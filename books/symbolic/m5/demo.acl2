@@ -1,0 +1,3 @@
+(include-book "utilities")
+
+(certify-book "demo" 1)

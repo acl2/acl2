@@ -1,0 +1,1 @@
+(certify-book "consider-hint-tests" 0 t :skip-proofs-okp t)

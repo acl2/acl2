@@ -1,0 +1,360 @@
+#; ACL2 Version 3.3 -- A Computational Logic for Applicative Common Lisp
+#; Copyright (C) 2007  University of Texas at Austin
+
+#; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+#; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
+
+#; This program is free software; you can redistribute it and/or modify
+#; it under the terms of the GNU General Public License as published by
+#; the Free Software Foundation; either version 2 of the License, or
+#; (at your option) any later version.
+
+#; This program is distributed in the hope that it will be useful,
+#; but WITHOUT ANY WARRANTY; without even the implied warranty of
+#; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#; GNU General Public License for more details.
+
+#; You should have received a copy of the GNU General Public License
+#; along with this program; if not, write to the Free Software
+#; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+#; Written by:  Matt Kaufmann               and J Strother Moore
+#; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
+#; Department of Computer Sciences
+#; University of Texas at Austin
+#; Austin, TX 78712-1188 U.S.A.
+
+#; Adapted from makefiles for IHS and data-structures library, which were
+#; created by Bishop Brock.
+
+#; NOTE:  Target "all" causes a recursive invocation of make with ACL2 set to
+#; its current value.  These recursive invocations of make thus have ACL2 set
+#; on the command line, which overrides any values of ACL2 set in those files.
+#; This should not cause any problems unless you try to do something fancy; see
+#; the comment for example just above target .exercises.cert in
+#; books/case-studies/ivy/ivy-v2/ivy-sources/Makefile from the ACL2
+#; distribution.
+
+# Success can be determined by checking for the absence of the following string
+# in the log;  "**CERTIFICATION FAILED**".
+
+# We could probably arrange for the make process to stop as soon as
+# certification fails, if there is a need.  If we do that, we should also
+# arrange that the -k (or --keep_going) flag, as specified by the GNU make
+# manual, avoids such stopping.
+
+#################### Editable variables ####################
+
+# The default command below prints runtime statistics for the certification.
+# We normally inhibit most output during certification to speed up the proofs.
+# Edit as necessary.
+
+# The setting of ACL2 immediately below reflects an assumption about where this
+# Makefile will be executed, namely, directly under books/.  This assumption
+# can of course be overridden by specifying ACL2 on the command line, for
+# example: make ACL2=/home/smith/saved_acl2.  Be sure to do this override on
+# the command line rather than by editing the line below, because that edit
+# will probably not suffice for overriding the assignment of ACL2 that is made
+# in some books (namely, those not just one level past books/).
+
+ACL2 ?= ../../saved_acl2
+
+ACL2_BOOKS_MAKEFILE ?= Makefile
+
+# Set the following variable to a non-empty string if you want debug information.
+ACL2_BOOKS_DEBUG ?=
+
+# Avoid loading customization file unless environment variable is already set.
+export ACL2-CUSTOMIZATION ?= NONE
+
+# Fix problem with sh on some Linux systems:
+ifeq ($(OSTYPE),linux)
+	SHELL = bash
+endif
+ifeq ($(OSTYPE),linux-gnu)
+	SHELL = bash
+endif
+
+# Inhibit all output except the summary (which can be useful for tracking down problems).
+# Set this to "" if you do want the output.
+
+INHIBIT = (assign inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote expansion)))
+
+# Support for make dependencies:  should be a list of book names without
+# the .lisp suffix.  Can be overridden on the command line or in a file
+# that includes this file.
+
+BOOKS = $(patsubst %.lisp, %, $(wildcard *.lisp))
+
+#################### END of editable variables ####################
+
+# We should really check that following is not empty.  It is the same as
+# books, but with .cert suffixes.  This variable should not be overridden;
+# it is computed as needed from BOOKS.
+
+BOOKS_CERT   = $(patsubst %, %.cert, $(BOOKS))
+BOOKS_FASL   = $(patsubst %, %.fasl, $(BOOKS))
+BOOKS_FAS   = $(patsubst %, %.fas, $(BOOKS))
+BOOKS_SPARCF = $(patsubst %, %.sparcf, $(BOOKS))
+BOOKS_UFSL = $(patsubst %, %.ufsl, $(BOOKS))
+BOOKS_DFSL = $(patsubst %, %.dfsl, $(BOOKS))
+BOOKS_D64FSL = $(patsubst %, %.d64fsl, $(BOOKS))
+BOOKS_DX64FSL = $(patsubst %, %.dx64fsl, $(BOOKS))
+BOOKS_LX64FSL = $(patsubst %, %.lx64fsl, $(BOOKS))
+BOOKS_X86F = $(patsubst %, %.x86f, $(BOOKS))
+BOOKS_O      = $(patsubst %, %.o, $(BOOKS))
+
+#  This tells make to expect `suffix rules' for these file suffixes.
+
+.SUFFIXES: .cert .lisp
+
+#  This rule tells how to get <book>.cert from <book>.lisp, either by running
+#  ACL2 on the <book>.acl2 file (if it exists) or using the default command
+#  to certify at ground zero.  Note that some Lisps execute (LP) upon startup
+#  and some do not, and some (e.g., OpenMCL) might not even start in the ACL2
+#  package, which can cause a problem if .acl2 files in our regressions suite
+#  execute (LP) instead of (ACL2::LP).  We deal with these issues below.
+
+.lisp.cert:
+	@echo "Making `pwd`/$*.cert on `date`"
+	@rm -f $*.cert
+	@echo '(acl2::value :q)' > workxxx.$(*F)
+	@echo '(in-package "ACL2")' >> workxxx.$(*F)
+	@echo '(acl2::lp)' >> workxxx.$(*F)
+	@echo '$(INHIBIT)' >> workxxx.$(*F)
+	@if [ -f $*.acl2 ] ; \
+	then \
+	  cat $*.acl2 >> workxxx.$(*F) ; \
+	elif [ -f cert.acl2 ] ; \
+	then \
+	  cat cert.acl2 >> workxxx.$(*F) ; \
+	  echo "" >> workxxx.$(*F) ; \
+	  echo '(certify-book "$*" ? $(COMPILE_FLG))' >> workxxx.$(*F) ; \
+	else \
+	  echo "" >> workxxx.$(*F) ; \
+	  echo '(certify-book! "$*" 0 $(COMPILE_FLG))' >> workxxx.$(*F) ; \
+	fi
+	@echo "" >> workxxx.$(*F)
+	@echo '(acl2::value :q)' >> workxxx.$(*F)
+	@echo '(acl2::exit-lisp)' >> workxxx.$(*F)
+	@if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
+	then \
+	  echo "[Makefile-generic]: certify book commands:" ;\
+	  echo "" ;\
+	  cat workxxx.$(*F) ;\
+	  echo "" ;\
+	fi	
+	@($(ACL2) < workxxx.$(*F) 2>&1) > $*.out
+	@rm -f workxxx.$(*F)
+	@((test -f $<) && (ls -al $*.cert)) || (echo "**CERTIFICATION FAILED** for `pwd`/$*.lisp" ; exit 1)
+# The following code can replace the line just above.  However, it is a bit
+# complicated by our having seen sh on Sun/Solaris 5.9 fail to recognize -nt,
+# which is this code uses csh instead of sh if possible.  At any rate, the test
+# on file dates seems unnecessary since we remove the .cert file immediately
+# upon entering this target.
+#	@if [ `which csh` ] ; then \
+#	csh -c "((test -f $< -a ! $< -nt $@ ) && (ls -al $*.cert))" || ($(MAKE) -s --no-print-directory FAILED FAILED_BOOK=`pwd`/$*.lisp) ; \
+#	else \
+#	((test -f $< -a ! $< -nt $@ ) && (ls -al $*.cert)) || ($(MAKE) -s --no-print-directory FAILED FAILED_BOOK=`pwd`/$*.lisp) ; \
+#	fi
+
+#  This rule certifies every book in BOOKS.  If the dependencies are set up
+#  correctly then the order of the books in BOOKS won't matter.
+
+.PHONY: all
+all:
+	@if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
+	then \
+		echo "[Makefile-generic]: Preparing to make 'all'" ;\
+	fi
+	@echo 'Using ACL2=$(ACL2)'
+	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) $(BOOKS_CERT) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)'
+
+# The following rules are useful when books have been certified in one lisp,
+# but we would also like their compiled files to exist in the other lisp.
+
+.PHONY: fasl
+fasl:
+	@echo 'Using ACL2=$(ACL2)'
+	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) $(BOOKS_FASL) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)'
+
+%.fasl: %.cert
+	@echo "Making $$PWD/$@"
+	echo '(acl2::value :q) (acl2::lp) (ld `((include-book "$(patsubst %.fasl,%,$(@))" :load-compiled-file :comp :ttags :all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2)
+
+.PHONY: fas
+fas:
+	@echo 'Using ACL2=$(ACL2)'
+	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) $(BOOKS_FAS) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)'
+
+# For CLISP, apparently only the first echoed form is evaluated.  So do not give multiple forms.
+%.fas: %.cert
+	@echo "Making $$PWD/$@"
+	echo '(ld `((include-book "$(patsubst %.fas,%,$(@))" :load-compiled-file :comp :ttags :all)))' | $(ACL2)
+
+.PHONY: sparcf
+sparcf:
+	@echo 'Using ACL2=$(ACL2)'
+	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) $(BOOKS_SPARCF) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)'
+
+%.sparcf: %.cert
+	@echo "Making $$PWD/$@"
+	echo '(acl2::value :q) (acl2::lp) (ld `((include-book "$(patsubst %.sparcf,%,$(@))" :load-compiled-file :comp :ttags :all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2)
+
+.PHONY: ufsl
+ufsl:
+	@echo 'Using ACL2=$(ACL2)'
+	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) $(BOOKS_UFSL) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)'
+
+%.ufsl: %.cert
+	@echo "Making $$PWD/$@"
+	echo '(acl2::value :q) (acl2::lp) (ld `((include-book "$(patsubst %.ufsl,%,$(@))" :load-compiled-file :comp :ttags :all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2)
+
+.PHONY: x86f
+x86f:
+	@echo 'Using ACL2=$(ACL2)'
+	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) $(BOOKS_X86F) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)'
+
+%.x86f: %.cert
+	@echo "Making $$PWD/$@"
+	echo '(acl2::value :q) (acl2::lp) (ld `((include-book "$(patsubst %.x86f,%,$(@))" :load-compiled-file :comp :ttags :all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2)
+
+.PHONY: dfsl
+dfsl:
+	@echo 'Using ACL2=$(ACL2)'
+	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) $(BOOKS_DFSL) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)'
+
+%.dfsl: %.cert
+	@echo "Making $$PWD/$@"
+	echo '(acl2::value :q) (acl2::lp) (ld `((include-book "$(patsubst %.dfsl,%,$(@))" :load-compiled-file :comp :ttags :all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2)
+
+.PHONY: d64fsl
+d64fsl:
+	@echo 'Using ACL2=$(ACL2)'
+	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) $(BOOKS_D64FSL) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)'
+
+%.d64fsl: %.cert
+	@echo "Making $$PWD/$@"
+	echo '(acl2::value :q) (acl2::lp) (ld `((include-book "$(patsubst %.d64fsl,%,$(@))" :load-compiled-file :comp :ttags :all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2)
+
+.PHONY: dx64fsl
+dx64fsl:
+	@echo 'Using ACL2=$(ACL2)'
+	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) $(BOOKS_DX64FSL) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)'
+
+%.dx64fsl: %.cert
+	@echo "Making $$PWD/$@"
+	echo '(acl2::value :q) (acl2::lp) (ld `((include-book "$(patsubst %.dx64fsl,%,$(@))" :load-compiled-file :comp :ttags :all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2)
+
+.PHONY: o
+o:
+	@echo 'Using ACL2=$(ACL2)'
+	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) $(BOOKS_O) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)'
+
+%.o: %.cert
+	@echo "Making $$PWD/$@"
+	echo '(acl2::value :q) (acl2::lp) (ld `((include-book "$(patsubst %.o,%,$(@))" :load-compiled-file :comp :ttags :all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2)
+
+.PHONY: lx64fsl
+lx64fsl:
+	@echo 'Using ACL2=$(ACL2)'
+	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) $(BOOKS_LX64FSL) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)'
+
+%.lx64fsl: %.cert
+	@echo "Making $$PWD/$@"
+	echo '(acl2::value :q) (acl2::lp) (ld `((include-book "$(patsubst %.lx64fsl,%,$(@))" :load-compiled-file :comp :ttags :all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2)
+
+# The dependencies rule prints make dependency commands to the screen.  The basic
+# strategy is to look for include-book commands, and to prefix appropriately
+# "$(ACL2_SYSTEM_BOOKS)" when :dir :system is specified.  Thus, if :dir :system is
+# specified then a common Makefile header in a books directory could be as
+# follows (just strip off the leading "# " on each line).
+
+# ----------------------------------------------------------------------
+# # The following variable should represent the ACL2 source directory.
+# # It is the only variable in this Makefile that may need to be edited.
+# ACL2_SRC = ../../../../../..
+
+# ACL2_SYSTEM_BOOKS = $(ACL2_SRC)/books
+# include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
+# ACL2 = $(ACL2_SRC)/saved_acl2
+# ----------------------------------------------------------------------
+
+# Here are variables that represent egrep commands for finding include-book
+# forms, as well as sed commands for modifying those include-book forms to
+# generate dependency lines.
+
+# Grep commands to rule out :dir :system:
+ACL2_NON_DIR            = egrep -i -v ':dir[ \t]*:system'
+
+# Grep commands for include-book and ld forms withOUT :dir :system:
+ACL2_EGREP_CMD          = egrep -i '^[^;]*include-book[ \t]*\".*\"' $$book.lisp | $(ACL2_NON_DIR)
+ACL2_EGREP_CMD_ACL2     = $(subst book.lisp,book.acl2,$(ACL2_EGREP_CMD))
+ACL2_EGREP_CMD_CERT     = $(subst $$book.lisp,cert.acl2,$(ACL2_EGREP_CMD))
+ACL2_EGREP_CMD_ACL2_LD  = egrep -i '^[^;]*\(ld[ \t]*\".*\"' $$book.acl2 | $(ACL2_NON_DIR)
+ACL2_EGREP_CMD_CERT_LD  = egrep -i '^[^;]*\(ld[ \t]*\".*\"' cert.acl2 | $(ACL2_NON_DIR)
+
+# Grep commands for include-book and ld forms WITH :dir :system (need a file argument):
+ACL2_EGREP_CMD_DIR      = egrep -i '^[^;]*include-book[ \t]*\".*\"[ \t]*:dir[ \t]*:system'
+ACL2_EGREP_CMD_DIR_LD   = egrep -i '^[^;]*\(ld[ \t]*\".*\"[ \t]*:dir[ \t]*:system'
+
+# Sed commands for transforming above egrep results into a dependency line:
+ACL2_SED_CMD            = sed "s/[^\"]*\"/$$book.cert: /" | sed 's/".*/.cert/'
+ACL2_SED_CMD_LD         = sed "s/[^\"]*\"/$$book.cert: /" | sed 's/".*//'
+ACL2_SED_CMD_DIR        = $(subst book.cert: ,book.cert: $$\(ACL2_SYSTEM_BOOKS)\/,$(ACL2_SED_CMD))
+ACL2_SED_CMD_DIR_LD     = $(subst book.cert: ,book.cert: $$\(ACL2_SYSTEM_BOOKS)\/,$(ACL2_SED_CMD_LD))
+
+# To comment out a line:
+ACL2_SED_CMD_COMMENT    = sed "s/^/\# /"
+
+# See comments above.
+.PHONY: dependencies
+dependencies: 
+	@for book in $(BOOKS) ; \
+	do \
+	echo "" ;  echo "$$book.cert: $$book.lisp" ; \
+	$(ACL2_EGREP_CMD) | $(ACL2_SED_CMD) ;\
+	$(ACL2_EGREP_CMD_DIR) $$book.lisp | $(ACL2_SED_CMD_DIR) | $(ACL2_SED_CMD_COMMENT) ;\
+	if [ -f $$book.acl2 ]; then \
+	echo "$$book.cert: $$book.acl2" ; \
+	$(ACL2_EGREP_CMD_ACL2) | $(ACL2_SED_CMD) ;\
+	$(ACL2_EGREP_CMD_ACL2_LD) | $(ACL2_SED_CMD_LD) ;\
+	$(ACL2_EGREP_CMD_DIR) $$book.acl2 | $(ACL2_SED_CMD_DIR) | $(ACL2_SED_CMD_COMMENT) ;\
+	$(ACL2_EGREP_CMD_DIR_LD) $$book.acl2 | $(ACL2_SED_CMD_DIR_LD) | $(ACL2_SED_CMD_COMMENT) ;\
+	elif [ -f cert.acl2 ]; then \
+	echo "$$book.cert: cert.acl2" ; \
+	$(ACL2_EGREP_CMD_CERT) | $(ACL2_SED_CMD) ;\
+	$(ACL2_EGREP_CMD_CERT_LD) | $(ACL2_SED_CMD_LD) ;\
+	$(ACL2_EGREP_CMD_DIR) cert.acl2 | $(ACL2_SED_CMD_DIR) | $(ACL2_SED_CMD_COMMENT) ;\
+	$(ACL2_EGREP_CMD_DIR_LD) cert.acl2 | $(ACL2_SED_CMD_DIR_LD) | $(ACL2_SED_CMD_COMMENT) ;\
+	fi ; \
+	done
+
+.PHONY: clean
+clean:
+	rm -f *.cert
+	rm -f *.h
+	rm -f *.c
+	rm -f *.o
+	rm -f *.sbin
+	rm -f *.lbin
+	rm -f *.fasl
+	rm -f *.ufsl
+	rm -f *.pfsl
+	rm -f *.dfsl
+	rm -f *.d64fsl
+	rm -f *.dx64fsl
+	rm -f *.lx64fsl
+	rm -f *.bin
+	rm -f *.sparcf
+	rm -f *.axpf
+	rm -f *.x86f
+	rm -f *.ppcf
+	rm -f *.fas
+	rm -f *.lib
+	rm -f *.out
+	rm -f *.date
+	rm -f *.log
+	rm -f TMP*.*
+	rm -f *@expansion.lsp
+	rm -f workxxx*

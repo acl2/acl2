@@ -1,0 +1,4 @@
+; Enable proof output.
+(set-inhibit-output-lst '(proof-tree))
+
+(certify-book "basic-tests" 0 t :skip-proofs-okp t :defaxioms-okp t)

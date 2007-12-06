@@ -1,0 +1,54 @@
+This directory contains solutions for exercises in Chapter 6 of
+
+ Computer-Aided Reasoning:  An Approach, by Kaufmann, Manolios, and Moore,
+ Kluwer Academic Publishers, June, 2000.
+
+See books/textbook/README for a guide to all solutions and general
+information.
+
+The following files (or extensions) may be present on this directory.
+
+README     - guide to contents of the directory
+Makefile   - Unix file for recertifying the ACL2 books on the directory
+             (present on all but chap7, which contains no books)
+
+*.lisp     - certifiable ACL2 book containing solutions to exercises
+*.txt      - solutions to exercises not amenable to ACL2 formulation
+*.acl2     - driver used by Makefile to recertify some *.lisp files
+
+*.cert     - certificate indicating that *.lisp has been certified
+*.date     - date of beginning of recertification run
+*.log      - output of make
+*.out      - output produced by ACL2 during certification
+*.o        - compiled version of *.lisp file in some Common Lisps
+*.fasl     - compiled version of *.lisp file in some Common Lisps
+
+Any file with the extension ``.lisp'' is a certifiable book that can
+be included into your ACL2 session with include-book.
+
+To recertify all the books, stand in this directory and type make.
+
+Location of Solutions to Particular Exercises
+
+Many of the exercises in Chapter 6 require you to present formal
+proofs in terms of the primitive rules of inference or require set
+theoretic or other metatheoretic arguments.  Such exercises do not
+readily admit solutions expressed as ACL2 commands.
+
+However, a few of the exercises do admit solution with ACL2, even
+though you -- the reader -- are not actually expected to do them this
+way.  Indeed, upon your first reading of Chapter 6, you will probably
+not be able to use the theorem prover well enough to do these proofs.
+But you might eventually return to these exercises with the theorem
+prover behind you and appreciate these solutions.
+
+
+
+   6 The Logic
+     Exercises 6.1 - 6.25 with pencil and paper:
+       chap6/solutions.txt
+
+     Exercises 6.3, 6.4, 6.6 - 6.8, 6.11 - 6.16 with ACL2:
+       chap6/selected-solutions.lisp
+
+
