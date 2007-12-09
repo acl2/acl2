@@ -48,6 +48,18 @@ ACL2 !>(pack '(if a (foo b) (bar c d)))
 |(IF A (FOO B) (BAR C D))|
 </pre>
 <hr>
+<b>progndollar.lisp</b> - Defines <code>PROGN$</code>, which evaluates
+several forms and returns the value of the last one.  Expands to a
+series of nested <code>PROG2$</code>s.
+<hr>
+<b>cws.lisp</b> - Defines <code>CWS</code>, which prints the values of
+a series of forms and returns the value of the last one:<pre>
+ACL2 !>(let ((x '(a b c)) (y '(d e f))) (cws x y))
+X: (A B C)
+Y: (D E F)
+(D E F)
+</pre>
+<hr>
 <!-- Note: I imagine if lots of other files get put here, we should split this --
   -- documentation into one file per library or so. -->
 
