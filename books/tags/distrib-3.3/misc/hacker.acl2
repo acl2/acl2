@@ -1,0 +1,50 @@
+(defpkg "ACL2-HACKER"
+ (append
+  '(; things we want from ACL2 package that aren't in *acl2-exports*:
+    value set-w!
+    ld-evisc-tuple connected-book-directory guard-checking-on
+    inhibit-output-lst print-clause-ids acl2-raw-mode-p 
+    raw-mode-restore-lst saved-output-token-lst tainted-okp
+    in-package-fn defpkg-fn pe! trans! pso pso! value-triple
+    default-evisc-tuple
+
+    progn! untouchable-fns untouchable-vars ld-redefinition-action
+    set-ld-skip-proofsp set-ld-redefinition-action set-ld-prompt
+    set-ld-keyword-aliases set-ld-pre-eval-filter set-ld-error-triples
+    set-ld-error-action set-ld-query-control-alist set-cbd-fn
+    set-raw-mode set-raw-mode-fn set-tainted-okp
+    push-untouchable-fn remove-untouchable-fn
+    set-raw-mode-on set-raw-mode-off temp-touchable-vars temp-touchable-fns
+    set-temp-touchable-vars set-temp-touchable-fns
+    
+    global-value current-acl2-world ld-level *wormholep* raw-mode-p
+    max-absolute-event-number getprop er-let* *valid-output-names*
+    state-global-let* extension absolute-to-relative-command-number
+    access-command-tuple-number global-set-lst command-number-baseline
+    event-number-baseline next-absolute-command-number add-command-landmark
+    next-absolute-event-number add-event-landmark scan-to-command
+    certify-book-fn f-get-global f-put-global f-boundp-global
+    checkpoint-processors global-val)
+    
+  '(; defined here and "exported" to ACL2 package:
+    hacker ; documentation topic
+    push+touchable
+    push=touchable
+    push-all-touchable
+    pop-touchable
+    progn+touchable
+    with-touchable ; alias
+    progn+redef
+    with-redef-allowed ; alias
+    in-raw-mode
+    with-raw-mode ; alias
+    hacker-defun
+    modify-raw-defun
+    copy-defun
+    redef-rewrite)
+   (union-eq *acl2-exports*
+             *common-lisp-symbols-from-main-lisp-package*)))
+
+
+(ACL2::CERTIFY-BOOK "hacker" ACL2::?)
+

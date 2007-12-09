@@ -1,0 +1,147 @@
+
+A Tool for the Subclass of Unrollable List Formulas in ACL2 (SULFA)
+by Erik Reeber and Warren A. Hunt, Jr.
+
+For help on using the tool email Erik Reeber at
+reeber@cs.utexas.edu
+
+INSTALLATION
+03/29/07
+
+0) We assume that you have an executable of ACL2, reachable by executing 
+   "../../../saved_acl2" from the directory with this README.
+ 
+   We also assume you have a Perl interpreter and a C compiler.
+
+1) In order to use our tool, you'll need a SAT solver.  Download and 
+   compile, if necessary, either zchaff version 2007.3.12, which can be found at: 
+   http://www.princeton.edu/~chaff/zchaff.html
+
+   or
+
+   Minisat 1.4 or Minisat 2 (the first release), which can be found at:
+
+   http://www.cs.chalmers.se/Cs/Research/FormalMethods/MiniSat/MiniSat.html
+
+     or in the ACL2 web space under:
+
+     http://www.cs.utexas.edu/users/moore/acl2/aux/
+
+2) In the same directory as this README file, type: 
+   "make PERL=<perl-int> CC=<c-comp> SAT_SOLVER=<sat-exec> SAT_SOLVER_TYPE=<sat-type>"
+
+   where <perl-int> is your Perl interpreter (default "perl"), 
+         <c-comp> is your C compiler (default "gcc"),
+         <sat-exec> is your SAT solver executable name 
+           (default "/../../../aux/minisat2/${HOSTTYPE}/minisat/core/minisat"), and
+         <sat-type> is either "minisat" or "zchaff" (default "minisat").
+
+   Note that the <perl-int>, <c-comp>, and <sat-exec> values should either be full
+   path names (e.g. "/var/local/minisat/core/minisat"), or names of executables 
+   reachable from your PATH after starting a fresh shell (e.g. if you use c-shell
+   the PATH is set up in ~/.cshrc).  
+
+   For example, if your PERL interpreter is in "/usr/bin/perl", you have "gcc" in 
+   your PATH, and have installed minisat 2 in "/var/local/minisat/core/minisat",
+   then type:
+
+   "make PERL=/usr/bin/perl SAT_SOLVER=/var/local/minisat/core/minisat SAT_SOLVER_TYPE=minisat"
+
+   Alternatively, you can modify the defaults for the PERL, CC, SAT_SOLVER, and 
+   SAT_SOLVER_TYPE variables in "Makefile".
+
+   Note: Minisat writes a bunch of output to stderr, so expect to see a bunch of 
+   output during the compilation if you use minisat.  
+
+
+RUNNING THE TOOL(S)
+3/29/07
+
+Two tools are included in this distribution, a clause processor and 
+a bit-vector SMT solver.
+
+1) To use the SULFA-SAT solver, first include the clause processor 
+into ACL2 by calling:
+
+(include-book "clause-processors/SULFA/books/clause-processors/sat-clause-processor" 
+ :dir :system :ttags (sat sat-cl))
+
+You can then access the ACL2's "trusted clause-processor" interface.  For
+example, 
+
+(defthm prop-form-1
+  (or (and a b)
+      (and (not a) b)
+      (not b))
+  :hints (("Goal" :clause-processor (:function sat :hint nil)))
+  :rule-classes nil)
+
+For more information on this clause processor, look at the tutorial in
+"books/sat-tests/tutorial.lisp".  You may also want to read ACL2's 
+documentation on clause processors.
+
+
+2) A prototype bit-vector SMT solver, SULFA-SMT, is also included with 
+this distribution.  SULFA-SMT can be executed as a perl script created in 
+"scripts/sulfa-smt" and accepts the standard bit-vector SMT format, described 
+at:
+
+http://combination.cs.uiowa.edu/smtlib/
+
+A number of bit-vector benchmark problems are also available from this
+site, under the name "QF_UFBV32" (Quantifier-Free formulas with Uninterpreted 
+Functions and 32 bit, Bit Vectors).  For convenience we've included a 
+few of these in the directory "smt-examples/smt-lib-crafted".  Given such 
+a problem, such as "smt-examples/smt-lib-crafted/bb.smt", we can call the SMT solver as follows:
+
+perl scripts/sulfa-smt < smt-examples/smt-lib-crafted/bb.smt
+
+Which will then print either "sat" or "unsat".  For a more verbose print 
+out, use the "-v 4" option:
+
+perl scripts/sulfa-smt -v 4 < smt-examples/smt-lib-crafted/bb.smt
+
+What's interesting about this SMT solver is that the bit-vector functions 
+are implemented as ACL2 functions (in the file 
+"books/bv-smt-solver/bv-lib-definitions.lisp").  Furthermore, it makes use of 
+the ACL2 theorem prover to perform simplification on these functions before
+using the SULFA-SAT clause processor to solve them.  
+
+The basic methodology is that we use "books/bv-smt-solver/translation.lisp" to
+translate the SMT-lib to ACL2, "books/bv-smt-solver/bv-lib-definitions.lisp" to
+model the resulting bit-vector functions, and "smt-check" in 
+"books/bv-smt-solver/smt" to check the resulting formula.  The "smt-check"
+function first uses the ACL2 simplifier through the symbolic simulator defined
+in "../../misc/expander.lisp", and the simplification rules
+defined "books/bv-smt-solver/bv-lib-lemmas.lisp".  After simplification, 
+"smt-check" solves the resulting problem by using the SAT-based SULFA solver 
+through the interface defined in "books/sat/sat".
+
+
+GUIDE TO DOCUMENTATION
+03/29/07
+
+The directory "books/sat-tests" contains a number of examples that make
+use of our SAT-based clause processor for SULFA formulas, including
+the tutorial "books/sat-tests/tutorial.lisp".
+
+The file "doc/sat-solver-interface.txt" explains the interface we use to 
+communicate with SAT solvers, so that you can put a new SAT solver 
+"under the hood."
+
+The file "doc/tool-interface.txt" briefly explains each of the top-level
+functions in "books/sat/sat.lisp" to better facilitate the creation of
+new clause processors built on top of our underlying SAT-solving system.
+
+
+RELEVANT PUBLICATION
+03/29/07
+
+Erik Reeber and Warren A. Hunt, Jr., A SAT-Based Decision
+Publications  Procedure for the Subclass of Unrollable List Functions in ACL2
+(SULFA), The 3rd International Joint Conference on Automated
+Reasoning (IJCAR 2006), pp 453-467, Springer.
+
+
+
+

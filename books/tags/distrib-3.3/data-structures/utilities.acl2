@@ -1,0 +1,6 @@
+(acl2::value :q)
+(acl2::lp)
+(ld '((ubt! 1)
+      (in-package "ACL2")
+      (ld "define-u-package.lisp")
+      (certify-book "utilities" 1)))
