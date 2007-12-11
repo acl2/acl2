@@ -9,3 +9,4 @@
   * Either use the standard makefile approch (see :doc book-makefiles) or explain why this would be awkward.  Non-standard makefiles should still cause the string "**CERTIFICATION FAILED**" to be printed whenever a book's certification fails.
   * Avoid non-local in-theory events except when there is a good reason for them.
   * If you add a new top-level directory, be sure to record any new directory-level dependencies in books/Makefile.
+  * Comment all non-trivial changes with your name.
