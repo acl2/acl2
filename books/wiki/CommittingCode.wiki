@@ -8,3 +8,4 @@
   * Books should target the latest official ACL2 release, even if that is an incremental release x.y.z.
   * Either use the standard makefile approch (see :doc book-makefiles) or explain why this would be awkward.
   * Avoid non-local in-theory events except when there is a good reason for them.
+  * If you add a new top-level directory, be sure to record any new directory-level dependencies in books/Makefile.
