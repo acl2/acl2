@@ -3,6 +3,8 @@
 = Important guidelines =
 
   * Document what you have changed when you commit.
-  * Try not to break the build.
-  * Try to make sure all parens are balanced.
-  * Books should target the latest official ACL2 release.
+  * Avoid breaking the build, by running a full regression including the workshop books.
+  * Make sure all parens are balanced.  File emacs/emacs-acl2.el distributed with ACL2 defines a command meta-x find-unbalanced-parentheses for this purpose.
+  * Books should target the latest official ACL2 release, even if that is an incremental release x.y.z.
+  * Either use the standard makefile approch (see :doc book-makefiles) or explain why this would be awkward.
+  * Avoid non-local in-theory events except when there is a good reason for them.
