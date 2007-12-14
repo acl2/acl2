@@ -2,6 +2,7 @@
 "
 .:
 Makefile
+Readme.lsp
 bstar.lisp
 cws.lisp
 index.html
