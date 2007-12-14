@@ -1437,7 +1437,15 @@
       (mv-let
        ($sat state)
        (add-cnf-clause (cons (negate-f-expr consp-lhs) cnf-lits) $sat state)
-       (add-cnf-const-i1-pop cnf-lits todo-list $sat state)))
+       (let* ((car-lhs (car-vari lhs-var $sat))
+              (cdr-lhs (cdr-vari lhs-var $sat))
+              (todo-list (add-cnf-const-i1-push car-lhs 
+                                                nil
+                                                todo-list))
+              (todo-list (add-cnf-const-i1-push cdr-lhs 
+                                                nil
+                                                todo-list)))
+         (add-cnf-const-i1-pop cnf-lits todo-list $sat state))))
      (t
       (let* ((car-lhs (car-vari lhs-var $sat))
              (cdr-lhs (cdr-vari lhs-var $sat))

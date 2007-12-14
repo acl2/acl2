@@ -11,14 +11,14 @@
 ;; of intermediate variables.  I could use resizable array's, 
 ;; for now, I'd like to avoid the hassle.
 
-;; My guess is that a million
-;; is more than enough---our final number of variables
-;; will be larger...
-(defconst *max-vars* 1000000)
+;; The following is a bad programming practice---a bound
+;; on the number of variables.  I need to fix it, because
+;; it's starting to hurt me.
+(defconst *max-vars* 3000000)
 
 (defconst acl2::*sat-max-entry-id* *max-vars*)
 
-(defconst *init-array-size* 100)
+(defconst *init-array-size* 1000)
 
 ;; The maximum number of final variables.  I think 10 million
 ;; should be plenty.  

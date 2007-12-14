@@ -8,8 +8,8 @@ reeber@cs.utexas.edu
 INSTALLATION
 03/29/07
 
-0) We assume that you have an executable of ACL2, reachable by executing 
-   "../../../saved_acl2" from the directory with this README.
+0) We assume that you have an executable of ACL2 and that you have certified its system
+   books.
  
    We also assume you have a Perl interpreter and a C compiler.
 
@@ -28,9 +28,11 @@ INSTALLATION
      http://www.cs.utexas.edu/users/moore/acl2/aux/
 
 2) In the same directory as this README file, type: 
-   "make PERL=<perl-int> CC=<c-comp> SAT_SOLVER=<sat-exec> SAT_SOLVER_TYPE=<sat-type>"
+   "make ACL2_SYSTEM_BOOKS=<acl2-books> ACL2=<acl2-exec> PERL=<perl-int> CC=<c-comp> SAT_SOLVER=<sat-exec> SAT_SOLVER_TYPE=<sat-type>"
 
-   where <perl-int> is your Perl interpreter (default "perl"), 
+   where <acl2-books> is the path to ACL2's system books (default "../../../books")
+         <acl2-exec> is your ACL2 executable (default "<acl2-books>/../saved_exec")
+         <perl-int> is your Perl interpreter (default "perl"), 
          <c-comp> is your C compiler (default "gcc"),
          <sat-exec> is your SAT solver executable name 
            (default "/../../../aux/minisat2/${HOSTTYPE}/minisat/core/minisat"), and

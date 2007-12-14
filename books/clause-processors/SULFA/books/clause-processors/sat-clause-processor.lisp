@@ -13,68 +13,131 @@
 (defun sat-cl-update-property-status (val $sat)
   (declare (xargs :stobjs $sat))
   (sat-update-external-value 
-   (cons val (cdr (sat-external-value $sat)))
+   (list* val (cdr (sat-external-value $sat)))
    $sat))
 
 (defun sat-cl-marked-un-fns ($sat)
   (declare (xargs :stobjs $sat))
-  (cdr (sat-external-value $sat)))
+  (cadr (sat-external-value $sat)))
 
 (defun sat-cl-update-marked-un-fns (val $sat)
   (declare (xargs :stobjs $sat))
   (sat-update-external-value 
-   (cons (car (sat-external-value $sat)) val) 
+   (list* (car (sat-external-value $sat)) val
+          (cddr (sat-external-value $sat))) 
    $sat))
 
-(defun sat-cl-print-input-alist (alist)
+(defun sat-cl-ce-alist ($sat)
+  (declare (xargs :stobjs $sat))
+  (caddr (sat-external-value $sat)))
+
+(defun sat-cl-update-ce-alist (val $sat)
+  (declare (xargs :stobjs $sat))
+  (sat-update-external-value 
+   (list* (car (sat-external-value $sat))
+          (cadr (sat-external-value $sat))
+          val
+          (cdddr (sat-external-value $sat))) 
+   $sat))
+
+;; ---------------------------------------------------
+;; A macro to help with running counter-examples
+;; ---------------------------------------------------
+
+;; If you want to see what (f (g x)) evaluates
+;; to under the current counterexample, type
+;; (sat-cl-ce (f (g x)))
+
+;; Note: It doesn't currently work with uninterpreted
+;; functions.
+
+(defmacro sat-cl-ce (expr)
+  `(mv-let
+    (erp val state)
+    (simple-translate-and-eval (quote ,expr)
+                               (sat-cl-ce-alist $sat)
+                               nil
+                               "User create ce"
+                               "sat-cl-ce"
+                               (w state)
+                               state)
+    (mv erp (cdr val) state)))
+
+;; ---------------------------------------------------
+
+(defun sat-cl-get-un-fn-val (x ans)
+  (cond
+   ((atom x)
+    (mv (revappend ans nil) x))
+   (t
+    (sat-cl-get-un-fn-val (cdr x)
+                          (cons (car x) ans)))))
+
+(defun sat-cl-add-un-fn (fn fn-alist alist)
+  (cond
+   ((endp fn-alist)
+    alist)
+   (t
+    (let ((args (car (car fn-alist)))
+          (return-val (cdr (car fn-alist))))
+      (sat-cl-add-un-fn fn (cdr fn-alist)
+                        (cons (cons (cons fn args) return-val)
+                              alist))))))
+
+(defun sat-cl-add-un-fn-list (fn-list alist $sat state)
+  (declare (xargs :stobjs $sat)) 
+  (cond 
+   ((endp fn-list)
+    (mv alist $sat state))
+   (t
+    (mv-let
+     (erp un-fn-alist $sat state)
+     (sat-si-un-fn-alist (car fn-list) $sat state)
+     (declare (ignore erp))
+     (sat-cl-add-un-fn-list (cdr fn-list) 
+                            (sat-cl-add-un-fn (car fn-list)
+                                              un-fn-alist
+                                              alist)
+                            $sat state)))))
+
+(defun sat-cl-update-current-ce ($sat state)
+  (declare (xargs :stobjs $sat)) 
+  (mv-let
+   (erp fn-list $sat state)
+   (sat-un-fn-list $sat state)
+   (declare (ignore erp))
+   (mv-let
+    (erp alist $sat state)
+    (sat-si-input-alist $sat state)
+    (declare (ignore erp))
+    (mv-let
+     (alist $sat state)
+     (sat-cl-add-un-fn-list fn-list alist $sat state)
+     (let (($sat (sat-cl-update-ce-alist alist $sat)))
+       (mv $sat state))))))
+
+(defun sat-cl-print-alist (alist)
   (cond
    ((endp alist)
     nil)
    (t
     (prog2$
      (cw "~x0: ~x1~%" (caar alist) (cdar alist))
-     (sat-cl-print-input-alist (cdr alist))))))
+     (sat-cl-print-alist (cdr alist))))))
 
-(defun sat-cl-print-un-fn-alist (fn alist)
-  (cond
-   ((endp alist)
-    nil)
-   (t
-    (prog2$
-     (cw "~x0: ~x1~%" (cons fn (caar alist)) (cdar alist))
-     (sat-cl-print-un-fn-alist fn (cdr alist))))))
-     
-(defun sat-cl-print-un-fn-values (fn-list $sat state)
+(defun sat-cl-print-ce ($sat)
   (declare (xargs :stobjs $sat))
-  (cond 
-   ((endp fn-list)
-    (mv $sat state))
-   (t
-    (mv-let
-     (erp un-fn-alist $sat state)
-     (sat-si-un-fn-alist (car fn-list) $sat state)
-     (declare (ignore erp))
-     (prog2$
-      (sat-cl-print-un-fn-alist (car fn-list) un-fn-alist)
-      (sat-cl-print-un-fn-values (cdr fn-list) $sat state))))))
+  (sat-cl-print-alist (sat-cl-ce-alist $sat)))
 
-(defun sat-cl-print-ce ($sat state)
+(defun sat-cl-update-and-print-ce ($sat state)
   (declare (xargs :stobjs $sat))
   (mv-let
-   (erp si-alist $sat state)
-   (sat-si-input-alist $sat state)
-   (declare (ignore erp))
-   (mv-let
-    (erp fn-list $sat state)
-    (sat-un-fn-list $sat state)
-    (declare (ignore erp))
-    (prog2$
-     (cw "The following counter example was generated:~%")
-     (prog2$
-      (sat-cl-print-input-alist si-alist)
-      (sat-cl-print-un-fn-values fn-list $sat state))))))
-      
-     
+   ($sat state)
+   (sat-cl-update-current-ce $sat state)
+   (prog2$ 
+    (sat-cl-print-ce $sat)
+    (mv $sat state))))
+
 (defun sat-cl-add-input-literal-list (input-lit-list $sat state)
   (declare (xargs :stobjs $sat))
   (cond
@@ -194,15 +257,15 @@
             state))
        ((not in-SULFA)
         (mv (cons "ERROR: This formula is not in ~
-                   our decidable subclass (SULFA)~%"
+                   the decidable Subclass of Unrollable List Formulas in ACL2 (SULFA)~%"
                   nil)
             nil
             $sat
             state))
        (t
         (prog2$ 
-         (cw "The expression is in our decidable ~
-              subclass of ACL2 formulas (SULFA).~%")
+         (cw "The expression is in the decidable ~
+              Subclass of Unrollable List Formulas in ACL2 (SULFA).~%")
          (mv-let
           ($sat state)
           (sat-cl-add-input-literal-list input-clause $sat state)
@@ -218,8 +281,8 @@
               (declare (ignore erp))
               (let* (($sat (sat-cl-update-property-status 'acl2::valid $sat)))
                 (prog2$ 
-                 (cw "There is no satisfying instance, ~
-                       therefore the original formula was valid~%")
+                 (cw "The SAT solver found no satisfying instance (to the negated formula); ~
+                       therefore, the original formula is valid~%")
                  (mv nil '() $sat state)))))
             (t
              (prog2$
@@ -228,69 +291,69 @@
                (erp $sat state)
                (sat-generate-satisfying-instance $sat state)
                (declare (ignore erp))
+               (mv-let
+                ($sat state)
+                (sat-cl-update-and-print-ce $sat state)
                 (mv-let
-                 ($sat state)
-                 (sat-cl-print-ce $sat state)
+                 (erp ce-alist $sat state)
+                 (sat-si-input-alist $sat state)
+                 (declare (ignore erp))
                  (mv-let
-                  (erp ce-alist $sat state)
-                  (sat-si-input-alist $sat state)
+                  (erp $sat state)
+                  (sat-end-problem $sat state)
                   (declare (ignore erp))
-                  (mv-let
-                   (erp $sat state)
-                   (sat-end-problem $sat state)
-                   (declare (ignore erp))
-                   (cond
-                    (check-ce
-                     (prog2$
-                      (cw "Checking counter-example.~%")
-                      (mv-let 
-                       (ce-val state)
-                       (sat-cl-run-clause input-clause ce-alist state)
-                       (cond
-                        (ce-val                        
-                         (prog2$ 
-                          (cw "The formula evaluated to true, so the counter example ~
+                  (cond
+                   (check-ce
+                    (prog2$
+                     (cw "Checking counter-example.~%")
+                     (mv-let 
+                      (ce-val state)
+                      (sat-cl-run-clause input-clause ce-alist state)
+                      (cond
+                       (ce-val                        
+                        (prog2$ 
+                         (cw "The formula evaluated to true, so the counter example ~
                             is SPURIOUS.~%")
-                          (mv (cons "The SAT-based procedure failed to verify ~
+                         (mv (cons "The SAT-based procedure failed to verify ~
                                      the formula~%"
-                                    nil)
-                              nil 
-                              $sat
-                              state)))
-                        (t
-                         (let* (($sat (sat-cl-update-property-status 'acl2::invalid $sat)))
-                           (prog2$
-                            (cw "The formula evaluated to false, so the ~
+                                   nil)
+                             nil 
+                             $sat
+                             state)))
+                       (t
+                        (let* (($sat (sat-cl-update-property-status 'acl2::invalid $sat)))
+                          (prog2$
+                           (cw "The formula evaluated to false, so the ~
                                  counter example is real.~%")
-                            (mv (cons "The SAT-based procedure failed to ~
+                           (mv (cons "The SAT-based procedure failed to ~
                                        verify the formula~%"
-                                      nil)
-                                nil 
-                                $sat
-                                state))))))))
-                    (marked-un-fn-list
-                     (prog2$
-                      (cw "Counter-example checking is currently off and ~
+                                     nil)
+                               nil 
+                               $sat
+                               state))))))))
+                   (marked-un-fn-list
+                    (prog2$
+                     (cw "Counter-example checking is currently off and ~
                            some abstraction was used.  Therefore, we do not ~
                            know if the counter example is real.~%")
-                      (mv (cons "The SAT-based procedure failed to verify ~
+                     (mv (cons "The SAT-based procedure failed to verify ~
                                  the formula~%"
-                                nil)
-                          nil 
-                          $sat
-                          state)))
-                    (t
-                     (let* (($sat (sat-cl-update-property-status 'acl2::invalid $sat)))
-                       (prog2$
-                        (cw "Counter-example checking is currently off, but ~
+                               nil)
+                         nil 
+                         $sat
+                         state)))
+                   (t
+                    (let* (($sat (sat-cl-update-property-status 'acl2::invalid $sat)))
+                      (prog2$
+                       (cw "Counter-example checking is currently off, but ~
                            no abstraction was used.  Therefore the ~
                            counter example must be real.~%")
-                        (mv (cons "The SAT-based procedure failed to verify ~
+                       (mv (cons "The SAT-based SULFA solver failed to verify ~
                                    the formula~%"
-                                  nil)
-                            nil 
-                            $sat
-                            state)))))))))))))))))))))                     
+                                 nil)
+                           nil 
+                           $sat
+                           state)))))))))))))))))))))                     
 
 (defun sat-cl-lookup-hint-val (key default sat-hint)
   (let* ((entry (member key sat-hint)))

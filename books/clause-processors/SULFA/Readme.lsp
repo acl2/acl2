@@ -1,6 +1,3 @@
-; Proof of the soundness of the simply typed lambda calculus
-; Copyright (C) 2007 Erik Reeber and Warren A. Hunt, Jr.
-
 ((:FILES ; non-empty list of filenames, generated from Unix command "ls -1R"
 "
 .:

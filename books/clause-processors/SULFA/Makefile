@@ -1,12 +1,13 @@
+# make ACL2_SYSTEM_BOOKS=/projects/acl2/v3-2-linux/books ACL2=/projects/acl2/v3-2-linux/allegro-saved_acl2
 
 # Your Perl interpreter
 PERL ?= perl
 
 # Your SAT solver executable
-SAT_SOLVER ?= ${PWD}/../../../aux/minisat2/${HOSTTYPE}/minisat/core/minisat
+SAT_SOLVER ?= /projects/hvg/SAT/solvers/bin/zchaff
 
 # Either "minisat" or "zchaff"
-SAT_SOLVER_TYPE ?= minisat
+SAT_SOLVER_TYPE ?= zchaff
 
 # Your C compiler
 CC = gcc
