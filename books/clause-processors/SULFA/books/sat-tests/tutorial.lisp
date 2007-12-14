@@ -294,8 +294,18 @@ ACL2 !>
 
 ;; For example, we can define xor as below:
 
-(defun xor (x y)
-  (if x (if y nil t) (if y t nil)))
+; Changed by Matt Kaufmann to be compatible with ACL2 after Version 3.3:
+(defun xor (p q)
+
+  ":Doc-Section ACL2::Programming
+
+  logical ``exclusive or''~/
+
+  ~c[Xor] is the ACL2 exclusive-or function.  ~c[(xor P Q)] means that either
+  ~c[P] or ~c[Q], but not both, is false (i.e., ~c[nil]).~/~/"
+
+  (declare (xargs :guard t))
+  (if p (if q nil t) (if q t nil)))
 
 ;; And now we can prove theorems about xor, using the clause processor:
 
@@ -403,7 +413,7 @@ ACL2 !>
 #|
 ;; The first formal of v-adder must be a ground formal,
 ;; both because of its use in (zp n), and its use in
-;; the measure of v-adder.
+;; the recursive measure of v-adder.
 
 (sat-ground-formals 'v-adder $sat state)
 ;; =>

@@ -252,7 +252,7 @@
   left-hand side of the conclusion of that lemma inside the specified goal
   clause, starting with the last literal.  The system uses a heuristically
   modified version of the Huet-Lang second-order pattern matching algorithm
-  and, in general, produces instantatiations of both variable symbols and
+  and, in general, produces instantiations of both variable symbols and
   constrained function symbols in the lemma.  If an instance is found, the
   consideration is turned into a ~il[lemma-instance] and ~c[:use]d.
 
@@ -286,9 +286,9 @@
   where ~c[name] is the name of a previously proved theorem, ~c[pterm] is
   either a term or the keyword ~c[:lhs], ~c[tterm] is either a term or the
   keyword ~c[conclusion] or the keyword ~c[:clause], ~c[vsubst] is a variable
-  substitution as might be given in an ~c[:instance], e.g., ~c[((x (rev a)) (y
-  (sort b)))], and ~c[fsubst] is a functional substitution as might be given
-  in a ~c[:functional-instance], e.g., ~c[((map-h sumer))].
+  substitution as might be given in an ~c[:instance], e.g.,
+  ~c[((x (rev a)) (y (sort b)))], and ~c[fsubst] is a functional substitution
+  as might be given in a ~c[:functional-instance], e.g., ~c[((map-h sumer))].
 
   If ~c[pterm] is a term, that term is used as the pattern we try to
   instantiate.  If ~c[pterm] is the keyword ~c[:lhs], the left-hand side

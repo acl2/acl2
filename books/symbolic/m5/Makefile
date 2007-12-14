@@ -2,9 +2,9 @@
 # It is the only variable in this Makefile that may need to be edited.
 ACL2_SRC = ../../..
 
-ACL2_SYSTEM_BOOKS = $(ACL2_SRC)/books
+ACL2_SYSTEM_BOOKS ?= $(ACL2_SRC)/books
 include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
-ACL2 = $(ACL2_SRC)/saved_acl2
+ACL2 ?= $(ACL2_SRC)/saved_acl2
 
 # This makefile certifies the m5 model, including a recursive factorial
 # method. This is unchanged (well almost) from J's standard Makefile.

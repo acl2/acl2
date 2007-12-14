@@ -2,8 +2,9 @@
 # It is the only variable in this Makefile that may need to be edited.
 ACL2_SRC = ../../../..
 
-include $(ACL2_SRC)/books/Makefile-generic
-ACL2 = $(ACL2_SRC)/saved_acl2
+ACL2_SYSTEM_BOOKS ?= $(ACL2_SRC)/books
+include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
+ACL2 ?= $(ACL2_SRC)/saved_acl2
 
 # Override default setting since solutions.lisp is not intended to be certified.
 BOOKS = find-path1 find-path2 find-path3 helpers linear-find-path

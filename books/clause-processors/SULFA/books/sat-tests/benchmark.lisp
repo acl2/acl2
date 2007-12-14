@@ -18,8 +18,18 @@
     (and (iff (car x) (car y))
          (n-bleq (1- n) (cdr x) (cdr y)))))
 
-(defun xor (x y)
-  (if x (if y nil t) (if y t nil)))
+; Changed by Matt Kaufmann to be compatible with ACL2 after Version 3.3:
+(defun xor (p q)
+
+  ":Doc-Section ACL2::Programming
+
+  logical ``exclusive or''~/
+
+  ~c[Xor] is the ACL2 exclusive-or function.  ~c[(xor P Q)] means that either
+  ~c[P] or ~c[Q], but not both, is false (i.e., ~c[nil]).~/~/"
+
+  (declare (xargs :guard t))
+  (if p (if q nil t) (if q t nil)))
 
 (defun xor3 (x y z)
   (xor x (xor y z)))

@@ -491,9 +491,18 @@
   (sig nat (bitvec n) (bitvec n) (bitvec n))
   bv-or-raw)
 
-(defun xor (a b)
+; Changed by Matt Kaufmann to be compatible with ACL2 after Version 3.3:
+(defun xor (p q)
+
+  ":Doc-Section ACL2::Programming
+
+  logical ``exclusive or''~/
+
+  ~c[Xor] is the ACL2 exclusive-or function.  ~c[(xor P Q)] means that either
+  ~c[P] or ~c[Q], but not both, is false (i.e., ~c[nil]).~/~/"
+
   (declare (xargs :guard t))
-  (if a b (not b)))
+  (if p (if q nil t) (if q t nil)))
 
 ;; (defund bv-xor (n x y)
 ;;   (if (zp n)
