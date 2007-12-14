@@ -94,6 +94,7 @@ sulfa-smt.isf
 smt-lib-crafted
 
 ./smt-examples/smt-lib-crafted:
+README
 bb.smt
 bbb.smt
 bit-counting.smt

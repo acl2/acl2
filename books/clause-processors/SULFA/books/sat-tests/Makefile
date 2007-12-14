@@ -29,9 +29,13 @@ test-help.cert: test-help.acl2
 benchmark.cert: benchmark.lisp
 benchmark.cert: test-help.cert
 
+# Fake dependency added to avoid parallel execution
+test-incremental.cert: benchmark.cert
 test-incremental.cert: test-incremental.lisp
 test-incremental.cert: test-help.cert
 
+# Fake dependency added to avoid parallel execution
+sudoku.cert: test-incremental.cert
 sudoku.cert: sudoku.lisp
 sudoku.cert: test-help.cert
 

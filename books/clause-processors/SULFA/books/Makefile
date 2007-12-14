@@ -5,5 +5,9 @@ DIRS = sat clause-processors sat-tests bv-smt-solver
 
 include ${ACL2_SYSTEM_BOOKS}/Makefile-psubdirs
 
-bv-smt-solver: sat clause-processors
-sat-tests: sat clause-processors
+.PHONY: $(DIRS)
+
+clause-processors: sat
+sat-tests: clause-processors
+bv-smt-solver: clause-processors
+

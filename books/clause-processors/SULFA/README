@@ -120,6 +120,16 @@ defined "books/bv-smt-solver/bv-lib-lemmas.lisp".  After simplification,
 through the interface defined in "books/sat/sat".
 
 
+A NOTE ON PARALLELISM
+11/14/07
+
+The SULFA tool currently does not support parallel execution.  A 
+file is used to communicate with the SAT solver and this file always has the same
+name.  Thus, if two copies of ACL2 are operating in the same directory, they will
+conflict with each other if they are both communicating with the SAT solver at the
+same time.
+
+
 GUIDE TO DOCUMENTATION
 03/29/07
 

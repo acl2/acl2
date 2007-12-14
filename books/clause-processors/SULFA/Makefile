@@ -29,7 +29,7 @@ ACL2 = ${PWD}/${ACL2_SYSTEM_BOOKS}/../saved_acl2
 
 # I want the defaults set in this makefile to carry over into
 # subdirectories.
-MAKE_REC = $(MAKE) PERL=${PERL} SAT_SOLVER=${SAT_SOLVER} SAT_SOLVER_TYPE=${SAT_SOLVER_TYPE} CC=${CC}
+MAKE += PERL=${PERL} SAT_SOLVER=${SAT_SOLVER} SAT_SOLVER_TYPE=${SAT_SOLVER_TYPE} CC=${CC}
 
 DIRS = scripts c-files books
 
@@ -53,13 +53,13 @@ check_sat_exec:
 scripts/sulfa-smt: subdirs scripts/interpret_sulfa_file
 
 scripts/sulfa-smt: 
-	@${MAKE_REC} sulfa-smt -C scripts
+	@${MAKE} sulfa-smt -C scripts
 
 subdirs: scripts/interpret_sulfa_file 
 
 subdirs: 
 	@for dir in ${DIRS}; do \
-        ${MAKE_REC} -C $$dir; \
+       ${MAKE} -C $$dir; \
         done
 
 .PHONY: subdirs
@@ -84,11 +84,11 @@ chmod ugo+rx-w scripts/interpret_sulfa_file
 clean:
 	rm -f \#*\# *~
 	rm -f scripts/interpret_sulfa_file 
-	${MAKE_REC} clean-subdirs
+	${MAKE} clean-subdirs
 
 clean-subdirs: 
 	for dir in ${DIRS}; do \
-        ${MAKE_REC} clean -C $$dir; \
+        ${MAKE} clean -C $$dir; \
         done
 
 .PHONY: clean-subdirs
