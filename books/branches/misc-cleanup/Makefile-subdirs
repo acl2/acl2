@@ -1,0 +1,195 @@
+#; ACL2 Version 3.3 -- A Computational Logic for Applicative Common Lisp
+#; Copyright (C) 2007  University of Texas at Austin
+
+#; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+#; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
+
+#; This program is free software; you can redistribute it and/or modify
+#; it under the terms of the GNU General Public License as published by
+#; the Free Software Foundation; either version 2 of the License, or
+#; (at your option) any later version.
+
+#; This program is distributed in the hope that it will be useful,
+#; but WITHOUT ANY WARRANTY; without even the implied warranty of
+#; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#; GNU General Public License for more details.
+
+#; You should have received a copy of the GNU General Public License
+#; along with this program; if not, write to the Free Software
+#; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+#; Written by:  Matt Kaufmann               and J Strother Moore
+#; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
+#; Department of Computer Sciences
+#; University of Texas at Austin
+#; Austin, TX 78712-1188 U.S.A.
+
+# This file is to be included in other Makefiles.  The include should be
+# preceded by a definition of DIRS, the list of subdirectories.
+
+.PHONY: top
+top:
+	@my_status=0
+	@for dir in $(DIRS) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; $(MAKE)) ; \
+	my_status=$$? ; \
+	if [ $$my_status -ne 0 ] ; then exit 1 ; fi ; \
+	fi \
+	done
+	@exit $$my_status
+
+.PHONY: fasl
+fasl: fasl-more
+
+.PHONY: fasl-more
+fasl-more:
+	@for dir in $(DIRS) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) fasl ; \
+	cd ..) ; \
+	fi \
+	done
+
+.PHONY: fas
+fas: fas-more
+
+.PHONY: fas-more
+fas-more:
+	@for dir in $(DIRS) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) fas ; \
+	cd ..) ; \
+	fi \
+	done
+
+.PHONY: o
+o: o-more
+
+.PHONY: o-more
+o-more:
+	@for dir in $(DIRS) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) o ; \
+	cd ..) ; \
+	fi \
+	done
+
+.PHONY: sparcf
+sparcf: sparcf-more
+
+.PHONY: sparcf-more
+sparcf-more:
+	@for dir in $(DIRS) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) sparcf ; \
+	cd ..) ; \
+	fi \
+	done
+
+.PHONY: ufsl
+ufsl: ufsl-more
+
+.PHONY: ufsl-more
+ufsl-more:
+	@for dir in $(DIRS) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) ufsl ; \
+	cd ..) ; \
+	fi \
+	done
+
+.PHONY: x86f
+x86f: x86f-more
+
+.PHONY: x86f-more
+x86f-more:
+	@for dir in $(DIRS) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) x86f ; \
+	cd ..) ; \
+	fi \
+	done
+
+.PHONY: dfsl
+dfsl: dfsl-more
+
+.PHONY: dfsl-more
+dfsl-more:
+	@for dir in $(DIRS) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) dfsl ; \
+	cd ..) ; \
+	fi \
+	done
+
+.PHONY: d64fsl
+d64fsl: d64fsl-more
+
+.PHONY: d64fsl-more
+d64fsl-more:
+	@for dir in $(DIRS) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) d64fsl ; \
+	cd ..) ; \
+	fi \
+	done
+
+.PHONY: dx64fsl
+dx64fsl: dx64fsl-more
+
+.PHONY: dx64fsl-more
+dx64fsl-more:
+	@for dir in $(DIRS) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) dx64fsl ; \
+	cd ..) ; \
+	fi \
+	done
+
+.PHONY: lx64fsl
+lx64fsl: lx64fsl-more
+
+.PHONY: lx64fsl-more
+lx64fsl-more:
+	@for dir in $(DIRS) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) lx64fsl ; \
+	cd ..) ; \
+	fi \
+	done
+
+.PHONY: clean
+clean: clean-more
+
+.PHONY: clean-more
+clean-more:
+	@for dir in $(DIRS) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) clean ; \
+	cd ..) ; \
+	fi \
+	done

@@ -1,0 +1,348 @@
+Exercise 3.1
+
+Which of the utterances below denote ACL2 atoms?  For those that do denote
+atoms, indicate whether the atom is an integer, rational, complex number,
+character, string, or symbol.
+
+1. 0.33
+No
+
+2. #b-1101
+Integer
+
+3. +123
+Integer
+
+4. #b+001/011
+Rational
+
+5. 1101
+       2
+No
+
+6. 12E-7
+No
+
+7. #\A
+Character
+
+8. #\Umlatt
+No
+
+9. #\Space
+Character
+
+10. #\<greek-sigma>
+No
+
+11. "Error 33"
+String
+
+12. "No such name: "Smithville""
+No
+
+13. ab
+Symbol (the same symbol as that denoted by AB)
+
+14. :question
+Symbol
+
+15. 1,y
+No
+
+16. nil
+Symbol
+
+17. ACL2::SETQ
+Symbol
+
+18. ACL2::FOO
+Symbol
+
+============================================================
+
+Exercise 3.2
+
+For each list below, how many elements are in the list?
+How many distinct elements?
+
+1. (A 6 A-6 a "A" #b110 #\A)
+7 elements; 5 distinct, (A 6 A-6 "A" #\A)
+
+2. (NIL () (NIL) (()))
+4 elements; 2 distinct, (NIL (NIL))
+
+3. ((A B) (A b) (A . b) (A B . NIL))
+4 elements; 2 distinct, ((A B) (A . B))
+
+============================================================
+
+Exercise 3.3
+
+What is the length of the longest branch in each of the following binary trees?
+Also, for each tree, write down the list of atoms in the leaves, from leftmost
+to rightmost.  Does either tree contain the same atom twice as a leaf?  It
+sometimes helps to draw the tree.
+
+1.
+ ((a b . c) . d)
+           /\
+          /  \
+         /    \
+        /      \
+    (a b . c)   d
+      /\
+     /  \
+    a   (b . c)
+          /\
+         b  c
+
+The longest branches of the above tree have length 3.
+The list of atoms in the leaves (from left to right) is (a b c d).
+No atom appears twice as a leaf.
+
+2.
+    ((a b c) 1 2 (3 . 4) 5)
+           /\
+          /  \
+         /    \
+        /      \
+       /        \
+      /          \
+    (a b c)      (1 2 (3 . 4) 5)
+     /\          /\
+    /  \        1 (2 (3 . 4) 5)
+   a  (b c)         /\
+       /\          2  ((3 . 4) 5)
+      /  \                 /\
+     b  (c)               /  \
+        /\           (3 . 4)  (5)
+       c  nil          /\     /\
+                      3  4   5  nil
+
+The longest branches of the above tree have length 5.
+
+The list of atoms in the leaves (from left to right) is 
+(a b c nil 1 2 3 4 5 nil).
+
+Nil appears twice as a leaf.
+
+============================================================
+
+Exercise 3.4
+
+In the following, assume CAR and CDR are function symbols of one argument,
+EQUAL is a function symbol of two arguments, and IF is a function symbol of
+three arguments.  For the moment, assume there are no other function symbols.
+Which of the following are expressions?
+
+1. x
+Yes
+
+2. <greek pi>
+No
+
+3. '(a b c)
+Yes
+
+4. (equal (car x) (cdr y))
+Yes
+
+5. (car x y)
+No
+
+6. (car (equal x y))
+Yes
+
+7. (if (if a b c) "One" "Two")
+Yes
+
+8. (car (a b c))
+No
+
+9. (car (cdr b c))
+No
+
+10. (car (cdr car))
+Yes
+
+11. (equal (if 1 (car if) cdr) equal)
+Yes
+
+12. ((lambda (x) (equal x x)) (car a))
+Yes
+
+13. ((lambda (x) (equal x a)) (car x))
+No (variable a occurs free in the body of the lambda)
+
+============================================================
+
+Exercise 3.5
+
+For each variable occurrence in the expressions below, say whether the
+occurrence is a free, bound, or binding occurrence.
+
+Directly under each variable is F for free, B for bound, and b for binding.
+
+1. x
+   F
+
+2. (equal (car x) (cdr y))
+               F       F
+
+3. ((lambda (x y) (equal x y)) (car a) (car b))}
+             b b         B B        F       F
+
+4. (if (equal x y)
+             F F
+       ((lambda (x) (equal x 1)) (car a))
+                 b         B          F
+     (cdr z))
+          F
+
+5. ((lambda (x y) '(equal x y)) (car a) (car b))
+             b b                     F       F
+
+6. ((lambda (x) (equal x 'x)) x)
+             b         B      F
+
+7. (if (x x)
+          F
+       ((lambda (x) (equal x 'x)) x)
+                 b         B      F
+     (x 'x))
+
+============================================================
+
+Exercise 3.6
+
+Write the simple expression abbreviated by the following special forms.
+Check your expansions using :trans.
+
+1.
+ACL2 !>:trans (cond ((equal op 'incrmt) (+ x 1))
+		    ((equal op 'double) (* x 2))
+		    (t 0))
+
+(IF (EQUAL OP 'INCRMT)
+    (BINARY-+ X '1)
+    (IF (EQUAL OP 'DOUBLE)
+        (BINARY-* X '2)
+        '0))
+
+=> *
+
+2.
+ACL2 !>:trans (let ((x 1)
+		    (y x))
+		(+ x y))
+
+((LAMBDA (X Y) (BINARY-+ X Y)) '1 X)
+
+=> *
+
+ACL2 !>
+
+============================================================
+
+Exercise 3.7
+
+Write the COND expression of the precediong exercise as a CASE statement.
+
+(case op
+      (incrmt (+ x 1))
+      (double (* x 2))
+      (otherwise 0))
+
+============================================================
+
+Exercise 3.8
+
+Suppose the LET expression of the exercise before last is evaluated in a
+context in which X has the value 3.  What is the result?
+
+ACL2 !>(let ((x 3))
+	 (let ((x 1)  ; x is 1
+	       (y x)) ; y is 3
+	   (+ x y)))
+4
+ACL2 !>
+
+Now replace the LET with LET*.  What is the expansion?
+
+ACL2 !>:trans1 (let* ((x 1)
+		      (y x))
+		 (+ x y))
+ (LET ((X 1)) (LET* ((Y X)) (+ X Y)))
+ACL2 !>:trans (let* ((x 1)
+		     (y x))
+		(+ x y))
+
+((LAMBDA (X)
+         ((LAMBDA (Y X) (BINARY-+ X Y)) X X))
+ '1)
+
+=> *
+
+ACL2 !>
+
+What is the result in that same context?
+
+The result is 2, even without the context:
+
+ACL2 !>(let* ((x 1)
+	      (y x))
+	 (+ x y))
+2
+ACL2 !>
+
+If we try to use a contextual binding of x, we get a complaint from ACL2:
+
+ACL2 !>(let ((x 3))
+	 (let* ((x 1)  ; x is 1
+		(y x)) ; y is 1
+	   (+ x y)))
+
+
+ACL2 Error in TOP-LEVEL:  The variable X is not used in the LET expression
+that binds X.  But X is not declared IGNOREd. See :DOC set-ignore-
+ok.
+
+ACL2 !>
+
+We can get around that complaint as follows, thus arriving at the expected
+answer.
+
+ACL2 !>(let ((x 3))
+         (declare (ignore x))
+	 (let* ((x 1)  ; x is 1
+		(y x)) ; y is 1
+	   (+ x y)))
+2
+ACL2 !>
+
+============================================================
+
+Exercise 3.9
+
+Write down an ACL2 expression formalizing the phrases below.
+
+1. twice the sum of x and y
+(* 2 (+ x y))
+
+2. the car of the cdr of x
+(car (cdr x))
+
+3. x is y
+(equal x y)
+
+4. x is a non-integer rational number
+(and (rationalp x) (not (integerp x)))
+
+5. x is a symbol in the package SMITH
+(and (symbolp x) (equal (symbol-package-name x) "SMITH"))
+
+6. 0, if x is a string; 1, otherwise
+(if (stringp x) 0 1)
+
+============================================================

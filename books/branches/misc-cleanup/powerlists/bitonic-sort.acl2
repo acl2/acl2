@@ -1,0 +1,3 @@
+(ld "defpkg.lisp")
+
+(certify-book "bitonic-sort" 3)
