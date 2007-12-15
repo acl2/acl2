@@ -21,7 +21,7 @@ what the heck!!
 
 |#
 
-(include-book "misc/defpun" :dir :system)
+(include-book "tools/defpun" :dir :system)
 (include-book "ordinals/ordinals-without-arithmetic" :dir :system)
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))

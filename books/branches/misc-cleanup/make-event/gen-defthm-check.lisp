@@ -2,7 +2,7 @@
 
 (in-package "ACL2")
 
-(include-book "misc/expander" :dir :system)
+(include-book "tools/expander" :dir :system)
 
 (defmacro defthm! (&whole ev
                           &rest args)

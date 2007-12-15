@@ -15,7 +15,7 @@ symbolic simulation. This book will be made use of in the defsimulate macro.
 
 |#
 
-(include-book "misc/defpun" :dir :system)
+(include-book "tools/defpun" :dir :system)
 (include-book "ordinals/ordinals" :dir :system)
 
 (defstub nextt (*) => *)

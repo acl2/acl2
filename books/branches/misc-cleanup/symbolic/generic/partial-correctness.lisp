@@ -24,7 +24,7 @@ that they do not depend much on which arithmetic library is included.
 
 |#
 
-(include-book "misc/defpun" :dir :system)
+(include-book "tools/defpun" :dir :system)
 (include-book "ordinals/ordinals" :dir :system)
 
 (defstub nextt (*) => *) 

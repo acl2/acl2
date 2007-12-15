@@ -94,7 +94,7 @@ Christmas 2001
 (include-book "data-structures/list-defthms" :dir :system)
 (include-book "data-structures/deflist"      :dir :system)
 (include-book "data-structures/defalist"     :dir :system)
-(include-book "misc/meta-lemmas"             :dir :system)   ;Always include last!
+(include-book "tools/meta-lemmas"             :dir :system)   ;Always include last!
 
 (minimal-ihs-theory)
 

@@ -18,7 +18,7 @@ efficient symbolic simulation based on reasoning about cutpoints.
 |#
 
 (include-book "ordinals/ordinals" :dir :system) 
-(include-book "misc/defpun" :dir :system)
+(include-book "tools/defpun" :dir :system)
 
 ;; Again I do have the functions nextt and run.
 

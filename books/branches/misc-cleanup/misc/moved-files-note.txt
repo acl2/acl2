@@ -1,0 +1,23 @@
+
+The following table lists files that used to reside in this directory
+alongside their new locations, where each such location is relative to
+the system books directory.
+
+bash.lisp                        tools/
+beta-reduce.lisp                 tools/
+book-thms.lisp                   tools/
+computed-hint.lisp               tools/
+defmac.lisp                      tools/
+defopener.lisp                   tools/
+defp.lisp                        tools/
+defpun.lisp                      tools/
+dump-events.lisp                 tools/
+expander.lisp                    tools/
+find-lemmas.lisp                 tools/
+hacker.acl2                      tools/
+hacker.lisp                      tools/
+priorities.lisp                  tools/
+simplify-defuns.lisp             tools/
+simplify-defuns.txt              tools/
+sticky-disable.lisp              tools/
+untranslate-patterns.lisp        tools/

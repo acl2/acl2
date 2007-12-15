@@ -40,32 +40,6 @@ Lisp creates object files with .o extensions.  You can also do
 
 ===============================================================================
 
-bash.lisp -- simplification of top-level goal
-
-If you submit (bash term), you will get back a list of terms produced by the
-ACL2 simplifier.  See the description at the top of bash.lisp for details.
-
-See also defopener.lisp and expander.lisp.
-
-===============================================================================
-
-beta-reduce.lisp -- proof of correctness for a beta-reduction routine
-
-The final event in this book illustrates how to use this book to prove
-correctness for a simple beta-reduction routine for an arbitrary ACL2
-evaluator.
-
-===============================================================================
-
-book-thms.lisp -- returns theorems and axioms at the top level of an included
-                  book
-
-===============================================================================
-
-computed-hint.lisp -- examples of computed hints
-
-===============================================================================
-
 csort.lisp  -- a proof of the ``feed-drain'' systolic sort algorithm
 
 Specification and proof of correctness of an abstract comparator array
@@ -75,41 +49,6 @@ proof is A Mechanical Checked Proof of a Comparator Sort Algorithm, by
 Brock and Moore.
 
 http://www.cs.utexas.edu/users/moore/acl2
-
-===============================================================================
-
-defmac.lisp -- define macros to be efficient for macro expansion
-
-See comment at the top of defmac.lisp.
-
-===============================================================================
-
-misc2/defpun-exec-domain-example.lisp -- execute partial functions on a
-                                         specified domain
-
-===============================================================================
-
-defopener.lisp -- create theorem equating term with its simplification
-
-For documentation:
-(include-book "misc/defopener" :dir :system)
-followed by
-:doc! defopener.
-
-See also bash.lisp and expander.lisp.
-
-===============================================================================
-
-defpun.lisp -- define partial functions using defpun
-defp.lisp   -- define partial functions using defp
-
-These books provides macros by which you can introduce some function
-``definitions'' that do not always terminate.  In particular, the defpun macro
-allows certain tail-recursive function definitions to be admitted, and the defp
-macro builds on defpun to allow more general forms of tail recursion.
-
-Details of defpun are provided by Manolios and Moore in ``Partial Functions in
-ACL2'' http://www.cs.utexas.edu/users/moore/publications/defpun/index.html
 
 ===============================================================================
 
@@ -143,27 +82,6 @@ but perhaps the examples will help some.
 
 ===============================================================================
 
-expander.lisp     --   symbolic expansion utilities for ACL2
-dump-events.lisp  --   file-dumping utility for ACL2
-
-See also simplify-defuns.lisp for a related tool.
-
-These books contains various experimental symbolic expansion programs for
-ACL2, and an event dumping utility.  This stuff can really be helpful when
-doing a big project with ACL2.  In expander.lisp the documented macros are
-SYMSIM and DEFTHM?.  In dump-events.lisp, see the documentation for
-DUMP-EVENTS. 
-
-Unfortunately, the real-world examples of the uses of these utilities are in
-proprietary proofs, so all we will do here is give a few hints.  The idea was
-to save time in large proofs by using DEFTHM? to pre-compute the reduced
-expansions of complex functions.  We used DEFTHM? to write theorems of the
-form (EQUAL (HAIRY-FN ...) (... <expanded and reduced body> ...)).  We then
-used DUMP-EVENTS to dump the lemmas produced by DEFTHM? to a file, which was
-then certified. 
-
-===============================================================================
-
 fibonacci.lisp -- a thm. on the Fibonacci sequence and greatest common divisor
 -- Supporting books: --
 int-division.lisp
@@ -183,17 +101,6 @@ then (mv t nil state) is returned.
 
 (write-list list fname ctx state) pretty-prints the given list of forms to
 file fname, except that strings are printed without any formatting.
-
-===============================================================================
-
-find-lemmas.lisp -- utility for finding relevant lemmas
-
-(Find-lemmas (fn1 fn2 ...)) returns all lemmas in which all of the indicated
-function symbols occur, except those lemmas in the ground-zero world.  In
-order to include those as well, give a second argument of nil:
-(find-lemmas (fn1 fn2 ...) nil).
-
-If fns is a symbol, then fns is replaced by (list fns).
 
 ===============================================================================
 
@@ -242,7 +149,7 @@ which is propositionally equivalent to (OR (EQL x :MEDIUM) (EQL x :LARGE)).
 
 ===============================================================================
 
-misc2/misc.lisp -- miscellaneous support, e.g. for lemmas proved to support
+misc.lisp -- miscellaneous support, e.g. for lemmas proved to support
                    decisions made in the ACL2 sources
 
 ===============================================================================
@@ -253,10 +160,6 @@ mult.lisp -- verification of a multiplication program written for the Mostek
 As described near the top of the file, this solves a challenge posed by Bill
 Legato, to prove that a program written for the Mostek 6502 microprocessor
 correctly implements multiplication.
-
-===============================================================================
-
-priorities.lisp -- priority-based rewriting
 
 ===============================================================================
 
@@ -312,13 +215,6 @@ exported theorems.  The result is records.lisp.
 
 ===============================================================================
 
-simplify-defuns.lisp -- simplify definitions in a file and prove equivalence
-
-See simplify-defuns.txt (which can be printed out as 8 pages with 12 point
-courier font).  Also see expander.lisp for a related tool.
-
-===============================================================================
-
 sin-cos.lisp  --  rational approximations to SIN and COS with Maclaurin series
 
 This library contains both "obvious" and "fast" series approximation functions
@@ -362,6 +258,3 @@ the book that shows how this works.
 
 ===============================================================================
 
-untranslate-patterns.lisp -- simple, pattern-based untranslation for ACL2
-
-===============================================================================

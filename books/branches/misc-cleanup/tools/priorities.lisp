@@ -28,7 +28,7 @@
 
 ; To use priority phased simplification, 
 
-; (include-book "books/misc/priorities")
+; (include-book "tools/priorities" :dir :system)
 
 ; (set-default-hints (list *priority-phased-simplification* ...))
 

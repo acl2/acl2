@@ -16,7 +16,7 @@ show how, if it did, we could have used the macro itself via defexec.
 |#
 
 
-(include-book "misc/defpun" :dir :system)
+(include-book "tools/defpun" :dir :system)
 
 (include-book "make-event/eval" :dir :system)
 

@@ -1,0 +1,7 @@
+
+The following table lists files that used to reside in this directory
+alongside their new locations, where each such location is relative to
+the system books directory.
+
+defpun-exec-domain-example.lisp  tools/
+misc.lisp                        misc/

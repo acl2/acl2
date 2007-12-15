@@ -64,7 +64,7 @@ think I can do the change reliably.
 ;; from inside encapsulation.
 
 (include-book "ordinals/ordinals-without-arithmetic" :dir :system)
-(include-book "misc/defpun" :dir :system)
+(include-book "tools/defpun" :dir :system)
       
     
 
