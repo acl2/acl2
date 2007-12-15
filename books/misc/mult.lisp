@@ -84,23 +84,17 @@ Christmas 2001
 
 ;; We load the IHS book, and some other useful books, that are part of
 ;; the standard 2.6 distribution.
-
-(defmacro include-library-book (book)
-  "Include a book from the ACL2 distribution."
-  `(INCLUDE-BOOK 
-    ,(concatenate 'string "../" book)))
-
-(include-library-book "arithmetic/top-with-meta")
-(include-library-book "ihs/ihs-definitions")
-(include-library-book "ihs/ihs-lemmas")
-(include-library-book "data-structures/structures")
-(include-library-book "data-structures/array1")
-(include-library-book "ihs/@logops")
-(include-library-book "data-structures/list-defuns")
-(include-library-book "data-structures/list-defthms")
-(include-library-book "data-structures/deflist")
-(include-library-book "data-structures/defalist")
-(include-library-book "misc/meta-lemmas")          ;Always include last!
+(include-book "arithmetic/top-with-meta"     :dir :system)
+(include-book "ihs/ihs-definitions"          :dir :system)
+(include-book "ihs/ihs-lemmas"               :dir :system)
+(include-book "data-structures/structures"   :dir :system)
+(include-book "data-structures/array1"       :dir :system)
+(include-book "ihs/@logops"                  :dir :system)
+(include-book "data-structures/list-defuns"  :dir :system)
+(include-book "data-structures/list-defthms" :dir :system)
+(include-book "data-structures/deflist"      :dir :system)
+(include-book "data-structures/defalist"     :dir :system)
+(include-book "misc/meta-lemmas"             :dir :system)   ;Always include last!
 
 (minimal-ihs-theory)
 
