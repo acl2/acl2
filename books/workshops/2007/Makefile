@@ -14,12 +14,6 @@
 
 ##############################
 
-# Supporting materials that authors have said will be forthcoming:
-
-# Frank Rimlinger says he will get his materials to me before November 15.
-
-##############################
-
 # Supporting materials that are not meant for ACL2 procesing.
 
 # gordon/support/
@@ -40,6 +34,7 @@ DIRS =  cowles-et-al/support \
 	dillinger-et-al/code \
 	erickson/bprove \
 	rubio/support \
+	rimlinger/support \
 	schmaltz/genoc-v1.0
 
 include ../../Makefile-psubdirs

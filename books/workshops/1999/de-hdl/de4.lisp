@@ -44,9 +44,18 @@
 ;;;  Below are primitive symbolic evaluation functions that are used
 ;;;  by DE to evaluate primitives.
 
-(defun xor (x y)
+; Changed by Matt Kaufmann to be compatible with ACL2 after Version 3.3:
+(defun xor (p q)
+
+  ":Doc-Section ACL2::Programming
+
+  logical ``exclusive or''~/
+
+  ~c[Xor] is the ACL2 exclusive-or function.  ~c[(xor P Q)] means that either
+  ~c[P] or ~c[Q], but not both, is false (i.e., ~c[nil]).~/~/"
+
   (declare (xargs :guard t))
-  (if x (not y) (b-fix y)))
+  (if p (if q nil t) (if q t nil)))
 
 ;;;  The primitive evaluation function to compute outputs.
 
