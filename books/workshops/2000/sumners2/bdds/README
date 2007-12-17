@@ -1,0 +1,28 @@
+The books in this directory demonstrate a proof of correctness of
+a BDD manager written with stobjs in ACL2.
+
+BOOK descriptions
+-----------------
+bdd-mgr.lisp  -- definition of bdd-mgr operations and guard proofs
+bdd-spec.lisp -- definition of specification bdd function (no stobjs)
+                 and various proofs about bdd algorithms in general
+bdd-prf.lisp  -- proof that the bdd-mgr functions implement the bdd-spec
+                 functions and that a satisfiability checker defined
+                 with the bdd-mgr operations is correct
+
+To build the books in this directory (in the correct order),
+perform the following commands:
+
+To build the books in this directory (in the correct order), perform the
+following commands, or else just type make on a Unix or Linux system if this
+directory is installed in a copy of the ACL2 distribution, under
+books/workshops/2000/sumners1/cdeq/.
+
+<shell> ACL2
+<lisp>  (lp)
+ACL2 !> (ld "make.lsp")
+
+
+   -Rob Sumners
+    robert.sumners@amd.com
+

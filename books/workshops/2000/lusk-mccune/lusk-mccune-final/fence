@@ -1,0 +1,688 @@
+(in-package "ACL2")
+
+(include-book "simulator")
+(include-book "compile")
+
+(sim
+
+ '(
+   (DELIVER . 4171) (DELIVER . 8601) (STEP . 2628) (STEP . 5460)
+   (STEP . 91) (DELIVER . 1679) (STEP . 7016) (STEP . 1200)
+   (DELIVER . 4466) (DELIVER . 3037) (DELIVER . 297) (DELIVER . 6124)
+   (DELIVER . 318) (DELIVER . 8179) (STEP . 30) (STEP . 9229)
+   (STEP . 2578) (DELIVER . 397) (DELIVER . 8538) (STEP . 8593)
+   (STEP . 3167) (STEP . 7727) (STEP . 6736) (STEP . 7074)
+   (DELIVER . 3575) (DELIVER . 7403) (STEP . 5457) (STEP . 5518)
+   (DELIVER . 4937) (DELIVER . 7809) (DELIVER . 4283) (STEP . 3460)
+   (STEP . 5613) (DELIVER . 7930) (STEP . 7872) (DELIVER . 7326)
+   (STEP . 6265) (DELIVER . 4308) (DELIVER . 9783) (STEP . 6137)
+   (DELIVER . 2433) (STEP . 5497) (DELIVER . 3809) (DELIVER . 4715)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4968) (STEP . 344) (STEP . 1733) (DELIVER . 1392)
+   (STEP . 6026) (DELIVER . 1112) (DELIVER . 8843) (STEP . 6888)
+   (STEP . 7271) (STEP . 8412) (STEP . 6133) (STEP . 8764) (STEP . 4904)
+   (STEP . 91) (DELIVER . 1679) (STEP . 7016) (STEP . 1200)
+   (DELIVER . 4466) (DELIVER . 3037) (DELIVER . 297) (DELIVER . 6124)
+   (DELIVER . 318) (DELIVER . 8179) (STEP . 30) (STEP . 9229)
+   (STEP . 2578) (DELIVER . 397) (DELIVER . 8538) (STEP . 8593)
+   (STEP . 3167) (STEP . 7727) (STEP . 6736) (STEP . 7074)
+   (DELIVER . 3575) (DELIVER . 7403) (STEP . 5457) (STEP . 5518)
+   (DELIVER . 4937) (DELIVER . 7809) (DELIVER . 4283) (STEP . 3460)
+   (STEP . 5613) (DELIVER . 7930) (STEP . 7872) (DELIVER . 7326)
+   (STEP . 6265) (DELIVER . 4308) (DELIVER . 9783) (STEP . 6137)
+   (DELIVER . 2433) (STEP . 5497) (DELIVER . 3809) (DELIVER . 4715)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4968) (STEP . 344) (STEP . 1733) (DELIVER . 1392)
+   (STEP . 6026) (DELIVER . 1112) (DELIVER . 8843) (STEP . 6888)
+   (STEP . 7271) (STEP . 8412) (STEP . 6133) (STEP . 8764) (STEP . 4904)
+   (DELIVER . 7828)
+
+   (DELIVER . 4171) (DELIVER . 8601) (STEP . 2628) (STEP . 5460)
+   (STEP . 91) (DELIVER . 1679) (STEP . 7016) (STEP . 1200)
+   (DELIVER . 4466) (DELIVER . 3037) (DELIVER . 297) (DELIVER . 6124)
+   (DELIVER . 318) (DELIVER . 8179) (STEP . 30) (STEP . 9229)
+   (STEP . 2578) (DELIVER . 397) (DELIVER . 8538) (STEP . 8593)
+   (STEP . 3167) (STEP . 7727) (STEP . 6736) (STEP . 7074)
+   (DELIVER . 3575) (DELIVER . 7403) (STEP . 5457) (STEP . 5518)
+   (DELIVER . 4937) (DELIVER . 7809) (DELIVER . 4283) (STEP . 3460)
+   (STEP . 5613) (DELIVER . 7930) (STEP . 7872) (DELIVER . 7326)
+   (STEP . 6265) (DELIVER . 4308) (DELIVER . 9783) (STEP . 6137)
+   (DELIVER . 2433) (STEP . 5497) (DELIVER . 3809) (DELIVER . 4715)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4968) (STEP . 344) (STEP . 1733) (DELIVER . 1392)
+   (STEP . 6026) (DELIVER . 1112) (DELIVER . 8843) (STEP . 6888)
+   (STEP . 7271) (STEP . 8412) (STEP . 6133) (STEP . 8764) (STEP . 4904)
+   (STEP . 91) (DELIVER . 1679) (STEP . 7016) (STEP . 1200)
+   (DELIVER . 4466) (DELIVER . 3037) (DELIVER . 297) (DELIVER . 6124)
+   (DELIVER . 318) (DELIVER . 8179) (STEP . 30) (STEP . 9229)
+   (STEP . 2578) (DELIVER . 397) (DELIVER . 8538) (STEP . 8593)
+   (STEP . 3167) (STEP . 7727) (STEP . 6736) (STEP . 7074)
+   (DELIVER . 3575) (DELIVER . 7403) (STEP . 5457) (STEP . 5518)
+   (DELIVER . 4937) (DELIVER . 7809) (DELIVER . 4283) (STEP . 3460)
+   (STEP . 5613) (DELIVER . 7930) (STEP . 7872) (DELIVER . 7326)
+   (STEP . 6265) (DELIVER . 4308) (DELIVER . 9783) (STEP . 6137)
+   (DELIVER . 2433) (STEP . 5497) (DELIVER . 3809) (DELIVER . 4715)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4968) (STEP . 344) (STEP . 1733) (DELIVER . 1392)
+   (STEP . 6026) (DELIVER . 1112) (DELIVER . 8843) (STEP . 6888)
+   (STEP . 7271) (STEP . 8412) (STEP . 6133) (STEP . 8764) (STEP . 4904)
+   (DELIVER . 7828)
+
+   (DELIVER . 4171) (DELIVER . 8601) (STEP . 2628) (STEP . 5460)
+   (STEP . 91) (DELIVER . 1679) (STEP . 7016) (STEP . 1200)
+   (DELIVER . 4466) (DELIVER . 3037) (DELIVER . 297) (DELIVER . 6124)
+   (DELIVER . 318) (DELIVER . 8179) (STEP . 30) (STEP . 9229)
+   (STEP . 2578) (DELIVER . 397) (DELIVER . 8538) (STEP . 8593)
+   (STEP . 3167) (STEP . 7727) (STEP . 6736) (STEP . 7074)
+   (DELIVER . 3575) (DELIVER . 7403) (STEP . 5457) (STEP . 5518)
+   (DELIVER . 4937) (DELIVER . 7809) (DELIVER . 4283) (STEP . 3460)
+   (STEP . 5613) (DELIVER . 7930) (STEP . 7872) (DELIVER . 7326)
+   (STEP . 6265) (DELIVER . 4308) (DELIVER . 9783) (STEP . 6137)
+   (DELIVER . 2433) (STEP . 5497) (DELIVER . 3809) (DELIVER . 4715)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4968) (STEP . 344) (STEP . 1733) (DELIVER . 1392)
+   (STEP . 6026) (DELIVER . 1112) (DELIVER . 8843) (STEP . 6888)
+   (STEP . 7271) (STEP . 8412) (STEP . 6133) (STEP . 8764) (STEP . 4904)
+   (STEP . 91) (DELIVER . 1679) (STEP . 7016) (STEP . 1200)
+   (DELIVER . 4466) (DELIVER . 3037) (DELIVER . 297) (DELIVER . 6124)
+   (DELIVER . 318) (DELIVER . 8179) (STEP . 30) (STEP . 9229)
+   (STEP . 2578) (DELIVER . 397) (DELIVER . 8538) (STEP . 8593)
+   (STEP . 3167) (STEP . 7727) (STEP . 6736) (STEP . 7074)
+   (DELIVER . 3575) (DELIVER . 7403) (STEP . 5457) (STEP . 5518)
+   (DELIVER . 4937) (DELIVER . 7809) (DELIVER . 4283) (STEP . 3460)
+   (STEP . 5613) (DELIVER . 7930) (STEP . 7872) (DELIVER . 7326)
+   (STEP . 6265) (DELIVER . 4308) (DELIVER . 9783) (STEP . 6137)
+   (DELIVER . 2433) (STEP . 5497) (DELIVER . 3809) (DELIVER . 4715)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4968) (STEP . 344) (STEP . 1733) (DELIVER . 1392)
+   (STEP . 6026) (DELIVER . 1112) (DELIVER . 8843) (STEP . 6888)
+   (STEP . 7271) (STEP . 8412) (STEP . 6133) (STEP . 8764) (STEP . 4904)
+   (DELIVER . 7828)
+   )
+
+ 0;; step counter
+
+ nil;; trace
+
+ (list					; mstate = multiprocess state with connections
+
+   ;; This program simulates a barrier algorithm implemented by the managers
+   ;; for the clients.  (There are no daemons or consoles.)  The three clients
+   ;; each must call the barrier (send fence-in message) before they can
+   ;; continue (receive fence-out message).  All connections are
+   ;; pre-established in the initial mstate.
+   
+
+  (list					; list of pstates, one for each process
+
+   ;;------------------------------------------------------------- manager 0
+
+   ;; Each manager is connected to its neighbors in the ring and to a client
+   ;; process.  The managers must collectively wait for all the clients to
+   ;; enter the barrier (send their managers fence-in messages) before they
+   ;; are allowed to leave (they wait for fence-out messages from their managers.)
+
+   (list				; first manager pstate
+
+    '(host1 1)				; process id for manager 0
+
+    (compile-list			; main manager program
+     '(
+       (asgn select-set (lhs-fd cli-fd))
+       (while 'true
+	 (select select-set selected-set)
+	 (if (member lhs-fd selected-set)
+	     (call lhs-handler)
+	   )
+	 (if (member cli-fd selected-set)
+	     (call cli-handler)
+	   )
+	 )
+       (return)				; end of main manager program
+
+
+       (procedure lhs-handler)		; lhs-handler
+       (receive lhs-fd lhs-message)
+       (asgn cmd (cdr (assoc 'cmd lhs-message)))
+
+       (if (equal cmd 'man-fence-in)
+	   (call man-fence-in-handler)
+	 )
+       (if (equal cmd 'man-fence-out)
+	   (call man-fence-out-handler)
+	 )
+       (return)				; end of lhs-handler
+
+
+       (procedure cli-handler)		; client handler in manager
+       (receive cli-fd cli-message)
+       (asgn cmd (cdr (assoc 'cmd cli-message)))
+       (if (equal cmd 'cli-fence-in)
+	   (call cli-fence-in-handler)
+	 )
+       (if (not (equal cmd 'cli-fence-in))
+	   (asgn status 'ERROR-unxpected-message-not-fence-in)
+	 )
+       (return)				; end of cli-handler
+
+
+					; beginning of specific message handlers
+      
+
+       (procedure cli-fence-in-handler)	; manager gets fence-in message from client
+       (asgn client-fenced-in 1)
+       (if (equal man-id 0)
+	   (send rhs-fd (('cmd . 'man-fence-in)))
+	 )
+       (if (not (equal man-id 0))
+	   (if (equal fence-in-msg-here 1)
+	       (send rhs-fd (('cmd . 'man-fence-in)))
+	     )
+	 )
+       (return)				; end of cli-fence-in handler
+
+       (procedure man-fence-in-handler)	; manager gets fence-in message from lhs
+       (asgn fence-in-msg-here 1)
+       (if (equal man-id 0)
+	   (send rhs-fd (('cmd . 'man-fence-out)))
+	 )
+       (if (not (equal man-id 0))
+	   (if (equal client-fenced-in 1)
+	       (send rhs-fd (('cmd . 'man-fence-in)))
+	     )
+	 )
+       (return)				; end of man-fence-in-handler
+
+       (procedure man-fence-out-handler) ; manager gets fence out message from lhs
+       (send cli-fd (('cmd . 'cli-fence-out)))
+       (if (not (equal man-id 0))
+	   (send rhs-fd (('cmd . 'man-fence-out)))
+	 )		
+       (return)				; end of man-fence-out-handler
+
+       )				; uncompiled program
+     nil
+     )					; compiled program
+    1					; program counter
+    nil					; xstack
+    '((man-id . 0)			; initial memory
+      (fence-in-msg-here . 0)
+      (client-fenced-in  . 0) 
+      (lhs-fd            . 3)
+      (rhs-fd            . 4)
+      (mpd-fd            . 5)
+      (cli-fd            . 6)
+      )
+    )					; end of pstate
+
+   ;;------------------------------------------------------------- manager 1
+
+   ;; Same as for manager 0
+
+   (list				; first manager pstate
+
+    '(host2 1)				; process id for manager 0
+
+    (compile-list			; main manager program
+     '(
+       (asgn select-set (lhs-fd cli-fd))
+       (while 'true
+	 (select select-set selected-set)
+	 (if (member lhs-fd selected-set)
+	     (call lhs-handler)
+	   )
+	 (if (member cli-fd selected-set)
+	     (call cli-handler)
+	   )
+	 )
+       (return)				; end of main manager program
+
+
+       (procedure lhs-handler)		; lhs-handler
+       (receive lhs-fd lhs-message)
+       (asgn cmd (cdr (assoc 'cmd lhs-message)))
+
+       (if (equal cmd 'man-fence-in)
+	   (call man-fence-in-handler)
+	 )
+       (if (equal cmd 'man-fence-out)
+	   (call man-fence-out-handler)
+	 )
+       (return)				; end of lhs-handler
+
+
+       (procedure cli-handler)		; client handler in manager
+       (receive cli-fd cli-message)
+       (asgn cmd (cdr (assoc 'cmd cli-message)))
+       (if (equal cmd 'cli-fence-in)
+	   (call cli-fence-in-handler)
+	 )
+       (if (not (equal cmd 'cli-fence-in))
+	   (asgn status 'ERROR-unxpected-message-not-fence-in)
+	 )
+       (return)				; end of cli-handler
+
+
+					; beginning of specific message handlers
+      
+
+       (procedure cli-fence-in-handler)	; manager gets fence-in message from client
+       (asgn client-fenced-in 1)
+       (if (equal man-id 0)
+	   (send rhs-fd (('cmd . 'man-fence-in)))
+	 )
+       (if (not (equal man-id 0))
+	   (if (equal fence-in-msg-here 1)
+	       (send rhs-fd (('cmd . 'man-fence-in)))
+	     )
+	 )
+       (return)				; end of cli-fence-in handler
+
+       (procedure man-fence-in-handler)	; manager gets fence-in message from lhs
+       (asgn fence-in-msg-here 1)
+       (if (equal man-id 0)
+	   (send rhs-fd (('cmd . 'man-fence-out)))
+	 )
+       (if (not (equal man-id 0))
+	   (if (equal client-fenced-in 1)
+	       (send rhs-fd (('cmd . 'man-fence-in)))
+	     )
+	 )
+       (return)				; end of man-fence-in-handler
+
+       (procedure man-fence-out-handler) ; manager gets fence out message from lhs
+       (send cli-fd (('cmd . 'cli-fence-out)))
+       (if (not (equal man-id 0))
+	   (send rhs-fd (('cmd . 'man-fence-out)))
+	 )		
+       (return)				; end of man-fence-out-handler
+
+       )				; uncompiled program
+     nil
+     )					; compiled program
+    1					; program counter
+    nil					; xstack
+    '((man-id . 1)			; initial memory
+      (fence-in-msg-here . 0)
+      (client-fenced-in  . 0) 
+      (lhs-fd            . 3)
+      (rhs-fd            . 4)
+      (mpd-fd            . 5)
+      (cli-fd            . 6)
+      )
+    )					; end of pstate
+
+   ;;------------------------------------------------------------- manager 2
+
+   (list				; first manager pstate
+
+   ;; same as for managers 0 and 1
+
+    '(host3 1)				; process id for manager 0
+
+    (compile-list			; main manager program
+     '(
+       (asgn select-set (lhs-fd cli-fd))
+       (while 'true
+	 (select select-set selected-set)
+	 (if (member lhs-fd selected-set)
+	     (call lhs-handler)
+	   )
+	 (if (member cli-fd selected-set)
+	     (call cli-handler)
+	   )
+	 )
+       (return)				; end of main manager program
+
+
+       (procedure lhs-handler)		; lhs-handler
+       (receive lhs-fd lhs-message)
+       (asgn cmd (cdr (assoc 'cmd lhs-message)))
+
+       (if (equal cmd 'man-fence-in)
+	   (call man-fence-in-handler)
+	 )
+       (if (equal cmd 'man-fence-out)
+	   (call man-fence-out-handler)
+	 )
+       (return)				; end of lhs-handler
+
+
+       (procedure cli-handler)		; client handler in manager
+       (receive cli-fd cli-message)
+       (asgn cmd (cdr (assoc 'cmd cli-message)))
+       (if (equal cmd 'cli-fence-in)
+	   (call cli-fence-in-handler)
+	 )
+       (if (not (equal cmd 'cli-fence-in))
+	   (asgn status 'ERROR-unxpected-message-not-fence-in)
+	 )
+       (return)				; end of cli-handler
+
+
+					; beginning of specific message handlers
+      
+
+       (procedure cli-fence-in-handler)	; manager gets fence-in message from client
+       (asgn client-fenced-in 1)
+       (if (equal man-id 0)
+	   (send rhs-fd (('cmd . 'man-fence-in)))
+	 )
+       (if (not (equal man-id 0))
+	   (if (equal fence-in-msg-here 1)
+	       (send rhs-fd (('cmd . 'man-fence-in)))
+	     )
+	 )
+       (return)				; end of cli-fence-in handler
+
+       (procedure man-fence-in-handler)	; manager gets fence-in message from lhs
+       (asgn fence-in-msg-here 1)
+       (if (equal man-id 0)
+	   (send rhs-fd (('cmd . 'man-fence-out)))
+	 )
+       (if (not (equal man-id 0))
+	   (if (equal client-fenced-in 1)
+	       (send rhs-fd (('cmd . 'man-fence-in)))
+	     )
+	 )
+       (return)				; end of man-fence-in-handler
+
+       (procedure man-fence-out-handler) ; manager gets fence out message from lhs
+       (send cli-fd (('cmd . 'cli-fence-out)))
+       (if (not (equal man-id 0))
+	   (send rhs-fd (('cmd . 'man-fence-out)))
+	 )		
+       (return)				; end of man-fence-out-handler
+
+       )				; uncompiled program
+     nil
+     )					; compiled program
+    1					; program counter
+    nil					; xstack
+    '((man-id . 2)			; initial memory
+      (fence-in-msg-here . 0)
+      (client-fenced-in  . 0) 
+      (lhs-fd            . 3)
+      (rhs-fd            . 4)
+      (mpd-fd            . 5)
+      (cli-fd            . 6)
+      )
+    )					; end of pstate
+
+   ;;-------------------------------------------------------- client 0
+
+   ;; Each client sends its manager a fence-in message and waits for a
+   ;; fence-out message.
+
+   (list				; client on first host
+
+    '(host1 2)				; process id for first client
+
+    (compile-list			; client doing fence
+     '(
+       (send man-fd (('cmd . 'cli-fence-in)))
+       (receive man-fd man-message)
+       (asgn cmd (cdr (assoc 'cmd man-message)))
+       (if (not (equal cmd 'cli-fence-out))
+	   (asgn status 'ERROR-unexpected-message-not-cli-fence-out)
+	 )
+       (return)				; end of client
+
+       )				; uncompiled program
+     nil
+     )					; compiled program
+    1					; program counter
+    nil					; xstack
+    '((man-fd . 1))			; initial memory
+    )					; end of pstate
+
+   ;;-------------------------------------------------------- client 1
+
+   ;; Same as for client 0
+
+   (list				; client on first host
+
+    '(host2 2)				; process id for first client
+
+    (compile-list			; client doing fence
+     '(
+       (send man-fd (('cmd . 'cli-fence-in)))
+       (receive man-fd man-message)
+       (asgn cmd (cdr (assoc 'cmd man-message)))
+       (if (not (equal cmd 'cli-fence-out))
+	   (asgn status 'ERROR-unexpected-message-not-cli-fence-out)
+	 )
+       (return)				; end of client
+
+       )				; uncompiled program
+     nil
+     )					; compiled program
+    1					; program counter
+    nil					; xstack
+    '((man-fd . 1))			; initial memory
+    )					; end of pstate
+
+   ;;-------------------------------------------------------- client 2
+
+   ;; Same as for clients 0 and 1
+
+   (list				; client on first host
+
+    '(host3 2)				; process id for first client
+
+    (compile-list			; client doing fence
+     '(
+       (send man-fd (('cmd . 'cli-fence-in)))
+       (receive man-fd man-message)
+       (asgn cmd (cdr (assoc 'cmd man-message)))
+       (if (not (equal cmd 'cli-fence-out))
+	   (asgn status 'ERROR-unexpected-message-not-cli-fence-out)
+	 )
+       (return)				; end of client
+
+       )				; uncompiled program
+     nil
+     )					; compiled program
+    1					; program counter
+    nil					; xstack
+    '((man-fd . 1))			; initial memory
+    )					; end of pstate
+
+   ;;------------------------------------------------------------
+
+   )					; end of pstate list
+
+  (list					; connection list
+
+   ;; The managers are connected in a ring and each client is connected to one
+   ;; manager. 
+
+   '(((host1 1) 4 (host2 1) 3) nil nil)
+   '(((host2 1) 4 (host3 1) 3) nil nil)
+   '(((host3 1) 4 (host1 1) 3) nil nil)
+
+   '(((host1 1) 6 (host1 2) 1) nil nil)
+   '(((host2 1) 6 (host2 2) 1) nil nil)
+   '(((host3 1) 6 (host3 2) 1) nil nil)
+
+   '(((host2 1) 3 (host1 1) 4) nil nil)
+   '(((host3 1) 3 (host2 1) 4) nil nil)
+   '(((host1 1) 3 (host3 1) 4) nil nil)
+     		            
+   '(((host1 2) 1 (host1 1) 6) nil nil)
+   '(((host2 2) 1 (host2 1) 6) nil nil)
+   '(((host3 2) 1 (host3 1) 6) nil nil)
+
+   )					; end of connections
+
+  (list					; list of sockets being listened on
+
+   )					; end of listening list
+
+  nil					; program-list
+
+  )					; End of multiprocess-state
+
+ )

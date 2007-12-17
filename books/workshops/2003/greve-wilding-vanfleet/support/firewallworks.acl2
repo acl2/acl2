@@ -1,0 +1,8 @@
+(value :q)
+(lp)
+(include-book "firewallspec")
+(include-book "consistency-test-passed" :uncertified-okp nil)
+:u
+(include-book "compatible" :uncertified-okp nil)
+:u
+(certify-book "firewallworks" 1 t :defaxioms-okp t)

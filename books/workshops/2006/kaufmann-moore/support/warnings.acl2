@@ -1,0 +1,1 @@
+(certify-book "warnings" 0 nil :defaxioms-okp t :skip-proofs-okp t)

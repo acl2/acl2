@@ -1,0 +1,21 @@
+module toy;
+
+input in[3:0];
+input longop;
+output out;
+
+s01 = in[0] & in[1];
+s23 = in[2] & in[3];
+
+s01_muxed = (longop) ? s01 : ~s01; // or, (longop == s01)
+
+s01_muxed_flopped <= s01_muxed;
+s23_flopped       <= s23;
+
+s0123 <= s01_muxed_flopped & s23_flopped;
+
+longop_flopped <= longop;
+
+out = (longop_flopped) ? s0123 : s01_muxed_flopped;
+
+endmodule // toy

@@ -1,0 +1,50 @@
+This file explains the "defung" macro and has some exercises on using
+macros. 
+
+Guard verification (see the documenation topic "Guards") is used to
+show that if the inputs to a function satisfy the guard conjecture,
+any function call resulting from a call of the verified function is
+Common Lisp compliant.  This allows for efficient execution of
+verified functions, as is discussed in Applied Formal Logic: An
+Approach.  When specifying and verifying guards, one often has to
+prove theorems about the type of the return value of a function when
+its input satisfies the guard conjecture.  We find it helpful to be
+able to specify the return type next to the guard condition and have
+developed "defung", a simple macro to do this.  Consider the
+following example:
+
+ :trans1
+ (defung set-union (X Y)
+ "set union, i.e., X U Y"
+   (declare (xargs :guard (true-listp X)))
+   ((implies (true-listp Y) (true-listp (set-union X Y))) 
+    :rule-classes :type-prescription)
+   (if (endp X)
+       Y
+     (cons (car X) (set-union (cdr X) Y))))
+
+which returns
+
+ (PROGN (DEFUN SET-UNION (X Y)
+               "set union, i.e., X U Y"
+               (DECLARE (XARGS :GUARD (TRUE-LISTP X)))
+               (IF (ENDP X)
+                   Y (CONS (CAR X) (SET-UNION (CDR X) Y))))
+        (DEFTHM FAST-SETS::SET-UNION-RETURN-TYPE
+                (IMPLIES (TRUE-LISTP Y)
+                         (TRUE-LISTP (SET-UNION X Y)))
+                :RULE-CLASSES :TYPE-PRESCRIPTION))
+
+
+So "defung" takes an extra argument that appears after the
+declaration and generates two events: a "defun", as expected, and
+the extra argument is turned into a "defthm" whose name is derived
+from the "defun".
+
+If you want some practice with macros, here are two exercises to try.
+
+1. Write a function "make-sym" that given symbols "s" and "suf",
+   returns the symbol "s-suf" in the package of "s"; specify and
+   verify the guard of "make-sym".
+
+2. Use "make-sym" to write the "defung" macro.

@@ -1,0 +1,24 @@
+# EDIT THE FOLLOWING by replacing the directory with your ACL2 distributed
+# books directory.  You are welcome to omit this line, or not as you prefer, in
+# your contribution.
+ACL2_SYSTEM_BOOKS = ../../../../../../../books
+
+include ${ACL2_SYSTEM_BOOKS}/Makefile-generic
+
+# OPTIONALLY EDIT THE FOLLOWING.  But do not use "time" or "nice"; at least one
+# of these can cause trouble in some environments.
+ACL2 = ${ACL2_SYSTEM_BOOKS}/../saved_acl2
+
+# Pasted in from "make dependencies":
+
+circuit-scheduling.cert: circuit-scheduling.lisp
+circuit-scheduling.cert: ../../generic-modules/GeNoC-scheduling.cert
+circuit-scheduling.cert: intersect.cert
+
+intersect.cert: intersect.lisp
+# intersect.cert: $(ACL2_SYSTEM_BOOKS)/data-structures/list-defuns.cert
+# intersect.cert: $(ACL2_SYSTEM_BOOKS)/data-structures/list-defthms.cert
+
+packet-scheduling.cert: packet-scheduling.lisp
+packet-scheduling.cert: ../../generic-modules/GeNoC-scheduling.cert
+packet-scheduling.cert: intersect.cert

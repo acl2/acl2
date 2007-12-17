@@ -1,0 +1,5 @@
+(value :q)
+
+(lp)
+
+(certify-book "impl-hack" 0 t :defaxioms-okp t)

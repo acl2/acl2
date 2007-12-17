@@ -1,0 +1,12 @@
+; In order not to compile the book, use following ld command should be used.
+;(ld '((ubt! 1)
+;      (ld "define-u-package.lsp")
+;      (certify-book "utils" 1 nil)))
+
+:q 
+(lp)
+(ld '((ubt! 1)
+      (ld "define-u-package.lsp")
+      (certify-book "utils" 1)))
+
+
