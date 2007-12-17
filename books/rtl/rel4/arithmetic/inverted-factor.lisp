@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-;(local (include-book "../../../meta/meta-times-equal"))
+;(local (include-book "meta/meta-times-equal" :dir :system))
 ;(local (INCLUDE-BOOK "predicate"))
 ;(local (INCLUDE-BOOK "fp2"))
 

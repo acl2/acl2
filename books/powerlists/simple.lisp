@@ -12,7 +12,7 @@ To certify this book, I do the following:
 
 (in-package "POWERLISTS")
 (include-book "algebra")
-(include-book "../arithmetic/top"
+(include-book "arithmetic/top" :dir :system
 	      :load-compiled-file nil)
 
 (set-verify-guards-eagerness 2)

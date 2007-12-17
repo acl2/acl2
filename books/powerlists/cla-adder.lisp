@@ -17,7 +17,7 @@ To compile it, I do the following:
 (in-package "POWERLISTS")
 (include-book "prefix-sum" :load-compiled-file nil)
 (include-book "algebra" :load-compiled-file nil)
-(include-book "../arithmetic/top"
+(include-book "arithmetic/top" :dir :system
 	      :load-compiled-file nil)
 
 ;;; First, we define our basic adder circuits.  We represent bit vectors as

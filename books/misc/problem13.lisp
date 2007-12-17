@@ -24,9 +24,9 @@
 (in-package "ACL2")
 
 ; The following includes help ACL2 with arithmetic:
-(include-book "../arithmetic/equalities")
-(include-book "../arithmetic/inequalities")
-(include-book "../ordinals/e0-ordinal")
+(include-book "arithmetic/equalities" :dir :system)
+(include-book "arithmetic/inequalities" :dir :system)
+(include-book "ordinals/e0-ordinal" :dir :system)
 (set-well-founded-relation e0-ord-<)
 
 ; A shorthand for naturals:

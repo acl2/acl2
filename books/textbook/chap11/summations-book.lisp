@@ -2,7 +2,7 @@
 
 ; This time we start with a standard arithmetic book.
 
-(include-book "../../arithmetic/top-with-meta")
+(include-book "arithmetic/top-with-meta" :dir :system)
 
 ; ---------------------------------------------------------------------------
 ; Exercise 11.26

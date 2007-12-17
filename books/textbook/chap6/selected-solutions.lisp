@@ -17,7 +17,7 @@
 ; ---------------------------------------------------------------------------
 ; Exercise 6.3
 
-(include-book "../../ordinals/e0-ordinal")
+(include-book "ordinals/e0-ordinal" :dir :system)
 (set-well-founded-relation e0-ord-<)
 
 (defthm w-larger-than-nats
@@ -76,7 +76,7 @@
 
 (encapsulate 
  nil
- (local (include-book "../../arithmetic/top-with-meta"))
+ (local (include-book "arithmetic/top-with-meta" :dir :system))
  (defthm dec-decreases
    (implies (natp n)
 	    (e0-ord-< (dec (1+ n)) (dec n)))))

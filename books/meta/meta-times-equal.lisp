@@ -24,9 +24,10 @@
 
 (include-book "term-defuns")
 
-(local (include-book "term-lemmas" :load-compiled-file nil))
+(local (include-book "term-lemmas"
+                     :load-compiled-file nil))
 
-(local (include-book "../arithmetic/equalities"
+(local (include-book "arithmetic/equalities" :dir :system 
                      :load-compiled-file nil))
 
 (defevaluator ev-times-equal ev-times-equal-list

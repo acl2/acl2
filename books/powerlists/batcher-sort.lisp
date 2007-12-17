@@ -68,7 +68,7 @@ certify-book on this file.  Here's how I do it:
 
 (in-package "POWERLISTS")
 (include-book "merge-sort")
-(include-book "../arithmetic/top"
+(include-book "arithmetic/top" :dir :system
 	      :load-compiled-file nil)
 
 (set-verify-guards-eagerness 2)

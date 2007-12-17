@@ -15,7 +15,7 @@
       (= (* b (* a c)))))
 
 
-(include-book "../arithmetic/top-with-meta")
+(include-book "arithmetic/top-with-meta" :dir :system)
 
 ; Here I prove Euclid's theorem, that p|ab implies p|a or p|b, for prime p.  I
 ; defaxiom a few "basic" facts.  My point is to illustrate dft.

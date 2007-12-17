@@ -19,11 +19,8 @@
 
 (IN-PACKAGE "ACL2")
 
-(local
- (include-book "../meta/top"))
-
-(local
- (include-book "../../ihs/quotient-remainder-lemmas"))
+(local (include-book "../meta/top"))
+(local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 
 ;(defmacro e/d (enable disable)
 ;  `(union-theories ',enable (disable ,@disable)))

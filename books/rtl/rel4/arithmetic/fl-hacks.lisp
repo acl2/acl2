@@ -33,7 +33,7 @@ This book contains a few hacks about fl which aren't used elsewhere in support/.
 (local (include-book "fl")) ;drop?
 (local (include-book "mod"))
 (local (include-book "even-odd"))
-(local (include-book "../../../meta/meta-plus-equal"))
+(local (include-book "meta/meta-plus-equal" :dir :system))
 
 (local (include-book "arith"))
 

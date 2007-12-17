@@ -39,8 +39,8 @@ appropriate certify-book command.  Something like the following will work:
 (set-verify-guards-eagerness 2)
 
 
-(include-book "../data-structures/structures")
-(include-book "../ordinals/e0-ordinal")
+(include-book "data-structures/structures" :dir :system)
+(include-book "ordinals/e0-ordinal" :dir :system)
 (set-well-founded-relation e0-ord-<)
 
 (verify-guards u::import-as-macros-fn)	; Sigh.....

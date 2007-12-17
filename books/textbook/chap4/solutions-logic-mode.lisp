@@ -197,7 +197,7 @@ but this does not seem as clear.
 
 (encapsulate 
  nil
- (local (include-book "../../ihs/ihs-lemmas"))
+ (local (include-book "ihs/ihs-lemmas" :dir :system))
  (defun sum-base-10-digits (n)
    (declare (xargs :guard (and (integerp n)
 			       (< 0 n))))

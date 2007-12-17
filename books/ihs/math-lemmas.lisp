@@ -40,7 +40,7 @@
 
 (in-package "ACL2")
 
-(include-book "../arithmetic/top")
+(include-book "arithmetic/top" :dir :system)
 (include-book "ihs-init")
 
 (deflabel math-lemmas

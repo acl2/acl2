@@ -16,7 +16,7 @@
 ;;(ag a r) returns the value at index a in array r, and (as a v r) returns 
 ;;a new array with index a set to value v in array r.
 
-(include-book "../../../misc/total-order")
+(include-book "misc/total-order" :dir :system)
 
 (include-book "rtl")
 

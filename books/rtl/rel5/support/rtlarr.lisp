@@ -85,7 +85,7 @@ well-formed record hypothesis.
 
 |#
 
-(include-book "../../../misc/total-order")
+(include-book "misc/total-order" :dir :system)
 
 ;; BEGIN records definitions.
 

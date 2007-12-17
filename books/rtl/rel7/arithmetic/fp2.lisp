@@ -7,9 +7,9 @@
 (in-package "ACL2")
 
 
-(local (include-book "../../../ihs/ihs-definitions"))
-(local (include-book "../../../ihs/ihs-lemmas"))
-(local (include-book "../../../ihs/ihs-lemmas"))
+(local (include-book "ihs/ihs-definitions" :dir :system))
+(local (include-book "ihs/ihs-lemmas" :dir :system))
+(local (include-book "ihs/ihs-lemmas" :dir :system))
 
 ; The following is (minimal-ihs-theory)
 (local (PROGN (IN-THEORY NIL)
@@ -113,7 +113,7 @@
  (encapsulate 
   ()
              
-  (local (include-book "../../../arithmetic-2/meta/non-linear"))
+  (local (include-book "arithmetic-2/meta/non-linear" :dir :system))
 
 ;BOZO generalize the (rationalp x) hyp (is it enough that, say, y be rational?)
   (defthm *-weakly-monotonic-alt
@@ -729,7 +729,7 @@ In this case, we must be sure that we don't multiply through by k (since we foun
 (defun point-left-measure (x)
   (floor (if (and (rationalp x) (> x 0)) x 0) 1))
 
-(include-book "../../../ordinals/e0-ordinal")
+(include-book "ordinals/e0-ordinal" :dir :system)
 
 (defthm recursion-by-point-right
   (and (e0-ordinalp (point-right-measure x))

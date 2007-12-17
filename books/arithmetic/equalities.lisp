@@ -48,7 +48,7 @@ Then:
 (defmacro real-listp (l)
   `(rational-listp ,l))
 
-(include-book "../cowles/acl2-crg" :load-compiled-file nil)
+(include-book "cowles/acl2-crg" :dir :system :load-compiled-file nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Force

@@ -8,7 +8,7 @@
 
 (in-package "ACL2")
 
-(local (include-book "../../../arithmetic/top"))
+(local (include-book "arithmetic/top" :dir :system))
 
 (local (defun kmin (x k)
   (if (integerp k)

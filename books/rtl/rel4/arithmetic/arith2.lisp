@@ -9,9 +9,9 @@ It's still kind of a mess.  But it's better now that we have the rules in common
 (include-book "fp2")
 (include-book "predicate")
 (include-book "product")
-(include-book "../../../meta/meta-times-equal")
-(include-book "../../../meta/meta-plus-equal")
-(include-book "../../../meta/meta-plus-lessp")
+(include-book "meta/meta-times-equal" :dir :system)
+(include-book "meta/meta-plus-equal" :dir :system)
+(include-book "meta/meta-plus-lessp" :dir :system)
 
 
 ;get more rules from arithmetic-2 ?
@@ -81,9 +81,9 @@ It's still kind of a mess.  But it's better now that we have the rules in common
                   (< a b))))
 
 
-(include-book "../../../meta/meta-times-equal")
-(include-book "../../../meta/meta-plus-equal")
-(include-book "../../../meta/meta-plus-lessp")
+(include-book "meta/meta-times-equal" :dir :system)
+(include-book "meta/meta-plus-equal" :dir :system)
+(include-book "meta/meta-plus-lessp" :dir :system)
 
 
 (defthm mult-both-sides-of-equal

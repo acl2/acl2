@@ -24,7 +24,7 @@
 (include-book "alist-defuns")
 (include-book "list-defuns")
 (include-book "set-defuns")
-(local (include-book "../arithmetic/equalities"))
+(local (include-book "arithmetic/equalities" :dir :system))
 (local (include-book "set-defthms"))
 
 

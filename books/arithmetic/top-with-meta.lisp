@@ -24,4 +24,4 @@
 (in-package "ACL2")
 
 (include-book "top" :load-compiled-file nil)
-(include-book "../meta/meta" :load-compiled-file nil)
+(include-book "meta/meta" :dir :system :load-compiled-file nil)

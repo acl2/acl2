@@ -30,7 +30,7 @@
 (in-package "S")
 
 (include-book "total-ordering")
-(include-book "../ordinals/e0-ordinal")
+(include-book "ordinals/e0-ordinal" :dir :system)
 (set-well-founded-relation e0-ord-<)
 
 (defun standard-atom (x)
@@ -1296,7 +1296,7 @@
 ; ----------------------------------------------------------------------------
 ; Arithmetic
 
-(include-book "../arithmetic/top-with-meta")
+(include-book "arithmetic/top-with-meta" :dir :system)
 
 
 (defun cardinality (a)

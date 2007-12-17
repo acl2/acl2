@@ -1,5 +1,5 @@
 (in-package "ACL2")
-(include-book "../../ordinals/e0-ordinal")
+(include-book "ordinals/e0-ordinal" :dir :system)
 (set-well-founded-relation e0-ord-<)
 
 ; Section 11.5 Tautology Checking 
@@ -71,7 +71,7 @@
 
 ; Admit if-n in :logic mode.
 
-(include-book "../../arithmetic/top")
+(include-book "arithmetic/top" :dir :system)
 
 (defun if-depth (x)
   (if (ifp x)

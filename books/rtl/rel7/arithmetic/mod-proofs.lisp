@@ -15,8 +15,8 @@
 (local (include-book "integerp"))
 (local (include-book "product"))
 (local (include-book "complex-rationalp"))
-(local (include-book "../../../meta/meta-plus-equal"))
-(local (include-book "../../../meta/meta-plus-lessp"))
+(local (include-book "meta/meta-plus-equal" :dir :system))
+(local (include-book "meta/meta-plus-lessp" :dir :system))
 (local (include-book "predicate"))
 (local (include-book "rationalp"))
 

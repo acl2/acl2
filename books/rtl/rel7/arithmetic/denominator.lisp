@@ -35,7 +35,7 @@
 ;linear?
 (encapsulate
  ()
- (local (include-book "../../../arithmetic/mod-gcd"))
+ (local (include-book "arithmetic/mod-gcd" :dir :system))
  (defthm denominator-lower-bound
    (implies (and (< 0 q)
                  (integerp p)

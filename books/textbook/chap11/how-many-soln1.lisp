@@ -16,8 +16,7 @@
 
 (include-book "perm")
 
-(local
- (include-book "../../arithmetic/top"))
+(local (include-book "arithmetic/top" :dir :system))
 
 ; ---------------------------------------------------------------------------
 ; Exercise 11.47

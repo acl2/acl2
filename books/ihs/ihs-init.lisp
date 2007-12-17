@@ -34,7 +34,7 @@
 
 (in-package "ACL2")
 
-(include-book "../data-structures/utilities")
+(include-book "data-structures/utilities" :dir :system)
 
 (deflabel ihs-init
   :doc ":doc-section ihs-init

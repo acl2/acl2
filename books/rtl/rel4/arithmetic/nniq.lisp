@@ -289,8 +289,8 @@
 
 
 (encapsulate ()
-             (local (include-book "../../../arithmetic/rationals"))
-             (local (include-book "../../../arithmetic/idiv"))
+             (local (include-book "arithmetic/rationals" :dir :system))
+             (local (include-book "arithmetic/idiv" :dir :system))
 
              (defthm quotient-numer-denom
                (implies (and (integerp x) (< 0 x) (integerp y) (< 0 y))
@@ -443,8 +443,8 @@
 
 
 (encapsulate ()
-             (local (include-book "../../../arithmetic/idiv"))
-             (local (INCLUDE-BOOK "../../../arithmetic/top-with-meta"))
+             (local (include-book "arithmetic/idiv" :dir :system))
+             (local (INCLUDE-BOOK "arithmetic/top-with-meta" :dir :system))
 
              (defthm nniq-eric-1
                (implies (and (rationalp x)

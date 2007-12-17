@@ -36,7 +36,7 @@
 
 (in-theory (disable add3-measure))
 
-(include-book "../../../ordinals/e0-ordinal")
+(include-book "ordinals/e0-ordinal" :dir :system)
 (set-well-founded-relation e0-ord-<)
 
 (defun add3-induct (x y z)

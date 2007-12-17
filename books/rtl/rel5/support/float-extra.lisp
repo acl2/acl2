@@ -17,7 +17,7 @@
  (encapsulate
   ()
 
-  (local (include-book "../../../arithmetic/inequalities"))
+  (local (include-book "arithmetic/inequalities" :dir :system))
   (set-enforce-redundancy t)
 
   (defmacro fc (x) x)

@@ -1,9 +1,9 @@
 (in-package "ACL2")
 
                   
-(include-book "../../../meta/meta-times-equal")
-(include-book "../../../meta/meta-plus-equal")
-(include-book "../../../meta/meta-plus-lessp")
+(include-book "meta/meta-times-equal" :dir :system)
+(include-book "meta/meta-plus-equal" :dir :system)
+(include-book "meta/meta-plus-lessp" :dir :system)
 
 (include-book "common-factor-defuns")
 

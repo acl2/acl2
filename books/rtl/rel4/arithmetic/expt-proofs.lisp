@@ -31,7 +31,7 @@
 
 (encapsulate 
  ()
- (local (include-book "../../../arithmetic/top"))
+ (local (include-book "arithmetic/top" :dir :system))
  (defthm a16
    (equal (expt (* a b) i)
           (* (expt a i) (expt b i)))

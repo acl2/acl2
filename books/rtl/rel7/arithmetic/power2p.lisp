@@ -15,7 +15,7 @@
 ;(defun power2p (x)
  ; (equal x (expt 2 (expo x))))
 
-(include-book "../../../ordinals/e0-ordinal")
+(include-book "ordinals/e0-ordinal" :dir :system)
 (set-well-founded-relation e0-ord-<)
 
 (defund power2p-measure (x)

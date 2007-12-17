@@ -15,7 +15,7 @@ To compile it, I do the following:
 (in-package "POWERLISTS")
 (include-book "algebra" :load-compiled-file nil)
 (include-book "simple" :load-compiled-file nil)
-(include-book "../arithmetic/top"
+(include-book "arithmetic/top" :dir :system
 	      :load-compiled-file nil)
 
 (set-verify-guards-eagerness 2)

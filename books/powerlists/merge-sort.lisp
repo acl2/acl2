@@ -19,7 +19,7 @@ certify-book on this file.  Here's how I do it:
 (in-package "POWERLISTS")
 (include-book "algebra")
 (include-book "sort")
-(include-book "../ordinals/e0-ordinal")
+(include-book "ordinals/e0-ordinal" :dir :system)
 (set-well-founded-relation ACL2::e0-ord-<)
 
 (set-verify-guards-eagerness 2)

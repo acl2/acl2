@@ -10,7 +10,7 @@
 (local (include-book "unary-divide"))
 (local (include-book "rationalp"))
 (local (include-book "inverted-factor"))
-(local (include-book "../../../meta/meta-plus-lessp"))
+(local (include-book "meta/meta-plus-lessp" :dir :system))
 ; (thm (rationalp (floor i j)))) goes through
 
 

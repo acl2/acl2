@@ -3,7 +3,7 @@
 (set-enforce-redundancy t)
 
 ; Optionally, one may wish to consider:
-; (include-book "../../../misc/rtl-untranslate")
+; (include-book "misc/rtl-untranslate" :dir :system)
 ; to inhibit expansion of macros in proof output.
 
 ; We deliberately exclude any *-helpers.lisp books that may appear here.

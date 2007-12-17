@@ -694,7 +694,7 @@
 (defun point-left-measure (x)
   (floor (if (and (rationalp x) (> x 0)) x 0) 1))
 
-(include-book "../../../ordinals/e0-ordinal")
+(include-book "ordinals/e0-ordinal" :dir :system)
 (set-well-founded-relation e0-ord-<)
 
 (defthm recursion-by-point-right

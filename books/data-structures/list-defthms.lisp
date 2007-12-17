@@ -26,7 +26,7 @@
 ;; We need this much arithmetic to get some of the following
 ;; theorems proved, e.g., put-seg-non-recursive, len-nthcdr.
 
-(local (include-book "../arithmetic/equalities"))
+(local (include-book "arithmetic/equalities" :dir :system))
 
 ; ------------------------------------------------------------
 ; Equality Trichotomy

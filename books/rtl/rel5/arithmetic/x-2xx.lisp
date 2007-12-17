@@ -10,9 +10,9 @@
 
 (in-package "ACL2")
 
-(local (include-book "../../../arithmetic/top-with-meta"))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(local (include-book "../../../arithmetic/mod-gcd"))
+(local (include-book "arithmetic/mod-gcd" :dir :system))
 
 ;; The definition of nonneg-int-gcd often interacts with the rewrite rule,
 ;; commutativity-of-nonneg-int-gcd, to cause the rewriter to loop and stack

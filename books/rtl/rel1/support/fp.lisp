@@ -4,8 +4,8 @@
 ;Altered by Daron Vroon for v2-8 to use the new ordinal definitions.
 
 (in-package "ACL2")
-(local (include-book "../../../ihs/ihs-definitions"))
-(local (include-book "../../../ihs/ihs-lemmas"))
+(local (include-book "ihs/ihs-definitions" :dir :system))
+(local (include-book "ihs/ihs-lemmas" :dir :system))
 
 ; The following is (minimal-ihs-theory)
 (local (PROGN (IN-THEORY NIL)

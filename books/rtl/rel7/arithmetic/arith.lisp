@@ -3,15 +3,9 @@
 ;This book contains basic arith stuff which i'm pretty sure won't hurt anything.
 
 (local (include-book "arith2"))
-
-;This is a meta rule to cancel identical terms from both sides of an equality of sums.
-(include-book "../../../meta/meta-plus-equal")
-
-;This is a meta rule to cancel identical terms from both sides of a < of sums.
-(include-book "../../../meta/meta-plus-lessp")
-
-;This is a meta rule to cancel identical terms from both sides of an equality of products (I think).
-(include-book "../../../meta/meta-times-equal")
+(include-book "meta/meta-plus-equal" :dir :system)
+(include-book "meta/meta-plus-lessp" :dir :system)
+(include-book "meta/meta-times-equal" :dir :system)
 
 ;Note!  There is not meta-times-lessp, which would be really nice to have.  I now have a bind-free rule to do that...
 

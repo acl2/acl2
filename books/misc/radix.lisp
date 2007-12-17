@@ -24,8 +24,8 @@
 ;;      for the conversion. 
 (in-package "RADIX")
 ;; These books are included to prove some guards. 
-(local (include-book "../arithmetic-2/meta/top"))
-(local (include-book "../arithmetic-2/floor-mod/floor-mod"))
+(local (include-book "arithmetic-2/meta/top" :dir :system))
+(local (include-book "arithmetic-2/floor-mod/floor-mod" :dir :system))
 
 ;; Returns the maximum integer that is not larger than the log of x with base,
 ;; In TeX format, $\lfloor\log_{base}(x)\rfloor$.

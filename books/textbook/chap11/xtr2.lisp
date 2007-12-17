@@ -5,7 +5,7 @@
 ; ---------------------------------------------------------------------------
 ; Exercise 11.52
 
-(include-book "../../arithmetic/top-with-meta")
+(include-book "arithmetic/top-with-meta" :dir :system)
 
 (defun xtr (map lst)
   (if (endp map)

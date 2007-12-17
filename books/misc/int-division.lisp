@@ -12,8 +12,8 @@
 
 
 (in-package "ACL2")
-(include-book "../arithmetic/equalities")
-(include-book "../arithmetic/inequalities")
+(include-book "arithmetic/equalities" :dir :system)
+(include-book "arithmetic/inequalities" :dir :system)
 
 (defun integer-quotient (a b)
   (if (and (integerp a)
