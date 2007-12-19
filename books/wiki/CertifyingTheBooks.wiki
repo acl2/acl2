@@ -27,12 +27,15 @@ An easy way to fix this is to set the ACL2_SYSTEM_BOOKS variable in your `saved_
 exec "/[...]/gcl-saved_acl2.gcl" $*
 }}}
 
-And you just need to add the "export" line, e.g.:
+And you just need to add two lines, as follows:
 
 {{{ 
 #!/bin/sh
 # Saved November 5, 2007  23:40:11
 
-export ACL2_SYSTEM_BOOKS="/path/to/my/acl2-books"
+export ACL2_SYSTEM_BOOKS
+ACL2_SYSTEM_BOOKS="/path/to/my/acl2-books"
 exec "/[...]/gcl-saved_acl2.gcl" $*
 }}}
+
+See also ACL2 documentation topic BOOK-MAKEFILES for more information.
