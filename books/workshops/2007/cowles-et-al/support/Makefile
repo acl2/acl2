@@ -1,3 +1,3 @@
-include ../../../../../books/Makefile-subdirs
+include ../../../../Makefile-subdirs
 
 DIRS = cowles greve ray

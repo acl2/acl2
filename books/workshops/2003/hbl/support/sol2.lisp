@@ -1,8 +1,8 @@
 ;(acl2::set-match-free-error nil)
 (in-package "ACL2")
-(include-book "../../../../../books/misc/records")
-(include-book "../../../../../books/arithmetic/top-with-meta")
-(include-book "../../../../ordinals/e0-ordinal")
+(include-book "misc/records" :dir :system)
+(include-book "arithmetic/top-with-meta" :dir :system)
+(include-book "ordinals/e0-ordinal" :dir :system)
 (set-well-founded-relation e0-ord-<)
 ;-------------------
 ;; use record book instead of using list

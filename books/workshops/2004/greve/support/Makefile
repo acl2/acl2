@@ -1,11 +1,9 @@
 
-DEFAULT_ACL2_ROOT = ../../../../..
+ACL2_SYSTEM_BOOKS ?= ../../../..
 
-ACL2BOOKS = $(DEFAULT_ACL2_ROOT)/books
+include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
 
-include $(ACL2BOOKS)/Makefile-generic
-
-ACL2 = $(DEFAULT_ACL2_ROOT)/saved_acl2
+ACL2 ?= $(ACL2_SYSTEM_BOOKS)/../saved_acl2
 
 BOOKS = mark defrecord
 
