@@ -57,7 +57,7 @@
 # will probably not suffice for overriding the assignment of ACL2 that is made
 # in some books (namely, those not just one level past books/).
 
-ACL2 ?= ../../saved_acl2
+ACL2 ?= ../../saved_acl2h
 
 ACL2_BOOKS_MAKEFILE ?= Makefile
 

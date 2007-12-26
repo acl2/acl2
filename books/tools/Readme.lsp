@@ -9,7 +9,7 @@ index.html
 pack.lisp
 progndollar.lisp
 ")
- (:TITLE "Macro Magic")
+ (:TITLE "Tools")
  (:AUTHOR/S
   "Sol Swords"
   )
@@ -17,9 +17,9 @@ progndollar.lisp
   "macro"
   )
  (:ABSTRACT "The books in this directory contain miscellaneous macros
-to make common constructs easier and less verbose to write.  See
-index.html for more detailed documentation than this abstract, and
-comments in the source files for more yet.
+and tools designed to make common constructs easier and less verbose
+to write.  See index.html for more detailed documentation than this
+abstract, and comments in the source files for more yet.
 
 bstar.lisp defines the macro B* which is a drop-in replacement for
 LET* with support for binding MVs and recognizing user-defined binder
