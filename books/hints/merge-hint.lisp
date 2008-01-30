@@ -551,7 +551,7 @@
   (must-fail
    (er-progn
     (prog2$
-     (trace$ prove)
+     t ; (trace$ prove) ; wrong signature for trace$ after v3-3
      (set-inhibit-output-lst '(proof-tree)))
     (thm (equal x y)
          :hints
