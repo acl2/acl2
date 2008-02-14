@@ -12,10 +12,11 @@
 
 ;;Necessary defuns: BOZO is all this necessary?
 
-(defun natp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (<= 0 x)))
+(local ; ACL2 primitive
+ (defun natp (x)
+   (declare (xargs :guard t))
+   (and (integerp x)
+        (<= 0 x))))
 
 (defund bvecp (x k)
   (declare (xargs :guard (integerp k)))

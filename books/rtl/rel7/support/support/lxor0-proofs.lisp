@@ -11,10 +11,11 @@ todo: ;add analogs of the thms in land0.lisp past bitn-land0
 
 ;add macro alias
 
-(defun natp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (<= 0 x)))
+(local ; ACL2 primitive
+ (defun natp (x)
+   (declare (xargs :guard t))
+   (and (integerp x)
+        (<= 0 x))))
 
 (defund fl (x)
   (declare (xargs :guard (real/rationalp x)))

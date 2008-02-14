@@ -58,23 +58,48 @@
               state)
     state))
 
+(defun write-list-body-fn (bangp)
+  `(mv-let (channel state)
+           ,(if bangp
+                '(open-output-channel! fname :character state)
+              '(open-output-channel fname :character state))
+           (if channel
+               (mv-let
+                (col state)
+                (fmt1 "Writing file ~x0~%" (list (cons #\0 fname))
+                      0 (standard-co state) state nil)
+                (declare (ignore col))
+                (let ((state (write-objects list channel state)))
+                  (pprogn (close-output-channel channel state)
+                          (value :invisible))))
+             (er soft ctx
+                 "Unable to open file ~s0 for :character output."
+                 fname))))
+
+(defmacro write-list-body (bangp)
+  (write-list-body-fn bangp))
+
 ; Pretty-print the given list of forms to file fname, except that strings are
 ; printed without any formatting.
 (defun write-list (list fname ctx state)
-  (mv-let (channel state)
-	  (open-output-channel fname :character state)
-          (if channel
-              (mv-let
-               (col state)
-               (fmt1 "Writing file ~x0~%" (list (cons #\0 fname))
-                    0 (standard-co state) state nil)
-               (declare (ignore col))
-               (let ((state (write-objects list channel state)))
-                 (pprogn (close-output-channel channel state)
-                         (value :invisible))))
-            (er soft ctx
-                "Unable to open file ~s0 for :character output."
-                fname))))
+  (write-list-body nil))
+
+(defmacro write-list! (list fname ctx &optional ttag)
+
+; A non-nil ttag must be supplied, of course, unless there is already an active
+; ttag at the point where write-list! is called.
+
+  (let ((trans-eval-form `(trans-eval '(let ((list ,list)
+                                             (fname ,fname)
+                                             (ctx ,ctx))
+                                         ,(write-list-body-fn t))
+                                      ,ctx
+                                      state)))
+
+    `(er-progn ,(if ttag
+                    `(progn (defttag ,ttag) (progn! ,trans-eval-form))
+                  trans-eval-form)
+               (value :invisible))))
 
 ; (Downcase form) causes the execution of form but where printing is in
 ; :downcase mode.  Form must return an error triple.

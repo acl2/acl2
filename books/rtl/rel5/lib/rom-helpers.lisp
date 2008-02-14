@@ -11,10 +11,11 @@
        (< x (expt 2 k))))
 (local (in-theory (enable bvecp)))
 
-(defun natp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (<= 0 x)))
+(local ; ACL2 primitive
+ (defun natp (x)
+   (declare (xargs :guard t))
+   (and (integerp x)
+        (<= 0 x))))
 
 (defun check-array (name a dim1 dim2)
   (if (zp dim1)

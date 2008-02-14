@@ -21,10 +21,11 @@ Most of the functions introduced are disabled.
 ;;formalization of the RTL semantics
 
 ;leave enabled
-(defun natp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (<= 0 x)))
+(local ; ACL2 primitive
+ (defun natp (x)
+   (declare (xargs :guard t))
+   (and (integerp x)
+        (<= 0 x))))
 
 
 ;; 1. bit-vector constants

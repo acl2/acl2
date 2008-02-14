@@ -33,27 +33,32 @@ corresponding definitions and theorems.
 
 |# ; |
 
-(defun natp (n)
-  (and (integerp n)
-       (>= n 0)))
+; The following two are now built-in (different variable name, though).
 
-(defthm natp-compound-recognizer
-  (iff (natp n)
-       (and (integerp n)
-            (>= n 0)))
-  :rule-classes :compound-recognizer)
+; (defun natp (n)
+;   (and (integerp n)
+;        (>= n 0))))
+
+; (defthm natp-compound-recognizer
+;   (iff (natp n)
+;        (and (integerp n)
+;             (>= n 0)))
+;   :rule-classes :compound-recognizer)
 
 (in-theory (disable natp))
 
-(defun posp (n)
-  (and (integerp n)
-       (> n 0)))
+; The following two are now built-in (different variable name, though).
 
-(defthm posp-compound-recognizer
-  (iff (posp n)
-       (and (integerp n)
-            (> n 0)))
-  :rule-classes :compound-recognizer)
+; (local ; ACL2 primitive
+;  (defun posp (n)
+;    (and (integerp n)
+;         (> n 0))))
+
+; (defthm posp-compound-recognizer
+;   (iff (posp n)
+;        (and (integerp n)
+;             (> n 0)))
+;   :rule-classes :compound-recognizer)
 
 (in-theory (disable posp))
 

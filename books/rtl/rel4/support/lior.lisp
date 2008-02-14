@@ -12,10 +12,11 @@ prove (elsewhere) lemmas mixing lior with other functions
 
 ;; Necessary defuns:
 
-(defun natp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (<= 0 x)))
+(local ; ACL2 primitive
+ (defun natp (x)
+   (declare (xargs :guard t))
+   (and (integerp x)
+        (<= 0 x))))
 
 (defund fl (x)
   (declare (xargs :guard (real/rationalp x)))

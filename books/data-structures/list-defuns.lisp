@@ -256,21 +256,23 @@
 	       (t (cons (car seg) (put-seg i (cdr seg) (cdr l))))))
 	(t (cons (car l) (put-seg (1- i) seg (cdr l))))))
 
-(defun remove-eq (x l)
-  "The list constructed from L by removing all occurrences of X."
-  (declare (xargs :guard (if (symbolp x)
-			     (true-listp l)
-			   (symbol-listp l))))
-  (cond ((endp l) nil)
-	((eq x (car l)) (remove-eq x (cdr l)))
-	(t (cons (car l) (remove-eq x (cdr l))))))
+(local ; ACL2 primitive
+ (defun remove-eq (x l)
+   "The list constructed from L by removing all occurrences of X."
+   (declare (xargs :guard (if (symbolp x)
+                              (true-listp l)
+                            (symbol-listp l))))
+   (cond ((endp l) nil)
+         ((eq x (car l)) (remove-eq x (cdr l)))
+         (t (cons (car l) (remove-eq x (cdr l)))))))
 
-(defun remove-equal (x l)
-  "The list constructed from L by removing all occurrences of X."
-  (declare (xargs :guard (true-listp l)))
-  (cond ((endp l) nil)
-	((equal x (car l)) (remove-equal x (cdr l)))
-	(t (cons (car l) (remove-equal x (cdr l))))))
+(local ; ACL2 primitive
+ (defun remove-equal (x l)
+   "The list constructed from L by removing all occurrences of X."
+   (declare (xargs :guard (true-listp l)))
+   (cond ((endp l) nil)
+         ((equal x (car l)) (remove-equal x (cdr l)))
+         (t (cons (car l) (remove-equal x (cdr l)))))))
 
 (defun remove-duplicates-eq (l)
   (declare (xargs :guard (symbol-listp l)))

@@ -23,10 +23,11 @@
 	(t (1+ (expo (/ x 2))))))
 
 ;should this be here?  should it be enabled?
-(defun natp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (<= 0 x)))
+(local ; ACL2 primitive
+ (defun natp (x)
+   (declare (xargs :guard t))
+   (and (integerp x)
+        (<= 0 x))))
 
 (defund bvecp (x k)
   (declare (xargs :guard (integerp k)))

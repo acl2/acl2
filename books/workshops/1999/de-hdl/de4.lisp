@@ -45,17 +45,18 @@
 ;;;  by DE to evaluate primitives.
 
 ; Changed by Matt Kaufmann to be compatible with ACL2 after Version 3.3:
-(defun xor (p q)
+(local ; ACL2 primitive
+ (defun xor (p q)
 
-  ":Doc-Section ACL2::Programming
+   ":Doc-Section ACL2::Programming
 
   logical ``exclusive or''~/
 
   ~c[Xor] is the ACL2 exclusive-or function.  ~c[(xor P Q)] means that either
   ~c[P] or ~c[Q], but not both, is false (i.e., ~c[nil]).~/~/"
 
-  (declare (xargs :guard t))
-  (if p (if q nil t) (if q t nil)))
+   (declare (xargs :guard t))
+   (if p (if q nil t) (if q t nil))))
 
 ;;;  The primitive evaluation function to compute outputs.
 

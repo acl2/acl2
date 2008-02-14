@@ -10,10 +10,11 @@
 ;generalize some of these rules to be about expt with any base (not just 2)
 
 ;remove this?
-(defun natp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (<= 0 x)))
+(local ; ACL2 primitive
+ (defun natp (x)
+   (declare (xargs :guard t))
+   (and (integerp x)
+        (<= 0 x))))
 
 (defund fl (x)
   (declare (xargs :guard (real/rationalp x)))
@@ -771,10 +772,11 @@ these deal with arbitrary bases (not just 2):
  (include-book
   "../arithmetic/product"))
 
-(defun natp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (>= x 0)))
+(local ; ACL2 primitive
+ (defun natp (x)
+   (declare (xargs :guard t))
+   (and (integerp x)
+        (>= x 0))))
 
 
 

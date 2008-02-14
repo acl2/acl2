@@ -10,10 +10,11 @@
        (<= 0 x)
        (< x (expt 2 k))))
 
-(defun natp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (<= 0 x)))
+(local ; ACL2 primitive
+ (defun natp (x)
+   (declare (xargs :guard t))
+   (and (integerp x)
+        (<= 0 x))))
 
 ;; New stuff:
 

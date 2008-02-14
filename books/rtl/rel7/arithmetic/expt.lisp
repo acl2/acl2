@@ -10,10 +10,11 @@
 ;generalize some of these rules to be about expt with any base (not just 2)
 
 ;remove this?
-(defun natp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (<= 0 x)))
+(local ; ACL2 primitive
+ (defun natp (x)
+   (declare (xargs :guard t))
+   (and (integerp x)
+        (<= 0 x))))
 
 (defund fl (x)
   (declare (xargs :guard (real/rationalp x)))

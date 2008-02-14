@@ -400,10 +400,11 @@ It's still kind of a mess.  But it's better now that we have the rules in common
 
 ;natp is defined here to try to make sure its always enabled
 
-(defun natp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (<= 0 x)))
+(local ; ACL2 primitive
+ (defun natp (x)
+   (declare (xargs :guard t))
+   (and (integerp x)
+        (<= 0 x))))
 
 (in-theory (enable natp))
 

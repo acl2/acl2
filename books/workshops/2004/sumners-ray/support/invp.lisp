@@ -116,11 +116,13 @@ NOTES/ISSUES
             (declare (type (unsigned-byte ,size) x))
             (if b (the (unsigned-byte ,size) (1+ x)) x)))))
 
-(defmacro 1+f (x) 
-  `(the-fixnum (1+ (the-fixnum ,x))))
+(local ; ACL2 primitive
+ (defmacro 1+f (x) 
+   `(the-fixnum (1+ (the-fixnum ,x)))))
 
-(defmacro 1-f (x)
-  `(the-fixnum (1- (the-fixnum ,x))))
+(local ; ACL2 primitive
+ (defmacro 1-f (x)
+   `(the-fixnum (1- (the-fixnum ,x)))))
 
 (defmacro modf (x y)
   `(the-fixnum (mod (the-fixnum ,x) (the-fixnum ,y))))

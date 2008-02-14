@@ -718,10 +718,11 @@ ex:   (INTEGERP (* (/ (EXPT 2 J))
            (equal x y))
   :rule-classes nil)
 
-(defun natp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (<= 0 x)))
+(local ; ACL2 primitive
+ (defun natp (x)
+   (declare (xargs :guard t))
+   (and (integerp x)
+        (<= 0 x))))
 
 ;comes from mod-upper-bound
 (defthmd mod-bnd-1

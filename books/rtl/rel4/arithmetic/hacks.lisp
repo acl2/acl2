@@ -2,10 +2,11 @@
 
 ;This book contains arithmetic hacks removed from basic.lisp
 
-(defun natp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (<= 0 x)))
+(local ; ACL2 primitive ...
+ (defun natp (x)
+   (declare (xargs :guard t))
+   (and (integerp x)
+        (<= 0 x))))
 
 (local (include-book "fp2"))
 

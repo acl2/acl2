@@ -4,6 +4,12 @@
 
 #|
 
+Note: See also the following paper (and accompanying slides):
+
+Matt Kaufmann and Rob Sumners.  Efficient Rewriting of Data Structures
+in ACL2.  In: Proceedings of ACL2 Workshop 2002,
+http://www.cs.utexas.edu/users/moore/acl2/workshop-2002/#presentations
+
 We define properties of a generic record accessor function and updater
 function.  The basic functions are (g a r) and (s a v r) where a is an
 address/key, v is a value, r is a record, and (g a r) returns the value set to
@@ -303,3 +309,16 @@ well-formed record hypothesis.
 ;; manipulate record terms which are encountered.
 
 (in-theory (disable s g))
+
+;; Contributed by Sandip Ray (who isn't sure that he is the one who originally
+;; wrote UPDATE).
+
+(defun update-macro (upds result)
+  (declare (xargs :guard (keyword-value-listp upds)))
+  (if (endp upds) result
+    (update-macro (cddr upds)
+                  (list 's (car upds) (cadr upds) result))))
+
+(defmacro update (old &rest updates)
+  (declare (xargs :guard (keyword-value-listp updates)))
+  (update-macro updates old))

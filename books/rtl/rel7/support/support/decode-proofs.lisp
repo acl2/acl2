@@ -13,10 +13,11 @@
 (in-theory (disable decode))
 |#
 
-(defun natp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (<= 0 x)))
+(local ; ACL2 primitive
+ (defun natp (x)
+   (declare (xargs :guard t))
+   (and (integerp x)
+        (<= 0 x))))
 
 (local (include-book "../../arithmetic/fl"))
 (local (include-book "ash"))

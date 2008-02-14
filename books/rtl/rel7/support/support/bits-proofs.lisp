@@ -30,10 +30,11 @@
 	((< x 2) 0)
 	(t (1+ (expo (/ x 2))))))
 
-(defun natp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (<= 0 x)))
+(local ; ACL2 primitive
+ (defun natp (x)
+   (declare (xargs :guard t))
+   (and (integerp x)
+        (<= 0 x))))
 
 
 ;this book is still a mess

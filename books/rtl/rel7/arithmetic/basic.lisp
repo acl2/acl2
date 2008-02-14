@@ -17,10 +17,11 @@
 
 ;;; natp ;;;
 ;Currently, we plan to leave natp enabled...
-(defun natp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (<= 0 x)))
+(local ; ACL2 primitive
+ (defun natp (x)
+   (declare (xargs :guard t))
+   (and (integerp x)
+        (<= 0 x))))
 
 (defthm natp-compound-recognizer
   (equal (natp x)
