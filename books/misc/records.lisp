@@ -311,14 +311,14 @@ well-formed record hypothesis.
 (in-theory (disable s g))
 
 ;; Contributed by Sandip Ray (who isn't sure that he is the one who originally
-;; wrote UPDATE).
+;; wrote this), but renamed here to record-update to avoid name conflicts.
 
-(defun update-macro (upds result)
+(defun record-update-macro (upds result)
   (declare (xargs :guard (keyword-value-listp upds)))
   (if (endp upds) result
-    (update-macro (cddr upds)
-                  (list 's (car upds) (cadr upds) result))))
+    (record-update-macro (cddr upds)
+                         (list 's (car upds) (cadr upds) result))))
 
-(defmacro update (old &rest updates)
+(defmacro record-update (old &rest updates)
   (declare (xargs :guard (keyword-value-listp updates)))
-  (update-macro updates old))
+  (record-update-macro updates old))
