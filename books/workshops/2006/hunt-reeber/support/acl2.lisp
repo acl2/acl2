@@ -17,18 +17,17 @@
          (n-bleq (1- n) (cdr x) (cdr y)))))
 
 ; Changed by Matt Kaufmann to be compatible with ACL2 after Version 3.3:
-(local ; ACL2 primitive
- (defun xor (p q)
+(defun xor (p q)
 
-   ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::Programming
 
   logical ``exclusive or''~/
 
   ~c[Xor] is the ACL2 exclusive-or function.  ~c[(xor P Q)] means that either
   ~c[P] or ~c[Q], but not both, is false (i.e., ~c[nil]).~/~/"
 
-   (declare (xargs :guard t))
-   (if p (if q nil t) (if q t nil))))
+  (declare (xargs :guard t))
+  (if p (if q nil t) (if q t nil)))
 
 (defun xor3 (x y z)
   (xor x (xor y z)))
