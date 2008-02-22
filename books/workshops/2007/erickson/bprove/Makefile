@@ -11,19 +11,16 @@ ACL2 = ${ACL2_SYSTEM_BOOKS}/../saved_acl2
 
 # Pasted in from "make dependencies":
 
-
-
-gen.cert: gen.lisp
 bash.cert: bash.lisp
 
-# sub.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/top-with-meta.cert
+exdefs.cert: exdefs.lisp
+exdefs.cert: lemgen.cert
 
-refute.cert: refute.lisp
-refute.cert: bash.cert
+gen.cert: gen.lisp
 
 lemgen.cert: lemgen.lisp
 lemgen.cert: refute.cert
 lemgen.cert: gen.cert
 
-exdefs.cert: exdefs.lisp
-exdefs.cert: lemgen.cert
+refute.cert: refute.lisp
+refute.cert: bash.cert
