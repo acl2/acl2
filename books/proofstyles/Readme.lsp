@@ -64,7 +64,7 @@ correctness of the program in each o9f the three strategies")
 "Mechanical Proof of Soundness and Completeness of Three Proof Styles
 in ACL2
 
-Copyright (C) 2006 Sandip Ray
+Copyright (C) 2008 Sandip Ray
 
 This program is free software; you can redistribute it and/ormodify it
 under the terms of the GNU General Public Licenseas published by the
