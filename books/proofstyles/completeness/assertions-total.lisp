@@ -732,7 +732,7 @@ how to define the assertions so that we can derive the VCG obligations.
    (("Goal"
      :in-theory 
      (disable clock-fn-provide-exitpoint
-              (: forward-chaining EXITPOINT-AND-NOT-EXITPOINT-IMPLIES-N-NATP))
+              (:forward-chaining EXITPOINT-AND-NOT-EXITPOINT-IMPLIES-N-NATP))
             :use ((:instance clock-fn-is-minimal
                              (k n))
                   (:instance clock-fn-provide-exitpoint
