@@ -12,6 +12,9 @@ computed-hint.cert: computed-hint.lisp
 
 csort.cert: csort.lisp
 
+definline.cert: definline.lisp
+definline.cert: definline.acl2
+
 defmac.cert: defmac.lisp
 
 defopener.cert: defopener.lisp
