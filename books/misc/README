@@ -78,6 +78,12 @@ http://www.cs.utexas.edu/users/moore/acl2
 
 ===============================================================================
 
+definline.lisp -- utility for defining inlined functions
+
+See the documentation provided by the author (Jared Davis) in the file.
+
+===============================================================================
+
 defmac.lisp -- define macros to be efficient for macro expansion
 
 See comment at the top of defmac.lisp.
