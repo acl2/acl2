@@ -262,6 +262,17 @@ correctly implements multiplication.
 
 ===============================================================================
 
+oprof.lisp -- simple performance profiling tool for OpenMCL
+
+This book only works on the OpenMCL-based version of ACL2.  It implements a 
+simple performance profiler that allows you to see which functions are taking
+the most time during some computation.  See the comments inside this book for 
+usage instructions and examples.  Also note that this book uses a ttag, so to
+include it you will need to run something like this:
+  (include-book "misc/oprof" :dir :system :ttags '(oprof)).
+
+===============================================================================
+
 priorities.lisp -- priority-based rewriting
 
 ===============================================================================
