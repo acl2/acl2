@@ -1,0 +1,8 @@
+
+(IN-PACKAGE "ACL2")
+"ACL2 Version 3.3"
+:BEGIN-PORTCULLIS-CMDS
+:END-PORTCULLIS-CMDS
+NIL
+(("/v/filer4b/v20q001/jared/acl2-books/misc/oprof.lisp" "oprof" "oprof" ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS (OPROF "/v/filer4b/v20q001/jared/acl2-books/misc/oprof.lisp"))) . 242330293))
+246078526
