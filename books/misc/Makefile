@@ -27,6 +27,7 @@ defpun.cert: defpun.lisp
 
 dft-ex.cert: dft-ex.lisp
 dft-ex.cert: dft.cert
+# dft-ex.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/top-with-meta.cert
 dft-ex.cert: ../arithmetic/top-with-meta.cert
 dft-ex.cert: dft-ex.acl2
 
@@ -49,6 +50,7 @@ goodstein.cert: goodstein.lisp
 
 grcd.cert: grcd.lisp
 grcd.cert: int-division.cert
+# grcd.cert: $(ACL2_SYSTEM_BOOKS)/ordinals/e0-ordinal.cert
 grcd.cert: ../ordinals/e0-ordinal.cert
 
 hacker.cert: hacker.lisp
@@ -68,6 +70,8 @@ hons-tests.cert: qi.cert
 how-to-prove-thms.cert: how-to-prove-thms.lisp
 
 int-division.cert: int-division.lisp
+# int-division.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/equalities.cert
+# int-division.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/inequalities.cert
 int-division.cert: ../arithmetic/equalities.cert
 int-division.cert: ../arithmetic/inequalities.cert
 
@@ -75,15 +79,28 @@ integer-type-set-test.cert: integer-type-set-test.lisp
 
 meta-lemmas.cert: meta-lemmas.lisp
 
-mod-expt.cert: mod-expt.lisp
-# mod-expt.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic-3/bind-free/top.cert
-# mod-expt.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic-3/floor-mod/floor-mod.cert
-
 mult.cert: mult.lisp
+# mult.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/top-with-meta.cert
+# mult.cert: $(ACL2_SYSTEM_BOOKS)/ihs/ihs-definitions.cert
+# mult.cert: $(ACL2_SYSTEM_BOOKS)/ihs/ihs-lemmas.cert
+# mult.cert: $(ACL2_SYSTEM_BOOKS)/data-structures/structures.cert
+# mult.cert: $(ACL2_SYSTEM_BOOKS)/data-structures/array1.cert
+# mult.cert: $(ACL2_SYSTEM_BOOKS)/ihs/@logops.cert
+# mult.cert: $(ACL2_SYSTEM_BOOKS)/data-structures/list-defuns.cert
+# mult.cert: $(ACL2_SYSTEM_BOOKS)/data-structures/list-defthms.cert
+# mult.cert: $(ACL2_SYSTEM_BOOKS)/data-structures/deflist.cert
+# mult.cert: $(ACL2_SYSTEM_BOOKS)/data-structures/defalist.cert
+# mult.cert: $(ACL2_SYSTEM_BOOKS)/misc/meta-lemmas.cert
+
+oprof.cert: oprof.lisp
+oprof.cert: oprof.acl2
 
 priorities.cert: priorities.lisp
 
 problem13.cert: problem13.lisp
+# problem13.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/equalities.cert
+# problem13.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/inequalities.cert
+# problem13.cert: $(ACL2_SYSTEM_BOOKS)/ordinals/e0-ordinal.cert
 problem13.cert: ../arithmetic/equalities.cert
 problem13.cert: ../arithmetic/inequalities.cert
 problem13.cert: ../ordinals/e0-ordinal.cert
@@ -97,6 +114,8 @@ qi.cert: qi.lisp
 qi.cert: hons-help2.cert
 
 radix.cert: radix.lisp
+# radix.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic-2/meta/top.cert
+# radix.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic-2/floor-mod/floor-mod.cert
 radix.cert: ../arithmetic-2/meta/top.cert
 radix.cert: ../arithmetic-2/floor-mod/floor-mod.cert
 radix.cert: radix.acl2
@@ -128,7 +147,3 @@ transfinite.cert: transfinite.lisp
 untranslate-patterns.cert: untranslate-patterns.lisp
 untranslate-patterns.cert: symbol-btree.cert
 # untranslate-patterns.cert: $(ACL2_SYSTEM_BOOKS)/misc/untranslate-patterns.cert
-
-while-loop.cert: while-loop.lisp
-# while-loop.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/top-with-meta.cert
-

@@ -78,7 +78,9 @@
 
 ;; Some examples.
 
-(include-book "oprof" :ttags '(oprof))
+(include-book
+ "oprof"
+ :ttags '(oprof))
 
 (defun fib (n)
   (declare (xargs :guard (natp n)))

@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-(include-book "misc/qi" :dir :system)
+(include-book "qi")
 
 (defun get-val (v vals vars)
   (declare (xargs :guard (and (boolean-listp vals)
