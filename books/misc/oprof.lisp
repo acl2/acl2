@@ -6,18 +6,18 @@
 
 ;; Basic Usage:
 ;;
-;;   1. Choose the functions to profile:  (start-profiling '(foo bar baz))
+;;   1. Choose the functions to profile:  (oprof.watch '(foo bar baz))
 ;;   2. Run the code you want to profile over.
-;;   3. Print the report: (profiling-report)
+;;   3. Print the report: (oprof.report)
 ;;
-;; You may find these functions useful:
+;; You may also find these functions useful:
 ;;
-;;   (clear-profiling)     -- resets all times to zero, but keeps profiling
-;;                            the current functions.
+;;   (oprof.clear)              -- resets all times to zero, but keeps profiling
+;;                                 the current functions.
 ;;
-;;   (stop-all-profiling)  -- turns off profiling for all functions
+;;   (oprof.stop)               -- turns off profiling for all functions
 ;;
-;;   (stop-profiling '(foo bar)) -- turns off profiling for foo, bar.
+;;   (oprof.unwatch '(foo bar)) -- turns off profiling for foo, bar.
 ;;
 ;; See below for some examples.  Also note:
 ;;
