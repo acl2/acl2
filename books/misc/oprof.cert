@@ -1,8 +1,0 @@
-
-(IN-PACKAGE "ACL2")
-"ACL2 Version 3.3"
-:BEGIN-PORTCULLIS-CMDS
-:END-PORTCULLIS-CMDS
-NIL
-(("/v/filer4b/v11q001/acl2/devel/books/misc/oprof.lisp" "oprof" "oprof" ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS (OPROF "/v/filer4b/v11q001/acl2/devel/books/misc/oprof.lisp"))) . 20841232))
-118190073
