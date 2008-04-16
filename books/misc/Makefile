@@ -45,6 +45,8 @@ file-io.cert: file-io.lisp
 
 find-lemmas.cert: find-lemmas.lisp
 
+getprop.cert: getprop.lisp
+
 goodstein.cert: goodstein.lisp
 # goodstein.cert: $(ACL2_SYSTEM_BOOKS)/ordinals/e0-ordinal.cert
 

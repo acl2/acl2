@@ -203,6 +203,13 @@ If fns is a symbol, then fns is replaced by (list fns).
 
 ===============================================================================
 
+getprop.lisp -- user-managed fast property lists
+
+The ACL2 functions GETPROP and PUTPROP take advantage of under-the-hood Lisp
+(hashed) property lists.  This book contains an example showing how this works.
+
+===============================================================================
+
 goodstein.lisp -- Goodstein function in ACL2
 
 ===============================================================================
