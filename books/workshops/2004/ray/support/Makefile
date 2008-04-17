@@ -3,7 +3,7 @@
 ACL2_SYSTEM_BOOKS ?= ../../../..
 
 include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
-ACL2 ?= $(ACL2_SYSTEM_BOOKS)/../saved_acl2
+ACL2 = $(ACL2_SYSTEM_BOOKS)/../saved_acl2
 
 defcoerce.cert: defcoerce.lisp
 defcoerce.cert: generic.cert

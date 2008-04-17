@@ -4,7 +4,7 @@ ACL2_SRC = ../../../..
 ACL2_SYSTEM_BOOKS ?= ../../..
 
 include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
-ACL2 ?= $(ACL2_SRC)/saved_acl2
+ACL2 = $(ACL2_SRC)/saved_acl2
 
 # Override default setting since solutions.lisp is not intended to be certified.
 BOOKS = find-path1 find-path2 find-path3 helpers linear-find-path

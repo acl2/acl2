@@ -7,7 +7,7 @@ include ${ACL2_SYSTEM_BOOKS}/Makefile-generic
 
 # OPTIONALLY EDIT THE FOLLOWING.  But do not use "time" or "nice"; at least one
 # of these can cause trouble in some environments.
-ACL2 ?= ${ACL2_SYSTEM_BOOKS}/../saved_acl2
+ACL2 = ${ACL2_SYSTEM_BOOKS}/../saved_acl2
 
 # From make dependencies:
 

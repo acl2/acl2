@@ -5,7 +5,7 @@ ACL2_SYSTEM_BOOKS ?= ../..
 ACL2_SRC = ../../..
 
 include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
-ACL2 ?= $(ACL2_SRC)/saved_acl2
+ACL2 = $(ACL2_SRC)/saved_acl2
 
 
 defstobj+.cert: defstobj+.lisp

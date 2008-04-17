@@ -4,7 +4,7 @@ ACL2_SRC = ../../..
 ACL2_SYSTEM_BOOKS ?= ../..
 
 include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
-ACL2 ?= $(ACL2_SRC)/saved_acl2
+ACL2 = $(ACL2_SRC)/saved_acl2
 
 tiny-triangle-correct.cert: tiny-triangle-correct.lisp
 tiny-triangle-correct.cert: ../tiny-fib/tiny-rewrites.cert

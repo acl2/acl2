@@ -3,7 +3,7 @@
 ACL2_SYSTEM_BOOKS ?= ../../../../..
 
 include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
-ACL2 ?= $(ACL2_SYSTEM_BOOKS)/../saved_acl2
+ACL2 = $(ACL2_SYSTEM_BOOKS)/../saved_acl2
 
 BOOKS = bag-pkg bag-exports cons basic meta bind-free-rules two-level two-level-meta neq eric-meta top #foo
 
