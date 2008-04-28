@@ -58,7 +58,7 @@ DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 \
 	finite-set-theory/osets-0.81 finite-set-theory/osets-0.9 defexec symbolic \
 	data-structures/memories unicode concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
-	quadratic-reciprocity misc/misc2 tools
+	quadratic-reciprocity misc/misc2 tools models/jvm/m5 paco
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 \
 	misc proofstyles rtl make-event hints arithmetic-3/extra \
@@ -66,7 +66,7 @@ DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 \
 	defexec symbolic \
 	data-structures/memories unicode concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
-	quadratic-reciprocity misc/misc2 tools
+	quadratic-reciprocity misc/misc2 tools models/jvm/m5 paco
 SHORTDIRS2 = ordinals data-structures bdd
 
 .PHONY: $(DIRS1) $(DIRS2) $(DIRS3)
@@ -95,7 +95,7 @@ defexec: arithmetic misc ordinals make-event
 symbolic: arithmetic arithmetic-2 data-structures ihs misc ordinals
 data-structures/memories: arithmetic-3 misc
 unicode: arithmetic arithmetic-3 ihs
-proofstyles: arithmetic-2 ordinals
+proofstyles: arithmetic-2 ordinals misc top-with-meta-cert
 concurrent-programs/bakery: misc ordinals
 concurrent-programs/german-protocol: misc
 deduction/passmore: 
@@ -103,6 +103,9 @@ clause-processors: top-with-meta-cert make-event arithmetic-3 textbook arithmeti
 quadratic-reciprocity: rtl
 misc/misc2: rtl make-event
 hints: make-event
+models/jvm/m5: top-with-meta-cert ordinals misc ihs
+# models/jvm/m5 is needed for paco/books, not paco
+paco: ihs ordinals top-with-meta-cert
 # Let us wait for everything else before workshops:
 workshops: $(DIRS1) $(DIRS2_EXCEPT_WK)
 

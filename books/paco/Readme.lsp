@@ -39,7 +39,7 @@ proveall.lisp
    "theorem prover"
    "pedagogical"
    )
- (:ABSTRACT "Paco is a cut-down,simplified ACL2-like theorem prover for
+ (:ABSTRACT "Paco is a cut-down, simplified ACL2-like theorem prover for
 pedagogical use.
 
 Type ``make'' to certify all books in this directory.  Then to run paco, connect
