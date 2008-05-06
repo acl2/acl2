@@ -18,7 +18,7 @@
 #|
 ; Certification Instructions.
 
-(include-book "m5")
+(include-book "models/jvm/m5/m5" :dir :system)
 
 (certify-book "utilities" 1)
 

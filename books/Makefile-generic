@@ -90,19 +90,21 @@ BOOKS := $(patsubst %.lisp, %, $(wildcard *.lisp))
 
 # We should really check that following is not empty.  It is the same as
 # books, but with .cert suffixes.  This variable should not be overridden;
-# it is computed as needed from BOOKS.
+# it is computed as needed from BOOKS.  Note the use of '=' rather than ':=',
+# so that BOOKS can be redefined after including this file in another makefile
+# and the variables below will automatically be updated accordingly.
 
-BOOKS_CERT   := $(patsubst %, %.cert, $(BOOKS))
-BOOKS_FASL   := $(patsubst %, %.fasl, $(BOOKS))
-BOOKS_FAS   := $(patsubst %, %.fas, $(BOOKS))
-BOOKS_SPARCF := $(patsubst %, %.sparcf, $(BOOKS))
-BOOKS_UFSL := $(patsubst %, %.ufsl, $(BOOKS))
-BOOKS_DFSL := $(patsubst %, %.dfsl, $(BOOKS))
-BOOKS_D64FSL := $(patsubst %, %.d64fsl, $(BOOKS))
-BOOKS_DX64FSL := $(patsubst %, %.dx64fsl, $(BOOKS))
-BOOKS_LX64FSL := $(patsubst %, %.lx64fsl, $(BOOKS))
-BOOKS_X86F := $(patsubst %, %.x86f, $(BOOKS))
-BOOKS_O      := $(patsubst %, %.o, $(BOOKS))
+BOOKS_CERT   = $(patsubst %, %.cert, $(BOOKS))
+BOOKS_FASL   = $(patsubst %, %.fasl, $(BOOKS))
+BOOKS_FAS   = $(patsubst %, %.fas, $(BOOKS))
+BOOKS_SPARCF = $(patsubst %, %.sparcf, $(BOOKS))
+BOOKS_UFSL = $(patsubst %, %.ufsl, $(BOOKS))
+BOOKS_DFSL = $(patsubst %, %.dfsl, $(BOOKS))
+BOOKS_D64FSL = $(patsubst %, %.d64fsl, $(BOOKS))
+BOOKS_DX64FSL = $(patsubst %, %.dx64fsl, $(BOOKS))
+BOOKS_LX64FSL = $(patsubst %, %.lx64fsl, $(BOOKS))
+BOOKS_X86F = $(patsubst %, %.x86f, $(BOOKS))
+BOOKS_O      = $(patsubst %, %.o, $(BOOKS))
 
 #  This tells make to expect `suffix rules' for these file suffixes.
 

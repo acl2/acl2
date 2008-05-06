@@ -53,20 +53,20 @@ DIRS1 = cowles arithmetic meta
 # We rely on DIRS3 being a subset of DIRS2 in the dependence of DIRS2 on
 # top-with-meta-cert.
 DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 \
-	misc proofstyles rtl arithmetic-3/extra make-event hints \
+	misc models/jvm/m5 proofstyles rtl arithmetic-3/extra make-event hints \
 	finite-set-theory finite-set-theory/osets powerlists textbook \
 	finite-set-theory/osets-0.81 finite-set-theory/osets-0.9 defexec symbolic \
 	data-structures/memories unicode concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
-	quadratic-reciprocity misc/misc2 tools models/jvm/m5 paco
+	quadratic-reciprocity misc/misc2 tools paco
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 \
-	misc proofstyles rtl make-event hints arithmetic-3/extra \
+	misc models/jvm/m5 proofstyles rtl make-event hints arithmetic-3/extra \
 	finite-set-theory finite-set-theory/osets powerlists textbook \
 	defexec symbolic \
 	data-structures/memories unicode concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
-	quadratic-reciprocity misc/misc2 tools models/jvm/m5 paco
+	quadratic-reciprocity misc/misc2 tools paco
 SHORTDIRS2 = ordinals data-structures bdd
 
 .PHONY: $(DIRS1) $(DIRS2) $(DIRS3)
@@ -92,7 +92,7 @@ finite-set-theory: arithmetic ordinals
 powerlists: arithmetic ordinals data-structures
 textbook: arithmetic top-with-meta-cert ordinals ihs
 defexec: arithmetic misc ordinals make-event
-symbolic: arithmetic arithmetic-2 data-structures ihs misc ordinals
+symbolic: arithmetic arithmetic-2 data-structures ihs misc ordinals models/jvm/m5
 data-structures/memories: arithmetic-3 misc
 unicode: arithmetic arithmetic-3 ihs
 proofstyles: arithmetic-2 ordinals misc top-with-meta-cert

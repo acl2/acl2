@@ -164,9 +164,7 @@
                        *common-lisp-symbols-from-main-lisp-package*))
    '(PC PROGRAM PUSH POP RETURN REVERSE STEP ++)))
 
-(include-book "ordinals/e0-ordinal" :dir :system)
-
-(certify-book "m5" 4)
+(certify-book "m5" 3)
 
 J & George
 |#
@@ -1808,11 +1806,16 @@ J & George
 ; -----------------------------------------------------------------------------
 ; (IUSHR) Instruction
 
+(defun iushr (val1 shft)
+  (if (< val1 0)
+      (+ (shr val1 shft) (shl 1 (- 32 shft)))
+    (shr val1 shft)))
+
 (defun execute-IUSHR (inst th s)
   (let* ((val1 (top (pop (stack (top-frame th s)))))
          (val2 (top (stack (top-frame th s))))
          (shiftval (5-bit-fix val2))
-         (result (shr val1 shiftval)))
+         (result (iushr val1 shiftval)))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
               :stack (push (int-fix result)
@@ -2328,11 +2331,16 @@ J & George
 ; -----------------------------------------------------------------------------
 ; (LUSHR) Instruction
 
+(defun lushr (val1 shft)
+  (if (< val1 0)
+      (+ (shr val1 shft) (shl 1 (- 64 shft)))
+    (shr val1 shft)))
+
 (defun execute-LUSHR (inst th s)
   (let* ((val1 (top (popn 2 (stack (top-frame th s)))))
          (val2 (top (stack (top-frame th s))))
          (shiftval (6-bit-fix val2))
-         (result (shr val1 shiftval)))
+         (result (lushr val1 shiftval)))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
               :stack (push 0

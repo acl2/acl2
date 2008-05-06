@@ -152,5 +152,4 @@
                        *common-lisp-symbols-from-main-lisp-package*))
    '(PC PROGRAM PUSH POP RETURN REVERSE STEP ++)))
 
-(include-book "ordinals/e0-ordinal" :dir :system)
-(certify-book "m5" 4)
+(certify-book "m5" 3)
