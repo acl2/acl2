@@ -62,6 +62,8 @@ includes a previous book.
   test-case-check.lisp
   nested.lisp
   nested-check.lisp
++ embeddable-event-forms.lisp
+    Simple constructors to make forms you can put in a book.
 + embedded-defaxioms.lisp
     Illustrates the idea of using make-event to check that books do NOT
     certify.
@@ -105,6 +107,7 @@ defconst-fast-examples.lisp
 defconst-fast.lisp
 defrefine.lisp
 dotimes.lisp
+embeddable-event-forms.lisp
 embedded-defaxioms
 embedded-defaxioms.acl2
 embedded-defaxioms.lisp
