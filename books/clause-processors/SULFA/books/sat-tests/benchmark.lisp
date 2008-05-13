@@ -619,6 +619,16 @@
            (submaskp 256 x (bv-or 256 y z)))
  :hints (("Goal" :clause-processor (:function sat :hint nil))))
 
+; The rest are commented out by Matt K. because SBCL Version 1.0.16 with
+; #+sb-thread has caused the following error on 32-bit linux running on a
+; 64-bit machine, for the first of these:
+
+; Error:  Heap exhausted: 1327104 bytes available, 12000016 requested. PROCEED WITH CAUTION!
+
+; A similar error seems to occur for other forms after the first below, as
+; well, so we comment them all out.
+
+#||
 (defthm n-bleq-1000
   (n-bleq 1000 x x)
   :hints (("Goal" :clause-processor (:function sat :hint nil))))
@@ -684,7 +694,7 @@
          (simple-mult 4 b a))
  :hints (("Goal" :clause-processor (:function sat :hint nil))))
 
-#| ;; Commented because it takes a while 
+#| ;; Commented because it takes a while
 ;; DEBUG---turn on
 (defthm mult-8x8
  (n-bleq 16
@@ -706,6 +716,7 @@
   (valid_digits 100 x)
   (valid_digits 100 (next_counter_state 100 x)))
   :hints (("Goal" :clause-processor (:function sat :hint nil))))
+||#
 
 ;; 64x6 Add-shift False
 ;; (thm

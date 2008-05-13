@@ -1035,6 +1035,16 @@
   (equal (uf3 x0 x1 x2) (uf3 y0 x1 x2)))
  :hint-arg '(:check-counter-example nil))
 
+; The rest are commented out by Matt K. because SBCL Version 1.0.16 with
+; #+sb-thread has caused the following error on 32-bit linux running on a
+; 64-bit machine:
+
+; Error:  Heap exhausted: 6393856 bytes available, 12000016 requested. PROCEED WITH CAUTION!
+
+; A similar error seems to occur for the first few forms after the first below,
+; as well, so we comment them all out.
+
+#||
 (thm-sat-valid
  (implies
   (and (equal x0 (uf1 a))
@@ -2065,6 +2075,4 @@
   (iff (n-nth 500 (bv-not 1000 (bv-not 1000 x)))
        (n-nth 500 x))
   :name coi-check-1)
-
-
-
+||#
