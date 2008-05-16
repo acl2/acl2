@@ -53,7 +53,7 @@ DIRS1 = cowles arithmetic meta
 # We rely on DIRS3 being a subset of DIRS2 in the dependence of DIRS2 on
 # top-with-meta-cert.
 DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 \
-	misc models/jvm/m5 proofstyles rtl arithmetic-3/extra make-event parallel hints \
+	misc models/jvm/m5 proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
 	finite-set-theory finite-set-theory/osets powerlists textbook \
 	finite-set-theory/osets-0.81 finite-set-theory/osets-0.9 defexec symbolic \
 	data-structures/memories unicode concurrent-programs/bakery \
@@ -62,7 +62,7 @@ DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 \
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 \
 	misc models/jvm/m5 proofstyles rtl make-event parallel hints arithmetic-3/extra \
-	finite-set-theory finite-set-theory/osets powerlists textbook \
+	sorting finite-set-theory finite-set-theory/osets powerlists textbook \
 	defexec symbolic \
 	data-structures/memories unicode concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
@@ -107,6 +107,7 @@ models/jvm/m5: top-with-meta-cert ordinals misc ihs
 # models/jvm/m5 is needed for paco/books, not paco
 paco: ihs ordinals top-with-meta-cert
 parallel: make-event
+sorting: arithmetic-3/extra
 # Let us wait for everything else before workshops:
 workshops: $(DIRS1) $(DIRS2_EXCEPT_WK)
 
