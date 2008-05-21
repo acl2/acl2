@@ -8,6 +8,8 @@ beta-reduce.cert: beta-reduce.lisp
 
 book-thms.cert: book-thms.lisp
 
+computed-hint-rewrite.cert: computed-hint-rewrite.lisp
+
 computed-hint.cert: computed-hint.lisp
 
 csort.cert: csort.lisp
