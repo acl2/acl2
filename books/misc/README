@@ -62,6 +62,10 @@ book-thms.lisp -- returns theorems and axioms at the top level of an included
 
 ===============================================================================
 
+computed-hint-rewrite.lisp -- interface to the rewriter for computed hints
+
+===============================================================================
+
 computed-hint.lisp -- examples of computed hints
 
 ===============================================================================
