@@ -1,5 +1,5 @@
 ;; Simple, Pattern-Based Untranslation for ACL2
-;; Copyright (C) 2005-2006 by Jared Davis <jared@cs.utexas.edu>
+;; Copyright (C) 2005-2008 by Jared Davis <jared@cs.utexas.edu>
 ;;
 ;; This program is free software; you can redistribute it and/or modify it
 ;; under the terms of the GNU General Public License as published by the Free
@@ -413,20 +413,34 @@
 ;   =>
 ;   (if (not (predicate (car x))) t nil)
 
-(mutual-recursion 
+(mutual-recursion
 
   (defun jared-rewrite1 (pat repl term)
     (declare (xargs :mode :program))
     (mv-let (successful sublist)
-      (jared-unify-term pat term nil)
-      (if successful
-          (jared-substitute sublist repl)
-        (cond ((atom term)
-               term)
-              ((eq (car term) 'quote)
-               term)
-              (t (cons (jared-rewrite1 pat repl (car term))
-                       (jared-rewrite-lst1 pat repl (cdr term))))))))
+            (jared-unify-term pat term nil)
+            (if successful
+                (jared-substitute sublist repl)
+              (cond
+               ((atom term) term)
+               ((eq (car term) 'quote) term)
+               ((member (car term) '(let let*))
+                (let* ((names         (strip-cars (second term)))
+                       (actuals       (strip-cadrs (second term)))
+                       (actuals-prime (jared-rewrite-lst1 pat repl actuals))
+                       (length        (length term))
+                       (nils          (make-list length))
+                       (ignore        (if (= length 3) nil (third term)))
+                       (body          (if (= length 3) (third term) (fourth term)))
+                       (body-prime    (jared-rewrite1 pat repl body))
+                       (result        (cons (car term)
+                                            (cons (pairlis$ names (pairlis$ actuals-prime nils))
+                                                  (if ignore
+                                                      (cons ignore (cons body-prime nil))
+                                                    (cons body-prime nil))))))
+                  result))
+               (t (cons (car term)
+                        (jared-rewrite-lst1 pat repl (cdr term))))))))
 
   (defun jared-rewrite-lst1 (pat repl lst)
     (declare (xargs :mode :program))
@@ -434,7 +448,10 @@
         nil
       (cons (jared-rewrite1 pat repl (car lst))
             (jared-rewrite-lst1 pat repl (cdr lst)))))
+
 )
+
+
 
 
 ; Finally, given that we can apply a rewrite a term with a single replacement,
@@ -442,17 +459,23 @@
 ; we walk through a list of substitutions, sequentially rewriting the term
 ; using each substitution.
 
+(defun jared-rewrite-aux (term subs)
+   (declare (xargs :mode :program))
+   (if (endp subs)
+       term
+     (let* ((first-sub (car subs))
+            (newterm (jared-rewrite1 (car first-sub)
+                                     (cdr first-sub)
+                                     term)))
+       (jared-rewrite-aux newterm (cdr subs)))))
+
 (defun jared-rewrite (term subs)
-  (declare (xargs :mode :program))
-  (if (endp subs)
-      term
-    (let* ((first-sub (car subs))
-           (newterm (jared-rewrite1 (car first-sub)
-                                    (cdr first-sub)
-                                    term)))
-      (if (equal term newterm)
-          (jared-rewrite term (cdr subs))
-        newterm))))
+   (declare (xargs :mode :program))
+   (let ((rw-pass (jared-rewrite-aux term subs)))
+     (if (equal rw-pass term)
+         term
+       (jared-rewrite rw-pass subs))))
+
 
 
 ; Now we define a really simple untranslate preprocessor that simply returns
