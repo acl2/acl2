@@ -2,7 +2,11 @@
 ; defconst in a book has the unfortunate property that its form is evaluated
 ; not only when that book is certified, but also (again) when that book is
 ; included.  Defconst-fast is more efficient because it generates a defconst
-; that uses the result of the evaluation.  See defconst-fast-examples.lisp.
+; that uses the result of the evaluation.  Moreover, defconst does its
+; evaluation in a "safe mode" that avoids soundness issues but can cause a
+; slowdown of (we have seen) 4X.
+
+; See also defconst-fast-examples.lisp.
 
 (in-package "ACL2")
 

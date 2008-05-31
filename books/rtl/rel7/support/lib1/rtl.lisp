@@ -471,7 +471,8 @@ get rid of the bits call.
   ;; Based on cond-macro.
   (declare (xargs :guard (cond-clausesp clauses)))
   (if (consp clauses)
-      (if (eq (car (car clauses)) t)
+      (if (and (eq (car (car clauses)) t)
+               (eq (cdr clauses) nil))
           (if (cdr (car clauses))
               (car (cdr (car clauses)))
             (car (car clauses)))

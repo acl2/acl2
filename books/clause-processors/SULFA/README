@@ -35,7 +35,7 @@ INSTALLATION
          <perl-int> is your Perl interpreter (default "perl"), 
          <c-comp> is your C compiler (default "gcc"),
          <sat-exec> is your SAT solver executable name 
-           (default "/../../../aux/minisat2/${HOSTTYPE}/minisat/core/minisat"), and
+           (default "../../../aux/minisat2/${HOSTTYPE}/minisat/core/minisat"), and
          <sat-type> is either "minisat" or "zchaff" (default "minisat").
 
    Note that the <perl-int>, <c-comp>, and <sat-exec> values should either be full

@@ -359,4 +359,5 @@ clean:
 	rm -f *.log
 	rm -f TMP*.*
 	rm -f *@expansion.lsp
+	rm -f temp-emacs-file.lsp
 	rm -f workxxx*
