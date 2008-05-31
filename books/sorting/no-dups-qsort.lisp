@@ -20,7 +20,7 @@
 
 (in-package "ACL2")
 
-(include-book "/u/moore/sorting/qsort")
+(include-book "qsort")
 
 (defun no-dups-cons (x y)
   (cond ((and (consp y)

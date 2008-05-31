@@ -36,7 +36,7 @@ msort.cert: ordered-perms.cert
 msort.cert: convert-perm-to-how-many.cert
 
 no-dups-qsort.cert: no-dups-qsort.lisp
-no-dups-qsort.cert: /u/moore/sorting/qsort.cert
+no-dups-qsort.cert: qsort.cert
 
 ordered-perms.cert: ordered-perms.lisp
 ordered-perms.cert: perm.cert
