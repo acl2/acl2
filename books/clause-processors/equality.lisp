@@ -322,10 +322,6 @@
           :do-not '(generalize fertilize)))
   :otf-flg t)
 
-(define-trusted-clause-processor
-  equality-substitute-clause
-  nil
-  :ttag my-ttag)
 
 ; Here is an application contributed by Erik Reeber (which we make local so
 ; that it's not exported).

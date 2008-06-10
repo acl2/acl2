@@ -1,1 +1,1 @@
-(certify-book "equality" 0 t :ttags (my-ttag))
+(certify-book "equality" ? t)
