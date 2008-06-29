@@ -4,7 +4,20 @@
 ;; A symbol-btree is a data structure of the form (symbol value left . right)
 ;; where left and right are symbol-btrees.
 
-;; This book is not very good.  There are tons of obvious theorems to prove,
+;; Example use:
+#|
+ACL2 !>(assign btree (symbol-alist-to-btree '((c . 3) (a . 1) (b . 2) (d . 4))))
+(C 3 (B 2 (A 1 NIL)) D 4)
+ACL2 !>(symbol-btree-lookup 'd (@ btree))
+4
+ACL2 !>(symbol-btree-lookup 'e (@ btree))
+NIL
+ACL2 !>(symbol-btree-lookup 'c (@ btree))
+3
+ACL2 !>
+|#
+
+;; This book is not very complete.  There are tons of obvious theorems to prove,
 ;; like lookup of update, etc., and the equivalence of lookups after
 ;; rebalancing.  But I (Jared) am too lazy to do this, and only wanted to bring
 ;; these functions into :logic mode.  Also, I tried to maintain total
