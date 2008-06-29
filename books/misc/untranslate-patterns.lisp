@@ -424,6 +424,13 @@
               (cond
                ((atom term) term)
                ((eq (car term) 'quote) term)
+               ((eq (car term) 'cond)
+                (let* ((cond-pairs   (cdr term))
+                       (tests        (strip-cars cond-pairs))
+                       (bodies       (strip-cadrs cond-pairs))
+                       (tests-prime  (jared-rewrite-lst1 pat repl tests))
+                       (bodies-prime (jared-rewrite-lst1 pat repl bodies)))
+                  (cons 'cond (pairlis$ tests-prime (pairlis$ bodies-prime nil)))))
                ((member (car term) '(let let*))
                 (let* ((names         (strip-cars (second term)))
                        (actuals       (strip-cadrs (second term)))
