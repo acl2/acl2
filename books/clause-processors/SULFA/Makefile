@@ -4,22 +4,17 @@
 PERL ?= perl
 
 # Your SAT solver executable
-SAT_SOLVER ?= /projects/hvg/SAT/solvers/bin/zchaff
+SAT_SOLVER ?= ${PWD}/../../../../aux/minisat2/${HOSTTYPE}/minisat/core/minisat
 
 # Either "minisat" or "zchaff"
-SAT_SOLVER_TYPE ?= zchaff
+SAT_SOLVER_TYPE ?= minisat
 
-# Your C compiler
-CC = gcc
-
+#Or, for example:
 #SAT_SOLVER = ${PWD}/../../../sat-solvers/zchaff/zchaff
 #SAT_SOLVER_TYPE = zchaff
 
-#SAT_SOLVER = ${PWD}/../../../sat-solvers/minisat/core/minisat
-#SAT_SOLVER_TYPE = minisat
-
-#SAT_SOLVER = ${PWD}/../../../sat-solvers/minisat/simp/minisat
-#SAT_SOLVER_TYPE = minisat
+# Your C compiler
+CC = gcc
 
 ACL2_SYSTEM_BOOKS = ../..
 
