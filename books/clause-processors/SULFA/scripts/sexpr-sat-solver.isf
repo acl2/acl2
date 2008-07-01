@@ -66,6 +66,12 @@ if ($ARGV[$com] =~ m/--new-problem/) {
     exit 1;
   }
 
+  if (!(-x "%SAT_SOLVER%")) {
+    print "ERROR: Cannot find the specified SAT solver: %SAT_SOLVER%\n";
+    print "Note that the SAT solver must be executable and must be specified through an absolute pathname.\n";
+    exit 1;
+  }
+
   $num_vars = $ARGV[$com+1];
   $num_clauses = $ARGV[$com+2];
   $output_file = $ARGV[$com+3];
