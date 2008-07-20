@@ -2,15 +2,38 @@
 
 (include-book "ordinals") 
 
+; 2008-07-20, Peter Dillinger:  Added guards and a couple tweaks to make
+; common lisp compliant.
+
+; A recognizer for a list of natural numbers.
+
+(defun natp-listp (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (null x))
+        (t (and (natp (car x))
+                (natp-listp (cdr x))))))
+
+; A recognizer for natural number or a list of natural numbers.
+
+(defun lexp (x)
+  (declare (xargs :guard t))
+  (or (natp x)
+      (and (consp x)
+           (natp-listp x))))
+
+
 ; d< is intended to be applied to lists of natural numbers of
 ; equal length.  t is returned iff x is lexicographically less
 ; than y.
 
 (defun d< (x y)
+  (declare (xargs :guard (and (natp-listp x)
+                              (natp-listp y))))
   (and (consp x)
+       (consp y)
        (or (< (car x) (car y))
            (and (= (car x) (car y))
-                (d< (cdr x) (cdr y))))))
+                (d< (cdr x) (cdr y)))))))
 
 ; Each of the arguments to l< is intended to be either a list of
 ; natural numbers, or a natural number. If both are natural
@@ -18,6 +41,8 @@
 ; the length of x is less than the length of y or (d< x y).
 
 (defun l< (x y)
+  (declare (xargs :guard (and (lexp x)
+                              (lexp y))))
   (or (< (len x) (len y))
       (and (= (len x) (len y))
            (if (atom x)
@@ -27,6 +52,7 @@
 ; How to turn a list of naturals into an ordinal.  
 
 (defun lsttoo (x)
+  (declare (xargs :guard (natp-listp x)))
   (if (endp x)
       0
     (o+ (o* (o^ (omega) (len x)) (1+ (car x)))
@@ -35,8 +61,10 @@
 ; How to turn a natural or a list of naturals into an ordinal.  
 
 (defun ltoo (x)
-  (if (atom x) 
-      (nfix x)
+  (declare (xargs :guard (lexp x)))
+  (if (atom x)
+      (mbe :logic (nfix x)
+           :exec x)
     (lsttoo x)))
 
 #|
@@ -50,21 +78,6 @@ Some examples
 
 |#
 
-; A recognizer for a list of natural numbers.
-
-(defun natp-listp (x)
-  (or (null x)
-      (and (natp (car x))
-           (natp-listp (cdr x)))))
-
-; A recognizer for natural number or a list of natural numbers.
-
-(defun lexp (x)
-  (or (natp x)
-      (and (consp x)
-           (natp-listp x))))
-
-; A recognizer for natural number or a list of natural numbers.
 
 (defthm o-p-lsttoo 
   (implies (natp-listp x)
@@ -216,3 +229,4 @@ following definition is accepted by acl2.
     (cons (car x) (app (cdr x) y))))
 
 |#
+

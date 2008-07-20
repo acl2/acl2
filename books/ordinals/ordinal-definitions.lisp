@@ -65,6 +65,7 @@
   `(omega-term (o-first-expt ,x) (o-first-coeff ,x)))
 
 (defun omega ()
+  (declare (xargs :guard t))
   (omega-term 1 1))
 
 (defun o-max (a b)
