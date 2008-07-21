@@ -33,7 +33,7 @@
        (consp y)
        (or (< (car x) (car y))
            (and (= (car x) (car y))
-                (d< (cdr x) (cdr y)))))))
+                (d< (cdr x) (cdr y))))))
 
 ; Each of the arguments to l< is intended to be either a list of
 ; natural numbers, or a natural number. If both are natural
