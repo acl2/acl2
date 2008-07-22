@@ -57,9 +57,6 @@ grcd.cert: int-division.cert
 # grcd.cert: $(ACL2_SYSTEM_BOOKS)/ordinals/e0-ordinal.cert
 grcd.cert: ../ordinals/e0-ordinal.cert
 
-hacker.cert: hacker.lisp
-hacker.cert: hacker.acl2
-
 hanoi.cert: hanoi.lisp
 hanoi.cert: hanoi.acl2
 

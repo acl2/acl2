@@ -220,6 +220,9 @@ goodstein.lisp -- Goodstein function in ACL2
 
 hacker.lisp -- Utilities in support of building ACL2 extensions/modifications
 
+THIS BOOK HAS BEEN REMOVED.  Instead please use
+books/hacking/hacker.lisp in the ACL2 distribution.
+
 ===============================================================================
 
 hanoi.lisp -- A solution to the Towers of Hanoi problem
