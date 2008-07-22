@@ -1,0 +1,6 @@
+(ld "hacker-pkg.lsp")
+
+(include-book "hacker" :load-compiled-file :comp)
+
+
+(ACL2::CERTIFY-BOOK "defcode" ACL2::? T :TTAGS ((DEFCODE)))
