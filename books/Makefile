@@ -58,7 +58,7 @@ DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 \
 	finite-set-theory/osets-0.81 finite-set-theory/osets-0.9 defexec symbolic \
 	data-structures/memories unicode concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
-	quadratic-reciprocity misc/misc2 tools paco hacker
+	quadratic-reciprocity misc/misc2 tools paco hacking
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 \
 	misc models/jvm/m5 proofstyles rtl make-event parallel hints arithmetic-3/extra \
@@ -66,7 +66,7 @@ DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 \
 	defexec symbolic \
 	data-structures/memories unicode concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
-	quadratic-reciprocity misc/misc2 tools paco hacker
+	quadratic-reciprocity misc/misc2 tools paco hacking
 SHORTDIRS2 = ordinals data-structures bdd
 
 .PHONY: $(DIRS1) $(DIRS2) $(DIRS3)
@@ -106,7 +106,7 @@ hints: make-event
 models/jvm/m5: top-with-meta-cert ordinals misc ihs
 # models/jvm/m5 is needed for paco/books, not paco
 paco: ihs ordinals top-with-meta-cert
-# hacker has no dependencies
+# hacking has no dependencies
 parallel: make-event
 sorting: arithmetic-3/extra
 # Let us wait for everything else before workshops:
