@@ -75,6 +75,8 @@ gen-defun-check.cert: gen-defun-check.lisp
 
 gen-defun.cert: gen-defun.lisp
 
+inline-book.cert: inline-book.lisp
+
 local-requires-skip-check-include.cert: local-requires-skip-check-include.lisp
 local-requires-skip-check-include.cert: local-requires-skip-check.cert
 local-requires-skip-check-include.cert: eval.cert

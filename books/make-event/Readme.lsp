@@ -80,6 +80,9 @@ includes a previous book.
 + defrefine.lisp
     Provides a collection of macros to aid in reasoning about ACL2 functions
     via refinement.
++ inline-book.lisp
+    Provides a couple rough replacements for include-book that do not require
+    separate certification of the included book.
 
 The rest of this file is metadata for the ACL2 system.
 
@@ -119,6 +122,7 @@ gen-defthm-check.lisp
 gen-defthm.lisp
 gen-defun-check.lisp
 gen-defun.lisp
+inline-book.lisp
 local-requires-skip-check-include.lisp
 local-requires-skip-check.lisp
 logical-tangent.lisp
@@ -163,7 +167,7 @@ local-defaxiom-2.lisp
  (:AUTHOR/S "M. Kaufmann" "J Moore" "David Rager" "Peter Dillinger")
  (:KEYWORDS ; non-empty list of keywords, case-insensitive
    "make-event" "assert!" "assert!!" "must-fail" "must-succeed" "must-eval-to"
-   "must-eval-to-t" "test-case" "dotimes$" "logical-tangent"
+   "must-eval-to-t" "test-case" "dotimes$" "logical-tangent" "inline-book"
    "program refinement")
  (:ABSTRACT "
 The .lisp files in this directory illustrate a number of potential
