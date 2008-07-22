@@ -303,6 +303,10 @@ radix.lisp -- support for radix conversion
 
 ===============================================================================
 
+random.lisp -- a pseudo-random number generator
+
+===============================================================================
+
 records.lisp   --  canonical key-value record structures
 records0.lisp  --  canonical key-value record structures
 

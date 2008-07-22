@@ -1,4 +1,4 @@
-; Started by David Rager extended by Matt Kaufmann and anyone else who cares to
+; Started by David Rager; extended by Matt Kaufmann and anyone else who cares to
 ; do so.
 
 (in-package "ACL2")

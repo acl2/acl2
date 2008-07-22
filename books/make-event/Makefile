@@ -51,6 +51,8 @@ defspec.cert: eval.cert
 
 dotimes.cert: dotimes.lisp
 
+embeddable-event-forms.cert: embeddable-event-forms.lisp
+
 embedded-defaxioms.cert: embedded-defaxioms.lisp
 embedded-defaxioms.cert: embedded-defaxioms.acl2
 embedded-defaxioms.cert: eval.cert
