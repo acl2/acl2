@@ -36,7 +36,10 @@ table-guard.lisp
    "extensions" "raw mode" "raw lisp"
    )
  (:ABSTRACT
-"This support code is intended as a library to those who wish to use
+"NOTE: This directory has been superseded by directory books/hacking/
+of the ACL2 release.
+
+This support code is intended as a library to those who wish to use
 trust tags to modify or extend core ACL2 behavior.  We add some other
 constructs to the set of low-level tools enabled by trust tags that make
 system modifications easier to specify and keep track of.  We also offer
