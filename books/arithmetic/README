@@ -1,3 +1,6 @@
+Please see Section 0 of ../arithmetic-4/README for information about
+which arithmetic books to use.
+
 Contents of this directory:
 
 README			This file
@@ -9,7 +12,7 @@ factorial.lisp		Theorems about the factorial function
 idiv.lisp		Theorems about integer division and related functions
 inequalities.lisp	Arithmetic inequality rules
 rational-listp.lisp	Very short book about lists of rationals
-rationals-with-axioms-proved.lisp	Supersedes rationals-with-axioms.lis
+rationals-with-axioms-proved.lisp	Supersedes rationals-with-axioms.lisp
 sumlist.lisp		Theorems about sum of a list of numbers
 top.lisp		Putting it all together
 top-with-meta.lisp      Extension of top.lisp by the books in ../meta

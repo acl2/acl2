@@ -1,6 +1,13 @@
+This directory is deprecated.  Please see Section 0 of
+../arithmetic-4/README for information about which arithmetic books to
+use.
+
+Original comments (for this deprecated directory):
+
 This directory was written by Robert Krug, based in part on the arithmetic/
 directory but with many changes that make this potentially more useful in a
 number of circumstances.
+
 
 Contents:
 

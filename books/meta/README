@@ -1,3 +1,6 @@
+Please see Section 0 of ../arithmetic-4/README for information about
+which arithmetic books to use.
+
 This directory contains some meta rules for arithmetic.  They are shown below.
 There is a long history of meta rules for Nqthm.  The ones below were first
 proved, with hypotheses (because they preceded version 1.8 of ACL2), by John
