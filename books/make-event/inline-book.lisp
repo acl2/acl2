@@ -14,8 +14,9 @@ be in different packages.
 
 We handle in-package clauses and the acl2-defaults-table properly, but we
 assume the portcullis is already satisfied.  One version, "inline-book,"
-does not respect LOCAL events in the refernced book, while the other,
-"encapsulate-book," does.
+does not respect LOCAL events in the referenced book, while the other,
+"encapsulate-book," does.  Also, (local (inline-book ...)) is not supported
+but (local (encapsulate-book ...)) should work.
 
 The syntax is to replace "include-book" with "inline-book" or
 "encapsulate-book," except that only the book name and any :dir argument are

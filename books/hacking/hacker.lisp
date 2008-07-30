@@ -487,6 +487,15 @@
 
 ;=========== begin program-only stuff ===========
 
+; figure out which var is the program-only state global
+(make-event
+ (if (member-eq 'program-fns-with-raw-code (global-val 'untouchable-vars (w state)))
+   (value
+    '(defconst *program-only-state-global* 'program-fns-with-raw-code))
+   (value
+    '(defconst *program-only-state-global* 'built-in-program-mode-fns))))
+
+
 ; for export
 (defmacro ensure-program-only-flag (&rest fn-lst)
   ":Doc-Section hacker
@@ -513,9 +522,9 @@
   ~/"
   (declare (xargs :guard (and fn-lst
                               (symbol-listp fn-lst))))
-  `(progn!=touchable :vars built-in-program-mode-fns
-     (assign built-in-program-mode-fns
-       (union-eq (@ built-in-program-mode-fns) ',fn-lst))))
+  `(progn!=touchable :vars ,*program-only-state-global*
+     (assign ,*program-only-state-global*
+       (union-eq (@ ,*program-only-state-global*) ',fn-lst))))
 
 ; test whether a function is in :PROGRAM mode
 (defun program-mode-p (fn wrld)
