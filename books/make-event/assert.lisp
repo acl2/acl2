@@ -15,7 +15,7 @@
         (er soft 'assert!
             "Assertion failed:~%~x0"
             ',assertion))
-      (value ',(or form '(value-triple nil))))))
+      (value ',(or form '(value-triple :success))))))
 
 (defmacro assert! (&whole whole-form
                           assertion &optional form)
@@ -76,7 +76,7 @@
   `(mv-let (result ,st)
            ,assertion
            (if result
-               (mv nil ',(or form '(value-triple nil)) state ,st)
+               (mv nil ',(or form '(value-triple :success)) state ,st)
              (mv-let (erp val state)
                      (er soft 'assert!
                          "Assertion failed:~%~x0"
