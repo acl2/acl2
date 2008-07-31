@@ -14,7 +14,12 @@
 ;; The following is a bad programming practice---a bound
 ;; on the number of variables.  I need to fix it, because
 ;; it's starting to hurt me.
-(defconst *max-vars* 3000000)
+; Changed by Matt K. to avoid make-array$ error caused in Lispworks 4.4.6,
+; because array-total-size-limit = 1048448.  Erik Reeber says (email
+; communicate, 7/31/08) that he had "upped the number of variables" because one
+; of his proofs needed the increase, but that this proof is no longer run.
+;(defconst *max-vars* 3000000)
+(defconst *max-vars* 1000000)
 
 (defconst acl2::*sat-max-entry-id* *max-vars*)
 
