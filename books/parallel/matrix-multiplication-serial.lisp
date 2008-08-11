@@ -4,6 +4,9 @@
 (include-book "make-event/embeddable-event-forms" :dir :system)
 (include-book "matrix-multiplication-setup")
 
+; NOTE: See the comment at this same point in
+; matrix-multiplication-parallel.lisp about apparently 64-bit GCL issues.
+
 (set-compile-fns t)
 
 (defun multiply-matrices-aux (A B)

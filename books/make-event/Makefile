@@ -79,6 +79,14 @@ gen-defun.cert: gen-defun.lisp
 
 inline-book.cert: inline-book.lisp
 
+local-elided-include.cert: local-elided-include.lisp
+local-elided-include.cert: local-elided.cert
+local-elided-include.cert: eval.cert
+# local-elided-include.cert: $(ACL2_SYSTEM_BOOKS)/misc/file-io.cert
+
+local-elided.cert: local-elided.lisp
+local-elided.cert: eval.cert
+
 local-requires-skip-check-include.cert: local-requires-skip-check-include.lisp
 local-requires-skip-check-include.cert: local-requires-skip-check.cert
 local-requires-skip-check-include.cert: eval.cert

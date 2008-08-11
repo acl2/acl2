@@ -509,9 +509,9 @@
   ~/"
   (declare (xargs :guard (and fn-lst
                               (symbol-listp fn-lst))))
-  `(progn!=touchable :vars built-in-program-mode-fns
-     (assign built-in-program-mode-fns
-       (union-eq (@ built-in-program-mode-fns) ',fn-lst))))
+  `(progn!=touchable :vars program-fns-with-raw-code
+     (assign program-fns-with-raw-code
+       (union-eq (@ program-fns-with-raw-code) ',fn-lst))))
 
 ; test whether a function is in :PROGRAM mode
 (defun program-mode-p (fn wrld)

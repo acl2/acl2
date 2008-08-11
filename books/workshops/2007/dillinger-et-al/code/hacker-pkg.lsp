@@ -15,7 +15,7 @@
     set-raw-mode set-raw-mode-fn set-tainted-okp
     push-untouchable-fn remove-untouchable-fn
     set-raw-mode-on set-raw-mode-off temp-touchable-vars temp-touchable-fns
-    set-temp-touchable-vars set-temp-touchable-fns built-in-program-mode-fns
+    set-temp-touchable-vars set-temp-touchable-fns program-fns-with-raw-code
     
     global-value current-acl2-world ld-level *wormholep* raw-mode-p
     max-absolute-event-number getprop er-let* *valid-output-names*

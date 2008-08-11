@@ -4,6 +4,30 @@
 (include-book "make-event/embeddable-event-forms" :dir :system)
 (include-book "matrix-multiplication-setup")
 
+; We have seen errors such as the following due to compilation (see
+; set-compile-fns call below).  But we have only seen problems on 64-bit Linux
+; running GCL 2.6.7, so we suspect a Lisp problem.  (By the way, this was not a
+; disk space or protection issue; there was plenty of disk space, and
+; subsequent certification attempts succeeded [ruling out a protection issue].)
+
+; (1)
+; Compiling gazonk2.lsp.
+; End of Pass 1.  
+; End of Pass 2.  
+; gcc: gazonk2.c: No such file or directory
+; gcc: no input files
+
+; (2)
+; Compiling gazonk2.lsp.
+; End of Pass 1.  
+; End of Pass 2.  
+; Your C compiler failed to compile the intermediate file.
+; 
+; Error: Cannot open the file gazonk2.o.
+
+; (3)
+; Error: Cannot open the file gazonk3.data.
+
 (set-compile-fns t)
 
 (defun get-midpoints (left right)

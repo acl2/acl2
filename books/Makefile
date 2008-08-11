@@ -1,5 +1,5 @@
-#; ACL2 Version 3.3 -- A Computational Logic for Applicative Common Lisp
-#; Copyright (C) 2007  University of Texas at Austin
+#; ACL2 Version 3.4 -- A Computational Logic for Applicative Common Lisp
+#; Copyright (C) 2008  University of Texas at Austin
 
 #; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 #; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
@@ -52,7 +52,7 @@ DIRS1 = cowles arithmetic meta
 # Additional directories, where DIRS3 prunes out those not distributed.
 # We rely on DIRS3 being a subset of DIRS2 in the dependence of DIRS2 on
 # top-with-meta-cert.
-DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 \
+DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-4 \
 	misc models/jvm/m5 proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
 	finite-set-theory finite-set-theory/osets powerlists textbook \
 	finite-set-theory/osets-0.81 finite-set-theory/osets-0.9 defexec symbolic \
@@ -60,7 +60,7 @@ DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity misc/misc2 tools paco hacking
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
-DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 \
+DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-4 \
 	misc models/jvm/m5 proofstyles rtl make-event parallel hints arithmetic-3/extra \
 	sorting finite-set-theory finite-set-theory/osets powerlists textbook \
 	defexec symbolic \
@@ -86,8 +86,9 @@ misc: arithmetic top-with-meta-cert ordinals arithmetic-2 arithmetic-3
 make-event: misc arithmetic-3 arithmetic rtl
 arithmetic-2: ihs
 rtl: arithmetic meta top-with-meta-cert ordinals ihs misc arithmetic-2
-# arithmetic-3 has no dependencies
+# arithmetic-3 has no dependencies (but see arithmetic-3/extra)
 arithmetic-3/extra: arithmetic-3 ihs rtl arithmetic-2 arithmetic-3
+# arithmetic-4 has no dependencies
 finite-set-theory: arithmetic ordinals
 powerlists: arithmetic ordinals data-structures
 textbook: arithmetic top-with-meta-cert ordinals ihs

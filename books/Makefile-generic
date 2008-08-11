@@ -1,5 +1,5 @@
-#; ACL2 Version 3.3 -- A Computational Logic for Applicative Common Lisp
-#; Copyright (C) 2007  University of Texas at Austin
+#; ACL2 Version 3.4 -- A Computational Logic for Applicative Common Lisp
+#; Copyright (C) 2008  University of Texas at Austin
 
 #; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 #; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
@@ -78,7 +78,7 @@ endif
 # Inhibit all output except the summary (which can be useful for tracking down problems).
 # Set this to "" if you do want the output.
 
-INHIBIT := (assign inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote expansion)))
+INHIBIT := (set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote expansion)))
 
 # Support for make dependencies:  should be a list of book names without
 # the .lisp suffix.  Can be overridden on the command line or in a file

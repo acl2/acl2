@@ -3,20 +3,7 @@
 
 (in-package "ACL2")
 
-(defun or-list (x)
-  (declare (xargs :guard (true-listp x)))
-  (if (endp x)
-      nil
-    (if (car x)
-        t
-      (or-list (cdr x)))))
-
-(defun and-list (x)
-  (declare (xargs :guard (true-listp x)))
-  (if (endp x)
-      t
-    (and (car x)
-         (and-list (cdr x)))))
+; Modified for v3-4 by Matt K.: or-list and and-list are now defined in ACL2.
 
 (defun iff-list (x y)
   (if (and (consp x)
@@ -322,6 +309,10 @@
           :do-not '(generalize fertilize)))
   :otf-flg t)
 
+(define-trusted-clause-processor
+  equality-substitute-clause
+  nil
+  :ttag my-ttag)
 
 ; Here is an application contributed by Erik Reeber (which we make local so
 ; that it's not exported).

@@ -4,8 +4,6 @@
 
 (include-book "qi")
 
-(value-triple (clear-memoize-tables))
-
 (value-triple (clear-hash-tables))
 
 (defun fib (x)
@@ -25,10 +23,28 @@
 (memoize 'fib)
 
 #+hons
+(defthm fib-test0
+
+; SBCL 1.03 has given the following error for fib-test, below, when not
+; including fib-test0 first:
+
+; Error:  Control stack exhausted (no more space for function call frames).
+
+; Since fib is not tail-recursive, the problem presumably is that even with
+; memoization, we need a control stack of size about 10000 for fib-test.  By
+; putting fib-test0 first, we presumably stay within SBCL's stack size limit.
+
+  (equal (integer-length (fib 5000)) 3471))
+
+#+hons
 (defthm fib-test
   (equal (integer-length (fib 10000)) 6942))
 
 (defn tree-depth (x)
+
+  ; This is the same as max-depth, but we want to
+  ; hack with it so we give it another name.
+
   (if (atom x)
       0
     (1+ (max (tree-depth (car x))
@@ -70,5 +86,14 @@
 (memoize 'qnorm1)
 #+hons
 (memoize 'qvar-n)
+
+(defn lfoo (x) (if (atom x) 0 (+ 1 (lfoo (cdr x)))))
+
+#+hons
+(memoize 'lfoo :trace 'notinline)
+
+(defthm l-thm (equal (lfoo (hons-copy '(a b c))) 3))
+
+(defthm l-thm2 (equal (lfoo (hons-copy '(a b c))) 3))
 
 (defthm quick-sanity-check (check-q))

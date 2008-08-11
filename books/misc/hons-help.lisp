@@ -29,12 +29,36 @@
         ansfl1-do-not-use-elsewhere1)))
     ,x))
 
-(defabbrev gentle-car  (x) (if (listp x) (car x) nil))
-(defabbrev gentle-cdr  (x) (if (listp x) (cdr x) nil))
-(defabbrev gentle-caar (x) (gentle-car (gentle-car x)))
-(defabbrev gentle-cadr (x) (gentle-car (gentle-cdr x)))
-(defabbrev gentle-cdar (x) (gentle-cdr (gentle-car x)))
-(defabbrev gentle-cddr (x) (gentle-cdr (gentle-cdr x)))
+(defabbrev gentle-car    (x) (if (consp x) (car x) nil))
+(defabbrev gentle-cdr    (x) (if (consp x) (cdr x) nil))
+(defabbrev gentle-caar   (x) (gentle-car (gentle-car x)))
+(defabbrev gentle-cadr   (x) (gentle-car (gentle-cdr x)))
+(defabbrev gentle-cdar   (x) (gentle-cdr (gentle-car x)))
+(defabbrev gentle-cddr   (x) (gentle-cdr (gentle-cdr x)))
+(defabbrev gentle-caaar  (x) (gentle-car (gentle-caar x)))
+(defabbrev gentle-cadar  (x) (gentle-car (gentle-cdar x)))
+(defabbrev gentle-cdaar  (x) (gentle-cdr (gentle-caar x)))
+(defabbrev gentle-cddar  (x) (gentle-cdr (gentle-cdar x)))
+(defabbrev gentle-caadr  (x) (gentle-car (gentle-cadr x)))
+(defabbrev gentle-caddr  (x) (gentle-car (gentle-cddr x)))
+(defabbrev gentle-cdadr  (x) (gentle-cdr (gentle-cadr x)))
+(defabbrev gentle-cdddr  (x) (gentle-cdr (gentle-cddr x)))
+(defabbrev gentle-caaaar (x) (gentle-car (gentle-caaar x)))
+(defabbrev gentle-cadaar (x) (gentle-car (gentle-cdaar x)))
+(defabbrev gentle-cdaaar (x) (gentle-cdr (gentle-caaar x)))
+(defabbrev gentle-cddaar (x) (gentle-cdr (gentle-cdaar x)))
+(defabbrev gentle-caadar (x) (gentle-car (gentle-cadar x)))
+(defabbrev gentle-caddar (x) (gentle-car (gentle-cddar x)))
+(defabbrev gentle-cdadar (x) (gentle-cdr (gentle-cadar x)))
+(defabbrev gentle-cdddar (x) (gentle-cdr (gentle-cddar x)))
+(defabbrev gentle-caaadr (x) (gentle-car (gentle-caadr x)))
+(defabbrev gentle-cadadr (x) (gentle-car (gentle-cdadr x)))
+(defabbrev gentle-cdaadr (x) (gentle-cdr (gentle-caadr x)))
+(defabbrev gentle-cddadr (x) (gentle-cdr (gentle-cdadr x)))
+(defabbrev gentle-caaddr (x) (gentle-car (gentle-caddr x)))
+(defabbrev gentle-cadddr (x) (gentle-car (gentle-cdddr x)))
+(defabbrev gentle-cdaddr (x) (gentle-cdr (gentle-caddr x)))
+(defabbrev gentle-cddddr (x) (gentle-cdr (gentle-cdddr x)))
 
 (defn gentle-binary-+ (x y)
   (if (acl2-numberp x)
@@ -81,8 +105,32 @@
   (cond ((null y) `(gentle-unary-- ,x))
         (t `(gentle-binary-- ,x (gentle-+ ,y)))))
 
+(defn const-list-acc (n const acc)
+  (cond ((not (posp n)) acc)
+        (t (const-list-acc (1- n) const (hons const acc)))))
+
+(defn nil-list (n)
+  (const-list-acc n nil nil))
+
+(defn t-list (n)
+  (const-list-acc n t nil))
+
 (defn gentle-take (n l)
- (and (posp n) (consp l) (cons (car l) (gentle-take (1- n) (cdr l)))))
+
+ "Unlike TAKE, GENTLE-TAKE fills at the end with NILs, if necessary, to
+ always return a list n long."
+
+ (cond ((not (posp n)) nil)
+       ((atom l) (nil-list n))
+       (t (cons (car l)
+                (gentle-take (1- n) (cdr l))))))
+
+(defn make-same-length (v1 v2)
+  (let ((l1 (len v1))
+        (l2 (len v2)))
+    (cond ((eql l1 l2) (mv v1 v2))
+          ((< l1 l2)   (mv (gentle-take l2 v1) v2))
+          (t           (mv v1 (gentle-take l1 v2))))))
 
 (defn gentle-last (l)
   (if (or (atom l) (atom (cdr l)))
@@ -114,17 +162,6 @@
   `(let* ,bindings
      ,@(gentle-butlast r 1)
      ,(ansfl-last-list (car (gentle-last r)) bindings)))
-
-(defmacro with-memoize (fn form)
-  `(let ((fn ,fn))
-     ((lambda (x y)
-        (declare (ignore x))
-        y)
-      (memoize! fn)
-      ((lambda (u v)
-         (declare (ignore v))
-         u)
-       ,form (unmemoize! fn)))))
 
 (defmacro with-fast-list (var term name form)
   `(let ((,var (hons-put-list
@@ -195,31 +232,6 @@
   (implies (integerp n)
            (and (integerp (hons-len1 x n))
                 (>= (hons-len1 x n) n))))
-
-(defun cons-subtrees (x al)
-  ;; (cons-subtrees x NIL) is an alist that associates each subtree
-  ;; of x with t, without duplication.
-  (declare (xargs :guard t
-                  :guard-hints
-                  (("Goal" :in-theory (e/d () (hons-acons))))
-                  :verify-guards nil))
-  (cond ((atom x) al)
-        ((hons-get x al) al)
-        (t (cons-subtrees
-            (car x)
-            (cons-subtrees (cdr x)
-                           (hons-acons x t al))))))
-
-(verify-guards cons-subtrees)
-
-;  By implementing NUMBER-SUBTREES in "hons-raw.lisp" we could
-;  eliminate the need to build the association list altogether and
-;  just use the Common Lisp function HASH-TABLE-COUNT after entering
-;  each unique tree into a hash table.
-
-(defn number-subtrees (x)
-  (hons-len (flush-hons-get-hash-table-link
-             (cons-subtrees x 'number-subtrees))))
 
 (defn hons-member-equal (x y)
   (cond ((atom y) nil)
@@ -309,14 +321,24 @@
       (hons-put-list (cdr keys) next-values next-l))))
 
 (defun worth-hashing1 (l n)
-  (declare (type (integer 0 18) n)  ; *magic-number-for-hashing*
+  (declare (type (integer 0 18) n)
            (xargs :guard t))
   (cond ((eql n 0) t)
         ((atom l) nil)
-        (t (worth-hashing1 (cdr l) (the (integer 0 18) ; *magic-number-for-hashing*
+        (t (worth-hashing1 (cdr l) (the (integer 0 18)
+                                     ;; 18 is a *magic-number*
                                      (1- n))))))
 
-(defconst *magic-number-for-hashing* 18)
+(defconst *magic-number-for-hashing* 
+
+  18
+
+  ":Doc-Section Hons-and-Memoization
+
+  Assoc is sometimes faster than gethash.~/
+
+  Lis folklore sez it is faster to use
+  ASSOC than GETHASH if a list has length 18 or less.~/~/")
 
 (defn worth-hashing (l)
   (worth-hashing1 l *magic-number-for-hashing*))
@@ -606,7 +628,7 @@
                  ,name
                  ,(if eviscp
                       evisc
-                    (concatenate 'string "#," (symbol-name name))))
+                    (concatenate 'string "#,|" (symbol-name name) "|")))
           (table persistent-hons-table
                  (let ((x ,name))
                    (if (or (consp x) (stringp x))
@@ -638,7 +660,7 @@
    However, if FAIL is called at run-time, an error occurs.
 
    FAIL can perhaps be understood in analogy with the notion of a
-   'resource error'.  Though can prove:
+   'resource error'.  Though one can prove:
 
       (thm (implies (posp n) (consp (make-list n))))
 
@@ -648,19 +670,9 @@
 
 )
 
-(defun hons-safe-take (n x)
-  (declare (xargs :guard (natp n)))
-  (if (zp n)
-      nil
-    (if (atom x)
-        (hons nil
-              (hons-safe-take (1- n) nil))
-      (hons (car x)
-            (hons-safe-take (1- n) (cdr x))))))
-
 (set-state-ok t)
 
-(defn plev-fn (length level lines pause-lines circle pretty readably state)
+(defn plev-fn (length level lines circle pretty readably state)
   (declare (xargs :mode :program))
   (let* ((old-tuple (default-evisc-tuple state))
          (new-tuple (list (car old-tuple) level length 
@@ -682,8 +694,6 @@
                             level
                             :lines
                             lines
-                            :pause-lines
-                            pause-lines
                             :circle
                             circle
                             :readably
@@ -695,18 +705,21 @@
 (defmacro plev (&key (length '16)
                      (level '3)
                      (lines 'nil)
-                     (pause-lines 'nil)
                      (circle 't)
                      (pretty 't)
                      (readably 'nil))
 
-; PLEV sets variables that control printing via the keywords
-; :LENGTH :LEVEL :LINES :PAUSE-LINES :CIRCLE :PRETTY and :READABLY.
-; with defaults:
-; 16       3     NIL    nil          T       T           NIL.     
+  ":Doc-Section Hons-and-Memoization
+
+  Sets some print control variables.~/
+
+    PLEV sets variables that control printing via the keywords
+    :LENGTH :LEVEL :LINES :CIRCLE :PRETTY and :READABLY.
+    with defaults:
+    16       3     NIL     T       T           NIL.~/~/"
 
 
-  `(plev-fn ,length ,level ,lines ,pause-lines ,circle ,pretty ,readably state))
+  `(plev-fn ,length ,level ,lines ,circle ,pretty ,readably state))
 
 (defn make-list-of-numbers (n)
   (declare (xargs :guard (natp n)))
@@ -714,19 +727,98 @@
       (list n)
     (hons n (make-list-of-numbers (1- n)))))
 
-(defmacro plev-max ()
+(defmacro plev-max (&key (length 'nil)
+                         (level 'nil)
+                         (lines 'nil)
+                         (circle 'nil)
+                         (pretty 't)
+                         (readably 'nil))
 
-; PLEV-MAX sets variables that control printing via the keywords
-; :LENGTH :LEVEL :LINES :PAUSE-LINES :CIRCLE :PRETTY and :READABLY.
-; with defaults:
-; nil     nil    nil    nil          nil     t            nil.
+  ":Doc-Section Hons-and-Memoization
+
+  Sets some print control variables to maximal values.~/
+  ~/~/"  
+
+  `(plev-fn ,length ,level ,lines ,circle ,pretty ,readably state))
 
 
-  '(plev-fn nil nil nil nil t t nil state))
+(defmacro plev-min (&key (length '3)
+                         (level '3)
+                         (lines '60)
+                         (circle 't)
+                         (pretty 'nil)
+                         (readably 'nil))
 
+  ":Doc-Section Hons-and-Memoization
 
-(defun make-fal (al name)
+  Sets some print control variables to minimal values.~/
+  ~/~/"
+
+  `(plev-fn ,length ,level ,lines ,circle ,pretty ,readably state))
+
+(defn make-fal (al name)
+  ":Doc-Section Hons-and-Memoization
+
+  Make a fast alist out of an alist~/
+
+  (MAKE-FAL al name) copies the alist AL with hons-acons
+  to make a fast alist that ends with NAME.~/~/"
+
+  
   (cond ((atom al) name)
         (t (hons-acons (gentle-caar al)
                        (gentle-cdar al)
                        (make-fal (cdr al) name)))))
+
+(defn make-fal! (al name)
+  (cond ((atom al) name)
+        (t (hons-acons! (gentle-caar al)
+                        (gentle-cdar al)
+                        (make-fal (cdr al) name)))))
+
+(defn hons-make-list (n a e)
+  ":Doc-Section Hons-and-Memoization
+
+  Honses A onto E N times.~/
+  (HONS-MAKE-LIST n a e) is the result of N times honsing A onto E.
+  Equal to (hons-append (make-list n :initial-element n) e).~/~/"
+
+  (if (not (posp n))
+      e
+    (hons a (hons-make-list (1- n) a e))))
+
+(defn hons-take (n l)
+  ":Doc-Section Hons-and-Memoization
+
+ First n elements of l~/
+
+ (HONS-TAKE n l) returns a honsed list of the first N elements of L.
+ To always return a list of n elements, HONS-TAKE fills at the end
+ with NIL, if necessary.~/~/"
+
+ (cond ((not (posp n)) nil)
+       ((atom l) (nil-list n))
+       (t (hons (car l)
+                (hons-take (1- n) (cdr l))))))
+
+(defn alist-subsetp1 (l1 l2 el)
+  (cond ((atom el) t)
+        (t (and (equal (hons-get (car el) l1)
+                       (hons-get (car el) l2))
+                (alist-subsetp1 l1 l2 (cdr el))))))
+
+(defn alist-subsetp (al1 al2)
+  (alist-subsetp1 al1 al2 al1))
+
+(defn alist-equal (al1 al2)
+  ":Doc-Section Hons-and-Memoization
+
+  Determine whether two alists are EQUAL with respect to HONS-GET.~/
+
+  (ALIST-EQUAL al1 al2) determines whether for all X, the two alist
+  (equal (hons-get x AL1) (hons-get x AL2)).  May run faster on fast
+  alists than the obvious calculation. ~/~/"
+
+  (and (equal (fast-alist-len al1)
+              (fast-alist-len al2))
+       (alist-subsetp al1 al2)))

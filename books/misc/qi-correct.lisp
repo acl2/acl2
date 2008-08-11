@@ -2,22 +2,52 @@
 
 (include-book "qi")
 
+; Some general lemmas that should be relocated...
+
+(defthm no-duplicatesp-subsetp
+  (implies (and (subsetp l1 l2)
+                (no-duplicatesp l1)
+                (equal (car l1) (car l2)))
+           (subsetp (cdr l1) (cdr l2))))
+
+(defthm member-delete
+  (implies (and (member v1 l)
+                (not (eql v1 v2)))
+           (member v1 (delete-hql v2 l))))
+
+; The issue for the next two events is the use of DELETE-HQL.
+
+(defthm subset-eq-delete
+  (implies (and (subsetp l1 l2)
+                (not (member v l1)))
+           (subsetp l1 (delete-hql v l2))))
+
+(defthm delete-subsetp
+  (implies (and (subsetp l1 l2)
+                (no-duplicatesp l1)
+                (member v l1))
+           (subsetp (delete-hql v l1)
+                    (delete-hql v l2))))
+
+; Some definitions and lemmas dealing with the arguments given to
+; EVAL-BDD.
+
 (defun get-val (v vals vars)
   (declare (xargs :guard (and (boolean-listp vals)
-                              (symbol-listp vars))))
+                              (eqlable-listp vars))))
   (if (atom vars)
       nil
-    (if (eq v (car vars))
+    (if (eql v (car vars))
         (car vals)
       (get-val v (cdr vals) (cdr vars)))))
 
 (defun delete-val (vals v vars)
   (declare (xargs :guard (and (boolean-listp vals)
-                              (symbol-listp vars))
+                              (eqlable-listp vars))
                   :verify-guards nil))
   (if (atom vars)
       vals
-    (if (eq v (car vars))
+    (if (eql v (car vars))
         (cdr vals)
       (cons (car vals)
             (delete-val (cdr vals) v (cdr vars))))))
@@ -30,20 +60,24 @@
 
 (defun vals-reorder (vals vars nvars)
   (declare (xargs :guard (and (boolean-listp vals)
-                              (symbol-listp vars)
-                              (symbol-listp nvars))))
+                              (eqlable-listp vars)
+                              (eqlable-listp nvars))))
   (if (atom nvars)
       vals
     (cons (get-val (car nvars) vals vars)
           (vals-reorder (delete-val vals (car nvars) vars)
-                        (delete-hq (car nvars) vars) (cdr nvars)))))
+                        (delete-hql (car nvars) vars) (cdr nvars)))))
+
+; The proofs that Q-RESTRICT and Q-REORDER are OK.  This provides a
+; guide to proving the correctness of UBDD variable re-ordering
+; heuristics.
 
 (defun q-restrict-shrink-induct (x vals v vars)
   (declare (xargs :guard (and (boolean-listp vals)
-                              (symbol-listp vars))))
+                              (eqlable-listp vars))))
   (if (atom x)
       (list x vals v vars)
-    (if (eq v (car vars))
+    (if (eql v (car vars))
         (if (car vals)
             (q-restrict-shrink-induct (car x) (cdr vals) v vars)
           (q-restrict-shrink-induct (cdr x) (cdr vals) v vars))
@@ -53,7 +87,7 @@
 
 (defthm q-restrict-shrink-correct
   (implies  (and (iff (get-val v vals vars) n)
-                 (member-eq v vars))
+                 (member v vars))
             (equal (eval-bdd (q-restrict-shrink x n v vars)
                              (delete-val vals v vars))
                    (eval-bdd x vals)))
@@ -63,12 +97,12 @@
 (defun q-reorder-induct (x vals vars nvars)
   (declare (xargs :measure (acl2-count nvars)
                   :guard (and (boolean-listp vals)
-                              (symbol-listp vars)
-                              (symbol-listp nvars))))
+                              (eqlable-listp vars)
+                              (eqlable-listp nvars))))
   (if (or (atom x)
           (atom nvars))
       nil
-    (if (eq (car nvars) (car vars))
+    (if (eql (car nvars) (car vars))
         (if (car vals)
             (q-reorder-induct
              (car x) (cdr vals) (cdr vars) (cdr nvars))
@@ -78,147 +112,66 @@
         (if val
             (q-reorder-induct (q-restrict-shrink x t (car nvars) vars)
                               (delete-val vals (car nvars) vars)
-                              (delete-hq (car nvars) vars)
+                              (delete-hql (car nvars) vars)
                               (cdr nvars))
           (q-reorder-induct (q-restrict-shrink x nil (car nvars) vars)
                             (delete-val vals (car nvars) vars)
-                            (delete-hq (car nvars) vars)
+                            (delete-hql (car nvars) vars)
                             (cdr nvars)))))))
 
-(defun unique-eq (l)
-  (declare (xargs :guard (symbol-listp l)))
-  (if (endp l) t
-    (if (member-eq (car l) (cdr l)) nil
-      (unique-eq (cdr l)))))
-
-(defthm unique-eq-subsetp-eq
-  (implies (and (subsetp-eq l1 l2)
-                (unique-eq l1)
-                (equal (car l1) (car l2)))
-           (subsetp-eq (cdr l1) (cdr l2))))
-
-(defthm member-eq-delete
-  (implies (and (member-eq v1 l)
-                (not (eq v1 v2)))
-           (member-eq v1 (delete-hq v2 l))))
-
-(defthm subset-eq-delete
-  (implies (and (subsetp-eq l1 l2)
-                (not (member-eq v l1)))
-           (subsetp-eq l1 (delete-hq v l2))))
-
-(defthm delete-subsetp-eq
-  (implies (and (subsetp-eq l1 l2)
-                (unique-eq l1)
-                (member-eq v l1))
-           (subsetp-eq (delete-hq v l1)
-                       (delete-hq v l2))))
-
 (defthm q-reorder-correct
-  (implies (and (unique-eq nvars)
-                (subsetp-eq nvars vars))
+  (implies (and (no-duplicatesp nvars)
+                (subsetp nvars vars))
            (equal (eval-bdd (q-reorder x vars nvars)
                             (vals-reorder vals vars nvars))
                   (eval-bdd x vals)))
   :hints (("Goal" :induct (q-reorder-induct x vals vars nvars))))
 
-;=====================================================================
 
-;; (defthm eval-bdd-cdr
-;;   (implies (and (consp y)
-;;                 (not (car vals)))
-;;            (equal (eval-bdd y vals)
-;;                   (eval-bdd (cdr y) (cdr vals)))))
+; Funny, but critical fact to the theorem prover.
 
-;; (defthm eval-bdd-car
-;;   (implies (and (consp y)
-;;                 (car vals))
-;;            (equal (eval-bdd y vals)
-;;                   (eval-bdd (car y) (cdr vals)))))
+(defthm blp-implies-t
+  (implies (and (booleanp x) x)
+           (equal (equal x t) t)))
 
 
-(defthm q-and-correct
-  (implies (and (normp x)
-                (normp y))
-           (equal (eval-bdd (q-and x y) vals)
-                  (and (eval-bdd x vals)
-                       (eval-bdd y vals)))))
+; We prove the correctness of the various UBDD manipulation functions
+; in such a manner that their correctness is always in terms of the
+; correctness of Q-ITE; that is, we convert every operation into Q-ITE
+; operations that can then be rewritten into IF expressions.  We treat
+; Q-NOT and Q-NOT specially, we show that these functions a simple
+; NOT.  We always prove two main lemmas about each UBDD function: that
+; it produces a NORMP, and that it is correct with respect to some
+; Boolean function.
 
-(defthm normp-q-and
-  (implies (and (normp x)
-                (normp y))
-           (normp (q-and x y))))
+; We start with Q-NOT and Q-NOT-ITE.
 
-(defthm q-or-correct
-  (implies (and (normp x)
-                (normp y))
-           (equal (eval-bdd (q-or x y) vals)
-                  (or (eval-bdd x vals)
-                      (eval-bdd y vals)))))
+(encapsulate
+ ()
+ (local
+  (defthm consp-q-not
+    (implies (and (normp x)
+                  (consp x))
+             (and (consp (q-not x))
+                  (normp (q-not x))))))
 
-(defthm normp-q-or
-  (implies (and (normp x)
-                (normp y))
-           (normp (q-or x y))))
+ (local
+  (defthm atom-q-not
+    (implies (and (normp x)
+                  (atom x))
+             (normp (q-not x)))))
+
+ (defthm normp-q-not
+   (implies (normp x)
+            (normp (q-not x)))
+   :hints (("Goal" :in-theory (e/d (booleanp) (q-not))))))
 
 (defthm q-not-correct
   (implies (normp x)
            (equal (eval-bdd (q-not x) vals)
                   (not (eval-bdd x vals)))))
 
-(defthm consp-q-not
-  (implies (and (normp x)
-                (consp x))
-           (and (consp (q-not x))
-                (normp (q-not x)))))
-
-(defthm atom-q-not
-  (implies (and (normp x)
-                (atom x))
-           (normp (q-not x))))
-
-(defthm normp-q-not
-  (implies (normp x)
-           (normp (q-not x)))
-  :hints (("Goal" :in-theory (e/d (booleanp) (q-not)))))
-
-(in-theory (disable consp-q-not))
-(in-theory (disable atom-q-not))
-
-(defthm q-not-equiv-q-not-ite
-  (implies (normp x)
-           (equal (q-not x)
-                  (q-not-ite x))))
-
-(defthm q-and-args-identical-is-arg
-  (implies (normp x)
-           (equal (q-and x x) x)))
-
-(defthm q-and-equiv-q-and-ite
-  (implies (and (normp x)
-                (normp y))
-           (equal (q-and x y)
-                  (q-and-ite x y))))
-
-(defthm normp-q-and-ite
-  (implies (and (normp x)
-                (normp y))
-           (normp (q-and-ite x y))))
-
-(defthm q-or-args-identical-is-arg
-  (implies (normp x)
-           (equal (q-or x x) x)))
-
-(defthm q-or-equiv-q-or-ite
-  (implies (and (normp x)
-                (normp y))
-           (equal (q-or x y)
-                  (q-or-ite x y))))
-
-(defthm normp-q-or-ite
-  (implies (and (normp x)
-                (normp y))
-           (normp (q-or-ite x y))))
+; Now we consider Q-ITE
 
 (defthm normp-q-ite
   (implies (and (normp x)
@@ -228,7 +181,7 @@
   :hints
   (("Goal"
     :induct (q-ite x y z)
-    :in-theory (disable q-not q-not-equiv-q-not-ite))))
+    :in-theory (disable q-not))))
 
 (defun q-ite-induct (x y z vals)
   (declare (xargs :measure (acl2-count x)
@@ -263,18 +216,19 @@
 ;            )))
 
 
-; Rough time:  121.07 seconds (prove: 103.72, print: 17.35, other: 0.00)
+; Rough time: 121.07 seconds (prove: 103.72, print: 17.35, other:
+; 0.00)
 
-; Robert Krug looked at this proof, and produced the following set
-; of improvements.
+; Robert Krug looked at this proof, and produced the following set of
+; improvements.
 
-; A couple of expand hints sped things up a good bit.  I had examined the
-; original proof, and decided that the first set of case-splits looked
-; like the correct thing, but didn't like the two rounds of destructor
-; elimination before the next set of big case-splits.  I wanted to force
-; this second set to occur earlier in the flow, and saw that these terms
-; terms appeared regularly, so I suggested to ACL2 that it be a little more
-; eager to expand them.
+; A couple of expand hints sped things up a good bit.  I had examined
+; the original proof, and decided that the first set of case-splits
+; looked like the correct thing, but didn't like the two rounds of
+; destructor elimination before the next set of big case-splits.  I
+; wanted to force this second set to occur earlier in the flow, and
+; saw that these terms terms appeared regularly, so I suggested to
+; ACL2 that it be a little more eager to expand them.
 
 ; (defthm q-ite-correct
 ;   (implies (and (normp x)
@@ -320,8 +274,8 @@
 ; Time:  13.76 seconds (prove: 12.34, print: 1.42, other: 0.00)
 
 
-; I then got greedy, and disabled eval-bdd and q-ite, and told ACL2 just
-; which instances to expand:
+; I then got greedy, and disabled eval-bdd and q-ite, and told ACL2
+; just which instances to expand:
 
 (defthm q-ite-correct
   (implies (and (normp x)
@@ -359,12 +313,152 @@
 		    (Q-ITE X T X)
 		    (Q-ITE X T NIL)
 		    (Q-ITE X NIL T))
-           :in-theory (disable q-not q-not-equiv-q-not-ite
-			       eval-bdd q-ite)
+           :in-theory (disable q-not eval-bdd q-ite)
            )))
 
 ; Time:  5.97 seconds (prove: 4.41, print: 1.56, other: 0.00)
 
+
+; This concludes all that we really need to know about our UBDD
+; functions.  We now consider other UBDD manipulation functions.
+
+
+
+(encapsulate
+ ()
+ (local
+    (defthm q-not-equiv-q-not-ite
+    (implies (normp x)
+             (equal (q-not-ite x)
+                    (q-not x))))
+    )
+
+ (defthm normp-q-not-ite
+   (implies (normp x)
+            (normp (q-not-ite x))))
+
+; Question: would it be better to make the RHS (if (eval-bdd x vals) t
+; nil) ?
+
+ (defthm q-not-ite-correct
+   (implies (normp x)
+            (equal (eval-bdd (q-not-ite x) vals)
+                   (not (eval-bdd x vals))))
+   :hints (("Goal" :in-theory (e/d () (q-not))))))
+
+
+; Q-AND and Q-AND-ITE
+
+(defthm normp-q-and
+  (implies (and (normp x)
+                (normp y))
+           (normp (q-and x y))))
+
+(defthm normp-q-and-ite
+  (implies (and (normp x)
+                (normp y))
+           (normp (q-and-ite x y))))
+
+(defthm q-and-correct
+    (implies (and (normp x)
+                  (normp y))
+             (equal (eval-bdd (q-and x y) vals)
+                    (and (eval-bdd x vals)
+                         (eval-bdd y vals)))))
+
+(defthm q-and-equiv-q-and-ite
+  (implies (and (normp x)
+                (normp y))
+           (equal (q-and-ite x y)
+                  (q-and x y))))
+
+(defthm q-and-args-identical-is-arg
+  (implies (normp x)
+           (equal (q-and x x) x)))
+
+
+; Q-OR and Q-OR-ITE
+
+(defthm normp-q-or
+  (implies (and (normp x)
+                (normp y))
+           (normp (q-or x y))))
+
+(defthm normp-q-or-ite
+  (implies (and (normp x)
+                (normp y))
+           (normp (q-or-ite x y))))
+
+(defthm q-or-correct
+  (implies (and (normp x)
+                (normp y))
+           (equal (eval-bdd (q-or x y) vals)
+                  (or (eval-bdd x vals)
+                      (eval-bdd y vals))))
+  :hints (("goal" :in-theory
+           (enable q-or eval-bdd normp))))
+
+(defthm q-or-equiv-q-or-ite
+  (implies (and (normp x)
+                (normp y))
+           (equal (q-or-ite x y)
+                  (q-or x y))))
+
+(defthm q-or-args-identical-is-arg
+  (implies (normp x)
+           (equal (q-or x x) x)))
+
+
+; Q-XOR and Q-XOR-ITE
+
+(defthm normp-q-xor
+  (implies (and (normp x)
+                (normp y))
+           (normp (q-xor x y)))
+  :hints (("Goal" :in-theory (disable q-not))))
+
+(defthm normp-q-xor-ite
+  (implies (and (normp x)
+                (normp y))
+           (normp (q-xor-ite x y))))
+
+(defthm q-xor-correct
+  (implies (and (normp x)
+                (normp y))
+           (equal (eval-bdd (q-xor x y) vals)
+                  (xor (eval-bdd x vals)
+                       (eval-bdd y vals))))
+  :hints (("Goal" :in-theory
+           (enable q-xor eval-bdd normp))))
+
+; Note:  Proved Q-XOR-ITE correct directly; it is difficult to prove
+; that Q-XOR-ITE is equal to Q-XOR.
+
+(defthm q-xor-ite-correct
+  (implies (and (normp x)
+                (normp y)
+                (boolean-listp vals))
+           (equal (eval-bdd (q-xor-ite x y) vals)
+                  (xor (eval-bdd x vals)
+                       (eval-bdd y vals))))
+  :hints (("Goal" :in-theory (disable q-ite q-not))))
+
+(defthm q-xor-ite-args-identical-is-arg
+  (implies (normp x)
+           (equal (q-xor-ite x x) nil)))
+
+(defthm q-xor-args-identical-is-arg
+  (implies (normp x)
+           (equal (q-xor x x) nil)))
+
+
+; Shut off Q-functions.
+
+(in-theory (disable q-ite))
+(in-theory (disable q-not))
+(in-theory (disable q-and))
+(in-theory (disable q-or))
+(in-theory (disable q-xor))
 
 (defthm q-and-ite-is-and
   (implies (and (normp x)
@@ -380,24 +474,36 @@
                   (or (eval-bdd x vals)
                       (eval-bdd y vals)))))
 
+(in-theory (disable q-and-ite))
+(in-theory (disable q-or-ite))
+(in-theory (disable q-xor-ite))
+
 
 ; Below here we deal with human readable terms...
 
 (defun sym-val (term vars vals)
-  (declare (xargs :guard (and (symbol-listp vars)
+  (declare (xargs :guard (and (eqlable-listp vars)
                               (boolean-listp vals))))
   (if (endp vars) nil
-    (if (eq term (car vars))
+    (if (eql term (car vars))
         (car vals)
       (sym-val term (cdr vars) (cdr vals)))))
 
 (defun term-eval (term vars vals)
+
+ ":Doc-section Hons-and-Memoization
+
+  Semantics for IF-expressions.~/
+  (TERM vars vals) is the meaning of the TO-IF expression TERM with
+  respect to the bindings of the variables in the list VARS to the
+  Booleans in the list VALS.~/~/"
+
   (declare (xargs :guard (and (qnorm1-guard term)
-                              (symbol-listp vars)
+                              (eqlable-listp vars)
                               (boolean-listp vals))))
   (cond ((eq term t) t)
         ((eq term nil) nil)
-        ((symbolp term)
+        ((eqlablep term)
          (sym-val term vars vals))
         (t (let ((fn (car term))
                  (args (cdr term)))
@@ -410,10 +516,10 @@
 
 (defun term-all-p (term vars)
   (declare (xargs :guard (and (qnorm1-guard term)
-                              (symbol-listp vars))))
+                              (eqlable-listp vars))))
   (if (atom term)
       (or (booleanp term)
-          (member-eq term vars))
+          (member term vars))
     (let ((fn (car term))
           (args (cdr term)))
       (if (eq fn 'if)
@@ -459,30 +565,34 @@
 
 (in-theory (enable qvar-n))
 
-(defthm eval-qvar-n (equal (eval-bdd (qvar-n i) nil)
-                          nil))
+(defthm eval-qvar-n
+  (equal (eval-bdd (qvar-n i) nil)
+         nil))
 
-(defthm <loc (implies (member term vars)
-                      (<= 0 (locn term vars))))
+(defthm <loc
+  (implies (member term vars)
+           (<= 0 (locn term vars))))
 
 (defthm eval-bdd-qvar-n
-  (implies (and (symbolp term)
+  (implies (and (eqlablep term)
                 (not (equal term t))
                 (not (equal term nil))
                 (boolean-listp vals)
-                (member-eq term vars))
+                (member term vars))
            (equal (eval-bdd (qvar-n (locn term vars)) vals)
                   (sym-val term vars vals))))
 
-(defthm not-mem (implies (not (member term vars))
-                         (equal (locn term vars) (len vars))))
+(defthm not-mem
+  (implies (not (member term vars))
+           (equal (locn term vars)
+                  (len vars))))
 
 (defthm eval-bdd-var-to-tree
-  (implies (and (symbolp term)
+  (implies (and (eqlablep term)
                 (not (equal term t))
                 (not (equal term nil))
                 (boolean-listp vals)
-                (member-eq term vars))
+                (member term vars))
            (equal (eval-bdd (var-to-tree term vars) vals)
                   (sym-val term vars vals)))
   :hints (("Goal"

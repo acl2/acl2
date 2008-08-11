@@ -25,6 +25,8 @@ includes a previous book.
 + gen-defun.lisp
     Generate events and event names based on the current logical world.
   gen-defun-check.lisp
+  local-elided.lisp
+  local-elided-include.lisp
   local-requires-skip-check.lisp
   local-requires-skip-check-include.lisp
 + defconst-fast.lisp

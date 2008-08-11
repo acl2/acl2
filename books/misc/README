@@ -400,3 +400,7 @@ the book that shows how this works.
 untranslate-patterns.lisp -- simple, pattern-based untranslation for ACL2
 
 ===============================================================================
+
+wet.lisp -- a backtrace utility (see :DOC wet)
+
+===============================================================================

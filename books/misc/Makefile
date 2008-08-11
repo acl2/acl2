@@ -30,7 +30,7 @@ defpun.cert: defpun.lisp
 dft-ex.cert: dft-ex.lisp
 dft-ex.cert: dft.cert
 # dft-ex.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/top-with-meta.cert
-dft-ex.cert: ../arithmetic/top-with-meta.cert
+# dft-ex.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/top-with-meta.cert
 dft-ex.cert: dft-ex.acl2
 
 dft.cert: dft.lisp
@@ -55,7 +55,6 @@ goodstein.cert: goodstein.lisp
 grcd.cert: grcd.lisp
 grcd.cert: int-division.cert
 # grcd.cert: $(ACL2_SYSTEM_BOOKS)/ordinals/e0-ordinal.cert
-grcd.cert: ../ordinals/e0-ordinal.cert
 
 hanoi.cert: hanoi.lisp
 hanoi.cert: hanoi.acl2
@@ -73,8 +72,6 @@ how-to-prove-thms.cert: how-to-prove-thms.lisp
 int-division.cert: int-division.lisp
 # int-division.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/equalities.cert
 # int-division.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/inequalities.cert
-int-division.cert: ../arithmetic/equalities.cert
-int-division.cert: ../arithmetic/inequalities.cert
 
 integer-type-set-test.cert: integer-type-set-test.lisp
 
@@ -102,9 +99,6 @@ problem13.cert: problem13.lisp
 # problem13.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/equalities.cert
 # problem13.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/inequalities.cert
 # problem13.cert: $(ACL2_SYSTEM_BOOKS)/ordinals/e0-ordinal.cert
-problem13.cert: ../arithmetic/equalities.cert
-problem13.cert: ../arithmetic/inequalities.cert
-problem13.cert: ../ordinals/e0-ordinal.cert
 
 process-book-readme.cert: process-book-readme.lisp
 
@@ -117,9 +111,10 @@ qi.cert: hons-help2.cert
 radix.cert: radix.lisp
 # radix.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic-2/meta/top.cert
 # radix.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic-2/floor-mod/floor-mod.cert
-radix.cert: ../arithmetic-2/meta/top.cert
-radix.cert: ../arithmetic-2/floor-mod/floor-mod.cert
 radix.cert: radix.acl2
+
+random.cert: random.lisp
+# random.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic-2/floor-mod/floor-mod.cert
 
 records.cert: records.lisp
 records.cert: total-order.cert
@@ -140,6 +135,7 @@ sort-symbols.cert: sort-symbols.lisp
 sticky-disable.cert: sticky-disable.lisp
 
 symbol-btree.cert: symbol-btree.lisp
+# symbol-btree.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic-3/floor-mod/floor-mod.cert
 
 total-order.cert: total-order.lisp
 
@@ -148,3 +144,5 @@ transfinite.cert: transfinite.lisp
 untranslate-patterns.cert: untranslate-patterns.lisp
 untranslate-patterns.cert: symbol-btree.cert
 # untranslate-patterns.cert: $(ACL2_SYSTEM_BOOKS)/misc/untranslate-patterns.cert
+
+wet.cert: wet.lisp

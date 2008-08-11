@@ -1,11 +1,4 @@
-# This Makefile is really a stub, to avoid certifying books that use
-# parallelism primitives not defined until after ACL2 Version 3.3.  If you are
-# seeing this line in a later ACL2 version, please contact the ACL2
-# implementors, as this Makefile needs to be updated.
-
 include ../Makefile-generic
-
-BOOKS := matrix-multiplication-setup
 
 # Dependencies:
 
