@@ -85,6 +85,9 @@ includes a previous book.
 + inline-book.lisp
     Provides a couple rough replacements for include-book that do not require
     separate certification of the included book.
++ require-book.lisp
+    Provides a way of specifying that a book should be included when using
+    a book but is not needed for certification.
 
 The rest of this file is metadata for the ACL2 system.
 
@@ -144,6 +147,7 @@ proof-by-arith.lisp
 read-from-file-data-mod.lsp
 read-from-file-data.lsp
 read-from-file.lisp
+require-book.lisp
 stobj-test.lisp
 test-case-check.lisp
 test-case.lisp

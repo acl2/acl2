@@ -138,6 +138,8 @@ read-from-file.cert: read-from-file.lisp
 # read-from-file.cert: $(ACL2_SYSTEM_BOOKS)/misc/file-io.cert
 # read-from-file.cert: $(ACL2_SYSTEM_BOOKS)/misc/file-io.cert
 
+require-book.cert: require-book.lisp
+
 stobj-test.cert: stobj-test.lisp
 
 test-case-check.cert: test-case-check.lisp
