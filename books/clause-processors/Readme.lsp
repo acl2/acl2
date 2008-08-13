@@ -10,12 +10,15 @@ bv-add-tests.lisp
 bv-add.lisp
 equality.acl2
 equality.lisp
+join-thms.lisp
+null-fail-hints.lisp
 ")
  (:TITLE    "Clause processor examples")
  (:AUTHOR/S 
   "Jared Davis"
   "Matt Kaufmann"
   "Erik Reeber"
+  "Sol Swords"
   )
  (:KEYWORDS ; non-empty list of keywords, case-insensitive
    "clause processors"
@@ -40,6 +43,11 @@ decision procedure for bit vectors.
 Book equality.lisp illustrates the use of clause processors to deal with
 equality reasoning.
 
+Book join-thms.lisp automates the introduction of certain theorems about
+evaluators that are useful for verifying clause processors.
+
+Book null-fail-hints.lisp introduces keyword hints :null, which does nothing,
+and :fail, which causes the proof to fail.
 ")
  (:PERMISSION
   "Clause processor examples

@@ -71,3 +71,7 @@ bv-add.cert: bv-add.lisp
 equality.cert: equality.lisp
 # equality.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/top.cert
 
+join-thms.cert: join-thms.lisp
+
+null-fail-hints.cert: null-fail-hints.lisp
+# null-fail-hints.cert: $(ACL2_SYSTEM_BOOKS)/clause-processors/join-thms.cert
