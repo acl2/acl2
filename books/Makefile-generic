@@ -361,3 +361,13 @@ clean:
 	rm -f *@expansion.lsp
 	rm -f temp-emacs-file.lsp
 	rm -f workxxx*
+
+
+
+ALL_LISP_FILES := $(wildcard *.lisp)
+ALL_ACL2_FILES := $(wildcard *.acl2)
+
+deps: $(ALL_LISP_FILES) $(ALL_ACL2_FILES)
+	@echo "Updating dependencies in `pwd`"
+	+@make -s dependencies > deps
+
