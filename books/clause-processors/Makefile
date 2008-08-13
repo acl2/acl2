@@ -70,4 +70,4 @@ bv-add.cert: bv-add.lisp
 
 equality.cert: equality.lisp
 # equality.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/top.cert
-equality.cert: equality.acl2
+
