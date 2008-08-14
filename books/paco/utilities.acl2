@@ -1,4 +1,4 @@
-(ld "acl2-customization.lisp") ; adds the :paco keyword command
+(ld "acl2-customization.lsp") ; adds the :paco keyword command
 
 (in-package "ACL2")
 

@@ -403,8 +403,7 @@ or
     `(encapsulate 
       nil
       ,@(if arithmetic-opt
-            `((local (include-book "arithmetic/top-with-meta"
-                                   :dir :system)))
+            `((local (include-book "arithmetic/top-with-meta" :dir :system)))
           nil)
       (deflabel ,before-label)
       ,@(deftuple-defs name components guard-opt hons-opt compact-opt

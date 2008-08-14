@@ -18,7 +18,7 @@ does not respect LOCAL events in the referenced book, while the other,
 "encapsulate-book," does.  Also, (local (inline-book ...)) is not supported
 but (local (encapsulate-book ...)) should work.
 
-The syntax is to replace "include-book" with "inline-book" or
+;The syntax is to replace "include-book" with "inline-book" or
 "encapsulate-book," except that only the book name and any :dir argument are
 used by inline-book.  All the other parameters are ignored/irrelevant and the
 effect is that they are inherited from the parent book. 
@@ -26,12 +26,12 @@ effect is that they are inherited from the parent book.
 
 In a feat of make-event foo, the inclusion of this book can itself be inlined:
 
-(make-event
- (er-progn (ld "inline-book.lisp")
-           (make-event (compute-inline-book-value "inline-book"))))
+;(make-event
+; (er-progn (ld "inline-book.lisp")
+;           (make-event (compute-inline-book-value "inline-book"))))
 
 Explanation:
-  (ld "inline-book.lisp") loads the definitions in this file but they only
+;  (ld "inline-book.lisp") loads the definitions in this file but they only
 persist for computing the next result.
   (compute-inline-book-value "inline-book") is able to complete because we
 temporarily loaded in the definitions, and this returns all the forms in

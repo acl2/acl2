@@ -31,75 +31,10 @@
 
 include ../Makefile-generic
 
-BOOKS = utilities \
-        output-module \
-        foundations \
-        type-set \
-        rewrite \
-        simplify \
-        elim-dest \
-        induct \
-        prove \
-        database \
-        paco
 
-BOOKS_LISP = (patsubst %, %.lisp, $(BOOKS))
+# BOOKS_LISP = (patsubst %, %.lisp, $(BOOKS))
 
 tags:
-	 etags ${BOOKS_LISP}
+	 etags $(BOOKS_LISP)
 
-# Put dependencies (from `make -s dependencies, or other sources) below
-
-utilities.cert: utilities.lisp
-# utilities.cert: $(ACL2_SYSTEM_BOOKS)/ihs/ihs-lemmas.cert
-utilities.cert: utilities.acl2
-
-output-module.cert: output-module.lisp
-output-module.cert: output-module.acl2
-output-module.cert: utilities.cert
-
-foundations.cert: foundations.lisp
-foundations.cert: foundations.acl2
-foundations.cert: output-module.cert
-
-type-set.cert: type-set.lisp
-# type-set.cert: $(ACL2_SYSTEM_BOOKS)/ordinals/e0-ordinal.cert
-# type-set.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/top-with-meta.cert
-type-set.cert: type-set.acl2
-type-set.cert: foundations.cert
-
-rewrite.cert: rewrite.lisp
-rewrite.cert: rewrite.acl2
-rewrite.cert: type-set.cert
-
-simplify.cert: simplify.lisp
-simplify.cert: simplify.acl2
-simplify.cert: rewrite.cert
-
-elim-dest.cert: elim-dest.lisp
-elim-dest.cert: elim-dest.acl2
-elim-dest.cert: simplify.cert
-
-induct.cert: induct.lisp
-induct.cert: induct.acl2
-induct.cert: elim-dest.cert
-
-prove.cert: prove.lisp
-prove.cert: prove.acl2
-prove.cert: induct.cert
-
-database.cert: database.lisp
-database.cert: database.acl2
-database.cert: prove.cert
-
-paco.cert: paco.lisp
-paco.cert: utilities.cert
-paco.cert: foundations.cert
-paco.cert: type-set.cert
-paco.cert: rewrite.cert
-paco.cert: simplify.cert
-paco.cert: induct.cert
-paco.cert: prove.cert
-paco.cert: database.cert
-paco.cert: paco.acl2
-paco.cert: database.cert
+-include Makefile-deps

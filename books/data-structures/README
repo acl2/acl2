@@ -29,8 +29,8 @@ The following books provide support for the above, but are not
 themselves certified.  Users should not generally have any reason to
 use these directly.
 
-define-structures-package.lisp
-define-u-package.lisp
+define-structures-package.lsp
+define-u-package.lsp
 utilities.lisp
 
 

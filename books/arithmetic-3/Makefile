@@ -1,5 +1,3 @@
-ACL2 = ../../saved_acl2
-
 arith-top: top all
 all: top
 
