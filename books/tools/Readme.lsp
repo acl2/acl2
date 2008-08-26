@@ -7,6 +7,9 @@ bstar.lisp
 cws.lisp
 defsum.lisp
 deftuple.lisp
+flag.acl2
+flag.lisp
+flag-package.lsp
 index.html
 pack.lisp
 progndollar.lisp
@@ -50,6 +53,8 @@ sum-of-products data structures as defined by defsum.
  (:PERMISSION
   "{bstar,cws,defsum,deftuple,pack,progndollar,theory-tools,types-misc}.lisp
  copyright (C) 2007 by Sol Swords <sswords@cs.utexas.edu>.
+
+flag.lisp copyright 2008 by Jared Davis <jared@cs.utexas.edu> and Sol Swords.
 
 This program is free software; you can redistribute it and/or 
 modify it under the terms of the GNU General Public License as 

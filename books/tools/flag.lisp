@@ -1,0 +1,358 @@
+; flag.lisp -- Introduce induction scheme for mutually recursive functions.
+; Sol Swords and Jared Davis {sswords,jared}@cs.utexas.edu
+
+; Examples
+#|
+(include-book "tools/flag" :dir :system)
+
+(FLAG::make-flag flag-pseudo-termp 
+                 pseudo-termp
+                 :flag-var flag
+                 :flag-mapping ((pseudo-termp . term)
+                                (pseudo-term-listp . list))
+                 ;; :hints {for the measure theorem}
+                 :defthm-macro-name defthm-pseudo-termp
+                 )
+
+; This introduces (flag-pseudo-termp flag x lst)
+; Theorems equating it with pseudo-termp and pseudo-term-listp
+; And the macro shown below.
+
+(in-theory (disable (:type-prescription pseudo-termp)
+                    (:type-prescription pseudo-term-listp)))
+
+(defthm-pseudo-termp type-of-pseudo-termp
+  (term (booleanp (pseudo-termp x))
+        :rule-classes :rewrite 
+        :doc nil)
+  (list (booleanp (pseudo-term-listp lst))
+        )
+  :hints(("Goal" 
+          :induct (flag-pseudo-termp flag x lst))))
+
+
+
+(defstobj term-bucket
+  (terms))
+
+(mutual-recursion
+
+ (defun terms-into-bucket (x term-bucket) 
+   ;; Returns (mv number of terms added, term-bucket)
+   (declare (xargs :stobjs (term-bucket)
+                   :verify-guards nil))
+   (cond ((or (atom x)
+              (quotep x))
+          (let ((term-bucket (update-terms (cons x (terms term-bucket)) term-bucket)))
+            (mv 1 term-bucket)))
+         (t
+          (mv-let (numterms term-bucket)
+                  (terms-into-bucket-list (cdr x) term-bucket)
+                  (let ((term-bucket (update-terms (cons x (terms term-bucket)) term-bucket)))
+                    (mv (+ numterms 1) term-bucket))))))
+
+ (defun terms-into-bucket-list (x term-bucket)
+   (declare (xargs :stobjs (term-bucket)))
+   (if (atom x) 
+       (mv 0 term-bucket)
+     (mv-let (num-car term-bucket)
+             (terms-into-bucket (car x) term-bucket)
+             (mv-let (num-cdr term-bucket)
+                     (terms-into-bucket-list (cdr x) term-bucket)
+                     (mv (+ num-car num-cdr) term-bucket))))))
+
+(terms-into-bucket '(f x y z) term-bucket)
+
+(FLAG::make-flag flag-terms-into-bucket
+                 terms-into-bucket)
+|#                 
+
+
+
+(in-package "FLAG")
+
+(program)
+
+(defun get-clique-members (fn world)
+  (or (getprop fn 'recursivep nil 'current-acl2-world world)
+      (er hard 'get-clique-members "Expected ~s0 to be in a mutually-recursive nest.~%")))
+  
+(defun get-formals (fn world)
+  (getprop fn 'formals nil 'current-acl2-world world))
+
+(defun get-body (fn world)
+  ;; This gets the original, normalized or non-normalized body based on what
+  ;; the user typed for the :normalize xarg.  The use of "last" skips past 
+  ;; any other :definition rules that have been added since then.
+  (access def-body 
+          (car (last (getprop fn 'def-bodies nil 'current-acl2-world world)))
+          :concl))
+
+(defun get-measure (fn world)
+  (access justification
+          (getprop fn 'justification nil 'current-acl2-world world)
+          :measure))
+
+(defun get-wfr (fn world)
+  (access justification
+          (getprop fn 'justification nil 'current-acl2-world world)
+          :rel))
+
+(defun make-flag-measure-aux (alist world)
+  (cond ((and (consp alist)
+              (consp (cdr alist)))
+         (cons `(,(cdar alist) ,(get-measure (caar alist) world))
+               (make-flag-measure-aux (cdr alist) world)))
+        ((consp alist)
+         (list `(otherwise ,(get-measure (caar alist) world))))
+        (t 
+         (er hard 'make-flag-measure-aux "Never get here."))))
+
+(defun make-flag-measure (flag-var alist world)
+  (declare (xargs :guard (symbolp flag-var)
+                  :mode :program))
+  `(case ,flag-var
+     . ,(make-flag-measure-aux alist world)))
+
+(defun merge-formals (alist world)
+  (if (consp alist)
+      (union-eq (get-formals (caar alist) world)
+                (merge-formals (cdr alist) world))
+    nil))
+
+(defun merge-actuals (alist formals)
+  ;; The alist has in it (orig-formal . actual) pairs.  Walk through formals 
+  ;; and replace any orig-formal with its actual; replace any unbound new
+  ;; formals with nil.
+  (if (consp formals)
+      (cons (cdr (assoc-eq (car formals) alist))
+            (merge-actuals alist (cdr formals)))
+    nil))
+
+(mutual-recursion 
+
+ (defun mangle-body (body fn-name alist formals world)
+   (cond ((atom body)
+          body)
+         ((eq (car body) 'quote)
+          body)
+         ((symbolp (car body))
+          (let ((lookup   (assoc-eq (car body) alist))
+                (new-args (mangle-body-list (cdr body) fn-name alist formals world)))
+            (if lookup
+                (let* ((orig-formals (get-formals (car lookup) world))
+                       (new-actuals (merge-actuals (pairlis$ orig-formals new-args) formals)))
+                  `(,fn-name ',(cdr lookup) . ,new-actuals))
+              (cons (car body) new-args))))
+         (t
+          (let ((lformals (cadar body))
+                (lbody    (caddar body))
+                (largs    (cdr body)))
+            (cons (list 'lambda 
+                        lformals
+                        (mangle-body lbody  fn-name alist formals world))
+                  (mangle-body-list largs fn-name alist formals world))))))
+
+ (defun mangle-body-list (list fn-name alist formals world)
+   (if (consp list)
+       (cons (mangle-body (car list) fn-name alist formals world)
+             (mangle-body-list (cdr list) fn-name alist formals world))
+     nil)))
+
+
+(defun make-flag-body-aux (fn-name formals alist full-alist world)
+  (if (consp alist)
+      (let* ((orig-body (get-body (caar alist) world))
+             (new-body (mangle-body orig-body fn-name full-alist formals world)))
+        (cond ((consp (cdr alist))
+               (cons `(,(cdar alist) ,new-body)
+                     (make-flag-body-aux fn-name formals (cdr alist) full-alist world)))
+              (t
+               (list `(otherwise ,new-body)))))
+    (er hard 'make-flag-body-aux "Never get here.")))
+
+(defun make-flag-body (fn-name flag-var alist hints world)
+  (let ((formals (merge-formals alist world)))
+  `(defun ,fn-name ,(cons flag-var formals)
+     (declare (xargs :verify-guards nil
+                     :normalize nil
+                     :measure ,(make-flag-measure flag-var alist world)
+                     :non-executable t
+                     :hints ,hints
+                     :well-founded-relation ,(get-wfr (caar alist) world)))
+     (case ,flag-var
+       . 
+       ,(make-flag-body-aux fn-name formals alist alist world)))))
+     
+(defun extract-keyword-from-args (kwd args)
+  (if (consp args)
+      (if (eq (car args) kwd)
+          (if (consp (cdr args))
+              (cadr args)
+            (er hard "Expected something to follow ~s0.~%" kwd))
+        (extract-keyword-from-args kwd (cdr args)))
+    nil))
+
+(defun throw-away-keyword-parts (args)
+  (if (consp args)
+      (if (keywordp (car args))
+          nil
+        (cons (car args)
+              (throw-away-keyword-parts (cdr args))))
+    nil))
+
+(defun pair-up-cases-with-thmparts (alist thmparts)
+  ;; Each thmpart is an thing like (flag <thm-body> :name ... :rule-classes ... :doc ...)
+  (if (consp alist)
+      (let* ((flag   (cdar alist))
+             (lookup (assoc-eq flag thmparts)))
+        (if (not lookup)
+            (er hard 'pair-up-cases-with-thmparts 
+                "Expected there to be a case for the flag ~s0.~%" flag)
+          (if (consp (cdr alist))
+              (cons `(,flag ,(cadr lookup))
+                    (pair-up-cases-with-thmparts (cdr alist) thmparts))
+            (list `(otherwise ,(cadr lookup))))))
+    (er hard 'pair-up-cases-with-thmparts
+        "Never get here.")))
+
+(defun make-defthm-macro-fn-aux (name flag-var alist thmparts)
+  ;; We have just proven the lemma and it's time to instantiate it to 
+  ;; give us each thm.
+  (if (consp alist)
+      (let* ((flag (cdar alist))
+             (lookup (assoc-eq flag thmparts)))
+        ;; Not checking for lookup, already did it when we did cases.
+        (let ((this-name (or (extract-keyword-from-args :name (cddr lookup))
+                             (intern-in-package-of-symbol 
+                              (concatenate 'string 
+                                           (symbol-name name)
+                                           "-"
+                                           (symbol-name flag))
+                              name)))
+              (rule-classes (or (extract-keyword-from-args :rule-classes (cddr lookup))
+                                :rewrite))
+              (doc          (extract-keyword-from-args :doc (cddr lookup))))
+          (cons `(defthm ,this-name
+                   ,(cadr lookup)
+                   :rule-classes ,rule-classes
+                   :doc ,doc
+                   :hints(("Goal" 
+                           :in-theory (theory 'minimal-theory)
+                           :use ((:instance ,name (,flag-var ',flag))))))
+                (make-defthm-macro-fn-aux name flag-var (cdr alist) thmparts))))
+    nil))
+
+(defun make-defthm-macro-fn (name args alist flag-var)
+  (let ((thmparts (throw-away-keyword-parts args)))
+    `(encapsulate
+      ()
+      (local (defthm ,name
+               (case ,flag-var . ,(pair-up-cases-with-thmparts alist thmparts))
+               :rule-classes nil
+               ;; user must give induction scheme.  lolol.
+               :hints ,(extract-keyword-from-args :hints args)
+               :instructions ,(extract-keyword-from-args :instructions args)
+               :otf-flg ,(extract-keyword-from-args :otf-flg args)))
+      
+      . ,(make-defthm-macro-fn-aux name flag-var alist thmparts))))
+
+(defun make-defthm-macro (real-macro-name alist flag-var)
+  `(defmacro ,real-macro-name (name &rest args)
+     (declare (xargs :guard (symbolp name)))
+     (make-defthm-macro-fn name args ',alist ',flag-var)))
+
+(defun make-cases-for-equiv (alist world)
+  (if (consp alist)
+      (let* ((fn   (caar alist))
+             (flag (cdar alist))
+             (fn-formals (get-formals fn world)))
+        (if (consp (cdr alist))
+            (cons `(,flag (,fn . ,fn-formals))
+                  (make-cases-for-equiv (cdr alist) world))
+          (list `(otherwise (,fn . ,fn-formals)))))
+    nil))
+
+
+;; Collects up any calls of functions listed in FNS that are present in x.
+(mutual-recursion
+ (defun find-calls-of-fns-term (x fns acc)
+   (cond ((or (atom x) (eq (car x) 'quote)) acc)
+         ((member-eq (car x) fns)
+          (find-calls-of-fns-list (cdr x) fns (cons x acc)))
+         (t
+          (find-calls-of-fns-list (cdr x) fns acc))))
+ (defun find-calls-of-fns-list (x fns acc)
+   (if (atom x)
+       acc
+     (find-calls-of-fns-term
+      (car x) fns
+      (find-calls-of-fns-list (cdr x) fns acc)))))
+
+;; Gives an expand hint for any function in FNS present in the
+;; conclusion of the clause.
+(defun expand-calls-computed-hint (clause fns)
+ (let ((expand-list (find-calls-of-fns-term (car (last clause)) fns nil)))
+   `(:expand ,expand-list)))
+
+
+(defun make-flag-fn (flag-fn-name clique-member-name flag-var flag-mapping hints 
+                                  defthm-macro-name world)
+  (let* ((flag-var (or flag-var 
+                       (intern-in-package-of-symbol "FLAG" flag-fn-name)))
+         (alist (or flag-mapping
+                    (pairlis$ (get-clique-members clique-member-name world)
+                              (get-clique-members clique-member-name world))))
+         (defthm-macro-name (or defthm-macro-name
+                                (intern-in-package-of-symbol 
+                                 (concatenate 'string "DEFTHM-" (symbol-name flag-fn-name))
+                                 flag-fn-name)))
+         (equiv-thm-name (intern-in-package-of-symbol 
+                          (concatenate 'string (symbol-name flag-fn-name) "-EQUIVALENCES")
+                          flag-fn-name))
+         (formals        (merge-formals alist world)))
+    `(encapsulate
+      ()
+      (logic)
+      (set-ignore-ok t)
+      ,(make-flag-body flag-fn-name flag-var alist hints world)
+      ,(make-defthm-macro defthm-macro-name alist flag-var)
+
+      (with-output
+       :off prove ;; hides induction scheme, too
+       :gag-mode :goals
+       (defthm ,equiv-thm-name
+         (equal (,flag-fn-name ,flag-var . ,formals)
+                (case ,flag-var
+                  ,@(make-cases-for-equiv alist world)))
+         :hints (("Goal"
+                  :induct 
+                  (,flag-fn-name ,flag-var . ,formals)
+                  :in-theory 
+                  (union-theories (theory 'minimal-theory)
+                                  '((:induction ,flag-fn-name))))
+                 (and stable-under-simplificationp
+                      (expand-calls-computed-hint ACL2::clause
+                                                  ',(cons flag-fn-name
+                                                          (strip-cars alist)))))))
+       
+       
+      (in-theory (disable (:definition ,flag-fn-name)))
+      )))
+        
+(defmacro make-flag (flag-fn-name clique-member-name 
+                     &key
+                     flag-var
+                     flag-mapping 
+                     hints
+                     defthm-macro-name)
+  `(make-event (make-flag-fn ',flag-fn-name 
+                             ',clique-member-name 
+                             ',flag-var
+                             ',flag-mapping 
+                             ',hints
+                             ',defthm-macro-name
+                             (w state))))
+
+
+
