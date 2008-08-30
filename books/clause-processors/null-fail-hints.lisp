@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 
-(include-book "clause-processors/join-thms" :dir :system)
+(include-book "join-thms")
 
 (defun identity-clause-processor (clause)
   (list clause))

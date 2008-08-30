@@ -74,4 +74,4 @@ equality.cert: equality.lisp
 join-thms.cert: join-thms.lisp
 
 null-fail-hints.cert: null-fail-hints.lisp
-# null-fail-hints.cert: $(ACL2_SYSTEM_BOOKS)/clause-processors/join-thms.cert
+null-fail-hints.cert: join-thms.cert
