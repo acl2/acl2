@@ -76,6 +76,7 @@ SHORTDIRS2 = ordinals data-structures bdd
 all:
 	@date ; $(TIME) $(MAKE) all-aux
 
+
 # Next, specify all of the directory dependencies.  At this point we do this
 # manually by inspecting the Makefiles.
 arithmetic: cowles
@@ -682,7 +683,7 @@ clean:
 # Tar up books and support, not including workshops or nonstd stuff.
 .PHONY: tar
 tar:
-	tar cvf books.tar Makefile Makefile-generic Makefile-subdirs README README.html certify-numbers.lisp $(DIRS1) $(DIRS3)
+	tar cvf books.tar Makefile Makefile-generic Makefile-subdirs README README.html certify-numbers.lsp $(DIRS1) $(DIRS3)
 
 # The following "short" targets allow for a relatively short test, in response
 # to a request from GCL maintainer Camm Maguire.
