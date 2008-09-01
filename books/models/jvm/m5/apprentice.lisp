@@ -245,7 +245,8 @@ proved it after about an hour's work.
 ;   /u/moore/bin/watchlog foo.log
 ; to observe it in another buffer.  To get the diversion stuff, do
 
-(include-book "watchlog")
+(include-book
+ "watchlog")
 (acl2::divert)
 ...
 (acl2::undivert)
@@ -264,19 +265,22 @@ proved it after about an hour's work.
 (stop-proof-tree)
 
 ; Here is the standard ld command to load the file skipping proofs.
-(ld (cons '(include-book "m5")
+(ld (cons '(include-book
+            "m5")
           "apprentice.lisp")
     :ld-pre-eval-print t :ld-skip-proofsp t)
 
 ; Here is how to load it and ship proofs to a log file.
-(ld (cons '(include-book "m5")
+(ld (cons '(include-book
+            "m5")
           "apprentice.lisp")
     :ld-pre-eval-print t
     :standard-co "apprentice.log"
     :proofs-co   "apprentice.log")
 
 ; Here is how to certify and keep a log file.
-(ld '((include-book "m5")
+(ld '((include-book
+       "m5")
       (certify-book "apprentice" 1))
     :standard-co "apprentice.log"
     :proofs-co   "apprentice.log"

@@ -31,9 +31,6 @@
 
 include ../Makefile-generic
 
-
-# BOOKS_LISP = (patsubst %, %.lisp, $(BOOKS))
-
 tags:
 	 etags $(BOOKS_LISP)
 

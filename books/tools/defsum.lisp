@@ -1017,7 +1017,8 @@
     (local (in-theory (enable product-type (:executable-counterpart
                                             product-type))))
     ,@(if arith-option
-          `((local (include-book "arithmetic/top-with-meta" :dir :system)))
+          `((local (include-book
+                    "arithmetic/top-with-meta" :dir :system)))
         nil)
     ,@(basic-products-defs products guard-option accessor-option hons-opt compact-opt)
     
