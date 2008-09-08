@@ -58,7 +58,7 @@ DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 ari
 	defexec symbolic \
 	data-structures/memories unicode concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
-	quadratic-reciprocity misc/misc2 tools paco hacking
+	quadratic-reciprocity misc/misc2 tools paco hacking hons-bdds
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-4 \
 	misc models/jvm/m5 proofstyles rtl make-event parallel hints arithmetic-3/extra \
@@ -66,7 +66,7 @@ DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 ari
 	defexec symbolic \
 	data-structures/memories unicode concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
-	quadratic-reciprocity misc/misc2 tools paco hacking
+	quadratic-reciprocity misc/misc2 tools paco hacking hons-bdds
 SHORTDIRS2 = ordinals data-structures bdd
 
 .PHONY: $(DIRS1) $(DIRS2) $(DIRS3)
@@ -94,6 +94,7 @@ finite-set-theory: arithmetic ordinals
 powerlists: arithmetic ordinals data-structures
 textbook: arithmetic top-with-meta-cert ordinals ihs
 defexec: arithmetic misc ordinals make-event
+hons-bdds: misc clause-processors
 symbolic: arithmetic arithmetic-2 data-structures ihs misc ordinals models/jvm/m5
 data-structures/memories: arithmetic-3 misc
 unicode: arithmetic arithmetic-3 ihs
@@ -675,7 +676,7 @@ clean:
 	do \
 	if [ -f $$dir/Makefile ]; then \
 	(cd $$dir ; \
-	$(MAKE) clean ; \
+	$(MAKE) FAST_DEPS_FOR_CLEAN=1 clean ; \
 	cd ..) ; \
 	fi \
 	done

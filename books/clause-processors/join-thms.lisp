@@ -12,7 +12,6 @@
 
 (in-package "ACL2")
   
-
 (defthm conjoin-clauses-of-one
   (equal (conjoin-clauses (list x))
          (disjoin x)))

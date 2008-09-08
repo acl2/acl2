@@ -3,7 +3,8 @@
 
 ; Examples
 #|
-(include-book "tools/flag" :dir :system)
+(include-book 
+ "tools/flag" :dir :system)
 
 (FLAG::make-flag flag-pseudo-termp 
                  pseudo-termp

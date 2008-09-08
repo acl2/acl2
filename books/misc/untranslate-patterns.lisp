@@ -520,7 +520,8 @@
 
 Here is a little script you can try.
 
-(include-book "misc/untranslate-patterns" :dir :system)
+(include-book
+ "misc/untranslate-patterns" :dir :system)
 
 (defconst *const* '(a b c d))
 
