@@ -1,10 +1,8 @@
-# Jared: someone needs to fix this directory who understands it.
-# I am taking out the include of Makefile-deps so that it does not confuse the
-# new Makefile-big thing.
-# I am leaving in the include of Makefile-generic so that one can attempt to 
-# type "make" here, but that seems to be completely broken since all of these
-# books have defaxioms and such.
+# This directory provides support for its parent directory.  See in
+# particular ../embedded-defaxioms.lisp.
+
+# Thus, do not include Makefile-deps, which Jared says can confuse the
+# new Makefile-big thing.  We include Makefile-generic for historic
+# reasons, and because it might be necessary now or down the road.
 
 include ../../Makefile-generic
-
-
