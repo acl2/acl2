@@ -1,4 +1,3 @@
-#labels PackagesforBooks
 Jared created a good overview on how to define packages for your books.
 
 http://www.cs.utexas.edu/users/jared/acl2/packages.cgi
