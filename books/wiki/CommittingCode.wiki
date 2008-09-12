@@ -1,4 +1,4 @@
-#summary Suggested guidelines on how to commit code.
+#summary Suggested guidelines for how to commit code.
 
 = Important guidelines =
 
