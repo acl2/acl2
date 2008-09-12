@@ -1,3 +1,5 @@
+#summary Suggested guidelines for how to use packages when creating books.
+
 Jared created a good overview on how to define packages for your books.
 
 http://www.cs.utexas.edu/users/jared/acl2/packages.cgi
