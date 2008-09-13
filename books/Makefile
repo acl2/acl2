@@ -111,7 +111,7 @@ models/jvm/m5: top-with-meta-cert ordinals misc ihs
 paco: ihs ordinals top-with-meta-cert
 # hacking has no dependencies
 parallel: make-event
-security: make-event arithmetic-3/bind-free arithmetic-3/floor-mod
+security: make-event arithmetic-3
 sorting: arithmetic-3/extra
 # Let us wait for everything else before workshops:
 workshops: $(DIRS1) $(DIRS2_EXCEPT_WK)

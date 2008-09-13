@@ -292,9 +292,9 @@ nothing:
 # generate dependency lines.
 
 # Grep commands to rule out :dir :system:
-ACL2_NON_DIR            = egrep -i -v ':dir[ \t]*:system'
+ACL2_NON_DIR            = egrep -i -v ':dir'
 
-# Grep commands for include-book and ld forms withOUT :dir :system:
+# Grep commands for include-book and ld forms withOUT :dir:
 ACL2_EGREP_CMD          = egrep -i '^[^;]*include-book[ \t]*\".*\"' $$book.lisp | $(ACL2_NON_DIR)
 ACL2_EGREP_CMD_ACL2     = $(subst book.lisp,book.acl2,$(ACL2_EGREP_CMD))
 ACL2_EGREP_CMD_CERT     = $(subst $$book.lisp,cert.acl2,$(ACL2_EGREP_CMD))
@@ -369,6 +369,8 @@ clean:
 	rm -f workxxx*
 
 ifdef FAST_DEPS_FOR_CLEAN
+# Note that Makefile-deps will be deleted by the clean target
+# immediately after the following code creates it.
 Makefile-deps: 
 	@echo "# Skipping deps" > Makefile-deps
 else
