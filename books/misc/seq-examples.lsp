@@ -159,6 +159,8 @@
 
 #||
 ; stack overflows on my Lisp
+; segfaults on gcl, watch out.
+(comp 'match-ints)
 (mv-let (erp val lst)
         (match-ints (make-list 10000000 :initial-element 0))
         (declare (ignore val lst))
@@ -166,6 +168,7 @@
 ||#
 
 ; does not stack overflow on my Lisp
+(comp 'tr-match-ints)
 (mv-let (erp val lst)
         (tr-match-ints (make-list 10000000 :initial-element 0) nil)
         (declare (ignore val lst))
