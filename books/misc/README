@@ -347,6 +347,15 @@ exported theorems.  The result is records.lisp.
 
 ===============================================================================
 
+seq.lisp -- the seq macro language
+seq-examples.lsp -- examples of using the seq macro
+
+SEQ is a macro language for implementing parsers or otherwise applying
+"actions" to "streams".  See the comments at the top of seq.lisp and also
+see the examples in seq-examples.lsp for more information.
+
+===============================================================================
+
 simplify-defuns.lisp -- simplify definitions in a file and prove equivalence
 
 See simplify-defuns.txt (which can be printed out as 8 pages with 12 point
