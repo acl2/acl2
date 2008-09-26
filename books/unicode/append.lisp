@@ -17,6 +17,7 @@
 
 (in-package "ACL2")
 
+(include-book "list-fix")
 (local (include-book "arithmetic-3/bind-free/top" :dir :system))
 
 (local (defthm len-when-consp
@@ -74,3 +75,6 @@
                 (character-listp y))
            (character-listp (append x y))))
 
+(defthm append-of-nil
+  (equal (append x nil)
+         (list-fix x)))

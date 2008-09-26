@@ -31,10 +31,9 @@
                                      (<= 0 n))))
          (if (zp n)
              ans
-           (simpler-explode-nonnegative-integer (floor n 10)
-                                                (cons (digit-to-char 
-                                                       (mod n 10))
-                                                      ans)))))
+           (simpler-explode-nonnegative-integer 
+            (floor n 10)
+            (cons (digit-to-char (mod n 10)) ans)))))
 
 
 
@@ -74,6 +73,10 @@
            (if (zp m)
                nil
              (basic-eni-induction (floor n 10) (floor m 10))))))
+
+(local (defthm consp-of-basic-eni-core
+         (equal (consp (basic-eni-core n))
+                (not (zp n)))))
 
 (local (defthm equal-of-basic-eni-cores
          (equal (equal (basic-eni-core n)
@@ -158,10 +161,8 @@
            (base10-digit-char-listp (explode-nonnegative-integer n 10 acc))))
 
 
-
 (encapsulate
  ()
-
  (local (defthm lemma
           (equal (equal (revappend x acc) '(#\0))
                  (or (and (equal acc nil)
@@ -176,3 +177,68 @@
             (not (equal (explode-nonnegative-integer n 10 nil)
                         '(#\0))))
    :hints(("Goal" :in-theory (enable digit-to-char)))))
+
+
+
+
+(defund base10-digit-char-to-nat (x)
+  (declare (xargs :guard (base10-digit-charp x)))
+  (case x
+    (#\0 0)
+    (#\1 1)
+    (#\2 2)
+    (#\3 3)
+    (#\4 4)
+    (#\5 5)
+    (#\6 6)
+    (#\7 7)
+    (#\8 8)
+    (otherwise 9)))
+
+(defthm base10-digit-char-to-nat-of-digit-to-char
+  (implies (and (force (natp n))
+                (force (<= 0 n))
+                (force (<= n 9)))
+           (equal (base10-digit-char-to-nat (digit-to-char n))
+                  n))
+  :hints(("Goal" :in-theory (enable base10-digit-char-to-nat
+                                    digit-to-char))))
+
+(defthm digit-to-char-of-base10-digit-char-to-nat
+  (implies (force (base10-digit-charp x))
+           (equal (digit-to-char (base10-digit-char-to-nat x))
+                  x))
+  :hints(("Goal" :in-theory (enable base10-digit-charp
+                                    base10-digit-char-to-nat
+                                    digit-to-char))))
+
+(defund basic-unexplode-core (x)
+  (declare (xargs :guard (base10-digit-char-listp x)))
+  (if (consp x)
+      (+ (base10-digit-char-to-nat (car x))
+         (* 10 (basic-unexplode-core (cdr x))))
+    0))
+
+(local (defthm basic-unexplode-core-of-basic-eni-core
+         (implies (force (natp n))
+                  (equal (basic-unexplode-core (basic-eni-core n))
+                         n))
+         :hints(("Goal" :in-theory (enable basic-eni-core
+                                           basic-unexplode-core)))))
+
+(defund unexplode-nonnegative-integer (x)
+  (declare (xargs :guard (base10-digit-char-listp x)))
+  (basic-unexplode-core (revappend x nil)))
+
+(encapsulate
+ ()
+ (local (include-book "rev"))
+ 
+ (defthm unexplode-nonnegative-integer-of-explode-nonnegative-integer
+   (implies (force (natp n))
+            (equal (unexplode-nonnegative-integer (explode-nonnegative-integer n 10 nil))
+                   n))
+   :hints(("Goal" :in-theory (e/d (unexplode-nonnegative-integer)
+                                  (basic-eni-core))))))
+
+  

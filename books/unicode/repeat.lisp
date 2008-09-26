@@ -19,10 +19,12 @@
 (include-book "take")
 
 (defund repeat (x n)
-  (declare (xargs :guard (natp n)))
-  (if (zp n)
-      nil
-    (cons x (repeat x (1- n)))))
+  (declare (xargs :guard (natp n)
+                  :verify-guards nil))
+  (mbe :logic (if (zp n)
+                  nil
+                (cons x (repeat x (- n 1))))
+       :exec (make-list-ac n x nil)))
 
 (defthm simpler-take-when-not-consp
   (implies (not (consp x))
@@ -30,3 +32,7 @@
                   (repeat nil n)))
   :hints(("Goal" :in-theory (enable repeat))))
 
+(defthm len-of-repeat
+  (equal (len (repeat x n))
+         (nfix n))
+  :hints(("Goal" :in-theory (enable repeat))))

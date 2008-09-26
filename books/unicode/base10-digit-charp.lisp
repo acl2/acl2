@@ -18,6 +18,7 @@
 (in-package "ACL2")
 
 (defund base10-digit-charp (x)
+  (declare (xargs :guard t))
   (if (member x '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
       t
     nil))
@@ -29,6 +30,7 @@
 
 
 (defund base10-digit-char-listp (x)
+  (declare (xargs :guard t))
   (if (consp x)
       (and (base10-digit-charp (car x))
            (base10-digit-char-listp (cdr x)))
