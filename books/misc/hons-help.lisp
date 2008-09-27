@@ -623,24 +623,27 @@
       (value f))))
 
 (defmacro defhonst (name form &key (evisc 'nil eviscp) check doc)
-  `(progn (defconst ,name (hons-copy ,form) ,doc)
-          (table evisc-table
-                 ,name
-                 ,(if eviscp
-                      evisc
-                    (concatenate 'string "#,|" (symbol-name name) "|")))
-          (table persistent-hons-table
-                 (let ((x ,name))
-                   (if (or (consp x) (stringp x))
+  `(with-output
+    :off summary
+    (progn
+      (defconst ,name (hons-copy ,form) ,doc)
+      (table evisc-table
+             ,name
+             ,(if eviscp
+                  evisc
+                (concatenate 'string "#,|" (symbol-name name) "|")))
+      (table persistent-hons-table
+             (let ((x ,name))
+               (if (or (consp x) (stringp x))
 
 ; honsp-check without check
 
-                       x
-                     nil))
-                 t)
-          ,@(and check
-                 `((assert-event ,check)))
-          (value-triple ',name)))
+                   x
+                 nil))
+             t)
+      ,@(and check
+             `((assert-event ,check)))
+      (value-triple ',name))))
 
 (defmacro all-memoized-fns (&optional show-conditions)
   (if show-conditions
