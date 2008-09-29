@@ -631,7 +631,10 @@
              ,name
              ,(if eviscp
                   evisc
-                (concatenate 'string "#,|" (symbol-name name) "|")))
+                (let ((str (symbol-name name)))
+                  (if (may-need-slashes str)
+                      (concatenate 'string "#,|" str "|")
+                    (concatenate 'string "#," str)))))
       (table persistent-hons-table
              (let ((x ,name))
                (if (or (consp x) (stringp x))
