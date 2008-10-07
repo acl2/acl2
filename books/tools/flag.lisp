@@ -3,7 +3,7 @@
 
 ; Examples
 #|
-(include-book 
+(include-book  ;; this newline is so that this is ignored in dependency scanning
  "tools/flag" :dir :system)
 
 (FLAG::make-flag flag-pseudo-termp 
@@ -233,15 +233,18 @@
                               name)))
               (rule-classes (or (extract-keyword-from-args :rule-classes (cddr lookup))
                                 :rewrite))
-              (doc          (extract-keyword-from-args :doc (cddr lookup))))
-          (cons `(defthm ,this-name
-                   ,(cadr lookup)
-                   :rule-classes ,rule-classes
-                   :doc ,doc
-                   :hints(("Goal" 
-                           :in-theory (theory 'minimal-theory)
-                           :use ((:instance ,name (,flag-var ',flag))))))
-                (make-defthm-macro-fn-aux name flag-var (cdr alist) thmparts))))
+              (doc          (extract-keyword-from-args :doc (cddr lookup)))
+              (skip (extract-keyword-from-args :skip (cddr lookup))))
+          (if skip
+              (make-defthm-macro-fn-aux name flag-var (cdr alist) thmparts)
+            (cons `(defthm ,this-name
+                     ,(cadr lookup)
+                     :rule-classes ,rule-classes
+                     :doc ,doc
+                     :hints(("Goal" 
+                             :in-theory (theory 'minimal-theory)
+                             :use ((:instance ,name (,flag-var ',flag))))))
+                  (make-defthm-macro-fn-aux name flag-var (cdr alist) thmparts)))))
     nil))
 
 (defun make-defthm-macro-fn (name args alist flag-var)

@@ -187,7 +187,8 @@
 
 (defun patbindfn (pattern assign-expr nested-expr)
   (cond ((and (consp assign-expr) (not (eq (car assign-expr) 'quote))
-              (consp pattern) (not (eq (car pattern) 'mv)))
+              (consp pattern) (not (eq (car pattern) 'mv))
+              (not (eq (car pattern) 'er)))
          (let ((var (pack pattern))) 
            `(let ((,var ,assign-expr))
               (patbind ,pattern ,var ,nested-expr))))
@@ -274,10 +275,41 @@
             (list-binding-list (cdr args) (1+ n) form ignores)))))
 
 
+(defun list*-binding-list (args form ignores)
+  (if (atom (cdr args))
+      (if (member (car args) ignores)
+          nil
+        (list (list (car args) form)))
+    (if (member (car args) ignores)
+        (list*-binding-list (cdr args) form ignores)
+      (cons (list (car args) `(car ,form))
+            (list*-binding-list (cdr args) `(cdr ,form) ignores)))))
+
+
 (defmacro patbind-list (args binding ignores expr)
   (declare (xargs :guard (true-listp args)))
   `(let ,(list-binding-list args 0 binding ignores)
      ,expr))
+
+
+(defmacro patbind-list* (args binding ignores expr)
+  (declare (xargs :guard (true-listp args)))
+  `(let ,(list*-binding-list args binding ignores)
+     ,expr))
+
+(defmacro patbind-er (args binding ignores expr)
+  `(er-let* ((,(car args) ,binding))
+            ,@(if ignores
+                  `((declare (ignore . ,ignores)))
+                nil)
+            ,expr))
+
+(defmacro patbind-state-global (args binding ignores expr)
+  (declare (ignorable ignores))
+  `(state-global-let*
+    ((,(car args) ,binding))
+    ,expr))
+
 
 (local
  (progn
