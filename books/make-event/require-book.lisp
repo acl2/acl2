@@ -106,6 +106,22 @@ to give more specific messages for each recommended book.
                  (t ; a default message
                   (er soft ctx "Book has not been included: ~x0" full-book-name)))))))))
 
+; Added for compatibility with ACL2 Version 3.4 during development of the next
+; version.  It should be fine to remove this after the next version is
+; released.
+(set-state-ok t)
+(defun set-print-case (case state)
+  (declare (xargs :mode :logic
+                  :guard (and (or (eq case :upcase) (eq case :downcase))
+                              (state-p state))))
+  (prog2$ (or (eq case :upcase)
+              (eq case :downcase)
+              (illegal 'set-print-case
+                       "The value ~x0 is illegal as an ACL2 print-base, which ~
+                        must be :UPCASE or :DOWNCASE."
+                       (list (cons #\0 case))))
+          (f-put-global 'print-case case state)))
+
 (defun maybe-chk-for-included-book-fn (user-book-name dir errmsg no-err-if-existsp ctx state)
   (let ((behalf-of (cond ((or (@ certify-book-info)
                               (assoc-eq 'certify-book (global-val 'embedded-event-lst (w state))))
