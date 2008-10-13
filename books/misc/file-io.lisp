@@ -105,7 +105,7 @@
 ; :downcase mode.  Form must return an error triple.
 (defmacro downcase (form)
   `(state-global-let*
-    ((print-case :downcase))
+    ((print-case :downcase set-print-case))
     ,form))
 
 ; Same as write-list above, but where printing is down in downcase mode:

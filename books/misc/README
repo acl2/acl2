@@ -398,6 +398,10 @@ total-order.lisp -- total order for ACL2
 
 ===============================================================================
 
+trace1.lisp -- alternate implementation of tracing
+
+===============================================================================
+
 transfinite.lisp -- generic proof by strong ordinal induction
 
 This book presents a way to use functional instantiation to reduce a theorem to

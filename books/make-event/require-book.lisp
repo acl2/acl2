@@ -115,7 +115,7 @@ to give more specific messages for each recommended book.
                          (t
                           'top-level))))
     (state-global-let*
-     ((print-case ':downcase)) ; probably better in this case
+     ((print-case ':downcase set-print-case)) ; probably better in this case
      (if (eq behalf-of 'include-book)
        (chk-for-included-book-fn user-book-name dir errmsg no-err-if-existsp ctx state)
        (mv-let

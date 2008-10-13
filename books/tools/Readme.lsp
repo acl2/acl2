@@ -3,6 +3,7 @@
 .:
 Makefile
 Readme.lsp
+arith4-theory.lisp
 bstar.lisp
 cws.lisp
 defsum.lisp
@@ -11,10 +12,14 @@ flag.acl2
 flag.lisp
 flag-package.lsp
 index.html
+mv-nth.lisp
 pack.lisp
 progndollar.lisp
+rulesets.lisp
+stobj-help.lisp
 theory-tools.lisp
 types-misc.lisp
+with-arith4-help.lisp
 ")
  (:TITLE "Tools")
  (:AUTHOR/S

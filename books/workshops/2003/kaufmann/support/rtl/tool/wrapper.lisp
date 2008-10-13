@@ -12,7 +12,7 @@
          (simplify-model-helpers
           (concatenate 'string rel4-lib "simplify-model-helpers")))
     `(state-global-let*
-      ((print-case :downcase))
+      ((print-case :downcase set-print-case))
       (ld
        '((INCLUDE-BOOK
           ,"tool/simplify-defuns")

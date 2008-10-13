@@ -10,6 +10,8 @@ bv-add-tests.lisp
 bv-add.lisp
 equality.acl2
 equality.lisp
+generalize.acl2
+generalize.lisp
 join-thms.lisp
 null-fail-hints.lisp
 ")
@@ -43,6 +45,8 @@ decision procedure for bit vectors.
 Book equality.lisp illustrates the use of clause processors to deal with
 equality reasoning.
 
+Book generalize.lisp provides a generalization clause processor.
+
 Book join-thms.lisp automates the introduction of certain theorems about
 evaluators that are useful for verifying clause processors.
 
@@ -55,6 +59,7 @@ Copyright (C) 2007 by:
  Jared Davis <jared@cs.utexas.edu>       (equality.lisp)
  Matt Kaufmann <kaufmann@cs.utexas.edu>  (basic-examples.lisp)
  Erik Reeber <reeber@cs.utexas.edu>      (bv-add*.lisp)
+ Sol Swords <sswords@cs.utexas.edu>      (generalize.lisp)
 
 This program is free software; you can redistribute it and/or 
 modify it under the terms of the GNU General Public License as 
