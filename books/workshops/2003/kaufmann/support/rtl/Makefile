@@ -11,7 +11,7 @@ diffs.out: bvecp.cert
 	diff bvecp.lisp results/bvecp.lisp >> diffs.out
 	diff model-eq.lisp results/model-eq.lisp >> diffs.out
 	@if [ ! -z "`head -1 diffs.out`" ] ; then \
-	  echo "Found unexpected results." ;\
+	  echo "**ERROR**: Found unexpected results." ;\
 	  exit 1 ;\
 	  fi
 
