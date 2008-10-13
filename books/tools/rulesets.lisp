@@ -151,7 +151,8 @@
 (local
  (encapsulate
   nil
-  (include-book "make-event/assert" :dir :system)
+  (include-book
+   "make-event/assert" :dir :system)
 
  (def-ruleset! foo '(append reverse))
 

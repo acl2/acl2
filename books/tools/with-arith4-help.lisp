@@ -2,7 +2,7 @@
 
 (in-package "ACL2")
 
-(include-book "tools/rulesets" :dir :system)
+(include-book "rulesets")
 
 ;; This is included so that this book will be considered dependent on
 ;; arith4-theory, so that any books that include this will be considered

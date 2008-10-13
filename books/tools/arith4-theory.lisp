@@ -10,7 +10,7 @@
        :clear)
 
 (include-book "arithmetic-4/top" :dir :system)
-(include-book "tools/rulesets" :dir :system)
+(include-book "rulesets")
 
 (def-ruleset! arith4-enable-ruleset (set-difference-theories
                                      (current-theory :here)

@@ -113,6 +113,7 @@ paco: ihs ordinals top-with-meta-cert
 parallel: make-event
 security: make-event arithmetic-3
 sorting: arithmetic-3/extra
+tools: arithmetic-4 misc
 # Let us wait for everything else before workshops:
 workshops: $(DIRS1) $(DIRS2_EXCEPT_WK)
 
