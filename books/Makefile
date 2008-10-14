@@ -102,7 +102,7 @@ proofstyles: arithmetic-2 ordinals misc top-with-meta-cert
 concurrent-programs/bakery: misc ordinals
 concurrent-programs/german-protocol: misc
 deduction/passmore: 
-clause-processors: top-with-meta-cert make-event arithmetic-3 textbook arithmetic misc
+clause-processors: top-with-meta-cert make-event arithmetic-3 textbook arithmetic misc tools data-structures arithmetic-4
 quadratic-reciprocity: rtl
 misc/misc2: rtl make-event
 hints: make-event
