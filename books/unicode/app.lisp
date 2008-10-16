@@ -21,7 +21,6 @@
 (include-book "take")
 (local (include-book "nthcdr"))
 
-
 (defund app (x y)
   (declare (xargs :guard t))
   (if (consp x)
