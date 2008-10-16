@@ -163,6 +163,17 @@
      ,@(gentle-butlast r 1)
      ,(ansfl-last-list (car (gentle-last r)) bindings)))
 
+(defmacro with-memoize (fn form)
+  `(let ((fn ,fn))
+     ((lambda (x y)
+        (declare (ignore x))
+        y)
+      (memoize! fn)
+      ((lambda (u v)
+         (declare (ignore v))
+         u)
+       ,form (unmemoize! fn)))))
+
 (defmacro with-fast-list (var term name form)
   `(let ((,var (hons-put-list
                 ,term

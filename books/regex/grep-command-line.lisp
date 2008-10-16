@@ -911,7 +911,7 @@
                               (booleanp multi)
                               (state-p state))))
   (if (atom files)
-      (mv 0 state)
+      (mv 1 state)
     (let* ((file (car files)))
       (mv-let (channel state)
               (open-input-channel file :character state)

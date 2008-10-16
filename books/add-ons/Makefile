@@ -1,3 +1,3 @@
 include ../Makefile-generic
--include Makefile-deps
 
+-include Makefile-deps

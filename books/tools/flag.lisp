@@ -249,17 +249,19 @@
 
 (defun make-defthm-macro-fn (name args alist flag-var)
   (let ((thmparts (throw-away-keyword-parts args)))
-    `(encapsulate
-      ()
-      (local (defthm ,name
-               (case ,flag-var . ,(pair-up-cases-with-thmparts alist thmparts))
-               :rule-classes nil
-               ;; user must give induction scheme.  lolol.
-               :hints ,(extract-keyword-from-args :hints args)
-               :instructions ,(extract-keyword-from-args :instructions args)
-               :otf-flg ,(extract-keyword-from-args :otf-flg args)))
+    `(progn
+       (encapsulate
+        ()
+        (local (defthm ,name
+                 (case ,flag-var . ,(pair-up-cases-with-thmparts alist thmparts))
+                 :rule-classes nil
+                 ;; user must give induction scheme.  lolol.
+                 :hints ,(extract-keyword-from-args :hints args)
+                 :instructions ,(extract-keyword-from-args :instructions args)
+                 :otf-flg ,(extract-keyword-from-args :otf-flg args)))
       
-      . ,(make-defthm-macro-fn-aux name flag-var alist thmparts))))
+        . ,(make-defthm-macro-fn-aux name flag-var alist thmparts))
+       (value-triple ',name))))
 
 (defun make-defthm-macro (real-macro-name alist flag-var)
   `(defmacro ,real-macro-name (name &rest args)

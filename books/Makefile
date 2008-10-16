@@ -58,7 +58,7 @@ DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 ari
 	defexec symbolic \
 	data-structures/memories unicode concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
-	quadratic-reciprocity misc/misc2 tools paco hacking hons-bdds security
+	quadratic-reciprocity misc/misc2 tools paco hacking hons-bdds security regex
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-4 \
 	misc models/jvm/m5 proofstyles rtl make-event parallel hints arithmetic-3/extra \
@@ -66,7 +66,7 @@ DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 ari
 	defexec symbolic \
 	data-structures/memories unicode concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
-	quadratic-reciprocity misc/misc2 tools paco hacking hons-bdds security
+	quadratic-reciprocity misc/misc2 tools paco hacking hons-bdds security regex
 SHORTDIRS2 = ordinals data-structures bdd
 
 .PHONY: $(DIRS1) $(DIRS2) $(DIRS3)
@@ -102,7 +102,8 @@ proofstyles: arithmetic-2 ordinals misc top-with-meta-cert
 concurrent-programs/bakery: misc ordinals
 concurrent-programs/german-protocol: misc
 deduction/passmore: 
-clause-processors: top-with-meta-cert make-event arithmetic-3 textbook arithmetic misc tools data-structures arithmetic-4
+clause-processors: top-with-meta-cert make-event arithmetic-3 textbook arithmetic \
+	misc tools data-structures arithmetic-4
 quadratic-reciprocity: rtl
 misc/misc2: rtl make-event
 hints: make-event
@@ -114,6 +115,8 @@ parallel: make-event
 security: make-event arithmetic-3
 sorting: arithmetic-3/extra
 tools: arithmetic-4 misc
+regex: tools
+
 # Let us wait for everything else before workshops:
 workshops: $(DIRS1) $(DIRS2_EXCEPT_WK)
 

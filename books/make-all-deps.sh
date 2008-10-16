@@ -73,7 +73,7 @@ do
 done
 
 
-cat Makefile-alldeps | grep -v "#" | grep -v "^$" \
+cat $TARGET | grep -v "#" | grep -v "^$" \
     | sed -r "s|^(.*): .*$|\\1 \\\|" | sort --unique > Makefile-tmp
 
 echo "" >> $TARGET
@@ -81,31 +81,4 @@ echo "" >> $TARGET
 echo "BOOKS = \\" >> $TARGET
 cat Makefile-tmp >> $TARGET
 echo "" >> $TARGET
-
-
-# echo "rtl/rel4/support/rtlarr.cert: misc/total-order.cert"
-
-# cat Makefile-alldeps | grep -v "#" | grep -v "^$" > makefile-tmp1
-
-# lines=`cat makefile-tmp1`
-# IFS="
-# "
-# for line in $lines ; do
-#     echo $line | sed -r "s|^(.*): .*$|\\1 \\\|"
-# done | sort --unique
-
-
-#  >> Makefile-tmp
-
-#  | sort --unique >> Makefile-tmp
-
-
-
-# # Then the user should run something like this:       
-    
-# # make -f Makefile-big -j 8 ACL2=acl2
-
-
-
-
-
+rm Makefile-tmp

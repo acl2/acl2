@@ -34,6 +34,14 @@
   (equal (list-fix (cons a x))
          (cons a (list-fix x)))
   :hints(("Goal" :in-theory (enable list-fix))))
+
+(defthm car-of-list-fix 
+  (equal (car (list-fix x))
+         (car x)))
+
+(defthm cdr-of-list-fix 
+  (equal (cdr (list-fix x))
+         (list-fix (cdr x))))
   
 (defthm list-fix-when-len-zero
   (implies (equal (len x) 0)

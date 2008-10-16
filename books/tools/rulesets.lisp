@@ -24,10 +24,14 @@
         ((runep x world) t)
         ((and (consp x)
               (consp (cdr x))
-              (not (cddr x))
-              (eq (car x) :ruleset))
-         (or (is-ruleset (cadr x) world)
-             (cw "**NOTE**:~%~x0 is not a ruleset.~%" (cadr x))))
+              (not (cddr x)))
+         (if (eq (car x) :ruleset)
+             (or (is-ruleset (cadr x) world)
+                 (cw "**NOTE**:~%~x0 is not a ruleset.~%" (cadr x)))
+           (or (eq (car x) :executable-counterpart-theory)
+               (eq (car x) :current-theory)
+               (cw "**NOTE**:~%~x0 is not a valid keyword for a ruleset ~
+designator.~%" (car x)))))
         (t (cw "**NOTE**:~%~x0 is not a valid ruleset designator.~%" x))))
 
 (defun ruleset-designator-listp (x world)
@@ -94,12 +98,18 @@
   (if (atom x)
       nil
     (let ((des (car x)))
-      (if (and (consp des)
-               (eq (car des) :ruleset))
-          (append (expand-ruleset1 (ruleset (cadr des)) world)
-                  (expand-ruleset1 (cdr x) world))
-        (cons (car x)
-              (expand-ruleset1 (cdr x) world))))))
+      (if (or (atom des) (runep des world))
+          (cons des (expand-ruleset1 (cdr x) world))
+        (case (car des)
+          (:ruleset
+           (append (expand-ruleset1 (ruleset (cadr des)) world)
+                   (expand-ruleset1 (cdr x) world)))
+          (:executable-counterpart-theory
+           (append (executable-counterpart-theory (cadr des))
+                   (expand-ruleset1 (cdr x) world)))
+          (:current-theory
+           (append (executable-counterpart-theory (cadr des))
+                   (expand-ruleset1 (cdr x) world))))))))
 
 (defun expand-ruleset (x world)
   (if (ruleset-designator-listp x world)
@@ -138,6 +148,11 @@
         (t (e/d*-fn '(current-theory :here)
                     theories t))))
 
+(defmacro e/d** (&rest theories)
+  (declare (xargs :guard (true-list-listp theories)))
+  (cond ((atom theories) nil)
+        (t (e/d*-fn nil theories t))))
+
 (defmacro ruleset-theory (ruleset)
   `(expand-ruleset (ruleset ,ruleset) world))
 
@@ -151,8 +166,7 @@
 (local
  (encapsulate
   nil
-  (include-book
-   "make-event/assert" :dir :system)
+  (include-book "make-event/assert" :dir :system)
 
  (def-ruleset! foo '(append reverse))
 

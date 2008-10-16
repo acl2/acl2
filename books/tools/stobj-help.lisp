@@ -193,7 +193,7 @@
                    (and (< (nfix ai) ,size) ,init))
             :hints (("Goal" :in-theory (disable make-list-ac
                                                 (make-list-ac)))))
-          (defthm ,(incat stobj (symbol-name stobj) "-"
+          (defthmd ,(incat stobj (symbol-name stobj) "-"
                           (symbol-name acc) "-OUT-OF-RANGE")
             (implies (<= (,len ,stobj) (nfix n))
                      (not (,acc n ,stobj))))
