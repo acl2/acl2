@@ -7,6 +7,11 @@
 (defmacro range-start (x) `(cadr ,x))
 (defmacro range-end (x) `(caddr ,x))
 
+#||
+;; Depend on arithmetic since defsum uses it.
+(include-book "arithmetic/top-with-meta" :dir :system)
+||#
+
 ;; Checks whether x is a valid element to include in a charset.
 ;; either a character or ('range char char).
 
