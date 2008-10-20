@@ -3,9 +3,10 @@
 all:
 
 Makefile-alldeps:
-	@make-all-deps.sh
+	@echo "Running make-all-deps.sh" ;\
+	./make-all-deps.sh ;
 
--include Makefile-alldeps
+include Makefile-alldeps
 
 all: $(BOOKS)
 
@@ -13,6 +14,7 @@ all: $(BOOKS)
 	@echo "Making `pwd`/$*.cert on `date`" ;\
 	DIR=`dirname $*` ;\
 	FILE=`basename $*` ;\
+        ACL2=`which $(ACL2)` ;\
 	cd $$DIR ;\
 	rm -f $$FILE.cert ;\
 	echo '(acl2::value :q)' > workxxx.$$FILE ;\
@@ -34,7 +36,7 @@ all: $(BOOKS)
 	echo "" >> workxxx.$$FILE ;\
 	echo '(acl2::value :q)' >> workxxx.$$FILE ;\
 	echo '(acl2::exit-lisp)' >> workxxx.$$FILE ;\
-	($(ACL2) < workxxx.$$FILE 2>&1) > $$FILE.out ;\
+	($$ACL2 < workxxx.$$FILE 2>&1) > $$FILE.out ;\
 	rm -f workxxx.$$FILE ;\
 	((test -f $$FILE.cert) && (ls -al $$FILE.cert)) || (echo "**CERTIFICATION FAILED** for `pwd`/$$FILE.lisp" ; exit 1)
 
