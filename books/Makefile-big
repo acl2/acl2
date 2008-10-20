@@ -2,7 +2,10 @@
 
 all:
 
-include Makefile-alldeps
+Makefile-alldeps:
+	@make-all-deps.sh
+
+-include Makefile-alldeps
 
 all: $(BOOKS)
 
