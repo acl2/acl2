@@ -2,17 +2,23 @@
 
 # First, find all the directories with Makefiles that reference Makefile-deps
 
-echo "Choosing subdirectories to consider."
-
-DIRS=`find * -type d | grep -v "\.svn" | grep -v workshops`
+DIRS=${DIRS:-`find * -type d | grep -v "\.svn" | grep -v workshops`}
+SYSBOOKS_SKIP=${SYSBOOKS_SKIP:-no};
+SYSBOOKS_DIR=${SYSBOOKS_DIR:-.};
 TARGET=`pwd`/Makefile-alldeps
 BASE=`pwd`
+
+case `uname` in
+    Linux)    SED_FLG="-r" ;;
+    Darwin)   SED_FLG="-E" ;;
+    *)        SED_FLG="-r" ;;
+esac
 
 
 fixdotdots () {
 
     THE_PATH="$1";
-    THE_NEW_PATH=`echo "$THE_PATH" | sed -r -e 's!( |\/)[^/:]*\/\.\.\/!\1!'`
+    THE_NEW_PATH=`echo "$THE_PATH" | sed $SED_FLG -e 's!( |\/)[^/:]*\/\.\.\/!\1!'`
     if [ "$THE_PATH" == "$THE_NEW_PATH" ] ;
 	then
 	echo $THE_PATH;
@@ -58,23 +64,26 @@ do
 	
     echo "# From $d/Makefile-deps" >> $TARGET
     cat Makefile-deps | grep -v "^#" | grep ":" \
-	| sed -r "s|(.*): (.*)|$d/\\1: $d/\\2|" | fixdotdots_top >> $TARGET
+	| sed $SED_FLG -e "s|(.*): (.*)|$d/\\1: $d/\\2|" | fixdotdots_top >> $TARGET
     
-    echo "# From $d/Makefile-deps (system book comments)" >> $TARGET
-    cat Makefile-deps | grep "^.*ACL2_SYSTEM_BOOKS.*" \
-	| sed -r "s|# (.*):.*\(ACL2_SYSTEM_BOOKS\)/(.*)|$d/\\1: \\2|" | fixdotdots_top >> $TARGET
-    
+    if [ $SYSBOOKS_SKIP == no ] ; then
+	echo "# From $d/Makefile-deps (system book comments)" >> $TARGET
+	cat Makefile-deps | grep "^.*ACL2_SYSTEM_BOOKS.*" \
+	    | sed $SED_FLG -e "s|# (.*):.*\(ACL2_SYSTEM_BOOKS\)/(.*)|$d/\\1: ${SYSBOOKS_DIR}/\\2|" \
+	    | fixdotdots_top >> $TARGET
+    fi
+
     # BOZO maybe eventually add other stuff from the main Makefile if needed?
     echo "# From $d/Makefile" >> $TARGET
     cat Makefile | egrep -v "^[:BLANK:]" | egrep -v "^#" | egrep "^(.*)\.cert: (.*)" \
-       | sed -r "s|^(.*)\.cert: (.*)|$d/\\1.cert: $d/\\2|" | fixdotdots_top >> $TARGET
+       | sed $SED_FLG -e "s|^(.*)\.cert: (.*)|$d/\\1.cert: $d/\\2|" | fixdotdots_top >> $TARGET
 
     cd $BASE
 done
 
 
 cat $TARGET | grep -v "#" | grep -v "^$" \
-    | sed -r "s|^(.*): .*$|\\1 \\\|" | sort --unique > Makefile-tmp
+    | sed $SED_FLG -e "s|^(.*): .*$|\\1 \\\|" | sort --unique > Makefile-tmp
 
 echo "" >> $TARGET
 echo "" >> $TARGET

@@ -22,6 +22,7 @@
                   (not (keywordp (car x)))))
          (theoryp! (list x) world))
         ((runep x world) t)
+        ((and (consp x) (symbolp (car x)) (eq (cdr x) nil)) t)
         ((and (consp x)
               (consp (cdr x))
               (not (cddr x)))
@@ -100,16 +101,19 @@ designator.~%" (car x)))))
     (let ((des (car x)))
       (if (or (atom des) (runep des world))
           (cons des (expand-ruleset1 (cdr x) world))
-        (case (car des)
-          (:ruleset
-           (append (expand-ruleset1 (ruleset (cadr des)) world)
-                   (expand-ruleset1 (cdr x) world)))
-          (:executable-counterpart-theory
-           (append (executable-counterpart-theory (cadr des))
-                   (expand-ruleset1 (cdr x) world)))
-          (:current-theory
-           (append (executable-counterpart-theory (cadr des))
-                   (expand-ruleset1 (cdr x) world))))))))
+        (if (null (cdar x))
+            (cons `(:executable-counterpart ,(car x))
+                  (expand-ruleset1 (cdr x) world))
+          (case (car des)
+            (:ruleset
+             (append (expand-ruleset1 (ruleset (cadr des)) world)
+                     (expand-ruleset1 (cdr x) world)))
+            (:executable-counterpart-theory
+             (append (executable-counterpart-theory (cadr des))
+                     (expand-ruleset1 (cdr x) world)))
+            (:current-theory
+             (append (executable-counterpart-theory (cadr des))
+                     (expand-ruleset1 (cdr x) world)))))))))
 
 (defun expand-ruleset (x world)
   (if (ruleset-designator-listp x world)
