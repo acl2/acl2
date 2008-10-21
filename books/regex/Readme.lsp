@@ -2,13 +2,13 @@
 "
 .:
 Makefile
-Makefile-deps
 Readme.lsp
 defset-encapsulates.lisp
 defset-macros.lisp
 equal-based-set.lisp
 grep-command-line.lisp
 input-list.lisp
+make-acl2-grep.lsp
 regex-chartrans.lisp
 regex-defs.lisp
 regex-exec.lisp
