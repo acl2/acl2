@@ -52,6 +52,9 @@ evaluators that are useful for verifying clause processors.
 
 Book null-fail-hints.lisp introduces keyword hints :null, which does nothing,
 and :fail, which causes the proof to fail.
+
+Book replace-impl.lisp introduces a clause processor that replaces a hyp with
+something implied by that hyp.
 ")
  (:PERMISSION
   "Clause processor examples

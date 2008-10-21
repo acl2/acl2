@@ -244,6 +244,12 @@ integer-type-set-test.lisp -- Tests of enhancement to integer reasoning
 
 ===============================================================================
 
+invariants.lisp -- Tries to prove lemmas stating that if a certain
+property is true of the arguments to a function, that property will be
+true of the arguments to all its recursive calls.
+
+===============================================================================
+
 meta-lemmas.lisp  --  meta-lemmas for nth and member
 
 This book simply provides 2 meta-lemmas.  The first, REDUCE-NTH-META-CORRECT,
