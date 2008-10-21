@@ -1,10 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 # First, find all the directories with Makefiles that reference Makefile-deps
 
 DIRS=${DIRS:-`find * -type d | grep -v "\.svn" | grep -v workshops`}
-SYSBOOKS_SKIP=${SYSBOOKS_SKIP:-no};
-SYSBOOKS_DIR=${SYSBOOKS_DIR:-.};
+SYSBOOKS_SKIP=${SYSBOOKS_SKIP:-no}
+SYSBOOKS_DIR=${SYSBOOKS_DIR:-""}
+
 TARGET=`pwd`/Makefile-alldeps
 BASE=`pwd`
 
@@ -52,7 +53,7 @@ do
 	cd $BASE
 	continue
     fi
-    
+
     make -s nothing > /dev/null 2>&1
     
     if [ ! -f Makefile-deps ]
@@ -69,7 +70,7 @@ do
     if [ $SYSBOOKS_SKIP == no ] ; then
 	echo "# From $d/Makefile-deps (system book comments)" >> $TARGET
 	cat Makefile-deps | grep "^.*ACL2_SYSTEM_BOOKS.*" \
-	    | sed $SED_FLG -e "s|# (.*):.*\(ACL2_SYSTEM_BOOKS\)/(.*)|$d/\\1: ${SYSBOOKS_DIR}/\\2|" \
+	    | sed $SED_FLG -e "s|# (.*):.*\(ACL2_SYSTEM_BOOKS\)/(.*)|$d/\\1: ${SYSBOOKS_DIR}\\2|" \
 	    | fixdotdots_top >> $TARGET
     fi
 
