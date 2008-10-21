@@ -839,3 +839,84 @@
   (and (equal (fast-alist-len al1)
               (fast-alist-len al2))
        (alist-subsetp al1 al2)))
+
+(defn gentle-assoc-eq (x y)
+  (declare (xargs :guard (symbolp x)))
+  (if (atom y)
+      nil
+    (if (and (consp (car y))
+             (eq x (caar y)))
+        (car y)
+      (gentle-assoc-eq x (cdr y)))))
+
+(defn gentle-assoc-eql (x y)
+  (declare (xargs :guard (eqlablep x)))
+  (if (atom y)
+      nil
+    (if (and (consp (car y))
+             (eql x (caar y)))
+        (car y)
+      (gentle-assoc-eql x (cdr y)))))
+
+(defn gentle-assoc-equal-help (x y)
+  (if (atom y)
+      nil
+    (if (and (consp (car y))
+             (hons-equal x (caar y)))
+        (car y)
+      (gentle-assoc-equal-help x (cdr y)))))
+
+(defn gentle-assoc-equal (x y)
+  (cond ((symbolp x) (gentle-assoc-eq x y))
+        ((or (acl2-numberp x)
+             (characterp x))
+         (gentle-assoc-eql x y))
+        (t (gentle-assoc-equal-help x y))))
+
+(defn gentle-g (x l)
+  (cdr (gentle-assoc-equal x l)))
+
+(defn gentle-s-help (a v l)
+  (cond ((atom l) (cons (cons a v) nil))
+        ((and (consp (car l))
+              (equal a (caar l)))
+         (cons (cons a v) (cdr l)))
+        (t (cons (car l)
+                 (gentle-s-help a v (cdr l))))))
+
+(defn gentle-s (a v l)
+
+  "The key theorem about GENTLE-S is
+   (equal (gentle-g a (gentle-s b v l))
+          (if (equal a b)
+              v
+            (gentle-g a l)))."
+
+  (let ((pair (gentle-assoc-equal a l)))
+    (cond ((null pair) (cons (cons a v) l))
+          ((equal v (cdr pair)) l)
+          (t (gentle-s-help a v l)))))
+
+(defthm gentle-s-a-thm0
+  (equal (gentle-assoc-eq a (gentle-s-help b v l))
+         (if (equal a b)
+             (cons a v)
+           (gentle-assoc-eq a l))))
+
+(defthm gentle-s-a-thm1
+  (equal (gentle-assoc-eql a (gentle-s-help b v l))
+         (if (equal a b)
+             (cons a v)
+           (gentle-assoc-eql a l))))
+
+(defthm gentle-s-a-thm2
+  (equal (gentle-assoc-equal-help a (gentle-s-help b v l))
+         (if (equal a b)
+             (cons a v)
+           (gentle-assoc-equal-help a l))))
+
+(defthm gentle-s-a-thm3
+  (equal (gentle-g a (gentle-s b v l))
+         (if (equal a b)
+             v
+           (gentle-g a l))))

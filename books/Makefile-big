@@ -1,5 +1,11 @@
 
 
+# This makefile is designed to support file-level dependencies among
+# ACL2 books.  The make-all-deps.sh script produces a dependency file
+# called Makefile-alldeps reflecting the dependencies among all the
+# libraries that support this scheme.
+
+
 all:
 
 Makefile-alldeps:

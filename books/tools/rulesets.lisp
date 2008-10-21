@@ -162,15 +162,16 @@ designator.~%" (car x)))))
 
 
 #||
-;; I'm commenting this out because I don't want the tools directory to depend
-;; on the make-event directory.  - Sol
 
 (logic)
 
 (local
  (encapsulate
   nil
-  (include-book "make-event/assert" :dir :system)
+  (include-book
+   ;; This is on a separate line so that this book won't appear to depend on
+   ;; the make-event subdir.
+   "make-event/assert" :dir :system)
 
  (def-ruleset! foo '(append reverse))
 
