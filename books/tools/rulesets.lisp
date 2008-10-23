@@ -102,7 +102,7 @@ designator.~%" (car x)))))
       (if (or (atom des) (runep des world))
           (cons des (expand-ruleset1 (cdr x) world))
         (if (null (cdar x))
-            (cons `(:executable-counterpart ,(car x))
+            (cons `(:executable-counterpart ,(caar x))
                   (expand-ruleset1 (cdr x) world))
           (case (car des)
             (:ruleset
