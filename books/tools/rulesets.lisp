@@ -78,18 +78,20 @@ designator.~%" (car x)))))
   (declare (xargs :guard (symbolp name)))
   `(make-event
     (let* ((world (w state))
+           (name ',name)
            (result ,form))
       (if (ruleset-designator-listp result world)
-          (value `(table ruleset-table ',',name ',result))
+          (value `(table ruleset-table ',name ',result))
         (er soft 'def-ruleset! "Invalid ruleset specified~%")))))
 
 (defmacro add-to-ruleset! (name form)
   (declare (xargs :guard (symbolp name)))
   `(make-event
     (let* ((world (w state))
+           (name ',name)
            (result ,form))
       (if (ruleset-designator-listp result world)
-          (value `(table ruleset-table ',',name
+          (value `(table ruleset-table ',name
                          (union-equal ',result (ruleset ',name))))
         (er soft 'add-to-ruleset! "Invalid ruleset specified~%")))))
 

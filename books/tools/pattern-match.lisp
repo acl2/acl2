@@ -481,9 +481,12 @@ applied to the constructed object return the arguments to the constructor.  ~/
         (err-string-truelist
          (concatenate 'string "Badly formed expression: ~x0~%")))
     
-    `(defmacro ,(intern (concatenate 'string (symbol-name constructor)
+    `(defmacro ,(intern-in-package-of-symbol
+                 (concatenate 'string (symbol-name constructor)
                                      "-PATTERN-MATCHER")
-                        "ACL2")
+                 (if (equal (symbol-package-name constructor) "COMMON-LISP")
+                     'acl2::bla
+                   constructor))
        (term args tests bindings lhses rhses pmstate)
        (cond ((not (true-listp args))
               (er hard 'top-level ,err-string-truelist (cons ',constructor args)))

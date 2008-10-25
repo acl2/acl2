@@ -3,7 +3,6 @@
 .:
 Makefile
 Readme.lsp
-arith4-theory.lisp
 bstar.lisp
 cws.lisp
 defsum.lisp
