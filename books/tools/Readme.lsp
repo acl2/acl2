@@ -15,6 +15,7 @@ mv-nth.lisp
 pack.lisp
 progndollar.lisp
 rulesets.lisp
+safe-case.lisp
 stobj-help.lisp
 theory-tools.lisp
 types-misc.lisp
@@ -23,6 +24,7 @@ with-arith4-help.lisp
  (:TITLE "Tools")
  (:AUTHOR/S
   "Sol Swords"
+  "Jared Davis"
   )
  (:KEYWORDS
   "macro"
@@ -42,6 +44,9 @@ their values without typing formatting strings.
 progndollar.lisp defines PROGN$, which evaluates several forms in
 sequence for side effects.
 
+safe-case.lisp is a drop-in replacement for case, but causes an error 
+if none of the cases are matched.
+
 defsum and deftuple.lisp provide macros for defining product types
 with constructors, accessors, recognizers, and appropriate theorems
 for reasoning about them without reference to the underlying cons
@@ -59,6 +64,8 @@ sum-of-products data structures as defined by defsum.
  copyright (C) 2007 by Sol Swords <sswords@cs.utexas.edu>.
 
 flag.lisp copyright 2008 by Jared Davis <jared@cs.utexas.edu> and Sol Swords.
+
+safe-case.lisp copyright 2008 by Jared Davis <jared@cs.utexas.edu>.
 
 This program is free software; you can redistribute it and/or 
 modify it under the terms of the GNU General Public License as 
