@@ -76,7 +76,8 @@
 
 (defun get-clique-members (fn world)
   (or (getprop fn 'recursivep nil 'current-acl2-world world)
-      (er hard 'get-clique-members "Expected ~s0 to be in a mutually-recursive nest.~%")))
+      (er hard 'get-clique-members "Expected ~s0 to be in a mutually-recursive nest.~%"
+          fn)))
   
 (defun get-formals (fn world)
   (getprop fn 'formals nil 'current-acl2-world world))
@@ -231,8 +232,8 @@
                                            "-"
                                            (symbol-name flag))
                               name)))
-              (rule-classes (or (extract-keyword-from-args :rule-classes (cddr lookup))
-                                :rewrite))
+              (rule-classes (let ((mem (member :rule-classes (cddr lookup))))
+                              (if mem (cadr mem) :rewrite)))
               (doc          (extract-keyword-from-args :doc (cddr lookup)))
               (skip (extract-keyword-from-args :skip (cddr lookup))))
           (if skip

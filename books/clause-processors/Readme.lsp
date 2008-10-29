@@ -13,7 +13,9 @@ equality.lisp
 generalize.acl2
 generalize.lisp
 join-thms.lisp
+multi-env-trick.lisp
 null-fail-hints.lisp
+replace-impl.lisp
 ")
  (:TITLE    "Clause processor examples")
  (:AUTHOR/S 
@@ -50,11 +52,16 @@ Book generalize.lisp provides a generalization clause processor.
 Book join-thms.lisp automates the introduction of certain theorems about
 evaluators that are useful for verifying clause processors.
 
-Book null-fail-hints.lisp introduces keyword hints :null, which does nothing,
-and :fail, which causes the proof to fail.
+Book multi-env-trick.lisp automates a trick for introducing clause
+processors that allows each generated clause to be evaluated under multiple
+binding alists in the correctness proof.
 
-Book replace-impl.lisp introduces a clause processor that replaces a hyp with
-something implied by that hyp.
+Book null-fail-hints.lisp introduces keyword hints :null, which does
+nothing, and :fail, which causes the proof to fail.  These are probably not
+as good as :no-op and :error, which are built into ACL2.
+
+Book replace-impl.lisp introduces a clause processor that replaces a hyp
+with something implied by that hyp.
 ")
  (:PERMISSION
   "Clause processor examples
@@ -62,7 +69,7 @@ Copyright (C) 2007 by:
  Jared Davis <jared@cs.utexas.edu>       (equality.lisp)
  Matt Kaufmann <kaufmann@cs.utexas.edu>  (basic-examples.lisp)
  Erik Reeber <reeber@cs.utexas.edu>      (bv-add*.lisp)
- Sol Swords <sswords@cs.utexas.edu>      (generalize.lisp)
+ Sol Swords <sswords@cs.utexas.edu>      (generalize.lisp, multi-env-trick.lisp)
 
 This program is free software; you can redistribute it and/or 
 modify it under the terms of the GNU General Public License as 

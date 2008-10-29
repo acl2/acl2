@@ -18,6 +18,12 @@
 
 (in-theory (disable conjoin-clauses conjoin disjoin))
 
+(defthm pseudo-termp-disjoin
+  (implies (pseudo-term-listp x)
+           (pseudo-termp (disjoin x)))
+  :hints(("Goal" :in-theory (enable pseudo-termp pseudo-term-listp disjoin)
+          :induct (disjoin x))))
+
 (defmacro def-join-thms (ev)
   `(encapsulate
     nil
