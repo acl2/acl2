@@ -38,6 +38,52 @@
 ;; processor. See the example (with DEMO-EV and EQUAL-FS-CP) at the bottom of
 ;; this file.
 
+;; Usage of these macros:
+
+;; DEF-MULTI-ENV-FNS is invoked as (DEF-MULTI-ENV-FNS <EV>) where EV is an
+;; evaluator function defined using defevaluator.  This evaluator should, at
+;; minimum, have IF among its recognized functions.  This introduces, among
+;; other things, a function named CLAUSES-APPLY-ALISTS-<EV>.  This function
+;; takes a list of clauses and a list of lists of alists.  It iterates through
+;; the two lists in parallel.  For each corresponding pair of a clause and a
+;; list of alists, it checks that under every alist in the list, the clause
+;; evaluates to a nonnil value.  In order to prove a clause processor correct
+;; under evaluator EV using PROVE-MULTI-ENV-CLAUSE-PROC, you will need to be
+;; able to provide a function CLAUSE-PROC-ALIST-LISTS which produces a list of
+;; lists of alists appropriate for pairing with the clauses produced by the
+;; clause processor.  It then suffices to prove the following:
+
+;; (implies (and (pseudo-term-listp cl)
+;;               (alistp al)
+;;               (clauses-apply-alists-ev
+;;                (clause-proc cl hints)
+;;                (clause-proc-alist-lists cl hints al)))
+;;          (ev (disjoin cl) al))
+
+;; PROVE-MULTI-ENV-CLAUSE-PROC will introduce a clause-processor correctness
+;; theorem in the standard format (as MY-CPROC-CORRECT, at the top of the
+;; page) using a bad-guy function for the alist in the third hyp.  It gives a
+;; hint to prove this by functional instantiation such that this proof reduces
+;; to a proof of the above lemma.
+
+;; PROVE-MULTI-ENV-CLAUSE-PROC is invoked as follows:
+
+;; (prove-multi-env-clause-proc
+;;  <name of correctness thm>
+;;  :ev <evaluator>
+;;  :evlst <corresponding evaluator for lists>
+;;  :clauseproc <clause processor function name>
+;;  :alistfn <alist-list-list function or lambda>
+;;  :hints <supplemental hints>)
+
+;; Currently only clause processors which take one or two arguments (clause or
+;; clause and hints) are supported; it is certainly possible to support clause
+;; processors which take stobj arguments in addition, but this is not yet
+;; impelemented.  The :ALISTFN argument expects a function or lambda of three
+;; arguments corresponding to CL, HINTS, and AL in the theorem statement above.
+;; If it takes fewer arguments, you must provide a lambda which wraps this
+;; function, such as (LAMBDA (CL HINTS AL) (MY-ALIST-LIST-FN CL AL)). 
+
 (local (include-book "join-thms"))
 
 
@@ -143,7 +189,8 @@
                        (if-ev-bad-guy (bad-guy-clause-proc cl hints))))
            (if-ev (disjoin cl) al))
   :hints (("goal" :in-theory (enable conjoin-clauses)
-           :use bad-guy-clause-proc-lemma)))
+           :use bad-guy-clause-proc-lemma))
+  :rule-classes nil)
 
 
 (defmacro incat (sym &rest lst)
@@ -185,7 +232,9 @@
     (cons `(,(car varlst) (nth ,n ,var))
           (nth-bindings (1+ n) var (cdr varlst)))))
 
-(defun prove-multi-env-clause-proc-fn (name ev evlst clauseproc alistfn hints world)
+(defun prove-multi-env-clause-proc-fn (name ev evlst clauseproc alistfn hints
+                                            world)
+  (declare (xargs :mode :program))
   (let* ((bad-guy (incat ev (symbol-name ev) "-BAD-GUY"))
          ;; (bad-guy-rewrite (incat ev (symbol-name ev) "-BAD-GUY-REWRITE"))
          (clause-apply (incat ev "CLAUSE-APPLY-ALISTS-" (symbol-name ev)))
@@ -198,29 +247,35 @@
                      that take 1 or 2 arguments.  Feel free to patch.~%")))
          (cp-call `(,clauseproc . ,(take cp-nargs '(cl hints))))
          (cp-lambda `(lambda (cl hints)
-                       (,clauseproc . ,(take cp-nargs '(cl hints))))))
+                       (,clauseproc . ,(take cp-nargs '(cl hints)))))
+         (constraint-0 (genvar ev (symbol-name (pack2 ev '-constraint-))
+                               0 nil)))
     (declare (ignore ign))
-    `(defthm ,name
-       (implies (and (pseudo-term-listp cl)
-                     (alistp al)
-                     (,ev (conjoin-clauses ,cp-call)
-                          (,bad-guy ,cp-call)))
-                (,ev (disjoin cl) al))
-       :hints (("Goal" :use ((:functional-instance
-                              bad-guy-clause-proc-correct
-                              (if-ev ,ev)
-                              (if-ev-lst ,evlst)
-                              (if-ev-bad-guy ,bad-guy)
-                              (clause-apply-alists-if-ev
-                               ,clause-apply)
-                              (clauses-apply-alists-if-ev
-                               ,clauses-apply)
-                              (bad-guy-clause-proc
-                               ,cp-lambda)
-                              (bad-guy-alist-lists
-                               ,alistfn))))
-               . ,hints)
-       :rule-classes :clause-processor)))
+    `(progn
+       (def-multi-env-fns ,ev)
+       (defthm ,name
+         (implies (and (pseudo-term-listp cl)
+                       (alistp al)
+                       (,ev (conjoin-clauses ,cp-call)
+                            (,bad-guy ,cp-call)))
+                  (,ev (disjoin cl) al))
+         :hints (("Goal" :use ((:functional-instance
+                                bad-guy-clause-proc-correct
+                                (if-ev ,ev)
+                                (if-ev-lst ,evlst)
+                                (if-ev-bad-guy ,bad-guy)
+                                (clause-apply-alists-if-ev
+                                 ,clause-apply)
+                                (clauses-apply-alists-if-ev
+                                 ,clauses-apply)
+                                (bad-guy-clause-proc
+                                 ,cp-lambda)
+                                (bad-guy-alist-lists
+                                 ,alistfn))))
+                 (and stable-under-simplificationp
+                      '(:in-theory (enable ,constraint-0)))
+                 . ,hints)
+         :rule-classes :clause-processor))))
 
 (defmacro prove-multi-env-clause-proc
   (name &key ev evlst clauseproc alistfn hints)
@@ -316,9 +371,7 @@
  :ev demo-ev
  :evlst demo-ev-lst
  :clauseproc equal-fs-cp
- :alistfn (lambda (cl hints al) (equal-fs-cp-alists cl al))
- :hints ((and stable-under-simplificationp
-              '(:in-theory (enable demo-ev-constraint-0)))))
+ :alistfn (lambda (cl hints al) (equal-fs-cp-alists cl al)))
 
 
 
