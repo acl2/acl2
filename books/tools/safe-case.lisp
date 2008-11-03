@@ -6,7 +6,7 @@
 (defmacro safe-case (&rest l)
   ":Doc-Section Case
    Error-checking alternative to `case'.~/
-   ~c[(include-book \"tools/safe-case\" :dir :system)] ~/
+   ~c[;; (include-book \"tools/safe-case\" :dir :system)] ~/
    ~c[Safe-case] is a drop-in replacement for ~il[case], and is logically identical 
    to ~c[case].  The only difference is during execution.  When ~c[case] is used and 
    none of the cases match, the answer is ~c[nil]:

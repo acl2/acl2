@@ -271,10 +271,12 @@
                                 (bad-guy-clause-proc
                                  ,cp-lambda)
                                 (bad-guy-alist-lists
-                                 ,alistfn))))
+                                 ,alistfn)))
+                  :do-not-induct t)
                  (and stable-under-simplificationp
                       '(:in-theory (enable ,constraint-0)))
                  . ,hints)
+         :otf-flg t
          :rule-classes :clause-processor))))
 
 (defmacro prove-multi-env-clause-proc
@@ -286,93 +288,137 @@
 
 
 #||
-;; example.
 
-;; evaluator:
+;; Say we want to prove that a certain term always produces a CONS, and we
+;; think this can be shown by a very simple syntactic analysis where we don't
+;; consider contextual information such as let bindings, if tests, etc.  (In
+;; reality this is pretty useless because ACL2 does a good job with this via
+;; type reasoning.  But the principle can be applied to other things.)
 
-(defevaluator demo-ev demo-ev-lst ((if a b c) (equal a b)))
+;; Here is the evaluator we'll use:
+
+(defevaluator cons-ev cons-ev-lst ((cons a b) (consp a) (if a b c)))
+
+;; We want our clause processor to walk through the term as follows:
+
+;; (consp-cp `(if ,x ,y ,z)) => (append (consp-cp y) (consp-cp z))
+;; (consp-cp `((lambda ,vars ,body) . ,args)) => (consp-cp body)
+;; (consp-cp `(cons ,a ,b)) => true
+;; (consp-cp `(quote ,x)) => (consp x)
+;; otherwise
+;; (consp-cp x) => `(consp ,x).
+
+(defun consp-cp-term (term)
+  (case-match term
+    (('if & y z)            (append (consp-cp-term y) (consp-cp-term z)))
+    ((('lambda & body) . &) (consp-cp-term body))
+    ;; If it's definitely a CONS we don't need to produce any new clauses.  If
+    ;; it's definitely not a CONS then we produce the empty clause.
+    (('cons & &)            nil)
+    (('quote x)             (if (consp x) nil (list nil)))
+    (&                      (list (list `(consp ,term))))))
+
+;; The only difficulty with this is with the lambda step.  If we're evaluating
+;; a term under alist AL and we get to a lambda, the evaluation of the lambda
+;; body under AL has nothing to do with the evaluation of the term -- it needs
+;; to be evaluated under the alist (pairlis$ lambda-vars (ev-lst lambda-args
+;; al)).  So we introduce another function CONSP-CP-TERM-ALISTS which produces
+;; alists corresponding to the clauses produced by the clause processor.
+;; Actually, due to how clauses-apply-alists-cons-ev works, we produce a
+;; singleton list containing the appropriate alist for each clause produced by
+;; consp-cp-term.
+
+(defun consp-cp-term-alists (term al)
+  (case-match term
+    (('if & y z)            (append (consp-cp-term-alists y al)
+                                    (consp-cp-term-alists z al)))
+    ((('lambda vars body) . args)
+                            (consp-cp-term-alists
+                             body
+                             (pairlis$ vars
+                                       (cons-ev-lst args al))))
+    (('cons & &)            nil)
+    (('quote x)             (if (consp x) nil (list (list al))))
+    (&                      (list (list al)))))
+
+;; We then define the clause processor itself and a corresponding
+;; alist-generating function.
+
+(defun consp-cp (clause)
+  ;; Check that the clause's conclusion is of the form (consp term) and if so
+  ;; run the subroutine above:
+  (let ((term (car (last clause))))
+    (case-match term
+      (('consp x)  (consp-cp-term x))
+      ;; otherwise, no-op:
+      (&           (list clause)))))
+
+(defun consp-cp-alists (clause al)
+  (let ((term (car (last clause))))
+    (case-match term
+      (('consp x) (consp-cp-term-alists x al))
+      (&          (list (list al))))))
 
 
-;;; This stupid clause processor takes a term of the form
-;;; (equal (f a b) (f c d))
-;;; and produces the single clause (equal x y).  (hah!)  
-(defun equal-fs-cp (clause)
-  (if (and (consp clause)
-           (null (cdr clause)))
-      (let ((car (car clause)))
-        (case-match car
-          (('equal (f & &) (g & &))
-           (if (equal f g)
-               '(((equal x y)))
-             (list clause)))
-          (& (list clause))))
-    (list clause)))     
+;; The correctness argument:
 
+(def-multi-env-fns cons-ev)
 
-;; This function produces, for each clause produced by the clause processor
-;; above, a list of alists.  Proving that each clause evaluates to nonnil under
-;; all the corresponding alists suffices to prove the original clause.
-(defun equal-fs-cp-alists (clause al)
-  (if (and (consp clause)
-           (null (cdr clause)))
-      (let ((car (car clause)))
-        (case-match car
-          (('equal (f a b) (g c d))
-           (if (equal f g)
-               `((((x . ,a) (y . ,c))
-                  ((x . ,b) (y . ,d))))
-             (list (list al))))
-          (& (list (list al)))))
-    (list (list al))))
+(def-join-thms cons-ev)
 
+(defthm len-append
+  (equal (len (append a b)) (+ (len a) (len b))))
 
-(def-multi-env-fns demo-ev)
+(defthm consp-cp-term-alists-length
+  (equal (len (consp-cp-term-alists term al))
+         (len (consp-cp-term term))))
 
-(def-join-thms demo-ev)
+(defthm clauses-apply-alists-append
+  (implies (equal (len a) (len a-al))
+           (equal (clauses-apply-alists-cons-ev
+                   (append a b) (append a-al b-al))
+                  (and (clauses-apply-alists-cons-ev a a-al)
+                       (clauses-apply-alists-cons-ev b b-al)))))
+              
+(defthm consp-cp-term-correct
+  (implies (clauses-apply-alists-cons-ev
+            (consp-cp-term term)
+            (consp-cp-term-alists term al))
+           (consp (cons-ev term al))))
 
-(defthm equal-fs-cp-lemma
-  (implies (and (pseudo-term-listp cl)
-                (alistp al)
-                (clauses-apply-alists-demo-ev
-                 (equal-fs-cp cl)
-                 (equal-fs-cp-alists cl al)))
-           (demo-ev (disjoin cl) al)))
+(defthm consp-cp-term-correct1
+  (implies (not (consp (cons-ev term al)))
+           (not (clauses-apply-alists-cons-ev
+                 (consp-cp-term term)
+                 (consp-cp-term-alists term al)))))
 
-(in-theory (disable equal-fs-cp equal-fs-cp-alists))
+(in-theory (disable consp-cp-term consp-cp-term-alists))
 
+(defthm ev-car-last-implies-ev-clause
+  (implies (cons-ev (car (last clause)) al)
+           (cons-ev (disjoin clause) al))
+  :hints(("Goal" :in-theory (e/d (disjoin) (cons-ev-of-disjoin-3)))))
 
+;; The following lemma is the main requirement for successfully proving the
+;; clause processor correct.  It says that when the clauses produced by
+;; CONSP-CP evaluate to true with each of the corresponding alists produced by
+;; CONSP-CP-ALISTS, then the original clause is satisfied.
+(defthm consp-cp-correct-main-lemma
+  (implies (clauses-apply-alists-cons-ev
+            (consp-cp clause)
+            (consp-cp-alists clause al))
+           (cons-ev (disjoin clause) al)))
 
-;; (defthm eval-fs-cp-correct
-;;   (implies (and (pseudo-term-listp cl)
-;;                 (alistp al)
-;;                 (demo-ev (conjoin-clauses (equal-fs-cp cl))
-;;                          (demo-ev-bad-guy (equal-fs-cp cl))))
-;;            (demo-ev (disjoin cl) al))
-;;   :hints (("goal" :use ((:functional-instance 
-;;                          bad-guy-clause-proc-correct
-;;                          (if-ev demo-ev)
-;;                          (if-ev-lst demo-ev-lst)
-;;                          (if-ev-bad-guy demo-ev-bad-guy)
-;;                          (clause-apply-alists-if-ev
-;;                           clause-apply-alists-demo-ev)
-;;                          (clauses-apply-alists-if-ev
-;;                           clauses-apply-alists-demo-ev)
-;;                          (bad-guy-clause-proc
-;;                           (lambda (cl hints) (equal-fs-cp cl)))
-;;                          (bad-guy-alist-lists
-;;                           (lambda (cl hints al)
-;;                             (equal-fs-cp-alists cl al))))))
-;;           (and stable-under-simplificationp
-;;                '(:in-theory (enable demo-ev-constraint-0))))
-;;   :rule-classes :clause-processor)
+(in-theory (disable consp-cp consp-cp-alists))
 
+;; Finally, this submits the correctness theorem allowing us to use CONSP-CP as
+;; a verified clause processor:
 (prove-multi-env-clause-proc
- equal-fs-cp-correct
- :ev demo-ev
- :evlst demo-ev-lst
- :clauseproc equal-fs-cp
- :alistfn (lambda (cl hints al) (equal-fs-cp-alists cl al)))
-
+ consp-cp-correct
+ :ev cons-ev :evlst cons-ev-lst
+ :clauseproc consp-cp
+ :alistfn (lambda (cl hints al) (consp-cp-alists cl al)))
+  
 
 
 
