@@ -13,16 +13,46 @@
 
 (in-package "ACL2")
 
-; This is a faster version of coerce.  It is the same as ACL2's regular coerce
-; when converting character lists into strings.  It is much faster than ACL2's
-; coerce when converting strings into character lists.
+; This is an often-faster version of coerce.
 ;
-; On my machine, using CCL, I have:
+;  - It is the same as ACL2's regular coerce when converting character lists
+;    into strings.  It is much faster than ACL2's
 ;
-;  - Regular : 36 seconds, 4.6 GB allocated
-;  - Fast    : 4  seconds, 2.0 GB allocated
+;  - It is often faster when converting strings into character lists.
 ;
-; For the following test:
+;   "Fast-coerce is _____ than regular coerce"
+;
+;    - Allegro: negligibly faster
+;    - Clisp:   negligibly slower
+;    - GCL:     50-60% faster
+;    - CMUCL:   40% faster & uses 30% less memory
+;    - OpenMCL: 90% faster & uses 56% less memory
+;    - SBCL:    50% faster & uses 8% less memory
+;
+; On Nemesis. (32-bit) -- fast-coerce -------- coerce ------
+;
+; /p/bin/acl2               10.6s                27s
+;
+; /p/bin/acl2-allegro       46.4s               48.5s
+;                          1.040 GB            1.040 GB
+;
+; /p/bin/acl2-cmucl         10.3s               17.1s
+;                          1.040 GB            1.440 GB
+;
+; /p/bin/acl2-clisp         44.35s              42.6s
+;                          1.040 GB            1.040 GB
+;
+; On Lhug-3. (64-bit) --- fast-coerce -------- coerce ------
+;
+;
+; /p/bin/acl2-gcl           18.8s               39.7s
+;
+; /p/bin/acl2-openmcl        5.5s                64s
+;                          2.080 GB            4.64 GB
+;
+; /p/bin/acl2-sbcl           5.6s               10.94s
+;                          2.080 GB            2.240 GB
+;
 ;
 ;   (time$ (loop for i fixnum from 1 to 10000000 do 
 ;                (coerce "Hello, World!" 'list)))
