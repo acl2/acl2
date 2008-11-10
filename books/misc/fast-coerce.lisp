@@ -102,7 +102,7 @@
          :hints(("Goal" :in-theory (enable fast-coerce-aux2
                                            fast-coerce-aux1)))))
 
-(defund fast-coerce (x y)
+(defun fast-coerce (x y)
   (declare (xargs :guard (case y
                            (list (stringp x))
                            (string (character-listp x)))))
