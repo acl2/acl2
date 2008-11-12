@@ -792,7 +792,8 @@
 	 (empty x)))
 
 (defthm cardinality-sfix-cancel
-  (equal (cardinality (sfix X)) (cardinality X)))
+  (equal (cardinality (sfix X))
+         (cardinality X)))
 
 (defthm insert-cardinality
   (equal (cardinality (insert a X))
@@ -811,6 +812,12 @@
            (<= (cardinality X) (cardinality Y)))
   :rule-classes (:rewrite :linear))
 
+(defthm proper-subset-cardinality
+  (implies (and (subset X Y)
+                (not (subset Y X)))
+           (< (cardinality X) (cardinality Y)))
+  :rule-classes (:rewrite :linear))
+
 (defthmd equal-cardinality-subset-is-equality
   (implies (and (setp X)
                 (setp Y)
@@ -819,24 +826,26 @@
            (equal (equal X Y) t)))
 
 (defthm intersect-cardinality-X
-  (<= (cardinality (intersect X Y)) (cardinality X))
-  :rule-classes :linear)
+  (<= (cardinality (intersect X Y)) 
+      (cardinality X))
+  :rule-classes (:rewrite :linear))
 
 (defthm intersect-cardinality-Y
-  (<= (cardinality (intersect X Y)) (cardinality Y))
-  :rule-classes :linear)
+  (<= (cardinality (intersect X Y))
+      (cardinality Y))
+  :rule-classes (:rewrite :linear))
 
 (defthm expand-cardinality-of-union
   (equal (cardinality (union X Y))
          (- (+ (cardinality X) (cardinality Y))
             (cardinality (intersect X Y))))
-  :rule-classes :linear)
+  :rule-classes (:rewrite :linear))
 
 (defthm expand-cardinality-of-difference
   (equal (cardinality (difference X Y))
          (- (cardinality X)
             (cardinality (intersect X Y))))
-  :rule-classes :linear)
+  :rule-classes (:rewrite :linear))
 
 (defthm intersect-cardinality-subset
   (implies (subset X Y)
@@ -848,7 +857,7 @@
   (implies (not (subset x y))
            (< (cardinality (intersect x y))
               (cardinality x)))
-  :rule-classes :linear)
+  :rule-classes (:rewrite :linear))
 
 (defthm intersect-cardinality-subset-2
   (equal (equal (cardinality (intersect X Y)) (cardinality X))
