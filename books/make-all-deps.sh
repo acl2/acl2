@@ -1,10 +1,12 @@
 #!/bin/bash
 
-# First, find all the directories with Makefiles that reference Makefile-deps
 
-DIRS=${DIRS:-`find * -type d | grep -v "\.svn" | grep -v workshops`}
+BOOK_DIRS=${BOOK_DIRS[*]:-`find * -type d | grep -v "\.svn" | grep -v workshops`}
 SYSBOOKS_SKIP=${SYSBOOKS_SKIP:-no}
 SYSBOOKS_DIR=${SYSBOOKS_DIR:-""}
+
+# Override the above assignments with the values in the local dep-params.sh, if exists
+if [ -f dep-params.sh ] ; then source dep-params.sh ; fi
 
 TARGET=`pwd`/Makefile-alldeps
 BASE=`pwd`
@@ -43,7 +45,7 @@ fixdotdots_top () {
 # then add all the dependencies into the Makefile-alldeps in the main books dir.
 
 echo "" > $TARGET
-for d in $DIRS
+for d in ${BOOK_DIRS[*]}
 do
     cd $d
 	

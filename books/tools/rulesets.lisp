@@ -148,16 +148,16 @@ designator.~%" (car x)))))
                                               (expand-ruleset ',(car e/d-list) world))
                     (cdr e/d-list) t))))
 
+(defmacro e/d** (&rest theories)
+  (declare (xargs :guard (true-list-listp theories)))
+  (cond ((atom theories) nil)
+        (t (e/d*-fn nil theories t))))
+
 (defmacro e/d* (&rest theories)
   (declare (xargs :guard (true-list-listp theories)))
   (cond ((atom theories) '(current-theory :here))
         (t (e/d*-fn '(current-theory :here)
                     theories t))))
-
-(defmacro e/d** (&rest theories)
-  (declare (xargs :guard (true-list-listp theories)))
-  (cond ((atom theories) nil)
-        (t (e/d*-fn nil theories t))))
 
 (defmacro ruleset-theory (ruleset)
   `(expand-ruleset (ruleset ,ruleset) world))

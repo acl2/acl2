@@ -89,9 +89,9 @@ scope before using WITH-ARITH4-NONLINEAR-HELP.~%"))))
                          (er hard 'with-arith4-nonlinear++-help
                              "Run (ALLOW-ARITH4-HELP) in the current local
 scope before using WITH-ARITH4-NONLINEAR++-HELP.~%"))))
-     (local (set-default-hints '((nonlinearp-default-hint
-                                  stable-under-simplificationp
-                                  hist pspv))))
+     (local (set-default-hints '((nonlinearp-default-hint++
+                                  id stable-under-simplificationp
+                                  hist nil))))
      (local (table theory-invariant-table nil
                    (table-alist 'post-arith4-theory-invariants world)
                    :clear))
