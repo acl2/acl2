@@ -7009,6 +7009,17 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
  :hints (("Goal" :use (:instance make-n-list (el l1) (n 1))))
  :rule-classes nil)
 
+; Added by Matt K. for v3-5.  Heuristic changes to linear arithmetic were
+; preventing the next lemma, not-member-equal-bool-holds-on-ev, from going
+; through.  But the original proof involved generalization and three levels of
+; induction, so rather than investigate further, we'll just prove the following
+; lemma.  With it, the proof of not-member-equal-bool-holds-on-ev goes through
+; without :hints.
+(local
+ (defthm helper-from-matt-k
+   (implies (not (equal el l1))
+            (not (member-equal-bool el (make-n-list l1 n))))))
+
 (defthm not-member-equal-bool-holds-on-ev
  (implies
   (and
