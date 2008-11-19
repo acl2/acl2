@@ -198,6 +198,12 @@
 	  (equal x (elt1 (car p)))
 	  (equiv-p (elt2 (car p)) y (cdr p)))))
 
+; The following was added by Matt Kaufmann after ACL2 Version 3.4 because of
+; a soundness bug fix; see ``subversive'' in :doc note-3-5.
+ (defthm equiv-p-type
+   (booleanp (equiv-p x y p))
+   :rule-classes :type-prescription)
+
  (defthm local-confluence
    (let ((valley (transform-local-peak p)))
      (implies (and (equiv-p x y p) (local-peak-p p))

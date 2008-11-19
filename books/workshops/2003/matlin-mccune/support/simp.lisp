@@ -128,6 +128,12 @@
        t
      (and (ceval (car x) i) (ceval-list (cdr x) i))))
  
+; The following was added by Matt Kaufmann after ACL2 Version 3.4 because of
+; a soundness bug fix; see ``subversive'' in :doc note-3-5.
+ (defthm ceval-list-type
+   (booleanp (ceval-list x i))
+   :rule-classes :type-prescription)
+
  (defthm simplify-sound
    (implies (ceval-list y i)
 	    (equal (ceval (simplify x y) i)

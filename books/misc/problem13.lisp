@@ -52,6 +52,11 @@
     (if (zp (nfix i))
 	(nfix n)
       (g (+ -1 (nfix i)) (f n))))  ;tail recursiveness is important
+; The following was added by Matt Kaufmann after ACL2 Version 3.4 because of
+; a soundness bug fix; see ``subversive'' in :doc note-3-5.
+  (defthm g-type
+    (natp (g i n))
+    :rule-classes :type-prescription)
   (local (defun Q-witness (n) (declare (ignore n)) 2))
   (defthm Q-witness-type
     (and (integerp (Q-witness n))
