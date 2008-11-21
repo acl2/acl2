@@ -2,8 +2,8 @@
 
 
 BOOK_DIRS=${BOOK_DIRS[*]:-`find * -type d | grep -v "\.svn" | grep -v workshops`}
-SYSBOOKS_SKIP=${SYSBOOKS_SKIP:-no}
-SYSBOOKS_DIR=${SYSBOOKS_DIR:-""}
+SYSBOOKS_SKIP=no
+SYSBOOKS_DIR=""
 
 # Override the above assignments with the values in the local dep-params.sh, if exists
 if [ -f dep-params.sh ] ; then source dep-params.sh ; fi

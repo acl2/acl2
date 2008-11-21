@@ -32,7 +32,7 @@
            (or (eq (car x) :executable-counterpart-theory)
                (eq (car x) :current-theory)
                (cw "**NOTE**:~%~x0 is not a valid keyword for a ruleset ~
-designator.~%" (car x)))))
+designator in ~x1.~%" (car x) x))))
         (t (cw "**NOTE**:~%~x0 is not a valid ruleset designator.~%" x))))
 
 (defun ruleset-designator-listp (x world)
