@@ -13,7 +13,7 @@
 
      (ANSFL X Y) = X
 
-  X must a form that returns a single value."
+  X must be a form that returns a single value."
 
   `((lambda (ansfl-do-not-use-elsewhere1 ansfl-do-not-use-elsewhere2)
       (declare (ignore ansfl-do-not-use-elsewhere2))
@@ -75,25 +75,58 @@
         ((atom (cddr r)) `(gentle-binary-+ ,(car r) ,(cadr r)))
         (t `(gentle-binary-+ ,(car r) (gentle-+ ,@(cdr r))))))
 
+(defn gentle-revappend (x y)
+  (if (atom x) y
+    (gentle-revappend (cdr x) (cons (car x) y))))
+
+(defn gentle-reverse (x)
+  (if (stringp x)
+      (reverse x)
+    (gentle-revappend x nil)))
+
 (defn gentle-strip-cars (l)
   (if (atom l)
       nil
     (cons (if (atom (car l))
-              (car l)
-            (car (car l)))
+               (car l)
+             (car (car l)))
           (gentle-strip-cars (cdr l)))))
+
+(defn gentle-strip-cdrs (l)
+  (if (atom l)
+      nil
+    (cons (if (atom (car l))
+              (car l)
+            (cdr (car l)))
+          (gentle-strip-cdrs (cdr l)))))
 
 (defn gentle-length (l)
   (if (stringp l)
       (length l)
     (len l)))
 
+(defn gentle-member-eq (x y)
+  (declare (xargs :guard (symbolp x)))
+  (cond ((atom y) nil)
+        ((eq x (car y)) y)
+        (t (gentle-member-eq x (cdr y)))))
+
+(defn gentle-member-eql (x y)
+  (declare (xargs :guard (eqlablep x)))
+  (cond ((atom y) nil)
+        ((eql x (car y)) y)
+        (t (gentle-member-eql x (cdr y)))))
+
+(defn gentle-member-equal (x y)
+  (cond ((atom y) nil)
+        ((equal x (car y)) y)
+        (t (gentle-member-equal x (cdr y)))))
+    
 (defn gentle-member (x y)
-  (if (atom y)
-      nil
-    (if (equal x (car y))
-        y
-      (gentle-member x (cdr y)))))
+  (cond ((symbolp x) (gentle-member-eq x y))
+        ((or (characterp x) (acl2-numberp x))
+         (gentle-member-eql x y))
+        (t (gentle-member-equal x y))))
 
 (defn gentle-binary-- (x y)
   (if (and (acl2-numberp x)
@@ -162,17 +195,6 @@
   `(let* ,bindings
      ,@(gentle-butlast r 1)
      ,(ansfl-last-list (car (gentle-last r)) bindings)))
-
-(defmacro with-memoize (fn form)
-  `(let ((fn ,fn))
-     ((lambda (x y)
-        (declare (ignore x))
-        y)
-      (memoize! fn)
-      ((lambda (u v)
-         (declare (ignore v))
-         u)
-       ,form (unmemoize! fn)))))
 
 (defmacro with-fast-list (var term name form)
   `(let ((,var (hons-put-list
@@ -348,8 +370,8 @@
 
   Assoc is sometimes faster than gethash.~/
 
-  Lis folklore sez it is faster to use
-  ASSOC than GETHASH if a list has length 18 or less.~/~/")
+  Lisp folklore says it is faster to use ASSOC than GETHASH on a list
+  if the list has length 18 or less.~/~/")
 
 (defn worth-hashing (l)
   (worth-hashing1 l *magic-number-for-hashing*))
@@ -607,14 +629,7 @@
 
 ;;; Defhonst
 
-;; Defhonst is like defconst, but makes sure that a hons-copy of the
-;; value is stored, and that the value remains a honsp, even after a
-;; call of clear-hash-tables.  To this end, we keep a record of all
-;; these values.  We also use that record to help with evisceration.
-
-;; Maybe defhonst should be elevated to an event some day.  If so,
-;; then the undoing of the event should probably flush the record for
-;; that constant.
+;; Defhonst is like defconst.
 
 ;; The record for all defhonst values is kept in the ACL2 global
 ;; 'defhonst.  To flush all defhonst records manually, one may:
@@ -634,6 +649,9 @@
       (value f))))
 
 (defmacro defhonst (name form &key (evisc 'nil eviscp) check doc)
+
+; From Matt Mon Sep 29 09:53:49 CDT 2008
+
   `(with-output
     :off summary
     (progn
@@ -644,8 +662,8 @@
                   evisc
                 (let ((str (symbol-name name)))
                   (if (may-need-slashes str)
-                      (concatenate 'string "#,|" str "|")
-                    (concatenate 'string "#," str)))))
+                      (concatenate 'string "#.|" str "|")
+                    (concatenate 'string "#." str)))))
       (table persistent-hons-table
              (let ((x ,name))
                (if (or (consp x) (stringp x))
@@ -753,7 +771,7 @@
 
   ":Doc-Section Hons-and-Memoization
 
-  Sets some print control variables to maximal values.~/
+  (PLEV-MAX) sets some print control variables to maximal values.~/
   ~/~/"  
 
   `(plev-fn ,length ,level ,lines ,circle ,pretty ,readably state))
@@ -768,7 +786,7 @@
 
   ":Doc-Section Hons-and-Memoization
 
-  Sets some print control variables to minimal values.~/
+  (PLEV-MIN) sets some print control variables to minimal values.~/
   ~/~/"
 
   `(plev-fn ,length ,level ,lines ,circle ,pretty ,readably state))
@@ -802,7 +820,7 @@
 
   (if (not (posp n))
       e
-    (hons a (hons-make-list (1- n) a e))))
+    (hons-make-list (1- n) a (hons a e))))
 
 (defn hons-take (n l)
   ":Doc-Section Hons-and-Memoization
@@ -830,11 +848,10 @@
 (defn alist-equal (al1 al2)
   ":Doc-Section Hons-and-Memoization
 
-  Determine whether two alists are EQUAL with respect to HONS-GET.~/
+  (ALIST-EQUAL al1 al2) returns T or NIL according to whether for all
+  x, (equal (hons-get x AL1) (hons-get x AL2)).~/
 
-  (ALIST-EQUAL al1 al2) determines whether for all X, the two alist
-  (equal (hons-get x AL1) (hons-get x AL2)).  May run faster on fast
-  alists than the obvious calculation. ~/~/"
+  ALIST-EQUAL sometimes runs rather fast on fast alists. ~/~/"
 
   (and (equal (fast-alist-len al1)
               (fast-alist-len al2))

@@ -31,11 +31,6 @@
 
 (def-macro-alias hhut hons-acons! 3)
 
-(encapsulate
- ()
- (set-state-ok t)
- (def-macro-alias head-object hons-read-object (channel st)))
-
 (def-macro-alias hhshrink-alist hons-shrink-alist! 2)
 
 (def-macro-alias hshrink-alist hons-shrink-alist 2)
