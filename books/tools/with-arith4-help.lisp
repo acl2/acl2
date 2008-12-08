@@ -98,6 +98,10 @@ scope before using WITH-ARITH4-NONLINEAR++-HELP.~%"))))
      . ,stuff))
 
 
+(defmacro enable-arith4 ()
+  `(e/d* ((:ruleset arith4-enable-ruleset)
+          (:ruleset arith4-disable-ruleset))))
+
 ;; Notes:
 
 ;; This book allows the arithmetic-4 library to be included locally within a book
