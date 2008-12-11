@@ -302,6 +302,5 @@
                                                        (theory 'full))
                               (theory 'minimal-arithmetic-theory))))
 
-(include-book "banner"
 ; Avoid printing banner twice:
-              :load-compiled-file nil)
+(include-book "banner" :load-compiled-file nil)

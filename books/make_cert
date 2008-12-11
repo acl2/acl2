@@ -1,0 +1,33 @@
+
+
+%.cert: %.lisp
+	@echo "Making `pwd`/$*.cert on `date`" ;\
+	DIR=`dirname $*` ;\
+	FILE=`basename $*` ;\
+        ACL2=`which $(ACL2)` ;\
+	cd $$DIR ;\
+	rm -f $$FILE.cert ;\
+	echo '(acl2::value :q)' > workxxx.$$FILE ;\
+	echo '(ccl::set-lisp-heap-gc-threshold (expt 2 30))' >> workxxx.$$FILE ;\
+	echo '(in-package "ACL2")' >> workxxx.$$FILE ;\
+	echo '(acl2::lp)' >> workxxx.$$FILE ;\
+	echo '$(INHIBIT)' >> workxxx.$$FILE ;\
+	if [ -f $$FILE.acl2 ] ;\
+	then \
+	  cat $$FILE.acl2 >> workxxx.$$FILE ;\
+	elif [ -f cert.acl2 ] ;\
+	then \
+	  cat cert.acl2 >> workxxx.$$FILE ;\
+	  echo "" >> workxxx.$$FILE ;\
+	  echo "(certify-book \"$$FILE\" ? t)" >> workxxx.$$FILE ;\
+	else \
+	  echo "" >> workxxx.$$FILE ;\
+	  echo "(certify-book! \"$$FILE\" 0 t)" >> workxxx.$$FILE ;\
+	fi ;\
+	echo "" >> workxxx.$$FILE ;\
+	echo '(acl2::value :q)' >> workxxx.$$FILE ;\
+	echo '(acl2::exit-lisp)' >> workxxx.$$FILE ;\
+	($$ACL2 < workxxx.$$FILE 2>&1) > $$FILE.out ;\
+	rm -f workxxx.$$FILE ;\
+	((test -f $$FILE.cert) && (ls -al $$FILE.cert)) || (echo "**CERTIFICATION FAILED** for `pwd`/$$FILE.lisp" ; exit 1)
+
