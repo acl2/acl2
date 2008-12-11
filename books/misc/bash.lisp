@@ -80,7 +80,7 @@ ACL2 !>(bash-term-to-dnf
 	'(("Goal" :expand ((true-listp x)
 			   (true-listp (cdr x))
 			   (append x y))))
-	nil state)
+	nil nil state)
  (((EQUAL Y ZZZ))
   ((NOT (CONSP X))
    (NOT (CONSP (CDR X)))
@@ -127,7 +127,7 @@ Then:
   ACL2 !>(er-let* ((clauses (bash-term-to-dnf
 			     '(implies (and (p1 x) (p3 x))
 				       (hide aaa))
-			     nil nil state)))
+			     nil nil t state)))
 		  (mv nil (strip-lastcar clauses) state))
    (((NOT (P1 X))
      (NOT (CONSP X))
@@ -235,7 +235,7 @@ Then:
    (t (cons (untranslate-lst (car list) iff-flg wrld)
 	    (untranslate-lst-lst (cdr list) iff-flg wrld)))))
 
-(defun bash-term-to-dnf (form hints verbose state)
+(defun bash-term-to-dnf (form hints verbose untranslate-flg state)
 
 ; Keep this in sync with bash-fn.
 
@@ -246,20 +246,29 @@ Then:
             (simplify-with-prover form hints ctx state))
            (t
             (state-global-let*
-             ((inhibit-output-lst *valid-output-names*))
+             ((gag-mode nil set-gag-mode-fn)
+              (inhibit-output-lst *valid-output-names*)
+              (print-clause-ids nil))
              (simplify-with-prover form hints ctx state))))
      (cond
       (erp
-       (pprogn
-        (warning$ ctx "bash"
-                  "Unable to simplify the input term~@0"
-                  (cond ((eq erp 'no-change)
-                         ".")
-                        (t (msg " because an error occurred.~@0"
-                                (cond
-                                 (verbose "")
-                                 (t "  Try setting the verbose flag to t in ~
-                                     order to see what is going on."))))))
-        (value (list (list form)))))
+       (cond ((eq verbose :all)
+              (pprogn
+               (warning$ ctx "bash"
+                         "Unable to simplify the input term~@0"
+                         (cond ((eq erp 'no-change)
+                                ".")
+                               (t (msg " because an error occurred.~@0"
+                                       (cond
+                                        (verbose "")
+                                        (t "  Try setting the verbose flag to ~
+                                            t in order to see what is going ~
+                                            on."))))))
+               (value (list (list form)))))
+             (t
+              (value (list (list form))))))
+      (untranslate-flg
+       (value (untranslate-lst-lst clauses t (w state))))
       (t
-       (value (untranslate-lst-lst clauses t (w state))))))))
+       (value clauses))))))
+
