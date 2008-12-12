@@ -1,5 +1,19 @@
 #!/bin/bash
 
+######################################################################
+## NOTE.  This file is not part of the standard ACL2 books build
+## process; it is part of an experimental build system that is not yet
+## intended, for example, to be capable of running the whole
+## regression.  The ACL2 developers do not maintain this file.
+##
+## Please contact Sol Swords <sswords@cs.utexas.edu> or Jared Davis
+## <jared@cs.utexas.edu> with any questions/comments.
+######################################################################
+
+# Copyright 2008 by Jared Davis and Sol Swords.
+# Credit to Matt Kaufmann and J Strother Moore for code from Makefile-generic.
+
+
 
 BOOK_DIRS=${BOOK_DIRS[*]:-`find * -type d | grep -v "\.svn" | grep -v workshops`}
 SYSBOOKS_SKIP=no

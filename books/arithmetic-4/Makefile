@@ -5,4 +5,4 @@ DIRS = support lib
 include ../Makefile-subdirs
 include ../Makefile-generic
 
-include Makefile-deps
+-include Makefile-deps

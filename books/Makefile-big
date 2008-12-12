@@ -1,5 +1,19 @@
 
 
+######################################################################
+## NOTE.  This file is not part of the standard ACL2 books build
+## process; it is part of an experimental build system that is not yet
+## intended, for example, to be capable of running the whole
+## regression.  The ACL2 developers do not maintain this file.
+##
+## Please contact Jared Davis <jared@cs.utexas.edu> or Sol Swords
+## <sswords@cs.utexas.edu> with any questions/comments.
+######################################################################
+
+# Copyright 2008 by Jared Davis and Sol Swords.
+# Credit to Matt Kaufmann and J Strother Moore for code from Makefile-generic.
+
+
 # This makefile is designed to support file-level dependencies among
 # ACL2 books.  The make-all-deps.sh script produces a dependency file
 # called Makefile-alldeps reflecting the dependencies among all the

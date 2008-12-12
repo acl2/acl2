@@ -1,9 +1,36 @@
-#!/usr/bin/perl
 
-# This script scans for dependencies of some ACL2 .cert files.  To
-# run, execute
-# perl cert.pl book1.cert book2.cert ...
-# More command line options are forthcoming.
+######################################################################
+## NOTE.  This file is not part of the standard ACL2 books build
+## process; it is part of an experimental build system that is not yet
+## intended, for example, to be capable of running the whole
+## regression.  The ACL2 developers do not maintain this file.
+##
+## Please contact Sol Swords <sswords@cs.utexas.edu> with any
+## questions/comments.
+######################################################################
+
+# Copyright 2008 by Sol Swords.
+
+
+
+#; This program is free software; you can redistribute it and/or modify
+#; it under the terms of the GNU General Public License as published by
+#; the Free Software Foundation; either version 2 of the License, or
+#; (at your option) any later version.
+
+#; This program is distributed in the hope that it will be useful,
+#; but WITHOUT ANY WARRANTY; without even the implied warranty of
+#; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#; GNU General Public License for more details.
+
+#; You should have received a copy of the GNU General Public License
+#; along with this program; if not, write to the Free Software
+#; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+
+
+# This script scans for dependencies of some ACL2 .cert files.
+# Run "perl cert.pl -h" for usage.
 
 # This script scans for include-book forms in the .lisp file
 # corresponding to each .cert target and recursively maps out the
@@ -18,25 +45,20 @@
 
 
 
-
-
-
-
-
 use strict;
 use warnings;
 use File::Basename;
 
 my %seen = ( );
 
-my $use_pfiles = 1;
-my $write_pfiles = 1;
+my $use_pfiles = 0;
+my $write_pfiles = 0;
 
 
 
 # This sets the location of :dir :system as the directory where this script sits.
 my %dirs = ( "SYSTEM" => dirname($0) );
-
+print "System dir is " . dirname($0) . "\n";
 my $local_dirs = 0;
 
 
@@ -45,6 +67,10 @@ my $jobs = 1;
 my $clean_certs = 0;
 my $no_build = 0;
 my $clean_pfiles = 0;
+my $print_deps = 0;
+my $no_makefile = 0;
+my $mf_name = "Makefile-tmp";
+my $all_deps = 0;
 
 while (my $arg = shift(@ARGV)) {
     if ($arg eq "--help" || $arg eq "-h") {
@@ -61,22 +87,28 @@ and options are as follows:
    -j <n>
            Use n processes to build certificates in parallel.
 
-   --no-use-pfiles
+   --use-pfiles
    -u
-           Don\'t look at files with \".p\" extensions to obtain
-           pre-cached dependency information.
+           Read files with \".p\" extensions to obtain pre-cached
+           dependency information.
 
-   --no-write-pfiles
+
+   --write-pfiles
    -w
-           Don\'t write out files with ".p" extensions containing
-           cached dependency information.
+           Write out files with ".p" extensions to cache dependency
+           information.
+
+   --all-deps
+   -d
+           Write out dependency information for all targets
+           encountered, including ones which don\'t need updating.
 
    --clean-certs
    -cc
-           Delete each certificate file encountered in the dependency
-           search.  Warning: Unless the "-n"/"--no-build" flag is
-           given, the script will then subsequently rebuild these
-           files.
+           Delete each certificate file and corresponding .out file
+           encountered in the dependency search.  Warning: Unless the
+           "-n"/"--no-build" flag is given, the script will then
+           subsequently rebuild these files.
 
    --clean-pfiles
    -cp
@@ -98,23 +130,55 @@ and options are as follows:
            don\'t generate new cache files or build certificates.
            Equivalent to "-n -w -cc -cp".
 
+   -o <makefile-name>
+           Determines where to write the dependency information;
+           default is Makefile-tmp.
+
+   --verbose-deps
+   -v
+           Print out dependency information as it\'s discovered.
+
+   --makefile-only
+   -m
+           Write out a file Makefile-tmp containing the dependency
+           graph, but don\'t run make.
+
+   --static-makefile-mode <makefile-name>
+   -s <makefile-name>
+           Equivalent to -u -w -d -m -o <makefile-name>.  Useful for
+           building a static makefile for your targets, which will
+           suffice for certifying them as long as the dependencies
+           between source files don\'t change.
+
 ';
-        exit 0;
+	exit 0;
     } elsif ($arg eq  "--jobs" || $arg eq "-j") {
 	$jobs = shift @ARGV;
-    } elsif ($arg eq "--no-use-pfiles" || $arg eq "-u") {
-	$use_pfiles = 0;
-    } elsif ($arg eq "--no-write-pfiles" || $arg eq "-w") {
-	$write_pfiles = 0;
+    } elsif ($arg eq "--use-pfiles" || $arg eq "-u") {
+	$use_pfiles = 1;
+    } elsif ($arg eq "--write-pfiles" || $arg eq "-w") {
+	$write_pfiles = 1;
     } elsif ($arg eq "--clean-certs" || $arg eq "-cc") {
 	$clean_certs = 1;
     } elsif ($arg eq "--no-build" || $arg eq "-n") {
-	$no_build = 1;
+	$no_makefile = 1;
     } elsif ($arg eq "--clean-pfiles" || $arg eq "-cp") {
 	$clean_pfiles = 1;
     } elsif ($arg eq "--clean-all" || $arg eq "-c") {
-        $clean_pfiles = $no_build = $clean_certs = 1;
+        $clean_pfiles = $no_makefile = $clean_certs = 1;
         $write_pfiles = $use_pfiles = 0;
+    } elsif ($arg eq "--verbose-deps" || $arg eq "-v") {
+	$print_deps = 1;
+    } elsif ($arg eq "--makefile-only" || $arg eq "-m") {
+	$no_build = 1;
+    } elsif ($arg eq "-o") {
+	$mf_name = shift @ARGV;
+    } elsif ($arg eq "--all-deps" || $arg eq "-d") {
+	$all_deps = 1;
+    } elsif ($arg eq "--static-makefile-mode" || $arg eq "-s") {
+	$mf_name = shift @ARGV;
+	$use_pfiles = $write_pfiles = 0;
+	$all_deps = $no_build = 1;
     } else {
 	push(@targets, $arg);
     }
@@ -129,6 +193,12 @@ sub lookup_colon_dir {
     return $dirpath;
 }
 
+sub rm_dotdots {
+    my $path = shift;
+    while ($path =~ s/( |\/)[^\/\.]+\/\.\.\//$1/g) {}
+    return $path;
+}
+
 sub get_include_book {
     my $base = shift;
     my $the_line = shift;
@@ -141,14 +211,10 @@ sub get_include_book {
 		print "Error: Unknown :dir entry $res[1] for $base\n";
 		return 0;
 	    }
-	    my $path = "$dirpath/$res[0].cert";
-	    while ($path =~ s/( |\/)[^\/\:]*\/\.\.\//$1/g) {}
-	    return $path;
+	    return rm_dotdots("$dirpath/$res[0].cert");
 	} else {
 	    my $dir = dirname($base);
-	    my $path = "$dir/$res[0].cert";
-	    while ($path =~ s/( |\/)[^\/\:]*\/\.\.\//$1/g) {}
-	    return $path;
+	    return rm_dotdots("$dir/$res[0].cert");
 	}
     }
     return 0;
@@ -156,7 +222,7 @@ sub get_include_book {
 
 # Possible more general way of recognizing a Lisp symbol:
 # ((?:[^\\s\\\\|]|\\\\.|(?:\\|[^|]*\\|))*)
-# - repeatedly matches either: a non-bar, non-backslash, non-whitespace character,
+# - repeatedly matches either: a non-pipe, non-backslash, non-whitespace character,
 #                              a backslash and subsequently any character, or
 #                              a pair of pipes with a series of intervening non-pipe characters.
 # For now, stick with a dumber, less error-prone method.
@@ -176,14 +242,10 @@ sub get_ld {
 		print "Error: Unknown :dir entry $res[1] for $base\n";
 		return 0;
 	    }
-	    my $path = "$dirpath/$res[0]";
-	    while ($path =~ s/( |\/)[^\/\:]*\/\.\.\//$1/g) {}
-	    return $path;
+	    return rm_dotdots("$dirpath/$res[0]");
 	} else {
 	    my $dir = dirname($base);
-	    my $path = "$dir/$res[0]";
-	    while ($path =~ s/( |\/)[^\/\:]*\/\.\.\//$1/g) {}
-	    return $path;
+	    return rm_dotdots("$dir/$res[0]");
 	}
     }
     return 0;
@@ -200,9 +262,7 @@ sub get_add_dir {
 	$local_dirs = $local_dirs || {};
 	my $name = uc($res[0]);
 	my $basedir = dirname($base);
-	my $path = "$basedir/$res[1]";	
-	while ($path =~ s/( |\/)[^\/\:]*\/\.\.\//$1/g) {}
-	$local_dirs->{$name} = $path;
+	$local_dirs->{$name} = rm_dotdots("$basedir/$res[1]");
     }
     return 0;
 }
@@ -271,14 +331,17 @@ sub add_deps {
 	return;
     }
 
-    if (-e $target && $clean_certs) {
-	unlink($target);
-    }
-
     my $base = $target;
     $base =~ s/\.cert$//;
     my $pfile = $base . ".p";
     my $lispfile = $base . ".lisp";
+
+    # Clean the cert and out files if we're cleaning.
+    if ($clean_certs) {
+	my $outfile = $base . ".out";
+	unlink($target) if (-e $target);
+	unlink($outfile) if (-e $outfile);
+    }
 
     # First check that the corresponding .lisp file exists.
     if (! -e $lispfile) {
@@ -311,8 +374,6 @@ sub add_deps {
 	
 	# Scan the .acl2 file first so that we get the add-include-book-dir
 	# commands before the include-book commands.
-
-	
 	scan_ld($acl2file, $deps);
 
 	# Scan the lisp file for include-books.
@@ -336,69 +397,80 @@ sub add_deps {
 	    close($p);
 	}
     } else {
-	# Read the dependencies from the pfile.
+
+	# Read the dependencies from the pfile instead of regenerating them.
 	open(my $p, "<", $pfile);
 	while (my $the_line = <$p>) {
-	    $the_line =~ s/\n$//;
-	    push(@{$deps}, $the_line);
+	    # Chop the newline off and add to deps.
+	    push(@{$deps}, substr($the_line, 0, -1));
 	}
 	close($p);
     }
-    
+
+    if ($print_deps) {
+	print "Dependencies for $target:\n";
+	foreach my $dep (@{$deps}) {
+	    print "$dep\n";
+	}
+	print "\n";
+    }
+
     foreach my $dep (@{$deps}) {
 	add_deps($dep);
     }
 
-    # If this needs an update, we're done, otherwise we need to delete
-    # its entry in the dependency table. 
-    my $needs_update = (! -e $target);
-    if (! $needs_update) {
-	foreach my $dep (@{$deps}) {
-	    if ((-e $dep && newer_than($dep, $target)) || $seen{$dep}) {
-		$needs_update = 1;
-		last;
+    # If this target needs an update or we're in all_deps mode, we're
+    # done, otherwise we'll delete its entry in the dependency table.
+    unless ($all_deps) {
+	my $needs_update = (! -e $target);
+	if (! $needs_update) {
+	    foreach my $dep (@{$deps}) {
+		if ((-e $dep && newer_than($dep, $target)) || $seen{$dep}) {
+		    $needs_update = 1;
+		    last;
+		}
 	    }
 	}
-    }
-    if (! $needs_update) {
-	$seen{$target} = 0;
+	if (! $needs_update) {
+	    $seen{$target} = 0;
+	}
     }
 
-#    print "Done calculating dependencies for $target\n";
 }
 
-print "Starting dependency calculation\n";
 foreach my $target (@targets) {
     $target =~ s/\.lisp$/.cert/;
     add_deps($target);
 }
 
 
-unless ($no_build) {
-# Build the makefile and run make.
-    open (my $mf, ">", "Makefile-tmp");
-    print "Done adding dependencies\n";
-    print $mf "
-ACL2 := " . $ENV{"ACL2"} . "
-include " . dirname($0) . "/make_cert
-.PHONY: all
-
-    all :
-    ";
+unless ($no_makefile) {
+    my $acl2 = $ENV{"ACL2"};
+    unless ($acl2) {
+	die "Error: Shell variable ACL2 should be set for this to work correctly.\n";
+    }
+    # Build the makefile and run make.
+    open (my $mf, ">", $mf_name) or die "Failed to open output file $mf_name\n";
+    print $mf '
+ACL2 := ' . $ENV{"ACL2"} . '
+include ' . dirname($0) . '/make_cert
+' . '.' . 'PHONY: all
+all:
+';
     while ((my $key, my $value) = each %seen) {
 	if ($value) { 
-#	print "Dependencies for $key:\n";
 	    print $mf "all : $key\n";
 	    my @the_deps = @{$value};
 	    foreach my $dep (@the_deps) {
-#	    print "$dep\n";
 		print $mf "$key : $dep\n";
 	    }
 	}
     }
     close($mf);
-
-    exec("make", "-j", $jobs, "-f", "Makefile-tmp");
+    
+    unless ($no_build) {
+	exec("make", "-j", $jobs, "-f", $mf_name);
+    }
 }
 
 
