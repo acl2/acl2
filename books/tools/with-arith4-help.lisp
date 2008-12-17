@@ -99,8 +99,8 @@ scope before using WITH-ARITH4-NONLINEAR++-HELP.~%"))))
 
 
 (defmacro enable-arith4 ()
-  `(e/d* ((:ruleset arith4-enable-ruleset)
-          (:ruleset arith4-disable-ruleset))))
+  `(e/d* ((:ruleset arith4-enable-ruleset))
+         ((:ruleset arith4-disable-ruleset))))
 
 ;; Notes:
 
