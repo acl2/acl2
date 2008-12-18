@@ -169,25 +169,27 @@
 (defund comparable-mergesort (x)
   (declare (xargs :guard (and (true-listp x)
                               (comparable-listp x))))
-  (let ((len (length x)))
+  (let ((len (mbe :logic (len x)
+                  :exec (length x))))
     (if (< (the integer len) *mergesort-fixnum-threshold*)
         (fast-comparable-mergesort-fixnums x len)
       (fast-comparable-mergesort-integers x len))))
 
 (defthm comparable-listp-of-comparable-mergesort
-  (implies (and (force (comparable-listp x))
-                (force (true-listp x)))
+  (implies (force (comparable-listp x))
            (comparable-listp (comparable-mergesort x)))
   :hints(("Goal" :in-theory (enable comparable-mergesort))))
 
 (defthm duplicity-of-comparable-mergesort
-  (implies (force (true-listp x))
-           (equal (duplicity a (comparable-mergesort x))
-                  (duplicity a x))))
+  (equal (duplicity a (comparable-mergesort x))
+         (duplicity a x)))
 
 (defthm comparable-orderedp-of-comparable-mergesort
-  (implies (force (true-listp x))
-           (comparable-orderedp (comparable-mergesort x))))
+  (comparable-orderedp (comparable-mergesort x)))
+
+(defthm no-duplicatesp-equal-of-comparable-mergesort
+  (equal (no-duplicatesp-equal (comparable-mergesort x))
+         (no-duplicatesp-equal x)))
 
 
 

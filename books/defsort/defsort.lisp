@@ -263,7 +263,8 @@
                                                                    natp
                                                                    (:type-prescription len)
                                                                    (:executable-counterpart expt))))))
-          (let ((len (length x)))
+          (let ((len (mbe :logic (len x)
+                          :exec (length x))))
             (if (< (the integer len) *mergesort-fixnum-threshold*)
                 (,fixnum x len)
               (,integer x len))))
@@ -271,9 +272,8 @@
         
 
         (defthm ,(mksym prefix "-SORT-PRESERVES-DUPLICITY")
-          (implies (force (true-listp x))
-                   (equal (duplicity a (,sort x))
-                          (duplicity a x)))
+          (equal (duplicity a (,sort x))
+                 (duplicity a x))
           :hints(("Goal"
                   :in-theory (enable ,sort)
                   :use ((:functional-instance duplicity-of-comparable-mergesort
@@ -287,8 +287,7 @@
 
         ,@(and comparablep
                `((defthm ,(mksym prefix "-SORT-CREATES-COMPARABLE-LISTP")
-                   (implies (and (force (,comparable-listp x))
-                                 (force (true-listp x)))
+                   (implies (force (,comparable-listp x))
                             (,comparable-listp (,sort x)))
                    :hints(("Goal"
                            :use ((:functional-instance comparable-listp-of-comparable-mergesort
@@ -301,11 +300,24 @@
                                                        (comparable-mergesort ,sort))))))))
 
         (defthm ,(mksym prefix "-SORT-SORTS")
-          (implies (force (true-listp x))
-                   (,orderedp (,sort x)))
+          (,orderedp (,sort x))
           :hints(("Goal"
                   :in-theory (enable ,orderedp)
                   :use ((:functional-instance comparable-orderedp-of-comparable-mergesort
+                                              (compare< ,compare<)
+                                              (comparablep ,comparable-inst)
+                                              (comparable-listp ,comparable-listp-inst)
+                                              (comparable-merge ,merge)
+                                              (comparable-orderedp ,orderedp)
+                                              (fast-comparable-mergesort-fixnums ,fixnum)
+                                              (fast-comparable-mergesort-integers ,integer)
+                                              (comparable-mergesort ,sort))))))
+
+        (defthm ,(mksym prefix "-NO-DUPLICATESP-EQUAL")
+          (equal (no-duplicatesp-equal (,sort x))
+                 (no-duplicatesp-equal x))
+          :hints(("Goal"
+                  :use ((:functional-instance no-duplicatesp-equal-of-comparable-mergesort
                                               (compare< ,compare<)
                                               (comparablep ,comparable-inst)
                                               (comparable-listp ,comparable-listp-inst)

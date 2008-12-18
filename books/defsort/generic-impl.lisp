@@ -18,6 +18,7 @@
 (include-book "unicode/take" :dir :system)
 (include-book "unicode/nthcdr" :dir :system)
 (include-book "unicode/list-fix" :dir :system)
+(include-book "duplicity")
 (allow-arith4-help)
 
 
@@ -803,20 +804,34 @@
 (defund comparable-mergesort (x)
   (declare (xargs :guard (and (true-listp x)
                               (comparable-listp x))))
-  (let ((len (length x)))
+  (let ((len (mbe :logic (len x)
+                  :exec (length x))))
     (if (< (the integer len) *mergesort-fixnum-threshold*)
         (fast-comparable-mergesort-fixnums x len)
       (fast-comparable-mergesort-integers x len))))
 
+
+(defthm nthcdr-of-list-fix
+  (equal (nthcdr n (list-fix x))
+         (list-fix (nthcdr n x))))
+
+(defthm simpler-take-of-list-fix
+  (equal (simpler-take n (list-fix x))
+         (list-fix (simpler-take n x))))
+
+(defthm comparable-mergesort-spec2-of-list-fix
+  (equal (comparable-mergesort-spec2 (list-fix x))
+         (comparable-mergesort-spec2 x))
+  :hints(("Goal"
+          :in-theory (enable comparable-mergesort-spec2))))
+
 (defthm comparable-mergesort-redefinition
-  (implies (true-listp x)
-           (equal (comparable-mergesort x)
-                  (comparable-mergesort-spec x)))
+  (equal (comparable-mergesort x)
+         (comparable-mergesort-spec x))
   :hints(("Goal" :in-theory (enable comparable-mergesort))))
 
 (defthm comparable-listp-of-comparable-mergesort
-  (implies (and (force (comparable-listp x))
-                (force (true-listp x)))
+  (implies (force (comparable-listp x))
            (comparable-listp (comparable-mergesort x)))
   :hints(("Goal" :in-theory (enable comparable-mergesort))))
 
@@ -827,27 +842,10 @@
 ;; We now establish that sorting preserves the duplicities of elements.  In
 ;; other words, the output is a permutation of its input.
 
-(defund duplicity (a x)
-  (declare (xargs :guard t))
-  (cond ((atom x)
-         0)
-        ((equal (car x) a)
-         (+ 1 (duplicity a (cdr x))))
-        (t
-         (duplicity a (cdr x)))))
-
-(defthm duplicity-when-not-consp
-  (implies (not (consp x))
-           (equal (duplicity a x)
-                  0))
-  :hints(("Goal" :in-theory (enable duplicity))))
-
-(defthm duplicity-of-cons
-  (equal (duplicity a (cons b x))
-         (if (equal a b)
-             (+ 1 (duplicity a x))
-           (duplicity a x)))
-  :hints(("Goal" :in-theory (enable duplicity))))
+(defthm duplicity-of-list-fix
+  (equal (duplicity a (list-fix x))
+         (duplicity a x))
+  :hints(("Goal" :induct (len x))))
 
 (defthm duplicity-of-pieces
   (implies (and (natp n)
@@ -870,9 +868,8 @@
 
 (with-arith4-help
  (defthm duplicity-of-comparable-mergesort
-   (implies (force (true-listp x))
-            (equal (duplicity a (comparable-mergesort x))
-                   (duplicity a x)))
+   (equal (duplicity a (comparable-mergesort x))
+          (duplicity a x))
    :hints(("Goal" :in-theory (enable comparable-mergesort)))))
 
 
@@ -950,11 +947,19 @@
   (comparable-orderedp (comparable-mergesort-spec2 x))
   :hints(("Goal" :in-theory (enable comparable-mergesort-spec2))))
 
+
 (with-arith4-help
  (defthm comparable-orderedp-of-comparable-mergesort
-   (implies (force (true-listp x))
-            (comparable-orderedp (comparable-mergesort x)))))
+   (comparable-orderedp (comparable-mergesort x))))
 
+(defthm no-duplicatesp-equal-of-comparable-mergesort
+  (equal (no-duplicatesp-equal (comparable-mergesort x))
+         (no-duplicatesp-equal x))
+  :hints(("Goal"
+          :use ((:functional-instance no-duplicatesp-equal-same-by-duplicity
+                                      (duplicity-hyp (lambda () t))
+                                      (duplicity-lhs (lambda () (comparable-mergesort x)))
+                                      (duplicity-rhs (lambda () x)))))))
 
-
-
+  
+                               
