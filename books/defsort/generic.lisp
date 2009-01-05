@@ -175,6 +175,10 @@
         (fast-comparable-mergesort-fixnums x len)
       (fast-comparable-mergesort-integers x len))))
 
+(defthm true-listp-of-comparable-mergesort
+  (true-listp (comparable-mergesort x))
+  :rule-classes :type-prescription)
+
 (defthm comparable-listp-of-comparable-mergesort
   (implies (force (comparable-listp x))
            (comparable-listp (comparable-mergesort x)))

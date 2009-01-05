@@ -312,6 +312,18 @@
             (comparable-mergesort-spec2 (take half x))
             (comparable-mergesort-spec2 (nthcdr half x)))))))
 
+(defthm true-listp-of-comparable-merge
+  (implies (and (true-listp y)
+                (true-listp x))
+           (true-listp (comparable-merge x y)))
+  :rule-classes :type-prescription
+  :hints(("Goal" :in-theory (enable comparable-merge))))
+
+(defthm true-listp-of-comparable-mergesort-spec2
+  (true-listp (comparable-mergesort-spec2 x))
+  :rule-classes :type-prescription
+  :hints(("Goal" :in-theory (enable comparable-mergesort-spec2))))
+
 (defthm comparable-mergesort-spec-redefinition
   (equal (comparable-mergesort-spec x)
          (comparable-mergesort-spec2 x))
@@ -809,6 +821,11 @@
     (if (< (the integer len) *mergesort-fixnum-threshold*)
         (fast-comparable-mergesort-fixnums x len)
       (fast-comparable-mergesort-integers x len))))
+
+(defthm true-listp-of-comparable-mergesort
+  (true-listp (comparable-mergesort x))
+  :rule-classes :type-prescription
+  :hints(("Goal" :in-theory (enable comparable-mergesort))))
 
 
 (defthm nthcdr-of-list-fix

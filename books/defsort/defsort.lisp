@@ -269,8 +269,6 @@
                 (,fixnum x len)
               (,integer x len))))
 
-        
-
         (defthm ,(mksym prefix "-SORT-PRESERVES-DUPLICITY")
           (equal (duplicity a (,sort x))
                  (duplicity a x))
@@ -326,6 +324,21 @@
                                               (fast-comparable-mergesort-fixnums ,fixnum)
                                               (fast-comparable-mergesort-integers ,integer)
                                               (comparable-mergesort ,sort))))))
+
+        (defthm ,(mksym prefix "-TRUE-LISTP")
+          (true-listp (,sort x))
+          :rule-classes :type-prescription
+          :hints(("Goal"
+                  :use ((:functional-instance true-listp-of-comparable-mergesort
+                                              (compare< ,compare<)
+                                              (comparablep ,comparable-inst)
+                                              (comparable-listp ,comparable-listp-inst)
+                                              (comparable-merge ,merge)
+                                              (comparable-orderedp ,orderedp)
+                                              (fast-comparable-mergesort-fixnums ,fixnum)
+                                              (fast-comparable-mergesort-integers ,integer)
+                                              (comparable-mergesort ,sort))))))
+
 
         ))))
         
