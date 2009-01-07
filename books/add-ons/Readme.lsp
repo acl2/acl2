@@ -4,7 +4,6 @@
 Makefile
 Readme.lsp
 hash-stobjs.acl2
-hash-stobjs.cert
 hash-stobjs.lisp")
  (:abstract "This directory contains books which add system-level functionality
 to ACL2.  These books should be considered experimental, potentially buggy and
