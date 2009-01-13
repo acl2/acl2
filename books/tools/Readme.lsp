@@ -5,6 +5,7 @@ Makefile
 Readme.lsp
 bstar.lisp
 cws.lisp
+defined-const.lisp
 defsum.lisp
 deftuple.lisp
 flag.acl2
@@ -41,6 +42,9 @@ forms.
 cws.lisp defines CWS, which is a shortcut for printing expressions and
 their values without typing formatting strings.
 
+defined-const.lisp defines DEFINED-CONST, which produces a defconst and a
+theorem saying what term it represents while only evaluating that term once.
+
 progndollar.lisp defines PROGN$, which evaluates several forms in
 sequence for side effects.
 
@@ -60,8 +64,8 @@ functionality, especially useful for writing functions that deal with
 sum-of-products data structures as defined by defsum.
 ")
  (:PERMISSION
-  "{bstar,cws,defsum,deftuple,pack,progndollar,theory-tools,types-misc}.lisp
- copyright (C) 2007 by Sol Swords <sswords@cs.utexas.edu>.
+  "{bstar,cws,defined-const,defsum,deftuple,pack,progndollar,theory-tools,types-misc}.lisp
+ copyright (C) 2009 by Sol Swords <sswords@cs.utexas.edu>.
 
 flag.lisp copyright 2008 by Jared Davis <jared@cs.utexas.edu> and Sol Swords.
 
