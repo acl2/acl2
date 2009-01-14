@@ -43,7 +43,8 @@ cws.lisp defines CWS, which is a shortcut for printing expressions and
 their values without typing formatting strings.
 
 defined-const.lisp defines DEFINED-CONST, which produces a defconst and a
-theorem saying what term it represents while only evaluating that term once.
+theorem saying what term it represents while only evaluating that term once (if
+the HONS system is present) or twice (if not.)
 
 progndollar.lisp defines PROGN$, which evaluates several forms in
 sequence for side effects.

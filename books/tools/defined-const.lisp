@@ -24,7 +24,13 @@
 
 ;; Note that if you use :rule-classes :rewrite and want the theorem to fire,
 ;; you'll need to disable the appropriate executable counterparts of functions
-;; that appear in the term.
+;; that appear in the term.  Also, ACL2 may refuse to create rewrite rules
+;; targetting certaing ground expressions; Matt Kaufmann provided this example
+;; which fails:
+
+;; (defined-const *foo* (+ 2 3))
+
+;; In these cases you can supply :rule-classes nil to allow this to work.
 
 
 
@@ -57,7 +63,8 @@
           (defthm defined-const-memoize-fn-is-term
             (equal ,term
                    (defined-const-memoize-fn))
-            :hints (("goal" :in-theory (disable (defined-const-memoize-fn)))))
+            :hints (("goal" :in-theory (disable (defined-const-memoize-fn))))
+            :rule-classes nil)
 
           (memoize 'defined-const-memoize-fn)))
 
@@ -66,6 +73,7 @@
           `(progn (defconst ,',constname ',val)
                   (defthm ,',thmname
                     (equal ,',term ,',constname)
+                    :hints (("goal" :use defined-const-memoize-fn-is-term))
                     :rule-classes ,',rule-classes)))))))
 
 
