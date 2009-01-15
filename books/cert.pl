@@ -1,3 +1,4 @@
+#!/usr/bin/env perl
 
 ######################################################################
 ## NOTE.  This file is not part of the standard ACL2 books build
@@ -56,9 +57,21 @@ my $write_pfiles = 0;
 
 
 
-# This sets the location of :dir :system as the directory where this script sits.
-my %dirs = ( "SYSTEM" => dirname($0) );
-print "System dir is " . dirname($0) . "\n";
+sub rec_readlink {
+    my $file = shift;
+    my $last = $file;
+    my $dest;
+    while ($dest = readlink $last) {
+	$last = $dest;
+    }
+    return $last;
+}
+
+# This sets the location of :dir :system as the directory where this
+# script sits.
+my $this_script = rec_readlink(substr(`which $0`, 0 ,-1));
+my %dirs = ( "SYSTEM" => dirname($this_script) );
+print "System dir is " . dirname($this_script) . "\n";
 my $local_dirs = 0;
 
 
@@ -199,6 +212,16 @@ sub rm_dotdots {
     return $path;
 }
 
+sub rel_path {
+    my $base = shift;
+    my $path = shift;
+    if (substr($path,0,1) eq "/") {
+	return $path;
+    } else {
+	return rm_dotdots("$base/$path");
+    }
+}
+
 sub get_include_book {
     my $base = shift;
     my $the_line = shift;
@@ -211,10 +234,10 @@ sub get_include_book {
 		print "Error: Unknown :dir entry $res[1] for $base\n";
 		return 0;
 	    }
-	    return rm_dotdots("$dirpath/$res[0].cert");
+	    return rel_path($dirpath, "$res[0].cert");
 	} else {
 	    my $dir = dirname($base);
-	    return rm_dotdots("$dir/$res[0].cert");
+	    return rel_path($dir, "$res[0].cert");
 	}
     }
     return 0;
@@ -242,10 +265,10 @@ sub get_ld {
 		print "Error: Unknown :dir entry $res[1] for $base\n";
 		return 0;
 	    }
-	    return rm_dotdots("$dirpath/$res[0]");
+	    return rel_path($dirpath, $res[0]);
 	} else {
 	    my $dir = dirname($base);
-	    return rm_dotdots("$dir/$res[0]");
+	    return rel_path($dir, $res[0]);
 	}
     }
     return 0;
@@ -262,13 +285,10 @@ sub get_add_dir {
 	$local_dirs = $local_dirs || {};
 	my $name = uc($res[0]);
 	my $basedir = dirname($base);
-	$local_dirs->{$name} = rm_dotdots("$basedir/$res[1]");
+	$local_dirs->{$name} = rel_path($basedir, $res[1]);
     }
     return 0;
 }
-
-
-
 
 
 sub newer_than {
@@ -281,7 +301,7 @@ sub excludep {
     my $prev = shift;
     my $dirname = dirname($prev);
     while ($dirname ne $prev) {
-	if (-e ($dirname . "/cert_pl_exclude")) {
+	if (-e rel_path($dirname, "cert_pl_exclude")) {
 	    return 1;
 	}
 	$prev = $dirname;
@@ -354,9 +374,9 @@ sub add_deps {
 
     # If a corresponding .acl2 file exists or otherwise if a
     # cert.acl2 file exists in the directory, we need to scan that for dependencies as well.
-    my $acl2file = $base . "acl2";
+    my $acl2file = $base . ".acl2";
     if (! -e $acl2file) {
-	$acl2file = dirname($base) . "/cert.acl2";
+	$acl2file = rel_path(dirname($base), "cert.acl2");
 	if (! -e $acl2file) {
 	    $acl2file = 0;
 	}
@@ -419,6 +439,34 @@ sub add_deps {
 	add_deps($dep);
     }
 
+    # If there is an .image file corresponding to this file or a
+    # cert.image in this file's directory, add a dependency on the
+    # ACL2 image specified in that file.
+    my $imagefile = $base . ".image";
+    if (! -e $imagefile) {
+	$imagefile = rel_path(dirname($base), "cert.image");
+	if (! -e $imagefile) {
+	    $imagefile = 0;
+	}
+    }
+    if ($imagefile) {
+	open(my $im, "<", $imagefile);
+	my $line = <$im>;
+	if ($line) {
+	    if (substr($line,-1,1) eq "\n") {
+		chop $line;
+	    }
+	    my $image = rel_path(dirname($base), $line);
+	    if (! -e $image) {
+		$image = substr(`which $line`,0,-1);
+	    }
+	    if (-e $image) {
+		push(@{$deps}, rec_readlink($image));
+	    }
+	}
+    }
+    
+
     # If this target needs an update or we're in all_deps mode, we're
     # done, otherwise we'll delete its entry in the dependency table.
     unless ($all_deps) {
@@ -447,14 +495,16 @@ foreach my $target (@targets) {
 unless ($no_makefile) {
     my $acl2 = $ENV{"ACL2"};
     unless ($acl2) {
-	die "Error: Shell variable ACL2 should be set for this to work correctly.\n";
+	## die "Error: Shell variable ACL2 should be set for this to work correctly.\n";
+	print "ACL2 defaults to acl2\n";
+	$acl2 = "acl2";
     }
     # Build the makefile and run make.
     open (my $mf, ">", $mf_name) or die "Failed to open output file $mf_name\n";
     print $mf '
-ACL2 := ' . $ENV{"ACL2"} . '
-include ' . dirname($0) . '/make_cert
-' . '.' . 'PHONY: all
+ACL2 := ' . $acl2 . '
+include ' . rel_path(dirname($this_script), "make_cert") . '
+.PHONY: all
 all:
 ';
     while ((my $key, my $value) = each %seen) {

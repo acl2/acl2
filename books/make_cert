@@ -19,11 +19,22 @@
 COMPILE_FLG := t :ttags :all :skip-proofs-okp t
 
 %.cert: %.lisp
-	@echo "Making `pwd`/$*.cert on `date`" ;\
+	@echo "Making $*.cert on `date`" ;\
 	DIR=`dirname $*` ;\
 	FILE=`basename $*` ;\
         ACL2=`which $(ACL2)` ;\
 	cd $$DIR ;\
+	if [ -f $$FILE.image ] ; then \
+	   IM=`cat $$FILE.image` ;\
+	   if [ "$${IM}" != "" ] ; then \
+	      ACL2=$${IM} ;\
+	   fi ;\
+	elif [ -f cert.image ] ; then \
+	   IM=`cat cert.image` ;\
+	   if [ "$${IM}" != "" ] ; then \
+	      ACL2=$${IM} ;\
+	   fi ;\
+	fi ;\
 	rm -f $$FILE.cert ;\
 	echo '(acl2::value :q)' > workxxx.$$FILE ;\
 	echo '(ccl::set-lisp-heap-gc-threshold (expt 2 30))' >> workxxx.$$FILE ;\
@@ -40,12 +51,12 @@ COMPILE_FLG := t :ttags :all :skip-proofs-okp t
 	  echo "(certify-book \"$$FILE\" ? $(COMPILE_FLG))" >> workxxx.$$FILE ;\
 	else \
 	  echo "" >> workxxx.$$FILE ;\
-	  echo "(certify-book! \"$$FILE\" 0 $(COMPLILE_FLG))" >> workxxx.$$FILE ;\
+	  echo "(certify-book \"$$FILE\" ? $(COMPLILE_FLG))" >> workxxx.$$FILE ;\
 	fi ;\
 	echo "" >> workxxx.$$FILE ;\
 	echo '(acl2::value :q)' >> workxxx.$$FILE ;\
 	echo '(acl2::exit-lisp)' >> workxxx.$$FILE ;\
 	($$ACL2 < workxxx.$$FILE 2>&1) > $$FILE.out ;\
 	rm -f workxxx.$$FILE ;\
-	((test -f $$FILE.cert) && (ls -al $$FILE.cert)) || (echo "**CERTIFICATION FAILED** for `pwd`/$$FILE.lisp" ; exit 1)
+	((test -f $$FILE.cert) && (ls -al $$FILE.cert)) || (echo "**CERTIFICATION FAILED** for $$FILE.lisp" ; exit 1)
 
