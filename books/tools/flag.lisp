@@ -303,6 +303,12 @@
    `(:expand ,expand-list)))
 
 
+(defun flag-table-events (alist entry)
+  (if (atom alist)
+      nil
+    (cons `(table flag-fns ',(caar alist) ',entry)
+          (flag-table-events (cdr alist) entry))))
+
 (defun make-flag-fn (flag-fn-name clique-member-name flag-var flag-mapping hints 
                                   defthm-macro-name world)
   (let* ((flag-var (or flag-var 
@@ -342,8 +348,12 @@
                       (expand-calls-computed-hint ACL2::clause
                                                   ',(cons flag-fn-name
                                                           (strip-cars alist)))))))
-       
-       
+      
+      ,@(flag-table-events alist `(,flag-fn-name
+                                   ,alist 
+                                   ,defthm-macro-name
+                                   ,equiv-thm-name))
+                                   
       (in-theory (disable (:definition ,flag-fn-name)))
       )))
         
@@ -362,4 +372,18 @@
                              (w state))))
 
 
+;; Accessors for the records stored in the flag-fns table
+(defun flag-present (fn world)
+  (consp (assoc-eq fn (table-alist 'flag::flag-fns world))))
 
+(defun flag-fn-name (fn world)
+  (nth 0 (cdr (assoc-eq fn (table-alist 'flag::flag-fns world)))))
+
+(defun flag-alist (fn world)
+  (nth 1 (cdr (assoc-eq fn (table-alist 'flag::flag-fns world)))))
+
+(defun flag-defthm-macro (fn world)
+  (nth 2 (cdr (assoc-eq fn (table-alist 'flag::flag-fns world)))))
+
+(defun flag-equivs-name (fn world)
+  (nth 3 (cdr (assoc-eq fn (table-alist 'flag::flag-fns world)))))
