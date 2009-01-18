@@ -57,12 +57,28 @@ my $write_pfiles = 0;
 
 
 
+sub rm_dotdots {
+    my $path = shift;
+    while ($path =~ s/( |\/)[^\/\.]+\/\.\.\//$1/g) {}
+    return $path;
+}
+
+sub rel_path {
+    my $base = shift;
+    my $path = shift;
+    if (substr($path,0,1) eq "/") {
+	return $path;
+    } else {
+	return rm_dotdots("$base/$path");
+    }
+}
+
 sub rec_readlink {
     my $file = shift;
     my $last = $file;
     my $dest;
     while ($dest = readlink $last) {
-	$last = $dest;
+	$last = rel_path(dirname($last),$dest);
     }
     return $last;
 }
@@ -204,22 +220,6 @@ sub lookup_colon_dir {
     my $dirpath = ($local_dirs && $local_dirs->{$name})
 	|| $dirs{$name} ;
     return $dirpath;
-}
-
-sub rm_dotdots {
-    my $path = shift;
-    while ($path =~ s/( |\/)[^\/\.]+\/\.\.\//$1/g) {}
-    return $path;
-}
-
-sub rel_path {
-    my $base = shift;
-    my $path = shift;
-    if (substr($path,0,1) eq "/") {
-	return $path;
-    } else {
-	return rm_dotdots("$base/$path");
-    }
 }
 
 sub get_include_book {
