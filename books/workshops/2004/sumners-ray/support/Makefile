@@ -15,7 +15,7 @@ top1:
 top: success.txt
 
 success.txt: mesi.cert crit.cert invp.lisp
-	@echo "Making success.txt on `date`"
+	@echo "Making `pwd`/success.txt on `date`"
 	@rm -f success.txt workxxx
 	@date > run.date
 	@echo '(value :q)' > workxxx
