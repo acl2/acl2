@@ -68,12 +68,20 @@
 
           (memoize 'defined-const-memoize-fn)))
 
+
        (make-event
-        (let ((val (defined-const-memoize-fn)))
-          `(progn (defconst ,',constname ',val)
-                  (defthm ,',thmname
-                    (equal ,',term ,',constname)
-                    :hints (("goal" :use defined-const-memoize-fn-is-term))
-                    :rule-classes ,',rule-classes)))))))
+        `(make-event
+          (let ((val ,(if (getprop 'formals 'defind-const-memoize-fn nil 'current-acl2-world
+                                   (w state))
+                          ;; This checks to see whether the local events above
+                          ;; were run.  If not, we're in an include-book; just
+                          ;; run the original term.
+                          '(defined-const-memoize-fn)
+                        ',term)))
+            `(progn (defconst ,',',constname ',val)
+                    (defthm ,',',thmname
+                      (equal ,',',term ,',',constname)
+                      :hints (("goal" :use defined-const-memoize-fn-is-term))
+                      :rule-classes ,',',rule-classes))))))))
 
 
