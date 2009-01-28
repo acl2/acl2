@@ -707,21 +707,22 @@
 
 (set-state-ok t)
 
-(defn plev-fn (length level lines circle pretty readably state)
-  (declare (xargs :mode :program))
-  (let* ((old-tuple (default-evisc-tuple state))
-         (new-tuple (list (car old-tuple) level length 
-                          (cadddr old-tuple))))
-    (let ((state (set-brr-term-evisc-tuple new-tuple)))
-      (let ((state
-             (f-put-global 'user-default-evisc-tuple
-                           new-tuple state)))
-        (let ((state
-               (f-put-global 'user-term-evisc-tuple
-                             new-tuple state)))
-          (mv-let (flg ans state)
-                  (set-ld-evisc-tuple new-tuple state)
-                  (declare (ignore ans))
+; MattK: Using make-event for now so that plev-fn can be defined suitably for
+; Version 3.4 and also for the pre-v-3.5 development version.
+(make-event
+ (if (getprop 'set-evisc-tuple 'macro-args nil 'current-acl2-world (w state))
+     '(defn plev-fn (length level lines circle pretty readably state)
+        (declare (xargs :mode :program))
+        (let* ((old-tuple (default-evisc-tuple state))
+               (new-tuple (list (car old-tuple) level length 
+                                (cadddr old-tuple))))
+          (mv-let (flg val state)
+                  (set-evisc-tuple new-tuple
+                                   :iprint :same
+                                   :sites '(:TERM :LD
+                                                  ;; :TRACE
+                                                  :ABBREV))
+                  (declare (ignore val))
                   (mv flg
                       (list :length
                             length
@@ -735,7 +736,36 @@
                             readably
                             :pretty
                             pretty)
-                      state)))))))
+                      state))))
+   '(defn plev-fn (length level lines circle pretty readably state)
+      (declare (xargs :mode :program))
+      (let* ((old-tuple (default-evisc-tuple state))
+             (new-tuple (list (car old-tuple) level length 
+                              (cadddr old-tuple))))
+        (let ((state (set-brr-term-evisc-tuple new-tuple)))
+          (let ((state
+                 (f-put-global 'user-default-evisc-tuple
+                               new-tuple state)))
+            (let ((state
+                   (f-put-global 'user-term-evisc-tuple
+                                 new-tuple state)))
+              (mv-let (flg ans state)
+                      (set-ld-evisc-tuple new-tuple state)
+                      (declare (ignore ans))
+                      (mv flg
+                          (list :length
+                                length
+                                :level
+                                level
+                                :lines
+                                lines
+                                :circle
+                                circle
+                                :readably
+                                readably
+                                :pretty
+                                pretty)
+                          state)))))))))
 
 (defmacro plev (&key (length '16)
                      (level '3)
