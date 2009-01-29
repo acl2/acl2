@@ -16,6 +16,7 @@ join-thms.lisp
 multi-env-trick.lisp
 null-fail-hints.lisp
 replace-impl.lisp
+use-by-hint.lisp
 ")
  (:TITLE    "Clause processor examples")
  (:AUTHOR/S 
@@ -62,6 +63,11 @@ as good as :no-op and :error, which are built into ACL2.
 
 Book replace-impl.lisp introduces a clause processor that replaces a hyp
 with something implied by that hyp.
+
+Book use-by-hint introduces a computed hint to apply a particular :by hint
+as signalled by a logically meaningless hyp placed in the clause, so that a
+clause processor can produce clauses that are copies of statements of existing
+theorems.
 ")
  (:PERMISSION
   "Clause processor examples
@@ -69,7 +75,9 @@ Copyright (C) 2007 by:
  Jared Davis <jared@cs.utexas.edu>       (equality.lisp)
  Matt Kaufmann <kaufmann@cs.utexas.edu>  (basic-examples.lisp)
  Erik Reeber <reeber@cs.utexas.edu>      (bv-add*.lisp)
- Sol Swords <sswords@cs.utexas.edu>      (generalize.lisp, multi-env-trick.lisp)
+ Sol Swords <sswords@cs.utexas.edu>      (generalize.lisp,
+                                          multi-env-trick.lisp,
+                                          use-by-hint.lisp)
 
 This program is free software; you can redistribute it and/or 
 modify it under the terms of the GNU General Public License as 

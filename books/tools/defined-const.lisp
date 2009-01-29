@@ -51,14 +51,14 @@
           (in-theory nil)
        
           (defun defined-const-memoize-fn1 ()
-                (declare (xargs :verify-guards nil))
-                ,term)
+            (declare (xargs :verify-guards nil))
+            ,term)
 
           (in-theory (disable (defined-const-memoize-fn1)))
 
           (defun defined-const-memoize-fn ()
-                (declare (xargs :guard t))
-                (ec-call (defined-const-memoize-fn1)))
+            (declare (xargs :guard t))
+            (ec-call (defined-const-memoize-fn1)))
 
           (defthm defined-const-memoize-fn-is-term
             (equal ,term
@@ -74,14 +74,18 @@
           (let ((val ,(if (getprop 'formals 'defind-const-memoize-fn nil 'current-acl2-world
                                    (w state))
                           ;; This checks to see whether the local events above
-                          ;; were run.  If not, we're in an include-book; just
-                          ;; run the original term.
+                          ;; were run.  If so, we run defined-const-memoize-fn;
+                          ;; if not, it probably means we're in an include-book
+                          ;; of an uncertified book, in which case we just run
+                          ;; the original term.
                           '(defined-const-memoize-fn)
                         ',term)))
             `(progn (defconst ,',',constname ',val)
                     (defthm ,',',thmname
                       (equal ,',',term ,',',constname)
                       :hints (("goal" :use defined-const-memoize-fn-is-term))
-                      :rule-classes ,',',rule-classes))))))))
+                      :rule-classes ,',',rule-classes)
+                    (table defined-const-table
+                           ',',',constname (list* ',val ',',',term ',',',thmname)))))))))
 
 

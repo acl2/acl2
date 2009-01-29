@@ -56,7 +56,12 @@ COMPILE_FLG := t :ttags :all :skip-proofs-okp t
 	echo "" >> workxxx.$$FILE ;\
 	echo '(acl2::value :q)' >> workxxx.$$FILE ;\
 	echo '(acl2::exit-lisp)' >> workxxx.$$FILE ;\
-	($$ACL2 < workxxx.$$FILE 2>&1) > $$FILE.out ;\
+	if [ "$$TIME_CERT" != "" ] ;\
+	then \
+	  (time $$ACL2 < workxxx.$$FILE 2>&1) > $$FILE.out ;\
+	else \
+	  ($$ACL2 < workxxx.$$FILE 2>&1) > $$FILE.out ;\
+	fi ;\
 	rm -f workxxx.$$FILE ;\
 	((test -f $$FILE.cert) && (ls -al $$FILE.cert)) || (echo "**CERTIFICATION FAILED** for $$FILE.lisp" ; exit 1)
 
