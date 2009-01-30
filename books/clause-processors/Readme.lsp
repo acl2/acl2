@@ -15,6 +15,7 @@ generalize.lisp
 join-thms.lisp
 multi-env-trick.lisp
 null-fail-hints.lisp
+replace-defined-consts.lisp
 replace-impl.lisp
 use-by-hint.lisp
 ")
@@ -61,6 +62,9 @@ Book null-fail-hints.lisp introduces keyword hints :null, which does
 nothing, and :fail, which causes the proof to fail.  These are probably not
 as good as :no-op and :error, which are built into ACL2.
 
+Book replace-defined-consts.lisp introduces a computed hint that replaces
+defined constants (see tools/defined-const.lisp) with their definitions.
+
 Book replace-impl.lisp introduces a clause processor that replaces a hyp
 with something implied by that hyp.
 
@@ -77,6 +81,7 @@ Copyright (C) 2007 by:
  Erik Reeber <reeber@cs.utexas.edu>      (bv-add*.lisp)
  Sol Swords <sswords@cs.utexas.edu>      (generalize.lisp,
                                           multi-env-trick.lisp,
+                                          replace-defined-const.lisp,
                                           use-by-hint.lisp)
 
 This program is free software; you can redistribute it and/or 

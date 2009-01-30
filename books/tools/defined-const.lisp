@@ -85,7 +85,8 @@
                       (equal ,',',term ,',',constname)
                       :hints (("goal" :use defined-const-memoize-fn-is-term))
                       :rule-classes ,',',rule-classes)
-                    (table defined-const-table
-                           ',',',constname (list* ',val ',',',term ',',',thmname)))))))))
+                    (make-event
+                     `(table defined-const-table
+                             ',',',',constname ',',',',thmname)))))))))
 
 
