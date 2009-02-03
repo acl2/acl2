@@ -15,6 +15,7 @@ generalize.lisp
 join-thms.lisp
 multi-env-trick.lisp
 null-fail-hints.lisp
+replace-defined-consts.acl2
 replace-defined-consts.lisp
 replace-impl.lisp
 use-by-hint.lisp
