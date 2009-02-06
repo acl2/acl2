@@ -17,6 +17,7 @@ pack.lisp
 progndollar.lisp
 rulesets.lisp
 safe-case.lisp
+saved-errors.lisp
 stobj-help.lisp
 theory-tools.lisp
 types-misc.lisp
@@ -51,6 +52,9 @@ sequence for side effects.
 
 safe-case.lisp is a drop-in replacement for case, but causes an error 
 if none of the cases are matched.
+
+saved-errors.lisp provides a way of customizing error messages for complex
+generated events.
 
 defsum and deftuple.lisp provide macros for defining product types
 with constructors, accessors, recognizers, and appropriate theorems
