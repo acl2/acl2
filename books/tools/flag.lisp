@@ -333,7 +333,6 @@
 
       (with-output
        :off prove ;; hides induction scheme, too
-       :gag-mode :goals
        (defthm ,equiv-thm-name
          (equal (,flag-fn-name ,flag-var . ,formals)
                 (case ,flag-var

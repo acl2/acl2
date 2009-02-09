@@ -84,7 +84,13 @@
          (if erp
              ;; If the event failed, print the error message and then produce
              ;; an unsuccessful but quiet make-event.
-             (er-progn (er very-soft ',ctx
+             (er-progn
+              ;; Save state globals related to REDO-FLAT.
+              (assign error-redo-flat-fail
+                      (f-get-global 'redo-flat-fail state))
+              (assign error-redo-flat-succ
+                      (f-get-global 'redo-flat-succ state))
+              (er very-soft ',ctx
                            "~@0~%"
                            (if (boundp-global 'saved-error-for-final-error-printing state)
                                (@ saved-error-for-final-error-printing)
@@ -112,4 +118,47 @@
                                       'saved-error-for-final-error-printing
                                       state)))
                           (value '(value-triple :invisible)))))))))))
+
+(defmacro error-redo-flat (&key (succ-ld-skip-proofsp 't)
+                                (label 'r)
+                                (succ 't)
+                                (fail 't)
+                                (pbt 't)
+                                (show 'nil))
+
+  `(if (null (f-get-global 'error-redo-flat-fail state))
+       (pprogn (fms "
+There is no failure saved from a WITH-FINAL-ERROR-PRINTING form.~|"
+                    nil (standard-co state) state nil)
+               (value :invisible))
+     ,(if show
+          `(pprogn (fms "List of events (from encapsulate or progn) preceding ~
+                         the failure:~|~%~x0~|"
+                        (list (cons #\0 (f-get-global 'error-redo-flat-succ state)))
+                        (standard-co state) state (ld-evisc-tuple state))
+                   (fms "Failed event:~|~%~x0~|"
+                        (list (cons #\0 (f-get-global 'error-redo-flat-fail state)))
+                        (standard-co state) state (ld-evisc-tuple state))
+                   (value :invisible))
+        `(let ((error-redo-flat-succ (f-get-global 'error-redo-flat-succ state))
+               (error-redo-flat-fail (f-get-global 'error-redo-flat-fail state)))
+           (state-global-let*
+            ((error-redo-flat-succ error-redo-flat-succ)
+             (error-redo-flat-fail error-redo-flat-fail))
+            (ld (list ,@(and succ label `('(deflabel ,label)))
+                      ,@(and succ (list (list 'list ''ld
+                                              (list 'cons
+                                                    ''list
+                                                    (list 'kwote-lst 'error-redo-flat-succ))
+                                              :ld-skip-proofsp succ-ld-skip-proofsp)))
+                      ,@(and fail (list (list 'list ''ld
+                                              (list 'list
+                                                    ''list
+                                                    (list 'list ''quote 'error-redo-flat-fail))
+                                              :ld-error-action :continue
+                                              :ld-pre-eval-print t)))
+                      ,@(and pbt succ label
+                             `('(pprogn (newline (proofs-co state)
+                                                 state)
+                                        (pbt ',label)))))))))))
 
