@@ -39,7 +39,8 @@
                          term
                          &key
                          thmname
-                         (rule-classes ':rewrite))
+                         (rule-classes ':rewrite)
+                         evisc)
   (let ((thmname (or thmname (intern-in-package-of-symbol
                               (concatenate 'string
                                            (symbol-name constname) "-DEF")
@@ -85,8 +86,13 @@
                       (equal ,',',term ,',',constname)
                       :hints (("goal" :use defined-const-memoize-fn-is-term))
                       :rule-classes ,',',rule-classes)
-                    (make-event
-                     `(table defined-const-table
-                             ',',',',constname ',',',',thmname)))))))))
+                    (table defined-const-table
+                           ',',',constname ',',',thmname)
+                    ,@(and ,,evisc
+                          `((table evisc-table ,',',constname
+                                   ,(let ((name (symbol-name ',',constname)))
+                                      (if (may-need-slashes name)
+                                          (concatenate 'string "#.|" name "|")
+                                        (concatenate 'string "#." name)))))))))))))
 
 

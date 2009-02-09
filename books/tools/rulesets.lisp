@@ -33,6 +33,11 @@
                (eq (car x) :current-theory)
                (cw "**NOTE**:~%~x0 is not a valid keyword for a ruleset ~
 designator in ~x1.~%" (car x) x))))
+        ((and (consp x)
+              (consp (cdr x))
+              (consp (cddr x))
+              (not (cdddr x)))
+         (eq (car x) :rules-of-class))
         (t (cw "**NOTE**:~%~x0 is not a valid ruleset designator.~%" x))))
 
 (defun ruleset-designator-listp (x world)
@@ -41,6 +46,19 @@ designator in ~x1.~%" (car x) x))))
     (and (ruleset-designatorp (car x) world)
          (ruleset-designator-listp (cdr x) world))))
 
+
+
+(defun rules-of-class1 (class theory)
+  (declare (xargs :mode :program))
+  (if (atom theory)
+      nil
+    (if (and (consp (car theory))
+             (eq (caar theory) class))
+        (cons (car theory) (rules-of-class1 class (cdr theory)))
+      (rules-of-class1 class (cdr theory)))))
+
+(defmacro rules-of-class (class name)
+  `(rules-of-class1 ,class (universal-theory ',name)))
 
 
 
@@ -112,6 +130,10 @@ designator in ~x1.~%" (car x) x))))
                      (expand-ruleset1 (cdr x) world)))
             (:executable-counterpart-theory
              (append (executable-counterpart-theory (cadr des))
+                     (expand-ruleset1 (cdr x) world)))
+            (:rules-of-class
+             (append (rules-of-class (cadr des)
+                                     (universal-theory (caddr des)))
                      (expand-ruleset1 (cdr x) world)))
             (:current-theory
              (append (executable-counterpart-theory (cadr des))
