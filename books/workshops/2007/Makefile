@@ -14,7 +14,7 @@
 
 ##############################
 
-# Supporting materials that are not meant for ACL2 procesing.
+# Supporting materials that are not meant for ACL2 processing.
 
 # gordon/support/
 
