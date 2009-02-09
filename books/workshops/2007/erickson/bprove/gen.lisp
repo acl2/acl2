@@ -112,6 +112,43 @@
 
 )
 
+(defun dumb-fn-count-1 (flg x acc)
+  (declare (xargs :guard (and (if flg
+                                  (pseudo-term-listp x)
+                                (pseudo-termp x))
+                              (natp acc))))
+  (cond (flg (cond ((null x)
+                    acc)
+                   (t
+                    (dumb-fn-count-1 t (cdr x)
+                                     (dumb-fn-count-1 nil (car x) acc)))))
+        ((or (variablep x) (fquotep x))
+         acc)
+        (t (dumb-fn-count-1 t (fargs x) (1+ acc)))))
+
+(defun dumb-fn-count (x)
+
+; Originally we had this upside-down call tree, where cons-count was a function
+; that counts the number of conses in an object.
+
+; cons-count
+;   smallest-common-subterms
+;     generalizable-terms-across-relations
+;       generalizable-terms
+;     generalizable-terms-across-literals1
+;       generalizable-terms-across-literals
+;         generalizable-terms
+;           generalize-clause
+
+; But the role of evgs disappears if we use dumb-occur instead of occur in our
+; algorithm for finding common subterms, which seems anyhow like the right
+; thing to do if the point is to generalize common subterms to variables.
+; Evg-occur is called by occur but not by dumb-occur, and evg-occur is
+; potentially expensive on galactic objects.  So we no longer use cons-count to
+; compute the smallest-common-subterms; we use fn-count-dumb.
+
+  (dumb-fn-count-1 nil x 0))
+
 (defun smallest-common-subterms2 (term1 term2 ens wrld ans)
 
 ; We accumulate onto ans and return the list of every subterm x of
@@ -122,7 +159,7 @@
 ; subterms.
 
   (mv-let (ans potential)
-          (cond ((> (cons-count term1) (cons-count term2))
+          (cond ((> (dumb-fn-count term1) (dumb-fn-count term2))
                  (smallest-common-subterms12 term2 term1 ens wrld ans))
                 (t (smallest-common-subterms12 term1 term2 ens wrld ans)))
           (declare (ignore potential))
