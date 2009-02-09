@@ -58,7 +58,7 @@ designator in ~x1.~%" (car x) x))))
       (rules-of-class1 class (cdr theory)))))
 
 (defmacro rules-of-class (class name)
-  `(rules-of-class1 ,class (universal-theory ',name)))
+  `(rules-of-class1 ,class (universal-theory ,name)))
 
 
 
@@ -132,8 +132,7 @@ designator in ~x1.~%" (car x) x))))
              (append (executable-counterpart-theory (cadr des))
                      (expand-ruleset1 (cdr x) world)))
             (:rules-of-class
-             (append (rules-of-class (cadr des)
-                                     (universal-theory (caddr des)))
+             (append (rules-of-class (cadr des) (caddr des))
                      (expand-ruleset1 (cdr x) world)))
             (:current-theory
              (append (executable-counterpart-theory (cadr des))
