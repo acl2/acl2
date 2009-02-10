@@ -149,7 +149,14 @@ BOOKS_LISP    = $(patsubst %, %.lisp,    $(BOOKS))
 	fi	
 	@($(ACL2) < workxxx.$(*F) 2>&1) > $*.out
 	@rm -f workxxx.$(*F)
-	@((test -f $<) && (ls -al $*.cert)) || (echo "**CERTIFICATION FAILED** for `pwd`/$*.lisp" ; exit 1)
+	@((test -f $<) && (ls -al $*.cert)) || \
+            (echo "**CERTIFICATION FAILED** for `pwd`/$*.lisp" ;\
+	     echo "" ;\
+	     tail -300 $*.out | sed 's/^/   | /' ;\
+	     echo "" ;\
+	     echo "" ;\
+	     echo "**CERTIFICATION FAILED** for `pwd`/$*.lisp" ;\
+             exit 1)
 # The following code can replace the line just above.  However, it is a bit
 # complicated by our having seen sh on Sun/Solaris 5.9 fail to recognize -nt,
 # which is this code uses csh instead of sh if possible.  At any rate, the test
