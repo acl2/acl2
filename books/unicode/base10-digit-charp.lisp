@@ -70,8 +70,8 @@
                                     base10-digit-charp))))
 
 (defthm equal-of-digit-to-chars
-  (implies (and (natp i) (< i 10)
-                (natp j) (< j 10))
+  (implies (and (natp i) (< i 16)
+                (natp j) (< j 16))
            (equal (equal (digit-to-char i)
                          (digit-to-char j))
                   (equal i j)))
