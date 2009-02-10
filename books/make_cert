@@ -63,5 +63,12 @@ COMPILE_FLG := t :ttags :all :skip-proofs-okp t
 	  ($$ACL2 < workxxx.$$FILE 2>&1) > $$FILE.out ;\
 	fi ;\
 	rm -f workxxx.$$FILE ;\
-	((test -f $$FILE.cert) && (ls -al $$FILE.cert)) || (echo "**CERTIFICATION FAILED** for $$FILE.lisp" ; exit 1)
+	((test -f $$FILE.cert) && (ls -al $$FILE.cert)) || \
+	 (echo "**CERTIFICATION FAILED** for $$FILE.lisp" ;\
+	  echo "" ;\
+          tail -300 $$FILE.out | sed 's/^/   | /' ;\
+	  echo "" ;\
+	  echo "" ;\
+          echo "**CERTIFICATION FAILED** for $$FILE.lisp" ;\
+          exit 1)
 
