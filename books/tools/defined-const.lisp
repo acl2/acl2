@@ -72,15 +72,16 @@
 
        (make-event
         `(make-event
-          (let ((val ,(if (getprop 'formals 'defined-const-memoize-fn nil 'current-acl2-world
-                                   (w state))
+          (let ((val ,(if (eq (getprop 'defined-const-memoize-fn 'formals 'none 'current-acl2-world
+                                       (w state))
+                              'none)
                           ;; This checks to see whether the local events above
                           ;; were run.  If so, we run defined-const-memoize-fn;
                           ;; if not, it probably means we're in an include-book
                           ;; of an uncertified book, in which case we just run
                           ;; the original term.
-                          '(defined-const-memoize-fn)
-                        ',term)))
+                          ',term
+                        '(defined-const-memoize-fn))))
             `(progn (defconst ,',',constname ',val)
                     (defthm ,',',thmname
                       (equal ,',',term ,',',constname)

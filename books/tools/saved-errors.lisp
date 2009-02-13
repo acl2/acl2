@@ -162,3 +162,23 @@ There is no failure saved from a WITH-FINAL-ERROR-PRINTING form.~|"
                                                  state)
                                         (pbt ',label)))))))))))
 
+
+
+(defun saved-error-cond-fn (conds)
+  (if (atom conds)
+      '((t (value '(value-triple 'bindings-ok))))
+    (let ((test (caar conds))
+          (msg (cadar conds)))
+      (cons `(,test
+              (er-progn (assign saved-error-for-final-error-printing ,msg)
+                        (value `(with-output :off :all (make-event nil)))))
+            (saved-error-cond-fn (cdr conds))))))
+
+
+
+(defmacro saved-error-cond (&rest conds)
+  `(with-output
+    :off :all
+    (make-event
+     (cond
+      . ,(saved-error-cond-fn conds)))))
