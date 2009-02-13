@@ -72,7 +72,7 @@
 
        (make-event
         `(make-event
-          (let ((val ,(if (getprop 'formals 'defind-const-memoize-fn nil 'current-acl2-world
+          (let ((val ,(if (getprop 'formals 'defined-const-memoize-fn nil 'current-acl2-world
                                    (w state))
                           ;; This checks to see whether the local events above
                           ;; were run.  If so, we run defined-const-memoize-fn;
