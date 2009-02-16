@@ -119,7 +119,7 @@
 
 (defn gentle-member-equal (x y)
   (cond ((atom y) nil)
-        ((equal x (car y)) y)
+        ((hons-equal x (car y)) y)
         (t (gentle-member-equal x (cdr y)))))
     
 (defn gentle-member (x y)
@@ -905,23 +905,23 @@
         (car y)
       (gentle-assoc-eql x (cdr y)))))
 
-(defn gentle-assoc-equal-help (x y)
+(defn gentle-assoc-help (x y)
   (if (atom y)
       nil
     (if (and (consp (car y))
              (hons-equal x (caar y)))
         (car y)
-      (gentle-assoc-equal-help x (cdr y)))))
+      (gentle-assoc-help x (cdr y)))))
 
-(defn gentle-assoc-equal (x y)
+(defn gentle-assoc (x y)
   (cond ((symbolp x) (gentle-assoc-eq x y))
         ((or (acl2-numberp x)
              (characterp x))
          (gentle-assoc-eql x y))
-        (t (gentle-assoc-equal-help x y))))
+        (t (gentle-assoc-help x y))))
 
 (defn gentle-g (x l)
-  (cdr (gentle-assoc-equal x l)))
+  (cdr (gentle-assoc x l)))
 
 (defn gentle-s-help (a v l)
   (cond ((atom l) (cons (cons a v) nil))
@@ -939,7 +939,7 @@
               v
             (gentle-g a l)))."
 
-  (let ((pair (gentle-assoc-equal a l)))
+  (let ((pair (gentle-assoc a l)))
     (cond ((null pair) (cons (cons a v) l))
           ((equal v (cdr pair)) l)
           (t (gentle-s-help a v l)))))
@@ -957,10 +957,10 @@
            (gentle-assoc-eql a l))))
 
 (defthm gentle-s-a-thm2
-  (equal (gentle-assoc-equal-help a (gentle-s-help b v l))
+  (equal (gentle-assoc-help a (gentle-s-help b v l))
          (if (equal a b)
              (cons a v)
-           (gentle-assoc-equal-help a l))))
+           (gentle-assoc-help a l))))
 
 (defthm gentle-s-a-thm3
   (equal (gentle-g a (gentle-s b v l))

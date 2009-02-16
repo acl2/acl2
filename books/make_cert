@@ -22,7 +22,7 @@ COMPILE_FLG := t :ttags :all :skip-proofs-okp t
 	@echo "Making $*.cert on `date`" ;\
 	DIR=`dirname $*` ;\
 	FILE=`basename $*` ;\
-        ACL2=`which $(ACL2)` ;\
+        ACL2=`which $(ACL2) 2> /dev/null` ;\
 	cd $$DIR ;\
 	if [ -f $$FILE.image ] ; then \
 	   IM=`cat $$FILE.image` ;\
