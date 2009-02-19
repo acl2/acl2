@@ -8,6 +8,7 @@ basic-examples.lisp
 bv-add-common.lisp
 bv-add-tests.lisp
 bv-add.lisp
+decomp-hint.lisp
 equality.acl2
 equality.lisp
 generalize.acl2
@@ -46,6 +47,9 @@ definitions and uses of trivial trusted and verified clause processors.
 
 Books bv-add*.lisp illustrate the use of clause processors to implement a
 decision procedure for bit vectors.
+
+Book decomp-hint.lisp introduces computed hints useful for proving local
+properties of a cons tree by systematically structurally decomposing it.
 
 Book equality.lisp illustrates the use of clause processors to deal with
 equality reasoning.
