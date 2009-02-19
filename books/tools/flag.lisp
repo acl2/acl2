@@ -433,8 +433,13 @@
                   :induct 
                   (,flag-fn-name ,flag-var . ,formals)
                   :in-theory 
-                  (union-theories (theory 'minimal-theory)
-                                  '((:induction ,flag-fn-name))))
+                  (set-difference-theories 
+                   (union-theories (theory 'minimal-theory)
+                                   '((:induction ,flag-fn-name)))
+                   ;; Jared found a case where "linear" forced some goals
+                   ;; from an equality, which were unprovable.  So, turn off
+                   ;; forcing.
+                   '((:executable-counterpart force))))
                  (and stable-under-simplificationp
                       (expand-calls-computed-hint ACL2::clause
                                                   ',(cons flag-fn-name
@@ -478,3 +483,75 @@
 
 (defun flag-equivs-name (fn world)
   (nth 3 (cdr (assoc-eq fn (table-alist 'flag::flag-fns world)))))
+
+
+
+
+
+
+
+(local 
+
+; A couple tests to make sure things are working.
+
+ (encapsulate
+  ()
+  
+  (FLAG::make-flag flag-pseudo-termp 
+                   pseudo-termp
+                   :flag-var flag
+                   :flag-mapping ((pseudo-termp . term)
+                                  (pseudo-term-listp . list))
+                   ;; :hints {for the measure theorem}
+                   :defthm-macro-name defthm-pseudo-termp
+                   )
+  
+; This introduces (flag-pseudo-termp flag x lst)
+; Theorems equating it with pseudo-termp and pseudo-term-listp
+; And the macro shown below.
+
+  (in-theory (disable (:type-prescription pseudo-termp)
+                      (:type-prescription pseudo-term-listp)))
+  
+  (defthm-pseudo-termp type-of-pseudo-termp
+    (term (booleanp (pseudo-termp x))
+          :rule-classes :rewrite 
+          :doc nil)
+    (list (booleanp (pseudo-term-listp lst))
+          )
+    :hints(("Goal" 
+            :induct (flag-pseudo-termp flag x lst))))
+
+
+
+  (defstobj term-bucket
+    (terms))
+
+  (mutual-recursion
+
+   (defun terms-into-bucket (x term-bucket) 
+     ;; Returns (mv number of terms added, term-bucket)
+     (declare (xargs :stobjs (term-bucket)
+                     :verify-guards nil))
+     (cond ((or (atom x)
+                (quotep x))
+            (let ((term-bucket (update-terms (cons x (terms term-bucket)) term-bucket)))
+              (mv 1 term-bucket)))
+           (t
+            (mv-let (numterms term-bucket)
+                    (terms-into-bucket-list (cdr x) term-bucket)
+                    (let ((term-bucket (update-terms (cons x (terms term-bucket)) term-bucket)))
+                      (mv (+ numterms 1) term-bucket))))))
+
+   (defun terms-into-bucket-list (x term-bucket)
+     (declare (xargs :stobjs (term-bucket)))
+     (if (atom x) 
+         (mv 0 term-bucket)
+       (mv-let (num-car term-bucket)
+               (terms-into-bucket (car x) term-bucket)
+               (mv-let (num-cdr term-bucket)
+                       (terms-into-bucket-list (cdr x) term-bucket)
+                       (mv (+ num-car num-cdr) term-bucket))))))
+
+  (FLAG::make-flag flag-terms-into-bucket
+                   terms-into-bucket)))
