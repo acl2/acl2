@@ -94,3 +94,13 @@
       (acl2-count x))
   :rule-classes :linear)
 
+(defthm car-of-nthcdr
+  (equal (car (nthcdr i x)) (nth i x)))
+
+(defthm nthcdr-of-cdr
+  (equal (nthcdr i (cdr x))
+         (cdr (nthcdr i x))))
+
+(defthm nthcdr-when-less-than-len-under-iff
+  (implies (< (nfix n) (len x))
+           (iff (nthcdr n x) t)))

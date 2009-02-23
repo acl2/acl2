@@ -133,4 +133,6 @@
 (defthm nthcdr-of-len-from-app
   (equal (nthcdr (len x) (app x y))
          (list-fix y))
-  :hints(("Goal" :induct (len x))))
+  :hints(("Goal" 
+          :induct (len x)
+          :in-theory (disable prefer-positive-addends-<))))

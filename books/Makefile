@@ -56,7 +56,7 @@ DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 ari
 	misc models/jvm/m5 proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
 	finite-set-theory finite-set-theory/osets powerlists textbook \
 	defexec symbolic \
-	data-structures/memories unicode concurrent-programs/bakery \
+	data-structures/memories unicode str concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity misc/misc2 tools paco hacking hons-bdds security regex \
         defsort
@@ -65,7 +65,7 @@ DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 ari
 	misc models/jvm/m5 proofstyles rtl make-event parallel hints arithmetic-3/extra \
 	sorting finite-set-theory finite-set-theory/osets powerlists textbook \
 	defexec symbolic \
-	data-structures/memories unicode concurrent-programs/bakery \
+	data-structures/memories unicode str concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity misc/misc2 tools paco hacking hons-bdds security regex \
         defsort
@@ -119,7 +119,7 @@ sorting: arithmetic-3/extra
 tools: arithmetic-4 misc
 regex: tools
 defsort: misc make-event arithmetic-4 unicode tools
-
+str: arithmetic unicode defsort
 
 # Let us wait for everything else before workshops:
 workshops: $(DIRS1) $(DIRS2_EXCEPT_WK)
