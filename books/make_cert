@@ -36,10 +36,7 @@ COMPILE_FLG := t :ttags :all :skip-proofs-okp t
 	   fi ;\
 	fi ;\
 	rm -f $$FILE.cert ;\
-	echo '(acl2::value :q)' > workxxx.$$FILE ;\
-	echo '(ccl::set-lisp-heap-gc-threshold (expt 2 30))' >> workxxx.$$FILE ;\
 	echo '(in-package "ACL2")' >> workxxx.$$FILE ;\
-	echo '(acl2::lp)' >> workxxx.$$FILE ;\
 	echo '$(INHIBIT)' >> workxxx.$$FILE ;\
 	if [ -f $$FILE.acl2 ] ;\
 	then \
@@ -51,7 +48,7 @@ COMPILE_FLG := t :ttags :all :skip-proofs-okp t
 	  echo "(certify-book \"$$FILE\" ? $(COMPILE_FLG))" >> workxxx.$$FILE ;\
 	else \
 	  echo "" >> workxxx.$$FILE ;\
-	  echo "(certify-book \"$$FILE\" ? $(COMPLILE_FLG))" >> workxxx.$$FILE ;\
+	  echo "(certify-book \"$$FILE\" ? $(COMPILE_FLG))" >> workxxx.$$FILE ;\
 	fi ;\
 	echo "" >> workxxx.$$FILE ;\
 	echo '(acl2::value :q)' >> workxxx.$$FILE ;\
