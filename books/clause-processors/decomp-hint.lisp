@@ -24,7 +24,7 @@
 ;; then the other possible guess, and finally giving up.
 
 
-(include-book "clause-processors/join-thms" :dir :system)
+(include-book "join-thms")
 
 (include-book "tools/bstar" :dir :system)
 
