@@ -327,9 +327,6 @@
 
 #|
 
-;; It turns out that hons-duplicated-members is not as fast as duplicated-members,
-;; as shown in the tests below.
-
 :q
 
 (defconst *test1* 
