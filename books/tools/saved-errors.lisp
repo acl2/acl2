@@ -182,3 +182,15 @@ There is no failure saved from a WITH-FINAL-ERROR-PRINTING form.~|"
     (make-event
      (cond
       . ,(saved-error-cond-fn conds)))))
+
+
+
+(defun skip-proofs-outside-certify-fn (form)
+  `(make-event
+    (if (acl2::f-get-global 'acl2::certify-book-info state)
+        ',form
+      `(skip-proofs ,',form))))
+
+(defmacro skip-proofs-outside-certify (form)
+  (skip-proofs-outside-certify-fn form))
+

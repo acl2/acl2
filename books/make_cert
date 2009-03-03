@@ -16,7 +16,9 @@
 # This file can be included in a GNU makefile (with SHELL set to bash)
 # to provide a rule for certifying ACL2 books.
 
-COMPILE_FLG := t :ttags :all :skip-proofs-okp t
+COMPILE_FLG ?= t :ttags :all :skip-proofs-okp t
+INHIBIT ?= (set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote expansion)))
+ACL2_BOOKS_DEBUG ?=
 
 %.cert: %.lisp
 	@echo "Making $*.cert on `date`" ;\
@@ -36,8 +38,10 @@ COMPILE_FLG := t :ttags :all :skip-proofs-okp t
 	   fi ;\
 	fi ;\
 	rm -f $$FILE.cert ;\
-	echo '(in-package "ACL2")' >> workxxx.$$FILE ;\
-	echo '$(INHIBIT)' >> workxxx.$$FILE ;\
+	echo '(acl2::value :q)' > workxxx.$(*F) ;\
+	echo '(in-package "ACL2")' >> workxxx.$(*F) ;\
+	echo '(acl2::lp)' >> workxxx.$(*F) ;\
+	echo '$(INHIBIT)' >> workxxx.$(*F) ;\
 	if [ -f $$FILE.acl2 ] ;\
 	then \
 	  cat $$FILE.acl2 >> workxxx.$$FILE ;\
@@ -53,6 +57,13 @@ COMPILE_FLG := t :ttags :all :skip-proofs-okp t
 	echo "" >> workxxx.$$FILE ;\
 	echo '(acl2::value :q)' >> workxxx.$$FILE ;\
 	echo '(acl2::exit-lisp)' >> workxxx.$$FILE ;\
+	if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
+	then \
+	  echo "[Makefile-generic]: certify book commands:" ;\
+	  echo "" ;\
+	  cat workxxx.$(*F) ;\
+	  echo "" ;\
+	fi ;\
 	if [ "$$TIME_CERT" != "" ] ;\
 	then \
 	  (time $$ACL2 < workxxx.$$FILE 2>&1) > $$FILE.out ;\
