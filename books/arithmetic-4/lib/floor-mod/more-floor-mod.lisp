@@ -53,7 +53,7 @@
 	    (INTEGERP (* (/ J) (FLOOR X I))))
    :hints (("Goal" :cases ((equal j 0))))))
 
-(defthm foo   ;;; OK
+(defthm |(floor (+ x r) i)|
   (implies (and (integerp x)
                 ;(<= 0 x)
                 (rationalp r)
