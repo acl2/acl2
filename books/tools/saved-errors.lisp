@@ -72,9 +72,11 @@
     :off (summary warning!)
     :stack :push
     (make-event
-     (if (acl2::f-get-global 'acl2::certify-book-info state)
-         ;; We're in a certify-book, so just produce the form without any
-         ;; error printing.
+     (if (or (acl2::f-get-global 'acl2::certify-book-info state)
+             (acl2::global-val 'include-book-path (w state))
+             (ld-skip-proofsp state))
+         ;; We're in a certify-book, include-book, or skip-proofs, so just
+         ;; produce the form without any error printing.
          (value '(with-output :stack :pop ,form))
        (mv-let (erp val state)
          ;; Run the form inside a make-event.  This allows us to access its

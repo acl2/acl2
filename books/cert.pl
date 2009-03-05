@@ -243,6 +243,28 @@ sub get_include_book {
     return 0;
 }
 
+sub get_depends_on {
+    my $base = shift;
+    my $the_line = shift;
+    my $regexp = "\\(depends-on[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
+    my @res = $the_line =~ m/$regexp/i;
+    if (@res) {
+	if ($res[1]) {
+	    my $dirpath = lookup_colon_dir($res[1]);
+	    unless ($dirpath) {
+		print "Error: Unknown :dir entry $res[1] for $base\n";
+		return 0;
+	    }
+	    return rel_path($dirpath, "$res[0]");
+	} else {
+	    my $dir = dirname($base);
+	    return rel_path($dir, "$res[0]");
+	}
+    }
+    return 0;
+}
+
+
 # Possible more general way of recognizing a Lisp symbol:
 # ((?:[^\\s\\\\|]|\\\\.|(?:\\|[^|]*\\|))*)
 # - repeatedly matches either: a non-pipe, non-backslash, non-whitespace character,
@@ -318,7 +340,7 @@ sub scan_ld {
 	push (@{$deps}, $fname);
 	open(my $ld, "<", $fname);
 	while (my $the_line = <$ld>) {
-	    my $res = get_include_book($fname, $the_line);
+	    my $res = get_include_book($fname, $the_line) || get_depends_on($fname, $the_line);
 	    if ($res) {
 		push(@{$deps}, $res);
 	    } else {
@@ -326,11 +348,28 @@ sub scan_ld {
 		if ($res) {
 		    scan_ld($res, $deps);
 		} else {
-		    $res = get_add_dir($fname, $the_line);
+		    get_add_dir($fname, $the_line);
 		}
 	    }
 	}
 	close($ld);
+    }
+}
+
+sub scan_book {
+    my $fname = shift;
+    my $deps = shift;
+
+    if ($fname) {
+	# Scan the lisp file for include-books.
+	open(my $lisp, "<", $fname);
+	while (my $the_line = <$lisp>) {
+	    my $res = get_include_book($fname, $the_line) || get_depends_on($fname, $the_line);
+	    if ($res) {
+		push(@{$deps},$res);
+	    }
+	}
+	close($lisp);
     }
 }
     
@@ -397,14 +436,7 @@ sub add_deps {
 	scan_ld($acl2file, $deps);
 
 	# Scan the lisp file for include-books.
-	open(my $lisp, "<", $lispfile);
-	while (my $the_line = <$lisp>) {
-	    my $res = get_include_book($base, $the_line);
-	    if ($res) {
-		push(@{$deps},$res);
-	    }
-	}
-	close($lisp);
+	scan_book($lispfile, $deps);
 
 	$local_dirs = 0;
 	
