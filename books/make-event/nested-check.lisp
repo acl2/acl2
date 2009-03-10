@@ -19,48 +19,48 @@
 ; redundant
 (make-event
  '(my-make-event
-   (value-triple '(defun nest1 (x)
-                    (cons x x)))))
+   (value '(defun nest1 (x)
+             (cons x x)))))
 
 ; redundant
 (my-make-event
  '(my-make-event
-   (value-triple '(defun nest1 (x)
-                    (cons x x)))))
+   (value '(defun nest1 (x)
+             (cons x x)))))
 
 ; redundant
 (my-make-event
  '(make-event
-   (value-triple '(defun nest1 (x)
-                    (cons x x)))))
+   (value '(defun nest1 (x)
+             (cons x x)))))
 
 (with-output
  :off warning
  (my-make-event
   '(make-event
-    (value-triple '(with-output
-                    :on warning
-                    (defun nest2 (x)
-                      (list x x)))))))
+    (value '(with-output
+             :on warning
+             (defun nest2 (x)
+               (list x x)))))))
 ; redundant
 (with-output
  :off warning
  (make-event
   '(my-make-event
-    (value-triple '(with-output
-                    :on event
-                    (defun nest2 (x)
-                      (list x x)))))))
+    (value '(with-output
+             :on event
+             (defun nest2 (x)
+               (list x x)))))))
 
 ; redundant
 (with-output
  :off warning
  (my-make-event
   '(my-make-event
-    (value-triple '(with-output
-                    :on event
-                    (defun nest2 (x)
-                      (list x x)))))))
+    (value '(with-output
+             :on event
+             (defun nest2 (x)
+               (list x x)))))))
 
 ; nested redundant event
 
