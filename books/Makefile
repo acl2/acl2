@@ -85,7 +85,7 @@ arithmetic: cowles
 meta: arithmetic
 ordinals: top-with-meta-cert
 ihs: arithmetic data-structures
-misc: arithmetic top-with-meta-cert ordinals arithmetic-2 arithmetic-3
+misc: data-structures top-with-meta-cert ordinals arithmetic ihs arithmetic-2 arithmetic-3
 make-event: misc arithmetic-3 arithmetic rtl
 arithmetic-2: ihs
 rtl: arithmetic meta top-with-meta-cert ordinals ihs misc arithmetic-2
@@ -112,7 +112,7 @@ hints: make-event
 models/jvm/m5: top-with-meta-cert ordinals misc ihs
 # models/jvm/m5 is needed for paco/books, not paco
 paco: ihs ordinals top-with-meta-cert
-# hacking has no dependencies
+hacking: misc
 parallel: make-event
 security: make-event arithmetic-3
 sorting: arithmetic-3/extra

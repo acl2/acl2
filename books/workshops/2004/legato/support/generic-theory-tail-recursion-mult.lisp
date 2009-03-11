@@ -459,7 +459,14 @@
 	   (equal (wp-zcoef-h s)
 		  (* 2 (f2 s) (mod (f1 s) (expt 2 (1- (x s)))))))
   :hints (("Goal"
-	   :in-theory (enable mod))))
+	   :in-theory (enable mod))
+; Matt K. added the following 2/21/09 (after ACL2 v3-4) because of a heuristic
+; change suggested by Robert Krug, in which the "pseudo-fn-count" is used in
+; arith-term-order just as it has been in term-order.  That change exposed a
+; known looping issue with the arithmetic-3 library, specifically the lemma
+; disabled below.
+          ("Subgoal *1/2.2'9'"
+           :in-theory (disable prefer-positive-addends-equal))))
 	   
 (defthm floor-mod-*-2-kb
   (implies (and (equal c (floor a 2))

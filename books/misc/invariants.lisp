@@ -32,7 +32,7 @@
 
 (program)
 (set-state-ok t)
-(include-book "misc/bash" :dir :system)
+(include-book "bash")
 
 
 
