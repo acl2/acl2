@@ -13,6 +13,8 @@
                                 (pseudo-term-listp . list))
                  ;; :hints {for the measure theorem}
                  :defthm-macro-name defthm-pseudo-termp
+                 ;; make everything local but the defthm macro
+                 :local t 
                  )
 
 ; This introduces (flag-pseudo-termp flag x lst)
@@ -166,6 +168,8 @@
   
 
 
+(defmacro id (form) form)
+
 (defun get-clique-members (fn world)
   (or (getprop fn 'recursivep nil 'current-acl2-world world)
       (er hard 'get-clique-members "Expected ~s0 to be in a mutually-recursive nest.~%"
@@ -267,13 +271,16 @@
 
 (defun make-flag-body (fn-name flag-var alist hints world)
   (let ((formals (merge-formals alist world)))
-  `(defun ,fn-name ,(cons flag-var formals)
+  `(defun ,fn-name (,flag-var . ,formals)
      (declare (xargs :verify-guards nil
                      :normalize nil
                      :measure ,(make-flag-measure flag-var alist world)
                      :non-executable t
                      :hints ,hints
-                     :well-founded-relation ,(get-wfr (caar alist) world)))
+                     :well-founded-relation ,(get-wfr (caar alist)
+                                                      world)
+                     :mode :logic)
+              (ignorable . ,formals))
      (case ,flag-var
        . 
        ,(make-flag-body-aux fn-name formals alist alist world)))))
@@ -402,7 +409,7 @@
           (flag-table-events (cdr alist) entry))))
 
 (defun make-flag-fn (flag-fn-name clique-member-name flag-var flag-mapping hints 
-                                  defthm-macro-name world)
+                                  defthm-macro-name local world)
   (let* ((flag-var (or flag-var 
                        (intern-in-package-of-symbol "FLAG" flag-fn-name)))
          (alist (or flag-mapping
@@ -416,55 +423,59 @@
                           (concatenate 'string (symbol-name flag-fn-name) "-EQUIVALENCES")
                           flag-fn-name))
          (formals        (merge-formals alist world)))
-    `(encapsulate
-      ()
+    `(progn
       (logic)
-      (set-ignore-ok t)
-      ,(make-flag-body flag-fn-name flag-var alist hints world)
+      (,(if local 'local 'id)
+       ,(make-flag-body flag-fn-name flag-var alist hints world))
       ,(make-defthm-macro defthm-macro-name alist flag-var)
 
-      (with-output
-       :off prove ;; hides induction scheme, too
-       (defthm ,equiv-thm-name
-         (equal (,flag-fn-name ,flag-var . ,formals)
-                (case ,flag-var
-                  ,@(make-cases-for-equiv alist world)))
-         :hints (("Goal"
-                  :induct 
-                  (,flag-fn-name ,flag-var . ,formals)
-                  :in-theory 
-                  (set-difference-theories 
-                   (union-theories (theory 'minimal-theory)
-                                   '((:induction ,flag-fn-name)))
-                   ;; Jared found a case where "linear" forced some goals
-                   ;; from an equality, which were unprovable.  So, turn off
-                   ;; forcing.
-                   '((:executable-counterpart force))))
-                 (and stable-under-simplificationp
-                      (expand-calls-computed-hint ACL2::clause
-                                                  ',(cons flag-fn-name
-                                                          (strip-cars alist)))))))
+      (,(if local 'local 'id)
+       (with-output
+        :off prove ;; hides induction scheme, too
+        (encapsulate nil
+          (logic)
+          (defthm ,equiv-thm-name
+            (equal (,flag-fn-name ,flag-var . ,formals)
+                   (case ,flag-var
+                     ,@(make-cases-for-equiv alist world)))
+            :hints (("Goal"
+                     :induct 
+                     (,flag-fn-name ,flag-var . ,formals)
+                     :in-theory 
+                     (set-difference-theories 
+                      (union-theories (theory 'minimal-theory)
+                                      '((:induction ,flag-fn-name)))
+                      ;; Jared found a case where "linear" forced some goals
+                      ;; from an equality, which were unprovable.  So, turn off
+                      ;; forcing.
+                      '((:executable-counterpart force))))
+                    (and stable-under-simplificationp
+                         (expand-calls-computed-hint ACL2::clause
+                                                     ',(cons flag-fn-name
+                                                             (strip-cars alist)))))))))
       
-      ,@(flag-table-events alist `(,flag-fn-name
-                                   ,alist 
-                                   ,defthm-macro-name
-                                   ,equiv-thm-name))
-                                   
-      (in-theory (disable (:definition ,flag-fn-name)))
-      )))
+      (,(if local 'local 'id)
+       (progn . ,(flag-table-events alist `(,flag-fn-name
+                                            ,alist 
+                                            ,defthm-macro-name
+                                            ,equiv-thm-name))))
+      (,(if local 'local 'id)
+       (in-theory (disable (:definition ,flag-fn-name)))))))
         
 (defmacro make-flag (flag-fn-name clique-member-name 
                      &key
                      flag-var
                      flag-mapping 
                      hints
-                     defthm-macro-name)
+                     defthm-macro-name
+                     local)
   `(make-event (make-flag-fn ',flag-fn-name 
                              ',clique-member-name 
                              ',flag-var
                              ',flag-mapping 
                              ',hints
                              ',defthm-macro-name
+                             ',local
                              (w state))))
 
 

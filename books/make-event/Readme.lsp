@@ -137,6 +137,7 @@ macros-skip-proofs-include.lisp
 macros-skip-proofs.acl2
 macros-skip-proofs.lisp
 macros.lisp
+make-redundant.lisp
 nested-check.lisp
 nested.lisp
 portcullis-expansion-include.acl2
