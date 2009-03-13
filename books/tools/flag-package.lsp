@@ -11,4 +11,4 @@
               )
     (union-eq *acl2-exports*
               *common-lisp-symbols-from-main-lisp-package*))
-   '(defmacro defthm defun verify-guards defconst mutual-recursion)))
+   '(defmacro defthm defun verify-guards defconst mutual-recursion id)))
