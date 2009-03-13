@@ -1,11 +1,6 @@
 include ../Makefile-generic
 -include Makefile-deps
 
-clean+:
-	cd embedded-defaxioms ; $(MAKE) clean
-
-clean: clean+
-
 # Added manually, based on *default-arith-book-alist*:
 # proof-by-arith.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic-3/bind-free/top.cert
 # proof-by-arith.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic-3/floor-mod/floor-mod.cert

@@ -66,9 +66,6 @@ includes a previous book.
   nested-check.lisp
 + embeddable-event-forms.lisp
     Simple constructors to make forms you can put in a book.
-+ embedded-defaxioms.lisp
-    Illustrates the idea of using make-event to check that books do NOT
-    certify.
   portcullis-expansion.lisp
   portcullis-expansion-include.lisp
 + stobj-test.lisp
@@ -116,9 +113,6 @@ defconst-fast.lisp
 defrefine.lisp
 dotimes.lisp
 embeddable-event-forms.lisp
-embedded-defaxioms
-embedded-defaxioms.acl2
-embedded-defaxioms.lisp
 eval-check-tests.lisp
 eval-check.lisp
 eval-tests.lisp
@@ -152,23 +146,6 @@ require-book.lisp
 stobj-test.lisp
 test-case-check.lisp
 test-case.lisp
-
-./embedded-defaxioms:
-Makefile
-bar.lisp
-baruser.lisp
-foo-a1.lisp
-foo-a21.lisp
-foo-b1.lisp
-foo-b2.lisp
-foo-b3.lisp
-foo-c1.lisp
-foo-c2.lisp
-foo-d.lisp
-foo-e.lisp
-foo-f.lisp
-local-defaxiom-1.lisp
-local-defaxiom-2.lisp
 ")
  (:TITLE    "Examples illustrating the use of make-event")
  (:AUTHOR/S "M. Kaufmann" "J Moore" "David Rager" "Peter Dillinger")
