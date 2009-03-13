@@ -16,6 +16,8 @@
 
 (include-book "doc")
 
+(include-book "eqv")
+
 (include-book "ieqv")
 (include-book "iprefixp")
 (include-book "iless")

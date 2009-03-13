@@ -15,6 +15,15 @@
 (in-package "ACL2")
 (include-book "top")
 
+(defmacro char-fix (x) `(STR::char-fix ,x))
+(add-macro-alias char-fix STR::char-fix)
+
+(defmacro chareqv (x y) `(STR::chareqv ,x ,y))
+(add-macro-alias chareqv STR::chareqv)
+
+(defmacro charlisteqv (x y) `(STR::charlisteqv ,x ,y))
+(add-macro-alias charlisteqv STR::charlisteqv)
+
 (defmacro ichareqv (x) `(STR::ichareqv ,x))
 (add-macro-alias ichareqv STR::ichareqv)
 
