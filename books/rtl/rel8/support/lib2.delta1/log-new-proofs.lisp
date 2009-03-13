@@ -839,7 +839,6 @@
  (local 
   (encapsulate () 
 
-               #!ACL2
                (defun all-ones-p (x n)
                  (if (zp n)
                      t
@@ -847,7 +846,6 @@
                         (all-ones-p x (+ -1 n)))))
 
 
-               #!ACL2
                (defthmd sumbits-less-than
                  (implies (natp n)
                           (<= (sumbits x n) (+ -1 (expt 2 n))))
@@ -858,7 +856,6 @@
                                                            (n (+ -1 n))))))
                  :rule-classes :linear)
 
-               #!ACL2
                (defthmd all-bits-sumbits-is
                  (implies (equal (sumbits x n) (+ -1 (expt 2 n)))
                           (all-ones-p x n))
@@ -868,7 +865,6 @@
                                                           (x x)
                                                           (n (+ -1 n)))))))
 
-               #!ACL2
                (defthmd bits-tail-specific
                  (implies (and (natp n)
                                (> n 0))
@@ -877,7 +873,6 @@
                  :hints (("Goal" :cases ((bvecp (+ -1 (expt 2 n)) n)))
                          ("Subgoal 2" :in-theory (enable bvecp))))
 
-               #!ACL2
                (defthmd all-bits-sumbits-is-strong
                  (implies (and (natp n)
                                (> n 0))
@@ -889,7 +884,6 @@
                                            (x (+ -1 (expt 2 n))))))))
 
 
-               #!ACL2
                (defthmd all-bits-sumbits-is-2
                  (implies (and (all-ones-p x n)
                                (natp n))
@@ -899,7 +893,6 @@
 
 
 
-               #!ACL2
                (defthm all-bits-sumbits-is-2-strong
                  (implies (and (not (equal x (+ -1 (expt 2 n))))
                                (bvecp x n)
@@ -915,7 +908,6 @@
 
 
 
-               #!ACL2
                (defthm bitn-all-ones-is-one
                  (implies (and (all-ones-p x n)
                                (natp i)
@@ -925,7 +917,6 @@
 
 
 
-               #!ACL2
                (defun all-ones-p-alt (x n)
                  (if (zp n)
                      t
@@ -934,7 +925,6 @@
 
                  
                
-               #!ACL2
                (defthmd all-ones-p-bits-all-ones
                  (implies (and (all-ones-p x n)
                                (natp n)
@@ -958,7 +948,6 @@
 
 
 
-               #!ACL2
                (defthm all-ones-p-alt-is-all-one-p
                  (equal (all-ones-p-alt x n)
                         (all-ones-p x n)))
@@ -968,7 +957,6 @@
 
 
 
- #!ACL2
  (defthmd bits-all-ones-is-all-ones
    (implies (and (natp m)
                  (> m 0)
