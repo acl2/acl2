@@ -423,8 +423,11 @@
                           (concatenate 'string (symbol-name flag-fn-name) "-EQUIVALENCES")
                           flag-fn-name))
          (formals        (merge-formals alist world)))
-    `(progn
+    `(encapsulate ;; use encapsulate instead of progn so set-ignore-ok is local to this
+      ()
       (logic)
+      (set-ignore-ok t) ;; can't wrap this in local --- fubar!
+
       (,(if local 'local 'id)
        ,(make-flag-body flag-fn-name flag-var alist hints world))
       ,(make-defthm-macro defthm-macro-name alist flag-var)
@@ -499,7 +502,7 @@
 
 
 
-
+(logic) ;; so local events aren't skipped
 
 (local 
 
@@ -565,4 +568,25 @@
                        (mv (+ num-car num-cdr) term-bucket))))))
 
   (FLAG::make-flag flag-terms-into-bucket
-                   terms-into-bucket)))
+                   terms-into-bucket)
+
+
+  ;; previously this didn't work, now we set-ignore-ok to fix it.
+  (encapsulate
+   ()
+   (set-ignore-ok t)
+   (mutual-recursion
+    (defun ignore-test-f (x)
+      (if (consp x)
+          (let ((y (+ x 1)))
+            (ignore-test-g (cdr x)))
+        nil))
+    (defun ignore-test-g (x)
+      (if (consp x)
+          (ignore-test-f (cdr x))
+        nil))))
+
+  (FLAG::make-flag flag-ignore-test
+                   ignore-test-f)
+
+  ))
