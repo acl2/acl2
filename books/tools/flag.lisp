@@ -423,10 +423,10 @@
                           (concatenate 'string (symbol-name flag-fn-name) "-EQUIVALENCES")
                           flag-fn-name))
          (formals        (merge-formals alist world)))
-    `(encapsulate ;; use encapsulate instead of progn so set-ignore-ok is local to this
-      ()
+    `(,@(if local '(progn) '(encapsulate nil))
+      ;; use encapsulate instead of progn so set-ignore-ok is local to this
       (logic)
-      (set-ignore-ok t) ;; can't wrap this in local --- fubar!
+      ,@(and (not local) '((set-ignore-ok t))) ;; can't wrap this in local --- fubar!
 
       (,(if local 'local 'id)
        ,(make-flag-body flag-fn-name flag-var alist hints world))
