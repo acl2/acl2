@@ -116,7 +116,7 @@ hacking: misc
 parallel: make-event
 security: make-event arithmetic-3
 sorting: arithmetic-3/extra
-tools: arithmetic-4 misc
+tools: arithmetic-4 misc unicode
 regex: tools
 defsort: misc make-event arithmetic-4 unicode tools
 str: arithmetic unicode defsort
