@@ -1,10 +1,158 @@
+(in-package "ACL2")
 
 ;; This book contains the macro b*, which acts like let* with certain
 ;; extensions.  Some of its features:
 ;; - Can bind single values and MVs within the same let*-like sequence
 ;; of assignments, without nesting
 ;; - Can bind variables using user-defined pattern-matching idioms
-;; - Eliminates ignore declarations
+;; - Eliminates ignore and ignorable declarations
+
+(defdoc b* ":DOC-SECTION Programming
+Flexible let*-like macro for variable bindings~/
+Usage:
+~bv[]
+(b* ;; let*-like binding to a single variable:
+    ((x (cons 'a 'b))
+
+     ;; mv binding
+     ((mv y z) (return-two-values x x))
+
+     ;; No binding: expression evaluated for side effects
+     (- (cw \"Hello\")) ;; prints \"Hello\"
+
+     ;; MV which ignores a value:
+     ((mv & a) (return-garbage-in-first-mv y z))
+
+     ;; Binds value 0 to C and value 1 to D,
+     ;; declares (ignorable C) and (ignore D)
+     ((mv ?c ?!d) (another-mv a z))
+
+     ;; Bind V to the middle value of an error triple,
+     ;; quitting if there is an error condition (a la er-let*)
+     ((er v) (trans-eval '(len (list 'a 1 2 3)) 'foo state))
+
+     ;; Pattern-based binding using cons, where D is ignorable
+     ((cons (cons b c) ?d) (must-return-nested-conses a))
+
+     ;; Alternate form of pattern binding with cons nests, where G is ignored:
+     (`(,e (,f . ,?!g)) (makes-a-list-of-conses b))
+
+     ;; LIST and LIST* are also supported:
+     ((list a b) '((1 2) (3 4)))
+     ((list* a b c) '((1 2) (3 4) 5 6 7))
+
+     ;; Pattern with user-defined constructor:
+     ((my-tuple foo bar hum) (something-of-type-my-tuple e c g))
+
+     ;; Don't-cares with pattern bindings:
+     ((my-tuple & (cons carbar &) hum) (something-else foo f hum))
+
+     ;; Pattern inside an mv:
+     ((mv a (cons & c)) (make-mv-with-cons)))
+  (some-expression .....))
+~ev[]
+~/
+
+B* is a macro for binding variables in sequence, like let*.  However, it
+contains some additional features to allow it to bind multi-values, error
+triples, and subtrees of CONS structures, run forms for side-effects, ignore
+variables or declare them ignorable.  It can also be extended by the user to
+support more binding constructs.
+
+Its syntax is
+(b* <list-of-bindings> . <list-of-result-forms>)
+where a result form is any ACL2 term, and a binding is
+(<binder-form> <expression>).  See below for discussion of binder forms.
+
+
+-- Basic let*-like usage --
+B* can be used exactly like LET*, except that it does not yet support DECLARE
+forms.  However, IGNORE or IGNORABLE declarations are inserted by B* according
+to the syntax of the variables bound; see below.  B* also supports multiple
+result expressions after the binding list; these are run in sequence and the
+result of the last such form is returned.
+
+-- Binder Forms --
+The following binder forms are supported by this book alone, but support may
+be added by the user for other binding forms.  In most cases, these binding
+forms may be nested.
+
+(mv a b ...) produces an MV-LET binding
+
+(cons a b) produces a binding of the CAR and CDR of the corresponding expression
+
+(er a) produces an ER-LET* binding
+
+(list a b ...) produces a binding of (NTH 0 val), (NTH 1 val), etc, where val
+is the result of the corresponding expression
+
+(list* a b), `(,a . ,b) are alternatives to the CONS binder.
+
+-- Nesting Binders --
+The CONS, LIST, LIST*, and backtick binders may be nested arbitrarily inside
+other binders.  Often user-defined binders may also be arbitrarily nested.  For
+example,
+((mv (list `(,a . ,b)) (cons c d)) <form>)
+will result in the following (logical) bindings:
+a bound to (car (nth 0 (mv-nth 0 <form>)))
+b bound to (cdr (nth 0 (mv-nth 0 <form>)))
+c bound to (car (mv-nth 1 <form>))
+d bound to (cdr (mv-nth 1 <form>)).
+
+-- Ignore, Ignorable, and Side-effect Only Bindings --
+The following constructs may be used in place of variables:
+
+Dash (-), used as a top-level binding form, will run the corresponding
+expression for side-effects without binding its value.  Used as a lower-level
+binding form, it will cause the binding to be ignored or not created.  
+
+Ampersand (&), used as a top-level binding form, will cause the corresponding
+expression to be ignored and not run at all.  Used as a lower-level binding
+form, it will cause the binding to be ignored or not created.
+
+Any symbol beginning with ?! works similarly to the & form.  It is ignored
+or not evaluated at all.
+
+Any symbol beginning with ? but not ?! will make a binding of the symbol
+obtained by removing the ?, and will make an IGNORABLE declaration for this
+variable.
+
+-- User-Defined Binders --
+A new binder form may be created by defining a macro named PATBIND-<name>, in
+the ACL2 package.  We discuss the detailed interface of user-defined binders
+below.  First, DEF-PATBIND-MACRO provides a simple way to define certain user
+binders.  For example, this form is used to define the binder for CONS:
+(def-patbind-macro cons (car cdr))
+This defines a binder macro PATBIND-CONS which enables (cons a b) to be used as
+a binder form.  This binder form must take two arguments since two destructor
+functions (car cdr) are given to def-patbind-macro.  The destructor functions
+are each applied to the form to produce the bindings for the corresponding
+arguments of the binder.
+
+There are many cases in which DEF-PATBIND-MACRO is not powerful enough.  For
+example, a binder produced by DEF-PATBIND-MACRO may only take a fixed number of
+arguments.  To more flexibly create binders, one must define binder macros by
+hand.
+
+A binder macro PATBIND-<NAME> must take four arguments ARGS, BINDING, IGNORES,
+and EXPR.  EXPR is the result expression to be run once the bindings are in
+place.  BINDING is the term to be decomposed and bound to ARGS, which are
+variables corresponding to the arguments given to the binder form.  Finally,
+IGNORES is a list of the same length as ARGS each element of which is either
+NIL or one of the symbols IGNORE (meaning the corresponding argument is an
+ignored variable) or IGNORABLE (meaning the corresponding argument is an
+ignorable variable.
+
+The binder macro must produce a form that performs the bindings of ARGS to the
+appropriate forms involving BINDING, makes declarations appropriate for
+IGNORES, and finally runs EXPR.
+:trans1 EXPR.
+
+For examples of this, see the definitions of binder macros PATBIND-LIST and
+PATBIND-LIST*.
+")
+
+
 
 ;; Here are some examples of how it can be used:
 #||
@@ -141,7 +289,7 @@
 ;;       (the-answer)))).
 
 
-(in-package "ACL2")
+
 
 
 (include-book "pack")
@@ -163,44 +311,89 @@
 (defun ignore-var-name (n)
   (str-num-sym "IGNORE-" n))
 
-(defun patbind-var-ignore-list (args vars ignores)
-  (if (atom args)
-      (mv (reverse vars) ignores)
-    (if (or (member (car args) *patbind-special-syms*)
-            (quotep (car args)))
-        (let ((var (ignore-var-name (length ignores))))
-          (patbind-var-ignore-list (cdr args) (cons var vars)
-                                  (cons var ignores)))
-      (patbind-var-ignore-list (cdr args) (cons (pack (car args)) vars)
-                              ignores))))
 
+
+(verify-termination doubleton-list-p)
+(verify-guards doubleton-list-p)
+
+
+
+(defun patbind-decode-varname (pattern)
+  (let* ((name (symbol-name pattern))
+         (?p (and (<= 1 (length name))
+                  (eql (char name 0) #\?)))
+         (?!p (and ?p
+                   (<= 2 (length name))
+                   (eql (char name 1) #\!)))
+         (sym (cond 
+               (?!p (intern-in-package-of-symbol
+                     (subseq name 2 nil) pattern))
+               (?p (intern-in-package-of-symbol
+                    (subseq name 1 nil) pattern))
+               (t pattern)))
+         (ignorep (cond
+                   (?!p 'ignore)
+                   (?p 'ignorable))))
+    (mv sym ignorep)))
 
 (defun patbind-nest (args vars expr)
   (if (atom args)
       expr
-    (if (eq (car args) (car vars))
+    (if (atom (car args))
         (patbind-nest (cdr args) (cdr vars) expr)
       `(patbind ,(car args) ,(car vars)
-             ,(patbind-nest (cdr args) (cdr vars) expr)))))
+                ,(patbind-nest (cdr args) (cdr vars) expr)))))
 
-                       
+
+(defun patbind-find-ignores (ignore-or-ignorable vars ignores acc)
+  (if (atom vars)
+      acc
+    (patbind-find-ignores
+     ignore-or-ignorable
+     (cdr vars) (cdr ignores)
+     (if (eq ignore-or-ignorable (car ignores))
+         (cons (car vars) acc)
+       acc))))
+
+(defun patbind-var-ignore-list (args vars igcount ignores)
+  (if (atom args)
+      (mv (reverse vars) (reverse ignores))
+    (mv-let (sym ignorep)
+      (cond ((or (member (car args) *patbind-special-syms*)
+                 (quotep (car args))
+                 (and (atom (car args)) (not (symbolp (car args)))))
+             (let ((var (ignore-var-name igcount)))
+               (mv var 'ignore)))
+            ((symbolp (car args))
+             (patbind-decode-varname (car args)))
+            (t (mv (pack (car args)) nil)))
+      (patbind-var-ignore-list (cdr args) (cons sym vars)
+                               (if (eql ignorep 'ignore)
+                                   (1+ igcount)
+                                 igcount)
+                               (cons ignorep ignores)))))
+
+
 
 (defun patbindfn (pattern assign-expr nested-expr)
   (cond ((and (consp assign-expr) (not (eq (car assign-expr) 'quote))
-              (consp pattern) (not (eq (car pattern) 'mv))
+              (consp pattern)
+              (not (eq (car pattern) 'mv))
               (not (eq (car pattern) 'er)))
          (let ((var (pack pattern))) 
            `(let ((,var ,assign-expr))
               (patbind ,pattern ,var ,nested-expr))))
         ((eq pattern '-)
-         `(let ((ign ,assign-expr))
-            (declare (ignore ign))
-            ,nested-expr))
+         `(prog2$ ,assign-expr
+                  ,nested-expr))
         ((member pattern *patbind-special-syms*)
          nested-expr)
         ((atom pattern)
-         `(let ((,pattern ,assign-expr))
-            ,nested-expr))
+         (mv-let (sym ignorep)
+           (patbind-decode-varname pattern)
+           `(let ((,sym ,assign-expr))
+              ,@(and ignorep `((declare (,ignorep ,sym))))
+              ,nested-expr)))
         ((eq (car pattern) 'quote)
          nested-expr)
         (t (let* ((binder (car pattern))
@@ -208,25 +401,39 @@
                   (args (cdr pattern)))
              (mv-let 
               (vars ignores)
-              (patbind-var-ignore-list args nil nil)
+              (patbind-var-ignore-list args nil 0 nil)
               `(,patbind-macro ,vars ,assign-expr ,ignores
-                              ,(patbind-nest args vars nested-expr)))))))
+                               ,(patbind-nest args vars nested-expr)))))))
              
         
+
+(defun mk-prog2$-nest (exprs)
+  (declare (xargs :guard (consp exprs)))
+  (if (atom (cdr exprs))
+      (car exprs)
+    `(prog2$ ,(car exprs)
+             ,(mk-prog2$-nest (cdr exprs)))))
          
          
 (defmacro patbind (pattern assign-expr nested-expr)
   (patbindfn pattern assign-expr nested-expr))
 
 
-(defun b*-fn (bindlist expr)
+(defun b*-fn1 (bindlist expr)
+  (declare (xargs :guard (doubleton-list-p bindlist)))
   (if (atom bindlist)
       expr
     `(patbind ,(caar bindlist) ,(cadar bindlist)
-           ,(b*-fn (cdr bindlist) expr))))
+              ,(b*-fn1 (cdr bindlist) expr))))
 
-(defmacro b* (bindlist expr)
-  (b*-fn bindlist expr))
+(defun b*-fn (bindlist exprs)
+  (declare (xargs :guard (and (doubleton-list-p bindlist)
+                              (consp exprs))))
+  (b*-fn1 bindlist (mk-prog2$-nest exprs)))
+
+(defmacro b* (bindlist expr &rest exprs)
+  (declare (xargs :guard (doubleton-list-p bindlist)))
+  (b*-fn bindlist (cons expr exprs)))
 
 
 
@@ -234,10 +441,10 @@
 (defun binding-list (args bindings ignores)
   (if (atom args)
       nil
-    (if (member (car args) ignores)
-        (binding-list (cdr args) (cdr bindings) ignores)
+    (if (eql (car ignores) 'ignore)
+        (binding-list (cdr args) (cdr bindings) (cdr ignores))
       (cons (list (car args) (car bindings))
-            (binding-list (cdr args) (cdr bindings) ignores)))))
+            (binding-list (cdr args) (cdr bindings) (cdr ignores))))))
 
 
 (defun destructor-binding-list (destructors)
@@ -252,57 +459,69 @@
   `(defmacro ,(patbind-macro-name binder) (args binding ignores expr)
      (declare (xargs :guard (and (true-listp args)
                                  (= (length args) ,len))))
+     (let ((ignorable (patbind-find-ignores 'ignorable args ignores nil)))
      `(let ,(binding-list args ,binding-list ignores)
-        ,expr))))
+        ,@(and ignorable `((declare (ignorable . ,ignorable))))
+        ,expr)))))
 
 
 
 (defmacro patbind-mv (args binding ignores expr)
-  `(mv-let ,args ,binding 
-           ,@(if ignores
-                 `((declare (ignore ,@ignores)))
-               nil)
-           ,expr))
+  (let ((ignore (patbind-find-ignores 'ignore args ignores nil))
+        (ignorable (patbind-find-ignores 'ignorable args ignores nil)))
+    `(mv-let ,args ,binding 
+       ,@(and (or ignore ignorable)
+              `((declare ,@(and ignore `((ignore . ,ignore)))
+                         . ,(and ignorable `((ignorable . ,ignorable))))))
+       ,expr)))
 
 (def-patbind-macro cons (car cdr))
 
 (defun list-binding-list (args n form ignores)
   (if (atom args)
       nil
-    (if (member (car args) ignores)
-        (list-binding-list (cdr args) (1+ n) form ignores)
+    (if (eql (car ignores) 'ignore)
+        (list-binding-list (cdr args) (1+ n) form (cdr ignores))
       (cons (list (car args) `(nth ,n ,form))
-            (list-binding-list (cdr args) (1+ n) form ignores)))))
+            (list-binding-list (cdr args) (1+ n) form (cdr ignores))))))
 
 
 (defun list*-binding-list (args form ignores)
   (if (atom (cdr args))
-      (if (member (car args) ignores)
+      (if (eql (car ignores) 'ignore)
           nil
         (list (list (car args) form)))
-    (if (member (car args) ignores)
-        (list*-binding-list (cdr args) form ignores)
+    (if (eql (car ignores) 'ignore)
+        (list*-binding-list (cdr args) form (cdr ignores))
       (cons (list (car args) `(car ,form))
-            (list*-binding-list (cdr args) `(cdr ,form) ignores)))))
+            (list*-binding-list (cdr args) `(cdr ,form) (cdr ignores))))))
 
 
 (defmacro patbind-list (args binding ignores expr)
   (declare (xargs :guard (true-listp args)))
-  `(let ,(list-binding-list args 0 binding ignores)
-     ,expr))
+  (let ((ignorable (patbind-find-ignores 'ignorable args ignores nil)))
+    `(let ,(list-binding-list args 0 binding ignores)
+       ,@(and ignorable `((declare (ignorable . ,ignorable))))
+       ,expr)))
 
 
 (defmacro patbind-list* (args binding ignores expr)
   (declare (xargs :guard (true-listp args)))
-  `(let ,(list*-binding-list args binding ignores)
-     ,expr))
+  (let ((ignorable (patbind-find-ignores 'ignorable args ignores nil)))
+    `(let ,(list*-binding-list args binding ignores)
+       ,@(and ignorable `((declare (ignorable . ,ignorable))))
+       ,expr)))
 
 (defmacro patbind-er (args binding ignores expr)
-  `(er-let* ((,(car args) ,binding))
-            ,@(if ignores
-                  `((declare (ignore . ,ignores)))
-                nil)
-            ,expr))
+  (declare (xargs :guard (and (consp args) (eq (cdr args) nil))))
+  (case (car ignores)
+    (ignore `(er-progn ,binding ,expr))
+    (ignorable `(er-let* ((,(car args) ,binding))
+                         (let ((,(car args) ,(car args)))
+                           (declare (ignorable ,(car args)))
+                         ,expr)))
+    (otherwise `(er-let* ((,(car args) ,binding))
+                         ,expr))))
 
 (defmacro patbind-state-global (args binding ignores expr)
   (declare (ignorable ignores))
@@ -353,8 +572,8 @@
                      "~% ****** ERROR ******~%~
 Testing of the patbind macro failed on expression ~x0~%~%" err)
                  state)
-           (value (prog2$ (cw "~%Testing of the patbind macro ~
-passed.~%")
+           (value (prog2$ (cw "
+Testing of the patbind macro passed.~%")
                           `(value-triple 'tests-ok)))))
        :check-expansion (value-triple 'tests-ok)))
 
@@ -379,9 +598,8 @@ passed.~%")
      nil)
 
     ((patbind - (cw "Hello") nil)
-     (let ((ign (cw "Hello")))
-       (declare (ignore ign))
-       nil))
+     (prog2$ (cw "Hello")
+             nil))
 
     ((patbind (cons a &) '(a b) a)
      (let ((a (car '(a b))))
