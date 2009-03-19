@@ -251,7 +251,8 @@
 (verify-guards har-gather-atoms1)
 
 
-(defun har-atom-list-to-map (x n acc)
+
+(defun har-atom-list-to-index-map (x n acc)
   (declare (xargs :guard (natp n)))
 
 ; We build a fast-alist of indices to atoms, given
@@ -260,9 +261,23 @@
 ;   - ACC, the fast-alist we have built so far.
 
   (if (consp x)
-      (har-atom-list-to-map (cdr x) 
-                            (+ n 1)
-                            (hons-acons n (car x) acc))
+      (har-atom-list-to-index-map (cdr x) 
+                                  (+ n 1)
+                                  (hons-acons n (car x) acc))
+    acc))
+
+(defun har-atom-list-to-atom-map (x n acc)
+  (declare (xargs :guard (natp n)))
+
+; We build a fast-alist of atoms to indices, given
+;   - X, the list of atoms in index order,
+;   - N, the current index we are on, and
+;   - ACC, the fast-alist we have built so far.
+
+  (if (consp x)
+      (har-atom-list-to-atom-map (cdr x) 
+                                 (+ n 1)
+                                 (hons-acons (car x) n acc))
     acc))
 
 (defund har-gather-atoms (x sortp)
@@ -274,8 +289,11 @@
       (b* ((-            (flush-hons-get-hash-table-link unsorted-alist))
            (atoms        (strip-cars unsorted-alist))
            (sorted-atoms (<<-sort atoms))
-           (sorted-alist (har-atom-list-to-map sorted-atoms 0 nil)))
+           (sorted-alist (har-atom-list-to-atom-map sorted-atoms 0 nil)))
           (mv num-atoms sorted-alist)))))
+
+
+
 
 
 
@@ -358,9 +376,6 @@
       (mv num-atoms max-index alst insts)))
 
 
-
-
-
 (defun har-decompress1 (instrs map map-size)
   (declare (xargs :guard (equal map-size (len map))
                   ;; BOZO figure out adequate guards and verify them some day.
@@ -409,7 +424,7 @@
 ; AN is the number of atoms in the atom list, ALST.  INSTRS are the
 ; instructions for building the conses.  We do the decompression and return X.
 
-  (let ((amap (har-atom-list-to-map alst 0 nil)))
+  (let ((amap (har-atom-list-to-index-map alst 0 nil)))
     (if (not (= (length amap) an))
         (er hard? 'har-decompress "Atom list is the wrong length.")
       (cdar (har-decompress1 instrs amap an)))))
@@ -796,3 +811,5 @@
 (defmacro har-unzip (filename &key honsp)
   "See :doc hons-archive"
   `(har-unzip-fn ',honsp ,filename state)) 
+
+
