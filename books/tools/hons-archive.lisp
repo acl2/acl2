@@ -177,12 +177,6 @@
   so to successfully move a hons archive, you will need to move both of these
   files.
 
-  For the best compression and fastest reading, ~c[x] should be structure
-  shared to the maximum extent before zipping.  ~c[Har-zip] does NOT try to
-  ~il[hons-copy] its argument, so you may wish to consider doing so before
-  calling ~c[har-zip].  But this is only a performance consideration, and one can
-  freely zip arbitrary ACL2 objects, regardless of whether they are honsed.
-
 
   Hons archives can be read with the ~c[har-unzip] macro,
   ~bv[]
@@ -514,13 +508,15 @@
 
 (defun har-zip-fn (x filename state)
   (declare (xargs :mode :program :stobjs state))
-  (b* ((- (cw "; har-archive: preparing data.~%"))
-       (filename-atoms   (concatenate 'string filename "-atoms"))
+  (b* ((filename-atoms   (concatenate 'string filename "-atoms"))
        (filename-conses  (concatenate 'string filename "-conses"))
+       (- (cw "; har-zip: hons-copying data.~%"))
+       (x (hons-copy x))
+       (- (cw "; har-zip: compiling hons archive.~%"))
        ((mv num-atoms max-index alst instrs) (har-compress x))
-       (- (cw "; har-archive: writing atoms file.~%"))
+       (- (cw "; har-zip: writing atoms file.~%"))
        (state (har-write-object-file (list* num-atoms max-index alst) filename-atoms state))
-       (- (cw "; har-archive: writing conses file.~%"))
+       (- (cw "; har-zip: writing conses file.~%"))
        (state (har-write-instrs max-index (reverse instrs) filename-conses state)))
       state))
 
