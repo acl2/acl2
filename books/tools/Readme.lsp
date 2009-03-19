@@ -11,7 +11,6 @@ deftuple.lisp
 flag.acl2
 flag.lisp
 flag-package.lsp
-hons-archive.lisp
 index.html
 mv-nth.lisp
 pack.lisp
@@ -47,10 +46,6 @@ their values without typing formatting strings.
 defined-const.lisp defines DEFINED-CONST, which produces a defconst and a
 theorem saying what term it represents while only evaluating that term once (if
 the HONS system is present) or twice (if not.)
-
-hons-archive.lisp defines HAR-ZIP and HAR-UNZIP, which are a mechanism
-for writing ACL2 objects to files and then loading them in other sessions.
-It is only useful when the HONS system is present.
 
 progndollar.lisp defines PROGN$, which evaluates several forms in
 sequence for side effects.

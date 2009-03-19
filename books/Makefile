@@ -59,7 +59,7 @@ DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 ari
 	data-structures/memories unicode str concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity misc/misc2 tools paco hacking hons-bdds security regex \
-        defsort
+        defsort hons-archive
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-4 \
 	misc models/jvm/m5 proofstyles rtl make-event parallel hints arithmetic-3/extra \
@@ -68,7 +68,7 @@ DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 ari
 	data-structures/memories unicode str concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity misc/misc2 tools paco hacking hons-bdds security regex \
-        defsort
+        defsort hons-archive
 SHORTDIRS2 = ordinals data-structures bdd
 
 .PHONY: $(DIRS1) $(DIRS2) $(DIRS3)
@@ -119,6 +119,7 @@ sorting: arithmetic-3/extra
 tools: arithmetic-4 misc unicode
 regex: tools
 defsort: misc make-event arithmetic-4 unicode tools
+hons-archive: defsort unicode tools arithmetic-3
 str: arithmetic unicode defsort
 
 # Let us wait for everything else before workshops:

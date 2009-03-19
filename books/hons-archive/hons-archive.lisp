@@ -16,6 +16,7 @@
 (in-package "ACL2")
 (include-book "tools/bstar" :dir :system)
 (include-book "unicode/read-ints" :dir :system)
+(include-book "defsort/uniquep" :dir :system)
 (local (include-book "unicode/unsigned-byte-listp" :dir :system))
 (local (include-book "unicode/signed-byte-listp" :dir :system))
 (local (include-book "arithmetic-3/bind-free/top" :dir :system))
@@ -162,7 +163,10 @@
 
   Hons archives can be created with the ~c[har-zip] macro,
   ~bv[]
-     (har-zip x filename) --> state
+     (har-zip x filename
+              :sortp {t, nil})
+       -->
+     state
   ~ev[]
   This macro implicitly takes ~c[state], so it can only be used in contexts
   where ~c[state] is available, such as the top-level loop, make-events, and so
@@ -177,10 +181,19 @@
   so to successfully move a hons archive, you will need to move both of these
   files.
 
+  By default, ~c[:sortp] is ~c[nil] and the atoms are written to the file in whatever
+   seemingly-random order is produced as we walk over the object.  But if ~c[:sortp] 
+  is set to ~c[t], the atoms are instead printed in a sorted order.  This takes 
+  additional time and does not give any benefit to unzipping.  However, it may result
+  in more useful \"diffs\" between various revisions of the atoms file.
+
 
   Hons archives can be read with the ~c[har-unzip] macro,
   ~bv[]
-     (har-unzip filename :honsp {t, nil})  --> (mv x state)
+     (har-unzip filename 
+                :honsp {t, nil})
+       -->
+     (mv x state)
   ~ev[]
   Because of the use of state, one typically needs to use ~il[make-event] 
   to actually get at the contents of a HAR, e.g.,
@@ -210,7 +223,8 @@
 
 ; X is an object we wish to compress.  We are constructing a fast-alist (tbl)
 ; which maps every atom in x to a unique index.  N is the next available index,
-; and we just count upwards.
+; and we just count upwards.  This effectively builds the table in "unsorted"
+; order.
 
   (if (atom x)
       (if (hons-get-fn-do-not-hopy x tbl)
@@ -236,9 +250,32 @@
 
 (verify-guards har-gather-atoms1)
 
-(defund har-gather-atoms (x)
+
+(defun har-atom-list-to-map (x n acc)
+  (declare (xargs :guard (natp n)))
+
+; We build a fast-alist of indices to atoms, given
+;   - X, the list of atoms in index order,
+;   - N, the current index we are on, and
+;   - ACC, the fast-alist we have built so far.
+
+  (if (consp x)
+      (har-atom-list-to-map (cdr x) 
+                            (+ n 1)
+                            (hons-acons n (car x) acc))
+    acc))
+
+(defund har-gather-atoms (x sortp)
   (declare (xargs :guard t))
-  (har-gather-atoms1 x 0 nil))
+  (mv-let (num-atoms unsorted-alist)
+          (har-gather-atoms1 x 0 nil)
+    (if (not sortp)
+        (mv num-atoms unsorted-alist)
+      (b* ((-            (flush-hons-get-hash-table-link unsorted-alist))
+           (atoms        (strip-cars unsorted-alist))
+           (sorted-atoms (<<-sort atoms))
+           (sorted-alist (har-atom-list-to-map sorted-atoms 0 nil)))
+          (mv num-atoms sorted-alist)))))
 
 
 
@@ -298,7 +335,7 @@
 
 
 
-(defun har-compress (x)
+(defun har-compress (x sortp)
   (declare (xargs :guard t
                   ;; BOZO verify guards some day
                   :verify-guards nil))
@@ -313,7 +350,7 @@
 ;   - ALST is the list of atoms (in index order)
 ;   - INSTS are the instructions for building the conses (in reverse order)
 
-  (b* (((mv num-atoms amap)         (har-gather-atoms x))
+  (b* (((mv num-atoms amap)         (har-gather-atoms x sortp))
        ((mv max-index & tbl insts)  (har-gather-conses x num-atoms nil nil amap))
        (alst                        (strip-cars (reverse amap)))
        (-                           (flush-hons-get-hash-table-link amap))
@@ -322,20 +359,6 @@
 
 
 
-
-(defun har-atom-list-to-map (x n acc)
-  (declare (xargs :guard (natp n)))
-
-; We build a fast-alist of indices to atoms, given
-;   - X, the list of atoms in index order,
-;   - N, the current index we are on, and
-;   - ACC, the fast-alist we have built so far.
-
-  (if (consp x)
-      (har-atom-list-to-map (cdr x) 
-                            (+ n 1)
-                            (hons-acons n (car x) acc))
-    acc))
 
 
 (defun har-decompress1 (instrs map map-size)
@@ -489,6 +512,18 @@
          (prog2$ (er hard? 'har-write-instrs "Implement support for >32 bits.~%")
                  state))))
 
+(defun har-write-objects (x channel state)
+  (declare (xargs :mode :program :stobjs state))
+
+; We originally printed the entire atoms file using a single call of
+; print-object$.  But doing it on an element-by-element basis puts newlines in
+; between the objects, which results in more sensible diffs when sortp is true.
+
+  (if (atom x)
+      state
+    (let ((state (print-object$ (car x) channel state)))
+      (har-write-objects (cdr x) channel state))))
+
 (defun har-write-object-file (x filename state)
   (declare (xargs :mode :program :stobjs state))
 
@@ -502,27 +537,27 @@
               (prog2$ (er hard? 'har-write-object-file 
                           "Error opening file ~x0.~%" filename)
                       state)
-            (let* ((state (print-object$ x channel state))
+            (let* ((state (har-write-objects x channel state))
                    (state (close-output-channel channel state)))
               state))))
 
-(defun har-zip-fn (x filename state)
+(defun har-zip-fn (x filename sortp state)
   (declare (xargs :mode :program :stobjs state))
   (b* ((filename-atoms   (concatenate 'string filename "-atoms"))
        (filename-conses  (concatenate 'string filename "-conses"))
        (- (cw "; har-zip: hons-copying data.~%"))
        (x (hons-copy x))
        (- (cw "; har-zip: compiling hons archive.~%"))
-       ((mv num-atoms max-index alst instrs) (har-compress x))
+       ((mv num-atoms max-index alst instrs) (har-compress x sortp))
        (- (cw "; har-zip: writing atoms file.~%"))
        (state (har-write-object-file (list* num-atoms max-index alst) filename-atoms state))
        (- (cw "; har-zip: writing conses file.~%"))
        (state (har-write-instrs max-index (reverse instrs) filename-conses state)))
       state))
 
-(defmacro har-zip (x filename)
+(defmacro har-zip (x filename &key sortp)
   "See :doc hons-archive"
-  `(har-zip-fn ,x ,filename state))
+  `(har-zip-fn ,x ,filename ,sortp state))
 
 
 
@@ -711,6 +746,14 @@
                  (state (close-input-channel channel state)))
                 (mv result state)))))
                  
+(defun har-read-objects (channel state acc)
+  (declare (xargs :mode :program :stobjs state))
+  (mv-let (eofp obj state)
+          (read-object channel state)
+          (if eofp
+              (mv (reverse acc) state)
+            (har-read-objects channel state (cons obj acc)))))
+
 (defun har-read-object-file (filename state)
   (declare (xargs :mode :program :stobjs state))
   (mv-let (channel state)
@@ -718,22 +761,9 @@
           (if (not channel)
               (mv (er hard? 'har-read-object-file "Error opening file ~x0.~%" filename)
                   state)
-            (mv-let (eofp contents state)
-                    (read-object channel state)
-                    (if eofp
-                        (let ((state (close-input-channel channel state)))
-                          (mv (er hard? 'har-read-object-file 
-                                  "File ~x0 is empty.~%" filename)
-                              state))
-                      (mv-let (eofp trash state)
-                              (read-object channel state)
-                              (declare (ignore trash))
-                              (let ((state (close-input-channel channel state)))
-                                (mv (if eofp
-                                        contents
-                                      (er hard? 'har-read-object-file
-                                          "File ~x0 is corrupt.~%" filename))
-                                    state))))))))
+            (b* (((mv objs state) (har-read-objects channel state nil))
+                 (state           (close-input-channel channel state)))
+                (mv objs state)))))
 
 (defun har-unzip-fn (honsp filename state)
   (declare (xargs :mode :program :stobjs state))
@@ -766,5 +796,3 @@
 (defmacro har-unzip (filename &key honsp)
   "See :doc hons-archive"
   `(har-unzip-fn ',honsp ,filename state)) 
-
-
