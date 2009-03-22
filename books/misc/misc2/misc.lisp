@@ -6,7 +6,7 @@
 ; Justification for using floor to compute nonnegative-integer-quotient in raw
 ; Lisp:
 
-(local (include-book "rtl/rel7/arithmetic/top" :dir :system))
+(local (include-book "rtl/rel8/arithmetic/top" :dir :system))
 
 (defun nonnegative-integer-quotient-as-floor-test (i j)
 ; Guard is from nonnegative-integer-quotient.
