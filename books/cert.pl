@@ -100,6 +100,7 @@ my $print_deps = 0;
 my $no_makefile = 0;
 my $mf_name = "Makefile-tmp";
 my $all_deps = 0;
+my @includes = ();
 
 while (my $arg = shift(@ARGV)) {
     if ($arg eq "--help" || $arg eq "-h") {
@@ -142,22 +143,20 @@ and options are as follows:
    --clean-pfiles
    -cp
            Delete each depencency cache ".p" file encountered.
-           Implies "-u".  Warning 1:  Unless the "-w"/
-           "--no-write-pfiles" flag is given, these will then be
-           recreated.  Warning 2:  Unless the "-n"/ "--no-build" flag
+           Implies "-u".  Warning:  Unless the "-n"/ "--no-build" flag
            is given, the script will then go on to certify the books.
 
    --no-build
    -n
-           Don\'t call make in order to certify the books; just run
-           this script for "side effects" such as cleaning or
-           generating dependency cache files.
+           Don\'t create a makefile or call make; just run this script
+           for "side effects" such as cleaning or generating
+           dependency cache files.
 
    --clean-all
    -c
            Just clean up certificates and dependency cache files,
            don\'t generate new cache files or build certificates.
-           Equivalent to "-n -w -cc -cp".
+           Equivalent to "-n -cc -cp".
 
    -o <makefile-name>
            Determines where to write the dependency information;
@@ -174,10 +173,16 @@ and options are as follows:
 
    --static-makefile-mode <makefile-name>
    -s <makefile-name>
-           Equivalent to -u -w -d -m -o <makefile-name>.  Useful for
+           Equivalent to -d -m -o <makefile-name>.  Useful for
            building a static makefile for your targets, which will
            suffice for certifying them as long as the dependencies
            between source files don\'t change.
+
+   --include <makefile-name>
+   -i <makefile-name>
+           Include the specified makefile via an include command in
+           the makefile produced.  Multiple -i arguments may be given
+           to include multiple makefiles.
 
 ';
 	exit 0;
@@ -208,6 +213,8 @@ and options are as follows:
 	$mf_name = shift @ARGV;
 	$use_pfiles = $write_pfiles = 0;
 	$all_deps = $no_build = 1;
+    } elsif ($arg eq "--include" || $arg eq "-i") {
+	push(@includes, shift @ARGV);
     } else {
 	push(@targets, $arg);
     }
@@ -536,6 +543,16 @@ unless ($no_makefile) {
     print $mf '
 ACL2 := ' . $acl2 . '
 include ' . rel_path(dirname($this_script), "make_cert") . '
+
+';
+    foreach my $incl (@includes) {
+	print $mf '
+include ' . $incl . '
+';
+    }
+
+print $mf '
+
 .PHONY: all
 all:
 ';
