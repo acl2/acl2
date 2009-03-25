@@ -296,7 +296,6 @@
 
 
 
-
 (defun har-gather-conses (x n tbl insts amap)
   (declare (xargs :guard (natp n)
                   ;; BOZO verify guards some day
@@ -428,8 +427,6 @@
     (if (not (= (length amap) an))
         (er hard? 'har-decompress "Atom list is the wrong length.")
       (cdar (har-decompress1 instrs amap an)))))
-
-
 
 
 

@@ -24,6 +24,24 @@
 (defmacro charlisteqv (x y) `(STR::charlisteqv ,x ,y))
 (add-macro-alias charlisteqv STR::charlisteqv)
 
+
+(defmacro digitp (x) `(STR::digitp ,x))
+(add-macro-alias digitp STR::digitp)
+
+(defmacro digit-val (x) `(STR::digit-val ,x))
+(add-macro-alias digit-val STR::digit-val)
+
+(defmacro digit-listp (x) `(STR::digit-listp ,x))
+(add-macro-alias digit-listp STR::digit-listp)
+
+(defmacro digit-list-value (x) `(STR::digit-list-value ,x))
+(add-macro-alias digit-list-value STR::digit-list-value)
+
+(defmacro charlistnat< (x y) `(STR::charlistnat< ,x ,y))
+(add-macro-alias charlistnat< STR::charlistnat<)
+
+
+
 (defmacro ichareqv (x) `(STR::ichareqv ,x))
 (add-macro-alias ichareqv STR::ichareqv)
 
@@ -57,6 +75,8 @@
 (defmacro isubstrp (x y) `(STR::isubstrp ,x ,y))
 (add-macro-alias isubstrp STR::isubstrp) 
 
+
+
 (defmacro strpos (x y) `(STR::strpos ,x ,y))
 (add-macro-alias strpos STR::strpos)
 
@@ -65,4 +85,7 @@
 
 (defmacro substrp (x y) `(STR::substrp ,x ,y))
 (add-macro-alias substrp STR::substrp)
+
+(defmacro strnat< (x y) `(STR::strnat< ,x ,y))
+(add-macro-alias strnat< STR::strnat<)
 

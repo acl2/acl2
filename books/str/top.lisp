@@ -13,11 +13,9 @@
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "STR")
-
 (include-book "doc")
-
+(include-book "digitp")
 (include-book "eqv")
-
 (include-book "ieqv")
 (include-book "iprefixp")
 (include-book "iless")
@@ -25,8 +23,9 @@
 (include-book "istrpos")
 (include-book "istrprefixp")
 (include-book "isubstrp")
-
 (include-book "strpos")
 (include-book "strprefixp")
+(include-book "strnatless")
 (include-book "substrp")
+
 

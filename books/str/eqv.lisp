@@ -32,6 +32,13 @@
                   x))
   :hints(("Goal" :in-theory (enable char-fix))))
 
+(defthm equal-of-char-codes
+  (equal (equal (char-code x) (char-code y))
+         (equal (char-fix x)
+                (char-fix y)))
+  :hints(("Goal" :in-theory (enable char-fix))))
+
+
 
 
 (defund chareqv (x y)
@@ -129,6 +136,9 @@
   :hints(("Goal" :in-theory (enable charlisteqv))))
 
 (defcong charlisteqv charlisteqv (cdr x) 1
+  :hints(("Goal" :in-theory (enable charlisteqv))))
+
+(defcong charlisteqv equal (len x) 1
   :hints(("Goal" :in-theory (enable charlisteqv))))
 
 (defcong charlisteqv chareqv (nth n x) 2
