@@ -1,23 +1,46 @@
-This directory is essentially deprecated.  Please see
-../arithmetic-5/README for information about which arithmetic books to
-use.
+Advice on the use of arithmetic books (based largely on comments from
+Robert Krug, and repeated in ../arithmetic/README):
+
+  SUMMARY: Power users should include arithmetic-5/top; new users
+  should probably instead include arithmetic/top-with-meta.
+
+  Details:
+
+  If you are willing to use dmr (see :doc dmr) and tolerate
+  sometimes-slower (but more complete) reasoning, use arithmetic-5.
+  Robert is not aware of any rewriting loops.
+
+  If you are willing tolerate sometimes-slower (but more complete)
+  reasoning, but you want to avoid dmr, use arithmetic-4.  However, if
+  you're willing to use arithmetic-4, consider using arithmetic-5
+  instead -- it doesn't require much more use of dmr, and it's much
+  more up-to-date.  You may encounter rewriting loops.
+
+  Don't use arithmetic-3.  It's not as powerful as arithmetic-4
+  (Robert doesn't know if it's faster), and it has more rewriting
+  loops than arithmetic-3.
+
+  Note that arithmetic-2 is totally obsolete.  We may stop
+  distributing it.
+
+  If you want fast, lightweight arithmetic, use
+  arithmetic/top-with-meta.
 
 =================================================================
 
-README for Arithmetic-3
+README for Arithmetic-4 [actually arithmetic-5; more updates may come]
 
 Author: Robert Bellarmine Krug
 
 Read at least Section 1.A.
 
-Also, see Section 0 of ../arithmetic-5/README for information about which
-arithmetic books to use.
-
 =================================================================
 
 Contents
 
-1. HOW TO USE THE ARITHMETIC-3 BOOKS.
+0. WHICH ARITHMETIC BOOKS SHOULD I USE?
+
+1. HOW TO USE THE ARITHMETIC-4 BOOKS.
   1.A. In Brief 
   1.B. Choosing a Normal Form.
   1.C. Mini-theories.
@@ -30,19 +53,71 @@ Contents
 
 =================================================================
 
+0. WHICH ARITHMETIC BOOKS SHOULD I USE?
 
-1. HOW TO USE THE ARITHMETIC-3 BOOKS.
+I wish there were a simple and always correct answer to this common
+question.  Unfortunately, when Goedel kicked us out of Cantor's
+paradise, he demonstrated that such an answer could not exist.
+Do not, however, abandon hope.  The following guidelines should
+be good enough.
+
+If you only need a little arithmetic reasoning (and no reasoning
+about floor and mod), arithmetic/top-with-meta will probably
+suffice.  It is a good, fast, minimal arithmetic library.
+
+The book arithmetic-3/top is much more powerful, and includes
+rules for reasoning about floor and mod also.  This library is 
+reasonably fast, but unfortunately suffers from rewrite loops on 
+occasion.  (As of ACL2 v. 3.3.  We hope to fix this in the next 
+release.)  You can enable nonlinear arithmetic (an extension of
+ACL2's linear arithmetic package to include multiplication) with:
+
+(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
+                                              hist pspv))).
+
+The most powerful (and therefore the slowest) library is
+arithmetic-4/top.  It also includes the start of a theory about
+the logical operators such as logand and lognot.  You can enable
+nonlinear reasoning with either
+
+(set-default-hints '((nonlinearp-default-hint
+                      stable-under-simplificationp
+	              hist pspv)))
+
+or
+
+(set-default-hints '((nonlinearp-default-hint++ 
+		      id stable-under-simplificationp
+		      hist nil)))
+
+We would greatly appreciate any feedback on the shortcomings and/or
+strengths of these books, as well as any hints as to how to choose
+the appropriate library.
+
+=================================================================
+
+
+1. HOW TO USE THE ARITHMETIC-4 BOOKS.
 
   1.A. In Brief
 
 First certify the books in arithmetic-3.
 
-Then, after starting ACL2, execute the following two forms:
+Then, after starting ACL2, load the library with:
 
-(include-book "arithmetic-3/top" :dir :system)
+(include-book "arithmetic-4/top" :dir :system)
 
-(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
-                                              hist pspv)))
+and enable nonlinear arithmetic with either
+
+(set-default-hints '((nonlinearp-default-hint
+                      stable-under-simplificationp
+	              hist pspv)))
+
+or
+
+(set-default-hints '((nonlinearp-default-hint++ 
+		      id stable-under-simplificationp
+		      hist nil)))
 
 Note 1: If you are having difficulty proving a ``simple'' theorem
 and the arithemtic book's rules seem to be getting in the way, You can
@@ -84,9 +159,7 @@ believe that the default setup is sufficient for most purposes.
 On occasion one will run across a lemma which requires a
 different normal form and it is for these occasions that we provide
 the following; however, for many users it will be sufficient to just
-include the appropriate books and to execute 
-(set-default-hints '(nonlinearp-default-hint stable-under-simplificationp 
-                                             hist pspv))
+include the appropriate books and to enable nonlinear arithmetic
 as described above.
 
 

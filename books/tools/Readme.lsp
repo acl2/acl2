@@ -21,7 +21,7 @@ saved-errors.lisp
 stobj-help.lisp
 theory-tools.lisp
 types-misc.lisp
-with-arith4-help.lisp
+with-arith5-help.lisp
 ")
  (:TITLE "Tools")
  (:AUTHOR/S

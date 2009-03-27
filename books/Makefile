@@ -47,12 +47,14 @@ TIME = time
 
 # NOTE!  This does *not* touch directory nonstd.
 
+# Note: arithmetic-4 could be added in analogy to arithmetic-5.
+
 # First directories of books to certify:
 DIRS1 = cowles arithmetic meta
 # Additional directories, where DIRS3 prunes out those not distributed.
 # We rely on DIRS3 being a subset of DIRS2 in the dependence of DIRS2 on
 # top-with-meta-cert.
-DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-4 \
+DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-5 \
 	misc models/jvm/m5 proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
 	finite-set-theory finite-set-theory/osets powerlists textbook \
 	defexec symbolic \
@@ -61,7 +63,7 @@ DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 ari
 	quadratic-reciprocity misc/misc2 tools paco hacking hons-bdds security regex \
         defsort hons-archive
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
-DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-4 \
+DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-5 \
 	misc models/jvm/m5 proofstyles rtl make-event parallel hints arithmetic-3/extra \
 	sorting finite-set-theory finite-set-theory/osets powerlists textbook \
 	defexec symbolic \
@@ -91,7 +93,7 @@ arithmetic-2: ihs
 rtl: arithmetic meta top-with-meta-cert ordinals ihs misc arithmetic-2
 # arithmetic-3 has no dependencies (but see arithmetic-3/extra)
 arithmetic-3/extra: arithmetic-3 ihs rtl arithmetic-2 arithmetic-3
-# arithmetic-4 has no dependencies
+# arithmetic-5 has no dependencies
 finite-set-theory: arithmetic ordinals
 powerlists: arithmetic ordinals data-structures
 textbook: arithmetic top-with-meta-cert ordinals ihs
@@ -105,7 +107,7 @@ concurrent-programs/bakery: misc ordinals
 concurrent-programs/german-protocol: misc
 deduction/passmore: 
 clause-processors: top-with-meta-cert make-event arithmetic-3 textbook arithmetic \
-	misc tools data-structures arithmetic-4
+	misc tools data-structures arithmetic-5
 quadratic-reciprocity: rtl
 misc/misc2: rtl make-event
 hints: make-event
@@ -116,9 +118,9 @@ hacking: misc
 parallel: make-event
 security: make-event arithmetic-3
 sorting: arithmetic-3/extra
-tools: arithmetic-4 misc unicode
+tools: arithmetic-5 misc unicode
 regex: tools
-defsort: misc make-event arithmetic-4 unicode tools
+defsort: misc make-event unicode tools
 hons-archive: defsort unicode tools arithmetic-3
 str: arithmetic unicode defsort
 

@@ -1,9 +1,19 @@
+NOTE: This library has been superseded by ../arithmetic-5/, though
+"make" can still be used to certify its books.
+
+If you consider using this library, please consider using
+../arithmetic-5/ instead.  ../arithmetic-5/README for information
+about which arithmetic books to use.
 
 =================================================================
 
 README for Arithmetic-4
 
 Author: Robert Bellarmine Krug
+
+NOTE: This directory has been essentially superseded by
+../arithmetic-5/.  See the README in that directory for an
+explanation.
 
 Read at least Section 1.A.
 

@@ -324,7 +324,7 @@
            (chars-of-digit-equal-n-fn n (1- m)))))
 
 
-(local (include-book "arithmetic-4/top" :dir :system))
+(local (include-book "arithmetic-5/top" :dir :system))
 
 (defthm chars-of-digit-equal-n-fn-implies
   (implies (and (chars-of-digit-equal-n-fn n m)

@@ -14,12 +14,12 @@
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(include-book "tools/with-arith4-help" :dir :system)
+(include-book "tools/with-arith5-help" :dir :system)
 (include-book "unicode/take" :dir :system)
 (include-book "unicode/nthcdr" :dir :system)
 (include-book "unicode/list-fix" :dir :system)
 (include-book "duplicity")
-(allow-arith4-help)
+(allow-arith5-help)
 
 
 (encapsulate
@@ -192,7 +192,7 @@
 
 
 
-(with-arith4-help
+(with-arith5-help
  (defthm comparable-mergesort-spec-admission
    (AND (O-P (LEN X))
         (IMPLIES (AND (NOT (ATOM X))
@@ -229,7 +229,7 @@
 
 (encapsulate
  ()
- (local (in-theory (enable-arith4)))
+ (local (in-theory (enable-arith5)))
 
  (defthm true-listp-of-nthcdr-weak
    (implies (true-listp x)
@@ -370,7 +370,7 @@
 
 (encapsulate
  ()
- (local (in-theory (enable-arith4)))
+ (local (in-theory (enable-arith5)))
 
  (local (defthm crock
           (implies (and (natp len1)
@@ -411,7 +411,7 @@
 ; Refinement 3.  We now add fixnum and integer declarations, in order to make
 ; the arithmetic faster.
 
-(with-arith4-help
+(with-arith5-help
  (defthm fast-comparable-mergesort-fixnums-admission
    (AND (O-P (NFIX LEN))
         (IMPLIES
@@ -480,7 +480,7 @@
                 (part2 (fast-comparable-mergesort-fixnums (nthcdr len1 x) len2)))
            (comparable-merge part1 part2)))))
 
-(with-arith4-help
+(with-arith5-help
  (defthm fast-comparable-mergesort-fixnums-redefinition
    (equal (fast-comparable-mergesort-fixnums x len)
           (comparable-mergesort-spec3 x len))
@@ -498,7 +498,7 @@
 
 
 
-(with-arith4-help
+(with-arith5-help
  ;; To generate this, run (in-theory (theory 'minimal-theory)) and then try to
  ;; verify-guards.
  (defthm fast-comparable-mergesort-fixnums-guards
@@ -606,7 +606,7 @@
 (defconst *mergesort-fixnum-threshold* 536870912)
 
 
-(with-arith4-help
+(with-arith5-help
  (defthm fast-comparable-mergesort-integers-admission
    (AND (O-P (NFIX LEN))
         (IMPLIES
@@ -671,7 +671,7 @@
                          (fast-comparable-mergesort-integers (nthcdr len1 x) len2))))
            (comparable-merge part1 part2)))))
 
-(with-arith4-help
+(with-arith5-help
  (defthm fast-comparable-mergesort-integers-redefinition
    (equal (fast-comparable-mergesort-integers x len)
           (comparable-mergesort-spec3 x len))
@@ -698,7 +698,7 @@
                                          (fast-comparable-mergesort-fixnums-redefinition
                                           fast-comparable-mergesort-integers-redefinition))))))
   
- (with-arith4-help
+ (with-arith5-help
   (defthm fast-comparable-mergesort-integers-guards
     (AND
      (IMPLIES (AND (TRUE-LISTP X)
@@ -877,13 +877,13 @@
             (duplicity a y)))
   :hints(("Goal" :in-theory (enable comparable-merge))))
 
-(with-arith4-help
+(with-arith5-help
  (defthm duplicity-of-comparable-mergesort-spec2
    (equal (duplicity a (comparable-mergesort-spec2 x))
           (duplicity a x))
    :hints(("Goal" :in-theory (enable comparable-mergesort-spec2)))))
 
-(with-arith4-help
+(with-arith5-help
  (defthm duplicity-of-comparable-mergesort
    (equal (duplicity a (comparable-mergesort x))
           (duplicity a x))
@@ -965,7 +965,7 @@
   :hints(("Goal" :in-theory (enable comparable-mergesort-spec2))))
 
 
-(with-arith4-help
+(with-arith5-help
  (defthm comparable-orderedp-of-comparable-mergesort
    (comparable-orderedp (comparable-mergesort x))))
 
