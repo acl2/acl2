@@ -173,7 +173,7 @@
 ;   this definition.
 
 ; 'meta - a rule justified by a metatheorem.  In this case, the lhs is
-;   the the metafunction symbol to be applied and hyps is the
+;   the metafunction symbol to be applied and hyps is the
 ;   metafunction symbol to generate the hyps.  If the rhs is the
 ;   symbol 'extended then both metafunctions are extended and take two
 ;   arguments, the target term and the mfc.  Otherwise, they just take
