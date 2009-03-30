@@ -1,5 +1,5 @@
-include ../../../../Makefile-generic
 ACL2 ?= ../../../../../saved_acl2
+include ../../../../Makefile-generic
 
 # Don't alphabetize this list!
 BOOKS = arith basic bits log float reps round \

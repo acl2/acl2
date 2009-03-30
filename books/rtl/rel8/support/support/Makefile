@@ -1,5 +1,5 @@
-include ../../../../Makefile-generic
 ACL2 ?= ../../../../../saved_acl2
+include ../../../../Makefile-generic
 
 # don't alphabetize this list!
 BOOKS = mod4 add3-proofs add3 all-ones ash bias-proofs bias bitn bitn-proofs						\
