@@ -55,8 +55,8 @@ ACL2_BOOKS_DEBUG ?=
 	  echo "(certify-book \"$$FILE\" ? $(COMPILE_FLG))" >> workxxx.$$FILE ;\
 	fi ;\
 	echo "" >> workxxx.$$FILE ;\
-	echo '(acl2::value :q)' >> workxxx.$$FILE ;\
-	echo '(acl2::exit-lisp)' >> workxxx.$$FILE ;\
+        echo "(acl2::ld \"make_cert.lsp\" :dir :system)" >> workxxx.$$FILE ;\
+	echo "(acl2::horrible-include-book-exit \"$$FILE\" acl2::state)" >> workxxx.$$FILE ;\
 	if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
 	then \
 	  echo "[Makefile-generic]: certify book commands:" ;\
@@ -70,13 +70,17 @@ ACL2_BOOKS_DEBUG ?=
 	else \
 	  ($$ACL2 < workxxx.$$FILE 2>&1) > $$FILE.out ;\
 	fi ;\
+        STATUS=$$? ;\
 	rm -f workxxx.$$FILE ;\
-	((test -f $$FILE.cert) && (ls -al $$FILE.cert)) || \
-	 (echo "**CERTIFICATION FAILED** for $$FILE.lisp" ;\
+	if [ "$$STATUS" == "43" ] ; then \
+	   ls -al $$FILE.cert || echo "NFS problem for $$FILE?" ;\
+	else \
+	  echo "**CERTIFICATION FAILED** for $$FILE.lisp (code $$STATUS)" ;\
 	  echo "" ;\
           tail -300 $$FILE.out | sed 's/^/   | /' ;\
 	  echo "" ;\
 	  echo "" ;\
-          echo "**CERTIFICATION FAILED** for $$FILE.lisp" ;\
-          exit 1)
+          echo "**CERTIFICATION FAILED** for $$FILE.lisp (code $$STATUS)" ;\
+          exit 1 ;\
+        fi
 
