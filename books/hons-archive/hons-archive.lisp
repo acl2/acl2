@@ -23,6 +23,7 @@
 
 
 
+
 ;                       FILE PRIMITIVES (BOZO)
 ;
 ; BOZO.  Some day, we should consider moving these to the unicode library, and
@@ -151,26 +152,38 @@
   ":Doc-Section hons-archive
   Mechanism for serializing ACL2 objects~/
 
-  Hons Archives (HARs) are a way to write ACL2 objects to disk so they can be loaded
-  in other ACL2 sessions.
+  Hons Archives (HARs) are a way to write ACL2 objects to disk so they can be 
+  loaded in other ACL2 sessions.
 
-  ACL2 already provides a couple of other ways to do this, for instance ~pl[io]
-  for a description of ~c[print-object$] and ~c[read-object].  Users of ACL2h may
-  also be interested in ~c[compact-print-file] and ~c[compact-read-file], from
-  ~c[hons-raw.lisp].  By comparison, hons archives are typically slower to create
-  but faster to load than these other methods.
+  ACL2 already provides a couple of other ways to do this:
+
+     - ~pl[io] for a description of ~c[print-object$] and ~c[read-object].  
+
+     - Users of ACL2h may also be interested in ~c[compact-print-file] and 
+       ~c[compact-read-file], which are defined in ~c[hons-raw.lisp] in the ACL2
+       sources and may only be used in raw lisp.
+
+  By comparison, hons archives are typically slower to create but faster
+  to load than these other methods.
 
 
-  Hons archives can be created with the ~c[har-zip] macro,
+  MAKING HONS ARCHIVES.
+
+  Hons archives can be created with the ~c[har-zip] macro
   ~bv[]
-     (har-zip x filename
+     (har-zip x filename 
               :sortp {t, nil})
        -->
      state
   ~ev[]
-  This macro implicitly takes ~c[state], so it can only be used in contexts
-  where ~c[state] is available, such as the top-level loop, make-events, and so
-  on.
+  
+  This macro implicitly expects ~c[state] to be available, so it can only be used
+  in a context where ~c[state] is available, such as at the top-level loop or in
+  other functions that take ~c[state].
+
+  NOTE: In make-events, ~c[har-zip!] must be used instead, and this requires that
+  a trust-tag is active (~pl[defttag]).  See also the definition of ~c[har-zip!] if
+  you need a more flexible solution.
 
   The ~c[filename] is really a prefix, and each hons archive actually consists of
   two files on disk,
@@ -187,6 +200,8 @@
   additional time and does not give any benefit to unzipping.  However, it may result
   in more useful \"diffs\" between various revisions of the atoms file.
 
+
+  READING HONS ARCHIVES.
 
   Hons archives can be read with the ~c[har-unzip] macro,
   ~bv[]
@@ -571,6 +586,21 @@
   "See :doc hons-archive"
   `(har-zip-fn ,x ,filename ,sortp state))
 
+(defmacro har-zip! (x filename &key sortp)
+  "See :doc hons-archive"
+  `(mv-let (erp val state)
+           (progn! 
+            :state-global-bindings
+            ((temp-touchable-vars t set-temp-touchable-vars))
+            (state-global-let* 
+             ((writes-okp t))
+             (let ((state (har-zip-fn ,x ,filename ,sortp state)))
+               (mv nil nil state))))
+           (declare (ignore erp val))
+           state))
+
+
+
 
 
 ;                             UNZIPPING OBJECTS
@@ -808,5 +838,4 @@
 (defmacro har-unzip (filename &key honsp)
   "See :doc hons-archive"
   `(har-unzip-fn ',honsp ,filename state)) 
-
 
