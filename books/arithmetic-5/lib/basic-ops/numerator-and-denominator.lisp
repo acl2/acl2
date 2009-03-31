@@ -110,7 +110,7 @@
          (or (integerp x)
              (not (rationalp x)))))
 
-(defthm *-r-denominator-r
+(defthm |(* r (denominator r))|
   (implies (rationalp r)
 	   (equal (* r (denominator r))
 		  (numerator r))))
@@ -148,8 +148,11 @@
 
 ;;; From arithmetic/rationals.lisp
 
+; We name this Numerator-goes-down-by-integer-division-linear rather than
+; Numerator-goes-down-by-integer-division to avoid a conflict with system books
+; arithmetic/rationals.lisp.
 (defthm
-  Numerator-goes-down-by-integer-division
+  Numerator-goes-down-by-integer-division-linear
   (implies (and (integerp x)
 		(< 0 x)
 		(rationalp r))
