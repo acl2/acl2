@@ -1874,3 +1874,51 @@
                             well-formed-msg4p session-key constantsp
                             er-msg hr-msg initiator-step3
                             initiator-step3-prev-msg-ok nr mv-nth)))))
+
+
+#|
+; Theorem to prove in the future to show that if both the initiator and
+; responder successfully complete the protocol, they have the same view of the
+; session keys.
+
+(defthm success-of-both-implies-equal-session-keys
+  (mv-let 
+   (network-s-after-1 initiator-s-after-1)
+   (initiator-step1 network-s initiator-s 
+                    initiator-constants public-constants)
+   (mv-let
+    (network-s-after-2 responder-s-after-2)
+    (responder-step1 
+     (function-we-know-nothing-about1 network-s-after-1)
+     responder-s responder-constant public-constants)
+
+    (mv-let 
+     (network-s-after-3 initiator-s-after-3)
+     (initiator-step2 
+      (function-we-know-nothing-about2 network-s-after-2)
+      initiator-s-after-1 initiator-constants 
+      public-constants)
+
+     (mv-let
+      (network-s-after-4 responder-s-after-4)
+      (responder-step2
+       (function-we-know-nothing-about3 network-s-after-3)
+       responder-s-after-2 responder-constants 
+       public-constants)
+      
+      (mv-let 
+       (network-s-after-5 initiator-s-after-5)
+       (initiator-step3
+        (function-we-know-nothing-about4 network-s-after-4)
+        initiator-s-after-3 initiator-constants 
+        public-constants)
+       (declare (ignore network-s-after-5))
+       
+       (implies 
+        (and (done initiator-s-after-5)
+             (success initiator-s-after-5)
+             (done responder-s-after-4)
+             (success responder-s-after-4))
+        (equal (session-key initiator-s-after-5)
+               (session-key responder-s-after-5)))))))))
+|#
