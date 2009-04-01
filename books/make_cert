@@ -20,6 +20,10 @@ COMPILE_FLG ?= t :ttags :all :skip-proofs-okp t
 INHIBIT ?= (set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote expansion)))
 ACL2_BOOKS_DEBUG ?=
 
+# Avoid loading customization file unless environment variable is already set.
+export ACL2-CUSTOMIZATION ?= NONE
+
+
 %.cert: %.lisp
 	@echo "Making $*.cert on `date`" ;\
 	DIR=`dirname $*` ;\
@@ -38,40 +42,41 @@ ACL2_BOOKS_DEBUG ?=
 	   fi ;\
 	fi ;\
 	rm -f $$FILE.cert ;\
-	echo '(acl2::value :q)' > workxxx.$(*F) ;\
-	echo '(in-package "ACL2")' >> workxxx.$(*F) ;\
-	echo '(acl2::lp)' >> workxxx.$(*F) ;\
-	echo '$(INHIBIT)' >> workxxx.$(*F) ;\
+	WORKXXXFILE=workxxx.$$FILE.$$RANDOM ;\
+	echo '(acl2::value :q)' > $$WORKXXXFILE ;\
+	echo '(in-package "ACL2")' >> $$WORKXXXFILE ;\
+	echo '(acl2::lp)' >> $$WORKXXXFILE ;\
+	echo '$(INHIBIT)' >> $$WORKXXXFILE ;\
 	if [ -f $$FILE.acl2 ] ;\
 	then \
-	  cat $$FILE.acl2 >> workxxx.$$FILE ;\
+	  cat $$FILE.acl2 >> $$WORKXXXFILE ;\
 	elif [ -f cert.acl2 ] ;\
 	then \
-	  cat cert.acl2 >> workxxx.$$FILE ;\
-	  echo "" >> workxxx.$$FILE ;\
-	  echo "(certify-book \"$$FILE\" ? $(COMPILE_FLG))" >> workxxx.$$FILE ;\
+	  cat cert.acl2 >> $$WORKXXXFILE ;\
+	  echo "" >> $$WORKXXXFILE ;\
+	  echo "(certify-book \"$$FILE\" ? $(COMPILE_FLG))" >> $$WORKXXXFILE ;\
 	else \
-	  echo "" >> workxxx.$$FILE ;\
-	  echo "(certify-book \"$$FILE\" ? $(COMPILE_FLG))" >> workxxx.$$FILE ;\
+	  echo "" >> $$WORKXXXFILE ;\
+	  echo "(certify-book \"$$FILE\" ? $(COMPILE_FLG))" >> $$WORKXXXFILE ;\
 	fi ;\
-	echo "" >> workxxx.$$FILE ;\
-        echo "(acl2::ld \"make_cert.lsp\" :dir :system)" >> workxxx.$$FILE ;\
-	echo "(acl2::horrible-include-book-exit \"$$FILE\" acl2::state)" >> workxxx.$$FILE ;\
+	echo "" >> $$WORKXXXFILE ;\
+        echo "(acl2::ld \"make_cert.lsp\" :dir :system)" >> $$WORKXXXFILE ;\
+	echo "(acl2::horrible-include-book-exit \"$$FILE\" acl2::state)" >> $$WORKXXXFILE ;\
 	if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
 	then \
-	  echo "[Makefile-generic]: certify book commands:" ;\
+	  echo "[make_cert]: certify book commands for $$FILE:" ;\
 	  echo "" ;\
-	  cat workxxx.$(*F) ;\
+	  cat $$WORKXXXFILE ;\
 	  echo "" ;\
 	fi ;\
 	if [ "$$TIME_CERT" != "" ] ;\
 	then \
-	  (time $$ACL2 < workxxx.$$FILE 2>&1) > $$FILE.out ;\
+	  (time $$ACL2 < $$WORKXXXFILE 2>&1) > $$FILE.out ;\
 	else \
-	  ($$ACL2 < workxxx.$$FILE 2>&1) > $$FILE.out ;\
+	  ($$ACL2 < $$WORKXXXFILE 2>&1) > $$FILE.out ;\
 	fi ;\
         STATUS=$$? ;\
-	rm -f workxxx.$$FILE ;\
+	rm -f $$WORKXXXFILE ;\
 	if [ "$$STATUS" == "43" ] ; then \
 	   ls -al $$FILE.cert || echo "NFS problem for $$FILE?" ;\
 	else \
