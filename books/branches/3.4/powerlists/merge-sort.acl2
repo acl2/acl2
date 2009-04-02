@@ -1,0 +1,3 @@
+(ld "defpkg.lisp")
+
+(certify-book "merge-sort" 3)

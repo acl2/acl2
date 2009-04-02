@@ -1,0 +1,4 @@
+(value :q)
+(LP)
+(ld "certification.acl2")
+(certify-book "negation" 5)

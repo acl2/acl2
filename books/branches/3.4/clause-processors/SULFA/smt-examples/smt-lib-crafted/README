@@ -1,0 +1,48 @@
+
+This directory contains some examples of SMT problems
+in the SMT-LIB 32 bit, bit-vector format.
+
+These were downloaded off the Internet from:
+
+http://combination.cs.uiowa.edu/smtlib/
+
+which also contains the official specification of the
+SMT-LIB format.  Quoting from (a sub-page of) that page
+and expanding a couple of links:
+
+  Citing SMT-LIB
+
+  To cite SMT-LIB as a whole the best for the moment would be to use something
+  like the following:
+
+  Silvio Ranise and Cesare Tinelli. The Satisfiability Modulo Theories Library
+  (SMT-LIB), www.SMT-LIB.org. 2006.
+
+  @MISC{RanTin-SMTLIB,
+    author =	 {Silvio Ranise and Cesare Tinelli},
+    title =	 {{The Satisfiability Modulo Theories Library (SMT-LIB)}},
+    howpublished = {{\tt www.SMT-LIB.org}},
+    year =	 2006,
+  }
+
+  To cite a publication on the the SMT-LIB format
+  specifically, please use:
+
+  Silvio Ranise and Cesare Tinelli. The SMT-LIB
+  Standard: Version 1.2. Technical Report, Department
+  of Computer Science, The University of Iowa,
+  2006. (Available at www.SMT-LIB.org .)
+
+  @TECHREPORT{RanTin-RR-06,
+  author =	 {Silvio Ranise and Cesare Tinelli},
+  title =	 {{The SMT-LIB Standard: Version 1.2}},
+  institution =	 {Department of Computer Science, The University of
+                  Iowa},
+  year =	 2006,
+  note =	 {Available at {\tt www.SMT-LIB.org}}
+  }
+
+The problems are part of the QF_UFBV32 benchmark suite.
+They were contributed by Vijay Ganesh, and translated into
+SMT-LIB format by Clark Barrett.
+

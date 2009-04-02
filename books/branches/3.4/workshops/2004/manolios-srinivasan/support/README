@@ -1,0 +1,101 @@
+
+README for a benchmark suite of 18 hard ACL2 problems
+------------------------------------------------------
+ 
+The file contains information about the
+supporting material for the paper submitted to the
+"Fifth International Workshop on the ACL2 Theorem Prover
+and Its Applications (ACL2-2004)". The paper submitted
+is:
+ 
+
+Title: A Suite of Hard ACL2 Theorems Arising in Refinement-Based 
+Processor Verification
+
+Authors: Panagiotis Manolios and Sudarshan Srinivasan,
+
+
+The paper describes a class of hard ACL2 problems
+arising from refinement based microprocessor
+verification. 
+
+The supporting material has the following two directories:
+
+1. "Benchmark-Problems"
+
+Contains a benchmark suite of 18 hard ACL2 problems. The table below
+lists the benchmarks (from table 1 in the above paper) and the name of
+the corresponding file.
+
+Benchmark           ACL2 File
+-------------------------------------------
+5S-Part           : "5s-part.lisp"
+5S                : "5S.lisp"
+CXS-S             : "cxs-safety.lisp"
+CXS-SL            : "cxs.lisp"
+CXS-BP-S          : "cxs-bp-safety.lisp"
+CXS-BP-SL         : "cxs-bp.lisp"
+CXS-BP-EX-S       : "cxs-bp-ex-safety.lisp"
+CXS-BP-EX-SL      : "cxs-bp-ex.lisp" 
+CXS-BP-EX-INP-S   : "cxs-bp-ex-inp-safety.lisp"
+CXS-BP-EX-INP-SL  : "cxs-bp-ex-inp.lisp" 
+FXS-S		  : "fxs-safety.lisp"
+FXS-SL		  : "fxs.lisp"
+FXS-BP-S 	  : "fxs-bp-safety.lisp"
+FXS-BP-SL 	  : "fxs-bp.lisp"
+FXS-BP-EX-S 	  : "fxs-bp-ex-safety.lisp"
+FXS-BP-EX-SL 	  : "fxs-bp-ex.lisp" 
+FXS-BP-EX-INP-S   : "fxs-bp-ex-inp-safety.lisp"
+FXS-BP-EX-INP-SL  : "fxs-bp-ex-inp.lisp" 
+
+
+The simplest of these problems take 15.5 days to 
+complete. Other problems are an order of magnitude
+harder and we have made an estimate of their running
+times in the paper. For this reason, do not attempt
+to certify these books.
+
+2. "Supporting-Books" 
+
+Contains supporting ACL2 books for the problems
+including the "records" book that has theorems about
+set and get, a book for arithmetic reasoning "meta",
+and two other books that have some function and macro 
+definitions. 
+
+
+Instructions:
+-------------
+
+We have tested these files with ACL2 v2.8. To try out the
+benchmark problems in the Benchmark-Problems directory you have
+to:
+
+1. Certify the books in the Supporting-Books directory.
+
+   a. Edit the file Supporting-Books/meta.lisp so that it
+      points to your local copy of the top-with-meta book (which
+      is in the subdirectory "books/arithmetic/" of your local
+      ACL2 installation).
+
+   b. Starting in the ground zero theory, load the file
+      "certify.lisp" in the Supporting-Books directory.
+
+2. To try out a benchmark problem, load the corresponding file
+   into ACL2. Note that the simplest of these benchmarks takes
+   15.5 days to complete and therefore it will be
+   difficult/impossible to certify them. Recall that in ACL2 you
+   load files using "ld", e.g., to load the file "a.lisp" type:
+
+   (ld "a.lisp")
+
+Bug-Report
+----------
+If you find any problems you can report to
+darshan@ece.gatech.edu.
+
+
+AUTHORS
+-------
+Panagiotis Manolios
+Sudarshan Srinivasan

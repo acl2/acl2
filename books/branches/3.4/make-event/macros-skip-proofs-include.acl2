@@ -1,0 +1,1 @@
+(certify-book "macros-skip-proofs-include" 0 t :skip-proofs-okp t)

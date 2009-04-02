@@ -1,0 +1,4 @@
+(ld "acl2-customization.lisp") ; adds the :paco keyword command
+(set-verify-guards-eagerness 0)
+(include-book "output-module")
+(certify-book "foundations" 3)
