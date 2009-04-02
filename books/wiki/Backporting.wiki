@@ -1,0 +1,22 @@
+#summary One-sentence summary of this page.
+How to merge changes from the bleeding edge into a release branch.
+
+The acl2-books repository has a trunk, containing bleeding-edge code that may not work in the current released ACL2, and release branches, which should always be able to pass a regression with the current released version.  However, the release branches may not contain all the latest, best code that is in the bleeding edge.  Therefore, in addition to making their own improvements, members are welcome to backport changes and new books from the trunk into release branches.
+
+A typical workflow for such an operation might be:
+ * Check out the latest release branch, currently 3.4.
+ * Merge the desired set of changes from the trunk into this working copy.  For example, to apply the changes made since revision 100 of the trunk to my-dir/my-library, you might use the following merge command:
+{{{
+   svn merge -r 100:HEAD \
+    https://acl2-books.googlecode.com/svn/trunk/my-dir/my-library \
+    my-dir/my-library
+}}}
+ * Try running a regression to see if everything works.  See [http://code.google.com/p/acl2-books/wiki/CertifyingTheBooks CertifyingTheBooks].
+ * If anything fails to build, please fix it before committing!  This may require some ACL2 skills, but often people on the [mailto:acl2-help@utlists.utexas.edu acl2-help] mailing list are willing to help.
+ * If you add or delete any files in the previous step, ensure that these changes are propagated to the repository by using `svn add` and `svn delete`.
+ * Commit the changes with an informative message.  It is especially useful to note the revision of the trunk to which you are bringing the library up to date; this may make future merges much easier.  For example,
+{{{
+   svn commit my-dir/my-library -m "Updated 3.4 branch of my-library to trunk revision 236."
+}}}
+
+Thanks for your contribution!
