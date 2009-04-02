@@ -49,6 +49,9 @@
 use strict;
 use warnings;
 use File::Basename;
+use File::Spec;
+use Cwd;
+use Cwd 'abs_path';
 
 my %seen = ( );
 
@@ -69,7 +72,7 @@ sub rel_path {
     if (substr($path,0,1) eq "/") {
 	return $path;
     } else {
-	return rm_dotdots("$base/$path");
+	return "$base/$path";
     }
 }
 
@@ -83,9 +86,23 @@ sub rec_readlink {
     return $last;
 }
 
+sub canonical_path {
+    my $path = shift;
+    my $abspath = File::Spec->rel2abs(rec_readlink($path));
+    my ($vol, $dir, $file) = File::Spec->splitpath($abspath);
+    my $absdir = abs_path($dir);
+    if ($absdir) {
+	return File::Spec->catpath($vol, $absdir, $file);
+    } else {
+	print "Warning: canonical_path: Directory not found: " . $dir . "\n";
+	return 0;
+    }
+}
+
+
 # This sets the location of :dir :system as the directory where this
 # script sits.
-my $this_script = rec_readlink(substr(`which $0`, 0 ,-1));
+my $this_script = canonical_path(substr(`which $0`, 0 ,-1));
 my %dirs = ( "SYSTEM" => dirname($this_script) );
 print "System dir is " . dirname($this_script) . "\n";
 my $local_dirs = 0;
@@ -216,7 +233,7 @@ and options are as follows:
     } elsif ($arg eq "--include" || $arg eq "-i") {
 	push(@includes, shift @ARGV);
     } else {
-	push(@targets, $arg);
+	push(@targets, canonical_path($arg));
     }
 }
 
@@ -241,10 +258,10 @@ sub get_include_book {
 		print "Error: Unknown :dir entry $res[1] for $base\n";
 		return 0;
 	    }
-	    return rel_path($dirpath, "$res[0].cert");
+	    return canonical_path(rel_path($dirpath, "$res[0].cert"));
 	} else {
 	    my $dir = dirname($base);
-	    return rel_path($dir, "$res[0].cert");
+	    return canonical_path(rel_path($dir, "$res[0].cert"));
 	}
     }
     return 0;
@@ -262,10 +279,10 @@ sub get_depends_on {
 		print "Error: Unknown :dir entry $res[1] for $base\n";
 		return 0;
 	    }
-	    return rel_path($dirpath, "$res[0]");
+	    return canonical_path(rel_path($dirpath, "$res[0]"));
 	} else {
 	    my $dir = dirname($base);
-	    return rel_path($dir, "$res[0]");
+	    return canonical_path(rel_path($dir, "$res[0]"));
 	}
     }
     return 0;
@@ -294,10 +311,10 @@ sub get_ld {
 		print "Error: Unknown :dir entry $res[1] for $base\n";
 		return 0;
 	    }
-	    return rel_path($dirpath, $res[0]);
+	    return canonical_path(rel_path($dirpath, $res[0]));
 	} else {
 	    my $dir = dirname($base);
-	    return rel_path($dir, $res[0]);
+	    return canonical_path(rel_path($dir, $res[0]));
 	}
     }
     return 0;
@@ -314,7 +331,7 @@ sub get_add_dir {
 	$local_dirs = $local_dirs || {};
 	my $name = uc($res[0]);
 	my $basedir = dirname($base);
-	$local_dirs->{$name} = rel_path($basedir, $res[1]);
+	$local_dirs->{$name} = canonical_path(rel_path($basedir, $res[1]));
     }
     return 0;
 }
@@ -495,12 +512,12 @@ sub add_deps {
 	    if (substr($line,-1,1) eq "\n") {
 		chop $line;
 	    }
-	    my $image = rel_path(dirname($base), $line);
+	    my $image = canonical_path(rel_path(dirname($base), $line));
 	    if (! -e $image) {
 		$image = substr(`which $line`,0,-1);
 	    }
 	    if (-e $image) {
-		push(@{$deps}, rec_readlink($image));
+		push(@{$deps}, canonical_path($image));
 	    }
 	}
     }

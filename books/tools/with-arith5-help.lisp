@@ -9,9 +9,15 @@
 
 (include-book "rulesets")
 
-(defmacro allow-arith5-help ()
-  `(progn
-     (local
+(defun check-for-arith5-rulesets (world)
+  (let ((ruleset-alist (table-alist 'ruleset-table world)))
+    (and (consp (assoc 'arith5-enable-ruleset ruleset-alist))
+         (consp (assoc 'arith5-disable-ruleset ruleset-alist)))))
+
+(defun allow-arith5-help-fn (world)
+  (if (check-for-arith5-rulesets world)
+      '(value-triple :redundant-allow-arith5-help)
+    '(local
       (progn
 
         (defun before-including-arithmetic-5 () nil)
@@ -43,21 +49,24 @@
 
         (in-theory (current-theory 'before-including-arithmetic-5))))))
 
+(defmacro allow-arith5-help ()
+  '(make-event (allow-arith5-help-fn (w state))))
 
-(defun check-for-arith5-rulesets (world)
-  (let ((ruleset-alist (table-alist 'ruleset-table world)))
-    (and (consp (assoc 'arith5-enable-ruleset ruleset-alist))
-         (consp (assoc 'arith5-disable-ruleset ruleset-alist)))))
+
+
+(defmacro my-enable-arith5 (ctx)
+  `(if (check-for-arith5-rulesets world)
+       (e/d* ((:ruleset arith5-enable-ruleset))
+             ((:ruleset arith5-disable-ruleset)))
+     (er hard ,ctx
+         "~
+Run (ALLOW-ARITH5-HELP) in the current local scope before using ~x0.~%" ,ctx)))
+
 
 (defmacro with-arith5-help (&rest stuff)
   `(encapsulate
      nil
-     (local (in-theory (if (check-for-arith5-rulesets world)
-                           (e/d* ((:ruleset arith5-enable-ruleset))
-                                 ((:ruleset arith5-disable-ruleset)))
-                         (er hard 'with-arith5-help
-                             "Run (ALLOW-ARITH5-HELP) in the current local
-scope before using WITH-ARITH5-HELP.~%"))))
+     (local (in-theory (my-enable-arith5 'with-arith5-help)))
      (local (table theory-invariant-table nil
                    (table-alist 'post-arith5-theory-invariants world)
                    :clear))
@@ -66,12 +75,7 @@ scope before using WITH-ARITH5-HELP.~%"))))
 (defmacro with-arith5-nonlinear-help (&rest stuff)
   `(encapsulate
      nil
-     (local (in-theory (if (check-for-arith5-rulesets world)
-                           (e/d* ((:ruleset arith5-enable-ruleset))
-                                 ((:ruleset arith5-disable-ruleset)))
-                         (er hard 'with-arith5-nonlinear-help
-                             "Run (ALLOW-ARITH5-HELP) in the current local
-scope before using WITH-ARITH5-NONLINEAR-HELP.~%"))))
+     (local (in-theory (my-enable-arith5 'with-arith5-nonlinear-help)))
      (local (set-default-hints '((nonlinearp-default-hint
                                   stable-under-simplificationp
                                   hist pspv))))
@@ -83,12 +87,7 @@ scope before using WITH-ARITH5-NONLINEAR-HELP.~%"))))
 (defmacro with-arith5-nonlinear++-help (&rest stuff)
   `(encapsulate
      nil
-     (local (in-theory (if (check-for-arith5-rulesets world)
-                           (e/d* ((:ruleset arith5-enable-ruleset))
-                                 ((:ruleset arith5-disable-ruleset)))
-                         (er hard 'with-arith5-nonlinear++-help
-                             "Run (ALLOW-ARITH5-HELP) in the current local
-scope before using WITH-ARITH5-NONLINEAR++-HELP.~%"))))
+     (local (in-theory (my-enable-arith5 'with-arith5-nonlinear++-help)))
      (local (set-default-hints '((nonlinearp-default-hint++
                                   id stable-under-simplificationp
                                   hist nil))))
@@ -99,8 +98,7 @@ scope before using WITH-ARITH5-NONLINEAR++-HELP.~%"))))
 
 
 (defmacro enable-arith5 ()
-  `(e/d* ((:ruleset arith5-enable-ruleset))
-         ((:ruleset arith5-disable-ruleset))))
+  '(my-enable-arith5 'enable-arith5))
 
 ;; Notes:
 
