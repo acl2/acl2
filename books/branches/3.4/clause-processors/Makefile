@@ -51,23 +51,5 @@ clean-sulfa:
 
 # Dependencies:
 
-basic-examples.cert: basic-examples.lisp
-# basic-examples.cert: $(ACL2_SYSTEM_BOOKS)/make-event/eval.cert
-# basic-examples.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/top-with-meta.cert
-basic-examples.cert: basic-examples.acl2
+-include Makefile-deps
 
-bv-add-common.cert: bv-add-common.lisp
-# bv-add-common.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic-3/floor-mod/floor-mod.cert
-
-bv-add-tests.cert: bv-add-tests.lisp
-bv-add-tests.cert: bv-add-common.cert
-bv-add-tests.cert: bv-add.cert
-# bv-add-tests.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic-3/floor-mod/floor-mod.cert
-
-bv-add.cert: bv-add.lisp
-# bv-add.cert: $(ACL2_SYSTEM_BOOKS)/textbook/chap11/perm-append.cert
-# bv-add.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic-3/floor-mod/floor-mod.cert
-
-equality.cert: equality.lisp
-# equality.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/top.cert
-equality.cert: equality.acl2

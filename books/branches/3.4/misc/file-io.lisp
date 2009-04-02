@@ -101,11 +101,27 @@
                   trans-eval-form)
                (value :invisible))))
 
+; Added for compatibility with ACL2 Version 3.4 during development of the next
+; version.  It should be fine to remove this after the next version is
+; released.
+(set-state-ok t)
+(defun set-print-case (case state)
+  (declare (xargs :mode :logic
+                  :guard (and (or (eq case :upcase) (eq case :downcase))
+                              (state-p state))))
+  (prog2$ (or (eq case :upcase)
+              (eq case :downcase)
+              (illegal 'set-print-case
+                       "The value ~x0 is illegal as an ACL2 print-base, which ~
+                        must be :UPCASE or :DOWNCASE."
+                       (list (cons #\0 case))))
+          (f-put-global 'print-case case state)))
+
 ; (Downcase form) causes the execution of form but where printing is in
 ; :downcase mode.  Form must return an error triple.
 (defmacro downcase (form)
   `(state-global-let*
-    ((print-case :downcase))
+    ((print-case :downcase set-print-case))
     ,form))
 
 ; Same as write-list above, but where printing is down in downcase mode:

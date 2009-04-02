@@ -930,7 +930,7 @@
   (equal (nth n (append a b))
 	 (if (< (nfix n) (len a))
 	     (nth n a)
-	     (nth (- (nfix n) (len a)) b))))
+	     (nth (- n (len a)) b))))
 
 (defthm nth-revappend
   (implies (and	(integerp n)

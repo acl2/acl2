@@ -1,3 +1,6 @@
+[NOTE: This library has been superseded by ../rel8/, though
+"make" can still be used to certify its books.]
+
 This directory contains an ACL2 library of register-transfer logic, developed
 at AMD from 1996 to the present in support of the mechanical verification of 
 various components of the AMD microprocessors that were designed during that 

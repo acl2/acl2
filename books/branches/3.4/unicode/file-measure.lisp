@@ -69,12 +69,27 @@
   :hints(("Goal" :in-theory (disable statep-functions)))
   :rule-classes ((:rewrite) (:linear)))
 
-(defthm read-object-measure-strong
-  (implies (and (state-p1 state)
-                (car (read-object channel state)))
-           (<= (file-measure channel (mv-nth 2 (read-object channel state)))
+(encapsulate
+ ()
+ (local (defthm lemma
+          (implies (state-p1 state)
+                   (equal (consp (cddr (assoc-equal channel (open-input-channels state))))
+                          (if (cddr (assoc-equal channel (open-input-channels state)))
+                              t
+                            nil)))
+          :hints(("Goal"
+                  :in-theory (disable open-channels-assoc 
+                                      open-channels-p
+                                      open-input-channels)
+                  :use ((:instance open-channels-assoc
+                                   (x (open-input-channels state))))))))
+
+ (defthm read-object-measure-strong
+   (implies (and (state-p1 state)
+                 (not (car (read-object channel state))))
+            (< (file-measure channel (mv-nth 2 (read-object channel state)))
                (file-measure channel state)))
-  :hints(("Goal" :in-theory (disable statep-functions)))
-  :rule-classes ((:rewrite) (:linear)))
+   :hints(("Goal" :in-theory (disable statep-functions)))
+   :rule-classes ((:rewrite) (:linear))))
 
 (in-theory (disable file-measure))

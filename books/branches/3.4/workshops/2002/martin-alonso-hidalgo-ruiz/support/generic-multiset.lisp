@@ -66,6 +66,12 @@
 	  (1+ (count-bag-equiv e (reduct m))))
 	 (t (count-bag-equiv e (reduct m)))))
 
+; The following was added by Matt Kaufmann after ACL2 Version 3.4 because of
+; a soundness bug fix; see ``subversive'' in :doc note-3-5.
+ (defthm count-bag-equiv-type
+   (natp (count-bag-equiv e m))
+   :rule-classes :type-prescription)
+
  (defthm count-include
    (equal (count-bag-equiv e1 (include e2 m))
 	  (if (equiv e1 e2)

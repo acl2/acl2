@@ -36,9 +36,11 @@
 ;; Ruben Gamboa added the following books for ACL2(r) (see :doc real).
 
 #+:non-standard-analysis
-(include-book "realp")
+(include-book ;; jared -- newline keeps these out of deps
+ "realp")
 #+:non-standard-analysis
-(include-book "real-listp")
+(include-book ;; jared -- newline keeps these out of deps
+ "real-listp")
 
 ; The following two depend individually on the first.
 

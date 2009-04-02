@@ -1,0 +1,24 @@
+ACL2 ?= ../../../../../saved_acl2
+include ../../../../Makefile-generic
+
+# Dependencies:
+top.cert: top.lisp
+top.cert: ../lib2.delta1/rtl.cert
+top.cert: ../lib2.delta1/rtlarr.cert
+top.cert: ../lib2/basic.cert
+top.cert: ../lib2.delta2/bits.cert
+top.cert: ../lib2.delta2/log.cert
+top.cert: ../lib2.delta1/float.cert
+top.cert: ../lib2.delta1/reps.cert
+top.cert: ../lib2.delta1/round.cert
+top.cert: ../lib2.delta2/add.cert
+top.cert: ../lib2.delta1/mult.cert
+top.cert: ../lib2.delta1/arith.cert
+top.cert: ../lib2.delta1/util.cert
+top.cert: ../lib2.delta1/bvecp-raw-helpers.cert
+top.cert: ../lib2.delta1/simple-loop-helpers.cert
+top.cert: ../lib2/rom-helpers.cert
+top.cert: ../lib2.delta1/bvecp-helpers.cert
+top.cert: ../lib2.delta1/logn.cert
+top.cert: ../lib2.delta1/simplify-model-helpers.cert
+top.cert: ../lib2.delta1/logn2log.cert

@@ -74,11 +74,11 @@ a bit vector of length N.
   (declare (xargs :guard (and (consp x)
                               (consp (cdr x))
                               (consp (cddr x)))))
-  (cond ((endp (rest (rest (rest x)))) ;(land x y n) -- the base case
+  (cond ((endp (cdddr x)) ;(land x y n) -- the base case
          `(binary-land ,@x))
         (t         
-         `(binary-land ,(first x)
-                       (land ,@(rest x))
+         `(binary-land ,(car x)
+                       (land ,@(cdr x))
                        ,(car (last x))))))
 
 ;Allows things like (in-theory (disable land)) to refer to binary-land.

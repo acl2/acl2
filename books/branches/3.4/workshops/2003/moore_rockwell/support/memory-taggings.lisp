@@ -198,10 +198,22 @@
        (or (member e a)
            (member e b))))
 
+; Matt K. mod: Intersectp is defined after ACL2 3.4, syntactically a bit
+; differently from the definition that was here before:
+
+;(defun intersectp (x y)
+;  (cond ((endp x) nil)
+;        (t (or (member (car x) y)
+;               (intersectp (cdr x) y)))))
+
+; Here is the ACL2 definition.
+
 (defun intersectp (x y)
+  (declare (xargs :guard (and (eqlable-listp x)
+                              (eqlable-listp y))))
   (cond ((endp x) nil)
-        (t (or (member (car x) y)
-               (intersectp (cdr x) y)))))
+        ((member (car x) y) t)
+        (t (intersectp (cdr x) y))))
 
 (defthm unique-append
   (iff (unique (append a b))

@@ -47,26 +47,30 @@ TIME = time
 
 # NOTE!  This does *not* touch directory nonstd.
 
+# Note: arithmetic-4 could be added in analogy to arithmetic-5.
+
 # First directories of books to certify:
 DIRS1 = cowles arithmetic meta
 # Additional directories, where DIRS3 prunes out those not distributed.
 # We rely on DIRS3 being a subset of DIRS2 in the dependence of DIRS2 on
 # top-with-meta-cert.
-DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-4 \
+DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-5 \
 	misc models/jvm/m5 proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
 	finite-set-theory finite-set-theory/osets powerlists textbook \
-	finite-set-theory/osets-0.81 finite-set-theory/osets-0.9 defexec symbolic \
-	data-structures/memories unicode concurrent-programs/bakery \
+	defexec symbolic \
+	data-structures/memories unicode str concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
-	quadratic-reciprocity misc/misc2 tools paco hacking
+	quadratic-reciprocity misc/misc2 tools paco hacking hons-bdds security regex \
+        defsort hons-archive
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
-DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-4 \
+DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-5 \
 	misc models/jvm/m5 proofstyles rtl make-event parallel hints arithmetic-3/extra \
 	sorting finite-set-theory finite-set-theory/osets powerlists textbook \
 	defexec symbolic \
-	data-structures/memories unicode concurrent-programs/bakery \
+	data-structures/memories unicode str concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
-	quadratic-reciprocity misc/misc2 tools paco hacking
+	quadratic-reciprocity misc/misc2 tools paco hacking hons-bdds security regex \
+        defsort hons-archive
 SHORTDIRS2 = ordinals data-structures bdd
 
 .PHONY: $(DIRS1) $(DIRS2) $(DIRS3)
@@ -76,23 +80,25 @@ SHORTDIRS2 = ordinals data-structures bdd
 all:
 	@date ; $(TIME) $(MAKE) all-aux
 
+
 # Next, specify all of the directory dependencies.  At this point we do this
 # manually by inspecting the Makefiles.
 arithmetic: cowles
 meta: arithmetic
 ordinals: top-with-meta-cert
 ihs: arithmetic data-structures
-misc: arithmetic top-with-meta-cert ordinals arithmetic-2 arithmetic-3
+misc: data-structures top-with-meta-cert ordinals arithmetic ihs arithmetic-2 arithmetic-3
 make-event: misc arithmetic-3 arithmetic rtl
 arithmetic-2: ihs
 rtl: arithmetic meta top-with-meta-cert ordinals ihs misc arithmetic-2
 # arithmetic-3 has no dependencies (but see arithmetic-3/extra)
 arithmetic-3/extra: arithmetic-3 ihs rtl arithmetic-2 arithmetic-3
-# arithmetic-4 has no dependencies
+# arithmetic-5 has no dependencies
 finite-set-theory: arithmetic ordinals
 powerlists: arithmetic ordinals data-structures
 textbook: arithmetic top-with-meta-cert ordinals ihs
 defexec: arithmetic misc ordinals make-event
+hons-bdds: misc clause-processors
 symbolic: arithmetic arithmetic-2 data-structures ihs misc ordinals models/jvm/m5
 data-structures/memories: arithmetic-3 misc
 unicode: arithmetic arithmetic-3 ihs
@@ -100,16 +106,24 @@ proofstyles: arithmetic-2 ordinals misc top-with-meta-cert
 concurrent-programs/bakery: misc ordinals
 concurrent-programs/german-protocol: misc
 deduction/passmore: 
-clause-processors: top-with-meta-cert make-event arithmetic-3 textbook arithmetic misc
+clause-processors: top-with-meta-cert make-event arithmetic-3 textbook arithmetic \
+	misc tools data-structures arithmetic-5
 quadratic-reciprocity: rtl
 misc/misc2: rtl make-event
 hints: make-event
 models/jvm/m5: top-with-meta-cert ordinals misc ihs
 # models/jvm/m5 is needed for paco/books, not paco
 paco: ihs ordinals top-with-meta-cert
-# hacking has no dependencies
+hacking: misc
 parallel: make-event
+security: make-event arithmetic-3
 sorting: arithmetic-3/extra
+tools: arithmetic-5 misc unicode
+regex: tools
+defsort: misc make-event unicode tools
+hons-archive: defsort unicode tools arithmetic-3
+str: arithmetic unicode defsort
+
 # Let us wait for everything else before workshops:
 workshops: $(DIRS1) $(DIRS2_EXCEPT_WK)
 
@@ -674,7 +688,7 @@ clean:
 	do \
 	if [ -f $$dir/Makefile ]; then \
 	(cd $$dir ; \
-	$(MAKE) clean ; \
+	$(MAKE) FAST_DEPS_FOR_CLEAN=1 clean ; \
 	cd ..) ; \
 	fi \
 	done
@@ -682,7 +696,7 @@ clean:
 # Tar up books and support, not including workshops or nonstd stuff.
 .PHONY: tar
 tar:
-	tar cvf books.tar Makefile Makefile-generic Makefile-subdirs README README.html certify-numbers.lisp $(DIRS1) $(DIRS3)
+	tar cvf books.tar Makefile Makefile-generic Makefile-subdirs README README.html certify-numbers.lsp $(DIRS1) $(DIRS3)
 
 # The following "short" targets allow for a relatively short test, in response
 # to a request from GCL maintainer Camm Maguire.

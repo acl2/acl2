@@ -1,3 +1,0 @@
-(ld "defpkg.lisp")
-
-(certify-book "algebra" 3)

@@ -13,7 +13,7 @@
 
      (ANSFL X Y) = X
 
-  X must a form that returns a single value."
+  X must be a form that returns a single value."
 
   `((lambda (ansfl-do-not-use-elsewhere1 ansfl-do-not-use-elsewhere2)
       (declare (ignore ansfl-do-not-use-elsewhere2))
@@ -75,25 +75,58 @@
         ((atom (cddr r)) `(gentle-binary-+ ,(car r) ,(cadr r)))
         (t `(gentle-binary-+ ,(car r) (gentle-+ ,@(cdr r))))))
 
+(defn gentle-revappend (x y)
+  (if (atom x) y
+    (gentle-revappend (cdr x) (cons (car x) y))))
+
+(defn gentle-reverse (x)
+  (if (stringp x)
+      (reverse x)
+    (gentle-revappend x nil)))
+
 (defn gentle-strip-cars (l)
   (if (atom l)
       nil
     (cons (if (atom (car l))
-              (car l)
-            (car (car l)))
+               (car l)
+             (car (car l)))
           (gentle-strip-cars (cdr l)))))
+
+(defn gentle-strip-cdrs (l)
+  (if (atom l)
+      nil
+    (cons (if (atom (car l))
+              (car l)
+            (cdr (car l)))
+          (gentle-strip-cdrs (cdr l)))))
 
 (defn gentle-length (l)
   (if (stringp l)
       (length l)
     (len l)))
 
+(defn gentle-member-eq (x y)
+  (declare (xargs :guard (symbolp x)))
+  (cond ((atom y) nil)
+        ((eq x (car y)) y)
+        (t (gentle-member-eq x (cdr y)))))
+
+(defn gentle-member-eql (x y)
+  (declare (xargs :guard (eqlablep x)))
+  (cond ((atom y) nil)
+        ((eql x (car y)) y)
+        (t (gentle-member-eql x (cdr y)))))
+
+(defn gentle-member-equal (x y)
+  (cond ((atom y) nil)
+        ((hons-equal x (car y)) y)
+        (t (gentle-member-equal x (cdr y)))))
+    
 (defn gentle-member (x y)
-  (if (atom y)
-      nil
-    (if (equal x (car y))
-        y
-      (gentle-member x (cdr y)))))
+  (cond ((symbolp x) (gentle-member-eq x y))
+        ((or (characterp x) (acl2-numberp x))
+         (gentle-member-eql x y))
+        (t (gentle-member-equal x y))))
 
 (defn gentle-binary-- (x y)
   (if (and (acl2-numberp x)
@@ -337,8 +370,8 @@
 
   Assoc is sometimes faster than gethash.~/
 
-  Lis folklore sez it is faster to use
-  ASSOC than GETHASH if a list has length 18 or less.~/~/")
+  Lisp folklore says it is faster to use ASSOC than GETHASH on a list
+  if the list has length 18 or less.~/~/")
 
 (defn worth-hashing (l)
   (worth-hashing1 l *magic-number-for-hashing*))
@@ -596,14 +629,7 @@
 
 ;;; Defhonst
 
-;; Defhonst is like defconst, but makes sure that a hons-copy of the
-;; value is stored, and that the value remains a honsp, even after a
-;; call of clear-hash-tables.  To this end, we keep a record of all
-;; these values.  We also use that record to help with evisceration.
-
-;; Maybe defhonst should be elevated to an event some day.  If so,
-;; then the undoing of the event should probably flush the record for
-;; that constant.
+;; Defhonst is like defconst.
 
 ;; The record for all defhonst values is kept in the ACL2 global
 ;; 'defhonst.  To flush all defhonst records manually, one may:
@@ -623,24 +649,33 @@
       (value f))))
 
 (defmacro defhonst (name form &key (evisc 'nil eviscp) check doc)
-  `(progn (defconst ,name (hons-copy ,form) ,doc)
-          (table evisc-table
-                 ,name
-                 ,(if eviscp
-                      evisc
-                    (concatenate 'string "#,|" (symbol-name name) "|")))
-          (table persistent-hons-table
-                 (let ((x ,name))
-                   (if (or (consp x) (stringp x))
+
+; From Matt Mon Sep 29 09:53:49 CDT 2008
+
+  `(with-output
+    :off summary
+    (progn
+      (defconst ,name (hons-copy ,form) ,doc)
+      (table evisc-table
+             ,name
+             ,(if eviscp
+                  evisc
+                (let ((str (symbol-name name)))
+                  (if (may-need-slashes str)
+                      (concatenate 'string "#.|" str "|")
+                    (concatenate 'string "#." str)))))
+      (table persistent-hons-table
+             (let ((x ,name))
+               (if (or (consp x) (stringp x))
 
 ; honsp-check without check
 
-                       x
-                     nil))
-                 t)
-          ,@(and check
-                 `((assert-event ,check)))
-          (value-triple ',name)))
+                   x
+                 nil))
+             t)
+      ,@(and check
+             `((assert-event ,check)))
+      (value-triple ',name))))
 
 (defmacro all-memoized-fns (&optional show-conditions)
   (if show-conditions
@@ -672,21 +707,22 @@
 
 (set-state-ok t)
 
-(defn plev-fn (length level lines circle pretty readably state)
-  (declare (xargs :mode :program))
-  (let* ((old-tuple (default-evisc-tuple state))
-         (new-tuple (list (car old-tuple) level length 
-                          (cadddr old-tuple))))
-    (let ((state (set-brr-term-evisc-tuple new-tuple)))
-      (let ((state
-             (f-put-global 'user-default-evisc-tuple
-                           new-tuple state)))
-        (let ((state
-               (f-put-global 'user-term-evisc-tuple
-                             new-tuple state)))
-          (mv-let (flg ans state)
-                  (set-ld-evisc-tuple new-tuple state)
-                  (declare (ignore ans))
+; MattK: Using make-event for now so that plev-fn can be defined suitably for
+; Version 3.4 and also for the pre-v-3.5 development version.
+(make-event
+ (if (getprop 'set-evisc-tuple 'macro-args nil 'current-acl2-world (w state))
+     '(defn plev-fn (length level lines circle pretty readably state)
+        (declare (xargs :mode :program))
+        (let* ((old-tuple (default-evisc-tuple state))
+               (new-tuple (list (car old-tuple) level length 
+                                (cadddr old-tuple))))
+          (mv-let (flg val state)
+                  (set-evisc-tuple new-tuple
+                                   :iprint :same
+                                   :sites '(:TERM :LD
+                                                  ;; :TRACE
+                                                  :ABBREV))
+                  (declare (ignore val))
                   (mv flg
                       (list :length
                             length
@@ -700,7 +736,36 @@
                             readably
                             :pretty
                             pretty)
-                      state)))))))
+                      state))))
+   '(defn plev-fn (length level lines circle pretty readably state)
+      (declare (xargs :mode :program))
+      (let* ((old-tuple (default-evisc-tuple state))
+             (new-tuple (list (car old-tuple) level length 
+                              (cadddr old-tuple))))
+        (let ((state (set-brr-term-evisc-tuple new-tuple)))
+          (let ((state
+                 (f-put-global 'user-default-evisc-tuple
+                               new-tuple state)))
+            (let ((state
+                   (f-put-global 'user-term-evisc-tuple
+                                 new-tuple state)))
+              (mv-let (flg ans state)
+                      (set-ld-evisc-tuple new-tuple state)
+                      (declare (ignore ans))
+                      (mv flg
+                          (list :length
+                                length
+                                :level
+                                level
+                                :lines
+                                lines
+                                :circle
+                                circle
+                                :readably
+                                readably
+                                :pretty
+                                pretty)
+                          state)))))))))
 
 (defmacro plev (&key (length '16)
                      (level '3)
@@ -736,7 +801,7 @@
 
   ":Doc-Section Hons-and-Memoization
 
-  Sets some print control variables to maximal values.~/
+  (PLEV-MAX) sets some print control variables to maximal values.~/
   ~/~/"  
 
   `(plev-fn ,length ,level ,lines ,circle ,pretty ,readably state))
@@ -751,7 +816,7 @@
 
   ":Doc-Section Hons-and-Memoization
 
-  Sets some print control variables to minimal values.~/
+  (PLEV-MIN) sets some print control variables to minimal values.~/
   ~/~/"
 
   `(plev-fn ,length ,level ,lines ,circle ,pretty ,readably state))
@@ -785,7 +850,7 @@
 
   (if (not (posp n))
       e
-    (hons a (hons-make-list (1- n) a e))))
+    (hons-make-list (1- n) a (hons a e))))
 
 (defn hons-take (n l)
   ":Doc-Section Hons-and-Memoization
@@ -813,12 +878,92 @@
 (defn alist-equal (al1 al2)
   ":Doc-Section Hons-and-Memoization
 
-  Determine whether two alists are EQUAL with respect to HONS-GET.~/
+  (ALIST-EQUAL al1 al2) returns T or NIL according to whether for all
+  x, (equal (hons-get x AL1) (hons-get x AL2)).~/
 
-  (ALIST-EQUAL al1 al2) determines whether for all X, the two alist
-  (equal (hons-get x AL1) (hons-get x AL2)).  May run faster on fast
-  alists than the obvious calculation. ~/~/"
+  ALIST-EQUAL sometimes runs rather fast on fast alists. ~/~/"
 
   (and (equal (fast-alist-len al1)
               (fast-alist-len al2))
        (alist-subsetp al1 al2)))
+
+(defn gentle-assoc-eq (x y)
+  (declare (xargs :guard (symbolp x)))
+  (if (atom y)
+      nil
+    (if (and (consp (car y))
+             (eq x (caar y)))
+        (car y)
+      (gentle-assoc-eq x (cdr y)))))
+
+(defn gentle-assoc-eql (x y)
+  (declare (xargs :guard (eqlablep x)))
+  (if (atom y)
+      nil
+    (if (and (consp (car y))
+             (eql x (caar y)))
+        (car y)
+      (gentle-assoc-eql x (cdr y)))))
+
+(defn gentle-assoc-help (x y)
+  (if (atom y)
+      nil
+    (if (and (consp (car y))
+             (hons-equal x (caar y)))
+        (car y)
+      (gentle-assoc-help x (cdr y)))))
+
+(defn gentle-assoc (x y)
+  (cond ((symbolp x) (gentle-assoc-eq x y))
+        ((or (acl2-numberp x)
+             (characterp x))
+         (gentle-assoc-eql x y))
+        (t (gentle-assoc-help x y))))
+
+(defn gentle-g (x l)
+  (cdr (gentle-assoc x l)))
+
+(defn gentle-s-help (a v l)
+  (cond ((atom l) (cons (cons a v) nil))
+        ((and (consp (car l))
+              (equal a (caar l)))
+         (cons (cons a v) (cdr l)))
+        (t (cons (car l)
+                 (gentle-s-help a v (cdr l))))))
+
+(defn gentle-s (a v l)
+
+  "The key theorem about GENTLE-S is
+   (equal (gentle-g a (gentle-s b v l))
+          (if (equal a b)
+              v
+            (gentle-g a l)))."
+
+  (let ((pair (gentle-assoc a l)))
+    (cond ((null pair) (cons (cons a v) l))
+          ((equal v (cdr pair)) l)
+          (t (gentle-s-help a v l)))))
+
+(defthm gentle-s-a-thm0
+  (equal (gentle-assoc-eq a (gentle-s-help b v l))
+         (if (equal a b)
+             (cons a v)
+           (gentle-assoc-eq a l))))
+
+(defthm gentle-s-a-thm1
+  (equal (gentle-assoc-eql a (gentle-s-help b v l))
+         (if (equal a b)
+             (cons a v)
+           (gentle-assoc-eql a l))))
+
+(defthm gentle-s-a-thm2
+  (equal (gentle-assoc-help a (gentle-s-help b v l))
+         (if (equal a b)
+             (cons a v)
+           (gentle-assoc-help a l))))
+
+(defthm gentle-s-a-thm3
+  (equal (gentle-g a (gentle-s b v l))
+         (if (equal a b)
+             v
+           (gentle-g a l))))

@@ -1,0 +1,91 @@
+
+
+######################################################################
+## NOTE.  This file is not part of the standard ACL2 books build
+## process; it is part of an experimental build system that is not yet
+## intended, for example, to be capable of running the whole
+## regression.  The ACL2 developers do not maintain this file.
+##
+## Please contact Jared Davis <jared@cs.utexas.edu> or Sol Swords
+## <sswords@cs.utexas.edu> with any questions/comments.
+######################################################################
+
+# Copyright 2008 by Sol Swords and Jared Davis.
+# Credit to Matt Kaufmann and J Strother Moore for code from Makefile-generic.
+
+# This file can be included in a GNU makefile (with SHELL set to bash)
+# to provide a rule for certifying ACL2 books.
+
+COMPILE_FLG ?= t :ttags :all :skip-proofs-okp t
+INHIBIT ?= (set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote expansion)))
+ACL2_BOOKS_DEBUG ?=
+
+# Avoid loading customization file unless environment variable is already set.
+export ACL2-CUSTOMIZATION ?= NONE
+
+
+%.cert: %.lisp
+	@echo "Making $*.cert on `date`" ;\
+	DIR=`dirname $*` ;\
+	FILE=`basename $*` ;\
+        ACL2=`which $(ACL2) 2> /dev/null` ;\
+	cd $$DIR ;\
+	if [ -f $$FILE.image ] ; then \
+	   IM=`cat $$FILE.image` ;\
+	   if [ "$${IM}" != "" ] ; then \
+	      ACL2=$${IM} ;\
+	   fi ;\
+	elif [ -f cert.image ] ; then \
+	   IM=`cat cert.image` ;\
+	   if [ "$${IM}" != "" ] ; then \
+	      ACL2=$${IM} ;\
+	   fi ;\
+	fi ;\
+	rm -f $$FILE.cert ;\
+	WORKXXXFILE=workxxx.$$FILE.$$RANDOM ;\
+	echo '(acl2::value :q)' > $$WORKXXXFILE ;\
+	echo '(in-package "ACL2")' >> $$WORKXXXFILE ;\
+	echo '(acl2::lp)' >> $$WORKXXXFILE ;\
+	echo '$(INHIBIT)' >> $$WORKXXXFILE ;\
+	if [ -f $$FILE.acl2 ] ;\
+	then \
+	  cat $$FILE.acl2 >> $$WORKXXXFILE ;\
+	elif [ -f cert.acl2 ] ;\
+	then \
+	  cat cert.acl2 >> $$WORKXXXFILE ;\
+	  echo "" >> $$WORKXXXFILE ;\
+	  echo "(certify-book \"$$FILE\" ? $(COMPILE_FLG))" >> $$WORKXXXFILE ;\
+	else \
+	  echo "" >> $$WORKXXXFILE ;\
+	  echo "(certify-book \"$$FILE\" ? $(COMPILE_FLG))" >> $$WORKXXXFILE ;\
+	fi ;\
+	echo "" >> $$WORKXXXFILE ;\
+        echo "(acl2::ld \"make_cert.lsp\" :dir :system)" >> $$WORKXXXFILE ;\
+	echo "(acl2::horrible-include-book-exit \"$$FILE\" acl2::state)" >> $$WORKXXXFILE ;\
+	if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
+	then \
+	  echo "[make_cert]: certify book commands for $$FILE:" ;\
+	  echo "" ;\
+	  cat $$WORKXXXFILE ;\
+	  echo "" ;\
+	fi ;\
+	if [ "$$TIME_CERT" != "" ] ;\
+	then \
+	  (time $$ACL2 < $$WORKXXXFILE 2>&1) > $$FILE.out ;\
+	else \
+	  ($$ACL2 < $$WORKXXXFILE 2>&1) > $$FILE.out ;\
+	fi ;\
+        STATUS=$$? ;\
+	rm -f $$WORKXXXFILE ;\
+	if [ "$$STATUS" == "43" ] ; then \
+	   ls -al $$FILE.cert || echo "NFS problem for $$FILE?" ;\
+	else \
+	  echo "**CERTIFICATION FAILED** for $$FILE.lisp (code $$STATUS)" ;\
+	  echo "" ;\
+          tail -300 $$FILE.out | sed 's/^/   | /' ;\
+	  echo "" ;\
+	  echo "" ;\
+          echo "**CERTIFICATION FAILED** for $$FILE.lisp (code $$STATUS)" ;\
+          exit 1 ;\
+        fi
+

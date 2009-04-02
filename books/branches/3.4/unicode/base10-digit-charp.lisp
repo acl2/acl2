@@ -18,6 +18,7 @@
 (in-package "ACL2")
 
 (defund base10-digit-charp (x)
+  (declare (xargs :guard t))
   (if (member x '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
       t
     nil))
@@ -29,6 +30,7 @@
 
 
 (defund base10-digit-char-listp (x)
+  (declare (xargs :guard t))
   (if (consp x)
       (and (base10-digit-charp (car x))
            (base10-digit-char-listp (cdr x)))
@@ -68,8 +70,8 @@
                                     base10-digit-charp))))
 
 (defthm equal-of-digit-to-chars
-  (implies (and (natp i) (< i 10)
-                (natp j) (< j 10))
+  (implies (and (natp i) (< i 16)
+                (natp j) (< j 16))
            (equal (equal (digit-to-char i)
                          (digit-to-char j))
                   (equal i j)))

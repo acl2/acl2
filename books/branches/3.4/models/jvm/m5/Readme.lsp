@@ -47,7 +47,7 @@ models, M5.  See the README file in this directory.
 "
 )
  (:PERMISSION
-  "Paco
+  "M5
  Copyright (C) 2008 by:
  J Moore <moore@cs.utexas.edu>
 

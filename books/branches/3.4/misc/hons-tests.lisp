@@ -4,8 +4,6 @@
 
 (include-book "qi")
 
-(value-triple (clear-hash-tables))
-
 (defun fib (x)
   (declare (xargs :guard (and (integerp x)
                               (<= 0 x))))

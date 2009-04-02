@@ -478,13 +478,26 @@
                      (X (tail X)) 
                      (Y (delete (head X) Y)))))))
 
+(defthm proper-subset-cardinality
+  (implies (and (subset X Y)
+                (not (subset Y X)))
+           (< (cardinality X) (cardinality Y)))
+  :rule-classes (:rewrite :linear)
+  :hints(("Goal" 
+          :in-theory (disable pick-a-point-subset-strategy)
+          :use ((:instance equal-cardinality-subset-is-equality
+                           (X (sfix x))
+                           (Y (sfix y)))))))
+
 (defthm intersect-cardinality-X
-  (<= (cardinality (intersect X Y)) (cardinality X))
-  :rule-classes :linear)
+  (<= (cardinality (intersect X Y)) 
+      (cardinality X))
+  :rule-classes (:rewrite :linear))
 
 (defthm intersect-cardinality-Y
-  (<= (cardinality (intersect X Y)) (cardinality Y))
-  :rule-classes :linear)
+  (<= (cardinality (intersect X Y))
+      (cardinality Y))
+  :rule-classes (:rewrite :linear))
 
 
 
@@ -495,13 +508,13 @@
   (equal (cardinality (union X Y))
          (- (+ (cardinality X) (cardinality Y))
             (cardinality (intersect X Y))))
-  :rule-classes :linear)
+  :rule-classes (:rewrite :linear))
 
 (defthm expand-cardinality-of-difference
   (equal (cardinality (difference X Y))
          (- (cardinality X) 
             (cardinality (intersect X Y))))
-  :rule-classes :linear)
+  :rule-classes (:rewrite :linear))
 
 (defthm intersect-cardinality-subset
   (implies (subset X Y)
@@ -513,12 +526,14 @@
   (implies (not (subset x y))
            (< (cardinality (intersect x y))
               (cardinality x)))
-  :rule-classes :linear)
+  :rule-classes (:rewrite :linear))
 
 (defthm intersect-cardinality-subset-2
-  (equal (equal (cardinality (intersect X Y)) (cardinality X))
+  (equal (equal (cardinality (intersect X Y))
+                (cardinality X))
 	 (subset X Y)))
 
 (defthm intersect-cardinality-non-subset-2
-  (equal (< (cardinality (intersect x y)) (cardinality x))
+  (equal (< (cardinality (intersect x y))
+            (cardinality x))
 	 (not (subset x y))))

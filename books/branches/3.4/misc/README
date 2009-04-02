@@ -174,6 +174,14 @@ then certified.
 
 ===============================================================================
 
+fast-coerce.lisp -- a replacement for coerce, which speeds up (coerce x 'list)
+
+This just providse the function fast-coerce, which is a drop-in replacement
+for coerce and is faster at converting strings to lists.
+
+===============================================================================
+
+
 fibonacci.lisp -- a thm. on the Fibonacci sequence and greatest common divisor
 -- Supporting books: --
 int-division.lisp
@@ -241,6 +249,12 @@ See: http://www.cs.utexas.edu/users/moore/publications/how-to-prove-thms
 ===============================================================================
 
 integer-type-set-test.lisp -- Tests of enhancement to integer reasoning
+
+===============================================================================
+
+invariants.lisp -- Tries to prove lemmas stating that if a certain
+property is true of the arguments to a function, that property will be
+true of the arguments to all its recursive calls.
 
 ===============================================================================
 
@@ -347,6 +361,15 @@ exported theorems.  The result is records.lisp.
 
 ===============================================================================
 
+seq.lisp -- the seq macro language
+seq-examples.lsp -- examples of using the seq macro
+
+SEQ is a macro language for implementing parsers or otherwise applying
+"actions" to "streams".  See the comments at the top of seq.lisp and also
+see the examples in seq-examples.lsp for more information.
+
+===============================================================================
+
 simplify-defuns.lisp -- simplify definitions in a file and prove equivalence
 
 See simplify-defuns.txt (which can be printed out as 8 pages with 12 point
@@ -386,6 +409,10 @@ See the top of the file for examples and a relevant theorem.
 ===============================================================================
 
 total-order.lisp -- total order for ACL2
+
+===============================================================================
+
+trace1.lisp -- alternate implementation of tracing
 
 ===============================================================================
 

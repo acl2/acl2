@@ -16,6 +16,8 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
+(local (include-book "take"))
+(local (include-book "arithmetic-3/bind-free/top" :dir :system))
 
 (defund list-fix (x)
   (declare (xargs :guard t))
@@ -34,6 +36,14 @@
   (equal (list-fix (cons a x))
          (cons a (list-fix x)))
   :hints(("Goal" :in-theory (enable list-fix))))
+
+(defthm car-of-list-fix 
+  (equal (car (list-fix x))
+         (car x)))
+
+(defthm cdr-of-list-fix 
+  (equal (cdr (list-fix x))
+         (list-fix (cdr x))))
   
 (defthm list-fix-when-len-zero
   (implies (equal (len x) 0)
@@ -60,3 +70,13 @@
   (equal (consp (list-fix x))
          (consp x))
   :hints(("Goal" :induct (len x))))
+
+(defthm last-of-list-fix
+  (equal (last (list-fix x))
+         (list-fix (last x))))
+
+(defthm butlast-of-list-fix
+  (equal (butlast (list-fix x) n)
+         (butlast x n))
+  :hints(("Goal" :in-theory (enable butlast))))
+                                    

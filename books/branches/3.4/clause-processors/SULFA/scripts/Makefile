@@ -18,7 +18,8 @@ clean:
 	rm -f *acl2_with_smt* temp_command_file.lisp 
 	rm -fr sat-temp-files 
 	rm -fr sulfa_smt_temp 
-	rm -f sulfa-smt 
+	rm -f sulfa-smt
+	rm -f interpret_sulfa_file
 
 # Dependencies
 sulfa-smt: interpret_sulfa_file 

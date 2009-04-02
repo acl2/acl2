@@ -6,8 +6,8 @@
 
 ;;   (2) If p is a prime divisor of a*b, then p divides either a or b.
 
-(include-book "rtl/rel7/lib/arith" :dir :system)   ; basic arithmetic
-(include-book "rtl/rel7/lib/basic" :dir :system)   ; properties of mod
+(include-book "rtl/rel8/lib/arith" :dir :system)   ; basic arithmetic
+(include-book "rtl/rel8/lib/basic" :dir :system)   ; properties of mod
 
 ;; We first list some basic properties of divisibility.
 

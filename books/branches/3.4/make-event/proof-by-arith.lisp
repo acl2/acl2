@@ -25,6 +25,17 @@
 ; Sandip Ray points out that it would be really cool to do this sort of thing
 ; in parallel!  That may happen some day....
 
+
+;; This comment fools the dependency scanner into thinking that this book
+;; depends on lots of arithmetic books.
+#||
+(include-book "arithmetic-3/bind-free/top" :dir :system)
+(include-book "arithmetic-3/floor-mod/floor-mod" :dir :system)
+(include-book "arithmetic/top-with-meta" :dir :system)
+(include-book "rtl/rel5/arithmetic/top" :dir :system)
+(include-book "arithmetic-3/bind-free/top" :dir :system)
+||#
+
 (in-package "ACL2")
 
 (comp '(union-theories-fn1

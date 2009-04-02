@@ -1,22 +1,8 @@
 include ../Makefile-generic
+-include Makefile-deps
 
-# Dependencies:
+# Additional dependencies to force serialization when set-compile-fns is set
+# (causes a problem for GCL 2.6.*).
 
-fibonacci.cert: fibonacci.lisp
-# fibonacci.cert: $(ACL2_SYSTEM_BOOKS)/make-event/assert.cert
-
-matrix-multiplication-parallel.cert: matrix-multiplication-parallel.lisp
-matrix-multiplication-parallel.cert: matrix-multiplication-setup.cert
-# matrix-multiplication-parallel.cert: $(ACL2_SYSTEM_BOOKS)/make-event/assert.cert
-# matrix-multiplication-parallel.cert: $(ACL2_SYSTEM_BOOKS)/make-event/embeddable-event-forms.cert
-
-matrix-multiplication-serial.cert: matrix-multiplication-serial.lisp
-matrix-multiplication-serial.cert: matrix-multiplication-setup.cert
-# matrix-multiplication-serial.cert: $(ACL2_SYSTEM_BOOKS)/make-event/assert.cert
-# matrix-multiplication-serial.cert: $(ACL2_SYSTEM_BOOKS)/make-event/embeddable-event-forms.cert
-
-matrix-multiplication-setup.cert: matrix-multiplication-setup.lisp
-
-syntax-tests.cert: syntax-tests.lisp
-# syntax-tests.cert: $(ACL2_SYSTEM_BOOKS)/make-event/assert.cert
-# syntax-tests.cert: $(ACL2_SYSTEM_BOOKS)/make-event/eval.cert
+matrix-multiplication-parallel.cert: matrix-multiplication-serial.cert
+fibonacci.cert: matrix-multiplication-parallel.cert

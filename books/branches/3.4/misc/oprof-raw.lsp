@@ -19,8 +19,6 @@
   nil)
 
 (defun oprof.watch-fn (f)
-  ;; Create an initial entry in the profiling table.
-  (setf (gethash f *oprof.results-table*) (cons 0 0))
   ;; Calling this function will now push frames onto the active stack.
   (eval `(CCL::advise ,f
                       (push (cons ',f (get-internal-real-time)) *oprof.active-stack*)
@@ -37,6 +35,9 @@
                                 (- (the fixnum (get-internal-real-time))
                                    (the fixnum (cdr frame))))))
                       :when :after))
+  ;; We create the result after trying to do the advises, so if anything goes wrong
+  ;; we won't get spurious entries in the table.
+  (setf (gethash f *oprof.results-table*) (cons 0 0))
   nil)
 
 (defun oprof.watch (fns)

@@ -8,14 +8,25 @@ basic-examples.lisp
 bv-add-common.lisp
 bv-add-tests.lisp
 bv-add.lisp
+decomp-hint.lisp
 equality.acl2
 equality.lisp
+generalize.acl2
+generalize.lisp
+join-thms.lisp
+multi-env-trick.lisp
+null-fail-hints.lisp
+replace-defined-consts.acl2
+replace-defined-consts.lisp
+replace-impl.lisp
+use-by-hint.lisp
 ")
  (:TITLE    "Clause processor examples")
  (:AUTHOR/S 
   "Jared Davis"
   "Matt Kaufmann"
   "Erik Reeber"
+  "Sol Swords"
   )
  (:KEYWORDS ; non-empty list of keywords, case-insensitive
    "clause processors"
@@ -37,9 +48,35 @@ definitions and uses of trivial trusted and verified clause processors.
 Books bv-add*.lisp illustrate the use of clause processors to implement a
 decision procedure for bit vectors.
 
+Book decomp-hint.lisp introduces computed hints useful for proving local
+properties of a cons tree by systematically structurally decomposing it.
+
 Book equality.lisp illustrates the use of clause processors to deal with
 equality reasoning.
 
+Book generalize.lisp provides a generalization clause processor.
+
+Book join-thms.lisp automates the introduction of certain theorems about
+evaluators that are useful for verifying clause processors.
+
+Book multi-env-trick.lisp automates a trick for introducing clause
+processors that allows each generated clause to be evaluated under multiple
+binding alists in the correctness proof.
+
+Book null-fail-hints.lisp introduces keyword hints :null, which does
+nothing, and :fail, which causes the proof to fail.  These are probably not
+as good as :no-op and :error, which are built into ACL2.
+
+Book replace-defined-consts.lisp introduces a computed hint that replaces
+defined constants (see tools/defined-const.lisp) with their definitions.
+
+Book replace-impl.lisp introduces a clause processor that replaces a hyp
+with something implied by that hyp.
+
+Book use-by-hint introduces a computed hint to apply a particular :by hint
+as signalled by a logically meaningless hyp placed in the clause, so that a
+clause processor can produce clauses that are copies of statements of existing
+theorems.
 ")
  (:PERMISSION
   "Clause processor examples
@@ -47,6 +84,10 @@ Copyright (C) 2007 by:
  Jared Davis <jared@cs.utexas.edu>       (equality.lisp)
  Matt Kaufmann <kaufmann@cs.utexas.edu>  (basic-examples.lisp)
  Erik Reeber <reeber@cs.utexas.edu>      (bv-add*.lisp)
+ Sol Swords <sswords@cs.utexas.edu>      (generalize.lisp,
+                                          multi-env-trick.lisp,
+                                          replace-defined-const.lisp,
+                                          use-by-hint.lisp)
 
 This program is free software; you can redistribute it and/or 
 modify it under the terms of the GNU General Public License as 

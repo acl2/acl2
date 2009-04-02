@@ -1,21 +1,6 @@
-# The following variable should represent the ACL2 source directory.
-# It is the only variable in this Makefile that may need to be edited.
-ACL2_SRC = ../../..
-ACL2_SYSTEM_BOOKS ?= ../..
-
-include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
-ACL2 = $(ACL2_SRC)/saved_acl2
+ACL2 ?= ../../../saved_acl2
+include ../../Makefile-generic
+-include Makefile-deps
 
 # This makefile certifies the m5 model, including a recursive factorial
 # method. This is unchanged (well almost) from J's standard Makefile.
-
-demo.cert: demo.lisp
-demo.cert: utilities.cert
-demo.cert: demo.acl2
-demo.cert: utilities.cert
-
-utilities.cert: utilities.lisp
-# utilities.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic/top-with-meta.cert
-# utilities.cert: $(ACL2_SYSTEM_BOOKS)/ihs/quotient-remainder-lemmas.cert
-utilities.cert: utilities.acl2
-# utilities.cert: $(ACL2_SYSTEM_BOOKS)/models/jvm/m5/m5.cert
