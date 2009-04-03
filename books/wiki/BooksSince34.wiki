@@ -35,6 +35,15 @@ regex/:
 rtl/rel8/:
    Replacement for (and probably improvement on) rtl/rel7/.
 
+security/:
+   Provides a place to store work related to security protocol 
+   verification.
+
+security/jfkr:
+   A model for key-establishment security protocol JFKr.  Also contains
+   a cryptography library that models "perfect cryptography" and a
+   Diffie-Helman implementation.
+
 tools/flag.lisp:
    Make-event that defines a "flag function" that provides an
    induction scheme appropriate for use with a mutually-recursive
