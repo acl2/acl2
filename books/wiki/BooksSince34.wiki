@@ -11,6 +11,9 @@ add-ons/hash-stobjs.lisp:
    Experimental book which allows stobjs to contain hash table members.
    Requires a trust tag since it redefines ACL2 system functions.
 
+arithmetic-5/:
+   Replacement for (and improvement on) arithmetic-4/.
+
 clause-processors/join-thms.lisp:
    Contains a macro which introduces rules about an evaluator and
    conjoin and disjoin; useful for verifying clause processors.
@@ -28,6 +31,9 @@ clause-processors/multi-env-trick.lisp:
 regex/:
    An ACL2 regular expression library aiming for feature parity with
    grep.
+
+rtl/rel8/:
+   Replacement for (and probably improvement on) rtl/rel7/.
 
 tools/flag.lisp:
    Make-event that defines a "flag function" that provides an
