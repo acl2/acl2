@@ -1,4 +1,4 @@
-List (probably partial) of books added after the release of ACL2 Version 3.4.
+#summary List (probably partial) of books added after the release of ACL2 Version 3.4.
 
 = Introduction =
 
