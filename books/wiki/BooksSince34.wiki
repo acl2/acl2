@@ -39,7 +39,7 @@ tools/flag.lisp:
    Make-event that defines a "flag function" that provides an
    induction scheme appropriate for use with a mutually-recursive
    clique, and also defines a macro useful for proving theorems about
-   that mutually recursive function.
+   functions in the clique.
 
 tools/bstar.lisp:
    Macro similar to `let*`, but with support for multiple values, object
