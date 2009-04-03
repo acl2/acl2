@@ -1,0 +1,66 @@
+= Introduction =
+
+The following list of books and directories is a (probably partial)
+list of what has been added after the release of ACL2 Version 3.4.
+
+= List of Books =
+
+add-ons/hash-stobjs.lisp:
+   Experimental book which allows stobjs to contain hash table members.
+   Requires a trust tag since it redefines ACL2 system functions.
+
+clause-processors/join-thms.lisp:
+   Contains a macro which introduces rules about an evaluator and
+   conjoin and disjoin; useful for verifying clause processors.
+
+clause-processors/generalize.lisp:
+   Defines a verified clause processor which replaces certain terms
+   with fresh variables.  Also contains useful functions for creating
+   fresh variables.
+
+clause-processors/multi-env-trick.lisp:
+   Introduces a trick that can be useful for proving clause processors
+   correct when the variables in the clauses produced have complicated
+   binding relationships with the original clause.
+
+regex/:
+   An ACL2 regular expression library aiming for feature parity with
+   grep.
+
+tools/flag.lisp:
+   Make-event that defines a "flag function" that provides an
+   induction scheme appropriate for use with a mutually-recursive
+   clique, and also defines a macro useful for proving theorems about
+   that mutually recursive function.
+
+tools/bstar.lisp:
+   Macro similar to `let*`, but with support for multiple values, object
+   destructuring, error triples, user-defined binding operations,
+   unobtrusive ignored/ignorable bindings, code run for side-effects,
+   and more.
+
+tools/mv-nth.lisp:
+   Provides a :meta rule to open MV-NTH occurrences, and disables
+   MV-NTH so that you see (MV-NTH 0 ...) rather than (CAR ...).
+
+tools/rulesets.lisp:
+   Provides tools for defining and modifying rulesets, which are
+   similar in spirit to defined theories but can be modified once
+   defined.
+
+tools/with-arith5-help:
+   Utility which locally loads the arithmetic-5 books, but disables the
+   rules it introduces. Provides macros which can enable these rules
+   when they are needed.
+
+tools/defined-const:
+   Utility which, when using the HONS system, can define a constant to
+   be the result of some expensive computation and prove a theorem that
+   the constant equals the original term, while only running the
+   computation once.  Requires running the computation twice if not
+   using the HONS system.  Also see
+   clause-processors/replace-defined-consts.lisp.
+
+tools/saved-errors.lisp
+   Provides a mechanism for running a series of generated events and
+   printing a useful error message when one of them fails.
