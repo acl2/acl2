@@ -18,7 +18,7 @@ Robert Krug, and repeated in ../arithmetic-5/README):
 
   Don't use arithmetic-3.  It's not as powerful as arithmetic-4
   (Robert doesn't know if it's faster), and it has more rewriting
-  loops than arithmetic-3.
+  loops than arithmetic-4.
 
   Note that arithmetic-2 is totally obsolete.  We may stop
   distributing it.

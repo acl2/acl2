@@ -18,7 +18,7 @@ Robert Krug, and repeated in ../arithmetic/README):
 
   Don't use arithmetic-3.  It's not as powerful as arithmetic-4
   (Robert doesn't know if it's faster), and it has more rewriting
-  loops than arithmetic-3.
+  loops than arithmetic-4.
 
   Note that arithmetic-2 is totally obsolete.  We may stop
   distributing it.
@@ -28,7 +28,7 @@ Robert Krug, and repeated in ../arithmetic/README):
 
 =================================================================
 
-README for Arithmetic-4 [actually arithmetic-5; more updates may come]
+README for Arithmetic-5
 
 Author: Robert Bellarmine Krug
 
@@ -40,7 +40,7 @@ Contents
 
 0. WHICH ARITHMETIC BOOKS SHOULD I USE?
 
-1. HOW TO USE THE ARITHMETIC-4 BOOKS.
+1. HOW TO USE THE ARITHMETIC-5 BOOKS.
   1.A. In Brief 
   1.B. Choosing a Normal Form.
   1.C. Mini-theories.
@@ -65,30 +65,30 @@ If you only need a little arithmetic reasoning (and no reasoning
 about floor and mod), arithmetic/top-with-meta will probably
 suffice.  It is a good, fast, minimal arithmetic library.
 
-The book arithmetic-3/top is much more powerful, and includes
-rules for reasoning about floor and mod also.  This library is 
-reasonably fast, but unfortunately suffers from rewrite loops on 
-occasion.  (As of ACL2 v. 3.3.  We hope to fix this in the next 
-release.)  You can enable nonlinear arithmetic (an extension of
-ACL2's linear arithmetic package to include multiplication) with:
-
-(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
-                                              hist pspv))).
-
-The most powerful (and therefore the slowest) library is
-arithmetic-4/top.  It also includes the start of a theory about
-the logical operators such as logand and lognot.  You can enable
-nonlinear reasoning with either
+The book arithmetic-4/top is much more powerful, and includes
+rules for reasoning about floor and mod.  It also includes 
+the start of a theory about the logical operators such as logand 
+and lognot.  You can enable nonlinear reasoning with either
 
 (set-default-hints '((nonlinearp-default-hint
                       stable-under-simplificationp
-	              hist pspv)))
+                      hist pspv)))
 
 or
 
 (set-default-hints '((nonlinearp-default-hint++ 
-		      id stable-under-simplificationp
-		      hist nil)))
+                      id stable-under-simplificationp
+                      hist nil)))
+
+This library is reasonably fast, but unfortunately suffers from 
+rewrite loops on occasion.   
+
+I do not particularly reccomend arithmetic-3, but it is a bit 
+faster than arithmetic-4, and some users may find it useful.
+
+The most powerful (and therefore the slowest) library is this
+one, arithmetic-5/top.  Perhaps the greatest drawback for some
+users is that arithmetic-5 can cause excessive case-splits.
 
 We would greatly appreciate any feedback on the shortcomings and/or
 strengths of these books, as well as any hints as to how to choose
@@ -97,27 +97,27 @@ the appropriate library.
 =================================================================
 
 
-1. HOW TO USE THE ARITHMETIC-4 BOOKS.
+1. HOW TO USE THE ARITHMETIC-5 BOOKS.
 
   1.A. In Brief
 
-First certify the books in arithmetic-3.
+Load the library with:
 
-Then, after starting ACL2, load the library with:
-
-(include-book "arithmetic-4/top" :dir :system)
+(include-book "arithmetic-5/top" :dir :system)
 
 and enable nonlinear arithmetic with either
 
 (set-default-hints '((nonlinearp-default-hint
                       stable-under-simplificationp
-	              hist pspv)))
+                      hist pspv)))
 
 or
 
 (set-default-hints '((nonlinearp-default-hint++ 
-		      id stable-under-simplificationp
-		      hist nil)))
+                      id stable-under-simplificationp
+                      hist nil)))
+
+The latter being the suggested (and slightly slower) version.
 
 Note 1: If you are having difficulty proving a ``simple'' theorem
 and the arithemtic book's rules seem to be getting in the way, You can
@@ -131,7 +131,25 @@ you with a small set.
 Execute (set-default-arithmetic-theory) to return to the default
 starting point of the arithemtic books.
 
-Note 2: Occasionally non-linear arithmetic will go off into the weeds
+Note 2: If you encounter a theorem for which arithmetic-5 is being
+too slow, there are two techniques which can help you to determine
+which rules are the most likely culprits, and then disable them.
+First (the most powerful, but tied to the use of emacs) is dmr.
+The second (and simpler) is accumulated persistence.  Both of these
+are documented in the standard ACL2 documentation.
+
+Note 3: Perhaps the greatest drawback for some
+users is that arithmetic-5 can cause excessive case-splits.
+These have two sources --- first it is very eager to split on
+the types of operands to arithmetic operations, if it cannot
+determine (via type reasoning) the the operand is of the correct
+type.  These rules have names such asdefault-plus-1.  Disabling
+these rules may lead to strange behaviour.  The second source
+is rules for if normalization.  I have found these rules very
+usefull at times, but they can be expensive.  These rules have
+names like |(+ (if a b c) x)|
+
+Note 4: Occasionally non-linear arithmetic will go off into the weeds
 and consume too much time.  If you notice that ACL2 is taking too long
 on a particular goal or theorem, you can try executing
 (set-default-hints nil) before retrying the problematic theorem.  This
@@ -595,59 +613,8 @@ type-prescription rules.  In particular, rewriting is not used.
 (For example, the presence of (< 4 x) as a hypothesis is not
 sufficient for type-reasoning to establish (< 3 x).)
 
-4. The use of defaxiom (or skip-proofs) is a good way to avoid wasting
-time proving useless lemmas.
-
-5. False theorems are surprisingly hard to prove.  Even the most
+4. False theorems are surprisingly hard to prove.  Even the most
 experienced ACL2 user will regularly write a false theorem.  When a
 proof just will not go through, examine the output of the failed proof
 attempt with an eye to test cases which may reveal a problem.
-
-6. (From the documentation)
 
-Stack overflows are most often caused by looping rewrite rules. In  
-some Lisps, especially GCL, stack overflows often manifest themselves
-as segmentation faults, causing the entire ACL2 image to crash.
-Finding looping rewrite rules can be tricky, especially if you are
-using books supplied by other people.
-
-A wonderful trick is the following. When there is a stack overflow
-during a proof, abort and then try it again after turning on rewrite
-stack monitoring with :brr t. When the stack overflows again, exit to
-raw Lisp. How you exit to raw Lisp depends on which Lisp you are
-using. In Allegro Common Lisp, for example, the stack overflow will
-leave you in an interactive break. You must exit this break, e.g.,
-with :continue 1. This will leave you in the top-level ACL2 command
-loop. You must exit this environment with :q. That will leave you in
-raw Allegro.
-
-After getting into raw Lisp, execute
-  (cw-gstack)
-
-The loop in the rewriter will probably be evident!
-
-If you are in GCL the stack overflow will probably cause a 
-segmentation fault and abort the Lisp job. This makes it harder to
-debug but here is what you do. First, re-create the situation just
-prior to submitting the form that will cause the stack overflow. You
-can do this without suffering through all the proofs by using the
-:ld-skip-proofsp option of ld to reload your scripts. Before you
-submit the form that causes the stack overflow, exit the ACL2 command
-loop with :q. In raw GCL type
- (si::use-fast-links nil)
-
-This will slow GCL down but make it detect and signal stack overflows
-rather than overwrite the system memory. Now reenter the ACL2 command
-loop with (lp).
-
-Now carry on as described above, turning on rewrite stack monitoring
-with :brr t and provoking the stack overflow. When it occurs, you will
-be in an interactive break. Exit to raw Lisp with two successive :q's,
-one to get out of the error break and the next to get out of the
-top-level ACL2 command loop. Then in raw GCL execute the cw-gstack
-above.
-
-Suggestion: Once you have found the loop and fixed it, you should
-execute the ACL2 command :brr nil, so that you don't slow down
-subsequent proof attempts. If you are in GCL, you should also get into
-raw Lisp and execute (si::use-fast-links t).
