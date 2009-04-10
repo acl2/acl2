@@ -419,9 +419,8 @@
 		  (equal x 0))))
 
 (defthm |(equal (lognot x) 0)|
-  (implies (integerp i)
-	   (equal (equal (lognot x) 0)
-		  (equal x -1))))
+  (equal (equal (lognot x) 0)
+         (equal x -1)))
 
 (defthm |(floor (lognot x) 2)|
   (implies (integerp x)

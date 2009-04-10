@@ -1489,9 +1489,8 @@ and variants
 		  (equal x 0))))
 
 (defthm |(equal (lognot x) 0)|
-  (implies (integerp i)
-	   (equal (equal (lognot x) 0)
-		  (equal x -1))))
+  (equal (equal (lognot x) 0)
+         (equal x -1)))
 
 ;;; this next bunch should be generalized to any power of 2
 
