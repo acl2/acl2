@@ -145,11 +145,13 @@ ignorable variable.
 
 The binder macro must produce a form that performs the bindings of ARGS to the
 appropriate forms involving BINDING, makes declarations appropriate for
-IGNORES, and finally runs EXPR.
-:trans1 EXPR.
+IGNORES, and finally runs EXPR.  For examples of this, see the definitions of
+binder macros PATBIND-LIST and PATBIND-LIST*.
 
-For examples of this, see the definitions of binder macros PATBIND-LIST and
-PATBIND-LIST*.
+The default behavior on each binder is to first bind a variable to the result
+of computing the form.  When the form returns multiple values, this is the
+wrong behavior.  The MV and ER binders are treated specially for this purpose.
+User binders are treated this way if they end in the character +.
 ")
 
 
@@ -379,8 +381,12 @@ PATBIND-LIST*.
   (cond ((and (consp assign-expr) (not (eq (car assign-expr) 'quote))
               (consp pattern)
               (not (eq (car pattern) 'mv))
-              (not (eq (car pattern) 'er)))
-         (let ((var (pack pattern))) 
+              (not (eq (car pattern) 'er))
+              (not (and (symbolp (car pattern))
+                        (let ((str (symbol-name (car pattern))))
+                          (and (not (equal str ""))
+                               (eql (char str (1- (length str))) #\+))))))
+         (let ((var (pack pattern)))
            `(let ((,var ,assign-expr))
               (patbind ,pattern ,var ,nested-expr))))
         ((eq pattern '-)

@@ -35,65 +35,81 @@
 
 
 
-(defmacro defined-const (constname
+(defun defined-const-fn (constname
                          term
-                         &key
                          thmname
-                         (rule-classes ':rewrite)
+                         rule-classes
                          evisc)
   (let ((thmname (or thmname (intern-in-package-of-symbol
                               (concatenate 'string
                                            (symbol-name constname) "-DEF")
                               constname))))
-    `(encapsulate nil
+    `(with-output
+      :off :all :on (error)
+      (encapsulate nil
 
-       (local
-        (progn
-          (in-theory nil)
+        (local
+         (progn
+           (in-theory nil)
        
-          (defun defined-const-memoize-fn1 ()
-            (declare (xargs :verify-guards nil))
-            ,term)
+           (defun defined-const-memoize-fn1 ()
+             (declare (xargs :verify-guards nil))
+             ,term)
 
-          (in-theory (disable (defined-const-memoize-fn1)))
+           (in-theory (disable (defined-const-memoize-fn1)))
 
-          (defun defined-const-memoize-fn ()
-            (declare (xargs :guard t))
-            (ec-call (defined-const-memoize-fn1)))
+           (defun defined-const-memoize-fn ()
+             (declare (xargs :guard t))
+             (ec-call (defined-const-memoize-fn1)))
 
-          (defthm defined-const-memoize-fn-is-term
-            (equal ,term
-                   (defined-const-memoize-fn))
-            :hints (("goal" :in-theory (disable (defined-const-memoize-fn))))
-            :rule-classes nil)
+           (defthm defined-const-memoize-fn-is-term
+             (equal ,term
+                    (defined-const-memoize-fn))
+             :hints (("goal" :in-theory (disable (defined-const-memoize-fn))))
+             :rule-classes nil)
 
-          (memoize 'defined-const-memoize-fn)))
-
-
-       (make-event
-        `(make-event
-          (let ((val ,(if (eq (getprop 'defined-const-memoize-fn 'formals 'none 'current-acl2-world
-                                       (w state))
-                              'none)
-                          ;; This checks to see whether the local events above
-                          ;; were run.  If so, we run defined-const-memoize-fn;
-                          ;; if not, it probably means we're in an include-book
-                          ;; of an uncertified book, in which case we just run
-                          ;; the original term.
-                          ',term
-                        '(defined-const-memoize-fn))))
-            `(progn (defconst ,',',constname ',val)
-                    (defthm ,',',thmname
-                      (equal ,',',term ,',',constname)
-                      :hints (("goal" :use defined-const-memoize-fn-is-term))
-                      :rule-classes ,',',rule-classes)
-                    (table defined-const-table
-                           ',',',constname ',',',thmname)
-                    ,@(and ,,evisc
-                          `((table evisc-table ,',',constname
-                                   ,(let ((name (symbol-name ',',constname)))
-                                      (if (may-need-slashes name)
-                                          (concatenate 'string "#.|" name "|")
-                                        (concatenate 'string "#." name)))))))))))))
+           (memoize 'defined-const-memoize-fn)))
 
 
+        (make-event
+         `(make-event
+           (let ((val ,(if (eq (getprop 'defined-const-memoize-fn 'formals 'none 'current-acl2-world
+                                        (w state))
+                               'none)
+                           ;; This checks to see whether the local events above
+                           ;; were run.  If so, we run defined-const-memoize-fn;
+                           ;; if not, it probably means we're in an include-book
+                           ;; of an uncertified book, in which case we just run
+                           ;; the original term.
+                           ',term
+                         '(defined-const-memoize-fn))))
+             `(progn (with-output
+                      :stack :pop
+                      (defconst ,',',constname ',val))
+                     (with-output
+                      :stack :pop
+                      (defthm ,',',thmname
+                        (equal ,',',term ,',',constname)
+                        :hints (("goal" :use defined-const-memoize-fn-is-term))
+                        :rule-classes ,',',rule-classes))
+                     (with-output
+                      :stack :pop
+                      (table defined-const-table
+                             ',',',constname ',',',thmname))
+                     ,@(and ,,evisc
+                            `((with-output
+                               :stack :pop
+                               (table evisc-table ,',',constname
+                                      ,(let ((name (symbol-name ',',constname)))
+                                         (if (may-need-slashes name)
+                                             (concatenate 'string "#.|" name "|")
+                                           (concatenate 'string "#." name)))))))))))))))
+
+
+(defmacro defined-const (constname
+                         term
+                         &key
+                         thmname
+                         rule-classes
+                         evisc)
+  (defined-const-fn constname term thmname rule-classes evisc))
