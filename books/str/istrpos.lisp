@@ -71,7 +71,7 @@
   The \"soundness\" and \"completness\" of strpos are established in the theorems
   ~c[iprefixp-of-istrpos] and ~c[completeness-of-istrpos].~/
 
-  ~l[strpos], ~pl[substr], and ~pl[isubstrp]"
+  ~l[strpos], ~pl[substrp], and ~pl[isubstrp]"
 
   (declare (type string x)
            (type string y))
