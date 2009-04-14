@@ -1,4 +1,5 @@
-#summary List (probably partial) of books added after the release of ACL2 Version 3.4.
+#summary Books added after the release of ACL2 Version 3.4, together
+with partial discussion of changes other than additions.
 
 = Introduction =
 
@@ -75,6 +76,9 @@ hons-archive/:
 make-event/ REMOVALS:
    embedded-defaxioms/, embedded-defaxioms.{acl2,lisp}
 
+make-event/defmac.lisp:
+   Alternative to defmacro that can be more efficient for macro expansion.
+
 make-event/make-redundant.lisp:
    Defines a simple make-event which submits a redundant copy of a
    defthm/defun/defmacro event.  The practical use of this is for
@@ -88,7 +92,9 @@ make-event/require-book.lisp:
 
 misc/evalable-printing.lisp:
    Implements a "beginner-friendly" way of printing objects such that
-   evaluating the printed result gives that same result
+   evaluating the printed result gives that same result.  See also
+   ../hacking/evalable-ld-printing.lisp, which prints LD results in
+   "evalable" way, as provided by "evalable-printing" book.
 
 misc/fast-coerce.lisp:
    A replacement for coerce, which speeds up (coerce x 'list).
