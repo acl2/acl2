@@ -99,6 +99,10 @@ misc/invariants.lisp:
    arguments to all its recursive calls.
 
 misc/simplify-thm.lisp:
+   A simple event generator which breaks a term thought to be a theorem
+   into some number of theorems of a form where none of the hyps nor
+   the conclusion contain IFs.  Someone may wish to extend this with
+   rule-classes and other more flexible options.
 
 misc/trace1.lisp:
    Alternate implementation of tracing.
@@ -158,6 +162,8 @@ tools/saved-errors.lisp
    printing a useful error message when one of them fails.
 
 tools/stobj-help.lisp:
+   Provides a make-event which proves some useful rules about a stobj,
+   such as type theorems, access/update rewrite rules, etc.
 
 tools/with-arith5-help:
    Utility which locally loads the arithmetic-5 books, but disables the
@@ -167,4 +173,3 @@ tools/with-arith5-help:
 unicode/:
    Added books prefixp.lisp, read-file-objects.lisp, and rev.lisp, and
    removed books utf8-decode-string.lisp and utf8.lisp.
-
