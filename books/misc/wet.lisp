@@ -181,7 +181,7 @@
                              (erp
                               (let ((evisc-tuple ,(if evisc-tuple-p
                                                       evisc-tuple
-                                                    '(default-evisc-tuple state)))
+                                                    '(abbrev-evisc-tuple state)))
                                     (val (f-get-global 'wet-stack state)))
                                 (pprogn
                                  (fms "Backtrace stack:"

@@ -77,18 +77,30 @@
    (t (let* ((pair (car book-alist))
              (book (car pair))
              (extra-events (cdr pair))
+             (in-certify-book (f-get-global 'certify-book-info state))
              (encap-event
               `(encapsulate
                 ()
                 (local (include-book ,book :dir :system))
                 ,@extra-events
-                ,event)))
+                ,event))
+             (final-encap-event
+              (cond (in-certify-book encap-event)
+                    (t `(encapsulate
+                         ()
+                         (local (include-book ,book :dir :system))
+                         (set-inhibit-warnings "Skip-proofs")
+                         (skip-proofs
+                          (encapsulate
+                           ()
+                           ,@extra-events
+                           ,event)))))))
         (mv-let (erp trans-ans state) ; trans-ans is (cons stobjs-out values)
                 (trans-eval encap-event ctx state)
                 (cond ((or erp
                            (car (cdr trans-ans))) ; erp from trans-ans
                        (proof-by-arith-1 event (cdr book-alist) ctx state))
-                      (t (value encap-event))))))))
+                      (t (value final-encap-event))))))))
 
 (defmacro proof-by-arith (&whole whole-form
                                  event &optional quietp arith-book-alist)

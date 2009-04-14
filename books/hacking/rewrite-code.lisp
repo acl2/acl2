@@ -298,7 +298,7 @@
                 (#\n . ,(and (consp rng) (car rng))))
               (standard-co state)
               state
-              (acl2::default-evisc-tuple state)))
+              (acl2::abbrev-evisc-tuple state)))
           ; ok
           state)
         (assert-zero-allowed-entry-lst var-entries state)))))

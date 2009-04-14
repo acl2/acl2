@@ -67,6 +67,10 @@ for defsum and deftuple.
 pattern-match.lisp provides user-extensible pattern-matching
 functionality, especially useful for writing functions that deal with
 sum-of-products data structures as defined by defsum.
+
+stobj-help.lisp provides a make-event which proves some useful rules about a
+stobj, such as type theorems, access/update rewrite rules, etc.
+
 ")
  (:PERMISSION
   "{bstar,cws,defined-const,defsum,deftuple,pack,progndollar,theory-tools,types-misc}.lisp

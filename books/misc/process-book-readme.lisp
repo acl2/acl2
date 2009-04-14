@@ -72,7 +72,7 @@
                       "The form read from a book's Readme.lsp file should be ~
                        an list of true lists each with at least two elements, ~
                        but ~X01 is not."
-                      alist (default-evisc-tuple state)))
+                      alist (abbrev-evisc-tuple state)))
                  (t (let* ((files-entry    (assoc-eq :FILES alist))
                            (title-entry    (assoc-eq :TITLE alist))
                            (author/s-entry (assoc-eq :AUTHOR/S alist))

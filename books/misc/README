@@ -88,9 +88,10 @@ See the documentation provided by the author (Jared Davis) in the file.
 
 ===============================================================================
 
-defmac.lisp -- define macros to be efficient for macro expansion
+defmac.lisp -- alternative to defmacro that can be more efficient for
+               macro expansion
 
-See comment at the top of defmac.lisp.
+See also :doc defmac after including this book.
 
 ===============================================================================
 
@@ -150,6 +151,17 @@ ACL2 !>:trans1 (dft comm2-test-1 ...)
 and looking at the output.  The second book contains a few more interesting
 examples, e.g., of case analysis and other things.  There is no documentation,
 but perhaps the examples will help some.
+
+===============================================================================
+
+evalable-printing.lisp -- a
+"beginner-friendly" way of printing objects such that evaluating the
+printed result gives that same result
+
+See also ../hacking/evalable-ld-printing.lisp, which prints LD results
+in "evalable" way, as provided by "evalable-printing" book.  To
+activate, include this book and assign a non-nil value to the state
+global EVALABLE-LD-PRINTINGP, as in (assign evalable-ld-printingp t).
 
 ===============================================================================
 
@@ -377,6 +389,16 @@ courier font).  Also see expander.lisp for a related tool.
 
 ===============================================================================
 
+simplify-thm.lisp -- a simple event generator which breaks a term
+                     thought to be a theorem into some number of
+                     theorems of a form where none of the hyps nor the
+                     conclusion contain IFs.
+
+Someone may wish to extend this with rule-classes and other more
+flexible options.
+
+===============================================================================
+
 sin-cos.lisp  --  rational approximations to SIN and COS with Maclaurin series
 
 This library contains both "obvious" and "fast" series approximation functions
@@ -409,6 +431,12 @@ See the top of the file for examples and a relevant theorem.
 ===============================================================================
 
 total-order.lisp -- total order for ACL2
+
+===============================================================================
+
+trace-star.lisp -- a beginner-friendly variant of trace$.  Features
+"evalable" printing, provided by "evalable-printing" book, and
+other modifications.
 
 ===============================================================================
 

@@ -1,21 +1,5 @@
 (in-package "ACL2")
 
-; Added for compatibility with ACL2 Version 3.4 during development of the next
-; version.  It should be fine to remove this after the next version is
-; released.
-(set-state-ok t)
-(defun set-print-case (case state)
-  (declare (xargs :mode :logic
-                  :guard (and (or (eq case :upcase) (eq case :downcase))
-                              (state-p state))))
-  (prog2$ (or (eq case :upcase)
-              (eq case :downcase)
-              (illegal 'set-print-case
-                       "The value ~x0 is illegal as an ACL2 print-base, which ~
-                        must be :UPCASE or :DOWNCASE."
-                       (list (cons #\0 case))))
-          (f-put-global 'print-case case state)))
-
 ; This macro is developed to make it easy to call transform-defuns in the
 ; Makefile in support/rtl/, after ld-ing pkgs.lisp there.
 
