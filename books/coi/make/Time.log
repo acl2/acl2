@@ -1,0 +1,67 @@
+
+Building on Tue Apr 14 15:52:04 CDT 2009
+Command exited with non-zero status 2
+0.01 Seconds for ../symbol-fns
+
+Building on Tue Apr 14 15:52:21 CDT 2009
+Command exited with non-zero status 2
+0.00 Seconds for ../symbol-fns
+
+Building on Tue Apr 14 15:53:01 CDT 2009
+3.54 Seconds for ../symbol-fns
+35.92 Seconds for ../util
+5.90 Seconds for ../adviser
+30.00 Seconds for ../nary
+44.98 Seconds for ../lists
+70.33 Seconds for ../osets
+10.38 Seconds for ../syntax
+286.61 Seconds for ../bags
+34.94 Seconds for ../alists
+68.00 Seconds for ../records
+Command exited with non-zero status 2
+1.45 Seconds for ../paths
+
+Building on Wed Apr 15 08:50:18 CDT 2009
+1.36 Seconds for ../symbol-fns
+3.85 Seconds for ../util
+1.51 Seconds for ../adviser
+Command terminated by signal 2
+0.01 Seconds for ../nary
+
+Building on Wed Apr 15 08:57:06 CDT 2009
+1.36 Seconds for ../symbol-fns
+3.77 Seconds for ../util
+1.56 Seconds for ../adviser
+1.82 Seconds for ../nary
+3.04 Seconds for ../lists
+2.79 Seconds for ../osets
+1.76 Seconds for ../syntax
+2.80 Seconds for ../bags
+3.18 Seconds for ../alists
+3.98 Seconds for ../records
+4.02 Seconds for ../paths
+9.04 Seconds for ../maps
+153.39 Seconds for ../dtrees
+14.09 Seconds for ../defpun
+15.71 Seconds for ../defstructure
+274.65 Seconds for ../super-ihs
+
+Building on Wed Apr 15 09:10:11 CDT 2009
+14.12 Seconds for ../symbol-fns
+34.59 Seconds for ../util
+23.01 Seconds for ../adviser
+45.02 Seconds for ../nary
+18.49 Seconds for ../lists
+81.07 Seconds for ../osets
+12.67 Seconds for ../syntax
+31.21 Seconds for ../bags
+50.97 Seconds for ../alists
+34.81 Seconds for ../records
+40.67 Seconds for ../paths
+7.98 Seconds for ../maps
+7.58 Seconds for ../dtrees
+1.02 Seconds for ../defpun
+1.38 Seconds for ../defstructure
+5.35 Seconds for ../super-ihs
+702.82 Seconds for ../gacc
+7.07 Seconds for ../gacc

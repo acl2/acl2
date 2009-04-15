@@ -1,0 +1,48 @@
+#!/bin/sh
+
+cd ..
+cvs -d /rfs/proj/acs_dept/CVS checkout symbol-fns
+cvs -d /rfs/proj/acs_dept/CVS checkout guards
+cvs -d /rfs/proj/acs_dept/CVS checkout adviser
+cvs -d /rfs/proj/acs_dept/CVS checkout lists
+cvs -d /rfs/proj/acs_dept/CVS checkout sets
+cvs -d /rfs/proj/acs_dept/CVS checkout osets
+cvs -d /rfs/proj/acs_dept/CVS checkout syntax
+cvs -d /rfs/proj/acs_dept/CVS checkout bags
+cvs -d /rfs/proj/acs_dept/CVS checkout alists
+cvs -d /rfs/proj/acs_dept/CVS checkout records
+cvs -d /rfs/proj/acs_dept/CVS checkout lcf
+cvs -d /rfs/proj/acs_dept/CVS checkout challenges
+cvs -d /rfs/proj/acs_dept/CVS checkout paths
+cvs -d /rfs/proj/acs_dept/CVS checkout maps
+cvs -d /rfs/proj/acs_dept/CVS checkout dtrees
+cvs -d /rfs/proj/acs_dept/CVS checkout graphs
+cvs -d /rfs/proj/acs_dept/CVS checkout defpun
+cvs -d /rfs/proj/acs_dept/CVS checkout pacc
+cvs -d /rfs/proj/acs_dept/CVS checkout defstructure
+cvs -d /rfs/proj/acs_dept/CVS checkout super-ihs
+cvs -d /rfs/proj/acs_dept/CVS checkout gwv
+cvs -d /rfs/proj/acs_dept/CVS checkout gacc
+cvs -d /rfs/proj/acs_dept/CVS checkout nary
+cvs -d /rfs/proj/acs_dept/CVS checkout nu
+cvs -d /rfs/proj/acs_dept/CVS checkout pipe
+cvs -d /rfs/proj/shade/cvs checkout -P aamp-model
+cvs -d /rfs/proj/acs_dept/CVS checkout m5
+cvs -d /rfs/proj/acs_dept/CVS checkout vfaat
+cvs -d /rfs/proj/acs_dept/CVS checkout t2
+cvs -d /rfs/proj/acs_dept/CVS checkout cutpoints
+cvs -d /rfs/proj/acs_dept/CVS checkout cutpoints-compositional
+cvs -d /rfs/proj/acs_dept/CVS checkout info-flow
+cvs -d /rfs/proj/acs_dept/CVS checkout examples
+cvs -d /rfs/proj/acs_dept/CVS checkout dfg
+cvs -d /rfs/proj/acs_dept/project/Secure-Computing/CVS checkout -P aamp7-separation
+cvs -d /rfs/proj/acs_dept/CVS checkout rci
+#cvs -d /rfs/proj/milsrtos/CVS checkout ghs
+
+#Leaving this here to update make/ if you call this command to update stuff, rather than get stuff the first time.
+#On the initial use of getall, you probably already have make/ checked out (or else you wouldn't have this file!).
+cvs -d /rfs/proj/acs_dept/CVS checkout make
+
+#cd make
+#make -f Makelibs
+

@@ -1,0 +1,4 @@
+(ld "Makefile.acl2")
+(ld "symbol-fns-defpkg.lsp" :dir :symbol-fns)
+(ld "defun-defpkg.lsp")
+(certify-book "recursion-support" ? t)

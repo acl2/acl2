@@ -1,0 +1,11 @@
+#|-*-Lisp-*-=================================================================|#
+#|                                                                           |#
+#| coi: Computational Object Inference                                       |#
+#|                                                                           |#
+#|===========================================================================|#
+(ld "alist-defpkg.lsp")
+
+;(include-book "bag-pkg" :dir :bags)
+(ld "bag-defpkg.lsp" :dir :bags)
+
+(ld "adviser-defpkg.lsp" :dir :adviser)

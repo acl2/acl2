@@ -1,0 +1,12 @@
+#|-*-Lisp-*-=================================================================|#
+#|                                                                           |#
+#| coi: Computational Object Inference                                       |#
+#|                                                                           |#
+#|===========================================================================|#
+
+(ld "cert.acl2")
+(ld "defun-defpkg.lsp")
+(ld "def-defpkg.lsp")
+(ld "debug-defpkg.lsp")
+(ld "symbol-fns-defpkg.lsp" :dir :symbol-fns)
+(certify-book "defun" ?)
