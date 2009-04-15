@@ -62,6 +62,11 @@ clause-processors/use-by-hint.lisp:
    that a clause processor can produce clauses that are copies of
    statements of existing theorems.
 
+coi/:
+   The coi books comprise a "shelf" of ACL2 books related to the
+   modeling of "computational objects" such as processors, memories,
+   kernels, microcode, and so on.
+
 defsort/:
    Defines a stable sort when given a comparison function.
 
