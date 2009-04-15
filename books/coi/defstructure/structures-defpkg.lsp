@@ -24,7 +24,7 @@
 ;; pathname.)   
 ;;-- Now we do, with :dir support on LDs in ACL2 version 2.9.3.  So I'm trying to make use of that   -ews
 
-(ld "data-structures/define-u-package.lisp" :dir :system)
+(ld "data-structures/define-u-package.lsp" :dir :system)
 
 ;; (defpkg "U" (union-eq *acl2-exports*
 ;;                       *common-lisp-symbols-from-main-lisp-package*))
