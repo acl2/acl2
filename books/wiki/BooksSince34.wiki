@@ -2,8 +2,8 @@
 
 = Introduction =
 
-The following list of books and directories describes changes
-since the release of ACL2 Version 3.4.
+The following alphabetical list of books and directories describes
+changes since the release of ACL2 Version 3.4.
 
 Other changes since Version 3.4: (1) Files that are not to be
 certified and had .lisp suffixes now generally have .lsp suffixes; and
