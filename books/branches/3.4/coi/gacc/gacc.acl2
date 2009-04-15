@@ -1,0 +1,19 @@
+#|-*-Lisp-*-=================================================================|#
+#|                                                                           |#
+#| coi: Computational Object Inference                                       |#
+#|                                                                           |#
+#|===========================================================================|#
+
+(ld "cert.acl2")
+
+;Since path appears before :: in gacc2.lisp.
+(ld "path-defpkg.lsp" :dir :paths)
+
+;; The include-book commands below are copied here for effiency (ask Eric for
+;; the details).  Keep this list in sync with the list in the .lisp file.
+
+(include-book "ram")
+(include-book "ordinals/e0-ordinal" :dir :system)
+
+(certify-book "gacc" ?)
+

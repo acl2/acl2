@@ -1,0 +1,11 @@
+#|-*-Lisp-*-=================================================================|#
+#|                                                                           |#
+#| coi: Computational Object Inference                                       |#
+#|                                                                           |#
+#|===========================================================================|#
+
+(ld "gacc-defpkg.lsp")
+
+(ld "set-defpkg.lsp" :dir :osets)
+
+(ld "path-defpkg.lsp" :dir :paths)

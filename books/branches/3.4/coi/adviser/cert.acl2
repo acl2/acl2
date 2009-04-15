@@ -1,0 +1,8 @@
+#|-*-Lisp-*-=================================================================|#
+#|                                                                           |#
+#| coi: Computational Object Inference                                       |#
+#|                                                                           |#
+#|===========================================================================|#
+(ld "Makefile.acl2")
+(ld "symbol-fns-defpkg.lsp" :dir :symbol-fns)
+(ld "adviser-defpkg.lsp")

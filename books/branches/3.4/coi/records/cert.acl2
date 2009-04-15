@@ -1,0 +1,11 @@
+#|-*-Lisp-*-=================================================================|#
+#|                                                                           |#
+#| coi: Computational Object Inference                                       |#
+#|                                                                           |#
+#|===========================================================================|#
+(ld "rec-defpkg.lsp")
+(ld "symbol-fns-defpkg.lsp" :dir :symbol-fns)
+(ld "set-defpkg.lsp" :dir :osets)
+(ld "bag-defpkg.lsp" :dir :bags)
+(ld "list-defpkg.lsp" :dir :lists)
+(ld "data-structures/memories/package.lsp" :dir :system)
