@@ -27,8 +27,6 @@
 
 (in-package "JFKR")
 
-; (set-guard-checking :all)
-
 ; These allow me to use a macro to bind variables to their accessors in a
 ; standard fashion without retyping the accesses and calculations everytime.  I
 ; could retype, but it results in really long looking code and is painful to
