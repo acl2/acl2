@@ -69,7 +69,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "rtl/rel7/arithmetic/top" :dir :system)
+(include-book "rtl/rel8/arithmetic/top" :dir :system)
 
 (defthmd over-estimate-rule-var-leaf
   (implies (and (syntaxp (symbolp x))
