@@ -798,14 +798,18 @@
 
   
   (cond ((atom al) name)
-        (t (hons-acons (gentle-caar al)
-                       (gentle-cdar al)
+        ((atom (car al))
+         (make-fal (cdr al) name))
+        (t (hons-acons (caar al)
+                       (cdar al)
                        (make-fal (cdr al) name)))))
 
 (defn make-fal! (al name)
   (cond ((atom al) name)
-        (t (hons-acons! (gentle-caar al)
-                        (gentle-cdar al)
+        ((atom (car al))
+         (make-fal (cdr al) name))
+        (t (hons-acons! (caar al)
+                        (cdar al)
                         (make-fal (cdr al) name)))))
 
 (defn hons-make-list (n a e)
