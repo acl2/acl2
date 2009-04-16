@@ -61,6 +61,9 @@
 # Ruben Gamboa and John Cowles
 # Inverse Functions in ACL2(r)
 
+# David Rager
+# An Executable Model for Security Protocol JFKr
+
 ##############################
 
 # There are no supporting materials for the following contributions.
@@ -81,9 +84,6 @@
 
 # Rex Page
 # Computational Logic in the Undergraduate Curriculum
-
-# David Rager
-# An Executable Model for Security Protocol JFKr
 
 ##############################
 
