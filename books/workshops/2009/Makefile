@@ -32,20 +32,8 @@
 
 # Supporting materials not yet received:
 
-# J Moore
-# Automatically Computing Functional Instantiations
-
 # Robert Boyer and Warren Hunt
 # Symbolic Simulation in ACL2
-
-# Rex Page
-# Computational Logic in the Undergraduate Curriculum
-
-# Carl Eastland and Matthias Felleisen
-# Automatically Verified GUI Programs
-
-# Carl Eastland 
-# DoubleCheck Your Theorems
 
 # Ryan Ralston
 # ACL2-Certified AVL Trees
@@ -57,9 +45,6 @@
 # Efficient, Formally Verifiable Data Structures using ACL2
 #   Single-Threaded Objects for High-Assurance Systems
 
-# David Rager
-# An Executable Model for Security Protocol JFKr
-
 # David Greve
 # Automated Reasoning With Quantified Formulae
 
@@ -68,21 +53,13 @@
 
 ##############################
 
-# Supporting materials for books already distributed:
+# Supporting materials are elsewhere (see README files):
 
-# None at this point.
+# J Moore
+# Automatically Computing Functional Instantiations
 
-##############################
-
-# Supporting materials not yet certifiable:
-
-# None at this point.
-
-##############################
-
-# Supporting materials that are not meant for ACL2 processing.
-
-# None at this point.
+# Ruben Gamboa and John Cowles
+# Inverse Functions in ACL2(r)
 
 ##############################
 
@@ -94,9 +71,19 @@
 # Matt Kaufmann
 # Abbreviated Output for Input in ACL2
 
-# Ruben Gamboa and John Cowles
-# Inverse Functions in ACL2(r)
-# [See README in directory gamboa-cowles-inverses/.]
+# Carl Eastland and Matthias Felleisen
+# Automatically Verified GUI Programs
+# [part of Dracula]
+
+# Carl Eastland 
+# DoubleCheck Your Theorems
+# [part of Dracula]
+
+# Rex Page
+# Computational Logic in the Undergraduate Curriculum
+
+# David Rager
+# An Executable Model for Security Protocol JFKr
 
 ##############################
 
