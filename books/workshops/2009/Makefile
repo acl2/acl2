@@ -17,6 +17,9 @@
 # Laurence Pierre, Renauld Clavel, and Regis Leveugle
 # ACL2 for the Verification of Fault-Tolerance Properties: First Results  
 
+# Fares Fraij and Steve Roach
+# Proof of Transitive Closure Property of Directed Acyclic Graphs
+
 # Rob Sumners
 # User Control and Direction of a More Efficient Simplifier in ACL2
 
@@ -37,9 +40,6 @@
 
 # Ryan Ralston
 # ACL2-Certified AVL Trees
-
-# Fares Fares and Steve Roach
-# Proof of Transitive Closure Property of Directed Acyclic Graphs
 
 # David Hardin and Samuel Hardin
 # Efficient, Formally Verifiable Data Structures using ACL2
@@ -87,7 +87,8 @@
 
 ##############################
 
-DIRS =  cowles-gamboa-triangle-square \
+DIRS =  cowles-gamboa-triangle-square/triangle=square-materials \
+	fraij-roach/support \
 	kaufmann-kornerup-reitblatt/support \
 	liu/support \
 	pierre-clavel-leveugle/Fault-tolerance \
