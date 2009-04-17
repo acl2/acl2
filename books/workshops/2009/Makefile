@@ -45,15 +45,9 @@
 # Efficient, Formally Verifiable Data Structures using ACL2
 #   Single-Threaded Objects for High-Assurance Systems
 
-# David Greve
-# Automated Reasoning With Quantified Formulae
-
-# David Greve
-# Assuming Termination
-
 ##############################
 
-# Supporting materials are elsewhere (see README files):
+# Supporting materials appearing elsewhere (see README files):
 
 # J Moore
 # Automatically Computing Functional Instantiations
@@ -63,6 +57,14 @@
 
 # David Rager
 # An Executable Model for Security Protocol JFKr
+
+# David Greve
+# Automated Reasoning With Quantified Formulae
+# [Will appear later under books/coi/.]
+
+# David Greve
+# Assuming Termination
+# [Will appear later under books/coi/.]
 
 ##############################
 
