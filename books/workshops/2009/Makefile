@@ -35,12 +35,6 @@
 
 # Supporting materials not yet received:
 
-# Robert Boyer and Warren Hunt
-# Symbolic Simulation in ACL2
-
-# Ryan Ralston
-# ACL2-Certified AVL Trees
-
 # David Hardin and Samuel Hardin
 # Efficient, Formally Verifiable Data Structures using ACL2
 #   Single-Threaded Objects for High-Assurance Systems
@@ -60,15 +54,18 @@
 
 # David Greve
 # Automated Reasoning With Quantified Formulae
-# [Will appear later under books/coi/.]
+# [Awaiting release approval; will appear later under books/coi/.]
 
 # David Greve
 # Assuming Termination
-# [Will appear later under books/coi/.]
+# [Awaiting release approval; will appear later under books/coi/.]
 
 ##############################
 
 # There are no supporting materials for the following contributions.
+
+# Robert Boyer and Warren Hunt
+# Symbolic Simulation in ACL2
 
 # Antonio Garcia-Dominguez, Francisco Palomo-Lozano and Inmaculada Medina-Bulo
 # Hypertext Navigation of ACL2 Proofs with XMLEye
@@ -86,6 +83,10 @@
 
 # Rex Page
 # Computational Logic in the Undergraduate Curriculum
+
+# Ryan Ralston
+# ACL2-Certified AVL Trees
+# [May be submitted at a later time, upon completion.]
 
 ##############################
 
