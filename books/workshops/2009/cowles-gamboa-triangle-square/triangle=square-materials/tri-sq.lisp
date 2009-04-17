@@ -17,7 +17,7 @@
 |#
 
 (add-include-book-dir :books 
-		      "../../../../"))
+		      "../../../../")
 
 (local
  (include-book "arithmetic-3/top" :dir :books
