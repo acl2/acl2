@@ -35,7 +35,8 @@
 (in-theory (disable encryptable-listp decryptable-listp))
 
 (thm 
- (implies (integer-listp (foo x))  (encryptable-lisp (foo x))) :rule-classes :type-prescription)
+ (implies (integer-listp (foo x))  (encryptable-lisp (foo x)))
+ :rule-classes :type-prescription)
 
 (defthm encryptable-listp-implies-integer-listp
   (implies (integer-listp x)
@@ -45,8 +46,6 @@
   (implies (encryptable-listp x)
            (integer-listp x)))
 |#
-
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
