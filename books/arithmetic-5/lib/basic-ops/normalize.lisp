@@ -585,7 +585,7 @@
  (in-theory (disable matching-factor-gather-exponents-p)))
 
 (defun find-matching-factor-gather-exponents (to-match x mfc state)
-  (declare (xargs :guard (true-listp to-match)))
+  (declare (xargs :guard t))
   (cond ((eq (fn-symb x) 'BINARY-*)
          (cond ((and (matching-factor-gather-exponents-p to-match (arg1 x))
 		     ;; prevent various odd loops
@@ -638,7 +638,7 @@
  (in-theory (disable matching-factor-scatter-exponents-p)))
 
 (defun find-matching-factor-scatter-exponents (to-match x mfc state)
-  (declare (xargs :guard (true-listp to-match)))
+  (declare (xargs :guard t))
   (cond ((eq (fn-symb x) 'BINARY-*)
          (cond ((and (matching-factor-scatter-exponents-p to-match (arg1 x))
 		     ;; Prevent various odd loops.
