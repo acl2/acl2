@@ -7,6 +7,10 @@
 # John Cowles and Ruben Gamboa
 # \triangle = \square
 
+# David Hardin and Samuel Hardin
+# Efficient, Formally Verifiable Data Structures using ACL2
+#   Single-Threaded Objects for High-Assurance Systems
+
 # Hanbing Liu
 # Proving A Specific Type Of Inequality Theorems in ACL2: a bind-free experience report
 
@@ -30,14 +34,6 @@
 # Freek Verbeek and Julien Schmaltz
 # Formal Validation of Deadlock Prevention in Networks-on-Chips
 # verbeek-schmaltz/
-
-##############################
-
-# Supporting materials not yet received:
-
-# David Hardin and Samuel Hardin
-# Efficient, Formally Verifiable Data Structures using ACL2
-#   Single-Threaded Objects for High-Assurance Systems
 
 ##############################
 
@@ -92,6 +88,7 @@
 
 DIRS =  cowles-gamboa-triangle-square/triangle=square-materials \
 	fraij-roach/support \
+	hardin/deque-stobj \
 	kaufmann-kornerup-reitblatt/support \
 	liu/support \
 	pierre-clavel-leveugle/Fault-tolerance \
