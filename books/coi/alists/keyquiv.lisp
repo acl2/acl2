@@ -7,13 +7,13 @@
 ;; Primitive alist fixing and equivalence relations.
 
 (in-package "ALIST")
-(include-book "iff" :dir :util)
-(include-book "basic" :dir :lists)
-(include-book "memberp" :dir :lists)
-(include-book "set" :dir :lists)
-(include-book "good-rewrite-order" :dir :util)
+(include-book "../util/iff")
+(include-book "../lists/basic")
+(include-book "../lists/memberp")
+(include-book "../lists/set")
+(include-book "../util/good-rewrite-order")
 (include-book "equiv")
-(local (include-book "iff" :dir :util))
+(local (include-book "../util/iff"))
 
 ;; Interpreting Objects as Conses (consfix)
 ;; 
@@ -401,7 +401,7 @@
      (encapsulate
 	 ()
        
-       (local (include-book "remove-induction" :dir :lists))
+       (local (include-book "../lists/remove-induction"))
        
        (defthm keys-remove
 	 (implies
@@ -656,7 +656,7 @@
 
 ;; This should be true in general
 
-(include-book "remove" :dir :lists)
+(include-book "../lists/remove")
 
 (defun def-equivp (list x y)
   (and (assoc-equiv (list::remove-list list (keys x)) x y)

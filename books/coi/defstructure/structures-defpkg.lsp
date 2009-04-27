@@ -5,18 +5,18 @@
 #|===========================================================================|#
 (in-package "ACL2")
 
-(ld "Makefile.acl2")
+; (ld "Makefile.acl2")
 
-;(include-book "symbol-fns-exports" :dir :symbol-fns)
-(ld "symbol-fns-exports.lsp" :dir :symbol-fns)
+;(include-book "../symbol-fns/symbol-fns-exports")
+(ld "../symbol-fns/symbol-fns-exports.lsp")
 
 ;bzo drop?
-;(include-book "record-exports" :dir :records)
-(ld "record-exports.lsp" :dir :records) 
+;(include-book "../records/record-exports")
+(ld "../records/record-exports.lsp") 
 
 ;bzo
-;(include-book "path-exports" :dir :paths) -ews
-(ld "path-defpkg.lsp" :dir :paths)
+;(include-book "../paths/path-exports") -ews
+(ld "../paths/path-defpkg.lsp")
 
 ;; Define the STRUCTURES package (and the U package).  The STRUCTURES and U packages are stolen from the books/
 ;; directory and put here so that we can modify them and refer to them more easily.  (We like to ld the books which

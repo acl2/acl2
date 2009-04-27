@@ -5,7 +5,7 @@
 #|===========================================================================|#
 (in-package "ACL2")
 (include-book "auxilary")
-(include-book "mv-nth" :dir :util)
+(include-book "../util/mv-nth")
 
 (defun syn::alist-binding (alist1 symbol)
   (declare (type symbol symbol))

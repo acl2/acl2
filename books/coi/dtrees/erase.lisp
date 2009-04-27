@@ -13,8 +13,8 @@
 
 (in-package "DTREE")
 (include-book "set")
-(include-book "dominates" :dir :paths)
-(include-book "diverge" :dir :paths)
+(include-book "../paths/dominates")
+(include-book "../paths/diverge")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
 ;; Here is the erase function.  It operates on dtrees, and handles its own

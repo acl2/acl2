@@ -9,7 +9,7 @@
 
 (include-book "gacc2")
 (include-book "gacc")
-(include-book "mv-nth" :dir :util)
+(include-book "../util/mv-nth")
 
 ;(local (in-theory (disable bag::SUBBAGP-DISJOINT bag::SUBBAGP-DISJOINT-commute)))
 (local (in-theory (disable acl2::S-EQUAL-DIFFERENTIAL)))
@@ -570,7 +570,7 @@
 
 ;; (encapsulate
 ;;  ()
-;;  (local (include-book "logical-logops" :dir :super-ihs))
+;;  (local (include-book "../super-ihs/logical-logops"))
 ;; ;bzo
 ;;  (DEFTHM ACL2::LOGAND-WITH-MASK-ERIC-constant-version
 ;;    (IMPLIES (and (syntaxp acl2::mask)

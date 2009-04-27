@@ -9,7 +9,7 @@
 (in-package "LIST")
 (include-book "basic")
 (include-book "memberp")
-(local (include-book "iff" :dir :util))
+(local (include-book "../util/iff"))
 
 (defund map-cons (a x)
   (declare (type t a x))

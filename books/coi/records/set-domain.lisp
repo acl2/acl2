@@ -6,8 +6,8 @@
 (in-package "SET")
 
 (include-book "domain")
-(include-book "sets" :dir :osets)
-(include-book "extras" :dir :osets)
+(include-book "../osets/sets")
+(include-book "../osets/extras")
 
 ;; Here we define a "set" version of rkeys.
 
@@ -72,9 +72,9 @@
 ;; returns an oset.
 
 (include-book "records")
-(include-book "sets" :dir :osets)
-(local (include-book "map" :dir :osets))
-(local (include-book "extras" :dir :osets))
+(include-book "../osets/sets")
+(local (include-book "../osets/map"))
+(local (include-book "../osets/extras"))
 
 (defun key-set (r)
   (if (consp r)

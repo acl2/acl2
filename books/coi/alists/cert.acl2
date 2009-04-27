@@ -5,7 +5,7 @@
 #|===========================================================================|#
 (ld "alist-defpkg.lsp")
 
-;(include-book "bag-pkg" :dir :bags)
-(ld "bag-defpkg.lsp" :dir :bags)
+;(include-book "../bags/bag-pkg")
+(ld "../bags/bag-defpkg.lsp")
 
-(ld "adviser-defpkg.lsp" :dir :adviser)
+(ld "../adviser/adviser-defpkg.lsp")

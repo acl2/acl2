@@ -4,6 +4,6 @@
 #|                                                                           |#
 #|===========================================================================|#
 (ld "cert.acl2")
-(ld "set-defpkg.lsp" :dir :osets)
-(ld "path-defpkg.lsp" :dir :paths)
+(ld "../osets/set-defpkg.lsp")
+(ld "../paths/path-defpkg.lsp")
 (certify-book "tr-path-connection" ?)

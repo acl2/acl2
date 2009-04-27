@@ -5,8 +5,8 @@
 #|===========================================================================|#
 (in-package "GACC")
 
-;(include-book "memberp" :dir :lists)
-(include-book "basic" :dir :bags)
+;(include-book "../lists/memberp")
+(include-book "../bags/basic")
 
 ;;
 ;; ADDR-RANGE

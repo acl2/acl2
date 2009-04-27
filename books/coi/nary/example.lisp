@@ -5,7 +5,7 @@
 #|===========================================================================|#
 (in-package "ACL2")
 
-;;(xxinclude-book "top" :dir :bags)
+;;(xxinclude-book "../bags/top")
 (include-book "nary")
 
 (defmacro ac (&optional (v 't))
@@ -683,7 +683,8 @@ Accumulated Persistence
    (encapsulate
        ()
 
-     (xxinclude-book "top" :dir :bags)   
+     (xxinclude-book ; break line to avoid bogus make dependency
+      "../bags/top")   
      
      (defequiv+ (bag::memberp x y)
        :pred    memberp-pred

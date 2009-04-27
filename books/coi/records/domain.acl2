@@ -4,6 +4,6 @@
 #|                                                                           |#
 #|===========================================================================|#
 (ld "cert.acl2")
-(ld "alist-defpkg.lsp" :dir :alists)
+(ld "../alists/alist-defpkg.lsp")
 (include-book "records")
 (certify-book "domain" ? t)

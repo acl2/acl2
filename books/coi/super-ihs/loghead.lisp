@@ -808,7 +808,7 @@
 ;;                         (t (our-lexorder term1 term2))))))
 
 
-(include-book "syntaxp" :dir :util)
+(include-book "../util/syntaxp")
 
 ;can this loop (if y is a loghead call?)?
 (defthm loghead-subst

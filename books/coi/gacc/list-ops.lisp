@@ -6,13 +6,13 @@
 (in-package "GACC")
 
 (include-book "mem")
-(include-book "memberp" :dir :lists)
-(include-book "basic" :dir :bags)
+(include-book "../lists/memberp")
+(include-book "../bags/basic")
 
 (include-book "list-ops-common")
 
 ;try to include less of super-ihs:
-(include-book "super-ihs" :dir :super-ihs)
+(include-book "../super-ihs/super-ihs")
 
 ;; Operations for reading and writing lists of bytes.  Perhaps all fancier
 ;; reads and writes should be phrased in terms of rd-list and wr-list?  If so,

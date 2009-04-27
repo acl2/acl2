@@ -23,8 +23,8 @@
 (in-package "ALIST")
 (include-book "strip")
 (include-book "clearkey")
-(include-book "basic" :dir :bags)
-(local (include-book "iff" :dir :util))
+(include-book "../bags/basic")
+(local (include-book "../util/iff"))
 
 ;; bzo move to bags library
 (defthm count-of-remove-all-diff
@@ -169,7 +169,7 @@
 
 (encapsulate
  ()
- (local (include-book "pick-a-point" :dir :bags))
+ (local (include-book "../bags/pick-a-point"))
 
  (defthm subbagp-strip-cars-of-deshadow
    (BAG::subbagp (strip-cars (deshadow x)) 

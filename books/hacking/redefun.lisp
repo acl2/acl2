@@ -8,12 +8,15 @@
 
 
 (defun chk-acceptable-redefun (def ctx wrld state)
-  (er-let* ((tuple (chk-acceptable-defuns (list def) ctx wrld state)))
+  (er-let*
+   ((tuple (chk-acceptable-defuns (list def) ctx wrld state)))
+   (assert$
+    (equal (length tuple) 21)
     (let* ((name (car def))
-           (new-wrld (nth 17 tuple))
+           (new-wrld (nth 18 tuple))
            (old-symbol-class
             (getprop name 'symbol-class 0 'current-acl2-world wrld))
-           (new-symbol-class (nth 14 tuple))
+           (new-symbol-class (nth 15 tuple))
            (old-formals
             (getprop name 'formals 0 'current-acl2-world wrld))  
            (new-formals
@@ -26,34 +29,36 @@
             (getprop name 'stobjs-out 0 'current-acl2-world wrld))  
            (new-stobjs-out
             (getprop name 'stobjs-out 0 'current-acl2-world new-wrld)))
-    (cond ((eql old-symbol-class 0)
-           (er soft ctx "No existing definition: ~x0" name))
-          ((nth 18 tuple) ; non-executablep
-           (er soft ctx
-               "Please do not redefun a non-executable function."))
-          ((not (eq ':program old-symbol-class))
-           (er soft ctx
-               "Old definition should have defun-mode :program.  Sorry."))
-          ((not (eq ':program new-symbol-class))
-           (er soft ctx
-               "New definition should have defun-mode :program.  Sorry."))
-          ((not (equal new-formals old-formals))
-           (er soft ctx
-               "Please use the same formal parameter list when redefining. ~
-                Previous formals: ~x0"
-               old-formals))
-          ((not (equal new-stobjs-in old-stobjs-in))
-           (er soft ctx
-               "New definition should have the same stobjs-in.~
-                Previously, ~x0.  Specified, ~x1."
-               old-stobjs-in new-stobjs-in))
-          ((not (equal new-stobjs-out old-stobjs-out))
-           (er soft ctx
-               "New definition should have the same stobjs-out.~
-                Previously, ~x0.  Specified, ~x1."
-               old-stobjs-out new-stobjs-out))
-          (t ; okay
-           (value :invisible))))))
+      (cond ((eql old-symbol-class 0)
+             (er soft ctx "No existing definition: ~x0" name))
+            ((nth 19 tuple) ; non-executablep
+             (er soft ctx
+                 "Please do not redefun a non-executable function.  The ~
+                  offending definition is: ~x0."
+                 def))
+            ((not (eq ':program old-symbol-class))
+             (er soft ctx
+                 "Old definition should have defun-mode :program.  Sorry."))
+            ((not (eq ':program new-symbol-class))
+             (er soft ctx
+                 "New definition should have defun-mode :program.  Sorry."))
+            ((not (equal new-formals old-formals))
+             (er soft ctx
+                 "Please use the same formal parameter list when redefining. ~
+                  Previous formals: ~x0"
+                 old-formals))
+            ((not (equal new-stobjs-in old-stobjs-in))
+             (er soft ctx
+                 "New definition should have the same stobjs-in.Previously, ~
+                  ~x0.  Specified, ~x1."
+                 old-stobjs-in new-stobjs-in))
+            ((not (equal new-stobjs-out old-stobjs-out))
+             (er soft ctx
+                 "New definition should have the same stobjs-out.Previously, ~
+                  ~x0.  Specified, ~x1."
+                 old-stobjs-out new-stobjs-out))
+            (t ; okay
+             (value :invisible)))))))
 
 
 ; this is a safer version of doing defun with redefinition allowed.

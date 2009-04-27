@@ -8,8 +8,8 @@
 
 (in-package "PATH")
 (include-book "dominates")
-(include-book "basic" :dir :bags)
-(local (include-book "iff" :dir :util))
+(include-book "../bags/basic")
+(local (include-book "../util/iff"))
 
 
 

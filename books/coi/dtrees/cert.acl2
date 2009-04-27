@@ -5,12 +5,12 @@
 #|===========================================================================|#
 (ld "dtree-defpkg.lsp")
 
-;(include-book "bag-pkg" :dir :bags)
-(ld "bag-defpkg.lsp" :dir :bags)
+;(include-book "../bags/bag-pkg")
+(ld "../bags/bag-defpkg.lsp")
 
-;(include-book "sets-pkg" :dir :osets)
-(ld "set-defpkg.lsp" :dir :osets)
+;(include-book "../osets/sets-pkg")
+(ld "../osets/set-defpkg.lsp")
 
-;(include-book "path-pkg" :dir :paths)
-(ld "path-defpkg.lsp" :dir :paths)
+;(include-book "../paths/path-pkg")
+(ld "../paths/path-defpkg.lsp")
 

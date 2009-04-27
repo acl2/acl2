@@ -4,7 +4,7 @@
 #|                                                                           |#
 #|===========================================================================|#
 (in-package "PATH")
-(local (include-book "iff" :dir :util))
+(local (include-book "../util/iff"))
 
 ;;
 ;; The new direction for path reasoning.

@@ -5,16 +5,16 @@
 #|===========================================================================|#
 (in-package "ACL2")
 
-(ld "Makefile.acl2")
+; (ld "Makefile.acl2")
 
-;(include-book "syn-pkg" :dir :syntax)
-;(include-book "bag-pkg" :dir :bags)
-;(include-book "symbol-fns-exports" :dir :symbol-fns)
+;(include-book "../syntax/syn-pkg")
+;(include-book "../bags/bag-pkg")
+;(include-book "../symbol-fns/symbol-fns-exports")
 
-;(include-book "list-exports" :dir :lists)
-;(ld "list-exports.lsp" :dir :lists) ;trying... -ews
+;(include-book "../lists/list-exports")
+;(ld "../lists/list-exports.lsp") ;trying... -ews
 
-;(include-book "alist-pkg" :dir :alists)
+;(include-book "../alists/alist-pkg")
 
 (ld "record-exports.lsp")
 

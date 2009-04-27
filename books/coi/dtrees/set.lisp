@@ -14,8 +14,8 @@
 
 (in-package "DTREE")
 (include-book "raw")
-(include-book "dominates" :dir :paths)
-(include-book "diverge" :dir :paths)
+(include-book "../paths/dominates")
+(include-book "../paths/diverge")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
 (defund set (path value dtree)

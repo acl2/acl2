@@ -7,8 +7,8 @@
 ;; Primitive alist fixing and equivalence relations.
 
 (in-package "ALIST")
-(include-book "basic" :dir :lists)
-(include-book "iff" :dir :util)
+(include-book "../lists/basic")
+(include-book "../util/iff")
 
 ;; Use assox to ensure minimal guard obligations.
 

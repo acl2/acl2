@@ -9,11 +9,11 @@
 ;; A book about alists used in binding environments.
 ;;
 
-(include-book "mv-nth" :dir :util)
-(include-book "nary" :dir :nary)
-(include-book "good-rewrite-order" :dir :util)
+(include-book "../util/mv-nth")
+(include-book "../nary/nary")
+(include-book "../util/good-rewrite-order")
 (include-book "keyquiv")
-(include-book "top" :dir :bags)
+(include-book "../bags/top")
 (include-book "misc/total-order" :dir :system)
 
 ;; bindequiv is like keyquiv except that it does not provide any

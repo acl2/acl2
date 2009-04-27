@@ -253,7 +253,8 @@
   :hints (("Goal" :induct (nm-induction n m)
 	   :in-theory (enable nthcdr))))
 
-(xxinclude-book "basic" :dir :lists)
+; Commented out for dependency analysis (we're in a multi-line comment anyhow):
+; (xxinclude-book "../lists/basic")
 
 (defthm firstn-nil-list
   (implies

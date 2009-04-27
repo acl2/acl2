@@ -5,7 +5,7 @@
 #|===========================================================================|#
 (in-package "LIST")
 
-(include-book "adviser" :dir :adviser)
+(include-book "../adviser/adviser")
 (include-book "memberp")
 
 ;; Here is a version of subset with minimal guards.

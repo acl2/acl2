@@ -4,16 +4,16 @@
 #|                                                                           |#
 #|===========================================================================|#
 (in-package "PATH")
-(include-book "repeat" :dir :lists)
-(include-book "top" :dir :bags)
-(include-book "top" :dir :alists)
-(include-book "records" :dir :records)
-(include-book "domain" :dir :records) ;because we mention rkeys below
+(include-book "../lists/repeat")
+(include-book "../bags/top")
+(include-book "../alists/top")
+(include-book "../records/records")
+(include-book "../records/domain") ;because we mention rkeys below
 (include-book "compatibility")
 (include-book "dominates")
 (include-book "diverge")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
-(local (include-book "iff" :dir :util))
+(local (include-book "../util/iff"))
 
 
 ;; Leftover Dominates/Diverge Stuff ------------------------------------------
@@ -885,7 +885,7 @@
                   nil))
   :hints (("Goal" :in-theory (enable g-list))))
 
-(include-book "syntaxp" :dir :util)
+(include-book "../util/syntaxp")
 ;bzo dup (move to utilities?)
 #+joe
 (DEFUN ACL2::SMALLER-TERM (ACL2::X ACL2::Y)

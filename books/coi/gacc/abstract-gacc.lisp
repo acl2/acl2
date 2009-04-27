@@ -5,7 +5,7 @@
 #|===========================================================================|#
 (in-package "ACL2")
 
-(include-book "defrecord" :dir :records)
+(include-book "../records/defrecord")
 
 ;; This file represents the beginnings of the future of gacc.
 ;;

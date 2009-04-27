@@ -79,7 +79,7 @@
 
 (in-package "STRUCTURES")
 
-(include-book "path" :dir :paths)
+(include-book "../paths/path")
 (include-book "data-structures/utilities" :dir :system)
 
 (program)

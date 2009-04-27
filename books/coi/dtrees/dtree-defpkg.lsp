@@ -5,13 +5,13 @@
 #|===========================================================================|#
 (in-package "ACL2")
 
-(ld "Makefile.acl2")
+; (ld "Makefile.acl2")
 
-;(include-book "list-exports" :dir :lists)
-(ld "list-exports.lsp" :dir :lists)
+;(include-book "../lists/list-exports")
+(ld "../lists/list-exports.lsp")
 
-;(include-book "map-pkg" :dir :maps)
-(ld "map-exports.lsp" :dir :maps)
+;(include-book "../maps/map-pkg")
+(ld "../maps/map-exports.lsp")
 
 (defpkg "DTREE" (set-difference-eq
                  ;(remove-duplicates-eql ;no longer necessary

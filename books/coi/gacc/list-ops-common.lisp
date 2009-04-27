@@ -6,11 +6,11 @@
 (in-package "GACC")
 
 ;try to include less of super-ihs:
-(include-book "super-ihs" :dir :super-ihs)
-(include-book "memberp" :dir :lists)
-(include-book "repeat" :dir :lists)
-(include-book "basic" :dir :bags)
-(include-book "find-index" :dir :lists)
+(include-book "../super-ihs/super-ihs")
+(include-book "../lists/memberp")
+(include-book "../lists/repeat")
+(include-book "../bags/basic")
+(include-book "../lists/find-index")
 
 ;;
 ;; logapp-list
@@ -392,7 +392,7 @@
                  (bag::remove-1 (loghead 16 a) (LOGHEAD-LIST 16 x) )
                (LOGHEAD-LIST 16 x))))
 
-(local (include-book "pick-a-point" :dir :bags)) ;bzo make non-local?
+(local (include-book "../bags/pick-a-point")) ;bzo make non-local?
 
 (defthm subbagp-of-two-loghead-list-calls
   (implies (bag::subbagp vals1 vals2)

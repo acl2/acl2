@@ -6,5 +6,5 @@
 
 (ld "cert.acl2")
 (ld "data-structures/memories/package.lsp" :dir :system)
-(ld "path-defpkg.lsp" :dir :paths)
+(ld "../paths/path-defpkg.lsp")
 (certify-book "fr-path-connection" ? t)

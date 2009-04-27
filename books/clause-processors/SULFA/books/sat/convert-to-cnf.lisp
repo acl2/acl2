@@ -255,7 +255,8 @@
                                    nil)))
     (mv-let
      (erp val state)
-     (simple-translate-and-eval (nth 4 justif)
+     (simple-translate-and-eval (acl2::access acl2::justification justif
+                                              :measure)
                                 alist
                                 nil
                                 "SAT internal evaluator"

@@ -3,8 +3,8 @@
 #| coi: Computational Object Inference                                       |#
 #|                                                                           |#
 #|===========================================================================|#
-(ld "Makefile.acl2")
-(ld "adviser-defpkg.lsp" :dir :adviser)
+; (ld "Makefile.acl2")
+(ld "../adviser/adviser-defpkg.lsp")
 (ld "list-defpkg.lsp")
-(ld "debug-defpkg.lsp" :dir :util)
-(ld "def-defpkg.lsp" :dir :util)
+(ld "../util/debug-defpkg.lsp")
+(ld "../util/def-defpkg.lsp")

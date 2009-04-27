@@ -5,7 +5,7 @@
 #|===========================================================================|#
 (in-package "ACL2")
 
-(include-book "syntax" :dir :syntax)
+(include-book "../syntax/syntax")
 
 (set-state-ok t)
 

@@ -6,7 +6,7 @@
 (in-package "LIST")
 
 (include-book "memberp")
-(local (include-book "iff" :dir :util))
+(local (include-book "../util/iff"))
 (local (include-book "remove"))
 
 (defun disjoint (x y)

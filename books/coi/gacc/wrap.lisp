@@ -7,16 +7,16 @@
 
 ;A book about wrapped address ranges...
 
-;(include-book "memberp" :dir :lists)
-(include-book "basic" :dir :bags)
+;(include-book "../lists/memberp")
+(include-book "../bags/basic")
 
-(include-book "super-ihs" :dir :super-ihs)
+(include-book "../super-ihs/super-ihs")
 
 (include-book "addr-range") ;bzo
 
-(include-book "mixed" :dir :lists)
+(include-book "../lists/mixed")
 
-(include-book "find-index" :dir :lists)
+(include-book "../lists/find-index")
 
 (local (in-theory (disable ACL2::LOGHEAD-IDENTITY-2))) ;for efficiency... ;bzo, disable elsewhere?
 
@@ -822,7 +822,7 @@
            :use ((:instance offset-range-wrap-of-loghead (base (+ x y)))
                  (:instance offset-range-wrap-of-loghead (base (+ x (loghead width y))))))))
 
-(include-book "syntaxp" :dir :util)
+(include-book "../util/syntaxp")
 
 
 (defthm offset-range-wrap-subst-in-sum-offset

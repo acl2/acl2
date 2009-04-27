@@ -19,8 +19,8 @@
 
 (in-package "ALIST")
 (include-book "equiv")
-(include-book "memberp" :dir :lists)
-(local (include-book "iff" :dir :util))
+(include-book "../lists/memberp")
+(local (include-book "../util/iff"))
 
 (in-theory (disable strip-cars strip-cdrs))
 

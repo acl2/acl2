@@ -5,7 +5,7 @@
 #|===========================================================================|#
 (in-package "ACL2")
 
-(include-book "symbol-fns" :dir :symbol-fns)
+(include-book "../symbol-fns/symbol-fns")
 
 (set-state-ok t)
 

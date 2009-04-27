@@ -5,7 +5,7 @@
 #|===========================================================================|#
 (in-package "ACL2")
 
-(ld "Makefile.acl2")
+; (ld "Makefile.acl2")
 
 (defpkg "SYN"
   (set-difference-equal

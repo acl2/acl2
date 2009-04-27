@@ -9,9 +9,9 @@
 ;; Here is an alternate view of record domains using list::sets
 ;;
 
-(include-book "keyquiv" :dir :alists)
+(include-book "../alists/keyquiv")
 (include-book "records")
-(include-book "basic" :dir :bags)
+(include-book "../bags/basic")
 
 (local (in-theory (enable alist::keys)))
 
@@ -165,7 +165,7 @@
                                      (bag::count-of-cdr)))))
    )
    
-  (local (include-book "pick-a-point" :dir :bags))
+  (local (include-book "../bags/pick-a-point"))
   
   ;; DAG - should probably be moved to bags somewhere
   (local

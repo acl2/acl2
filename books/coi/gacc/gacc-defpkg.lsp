@@ -5,19 +5,19 @@
 #|===========================================================================|#
 (in-package "ACL2")
 
-(ld "Makefile.acl2")
+; (ld "Makefile.acl2")
 
-;(include-book "symbols" :dir :super-ihs)
+;(include-book "../super-ihs/symbols")
 ;BZO what should we do with this?
-(ld "symbols.lsp" :dir :super-ihs)
+(ld "../super-ihs/symbols.lsp")
 
-;(include-book "list-exports" :dir :lists)
-(ld "list-exports.lsp" :dir :lists)
+;(include-book "../lists/list-exports")
+(ld "../lists/list-exports.lsp")
 
-;(include-book "bag-exports" :dir :bags)
-(ld "bag-exports.lsp" :dir :bags)
+;(include-book "../bags/bag-exports")
+(ld "../bags/bag-exports.lsp")
 
-(ld "util-exports.lsp" :dir :util)
+(ld "../util/util-exports.lsp")
 
 (defpkg "GACC" 
 ;;  (remove-duplicates-eql   ;no longer necessary due to change in ACL2

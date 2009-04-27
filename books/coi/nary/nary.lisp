@@ -256,9 +256,9 @@
 
 (in-package "ACL2")
 
-;;(include-book "syntax" :dir :syntax)
-(include-book "in-conclusion" :dir :util)
-(include-book "implies" :dir :util)
+;;(include-book "../syntax/syntax")
+(include-book "../util/in-conclusion")
+(include-book "../util/implies")
 
 (defun unhide (x)
   (declare (type t x))

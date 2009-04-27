@@ -7,7 +7,7 @@
 (ld "cert.acl2")
 
 ;Since path appears before :: in gacc2.lisp.
-(ld "path-defpkg.lsp" :dir :paths)
+(ld "../paths/path-defpkg.lsp")
 
 ;; The include-book commands below are copied here for effiency (ask Eric for
 ;; the details).  Keep this list in sync with the list in the .lisp file.

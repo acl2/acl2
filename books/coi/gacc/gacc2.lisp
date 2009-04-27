@@ -7,7 +7,7 @@
 
 ;; Keep this list of include-books in sync with the list in the .acl2 file:
 ;;
-(include-book "defstructure" :dir :defstructure)
+(include-book "../defstructure/defstructure")
 (include-book "ram")
 
 ;These two rules get sucked in by defstructure.  We disable these for

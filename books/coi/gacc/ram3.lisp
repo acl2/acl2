@@ -5,7 +5,7 @@
 #|===========================================================================|#
 (in-package "GACC")
 
-(local (include-book "iff" :dir :util))
+(local (include-book "../util/iff"))
 
 ;; This books includes support for reading and writing to a memory with the following characteristics:
 ;; Addresses are 32-bit signed integers.
@@ -36,10 +36,10 @@
 
 (local (include-book "rtl/rel4/arithmetic/fl" :dir :system))
 
-;(local (include-book "loglist" :dir :super-ihs)) ;bzo
-(local (include-book "super-ihs" :dir :super-ihs)) ;bzo
-(include-book "fast" :dir :super-ihs)
-(include-book "mixed" :dir :lists)
+;(local (include-book "../super-ihs/loglist")) ;bzo
+(local (include-book "../super-ihs/super-ihs")) ;bzo
+(include-book "../super-ihs/fast")
+(include-book "../lists/mixed")
 
 
 (local (in-theory (enable list::memberp)))
@@ -198,7 +198,7 @@
   :hints (("Goal" :in-theory (e/d (clr) (wr-of-0-becomes-clr)))))
 
 
-(local (include-book "pick-a-point" :dir :bags)) ;bzo make non-local? ;drop?
+(local (include-book "../bags/pick-a-point")) ;bzo make non-local? ;drop?
 
 ;bzo dup
 ;move
@@ -3955,7 +3955,7 @@
 
 
 
-(include-book "repeat" :dir :lists)
+(include-book "../lists/repeat")
 
 
 

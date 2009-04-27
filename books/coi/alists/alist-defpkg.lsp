@@ -5,10 +5,10 @@
 #|===========================================================================|#
 (in-package "ACL2")
 
-(ld "Makefile.acl2")
+; (ld "Makefile.acl2")
 
-;(include-book "list-exports" :dir :lists)
-(ld "list-exports.lsp" :dir :lists)
+;(include-book "../lists/list-exports")
+(ld "../lists/list-exports.lsp")
 
 (defpkg "ALIST"
 ;	(remove-duplicates-eql ;no longer necessary due to change in ACL2

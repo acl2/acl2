@@ -6,7 +6,7 @@
 (in-package "BAG")
 
 (include-book "bind-free-rules") ;remove this?
-(local (include-book "iff" :dir :util))
+(local (include-book "../util/iff"))
 
 (in-theory (disable mfc-clause))
 (in-theory (disable acl2::mfc-type-alist))

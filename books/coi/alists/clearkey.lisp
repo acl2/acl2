@@ -16,7 +16,7 @@
 
 (in-package "ALIST")
 (include-book "equiv")
-(include-book "basic" :dir :bags)
+(include-book "../bags/basic")
 
 (defund clearkey (k x)
   (declare (xargs :guard (alistp x)))

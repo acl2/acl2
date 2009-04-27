@@ -16,10 +16,10 @@
 
 ;bzo we probably don't need this much of super-ihs...  for example, gacc probably doesn't need many theorems about logior, etc...
 
-(include-book "super-ihs" :dir :super-ihs)
+(include-book "../super-ihs/super-ihs")
 
-;(local (include-book "super-ihs" :dir :super-ihs))
-;(include-book "unsigned-byte-p" :dir :super-ihs)
+;(local (include-book "../super-ihs/super-ihs"))
+;(include-book "../super-ihs/unsigned-byte-p")
 ;(in-theory (disable ACL2::LOGHEAD*-BETTER))
 
 ;Attempt to include in this book redundant copies of just those events from

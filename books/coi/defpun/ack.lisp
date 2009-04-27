@@ -6,7 +6,7 @@
 (in-package "ACL2")
 
 (include-book "defminterm")
-;;(xxclude-book "basic" :dir :lists)
+;;(xxclude-book "../lists/basic")
 
 (defun natural-listp (list)
   (declare (type t list))

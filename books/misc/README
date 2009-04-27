@@ -430,6 +430,14 @@ See the top of the file for examples and a relevant theorem.
 
 ===============================================================================
 
+misc2/ruler-extenders-tests.lisp -- tests for ruler-extenders
+
+This suite of tests is mainly for regression, though users interested
+in more information about ruler-extenders, beyond that provided in
+:doc ruler-extenders, may find this file to be interesting.
+
+===============================================================================
+
 total-order.lisp -- total order for ACL2
 
 ===============================================================================

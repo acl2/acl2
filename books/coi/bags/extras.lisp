@@ -5,7 +5,7 @@
 #|===========================================================================|#
 (in-package "BAG")
 (include-book "basic")
-(include-book "find-index" :dir :lists)
+(include-book "../lists/find-index")
 
 ;bzo where should this go?
 (defthm find-index-of-cdr

@@ -12,7 +12,7 @@
 ;and remove this inclue book.
 
 
-;(include-book "defrecord" :dir :records)
+;(include-book "../records/defrecord")
 
 (include-book "mem")
 
@@ -274,7 +274,7 @@
 (encapsulate
  ()
  ;maybe this lemma doesn't belong here?
- (local (include-book "byte-p" :dir :super-ihs)) ;bzo
+ (local (include-book "../super-ihs/byte-p")) ;bzo
 
  (defthm signed-byte-p-of-rx-gen
    (implies (and (< size size1)

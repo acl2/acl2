@@ -6,7 +6,7 @@
 (include-book "sets")
 (include-book "set-order")
 (include-book "conversions")
-(include-book "iff" :dir :util)
+(include-book "../util/iff")
 
 (include-book "misc/total-order" :dir :system) ;was is this not included by set-order?
 

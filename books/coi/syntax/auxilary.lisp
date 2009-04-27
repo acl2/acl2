@@ -4,7 +4,7 @@
 #|                                                                           |#
 #|===========================================================================|#
 (in-package "SYMBOL-FNS")
-(include-book "symbol-fns" :dir :symbol-fns)
+(include-book "../symbol-fns/symbol-fns")
 
 (defun collect-variables-rec (fn term res)
   (declare (type t fn term res))

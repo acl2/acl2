@@ -7,7 +7,7 @@
 
 (include-book "nth-and-update-nth")
 (include-book "memberp")
-(local (include-book "iff" :dir :util))
+(local (include-book "../util/iff"))
 
 ;does something like this function exist elsewhere?
 (defun find-index (key lst)

@@ -10,8 +10,8 @@
 (include-book "wrap")
 (local (include-book "rtl/rel4/arithmetic/fl" :dir :system))
 
-;(local (include-book "loglist" :dir :super-ihs)) ;bzo
-(local (include-book "super-ihs" :dir :super-ihs)) ;bzo
+;(local (include-book "../super-ihs/loglist")) ;bzo
+(local (include-book "../super-ihs/super-ihs")) ;bzo
 
 (local (in-theory (enable zp)))
 

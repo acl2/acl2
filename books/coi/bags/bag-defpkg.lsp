@@ -5,13 +5,13 @@
 #|===========================================================================|#
 (in-package "ACL2")
 
-(ld "Makefile.acl2")
+; (ld "Makefile.acl2")
 
-(ld "list-exports.lsp" :dir :lists)
-(ld "util-exports.lsp" :dir :util)
+(ld "../lists/list-exports.lsp")
+(ld "../util/util-exports.lsp")
 
-;(include-book "syn-pkg" :dir :syntax)
-(ld "syn-defpkg.lsp" :dir :syntax)
+;(include-book "../syntax/syn-pkg")
+(ld "../syntax/syn-defpkg.lsp")
 
 (defpkg "BAG" (append '(list::disjoint
 			syn::defirrelevant

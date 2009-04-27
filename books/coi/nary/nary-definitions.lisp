@@ -86,7 +86,7 @@
 ;; (defequiv (set-equal x y))
 ;;
 
-;;(include-book "syntax" :dir :syntax)
+;;(include-book "../syntax/syntax")
 
 (defun unhide (x)
   (declare (type t x))

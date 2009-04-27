@@ -27,7 +27,7 @@
 ;; make it all work with records/path.lisp yet.
 
 (in-package "PATH")
-(include-book "basic" :dir :lists)
+(include-book "../lists/basic")
 
 (defund dominates (x y)
   (declare (type t x y))

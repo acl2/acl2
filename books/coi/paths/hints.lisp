@@ -7,7 +7,7 @@
 (include-book "pm")
 
 ;; DAG -- for now we will import this globally.
-(include-book "iff" :dir :util)
+(include-book "../util/iff")
 
 ;; jcd - bzo - I'd really like to work on removing this file.  It would be
 ;; better if we could come up with a unified theory rather than having to do

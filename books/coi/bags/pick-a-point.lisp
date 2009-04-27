@@ -45,7 +45,7 @@
 
 (in-package "BAG")
 (include-book "basic")
-(include-book "adviser" :dir :adviser)
+(include-book "../adviser/adviser")
 
 
 (encapsulate

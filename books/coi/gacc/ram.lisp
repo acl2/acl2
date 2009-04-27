@@ -8,12 +8,12 @@
 (include-book "ram0")
 (include-book "block")
 
-(include-book "two-level-meta" :dir :bags) ;we need this, because of mentions of "flat below"; move that stuff to a different book?
+(include-book "../bags/two-level-meta") ;we need this, because of mentions of "flat below"; move that stuff to a different book?
 
 (local (include-book "rtl/rel4/arithmetic/fl" :dir :system))
 
-;(local (include-book "loglist" :dir :super-ihs)) ;bzo
-(local (include-book "super-ihs" :dir :super-ihs)) ;bzo
+;(local (include-book "../super-ihs/loglist")) ;bzo
+(local (include-book "../super-ihs/super-ihs")) ;bzo
 
 ;;
 ;;

@@ -17,12 +17,12 @@
 ;; Try "pick a point" proofs to show that two rams are equal
 ;; by showing that they agree on a lookup of an arbitrary address.
 
-(include-book "defrecord-fast" :dir :records)
+(include-book "../records/defrecord-fast")
 
 ;basically just includes a bunch of super-ihs stuff:
 ;(include-book "bits")
-(include-book "loghead" :dir :super-ihs) 
-(include-book "unsigned-byte-p" :dir :super-ihs) 
+(include-book "../super-ihs/loghead") 
+(include-book "../super-ihs/unsigned-byte-p") 
 
 (local (in-theory (disable ACL2::LOGCAR-0-REWRITE)))
 
@@ -205,7 +205,7 @@
 ;(defun clr (ad ram)
 ;  (wr ad 0 ram))
 
-(include-book "syntaxp" :dir :util)
+(include-book "../util/syntaxp")
 
 (defthm rd-subst-when-wr-equal
   (implies (and (equal (wr b val ram1) (wr b val ram2))

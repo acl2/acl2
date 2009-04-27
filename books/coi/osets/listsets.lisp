@@ -21,8 +21,8 @@
 
 (in-package "SET")
 (include-book "misc/untranslate-patterns" :dir :system)
-(include-book "basic" :dir :lists)
-(include-book "memberp" :dir :lists)
+(include-book "../lists/basic")
+(include-book "../lists/memberp")
 (include-book "map")
 (set-verify-guards-eagerness 2)
 

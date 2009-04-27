@@ -4,8 +4,8 @@
 #|                                                                           |#
 #|===========================================================================|#
 (in-package "BAG")
-(include-book "basic" :dir :lists)
-(include-book "memberp" :dir :lists)
+(include-book "../lists/basic")
+(include-book "../lists/memberp")
 
 ; bzo eventually, our rules will be about these names:
 
@@ -1942,7 +1942,7 @@
 ;;
 ;;
 
-(include-book "disjoint" :dir :lists)
+(include-book "../lists/disjoint")
 
 ;Make sure disjoint's :type-prescription rule is as strong as we think.
 ;Don't remove this just because its has no effect on the world.

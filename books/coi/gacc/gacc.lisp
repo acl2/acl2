@@ -10,7 +10,7 @@
 (include-book "ram")
 (include-book "ordinals/e0-ordinal" :dir :system)
 
-(local (include-book "top" :dir :bags)) ;would have the effect of disabling a bunch of expensive bag rules.
+(local (include-book "../bags/top")) ;would have the effect of disabling a bunch of expensive bag rules.
 
 (local (in-theory (disable MAX-OFFSET)))
 

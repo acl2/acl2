@@ -54,7 +54,7 @@ DIRS1 = cowles arithmetic meta
 # Additional directories, where DIRS3 prunes out those not distributed.
 # We rely on DIRS3 being a subset of DIRS2 in the dependence of DIRS2 on
 # top-with-meta-cert.
-DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-5 \
+DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-5 \
 	misc models/jvm/m5 proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
 	finite-set-theory finite-set-theory/osets powerlists textbook \
 	defexec symbolic \
@@ -62,20 +62,13 @@ DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 ari
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity misc/misc2 tools paco hacking hons-bdds security regex \
         defsort hons-archive
+DIRS2_EXCEPT_WK = $(DIRS2_EXCEPT_WK_COI) coi
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
-DIRS3 =           ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-5 \
-	misc models/jvm/m5 proofstyles rtl make-event parallel hints arithmetic-3/extra \
-	sorting finite-set-theory finite-set-theory/osets powerlists textbook \
-	defexec symbolic \
-	data-structures/memories unicode str concurrent-programs/bakery \
-	concurrent-programs/german-protocol deduction/passmore clause-processors \
-	quadratic-reciprocity misc/misc2 tools paco hacking hons-bdds security regex \
-        defsort hons-archive
 SHORTDIRS2 = ordinals data-structures bdd
 
-.PHONY: $(DIRS1) $(DIRS2) $(DIRS3)
+.PHONY: $(DIRS1) $(DIRS2) $(DIRS2_EXCEPT_WK)
 
-# Same as all-plus below, using DIRS3 instead of DIRS2.  Much faster!!  Omits
+# Same as all-plus below, using DIRS2_EXCEPT_WK instead of DIRS2.  Much faster!!  Omits
 # books less likely to be needed, in particular, under workshops/.
 all:
 	@date ; $(TIME) $(MAKE) all-aux
@@ -123,9 +116,12 @@ regex: tools
 defsort: misc make-event unicode tools
 hons-archive: defsort unicode tools arithmetic-3
 str: arithmetic unicode defsort
+coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
+	misc ordinals rtl
 
-# Let us wait for everything else before workshops:
-workshops: $(DIRS1) $(DIRS2_EXCEPT_WK)
+# Let us wait for everything else before workshops, except we currrently
+# (as of v3-5, at least) don't need to wait for coi (that may change).
+workshops: $(DIRS1) $(DIRS2_EXCEPT_WK_COI)
 
 $(DIRS1):
 	@if [ -f $@/Makefile ]; then cd $@ ; $(MAKE) ; fi
@@ -134,7 +130,7 @@ $(DIRS2): top-with-meta-cert
 	@if [ -f $@/Makefile ]; then cd $@ ; $(MAKE) ; fi
 
 .PHONY: all-aux
-all-aux: $(DIRS1) $(DIRS3)
+all-aux: $(DIRS1) $(DIRS2_EXCEPT_WK)
 
 # We should really parallelize the compile targets below (fasl, all-fasl,
 # all-o, etc.) as with the .cert targets above.  Any volunteers?
@@ -160,7 +156,7 @@ fasl-aux:
 	fi \
 	done
 	@$(MAKE) top-with-meta-fasl
-	@for dir in $(DIRS3) ; \
+	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
 	(cd $$dir ; \
@@ -184,7 +180,7 @@ fas-aux:
 	fi \
 	done
 	@$(MAKE) top-with-meta-fas
-	@for dir in $(DIRS3) ; \
+	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
 	(cd $$dir ; \
@@ -208,7 +204,7 @@ sparcf-aux:
 	fi \
 	done
 	@$(MAKE) top-with-meta-sparcf
-	@for dir in $(DIRS3) ; \
+	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
 	(cd $$dir ; \
@@ -232,7 +228,7 @@ ufsl-aux:
 	fi \
 	done
 	@$(MAKE) top-with-meta-ufsl
-	@for dir in $(DIRS3) ; \
+	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
 	(cd $$dir ; \
@@ -256,7 +252,7 @@ x86f-aux:
 	fi \
 	done
 	@$(MAKE) top-with-meta-x86f
-	@for dir in $(DIRS3) ; \
+	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
 	(cd $$dir ; \
@@ -280,7 +276,7 @@ o-aux:
 	fi \
 	done
 	@$(MAKE) top-with-meta-o
-	@for dir in $(DIRS3) ; \
+	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
 	(cd $$dir ; \
@@ -304,7 +300,7 @@ dfsl-aux:
 	fi \
 	done
 	@$(MAKE) top-with-meta-dfsl
-	@for dir in $(DIRS3) ; \
+	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
 	(cd $$dir ; \
@@ -328,7 +324,7 @@ d64fsl-aux:
 	fi \
 	done
 	@$(MAKE) top-with-meta-d64fsl
-	@for dir in $(DIRS3) ; \
+	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
 	(cd $$dir ; \
@@ -352,7 +348,7 @@ dx64fsl-aux:
 	fi \
 	done
 	@$(MAKE) top-with-meta-dx64fsl
-	@for dir in $(DIRS3) ; \
+	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
 	(cd $$dir ; \
@@ -376,7 +372,7 @@ lx64fsl-aux:
 	fi \
 	done
 	@$(MAKE) top-with-meta-lx64fsl
-	@for dir in $(DIRS3) ; \
+	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
 	(cd $$dir ; \
@@ -696,7 +692,7 @@ clean:
 # Tar up books and support, not including workshops or nonstd stuff.
 .PHONY: tar
 tar:
-	tar cvf books.tar Makefile Makefile-generic Makefile-subdirs README README.html certify-numbers.lsp $(DIRS1) $(DIRS3)
+	tar cvf books.tar Makefile Makefile-generic Makefile-subdirs README README.html certify-numbers.lsp $(DIRS1) $(DIRS2_EXCEPT_WK)
 
 # The following "short" targets allow for a relatively short test, in response
 # to a request from GCL maintainer Camm Maguire.

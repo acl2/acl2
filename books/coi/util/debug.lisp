@@ -7,36 +7,36 @@
 
 ;; ===================================================================
 ;;
-;; debug::fail
+;; coi-debug::fail
 ;;
 ;; ===================================================================
 
-(defund debug::fail-fn (value message parameters)
+(defund coi-debug::fail-fn (value message parameters)
   (declare (type t value message parameters))
   (prog2$
-   (hard-error 'debug::fail message parameters)
+   (hard-error 'coi-debug::fail message parameters)
    value))
 
-(defthm debug::fail-fn-value
-  (equal (debug::fail-fn value message parameters)
+(defthm coi-debug::fail-fn-value
+  (equal (coi-debug::fail-fn value message parameters)
 	 value)
-  :hints (("Goal" :in-theory (enable debug::fail-fn))))
+  :hints (("Goal" :in-theory (enable coi-debug::fail-fn))))
 
-(defmacro debug::fail (&key (value 'nil)
+(defmacro coi-debug::fail (&key (value 'nil)
 			    (message '"Failure")
 			    (parameters 'nil))
-  `(debug::fail-fn ,value ,message ,(map-values-to-fmt-list parameters)))
+  `(coi-debug::fail-fn ,value ,message ,(map-values-to-fmt-list parameters)))
 
 ;; -------------------------------------------------------------------
-(def::doc debug::fail
+(def::doc coi-debug::fail
 
   :one-liner "A macro to assist in signalling runtime errors"
 
   :details (docstring
 "
 
-  The debug::fail macro allows the user to signal runtime errors
-in ACL2 code.  The return value of debug::fail can be set by
+  The coi-debug::fail macro allows the user to signal runtime errors
+in ACL2 code.  The return value of coi-debug::fail can be set by
 specifying a :value parameter.  The failure message can be configured
 via the :message keyword.  Additional parameters can be passed in as 
 a list via :parameters.
@@ -44,7 +44,7 @@ a list via :parameters.
   Typical usage pattern:
 
   (if (consp x) (car x)
-    (debug::fail :value nil
+    (coi-debug::fail :value nil
                  :message \"~x0 is not a consp\"
                  :parameters (x)))
 
@@ -55,7 +55,7 @@ break on a failure.  The following code will do just that.
            (acl2::defttag t)
            (acl2::progn!
              (acl2::set-raw-mode t)
-             (defun debug::fail-fn (value message parameters)
+             (defun coi-debug::fail-fn (value message parameters)
                (acl2::prog2$
                  (acl2::fmt-to-comment-window message parameters 0 nil)
                  (acl2::break)))))
@@ -66,32 +66,32 @@ break on a failure.  The following code will do just that.
 
 ;; ===================================================================
 ;;
-;; debug::assert
+;; coi-debug::assert
 ;;
 ;; ===================================================================
 
-(defun debug::assert-fn (test true false message parms)
+(defun coi-debug::assert-fn (test true false message parms)
   (declare (type t test))
-  (if (not test) (debug::fail-fn false message parms)
+  (if (not test) (coi-debug::fail-fn false message parms)
     true))
 
-(defmacro debug::assert (test &key (value 'nil) (message 'nil) (parameters 'nil))
+(defmacro coi-debug::assert (test &key (value 'nil) (message 'nil) (parameters 'nil))
   (let ((parameters (cons test parameters)))
     (let ((message (or message "Failed Assertion: ~x0")))
-      `(debug::assert-fn ,test ,(or value *t*)
+      `(coi-debug::assert-fn ,test ,(or value *t*)
 			 ,value ,message ,(map-values-to-fmt-list parameters)))))
 
 ;; -------------------------------------------------------------------
 
-(def::doc debug::assert
+(def::doc coi-debug::assert
 
   :one-liner "A macro to assist in detecting runtime errors"
 
   :details (docstring
 "
 
-  The debug::assert macro allows the user to identify runtime errors
-in ACL2 code.  The return value of debug::assert can be set by
+  The coi-debug::assert macro allows the user to identify runtime errors
+in ACL2 code.  The return value of coi-debug::assert can be set by
 specifying a :value parameter.  The failure message can be configured
 via the :message keyword.  Note that the first argument (~x0) is the
 syntactic form of the test, but that additional parameters can be
@@ -99,7 +99,7 @@ passed in as a list via :parameters.
 
   Example usage pattern:
 
-  (let ((y (debug::assert (test y)
+  (let ((y (coi-debug::assert (test y)
                           :value y
                           :message \"Y failed ~x0 in ~x1\"
                           :parameters (z))))

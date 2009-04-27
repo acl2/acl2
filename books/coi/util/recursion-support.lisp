@@ -2,7 +2,7 @@
 
 (include-book "mv-nth")
 (include-book "defun-support")
-(include-book "symbol-fns" :dir :symbol-fns)
+(include-book "../symbol-fns/symbol-fns")
 
 (defun syn-truep (x)
   (declare (type t x))

@@ -8,7 +8,7 @@
 
 (include-book "misc/beta-reduce" :dir :system)
 (include-book "debug")
-(include-book "symbol-fns" :dir :symbol-fns)
+(include-book "../symbol-fns/symbol-fns")
 (include-book "mv-nth")
 
 ;; ===================================================================
@@ -428,7 +428,7 @@
       (let ((decl (car body)))
 	(cond
 	 ((function-declaration-p decl)
-	  (let ((declaration (debug::assert (null declaration) :value decl :message "Multiple Function Declarations")))
+	  (let ((declaration (coi-debug::assert (null declaration) :value decl :message "Multiple Function Declarations")))
 	    (extract-function-declaration-from-body-rec (cdr body) declaration signature sig-hints res)))
 	 ((xarg-p decl)
 	  (met ((signature xbody) (extract-xarg-key-from-body-rec :signature (xarg-body decl) signature nil))
@@ -472,17 +472,17 @@
   (declare (type (satisfies declaration-listp) decls))
   (met ((declaration signature sig-hints decls) (extract-function-declaration-rec decls nil nil nil nil))
     (let ((signature (if (and (consp signature)
-			      (debug::assert (and (< (len signature) 2)
+			      (coi-debug::assert (and (< (len signature) 2)
 						  (signature-declaration-p (car signature))
 						  (not declaration))
 					     :message "Malformed/Multiple signature specification(s)"))
 			 (signature-to-declaration (car signature))
 		       nil))
 	  (sig-hints (and (consp sig-hints)
-			  (debug::assert (< (len signature) 2) :value (car sig-hints) 
+			  (coi-debug::assert (< (len signature) 2) :value (car sig-hints) 
 					 :message "Multiple :sig-hints Bindings")))
 	  (declaration (if (and declaration
-				(debug::assert (function-declaration-p declaration)
+				(coi-debug::assert (function-declaration-p declaration)
 					       :message "Malformed function declaration"))
 			   declaration
 			 nil))
@@ -1077,7 +1077,7 @@
 	   (consp args))
       (append (translate-declaration-to-guard-list (car arg-types) (car args))
 	      (map-arg-types-over-args (cdr arg-types) (cdr args)))
-    (debug::assert (equal (consp arg-types) (consp args)) :value 'nil
+    (coi-debug::assert (equal (consp arg-types) (consp args)) :value 'nil
 		   :message "Function signature and argument list differ in length")))
 
 (defthm true-listp-map-arg-types-over-args
@@ -1113,7 +1113,7 @@
 	  (let ((xarg-guards (defun::get-xarg-key-from-body :guard (cdr entry))))
 	    (let ((signature (defun::get-xarg-key-from-body :signature (cdr entry))))
 	      (let ((sig-guards (and (equal (len signature) 1)
-				     (debug::assert (signature-declaration-p (car signature)))
+				     (coi-debug::assert (signature-declaration-p (car signature)))
 				     (let ((decl (signature-to-declaration (car signature))))
 				       (list (function-declaration-to-guard args decl))))))
 		(append xarg-guards sig-guards
@@ -1445,7 +1445,7 @@
     (wf-congruence-spec spec))
    (congruence-pairing (pair-hints-with-patterns-and-split hints spec))))
 
-(include-book "symbol-fns" :dir :symbol-fns)
+(include-book "../symbol-fns/symbol-fns")
 
 (defun alt-args-from-pattern (args pattern suffix)
   (declare (type (satisfies symbol-listp) args))

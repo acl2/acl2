@@ -7,7 +7,7 @@
 
 (in-package "SET")
 (include-book "multicons")
-(local (include-book "iff" :dir :util))
+(local (include-book "../util/iff"))
 
 (local (in-theory (enable weak-insert-induction-helper-1)))
 (local (in-theory (enable weak-insert-induction-helper-2)))

@@ -8,7 +8,7 @@
 
 (in-package "LIST")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
-(include-book "debug" :dir :util)
+(include-book "../util/debug")
 (include-book "acl2-count")
 
 ;; bzo (ews and jcd) We would like to disable true-listp as well, but we're
@@ -26,7 +26,7 @@
 ;; bzo (jcd) - Do we have this rule in many other places?  Would it be good
 ;; to "standardize" and use this one location (or put these someplace else)?
 
-(local (include-book "iff" :dir :util))
+(local (include-book "../util/iff"))
 
 ;; Note (jcd and ews): At one point, we tried strengthened this rule by moving
 ;; the consp hypothesis into the conclusion.  The modified rule was:
@@ -1666,7 +1666,7 @@
 
 (theory-invariant (incompatible (:rewrite len-cdr-equal-len-cdr-rewrite) (:definition len)))
 
-(include-book "adviser" :dir :adviser)
+(include-book "../adviser/adviser")
 
 (encapsulate
  ()
@@ -1756,14 +1756,14 @@
 (defund cdr! (x)
   (declare (type t x))
   (if (consp x) (cdr x) 
-    (debug::fail :value nil
+    (coi-debug::fail :value nil
 		 :message "In function cdr!: argument ~x0 is not a consp"
 		 :parameters (x))))
 
 (defund car! (x default)
   (declare (type t x))
   (if (consp x) (car x) 
-    (debug::fail :value default
+    (coi-debug::fail :value default
 		 :message "In function car!: argument ~x0 is not a consp"
 		 :parameters (x))))
 

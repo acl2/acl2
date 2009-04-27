@@ -10,7 +10,7 @@
 ;; standard names.
 
 (in-package "PATH")
-(include-book "top" :dir :alists)
+(include-book "../alists/top")
 
 (defmacro keys (x)
   `(strip-cars ,x))

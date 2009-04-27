@@ -12,14 +12,14 @@
 
 (include-book "memory")
 (include-book "domain")
-(include-book "conversions" :dir :osets)
-(include-book "extras" :dir :osets)
-(include-book "map" :dir :osets)
-(include-book "basic" :dir :bags) ;bzo is this okay - can records depend on bags?
+(include-book "../osets/conversions")
+(include-book "../osets/extras")
+(include-book "../osets/map")
+(include-book "../bags/basic") ;bzo is this okay - can records depend on bags?
 
-(local (include-book "iff" :dir :util))
+(local (include-book "../util/iff"))
 
-(local (include-book "set-processor" :dir :osets))
+(local (include-book "../osets/set-processor"))
 
 (local (include-book "data-structures/memories/log2" :dir :system))
 

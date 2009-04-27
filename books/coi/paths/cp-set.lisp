@@ -5,7 +5,7 @@
 #|===========================================================================|#
 (in-package "PATH")
 
-(include-book "multicons" :dir :osets)
+(include-book "../osets/multicons")
 (include-book "hints")
 
 (local (in-theory (enable set::weak-insert-induction-helper-1)))
@@ -368,7 +368,7 @@
   :hints (("goal" :in-theory (e/d (diverge open-clrp-list open-cp-set-equal gp-of-sp)
 				  (acl2::equal-booleans-reducton)))))
 
-(include-book "multiappend" :dir :osets)
+(include-book "../osets/multiappend")
 
 (defthm multicons-over-insert
   (equal (set::multicons a (set::insert x list))

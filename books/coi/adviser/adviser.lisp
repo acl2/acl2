@@ -8,7 +8,7 @@
 
 (in-package "ADVISER")
 (include-book "misc/symbol-btree" :dir :system)
-(include-book "symbol-fns" :dir :symbol-fns)
+(include-book "../symbol-fns/symbol-fns")
 
 (defdoc Adviser
   ":Doc-Section Adviser

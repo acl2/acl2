@@ -6,13 +6,13 @@
 (in-package "GACC")
 
 (include-book "mem-fast")
-(include-book "memberp" :dir :lists)
-;(include-book "basic" :dir :bags)
-(include-book "extras" :dir :bags)
-;(include-book "find-index" :dir :lists)
+(include-book "../lists/memberp")
+;(include-book "../bags/basic")
+(include-book "../bags/extras")
+;(include-book "../lists/find-index")
 
 ;try to include less of super-ihs:
-(include-book "super-ihs" :dir :super-ihs)
+(include-book "../super-ihs/super-ihs")
 
 (include-book "list-ops-common")
 

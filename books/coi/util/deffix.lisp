@@ -6,7 +6,7 @@
 
 (in-package "ACL2")
 
-(include-book "symbol-fns" :dir :symbol-fns)
+(include-book "../symbol-fns/symbol-fns")
 
 (defmacro def::fix (fix equiv &key (in-theory 'nil))
 

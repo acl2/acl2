@@ -4,8 +4,8 @@
 #|                                                                           |#
 #|===========================================================================|#
 (ld "rec-defpkg.lsp")
-(ld "symbol-fns-defpkg.lsp" :dir :symbol-fns)
-(ld "set-defpkg.lsp" :dir :osets)
-(ld "bag-defpkg.lsp" :dir :bags)
-(ld "list-defpkg.lsp" :dir :lists)
+(ld "../symbol-fns/symbol-fns-defpkg.lsp")
+(ld "../osets/set-defpkg.lsp")
+(ld "../bags/bag-defpkg.lsp")
+(ld "../lists/list-defpkg.lsp")
 (ld "data-structures/memories/package.lsp" :dir :system)

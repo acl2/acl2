@@ -1,3 +1,3 @@
 
-(defpkg "DEBUG" nil)
+(defpkg "COI-DEBUG" nil)
 

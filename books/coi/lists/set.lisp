@@ -7,9 +7,9 @@
 
 (include-book "remove")
 (include-book "disjoint")
-(include-book "defbinding" :dir :util)
+(include-book "../util/defbinding")
 
-(local (include-book "iff" :dir :util))
+(local (include-book "../util/iff"))
 
 ;; DAG -- it would be nice to push this back ..
 (defthm disjoint-remove-list

@@ -6,7 +6,7 @@
 (in-package "ACL2")
 
 (include-book "records")
-(include-book "symbol-fns" :dir :symbol-fns)
+(include-book "../symbol-fns/symbol-fns")
 
 (defmacro defarray (&key (name 'nil) (type 'nil) (size 'nil))
 

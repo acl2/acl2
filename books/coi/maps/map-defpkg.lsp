@@ -5,13 +5,13 @@
 #|===========================================================================|#
 (in-package "ACL2")
 
-(ld "Makefile.acl2")
+; (ld "Makefile.acl2")
 
-;(include-book "sets-pkg" :dir :osets)
-(ld "set-defpkg.lsp" :dir :osets)
+;(include-book "../osets/sets-pkg")
+(ld "../osets/set-defpkg.lsp")
 
-;(include-book "adviser-pkg" :dir :adviser)
-(ld "adviser-defpkg.lsp" :dir :adviser)
+;(include-book "../adviser/adviser-pkg")
+(ld "../adviser/adviser-defpkg.lsp")
 
 (defpkg "MAP" (set-difference-eq 
 ;               (remove-duplicates-eql ;no longer necessary

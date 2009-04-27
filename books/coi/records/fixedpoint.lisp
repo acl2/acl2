@@ -25,7 +25,7 @@
 
 (include-book "domain")
 
-(include-book "rule-sets" :dir :util)
+(include-book "../util/rule-sets")
 
 ;; ==================================================================
 ;;

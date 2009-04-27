@@ -6,6 +6,6 @@
 
 (ld "gacc-defpkg.lsp")
 
-(ld "set-defpkg.lsp" :dir :osets)
+(ld "../osets/set-defpkg.lsp")
 
-(ld "path-defpkg.lsp" :dir :paths)
+(ld "../paths/path-defpkg.lsp")

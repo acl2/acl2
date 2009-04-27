@@ -5,13 +5,13 @@
 #|===========================================================================|#
 (in-package "ACL2")
 
-(ld "Makefile.acl2")
+; (ld "Makefile.acl2")
 
-(ld "adviser-defpkg.lsp" :dir :adviser)
-(ld "list-exports.lsp" :dir :lists)
-(ld "alist-defpkg.lsp" :dir :alists)
-(ld "syn-defpkg.lsp" :dir :syntax)
-(ld "util-exports.lsp" :dir :util)
+(ld "../adviser/adviser-defpkg.lsp")
+(ld "../lists/list-exports.lsp")
+(ld "../alists/alist-defpkg.lsp")
+(ld "../syntax/syn-defpkg.lsp")
+(ld "../util/util-exports.lsp")
 
 (defpkg "PATH" ;(remove-duplicates-eql ;no longer necessary
 		`(,@*acl2-exports*

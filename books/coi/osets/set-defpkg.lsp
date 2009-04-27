@@ -3,9 +3,9 @@
 #|===========================================================================|#
 (in-package "ACL2")
 
-(ld "Makefile.acl2")
+; (ld "Makefile.acl2")
 
-(ld "list-defpkg.lsp" :dir :lists)
+(ld "../lists/list-defpkg.lsp")
 (ld "computed-hints-defpkg.lsp")
 
 (defpkg "SET"

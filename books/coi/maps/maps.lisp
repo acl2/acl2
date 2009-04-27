@@ -188,8 +188,8 @@
 
 (in-package "MAP")
 
-(include-book "sets" :dir :osets)
-(include-book "adviser" :dir :adviser)
+(include-book "../osets/sets")
+(include-book "../adviser/adviser")
 (include-book "misc/untranslate-patterns" :dir :system)
 
 (local (defthm equal-of-booleans-rewrite

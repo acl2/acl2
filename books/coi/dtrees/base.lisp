@@ -15,10 +15,10 @@
 
 (in-package "DTREE")
 ;; DAG -- I do this globally here
-(include-book "iff" :dir :util)
-(include-book "maps" :dir :maps)
-(include-book "basic" :dir :lists)
-(include-book "multicons" :dir :osets)
+(include-book "../util/iff")
+(include-book "../maps/maps")
+(include-book "../lists/basic")
+(include-book "../osets/multicons")
 
 (local (in-theory (enable set::weak-insert-induction-helper-1)))
 (local (in-theory (enable set::weak-insert-induction-helper-2)))
@@ -63,7 +63,7 @@
 (encapsulate
  ()
 
- (local (include-book "typed-maps" :dir :maps))
+ (local (include-book "../maps/typed-maps"))
 
  (defthm dtreep-when-in-dtreemapp
    (implies (and (dtreemapp map)
@@ -662,8 +662,8 @@
 ;; Then, suppose we have some particular child named C, and we have computed
 ;; its domain.  Suppose C's domain consists of { p1, p2, ..., pN }.  Well then,
 ;; our domain must include "C" plus p1, "C" plus p2, ..., "C" plus pN.  We
-;; define the set::multicons operation (see "multicons.lisp" in :dir :osets)
-;; for this purpose.
+;; define the set::multicons operation (see "multicons.lisp" in directory
+;; ../osets) for this purpose.
 ;;
 ;; You can imagine that we need to do this for each of our children and union
 ;; together all of the resulting paths.  As a final observation, we need to add

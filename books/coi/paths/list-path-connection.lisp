@@ -13,9 +13,9 @@
 
 ;;bzo Maybe this book should be renamed, since it doesn't really include any path stuff (now it does, at the bottom)
 
-(include-book "domain" :dir :records)
+(include-book "../records/domain")
 
-(include-book "extras" :dir :bags)
+(include-book "../bags/extras")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
 

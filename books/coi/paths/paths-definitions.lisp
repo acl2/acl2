@@ -3826,7 +3826,7 @@ DAG
                                depset
                                )))))
 
-(LOCAL (INCLUDE-BOOK "rewrite-equiv" :dir :util))
+(LOCAL (INCLUDE-BOOK "../util/rewrite-equiv"))
 ;;
 ;; The issues above occured because the wrong setequiv was being used.
 

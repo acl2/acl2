@@ -4,11 +4,11 @@
 #|                                                                           |#
 #|===========================================================================|#
 (in-package "PATH")
-(include-book "basic" :dir :lists)
-(include-book "map-cons" :dir :lists)
-(include-book "syntax" :dir :syntax)
-(include-book "mv-nth" :dir :util)
-(local (include-book "iff" :dir :util))
+(include-book "../lists/basic")
+(include-book "../lists/map-cons")
+(include-book "../syntax/syntax")
+(include-book "../util/mv-nth")
+(local (include-book "../util/iff"))
 
 ;; jcd - changing this to path, speeds things up a lot (~100 seconds) and
 ;; separates paths from graphs.

@@ -7,9 +7,9 @@
 
 (include-book "basic")
 (include-book "ordinals/e0-ordinal" :dir :system)
-(include-book "mv-nth" :dir :util)
-(local (include-book "iff" :dir :util))
-(include-book "syntax" :dir :syntax)
+(include-book "../util/mv-nth")
+(local (include-book "../util/iff"))
+(include-book "../syntax/syntax")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
 (local (in-theory (disable LIST::DISJOINT-BY-MULTIPLICITY)))

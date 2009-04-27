@@ -1,9 +1,9 @@
 (in-package "ALIST")
 
-(include-book "set" :dir :lists)
+(include-book "../lists/set")
 (include-book "keyquiv")
-(include-book "good-rewrite-order" :dir :util)
-(include-book "nary" :dir :nary)
+(include-book "../util/good-rewrite-order")
+(include-book "../nary/nary")
 
 (defun subkeyquivp (list x y)
   (declare (type t list x y))

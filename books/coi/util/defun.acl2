@@ -8,5 +8,5 @@
 (ld "defun-defpkg.lsp")
 (ld "def-defpkg.lsp")
 (ld "debug-defpkg.lsp")
-(ld "symbol-fns-defpkg.lsp" :dir :symbol-fns)
+(ld "../symbol-fns/symbol-fns-defpkg.lsp")
 (certify-book "defun" ?)

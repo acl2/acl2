@@ -14,10 +14,10 @@
 ;; (acl2::add-include-book-dir :records "/rfs/proj/milsrtos/Users/ewsmith/new4/4/records/")
 
 (include-book "mem")
-(include-book "path" :dir :paths)
-(include-book "domain" :dir :records)
-(include-book "conversions" :dir :osets)
-(include-book "quantify" :dir :osets)
+(include-book "../paths/path")
+(include-book "../records/domain")
+(include-book "../osets/conversions")
+(include-book "../osets/quantify")
 
 (defun set::rkeys (r)
   (list::2set (rkeys r)))

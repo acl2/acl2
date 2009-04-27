@@ -342,7 +342,12 @@
 (defun fn-justification (fn state)
   (getprop fn 
            'acl2::justification
-           '(JUSTIFICATION () O-P O< (quote 0))
+           #!acl2(make justification
+                       :subset ()
+                       :mp 'o-p
+                       :rel 'o-<
+                       :measure '(quote 0)
+                       :ruler-extenders *basic-ruler-extenders*)
            'acl2::current-acl2-world 
            (w state)))
 

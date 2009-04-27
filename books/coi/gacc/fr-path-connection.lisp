@@ -12,10 +12,10 @@
 ;bzo some of this stuff should be moved to paths..
 
 (include-book "mem-fast")
-(include-book "path" :dir :paths)
-(include-book "mem-domain" :dir :records)
-(include-book "extras" :dir :osets)
-(include-book "path" :dir :paths) ;don't use much of this
+(include-book "../paths/path")
+(include-book "../records/mem-domain")
+(include-book "../osets/extras")
+(include-book "../paths/path") ;don't use much of this
 
               
 ;;

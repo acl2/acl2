@@ -4,7 +4,7 @@
 (in-package "SET")
 
 (include-book "sets")
-(include-book "set" :dir :lists) ;is this okay?
+(include-book "../lists/set") ;is this okay?
 
 ;;This stuff is taken from set-order.lisp.
 

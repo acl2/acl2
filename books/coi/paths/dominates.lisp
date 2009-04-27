@@ -7,12 +7,12 @@
 ;; Domination relations for lists
 
 (in-package "PATH")
-(include-book "basic" :dir :lists) 
-(include-book "memberp" :dir :lists) 
-(include-book "basic" :dir :bags)
-(include-book "adviser" :dir :adviser)
+(include-book "../lists/basic") 
+(include-book "../lists/memberp") 
+(include-book "../bags/basic")
+(include-book "../adviser/adviser")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
-(local (include-book "iff" :dir :util))
+(local (include-book "../util/iff"))
 
 
 ;; ----------------------------------------------------------------------------

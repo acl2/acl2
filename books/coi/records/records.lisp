@@ -8,7 +8,7 @@
 ;;This book is sort of a wrapper around misc/records.  It includes that booka
 ;;and then defines and proves some more stuff about records.
 
-(local (include-book "basic" :dir :lists)) ;trying with this local..
+(local (include-book "../lists/basic")) ;trying with this local..
 (include-book "misc/records" :dir :system)
 
 ;;

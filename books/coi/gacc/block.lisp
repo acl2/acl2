@@ -5,7 +5,7 @@
 #|===========================================================================|#
 (in-package "GACC")
 
-(include-book "basic" :dir :bags)
+(include-book "../bags/basic")
 
 ;bzo make this local?
 (include-book "arithmetic/top-with-meta" :dir :system) 
