@@ -1,3 +1,6 @@
+; NOTE: This directory has been superseded by directory books/hacking/
+; of the ACL2 release.
+
 ((:FILES "
 .:
 Makefile
