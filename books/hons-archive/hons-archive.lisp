@@ -232,36 +232,35 @@
   ~/
   ")
 
-(defun har-gather-atoms1 (x n tbl)
+(defun har-gather-atoms1 (x n tbl seen)
   (declare (xargs :guard (natp n)
                   :verify-guards nil))
 
-; X is an object we wish to compress.  We are constructing a fast-alist (tbl)
+; X is an object we wish to compress.  We are constructing a fast-alist, tbl,
 ; which maps every atom in x to a unique index.  N is the next available index,
-; and we just count upwards.  This effectively builds the table in "unsorted"
-; order.
+; and we just count upwards.  Seen is the list of conses we have seen so far,
+; which is used to avoid repeatedly traversing the same shared structures.
+; We effectively build the table in "unsorted" order.  
 
-  (if (atom x)
-      (if (hons-get-fn-do-not-hopy x tbl)
-          (mv (mbe :logic (nfix n)
-                   :exec n)
-              tbl)
-        (mv (mbe :logic (+ (nfix n) 1) 
-                 :exec (+ n 1))
-            (hons-acons x 
-                        (mbe :logic (nfix n) 
-                             :exec n) 
-                        tbl)))
-    (mv-let (n-prime tbl-prime)
-            (har-gather-atoms1 (car x) n tbl)
-            (har-gather-atoms1 (cdr x) n-prime tbl-prime))))
+  (let ((obj (hons-get x seen))
+        (n   (mbe :logic (nfix n) :exec n)))
+    (cond (obj
+           (mv n tbl seen))
+          ((atom x)
+           (mv (+ n 1)
+               (hons-acons x n tbl)
+               (hons-acons x t seen)))
+          (t
+           (mv-let (n tbl seen)
+                   (har-gather-atoms1 (car x) n tbl seen)
+                   (har-gather-atoms1 (cdr x) n tbl seen))))))
 
 (defthm natp-of-car-of-har-gather-atoms1
-  (natp (car (har-gather-atoms1 x n tbl))))
+  (natp (car (har-gather-atoms1 x n tbl seen))))
 
 (defthm alistp-of-har-gather-atoms1
   (implies (alistp tbl)
-           (alistp (mv-nth 1 (har-gather-atoms1 x n tbl)))))
+           (alistp (mv-nth 1 (har-gather-atoms1 x n tbl seen)))))
 
 (verify-guards har-gather-atoms1)
 
@@ -297,15 +296,17 @@
 
 (defund har-gather-atoms (x sortp)
   (declare (xargs :guard t))
-  (mv-let (num-atoms unsorted-alist)
-          (har-gather-atoms1 x 0 nil)
-    (if (not sortp)
-        (mv num-atoms unsorted-alist)
-      (b* ((-            (flush-hons-get-hash-table-link unsorted-alist))
-           (atoms        (strip-cars unsorted-alist))
-           (sorted-atoms (<<-sort atoms))
-           (sorted-alist (har-atom-list-to-atom-map sorted-atoms 0 nil)))
-          (mv num-atoms sorted-alist)))))
+  (mv-let (num-atoms unsorted-alist seen-alist)
+          (har-gather-atoms1 x 0 nil nil)
+          (prog2$ 
+           (flush-hons-get-hash-table-link seen-alist)
+           (if (not sortp)
+               (mv num-atoms unsorted-alist)
+             (b* ((-            (flush-hons-get-hash-table-link unsorted-alist))
+                  (atoms        (strip-cars unsorted-alist))
+                  (sorted-atoms (<<-sort atoms))
+                  (sorted-alist (har-atom-list-to-atom-map sorted-atoms 0 nil)))
+                 (mv num-atoms sorted-alist))))))
 
 
 
