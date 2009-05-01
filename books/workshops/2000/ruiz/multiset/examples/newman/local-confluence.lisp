@@ -278,7 +278,7 @@
 		      proof-step-p equiv-p rel mul-rel
 		      exists-local-peak replace-local-peak
 		      transform-local-peak exists-rel-bigger))
-	   ("Subgoal 12" :in-theory (enable rel-transitive)))))
+	   ("Subgoal 10" :in-theory (enable rel-transitive)))))
 
 
 

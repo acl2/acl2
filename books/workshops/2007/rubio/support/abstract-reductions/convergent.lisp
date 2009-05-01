@@ -373,7 +373,7 @@
 		      proof-step-p equiv-p rel mul-rel
 		      exists-local-peak replace-local-peak
 		      transform-local-peak exists-rel-bigger))
-	   ("Subgoal 10" :use 
+	   ("Subgoal 8" :use 
 	    (:instance rel-transitive
 		       (x nwm::x) (y nwm::y) (z nwm::z))))))
 

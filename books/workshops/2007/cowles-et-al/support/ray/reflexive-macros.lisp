@@ -161,24 +161,20 @@ interesting macros for specific domains.
                        (x ,x)
                        (st ,st))
                       (:instance ,run)))
-              ("Subgoal 6"
+              ("Subgoal 5"
                :use ((:instance finish-is-not-btm
                                 (,x x)
                                 (,st st))))
-              ("Subgoal 5"
+              ("Subgoal 4"
                :use ((:instance (:definition ,run)
                                 (,x x)
                                 (,st st))))
-              ("Subgoal 4"
+              ("Subgoal 3"
                :use ((:instance (:definition ,run-clk)
                                 (,x x)
                                 (,st st))))
-              ("Subgoal 3"
-               :use ((:instance exists-enough-clk-suff
-                                (,x x)
-                                (,st st))))
               ("Subgoal 2"
-               :use ((:instance (:definition exists-enough-clk)
+               :use ((:instance exists-enough-clk-suff
                                 (,x x)
                                 (,st st))))
               ("Subgoal 1"
