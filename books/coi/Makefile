@@ -1,0 +1,21 @@
+ACL2 ?= ../../saved_acl2
+
+DIRS =	symbol-fns \
+	util \
+	adviser \
+	nary \
+	lists \
+	osets \
+	syntax \
+	bags \
+	alists \
+	records \
+	paths \
+	maps \
+	dtrees \
+	defpun \
+	defstructure \
+	super-ihs \
+	gacc
+
+include ../Makefile-subdirs
