@@ -118,6 +118,8 @@ my $no_makefile = 0;
 my $mf_name = "Makefile-tmp";
 my $all_deps = 0;
 my @includes = ();
+my @include_afters = ();
+my $cust_target = 0;
 
 while (my $arg = shift(@ARGV)) {
     if ($arg eq "--help" || $arg eq "-h") {
@@ -129,6 +131,10 @@ perl cert.pl <options, targets>
 
 where targets are filenames of ACL2 files or certificates to be built
 and options are as follows:
+
+   --help
+   -h
+           Display this help and exit.
 
    --jobs <n>
    -j <n>
@@ -185,8 +191,7 @@ and options are as follows:
 
    --makefile-only
    -m
-           Write out a file Makefile-tmp containing the dependency
-           graph, but don\'t run make.
+           Don\'t run make after running the dependency analysis.
 
    --static-makefile-mode <makefile-name>
    -s <makefile-name>
@@ -199,8 +204,23 @@ and options are as follows:
    -i <makefile-name>
            Include the specified makefile via an include command in
            the makefile produced.  Multiple -i arguments may be given
-           to include multiple makefiles.
+           to include multiple makefiles.  The include commands occur
+           before the dependencies in the makefile.
 
+   --include-after <makefile-name>
+   -ia <makefile-name>
+           Include the specified makefile via an include command in
+           the makefile produced.  Multiple -ia arguments may be given
+           to include multiple makefiles.  The include commands occur
+           after the dependencies in the makefile.
+
+   --custom-target
+   -ct
+           When writing the makefile, instead of creating a phony
+           \'all\' target which depends on the certificates of all the
+           books, create a list variable CERT_PL_BOOKS containing all
+           the target certificates.  The \'all\' target can then be
+           created by the user in an include-after file.
 ';
 	exit 0;
     } elsif ($arg eq  "--jobs" || $arg eq "-j") {
@@ -232,6 +252,10 @@ and options are as follows:
 	$all_deps = $no_build = 1;
     } elsif ($arg eq "--include" || $arg eq "-i") {
 	push(@includes, shift @ARGV);
+    } elsif ($arg eq "--include-after" || $arg eq "-ia") {
+	push(@include_afters, shift @ARGV);
+    } elsif ($arg eq "--custom-target" || $arg eq "-ct") {
+	$cust_target = 1;
     } else {
 	push(@targets, canonical_path($arg));
     }
@@ -567,21 +591,35 @@ include ' . rel_path(dirname($this_script), "make_cert") . '
 include ' . $incl . '
 ';
     }
-
-print $mf '
-
-.PHONY: all
+    
+    if ($cust_target) {
+	print $mf "CERT_PL_BOOKS := \n";
+    } else {
+	print $mf '.PHONY: all
 all:
 ';
+    }
+
     while ((my $key, my $value) = each %seen) {
 	if ($value) { 
-	    print $mf "all : $key\n";
+	    if ($cust_target) {
+		print $mf "CERT_PL_BOOKS += $key\n";
+	    } else {
+		print $mf "all : $key\n";
+	    }
 	    my @the_deps = @{$value};
 	    foreach my $dep (@the_deps) {
 		print $mf "$key : $dep\n";
 	    }
 	}
     }
+
+    foreach my $incl (@include_afters) {
+	print $mf '
+include ' . $incl . '
+';
+    }
+
     close($mf);
     
     unless ($no_build) {
