@@ -1,0 +1,53 @@
+DTREE::foo   --   (include-book "top" :dir :dtrees)
+Dtrees are mutually recursive structures with dependency information.
+
+(dtreep x) -> bool             recognizer for dtrees
+(dtreemapp x) -> bool          recognizer for dtree maps
+(dtreefix dtree) -> dtree      interpret an object as a dtree
+(dtreemapfix dtmap) -> dtmap   interpret an object as a dtree map
+(leaf locals) -> dtree         construct childless dtree from a set of localdeps
+(count dtree) -> natp          measure, useful for termination
+(countmap dtmap) -> natp       measure, useful for termination
+(localdeps dtree) -> set       local dependencies for this dtree node
+(deps dtree) -> set            union of all localdeps everywhere through the dtree
+(depsource x dtree) -> path    path to a node which has x in its localdeps
+(in path dtree) -> bool        true iff path is bound in dtree
+(domain dtree) -> set          set of all paths bound in the dtree
+(haschild name dtree) -> bool  true iff dtree has an immediate child of given name
+(children dtree) -> dtmap      map of this dtree's children nodes
+(leafp path dtree) -> bool     true iff path is bound in dtree and has no children
+(leafdomain dtree) -> set      set of all paths which are leaves in the dtree
+(royalp path dtree) -> bool    true iff path is royal (highest with localdeps)
+(royaldomain dtree) -> set     set of all paths which are royal in the dtree
+(getchild name dt) -> dtree    retrieve an immediate child from the dtree
+(get path dtree) -> dtree      retrieve the dtree at path in the dtree
+(setchild name val dt) -> dt   update immediate child of dt with val (a dtree)
+(set path val dt) -> dtree     update path in dt to val (itself a dtree)
+(erasechild name dt) -> dtree  remove an immediate child from the dtree
+(erase path dt) -> dtree       remove path from the dtree
+(subtree x y) -> bool          (subset (dom x) (dom y)) ^ all localdeps subsets?
+(equiv x y) -> bool            (equal (dom x) (dom y)) ^ all localdeps equal?
+(subdeps x y) -> bool          weaker subtree: all deps subsets?
+(equivdeps x y) -> bool        weaker equiv: all deps equal?
+
+
+MAP::foo   --   (include-book "maps" :dir :maps)  [dtrees/top includes this]
+Maps are like records or alists; they bind keys to values.
+
+(mapp x) -> bool              recognizer for maps
+(fix map) -> map              interpret an object as a map
+(optimize map) -> map         compress wasted space in map
+(default) -> ??               the "default element", cannot be executed
+(emptymap) -> map             macro for nil
+(domain map) -> set           all keys bound in map
+(in key map) -> bool          macro for (in key (domain map))
+(get key map) -> map          retrieve current binding for key or (default)
+(set key val map) -> map      update map with a new binding for key
+(erase key map) -> map        unbinds key from the map
+(head map) -> key             get some key out of map in arbitrary order
+(tail map) -> map             macro for (erase (head map) map)
+(empty map) -> bool           macro for (SETS::empty (domain map))
+(empty-exec map) -> bool      fast version of empty (NOT FOR DEFTHMS!)
+(submap x y) -> bool          test if every key of x has same value in x and y
+(equiv x y) -> bool           mutual submap test, same keys and values
+

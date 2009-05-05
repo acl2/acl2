@@ -1,0 +1,88 @@
+#!/bin/csh
+
+# This script sets up pathnames in
+#   1. the scripts that run Ivy,
+#   2. the mace scripts.
+
+set base=$PWD
+
+echo ""
+echo "Base directory is $base"
+echo ""
+
+set src=$base/ivy-sources
+set macedir=mace-1.3.4
+set otterdir=otter-3.0.6
+
+# Insert backslashes before the slashes, because the path will be
+# used in sed commands.
+
+set srcx=`echo $src | sed "s/\//\\\//g"`
+
+echo 
+echo -n "What command runs ACL2 (default acl2) ? "
+set acl2=$<
+if ($acl2 == "") set acl2=acl2
+set acl2x=`echo $acl2 | sed "s/\//\\\//g"`
+
+echo ""
+echo -n "What command runs Otter-306 (default $base/$otterdir/source/otter) ? "
+set otter=$<
+if ($otter == "") set otter=$base/$otterdir/source/otter
+set otterx=`echo $otter | sed "s/\//\\\//g"`
+
+echo ""
+echo -n "What command runs MACE-134 (default $base/$macedir/mace-loop) ? "
+set mace=$<
+if ($mace == "") set mace=$base/$macedir/mace-loop
+set macex=`echo $mace | sed "s/\//\\\//g"`
+
+echo ""
+echo "Making ivy and sivy scripts in"
+echo "      $src/util ..."
+echo ""
+
+cd $src/util
+
+foreach i (ivy sivy checker make-saved-ivy)
+    echo doing $i ...
+    sed -e "/set ivy_source=/s/=.*/=$srcx/" \
+	-e "/set acl2=/s/=.*/=$acl2x/" \
+	-e "/set otter_binary=/s/=.*/=$otterx/" \
+	-e "/set mace_binary/s/=.*/=$macex/" \
+	$i.orig >! $i
+    chmod +x $i	
+end
+
+# Go back to starting directory
+
+cd $base
+
+echo ""
+echo "Updating mace and mace-loop scripts in"
+echo "      $base/$macedir"
+echo "to use"
+echo "      $otter."
+echo ""
+
+foreach i ($macedir/mace $macedir/mace-loop)
+    echo doing $i ...
+    if (-e $i) then
+	cp $i temp$$
+    else
+	cp $i.orig temp$$
+    endif	
+    sed -e "/set OTTER=/s/=.*/=$otterx/" temp$$ >! $i
+    /bin/rm temp$$
+    chmod +x $i
+end
+
+echo 
+echo "**********************************************************************"
+echo "* Check the pathname in                                              *"
+echo "*        $src/arithmetic.lisp"
+echo "* and update it if necessary.                                        *"
+echo "**********************************************************************"
+echo ""
+echo "After that, the pathname configuration should be complete."
+echo ""

@@ -1,0 +1,15 @@
+(value :q)
+
+(lp)
+
+(set-ld-pre-eval-print :never state)
+
+(assign inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation)))
+
+(include-book "cbf")
+
+(write-benchmark-file "be/" state)
+
+:u
+
+(certify-book "benchmarks")

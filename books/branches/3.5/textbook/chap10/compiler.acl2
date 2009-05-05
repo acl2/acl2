@@ -1,0 +1,22 @@
+; Section 10.6 Compiler for Stack Machine - certification instructions
+
+; This file contains the certification instructions for compiler.lisp.  That
+; is, to certify compiler.lisp, it suffices to LOAD this file into a Common
+; Lisp running ACL2.  The key command in this file is the DEFPKG, defining the
+; package named "compile".  Package definitions are not permitted in books and
+; so are executed before the book itself is processed.  We define the compiler
+; in a separate package because we wish to define functions named pop, push,
+; compile, etc., and the symbols of those names in the ACL2 package are
+; already defined.
+
+(value :q)
+
+(lp)
+
+(defpkg "COMPILE"
+  (set-difference-eq
+   (union-eq *acl2-exports*
+             *common-lisp-symbols-from-main-lisp-package*)
+   '(pop push top compile step eval)))
+
+(certify-book "compiler" 1)

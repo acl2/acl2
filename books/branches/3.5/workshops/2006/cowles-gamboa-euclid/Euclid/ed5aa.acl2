@@ -1,0 +1,8 @@
+(defpkg "GAUSS-INT"
+        (union-eq *acl2-exports*
+		  *common-lisp-symbols-from-main-lisp-package*))
+
+(certify-book "ed5aa" 
+	      1
+	      nil ;;compile-flg
+	      )

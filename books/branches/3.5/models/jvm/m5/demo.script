@@ -1,0 +1,124 @@
+For my demo, I set up two shells, one running ACL2 and the other running Linux.
+I initialize my ACL2 shell by connecting to this directory and doing:
+
+(include-book "jvm-fact-setup")
+(in-package "M5")
+
+(defun demo-fact (n)
+  (let ((sched (fact-sched 0 n)))
+    (list (list 'steps (len sched))
+          (list 'ans 
+                 (top
+                  (stack
+                   (top-frame 0
+                              (run sched
+                                   (make-state
+                                    (list
+                                     (cons 0
+                                           (make-thread
+                                            (push
+                                             (make-frame
+                                              0
+                                              nil
+                                              (push n nil)
+                                              '((INVOKESTATIC "Demo" "fact" 1))
+                                              'UNLOCKED
+                                              "Demo")
+                                             nil)
+                                            'SCHEDULED
+                                            nil)))
+                                    *demo-heap*
+                                    *demo-class-table*)))))))))
+
+; --- end of setup of ACL2 shell ---
+
+I initialize my Linux shell by connecting to this directory.
+
+; --- end of setup of Linux shell ---
+
+To give my M5 demo, I start in the Linux shell and type these three commands:
+
+% cat Demo.java
+% javap -c Demo
+% java Demo 5
+
+The first will show you a Java definition of a recursive factorial.  The second
+will print the bytecode produced by Sun's javac compiler.  Point out the
+bytecode for fact, which starts on the line
+
+ public static int fact(int);
+
+The third command will run that bytecode on 5 and print 120.
+
+Now enter your ACL2 shell.
+
+(lookup-method "fact" "Demo" *demo-class-table*)
+
+will display the M5 bytecode corresponding to the fact method just shown.
+
+Use pe to show the defuns of
+ run
+ step
+ do-inst
+ execute-iadd
+
+Use 
+(demo-fact 5)
+
+to execute the bytecode on 5 and get 120.
+
+Now do 
+
+(demo-fact 17)
+
+You get a negative answer.  This is due to 32 bit int overflow.
+
+---
+
+Go over to your Linux shell and do
+
+java Demo 17
+
+You will get the same negative answer
+
+---
+
+Now go back to your ACL2 shell and do
+
+(! 17)
+
+to print the correct answer
+
+and do
+
+(int-fix (! 17))
+
+to show what happens if you take the correct answer and then truncate it at 32
+bits and interpret those low order 32 bits in twos-complement.
+
+That is the negative number fact is returning: ``the low order 32 bits of the
+true factorial"
+
+Now prove it:
+
+(defthm fact-is-correct
+  (implies (poised-to-invoke-fact th s n)
+           (equal
+            (run (fact-sched th n) s)
+            (modify th s
+             :pc (+ 3 (pc (top-frame th s)))
+             :stack (push (int-fix (! n))
+                          (pop (stack (top-frame th s)))))))
+  :hints (("Goal"
+           :induct (induction-hint th s n))))
+
+(Use :pso to display the proof if gag-mode is enabled.)
+
+This theorem says that if you have an M5 state poised to execute the fact
+method on n in thread th and if you run it a certain number to steps on thread
+th, you just modify s by incrementing the pc past the invoke instruction (which
+is 3 bytes) and popping the n off the stack and pushing the low order 32 bits
+of the true n!.
+
+
+

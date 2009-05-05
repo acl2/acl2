@@ -1,0 +1,6 @@
+(defpkg "INT-C-MOD"
+        (union-eq *acl2-exports*
+		  *common-lisp-symbols-from-main-lisp-package*))
+
+(certify-book "ed4cb" 
+	      1)
