@@ -120,6 +120,7 @@ my $all_deps = 0;
 my @includes = ();
 my @include_afters = ();
 my $cust_target = 0;
+my $make_target = "all";
 
 while (my $arg = shift(@ARGV)) {
     if ($arg eq "--help" || $arg eq "-h") {
@@ -214,12 +215,13 @@ and options are as follows:
            to include multiple makefiles.  The include commands occur
            after the dependencies in the makefile.
 
-   --custom-target
-   -ct
+   --custom-target <target>
+   -ct <target>
            When writing the makefile, instead of creating a phony
            \'all\' target which depends on the certificates of all the
            books, create a list variable CERT_PL_BOOKS containing all
-           the target certificates.  The \'all\' target can then be
+           the target certificates.  Then, if make is to be run, run
+           it with the specified target.  This target should be
            created by the user in an include-after file.
 ';
 	exit 0;
@@ -256,6 +258,7 @@ and options are as follows:
 	push(@include_afters, shift @ARGV);
     } elsif ($arg eq "--custom-target" || $arg eq "-ct") {
 	$cust_target = 1;
+	$make_target = shift @ARGV;
     } else {
 	push(@targets, canonical_path($arg));
     }
@@ -603,7 +606,7 @@ all:
     while ((my $key, my $value) = each %seen) {
 	if ($value) { 
 	    if ($cust_target) {
-		print $mf "CERT_PL_BOOKS += $key\n";
+		print $mf "CERT_PL_BOOKS := \$(CERT_PL_BOOKS) $key\n";
 	    } else {
 		print $mf "all : $key\n";
 	    }
@@ -623,7 +626,7 @@ include ' . $incl . '
     close($mf);
     
     unless ($no_build) {
-	exec("make", "-j", $jobs, "-f", $mf_name);
+	exec("make", "-j", $jobs, "-f", $mf_name, $make_target);
     }
 }
 
