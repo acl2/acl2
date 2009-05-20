@@ -324,7 +324,7 @@
            (chars-of-digit-equal-n-fn n (1- m)))))
 
 
-(local (include-book "arithmetic-5/top" :dir :system))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 
 (defthm chars-of-digit-equal-n-fn-implies
   (implies (and (chars-of-digit-equal-n-fn n m)
@@ -403,7 +403,8 @@
            
 
 
-
+(local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+(local (in-theory (disable floor)))
 (defun nat-to-charlist1 (n)
   (declare (xargs :guard (natp n)))
   (if (zp n)
@@ -431,7 +432,6 @@
 (defthm nat-to-charlist1-intersect-digit-chars
   (implies (not (zp n))
            (intersectp-equal (nat-to-charlist1 n) *digit-chars*)))
-
 
 
 (defthm nat-to-charlist1-not-list-char-0

@@ -14,13 +14,13 @@
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(include-book "tools/with-arith5-help" :dir :system)
 (include-book "unicode/take" :dir :system)
 (include-book "unicode/nthcdr" :dir :system)
 (include-book "unicode/list-fix" :dir :system)
 (include-book "duplicity")
-(allow-arith5-help)
 
+(local (include-book "ihs/ihs-lemmas" :dir :system))
+(local (in-theory (disable floor mod)))
 
 (encapsulate
  (((comparablep *) => *)
@@ -192,18 +192,17 @@
 
 
 
-(with-arith5-help
- (defthm comparable-mergesort-spec-admission
-   (AND (O-P (LEN X))
-        (IMPLIES (AND (NOT (ATOM X))
-                      (NOT (ATOM (CDR X))))
-                 (O< (LEN (NTHCDR (FLOOR (LEN X) 2) X))
-                     (LEN X)))
-        (IMPLIES (AND (NOT (ATOM X))
-                      (NOT (ATOM (CDR X))))
-                 (O< (LEN (TAKE (FLOOR (LEN X) 2) X))
-                     (LEN X))))
-   :rule-classes nil))
+(defthm comparable-mergesort-spec-admission
+  (AND (O-P (LEN X))
+       (IMPLIES (AND (NOT (ATOM X))
+                     (NOT (ATOM (CDR X))))
+                (O< (LEN (NTHCDR (FLOOR (LEN X) 2) X))
+                    (LEN X)))
+       (IMPLIES (AND (NOT (ATOM X))
+                     (NOT (ATOM (CDR X))))
+                (O< (LEN (TAKE (FLOOR (LEN X) 2) X))
+                    (LEN X))))
+  :rule-classes nil)
 
 (defund comparable-mergesort-spec (x)
   (declare (xargs :measure (len x)
@@ -229,7 +228,7 @@
 
 (encapsulate
  ()
- (local (in-theory (enable-arith5)))
+
 
  (defthm true-listp-of-nthcdr-weak
    (implies (true-listp x)
@@ -370,7 +369,11 @@
 
 (encapsulate
  ()
- (local (in-theory (enable-arith5)))
+
+ 
+ (local (defthm simpler-take-of-cdr
+          (equal (simpler-take n (cdr x))
+                 (cdr (simpler-take (+ 1 n) x)))))
 
  (local (defthm crock
           (implies (and (natp len1)
@@ -389,7 +392,11 @@
                   :use ((:instance crock
                                    (len1 (first-half-len len))
                                    (len2 (second-half-len len))))))))
-                              
+
+ (local (defthm crock3
+          (implies (< 1 (len x))
+                   (consp (cdr x)))))
+
  (defthm comparable-mergesort-spec3-redefinition
    (implies (<= len (len x))
             (equal (comparable-mergesort-spec3 x len)
@@ -399,7 +406,10 @@
            :induct (comparable-mergesort-spec3 x len)
            :in-theory (enable comparable-mergesort-spec3
                               comparable-mergesort-spec2)
-           :expand (comparable-mergesort-spec2 (simpler-take len x))))))
+           :expand (comparable-mergesort-spec2 (simpler-take len x)))
+          ("Subgoal *1/3"
+           :use first-plus-second-half
+           :in-theory (disable first-plus-second-half)))))
 
 (defthm comparable-listp-of-comparable-mergesort-spec3
   (implies (and (<= len (len x))
@@ -411,47 +421,46 @@
 ; Refinement 3.  We now add fixnum and integer declarations, in order to make
 ; the arithmetic faster.
 
-(with-arith5-help
- (defthm fast-comparable-mergesort-fixnums-admission
-   (AND (O-P (NFIX LEN))
-        (IMPLIES
-         (AND (NOT (ZP LEN)) (NOT (= LEN 1)))
-         (O<
-          (NFIX
-           (LET
-            ((VAR
-              (+
-               (LET
-                ((VAR
-                  (LET ((VAR (ASH (LET ((VAR LEN))
+(defthm fast-comparable-mergesort-fixnums-admission
+  (AND (O-P (NFIX LEN))
+       (IMPLIES
+        (AND (NOT (ZP LEN)) (NOT (= LEN 1)))
+        (O<
+         (NFIX
+          (LET
+           ((VAR
+             (+
+              (LET
+               ((VAR
+                 (LET ((VAR (ASH (LET ((VAR LEN))
+                                      (IF (SIGNED-BYTE-P 30 VAR)
+                                          VAR (THE-ERROR '(SIGNED-BYTE 30) VAR)))
+                                 -1)))
+                      (IF (SIGNED-BYTE-P 30 VAR)
+                          VAR
+                          (THE-ERROR '(SIGNED-BYTE 30) VAR)))))
+               (IF (SIGNED-BYTE-P 30 VAR)
+                   VAR (THE-ERROR '(SIGNED-BYTE 30) VAR)))
+              (LET ((VAR (LOGAND (LET ((VAR LEN))
+                                      (IF (SIGNED-BYTE-P 30 VAR)
+                                          VAR (THE-ERROR '(SIGNED-BYTE 30) VAR)))
+                                 1)))
+                   (IF (SIGNED-BYTE-P 30 VAR)
+                       VAR
+                       (THE-ERROR '(SIGNED-BYTE 30) VAR))))))
+           (IF (SIGNED-BYTE-P 30 VAR)
+               VAR (THE-ERROR '(SIGNED-BYTE 30) VAR))))
+         (NFIX LEN)))
+       (IMPLIES
+        (AND (NOT (ZP LEN)) (NOT (= LEN 1)))
+        (O< (NFIX (LET ((VAR (ASH (LET ((VAR LEN))
                                        (IF (SIGNED-BYTE-P 30 VAR)
                                            VAR (THE-ERROR '(SIGNED-BYTE 30) VAR)))
                                   -1)))
                        (IF (SIGNED-BYTE-P 30 VAR)
-                           VAR
-                           (THE-ERROR '(SIGNED-BYTE 30) VAR)))))
-                (IF (SIGNED-BYTE-P 30 VAR)
-                    VAR (THE-ERROR '(SIGNED-BYTE 30) VAR)))
-               (LET ((VAR (LOGAND (LET ((VAR LEN))
-                                       (IF (SIGNED-BYTE-P 30 VAR)
-                                           VAR (THE-ERROR '(SIGNED-BYTE 30) VAR)))
-                                  1)))
-                    (IF (SIGNED-BYTE-P 30 VAR)
-                        VAR
-                        (THE-ERROR '(SIGNED-BYTE 30) VAR))))))
-            (IF (SIGNED-BYTE-P 30 VAR)
-                VAR (THE-ERROR '(SIGNED-BYTE 30) VAR))))
-          (NFIX LEN)))
-        (IMPLIES
-         (AND (NOT (ZP LEN)) (NOT (= LEN 1)))
-         (O< (NFIX (LET ((VAR (ASH (LET ((VAR LEN))
-                                        (IF (SIGNED-BYTE-P 30 VAR)
-                                            VAR (THE-ERROR '(SIGNED-BYTE 30) VAR)))
-                                   -1)))
-                        (IF (SIGNED-BYTE-P 30 VAR)
-                            VAR (THE-ERROR '(SIGNED-BYTE 30) VAR))))
-             (NFIX LEN))))
-   :rule-classes nil))
+                           VAR (THE-ERROR '(SIGNED-BYTE 30) VAR))))
+            (NFIX LEN))))
+  :rule-classes nil)
 
 (defund fast-comparable-mergesort-fixnums (x len)
   (declare (xargs :guard (and (true-listp x)
@@ -480,16 +489,15 @@
                 (part2 (fast-comparable-mergesort-fixnums (nthcdr len1 x) len2)))
            (comparable-merge part1 part2)))))
 
-(with-arith5-help
- (defthm fast-comparable-mergesort-fixnums-redefinition
-   (equal (fast-comparable-mergesort-fixnums x len)
-          (comparable-mergesort-spec3 x len))
-   :hints(("Goal"
-           :in-theory (e/d (fast-comparable-mergesort-fixnums
-                            comparable-mergesort-spec3
-                            first-half-len
-                            second-half-len)
-                           (comparable-mergesort-spec3-redefinition))))))
+(defthm fast-comparable-mergesort-fixnums-redefinition
+  (equal (fast-comparable-mergesort-fixnums x len)
+         (comparable-mergesort-spec3 x len))
+  :hints(("Goal"
+          :in-theory (e/d (fast-comparable-mergesort-fixnums
+                           comparable-mergesort-spec3
+                           first-half-len
+                           second-half-len)
+                          (comparable-mergesort-spec3-redefinition)))))
 
 (defthm comparable-listp-of-fast-comparable-mergesort-fixnums
   (implies (and (<= len (len x))
@@ -498,101 +506,101 @@
 
 
 
-(with-arith5-help
- ;; To generate this, run (in-theory (theory 'minimal-theory)) and then try to
- ;; verify-guards.
- (defthm fast-comparable-mergesort-fixnums-guards
-   (AND
-    (IMPLIES (AND (TRUE-LISTP X)
-                  (COMPARABLE-LISTP X)
-                  (NATP LEN))
-             (RATIONALP (LEN X)))
-    (IMPLIES (AND (TRUE-LISTP X)
-                  (COMPARABLE-LISTP X)
-                  (NATP LEN))
-             (RATIONALP LEN))
-    (IMPLIES (AND (SIGNED-BYTE-P 30 LEN)
-                  (<= LEN (LEN X))
-                  (NATP LEN)
-                  (COMPARABLE-LISTP X)
-                  (TRUE-LISTP X))
-             (EQUAL (ZP LEN) (= LEN 0)))
-    (IMPLIES (AND (SIGNED-BYTE-P 30 LEN)
-                  (<= LEN (LEN X))
-                  (NATP LEN)
-                  (COMPARABLE-LISTP X)
-                  (TRUE-LISTP X))
-             (LET ((VAR LEN))
-                  (SIGNED-BYTE-P 30 VAR)))
-    (IMPLIES (AND (SIGNED-BYTE-P 30 LEN)
-                  (<= LEN (LEN X))
-                  (NATP LEN)
-                  (COMPARABLE-LISTP X)
-                  (TRUE-LISTP X))
-             (ACL2-NUMBERP LEN))
-    (IMPLIES (AND (SIGNED-BYTE-P 30 LEN)
-                  (<= LEN (LEN X))
-                  (NATP LEN)
-                  (COMPARABLE-LISTP X)
-                  (TRUE-LISTP X)
-                  (NOT (ZP LEN))
-                  (NOT (= LEN 1)))
-             (INTEGERP LEN))
-    (IMPLIES
-     (AND (SIGNED-BYTE-P 30 LEN)
-          (<= LEN (LEN X))
-          (NATP LEN)
-          (COMPARABLE-LISTP X)
-          (TRUE-LISTP X)
-          (NOT (ZP LEN))
-          (NOT (= LEN 1)))
-     (LET
-      ((LEN1 (ASH LEN -1)))
-      (AND
-       (LET ((VAR LEN1))
-            (SIGNED-BYTE-P 30 VAR))
-       (LET ((VAR LEN)) (SIGNED-BYTE-P 30 VAR))
-       (INTEGERP LEN)
-       (LET ((VAR (LOGAND LEN 1)))
-            (SIGNED-BYTE-P 30 VAR))
-       (ACL2-NUMBERP LEN1)
-       (ACL2-NUMBERP (LOGAND LEN 1))
-       (LET ((VAR (+ LEN1 (LOGAND LEN 1))))
-            (SIGNED-BYTE-P 30 VAR))
-       (LET
-        ((LEN2 (+ LEN1 (LOGAND LEN 1))))
-        (AND
-         (TRUE-LISTP X)
-         (SIGNED-BYTE-P 30 LEN1)
-         (NATP LEN1)
+;; To generate this, run (in-theory (theory 'minimal-theory)) and then try to
+;; verify-guards.
+(defthm fast-comparable-mergesort-fixnums-guards
+  (AND
+   (IMPLIES (AND (TRUE-LISTP X)
+                 (COMPARABLE-LISTP X)
+                 (NATP LEN))
+            (RATIONALP (LEN X)))
+   (IMPLIES (AND (TRUE-LISTP X)
+                 (COMPARABLE-LISTP X)
+                 (NATP LEN))
+            (RATIONALP LEN))
+   (IMPLIES (AND (SIGNED-BYTE-P 30 LEN)
+                 (<= LEN (LEN X))
+                 (NATP LEN)
+                 (COMPARABLE-LISTP X)
+                 (TRUE-LISTP X))
+            (EQUAL (ZP LEN) (= LEN 0)))
+   (IMPLIES (AND (SIGNED-BYTE-P 30 LEN)
+                 (<= LEN (LEN X))
+                 (NATP LEN)
+                 (COMPARABLE-LISTP X)
+                 (TRUE-LISTP X))
+            (LET ((VAR LEN))
+                 (SIGNED-BYTE-P 30 VAR)))
+   (IMPLIES (AND (SIGNED-BYTE-P 30 LEN)
+                 (<= LEN (LEN X))
+                 (NATP LEN)
+                 (COMPARABLE-LISTP X)
+                 (TRUE-LISTP X))
+            (ACL2-NUMBERP LEN))
+   (IMPLIES (AND (SIGNED-BYTE-P 30 LEN)
+                 (<= LEN (LEN X))
+                 (NATP LEN)
+                 (COMPARABLE-LISTP X)
+                 (TRUE-LISTP X)
+                 (NOT (ZP LEN))
+                 (NOT (= LEN 1)))
+            (INTEGERP LEN))
+   (IMPLIES
+    (AND (SIGNED-BYTE-P 30 LEN)
+         (<= LEN (LEN X))
+         (NATP LEN)
          (COMPARABLE-LISTP X)
-         (<= LEN1 (LEN X))
-         (LET
-          ((PART1 (FAST-COMPARABLE-MERGESORT-FIXNUMS X LEN1)))
-          (AND (INTEGERP LEN1)
-               (TRUE-LISTP X)
-               (<= 0 LEN1)
-               (TRUE-LISTP (NTHCDR LEN1 X))
-               (SIGNED-BYTE-P 30 LEN2)
-               (NATP LEN2)
-               (COMPARABLE-LISTP (NTHCDR LEN1 X))
-               (<= LEN2 (LEN (NTHCDR LEN1 X)))
-               (LET ((PART2 (FAST-COMPARABLE-MERGESORT-FIXNUMS (NTHCDR LEN1 X)
-                                                               LEN2)))
-                    (AND (COMPARABLE-LISTP PART1)
-                         (COMPARABLE-LISTP PART2))))))))))
-    (IMPLIES (AND (SIGNED-BYTE-P 30 LEN)
-                  (<= LEN (LEN X))
-                  (NATP LEN)
-                  (COMPARABLE-LISTP X)
-                  (TRUE-LISTP X)
-                  (NOT (ZP LEN))
-                  (NOT (= LEN 1)))
-             (LET ((VAR (ASH LEN -1)))
-                  (SIGNED-BYTE-P 30 VAR))))
-   :rule-classes nil
-   :hints(("Goal" 
-           :in-theory (disable fast-comparable-mergesort-fixnums-redefinition)))))
+         (TRUE-LISTP X)
+         (NOT (ZP LEN))
+         (NOT (= LEN 1)))
+    (LET
+     ((LEN1 (ASH LEN -1)))
+     (AND
+      (LET ((VAR LEN1))
+           (SIGNED-BYTE-P 30 VAR))
+      (LET ((VAR LEN)) (SIGNED-BYTE-P 30 VAR))
+      (INTEGERP LEN)
+      (LET ((VAR (LOGAND LEN 1)))
+           (SIGNED-BYTE-P 30 VAR))
+      (ACL2-NUMBERP LEN1)
+      (ACL2-NUMBERP (LOGAND LEN 1))
+      (LET ((VAR (+ LEN1 (LOGAND LEN 1))))
+           (SIGNED-BYTE-P 30 VAR))
+      (LET
+       ((LEN2 (+ LEN1 (LOGAND LEN 1))))
+       (AND
+        (TRUE-LISTP X)
+        (SIGNED-BYTE-P 30 LEN1)
+        (NATP LEN1)
+        (COMPARABLE-LISTP X)
+        (<= LEN1 (LEN X))
+        (LET
+         ((PART1 (FAST-COMPARABLE-MERGESORT-FIXNUMS X LEN1)))
+         (AND (INTEGERP LEN1)
+              (TRUE-LISTP X)
+              (<= 0 LEN1)
+              (TRUE-LISTP (NTHCDR LEN1 X))
+              (SIGNED-BYTE-P 30 LEN2)
+              (NATP LEN2)
+              (COMPARABLE-LISTP (NTHCDR LEN1 X))
+              (<= LEN2 (LEN (NTHCDR LEN1 X)))
+              (LET ((PART2 (FAST-COMPARABLE-MERGESORT-FIXNUMS (NTHCDR LEN1 X)
+                                                              LEN2)))
+                   (AND (COMPARABLE-LISTP PART1)
+                        (COMPARABLE-LISTP PART2))))))))))
+   (IMPLIES (AND (SIGNED-BYTE-P 30 LEN)
+                 (<= LEN (LEN X))
+                 (NATP LEN)
+                 (COMPARABLE-LISTP X)
+                 (TRUE-LISTP X)
+                 (NOT (ZP LEN))
+                 (NOT (= LEN 1)))
+            (LET ((VAR (ASH LEN -1)))
+                 (SIGNED-BYTE-P 30 VAR))))
+  :rule-classes nil
+  :hints(("Goal" 
+          :in-theory (disable fast-comparable-mergesort-fixnums-redefinition)
+          :do-not-induct t)))
 
 (encapsulate
  ()
@@ -606,41 +614,40 @@
 (defconst *mergesort-fixnum-threshold* 536870912)
 
 
-(with-arith5-help
- (defthm fast-comparable-mergesort-integers-admission
-   (AND (O-P (NFIX LEN))
-        (IMPLIES
-         (AND (NOT (ZP LEN)) (NOT (= LEN 1)))
-         (O<
-          (NFIX
-           (LET
-            ((VAR
-              (+ (LET ((VAR (LET ((VAR (ASH (LET ((VAR LEN))
-                                                 (IF (INTEGERP VAR)
-                                                     VAR (THE-ERROR 'INTEGER VAR)))
-                                            -1)))
-                                 (IF (INTEGERP VAR)
-                                     VAR (THE-ERROR 'INTEGER VAR)))))
-                      (IF (INTEGERP VAR)
-                          VAR (THE-ERROR 'INTEGER VAR)))
-                 (LET ((VAR (LOGAND (LET ((VAR LEN))
-                                         (IF (INTEGERP VAR)
-                                             VAR (THE-ERROR 'INTEGER VAR)))
-                                    1)))
-                      (IF (INTEGERP VAR)
-                          VAR (THE-ERROR 'INTEGER VAR))))))
-            (IF (INTEGERP VAR)
-                VAR (THE-ERROR 'INTEGER VAR))))
-          (NFIX LEN)))
-        (IMPLIES (AND (NOT (ZP LEN)) (NOT (= LEN 1)))
-                 (O< (NFIX (LET ((VAR (ASH (LET ((VAR LEN))
+(defthm fast-comparable-mergesort-integers-admission
+  (AND (O-P (NFIX LEN))
+       (IMPLIES
+        (AND (NOT (ZP LEN)) (NOT (= LEN 1)))
+        (O<
+         (NFIX
+          (LET
+           ((VAR
+             (+ (LET ((VAR (LET ((VAR (ASH (LET ((VAR LEN))
                                                 (IF (INTEGERP VAR)
                                                     VAR (THE-ERROR 'INTEGER VAR)))
                                            -1)))
                                 (IF (INTEGERP VAR)
-                                    VAR (THE-ERROR 'INTEGER VAR))))
-                     (NFIX LEN))))
-   :rule-classes nil))
+                                    VAR (THE-ERROR 'INTEGER VAR)))))
+                     (IF (INTEGERP VAR)
+                         VAR (THE-ERROR 'INTEGER VAR)))
+                (LET ((VAR (LOGAND (LET ((VAR LEN))
+                                        (IF (INTEGERP VAR)
+                                            VAR (THE-ERROR 'INTEGER VAR)))
+                                   1)))
+                     (IF (INTEGERP VAR)
+                         VAR (THE-ERROR 'INTEGER VAR))))))
+           (IF (INTEGERP VAR)
+               VAR (THE-ERROR 'INTEGER VAR))))
+         (NFIX LEN)))
+       (IMPLIES (AND (NOT (ZP LEN)) (NOT (= LEN 1)))
+                (O< (NFIX (LET ((VAR (ASH (LET ((VAR LEN))
+                                               (IF (INTEGERP VAR)
+                                                   VAR (THE-ERROR 'INTEGER VAR)))
+                                          -1)))
+                               (IF (INTEGERP VAR)
+                                   VAR (THE-ERROR 'INTEGER VAR))))
+                    (NFIX LEN))))
+  :rule-classes nil)
 
 (defund fast-comparable-mergesort-integers (x len)
   (declare (xargs :guard (and (true-listp x)
@@ -671,16 +678,15 @@
                          (fast-comparable-mergesort-integers (nthcdr len1 x) len2))))
            (comparable-merge part1 part2)))))
 
-(with-arith5-help
- (defthm fast-comparable-mergesort-integers-redefinition
-   (equal (fast-comparable-mergesort-integers x len)
-          (comparable-mergesort-spec3 x len))
-   :hints(("Goal"
-           :in-theory (e/d (fast-comparable-mergesort-integers
-                            comparable-mergesort-spec3
-                            first-half-len
-                            second-half-len)
-                           (comparable-mergesort-spec3-redefinition))))))
+(defthm fast-comparable-mergesort-integers-redefinition
+  (equal (fast-comparable-mergesort-integers x len)
+         (comparable-mergesort-spec3 x len))
+  :hints(("Goal"
+          :in-theory (e/d (fast-comparable-mergesort-integers
+                           comparable-mergesort-spec3
+                           first-half-len
+                           second-half-len)
+                          (comparable-mergesort-spec3-redefinition)))))
 
 (defthm comparable-listp-of-fast-comparable-mergesort-integers
   (implies (and (<= len (len x))
@@ -698,113 +704,112 @@
                                          (fast-comparable-mergesort-fixnums-redefinition
                                           fast-comparable-mergesort-integers-redefinition))))))
   
- (with-arith5-help
-  (defthm fast-comparable-mergesort-integers-guards
-    (AND
-     (IMPLIES (AND (TRUE-LISTP X)
-                   (COMPARABLE-LISTP X)
-                   (NATP LEN))
-              (RATIONALP (LEN X)))
-     (IMPLIES (AND (TRUE-LISTP X)
-                   (COMPARABLE-LISTP X)
-                   (NATP LEN))
-              (RATIONALP LEN))
-     (IMPLIES (AND (INTEGERP LEN)
-                   (<= LEN (LEN X))
-                   (NATP LEN)
-                   (COMPARABLE-LISTP X)
-                   (TRUE-LISTP X))
-              (EQUAL (ZP LEN) (= LEN 0)))
-     (IMPLIES
-      (AND (INTEGERP LEN)
-           (<= LEN (LEN X))
-           (NATP LEN)
-           (COMPARABLE-LISTP X)
-           (TRUE-LISTP X)
-           (NOT (ZP LEN))
-           (NOT (= LEN 1)))
-      (LET
-       ((LEN1 (ASH LEN -1)))
-       (AND
-        (LET ((VAR LEN1)) (INTEGERP VAR))
-        (LET ((VAR LEN)) (INTEGERP VAR))
-        (INTEGERP LEN)
-        (LET ((VAR (LOGAND LEN 1)))
-             (INTEGERP VAR))
-        (ACL2-NUMBERP LEN1)
-        (ACL2-NUMBERP (LOGAND LEN 1))
-        (LET ((VAR (+ LEN1 (LOGAND LEN 1))))
-             (INTEGERP VAR))
-        (LET
-         ((LEN2 (+ LEN1 (LOGAND LEN 1))))
-         (AND
-          (LET ((VAR LEN1)) (INTEGERP VAR))
-          (RATIONALP LEN1)
-          (OR (<= 536870912 LEN1) (TRUE-LISTP X))
-          (OR (<= 536870912 LEN1)
-              (SIGNED-BYTE-P 30 LEN1))
-          (OR (<= 536870912 LEN1) (NATP LEN1))
-          (OR (<= 536870912 LEN1)
-              (COMPARABLE-LISTP X))
-          (OR (<= 536870912 LEN1)
-              (<= LEN1 (LEN X)))
-          (OR (< LEN1 536870912) (TRUE-LISTP X))
-          (OR (< LEN1 536870912) (INTEGERP LEN1))
-          (OR (< LEN1 536870912) (NATP LEN1))
-          (OR (< LEN1 536870912)
-              (COMPARABLE-LISTP X))
-          (OR (< LEN1 536870912)
-              (<= LEN1 (LEN X)))
-          (LET
-           ((PART1 (IF (< LEN1 536870912)
-                       (FAST-COMPARABLE-MERGESORT-FIXNUMS X LEN1)
-                       (FAST-COMPARABLE-MERGESORT-INTEGERS X LEN1))))
-           (AND
-            (LET ((VAR LEN2)) (INTEGERP VAR))
-            (RATIONALP LEN2)
-            (OR (<= 536870912 LEN2) (INTEGERP LEN1))
-            (OR (<= 536870912 LEN2) (TRUE-LISTP X))
-            (OR (<= 536870912 LEN2) (<= 0 LEN1))
-            (OR (<= 536870912 LEN2)
-                (TRUE-LISTP (NTHCDR LEN1 X)))
-            (OR (<= 536870912 LEN2)
-                (SIGNED-BYTE-P 30 LEN2))
-            (OR (<= 536870912 LEN2) (NATP LEN2))
-            (OR (<= 536870912 LEN2)
-                (COMPARABLE-LISTP (NTHCDR LEN1 X)))
-            (OR (<= 536870912 LEN2)
-                (<= LEN2 (LEN (NTHCDR LEN1 X))))
-            (OR (< LEN2 536870912) (INTEGERP LEN1))
-            (OR (< LEN2 536870912) (TRUE-LISTP X))
-            (OR (< LEN2 536870912) (<= 0 LEN1))
-            (OR (< LEN2 536870912)
-                (TRUE-LISTP (NTHCDR LEN1 X)))
-            (OR (< LEN2 536870912) (INTEGERP LEN2))
-            (OR (< LEN2 536870912) (NATP LEN2))
-            (OR (< LEN2 536870912)
-                (COMPARABLE-LISTP (NTHCDR LEN1 X)))
-            (OR (< LEN2 536870912)
-                (<= LEN2 (LEN (NTHCDR LEN1 X))))
-            (LET ((PART2 (IF (< LEN2 536870912)
-                             (FAST-COMPARABLE-MERGESORT-FIXNUMS (NTHCDR LEN1 X)
-                                                                LEN2)
-                             (FAST-COMPARABLE-MERGESORT-INTEGERS (NTHCDR LEN1 X)
-                                                                 LEN2))))
-                 (AND (COMPARABLE-LISTP PART1)
-                      (COMPARABLE-LISTP PART2))))))))))
-     (IMPLIES (AND (INTEGERP LEN)
-                   (<= LEN (LEN X))
-                   (NATP LEN)
-                   (COMPARABLE-LISTP X)
-                   (TRUE-LISTP X)
-                   (NOT (ZP LEN))
-                   (NOT (= LEN 1)))
-              (LET ((VAR (ASH LEN -1)))
-                   (INTEGERP VAR))))
-    :rule-classes nil
-    :hints(("Goal" :in-theory (disable 
-                               fast-comparable-mergesort-integers-redefinition
-                               fast-comparable-mergesort-fixnums-redefinition)))))
+ (defthm fast-comparable-mergesort-integers-guards
+   (AND
+    (IMPLIES (AND (TRUE-LISTP X)
+                  (COMPARABLE-LISTP X)
+                  (NATP LEN))
+             (RATIONALP (LEN X)))
+    (IMPLIES (AND (TRUE-LISTP X)
+                  (COMPARABLE-LISTP X)
+                  (NATP LEN))
+             (RATIONALP LEN))
+    (IMPLIES (AND (INTEGERP LEN)
+                  (<= LEN (LEN X))
+                  (NATP LEN)
+                  (COMPARABLE-LISTP X)
+                  (TRUE-LISTP X))
+             (EQUAL (ZP LEN) (= LEN 0)))
+    (IMPLIES
+     (AND (INTEGERP LEN)
+          (<= LEN (LEN X))
+          (NATP LEN)
+          (COMPARABLE-LISTP X)
+          (TRUE-LISTP X)
+          (NOT (ZP LEN))
+          (NOT (= LEN 1)))
+     (LET
+      ((LEN1 (ASH LEN -1)))
+      (AND
+       (LET ((VAR LEN1)) (INTEGERP VAR))
+       (LET ((VAR LEN)) (INTEGERP VAR))
+       (INTEGERP LEN)
+       (LET ((VAR (LOGAND LEN 1)))
+            (INTEGERP VAR))
+       (ACL2-NUMBERP LEN1)
+       (ACL2-NUMBERP (LOGAND LEN 1))
+       (LET ((VAR (+ LEN1 (LOGAND LEN 1))))
+            (INTEGERP VAR))
+       (LET
+        ((LEN2 (+ LEN1 (LOGAND LEN 1))))
+        (AND
+         (LET ((VAR LEN1)) (INTEGERP VAR))
+         (RATIONALP LEN1)
+         (OR (<= 536870912 LEN1) (TRUE-LISTP X))
+         (OR (<= 536870912 LEN1)
+             (SIGNED-BYTE-P 30 LEN1))
+         (OR (<= 536870912 LEN1) (NATP LEN1))
+         (OR (<= 536870912 LEN1)
+             (COMPARABLE-LISTP X))
+         (OR (<= 536870912 LEN1)
+             (<= LEN1 (LEN X)))
+         (OR (< LEN1 536870912) (TRUE-LISTP X))
+         (OR (< LEN1 536870912) (INTEGERP LEN1))
+         (OR (< LEN1 536870912) (NATP LEN1))
+         (OR (< LEN1 536870912)
+             (COMPARABLE-LISTP X))
+         (OR (< LEN1 536870912)
+             (<= LEN1 (LEN X)))
+         (LET
+          ((PART1 (IF (< LEN1 536870912)
+                      (FAST-COMPARABLE-MERGESORT-FIXNUMS X LEN1)
+                      (FAST-COMPARABLE-MERGESORT-INTEGERS X LEN1))))
+          (AND
+           (LET ((VAR LEN2)) (INTEGERP VAR))
+           (RATIONALP LEN2)
+           (OR (<= 536870912 LEN2) (INTEGERP LEN1))
+           (OR (<= 536870912 LEN2) (TRUE-LISTP X))
+           (OR (<= 536870912 LEN2) (<= 0 LEN1))
+           (OR (<= 536870912 LEN2)
+               (TRUE-LISTP (NTHCDR LEN1 X)))
+           (OR (<= 536870912 LEN2)
+               (SIGNED-BYTE-P 30 LEN2))
+           (OR (<= 536870912 LEN2) (NATP LEN2))
+           (OR (<= 536870912 LEN2)
+               (COMPARABLE-LISTP (NTHCDR LEN1 X)))
+           (OR (<= 536870912 LEN2)
+               (<= LEN2 (LEN (NTHCDR LEN1 X))))
+           (OR (< LEN2 536870912) (INTEGERP LEN1))
+           (OR (< LEN2 536870912) (TRUE-LISTP X))
+           (OR (< LEN2 536870912) (<= 0 LEN1))
+           (OR (< LEN2 536870912)
+               (TRUE-LISTP (NTHCDR LEN1 X)))
+           (OR (< LEN2 536870912) (INTEGERP LEN2))
+           (OR (< LEN2 536870912) (NATP LEN2))
+           (OR (< LEN2 536870912)
+               (COMPARABLE-LISTP (NTHCDR LEN1 X)))
+           (OR (< LEN2 536870912)
+               (<= LEN2 (LEN (NTHCDR LEN1 X))))
+           (LET ((PART2 (IF (< LEN2 536870912)
+                            (FAST-COMPARABLE-MERGESORT-FIXNUMS (NTHCDR LEN1 X)
+                                                               LEN2)
+                            (FAST-COMPARABLE-MERGESORT-INTEGERS (NTHCDR LEN1 X)
+                                                                LEN2))))
+                (AND (COMPARABLE-LISTP PART1)
+                     (COMPARABLE-LISTP PART2))))))))))
+    (IMPLIES (AND (INTEGERP LEN)
+                  (<= LEN (LEN X))
+                  (NATP LEN)
+                  (COMPARABLE-LISTP X)
+                  (TRUE-LISTP X)
+                  (NOT (ZP LEN))
+                  (NOT (= LEN 1)))
+             (LET ((VAR (ASH LEN -1)))
+                  (INTEGERP VAR))))
+   :rule-classes nil
+   :hints(("Goal" :in-theory (disable 
+                              fast-comparable-mergesort-integers-redefinition
+                              fast-comparable-mergesort-fixnums-redefinition))))
 
  (local (in-theory nil))
  (verify-guards fast-comparable-mergesort-integers
@@ -877,17 +882,15 @@
             (duplicity a y)))
   :hints(("Goal" :in-theory (enable comparable-merge))))
 
-(with-arith5-help
- (defthm duplicity-of-comparable-mergesort-spec2
-   (equal (duplicity a (comparable-mergesort-spec2 x))
-          (duplicity a x))
-   :hints(("Goal" :in-theory (enable comparable-mergesort-spec2)))))
+(defthm duplicity-of-comparable-mergesort-spec2
+  (equal (duplicity a (comparable-mergesort-spec2 x))
+         (duplicity a x))
+  :hints(("Goal" :in-theory (enable comparable-mergesort-spec2))))
 
-(with-arith5-help
- (defthm duplicity-of-comparable-mergesort
-   (equal (duplicity a (comparable-mergesort x))
-          (duplicity a x))
-   :hints(("Goal" :in-theory (enable comparable-mergesort)))))
+(defthm duplicity-of-comparable-mergesort
+  (equal (duplicity a (comparable-mergesort x))
+         (duplicity a x))
+  :hints(("Goal" :in-theory (enable comparable-mergesort))))
 
 
 
@@ -965,9 +968,8 @@
   :hints(("Goal" :in-theory (enable comparable-mergesort-spec2))))
 
 
-(with-arith5-help
- (defthm comparable-orderedp-of-comparable-mergesort
-   (comparable-orderedp (comparable-mergesort x))))
+(defthm comparable-orderedp-of-comparable-mergesort
+  (comparable-orderedp (comparable-mergesort x)))
 
 (defthm no-duplicatesp-equal-of-comparable-mergesort
   (equal (no-duplicatesp-equal (comparable-mergesort x))
