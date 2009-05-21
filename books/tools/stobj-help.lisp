@@ -48,11 +48,11 @@
  nil
  (local (include-book "arithmetic-5/top" :dir :system))            
  (defthm nth-make-list-ac
-   (equal (nth m (make-list-ac n elt tail))
-          (if (< (nfix m) (nfix n))
-              elt
-            (nth (- (nfix m) (nfix n)) tail)))
-   :hints (("goal" :induct (nth-make-list-ac-ind m n)
+   ;; JCD changed names to match data-structures/list-defthms
+   (equal (nth i (make-list-ac j val ac))
+          (if (< (nfix i) (nfix j))
+              val (nth (- i (nfix j)) ac)))
+   :hints (("goal" :induct (nth-make-list-ac-ind i j)
             :in-theory (enable make-list-ac-open)))))
 
 (include-book "misc/simplify-thm" :dir :system)
