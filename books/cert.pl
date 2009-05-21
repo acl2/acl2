@@ -159,10 +159,10 @@ and options are as follows:
 
    --clean-certs
    -cc
-           Delete each certificate file and corresponding .out file
-           encountered in the dependency search.  Warning: Unless the
-           "-n"/"--no-build" flag is given, the script will then
-           subsequently rebuild these files.
+           Delete each certificate file and corresponding .out and
+           .time file encountered in the dependency search.  Warning:
+           Unless the "-n"/"--no-build" flag is given, the script will
+           then subsequently rebuild these files.
 
    --clean-pfiles
    -cp
@@ -449,8 +449,10 @@ sub add_deps {
     # Clean the cert and out files if we're cleaning.
     if ($clean_certs) {
 	my $outfile = $base . ".out";
+	my $timefile = $base . ".time";
 	unlink($target) if (-e $target);
 	unlink($outfile) if (-e $outfile);
+	unlink($timefile) if (-e $timefile);
     }
 
     # First check that the corresponding .lisp file exists.

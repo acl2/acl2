@@ -71,7 +71,7 @@ export ACL2-CUSTOMIZATION ?= NONE
 	fi ;\
 	if [ "$$TIME_CERT" != "" ] ;\
 	then \
-	  (time $$ACL2 < $$WORKXXXFILE 2>&1) > $$FILE.out ;\
+	  (env time -o $$FILE.time $$ACL2 < $$WORKXXXFILE 2>&1) > $$FILE.out ;\
 	else \
 	  ($$ACL2 < $$WORKXXXFILE 2>&1) > $$FILE.out ;\
 	fi ;\
