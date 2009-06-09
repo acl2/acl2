@@ -49,6 +49,11 @@
 
 (in-theory (disable disjoin))
 
+(defthm clause-eval-disjoin-append
+  (iff (clause-eval (disjoin (append x y)) a)
+       (or (clause-eval (disjoin x) a)
+	   (clause-eval (disjoin y) a))))
+
 (defthm open-conjoin
   (equal (conjoin (cons a list))
 	 (if (consp list)
@@ -67,6 +72,11 @@
 	      (clause-eval (conjoin (cdr list)) a))))))
 
 (in-theory (disable conjoin))
+
+(defthm clause-eval-conjoin-append
+  (iff (clause-eval (conjoin (append x y)) a)
+       (and (clause-eval (conjoin x) a)
+	    (clause-eval (conjoin y) a))))
 
 (defun clause-not (x)
   `(if ,x (quote nil) (quote t)))
@@ -98,7 +108,9 @@
 	(eval-disjoin2       (packn-pos (list eval "-DISJOIN2") eval))
 	(eval-conjoin2       (packn-pos (list eval "-CONJOIN2") eval))
 	(eval-disjoin        (packn-pos (list eval "-DISJOIN") eval))
+	(eval-disjoin-append (packn-pos (list eval "-DISJOIN-APPEND") eval))
 	(eval-conjoin        (packn-pos (list eval "-CONJOIN") eval))
+	(eval-conjoin-append (packn-pos (list eval "-CONJOIN-APPEND") eval))
 	(eval-clause-not     (packn-pos (list eval "-CLAUSE-NOT") eval))
 	(eval-clause-implies (packn-pos (list eval "-CLAUSE-IMPLIES") eval))
 	(eval-constraint-0   (packn-pos (list eval "-CONSTRAINT-0") eval))
@@ -168,6 +180,16 @@
 			       (clause-eval ,eval)
 			       (clause-eval-list ,eval-list)))))
 
+       (defthm ,eval-conjoin-append
+	 (iff (,eval (conjoin (append x y)) a)
+	      (and (,eval (conjoin x) a)
+		   (,eval (conjoin y) a)))
+	 :hints (("Goal" :use (:functional-instance
+			       clause-eval-conjoin-append
+			       (clause-eval ,eval)
+			       (clause-eval-list ,eval-list)))))
+
+
        (defthm ,eval-disjoin
 	 (and
 	  (implies
@@ -180,6 +202,15 @@
 		    (,eval (disjoin (cdr list)) a)))))
 	 :hints (("Goal" :use (:functional-instance
 			       clause-eval-disjoin
+			       (clause-eval ,eval)
+			       (clause-eval-list ,eval-list)))))
+
+       (defthm ,eval-disjoin-append
+	 (iff (,eval (disjoin (append x y)) a)
+	      (or (,eval (disjoin x) a)
+		  (,eval (disjoin y) a)))
+	 :hints (("Goal" :use (:functional-instance
+			       clause-eval-disjoin-append
 			       (clause-eval ,eval)
 			       (clause-eval-list ,eval-list)))))
 
