@@ -13,21 +13,30 @@
 
 (in-package "ACL2")
 
-; This is an often-faster version of coerce.
+; This is a sometimes-faster version of coerce.
 ;
 ;  - It is the same as ACL2's regular coerce when converting character lists
-;    into strings.  It is much faster than ACL2's
+;    into strings.
 ;
-;  - It is often faster when converting strings into character lists.
+;  - It is sometimes faster when converting strings into character lists.
 ;
-;   "Fast-coerce is _____ than regular coerce"
+;      "Fast-coerce is _____ than regular coerce"
 ;
-;    - Allegro: negligibly faster
-;    - Clisp:   negligibly slower
-;    - GCL:     50-60% faster
-;    - CMUCL:   40% faster & uses 30% less memory
-;    - OpenMCL: 90% faster & uses 56% less memory
-;    - SBCL:    50% faster & uses 8% less memory
+;       - Allegro: negligibly faster
+;       - Clisp:   negligibly slower
+;       - GCL:     50-60% faster
+;       - CMUCL:   40% faster & uses 30% less memory
+;       - SBCL:    50% faster & uses 8% less memory
+;       - Old CCL: 90% faster & uses 56% less memory
+;       - New CCL: 18% slower
+;
+; We would like to tailor the :exec part of the definition to fit the Lisp we
+; are using via features, but we think this would break the ability to share
+; certificates across Lisps.  Ugh.  For now we are just going to leave it as 
+; is, and say don't use it if your primary environment is the new version of 
+; CCL.
+;
+; Ideally we should get rid of this file and simply improve each Lisp.
 ;
 ; On Nemesis. (32-bit) -- fast-coerce -------- coerce ------
 ;
@@ -47,15 +56,27 @@
 ;
 ; /p/bin/acl2-gcl           18.8s               39.7s
 ;
-; /p/bin/acl2-openmcl        5.5s                64s
+; /p/bin/acl2-openmcl        5.5s                64s     (OLDER VERSION)
 ;                          2.080 GB            4.64 GB
 ;
 ; /p/bin/acl2-sbcl           5.6s               10.94s
 ;                          2.080 GB            2.240 GB
 ;
 ;
-;   (time$ (loop for i fixnum from 1 to 10000000 do 
-;                (coerce "Hello, World!" 'list)))
+; On FV-1 (64-bit)   --- fast-coerce -------- coerce ------
+;
+; acl2-ccl                  4.96s              4.07s    (NEW VERSION)
+;                          2.080 GB           2.080 GB
+
+#||               
+
+(time$ (loop for i fixnum from 1 to 10000000 do 
+             (coerce "Hello, World!" 'list)))
+
+(time$ (loop for i fixnum from 1 to 10000000 do 
+             (fast-coerce "Hello, World!" 'list)))
+
+||#
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
@@ -136,15 +157,22 @@
                            (list (stringp x))
                            (string (character-listp x)))))
   (mbe :logic (coerce x y)
-       :exec (if (eq y 'list)
-                 (let ((length (length x)))
-                   (if (< (the integer length) 
-                          (the integer 536870912))
-                       (fast-coerce-aux1 (the string x) 
-                                         (the (signed-byte 30) 0)
-                                         (the (signed-byte 30) length))
-                     (fast-coerce-aux2 (the string x) 
-                                       (the integer 0)
-                                       (the integer length))))
-               (coerce x y))))
+       :exec 
+       ;; I'd like to just use 
+       ;;  (if (eq y 'list)
+       ;;     (coerce x 'list)
+       ;;    (coerce x 'string))
+       ;; when running on CLISP or CCL, and the loop below for other Lisps.  But
+       ;; this would break certificate-compatibility, so I just leave it as is.
+       (if (eq y 'list)
+           (let ((length (length x)))
+             (if (< (the integer length) 
+                    (the integer 536870912))
+                 (fast-coerce-aux1 (the string x) 
+                                   (the (signed-byte 30) 0)
+                                   (the (signed-byte 30) length))
+               (fast-coerce-aux2 (the string x) 
+                                 (the integer 0)
+                                 (the integer length))))
+         (coerce x y))))
 
