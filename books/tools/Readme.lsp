@@ -22,6 +22,7 @@ stobj-help.lisp
 theory-tools.lisp
 types-misc.lisp
 with-arith5-help.lisp
+with-quoted-forms.lisp
 ")
  (:TITLE "Tools")
  (:AUTHOR/S
@@ -71,6 +72,9 @@ sum-of-products data structures as defined by defsum.
 stobj-help.lisp provides a make-event which proves some useful rules about a
 stobj, such as type theorems, access/update rewrite rules, etc.
 
+with-quoted-forms.lisp provides a macro that may be useful for computing
+complicated :USE hints where the terms used in the substitutions result from
+deeply nested variable bindings.
 ")
  (:PERMISSION
   "{bstar,cws,defined-const,defsum,deftuple,pack,progndollar,theory-tools,types-misc}.lisp

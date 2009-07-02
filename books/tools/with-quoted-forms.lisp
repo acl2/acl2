@@ -28,9 +28,9 @@
 ;;         (e (baz d c b)))
 ;;    `(:use ((:instance th (x ,(fq e)))))))
 ;; Note that we simply have copied the let* bindings from above, and
-;; that where we want the term of E to appear, we use the form (vq
-;; e).  The result of evaluating this form is the desired use hint
-;; from above.
+;; that where we want the term of E to appear, we instead used the
+;; form (fq e).  The result of evaluating this form is the desired use
+;; hint from above.
 
 ;; How does this work?  First, the form is translated so as to expand
 ;; away any macros.  Next, it is fully beta-reduced: lambdas are
