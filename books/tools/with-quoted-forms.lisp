@@ -95,3 +95,20 @@
 (defmacro with-quoted-forms (form)
   `(with-quoted-forms-fn ',form state))
 
+
+
+;; VAR-FQ-BINDINGS makes a list of bindings appropriate for use in a
+;; substitution list for a use hint, where each variable name is bound to its
+;; FQ.  For example, these two are equivalent:
+;;    `(:use ((:instance foo (a ,(fq a)) (b ,(fq b)))))))
+;;    `(:use ((:instance foo . ,(var-fq-bindings (a b)))))))
+
+(defun var-fq-bindings-lst (vars)
+  (if (atom vars)
+      nil
+    (cons ``(,',(car vars) ,(fq ,(car vars)))
+          (var-fq-bindings-lst (cdr vars)))))
+
+
+(defmacro var-fq-bindings (vars)
+  (cons 'list (var-fq-bindings-lst vars)))
