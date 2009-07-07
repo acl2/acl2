@@ -374,7 +374,9 @@ exported theorems.  The result is records.lisp.
 ===============================================================================
 
 seq.lisp -- the seq macro language
+seqw.lisp -- the seqw macro language
 seq-examples.lsp -- examples of using the seq macro
+seqw-examples.lsp -- examples of using the seqw.macro
 
 SEQ is a macro language for implementing parsers or otherwise applying
 "actions" to "streams".  See the comments at the top of seq.lisp and also

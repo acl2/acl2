@@ -17,8 +17,9 @@
 ; THE SEQ MACRO
 ;
 ; NOTE: See seq-examples.lsp for some examples.
+; NOTE: See seqw.lisp for an expanded version of SEQ.
 ;
-; SEQ is a macro language for applying ACTIONS to a STREAM.
+; SEQ is a macro language for applying ACTIONS to a STREAM.  
 ;
 ; In this context, a "stream" is any data structure that we want to update in
 ; an essentially sequential/single-threaded way.  It might be a stobj, but it
@@ -557,8 +558,8 @@
 
      (cond 
 
-      ;; Easy case 1.  The subblock ends with a return, so we always either process
-; it or rest but never both.
+; Easy case 1.  The subblock ends with a return, so we always either process it
+; or rest but never both.
 
       (ends-with-returnp
        `(if ,condition
