@@ -204,7 +204,7 @@
                     ,(seqw-process-block subblock stream warnings nil)
                   (mv nil nil ,stream ,warnings))
                 (if !!!error
-                    (mv !!!error !!!val ,stream)
+                    (mv !!!error !!!val ,stream ,warnings)
                   (check-vars-not-free (!!!error !!!val) ,rest))))
 
 
