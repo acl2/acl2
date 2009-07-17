@@ -566,16 +566,17 @@
        *initial-clause-id*
        (add-literal tterm (dumb-negate-lit-lst thyps) t)
        nil saved-pspv ctx
-       thints thints wrld nil state)
+       thints wrld nil state)
       (cond
        (erp (silent-error state))
        (t
         (let ((hint-settings (car pair))
               (thints (cdr pair)))
-          (pprogn
+          (mv-let
+           (hint-settings state)
            (cond ((null hint-settings)
-                  state)
-                 (t (thanks-for-the-hint nil state))) ;BB
+                  (mv nil state))
+                 (t (thanks-for-the-hint nil hint-settings state))) ;BB
            (er-let* ((pspv (load-hint-settings-into-pspv
                             t hint-settings saved-pspv wrld ctx state)))
                     (cond
