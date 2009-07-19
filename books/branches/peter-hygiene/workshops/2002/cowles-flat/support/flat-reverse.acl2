@@ -1,0 +1,14 @@
+(value :q)
+
+(LP)
+
+(defpkg "FLAT"
+  (union-eq 
+   *acl2-exports*
+   *common-lisp-symbols-from-main-lisp-package*))
+
+(certify-book "flat-reverse" 
+	      1
+	      nil ; compile-flg
+	      :defaxioms-okp nil 
+	      :skip-proofs-okp nil)

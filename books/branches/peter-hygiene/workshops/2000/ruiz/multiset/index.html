@@ -1,0 +1,88 @@
+<HTML>
+<HEAD><TITLE>Multiset relations: a tool for proving termination</TITLE></HEAD>
+<BODY BGCOLOR="#FFFFFF">
+ 
+This directory contains the supporting materials for the paper:<br><br>
+
+Multiset relations: a tool for proving termination<br>
+J.-L. Ruiz-Reina, J.-A. Alonso, M.-J. Hidalgo, F.-J. Mart&iacute;n<br>
+<i>ACL2 Workshop 2000 Proceedings</i>, Austin, TX, October 2000.
+
+<p>
+There is also <A HREF="http://www.cs.us.es/~jruiz/acl2-mul">web page
+about this work</A> in our web server.  
+
+<P>
+Contents of this directory:
+
+<p>
+<table>
+
+<tr>
+<td><code>README.html</code></td>
+<td>this file</td>
+
+<tr>
+<td><code><A HREF="multiset.lisp">multiset.lisp</A></code></td>
+<td>A proof of well-foundedness of the multiset relation 
+induced by a well-founded relation. Also, useful rules 
+for multisets.</td>
+</tr>
+
+<tr>
+<td><code><A HREF="defmul.lisp">defmul.lisp</A></code></td>
+<td>Definition of demul and defmul-components macros.</td>
+</tr>
+
+<tr>
+<td><code><A
+HREF="examples/ackermann/ackermann.lisp">examples/ackermann/ackermann.lisp</A></code></td>
+<td>Termination of a tail-recursive version of Ackermann's
+function.  </td>
+</tr>
+
+<tr> 
+<td><code>
+<A HREF="examples/mccarthy-91/mccarthy-91.lisp">examples/mccarthy-91/mccarthy-91.lisp</A></code></td>
+<td>Termination of an iterative version of McCarthy's 91
+function. </td> 
+</tr>
+
+<tr>
+<td COLSPAN="2"><U>The following books are part of Newman's lemma example:</U></td>
+</tr>
+
+<tr>
+<td><code><A
+HREF="examples/newman/abstract-proofs.lisp">examples/newman/abstract-proofs.lisp</A></code></td>
+<td>Basic concepts about abstract reduction relations.</td>
+</tr>
+
+
+<tr>
+<td><code><A HREF="examples/newman/confluence.lisp">examples/newman/confluence.lisp</A></code></td>
+<td>A decision algorithm of the equivalence
+relation described by a confluent and normalizing
+reduction
+</td>
+</tr>
+
+
+<tr>
+<td><code><A HREF="examples/newman/newman.lisp">examples/newman/newman.lisp</A></code></td>
+<td>A proof of Newman's lemma: "Local confluence and
+termination implies confluence". This book uses defmul.</td>
+</tr>
+
+
+<tr>
+<td><code><A HREF="examples/newman/local-confluence.lisp">examples/newman/local-confluence.lisp</A></code></td>
+<td>A decision algorithm for the equivalence relation
+described by a terminating and locally confluent
+reduction relation.  </td>
+</tr>
+
+</table>
+
+</body>
+</html>

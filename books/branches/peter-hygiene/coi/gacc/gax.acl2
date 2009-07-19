@@ -1,0 +1,15 @@
+#|-*-Lisp-*-=================================================================|#
+#|                                                                           |#
+#| coi: Computational Object Inference                                       |#
+#|                                                                           |#
+#|===========================================================================|#
+
+(ld "gacc-defpkg.lsp")
+
+;; The include-book commands below are copied here for effiency (ask Eric for
+;; the details).  Keep this list in sync with the list in the .lisp file.
+
+(include-book "gacc2")
+(include-book "gacc")
+
+(certify-book "gax" ?)

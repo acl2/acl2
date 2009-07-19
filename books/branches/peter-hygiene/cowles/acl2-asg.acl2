@@ -1,0 +1,11 @@
+(defpkg 
+  "ACL2-ASG"
+  (set-difference-equal
+   (union-eq *acl2-exports*
+             *common-lisp-symbols-from-main-lisp-package*)
+   '(zero)))
+
+(certify-book 
+  "acl2-asg"
+  1
+  nil)

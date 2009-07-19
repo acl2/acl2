@@ -1,0 +1,7 @@
+
+(defpkg "SAT"
+  (union-eq
+   '(with-local-stobj simple-translate-and-eval trans-eval revappend value-triple
+          unquote getprop putprop msg *sulfa-dir* $sat)
+   (union-eq *acl2-exports*
+             *common-lisp-symbols-from-main-lisp-package*)))
