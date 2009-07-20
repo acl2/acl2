@@ -1,4 +1,8 @@
 (in-package "ACL2")
+; were in portcullis:
+(include-book "defcode" :load-compiled-file :comp :ttags ((defcode)))
+(include-book "rewrite-code" :load-compiled-file :comp)
+(include-book "redefun" :load-compiled-file :comp)
 
 #|
 

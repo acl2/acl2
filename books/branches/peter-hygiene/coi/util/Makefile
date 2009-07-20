@@ -1,4 +1,3 @@
-ACL2 ?= ../../../saved_acl2
 include ../../Makefile-generic
 BOOKS = mv-nth iff syntaxp ith fixequiv ifixequiv nfixequiv table \
         good-rewrite-order rewrite-equiv clause-processor defsubtype deffix \

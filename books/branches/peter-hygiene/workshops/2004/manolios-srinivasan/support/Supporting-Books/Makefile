@@ -1,6 +1,5 @@
 include ../../../../../Makefile-generic
 
-ACL2 = ../../../../../../saved_acl2
 
 det-macros.cert: det-macros.lisp
 

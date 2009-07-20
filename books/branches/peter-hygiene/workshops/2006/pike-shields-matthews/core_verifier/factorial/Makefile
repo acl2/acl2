@@ -4,14 +4,11 @@
 
 ## Makefile for mCrytpol Verifying Compiler ACL2 books
 
-include ../dir.mk
-
 # # .PHONY: depend
 # # depend:
 # # 	sh ../cert.mk
 
-include $(DIR)/books/Makefile-generic
-ACL2 = $(DIR)/saved_acl2
+include ../../../../../Makefile-generic
 
 BOOKS = fac-source-shallow-canon fac-source-shallow-flatten proof-fac
 

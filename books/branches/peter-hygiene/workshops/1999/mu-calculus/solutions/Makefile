@@ -1,6 +1,5 @@
 include ../../../../Makefile-generic
 
-ACL2 = ../../../../../saved_acl2
 
 # Override default setting since build.lisp is not intended to be certified.
 BOOKS = ctl defung fast-sets fixpoints meta models perm relations semantics sets syntax

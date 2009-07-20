@@ -1,4 +1,3 @@
-ACL2 ?= ../../../saved_acl2
 include ../../Makefile-generic
 BOOKS = acl2-count basic memberp \
         repeat map-cons \

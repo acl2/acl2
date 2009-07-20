@@ -11,7 +11,6 @@
 
 include ../../../../../Makefile-generic
 
-ACL2 = ../../../../../../saved_acl2
 
 BOOKS = defs-in inputs lemmas-in defs-out defs-eq lemmas-out 
 

@@ -1,4 +1,3 @@
-ACL2 ?= ../../../saved_acl2
 include ../../Makefile-generic
 
 BOOKS = from-rtl arithmetic evenp bit-functions logcar loghead ash \

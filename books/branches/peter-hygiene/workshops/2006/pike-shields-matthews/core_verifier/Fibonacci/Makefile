@@ -4,10 +4,7 @@
 
 ## Makefile for mCrytpol Verifying Compiler ACL2 books
 
-include ../dir.mk
-
-include $(DIR)/books/Makefile-generic
-ACL2 = $(DIR)/saved_acl2
+include ../../../../../Makefile-generic
 
 # .PHONY: depend
 # depend:

@@ -10,7 +10,6 @@
 
 include ../../../../Makefile-generic
 
-ACL2 = ../../../../../saved_acl2
 
 # List books explicitly to avoid vhdl-acl2, which is not certifiable (has forms
 # that are not embedded event forms).

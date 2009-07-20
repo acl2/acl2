@@ -1,4 +1,3 @@
-ACL2 ?= ../../../saved_acl2
 include ../../Makefile-generic
 
 BOOKS = gacc-pkg gacc-exports abstract-gacc addr-range bits mem-fast mem \

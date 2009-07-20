@@ -1,8 +1,5 @@
 (ld "hacker-pkg.lsp")
 
-(include-book "defcode" :load-compiled-file :comp :ttags ((defcode)))
-(include-book "rewrite-code" :load-compiled-file :comp)
-(include-book "redefun" :load-compiled-file :comp)
 
 
 (ACL2::CERTIFY-BOOK "table-guard" ACL2::? T :TTAGS ((DEFCODE) (TABLE-GUARD)))

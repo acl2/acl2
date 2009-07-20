@@ -1,6 +1,5 @@
 (ld "hacker-pkg.lsp")
 
-(include-book "defstruct-parsing" :load-compiled-file :comp)
 
 
 (ACL2::CERTIFY-BOOK "raw" ACL2::? T)

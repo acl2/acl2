@@ -1,6 +1,5 @@
 include ../../../../../../Makefile-generic
 
-ACL2 = ../../../../../../../saved_acl2
 
 # Override default setting since only the solutions are to be certified.
 

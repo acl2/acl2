@@ -10,7 +10,6 @@
 
 include ../../../../Makefile-generic
 
-ACL2 = ../../../../../saved_acl2
 
 # These books are obtained from certify.lisp.  The file bis.lisp is a
 # bisimulation book that was provided by Rob Sumners and is referenced in the

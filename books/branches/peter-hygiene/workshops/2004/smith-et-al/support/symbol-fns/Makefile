@@ -1,9 +1,4 @@
-# The following variable should represent the ACL2 source directory.  It and
-# ACL2 are the only variables in this Makefile that may need to be edited.
-ACL2_SYSTEM_BOOKS ?= ../../../../..
-
-include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
-ACL2 = $(ACL2_SYSTEM_BOOKS)/../saved_acl2
+include ../../../../../Makefile-generic
 
 BOOKS = symbol-fns symbol-fns-exports
 

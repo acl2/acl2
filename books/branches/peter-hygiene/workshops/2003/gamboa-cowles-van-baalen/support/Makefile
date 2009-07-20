@@ -10,7 +10,6 @@
 
 include ../../../../Makefile-generic
 
-ACL2 = ../../../../../saved_acl2
 
 BOOKS = kalman-defs kalman-demo kalman-proof linalg
 
