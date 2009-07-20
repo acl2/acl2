@@ -10,7 +10,6 @@
 
 include ../../../../Makefile-generic
 
-ACL2 = ../../../../../saved_acl2
 
 # Override default setting since TMP.lisp, TMP1.lisp, and
 # dag-unification-examples.lisp are not intended to be certified.

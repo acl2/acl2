@@ -1,6 +1,5 @@
 include ../../../../../Makefile-generic
 
-ACL2 = ../../../../../../saved_acl2
 
 BOOKS = defstobj+ fib-def partial-clock-functions tiny tiny-rewrites
 

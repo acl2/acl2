@@ -6,7 +6,6 @@ top: fmul.lisp proof.cert
 
 include ../../../Makefile-generic
 
-ACL2 = ../../../../saved_acl2
 
 compiler.cert: compiler.lisp
 # compiler.cert: rtl.cert

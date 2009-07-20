@@ -1,4 +1,5 @@
 (in-package "ACL2")
+(include-book "hacker" :load-compiled-file :comp) ;was in portcullis
 
 (program)
 (set-state-ok t)

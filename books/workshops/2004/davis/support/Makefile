@@ -1,6 +1,5 @@
 include ../../../../Makefile-generic
 
-ACL2 = ../../../../../saved_acl2
 
 BOOKS = instance computed-hints \
         primitives membership fast outer sort \

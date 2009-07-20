@@ -1,5 +1,3 @@
-ACL2 ?= ../../saved_acl2
-
 DIRS =	symbol-fns \
 	util \
 	adviser \

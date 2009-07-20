@@ -1,6 +1,5 @@
 include ../../../Makefile-generic
 
-ACL2 = ../../../../saved_acl2
 
 # Override default setting since solutions.lisp is not intended to be certified.
 BOOKS = find-path1 find-path2 find-path3 helpers linear-find-path

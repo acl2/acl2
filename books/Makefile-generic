@@ -49,15 +49,23 @@
 # We normally inhibit most output during certification to speed up the proofs.
 # Edit as necessary.
 
-# The setting of ACL2 immediately below reflects an assumption about where this
-# Makefile will be executed, namely, directly under books/.  This assumption
-# can of course be overridden by specifying ACL2 on the command line, for
-# example: make ACL2=/home/smith/saved_acl2.  Be sure to do this override on
-# the command line rather than by editing the line below, because that edit
-# will probably not suffice for overriding the assignment of ACL2 that is made
-# in some books (namely, those not just one level past books/).
+# Check that this version of MAKE defines MAKEFILE_LIST
+ifdef MAKEFILE_LIST
 
-ACL2 ?= ../../saved_acl2
+# Determine the location of this Makefile-generic
+BOOKS_DIR := $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
+
+# and use that to determine the default location of ACL2.  To override,
+# set the ACL2 variable on the command line or in the environment.
+ACL2 ?= $(BOOKS_DIR)../saved_acl2
+
+# Unless otherwise specified, use these as the system books, to avoid
+# compatibility problems.
+export ACL2_SYSTEM_BOOKS ?= $(BOOKS_DIR)
+
+endif
+# Otherwise, specify ACL2= and ACL2_SYSTEM_BOOKS= oneself.
+
 
 ACL2_BOOKS_MAKEFILE ?= Makefile
 

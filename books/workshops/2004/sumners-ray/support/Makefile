@@ -38,7 +38,6 @@ include ../../../../Makefile-generic
 # include invp as a book:
 BOOKS = basis crit mesi records sets total-order
 
-ACL2 = ../../../../../saved_acl2
 
 clean: clean-more
 

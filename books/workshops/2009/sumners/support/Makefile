@@ -1,6 +1,4 @@
-ACL2_SYSTEM_BOOKS ?= ../../../..
-include ${ACL2_SYSTEM_BOOKS}/Makefile-generic
-ACL2 = ${ACL2_SYSTEM_BOOKS}/../saved_acl2
+include ../../../../Makefile-generic
 
 # We only certify kas by default, because examples requires a Common
 # Lisp with fixnums of 60 bits or more, and not every Common Lisp has

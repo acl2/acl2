@@ -1,5 +1,4 @@
 include ../../../../Makefile-generic
-ACL2 = ../../../../../saved_acl2
 
 # Omit ed5ba because it depends on ACL2(r):
 BOOKS = ed1 ed2a ed2b ed3 ed4aa ed4ab ed4ba ed4bb ed4ca ed4cb ed4da ed4db ed5aa ed6a prime-fac
