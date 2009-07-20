@@ -49,17 +49,23 @@
 # We normally inhibit most output during certification to speed up the proofs.
 # Edit as necessary.
 
+# Check that this version of MAKE defines MAKEFILE_LIST
+ifdef MAKEFILE_LIST
 
 # Determine the location of this Makefile-generic
 BOOKS_DIR := $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
 
 # and use that to determine the default location of ACL2.  To override,
 # set the ACL2 variable on the command line or in the environment.
-ACL2 ?= $(BOOKS_DIR)/../saved_acl2
+ACL2 ?= $(BOOKS_DIR)../saved_acl2
 
 # Unless otherwise specified, use these as the system books, to avoid
 # compatibility problems.
 export ACL2_SYSTEM_BOOKS ?= $(BOOKS_DIR)
+
+endif
+# Otherwise, specify ACL2= and ACL2_SYSTEM_BOOKS= oneself.
+
 
 ACL2_BOOKS_MAKEFILE ?= Makefile
 
