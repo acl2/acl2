@@ -3,6 +3,7 @@
 # books directory.  You are welcome to omit this line, or not as you prefer, in
 # your contribution.
 #ACL2_SYSTEM_BOOKS = /projects/hvg/reeber-local/v2-9-4-linux/books
+ACL2_SYSTEM_BOOKS = ../../../..
 
 include ${ACL2_SYSTEM_BOOKS}/Makefile-generic
 
