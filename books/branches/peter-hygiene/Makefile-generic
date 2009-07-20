@@ -51,10 +51,10 @@
 
 
 # Determine the location of this Makefile-generic
-BOOKS_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
+BOOKS_DIR := $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
 
-# and use that to determine the default location of ACL2.  You should only
-# override this default location on the command line, using ACL2=
+# and use that to determine the default location of ACL2.  To override,
+# set the ACL2 variable on the command line or in the environment.
 ACL2 ?= $(BOOKS_DIR)/../saved_acl2
 
 # Unless otherwise specified, use these as the system books, to avoid
