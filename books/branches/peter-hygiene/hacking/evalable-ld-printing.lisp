@@ -5,6 +5,11 @@
 ; global EVALABLE-LD-PRINTINGP, as in
 ;   (assign evalable-ld-printingp t)
 ;
+; If ld-post-eval-print is :command-conventions, we do not make error
+; triple output evalable.  To make error triple output looks especially
+; unique, I recommend making it look like a comment:
+;   (assign triple-print-prefix "; ")
+;
 ; Requires a trust tag :evalable-ld-printing
 ;
 ; Peter C. Dillinger, Northeastern University, 2008
