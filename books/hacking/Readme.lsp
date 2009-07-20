@@ -9,6 +9,10 @@ defcode.acl2
 defcode.lisp
 defstruct-parsing.acl2
 defstruct-parsing.lisp
+dynamic-make-event.acl2
+dynamic-make-event.lisp
+dynamic-make-event-test.acl2
+dynamic-make-event-test.lisp
 hacker.acl2
 hacker.lisp
 hacker-pkg.lsp
@@ -82,6 +86,12 @@ defcode.lisp
 
 defstruct-parsing.lisp
     Book for parsing defstruct calls
+
+dynamic-make-event.lisp
+    Support for modified events to return a make-event expansion.
+
+dynamic-make-event-test.lisp
+    A regression test for dynamic-make-event.
 
 hacker.lisp
     Basic book with hacking constructs

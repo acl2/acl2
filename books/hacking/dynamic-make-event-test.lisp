@@ -11,7 +11,7 @@ dynamic-make-event-test.lisp
 
 By Peter Dillinger, ca. 2009
 
-This is a test for the dynamic-make-event book.
+This is a regression test for the dynamic-make-event book.
 
 |#
 
