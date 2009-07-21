@@ -17,6 +17,16 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
+;--------------------------------------------------------------------------
+; After books have been moved, this file can update .cert files to reflect
+; their new location.  There are potential reliability and soundness issues
+; (see make-certificate-file in ACL2 sources), but it should work fine on
+; the system books.
+;
+; This file should be loadable with LD and should not include any books, so
+; that it is available to be used even if .cert files are messed up.
+
+
 (program)
 (set-state-ok t)
 
@@ -169,3 +179,8 @@
     ',dir
     'fix-cert
     state))
+
+
+; so that we can also load this book with LD without complications
+(logic)
+(set-state-ok nil)
