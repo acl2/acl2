@@ -197,6 +197,33 @@ END
 	print_path ($ {$costs}[2]);
     }
 }
+
+
+# Jared added this to report the individual times.
+sub report_individual_files 
+{
+    print "\n\nIndividual times for all files (sorted by name; not just the critical path):\n\n";
+
+    my %lines = ();
+
+    foreach my $filename (keys %deps) 
+    {
+         my @shortcert = $filename =~ m/^.*\/([^\/]*\/[^\/]*)$/;
+         my $shortname = $shortcert[0];
+         my $indiv_time = get_cert_time $filename;
+         $lines{$shortname} = $indiv_time;
+    }
+
+    foreach my $name ( sort(keys %lines) )
+    {
+        my $time = $lines{$name};
+        formline (<<'END', $name, $time);
+@<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< @######.##
+END
+        print $^A;
+        $^A = "";
+    }
+}
     
 
 my $mkfile = canonical_path(shift);
@@ -209,6 +236,7 @@ mk_dep_graph $mkfile;
 get_max_cost_path $topfile;
 
 
+print "\nCritical path:\n\n";
 formline (<<'END', "File", "Time", "Cumulative");
 @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< @>>>>>>>>> @>>>>>>>>>>>>>>
 END
@@ -216,5 +244,5 @@ print $^A;
 $^A = "";
 
 print_path ($topfile);
-    
-	    
+
+report_individual_files;
