@@ -1,0 +1,3 @@
+(include-book "test1pp" :ttags :all)
+
+(certify-book "test1p" 1 t :ttags :all)
