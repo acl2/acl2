@@ -59,6 +59,7 @@ my $use_pfiles = 0;
 my $write_pfiles = 0;
 
 
+my $base_path = 0;
 
 sub rm_dotdots {
     my $path = shift;
@@ -86,7 +87,7 @@ sub rec_readlink {
     return $last;
 }
 
-sub canonical_path {
+sub abs_canonical_path {
     my $path = shift;
     my $abspath = File::Spec->rel2abs(rec_readlink($path));
     my ($vol, $dir, $file) = File::Spec->splitpath($abspath);
@@ -98,6 +99,16 @@ sub canonical_path {
 	return 0;
     }
 }
+
+sub canonical_path {
+    my $abs_path = abs_canonical_path(shift);
+    if ($base_path) {
+	return File::Spec->abs2rel($abs_path, $base_path);
+    } else {
+	return $abs_path;
+    }
+}
+    
 
 
 # This sets the location of :dir :system as the directory where this
@@ -223,6 +234,19 @@ and options are as follows:
            the target certificates.  Then, if make is to be run, run
            it with the specified target.  This target should be
            created by the user in an include-after file.
+
+   --relative-paths
+   -r
+           Use paths relative to the current directory rather than
+           absolute paths.  This is useful for producing a static
+           makefile (see --static-makefile-mode above) for
+           distribution with a directory that may be placed at
+           different locations on different users\' file systems.
+
+   --targets <file>
+   -t <file>
+           Add as targets the files listed (one per line) in <file>.
+
 ';
 	exit 0;
     } elsif ($arg eq  "--jobs" || $arg eq "-j") {
@@ -259,6 +283,14 @@ and options are as follows:
     } elsif ($arg eq "--custom-target" || $arg eq "-ct") {
 	$cust_target = 1;
 	$make_target = shift @ARGV;
+    } elsif ($arg eq "--relative-paths" || $arg eq "-r") {
+	$base_path = abs_canonical_path(".");
+    } elsif ($arg eq "--targets" || $arg eq "-t") {
+	my $fname = shift;
+	open (my $tfile, $fname);
+	while (my $the_line = <$tfile>) {
+	    push (@targets, canonical_path(substr($the_line, 0, -1)));
+	}
     } else {
 	push(@targets, canonical_path($arg));
     }
