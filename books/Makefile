@@ -50,7 +50,7 @@ TIME = time
 # Note: arithmetic-4 could be added in analogy to arithmetic-5.
 
 # First directories of books to certify:
-DIRS1 = cowles arithmetic meta
+DIRS1 = cowles arithmetic meta fix-cert
 # Additional directories, where DIRS3 prunes out those not distributed.
 # We rely on DIRS3 being a subset of DIRS2 in the dependence of DIRS2 on
 # top-with-meta-cert.
