@@ -65,6 +65,10 @@
 
 
 
+
+
+
+
 ;; We can define a sort for strings.  String< is not appropriate because it
 ;; returns numbers instead of bools, so we define a little wrapper for it.
 ;; Furthermore, we need to prove the transitivity of string<, since this is
@@ -149,6 +153,7 @@
 (include-book ;; Line break fools dependency scanner.
  "finite-set-theory/osets/sort" :dir :system)
 
+
 :q
 
 (ccl::set-lisp-heap-gc-threshold (expt 2 30))
@@ -159,6 +164,14 @@
   (loop for j from 1 to 10
         nconc
         (loop for i from 1 to 1000 collect i)))
+
+(defparameter *strings*
+  (loop for j from 1 to 10
+        nconc
+        (loop for i from 1 to 1000
+              collect
+              (concatenate 'string "string_number_" 
+                           (coerce (explode-atom i 10) 'string)))))
 
 
 ;; 9.13 seconds with 4.4 GB allocated
@@ -196,15 +209,6 @@
                      (declare (ignore result))
                      nil))))
 
-
-(defparameter *strings*
-  (loop for j from 1 to 10
-        nconc
-        (loop for i from 1 to 1000
-              collect
-              (concatenate 'string "string_number_" 
-                           (coerce (explode-atom i 10) 'string)))))
-
 ;; 25.4 seconds with 4.4 GB allocated
 (progn (ccl::gc) 
        (time (loop for i fixnum from 1 to 1000
@@ -228,5 +232,21 @@
                    (let ((result (string-sort (cons "foo" *strings*))))
                      (declare (ignore result))
                      nil))))
+
+
+
+
+(include-book ;; NOTE: not compatible with other includes
+ "defexec/other-apps/qsort/programs" :dir :system)
+
+;; 16.1 seconds with 240 MB allocated -- interesting
+(progn (ccl::gc)
+       (time (loop for i fixnum from 1 to 1000
+                   do 
+                   (let ((result (qsort (cons i *integers*))))
+                     (declare (ignore result))
+                     nil))))
+
+
 
 ||#

@@ -1,0 +1,2 @@
+(ld "package.lsp")
+(certify-book "serialize-tests" ? t :ttags :all)
