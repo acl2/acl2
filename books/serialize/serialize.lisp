@@ -147,5 +147,7 @@
 #-gcl
 (ACL2::progn!
  (set-raw-mode t)
- (load (compile-file "serialize-raw.lsp")))
+ (load
+  (compile-file
+   (ACL2::extend-pathname (cbd) "serialize-raw.lsp" state))))
 
