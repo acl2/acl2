@@ -415,7 +415,7 @@
                      (car-obj   (aref *decode-array* car-index))
                      (cdr-obj   (aref *decode-array* cdr-index)))
                 (setf (aref *decode-array* *decode-free*)
-                      (cons car-obj cdr-obj))
+                      (hons car-obj cdr-obj))
                 (incf *decode-free*)))
       (loop for i from 1 to len do
             (let* ((car-index (nat-byte-decode))
@@ -423,7 +423,7 @@
                    (car-obj   (aref *decode-array* car-index))
                    (cdr-obj   (aref *decode-array* cdr-index)))
               (setf (aref *decode-array* *decode-free*)
-                    (hons car-obj cdr-obj))
+                    (cons car-obj cdr-obj))
               (incf *decode-free*))))))
       
 
@@ -436,7 +436,7 @@
 ; COMPRESSION.
 ;
 ; Given a valid ACL2 object, (gather-atoms x) quickly collects a list of all
-; the atoms in the object without duplication.  
+; the atoms in the object, without duplication.  
 ;
 ; The atoms are partitioned into lists by their types, so that we separately
 ; return the symbols, naturals, non-natural rationals, strings, and finally
@@ -447,12 +447,18 @@
 ;
 ;  - The SYM hash table is used to store symbols we have seen
 ;  - The EQL hash table is used to store numbers and characters
-;  - The EQUAL hash table is used to store strings
+;  - The STRING hash table is used to store strings
 ;  - The CONS hash table is used to store conses 
 ;
 ; Invariant 1.  Every symbol we have seen is in the SYM hash table.
 ; Invariant 2.  Every number/character we have seen is in the EQL hash table.
-; Invariant 3.  Every string we have seen is in the EQUAL hash table.
+;
+; Invariant 3.  The string table is an EQ table that has every string we have
+;               seen.  This is only used as a filter to avoid adding some
+;               repeated strings into *gathered-strings*, and is NOT COMPLETE
+;               since, e.g., "foo" and "foo" may be EQUAL-but-not-EQ.  (We
+;               originally used an EQUAL hash table, but found its performance
+;               to be too poor.)
 ;
 ; We make no guarantees about the CONS hash table; it is used only to avoid
 ; revisiting shared structures.  It is "safe" to visit an EQUAL-but-not-EQ cons
@@ -461,29 +467,116 @@
 
 (defparameter *gather-atoms-seen-sym* nil)
 (defparameter *gather-atoms-seen-eql* nil)
-(defparameter *gather-atoms-seen-equal* nil)
+(defparameter *gather-atoms-seen-string* nil)
 (defparameter *gather-atoms-seen-cons* nil)
 
 (declaim (type hash-table *gather-atoms-seen-sym*))
 (declaim (type hash-table *gather-atoms-seen-eql*))
-(declaim (type hash-table *gather-atoms-seen-equal*))
+(declaim (type hash-table *gather-atoms-seen-string*))
 (declaim (type hash-table *gather-atoms-seen-cons*))
 
-; We also use several accumulators to store the atoms we have found.  The
-; objects are separated by type and pushed into these accumulators.  
-;
-; The accumulators for naturals, rationals, complexes, strings, and 
-; characters are simple lists that we push new values into.  The symbol
-; accumulator is more complex, and associates packages with the lists of 
-; symbols that are found in that package.
 
+; Because performance can be very sensitive w.r.t. the size of these hash
+; tables, it is best to avoid rehashing altogether.  We occasionally try to
+; detect size changes so we can report them to the user.
+;
+; This is a simple scheme.  We record the sizes of the hash tables when we
+; create them.  Then, on each recursive call to gather-atoms, we run our debug
+; function below.  Ordinarily this is does nothing but decrease the current
+; count.  When the count reaches zero, we check the sizes against what we used
+; to think they were.  If any changes are detected, we print a message.  This
+; way, the overhead stays very low.
+
+(defparameter *gather-atoms-size-sym* 0)
+(defparameter *gather-atoms-size-eql* 0)
+(defparameter *gather-atoms-size-string* 0)
+(defparameter *gather-atoms-size-cons* 0)
+(defparameter *gather-atoms-size-debug-start* 0)
+(defparameter *gather-atoms-size-debug-current* 0)
+(defparameter *gather-atoms-size-debug-help-printed* nil)
+
+(declaim (type fixnum *gather-atoms-size-sym*))
+(declaim (type fixnum *gather-atoms-size-eql*))
+(declaim (type fixnum *gather-atoms-size-string*))
+(declaim (type fixnum *gather-atoms-size-cons*))
+(declaim (type fixnum *gather-atoms-size-debug-start*))
+(declaim (type fixnum *gather-atoms-size-debug-current*))
+
+(declaim (inline gather-atoms-size-debug))
+
+(defun gather-atoms-size-debug ()
+  (decf *gather-atoms-size-debug-current*)
+  (when (= *gather-atoms-size-debug-current* 0)
+
+    ;; Start counting down again.
+    (setf *gather-atoms-size-debug-current*
+          *gather-atoms-size-debug-start*)
+
+    (when (or (> (hash-table-size *gather-atoms-seen-sym*) *gather-atoms-size-sym*)
+              (> (hash-table-size *gather-atoms-seen-eql*) *gather-atoms-size-eql*)
+              (> (hash-table-size *gather-atoms-seen-string*) *gather-atoms-size-string*)
+              (> (hash-table-size *gather-atoms-seen-cons*) *gather-atoms-size-cons*))
+      
+      ;; If this is the first time we've seen any resize, print a help message.
+      (unless *gather-atoms-size-debug-help-printed*
+        (format t ";; Note: hash-table resizes detected.  For better performance, consider ~%")
+        (format t ";; larger table sizes.  See :doc SERIALIZE::SERIALIZE.~%")
+        (setf *gather-atoms-size-debug-help-printed* t))
+    
+      (when (> (hash-table-size *gather-atoms-seen-sym*) *gather-atoms-size-sym*)
+        (format t ";; Note: symbol-table has grown from ~a to ~a.~%"
+                *gather-atoms-size-sym* 
+                (hash-table-size *gather-atoms-seen-sym*))
+        (setf *gather-atoms-size-sym* 
+              (hash-table-size *gather-atoms-seen-sym*)))
+      
+      (when (> (hash-table-size *gather-atoms-seen-eql*) *gather-atoms-size-eql*)
+        (format t ";; Note: number-table has grown from ~a to ~a.~%"
+                *gather-atoms-size-eql*
+                (hash-table-size *gather-atoms-seen-eql*))
+        (setf *gather-atoms-size-eql*
+              (hash-table-size *gather-atoms-seen-eql*)))
+      
+      (when (> (hash-table-size *gather-atoms-seen-string*) 
+               *gather-atoms-size-string*)
+        (format t ";; Note: string-table has grown from ~a to ~a.~%"
+                *gather-atoms-size-string*
+                (hash-table-size *gather-atoms-seen-string*))
+        (setf *gather-atoms-size-string*
+              (hash-table-size *gather-atoms-seen-string*)))
+
+      (when (> (hash-table-size *gather-atoms-seen-cons*) 
+               *gather-atoms-size-cons*)
+        (format t ";; Note: cons-table has grown from ~a to ~a.~%"
+                *gather-atoms-size-cons*
+                (hash-table-size *gather-atoms-seen-cons*))
+        (setf *gather-atoms-size-cons*
+              (hash-table-size *gather-atoms-seen-cons*))))))
+
+
+; We also use several accumulators to store the atoms we have found.  The
+; objects are separated by type and pushed into these accumulators.
+;
+; The accumulators for naturals, rationals, complexes, strings, and characters
+; are simple lists that we push new values into.  Because of the invariants
+; above, we can guarantee that our accumulators for naturals, rationals,
+; complexes, and characters have no duplicates.  The same is NOT true for
+; strings, and because of this we have special handling for them.  (We will not
+; have any duplicated EQ strings, but we may have some strings which are
+; EQUAL-but-not-EQ).
+;
+; The symbol accumulator is more complex, and associates packages with the
+; lists of symbols that are found in that package.  After this is done, we
+; convert the hash table into an alist using a simple maphash.  Because of the
+; invariants above, the symbols in the hash table are unique.
+ 
 (defparameter *gathered-symbols-ht* nil)
 (defparameter *gathered-symbols-alist* nil)
 (defparameter *gathered-naturals* nil)
 (defparameter *gathered-rationals* nil)
 (defparameter *gathered-complexes* nil)
-(defparameter *gathered-strings* nil)
 (defparameter *gathered-chars* nil)
+(defparameter *gathered-strings* nil)
 
 (declaim (type hash-table *gathered-symbols-ht*))
 (declaim (type list *gathered-symbols-alist*))
@@ -493,10 +586,16 @@
 (declaim (type list *gathered-strings*))
 (declaim (type list *gathered-chars*))
 
+
+
+
+
 (defun gather-atoms (x)
 
 ; Note: assumes all of the tables and accumulators above have already been
 ; initialized.  You should never call this directly.
+
+  (gather-atoms-size-debug)
 
   (cond ((consp x)
          (unless (gethash x *gather-atoms-seen-cons*)
@@ -508,8 +607,8 @@
            (setf (gethash x *gather-atoms-seen-sym*) t)
            (push x (gethash (symbol-package x) *gathered-symbols-ht*))))
         ((stringp x)
-         (unless (gethash x *gather-atoms-seen-equal*)
-           (setf (gethash x *gather-atoms-seen-equal*) t)
+         (unless (gethash x *gather-atoms-seen-string*)
+           (setf (gethash x *gather-atoms-seen-string*) t)
            (push x *gathered-strings*)))
         (t
          (unless (gethash x *gather-atoms-seen-eql*)
@@ -525,26 +624,77 @@
                  (t
                   (error "gather-atoms given non-ACL2 object.")))))))
 
+
 ; Once the atoms have been gathered, we build an atom map.  The atom map is
 ; intended to be an association from every atom in the object to a unique
-; number.  For efficiency, we split the atom map into three hash tables, one
-; for eq, one for eql, and one for equal objects.  The *free-index* parameter
-; is the next free index, and just counts up.
+; number.
+;
+; Originally, for efficiency, we split the atom map into three hash tables, one
+; for eq, one for eql, and one for equal objects (i.e., strings).  The
+; *free-index* parameter is the next free index, and just counts up.  Today, we
+; use an EQ hash table for the strings as well.
 
 (defparameter *free-index* 0)
 (defparameter *atom-map-eq* nil)
 (defparameter *atom-map-eql* nil)
-(defparameter *atom-map-equal* nil)
+(defparameter *atom-map-string* nil)
 
 (declaim (type integer *free-index*))
 (declaim (type hash-table *atom-map-eq*))
 (declaim (type hash-table *atom-map-eql*))
-(declaim (type hash-table *atom-map-equal*))
+(declaim (type hash-table *atom-map-string*))
+
+
+(defun make-atom-map-for-strings (x)
+
+; Here is the story for strings.
+;
+; To avoid #'equal hashing, we only used EQ to detect whether strings had
+; already been seen when we gathered atoms, so the *gathered-strings* 
+; accumulator may have various strings which are EQUAL-but-not-EQ.
+;
+; We also want to avoid #'equal hashing when we build our consing instructions,
+; so we are going to do something special for *atom-map-string*.
+;
+; This function is called with (sort *gathered-strings*) as its input.  Because
+; of that, we only need to look at adjacent strings to see if they are
+; EQUAL-but-not-EQ.  We are going to add an entry for every string to
+; *atom-map-string*, but we do something tricky: if the string is EQUAL to 
+; its neighbor, we do not increment the *free-index*.
+;
+; In other words, given a list like ("foo" "foo" "bar") of non-EQ strings, we
+; will assign the first two "foo"s to the same index, and "bar" to the next
+; index.  This way, our make-instructions function can do EQ lookups and yet
+; still find the same index for strings.
+;
+; We construct *atom-map-string* as a side-effect.  We return a version of X
+; where all duplicates have been eliminated.  This is important because when we
+; encode the strings, they implicitly get indexed, and this indexing needs to
+; agree with the values we've assigned in the atom map.
+
+  (if (null x)
+      x
+    (progn
+      ;; In all cases, add an entry for the first string.
+      (setf (gethash (first x) *atom-map-string*) *free-index*)
+      (if (or (null (cdr x))
+              (not (equal (first x) (second x))))
+          ;; Not (STR1 STR1 ...), so increment and keep going
+          (progn
+            (incf *free-index*)
+            (cons (car x) 
+                  (make-atom-map-for-strings (cdr x))))
+        ;; (STR1 STR1 ...), so treat it as (STR1 ...)
+        (make-atom-map-for-strings (cdr x))))))
+
+
 
 (defun make-atom-map ()
 
 ; Note: assumes all of the tables above have already been initialized.  You
 ; should never call this directly.
+
+; Note: this order must agree with encode-to-file.
 
   (dolist (elem *gathered-naturals*)
     (setf (gethash elem *atom-map-eql*) *free-index*)
@@ -558,11 +708,14 @@
   (dolist (elem *gathered-chars*)
     (setf (gethash elem *atom-map-eql*) *free-index*)
     (incf *free-index*))
-  (dolist (elem *gathered-strings*)
-    (setf (gethash elem *atom-map-equal*) *free-index*)
-    (incf *free-index*))
-  ;; Turn the hash table of symbols into an alist so that they're in a 
-  ;; predictable order.
+
+  ;; Strings get sorted then added with our custom routine.
+  (let ((sorted-strings (maybe-time (sort *gathered-strings* #'string<))))
+    (setf *gathered-strings* 
+          (maybe-time (make-atom-map-for-strings sorted-strings))))
+
+  ;; Turn the hash table of symbols into an alist so that they're in the
+  ;; same order now and when we encode.  Probably not necessary?
   (maphash (lambda (key val)
              (push (cons (package-name key) val)
                    *gathered-symbols-alist*))
@@ -596,7 +749,7 @@
       (cond ((symbolp x)
              (gethash x *atom-map-eq*))
             ((stringp x)
-             (gethash x *atom-map-equal*))
+             (gethash x *atom-map-string*))
             (t
              (gethash x *atom-map-eql*)))
     (or (gethash x *cons-table*)
@@ -622,81 +775,92 @@
   (inst-list-byte-encode *cons-instructions*))
 
 
-(defun write-fn (filename obj verbosep memconfig state)
-
+(defun write-fn (filename obj verbosep symbol-table-size number-table-size
+                          string-table-size cons-table-size package-table-size 
+                          state)
 ; X is an ACL2 object to write into filename.
 
-  (let ((symbol-table-size  (or (cdr (assoc :symbol-table-size memconfig)) 32768))
-        (number-table-size  (or (cdr (assoc :number-table-size memconfig)) 32768))
-        (string-table-size  (or (cdr (assoc :string-table-size memconfig)) 32768))
-        (cons-table-size    (or (cdr (assoc :cons-table-size memconfig)) 131072))
-        (package-table-size (or (cdr (assoc :package-table-size memconfig)) 128)))
-    (let ((*verbose*                 verbosep)
-          (*gather-atoms-seen-sym*   (make-hash-table :test 'eq :size symbol-table-size))
-          (*gather-atoms-seen-eql*   (make-hash-table :test 'eql :size number-table-size))
-          (*gather-atoms-seen-equal* (make-hash-table :test 'equal :size string-table-size))
-          (*gather-atoms-seen-cons*  (make-hash-table :test 'eq :size cons-table-size))
-          (*gathered-symbols-ht*     (make-hash-table :test 'eq :size package-table-size))
-          (*gathered-symbols-alist*  nil)
-          (*gathered-naturals*       nil)
-          (*gathered-rationals*      nil)
-          (*gathered-complexes*      nil)
-          (*gathered-strings*        nil)
-          (*gathered-chars*          nil)
-          (*free-index*              0)
-          (*atom-map-eq*             (make-hash-table :test 'eq :size symbol-table-size))
-          (*atom-map-eql*            (make-hash-table :test 'eql :size number-table-size))
-          (*atom-map-equal*          (make-hash-table :test 'equal :size string-table-size))
-          (*cons-table*              (make-hash-table :test 'eq :size cons-table-size))
-          (*cons-instructions*       nil)
-          (*encode-stream*           (open filename 
-                                           :direction :output
-                                           :if-exists :supersede
-                                           :element-type '(unsigned-byte 8))))
+  (let ((*verbose*                  verbosep)
+        (*gather-atoms-seen-sym*    (make-hash-table :test 'eq :size symbol-table-size))
+        (*gather-atoms-seen-eql*    (make-hash-table :test 'eql :size number-table-size))
+        (*gather-atoms-seen-string* (make-hash-table :test 'eq :size string-table-size))
+        (*gather-atoms-seen-cons*   (make-hash-table :test 'eq :size cons-table-size))
+        (*gathered-symbols-ht*      (make-hash-table :test 'eq :size package-table-size))
+        (*gathered-symbols-alist*   nil)
+        (*gathered-naturals*        nil)
+        (*gathered-rationals*       nil)
+        (*gathered-complexes*       nil)
+        (*gathered-strings*         nil)
+        (*gathered-chars*           nil)
+        (*free-index*               0)
+        (*atom-map-eq*              (make-hash-table :test 'eq :size symbol-table-size))
+        (*atom-map-eql*             (make-hash-table :test 'eql :size number-table-size))
+        (*atom-map-string*          (make-hash-table :test 'eq :size string-table-size))
+        (*cons-table*               (make-hash-table :test 'eq :size cons-table-size))
+        (*cons-instructions*        nil)
+        (*encode-stream*            (open filename 
+                                          :direction :output
+                                          :if-exists :supersede
+                                          :element-type '(unsigned-byte 8))))
 
 ; At one point I thought it might be useful to declare all of the above as
 ; dynamic-extent.  But it seems like CCL doesn't stack-allocate hash tables?  I
 ; wonder if there's a way to tell the garbage collector to ignore these until
 ; the function is over, and to throw them away afterwards?  Ask Bob?
 
-    (maybe-print "; Gathering atoms.~%")
-    (maybe-time (gather-atoms obj))
+    (let ((*gather-atoms-size-sym*                (hash-table-size *gather-atoms-seen-sym*))
+          (*gather-atoms-size-eql*                (hash-table-size *gather-atoms-seen-eql*))
+          (*gather-atoms-size-string*             (hash-table-size *gather-atoms-seen-string*))
+          (*gather-atoms-size-cons*               (hash-table-size *gather-atoms-seen-cons*))
+          (*gather-atoms-size-debug-help-printed* nil)
+          (*gather-atoms-size-debug-start*        60000)
+          (*gather-atoms-size-debug-current*      30000))
 
-    (maybe-print "; Making atom map.~%")
-    (maybe-time (make-atom-map))
+      (maybe-print "; Table sizes: symbols ~a; numbers ~a; strings ~a; conses ~a; packages ~a.~%"
+                   symbol-table-size 
+                   number-table-size
+                   string-table-size
+                   cons-table-size
+                   package-table-size)
 
-    (maybe-print "; Making instructions.~%")
-    (maybe-time (make-instructions obj))
-    (setf *cons-instructions* (nreverse *cons-instructions*))
+      (maybe-print "; Gathering atoms.~%")
+      (maybe-time (gather-atoms obj))
 
-    ;; Do all of the encoding.  We start each file with a 32-bit number,
-    ;; #xAC12OBC7, which, squinted at, looks vaguely like "ACL2 OBCT", i.e.,
-    ;; "ACL2 Object". This gives us a minor sanity check and ensures that the
-    ;; file doesn't start with valid ASCII characters, so programs that convert
-    ;; newlines in text-mode files should hopefully leave us alone.
-    (encoder-write #xAC)
-    (encoder-write #x12)
-    (encoder-write #x0B)
-    (encoder-write #xC7)
+      (maybe-print "; Making atom map.~%")
+      (maybe-time (make-atom-map))
 
-    ;; Number of indices needed in the decode array.
-    (maybe-print "; Max index is ~a.~%" *free-index*)
-    (nat-byte-encode *free-index*)
+      (maybe-print "; Making instructions.~%")
+      (maybe-time (make-instructions obj))
+      (setf *cons-instructions* (nreverse *cons-instructions*))
 
-    ;; All the contents of the object, put into their types.
-    (maybe-time (encode-to-file))
+      ;; Do all of the encoding.  We start each file with a 32-bit number,
+      ;; #xAC12OBC7, which, squinted at, looks vaguely like "ACL2 OBCT", i.e.,
+      ;; "ACL2 Object". This gives us a minor sanity check and ensures that the
+      ;; file doesn't start with valid ASCII characters, so programs that convert
+      ;; newlines in text-mode files should hopefully leave us alone.
+      (encoder-write #xAC)
+      (encoder-write #x12)
+      (encoder-write #x0B)
+      (encoder-write #xC7)
 
-    ;; As a final sanity check, we again write #xAC12OBC7, which we can look
-    ;; for as a sanity check.
-    (encoder-write #xAC)
-    (encoder-write #x12)
-    (encoder-write #x0B)
-    (encoder-write #xC7)
+      ;; Number of indices needed in the decode array.
+      (maybe-print "; Max index is ~a.~%" *free-index*)
+      (nat-byte-encode *free-index*)
 
-    ;; All done.
-    (close *encode-stream*)
+      ;; All the contents of the object, put into their types.
+      (maybe-time (encode-to-file))
 
-    state)))
+      ;; As a final sanity check, we again write #xAC12OBC7, which we can look
+      ;; for as a sanity check.
+      (encoder-write #xAC)
+      (encoder-write #x12)
+      (encoder-write #x0B)
+      (encoder-write #xC7)
+
+      ;; All done.
+      (close *encode-stream*)
+
+      state)))
 
 
 
@@ -728,7 +892,9 @@
          #+ccl (*decode-vec* nil)
          #+ccl (mapped-file nil)
          )
-         
+
+    (maybe-print "; Opening file.~%")
+
     ;; Ugly.  In most Lisps, we just use ordinary streams.  In CCL, we use a 
     ;; memory-mapped file.
     #-ccl
@@ -739,11 +905,11 @@
 
     #+ccl
     (progn
-     (setf mapped-file (ccl::map-file-to-octet-vector filename))
-     (multiple-value-bind (arr offset)
-         (array-displacement mapped-file)
-       (setf *decode-pos* offset)
-       (setf *decode-vec* arr)))
+      (setf mapped-file (ccl::map-file-to-octet-vector filename))
+      (multiple-value-bind (arr offset)
+          (array-displacement mapped-file)
+        (setf *decode-pos* offset)
+        (setf *decode-vec* arr)))
 
     (check-magic-number filename)
     (let* ((max-index      (nat-byte-decode))
@@ -753,10 +919,18 @@
       (maybe-time (decode-and-load honsp))
       (check-magic-number filename)
       
+      (maybe-print "; Closing file.~%")
       #-ccl (close *decode-stream*)
       #+ccl (ccl::unmap-octet-vector mapped-file)
 
+      (maybe-print "; Final sanity check.~%")
       (unless (= *decode-free* max-index)
         (error "File ~a has the wrong number of entries: decode-free is ~a, max-index is ~a.~%"
                filename *decode-free* max-index))
       (mv (aref *decode-array* (- max-index 1)) state))))
+
+
+
+
+
+

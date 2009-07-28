@@ -1,13 +1,13 @@
 (in-package "ACL2")
 (include-book "serialize" :ttags :all)
 
-(defmacro test-serialize (x)
+(defmacro test-serialize (x &rest write-args)
   (declare (ignorable x))
   `(make-event
     #+gcl
     (value `(value-triple :does-not-work-on-gcl))
     #-gcl
-    (let ((state (serialize::write "test.sao" ,x :verbosep t)))
+    (let ((state (serialize::write "test.sao" ,x :verbosep t ,@write-args)))
       (mv-let (obj state)
               (serialize::read "test.sao" :verbosep t)
               (if (equal ,x obj)
@@ -125,3 +125,25 @@
     
 (test-serialize *test*)
 
+(defconst *test2*
+  (append (make-strs "foo" 100000)
+          (make-strs "foo" 100000)
+          (make-strs "bar" 100000)
+          (make-strs "bar" 100000)
+          (make-strs "baz" 100000)
+          (make-strs "baz" 100000)))
+
+
+(test-serialize *test2*
+                ;; This test shows some warnings about the string and cons
+                ;; tables begin resized, and takes 7.6 seconds on fv-1
+                )
+
+(test-serialize *test2*
+                :cons-table-size (expt 2 21)
+                :string-table-size (expt 2 21)
+                ;; This prints no such messages and reduces the time needed
+                ;; to 5.0 seconds.
+                )
+
+(test-serialize 0)

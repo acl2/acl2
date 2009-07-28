@@ -31,8 +31,12 @@
   Note: these are macros that implicitly take ~c[state].
   ~bv[]
     (SERIALIZE::write filename object 
-                      [:memconfig <config>]
-                      [:verbose t/nil])
+                      [:verbose t/nil]
+                      [:symbol-table-size <size>]
+                      [:number-table-size <size>]
+                      [:string-table-size <size>]
+                      [:cons-table-size <size>]
+                      [:package-table-size <size>])
        --> state
 
     (SERIALIZE::read filename
@@ -58,41 +62,33 @@
 
   WRITING.
 
-  The ~c[write] command optionally takes a memory configuration, which is 
-  an alist that allows the advanced user to change various hash-table sizes.
-  In particular, the valid keys and defaults are as follows.
+  Writing performance can be particularly bad if the hash tables it uses are
+  resized too often.  Because of this, we monitor for these resizes and report
+  them.  If you see many messages about tables growing, you should consider 
+  increasing the corresponding table size.
+
+  The sizes you can configure and their defaults are shown below.
 
   ~bv[]
      Parameter               Default Value
     ----------------------------------------
-     :symbol-table-size      32,768 (2^15)
-     :number-table-size      32,768 (2^15)
-     :string-table-size      32,768 (2^15)
+     :symbol-table-size      32,768  (2^15)
+     :number-table-size      32,768  (2^15)
+     :string-table-size      32,768  (2^15)
      :cons-table-size        131,072 (2^17)
-     :package-table-size     128 (2^7)
+     :package-table-size     128     (2^7)
     ----------------------------------------
   ~ev[]
 
-  Here is an example:
-  ~bv[]
-  (write \"foo.sao\" '(3 . 4)
-         :verbosep t
-         :memconfig `((:symbol-table-size . ,(expt 2 20))))
-  ~ev[]
+  These defaults are probably appropriate for \"small\" ACL2 objects, and 
+  for large objects you will almost certainly want to increase them.  The
+  basic rule to keep in mind is:
 
+    Larger tables = better hashing performance + higher memory allocation
 
-  These sizes affect certain hash tables that are used while gathering atoms
-  and creating the atom map.  We think these defaults are probably appropriate
-  for most \"ordinary\" ACL2 objects.
-
-  If your objects are very large, or contain an inordinate amount of symbols,
-  numbers, strings, conses, or whatever, then increasing these sizes may 
-  improve your writing performance by reducing hash-table collisions and 
-  resizing.
-
-  On the other hand, if you are writing lots of small objects, you may wish to
-  lower these numbers to reduce the amount of memory allocated on each call to
-  ~c[write].
+  The memory allocation is basically \"once per call of ~c[write]\", so 
+  if you're writing just one big object, make big tables, but if you're 
+  writing lots of small objects, keep them small.
 
 
   READING.
@@ -122,13 +118,20 @@
            (declare (ignore erp))
            (mv val state))))
 
-(defun write-fn (filename obj verbosep memconfig state)
+(defun write-fn (filename obj verbosep symbol-table-size number-table-size
+                          string-table-size cons-table-size package-table-size 
+                          state)
   (declare (xargs :guard (and (stringp filename)
                               (booleanp verbosep)
-                              (alistp memconfig)
+                              (posp symbol-table-size)
+                              (posp number-table-size)
+                              (posp string-table-size)
+                              (posp cons-table-size)
+                              (posp package-table-size)
                               (state-p state))
                   :stobjs state)
-           (ignore filename obj verbosep memconfig))
+           (ignore filename obj verbosep symbol-table-size number-table-size
+                   string-table-size cons-table-size package-table-size))
   (prog2$
    (er hard? 'write-fn "Raw-lisp definition not installed??")
    (mv-let (erp val state)
@@ -141,8 +144,16 @@
 (defmacro read (filename &key honsp verbosep)
   `(read-fn ,filename ,honsp ,verbosep state))
 
-(defmacro write (filename obj &key verbosep memconfig)
-  `(write-fn ,filename ,obj ,verbosep ,memconfig state))
+(defmacro write (filename obj &key 
+                          verbosep
+                          (symbol-table-size '32768)
+                          (number-table-size '32768)
+                          (string-table-size '32768)
+                          (cons-table-size  '131072)
+                          (package-table-size '128))
+  `(write-fn ,filename ,obj ,verbosep ,symbol-table-size ,number-table-size
+             ,string-table-size ,cons-table-size ,package-table-size 
+             state))
 
 #-gcl
 (ACL2::progn!
