@@ -50,13 +50,13 @@ TIME = time
 # Note: arithmetic-4 could be added in analogy to arithmetic-5.
 
 # First directories of books to certify:
-DIRS1 = cowles arithmetic meta fix-cert
+DIRS1 = cowles arithmetic meta
 # Additional directories, where DIRS3 prunes out those not distributed.
 # We rely on DIRS3 being a subset of DIRS2 in the dependence of DIRS2 on
 # top-with-meta-cert.
 DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-5 \
 	misc models/jvm/m5 proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
-	finite-set-theory finite-set-theory/osets powerlists textbook \
+	fix-cert finite-set-theory finite-set-theory/osets powerlists textbook \
 	defexec symbolic \
 	data-structures/memories unicode str concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
