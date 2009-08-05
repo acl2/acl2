@@ -1,4 +1,4 @@
-#; ACL2 Version 3.5 -- A Computational Logic for Applicative Common Lisp
+#; ACL2 Version 3.6 -- A Computational Logic for Applicative Common Lisp
 #; Copyright (C) 2009  University of Texas at Austin
 
 #; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -94,7 +94,7 @@ defexec: arithmetic misc ordinals make-event
 hons-bdds: misc clause-processors
 symbolic: arithmetic arithmetic-2 data-structures ihs misc ordinals models/jvm/m5
 data-structures/memories: arithmetic-3 misc
-unicode: arithmetic arithmetic-3 ihs
+unicode: arithmetic arithmetic-3 ihs ordinals
 proofstyles: arithmetic-2 ordinals misc top-with-meta-cert
 concurrent-programs/bakery: misc ordinals
 concurrent-programs/german-protocol: misc
@@ -120,7 +120,7 @@ coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
 	misc ordinals rtl
 
 # Let us wait for everything else before workshops, except we currrently
-# (as of v3-5, at least) don't need to wait for coi (that may change).
+# (as of v3-6, at least) don't need to wait for coi (that may change).
 workshops: $(DIRS1) $(DIRS2_EXCEPT_WK_COI)
 
 $(DIRS1):
