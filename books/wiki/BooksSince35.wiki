@@ -1,9 +1,12 @@
-#summary Books added after the release of ACL2 Version 3.5, together with partial discussion of changes other than additions.
+#summary Books added after ACL2 Version 3.5, before the release of ACL2 Version 3.6.
 
 = Introduction =
 
 The following alphabetical list of books and directories describes
-changes since the release of ACL2 Version 3.5.
+additions to ACL2 Version 3.6 (made after the release of ACL2 Version
+3.5).  For changes to existing books rather than additions, see the
+log entries (follow the [[Source]] link) starting with revision r286 up
+through revision r329.
 
 = List of Books =
 
