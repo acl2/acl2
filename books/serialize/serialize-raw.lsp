@@ -87,7 +87,7 @@
 ; into an array, the *decode-array*.  The *decode-free* variable says where the
 ; next available slot in the array is located.
 
-(defparameter *decode-array* (make-array 0))
+(defvar *decode-array*)
 (defparameter *decode-free* 0)
 (declaim (type vector *decode-array*))
 (declaim (type integer *decode-free*))
@@ -465,10 +465,10 @@
 ; repeatedly, because the invariants above ensure that we will not duplicate
 ; any atoms in our answer.
 
-(defparameter *gather-atoms-seen-sym* (make-hash-table :size 0))
-(defparameter *gather-atoms-seen-eql* (make-hash-table :size 0))
-(defparameter *gather-atoms-seen-string* (make-hash-table :size 0))
-(defparameter *gather-atoms-seen-cons* (make-hash-table :size 0))
+(defvar *gather-atoms-seen-sym*)
+(defvar *gather-atoms-seen-eql*)
+(defvar *gather-atoms-seen-string*)
+(defvar *gather-atoms-seen-cons*)
 
 (declaim (type hash-table *gather-atoms-seen-sym*))
 (declaim (type hash-table *gather-atoms-seen-eql*))
@@ -570,7 +570,7 @@
 ; convert the hash table into an alist using a simple maphash.  Because of the
 ; invariants above, the symbols in the hash table are unique.
  
-(defparameter *gathered-symbols-ht* (make-hash-table :size 0))
+(defvar *gathered-symbols-ht*)
 (defparameter *gathered-symbols-alist* nil)
 (defparameter *gathered-naturals* nil)
 (defparameter *gathered-rationals* nil)
@@ -635,9 +635,9 @@
 ; use an EQ hash table for the strings as well.
 
 (defparameter *free-index* 0)
-(defparameter *atom-map-eq* (make-hash-table :size 0))
-(defparameter *atom-map-eql* (make-hash-table :size 0))
-(defparameter *atom-map-string* (make-hash-table :size 0))
+(defvar *atom-map-eq*)
+(defvar *atom-map-eql*)
+(defvar *atom-map-string*)
 
 (declaim (type integer *free-index*))
 (declaim (type hash-table *atom-map-eq*))
@@ -735,7 +735,7 @@
 ; of the form (car-index . cdr-index), that will be used to recreate each cons.
 ; We build this list of instructions in reverse-order using push.
 
-(defparameter *cons-table* (make-hash-table :size 0))
+(defvar *cons-table*)
 (defparameter *cons-instructions* nil)
 
 (declaim (type hash-table *cons-table*))
