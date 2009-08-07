@@ -1,0 +1,42 @@
+#summary Books added after the release of ACL2 Version 3.5, together with partial discussion of changes other than additions.
+
+= Introduction =
+
+The following alphabetical list of books and directories describes
+changes since the release of ACL2 Version 3.5.
+
+= List of Books =
+
+critpath.pl:
+   Part of an experimental build system that is not yet intended, for
+   example, to be capable of running the whole regression
+
+defsort/remove-dups.lisp:
+   Minor addition of a duplicate-removing function to defsort
+
+fix-cert/:
+   After moving books from one place to another in a filesystem, use
+   this library to update the .cert files accordingly without costly
+   recertification.
+
+hacking/dynamic-make-event.lisp:
+   Low-level support for system hacking; see comment near top of file.
+   New, related files: hacking/dynamic-make-event-test.acl2,
+   hacking/dynamic-make-event-test.lisp, and
+   hacking/dynamic-make-event.acl2.
+
+misc/seqw.lisp:
+   New SEQW macro is like seq (see misc/seq.lisp), but collects
+   warnings.  See also new, related file misc/seqw-examples.lsp.
+
+serialize/:
+   Optimized routines for Serializing ACL2 objects (for any host Lisp
+   other than GCL).  Quoting the :doc: "We implement some routines for
+   writing arbitrary ACL2 objects to files, and for loading those
+   files later."
+
+tools/with-quoted-forms.lisp:
+   Useful for computing large :USE hints; see comment at top of file.
+
+unicode/two-nats-measure.lisp:
+   Lexicographic order measure for pairs of natural numbers
