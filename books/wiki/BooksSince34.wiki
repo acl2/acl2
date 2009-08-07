@@ -1,11 +1,12 @@
-#summary Books added after the release of ACL2 Version 3.4, together with partial discussion of changes other than additions.
+#summary Books added after the release of ACL2 Version 3.4, before the release of ACl2 Version 3.5, together with partial discussion of changes other than additions.
 
 = Introduction =
 
 The following alphabetical list of books and directories describes
-changes since the release of ACL2 Version 3.4.
+changes since the release of ACL2 Version 3.4, before the release
+of ACl2 Version 3.5.
 
-Other changes since Version 3.4: (1) Files that are not to be
+Other changes to Version 3.5 since Version 3.4: (1) Files that are not to be
 certified and had .lisp suffixes now generally have .lsp suffixes; and
 (2) Many cert.lsp and certify.lsp files have been removed.
 
