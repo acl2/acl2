@@ -1,0 +1,3 @@
+(ld "def-defpkg.lsp")
+(ld "debug-defpkg.lsp")
+(certify-book "debug" ?)

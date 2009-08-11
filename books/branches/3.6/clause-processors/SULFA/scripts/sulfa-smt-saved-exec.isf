@@ -1,0 +1,85 @@
+#!%PERL%
+
+# %CREATE_GENERATED_WARNING%
+
+# print "usage: sulfa-smt <smt-file> [-temp_dir <temp directory> -v <verbosity level: 0 to 4>]\n";
+
+$numargs = $#ARGV + 1;
+
+$temp_dir = "./sulfa_smt_temp/";    
+$verbosity = 1;
+
+$i=0;
+while ($i < $numargs) {
+    if (($ARGV[$i] eq "-temp_dir") && ($i+1 < $numargs)) {
+        $temp_dir = $ARGV[$i+1] . "/";
+        $i += 2;
+    } elsif (($ARGV[$i] eq "-v") && ($i+1 < $numargs)) {
+        $verbosity = $ARGV[$i+1];
+        $i += 2;
+    } else {
+        print "ERROR: Unrecognized command: " . $ARGV[$i] . "\n";
+        print "usage: sulfa-smt <smt-file> [-temp_dir <temp directory> -v <verbosity level: 0 to 4>]\n";
+        exit 1;
+    }
+}
+
+$ACL2_out_file = $temp_dir . "out.sof";
+$prepped_smt_file = $temp_dir . "smt_file.prepped";
+$ACL2_smt_file = $temp_dir . "smt_file.lisp";
+$ACL2_cmd_file = $temp_dir . "ACL2_cmd_file.lisp";
+
+$prepper = "%SULFA_DIR%/c-files/smt-prep";
+$ACL2 = "%SULFA_DIR%/acl2/acl2_with_smt";
+
+system "rm -f -r " . $temp_dir;
+system "mkdir " . $temp_dir;
+
+system $prepper . " > " . $prepped_smt_file;
+
+open(OUTP, "> $ACL2_cmd_file") or die("Cannot open $ACL2_cmd_file for writing\n");
+if ($verbosity < 4) {
+    # Inihibit ACL2 proof output
+    print OUTP "(set-inhibit-output-lst '(error warning warning! observation prove proof-checker event expansion summary proof-tree))";
+}
+print OUTP "(translate-smt-file \"" . $prepped_smt_file . "\" \"" . $ACL2_smt_file . "\" \"" . 
+        $ACL2_out_file . "\" state)";
+print OUTP "(ld \"" . $ACL2_smt_file . "\")";
+close OUTP;
+
+if ($verbosity < 3) {
+    system $ACL2 . " < " . $ACL2_cmd_file . " >& /dev/null";
+} else {
+    system $ACL2 . " < " . $ACL2_cmd_file;
+}
+
+if ($verbosity < 1) {
+    open(INP, "< $ACL2_out_file") or die("Cannot open $ACL2_out_file for reading\n");
+    while ($line = <INP>) {
+        if ($line =~ m/UNSAT/) {
+            print "unsat";
+        } elsif ($line =~ m/SAT/) {
+            print "sat";
+        }
+    }
+    close INP;
+    print "\n";
+} elsif ($verbosity < 2) {
+    open(INP, "< $ACL2_out_file") or die("Cannot open $ACL2_out_file for reading\n");
+    while ($line = <INP>) {
+        if ($line =~ m/ERROR/) {
+            print "ERROR: ";
+        }
+        if ($line =~ m/UNSAT/) {
+            print "unsat";
+        } elsif ($line =~ m/SAT/) {
+            print "sat";
+        }
+    }
+    close INP;
+    print "\n";
+} else {
+    system "cat " . $ACL2_out_file;
+}
+
+system "rm -f -r " . $temp_dir

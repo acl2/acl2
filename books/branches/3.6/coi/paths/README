@@ -1,0 +1,28 @@
+CURRENT STATUS OF THE PATHS LIBRARY
+
+The paths library is huge.  Note that the file path.lisp is over 6000 lines.
+We have been working on modularizing it and breaking it up into more easily
+reusable chunks.  This work has already resulted in the creation of an Alists
+library, but there is lots more to do.
+
+I have also worked on extracting all the "dominates" and "diverge" functions.
+My hope was to create a richer library for these ideas.  Unfortunately, I have
+not yet had time to integrate these updates back into path.lisp.  At some point
+in the future, it might be worthwhile to do this.
+
+We should also go through path.lisp and try to pull out the stuff that doesn't
+pertain to paths.  In particular, functions like cp, s-list, clr, and so forth
+ought to be moved to records.  Functions like compose-alists ought to be moved
+to the alists library, and we should generally try to go through and disable
+many definitions and add the appropriate rules.  There are also a lot of rules
+that simply don't belong here, e.g., rules about bags.
+
+Anyway, I think you will be able to achieve some real gains by trying to just
+reorganize the library so that the rules about each concept are near each
+other.  Splitting out dominates and diverge is probably a good first step
+towards this.
+
+What we would really like to do is have a situation like bags, where we can
+just include the "basic" path theory when we are working with smaller goals, or
+we can include the "advanced" meta-driven path theory for working with huge
+terms when we need to do so.

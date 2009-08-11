@@ -1,0 +1,47 @@
+(in-package "ACL2")
+(include-book "../read-ints")
+(set-verify-guards-eagerness 2)
+(set-state-ok t)
+
+(defun make-test-fn (function)
+  (declare (xargs :guard (symbolp function)))
+  (let ((test-fn (intern-in-package-of-symbol (concatenate 'string "TEST-" 
+                                                     (symbol-name function))
+                                        function))
+        (time-fn (intern-in-package-of-symbol (concatenate 'string "TIME-"
+                                                     (symbol-name function))
+                                              function)))
+  `(encapsulate nil
+    (defun ,test-fn (n channel state)
+      (declare (xargs :guard (and (natp n)
+                                  (state-p state)
+                                  (symbolp channel)
+                                  (open-input-channel-p channel :byte state)))
+               (type (signed-byte 29) n))
+      (if (mbe :logic (zp n) :exec (= (the-fixnum n) 0))
+          state
+        (mv-let (data state)
+                (,function channel state)
+                (declare (ignore data))
+                (,test-fn (the-fixnum (1- (the-fixnum n)))
+                          channel state))))
+    (defun ,time-fn (n file state)
+      (declare (xargs :mode :program))
+      (mv-let (channel state)
+              (open-input-channel file :byte state)
+              (,test-fn n channel state))))))
+
+(defmacro make-test (function)
+  (make-test-fn function))
+
+(make-test read-byte$)
+(make-test read-8s)
+(make-test read-16ule)
+(make-test read-16ube)
+(make-test read-16sbe)
+(make-test read-16sle)
+(make-test read-32ube)
+(make-test read-32ule)
+(make-test read-32sbe)
+(make-test read-32sle)
+

@@ -1,0 +1,4 @@
+(ld "hacker-pkg.lsp")
+
+
+(ACL2::CERTIFY-BOOK "subsumption" ACL2::? T)
