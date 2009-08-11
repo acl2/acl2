@@ -19,6 +19,7 @@ rulesets.lisp
 safe-case.lisp
 saved-errors.lisp
 stobj-help.lisp
+struct-measure-cp.lisp
 theory-tools.lisp
 types-misc.lisp
 with-arith5-help.lisp
@@ -71,6 +72,9 @@ sum-of-products data structures as defined by defsum.
 
 stobj-help.lisp provides a make-event which proves some useful rules about a
 stobj, such as type theorems, access/update rewrite rules, etc.
+
+struct-measure-cp.lisp provides a clause processor that quickly proves measure
+conjectures for a small class of simple recursive functions.
 
 with-quoted-forms.lisp provides a macro that may be useful for computing
 complicated :USE hints where the terms used in the substitutions result from
