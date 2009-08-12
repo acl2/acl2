@@ -15,7 +15,8 @@
 
 ;; The constant *defeval-entries-for-all-reasonable-functions*, defined in a
 ;; comment at the bottom of this file, contains a list of ~570 function "calls"
-;; (such as (cons a b), (foo arg1 arg2), etc.)
+;; (such as (cons a b), (foo arg1 arg2), etc) if the contents of the comment
+;; are loaded in an empty ACL2 with this file loaded.
 
 ;; On one modern (ca. 2009) machine, DEFEVALUATOR-FAST proves the constraints
 ;; for the evaluator recognizing all the listed functions in 2.2 seconds (when
@@ -162,6 +163,7 @@
                                :measure (acl2-count x)
                                :well-founded-relation o<
                                :non-executable t
+                               :normalize nil
                                :mode :logic))
                (cond
                 ((symbolp x) (and x (cdr (assoc-eq x a))))

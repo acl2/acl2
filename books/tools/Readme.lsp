@@ -5,6 +5,7 @@ Makefile
 Readme.lsp
 bstar.lisp
 cws.lisp
+defevaluator-fast.lisp
 defined-const.lisp
 defsum.lisp
 deftuple.lisp
@@ -19,7 +20,6 @@ rulesets.lisp
 safe-case.lisp
 saved-errors.lisp
 stobj-help.lisp
-struct-measure-cp.lisp
 theory-tools.lisp
 types-misc.lisp
 with-arith5-help.lisp
@@ -49,6 +49,9 @@ defined-const.lisp defines DEFINED-CONST, which produces a defconst and a
 theorem saying what term it represents while only evaluating that term once (if
 the HONS system is present) or twice (if not.)
 
+defevaluator-fast.lisp provides a macro much like defevaluator, but much faster
+when the number of functions to be recognized is large.
+
 progndollar.lisp defines PROGN$, which evaluates several forms in
 sequence for side effects.
 
@@ -72,9 +75,6 @@ sum-of-products data structures as defined by defsum.
 
 stobj-help.lisp provides a make-event which proves some useful rules about a
 stobj, such as type theorems, access/update rewrite rules, etc.
-
-struct-measure-cp.lisp provides a clause processor that quickly proves measure
-conjectures for a small class of simple recursive functions.
 
 with-quoted-forms.lisp provides a macro that may be useful for computing
 complicated :USE hints where the terms used in the substitutions result from
