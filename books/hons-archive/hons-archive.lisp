@@ -85,12 +85,12 @@
 
   (let* ((state (write-byte$ 
                  (the (unsigned-byte 8) 
-                   (logand (the (unsigned-byte 32) x)
+                   (logand (the (unsigned-byte 24) x)
                            (the (unsigned-byte 8) #xFF)))
                  channel state))
          (state (write-byte$ 
                  (the (unsigned-byte 8) 
-                   (logand (the (unsigned-byte 8) 
+                   (logand (the (unsigned-byte 16) 
                              (ash (the (unsigned-byte 32) x) -8))
                            (the (unsigned-byte 8) #xFF)))
                  channel state))
@@ -121,13 +121,13 @@
                  channel state))
          (state (write-byte$ 
                  (the (unsigned-byte 8) 
-                   (logand (the (unsigned-byte 8) 
+                   (logand (the (unsigned-byte 24) 
                              (ash (the (unsigned-byte 32) x) -8))
                            (the (unsigned-byte 8) #xFF)))
                  channel state))
          (state (write-byte$ 
                  (the (unsigned-byte 8) 
-                   (logand (the (unsigned-byte 8) 
+                   (logand (the (unsigned-byte 16) 
                              (ash (the (unsigned-byte 32) x) -16))
                            (the (unsigned-byte 8) #xFF)))
                  channel state))
