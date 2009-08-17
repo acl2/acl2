@@ -1,3 +1,10 @@
+; Changes by Pete Manolios Wed Jul 15 21:22:03 EDT 2009
+; Changes by Daron Vroon shortly thereafter.
+; Made minor modifications and added simplification
+; functions at the end of the file that allow us to simplify the
+; "termination checkpoints" we generate. See the end of the file
+; for documentation, examples, and ideas for extending this work.
+
 ; expander.lisp  --  symbolic expansion utilities for ACL2
 ; Copyright (C) 1997  Computational Logic, Inc.
 
@@ -86,11 +93,12 @@
  (local (defun hidden-expander-function (x) x)))
 
 (defun silly-rec-fn-for-rewrite* (x)
+  (declare (xargs :verify-guards t))
   (if (consp x)
       (silly-rec-fn-for-rewrite* (cdr x))
     x))
 
-(verify-guards silly-rec-fn-for-rewrite*)
+;; (verify-guards silly-rec-fn-for-rewrite*)
 
 (program)
 
@@ -498,7 +506,11 @@
                       geneqv wrld state
                       ;; fnstack ancestors
                       simplify-clause-pot-lst
-                      rcnst gstack ttree)
+                      rcnst gstack ttree
+                      ;;DARON: added must-rewrite-flg, which is T if we want to
+                      ;;throw an error if the term fails to rewrite, and NIL
+                      ;;otherwise.
+                      must-rewrite-flg)
 
 ; Rewrite term repeatedly, (- repeat-limit completed-iterations) times.  Note
 ; that hyps is T after the first time through.
@@ -516,8 +528,11 @@
           (cond
            ((equal val term)
             (cond
-             ((eq hyps t)
+             ;; DARON: if must-rewrite-flg is NIL, we just return the term.
+             ((or (not must-rewrite-flg)
+                  (eq hyps t))
               (mv term ttree state))
+             ;; otherwise, we throw the error.
              (t (er soft ctx
                     "The term~%  ~p0~%failed to rewrite to a new term under ~
                      hypotheses~%  ~p1."
@@ -525,25 +540,36 @@
                     (untranslate-lst hyps t wrld)))))
            ((= repeat-limit completed-iterations)
             (pprogn
-             (fms "OUT OF PATIENCE!  Completed ~n0 iterations."
-                  (list (cons #\0 (list completed-iterations)))
-                  *standard-co* state nil)
+             ;; DARON: wrapped this fms in an io? so we can inhibit it if we
+             ;; want.
+             (io? prove nil state
+                  (completed-iterations)
+                  (fms "OUT OF PATIENCE!  Completed ~n0 iterations."
+                       (list (cons #\0 (list completed-iterations)))
+                       *standard-co* state nil))
              (mv val new-ttree state)))
            (t (pprogn (if (eql completed-iterations 0)
                           state
-                        (fms "NOTE:  Starting ~n0 repetition of rewrite.~%"
-                             (list (cons #\0 (list (1+ completed-iterations))))
-                             *standard-co* state nil))
+                        ;; DARON: wrapped this fms in an io? so we can inhibit
+                        ;; output if we want.
+                        (io? prove nil state
+                             (completed-iterations)
+                             (fms "NOTE:  Starting ~n0 repetition of rewrite.~%"
+                                  (list (cons #\0 (list (1+ completed-iterations))))
+                                  *standard-co* state nil)))
                       (rewrite* val t ctx
                                 repeat-limit
                                 (1+ completed-iterations)
                                 type-alist geneqv wrld state
                                 simplify-clause-pot-lst rcnst gstack
-                                new-ttree))))))
+                                new-ttree
+                                ;; DARON: we must pass must-rewrite-flg to
+                                ;; subsequent iterations.
+                                must-rewrite-flg))))))
 
 (defun tool2-fn1
   (term hyps equiv ctx ens wrld state thints prove-assumptions
-        inhibit-output translate-flg print-flg)
+        inhibit-output translate-flg print-flg must-rewrite-flg)
 
 ; Returns error triple with value (list* runes rewritten-term assumptions).
 ; But assumptions is nil if prove-assumptions is nil (we don't collect them) or
@@ -676,7 +702,8 @@
                                                                wrld))))
                                              wrld state
                                              simplify-clause-pot-lst rcnst gstack
-                                             nil)
+                                             nil
+                                             must-rewrite-flg)
                                    (cond
                                     ((equal val t)
                                      (mv t nil state))
@@ -781,36 +808,12 @@
                                                   state)
                                                  (value val)))))))))))))))))))))))))))))))))
 
-(defun tool2-fn
-  (term hyps equiv state hints prove-assumptions inhibit-output translate-flg
-        print-flg)
-
-; Returns error triple with value (list* runes rewritten-term assumptions).
-; But assumptions is nil if prove-assumptions is nil (we don't collect them) or
-; is t (we insist that all forced assumptions be proved).
-
-  (let ((ctx 'TOOL2))
-    (state-global-let*
-     ((inhibit-output-lst
-       (if inhibit-output
-           (if (eq inhibit-output :prove)
-               (union-eq '(proof-tree prove) (@ inhibit-output-lst))
-             *valid-output-names-except-error*)
-         (@ inhibit-output-lst))))
-     (prog2$
-      (initialize-brr-stack state)
-      (er-let*
-       ((wrld (value (w state)))
-        (thints (translate-hints 'tool2 hints ctx wrld state)))
-       (let ((ens (ens state)))
-         (tool2-fn1 term hyps equiv ctx ens wrld state thints prove-assumptions
-                    inhibit-output translate-flg print-flg)))))))
-
 (defun tool2-fn0
   (term hyps equiv ctx ens wrld state hints prove-assumptions
-        inhibit-output translate-flg print-flg)
+        inhibit-output translate-flg print-flg must-rewrite-flg)
 
 ; Same as tool2-fn, except the user must supply the ctx, ens, and wrld.
+; DARON: added must-rewrite-flg to formals of tool2-fn0.
 
   (state-global-let*
    ((inhibit-output-lst
@@ -824,7 +827,27 @@
     (er-let* 
      ((thints (translate-hints 'tool2 hints ctx wrld state)))
      (tool2-fn1 term hyps equiv ctx ens wrld state thints prove-assumptions
-                inhibit-output translate-flg print-flg)))))
+                inhibit-output translate-flg print-flg must-rewrite-flg)))))
+
+(defun tool2-fn
+  (term hyps equiv state hints prove-assumptions inhibit-output translate-flg
+        print-flg)
+
+; Returns error triple with value (list* runes rewritten-term assumptions).
+; But assumptions is nil if prove-assumptions is nil (we don't collect them) or
+; is t (we insist that all forced assumptions be proved).
+
+; DARON: there was a bunch of duplicated code here, so I simplified tool2-fn to
+; call tool2-fn0. Note that the signature of tool2-fn is still the same. By
+; default it sets the must-rewrite-flg to T, which gives it the same behavior
+; as before.
+
+  (let ((ctx 'TOOL2)
+        (wrld (w state))
+        (ens (ens state)))
+    (tool2-fn0 term hyps equiv ctx ens wrld state hints prove-assumptions
+               inhibit-output translate-flg print-flg t)))
+
 
 ;;;;;;; Hooking them together
 
@@ -1338,3 +1361,151 @@
              state)
            (value tuples-lst))))
 
+; DARON: added the new function to streamline calls to normalize:
+
+(defun normalize-no-ttree (term iff-flg type-alist ens wrld)
+  (mv-let (x ttree)
+          (normalize term iff-flg type-alist ens wrld nil)
+          (declare (ignore ttree))
+          x))
+
+
+; PETE: new functions for ccg analysis.
+; DARON: altered functions below to take ctx, ens, and wrld.
+
+(defun simp-hyps-aux
+  (hyps-remaining hyps-init hyps-res ctx ens wrld state hints
+                  inhibit-output print-flg simp-flg)
+  (cond
+   ((null hyps-remaining)
+    (value (reverse hyps-res)))
+   (t (let* ((hyp0 (car hyps-remaining))
+             (hyp (normalize-no-ttree hyp0 t nil ens wrld))
+             (other-hyps (remove1-equal hyp0 hyps-init)))
+        ;; DARON: changed this er-let* to an mv-let so we can catch any
+        ;; errors. If there are errors, we simply use the original term.
+        (mv-let
+         (erp x state)
+         (tool2-fn0 hyp 
+                    other-hyps
+                    'iff ctx ens wrld state hints nil
+                    inhibit-output nil print-flg nil)
+         (let* ((res (if erp
+                         hyp
+                       (normalize-no-ttree (cadr x) t nil ens wrld)))
+                (simplified-to-t? (equal res ''t))
+                (simplified-to-nil? (equal res ''nil))
+                (simplified? (term-order res hyp))
+                (always-simp? (and (not (equal simp-flg :t))
+                                   (not (equal simp-flg :term-order))))
+                (nhyps-init 
+                 (cond (simplified-to-t? 
+                        other-hyps)
+                       ((or always-simp?
+                            (and simplified? (not (equal simp-flg :t))))
+                        (append (flatten-ands-in-lit res) 
+                                other-hyps))
+                       (t (append (flatten-ands-in-lit hyp)
+                                  other-hyps))))
+                (nhyps-res
+                 (cond (simplified-to-t? hyps-res)
+                       ((or always-simp?
+                            (and simplified? (not (equal simp-flg :t))))
+                        (append (flatten-ands-in-lit res)
+                                hyps-res))
+                       (t
+                        (append (flatten-ands-in-lit hyp)
+                                hyps-res)))))
+           (if simplified-to-nil?
+               (value nil)
+             (simp-hyps-aux (cdr hyps-remaining)
+                            nhyps-init
+                            nhyps-res
+                            ctx ens wrld state hints
+                            inhibit-output print-flg simp-flg))))))))
+
+; DARON: changed simp-hyps to simp-hyps0, requiring ctx, ens, and wrld from the
+; user, and then wrote a new simp-hyps which simply calls simp-hyps0 with these
+; values provided.
+
+(defun simp-hyps0 (hyps ctx ens wrld state hints inhibit-output print-flg simp-flg)
+  "See the documentation for simp-hyps. This function has the same
+   functionality, but requires the user to provide the ctx, ens, and wrld."
+  (let ((nd-hyps (remove-duplicates hyps)))
+    (er-let*
+     ((t-nd-hyps 
+       (simp-hyps-aux nd-hyps nd-hyps nil ctx ens wrld state hints
+                      inhibit-output print-flg :t)))
+     (if (equal simp-flg :t)
+         (value t-nd-hyps)
+       (simp-hyps-aux 
+        t-nd-hyps t-nd-hyps nil ctx ens wrld state hints
+        inhibit-output print-flg simp-flg)))))
+
+(defun simp-hyps (hyps state hints inhibit-output print-flg simp-flg)
+  "Given a list of terms (hyps), return a list that is a subset
+  of hyps. The conjunction of hyps should be equal to the
+  conjuction of the returned list. If simp-flg is :t, all we do
+  is to remove elements of hyps that can be proven to simplify to
+  t, assuming the rest of the elements in hyps hold. If simp-flg
+  is :term-order, then we replace elements of hyps with what they
+  simplify to (again, assuming the rest of the elements in hyps
+  hold) if we wind up with a smaller term (as determined by the
+  function term-order). Otherwise, we replace elements of hyps
+  with whatever they simplify to (again, assuming the rest of the
+  elements in hyps hold). Some care is taken to deal with
+  duplicates, and the like. For example, we always try with
+  simp-flg set to :t first since this tends to return results
+  that depend less on the order of arguments. To see this, note
+  that if you give ((natp x) (integerp x)) as input, you would get
+  different results when you change the order of the hyps (if you
+  didn't try :t first). "
+  (simp-hyps0 hyps 'SIMP-HYPS (ens state) (w state)
+              state hints inhibit-output print-flg simp-flg))
+
+#|
+Testing code 
+
+
+(simp-hyps '((natp x) (natp x)) state nil t nil :t)
+(simp-hyps '((natp x) (natp x)) state nil t nil :term-order)
+(simp-hyps '((natp x) (natp x)) state nil t nil nil)
+
+(simp-hyps '((natp x) (integerp x)) state nil t nil :t)
+(simp-hyps '((natp x) (integerp x)) state nil t nil :term-order)
+(simp-hyps '((natp x) (integerp x)) state nil t nil nil)
+
+(simp-hyps '((integerp x) (natp x) (integerp x) (natp x)) state nil t nil :t)
+(simp-hyps '((integerp x) (natp x) (integerp x) (natp x)) state nil t nil :term-order)
+(simp-hyps '((integerp x) (natp x) (integerp x) (natp x)) state nil t nil nil)
+
+(simp-hyps '((not (stringp x)) (integerp x) (natp x) (posp x)) state nil t nil :t)
+(simp-hyps '((not (stringp x)) (integerp x) (natp x) (posp x)) state nil t nil :term-order)
+(simp-hyps '((not (stringp x)) (integerp x) (natp x) (posp x)) state nil t nil nil)
+
+(simp-hyps '((natp x) (integerp x) (< x 1)) state nil t nil :t)
+(simp-hyps '((natp x) (integerp x) (< x 1)) state nil t nil :term-order)
+(simp-hyps '((natp x) (integerp x) (< x 1)) state nil t nil nil)
+
+(simp-hyps '((natp x) (integerp x) (< x 1)) state nil t nil :t)
+(simp-hyps '((natp x) (integerp x) (< x 1)) state nil t nil :term-order)
+(simp-hyps '((integerp x) (natp x) (< x 1)) state nil t nil nil)
+
+(simp-hyps '((natp x) (stringp x)) state nil t nil :t)
+(simp-hyps '((natp x) (stringp x)) state nil t nil :term-order)
+(simp-hyps '((natp x) (stringp x)) state nil t nil nil)
+
+|#
+
+#|
+For possible future work.
+
+Consider
+
+(simp-hyps '((natp x) (< x 1)) state nil t nil nil)
+
+This doesn't lead to simplifications, but we can figure out that
+x=0. Maybe we should think about how to do this and do it.
+
+
+|#
