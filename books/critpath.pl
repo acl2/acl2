@@ -54,7 +54,7 @@
 # critpath.pl <makefile> <top-book>
 # Here the <makefile> should be the Makefile-tmp produced by cert.pl
 # in step 1.  However, if this gets deleted, you can recreate it using
-# cert.pl -s <makefile> top.lisp
+# cert.pl -s <makefile> <top-book>
 # <top-book> should be the .lisp or .cert file of the book of
 # interest.
 
@@ -93,7 +93,7 @@ sub rec_readlink {
     return $last;
 }
 
-sub canonical_path {
+sub abs_canonical_path {
     my $path = shift;
     my $abspath = File::Spec->rel2abs(rec_readlink($path));
     my ($vol, $dir, $file) = File::Spec->splitpath($abspath);
@@ -103,6 +103,17 @@ sub canonical_path {
     } else {
 	print "Warning: canonical_path: Directory not found: " . $dir . "\n";
 	return 0;
+    }
+}
+
+my $base_path = abs_canonical_path(".");
+
+sub canonical_path {
+    my $abs_path = abs_canonical_path(shift);
+    if ($base_path) {
+	return File::Spec->abs2rel($abs_path, $base_path);
+    } else {
+	return $abs_path;
     }
 }
 
@@ -186,7 +197,7 @@ sub print_path {
     my $costs = $costs{$certfile};
     my @shortcert = $certfile =~ m/^.*\/([^\/]*\/[^\/]*)$/;
 
-    formline (<<'END', $shortcert[0], $ {$costs}[0], $ {$costs}[1]);
+    formline (<<'END', $shortcert[0] || $certfile, $ {$costs}[0], $ {$costs}[1]);
 @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< @######.## @###########.##
 END
     
@@ -209,7 +220,7 @@ sub report_individual_files
     foreach my $filename (keys %deps) 
     {
          my @shortcert = $filename =~ m/^.*\/([^\/]*\/[^\/]*)$/;
-         my $shortname = $shortcert[0];
+         my $shortname = $shortcert[0] || $filename;
          my $indiv_time = get_cert_time $filename;
          $lines{$shortname} = $indiv_time;
     }

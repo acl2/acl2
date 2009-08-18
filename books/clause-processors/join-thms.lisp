@@ -24,6 +24,20 @@
   :hints(("Goal" :in-theory (enable pseudo-termp pseudo-term-listp disjoin)
           :induct (disjoin x))))
 
+(defthm pseudo-termp-conjoin
+  (implies (pseudo-term-listp x)
+           (pseudo-termp (conjoin x)))
+  :hints(("Goal" :in-theory (enable conjoin pseudo-termp pseudo-term-listp))))
+
+(defthm pseudo-term-listp-disjoin-lst
+  (implies (pseudo-term-list-listp x)
+           (pseudo-term-listp (disjoin-lst x))))
+
+(defthm pseudo-termp-conjoin-clauses
+  (implies (pseudo-term-list-listp clauses)
+           (pseudo-termp (conjoin-clauses clauses)))
+  :hints(("Goal" :in-theory (e/d (conjoin-clauses) (disjoin-lst)))))
+
 (defmacro def-join-thms (ev)
   `(encapsulate
     nil

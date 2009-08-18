@@ -1,6 +1,7 @@
 
 (in-package "ACL2")
 
+;; c. 2009 by Sol Swords
 
 ;; This provides a new macro, defevaluator-fast, which behaves much like
 ;; defevaluator: from the user perspective, it should be identical; it produces
@@ -14,13 +15,15 @@
 ;; Some data:
 
 ;; The constant *defeval-entries-for-all-reasonable-functions*, defined in a
-;; comment at the bottom of this file, contains a list of ~570 function "calls"
+;; comment at the bottom of this file, contains a list of 574 function "calls"
 ;; (such as (cons a b), (foo arg1 arg2), etc) if the contents of the comment
-;; are loaded in an empty ACL2 with this file loaded.
+;; are loaded after including this book in an empty acl2h.
 
 ;; On one modern (ca. 2009) machine, DEFEVALUATOR-FAST proves the constraints
 ;; for the evaluator recognizing all the listed functions in 2.2 seconds (when
-;; output is turned off.)
+;; output is turned off.)  Empirically, runtime seems to scale quadratically
+;; with the number of functions recognized, which is consistent with the notion
+;; that there are linearly many theorems which each prove in linear time.
 
 ;; In comparison, if we redefine DEFEVALUATOR so that it can handle MVs and
 ;; functions that take stobjs and so that it gives a :DO-NOT '(PREPROCESS) hint
@@ -30,9 +33,11 @@
 ;; hint is omitted, then somewhere in the 40s the measure conjecture begins to
 ;; spend an impractically long time in IF-TAUTOLOGYP, part of preprocessing.)
 
-
 ;; Acknowledgements:  Code ripped liberally from the original defevaluator
-;; macro in defthm.lisp (in the ACL2 sources.)
+;; macro in defthm.lisp (in the ACL2 sources.)  Also, Jared Davis provided the
+;; idea of defining the evaluator to call evfn-lst once on the function or
+;; lambda arguments rather than calling evfn N times for each N-ary function
+;; recognized (this is the main innovation that speeds up the proofs.)
 
 (program)
 
@@ -250,8 +255,8 @@
    ((not (and (symbolp evfn)
               (symbolp evfn-lst)
               (symbol-list-listp fn-args-lst)))
-    `(er soft '(defevaluator . ,evfn)
-         "The form of a defevaluator event is (defevaluator evfn ~
+    `(er soft '(defevaluator-fast . ,evfn)
+         "The form of a defevaluator event is (defevaluator-fast evfn ~
           evfn-lst fn-args-lst), where evfn and evfn-lst are symbols ~
           and fn-args-lst is a true list of lists of symbols.  ~
           However, ~x0 does not have this form."
