@@ -81,7 +81,7 @@
 (defun with-quoted-forms-fn (form state)
   (declare (xargs :mode :program :stobjs state))
   (b* (((er trans)
-        (translate form '(nil) nil nil 'with-quoted-var-terms
+        (translate form t nil nil 'with-quoted-var-terms
                    (w state) state))
        (reduce (beta-reduce-with-quotes trans nil))
        ((er (cons & val))
@@ -112,3 +112,85 @@
 
 (defmacro var-fq-bindings (vars)
   (cons 'list (var-fq-bindings-lst vars)))
+
+
+
+
+;; This is a different scheme yet: beta-reduce-collect-bindings beta-reduces
+;; some term and collects all of the beta-reduced lambda bindings within it
+;; into a single alist.  Of course, if a variable is bound more than once, one
+;; may shadow the other in the alist.
+
+;; The wrapper macro bind-as-in-definition can be used as follows.
+;; Often one needs to prove a theorem about some complicated function and must
+;; invoke other theorems via :use hints with substitutions involving
+;; intermediate results within the function body.  Say the function is FOO and
+;; the terms we want to access are the bound values of variables A, B, and C.
+;; Then a computed hint can be generated as follows:
+;; (bind-as-in-definition
+;;  foo
+;;  (a b c)
+;;  `(:use ((:instance bar-baz
+;;                     (x ,a) (y ,b) (z ,c)))
+;;         :in-theory (disable bar-baz)))
+;;
+;; Bind-as-in-definition looks up the definition of the given function and
+;; beta-reduces its body, collecting the beta-reduced binding of each variable
+;; bound by a lambda within that definition.  It then binds the listed
+;; variables to the bindings found for them.
+
+(mutual-recursion
+ (defun beta-reduce-collect-bindings (x alist bindings)
+   (declare (xargs :guard (and (pseudo-termp x)
+                               (alistp alist))
+                   :mode :program))
+   (cond ((eq x nil) (mv nil bindings))
+         ((atom x)
+          (let ((look (assoc x alist)))
+            (mv (if look (cdr look) x) bindings)))
+         ((eq (car x) 'quote) (mv x bindings))
+         (t
+          (mv-let (lst bindings)
+            (beta-reduce-collect-bindings-list (cdr x) alist bindings)
+            (if (symbolp (car x))
+                (mv (cons (car x) lst) bindings)
+              (let ((new-bindings (pairlis$ (cadar x) lst)))
+                (beta-reduce-collect-bindings
+                 (caddar x)
+                 new-bindings
+                 (append new-bindings bindings))))))))
+ (defun beta-reduce-collect-bindings-list (x alist bindings)
+   (declare (xargs :guard (and (pseudo-term-listp x)
+                               (alistp alist))))
+   (if (atom x)
+       (mv nil bindings)
+     (b* (((mv car bindings)
+           (beta-reduce-collect-bindings (car x) alist bindings))
+          ((mv cdr bindings)
+           (beta-reduce-collect-bindings-list (cdr x) alist bindings)))
+       (mv (cons car cdr) bindings)))))
+
+(defun bind-according-to-alist-lst (vars alist)
+  (if (atom vars)
+      nil
+    (cons `(,(car vars) (cdr (assoc ',(car vars) ,alist)))
+          (bind-according-to-alist-lst (cdr vars) alist))))
+
+(defmacro bind-according-to-alist (alist vars &rest body)
+  `(let ,(bind-according-to-alist-lst vars alist)
+     . ,body))
+
+
+
+(defun bind-as-in-definition-fn (fn vars term)
+  `(b* ((body (getprop ',fn 'unnormalized-body nil
+                       'current-acl2-world (w state)))
+        ((mv & bindings)
+         (beta-reduce-collect-bindings body nil nil)))
+     (bind-according-to-alist
+      bindings
+      ,vars
+      . ,term)))
+
+(defmacro bind-as-in-definition (fn vars &rest term)
+  (bind-as-in-definition-fn fn vars term))
