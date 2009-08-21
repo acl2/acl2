@@ -32,6 +32,12 @@
         (case-match term
           ((!equiv !lhs &)
            (concl-as-equiv-and-lhs-1 equiv lhs (cdr concls)))
+          (('not !lhs)
+           ;; NOTE: This isn't necessarily acceptible for all possible equivs!
+           ;; This can be interpreted as (IFF X NIL) or (EQUAL X NIL), for
+           ;; example, but in some cases (ARBITRARY-EQUIV X NIL) does not imply
+           ;; (NOT X).
+           (concl-as-equiv-and-lhs-1 equiv lhs (cdr concls)))
           (& (msg "The last literal of each clause generated is expected to ~
                    be of the form (equiv lhs rhs) for the same equiv and lhs. ~
                    The equiv for the last literal of the first clause is ~x0 ~
@@ -39,12 +45,17 @@
                    generated is:~|~%~x2"
                   equiv lhs term)))))))
 
-(defun concl-as-equiv-and-lhs (concls)
+(defun concl-as-equiv-and-lhs (concls equiv)
   (assert$
    concls
    (let ((term (car concls)))
      (case-match term
-       ((equiv lhs &)
+       ((!equiv lhs &)
+        (let ((msg (concl-as-equiv-and-lhs-1 equiv lhs (cdr concls))))
+          (cond (msg (mv nil msg))
+                (t (mv equiv lhs)))))
+       (('not lhs)
+        ;; See the note in concl-as-equiv-and-lhs-1 for caveats about NOT.
         (let ((msg (concl-as-equiv-and-lhs-1 equiv lhs (cdr concls))))
           (cond (msg (mv nil msg))
                 (t (mv equiv lhs)))))
@@ -241,7 +252,7 @@
         ,(flatten-ifs-to-cond fbr)))
     (& term)))
 
-(defun bash-sim-fn (form hints ctx state)
+(defun bash-sim-fn (form hints equiv ctx state)
   (er-let*
    ((cl-list (with-ctx-summarized
               ctx
@@ -250,7 +261,7 @@
     (hyps-list concls)
     (split-out-concls cl-list nil nil)
     (mv-let (equiv lhs)
-            (concl-as-equiv-and-lhs concls)
+            (concl-as-equiv-and-lhs concls equiv)
             (cond
              (equiv (value (split-clauses-to-flg-term-pair hyps-list concls)))
              (t (er soft ctx "~@0" lhs)))))))
@@ -261,7 +272,7 @@
          (form (if hyp `(implies ,hyp ,form0) form0))
          (wrld (w state)))
     (er-let*
-     ((flg-rhs0-pair (bash-sim-fn form hints ctx state)))
+     ((flg-rhs0-pair (bash-sim-fn form hints equiv ctx state)))
      (let* ((flg (car flg-rhs0-pair))
             (rhs0 (cdr flg-rhs0-pair))
             (rhs1 (if flatten (flatten-ifs-to-cond rhs0) rhs0))
@@ -285,12 +296,22 @@
             ,(cond (flatten-failed-flg
                     '(case-match term
                        ((& & ('hide x)) ; (equiv lhs (hide x))
-                        (list :expand (list 'hide x)))
+                        (list :expand (list (list 'hide x))))
+                       ((& ('hide x) &) ; (equiv (hide x) lhs)
+                        (list :expand (list (list 'hide x))))
+                       (('not ('hide x))
+                        (list :expand (list (list 'hide x))))
                        (& nil)))
                    (t
                     '(case-match term
                        ((& & ('hide x)) ; (equiv lhs (hide x))
-                        (list :expand (list 'hide x)
+                        (list :expand (list (list 'hide x))
+                              :in-theory '(theory 'minimal-theory)))
+                       ((& ('hide x) &) ; (equiv (hide x) lhs)
+                        (list :expand (list (list 'hide x))
+                              :in-theory '(theory 'minimal-theory)))
+                       (('not ('hide x))
+                        (list :expand (list (list 'hide x))
                               :in-theory '(theory 'minimal-theory)))
                        (& nil))))))))
 
