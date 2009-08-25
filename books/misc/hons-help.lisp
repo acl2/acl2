@@ -938,3 +938,56 @@
          (if (equal a b)
              v
            (gentle-g a l))))
+
+
+(defun hons-sublis-aux (fal x)
+  "See hons-sublis, below."
+  (declare (xargs :guard t))
+  (if (atom x)
+      (let ((pair (hons-get x fal)))
+        (if pair (cdr pair) x))
+    (cons (hons-sublis-aux fal (car x))
+          (hons-sublis-aux fal (cdr x)))))
+
+(encapsulate
+ ()
+ (local (defthm lemma
+          (implies (alistp x)
+                   (equal (hons-assoc-equal a x)
+                          (assoc a x)))
+          :hints(("Goal" :induct (len x)))))
+
+ (defthm hons-sublis-aux-removal
+   (implies (alistp fal)
+            (equal (hons-sublis-aux fal x)
+                   (sublis fal x)))))
+
+(memoize 'hons-sublis-aux :condition '(consp x))
+
+
+(defun hons-sublis (fal x)
+
+  ":Doc-Section Hons-and-Memoization
+   Memoized version of SUBLIS which uses fast-alists.~/~/
+   
+   ~c[(hons-sublis fal x)] is like ~il[sublis], but may be faster in two 
+   ways.  
+
+   1. It uses ~il[hons-get] instead of ~il[assoc], which may provide a speedup
+   when the alist in question is very long.  Note that for good performance, the
+   fast-alist argument, ~c[fal], must be a valid fast-alist.
+
+   2. It uses a memoized auxiliary function, which may provide a speedup when 
+   the tree argument, ~c[x], contains large, shared structures.
+   ~/"
+
+  (declare (xargs :guard t))
+  (let ((ret (hons-sublis-aux fal x)))
+    (prog2$
+     (clear-memoize-table 'hons-sublis)
+     ret)))
+
+(defthm hons-sublis-removal
+  (implies (alistp fal)
+           (equal (hons-sublis fal x)
+                  (sublis fal x))))
