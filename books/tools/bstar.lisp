@@ -31,10 +31,17 @@ Usage:
      ;; quitting if there is an error condition (a la er-let*)
      ((er v) (trans-eval '(len (list 'a 1 2 3)) 'foo state))
 
+     ;; The WHEN, IF, and UNLESS constructs insert an IF in the
+     ;; binding stream.  The WHEN and IF constructs are equivalent.
+     ((when v) (finish-early-because-of v))
+     ((if v)   (finish-early-because-of v))
+     ((unless c) (finish-early-unless c))
+
      ;; Pattern-based binding using cons, where D is ignorable
      ((cons (cons b c) ?d) (must-return-nested-conses a))
 
-     ;; Alternate form of pattern binding with cons nests, where G is ignored:
+     ;; Alternate form of pattern binding with cons nests, where G is
+     ;; ignored:
      (`(,e (,f . ,?!g)) (makes-a-list-of-conses b))
 
      ;; LIST and LIST* are also supported:
@@ -87,6 +94,22 @@ forms may be nested.
 is the result of the corresponding expression
 
 (list* a b), `(,a . ,b) are alternatives to the CONS binder.
+
+(if test), (when test), and (unless test) don't actually produce bindings at
+all.  Instead, they insert an IF where one branch is the rest of the B* form and
+the other is the \"bound\" expression.  For example,
+~bv[]
+(b* (((if (atom a)) 0)
+     (rest (of-bindings)))
+  final-expr)
+~ev[]
+expands to something like this:
+~bv[]
+(if (atom a)
+    0
+  (b* ((rest (of-bindings)))
+    final-expr))
+~ev[]
 
 -- Nesting Binders --
 The CONS, LIST, LIST*, and backtick binders may be nested arbitrarily inside
@@ -380,8 +403,7 @@ User binders are treated this way if they end in the character +.
 (defun patbindfn (pattern assign-expr nested-expr)
   (cond ((and (consp assign-expr) (not (eq (car assign-expr) 'quote))
               (consp pattern)
-              (not (eq (car pattern) 'mv))
-              (not (eq (car pattern) 'er))
+              (not (member (car pattern) '(mv er when unless if)))
               (not (and (symbolp (car pattern))
                         (let ((str (symbol-name (car pattern))))
                           (and (not (equal str ""))
@@ -534,6 +556,29 @@ User binders are treated this way if they end in the character +.
   `(state-global-let*
     ((,(car args) ,binding))
     ,expr))
+
+
+(defmacro patbind-when (args bindings ignores expr)
+  (declare (ignore ignores)
+           (xargs :guard (and (consp args) (eq (cdr args) nil))))
+  `(if ,(car args)
+       ,bindings
+     ,expr))
+
+(defmacro patbind-if (args bindings ignores expr)
+  (declare (ignore ignores)
+           (xargs :guard (and (consp args) (eq (cdr args) nil))))
+  `(if ,(car args)
+       ,bindings
+     ,expr))
+
+(defmacro patbind-unless (args bindings ignores expr)
+  (declare (ignore ignores)
+           (xargs :guard (and (consp args) (eq (cdr args) nil))))
+  `(if ,(car args)
+       ,expr
+     ,bindings))
+  
 
 
 (local
