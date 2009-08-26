@@ -424,6 +424,12 @@ User binders are treated this way if they end in the character +.
               ,nested-expr)))
         ((eq (car pattern) 'quote)
          nested-expr)
+        ((member (car pattern) '(when unless if))
+         (let* ((binder (car pattern))
+                (patbind-macro (patbind-macro-name binder))
+                (args (cdr pattern)))
+           `(,patbind-macro ,args ,assign-expr nil
+                            ,nested-expr)))
         (t (let* ((binder (car pattern))
                   (patbind-macro (patbind-macro-name binder))
                   (args (cdr pattern)))
