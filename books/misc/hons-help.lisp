@@ -984,7 +984,7 @@
   (declare (xargs :guard t))
   (let ((ret (hons-sublis-aux fal x)))
     (prog2$
-     (clear-memoize-table 'hons-sublis)
+     (clear-memoize-table 'hons-sublis-aux)
      ret)))
 
 (defthm hons-sublis-removal

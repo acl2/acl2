@@ -60,13 +60,14 @@
 ;; hyp of the form (use-by-hint 'rulename).  If so, first remove that literal
 ;; using remove-first-hyp-cp, then give a :by hint with that rule.
 (defun use-by-computed-hint (clause)
-  (and (consp clause)
-       (let ((car (car clause)))
-         (case-match car
-           (('not ('use-by-hint ('quote rule)))
-            `(:computed-hint-replacement
-              ('(:by ,rule :do-not '(preprocess simplify)))
-              :clause-processor remove-first-hyp-cp))
-           (& nil)))))
+  (declare (xargs :mode :program))
+  (case-match clause
+    ((('not ('use-by-hint ('quote rule . &) . &) . &) . &)
+     `(:computed-hint-replacement
+       ('(:by ,rule :do-not '(preprocess simplify)))
+       :clause-processor remove-first-hyp-cp))
+    (& nil)))
+
+
 
 

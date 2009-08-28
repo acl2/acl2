@@ -29,26 +29,43 @@
 (include-book "tools/bstar" :dir :system)
 
 
+
 (mutual-recursion
  (defun find-expands-for-arg-term (x arg world exclude)
-   (cond ((atom x) nil)
-         ((eq (car x) 'quote) nil)
-         (t (let ((from-args (find-expands-for-arg-list
-                              (cdr x) arg world exclude)))
+   (cond ((atom x) (mv nil nil))
+         ((eq (car x) 'quote) (mv nil nil))
+         (t (b* (((mv expands found)
+                  (find-expands-for-arg-list
+                   (cdr x) arg world exclude)))
               ;; If expansion is found in the args, don't expand x yet.
-              (or from-args
-                  (and (member-equal arg (cdr x))
-                       ;; check that x is expandable:
-                       (and (not (member (car x) exclude))
-                            (or (consp (car x))
-                                (getprop (car x) 'def-bodies nil
-                                         'current-acl2-world world)))
-                       (list x)))))))
+              (if expands
+                  (mv expands found)
+                (if (or found
+                        (member-equal arg (cdr x)))
+                    ;; check that x is expandable.
+                    (if (or (member (car x) exclude)
+                            (consp (car x))
+                            (member (car x) '(not car cdr)))
+                        (mv nil nil)
+                      (if (fgetprop (car x) 'def-bodies nil world)
+                          (mv (list x) nil)
+                        (mv nil t)))
+                  (mv nil nil)))))))
  (defun find-expands-for-arg-list (x arg world exclude)
    (if (atom x)
-       nil
-     (union-equal (find-expands-for-arg-term (car x) arg world exclude)
-                  (find-expands-for-arg-list (cdr x) arg world exclude)))))
+       (mv nil nil)
+     (b* (((mv car-ex car-f)
+           (find-expands-for-arg-term (car x) arg world exclude))
+          ((mv cdr-ex cdr-f)
+           (find-expands-for-arg-list (cdr x) arg world exclude)))
+       (mv (union-equal car-ex cdr-ex)
+           (or car-f cdr-f))))))
+
+(defun find-expands-for-arg-clause (x arg world exclude)
+  (mv-let (expands found)
+    (find-expands-for-arg-list x arg world exclude)
+    (declare (ignore found))
+    expands))
 
 (mutual-recursion
  (defun present-in-term (x subt)
@@ -122,7 +139,7 @@
 (defun structural-decomp-hint-careful (clause arg stablep world exclude)
   (and stablep
        ;;(prog2$ (cw "Running structural-decomp-hint-careful, arg: ~x0~%" arg)
-       (let ((expands (find-expands-for-arg-list clause arg world exclude)))
+       (let ((expands (find-expands-for-arg-clause clause arg world exclude)))
          (if expands
              `(:computed-hint-replacement
                ((structural-decomp-hint-careful
@@ -167,7 +184,7 @@ chosen structure to decompose. Clause: ~x0~%" clause)
 (defun structural-decomp-hint-fast (clause arg stablep world exclude)
   (and stablep
        ;;(prog2$ (cw "Running structural-decomp-hint-fast, arg: ~x0~%" arg)
-       (let ((expands (find-expands-for-arg-list clause arg world exclude)))
+       (let ((expands (find-expands-for-arg-clause clause arg world exclude)))
          (if expands
              `(:computed-hint-replacement
                ((structural-decomp-hint-fast
