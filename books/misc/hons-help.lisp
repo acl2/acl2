@@ -962,8 +962,10 @@
             (equal (hons-sublis-aux fal x)
                    (sublis fal x)))))
 
-(memoize 'hons-sublis-aux :condition '(consp x))
-
+(make-event
+ (if (hons-enabledp state)
+     '(memoize 'hons-sublis-aux :condition '(consp x))
+   '(value-triple :skipping-memoization)))
 
 (defun hons-sublis (fal x)
 
