@@ -94,7 +94,7 @@
 (set-irrelevant-formals-ok t)
 (flag::make-flag replace-const-alists-flag replace-const-alists-term)
 
-(def-multi-env-fns replace-const-ev)
+(def-multi-env-fns replace-const-ev replace-const-ev-lst)
 
 
 (defthm-replace-const-alists-flag
@@ -175,7 +175,8 @@
  :ev replace-const-ev
  :evlst replace-const-ev-lst
  :clauseproc replace-consts-cp
- :alistfn replace-consts-cp-alists)
+ :alists (replace-consts-cp-alists clause alist al)
+ :alist-name al)
 
 (defun replace-consts-alist1 (table world omit)
   (if (atom table)

@@ -85,112 +85,78 @@
 ;; function, such as (LAMBDA (CL HINTS AL) (MY-ALIST-LIST-FN CL AL)). 
 
 (local (include-book "join-thms"))
+(include-book "misc/untranslate-patterns" :dir :system)
 
+(defevaluator multi-env-ev multi-env-ev-lst ((if a b c)))
 
-(encapsulate
-  (((bad-guy-clause-proc * *) => *)
-   ((bad-guy-alist-lists * * *) => *))
+(defchoose multi-env-ev-bad-guy (a) (x)
+  (not (multi-env-ev x a)))
 
-  (defevaluator if-ev if-ev-lst ((if a b c)))
+(defun clause-apply-alists-multi-env-ev (clause alists)
+  (or (atom alists)
+      (and (multi-env-ev (disjoin clause) (car alists))
+           (clause-apply-alists-multi-env-ev clause (cdr alists)))))
 
-  (defchoose if-ev-bad-guy (al) (clauses)
-    (not (if-ev (conjoin (disjoin-lst clauses)) al)))
+(defun clauses-apply-alists-multi-env-ev (clauses alist-lists)
+  (or (atom clauses)
+      (and (clause-apply-alists-multi-env-ev
+            (car clauses) (car alist-lists))
+           (clauses-apply-alists-multi-env-ev
+            (cdr clauses) (cdr alist-lists)))))
 
-  (defun clause-apply-alists-if-ev (clause alists)
-    (or (atom alists)
-        (and (if-ev (disjoin clause) (car alists))
-             (clause-apply-alists-if-ev clause (cdr alists)))))
+(defmacro multi-env-ev-theoremp (x)
+  `(multi-env-ev ,x (multi-env-ev-bad-guy ,x)))
 
-  (defun clauses-apply-alists-if-ev (clauses alist-lists)
-    (or (atom clauses)
-        (and (clause-apply-alists-if-ev (car clauses) (car alist-lists))
-             (clauses-apply-alists-if-ev (cdr clauses) (cdr alist-lists)))))
-
-
-  (local (defun bad-guy-clause-proc (cl hints)
-           (declare (ignore cl hints))
-           (list nil)))
-
-  (local (defun bad-guy-alist-lists (cl hints al)
-           (declare (ignore cl hints al))
-           (list (list nil))))
-
-
-  (defthm bad-guy-clause-proc-lemma
-    (implies (and (pseudo-term-listp cl)
-                  (alistp al)
-                  (clauses-apply-alists-if-ev
-                   (bad-guy-clause-proc cl hints)
-                   (bad-guy-alist-lists cl hints al)))
-             (if-ev (disjoin cl) al))
-    :hints (("goal" :do-not-induct t
-             :expand ((:free (x) (hide x)))))
-    :rule-classes nil))
-
-
-(local
- (progn
-   (def-join-thms if-ev)
+(add-untranslate-pattern
+ (multi-env-ev ?x (multi-env-ev-bad-guy ?x))
+ (multi-env-ev-theoremp ?x))
 
 
 
+(local (def-join-thms multi-env-ev))
 
-   (defthm member-conjoin-clauses-true
-     (implies (and (member-equal clause clauses)
-                   (if-ev (conjoin (disjoin-lst clauses)) al))
-              (if-ev (disjoin clause) al))
-     :hints (("goal" :in-theory (enable conjoin-clauses))))
+(defthm multi-env-ev-theoremp-implies-clause-apply-alists
+  (implies (multi-env-ev-theoremp (disjoin x))
+           (clause-apply-alists-multi-env-ev x alists))
+  :hints (("Subgoal *1/3" :use
+           ((:instance multi-env-ev-bad-guy
+                       (x (disjoin x))
+                       (a (car alists)))))))
 
-   (defthm if-ev-bad-guy-rewrite
-     (implies (not (if-ev (conjoin (disjoin-lst clauses)) al))
-              (not (if-ev (conjoin (disjoin-lst clauses))
-                          (if-ev-bad-guy clauses))))
-     :hints (("goal" :use if-ev-bad-guy)))
+(defthm multi-env-ev-theoremp-conjoin-cons
+  (iff (multi-env-ev-theoremp (conjoin (cons a b)))
+       (and (multi-env-ev-theoremp a)
+            (multi-env-ev-theoremp (conjoin b))))
+  :hints (("goal" :use
+           ((:instance multi-env-ev-bad-guy
+                       (x a)
+                       (a (multi-env-ev-bad-guy
+                           (conjoin (cons a b)))))
+            (:instance multi-env-ev-bad-guy
+                       (x (conjoin (cons a b)))
+                       (a (multi-env-ev-bad-guy a)))
+            (:instance multi-env-ev-bad-guy
+                       (x (conjoin b))
+                       (a (multi-env-ev-bad-guy
+                           (conjoin (cons a b)))))
+            (:instance multi-env-ev-bad-guy
+                       (x (conjoin (cons a b)))
+                       (a (multi-env-ev-bad-guy
+                           (conjoin b))))))))
 
-   (defthm clauses-true-for-if-ev-cdr
-     (implies (if-ev (conjoin (disjoin-lst clauses)) (if-ev-bad-guy clauses))
-              (if-ev (conjoin (disjoin-lst (cdr clauses)))
-                     (if-ev-bad-guy (cdr clauses))))
-     :hints (("Subgoal *1/2"
-              :use ((:instance if-ev-bad-guy
-                               (al (if-ev-bad-guy (cdr clauses))))))))
+(defthm multi-env-theoremp-conjoin-clauses-cons
+  (iff (multi-env-ev-theoremp (conjoin-clauses (cons a b)))
+       (and (multi-env-ev-theoremp (disjoin a))
+            (multi-env-ev-theoremp (conjoin-clauses b))))
+  :hints(("Goal" :in-theory (enable conjoin-clauses))))
 
 
-   (defthm member-true-for-if-ev
-     (implies (and (member-equal clause clauses)
-                   (if-ev (conjoin (disjoin-lst clauses)) (if-ev-bad-guy clauses)))
-              (if-ev (disjoin clause) al))
-     :hints (("Subgoal *1/2" :use if-ev-bad-guy)))
 
-   (defthm clause-true-for-ev-apply-alists-ok
-     (implies (and (member-equal clause clauses)
-                   (if-ev (conjoin (disjoin-lst clauses))
-                          (if-ev-bad-guy clauses)))
-              (clause-apply-alists-if-ev clause alists))
-     :hints(("Goal"
-             :induct (clause-apply-alists-if-ev clause alists))))
+(defthm multi-env-ev-theoremp-implies-clauses-apply-alists
+  (implies (multi-env-ev-theoremp (conjoin-clauses x))
+           (clauses-apply-alists-multi-env-ev x alists))
+  :hints(("Goal" :in-theory (enable conjoin-clauses disjoin-lst))))
 
-   (defthm clauses-true-for-ev-apply-alists-ok
-     (implies (if-ev (conjoin (disjoin-lst clauses))
-                     (if-ev-bad-guy clauses))
-              (clauses-apply-alists-if-ev clauses alist-lists))
-     :hints(("Subgoal *1/4"
-             :in-theory  (e/d ()
-                              (clause-true-for-ev-apply-alists-ok))
-             :use ((:instance clause-true-for-ev-apply-alists-ok
-                              (clause (car clauses))
-                              (alists (car alist-lists)))))))))
-
-(defthm bad-guy-clause-proc-correct
-  (implies (and (pseudo-term-listp cl)
-                (alistp al)
-                (if-ev (conjoin-clauses
-                        (bad-guy-clause-proc cl hints))
-                       (if-ev-bad-guy (bad-guy-clause-proc cl hints))))
-           (if-ev (disjoin cl) al))
-  :hints (("goal" :in-theory (enable conjoin-clauses)
-           :use bad-guy-clause-proc-lemma))
-  :rule-classes nil)
 
 
 (defmacro incat (sym &rest lst)
@@ -198,20 +164,60 @@
     (concatenate 'string . ,lst)
     ,sym))
 
-(defun def-multi-env-fn (ev)
+(defun multi-env-functional-instance-fn
+  (thm x alists ev evlst bad-guy)
+  (let* ((bad-guy (or bad-guy (incat ev (symbol-name ev) "-BAD-GUY")))
+         (clause-apply (incat ev "CLAUSE-APPLY-ALISTS-" (symbol-name ev)))
+         (clauses-apply (incat ev "CLAUSES-APPLY-ALISTS-" (symbol-name ev))))
+    `(:use ((:instance
+             (:functional-instance
+              ,thm
+              (multi-env-ev ,ev)
+              (multi-env-ev-lst ,evlst)
+              (multi-env-ev-bad-guy ,bad-guy)
+              (clause-apply-alists-multi-env-ev
+               ,clause-apply)
+              (clauses-apply-alists-multi-env-ev
+               ,clauses-apply))
+             (x ,x)
+             (alists ,alists))))))
+
+(defmacro multi-env-functional-instance
+  (thm x alists &key ev evlst bad-guy)
+  `(multi-env-functional-instance-fn
+    ',thm ',x ',alists ',ev ',evlst ',bad-guy))
+
+
+(defun def-multi-env-fn (ev evlst)
+  (declare (xargs :mode :program))
   (let ((bad-guy (incat ev (symbol-name ev) "-BAD-GUY"))
         (bad-guy-rewrite (incat ev (symbol-name ev) "-BAD-GUY-REWRITE"))
+        (theoremp (incat ev (symbol-name ev) "-THEOREMP"))
         (clause-apply (incat ev "CLAUSE-APPLY-ALISTS-" (symbol-name ev)))
-        (clauses-apply (incat ev "CLAUSES-APPLY-ALISTS-" (symbol-name ev))))
+        (clauses-apply (incat ev "CLAUSES-APPLY-ALISTS-" (symbol-name ev)))
+        (clause-apply-thm
+         (incat ev (symbol-name ev)
+                "-THEOREMP-IMPLIES-CLAUSE-APPLY-ALISTS"))
+        (clauses-apply-thm
+         (incat ev (symbol-name ev)
+                "-THEOREMP-IMPLIES-CLAUSES-APPLY-ALISTS"))
+        (constraint-0 (genvar ev (symbol-name (pack2 ev '-constraint-))
+                              0 nil)))
     `(progn
-       (defchoose ,bad-guy (al) (clauses)
-         (not (,ev (conjoin (disjoin-lst clauses)) al)))
+       (defchoose ,bad-guy (a) (x)
+         (not (,ev x a)))
 
        (defthm ,bad-guy-rewrite
-         (implies (not (,ev (conjoin (disjoin-lst clauses)) al))
-                  (not (,ev (conjoin (disjoin-lst clauses))
-                            (,bad-guy clauses))))
+         (implies (,ev x (,bad-guy x))
+                  (,ev x a))
          :hints (("goal" :use ,bad-guy)))
+
+       (defmacro ,theoremp (x)
+         `(,',ev ,x (,',bad-guy ,x)))
+
+       (add-untranslate-pattern
+        (,ev ?x (,bad-guy ?x))
+        (,theoremp ?x))
 
        (defun ,clause-apply (clause alists)
          (or (atom alists)
@@ -221,69 +227,69 @@
        (defun ,clauses-apply (clauses alist-lists)
          (or (atom clauses)
              (and (,clause-apply (car clauses) (car alist-lists))
-                  (,clauses-apply (cdr clauses) (cdr alist-lists))))))))
+                  (,clauses-apply (cdr clauses) (cdr alist-lists)))))
 
-(defmacro def-multi-env-fns (ev)
-  (def-multi-env-fn ev))
-
-(defun nth-bindings (n var varlst)
-  (if (endp varlst)
-      nil
-    (cons `(,(car varlst) (nth ,n ,var))
-          (nth-bindings (1+ n) var (cdr varlst)))))
-
-(defun prove-multi-env-clause-proc-fn (name ev evlst clauseproc alistfn hints
-                                            world)
-  (declare (xargs :mode :program))
-  (let* ((bad-guy (incat ev (symbol-name ev) "-BAD-GUY"))
-         ;; (bad-guy-rewrite (incat ev (symbol-name ev) "-BAD-GUY-REWRITE"))
-         (clause-apply (incat ev "CLAUSE-APPLY-ALISTS-" (symbol-name ev)))
-         (clauses-apply (incat ev "CLAUSES-APPLY-ALISTS-" (symbol-name ev)))
-         (cp-nargs
-          (length (getprop clauseproc 'formals nil 'current-acl2-world world)))
-         (ign (and (< 2 cp-nargs)
-                 (er hard 'prove-multi-env-clause-proc
-                     "This utility currently only works for clause processors ~
-                     that take 1 or 2 arguments.  Feel free to patch.~%")))
-         (cp-call `(,clauseproc . ,(take cp-nargs '(cl hints))))
-         (cp-lambda `(lambda (cl hints)
-                       (,clauseproc . ,(take cp-nargs '(cl hints)))))
-         (constraint-0 (genvar ev (symbol-name (pack2 ev '-constraint-))
-                               0 nil)))
-    (declare (ignore ign))
-    `(progn
-       (def-multi-env-fns ,ev)
-       (defthm ,name
-         (implies (and (pseudo-term-listp cl)
-                       (alistp al)
-                       (,ev (conjoin-clauses ,cp-call)
-                            (,bad-guy ,cp-call)))
-                  (,ev (disjoin cl) al))
-         :hints (("Goal" :use ((:functional-instance
-                                bad-guy-clause-proc-correct
-                                (if-ev ,ev)
-                                (if-ev-lst ,evlst)
-                                (if-ev-bad-guy ,bad-guy)
-                                (clause-apply-alists-if-ev
-                                 ,clause-apply)
-                                (clauses-apply-alists-if-ev
-                                 ,clauses-apply)
-                                (bad-guy-clause-proc
-                                 ,cp-lambda)
-                                (bad-guy-alist-lists
-                                 ,alistfn)))
-                  :do-not-induct t)
+       (defthmd ,clause-apply-thm
+         (implies (,theoremp (disjoin clause))
+                  (,clause-apply clause alists))
+         :hints ((multi-env-functional-instance
+                  multi-env-ev-theoremp-implies-clause-apply-alists
+                  clause alists
+                  :ev ,ev
+                  :evlst ,evlst)
                  (and stable-under-simplificationp
-                      '(:in-theory (enable ,constraint-0)))
+                      '(:in-theory (enable ,constraint-0)))))
+
+       (defthmd ,clauses-apply-thm
+         (implies (,theoremp (conjoin-clauses clause))
+                  (,clauses-apply clause alists))
+         :hints ((multi-env-functional-instance
+                  multi-env-ev-theoremp-implies-clauses-apply-alists
+                  clause alists
+                  :ev ,ev
+                  :evlst ,evlst))))))
+
+(defmacro def-multi-env-fns (ev evlst)
+  (def-multi-env-fn ev evlst))
+
+  
+  
+
+(defun prove-multi-env-clause-proc-fn (name ev evlst clauseproc alists hints
+                                            bad-guy alist-name world)
+  (declare (xargs :mode :program))
+  (let* ((bad-guy (or bad-guy (incat ev (symbol-name ev) "-BAD-GUY")))
+         (clauses-apply-thm
+          (incat ev (symbol-name ev)
+                 "-THEOREMP-IMPLIES-CLAUSES-APPLY-ALISTS"))
+         (cp-args
+          (fgetprop clauseproc 'formals nil world))
+         (clausename (car cp-args))
+         (multivaluesp (< 1 (len (fgetprop clauseproc 'stobjs-out nil world))))
+         (cp-call1 `(,clauseproc . ,cp-args))
+         (cp-call (if multivaluesp `(clauses-result ,cp-call1) cp-call1)))
+    `(progn
+       (def-multi-env-fns ,ev ,evlst)
+       (defthm ,name
+         (implies (and (pseudo-term-listp ,clausename)
+                       (alistp ,alist-name)
+                       (,ev (conjoin-clauses ,cp-call)
+                            (,bad-guy (conjoin-clauses ,cp-call))))
+                  (,ev (disjoin ,clausename) ,alist-name))
+         :hints (("Goal" :use ((:instance
+                                ,clauses-apply-thm
+                                (clause ,cp-call)
+                                (alists ,alists))))
                  . ,hints)
          :otf-flg t
          :rule-classes :clause-processor))))
 
 (defmacro prove-multi-env-clause-proc
-  (name &key ev evlst clauseproc alistfn hints)
+  (name &key ev evlst clauseproc alists bad-guy (alist-name 'al) hints)
   `(make-event
     (prove-multi-env-clause-proc-fn
-     ',name ',ev ',evlst ',clauseproc ',alistfn ',hints (w state))))
+     ',name ',ev ',evlst ',clauseproc ',alists
+     ',hints ',bad-guy ',alist-name (w state))))
 
 
 

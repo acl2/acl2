@@ -90,11 +90,24 @@
 
 (def-join-thms strdec-ev)
 
-(defun remove-terms-without-present (clause struct)
+(defun consed-subterms (term)
+  (case-match term
+    (('cons a b . &)
+     (union-equal (consed-subterms a)
+                  (consed-subterms b)))
+    (& (list term))))
+
+(defun consed-subterm-present-in-term (term consed)
+  (if (atom consed)
+      nil
+    (or (present-in-term term (car consed))
+        (consed-subterm-present-in-term term (cdr consed)))))
+
+(defun remove-terms-without-present (clause subterms)
   (if (atom clause)
       clause
-    (let ((rest (remove-terms-without-present (cdr clause) struct)))
-      (if (present-in-term (car clause) struct)
+    (let ((rest (remove-terms-without-present (cdr clause) subterms)))
+      (if (consed-subterm-present-in-term (car clause) subterms)
           (if (equal rest (cdr clause))
               clause
             (cons (car clause) rest))
@@ -108,10 +121,12 @@
 
 (defun select-expand-substruct (clause substruct)
   (list (cons `(not (structure-decompose ,substruct))
-              (remove-terms-without-present clause substruct))))
+              (remove-terms-without-present
+               clause (consed-subterms substruct)))))
 
 (defun remove-irrel-cp (clause substruct)
-  (list (remove-terms-without-present clause substruct)))
+  (list (remove-terms-without-present
+         clause (consed-subterms substruct))))
 
 (defthm select-expand-substruct-correct
   (implies (and (pseudo-term-listp clause)
@@ -121,7 +136,10 @@
                              clause substruct))
                            a))
            (strdec-ev (disjoin clause) a))
-  :hints (("goal" :in-theory (enable structure-decompose)))
+  :hints (("goal" :in-theory
+           (e/d (structure-decompose)
+                (consed-subterms
+                 consed-subterm-present-in-term))))
   :rule-classes :clause-processor)
 
 
@@ -133,92 +151,108 @@
                              clause substruct))
                            a))
            (strdec-ev (disjoin clause) a))
-  :hints (("goal" :in-theory (enable structure-decompose)))
+  :hints (("goal" :in-theory
+           (e/d (structure-decompose)
+                (consed-subterms
+                 consed-subterm-present-in-term))))
   :rule-classes :clause-processor)
 
-(defun structural-decomp-hint-careful (clause arg stablep world exclude)
-  (and stablep
-       ;;(prog2$ (cw "Running structural-decomp-hint-careful, arg: ~x0~%" arg)
-       (let ((expands (find-expands-for-arg-clause clause arg world exclude)))
-         (if expands
-             `(:computed-hint-replacement
-               ((structural-decomp-hint-careful
-                 clause ',arg stable-under-simplificationp world ',exclude))
-               :expand ,expands)
-           ;; Heuristically decide based on presence in the conclusion
-           ;; or in rest of clause whether to prefer expanding
-           ;; (car arg) or (cdr arg)
-           (b* ((car `(car ,arg))
-                (cdr `(cdr ,arg))
-                (concl (car (last clause)))
-                ((mv 1st 2nd give-up)
-                 (cond ((present-in-term concl car) (mv car cdr nil))
-                       ((present-in-term concl cdr) (mv cdr car nil))
-                       ((present-in-term-list clause car)
-                        (mv car cdr nil))
-                       ((present-in-term-list clause cdr)
-                        (mv cdr car nil))
-                       (t (mv car cdr t)))))
-             (if give-up
-                 (prog2$ (cw "Giving up on structural expansion~%")
-                         '(:no-op t))
-               `(:computed-hint-replacement
-                 ((after-select-substruct-hint
-                   clause stable-under-simplificationp world ',exclude))
-                 :or ((:clause-processor
-                       (select-expand-substruct clause ',1st))
-                      (:clause-processor
-                       (select-expand-substruct clause ',2nd))
-                      (:no-op t)))))))))
+(defun structural-decomp-hint-careful (clause arg stablep state exclude)
+  (declare (xargs :stobjs state
+                  :mode :program))
+  (b* (((unless stablep) (value nil))
+       (world (w state))
+       ((er arg) (translate arg t nil nil 'structural-decomp-hint-careful
+                            world state))
+       (expands
+        (find-expands-for-arg-clause clause arg world exclude))
+       ((when expands)
+        (value
+         `(:computed-hint-replacement
+           ((structural-decomp-hint-careful
+             clause ',arg stable-under-simplificationp world ',exclude))
+           :expand ,expands)))
+       ;; Heuristically decide based on presence in the conclusion
+       ;; or in rest of clause whether to prefer expanding
+       ;; (car arg) or (cdr arg)
+       (car `(car ,arg))
+       (cdr `(cdr ,arg))
+       (concl (car (last clause)))
+       ((mv 1st 2nd give-up)
+        (cond ((present-in-term concl car) (mv car cdr nil))
+              ((present-in-term concl cdr) (mv cdr car nil))
+              ((present-in-term-list clause car)
+               (mv car cdr nil))
+              ((present-in-term-list clause cdr)
+               (mv cdr car nil))
+              (t (mv car cdr t)))))
+    (if give-up
+        (prog2$ (cw "Giving up on structural expansion~%")
+                (value '(:no-op t)))
+      (value `(:computed-hint-replacement
+               ((after-select-substruct-hint
+                 clause stable-under-simplificationp state ',exclude))
+               :or ((:clause-processor
+                     (select-expand-substruct clause ',1st))
+                    (:clause-processor
+                     (select-expand-substruct clause ',2nd))
+                    (:no-op t)))))))
 
-(defun after-select-substruct-hint (clause stablep world exclude)
+(defun after-select-substruct-hint (clause stablep state exclude)
+  (declare (xargs :stobjs state
+                  :mode :program))
   ;; (prog2$ (cw "Running after-select-substruct-hint~%")
-          (let ((term (car clause)))
-            (case-match term
-              (('not ('structure-decompose arg))
-               (structural-decomp-hint-careful clause arg stablep world exclude))
-              (t (prog2$ (cw "After-select-substruct-hint didn't find the
+  (let ((term (car clause)))
+    (case-match term
+      (('not ('structure-decompose arg))
+       (structural-decomp-hint-careful clause arg stablep state exclude))
+      (& (prog2$ (cw "After-select-substruct-hint didn't find the
 chosen structure to decompose. Clause: ~x0~%" clause)
-                         '(:no-op t))))))
+                 (value '(:no-op t)))))))
 
-(defun structural-decomp-hint-fast (clause arg stablep world exclude)
-  (and stablep
-       ;;(prog2$ (cw "Running structural-decomp-hint-fast, arg: ~x0~%" arg)
-       (let ((expands (find-expands-for-arg-clause clause arg world exclude)))
-         (if expands
-             `(:computed-hint-replacement
-               ((structural-decomp-hint-fast
-                 clause ',arg stable-under-simplificationp world ',exclude))
-               :expand ,expands)
-           ;; Heuristically decide based on presence in the conclusion
-           ;; or in rest of clause whether to prefer expanding
-           ;; (car arg) or (cdr arg)
-           (b* ((car `(car ,arg))
-                (cdr `(cdr ,arg))
-                (concl (car (last clause)))
-                ((mv 1st give-up)
-                 (cond ((present-in-term concl car) (mv car nil))
-                       ((present-in-term concl cdr) (mv cdr nil))
-                       ((present-in-term-list clause car)
-                        (mv car nil))
-                       ((present-in-term-list clause cdr)
-                        (mv cdr nil))
-                       (t (mv car t)))))
-             (if give-up
-                 (prog2$ (cw "Giving up on structural expansion~%")
-                         '(:no-op t))
-               `(:computed-hint-replacement
+(defun structural-decomp-hint-fast (clause arg stablep state exclude)
+  (declare (xargs :stobjs state
+                  :mode :program))
+  (b* (((unless stablep) (value nil))
+       (world (w state))
+       ((er arg) (translate arg t nil nil 'structural-decomp-hint-fast
+                            world state))
+       (expands (find-expands-for-arg-clause clause arg world exclude))
+       ((when expands)
+        (value `(:computed-hint-replacement
                  ((structural-decomp-hint-fast
-                   clause ',1st stable-under-simplificationp world ',exclude))
-                 :clause-processor
-                 (remove-irrel-cp clause ',1st))))))))
+                   clause ',arg stable-under-simplificationp state
+                   ',exclude))
+                 :expand ,expands)))
+       ;; Heuristically decide based on presence in the conclusion
+       ;; or in rest of clause whether to prefer expanding
+       ;; (car arg) or (cdr arg)
+       (car (if (eq (car arg) 'cons) (cadr arg)`(car ,arg)))
+       (cdr (if (eq (car arg) 'cons) (caddr arg)`(cdr ,arg)))
+       (concl (car (last clause)))
+       ((mv 1st give-up)
+        (cond ((present-in-term concl car) (mv car nil))
+              ((present-in-term concl cdr) (mv cdr nil))
+              ((present-in-term-list clause car)
+               (mv car nil))
+              ((present-in-term-list clause cdr)
+               (mv cdr nil))
+              (t (mv car t)))))
+    (if give-up
+        (prog2$ (cw "Giving up on structural expansion~%")
+                (value '(:no-op t)))
+      (value `(:computed-hint-replacement
+               ((structural-decomp-hint-fast
+                 clause ',1st stable-under-simplificationp state ',exclude))
+               :clause-processor
+               (remove-irrel-cp clause ',1st))))))
 
 
 (defmacro structural-decomp (arg &key do-not-expand)
-  `(structural-decomp-hint-fast clause ',arg stable-under-simplificationp world
-                                ,do-not-expand))
+  `(structural-decomp-hint-fast
+    clause ',arg stable-under-simplificationp state ,do-not-expand))
 
 (defmacro structural-decomp-careful (arg &key do-not-expand)
-  `(structural-decomp-hint clause ',arg stable-under-simplificationp world
-                           ,do-not-expand))
+  `(structural-decomp-hint-careful
+    clause ',arg stable-under-simplificationp state ,do-not-expand))
 
