@@ -14,7 +14,7 @@
 
 (in-package "STR")
 
-(defdoc str
+(defdoc Str
 ":Doc-Section Str
 ACL2 String Library~/
 
@@ -34,10 +34,9 @@ The documentation is then available by writing ~c[:doc STR::str].  All of the
 library's functions are found in the STR package, so you will need to do one of
 the following.
 
-  1. Type STR:: before the names of the functions,
+  1. Type STR:: before the names of the functions,  OR
 
-  2. Import STR::*exports* into your own package (for non-ACL2 package users),
-     or
+  2. Import STR::*exports* into your own package, OR
 
   3. Additionally load a set of ACL2-package macros which are aliases for the
      functions in the STR package.  To do this, run:

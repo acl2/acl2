@@ -1,0 +1,398 @@
+# certlib.pl - Library routines for cert.pl, critpath.pl, etc.
+# Copyright 2008-2009 by Sol Swords 
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc., 675 Mass
+# Ave, Cambridge, MA 02139, USA.
+#
+# NOTE.  This file is not part of the standard ACL2 books build process; it is
+# part of an experimental build system that is not yet intended, for example,
+# to be capable of running the whole regression.  The ACL2 developers do not
+# maintain this file.  Please contact Sol Swords <sswords@cs.utexas.edu> with
+# any questions/comments.
+
+
+use strict;
+use warnings;
+use File::Basename;
+use File::Spec;
+use Cwd;
+use Cwd 'abs_path';
+
+
+my $BASE_PATH = abs_canonical_path(".");
+
+
+sub human_time {
+
+# human_time(secs,shortp) returns a string describing the time taken in a
+# human-friendly format, e.g., 5.6 minutes, 10.3 hours, etc.  If shortp is
+# given, then we use, e.g., "min" instead of "minutes."
+
+    my $secs = shift;
+    my $shortp = shift;
+
+    if (!$secs) {
+	return "???";
+    }
+
+    if ($secs < 60) {
+	return sprintf("%.1f %s", $secs, $shortp ? "sec" : "seconds");
+    }
+
+    if ($secs < 60 * 60) {
+	return sprintf("%.1f %s", ($secs / 60.0), $shortp ? "min" : "minutes");
+    }
+
+    return sprintf("%.2f %s", ($secs / (60 * 60)), $shortp ? "hr" : "hours");
+}
+
+
+sub rm_dotdots {
+    my $path = shift;
+    while ($path =~ s/( |\/)[^\/\.]+\/\.\.\//$1/g) {}
+    return $path;
+}
+
+
+sub rel_path {
+    my $base = shift;
+    my $path = shift;
+    if (substr($path,0,1) eq "/") {
+	return $path;
+    } else {
+	return "$base/$path";
+    }
+}
+
+
+sub rec_readlink {
+    my $path = shift;
+    while (-l $path) {
+	$path = readlink $path;
+    }
+    return $path;
+}
+
+
+sub abs_canonical_path {
+    my $path = shift;
+    my $abspath = File::Spec->rel2abs(rec_readlink($path));
+    my ($vol, $dir, $file) = File::Spec->splitpath($abspath);
+    my $absdir = abs_path($dir);
+    if ($absdir) {
+	return File::Spec->catpath($vol, $absdir, $file);
+    } else {
+	print "Warning: canonical_path: Directory not found: " . $dir . "\n";
+	return 0;
+    }
+}
+
+
+sub canonical_path {
+    my $abs_path = abs_canonical_path(shift);
+    if ($BASE_PATH) {
+	return File::Spec->abs2rel($abs_path, $BASE_PATH);
+    } else {
+	return $abs_path;
+    }
+}
+
+
+sub short_cert_name {
+
+# Given a path to some ACL2 book, e.g., foo/bar/baz/blah.cert, we produce 
+# a shortened version of the name, e.g., "baz/blah.cert".  Usually this is 
+# enough to identify the book, and keeps the noise of the path down to a 
+# minimum.
+
+    my $certfile = shift;
+
+    # Ordinary case for foo/bar/baz/blah.cert
+    $certfile =~ m/^.*\/([^\/]*\/[^\/]*)$/;
+    my $shortcert = $1;
+
+    # Special case for, e.g., foo.cert:
+    if (!$shortcert) {
+	$shortcert = $certfile;
+    }
+
+    return $shortcert;
+}
+
+
+sub get_cert_time {
+
+# Given a .cert file, gets the total user + system time recorded in the
+# corresponding .time file.  If not found, prints a warning and returns 0.
+
+    my $path = shift;
+    my $warnings = shift;
+
+    $path =~ s/\.cert$/\.time/;
+    
+    if (open (my $timefile, "<", $path)) {
+	while (my $the_line = <$timefile>) {
+	    my $regexp = "^([0-9]*\\.[0-9]*)user ([0-9]*\\.[0-9]*)system";
+	    my @res = $the_line =~ m/$regexp/;
+	    if (@res) {
+		return 0.0 + $res[0] + $res[1];
+	    }
+	}
+	push(@$warnings, "Corrupt timings in $path\n");
+	return 0;
+    } else {
+	push(@$warnings, "Could not open $path\n");
+	return 0;
+    }
+}
+
+
+sub makefile_dependency_graph {
+
+# makefile_dependency_graph(makefile-name)
+#
+# Records a dependency graph between cert files by looking through the Makefile
+# and adding an entry for each line matching *.cert : *.cert.
+
+    my $mkpath = shift;
+    my %deps = ();
+
+    open (my $mkfile, "<", $mkpath) or die "Failed to open makefile $mkpath\n";
+    my $regexp = "^(.*\\.cert)[\\s]*:[\\s]*(.*\\.cert)";
+    while (my $teh_line = <$mkfile>) {
+	my @res = $teh_line =~ m/$regexp/;
+	if (@res) {
+	    push(@{$deps{$res[0]}}, $res[1]);
+	}
+    }
+
+    return %deps;
+}
+
+
+
+sub make_costs_table_aux {
+
+# make_costs_table_aux(file, deps, costs, warnings) -> cost
+# May modify costs and warnings.
+#
+# Inputs:
+#
+#  - Certfile is a string, the name of the file to get the cost for.
+#
+#  - Deps is a reference to a dependency graph such as is generated by
+#    makefile_dependency_graph.
+# 
+#  - Costs is a reference to the table of costs which we are constructing.
+
+    my $certfile = shift;
+    my $deps = shift;
+    my $costs = shift;
+    my $warnings = shift;
+
+    if ($costs->{$certfile}) {
+	return $costs->{$certfile};
+    }
+
+    my $certtime = get_cert_time($certfile, $warnings);
+    my $certdeps = $deps->{$certfile};
+
+    my $most_expensive_dep_total = 0;
+    my $most_expensive_dep = 0;
+
+    foreach my $dep (@{$certdeps}) {
+	my $this_dep_costs = make_costs_table_aux($dep, $deps, $costs, $warnings);
+	my $this_dep_total = $this_dep_costs->{"totaltime"};
+	if ($this_dep_total > $most_expensive_dep_total) {
+	    $most_expensive_dep = $dep;
+	    $most_expensive_dep_total = $this_dep_total;
+	}
+    }
+
+    my %entry = ( "shortcert" => short_cert_name($certfile),
+		  "selftime" => $certtime, 
+		  "totaltime" => $most_expensive_dep_total + $certtime, 
+		  "maxpath" => $most_expensive_dep );
+
+    $costs->{$certfile} = \%entry;
+    return $costs->{$certfile};
+}
+
+
+sub make_costs_table {
+
+# make_costs_table (topfile, deps) -> (costs_table, warnings)
+
+# For each cert file in the dependency graph, records a maximum-cost
+# path, the path's cost, and the cert's own cost.
+
+    my $certfile = shift;
+    my $deps = shift;
+    my %costs = ();
+    my @warnings = ();
+    my $maxcost = make_costs_table_aux($certfile, $deps, \%costs, \@warnings);
+    return (\%costs, \@warnings);
+}
+
+
+
+sub warnings_report {
+
+# warnings_report(warnings, htmlp) returns a string describing any warnings
+# which were encountered during the generation of the costs table, such as for
+# missing .time files.
+
+    my $warnings = shift;
+    my $htmlp = shift;
+
+    unless (@$warnings) {
+	return "";
+    }
+
+    my $ret;
+
+    if ($htmlp) {
+	$ret = "<dl class=\"critpath_warnings\">\n"
+	     . "<dt>Warnings</dt>\n";
+	foreach (@$warnings) {
+	    chomp($_);
+	    $ret .= "<dd>$_</dd>\n";
+	}
+	$ret .= "</dl>\n\n";
+    }
+
+    else  {
+	$ret = "Warnings:\n\n";
+	foreach (@$warnings) {
+	    chomp($_);
+	    $ret .= "$_\n";
+	}
+	$ret .= "\n\n";
+    }
+
+    return $ret;
+}
+
+
+
+sub critical_path_report {
+
+# critical_path_report(file,costs,htmlp) returns a string describing the
+# critical path for file according to the costs_table, either in TEXT or HTML
+# format per the value of htmlp.
+
+    my $file = shift;
+    my $costs = shift;
+    my $htmlp = shift;
+
+    my $ret;
+
+    if ($htmlp) {
+	$ret = "<table class=\"critpath_table\">\n"
+	     . "<tr class=\"critpath_head\">"
+	     . "<th>Critical Path</th>" 
+	     . "<th>Time</th>"
+	     . "<th>Cumulative</th>"
+	     . "</tr>\n";
+    }
+    else {
+	$ret = "Critical Path\n\n"
+	     . sprintf("%-50s %10s   %10s\n", "File", "Time", "Cumulative");
+    }
+
+    while ($file) 
+    {
+	my $filecosts = $costs->{$file};
+	my $shortcert = $filecosts->{"shortcert"};
+	my $selftime = $filecosts->{"selftime"};
+	my $cumtime = $filecosts->{"totaltime"};
+
+	my $selftime_pr = $selftime ? human_time($selftime, 1) : "[Error]";
+	my $cumtime_pr = $cumtime ? human_time($cumtime, 1) : "[Error]";
+   
+	if ($htmlp) {
+	    $ret .= "<tr class=\"critpath_row\">"
+	 	 . "<td class=\"critpath_name\">$shortcert</td>"
+		 . "<td class=\"critpath_self\">$selftime_pr</td>"
+		 . "<td class=\"critpath_total\">$cumtime_pr</td>"
+		 . "</tr>\n";
+	}
+	else {
+	    $ret .= sprintf("%-50s %10s   %10s\n", $shortcert, $selftime_pr, $cumtime_pr);
+	}
+
+	$file = $filecosts->{"maxpath"};
+    }
+
+    if ($htmlp) {
+	$ret .= "</table>\n\n";
+    }
+    else {
+	$ret .= "\n\n";
+    }
+
+    return $ret;
+}
+	
+
+sub individual_files_report {
+
+# individual_files_report(costs,htmlp) returns a string describing the
+# self-times of each file in the costs_table, either in either TEXT or HTML
+# format, per the value of htmlp.
+
+    my $costs = shift;
+    my $htmlp = shift;
+    my %lines = ();
+    my $name;
+
+    foreach $name ( keys %$costs) {
+	my $entry = $costs->{$name};
+	my $shortcert = $entry->{"shortcert"};
+	my $selftime = $entry->{"selftime"};
+	$lines{$shortcert} = $selftime;
+    }
+
+    my @sorted = reverse sort { ($lines{$a} + 0.0) <=> ($lines{$b} + 0.0) } keys(%lines);
+    my $ret;
+    if ($htmlp) 
+    {
+	$ret = "<table class=\"indiv_table\">\n"
+	     . "<tr class=\"indiv_head\"><th>All Files</th> <th>Time</th></tr>\n";
+	
+	foreach $name (@sorted)
+	{
+	    my $time = $lines{$name} ? human_time($lines{$name}, 1) : "[Error]";
+
+	    $ret .= "<tr class=\"indiv_row\">";
+	    $ret .= "<td class=\"indiv_file\">$name</td>";
+	    $ret .= "<td class=\"indiv_time\">$time</td>";
+	    $ret .= "</tr>\n";
+	}
+	$ret .= "</table>\n\n";
+    }
+
+    else
+    {
+	$ret = "Individual File Times\n\n";
+	foreach $name (@sorted) {
+	    $ret .= sprintf("%-50s %10s\n", $name, $lines{$name});
+	}
+	$ret .= "\n\n";
+    }
+
+    return $ret;
+}   
+
+

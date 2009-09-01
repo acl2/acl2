@@ -255,7 +255,7 @@ pattern list matches the list of inputs. ~/~/"
    (& default-value))
   ~ev[]
 
- ~c[pm] is a convenient abbreviation for ~[pattern-match].
+ ~c[pm] is a convenient abbreviation for ~il[pattern-match].
 
  Pattern-match is similar to case-match, but the two macros interpret patterns
 differently.  If the pattern is ~c[(a b c)], case-match interprets this as a
@@ -645,7 +645,7 @@ same length as the argument list.
    (term args tests bindings lhses rhses pmstate)
    ;; Ensure that args is a true-list; it may be any length.
    (if (not (true-listp args))
-       (er hard 'top-level ``Badly formed expression: ~x0~%''
+       (er hard 'top-level ``Badly formed expression: ~~x0~~%''
            (cons 'list args))
      (let
          ;; list-of-nths produces a list of calls to nth, from (nth 0 term) up
@@ -677,7 +677,7 @@ lhses.
    ;; If this is counterintuitive, consider that this would suggest syntax such
    ;; as (list* a b . c).
    (if (not (true-listp args))
-       (er hard 'top-level ``Badly formed expression: ~x0~%''
+       (er hard 'top-level ``Badly formed expression: ~~x0~~%''
            (cons 'list* args))
      (let
          ;; Just push term onto rhses
@@ -707,7 +707,7 @@ ours or we would need to do more processing of them.
    ;; Args should be a list of length 1 - just a pattern.
    (if (or (atom args)
            (cdr args))
-       (er hard 'top-level ``Badly formed expression: ~x0~%''
+       (er hard 'top-level ``Badly formed expression: ~~x0~~%''
            (cons 'raw args))
      ;; match-tests-and-bindings takes a term, a case-match pattern, and a list
      ;; of tests and bindings; it returns a new version of tests and bindings
