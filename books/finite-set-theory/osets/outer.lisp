@@ -224,9 +224,14 @@
            (and (in a Y) (in a X))))
 )
 
-(verify-guards intersect
+(defthm fast-intersect-correct
+  (implies (and (setp X) 
+                (setp Y))
+           (equal (fast-intersect X Y nil)
+                  (intersect X Y)))
   :hints(("Goal" :in-theory (enable fast-intersect-theory))))
-			
+
+(verify-guards intersect)
 
 (defthm intersect-symmetric
   (equal (intersect X Y) (intersect Y X))
@@ -279,6 +284,17 @@
 (defthm intersect-outer-cancel
   (equal (intersect X (intersect X Z))
          (intersect X Z)))
+
+
+; -------------------------------------------------------------------
+; Intersectp - check if intersection is nonempty without constructing 
+; the intersect.
+
+(defun intersectp (X Y)
+  (declare (xargs :guard (and (setp X) (setp Y))))
+  (mbe :logic (not (empty (intersect X Y)))
+       :exec (fast-intersectp X Y)))
+
 
 
 ; -------------------------------------------------------------------

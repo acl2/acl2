@@ -179,6 +179,19 @@
          (fast-intersect (tail X) Y acc))
         (t (fast-intersect X (tail Y) acc))))
 
+(defun fast-intersectp (X Y)
+  (declare (xargs :guard (and (setp X)
+                              (setp Y))
+                  :measure (fast-measure X Y)))
+  (cond ((empty X) nil)
+        ((empty Y) nil)
+        ((equal (head X) (head Y))
+         t)
+        ((<< (head X) (head Y))
+         (fast-intersectp (tail X) Y))
+        (t
+         (fast-intersectp X (tail Y)))))
+
 (defun fast-difference (X Y acc)
   (declare (xargs :measure (fast-measure X Y)
                   :guard (and (setp X) (setp Y) (true-listp acc))))
@@ -214,6 +227,11 @@
                      (insert (head X) (intersect (tail X) Y)))
                     (t (intersect (tail X) Y)))
        :exec (fast-intersect X Y nil)))
+
+(defun intersectp (X Y)
+  (declare (xargs :guard (and (setp X) (setp Y))))
+  (mbe :logic (not (empty (intersect X Y)))
+       :exec (fast-intersectp X Y)))
 
 (defun difference (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))

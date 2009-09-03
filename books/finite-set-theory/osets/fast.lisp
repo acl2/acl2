@@ -248,6 +248,20 @@
 ;;; creates sets and has the expected membership property.  And again,
 ;;; the proofs are quite ugly.
 
+
+(defun fast-intersectp (X Y)
+  (declare (xargs :guard (and (setp X)
+                              (setp Y))
+                  :measure (fast-measure X Y)))
+  (cond ((empty X) nil)
+        ((empty Y) nil)
+        ((equal (head X) (head Y))
+         t)
+        ((<< (head X) (head Y))
+         (fast-intersectp (tail X) Y))
+        (t
+         (fast-intersectp X (tail Y)))))
+
 ;; PATCH (0.91): David Rager noticed that as of v0.9, fast-intersect was not
 ;; tail recursive, and submitted an updated version.  The original
 ;; fast-intersect has been renamed to fast-intersect-old, and the new
@@ -264,6 +278,7 @@
                ((<< (head X) (head Y))
                 (fast-intersect-old (tail X) Y))
                (t (fast-intersect-old X (tail Y))))))
+
 
 (local
  (encapsulate 
@@ -354,6 +369,29 @@
                                            (a (head X))
                                            (X (tail X))
                                            (Y (tail Y))))))
+
+
+  (local (defthm lemma-4
+           (implies (setp X)
+                    (equal (empty (cons a x))
+                           (and (not (empty X))
+                                (not (<< a (head X))))))
+           :hints(("Goal" :in-theory (enable empty head setp)))))
+
+  (defthm fast-intersectp-correct-lemma
+    (implies (and (setp X) 
+                  (setp Y))
+             (equal (fast-intersectp X Y)
+                    (not (empty (fast-intersect-old X Y)))))
+    :hints(("Goal" 
+            :induct (fast-intersect-old X Y)
+            :in-theory (enable primitive-order-theory))
+           ("Subgoal *1/3" 
+            :use ((:instance fast-intersect-old-order-weak
+                             (a (head x))
+                             (x (tail x))
+                             (y (tail y)))))))
+                                    
   ))
 
 
@@ -381,7 +419,6 @@
                           (revappend acc (fast-intersect-old x y))))
           :hints (("Goal" :in-theory (enable sfix empty)))))
 
-
  (local (defthm lemma2
           (equal (fast-intersect x y nil)
                  (fast-intersect-old x y))))
@@ -399,9 +436,16 @@
    (implies (and (setp X) (setp Y))
             (equal (in a (fast-intersect X Y nil))
                    (and (in a X) (in a Y)))))
+
+ (defthm fast-intersectp-correct
+   (implies (and (setp X) (setp Y))
+            (equal (fast-intersectp X Y)
+                   (not (empty (fast-intersect X Y nil))))))
  )
 
 
+
+  
 
 ;;; Fast Difference
 ;;;
