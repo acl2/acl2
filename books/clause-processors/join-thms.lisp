@@ -11,7 +11,7 @@
 
 
 (in-package "ACL2")
-  
+
 (defthm conjoin-clauses-of-one
   (equal (conjoin-clauses (list x))
          (disjoin x)))
@@ -38,73 +38,132 @@
            (pseudo-termp (conjoin-clauses clauses)))
   :hints(("Goal" :in-theory (e/d (conjoin-clauses) (disjoin-lst)))))
 
+
+
 (defmacro def-join-thms (ev)
   `(encapsulate
-    nil
-    (local (in-theory (enable conjoin disjoin)))
+     nil
+     (local (in-theory (e/d (conjoin disjoin)
+                            (default-car default-cdr))))
 
-    (defthm ,(intern-in-package-of-symbol
-              (concatenate 'string
-                           (symbol-name ev)
-                           "-CONJOIN-CLAUSES-OF-TWO-OR-MORE")
-              ev)
-      (iff (,ev (conjoin-clauses (cons x (cons y z))) a)
-           (and (,ev (disjoin x) a)
-                (,ev (conjoin-clauses (cons y z)) a)))
-      :hints (("goal" :in-theory (enable conjoin-clauses conjoin disjoin))))
+     (defthm ,(intern-in-package-of-symbol
+               (concatenate 'string
+                            (symbol-name ev)
+                            "-DISJOIN-CONS")
+               ev)
+       (iff (,ev (disjoin (cons x y)) a)
+            (or (,ev x a)
+                (,ev (disjoin y) a))))
 
-    (defthm ,(intern-in-package-of-symbol
-              (concatenate 'string
-                           (symbol-name ev)
-                           "-OF-DISJOIN-1")
-              ev)
-      (iff (,ev (disjoin (cons x y)) a)
-           (or (,ev x a)
-               (,ev (disjoin y) a))))
+     (defthmd ,(intern-in-package-of-symbol
+                (concatenate 'string
+                             (symbol-name ev)
+                             "-DISJOIN-WHEN-CONSP")
+                ev)
+       (implies (consp x)
+                (iff (,ev (disjoin x) a)
+                     (or (,ev (car x) a)
+                         (,ev (disjoin (cdr x)) a)))))
 
-    (defthm ,(intern-in-package-of-symbol
-              (concatenate 'string
-                           (symbol-name ev)
-                           "-OF-CONJOIN-1")
-              ev)
-      (iff (,ev (conjoin (cons x y)) a)
-           (and (,ev x a)
-                (,ev (conjoin y) a))))
+     (defthm ,(intern-in-package-of-symbol
+               (concatenate 'string
+                            (symbol-name ev)
+                            "-DISJOIN-ATOM")
+               ev)
+       (implies (not (consp x))
+                (equal (,ev (disjoin x) a)
+                       nil))
+       :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-    (defthm ,(intern-in-package-of-symbol
-              (concatenate 'string
-                           (symbol-name ev)
-                           "-OF-DISJOIN-2")
-              ev)
-      (implies (not (consp x))
-               (equal (,ev (disjoin x) a) nil)))
+     (defthm ,(intern-in-package-of-symbol
+               (concatenate 'string
+                            (symbol-name ev)
+                            "-DISJOIN-APPEND")
+               ev)
+       (iff (,ev (disjoin (append x y)) a)
+            (or (,ev (disjoin x) a)
+                (,ev (disjoin y) a)))
+       :hints (("goal" :induct (append x y)
+                :in-theory (disable disjoin))))
 
-    (defthm ,(intern-in-package-of-symbol
-              (concatenate 'string
-                           (symbol-name ev)
-                           "-OF-CONJOIN-2")
-              ev)
-      (implies (not (consp x))
-               (equal (,ev (conjoin x) a) t)))
+     (defthm ,(intern-in-package-of-symbol
+               (concatenate 'string
+                            (symbol-name ev)
+                            "-CONJOIN-CONS")
+               ev)
+       (iff (,ev (conjoin (cons x y)) a)
+            (and (,ev x a)
+                 (,ev (conjoin y) a))))
 
-    (defthm ,(intern-in-package-of-symbol
-              (concatenate 'string
-                           (symbol-name ev)
-                           "-OF-DISJOIN-3")
-              ev)
-      (implies (consp x)
-               (iff (,ev (disjoin x) a)
-                    (or (,ev (car x) a)
-                        (,ev (disjoin (cdr x)) a))))
-      :rule-classes ((:rewrite :backchain-limit-lst 0)))
+     (defthmd ,(intern-in-package-of-symbol
+                (concatenate 'string
+                             (symbol-name ev)
+                             "-CONJOIN-WHEN-CONSP")
+                ev)
+       (implies (consp x)
+                (iff (,ev (conjoin x) a)
+                     (and (,ev (car x) a)
+                          (,ev (conjoin (cdr x)) a)))))
 
-    (defthm ,(intern-in-package-of-symbol
-              (concatenate 'string
-                           (symbol-name ev)
-                           "-OF-CONJOIN-3")
-              ev)
-      (implies (consp x)
-               (iff (,ev (conjoin x) a)
-                    (and (,ev (car x) a)
-                         (,ev (conjoin (cdr x)) a))))
-      :rule-classes ((:rewrite :backchain-limit-lst 0)))))
+     (defthm ,(intern-in-package-of-symbol
+               (concatenate 'string
+                            (symbol-name ev)
+                            "-CONJOIN-ATOM")
+               ev)
+       (implies (not (consp x))
+                (equal (,ev (conjoin x) a)
+                       t))
+       :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+     (defthm ,(intern-in-package-of-symbol
+               (concatenate 'string
+                            (symbol-name ev)
+                            "-CONJOIN-APPEND")
+               ev)
+       (iff (,ev (conjoin (append x y)) a)
+            (and (,ev (conjoin x) a)
+                 (,ev (conjoin y) a)))
+       :hints (("goal" :induct (append x y)
+                :in-theory (disable conjoin))))
+
+     (defthm ,(intern-in-package-of-symbol
+               (concatenate 'string
+                            (symbol-name ev)
+                            "-CONJOIN-CLAUSES-CONS")
+               ev)
+       (iff (,ev (conjoin-clauses (cons x y)) a)
+            (and (,ev (disjoin x) a)
+                 (,ev (conjoin-clauses y) a)))
+       :hints(("Goal" :in-theory (enable conjoin-clauses disjoin-lst))))
+
+
+     (defthmd ,(intern-in-package-of-symbol
+                (concatenate 'string
+                             (symbol-name ev)
+                             "-CONJOIN-CLAUSES-WHEN-CONSP")
+                ev)
+       (implies (consp x)
+                (iff (,ev (conjoin-clauses x) a)
+                     (and (,ev (disjoin (car x)) a)
+                          (,ev (conjoin-clauses (cdr x)) a)))))
+
+     (defthm ,(intern-in-package-of-symbol
+               (concatenate 'string
+                            (symbol-name ev)
+                            "-CONJOIN-CLAUSES-ATOM")
+               ev)
+       (implies (not (consp x))
+                (equal (,ev (conjoin-clauses x) a)
+                       t))
+       :hints(("Goal" :in-theory (enable conjoin-clauses disjoin-lst)))
+       :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+     (defthm ,(intern-in-package-of-symbol
+               (concatenate 'string
+                            (symbol-name ev)
+                            "-CONJOIN-CLAUSES-APPEND")
+               ev)
+       (iff (,ev (conjoin-clauses (append x y)) a)
+            (and (,ev (conjoin-clauses x) a)
+                 (,ev (conjoin-clauses y) a)))
+       :hints (("goal" :induct (append x y))))))

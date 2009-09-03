@@ -243,8 +243,10 @@
                                   env))
                 (gen-eval (disjoin x) env)))
   :hints (("goal" :induct (len x))
-          ("Subgoal *1/1" :in-theory (enable replace-subterms-list
-                                             term-vars-list))))
+          ("Subgoal *1/1" :in-theory
+           (enable replace-subterms-list
+                   term-vars-list
+                   gen-eval-disjoin-when-consp))))
 
 
 
