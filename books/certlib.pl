@@ -222,7 +222,8 @@ sub make_costs_table_aux {
 
     my %entry = ( "shortcert" => short_cert_name($certfile),
 		  "selftime" => $certtime, 
-		  "totaltime" => $most_expensive_dep_total + $certtime, 
+		  "totaltime" => $most_expensive_dep_total +
+		                 ($certtime ? $certtime : 0.000001), 
 		  "maxpath" => $most_expensive_dep );
 
     $costs->{$certfile} = \%entry;
@@ -345,6 +346,18 @@ sub critical_path_report {
     return $ret;
 }
 	
+sub classify_book_time {
+    
+# classify_book_time(secs) returns "low", "med", or "high".
+
+    my $time = shift;
+
+    return "err" if !$time;
+    return "low" if ($time < 30);
+    return "med" if ($time < 120);
+    return "high";
+}
+
 
 sub individual_files_report {
 
@@ -354,41 +367,59 @@ sub individual_files_report {
 
     my $costs = shift;
     my $htmlp = shift;
-    my %lines = ();
-    my $name;
+#    my %lines = ();
+#    my $name;
 
-    foreach $name ( keys %$costs) {
-	my $entry = $costs->{$name};
-	my $shortcert = $entry->{"shortcert"};
-	my $selftime = $entry->{"selftime"};
-	$lines{$shortcert} = $selftime;
-    }
+#     foreach $name ( keys %$costs) {
+#  	my $entry = $costs->{$name};
+#  	my $shortcert = $entry->{"shortcert"};
+# # 	my $selftime = $entry->{"selftime"};
+# # 	my $totaltime = $entry->{"totaltime"};
+# # 	my $maxpath = $entry->{"maxpath"};
+# #	$lines{$shortcert} = $entry;
+#     }
 
-    my @sorted = reverse sort { ($lines{$a} + 0.0) <=> ($lines{$b} + 0.0) } keys(%lines);
+    my @sorted = reverse sort { ($costs->{$a}->{"totaltime"} + 0.0) <=> ($costs->{$b}->{"totaltime"} + 0.0) } keys(%{$costs});
     my $ret;
     if ($htmlp) 
     {
 	$ret = "<table class=\"indiv_table\">\n"
-	     . "<tr class=\"indiv_head\"><th>All Files</th> <th>Time</th></tr>\n";
-	
-	foreach $name (@sorted)
-	{
-	    my $time = $lines{$name} ? human_time($lines{$name}, 1) : "[Error]";
+	     . "<tr class=\"indiv_head\"><th>All Files</th> <th>Cumulative</th> <th>Self</th></tr>\n";
+    } else {
+	$ret = "Individual File Times\n\n";
 
-	    $ret .= "<tr class=\"indiv_row\">";
-	    $ret .= "<td class=\"indiv_file\">$name</td>";
-	    $ret .= "<td class=\"indiv_time\">$time</td>";
-	    $ret .= "</tr>\n";
-	}
-	$ret .= "</table>\n\n";
     }
 
-    else
+
+    foreach my $name (@sorted)
     {
-	$ret = "Individual File Times\n\n";
-	foreach $name (@sorted) {
-	    $ret .= sprintf("%-50s %10s\n", $name, $lines{$name});
+	my $entry = $costs->{$name};
+	my $short = $entry->{"shortcert"};
+	my $cumul = $entry->{"totaltime"} ? human_time($entry->{"totaltime"}, 1) : "[Error]";
+	my $time = $entry->{"selftime"} ? human_time($entry->{"selftime"}, 1) : "[Error]";
+	my $depname = $entry->{"maxpath"} ? $costs->{$entry->{"maxpath"}}->{"shortcert"} : "[None]";
+	my $timeclass = classify_book_time($entry->{"selftime"});
+
+	if ($htmlp)
+	{
+	    $ret .= "<tr class=\"indiv_row\">";
+	    $ret .= "<td class=\"indiv_file\">";
+	    $ret .= "  <span class=\"indiv_file_name\">$short</span><br/>";
+	    $ret .= "  <span class=\"indiv_crit_dep\">--> $depname</span>";
+	    $ret .= "</td>";
+	    $ret .= "<td class=\"indiv_cumul\">$cumul</td>";
+	    $ret .= "<td class=\"indiv_time_$timeclass\">$time</td>";
+	    $ret .= "</tr>\n";
+	} else {
+	    $ret .= sprintf("%-50s %10s %10s  --->  %-50s\n",
+			    $short, $cumul, $time, $depname);
 	}
+    }
+    
+    if ($htmlp)
+    {
+	$ret .= "</table>\n\n";
+    } else {
 	$ret .= "\n\n";
     }
 

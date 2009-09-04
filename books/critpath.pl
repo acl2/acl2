@@ -27,23 +27,28 @@ use warnings;
 use strict;
 use Getopt::Long qw(:config bundling); 
 use File::Spec;
+use FindBin qw($RealBin);
+
+# Note: Trying out FindBin::$RealBin.  If breaks, we can go back to
+# the system below.
 
 # Perl's include mechanism seems horribly broken.  FindBin doesn't understand
 # what to do if the script is invoked through a symlink.  The following is
 # ugly, but seems to work through symlinks, or through "perl filename", or
 # through ./filename, without requiring extra modules from CPAN.
 
-sub fully_resolve_symlink {
-    my $path = shift;
-    while (-l $path) {
-	$path = readlink $path;
-    }
-    return $path;
-}
+# sub fully_resolve_symlink {
+#     my $path = shift;
+#     while (-l $path) {
+# 	$path = readlink $path;
+#     }
+#     return $path;
+# }
 	
-my $script_file = fully_resolve_symlink($0);
-my $script_dir = File::Spec->catpath( (File::Spec->splitpath($script_file))[0,1] );
-(do "$script_dir/certlib.pl") or die("Error loading $script_dir/certlib.pl:\n $!");
+# my $script_file = fully_resolve_symlink($0);
+# my $script_dir = File::Spec->catpath( (File::Spec->splitpath($script_file))[0,1] );
+
+(do "$RealBin/certlib.pl") or die("Error loading $RealBin/certlib.pl:\n $!");
 
 
 my $HELP_MESSAGE = "

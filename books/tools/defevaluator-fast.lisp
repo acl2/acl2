@@ -66,7 +66,10 @@
                        (,evfn x a)
                        (:free (args)
                               (,evfn (cons (car x)
-                                           args) nil)))))))
+                                           args) nil)))
+                      :in-theory '(eval-list-kwote-lst
+                                   fix-true-list-ev-lst
+                                   car-cons cdr-cons)))))
                  (1
 ;                   (implies (symbolp x)
 ;                            (equal (evfn x a)
@@ -99,8 +102,11 @@
 ;                            (equal (evfn x a)
 ;                                   (foo (evfn (cadr x) a)
 ;                                        ...)))
-                  `(:hints (("goal" :expand ((,evfn x a)
-                                             (:free (x) (hide x)))))))))
+                  `(:hints (("goal" :expand
+                             ((,evfn x a)
+                              (:free (x) (hide x))
+                              (:free (fn args)
+                                     (apply-for-defevaluator fn args)))))))))
               `(local (in-theory (disable ,thmname)))
               (defevaluator-fast-form/defthms evfn evfn-lst prefix (1+ i)
                 (cdr clauses)))))))
@@ -112,7 +118,7 @@
           (evaluator-fast-clause/arglist (cdr formals) `(cdr ,x)))))
 
 (defun defevaluator-fast-form/fns-clauses (fn-args-lst)
-
+  (declare (xargs :mode :program))
 ; We return a list of cond clauses,
 ; (
 ;  ((equal (car x) 'fn1)
@@ -126,7 +132,7 @@
 
   (cond ((null fn-args-lst) '((t nil)))
         (t (cons
-            (list (list 'equal '(car x) (kwote (caar fn-args-lst)))
+            (list (list 'equal 'fn (kwote (caar fn-args-lst)))
                   (cons (caar fn-args-lst)
                         (evaluator-fast-clause/arglist (cdar fn-args-lst)
                                                        'args)))
@@ -140,7 +146,8 @@
             acl2-count
             alistp
             fix-true-list kwote kwote-lst pairlis$-fix-true-list
-            (:type-prescription acl2-count))))
+;;             (:type-prescription acl2-count)
+            )))
 
 (defun defevaluator-fast-form (evfn evfn-lst fn-args-lst)
   (declare (xargs :mode :program))
@@ -156,72 +163,80 @@
        ((,evfn-lst * *) => *))
       (set-inhibit-warnings "theory")
       (local (in-theory *defevaluator-fast-form-base-theory*))
-      ,@(sublis
-         (list (cons 'evfn evfn)
-               (cons 'evfn-lst evfn-lst)
-               (cons 'fns-clauses fns-clauses)
-               (cons 'defthms defthms))
-         '((local
-            (mutual-recursion
-             (defun evfn (x a)
-               (declare (xargs :verify-guards nil
-                               :measure (acl2-count x)
-                               :well-founded-relation o<
-                               :non-executable t
-                               :normalize nil
-                               :mode :logic))
-               (cond
-                ((symbolp x) (and x (cdr (assoc-eq x a))))
-                ((atom x) nil)
-                ((eq (car x) 'quote) (car (cdr x)))
-                (t (let ((args (evfn-lst (cdr x) a)))
-                     (cond
-                      ((consp (car x))
-                       (evfn (car (cdr (cdr (car x))))
-                             (pairlis$ (car (cdr (car x)))
-                                       args)))
-                      .
-                      fns-clauses)))))
-             (defun evfn-lst (x-lst a)
-               (declare (xargs :measure (acl2-count x-lst)
-                               :well-founded-relation o<))
-               (cond ((endp x-lst) nil)
-                     (t (cons (evfn (car x-lst) a)
-                              (evfn-lst (cdr x-lst) a)))))))
-           (local (in-theory (disable evfn evfn-lst)))
-           (local
-            (defthm eval-list-kwote-lst
-              (equal (evfn-lst (kwote-lst args) a)
-                     (fix-true-list args))
-              :hints (("goal"
-                       :expand ((:free (x y) (evfn-lst (cons x y) a))
-                                (evfn-lst nil a)
-                                (:free (x)
-                                       (evfn (list 'quote x) a)))
-                       :induct (fix-true-list args)))))
-           (local
-            (defthm fix-true-list-ev-lst
-              (equal (fix-true-list (evfn-lst x a))
-                     (evfn-lst x a))
-              :hints (("goal" :induct (len x)
-                       :in-theory (e/d ((:induction len)))
-                       :expand ((evfn-lst x a)
-                                (evfn-lst nil a))))))
-           (local
-            (defthm ev-commutes-car
-              (equal (car (evfn-lst x a))
-                     (evfn (car x) a))
-              :hints (("goal" :expand ((evfn-lst x a)
-                                       (evfn nil a))
-                       :in-theory (enable default-car)))))
-           (local
-            (defthm ev-lst-commutes-cdr
-              (equal (cdr (evfn-lst x a))
-                     (evfn-lst (cdr x) a))
-              :hints (("Goal" :expand ((evfn-lst x a)
-                                       (evfn-lst nil a))
-                       :in-theory (enable default-cdr)))))
-           . defthms)))))
+      . ,(sublis
+          (list (cons 'evfn evfn)
+                (cons 'evfn-lst evfn-lst)
+                (cons 'fns-clauses fns-clauses)
+                (cons 'defthms defthms))
+          '((local (defun apply-for-defevaluator (fn args)
+                     (declare (xargs :verify-guards nil
+                                     :normalize nil
+                                     :non-executable t))
+                     (cond . fns-clauses)))
+            (local
+             (mutual-recursion
+              (defun evfn (x a)
+                (declare
+                 (xargs :verify-guards nil
+                        :measure (acl2-count x)
+                        :well-founded-relation o<
+                        :non-executable t
+                        :normalize nil
+                        :hints (("goal" :in-theory
+                                 (enable (:type-prescription
+                                          acl2-count))))
+                        :mode :logic))
+                (cond
+                 ((symbolp x) (and x (cdr (assoc-eq x a))))
+                 ((atom x) nil)
+                 ((eq (car x) 'quote) (car (cdr x)))
+                 (t (let ((args (evfn-lst (cdr x) a)))
+                      (cond
+                       ((consp (car x))
+                        (evfn (car (cdr (cdr (car x))))
+                              (pairlis$ (car (cdr (car x)))
+                                        args)))
+                       (t (apply-for-defevaluator (car x) args)))))))
+                (defun evfn-lst (x-lst a)
+                  (declare (xargs :measure (acl2-count x-lst)
+                                  :well-founded-relation o<))
+                  (cond ((endp x-lst) nil)
+                        (t (cons (evfn (car x-lst) a)
+                                 (evfn-lst (cdr x-lst) a)))))))
+            (local (in-theory (disable evfn evfn-lst apply-for-defevaluator)))
+            (local
+             (defthm eval-list-kwote-lst
+               (equal (evfn-lst (kwote-lst args) a)
+                      (fix-true-list args))
+               :hints (("goal"
+                        :expand ((:free (x y) (evfn-lst (cons x y) a))
+                                 (evfn-lst nil a)
+                                 (:free (x)
+                                        (evfn (list 'quote x) a)))
+                        :induct (fix-true-list args)))))
+            (local
+             (defthm fix-true-list-ev-lst
+               (equal (fix-true-list (evfn-lst x a))
+                      (evfn-lst x a))
+               :hints (("goal" :induct (len x)
+                        :in-theory (e/d ((:induction len)))
+                        :expand ((evfn-lst x a)
+                                 (evfn-lst nil a))))))
+            (local
+             (defthm ev-commutes-car
+               (equal (car (evfn-lst x a))
+                      (evfn (car x) a))
+               :hints (("goal" :expand ((evfn-lst x a)
+                                        (evfn nil a))
+                        :in-theory (enable default-car)))))
+            (local
+             (defthm ev-lst-commutes-cdr
+               (equal (cdr (evfn-lst x a))
+                      (evfn-lst (cdr x) a))
+               :hints (("Goal" :expand ((evfn-lst x a)
+                                        (evfn-lst nil a))
+                        :in-theory (enable default-cdr)))))
+            . defthms)))))
 
 (defmacro defevaluator-fast (&whole x evfn evfn-lst fn-args-lst)
 
@@ -272,56 +287,54 @@
  ;; A test to show that ACL2 recognizes evaluators defined with
  ;; DEFEVALUATOR-FAST as valid evaluators for meta-reasoning:
  (progn
-   (with-output
-    :off :all
-    (defevaluator-fast foo-ev foo-ev-lst
-      ((XXXJOIN FN ARGS)
-       (INTEGER-ABS X)
-       (OR-MACRO LST)
-       (AND-MACRO LST)
-       (LIST-MACRO LST)
-       (TRUE-LISTP X)
-       (EQ X Y)
-       (REWRITE-EQUIV X)
-       (HIDE X)
-       (NOT P)
-       (IMPLIES P Q)
-       (BOOLEANP X)
-       (XOR P Q)
-       (IFF P Q)
-       (O< X Y)
-       (O-P X)
-       (SYMBOLP X)
-       (SYMBOL-PACKAGE-NAME X)
-       (SYMBOL-NAME X)
-       (STRINGP X)
-       (REALPART X)
-       (RATIONALP X)
-       (PKG-WITNESS PKG)
-       (NUMERATOR X)
-       (INTERN-IN-PACKAGE-OF-SYMBOL STR SYM)
-       (INTEGERP X)
-       (IMAGPART X)
-       (IF X Y Z)
-       (EQUAL X Y)
-       (DENOMINATOR X)
-       (CONSP X)
-       (CONS X Y)
-       (COERCE X Y)
-       (COMPLEX-RATIONALP X)
-       (COMPLEX X Y)
-       (CODE-CHAR X)
-       (CHARACTERP X)
-       (CHAR-CODE X)
-       (CDR X)
-       (CAR X)
-       (< X Y)
-       (UNARY-/ X)
-       (UNARY-- X)
-       (BINARY-+ X Y)
-       (BINARY-* X Y)
-       (BAD-ATOM<= X Y)
-       (ACL2-NUMBERP X))))
+   (defevaluator-fast foo-ev foo-ev-lst
+     ((XXXJOIN FN ARGS)
+      (INTEGER-ABS X)
+      (OR-MACRO LST)
+      (AND-MACRO LST)
+      (LIST-MACRO LST)
+      (TRUE-LISTP X)
+      (EQ X Y)
+      (REWRITE-EQUIV X)
+      (HIDE X)
+      (NOT P)
+      (IMPLIES P Q)
+      (BOOLEANP X)
+      (XOR P Q)
+      (IFF P Q)
+      (O< X Y)
+      (O-P X)
+      (SYMBOLP X)
+      (SYMBOL-PACKAGE-NAME X)
+      (SYMBOL-NAME X)
+      (STRINGP X)
+      (REALPART X)
+      (RATIONALP X)
+      (PKG-WITNESS PKG)
+      (NUMERATOR X)
+      (INTERN-IN-PACKAGE-OF-SYMBOL STR SYM)
+      (INTEGERP X)
+      (IMAGPART X)
+      (IF X Y Z)
+      (EQUAL X Y)
+      (DENOMINATOR X)
+      (CONSP X)
+      (CONS X Y)
+      (COERCE X Y)
+      (COMPLEX-RATIONALP X)
+      (COMPLEX X Y)
+      (CODE-CHAR X)
+      (CHARACTERP X)
+      (CHAR-CODE X)
+      (CDR X)
+      (CAR X)
+      (< X Y)
+      (UNARY-/ X)
+      (UNARY-- X)
+      (BINARY-+ X Y)
+      (BINARY-* X Y)
+      (BAD-ATOM<= X Y)
+      (ACL2-NUMBERP X)))
 
    (defun stupid-cp (x)
      (list x))
@@ -341,7 +354,12 @@
 
 
 
-
+(defun mk-defeval-entries (fns world)
+  (if (atom fns)
+      nil
+    (let ((formals (getprop (car fns) 'formals nil 'current-acl2-world world)))
+      (cons (cons (car fns) formals)
+            (mk-defeval-entries (cdr fns) world)))))
 
 
 
@@ -350,6 +368,12 @@
 ;; Infrastructure for testing this
 (defun all-syms-in-world (w)
   (remove-duplicates (strip-cars w)))
+
+(defun list-of-nilsp (x)
+  (if (atom x)
+      (eq x nil)
+    (and (eq (car x) nil)
+         (list-of-nilsp (cdr x)))))
 
 (defun logic-function-syms (syms world)
   (if (atom syms)
@@ -361,7 +385,16 @@
                      '(:ideal :common-lisp-compliant))
              (not (member (car syms)
                           (global-val 'untouchable-fns world)))
-             (not (member (car syms) '(synp must-be-equal open-output-channel!))))
+             (not (member (car syms) '(synp must-be-equal
+                                            open-output-channel!)))
+             (list-of-nilsp (fgetprop (car syms) 'stobjs-out nil
+                                      world))
+             (list-of-nilsp (fgetprop (car syms) 'stobjs-in nil
+                                      world))
+             (not (and (member (car syms) *ec-call-bad-ops*)
+                       (not (equal (fgetprop (car syms) 'guard ''t
+                                             world)
+                                   ''t)))))
         (cons (car syms) (logic-function-syms (cdr syms) world))
       (logic-function-syms (cdr syms) world))))
 
@@ -481,5 +514,113 @@
   (equal (cdr (test-defevaluator-fast-ev-lst x a))
          (test-defevaluator-fast-ev-lst (cdr x) a))
   :hints(("Goal" :in-theory (disable test-defevaluator-fast-ev-commutes-car))))
+
+
+:trans1 (defevaluator-fast fooev fooevl
+  ((if a b c)
+   (cons a b)
+   (consp a)
+   (car a)
+   (car b)
+   (binary-append c d)
+   (nth n x)
+   (mv-nth n x)))
+
+
+(SET-INHIBIT-WARNINGS "theory")
+(LOCAL (IN-THEORY *DEFEVALUATOR-FAST-FORM-BASE-THEORY*))
+(LOCAL
+ (MUTUAL-RECURSION
+  (DEFUN FOOEV (X A)
+    (DECLARE (XARGS :VERIFY-GUARDS NIL
+                    :MEASURE (ACL2-COUNT X)
+                    :WELL-FOUNDED-RELATION O<
+                    :NON-EXECUTABLE T
+                    :NORMALIZE NIL
+                    :MODE :LOGIC))
+    (COND ((SYMBOLP X)
+           (AND X (CDR (ASSOC-EQ X A))))
+          ((ATOM X) NIL)
+          ((EQ (CAR X) 'QUOTE) (CAR (CDR X)))
+          (T (LET ((ARGS (FOOEVL (CDR X) A)))
+                  (COND ((CONSP (CAR X))
+                         (FOOEV (CAR (CDR (CDR (CAR X))))
+                                (PAIRLIS$ (CAR (CDR (CAR X))) ARGS)))
+                        ((EQUAL (CAR X) 'IF)
+                         (IF (CAR ARGS)
+                             (CAR (CDR ARGS))
+                             (CAR (CDR (CDR ARGS)))))
+                        ((EQUAL (CAR X) 'CONS)
+                         (CONS (CAR ARGS) (CAR (CDR ARGS))))
+                        ((EQUAL (CAR X) 'CONSP)
+                         (CONSP (CAR ARGS)))
+                        ((EQUAL (CAR X) 'CAR) (CAR (CAR ARGS)))
+                        ((EQUAL (CAR X) 'CAR) (CAR (CAR ARGS)))
+                        ((EQUAL (CAR X) 'BINARY-APPEND)
+                         (BINARY-APPEND (CAR ARGS)
+                                        (CAR (CDR ARGS))))
+                        ((EQUAL (CAR X) 'NTH)
+                         (NTH (CAR ARGS) (CAR (CDR ARGS))))
+                        ((EQUAL (CAR X) 'MV-NTH)
+                         (MV-NTH (CAR ARGS) (CAR (CDR ARGS))))
+                        (T NIL))))))
+  (DEFUN FOOEVL (X-LST A)
+    (DECLARE (XARGS :MEASURE (ACL2-COUNT X-LST)
+                    :WELL-FOUNDED-RELATION O<))
+    (COND ((ENDP X-LST) NIL)
+          (T (CONS (FOOEV (CAR X-LST) A)
+                   (FOOEVL (CDR X-LST) A)))))))
+(LOCAL (IN-THEORY (DISABLE FOOEV FOOEVL)))
+(LOCAL
+ (DEFTHM EVAL-LIST-KWOTE-LST
+   (EQUAL (FOOEVL (KWOTE-LST ARGS) A)
+          (FIX-TRUE-LIST ARGS))
+   :HINTS (("goal" :EXPAND ((:FREE (X Y) (FOOEVL (CONS X Y) A))
+                            (FOOEVL NIL A)
+                            (:FREE (X) (FOOEV (LIST 'QUOTE X) A)))
+            :INDUCT (FIX-TRUE-LIST ARGS)))))
+(LOCAL (DEFTHM FIX-TRUE-LIST-EV-LST
+         (EQUAL (FIX-TRUE-LIST (FOOEVL X A))
+                (FOOEVL X A))
+         :HINTS (("goal" :INDUCT (LEN X)
+                  :IN-THEORY (E/D ((:INDUCTION LEN)))
+                  :EXPAND ((FOOEVL X A) (FOOEVL NIL A))))))
+(LOCAL (DEFTHM EV-COMMUTES-CAR
+         (EQUAL (CAR (FOOEVL X A))
+                (FOOEV (CAR X) A))
+         :HINTS (("goal" :EXPAND ((FOOEVL X A) (FOOEV NIL A))
+                  :IN-THEORY (ENABLE DEFAULT-CAR)))))
+(LOCAL (DEFTHM EV-LST-COMMUTES-CDR
+         (EQUAL (CDR (FOOEVL X A))
+                (FOOEVL (CDR X) A))
+         :HINTS (("Goal" :EXPAND ((FOOEVL X A) (FOOEVL NIL A))
+                  :IN-THEORY (ENABLE DEFAULT-CDR)))))
+
+
+
+(DEFTHM FOOEV-CONSTRAINT-2
+          (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'QUOTE))
+                   (EQUAL (FOOEV X A) (CADR X)))
+          :HINTS (("goal" :EXPAND ((FOOEV X A)))))
+
+(local (defthm fooev-lst-kwote-lst
+         (equal (fooev-lst (kwote-lst x)
+
+(DEFTHMD FOOEV-CONSTRAINT-0
+  (IMPLIES (AND (CONSP X)
+                (SYNTAXP (NOT (EQUAL A ''NIL)))
+                (NOT (EQUAL (CAR X) 'QUOTE)))
+           (EQUAL (FOOEV X A)
+                  (FOOEV (CONS (CAR X)
+                               (KWOTE-LST (FOOEVL (CDR X) A)))
+                         NIL)))
+  :HINTS (("Goal" :EXPAND ((:FREE (X) (HIDE X))
+                           (FOOEV X A)
+                           (:FREE (ARGS)
+                                  (FOOEV (CONS (CAR X) ARGS) NIL)))
+           :in-theory (e/d** (eval-list-kwote-lst
+                              fix-true-list-ev-lst
+                              car-cons cdr-cons)))))
+
 
 ||#

@@ -69,5 +69,18 @@
     (& nil)))
 
 
+(defun use-these-hints (x)
+  (declare (ignore x))
+  t)
+
+(in-theory (disable use-these-hints (use-these-hints)
+                    (:type-prescription use-these-hints)))
 
 
+(defun use-these-hints-hint (clause)
+  (case-match clause
+    ((('not ('use-these-hints ('quote the-hints . &) . &) . &) . &)
+     `(:computed-hint-replacement
+       ,the-hints
+       :clause-processor remove-first-hyp-cp))
+    (& nil)))
