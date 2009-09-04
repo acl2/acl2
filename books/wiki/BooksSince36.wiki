@@ -1,0 +1,19 @@
+#summary Books added after ACL2 Version 3.6, before the release of ACL2 Version 3.6.1.
+
+= Introduction =
+
+The following alphabetical list of books and directories describes
+additions to ACL2 Version 3.6.1 (made after the release of ACL2 Version
+3.6).  For changes to existing books rather than additions, see the
+log entries (follow the [[Source]] link) starting with revision
+329 up through revision 350.
+
+= List of Books =
+
+books/clause-processors/nvalues-thms.lisp:
+   Clause-processor that can help prove theorems saying that
+   a function returns a certain number of values
+
+books/tools/defevaluator-fast.lisp:
+   Provides a macro much like defevaluator, but much faster
+   when the number of functions to be recognized is large
