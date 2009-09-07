@@ -134,6 +134,9 @@
 ;;                     (x ,a) (y ,b) (z ,c)))
 ;;         :in-theory (disable bar-baz)))
 ;;
+;; Optionally, instead of supplying the function name, one can supply
+;; a call to the function; the formals will then be bound as specified.
+;;
 ;; Bind-as-in-definition looks up the definition of the given function and
 ;; beta-reduces its body, collecting the beta-reduced binding of each variable
 ;; bound by a lambda within that definition.  It then binds the listed
@@ -182,11 +185,16 @@
 
 
 
-(defun bind-as-in-definition-fn (fn vars term)
-  `(b* ((body (getprop ',fn 'unnormalized-body nil
+(defun bind-as-in-definition-fn (fn-or-call vars term)
+  `(b* ((fn-or-call ',fn-or-call)
+        (fn (if (consp fn-or-call) (car fn-or-call) fn-or-call))
+        (body (getprop fn 'unnormalized-body nil
                        'current-acl2-world (w state)))
+        (alist (and (consp fn-or-call)
+                    (pairlis$ (fgetprop fn 'formals nil (w state))
+                              (cdr fn-or-call))))
         ((mv & bindings)
-         (beta-reduce-collect-bindings body nil nil)))
+         (beta-reduce-collect-bindings body alist alist)))
      (bind-according-to-alist
       bindings
       ,vars
