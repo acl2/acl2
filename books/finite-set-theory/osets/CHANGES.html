@@ -17,6 +17,18 @@ Finite Set Theory based on Fully Ordered Lists<br/>
 
 <h3>Change Log</h3>
 
+<h4>Changes Since 0.91</h4>
+
+<p><em>Added intersectp function</em>.  This is like intersect, but does 
+   not bother to construct the list.  As a result, it may allow you to avoid 
+   consing when you are only concerned with whether sets intersect.</p>
+
+<p><em>Redesigned split-list</em>.  The mergesort now uses a new split-list
+   function which involves about half the consing.</p>
+
+<p><em>Mergesort's guard is improved.</em>  Mergesort no longer requires your
+   input to be a true-listp.</p>
+
 <h4>Version 0.91, January 28, 2006</h4>
 
 <p>This is a relatively minor release for efficiency improvements and minor

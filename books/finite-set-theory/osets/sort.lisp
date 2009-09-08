@@ -52,7 +52,16 @@
 
 (in-package "SETS")
 (include-book "outer")
+(local (include-book "unicode/app" :dir :system))
+(local (include-book "unicode/rev" :dir :system))
 (set-verify-guards-eagerness 2)
+
+
+
+(local (defthm app-of-cons-of-list-fix
+         (equal (acl2::app x (cons a (acl2::list-fix y)))
+                (acl2::app x (cons a y)))
+         :hints(("Goal" :induct (len x)))))
 
 
 
@@ -67,6 +76,9 @@
 ; with the common list functions such as cons, append, and reverse.
 ; In the future we might want to expand this section to include more
 ; theorems.
+
+;;; BOZO this is really gross.  We should get rid of in-list and just 
+;;; use member-equal, or memberp from somewhere else.
 
 (defun in-list (a x)
   (declare (xargs :guard (true-listp x)))
@@ -84,6 +96,19 @@
   (equal (in-list a (append x y))
 	 (or (in-list a x)
 	     (in-list a y))))
+
+(local (defthm in-list-list-fix
+         (equal (in-list a (acl2::list-fix x))
+                (in-list a x))))
+
+(local (defthm in-list-app
+         (equal (in-list a (acl2::app x y))
+                (or (in-list a x)
+                    (in-list a y)))))
+
+(local (defthm in-list-rev
+         (equal (in-list a (acl2::rev x))
+                (in-list a x))))
 
 (encapsulate nil
 
@@ -107,113 +132,174 @@
 		  (in a X)))
   :hints(("Goal" :in-theory (enable sfix head tail empty setp))))
 
-; We now introduce a naive function to split a list into two.
-
-;; PATCH(0.91): Split-list was not properly tail recursive as of version 0.9.
-;; The old function has been renamed to split-list-old, and I have added a 
-;; new version, at David Rager's suggestion, which corrects the problem.
-
-(local (defun split-list-old (x)
-         (declare (xargs :guard (true-listp x)))
-         (cond ((endp x) (mv nil nil))
-               ((endp (cdr x)) (mv (list (car x)) nil))
-               (t (mv-let (part1 part2)
-                          (split-list-old (cddr x))
-                          (mv (cons (car x) part1)
-                              (cons (cadr x) part2)))))))
-
-(local (defthm split-list-old-membership
-	 (equal (in-list a x)
-		(or (in-list a (mv-nth 0 (split-list-old x)))
-		    (in-list a (mv-nth 1 (split-list-old x)))))))
-
-(local (defthm split-list-old-part1-truelist
-	 (true-listp (mv-nth 0 (split-list-old x)))
-	 :rule-classes :type-prescription))
-
-(local (defthm split-list-old-part2-truelist
-	 (true-listp (mv-nth 1 (split-list-old x)))
-	 :rule-classes :type-prescription))
-
-(local (defthm split-list-old-length-part1
-	 (implies (consp (cdr x))
-		  (equal (len (mv-nth 0 (split-list-old x)))
-			 (+ 1 (len (mv-nth 0 (split-list-old (cddr x)))))))))
-
-(local (defthm split-list-old-length-part2
-	 (implies (consp (cdr x))
-		  (equal (len (mv-nth 1 (split-list-old x)))
-			 (+ 1 (len (mv-nth 1 (split-list-old (cddr x)))))))))
-
-(local (defthm split-list-old-length-less-part1
-	 (implies (consp (cdr x))
-		  (< (len (mv-nth 0 (split-list-old x)))
-		     (len x)))))
-
-(local (defthm split-list-old-length-less-part2
-	 (implies (consp (cdr x))
-		  (< (len (mv-nth 1 (split-list-old x)))
-		     (len x)))))
-
-(local (in-theory (disable split-list-old-length-part1
-			   split-list-old-length-part2)))
 
 
 
-(defun split-list (x acc acc2)
-  (declare (xargs :guard (true-listp x)))
-  (cond ((endp x) 
-         (mv acc acc2))
-        ((endp (cdr x)) 
-         (mv (cons (car x) acc) acc2))
-        (t (split-list (cddr x)
-                       (cons (car x) acc)
-                       (cons (cadr x) acc2)))))
+; Historic Notes.
+;
+; Originally I used the following function to split the list.
+;
+;  (defun split-list-old (x)
+;    (declare (xargs :guard (true-listp x)))
+;    (cond ((endp x) (mv nil nil))
+;          ((endp (cdr x)) (mv (list (car x)) nil))
+;          (t (mv-let (part1 part2)
+;                     (split-list-old (cddr x))
+;                     (mv (cons (car x) part1)
+;                         (cons (cadr x) part2)))))))
+;
+; But David Rager noted that this was not tail recursive, and accordingly 
+; it ran into trouble on large data sets.  Accordingly, in Version 0.91, 
+; I rewrote this to be tail recursive:
+;
+;  (defun split-list (x acc acc2)
+;   (declare (xargs :guard (true-listp x)))
+;   (cond ((endp x) 
+;          (mv acc acc2))
+;         ((endp (cdr x)) 
+;          (mv (cons (car x) acc) acc2))
+;         (t (split-list (cddr x)
+;                        (cons (car x) acc)
+;                        (cons (cadr x) acc2)))))
+;
+; Since then, I wrote the defsort/defsort library, which uses some tricks to
+; provide a faster mergesort.  One key optimization is to take the first and
+; second halves of the list, rather than splitting the list in terms of evens
+; and odds.  This allows you to split the list with half as much consing.
+;
+; Defsort's approach uses a lot of arithmetic optimization.  I later wrote a
+; mergesort for Milawa, where arithmetic is expensive.  Here, I implemented
+; split-list by walking down "one cdr" and "two cdrs" at a time.  Below is a 
+; reimplementation of this strategy for osets.
 
-(local (defthm lemma
-         (equal (split-list x acc acc2)
-                (mv-let (part1 part2)
-                        (split-list-old x)
-                        (mv (revappend part1 acc)
-                            (revappend part2 acc2))))))
+(defund halve-list-aux (mid x acc)
+  (declare (xargs :guard (<= (len x) (len mid))))
 
-(local (defthm lemma2
-         (equal (len (revappend x y))
-                (+ (len x) (len y)))))
+; We split the list by walking down it in a funny way; see halve-list.
+; Initially, mid and x both point to the front of the list.  We walk down x
+; taking two steps for every one step we take for mid; hence mid stays at the
+; middle of the list.  As we traverse mid, we puts its members into acc, and
+; when x runs out we return both acc and the rest of mid.  This effectively
+; lets us split the list in two (1) without doing any arithmetic, which can be
+; expensive since we can't use fixnum declarations, and (2) while consing only
+; (1/2)n times, where n is the length of the list.  This splitting function
+; performs well, handily beating the old osets split-list implementation on a
+; large list of symbols which we used to test it.
 
-(local (defthm lemma3
-         (equal (true-listp (revappend x y))
-                (true-listp y))))
-         
+  (if (or (atom x)
+          (atom (cdr x)))
+      (mv acc mid)
+    (halve-list-aux (cdr mid)
+                    (cdr (cdr x))
+                    (cons (car mid) acc))))
+
+(defund halve-list (x)
+  (declare (xargs :guard t))
+  (halve-list-aux x x nil))
+
+(defthm halve-list-aux-when-not-consp
+  (implies (not (consp x))
+           (equal (halve-list-aux mid x acc)
+                  (list acc mid)))
+  :hints(("Goal" :in-theory (enable halve-list-aux))))
+
+(defthm halve-list-aux-when-not-consp-of-cdr
+  (implies (not (consp (cdr x)))
+           (equal (halve-list-aux mid x acc)
+                  (list acc mid)))
+  :hints(("Goal" :in-theory (enable halve-list-aux))))
+
+(defthm halve-list-aux-len-1
+  (implies (and (<= (len x) (len mid))
+                (consp x)
+                (consp (cdr x)))
+           (< (len (car (halve-list-aux mid x acc)))
+              (+ (len mid) (len acc))))
+  :rule-classes ((:rewrite) (:linear))
+  :hints(("Goal" :in-theory (enable halve-list-aux))))
+
+(defthm halve-list-aux-len-2
+  (implies (and (<= (len x) (len mid))
+                (consp x)
+                (consp (cdr x)))
+           (< (len (second (halve-list-aux mid x acc)))
+              (len mid)))
+  :rule-classes ((:rewrite) (:linear))
+  :hints(("Goal" :in-theory (enable halve-list-aux))))
+
+(local (defthm halve-list-aux-append-property
+         (implies (<= (len x) (len mid))
+                  (equal (acl2::app (acl2::rev (first (halve-list-aux mid x acc)))
+                                    (second (halve-list-aux mid x acc)))
+                         (acl2::app (acl2::rev acc) 
+                                    mid)))
+         :hints(("Goal" 
+                 :in-theory (enable halve-list-aux)
+                 :do-not '(generalize fertilize)))))
+
+(local (defthm halve-list-correct
+         (equal (acl2::app (acl2::rev (first (halve-list x)))
+                           (second (halve-list x)))
+                (acl2::list-fix x))
+         :hints(("Goal" :in-theory (enable halve-list)))))
+
+(defthm halve-list-len-1
+  (implies (and (consp x)
+                (consp (cdr x)))
+           (< (len (first (halve-list x)))
+              (len x)))
+  :hints(("Goal"
+          :in-theory (e/d (halve-list)
+                          (halve-list-aux-len-1))
+          :use ((:instance halve-list-aux-len-1
+                           (mid x) (x x) (acc nil))))))
+
+(defthm halve-list-len-2
+  (implies (and (consp x)
+                (consp (cdr x)))
+           (< (len (second (halve-list x)))
+              (len x)))
+  :hints(("Goal" :in-theory (enable halve-list))))
+
+(defthm halve-list-membership-property
+  (equal (in-list a x)
+         (or (in-list a (first (halve-list x)))
+             (in-list a (second (halve-list x)))))
+  :rule-classes nil
+  :hints(("Goal" 
+          :in-theory (disable in-list-app)
+          :use ((:instance in-list-app
+                           (x (acl2::rev (first (halve-list x))))
+                           (y (second (halve-list x))))))))
+
 (defun mergesort-exec (x)
-  (declare (xargs 
-            :guard (true-listp x)
-            :measure (len x)
-            :hints(("Goal" :use ((:instance split-list-old-length-less-part1)
-                                 (:instance split-list-old-length-less-part2))))
-            :verify-guards nil))
-  (cond ((endp x) nil)
-        ((endp (cdr x)) (insert (car x) nil))
+  (declare (xargs :guard t
+                  :measure (len x)
+                  :hints(("Goal"
+                          :use ((:instance halve-list-len-1)
+                                (:instance halve-list-len-2))))
+                  :verify-guards nil))
+  (cond ((atom x) nil)
+        ((atom (cdr x))
+         (insert (car x) nil))
         (t (mv-let (part1 part2)
-                   (split-list x nil nil)
+                   (halve-list x)
                    (union (mergesort-exec part1) (mergesort-exec part2))))))
 
 (local (defthm mergesort-exec-set
          (setp (mergesort-exec x))))
 
-(local (in-theory (disable split-list-old-membership)))
-
 (local (defthm mergesort-membership-2
          (implies (in-list a x)
                   (in a (mergesort-exec x)))
-         :hints(("Subgoal *1/3" :use (:instance split-list-old-membership)))))
+         :hints(("Subgoal *1/3" :use (:instance halve-list-membership-property)))))
 
 (local (defthm mergesort-membership-1
          (implies (in a (mergesort-exec x))
                   (in-list a x))
-         :hints(("Subgoal *1/6" :use (:instance split-list-old-membership))
-                ("Subgoal *1/5" :use (:instance split-list-old-membership))
-                ("Subgoal *1/4" :use (:instance split-list-old-membership)))))
+         :hints(("Subgoal *1/6" :use (:instance halve-list-membership-property))
+                ("Subgoal *1/5" :use (:instance halve-list-membership-property))
+                ("Subgoal *1/4" :use (:instance halve-list-membership-property)))))
 
 (local (defthm mergesort-membership
          (iff (in a (mergesort-exec x))
@@ -224,8 +310,8 @@
 
 
 (defun mergesort (x)
-  (declare (xargs :guard (true-listp x)
-		  :verify-guards nil))
+  (declare (xargs :guard t
+                  :verify-guards nil))
   (mbe :logic (if (endp x)
 		  nil
 		(insert (car x)
