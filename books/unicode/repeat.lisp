@@ -24,7 +24,12 @@
   (mbe :logic (if (zp n)
                   nil
                 (cons x (repeat x (- n 1))))
-       :exec (make-list-ac n x nil)))
+
+; On CCL, a simple loop of (loop for i from 1 to 10000 do (repeat 6 10000))
+; finished in 2.74 seconds when we use make-list, versus 3.69 seconds when 
+; we use make-list-ac.  So lets use make-list.
+
+       :exec (make-list n :initial-element x)))
 
 (defthm |(repeat x 0)|
   (equal (repeat x 0)
