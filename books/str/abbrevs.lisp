@@ -41,7 +41,6 @@
 (add-macro-alias charlistnat< STR::charlistnat<)
 
 
-
 (defmacro ichareqv (x) `(STR::ichareqv ,x))
 (add-macro-alias ichareqv STR::ichareqv)
 
@@ -75,6 +74,18 @@
 (defmacro isubstrp (x y) `(STR::isubstrp ,x ,y))
 (add-macro-alias isubstrp STR::isubstrp) 
 
+
+(defmacro rpadchars (x len) `(STR::rpadchars ,x ,len))
+(add-macro-alias rpadchars STR::rpadchars)
+
+(defmacro rpadstr (x len) `(STR::rpadstr ,x ,len))
+(add-macro-alias rpadstr STR::rpadstr)
+
+(defmacro lpadchars (x len) `(STR::lpadchars ,x ,len))
+(add-macro-alias lpadchars STR::lpadchars)
+
+(defmacro lpadstr (x len) `(STR::lpadstr ,x ,len))
+(add-macro-alias lpadstr STR::lpadstr)
 
 
 (defmacro strpos (x y) `(STR::strpos ,x ,y))

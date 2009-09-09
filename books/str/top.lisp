@@ -23,6 +23,8 @@
 (include-book "istrpos")
 (include-book "istrprefixp")
 (include-book "isubstrp")
+(include-book "natstr")
+(include-book "pad")
 (include-book "strpos")
 (include-book "strprefixp")
 (include-book "strnatless")

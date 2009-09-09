@@ -15,6 +15,10 @@
 (in-package "ACL2")
 (include-book "arithmetic/top" :dir :system)
 (include-book "unicode/nthcdr" :dir :system)
+(include-book "unicode/append" :dir :system)
+(include-book "unicode/repeat" :dir :system)
+(in-theory (enable acl2::make-list-ac->repeat))
+
 
 ;; This whole file is a "bozo" that we should consider moving elsewhere.
 
@@ -72,3 +76,36 @@
            :use ((:instance lemma1)
                  (:instance lemma2)
                  (:instance lemma3))))))
+
+(defthm character-listp-of-repeat
+  (implies (characterp x)
+           (character-listp (acl2::repeat x n)))
+  :hints(("Goal" :in-theory (enable acl2::repeat))))
+
+(defthm len-of-append
+  (equal (len (append x y))
+         (+ (len x)
+            (len y))))
+
+(defthm consp-of-repeat
+  (equal (consp (acl2::repeat x n))
+         (not (zp n)))
+  :hints(("Goal" :in-theory (enable acl2::repeat))))
+
+(defthm car-of-append
+  (equal (car (append x y))
+         (if (consp x)
+             (car x)
+           (car y))))
+
+(defthm car-of-repeat
+  (equal (car (acl2::repeat x n))
+         (if (zp n)
+             nil
+           x))
+  :hints(("Goal" :in-theory (enable acl2::repeat))))
+
+(defthm append-of-repeat-to-cons-of-same
+  (equal (append (acl2::repeat a n) (cons a x))
+         (cons a (append (acl2::repeat a n) x)))
+  :hints(("Goal" :in-theory (enable acl2::repeat))))

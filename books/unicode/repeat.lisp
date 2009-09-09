@@ -76,10 +76,11 @@
           :hints(("Goal"
                   :in-theory (enable repeat)))))
 
- (local (defthm main-lemma
-          (equal (make-list-ac n x acc)
-                 (append (repeat x n) 
-                         acc))))
+ (defthmd make-list-ac->repeat
+   (equal (make-list-ac n x acc)
+          (append (repeat x n) 
+                  acc)))
  
  (verify-guards repeat
-                :hints(("Goal" :in-theory (enable repeat)))))
+                :hints(("Goal" :in-theory (enable repeat
+                                                  make-list-ac->repeat)))))
