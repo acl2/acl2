@@ -526,7 +526,7 @@ User binders are treated this way if they end in the character +.
           nil
         (list (list (car args) form)))
     (if (eql (car ignores) 'ignore)
-        (list*-binding-list (cdr args) form (cdr ignores))
+        (list*-binding-list (cdr args) `(cdr ,form) (cdr ignores))
       (cons (list (car args) `(car ,form))
             (list*-binding-list (cdr args) `(cdr ,form) (cdr ignores))))))
 
