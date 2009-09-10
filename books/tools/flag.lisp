@@ -231,19 +231,20 @@
 
  (defun mangle-body (body fn-name alist formals world)
    (cond ((atom body)
-          body)
+          (if (eq body 'acl2::state) 'acl2::fake-flag-state body))
          ((eq (car body) 'quote)
           body)
          ((symbolp (car body))
           (let ((lookup   (assoc-eq (car body) alist))
                 (new-args (mangle-body-list (cdr body) fn-name alist formals world)))
             (if lookup
-                (let* ((orig-formals (get-formals (car lookup) world))
+                (let* ((orig-formals (subst 'acl2::fake-flag-state 'acl2::state
+                                            (get-formals (car lookup) world)))
                        (new-actuals (merge-actuals (pairlis$ orig-formals new-args) formals)))
                   `(,fn-name ',(cdr lookup) . ,new-actuals))
               (cons (car body) new-args))))
          (t
-          (let ((lformals (cadar body))
+          (let ((lformals (subst 'acl2::fake-flag-state 'acl2::state (cadar body)))
                 (lbody    (caddar body))
                 (largs    (cdr body)))
             (cons (list 'lambda 
@@ -270,7 +271,7 @@
     (er hard 'make-flag-body-aux "Never get here.")))
 
 (defun make-flag-body (fn-name flag-var alist hints world)
-  (let ((formals (merge-formals alist world)))
+  (let ((formals (subst 'acl2::fake-flag-state 'acl2::state (merge-formals alist world))))
   `(defun ,fn-name (,flag-var . ,formals)
      (declare (xargs :verify-guards nil
                      :normalize nil
