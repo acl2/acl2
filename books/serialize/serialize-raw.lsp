@@ -885,7 +885,7 @@
   (symbol-package-alist-byte-decode/load)
   (inst-list-byte-decode/load honsp))
 
-(defun read-fn (filename honsp verbosep state)
+(defun actually-read (filename honsp verbosep)
 
   (let* ((*verbose* verbosep)
          #-(and ccl (not mswindows)) (*decode-stream* nil)
@@ -928,7 +928,12 @@
       (unless (= *decode-free* max-index)
         (error "File ~a has the wrong number of entries: decode-free is ~a, max-index is ~a.~%"
                filename *decode-free* max-index))
-      (mv (aref *decode-array* (- max-index 1)) state))))
+
+      (aref *decode-array* (- max-index 1)))))
+
+(defun read-fn (filename honsp verbosep state)
+  (mv (actually-read filename honsp verbosep) 
+      state))
 
 
 

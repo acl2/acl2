@@ -1,5 +1,6 @@
 (in-package "ACL2")
 (include-book "serialize" :ttags :all)
+(include-book "unsound-read" :ttags :all)
 (set-compile-fns t)
 
 (defmacro test-serialize (x &rest write-args)
@@ -11,7 +12,8 @@
     (let ((state (serialize::write "test.sao" ,x :verbosep t ,@write-args)))
       (mv-let (obj state)
               (serialize::read "test.sao" :verbosep t)
-              (if (equal ,x obj)
+              (if (and (equal ,x obj)
+                       (equal ,x (serialize::unsound-read "test.sao" :verbosep t)))
                   (value `(value-triple :test-passed))
                 (er soft 'test-serialize
                     "Test failed for ~x0.~%" ,x))))))
@@ -127,6 +129,39 @@
     
 (test-serialize *test*)
 
+
+
+(local 
+ (encapsulate
+  ()
+  ;; Write NIL to test.sao
+  (make-event 
+   (let ((state (serialize::write "test.sao" nil)))
+     (value '(value-triple :invisible))))
+
+  ;; Prove that test.sao contains NIL.
+  (defthm lemma-1 
+    (equal (serialize::unsound-read "test.sao") nil)
+    :rule-classes nil)
+
+  ;; Write T to test.sao
+  (make-event 
+   (let ((state (serialize::write "test.sao" t)))
+     (value '(value-triple :invisible))))
+
+  ;; Prove that test.sao contains T.
+  (defthm lemma-2
+    (equal (serialize::unsound-read "test.sao") t)
+    :rule-classes nil)
+
+  ;; Arrive at our contradiction.
+  (defthm qed
+    nil
+    :rule-classes nil
+    :hints(("Goal" 
+            :use ((:instance lemma-1)
+                  (:instance lemma-2))
+            :in-theory (disable (serialize::unsound-read-fn)))))))
 
 
 #||
