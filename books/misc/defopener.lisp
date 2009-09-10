@@ -356,7 +356,7 @@
                        (mv "Name check failed (see error message above)."
                            nil
                            state)) 
-                    (value '(value-triple nil)))))))))
+                    (value '(value-triple nil :on-skip-proofs t)))))))))
 
 (defmacro defopener (&whole ev-form
                             name call

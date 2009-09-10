@@ -458,11 +458,10 @@
                                                      ',(cons flag-fn-name
                                                              (strip-cars alist)))))))))
       
-      (,(if local 'local 'id)
-       (progn . ,(flag-table-events alist `(,flag-fn-name
-                                            ,alist 
-                                            ,defthm-macro-name
-                                            ,equiv-thm-name))))
+      (progn . ,(flag-table-events alist `(,flag-fn-name
+                                           ,alist 
+                                           ,defthm-macro-name
+                                           ,equiv-thm-name)))
       (,(if local 'local 'id)
        (in-theory (disable (:definition ,flag-fn-name)))))))
         

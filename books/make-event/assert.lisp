@@ -57,9 +57,9 @@
 ; certification world.  It also succeeds at include-book time even if we
 ; include the book after executing another command, because assert! uses
 ; make-event with :check-expansion nil.  See assert-include.lisp.
-(assert! (equal (access-command-tuple-form
-                 (cddr (car (scan-to-command (w state)))))
-                '(exit-boot-strap-mode)))
+(local (assert! (equal (access-command-tuple-form
+                        (cddr (car (scan-to-command (w state)))))
+                       '(exit-boot-strap-mode))))
 
 ; We turn now to developing an extension of assert! that works with stobjs, in
 ; this case for assertions that return (mv val st) where val is an ordinary
