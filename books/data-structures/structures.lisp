@@ -29,8 +29,9 @@
 ;;;    
 ;;;    The on-line documentation only contains examples and a formal syntax
 ;;;    description. The complete documentation for DEFSTRUCTURE is a report
-;;;    entitled "DEFSTRUCTURE for ACL2." This report is distributed with the
-;;;    ACL2 release, and is also available from the ACL2 home page:
+;;;    entitled "DEFSTRUCTURE for ACL2." This report is available from the
+;;;    [Books and Papers about ACL2 and Its Applications] link on ACL2 home
+;;;    page:
 ;;;    
 ;;;    http://www.cs.utexas.edu/users/moore/acl2
 ;;;
