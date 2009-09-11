@@ -110,10 +110,17 @@
 
   The ~c[read] command needs less configuration.
 
-  If the ~c[:honsp] flag is given, then the object returned will be
-  built entirely out of honses.  By default, we do not use ~c[hons]
-  because it is slower than ~c[cons].  But using the ~c[:honsp] flag may
-  faster than calling ~c[hons-copy] after reading the object.
+  If ~c[:honsp] is given ~c[t], then the object returned will be built
+  entirely out of honses.  By default, we do not use ~c[hons] because it
+  is slower than ~c[cons].  But using the ~c[:honsp] flag may faster
+  than calling ~c[hons-copy] after reading the object.
+
+  CCL Only.  As an advanced and obscure option, ~c[:honsp] may also be
+  given the value ~c[:static], in which case static conses will be
+  created with ~c[ccl:static-cons].  These conses are NOT ~c[hons]es,
+  but are not moved by CCL's garbage collector, which may have
+  applications in certain raw Lisp code.  In any Lisp besides CCL,
+  ~c[:static] is treated as ~c[nil].
 
 
   NOTES ABOUT BOOKS.
@@ -261,7 +268,7 @@
 
 (defun read-fn (filename honsp verbosep state)
   (declare (xargs :guard (and (stringp filename)
-                              (booleanp honsp)
+                              (member-eq honsp '(t nil :static))
                               (booleanp verbosep)
                               (state-p state))
                   :stobjs state)

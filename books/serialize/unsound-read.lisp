@@ -26,7 +26,7 @@
   
 (defun unsound-read-fn (filename honsp verbosep)
   (declare (xargs :guard (and (stringp filename)
-                              (booleanp honsp)
+                              (member-eq honsp '(t nil :static))
                               (booleanp verbosep))))
   (prog2$
    (er hard? 'unsound-read-fn "Raw-lisp definition not installed??")

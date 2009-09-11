@@ -70,11 +70,11 @@
 (progn
   (defparameter *decode-vec* nil)
   (defparameter *decode-pos* nil)
-  (declaim (type vector *decode-vec*))
+  (declaim (type simple-array *decode-vec*))
   (declaim (type fixnum *decode-pos*))
   (defmacro decoder-read ()
     `(let ((ret (the (unsigned-byte 8)
-                  (aref (the vector *decode-vec*)
+                  (aref (the simple-array *decode-vec*)
                         (the fixnum *decode-pos*)))))
        (incf *decode-pos*)
        ret)))
@@ -90,8 +90,8 @@
 
 (defvar *decode-array*)
 (defparameter *decode-free* 0)
-(declaim (type vector *decode-array*))
-(declaim (type integer *decode-free*))
+(declaim (type simple-vector *decode-array*))
+(declaim (type fixnum *decode-free*))
 
 
 
@@ -170,7 +170,7 @@
     (maybe-print "; Decoding ~a naturals.~%" len)
     (loop for i from 1 to len 
           do
-          (setf (aref *decode-array* *decode-free*)
+          (setf (svref *decode-array* *decode-free*)
                 (nat-byte-decode))
           (incf *decode-free*))))
 
@@ -217,7 +217,7 @@
     (maybe-print "; Decoding ~a rationals.~%" len)
     (loop for i from 1 to len 
           do
-          (setf (aref *decode-array* *decode-free*)
+          (setf (svref *decode-array* *decode-free*)
                 (rational-byte-decode))
           (incf *decode-free*))))
 
@@ -258,7 +258,7 @@
     (maybe-print "; Decoding ~a complexes.~%" len)
     (loop for i from 1 to len
           do
-          (setf (aref *decode-array* *decode-free*)
+          (setf (svref *decode-array* *decode-free*)
                 (complex-byte-decode))
           (incf *decode-free*))))
 
@@ -283,7 +283,7 @@
     (maybe-print "; Decoding ~a characters.~%" len)
     (loop for i from 1 to len 
           do
-          (setf (aref *decode-array* *decode-free*)
+          (setf (svref *decode-array* *decode-free*)
                 (code-char (decoder-read)))
           (incf *decode-free*))))
 
@@ -315,18 +315,16 @@
 (defun string-byte-decode ()
   (let* ((len   (nat-byte-decode))
          (len-1 (- len 1))
-         (str (make-string (the integer len))))
+         (str   (make-string (the fixnum len))))
     (declare (type fixnum len)
              (type fixnum len-1)
              (type vector str))
     (loop for i fixnum from 0 to len-1
           do
-          (setf (aref (the vector str) (the fixnum i))
+          (setf (schar str i)
                 (the character 
                   (code-char (decoder-read)))))
     str))
-
-
 
 (defun string-list-byte-encode (x)
   (let ((len (length x)))
@@ -338,9 +336,11 @@
 (defun string-list-byte-decode/load ()
   (let ((len (nat-byte-decode)))
     (maybe-print "; Decoding ~a strings.~%" len)
-    (loop for i from 1 to len
+    (when (> len most-positive-fixnum)
+      (error "Too many strings~%"))
+    (loop for i fixnum from 1 to len
           do
-          (setf (aref *decode-array* *decode-free*)
+          (setf (svref *decode-array* *decode-free*)
                 (string-byte-decode))
           (incf *decode-free*))))
 
@@ -367,14 +367,16 @@
 
 (defun symbol-list-byte-decode/load ()
   (let* ((pkg-name (string-byte-decode))
-         (len      (nat-byte-decode)))
+         (len      (nat-byte-decode))
+         (stop     (the fixnum (+ *decode-free* len))))
     (maybe-print ";; Decoding ~a symbols for ~a package.~%" len pkg-name)
     ;; We call pkg-witness to ensure the package is known to ACL2, and to 
     ;; justify our use of raw intern below.
     (acl2::pkg-witness pkg-name)
-    (loop for i from 1 to len
+    (loop until (= (the fixnum *decode-free*)
+                   (the fixnum stop))
           do
-          (setf (aref *decode-array* *decode-free*)
+          (setf (svref *decode-array* *decode-free*)
                 (intern (string-byte-decode) pkg-name))
           (incf *decode-free*))))
 
@@ -390,7 +392,9 @@
 (defun symbol-package-alist-byte-decode/load ()
   (let ((len (nat-byte-decode)))
     (maybe-print "; Decoding symbols for ~a packages.~%" len)
-    (loop for i from 1 to len
+    (when (> len most-positive-fixnum)
+      (error "Too many packages.~%"))
+    (loop for i fixnum from 1 to len
           do
           (symbol-list-byte-decode/load))))
 
@@ -408,24 +412,42 @@
 
 (defun inst-list-byte-decode/load (honsp)
   (let ((len (nat-byte-decode)))
+    (when (> len most-positive-fixnum)
+      (error "Too many conses"))
     (maybe-print "; Decoding ~a consing instructions.~%" len)
-    (if honsp
-        (loop for i from 1 to len do
-              (let* ((car-index (nat-byte-decode))
-                     (cdr-index (nat-byte-decode))
-                     (car-obj   (aref *decode-array* car-index))
-                     (cdr-obj   (aref *decode-array* cdr-index)))
-                (setf (aref *decode-array* *decode-free*)
-                      (hons car-obj cdr-obj))
-                (incf *decode-free*)))
-      (loop for i from 1 to len do
-            (let* ((car-index (nat-byte-decode))
-                   (cdr-index (nat-byte-decode))
-                   (car-obj   (aref *decode-array* car-index))
-                   (cdr-obj   (aref *decode-array* cdr-index)))
-              (setf (aref *decode-array* *decode-free*)
-                    (cons car-obj cdr-obj))
-              (incf *decode-free*))))))
+    (cond ((eq honsp :static)
+           (progn 
+             (maybe-print ";; Building static conses.~%")
+             (loop for i fixnum from 1 to len do
+                   (let* ((car-index (nat-byte-decode))
+                          (cdr-index (nat-byte-decode))
+                          (car-obj   (svref *decode-array* car-index))
+                          (cdr-obj   (svref *decode-array* cdr-index)))
+                     (setf (svref *decode-array* *decode-free*)
+                           (ccl::static-cons car-obj cdr-obj))
+                     (incf *decode-free*)))))
+          ((eq honsp t)
+           (progn
+             (maybe-print ";; Building honses.~%")
+             (loop for i fixnum from 1 to len do
+                   (let* ((car-index (nat-byte-decode))
+                          (cdr-index (nat-byte-decode))
+                          (car-obj   (svref *decode-array* car-index))
+                          (cdr-obj   (svref *decode-array* cdr-index)))
+                     (setf (svref *decode-array* *decode-free*)
+                           (hons car-obj cdr-obj))
+                     (incf *decode-free*)))))
+          (t
+           (progn
+             (maybe-print ";; Building regular conses.~%")
+             (loop for i fixnum from 1 to len do
+                   (let* ((car-index (nat-byte-decode))
+                          (cdr-index (nat-byte-decode))
+                          (car-obj   (svref *decode-array* car-index))
+                          (cdr-obj   (svref *decode-array* cdr-index)))
+                     (setf (svref *decode-array* *decode-free*)
+                           (cons car-obj cdr-obj))
+                     (incf *decode-free*))))))))
       
 
 
@@ -909,6 +931,8 @@
       (setf mapped-file (ccl::map-file-to-octet-vector filename))
       (multiple-value-bind (arr offset)
           (array-displacement mapped-file)
+        ;(format t "Type of arr is ~a" (type-of arr))
+        ;(format t "Simple-vectorp is ~a" (typep arr 'simple-vector))
         (setf *decode-pos* offset)
         (setf *decode-vec* arr)))
 
@@ -916,6 +940,10 @@
     (let* ((max-index      (nat-byte-decode))
            (*decode-array* (make-array max-index))
            (*decode-free*  0))
+      ;; BOZO is dynamic-extend okay given that we return decode-array[max-index - 1]
+      ;; at the end of the loop?  it seems to work okay for the tests at least.
+      (declare (dynamic-extent *decode-array*)
+               (dynamic-extent *decode-free*))
       (maybe-print "; Max index is ~a.~%" max-index)
       (maybe-time (decode-and-load honsp))
       (check-magic-number filename)
@@ -929,7 +957,7 @@
         (error "File ~a has the wrong number of entries: decode-free is ~a, max-index is ~a.~%"
                filename *decode-free* max-index))
 
-      (aref *decode-array* (- max-index 1)))))
+      (svref *decode-array* (- max-index 1)))))
 
 (defun read-fn (filename honsp verbosep state)
   (mv (actually-read filename honsp verbosep) 
