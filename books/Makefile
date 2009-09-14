@@ -116,7 +116,7 @@ tools: arithmetic-5 misc unicode
 regex: tools
 defsort: misc make-event unicode tools
 hons-archive: defsort unicode tools arithmetic-3
-str: arithmetic unicode defsort
+str: arithmetic unicode defsort tools make-event
 coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
 	misc ordinals rtl
 

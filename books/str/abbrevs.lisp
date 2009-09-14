@@ -88,6 +88,9 @@
 (add-macro-alias lpadstr STR::lpadstr)
 
 
+(defmacro strsplit (x del) `(STR::strsplit ,x ,del))
+(add-macro-alias strsplit STR::strsplit)
+
 (defmacro strpos (x y) `(STR::strpos ,x ,y))
 (add-macro-alias strpos STR::strpos)
 
