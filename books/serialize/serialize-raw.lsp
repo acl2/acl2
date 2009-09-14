@@ -411,11 +411,14 @@
       (nat-byte-encode (cdr elem)))))
 
 (defun inst-list-byte-decode/load (honsp)
+  #-ccl (when (eq honsp :static)
+          (setq honsp nil))
   (let ((len (nat-byte-decode)))
     (when (> len most-positive-fixnum)
       (error "Too many conses"))
     (maybe-print "; Decoding ~a consing instructions.~%" len)
-    (cond ((eq honsp :static)
+    (cond #+ccl
+          ((eq honsp :static) ; ccl only
            (progn 
              (maybe-print ";; Building static conses.~%")
              (loop for i fixnum from 1 to len do
