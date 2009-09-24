@@ -952,3 +952,199 @@
           )
          ("Subgoal *1/2''" :in-theory (disable cdr-cons cons-car-cdr))
          ("Subgoal *1/2'4'" :in-theory (enable cdr-cons))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Illustration of ideas in :doc hints-and-the-waterfall
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(set-default-hints nil)
+(set-override-hints nil)
+
+; The following example is for advanced users of computed hints, and assumes an
+; understanding of documentation topic hints-and-the-waterfall.
+
+; Below we find two versions of nonlinearp-default-hint.  The first is from
+; books/arithmetic-5/lib/basic-ops/default-hint.lisp, with the comment slightly
+; modified.  The second is the result of removing a test and winding up with an
+; infinite loop.
+
+; For each version, we attempt to prove a trivial theorem that requires
+; induction.  The first attempt succeeds, while the second fails.  In fact, we
+; impose a time limit because the second attempt goes into an infinite loop.
+
+; We explain this example by first explaining what the two versions of
+; nonlinearp-default-hint have in common.  Each is a function that can generate
+; a computed hint in either of the following two situations:
+
+; (A) If the goal is stable under simplification -- i.e., if the goal or an
+;     ancestor of it has passed through the simplifier without being changed --
+;     then assuming nonlinear arithmetic is currently off, a computed hint is
+;     generated that turns on nonlinear arithmetic for the current goal and all
+;     its descendents, at least until another hint turns nonlinear arithmetic
+;     off.
+
+; (B) If we are at the top of the waterfall, nonlinear arithmetic is currently
+;     enabled, and at least one proof process has applied to the current goal
+;     or an ancestor of it, then a computed hint MAY BE generated that turns
+;     off nonlinear arithmetic.
+
+; In (B), "MAY BE" can be replaced by "is" for the second version of
+; nonlinearp-default-hint, which is the one that can cause an infinite loop.
+; The first version of nonlinearp-default-hint restricts (B) by refusing to
+; generate a computed hint if the most recently applied proof process is the
+; "settled down" process.  As we now explain, this refusal is what prevents an
+; infinite loop.
+
+; Consider the second version of nonlinearp-default-hint below, in which the
+; clause is allowed to have just settled down when generating a hint that
+; re-disables nonlinear arithmetic.  The following sequence occurs.
+
+; (1) The initial goal for theorem TEST1 passes unchanged through the
+;     simplification process (induction is the first successful proof
+;     activity).  Thus the "settled-down" proof process hits, sending the goal
+;     back to the top of the waterfall.
+
+; (2) The goal passes through the waterfall, again passing through the
+;     simplifier unchanged.  This time it then passes through the
+;     "settled-down" process without hitting, since it had already settled
+;     down.  So it reaches the point where we look for a computed hint to
+;     select with variable STABLE-UNDER-SIMPLIFICATIONP bound to T.
+;     Nonlinearp-default-hint generates a computed hint to turn on nonlinear
+;     arithmetic (situation (A) above) and sends the goal back to the top of
+;     the waterfall, with this hint as the selected hint.
+
+;     NOTE: the history of the goal is modified to remove the indication that
+;     it has settled down.  Quoting from :doc hints-and-the-waterfall, about
+;     computed hints being selected in the case that
+;     STABLE-UNDER-SIMPLIFICATIONP is T:
+
+;       A subtlety is that in this case, if the most recent hit had been from
+;       settling down, then the prover ``changes its mind'' and considers that
+;       the goal has not yet settled down after all as it continues through the
+;       waterfall.
+
+; (3) The hint is applied to enable nonlinear arithmetic, and the goal passes
+;     through the waterfall.  Because its history says that it has not yet
+;     reached the point of settling down (see the "NOTE" in (2) above), the
+;     "settled-down" proof process hits, sending the goal back to the top of
+;     the waterfall.
+
+; (4) In the search for an applicable hint, we are in situation (B) above and
+;     hence the nonlinearp-default-hint applies to disable nonlinear
+;     arithmetic.  (Remember, we are considering the second version of
+;     nonlinearp-default-hint below, which does not consider settling down.)
+;     Then the goal passes through the waterfall, and exactly as in (2) above,
+;     situation (A) above applies, so nonlinearp-default-hint generates a
+;     computed hint to turn on nonlinear arithmetic and sends the goal back to
+;     the top of the waterfall, with this hint as the selected hint.
+
+; We now have a loop (3), (4), (3), (4), (3), (4), ....  So why does the first
+; version of nonlinearp-default-hint break this loop?  At the start of (4),
+; situation (B) no longer applies because the goal has just settled down from
+; (3), and hence the first (most recent) element of the history is a
+; 'SETTLED-DOWN-CLAUSE entry.  Indeed, we can see that the proof of TEST1 in
+; the first encapsulate form below generates a comment that "We now enable
+; non-linear arithmetic" but no such comment about disabling.
+
+(encapsulate
+ ()
+
+ (local
+  (defun nonlinearp-default-hint (stable-under-simplificationp hist pspv)
+    (declare (xargs :guard (and (consp pspv)
+                                (consp (car pspv))
+                                (consp (caar pspv))
+                                (consp (cdaar pspv))
+                                (consp (cddaar pspv))
+                                (consp (cdr (cddaar pspv)))
+                                (consp (cddr (cddaar pspv)))
+                                (consp (cdddr (cddaar pspv)))
+                                (consp (cddddr (cddaar pspv))))))
+    (cond (stable-under-simplificationp
+           (if (not (access rewrite-constant
+                            (access prove-spec-var pspv :rewrite-constant)
+                            :nonlinearp))
+               (prog2$
+                (cw "~%~%[Note: We now enable non-linear arithmetic.]~%~%")
+                '(:computed-hint-replacement t
+                                             :nonlinearp t))
+             nil))
+          ((access rewrite-constant
+                   (access prove-spec-var pspv :rewrite-constant)
+                   :nonlinearp)
+           (if (and (consp hist)
+                    (consp (car hist))
+                    ;; The following is discussed below:
+                    (not (equal (caar hist) 'SETTLED-DOWN-CLAUSE)))
+               (prog2$
+                (cw "~%~%[Note: We now disable non-linear arithmetic.]~%~%")
+                '(:computed-hint-replacement t
+                                             :nonlinearp nil))
+             nil))
+          (t
+           nil))))
+
+ (local
+  (add-default-hints
+   '((nonlinearp-default-hint stable-under-simplificationp hist pspv))))
+
+ (local
+  (defthm test1
+    (equal (len (append x nil))
+           (len x))
+    :rule-classes nil)))
+
+(encapsulate
+ ()
+
+ (local
+  (defun nonlinearp-default-hint (stable-under-simplificationp hist pspv)
+    (declare (xargs :guard (and (consp pspv)
+                                (consp (car pspv))
+                                (consp (caar pspv))
+                                (consp (cdaar pspv))
+                                (consp (cddaar pspv))
+                                (consp (cdr (cddaar pspv)))
+                                (consp (cddr (cddaar pspv)))
+                                (consp (cdddr (cddaar pspv)))
+                                (consp (cddddr (cddaar pspv))))))
+    (cond (stable-under-simplificationp
+           (if (not (access rewrite-constant
+                            (access prove-spec-var pspv :rewrite-constant)
+                            :nonlinearp))
+               (prog2$
+                (cw "~%~%[Note: We now enable non-linear arithmetic.]~%~%")
+                '(:computed-hint-replacement t
+                                             :nonlinearp t))
+             nil))
+          ((access rewrite-constant
+                   (access prove-spec-var pspv :rewrite-constant)
+                   :nonlinearp)
+           (if (and (consp hist)
+                    (consp (car hist))
+                    ;; The extra test is removed this time:
+                    ;; (not (equal (caar hist) 'SETTLED-DOWN-CLAUSE))
+                    )
+               (prog2$
+                (cw "~%~%[Note: We now disable non-linear arithmetic.]~%~%")
+                '(:computed-hint-replacement t
+                                             :nonlinearp nil))
+             nil))
+          (t
+           nil))))
+
+ (local
+  (add-default-hints
+   '((nonlinearp-default-hint stable-under-simplificationp hist pspv))))
+
+ (must-fail
+  (with-prover-time-limit
+; The proof of the previous test1 has succeeded in Sept. 2009 on a 2.2GHz
+; Opteron (tm) Processor 850 in under 1/20 seconds of real time.  So the time
+; limit below seems generous.  It was still sufficient to see over 240 trips
+; through the infinite loop.
+   1/5
+   (defthm test1
+     (equal (len (append x nil))
+            (len x))
+     :rule-classes nil))))
