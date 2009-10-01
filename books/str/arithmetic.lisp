@@ -109,3 +109,16 @@
   (equal (append (acl2::repeat a n) (cons a x))
          (cons a (append (acl2::repeat a n) x)))
   :hints(("Goal" :in-theory (enable acl2::repeat))))
+
+
+(defthm len-of-nonempty-string-is-positive
+  (implies (and (stringp x)
+                (not (equal x "")))
+           (< 0 (len (coerce x 'list))))
+  :hints(("Goal" 
+          :in-theory (disable coerce-inverse-2)
+          :use ((:instance coerce-inverse-2)))))
+
+(defthm simpler-take-of-len
+  (equal (simpler-take (len x) x)
+         (list-fix x)))

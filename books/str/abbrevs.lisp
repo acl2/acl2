@@ -15,6 +15,15 @@
 (in-package "ACL2")
 (include-book "top")
 
+(defmacro cat (&rest args) `(STR::cat . ,args))
+
+(defmacro append-chars (x y) `(STR::append-chars ,x ,y))
+(add-macro-alias append-chars STR::append-chars)
+
+(defmacro revappend-chars (x y) `(STR::revappend-chars ,x ,y))
+(add-macro-alias revappend-chars STR::revappend-chars)
+
+
 (defmacro char-fix (x) `(STR::char-fix ,x))
 (add-macro-alias char-fix STR::char-fix)
 
