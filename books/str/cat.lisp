@@ -142,7 +142,8 @@
 
 #||
 
-(include-book "cat")
+(include-book ;; newline to fool dependency scanner
+ "cat")
 
 ;; Simple experiments on fv-1:
 
