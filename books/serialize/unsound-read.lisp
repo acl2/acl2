@@ -35,9 +35,8 @@
 (defmacro unsound-read (filename &key honsp verbosep)
   `(unsound-read-fn ,filename ,honsp ,verbosep))
 
-#-gcl
 (ACL2::progn!
  (set-raw-mode t)
- (let ((f (compile-file
-           (ACL2::extend-pathname (cbd) "unsound-read-raw.lsp" state))))
-   (ACL2::load-compiled f)))
+ (unless (eq (get-global 'ACL2::host-lisp state) :gcl)
+   (let ((f (compile-file (ACL2::extend-pathname (cbd) "unsound-read-raw.lsp" state))))
+     (ACL2::load-compiled f))))

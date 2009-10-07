@@ -317,11 +317,10 @@
              ,string-table-size ,cons-table-size ,package-table-size 
              state))
 
-#-gcl
 (ACL2::progn!
  (set-raw-mode t)
- (let ((f (compile-file
-           (ACL2::extend-pathname (cbd) "serialize-raw.lsp" state))))
-   (ACL2::load-compiled f)))
+ (unless (eq (get-global 'ACL2::host-lisp state) :gcl)
+   (let ((f (compile-file (ACL2::extend-pathname (cbd) "serialize-raw.lsp" state))))
+     (ACL2::load-compiled f))))
 
 

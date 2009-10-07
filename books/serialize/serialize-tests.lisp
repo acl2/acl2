@@ -6,17 +6,17 @@
 (defmacro test-serialize (x &rest write-args)
   (declare (ignorable x write-args))
   `(make-event
-    #+gcl
-    (value `(value-triple :does-not-work-on-gcl))
-    #-gcl
-    (let ((state (serialize::write "test.sao" ,x :verbosep t ,@write-args)))
-      (mv-let (obj state)
-              (serialize::read "test.sao" :verbosep t)
-              (if (and (equal ,x obj)
-                       (equal ,x (serialize::unsound-read "test.sao" :verbosep t)))
-                  (value `(value-triple :test-passed))
-                (er soft 'test-serialize
-                    "Test failed for ~x0.~%" ,x))))))
+    (let ((host-lisp (get-global 'ACL2::host-lisp state)))
+      (if (equal host-lisp :gcl)
+          (value `(value-triple :does-not-work-on-gcl))
+        (let ((state (serialize::write "test.sao" ,x :verbosep t ,@write-args)))
+          (mv-let (obj state)
+                  (serialize::read "test.sao" :verbosep t)
+                  (if (and (equal ,x obj)
+                           (equal ,x (serialize::unsound-read "test.sao" :verbosep t)))
+                      (value `(value-triple :test-passed))
+                    (er soft 'test-serialize
+                        "Test failed for ~x0.~%" ,x))))))))
 
 (test-serialize 0)
 (test-serialize 1)
