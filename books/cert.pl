@@ -132,6 +132,7 @@ my @includes = ();
 my @include_afters = ();
 my $cust_target = 0;
 my $make_target = "all";
+my $svn_mode = 0;
 
 while (my $arg = shift(@ARGV)) {
     if ($arg eq "--help" || $arg eq "-h") {
@@ -243,6 +244,10 @@ and options are as follows:
            distribution with a directory that may be placed at
            different locations on different users\' file systems.
 
+   --svn-status
+           Traverse the dependency tree and run "svn status" on each
+           non-cert file in the tree.  Does not build a makefile.
+
    --targets <file>
    -t <file>
            Add as targets the files listed (one per line) in <file>.
@@ -285,7 +290,11 @@ and options are as follows:
 	$make_target = shift @ARGV;
     } elsif ($arg eq "--relative-paths" || $arg eq "-r") {
 	$base_path = abs_canonical_path(".");
-    } elsif ($arg eq "--targets" || $arg eq "-t") {
+    } elsif ($arg eq "--svn-status") {
+	$no_makefile = 1;
+	$no_build = 1;
+	$svn_mode = 1;
+    }elsif ($arg eq "--targets" || $arg eq "-t") {
 	my $fname = shift;
 	open (my $tfile, $fname);
 	while (my $the_line = <$tfile>) {
@@ -466,6 +475,10 @@ sub add_deps {
     }
 
     if ($target !~ /\.cert$/) {
+	if ($svn_mode) {
+	    print `svn status --no-ignore $target`;
+	    $seen{$target} = 0;
+	}
 	return;
     }
 
