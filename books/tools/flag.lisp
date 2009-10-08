@@ -34,7 +34,6 @@
           :induct (flag-pseudo-termp flag x lst))))
 
 
-
 (defstobj term-bucket
   (terms))
 
@@ -73,6 +72,11 @@
 
 
 (in-package "FLAG")
+
+
+(defthmd expand-all-hides
+  (equal (hide x) x)
+  :hints (("goal" :expand ((hide x)))))
 
 (program)
 
@@ -447,7 +451,8 @@
                      :in-theory 
                      (set-difference-theories 
                       (union-theories (theory 'minimal-theory)
-                                      '((:induction ,flag-fn-name)))
+                                      '((:induction ,flag-fn-name)
+                                        (:rewrite expand-all-hides)))
                       ;; Jared found a case where "linear" forced some goals
                       ;; from an equality, which were unprovable.  So, turn off
                       ;; forcing.

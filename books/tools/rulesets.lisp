@@ -23,29 +23,30 @@
          (theoryp! (list x) world))
         ((runep x world) t)
         ((and (consp x) (symbolp (car x)) (eq (cdr x) nil)) t)
-        ((and (consp x)
-              (consp (cdr x))
-              (not (cddr x)))
-         (if (eq (car x) :ruleset)
-             (or (is-ruleset (cadr x) world)
-                 (cw "**NOTE**:~%~x0 is not a ruleset.~%" (cadr x)))
-           (or (eq (car x) :executable-counterpart-theory)
-               (eq (car x) :current-theory)
-               (cw "**NOTE**:~%~x0 is not a valid keyword for a ruleset ~
-designator in ~x1.~%" (car x) x))))
-        ((and (consp x)
-              (consp (cdr x))
-              (consp (cddr x))
-              (not (cdddr x)))
-         (eq (car x) :rules-of-class))
-        (t (cw "**NOTE**:~%~x0 is not a valid ruleset designator.~%" x))))
+        (t (and (consp x)
+                (case-match x
+                  ((':ruleset ruleset)
+                   (or (is-ruleset ruleset world)
+                       (cw "**NOTE**:~%~x0 is not a ruleset.~%"
+                           ruleset)))
+                  ((':executable-counterpart-theory &) t)
+                  ((':current-theory &) t)
+                  ((':theory &) t)
+                  ((':rules-of-class & &) t)
+                  (& (cw "~
+**NOTE**:~%~x0 is neither a rune nor a valid ruleset designator.~%" x)))))))
+
+
+;; This does not short-circuit, so that we get error messages for all the
+;; invalid entries.
+(defun ruleset-designator-listp1 (x world ok)
+  (if (atom x)
+      (and (eq x nil) ok)
+    (ruleset-designator-listp1
+     (cdr x) world (and (ruleset-designatorp (car x) world) ok))))
 
 (defun ruleset-designator-listp (x world)
-  (if (atom x)
-      (eq x nil)
-    (and (ruleset-designatorp (car x) world)
-         (ruleset-designator-listp (cdr x) world))))
-
+  (ruleset-designator-listp1 x world t))
 
 
 (defun rules-of-class1 (class theory)
@@ -133,6 +134,9 @@ designator in ~x1.~%" (car x) x))))
                      (expand-ruleset1 (cdr x) world)))
             (:rules-of-class
              (append (rules-of-class (cadr des) (caddr des))
+                     (expand-ruleset1 (cdr x) world)))
+            (:theory
+             (append (theory (cadr des))
                      (expand-ruleset1 (cdr x) world)))
             (:current-theory
              (append (executable-counterpart-theory (cadr des))
