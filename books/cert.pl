@@ -55,10 +55,6 @@ use Cwd 'abs_path';
 
 my %seen = ( );
 
-my $use_pfiles = 0;
-my $write_pfiles = 0;
-
-
 my $base_path = 0;
 
 sub rm_dotdots {
@@ -116,14 +112,12 @@ sub canonical_path {
 my $this_script = canonical_path(substr(`which $0`, 0 ,-1));
 my %dirs = ( "SYSTEM" => dirname($this_script) );
 print "System dir is " . dirname($this_script) . "\n";
-my $local_dirs = 0;
 
 
 my @targets = ();
 my $jobs = 1;
 my $clean_certs = 0;
 my $no_build = 0;
-my $clean_pfiles = 0;
 my $print_deps = 0;
 my $no_makefile = 0;
 my $mf_name = "Makefile-tmp";
@@ -133,6 +127,7 @@ my @include_afters = ();
 my $cust_target = 0;
 my $make_target = "all";
 my $svn_mode = 0;
+my $debugging = 0;
 
 while (my $arg = shift(@ARGV)) {
     if ($arg eq "--help" || $arg eq "-h") {
@@ -153,17 +148,6 @@ and options are as follows:
    -j <n>
            Use n processes to build certificates in parallel.
 
-   --use-pfiles
-   -u
-           Read files with \".p\" extensions to obtain pre-cached
-           dependency information.
-
-
-   --write-pfiles
-   -w
-           Write out files with ".p" extensions to cache dependency
-           information.
-
    --all-deps
    -d
            Write out dependency information for all targets
@@ -175,12 +159,6 @@ and options are as follows:
            .time file encountered in the dependency search.  Warning:
            Unless the "-n"/"--no-build" flag is given, the script will
            then subsequently rebuild these files.
-
-   --clean-pfiles
-   -cp
-           Delete each depencency cache ".p" file encountered.
-           Implies "-u".  Warning:  Unless the "-n"/ "--no-build" flag
-           is given, the script will then go on to certify the books.
 
    --no-build
    -n
@@ -248,6 +226,9 @@ and options are as follows:
            Traverse the dependency tree and run "svn status" on each
            non-cert file in the tree.  Does not build a makefile.
 
+   --debug
+           Print reams and reams of debugging info.
+
    --targets <file>
    -t <file>
            Add as targets the files listed (one per line) in <file>.
@@ -256,19 +237,12 @@ and options are as follows:
 	exit 0;
     } elsif ($arg eq  "--jobs" || $arg eq "-j") {
 	$jobs = shift @ARGV;
-    } elsif ($arg eq "--use-pfiles" || $arg eq "-u") {
-	$use_pfiles = 1;
-    } elsif ($arg eq "--write-pfiles" || $arg eq "-w") {
-	$write_pfiles = 1;
     } elsif ($arg eq "--clean-certs" || $arg eq "-cc") {
 	$clean_certs = 1;
     } elsif ($arg eq "--no-build" || $arg eq "-n") {
 	$no_makefile = 1;
-    } elsif ($arg eq "--clean-pfiles" || $arg eq "-cp") {
-	$clean_pfiles = 1;
     } elsif ($arg eq "--clean-all" || $arg eq "-c") {
-        $clean_pfiles = $no_makefile = $clean_certs = 1;
-        $write_pfiles = $use_pfiles = 0;
+        $no_makefile = $clean_certs = 1;
     } elsif ($arg eq "--verbose-deps" || $arg eq "-v") {
 	$print_deps = 1;
     } elsif ($arg eq "--makefile-only" || $arg eq "-m") {
@@ -279,7 +253,6 @@ and options are as follows:
 	$all_deps = 1;
     } elsif ($arg eq "--static-makefile-mode" || $arg eq "-s") {
 	$mf_name = shift @ARGV;
-	$use_pfiles = $write_pfiles = 0;
 	$all_deps = $no_build = 1;
     } elsif ($arg eq "--include" || $arg eq "-i") {
 	push(@includes, shift @ARGV);
@@ -294,21 +267,27 @@ and options are as follows:
 	$no_makefile = 1;
 	$no_build = 1;
 	$svn_mode = 1;
-    }elsif ($arg eq "--targets" || $arg eq "-t") {
+    } elsif ($arg eq "--targets" || $arg eq "-t") {
 	my $fname = shift;
 	open (my $tfile, $fname);
 	while (my $the_line = <$tfile>) {
-	    push (@targets, canonical_path(substr($the_line, 0, -1)));
+	    push (@targets, substr($the_line, 0, -1));
 	}
+    } elsif ($arg eq "--debug") {
+	print "debugging\n";
+	$debugging = 1;
     } else {
-	push(@targets, canonical_path($arg));
+	push(@targets, $arg);
     }
 }
 
 
 
+
 sub lookup_colon_dir {
     my $name = uc(shift);
+    my $local_dirs = shift;
+
     my $dirpath = ($local_dirs && $local_dirs->{$name})
 	|| $dirs{$name} ;
     return $dirpath;
@@ -317,13 +296,16 @@ sub lookup_colon_dir {
 sub get_include_book {
     my $base = shift;
     my $the_line = shift;
+    my $local_dirs = shift;
+
     my $regexp = "^[^;]*\\(include-book[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
 	if ($res[1]) {
-	    my $dirpath = lookup_colon_dir($res[1]);
+	    my $dirpath = lookup_colon_dir($res[1], $local_dirs);
 	    unless ($dirpath) {
 		print "Error: Unknown :dir entry $res[1] for $base\n";
+		print_dirs($local_dirs) if $debugging;
 		return 0;
 	    }
 	    return canonical_path(rel_path($dirpath, "$res[0].cert"));
@@ -338,13 +320,16 @@ sub get_include_book {
 sub get_depends_on {
     my $base = shift;
     my $the_line = shift;
+    my $local_dirs = shift;
+
     my $regexp = "\\(depends-on[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
 	if ($res[1]) {
-	    my $dirpath = lookup_colon_dir($res[1]);
+	    my $dirpath = lookup_colon_dir($res[1], $local_dirs);
 	    unless ($dirpath) {
 		print "Error: Unknown :dir entry $res[1] for $base\n";
+		print_dirs($local_dirs) if $debugging;
 		return 0;
 	    }
 	    return canonical_path(rel_path($dirpath, "$res[0]"));
@@ -368,15 +353,17 @@ sub get_depends_on {
 sub get_ld {
     my $base = shift;
     my $the_line = shift;
+    my $local_dirs = shift;
 
     # Check for LD commands
     my $regexp = "^[^;]*\\(ld[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
 	if ($res[1]) {
-	    my $dirpath = lookup_colon_dir($res[1]);
+	    my $dirpath = lookup_colon_dir($res[1], $local_dirs);
 	    unless ($dirpath) {
 		print "Error: Unknown :dir entry $res[1] for $base\n";
+		print_dirs($local_dirs) if $debugging;
 		return 0;
 	    }
 	    return canonical_path(rel_path($dirpath, $res[0]));
@@ -391,17 +378,19 @@ sub get_ld {
 sub get_add_dir {
     my $base = shift;
     my $the_line = shift;
+    my $local_dirs = shift;
 
     # Check for ADD-INCLUDE-BOOK-DIR commands
     my $regexp = "^[^;]*\\(add-include-book-dir[\\s]+:([^\\s]*)[\\s]*\"([^\"]*)\\/\"";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
-	$local_dirs = $local_dirs || {};
 	my $name = uc($res[0]);
 	my $basedir = dirname($base);
 	$local_dirs->{$name} = canonical_path(rel_path($basedir, $res[1]));
+	print "Added local_dirs entry " . $local_dirs->{$name} . " for $name\n" if $debugging;
+	print_dirs($local_dirs) if $debugging;
+	return 1;
     }
-    return 0;
 }
 
 
@@ -424,24 +413,37 @@ sub excludep {
     return 0;
 }
 
+
+
+sub print_dirs {
+    my $local_dirs = shift;
+    print "dirs:\n";
+    while ( (my $k, my $v) = each (%{$local_dirs})) {
+	print "$k -> $v\n";
+    }
+}
+
 sub scan_ld {
     my $fname = shift;
     my $deps = shift;
+    my $local_dirs = shift;
+    print "scan_ld $fname\n" if $debugging;
 
     if ($fname) {
 	push (@{$deps}, $fname);
 	open(my $ld, "<", $fname);
 	while (my $the_line = <$ld>) {
-	    my $res = get_include_book($fname, $the_line) || get_depends_on($fname, $the_line);
-	    if ($res) {
-		push(@{$deps}, $res);
-	    } else {
-		$res = get_ld($fname, $the_line);
-		if ($res) {
-		    scan_ld($res, $deps);
-		} else {
-		    get_add_dir($fname, $the_line);
-		}
+	    my $incl = get_include_book($fname, $the_line, $local_dirs);
+	    my $depend =  $incl || get_depends_on($fname, $the_line, $local_dirs);
+	    my $ld = $depend || get_ld($fname, $the_line, $local_dirs);
+	    my $add = $ld || get_add_dir($fname, $the_line, $local_dirs);
+	    if ($incl) {
+		push(@{$deps}, $incl);
+	    } elsif ($depend) {
+		push(@{$deps}, $depend);
+	    } elsif ($ld) {
+		push(@{$deps}, $ld);
+		scan_ld($ld, $deps, $local_dirs);
 	    }
 	}
 	close($ld);
@@ -451,20 +453,31 @@ sub scan_ld {
 sub scan_book {
     my $fname = shift;
     my $deps = shift;
+    my $local_dirs = shift;
+
+    print "scan_book $fname\n" if $debugging;
 
     if ($fname) {
 	# Scan the lisp file for include-books.
 	open(my $lisp, "<", $fname);
 	while (my $the_line = <$lisp>) {
-	    my $res = get_include_book($fname, $the_line) || get_depends_on($fname, $the_line);
-	    if ($res) {
-		push(@{$deps},$res);
+	    my $incl = get_include_book($fname, $the_line, $local_dirs);
+	    my $dep = $incl || get_depends_on($fname, $the_line, $local_dirs);
+	    my $add = $dep || get_add_dir($fname, $the_line, $local_dirs);
+	    if ($incl) {
+		push(@{$deps},$incl);
+	    } elsif ($dep) {
+		push(@{$deps}, $incl);
 	    }
 	}
 	close($lisp);
     }
 }
     
+
+    
+    
+
 
 sub add_deps {
     my $target = shift;
@@ -486,6 +499,9 @@ sub add_deps {
 	return;
     }
 
+    print "add_deps $target\n" if $debugging;
+
+    my $local_dirs = {};
     my $base = $target;
     $base =~ s/\.cert$//;
     my $pfile = $base . ".p";
@@ -519,56 +535,13 @@ sub add_deps {
 	}
     }
 
-    if (-e $pfile && $clean_pfiles) {
-	unlink($pfile);
-    }
-
-    if ((! $use_pfiles) || (! -e $pfile) || (newer_than($lispfile, $pfile))
-	|| ($acl2file && newer_than($acl2file, $pfile))) {
-	# Recreate the pfile and calculate the deps.
-
-	$local_dirs = 0;
-	
-	# Scan the .acl2 file first so that we get the add-include-book-dir
-	# commands before the include-book commands.
-	scan_ld($acl2file, $deps);
-
-	# Scan the lisp file for include-books.
-	scan_book($lispfile, $deps);
-
-	$local_dirs = 0;
-	
-	if ($write_pfiles) {
-	    # Print the dependencies to the pfile.
-	    open (my $p, ">", $pfile);
-	    foreach my $dep (@{$deps}) {
-		print $p $dep . "\n";
-	    }
-	    close($p);
-	}
-    } else {
-
-	# Read the dependencies from the pfile instead of regenerating them.
-	open(my $p, "<", $pfile);
-	while (my $the_line = <$p>) {
-	    # Chop the newline off and add to deps.
-	    push(@{$deps}, substr($the_line, 0, -1));
-	}
-	close($p);
-    }
-
-    if ($print_deps) {
-	print "Dependencies for $target:\n";
-	foreach my $dep (@{$deps}) {
-	    print "$dep\n";
-	}
-	print "\n";
-    }
-
-    foreach my $dep (@{$deps}) {
-	add_deps($dep);
-    }
-
+    # Scan the .acl2 file first so that we get the add-include-book-dir
+    # commands before the include-book commands.
+    scan_ld($acl2file, $deps, $local_dirs);
+    
+    # Scan the lisp file for include-books.
+    scan_book($lispfile, $deps, $local_dirs);
+    
     # If there is an .image file corresponding to this file or a
     # cert.image in this file's directory, add a dependency on the
     # ACL2 image specified in that file.
@@ -579,6 +552,7 @@ sub add_deps {
 	    $imagefile = 0;
 	}
     }
+
     if ($imagefile) {
 	open(my $im, "<", $imagefile);
 	my $line = <$im>;
@@ -594,6 +568,19 @@ sub add_deps {
 		push(@{$deps}, canonical_path($image));
 	    }
 	}
+    }
+
+    if ($print_deps) {
+	print "Dependencies for $target:\n";
+	foreach my $dep (@{$deps}) {
+	    print "$dep\n";
+	}
+	print "\n";
+    }
+
+    # Run the recursive add_deps on each dependency.
+    foreach my $dep  (@{$deps}) {
+	add_deps($dep);
     }
     
 
@@ -617,6 +604,7 @@ sub add_deps {
 }
 
 foreach my $target (@targets) {
+    $target = canonical_path($target);
     $target =~ s/\.lisp$/.cert/;
     add_deps($target);
 }
