@@ -467,7 +467,7 @@ sub scan_book {
 	    if ($incl) {
 		push(@{$deps},$incl);
 	    } elsif ($dep) {
-		push(@{$deps}, $incl);
+		push(@{$deps}, $dep);
 	    }
 	}
 	close($lisp);
