@@ -342,6 +342,17 @@ User binders are treated this way if they end in the character +.
 (verify-guards doubleton-list-p)
 
 
+(defun debuggable-doubleton-list-p (x)
+  (declare (xargs :guard t))
+  (mbe :logic (doubleton-list-p x)
+       :exec (cond ((atom x) 
+                    (or (equal x nil)
+                        (cw "; Not a doubleton-list-p: ends with ~x0, instead of nil.~%" x)))
+                   ((and (true-listp (car x))
+                         (eql (length (car x)) 2))
+                    (debuggable-doubleton-list-p (cdr x)))
+                   (t
+                    (cw "; Not a doubleton-list-p: first bad entry is ~x0.~%" (car x))))))
 
 (defun patbind-decode-varname (pattern)
   (let* ((name (symbol-name pattern))
@@ -454,19 +465,19 @@ User binders are treated this way if they end in the character +.
 
 
 (defun b*-fn1 (bindlist expr)
-  (declare (xargs :guard (doubleton-list-p bindlist)))
+  (declare (xargs :guard (debuggable-doubleton-list-p bindlist)))
   (if (atom bindlist)
       expr
     `(patbind ,(caar bindlist) ,(cadar bindlist)
               ,(b*-fn1 (cdr bindlist) expr))))
 
 (defun b*-fn (bindlist exprs)
-  (declare (xargs :guard (and (doubleton-list-p bindlist)
+  (declare (xargs :guard (and (debuggable-doubleton-list-p bindlist)
                               (consp exprs))))
   (b*-fn1 bindlist (mk-prog2$-nest exprs)))
 
 (defmacro b* (bindlist expr &rest exprs)
-  (declare (xargs :guard (doubleton-list-p bindlist)))
+  (declare (xargs :guard (debuggable-doubleton-list-p bindlist)))
   (b*-fn bindlist (cons expr exprs)))
 
 
