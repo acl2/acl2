@@ -438,7 +438,7 @@
 
       (,(if local 'local 'id)
        (with-output
-        :off prove ;; hides induction scheme, too
+        :off (prove event) ;; hides induction scheme, too
         (encapsulate nil
           (logic)
           (defthm ,equiv-thm-name
@@ -453,10 +453,13 @@
                       (union-theories (theory 'minimal-theory)
                                       '((:induction ,flag-fn-name)
                                         (:rewrite expand-all-hides)))
-                      ;; Jared found a case where "linear" forced some goals
-                      ;; from an equality, which were unprovable.  So, turn off
-                      ;; forcing.
-                      '((:executable-counterpart force))))
+                      '(;; Jared found mv-nth to be slowing down a couple of flag
+                        ;; function admissions.  Take it out of the minimal theory.
+                        (:definition mv-nth)
+                        ;; Jared found a case where "linear" forced some goals
+                        ;; from an equality, which were unprovable.  So, turn
+                        ;; off forcing.
+                        (:executable-counterpart force))))
                     (and stable-under-simplificationp
                          (expand-calls-computed-hint ACL2::clause
                                                      ',(cons flag-fn-name
