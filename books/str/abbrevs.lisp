@@ -50,6 +50,9 @@
 (add-macro-alias charlistnat< STR::charlistnat<)
 
 
+(defmacro html-encode-string (x tabsize) `(STR::html-encode-string ,x ,tabsize))
+(add-macro-alias html-encode-string STR::html-encode-string)
+
 (defmacro ichareqv (x) `(STR::ichareqv ,x))
 (add-macro-alias ichareqv STR::ichareqv)
 

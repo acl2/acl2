@@ -17,6 +17,7 @@
 (include-book "doc")
 (include-book "digitp")
 (include-book "eqv")
+(include-book "html-encode")
 (include-book "ieqv")
 (include-book "iprefixp")
 (include-book "iless")
