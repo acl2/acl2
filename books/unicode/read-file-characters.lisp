@@ -22,6 +22,8 @@
 (local (include-book "open-input-channel"))
 (local (include-book "read-char"))
 (local (include-book "close-input-channel"))
+(local (include-book "revappend"))
+
 
 (defun tr-read-char$-all (channel state acc)
   (declare (xargs :guard (and (state-p state)
@@ -33,7 +35,7 @@
       (mv-let (char state)
               (read-char$ channel state)
               (if (eq char nil)
-                  (mv (reverse acc) state)
+                  (mv acc state)
                 (tr-read-char$-all channel state (cons char acc))))
     (mv nil state)))
                  
@@ -52,9 +54,12 @@
                                     (read-char$-all channel state)
                                     (mv (cons char rest) state))))
                 (mv nil state))
-       :exec (tr-read-char$-all channel state nil)))
+       :exec (mv-let (data state)
+                     (tr-read-char$-all channel state nil)
+                     (mv (reverse data) state))))
 
 (defun read-file-characters (filename state)
+  "Read the entire file and return its contents as a list of characters."
   (declare (xargs :guard (and (state-p state)
                               (stringp filename))
                   :verify-guards nil))
@@ -63,6 +68,22 @@
           (if channel
               (mv-let (data state)
                       (read-char$-all channel state)
+                      (let ((state (close-input-channel channel state)))
+                        (mv data state)))
+            (mv "Error opening file." state))))
+
+(defun read-file-characters-rev (filename state)
+  "Read the entire file and return its contents as a list of characters in 
+   reverse order.  This is faster than read-file-characters because it does
+   not need to reverse the accumulator."
+  (declare (xargs :guard (and (state-p state)
+                              (stringp filename))
+                  :verify-guards nil))
+  (mv-let (channel state)
+          (open-input-channel filename :character state)
+          (if channel
+              (mv-let (data state)
+                      (tr-read-char$-all channel state nil)
                       (let ((state (close-input-channel channel state)))
                         (mv data state)))
             (mv "Error opening file." state))))
@@ -85,24 +106,49 @@
                        (open-input-channel-p1 channel :character state)
                        (true-listp acc))
                   (equal (car (tr-read-char$-all channel state acc))
-                         (revappend acc (car (read-char$-all channel state)))))))
+                         (revappend (car (read-char$-all channel state)) acc)))))
 
 (local (defthm lemma-state-equiv
          (equal (mv-nth 1 (tr-read-char$-all channel state acc))
                 (mv-nth 1 (read-char$-all channel state)))))
-  
+
+(local (defthm lemma-true-listp-impl
+         (implies (true-listp acc)
+                  (true-listp (car (tr-read-char$-all channel state acc))))
+         :rule-classes :type-prescription))
+
+(local (defthm lemma-true-listp-spec
+         (true-listp (car (read-char$-all channel state)))
+         :rule-classes :type-prescription))
+                     
 (local (defthm lemma-equiv
          (implies (and (state-p1 state)
                        (symbolp channel)
                        (open-input-channel-p1 channel :character state))
                   (equal (tr-read-char$-all channel state nil)
-                         (read-char$-all channel state)))
+                         (mv (reverse (car (read-char$-all channel state)))
+                             (mv-nth 1 (read-char$-all channel state)))))
          :hints(("Goal" :in-theory (disable tr-read-char$-all read-char$-all)
                  :use ((:instance lemma-decompose-impl (acc nil))
                        (:instance lemma-decompose-spec)
                        (:instance lemma-data-equiv (acc nil)))))))
 
-(verify-guards read-char$-all)
+(encapsulate
+ ()
+ (local (include-book "rev"))
+ (verify-guards read-char$-all))
+
+
+(defthm read-file-characters-rev-redefinition
+  (implies (and (force (stringp filename))
+                (force (state-p1 state)))
+           (equal (read-file-characters-rev filename state)
+                  (mv-let (data state)
+                          (read-file-characters filename state)
+                          (if (stringp data)
+                              (mv data state)
+                            (mv (reverse data) state))))))
+          
 
 (defthm read-char$-all-preserves-state
   (implies (and (force (state-p1 state))
@@ -125,6 +171,9 @@
 
 (verify-guards read-file-characters)
 
+(verify-guards read-file-characters-rev)
+
+
 (defthm read-file-characters-preserves-state
   (implies (and (force (state-p1 state))
                 (force (stringp filename)))
@@ -136,5 +185,9 @@
                 (not (stringp (car (read-file-characters filename state)))))
            (character-listp (car (read-file-characters filename state)))))
 
-(in-theory (disable tr-read-char$-all read-char$-all read-file-characters))
+
+(in-theory (disable tr-read-char$-all 
+                    read-char$-all 
+                    read-file-characters
+                    read-file-characters-rev))
 
