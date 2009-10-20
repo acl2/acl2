@@ -1,0 +1,73 @@
+/* XDOC Documentation System for ACL2
+   Copyright (C) 2009 Centaur Technology
+
+   This program is free software; you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by the Free
+   Software Foundation; either version 2 of the License, or (at your option)
+   any later version.  This program is distributed in the hope that it will be
+   useful but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+   Public License for more details.  You should have received a copy of the GNU
+   General Public License along with this program; if not, write to the Free
+   Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+   02111-1307, USA.
+*/
+
+h1 {
+  text-align: center;
+}
+
+h1,h2,h3,h4,h5 {
+  font-family: sans-serif;
+  color: #800000;
+}
+
+h5 { 
+  margin-left: 1em;
+}
+
+body {
+  width: 6.5in;
+}
+
+p, li, dl { 
+  margin-left: 1em;
+  text-align: justify;
+}
+
+dt {
+  margin-top: 1em;
+  font-family: sans-serif; 
+  font-weight: bold;
+}
+
+.sf {
+  font-family: sans-serif;
+}
+
+.box {
+  margin-left: 2.5em;
+  margin-right: 2.5em;
+  border-width: 1px;
+  border-style: solid;
+  border-color: black;
+}
+
+a:hover {
+  background-color: #ffffa0;
+}
+
+.code {
+  margin-left: 2.5em;
+  margin-right: 2.5em;
+  padding: .5em;
+  background-color: #ffffd0;
+}
+
+i {
+  font-family: serif;
+}
+
+tt {
+  color: #006000;
+}
