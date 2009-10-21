@@ -28,10 +28,10 @@ to how it works, the markup, etc., for the time being.</p>
 
 <h3>Writing Documentation</h3>
 
-<p>To begin using XDOC, the first step is to include the <tt>xdoc/xdoc</tt>
+<p>To begin using XDOC, the first step is to include the <tt>xdoc/defxdoc</tt>
 book in your library, e.g.,</p>
 
-<code>(include-book \"xdoc/xdoc\" :dir :system)</code>
+<code>(include-book \"xdoc/defxdoc\" :dir :system)</code>
 
 <p>This book is intentionally quite minimal.  It loads quickly, mainly keeps to
 the <tt>XDOC</tt> package, and adds no theorems.  In short, it has a light

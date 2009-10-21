@@ -39,6 +39,13 @@
        (state          (close-output-channel out state)))
       state))
 
+(defun stupid-copy-files (srcdir filenames destdir state)
+  (if (atom filenames)
+      state
+    (b* ((srcfile  (acl2::extend-pathname srcdir (car filenames) state))
+         (destfile (acl2::extend-pathname destdir (car filenames) state))
+         (state    (stupid-copy-file srcfile destfile state)))
+        (stupid-copy-files srcdir (cdr filenames) destdir state))))
 
 
 ; XDOC Preprocessor
@@ -98,7 +105,7 @@
             (body    (get-body fn world))
             (guard   (get-guard fn world)))
         `(defun ,fn ,formals
-           ,@(or (not guard) 
+           ,@(and guard
                  `((declare (xargs :guard ,guard))))
            ,body))
     (or (cw "; xdoc note: get-def failed for ~x0.~%" fn)
@@ -162,8 +169,7 @@
   (let ((str (concatenate 'string 
                           (symbol-package-name x)
                           "::"
-                          (symbol-name x)
-                          ".xml")))
+                          (symbol-name x))))
     (file-name-mangle-aux str 0 (length str) acc)))
 
 
@@ -609,7 +615,7 @@
        (acc    nil)
        (acc    (str::revappend-chars "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" acc))
        (acc    (cons #\Newline acc))
-       (acc    (str::revappend-chars "<?xml-stylesheet type=\"text/xsl\" href=\"xdoc.xsl\"?>" acc))
+       (acc    (str::revappend-chars "<?xml-stylesheet type=\"text/xsl\" href=\"xdoc-to-dynamic-html.xsl\"?>" acc))
        (acc    (cons #\Newline acc))
        (acc    (str::revappend-chars "<topic name=\"" acc))
        (acc    (sym-mangle-cap name base-pkg acc))
@@ -632,7 +638,9 @@
   (b* ((name               (cdr (assoc :name x)))
        (-                  (cw "Saving ~s0::~s1.~%" (symbol-package-name name) (symbol-name name)))
        ((mv text state)    (preprocess-topic x state))
-       (filename           (reverse (coerce (file-name-mangle name nil) 'string)))
+       (filename           (concatenate 'string 
+                                        (reverse (coerce (file-name-mangle name nil) 'string))
+                                        ".xml"))
        (fullpath           (acl2::extend-pathname dir filename state))
        ((mv channel state) (open-output-channel fullpath :character state))
        (state              (princ$ text channel state))
@@ -657,15 +665,18 @@
          (prog2$ (cw "; xdoc note: no topics are documented.~%")
                  state))
         (t
-         (b* ((-        (cw "; Copying xdoc.css and xdoc.xsl~%"))
-              (css-in   (acl2::extend-pathname *xdoc-root-dir* "xdoc.css" state))
-              (css-out  (acl2::extend-pathname dir "xdoc.css" state))
-              (state    (stupid-copy-file css-in css-out state))
-              (xsl-in   (acl2::extend-pathname *xdoc-root-dir* "xdoc.xsl" state))
-              (xsl-out  (acl2::extend-pathname dir "xdoc.xsl" state))
-              (state    (stupid-copy-file xsl-in xsl-out state))
-              (-        (cw "; Preprocess and save ~x0 topics.~%" (len x))))
-             (time$ (save-topics-aux x dir state))))))
+         (b* ((-        (cw "; Copying xsl, css, and Makefile-trans~%"))
+              (state    (time$ (stupid-copy-files *xdoc-root-dir*
+                                                  (list "Makefile-trans"
+                                                        "xdoc.css"
+                                                        "xdoc-to-text.xsl"
+                                                        "xdoc-to-html-aux.xsl"
+                                                        "xdoc-to-dynamic-html.xsl"
+                                                        "xdoc-to-static-html.xsl")
+                                                  dir state)))
+              (-        (cw "; Preprocess and save ~x0 topics.~%" (len x)))
+              (state    (time$ (save-topics-aux x dir state))))
+             state))))
 
 (defmacro save (dir)
   `(save-topics (get-xdoc-table (w state)) ,dir state))

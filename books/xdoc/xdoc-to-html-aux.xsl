@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
 <!-- 
 
@@ -16,6 +16,10 @@ details.  You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software Foundation, Inc.,
 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+  
+  xdoc-to-html-aux.xsl
+  Main transformations to convert XDOC to HTML
+
 -->
 
 <xsl:template match="topic">
@@ -31,19 +35,6 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
   </html>
 </xsl:template>
 
-<xsl:template match="parent">
-  <p>Parent: <a href="{@topic}">
-    <xsl:value-of select="."/>
-  </a></p>
-</xsl:template>
-
-
-<xsl:template match="see">
-  <a href="{@topic}">
-    <xsl:value-of select="."/>
-  </a>
-</xsl:template>
-
 <xsl:template match="code">
   <pre class="code"><xsl:apply-templates/></pre>
 </xsl:template>
@@ -51,10 +42,6 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 <xsl:template match="box">
   <div class="box"><xsl:apply-templates/></div>
 </xsl:template>
-
-
-<!-- Support for various XHTML tags.  We just let you use things like 
-  <b>, <ul>, <p>, etc., verbatim. -->
 
 <xsl:template match="p">
   <p><xsl:apply-templates/></p>

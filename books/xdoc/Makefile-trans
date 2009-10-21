@@ -1,0 +1,147 @@
+# XDOC Documentation System for ACL2
+# Copyright (C) 2009 Centaur Technology
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.  This program is distributed in the hope that it will be useful but
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+# more details.  You should have received a copy of the GNU General Public
+# License along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+
+# Makefile-trans 
+# Converts .xml files from XDOC into other formats
+#
+#
+# CONFIGURATION.
+#
+# This Makefile requires either Xalan-Java or Xalan-C++ to be installed.  It
+# should be relatively easy to extend it to other XSLT processors.
+#
+# Note that Xalan-C++ performs much better than Xalan-Java.  This is probably
+# mainly due to the "many invocations, little wrok each"  perhaps largely 
+# due to the difference in startup costs between Java and C++ programs
+
+#
+#
+# OPTION 1.  Xalan-Java (slower)
+#
+# Xalan-Java is available from http://xml.apache.org/xalan-j/, and requires a
+# Java environment.  To set it up, you will need to 
+#
+#  (1) Download 'xalan-j_2_7_1-bin.zip' or similar, and extract it to somewhere
+#      on your system.
+#
+#  (2) Define an environment variable named XALANDIR that points to the
+#      resulting directory containing xalan.jar, etc.  For instance, you 
+#      might add to your .bashrc or equivalent:
+#
+#	     export XALANDIR=/path/to/xalan-j_2_7_1
+#
+# 
+# OPTION 2.  Xalan-C++ (faster)
+# 
+# Xalan-C++ is available from http://xml.apache.org/xalan-c/.  Some binary 
+# downloads are available, or you can compile it from source.  
+#
+# Once you have it working, you should add the executable named "Xalan" to 
+# your path, e.g., so that running "Xalan" with no arguments prints a help
+# message like:
+#
+#     Xalan version 1.10.0.
+#     Xerces version 2.7.0.
+#     Usage: Xalan [options] source stylesheet
+#     ...
+#
+#
+# CONVERTING XDOC DOCUMENTATION.
+#
+# Once either of the above XSLT transformers is installed, you can use this 
+# Makefile to convert XDOC documentation into other formats.
+#  
+#   (1) Generate your xdoc documentation using xdoc::save.  This should result
+#       in a directory, say "my-doc-dir", with lots of XML files, and a copy of
+#       this file, Makefile-trans.
+#
+#   (2) In my-doc-dir, run
+#    
+#          make -f Makefile-trans [target1 target2 ...]
+#
+#       Valid targets are:
+# 
+#          all        Generate all supported documentation formats
+#          html       Generate static .html files in html/
+#          text       Generate plain text files in text/
+#
+# The generated output will be written to subdirectories named "html", "text", 
+# and so on.
+
+XML_FILES := $(wildcard *.xml)
+HTML_FILES := $(patsubst %.xml, html/%.html, $(XML_FILES))
+TEXT_FILES := $(patsubst %.xml, text/%.text, $(XML_FILES))
+
+.PHONY: welcome all html text text-dir html-dir
+
+
+XALAN_C_BIN ?= $(shell which Xalan 2>/dev/null || echo "")
+
+
+ifneq "$(XALAN_C_BIN)" ""
+
+WELCOME_MSG := "Using Xalan-C++ from $(XALAN_C_BIN)"
+
+###  Configuration for Xalan-C++
+
+html/%.html: %.xml xdoc-to-static-html.xsl html-dir welcome
+	@echo "Making $@"
+	@$(XALAN_C_BIN) -o html/$*.html $*.xml xdoc-to-static-html.xsl 
+
+text/%.text: %.xml xdoc-to-text.xsl text-dir welcome
+	@echo "Making $@"
+	@$(XALAN_C_BIN) -o text/$*.text $*.xml xdoc-to-text.xsl 
+
+else
+
+### Configuration for Xalan-Java
+
+WELCOME_MSG := "Using Xalan-Java from $(XALANDIR)"
+
+ifndef XALANDIR      # Quick sanity check
+all:
+	@echo "Error: Xalan not found and XALANDIR is not defined"
+	@echo "See the instructions in Makefile-trans for help."
+	@exit 1
+endif
+
+XALAN_JARS := xalan.jar serializer.jar xercesImpl.jar xml-apis.jar
+CLASSPATH := $(patsubst %,$(XALANDIR)/%:,$(XALAN_JARS))
+export CLASSPATH
+
+html/%.html: %.xml xdoc-to-static-html.xsl html-dir welcome
+	@echo "Making $@"
+	@java org.apache.xalan.xslt.Process -IN $*.xml -XSL xdoc-to-static-html.xsl -OUT html/$*.html
+
+text/%.text: %.xml xdoc-to-text.xsl text-dir welcome
+	@echo "Making $@"
+	@java org.apache.xalan.xslt.Process -IN $*.xml -XSL xdoc-to-text.xsl -OUT text/$*.text
+
+endif
+
+all: html text
+
+text: $(TEXT_FILES)
+
+text-dir:
+	@mkdir -p text
+
+html: $(HTML_FILES)
+
+html-dir:
+	@mkdir -p html
+	@cp xdoc.css html
+
+welcome: 
+	@echo $(WELCOME_MSG)
