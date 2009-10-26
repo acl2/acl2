@@ -759,9 +759,12 @@
            :do-not-induct t
            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)
            :do-not '(eliminate-destructors generalize fertilize))
-          ("Subgoal 25" 
-           :expand (availablemovep route_triple N))
-          ("Subgoal 23"
+; Subgoal hints modified by Matt K. after ACL2 Version 3.6.1 for changes in
+; too-many-ifs heuristic.  The first of these is just for backward
+; compatibility; the second is for the new ACL2.
+          ("Subgoal 25"
+           :expand (availablemovep route_triple n))
+          ("Subgoal 2.26"
            :expand (all_intp route_triple))))
 
 

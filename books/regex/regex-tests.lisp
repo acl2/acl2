@@ -150,8 +150,11 @@
 (in-theory (disable regex-other-testp))
 
 (defun do-other-test (test)
-  (declare (xargs :guard (regex-other-testp test)))
-  
+  (declare (xargs :guard (regex-other-testp test)
+; Added by Matt K. after ACL2 Version 3.6.1 for change in too-many-ifs
+; heuristic:
+                  :guard-hints
+                  (("Goal" :in-theory (enable regex-other-testp)))))
    (let* ((num (nth 0 test))
           (ans (nth 1 test))
           (reg (nth 2 test))
