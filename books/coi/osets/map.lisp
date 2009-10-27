@@ -389,11 +389,11 @@
                  ((filter-list<not-inversep> ?a ?b) (,filter-list<not-inversep<f>> ?a ?b ,@extra-args))
          ))
 
-         (theory<f>         (mksym (app "map-theory" wrap) in-package))
-         (suffix            (mksym wrap in-package))
-         (thm-names         (INSTANCE::defthm-names *map-theorems*))
-         (thm-name-map      (INSTANCE::create-new-names thm-names suffix))
-         (theory<f>-defthms (sublis thm-name-map thm-names))
+         ;;(theory<f>         (mksym (app "map-theory" wrap) in-package))
+         ;;(suffix            (mksym wrap in-package))
+         ;;(thm-names         (INSTANCE::defthm-names *map-theorems*))
+         ;;(thm-name-map      (INSTANCE::create-new-names thm-names suffix))
+         ;;(theory<f>-defthms (sublis thm-name-map thm-names))
          )
 
   `(encapsulate ()
@@ -425,7 +425,8 @@
 
                 (verify-guards ,map<f>)
 
-                (deftheory ,theory<f>
+                #+joe
+		(deftheory ,theory<f>
                   (union-theories 
                    (theory ',(mksym (app "theory" ipw) in-package))
                    '(,map<f> ,map-list<f> ,inversep<f>
@@ -449,11 +450,11 @@
 
 
 (deftheory generic-map-theory 
-  (union-theories (theory 'theory<inversep>)
-                  `(,@(INSTANCE::defthm-names *map-theorems*)
-                      map 
-                      map-list
-                      inversep)))
+  ;(union-theories (theory 'theory<inversep>)
+  `(,@(INSTANCE::defthm-names *map-theorems*)
+      map 
+      map-list
+      inversep))
 
 (in-theory (disable generic-map-theory))
                      
