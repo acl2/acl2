@@ -168,19 +168,17 @@
                 (cons 'evfn-lst evfn-lst)
                 (cons 'fns-clauses fns-clauses)
                 (cons 'defthms defthms))
-          '((local (defun apply-for-defevaluator (fn args)
+          '((local (defun-nx apply-for-defevaluator (fn args)
                      (declare (xargs :verify-guards nil
-                                     :normalize nil
-                                     :non-executable t))
+                                     :normalize nil))
                      (cond . fns-clauses)))
             (local
              (mutual-recursion
-              (defun evfn (x a)
+              (defun-nx evfn (x a)
                 (declare
                  (xargs :verify-guards nil
                         :measure (acl2-count x)
                         :well-founded-relation o<
-                        :non-executable t
                         :normalize nil
                         :hints (("goal" :in-theory
                                  (enable (:type-prescription
@@ -197,7 +195,7 @@
                               (pairlis$ (car (cdr (car x)))
                                         args)))
                        (t (apply-for-defevaluator (car x) args)))))))
-                (defun evfn-lst (x-lst a)
+                (defun-nx evfn-lst (x-lst a)
                   (declare (xargs :measure (acl2-count x-lst)
                                   :well-founded-relation o<))
                   (cond ((endp x-lst) nil)
@@ -459,12 +457,11 @@
                (cons 'defthms defthms))
          '((local
             (mutual-recursion
-             (defun evfn (x a)
+; MODIFIED: Make the evaluator non-executable so it can handle stobjs and mvs
+             (defun-nx evfn (x a)
                (declare (xargs :verify-guards nil
                                :measure (acl2-count x)
                                :well-founded-relation o<
-; MODIFIED: Make the evaluator non-executable so it can handle stobjs and mvs
-                               :non-executable t
                                :mode :logic
 ; MODIFIED: Prevent preprocessing in the measure theorem to eliminate a drastic
 ; slowdown.
@@ -531,11 +528,10 @@
 (LOCAL (IN-THEORY *DEFEVALUATOR-FAST-FORM-BASE-THEORY*))
 (LOCAL
  (MUTUAL-RECURSION
-  (DEFUN FOOEV (X A)
+  (DEFUN-NX FOOEV (X A)
     (DECLARE (XARGS :VERIFY-GUARDS NIL
                     :MEASURE (ACL2-COUNT X)
                     :WELL-FOUNDED-RELATION O<
-                    :NON-EXECUTABLE T
                     :NORMALIZE NIL
                     :MODE :LOGIC))
     (COND ((SYMBOLP X)

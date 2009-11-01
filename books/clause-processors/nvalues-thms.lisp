@@ -12,8 +12,7 @@
   (and (true-listp x)
        (equal (len x) n)))
 
-(defun list-of-mv-nths (left n x)
-  (declare (xargs :non-executable t))
+(defun-nx list-of-mv-nths (left n x)
   (if (zp left)
       nil
     (cons (mv-nth n x)

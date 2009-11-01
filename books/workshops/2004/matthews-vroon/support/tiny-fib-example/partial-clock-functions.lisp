@@ -79,8 +79,7 @@ the nth number in the fibonacci sequence written for the tiny machine.
 
 ;Simulate tiny-state until it reaches a cutpoint state,
 ; assuming it does.
-(defun run-to-cutpoint (tiny-state)
-  (declare (xargs :non-executable t))
+(defun-nx run-to-cutpoint (tiny-state)
   (run (steps-to-cutpoint tiny-state) tiny-state))
 
 (in-theory (disable at-cutpoint tiny-statep))
@@ -120,9 +119,8 @@ the nth number in the fibonacci sequence written for the tiny machine.
 (in-theory (disable run))
 
 (local
- (defun steps-to-cutpoint-induction (k tiny-state steps)
-   (declare (xargs :non-executable t
-                   :verify-guards nil
+ (defun-nx steps-to-cutpoint-induction (k tiny-state steps)
+   (declare (xargs :verify-guards nil
                    :guard (and (equal tiny-state tiny-state)
                                (equal steps steps))))
    (or (zp k)
@@ -445,8 +443,7 @@ the nth number in the fibonacci sequence written for the tiny machine.
 ;; decrease from cutpoint to cutpoint, until an
 ;; exit point has been reached. In this example we
 ;; just use the value of the program counter.
-(defun cutpoint-measure (tiny-state)
-  (declare (xargs :non-executable t))
+(defun-nx cutpoint-measure (tiny-state)
   (if (at-exitpoint tiny-state)
       0
     (o+ (o* (omega) (nfix (dtos-val tiny-state 0))) 

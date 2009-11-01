@@ -183,11 +183,10 @@
 
 (defun make-flag-body (fn-name flag-var alist hints world)
   (let ((formals (merge-formals alist world)))
-  `(defun ,fn-name (,flag-var . ,formals)
+  `(defun-nx ,fn-name (,flag-var . ,formals)
      (declare (xargs :verify-guards nil
                      :normalize nil
                      :measure ,(make-flag-measure flag-var alist world)
-                     :non-executable t
                      :hints ,hints
                      :well-founded-relation ,(get-wfr (caar alist)
                                                       world)

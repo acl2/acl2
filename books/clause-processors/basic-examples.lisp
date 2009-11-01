@@ -913,8 +913,7 @@
 
 ; Non-executable clause-processors are illegal.
 
-(defun trivial-cl-proc-nonexec (cl)
-  (declare (xargs :non-executable t))
+(defun-nx trivial-cl-proc-nonexec (cl)
   (list cl))
 
 (must-fail
@@ -927,8 +926,7 @@
             (ev3 (disjoin cl) a))
    :rule-classes :clause-processor))
 
-(defun strengthen-cl-nonexec (cl term)
-  (declare (xargs :non-executable t))
+(defun-nx strengthen-cl-nonexec (cl term)
 ; sad that we can't translate term first
   (cond ((pseudo-termp term) ; sad that we can't use termp!
          (list (cons (list 'not term)

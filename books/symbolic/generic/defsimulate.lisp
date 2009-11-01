@@ -142,8 +142,7 @@ think I can do the change reliably.
           
           (list
 
-           `(defun ,run (,(lastval params) n) 
-              (declare (xargs :non-executable t)) 
+           `(defun-nx ,run (,(lastval params) n)  
               ;; I add the :non-executable argument in the declare because nextt
               ;; might otherwise have stobjs or something like that and I dont
               ;; want to deal with them.
@@ -218,7 +217,7 @@ think I can do the change reliably.
 
       
       `(local
-        (defun concrete-steps-to-cutpoint ,params
+        (defun-nx concrete-steps-to-cutpoint ,params
           (declare (xargs :normalize nil :non-executable t))
           (let ((steps ,(cons 'concrete-steps-to-cutpoint-tail (snoc params 0)))
                 (s ,(lastval params)))
@@ -230,7 +229,7 @@ think I can do the change reliably.
       ;; no user input should be required.
       
       `(local 
-        (defun concrete-nextt-cutpoint ,params
+        (defun-nx concrete-nextt-cutpoint ,params
           (declare (xargs :normalize nil :non-executable t))
           (let* ((s ,(lastval params))
                  (steps ,(cons 'concrete-steps-to-cutpoint 
@@ -411,7 +410,7 @@ think I can do the change reliably.
       ;; correctness theorem by functional instantiation.
       
 
-      `(defun ,exitsteps ,params
+      `(defun-nx ,exitsteps ,params
          (declare (xargs :normalize nil :non-executable t))
          (let ((steps ,(cons (packn (list exitsteps '-tail)) (snoc params 0)))
                (s ,(lastval params)))
@@ -601,8 +600,7 @@ think I can do the change reliably.
           
           (list
 
-           `(defun ,run (,(lastval params) n) 
-              (declare (xargs :non-executable t)) 
+           `(defun-nx ,run (,(lastval params) n) 
               ;; I add the :non-executable argument in the declare because nextt
               ;; might otherwise have stobjs or something like that and I dont
               ;; want to deal with them.
@@ -680,7 +678,7 @@ think I can do the change reliably.
       
       
       `(local
-        (defun concrete-steps-to-cutpoint ,params
+        (defun-nx concrete-steps-to-cutpoint ,params
           (declare (xargs :normalize nil :non-executable t))
           (let ((steps ,(cons 'concrete-steps-to-cutpoint-tail (snoc params 0)))
                 (s ,(lastval params)))
@@ -692,7 +690,7 @@ think I can do the change reliably.
       ;; no user input should be required.
       
       `(local 
-        (defun concrete-nextt-cutpoint ,params
+        (defun-nx concrete-nextt-cutpoint ,params
           (declare (xargs :normalize nil :non-executable t))
           (let* ((s ,(lastval params))
                  (steps ,(cons 'concrete-steps-to-cutpoint 
@@ -1008,7 +1006,7 @@ think I can do the change reliably.
       ;; correctness theorem by functional instantiation.
       
 
-      `(defun ,exitsteps ,params
+      `(defun-nx ,exitsteps ,params
          (declare (xargs :normalize nil :non-executable t))
          (let ((steps ,(cons (packn (list exitsteps '-tail)) (snoc params 0)))
                (s ,(lastval params)))

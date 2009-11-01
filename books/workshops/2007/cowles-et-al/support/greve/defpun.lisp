@@ -138,7 +138,7 @@
 (in-package "ACL2")
 
 (defmacro defun-nonexec (name args &rest rst)
-  `(defun ,name ,args (declare (xargs :non-executable t)) ,@rst))
+  `(defun-nx ,name ,args ,@rst))
 
 (encapsulate
     (

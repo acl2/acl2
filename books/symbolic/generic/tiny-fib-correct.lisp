@@ -95,8 +95,7 @@ represented.
 ;; macro. In lieu of that the only option I have is to make dummy-tiny-state be
 ;; :non-executable.
 
-(defun dummy-tiny-state ()
-  (declare (xargs :non-executable t))
+(defun-nx dummy-tiny-state ()
   (create-tiny-state))
 
 ;; Now correspondingly define the exitpoints, precondition and

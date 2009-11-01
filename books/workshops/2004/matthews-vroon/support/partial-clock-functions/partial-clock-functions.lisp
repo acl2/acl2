@@ -196,8 +196,7 @@
 ;The number of steps until mstate reaches the next
 ; cutpoint state, if there is one. If there isn't,
 ; then this function returns zero.
-(defun steps-to-cutpoint (mstate)
-  (declare (xargs :non-executable t))
+(defun-nx steps-to-cutpoint (mstate)
   (let ((steps (steps-to-cutpoint-tail 0 mstate)))
     (if (at-cutpoint (run steps mstate))
 	steps
@@ -205,8 +204,7 @@
 
 ;Simulate mstate until it reaches a cutpoint state,
 ; assuming it does.
-(defun run-to-cutpoint (mstate)
-  (declare (xargs :non-executable t))
+(defun-nx run-to-cutpoint (mstate)
   (run (steps-to-cutpoint mstate) mstate))
 
 #|
@@ -257,9 +255,8 @@
 
 (in-theory (disable run))
 
-(defun steps-to-cutpoint-induction (k mstate steps)
-  (declare (xargs :non-executable t
-                  :verify-guards nil
+(defun-nx steps-to-cutpoint-induction (k mstate steps)
+  (declare (xargs :verify-guards nil
                   :guard (and (equal mstate mstate)
                               (equal steps steps))))
   (or (zp k)
@@ -434,8 +431,7 @@
 ; This function allows simpler rewrite rules
 ; than RUN-TO-CUTPOINT does.
 
-(defun next-cutpoint (mstate)
-  (declare (xargs :non-executable t))
+(defun-nx next-cutpoint (mstate)
   (let ((steps (steps-to-cutpoint mstate)))
     (if (natp steps)
 	(run steps mstate)
@@ -443,8 +439,7 @@
 
 ;;A derived induction scheme, useful for reasoning
 ;; about NEXT-CUTPOINT
-(defun next-cutpoint-induction (k mstate)
-  (declare (xargs :non-executable t))
+(defun-nx next-cutpoint-induction (k mstate)
   (cond
    ((at-cutpoint mstate)
     t)
@@ -474,8 +469,7 @@
 
 (in-theory (e/d (steps-to-cutpoint-nonzero-intro) (next-cutpoint)))
 
-(defun cutpoint-to-cutpoint (mstate)
-  (declare (xargs :non-executable t))
+(defun-nx cutpoint-to-cutpoint (mstate)
   (next-cutpoint (next mstate)))
 
 (defthm cutpoint-to-cutpoint-returns-cutpoint-state
@@ -571,9 +565,8 @@
 
 ;;Number of machine steps until we exit, assuming
 ;; we start at a cutpoint state.
-(defun steps-to-exitpoint (mstate)
-  (declare (xargs :non-executable t
-                  :measure (cutpoint-measure mstate)))
+(defun-nx steps-to-exitpoint (mstate)
+  (declare (xargs :measure (cutpoint-measure mstate)))
   (cond
    ((not (at-cutpoint mstate)) 0)
    ((at-exitpoint mstate) 0)
@@ -591,9 +584,8 @@
   :hints (("Goal" :in-theory (enable cutpoint-to-cutpoint
                                      adding-natp-args-implies-natp))))
 
-(defun next-exitpoint (mstate)
-  (declare (xargs :non-executable t
-                  :measure (cutpoint-measure mstate)))
+(defun-nx next-exitpoint (mstate)
+  (declare (xargs :measure (cutpoint-measure mstate)))
   (cond
    ((not (at-cutpoint mstate))
     mstate)
