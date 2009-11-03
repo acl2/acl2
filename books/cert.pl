@@ -52,6 +52,7 @@ use File::Basename;
 use File::Spec;
 use Cwd;
 use Cwd 'abs_path';
+use Getopt::Long qw(:config bundling_override);
 
 my %seen = ( );
 
@@ -129,9 +130,9 @@ my $make_target = "all";
 my $svn_mode = 0;
 my $debugging = 0;
 
-while (my $arg = shift(@ARGV)) {
-    if ($arg eq "--help" || $arg eq "-h") {
-	print '
+$base_path = abs_canonical_path(".");
+
+my $helpstr = '
 cert.pl: Automatic dependency analysis for certifying ACL2 books.
 
 Usage:
@@ -154,7 +155,7 @@ and options are as follows:
            encountered, including ones which don\'t need updating.
 
    --clean-certs
-   -cc
+   --cc
            Delete each certificate file and corresponding .out and
            .time file encountered in the dependency search.  Warning:
            Unless the "-n"/"--no-build" flag is given, the script will
@@ -184,7 +185,7 @@ and options are as follows:
    -m
            Don\'t run make after running the dependency analysis.
 
-   --static-makefile-mode <makefile-name>
+   --static-makefile <makefile-name>
    -s <makefile-name>
            Equivalent to -d -m -o <makefile-name>.  Useful for
            building a static makefile for your targets, which will
@@ -199,14 +200,14 @@ and options are as follows:
            before the dependencies in the makefile.
 
    --include-after <makefile-name>
-   -ia <makefile-name>
+   --ia <makefile-name>
            Include the specified makefile via an include command in
            the makefile produced.  Multiple -ia arguments may be given
            to include multiple makefiles.  The include commands occur
            after the dependencies in the makefile.
 
    --custom-target <target>
-   -ct <target>
+   --ct <target>
            When writing the makefile, instead of creating a phony
            \'all\' target which depends on the certificates of all the
            books, create a list variable CERT_PL_BOOKS containing all
@@ -214,13 +215,10 @@ and options are as follows:
            it with the specified target.  This target should be
            created by the user in an include-after file.
 
-   --relative-paths
-   -r
-           Use paths relative to the current directory rather than
-           absolute paths.  This is useful for producing a static
-           makefile (see --static-makefile-mode above) for
-           distribution with a directory that may be placed at
-           different locations on different users\' file systems.
+   --relative-paths <dir>
+   -r <dir>
+           Use paths relative to the given directory rather than
+           the current directory.
 
    --svn-status
            Traverse the dependency tree and run "svn status" on each
@@ -234,54 +232,47 @@ and options are as follows:
            Add as targets the files listed (one per line) in <file>.
 
 ';
-	exit 0;
-    } elsif ($arg eq  "--jobs" || $arg eq "-j") {
-	$jobs = shift @ARGV;
-    } elsif ($arg eq "--clean-certs" || $arg eq "-cc") {
-	$clean_certs = 1;
-    } elsif ($arg eq "--no-build" || $arg eq "-n") {
-	$no_makefile = 1;
-    } elsif ($arg eq "--clean-all" || $arg eq "-c") {
-        $no_makefile = $clean_certs = 1;
-    } elsif ($arg eq "--verbose-deps" || $arg eq "-v") {
-	$print_deps = 1;
-    } elsif ($arg eq "--makefile-only" || $arg eq "-m") {
-	$no_build = 1;
-    } elsif ($arg eq "-o") {
-	$mf_name = shift @ARGV;
-    } elsif ($arg eq "--all-deps" || $arg eq "-d") {
-	$all_deps = 1;
-    } elsif ($arg eq "--static-makefile-mode" || $arg eq "-s") {
-	$mf_name = shift @ARGV;
-	$all_deps = $no_build = 1;
-    } elsif ($arg eq "--include" || $arg eq "-i") {
-	push(@includes, shift @ARGV);
-    } elsif ($arg eq "--include-after" || $arg eq "-ia") {
-	push(@include_afters, shift @ARGV);
-    } elsif ($arg eq "--custom-target" || $arg eq "-ct") {
-	$cust_target = 1;
-	$make_target = shift @ARGV;
-    } elsif ($arg eq "--relative-paths" || $arg eq "-r") {
-	$base_path = abs_canonical_path(".");
-    } elsif ($arg eq "--svn-status") {
-	$no_makefile = 1;
-	$no_build = 1;
-	$svn_mode = 1;
-    } elsif ($arg eq "--targets" || $arg eq "-t") {
-	my $fname = shift;
-	open (my $tfile, $fname);
-	while (my $the_line = <$tfile>) {
-	    push (@targets, substr($the_line, 0, -1));
-	}
-    } elsif ($arg eq "--debug") {
-	print "debugging\n";
-	$debugging = 1;
-    } else {
-	push(@targets, $arg);
-    }
-}
 
+GetOptions ("help|h"               => sub { print $helpstr; exit 0 ; },
+	    "jobs|j=i"             => \$jobs,
+	    "clean-certs|cc"       => \$clean_certs,
+	    "no-build|n"           => \$no_makefile,
+	    "clean-all|c"          => sub {$no_makefile = 1;
+					   $clean_certs = 1;},
+	    "verbose-deps|v"       => \$print_deps,
+	    "makefile-only|m"      => \$no_build,
+	    "o=s"                  => \$mf_name,
+	    "all-deps|d"           => \$all_deps,
+	    "static-makefile|s=s"  => sub {shift;
+					   $mf_name = shift;
+					   $all_deps = 1;
+					   $no_build = 1;},
+	    "include|i=s"          => sub {shift;
+					   push(@includes, shift);},
+	    "include-after|ia=s"     => sub {shift;
+					     push(@include_afters,
+						  shift);},
+	    "custom-target|ct=s"   => sub {$cust_target=1;
+					   shift;
+					   $make_target=shift;},
+	    "relative-paths|r=s"   => sub {shift;
+					   $base_path =
+					       abs_canonical_path(shift);},
+	    "svn-status"           => sub {$no_makefile=1;
+					   $no_build=1;
+					   $svn_mode=1;},
+	    "targets|t=s"          => sub {
+		shift;
+		my $fname=shift;
+		open (my $tfile, $fname);
+		while (my $the_line = <$tfile>) {
+		    push (@targets, substr($the_line, 0, -1));
+		}},
+	    "debug"                => \$debugging
+	    );
+	    
 
+push(@targets, @ARGV);
 
 
 sub lookup_colon_dir {
