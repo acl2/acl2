@@ -85,6 +85,10 @@ export ACL2-CUSTOMIZATION ?= NONE
           tail -300 $$FILE.out | sed 's/^/   | /' ;\
 	  echo "" ;\
 	  echo "" ;\
+	  if [ "$$ON_FAILURE_CMD" != "" ] ;\
+	  then \
+	     $$ON_FAILURE_CMD ;\
+	  fi ;\
           echo "**CERTIFICATION FAILED** for $$FILE.lisp (code $$STATUS)" ;\
           exit 1 ;\
         fi
