@@ -54,8 +54,6 @@ use Cwd;
 use Cwd 'abs_path';
 use Getopt::Long qw(:config bundling_override);
 
-my %seen = ( );
-
 my $base_path = 0;
 
 sub rm_dotdots {
@@ -112,7 +110,6 @@ sub canonical_path {
 # script sits.
 my $this_script = canonical_path(substr(`which $0`, 0 ,-1));
 my %dirs = ( "SYSTEM" => dirname($this_script) );
-print "System dir is " . dirname($this_script) . "\n";
 
 
 my @targets = ();
@@ -129,6 +126,8 @@ my $cust_target = 0;
 my $make_target = "all";
 my $svn_mode = 0;
 my $debugging = 0;
+my $quiet = 0;
+my @run_sources = ();
 
 $base_path = abs_canonical_path(".");
 
@@ -258,9 +257,23 @@ GetOptions ("help|h"               => sub { print $helpstr; exit 0 ; },
 	    "relative-paths|r=s"   => sub {shift;
 					   $base_path =
 					       abs_canonical_path(shift);},
-	    "svn-status"           => sub {$no_makefile=1;
-					   $no_build=1;
-					   $svn_mode=1;},
+	    "svn-status"           => sub {push (@run_sources,
+						 sub { my $target = shift;
+						       print `svn status --no-ignore $target`;
+						   })},
+	    "tags-file=s"          => sub { shift;
+					    my $tagfile = shift;
+					    push (@run_sources,
+						  sub { my $target = shift;
+							print `etags -a -o $tagfile $target`;})},
+	    "source-cmd=s"         => sub { shift;
+					    my $cmd = shift;
+					    push (@run_sources,
+						  sub { my $target = shift;
+							my $line = $cmd;
+							$line =~ s/{}/$target/;
+							print `$line`;})},
+	    "quiet|q"              => \$quiet,
 	    "targets|t=s"          => sub {
 		shift;
 		my $fname=shift;
@@ -270,7 +283,8 @@ GetOptions ("help|h"               => sub { print $helpstr; exit 0 ; },
 		}},
 	    "debug"                => \$debugging
 	    );
-	    
+
+print "System dir is " . dirname($this_script) . "\n" unless $quiet;
 
 push(@targets, @ARGV);
 
@@ -472,17 +486,19 @@ sub scan_book {
 
 sub add_deps {
     my $target = shift;
+    my $seen = shift;
+    my $run_sources = shift;
 
-    if (exists $seen{$target}) {
+    if (exists $seen->{$target}) {
 	# We've already calculated this file's dependencies.
 	return;
     }
 
     if ($target !~ /\.cert$/) {
-	if ($svn_mode) {
-	    print `svn status --no-ignore $target`;
-	    $seen{$target} = 0;
+	foreach my $run (@{$run_sources}) {
+	    &$run($target);
 	}
+	$seen->{$target} = 0;
 	return;
     }
 
@@ -513,8 +529,8 @@ sub add_deps {
 	return;
     }
 
-    $seen{$target} = [ $lispfile ];
-    my $deps = $seen{$target};
+    $seen->{$target} = [ $lispfile ];
+    my $deps = $seen->{$target};
 
     # If a corresponding .acl2 file exists or otherwise if a
     # cert.acl2 file exists in the directory, we need to scan that for dependencies as well.
@@ -571,7 +587,7 @@ sub add_deps {
 
     # Run the recursive add_deps on each dependency.
     foreach my $dep  (@{$deps}) {
-	add_deps($dep);
+	add_deps($dep, $seen, $run_sources);
     }
     
 
@@ -581,23 +597,25 @@ sub add_deps {
 	my $needs_update = (! -e $target);
 	if (! $needs_update) {
 	    foreach my $dep (@{$deps}) {
-		if ((-e $dep && newer_than($dep, $target)) || $seen{$dep}) {
+		if ((-e $dep && newer_than($dep, $target)) || $seen->{$dep}) {
 		    $needs_update = 1;
 		    last;
 		}
 	    }
 	}
 	if (! $needs_update) {
-	    $seen{$target} = 0;
+	    $seen->{$target} = 0;
 	}
     }
 
 }
 
+my %seen = ( );
+
 foreach my $target (@targets) {
     $target = canonical_path($target);
     $target =~ s/\.lisp$/.cert/;
-    add_deps($target);
+    add_deps($target, \%seen, \@run_sources);
 }
 
 
