@@ -48,86 +48,37 @@
 
 use strict;
 use warnings;
-use File::Basename;
-use File::Spec;
-use Cwd;
-use Cwd 'abs_path';
+use FindBin qw($RealBin);
 use Getopt::Long qw(:config bundling_override);
 
+(do "$RealBin/certlib.pl") or die ("Error loading $RealBin/certlib.pl:\n $!");
+
 my $base_path = 0;
-
-sub rm_dotdots {
-    my $path = shift;
-    while ($path =~ s/( |\/)[^\/\.]+\/\.\.\//$1/g) {}
-    return $path;
-}
-
-sub rel_path {
-    my $base = shift;
-    my $path = shift;
-    if (substr($path,0,1) eq "/") {
-	return $path;
-    } else {
-	return "$base/$path";
-    }
-}
-
-sub rec_readlink {
-    my $file = shift;
-    my $last = $file;
-    my $dest;
-    while ($dest = readlink $last) {
-	$last = rel_path(dirname($last),$dest);
-    }
-    return $last;
-}
-
-sub abs_canonical_path {
-    my $path = shift;
-    my $abspath = File::Spec->rel2abs(rec_readlink($path));
-    my ($vol, $dir, $file) = File::Spec->splitpath($abspath);
-    my $absdir = abs_path($dir);
-    if ($absdir) {
-	return File::Spec->catpath($vol, $absdir, $file);
-    } else {
-	print "Warning: canonical_path: Directory not found: " . $dir . "\n";
-	return 0;
-    }
-}
-
-sub canonical_path {
-    my $abs_path = abs_canonical_path(shift);
-    if ($base_path) {
-	return File::Spec->abs2rel($abs_path, $base_path);
-    } else {
-	return $abs_path;
-    }
-}
-    
 
 
 # This sets the location of :dir :system as the directory where this
 # script sits.
 my $this_script = canonical_path(substr(`which $0`, 0 ,-1));
-my %dirs = ( "SYSTEM" => dirname($this_script) );
 
 
 my @targets = ();
 my $jobs = 1;
-my $clean_certs = 0;
 my $no_build = 0;
-my $print_deps = 0;
 my $no_makefile = 0;
 my $mf_name = "Makefile-tmp";
-my $all_deps = 0;
 my @includes = ();
 my @include_afters = ();
 my $cust_target = 0;
 my $make_target = "all";
 my $svn_mode = 0;
-my $debugging = 0;
 my $quiet = 0;
 my @run_sources = ();
+my @make_args = ();
+
+my %certlib_opts = ( "debugging" => 0,
+		     "clean_certs" => 0,
+		     "print_deps" => 0,
+		     "all_deps" => 0 );
 
 $base_path = abs_canonical_path(".");
 
@@ -234,17 +185,17 @@ and options are as follows:
 
 GetOptions ("help|h"               => sub { print $helpstr; exit 0 ; },
 	    "jobs|j=i"             => \$jobs,
-	    "clean-certs|cc"       => \$clean_certs,
+	    "clean-certs|cc"       => \$certlib_opts{"clean_certs"},
 	    "no-build|n"           => \$no_makefile,
 	    "clean-all|c"          => sub {$no_makefile = 1;
-					   $clean_certs = 1;},
-	    "verbose-deps|v"       => \$print_deps,
+					   $certlib_opts{"clean_certs"} = 1;},
+	    "verbose-deps|v"       => \$certlib_opts{"print_deps"},
 	    "makefile-only|m"      => \$no_build,
 	    "o=s"                  => \$mf_name,
-	    "all-deps|d"           => \$all_deps,
+	    "all-deps|d"           => \$certlib_opts{"all_deps"},
 	    "static-makefile|s=s"  => sub {shift;
 					   $mf_name = shift;
-					   $all_deps = 1;
+					   $certlib_opts{"all_deps"} = 1;
 					   $no_build = 1;},
 	    "include|i=s"          => sub {shift;
 					   push(@includes, shift);},
@@ -274,6 +225,9 @@ GetOptions ("help|h"               => sub { print $helpstr; exit 0 ; },
 							$line =~ s/{}/$target/;
 							print `$line`;})},
 	    "quiet|q"              => \$quiet,
+	    "make-args=s"          => sub { shift;
+					    my $arg = shift;
+					    push(@make_args, $arg); },
 	    "targets|t=s"          => sub {
 		shift;
 		my $fname=shift;
@@ -281,334 +235,15 @@ GetOptions ("help|h"               => sub { print $helpstr; exit 0 ; },
 		while (my $the_line = <$tfile>) {
 		    push (@targets, substr($the_line, 0, -1));
 		}},
-	    "debug"                => \$debugging
+	    "debug"                => \$certlib_opts{"debugging"}
 	    );
 
-print "System dir is " . dirname($this_script) . "\n" unless $quiet;
+certlib_set_opts(\%certlib_opts);
+
+print "System dir is " . $RealBin . "\n" unless $quiet;
 
 push(@targets, @ARGV);
 
-
-sub lookup_colon_dir {
-    my $name = uc(shift);
-    my $local_dirs = shift;
-
-    my $dirpath = ($local_dirs && $local_dirs->{$name})
-	|| $dirs{$name} ;
-    return $dirpath;
-}
-
-sub get_include_book {
-    my $base = shift;
-    my $the_line = shift;
-    my $local_dirs = shift;
-
-    my $regexp = "^[^;]*\\(include-book[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
-    my @res = $the_line =~ m/$regexp/i;
-    if (@res) {
-	if ($res[1]) {
-	    my $dirpath = lookup_colon_dir($res[1], $local_dirs);
-	    unless ($dirpath) {
-		print "Error: Unknown :dir entry $res[1] for $base\n";
-		print_dirs($local_dirs) if $debugging;
-		return 0;
-	    }
-	    return canonical_path(rel_path($dirpath, "$res[0].cert"));
-	} else {
-	    my $dir = dirname($base);
-	    return canonical_path(rel_path($dir, "$res[0].cert"));
-	}
-    }
-    return 0;
-}
-
-sub get_depends_on {
-    my $base = shift;
-    my $the_line = shift;
-    my $local_dirs = shift;
-
-    my $regexp = "\\(depends-on[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
-    my @res = $the_line =~ m/$regexp/i;
-    if (@res) {
-	if ($res[1]) {
-	    my $dirpath = lookup_colon_dir($res[1], $local_dirs);
-	    unless ($dirpath) {
-		print "Error: Unknown :dir entry $res[1] for $base\n";
-		print_dirs($local_dirs) if $debugging;
-		return 0;
-	    }
-	    return canonical_path(rel_path($dirpath, "$res[0]"));
-	} else {
-	    my $dir = dirname($base);
-	    return canonical_path(rel_path($dir, "$res[0]"));
-	}
-    }
-    return 0;
-}
-
-
-# Possible more general way of recognizing a Lisp symbol:
-# ((?:[^\\s\\\\|]|\\\\.|(?:\\|[^|]*\\|))*)
-# - repeatedly matches either: a non-pipe, non-backslash, non-whitespace character,
-#                              a backslash and subsequently any character, or
-#                              a pair of pipes with a series of intervening non-pipe characters.
-# For now, stick with a dumber, less error-prone method.
-
-
-sub get_ld {
-    my $base = shift;
-    my $the_line = shift;
-    my $local_dirs = shift;
-
-    # Check for LD commands
-    my $regexp = "^[^;]*\\(ld[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
-    my @res = $the_line =~ m/$regexp/i;
-    if (@res) {
-	if ($res[1]) {
-	    my $dirpath = lookup_colon_dir($res[1], $local_dirs);
-	    unless ($dirpath) {
-		print "Error: Unknown :dir entry $res[1] for $base\n";
-		print_dirs($local_dirs) if $debugging;
-		return 0;
-	    }
-	    return canonical_path(rel_path($dirpath, $res[0]));
-	} else {
-	    my $dir = dirname($base);
-	    return canonical_path(rel_path($dir, $res[0]));
-	}
-    }
-    return 0;
-}
-
-sub get_add_dir {
-    my $base = shift;
-    my $the_line = shift;
-    my $local_dirs = shift;
-
-    # Check for ADD-INCLUDE-BOOK-DIR commands
-    my $regexp = "^[^;]*\\(add-include-book-dir[\\s]+:([^\\s]*)[\\s]*\"([^\"]*)\\/\"";
-    my @res = $the_line =~ m/$regexp/i;
-    if (@res) {
-	my $name = uc($res[0]);
-	my $basedir = dirname($base);
-	$local_dirs->{$name} = canonical_path(rel_path($basedir, $res[1]));
-	print "Added local_dirs entry " . $local_dirs->{$name} . " for $name\n" if $debugging;
-	print_dirs($local_dirs) if $debugging;
-	return 1;
-    }
-}
-
-
-sub newer_than {
-    my $file1 = shift;
-    my $file2 = shift;
-    return ((stat($file1))[9]) > ((stat($file2))[9]);
-}
-
-sub excludep {
-    my $prev = shift;
-    my $dirname = dirname($prev);
-    while ($dirname ne $prev) {
-	if (-e rel_path($dirname, "cert_pl_exclude")) {
-	    return 1;
-	}
-	$prev = $dirname;
-	$dirname = dirname($dirname);
-    }
-    return 0;
-}
-
-
-
-sub print_dirs {
-    my $local_dirs = shift;
-    print "dirs:\n";
-    while ( (my $k, my $v) = each (%{$local_dirs})) {
-	print "$k -> $v\n";
-    }
-}
-
-sub scan_ld {
-    my $fname = shift;
-    my $deps = shift;
-    my $local_dirs = shift;
-    print "scan_ld $fname\n" if $debugging;
-
-    if ($fname) {
-	push (@{$deps}, $fname);
-	open(my $ld, "<", $fname);
-	while (my $the_line = <$ld>) {
-	    my $incl = get_include_book($fname, $the_line, $local_dirs);
-	    my $depend =  $incl || get_depends_on($fname, $the_line, $local_dirs);
-	    my $ld = $depend || get_ld($fname, $the_line, $local_dirs);
-	    my $add = $ld || get_add_dir($fname, $the_line, $local_dirs);
-	    if ($incl) {
-		push(@{$deps}, $incl);
-	    } elsif ($depend) {
-		push(@{$deps}, $depend);
-	    } elsif ($ld) {
-		push(@{$deps}, $ld);
-		scan_ld($ld, $deps, $local_dirs);
-	    }
-	}
-	close($ld);
-    }
-}
-
-sub scan_book {
-    my $fname = shift;
-    my $deps = shift;
-    my $local_dirs = shift;
-
-    print "scan_book $fname\n" if $debugging;
-
-    if ($fname) {
-	# Scan the lisp file for include-books.
-	open(my $lisp, "<", $fname);
-	while (my $the_line = <$lisp>) {
-	    my $incl = get_include_book($fname, $the_line, $local_dirs);
-	    my $dep = $incl || get_depends_on($fname, $the_line, $local_dirs);
-	    my $add = $dep || get_add_dir($fname, $the_line, $local_dirs);
-	    if ($incl) {
-		push(@{$deps},$incl);
-	    } elsif ($dep) {
-		push(@{$deps}, $dep);
-	    }
-	}
-	close($lisp);
-    }
-}
-    
-
-    
-    
-
-
-sub add_deps {
-    my $target = shift;
-    my $seen = shift;
-    my $run_sources = shift;
-
-    if (exists $seen->{$target}) {
-	# We've already calculated this file's dependencies.
-	return;
-    }
-
-    if ($target !~ /\.cert$/) {
-	foreach my $run (@{$run_sources}) {
-	    &$run($target);
-	}
-	$seen->{$target} = 0;
-	return;
-    }
-
-    if (excludep($target)) {
-	return;
-    }
-
-    print "add_deps $target\n" if $debugging;
-
-    my $local_dirs = {};
-    my $base = $target;
-    $base =~ s/\.cert$//;
-    my $pfile = $base . ".p";
-    my $lispfile = $base . ".lisp";
-
-    # Clean the cert and out files if we're cleaning.
-    if ($clean_certs) {
-	my $outfile = $base . ".out";
-	my $timefile = $base . ".time";
-	unlink($target) if (-e $target);
-	unlink($outfile) if (-e $outfile);
-	unlink($timefile) if (-e $timefile);
-    }
-
-    # First check that the corresponding .lisp file exists.
-    if (! -e $lispfile) {
-	print "Error: Need $lispfile to build $target.\n";
-	return;
-    }
-
-    $seen->{$target} = [ $lispfile ];
-    my $deps = $seen->{$target};
-
-    # If a corresponding .acl2 file exists or otherwise if a
-    # cert.acl2 file exists in the directory, we need to scan that for dependencies as well.
-    my $acl2file = $base . ".acl2";
-    if (! -e $acl2file) {
-	$acl2file = rel_path(dirname($base), "cert.acl2");
-	if (! -e $acl2file) {
-	    $acl2file = 0;
-	}
-    }
-
-    # Scan the .acl2 file first so that we get the add-include-book-dir
-    # commands before the include-book commands.
-    scan_ld($acl2file, $deps, $local_dirs);
-    
-    # Scan the lisp file for include-books.
-    scan_book($lispfile, $deps, $local_dirs);
-    
-    # If there is an .image file corresponding to this file or a
-    # cert.image in this file's directory, add a dependency on the
-    # ACL2 image specified in that file.
-    my $imagefile = $base . ".image";
-    if (! -e $imagefile) {
-	$imagefile = rel_path(dirname($base), "cert.image");
-	if (! -e $imagefile) {
-	    $imagefile = 0;
-	}
-    }
-
-    if ($imagefile) {
-	open(my $im, "<", $imagefile);
-	my $line = <$im>;
-	if ($line) {
-	    if (substr($line,-1,1) eq "\n") {
-		chop $line;
-	    }
-	    my $image = canonical_path(rel_path(dirname($base), $line));
-	    if (! -e $image) {
-		$image = substr(`which $line`,0,-1);
-	    }
-	    if (-e $image) {
-		push(@{$deps}, canonical_path($image));
-	    }
-	}
-    }
-
-    if ($print_deps) {
-	print "Dependencies for $target:\n";
-	foreach my $dep (@{$deps}) {
-	    print "$dep\n";
-	}
-	print "\n";
-    }
-
-    # Run the recursive add_deps on each dependency.
-    foreach my $dep  (@{$deps}) {
-	add_deps($dep, $seen, $run_sources);
-    }
-    
-
-    # If this target needs an update or we're in all_deps mode, we're
-    # done, otherwise we'll delete its entry in the dependency table.
-    unless ($all_deps) {
-	my $needs_update = (! -e $target);
-	if (! $needs_update) {
-	    foreach my $dep (@{$deps}) {
-		if ((-e $dep && newer_than($dep, $target)) || $seen->{$dep}) {
-		    $needs_update = 1;
-		    last;
-		}
-	    }
-	}
-	if (! $needs_update) {
-	    $seen->{$target} = 0;
-	}
-    }
-
-}
 
 my %seen = ( );
 
@@ -670,7 +305,7 @@ include ' . $incl . '
     close($mf);
     
     unless ($no_build) {
-	exec("make", "-j", $jobs, "-f", $mf_name, $make_target);
+	exec { "make" } ("make", "-j", $jobs, "-f", $mf_name, @make_args, $make_target);
     }
 }
 
