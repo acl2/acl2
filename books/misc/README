@@ -373,6 +373,11 @@ exported theorems.  The result is records.lisp.
 
 ===============================================================================
 
+redef-pkg.lisp -- handy (though potentially unsound) utility for adding
+                  symbols to packages
+
+===============================================================================
+
 seq.lisp -- the seq macro language
 seqw.lisp -- the seqw macro language
 seq-examples.lsp -- examples of using the seq macro
