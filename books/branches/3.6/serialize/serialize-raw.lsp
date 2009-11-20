@@ -59,13 +59,13 @@
   `(write-byte (the (unsigned-byte 8) ,x)
                *encode-stream*))
 
-#-ccl
+#-(and ccl (not mswindows))
 (progn
   (defparameter *decode-stream* nil)
   (defmacro decoder-read ()
     `(the (unsigned-byte 8) (read-byte *decode-stream*))))
 
-#+ccl
+#+(and ccl (not mswindows))
 (progn
   (defparameter *decode-vec* nil)
   (defparameter *decode-pos* nil)
@@ -887,23 +887,23 @@
 (defun read-fn (filename honsp verbosep state)
 
   (let* ((*verbose* verbosep)
-         #-ccl (*decode-stream* nil)
-         #+ccl (*decode-pos* nil)
-         #+ccl (*decode-vec* nil)
-         #+ccl (mapped-file nil)
+         #-(and ccl (not mswindows)) (*decode-stream* nil)
+         #+(and ccl (not mswindows)) (*decode-pos* nil)
+         #+(and ccl (not mswindows)) (*decode-vec* nil)
+         #+(and ccl (not mswindows)) (mapped-file nil)
          )
 
     (maybe-print "; Opening file.~%")
 
     ;; Ugly.  In most Lisps, we just use ordinary streams.  In CCL, we use a 
     ;; memory-mapped file.
-    #-ccl
+    #-(and ccl (not mswindows))
     (setf *decode-stream* (open filename 
                                 :direction :input
                                 :element-type '(unsigned-byte 8)
                                 :if-does-not-exist :error))
 
-    #+ccl
+    #+(and ccl (not mswindows))
     (progn
       (setf mapped-file (ccl::map-file-to-octet-vector filename))
       (multiple-value-bind (arr offset)
@@ -920,8 +920,8 @@
       (check-magic-number filename)
       
       (maybe-print "; Closing file.~%")
-      #-ccl (close *decode-stream*)
-      #+ccl (ccl::unmap-octet-vector mapped-file)
+      #-(and ccl (not mswindows)) (close *decode-stream*)
+      #+(and ccl (not mswindows)) (ccl::unmap-octet-vector mapped-file)
 
       (maybe-print "; Final sanity check.~%")
       (unless (= *decode-free* max-index)
