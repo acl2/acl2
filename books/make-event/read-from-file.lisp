@@ -19,7 +19,9 @@ a
 (local (include-book "misc/file-io" :dir :system))
 
 (make-event
- (er-let* ((file-contents (read-list "read-from-file-data.lsp"
+ (er-let* ((file-contents (read-list (our-merge-pathnames
+                                      (cbd)
+                                      "read-from-file-data.lsp")
                                      'top-level
                                      state)))
           (value `(defconst *obtained-from-file*
@@ -38,7 +40,9 @@ a
 
 (local
  (make-event
-  (er-let* ((file-contents (read-list "read-from-file-data.lsp"
+  (er-let* ((file-contents (read-list (our-merge-pathnames
+                                       (cbd)
+                                       "read-from-file-data.lsp")
                                       'top-level
                                       state)))
            (value `(defconst *obtained-from-file-again*
@@ -52,7 +56,9 @@ a
 
 (local
  (make-event
-  (er-let* ((file-contents (read-list "read-from-file-data.lsp"
+  (er-let* ((file-contents (read-list (our-merge-pathnames
+                                       (cbd)
+                                       "read-from-file-data.lsp")
                                       'top-level
                                       state)))
            (value `(defconst *obtained-from-file-again*
@@ -83,7 +89,9 @@ a
 ; do-proofs? in make-event-fn in the ACL2 sources.
 
  (make-event
-  (er-let* ((file-contents (read-list "read-from-file-data.lsp"
+  (er-let* ((file-contents (read-list (our-merge-pathnames
+                                       (cbd)
+                                       "read-from-file-data.lsp")
                                       'top-level
                                       state)))
            (value `(local (defun foo ()
@@ -93,7 +101,9 @@ a
  )
 
 (make-event
- (er-let* ((file-contents (read-list "read-from-file-data.lsp"
+ (er-let* ((file-contents (read-list (our-merge-pathnames
+                                      (cbd)
+                                      "read-from-file-data.lsp")
                                      'top-level
                                      state)))
           (value `(defconst *obtained-from-file-again*
