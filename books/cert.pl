@@ -164,10 +164,6 @@ and options are as follows:
            Use paths relative to the given directory rather than
            the current directory.
 
-   --svn-status
-           Traverse the dependency tree and run "svn status" on each
-           non-cert file in the tree.  Does not build a makefile.
-
    --debug
            Print reams and reams of debugging info.
 
@@ -175,6 +171,35 @@ and options are as follows:
    -t <file>
            Add as targets the files listed (one per line) in <file>.
 
+   --quiet
+   -q
+           Don\'t print any asides except for errors and output from
+           --source-cmd commands.
+
+   --debug
+           Print some debugging info as the program runs.
+
+   --source-cmd <command-str>
+           Run the following command on each source file.  The actual
+           command line is created by replacing the string {} with the
+           target file in the command string.  For example:
+               cert.pl top.lisp -n -d --source-cmd "echo {}; wc {}"
+           Any number of --source-cmd directives may be given; the
+           commands will then be run in the order in which they are given.
+
+   --tags-file <tagfile>
+           Create an Emacs tags file containing the tags for all
+           source files.  Equivalent to
+           --source-cmd "etags -a -o tagfile {}".
+
+   --svn-status
+           Traverse the dependency tree and run "svn status" on each
+           source file in the tree.  Equivalent to
+           --source-cmd "svn status --no-ignore {}".
+
+   --make-args <arg>
+           Add command line arguments to make.  Multiple such
+           directives may be given.
 ';
 
 GetOptions ("help|h"               => sub { print $helpstr; exit 0 ; },
@@ -216,12 +241,10 @@ GetOptions ("help|h"               => sub { print $helpstr; exit 0 ; },
 					    push (@run_sources,
 						  sub { my $target = shift;
 							my $line = $cmd;
-							$line =~ s/{}/$target/;
+							$line =~ s/{}/$target/g;
 							print `$line`;})},
 	    "quiet|q"              => \$quiet,
-	    "make-args=s"          => sub { shift;
-					    my $arg = shift;
-					    push(@make_args, $arg); },
+	    "make-args=s"          => \@make_args,
 	    "targets|t=s"          => sub {
 		shift;
 		my $fname=shift;
@@ -238,8 +261,11 @@ print "System dir is " . $RealBin . "\n" unless $quiet;
 
 push(@targets, @ARGV);
 
-
 my %seen = ( );
+
+# BOZO: This is crude.  Think of a better way to specify arguments to
+# Make on the command line and pass them along.
+@make_args = split(/\s*(\'[^\']*\'|\"[^\"]*\"|\S*)/,join(" ", @make_args));
 
 foreach my $target (@targets) {
     $target = canonical_path($target);
@@ -247,12 +273,11 @@ foreach my $target (@targets) {
     add_deps($target, \%seen, \@run_sources);
 }
 
-
 unless ($no_makefile) {
     my $acl2 = $ENV{"ACL2"};
     unless ($acl2) {
 	## die "Error: Shell variable ACL2 should be set for this to work correctly.\n";
-	print "ACL2 defaults to acl2\n";
+	print "ACL2 defaults to acl2\n" unless $quiet;
 	$acl2 = "acl2";
     }
     # Build the makefile and run make.
