@@ -55,12 +55,6 @@ use Getopt::Long qw(:config bundling_override);
 
 my $base_path = 0;
 
-
-# This sets the location of :dir :system as the directory where this
-# script sits.
-my $this_script = canonical_path(substr(`which $0`, 0 ,-1));
-
-
 my @targets = ();
 my $jobs = 1;
 my $no_build = 0;
@@ -265,7 +259,7 @@ unless ($no_makefile) {
     open (my $mf, ">", $mf_name) or die "Failed to open output file $mf_name\n";
     print $mf '
 ACL2 := ' . $acl2 . '
-include ' . rel_path(dirname($this_script), "make_cert") . '
+include ' . rel_path($RealBin, "make_cert") . '
 
 ';
     foreach my $incl (@includes) {
