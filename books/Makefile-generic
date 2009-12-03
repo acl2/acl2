@@ -310,15 +310,15 @@ nothing:
 ACL2_NON_DIR            = egrep -i -v ':dir'
 
 # Grep commands for include-book and ld forms withOUT :dir:
-ACL2_EGREP_CMD          = egrep -i '^[^;]*include-book[ \t]*\".*\"' $$book.lisp | $(ACL2_NON_DIR)
+ACL2_EGREP_CMD          = egrep -i '^[^;]*include-book[ \t]*\".*[^\\]\"' $$book.lisp | $(ACL2_NON_DIR)
 ACL2_EGREP_CMD_ACL2     = $(subst book.lisp,book.acl2,$(ACL2_EGREP_CMD))
 ACL2_EGREP_CMD_CERT     = $(subst $$book.lisp,cert.acl2,$(ACL2_EGREP_CMD))
-ACL2_EGREP_CMD_ACL2_LD  = egrep -i '^[^;]*\(ld[ \t]*\".*\"' $$book.acl2 | $(ACL2_NON_DIR)
-ACL2_EGREP_CMD_CERT_LD  = egrep -i '^[^;]*\(ld[ \t]*\".*\"' cert.acl2 | $(ACL2_NON_DIR)
+ACL2_EGREP_CMD_ACL2_LD  = egrep -i '^[^;]*\(ld[ \t]*\".*[^\\]\"' $$book.acl2 | $(ACL2_NON_DIR)
+ACL2_EGREP_CMD_CERT_LD  = egrep -i '^[^;]*\(ld[ \t]*\".*[^\\]\"' cert.acl2 | $(ACL2_NON_DIR)
 
 # Grep commands for include-book and ld forms WITH :dir :system (need a file argument):
-ACL2_EGREP_CMD_DIR      = egrep -i '^[^;]*include-book[ \t]*\".*\"[ \t]*:dir[ \t]*:system'
-ACL2_EGREP_CMD_DIR_LD   = egrep -i '^[^;]*\(ld[ \t]*\".*\"[ \t]*:dir[ \t]*:system'
+ACL2_EGREP_CMD_DIR      = egrep -i '^[^;]*include-book[ \t]*\".*^[\\]\"[ \t]*:dir[ \t]*:system'
+ACL2_EGREP_CMD_DIR_LD   = egrep -i '^[^;]*\(ld[ \t]*\".*[^\\]\"[ \t]*:dir[ \t]*:system'
 
 # Sed commands for transforming above egrep results into a dependency line:
 ACL2_SED_CMD            = sed "s/[^\"]*\"/$$book.cert: /" | sed 's/".*/.cert/'
