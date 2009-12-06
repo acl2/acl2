@@ -38,132 +38,214 @@
            (pseudo-termp (conjoin-clauses clauses)))
   :hints(("Goal" :in-theory (e/d (conjoin-clauses) (disjoin-lst)))))
 
-
-
-(defmacro def-join-thms (ev)
-  `(encapsulate
+(defconst *def-join-thms-body*
+  '(encapsulate
      nil
-     (local (in-theory (e/d (conjoin disjoin)
+     (local (in-theory nil))
+     (local (in-theory (e/d (append
+                             conjoin disjoin car-cons cdr-cons
+                             disjoin2 conjoin2 iff if-rule quote-rule
+                             endp atom car-cdr-elim)
                             (default-car default-cdr))))
 
-     (defthm ,(intern-in-package-of-symbol
-               (concatenate 'string
-                            (symbol-name ev)
-                            "-DISJOIN-CONS")
-               ev)
-       (iff (,ev (disjoin (cons x y)) a)
-            (or (,ev x a)
-                (,ev (disjoin y) a))))
+     (defthm disjoin-cons
+       (iff (ev (disjoin (cons x y)) a)
+            (or (ev x a)
+                (ev (disjoin y) a))))
 
-     (defthmd ,(intern-in-package-of-symbol
-                (concatenate 'string
-                             (symbol-name ev)
-                             "-DISJOIN-WHEN-CONSP")
-                ev)
+     (defthmd disjoin-when-consp
        (implies (consp x)
-                (iff (,ev (disjoin x) a)
-                     (or (,ev (car x) a)
-                         (,ev (disjoin (cdr x)) a)))))
+                (iff (ev (disjoin x) a)
+                     (or (ev (car x) a)
+                         (ev (disjoin (cdr x)) a)))))
 
-     (defthm ,(intern-in-package-of-symbol
-               (concatenate 'string
-                            (symbol-name ev)
-                            "-DISJOIN-ATOM")
-               ev)
+     (defthm disjoin-atom
        (implies (not (consp x))
-                (equal (,ev (disjoin x) a)
+                (equal (ev (disjoin x) a)
                        nil))
        :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-     (defthm ,(intern-in-package-of-symbol
-               (concatenate 'string
-                            (symbol-name ev)
-                            "-DISJOIN-APPEND")
-               ev)
-       (iff (,ev (disjoin (append x y)) a)
-            (or (,ev (disjoin x) a)
-                (,ev (disjoin y) a)))
+     (defthm disjoin-append
+       (iff (ev (disjoin (append x y)) a)
+            (or (ev (disjoin x) a)
+                (ev (disjoin y) a)))
        :hints (("goal" :induct (append x y)
-                :in-theory (disable disjoin))))
+                :in-theory (e/d (disjoin-when-consp)
+                                (disjoin)))))
+     
+     (defthm conjoin-cons
+       (iff (ev (conjoin (cons x y)) a)
+            (and (ev x a)
+                 (ev (conjoin y) a))))
 
-     (defthm ,(intern-in-package-of-symbol
-               (concatenate 'string
-                            (symbol-name ev)
-                            "-CONJOIN-CONS")
-               ev)
-       (iff (,ev (conjoin (cons x y)) a)
-            (and (,ev x a)
-                 (,ev (conjoin y) a))))
-
-     (defthmd ,(intern-in-package-of-symbol
-                (concatenate 'string
-                             (symbol-name ev)
-                             "-CONJOIN-WHEN-CONSP")
-                ev)
+     (defthmd conjoin-when-consp
        (implies (consp x)
-                (iff (,ev (conjoin x) a)
-                     (and (,ev (car x) a)
-                          (,ev (conjoin (cdr x)) a)))))
+                (iff (ev (conjoin x) a)
+                     (and (ev (car x) a)
+                          (ev (conjoin (cdr x)) a)))))
 
-     (defthm ,(intern-in-package-of-symbol
-               (concatenate 'string
-                            (symbol-name ev)
-                            "-CONJOIN-ATOM")
-               ev)
+     (defthm conjoin-atom
        (implies (not (consp x))
-                (equal (,ev (conjoin x) a)
+                (equal (ev (conjoin x) a)
                        t))
        :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-     (defthm ,(intern-in-package-of-symbol
-               (concatenate 'string
-                            (symbol-name ev)
-                            "-CONJOIN-APPEND")
-               ev)
-       (iff (,ev (conjoin (append x y)) a)
-            (and (,ev (conjoin x) a)
-                 (,ev (conjoin y) a)))
+     (defthm conjoin-append
+       (iff (ev (conjoin (append x y)) a)
+            (and (ev (conjoin x) a)
+                 (ev (conjoin y) a)))
        :hints (("goal" :induct (append x y)
-                :in-theory (disable conjoin))))
+                :in-theory (e/d (conjoin-when-consp)
+                                (conjoin)))))
 
-     (defthm ,(intern-in-package-of-symbol
-               (concatenate 'string
-                            (symbol-name ev)
-                            "-CONJOIN-CLAUSES-CONS")
-               ev)
-       (iff (,ev (conjoin-clauses (cons x y)) a)
-            (and (,ev (disjoin x) a)
-                 (,ev (conjoin-clauses y) a)))
+     (defthm conjoin-clauses-cons
+       (iff (ev (conjoin-clauses (cons x y)) a)
+            (and (ev (disjoin x) a)
+                 (ev (conjoin-clauses y) a)))
        :hints(("Goal" :in-theory (enable conjoin-clauses disjoin-lst))))
 
 
-     (defthmd ,(intern-in-package-of-symbol
-                (concatenate 'string
-                             (symbol-name ev)
-                             "-CONJOIN-CLAUSES-WHEN-CONSP")
-                ev)
+     (defthmd conjoin-clauses-when-consp
        (implies (consp x)
-                (iff (,ev (conjoin-clauses x) a)
-                     (and (,ev (disjoin (car x)) a)
-                          (,ev (conjoin-clauses (cdr x)) a)))))
+                (iff (ev (conjoin-clauses x) a)
+                     (and (ev (disjoin (car x)) a)
+                          (ev (conjoin-clauses (cdr x)) a)))))
 
-     (defthm ,(intern-in-package-of-symbol
-               (concatenate 'string
-                            (symbol-name ev)
-                            "-CONJOIN-CLAUSES-ATOM")
-               ev)
+     (defthm conjoin-clauses-atom
        (implies (not (consp x))
-                (equal (,ev (conjoin-clauses x) a)
+                (equal (ev (conjoin-clauses x) a)
                        t))
        :hints(("Goal" :in-theory (enable conjoin-clauses disjoin-lst)))
        :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-     (defthm ,(intern-in-package-of-symbol
-               (concatenate 'string
-                            (symbol-name ev)
-                            "-CONJOIN-CLAUSES-APPEND")
-               ev)
-       (iff (,ev (conjoin-clauses (append x y)) a)
-            (and (,ev (conjoin-clauses x) a)
-                 (,ev (conjoin-clauses y) a)))
+     (defthm conjoin-clauses-append
+       (iff (ev (conjoin-clauses (append x y)) a)
+            (and (ev (conjoin-clauses x) a)
+                 (ev (conjoin-clauses y) a)))
        :hints (("goal" :induct (append x y))))))
+
+
+
+;; Rewrite-rule fields: 
+;; rune nume hyps equiv lhs rhs subclass heuristic-info backchain-limit-lst
+;; var-info match-free
+
+(defun ev-find-if-rule1 (ev lemmas)
+  (if (atom lemmas)
+      nil
+    (or (and (equal (access rewrite-rule (car lemmas) :hyps)
+                    '((consp x) (equal (car x) 'if)))
+             (let* ((equiv (access rewrite-rule (car lemmas) :equiv))
+                    (lhs (access rewrite-rule (car lemmas) :lhs))
+                    (rhs (access rewrite-rule (car lemmas) :rhs))
+                    (rune (access rewrite-rule (car lemmas) :rune))
+                    (subclass (access rewrite-rule (car lemmas) :subclass))
+                    (backchain (access rewrite-rule (car lemmas) :backchain-limit-lst)))
+               (and (eq equiv 'equal)
+                    (case-match lhs ((!ev . '(x a)) t))
+                    (case-match rhs (('if (!ev . '((car (cdr x)) a))
+                                         (!ev . '((car (cdr (cdr x))) a))
+                                       (!ev . '((car (cdr (cdr (cdr x)))) a)))
+                                     t))
+                    (eq subclass 'backchain)
+                    (eq backchain nil)
+                    (eq (car rune) :rewrite)
+                    rune)))
+        (ev-find-if-rule1 ev (cdr lemmas)))))
+
+(defun ev-find-if-rule (ev world)
+  (ev-find-if-rule1 ev (fgetprop ev 'lemmas nil world)))
+
+
+(defmacro def-join-thms (ev &key if-rule)
+  (let ((alist `(,@(and if-rule
+                        `((if-rule . ,if-rule)))
+                   (quote-rule
+                    . ,(intern-in-package-of-symbol
+                        (concatenate 'string
+                                     (symbol-name ev)
+                                     "-CONSTRAINT-2")
+                        ev))
+                   (disjoin-cons
+                    . ,(intern-in-package-of-symbol
+                        (concatenate 'string
+                                     (symbol-name ev)
+                                     "-DISJOIN-CONS")
+                        ev))
+                   (disjoin-when-consp
+                    . ,(intern-in-package-of-symbol
+                        (concatenate 'string
+                                     (symbol-name ev)
+                                     "-DISJOIN-WHEN-CONSP")
+                        ev))
+                   (disjoin-atom
+                    . ,(intern-in-package-of-symbol
+                        (concatenate 'string
+                                     (symbol-name ev)
+                                     "-DISJOIN-ATOM")
+                        ev))
+                   (disjoin-append
+                    . ,(intern-in-package-of-symbol
+                        (concatenate 'string
+                                     (symbol-name ev)
+                                     "-DISJOIN-APPEND")
+                        ev))
+                   (conjoin-cons
+                    . ,(intern-in-package-of-symbol
+                        (concatenate 'string
+                                     (symbol-name ev)
+                                     "-CONJOIN-CONS")
+                        ev))
+                   (conjoin-when-consp
+                    . ,(intern-in-package-of-symbol
+                        (concatenate 'string
+                                     (symbol-name ev)
+                                     "-CONJOIN-WHEN-CONSP")
+                        ev))
+                   (conjoin-atom
+                    . ,(intern-in-package-of-symbol
+                        (concatenate 'string
+                                     (symbol-name ev)
+                                     "-CONJOIN-ATOM")
+                        ev))
+                   (conjoin-append
+                    . ,(intern-in-package-of-symbol
+                        (concatenate 'string
+                                     (symbol-name ev)
+                                     "-CONJOIN-APPEND")
+                        ev))
+                   (conjoin-clauses-cons
+                    . ,(intern-in-package-of-symbol
+                        (concatenate 'string
+                                     (symbol-name ev)
+                                     "-CONJOIN-CLAUSES-CONS")
+                        ev))
+                   (conjoin-clauses-when-consp
+                    . ,(intern-in-package-of-symbol
+                        (concatenate 'string
+                                     (symbol-name ev)
+                                     "-CONJOIN-CLAUSES-WHEN-CONSP")
+                        ev))
+                   (conjoin-clauses-atom
+                    . ,(intern-in-package-of-symbol
+                        (concatenate 'string
+                                     (symbol-name ev)
+                                     "-CONJOIN-CLAUSES-ATOM")
+                        ev))
+                   (conjoin-clauses-append
+                    . ,(intern-in-package-of-symbol
+                        (concatenate 'string
+                                     (symbol-name ev)
+                                     "-CONJOIN-CLAUSES-APPEND")
+                        ev))
+                   (ev . ,ev))))
+    (if if-rule
+        (sublis alist *def-join-thms-body*)
+      `(make-event
+        (let* ((if-rule (ev-find-if-rule ',ev (w state)))
+               (alist (cons (cons 'if-rule if-rule) ',alist)))
+          (if if-rule
+              (value (sublis alist *def-join-thms-body*))
+            (er soft 'def-join-thms (msg "~
+Unable to find a rewrite rule for (~x0 X A) when (CAR X) is IF~%" ',ev))))))))
+
