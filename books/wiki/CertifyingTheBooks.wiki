@@ -1,5 +1,9 @@
 #summary How to certify all the books, for testing or use.
 
+Note: The version of ACL2 you use should match the version of the books you check out.  For example, if you are using ACL2 3.6, you should use the books from branches/3.6.  Minor version numbers (e.g. 3.6.1) may or may not have their own branches; if the matching branch does not exist, use the one numbered most closely before it.
+
+If you encounter a build failure and the branch you are building is appropriate for the ACL2 version you are using, please either fix it or create a bug report on the [http://code.google.com/p/acl2-books/issues/list issues] page.
+
 = Creating the "standard" certification environment =
 
 It's probably easiest to:
