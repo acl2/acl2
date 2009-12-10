@@ -620,7 +620,7 @@
     acl2::pprogn
     acl2::acl2-unwind-protect
     acl2::defund
-    acl2::worldp
+    acl2::plist-worldp
     acl2::getprop-default
     acl2::fgetprop
     acl2::sgetprop

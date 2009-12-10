@@ -97,7 +97,7 @@
   (equal (append (append a b) c)
          (append a (append b c))))
 
-(defthm true-listp-append
+(defthm true-listp-append-rewrite
   (equal (true-listp (append a b))
          (true-listp b)))
 

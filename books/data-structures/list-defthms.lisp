@@ -299,7 +299,7 @@
 ; TRUE-LISTP type prescription and rewrite rules
 ; ------------------------------------------------------------
 
-(defthm true-listp-append
+(defthm true-listp-append-rewrite
   (equal (true-listp (append a b))
 	 (true-listp b))
   :rule-classes ((:rewrite) 

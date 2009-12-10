@@ -372,7 +372,7 @@
 ; true-listp-rev, which also leads me to prove true-listp-append
 ; first.
 
-(defthm true-listp-append
+(defthm true-listp-append-rewrite
   (equal (true-listp (append a b))
          (true-listp b)))
 

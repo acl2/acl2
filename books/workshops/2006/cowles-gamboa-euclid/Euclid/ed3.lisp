@@ -2597,11 +2597,12 @@ To certify this book, first, create a world with the following packages:
 			 (irreducible-factors z))))
 	(t (list x))))
 
-(defthm
-  True-listp-append
-  (implies (true-listp lst2)
-	   (true-listp (append lst1 lst2)))
-  :rule-classes :type-prescription)
+; No longer needed after v3-6-1 (essentially part of axioms.lisp):
+; (defthm
+;   True-listp-append
+;   (implies (true-listp lst2)
+;            (true-listp (append lst1 lst2)))
+;   :rule-classes :type-prescription)
 
 (defthm
   True-listp-irreducible-factors-1

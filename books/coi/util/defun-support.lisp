@@ -30,7 +30,7 @@
 ;; ===================================================================
 
 (local
- (defthm true-listp-append
+ (defthm true-listp-append-rewrite
    (implies
     (true-listp y)
     (true-listp (append x y)))))

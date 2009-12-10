@@ -74,7 +74,7 @@
 
 ;;; ===== TRUE-LISTP
 
-(defthm true-listp-append
+(defthm true-listp-append-rewrite
   (equal (true-listp (append a b))
 	 (true-listp b)))
 

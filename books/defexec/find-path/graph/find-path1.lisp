@@ -250,7 +250,7 @@
       ; proved the next two lemmas.
 
       ; list processing
-      (defthm true-listp-append
+      (defthm true-listp-append-rewrite
         (equal (true-listp (append a b))
                (true-listp b)))
 

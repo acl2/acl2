@@ -227,7 +227,7 @@
 
 (defun untranslate-patterns-functions-btree (wrld)
   "Retrieve the untranslate patterns functions btree."
-  (declare (xargs :guard (and (worldp wrld)
+  (declare (xargs :guard (and (plist-worldp wrld)
                               (alistp (table-alist 'untranslate-patterns-table
                                                    wrld)))))
   (cdr (assoc-eq 'functions-database 
@@ -235,7 +235,7 @@
 
 (defun untranslate-patterns-constants-alist (wrld)
   "Retrieve the untranslate patterns constants alist."
-  (declare (xargs :guard (and (worldp wrld)
+  (declare (xargs :guard (and (plist-worldp wrld)
                               (alistp (table-alist 'untranslate-patterns-table
                                                    wrld)))))
   (cdr (assoc-eq 'constants-database 

@@ -61,7 +61,7 @@ DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3
 	data-structures/memories unicode str concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity misc/misc2 tools paco hacking hons-bdds security regex \
-        defsort hons-archive serialize xdoc
+        defsort hons-archive serialize xdoc system
 DIRS2_EXCEPT_WK = $(DIRS2_EXCEPT_WK_COI) coi
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 SHORTDIRS2 = ordinals data-structures bdd
@@ -739,3 +739,32 @@ short-test:
 	@if [ ! -f short-test.log ] || (fgrep '**' short-test.log > /dev/null) ; then \
 	(echo 'Short test failed!' ; exit 1) ; else \
 	echo 'Short test passed.' ; fi
+
+# The following target is primarily for developers to be able to check
+# well-formedness of the ACL2 world after including each book.
+# WARNING: Be sure to run "make regression" first!
+# The explicit make of top-with-meta.cert is there in order to avoid
+# removing that file after the .bkchk.out file is made (which
+# otherwise happens, somehow!).
+
+.PHONY: chk-include-book-worlds-top
+chk-include-book-worlds-top:
+	@(cd system ; $(MAKE) ; cd ..)
+	@for dir in $(DIRS1) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) chk-include-book-worlds ; \
+	cd ..) ; \
+	fi \
+	done
+	@(cd arithmetic/ ; $(MAKE) -f ../Makefile-generic top-with-meta.cert ; cd ..)
+	@(cd arithmetic/ ; $(MAKE) -f ../Makefile-generic top-with-meta.bkchk.out ; cd ..)
+	@for dir in $(DIRS2) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) chk-include-book-worlds ; \
+	cd ..) ; \
+	fi \
+	done

@@ -30,7 +30,7 @@
   (equal (car (append x y))
          (if (consp x) (car x) (car y))))
 
-(defthm true-listp-append
+(defthm true-listp-append-rewrite
   (equal (true-listp (append a b))
          (true-listp b)))
 

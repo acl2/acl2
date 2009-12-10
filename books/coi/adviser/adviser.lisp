@@ -293,7 +293,7 @@
 ;; following function.
 
 (defun pick-a-point-rules (world)
-  (declare (xargs :guard (and (worldp world)
+  (declare (xargs :guard (and (plist-worldp world)
                               (alistp (table-alist 'adviser-table world)))))
   (cdr (assoc-eq :pick-a-point-rules (table-alist 'adviser-table world))))
 

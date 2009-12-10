@@ -25,7 +25,7 @@
 
 (defun fast-no-duplicatesp1 (lst props)
   (declare (xargs :guard (and (symbol-listp lst)
-                              (worldp props))))
+                              (plist-worldp props))))
   (cond
    ((endp lst) t)
    ((getprop (car lst) 'mark nil 'fast-no-duplicatesp-world props)

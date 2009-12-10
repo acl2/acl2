@@ -13,7 +13,7 @@
 ;; ===================================================================
 
 ;; DAG - Should come from "lists"
-(defthm true-listp-append
+(defthm true-listp-append-rewrite
   (equal (true-listp (append x y))
          (true-listp y)))
 

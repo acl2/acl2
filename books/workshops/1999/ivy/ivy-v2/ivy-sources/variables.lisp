@@ -149,7 +149,7 @@
   :hints (("Goal"
 	   :do-not generalize)))
 
-(defthm true-listp-append  ; move to sets?
+(defthm true-listp-append-rewrite  ; move to sets?
   (implies (and (true-listp a)
 		(true-listp b))
 	   (true-listp (append a b))))

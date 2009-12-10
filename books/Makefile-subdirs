@@ -193,3 +193,17 @@ clean-more:
 	cd ..) ; \
 	fi \
 	done
+
+.PHONY: chk-include-book-worlds
+chk-include-book-worlds: chk-include-book-worlds-more
+
+.PHONY: chk-include-book-worlds-more
+chk-include-book-worlds-more:
+	@for dir in $(DIRS) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) chk-include-book-worlds ; \
+	cd ..) ; \
+	fi \
+	done

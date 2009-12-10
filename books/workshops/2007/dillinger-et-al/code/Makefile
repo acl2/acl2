@@ -1,5 +1,10 @@
 include ../../../../Makefile-generic
 
+# Override (ignore harmless warning printed by "make"):
+
+chk-include-book-worlds:
+	@echo "Note: Skipping chk-include-book-worlds."
+
 # From make dependencies:
 
 all.cert: all.lisp
