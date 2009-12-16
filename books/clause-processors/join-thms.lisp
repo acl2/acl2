@@ -156,89 +156,35 @@
 (defun ev-find-if-rule (ev world)
   (ev-find-if-rule1 ev (fgetprop ev 'lemmas nil world)))
 
+(defun ev-mk-rulename (ev name)
+  (intern-in-package-of-symbol
+   (concatenate 'string (symbol-name ev) "-"
+                (symbol-name name))
+   ev))
+
+(defun ev-pair-rulenames (ev names)
+  (if (atom names)
+      nil
+    (cons (cons (car names) (ev-mk-rulename ev (car names)))
+          (ev-pair-rulenames ev (cdr names)))))
 
 (defmacro def-join-thms (ev &key if-rule)
   (let ((alist `(,@(and if-rule
                         `((if-rule . ,if-rule)))
-                   (quote-rule
-                    . ,(intern-in-package-of-symbol
-                        (concatenate 'string
-                                     (symbol-name ev)
-                                     "-CONSTRAINT-2")
-                        ev))
-                   (disjoin-cons
-                    . ,(intern-in-package-of-symbol
-                        (concatenate 'string
-                                     (symbol-name ev)
-                                     "-DISJOIN-CONS")
-                        ev))
-                   (disjoin-when-consp
-                    . ,(intern-in-package-of-symbol
-                        (concatenate 'string
-                                     (symbol-name ev)
-                                     "-DISJOIN-WHEN-CONSP")
-                        ev))
-                   (disjoin-atom
-                    . ,(intern-in-package-of-symbol
-                        (concatenate 'string
-                                     (symbol-name ev)
-                                     "-DISJOIN-ATOM")
-                        ev))
-                   (disjoin-append
-                    . ,(intern-in-package-of-symbol
-                        (concatenate 'string
-                                     (symbol-name ev)
-                                     "-DISJOIN-APPEND")
-                        ev))
-                   (conjoin-cons
-                    . ,(intern-in-package-of-symbol
-                        (concatenate 'string
-                                     (symbol-name ev)
-                                     "-CONJOIN-CONS")
-                        ev))
-                   (conjoin-when-consp
-                    . ,(intern-in-package-of-symbol
-                        (concatenate 'string
-                                     (symbol-name ev)
-                                     "-CONJOIN-WHEN-CONSP")
-                        ev))
-                   (conjoin-atom
-                    . ,(intern-in-package-of-symbol
-                        (concatenate 'string
-                                     (symbol-name ev)
-                                     "-CONJOIN-ATOM")
-                        ev))
-                   (conjoin-append
-                    . ,(intern-in-package-of-symbol
-                        (concatenate 'string
-                                     (symbol-name ev)
-                                     "-CONJOIN-APPEND")
-                        ev))
-                   (conjoin-clauses-cons
-                    . ,(intern-in-package-of-symbol
-                        (concatenate 'string
-                                     (symbol-name ev)
-                                     "-CONJOIN-CLAUSES-CONS")
-                        ev))
-                   (conjoin-clauses-when-consp
-                    . ,(intern-in-package-of-symbol
-                        (concatenate 'string
-                                     (symbol-name ev)
-                                     "-CONJOIN-CLAUSES-WHEN-CONSP")
-                        ev))
-                   (conjoin-clauses-atom
-                    . ,(intern-in-package-of-symbol
-                        (concatenate 'string
-                                     (symbol-name ev)
-                                     "-CONJOIN-CLAUSES-ATOM")
-                        ev))
-                   (conjoin-clauses-append
-                    . ,(intern-in-package-of-symbol
-                        (concatenate 'string
-                                     (symbol-name ev)
-                                     "-CONJOIN-CLAUSES-APPEND")
-                        ev))
-                   (ev . ,ev))))
+                   (quote-rule . ,(ev-mk-rulename ev 'constraint-2))
+                   (ev . ,ev)
+                   . ,(ev-pair-rulenames ev '(disjoin-cons
+                                              disjoin-when-consp
+                                              disjoin-atom
+                                              disjoin-append
+                                              conjoin-cons
+                                              conjoin-when-consp
+                                              conjoin-atom
+                                              conjoin-append
+                                              conjoin-clauses-cons
+                                              conjoin-clauses-when-consp
+                                              conjoin-clauses-atom
+                                              conjoin-clauses-append)))))
     (if if-rule
         (sublis alist *def-join-thms-body*)
       `(make-event
