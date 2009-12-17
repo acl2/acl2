@@ -39,7 +39,7 @@
                          term
                          thmname
                          rule-classes
-                         evisc)
+                         evisc hons)
   (let ((thmname (or thmname (intern-in-package-of-symbol
                               (concatenate 'string
                                            (symbol-name constname) "-DEF")
@@ -60,7 +60,9 @@
 
            (defun defined-const-memoize-fn ()
              (declare (xargs :guard t))
-             (ec-call (defined-const-memoize-fn1)))
+             ,(if hons
+                  '(hons-copy (ec-call (defined-const-memoize-fn1)))
+                '(ec-call (defined-const-memoize-fn1))))
 
            (defthm defined-const-memoize-fn-is-term
              (equal ,term
@@ -103,7 +105,13 @@
                                       ,(let ((name (symbol-name ',',constname)))
                                          (if (may-need-slashes name)
                                              (concatenate 'string "#.|" name "|")
-                                           (concatenate 'string "#." name)))))))))))))))
+                                           (concatenate 'string "#."
+                                                        name)))))))
+                     ,@(and ,,hons
+                            `((with-output
+                               :stack :pop
+                               (table persistent-hons-table
+                                      ,',',constname t))))))))))))
 
 
 (defmacro defined-const (constname
@@ -111,5 +119,5 @@
                          &key
                          thmname
                          rule-classes
-                         evisc)
-  (defined-const-fn constname term thmname rule-classes evisc))
+                         evisc hons)
+  (defined-const-fn constname term thmname rule-classes evisc hons))
