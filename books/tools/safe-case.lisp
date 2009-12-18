@@ -20,12 +20,12 @@
    But when ~c[safe-case] is used and none of the cases match, the result is an
    error:
    ~bv[]
-   ACL2 !> (safe-case 3
+   ACL2 !> (safe-case (+ 0 3)
              (1 'one)
              (2 'two))
    
    HARD ACL2 ERROR in SAFE-CASE:  No case matched: 
-   (SAFE-CASE 3 (1 'ONE) (2 'TWO)).
+   (SAFE-CASE (+ 0 3) (1 'ONE) (2 'TWO)).  Test was 3.
    ~ev[]"
   (declare (xargs :guard (and (consp l)
                               (legal-case-clausesp (cdr l)))))
@@ -36,5 +36,8 @@
         `(case ,@l)
       `(case ,@l
          (otherwise 
-          (er hard? 'safe-case "No case matched: ~x0.~%" '(safe-case ,@l)))))))
+          (er hard? 'safe-case "No case matched: ~x0.  Test was ~x1.~%" 
+              '(safe-case ,@l) ,(car l)))))))
+
+
 
