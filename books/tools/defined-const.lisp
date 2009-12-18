@@ -32,9 +32,6 @@
 
 ;; In these cases you can supply :rule-classes nil to allow this to work.
 
-
-
-
 (defun defined-const-fn (constname
                          term
                          thmname
@@ -50,7 +47,7 @@
 
         (local
          (progn
-           (in-theory nil)
+           (in-theory '((:definition hons-copy)))
        
            (defun defined-const-memoize-fn1 ()
              (declare (xargs :verify-guards nil))
@@ -121,3 +118,10 @@
                          rule-classes
                          evisc hons)
   (defined-const-fn constname term thmname rule-classes evisc hons))
+
+
+;; Simple tests to make sure it works.
+
+(local (defined-const *foo* 3))
+(local (defined-const *bar* 3 :hons t))
+(local (defined-const *baz* 3 :evisc t :hons t))
