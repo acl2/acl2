@@ -22,17 +22,69 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 
 -->
 
-<xsl:template match="topic">
+<xsl:template match="page">
   <html>
   <head>
     <title><xsl:value-of select="@name"/></title>
     <link rel="stylesheet" type="text/css" href="xdoc.css"/>
+    <script type="text/javascript" src="xdoc.js"/>
   </head>
-  <body>
-  <h1><xsl:value-of select="@name"/></h1>
+  <body class="body_normal">
   <xsl:apply-templates/>
   </body>
   </html>
+</xsl:template>
+
+<xsl:template match="index">
+  <h1>Index</h1>
+  <dl class="index_dl">
+  <xsl:for-each select="index_entry">
+    <xsl:sort select="head/see" />
+    <dt class="index_dt"><xsl:apply-templates select="index_head"/></dt>
+    <dd class="index_dd"><xsl:apply-templates select="index_body"/></dd>
+  </xsl:for-each>
+  </dl>
+</xsl:template>
+
+<xsl:template match="topic">
+  <h1><xsl:value-of select="@name"/></h1>
+  <xsl:apply-templates/>
+</xsl:template>
+
+<xsl:template match="hindex_root">
+  <ul class="hindex"><xsl:apply-templates/></ul>
+</xsl:template>
+
+<xsl:template match="hindex_children">
+  <xsl:choose>
+    <xsl:when test="@kind='hide'">
+	<ul class="hindex" id="{@id}" style="display: none">
+	<xsl:apply-templates/>
+	</ul>
+    </xsl:when>
+
+    <xsl:otherwise>
+	<ul class="hindex" id="{@id}">
+	<xsl:apply-templates/>
+	</ul>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template match="hindex_short">
+</xsl:template>
+
+<xsl:template match="hindex_name">
+</xsl:template>
+
+<xsl:template match="short">
+  <p><xsl:apply-templates/></p>
+</xsl:template>
+
+<xsl:template match="srclink">
+  <a href="{@file}" class="srclink" title="Find-Tag in Emacs">
+    <xsl:apply-templates/>
+  </a>
 </xsl:template>
 
 <xsl:template match="code">
@@ -120,5 +172,6 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 <xsl:template match="h5">
   <h5><xsl:apply-templates/></h5>
 </xsl:template>
+
 
 </xsl:stylesheet>

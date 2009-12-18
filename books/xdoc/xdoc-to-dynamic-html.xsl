@@ -40,4 +40,29 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
   </a>
 </xsl:template>
 
+<xsl:template match="hindex">
+  <li><nobr><xsl:choose>
+	<xsl:when test="@kind='leaf'">
+           <img src="leaf.png"/>
+        </xsl:when>
+
+        <xsl:when test="@kind='show'">
+           <a href="JavaScript:toggleVisible('{@id}')">
+             <img id="img-{@id}" src="minus.png" border="0"/>
+           </a>
+        </xsl:when>
+
+        <xsl:when test="@kind='hide'">
+           <a href="JavaScript:toggleVisible('{@id}')">
+             <img id="img-{@id}" src="plus.png" border="0"/>
+           </a>
+	</xsl:when>
+      </xsl:choose>
+      <a href="{@topic}.xml" title="{hindex_short}">
+	<xsl:value-of select="hindex_name"/>
+     </a></nobr>
+    <xsl:apply-templates/>
+  </li>
+</xsl:template>
+
 </xsl:stylesheet>

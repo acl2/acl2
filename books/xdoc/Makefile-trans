@@ -80,8 +80,16 @@
 # and so on.
 
 XML_FILES := $(wildcard *.xml)
-HTML_FILES := $(patsubst %.xml, html/%.html, $(XML_FILES))
+
+HTML_FILES := $(patsubst %.xml, html/%.html, $(XML_FILES)) \
+              html/full-index.html \
+              html/brief-index.html \
+              html/topic-index.html \
+              html/frames.html
+
 TEXT_FILES := $(patsubst %.xml, text/%.text, $(XML_FILES))
+
+FORMATS := text html
 
 .PHONY: welcome all html text text-dir html-dir
 
@@ -95,6 +103,8 @@ WELCOME_MSG := "Using Xalan-C++ from $(XALAN_C_BIN)"
 
 ###  Configuration for Xalan-C++
 
+all: $(FORMATS)
+
 html/%.html: %.xml xdoc-to-static-html.xsl html-dir welcome
 	@echo "Making $@"
 	@$(XALAN_C_BIN) -o html/$*.html $*.xml xdoc-to-static-html.xsl 
@@ -102,6 +112,18 @@ html/%.html: %.xml xdoc-to-static-html.xsl html-dir welcome
 text/%.text: %.xml xdoc-to-text.xsl text-dir welcome
 	@echo "Making $@"
 	@$(XALAN_C_BIN) -o text/$*.text $*.xml xdoc-to-text.xsl 
+
+html/full-index.html: xdoc-to-full-index.xsl html-dir welcome
+	@echo "Making $@"
+	@$(XALAN_C_BIN) -o $@ index.xml xdoc-to-full-index.xsl
+
+html/brief-index.html: xdoc-to-brief-index.xsl html-dir welcome
+	@echo "Making $@"
+	@$(XALAN_C_BIN) -o $@ index.xml xdoc-to-brief-index.xsl
+
+html/topic-index.html: xdoc-to-topic-index.xsl html-dir welcome
+	@echo "Making $@"
+	@$(XALAN_C_BIN) -o $@ topics.xml xdoc-to-topic-index.xsl
 
 else
 
@@ -115,6 +137,8 @@ all:
 	@echo "See the instructions in Makefile-trans for help."
 	@exit 1
 endif
+
+all: $(FORMATS)
 
 XALAN_JARS := xalan.jar serializer.jar xercesImpl.jar xml-apis.jar
 CLASSPATH := $(patsubst %,$(XALANDIR)/%:,$(XALAN_JARS))
@@ -130,7 +154,6 @@ text/%.text: %.xml xdoc-to-text.xsl text-dir welcome
 
 endif
 
-all: html text
 
 text: $(TEXT_FILES)
 
@@ -141,7 +164,10 @@ html: $(HTML_FILES)
 
 html-dir:
 	@mkdir -p html
-	@cp xdoc.css html
+	@cp xdoc.css xdoc.js plus.png  minus.png leaf.png *.xdoc-link html
+
+html/frames.html:
+	@cp frames.html html
 
 welcome: 
 	@echo $(WELCOME_MSG)

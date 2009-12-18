@@ -26,8 +26,10 @@ h5 {
   margin-left: 1em;
 }
 
-body {
+
+.body_normal {
   width: 6.5in;
+  margin-left: 1em;
 }
 
 p, li, dl { 
@@ -70,4 +72,45 @@ i {
 
 tt {
   color: #006000;
+}
+
+.index_brief_dt { 
+  margin-top: 0px;
+  margin-left: -.1in;
+  font-family: serif;
+  font-weight: normal;
+}
+
+.index_brief_dt a {
+  text-decoration: none;
+}
+.index_brief_dt a:hover {
+  text-decoration: underline;
+}
+
+.hindex_fix { 
+  margin-left: -.15in;
+}
+
+.hindex {
+  margin-left: 5px;
+  list-style-type: none;
+  padding: 0px;
+  font-family: serif;
+  font-weight: normal;
+}
+
+.hindex a {
+  text-decoration: none;
+}
+
+.hindex a:hover {
+  text-decoration: underline;
+}
+
+.srclink {
+  font-family: monospace;
+  text-decoration: none;
+  background-color: #e0e0e0;
+  padding: 2px;
 }
