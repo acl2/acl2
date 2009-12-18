@@ -14,7 +14,7 @@
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(include-book "generic-impl")
+(local (include-book "generic-impl"))
 (set-enforce-redundancy t)
 
 (defund duplicity (a x)
@@ -145,8 +145,7 @@
                               (comparable-listp x)
                               (natp len)
                               (<= len (len x)))
-                  :measure (nfix len)
-                  :verify-guards nil)
+                  :measure (nfix len))
            (type integer len))
   (cond ((mbe :logic (zp len)
               :exec (= (the integer len) 0))
