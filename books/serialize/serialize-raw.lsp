@@ -15,7 +15,9 @@
 
 (in-package "SERIALIZE")
 
-(declaim (optimize (speed 3) (safety 0) (space 0)))
+(eval-when #-cltl2 (compile)
+           #+cltl2 (:compile-toplevel)
+           (declaim (optimize (speed 3) (safety 0) (space 0))))
 
 ; In verbose-mode, we print various messages and timing information.
 
