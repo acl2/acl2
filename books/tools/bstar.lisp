@@ -1,5 +1,7 @@
 (in-package "ACL2")
 
+;; Contact: Sol Swords <sswords@cs.utexas.edu>
+
 ;; This book contains the macro b*, which acts like let* with certain
 ;; extensions.  Some of its features:
 ;; - Can bind single values and MVs within the same let*-like sequence
@@ -19,6 +21,9 @@ Usage:
 
      ;; No binding: expression evaluated for side effects
      (- (cw \"Hello\")) ;; prints \"Hello\"
+
+     ;; Binding with type declaration:
+     ((the (integer 0 100) n) (foo z))
 
      ;; MV which ignores a value:
      ((mv & a) (return-garbage-in-first-mv y z))
@@ -41,12 +46,13 @@ Usage:
      ((cons (cons b c) ?d) (must-return-nested-conses a))
 
      ;; Alternate form of pattern binding with cons nests, where G is
-     ;; ignored:
-     (`(,e (,f . ,?!g)) (makes-a-list-of-conses b))
+     ;; ignored and f has a type declaration:
+     (`(,e (,(the (signed-byte 8) f) . ,?!g))
+      (makes-a-list-of-conses b))
 
      ;; LIST and LIST* are also supported:
      ((list a b) '((1 2) (3 4)))
-     ((list* a b c) '((1 2) (3 4) 5 6 7))
+     ((list* a (the string b) c) '((1 2) \"foo\" 5 6 7))
 
      ;; Pattern with user-defined constructor:
      ((my-tuple foo bar hum) (something-of-type-my-tuple e c g))
@@ -101,6 +107,11 @@ is the result of the corresponding expression
 is the result of the corresponding expression
 
 (list* a b), `(,a . ,b) are alternatives to the CONS binder.
+
+(the type-spec var) produces a binding of var to the result of the
+corresponding expression, and a declaration that var is of the given
+type-spec.  A THE pattern may be nested inside other patterns, but VAR must
+itself be a symbol and not a nested pattern, and type-spec must be a type-spec.
 
 (if test), (when test), and (unless test) don't actually produce bindings at
 all.  Instead, they insert an IF where one branch is the rest of the B* form and
@@ -504,6 +515,29 @@ Pattern constructor ~x0 needs a single argument which is a symbol, but got ~x1~%
        ,expr
      (progn$ . ,bindings)))
   
+(defmacro patbind-the (args bindings expr)
+  (declare (xargs :guard
+                  (and (destructure-guard the args bindings 2)
+                       (or (translate-declaration-to-guard
+                            (car args) 'var nil)
+                           (cw "~%~%**** ERROR ****
+The first argument to pattern constructor ~x0 must be a type-spec, but is ~x1~%~%"
+                               'the (car args)))
+                       (or (symbolp (cadr args))
+                           (cw "~%~%**** ERROR ****
+The second argument to pattern constructor ~x0 must be a symbol, but is ~x1~%~%"
+                               'the (cadr args))))))
+  (mv-let (sym ignorep)
+    (decode-varname-for-patbind (cadr args))
+    (if (eq ignorep 'ignore)
+        expr
+      `(let ((,sym ,(car bindings)))
+         ,@(and ignorep `((declare (ignorable ,sym))))
+         (declare (type ,(car args) ,sym))
+         ,expr))))
+      
+
+
 
 (set-state-ok t)
 
