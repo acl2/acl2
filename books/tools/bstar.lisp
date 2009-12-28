@@ -377,6 +377,7 @@ Pattern constructor ~x0 needs exactly one binding expression, but was given ~x1~
          (if computedp
              `(b* ,binders ,expr)
            `(let ((,bexpr ,binding))
+              (declare (ignorable ,bexpr))
               (b* ,binders
                 (check-vars-not-free (,bexpr) ,expr))))))))
 
@@ -447,6 +448,7 @@ Pattern constructor ~x0 needs exactly one binding expression, but was given ~x1~
     (if evaledp
         `(b* ,binders ,expr)
       `(let ((,form ,binding))
+         (declare (ignorable ,form))
          (b* ,binders
            (check-vars-not-free (,form) ,expr))))))
   
