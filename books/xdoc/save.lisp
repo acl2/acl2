@@ -990,6 +990,15 @@
  (let ((cbd (cbd)))
    (value `(defconst *xdoc-root-dir* ',cbd))))
 
+(defun save-success-file (ntopics dir state)
+  (b* ((file           (acl2::extend-pathname dir "success.txt" state))
+       ((mv out state) (open-output-channel file :character state))
+       ((mv & state)   (fmt "Successfully wrote ~x0 topics.~%~%" 
+                            (list (cons #\0 ntopics))
+                            out state nil))
+       (state          (close-output-channel out state)))
+      state))
+
 (defun save-topics (x dir index-pkg state)
   (cond ((not (stringp dir))
          (prog2$ (er hard? 'save-topics "Dir must be a string, but is: ~x0.~%" dir)
@@ -1022,7 +1031,9 @@
               (-        (cw "; Generate index.xml"))
               (state    (time$ (save-index x dir index-pkg state)))
               (-        (cw "; Generate topics.xml"))
-              (state    (time$ (save-hierarchy x dir index-pkg state))))
+              (state    (time$ (save-hierarchy x dir index-pkg state)))
+              (-        (cw "; Save success.txt"))
+              (state    (save-success-file (len x) dir state)))
              state))))
 
 (defmacro save (dir &key (index-pkg 'acl2::foo))
