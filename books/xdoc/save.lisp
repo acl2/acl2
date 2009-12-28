@@ -1005,7 +1005,6 @@
                                                         "xdoc.js"
                                                         "xdoc-to-text.xsl"
                                                         "frames.html"
-                                                        "xframes.html"
                                                         "xdoc-to-html-aux.xsl"
                                                         "xdoc-to-full-index.xsl"
                                                         "xdoc-to-brief-index.xsl"
