@@ -119,7 +119,7 @@ hons-archive: defsort unicode tools arithmetic-3
 str: arithmetic unicode defsort tools make-event
 coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
 	misc ordinals rtl
-xdoc: str unicode 
+xdoc: str unicode finite-set-theory
 
 # Let us wait for everything else before workshops, except we currrently
 # (as of v3-6, at least) don't need to wait for coi (that may change).
