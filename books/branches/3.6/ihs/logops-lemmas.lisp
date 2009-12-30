@@ -329,10 +329,9 @@
 ;;;  LOGNOT
 
 (defthm lognot-lognot
-  (equal (lognot (lognot i)) (ifix i))
-  :doc ":doc-section lognot-lognot
-  Rewrite: (LOGNOT (LOGNOT i)) = i.
-  ~/~/~/")
+    (implies (case-split (integerp i))
+	     (equal (lognot (lognot i))
+		    i)))
 
 (defthm cancel-equal-lognot
   (equal (equal (lognot i) (lognot j))
@@ -2045,14 +2044,13 @@ and appear above.~/")
      (("Goal"
        :in-theory (enable b-and b-ior)))))
 
-  (defthm logand-logior
-    (implies
-     (and (force (integerp i))
-	  (force (integerp j))
-	  (force (integerp k)))
-     (equal (logand i (logior j k))
-	    (logior (logand i j) (logand i k))))
-    :hints (("Goal" :induct (logcdr-induction-3 i j k)
+(defthmd logand-logior
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp z))
+    (equal (logand x (logior y z))
+	   (logior (logand x y) (logand x z))))
+    :hints (("Goal" :induct (logcdr-induction-3 x y z)
 	     :in-theory (enable ifix)))
     :doc ":doc-section logand-logior
     Rewrite: (LOGAND i (LOGIOR j k)) = (LOGIOR (LOGAND i j) (LOGAND j k)).
