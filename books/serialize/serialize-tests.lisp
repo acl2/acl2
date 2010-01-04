@@ -103,6 +103,8 @@
             (map-intern base (cdr strs)))
     nil))
 
+(comp t) ; avoid stack overflow in some GCL images for nats call just below
+
 (defconst *test* 
   (let* ((nats         (nats 0 1000))
          (negatives    (map-negate nats))
