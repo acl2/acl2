@@ -329,9 +329,13 @@
 ;;;  LOGNOT
 
 (defthm lognot-lognot
-    (implies (case-split (integerp i))
-	     (equal (lognot (lognot i))
-		    i)))
+  (implies (case-split (integerp i))
+           (equal (lognot (lognot i))
+                  i))
+  :doc ":doc-section lognot-lognot
+  Rewrite: (LOGNOT (LOGNOT i)) = i,
+  when (case-split (integerp i).
+  ~/~/~/")
 
 (defthm cancel-equal-lognot
   (equal (equal (lognot i) (lognot j))
@@ -2044,12 +2048,12 @@ and appear above.~/")
      (("Goal"
        :in-theory (enable b-and b-ior)))))
 
-(defthmd logand-logior
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp z))
-    (equal (logand x (logior y z))
-	   (logior (logand x y) (logand x z))))
+  (defthm logand-logior
+    (implies (and (integerp x)
+                  (integerp y)
+                  (integerp z))
+             (equal (logand x (logior y z))
+                    (logior (logand x y) (logand x z))))
     :hints (("Goal" :induct (logcdr-induction-3 x y z)
 	     :in-theory (enable ifix)))
     :doc ":doc-section logand-logior
