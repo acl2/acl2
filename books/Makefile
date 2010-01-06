@@ -61,7 +61,7 @@ DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3
 	data-structures/memories unicode str concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity misc/misc2 tools paco hacking hons-bdds security regex \
-        defsort hons-archive serialize xdoc system
+        defsort hons-archive serialize xdoc system tutorial-problems
 DIRS2_EXCEPT_WK = $(DIRS2_EXCEPT_WK_COI) coi
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 SHORTDIRS2 = ordinals data-structures bdd
