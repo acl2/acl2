@@ -287,14 +287,12 @@
       (let ((rule (select-instantiated-elim-rule-hint cl type-alist eliminables
 						      fns-to-elim ens wrld)))
         (cond ((null rule) (mv (list cl) nil nil))
-              (t (mv-let (contradictionp new-clause elim-vars1 ele)
+              (t (mv-let (new-clause elim-vars1 ele)
                    (apply-instantiated-elim-rule rule cl type-alist
                                                  avoid-vars ens wrld)
-                   (let ((clauses1 (if contradictionp
-                                       nil
-                                     (split-on-assumptions
-                                      (access elim-rule rule :hyps)
-                                      cl nil))))
+                   (let ((clauses1 (split-on-assumptions
+                                    (access elim-rule rule :hyps)
+                                    cl nil)))
                      (cond
                       ((equal new-clause *true-clause*)
                        (mv clauses1 elim-vars1 (list ele)))
@@ -330,14 +328,12 @@
 		     ;; On with the original show.
 		     ;; We are assuming that any choices to be made occur
 		     ;; at the very beginning.
-		     (mv-let (contradictionp new-clause elim-vars1 ele)
+		     (mv-let (new-clause elim-vars1 ele)
 		       (apply-instantiated-elim-rule rule cl type-alist
 						     avoid-vars ens wrld)
-		       (let ((clauses1 (if contradictionp
-					   nil
-					 (split-on-assumptions
-					  (access elim-rule rule :hyps)
-					  cl nil))))
+		       (let ((clauses1 (split-on-assumptions
+                                        (access elim-rule rule :hyps)
+                                        cl nil)))
 			 (cond
 			  ((equal new-clause *true-clause*)
 			   (mv clauses1 elim-vars1 (list ele)))

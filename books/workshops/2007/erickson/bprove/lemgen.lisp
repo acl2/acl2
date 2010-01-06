@@ -132,7 +132,7 @@
     (IF (EQUAL (ROT2 X (BINARY-APPEND X Y))
                (BINARY-APPEND Y X))
         T NIL)
-    T) nil nil (w state))
+    T) nil nil (sr-limit (w state)))
 |#
 
 (defun triv-clause (x)
@@ -164,7 +164,7 @@
 (defun norm (x state)
   (mv-let (nop x state) (TRANSLATE x nil NIL nil nil (W state) STATE)
 	  (let* ((x (expand-implies x))
-		 (x (clausify x nil nil (w state)))
+		 (x (clausify x nil nil (sr-limit (w state))))
 		 (x (simp-and-filter x)))
     (mv x state))))
 

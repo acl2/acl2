@@ -1,3 +1,6 @@
+# Nullify chk-include-book-worlds target (see Makefile-generic):
+ACL2_SKIP_CHK_INCLUDE_BOOK_WORLDS = t
+
 include ../Makefile-generic
 -include Makefile-deps
 
@@ -6,8 +9,3 @@ include ../Makefile-generic
 # such using one host Lisp may report uncertified books when
 # certification was done with an ACL2 based on a different host Lisp.
 # This seems like a reasonably harmless state of affairs, however.
-
-# Override (ignore harmless warning printed by "make"):
-
-chk-include-book-worlds:
-	@echo "Note: Skipping chk-include-book-worlds."

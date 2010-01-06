@@ -418,7 +418,8 @@ endif
 # check well-formedness of the ACL2 world after including each book.
 # Note that the two problematic directories for world-checking,
 # hacking/ and workshops/2007/dillinger-et-al/code/ override the
-# chk-include-book-worlds target in order to skip this check.  The
+# chk-include-book-worlds target by setting environment variable
+# ACL2_SKIP_CHK_INCLUDE_BOOK_WORLDS in order to skip this check.  The
 # problem seems likely to be that in many of the books in these two
 # directories, the first bad triple is a GLOBAL-VALUE for either the
 # unknown property EXTEND-PROGN! or RETRACT-PROGN!, or else is an
@@ -427,9 +428,11 @@ endif
 
 .PHONY: chk-include-book-worlds
 chk-include-book-worlds:
-	@echo 'Using ACL2=$(ACL2)'
-	@rm -f *.bkchk.out > /dev/null
-	$(MAKE) -s $(BOOKS_BKCHK_OUT) ACL2='$(ACL2)'
+	@if [ -z "$(ACL2_SKIP_CHK_INCLUDE_BOOK_WORLDS)" ]; then
+	echo 'Using ACL2=$(ACL2)' ; \
+	(rm -f *.bkchk.out > /dev/null) ; \
+	(MAKE) -s $(BOOKS_BKCHK_OUT) ACL2='$(ACL2)' ; \
+	fi
 
 %.bkchk.out: %.cert
 	@echo "Including `pwd`/$* on `date`"
