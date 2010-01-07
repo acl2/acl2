@@ -13,9 +13,6 @@
 
 ; KNOWN FLAWS:
 
-; - When importing only symbols already belong to the package, the new event
-;   has no effect.
-
 ; - During the redefinition of the package, each imported symbol whose name was
 ;   already interned into the package must first be uninterned, so that the
 ;   imported symbol and the symbol with that name in the package can become one
@@ -124,14 +121,14 @@
 
 (defmacro redef-pkg (name imports &optional doc book-path)
   (declare (ignore doc book-path))
-  `(add-symbols-to-pkg ,imports ,name))
+  `(set-imported-symbols-to-pkg ,imports ,name))
 
 (progn!
 
 (set-raw-mode-on state)
 
 ; Redefine add-symbols-to-pkg.
-(defun add-symbols-to-pkg (syms pkg &aux (state *the-live-state*))
+(defun set-imported-symbols-to-pkg (syms pkg &aux (state *the-live-state*))
   (let ((pkg-entry0 (assoc-equal pkg *ever-known-package-alist*))
         (pkg-entry1 (assoc-equal pkg (known-package-alist *the-live-state*)))
         (syms (if (symbolp syms) (list syms) syms)))
@@ -148,7 +145,8 @@
                           (subsetp-eq imports1 imports0))))
         (error "SURPRISE!  Different import lists.  Hmmmm......"))
       (let* ((new (set-difference-eq syms imports0))
-             (sorted-symbols (sort-symbol-listp (append new imports0))))
+	     (deleted (set-difference-eq imports0 syms))
+	     (sorted-symbols (sort-symbol-listp syms)))
         (setf (package-entry-imports
                (assoc-equal pkg *ever-known-package-alist*))
               sorted-symbols)
@@ -162,18 +160,22 @@
                 (push (symbol-name temp) ans))
               (unintern temp pkg))))
         (fms "NOTE: Added the following list of symbols to package ~x0:~| ~
-              ~x1~|~%"
+              ~x1~|and deleted the following list of symbols:~| ~
+              ~x2~|~%"
              (list (cons #\0 pkg)
-                   (cons #\1 new))
+                   (cons #\1 new)
+		   (cons #\2 deleted))
              (standard-co state) state nil)
         (when ans
-            (warning$ 'add-symbols-to-pkg "Package"
+            (warning$ 'set-imported-symbols-to-pkg "Package"
                       "The symbol~#0~[ with name~/s with names~] ~&0 imported ~
                        into the ~x1 package may cause problems, since ~#0~[it ~
                        already has~/they already have~] properties in the ~
                        ACL2 world."
                       ans pkg))
-        (import syms pkg)))))
+        (import new pkg)
+	(dolist (sym deleted)
+	  (unintern sym pkg))))))
 
 ; WARNING!  Update this if ACL2's def. of the following changes.
 ; (books/hacking/ has some sort of pattern-matching way to redefine functions
@@ -362,7 +364,7 @@
                                             (cons #\1 (package-entry-imports
                                                        package-entry)))
                                       (standard-co state) state nil)
-                                 (add-symbols-to-pkg imports name)
+                                 (set-imported-symbols-to-pkg imports name)
                                  (value 'redundant)))
                          ((and package-entry
                                (not (package-entry-hidden-p package-entry)))
