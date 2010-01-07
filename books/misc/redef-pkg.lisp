@@ -356,14 +356,15 @@
 ;                              (package-entry-book-path package-entry)
 ;                              defpkg-book-path w))
 
-                          (progn (fms "Debug: imports and ~
-                                       package-entry-imports are ~
-                                       different.~|imports: ~
-                                       ~x0~|%package-entry-imports: ~x1~|"
-                                      (list (cons #\0 imports)
-                                            (cons #\1 (package-entry-imports
-                                                       package-entry)))
-                                      (standard-co state) state nil)
+                          (progn
+;			    (fms "Debug: imports and ~
+;                                       package-entry-imports are ~
+;                                       different.~|imports: ~
+;                                       ~x0~|%package-entry-imports: ~x1~|"
+;                                      (list (cons #\0 imports)
+;                                            (cons #\1 (package-entry-imports
+;                                                       package-entry)))
+;                                      (standard-co state) state nil)
                                  (set-imported-symbols-to-pkg imports name)
                                  (value 'redundant)))
                          ((and package-entry
