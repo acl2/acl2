@@ -81,7 +81,7 @@
                 (force (<= (nfix n) (len x))))
            (comparable-listp (simpler-take n x)))
   :hints(("Goal" 
-          :in-theory (enable (:induction simpler-take))
+          :in-theory (enable simpler-take)
           :induct (simpler-take n x))))
 
 (defthm comparable-listp-of-nthcdr
@@ -237,15 +237,18 @@
  (defthm simpler-take-of-simpler-take
    (implies (< (nfix a) (nfix b))
             (equal (simpler-take a (simpler-take b x))
-                   (simpler-take a x))))
+                   (simpler-take a x)))
+   :hints(("Goal" :in-theory (enable simpler-take))))
 
  (defthm simpler-take-of-simpler-take-same
    (equal (simpler-take a (simpler-take a x))
-          (simpler-take a x)))
+          (simpler-take a x))
+   :hints(("Goal" :in-theory (enable simpler-take))))
 
  (defthm simpler-take-of-len
    (equal (simpler-take (len x) x)
-          (list-fix x)))
+          (list-fix x))
+   :hints(("Goal" :in-theory (enable simpler-take))))
 
  (defund first-half-len (len)
    (declare (xargs :guard (natp len)))
@@ -373,7 +376,8 @@
  
  (local (defthm simpler-take-of-cdr
           (equal (simpler-take n (cdr x))
-                 (cdr (simpler-take (+ 1 n) x)))))
+                 (cdr (simpler-take (+ 1 n) x)))
+          :hints(("Goal" :in-theory (enable simpler-take)))))
 
  (local (defthm crock
           (implies (and (natp len1)
@@ -836,10 +840,6 @@
 (defthm nthcdr-of-list-fix
   (equal (nthcdr n (list-fix x))
          (list-fix (nthcdr n x))))
-
-(defthm simpler-take-of-list-fix
-  (equal (simpler-take n (list-fix x))
-         (list-fix (simpler-take n x))))
 
 (defthm comparable-mergesort-spec2-of-list-fix
   (equal (comparable-mergesort-spec2 (list-fix x))

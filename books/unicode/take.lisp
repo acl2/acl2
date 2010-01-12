@@ -19,7 +19,7 @@
 
 (local (include-book "arithmetic-3/bind-free/top" :dir :system))
 
-(defun simpler-take (n xs)
+(defund simpler-take (n xs)
   (declare (xargs :guard (and (natp n)
                               (true-listp xs))))
   (if (zp n)
@@ -27,6 +27,8 @@
     (cons (car xs)
           (simpler-take (1- n) (cdr xs)))))
   
+(local (in-theory (enable simpler-take)))
+
 (encapsulate
  ()
  (local (defthm equivalence-lemma

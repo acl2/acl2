@@ -17,7 +17,7 @@
 
 (in-package "ACL2")
 (include-book "list-fix")
-(include-book "take")
+(local (include-book "take"))
 (local (include-book "arithmetic/top" :dir :system))
 
 (defund prefixp (x y)
@@ -66,4 +66,7 @@
   (implies (prefixp x y)
            (equal (simpler-take (len x) y)
                   (list-fix x)))
-  :hints(("Goal" :in-theory (enable (:induction prefixp)))))
+  :hints(("Goal" 
+          :in-theory (enable (:induction prefixp)
+                             simpler-take))))
+

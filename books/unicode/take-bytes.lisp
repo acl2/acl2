@@ -55,7 +55,7 @@
            (equal (car (take-bytes n channel state))
                   (simpler-take n (car (read-byte$-all channel state)))))
   :hints(("Goal" 
-          :in-theory (enable take take-bytes read-byte$-all)
+          :in-theory (enable simpler-take take-bytes read-byte$-all)
           :induct (take-bytes n channel state))))
 
 (defthm mv-nth1-of-take-bytes$

@@ -19,11 +19,28 @@
 (include-book "app")
 (include-book "consless-listp")
 
+(defun binary-append-without-guard (x y)
+  (declare (xargs :guard t))
+  (mbe :logic
+       (append x y)
+       :exec
+       (if (consp x)
+           (cons (car x)
+                 (binary-append-without-guard (cdr x) y))
+         y)))
+
+(defmacro append-without-guard (x y &rest rst)
+  (xxxjoin 'binary-append-without-guard (list* x y rst)))
+
+(add-macro-alias append-without-guard binary-append-without-guard)
+
 (defund flatten (x)
   (declare (xargs :guard t))
   (if (consp x)
-      (app (car x)
-           (flatten (cdr x)))
+      (mbe :logic (app (car x)
+                       (flatten (cdr x)))
+           :exec (binary-append-without-guard (car x)
+                                          (flatten (cdr x))))
     nil))
 
 (defthm flatten-when-not-consp

@@ -15,6 +15,7 @@
 (in-package "STR")
 (include-book "doc")
 (local (include-book "arithmetic"))
+(local (include-book "unicode/take" :dir :system))
 
 (defmacro cat (&rest args)
   
@@ -66,7 +67,8 @@
                        (< n (length x)))
                   (equal (append-chars-aux x n y)
                          (append (simpler-take (+ 1 n) (coerce x 'list)) y)))
-         :hints(("Goal" :use ((:instance append-chars-aux-correct))))))
+         :hints(("Goal"
+                 :use ((:instance append-chars-aux-correct))))))
 
 (defund append-chars (x y)
 

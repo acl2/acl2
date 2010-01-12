@@ -121,4 +121,16 @@
 
 (defthm simpler-take-of-len
   (equal (simpler-take (len x) x)
-         (list-fix x)))
+         (list-fix x))
+  :hints(("Goal" :in-theory (enable simpler-take))))
+
+(defthm simpler-take-of-zero
+  (equal (simpler-take 0 x)
+         nil)
+  :hints(("Goal" :in-theory (enable simpler-take))))
+
+(defthm character-listp-of-simpler-take
+  (implies (character-listp x)
+           (equal (character-listp (simpler-take n x))
+                  (<= (nfix n) (len x))))
+  :hints(("Goal" :in-theory (enable simpler-take))))

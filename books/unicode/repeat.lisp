@@ -16,7 +16,16 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(include-book "take")
+(local (include-book "take"))
+
+(defund simpler-take (n xs)
+  ;; Redundant from take.lisp
+  (declare (xargs :guard (and (natp n)
+                              (true-listp xs))))
+  (if (zp n)
+      nil
+    (cons (car xs)
+          (simpler-take (1- n) (cdr xs)))))
 
 (defund repeat (x n)
   (declare (xargs :guard (natp n)
@@ -45,7 +54,7 @@
   (implies (not (consp x))
            (equal (simpler-take n x)
                   (repeat nil n)))
-  :hints(("Goal" :in-theory (enable repeat))))
+  :hints(("Goal" :in-theory (enable repeat simpler-take))))
 
 (defthm len-of-repeat
   (equal (len (repeat x n))

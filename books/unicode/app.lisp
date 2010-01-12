@@ -16,18 +16,22 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-
 (include-book "list-fix")
-(include-book "take")
+(local (include-book "take"))
 (local (include-book "nthcdr"))
 
 
-(defund app (x y)
+(defund binary-app (x y)
   (declare (xargs :guard t))
   (if (consp x)
       (cons (car x) 
-            (app (cdr x) y))
+            (binary-app (cdr x) y))
     (list-fix y)))
+
+(defmacro app (x y &rest rst)
+  (xxxjoin 'binary-app (list* x y rst)))
+
+(add-macro-alias app binary-app)
 
 (defthm app-when-not-consp
   (implies (not (consp x))
@@ -128,7 +132,13 @@
 (defthm simpler-take-of-len-from-app
   (equal (simpler-take (len x) (app x y))
          (list-fix x))
-  :hints(("Goal" :induct (len x))))
+  :hints(("Goal" 
+          :in-theory (enable simpler-take)
+          :induct (len x))))
+
+(defthm take-of-len-from-app
+  (equal (take (len x) (app x y))
+         (list-fix x)))
 
 (defthm nthcdr-of-len-from-app
   (equal (nthcdr (len x) (app x y))

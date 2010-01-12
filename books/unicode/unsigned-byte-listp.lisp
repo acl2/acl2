@@ -203,7 +203,8 @@
 (defthm unsigned-byte-listp-of-simpler-take-past-length
   (implies (and (natp k)
                 (< (len x) k))
-           (not (unsigned-byte-listp bytes (simpler-take k x)))))
+           (not (unsigned-byte-listp bytes (simpler-take k x))))
+  :hints(("Goal" :in-theory (enable simpler-take))))
 
 (defthm unsigned-byte-listp-of-nthcdr
   (implies (unsigned-byte-listp bytes x)

@@ -252,7 +252,8 @@
                   (utf8=>ustring-fast (car (read-byte$-all channel state))
                                       acc)))
   :hints(("Goal" 
-          :in-theory (e/d (read-utf8-fast utf8=>ustring-fast)
+          :in-theory (e/d (read-utf8-fast utf8=>ustring-fast
+                                          simpler-take)
                           (nthcdr-bytes-2
                            nthcdr-bytes-3
                            nthcdr-bytes-4))
@@ -269,6 +270,7 @@
 
 (encapsulate
  ()
+ (local (in-theory (enable simpler-take)))
 
  (local (defthm terrible-lemma-1
           (implies (and (integerp x)

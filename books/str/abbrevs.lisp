@@ -20,6 +20,9 @@
 (defmacro append-chars (x y) `(STR::append-chars ,x ,y))
 (add-macro-alias append-chars STR::append-chars)
 
+(defmacro append-firstn-chars (n x y) `(STR::append-firstn-chars ,n ,x ,y))
+(add-macro-alias append-firstn-chars STR::append-firstn-chars)
+
 (defmacro revappend-chars (x y) `(STR::revappend-chars ,x ,y))
 (add-macro-alias revappend-chars STR::revappend-chars)
 
@@ -48,6 +51,10 @@
 
 (defmacro charlistnat< (x y) `(STR::charlistnat< ,x ,y))
 (add-macro-alias charlistnat< STR::charlistnat<)
+
+
+(defmacro firstn-chars (x y) `(STR::firstn-chars ,x ,y))
+(add-macro-alias firstn-chars STR::firstn-chars)
 
 
 (defmacro html-encode-string (x tabsize) `(STR::html-encode-string ,x ,tabsize))

@@ -19,6 +19,7 @@
 
 (include-book "flatten")
 (include-book "sum-list")
+(local (include-book "take"))
 (local (include-book "z-listp"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "nthcdr"))
@@ -65,7 +66,8 @@
 
 (local (defthm equal-of-simpler-take-and-list-fix
          (equal (equal (simpler-take n x) (list-fix x))
-                (equal (nfix n) (len x)))))
+                (equal (nfix n) (len x)))
+         :hints(("Goal" :in-theory (enable simpler-take)))))
 
 (defthm flatten-of-partition
   (implies (and (nat-listp sizes)
