@@ -13,6 +13,7 @@
 
 (in-package "XDOC")
 (include-book "defxdoc")
+(include-book "names")
 (include-book "str/top" :dir :system)
 (include-book "unicode/read-file-characters" :dir :system)
 (include-book "finite-set-theory/osets/sets" :dir :system)
@@ -20,11 +21,19 @@
 (program)
 
 
-; A stupid file copy routine, so we can copy our style files, etc.  We avoid
-; using "system" because of memory problems with forking on huge images.
+; save.lisp
+;
+; This file defines the XDOC functions for running the preprocessor and saving
+; XML files.  Normally you should not include this file except in a script that
+; generates your manual.
+
+
+; --------------------- File Copying ----------------------------
 
 (defun stupid-copy-file-aux (in out state)
-  ;; In, out are channels.
+
+; In, out are channels.  Copy from in to out, one byte at a time.
+
   (mv-let (byte state)
           (read-byte$ in state)
           (if (not byte)
@@ -33,6 +42,10 @@
               (stupid-copy-file-aux in out state)))))
 
 (defun stupid-copy-file (src dest state)
+
+; A stupid file copy routine, so we can copy our style files, etc.  We avoid
+; using "system" because of memory problems with forking on huge images.
+
   (b* (((mv in state)  (open-input-channel src :byte state))
        ((mv out state) (open-output-channel dest :byte state))
        (state          (stupid-copy-file-aux in out state))
@@ -49,14 +62,50 @@
         (stupid-copy-files srcdir (cdr filenames) destdir state))))
 
 
-; XDOC Preprocessor
 
-(defun in-package-p (sym base-pkg)
-  (equal (intern-in-package-of-symbol (symbol-name sym) base-pkg)
-         sym))
+; -------------  HTML encoding, IO help -------------------------
+
+(defun fmt-to-chars (string alist state) ;; ==> (MV CHARS STATE)
+
+; We can't use fmt to print directly to a string, which sucks.  So, we print to
+; a temporary file and read it back in.  This is truly horrible, but it's a lot
+; easier than reimplementing ppr.
+
+  (b* (((mv channel state)  (open-output-channel ".fmt-to-chars.tmp" :character state))
+       ((mv & state)        (fmt string alist channel state nil))
+       (state               (close-output-channel channel state))
+       ((mv data state)     (acl2::read-file-characters ".fmt-to-chars.tmp" state)))
+      (if (stringp data)
+          (prog2$
+           (cw "; xdoc note: in fmt-to-chars, failed to read .fmt-to-chars.tmp~%")
+           ;; In this funny return value, we insert a newline to be consistent
+           ;; with fmt.
+           (mv (coerce "
+[[ error reading .fmt-to-chars.tmp ]]" 'list)
+               state))
+        (mv data state))))
+
+
+(defun fmt-to-chars-and-encode (string alist state acc) ;; ==> (MV ACC-PRIME STATE)
   
+; Like fmt, but HTML-escape the result and accumulate it onto acc (in reverse
+; order) instead of printing it.
+
+  (mv-let (data state) 
+          (fmt-to-chars string alist state)
+          ;; We cdr the data because fmt puts in a newline.
+          (let ((acc (simple-html-encode-chars (cdr data) acc)))
+            (mv acc state))))
+
+
+
+
+
+; ----------------- World Lookup Stuff --------------------------
+
 (defun get-formals (fn world)
   (or (getprop fn 'formals nil 'current-acl2-world world)
+      (getprop fn 'macro-args nil 'current-acl2-world world)
       (cw "; xdoc note: get-formals failed for ~s0::~s1.~%" 
           (symbol-package-name fn) (symbol-name fn))
       (concatenate 'string 
@@ -100,29 +149,35 @@
                        "::" 
                        (symbol-name fn))))))
 
-(defun get-def (fn world)
-  (let ((def (acl2::get-def fn world)))
-    (or (and def
-             (cons 'defun def))
-        (cw "; xdoc note: get-def failed for ~x0.~%" fn)
+(defun get-event (name world)
+  ;; A general purpose event lookup as in :pe 
+  (let ((evt (acl2::get-event name world)))
+    (or evt
+        (cw "; xdoc note: get-event failed for ~x0.~%" name)
         (concatenate 'string 
-                     "Error getting definition for "
-                     (symbol-package-name fn)
-                     "::"
-                     (symbol-name fn)))))
-
-(defun get-theorem (name world)
-  (let ((thm (acl2::get-event name world)))
-    (or thm
-        (cw "; xdoc note: get-theorem failed for ~x0.~%" name)
-        (concatenate 'string 
-                     "Error getting theorem for " 
+                     "Error getting event for "
                      (symbol-package-name name)
-                     "::" 
+                     "::"
                      (symbol-name name)))))
 
+(defun get-def (fn world)
+  ;; This used to do something else.  Now we try to be permissive.
+  (let ((def (acl2::get-def fn world)))
+    (if def 
+        (cons 'defun def)
+      (get-event fn world))))
 
-;; (get-formals 'binary-append (w state))
+(defun get-theorem (name world)
+  ;; BOZO maybe do some cleaning to remove hints, etc.
+  (get-event name world))
+
+
+;; (get-event 'append (w state))
+;; (get-def 'append (w state))
+;; (get-event 'binary-append (w state))
+;; (get-def 'binary-append (w state))
+;; (get-formals 'binary-append (w state))  ;; --> (ACL2::X ACL2::Y)
+;; (get-formals 'append (w state)) ;; --> (ACL2::X ACL2::Y &REST ACL2::RST)
 ;; (get-measure 'binary-append (w state))
 ;; (get-guard 'binary-append (w state))
 ;; (get-body 'binary-append (w state))
@@ -130,46 +185,14 @@
 ;; (get-theorem 'acl2::car-cons (w state))
 
 
-(defun funny-char-code (x acc)
-  (declare (type character x))
-  (let* ((code  (char-code x))
-         (high  (ash code -4))
-         (low   (logand code #xF)))
-    (list* (digit-to-char high)
-           (digit-to-char low)
-           acc)))
-
-(defun file-name-mangle-aux (x n xl acc)
-  ;; colons become two underscores.
-  ;; funny characters become _[code], somewhat like url encoding
-  (declare (type string x))
-  (if (= n xl)
-      acc
-    (let ((char (char x n)))
-      (cond ((or (and (char<= #\a char) (char<= char #\z))
-                 (and (char<= #\A char) (char<= char #\Z))
-                 (and (char<= #\0 char) (char<= char #\9))
-                 (eql char #\-)
-                 (eql char #\.))
-             (file-name-mangle-aux x (+ n 1) xl (cons char acc)))
-            ((eql char #\:)
-             (file-name-mangle-aux x (+ n 1) xl (revappend '(#\_ #\_) acc)))
-            (t
-             (file-name-mangle-aux x (+ n 1) xl (funny-char-code char (cons #\_ acc))))))))
-
-(defun file-name-mangle (x acc)
-  (declare (type symbol x))
-  (let ((str (concatenate 'string 
-                          (symbol-package-name x)
-                          "::"
-                          (symbol-name x))))
-    (file-name-mangle-aux str 0 (length str) acc)))
 
 
 
 
-; Command recognition / parsing.
-;
+
+
+; -------------- Preprocessor Command Parsing  ------------------
+
 ; Throughout these functions, X is a string we are traversing, N is our current
 ; position in the string, XL is the length of the string, and an imagined guard
 ; is:
@@ -183,13 +206,17 @@
 ; We could do a lot of this in logic mode, but there doesn't seem to be much
 ; point to that.
 
-(defun error-context (x n xl) ;; ==> STRING describing location of error
+(defun error-context (x n xl) ;; ==> STRING
+  ;; Tries to show what text is near an error.
   (declare (type string x))
   (let ((min (nfix (- n 20)))
         (max (min (+ n 20) xl)))
     (subseq x min max)))
 
-(defun parse-symbol-name-part (x n xl bar-escape-p slash-escape-p some-chars-p acc) ;; ==> (MV ERROR NAME N-PRIME)
+; What a pain.  We have to implement a symbol parser.
+
+(defun parse-symbol-name-part (x n xl bar-escape-p slash-escape-p some-chars-p acc) 
+  ;; ==> (MV ERROR NAME N-PRIME)
   (declare (type string x))
 
 ; This tries to read just one part of a symbol name (i.e., the package part,
@@ -317,6 +344,7 @@
 ;; (test "acl2::bar|:|)")
 
 (defun read-literal (x n xl chars) ;; ==> (MV SUCCESSP N-PRIME)
+  ;; Try to read CHARS, verbatim.
   (declare (type string x))
   (cond ((= n xl)
          (mv (atom chars) n))
@@ -337,6 +365,7 @@
         (read-through-some-char-aux x (+ 1 n) xl chars (cons charN acc))))))
 
 (defun read-through-some-char (x n xl chars)
+  ;; Try to read until one of CHARS is found
   (declare (type string x))
   (read-through-some-char-aux x n xl chars nil))
 
@@ -350,8 +379,10 @@
          n)))
 
 (defun parse-directive (x n xl base-pkg) ;; ==> (MV ERROR COMMAND ARG N-PRIME)
+  ;; Every directive has the form @(command arg)
+  ;; Where command and arg are symbols.
+  ;; We assume @( has just been read, and N is now pointing right after the open paren.
   (declare (type string x))
-  ;; Note: @( must have just been read.  N is now pointing after the open paren.
   (b* ((n                    (skip-past-ws x n xl))
        ((mv error command n) (parse-symbol x n xl 'xdoc))
        ((when error)
@@ -393,65 +424,38 @@
 ;;   (parse-directive x 0 (length x) 'acl2::foo))
 
 
-(defun fmt-to-chars (string alist state) ;; ==> STATE
-  ;; We can't use fmt to print directly to a string, which sucks.  So, we print
-  ;; to a temporary file and read it back in.  This is truly horrible, but it's 
-  ;; a lot easier than reimplementing ppr.
-  (b* (((mv channel state)  (open-output-channel ".fmt-to-chars.tmp" :character state))
-       ((mv & state)        (fmt string alist channel state nil))
-       (state               (close-output-channel channel state))
-       ((mv data state)     (acl2::read-file-characters ".fmt-to-chars.tmp" state)))
-      (mv data state)))
-
-(defun simple-html-encode-chars (x acc)
-  (if (atom x)
-      acc
-    (let ((acc (case (car x)
-                 (#\< (revappend str::*html-less* acc))
-                 (#\> (revappend str::*html-greater* acc))
-                 (#\& (revappend str::*html-amp* acc))
-                 (#\" (revappend str::*html-quote* acc))
-                 (t   (cons (car x) acc)))))
-      (simple-html-encode-chars (cdr x) acc))))
-
-(defun fmt-to-chars-and-encode (string alist state acc) ;; ==> (MV ACC-PRIME STATE)
-  (mv-let (data state) 
-          (fmt-to-chars string alist state)
-          (if (stringp data)
-              (prog2$ 
-               (cw "; xdoc note: error reading fmt-to-chars.tmp; using filler instead.~%")
-               (mv (str::revappend-chars "[[ error reading fmt-to-chars.tmp ]]" acc)
-                   state))
-            ;; We cdr the data because fmt puts in a newline.
-            (let ((acc (simple-html-encode-chars (cdr data) acc)))
-              (mv acc state)))))
 
 
+; -------------- Executing Directives ---------------------------
 
-(defun sym-mangle (x base-pkg acc)
-  (let* ((acc (if (in-package-p x base-pkg)
-                  acc
-                (list* #\: #\:
-                       (simple-html-encode-chars (coerce (string-downcase (symbol-package-name x)) 'list) acc)))))
-    (simple-html-encode-chars (coerce (string-downcase (symbol-name x)) 'list) acc)))
+(defun process-url-directive (arg state acc) ;; ===> (MV ACC STATE)
 
-(defun upcase-first-letter (x)
-  (declare (type string x))
-  (if (equal x "")
-      x
-    (concatenate 'string 
-                 (coerce (list (char-upcase (char x 0))) 'string)
-                 (subseq x 1 nil))))
+; @(url foo) just expands into the file name for foo.
 
-(defun sym-mangle-cap (x base-pkg acc)
-  (if (in-package-p x base-pkg)
-      (let ((name-cap (upcase-first-letter (string-downcase (symbol-name x)))))
-        (simple-html-encode-chars (coerce name-cap 'list) acc))
-    (let* ((pkg-cap (upcase-first-letter (string-downcase (symbol-package-name x))))
-           (acc (list* #\: #\: (simple-html-encode-chars (coerce pkg-cap 'list) acc))))
-      (simple-html-encode-chars (coerce (string-downcase (symbol-name x)) 'list) acc))))
+  (b* ((acc            (file-name-mangle arg acc)))
+      (mv acc state)))
+
+
+(defun process-sym-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
+
+; @(sym foo) just expands into the standard name mangling for foo
+
+  (b* ((acc            (sym-mangle arg base-pkg acc)))
+      (mv acc state)))
+
+
+(defun process-sym-cap-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
+
+; @(csym foo) just expands into the standard capitalized name mangling for foo
+
+  (b* ((acc            (sym-mangle-cap arg base-pkg acc)))
+      (mv acc state)))
+
 
 (defun process-see-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
+
+; @(see foo) just expands into a link with a lowercase name.
+
   (b* ((acc            (str::revappend-chars "<see topic=\"" acc))
        (acc            (file-name-mangle arg acc))
        (acc            (str::revappend-chars "\">" acc))
@@ -459,26 +463,17 @@
        (acc            (str::revappend-chars "</see>" acc)))
       (mv acc state)))
 
+
 (defun process-see-cap-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
+
+; @(csee foo) just expands into a link with a capitalized name.
+
   (b* ((acc            (str::revappend-chars "<see topic=\"" acc))
        (acc            (file-name-mangle arg acc))
        (acc            (str::revappend-chars "\">" acc))
        (acc            (sym-mangle-cap arg base-pkg acc))
        (acc            (str::revappend-chars "</see>" acc)))
       (mv acc state)))
-
-(defun process-url-directive (arg state acc) ;; ===> (MV ACC STATE)
-  (b* ((acc            (file-name-mangle arg acc)))
-      (mv acc state)))
-
-(defun process-sym-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
-  (b* ((acc            (sym-mangle arg base-pkg acc)))
-      (mv acc state)))
-
-(defun process-sym-cap-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
-  (b* ((acc            (sym-mangle-cap arg base-pkg acc)))
-      (mv acc state)))
-
 
 
 (defconst *xdoc-link-file-message*
@@ -505,6 +500,9 @@
 ;   1. Extend acc with a srclink tag, and
 ;
 ;   2. Write a .xdoc-link file to dir for this tag.
+;
+; This is kind of ugly in that we may write the same .xdoc-link file many
+; times, but this doesn't seem to practically be a problem.
 ;
 ; Our emacs linking mechanism is slightly broken, in that all we can tell emacs
 ; is the name of a symbol to look for using its tags mechanism.  We are hoping
@@ -545,6 +543,9 @@
       (mv acc state)))
 
 (defun process-body-directive (arg state acc) ;; ===> (MV ACC STATE)
+
+; @(body foo) -- look up the body and pretty-print it in a <code> block.
+
   (b* ((body           (get-body arg (w state)))
        (acc            (str::revappend-chars "<code>" acc))
        ((mv acc state) (fmt-to-chars-and-encode "~x0" 
@@ -554,6 +555,10 @@
       (mv acc state)))
 
 (defun process-def-directive (arg dir state acc) ;; ===> (MV ACC STATE)
+
+; @(def foo) -- look up the definition for foo, pretty-print it in a <code>
+; block, along with a source-code link.
+
   (b* ((def            (get-def arg (w state)))
        (acc            (str::revappend-chars "<p><b>Definition: </b>" acc))
        ((mv acc state) (process-srclink-directive arg dir state acc))
@@ -566,6 +571,11 @@
       (mv acc state)))
 
 (defun process-gdef-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
+
+; @(gdef foo) -- Look up the definition for foo, pretty-print it as in @def,
+; but don't use a source-code link because this is a "Generated Definition" for
+; which a tags-search will probably fail.
+
   (b* ((def            (get-def arg (w state)))
        (acc            (str::revappend-chars "<p><b>Definition: </b>" acc))
        (acc            (sym-mangle arg base-pkg acc))
@@ -578,6 +588,10 @@
       (mv acc state)))
 
 (defun process-thm-directive (arg dir state acc) ;; ===> (MV ACC STATE)
+
+; @(thm foo) -- Look up the theorem named foo, and pretty-print its event along
+; with a source link.
+
   (b* ((theorem        (get-theorem arg (w state)))
        (acc            (str::revappend-chars "<p><b>Theorem: </b>" acc))
        ((mv acc state) (process-srclink-directive arg dir state acc))
@@ -590,6 +604,10 @@
       (mv acc state)))
 
 (defun process-gthm-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
+
+; @(gthm foo) -- Like @(thm foo), but don't provide a source link since this is
+; a generated theorem.
+
   (b* ((theorem        (get-theorem arg (w state)))
        (acc            (str::revappend-chars "<p><b>Theorem: </b>" acc))
        (acc            (sym-mangle arg base-pkg acc))
@@ -602,6 +620,10 @@
       (mv acc state)))
 
 (defun process-formals-directive (arg state acc) ;; ===> (MV ACC STATE)
+
+; @(formals foo) -- just find the formals for foo and print them without any 
+; extra formatting.
+
   (b* ((formals        (get-formals arg (w state)))
        ((mv acc state) (fmt-to-chars-and-encode "~x0" 
                                                 (list (cons #\0 formals))
@@ -609,7 +631,10 @@
       (mv acc state)))
 
 (defun process-call-directive (arg state acc) ;; ===> (MV ACC STATE)
-  ;; BOZO consider adding an emacs link.
+
+; @(call foo) -- find the formals to foo and insert <tt>(foo x y z)</tt>.
+; BOZO consider adding an emacs link.
+
   (b* ((formals        (get-formals arg (w state)))
        (call           (cons arg formals))
        (acc            (str::revappend-chars "<tt>" acc))
@@ -619,7 +644,25 @@
        (acc            (str::revappend-chars "</tt>" acc)))
       (mv acc state)))
 
+(defun process-ccall-directive (arg state acc) ;; ===> (MV ACC STATE)
+
+; @(ccall foo) -- "code call" is like @(call foo), but uses <code> instead
+; of <tt> tags.
+
+  (b* ((formals        (get-formals arg (w state)))
+       (call           (cons arg formals))
+       (acc            (str::revappend-chars "<code>" acc))
+       ((mv acc state) (fmt-to-chars-and-encode "~x0" 
+                                                (list (cons #\0 call))
+                                                state acc))
+       (acc            (str::revappend-chars "</code>" acc)))
+      (mv acc state)))
+
 (defun process-measure-directive (arg state acc) ;; ===> (MV ACC STATE)
+
+; @(measure foo) -- find the measure for foo and print it without any extra
+; formatting.
+
   (b* ((measure        (get-measure arg (w state)))
        ((mv acc state) (fmt-to-chars-and-encode "~x0" 
                                                 (list (cons #\0 measure))
@@ -628,21 +671,25 @@
 
 
 (defun process-directive (command arg dir base-pkg state acc) ;; ===> (MV ACC STATE)
+
+; Command and Arg are the already-parsed symbols we have read from the
+; documentation string.  Carry out whatever directive we've been asked to do.
+; DIR is the output dir.  Acc is the accumulator for our output characters.
+
   (case command
     (def       (process-def-directive arg dir state acc))
     (thm       (process-thm-directive arg dir state acc))
     (srclink   (process-srclink-directive arg dir state acc))
-
     (gdef      (process-gdef-directive arg base-pkg state acc))
     (gthm      (process-gthm-directive arg base-pkg state acc))
-
     (body      (process-body-directive arg state acc))
     (formals   (process-formals-directive arg state acc))
-    (call      (process-call-directive arg state acc))
     (measure   (process-measure-directive arg state acc))
+    (call      (process-call-directive arg state acc))
+    (ccall     (process-ccall-directive arg state acc))
+    (url       (process-url-directive arg state acc))
     (see       (process-see-directive arg base-pkg state acc))
     (csee      (process-see-cap-directive arg base-pkg state acc))
-    (url       (process-url-directive arg state acc))
     (sym       (process-sym-directive arg base-pkg state acc))
     (csym      (process-sym-cap-directive arg base-pkg state acc))
     (otherwise 
@@ -653,8 +700,13 @@
              (acc (str::revappend-chars "]]" acc)))
         (mv acc state))))))
 
+
 (defun preprocess-aux (x n xl dir base-pkg state acc) ;; ==> (MV ACC STATE)
   (declare (type string x))
+
+; Main preprocessor loop.  Read from the string and accumulate the result into
+; acc, expanding away any preprocessor directives.
+
   (if (= n xl)
       (mv acc state)
     (let ((char (char x n)))
@@ -683,147 +735,24 @@
 (defun preprocess-main (x dir base-pkg state acc)
   (declare (type string x))
   (b* ((current-pkg    (acl2::f-get-global 'current-package state))
+       ;; Temporarily make "fmt" print as if it's in base-pkg.
        ((mv & & state) (acl2::set-current-package (symbol-package-name base-pkg) state))
        ((mv acc state) (preprocess-aux x 0 (length x) dir base-pkg state acc))
+       ;; Restore base-pkg for whoever called us.
        ((mv & & state) (acl2::set-current-package current-pkg state)))
       (mv acc state)))
 
 
-(defun add-parents (parents base-pkg acc)
-  (if (atom parents)
-      acc
-    (let* ((acc (str::revappend-chars "<parent topic=\"" acc))
-           (acc (file-name-mangle (car parents) acc))
-           (acc (str::revappend-chars "\">" acc))
-           (acc (sym-mangle-cap (car parents) base-pkg acc))
-           (acc (str::revappend-chars "</parent>" acc))
-           (acc (cons #\Newline acc)))
-      (add-parents (cdr parents) base-pkg acc))))
-
-(defun preprocess-topic (x dir state)
-  (b* ((name     (cdr (assoc :name x)))
-       (base-pkg (cdr (assoc :base-pkg x)))
-       (short    (or (cdr (assoc :short x)) ""))
-       (long     (or (cdr (assoc :long x)) ""))
-       (parents  (cdr (assoc :parents x)))
-       ((unless (symbolp name))
-        (mv (er hard? 'preprocess-topic "Name is not a string: ~x0.~%" x)
-            state))
-       ((unless (symbolp base-pkg))
-        (mv (er hard? 'preprocess-topic "Base-pkg is not a symbol: ~x0.~%" base-pkg)
-            state))
-       ((unless (symbol-listp parents))
-        (mv (er hard? 'preprocess-topic "Parents are not a symbol-listp: ~x0.~%" x)
-            state))
-       ((unless (stringp short))
-        (mv (er hard? 'preprocess-topic "Short is not a string: ~x0.~%" x)
-            state))
-       ((unless (stringp long))
-        (mv (er hard? 'preprocess-topic "Long is not a string: ~x0.~%" x)
-            state))
-       (acc    nil)
-       (acc    (str::revappend-chars "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" acc))
-       (acc    (cons #\Newline acc))
-       (acc    (str::revappend-chars "<?xml-stylesheet type=\"text/xsl\" href=\"xdoc-to-dynamic-html.xsl\"?>" acc))
-       (acc    (cons #\Newline acc))
-       (acc    (str::revappend-chars "<page>" acc))
-       (acc    (str::revappend-chars "<topic name=\"" acc))
-       (acc    (sym-mangle-cap name base-pkg acc))
-       (acc    (str::revappend-chars "\">" acc))
-       (acc    (cons #\Newline acc))
-       (acc    (add-parents parents base-pkg acc))
-       (acc    (str::revappend-chars "<short>" acc))
-       ((mv acc state) (preprocess-main short dir base-pkg state acc))
-       (acc    (str::revappend-chars "</short>" acc))
-       (acc    (cons #\Newline acc))
-       (acc    (str::revappend-chars "<long>" acc))
-       ((mv acc state) (preprocess-main long dir base-pkg state acc))
-       (acc    (str::revappend-chars "</long>" acc))
-       (acc    (cons #\Newline acc))
-       (acc    (str::revappend-chars "</topic>" acc))
-       (acc    (cons #\Newline acc))
-       (acc    (str::revappend-chars "</page>" acc))
-       (acc    (cons #\Newline acc)))
-      (mv (reverse (coerce acc 'string)) state)))
-
-(defun save-topic (x dir state)
-  (b* ((name               (cdr (assoc :name x)))
-       (-                  (cw "Saving ~s0::~s1.~%" (symbol-package-name name) (symbol-name name)))
-       ((mv text state)    (preprocess-topic x dir state))
-       (filename           (concatenate 'string 
-                                        (reverse (coerce (file-name-mangle name nil) 'string))
-                                        ".xml"))
-       (fullpath           (acl2::extend-pathname dir filename state))
-       ((mv channel state) (open-output-channel fullpath :character state))
-       (state              (princ$ text channel state))
-       (state              (close-output-channel channel state)))
-      state))
-
-(defun save-topics-aux (x dir state)
-  (if (atom x)
-      state
-    (let ((state (save-topic (car x) dir state)))
-      (save-topics-aux (cdr x) dir state))))
 
 
-; Flat index.
 
-(defun index-add-topic (x dir index-pkg state acc)
-  (b* ((name     (cdr (assoc :name x)))
-       (short    (cdr (assoc :short x)))
-       (base-pkg (cdr (assoc :base-pkg x)))
-       (acc   (str::revappend-chars "<index_entry>" acc))
-       (acc   (cons #\Newline acc))
-       (acc   (str::revappend-chars "<index_head><see topic=\"" acc))
-       (acc   (file-name-mangle name acc))
-       (acc   (str::revappend-chars "\">" acc))
-       (acc   (sym-mangle-cap name index-pkg acc))
-       (acc   (str::revappend-chars "</see>" acc))
-       (acc   (str::revappend-chars "</index_head>" acc))
-       (acc   (cons #\Newline acc))
-       (acc   (str::revappend-chars "<index_body>" acc))
-       (acc   (cons #\Newline acc))
-       ((mv acc state) (preprocess-main short dir base-pkg state acc))
-       (acc   (cons #\Newline acc))
-       (acc   (str::revappend-chars "</index_body>" acc))
-       (acc   (cons #\Newline acc))
-       (acc   (str::revappend-chars "</index_entry>" acc))
-       (acc   (cons #\Newline acc)))
-      (mv acc state)))
-
-(defun index-add-topics (x dir index-pkg state acc)
-  (if (atom x)
-      (mv acc state)
-    (b* (((mv acc state) (index-add-topic (car x) dir index-pkg state acc)))
-        (index-add-topics (cdr x) dir index-pkg state acc))))
-
-(defun save-index (x dir index-pkg state)
-  (b* (;; The main body for both index pages is the same.
-       (acc nil)
-       (acc (str::revappend-chars "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" acc))
-       (acc (cons #\Newline acc))
-       (acc (str::revappend-chars "<?xml-stylesheet type=\"text/xsl\" href=\"xdoc-to-dynamic-html.xsl\"?>" acc))
-       (acc (cons #\Newline acc))
-       (acc (str::revappend-chars "<page>" acc))
-       (acc (cons #\Newline acc))
-       (acc (str::revappend-chars "<index>" acc))
-       (acc (cons #\Newline acc))
-       ((mv acc state) (index-add-topics x dir index-pkg state acc))
-       (acc (str::revappend-chars "</index>" acc))
-       (acc (cons #\Newline acc))
-       (acc (str::revappend-chars "</page>" acc))
-       (filename (acl2::extend-pathname dir "index.xml" state))
-       ((mv channel state) (open-output-channel filename :character state))
-       (state (princ$ (reverse (coerce acc 'string)) channel state))
-       (state (close-output-channel channel state)))
-      state))
-
-
-; Hierarchical index
+; ---------------- Hierarchical Index Generation ----------------
 
 
 (defun normalize-parents (x)
-  ;; Given an xdoc entry, remove duplicate parents and self-parents.
+  
+; Given an xdoc entry, remove duplicate parents and self-parents.
+
   (let* ((name    (cdr (assoc :name x)))
          (parents (cdr (assoc :parents x)))
          (orig    parents)
@@ -842,13 +771,18 @@
       (acons :parents parents x))))
 
 (defun normalize-parents-list (x)
+
+; Clean up parents throughout all xdoc topics.
+
   (if (atom x)
       nil
     (cons (normalize-parents (car x))
           (normalize-parents-list (cdr x)))))
 
 (defun find-roots (x)
-  ;; gather names of all doc topics which have no parents.
+
+; Gather names of all doc topics which have no parents.
+
   (if (atom x)
       nil
     (if (not (cdr  (assoc :parents (car x))))
@@ -857,7 +791,10 @@
       (find-roots (cdr x)))))
 
 (defun find-children-aux (par x)
-  ;; gather names of all xdoc topics in x which have parent par.
+
+; Gather names of all xdoc topics in x which have parent par.  I.e., this finds
+; the immediate children.
+
   (if (atom x)
       nil
     (if (member-equal par (cdr (assoc :parents (car x))))
@@ -866,10 +803,16 @@
       (find-children-aux par (cdr x)))))
 
 (defun find-children (par x)
-  ;; gather names of children topics and sort them.
+  
+; Gather names of immediate children topics and sort them.
+
   (sets::mergesort (find-children-aux par x)))
 
+
 (defun find-topic (name x)
+
+; Look up a particular topic by name in the list of topics.
+
   (if (atom x)
       nil
     (if (equal (cdr (assoc :name (car x))) name)
@@ -951,7 +894,6 @@
    
 ; - Children are the children of this path.
 ; - Path is our current location in the hierarchy.
-; -
 
    (if (atom children)
        (mv acc id state)
@@ -962,9 +904,10 @@
          (mv acc id state)))))
 
 (defun save-hierarchy (x dir base-pkg state)
-  ; X is all topics.
-  (b* ((x     (normalize-parents-list x))
-       (roots (sets::mergesort (find-roots x)))
+
+; X is all topics.  We assume all parents are normalized.
+
+  (b* ((roots (sets::mergesort (find-roots x)))
        (acc   nil)
        (acc   (str::revappend-chars "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" acc))
        (acc   (cons #\Newline acc))
@@ -984,6 +927,186 @@
        (state (princ$ (reverse (coerce acc 'string)) channel state))
        (state (close-output-channel channel state)))
       state))
+
+
+
+
+; ------------------ Making Flat Indexes ------------------------
+
+(defun index-add-topic (x dir index-pkg state acc)
+
+; X is a single topic entry in the xdoc table.  Index-pkg says the base package
+; for symbols seen frmo the index.
+
+  (b* ((name     (cdr (assoc :name x)))
+       (short    (cdr (assoc :short x)))
+       (base-pkg (cdr (assoc :base-pkg x)))
+       (acc   (str::revappend-chars "<index_entry>" acc))
+       (acc   (cons #\Newline acc))
+       (acc   (str::revappend-chars "<index_head><see topic=\"" acc))
+       (acc   (file-name-mangle name acc))
+       (acc   (str::revappend-chars "\">" acc))
+       (acc   (sym-mangle-cap name index-pkg acc))
+       (acc   (str::revappend-chars "</see>" acc))
+       (acc   (str::revappend-chars "</index_head>" acc))
+       (acc   (cons #\Newline acc))
+       (acc   (str::revappend-chars "<index_body>" acc))
+       (acc   (cons #\Newline acc))
+       ((mv acc state) (preprocess-main short dir base-pkg state acc))
+       (acc   (cons #\Newline acc))
+       (acc   (str::revappend-chars "</index_body>" acc))
+       (acc   (cons #\Newline acc))
+       (acc   (str::revappend-chars "</index_entry>" acc))
+       (acc   (cons #\Newline acc)))
+      (mv acc state)))
+
+(defun index-add-topics (x dir index-pkg state acc)
+
+; X is a list of topics.  Index-pkg says the base package for these symbols.
+
+  (if (atom x)
+      (mv acc state)
+    (b* (((mv acc state) (index-add-topic (car x) dir index-pkg state acc)))
+        (index-add-topics (cdr x) dir index-pkg state acc))))
+
+(defun index-topics (x title dir index-pkg state acc)
+
+; X is a list of topics.  Generate <index>...</index> for these topics and 
+; add to acc.
+
+  (b* ((acc (str::revappend-chars "<index title=\"" acc))
+       (acc (str::revappend-chars title acc))
+       (acc (str::revappend-chars "\">" acc))
+       (acc (cons #\Newline acc))
+       ((mv acc state) (index-add-topics x dir index-pkg state acc))
+       (acc (str::revappend-chars "</index>" acc))
+       (acc (cons #\Newline acc)))
+      (mv acc state)))
+
+(defun save-index (x dir index-pkg state)
+
+; Write index.xml for the whole list of all topics.
+
+  (b* ((acc nil)
+       (acc (str::revappend-chars "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" acc))
+       (acc (cons #\Newline acc))
+       (acc (str::revappend-chars "<?xml-stylesheet type=\"text/xsl\" href=\"xdoc-to-dynamic-html.xsl\"?>" acc))
+       (acc (cons #\Newline acc))
+       (acc (str::revappend-chars "<page>" acc))
+       (acc (cons #\Newline acc))
+       ((mv acc state) (index-topics x "Full Index" dir index-pkg state acc))
+       (acc (str::revappend-chars "</page>" acc))
+       (filename (acl2::extend-pathname dir "index.xml" state))
+       ((mv channel state) (open-output-channel filename :character state))
+       (state (princ$ (reverse (coerce acc 'string)) channel state))
+       (state (close-output-channel channel state)))
+      state))
+
+
+
+
+; -------------------- Making Topic Pages -----------------------
+
+(defun add-parents (parents base-pkg acc)
+  (if (atom parents)
+      acc
+    (let* ((acc (str::revappend-chars "<parent topic=\"" acc))
+           (acc (file-name-mangle (car parents) acc))
+           (acc (str::revappend-chars "\">" acc))
+           (acc (sym-mangle-cap (car parents) base-pkg acc))
+           (acc (str::revappend-chars "</parent>" acc))
+           (acc (cons #\Newline acc)))
+      (add-parents (cdr parents) base-pkg acc))))
+
+(defun gather-topics (names all-topics)
+
+; Given a list of topic names, get their entries from the list of all topics.
+
+  (cond ((atom all-topics)
+         nil)
+        ((member (cdr (assoc :name (car all-topics))) names)
+         (cons (car all-topics)
+               (gather-topics names (cdr all-topics))))
+        (t
+         (gather-topics names (cdr all-topics)))))
+
+(defun preprocess-topic (x all-topics dir state)
+  (b* ((name     (cdr (assoc :name x)))
+       (base-pkg (cdr (assoc :base-pkg x)))
+       (short    (or (cdr (assoc :short x)) ""))
+       (long     (or (cdr (assoc :long x)) ""))
+       (parents  (cdr (assoc :parents x)))
+       ((unless (symbolp name))
+        (mv (er hard? 'preprocess-topic "Name is not a string: ~x0.~%" x)
+            state))
+       ((unless (symbolp base-pkg))
+        (mv (er hard? 'preprocess-topic "Base-pkg is not a symbol: ~x0.~%" base-pkg)
+            state))
+       ((unless (symbol-listp parents))
+        (mv (er hard? 'preprocess-topic "Parents are not a symbol-listp: ~x0.~%" x)
+            state))
+       ((unless (stringp short))
+        (mv (er hard? 'preprocess-topic "Short is not a string: ~x0.~%" x)
+            state))
+       ((unless (stringp long))
+        (mv (er hard? 'preprocess-topic "Long is not a string: ~x0.~%" x)
+            state))
+       (acc    nil)
+       (acc    (str::revappend-chars "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" acc))
+       (acc    (cons #\Newline acc))
+       (acc    (str::revappend-chars "<?xml-stylesheet type=\"text/xsl\" href=\"xdoc-to-dynamic-html.xsl\"?>" acc))
+       (acc    (cons #\Newline acc))
+       (acc    (str::revappend-chars "<page>" acc))
+       (acc    (str::revappend-chars "<topic name=\"" acc))
+       (acc    (sym-mangle-cap name base-pkg acc))
+       (acc    (str::revappend-chars "\">" acc))
+       (acc    (cons #\Newline acc))
+       (acc    (add-parents parents base-pkg acc))
+       (acc    (str::revappend-chars "<short>" acc))
+       ((mv acc state) (preprocess-main short dir base-pkg state acc))
+       (acc    (str::revappend-chars "</short>" acc))
+       (acc    (cons #\Newline acc))
+       (acc    (str::revappend-chars "<long>" acc))
+       ((mv acc state) (preprocess-main long dir base-pkg state acc))
+       (acc    (str::revappend-chars "</long>" acc))
+       (acc    (cons #\Newline acc))
+
+       (children (find-children name all-topics))
+       (topics   (gather-topics children all-topics))
+
+       ((mv acc state) (if (not topics)
+                           (mv acc state)
+                         (index-topics topics "Subtopics" dir base-pkg state acc)))
+
+       (acc    (str::revappend-chars "</topic>" acc))
+       (acc    (cons #\Newline acc))
+       (acc    (str::revappend-chars "</page>" acc))
+       (acc    (cons #\Newline acc)))
+      (mv (reverse (coerce acc 'string)) state)))
+
+(defun save-topic (x all-topics dir state)
+  (b* ((name               (cdr (assoc :name x)))
+       (-                  (cw "Saving ~s0::~s1.~%" (symbol-package-name name) (symbol-name name)))
+       ((mv text state)    (preprocess-topic x all-topics dir state))
+       (filename           (concatenate 'string 
+                                        (reverse (coerce (file-name-mangle name nil) 'string))
+                                        ".xml"))
+       (fullpath           (acl2::extend-pathname dir filename state))
+       ((mv channel state) (open-output-channel fullpath :character state))
+       (state              (princ$ text channel state))
+       (state              (close-output-channel channel state)))
+      state))
+
+(defun save-topics-aux (x all-topics dir state)
+  (if (atom x)
+      state
+    (let ((state (save-topic (car x) all-topics dir state)))
+      (save-topics-aux (cdr x) all-topics dir state))))
+
+
+
+
+
 
 
 (make-event 
@@ -1026,8 +1149,9 @@
                                                   dir state)))
               ;; Note: generate the index after the topic files, so that errors
               ;; in short messages will be seen there.
+              (x        (normalize-parents-list x))
               (-        (cw "; Preprocess and save ~x0 topics.~%" (len x)))
-              (state    (time$ (save-topics-aux x dir state)))
+              (state    (time$ (save-topics-aux x x dir state)))
               (-        (cw "; Generate index.xml"))
               (state    (time$ (save-index x dir index-pkg state)))
               (-        (cw "; Generate topics.xml"))

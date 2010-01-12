@@ -36,10 +36,10 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 </xsl:template>
 
 <xsl:template match="index">
-  <h1>Index</h1>
+  <h3><xsl:value-of select="@title"/></h3>
   <dl class="index_dl">
   <xsl:for-each select="index_entry">
-    <xsl:sort select="head/see" />
+    <xsl:sort select="index_head/see" />
     <dt class="index_dt"><xsl:apply-templates select="index_head"/></dt>
     <dd class="index_dd"><xsl:apply-templates select="index_body"/></dd>
   </xsl:for-each>
