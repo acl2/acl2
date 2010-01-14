@@ -165,14 +165,17 @@
 
 (defun safe-access-command-tuple-number (x)
 
+; Warning: Keep this in sync with (defrec command-tuple ...) in the ACL2
+; sources.
+
 ; The smallest actual value for access-command-tuple-number in a well-formed
 ; world is -2.
 
   (if (consp x)
       (if (integerp (car x))
           (car x)
-          -2)
-      -2))
+        -2)
+    -2))
 
 (defun pseudo-command-indexp (x w)
   (declare (xargs :guard (plist-worldp w)))
@@ -289,6 +292,10 @@
 ; COMMAND-LANDMARK [GLOBAL-VALUE]
 
 (defun pseudo-command-landmarkp (val)
+
+; Warning: Keep this in sync with (defrec command-tuple ...) in the ACL2
+; sources.
+
   (and (consp val)
        (or (eql (car val) -1) (natp (car val)))
        (consp (cdr val))
@@ -297,8 +304,11 @@
            (and (eq (car (cadr val)) :logic)
                 (pseudo-formp (cdr (cadr val))))
            (pseudo-formp (cadr val)))
-       (or (null (cddr val))
-           (pseudo-formp (cddr val)))))
+       (consp (cddr val))
+       (or (null (caddr val))
+           (stringp (caddr val)))
+       (or (null (cdddr val))
+           (pseudo-formp (cdddr val)))))
 
 ; -----------------------------------------------------------------
 ; KNOWN-PACKAGE-ALIST [GLOBAL-VALUE]

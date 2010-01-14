@@ -138,7 +138,9 @@
      (declare (ignorable new-directory-name-with-slash new-familiar-name))
      (er-let*
       ((new-pkg-lst (create-pkgs-for-cert-file new-full-book-name ctx state))
-       (cert-obj (chk-certificate-file new-full-book-name t ctx state
+       (cert-obj (chk-certificate-file new-full-book-name
+                                       new-directory-name-with-slash
+                                       t ctx state
                                        *fix-cert-suspect-book-action-alist* nil)))
       (let* ((portcullis (cons (access cert-obj cert-obj :cmds)
                                (access cert-obj cert-obj :pre-alist)))
