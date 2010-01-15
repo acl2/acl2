@@ -53,7 +53,7 @@ use FindBin qw($RealBin);
 
 my $HELP_MESSAGE = "
 
- critpath.pl [OPTIONS] <makefile> <top-book>
+ critpath.pl [OPTIONS] <top-book>
 
  This program displays the longest dependency chain leading up to a certified
  book, measured in sequential certification time.  This is the amount of time
@@ -75,15 +75,8 @@ my $HELP_MESSAGE = "
      cert.pl top.lisp -c    # clean
      cert.pl top.lisp -j 8  # recertify using 8 parallel processors
 
- 2. Run critpath.pl [OPTIONS] <makefile> <top-book>,
-
-    Where:
- 
-       <makefile> is the Makefile-tmp produced by cert.pl in step 1.  If it
-       gets deleted, you can recreate it using:
-          cert.pl -s <makefile> <top-book>
-
-       <top-book> should be the .lisp or .cert file of the book of interest
+ 2. Run critpath.pl [OPTIONS] <top-book>, where <top-book> is the
+    .lisp or .cert file of the book of interest.
 
     The options are as follows:
 
@@ -95,6 +88,14 @@ my $HELP_MESSAGE = "
 
        --help       Print this help message and exit.
 
+       --makefile=<makefile>
+       -m <makefile>
+                    Compute the dependency graph from the given makefile
+                    instead of recomputing it by looking at all the
+                    source files.  The makefile must be of the format
+                    produced by cert.pl; this option uses a simple
+                    regular expression parsing of the makefile to
+                    produce the dependency graph.
  ";
 
 my %OPTIONS = (
@@ -102,29 +103,45 @@ my %OPTIONS = (
   'help'    => '',
   'nowarn'  => '',
   'nopath'  => '',
-  'nolist'  => ''
+  'nolist'  => '',
+  'makefile' => ''
 );
 
 my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     'help'   => \$OPTIONS{'help'},
 			     'nowarn' => \$OPTIONS{'nowarn'},
 			     'nopath' => \$OPTIONS{'nopath'},
-			     'nolist' => \$OPTIONS{'nolist'}
+			     'nolist' => \$OPTIONS{'nolist'},
+			     'm|makefile=s' => \$OPTIONS{'makefile'}
 			     );
 
-my $args_okp = (@ARGV == 2);
+my $args_okp = (@ARGV == 1);
 
 if (!$options_okp || !$args_okp || $OPTIONS{"help"})
 {
     print $HELP_MESSAGE;
-    exit $OPTIONS{"help"} ? 0 : 1;
+    exit ($OPTIONS{"help"} ? 0 : 1);
 }
 
-my $mkfile = canonical_path(shift);
+my %deps;
 my $topfile = canonical_path(shift);
 $topfile =~ s/\.lisp$/.cert/;
 
-my %deps = makefile_dependency_graph($mkfile);
+if ($OPTIONS{'makefile'}) {
+    %deps = makefile_dependency_graph($OPTIONS{'makefile'});
+} else {
+    %deps = ();
+    my %certlib_opts = ( "debugging" => 0,
+			 "clean_certs" => 0,
+			 "print_deps" => 0,
+			 "all_deps" => 1 );
+
+    certlib_set_opts(\%certlib_opts);
+
+    my @run_sources = ();
+    add_deps($topfile, \%deps, \@run_sources);
+}
+
 my ($costs, $warnings) = make_costs_table($topfile, \%deps);
 
 

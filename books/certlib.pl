@@ -212,15 +212,18 @@ sub make_costs_table_aux {
     my $most_expensive_dep_total = 0;
     my $most_expensive_dep = 0;
 
-    foreach my $dep (@{$certdeps}) {
-	my $this_dep_costs = make_costs_table_aux($dep, $deps, $costs, $warnings);
-	my $this_dep_total = $this_dep_costs->{"totaltime"};
-	if ($this_dep_total > $most_expensive_dep_total) {
-	    $most_expensive_dep = $dep;
-	    $most_expensive_dep_total = $this_dep_total;
+    if ($certdeps) {
+	foreach my $dep (@{$certdeps}) {
+	    if ($dep =~ /\.cert$/) {
+		my $this_dep_costs = make_costs_table_aux($dep, $deps, $costs, $warnings);
+		my $this_dep_total = $this_dep_costs->{"totaltime"};
+		if ($this_dep_total > $most_expensive_dep_total) {
+		    $most_expensive_dep = $dep;
+		    $most_expensive_dep_total = $this_dep_total;
+		}
+	    }
 	}
     }
-
     my %entry = ( "shortcert" => short_cert_name($certfile),
 		  "selftime" => $certtime, 
 		  "totaltime" => $most_expensive_dep_total +
