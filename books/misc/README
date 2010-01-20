@@ -378,6 +378,17 @@ redef-pkg.lisp -- handy (though potentially unsound) utility for adding
 
 ===============================================================================
 
+misc2/reverse-by-separation.lisp -- destructive linked-list program
+                                    verification example
+
+Quoting the file:
+
+; The following proof is a translation to ACL2 of a proof by Magnus Myreen
+; (Univ. of Cambridge), inspired by separation logic, about reversing linked
+; lists.
+
+===============================================================================
+
 seq.lisp -- the seq macro language
 seqw.lisp -- the seqw macro language
 seq-examples.lsp -- examples of using the seq macro

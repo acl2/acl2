@@ -103,7 +103,7 @@ deduction/passmore:
 clause-processors: top-with-meta-cert make-event arithmetic-3 textbook arithmetic \
 	misc tools data-structures arithmetic-5
 quadratic-reciprocity: rtl
-misc/misc2: rtl make-event
+misc/misc2: rtl make-event coi top-with-meta-cert
 hints: make-event
 models/jvm/m5: top-with-meta-cert ordinals misc ihs
 # models/jvm/m5 is needed for paco/books, not paco
