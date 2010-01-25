@@ -65,6 +65,12 @@
   (let ((n 1000))
     (equal (tree-depth (build-tree n)) n)))
 
+(defn make-list-of-numbers (n)
+  (declare (xargs :guard (natp n)))
+  (if (zp n)
+      (list n)
+    (hons n (make-list-of-numbers (1- n)))))
+
 (defun lots (n)
   (declare (xargs :guard (posp n)))
   (let* ((lots-of-numbers (make-list-of-numbers n)))

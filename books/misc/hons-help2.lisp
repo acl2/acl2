@@ -43,9 +43,6 @@
 (defmacro hist* (&rest x)
   `(hons-list* ,@x))
 
-(def-macro-alias hen1 hons-len1 2)
-
-(def-macro-alias hen hons-len 1)
 
 (def-macro-alias member-hqual hons-member-equal 2)
 
@@ -58,9 +55,6 @@
 
 (def-macro-alias heverse hons-reverse 1)
 
-(def-macro-alias hetprop hons-getprop 3)
-
-(def-macro-alias hutprop hons-putprop 4)
 
 (def-macro-alias hut-list hons-put-list 3)
 
@@ -68,8 +62,17 @@
 
 (def-macro-alias hunion hons-union 2)
 
-(def-macro-alias hmerge-sort hons-merge-sort 2)
 
 (def-macro-alias hopy-r hons-copy-r 1)
 
 (def-macro-alias hopy-list-r hons-copy-list-r 1)
+
+
+
+;; [Jared]: Removed these
+
+;; (def-macro-alias hen1 hons-len1 2)
+;; (def-macro-alias hen hons-len 1)
+;; (def-macro-alias hetprop hons-getprop 3)
+;; (def-macro-alias hutprop hons-putprop 4)
+;; (def-macro-alias hmerge-sort hons-merge-sort 2)
