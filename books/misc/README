@@ -227,6 +227,10 @@ If fns is a symbol, then fns is replaced by (list fns).
 
 ===============================================================================
 
+gentle.lisp -- analogues of known functions with weaker guards (often, T)
+
+===============================================================================
+
 getprop.lisp -- user-managed fast property lists
 
 The ACL2 utilities GETPROP and PUTPROP take advantage of under-the-hood Lisp
