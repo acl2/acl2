@@ -28,6 +28,23 @@
 (SET-DEFAULT-HINTS
      '((NONLINEARP-DEFAULT-HINT++ ID STABLE-UNDER-SIMPLIFICATIONP
                                   HIST NIL)))
+
+;; Jared adding this to speed up proofs
+
+(local (in-theory (disable not-integerp-type-set-rules
+                           ;mod-x-y-=-x+y
+                           ;simplify-terms-such-as-ax+bx-=-0
+                           ;reduce-additive-constant-equal
+                           ;floor-zero
+                           ;floor-=-x/y
+                           ;simplify-products-gather-exponents-<
+                           integerp-mod-1
+                           integerp-mod-2
+                           integerp-mod-3
+
+                           )))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -304,18 +321,22 @@
 
 (encapsulate ()
 
- (local
+(local
   (defun ind-fn (i)
     (if (zp i)
 	t
       (ind-fn (+ -1 i)))))
+
+(local (in-theory (enable integerp-mod-1
+                           integerp-mod-2
+                           integerp-mod-3)))
 
  ;; Robert Krug writes:  This hint took some knowledge about the
  ;; library, but it is described in the README.  If you can suggest a
  ;; way to make this more easily accessable, I would be interested in
  ;; hearing it.
 
- (local
+(local
   (scatter-exponents))
 
  ;; Robert Krug writes:  I believe I could prove this or an
@@ -325,8 +346,23 @@
  ;; RBK: Fix this proof.  72 generalizations and 96 destructor
  ;; eliminations!
 
- (local
+
+(local
+ (encapsulate
+  ()
+  (local (in-theory (disable (:REWRITE MOD-X-Y-=-X-Y . 1)
+                             (:REWRITE MOD-X-Y-=-X+Y . 1)
+                             EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT
+                             EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT
+                             EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT
+                             EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
+                             EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
+                             EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE
+                             EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B
+                             EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A)))
+
   (defthm mod-theorem-two-helper-helper
+    ;; 37.4 seconds
     (IMPLIES (AND (NOT (ZP I))
 		  (EQUAL (MOD (EXPT A I) N)
 			 (MOD (EXPT (MOD A N) I) N))
@@ -336,7 +372,7 @@
 		  (NOT (EQUAL N 0)))
 	     (EQUAL (MOD (* b (EXPT (MOD A N) I)) N)
 		    (MOD (* b (EXPT A I)) N)))
-    :hints (("Goal" :induct (ind-fn b)))))
+    :hints (("Goal" :induct (ind-fn b))))))
 
  ;; Robert Krug writes:  This helper, and ones like it, irritate me.
  ;; ACL2 failed to prove theorem two, with the subgoal:
@@ -357,7 +393,7 @@
  ;; rather than using a base case of (+ -1 I) and an indictive
  ;; case of I.  But this is not going to happen.
 
- (local
+(local
   (defthm mod-theorem-two-helper
     (IMPLIES (AND (NOT (ZP I))
 		  (EQUAL (MOD (EXPT A I) N)
@@ -368,10 +404,10 @@
 	     (EQUAL (MOD (EXPT (MOD A N) (+ 1 I)) N)
 		    (MOD (EXPT A (+ 1 I)) N)))))
 
- (local
+(local
   (gather-exponents))
 
- (defthm mod-theorem-two
+(defthm mod-theorem-two
    (implies (and (integerp a)
 		 (integerp i)
 		 (<= 0 i)

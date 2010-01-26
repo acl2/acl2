@@ -31,12 +31,24 @@
 (local
  (include-book "floor-mod-basic-helper"))
 
-;(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
-;                                              hist pspv)))
-
 (SET-DEFAULT-HINTS
      '((NONLINEARP-DEFAULT-HINT++ ID STABLE-UNDER-SIMPLIFICATIONP
                                   HIST NIL)))
+
+
+;; Jared adding this to speed up certification
+(local (in-theory (disable not-integerp-type-set-rules
+                           default-times-1
+                           rationalp-x
+                           reduce-rationalp-*
+                           acl2-numberp-x
+                           rationalp-/
+                           default-plus-1
+                           default-plus-2
+                           floor-positive)))
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -66,10 +78,16 @@
 			  (< 0 i))))
   :rule-classes (:rewrite :type-prescription))
 
+(local (in-theory (disable integerp-mod-1
+                           integerp-mod-2
+                           integerp-mod-3)))
+
 (defthm rationalp-mod
   (implies (rationalp x)
            (rationalp (mod x y)))
   :rule-classes (:rewrite :type-prescription))
+
+(local (in-theory (disable rationalp-mod)))
 
 (defthm floor-mod-elim
   (implies (acl2-numberp x)
@@ -199,6 +217,7 @@
       (:linear mod-bounds-1)
       (:linear mod-bounds-2)
       (:linear mod-bounds-3)))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -816,6 +835,9 @@ mod equalities.
   (equal (mod x x) 0)
   :hints (("Goal" :cases ((equal x 0))))
   :rule-classes (:rewrite :type-prescription))
+
+(local (in-theory (disable mod-zero-2 mod-zero)))
+
 
 (defthm mod-x-y-=-x+y
   (implies (and ;(acl2-numberp x)

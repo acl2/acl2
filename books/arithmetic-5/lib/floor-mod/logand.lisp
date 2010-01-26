@@ -50,6 +50,8 @@
 (local
  (in-theory (e/d (ash-to-floor) (ash))))
 
+(local (in-theory (disable not-integerp-type-set-rules)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; logand associativity and commutativity:
@@ -393,12 +395,10 @@ and variants
 			   (equal (mod (logand x y) 2)
 				  0)))))
 
-;;; Clean this up --- this is a crude patch job on an
-;;; earlier proof
+
 
 (encapsulate
  ()
-
  (local
   (defun floor-2-n-ind (x y n)
     (cond ((zip n)
@@ -418,404 +418,31 @@ and variants
     :hints (("Subgoal 4'" :in-theory (disable logand)))
     :rule-classes nil))
 
- (local
-  (in-theory
-   (disable
-    (:TYPE-PRESCRIPTION NOT-INTEGERP-4A)
-    (:TYPE-PRESCRIPTION MOD-ZERO . 4)
-    (:TYPE-PRESCRIPTION NOT-INTEGERP-4B)
-    (:REWRITE MOD-X-Y-=-X-Y . 2)
-    (:REWRITE CANCEL-MOD-+)
-    (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT)
-    (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT)
-    (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT)
-    (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT)
-    (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B)
-    (:REWRITE DEFAULT-TIMES-2)
-    (:REWRITE MOD-X-Y-=-X-Y . 1)
-    (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL)
-    (:REWRITE DEFAULT-MOD-RATIO)
-    (:TYPE-PRESCRIPTION NOT-INTEGERP-3B)
-    (:TYPE-PRESCRIPTION NOT-INTEGERP-2B)
-    (:TYPE-PRESCRIPTION NOT-INTEGERP-1B)
-    (:TYPE-PRESCRIPTION INTEGERP-/-EXPT-1)
-    (:TYPE-PRESCRIPTION INTEGERP-/-EXPT-2)
-    (:REWRITE MOD-X-Y-=-X . 4)
-    (:REWRITE DEFAULT-PLUS-2)
-    (:REWRITE DEFAULT-TIMES-1)
-    (:REWRITE MOD-X-Y-=-X+Y . 1)
-    (:REWRITE |(< (logand x y) 0)|)
-    (:TYPE-PRESCRIPTION |(< (logand x y) 0)| . 1)
-    (:REWRITE MOD-ZERO . 4)
-    (:REWRITE DEFAULT-PLUS-1)
-    (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<)
-    (:REWRITE |(mod (+ x (mod a b)) y)|)
-    (:REWRITE |(mod (+ x (- (mod a b))) y)|)
-    (:REWRITE DEFAULT-DIVIDE)
-    (:TYPE-PRESCRIPTION NOT-INTEGERP-3A)
-    (:TYPE-PRESCRIPTION NOT-INTEGERP-2A)
-    (:REWRITE |(* (- x) y)|)
-    (:REWRITE MOD-X-Y-=-X-Y . 3)
-    (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2)
-    (:TYPE-PRESCRIPTION MOD-ZERO . 3)
-    (:TYPE-PRESCRIPTION MOD-POSITIVE . 2)
-    (:TYPE-PRESCRIPTION MOD-POSITIVE . 1)
-    (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1)
-    (:TYPE-PRESCRIPTION NOT-INTEGERP-4B-EXPT)
-    (:TYPE-PRESCRIPTION MOD-NONPOSITIVE)
-    (:REWRITE MOD-X-Y-=-X . 2)
-    (:REWRITE DEFAULT-MINUS)
-    (:REWRITE MOD-ZERO . 1)
-    (:TYPE-PRESCRIPTION NOT-INTEGERP-3B-EXPT)
-    (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL)
-    (:TYPE-PRESCRIPTION NOT-INTEGERP-4A-EXPT)
-    (:REWRITE DEFAULT-LESS-THAN-2)
-    (:REWRITE MOD-CANCEL-*-CONST)
-    (:LINEAR MOD-BOUNDS-3)
-;;     (:REWRITE |(mod x (* y (/ z))) rewriting-goal-literal|)
-;;     (:REWRITE |(mod (* x (/ y)) z) rewriting-goal-literal|)
-    (:REWRITE DEFAULT-LESS-THAN-1)
-    (:REWRITE |(* (+ x y) z)|)
-    (:REWRITE SIMPLIFY-PRODUCTS-SCATTER-EXPONENTS-EQUAL)
-    (:REWRITE PREFER-POSITIVE-EXPONENTS-SCATTER-EXPONENTS-EQUAL)
-    (:REWRITE |(floor (+ x r) i)|)
-    (:REWRITE DEFAULT-FLOOR-RATIO)
-    (:REWRITE DEFAULT-MOD-2)
-    (:TYPE-PRESCRIPTION NOT-INTEGERP-2B-EXPT)
-    (:REWRITE SIMPLIFY-PRODUCTS-SCATTER-EXPONENTS-<)
-    (:REWRITE PREFER-POSITIVE-EXPONENTS-SCATTER-EXPONENTS-<)
-    (:TYPE-PRESCRIPTION BUBBLE-DOWN)
-    (:REWRITE DEFAULT-EXPT-2)
-    (:REWRITE DEFAULT-EXPT-1)
-    (:REWRITE |(expt 1/c n)|)
-    (:REWRITE |(expt (- x) n)|)
-    (:LINEAR MOD-BOUNDS-2)
-    (:REWRITE |(< (+ (- c) x) y)|)
-    (:REWRITE MOD-ZERO . 2)
-    (:REWRITE REMOVE-STRICT-INEQUALITIES)
-    (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<)
-    (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<)
-    (:REWRITE THE-FLOOR-BELOW)
-    (:REWRITE THE-FLOOR-ABOVE)
-    (:REWRITE |(< (- x) (- y))|)
- ;   (:REWRITE |(< (/ x) c) positive c --- present in goal|)
-    (:REWRITE INTEGERP-<-CONSTANT)
- ;;    (:REWRITE |(< c (/ x)) positive c --- present in goal|)
-;;     (:REWRITE |(< c (/ x)) positive c --- obj t or nil|)
-;;     (:REWRITE |(< c (/ x)) negative c --- present in goal|)
-;;     (:REWRITE |(< c (/ x)) negative c --- obj t or nil|)
-    (:REWRITE |(< c (- x))|)
- ;;    (:REWRITE |(< (/ x) c) positive c --- obj t or nil|)
-;;     (:REWRITE |(< (/ x) c) negative c --- present in goal|)
-;;     (:REWRITE |(< (/ x) c) negative c --- obj t or nil|)
-    (:REWRITE |(< (/ x) (/ y))|)
-    (:REWRITE CONSTANT-<-INTEGERP)
-    (:TYPE-PRESCRIPTION INTEGERP-MOD-2)
-    (:TYPE-PRESCRIPTION RATIONALP-MOD)
-    (:REWRITE |(equal (- x) (- y))|)
-    (:REWRITE |(equal (- x) c)|)
-    (:REWRITE BUBBLE-DOWN-*-MATCH-3)
-    (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B)
-    (:REWRITE |(* x (expt x n))|)
-    (:META META-INTEGERP-CORRECT)
-    (:REWRITE INTEGERP-MINUS-X)
-    (:REWRITE |(equal (mod (+ x y) z) x)|)
-    (:REWRITE DEFAULT-MOD-1)
-    (:TYPE-PRESCRIPTION FLOOR-ZERO . 4)
-    (:REWRITE |(< (* x y) 0)|)
-    (:LINEAR EXPT-X->=-X)
-    (:LINEAR EXPT-X->-X)
-    (:REWRITE |(< (/ x) 0)|)
-    (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER)
-    (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON)
-    (:REWRITE |(equal (/ x) c)|)
-    (:TYPE-PRESCRIPTION NOT-INTEGERP-3A-EXPT)
-    (:TYPE-PRESCRIPTION NOT-INTEGERP-2A-EXPT)
-    (:TYPE-PRESCRIPTION NOT-INTEGERP-1A-EXPT)
-    (:REWRITE |(equal c (/ x))|)
-    (:REWRITE |(equal (/ x) (/ y))|)
-    (:REWRITE EQUAL-OF-PREDICATES-REWRITE)
-    (:REWRITE |(equal c (- x))|)
-    (:REWRITE |(< x (+ c/d y))|)
-    (:REWRITE DEFAULT-FLOOR-1)
-    (:LINEAR EXPT-IS-WEAKLY-INCREASING-FOR-BASE->-1)
-    (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0)
-    (:TYPE-PRESCRIPTION FLOOR-ZERO . 2)
-    (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 1)
-    (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 1)
-    (:REWRITE |(< 0 (* x y))|)
-    (:REWRITE |(< 0 (/ x))|)
-    (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER)
-    (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-COMMON)
-    (:LINEAR EXPT-IS-WEAKLY-DECREASING-FOR-POS-BASE-<-1)
-    (:LINEAR EXPT-IS-DECREASING-FOR-POS-BASE-<-1)
-    (:REWRITE |arith (expt x c)|)
-    (:REWRITE |arith (expt 1/c n)|)
-    (:REWRITE |(- (* c x))|)
-;    (:REWRITE MOD-CANCEL-*-NOT-REWRITING-GOAL-LITERAL)
-    (:REWRITE |(mod x (- y))| . 3)
-    (:REWRITE |(mod x (- y))| . 2)
-;    (:REWRITE |(mod x (* y (/ z))) not rewriting-goal-literal|)
-    (:REWRITE |(mod (- x) y)| . 3)
-    (:REWRITE |(mod (- x) y)| . 2)
-    (:REWRITE |(mod (- x) y)| . 1)
-;    (:REWRITE |(mod (* x (/ y)) z) not rewriting-goal-literal|)
-    (:REWRITE SUM-IS-EVEN . 2)
-    (:REWRITE |(* c (* d x))|)
-    (:REWRITE |(equal (+ (- c) x) y)|)
-    (:REWRITE DEFAULT-FLOOR-2)
-    (:REWRITE |(floor x 2)| . 2)
-    (:REWRITE |(equal x (/ y))|)
-    (:LINEAR EXPT-LINEAR-UPPER-<)
-    (:LINEAR EXPT-LINEAR-LOWER-<)
-    (:LINEAR EXPT->=-1-TWO)
-    (:LINEAR EXPT->-1-TWO)
-    (:LINEAR EXPT-<=-1-ONE)
-    (:LINEAR EXPT-<-1-ONE)
-    )))
-
- ;; Very irritating --- these lemmatta prove easily as lemmas, but
- ;; the goals do not behave under the induction.
 
  (local
-  (DEFTHM |MOD-LOGAND Subgoal *1/2.6'|
-    (IMPLIES (AND (INTEGERP (* 1/2 X))
-		  (NOT (INTEGERP (* 1/2 Y)))
-		  (INTEGERP (* 1/2 (LOGAND X Y)))
-		  (INTEGERP (* 1/2 (MOD Y (EXPT 2 N))))
-		  (INTEGERP (* 1/2 (MOD X (EXPT 2 N))))
-		  (INTEGERP (* 1/2
-			       (LOGAND (MOD X (EXPT 2 N))
-				       (MOD Y (EXPT 2 N)))))
-		  (< 0 N)
-		  (EQUAL (MOD (LOGAND X Y) (EXPT 2 N)) 0)
-		  (INTEGERP X)
-		  (INTEGERP Y)
-		  (INTEGERP N))
-	     (EQUAL (LOGAND (MOD X (EXPT 2 N))
-			    (MOD Y (EXPT 2 N)))
-		    0))
-    :RULE-CLASSES NIL))
+  (defthm |(integerp (* 1/2 (mod x (expt 2 n))))|
+    ;; Jared discovered this rule by analyzing the several lemmas that used to
+    ;; be here.  It turns out that this one rule takes care of everything.
+    ;; Robert, should this rule be unlocalized?
+    (implies (and (< 0 n)
+                  (integerp n))
+             (equal (integerp (* 1/2 (mod x (expt 2 n))))
+                    (integerp (* 1/2 x))))))
 
- (local
-  (DEFTHM |MOD-LOGAND Subgoal *1/2.8'|
-    (IMPLIES (AND (INTEGERP (* 1/2 X))
-		  (NOT (INTEGERP (* 1/2 Y)))
-		  (INTEGERP (* 1/2 (LOGAND X Y)))
-		  (INTEGERP (* 1/2 (MOD Y (EXPT 2 N))))
-		  (NOT (INTEGERP (* 1/2 (MOD X (EXPT 2 N)))))
-		  (INTEGERP (* 1/2
-			       (LOGAND (MOD X (EXPT 2 N))
-				       (MOD Y (EXPT 2 N)))))
-		  (< 0 N)
-		  (EQUAL (MOD (LOGAND X Y) (EXPT 2 N)) 0)
-		  (INTEGERP X)
-		  (INTEGERP Y)
-		  (INTEGERP N))
-	     (EQUAL (LOGAND (MOD X (EXPT 2 N))
-			    (MOD Y (EXPT 2 N)))
-		    0))
-    :RULE-CLASSES NIL))
-
- (local
-  (DEFTHM |MOD-LOGAND Subgoal *1/2.9'|
-    (IMPLIES (AND (INTEGERP (* 1/2 X))
-		  (NOT (INTEGERP (* 1/2 Y)))
-		  (INTEGERP (* 1/2 (LOGAND X Y)))
-		  (NOT (INTEGERP (* 1/2 (MOD Y (EXPT 2 N)))))
-		  (NOT (INTEGERP (* 1/2 (MOD X (EXPT 2 N)))))
-		  (NOT (INTEGERP (* 1/2
-				    (LOGAND (MOD X (EXPT 2 N))
-					    (MOD Y (EXPT 2 N))))))
-		  (< 0 N)
-		  (EQUAL (MOD (LOGAND X Y) (EXPT 2 N)) 0)
-		  (INTEGERP X)
-		  (INTEGERP Y)
-		  (INTEGERP N))
-	     (EQUAL (LOGAND (MOD X (EXPT 2 N))
-			    (MOD Y (EXPT 2 N)))
-		    0))
-    :RULE-CLASSES NIL))
-
- (local
-  (DEFTHM |MOD-LOGAND Subgoal *1/2.22'|
-    (IMPLIES (AND (INTEGERP (* 1/2 Y))
-		  (INTEGERP (* 1/2 X))
-		  (INTEGERP (* 1/2 (LOGAND X Y)))
-		  (INTEGERP (* 1/2 (MOD X (EXPT 2 N))))
-		  (NOT (INTEGERP (* 1/2 (MOD Y (EXPT 2 N)))))
-		  (INTEGERP (* 1/2
-			       (LOGAND (MOD X (EXPT 2 N))
-				       (MOD Y (EXPT 2 N)))))
-		  (< 0 N)
-		  (EQUAL (MOD (LOGAND X Y) (EXPT 2 N)) 0)
-		  (INTEGERP X)
-		  (INTEGERP Y)
-		  (INTEGERP N))
-	     (EQUAL (LOGAND (MOD X (EXPT 2 N))
-			    (MOD Y (EXPT 2 N)))
-		    0))
-    :RULE-CLASSES NIL))
-
- (local
-  (DEFTHM |MOD-LOGAND Subgoal *1/2.26'|
-    (IMPLIES (AND (INTEGERP (* 1/2 Y))
-		  (INTEGERP (* 1/2 X))
-		  (INTEGERP (* 1/2 (LOGAND X Y)))
-		  (INTEGERP (* 1/2 (MOD Y (EXPT 2 N))))
-		  (NOT (INTEGERP (* 1/2 (MOD X (EXPT 2 N)))))
-		  (INTEGERP (* 1/2
-			       (LOGAND (MOD X (EXPT 2 N))
-				       (MOD Y (EXPT 2 N)))))
-		  (< 0 N)
-		  (EQUAL (MOD (LOGAND X Y) (EXPT 2 N)) 0)
-		  (INTEGERP X)
-		  (INTEGERP Y)
-		  (INTEGERP N))
-	     (EQUAL (LOGAND (MOD X (EXPT 2 N))
-			    (MOD Y (EXPT 2 N)))
-		    0))
-    :RULE-CLASSES NIL))
-
- (local
-  (DEFTHM |MOD-LOGAND Subgoal *1/2.27'|
-    (IMPLIES (AND (INTEGERP (* 1/2 Y))
-		  (INTEGERP (* 1/2 X))
-		  (INTEGERP (* 1/2 (LOGAND X Y)))
-		  (NOT (INTEGERP (* 1/2 (MOD Y (EXPT 2 N)))))
-		  (NOT (INTEGERP (* 1/2 (MOD X (EXPT 2 N)))))
-		  (NOT (INTEGERP (* 1/2
-				    (LOGAND (MOD X (EXPT 2 N))
-					    (MOD Y (EXPT 2 N))))))
-		  (< 0 N)
-		  (EQUAL (MOD (LOGAND X Y) (EXPT 2 N)) 0)
-		  (INTEGERP X)
-		  (INTEGERP Y)
-		  (INTEGERP N))
-	     (EQUAL (LOGAND (MOD X (EXPT 2 N))
-			    (MOD Y (EXPT 2 N)))
-		    0))
-    :RULE-CLASSES NIL))
-
- (local
-  (DEFTHM |MOD-LOGAND Subgoal *1/2.40'|
-    (IMPLIES (AND (INTEGERP (* 1/2 Y))
-		  (NOT (INTEGERP (* 1/2 X)))
-		  (INTEGERP (* 1/2 (LOGAND X Y)))
-		  (INTEGERP (* 1/2 (MOD X (EXPT 2 N))))
-		  (NOT (INTEGERP (* 1/2 (MOD Y (EXPT 2 N)))))
-		  (INTEGERP (* 1/2
-			       (LOGAND (MOD X (EXPT 2 N))
-				       (MOD Y (EXPT 2 N)))))
-		  (< 0 N)
-		  (EQUAL (MOD (LOGAND X Y) (EXPT 2 N)) 0)
-		  (INTEGERP X)
-		  (INTEGERP Y)
-		  (INTEGERP N))
-	     (EQUAL (LOGAND (MOD X (EXPT 2 N))
-			    (MOD Y (EXPT 2 N)))
-		    0))
-    :RULE-CLASSES NIL))
-
- (local
-  (DEFTHM |MOD-LOGAND Subgoal *1/2.42'|
-    (IMPLIES (AND (INTEGERP (* 1/2 Y))
-		  (NOT (INTEGERP (* 1/2 X)))
-		  (INTEGERP (* 1/2 (LOGAND X Y)))
-		  (INTEGERP (* 1/2 (MOD Y (EXPT 2 N))))
-		  (INTEGERP (* 1/2 (MOD X (EXPT 2 N))))
-		  (INTEGERP (* 1/2
-			       (LOGAND (MOD X (EXPT 2 N))
-				       (MOD Y (EXPT 2 N)))))
-		  (< 0 N)
-		  (EQUAL (MOD (LOGAND X Y) (EXPT 2 N)) 0)
-		  (INTEGERP X)
-		  (INTEGERP Y)
-		  (INTEGERP N))
-	     (EQUAL (LOGAND (MOD X (EXPT 2 N))
-			    (MOD Y (EXPT 2 N)))
-		    0))
-    :RULE-CLASSES NIL))
-
- (local
-  (DEFTHM |MOD-LOGAND Subgoal *1/2.48'|
-    (IMPLIES (AND (INTEGERP (* 1/2 Y))
-		  (NOT (INTEGERP (* 1/2 X)))
-		  (INTEGERP (* 1/2 (LOGAND X Y)))
-		  (NOT (INTEGERP (* 1/2 (MOD Y (EXPT 2 N)))))
-		  (NOT (INTEGERP (* 1/2 (MOD X (EXPT 2 N)))))
-		  (NOT (INTEGERP (* 1/2
-				    (LOGAND (MOD X (EXPT 2 N))
-					    (MOD Y (EXPT 2 N))))))
-		  (< 0 N)
-		  (EQUAL (MOD (LOGAND X Y) (EXPT 2 N)) 0)
-		  (INTEGERP X)
-		  (INTEGERP Y)
-		  (INTEGERP N))
-	     (EQUAL (LOGAND (MOD X (EXPT 2 N))
-			    (MOD Y (EXPT 2 N)))
-		    0))
-    :RULE-CLASSES NIL))
-
- (local
-  (DEFTHM |MOD-LOGAND Subgoal *1/2.49''|
-    (IMPLIES (AND (NOT (INTEGERP (* 1/2 Y)))
-		  (NOT (INTEGERP (* 1/2 X)))
-		  (NOT (INTEGERP (* 1/2 (LOGAND X Y))))
-		  (INTEGERP (* 1/2 (MOD X (EXPT 2 N))))
-		  (NOT (INTEGERP (* 1/2 (MOD Y (EXPT 2 N)))))
-		  (INTEGERP (* 1/2
-			       (LOGAND (MOD X (EXPT 2 N))
-				       (MOD Y (EXPT 2 N)))))
-		  (< 0 N)
-		  (EQUAL (MOD (LOGAND X Y) (EXPT 2 N)) 1)
-		  (INTEGERP X)
-		  (INTEGERP Y)
-		  (INTEGERP N))
-	     (EQUAL (LOGAND (MOD X (EXPT 2 N))
-			    (MOD Y (EXPT 2 N)))
-		    1))
-    :RULE-CLASSES NIL))
-
- (local
-  (DEFTHM |MOD-LOGAND Subgoal *1/2.65''|
-    (IMPLIES (AND (NOT (INTEGERP (* 1/2 Y)))
-		  (NOT (INTEGERP (* 1/2 X)))
-		  (NOT (INTEGERP (* 1/2 (LOGAND X Y))))
-		  (INTEGERP (* 1/2 (MOD Y (EXPT 2 N))))
-		  (INTEGERP (* 1/2 (MOD X (EXPT 2 N))))
-		  (INTEGERP (* 1/2
-			       (LOGAND (MOD X (EXPT 2 N))
-				       (MOD Y (EXPT 2 N)))))
-		  (< 0 N)
-		  (EQUAL (MOD (LOGAND X Y) (EXPT 2 N)) 1)
-		  (INTEGERP X)
-		  (INTEGERP Y)
-		  (INTEGERP N))
-	     (EQUAL (LOGAND (MOD X (EXPT 2 N))
-			    (MOD Y (EXPT 2 N)))
-		    1))
-    :RULE-CLASSES NIL))
-
- (local
-  (DEFTHM |MOD-LOGAND Subgoal *1/2.81''|
-    (IMPLIES (AND (NOT (INTEGERP (* 1/2 Y)))
-		  (NOT (INTEGERP (* 1/2 X)))
-		  (NOT (INTEGERP (* 1/2 (LOGAND X Y))))
-		  (INTEGERP (* 1/2 (MOD Y (EXPT 2 N))))
-		  (NOT (INTEGERP (* 1/2 (MOD X (EXPT 2 N)))))
-		  (INTEGERP (* 1/2
-			       (LOGAND (MOD X (EXPT 2 N))
-				       (MOD Y (EXPT 2 N)))))
-		  (< 0 N)
-		  (EQUAL (MOD (LOGAND X Y) (EXPT 2 N)) 1)
-		  (INTEGERP X)
-		  (INTEGERP Y)
-		  (INTEGERP N))
-	     (EQUAL (LOGAND (MOD X (EXPT 2 N))
-			    (MOD Y (EXPT 2 N)))
-		    1))
-    :RULE-CLASSES NIL))
+ (local (in-theory (disable not-integerp-type-set-rules
+                            EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT
+                            EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT
+                            EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT
+                            EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
+                            EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B
+                            cancel-mod-+
+                            (:TYPE-PRESCRIPTION MOD-ZERO . 4)
+                            default-mod-ratio
+                            default-times-2
+                            default-+-2
+                            (:REWRITE MOD-X-Y-=-X-Y . 2)
+                            (:REWRITE MOD-X-Y-=-X . 4)
+                            )))
 
  (defthm mod-logand
    (implies (and (integerp x)
@@ -831,23 +458,10 @@ and variants
 	   ("Subgoal *1/2" :use ((:instance break-logand-apart)
 				 (:instance break-logand-apart
 					    (x (MOD X (EXPT 2 N)))
-					    (y (MOD Y (EXPT 2 N))))))
-	   ("Subgoal *1/2.81''" :by |MOD-LOGAND Subgoal *1/2.81''|)
-	   ("Subgoal *1/2.65''" :by |MOD-LOGAND Subgoal *1/2.65''|)
-	   ("Subgoal *1/2.49''" :by |MOD-LOGAND Subgoal *1/2.49''|)
-	   ("Subgoal *1/2.48'" :by |MOD-LOGAND Subgoal *1/2.48'|)
-	   ("Subgoal *1/2.42'" :by |MOD-LOGAND Subgoal *1/2.42'|)
-	   ("Subgoal *1/2.41''" :by |MOD-LOGAND Subgoal *1/2.41''|)
-	   ("Subgoal *1/2.40'" :by |MOD-LOGAND Subgoal *1/2.40'|)
-	   ("Subgoal *1/2.27'" :by |MOD-LOGAND Subgoal *1/2.27'|)
-	   ("Subgoal *1/2.26'" :by |MOD-LOGAND Subgoal *1/2.26'|)
-	   ("Subgoal *1/2.22'" :by |MOD-LOGAND Subgoal *1/2.22'|)
-	   ("Subgoal *1/2.9'" :by |MOD-LOGAND Subgoal *1/2.9'|)
-	   ("Subgoal *1/2.8'" :by |MOD-LOGAND Subgoal *1/2.8'|)
-	   ("Subgoal *1/2.6'" :by |MOD-LOGAND Subgoal *1/2.6'|)
-	   ))
+					    (y (MOD Y (EXPT 2 N))))))))
 
  )
+
 
 (defthm |(integerp (* 1/2 (logand x y)))|
   (implies (and (integerp x)
@@ -885,6 +499,8 @@ and variants
 				(not (integerp (* 1/2 x)))
 				(not (integerp (* 1/2 y))))
 			   (not (integerp (* 1/2 (logand x y))))))))
+
+
 
 ;;; Masks:
 
@@ -925,19 +541,74 @@ and variants
 
 ;;; A messy, slow, proof:
 
-(defthm logand-mask-shifted
-  (implies (and (integerp x) 
-		(integerp n1)
-		(integerp n2)
-		(<= 0 n1)
-		(<= 0 n2))
-	   (equal (logand x (* (expt 2 n1)
-			       (+ -1 (expt 2 n2))))
-		  (* (expt 2 n1)
-		     (mod (floor x (expt 2 n1))
-			  (expt 2 n2)))))
-  :hints (("Goal" :do-not '(generalize)
-	   :induct (ind-hint x n1))))
+
+(encapsulate
+ ()
+ (local (in-theory (disable not-integerp-type-set-rules
+                            expt-type-prescription-nonpositive-base-odd-exponent
+                            expt-type-prescription-nonpositive-base-even-exponent
+                            expt-type-prescription-negative-base-odd-exponent
+                            expt-type-prescription-negative-base-even-exponent
+                            expt-type-prescription-integerp-base-b
+                            (:REWRITE MOD-X-Y-=-X-Y . 2)
+                            default-plus-1
+                            default-plus-2
+                            default-times-1
+                            default-times-2
+                            (:TYPE-PRESCRIPTION MOD-ZERO . 4)
+                            (:TYPE-PRESCRIPTION FLOOR-ZERO . 4)
+                            cancel-mod-+
+                            (:REWRITE MOD-X-Y-=-X . 3)
+                            (:REWRITE MOD-X-Y-=-X . 4)
+                            )))
+
+ ;; Jared just distilled these lemmas from the checkpoints.
+ (local
+  (defthm lemma
+    (IMPLIES (and (EQUAL (EXPT 2 N1)
+                         (MOD X (* (EXPT 2 N1) (EXPT 2 N2))))
+                  (NOT (ZP N1)))
+             (INTEGERP (* 1/2 X)))))
+
+ (local
+  (defthm lemma2
+    (IMPLIES (AND (EQUAL (+ (* 1/2 (EXPT 2 N1))
+                            (LOGAND (+ -1/2 (* 1/2 X))
+                                    (+ (* -1/2 (EXPT 2 N1))
+                                       (* 1/2 (EXPT 2 N1) (EXPT 2 N2)))))
+                         (* 1/2 (MOD X (* (EXPT 2 N1) (EXPT 2 N2)))))
+                  (NOT (ZP N1)))
+             (INTEGERP (* 1/2 X)))))
+
+ (local
+  (defthm lemma3
+    (IMPLIES (AND (EQUAL (+ (* 1/2 (EXPT 2 N1))
+                            (LOGAND (+ -1/2 (* 1/2 X))
+                                    (+ (* -1/2 (EXPT 2 N1))
+                                       (* 1/2 (EXPT 2 N1) (EXPT 2 N2)))))
+                         (+ (* 1/2 (EXPT 2 N1) (EXPT 2 N2))
+                            (* 1/2
+                               (MOD X (* (EXPT 2 N1) (EXPT 2 N2))))))
+                  (NOT (ZP N1))
+                  (INTEGERP N2)
+                  (<= 0 N2))
+             (integerp (* 1/2 x)))))
+
+ (defthm logand-mask-shifted
+   ;; This was taking 34 seconds, now it takes 6.24
+   (implies (and (integerp x) 
+                 (integerp n1)
+                 (integerp n2)
+                 (<= 0 n1)
+                 (<= 0 n2))
+            (equal (logand x (* (expt 2 n1)
+                                (+ -1 (expt 2 n2))))
+                   (* (expt 2 n1)
+                      (mod (floor x (expt 2 n1))
+                           (expt 2 n2)))))
+   :hints (("Goal" 
+            :do-not '(generalize)
+            :induct (ind-hint x n1)))))
 
 (in-theory (disable logand))
 
@@ -1293,12 +964,12 @@ and variants
     :rule-classes nil))
 
  (local
- (defthm crock-0
-  (implies (and (integerp x)
-		(not (integerp (* 1/2 x)))
-		(integerp n)
-		(< 0 n))
-	   (not (integerp (* 1/2 (mod x (expt 2 n))))))))
+  (defthm crock-0
+    (implies (and (integerp x)
+                  (not (integerp (* 1/2 x)))
+                  (integerp n)
+                  (< 0 n))
+             (not (integerp (* 1/2 (mod x (expt 2 n))))))))
 
  (local
   (defthm crock-1
@@ -1380,8 +1051,8 @@ and variants
     (:TYPE-PRESCRIPTION NOT-INTEGERP-2B-EXPT)
     (:REWRITE DEFAULT-EXPT-2)
     (:REWRITE DEFAULT-EXPT-1)
-    ; (:REWRITE |(expt 1/c n)|)
-    ; (:REWRITE |(expt (- x) n)|)
+; (:REWRITE |(expt 1/c n)|)
+; (:REWRITE |(expt (- x) n)|)
     (:TYPE-PRESCRIPTION BUBBLE-DOWN)
     (:REWRITE DEFAULT-FLOOR-RATIO)
     (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<)
@@ -1412,7 +1083,7 @@ and variants
     (:REWRITE DEFAULT-MOD-1)
     (:LINEAR EXPT-X->=-X)
     (:TYPE-PRESCRIPTION FLOOR-ZERO . 4)
-    ; (:REWRITE BUBBLE-DOWN-*-MATCH-3)
+; (:REWRITE BUBBLE-DOWN-*-MATCH-3)
     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER)
     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON)
     (:LINEAR EXPT-<=-1-TWO)
@@ -1480,6 +1151,7 @@ and variants
     )))
 
  (defthm mod-logior-expt-2-n
+   ;; 7.65 sec for the encapsulate
    (implies (and (integerp x)
 		 (integerp y)
 		 (integerp n))
@@ -1587,6 +1259,7 @@ and variants
 ;;; this next bunch should be generalized to any power of 2
 
 (defthm |(logxor (floor x 2) (floor y 2))|
+  ;; 9.66 seconds
   (implies (and (integerp x)
 		(integerp y))
 	   (equal (logxor (floor x 2) (floor y 2))
@@ -1877,6 +1550,8 @@ and variants
    :rule-classes nil))
 
 (defthm floor-lognot
+  ;; 10.2 seconds
+
   (implies (and (integerp x)
 		(integerp n)
 		(<= 0 n))

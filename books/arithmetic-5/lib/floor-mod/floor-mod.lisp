@@ -59,6 +59,23 @@
 (local
  (set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
 					       hist pspv))))
+
+
+;; Jared added this to speed up the proofs
+(local (in-theory (disable not-integerp-type-set-rules
+                           mod-x-y-=-x+y
+                           simplify-terms-such-as-ax+bx-=-0
+                           reduce-additive-constant-equal
+                           floor-zero
+                           floor-=-x/y
+                           simplify-products-gather-exponents-<
+
+                           integerp-mod-1
+                           integerp-mod-2
+                           integerp-mod-3
+                           )))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -725,155 +742,186 @@ an easy reduction unless the above applies anyway.
 
 ;;; Can I weaken any of the others?
 
-(defthm |(mod (mod x y) z)|
-  (implies (and (syntaxp (rewriting-goal-literal x mfc state))
-		;;(rationalp x)
-		(rationalp y)
-		(rationalp z)
-		(equal i (/ y z))
-		(integerp (* i (floor x y))))
-	   (equal (mod (mod x y) z)
-		  (if (equal z 0)
-		      (mod x y)
-		    (mod x z))))
-  :hints (("Goal" :cases ((rationalp x))
-	   :in-theory (enable mod)))
-  :rule-classes ((:rewrite)
-		 (:rewrite
-		  :corollary
-		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-				;;(rationalp x)
-				(rationalp y)
-				(equal z 0))
-			   (equal (mod (mod x y) z)
-				  (mod x y))))
-		 (:rewrite
-		  :corollary
-		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-				;;(rationalp x)
-				(rationalp y)
-				(rationalp z)
-				(not (equal z 0))
-				(equal i (/ y z))
-				(integerp (* i (floor x y))))
-			   (equal (mod (mod x y) z)
-				  (mod x z))))))
 
-(defthm |(mod (floor x y) z)|
-  (implies (and (syntaxp (rewriting-goal-literal x mfc state))
-		(rationalp x)
-		(integerp y)
-		(integerp z))
-	   (equal (mod (floor x y) z)
-		  (cond ((integerp (* x (/ y)))
-			 (* (/ y) (mod x (* y z))))
-			((and (< z 0)
-			      (integerp (* (/ z) (floor x y))))
-			 (+ (- z)
-			    (floor x y)
-			    (- (* z (floor x (* y z))))))
-			(t
-			 (+ (floor x y)
-			    (- (* z (floor x (* y z)))))))))
-  :rule-classes ((:rewrite)
-		 (:rewrite
-		  :corollary
-		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-				(rationalp x)
-				(integerp y)
-				(integerp z)
-				(< z 0)
-				(not (integerp (* x (/ y))))
-				(integerp (* (/ z) (floor x y))))
-			   (equal (mod (floor x y) z)
-				  (+ (- z)
-				     (floor x y)
-				     (- (* z (floor x (* y z))))))))
-		 (:rewrite
-		  :corollary
-		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-				(rationalp x)
-				(integerp y)
-				(integerp z)
-				(<= 0 z))
-			   (equal (mod (floor x y) z)
-				  (+ (floor x y)
-				     (- (* z (floor x (* y z))))))))
-		 (:rewrite
-		  :corollary
-		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-				(rationalp x)
-				(integerp y)
-				(integerp z)
-				(integerp (* x (/ y))))
-			   (equal (mod (floor x y) z)
-				  (* (/ y) (mod x (* y z))))))
-		 (:rewrite
-		  :corollary
-		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-				(rationalp x)
-				(integerp y)
-				(integerp z)
-				(not (integerp (* (/ z) (floor x y)))))
-			   (equal (mod (floor x y) z)
-				  (+ (floor x y)
-				     (- (* z (floor x (* y z))))))))))
-		  
+
+(encapsulate
+ ()
+ (local (in-theory (enable floor-=-x/y)))
+
+ (defthm |(mod (mod x y) z)|
+   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
+                 ;;(rationalp x)
+                 (rationalp y)
+                 (rationalp z)
+                 (equal i (/ y z))
+                 (integerp (* i (floor x y))))
+            (equal (mod (mod x y) z)
+                   (if (equal z 0)
+                       (mod x y)
+                     (mod x z))))
+   :hints (("Goal" :cases ((rationalp x))
+            :in-theory (enable mod)))
+   :rule-classes ((:rewrite)
+                  (:rewrite
+                   :corollary
+                   (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
+                                 ;;(rationalp x)
+                                 (rationalp y)
+                                 (equal z 0))
+                            (equal (mod (mod x y) z)
+                                   (mod x y))))
+                  (:rewrite
+                   :corollary
+                   (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
+                                 ;;(rationalp x)
+                                 (rationalp y)
+                                 (rationalp z)
+                                 (not (equal z 0))
+                                 (equal i (/ y z))
+                                 (integerp (* i (floor x y))))
+                            (equal (mod (mod x y) z)
+                                   (mod x z)))))))
+
+(encapsulate
+ ()
+ (local (in-theory (enable floor-zero
+                           floor-=-x/y
+                           mod-x-y-=-x+y
+                           not-integerp-1a
+                           not-integerp-1b
+                           not-integerp-2a
+                           not-integerp-2b)))
+
+ (local (in-theory (disable mod-zero 
+                            default-plus-1
+                            default-plus-2
+                            default-times-1
+                            default-times-2
+                            linear-floor-bounds-1
+                            linear-floor-bounds-2)))
+
+ (defthm |(mod (floor x y) z)|
+   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
+                 (rationalp x)
+                 (integerp y)
+                 (integerp z))
+            (equal (mod (floor x y) z)
+                   (cond ((integerp (* x (/ y)))
+                          (* (/ y) (mod x (* y z))))
+                         ((and (< z 0)
+                               (integerp (* (/ z) (floor x y))))
+                          (+ (- z)
+                             (floor x y)
+                             (- (* z (floor x (* y z))))))
+                         (t
+                          (+ (floor x y)
+                             (- (* z (floor x (* y z)))))))))
+   :rule-classes ((:rewrite)
+                  (:rewrite
+                   :corollary
+                   (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
+                                 (rationalp x)
+                                 (integerp y)
+                                 (integerp z)
+                                 (< z 0)
+                                 (not (integerp (* x (/ y))))
+                                 (integerp (* (/ z) (floor x y))))
+                            (equal (mod (floor x y) z)
+                                   (+ (- z)
+                                      (floor x y)
+                                      (- (* z (floor x (* y z))))))))
+                  (:rewrite
+                   :corollary
+                   (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
+                                 (rationalp x)
+                                 (integerp y)
+                                 (integerp z)
+                                 (<= 0 z))
+                            (equal (mod (floor x y) z)
+                                   (+ (floor x y)
+                                      (- (* z (floor x (* y z))))))))
+                  (:rewrite
+                   :corollary
+                   (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
+                                 (rationalp x)
+                                 (integerp y)
+                                 (integerp z)
+                                 (integerp (* x (/ y))))
+                            (equal (mod (floor x y) z)
+                                   (* (/ y) (mod x (* y z))))))
+                  (:rewrite
+                   :corollary
+                   (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
+                                 (rationalp x)
+                                 (integerp y)
+                                 (integerp z)
+                                 (not (integerp (* (/ z) (floor x y)))))
+                            (equal (mod (floor x y) z)
+                                   (+ (floor x y)
+                                      (- (* z (floor x (* y z)))))))))))
+
 
 ;;; Note how much easier this proof is than the one in
 ;;; ihs/quotient-remainder-lemmas.lisp
 
-(defthm |(floor (floor x y) z)|
-  (implies (and (syntaxp (rewriting-goal-literal x mfc state))
-		(rationalp x)
-		(integerp y)
-		(integerp z))
-	   (equal (floor (floor x y) z)
-		  (cond ((and (< z 0)
-			      (not (integerp (/ x y)))
-			      (integerp (/ (floor x y) z)))
-			 (+ 1 (floor x (* y z))))
-			(t
-			 (floor x (* y z))))))
-  :rule-classes ((:rewrite)
-		 (:rewrite
-		  :corollary
-		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-				(rationalp x)
-				(integerp y)
-				(integerp z)
-				(< z 0)
-				(not (integerp (/ x y)))
-				(integerp (/ (floor x y) z)))
-			   (equal (floor (floor x y) z)
-				  (+ 1 (floor x (* y z))))))
-		 (:rewrite
-		  :corollary
-		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-				(rationalp x)
-				(integerp y)
-				(integerp z)
-				(<= 0 z))
-			   (equal (floor (floor x y) z)
-				  (floor x (* y z)))))
-		 (:rewrite
-		  :corollary
-		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-				(rationalp x)
-				(integerp y)
-				(integerp z)
-				(integerp (/ x y)))
-			   (equal (floor (floor x y) z)
-				  (floor x (* y z)))))
-		 (:rewrite
-		  :corollary
-		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-				(rationalp x)
-				(integerp y)
-				(integerp z)
-				(not (integerp (/ (floor x y) z))))
-			   (equal (floor (floor x y) z)
-				  (floor x (* y z)))))))
+(encapsulate
+ ()
+ (local (in-theory (enable floor-zero floor-=-x/y
+                           ;; why?
+                           mod-x-y-=-x+y)))
+
+ (defthm |(floor (floor x y) z)|
+   ;; Jared 8.55 seconds
+   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
+                 (rationalp x)
+                 (integerp y)
+                 (integerp z))
+            (equal (floor (floor x y) z)
+                   (cond ((and (< z 0)
+                               (not (integerp (/ x y)))
+                               (integerp (/ (floor x y) z)))
+                          (+ 1 (floor x (* y z))))
+                         (t
+                          (floor x (* y z))))))
+   :rule-classes ((:rewrite)
+                  (:rewrite
+                   :corollary
+                   (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
+                                 (rationalp x)
+                                 (integerp y)
+                                 (integerp z)
+                                 (< z 0)
+                                 (not (integerp (/ x y)))
+                                 (integerp (/ (floor x y) z)))
+                            (equal (floor (floor x y) z)
+                                   (+ 1 (floor x (* y z))))))
+                  (:rewrite
+                   :corollary
+                   (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
+                                 (rationalp x)
+                                 (integerp y)
+                                 (integerp z)
+                                 (<= 0 z))
+                            (equal (floor (floor x y) z)
+                                   (floor x (* y z)))))
+                  (:rewrite
+                   :corollary
+                   (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
+                                 (rationalp x)
+                                 (integerp y)
+                                 (integerp z)
+                                 (integerp (/ x y)))
+                            (equal (floor (floor x y) z)
+                                   (floor x (* y z)))))
+                  (:rewrite
+                   :corollary
+                   (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
+                                 (rationalp x)
+                                 (integerp y)
+                                 (integerp z)
+                                 (not (integerp (/ (floor x y) z))))
+                            (equal (floor (floor x y) z)
+                                   (floor x (* y z))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -919,14 +967,21 @@ an easy reduction unless the above applies anyway.
       (mod-+-cancel-0-fn-1 x z)
     nil))
 
-(defthm |(equal (mod (+ x y) z) x)|
+(encapsulate
+ ()
+ (local (in-theory (enable not-integerp-1b
+                           not-integerp-2b
+                           not-integerp-2a
+                           not-integerp-1a)))
+
+ (defthm |(equal (mod (+ x y) z) x)|
     (implies (and (rationalp x)
 		  (rationalp y)
                   (syntaxp (mod-+-cancel-0-fn x z)))
              (equal (equal (mod x y) z)
                     (and (equal (mod (- x z) y) 0)
                          (equal (mod z y) z))))
-    :hints (("Goal" :cases ((rationalp z)))))
+    :hints (("Goal" :cases ((rationalp z))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1412,6 +1467,7 @@ an easy reduction unless the above applies anyway.
          nil)))
 
 (defthm |(mod (+ x (mod a b)) y)|
+;; Jared 13.42 seconds (some gc)
     (implies (and (acl2-numberp x)
 		  (acl2-numberp y)
                   (rationalp (/ x y))

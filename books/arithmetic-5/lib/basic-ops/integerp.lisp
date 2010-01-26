@@ -27,11 +27,37 @@
 (local
  (include-book "integerp-helper"))
 
-(local
- (set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
-					       hist pspv))))
+;; (local
+;;  (set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
+;; 					       hist pspv))))
 
 (table acl2-defaults-table :state-ok t)
+
+
+(local (in-theory (disable default-*-1
+                           default-*-2
+                           default-+-1
+                           default-+-2
+                           default-<-1
+                           default-<-2
+                           default-unary-/
+                           default-unary-minus
+                           default-realpart
+                           default-numerator
+                           default-imagpart
+                           default-denominator
+                           default-coerce-1
+                           default-coerce-2
+                           default-car
+                           default-cdr)))
+
+(local (in-theory (disable expt-type-prescription-rationalp
+                           expt-type-prescription-nonzero
+                           expt-type-prescription-positive-1
+                           expt-type-prescription-positive-2
+                           expt-type-prescription-integerp
+                           expt-type-prescription-non-zero-base)))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -63,8 +89,8 @@
 (encapsulate
  ()
 
- ;;; I surely don't need all this to prove not-integerp-helper!
- ;;; Clean this up.
+;;; I surely don't need all this to prove not-integerp-helper!
+;;; Clean this up.
  
  (local
   (include-book "common"))
@@ -84,34 +110,37 @@
  (local
   (defthm not-integerp-helper
     (implies (and ;(rationalp a)
-		  (rationalp x)
-		  (< 0 a)
-		  (< a x))
+              (rationalp x)
+              (< 0 a)
+              (< a x))
              (and (< 0 (* (/ x) a))
                   (< (* (/ x) a) 1)))
     :rule-classes nil))
 
  (defthm not-integerp-1a
    (implies (and ;(rationalp a)
-                 (rationalp x)
-                 (< 0 a)
-                 (< a x))
+             (rationalp x)
+             (< 0 a)
+             (< a x))
             (not (integerp (* (/ x) a))))
    :hints (("Goal" :use not-integerp-helper))
    :rule-classes :type-prescription)
 
  (defthm not-integerp-1a-expt
    (implies (and ;(rationalp a)
-                 (rationalp x)
-		 (integerp n)
-                 (< 0 a)
-                 (< a (expt x n)))
+             (rationalp x)
+             (integerp n)
+             (< 0 a)
+             (< a (expt x n)))
             (not (integerp (* (expt x (- n)) a))))
    :hints (("Goal" :use (:instance not-integerp-helper
 				   (x (expt x n)))))
    :rule-classes :type-prescription)
 
  )
+
+(local (in-theory (disable not-integerp-1a not-integerp-1a-expt)))
+
 
 (defthm not-integerp-1b
   (implies (and ;(rationalp a)
@@ -132,16 +161,18 @@
   :hints (("Goal" :use (:instance not-integerp-1a
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
-#|
-(defthm not-integerp-1c
-  (implies (and (rationalp a)
-                (rationalp b)
-		(rationalp x)
-		(< 0 (* a b))
-		(< (* a b) x))
-	   (not (integerp (* (/ x) a b))))
-  :rule-classes :type-prescription)
-|#
+
+(local (in-theory (disable not-integerp-1b not-integerp-1b-expt)))
+
+;; (defthm not-integerp-1c
+;;   (implies (and (rationalp a)
+;;                 (rationalp b)
+;; 		(rationalp x)
+;; 		(< 0 (* a b))
+;; 		(< (* a b) x))
+;; 	   (not (integerp (* (/ x) a b))))
+;;   :rule-classes :type-prescription)
+
 (defthm not-integerp-1d
   (implies (and ;(rationalp a)
                 (rationalp b)
@@ -167,6 +198,8 @@
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-1d not-integerp-1d-expt)))
+
 (defthm not-integerp-1e
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -191,6 +224,9 @@
 				  (a (* a b))
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-1e not-integerp-1e-expt)))
+
 
 (defthm not-integerp-1f
   (implies (and ;(rationalp a)
@@ -244,6 +280,11 @@
                                   (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-1f
+                           not-integerp-1f-expt-a
+                           not-integerp-1f-expt-b
+                           not-integerp-1f-expt-c)))
+
 (defthm not-integerp-1g
   (implies (and ;(rationalp a)
                 (rationalp x)
@@ -292,6 +333,12 @@
 				  (y (expt y n2)))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-1g
+                           not-integerp-1g-expt-a
+                           not-integerp-1g-expt-b
+                           not-integerp-1g-expt-c)))
+
+
 (defthm not-integerp-1h
   (implies (and ;(rationalp a)
                 (rationalp x)
@@ -339,27 +386,32 @@
 				  (x (expt x n1))
 				  (y (expt y n2)))))
   :rule-classes :type-prescription)
-#|
-(defthm not-integerp-1i
-  (implies (and (rationalp a)
-                (rationalp b)
-                (rationalp c)
-		(rationalp x)
-		(< 0 (* a b c))
-		(< (* a b c) x))
-	   (not (integerp (* (/ x) a b c))))
-  :rule-classes :type-prescription)
 
-(defthm not-integerp-1j
-  (implies (and (rationalp a)
-                (rationalp b)
-                (rationalp c)
-		(rationalp x)
-		(< 0 (* a b c))
-		(< (* a b c) x))
-	   (not (integerp (* a (/ x) b c))))
-  :rule-classes :type-prescription)
-|#
+(local (in-theory (disable not-integerp-1h
+                           not-integerp-1h-expt-a
+                           not-integerp-1h-expt-b
+                           not-integerp-1h-expt-c)))
+
+;; (defthm not-integerp-1i
+;;   (implies (and (rationalp a)
+;;                 (rationalp b)
+;;                 (rationalp c)
+;; 		(rationalp x)
+;; 		(< 0 (* a b c))
+;; 		(< (* a b c) x))
+;; 	   (not (integerp (* (/ x) a b c))))
+;;   :rule-classes :type-prescription)
+
+;; (defthm not-integerp-1j
+;;   (implies (and (rationalp a)
+;;                 (rationalp b)
+;;                 (rationalp c)
+;; 		(rationalp x)
+;; 		(< 0 (* a b c))
+;; 		(< (* a b c) x))
+;; 	   (not (integerp (* a (/ x) b c))))
+;;   :rule-classes :type-prescription)
+
 (defthm not-integerp-1k
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -386,6 +438,11 @@
 				  (a (* a b c))
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-1k
+                           not-integerp-1k-expt)))
+
+
 
 (defthm not-integerp-1l
   (implies (and ;(rationalp a)
@@ -413,17 +470,20 @@
 				  (a (* a b c))
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
-#|
-(defthm not-integerp-1m
-  (implies (and (rationalp a)
-                (rationalp b)
-                (rationalp x)
-		(rationalp y)
-		(< 0 (* a b))
-		(< (* a b) (* x y)))
-	   (not (integerp (* (/ x) (/ y) a b))))
-  :rule-classes :type-prescription)
-|#
+
+(local (in-theory (disable not-integerp-1l
+                           not-integerp-1l-expt)))
+
+;; (defthm not-integerp-1m
+;;   (implies (and (rationalp a)
+;;                 (rationalp b)
+;;                 (rationalp x)
+;; 		(rationalp y)
+;; 		(< 0 (* a b))
+;; 		(< (* a b) (* x y)))
+;; 	   (not (integerp (* (/ x) (/ y) a b))))
+;;   :rule-classes :type-prescription)
+
 (defthm not-integerp-1n
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -479,6 +539,13 @@
 				  (a (* a b))
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
+
+
+(local (in-theory (disable not-integerp-1n
+                           not-integerp-1n-expt-a
+                           not-integerp-1n-expt-b
+                           not-integerp-1n-expt-c)))
+
 
 (defthm not-integerp-1o
   (implies (and ;(rationalp a)
@@ -536,6 +603,12 @@
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-1o
+                           not-integerp-1o-expt-a
+                           not-integerp-1o-expt-b
+                           not-integerp-1o-expt-c)))
+
+
 (defthm not-integerp-1p
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -591,6 +664,12 @@
 				  (a (* a b))
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-1p
+                           not-integerp-1p-expt-a
+                           not-integerp-1p-expt-b
+                           not-integerp-1p-expt-c)))
+
 
 (defthm not-integerp-1q
   (implies (and ;(rationalp a)
@@ -648,6 +727,12 @@
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-1q
+                           not-integerp-1q-expt-a
+                           not-integerp-1q-expt-b
+                           not-integerp-1q-expt-c)))
+
+
 (defthm not-integerp-1r
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -703,6 +788,12 @@
 				  (a (* a b))
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-1r
+                           not-integerp-1r-expt-a
+                           not-integerp-1r-expt-b
+                           not-integerp-1r-expt-c)))
+
 
 (defthm not-integerp-1s
   (implies (and ;(rationalp a)
@@ -820,6 +911,17 @@
                                   (x (* (expt x n1) (expt y n2) (expt z n3))))))
   :rule-classes :type-prescription)
 
+
+(local (in-theory (disable not-integerp-1s
+                           not-integerp-1s-expt-a
+                           not-integerp-1s-expt-b
+                           not-integerp-1s-expt-c
+                           not-integerp-1s-expt-d
+                           not-integerp-1s-expt-e
+                           not-integerp-1s-expt-f
+                           not-integerp-1s-expt-g)))
+
+
 (defthm not-integerp-1t
   (implies (and ;(rationalp a)
                 (rationalp x)
@@ -931,6 +1033,15 @@
 				  (y (expt y n2))
 				  (z (expt z n3)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-1s
+                           not-integerp-1s-expt-a
+                           not-integerp-1s-expt-b
+                           not-integerp-1s-expt-c
+                           not-integerp-1s-expt-d
+                           not-integerp-1s-expt-e
+                           not-integerp-1s-expt-f
+                           not-integerp-1s-expt-g)))
 
 (defthm not-integerp-1u
   (implies (and ;(rationalp a)
@@ -1044,6 +1155,17 @@
 				  (y (expt y n2))
 				  (z (expt z n3)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-1u
+                           not-integerp-1u-expt-a
+                           not-integerp-1u-expt-b
+                           not-integerp-1u-expt-c
+                           not-integerp-1u-expt-d
+                           not-integerp-1u-expt-e
+                           not-integerp-1u-expt-f
+                           not-integerp-1u-expt-g)))
+
+
 
 (defthm not-integerp-1v
   (implies (and ;(rationalp a)
@@ -1157,6 +1279,17 @@
 				  (y (expt y n2))
 				  (z (expt z n3)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-1v
+                           not-integerp-1v-expt-a
+                           not-integerp-1v-expt-b
+                           not-integerp-1v-expt-c
+                           not-integerp-1v-expt-d
+                           not-integerp-1v-expt-e
+                           not-integerp-1v-expt-f
+                           not-integerp-1v-expt-g)))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1182,6 +1315,9 @@
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-2a
+                           not-integerp-2a-expt)))
+
 (defthm not-integerp-2b
   (implies (and ;(rationalp a)
 		(rationalp x)
@@ -1201,16 +1337,20 @@
   :hints (("Goal" :use (:instance not-integerp-2a
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
-#|
-(defthm not-integerp-2c
-  (implies (and (rationalp a)
-                (rationalp b)
-		(rationalp x)
-		(< (* a b) 0)
-		(< x (* a b)))
-	   (not (integerp (* (/ x) a b))))
-  :rule-classes :type-prescription)
-|#
+
+(local (in-theory (disable not-integerp-2b
+                           not-integerp-2b-expt)))
+
+
+;; (defthm not-integerp-2c
+;;   (implies (and (rationalp a)
+;;                 (rationalp b)
+;; 		(rationalp x)
+;; 		(< (* a b) 0)
+;; 		(< x (* a b)))
+;; 	   (not (integerp (* (/ x) a b))))
+;;   :rule-classes :type-prescription)
+
 (defthm not-integerp-2d
   (implies (and ;(rationalp a)
                 (rationalp b)
@@ -1236,6 +1376,10 @@
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-2d
+                           not-integerp-2d-expt)))
+
+
 (defthm not-integerp-2e
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -1260,6 +1404,10 @@
 				  (a (* a b))
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-2e
+                           not-integerp-2e-expt)))
+
 
 (defthm not-integerp-2f
   (implies (and ;(rationalp a)
@@ -1313,6 +1461,12 @@
                                   (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-2f
+                           not-integerp-2f-expt-a
+                           not-integerp-2f-expt-b
+                           not-integerp-2f-expt-c)))
+
+
 (defthm not-integerp-2g
   (implies (and ;(rationalp a)
                 (rationalp x)
@@ -1361,6 +1515,12 @@
 				  (y (expt y n2)))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-2g
+                           not-integerp-2g-expt-a
+                           not-integerp-2g-expt-b
+                           not-integerp-2g-expt-c)))
+
+
 (defthm not-integerp-2h
   (implies (and ;(rationalp a)
                 (rationalp x)
@@ -1408,27 +1568,33 @@
 				  (x (expt x n1))
 				  (y (expt y n2)))))
   :rule-classes :type-prescription)
-#|
-(defthm not-integerp-2i
-  (implies (and (rationalp a)
-                (rationalp b)
-                (rationalp c)
-		(rationalp x)
-		(< (* a b c) 0)
-		(< x (* a b c)))
-	   (not (integerp (* (/ x) a b c))))
-  :rule-classes :type-prescription)
 
-(defthm not-integerp-2j
-  (implies (and (rationalp a)
-                (rationalp b)
-                (rationalp c)
-		(rationalp x)
-		(< (* a b c) 0)
-		(< x (* a b c)))
-	   (not (integerp (* a (/ x) b c))))
-  :rule-classes :type-prescription)
-|#
+(local (in-theory (disable not-integerp-2h
+                           not-integerp-2h-expt-a
+                           not-integerp-2h-expt-b
+                           not-integerp-2h-expt-c)))
+
+
+;; (defthm not-integerp-2i
+;;   (implies (and (rationalp a)
+;;                 (rationalp b)
+;;                 (rationalp c)
+;; 		(rationalp x)
+;; 		(< (* a b c) 0)
+;; 		(< x (* a b c)))
+;; 	   (not (integerp (* (/ x) a b c))))
+;;   :rule-classes :type-prescription)
+
+;; (defthm not-integerp-2j
+;;   (implies (and (rationalp a)
+;;                 (rationalp b)
+;;                 (rationalp c)
+;; 		(rationalp x)
+;; 		(< (* a b c) 0)
+;; 		(< x (* a b c)))
+;; 	   (not (integerp (* a (/ x) b c))))
+;;   :rule-classes :type-prescription)
+
 (defthm not-integerp-2k
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -1455,6 +1621,10 @@
 				  (a (* a b c))
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-2k
+                           not-integerp-2k-expt)))
+
 
 (defthm not-integerp-2l
   (implies (and ;(rationalp a)
@@ -1482,17 +1652,20 @@
 				  (a (* a b c))
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
-#|
-(defthm not-integerp-2m
-  (implies (and (rationalp a)
-                (rationalp b)
-                (rationalp x)
-		(rationalp y)
-		(< (* a b) 0)
-		(< (* x y) (* a b)))
-	   (not (integerp (* (/ x) (/ y) a b))))
-  :rule-classes :type-prescription)
-|#
+
+(local (in-theory (disable not-integerp-2l
+                           not-integerp-2l-expt)))
+
+;; (defthm not-integerp-2m
+;;   (implies (and (rationalp a)
+;;                 (rationalp b)
+;;                 (rationalp x)
+;; 		(rationalp y)
+;; 		(< (* a b) 0)
+;; 		(< (* x y) (* a b)))
+;; 	   (not (integerp (* (/ x) (/ y) a b))))
+;;   :rule-classes :type-prescription)
+
 (defthm not-integerp-2n
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -1548,6 +1721,12 @@
 				  (a (* a b))
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-2n
+                           not-integerp-2n-expt-a
+                           not-integerp-2n-expt-b
+                           not-integerp-2n-expt-c)))
+
 
 (defthm not-integerp-2o
   (implies (and ;(rationalp a)
@@ -1605,6 +1784,12 @@
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-2o
+                           not-integerp-2o-expt-a
+                           not-integerp-2o-expt-b
+                           not-integerp-2o-expt-c)))
+
+
 (defthm not-integerp-2p
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -1660,6 +1845,13 @@
 				  (a (* a b))
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-2p
+                           not-integerp-2p-expt-a
+                           not-integerp-2p-expt-b
+                           not-integerp-2p-expt-c)))
+
+
 
 (defthm not-integerp-2q
   (implies (and ;(rationalp a)
@@ -1717,6 +1909,12 @@
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-2q
+                           not-integerp-2q-expt-a
+                           not-integerp-2q-expt-b
+                           not-integerp-2q-expt-c)))
+
+
 (defthm not-integerp-2r
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -1772,6 +1970,12 @@
 				  (a (* a b))
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-2r
+                           not-integerp-2r-expt-a
+                           not-integerp-2r-expt-b
+                           not-integerp-2r-expt-c)))
+
 
 (defthm not-integerp-2s
   (implies (and ;(rationalp a)
@@ -1889,6 +2093,16 @@
                                   (x (* (expt x n1) (expt y n2) (expt z n3))))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-2s
+                           not-integerp-2s-expt-a
+                           not-integerp-2s-expt-b
+                           not-integerp-2s-expt-c
+                           not-integerp-2s-expt-d
+                           not-integerp-2s-expt-e
+                           not-integerp-2s-expt-f
+                           not-integerp-2s-expt-g)))
+
+
 (defthm not-integerp-2t
   (implies (and ;(rationalp a)
                 (rationalp x)
@@ -2000,6 +2214,16 @@
 				  (y (expt y n2))
 				  (z (expt z n3)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-2t
+                           not-integerp-2t-expt-a
+                           not-integerp-2t-expt-b
+                           not-integerp-2t-expt-c
+                           not-integerp-2t-expt-d
+                           not-integerp-2t-expt-e
+                           not-integerp-2t-expt-f
+                           not-integerp-2t-expt-g)))
+
 
 (defthm not-integerp-2u
   (implies (and ;(rationalp a)
@@ -2113,6 +2337,16 @@
 				  (y (expt y n2))
 				  (z (expt z n3)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-2u
+                           not-integerp-2u-expt-a
+                           not-integerp-2u-expt-b
+                           not-integerp-2u-expt-c
+                           not-integerp-2u-expt-d
+                           not-integerp-2u-expt-e
+                           not-integerp-2u-expt-f
+                           not-integerp-2u-expt-g)))
+
 
 (defthm not-integerp-2v
   (implies (and ;(rationalp a)
@@ -2226,6 +2460,16 @@
 				  (y (expt y n2))
 				  (z (expt z n3)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-2v
+                           not-integerp-2v-expt-a
+                           not-integerp-2v-expt-b
+                           not-integerp-2v-expt-c
+                           not-integerp-2v-expt-d
+                           not-integerp-2v-expt-e
+                           not-integerp-2v-expt-f
+                           not-integerp-2v-expt-g)))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2251,6 +2495,10 @@
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-3a
+                           not-integerp-3a-expt)))
+
+
 (defthm not-integerp-3b
   (implies (and ;(rationalp a)
 		(rationalp x)
@@ -2270,16 +2518,20 @@
   :hints (("Goal" :use (:instance not-integerp-3a
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
-#|
-(defthm not-integerp-3c
-  (implies (and (rationalp a)
-                (rationalp b)
-		(rationalp x)
-		(< 0 (* a b))
-		(< x (- (* a b))))
-	   (not (integerp (* (/ x) a b))))
-  :rule-classes :type-prescription)
-|#
+
+(local (in-theory (disable not-integerp-3b
+                           not-integerp-3b-expt)))
+
+
+;; (defthm not-integerp-3c
+;;   (implies (and (rationalp a)
+;;                 (rationalp b)
+;; 		(rationalp x)
+;; 		(< 0 (* a b))
+;; 		(< x (- (* a b))))
+;; 	   (not (integerp (* (/ x) a b))))
+;;   :rule-classes :type-prescription)
+
 (defthm not-integerp-3d
   (implies (and ;(rationalp a)
                 (rationalp b)
@@ -2305,6 +2557,10 @@
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-3d
+                           not-integerp-3d-expt)))
+
+
 (defthm not-integerp-3e
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -2329,6 +2585,10 @@
 				  (a (* a b))
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-3e
+                           not-integerp-3e-expt)))
+
 
 (defthm not-integerp-3f
   (implies (and ;(rationalp a)
@@ -2382,6 +2642,12 @@
                                   (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-3f
+                           not-integerp-3f-expt-a
+                           not-integerp-3f-expt-b
+                           not-integerp-3f-expt-c)))
+
+
 (defthm not-integerp-3g
   (implies (and ;(rationalp a)
                 (rationalp x)
@@ -2430,6 +2696,12 @@
 				  (y (expt y n2)))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-3g
+                           not-integerp-3g-expt-a
+                           not-integerp-3g-expt-b
+                           not-integerp-3g-expt-c)))
+
+
 (defthm not-integerp-3h
   (implies (and ;(rationalp a)
                 (rationalp x)
@@ -2477,27 +2749,33 @@
 				  (x (expt x n1))
 				  (y (expt y n2)))))
   :rule-classes :type-prescription)
-#|
-(defthm not-integerp-3i
-  (implies (and (rationalp a)
-                (rationalp b)
-                (rationalp c)
-		(rationalp x)
-		(< 0 (* a b c))
-		(< x (- (* a b c))))
-	   (not (integerp (* (/ x) a b c))))
-  :rule-classes :type-prescription)
 
-(defthm not-integerp-3j
-  (implies (and (rationalp a)
-                (rationalp b)
-                (rationalp c)
-		(rationalp x)
-		(< 0 (* a b c))
-		(< x (- (* a b c))))
-	   (not (integerp (* a (/ x) b c))))
-  :rule-classes :type-prescription)
-|#
+(local (in-theory (disable not-integerp-3h
+                           not-integerp-3h-expt-a
+                           not-integerp-3h-expt-b
+                           not-integerp-3h-expt-c)))
+
+
+;; (defthm not-integerp-3i
+;;   (implies (and (rationalp a)
+;;                 (rationalp b)
+;;                 (rationalp c)
+;; 		(rationalp x)
+;; 		(< 0 (* a b c))
+;; 		(< x (- (* a b c))))
+;; 	   (not (integerp (* (/ x) a b c))))
+;;   :rule-classes :type-prescription)
+
+;; (defthm not-integerp-3j
+;;   (implies (and (rationalp a)
+;;                 (rationalp b)
+;;                 (rationalp c)
+;; 		(rationalp x)
+;; 		(< 0 (* a b c))
+;; 		(< x (- (* a b c))))
+;; 	   (not (integerp (* a (/ x) b c))))
+;;   :rule-classes :type-prescription)
+
 (defthm not-integerp-3k
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -2524,6 +2802,10 @@
 				  (a (* a b c))
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-3k
+                           not-integerp-3k-expt)))
+
 
 (defthm not-integerp-3l
   (implies (and ;(rationalp a)
@@ -2551,17 +2833,21 @@
 				  (a (* a b c))
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
-#|
-(defthm not-integerp-3m
-  (implies (and (rationalp a)
-                (rationalp b)
-                (rationalp x)
-		(rationalp y)
-		(< 0 (* a b))
-		(< (* x y) (- (* a b))))
-	   (not (integerp (* (/ x) (/ y) a b))))
-  :rule-classes :type-prescription)
-|#
+
+(local (in-theory (disable not-integerp-3l
+                           not-integerp-3l-expt)))
+
+
+;; (defthm not-integerp-3m
+;;   (implies (and (rationalp a)
+;;                 (rationalp b)
+;;                 (rationalp x)
+;; 		(rationalp y)
+;; 		(< 0 (* a b))
+;; 		(< (* x y) (- (* a b))))
+;; 	   (not (integerp (* (/ x) (/ y) a b))))
+;;   :rule-classes :type-prescription)
+
 (defthm not-integerp-3n
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -2617,6 +2903,12 @@
 				  (a (* a b))
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-3n
+                           not-integerp-3n-expt-a
+                           not-integerp-3n-expt-b
+                           not-integerp-3n-expt-c)))
+
 
 (defthm not-integerp-3o
   (implies (and ;(rationalp a)
@@ -2674,6 +2966,12 @@
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-3o
+                           not-integerp-3o-expt-a
+                           not-integerp-3o-expt-b
+                           not-integerp-3o-expt-c)))
+
+
 (defthm not-integerp-3p
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -2729,6 +3027,12 @@
 				  (a (* a b))
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-3p
+                           not-integerp-3p-expt-a
+                           not-integerp-3p-expt-b
+                           not-integerp-3p-expt-c)))
+
 
 (defthm not-integerp-3q
   (implies (and ;(rationalp a)
@@ -2786,6 +3090,12 @@
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-3n
+                           not-integerp-3n-expt-a
+                           not-integerp-3n-expt-b
+                           not-integerp-3n-expt-c)))
+
+
 (defthm not-integerp-3r
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -2841,6 +3151,12 @@
 				  (a (* a b))
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-3r
+                           not-integerp-3r-expt-a
+                           not-integerp-3r-expt-b
+                           not-integerp-3r-expt-c)))
+
 
 (defthm not-integerp-3s
   (implies (and ;(rationalp a)
@@ -2958,6 +3274,17 @@
                                   (x (* (expt x n1) (expt y n2) (expt z n3))))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-3s
+                           not-integerp-3s-expt-a
+                           not-integerp-3s-expt-b
+                           not-integerp-3s-expt-c
+                           not-integerp-3s-expt-d
+                           not-integerp-3s-expt-e
+                           not-integerp-3s-expt-f
+                           not-integerp-3s-expt-g
+                           )))
+
+
 (defthm not-integerp-3t
   (implies (and ;(rationalp a)
                 (rationalp x)
@@ -3069,6 +3396,17 @@
 				  (y (expt y n2))
 				  (z (expt z n3)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-3t
+                           not-integerp-3t-expt-a
+                           not-integerp-3t-expt-b
+                           not-integerp-3t-expt-c
+                           not-integerp-3t-expt-d
+                           not-integerp-3t-expt-e
+                           not-integerp-3t-expt-f
+                           not-integerp-3t-expt-g
+                           )))
+
 
 (defthm not-integerp-3u
   (implies (and ;(rationalp a)
@@ -3182,6 +3520,17 @@
 				  (y (expt y n2))
 				  (z (expt z n3)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-3u
+                           not-integerp-3u-expt-a
+                           not-integerp-3u-expt-b
+                           not-integerp-3u-expt-c
+                           not-integerp-3u-expt-d
+                           not-integerp-3u-expt-e
+                           not-integerp-3u-expt-f
+                           not-integerp-3u-expt-g
+                           )))
+
 
 (defthm not-integerp-3v
   (implies (and ;(rationalp a)
@@ -3295,6 +3644,17 @@
 				  (y (expt y n2))
 				  (z (expt z n3)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-3v
+                           not-integerp-3v-expt-a
+                           not-integerp-3v-expt-b
+                           not-integerp-3v-expt-c
+                           not-integerp-3v-expt-d
+                           not-integerp-3v-expt-e
+                           not-integerp-3v-expt-f
+                           not-integerp-3v-expt-g
+                           )))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3320,6 +3680,10 @@
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-4a
+                           not-integerp-4a-expt)))
+
+
 (defthm not-integerp-4b
   (implies (and ;(rationalp a)
 		(rationalp x)
@@ -3339,16 +3703,20 @@
   :hints (("Goal" :use (:instance not-integerp-4a
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
-#|
-(defthm not-integerp-4c
-  (implies (and (rationalp a)
-                (rationalp b)
-		(rationalp x)
-		(< (* a b) 0)
-		(< (- (* a b)) x))
-	   (not (integerp (* (/ x) a b))))
-  :rule-classes :type-prescription)
-|#
+
+(local (in-theory (disable not-integerp-4b
+                           not-integerp-4b-expt)))
+
+
+;; (defthm not-integerp-4c
+;;   (implies (and (rationalp a)
+;;                 (rationalp b)
+;; 		(rationalp x)
+;; 		(< (* a b) 0)
+;; 		(< (- (* a b)) x))
+;; 	   (not (integerp (* (/ x) a b))))
+;;   :rule-classes :type-prescription)
+
 (defthm not-integerp-4d
   (implies (and ;(rationalp a)
                 (rationalp b)
@@ -3374,6 +3742,10 @@
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-4d
+                           not-integerp-4d-expt)))
+
+
 (defthm not-integerp-4e
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -3398,6 +3770,10 @@
 				  (a (* a b))
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-4e
+                           not-integerp-4e-expt)))
+
 
 (defthm not-integerp-4f
   (implies (and ;(rationalp a)
@@ -3451,6 +3827,12 @@
                                   (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-4f
+                           not-integerp-4f-expt-a
+                           not-integerp-4f-expt-b
+                           not-integerp-4f-expt-c)))
+
+
 (defthm not-integerp-4g
   (implies (and ;(rationalp a)
                 (rationalp x)
@@ -3499,6 +3881,12 @@
 				  (y (expt y n2)))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-4g
+                           not-integerp-4g-expt-a
+                           not-integerp-4g-expt-b
+                           not-integerp-4g-expt-c)))
+
+
 (defthm not-integerp-4h
   (implies (and ;(rationalp a)
                 (rationalp x)
@@ -3546,27 +3934,33 @@
 				  (x (expt x n1))
 				  (y (expt y n2)))))
   :rule-classes :type-prescription)
-#|
-(defthm not-integerp-4i
-  (implies (and (rationalp a)
-                (rationalp b)
-                (rationalp c)
-		(rationalp x)
-		(< (* a b c) 0)
-		(< (- (* a b c)) x))
-	   (not (integerp (* (/ x) a b c))))
-  :rule-classes :type-prescription)
 
-(defthm not-integerp-4j
-  (implies (and (rationalp a)
-                (rationalp b)
-                (rationalp c)
-		(rationalp x)
-		(< (* a b c) 0)
-		(< (- (* a b c)) x))
-	   (not (integerp (* a (/ x) b c))))
-  :rule-classes :type-prescription)
-|#
+(local (in-theory (disable not-integerp-4h
+                           not-integerp-4h-expt-a
+                           not-integerp-4h-expt-b
+                           not-integerp-4h-expt-c)))
+
+
+;; (defthm not-integerp-4i
+;;   (implies (and (rationalp a)
+;;                 (rationalp b)
+;;                 (rationalp c)
+;; 		(rationalp x)
+;; 		(< (* a b c) 0)
+;; 		(< (- (* a b c)) x))
+;; 	   (not (integerp (* (/ x) a b c))))
+;;   :rule-classes :type-prescription)
+
+;; (defthm not-integerp-4j
+;;   (implies (and (rationalp a)
+;;                 (rationalp b)
+;;                 (rationalp c)
+;; 		(rationalp x)
+;; 		(< (* a b c) 0)
+;; 		(< (- (* a b c)) x))
+;; 	   (not (integerp (* a (/ x) b c))))
+;;   :rule-classes :type-prescription)
+
 (defthm not-integerp-4k
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -3593,6 +3987,10 @@
 				  (a (* a b c))
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-4k
+                           not-integerp-4k-expt)))
+
 
 (defthm not-integerp-4l
   (implies (and ;(rationalp a)
@@ -3620,17 +4018,20 @@
 				  (a (* a b c))
 				  (x (expt x n)))))
   :rule-classes :type-prescription)
-#|
-(defthm not-integerp-4m
-  (implies (and (rationalp a)
-                (rationalp b)
-                (rationalp x)
-		(rationalp y)
-		(< (* a b) 0)
-		(< (- (* a b)) (* x y)))
-	   (not (integerp (* (/ x) (/ y) a b))))
-  :rule-classes :type-prescription)
-|#
+
+(local (in-theory (disable not-integerp-4l
+                           not-integerp-4l-expt)))
+
+;; (defthm not-integerp-4m
+;;   (implies (and (rationalp a)
+;;                 (rationalp b)
+;;                 (rationalp x)
+;; 		(rationalp y)
+;; 		(< (* a b) 0)
+;; 		(< (- (* a b)) (* x y)))
+;; 	   (not (integerp (* (/ x) (/ y) a b))))
+;;   :rule-classes :type-prescription)
+
 (defthm not-integerp-4n
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -3686,6 +4087,11 @@
 				  (a (* a b))
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-4n
+                           not-integerp-4n-expt-a
+                           not-integerp-4n-expt-b
+                           not-integerp-4n-expt-c)))
 
 (defthm not-integerp-4o
   (implies (and ;(rationalp a)
@@ -3743,6 +4149,13 @@
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-4o
+                           not-integerp-4o-expt-a
+                           not-integerp-4o-expt-b
+                           not-integerp-4o-expt-c
+                           )))
+
+
 (defthm not-integerp-4p
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -3798,6 +4211,13 @@
 				  (a (* a b))
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-4p
+                           not-integerp-4p-expt-a
+                           not-integerp-4p-expt-b
+                           not-integerp-4p-expt-c
+                           )))
+
 
 (defthm not-integerp-4q
   (implies (and ;(rationalp a)
@@ -3855,6 +4275,13 @@
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-4q
+                           not-integerp-4q-expt-a
+                           not-integerp-4q-expt-b
+                           not-integerp-4q-expt-c
+                           )))
+
+
 (defthm not-integerp-4r
   (implies (and ;(rationalp a)
                 ;(rationalp b)
@@ -3910,6 +4337,13 @@
 				  (a (* a b))
 				  (x (* (expt x n1) (expt y n2))))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-4r
+                           not-integerp-4r-expt-a
+                           not-integerp-4r-expt-b
+                           not-integerp-4r-expt-c
+                           )))
+
 
 (defthm not-integerp-4s
   (implies (and ;(rationalp a)
@@ -4027,6 +4461,17 @@
                                   (x (* (expt x n1) (expt y n2) (expt z n3))))))
   :rule-classes :type-prescription)
 
+(local (in-theory (disable not-integerp-4s
+                           not-integerp-4s-expt-a
+                           not-integerp-4s-expt-b
+                           not-integerp-4s-expt-c
+                           not-integerp-4s-expt-d
+                           not-integerp-4s-expt-e
+                           not-integerp-4s-expt-f
+                           not-integerp-4s-expt-g
+                           )))
+
+
 (defthm not-integerp-4t
   (implies (and ;(rationalp a)
                 (rationalp x)
@@ -4138,6 +4583,17 @@
 				  (y (expt y n2))
 				  (z (expt z n3)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-4t
+                           not-integerp-4t-expt-a
+                           not-integerp-4t-expt-b
+                           not-integerp-4t-expt-c
+                           not-integerp-4t-expt-d
+                           not-integerp-4t-expt-e
+                           not-integerp-4t-expt-f
+                           not-integerp-4t-expt-g
+                           )))
+
 
 (defthm not-integerp-4u
   (implies (and ;(rationalp a)
@@ -4251,6 +4707,17 @@
 				  (y (expt y n2))
 				  (z (expt z n3)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-4u
+                           not-integerp-4u-expt-a
+                           not-integerp-4u-expt-b
+                           not-integerp-4u-expt-c
+                           not-integerp-4u-expt-d
+                           not-integerp-4u-expt-e
+                           not-integerp-4u-expt-f
+                           not-integerp-4u-expt-g
+                           )))
+
 
 (defthm not-integerp-4v
   (implies (and ;(rationalp a)
@@ -4364,6 +4831,324 @@
 				  (y (expt y n2))
 				  (z (expt z n3)))))
   :rule-classes :type-prescription)
+
+(local (in-theory (disable not-integerp-4v
+                           not-integerp-4v-expt-a
+                           not-integerp-4v-expt-b
+                           not-integerp-4v-expt-c
+                           not-integerp-4v-expt-d
+                           not-integerp-4v-expt-e
+                           not-integerp-4v-expt-f
+                           not-integerp-4v-expt-g
+                           )))
+
+(deftheory not-integerp-type-set-rules
+  '(not-integerp-1a
+    not-integerp-1a-expt
+    not-integerp-1b
+    not-integerp-1b-expt
+    not-integerp-1d
+    not-integerp-1d-expt
+    not-integerp-1e
+    not-integerp-1e-expt
+    not-integerp-1f
+    not-integerp-1f-expt-a
+    not-integerp-1f-expt-b
+    not-integerp-1f-expt-c
+    not-integerp-1g
+    not-integerp-1g-expt-a
+    not-integerp-1g-expt-b
+    not-integerp-1g-expt-c
+    not-integerp-1h
+    not-integerp-1h-expt-a
+    not-integerp-1h-expt-b
+    not-integerp-1h-expt-c
+    not-integerp-1k
+    not-integerp-1k-expt
+    not-integerp-1l
+    not-integerp-1l-expt
+    not-integerp-1n
+    not-integerp-1n-expt-a
+    not-integerp-1n-expt-b
+    not-integerp-1n-expt-c
+    not-integerp-1o
+    not-integerp-1o-expt-a
+    not-integerp-1o-expt-b
+    not-integerp-1o-expt-c
+    not-integerp-1p
+    not-integerp-1p-expt-a
+    not-integerp-1p-expt-b
+    not-integerp-1p-expt-c
+    not-integerp-1q
+    not-integerp-1q-expt-a
+    not-integerp-1q-expt-b
+    not-integerp-1q-expt-c
+    not-integerp-1r
+    not-integerp-1r-expt-a
+    not-integerp-1r-expt-b
+    not-integerp-1r-expt-c
+    not-integerp-1s
+    not-integerp-1s-expt-a
+    not-integerp-1s-expt-b
+    not-integerp-1s-expt-c
+    not-integerp-1s-expt-d
+    not-integerp-1s-expt-e
+    not-integerp-1s-expt-f
+    not-integerp-1s-expt-g
+    not-integerp-1t
+    not-integerp-1t-expt-a
+    not-integerp-1t-expt-b
+    not-integerp-1t-expt-c
+    not-integerp-1t-expt-d
+    not-integerp-1t-expt-e
+    not-integerp-1t-expt-f
+    not-integerp-1t-expt-g
+    not-integerp-1u
+    not-integerp-1u-expt-a
+    not-integerp-1u-expt-b
+    not-integerp-1u-expt-c
+    not-integerp-1u-expt-d
+    not-integerp-1u-expt-e
+    not-integerp-1u-expt-f
+    not-integerp-1u-expt-g
+    not-integerp-1v
+    not-integerp-1v-expt-a
+    not-integerp-1v-expt-b
+    not-integerp-1v-expt-c
+    not-integerp-1v-expt-d
+    not-integerp-1v-expt-e
+    not-integerp-1v-expt-f
+    not-integerp-1v-expt-g
+    not-integerp-2a
+    not-integerp-2a-expt
+    not-integerp-2b
+    not-integerp-2b-expt
+    not-integerp-2d
+    not-integerp-2d-expt
+    not-integerp-2e
+    not-integerp-2e-expt
+    not-integerp-2f
+    not-integerp-2f-expt-a
+    not-integerp-2f-expt-b
+    not-integerp-2f-expt-c
+    not-integerp-2g
+    not-integerp-2g-expt-a
+    not-integerp-2g-expt-b
+    not-integerp-2g-expt-c
+    not-integerp-2h
+    not-integerp-2h-expt-a
+    not-integerp-2h-expt-b
+    not-integerp-2h-expt-c
+    not-integerp-2k
+    not-integerp-2k-expt
+    not-integerp-2l
+    not-integerp-2l-expt
+    not-integerp-2n
+    not-integerp-2n-expt-a
+    not-integerp-2n-expt-b
+    not-integerp-2n-expt-c
+    not-integerp-2o
+    not-integerp-2o-expt-a
+    not-integerp-2o-expt-b
+    not-integerp-2o-expt-c
+    not-integerp-2p
+    not-integerp-2p-expt-a
+    not-integerp-2p-expt-b
+    not-integerp-2p-expt-c
+    not-integerp-2q
+    not-integerp-2q-expt-a
+    not-integerp-2q-expt-b
+    not-integerp-2q-expt-c
+    not-integerp-2r
+    not-integerp-2r-expt-a
+    not-integerp-2r-expt-b
+    not-integerp-2r-expt-c
+    not-integerp-2s
+    not-integerp-2s-expt-a
+    not-integerp-2s-expt-b
+    not-integerp-2s-expt-c
+    not-integerp-2s-expt-d
+    not-integerp-2s-expt-e
+    not-integerp-2s-expt-f
+    not-integerp-2s-expt-g
+    not-integerp-2t
+    not-integerp-2t-expt-a
+    not-integerp-2t-expt-b
+    not-integerp-2t-expt-c
+    not-integerp-2t-expt-d
+    not-integerp-2t-expt-e
+    not-integerp-2t-expt-f
+    not-integerp-2t-expt-g
+    not-integerp-2u
+    not-integerp-2u-expt-a
+    not-integerp-2u-expt-b
+    not-integerp-2u-expt-c
+    not-integerp-2u-expt-d
+    not-integerp-2u-expt-e
+    not-integerp-2u-expt-f
+    not-integerp-2u-expt-g
+    not-integerp-2v
+    not-integerp-2v-expt-a
+    not-integerp-2v-expt-b
+    not-integerp-2v-expt-c
+    not-integerp-2v-expt-d
+    not-integerp-2v-expt-e
+    not-integerp-2v-expt-f
+    not-integerp-2v-expt-g
+    not-integerp-3a
+    not-integerp-3a-expt
+    not-integerp-3b
+    not-integerp-3b-expt
+    not-integerp-3d
+    not-integerp-3d-expt
+    not-integerp-3e
+    not-integerp-3e-expt
+    not-integerp-3f
+    not-integerp-3f-expt-a
+    not-integerp-3f-expt-b
+    not-integerp-3f-expt-c
+    not-integerp-3g
+    not-integerp-3g-expt-a
+    not-integerp-3g-expt-b
+    not-integerp-3g-expt-c
+    not-integerp-3h
+    not-integerp-3h-expt-a
+    not-integerp-3h-expt-b
+    not-integerp-3h-expt-c
+    not-integerp-3k
+    not-integerp-3k-expt
+    not-integerp-3l
+    not-integerp-3l-expt
+    not-integerp-3n
+    not-integerp-3n-expt-a
+    not-integerp-3n-expt-b
+    not-integerp-3n-expt-c
+    not-integerp-3o
+    not-integerp-3o-expt-a
+    not-integerp-3o-expt-b
+    not-integerp-3o-expt-c
+    not-integerp-3p
+    not-integerp-3p-expt-a
+    not-integerp-3p-expt-b
+    not-integerp-3p-expt-c
+    not-integerp-3q
+    not-integerp-3q-expt-a
+    not-integerp-3q-expt-b
+    not-integerp-3q-expt-c
+    not-integerp-3r
+    not-integerp-3r-expt-a
+    not-integerp-3r-expt-b
+    not-integerp-3r-expt-c
+    not-integerp-3s
+    not-integerp-3s-expt-a
+    not-integerp-3s-expt-b
+    not-integerp-3s-expt-c
+    not-integerp-3s-expt-d
+    not-integerp-3s-expt-e
+    not-integerp-3s-expt-f
+    not-integerp-3s-expt-g
+    not-integerp-3t
+    not-integerp-3t-expt-a
+    not-integerp-3t-expt-b
+    not-integerp-3t-expt-c
+    not-integerp-3t-expt-d
+    not-integerp-3t-expt-e
+    not-integerp-3t-expt-f
+    not-integerp-3t-expt-g
+    not-integerp-3u
+    not-integerp-3u-expt-a
+    not-integerp-3u-expt-b
+    not-integerp-3u-expt-c
+    not-integerp-3u-expt-d
+    not-integerp-3u-expt-e
+    not-integerp-3u-expt-f
+    not-integerp-3u-expt-g
+    not-integerp-3v
+    not-integerp-3v-expt-a
+    not-integerp-3v-expt-b
+    not-integerp-3v-expt-c
+    not-integerp-3v-expt-d
+    not-integerp-3v-expt-e
+    not-integerp-3v-expt-f
+    not-integerp-3v-expt-g
+    not-integerp-4a
+    not-integerp-4a-expt
+    not-integerp-4b
+    not-integerp-4b-expt
+    not-integerp-4d
+    not-integerp-4d-expt
+    not-integerp-4e
+    not-integerp-4e-expt
+    not-integerp-4f
+    not-integerp-4f-expt-a
+    not-integerp-4f-expt-b
+    not-integerp-4f-expt-c
+    not-integerp-4g
+    not-integerp-4g-expt-a
+    not-integerp-4g-expt-b
+    not-integerp-4g-expt-c
+    not-integerp-4h
+    not-integerp-4h-expt-a
+    not-integerp-4h-expt-b
+    not-integerp-4h-expt-c
+    not-integerp-4k
+    not-integerp-4k-expt
+    not-integerp-4l
+    not-integerp-4l-expt
+    not-integerp-4n
+    not-integerp-4n-expt-a
+    not-integerp-4n-expt-b
+    not-integerp-4n-expt-c
+    not-integerp-4o
+    not-integerp-4o-expt-a
+    not-integerp-4o-expt-b
+    not-integerp-4o-expt-c
+    not-integerp-4p
+    not-integerp-4p-expt-a
+    not-integerp-4p-expt-b
+    not-integerp-4p-expt-c
+    not-integerp-4q
+    not-integerp-4q-expt-a
+    not-integerp-4q-expt-b
+    not-integerp-4q-expt-c
+    not-integerp-4r
+    not-integerp-4r-expt-a
+    not-integerp-4r-expt-b
+    not-integerp-4r-expt-c
+    not-integerp-4s
+    not-integerp-4s-expt-a
+    not-integerp-4s-expt-b
+    not-integerp-4s-expt-c
+    not-integerp-4s-expt-d
+    not-integerp-4s-expt-e
+    not-integerp-4s-expt-f
+    not-integerp-4s-expt-g
+    not-integerp-4t
+    not-integerp-4t-expt-a
+    not-integerp-4t-expt-b
+    not-integerp-4t-expt-c
+    not-integerp-4t-expt-d
+    not-integerp-4t-expt-e
+    not-integerp-4t-expt-f
+    not-integerp-4t-expt-g
+    not-integerp-4u
+    not-integerp-4u-expt-a
+    not-integerp-4u-expt-b
+    not-integerp-4u-expt-c
+    not-integerp-4u-expt-d
+    not-integerp-4u-expt-e
+    not-integerp-4u-expt-f
+    not-integerp-4u-expt-g
+    not-integerp-4v
+    not-integerp-4v-expt-a
+    not-integerp-4v-expt-b
+    not-integerp-4v-expt-c
+    not-integerp-4v-expt-d
+    not-integerp-4v-expt-e
+    not-integerp-4v-expt-f
+    not-integerp-4v-expt-g))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

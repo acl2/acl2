@@ -32,6 +32,38 @@
  (set-default-hints '((nonlinearp-default-hint
 		       stable-under-simplificationp hist pspv))))
 
+
+
+(local (in-theory (disable not-integerp-type-set-rules
+                           integerp-mod-1
+                           integerp-mod-2
+                           integerp-mod-3
+                           mod-bounds-1
+                           |(floor (+ x y) z) where (< 0 z)|
+                           REDUCE-ADDITIVE-CONSTANT-<
+                           default-times-1
+                           default-times-2
+                           MOD-X-Y-=-X-Y
+                           MOD-X-Y-=-X+Y
+                           cancel-mod-+
+                           default-plus-1
+                           default-plus-2
+                           default-floor-1
+                           default-floor-2
+                           linear-floor-bounds-1
+                           linear-floor-bounds-2
+                           linear-floor-bounds-3
+                           EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT
+                           EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT
+                           EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT
+                           EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
+                           EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
+                           EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE
+                           EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B
+                           EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
+                           )))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local
