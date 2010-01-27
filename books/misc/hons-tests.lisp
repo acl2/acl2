@@ -71,6 +71,8 @@
       (list n)
     (hons n (make-list-of-numbers (1- n)))))
 
+(comp 'make-list-of-numbers)
+
 (defun lots (n)
   (declare (xargs :guard (posp n)))
   (let* ((lots-of-numbers (make-list-of-numbers n)))
