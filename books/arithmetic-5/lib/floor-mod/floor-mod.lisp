@@ -62,6 +62,39 @@
 
 
 ;; Jared added this to speed up the proofs
+
+(local (defthm acl2-count-of-cdr-weak
+         (<= (acl2-count (cdr x))
+             (acl2-count x))
+         :rule-classes ((:rewrite) (:linear))))
+
+(local (defthm acl2-count-of-cdr-strong
+         (implies (consp x)
+                  (< (acl2-count (cdr x))
+                     (acl2-count x)))
+         :rule-classes ((:rewrite) (:linear))))
+
+(local (defthm acl2-count-of-car-weak
+         (<= (acl2-count (car x))
+             (acl2-count x))
+         :rule-classes ((:rewrite) (:linear))))
+
+(local (defthm acl2-count-of-car-strong
+         (implies (consp x)
+                  (< (acl2-count (car x))
+                     (acl2-count x)))
+         :rule-classes ((:rewrite) (:linear))))
+
+(local (defthm acl2-count-positive-when-consp
+         (implies (consp x)
+                  (< 0 (acl2-count x)))
+         :rule-classes :type-prescription))
+
+(local (defthm equal-of-acl2-count-of-cdr
+         (implies (equal (acl2-count x) (acl2-count (cdr x)))
+                  (not (consp x)))
+         :rule-classes :forward-chaining))
+
 (local (in-theory (disable not-integerp-type-set-rules
                            mod-x-y-=-x+y
                            simplify-terms-such-as-ax+bx-=-0
@@ -73,7 +106,43 @@
                            integerp-mod-1
                            integerp-mod-2
                            integerp-mod-3
+                           expt-type-prescription-nonpositive-base-odd-exponent
+                           expt-type-prescription-nonpositive-base-even-exponent
+                           expt-type-prescription-negative-base-odd-exponent
+                           expt-type-prescription-negative-base-even-exponent
+                           expt-type-prescription-integerp-base
+                           expt-type-prescription-positive-base
+                           expt-type-prescription-integerp-base-b
+                           expt-type-prescription-integerp-base-a
+                           default-plus-1
+                           default-plus-2
+                           default-times-1
+                           default-times-2
+                           default-divide
+                           default-minus
+                           default-expt-1
+                           default-expt-2
+                           default-mod-2
+                           mod-positive
+                           mod-negative
+                           mod-nonpositive
+                           mod-x-y-=-x-y
+                           floor-zero
+                           mod-zero
+                           rationalp-x
+                           integerp-/-expt-2
+                           floor-positive
+                           floor-negative
+
+                           acl2-numberp-x
+                           integer-abs
+                           acl2-count
+                           numeric-constant-p
+                           meta-rationalp-correct
+                           floor-=-x/y
                            )))
+
+
 
 
 
@@ -1307,7 +1376,9 @@ an easy reduction unless the above applies anyway.
              (equal (mod lhs rhs)
                     (* (/ c)
                        (mod (* c lhs) (* c rhs)))))
-  :hints (("Goal" :in-theory (enable mod))))
+  :hints (("Goal" 
+           :in-theory (e/d (mod)
+                           (floor-cancel-*-const)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -50,7 +50,59 @@
 (local
  (in-theory (e/d (ash-to-floor) (ash))))
 
-(local (in-theory (disable not-integerp-type-set-rules)))
+(local (in-theory (disable not-integerp-type-set-rules
+
+                           EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT
+                           EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT
+                           EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT
+                           EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
+                           EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
+                           EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE
+                           EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B
+                           EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
+
+                           ;; new ones
+                           default-plus-1
+                           default-plus-2
+                           default-times-1
+                           default-times-2
+                           default-floor-ratio
+                           default-divide
+                           default-minus
+                           cancel-floor-+
+                           |(floor (+ x r) i)|
+                           mod-positive
+                           mod-negative
+                           mod-nonpositive
+                           floor-nonnegative
+                           floor-negative
+                           floor-positive
+                           floor-nonpositive
+                           rationalp-x
+                           INTEGERP-/-EXPT-2
+                           the-floor-below
+                           |(equal c (- x))|
+                           (:REWRITE FLOOR-X-Y-=-1 . 2)
+                           (:REWRITE MOD-X-Y-=-X+Y . 1)
+                           default-less-than-1
+                           default-expt-1
+                           default-expt-2
+                           default-floor-1
+                           default-floor-2
+                           default-mod-2
+                           mod-bounds-2
+                           floor-zero
+                           mod-zero
+                           mod-x-y-=-x
+                           mod-x-y-=-x-y
+
+
+                           )))
+
+
+;; Consider these:
+; EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE
+; EXPT-TYPE-PRESCRIPTION-NON-0-BASE
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -334,22 +386,25 @@ and variants
 	 (t
 	  (ind-fn (+ -1 n))))))
 
-(defthm logand-floor-expt-2-n
+(encapsulate
+ ()
+ (local (in-theory (enable EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)))
+ (defthm logand-floor-expt-2-n
    (implies (and (integerp x)
 		 (integerp y)
 		 (integerp n))
 	    (equal (logand (floor x (expt 2 n))
 			   (floor y (expt 2 n)))
 		   (floor (logand x y) (expt 2 n))))
-   :hints (("Goal"			;:in-theory (enable logand)
+   :hints (("Goal" ;:in-theory (enable logand)
 	    :induct (ind-fn n)
 	    :do-not '(generalize eliminate-destructors))
 	   ("Subgoal *1/3" :use ((:instance |(logand (floor x 2) (floor y 2))|
 					    (x (FLOOR X (EXPT 2 (+ -1 N))))
 					    (y (FLOOR Y (EXPT 2 (+ -1 N))))))
-	                   :in-theory (disable |(logand (floor x 2) (floor y 2))|
-					       logand))
-	   ))
+            :in-theory (disable |(logand (floor x 2) (floor y 2))|
+                                logand))
+	   )))
 
 (defthm |(mod (logand x y) 2)|
   (implies (and (integerp x)
@@ -418,6 +473,8 @@ and variants
     :hints (("Subgoal 4'" :in-theory (disable logand)))
     :rule-classes nil))
 
+ (local (in-theory (enable EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
+                           mod-zero)))
 
  (local
   (defthm |(integerp (* 1/2 (mod x (expt 2 n))))|
@@ -429,13 +486,7 @@ and variants
              (equal (integerp (* 1/2 (mod x (expt 2 n))))
                     (integerp (* 1/2 x))))))
 
- (local (in-theory (disable not-integerp-type-set-rules
-                            EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
-                            EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B
-                            cancel-mod-+
+ (local (in-theory (disable cancel-mod-+
                             (:TYPE-PRESCRIPTION MOD-ZERO . 4)
                             default-mod-ratio
                             default-times-2
@@ -544,13 +595,12 @@ and variants
 
 (encapsulate
  ()
- (local (in-theory (disable not-integerp-type-set-rules
-                            expt-type-prescription-nonpositive-base-odd-exponent
-                            expt-type-prescription-nonpositive-base-even-exponent
-                            expt-type-prescription-negative-base-odd-exponent
-                            expt-type-prescription-negative-base-even-exponent
-                            expt-type-prescription-integerp-base-b
-                            (:REWRITE MOD-X-Y-=-X-Y . 2)
+ (local (in-theory (enable expt-type-prescription-integerp-base
+                           default-expt-1
+                           default-expt-2
+                           mod-zero)))
+
+ (local (in-theory (disable (:REWRITE MOD-X-Y-=-X-Y . 2)
                             default-plus-1
                             default-plus-2
                             default-times-1
@@ -935,6 +985,8 @@ and variants
 
 (encapsulate
  ()
+ (local (in-theory (enable EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
+                           mod-zero)))
 
  (local
   (defun floor-2-n-ind (x y n)
@@ -1549,27 +1601,31 @@ and variants
 	    (integerp (+ (/ n) (* x (/ n)))))
    :rule-classes nil))
 
-(defthm floor-lognot
-  ;; 10.2 seconds
+(encapsulate
+ ()
+ (local (in-theory (enable expt-type-prescription-integerp-base)))
 
-  (implies (and (integerp x)
-		(integerp n)
-		(<= 0 n))
-	   (equal (lognot (floor x (expt 2 n)))
-		  (floor (lognot x) (expt 2 n))))
-  :hints (("Goal"			;:in-theory (enable logand)
-	   :induct (ind-fn n)
-	   :do-not '(generalize eliminate-destructors))
-	  ("Subgoal *1/2" :use ((:instance
-				 (:theorem
-				  (implies (equal x y)
-					   (equal (floor x 2)
-						  (floor y 2))))
-				 (x (FLOOR (LOGNOT X) (EXPT 2 (+ -1 N))))
-				 (y (LOGNOT (FLOOR X (EXPT 2 (+ -1 N))))))))
-	  ("Subgoal *1/2.2" :use (:instance floor-lognot-helper
-					    (x x)
-					    (n (expt 2 n))))))
+ (defthm floor-lognot
+   ;; 10.2 seconds
+
+   (implies (and (integerp x)
+                 (integerp n)
+                 (<= 0 n))
+            (equal (lognot (floor x (expt 2 n)))
+                   (floor (lognot x) (expt 2 n))))
+   :hints (("Goal" ;:in-theory (enable logand)
+            :induct (ind-fn n)
+            :do-not '(generalize eliminate-destructors))
+           ("Subgoal *1/2" :use ((:instance
+                                  (:theorem
+                                   (implies (equal x y)
+                                            (equal (floor x 2)
+                                                   (floor y 2))))
+                                  (x (FLOOR (LOGNOT X) (EXPT 2 (+ -1 N))))
+                                  (y (LOGNOT (FLOOR X (EXPT 2 (+ -1 N))))))))
+           ("Subgoal *1/2.2" :use (:instance floor-lognot-helper
+                                             (x x)
+                                             (n (expt 2 n)))))))
 
 (defthm |(mod (lognot x) 2)|
   (implies (integerp x)
