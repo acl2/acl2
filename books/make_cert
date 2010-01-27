@@ -80,7 +80,7 @@ export ACL2-CUSTOMIZATION ?= NONE
 	if [ "$$STATUS" == "43" ] ; then \
 	   ls -al $$FILE.cert || echo "NFS problem for $$FILE?" ;\
 	else \
-	  echo "**CERTIFICATION FAILED** for $$FILE.lisp (code $$STATUS)" ;\
+	  echo "**CERTIFICATION FAILED** for $$DIR/$$FILE.lisp (code $$STATUS)" ;\
 	  echo "" ;\
           tail -300 $$FILE.out | sed 's/^/   | /' ;\
 	  echo "" ;\
@@ -89,7 +89,7 @@ export ACL2-CUSTOMIZATION ?= NONE
 	  then \
 	     $$ON_FAILURE_CMD ;\
 	  fi ;\
-          echo "**CERTIFICATION FAILED** for $$FILE.lisp (code $$STATUS)" ;\
+          echo "**CERTIFICATION FAILED** for $$DIR/$$FILE.lisp (code $$STATUS)" ;\
           exit 1 ;\
         fi
 
