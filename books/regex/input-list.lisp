@@ -321,7 +321,7 @@
   (if (atom (cdr il))
       (car il)
     (let ((l-rest (longest-il (cdr il))))
-      (if (<= (caar il) (car l-rest))
+      (if (>= (caar il) (car l-rest))
           (car il)
         l-rest))))
       
