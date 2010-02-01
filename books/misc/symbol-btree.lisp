@@ -26,7 +26,8 @@ ACL2 !>
 
 (in-package "ACL2")
 
-(local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
+(local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+(local (in-theory (disable floor)))
 
 (local (defthm len-evens-<
          (implies (consp (cdr x))
@@ -49,7 +50,7 @@ ACL2 !>
          (implies (alistp x)
                   (true-listp x))))
 
-(local (defthm consp-under-iff-when-true-listp
+(local (defthmd consp-under-iff-when-true-listp
          (implies (true-listp x)
                   (iff (consp x)
                        x))))

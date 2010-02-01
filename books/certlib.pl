@@ -313,7 +313,7 @@ sub critical_path_report {
     }
     else {
 	$ret = "Critical Path\n\n"
-	     . sprintf("%-50s %10s   %10s\n", "File", "Time", "Cumulative");
+	     . sprintf("%-50s %10s %10s\n", "File", "Cumulative", "Time");
     }
 
     while ($file) 
@@ -334,7 +334,7 @@ sub critical_path_report {
 		 . "</tr>\n";
 	}
 	else {
-	    $ret .= sprintf("%-50s %10s   %10s\n", $shortcert, $selftime_pr, $cumtime_pr);
+	    $ret .= sprintf("%-50s %10s %10s\n", $shortcert, $cumtime_pr, $selftime_pr);
 	}
 
 	$file = $filecosts->{"maxpath"};

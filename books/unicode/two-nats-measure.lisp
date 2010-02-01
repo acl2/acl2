@@ -17,7 +17,7 @@
 
 (in-package "ACL2")
 
-(local (include-book "ordinals/ordinals" :dir :system))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 
 (defund two-nats-measure (a b)
   (declare (xargs :guard (and (natp a)
