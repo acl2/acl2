@@ -13,56 +13,56 @@
 Flexible let*-like macro for variable bindings~/
 Usage:
 ~bv[]
-(b* ;; let*-like binding to a single variable:
-    ((x (cons 'a 'b))
+ (b* ;; let*-like binding to a single variable:
+     ((x (cons 'a 'b))
 
      ;; mv binding
-     ((mv y z) (return-two-values x x))
+      ((mv y z) (return-two-values x x))
 
      ;; No binding: expression evaluated for side effects
-     (- (cw \"Hello\")) ;; prints \"Hello\"
+      (- (cw \"Hello\")) ;; prints \"Hello\"
 
      ;; Binding with type declaration:
-     ((the (integer 0 100) n) (foo z))
+      ((the (integer 0 100) n) (foo z))
 
      ;; MV which ignores a value:
-     ((mv & a) (return-garbage-in-first-mv y z))
+      ((mv & a) (return-garbage-in-first-mv y z))
 
      ;; Binds value 0 to C and value 1 to D,
      ;; declares (ignorable C) and (ignore D)
-     ((mv ?c ?!d) (another-mv a z))
+      ((mv ?c ?!d) (another-mv a z))
 
      ;; Bind V to the middle value of an error triple,
      ;; quitting if there is an error condition (a la er-let*)
-     ((er v) (trans-eval '(len (list 'a 1 2 3)) 'foo state))
+      ((er v) (trans-eval '(len (list 'a 1 2 3)) 'foo state))
 
      ;; The WHEN, IF, and UNLESS constructs insert an IF in the
      ;; binding stream.  The WHEN and IF constructs are equivalent.
-     ((when v) (finish-early-because-of v))
-     ((if v)   (finish-early-because-of v))
-     ((unless c) (finish-early-unless c))
+      ((when v) (finish-early-because-of v))
+      ((if v)   (finish-early-because-of v))
+      ((unless c) (finish-early-unless c))
 
      ;; Pattern-based binding using cons, where D is ignorable
-     ((cons (cons b c) ?d) (must-return-nested-conses a))
+      ((cons (cons b c) ?d) (must-return-nested-conses a))
 
      ;; Alternate form of pattern binding with cons nests, where G is
      ;; ignored and f has a type declaration:
-     (`(,e (,(the (signed-byte 8) f) . ,?!g))
-      (makes-a-list-of-conses b))
+      (`(,e (,(the (signed-byte 8) f) . ,?!g))
+       (makes-a-list-of-conses b))
 
      ;; LIST and LIST* are also supported:
-     ((list a b) '((1 2) (3 4)))
-     ((list* a (the string b) c) '((1 2) \"foo\" 5 6 7))
+      ((list a b) '((1 2) (3 4)))
+      ((list* a (the string b) c) '((1 2) \"foo\" 5 6 7))
 
      ;; Pattern with user-defined constructor:
-     ((my-tuple foo bar hum) (something-of-type-my-tuple e c g))
+      ((my-tuple foo bar hum) (something-of-type-my-tuple e c g))
 
      ;; Don't-cares with pattern bindings:
-     ((my-tuple & (cons carbar &) hum) (something-else foo f hum))
+      ((my-tuple & (cons carbar &) hum) (something-else foo f hum))
 
      ;; Pattern inside an mv:
-     ((mv a (cons & c)) (make-mv-with-cons)))
-  (some-expression .....))
+      ((mv a (cons & c)) (make-mv-with-cons)))
+   (some-expression .....))
 ~ev[]
 ~/
 
@@ -73,9 +73,9 @@ variables or declare them ignorable.  It can also be extended by the user to
 support more binding constructs.
 
 Its syntax is
-(b* <list-of-bindings> . <list-of-result-forms>)
+ (b* <list-of-bindings> . <list-of-result-forms>)
 where a result form is any ACL2 term, and a binding is
-(<binder-form> [<expression>]).  See below for discussion of binder forms.
+ (<binder-form> [<expression>]).  See below for discussion of binder forms.
 Depending on the binder form, it may be that multiple expressions are allowed
 or only a single one.
 
@@ -94,53 +94,53 @@ The following binder forms are supported by this book alone, but support may
 be added by the user for other binding forms.  In most cases, these binding
 forms may be nested.
 
-(mv a b ...) produces an MV-LET binding
+ (mv a b ...) produces an MV-LET binding
 
-(cons a b) produces a binding of the CAR and CDR of the corresponding expression
+ (cons a b) produces a binding of the CAR and CDR of the corresponding expression
 
-(er a) produces an ER-LET* binding
+ (er a) produces an ER-LET* binding
 
-(list a b ...) produces a binding of (car val), (cadr val), etc, where val
+ (list a b ...) produces a binding of (car val), (cadr val), etc, where val
 is the result of the corresponding expression
 
-(nths a b ...) produces a binding of (nth 0 val), (nth 1 val), etc, where val
+ (nths a b ...) produces a binding of (nth 0 val), (nth 1 val), etc, where val
 is the result of the corresponding expression
 
-(list* a b), `(,a . ,b) are alternatives to the CONS binder.
+ (list* a b), `(,a . ,b) are alternatives to the CONS binder.
 
-(the type-spec var) produces a binding of var to the result of the
+ (the type-spec var) produces a binding of var to the result of the
 corresponding expression, and a declaration that var is of the given
 type-spec.  A THE pattern may be nested inside other patterns, but VAR must
 itself be a symbol and not a nested pattern, and type-spec must be a type-spec.
 
-(if test), (when test), and (unless test) don't actually produce bindings at
+ (if test), (when test), and (unless test) don't actually produce bindings at
 all.  Instead, they insert an IF where one branch is the rest of the B* form and
 the other is the \"bound\" expression.  For example,
 ~bv[]
-(b* (((if (atom a)) 0)
-     (rest (of-bindings)))
-  final-expr)
+ (b* (((if (atom a)) 0)
+      (rest (of-bindings)))
+   final-expr)
 ~ev[]
 expands to something like this:
 ~bv[]
-(if (atom a)
-    0
-  (b* ((rest (of-bindings)))
-    final-expr))
+ (if (atom a)
+     0
+   (b* ((rest (of-bindings)))
+     final-expr))
 ~ev[]
 These forms also create an \"implicit progn\" with multiple expressions, like
 this:
 ~bv[]
-(b* (((if (atom a)) (cw \"a is an atom, returning 0\") 0)
-     ...)
-  ...)
+ (b* (((if (atom a)) (cw \"a is an atom, returning 0\") 0)
+      ...)
+   ...)
 ~ev[]
 
 -- Nesting Binders --
 The CONS, LIST, LIST*, and backtick binders may be nested arbitrarily inside
 other binders.  Often user-defined binders may also be arbitrarily nested.  For
 example,
-((mv (list `(,a . ,b)) (cons c d)) <form>)
+ ((mv (list `(,a . ,b)) (cons c d)) <form>)
 will result in the following (logical) bindings:
 a bound to (car (nth 0 (mv-nth 0 <form>)))
 b bound to (cdr (nth 0 (mv-nth 0 <form>)))
@@ -171,7 +171,7 @@ A new binder form may be created by defining a macro named PATBIND-<name>.  We
 discuss the detailed interface of user-defined binders below.  First,
 DEF-PATBIND-MACRO provides a simple way to define certain user binders.  For
 example, this form is used to define the binder for CONS:
-(def-patbind-macro cons (car cdr))
+ (def-patbind-macro cons (car cdr))
 This defines a binder macro PATBIND-CONS which enables (cons a b) to be used as
 a binder form.  This binder form must take two arguments since two destructor
 functions (car cdr) are given to def-patbind-macro.  The destructor functions
@@ -180,32 +180,32 @@ arguments of the binder.
 
 There are many cases in which DEF-PATBIND-MACRO is not powerful enough.  For
 example, a binder produced by DEF-PATBIND-MACRO may only take a fixed number of
-arguments.  To more flexibly create binders, one must define binder macros by
-hand.
+arguments.  More flexible operations may be defined by hand-defining the binder
+macro using the form DEF-B*-BINDER; see ~il[DEF-B*-BINDER].
 
-A binder macro PATBIND-<NAME> must take three arguments ARGS, BINDINGS,
-and EXPR.  The form
+A binder macro PATBIND-<NAME> must take three arguments ARGS, FORMS,
+and REST-EXPR.  The form
 ~bv[]
-(b* (((binder arg1 arg2) binding1 binding2))
-   expr)
+ (b* (((binder arg1 arg2) binding1 binding2))
+    expr)
 ~ev[]
 translates to a macro call
 ~bv[]
-(patbind-binder (arg1 arg2) (binding1 binding2) expr).
+ (patbind-binder (arg1 arg2) (binding1 binding2) expr).
 ~ev[]
 That is, ARGS is the list of arguments given to the binder form, BINDINGS is
 the list of expressions bound to them, and EXPR is the result expression to be
 run once the bindings are in place.  The definition of the patbind-binder macro
 determines how this gets further expanded.  Some informative examples of these
-binder macros may be found in bstar.lisp\; simply search for macro declarations
-whose names begin with PATBIND-.  Here are some notes on defining binder macros.
+binder macros may be found in bstar.lisp\; simply search for uses of
+DEF-B*-BINDER. Here are some notes on defining binder macros.
 
 Often the simplest way to accomplish the intended effect of a patbind macro is
 to have it construct another B* form to be recursively expanded, or to call
 other patbind macros.  See, for example, the definition of PATBIND-LIST.
 
 Patbind macros for forms that are truly creating bindings should indeed use B*
-(or PATBIND, which is what B* expands to) to create these bindings, so that
+ (or PATBIND, which is what B* expands to) to create these bindings, so that
 ignores and nestings are dealt with uniformly.  See, for example, the
 definition of PATBIND-NTHS.
 
@@ -214,7 +214,7 @@ DEF-PATBIND-MACRO bind a variable to any binding that isn't already a variable
 or quoted constant.  This is important so that in the following form,
 ~c[(foo x y)] is run only once:
 ~bv[]
-(b* (((cons a b) (foo x y))) ...)
+ (b* (((cons a b) (foo x y))) ...)
 ~ev[]
 In these cases, it is good discipline to check the new variables introduced
 using the macro CHECK-VARS-NOT-FREE\; since ACL2 does not have gensym, this is
@@ -340,6 +340,63 @@ single term." pattern assign-exprs)
   (b*-fn bindlist (cons expr exprs)))
 
 
+(defdoc b*-binders ":Doc-section b*
+B*-BINDERS: List of the available directives usable in B*.~/
+~/~/")
+
+
+(defmacro def-b*-binder (name &rest rest)
+  (let* ((macro-name (macro-name-for-patbind name))
+         (decls-and-doc (butlast rest 1))
+         (body (car (last rest)))
+         (decls (remove-strings decls-and-doc))
+         (doc (get-string decls-and-doc))
+         (doc-sectionp (and doc 
+                            (equal (string-upcase (subseq doc 0 12))
+                                   ":DOC-SECTION"))))
+    `(progn
+       (defmacro ,macro-name (args forms rest-expr)
+         ,(if doc
+              (if doc-sectionp
+                  doc
+                (concatenate 'string ":DOC-SECTION ACL2::B*-BINDERS
+" doc))
+            (concatenate 'string
+                         ":DOC-SECTION ACL2::B*-BINDERS
+B* binder form " (symbol-name name) "~/
+ (placeholder)~/~/"))
+         ,@decls
+         ,body)
+       (table b*-binder-table ',name ',macro-name))))
+
+
+(defdoc def-b*-binder
+  ":doc-section b*
+DEF-B*-BINDER: Introduce a new form usable inside B*.~/
+Usage:
+~bv[]
+ (def-b*-binder <name> <declare> <doc> <body>)
+~ev[]
+Introduces a B* binder form of the given name.  The given body, which may use
+the variables args, forms, and rest-expr, is used to
+macroexpand a form like the following:
+~bv[]
+ (b* (((<name> . <args>) . <forms>)) <rest-expr>)
+~ev[]
+The documentation string and declaration forms are optional\; a placeholder doc
+string will be produced under :doc-section B*-BINDERS if none is provided.  It
+is recommended that the string use that :doc-section, since this provides a
+single location where the user may see all of the available binder forms.  If
+no doc-section is provided, B*-BINDERS will be used.~/
+
+This works by introducing a macro named PATBIND-<name>.  See ~il[b*] for more
+details.~/")
+
+
+
+
+
+
 
 
 
@@ -366,20 +423,20 @@ Pattern constructor ~x0 needs exactly one binding expression, but was given ~x1~
 
 (defmacro def-patbind-macro (binder destructors)
   (let ((len (length destructors)))
-    `(defmacro ,(macro-name-for-patbind binder) (args bindings expr)
+    `(def-b*-binder ,binder
        (declare (xargs :guard
-                       (destructure-guard ,binder args bindings ,len)))
-       (let* ((binding (car bindings))
+                       (destructure-guard ,binder args forms ,len)))
+       (let* ((binding (car forms))
               (computedp (or (atom binding)
                              (eq (car binding) 'quote)))
               (bexpr (if computedp binding (pack binding)))
               (binders (destructor-binding-list args ',destructors bexpr)))
          (if computedp
-             `(b* ,binders ,expr)
+             `(b* ,binders ,rest-expr)
            `(let ((,bexpr ,binding))
               (declare (ignorable ,bexpr))
               (b* ,binders
-                (check-vars-not-free (,bexpr) ,expr))))))))
+                (check-vars-not-free (,bexpr) ,rest-expr))))))))
 
 ;; The arg might be a plain variable, an ignored or ignorable variable, or a
 ;; binding expression.
@@ -418,17 +475,17 @@ Pattern constructor ~x0 needs exactly one binding expression, but was given ~x1~
           
 
 
-(defmacro patbind-mv (args bindings expr)
-  (declare (xargs :guard (destructure-guard mv args bindings nil)))
+(defmacro patbind-mv (args forms rest-expr)
+  (declare (xargs :guard (destructure-guard mv args forms nil)))
   (mv-let (vars binders ignores ignorables freshvars)
     (var-ignore-list-for-patbind-mv args 0 nil nil nil nil nil)
-    `(mv-let ,vars ,(car bindings)
+    `(mv-let ,vars ,(car forms)
        (declare (ignore . ,ignores))
        (declare (ignorable . ,ignorables))
        (check-vars-not-free
         ,ignores
         (b* ,binders
-          (check-vars-not-free ,freshvars ,expr))))))
+          (check-vars-not-free ,freshvars ,rest-expr))))))
 
 (def-patbind-macro cons (car cdr))
 
@@ -439,42 +496,42 @@ Pattern constructor ~x0 needs exactly one binding expression, but was given ~x1~
           (nths-binding-list (cdr args) (1+ n) form))))
 
 
-(defmacro patbind-nths (args bindings expr)
-  (declare (xargs :guard (destructure-guard nths args bindings nil)))
-  (let* ((binding (car bindings))
+(defmacro patbind-nths (args forms rest-expr)
+  (declare (xargs :guard (destructure-guard nths args forms nil)))
+  (let* ((binding (car forms))
          (evaledp (or (atom binding) (eq (car binding) 'quote)))
          (form (if evaledp binding (pack binding)))
          (binders (nths-binding-list args 0 form)))
     (if evaledp
-        `(b* ,binders ,expr)
+        `(b* ,binders ,rest-expr)
       `(let ((,form ,binding))
          (declare (ignorable ,form))
          (b* ,binders
-           (check-vars-not-free (,form) ,expr))))))
+           (check-vars-not-free (,form) ,rest-expr))))))
   
 
 
 
 
-(defmacro patbind-list (args bindings expr)
-  (declare (xargs :guard (destructure-guard list args bindings nil)))
+(defmacro patbind-list (args forms rest-expr)
+  (declare (xargs :guard (destructure-guard list args forms nil)))
   (if (atom args)
-      expr
-    `(patbind-cons (,(car args) (list . ,(cdr args))) ,bindings ,expr)))
+      rest-expr
+    `(patbind-cons (,(car args) (list . ,(cdr args))) ,forms ,rest-expr)))
 
-(defmacro patbind-list* (args bindings expr)
+(defmacro patbind-list* (args forms rest-expr)
   (declare (xargs :guard (and (consp args)
-                              (destructure-guard list* args bindings nil))))
+                              (destructure-guard list* args forms nil))))
   (if (atom (cdr args))
-      `(patbind ,(car args) ,bindings ,expr)
-    `(patbind-cons (,(car args) (list* . ,(cdr args))) ,bindings ,expr)))
+      `(patbind ,(car args) ,forms ,rest-expr)
+    `(patbind-cons (,(car args) (list* . ,(cdr args))) ,forms ,rest-expr)))
 
-(defmacro patbind-er (args bindings expr)
-  (declare (xargs :guard (destructure-guard er args bindings 1)))
+(defmacro patbind-er (args forms rest-expr)
+  (declare (xargs :guard (destructure-guard er args forms 1)))
   `(mv-let (patbind-er-fresh-variable-for-erp
             patbind-er-fresh-variable-for-val
             state)
-     ,(car bindings)
+     ,(car forms)
      (if patbind-er-fresh-variable-for-erp
          (mv patbind-er-fresh-variable-for-erp
              patbind-er-fresh-variable-for-val
@@ -484,42 +541,60 @@ Pattern constructor ~x0 needs exactly one binding expression, but was given ~x1~
                 (check-vars-not-free
                  (patbind-er-fresh-variable-for-val
                   patbind-er-fresh-variable-for-erp)
-                 ,expr)))))
+                 ,rest-expr)))))
 
-(defmacro patbind-state-global (args bindings expr)
+(defmacro patbind-state-global (args forms rest-expr)
   (declare (xargs :guard
                   (and (destructure-guard
-                        state-global args bindings 1)
+                        state-global args forms 1)
                        (or (symbolp (car args))
                            (cw "~%~%**** ERROR ****
 Pattern constructor ~x0 needs a single argument which is a symbol, but got ~x1~%~%"
                                'state-global args)))))
   `(state-global-let*
-    ((,(car args) ,(car bindings)))
-    ,expr))
+    ((,(car args) ,(car forms)))
+    ,rest-expr))
 
 
-(defmacro patbind-when (args bindings expr)
+(defmacro patbind-when (args forms rest-expr)
   (declare (xargs :guard (and (consp args) (eq (cdr args) nil))))
   `(if ,(car args)
-       (progn$ . , bindings)
-     ,expr))
+       (progn$ . , forms)
+     ,rest-expr))
 
-(defmacro patbind-if (args bindings expr)
+(defmacro patbind-if (args forms rest-expr)
   (declare (xargs :guard (and (consp args) (eq (cdr args) nil))))
   `(if ,(car args)
-       (progn$ . ,bindings)
-     ,expr))
+       (progn$ . ,forms)
+     ,rest-expr))
 
-(defmacro patbind-unless (args bindings expr)
+(defmacro patbind-unless (args forms rest-expr)
   (declare (xargs :guard (and (consp args) (eq (cdr args) nil))))
   `(if ,(car args)
-       ,expr
-     (progn$ . ,bindings)))
+       ,rest-expr
+     (progn$ . ,forms)))
   
-(defmacro patbind-the (args bindings expr)
+(def-b*-binder run-when
+  (declare (xargs :guard (and (consp args) (eq (cdr args) nil))))
+  `(prog2$ (and ,(car args)
+               (progn$ . , forms))
+           ,rest-expr))
+
+(def-b*-binder run-if
+  (declare (xargs :guard (and (consp args) (eq (cdr args) nil))))
+  `(prog2$ (and ,(car args)
+                (progn$ . ,forms))
+           ,rest-expr))
+
+(def-b*-binder run-unless
+  (declare (Xargs :guard (and (consp args) (eq (cdr args) nil))))
+  `(prog2$ (or ,(car args)
+               (progn$ . ,forms))
+           ,rest-expr))
+
+(defmacro patbind-the (args forms rest-expr)
   (declare (xargs :guard
-                  (and (destructure-guard the args bindings 2)
+                  (and (destructure-guard the args forms 2)
                        (or (translate-declaration-to-guard
                             (car args) 'var nil)
                            (cw "~%~%**** ERROR ****
@@ -532,11 +607,13 @@ The second argument to pattern constructor ~x0 must be a symbol, but is ~x1~%~%"
   (mv-let (sym ignorep)
     (decode-varname-for-patbind (cadr args))
     (if (eq ignorep 'ignore)
-        expr
-      `(let ((,sym ,(car bindings)))
+        rest-expr
+      `(let ((,sym ,(car forms)))
          ,@(and ignorep `((declare (ignorable ,sym))))
          (declare (type ,(car args) ,sym))
-         ,expr))))
+         ,rest-expr))))
+      
+
       
 
 
