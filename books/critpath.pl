@@ -138,8 +138,8 @@ if ($OPTIONS{'makefile'}) {
 
     certlib_set_opts(\%certlib_opts);
 
-    my @run_sources = ();
-    add_deps($topfile, \%deps, \@run_sources);
+    my @sources = ();
+    add_deps($topfile, \%deps, \@sources);
 }
 
 my ($costs, $warnings) = make_costs_table($topfile, \%deps);

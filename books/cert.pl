@@ -63,6 +63,7 @@ my $mf_name = "Makefile-tmp";
 my @includes = ();
 my @include_afters = ();
 my $cust_target = 0;
+my $collect_sources = 0;
 my $make_target = "all";
 my $svn_mode = 0;
 my $quiet = 0;
@@ -144,20 +145,30 @@ and options are as follows:
            before the dependencies in the makefile.
 
    --include-after <makefile-name>
-   --ia <makefile-name>
+   -ia <makefile-name>
            Include the specified makefile via an include command in
            the makefile produced.  Multiple -ia arguments may be given
            to include multiple makefiles.  The include commands occur
            after the dependencies in the makefile.
 
    --custom-target <target>
-   --ct <target>
+   -ct <target>
            When writing the makefile, instead of creating a phony
            \'all\' target which depends on the certificates of all the
-           books, create a list variable CERT_PL_BOOKS containing all
+           books, create a list variable CERT_PL_CERTS containing all
            the target certificates.  Then, if make is to be run, run
            it with the specified target.  This target should be
-           created by the user in an include-after file.
+           created by the user in an include-after file.  If make is
+           not to be run, then the name of the custom target is
+           irrelevant, but must be supplied anyway.
+
+   --collect-sources
+   -cs
+           Collect the names of all source files into the Makefile
+           variable CERT_PL_SOURCES.  This includes all .acl2 files
+           and any other files they might load with LD.  Note also
+           that this includes ALL source files, not just the ones
+           whose certificates are out of date.
 
    --relative-paths <dir>
    -r <dir>
@@ -224,6 +235,7 @@ GetOptions ("help|h"               => sub { print $helpstr; exit 0 ; },
 	    "custom-target|ct=s"   => sub {$cust_target=1;
 					   shift;
 					   $make_target=shift;},
+	    "collect-sources|cs"   => \$collect_sources,
 	    "relative-paths|r=s"   => sub {shift;
 					   $base_path =
 					       abs_canonical_path(shift);},
@@ -262,6 +274,7 @@ print "System dir is " . $RealBin . "\n" unless $quiet;
 push(@targets, @ARGV);
 
 my %seen = ( );
+my @sources = ( );
 
 # BOZO: This is crude.  Think of a better way to specify arguments to
 # Make on the command line and pass them along.
@@ -270,55 +283,61 @@ my %seen = ( );
 foreach my $target (@targets) {
     $target = canonical_path($target);
     $target =~ s/\.lisp$/.cert/;
-    add_deps($target, \%seen, \@run_sources);
+    add_deps($target, \%seen, \@sources);
 }
+
+# Is this how do we want to nest these?  Pick a command, run it on
+# every source file, versus pick a source file, run every command?
+# This way seems more flexible; commands can be grouped together.
+foreach my $run (@run_sources) {
+    foreach my $source (@sources) {
+	&$run($source);
+    }
+}
+
 
 unless ($no_makefile) {
     my $acl2 = $ENV{"ACL2"};
     unless ($acl2) {
-	## die "Error: Shell variable ACL2 should be set for this to work correctly.\n";
 	print "ACL2 defaults to acl2\n" unless $quiet;
 	$acl2 = "acl2";
     }
     # Build the makefile and run make.
-    open (my $mf, ">", $mf_name) or die "Failed to open output file $mf_name\n";
-    print $mf '
-ACL2 := ' . $acl2 . '
-include ' . rel_path($RealBin, "make_cert") . '
-
-';
+    open (my $mf, ">", $mf_name)
+	or die "Failed to open output file $mf_name\n";
+    print $mf "\nACL2 := $acl2 \n";
+    print $mf "include " . rel_path($RealBin, "make_cert") . "\n\n";
     foreach my $incl (@includes) {
-	print $mf '
-include ' . $incl . '
-';
+	print $mf "\ninclude $incl\n";
     }
     
-    if ($cust_target) {
-	print $mf "CERT_PL_BOOKS := \n";
-    } else {
-	print $mf '.PHONY: all
-all:
-';
-    }
+    print $mf "CERT_PL_CERTS := \n";
 
     while ((my $key, my $value) = each %seen) {
 	if ($value) { 
-	    if ($cust_target) {
-		print $mf "CERT_PL_BOOKS := \$(CERT_PL_BOOKS) $key\n";
-	    } else {
-		print $mf "all : $key\n";
-	    }
+	    print $mf "CERT_PL_CERTS := \$(CERT_PL_CERTS) $key\n";
 	    my @the_deps = @{$value};
 	    foreach my $dep (@the_deps) {
 		print $mf "$key : $dep\n";
 	    }
 	}
     }
+    
+    if ($collect_sources) {
+	print $mf "CERT_PL_SOURCES :=\n";
+	foreach my $source (@sources) {
+	    print $mf "CERT_PL_SOURCES := \$(CERT_PL_SOURCES) ";
+	    print $mf "$source\n";
+	}
+    }
+    
+    unless ($cust_target) {
+	print $mf ".PHONY: all\n";
+	print $mf "all: \$(CERT_PL_CERTS)\n";
+    }
 
     foreach my $incl (@include_afters) {
-	print $mf '
-include ' . $incl . '
-';
+	print $mf "\ninclude $incl\n";
     }
 
     close($mf);

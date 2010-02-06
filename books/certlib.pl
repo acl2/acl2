@@ -644,11 +644,14 @@ sub scan_book {
     
     
 
-
+# During a dependency search, this is run with $target set to each
+# cert and source file in the dependencies of the top-level targets.
+# If the target has been seen before, then it returns immediately.
 sub add_deps {
     my $target = shift;
     my $seen = shift;
-    my $run_sources = shift;
+    my $sources = shift;
+
 
     if (exists $seen->{$target}) {
 	# We've already calculated this file's dependencies.
@@ -656,9 +659,7 @@ sub add_deps {
     }
 
     if ($target !~ /\.cert$/) {
-	foreach my $run (@{$run_sources}) {
-	    &$run($target);
-	}
+	push(@{$sources}, $target);
 	$seen->{$target} = 0;
 	return;
     }
@@ -748,7 +749,7 @@ sub add_deps {
 
     # Run the recursive add_deps on each dependency.
     foreach my $dep  (@{$deps}) {
-	add_deps($dep, $seen, $run_sources);
+	add_deps($dep, $seen, $sources);
     }
     
 
