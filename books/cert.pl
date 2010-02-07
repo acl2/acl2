@@ -59,6 +59,7 @@ my @targets = ();
 my $jobs = 1;
 my $no_build = 0;
 my $no_makefile = 0;
+my $no_boilerplate = 0;
 my $mf_name = "Makefile-tmp";
 my @includes = ();
 my @include_afters = ();
@@ -137,6 +138,15 @@ and options are as follows:
            suffice for certifying them as long as the dependencies
            between source files don\'t change.
 
+   --no-boilerplate
+           Only include the dependency information and the setting of
+           CERT_PL_CERTS and, if --collect-sources, CERT_PL_SOURCES in
+           the makefile.  This subsumes --custom-target, and will
+           create a makefile that is suitable for including in another
+           makefile but that isn\'t itself complete because, for
+           example, it doesn\'t include a rule for building a
+           certificate.
+
    --include <makefile-name>
    -i <makefile-name>
            Include the specified makefile via an include command in
@@ -180,7 +190,9 @@ and options are as follows:
 
    --targets <file>
    -t <file>
-           Add as targets the files listed (one per line) in <file>.
+           Add as targets the files listed in <file>.  Whitespace is
+           ignored, # comments out the rest of a line, and filenames
+           are listed one per line.
 
    --quiet
    -q
@@ -211,6 +223,7 @@ and options are as follows:
    --make-args <arg>
            Add command line arguments to make.  Multiple such
            directives may be given.
+
 ';
 
 GetOptions ("help|h"               => sub { print $helpstr; exit 0 ; },
@@ -221,6 +234,7 @@ GetOptions ("help|h"               => sub { print $helpstr; exit 0 ; },
 					   $certlib_opts{"clean_certs"} = 1;},
 	    "verbose-deps|v"       => \$certlib_opts{"print_deps"},
 	    "makefile-only|m"      => \$no_build,
+	    "no-boilerplate"       => \$no_boilerplate,
 	    "o=s"                  => \$mf_name,
 	    "all-deps|d"           => \$certlib_opts{"all_deps"},
 	    "static-makefile|s=s"  => sub {shift;
@@ -262,7 +276,12 @@ GetOptions ("help|h"               => sub { print $helpstr; exit 0 ; },
 		my $fname=shift;
 		open (my $tfile, $fname);
 		while (my $the_line = <$tfile>) {
-		    push (@targets, substr($the_line, 0, -1));
+		    chomp($the_line);
+		    $the_line =~ m/^\s*([^\#]*[^\#\s])?/;
+		    my $fname = $1;
+		    if ($fname && (length($fname) > 0)) {
+			push (@targets, $fname);
+		    }
 		}},
 	    "debug"                => \$certlib_opts{"debugging"}
 	    );
@@ -297,42 +316,55 @@ foreach my $run (@run_sources) {
 
 
 unless ($no_makefile) {
-    my $acl2 = $ENV{"ACL2"};
-    unless ($acl2) {
-	print "ACL2 defaults to acl2\n" unless $quiet;
-	$acl2 = "acl2";
-    }
     # Build the makefile and run make.
     open (my $mf, ">", $mf_name)
 	or die "Failed to open output file $mf_name\n";
-    print $mf "\nACL2 := $acl2 \n";
-    print $mf "include " . rel_path($RealBin, "make_cert") . "\n\n";
+    unless ($no_boilerplate) {
+	my $acl2 = $ENV{"ACL2"};
+	unless ($acl2) {
+	    print "ACL2 defaults to acl2\n" unless $quiet;
+	    $acl2 = "acl2";
+	}
+	print $mf "\nACL2 := $acl2 \n";
+	print $mf "include "
+	    . rel_path($RealBin, "make_cert")
+	    . "\n\n";
+    }
     foreach my $incl (@includes) {
 	print $mf "\ninclude $incl\n";
     }
     
-    print $mf "CERT_PL_CERTS := \n";
+    print $mf "CERT_PL_CERTS :=";
+    while ((my $key, my $value) = each %seen) {
+	if ($value) { 
+	    print $mf " \\\n     $key";
+	}
+    }
+
+    print $mf "\n\n";
 
     while ((my $key, my $value) = each %seen) {
 	if ($value) { 
-	    print $mf "CERT_PL_CERTS := \$(CERT_PL_CERTS) $key\n";
 	    my @the_deps = @{$value};
+	    print $mf "$key :";
 	    foreach my $dep (@the_deps) {
-		print $mf "$key : $dep\n";
+		print $mf " \\\n     $dep";
 	    }
+	    print $mf "\n\n";
 	}
     }
     
     if ($collect_sources) {
-	print $mf "CERT_PL_SOURCES :=\n";
+	print $mf "\nCERT_PL_SOURCES :=";
 	foreach my $source (@sources) {
-	    print $mf "CERT_PL_SOURCES := \$(CERT_PL_SOURCES) ";
-	    print $mf "$source\n";
+	    print $mf " \\\n     $source ";
 	}
     }
+
+    print $mf "\n\n";
     
-    unless ($cust_target) {
-	print $mf ".PHONY: all\n";
+    unless ($cust_target || $no_boilerplate) {
+	print $mf "\n.PHONY: all\n";
 	print $mf "all: \$(CERT_PL_CERTS)\n";
     }
 

@@ -159,30 +159,6 @@ sub get_cert_time {
 }
 
 
-sub makefile_dependency_graph {
-
-# makefile_dependency_graph(makefile-name)
-#
-# Records a dependency graph between cert files by looking through the Makefile
-# and adding an entry for each line matching *.cert : *.cert.
-
-    my $mkpath = shift;
-    my %deps = ();
-
-    open (my $mkfile, "<", $mkpath) or die "Failed to open makefile $mkpath\n";
-    my $regexp = "^(.*\\.cert)[\\s]*:[\\s]*(.*\\.cert)";
-    while (my $teh_line = <$mkfile>) {
-	my @res = $teh_line =~ m/$regexp/;
-	if (@res) {
-	    push(@{$deps{$res[0]}}, $res[1]);
-	}
-    }
-
-    return %deps;
-}
-
-
-
 sub make_costs_table_aux {
 
 # make_costs_table_aux(file, deps, costs, warnings) -> cost
@@ -665,6 +641,7 @@ sub add_deps {
     }
 
     if (excludep($target)) {
+	$seen->{$target} = 0;
 	return;
     }
 
@@ -725,10 +702,8 @@ sub add_deps {
     if ($imagefile) {
 	open(my $im, "<", $imagefile);
 	my $line = <$im>;
-	if ($line) {
-	    if (substr($line,-1,1) eq "\n") {
-		chop $line;
-	    }
+	chomp $line;
+	if ($line && ($line ne "acl2")) {
 	    my $image = canonical_path(rel_path(dirname($base), $line));
 	    if (! -e $image) {
 		$image = substr(`which $line`,0,-1);

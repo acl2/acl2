@@ -87,15 +87,6 @@ my $HELP_MESSAGE = "
        --nolist     Suppress individual-files list.
 
        --help       Print this help message and exit.
-
-       --makefile=<makefile>
-       -m <makefile>
-                    Compute the dependency graph from the given makefile
-                    instead of recomputing it by looking at all the
-                    source files.  The makefile must be of the format
-                    produced by cert.pl; this option uses a simple
-                    regular expression parsing of the makefile to
-                    produce the dependency graph.
  ";
 
 my %OPTIONS = (
@@ -104,15 +95,13 @@ my %OPTIONS = (
   'nowarn'  => '',
   'nopath'  => '',
   'nolist'  => '',
-  'makefile' => ''
 );
 
 my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     'help'   => \$OPTIONS{'help'},
 			     'nowarn' => \$OPTIONS{'nowarn'},
 			     'nopath' => \$OPTIONS{'nopath'},
-			     'nolist' => \$OPTIONS{'nolist'},
-			     'm|makefile=s' => \$OPTIONS{'makefile'}
+			     'nolist' => \$OPTIONS{'nolist'}
 			     );
 
 my $args_okp = (@ARGV == 1);
@@ -127,20 +116,16 @@ my %deps;
 my $topfile = canonical_path(shift);
 $topfile =~ s/\.lisp$/.cert/;
 
-if ($OPTIONS{'makefile'}) {
-    %deps = makefile_dependency_graph($OPTIONS{'makefile'});
-} else {
-    %deps = ();
-    my %certlib_opts = ( "debugging" => 0,
-			 "clean_certs" => 0,
-			 "print_deps" => 0,
-			 "all_deps" => 1 );
+%deps = ();
+my %certlib_opts = ( "debugging" => 0,
+		     "clean_certs" => 0,
+		     "print_deps" => 0,
+		     "all_deps" => 1 );
 
-    certlib_set_opts(\%certlib_opts);
+certlib_set_opts(\%certlib_opts);
 
-    my @sources = ();
-    add_deps($topfile, \%deps, \@sources);
-}
+my @sources = ();
+add_deps($topfile, \%deps, \@sources);
 
 my ($costs, $warnings) = make_costs_table($topfile, \%deps);
 
