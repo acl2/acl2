@@ -46,8 +46,7 @@
 (set-non-linearp t)
 
 (local 
- (include-book 
-  "../../../../arithmetic-3/floor-mod/floor-mod"))
+ (include-book "../../../../arithmetic-3/floor-mod/floor-mod"))
 
 (local
  (defthm lemma_null_cddr_x_len_x_2

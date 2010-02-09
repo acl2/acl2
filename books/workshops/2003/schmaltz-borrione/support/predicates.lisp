@@ -12,11 +12,9 @@
 (in-package "ACL2")
 
 ; ACL2 books on lists
-(include-book
- "../../../../data-structures/list-defuns")
+(include-book "../../../../data-structures/list-defuns")
 
-(include-book
- "../../../../data-structures/list-defthms")
+(include-book "../../../../data-structures/list-defthms")
 
 
 ;------------------------------------------------------------------------------

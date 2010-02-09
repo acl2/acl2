@@ -13,7 +13,8 @@ returns values of the right "type".
 
 For example,
 
-  (include-book "XXX/books/misc/records")
+  (include-book ;; defeat dependency checker
+     "XXX/books/misc/records")
 
   (defun sbp16 (x)
     (declare (xargs :guard t))

@@ -9,10 +9,8 @@
 
 
 ;; we load the arithmetic books
-(include-book 
- "arithmetic-3/bind-free/top" :dir :system)
-(include-book 
- "arithmetic-3/floor-mod/floor-mod" :dir :system)
+(include-book "arithmetic-3/bind-free/top" :dir :system)
+(include-book "arithmetic-3/floor-mod/floor-mod" :dir :system)
 
 
 

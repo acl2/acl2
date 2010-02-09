@@ -28,8 +28,7 @@
 
 (set-non-linearp t)
 
-(include-book 
- "../../../../arithmetic-3/floor-mod/floor-mod")
+(include-book "../../../../arithmetic-3/floor-mod/floor-mod")
 
 (defthm mod-x-=-x
   (implies (and (rationalp x)

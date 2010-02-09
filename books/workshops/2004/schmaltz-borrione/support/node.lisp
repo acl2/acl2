@@ -204,8 +204,7 @@
 
 (set-non-linearp t)
 
-(include-book 
- "../../../../arithmetic-3/floor-mod/floor-mod")
+(include-book "../../../../arithmetic-3/floor-mod/floor-mod")
 
 ;; for "historical reasons" we keep two versions of some lemmas
 

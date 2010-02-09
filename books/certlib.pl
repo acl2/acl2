@@ -69,13 +69,12 @@ sub human_time {
 sub rel_path {
     my $base = shift;
     my $path = shift;
-    if (substr($path,0,1) eq "/") {
+    if (substr($path,0,1) eq "/" || !$base) {
 	return $path;
     } else {
 	return "$base/$path";
     }
 }
-
 
 sub rec_readlink {
     my $path = shift;
@@ -425,12 +424,34 @@ sub certlib_set_opts {
     $all_deps = $opts->{"all_deps"};
 }
 
+sub get_add_dir {
+    my $base = shift;
+    my $the_line = shift;
+    my $local_dirs = shift;
+
+    # Check for ADD-INCLUDE-BOOK-DIR commands
+    my $regexp = "^[^;]*\\(add-include-book-dir[\\s]+:([^\\s]*)[\\s]*\"([^\"]*)\\/\"";
+    my @res = $the_line =~ m/$regexp/i;
+    if (@res) {
+	my $name = uc($res[0]);
+	my $basedir = dirname($base);
+	$local_dirs->{$name} = canonical_path(rel_path($basedir, $res[1]));
+	print "Added local_dirs entry " . $local_dirs->{$name} . " for $name\n" if $debugging;
+	print_dirs($local_dirs) if $debugging;
+	return 1;
+    }
+}
+
+
 sub lookup_colon_dir {
     my $name = uc(shift);
     my $local_dirs = shift;
 
-    my $dirpath = ($local_dirs && $local_dirs->{$name})
-	|| $dirs{$name} ;
+    my $dirpath;
+    $local_dirs && ($dirpath = $local_dirs->{$name});
+    if (! defined($dirpath)) {
+	$dirpath = $dirs{$name} ;
+    }
     return $dirpath;
 }
 
@@ -444,8 +465,8 @@ sub get_include_book {
     if (@res) {
 	if ($res[1]) {
 	    my $dirpath = lookup_colon_dir($res[1], $local_dirs);
-	    unless ($dirpath) {
-		print "Error: Unknown :dir entry $res[1] for $base\n";
+	    unless (defined($dirpath)) {
+		print "Warning: Unknown :dir entry $res[1] for $base\n";
 		print_dirs($local_dirs) if $debugging;
 		return 0;
 	    }
@@ -468,8 +489,8 @@ sub get_depends_on {
     if (@res) {
 	if ($res[1]) {
 	    my $dirpath = lookup_colon_dir($res[1], $local_dirs);
-	    unless ($dirpath) {
-		print "Error: Unknown :dir entry $res[1] for $base\n";
+	    unless (defined($dirpath)) {
+		print "Warning: Unknown :dir entry $res[1] for $base\n";
 		print_dirs($local_dirs) if $debugging;
 		return 0;
 	    }
@@ -502,8 +523,8 @@ sub get_ld {
     if (@res) {
 	if ($res[1]) {
 	    my $dirpath = lookup_colon_dir($res[1], $local_dirs);
-	    unless ($dirpath) {
-		print "Error: Unknown :dir entry $res[1] for $base\n";
+	    unless (defined($dirpath)) {
+		print "Warning: Unknown :dir entry $res[1] for $base\n";
 		print_dirs($local_dirs) if $debugging;
 		return 0;
 	    }
@@ -514,24 +535,6 @@ sub get_ld {
 	}
     }
     return 0;
-}
-
-sub get_add_dir {
-    my $base = shift;
-    my $the_line = shift;
-    my $local_dirs = shift;
-
-    # Check for ADD-INCLUDE-BOOK-DIR commands
-    my $regexp = "^[^;]*\\(add-include-book-dir[\\s]+:([^\\s]*)[\\s]*\"([^\"]*)\\/\"";
-    my @res = $the_line =~ m/$regexp/i;
-    if (@res) {
-	my $name = uc($res[0]);
-	my $basedir = dirname($base);
-	$local_dirs->{$name} = canonical_path(rel_path($basedir, $res[1]));
-	print "Added local_dirs entry " . $local_dirs->{$name} . " for $name\n" if $debugging;
-	print_dirs($local_dirs) if $debugging;
-	return 1;
-    }
 }
 
 
@@ -571,25 +574,23 @@ sub scan_ld {
 
     print "scan_ld $fname\n" if $debugging;
 
-    if ($fname) {
-	push (@{$deps}, $fname);
-	open(my $ld, "<", $fname);
-	while (my $the_line = <$ld>) {
-	    my $incl = get_include_book($fname, $the_line, $local_dirs);
-	    my $depend =  $incl || get_depends_on($fname, $the_line, $local_dirs);
-	    my $ld = $depend || get_ld($fname, $the_line, $local_dirs);
-	    my $add = $ld || get_add_dir($fname, $the_line, $local_dirs);
-	    if ($incl) {
-		push(@{$deps}, $incl);
-	    } elsif ($depend) {
-		push(@{$deps}, $depend);
-	    } elsif ($ld) {
-		push(@{$deps}, $ld);
-		scan_ld($ld, $deps, $local_dirs);
-	    }
+    push (@{$deps}, $fname);
+    open(my $ld, "<", $fname);
+    while (my $the_line = <$ld>) {
+	my $incl = get_include_book($fname, $the_line, $local_dirs);
+	my $depend =  $incl || get_depends_on($fname, $the_line, $local_dirs);
+	my $ld = $depend || get_ld($fname, $the_line, $local_dirs);
+	my $add = $ld || get_add_dir($fname, $the_line, $local_dirs);
+	if ($incl) {
+	    push(@{$deps}, $incl);
+	} elsif ($depend) {
+	    push(@{$deps}, $depend);
+	} elsif ($ld) {
+	    push(@{$deps}, $ld);
+	    scan_ld($ld, $deps, $local_dirs);
 	}
-	close($ld);
     }
+    close($ld);
 }
 
 sub scan_book {
@@ -683,7 +684,7 @@ sub add_deps {
 
     # Scan the .acl2 file first so that we get the add-include-book-dir
     # commands before the include-book commands.
-    scan_ld($acl2file, $deps, $local_dirs);
+    $acl2file && scan_ld($acl2file, $deps, $local_dirs);
     
     # Scan the lisp file for include-books.
     scan_book($lispfile, $deps, $local_dirs);

@@ -132,7 +132,7 @@ Assumptions and acknowledgments:
 
 (1) The book defpun.lisp needs top be on the directory for this book to be
 certified. Note: If you dont want that, simply put the two forms (other than
-the (include-book "defpun") form at the bottom of the defpun.lisp file and
+the ; (include-book "defpun") form at the bottom of the defpun.lisp file and
 recertify that book.
 
 (2) We would assume that the user works with this book using the relevant
