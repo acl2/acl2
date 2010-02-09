@@ -75,7 +75,7 @@ my $HELP_MESSAGE = "
      cert.pl top.lisp -c    # clean
      cert.pl top.lisp -j 8  # recertify using 8 parallel processors
 
- 2. Run critpath.pl [OPTIONS] <top-book>, where <top-book> is the
+ 2. Run critpath.pl [OPTIONS] <top-book> ..., where each <top-book> is a
     .lisp or .cert file of the book of interest.
 
     The options are as follows:
@@ -87,6 +87,10 @@ my $HELP_MESSAGE = "
        --nolist     Suppress individual-files list.
 
        --help       Print this help message and exit.
+
+       -t, --targets <filename>
+                    Take the list of top-books from <filename>, in addition
+                    to any given on the command line.
  ";
 
 my %OPTIONS = (
@@ -97,26 +101,32 @@ my %OPTIONS = (
   'nolist'  => '',
 );
 
+my @targets = ();
+
 my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     'help'   => \$OPTIONS{'help'},
 			     'nowarn' => \$OPTIONS{'nowarn'},
 			     'nopath' => \$OPTIONS{'nopath'},
-			     'nolist' => \$OPTIONS{'nolist'}
+			     'nolist' => \$OPTIONS{'nolist'},
+			     "targets|t=s"          
+			              => sub { shift;
+					       read_targets(shift, \@targets);
+					   }
 			     );
 
-my $args_okp = (@ARGV == 1);
+push (@targets, @ARGV);
 
-if (!$options_okp || !$args_okp || $OPTIONS{"help"})
+if (!$options_okp || $OPTIONS{"help"})
 {
     print $HELP_MESSAGE;
     exit ($OPTIONS{"help"} ? 0 : 1);
 }
 
-my %deps;
-my $topfile = canonical_path(shift);
-$topfile =~ s/\.lisp$/.cert/;
+my %deps = ();
+my @sources = ();
+my $costs = {};
+my $warnings = [];
 
-%deps = ();
 my %certlib_opts = ( "debugging" => 0,
 		     "clean_certs" => 0,
 		     "print_deps" => 0,
@@ -124,10 +134,14 @@ my %certlib_opts = ( "debugging" => 0,
 
 certlib_set_opts(\%certlib_opts);
 
-my @sources = ();
-add_deps($topfile, \%deps, \@sources);
+foreach my $target (@targets) {
+    my $topfile = canonical_path($target);
+    $topfile =~ s/\.lisp$/.cert/;
+    add_deps($topfile, \%deps, \@sources);
+    ($costs, $warnings) = make_costs_table($topfile, \%deps, $costs, $warnings);
+}
 
-my ($costs, $warnings) = make_costs_table($topfile, \%deps);
+
 
 
 unless ($OPTIONS{'nowarn'}) {
@@ -135,7 +149,7 @@ unless ($OPTIONS{'nowarn'}) {
 }
 
 unless ($OPTIONS{'nopath'}) {
-    print critical_path_report($topfile, $costs, $OPTIONS{"html"});
+    print critical_path_report($costs, $OPTIONS{"html"});
 }
 
 unless ($OPTIONS{'nolist'}) {

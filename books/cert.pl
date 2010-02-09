@@ -283,18 +283,9 @@ GetOptions ("help|h"               => sub { print $summary_str;
 							print `$line`;})},
 	    "quiet|q"              => \$quiet,
 	    "make-args=s"          => \@make_args,
-	    "targets|t=s"          => sub {
-		shift;
-		my $fname=shift;
-		open (my $tfile, $fname);
-		while (my $the_line = <$tfile>) {
-		    chomp($the_line);
-		    $the_line =~ m/^\s*([^\#]*[^\#\s])?/;
-		    my $fname = $1;
-		    if ($fname && (length($fname) > 0)) {
-			push (@targets, $fname);
-		    }
-		}},
+	    "targets|t=s"          => sub { shift;
+					    read_targets(shift, \@targets);
+					},
 	    "debug"                => \$certlib_opts{"debugging"}
 	    );
 

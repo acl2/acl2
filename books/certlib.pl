@@ -177,9 +177,12 @@ sub make_costs_table_aux {
     my $costs = shift;
     my $warnings = shift;
 
-    if ($costs->{$certfile}) {
+    if (exists $costs->{$certfile}) {
 	return $costs->{$certfile};
     }
+
+    # put something in $costs->{$certfile} so that we don't loop
+    $costs->{$certfile} = 0;
 
     my $certtime = get_cert_time($certfile, $warnings);
     my $certdeps = $deps->{$certfile};
@@ -191,10 +194,19 @@ sub make_costs_table_aux {
 	foreach my $dep (@{$certdeps}) {
 	    if ($dep =~ /\.cert$/) {
 		my $this_dep_costs = make_costs_table_aux($dep, $deps, $costs, $warnings);
-		my $this_dep_total = $this_dep_costs->{"totaltime"};
-		if ($this_dep_total > $most_expensive_dep_total) {
-		    $most_expensive_dep = $dep;
-		    $most_expensive_dep_total = $this_dep_total;
+		# check for dependency loop:
+		if ($this_dep_costs) {
+		    my $this_dep_total = $this_dep_costs->{"totaltime"};
+		    if ($this_dep_total > $most_expensive_dep_total) {
+			$most_expensive_dep = $dep;
+			$most_expensive_dep_total = $this_dep_total;
+		    }
+		} else {
+		    if ($dep eq $certfile) {
+			push(@{$warnings}, "Self-dependency in $dep");
+		    } else {
+			push(@{$warnings}, "Dependency loop involving $dep and $certfile");
+		    }
 		}
 	    }
 	}
@@ -212,17 +224,17 @@ sub make_costs_table_aux {
 
 sub make_costs_table {
 
-# make_costs_table (topfile, deps) -> (costs_table, warnings)
+# make_costs_table (topfile, deps, costs_table, warnings) -> (costs_table, warnings)
 
 # For each cert file in the dependency graph, records a maximum-cost
 # path, the path's cost, and the cert's own cost.
 
     my $certfile = shift;
     my $deps = shift;
-    my %costs = ();
-    my @warnings = ();
-    my $maxcost = make_costs_table_aux($certfile, $deps, \%costs, \@warnings);
-    return (\%costs, \@warnings);
+    my $costs = shift;
+    my $warnings = shift;
+    my $maxcost = make_costs_table_aux($certfile, $deps, $costs, $warnings);
+    return ($costs, $warnings);
 }
 
 
@@ -268,13 +280,22 @@ sub warnings_report {
 
 sub critical_path_report {
 
-# critical_path_report(file,costs,htmlp) returns a string describing the
+# critical_path_report(costs,htmlp) returns a string describing the
 # critical path for file according to the costs_table, either in TEXT or HTML
 # format per the value of htmlp.
 
-    my $file = shift;
     my $costs = shift;
     my $htmlp = shift;
+
+    my $file;
+    my $maxcost = -1;
+    while ((my $key, my $value) = each %{$costs}) {
+	my $cumtime = $value->{"totaltime"};
+	if ($cumtime > $maxcost) {
+	    $maxcost = $cumtime;
+	    $file = $key;
+	}
+    }
 
     my $ret;
 
@@ -746,4 +767,18 @@ sub add_deps {
 	}
     }
 
+}
+
+sub read_targets {
+    my $fname=shift;
+    my $targets=shift;
+    open (my $tfile, $fname);
+    while (my $the_line = <$tfile>) {
+	chomp($the_line);
+	$the_line =~ m/^\s*([^\#]*[^\#\s])?/;
+	my $fname = $1;
+	if ($fname && (length($fname) > 0)) {
+	    push (@{$targets}, $fname);
+	}
+    }
 }
