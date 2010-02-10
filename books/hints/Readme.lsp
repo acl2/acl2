@@ -1,3 +1,6 @@
+; NOTE: Not included here, but possibly of use, is distributed book:
+; arithmetic-5/lib/basic-ops/dynamic-e-d.lisp
+
 ((:FILES ; non-empty list of filenames, generated from Unix command "ls -1R"
 "
 .:
