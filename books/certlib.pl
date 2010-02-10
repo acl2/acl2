@@ -117,17 +117,23 @@ sub short_cert_name {
 # minimum.
 
     my $certfile = shift;
+    my $short = shift;
 
-    # Ordinary case for foo/bar/baz/blah.cert
-    $certfile =~ m/^.*\/([^\/]*\/[^\/]*)$/;
-    my $shortcert = $1;
-
-    # Special case for, e.g., foo.cert:
-    if (!$shortcert) {
-	$shortcert = $certfile;
+    if ($short == -1) {
+	return $certfile;
     }
+    
+    my $pos = length($certfile)+1;
 
-    return $shortcert;
+    while ($short > -1) {
+	$pos = rindex($certfile, "/", $pos-1);
+	if ($pos == -1) {
+	    return $certfile;
+	}
+	$short = $short-1;
+    }
+    return substr($certfile, $pos+1);
+
 }
 
 
@@ -176,6 +182,7 @@ sub make_costs_table_aux {
     my $deps = shift;
     my $costs = shift;
     my $warnings = shift;
+    my $short = shift;
 
     if (exists $costs->{$certfile}) {
 	return $costs->{$certfile};
@@ -193,7 +200,7 @@ sub make_costs_table_aux {
     if ($certdeps) {
 	foreach my $dep (@{$certdeps}) {
 	    if ($dep =~ /\.cert$/) {
-		my $this_dep_costs = make_costs_table_aux($dep, $deps, $costs, $warnings);
+		my $this_dep_costs = make_costs_table_aux($dep, $deps, $costs, $warnings, $short);
 		# check for dependency loop:
 		if ($this_dep_costs) {
 		    my $this_dep_total = $this_dep_costs->{"totaltime"};
@@ -211,7 +218,7 @@ sub make_costs_table_aux {
 	    }
 	}
     }
-    my %entry = ( "shortcert" => short_cert_name($certfile),
+    my %entry = ( "shortcert" => short_cert_name($certfile, $short),
 		  "selftime" => $certtime, 
 		  "totaltime" => $most_expensive_dep_total +
 		                 ($certtime ? $certtime : 0.000001), 
@@ -233,7 +240,8 @@ sub make_costs_table {
     my $deps = shift;
     my $costs = shift;
     my $warnings = shift;
-    my $maxcost = make_costs_table_aux($certfile, $deps, $costs, $warnings);
+    my $short = shift;
+    my $maxcost = make_costs_table_aux($certfile, $deps, $costs, $warnings, $short);
     return ($costs, $warnings);
 }
 

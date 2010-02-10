@@ -66,9 +66,6 @@ my $no_boilerplate = 0;
 my $mf_name = "Makefile-tmp";
 my @includes = ();
 my @include_afters = ();
-my $cust_target = 0;
-my $collect_sources = 0;
-my $make_target = "all";
 my $svn_mode = 0;
 my $quiet = 0;
 my @run_sources = ();
@@ -126,7 +123,7 @@ and options are as follows:
    -c
            Just clean up certificates and dependency cache files,
            don\'t generate new cache files or build certificates.
-           Equivalent to "-n -cc -cp".
+           Equivalent to "-n -cc".
 
    -o <makefile-name>
            Determines where to write the dependency information;
@@ -148,13 +145,12 @@ and options are as follows:
            between source files don\'t change.
 
    --no-boilerplate
-           Only include the dependency information and the setting of
-           CERT_PL_CERTS and, if --collect-sources, CERT_PL_SOURCES in
-           the makefile.  This subsumes --custom-target, and will
-           create a makefile that is suitable for including in another
-           makefile but that isn\'t itself complete because, for
-           example, it doesn\'t include a rule for building a
-           certificate.
+           Omit from the makefile the inclusion of make_cert, which
+           provides the rule for building a certificate, and the
+           settings of the ACL2 and ACL2_SYSTEM_BOOKS variables.  This
+           will create a makefile containing the list of certificates
+           and dependencies between them and the sources, suitable for
+           including in another makefile.
 
    --include <makefile-name>
    -i <makefile-name>
@@ -170,32 +166,10 @@ and options are as follows:
            to include multiple makefiles.  The include commands occur
            after the dependencies in the makefile.
 
-   --custom-target <target>
-   -ct <target>
-           When writing the makefile, instead of creating a phony
-           \'all\' target which depends on the certificates of all the
-           books, create a list variable CERT_PL_CERTS containing all
-           the target certificates.  Then, if make is to be run, run
-           it with the specified target.  This target should be
-           created by the user in an include-after file.  If make is
-           not to be run, then the name of the custom target is
-           irrelevant, but must be supplied anyway.
-
-   --collect-sources
-   -cs
-           Collect the names of all source files into the Makefile
-           variable CERT_PL_SOURCES.  This includes all .acl2 files
-           and any other files they might load with LD.  Note also
-           that this includes ALL source files, not just the ones
-           whose certificates are out of date.
-
    --relative-paths <dir>
    -r <dir>
            Use paths relative to the given directory rather than
            the current directory.
-
-   --debug
-           Print reams and reams of debugging info.
 
    --targets <file>
    -t <file>
@@ -258,10 +232,6 @@ GetOptions ("help|h"               => sub { print $summary_str;
 	    "include-after|ia=s"     => sub {shift;
 					     push(@include_afters,
 						  shift);},
-	    "custom-target|ct=s"   => sub {$cust_target=1;
-					   shift;
-					   $make_target=shift;},
-	    "collect-sources|cs"   => \$collect_sources,
 	    "relative-paths|r=s"   => sub {shift;
 					   $base_path =
 					       abs_canonical_path(shift);},
@@ -311,6 +281,8 @@ foreach my $target (@targets) {
     add_deps($target, \%seen, \@sources);
 }
 
+@sources = sort(@sources);
+
 # Is this how do we want to nest these?  Pick a command, run it on
 # every source file, versus pick a source file, run every command?
 # This way seems more flexible; commands can be grouped together.
@@ -346,7 +318,7 @@ unless ($no_makefile) {
 or provide --acl2/-a option to override.\n" unless $quiet;
 	    $acl2 = "acl2";
 	}
-	print $mf "\nACL2 := $acl2 \n";
+	print $mf "\nACL2 ?= $acl2 \n";
 	print $mf "\nexport ACL2_SYSTEM_BOOKS := $RealBin\n";
 	print $mf "include "
 	    . rel_path($RealBin, "make_cert")
@@ -356,6 +328,10 @@ or provide --acl2/-a option to override.\n" unless $quiet;
     foreach my $incl (@includes) {
 	print $mf "\ninclude $incl\n";
     }
+
+    print $mf "\n.PHONY: all-cert-pl-certs\n\n";
+    print $mf "# Depends on all certificate files.\n";
+    print $mf "all-cert-pl-certs:\n\n";
     
     # declare CERT_PL_CERTS to be the list of certificates
     print $mf "CERT_PL_CERTS :=";
@@ -374,15 +350,14 @@ or provide --acl2/-a option to override.\n" unless $quiet;
 
     print $mf "\n\n";
 
-    # declare CERT_PL_SOURCES to be the list of sources, if generated
-    if ($collect_sources) {
-	@sources = sort(@sources);
-	print $mf "\nCERT_PL_SOURCES :=";
-	foreach my $source (@sources) {
-	    print $mf " \\\n     $source ";
-	}
-	print $mf "\n\n";
+    print $mf "all-cert-pl-certs: \$(CERT_PL_CERTS)\n\n";
+
+    # declare CERT_PL_SOURCES to be the list of sources
+    print $mf "CERT_PL_SOURCES :=";
+    foreach my $source (@sources) {
+	print $mf " \\\n     $source ";
     }
+    print $mf "\n\n";
 
     # write out the dependencies
     foreach my $cert (@certs) {
@@ -397,12 +372,6 @@ or provide --acl2/-a option to override.\n" unless $quiet;
 	}
     }
 
-    
-    unless ($cust_target || $no_boilerplate) {
-	print $mf "\n.PHONY: all\n";
-	print $mf "all: \$(CERT_PL_CERTS)\n";
-    }
-
     foreach my $incl (@include_afters) {
 	print $mf "\ninclude $incl\n";
     }
@@ -411,7 +380,7 @@ or provide --acl2/-a option to override.\n" unless $quiet;
     
     unless ($no_build) {
 	my $make_cmd = join(' ', ("make -j $jobs -f $mf_name",
-				  @make_args, $make_target));
+				  @make_args));
 	if ($certlib_opts{"debugging"}) {
 	    print "$make_cmd\n";
 	}

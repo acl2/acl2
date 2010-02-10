@@ -99,6 +99,7 @@ my %OPTIONS = (
   'nowarn'  => '',
   'nopath'  => '',
   'nolist'  => '',
+  'short'   => 1
 );
 
 my @targets = ();
@@ -108,6 +109,7 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     'nowarn' => \$OPTIONS{'nowarn'},
 			     'nopath' => \$OPTIONS{'nopath'},
 			     'nolist' => \$OPTIONS{'nolist'},
+			     'short=i' =>  \$OPTIONS{'short'},
 			     "targets|t=s"          
 			              => sub { shift;
 					       read_targets(shift, \@targets);
@@ -138,7 +140,7 @@ foreach my $target (@targets) {
     my $topfile = canonical_path($target);
     $topfile =~ s/\.lisp$/.cert/;
     add_deps($topfile, \%deps, \@sources);
-    ($costs, $warnings) = make_costs_table($topfile, \%deps, $costs, $warnings);
+    ($costs, $warnings) = make_costs_table($topfile, \%deps, $costs, $warnings, $OPTIONS{"short"});
 }
 
 
