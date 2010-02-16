@@ -468,7 +468,7 @@
   :rule-classes :clause-processor)
 
 (defun get-generalization-patterns (world)
-  (declare (xargs :guard (and (worldp world)
+  (declare (xargs :guard (and (plist-worldp world)
                               (alistp (table-alist 'generalization world)))))
   (cdr (assoc-eq :patterns (table-alist 'generalization world))))
 
