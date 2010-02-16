@@ -272,3 +272,18 @@ Then:
       (t
        (value clauses))))))
 
+;; When we call bash with hints we may modify the enabled structure.
+;; If we do this inside of a computed hint it may result in slow array
+;; access warnings.  By wrapping the outermost state modifying call
+;; with preserve-pspv you can protect the state.
+
+(defmacro preserve-pspv (call &key (pspv 'pspv))
+  `(let ((pspv ,pspv))
+     (let* ((old-ens (access rewrite-constant
+			     (access prove-spec-var pspv :rewrite-constant)
+			     :current-enabled-structure))
+	    (old-name (access enabled-structure old-ens :array-name)))
+       (mv-let (err val state) ,call
+	       (let ((ens (compress1 old-name (access enabled-structure old-ens :theory-array))))
+		 (declare (ignore ens))
+		 (mv err val state))))))
