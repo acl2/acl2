@@ -13,6 +13,7 @@
 ;;
 
 (defun fixequiv (x y)
+  (declare (type t x y))
   (equal (fix x) (fix y)))
 
 (defthm acl2-numberp-fix
@@ -87,8 +88,13 @@
 ;;
 ;; fixlist-equiv
 ;;
+;; It would be nice to have more list facts in place before doing this.
+;;
+;; In particular, it would be nice to assert that list::equiv refines
+;; this equivalence.
 
 (defun fixlist (list)
+  (declare (type t list))
   (if (consp list)
       (cons (fix (car list))
             (fixlist (cdr list)))
@@ -109,22 +115,57 @@
    (equal (fixlist list) list)))
 
 (defun fixlist-equiv (x y)
+  (declare (type t x y))
+  (if (consp x)
+      (and (consp y)
+	   (fixequiv (car x) (car y))
+	   (fixlist-equiv (cdr x) (cdr y)))
+    (not (consp y))))
+
+(defun fixlist-equiv-alt (x y)
+  (declare (type t x y))
   (equal (fixlist x)
          (fixlist y)))
 
+(defthmd fixlist-equiv-to-fixlist-equiv-alt
+  (equal (fixlist-equiv x y)
+	 (fixlist-equiv-alt x y))
+  :hints (("Goal" :induct (fixlist-equiv x y)
+	   :in-theory (enable fixequiv))))
+
+(local (in-theory (enable fixlist-equiv-to-fixlist-equiv-alt)))
+
 (defequiv fixlist-equiv)
 
-(defthm fixlist-equiv-definition
-  (equal (fixlist-equiv x y)
-         (if (consp x)
-             (and (consp y)
-                  (fixequiv (car x) (car y))
-                  (fixlist-equiv (cdr x) (cdr y)))
-           (not (consp y))))
-  :hints (("Goal" :in-theory (enable equal-fix)))
-  :rule-classes (:definition))
-
 (defthm fixlist-equiv-fixlist-reduction
-  (fixlist-equiv (fixlist x) x))
+  (implies
+   (acl2-number-listp x)
+   (equal (fixlist x) x)))
 
-(in-theory (disable fixlist-equiv))
+(defthmd equal-fixlist
+  (equal (equal x (fixlist y))
+	 (and (acl2-number-listp x)
+	      (fixlist-equiv x y))))
+
+(theory-invariant 
+ (incompatible
+  (:rewrite equal-fixlist)
+  (:definition fixlist-equiv)))
+
+(theory-invariant 
+ (incompatible
+  (:rewrite equal-fixlist)
+  (:definition fixlist-equiv-to-fixlist-equiv-alt)))
+
+(defcong fixlist-equiv fixlist-equiv (cons a x) 2)
+
+(defcong fixequiv fixlist-equiv (cons a x) 1)
+
+(defcong fixlist-equiv fixlist-equiv (append x y) 1
+  :hints (("Goal" :in-theory (disable fixlist-equiv-to-fixlist-equiv-alt))))
+
+(defcong fixlist-equiv fixlist-equiv (append x y) 2
+  :hints (("Goal" :induct (append x y)
+	   :in-theory (enable append))))
+
+(in-theory (disable fixlist-equiv-to-fixlist-equiv-alt))
