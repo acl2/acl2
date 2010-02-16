@@ -733,12 +733,13 @@
          ;; We finally make a deftheory event with the following name, which
          ;; holds all of these theorems:
 
-         (theory<p>         (mksym (app "theory" wrap) in-package))
-         (suffix            (mksym wrap in-package))
-         (thm-names         (append (INSTANCE::defthm-names *theorems*)
+         ;(theory<p>         (mksym (app "theory" wrap) in-package))
+         ;(suffix            (mksym wrap in-package))
+         #+joe
+	 (thm-names         (append (INSTANCE::defthm-names *theorems*)
                                     (INSTANCE::defthm-names *final-theorems*)))
-         (thm-name-map      (INSTANCE::create-new-names thm-names suffix))
-         (theory<p>-defthms (sublis thm-name-map thm-names))
+         ;(thm-name-map      (INSTANCE::create-new-names thm-names suffix))
+         ;(theory<p>-defthms (sublis thm-name-map thm-names))
 
          )
 
@@ -921,6 +922,7 @@
         ;; easily turn off the reasoning about these functions when you 
         ;; don't need it.  We do that with the following event:
 
+        #+joe
         (deftheory ,theory<p> '(,@theory<p>-defthms
                                 ,all<p>              ,all-list<p>
                                 ,exists<p>           ,exists-list<p>

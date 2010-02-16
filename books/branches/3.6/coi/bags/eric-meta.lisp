@@ -2013,8 +2013,10 @@
 
 
 (defthm show-unique-memberp-and-subbagp-from-type-alist-memberp-case-iff
-  (iff (show-unique-memberp-and-subbagp-from-type-alist-memberp-case a v x bag entry fact type-alist w whole-type-alist)
-       (hyp-for-show-unique-memberp-and-subbagp-from-type-alist-memberp-case a v x bag entry fact type-alist w whole-type-alist)))
+  (implies
+   (force fact) ; added with soundness bug fix for v3-6-1
+   (iff (show-unique-memberp-and-subbagp-from-type-alist-memberp-case a v x bag entry fact type-alist w whole-type-alist)
+        (hyp-for-show-unique-memberp-and-subbagp-from-type-alist-memberp-case a v x bag entry fact type-alist w whole-type-alist))))
 
 ;(in-theory (disable show-unique-memberp-and-subbagp-from-type-alist-memberp-case
 ;                    hyp-for-show-unique-memberp-and-subbagp-from-type-alist-memberp-case))
@@ -2270,8 +2272,10 @@
                           
 
 (defthm hyp-for-show-unique-memberps-from-type-alist-memberp-case-iff
-  (iff (hyp-for-show-unique-memberps-from-type-alist-memberp-case a v b bag entry fact type-alist w whole-type-alist)
-       (show-unique-memberps-from-type-alist-memberp-case a v b bag entry fact type-alist w whole-type-alist)))
+  (implies
+   (force fact) ; added with soundness bug fix for v3-6-1
+   (iff (hyp-for-show-unique-memberps-from-type-alist-memberp-case a v b bag entry fact type-alist w whole-type-alist)
+        (show-unique-memberps-from-type-alist-memberp-case a v b bag entry fact type-alist w whole-type-alist))))
 
 (defun hyp-for-show-unique-memberps-from-type-alist-subbagp-case-1 (a v b bag entry fact type-alist w whole-type-alist)
   (declare (ignore type-alist entry)

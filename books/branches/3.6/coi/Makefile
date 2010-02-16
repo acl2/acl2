@@ -14,6 +14,9 @@ DIRS =	symbol-fns \
 	defpun \
 	defstructure \
 	super-ihs \
-	gacc
+	gacc \
+	gensym \
+        generalize \
+	quantification
 
 include ../Makefile-subdirs

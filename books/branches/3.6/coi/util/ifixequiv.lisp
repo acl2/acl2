@@ -9,6 +9,7 @@
 (include-book "fixequiv")
 
 (defun ifixequiv (x y)
+  (declare (type t x y))
   (equal (ifix x) (ifix y)))
 
 (defequiv ifixequiv)
@@ -19,14 +20,6 @@
 
 (defthm ifixequiv-ifix
   (ifixequiv (ifix x) x))
-
-
-
-#+joe
-(defthm default-ifix
-  (implies
-   (not (integerp x))
-   (ifixequiv x 0)))
 
 (defcong ifixequiv equal (ifix x) 1)
 
