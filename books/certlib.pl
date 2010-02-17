@@ -28,10 +28,7 @@ use File::Basename;
 use File::Spec;
 use Cwd;
 use Cwd 'abs_path';
-use FindBin qw($RealBin);
-
-
-my $BASE_PATH = abs_canonical_path(".");
+# use FindBin qw($RealBin);
 
 
 sub human_time {
@@ -98,6 +95,8 @@ sub abs_canonical_path {
     }
 }
 
+my $BASE_PATH = abs_canonical_path(".");
+
 
 sub canonical_path {
     my $abs_path = abs_canonical_path(shift);
@@ -152,13 +151,15 @@ sub get_cert_time {
 	    my $regexp = "^([0-9]*\\.[0-9]*)user ([0-9]*\\.[0-9]*)system";
 	    my @res = $the_line =~ m/$regexp/;
 	    if (@res) {
+		close $timefile;
 		return 0.0 + $res[0] + $res[1];
 	    }
 	}
 	push(@$warnings, "Corrupt timings in $path\n");
+	close $timefile;
 	return 0;
     } else {
-	push(@$warnings, "Could not open $path\n");
+	push(@$warnings, "Could not open $path: $!\n");
 	return 0;
     }
 }
@@ -443,7 +444,14 @@ my $debugging = 0;
 my $clean_certs = 0;
 my $print_deps = 0;
 my $all_deps = 0;
-my %dirs = ( "SYSTEM" => $RealBin );
+
+my %dirs = ( );
+
+sub certlib_add_dir {
+    my $name = shift;
+    my $dir = shift;
+    $dirs{$name} = $dir;
+}
 
 sub certlib_set_opts {
     my $opts = shift;
@@ -451,6 +459,12 @@ sub certlib_set_opts {
     $clean_certs = $opts->{"clean_certs"};
     $print_deps = $opts->{"print_deps"};
     $all_deps = $opts->{"all_deps"};
+}
+
+sub certlib_set_base_path {
+    my $dir = shift;
+    $dir = $dir || ".";
+    $BASE_PATH = abs_canonical_path($dir);
 }
 
 sub get_add_dir {
@@ -604,22 +618,25 @@ sub scan_ld {
     print "scan_ld $fname\n" if $debugging;
 
     push (@{$deps}, $fname);
-    open(my $ld, "<", $fname);
-    while (my $the_line = <$ld>) {
-	my $incl = get_include_book($fname, $the_line, $local_dirs);
-	my $depend =  $incl || get_depends_on($fname, $the_line, $local_dirs);
-	my $ld = $depend || get_ld($fname, $the_line, $local_dirs);
-	my $add = $ld || get_add_dir($fname, $the_line, $local_dirs);
-	if ($incl) {
-	    push(@{$deps}, $incl);
-	} elsif ($depend) {
-	    push(@{$deps}, $depend);
-	} elsif ($ld) {
-	    push(@{$deps}, $ld);
-	    scan_ld($ld, $deps, $local_dirs);
+    if (open(my $ld, "<", $fname)) {
+	while (my $the_line = <$ld>) {
+	    my $incl = get_include_book($fname, $the_line, $local_dirs);
+	    my $depend =  $incl || get_depends_on($fname, $the_line, $local_dirs);
+	    my $ld = $depend || get_ld($fname, $the_line, $local_dirs);
+	    my $add = $ld || get_add_dir($fname, $the_line, $local_dirs);
+	    if ($incl) {
+		push(@{$deps}, $incl);
+	    } elsif ($depend) {
+		push(@{$deps}, $depend);
+	    } elsif ($ld) {
+		push(@{$deps}, $ld);
+		scan_ld($ld, $deps, $local_dirs);
+	    }
 	}
+	close($ld);
+    } else {
+	print "Warning: Could not open $fname: $!\n";
     }
-    close($ld);
 }
 
 sub scan_book {
@@ -631,18 +648,21 @@ sub scan_book {
 
     if ($fname) {
 	# Scan the lisp file for include-books.
-	open(my $lisp, "<", $fname);
-	while (my $the_line = <$lisp>) {
-	    my $incl = get_include_book($fname, $the_line, $local_dirs);
-	    my $dep = $incl || get_depends_on($fname, $the_line, $local_dirs);
-	    my $add = $dep || get_add_dir($fname, $the_line, $local_dirs);
-	    if ($incl) {
-		push(@{$deps},$incl);
-	    } elsif ($dep) {
-		push(@{$deps}, $dep);
+	if (open(my $lisp, "<", $fname)) {
+	    while (my $the_line = <$lisp>) {
+		my $incl = get_include_book($fname, $the_line, $local_dirs);
+		my $dep = $incl || get_depends_on($fname, $the_line, $local_dirs);
+		my $add = $dep || get_add_dir($fname, $the_line, $local_dirs);
+		if ($incl) {
+		    push(@{$deps},$incl);
+		} elsif ($dep) {
+		    push(@{$deps}, $dep);
+		}
 	    }
+	    close($lisp);
+	} else {
+	    print "Warning: Could not open $fname: $!\n";
 	}
-	close($lisp);
     }
 }
     
@@ -730,17 +750,21 @@ sub add_deps {
     }
 
     if ($imagefile) {
-	open(my $im, "<", $imagefile);
-	my $line = <$im>;
-	chomp $line;
-	if ($line && ($line ne "acl2")) {
-	    my $image = canonical_path(rel_path(dirname($base), $line));
-	    if (! -e $image) {
-		$image = substr(`which $line`,0,-1);
+	if (open(my $im, "<", $imagefile)) {
+	    my $line = <$im>;
+	    chomp $line;
+	    if ($line && ($line ne "acl2")) {
+		my $image = canonical_path(rel_path(dirname($base), $line));
+		if (! -e $image) {
+		    $image = substr(`which $line`,0,-1);
+		}
+		if (-e $image) {
+		    push(@{$deps}, canonical_path($image));
+		}
 	    }
-	    if (-e $image) {
-		push(@{$deps}, canonical_path($image));
-	    }
+	    close $im;
+	} else {
+	    print "Warning: Could not open $imagefile: $!\n";
 	}
     }
 
@@ -780,13 +804,20 @@ sub add_deps {
 sub read_targets {
     my $fname=shift;
     my $targets=shift;
-    open (my $tfile, $fname);
-    while (my $the_line = <$tfile>) {
-	chomp($the_line);
-	$the_line =~ m/^\s*([^\#]*[^\#\s])?/;
-	my $fname = $1;
-	if ($fname && (length($fname) > 0)) {
-	    push (@{$targets}, $fname);
+    if (open (my $tfile, $fname)) {
+	while (my $the_line = <$tfile>) {
+	    chomp($the_line);
+	    $the_line =~ m/^\s*([^\#]*[^\#\s])?/;
+	    my $fname = $1;
+	    if ($fname && (length($fname) > 0)) {
+		push (@{$targets}, $fname);
+	    }
 	}
+	close $tfile;
+    } else {
+	print "Warning: Could not open $fname: $!\n";
     }
 }
+
+# The following "1" is here so that loading this file with "do" or "require" will succeed:
+1;

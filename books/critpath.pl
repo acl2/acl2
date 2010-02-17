@@ -136,6 +136,10 @@ my %certlib_opts = ( "debugging" => 0,
 
 certlib_set_opts(\%certlib_opts);
 
+# add :dir :system as the path to this executable
+certlib_add_dir("SYSTEM", $RealBin);
+
+
 foreach my $target (@targets) {
     my $topfile = canonical_path($target);
     $topfile =~ s/\.lisp$/.cert/;

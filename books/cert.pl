@@ -51,7 +51,7 @@ use warnings;
 use FindBin qw($RealBin);
 use Getopt::Long qw(:config bundling_override);
 
-(do "$RealBin/certlib.pl") or die ("Error loading $RealBin/certlib.pl:\n $!");
+(do "$RealBin/certlib.pl") or die ("Error loading $RealBin/certlib.pl:\n!: $!\n\@: $@\n");
 
 my @orig_cmd_line_args = ();
 push (@orig_cmd_line_args, @ARGV);
@@ -260,6 +260,9 @@ GetOptions ("help|h"               => sub { print $summary_str;
 	    );
 
 certlib_set_opts(\%certlib_opts);
+
+# add :dir :system as the path to this executable
+certlib_add_dir("SYSTEM", $RealBin);
 
 
 push(@targets, @ARGV);
