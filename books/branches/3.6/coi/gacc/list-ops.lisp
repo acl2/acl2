@@ -378,7 +378,9 @@
 (defthmd wr-list-nil-to-clr-list
   (equal (wr-list ads nil ram)
          (clr-list ads ram))
-  :hints (("goal" :in-theory (e/d (wr-list memory-clr)
+  :hints (("goal" :in-theory (e/d (gacc::wr==wr
+				   GACC::MEMORY-CLR-DIFFERENTIAL 
+				   wr-list memory-clr)
                                   (wr==r!)))))
 
 (defthm wr-list-equal-rewrite
