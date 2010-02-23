@@ -16,6 +16,7 @@
 (include-book "coi/util/mv-nth" :dir :system)
 (include-book "coi/util/table" :dir :system)
 (include-book "coi/util/skip-rewrite" :dir :system)
+(include-book "coi/util/in-conclusion" :dir :system)
 
 (set-state-ok t)
 
@@ -479,8 +480,25 @@
 (defun rekey (key value)
   (and value `(,key ,value)))
 
-(defun defun-sk-fn (name args body doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls)
-  (let* ((exists-p (and (true-listp body)
+(defun generalize-witness-rec (n vars witness)
+  (if (consp vars)
+      (cons `(,(car vars) (gensym::generalize (acl2::hide (acl2::val ,n ,witness))))
+	    (generalize-witness-rec (1+ n) (cdr vars) witness))
+    nil))
+
+(defun generalize-witness (vars witness)
+  (if (equal (len vars) 1)
+      `((,(car vars) (gensym::generalize (acl2::hide ,witness))))
+    (generalize-witness-rec 0 vars witness)))
+
+(defun defun-sk-fn (name args body disable doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls)
+  (let* ((formula `(,name ,@args))
+	 (formula-by-multiplicity (intern-in-package-of-symbol
+				   (concatenate 'string
+						(symbol-name name)
+						"-BY-MULTIPLICITY")
+				   name))
+	 (exists-p (and (true-listp body)
 			(symbolp (car body))
 			(equal (symbol-name (car body))
 			       "EXISTS")))
@@ -543,14 +561,28 @@
 	:hints (("Goal" :expand (:free (x) (hide x))
 		 :in-theory (enable gensym::generalize))))
 
+      (defthm ,formula-by-multiplicity
+	(implies
+	 (acl2::in-conclusion-check ,formula :top ,(if exists-p t :negated))
+	 (equal ,formula
+		(let ,(generalize-witness bound-vars witness)
+		  ,body-guts)))
+	:hints (("Goal" :expand ((:free (x) (hide x))
+				 (:free (x) (gensym::generalize x))))))
+
       (add-generalization-pattern (hide ,witness-instance))
 
       (table::set 'quant-list (cons ',quant (table::get 'quant-list)))
       
+      ,@(and disable `((in-theory (disable ,name))))
+
       )))
   
 (defmacro def::un-sk (name args body &key doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls)
-  (defun-sk-fn name args body doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls))
+  (defun-sk-fn name args body nil doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls))
+
+(defmacro def::un-skd (name args body &key doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls)
+  (defun-sk-fn name args body t doc quant-ok skolem-name skolemize thm-name rewrite witness-dcls))
 
 ;; ===========================================================================
 
@@ -804,12 +836,36 @@
 	 (let ((res (merge-alist-list alist-list res)))
 	   (maximal-match-pattern-list-list hints quant (cdr plist-list) goal alist res state)))))
 
+
+(defun simple-pattern-match-predicate-in-goal (not fn args goal res)
+  (if (endp goal) res
+    (let ((term (car goal)))
+      (let ((negated (and (consp term) (equal (car term) 'not))))
+	(let ((term (if negated (cadr term) term)))
+	  (if (and (iff not negated)
+		   (consp term)
+		   (equal (car term) fn))
+	      (let ((alist (pairlis$ args (cdr term))))
+		(let ((res (add-new-alist alist res)))
+		  (simple-pattern-match-predicate-in-goal not fn args (cdr goal) res)))
+	    (simple-pattern-match-predicate-in-goal not fn args (cdr goal) res)))))))
+
 (defun maximal-instance-matching (hints type quant goal state)
   (declare (xargs :mode :program))
   (let ((body (quant-instance-body type quant)))
     (met ((err plist-list state) (bash-term-to-dnf body hints nil nil state))
 	 (declare (ignore err))
-	 (maximal-match-pattern-list-list hints quant plist-list goal nil nil state))))
+	 (met ((res state) (maximal-match-pattern-list-list hints quant plist-list goal nil nil state))
+	   ;;
+	   ;; Match on unopened quantified formulae
+	   ;;
+	   (let ((res (simple-pattern-match-predicate-in-goal (equal type (quant-type quant))
+							      (quant-name quant)
+							      (quant-bound quant)
+							      goal
+							      res)))
+	     (mv res state))))))
+
 
 ;; The -1 versions ..
 
