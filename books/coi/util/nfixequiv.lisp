@@ -8,7 +8,14 @@
 
 (include-book "ifixequiv")
 
+(defthm natp-implies-nfix-reduction
+  (implies
+   (natp x)
+   (equal (nfix x) x))
+  :hints (("Goal" :in-theory (enable nfix))))
+
 (defun nfixequiv (x y)
+  (declare (type t x y))
   (equal (nfix x) (nfix y)))
 
 (defequiv nfixequiv)
@@ -19,14 +26,6 @@
 
 (defthm nfixequiv-nfix
   (nfixequiv (nfix x) x))
-
-
-
-#+joe
-(defthm default-nfix
-  (implies
-   (not (natp x))
-   (nfixequiv x 0)))
 
 (defcong nfixequiv equal (nfix x) 1)
 

@@ -113,17 +113,40 @@ November 2002
 (defmacro join-symbols (witness &rest rst)
   `(intern-in-package-of-symbol (symbol-list-to-string (list ,@rst)) ,witness))
 
-(defmacro defrecord (name &key (rd 'nil) (wr 'nil) (clr 'nil) (fix 'ifix) (default 'nil) (typep 'integerp))
+(defun defrecord-fn (name rd rx wr clr fix default typep)
 
   (let* ((base name)
-         (default (if (null default) `(,fix nil) default))
-         (rd  (if (null rd)  (join-symbols name name '-rd) rd))
-         (wr  (if (null wr)  (join-symbols name name '-wr) wr))
-         (clr (if (null clr) (join-symbols name name '-clr) clr))
-         (wf  (join-symbols name 'wf-  typep))
-         (zp  (join-symbols name typep '-zp))
-         (wf-forward (join-symbols name wf '-forward))
-         )
+         (default  (or default `(,fix nil)))
+         (rd       (or rd  (join-symbols name name '-rd)))
+         (wr       (or wr  (join-symbols name name '-wr)))
+         (clr      (or clr (join-symbols name name '-clr)))
+	 (rx       (or rx  (join-symbols name name '-rx)))
+         (zp               (join-symbols name typep '-zp))
+         (wf               (join-symbols name 'wf-  typep))
+         (wf-forward       (join-symbols name wf '-forward))
+	 (rd-same-wr-hyps  (join-symbols base rd '-same- wr '-hyps))
+	 (rd-diff-wr-hyps  (join-symbols base rd '-diff- wr '-hyps))
+	 (wr-same-rd-hyps  (join-symbols base wr '-same- rd '-hyps))
+	 (wr-diff-wr-hyps  (join-symbols base wr '-diff- wr '-hyps))
+	 (wr-same-wr-hyps  (join-symbols base wr '-same- wr '-hyps))
+	 (rd-of-wr-redux   (join-symbols base rd '-of- wr '-redux))
+	 (wr-same-rd       (join-symbols base wr '-same- rd))
+	 (wr-same-wr       (join-symbols base wr '-same- wr))
+	 (typep-rd         (join-symbols base typep '- rd))
+	 (rd-over-clr      (join-symbols base rd '-over- clr))
+	 (clr-over-wr      (join-symbols base clr '-over- wr))
+	 (clr-over-clr     (join-symbols base clr '-over- clr))
+	 (clr-of-clr       (join-symbols base clr '-of- clr))
+	 (wr==r-hyp        (join-symbols base wr '==r-hyp))
+	 (wr==r            (join-symbols base wr '==r))
+	 (wr==wr-hyp       (join-symbols base wr '== wr '-hyp))
+	 (wr==wr           (join-symbols base wr '== wr))
+	 (wr==r!           (join-symbols base wr '==r!))
+         (clr-differential (join-symbols base clr '-differential))
+	 (rx-over-wr       (join-symbols base rx '-over- wr))
+	 (rx-over-clr      (join-symbols base rx '-over- clr))
+	 (equal-g-to-equal-rd-equal-rx (join-symbols base 'equal-g-to-equal- rd '-equal- rx))
+	 )
 
     `(encapsulate
       ()
@@ -166,113 +189,109 @@ November 2002
             ,default)))
       
       
-      (defthm ,(join-symbols base rd '-same- wr '-hyps)
+      (defthm ,rd-same-wr-hyps
         (implies (equal a b)
                  (equal (,rd a (,wr b v r)) 
                         (,fix v))))
       
-      (defthm ,(join-symbols base rd '-diff- wr '-hyps)
+      (defthm ,rd-diff-wr-hyps
         (implies (not (equal a b))
                  (equal (,rd a (,wr b v r))
                         (,rd a r))))
       
-      (defthm ,(join-symbols base wr '-same- rd '-hyps)
+      (defthm ,wr-same-rd-hyps
         (implies (equal a b)
                  (equal (,wr a (,rd b r) r) 
                         r)))
       
-      (defthm ,(join-symbols base wr '-diff- wr '-hyps)
+      (defthm ,wr-diff-wr-hyps
         (implies (not (equal a b))
                  (equal (,wr b y (,wr a x r))
                         (,wr a x (,wr b y r))))
         :rule-classes ((:rewrite :loop-stopper ((b a ,wr)))))
       
-      (defthm ,(join-symbols base wr '-same- wr '-hyps)
+      (defthm ,wr-same-wr-hyps
         (implies (equal a b)
                  (equal (,wr a y (,wr b x r))
                         (,wr a y r))))
       
-      (defthm ,(join-symbols base rd '-of- wr '-redux)
+      (defthm ,rd-of-wr-redux
         (equal (,rd a (,wr b v r))
                (if (equal b a) (,fix v)
                  (,rd a r)))
         :hints (("goal" :in-theory (disable ,fix ,rd ,wr))))
       
-      (defthm ,(join-symbols base wr '-same- rd)
+      (defthm ,wr-same-rd
         (equal (,wr a (,rd a r) r) 
                r))
       
-      (defthm ,(join-symbols base wr '-same- wr)
+      (defthm ,wr-same-wr
         (equal (,wr a y (,wr a x r))
                (,wr a y r)))
       
-      (defthm ,(join-symbols base typep '- rd)
-        (and (,typep (,rd a r))
-             (equal (,fix (,rd a r))
-                    (,rd a r))))
+      (defthm ,typep-rd
+        (,typep (,rd a r))
+	:rule-classes (:rewrite
+		       (:forward-chaining :trigger-terms ((,rd a r)))))
 
       (defun ,clr (a m)
         (,wr a ,default m))
 
-      (defthm ,(join-symbols base rd '-over- clr)
+      (defthm ,rd-over-clr
         (equal (,rd a1 (,clr a2 r))
                (if (equal a1 a2) (,fix nil)
                  (,rd a1 r)))
         :hints (("goal" :in-theory (enable g-of-s-redux))))
       
-      (defthm ,(join-symbols base clr '-over- wr)
+      (defthm ,clr-over-wr
         (equal (,clr a1 (,wr a2 v r))
                (if (equal a1 a2) (,clr a1 r)
                  (,wr a2 v (,clr a1 r)))))
       
-      (defthm ,(join-symbols base clr '-over- clr)
+      (defthm ,clr-over-clr
         (implies 
          (not (equal a1 a2))
          (equal (,clr a1 (,clr a2 r))
                 (,clr a2 (,clr a1 r)))))
 
-      (defthm ,(join-symbols base clr '-of- clr)
+      (defthm ,clr-of-clr
         (equal (,clr a (,clr a r))
                (,clr a r)))
     
-      (defun ,(join-symbols base wr '==r-hyp) (v a r)
+      (defun ,wr==r-hyp (v a r)
         (declare (type t v a r))
         (equal (,fix v) (,rd a r)))
 
-      (defthm ,(join-symbols base wr '==r)
+      (defthm ,wr==r
         (implies
          (and 
-          (,(join-symbols base wr '==r-hyp) v a r1)
+          (,wr==r-hyp v a r1)
           (equal r2 r1))
-         ;(and (equal (equal r1 (,wr a v r2)) 
-         ;            t)
-              (equal (equal (,wr a v r2) r1) 
-                     t)
-         ;     )
-         ))
+	 (equal (equal (,wr a v r2) r1) 
+		t)))
 
-      (defun ,(join-symbols base wr '== wr '-hyp) (v1 v2)
+      (defun ,wr==wr-hyp (v1 v2)
         (declare (type t v1 v2))
         (equal (,fix v1) (,fix v2)))
 
-      (in-theory (disable (,(join-symbols base wr '== wr '-hyp))))
+      (in-theory (disable (,wr==wr-hyp)))
 
-      (defthm ,(join-symbols base wr '== wr)
+      (defthmd ,wr==wr
         (implies
          (and 
           (equal a1 a2)
-          (,(join-symbols base wr '== wr '-hyp) v1 v2)
+          (,wr==wr-hyp v1 v2)
           (equal r2 r1))
          (equal (equal (,wr a1 v1 r1) (,wr a2 v2 r2))
                 t)))
 
-      (defthm ,(join-symbols base wr '==r!)
+      (defthm ,wr==r!
         (equal (equal r1 (,wr a v r2))
                (and (tag-location a (equal (,rd a r1) (,fix v)))
                     (equal (,clr a r1)
                            (,clr a r2)))))
       
-      (defthm ,(join-symbols base clr '-differential)
+      (defthmd ,clr-differential
         (implies
          (equal (,clr a r1) (,clr a r2))
          (equal (equal r1 r2)
@@ -280,11 +299,35 @@ November 2002
                        (,rd a r2))))
         :hints (("goal" :do-not '(preprocess))))
       
-      (in-theory (disable ;,(join-symbols base wr '==r!)
-                  ,(join-symbols base rd '-of- wr '-redux)
-                  ,rd ,wr ,clr))
+      ;; Default value reader ..
+
+      (defun ,rx (a m)
+	(g a (,clr a m)))
+
+      (defthm ,rx-over-wr
+	(equal (,rx a (,wr b v st))
+	       (,rx a st))
+	:hints (("Goal" :cases ((equal a b)))))
+      
+      (defthm ,rx-over-clr
+	(equal (,rx a (,clr b st))
+	       (,rx a st))
+	:hints (("Goal" :cases ((equal a b)))))
+
+      (defthmd ,equal-g-to-equal-rd-equal-rx
+	(equal (equal (g a r1) (g a r2))
+	       (and
+		(equal (,rd a r1) (,rd a r2))
+		(equal (,rx a r1) (,rx a r2)))))
+
+      (in-theory (disable
+                  ,rd-of-wr-redux
+                  ,rd ,rx ,wr ,clr))
 
       )))
+
+(defmacro defrecord (name &key (rd 'nil) (rx 'nil) (wr 'nil) (clr 'nil) (fix 'ifix) (default 'nil) (typep 'integerp))
+  (defrecord-fn name rd rx wr clr fix default typep))
 
 (local
  (encapsulate

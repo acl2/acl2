@@ -158,7 +158,8 @@
                        (wr a v2 ram2))
                 (not (equal ram1 ram2)))
            (equal (equal (rd a ram1) (rd a ram2))
-                  nil)))
+                  nil))
+  :hints (("Goal" :in-theory (enable GACC::MEMORY-CLR-DIFFERENTIAL))))
 
 (defthm clr-equal-differential-one
   (implies (and (equal (memory-clr a ram1)

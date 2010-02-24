@@ -8,6 +8,12 @@
 
 (include-book "fixequiv")
 
+(defthm integerp-implies-ifix-reduction
+  (implies
+   (integerp x)
+   (equal (ifix x) x))
+  :hints (("Goal" :in-theory (enable ifix))))
+
 (defun ifixequiv (x y)
   (declare (type t x y))
   (equal (ifix x) (ifix y)))

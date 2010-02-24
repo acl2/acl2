@@ -353,6 +353,9 @@
 ./coi/gacc/top.cert
 ./coi/gacc/tr-path-connection.cert
 ./coi/gacc/wrap.cert
+./coi/generalize/generalize.cert
+./coi/gensym/gensym-list.cert
+./coi/gensym/gensym.cert
 ./coi/lists/acl2-count.cert
 ./coi/lists/basic.cert
 ./coi/lists/disjoint.cert
@@ -408,6 +411,7 @@
 ./coi/paths/meta.cert
 ./coi/paths/path.cert
 ./coi/paths/pm.cert
+./coi/quantification/quantification.cert
 ./coi/records/defarray.cert
 ./coi/records/defrecord-fast.cert
 ./coi/records/defrecord.cert

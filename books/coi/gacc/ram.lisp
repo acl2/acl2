@@ -711,6 +711,8 @@
                             blk-rec
                             open-blk-rec
                             wr-list
+			    gacc::wr==wr
+			    GACC::MEMORY-CLR-DIFFERENTIAL 
                                         ;open-wx-rec
                             )
                            (wr==r!
