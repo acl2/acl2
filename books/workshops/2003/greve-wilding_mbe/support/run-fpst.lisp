@@ -380,7 +380,8 @@ The pathfinder can be run from the ACL2 read-eval-print loop.
 
 First, load this book
 
-   ACL2 !>(include-book "run-fpst")
+   ACL2 !>(include-book
+           "run-fpst")
    Loading /accts/dagreve/local/src/acl2-2.8a/books/arithmetic/equalities.o
    start address -T 1827ecc Finished loading /accts/dagreve/local/src/acl2-2.8a/books/arithmetic/equalities.o
    Loading /accts/dagreve/local/src/acl2-2.8a/books/arithmetic/rational-listp.o

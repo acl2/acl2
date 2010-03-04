@@ -701,7 +701,8 @@
 
 #|
 
-(include-book "Adleman")
+(include-book
+ "Adleman")
 
 (set-ld-redefinition-action '(:warn . :overwrite) state)
 
