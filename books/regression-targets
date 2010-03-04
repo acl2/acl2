@@ -93,8 +93,8 @@
 
 ##############################
 ### Everything below is generated, except initial comment characters
-###(#) have been inserted at beginnings of lines according to the list
-###of excluded files and directories, above.
+### (# ) have been inserted at beginnings of lines according to the list
+### of excluded files and directories, above.
 ##############################
 
 ./arithmetic-2/floor-mod/floor-mod-helper.cert
