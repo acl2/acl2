@@ -2,7 +2,7 @@
 # regression; it was created by running:
 # make clean
 # make all-plus
-# find . -name '*.cert' | sort > regression-targets".
+# find . -name '*.cert' | sort > regression-targets
 
 # This file provides the list of targets to be built by cert.pl, a
 # build system for ACL2 books.  Cert.pl requires a list of targets to
@@ -32,7 +32,8 @@
 
 
 # To create a static stand-alone makefile (usable in systems without
-# Perl) for these targets, you can run:
+# Perl) for these targets, you can run the following, where the -acl2
+# argument is optional:
 
 # ./cert.pl -s <makefile-name>             \
 #           --targets regression-targets   \
@@ -80,64 +81,21 @@
 #    that the equal sign in the name confuses make.
 # workshops/2009/cowles-gamboa-triangle-square/triangle=square-materials
 
-#    Files omitted due to excluded directories:
-# ./fix-cert/fix-cert.cert
-# ./fix-cert/moved/test1.cert
-# ./fix-cert/moved/test1b.cert
-# ./fix-cert/moved/test1bb.cert
-# ./fix-cert/moved/test1bp.cert
-# ./fix-cert/moved/test1p.cert
-# ./fix-cert/moved/test1pb.cert
-# ./fix-cert/moved/test1pp.cert
-# ./fix-cert/moved/test2.cert
-# ./fix-cert/test-fix-cert0.cert
-# ./fix-cert/test-fix-cert1.cert
-# ./fix-cert/test-fix-cert2.cert
-# ./fix-cert/test1.cert
-# ./fix-cert/test1b.cert
-# ./fix-cert/test1bb.cert
-# ./fix-cert/test1bp.cert
-# ./fix-cert/test1p.cert
-# ./fix-cert/test1pb.cert
-# ./fix-cert/test1pp.cert
-# ./fix-cert/test2.cert
+# NOTE: The following need to be omitted if they are generated below.
+# (In general, these will only be generated under the UT development
+# directory.)
 
-# ./workshops/1999/multiplier/compiler.cert
-# ./workshops/1999/multiplier/fmul-star.cert
-# ./workshops/1999/multiplier/fmul.cert
-# ./workshops/1999/multiplier/proof.cert
-# ./workshops/1999/multiplier/rtl.cert
-# ./workshops/1999/multiplier/spec.cert
+# arithmetic-4/ (and all its subdirectories)
+# clause-processors/SULFA/ (and all its subdirectories)
+# models/jvm/m5/apprentice.cert
+# nonstd/ (and all its subdirectories)
+# rtl/rel7/  (and all its subdirectories)
 
-# ./workshops/2003/greve-wilding-vanfleet/support/compatible.cert
-# ./workshops/2003/greve-wilding-vanfleet/support/consistency-test-passed.cert
-# ./workshops/2003/greve-wilding-vanfleet/support/firewallspec.cert
-# ./workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert
-# ./workshops/2003/greve-wilding-vanfleet/support/separation.cert
-
-# ./workshops/2003/kaufmann/support/input/defs-eq.cert
-# ./workshops/2003/kaufmann/support/input/defs-in.cert
-# ./workshops/2003/kaufmann/support/input/defs-out.cert
-# ./workshops/2003/kaufmann/support/input/inputs.cert
-# ./workshops/2003/kaufmann/support/input/lemmas-in.cert
-# ./workshops/2003/kaufmann/support/input/lemmas-out.cert
-# ./workshops/2003/kaufmann/support/rtl/bvecp-raw.cert
-# ./workshops/2003/kaufmann/support/rtl/bvecp.cert
-# ./workshops/2003/kaufmann/support/rtl/common.cert
-# ./workshops/2003/kaufmann/support/rtl/model-eq.cert
-# ./workshops/2003/kaufmann/support/rtl/model-macros.cert
-# ./workshops/2003/kaufmann/support/rtl/model-raw.cert
-# ./workshops/2003/kaufmann/support/rtl/model.cert
-# ./workshops/2003/kaufmann/support/rtl/package-defs.cert
-# ./workshops/2003/kaufmann/support/rtl/tool/file-io-pkgs.cert
-# ./workshops/2003/kaufmann/support/rtl/tool/simplify-defuns.cert
-# ./workshops/2003/kaufmann/support/rtl/tool/wrapper.cert
-
-# ./workshops/2009/cowles-gamboa-triangle-square/triangle=square-materials/log2.cert
-# ./workshops/2009/cowles-gamboa-triangle-square/triangle=square-materials/tri-sq.cert
-
-
-# Now the list of certificates:
+##############################
+### Everything below is generated, except initial comment characters
+###(#) have been inserted at beginnings of lines according to the list
+###of excluded files and directories, above.
+##############################
 
 ./arithmetic-2/floor-mod/floor-mod-helper.cert
 ./arithmetic-2/floor-mod/floor-mod.cert
@@ -270,6 +228,7 @@
 ./bdd/alu-proofs.cert
 ./bdd/alu.cert
 ./bdd/bdd-primitives.cert
+# ./bdd/benchmarks.cert
 ./bdd/bool-ops.cert
 ./bdd/cbf.cert
 ./bdd/hamming.cert
@@ -609,26 +568,26 @@
 ./finite-set-theory/osets/sort.cert
 ./finite-set-theory/set-theory.cert
 ./finite-set-theory/total-ordering.cert
-./fix-cert/fix-cert.cert
-./fix-cert/moved/test1.cert
-./fix-cert/moved/test1b.cert
-./fix-cert/moved/test1bb.cert
-./fix-cert/moved/test1bp.cert
-./fix-cert/moved/test1p.cert
-./fix-cert/moved/test1pb.cert
-./fix-cert/moved/test1pp.cert
-./fix-cert/moved/test2.cert
-./fix-cert/test-fix-cert0.cert
-./fix-cert/test-fix-cert1.cert
-./fix-cert/test-fix-cert2.cert
-./fix-cert/test1.cert
-./fix-cert/test1b.cert
-./fix-cert/test1bb.cert
-./fix-cert/test1bp.cert
-./fix-cert/test1p.cert
-./fix-cert/test1pb.cert
-./fix-cert/test1pp.cert
-./fix-cert/test2.cert
+# ./fix-cert/fix-cert.cert
+# ./fix-cert/moved/test1.cert
+# ./fix-cert/moved/test1b.cert
+# ./fix-cert/moved/test1bb.cert
+# ./fix-cert/moved/test1bp.cert
+# ./fix-cert/moved/test1p.cert
+# ./fix-cert/moved/test1pb.cert
+# ./fix-cert/moved/test1pp.cert
+# ./fix-cert/moved/test2.cert
+# ./fix-cert/test-fix-cert0.cert
+# ./fix-cert/test-fix-cert1.cert
+# ./fix-cert/test-fix-cert2.cert
+# ./fix-cert/test1.cert
+# ./fix-cert/test1b.cert
+# ./fix-cert/test1bb.cert
+# ./fix-cert/test1bp.cert
+# ./fix-cert/test1p.cert
+# ./fix-cert/test1pb.cert
+# ./fix-cert/test1pp.cert
+# ./fix-cert/test2.cert
 ./hacking/all.cert
 ./hacking/bridge.cert
 ./hacking/defcode.cert
@@ -1878,12 +1837,12 @@
 ./workshops/1999/mu-calculus/solutions/semantics.cert
 ./workshops/1999/mu-calculus/solutions/sets.cert
 ./workshops/1999/mu-calculus/solutions/syntax.cert
-./workshops/1999/multiplier/compiler.cert
-./workshops/1999/multiplier/fmul-star.cert
-./workshops/1999/multiplier/fmul.cert
-./workshops/1999/multiplier/proof.cert
-./workshops/1999/multiplier/rtl.cert
-./workshops/1999/multiplier/spec.cert
+# ./workshops/1999/multiplier/compiler.cert
+# ./workshops/1999/multiplier/fmul-star.cert
+# ./workshops/1999/multiplier/fmul.cert
+# ./workshops/1999/multiplier/proof.cert
+# ./workshops/1999/multiplier/rtl.cert
+# ./workshops/1999/multiplier/spec.cert
 ./workshops/1999/pipeline/b-ops-aux-def.cert
 ./workshops/1999/pipeline/b-ops-aux.cert
 ./workshops/1999/pipeline/basic-def.cert
@@ -2099,11 +2058,11 @@
 ./workshops/2003/gamboa-cowles-van-baalen/support/kalman-demo.cert
 ./workshops/2003/gamboa-cowles-van-baalen/support/kalman-proof.cert
 ./workshops/2003/gamboa-cowles-van-baalen/support/linalg.cert
-./workshops/2003/greve-wilding-vanfleet/support/compatible.cert
-./workshops/2003/greve-wilding-vanfleet/support/consistency-test-passed.cert
-./workshops/2003/greve-wilding-vanfleet/support/firewallspec.cert
-./workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert
-./workshops/2003/greve-wilding-vanfleet/support/separation.cert
+# ./workshops/2003/greve-wilding-vanfleet/support/compatible.cert
+# ./workshops/2003/greve-wilding-vanfleet/support/consistency-test-passed.cert
+# ./workshops/2003/greve-wilding-vanfleet/support/firewallspec.cert
+# ./workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert
+# ./workshops/2003/greve-wilding-vanfleet/support/separation.cert
 ./workshops/2003/greve-wilding_defrecord/support/defrecord.cert
 ./workshops/2003/greve-wilding_mbe/support/fpst.cert
 ./workshops/2003/greve-wilding_mbe/support/run-fpst.cert
@@ -2121,23 +2080,23 @@
 ./workshops/2003/hendrix/support/mtrans.cert
 ./workshops/2003/hendrix/support/mzero.cert
 ./workshops/2003/hendrix/support/vector.cert
-./workshops/2003/kaufmann/support/input/defs-eq.cert
-./workshops/2003/kaufmann/support/input/defs-in.cert
-./workshops/2003/kaufmann/support/input/defs-out.cert
-./workshops/2003/kaufmann/support/input/inputs.cert
-./workshops/2003/kaufmann/support/input/lemmas-in.cert
-./workshops/2003/kaufmann/support/input/lemmas-out.cert
-./workshops/2003/kaufmann/support/rtl/bvecp-raw.cert
-./workshops/2003/kaufmann/support/rtl/bvecp.cert
-./workshops/2003/kaufmann/support/rtl/common.cert
-./workshops/2003/kaufmann/support/rtl/model-eq.cert
-./workshops/2003/kaufmann/support/rtl/model-macros.cert
-./workshops/2003/kaufmann/support/rtl/model-raw.cert
-./workshops/2003/kaufmann/support/rtl/model.cert
-./workshops/2003/kaufmann/support/rtl/package-defs.cert
-./workshops/2003/kaufmann/support/rtl/tool/file-io-pkgs.cert
-./workshops/2003/kaufmann/support/rtl/tool/simplify-defuns.cert
-./workshops/2003/kaufmann/support/rtl/tool/wrapper.cert
+# ./workshops/2003/kaufmann/support/input/defs-eq.cert
+# ./workshops/2003/kaufmann/support/input/defs-in.cert
+# ./workshops/2003/kaufmann/support/input/defs-out.cert
+# ./workshops/2003/kaufmann/support/input/inputs.cert
+# ./workshops/2003/kaufmann/support/input/lemmas-in.cert
+# ./workshops/2003/kaufmann/support/input/lemmas-out.cert
+# ./workshops/2003/kaufmann/support/rtl/bvecp-raw.cert
+# ./workshops/2003/kaufmann/support/rtl/bvecp.cert
+# ./workshops/2003/kaufmann/support/rtl/common.cert
+# ./workshops/2003/kaufmann/support/rtl/model-eq.cert
+# ./workshops/2003/kaufmann/support/rtl/model-macros.cert
+# ./workshops/2003/kaufmann/support/rtl/model-raw.cert
+# ./workshops/2003/kaufmann/support/rtl/model.cert
+# ./workshops/2003/kaufmann/support/rtl/package-defs.cert
+# ./workshops/2003/kaufmann/support/rtl/tool/file-io-pkgs.cert
+# ./workshops/2003/kaufmann/support/rtl/tool/simplify-defuns.cert
+# ./workshops/2003/kaufmann/support/rtl/tool/wrapper.cert
 ./workshops/2003/matlin-mccune/support/simp.cert
 ./workshops/2003/moore_rockwell/support/memory-taggings.cert
 ./workshops/2003/moore_vcg/support/demo.cert
@@ -2403,8 +2362,8 @@
 ./workshops/2007/schmaltz/genoc-v1.0/instantiations/scheduling/circuit-scheduling.cert
 ./workshops/2007/schmaltz/genoc-v1.0/instantiations/scheduling/intersect.cert
 ./workshops/2007/schmaltz/genoc-v1.0/instantiations/scheduling/packet-scheduling.cert
-./workshops/2009/cowles-gamboa-triangle-square/triangle=square-materials/log2.cert
-./workshops/2009/cowles-gamboa-triangle-square/triangle=square-materials/tri-sq.cert
+# ./workshops/2009/cowles-gamboa-triangle-square/triangle=square-materials/log2.cert
+# ./workshops/2009/cowles-gamboa-triangle-square/triangle=square-materials/tri-sq.cert
 ./workshops/2009/fraij-roach/support/functions.cert
 ./workshops/2009/fraij-roach/support/theorems.cert
 ./workshops/2009/hardin/deque-stobj/deque-stobj.cert
