@@ -10,8 +10,9 @@
 
 ACL2 ?= acl2 
 
-export ACL2_SYSTEM_BOOKS := /v/filer4b/v11q001/acl2/devel/books
-include /v/filer4b/v11q001/acl2/devel/books/make_cert
+# export ACL2_SYSTEM_BOOKS := /v/filer4b/v11q001/acl2/devel/books
+# include /v/filer4b/v11q001/acl2/devel/books/make_cert
+include make_cert
 
 
 .PHONY: all-cert-pl-certs

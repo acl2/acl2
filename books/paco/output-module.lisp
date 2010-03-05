@@ -318,32 +318,49 @@
 ; the nume stack.  I then implement the basic operations on that
 ; stack, as described above.
 
+; The wormhole status of the nume-stack will be (:ENTER . stack).
+
 (defun reset-nume-stack nil
-  (assign-wormhole-output t 'nume-stack nil 'nil))
+  (wormhole-eval 'nume-stack
+                 '(lambda ()
+                    (make-wormhole-status nil :ENTER nil))
+                 nil))
 
 (defun push-nume-frame (nume)
-  (assign-wormhole-output t 'nume-stack nume
-                          '(cons (if (@ wormhole-input)
-                                     (list (@ wormhole-input))
-                                   nil)
-                                 (@ wormhole-output))))
+  (wormhole-eval 'nume-stack
+                 '(lambda (whs)
+                    (set-wormhole-data whs
+                                       (cons (if nume
+                                                 (list nume)
+                                                 nil)
+                                             (wormhole-data whs))))
+                 nil))
   
 (defun push-nume (nume)
   (if nume
-      (assign-wormhole-output t 'nume-stack nume
-                              '(cons (cons (@ wormhole-input)
-                                           (car (@ wormhole-output)))
-                                     (cdr (@ wormhole-output))))
-    nil))
+      (wormhole-eval 'nume-stack
+                     '(lambda (whs)
+                        (set-wormhole-data whs
+                                           (cons (cons nume (car (wormhole-data whs)))
+                                                 (cdr (wormhole-data whs)))))
+                     nil)
+      nil))
 
 (defun pop-nume-frame-nil ()
-  (assign-wormhole-output t 'nume-stack nil '(cdr (@ wormhole-output))))
+  (wormhole-eval 'nume-stack
+                 '(lambda (whs)
+                    (set-wormhole-data whs
+                                       (cdr (wormhole-data whs))))
+                 nil))
 
 (defun pop-nume-frame-t ()
-  (assign-wormhole-output t 'nume-stack nil
-                          '(cons (union-equal (car (@ wormhole-output))
-                                              (cadr (@ wormhole-output)))
-                                 (cddr (@ wormhole-output)))))
+  (wormhole-eval 'nume-stack
+                 '(lambda (whs)
+                    (set-wormhole-data whs
+                                       (cons (union-equal (car (wormhole-data whs))
+                                                          (cadr (wormhole-data whs)))
+                                             (cddr (wormhole-data whs)))))
+                 nil))
 
 ; And here is the basic macro that annotates a piece of code with
 ; nume stack handling.  See the example after the macro.
@@ -492,7 +509,7 @@
           (REMOVE-DUPLICATES-EQUAL
            (STRIP-CADRS
             (NUMES-TO-RUNES
-             (car (@ wormhole-output))
+             (car (wormhole-data (@ wormhole-status)))
              (@ ACL2::NUME-TO-RUNE-MAP))))))
      (CW
       "Subgoal ~x0~%~
@@ -521,10 +538,11 @@
       (IF (ENDP NAMES) 0 1)
       NAMES))
    (er-progn
-    (assign wormhole-output
-            (cons (union-equal (car (@ wormhole-output))
-                               (cadr (@ wormhole-output)))
-                  (cddr (@ wormhole-output))))
+    (assign wormhole-status
+            (set-wormhole-data (@ wormhole-status)
+                               (cons (union-equal (car (wormhole-data (@ wormhole-status)))
+                                                  (cadr (wormhole-data (@ wormhole-status))))
+                                     (cddr (wormhole-data (@ wormhole-status))))))
     (value :q))))
 
 (defmacro <apply-waterfall-process-id> (body)
@@ -537,7 +555,9 @@
       ((eq signal 'hit)
        (prog2$
         (wormhole
-         t 'nume-stack (list process id cl clauses hist-obj)
+         'nume-stack
+         '(lambda (whs) whs)
+         (list process id cl clauses hist-obj)
          '(apply-waterfall-process-msg-and-pop-nume-frame-t acl2::state)
          :ld-prompt nil
          :ld-verbose nil
@@ -554,7 +574,7 @@
    (cw "~x0~%"
        (CONS 'SUMMARY
              (NUMES-TO-RUNES
-              (CAR (@ wormhole-output))
+              (CAR (wormhole-data (@ wormhole-status)))
               (@ ACL2::NUME-TO-RUNE-MAP))))
    (value :q)))
 
@@ -562,7 +582,9 @@
   `(let ((proof-attempt
           (with-nume-tracking (proof-attempt) ,body :RESET t)))
      (prog2$
-      (wormhole t 'nume-stack nil
+      (wormhole 'nume-stack
+                '(lambda (whs) whs)
+                nil
                 '(prove-summary-msg acl2::state)
                 :ld-prompt nil
                 :ld-verbose nil

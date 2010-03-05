@@ -159,6 +159,10 @@
     assign-wormhole-output
     wormhole-input
     wormhole-output
+    wormhole-eval
+    make-wormhole-status
+    set-wormhole-data
+    wormhole-data
     er-progn
     assign
     @
