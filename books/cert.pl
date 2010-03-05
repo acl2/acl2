@@ -71,6 +71,7 @@ my $quiet = 0;
 my @run_sources = ();
 my @make_args = ();
 my $acl2 = $ENV{"ACL2"};
+my $acl2_books = $ENV{"ACL2_SYSTEM_BOOKS"};
 
 my %certlib_opts = ( "debugging" => 0,
 		     "clean_certs" => 0,
@@ -104,7 +105,15 @@ and options are as follows:
 
    --acl2 <cmd>
    -a <cmd>
-           Use <cmd> as the ACL2 executable.
+           Use <cmd> as the ACL2 executable, overriding the ACL2
+           environment variable and the location of an executable
+           named \"acl2\" in the PATH.
+
+   --acl2-books <dir>
+   -b <dir>
+           Use <dir> as the ACL2 system books directory, overriding
+           the ACL2_SYSTEM_BOOKS environment variable, the location of
+           acl2 in the PATH, and the location of this script.
 
    --clean-certs
    --cc
@@ -130,7 +139,7 @@ and options are as follows:
            default is Makefile-tmp.
 
    --verbose-deps
-   -v
+   -vthe path to this executable
            Print out dependency information as it\'s discovered.
 
    --makefile-only
@@ -227,6 +236,7 @@ GetOptions ("help|h"               => sub { print $summary_str;
 					   $certlib_opts{"all_deps"} = 1;
 					   $no_build = 1;},
 	    "acl2|a=s"             => \$acl2,
+	    "acl2-books|b=s"       => \$acl2_books,
 	    "include|i=s"          => sub {shift;
 					   push(@includes, shift);},
 	    "include-after|ia=s"     => sub {shift;
@@ -261,9 +271,46 @@ GetOptions ("help|h"               => sub { print $summary_str;
 
 certlib_set_opts(\%certlib_opts);
 
-# add :dir :system as the path to this executable
-certlib_add_dir("SYSTEM", $RealBin);
+# If $acl2_books is still not set, then:
+# - set it based on the location of acl2 in the path, if available
+# - otherwise set it to the directory containing this script.
 
+unless ($acl2) {
+    $acl2 = "acl2";
+}
+
+$acl2 = which($acl2);
+
+if ($acl2) {
+    $acl2 = abs_canonical_path($acl2);
+    unless($quiet || $no_build) {
+	print "ACL2 executable is ${acl2}\n";
+    }
+    $ENV{"ACL2"} = $acl2;
+} else {
+    unless ($quiet || $no_build) {
+	print
+"ACL2 executable not found.  Please specify with --acl2 command line
+flag or ACL2 environment variable.\n";
+    }
+}
+
+if (! $acl2_books) {
+    if ($acl2) {
+	$acl2_books = rel_path(dirname($acl2), "books");
+    } else {
+	$acl2_books = $RealBin;
+    }
+}
+$acl2_books = abs_canonical_path($acl2_books);
+unless($quiet) {
+    print "System books directory is ${acl2_books}\n";
+}
+
+certlib_add_dir("SYSTEM", $acl2_books);
+# In case we're going to run Make, set the ACL2_SYSTEM_BOOKS
+# and ACL2 environment variables to match our assumption.
+$ENV{"ACL2_SYSTEM_BOOKS"} = $acl2_books;
 
 push(@targets, @ARGV);
 
@@ -276,7 +323,7 @@ unless (@targets) {
     exit 1;
 }
 
-print "System dir is " . $RealBin . "\n" unless $quiet;
+
 
 foreach my $target (@targets) {
     $target = canonical_path($target);
@@ -316,15 +363,8 @@ unless ($no_makefile) {
     print $mf $mf_intro_string;
 
     unless ($no_boilerplate) {
-	unless ($acl2) {
-	    print "ACL2 executable defaults to acl2.  Set ACL2 environment variable
-or provide --acl2/-a option to override.\n" unless $quiet;
-	    $acl2 = "acl2";
-	}
-	print $mf "\nACL2 ?= $acl2 \n";
-	print $mf "\nexport ACL2_SYSTEM_BOOKS := $RealBin\n";
 	print $mf "include "
-	    . rel_path($RealBin, "make_cert")
+	    . canonical_path(rel_path($RealBin, "make_cert"))
 	    . "\n\n";
     }
 

@@ -23,6 +23,8 @@ ACL2_BOOKS_DEBUG ?=
 # Avoid loading customization file unless environment variable is already set.
 export ACL2-CUSTOMIZATION ?= NONE
 
+# Default ACL2 to whatever is in the path
+ACL2 ?= acl2
 
 %.cert: %.lisp
 	@echo "Making $*.cert on `date`" ;\

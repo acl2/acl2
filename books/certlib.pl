@@ -64,6 +64,9 @@ sub human_time {
 
 
 sub rel_path {
+# Composes two paths together.  Basically just builds "$base/$path"
+# but handles the special cases where $base is empty or $path is
+# absolute.
     my $base = shift;
     my $path = shift;
     if (substr($path,0,1) eq "/" || !$base) {
@@ -101,11 +104,31 @@ my $BASE_PATH = abs_canonical_path(".");
 sub canonical_path {
     my $abs_path = abs_canonical_path(shift);
     if ($BASE_PATH) {
-	return File::Spec->abs2rel($abs_path, $BASE_PATH);
+	my $relpath =  File::Spec->abs2rel($abs_path, $BASE_PATH);
+	return $relpath ? $relpath : ".";
     } else {
 	return $abs_path;
     }
 }
+
+sub which {
+    my $name = shift;
+    # test to see if this is just a filename with no directory -- is this correct?
+    if (basename($name) eq $name) {
+	foreach my $dir (split(":", $ENV{"PATH"})) {
+	    my $file = rel_path($dir, $name);
+	    if ((! -d $file) && -x $file) {
+		return abs_canonical_path($file);
+	    }
+	}
+    } elsif ((! -d $name) && -x $name) {
+	return abs_canonical_path($name);
+    }
+    return 0;
+}
+	
+
+
 
 
 sub short_cert_name {
@@ -756,7 +779,7 @@ sub add_deps {
 	    if ($line && ($line ne "acl2")) {
 		my $image = canonical_path(rel_path(dirname($base), $line));
 		if (! -e $image) {
-		    $image = substr(`which $line`,0,-1);
+		    $image = which($line);
 		}
 		if (-e $image) {
 		    push(@{$deps}, canonical_path($image));
