@@ -37,6 +37,7 @@
 
 # ./cert.pl -s <makefile-name>             \
 #           --targets regression-targets   \
+#           -b .
 #           --acl2 <acl2 executable>
 
 # or to create a static makefile that only contains dependency
