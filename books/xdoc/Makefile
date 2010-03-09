@@ -14,7 +14,7 @@ TAGS: $(wildcard *.lisp)
 
 .PHONY: moreclean
 moreclean:
-	rm -f .fmt-to-chars.tmp
+	rm -f .fmt-to-chars.tmp TAGS
 	rm -rf manual/*
 
 clean: moreclean
