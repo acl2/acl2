@@ -10,3 +10,11 @@ manual/success.txt: top.cert Makefile-trans $(wildcard *.xsl) xdoc.css frames.ht
 
 TAGS: $(wildcard *.lisp)
 	etags *.lisp
+
+
+.PHONY: moreclean
+moreclean:
+	rm -f .fmt-to-chars.tmp
+	rm -rf manual/*
+
+clean: moreclean
