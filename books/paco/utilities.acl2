@@ -156,13 +156,12 @@
 ; Used in the nume tracker
 
     wormhole
-    assign-wormhole-output
-    wormhole-input
-    wormhole-output
     wormhole-eval
+    wormhole-input
+    wormhole-status
     make-wormhole-status
-    set-wormhole-data
     wormhole-data
+    set-wormhole-data
     er-progn
     assign
     @
