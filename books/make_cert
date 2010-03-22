@@ -16,6 +16,8 @@
 # This file can be included in a GNU makefile (with SHELL set to bash)
 # to provide a rule for certifying ACL2 books.
 
+SHELL := $(shell which bash)
+
 COMPILE_FLG ?= t :ttags :all :skip-proofs-okp t
 INHIBIT ?= (set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote expansion)))
 ACL2_BOOKS_DEBUG ?=
