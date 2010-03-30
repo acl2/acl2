@@ -150,12 +150,11 @@
 
 (fact 3)
 
+;;; Modification by Matt K. for after ACL2 3.6.1 for early loading of compiled
+;;; files (see books/misc/evalable-printing.lisp):
 
-(defun my-get-global (v state)
-  (f-get-global v state))
+(trace* get-evalable-printing-abstractions)
 
-(trace* my-get-global)
-
-(my-get-global 'evalable-printing-abstractions state)
+(get-evalable-printing-abstractions state)
 
 ;|#

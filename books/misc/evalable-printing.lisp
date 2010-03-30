@@ -66,17 +66,14 @@
 (defconst *default-evalable-printing-abstractions*
   '(list list*-multiple cons))
 
+;;; Modification by Matt K. for after ACL2 3.6.1 for early loading of compiled
+;;; files, where the make-event expansion process cannot be assumed to take
+;;; place (rather, we just load the expansion).
 
-(make-event
- (pprogn
+(defun get-evalable-printing-abstractions (state)
   (if (f-boundp-global 'evalable-printing-abstractions state)
-    state
-    (f-put-global 'evalable-printing-abstractions
-                  *default-evalable-printing-abstractions*
-                  state))
-  (value '(value-triple :invisible)))
- :check-expansion t)
-
+      (f-get-global 'evalable-printing-abstractions state)
+    *default-evalable-printing-abstractions*))
 
 (defun lastcdr (x)
   (if (atom x)
@@ -125,8 +122,10 @@
 
 
 (defmacro make-evalable (x)
-  `(make-evalable-how ,x (@ evalable-printing-abstractions)))
+  `(make-evalable-how ,x (get-evalable-printing-abstractions state)))
 
 (defmacro make-evalable-with-stobjs (valx stobjs)
-  `(make-evalable-with-stobj-list-how ,valx ,stobjs (@ evalable-printing-abstractions)))
-
+  `(make-evalable-with-stobj-list-how
+    ,valx
+    ,stobjs
+    (get-evalable-printing-abstractions state)))

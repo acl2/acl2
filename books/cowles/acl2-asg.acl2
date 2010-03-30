@@ -7,5 +7,4 @@
 
 (certify-book 
   "acl2-asg"
-  1
-  nil)
+  1)

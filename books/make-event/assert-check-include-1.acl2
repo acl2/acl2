@@ -1,3 +1,5 @@
 (include-book "eval")
 
-(certify-book "assert-check-include-1" 1 t :save-expansion t)
+(setenv$ "ACL2_SAVE_EXPANSION" "t")
+
+(certify-book "assert-check-include-1" 1 t)

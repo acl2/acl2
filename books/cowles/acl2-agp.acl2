@@ -14,5 +14,4 @@
 
 (certify-book
   "acl2-agp"
-  2
-  nil)
+  2)

@@ -34,30 +34,6 @@
            (ignore name))
   (cw "Warning: proclaim-inline has not been redefined and is doing nothing."))
 
-(defun definline-fn (defun-fn args)
-  (declare (xargs :mode :program))
-  (if (not (consp args))
-      ;; This is the same message "defun" gives when it's unhappy.
-      (ACL2::er hard 'definline "A definition must be given three or more arguments, ~
-                                but ~x0 has length only 0.~%" args)
-    (let ((name (first args)))
-      (if (symbolp name)
-          `(ACL2::progn
-            ;; Need to check expansion to get them to work with included books.
-            (make-event (let ((invisible-work (proclaim-inline ',name)))
-                          (declare (ignore invisible-work))
-                          (value '(value-triple '(:proclaim-inline ,name))))
-                        :check-expansion t)
-            (,defun-fn ,@args))
-        ;; This is the same message "defun" gives when it's unhappy.
-        (ACL2::er hard 'definline "Names must be symbols and ~x0 is not.~%" name)))))
-
-(defmacro definline (&rest args)
-  (definline-fn 'defun args))
-
-(defmacro definlined (&rest args)
-  (definline-fn 'defund args))
-  
 (defttag definline)
 
 (progn!
@@ -66,4 +42,24 @@
    (progn
      (eval `(proclaim '(inline ,name)))
      nil)))
+
+(defun definline-fn (defun-fn args)
+  (declare (xargs :mode :program))
+  (if (not (consp args))
+      ;; This is the same message "defun" gives when it's unhappy.
+      (ACL2::er hard 'definline "A definition must be given three or more arguments, ~
+                                but ~x0 has length only 0.~%" args)
+    (let ((name (first args)))
+      (if (symbolp name)
+          `(progn
+             (value-triple (proclaim-inline ',name))
+             (,defun-fn ,@args))
+        ;; This is the same message "defun" gives when it's unhappy.
+        (ACL2::er hard 'definline "Names must be symbols and ~x0 is not.~%" name)))))
+
+(defmacro definline (&rest args)
+  (definline-fn 'defun args))
+
+(defmacro definlined (&rest args)
+  (definline-fn 'defund args))
 

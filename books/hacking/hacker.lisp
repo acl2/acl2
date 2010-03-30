@@ -833,6 +833,9 @@
     
     ))
 
+#|| Removed by Matt K. after ACL2 Version 3.6.1 in favor of the defmacro just
+    below,  because make-event expansion does not take place during (early)
+    loading of compiled files.
 (make-event ; used here like progn! without a ttag
  (er-progn
   (if (member-eq 'has-special-raw-definition
@@ -843,6 +846,17 @@
                 *bootstrap-special-raw-definitions*)))
   (value '(value-triple 'has-special-raw-definition)))
  :check-expansion t)
+||#
+
+(defmacro update-has-special-raw-definition (fn-lst)
+  `(pprogn (if (boundp-global 'has-special-raw-definition state)
+               state
+             (f-put-global 'has-special-raw-definition
+                           *bootstrap-special-raw-definitions*
+                           state))
+           (assign has-special-raw-definition
+                   (union-eq (@ has-special-raw-definition)
+                             ,fn-lst))))
 
 (push-untouchable has-special-raw-definition nil)
 
@@ -874,8 +888,7 @@
   (declare (xargs :guard (and fn-lst
                               (symbol-listp fn-lst))))
   `(progn!=touchable :vars has-special-raw-definition
-     (assign has-special-raw-definition
-       (union-eq (@ has-special-raw-definition) ',fn-lst))))
+     (update-has-special-raw-definition ',fn-lst)))
 
 ; for export
 (defmacro assert-no-special-raw-definition (&rest fn-lst)
@@ -900,10 +913,10 @@
   (declare (xargs :guard (and fn-lst
                               (symbol-listp fn-lst))))
   `(assert-event
-    (not (intersectp-eq (@ has-special-raw-definition)
+    (not (intersectp-eq (@opt has-special-raw-definition)
                         ',fn-lst))
     :msg (msg "Assertion failed.  Flagged as having special raw definition:~%~x0"
-              (intersection-eq (@ has-special-raw-definition)
+              (intersection-eq (@opt has-special-raw-definition)
                                ',fn-lst))
     :on-skip-proofs t))
 

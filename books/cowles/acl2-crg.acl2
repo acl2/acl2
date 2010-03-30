@@ -11,4 +11,4 @@
              *common-lisp-symbols-from-main-lisp-package*)
    '(zero)))
 
-(certify-book "acl2-crg" 2 nil)
+(certify-book "acl2-crg" 2)

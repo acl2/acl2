@@ -564,17 +564,19 @@
 
 ; -----------------------------------------------------------------
 ; CLTL-COMMAND [GLOBAL-VALUE]
+; TOP-LEVEL-CLTL-COMMAND-STACK [GLOBAL-VALUE]
 
-; The value is a raw lisp form to execute, e.g., (defconst name val).  But when
-; the car of the form is DEFUNS the general form is (DEFUNS defun-mode-flg
-; ignorep def1 def2 ...) and the raw lisp form to execute is actually (DEFUNS
-; def1' def2' ...), where the defi' are computed from the defi depending on
-; defun-mode-flg and ignorep.  Defun-Mode-flg is either nil (meaning the
-; function is :non-executable or the parent event is an encapsulate which is
-; trying to define the executable counterparts of the constrained functions;
-; either way, the effective defun-mode is :logic) or a defun-mode (meaning the
-; parent event is a DEFUNS and the defun-mode is the defun-mode of the defined
-; functions).  Ignorep is 'reclassifying, '(defstobj . stobj-name), or nil.
+; The value of CLTL-COMMAND is a raw lisp form to execute, e.g., (defconst name
+; val).  But when the car of the form is DEFUNS the general form is (DEFUNS
+; defun-mode-flg ignorep def1 def2 ...) and the raw lisp form to execute is
+; actually (DEFUNS def1' def2' ...), where the defi' are computed from the defi
+; depending on defun-mode-flg and ignorep.  Defun-Mode-flg is either nil
+; (meaning the function is :non-executable or the parent event is an
+; encapsulate which is trying to define the executable counterparts of the
+; constrained functions; either way, the effective defun-mode is :logic) or a
+; defun-mode (meaning the parent event is a DEFUNS and the defun-mode is the
+; defun-mode of the defined functions).  Ignorep is 'reclassifying, '(defstobj
+; . stobj-name), or nil.
 
 (defun pseudo-cltl-commandp (val)
   (case-match val
@@ -589,6 +591,14 @@
               (null ignorep))
           (pseudo-form-listp defs)))
     (& (pseudo-formp val))))
+
+; The value of TOP-LEVEL-CLTL-COMMAND-STACK is a list of CLTL-COMMAND objects.
+
+(defun pseudo-cltl-command-listp (val)
+  (cond ((atom val)
+         (null val))
+        (t (and (pseudo-cltl-commandp (car val))
+                (pseudo-cltl-command-listp (cdr val))))))
 
 ; -----------------------------------------------------------------
 ; INCLUDE-BOOK-ALIST [GLOBAL-VALUE]
@@ -1300,6 +1310,7 @@
     (COMMAND-NUMBER-BASELINE-INFO (command-number-baseline-infop val))
     (EMBEDDED-EVENT-LST (pseudo-embedded-event-lstp val))
     (CLTL-COMMAND (pseudo-cltl-commandp val))
+    (TOP-LEVEL-CLTL-COMMAND-STACK (pseudo-cltl-command-listp val))
     (INCLUDE-BOOK-ALIST (pseudo-include-book-alistp val))
     (INCLUDE-BOOK-ALIST-ALL (pseudo-include-book-alist-allp val))
     (INCLUDE-BOOK-PATH (pseudo-include-book-pathp val))
