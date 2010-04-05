@@ -72,7 +72,7 @@ my @run_sources = ();
 my @make_args = ();
 my $acl2 = $ENV{"ACL2"};
 my $acl2_books = $ENV{"ACL2_SYSTEM_BOOKS"};
-
+my $keep_going = 0;
 my %certlib_opts = ( "debugging" => 0,
 		     "clean_certs" => 0,
 		     "print_deps" => 0,
@@ -216,6 +216,11 @@ and options are as follows:
            Add command line arguments to make.  Multiple such
            directives may be given.
 
+   --keep-going
+   -k
+           Passes the -k/--keep-going flag to make, which causes it to
+           build as many targets as possible even after an error. Same
+           as "--make-args -k".
 ';
 
 GetOptions ("help|h"               => sub { print $summary_str;
@@ -263,6 +268,7 @@ GetOptions ("help|h"               => sub { print $summary_str;
 							print `$line`;})},
 	    "quiet|q"              => \$quiet,
 	    "make-args=s"          => \@make_args,
+            "keep-going|k"         => \$keep_going,
 	    "targets|t=s"          => sub { shift;
 					    read_targets(shift, \@targets);
 					},
@@ -422,7 +428,8 @@ unless ($no_makefile) {
     close($mf);
     
     unless ($no_build) {
-	my $make_cmd = join(' ', ("make -j $jobs -f $mf_name",
+	my $make_cmd = join(' ', (("make -j $jobs -f $mf_name"
+				   . ($keep_going ? " -k" : "")),
 				  @make_args));
 	if ($certlib_opts{"debugging"}) {
 	    print "$make_cmd\n";

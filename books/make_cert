@@ -58,10 +58,10 @@ ACL2 ?= acl2
 	then \
 	  cat cert.acl2 >> $$WORKXXXFILE ;\
 	  echo "" >> $$WORKXXXFILE ;\
-	  echo "(certify-book \"$$FILE\" ? $(COMPILE_FLG))" >> $$WORKXXXFILE ;\
+	  echo "(time$$ (certify-book \"$$FILE\" ? $(COMPILE_FLG)))" >> $$WORKXXXFILE ;\
 	else \
 	  echo "" >> $$WORKXXXFILE ;\
-	  echo "(certify-book \"$$FILE\" ? $(COMPILE_FLG))" >> $$WORKXXXFILE ;\
+	  echo "(time$$ (certify-book \"$$FILE\" ? $(COMPILE_FLG)))" >> $$WORKXXXFILE ;\
 	fi ;\
 	echo "" >> $$WORKXXXFILE ;\
         echo "(acl2::ld \"make_cert.lsp\" :dir :system)" >> $$WORKXXXFILE ;\
