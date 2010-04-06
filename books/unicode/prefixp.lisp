@@ -53,6 +53,16 @@
                   (prefixp (cdr x) y))
            t)))
 
+(defthm prefixp-of-list-fix-left
+  (equal (prefixp (list-fix x) y)
+         (prefixp x y))
+  :hints(("Goal" :in-theory (enable prefixp))))
+
+(defthm prefixp-of-list-fix-right
+  (equal (prefixp x (list-fix y))
+         (prefixp x y))
+  :hints(("Goal" :in-theory (enable prefixp))))
+
 (defthm len-when-prefixp
   (implies (prefixp x y)
            (equal (< (len y) (len x))
