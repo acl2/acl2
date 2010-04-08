@@ -371,7 +371,7 @@ dependencies:
 .PHONY: clean
 clean:
 	rm -f Makefile-deps
-	rm -f *.cert
+	rm -f *.cert *.cert.temp
 	rm -f *.h
 	rm -f *.c
 	rm -f *.o
