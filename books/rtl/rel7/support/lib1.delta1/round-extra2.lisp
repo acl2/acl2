@@ -5102,7 +5102,8 @@
                    (common-rounding-mode-p mode))
               (>= a (drnd x mode p q)))
      :hints (("Goal" :in-theory (enable sgn drnd rnd))
-             ("Subgoal 5" 
+;fcd/Satriani v3.7 Moore - used to be Subgoal 5
+             ("Subgoal 4"
               :use ((:instance near-choice
                                (x x)
                                (n (+ P (EXPO X) (* -1 (EXPO (SPN Q))))))))
@@ -5202,12 +5203,13 @@
                    (common-rounding-mode-p mode))
               (<= a (drnd x mode p q)))
      :hints (("Goal" :in-theory (enable ieee-mode-p drnd rnd))
-             ("Subgoal 2" 
-              :use ((:instance near+-choice
+; fcd/Satriani v3.7 Moore - used to be Subgoal 1
+             ("Subgoal 4" 
+              :use ((:instance near-choice
                                (x x)
                                (n (+ P (EXPO X) (* -1 (EXPO (SPN Q))))))))
-             ("Subgoal 1" 
-              :use ((:instance near-choice
+             ("Subgoal 2" 
+              :use ((:instance near+-choice
                                (x x)
                                (n (+ P (EXPO X) (* -1 (EXPO (SPN Q))))))))))
 

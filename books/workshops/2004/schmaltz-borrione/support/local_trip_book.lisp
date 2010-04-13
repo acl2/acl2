@@ -760,10 +760,11 @@
            :do-not '(eliminate-destructors generalize fertilize))
 ; Subgoal hints modified by Matt K. after ACL2 Version 3.6.1 for changes in
 ; too-many-ifs heuristic.  The first of these is just for backward
-; compatibility; the second is for the new ACL2.
+; compatibility and is irrelevant in modern proofs; the second is for the new ACL2.
           ("Subgoal 25"
            :expand (availablemovep route_triple n))
-          ("Subgoal 2.26"
+; fcd/Satriani v3.7 Moore - used to be Subgoal 2.26
+          ("Subgoal 2.22"
            :expand (all_intp route_triple))))
 
 

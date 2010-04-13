@@ -6897,8 +6897,10 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (build-values-by-rns (var-value gcell2) *rns*)))
  :hints (("Goal" :in-theory (enable my-or-2))
 	 ("Subgoal 5'''" :use (:instance goal15 (var-value-gcell2 (var-value gcell2))))
-	 ("Subgoal 4.1" :use subgoal41)
-	 ("Subgoal 2.1" :use subgoal21)))
+; fcd/Satriani v3.7 Moore - used to Subgoal 4.1
+	 ("Subgoal 1.1" :use subgoal41)
+; fcd/Satriani v3.7 Moore - used to Subgoal 2.1
+	 ("Subgoal 3.1" :use subgoal21)))
 
 
 

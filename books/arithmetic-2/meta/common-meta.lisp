@@ -865,9 +865,10 @@
       (equal (eva new-term a)
 	     (eva `(,bin-op ,new-piece ,term) a)))
     :hints (("Goal" :in-theory (disable pull-piece-out))
-	    ("Subgoal 6''" :use ((:instance pull-piece-up-correct
+;fcd/Satriani v3.7 Moore - used to be Subgoals 6'' and 5''
+	    ("Subgoal 7''" :use ((:instance pull-piece-up-correct
 					    (bin-op 'BINARY-+))))
-	    ("Subgoal 5''" :use ((:instance pull-piece-up-correct
+	    ("Subgoal 3''" :use ((:instance pull-piece-up-correct
 					     (bin-op 'BINARY-*)))))))
  
  ; This is the only theorem we export.

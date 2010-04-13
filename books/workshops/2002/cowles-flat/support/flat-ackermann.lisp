@@ -328,12 +328,14 @@ Heuristics suggest that second list should be right strict.
 		  (>= i 0))
 	     (<def= (g1-chain i x)
 		    (ub-g1-chain x)))
-    :hints (("Subgoal 8"
+; fcd/Satriani v3.7 Moore - used to be Subgoal 8
+    :hints (("Subgoal 2"
 	     :in-theory (disable lub-f1-chain-is-upper-bound)
 	     :use (:instance
 		   lub-f1-chain-is-upper-bound
 		   (x (list (- (car x) 1) 1))))
-	    ("Subgoal 3"
+; fcd/Satriani v3.7 Moore - used to be Subgoal 3
+	    ("Subgoal 6"
 	     :in-theory (disable lub-f1-chain-is-upper-bound)
 	     :use ((:instance
 		    lub-f1-chain-is-upper-bound

@@ -1404,11 +1404,15 @@ To certify this book:
   :rule-classes nil
   :hints (("Goal"
 	   :in-theory (disable (:definition nfix)))
-	  ("Subgoal 6"
+; fcd/Satriani v3.7 Moore - used to be Subgoal 6
+	  ("Subgoal 7"
 	   :use Subgoal-6-lemma)
-	  ("Subgoal 5"
-	   :use Subgoal-5-lemma)
+; fcd/Satriani v3.7 Moore - used to be Subgoal 5
 	  ("Subgoal 4"
-	   :use Subgoal-4-lemma)
+	   :use Subgoal-5-lemma)
+; fcd/Satriani v3.7 Moore - used to be Subgoal 4
 	  ("Subgoal 3"
+	   :use Subgoal-4-lemma)
+; fcd/Satriani v3.7 Moore - used to be Subgoal 3
+	  ("Subgoal 2"
 	   :use Subgoal-3-lemma)))

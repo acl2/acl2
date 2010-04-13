@@ -371,13 +371,16 @@
 ; Subgoal numbers changed by Matt K. for v2-9 (probably caused by call-stack
 ; change)
 
-	  ("Subgoal 20"
+; fcd/Satriani v3.7 Moore - used to be Subgoal 20
+	  ("Subgoal 12"
 	   :use ((:instance resolve-step-xsound)))
 	  ("Subgoal 16"
 	   :use ((:instance flip-step-xsound)))
-	  ("Subgoal 14"
+; fcd/Satriani v3.7 Moore - used to be Subgoal 14
+	  ("Subgoal 8"
 	   :use ((:instance instantiate-step-xsound)))
-	  ("Subgoal 10"
+; fcd/Satriani v3.7 Moore - used to be Subgoal 10
+	  ("Subgoal 20"
 	   :use ((:instance propositional-step-xsound)))
 	  ("Subgoal 4"
 	   :use ((:instance paramod-step-xsound)))

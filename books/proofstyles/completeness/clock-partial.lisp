@@ -49,7 +49,9 @@
  (defthm clock-fn-is-natp
   (implies (exitpoint (run-fn s k))
            (natp (clock-fn s)))
-  :rule-classes (:rewrite :forward-chaining :type-prescription)
+  :rule-classes (:rewrite
+                 ; :forward-chaining  ;fcd/Satriani v3.7 Moore
+                 :type-prescription)
   :hints (("Goal"
            :use ((:instance clock-fn-tail-inv
                             (steps 0))))))

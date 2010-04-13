@@ -669,7 +669,8 @@ to me).
            (lexicographic-temp (-> procs in (bake+-p (<- procs in) in procs
                                                      max))
                                (bake+-q (<- procs in) queue bucket max)))
-  :hints (("Subgoal 17"
+; fcd/Satriani v3.7 Moore - used to be Subgoal 17
+  :hints (("Subgoal 14"
             :in-theory (disable lexicographic-temp-if-something-else-set)
             :use ((:instance lexicographic-temp-if-something-else-set
                             (p (s :loc 4 (s :status 'wait (g in procs))))
@@ -804,12 +805,15 @@ to me).
 		    (bake+-max (<- procs in) max)))
   :hints (("Goal"
 	   :do-not-induct t)
-	  ("Subgoal 8"
+; fcd/Satriani v3.7 Moore - used to be Subgoal 8
+	  ("Subgoal 7"
 	   :cases ((equal in (current (<- procs in)))))
-	  ("Subgoal 4"
+; fcd/Satriani v3.7 Moore - used to be Subgoal 4
+	  ("Subgoal 6"
 	   :use ((:instance choosing-pos-pos-reduction
 			    (curr (current (<- procs in))))))
-	  ("Subgoal 2"
+; fcd/Satriani v3.7 Moore - used to be Subgoal 2
+	  ("Subgoal 4"
 	   :use ((:instance choosing-pos-pos-reduction
 			    (curr (current (<- procs in))))
 		 (:instance lexicographic-pos-lex<-reduction
