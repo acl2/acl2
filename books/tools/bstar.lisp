@@ -253,9 +253,9 @@ examples, and additionally PATBIND-NTHS, PATBIND-ER, and so forth.
   (cond ((atom x) 
          (or (equal x nil)
              (cw "; Not a binder list; ends with ~x0, instead of nil.~%" x)))
-        ((and (consp (car x))
-              (consp (cdar x))
-              (true-listp (cddar x)))
+        ;; This used to check that the cdar was also a cons and a true-list,
+        ;; but this can be left up to the individual binders.
+        ((consp (car x))
          (debuggable-binder-list-p (cdr x)))
         (t
          (cw "; Not a binder list; first bad entry is ~x0.~%" (car x)))))

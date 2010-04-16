@@ -85,7 +85,10 @@
                          '(defined-const-memoize-fn))))
              `(progn (with-output
                       :stack :pop
-                      (defconst ,',',constname ',val))
+                      (defconst ,',',constname
+                        ,,,(if hons
+                               ```(hons-copy ',val)
+                               ```',val)))
                      (with-output
                       :stack :pop
                       (defthm ,',',thmname
