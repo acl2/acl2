@@ -5,6 +5,7 @@
 Makefile
 Readme.lsp
 pseudo-good-worldp.lisp
+too-many-ifs.lisp
 worldp-check.acl2
 worldp-check.lisp
 "
@@ -14,8 +15,8 @@ worldp-check.lisp
  (:Keywords "Logical World")
  (:ABSTRACT
 
-"These books check invariants on the ACL2 logical world.  The scope may broaden
-in the future."
+"These books check invariants on the ACL2 logical world and verify termination
+and guards of some system functions.  The scope may broaden in the future."
 )
  (:PERMISSION
 
