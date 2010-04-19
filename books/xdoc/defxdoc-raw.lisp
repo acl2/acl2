@@ -28,7 +28,8 @@
                        (cons :parents parents)
                        (cons :short short)
                        (cons :long long))))
-     (push entry *raw-xdoc-list*)))
+     (push entry *raw-xdoc-list*)
+     nil))
 
  (defxdoc-raw defxdoc-raw
    :parents (xdoc)
