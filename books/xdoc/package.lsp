@@ -18,7 +18,7 @@
    (union-eq (union-eq *acl2-exports*
                        *common-lisp-symbols-from-main-lisp-package*)
              ;; Things to add:
-             '(b* quit exit value defxdoc macro-args
+             '(b* quit exit value defxdoc defxdoc-raw macro-args
                   getprop formals justification def-bodies current-acl2-world def-body
                   access theorem untranslated-theorem guard))
    ;; Things to remove:
