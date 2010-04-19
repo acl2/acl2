@@ -3,6 +3,9 @@ include ../Makefile-generic
 
 BOOKS := $(filter-out acl2-customization,$(BOOKS))
 
+# This is really gross.
+COMPILE_FLG := t :ttags :all
+
 all: manual/success.txt TAGS
 
 manual/success.txt: top.cert Makefile-trans $(wildcard *.xsl) xdoc.css frames.html make-manual.lsp

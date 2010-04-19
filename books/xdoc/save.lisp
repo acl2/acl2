@@ -13,6 +13,7 @@
 
 (in-package "XDOC")
 (include-book "defxdoc")
+(include-book "defxdoc-raw")
 (include-book "names")
 (include-book "str/top" :dir :system)
 (include-book "unicode/read-file-characters" :dir :system)
@@ -87,11 +88,11 @@
 
 
 (defun fmt-to-chars-and-encode (string alist state acc) ;; ==> (MV ACC-PRIME STATE)
-  
+
 ; Like fmt, but HTML-escape the result and accumulate it onto acc (in reverse
 ; order) instead of printing it.
 
-  (mv-let (data state) 
+  (mv-let (data state)
           (fmt-to-chars string alist state)
           ;; We cdr the data because fmt puts in a newline.
           (let ((acc (simple-html-encode-chars (cdr data) acc)))
@@ -106,12 +107,12 @@
 (defun get-formals (fn world)
   (or (getprop fn 'formals nil 'current-acl2-world world)
       (getprop fn 'macro-args nil 'current-acl2-world world)
-      (cw "; xdoc note: get-formals failed for ~s0::~s1.~%" 
+      (cw "; xdoc note: get-formals failed for ~s0::~s1.~%"
           (symbol-package-name fn) (symbol-name fn))
-      (concatenate 'string 
-                   "Error getting formals for " 
+      (concatenate 'string
+                   "Error getting formals for "
                    (symbol-package-name fn)
-                   "::" 
+                   "::"
                    (symbol-name fn))))
 
 (defun get-measure (fn world)
@@ -119,20 +120,20 @@
     (if just
         (access justification just :measure)
       (or (cw "; xdoc note: get-measure failed for ~x0.~%" fn)
-          (concatenate 'string 
+          (concatenate 'string
                        "Error getting measure for "
                        (symbol-package-name fn)
-                       "::" 
+                       "::"
                        (symbol-name fn))))))
 
 (defun get-guard (fn world)
   (if (getprop fn 'formals nil 'current-acl2-world world)
       (getprop fn 'guard nil 'current-acl2-world world)
     (or (cw "; xdoc note: get-guard failed for ~x0.~%" fn)
-        (concatenate 'string 
+        (concatenate 'string
                      "Error getting guard for "
                      (symbol-package-name fn)
-                     "::" 
+                     "::"
                      (symbol-name fn)))))
 
 (defun get-body (fn world)
@@ -143,18 +144,18 @@
     (if bodies
         (access def-body (car (last bodies)) :concl)
       (or (cw "; xdoc note: get-body failed for ~x0.~%" fn)
-          (concatenate 'string 
-                       "Error getting body for " 
+          (concatenate 'string
+                       "Error getting body for "
                        (symbol-package-name fn)
-                       "::" 
+                       "::"
                        (symbol-name fn))))))
 
 (defun get-event (name world)
-  ;; A general purpose event lookup as in :pe 
+  ;; A general purpose event lookup as in :pe
   (let ((evt (acl2::get-event name world)))
     (or evt
         (cw "; xdoc note: get-event failed for ~x0.~%" name)
-        (concatenate 'string 
+        (concatenate 'string
                      "Error getting event for "
                      (symbol-package-name name)
                      "::"
@@ -163,7 +164,7 @@
 (defun get-def (fn world)
   ;; This used to do something else.  Now we try to be permissive.
   (let ((def (acl2::get-def fn world)))
-    (if def 
+    (if def
         (cons 'defun def)
       (get-event fn world))))
 
@@ -215,21 +216,21 @@
 
 ; What a pain.  We have to implement a symbol parser.
 
-(defun parse-symbol-name-part (x n xl bar-escape-p slash-escape-p some-chars-p acc) 
+(defun parse-symbol-name-part (x n xl bar-escape-p slash-escape-p some-chars-p acc)
   ;; ==> (MV ERROR NAME N-PRIME)
   (declare (type string x))
 
 ; This tries to read just one part of a symbol name (i.e., the package part,
 ; or the name part.)
-  
+
   (if (= xl n)
 
-      ; End of string?  Error if we were escaped, or if we have not actually read 
+      ; End of string?  Error if we were escaped, or if we have not actually read
       ; some characters yet.  Otherwise, it was okay.
 
       (let ((result (reverse (coerce acc 'string))))
         (if (or bar-escape-p slash-escape-p (not some-chars-p))
-            (mv (concatenate 'string "Near " (error-context x n xl) 
+            (mv (concatenate 'string "Near " (error-context x n xl)
                              ": unexpected end of string while reading symbol.  "
                              "Characters read so far: " result)
                 result n)
@@ -252,8 +253,8 @@
              ;; turned off.
              (parse-symbol-name-part x n+1 xl t nil t (cons char acc)))
             ((member char '(#\Space #\( #\) #\Newline #\Tab #\Page #\: #\, #\' #\`))
-             ;; Whitespace, paren, colon, comma, quote, backquote, outside of a 
-             ;; bar escape; end of symbol.  We can stop as long as we've actually 
+             ;; Whitespace, paren, colon, comma, quote, backquote, outside of a
+             ;; bar escape; end of symbol.  We can stop as long as we've actually
              ;; read some characters.
              (if some-chars-p
                  (mv nil (reverse (coerce acc 'string)) n)
@@ -271,7 +272,7 @@
   (declare (type string x))
 
 ; This extends parse-symbol-name-part to read both parts.  We support keywords,
-; etc.  This is definitely not going to handle everything in Common Lisp, but 
+; etc.  This is definitely not going to handle everything in Common Lisp, but
 ; whatever.
 
   (if (= xl n)
@@ -287,7 +288,7 @@
                   (mv error nil n)
                 (mv nil (intern-in-package-of-symbol name :keyword) n)))
 
-        ;; Doesn't start with a colon. 
+        ;; Doesn't start with a colon.
         (b* (((mv error part1 n)
               (parse-symbol-name-part x n xl nil nil nil nil))
              ((when error)
@@ -303,7 +304,7 @@
                       (mv error nil n)))
                     ;; Things look pretty good here.  One weird thing we will try
                     ;; to detect is if there are extra colons, e.g.,
-                    ;; foo::bar::baz should be disallowed.  We really want a 
+                    ;; foo::bar::baz should be disallowed.  We really want a
                     ;; whitespace or paren or quote or something
                     (if (eql (char x n) #\:)
                         (mv (concatenate 'string "Near " (error-context x n xl)
@@ -311,14 +312,14 @@
                             nil n)
                       (mv nil (intern$ part2 part1) n)))
 
-              ;; Didn't match ::.  
+              ;; Didn't match ::.
               (if (and (< n xl)
                        (eql (char x n) #\:))
                   (mv (concatenate 'string "Near " (error-context x n xl)
                                    ": Lone colon after symbol name?")
                       nil n)
 
-                ;; We seem to have an okay package name, but no ::, so put 
+                ;; We seem to have an okay package name, but no ::, so put
                 ;; it into the base package.
                 (mv nil (intern-in-package-of-symbol part1 base-pkg) n))))))))
 
@@ -389,7 +390,7 @@
         (mv error nil nil n))
        (n                    (skip-past-ws x n xl))
        ((mv error arg n)     (parse-symbol x n xl base-pkg)))
-      (cond 
+      (cond
        ;; Some error parsing arg.  Add a little more context.
        (error (mv (concatenate 'string "In " (symbol-name command) " directive: " error)
                   nil nil n))
@@ -400,7 +401,7 @@
         (mv nil command arg (+ n 1)))
 
        (t
-        (mv (concatenate 'string "In " (symbol-name command) " directive, expected ) after " 
+        (mv (concatenate 'string "In " (symbol-name command) " directive, expected ) after "
                          (symbol-name arg)
                          ". Near " (error-context x n xl) ".")
             nil nil n)))))
@@ -480,15 +481,15 @@
   "; This is an XDOC Link file.
 ; Ordinarily, you should not see this file.
 ;
-; If you are viewing this file in a web browser, you probably 
+; If you are viewing this file in a web browser, you probably
 ; have not configured your web browser to send .xdoc-link files
 ; to Emacs.
 ;
-;   (Or, if you have already done that, but you accessed this 
-;    file through a web server, the server may just not be 
+;   (Or, if you have already done that, but you accessed this
+;    file through a web server, the server may just not be
 ;    assigning .xdoc-link files the appropriate MIME type.)
 ;
-; If you are viewing this file in Emacs, you probably have not 
+; If you are viewing this file in Emacs, you probably have not
 ; loaded xdoc.el from the xdoc/ directory.
 ;
 ; Please see the XDOC manual for more information.")
@@ -522,7 +523,7 @@
 ; hoping that most of the time find-tag will take them to the right place.
 
   (b* ((shortname (coerce (string-downcase (symbol-name arg)) 'list))
-       (filename  (concatenate 'string 
+       (filename  (concatenate 'string
                                (reverse (coerce (file-name-mangle arg nil) 'string))
                                ".xdoc-link"))
 
@@ -548,7 +549,7 @@
 
   (b* ((body           (get-body arg (w state)))
        (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0" 
+       ((mv acc state) (fmt-to-chars-and-encode "~x0"
                                                 (list (cons #\0 body))
                                                 state acc))
        (acc            (str::revappend-chars "</code>" acc)))
@@ -564,7 +565,7 @@
        ((mv acc state) (process-srclink-directive arg dir state acc))
        (acc            (str::revappend-chars "</p>" acc))
        (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0" 
+       ((mv acc state) (fmt-to-chars-and-encode "~x0"
                                                 (list (cons #\0 def))
                                                 state acc))
        (acc            (str::revappend-chars "</code>" acc)))
@@ -581,7 +582,7 @@
        (acc            (sym-mangle arg base-pkg acc))
        (acc            (str::revappend-chars "</p>" acc))
        (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0" 
+       ((mv acc state) (fmt-to-chars-and-encode "~x0"
                                                 (list (cons #\0 def))
                                                 state acc))
        (acc            (str::revappend-chars "</code>" acc)))
@@ -597,7 +598,7 @@
        ((mv acc state) (process-srclink-directive arg dir state acc))
        (acc            (str::revappend-chars "</p>" acc))
        (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0" 
+       ((mv acc state) (fmt-to-chars-and-encode "~x0"
                                                 (list (cons #\0 theorem))
                                                 state acc))
        (acc            (str::revappend-chars "</code>" acc)))
@@ -613,7 +614,7 @@
        (acc            (sym-mangle arg base-pkg acc))
        (acc            (str::revappend-chars "</p>" acc))
        (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0" 
+       ((mv acc state) (fmt-to-chars-and-encode "~x0"
                                                 (list (cons #\0 theorem))
                                                 state acc))
        (acc            (str::revappend-chars "</code>" acc)))
@@ -621,11 +622,11 @@
 
 (defun process-formals-directive (arg state acc) ;; ===> (MV ACC STATE)
 
-; @(formals foo) -- just find the formals for foo and print them without any 
+; @(formals foo) -- just find the formals for foo and print them without any
 ; extra formatting.
 
   (b* ((formals        (get-formals arg (w state)))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0" 
+       ((mv acc state) (fmt-to-chars-and-encode "~x0"
                                                 (list (cons #\0 formals))
                                                 state acc)))
       (mv acc state)))
@@ -638,7 +639,7 @@
   (b* ((formals        (get-formals arg (w state)))
        (call           (cons arg formals))
        (acc            (str::revappend-chars "<tt>" acc))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0" 
+       ((mv acc state) (fmt-to-chars-and-encode "~x0"
                                                 (list (cons #\0 call))
                                                 state acc))
        (acc            (str::revappend-chars "</tt>" acc)))
@@ -652,7 +653,7 @@
   (b* ((formals        (get-formals arg (w state)))
        (call           (cons arg formals))
        (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0" 
+       ((mv acc state) (fmt-to-chars-and-encode "~x0"
                                                 (list (cons #\0 call))
                                                 state acc))
        (acc            (str::revappend-chars "</code>" acc)))
@@ -664,7 +665,7 @@
 ; formatting.
 
   (b* ((measure        (get-measure arg (w state)))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0" 
+       ((mv acc state) (fmt-to-chars-and-encode "~x0"
                                                 (list (cons #\0 measure))
                                                 state acc)))
       (mv acc state)))
@@ -692,8 +693,8 @@
     (csee      (process-see-cap-directive arg base-pkg state acc))
     (sym       (process-sym-directive arg base-pkg state acc))
     (csym      (process-sym-cap-directive arg base-pkg state acc))
-    (otherwise 
-     (prog2$ 
+    (otherwise
+     (prog2$
       (cw "; xdoc error: unknown directive ~x0.~%" command)
       (let* ((acc (str::revappend-chars "[[ unknown directive " acc))
              (acc (str::revappend-chars (symbol-name command) acc))
@@ -750,7 +751,7 @@
 
 
 (defun normalize-parents (x)
-  
+
 ; Given an xdoc entry, remove duplicate parents and self-parents.
 
   (let* ((name    (cdr (assoc :name x)))
@@ -763,7 +764,7 @@
                     parents))
          (parents (if (no-duplicatesp-equal parents)
                       parents
-                    (prog2$ 
+                    (prog2$
                      (cw "; xdoc note: removing duplicate :parents for ~x0.~%" name)
                      (remove-duplicates-equal parents)))))
     (if (equal parents orig)
@@ -803,7 +804,7 @@
       (find-children-aux par (cdr x)))))
 
 (defun find-children (par x)
-  
+
 ; Gather names of immediate children topics and sort them.
 
   (sets::mergesort (find-children-aux par x)))
@@ -848,10 +849,10 @@
                         (t "hide")))
 
         ((when    (member-equal name (cdr path)))
-         (prog2$ 
+         (prog2$
           (er hard? 'make-hierarchy "Circular topic hierarchy.  Path is ~x0.~%" path)
           (mv acc id state)))
-        
+
         (topic (find-topic name all))
         (short (cdr (assoc :short topic)))
 
@@ -883,15 +884,15 @@
         (acc (cons #\Newline acc))
 
         (id   (+ id 1))
-        ((mv acc id state) 
+        ((mv acc id state)
          (make-hierarchy-list-aux children path dir base-pkg all id acc state))
         (acc (str::revappend-chars "</hindex_children>" acc))
         (acc (str::revappend-chars "</hindex>" acc))
         (acc (cons #\Newline acc)))
        (mv acc id state)))
-       
+
  (defun make-hierarchy-list-aux (children path dir base-pkg all id acc state)
-   
+
 ; - Children are the children of this path.
 ; - Path is our current location in the hierarchy.
 
@@ -971,7 +972,7 @@
 
 (defun index-topics (x title dir index-pkg state acc)
 
-; X is a list of topics.  Generate <index>...</index> for these topics and 
+; X is a list of topics.  Generate <index>...</index> for these topics and
 ; add to acc.
 
   (b* ((acc (str::revappend-chars "<index title=\"" acc))
@@ -1088,7 +1089,7 @@
   (b* ((name               (cdr (assoc :name x)))
        (-                  (cw "Saving ~s0::~s1.~%" (symbol-package-name name) (symbol-name name)))
        ((mv text state)    (preprocess-topic x all-topics dir state))
-       (filename           (concatenate 'string 
+       (filename           (concatenate 'string
                                         (reverse (coerce (file-name-mangle name nil) 'string))
                                         ".xml"))
        (fullpath           (acl2::extend-pathname dir filename state))
@@ -1109,14 +1110,14 @@
 
 
 
-(make-event 
+(make-event
  (let ((cbd (cbd)))
    (value `(defconst *xdoc-root-dir* ',cbd))))
 
 (defun save-success-file (ntopics dir state)
   (b* ((file           (acl2::extend-pathname dir "success.txt" state))
        ((mv out state) (open-output-channel file :character state))
-       ((mv & state)   (fmt "Successfully wrote ~x0 topics.~%~%" 
+       ((mv & state)   (fmt "Successfully wrote ~x0 topics.~%~%"
                             (list (cons #\0 ntopics))
                             out state nil))
        (state          (close-output-channel out state)))
@@ -1160,7 +1161,21 @@
               (state    (save-success-file (len x) dir state)))
              state))))
 
-(defmacro save (dir &key (index-pkg 'acl2::foo))
-  `(save-topics (get-xdoc-table (w state)) ,dir ',index-pkg state))
 
-           
+
+(defun unsound-all-xdoc-topics (world)
+  (declare (xargs :mode :program)
+           (ignore world))
+  (er hard? 'unsound-all-xdoc-topics
+      "Unsound-all-xdoc-topics not yet defined."))
+
+(defttag xdoc-raw)
+(acl2::progn!
+ (set-raw-mode t)
+ (defun unsound-all-xdoc-topics (world)
+   (append (get-xdoc-table world)
+           *raw-xdoc-list*)))
+(defttag nil)
+
+(defmacro save (dir &key (index-pkg 'acl2::foo))
+  `(save-topics (unsound-all-xdoc-topics (w state)) ,dir ',index-pkg state))

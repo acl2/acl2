@@ -60,7 +60,7 @@
 ; package and the symbol name when creating file names.
 
   (declare (type symbol x))
-  (let ((str (concatenate 'string 
+  (let ((str (concatenate 'string
                           (symbol-package-name x)
                           "::"
                           (symbol-name x))))
@@ -79,7 +79,7 @@
 (defun in-package-p (sym base-pkg)
 
 ; We don't just ask if the symbol-package-names of sym and base-pkg are equal,
-; because this would fail to account for things like COMMON-LISP::car versus 
+; because this would fail to account for things like COMMON-LISP::car versus
 ; ACL2::foo.
 
   (equal (intern-in-package-of-symbol (symbol-name sym) base-pkg)
@@ -87,15 +87,15 @@
 
 (defun simple-html-encode-chars (x acc)
 
-; X is a character list that we copy into acc (in reverse order), except that 
+; X is a character list that we copy into acc (in reverse order), except that
 ; we escape any HTML entities like < into the &lt; format.
 
   (if (atom x)
       acc
     (let ((acc (case (car x)
                  (#\< (list* #\; #\t #\l #\& acc))         ;; "&lt;" (in reverse)
-                 (#\> (list* #\; #\t #\g #\& acc))         ;; "&gt;" 
-                 (#\& (list* #\; #\p #\m #\a #\& acc))     ;; "&amp;" 
+                 (#\> (list* #\; #\t #\g #\& acc))         ;; "&gt;"
+                 (#\& (list* #\; #\p #\m #\a #\& acc))     ;; "&amp;"
                  (#\" (list* #\; #\t #\o #\u #\q #\& acc)) ;; "&quot;"
                  (t   (cons (car x) acc)))))
       (simple-html-encode-chars (cdr x) acc))))
@@ -123,7 +123,7 @@
   (declare (type string x))
   (if (equal x "")
       x
-    (concatenate 'string 
+    (concatenate 'string
                  (coerce (list (char-upcase (char x 0))) 'string)
                  (subseq x 1 nil))))
 

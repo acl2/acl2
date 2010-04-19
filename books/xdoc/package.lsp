@@ -14,11 +14,11 @@
 (in-package "ACL2")
 
 (defpkg "XDOC"
-  (set-difference-eq 
+  (set-difference-eq
    (union-eq (union-eq *acl2-exports*
                        *common-lisp-symbols-from-main-lisp-package*)
              ;; Things to add:
-             '(b* quit exit value defxdoc macro-args 
+             '(b* quit exit value defxdoc macro-args
                   getprop formals justification def-bodies current-acl2-world def-body
                   access theorem untranslated-theorem guard))
    ;; Things to remove:
