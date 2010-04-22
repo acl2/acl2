@@ -1,8 +1,9 @@
-; This book provides "stress tests" for determining whether early termination
-; is working well.  The intent is that a person who modifies the ACL2
+; This book provides "stress tests" for determining whether the parallelism
+; library is working well.  The intent is that a person who modifies the ACL2
 ; mulit-threading interface and the parallelism library can gain moderate
-; assurance that their changes did not break, plet, pargs, pand, and por by
-; running this file.
+; assurance that their changes did not break plet, pargs, pand, and por by
+; certifying this book.  It is also useful for testing release candidates for
+; CCL and SBCL.
 
 ; Code in all caps is effectively evaluated from a raw lisp prompt.
 
