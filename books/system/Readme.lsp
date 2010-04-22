@@ -6,6 +6,7 @@ Makefile
 Readme.lsp
 pseudo-good-worldp.lisp
 too-many-ifs.lisp
+top.lisp
 worldp-check.acl2
 worldp-check.lisp
 "
@@ -16,7 +17,10 @@ worldp-check.lisp
  (:ABSTRACT
 
 "These books check invariants on the ACL2 logical world and verify termination
-and guards of some system functions.  The scope may broaden in the future."
+and guards of some system functions.  The scope may broaden in the future.
+
+The book top.lisp includes books verifying termination and guards of system
+functions.  Add an include-book to top.lisp for each new such book."
 )
  (:PERMISSION
 
