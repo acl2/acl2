@@ -1,6 +1,6 @@
 #summary How to merge changes from the bleeding edge into a release branch.
 
-The acl2-books repository has a trunk, containing bleeding-edge code that may not work in the current released ACL2, and release branches, which should always be able to pass a regression with the current released version.  However, the release branches may not contain all the latest, best code that is in the bleeding edge.  Therefore, in addition to making their own improvements, members are welcome to backport changes and new books from the trunk into release branches.
+The acl2-books repository has a trunk, containing bleeding-edge code that may not work in the current released ACL2, and release branches, which should always be able to pass a regression with the current released version.  However, the release branches may not contain all the latest, "best" code that is in the bleeding edge.  Therefore, in addition to making their own improvements, members are welcome to backport changes and new books from the trunk into release branches.
 
 A typical workflow for such an operation might be:
  * Check out the latest release branch, currently 3.4.
