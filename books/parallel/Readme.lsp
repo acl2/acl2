@@ -7,7 +7,8 @@ fibonacci.lisp
 matrix-multiplication-parallel.lisp
 matrix-multiplication-serial.lisp
 matrix-multiplication-setup.lisp
-syntax-tests.lisp")
+syntax-tests.lisp
+stress-tests.lisp")
  (:TITLE    "Simple examples and tests of parallelism primitives")
  (:AUTHOR/S "David Rager")
  (:KEYWORDS ; non-empty list of keywords, case-insensitive
