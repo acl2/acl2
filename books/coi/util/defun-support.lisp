@@ -1137,7 +1137,7 @@
   (if (consp vals)
       (if (consp (cdr vals))
 	  (let ((conc (vals-to-thms-rec 0 vals fapp)))
-	    (and conc `((implies ,hyps (and ,@conc)))))
+	    (and conc `((implies ,hyps (and (true-listp ,fapp) ,@conc)))))
 	(let ((conc (translate-declaration-to-guard-list (car vals) fapp)))
 	  (and conc `((implies ,hyps ,@conc)))))
     nil))
