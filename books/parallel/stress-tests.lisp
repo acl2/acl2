@@ -20,6 +20,8 @@
 
 (defconst *level-of-pain* 100)
 
+(set-compile-fns t) ; avoid a stack overflow in allegro
+
 ;;;;;;;;;;
 ;; plet ;;
 ;;;;;;;;;;
