@@ -15,3 +15,7 @@
 (include-book "top")
 
 (xdoc::save "manual")
+
+(value :q)
+
+(good-bye)
