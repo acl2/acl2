@@ -2,8 +2,8 @@
 ; Matt Kaufmann and Jun Sawada, November, 2009
 
 ; While unsound in principle, redef-pkg can be useful during interactive
-; sessions.  Usage:
-
+; sessions.  Usage is just defpkg usage -- defpkg is modified by including
+; this book, or in raw-mode you can submit
 ; (redef-pkg name imports &optional doc book-path)
 ; where doc and book-path are ignored.
 
@@ -189,39 +189,42 @@
 ; in known-package-alist with field hidden-p=t (see the Essay on Hidden
 ; Packages).
 
+;;; Start new code
   (fms "Executing the redefined chk-acceptable-defpkg~%" nil
        (standard-co state) state nil)
+;;; End new code
 
   (let ((package-entry
          (and (not (global-val 'boot-strap-flg w))
               (find-package-entry
                name
                (global-val 'known-package-alist w)))))
+;;; Begin code deletion
 ; I removed the case with the same `form' from the previous defpkg call,
 ; because the evaluation of `form' may results in a list with different
 ; symbols.  The case in which form is evaluated to the same imported 
 ; symbol list is processed as redundant at the end of the function.
-;    (cond
-;     ((and package-entry
-;           (not (package-entry-hidden-p package-entry))
-;           (equal (caddr (package-entry-defpkg-event-form package-entry))
-;                  form))
-;      (value 'redundant))
-;     (t
-      (mv-let
-       (all-names state)
-       (list-all-package-names state)
-       (er-progn
-        (cond
-         ((or package-entry
-              (eq (ld-skip-proofsp state) 'include-book))
-          (value nil))
-         ((not (stringp name))
-          (er soft ctx
-              "Package names must be string constants and ~x0 is not.  See ~
-               :DOC defpkg."
-              name))
-         ((equal name "")
+#||
+    (cond
+     ((and package-entry
+           (not (package-entry-hidden-p package-entry))
+           (equal (caddr (package-entry-defpkg-event-form package-entry))
+                  form))
+      (value 'redundant))
+     (t
+||#
+;;; End code deletion
+      (er-progn
+       (cond
+        ((or package-entry
+             (eq (ld-skip-proofsp state) 'include-book))
+         (value nil))
+        ((not (stringp name))
+         (er soft ctx
+             "Package names must be string constants and ~x0 is not.  See ~
+              :DOC defpkg."
+             name))
+        ((equal name "")
 
 ; In Allegro CL, "" is prohibited because it is already a nickname for the
 ; KEYWORD package.  But in GCL we could prove nil up through v2-7 by certifying
@@ -238,125 +241,120 @@
 ;                                    (x '::abc) (y 17)))))
 ;   :rule-classes nil)
 
-          (er soft ctx
-              "The empty string is not a legal package name for defpkg."
-              name))
-         ((not (standard-char-listp (coerce name 'list)))
-          (er soft ctx
-              "~x0 is not a legal package name for defpkg, which requires the ~
-               name to contain only standard characters."
-              name))
-         ((not (equal (string-upcase name) name))
-          (er soft ctx
-              "~x0 is not a legal package name for defpkg, which disallows ~
-               lower case characters in the name."
-              name))
-         ((equal name "LISP")
-          (er soft ctx
-              "~x0 is disallowed as a a package name for defpkg, because this ~
-               package name is used under the hood in some Common Lisp ~
-               implementations."
-              name))
-         ((let ((len (length *1*-pkg-prefix*)))
-            (and (<= len (length name))
-                 (string-equal (subseq name 0 len) *1*-pkg-prefix*)))
+         (er soft ctx
+             "The empty string is not a legal package name for defpkg."
+             name))
+        ((not (standard-char-listp (coerce name 'list)))
+         (er soft ctx
+             "~x0 is not a legal package name for defpkg, which requires the ~
+              name to contain only standard characters."
+             name))
+        ((not (equal (string-upcase name) name))
+         (er soft ctx
+             "~x0 is not a legal package name for defpkg, which disallows ~
+              lower case characters in the name."
+             name))
+        ((equal name "LISP")
+         (er soft ctx
+             "~x0 is disallowed as a a package name for defpkg, because this ~
+              package name is used under the hood in some Common Lisp ~
+              implementations."
+             name))
+        ((let ((len (length *1*-pkg-prefix*)))
+           (and (<= len (length name))
+                (string-equal (subseq name 0 len) *1*-pkg-prefix*)))
 
 ; The use of string-equal could be considered overkill; probably equal provides
 ; enough of a check.  But we prefer not to consider the possibility that some
 ; Lisp has case-insensitive package names.  Probably we should similarly use
 ; member-string-equal instead of member-equal below.
 
-          (er soft ctx
-              "It is illegal for a package name to start (even ignoring case) ~
-               with the string \"~@0\".  ACL2 makes internal use of package ~
-               names starting with that string."
-              *1*-pkg-prefix*))
-         ((not (true-listp defpkg-book-path))
-          (er soft ctx
-              "The book-path argument to defpkg, if supplied, must be a ~
-               true-listp.  It is not recommended to supply this argument, ~
-               since the system makes use of it for producing useful error ~
-               messages.  The defpkg of ~x0 is thus illegal."
-              name))
-         (t (value nil)))
-        (cond
-         ((and (member-equal name all-names)
-               (not (global-val 'boot-strap-flg w))
-               (not (member-equal name
+         (er soft ctx
+             "It is illegal for a package name to start (even ignoring case) ~
+              with the string \"~@0\".  ACL2 makes internal use of package ~
+              names starting with that string."
+             *1*-pkg-prefix*))
+        ((not (true-listp defpkg-book-path))
+         (er soft ctx
+             "The book-path argument to defpkg, if supplied, must be a ~
+              true-listp.  It is not recommended to supply this argument, ~
+              since the system makes use of it for producing useful error ~
+              messages.  The defpkg of ~x0 is thus illegal."
+             name))
+        (t (value nil)))
 
-; It seems very likely that the following value contains the same names as
-; (strip-cars (known-package-alist state)), except for built-in packages, now
-; that we keep hidden packages around.  But it seems harmless enough to keep
-; this state global around.
+; At one time we checked that if the package exists, i.e. (member-equal name
+; all-names), and we are not in the boot-strap, then name must previously have
+; been introduced by defpkg.  But name may have been introduced by
+; maybe-introduce-empty-pkg, or even by a defpkg form evaluated in raw Lisp
+; when loading a compiled file before processing events on behalf of an
+; include-book.  So we leave it to defpkg-raw1 to check that a proposed package
+; is either new, is among *defpkg-virgins*, or is consistent with an existing
+; entry in *ever-known-package-alist*.
 
-                                  (f-get-global 'packages-created-by-defpkg
-                                                state))))
-          (er soft ctx
-              "The package named ~x0 already exists and was not created by ~
-               ACL2's defpkg.  We cannot (re)define an existing package.  See ~
-               :DOC defpkg."
-              name))
-         (t
-          (state-global-let*
-           ((safe-mode
+       (state-global-let*
+        ((safe-mode
 
 ; In order to build a profiling image for GCL, we have observed a need to avoid
 ; going into safe-mode when building the system.
 
-             (not (global-val 'boot-strap-flg w))))
-           (er-let*
-            ((pair (simple-translate-and-eval form nil nil
-                                              "The second argument to defpkg"
-                                              ctx w state)))
-            (let ((tform (car pair))
-                  (imports (cdr pair)))
-              (cond
-               ((not (symbol-listp imports))
-                (er soft ctx
-                    "The second argument of defpkg must eval to a list of ~
-                     symbols.  See :DOC defpkg."))
-               (t (let* ((imports (sort-symbol-listp imports))
-                         (conflict (conflicting-imports imports))
-                         (base-symbol (packn (cons name '("-PACKAGE")))))
+          (not (global-val 'boot-strap-flg w))))
+        (er-let*
+         ((pair (simple-translate-and-eval form nil nil
+                                           "The second argument to defpkg"
+                                           ctx w state)))
+         (let ((tform (car pair))
+               (imports (cdr pair)))
+           (cond
+            ((not (symbol-listp imports))
+             (er soft ctx
+                 "The second argument of defpkg must eval to a list of ~
+                  symbols.  See :DOC defpkg."))
+            (t (let* ((imports (sort-symbol-listp imports))
+                      (conflict (conflicting-imports imports))
+                      (base-symbol (packn (cons name '("-PACKAGE")))))
 
 ; Base-symbol is the the base symbol of the rune for the rule added by
 ; defpkg describing the properties of symbol-package-name on interns
 ; with the new package.
 
-                    (cond
-                     ((member-symbol-name *pkg-witness-name* imports)
-                      (er soft ctx
-                          "It is illegal to import symbol ~x0 because its ~
-                           name has been reserved for a symbol in the package ~
-                           being defined."
-                          (car (member-symbol-name *pkg-witness-name*
-                                                   imports))))
-                     (conflict
-                      (er soft ctx
-                          "The value of the second (imports) argument of ~
-                           defpkg may not contain two symbols with the same ~
-                           symbol name, e.g. ~&0.  See :DOC defpkg."
-                          conflict))
-                     (t (cond
-                         ((and package-entry
-                               (not (equal imports
-                                           (package-entry-imports
-                                            package-entry))))
-
-;                         (er soft ctx
-;                             "~@0"
-;                             (tilde-@-defpkg-error-phrase
-;                              name package-entry
-;                              (set-difference-eq
-;                               imports
-;                               (package-entry-imports package-entry))
-;                              (set-difference-eq
-;                               (package-entry-imports package-entry)
-;                               imports)
-;                              (package-entry-book-path package-entry)
-;                              defpkg-book-path w))
-
-                          (progn
+                 (cond
+                  ((member-symbol-name *pkg-witness-name* imports)
+                   (er soft ctx
+                       "It is illegal to import symbol ~x0 because its name ~
+                        has been reserved for a symbol in the package being ~
+                        defined."
+                       (car (member-symbol-name *pkg-witness-name*
+                                                imports))))
+                  (conflict
+                   (er soft ctx
+                       "The value of the second (imports) argument of defpkg ~
+                        may not contain two symbols with the same symbol ~
+                        name, e.g. ~&0.  See :DOC defpkg."
+                       conflict))
+                  (t (cond
+                      ((and package-entry
+                            (not (equal imports
+                                        (package-entry-imports
+                                         package-entry))))
+;;; Begin code deletion
+#||
+                       (er soft ctx
+                           "~@0"
+                           (tilde-@-defpkg-error-phrase
+                            name package-entry
+                            (set-difference-eq
+                             imports
+                             (package-entry-imports package-entry))
+                            (set-difference-eq
+                             (package-entry-imports package-entry)
+                             imports)
+                            (package-entry-book-path package-entry)
+                            defpkg-book-path w))
+||#
+;;; End code deletion
+;;; Begin code addition
+                       (progn
 ;			    (fms "Debug: imports and ~
 ;                                       package-entry-imports are ~
 ;                                       different.~|imports: ~
@@ -365,17 +363,18 @@
 ;                                            (cons #\1 (package-entry-imports
 ;                                                       package-entry)))
 ;                                      (standard-co state) state nil)
-                                 (set-imported-symbols-to-pkg imports name)
-                                 (value 'redundant)))
-                         ((and package-entry
-                               (not (package-entry-hidden-p package-entry)))
-                          (prog2$
-                           (chk-package-reincarnation-import-restrictions
-                            name imports)
-                           (value 'redundant)))
-                         (t (er-progn
-                             (chk-new-stringp-name 'defpkg name ctx w state)
-                             (chk-all-but-new-name base-symbol ctx nil w state)
+                         (set-imported-symbols-to-pkg imports name)
+                         (value 'redundant)))
+;;; End code addition
+                      ((and package-entry
+                            (not (package-entry-hidden-p package-entry)))
+                       (prog2$
+                        (chk-package-reincarnation-import-restrictions
+                         name imports)
+                        (value 'redundant)))
+                      (t (er-progn
+                          (chk-new-stringp-name 'defpkg name ctx w state)
+                          (chk-all-but-new-name base-symbol ctx nil w state)
 
 ; Note:  Chk-just-new-name below returns a world which we ignore because
 ; we know redefinition of 'package base-symbols is disallowed, so the
@@ -384,13 +383,13 @@
 ; Warning: In maybe-push-undo-stack and maybe-pop-undo-stack we rely
 ; on the fact that the symbol name-PACKAGE is new!
 
-                             (chk-just-new-name base-symbol
-                                                'package nil ctx w state)
-                             (prog2$
-                              (chk-package-reincarnation-import-restrictions
-                               name imports)
-                              (value (list* tform
-                                            imports
-                                            package-entry ; hidden-p is true
-                                            )))))))))))))))))))))
+                          (chk-just-new-name base-symbol
+                                             'package nil ctx w state)
+                          (prog2$
+                           (chk-package-reincarnation-import-restrictions
+                            name imports)
+                           (value (list* tform
+                                         imports
+                                         package-entry ; hidden-p is true
+                                         ))))))))))))))))))
 
