@@ -123,7 +123,10 @@
 	    (ceval x i)))
 
  (defun ceval-list (x i)
-   (declare (xargs :guard (true-listp x)))
+   (declare (xargs :guard (true-listp x)
+; Added by Matt Kaufmann after v3-6-1 to because of restriction on guard
+; verification for functions depending on signature functions:
+                   :verify-guards nil))
    (if (endp x)
        t
      (and (ceval (car x) i) (ceval-list (cdr x) i))))
@@ -140,6 +143,10 @@
 		   (ceval x i))))
 
  ) ;; end of encapsulate
+
+; Added by Matt Kaufmann after v3-6-1 (see comment for (defun ceval-list ...)
+; above):
+(verify-guards ceval-list)
 
 (defun rewritable (x y)
   (declare (xargs :guard t))
