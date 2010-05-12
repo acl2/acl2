@@ -730,9 +730,11 @@ sub add_deps {
     if ($clean_certs) {
 	my $outfile = $base . ".out";
 	my $timefile = $base . ".time";
+	my $compfile = $base . ".lx64fsl";
 	unlink($target) if (-e $target);
 	unlink($outfile) if (-e $outfile);
 	unlink($timefile) if (-e $timefile);
+	unlink($compfile) if (-e $compfile);
     }
 
     # First check that the corresponding .lisp file exists.
