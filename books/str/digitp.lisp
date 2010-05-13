@@ -24,14 +24,14 @@
   Recognizer for characters #\0 through #\9.~/
 
   ACL2 provides ~il[digit-char-p] which is more flexible and can recognize
-  characters in other bases.  ~c[digitp] only recognizes base-10 digits, 
+  characters in other bases.  ~c[digitp] only recognizes base-10 digits,
   but is roughly twice as fast as ~c[digit-char-p], at least on CCL.~/
 
   Here is an experiment you can run in raw lisp, with times reported in CCL
   on Lisp2.
 
   ~bv[]
-  (defconstant *chars* 
+  (defconstant *chars*
     (loop for i from 0 to 256 collect (code-char i)))
 
   ;; 21.876 seconds, no garbage
@@ -71,12 +71,12 @@
            (xargs :guard (digitp x)
                   :guard-hints (("Goal" :in-theory (enable digitp)))))
 
-  (mbe :logic 
+  (mbe :logic
        (if (digitp x)
            (- (char-code (char-fix x))
               (char-code #\0))
          0)
-       :exec 
+       :exec
        (the (unsigned-byte 8)
          (- (the (unsigned-byte 8) (char-code (the character x)))
             (the (unsigned-byte 8) 48)))))
@@ -98,7 +98,7 @@
 (defthm equal-of-digit-val-and-digit-val
   (implies (and (digitp x)
                 (digitp y))
-           (equal (equal (digit-val x) 
+           (equal (equal (digit-val x)
                          (digit-val y))
                   (equal x y)))
   :hints(("Goal" :in-theory (enable digit-val digitp char-fix))))
@@ -109,7 +109,7 @@
 
   ":Doc-Section Str
   Recognizes lists of ~il[digitp] characters.~/~/
-  " 
+  "
 
   (declare (xargs :guard (character-listp x)
                   :guard-hints (("Goal" :in-theory (enable digitp)))))
@@ -155,7 +155,7 @@
                 (nfix val))
        :exec (if (consp x)
                  (digit-list-value1 (cdr x)
-                                    (the integer 
+                                    (the integer
                                       (+ (the (unsigned-byte 8)
                                            (- (the (unsigned-byte 8) (char-code (the character (car x))))
                                               (the (unsigned-byte 8) 48)))
@@ -184,7 +184,7 @@
 (defcong charlisteqv equal (digit-list-value x) 1
   :hints(("Goal" :in-theory (enable digit-list-value
                                     charlisteqv))))
-      
+
 (defthm natp-of-digit-list-value
   (natp (digit-list-value x))
   :rule-classes :type-prescription
@@ -196,7 +196,7 @@
  (defthm digit-list-value-upper-bound
    (< (digit-list-value x)
       (expt 10 (len x)))
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (enable digit-list-value)
            :do-not '(generalize fertilize)))))
 
@@ -207,7 +207,7 @@
 
 (defthm digit-list-value1-removal
   (equal (digit-list-value1 x val)
-         (+ (digit-list-value x) 
+         (+ (digit-list-value x)
             (* (nfix val) (expt 10 (len x)))))
   :hints(("Goal"
           :in-theory (enable digit-list-value1 digit-list-value)
@@ -251,7 +251,7 @@
 
   (declare (xargs :guard (character-listp x)
                   :guard-hints (("Goal" :in-theory (enable digitp)))))
-      
+
   (if (consp x)
       (if (mbe :logic (digitp (car x))
                :exec (let ((code (the (unsigned-byte 8) (char-code (the character (car x))))))
@@ -261,7 +261,7 @@
           (cons (car x) (take-leading-digits (cdr x)))
         nil)
     nil))
- 
+
 (defcong charlisteqv equal (take-leading-digits x) 1
   :hints(("Goal" :in-theory (enable take-leading-digits
                                     charlisteqv
@@ -283,3 +283,64 @@
   (<= (len (take-leading-digits x)) (len x))
   :rule-classes :linear
   :hints(("Goal" :in-theory (enable take-leading-digits))))
+
+
+
+
+(defund digit-string-p-aux (x n xl)
+  (declare (type string x)
+           (type integer n)
+           (type integer xl)
+           (xargs :guard (and (stringp x)
+                              (natp n)
+                              (natp xl)
+                              (<= n xl)
+                              (= xl (length x)))
+                  :measure (nfix (- (nfix xl) (nfix n)))
+                  :verify-guards nil))
+  (if (mbe :logic (zp (- (nfix xl) (nfix n)))
+           :exec (= (the integer n) (the integer xl)))
+      t
+    (and (mbe :logic (digitp (char x n))
+              :exec
+              (let ((code (the (unsigned-byte 8)
+                            (char-code (the character (char x n))))))
+                (declare (type (unsigned-byte 8) code))
+                (and (<= (the (unsigned-byte 8) 48) (the (unsigned-byte 8) code))
+                     (<= (the (unsigned-byte 8) code) (the (unsigned-byte 8) 57)))))
+         (digit-string-p-aux x
+                             (mbe :logic (+ 1 (nfix n))
+                                  :exec (the integer (+ 1 (the integer n))))
+                             xl))))
+
+(verify-guards digit-string-p-aux
+               :hints(("Goal" :in-theory (enable digitp))))
+
+(defthm digit-string-p-aux-removal
+  (implies (and (stringp x)
+                (natp n)
+                (equal xl (length x)))
+           (equal (digit-string-p-aux x n xl)
+                  (digit-listp (nthcdr n (coerce x 'list)))))
+  :hints(("Goal" :in-theory (enable digit-string-p-aux
+                                    digit-listp))))
+
+(defun digit-string-p (x)
+  (declare (type string x))
+
+; 0.5485 seconds, no garbage
+;
+; (let ((x "1234"))
+;   (time$ (loop for i fixnum from 1 to 10000000 do
+;                (str::digit-string-p x))))
+;
+; 1.3762 seconds, 640 MB allocated
+;
+; (let ((x "1234"))
+;   (time$ (loop for i fixnum from 1 to 10000000 do
+;                (str::digit-listp (coerce x 'list)))))
+
+  (mbe :logic (digit-listp (coerce x 'list))
+       :exec (digit-string-p-aux x 0 (length x))))
+
+

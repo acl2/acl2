@@ -158,10 +158,10 @@
               do
               (revappend (coerce *str* 'list) nil))))
 
-;; .05 seconds, 20 MB allocated
+;; 2.88 seconds, 1.04 GB allocated
 (progn
   (gc$)
-  (time (loop for i fixnum from 1 to 100000
+  (time (loop for i fixnum from 1 to 5000000
               do
               (STR::revappend-chars *str* nil))))
 
@@ -173,10 +173,10 @@
               do
               (append (coerce *str* 'list) nil))))
 
-;; .06 seconds, 20 MB allocated
+;; 3.00 seconds, 1.04 GB allocated
 (progn
   (gc$)
-  (time (loop for i fixnum from 1 to 100000
+  (time (loop for i fixnum from 1 to 5000000
               do
               (STR::append-chars *str* nil))))
 
