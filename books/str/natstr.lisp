@@ -14,7 +14,7 @@
 
 (in-package "STR")
 (include-book "doc")
-(include-book "eqv")
+(include-book "digitp")
 (local (include-book "char-support"))
 (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 
@@ -47,6 +47,12 @@
 
 (verify-guards natchars-aux)
 
+(defthm digit-listp-of-natchars-aux
+  (implies (digit-listp acc)
+           (digit-listp (natchars-aux n acc)))
+  :hints(("Goal" :in-theory (enable natchars-aux digitp))))
+
+
 
 (defund natchars (n)
   (declare (type integer n)
@@ -65,6 +71,10 @@
   (character-listp (natchars n))
   :hints(("Goal" :in-theory (enable natchars))))
 
+(defthm digit-listp-of-natchars
+  (digit-listp (natchars n))
+  :hints(("Goal" :in-theory (enable natchars))))
+
 
 
 (defund natstr (n)
@@ -75,6 +85,10 @@
 (defthm stringp-of-natstr
   (stringp (natstr n))
   :rule-classes :type-prescription
+  :hints(("Goal" :in-theory (enable natstr))))
+
+(defthm digit-listp-of-natstr
+  (digit-listp (coerce (natstr n) 'list))
   :hints(("Goal" :in-theory (enable natstr))))
 
 
