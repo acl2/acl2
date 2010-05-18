@@ -1,3 +1,5 @@
+; This file contains some basic tests of various hint mechanisms.
+
 ; Note that because of must-fail, REBUILD doesn't work for this book.
 
 (in-package "ACL2")
