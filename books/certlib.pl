@@ -28,7 +28,6 @@ use File::Basename;
 use File::Spec;
 use Cwd;
 use Cwd 'abs_path';
-# use FindBin qw($RealBin);
 
 
 sub human_time {
@@ -56,11 +55,6 @@ sub human_time {
 }
 
 
-# sub rm_dotdots {
-#     my $path = shift;
-#     while ($path =~ s/( |\/)[^\/\.]+\/\.\.\//$1/g) {}
-#     return $path;
-# }
 
 
 sub rel_path {
@@ -399,17 +393,6 @@ sub individual_files_report {
 
     my $costs = shift;
     my $htmlp = shift;
-#    my %lines = ();
-#    my $name;
-
-#     foreach $name ( keys %$costs) {
-#  	my $entry = $costs->{$name};
-#  	my $shortcert = $entry->{"shortcert"};
-# # 	my $selftime = $entry->{"selftime"};
-# # 	my $totaltime = $entry->{"totaltime"};
-# # 	my $maxpath = $entry->{"maxpath"};
-# #	$lines{$shortcert} = $entry;
-#     }
 
     my @sorted = reverse sort { ($costs->{$a}->{"totaltime"} + 0.0) <=> ($costs->{$b}->{"totaltime"} + 0.0) } keys(%{$costs});
     my $ret;
