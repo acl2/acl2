@@ -29,6 +29,9 @@
 ;  The University of Texas at Austin
 ;  Austin, TX 78712-1188 USA
 
+; NOTE: For a generalization of this utility, see file defp.lisp in this
+; directory.
+
 ; To introduce an arbitrary tail-recursive function we proceed in
 ; three steps.  First is the proof that we can admit the generic one
 ; argument tail recursive function.  This ``generic theorem'' is
