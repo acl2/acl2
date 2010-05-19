@@ -3,4 +3,5 @@
 
 (in-package "ACL2")
 
+(include-book "hl-addr-combine")
 (include-book "too-many-ifs")

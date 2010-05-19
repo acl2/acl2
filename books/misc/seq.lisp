@@ -1,5 +1,10 @@
 ; The SEQ Macro Language
-; Copyright (C) 2008 Centaur Technology
+; Copyright (C) 2008-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -9,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
 
@@ -19,7 +26,7 @@
 ; NOTE: See seq-examples.lsp for some examples.
 ; NOTE: See seqw.lisp for an expanded version of SEQ.
 ;
-; SEQ is a macro language for applying ACTIONS to a STREAM.  
+; SEQ is a macro language for applying ACTIONS to a STREAM.
 ;
 ; In this context, a "stream" is any data structure that we want to update in
 ; an essentially sequential/single-threaded way.  It might be a stobj, but it
@@ -35,7 +42,7 @@
 ; it into val.
 ;
 ; But an action may also fail, in which case it should set ERROR to some
-; non-nil value.  Generally, we cons together a list of the form 
+; non-nil value.  Generally, we cons together a list of the form
 ;
 ;   (fmt-str arg0 arg1 ... argN)
 ;
@@ -62,10 +69,10 @@
 ;
 ; Such an assignment statement has two effects when action is successful:
 ;
-;   1. It binds var to the val produced by the action, and 
+;   1. It binds var to the val produced by the action, and
 ;   2. It rebinds stream to the updated stream produced by the action
 ;
-; But action may also fail, in which case the failure stops execution of the 
+; But action may also fail, in which case the failure stops execution of the
 ; current block and we propagate the error upwards throughout the entire SEQ
 ; program.
 ;
@@ -83,7 +90,7 @@
 ;
 ;     ((foo . bar) := (action ... <stream>))
 ;
-; NIL has a special meaning in this second form, and can be used to "drop" 
+; NIL has a special meaning in this second form, and can be used to "drop"
 ; parts of val which are not interesting.  For example, if action produces
 ; the value (1 . 2), and you write:
 ;
@@ -100,7 +107,7 @@
 ; checks that ensure that the returned stream has a weakly lower or strongly
 ; lower ACL2 count than the stream going into the action.  This is sometimes
 ; needed when using seq in mutually-recursive functions.
-; 
+;
 ;
 ;
 ;
@@ -119,7 +126,7 @@
 ; This causes the bindings for foo and bar only to be executed when the
 ; condition evaluates to non-nil.
 ;
-; 
+;
 ;
 ; RETURN STATEMENTS
 ;
@@ -130,10 +137,10 @@
 ;    (return expr)
 ;    (return-raw action)
 ;
-; Either one of these causes the entire SEQ program to exit.  In the first 
+; Either one of these causes the entire SEQ program to exit.  In the first
 ; form, EXPR is expected to evaluate to a regular ACL2 object, and the result
 ; of the SEQ program will be (MV NIL EXPR STREAM).  In the second form, ACTION
-; is expected to itself evaluate to an (MV ERROR VAL STREAM) tuple, and the 
+; is expected to itself evaluate to an (MV ERROR VAL STREAM) tuple, and the
 ; SEQ program returns this value verbatim.
 ;
 ;
@@ -174,7 +181,7 @@
 
  (defund cw-obj (x)
    ;; This is a "lazy" version of cw.
-   ;; For instance, 
+   ;; For instance,
    ;;   (cw-obj (list "hello, ~x0~%" 5)) prints Hello, 5 followed by a newline.
    ;; Note that it may cause an error.
    (declare (xargs :guard t))
@@ -197,12 +204,12 @@
 
 
 
-; NAMETREES 
+; NAMETREES
 ;
 ; Nametrees are trees of variable names and nils which contain no duplicate
 ; names.  They are used to give us automatic destructing of values returned by
 ; actions in our binding statements.
- 
+
 (defun seq-name-p (x)
   (declare (xargs :guard t))
   (cond ((not (symbolp x))
@@ -279,7 +286,7 @@
 ;   1. (RETURN EXPR)
 ;   2. (RETURN-RAW ACTION)
 ;
- 
+
   (declare (xargs :guard t))
   (and (consp x)
        (or (eq (car x) 'return)
@@ -288,9 +295,9 @@
            (cw "Error: Expected return to be a true-listp. ~x0.~%" x))
        (or (= (length x) 2)
            (cw "Error: Expected return to have length 2. ~x0.~%" x))))
-      
-(mutual-recursion 
- 
+
+(mutual-recursion
+
  (defun seq-when-p (x)
 
 ; The when statement has the form:
@@ -332,7 +339,7 @@
 
  (defun seq-block-p (x toplevelp)
 
-; A block is a list of other statements.  A top-level block must end with 
+; A block is a list of other statements.  A top-level block must end with
 ; a return statement, but other blocks need not do so.
 
    (declare (xargs :guard t))
@@ -371,7 +378,7 @@
       nil
     (seq-flatten-nametree (first x))))
 
-(mutual-recursion 
+(mutual-recursion
 
  (defun seq-when-names (x)
    (declare (xargs :guard (seq-when-p x)))
@@ -462,12 +469,12 @@
                                    ((not (mbt (,(case type (:s= '<) (:w= '<=))
                                                (acl2-count ,stream)
                                                (acl2-count !!!stream))))
-                                    (prog2$ (er hard? "SEQ count failed for (~x0 ~x1 ~x2.)~%" 
+                                    (prog2$ (er hard? "SEQ count failed for (~x0 ~x1 ~x2.)~%"
                                                 ',nametree ',type ',action)
                                             (mv "SEQ count failure." nil !!!stream)))
                                    (t
                                     (check-vars-not-free (!!!error !!!val !!!stream) ,rest)))))))
-             
+
              ;; Multiple variables; do the destructuring.
              (case type
 
@@ -488,7 +495,7 @@
                                  ((not (mbt (,(case type (:s= '<) (:w= '<=))
                                              (acl2-count ,stream)
                                              (acl2-count !!!stream))))
-                                  (prog2$ (er hard?  "SEQ count failed for (~x0 ~x1 ~x2.)~%" 
+                                  (prog2$ (er hard?  "SEQ count failed for (~x0 ~x1 ~x2.)~%"
                                               ',nametree ',type ',action)
                                           (mv "SEQ count failure." nil !!!stream)))
                                  (t
@@ -535,19 +542,19 @@
                                (seq-name-p stream))))
    (let ((condition (second x))
          (subblock  (cddr x)))
-     (seq-process-when (list* 'when 
+     (seq-process-when (list* 'when
                               `(not ,condition)
                               subblock)
                        stream rest)))
 
 
  (defun seq-process-when (x stream rest)
-   
+
 ; X is a when statement, stream is the name of the stream we are processing,
 ; and rest is the expansion for the statements that come after this when
 ; statement in the current block.  We are to write the MV code for this when
 ; statement.
-   
+
    (declare (xargs :guard (and (seq-when-p x)
                                (seq-name-p stream))))
 
@@ -556,7 +563,7 @@
           (ends-with-returnp (seq-list-ends-with-returnp subblock))
           (bound-in-subblock (seq-block-names subblock nil)))
 
-     (cond 
+     (cond
 
 ; Easy case 1.  The subblock ends with a return, so we always either process it
 ; or rest but never both.
@@ -570,7 +577,7 @@
 ; Easy case 2.  The subblock doesn't end with a return, so we may process it or
 ; and rest; but since it binds no variables so the only thing that it changes is
 ; the stream.
-     
+
       ((not bound-in-subblock)
        `(mv-let (!!!error !!!val ,stream)
                 (if ,condition
@@ -590,24 +597,24 @@
 ; before processing it, which returns to us a list of all the values for the
 ; variables it binds.  We can then rebind these variables before giving them to
 ; rest.
-     
+
       (t
        (let* ((return-stmt       `(return (list ,@bound-in-subblock)))
               (return-expansion  `(mv nil (list ,@bound-in-subblock) ,stream))
               (new-subblock      (append subblock (list return-stmt)))
               (rebindings        (seq-make-let-pairs-for-when bound-in-subblock)))
-        
+
          `(mv-let (!!!error !!!val ,stream)
                   (if ,condition
                       ,(seq-process-block new-subblock stream nil)
                     ,return-expansion)
                   (if !!!error
                       (mv !!!error !!!val ,stream)
-                   
+
 ; At this point, !!!val holds the list of all the values for the variables
 ; which were bound in the subblock.  We just need to redo these bindings so
 ; that they are available in rest.
-                   
+
                     (let* ,rebindings
                       (check-vars-not-free (!!!error !!!val) ,rest)))))))))
 
@@ -630,7 +637,7 @@
                    `(mv nil ,value ,stream))
                   ((eq type 'return-raw)
                    value))))))
- 
+
  (defun seq-process-block (x stream toplevelp)
    (declare (xargs :guard (and (seq-block-p x toplevelp)
                                (seq-name-p stream))))
@@ -646,7 +653,7 @@
       nil
     (cons `(,(car names) nil)
           (seq-make-initial-let-pairs (cdr names)))))
-                         
+
 ;(seq-make-initial-let-pairs '(a b c d))
 
 (defun seq-fn (stream block)

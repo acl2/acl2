@@ -95,7 +95,7 @@ defexec: arithmetic misc ordinals make-event
 hons-bdds: misc clause-processors
 symbolic: arithmetic arithmetic-2 data-structures ihs misc ordinals models/jvm/m5
 data-structures/memories: arithmetic-3 misc
-unicode: arithmetic arithmetic-3 ihs ordinals
+unicode: arithmetic arithmetic-3 ihs ordinals tools
 proofstyles: arithmetic-2 ordinals misc top-with-meta-cert
 concurrent-programs/bakery: misc ordinals
 concurrent-programs/german-protocol: misc
@@ -112,7 +112,7 @@ hacking: misc
 parallel: make-event
 security: make-event arithmetic-3
 sorting: arithmetic-3/extra
-tools: arithmetic-5 misc unicode
+tools: arithmetic-5 misc
 regex: tools
 defsort: misc make-event unicode tools
 hons-archive: defsort unicode tools arithmetic-3
@@ -120,7 +120,7 @@ str: arithmetic unicode defsort tools make-event
 coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
 	misc ordinals rtl
 xdoc: str unicode finite-set-theory
-system: tools arithmetic
+system: tools arithmetic arithmetic-5
 
 # Let us wait for everything else before workshops, except we currrently
 # (as of v3-6, at least) don't need to wait for coi (that may change).

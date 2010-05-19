@@ -1,5 +1,10 @@
 ; The SEQW Macro Language, Examples
-; Copyright (C) 2008 Centaur Technology
+; Copyright (C) 2008-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -9,13 +14,15 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
 (include-book "seqw")
 (set-verify-guards-eagerness 2)
 
-; Before reading these examples, see seq-examples.lsp.  
+; Before reading these examples, see seq-examples.lsp.
 
 ; We begin by altering our matching functions so that we cause warnings when
 ; matching even integers, and when matching strings that begin with "a", which
@@ -43,7 +50,7 @@
         ((not (stringp (car lst)))
          (mv "Error: string expected." nil lst warnings))
         (t
-         (mv nil (car lst) (cdr lst) 
+         (mv nil (car lst) (cdr lst)
              (if (bad-stringp (car lst))
                  (cons (list "Warning: bad string matched: ~x0.~%" (car lst))
                        warnings)
@@ -87,10 +94,10 @@
                      (list :d d)))))
 
 ; Fail, not even an int:
-(match-int-then-maybe-three-strings nil nil)    
+(match-int-then-maybe-three-strings nil nil)
 
 ; Fail, not even an int.
-(match-int-then-maybe-three-strings '("1") nil) 
+(match-int-then-maybe-three-strings '("1") nil)
 
 ; Works, one int is okay.  No warnings.
 (match-int-then-maybe-three-strings '(1) nil)
@@ -116,7 +123,7 @@
         (when (consp lst)
           (rest := (match-int-list lst warnings)))
         (return (cons first rest))))
-            
+
 (match-int-list nil nil)                 ;; fail, need at least one int
 (match-int-list '(1 2 3 4) nil)          ;; works, warnings about 2 and 4
 (match-int-list '(1 2 3 4 "five") nil)   ;; fail, not all integers, warnings about 2 and 4

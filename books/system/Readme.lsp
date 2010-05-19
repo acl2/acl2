@@ -4,6 +4,7 @@
 .:
 Makefile
 Readme.lsp
+hl-addr-combine.lisp
 pseudo-good-worldp.lisp
 too-many-ifs.lisp
 top.lisp
@@ -26,7 +27,7 @@ functions.  Add an include-book to top.lisp for each new such book."
 
 "
 This program is free software; you can redistribute it and/ormodify it under
-the terms of the GNU General Public Licenseas published by the Free Software
+the terms of the GNU General Public License as published by the Free Software
 Foundation; either version 2 of the License, or (at your option) any later
 version. This program is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or

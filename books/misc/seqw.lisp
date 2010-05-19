@@ -1,5 +1,10 @@
 ; The SEQW Macro Language
-; Copyright (C) 2009 Centaur Technology
+; Copyright (C) 2008-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -9,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
 (include-book "seq")
@@ -20,25 +27,25 @@
 ; SEQW is an alternative implementation of the SEQ language which allows for
 ; warnings to be implicitly collected and stored in a list as your program
 ; executes.  This comment only describes the differences between SEQW and SEQ,
-; so if you have not yet examined seq.lisp and seq-examples.lsp, you will 
+; so if you have not yet examined seq.lisp and seq-examples.lsp, you will
 ; want to look at them first.
 ;
 ; The difference is quite straightforward:
 ;
 ;   - Whereas a SEQ program has the form (seq <stream> ...), a SEQW program
-;     instead has one additional argument, (seqw <stream> <warnings> ...), 
+;     instead has one additional argument, (seqw <stream> <warnings> ...),
 ;     where <warnings> is the name of a warnings structure.
 ;
 ;   - Whereas every SEQ action returns (MV ERROR VAL STREAM), each SEQW action
-;     instead returns (MV ERROR VAL STREAM WARNINGS), where WARNINGS is the 
+;     instead returns (MV ERROR VAL STREAM WARNINGS), where WARNINGS is the
 ;     updated warnings structure.
 ;
 ; Similarly, every SEQW program returns (MV ERROR VAL STREAM WARNINGS) instead
 ; of (MV ERROR VAL STREAM).
 ;
-; What is a warnings structure?  When we use SEQW, we generally accumulate 
-; warnings into a list, so our actions just cons new warnings into this list 
-; when desired.  But SEQW itself imposes no particular constraints on what 
+; What is a warnings structure?  When we use SEQW, we generally accumulate
+; warnings into a list, so our actions just cons new warnings into this list
+; when desired.  But SEQW itself imposes no particular constraints on what
 ; a warnings structure is, and generally the way in which a warning is updated
 ; is determined by the actions of the program rather than by SEQW itself.
 ;
@@ -97,7 +104,7 @@
                               ,action
                               (if !!!error
                                   (mv !!!error ,nametree ,stream ,warnings)
-                                (check-vars-not-free (!!!error !!!val !!!stream) 
+                                (check-vars-not-free (!!!error !!!val !!!stream)
                                                      ,rest))))
 
                  ((:w= :s=)
@@ -109,13 +116,13 @@
                                    ((not (mbt (,(case type (:s= '<) (:w= '<=))
                                                (acl2-count ,stream)
                                                (acl2-count !!!stream))))
-                                    (prog2$ (er hard? "SEQW count failed for (~x0 ~x1 ~x2.)~%" 
+                                    (prog2$ (er hard? "SEQW count failed for (~x0 ~x1 ~x2.)~%"
                                                 ',nametree ',type ',action)
                                             (mv "SEQW count failure." nil !!!stream ,warnings)))
                                    (t
-                                    (check-vars-not-free (!!!error !!!val !!!stream) 
+                                    (check-vars-not-free (!!!error !!!val !!!stream)
                                                          ,rest)))))))
-             
+
              ;; Multiple variables; do the destructuring.
              (case type
 
@@ -136,12 +143,12 @@
                                  ((not (mbt (,(case type (:s= '<) (:w= '<=))
                                              (acl2-count ,stream)
                                              (acl2-count !!!stream))))
-                                  (prog2$ (er hard?  "SEQW count failed for (~x0 ~x1 ~x2.)~%" 
+                                  (prog2$ (er hard?  "SEQW count failed for (~x0 ~x1 ~x2.)~%"
                                               ',nametree ',type ',action)
                                           (mv "SEQW count failure." nil !!!stream ,warnings)))
                                  (t
                                   (let ,(seq-nametree-to-let-bindings nametree '!!!val)
-                                    (check-vars-not-free (!!!error !!!val !!!stream) 
+                                    (check-vars-not-free (!!!error !!!val !!!stream)
                                                          ,rest)))))))))))))
 
 ;(seqw-process-bind '(:= action) 'stream 'warnings '<rest>)
@@ -161,19 +168,19 @@
                                (seq-name-p warnings))))
    (let ((condition (second x))
          (subblock  (cddr x)))
-     (seqw-process-when (list* 'when 
+     (seqw-process-when (list* 'when
                                `(not ,condition)
                                subblock)
                         stream warnings rest)))
 
 
  (defun seqw-process-when (x stream warnings rest)
-   
+
 ; X is a when statement, stream is the name of the stream we are processing,
 ; warnings is the name of the warnings structure, and rest is the expansion for
 ; the statements that come after this when statement in the current block.  We
 ; are to write the MV code for this when statement.
-   
+
    (declare (xargs :guard (and (seq-when-p x)
                                (seq-name-p stream)
                                (seq-name-p warnings))))
@@ -183,7 +190,7 @@
           (ends-with-returnp (seq-list-ends-with-returnp subblock))
           (bound-in-subblock (seq-block-names subblock nil)))
 
-     (cond 
+     (cond
 
 ; Easy case 1.  The subblock ends with a return, so we always either process it
 ; or rest but never both.
@@ -197,7 +204,7 @@
 ; Easy case 2.  The subblock doesn't end with a return, so we may process it or
 ; and rest; but since it binds no variables so the only thing that it changes is
 ; the stream.
-     
+
       ((not bound-in-subblock)
        `(mv-let (!!!error !!!val ,stream ,warnings)
                 (if ,condition
@@ -217,24 +224,24 @@
 ; before processing it, which returns to us a list of all the values for the
 ; variables it binds.  We can then rebind these variables before giving them to
 ; rest.
-     
+
       (t
        (let* ((return-stmt       `(return (list ,@bound-in-subblock)))
               (return-expansion  `(mv nil (list ,@bound-in-subblock) ,stream ,warnings))
               (new-subblock      (append subblock (list return-stmt)))
               (rebindings        (seq-make-let-pairs-for-when bound-in-subblock)))
-        
+
          `(mv-let (!!!error !!!val ,stream ,warnings)
                   (if ,condition
                       ,(seqw-process-block new-subblock stream warnings nil)
                     ,return-expansion)
                   (if !!!error
                       (mv !!!error !!!val ,stream ,warnings)
-                   
+
 ; At this point, !!!val holds the list of all the values for the variables
 ; which were bound in the subblock.  We just need to redo these bindings so
 ; that they are available in rest.
-                   
+
                     (let* ,rebindings
                       (check-vars-not-free (!!!error !!!val) ,rest)))))))))
 
@@ -258,7 +265,7 @@
                    `(mv nil ,value ,stream ,warnings))
                   ((eq type 'return-raw)
                    value))))))
- 
+
  (defun seqw-process-block (x stream warnings toplevelp)
    (declare (xargs :guard (and (seq-block-p x toplevelp)
                                (seq-name-p stream)
