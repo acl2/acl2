@@ -64,7 +64,6 @@ ACL2 ?= acl2
 	  echo "(time$$ (certify-book \"$$FILE\" ? $(COMPILE_FLG)))" >> $$WORKXXXFILE ;\
 	fi ;\
 	echo "" >> $$WORKXXXFILE ;\
-	echo "(acl2::hons-summary)" >> $$WORKXXXFILE ;\
         echo "(acl2::ld \"make_cert.lsp\" :dir :system)" >> $$WORKXXXFILE ;\
 	echo "(acl2::horrible-include-book-exit \"$$FILE\" acl2::state)" >> $$WORKXXXFILE ;\
 	if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\

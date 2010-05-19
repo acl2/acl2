@@ -25,7 +25,8 @@
 
 (def-macro-alias assoc-hqual hons-assoc-equal 2)
 
-(def-macro-alias het hons-get (x a))
+; This should become (def-macro-alias het hons-get (x a)) for new-hons
+(def-macro-alias het hons-get-fn-do-hopy (x a))
 
 (def-macro-alias hut hons-acons 3)
 
