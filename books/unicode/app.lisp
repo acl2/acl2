@@ -24,7 +24,7 @@
 (defund binary-app (x y)
   (declare (xargs :guard t))
   (if (consp x)
-      (cons (car x) 
+      (cons (car x)
             (binary-app (cdr x) y))
     (list-fix y)))
 
@@ -72,7 +72,7 @@
 
 (defthm app-under-iff
   (iff (app x y)
-       (or (consp x) 
+       (or (consp x)
            (consp y)))
   :hints(("Goal" :induct (len x))))
 
@@ -91,7 +91,7 @@
                   (if (< n (len x))
                       (nth n x)
                     (nth (- n (len x)) y))))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable nth)
           :induct (nth n x))))
 
@@ -132,7 +132,7 @@
 (defthm simpler-take-of-len-from-app
   (equal (simpler-take (len x) (app x y))
          (list-fix x))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable simpler-take)
           :induct (len x))))
 
@@ -143,6 +143,6 @@
 (defthm nthcdr-of-len-from-app
   (equal (nthcdr (len x) (app x y))
          (list-fix y))
-  :hints(("Goal" 
+  :hints(("Goal"
           :induct (len x)
           :in-theory (disable prefer-positive-addends-<))))

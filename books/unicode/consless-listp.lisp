@@ -55,5 +55,5 @@
 
 (defthm consless-listp-of-cdr-when-consless-listp
   (implies (consless-listp x)
-           (consless-listp (cdr x))))  
+           (consless-listp (cdr x))))
 

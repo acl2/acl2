@@ -52,9 +52,9 @@
   (implies (and (force (state-p1 state))
                 (force (symbolp channel))
                 (force (open-input-channel-p1 channel :byte state)))
-           (equal (car (take-bytes n channel state))
-                  (simpler-take n (car (read-byte$-all channel state)))))
-  :hints(("Goal" 
+           (equal (mv-nth 0 (take-bytes n channel state))
+                  (simpler-take n (mv-nth 0 (read-byte$-all channel state)))))
+  :hints(("Goal"
           :in-theory (enable simpler-take take-bytes read-byte$-all)
           :induct (take-bytes n channel state))))
 

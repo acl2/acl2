@@ -16,6 +16,7 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
+(local (include-book "tools/mv-nth" :dir :system))
 (local (include-book "update-state"))
 (local (include-book "open-input-channels"))
 
@@ -41,7 +42,7 @@
 
 (defthm read-byte$-measure-strong
   (implies (and (state-p1 state)
-                (car (read-byte$ channel state)))
+                (mv-nth 0 (read-byte$ channel state)))
            (< (file-measure channel (mv-nth 1 (read-byte$ channel state)))
               (file-measure channel state)))
   :hints(("Goal" :in-theory (disable statep-functions)))
@@ -56,7 +57,7 @@
 
 (defthm read-char$-measure-strong
   (implies (and (state-p1 state)
-                (car (read-char$ channel state)))
+                (mv-nth 0 (read-char$ channel state)))
            (< (file-measure channel (mv-nth 1 (read-char$ channel state)))
               (file-measure channel state)))
   :hints(("Goal" :in-theory (disable statep-functions)))
@@ -78,7 +79,7 @@
                               t
                             nil)))
           :hints(("Goal"
-                  :in-theory (disable open-channels-assoc 
+                  :in-theory (disable open-channels-assoc
                                       open-channels-p
                                       open-input-channels)
                   :use ((:instance open-channels-assoc
@@ -86,7 +87,7 @@
 
  (defthm read-object-measure-strong
    (implies (and (state-p1 state)
-                 (not (car (read-object channel state))))
+                 (not (mv-nth 0 (read-object channel state))))
             (< (file-measure channel (mv-nth 2 (read-object channel state)))
                (file-measure channel state)))
    :hints(("Goal" :in-theory (disable statep-functions)))

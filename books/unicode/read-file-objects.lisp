@@ -20,6 +20,7 @@
 (local (include-book "open-input-channel"))
 (local (include-book "close-input-channel"))
 (local (include-book "read-object"))
+(local (include-book "tools/mv-nth" :dir :system))
 (set-state-ok t)
 
 (defun tr-read-object-all (channel state acc)
@@ -42,7 +43,7 @@
                               (open-input-channel-p channel :object state))
                   :measure (file-measure channel state)
                   :verify-guards nil))
-  (mbe 
+  (mbe
    :logic (if (state-p state)
               (mv-let (eofp obj state)
                       (read-object channel state)
@@ -72,13 +73,13 @@
  ()
  (local (defthm lemma-decompose-impl
           (equal (tr-read-object-all channel state acc)
-                 (list (car (tr-read-object-all channel state acc))
+                 (list (mv-nth 0 (tr-read-object-all channel state acc))
                        (mv-nth 1 (tr-read-object-all channel state acc))))
           :rule-classes nil))
-      
+
  (local (defthm lemma-decompose-spec
           (equal (read-object-all channel state)
-                 (list (car (read-object-all channel state))
+                 (list (mv-nth 0 (read-object-all channel state))
                        (mv-nth 1 (read-object-all channel state))))
           :rule-classes nil))
 
@@ -87,13 +88,13 @@
                         (symbolp channel)
                         (open-input-channel-p1 channel :object state)
                         (true-listp acc))
-                   (equal (car (tr-read-object-all channel state acc))
-                          (revappend acc (car (read-object-all channel state)))))))
+                   (equal (mv-nth 0 (tr-read-object-all channel state acc))
+                          (revappend acc (mv-nth 0 (read-object-all channel state)))))))
 
  (local (defthm lemma-state-equiv
           (equal (mv-nth 1 (tr-read-object-all channel state acc))
                  (mv-nth 1 (read-object-all channel state)))))
-  
+
  (local (defthm lemma-equiv
           (implies (and (state-p1 state)
                         (symbolp channel)
@@ -121,7 +122,7 @@
                                   (mv-nth 1 (read-object-all channel state)))))
 
 (defthm true-listp-of-read-object-all
-  (true-listp (car (read-object-all channel state)))
+  (true-listp (mv-nth 0 (read-object-all channel state)))
   :rule-classes (:rewrite :type-prescription)
   :hints(("Goal" :in-theory (enable read-object-all))))
 
@@ -133,13 +134,13 @@
            (state-p1 (mv-nth 1 (read-file-objects filename state)))))
 
 (defthm true-listp-of-read-file-objects
-  (implies (and (force (state-p1 state))
-                (force (stringp filename))
-                (not (stringp (car (read-file-objects filename state)))))
-           (true-listp (car (read-file-objects filename state))))
+  (implies (and (not (stringp (mv-nth 0 (read-file-objects filename state))))
+                (force (state-p1 state))
+                (force (stringp filename)))
+           (true-listp (mv-nth 0 (read-file-objects filename state))))
   :hints(("Goal" :in-theory (enable read-file-objects))))
 
-(in-theory (disable tr-read-object-all 
+(in-theory (disable tr-read-object-all
                     read-object-all
                     read-file-objects))
 

@@ -22,7 +22,7 @@
 (defund list-fix (x)
   (declare (xargs :guard t))
   (if (consp x)
-      (cons (car x) 
+      (cons (car x)
             (list-fix (cdr x)))
     nil))
 
@@ -46,14 +46,14 @@
          (cons a (list-fix x)))
   :hints(("Goal" :in-theory (enable list-fix))))
 
-(defthm car-of-list-fix 
+(defthm car-of-list-fix
   (equal (car (list-fix x))
          (car x)))
 
-(defthm cdr-of-list-fix 
+(defthm cdr-of-list-fix
   (equal (cdr (list-fix x))
          (list-fix (cdr x))))
-  
+
 (defthm list-fix-when-len-zero
   (implies (equal (len x) 0)
            (equal (list-fix x)
@@ -62,7 +62,7 @@
 (defthm true-listp-of-list-fix
   (true-listp (list-fix x)))
 
-(defthm len-of-list-fix 
+(defthm len-of-list-fix
   (equal (len (list-fix x))
          (len x)))
 
@@ -97,4 +97,4 @@
   (equal (butlast (list-fix x) n)
          (butlast x n))
   :hints(("Goal" :in-theory (enable butlast))))
-                                    
+

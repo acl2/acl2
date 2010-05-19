@@ -22,7 +22,7 @@
   (if (member x '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
       t
     nil))
-  
+
 (defthm characterp-when-base10-digit-charp
   (implies (base10-digit-charp x)
            (characterp x))

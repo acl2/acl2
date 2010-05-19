@@ -22,17 +22,17 @@
 (defthm stringp-of-reverse
   (equal (stringp (reverse x))
          (stringp x)))
-  
+
 (defthm true-listp-of-reverse
   (equal (true-listp (reverse x))
          (not (stringp x))))
- 
+
 (defthm equal-of-reverses-when-strings
   (implies (and (stringp x)
                 (stringp y))
            (equal (equal (reverse x) (reverse y))
                   (equal x y))))
-  
+
 (defthm equal-of-reverses-when-lists
   (implies (and (true-listp x)
                 (true-listp y))

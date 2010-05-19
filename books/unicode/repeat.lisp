@@ -35,7 +35,7 @@
                 (cons x (repeat x (- n 1))))
 
 ; On CCL, a simple loop of (loop for i from 1 to 10000 do (repeat 6 10000))
-; finished in 2.74 seconds when we use make-list, versus 3.69 seconds when 
+; finished in 2.74 seconds when we use make-list, versus 3.69 seconds when
 ; we use make-list-ac.  So lets use make-list.
 
        :exec (make-list n :initial-element x)))
@@ -87,9 +87,9 @@
 
  (defthmd make-list-ac->repeat
    (equal (make-list-ac n x acc)
-          (append (repeat x n) 
+          (append (repeat x n)
                   acc)))
- 
+
  (verify-guards repeat
                 :hints(("Goal" :in-theory (enable repeat
                                                   make-list-ac->repeat)))))

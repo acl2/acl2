@@ -23,13 +23,14 @@
 (include-book "partition")
 (local (include-book "nthcdr"))
 (local (include-book "signed-byte-listp"))
+(local (include-book "tools/mv-nth" :dir :system))
 (set-verify-guards-eagerness 2)
 (set-state-ok t)
 
 
 ;; The conversion into UTF-8 was pretty straightforward.  Unfortunately, the
 ;; conversion from UTF-8 is much more complicated, becuase we have to deal with
-;; lists of bytes rather than atomic code points. 
+;; lists of bytes rather than atomic code points.
 ;;
 ;; Assume for now that we are given a single UTF-8 encoded character.  This
 ;; might be a list of 1-4 bytes.  We will write functions to coerce these bytes
@@ -93,7 +94,7 @@
                                (list x1 j))))))
 
  (local (defthm lemma2
-          (implies (and (utf8-combine2-test x1) 
+          (implies (and (utf8-combine2-test x1)
                         (integerp x1)
                         (integerp i) (<= 0 i) (<= i x1)
                         (integerp j) (<= 0 j) (< j 256)
@@ -104,7 +105,7 @@
                         (equal (uchar=>utf8 (utf8-combine2 i j))
                                (list i j))))
           :hints(("Goal" :in-theory (enable utf8-combine2-guard)))))
-           
+
  (comp t)
 
  (local (defthm lemma3
@@ -114,7 +115,7 @@
                         (utf8-table36-ok? (utf8-combine2 x1 x2) (list x1 x2))
                         (equal (uchar=>utf8 (utf8-combine2 x1 x2))
                                (list x1 x2))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable utf8-combine2-guard
                                      unsigned-byte-p)
                   :use (:instance lemma2 (x1 255) (i x1) (j x2))))))
@@ -160,8 +161,8 @@
            (type (unsigned-byte 8) x2)
            (type (unsigned-byte 8) x3)
            (xargs :guard (utf8-combine3-guard x1 x2 x3)))
-  (let ((0000zzzz (logand (the-fixnum x1) #b00001111)) 
-        (00yyyyyy (logand (the-fixnum x2) #b00111111)) 
+  (let ((0000zzzz (logand (the-fixnum x1) #b00001111))
+        (00yyyyyy (logand (the-fixnum x2) #b00111111))
         (00xxxxxx (logand (the-fixnum x3) #b00111111)))
     (the-fixnum (logior (the-fixnum (ash (the-fixnum 0000zzzz) 12))
                         (the-fixnum (ash (the-fixnum 00yyyyyy) 6))
@@ -208,30 +209,30 @@
                         (integerp k) (<= 0 k) (<= k x3)
                         (utf8-combine3-guard x1 x2 k))
                    (and (uchar? (utf8-combine3 x1 x2 k))
-                        (utf8-table35-ok? (utf8-combine3 x1 x2 k) 
+                        (utf8-table35-ok? (utf8-combine3 x1 x2 k)
                                           (list x1 x2 k))
-                        (utf8-table36-ok? (utf8-combine3 x1 x2 k) 
+                        (utf8-table36-ok? (utf8-combine3 x1 x2 k)
                                           (list x1 x2 k))
                         (equal (uchar=>utf8 (utf8-combine3 x1 x2 k))
                                (list x1 x2 k))))))
 
  (local (defthm lemma2
-          (implies (and (test1-utf8-combine3 x1 x2) 
+          (implies (and (test1-utf8-combine3 x1 x2)
                         (integerp x2)
                         (integerp j) (<= 0 j) (<= j x2)
                         (integerp k) (<= 0 k) (< k 256)
                         (utf8-combine3-guard x1 j k))
                    (and (uchar? (utf8-combine3 x1 j k))
-                        (utf8-table35-ok? (utf8-combine3 x1 j k) 
+                        (utf8-table35-ok? (utf8-combine3 x1 j k)
                                           (list x1 j k))
-                        (utf8-table36-ok? (utf8-combine3 x1 j k) 
+                        (utf8-table36-ok? (utf8-combine3 x1 j k)
                                           (list x1 j k))
                         (equal (uchar=>utf8 (utf8-combine3 x1 j k))
                                (list x1 j k))))
           :hints(("Goal" :in-theory (enable utf8-combine3-guard)))))
-           
+
  (local (defthm lemma3
-          (implies (and (test-utf8-combine3 x1) 
+          (implies (and (test-utf8-combine3 x1)
                         (integerp x1)
                         (integerp i) (<= 0 i) (<= i x1)
                         (integerp j) (<= 0 j) (< j 256)
@@ -251,13 +252,13 @@
  (local (defthm lemma4
           (implies (utf8-combine3-guard x1 x2 x3)
                    (and (uchar? (utf8-combine3 x1 x2 x3))
-                        (utf8-table35-ok? (utf8-combine3 x1 x2 x3) 
+                        (utf8-table35-ok? (utf8-combine3 x1 x2 x3)
                                           (list x1 x2 x3))
-                        (utf8-table36-ok? (utf8-combine3 x1 x2 x3) 
+                        (utf8-table36-ok? (utf8-combine3 x1 x2 x3)
                                           (list x1 x2 x3))
                         (equal (uchar=>utf8 (utf8-combine3 x1 x2 x3))
                                (list x1 x2 x3))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable utf8-combine3-guard unsigned-byte-p)
                   :use (:instance lemma3 (x1 255) (i x1) (j x2) (k x3))))))
 
@@ -309,9 +310,9 @@
             (type (unsigned-byte 8) x3)
             (type (unsigned-byte 8) x4)
             (xargs :guard (utf8-combine4-guard x1 x2 x3 x4)))
-   (let ((00000uuu (logand (the-fixnum x1) #b00000111)) 
-         (00uuzzzz (logand (the-fixnum x2) #b00111111)) 
-         (00yyyyyy (logand (the-fixnum x3) #b00111111)) 
+   (let ((00000uuu (logand (the-fixnum x1) #b00000111))
+         (00uuzzzz (logand (the-fixnum x2) #b00111111))
+         (00yyyyyy (logand (the-fixnum x3) #b00111111))
          (00xxxxxx (logand (the-fixnum x4) #b00111111)))
      (the-fixnum (logior (the-fixnum (ash (the-fixnum 00000uuu) 18))
                          (the-fixnum (ash (the-fixnum 00uuzzzz) 12))
@@ -328,7 +329,7 @@
                             (and (uchar? result)
                                  (utf8-table35-ok? result (list x1 x2 x3 x4))
                                  (utf8-table36-ok? result (list x1 x2 x3 x4))
-                                 (equal (uchar=>utf8 
+                                 (equal (uchar=>utf8
                                          (utf8-combine4 x1 x2 x3 x4))
                                         (list x1 x2 x3 x4))))
                         t)))
@@ -368,15 +369,15 @@
                         (integerp m) (<= 0 m) (<= m x4)
                         (utf8-combine4-guard x1 x2 x3 m))
                    (and (uchar? (utf8-combine4 x1 x2 x3 m))
-                        (utf8-table35-ok? (utf8-combine4 x1 x2 x3 m) 
+                        (utf8-table35-ok? (utf8-combine4 x1 x2 x3 m)
                                           (list x1 x2 x3 m))
-                        (utf8-table36-ok? (utf8-combine4 x1 x2 x3 m) 
+                        (utf8-table36-ok? (utf8-combine4 x1 x2 x3 m)
                                           (list x1 x2 x3 m))
                         (equal (uchar=>utf8 (utf8-combine4 x1 x2 x3 m))
                                (list x1 x2 x3 m))))))
 
  (local (defthm lemma2
-          (implies (and (test2-utf8-combine4 x1 x2 x3) 
+          (implies (and (test2-utf8-combine4 x1 x2 x3)
                         (integerp x3)
                         (integerp k) (<= 0 k) (<= k x3)
                         (integerp m) (<= 0 m) (< m 256)
@@ -391,7 +392,7 @@
           :hints(("Goal" :in-theory (enable utf8-combine4-guard)))))
 
  (local (defthm lemma3
-          (implies (and (test1-utf8-combine4 x1 x2) 
+          (implies (and (test1-utf8-combine4 x1 x2)
                         (integerp x2)
                         (integerp j) (<= 0 j) (<= j x2)
                         (integerp k) (<= 0 k) (< k 256)
@@ -407,7 +408,7 @@
           :hints(("Goal" :in-theory (enable utf8-combine4-guard)))))
 
  (local (defthm lemma4
-          (implies (and (test-utf8-combine4 x1) 
+          (implies (and (test-utf8-combine4 x1)
                         (integerp x1)
                         (integerp i) (<= 0 i) (<= i x1)
                         (integerp j) (<= 0 j) (< j 256)
@@ -425,19 +426,19 @@
 
  (comp t)
 
- ;; This takes just over two minutes on a P4-2800.  That's pretty amazing, 
+ ;; This takes just over two minutes on a P4-2800.  That's pretty amazing,
  ;; considering that it's exhaustively checking 2^32 cases!
 
  (local (defthm lemma5
           (implies (utf8-combine4-guard x1 x2 x3 x4)
                    (and (uchar? (utf8-combine4 x1 x2 x3 x4))
-                        (utf8-table35-ok? (utf8-combine4 x1 x2 x3 x4) 
+                        (utf8-table35-ok? (utf8-combine4 x1 x2 x3 x4)
                                           (list x1 x2 x3 x4))
-                        (utf8-table36-ok? (utf8-combine4 x1 x2 x3 x4) 
+                        (utf8-table36-ok? (utf8-combine4 x1 x2 x3 x4)
                                           (list x1 x2 x3 x4))
                         (equal (uchar=>utf8 (utf8-combine4 x1 x2 x3 x4))
                                (list x1 x2 x3 x4))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable utf8-combine4-guard
                                      unsigned-byte-p)
                   :use (:instance lemma4
@@ -500,7 +501,7 @@
                 nil)))
          (otherwise nil))))
 
-      
+
 (encapsulate
  ()
  (local (defun tester (x)
@@ -720,7 +721,7 @@
   (implies (utf8-char=>uchar x)
            (equal (utf8-table35-expected-length (car x))
                   (len x)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable utf8-char=>uchar
                              utf8-table35-expected-length
                              utf8-combine2-guard
@@ -740,7 +741,7 @@
 ;; bytes as a utf8-string.
 
 (defund utf8-partition (x)
-  "We attempt to create a partitioning of a list of bytes which results in a 
+  "We attempt to create a partitioning of a list of bytes which results in a
    UTF-8 string."
   (declare (xargs :guard (unsigned-byte-listp 8 x)))
   (if (consp x)
@@ -757,36 +758,36 @@
     (mv (equal x nil) nil)))
 
 (defthm unsigned-byte-listp-when-utf8-partition
-  (implies (car (utf8-partition x))
+  (implies (mv-nth 0 (utf8-partition x))
            (unsigned-byte-listp 8 x))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (e/d (utf8-partition)
                           (utf8-table35-expected-length)))))
 
 (defthm nat-listp-when-utf8-partition
-  (implies (car (utf8-partition x))
+  (implies (mv-nth 0 (utf8-partition x))
            (nat-listp x))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable unsigned-byte-listp-when-utf8-partition)
           :use ((:instance unsigned-byte-listp-when-utf8-partition)))))
 
 (defthm true-listp-when-utf8-partition
-  (implies (car (utf8-partition x))
+  (implies (mv-nth 0 (utf8-partition x))
            (true-listp x))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable unsigned-byte-listp-when-utf8-partition)
           :use ((:instance unsigned-byte-listp-when-utf8-partition)))))
 
 (defthm utf8-partition-of-app-utf8-char
   (implies (and (utf8-char? a)
-                (car (utf8-partition x)))
-           (car (utf8-partition (app a x))))
+                (mv-nth 0 (utf8-partition x)))
+           (mv-nth 0 (utf8-partition (app a x))))
   :hints(("Goal"
           :in-theory (disable utf8-table35-expected-length)
           :expand (utf8-partition (app a x)))))
 
 (defthm sum-list-of-sizes-of-utf8-partition
-  (implies (car (utf8-partition x))
+  (implies (mv-nth 0 (utf8-partition x))
            (equal (sum-list (mv-nth 1 (utf8-partition x)))
                   (len x)))
   :hints(("Goal"
@@ -794,7 +795,7 @@
                           (utf8-table35-expected-length)))))
 
 (defthm nat-listp-of-mv-nth-1-of-utf8-partition
-  (implies (car (utf8-partition x))
+  (implies (mv-nth 0 (utf8-partition x))
            (nat-listp (mv-nth 1 (utf8-partition x))))
   :hints(("Goal" :in-theory (e/d (utf8-partition)
                                  (utf8-table35-expected-length)))))
@@ -808,9 +809,9 @@
 ;; the resulting list of sizes, then we obtain a valid UTF8 string.
 
 (defthm ustring?-of-utf8-partition
-  (implies (car (utf8-partition x))
+  (implies (mv-nth 0 (utf8-partition x))
            (utf8-string? (partition (mv-nth 1 (utf8-partition x)) x)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable utf8-partition partition)
           :induct (utf8-partition x))))
 
@@ -844,13 +845,13 @@
                 (true-listp sizes)
                 (equal (sum-list sizes) (len x))
                 (utf8-string? (partition sizes x)))
-           (car (utf8-partition x)))
+           (mv-nth 0 (utf8-partition x)))
   :hints(("Goal" :in-theory (enable partition utf8-partition))))
 
 
 ;; Correctness of UTF8-Partition.  (Part 3: Uniqueness)
 ;;
-;; Given a list of bytes, suppose there is any partitioning which results in a 
+;; Given a list of bytes, suppose there is any partitioning which results in a
 ;; valid UTF8 string.  Then, UTF8-Partition returns exactly this partitioning.
 
 (defthm utf8-partitioning-is-unique-when-any-valid-partitioning-exists
@@ -861,7 +862,7 @@
            (equal (mv-nth 1 (utf8-partition x))
                   sizes))
   :hints(("Goal" :in-theory (enable partition utf8-partition))))
-        
+
 
 
 
@@ -887,7 +888,7 @@
          (cons (utf8-char=>uchar a)
                (utf8-string=>ustring x)))
   :hints(("Goal" :in-theory (enable utf8-string=>ustring))))
-           
+
 (defthmd ustring?-of-utf8-string=>ustring
   (implies (utf8-string? x)
            (ustring? (utf8-string=>ustring x)))
@@ -911,8 +912,8 @@
   (declare (xargs :guard (and (unsigned-byte-listp 8 x)
                               (ustring? acc))
                   :verify-guards nil))
-  (mbe 
-   :logic 
+  (mbe
+   :logic
    (if (not (consp x))
        (if (equal x nil)
            (reverse acc)
@@ -923,7 +924,7 @@
          (let ((first (utf8-char=>uchar (take len1 x))))
            (if (not first)
                'fail
-             (utf8=>ustring-fast (nthcdr len1 x) 
+             (utf8=>ustring-fast (nthcdr len1 x)
                                  (cons first acc)))))))
    :exec
    (if (not (consp x))
@@ -931,9 +932,9 @@
            (reverse acc)
          'fail)
      (let ((x1 (car x)))
-       (cond 
+       (cond
 
-        ((in-range? (the-fixnum x1) 0 127) 
+        ((in-range? (the-fixnum x1) 0 127)
          ;; Expected length 1.  We don't need to do any further checking; we can
          ;; just recur very quickly.  Note that this will give us very good
          ;; performance for English text, where characters are typically only a
@@ -950,16 +951,16 @@
                   (x2-rest (rest  x1-rest)))
               (if (in-range? (the-fixnum x2) 128 191)
                   ;; Manually-inlined utf8-combine2 operation.
-                  (utf8=>ustring-fast 
-                   x2-rest 
-                   (cons 
+                  (utf8=>ustring-fast
+                   x2-rest
+                   (cons
                     (the-fixnum
-                     (logior 
+                     (logior
                       (the-fixnum (ash (the-fixnum (logand (the-fixnum x1) 31)) 6))
                       (the-fixnum (logand (the-fixnum x2) 63))))
                     acc))
                 'fail)))))
-       
+
         ((in-range? (the-fixnum x1) 224 239)
          ;; Expected length 3.
          (let ((x1-rest (rest x)))
@@ -971,27 +972,27 @@
                   'fail
                (let ((x3      (first x2-rest))
                      (x3-rest (rest  x2-rest)))
-                 (if (and (cond ((= (the-fixnum x1) 224)  
+                 (if (and (cond ((= (the-fixnum x1) 224)
                                  (in-range? (the-fixnum x2) 160 191))
-                                ((= (the-fixnum x1) 237)  
+                                ((= (the-fixnum x1) 237)
                                  (in-range? (the-fixnum x2) 128 159))
-                                (t 
+                                (t
                                  (in-range? (the-fixnum x2) 128 191)))
                           (in-range? (the-fixnum x3) 128 191))
-                     (utf8=>ustring-fast 
-                      x3-rest 
-                      (cons 
+                     (utf8=>ustring-fast
+                      x3-rest
+                      (cons
                        (the-fixnum
-                        (logior 
-                         (the-fixnum 
+                        (logior
+                         (the-fixnum
                           (ash (the-fixnum (logand (the-fixnum x1) 15)) 12))
                          (logior
-                          (the-fixnum 
+                          (the-fixnum
                            (ash (the-fixnum (logand (the-fixnum x2) 63)) 6))
                           (the-fixnum (logand (the-fixnum x3) 63)))))
                        acc))
                    'fail)))))))
-                       
+
         ((in-range? (the-fixnum x1) 240 244)
          ;; Expected length 4.  We only accept 240-244 because of Table 3-6.
          (let ((x1-rest (rest x)))
@@ -1011,26 +1012,26 @@
                                     (in-range? (the-fixnum x2) 144 191))
                                    ((= (the-fixnum x1) 244)
                                     (in-range? (the-fixnum x2) 128 143))
-                                   (t 
+                                   (t
                                     (in-range? (the-fixnum x2) 128 191)))
                              (in-range? (the-fixnum x3) 128 191)
                              (in-range? (the-fixnum x4) 128 191))
-                        (utf8=>ustring-fast 
-                         x4-rest 
-                         (cons 
+                        (utf8=>ustring-fast
+                         x4-rest
+                         (cons
                           (the-fixnum
-                           (logior 
-                            (the-fixnum 
+                           (logior
+                            (the-fixnum
                              (ash (the-fixnum (logand (the-fixnum x1) 7)) 18))
-                            (the-fixnum 
-                             (logior 
+                            (the-fixnum
+                             (logior
                               (the-fixnum
                                (ash (the-fixnum (logand (the-fixnum x2) 63)) 12))
                               (the-fixnum
-                               (logior 
-                                (the-fixnum 
+                               (logior
+                                (the-fixnum
                                  (ash (the-fixnum (logand (the-fixnum x3) 63)) 6))
-                                (the-fixnum 
+                                (the-fixnum
                                  (logand (the-fixnum x4) 63))))))))
                           acc))
                       'fail)))))))))
@@ -1057,11 +1058,11 @@
                        (<= X2 191))
                   (UCHAR? (LOGIOR (ASH (LOGAND X1 31) 6)
                                   (LOGAND X2 63))))
-         :hints(("Goal" 
+         :hints(("Goal"
                  :in-theory (enable utf8-combine2-guard
                                     utf8-combine2
                                     utf8-table35-bytes
-                                    utf8-table36-bytes)          
+                                    utf8-table36-bytes)
                  :use ((:instance uchar?-of-utf8-combine2))))))
 
 (local (defthm terrible-lemma-3
@@ -1073,7 +1074,7 @@
                        (<= X3 191))
                   (UCHAR? (LOGIOR 0 (ASH (LOGAND X2 63) 6)
                                   (LOGAND X3 63))))
-         :hints(("Goal" 
+         :hints(("Goal"
                  :in-theory (enable utf8-combine3-guard
                                     utf8-combine3
                                     utf8-table35-bytes
@@ -1096,7 +1097,7 @@
                   (UCHAR? (LOGIOR (ASH (LOGAND X1 15) 12)
                                   (ASH (LOGAND X2 63) 6)
                                   (LOGAND X3 63))))
-         :hints(("Goal" 
+         :hints(("Goal"
                  :in-theory (enable utf8-combine3-guard
                                     utf8-combine3
                                     utf8-table35-bytes
@@ -1112,7 +1113,7 @@
                        (<= X3 191))
                   (UCHAR? (LOGIOR 53248 (ASH (LOGAND X2 63) 6)
                                   (LOGAND X3 63))))
-         :hints(("Goal" 
+         :hints(("Goal"
                  :in-theory (enable utf8-combine3-guard
                                     utf8-combine3
                                     utf8-table35-bytes
@@ -1133,14 +1134,14 @@
                   (UCHAR? (LOGIOR 0 (ASH (LOGAND X2 63) 12)
                                   (ASH (LOGAND X3 63) 6)
                                   (LOGAND X4 63))))
-         :hints(("Goal" 
+         :hints(("Goal"
                  :in-theory (enable utf8-combine4-guard
                                     utf8-combine4
                                     utf8-table35-bytes
                                     utf8-table36-bytes)
                  :use ((:instance uchar?-of-utf8-combine4
                                   (x1 240)))))))
-          
+
 (local (defthm terrible-lemma-7
          (IMPLIES (AND (integerp x1)
                        (integerp x2)
@@ -1160,13 +1161,13 @@
                                   (ASH (LOGAND X2 63) 12)
                                   (ASH (LOGAND X3 63) 6)
                                   (LOGAND X4 63))))
-         :hints(("Goal" 
+         :hints(("Goal"
                  :in-theory (enable utf8-combine4-guard
                                     utf8-combine4
                                     utf8-table35-bytes
                                     utf8-table36-bytes)
                  :use ((:instance uchar?-of-utf8-combine4))))))
-                 
+
 (local (defthm terrible-lemma-8
          (IMPLIES (AND (integerp x2)
                        (integerp x3)
@@ -1180,7 +1181,7 @@
                   (UCHAR? (LOGIOR 1048576 (ASH (LOGAND x2 63) 12)
                                   (ASH (LOGAND x3 63) 6)
                                   (LOGAND x4 63))))
-         :hints(("Goal" 
+         :hints(("Goal"
                  :in-theory (enable utf8-combine4-guard
                                     utf8-combine4
                                     utf8-table35-bytes
@@ -1189,7 +1190,7 @@
                                   (x1 244)))))))
 
 (verify-guards utf8=>ustring-fast
-  :hints(("Goal" 
+  :hints(("Goal"
           :do-not '(generalize fertilize)
           :do-not-induct t
           :in-theory (enable unsigned-byte-listp
@@ -1209,7 +1210,7 @@
 ;; following.
 ;;
 ;;  (1) Partition the file into a valid set of bytes, if one exists.
-;;      (this is easy to do, we already have UTF8-Partition which 
+;;      (this is easy to do, we already have UTF8-Partition which
 ;;       finds this partitioning.)
 ;;
 ;;  (2) Go through "UTF8 Character by UTF8 character" and coerce each
@@ -1222,7 +1223,7 @@
 (defund utf8=>ustring (x)
   (declare (xargs :guard (unsigned-byte-listp 8 x)
                   :verify-guards nil))
-  (mbe :logic (mv-let (successp sizes) 
+  (mbe :logic (mv-let (successp sizes)
                       (utf8-partition x)
                       (if successp
                           (utf8-string=>ustring (partition sizes x))
@@ -1240,17 +1241,17 @@
 
  (local (defthm lemma2
           (implies (ustring? x)
-                   (car (utf8-partition (ustring=>utf8 x))))
+                   (mv-nth 0 (utf8-partition (ustring=>utf8 x))))
           :hints(("Goal" :in-theory (enable utf8-partition ustring=>utf8)))))
 
  (local (defthm lemma3
           (implies (ustring? x)
-                   (equal 
-                    (utf8-string=>ustring 
+                   (equal
+                    (utf8-string=>ustring
                      (partition (mv-nth 1 (utf8-partition (ustring=>utf8 x)))
                                 (ustring=>utf8 x)))
                     x))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :induct (len x)
                   :in-theory (enable utf8-partition)))))
 
@@ -1270,10 +1271,10 @@
  ;; bytes.
 
  (defthm ustring=>utf8-of-utf8=>ustring
-   (implies (car (utf8-partition x))
+   (implies (mv-nth 0 (utf8-partition x))
             (equal (ustring=>utf8 (utf8=>ustring x))
                    x))
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (enable utf8=>ustring)
            :use ((:instance flatten-of-partition
                             (sizes (mv-nth 1 (utf8-partition x)))
@@ -1288,10 +1289,10 @@
 
  (local (defthm lemma
           (implies (and (true-listp acc)
-                        (car (utf8-partition x)))
+                        (mv-nth 0 (utf8-partition x)))
                    (equal (utf8=>ustring-fast x acc)
                           (revappend acc (utf8=>ustring x))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable utf8=>ustring-fast
                                      utf8-partition
                                      utf8=>ustring)
@@ -1299,10 +1300,10 @@
 
  (local (defthm lemma2
           (implies (and (unsigned-byte-listp 8 x)
-                        (not (car (utf8-partition x))))
+                        (not (mv-nth 0 (utf8-partition x))))
                    (equal (utf8=>ustring-fast x acc)
                           'fail))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (e/d (utf8=>ustring-fast
                                    utf8-partition
                                    utf8-char=>uchar)

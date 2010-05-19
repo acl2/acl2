@@ -30,14 +30,14 @@
 (defund list-fix (x)
   (declare (xargs :guard t))
   (if (consp x)
-      (cons (car x) 
+      (cons (car x)
             (list-fix (cdr x)))
     nil))
 
 (defund binary-app (x y)
   (declare (xargs :guard t))
   (if (consp x)
-      (cons (car x) 
+      (cons (car x)
             (binary-app (cdr x) y))
     (list-fix y)))
 
@@ -71,7 +71,7 @@
 
 (defund rev (x)
   (declare (xargs :guard t))
-  (mbe :logic (if (consp x) 
+  (mbe :logic (if (consp x)
                   (append (rev (cdr x))
                           (list (car x)))
                 nil)

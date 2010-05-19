@@ -125,7 +125,7 @@
 ; returned will be the same as type in our call to open-input-channel-p1.
 
 (local (defthm assoc-eq-is-assoc-equal
-         (equal (assoc-eq a x) 
+         (equal (assoc-eq a x)
                 (assoc-equal a x))))
 
 (defthm assoc-open-input-channels-exists
@@ -162,9 +162,9 @@
                 (symbolp channel))
            (open-channels-p
             (add-pair channel
-                      (cons (cadr (assoc-equal channel 
+                      (cons (cadr (assoc-equal channel
                                                (open-input-channels state)))
-                            (cdddr (assoc-equal channel 
+                            (cdddr (assoc-equal channel
                                                 (open-input-channels state))))
                       (open-input-channels state))))
   :hints(("Goal" :in-theory (disable open-input-channels
@@ -181,12 +181,12 @@
   :hints(("Goal" :in-theory (enable update-open-input-channels
                                     open-input-channels
                                     state-p1))))
-        
+
 (defthm equal-of-add-pair-with-channels
   (implies (ordered-symbol-alistp channels)
            (equal (equal (add-pair channel x channels) channels)
                   (equal (assoc-equal channel channels)
                          (cons channel x))))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable ordered-symbol-alistp add-pair)
           :induct (add-pair channel x channels))))

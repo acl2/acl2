@@ -24,7 +24,7 @@
                        (not (equal a b)))
                   (not (equal (intern-in-package-of-symbol a in-pkg)
                               (intern-in-package-of-symbol b in-pkg))))
-         :hints(("Goal" 
+         :hints(("Goal"
                  :use ((:instance symbol-name-intern-in-package-of-symbol
                                   (s a) (any-symbol in-pkg))
                        (:instance symbol-name-intern-in-package-of-symbol

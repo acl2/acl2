@@ -43,7 +43,7 @@
            (true-listp x))
   :hints(("Goal" :induct (len x))))
 
-(encapsulate 
+(encapsulate
  ()
  (local (include-book "ihs/logops-lemmas" :dir :system))
 
@@ -52,17 +52,17 @@
                             lognot)))
 
  (local (in-theory (enable signed-byte-p-logops)))
- 
+
  (defthm signed-byte-p-logand
    (implies (and (signed-byte-p size x)
                  (signed-byte-p size y))
             (signed-byte-p size (logand x y))))
- 
+
  (defthm signed-byte-p-logior
    (implies (and (signed-byte-p size x)
                  (signed-byte-p size y))
             (signed-byte-p size (logior x y))))
- 
+
  (defthm signed-byte-p-lognot
    (implies (signed-byte-p size x)
             (signed-byte-p size (lognot x))))
@@ -75,15 +75,15 @@
            (signed-byte-p n (1- x)))
   :hints(("Goal" :in-theory (enable signed-byte-p))))
 
-(encapsulate 
+(encapsulate
  ()
 
  (local (include-book "arithmetic-3/bind-free/top" :dir :system))
 
  (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 
- (local (set-default-hints 
-         '((nonlinearp-default-hint stable-under-simplificationp 
+ (local (set-default-hints
+         '((nonlinearp-default-hint stable-under-simplificationp
                                     hist pspv))))
 
  (local (include-book "unsigned-byte-listp"))
@@ -122,14 +122,14 @@
                                   (ash)))))
 
  (defthm signed-byte-p-resolver
-   (implies (and (integerp n) 
+   (implies (and (integerp n)
                  (<= 1 n)
-                 (integerp x) 
+                 (integerp x)
                  (<= (- (expt 2 (1- n))) x)
                  (< x (expt 2 (1- n))))
             (signed-byte-p n x))
    :hints(("Goal" :in-theory (enable signed-byte-p))))
-  
+
  )
 
 (in-theory (disable ash))

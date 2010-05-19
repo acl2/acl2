@@ -20,7 +20,7 @@
 (include-book "utf8-table36")
 (local (include-book "append"))
 (local (include-book "signed-byte-listp"))  ;; for the-fixnum
-                          
+
 
 
 ;; Conversion From Unicode to UTF-8 ===========================================
@@ -43,30 +43,30 @@
 
         ((in-range? (the-fixnum x) #x0080 #x07FF)
          (let ((110yyyyy (logior #xC0 (the-fixnum (ash (the-fixnum x) -6))))
-               (10xxxxxx (logior #X80 (the-fixnum 
+               (10xxxxxx (logior #X80 (the-fixnum
                                        (logand (the-fixnum x) #x3F)))))
            (list 110yyyyy 10xxxxxx)))
 
         ((in-range? (the-fixnum x) #x0800 #xFFFF)
          (let ((1110zzzz (logior #xE0 (the-fixnum (ash (the-fixnum x) -12))))
-               (10yyyyyy (logior #x80 (the-fixnum 
-                                       (logand (the-fixnum 
+               (10yyyyyy (logior #x80 (the-fixnum
+                                       (logand (the-fixnum
                                                 (ash (the-fixnum x) -6))
                                                #x3F))))
-               (10xxxxxx (logior #x80 (the-fixnum 
+               (10xxxxxx (logior #x80 (the-fixnum
                                        (logand (the-fixnum x) #x3F)))))
            (list 1110zzzz 10yyyyyy 10xxxxxx)))
 
         (t (let ((11110uuu (logior #xF0 (the-fixnum (ash (the-fixnum x) -18))))
-                 (10uuzzzz (logior #x80 (the-fixnum 
-                                         (logand (the-fixnum 
+                 (10uuzzzz (logior #x80 (the-fixnum
+                                         (logand (the-fixnum
                                                   (ash (the-fixnum x) -12))
                                                  #x3F))))
-                 (10yyyyyy (logior #x80 (the-fixnum 
-                                         (logand (the-fixnum 
+                 (10yyyyyy (logior #x80 (the-fixnum
+                                         (logand (the-fixnum
                                                   (ash (the-fixnum x) -6))
                                                  #x3F))))
-                 (10xxxxxx (logior #x80 (the-fixnum 
+                 (10xxxxxx (logior #x80 (the-fixnum
                                          (logand (the-fixnum x) #x3F)))))
              (list 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx)))))
 
@@ -84,7 +84,7 @@
 
 
 ;; Now we would like to show that our encoding function actually respects the
-;; constraints of Tables 3-5 and 3-6 which we formalized above.  
+;; constraints of Tables 3-5 and 3-6 which we formalized above.
 ;;
 ;; How can we prove something like this?  I have no deep insight about why the
 ;; table is written as it is, it all seems rather random/arbitrary.  Rather
@@ -108,7 +108,7 @@
                  t)
                (or (zp i)
                    (test-uchar=>utf8 (1- i))))))
-  
+
  ;; We now show that if we have successfully tested all the integers between 0
  ;; and i, then each of these integers satisfies our desired property.
 
@@ -120,21 +120,21 @@
                         (uchar? j))
                    (and (utf8-table35-ok? j (uchar=>utf8 j))
                         (utf8-table36-ok? j (uchar=>utf8 j))))))
-  
- ;; Finally, by instantiation of the above theorem, we can show that all of the 
+
+ ;; Finally, by instantiation of the above theorem, we can show that all of the
  ;; integers in the range [0, #x10ffff] satisfy our property, and then trivially
  ;; all uchar's satisfy our property, since all uchar's are in this range.  This
- ;; means we run our testing function for about 1.1 million iterations, so we 
+ ;; means we run our testing function for about 1.1 million iterations, so we
  ;; need to compile things first.  The entire process takes only about 2 seconds
  ;; on a P4-2800.
- 
+
  (comp t)
 
  (local (defthm lemma2
           (implies (uchar? x)
                    (and (utf8-table35-ok? x (uchar=>utf8 x))
                         (utf8-table36-ok? x (uchar=>utf8 x))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :use (:instance lemma
                                   (i #x10FFFF)
                                   (j x))))))

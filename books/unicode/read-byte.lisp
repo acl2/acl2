@@ -17,6 +17,7 @@
 
 (in-package "ACL2")
 
+(local (include-book "tools/mv-nth" :dir :system))
 (local (include-book "update-state"))
 (local (include-book "open-input-channels"))
 (local (include-book "unsigned-byte-listp"))
@@ -37,22 +38,22 @@
                 (force (symbolp channel)))
            (state-p1 (mv-nth 1 (read-byte$ channel state))))
   :hints(("Goal" :in-theory (disable statep-functions)
-          :use ((:instance state-p1 
+          :use ((:instance state-p1
                            (x state))
-                (:instance state-p1 
+                (:instance state-p1
                            (x (mv-nth 1 (read-byte$ channel state))))))))
 
 (defthm open-input-channel-p1-of-read-byte$
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel)))
-           (open-input-channel-p1 channel 
+           (open-input-channel-p1 channel
                                   :byte
                                   (mv-nth 1 (read-byte$ channel state))))
   :hints(("Goal" :in-theory (disable statep-functions)
-          :use ((:instance state-p1 
+          :use ((:instance state-p1
                            (x state))
-                (:instance state-p1 
+                (:instance state-p1
                            (x (mv-nth 1 (read-byte$ channel state))))))))
 
 (local (defthmd car-typed-io-list-byte
@@ -63,59 +64,59 @@
                 (< (car x) 256)))))
 
 (defthm integerp-of-read-byte$
-  (implies (and (force (state-p1 state))
-                (force (open-input-channel-p1 channel :byte state))
-                (car (read-byte$ channel state)))
-           (integerp (car (read-byte$ channel state))))
+  (implies (and (mv-nth 0 (read-byte$ channel state))
+                (force (state-p1 state))
+                (force (open-input-channel-p1 channel :byte state)))
+           (integerp (mv-nth 0 (read-byte$ channel state))))
   :hints(("Goal" :in-theory (disable open-input-channel-p1
                                      open-input-channels)
           :use (:instance car-typed-io-list-byte
-                          (x (cddr (assoc-equal 
-                                    channel 
+                          (x (cddr (assoc-equal
+                                    channel
                                     (open-input-channels state))))))))
-  
+
 (defthm range-of-read-byte$
-  (implies (and (force (state-p1 state))
-                (force (open-input-channel-p1 channel :byte state))
-                (car (read-byte$ channel state)))
-           (and (<= 0 (car (read-byte$ channel state)))
-                (< (car (read-byte$ channel state)) 256)
-                (< (car (read-byte$ channel state)) (expt 2 8))))
+  (implies (and (mv-nth 0 (read-byte$ channel state))
+                (force (state-p1 state))
+                (force (open-input-channel-p1 channel :byte state)))
+           (and (<= 0 (mv-nth 0 (read-byte$ channel state)))
+                (< (mv-nth 0 (read-byte$ channel state)) 256)
+                (< (mv-nth 0 (read-byte$ channel state)) (expt 2 8))))
   :rule-classes :linear
   :hints(("Goal" :in-theory (disable open-input-channel-p1
                                      open-input-channels)
           :use (:instance car-typed-io-list-byte
-                          (x (cddr (assoc-equal 
-                                    channel 
-                                    (open-input-channels state))))))))          
+                          (x (cddr (assoc-equal
+                                    channel
+                                    (open-input-channels state))))))))
 
 (defthm unsigned-byte-p-of-read-byte$
-  (implies (and (force (state-p1 state))
-                (force (open-input-channel-p1 channel :byte state))
-                (car (read-byte$ channel state))
+  (implies (and (mv-nth 0 (read-byte$ channel state))
                 (<= 8 size)
-                (integerp size))
-           (unsigned-byte-p size (car (read-byte$ channel state))))
-  :hints(("Goal" 
+                (integerp size)
+                (force (state-p1 state))
+                (force (open-input-channel-p1 channel :byte state)))
+           (unsigned-byte-p size (mv-nth 0 (read-byte$ channel state))))
+  :hints(("Goal"
           :in-theory (e/d (unsigned-byte-p) (read-byte$))
           :use (:instance unsigned-byte-promote
                           (size1 8)
                           (size2 size)
-                          (x (car (read-byte$ channel state)))))))
+                          (x (mv-nth 0 (read-byte$ channel state)))))))
 
 (defthm signed-byte-p-of-read-byte$
-  (implies (and (force (state-p1 state))
-                (force (open-input-channel-p1 channel :byte state))
-                (car (read-byte$ channel state))
+  (implies (and (mv-nth 0 (read-byte$ channel state))
                 (<= 9 size)
-                (integerp size))
-           (signed-byte-p size (car (read-byte$ channel state))))
-  :hints(("Goal" 
+                (integerp size)
+                (force (state-p1 state))
+                (force (open-input-channel-p1 channel :byte state)))
+           (signed-byte-p size (mv-nth 0 (read-byte$ channel state))))
+  :hints(("Goal"
           :in-theory (disable read-byte$)
           :use (:instance unsigned-to-signed-promote
                           (size1 8)
                           (size2 size)
-                          (x (car (read-byte$ channel state)))))))
+                          (x (mv-nth 0 (read-byte$ channel state)))))))
 
 
 (encapsulate
@@ -127,11 +128,11 @@
                    (not (cadr x)))))
 
  (defthm car-of-read-byte$-after-eof
-   (implies (and (force (state-p state))
+   (implies (and (not (mv-nth 0 (read-byte$ channel state)))
+                 (force (state-p state))
                  (force (symbolp channel))
-                 (force (open-input-channel-p channel :byte state))
-                 (not (car (read-byte$ channel state))))
-            (not (car (read-byte$ channel (mv-nth 1 (read-byte$ channel state))))))
+                 (force (open-input-channel-p channel :byte state)))
+            (not (mv-nth 0 (read-byte$ channel (mv-nth 1 (read-byte$ channel state))))))
    :hints(("Goal" :in-theory (e/d (read-byte$)
                                   (statep-functions))))))
 
@@ -153,19 +154,19 @@
                           t))))
 
  (defthm mv-nth-of-read-byte$-when-eof
-   (implies (and (state-p state)
+   (implies (and (not (mv-nth 0 (read-byte$ channel state)))
+                 (state-p state)
                  (symbolp channel)
-                 (open-input-channel-p channel :byte state)
-                 (not (car (read-byte$ channel state))))
+                 (open-input-channel-p channel :byte state))
             (equal (mv-nth 1 (read-byte$ channel state))
                    state))
-   :hints(("Goal" :in-theory (e/d (read-byte$) 
+   :hints(("Goal" :in-theory (e/d (read-byte$)
                                   (statep-functions
                                    open-channel1
                                    open-channels-assoc))
            :use ((:instance open-channels-assoc
                             (x (open-input-channels state))))))))
-         
+
 
 (in-theory (disable state-p1 open-input-channel-p1 read-byte$))
 

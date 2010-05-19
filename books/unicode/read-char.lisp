@@ -16,7 +16,7 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-
+(local (include-book "tools/mv-nth" :dir :system))
 (local (include-book "update-state"))
 (local (include-book "open-input-channels"))
 
@@ -30,22 +30,22 @@
                 (force (symbolp channel)))
            (state-p1 (mv-nth 1 (read-char$ channel state))))
   :hints(("Goal" :in-theory (disable statep-functions)
-          :use ((:instance state-p1 
+          :use ((:instance state-p1
                            (x state))
-                (:instance state-p1 
+                (:instance state-p1
                            (x (mv-nth 1 (read-char$ channel state))))))))
 
 (defthm read-char$-open-input-channel-p1
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :character state))
                 (force (symbolp channel)))
-           (open-input-channel-p1 channel 
+           (open-input-channel-p1 channel
                                   :character
                                   (mv-nth 1 (read-char$ channel state))))
   :hints(("Goal" :in-theory (disable statep-functions)
-          :use ((:instance state-p1 
+          :use ((:instance state-p1
                            (x state))
-                (:instance state-p1 
+                (:instance state-p1
                            (x (mv-nth 1 (read-char$ channel state))))))))
 
 (local (defthmd car-typed-io-list-char
@@ -54,15 +54,15 @@
            (characterp (car x)))))
 
 (defthm read-char$-character
-  (implies (and (force (state-p1 state))
-                (force (open-input-channel-p1 channel :character state))
-                (car (read-char$ channel state)))
-           (characterp (car (read-char$ channel state))))
+  (implies (and (mv-nth 0 (read-char$ channel state))
+                (force (state-p1 state))
+                (force (open-input-channel-p1 channel :character state)))
+           (characterp (mv-nth 0 (read-char$ channel state))))
   :hints(("Goal" :in-theory (disable open-input-channel-p1
                                      open-input-channels)
           :use (:instance car-typed-io-list-char
-                          (x (cddr (assoc-equal 
-                                    channel 
+                          (x (cddr (assoc-equal
+                                    channel
                                     (open-input-channels state))))))))
 
 (encapsulate
@@ -74,11 +74,11 @@
                    (not (cadr x)))))
 
  (defthm read-char$-after-eof
-   (implies (and (force (state-p state))
+   (implies (and (not (mv-nth 0 (read-char$ channel state)))
+                 (force (state-p state))
                  (force (symbolp channel))
-                 (force (open-input-channel-p channel :character state))
-                 (not (car (read-char$ channel state))))
-            (not (car (read-char$ channel (mv-nth 1 (read-byte$ channel state))))))
+                 (force (open-input-channel-p channel :character state)))
+            (not (mv-nth 0 (read-char$ channel (mv-nth 1 (read-byte$ channel state))))))
    :hints(("Goal" :in-theory (e/d (read-char$)
                                   (statep-functions))))))
 

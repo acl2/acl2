@@ -41,7 +41,7 @@
   (implies (and (not (zp n))
                 (force (print-base-p base)))
            (not (equal (explode-atom n base) '(#\0)))))
-  
+
 (defthm base10-digit-char-listp-of-explode-atom
   (implies (natp n)
            (base10-digit-char-listp (explode-atom n 10))))

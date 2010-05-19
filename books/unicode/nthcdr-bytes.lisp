@@ -18,6 +18,7 @@
 (in-package "ACL2")
 (include-book "read-byte")
 (include-book "read-file-bytes")
+(local (include-book "tools/mv-nth" :dir :system))
 (set-state-ok t)
 
 (defund nthcdr-bytes (n channel state)
@@ -50,16 +51,16 @@
   (implies (and (force (state-p1 state))
                 (force (symbolp channel))
                 (force (open-input-channel-p1 channel :byte state)))
-           (equal (car (read-byte$-all channel (nthcdr-bytes n channel state)))
-                  (nthcdr n (car (read-byte$-all channel state)))))
-  :hints(("Goal" 
+           (equal (mv-nth 0 (read-byte$-all channel (nthcdr-bytes n channel state)))
+                  (nthcdr n (mv-nth 0 (read-byte$-all channel state)))))
+  :hints(("Goal"
           :in-theory (enable nthcdr-bytes nthcdr read-byte$-all)
           :induct (nthcdr-bytes n channel state))))
 
 (defthm nthcdr-bytes-1
   (equal (nthcdr-bytes 1 channel state)
          (mv-nth 1 (read-byte$ channel state)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable nthcdr-bytes)
           :expand ((nthcdr-bytes 1 channel state)))))
 
@@ -71,20 +72,20 @@
 
 (defthm nthcdr-bytes-3
   (equal (nthcdr-bytes 3 channel state)
-         (mv-nth 1 (read-byte$ 
+         (mv-nth 1 (read-byte$
                     channel
-                    (mv-nth 1 (read-byte$ 
+                    (mv-nth 1 (read-byte$
                                channel
                                (mv-nth 1 (read-byte$ channel state)))))))
   :hints(("Goal" :in-theory (enable nthcdr-bytes))))
 
 (defthm nthcdr-bytes-4
   (equal (nthcdr-bytes 4 channel state)
-         (mv-nth 1 (read-byte$ 
+         (mv-nth 1 (read-byte$
                     channel
-                    (mv-nth 1 (read-byte$ 
+                    (mv-nth 1 (read-byte$
                                channel
-                               (mv-nth 1 (read-byte$ 
+                               (mv-nth 1 (read-byte$
                                           channel
                                           (mv-nth 1 (read-byte$ channel state)))))))))
   :hints(("Goal" :in-theory (enable nthcdr-bytes))))
@@ -99,11 +100,11 @@
   :hints(("Goal" :in-theory (enable nthcdr-bytes))))
 
 (defthm nthcdr-bytes-measure-strong
-  (implies (and (force (state-p1 state))
+  (implies (and (mv-nth 0 (read-byte$ channel state))
+                (not (zp n))
+                (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
-                (force (symbolp channel))
-                (car (read-byte$ channel state))
-                (not (zp n)))
+                (force (symbolp channel)))
            (< (file-measure channel (nthcdr-bytes n channel state))
               (file-measure channel state)))
   :rule-classes (:rewrite :linear)

@@ -36,9 +36,9 @@
 ;;  7     U+10000..U+3FFFF     F0          90..BF      80..BF      80..BF
 ;;  8     U+40000..U+FFFFF     F1..F3      80..BF      80..BF      80..BF
 ;;  9     U+100000..U+10FFFF   F4          80..8F      80..BF      80..BF
-;; 
+;;
 ;; To ensure that these constraints are respected by our UTF-8 functions, we
-;; formalize the constraints of this table rigorously below.  
+;; formalize the constraints of this table rigorously below.
 ;;
 ;; Because we are formalizing the Unicode specification here, the thorough
 ;; reader should check to ensure that our formalization is in agreement with
@@ -55,63 +55,63 @@
 ;; require least row constraints, since these are handled by Table 3-6.
 
 (defund utf8-table36-codepoint-1? (x)
-  "Return true iff x matches U+0000..U+007F, i.e., if it could be a 
+  "Return true iff x matches U+0000..U+007F, i.e., if it could be a
    codepoint for Row 1 in Table 3-6."
   (declare (xargs :guard (uchar? x)))
   (and (mbt (uchar? x))
        (in-range? (the-fixnum x) 0 #x7F)))
 
 (defund utf8-table36-codepoint-2? (x)
-  "Return true iff x matches U+0080..U+07FF, i.e., if it could be a 
+  "Return true iff x matches U+0080..U+07FF, i.e., if it could be a
    codepoint for Row 2 in Table 3-6."
   (declare (xargs :guard (uchar? x)))
   (and (mbt (uchar? x))
        (in-range? (the-fixnum x) #x80 #x7FF)))
 
 (defund utf8-table36-codepoint-3? (x)
-  "Return true iff x matches U+0800..U+0FFF, i.e., if it could be a 
+  "Return true iff x matches U+0800..U+0FFF, i.e., if it could be a
    codepoint for Row 3 in Table 3-6."
   (declare (xargs :guard (uchar? x)))
   (and (mbt (uchar? x))
        (in-range? (the-fixnum x) #x800 #xFFF)))
 
 (defund utf8-table36-codepoint-4? (x)
-  "Return true iff x matches U+1000..U+CFFF, i.e., if it could be a 
+  "Return true iff x matches U+1000..U+CFFF, i.e., if it could be a
    codepoint for Row 4 in Table 3-6."
   (declare (xargs :guard (uchar? x)))
   (and (mbt (uchar? x))
        (in-range? (the-fixnum x) #x1000 #xCFFF)))
 
 (defund utf8-table36-codepoint-5? (x)
-  "Return true iff x matches U+D000..U+D7FF, i.e., if it could be a 
+  "Return true iff x matches U+D000..U+D7FF, i.e., if it could be a
    codepoint for Row 5 in Table 3-6."
   (declare (xargs :guard (uchar? x)))
   (and (mbt (uchar? x))
        (in-range? (the-fixnum x) #xD000 #xD7FF)))
 
 (defund utf8-table36-codepoint-6? (x)
-  "Return true iff x matches U+E000..U+FFFF, i.e., if it could be a 
+  "Return true iff x matches U+E000..U+FFFF, i.e., if it could be a
    codepoint for Row 6 in Table 3-6."
   (declare (xargs :guard (uchar? x)))
   (and (mbt (uchar? x))
        (in-range? (the-fixnum x) #xE000 #xFFFF)))
 
 (defund utf8-table36-codepoint-7? (x)
-  "Return true iff x matches U+10000..U+3FFFF, i.e., if it could be a 
+  "Return true iff x matches U+10000..U+3FFFF, i.e., if it could be a
    codepoint for Row 7 in Table 3-6."
   (declare (xargs :guard (uchar? x)))
   (and (mbt (uchar? x))
        (in-range? (the-fixnum x) #x10000 #x3FFFF)))
 
 (defund utf8-table36-codepoint-8? (x)
-  "Return true iff x matches U+40000..U+FFFFF, i.e., if it could be a 
+  "Return true iff x matches U+40000..U+FFFFF, i.e., if it could be a
    codepoint for Row 8 in Table 3-6."
   (declare (xargs :guard (uchar? x)))
   (and (mbt (uchar? x))
        (in-range? (the-fixnum x) #x40000 #xFFFFF)))
 
 (defund utf8-table36-codepoint-9? (x)
-  "Return true iff x matches U+100000..U+10FFFF, i.e., if it could be a 
+  "Return true iff x matches U+100000..U+10FFFF, i.e., if it could be a
    codepoint for Row 9 in Table 3-6."
   (declare (xargs :guard (uchar? x)))
   (and (mbt (uchar? x))
@@ -131,7 +131,7 @@
 
 
 ;; We now enumerate the valid entries for the bytes of each row in Table 3-6.
-;; For example, utf8-table36-bytes-4? ensures that x is a sequence of bytes 
+;; For example, utf8-table36-bytes-4? ensures that x is a sequence of bytes
 ;; which matches row 4 in Table 3-6.
 
 (defund utf8-table36-bytes-1? (x)
@@ -234,7 +234,7 @@
     utf8-table36-bytes-7?
     utf8-table36-bytes-8?
     utf8-table36-bytes-9?))
-       
+
 
 
 ;; We now merge our codepoint checking and byte-sequence checking functions, to
@@ -255,19 +255,19 @@
        (utf8-table36-bytes-1? x)))
 
 (defund utf8-table36-row-2? (cp x)
-  "True iff cp is a codepoint and x is a byte sequence which match the 
+  "True iff cp is a codepoint and x is a byte sequence which match the
    second row in Table 3-6."
   (declare (xargs :guard (and (uchar? cp)
                               (unsigned-byte-listp 8 x)
                               (equal (len x) 2))))
   (and (mbt (uchar? cp))
        (mbt (unsigned-byte-listp 8 x))
-       (mbt (equal (len x) 2))       
+       (mbt (equal (len x) 2))
        (utf8-table36-codepoint-2? cp)
        (utf8-table36-bytes-2? x)))
 
 (defund utf8-table36-row-3? (cp x)
-  "True iff cp is a codepoint and x is a byte sequence which match the 
+  "True iff cp is a codepoint and x is a byte sequence which match the
    third row of Table 3-6."
   (declare (xargs :guard (and (uchar? cp)
                               (unsigned-byte-listp 8 x)
@@ -279,7 +279,7 @@
        (utf8-table36-bytes-3? x)))
 
 (defund utf8-table36-row-4? (cp x)
-  "True iff cp is a codepoint and x is a byte sequence which match the 
+  "True iff cp is a codepoint and x is a byte sequence which match the
    fourth row of Table 3-6."
   (declare (xargs :guard (and (uchar? cp)
                               (unsigned-byte-listp 8 x)
@@ -291,7 +291,7 @@
        (utf8-table36-bytes-4? x)))
 
 (defund utf8-table36-row-5? (cp x)
-  "True iff cp is a codepoint and x is a byte sequence which match the 
+  "True iff cp is a codepoint and x is a byte sequence which match the
    fifth row of Table 3-6."
   (declare (xargs :guard (and (uchar? cp)
                               (unsigned-byte-listp 8 x)
@@ -303,7 +303,7 @@
        (utf8-table36-bytes-5? x)))
 
 (defund utf8-table36-row-6? (cp x)
-  "True iff cp is a codepoint and x is a byte sequence which match the 
+  "True iff cp is a codepoint and x is a byte sequence which match the
    sixth row of Table 3-6."
   (declare (xargs :guard (and (uchar? cp)
                               (unsigned-byte-listp 8 x)
@@ -313,9 +313,9 @@
        (mbt (equal (len x) 3))
        (utf8-table36-codepoint-6? cp)
        (utf8-table36-bytes-6? x)))
-  
+
 (defund utf8-table36-row-7? (cp x)
-  "True iff cp is a codepoint and x is a byte sequence which match the 
+  "True iff cp is a codepoint and x is a byte sequence which match the
    seventh row of Table 3-6."
   (declare (xargs :guard (and (uchar? cp)
                               (unsigned-byte-listp 8 x)
@@ -327,7 +327,7 @@
        (utf8-table36-bytes-7? x)))
 
 (defund utf8-table36-row-8? (cp x)
-  "True iff cp is a codepoint and x is a byte sequence which match the 
+  "True iff cp is a codepoint and x is a byte sequence which match the
    eighth row of Table 3-6."
   (declare (xargs :guard (and (uchar? cp)
                               (unsigned-byte-listp 8 x)
@@ -350,7 +350,7 @@
        (utf8-table36-codepoint-9? cp)
        (utf8-table36-bytes-9? x)))
 
-(deftheory utf8-table36-rows 
+(deftheory utf8-table36-rows
   '(utf8-table36-row-1?
     utf8-table36-row-2?
     utf8-table36-row-3?
@@ -374,7 +374,7 @@
          :hints(("Goal" :in-theory (enable utf8-table36-rows)))))
 
 (defund utf8-table36-ok? (cp x)
-  "True iff cp is a codepoint and x is a byte sequence which match some 
+  "True iff cp is a codepoint and x is a byte sequence which match some
    row in Table 3-6."
   (declare (xargs :guard (and (uchar? cp)
                               (unsigned-byte-listp 8 x)

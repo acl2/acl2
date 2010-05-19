@@ -58,25 +58,25 @@
            (true-listp x))
   :hints(("Goal" :induct (len x))))
 
-(encapsulate 
+(encapsulate
  ()
 
  (local (include-book "ihs/logops-lemmas" :dir :system))
 
- (local (in-theory (disable binary-logior 
-                            binary-logand 
-                            lognot 
+ (local (in-theory (disable binary-logior
+                            binary-logand
+                            lognot
                             unsigned-byte-p)))
 
  (local (in-theory (enable signed-byte-p-logops)))
- 
+
  (defthm unsigned-byte-p-logand
    (implies (and (or (unsigned-byte-p size i)
                      (unsigned-byte-p size j))
                  (force (integerp i))
                  (force (integerp j)))
             (unsigned-byte-p size (logand i j))))
- 
+
  (defthm unsigned-byte-p-logior
    (implies (and (force (integerp i))
                  (force (integerp j)))
@@ -95,11 +95,11 @@
 (encapsulate
  ()
 
- (local (include-book "arithmetic-3/bind-free/top" :dir :system)) 
+ (local (include-book "arithmetic-3/bind-free/top" :dir :system))
  (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
- 
- (local (set-default-hints 
-         '((nonlinearp-default-hint stable-under-simplificationp 
+
+ (local (set-default-hints
+         '((nonlinearp-default-hint stable-under-simplificationp
                                     hist pspv))))
 
  (local (defthm signed-byte-promote
@@ -125,13 +125,13 @@
                  (integerp size2)
                  (< size1 size2))
             (signed-byte-p size2 x))
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (enable unsigned-byte-p)
-           :use ((:instance lemma 
+           :use ((:instance lemma
                             (a size1))
                  (:instance signed-byte-promote
                             (size1 (+ 1 size1)))))))
- 
+
   (defthm unsigned-byte-p-of-ash
     (implies (and (force (integerp x))
                   (force (integerp shift))
@@ -163,7 +163,7 @@
                   (< x (expt 2 n)))
              (unsigned-byte-p n x))
     :hints(("Goal" :in-theory (enable unsigned-byte-p))))
-  
+
   )
 
 
@@ -177,7 +177,7 @@
          (and (unsigned-byte-listp bytes (list-fix x))
               (unsigned-byte-listp bytes (list-fix y))))
   :hints(("Goal" :induct (len x))))
-         
+
 (defthm unsigned-byte-listp-of-list-fix-when-unsigned-byte-listp
   (implies (unsigned-byte-listp bytes x)
            (unsigned-byte-listp bytes (list-fix x))))

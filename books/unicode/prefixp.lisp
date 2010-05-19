@@ -76,7 +76,7 @@
   (implies (prefixp x y)
            (equal (simpler-take (len x) y)
                   (list-fix x)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable (:induction prefixp)
                              simpler-take))))
 

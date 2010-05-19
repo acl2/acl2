@@ -81,7 +81,7 @@
              nil
            (or (consp x)
                (< 0 (acl2-count x))))))
-           
+
 (defthm acl2-count-of-nthcdr-linear
   (implies (and (not (zp n))
                 (consp x))

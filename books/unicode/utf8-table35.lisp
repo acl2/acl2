@@ -20,7 +20,7 @@
 (include-book "unsigned-byte-listp")
 (local (include-book "signed-byte-listp"))
 (local (in-theory (enable unsigned-byte-p)))
-                          
+
 
 
 ;; UTF-8 sequences are required to satisfy the informal constraints imposed by
@@ -31,9 +31,9 @@
 ;;  2     00000yyy yyxxxxxx           110yyyyy  10xxxxxx
 ;;  3     zzzzyyyy yyxxxxxx           1110zzzz  10yyyyyy  10xxxxxx
 ;;  4     000uuuuu zzzzyyyy yyxxxxx   11110uuu  10uuzzzz  10yyyyyy  10xxxxxx
-;; 
+;;
 ;; To ensure that these constraints are respected by our UTF-8 functions, we
-;; formalize the constraints of this table rigorously below.  
+;; formalize the constraints of this table rigorously below.
 ;;
 ;; Because we are formalizing the Unicode specification here, the thorough
 ;; reader should check to ensure that our formalization is in agreement with
@@ -59,14 +59,14 @@
        (in-range? (the-fixnum x) 0 #x7F))) ; match 0xxxxxxx
 
 (defund utf8-table35-codepoint-2? (x)
-  "Return true iff x matches 00000yyy yyxxxxxx, i.e., if it could be a 
+  "Return true iff x matches 00000yyy yyxxxxxx, i.e., if it could be a
    codepoint for Row 2 in Table 3-5."
   (declare (xargs :guard (uchar? x)))
   (and (mbt (uchar? x))
        (in-range? (the-fixnum x) 0 #x7FF))) ; match 00000yyy yyxxxxxx
 
 (defund utf8-table35-codepoint-3? (x)
-  "Return true iff x matches zzzzyyyy yyxxxxxx, i.e., if it could be a 
+  "Return true iff x matches zzzzyyyy yyxxxxxx, i.e., if it could be a
    codepoint for Row 3 in Table 3-5."
   (declare (xargs :guard (uchar? x)))
   (and (mbt (uchar? x))
@@ -88,7 +88,7 @@
 
 
 ;; We now rigorously explain what the valid entries are for the "Byte" columns
-;; in teh table.  Note that we really only have five bit patterns to consider:
+;; in the table.  Note that we really only have five bit patterns to consider:
 ;; one for each row in the 1st Byte column, and the pattern 10xxxxxx which is
 ;; used universally for all trailing bytes.
 
@@ -100,14 +100,14 @@
        (in-range? (the-fixnum x) 0 #x7F))) ; match 0xxxxxxx
 
 (defund utf8-table35-byte-1/2? (x)
-  "Return true iff x matches 110yyyyy, i.e., if it is the first byte of a 
+  "Return true iff x matches 110yyyyy, i.e., if it is the first byte of a
    two-byte UTF-8 sequence, as specified by Table 3-5."
   (declare (type (unsigned-byte 8) x))
   (and (mbt (unsigned-byte-p 8 x))
        (in-range? (the-fixnum x) #xC0 #xDF))) ; match 110yyyyy
 
 (defund utf8-table35-byte-1/3? (x)
-  "Return true iff x matches 1110zzzz, i.e., if it is the first byte of a 
+  "Return true iff x matches 1110zzzz, i.e., if it is the first byte of a
    three-byte UTF-8 sequence, as specified by Table 3-5."
   (declare (type (unsigned-byte 8) x))
   (and (mbt (unsigned-byte-p 8 x))
@@ -121,7 +121,7 @@
        (in-range? (the-fixnum x) #xF0 #xF7))) ; match 11110uuu
 
 (defund utf8-table35-trailing-byte? (x)
-  "Return true iff x matches 10xxxxxx, i.e., if it is a trailing byte in 
+  "Return true iff x matches 10xxxxxx, i.e., if it is a trailing byte in
    any of the rows in Table 3-5."
   (declare (type (unsigned-byte 8) x))
   (and (mbt (unsigned-byte-p 8 x))
@@ -148,7 +148,7 @@
   (declare (xargs :guard (and (uchar? cp)
                               (unsigned-byte-listp 8 x)
                               (equal (len x) 1))))
-  (and 
+  (and
    ;; input checking (these can be inferred from guards)
    (mbt (uchar? cp))
    (mbt (unsigned-byte-listp 8 x))
@@ -156,10 +156,10 @@
 
    ;; check that the codepoint/bytes are acceptable
    (utf8-table35-codepoint-1? cp)
-   (utf8-table35-byte-1/1? (first x)) 
-   
+   (utf8-table35-byte-1/1? (first x))
+
    ;; check that the codepoint/bytes correspond as expected
-   (= (the-fixnum cp) 
+   (= (the-fixnum cp)
       (the-fixnum (first x)))))
 
 (defund utf8-table35-row-2? (cp x)
@@ -168,7 +168,7 @@
   (declare (xargs :guard (and (uchar? cp)
                               (unsigned-byte-listp 8 x)
                               (equal (len x) 2))))
-  (and 
+  (and
    ;; input checking (these can be inferred from guards)
    (mbt (uchar? cp))
    (mbt (unsigned-byte-listp 8 x))
@@ -182,14 +182,14 @@
    ;; check that the codepoint/bytes correspond as expected
    (mbe :logic (let ((000yyyyy (logand (first x) #x1F))
                      (00xxxxxx (logand (second x) #x3F)))
-                 (equal (logior (ash 000yyyyy 6) 
+                 (equal (logior (ash 000yyyyy 6)
                                 00xxxxxx)
                         cp))
-        :exec  (let ((000yyyyy (the-fixnum 
+        :exec  (let ((000yyyyy (the-fixnum
                                 (logand (the-fixnum (first x)) #x1F)))
-                     (00xxxxxx (the-fixnum 
+                     (00xxxxxx (the-fixnum
                                 (logand (the-fixnum (second x)) #x3F))))
-                 (= (the-fixnum 
+                 (= (the-fixnum
                      (logior (the-fixnum (ash (the-fixnum 000yyyyy) 6))
                              (the-fixnum 00xxxxxx)))
                     (the-fixnum cp))))))
@@ -200,12 +200,12 @@
   (declare (xargs :guard (and (uchar? cp)
                               (unsigned-byte-listp 8 x)
                               (equal (len x) 3))))
-  (and 
+  (and
    ;; input checking (these can be inferred from guards)
    (mbt (uchar? cp))
    (mbt (unsigned-byte-listp 8 x))
    (mbt (equal (len x) 3))
-   
+
    ;; check that the codepoint/bytes are acceptable
    (utf8-table35-codepoint-3? cp)
    (utf8-table35-byte-1/3? (first x))
@@ -216,14 +216,14 @@
    (mbe :logic (let ((0000zzzz (logand (first x) #x0F))
                      (00yyyyyy (logand (second x) #x3F))
                      (00xxxxxx (logand (third x) #x3F)))
-                 (equal (logior (ash 0000zzzz 12)             
+                 (equal (logior (ash 0000zzzz 12)
                                 (ash 00yyyyyy 6)
                                 00xxxxxx)
                         cp))
         :exec (let ((0000zzzz (the-fixnum (logand (the-fixnum (first x)) #x0F)))
                     (00yyyyyy (the-fixnum (logand (the-fixnum (second x)) #x3F)))
                     (00xxxxxx (the-fixnum (logand (the-fixnum (third x)) #x3F))))
-                (= (the-fixnum 
+                (= (the-fixnum
                     (logior (the-fixnum (ash (the-fixnum 0000zzzz) 12))
                             (the-fixnum (ash (the-fixnum 00yyyyyy) 6))
                             (the-fixnum 00xxxxxx)))
@@ -235,7 +235,7 @@
   (declare (xargs :guard (and (uchar? cp)
                               (unsigned-byte-listp 8 x)
                               (equal (len x) 4))))
-  (and 
+  (and
    ;; input checking (these can be inferred from guards)
    (mbt (uchar? cp))
    (mbt (unsigned-byte-listp 8 x))
@@ -247,13 +247,13 @@
    (utf8-table35-trailing-byte? (second x))
    (utf8-table35-trailing-byte? (third x))
    (utf8-table35-trailing-byte? (fourth x))
-         
+
    ;; check that the codepoint/bytes correspond as expected
    (mbe :logic (let ((00000uuu (logand (first x)  #x07))
                      (00uuzzzz (logand (second x) #x3F))
                      (00yyyyyy (logand (third x)  #x3F))
                      (00xxxxxx (logand (fourth x) #x3F)))
-                 (equal (logior (ash 00000uuu 18)             
+                 (equal (logior (ash 00000uuu 18)
                                 (ash 00uuzzzz 12)
                                 (ash 00yyyyyy 6)
                                 00xxxxxx)

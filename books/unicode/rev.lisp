@@ -31,7 +31,7 @@
 (defund rev (x)
   (declare (xargs :verify-guards nil
                   :guard t))
-  (mbe :logic (if (consp x) 
+  (mbe :logic (if (consp x)
                   (append (rev (cdr x))
                           (list (car x)))
                 nil)
@@ -80,7 +80,7 @@
 
 (defthm reverse-removal
   (implies (true-listp x)
-           (equal (reverse x) 
+           (equal (reverse x)
                   (rev x))))
 
 (defthm rev-of-append

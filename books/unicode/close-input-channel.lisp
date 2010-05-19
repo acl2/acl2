@@ -16,7 +16,6 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-
 (local (include-book "update-state"))
 (local (include-book "open-input-channels"))
 
@@ -46,7 +45,7 @@
   (implies (and (open-channel1 channel)
                 (integerp clock)
                 (member-equal type *file-types*))
-           (read-file-listp1 
+           (read-file-listp1
             (list (caddar channel) type (cadddr (car channel)) clock)))))
 
 (local (defthm expand-file-clock-p
@@ -73,9 +72,9 @@
                        (open-input-channel-p1 channel type state))
                   (state-p1 (close-input-channel channel state)))
          :hints(("Goal" :in-theory (disable statep-functions)
-                 :use ((:instance state-p1 
+                 :use ((:instance state-p1
                                   (x state))
-                       (:instance state-p1 
+                       (:instance state-p1
                                   (x (close-input-channel channel state))))))))
 
 (defthm close-input-channel-state

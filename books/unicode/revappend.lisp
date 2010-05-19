@@ -28,7 +28,7 @@
 (defthm true-listp-of-revappend
   (equal (true-listp (revappend x y))
          (true-listp y)))
-  
+
 (defthm consp-of-revappend
   (equal (consp (revappend x y))
          (or (consp x)
@@ -42,9 +42,9 @@
 (defthm nth-of-revappend
   (equal (nth n (revappend x y))
          (if (<= (len x) (nfix n))
-             (nth (- (nfix n) (len x)) 
+             (nth (- (nfix n) (len x))
                   y)
-           (nth (+ (1- (len x)) (- (nfix n))) 
+           (nth (+ (1- (len x)) (- (nfix n)))
                 x))))
 
 (defthm equal-when-revappend-same
@@ -55,7 +55,7 @@
 
 (local (defthm revappend-last-is-car
          (implies (consp x)
-                  (equal (nth (1- (len x)) 
+                  (equal (nth (1- (len x))
                               (revappend x y))
                          (car x)))))
 
@@ -65,7 +65,7 @@
                               (revappend x2 y))))
          :hints(("Goal" :use ((:instance len (x (revappend x1 y)))
                               (:instance len (x (revappend x2 y))))))))
- 
+
 (local (defthm revappend-equal-x-cdrs-lemma
          (implies (and (true-listp x1) (consp x1)
                        (true-listp x2) (consp x2)
@@ -86,13 +86,13 @@
                  :use ((:instance revappend-lengths-x)
                        (:instance revappend-last-is-car (x x1))
                        (:instance revappend-last-is-car (x x2)))))))
-        
+
 (local (defthm revappend-nonempty-list
          (implies (consp x)
                   (not (equal (revappend x y) y)))
          :hints(("Goal" :use ((:instance len (x (revappend x y)))
                               (:instance len (x y)))))))
-        
+
 (local (defun revappend-induction-2 (x y acc)
          (if (and (consp x)
                   (consp y))
@@ -105,9 +105,9 @@
            (equal (equal (revappend x1 y)
                          (revappend x2 y))
                   (equal x1 x2)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :induct (revappend-induction-2 x1 x2 y))
-         ("Subgoal *1/1" 
+         ("Subgoal *1/1"
           :in-theory (disable revappend-equal-x-cdrs-lemma
                               revappend-equal-x-cars-lemma)
           :use ((:instance revappend-equal-x-cdrs-lemma)

@@ -26,7 +26,7 @@
       nil
     (cons (car xs)
           (simpler-take (1- n) (cdr xs)))))
-  
+
 (local (in-theory (enable simpler-take)))
 
 (encapsulate
@@ -64,7 +64,7 @@
            (if (consp x)
                (simpler-take-induction (1- n) (cdr x))
              (list n x)))))
-  
+
 (defthm simpler-take-of-append
   (equal (simpler-take n (append x y))
          (if (< (nfix n) (len x))

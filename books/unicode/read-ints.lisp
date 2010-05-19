@@ -25,20 +25,21 @@
 (local (include-book "signed-byte-listp"))
 (include-book "sign-byte")
 (include-book "combine")
+(local (include-book "tools/mv-nth" :dir :system))
 (local (include-book "arithmetic-3/bind-free/top" :dir :system))
 
 ;; Below are many similar functions, which we have aggregated into the
 ;; following macro:
 ;;
-;;     (read-bytes$ channel [:bytes bytes] 
-;;                          [:signed signed] 
+;;     (read-bytes$ channel [:bytes bytes]
+;;                          [:signed signed]
 ;;                          [:end end])
 ;;
 ;; If you provide :bytes, it must be either 1, 2, or 4.  (default is 1)
 ;; If you provide :signed, it must be either t or nil.   (default is nil)
 ;; If you provide :end, it must be either big or little. (default is big)
 ;;
-;; The macro simply expands into the appropriate function from the table 
+;; The macro simply expands into the appropriate function from the table
 ;; below.  (For the 1-byte readers, :end does not matter.)
 ;;
 ;;     Name         Bytes Read    Value Range        Endian-ness
@@ -87,11 +88,11 @@
                   :verify-guards nil))
   (mv-let (byte state)
           (read-byte$ channel state)
-          (if byte 
+          (if byte
               (mv (mbe :logic (sign-byte byte)
                        :exec  (if (< (the-fixnum byte) 128)
                                   byte
-                                (the-fixnum 
+                                (the-fixnum
                                  (- (the-fixnum byte) 256))))
                   state)
             (mv nil state))))
@@ -100,30 +101,30 @@
   :hints(("Goal" :in-theory (enable sign-byte signed-byte-p))))
 
 (defthm read-8s-signed-byte
-  (implies (and (force (state-p1 state))
+  (implies (and (mv-nth 0 (read-8s channel state))
+                (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
-                (force (symbolp channel))
-                (car (read-8s channel state)))
-           (signed-byte-p 8 (car (read-8s channel state)))))
-                
+                (force (symbolp channel)))
+           (signed-byte-p 8 (mv-nth 0 (read-8s channel state)))))
+
 (defthm read-8s-integer
-  (implies (and (force (state-p1 state))
+  (implies (and (mv-nth 0 (read-8s channel state))
+                (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
-                (force (symbolp channel))
-                (car (read-8s channel state)))
-           (integerp (car (read-8s channel state)))))
+                (force (symbolp channel)))
+           (integerp (mv-nth 0 (read-8s channel state)))))
 
 (defthm read-8s-range
-  (implies (and (force (state-p1 state))
+  (implies (and (mv-nth 0 (read-8s channel state))
+                (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
-                (force (symbolp channel))
-                (car (read-8s channel state)))
-           (and (<= -128 (car (read-8s channel state)))
-                (<= (- (expt 2 7)) (car (read-8s channel state)))
-                (< (car (read-8s channel state)) 128)
-                (< (car (read-8s channel state)) (expt 2 7))))
+                (force (symbolp channel)))
+           (and (<= -128 (mv-nth 0 (read-8s channel state)))
+                (<= (- (expt 2 7)) (mv-nth 0 (read-8s channel state)))
+                (< (mv-nth 0 (read-8s channel state)) 128)
+                (< (mv-nth 0 (read-8s channel state)) (expt 2 7))))
   :rule-classes :linear
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable signed-byte-p)
           :use (:instance read-8s-signed-byte))))
 
@@ -159,10 +160,10 @@
     (if (null x2)
         (mv 'fail state)
       (mv (mbe :logic (combine16u x1 x2)
-               :exec (logior 
-                      (the (unsigned-byte 16) 
+               :exec (logior
+                      (the (unsigned-byte 16)
                         (ash (the (unsigned-byte 8) x1) 8))
-                      (the (unsigned-byte 8) 
+                      (the (unsigned-byte 8)
                         x2)))
           state))))))
 
@@ -170,29 +171,29 @@
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-16ube channel state))
-                (not (equal (car (read-16ube channel state)) 'fail)))
-           (unsigned-byte-p 16 (car (read-16ube channel state)))))
-                
+                (mv-nth 0 (read-16ube channel state))
+                (not (equal (mv-nth 0 (read-16ube channel state)) 'fail)))
+           (unsigned-byte-p 16 (mv-nth 0 (read-16ube channel state)))))
+
 (defthm read-16ube-integer
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-16ube channel state))
-                (not (equal (car (read-16ube channel state)) 'fail)))
-           (integerp (car (read-16ube channel state)))))
+                (mv-nth 0 (read-16ube channel state))
+                (not (equal (mv-nth 0 (read-16ube channel state)) 'fail)))
+           (integerp (mv-nth 0 (read-16ube channel state)))))
 
 (defthm read-16ube-range
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-16ube channel state))
-                (not (equal (car (read-16ube channel state)) 'fail)))
-           (and (<= 0 (car (read-16ube channel state)))
-                (< (car (read-16ube channel state)) 65536)
-                (< (car (read-16ube channel state)) (expt 2 16))))
+                (mv-nth 0 (read-16ube channel state))
+                (not (equal (mv-nth 0 (read-16ube channel state)) 'fail)))
+           (and (<= 0 (mv-nth 0 (read-16ube channel state)))
+                (< (mv-nth 0 (read-16ube channel state)) 65536)
+                (< (mv-nth 0 (read-16ube channel state)) (expt 2 16))))
   :rule-classes :linear
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable unsigned-byte-p)
           :use (:instance read-16ube-unsigned-byte))))
 
@@ -228,10 +229,10 @@
     (if (null x2)
         (mv 'fail state)
       (mv (mbe :logic (combine16u x2 x1)
-               :exec (logior 
-                      (the (unsigned-byte 16) 
+               :exec (logior
+                      (the (unsigned-byte 16)
                         (ash (the (unsigned-byte 8) x2) 8))
-                      (the (unsigned-byte 8) 
+                      (the (unsigned-byte 8)
                         x1)))
           state))))))
 
@@ -239,29 +240,29 @@
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-16ule channel state))
-                (not (equal (car (read-16ule channel state)) 'fail)))
-           (unsigned-byte-p 16 (car (read-16ule channel state)))))
-                
+                (mv-nth 0 (read-16ule channel state))
+                (not (equal (mv-nth 0 (read-16ule channel state)) 'fail)))
+           (unsigned-byte-p 16 (mv-nth 0 (read-16ule channel state)))))
+
 (defthm read-16ule-integer
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-16ule channel state))
-                (not (equal (car (read-16ule channel state)) 'fail)))
-           (integerp (car (read-16ule channel state)))))
+                (mv-nth 0 (read-16ule channel state))
+                (not (equal (mv-nth 0 (read-16ule channel state)) 'fail)))
+           (integerp (mv-nth 0 (read-16ule channel state)))))
 
 (defthm read-16ule-range
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-16ule channel state))
-                (not (equal (car (read-16ule channel state)) 'fail)))
-           (and (<= 0 (car (read-16ule channel state)))
-                (< (car (read-16ube channel state)) 65536)
-                (< (car (read-16ube channel state)) (expt 2 16))))
+                (mv-nth 0 (read-16ule channel state))
+                (not (equal (mv-nth 0 (read-16ule channel state)) 'fail)))
+           (and (<= 0 (mv-nth 0 (read-16ule channel state)))
+                (< (mv-nth 0 (read-16ule channel state)) 65536)
+                (< (mv-nth 0 (read-16ule channel state)) (expt 2 16))))
   :rule-classes :linear
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable unsigned-byte-p)
           :use (:instance read-16ule-unsigned-byte))))
 
@@ -281,6 +282,8 @@
 
 (in-theory (disable read-16ule))
 
+
+
 ;; read-16sbe
 
 (defun read-16sbe (channel state)
@@ -295,11 +298,11 @@
     (if (null x2)
         (mv 'fail state)
       (mv (mbe :logic (combine16s x1 x2)
-               :exec (logior (the (signed-byte 16) 
-                                  (ash (the (signed-byte 8) 
+               :exec (logior (the (signed-byte 16)
+                                  (ash (the (signed-byte 8)
                                             (if (< (the-fixnum x1) 128)
                                                 (the-fixnum x1)
-                                              (the-fixnum 
+                                              (the-fixnum
                                                (- (the-fixnum x1) 256))))
                                        8))
                              (the (unsigned-byte 8)
@@ -310,30 +313,30 @@
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-16sbe channel state))
-                (not (equal (car (read-16sbe channel state)) 'fail)))
-           (signed-byte-p 16 (car (read-16sbe channel state)))))
-                
+                (mv-nth 0 (read-16sbe channel state))
+                (not (equal (mv-nth 0 (read-16sbe channel state)) 'fail)))
+           (signed-byte-p 16 (mv-nth 0 (read-16sbe channel state)))))
+
 (defthm read-16sbe-integer
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-16sbe channel state))
-                (not (equal (car (read-16sbe channel state)) 'fail)))
-           (integerp (car (read-16sbe channel state)))))
+                (mv-nth 0 (read-16sbe channel state))
+                (not (equal (mv-nth 0 (read-16sbe channel state)) 'fail)))
+           (integerp (mv-nth 0 (read-16sbe channel state)))))
 
 (defthm read-16sbe-range
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-16sbe channel state))
-                (not (equal (car (read-16sbe channel state)) 'fail)))
-           (and (<= -32768 (car (read-16sbe channel state)))
-                (<= (- (expt 2 15)) (car (read-16sbe channel state)))
-                (< (car (read-16sbe channel state)) 32768)
-                (< (car (read-16sbe channel state)) (expt 2 15))))
+                (mv-nth 0 (read-16sbe channel state))
+                (not (equal (mv-nth 0 (read-16sbe channel state)) 'fail)))
+           (and (<= -32768 (mv-nth 0 (read-16sbe channel state)))
+                (<= (- (expt 2 15)) (mv-nth 0 (read-16sbe channel state)))
+                (< (mv-nth 0 (read-16sbe channel state)) 32768)
+                (< (mv-nth 0 (read-16sbe channel state)) (expt 2 15))))
   :rule-classes :linear
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable signed-byte-p)
           :use (:instance read-16sbe-signed-byte))))
 
@@ -369,11 +372,11 @@
     (if (null x2)
         (mv 'fail state)
       (mv (mbe :logic (combine16s x2 x1)
-               :exec (logior (the (signed-byte 16) 
-                                  (ash (the (signed-byte 8) 
+               :exec (logior (the (signed-byte 16)
+                                  (ash (the (signed-byte 8)
                                             (if (< (the-fixnum x2) 128)
                                                 (the-fixnum x2)
-                                              (the-fixnum 
+                                              (the-fixnum
                                                (- (the-fixnum x2) 256))))
                                        8))
                              (the (unsigned-byte 8)
@@ -384,30 +387,30 @@
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-16sle channel state))
-                (not (equal (car (read-16sle channel state)) 'fail)))
-           (signed-byte-p 16 (car (read-16sle channel state)))))
-                
+                (mv-nth 0 (read-16sle channel state))
+                (not (equal (mv-nth 0 (read-16sle channel state)) 'fail)))
+           (signed-byte-p 16 (mv-nth 0 (read-16sle channel state)))))
+
 (defthm read-16sle-integer
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-16sle channel state))
-                (not (equal (car (read-16sle channel state)) 'fail)))
-           (integerp (car (read-16sle channel state)))))
+                (mv-nth 0 (read-16sle channel state))
+                (not (equal (mv-nth 0 (read-16sle channel state)) 'fail)))
+           (integerp (mv-nth 0 (read-16sle channel state)))))
 
 (defthm read-16sle-range
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-16sle channel state))
-                (not (equal (car (read-16sle channel state)) 'fail)))
-           (and (<= -32768 (car (read-16sle channel state)))
-                (<= (- (expt 2 15)) (car (read-16sle channel state)))
-                (< (car (read-16sle channel state)) 32768)
-                (< (car (read-16sle channel state)) (expt 2 15))))
+                (mv-nth 0 (read-16sle channel state))
+                (not (equal (mv-nth 0 (read-16sle channel state)) 'fail)))
+           (and (<= -32768 (mv-nth 0 (read-16sle channel state)))
+                (<= (- (expt 2 15)) (mv-nth 0 (read-16sle channel state)))
+                (< (mv-nth 0 (read-16sle channel state)) 32768)
+                (< (mv-nth 0 (read-16sle channel state)) (expt 2 15))))
   :rule-classes :linear
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable signed-byte-p)
           :use (:instance read-16sle-signed-byte))))
 
@@ -445,7 +448,7 @@
     (if (or (null x2) (null x3) (null x4))
         (mv 'fail state)
       (mv (mbe :logic (combine32u x1 x2 x3 x4)
-               :exec (logior (the (unsigned-byte 32) 
+               :exec (logior (the (unsigned-byte 32)
                                (ash (the (unsigned-byte 8) x1) 24))
                       (the (unsigned-byte 24)
                            (logior
@@ -463,29 +466,29 @@
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-32ube channel state))
-                (not (equal (car (read-32ube channel state)) 'fail)))
-           (unsigned-byte-p 32 (car (read-32ube channel state)))))
-                
+                (mv-nth 0 (read-32ube channel state))
+                (not (equal (mv-nth 0 (read-32ube channel state)) 'fail)))
+           (unsigned-byte-p 32 (mv-nth 0 (read-32ube channel state)))))
+
 (defthm read-32ube-integer
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-32ube channel state))
-                (not (equal (car (read-32ube channel state)) 'fail)))
-           (integerp (car (read-32ube channel state)))))
+                (mv-nth 0 (read-32ube channel state))
+                (not (equal (mv-nth 0 (read-32ube channel state)) 'fail)))
+           (integerp (mv-nth 0 (read-32ube channel state)))))
 
 (defthm read-32ube-range
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-32ube channel state))
-                (not (equal (car (read-32ube channel state)) 'fail)))
-           (and (<= 0 (car (read-32ube channel state)))
-                (< (car (read-32ube channel state)) 4294967296)
-                (< (car (read-32ube channel state)) (expt 2 32))))
+                (mv-nth 0 (read-32ube channel state))
+                (not (equal (mv-nth 0 (read-32ube channel state)) 'fail)))
+           (and (<= 0 (mv-nth 0 (read-32ube channel state)))
+                (< (mv-nth 0 (read-32ube channel state)) 4294967296)
+                (< (mv-nth 0 (read-32ube channel state)) (expt 2 32))))
   :rule-classes :linear
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable unsigned-byte-p)
           :use (:instance read-32ube-unsigned-byte))))
 
@@ -523,14 +526,14 @@
     (if (or (null x2) (null x3) (null x4))
         (mv 'fail state)
       (mv (mbe :logic (combine32u x4 x3 x2 x1)
-               :exec (logior (the (unsigned-byte 32) 
+               :exec (logior (the (unsigned-byte 32)
                                (ash (the (unsigned-byte 8) x4) 24))
                              (the (unsigned-byte 24)
                                   (logior
                                    (the (unsigned-byte 24)
                                         (ash (the (unsigned-byte 8) x3) 16))
                                    (the (unsigned-byte 16)
-                                        (logior 
+                                        (logior
                                          (the (unsigned-byte 16)
                                               (ash (the (unsigned-byte 8) x2) 8))
                                          (the (unsigned-byte 8)
@@ -541,29 +544,29 @@
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-32ule channel state))
-                (not (equal (car (read-32ule channel state)) 'fail)))
-           (unsigned-byte-p 32 (car (read-32ule channel state)))))
-                
+                (mv-nth 0 (read-32ule channel state))
+                (not (equal (mv-nth 0 (read-32ule channel state)) 'fail)))
+           (unsigned-byte-p 32 (mv-nth 0 (read-32ule channel state)))))
+
 (defthm read-32ule-integer
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-32ule channel state))
-                (not (equal (car (read-32ule channel state)) 'fail)))
-           (integerp (car (read-32ule channel state)))))
+                (mv-nth 0 (read-32ule channel state))
+                (not (equal (mv-nth 0 (read-32ule channel state)) 'fail)))
+           (integerp (mv-nth 0 (read-32ule channel state)))))
 
 (defthm read-32ule-range
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-32ule channel state))
-                (not (equal (car (read-32ule channel state)) 'fail)))
-           (and (<= 0 (car (read-32ule channel state)))
-                (< (car (read-32ule channel state)) 4294967296)
-                (< (car (read-32ule channel state)) (expt 2 32))))
+                (mv-nth 0 (read-32ule channel state))
+                (not (equal (mv-nth 0 (read-32ule channel state)) 'fail)))
+           (and (<= 0 (mv-nth 0 (read-32ule channel state)))
+                (< (mv-nth 0 (read-32ule channel state)) 4294967296)
+                (< (mv-nth 0 (read-32ule channel state)) (expt 2 32))))
   :rule-classes :linear
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable unsigned-byte-p)
           :use (:instance read-32ule-unsigned-byte))))
 
@@ -601,11 +604,11 @@
     (if (or (null x2) (null x3) (null x4))
         (mv 'fail state)
       (mv (mbe :logic (combine32s x1 x2 x3 x4)
-               :exec (logior (the (signed-byte 32) 
-                               (ash (the (signed-byte 8) 
+               :exec (logior (the (signed-byte 32)
+                               (ash (the (signed-byte 8)
                                          (if (< (the-fixnum x1) 128)
                                              x1
-                                           (the-fixnum 
+                                           (the-fixnum
                                             (- (the-fixnum x1) 256))))
                                     24))
                              (the (unsigned-byte 24)
@@ -613,7 +616,7 @@
                                    (the (unsigned-byte 24)
                                         (ash (the (unsigned-byte 8) x2) 16))
                                    (the (unsigned-byte 16)
-                                        (logior 
+                                        (logior
                                          (the (unsigned-byte 16)
                                               (ash (the (unsigned-byte 8) x3) 8))
                                          (the (unsigned-byte 8)
@@ -624,30 +627,30 @@
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-32sbe channel state))
-                (not (equal (car (read-32sbe channel state)) 'fail)))
-           (signed-byte-p 32 (car (read-32sbe channel state)))))
-                
+                (mv-nth 0 (read-32sbe channel state))
+                (not (equal (mv-nth 0 (read-32sbe channel state)) 'fail)))
+           (signed-byte-p 32 (mv-nth 0 (read-32sbe channel state)))))
+
 (defthm read-32sbe-integer
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-32sbe channel state))
-                (not (equal (car (read-32sbe channel state)) 'fail)))
-           (integerp (car (read-32sbe channel state)))))
+                (mv-nth 0 (read-32sbe channel state))
+                (not (equal (mv-nth 0 (read-32sbe channel state)) 'fail)))
+           (integerp (mv-nth 0 (read-32sbe channel state)))))
 
 (defthm read-32sbe-range
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-32sbe channel state))
-                (not (equal (car (read-32sbe channel state)) 'fail)))
-           (and (<= -2147483648 (car (read-32sbe channel state)))
-                (<= (- (expt 2 31)) (car (read-32sbe channel state)))
-                (< (car (read-32sbe channel state)) 2147483648)
-                (< (car (read-32sbe channel state)) (expt 2 31))))
+                (mv-nth 0 (read-32sbe channel state))
+                (not (equal (mv-nth 0 (read-32sbe channel state)) 'fail)))
+           (and (<= -2147483648 (mv-nth 0 (read-32sbe channel state)))
+                (<= (- (expt 2 31)) (mv-nth 0 (read-32sbe channel state)))
+                (< (mv-nth 0 (read-32sbe channel state)) 2147483648)
+                (< (mv-nth 0 (read-32sbe channel state)) (expt 2 31))))
   :rule-classes :linear
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable signed-byte-p)
           :use (:instance read-32sbe-signed-byte))))
 
@@ -685,15 +688,15 @@
     (if (or (null x2) (null x3) (null x4))
         (mv 'fail state)
       (mv (mbe :logic (combine32s x4 x3 x2 x1)
-               :exec (logior (the (signed-byte 32) 
-                               (ash (the (signed-byte 8) 
+               :exec (logior (the (signed-byte 32)
+                               (ash (the (signed-byte 8)
                                          (if (< (the-fixnum x4) 128)
                                              x4
-                                           (the-fixnum 
+                                           (the-fixnum
                                             (- (the-fixnum x4) 256))))
                                     24))
                              (the (unsigned-byte 24)
-                                  (logior 
+                                  (logior
                                    (the (unsigned-byte 24)
                                         (ash (the (unsigned-byte 8) x3) 16))
                                    (the (unsigned-byte 16)
@@ -708,30 +711,30 @@
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-32sle channel state))
-                (not (equal (car (read-32sle channel state)) 'fail)))
-           (signed-byte-p 32 (car (read-32sle channel state)))))
-                
+                (mv-nth 0 (read-32sle channel state))
+                (not (equal (mv-nth 0 (read-32sle channel state)) 'fail)))
+           (signed-byte-p 32 (mv-nth 0 (read-32sle channel state)))))
+
 (defthm read-32sle-integer
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-32sle channel state))
-                (not (equal (car (read-32sle channel state)) 'fail)))
-           (integerp (car (read-32sle channel state)))))
+                (mv-nth 0 (read-32sle channel state))
+                (not (equal (mv-nth 0 (read-32sle channel state)) 'fail)))
+           (integerp (mv-nth 0 (read-32sle channel state)))))
 
 (defthm read-32sle-range
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
-                (car (read-32sle channel state))
-                (not (equal (car (read-32sle channel state)) 'fail)))
-           (and (<= -2147483648 (car (read-32sle channel state)))
-                (<= (- (expt 2 31)) (car (read-32sle channel state)))
-                (< (car (read-32sle channel state)) 2147483648)
-                (< (car (read-32sle channel state)) (expt 2 31))))
+                (mv-nth 0 (read-32sle channel state))
+                (not (equal (mv-nth 0 (read-32sle channel state)) 'fail)))
+           (and (<= -2147483648 (mv-nth 0 (read-32sle channel state)))
+                (<= (- (expt 2 31)) (mv-nth 0 (read-32sle channel state)))
+                (< (mv-nth 0 (read-32sle channel state)) 2147483648)
+                (< (mv-nth 0 (read-32sle channel state)) (expt 2 31))))
   :rule-classes :linear
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable signed-byte-p)
           :use (:instance read-32sle-signed-byte))))
 
@@ -755,8 +758,8 @@
 
 ;; read-bytes$ macro
 
-(defmacro read-bytes$ (channel &key (bytes '1) 
-                                    (signed 'nil) 
+(defmacro read-bytes$ (channel &key (bytes '1)
+                                    (signed 'nil)
                                     (end 'big))
   (declare (xargs :guard (and (symbolp channel)
                               (booleanp signed)
@@ -765,14 +768,14 @@
                                   (equal bytes 4))
                               (or (equal end 'little)
                                   (equal end 'big)))))
-  (case end 
+  (case end
     ('big (if signed
               (case bytes
                 (1 `(read-8s ,channel state))
                 (2 `(read-16sbe ,channel state))
                 (4 `(read-32sbe ,channel state))
                 (t (er hard 'read-bytes$ "Bad case in read-bytes$.")))
-            (case bytes 
+            (case bytes
               (1 `(read-byte$ ,channel state))
               (2 `(read-16ube ,channel state))
               (4 `(read-32ube ,channel state))
@@ -790,7 +793,7 @@
                  (t (er hard 'read-bytes$ "Bad case in read-bytes$.")))))
     (t (er hard 'read-bytes$ "Bad case in read-bytes$."))))
 
-                   
+
 
 
 
@@ -815,7 +818,7 @@
         (read-n-data (intern-in-package-of-symbol
                       (concatenate 'string (symbol-name read-1) "-N-DATA")
                       read-1)))
-    `(encapsulate 
+    `(encapsulate
       nil
       (defun ,tr-read-n (n channel state acc)
         (declare (xargs :guard (and (natp n)
@@ -829,11 +832,11 @@
                   (,read-1 channel state)
                   (cond ((eq byte nil)
                          (mv 'fail state))
-                        ,@(if fails? 
+                        ,@(if fails?
                               `(((eq byte 'fail)
                                 (mv 'fail state)))
                             nil)
-                        (t (,tr-read-n (1- n) channel state 
+                        (t (,tr-read-n (1- n) channel state
                                        (cons byte acc)))))))
 
       (defun ,read-n (n channel state)
@@ -860,32 +863,32 @@
                                                    state))))))
        :exec (,tr-read-n n channel state nil)))
 
-      (local (defthm lemma-decompose-impl                     
+      (local (defthm lemma-decompose-impl
                (equal (,tr-read-n n channel state acc)
-                      (list (car (,tr-read-n n channel state acc))
+                      (list (mv-nth 0 (,tr-read-n n channel state acc))
                             (mv-nth 1 (,tr-read-n n channel state acc))))
                :rule-classes nil))
-      
+
       (local (defthm lemma-decompose-spec
                (equal (,read-n n channel state)
-                      (list (car (,read-n n channel state))
+                      (list (mv-nth 0 (,read-n n channel state))
                             (mv-nth 1 (,read-n n channel state))))
                :rule-classes nil))
 
-      (local (defthm lemma-data-equiv-1 
-               (implies (equal (car (,read-n n channel state)) 'fail)
-                        (equal (car (,tr-read-n n channel state acc)) 'fail))))
+      (local (defthm lemma-data-equiv-1
+               (implies (equal (mv-nth 0 (,read-n n channel state)) 'fail)
+                        (equal (mv-nth 0 (,tr-read-n n channel state acc)) 'fail))))
 
       (local (defthm lemma-data-equiv-2
                (implies (and (true-listp acc)
-                             (not (equal (car (,read-n n channel state)) 'fail)))
-                        (equal (car (,tr-read-n n channel state acc))
-                               (revappend acc (car (,read-n n channel state)))))))
+                             (not (equal (mv-nth 0 (,read-n n channel state)) 'fail)))
+                        (equal (mv-nth 0 (,tr-read-n n channel state acc))
+                               (revappend acc (mv-nth 0 (,read-n n channel state)))))))
 
       (local (defthm lemma-state-equiv
                (equal (mv-nth 1 (,tr-read-n n channel state acc))
                       (mv-nth 1 (,read-n n channel state)))))
-      
+
       (local (defthm lemma-equiv
                (equal (,tr-read-n n channel state nil)
                       (,read-n n channel state))
@@ -911,11 +914,11 @@
                                         (mv-nth 1 (,read-n n channel state)))))
 
       (defthm ,read-n-data
-        (implies (not (equal (car (,read-n n channel state)) 'fail))
-                 (and (true-listp (car (,read-n n channel state)))
-                      (equal (len (car (,read-n n channel state)))
+        (implies (not (equal (mv-nth 0 (,read-n n channel state)) 'fail))
+                 (and (true-listp (mv-nth 0 (,read-n n channel state)))
+                      (equal (len (mv-nth 0 (,read-n n channel state)))
                              (nfix n)))))
-                            
+
 )))
 
 
@@ -943,14 +946,14 @@
                                   (equal bytes 4))
                               (or (equal end 'little)
                                   (equal end 'big)))))
-  (case end 
+  (case end
     ('big (if signed
               (case bytes
                 (1 `(read-8s-n ,n ,channel state))
                 (2 `(read-16sbe-n ,n ,channel state))
                 (4 `(read-32sbe-n ,n ,channel state))
                 (t (er hard 'read-bytes$-n "Bad case in read-bytes$-n.")))
-            (case bytes 
+            (case bytes
               (1 `(read-byte$-n ,n ,channel state))
               (2 `(read-16ube-n ,n ,channel state))
               (4 `(read-32ube-n ,n ,channel state))

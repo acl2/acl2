@@ -29,7 +29,7 @@
                               (true-listp x))))
   (if (consp sizes)
       (cons (take (car sizes) x)
-            (partition (cdr sizes) 
+            (partition (cdr sizes)
                        (nthcdr (car sizes) x)))
     nil))
 
@@ -47,8 +47,8 @@
 
 (defthm consp-of-partition-under-iff
   (equal (consp (partition sizes x))
-         (if (partition sizes x) 
-             t 
+         (if (partition sizes x)
+             t
            nil))
   :hints(("Goal" :in-theory (enable partition))))
 

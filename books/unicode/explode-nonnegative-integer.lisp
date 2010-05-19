@@ -27,13 +27,13 @@
 ;; following, simpler definition.
 
 (local (defun simpler-explode-nonnegative-integer (n base ans)
-         (declare (xargs :guard (and (integerp n) 
+         (declare (xargs :guard (and (integerp n)
                                      (<= 0 n)
                                      (print-base-p base))))
          (if (or (zp n)
                  (not (print-base-p base)))
              ans
-           (simpler-explode-nonnegative-integer 
+           (simpler-explode-nonnegative-integer
             (floor n base)
             base
             (cons (digit-to-char (mod n base)) ans)))))
@@ -52,14 +52,14 @@
          :rule-classes ((:definition :install-body nil))))
 
 (local (in-theory (disable (:definition explode-nonnegative-integer))))
-  
+
 
 
 ;; Sadly, even simpler-explode-nonnegative-integer is hard to reason about as
 ;; it is tail recursive.  So, we will introduce a non tail-recursive function
 ;; in its place that does almost the same thing.  We'll call this the "basic
 ;; explode-nonnegative-integer core", or the basic-eni-core for short.
- 
+
 (local (defun basic-eni-core (n base)
          (declare (xargs :guard (and (natp n)
                                      (print-base-p base))))
@@ -73,7 +73,7 @@
          (declare (xargs :guard (and (natp n)
                                      (natp m)
                                      (print-base-p base))))
-         (if (zp n) 
+         (if (zp n)
              nil
            (if (zp m)
                nil
@@ -98,10 +98,10 @@
          (implies (force (print-base-p base))
                   (equal (equal (basic-eni-core n base)
                                 (basic-eni-core m base))
-                         (equal (nfix n) 
+                         (equal (nfix n)
                                 (nfix m))))
          :hints(("Goal" :induct (basic-eni-induction n m base)))))
- 
+
 (local (defthm equal-of-basic-eni-core-with-list-zero
          (not (equal (basic-eni-core n base) '(#\0)))
          :hints(("Goal" :in-theory (enable digit-to-char)))))
@@ -115,7 +115,7 @@
                   (equal (equal (simpler-explode-nonnegative-integer n base acc)
                                 (simpler-explode-nonnegative-integer m base acc))
                          (equal (nfix n) (nfix m))))))
-       
+
 (local (defthm simpler-eni-when-nonzero
          (implies (and (not (zp n))
                        (print-base-p base))
@@ -175,7 +175,7 @@
 
 (local (defthm base10-digit-char-listp-of-simpler-eni
          (implies (base10-digit-char-listp acc)
-                  (base10-digit-char-listp 
+                  (base10-digit-char-listp
                    (simpler-explode-nonnegative-integer n 10 acc)))))
 
 (defthm base10-digit-char-listp-of-explode-nonnegative-integer
@@ -193,7 +193,7 @@
                           (atom (cdr x)))
                      (and (equal acc '(#\0))
                           (atom x))))))
- 
+
  (defthm nonzeroness-of-explode-nonnegative-integer-when-nonzero
    (implies (and (not (zp n))
                  (force (print-base-p base)))
@@ -256,7 +256,7 @@
 (encapsulate
  ()
  (local (include-book "rev"))
- 
+
  (defthm unexplode-nonnegative-integer-of-explode-nonnegative-integer
    (implies (force (natp n))
             (equal (unexplode-nonnegative-integer (explode-nonnegative-integer n 10 nil))
@@ -264,4 +264,3 @@
    :hints(("Goal" :in-theory (e/d (unexplode-nonnegative-integer)
                                   (basic-eni-core))))))
 
-  

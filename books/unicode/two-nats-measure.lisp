@@ -22,7 +22,7 @@
 (defund two-nats-measure (a b)
   (declare (xargs :guard (and (natp a)
                               (natp b))))
-  (make-ord 2 
+  (make-ord 2
             (+ 1 (nfix a))
             (make-ord 1 (+ 1 (nfix b)) 0)))
 

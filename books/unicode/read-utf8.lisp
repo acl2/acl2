@@ -15,17 +15,17 @@
 ;; this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
-
 (in-package "ACL2")
 (include-book "utf8-decode")
 (include-book "take-bytes")
 (local (include-book "open-input-channel"))
 (local (include-book "close-input-channel"))
+(local (include-book "tools/mv-nth" :dir :system))
 (set-state-ok t)
 
 
 ;; We now want to recreate our utf8=>ustring function but directly using the
-;; file reading operations.  We begin by writing equivalents of "take" and 
+;; file reading operations.  We begin by writing equivalents of "take" and
 ;; "nthcdr" that operate on byte streams.  We will use (read-byte$-all ...)
 ;; effectively as the file's contents, and relate all of these operations to
 ;; it.
@@ -37,7 +37,7 @@
                               (ustring? acc))
                   :measure (file-measure channel state)
                   :verify-guards nil))
-  (mbe 
+  (mbe
    :logic
    (if (and (state-p state)
             (symbolp channel)
@@ -58,13 +58,13 @@
                                  (read-utf8-fast channel state (cons first acc)))))))))
      (mv 'fail state))
    :exec
-   (mv-let 
-    (x1 state) 
+   (mv-let
+    (x1 state)
     (read-byte$ channel state)
     (if (not x1)
         (mv (reverse acc) state)
-      (cond 
-       
+      (cond
+
        ((<= (the-fixnum x1) 127)
         ;; Expected length 1.  We don't need to do any further checking; we can
         ;; just recur very quickly.  Note that this will give us very good
@@ -78,43 +78,43 @@
         (mv-let (x2 state) (read-byte$ channel state)
            (if (and x2 (in-range? (the-fixnum x2) 128 191))
                ;; Manually-inlined utf8-combine2 operation.
-               (read-utf8-fast 
+               (read-utf8-fast
                 channel state
-                (cons 
+                (cons
                  (the-fixnum
-                  (logior 
+                  (logior
                    (the-fixnum (ash (the-fixnum (logand (the-fixnum x1) 31)) 6))
                    (the-fixnum (logand (the-fixnum x2) 63))))
                  acc))
              (mv 'fail state))))
-       
+
        ((in-range? (the-fixnum x1) 224 239)
         ;; Expected length 3.  (We cover all options here.)
         (mv-let (x2 state) (read-byte$ channel state)
          (mv-let (x3 state) (read-byte$ channel state)
            (if (and x2 x3
-                    (cond ((= (the-fixnum x1) 224)  
+                    (cond ((= (the-fixnum x1) 224)
                            (in-range? (the-fixnum x2) 160 191))
-                          ((= (the-fixnum x1) 237)  
+                          ((= (the-fixnum x1) 237)
                            (in-range? (the-fixnum x2) 128 159))
-                          (t 
+                          (t
                            (in-range? (the-fixnum x2) 128 191)))
                     (in-range? (the-fixnum x3) 128 191))
                (read-utf8-fast
                 channel state
-                (cons 
+                (cons
                  (the-fixnum
-                  (logior 
-                   (the-fixnum 
+                  (logior
+                   (the-fixnum
                     (ash (the-fixnum (logand (the-fixnum x1) 15)) 12))
-                   (the-fixnum 
+                   (the-fixnum
                     (logior
-                     (the-fixnum 
+                     (the-fixnum
                       (ash (the-fixnum (logand (the-fixnum x2) 63)) 6))
                      (the-fixnum (logand (the-fixnum x3) 63))))))
                  acc))
              (mv 'fail state)))))
-                       
+
        ((in-range? (the-fixnum x1) 240 244)
         ;; Expected length 4.  (We only accept 240-244 because of Table 3-6;
         ;; i.e., we exclude 245, 246, and 247.
@@ -126,36 +126,36 @@
                             (in-range? (the-fixnum x2) 144 191))
                            ((= (the-fixnum x1) 244)
                             (in-range? (the-fixnum x2) 128 143))
-                           (t 
+                           (t
                             (in-range? (the-fixnum x2) 128 191)))
                      (in-range? (the-fixnum x3) 128 191)
                      (in-range? (the-fixnum x4) 128 191))
-                (read-utf8-fast 
+                (read-utf8-fast
                  channel state
-                 (cons 
+                 (cons
                   (the-fixnum
-                   (logior 
-                    (the-fixnum 
+                   (logior
+                    (the-fixnum
                      (ash (the-fixnum (logand (the-fixnum x1) 7)) 18))
-                    (the-fixnum 
-                     (logior 
+                    (the-fixnum
+                     (logior
                       (the-fixnum
                        (ash (the-fixnum (logand (the-fixnum x2) 63)) 12))
                       (the-fixnum
-                       (logior 
-                        (the-fixnum 
+                       (logior
+                        (the-fixnum
                          (ash (the-fixnum (logand (the-fixnum x3) 63)) 6))
-                        (the-fixnum 
+                        (the-fixnum
                          (logand (the-fixnum x4) 63))))))))
                   acc))
-              (mv 'fail state))))))       
-       
+              (mv 'fail state))))))
+
        ;; This is a little obscure.  As an optimization above, we did not
        ;; consider cases for first byte = 192, 193, 245, 246, and 247, because
        ;; these are not allowed under Table 3-6.
        ;;
        ;; However, utf8-table35-expected-length predics the lengths of these
-       ;; as 2, 2, 4, 4, and 4, respectively.  So, for our MBE equivalence, we 
+       ;; as 2, 2, 4, 4, and 4, respectively.  So, for our MBE equivalence, we
        ;; need to make sure to advance the stream just like we do in the
        ;; :logic mode.
        ((or (= (the-fixnum x1) 192)
@@ -179,7 +179,7 @@
                                 (declare (ignore x4))
                                 (mv 'fail state)))))
 
-       (t 
+       (t
         (mv 'fail state)))))))
 
 (defthm state-p1-of-mv-nth-1-of-read-utf8-fast
@@ -193,13 +193,13 @@
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel)))
-           (open-input-channel-p1 channel :byte 
+           (open-input-channel-p1 channel :byte
                                   (mv-nth 1 (read-utf8-fast channel state acc))))
   :hints(("Goal" :in-theory (enable read-utf8-fast))))
 
 
 ;; Correctness of read-utf8-fast
-;; 
+;;
 ;; We think of (read-byte$-all channel state) as returning the file's contents.
 ;; We will show that under the appropriate hypotheses, the data returned by
 ;; (read-utf8-fast channel state acc) is exactly the same as what we would get
@@ -215,8 +215,8 @@
          (implies (and (force (state-p state))
                        (force (symbolp channel))
                        (force (open-input-channel-p channel :byte state)))
-                  (equal (car (read-byte$ channel state))
-                         (caar (read-byte$-all channel state))))
+                  (equal (mv-nth 0 (read-byte$ channel state))
+                         (car (mv-nth 0 (read-byte$-all channel state)))))
          :hints(("Goal" :in-theory (enable read-byte$-all)))))
 
 (local (theory-invariant
@@ -227,9 +227,9 @@
          (implies (and (force (state-p state))
                        (force (symbolp channel))
                        (force (open-input-channel-p channel :byte state)))
-                  (equal 
-                   (car (read-byte$-all channel (mv-nth 1 (read-byte$ channel state))))
-                   (cdr (car (read-byte$-all channel state)))))
+                  (equal
+                   (mv-nth 0 (read-byte$-all channel (mv-nth 1 (read-byte$ channel state))))
+                   (cdr (mv-nth 0 (read-byte$-all channel state)))))
          :hints(("Goal" :in-theory (e/d (read-byte$-all)
                                         (car-of-read-byte$))))))
 
@@ -237,21 +237,23 @@
          (implies (and (state-p1 state)
                        (symbolp channel)
                        (open-input-channel-p1 channel :byte state)
-                       (not (caar (read-byte$-all channel state))))
-                  (equal (car (read-byte$-all channel state))
+                       (not (car (mv-nth 0 (read-byte$-all channel state)))))
+                  (equal (mv-nth 0 (read-byte$-all channel state))
                          nil))
          :hints(("goal" :in-theory (e/d (read-byte$-all)
-                                        (car-of-read-byte$))))))
+                                        (car-of-read-byte$
+                                         read-byte$-all-of-mv-nth-1-of-read-byte$
+                                         ))))))
 
 (defthm car-of-read-utf8-fast-is-utf8=>ustring-fast-of-read-byte$-all
   (implies (and (force (state-p1 state))
                 (force (open-input-channel-p1 channel :byte state))
                 (force (symbolp channel))
                 (true-listp acc))
-           (equal (car (read-utf8-fast channel state acc))
-                  (utf8=>ustring-fast (car (read-byte$-all channel state))
+           (equal (mv-nth 0 (read-utf8-fast channel state acc))
+                  (utf8=>ustring-fast (mv-nth 0 (read-byte$-all channel state))
                                       acc)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (e/d (read-utf8-fast utf8=>ustring-fast
                                           simpler-take)
                           (nthcdr-bytes-2
@@ -289,11 +291,11 @@
                         (<= X2 191))
                    (UCHAR? (LOGIOR (ASH (LOGAND X1 31) 6)
                                    (LOGAND X2 63))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable utf8-combine2-guard
                                      utf8-combine2
                                      utf8-table35-bytes
-                                     utf8-table36-bytes)          
+                                     utf8-table36-bytes)
                   :use ((:instance uchar?-of-utf8-combine2))))))
 
  (local (defthm terrible-lemma-3
@@ -305,7 +307,7 @@
                         (<= X3 191))
                    (UCHAR? (LOGIOR 0 (ASH (LOGAND X2 63) 6)
                                    (LOGAND X3 63))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable utf8-combine3-guard
                                      utf8-combine3
                                      utf8-table35-bytes
@@ -328,7 +330,7 @@
                    (UCHAR? (LOGIOR (ASH (LOGAND X1 15) 12)
                                    (ASH (LOGAND X2 63) 6)
                                    (LOGAND X3 63))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable utf8-combine3-guard
                                      utf8-combine3
                                      utf8-table35-bytes
@@ -344,7 +346,7 @@
                         (<= X3 191))
                    (UCHAR? (LOGIOR 53248 (ASH (LOGAND X2 63) 6)
                                    (LOGAND X3 63))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable utf8-combine3-guard
                                      utf8-combine3
                                      utf8-table35-bytes
@@ -365,14 +367,14 @@
                    (UCHAR? (LOGIOR 0 (ASH (LOGAND X2 63) 12)
                                    (ASH (LOGAND X3 63) 6)
                                    (LOGAND X4 63))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable utf8-combine4-guard
                                      utf8-combine4
                                      utf8-table35-bytes
                                      utf8-table36-bytes)
                   :use ((:instance uchar?-of-utf8-combine4
                                    (x1 240)))))))
-          
+
  (local (defthm terrible-lemma-7
           (IMPLIES (AND (force (integerp x1))
                         (force (integerp x2))
@@ -392,13 +394,13 @@
                                    (ASH (LOGAND X2 63) 12)
                                    (ASH (LOGAND X3 63) 6)
                                    (LOGAND X4 63))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable utf8-combine4-guard
                                      utf8-combine4
                                      utf8-table35-bytes
                                      utf8-table36-bytes)
                   :use ((:instance uchar?-of-utf8-combine4))))))
-                 
+
  (local (defthm terrible-lemma-8
           (IMPLIES (AND (force (integerp x2))
                         (force (integerp x3))
@@ -412,7 +414,7 @@
                    (UCHAR? (LOGIOR 1048576 (ASH (LOGAND x2 63) 12)
                                    (ASH (LOGAND x3 63) 6)
                                    (LOGAND x4 63))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable utf8-combine4-guard
                                      utf8-combine4
                                      utf8-table35-bytes
@@ -426,7 +428,7 @@
           (implies (and (force (state-p1 state))
                         (force (open-input-channel-p1 channel :byte state))
                         (force (symbolp channel)))
-                   (unsigned-byte-listp 8 (car (read-byte$-all channel state))))
+                   (unsigned-byte-listp 8 (mv-nth 0 (read-byte$-all channel state))))
           :rule-classes ((:forward-chaining :trigger-terms ((read-byte$-all channel state))))))
 
  (local (defthm unsigned-byte-listp-8-of-cdr-when-unsigned-byte-listp-8
@@ -436,101 +438,101 @@
 
  (local (defthm crock
           (implies (unsigned-byte-listp bytes x)
-                   (iff (consp x) 
+                   (iff (consp x)
                         x))))
 
- (local (defthm hideous-lemma-1
+(local (defthm hideous-lemma-1
           (implies (and (force (state-p1 state))
                         (force (open-input-channel-p1 channel :byte state))
                         (force (symbolp channel))
-                        (car (read-byte$-all channel state)))
-                   (unsigned-byte-p 8 (caar (read-byte$-all channel state))))
+                        (mv-nth 0 (read-byte$-all channel state)))
+                   (unsigned-byte-p 8 (car (mv-nth 0 (read-byte$-all channel state)))))
           :rule-classes ((:rewrite)
-                         (:forward-chaining 
-                          :trigger-terms ((car (read-byte$-all channel state)))))))
+                         (:forward-chaining
+                          :trigger-terms ((mv-nth 0 (read-byte$-all channel state)))))))
 
- (local (defthm hideous-lemma-2
+(local (defthm hideous-lemma-2
           (implies (and (force (state-p1 state))
                         (force (open-input-channel-p1 channel :byte state))
                         (force (symbolp channel))
-                        (cdar (read-byte$-all channel state)))
-                   (unsigned-byte-p 8 (cadar (read-byte$-all channel state))))
+                        (cdr (mv-nth 0 (read-byte$-all channel state))))
+                   (unsigned-byte-p 8 (cadr (mv-nth 0 (read-byte$-all channel state)))))
           :rule-classes ((:rewrite)
-                         (:forward-chaining 
-                          :trigger-terms ((cdar (read-byte$-all channel state)))))))
+                         (:forward-chaining
+                          :trigger-terms ((cdr (mv-nth 0 (read-byte$-all channel state))))))))
 
- (local (defthm hideous-lemma-3
+(local (defthm hideous-lemma-3
           (implies (and (force (state-p1 state))
                         (force (open-input-channel-p1 channel :byte state))
                         (force (symbolp channel))
-                        (cddar (read-byte$-all channel state)))
-                   (unsigned-byte-p 8 (caddar (read-byte$-all channel state))))
+                        (cddr (mv-nth 0 (read-byte$-all channel state))))
+                   (unsigned-byte-p 8 (caddr (mv-nth 0 (read-byte$-all channel state)))))
           :rule-classes ((:rewrite)
-                         (:forward-chaining 
-                          :trigger-terms ((cddar (read-byte$-all channel state)))))
+                         (:forward-chaining
+                          :trigger-terms ((cddr (mv-nth 0 (read-byte$-all channel state))))))
           :hints(("Goal"
                   :in-theory (e/d (read-byte$-all)
                                   (car-of-read-byte$))
                   :expand ((read-byte$-all channel state)
                            (read-byte$-all channel (mv-nth 1 (read-byte$ channel state)))
-                           (read-byte$-all 
-                            channel 
-                            (mv-nth 1 (read-byte$ channel 
+                           (read-byte$-all
+                            channel
+                            (mv-nth 1 (read-byte$ channel
                                                   (mv-nth 1 (read-byte$ channel
                                                                         state))))))))))
 
- (local (defthm hideous-lemma-4
+(local (defthm hideous-lemma-4
           (implies (and (force (state-p1 state))
                         (force (open-input-channel-p1 channel :byte state))
                         (force (symbolp channel))
-                        (cdddar (read-byte$-all channel state)))
-                   (unsigned-byte-p 8 (car (cdddar (read-byte$-all channel state)))))
+                        (cdddr (mv-nth 0 (read-byte$-all channel state))))
+                   (unsigned-byte-p 8 (car (cdddr (mv-nth 0 (read-byte$-all channel state))))))
           :rule-classes ((:rewrite)
-                         (:forward-chaining 
-                          :trigger-terms ((cdddar (read-byte$-all channel state)))))
+                         (:forward-chaining
+                          :trigger-terms ((cdddr (mv-nth 0 (read-byte$-all channel state))))))
           :hints(("Goal"
                   :in-theory (e/d (read-byte$-all)
                                   (car-of-read-byte$))
                   :expand ((read-byte$-all channel state)
-                           (read-byte$-all channel 
+                           (read-byte$-all channel
                                            (mv-nth 1 (read-byte$ channel state)))
-                           (read-byte$-all 
-                            channel 
-                            (mv-nth 1 (read-byte$ channel 
+                           (read-byte$-all
+                            channel
+                            (mv-nth 1 (read-byte$ channel
                                                   (mv-nth 1 (read-byte$ channel state)))))
-                           (read-byte$-all 
-                            channel 
-                            (mv-nth 1 (read-byte$ 
+                           (read-byte$-all
+                            channel
+                            (mv-nth 1 (read-byte$
                                        channel
-                                       (mv-nth 1 (read-byte$ 
-                                                  channel 
+                                       (mv-nth 1 (read-byte$
+                                                  channel
                                                   (mv-nth 1 (read-byte$ channel
                                                                         state))))))))))))
 
- (local (defthm integerp-when-unsigned-byte-p-8
+(local (defthm integerp-when-unsigned-byte-p-8
           (implies (unsigned-byte-p 8 x)
                    (integerp x))))
 
- (local (defthm signed-byte-p-from-unsigned-byte-p-8
+(local (defthm signed-byte-p-from-unsigned-byte-p-8
           (implies (and (unsigned-byte-p 8 x)
                         (< 8 (nfix n)))
                    (signed-byte-p n x))))
 
- (local (defthm len-zero-when-true-listp
+(local (defthm len-zero-when-true-listp
           (implies (true-listp x)
                    (equal (equal (len x) 0)
                           (not x)))))
 
- (local (defthm integer-squeeze-lemma
+(local (defthm integer-squeeze-lemma
           (implies (and (syntaxp (quotep n))
                         (integerp n)
                         (< (1- n) x)
                         (< x (1+ n)))
-                   (equal (equal x n) 
+                   (equal (equal x n)
                           (integerp x)))
           :rule-classes ((:rewrite :backchain-limit-lst 1))))
 
- (local (defthm unsigned-byte-p-8-when-valid-integer
+(local (defthm unsigned-byte-p-8-when-valid-integer
           (implies (and (<= 0 x)
                         (< x 255))
                    (equal (unsigned-byte-p 8 x)
@@ -538,21 +540,21 @@
           :rule-classes ((:rewrite :backchain-limit-lst 1))
           :hints(("Goal" :in-theory (enable unsigned-byte-p)))))
 
- (local (include-book "arithmetic-3/bind-free/top" :dir :system))
+(local (include-book "arithmetic-3/bind-free/top" :dir :system))
 
- (local (defthm nthcdr-bytes-hack
+(local (defthm nthcdr-bytes-hack
           (implies (and (force (state-p1 state))
                         (force (open-input-channel-p1 channel :byte state))
                         (force (symbolp channel))
                         (force (natp n)))
                    (equal (nthcdr-bytes n channel (mv-nth 1 (read-byte$ channel state)))
                           (nthcdr-bytes (+ 1 n) channel state)))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :expand (nthcdr-bytes (+ 1 n) channel state)
                   :in-theory (enable nthcdr-bytes)
                   :do-not-induct t))))
 
- (local (in-theory (enable unsigned-byte-listp
+(local (in-theory (enable unsigned-byte-listp
                            utf8-char=>uchar
                            utf8-table35-bytes
                            utf8-table36-bytes
@@ -563,7 +565,7 @@
                            utf8-combine3-guard
                            utf8-combine4-guard)))
 
- (verify-guards read-utf8-fast
+(verify-guards read-utf8-fast
                 :hints(("Subgoal 2"
                         :in-theory (disable unsigned-byte-p-8-when-valid-integer
                                             nthcdr-bytes-hack))))
@@ -593,17 +595,17 @@
   :hints(("Goal" :in-theory (enable read-utf8))))
 
 (defthm car-of-read-utf8-when-file-cannot-be-opened
-  (implies (and (force (state-p1 state))
-                (force (stringp filename))
-                (stringp (car (read-file-bytes filename state))))
-           (equal (car (read-utf8 filename state))
-                  (car (read-file-bytes filename state))))
+  (implies (and (stringp (mv-nth 0 (read-file-bytes filename state)))
+                (force (state-p1 state))
+                (force (stringp filename)))
+           (equal (mv-nth 0 (read-utf8 filename state))
+                  (mv-nth 0 (read-file-bytes filename state))))
   :hints(("Goal" :in-theory (enable read-file-bytes read-utf8))))
-           
+
 (defthm car-of-read-utf8-when-file-can-be-opened
-  (implies (and (force (state-p1 state))
-                (force (stringp filename))
-                (not (stringp (car (read-file-bytes filename state)))))
-           (equal (car (read-utf8 filename state))
-                  (utf8=>ustring (car (read-file-bytes filename state)))))
+  (implies (and (not (stringp (mv-nth 0 (read-file-bytes filename state))))
+                (force (state-p1 state))
+                (force (stringp filename)))
+           (equal (mv-nth 0 (read-utf8 filename state))
+                  (utf8=>ustring (mv-nth 0 (read-file-bytes filename state)))))
   :hints(("Goal" :in-theory (enable read-utf8 read-file-bytes))))

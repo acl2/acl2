@@ -51,7 +51,7 @@
 
 
 (defthm update-open-input-channels-state-lemmas
-  (implies 
+  (implies
    (state-p1 state)
    (and (true-listp (update-open-input-channels updates state))
         (equal (len (update-open-input-channels updates state))
@@ -71,7 +71,7 @@
         (equal (idates (update-open-input-channels updates state))
                (idates state))
         (equal (acl2-oracle (update-open-input-channels updates state))
-               (acl2-oracle state))    
+               (acl2-oracle state))
         (equal (file-clock (update-open-input-channels updates state))
                (file-clock state))
         (equal (readable-files (update-open-input-channels updates state))
@@ -93,7 +93,7 @@
                   (open-channels-p updates)))
   :hints(("Goal" :in-theory (disable update-open-input-channels
                                      statep-functions)
-          :use ((:instance state-p1 
+          :use ((:instance state-p1
                            (x state))
                 (:instance state-p1
                            (x (update-open-input-channels updates state)))))))
@@ -107,7 +107,7 @@
 
 
 (defthm update-open-output-channels-state-lemmas
-  (implies 
+  (implies
    (state-p1 state)
    (and (true-listp (update-open-output-channels updates state))
         (equal (len (update-open-output-channels updates state))
@@ -127,7 +127,7 @@
         (equal (idates (update-open-output-channels updates state))
                (idates state))
         (equal (acl2-oracle (update-open-output-channels updates state))
-               (acl2-oracle state))    
+               (acl2-oracle state))
         (equal (file-clock (update-open-output-channels updates state))
                (file-clock state))
         (equal (readable-files (update-open-output-channels updates state))
@@ -149,7 +149,7 @@
                   (open-channels-p updates)))
   :hints(("Goal" :in-theory (disable update-open-output-channels
                                      statep-functions)
-          :use ((:instance state-p1 
+          :use ((:instance state-p1
                            (x state))
                 (:instance state-p1
                            (x (update-open-output-channels updates state)))))))
@@ -157,7 +157,7 @@
 
 
 (defthm update-global-table-state-lemmas
-  (implies 
+  (implies
    (state-p1 state)
    (and (true-listp (update-global-table updates state))
         (equal (len (update-global-table updates state))
@@ -177,7 +177,7 @@
         (equal (idates (update-global-table updates state))
                (idates state))
         (equal (acl2-oracle (update-global-table updates state))
-               (acl2-oracle state))    
+               (acl2-oracle state))
         (equal (file-clock (update-global-table updates state))
                (file-clock state))
         (equal (readable-files (update-global-table updates state))
@@ -196,7 +196,7 @@
 
 
 (defthm update-t-stack-state-lemmas
-  (implies 
+  (implies
    (state-p1 state)
    (and (true-listp (update-t-stack updates state))
         (equal (len (update-t-stack updates state))
@@ -216,7 +216,7 @@
         (equal (idates (update-t-stack updates state))
                (idates state))
         (equal (acl2-oracle (update-t-stack updates state))
-               (acl2-oracle state))    
+               (acl2-oracle state))
         (equal (file-clock (update-t-stack updates state))
                (file-clock state))
         (equal (readable-files (update-t-stack updates state))
@@ -238,7 +238,7 @@
                   (true-listp updates)))
   :hints(("Goal" :in-theory (disable update-t-stack
                                      statep-functions)
-          :use ((:instance state-p1 
+          :use ((:instance state-p1
                            (x state))
                 (:instance state-p1
                            (x (update-t-stack updates state)))))))
@@ -246,7 +246,7 @@
 
 
 (defthm update-32-bit-integer-stack-state-lemmas
-  (implies 
+  (implies
    (state-p1 state)
    (and (true-listp (update-32-bit-integer-stack updates state))
         (equal (len (update-32-bit-integer-stack updates state))
@@ -266,7 +266,7 @@
         (equal (idates (update-32-bit-integer-stack updates state))
                (idates state))
         (equal (acl2-oracle (update-32-bit-integer-stack updates state))
-               (acl2-oracle state))    
+               (acl2-oracle state))
         (equal (file-clock (update-32-bit-integer-stack updates state))
                (file-clock state))
         (equal (readable-files (update-32-bit-integer-stack updates state))
@@ -288,14 +288,14 @@
                   (32-bit-integer-listp updates)))
   :hints(("Goal" :in-theory (disable update-32-bit-integer-stack
                                      statep-functions)
-          :use ((:instance state-p1 
+          :use ((:instance state-p1
                            (x state))
                 (:instance state-p1
                            (x (update-32-bit-integer-stack updates state)))))))
 
 
 (defthm update-big-clock-entry-state-lemmas
-  (implies 
+  (implies
    (state-p1 state)
    (and (true-listp (update-big-clock-entry updates state))
         (equal (len (update-big-clock-entry updates state))
@@ -315,7 +315,7 @@
         (equal (idates (update-big-clock-entry updates state))
                (idates state))
         (equal (acl2-oracle (update-big-clock-entry updates state))
-               (acl2-oracle state))    
+               (acl2-oracle state))
         (equal (file-clock (update-big-clock-entry updates state))
                (file-clock state))
         (equal (readable-files (update-big-clock-entry updates state))
@@ -337,14 +337,14 @@
                   (integerp updates)))
   :hints(("Goal" :in-theory (disable update-big-clock-entry
                                      statep-functions)
-          :use ((:instance state-p1 
+          :use ((:instance state-p1
                            (x state))
                 (:instance state-p1
                            (x (update-big-clock-entry updates state)))))))
 
 
 (defthm update-idates-state-lemmas
-  (implies 
+  (implies
    (state-p1 state)
    (and (true-listp (update-idates updates state))
         (equal (len (update-idates updates state))
@@ -364,7 +364,7 @@
         (equal (idates (update-idates updates state))
                updates)
         (equal (acl2-oracle (update-idates updates state))
-               (acl2-oracle state))    
+               (acl2-oracle state))
         (equal (file-clock (update-idates updates state))
                (file-clock state))
         (equal (readable-files (update-idates updates state))
@@ -386,14 +386,14 @@
                   (integer-listp updates)))
   :hints(("Goal" :in-theory (disable update-idates
                                      statep-functions)
-          :use ((:instance state-p1 
+          :use ((:instance state-p1
                            (x state))
                 (:instance state-p1
                            (x (update-idates updates state)))))))
 
 
 (defthm update-acl2-oracle-state-lemmas
-  (implies 
+  (implies
    (state-p1 state)
    (and (true-listp (update-acl2-oracle updates state))
         (equal (len (update-acl2-oracle updates state))
@@ -413,7 +413,7 @@
         (equal (idates (update-acl2-oracle updates state))
                (idates state))
         (equal (acl2-oracle (update-acl2-oracle updates state))
-               updates)   
+               updates)
         (equal (file-clock (update-acl2-oracle updates state))
                (file-clock state))
         (equal (readable-files (update-acl2-oracle updates state))
@@ -448,7 +448,7 @@
                   (true-listp updates)))
   :hints(("Goal" :in-theory (disable update-acl2-oracle
                                      statep-functions)
-          :use ((:instance state-p1 
+          :use ((:instance state-p1
                            (x state))
                 (:instance state-p1
                            (x (update-acl2-oracle updates state)))))))
@@ -456,7 +456,7 @@
 
 
 (defthm update-file-clock-state-lemmas
-  (implies 
+  (implies
    (state-p1 state)
    (and (true-listp (update-file-clock updates state))
         (equal (len (update-file-clock updates state))
@@ -496,9 +496,9 @@
   (implies (state-p1 state)
            (equal (state-p1 (update-file-clock updates state))
                   (file-clock-p updates)))
-  :hints(("Goal" :use ((:instance state-p1 
+  :hints(("Goal" :use ((:instance state-p1
                                   (x state))
-                       (:instance state-p1 
+                       (:instance state-p1
                                   (x (update-file-clock updates state)))))))
 
 
@@ -506,7 +506,7 @@
 
 
 (defthm update-written-files-state-lemmas
-  (implies 
+  (implies
    (state-p1 state)
    (and (true-listp (update-written-files updates state))
         (equal (len (update-written-files updates state))
@@ -546,14 +546,14 @@
   (implies (state-p1 state)
            (equal (state-p1 (update-written-files updates state))
                   (written-files-p updates)))
-  :hints(("Goal" :use ((:instance state-p1 
+  :hints(("Goal" :use ((:instance state-p1
                                   (x state))
-                       (:instance state-p1 
+                       (:instance state-p1
                                   (x (update-written-files updates state)))))))
 
 
 (defthm update-read-files-state-lemmas
-  (implies 
+  (implies
    (state-p1 state)
    (and (true-listp (update-read-files updates state))
         (equal (len (update-read-files updates state))
@@ -593,16 +593,16 @@
   (implies (state-p1 state)
            (equal (state-p1 (update-read-files updates state))
                   (read-files-p updates)))
-  :hints(("Goal" :use ((:instance state-p1 
+  :hints(("Goal" :use ((:instance state-p1
                                   (x state))
-                       (:instance state-p1 
+                       (:instance state-p1
                                   (x (update-read-files updates state)))))))
 
 
 ; hey, there's no function called update-writeable-files!
 
 (defthm update-list-all-package-names-lst-state-lemmas
-  (implies 
+  (implies
    (state-p1 state)
    (and (true-listp (update-list-all-package-names-lst updates state))
         (equal (len (update-list-all-package-names-lst updates state))
@@ -642,15 +642,15 @@
   (implies (state-p1 state)
            (equal (state-p1 (update-list-all-package-names-lst updates state))
                   (true-list-listp updates)))
-  :hints(("Goal" :use ((:instance state-p1 
+  :hints(("Goal" :use ((:instance state-p1
                                   (x state))
-                       (:instance state-p1 
+                       (:instance state-p1
                                   (x (update-list-all-package-names-lst updates
                                                                         state)))))))
 
 
 (defthm update-user-stobj-alist1-state-lemmas
-  (implies 
+  (implies
    (state-p1 state)
    (and (true-listp (update-user-stobj-alist1 updates state))
         (equal (len (update-user-stobj-alist1 updates state))
@@ -690,9 +690,9 @@
   (implies (state-p1 state)
            (equal (state-p1 (update-user-stobj-alist1 updates state))
                   (symbol-alistp updates)))
-  :hints(("Goal" :use ((:instance state-p1 
+  :hints(("Goal" :use ((:instance state-p1
                                   (x state))
-                       (:instance state-p1 
+                       (:instance state-p1
                                   (x (update-user-stobj-alist1 updates
                                                                state)))))))
 

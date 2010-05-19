@@ -22,7 +22,7 @@
 (defund z-listp (x)
   (declare (xargs :guard t))
   (if (consp x)
-      (and (if (integerp (car x)) 
+      (and (if (integerp (car x))
                (<= (car x) 0)
              t)
            (z-listp (cdr x)))

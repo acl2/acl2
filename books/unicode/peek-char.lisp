@@ -30,10 +30,10 @@
            (characterp (car x)))))
 
 (defthm peek-char$-character
-  (implies (and (force (state-p1 state))
-                (force (open-input-channel-p1 channel :character state))
-                (car (peek-char$ channel state)))
-           (characterp (car (peek-char$ channel state))))
+  (implies (and (mv-nth 0 (peek-char$ channel state))
+                (force (state-p1 state))
+                (force (open-input-channel-p1 channel :character state)))
+           (characterp (mv-nth 0 (peek-char$ channel state))))
   :hints(("Goal" :in-theory (disable open-input-channel-p1
                                      open-input-channels)
           :use (:instance car-typed-io-list-char

@@ -50,7 +50,7 @@
            (equal (logbitp i y)
                   (logbitp i x)))
   :hints(("Goal" :in-theory (disable logbitp)))))
-                
+
 (local (defun test-sign-byte (i)
   (declare (type (unsigned-byte 8) i))
   (and (logbitp-equiv 7 i (sign-byte i))
@@ -68,8 +68,8 @@
 
 (defthm sign-byte-bit-correct
   (implies (and (unsigned-byte-p 8 i)
-                (integerp k) 
-                (<= 0 k) 
+                (integerp k)
+                (<= 0 k)
                 (< k 8))
            (equal (logbitp k (sign-byte i))
                   (logbitp k i)))

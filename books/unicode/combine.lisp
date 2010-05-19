@@ -45,7 +45,7 @@
            (type (unsigned-byte 8) x2))
   (logior (ash (sign-byte x1) 8)
           x2))
-  
+
 (defthm combine16s-signed-byte
   (implies (and (force (unsigned-byte-p 8 x1))
                 (force (unsigned-byte-p 8 x2)))
@@ -55,7 +55,7 @@
 
 
 (defun combine32u (x1 x2 x3 x4)
-  "Given unsigned bytes x1, x2, x3, and x4, compute 
+  "Given unsigned bytes x1, x2, x3, and x4, compute
      (x1 << 24) | (x2 << 16) | (x3 << 8) | x4
   and interpret the result as a 32-bit unsigned integer."
   (declare (type (unsigned-byte 8) x1)
@@ -77,7 +77,7 @@
 (in-theory (disable combine32u))
 
 (defun combine32s (x1 x2 x3 x4)
-  "Given unsigned bytes x1, x2, x3, and x4, compute 
+  "Given unsigned bytes x1, x2, x3, and x4, compute
      (x1 << 24) | (x2 << 16) | (x3 << 8) | x4
    and interpret the result as an 32-bit signed integer."
   (declare (type (unsigned-byte 8) x1)
