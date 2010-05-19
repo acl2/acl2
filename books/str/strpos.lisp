@@ -1,6 +1,10 @@
 ; ACL2 String Library
-; Copyright (C) 2009 Centaur Technology
-; Contact: jared@cs.utexas.edu
+; Copyright (C) 2009-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -10,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
 (include-book "strprefixp")
@@ -47,26 +53,26 @@
          nil)
         (t
          (strpos-fast (the string x)
-                      (the string y) 
+                      (the string y)
                       (mbe :logic (+ (nfix n) 1)
                            :exec (the integer (+ (the integer n) 1)))
                       (the integer xl)
                       (the integer yl)))))
 
 (defund strpos (x y)
-  
+
   ":Doc-Section Str
   Locate the first occurrence of a substring~/
 
   ~c[(strpos x y)] searches through the string y for the first occurrence of the
-  substring x.  It returns NIL if x never occurs in y, or returns the index of 
+  substring x.  It returns NIL if x never occurs in y, or returns the index of
   the first character of the first occurrence.
 
   The function is \"efficient\" in the sense that it does not coerce its arguments
   into lists, but rather traverses both strings with ~c[char].  On the other hand,
   it is a naive string search which operates by repeatedly calling ~il[strprefixp],
   rather than some better algorithm.
-  
+
   The \"soundness\" and \"completness\" of strpos are established in the theorems
   ~c[prefixp-of-strpos] and ~c[completeness-of-strpos].~/
 
@@ -102,7 +108,7 @@
                    (prefixp (coerce x 'list)
                             (nthcdr (strpos-fast x y n xl yl)
                                     (coerce y 'list))))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable strpos-fast)
                   :induct (strpos-fast x y n xl yl)))))
 
@@ -124,7 +130,7 @@
                 ((zp (- (nfix yl) (nfix n)))
                  (list x y n m xl yl))
                 (t
-                 (my-induction x y 
+                 (my-induction x y
                                (+ (nfix n) 1)
                                (if (= (nfix n) (nfix m))
                                    (+ (nfix m) 1)
@@ -146,7 +152,7 @@
                                  (nthcdr m (coerce y 'list))))
                    (and (natp (strpos-fast x y n xl yl))
                         (<= (strpos-fast x y n xl yl) m)))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (enable strpos-fast)
                   :induct (my-induction x y n m xl yl)
                   :do-not '(generalize fertilize)))))

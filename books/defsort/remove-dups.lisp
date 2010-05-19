@@ -1,7 +1,10 @@
 ; Defsort - Defines a stable sort when given a comparison function
 ; Copyright (C) 2008 Centaur Technology
 ;
-; Contact: Jared Davis <jared@cs.utexas.edu>
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -11,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
 (include-book "uniquep")
@@ -86,7 +91,7 @@
 
 #||
 
-(include-book 
+(include-book
   "remove-dups")
 
 (include-book "misc/hons-help" :dir :system)
@@ -95,20 +100,20 @@
 
 (ccl::set-lisp-heap-gc-threshold (expt 2 34))
 
-(defparameter *integers1* 
+(defparameter *integers1*
   ;; A test vector of 10,000 integers with many duplicates
   (loop for j from 1 to 10
         nconc
         (loop for i from 1 to 1000 collect i)))
 
-(defparameter *integers2* 
+(defparameter *integers2*
   ;; A test vector of 10,000 integers with no duplicates
   (loop for i from 1 to 10000 collect i)))
 
 ;; 5.3 seconds, 1.5 GB allocated
 (prog2$ (ccl::gc)
         (time (loop for i fixnum from 1 to 1000
-                   do 
+                   do
                    (let ((result (remove-dups *integers1*)))
                      (declare (ignore result))
                      nil))))
@@ -116,7 +121,7 @@
 ;; 2.0 seconds, 117 MB allocated
 (prog2$ (ccl::gc)
         (time (loop for i fixnum from 1 to 1000
-                   do 
+                   do
                    (let ((result (hons-remove-duplicates *integers1*)))
                      (declare (ignore result))
                      nil))))
@@ -124,7 +129,7 @@
 ;; 0.49 seconds, 135 MB allocated
 (prog2$ (ccl::gc)
         (time (loop for i fixnum from 1 to 100
-                   do 
+                   do
                    (let ((result (remove-dups *integers2*)))
                      (declare (ignore result))
                      nil))))
@@ -133,7 +138,7 @@
 ;; 1.1 seconds, 128 MB allocated
 (prog2$ (ccl::gc)
         (time (loop for i fixnum from 1 to 100
-                   do 
+                   do
                    (let ((result (hons-remove-duplicates *integers2*)))
                      (declare (ignore result))
                      nil))))

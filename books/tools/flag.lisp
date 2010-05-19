@@ -1,12 +1,31 @@
-; flag.lisp -- Introduce induction scheme for mutually recursive functions.
-; Sol Swords and Jared Davis {sswords,jared}@cs.utexas.edu
+; Make-flag -- Introduce induction scheme for mutually recursive functions.
+; Copyright (C) 2008-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original authors: Sol Swords and Jared Davis
+;                   {sswords,jared}@centtech.com
+
 
 ; Examples
 #|
 (include-book  ;; this newline is so that this is ignored in dependency scanning
  "tools/flag" :dir :system)
 
-(FLAG::make-flag flag-pseudo-termp 
+(FLAG::make-flag flag-pseudo-termp
                  pseudo-termp
                  :flag-var flag
                  :flag-mapping ((pseudo-termp . term)
@@ -14,7 +33,7 @@
                  ;; :hints {for the measure theorem}
                  :defthm-macro-name defthm-pseudo-termp
                  ;; make everything local but the defthm macro
-                 :local t 
+                 :local t
                  )
 
 ; This introduces (flag-pseudo-termp flag x lst)
@@ -26,11 +45,11 @@
 
 (defthm-pseudo-termp type-of-pseudo-termp
   (term (booleanp (pseudo-termp x))
-        :rule-classes :rewrite 
+        :rule-classes :rewrite
         :doc nil)
   (list (booleanp (pseudo-term-listp lst))
         )
-  :hints(("Goal" 
+  :hints(("Goal"
           :induct (flag-pseudo-termp flag x lst))))
 
 
@@ -39,7 +58,7 @@
 
 (mutual-recursion
 
- (defun terms-into-bucket (x term-bucket) 
+ (defun terms-into-bucket (x term-bucket)
    ;; Returns (mv number of terms added, term-bucket)
    (declare (xargs :stobjs (term-bucket)
                    :verify-guards nil))
@@ -55,7 +74,7 @@
 
  (defun terms-into-bucket-list (x term-bucket)
    (declare (xargs :stobjs (term-bucket)))
-   (if (atom x) 
+   (if (atom x)
        (mv 0 term-bucket)
      (mv-let (num-car term-bucket)
              (terms-into-bucket (car x) term-bucket)
@@ -67,7 +86,7 @@
 
 (FLAG::make-flag flag-terms-into-bucket
                  terms-into-bucket)
-|#                 
+|#
 
 
 
@@ -86,15 +105,15 @@
   (or (getprop fn 'recursivep nil 'current-acl2-world world)
       (er hard 'get-clique-members "Expected ~s0 to be in a mutually-recursive nest.~%"
           fn)))
-  
+
 (defun get-formals (fn world)
   (getprop fn 'formals nil 'current-acl2-world world))
 
 (defun get-body (fn world)
   ;; This gets the original, normalized or non-normalized body based on what
-  ;; the user typed for the :normalize xarg.  The use of "last" skips past 
+  ;; the user typed for the :normalize xarg.  The use of "last" skips past
   ;; any other :definition rules that have been added since then.
-  (access def-body 
+  (access def-body
           (car (last (getprop fn 'def-bodies nil 'current-acl2-world world)))
           :concl))
 
@@ -115,7 +134,7 @@
                (make-flag-measure-aux (cdr alist) world)))
         ((consp alist)
          (list `(otherwise ,(get-measure (caar alist) world))))
-        (t 
+        (t
          (er hard 'make-flag-measure-aux "Never get here."))))
 
 (defun make-flag-measure (flag-var alist world)
@@ -131,7 +150,7 @@
     nil))
 
 (defun merge-actuals (alist formals)
-  ;; The alist has in it (orig-formal . actual) pairs.  Walk through formals 
+  ;; The alist has in it (orig-formal . actual) pairs.  Walk through formals
   ;; and replace any orig-formal with its actual; replace any unbound new
   ;; formals with nil.
   (if (consp formals)
@@ -139,7 +158,7 @@
             (merge-actuals alist (cdr formals)))
     nil))
 
-(mutual-recursion 
+(mutual-recursion
 
  (defun mangle-body (body fn-name alist formals world)
    (cond ((atom body)
@@ -158,7 +177,7 @@
           (let ((lformals (cadar body))
                 (lbody    (caddar body))
                 (largs    (cdr body)))
-            (cons (list 'lambda 
+            (cons (list 'lambda
                         lformals
                         (mangle-body lbody  fn-name alist formals world))
                   (mangle-body-list largs fn-name alist formals world))))))
@@ -193,9 +212,9 @@
                      :mode :logic)
               (ignorable . ,formals))
      (case ,flag-var
-       . 
+       .
        ,(make-flag-body-aux fn-name formals alist alist world)))))
-     
+
 (defun extract-keyword-from-args (kwd args)
   (if (consp args)
       (if (eq (car args) kwd)
@@ -219,7 +238,7 @@
       (let* ((flag   (cdar alist))
              (lookup (assoc-eq flag thmparts)))
         (if (not lookup)
-            (er hard 'pair-up-cases-with-thmparts 
+            (er hard 'pair-up-cases-with-thmparts
                 "Expected there to be a case for the flag ~s0.~%" flag)
           (if (consp (cdr alist))
               (cons `(,flag ,(cadr lookup))
@@ -229,15 +248,15 @@
         "Never get here.")))
 
 (defun make-defthm-macro-fn-aux (name flag-var alist thmparts)
-  ;; We have just proven the lemma and it's time to instantiate it to 
+  ;; We have just proven the lemma and it's time to instantiate it to
   ;; give us each thm.
   (if (consp alist)
       (let* ((flag (cdar alist))
              (lookup (assoc-eq flag thmparts)))
         ;; Not checking for lookup, already did it when we did cases.
         (let ((this-name (or (extract-keyword-from-args :name (cddr lookup))
-                             (intern-in-package-of-symbol 
-                              (concatenate 'string 
+                             (intern-in-package-of-symbol
+                              (concatenate 'string
                                            (symbol-name name)
                                            "-"
                                            (symbol-name flag))
@@ -252,7 +271,7 @@
                      ,(cadr lookup)
                      :rule-classes ,rule-classes
                      :doc ,doc
-                     :hints(("Goal" 
+                     :hints(("Goal"
                              :in-theory (theory 'minimal-theory)
                              :use ((:instance ,name (,flag-var ',flag))))))
                   (make-defthm-macro-fn-aux name flag-var (cdr alist) thmparts)))))
@@ -270,7 +289,7 @@
                  :hints ,(extract-keyword-from-args :hints args)
                  :instructions ,(extract-keyword-from-args :instructions args)
                  :otf-flg ,(extract-keyword-from-args :otf-flg args)))
-      
+
         . ,(make-defthm-macro-fn-aux name flag-var alist thmparts))
        (value-triple ',name))))
 
@@ -319,18 +338,18 @@
     (cons `(table flag-fns ',(caar alist) ',entry)
           (flag-table-events (cdr alist) entry))))
 
-(defun make-flag-fn (flag-fn-name clique-member-name flag-var flag-mapping hints 
+(defun make-flag-fn (flag-fn-name clique-member-name flag-var flag-mapping hints
                                   defthm-macro-name local world)
-  (let* ((flag-var (or flag-var 
+  (let* ((flag-var (or flag-var
                        (intern-in-package-of-symbol "FLAG" flag-fn-name)))
          (alist (or flag-mapping
                     (pairlis$ (get-clique-members clique-member-name world)
                               (get-clique-members clique-member-name world))))
          (defthm-macro-name (or defthm-macro-name
-                                (intern-in-package-of-symbol 
+                                (intern-in-package-of-symbol
                                  (concatenate 'string "DEFTHM-" (symbol-name flag-fn-name))
                                  flag-fn-name)))
-         (equiv-thm-name (intern-in-package-of-symbol 
+         (equiv-thm-name (intern-in-package-of-symbol
                           (concatenate 'string (symbol-name flag-fn-name) "-EQUIVALENCES")
                           flag-fn-name))
          (formals        (merge-formals alist world)))
@@ -353,10 +372,10 @@
                    (case ,flag-var
                      ,@(make-cases-for-equiv alist world)))
             :hints (("Goal"
-                     :induct 
+                     :induct
                      (,flag-fn-name ,flag-var . ,formals)
-                     :in-theory 
-                     (set-difference-theories 
+                     :in-theory
+                     (set-difference-theories
                       (union-theories (theory 'minimal-theory)
                                       '((:induction ,flag-fn-name)
                                         (:rewrite expand-all-hides)))
@@ -371,25 +390,25 @@
                          (expand-calls-computed-hint ACL2::clause
                                                      ',(cons flag-fn-name
                                                              (strip-cars alist)))))))))
-      
+
       (progn . ,(flag-table-events alist `(,flag-fn-name
-                                           ,alist 
+                                           ,alist
                                            ,defthm-macro-name
                                            ,equiv-thm-name)))
       (,(if local 'local 'id)
        (in-theory (disable (:definition ,flag-fn-name)))))))
-        
-(defmacro make-flag (flag-fn-name clique-member-name 
+
+(defmacro make-flag (flag-fn-name clique-member-name
                      &key
                      flag-var
-                     flag-mapping 
+                     flag-mapping
                      hints
                      defthm-macro-name
                      local)
-  `(make-event (make-flag-fn ',flag-fn-name 
-                             ',clique-member-name 
+  `(make-event (make-flag-fn ',flag-fn-name
+                             ',clique-member-name
                              ',flag-var
-                             ',flag-mapping 
+                             ',flag-mapping
                              ',hints
                              ',defthm-macro-name
                              ',local
@@ -418,14 +437,14 @@
 
 (logic) ;; so local events aren't skipped
 
-(local 
+(local
 
 ; A couple tests to make sure things are working.
 
  (encapsulate
   ()
-  
-  (FLAG::make-flag flag-pseudo-termp 
+
+  (FLAG::make-flag flag-pseudo-termp
                    pseudo-termp
                    :flag-var flag
                    :flag-mapping ((pseudo-termp . term)
@@ -433,21 +452,21 @@
                    ;; :hints {for the measure theorem}
                    :defthm-macro-name defthm-pseudo-termp
                    )
-  
+
 ; This introduces (flag-pseudo-termp flag x lst)
 ; Theorems equating it with pseudo-termp and pseudo-term-listp
 ; And the macro shown below.
 
   (in-theory (disable (:type-prescription pseudo-termp)
                       (:type-prescription pseudo-term-listp)))
-  
+
   (defthm-pseudo-termp type-of-pseudo-termp
     (term (booleanp (pseudo-termp x))
-          :rule-classes :rewrite 
+          :rule-classes :rewrite
           :doc nil)
     (list (booleanp (pseudo-term-listp lst))
           )
-    :hints(("Goal" 
+    :hints(("Goal"
             :induct (flag-pseudo-termp flag x lst))))
 
 
@@ -457,7 +476,7 @@
 
   (mutual-recursion
 
-   (defun terms-into-bucket (x term-bucket) 
+   (defun terms-into-bucket (x term-bucket)
      ;; Returns (mv number of terms added, term-bucket)
      (declare (xargs :stobjs (term-bucket)
                      :verify-guards nil))
@@ -473,7 +492,7 @@
 
    (defun terms-into-bucket-list (x term-bucket)
      (declare (xargs :stobjs (term-bucket)))
-     (if (atom x) 
+     (if (atom x)
          (mv 0 term-bucket)
        (mv-let (num-car term-bucket)
                (terms-into-bucket (car x) term-bucket)

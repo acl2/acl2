@@ -1,32 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
-<!-- 
+<!--
 
-XDOC Documentation System for ACL2
-Copyright (C) 2009 Centaur Technology
-
-This program is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or (at your option) any later
-version.  This program is distributed in the hope that it will be useful but
-WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-details.  You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software Foundation, Inc.,
-59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-
+; XDOC Documentation System for ACL2
+; Copyright (C) 2009-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
   xdoc-to-text.xsl
   Converts xdoc markup to plain text
 
-  [Jared 10/21/09]:  I haven't put too much work into this.  Doing fancy 
-  things with XSLT seems rather difficult and I am not an expert.  
+  [Jared 10/21/09]:  I haven't put too much work into this.  Doing fancy
+  things with XSLT seems rather difficult and I am not an expert.
 
      The main deficiency right now is that I do not know how to make links
   stand out. My word-wrapping code is copied from some web site, and to use it
   I seem to have to treat the contents of elements such as <p> and <li> as
-  ordinary text.  This means that templates for <a> and <see> are never 
+  ordinary text.  This means that templates for <a> and <see> are never
   processed.  Maybe someone who knows XSLT will be able to provide a fix.
 
 -->

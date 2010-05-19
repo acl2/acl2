@@ -1,7 +1,10 @@
 ; Defsort - Defines a stable sort when given a comparison function
 ; Copyright (C) 2008 Centaur Technology
 ;
-; Contact: Jared Davis <jared@cs.utexas.edu>
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -11,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
 
@@ -53,7 +58,7 @@
   (equal (duplicity a (reverse x))
          (duplicity a x)))
 
-         
+
 
 
 
@@ -159,24 +164,24 @@
  (local (defthm lemma
           (implies (subsetp-equal a (cdr x))
                    (subsetp-equal a x))))
- 
+
  (local (defthm lemma2
           (subsetp-equal x x)
           :hints(("Goal" :induct (len x)))))
- 
+
  (local (defthm lemma3
           (implies (not (duplicity-badguy x))
                    (no-duplicatesp-equal x))
           :hints(("Goal" :in-theory (enable duplicity-badguy)))))
- 
+
  (local (defthm lemma5
           (implies (duplicity-badguy x)
                    (not (no-duplicatesp-equal x)))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :in-theory (disable no-duplicatesp-equal)
                   :use ((:instance no-duplicatesp-equal-when-high-duplicity
                                    (a (car (duplicity-badguy x)))))))))
- 
+
  (defthm duplicity-badguy-under-iff
    (iff (duplicity-badguy x)
         (not (no-duplicatesp-equal x)))))
@@ -191,7 +196,7 @@
  (local (defun duplicity-hyp () nil))
  (local (defun duplicity-lhs () nil))
  (local (defun duplicity-rhs () nil))
- 
+
  (defthm duplicity-constraint
    (implies (duplicity-hyp)
             (equal (duplicity a (duplicity-lhs))
@@ -230,4 +235,4 @@
    :hints(("goal"
            :use ((:instance lemma1)
                  (:instance lemma2))))))
-                           
+

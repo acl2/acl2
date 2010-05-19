@@ -1,6 +1,10 @@
 ; ACL2 String Library
-; Copyright (C) 2009 Centaur Technology
-; Contact: jared@cs.utexas.edu
+; Copyright (C) 2009-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -10,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
 (include-book "doc")
@@ -21,7 +27,7 @@
 
   ":Doc-Section Str
    Case-insensitive character equivalence test~/
- 
+
    ACL2's built-in version of this function, ~il[char-equal], is irritating to use
    because it has standard-char-p guards.  ~c[ichareqv] is somewhat less efficient,
    but it works on arbitrary characters and is an equivalence relation.~/
@@ -53,7 +59,7 @@
 
   ":Doc-Section Str
    Case-insensitive character-list equivalence test~/
-  
+
    We say that two lists are case-insensitively equivalent when they have the same
    length and each of their elements are pairwise ~il[ichareqv].~/
 
@@ -103,7 +109,7 @@
   :hints(("Goal" :in-theory (enable icharlisteqv))))
 
 (defthm icharlisteqv-of-cons-left
-  (equal (icharlisteqv (cons a x) y) 
+  (equal (icharlisteqv (cons a x) y)
          (and (consp y)
               (ichareqv (double-rewrite a) (car y))
               (icharlisteqv (double-rewrite x) (cdr y))))
@@ -129,12 +135,12 @@
                               (<= n l))
                   :measure (nfix (- (nfix l) (nfix n)))
                   :guard-hints (("Goal" :in-theory (enable ichareqv)))))
-  (mbe :logic 
+  (mbe :logic
        (if (zp (- (nfix l) (nfix n)))
            t
          (and (ichareqv (char x n) (char y n))
               (istreqv-aux x y (+ (nfix n) 1) l)))
-       :exec 
+       :exec
        (if (= (the integer n) (the integer l))
            t
          (and (let ((cx (the character (char (the string x) (the integer n))))
@@ -173,7 +179,7 @@
             (equal (istreqv-aux x y n l)
                    (icharlisteqv (nthcdr n (coerce x 'list))
                                  (nthcdr n (coerce y 'list)))))
-   :hints(("Goal" 
+   :hints(("Goal"
            :in-theory (enable istreqv-aux)
            :induct (istreqv-aux x y n l)))))
 
@@ -181,13 +187,13 @@
 
   ":Doc-Section Str
    Case-insensitive string equivalence test~/
-  
-   We say that two strings are case-insensitively equivalent when they have the 
+
+   We say that two strings are case-insensitively equivalent when they have the
    same length and each of their characters are pairwise ~il[ichareqv].  Logically
-   this is identical to ~c[(icharlisteqv (coerce x 'list) (coerce y 'list))], but 
+   this is identical to ~c[(icharlisteqv (coerce x 'list) (coerce y 'list))], but
    we use a more efficient implementation which avoids coercing the strings.
 
-   NOTE: for reasoning, we leave this function enabled and prefer to work with 
+   NOTE: for reasoning, we leave this function enabled and prefer to work with
    icharlisteqv of the coerces as our normal form.~/
 
    ~l[ichareqv] and ~pl[icharlisteqv]~/"
@@ -195,7 +201,7 @@
   (declare (type string x)
            (type string y))
 
-  (mbe :logic 
+  (mbe :logic
        (icharlisteqv (coerce x 'list) (coerce y 'list))
        :exec
        (let ((xl (the integer (length (the string x))))

@@ -1,6 +1,10 @@
 ; ACL2 String Library
-; Copyright (C) 2009 Centaur Technology
-; Contact: jared@cs.utexas.edu
+; Copyright (C) 2009-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -10,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
 (include-book "doc")
@@ -18,11 +24,11 @@
 (local (include-book "unicode/take" :dir :system))
 
 (defmacro cat (&rest args)
-  
+
   ":Doc-Section Str
   Concatenate strings~/
-  
-  ~c[(cat x y z ...)] is identical to ~c[(concatenate 'string x y z ...)], but 
+
+  ~c[(cat x y z ...)] is identical to ~c[(concatenate 'string x y z ...)], but
   has a somewhat shorter name. ~/ "
 
   `(concatenate 'string . ,args))
@@ -45,7 +51,7 @@
                         (<= n (len x)))
                    (equal (append (simpler-take (- n 1) x) (cons (nth (- n 1) x) y))
                           (append (simpler-take n x) y)))
-          :hints(("goal" 
+          :hints(("goal"
                   :in-theory (enable simpler-take)
                   :induct (simpler-take n x)))))
 
@@ -72,15 +78,15 @@
 
 (defund append-chars (x y)
 
-  ":Doc-Section Str 
+  ":Doc-Section Str
   Efficient (append (coerce x 'list) y)~/
- 
+
   This function is logically equal to ~c[(append (coerce x 'list) y)], but is
   implemented efficiently via ~c[char]. ~/ "
 
   (declare (xargs :guard (stringp x))
            (type string x))
-                  
+
   (mbe :logic (append (coerce x 'list) y)
        :exec (if (equal x "")
                  y
@@ -103,7 +109,7 @@
   (if (mbe :logic (zp (- (nfix xl) (nfix n)))
            :exec (= n xl))
       y
-    (revappend-chars-aux x 
+    (revappend-chars-aux x
                          (mbe :logic (+ (nfix n) 1)
                               :exec (+ n 1))
                          xl
@@ -117,16 +123,16 @@
                 (equal xl (length x)))
            (equal (revappend-chars-aux x n xl y)
                   (revappend (nthcdr n (coerce x 'list)) y)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable revappend-chars-aux)
           :induct (revappend-chars-aux x n xl y))))
 
 (defund revappend-chars (x y)
-  
+
   ":Doc-Section Str
   Efficient (revappend (coerce x 'list) y~/
 
-  This function is logically equal to ~c[(revappend (coerce x 'list) y)], but 
+  This function is logically equal to ~c[(revappend (coerce x 'list) y)], but
   is implemented efficiently via ~c[char]. ~/ "
 
   (declare (xargs :guard (stringp x))

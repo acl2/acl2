@@ -1,6 +1,10 @@
 ; ACL2 String Library
-; Copyright (C) 2009 Centaur Technology
-; Contact: jared@cs.utexas.edu
+; Copyright (C) 2009-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -10,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
 (include-book "doc")
@@ -21,10 +27,10 @@
                               (natp len))
                   :guard-hints (("Goal" :in-theory (enable acl2::repeat))))
            (type integer len))
-  (mbe :logic 
+  (mbe :logic
        (append x (make-list (nfix (- (nfix len) (len x)))
                             :initial-element #\Space))
-       :exec 
+       :exec
        (let* ((x-len (length (the list x)))
               (diff  (- len x-len)))
          (if (> diff 0)
@@ -68,7 +74,7 @@
                               (natp n))
                   :guard-hints (("Goal" :in-theory (enable lpadchars-aux acl2::repeat))))
            (type integer n))
-  (mbe :logic 
+  (mbe :logic
        (append (make-list n :initial-element #\Space)
                x)
        :exec

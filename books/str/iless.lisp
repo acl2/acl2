@@ -1,6 +1,10 @@
 ; ACL2 String Library
-; Copyright (C) 2009 Centaur Technology
-; Contact: jared@cs.utexas.edu
+; Copyright (C) 2009-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -10,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
 (include-book "doc")
@@ -19,7 +25,7 @@
 (local (include-book "arithmetic"))
 (local (include-book "char-support"))
 
- 
+
 (defund ichar< (x y)
 
   ":Doc-Section Str
@@ -33,14 +39,14 @@
   underscore, and backtick) are considered \"smaller\" than letters, even though
   in regular ASCII ordering they are \"larger\" than the upper-case letters.
   ~/
- 
+
   ~l[istr<] and ~pl[icharlist<]"
 
   (declare (type character x)
            (type character y))
 
   (mbe :logic
-       (let* ((xc (if (characterp x) 
+       (let* ((xc (if (characterp x)
                       (char-code x)
                     0))
               (yc (if (characterp y)
@@ -53,7 +59,7 @@
                           (+ yc 32)
                         yc)))
          (< xc-fix yc-fix))
-       
+
        :exec
        (let* ((xc     (the (unsigned-byte 8) (char-code (the character x))))
               (yc     (the (unsigned-byte 8) (char-code (the character y))))
@@ -67,7 +73,7 @@
                         (the (unsigned-byte 8) yc))))
          (< (the (unsigned-byte 8) xc-fix)
             (the (unsigned-byte 8) yc-fix)))))
-              
+
 (defthm ichar<-irreflexive
   (not (ichar< x x))
   :hints(("Goal" :in-theory (enable ichar<))))
@@ -106,7 +112,7 @@
             (equal (ichareqv x y)
                    t))
    :hints(("Goal" :in-theory (enable ichar< ichareqv)))))
-                          
+
 (defcong ichareqv equal (ichar< x y) 1
   :hints(("Goal" :in-theory (enable ichar<
                                     ichareqv
@@ -135,9 +141,9 @@
   Case-insensitive character-list less-than test~/
 
   We determine whether one character list alphabetically preceeds another, where
-  each character is tested with ~il[char<] and shorter strings are said to come 
+  each character is tested with ~il[char<] and shorter strings are said to come
   before longer strings. ~/
- 
+
   ~l[ichar<] and ~pl[istr<]"
 
   (declare (xargs :guard (and (character-listp x)
@@ -158,7 +164,7 @@
        (cond ((atom y)
               nil)
              ((atom x)
-              t)             
+              t)
              (t
               (let* ((xc     (the (unsigned-byte 8) (char-code (the character (car x)))))
                      (yc     (the (unsigned-byte 8) (char-code (the character (car y)))))
@@ -245,17 +251,17 @@
               nil)
              (t
               (istr<-aux x y (+ (nfix n) 1) xl yl)))
-       :exec 
+       :exec
        (cond ((= (the integer n) (the integer yl))
               nil)
              ((= (the integer n) (the integer xl))
               t)
-             (t 
+             (t
               (let* ((xc     (the (unsigned-byte 8)
-                               (char-code (the character 
+                               (char-code (the character
                                             (char (the string x) (the integer n))))))
-                     (yc     (the (unsigned-byte 8) 
-                               (char-code (the character 
+                     (yc     (the (unsigned-byte 8)
+                               (char-code (the character
                                             (char (the string y) (the integer n))))))
                      (xc-fix (if (and (<= (the (unsigned-byte 8) 65) (the (unsigned-byte 8) xc))
                                       (<= (the (unsigned-byte 8) xc) (the (unsigned-byte 8) 90)))
@@ -300,22 +306,22 @@
   ":Doc-Section Str
   Case-insensitive string less-than test~/
 
-  We determine whether one string alphabetically preceeds another, where each 
-  character is tested with ~il[char<] and shorter strings are said to come 
-  before longer strings. 
+  We determine whether one string alphabetically preceeds another, where each
+  character is tested with ~il[char<] and shorter strings are said to come
+  before longer strings.
 
   Logically, ~c[(istr< x y)] is ~c[(icharlist< (coerce x 'list) (coerce y 'list)],
   but we use a more efficient implementation which avoids coercing the strings.~/
- 
+
   ~l[ichar<] and ~pl[icharlist<]"
 
   (declare (type string x)
            (type string y))
 
-  (mbe :logic 
+  (mbe :logic
        (icharlist< (coerce x 'list) (coerce y 'list))
-       
-       :exec 
+
+       :exec
        (istr<-aux (the string x)
                   (the string y)
                   (the integer 0)
@@ -323,6 +329,6 @@
                   (the integer (length (the string y))))))
 
 
-       
-                   
+
+
 

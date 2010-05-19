@@ -1,7 +1,10 @@
 ; Serializing ACL2 Objects
-; Copyright (C) 2009 by Centaur Technology 
+; Copyright (C) 2009-2010 Centaur Technology
 ;
-; Contact: Jared Davis <jared@cs.utexas.edu>
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -11,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "SERIALIZE")
 
@@ -50,7 +55,7 @@
   Reading and writing objects can then be done with the following
   macros.  Note that these macros both implicitly take state!
   ~bv[]
-    (SERIALIZE::write filename object 
+    (SERIALIZE::write filename object
                       [:verbose t/nil]
                       [:symbol-table-size <size>]
                       [:number-table-size <size>]
@@ -165,7 +170,7 @@
   help your ~c[certify-book] time, and it only impacts a portion of the
   overall time.
 
-  To avoid this overhead, we have developed a POTENTIALLY UNSOUND 
+  To avoid this overhead, we have developed a POTENTIALLY UNSOUND
   alternative to SERIALIZE::read, which is available only by loading
   an additional book.  So, if the above scheme is not performing well
   for you, you may wish to ~pl[SERIALIZE::unsound-read].
@@ -201,11 +206,11 @@
   ~il[make-events] or other contexts where the ~c[state] is available.  The
   interface is just like ~c[read], except that it does not return ~c[state].
   That is,
-  ~bv[] 
-    (SERIALIZE::unsound-read filename 
+  ~bv[]
+    (SERIALIZE::unsound-read filename
                              [:honsp t/nil]
                              [:verbose t/nil])
-      --> 
+      -->
     obj
   ~ev[] ~/
 
@@ -218,28 +223,28 @@
     (equal (SERIALIZE::unsound-read filename honsp verbosep)
            (SERIALIZE::unsound-read filename honsp verbosep))
   ~ev[]
-  But we can violate this property by modifying the file system between 
-  calls of ~c[unsound-read], and the dependence of ~c[unsound-read] upon 
+  But we can violate this property by modifying the file system between
+  calls of ~c[unsound-read], and the dependence of ~c[unsound-read] upon
   the state is nowhere evident.  For instance, here is a proof of nil that
-  is carried out in ~c[serialize/serialize-tests.lisp] by exploiting this 
+  is carried out in ~c[serialize/serialize-tests.lisp] by exploiting this
   fact.
 
   ~bv[]
-  (local 
+  (local
    (encapsulate
     ()
     ;; Write NIL to test.sao
-    (make-event 
+    (make-event
      (let ((state (serialize::write \"test.sao\" nil)))
        (value '(value-triple :invisible))))
 
     ;; Prove that test.sao contains NIL.
-    (defthm lemma-1 
+    (defthm lemma-1
       (equal (serialize::unsound-read \"test.sao\") nil)
       :rule-classes nil)
 
     ;; Write T to test.sao
-    (make-event 
+    (make-event
      (let ((state (serialize::write \"test.sao\" t)))
        (value '(value-triple :invisible))))
 
@@ -252,7 +257,7 @@
     (defthm qed
       nil
       :rule-classes nil
-      :hints((\"Goal\" 
+      :hints((\"Goal\"
               :use ((:instance lemma-1)
                     (:instance lemma-2))
               :in-theory (disable (serialize::unsound-read-fn)))))))
@@ -281,7 +286,7 @@
            (mv val state))))
 
 (defun write-fn (filename obj verbosep symbol-table-size number-table-size
-                          string-table-size cons-table-size package-table-size 
+                          string-table-size cons-table-size package-table-size
                           state)
   (declare (xargs :guard (and (stringp filename)
                               (booleanp verbosep)
@@ -306,7 +311,7 @@
 (defmacro read (filename &key honsp verbosep)
   `(read-fn ,filename ,honsp ,verbosep state))
 
-(defmacro write (filename obj &key 
+(defmacro write (filename obj &key
                           verbosep
                           (symbol-table-size '32768)
                           (number-table-size '32768)
@@ -314,7 +319,7 @@
                           (cons-table-size  '131072)
                           (package-table-size '128))
   `(write-fn ,filename ,obj ,verbosep ,symbol-table-size ,number-table-size
-             ,string-table-size ,cons-table-size ,package-table-size 
+             ,string-table-size ,cons-table-size ,package-table-size
              state))
 
 (make-event

@@ -2,8 +2,6 @@ include ../Makefile-generic
 
 .PHONY: doc
 
-BOOKS := $(filter-out acl2-customization,$(BOOKS))
-
 -include Makefile-deps
 
 doc: top.cert

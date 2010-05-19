@@ -1,7 +1,10 @@
 ; Defsort - Defines a stable sort when given a comparison function
 ; Copyright (C) 2008 Centaur Technology
 ;
-; Contact: Jared Davis <jared@cs.utexas.edu>
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -11,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 
 ; Defsort Examples.
@@ -33,14 +38,14 @@
          :prefix <)
 
 (assert! (equal (<-sort '(5 5 3 4 4)) '(3 4 4 5 5)))
-                        
+
 
 
 ;; We cannot define (>-SORT X) directly using >, because in ACL2 > is a macro
 ;; instead of a function.  So, we define a wrapper.
 
 (defun greater-p (x y)
-  (declare (xargs :guard (and (rationalp x) 
+  (declare (xargs :guard (and (rationalp x)
                               (rationalp y))))
   (> x y))
 
@@ -110,7 +115,7 @@
 
 
 
-;; Imagine an alist of (number . string) pairs.  Below we can define 
+;; Imagine an alist of (number . string) pairs.  Below we can define
 ;; key and value sorts.
 
 (defun entry-p (x)
@@ -139,7 +144,7 @@
 
 (assert! (equal (entry-key-sort '((1 . "z") (2 . "b") (1 . "y") (2 . "a")))
                 '((1 . "z") (1 . "y") (2 . "b") (2 . "a"))))
-                
+
 (assert! (equal (entry-val-sort '((1 . "z") (2 . "b") (1 . "y") (2 . "a")))
                 '((2 . "a") (2 . "b") (1 . "y") (1 . "z"))))
 
@@ -147,7 +152,7 @@
 
 #||
 
-; Below are some performance comparisions. 
+; Below are some performance comparisions.
 ; We do our timings on CCL on Lisp2.
 
 (include-book ;; Line break fools dependency scanner.
@@ -158,7 +163,7 @@
 
 (ccl::set-lisp-heap-gc-threshold (expt 2 30))
 
-(defparameter *integers* 
+(defparameter *integers*
   ;; A test vector of 10,000 integers which are the numbers 1 through 1000,
   ;; each repeated ten times.
   (loop for j from 1 to 10
@@ -170,65 +175,65 @@
         nconc
         (loop for i from 1 to 1000
               collect
-              (concatenate 'string "string_number_" 
+              (concatenate 'string "string_number_"
                            (coerce (explode-atom i 10) 'string)))))
 
 
 ;; 9.13 seconds with 4.4 GB allocated
-(progn (ccl::gc) 
+(progn (ccl::gc)
        (time (loop for i fixnum from 1 to 1000
-                   do 
+                   do
                    (let ((result (SETS::mergesort (cons i *integers*))))
                      (declare (ignore result))
                      nil))))
 
 
 ;; 4.25 seconds with 1.5 GB allocated
-(progn (ccl::gc) 
+(progn (ccl::gc)
        (time (loop for i fixnum from 1 to 1000
-                   do 
+                   do
                    (let ((result (<<-sort (cons i *integers*))))
                      (declare (ignore result))
                      nil))))
 
 
 ;; 2.71 seconds with 1.5 GB allocated
-(progn (ccl::gc) 
+(progn (ccl::gc)
        (time (loop for i fixnum from 1 to 1000
-                   do 
+                   do
                    (let ((result (<-sort (cons i *integers*))))
                      (declare (ignore result))
                      nil))))
 
 
 ;; 2.97 seconds with 1.6 GB allocated
-(progn (ccl::gc) 
+(progn (ccl::gc)
        (time (loop for i fixnum from 1 to 1000
-                   do 
+                   do
                    (let ((result (>-sort (cons i *integers*))))
                      (declare (ignore result))
                      nil))))
 
 ;; 25.4 seconds with 4.4 GB allocated
-(progn (ccl::gc) 
+(progn (ccl::gc)
        (time (loop for i fixnum from 1 to 1000
-                   do 
+                   do
                    (let ((result (SETS::mergesort (cons "foo" *strings*))))
                      (declare (ignore result))
                      nil))))
 
 ;; 18.8 seconds with 1.5 GB allocated
-(progn (ccl::gc) 
+(progn (ccl::gc)
        (time (loop for i fixnum from 1 to 1000
-                   do 
+                   do
                    (let ((result (<<-sort (cons "foo" *strings*))))
                      (declare (ignore result))
                      nil))))
 
 ;; 11.7 seconds with 1.5 GB allocated
-(progn (ccl::gc) 
+(progn (ccl::gc)
        (time (loop for i fixnum from 1 to 1000
-                   do 
+                   do
                    (let ((result (string-sort (cons "foo" *strings*))))
                      (declare (ignore result))
                      nil))))
@@ -242,7 +247,7 @@
 ;; 16.1 seconds with 240 MB allocated -- interesting
 (progn (ccl::gc)
        (time (loop for i fixnum from 1 to 1000
-                   do 
+                   do
                    (let ((result (qsort (cons i *integers*))))
                      (declare (ignore result))
                      nil))))

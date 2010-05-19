@@ -1,3 +1,23 @@
+; Serializing ACL2 Objects
+; Copyright (C) 2009-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
+
 (in-package "ACL2")
 (include-book "serialize" :ttags :all)
 (include-book "unsound-read" :ttags :all)
@@ -105,7 +125,7 @@
 
 (comp t) ; avoid stack overflow in some GCL images for nats call just below
 
-(defconst *test* 
+(defconst *test*
   (let* ((nats         (nats 0 1000))
          (negatives    (map-negate nats))
          (chars        (map-code-char (nats 0 255)))
@@ -128,7 +148,7 @@
          (more-stuff
           (list stuff stuff stuff stuff stuff stuff stuff stuff stuff)))
     more-stuff))
-    
+
 (test-serialize *test*)
 
 
@@ -137,21 +157,21 @@
  (let ((host-lisp (get-global 'ACL2::host-lisp state)))
    (if (equal host-lisp :gcl)
        `(value-triple :does-not-work-on-gcl)
-     '(local 
+     '(local
        (encapsulate
         ()
         ;; Write NIL to test.sao
-        (make-event 
+        (make-event
          (let ((state (serialize::write "test.sao" nil)))
            (value '(value-triple :invisible))))
 
         ;; Prove that test.sao contains NIL.
-        (defthm lemma-1 
+        (defthm lemma-1
           (equal (serialize::unsound-read "test.sao") nil)
           :rule-classes nil)
 
         ;; Write T to test.sao
-        (make-event 
+        (make-event
          (let ((state (serialize::write "test.sao" t)))
            (value '(value-triple :invisible))))
 
@@ -164,7 +184,7 @@
         (defthm qed
           nil
           :rule-classes nil
-          :hints(("Goal" 
+          :hints(("Goal"
                   :use ((:instance lemma-1)
                         (:instance lemma-2))
                   :in-theory (disable (serialize::unsound-read-fn))))))))))
@@ -172,7 +192,7 @@
 
 #||
 
-;; Well, even with compilation on, gcl and sbcl and even ccl are having 
+;; Well, even with compilation on, gcl and sbcl and even ccl are having
 ;; overflows here.  Stupidity.  Stupidity.  I comment out the test.
 
 (defconst *test2*

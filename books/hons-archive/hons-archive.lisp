@@ -1,7 +1,10 @@
 ; Hons Archives
-; Copyright (C) 2009 by Centaur Technology 
+; Copyright (C) 2009-2010 Centaur Technology
 ;
-; Contact: Jared Davis <jared@cs.utexas.edu>
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -11,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
 (include-book "tools/bstar" :dir :system)
@@ -30,7 +35,7 @@
 ; also think about the guard verification of the writing functions.
 
 (defund combine24u (x1 x2 x3)
-  "Given unsigned bytes x1, x2, x3, compute 
+  "Given unsigned bytes x1, x2, x3, compute
      (x1 << 16) | (x2 << 8) | x3
   and interpret the result as a 24-bit unsigned integer."
   (declare (type (unsigned-byte 8) x1)
@@ -62,12 +67,12 @@
             (null x3))
         (mv 'fail state)
       (mv (mbe :logic (combine24u x3 x2 x1)
-               :exec (logior 
-                      (the (unsigned-byte 24) 
+               :exec (logior
+                      (the (unsigned-byte 24)
                         (ash (the (unsigned-byte 8) x3) 16))
-                      (the (unsigned-byte 16) 
+                      (the (unsigned-byte 16)
                         (ash (the (unsigned-byte 8) x2) 8))
-                      (the (unsigned-byte 8) 
+                      (the (unsigned-byte 8)
                         x1)))
           state)))))))
 
@@ -75,28 +80,28 @@
   (declare (xargs :guard (and (natp x)
                               (< x (expt 2 24))
                               (state-p state)
-                              (symbolp channel) 
+                              (symbolp channel)
                               (open-output-channel-p channel :byte state))
                   :mode :program ;; guards too hard for now
                   :stobjs state))
 
 ; Write a 24-bit quantity to a file as a series of three bytes, in
-; little-endian order.  
+; little-endian order.
 
-  (let* ((state (write-byte$ 
-                 (the (unsigned-byte 8) 
+  (let* ((state (write-byte$
+                 (the (unsigned-byte 8)
                    (logand (the (unsigned-byte 24) x)
                            (the (unsigned-byte 8) #xFF)))
                  channel state))
-         (state (write-byte$ 
-                 (the (unsigned-byte 8) 
-                   (logand (the (unsigned-byte 16) 
+         (state (write-byte$
+                 (the (unsigned-byte 8)
+                   (logand (the (unsigned-byte 16)
                              (ash (the (unsigned-byte 32) x) -8))
                            (the (unsigned-byte 8) #xFF)))
                  channel state))
-         (state (write-byte$ 
-                 (the (unsigned-byte 8) 
-                   (logand (the (unsigned-byte 8) 
+         (state (write-byte$
+                 (the (unsigned-byte 8)
+                   (logand (the (unsigned-byte 8)
                              (ash (the (unsigned-byte 32) x) -16))
                            (the (unsigned-byte 8) #xFF)))
                  channel state)))
@@ -106,7 +111,7 @@
   (declare (xargs :guard (and (natp x)
                               (< x (expt 2 32))
                               (state-p state)
-                              (symbolp channel) 
+                              (symbolp channel)
                               (open-output-channel-p channel :byte state))
                   :mode :program ;; guards too hard for now
                   :stobjs state))
@@ -114,26 +119,26 @@
 ; Write a 32-bit quantitity to a file as a series of four bytes, in
 ; little-endian order.
 
-  (let* ((state (write-byte$ 
-                 (the (unsigned-byte 8) 
+  (let* ((state (write-byte$
+                 (the (unsigned-byte 8)
                    (logand (the (unsigned-byte 32) x)
                            (the (unsigned-byte 8) #xFF)))
                  channel state))
-         (state (write-byte$ 
-                 (the (unsigned-byte 8) 
-                   (logand (the (unsigned-byte 24) 
+         (state (write-byte$
+                 (the (unsigned-byte 8)
+                   (logand (the (unsigned-byte 24)
                              (ash (the (unsigned-byte 32) x) -8))
                            (the (unsigned-byte 8) #xFF)))
                  channel state))
-         (state (write-byte$ 
-                 (the (unsigned-byte 8) 
-                   (logand (the (unsigned-byte 16) 
+         (state (write-byte$
+                 (the (unsigned-byte 8)
+                   (logand (the (unsigned-byte 16)
                              (ash (the (unsigned-byte 32) x) -16))
                            (the (unsigned-byte 8) #xFF)))
                  channel state))
-         (state (write-byte$ 
-                 (the (unsigned-byte 8) 
-                   (logand (the (unsigned-byte 8) 
+         (state (write-byte$
+                 (the (unsigned-byte 8)
+                   (logand (the (unsigned-byte 8)
                              (ash (the (unsigned-byte 32) x) -24))
                            (the (unsigned-byte 8) #xFF)))
                  channel state)))
@@ -152,14 +157,14 @@
   ":Doc-Section hons-archive
   Mechanism for serializing ACL2 objects~/
 
-  Hons Archives (HARs) are a way to write ACL2 objects to disk so they can be 
+  Hons Archives (HARs) are a way to write ACL2 objects to disk so they can be
   loaded in other ACL2 sessions.
 
   ACL2 already provides a couple of other ways to do this:
 
-     - ~pl[io] for a description of ~c[print-object$] and ~c[read-object].  
+     - ~pl[io] for a description of ~c[print-object$] and ~c[read-object].
 
-     - Users of ACL2h may also be interested in ~c[compact-print-file] and 
+     - Users of ACL2h may also be interested in ~c[compact-print-file] and
        ~c[compact-read-file], which are defined in ~c[hons-raw.lisp] in the ACL2
        sources and may only be used in raw lisp.
 
@@ -171,12 +176,12 @@
 
   Hons archives can be created with the ~c[har-zip] macro
   ~bv[]
-     (har-zip x filename 
+     (har-zip x filename
               :sortp {t, nil})
        -->
      state
   ~ev[]
-  
+
   This macro implicitly expects ~c[state] to be available, so it can only be used
   in a context where ~c[state] is available, such as at the top-level loop or in
   other functions that take ~c[state].
@@ -195,8 +200,8 @@
   files.
 
   By default, ~c[:sortp] is ~c[nil] and the atoms are written to the file in whatever
-   seemingly-random order is produced as we walk over the object.  But if ~c[:sortp] 
-  is set to ~c[t], the atoms are instead printed in a sorted order.  This takes 
+   seemingly-random order is produced as we walk over the object.  But if ~c[:sortp]
+  is set to ~c[t], the atoms are instead printed in a sorted order.  This takes
   additional time and does not give any benefit to unzipping.  However, it may result
   in more useful \"diffs\" between various revisions of the atoms file.
 
@@ -205,15 +210,15 @@
 
   Hons archives can be read with the ~c[har-unzip] macro,
   ~bv[]
-     (har-unzip filename 
+     (har-unzip filename
                 :honsp {t, nil})
        -->
      (mv x state)
   ~ev[]
-  Because of the use of state, one typically needs to use ~il[make-event] 
+  Because of the use of state, one typically needs to use ~il[make-event]
   to actually get at the contents of a HAR, e.g.,
   ~bv[]
-    (make-event 
+    (make-event
      (mv-let (obj state) (time$ (har-unzip \"big.har\"))
              (value `(defconst *big* ',obj))))
   ~ev[]
@@ -221,12 +226,12 @@
   The ~c[:honsp] argument controls whether the object will be reconstructed
   via ~il[cons] or ~il[hons].  By default, ~il[cons] is used because it is the
   faster alternative.  On the other hand, if you need the object to be part of
-  the hons frontier, you may wish to set ~c[:honsp t] instead of manually 
+  the hons frontier, you may wish to set ~c[:honsp t] instead of manually
   ~il[hons-copy]ing the object afterwards.
 
 
   Program Mode Note.  There is nothing \"under the hood\" about these functions
-  (beyond the use of hons and fast-alists), and in principle we can introduce 
+  (beyond the use of hons and fast-alists), and in principle we can introduce
   them all in logic mode and verify their guards.  I do not have time to do this
   right now, so for now they are in program mode.
   ~/
@@ -240,7 +245,7 @@
 ; which maps every atom in x to a unique index.  N is the next available index,
 ; and we just count upwards.  Seen is the list of conses we have seen so far,
 ; which is used to avoid repeatedly traversing the same shared structures.
-; We effectively build the table in "unsorted" order.  
+; We effectively build the table in "unsorted" order.
 
   (let ((obj (hons-get x seen))
         (n   (mbe :logic (nfix n) :exec n)))
@@ -275,7 +280,7 @@
 ;   - ACC, the fast-alist we have built so far.
 
   (if (consp x)
-      (har-atom-list-to-index-map (cdr x) 
+      (har-atom-list-to-index-map (cdr x)
                                   (+ n 1)
                                   (hons-acons n (car x) acc))
     acc))
@@ -289,7 +294,7 @@
 ;   - ACC, the fast-alist we have built so far.
 
   (if (consp x)
-      (har-atom-list-to-atom-map (cdr x) 
+      (har-atom-list-to-atom-map (cdr x)
                                  (+ n 1)
                                  (hons-acons (car x) n acc))
     acc))
@@ -298,7 +303,7 @@
   (declare (xargs :guard t))
   (mv-let (num-atoms unsorted-alist seen-alist)
           (har-gather-atoms1 x 0 nil nil)
-          (prog2$ 
+          (prog2$
            (flush-hons-get-hash-table-link seen-alist)
            (if (not sortp)
                (mv num-atoms unsorted-alist)
@@ -353,15 +358,15 @@
 
   (if (atom x)
       (mv (cdr (hons-get-fn-do-not-hopy x amap)) n tbl insts)
-    
+
     (let ((lookup (hons-get-fn-do-not-hopy x tbl)))
       (if lookup
           (mv (cdr lookup) n tbl insts)
-        (b* (((mv car-index n tbl insts) 
+        (b* (((mv car-index n tbl insts)
               (har-gather-conses (car x) n tbl insts amap))
              ((mv cdr-index n tbl insts)
               (har-gather-conses (cdr x) n tbl insts amap)))
-            (mv n 
+            (mv n
                 (+ n 1)
                 (hons-acons x n tbl)
                 (cons (cons car-index cdr-index) insts)))))))
@@ -375,7 +380,7 @@
 
 ; This is the clearest explanation of the compression process.
 ;
-; X is an object to compress.  
+; X is an object to compress.
 ;
 ; We return (MV NUM-ATOMS MAX-INDEX ALST INSTS), where
 ;   - NUM-ATOMS is the number of atoms
@@ -402,7 +407,7 @@
 ; and the file reading ops, below.
 ;
 ; INSTRS are a list of instructions to process, in the proper order.  Map is a
-; mapping of indexes to objects which we have constructed so far.  Map-size is 
+; mapping of indexes to objects which we have constructed so far.  Map-size is
 ; the current size of map and also is the index for this instruction.
 
   (if (atom instrs)
@@ -410,13 +415,13 @@
     (let* ((instr1 (car instrs))
            (sub1   (car instr1))
            (sub2   (cdr instr1))
-           (sub1-resolve 
+           (sub1-resolve
             (cond ((and (natp sub1)
                         (< sub1 map-size))
                    (cdr (hons-get-fn-do-not-hopy sub1 map)))
                   (t
                    (er hard? 'har-decompress-instrs "Illegal index: ~x0.~%" sub1))))
-           (sub2-resolve 
+           (sub2-resolve
             (cond ((and (natp sub2)
                         (< sub2 map-size))
                    (cdr (hons-get-fn-do-not-hopy sub2 map)))
@@ -468,7 +473,7 @@
 ; we need more objects than that, we will need to add support for larger links.
 
 (defun har-write-instrs24-aux (instrs channel state)
-  (declare (xargs :mode :program 
+  (declare (xargs :mode :program
                   :stobjs state))
 
 ; Instrs are instructions where the max-index should fit into 24 bits.  The
@@ -482,7 +487,7 @@
       (har-write-instrs24-aux (cdr instrs) channel state))))
 
 (defun har-write-instrs32-aux (instrs channel state)
-  (declare (xargs :mode :program 
+  (declare (xargs :mode :program
                   :stobjs state))
 
 ; Same as har-write-instrs24-aux, but for 32-bits.
@@ -494,7 +499,7 @@
       (har-write-instrs32-aux (cdr instrs) channel state))))
 
 (defun har-write-instrs24 (instrs filename state)
-  (declare (xargs :mode :program 
+  (declare (xargs :mode :program
                   :stobjs state))
 
 ; Instrs are instructions where the max-index should fit into 24 bits.  We
@@ -510,7 +515,7 @@
               state))))
 
 (defun har-write-instrs32 (instrs filename state)
-  (declare (xargs :mode :program 
+  (declare (xargs :mode :program
                   :stobjs state))
 
 ; Same as har-write-instrs24, but for 32-bits.
@@ -525,7 +530,7 @@
               state))))
 
 (defun har-write-instrs (max-index instrs filename state)
-  (declare (xargs :mode :program 
+  (declare (xargs :mode :program
                   :stobjs state))
 
 ; INSTRS are a list of instructions and MAX-INDEX is their max index.  We
@@ -562,7 +567,7 @@
   (mv-let (channel state)
           (open-output-channel filename :object state)
           (if (not channel)
-              (prog2$ (er hard? 'har-write-object-file 
+              (prog2$ (er hard? 'har-write-object-file
                           "Error opening file ~x0.~%" filename)
                       state)
             (let* ((state (har-write-objects x channel state))
@@ -590,10 +595,10 @@
 (defmacro har-zip! (x filename &key sortp)
   "See :doc hons-archive"
   `(mv-let (erp val state)
-           (progn! 
+           (progn!
             :state-global-bindings
             ((temp-touchable-vars t set-temp-touchable-vars))
-            (state-global-let* 
+            (state-global-let*
              ((writes-okp t))
              (let ((state (har-zip-fn ,x ,filename ,sortp state)))
                (mv nil nil state))))
@@ -606,7 +611,7 @@
 
 ;                             UNZIPPING OBJECTS
 ;
-; This is quite similar.  We intertwine our file reading with the creation of 
+; This is quite similar.  We intertwine our file reading with the creation of
 ; the index/object mapping.
 ;
 ; In har-decompress1, we just used a fast alist to map indices to reconstructed
@@ -614,10 +619,10 @@
 ; same approach.  But better performance can be obtained by using an array
 ; instead of a fast alist.
 ;
-; There are some size limitations in ACL2 arrays, in particular we are limited 
-; to (2^28)-1 elements when we call resize.  So, we actually adopt a hybrid 
+; There are some size limitations in ACL2 arrays, in particular we are limited
+; to (2^28)-1 elements when we call resize.  So, we actually adopt a hybrid
 ; approach, where up to the maximum array size of elements are stored in the
-; array, and any indices beyond that are stored in a fast alist.  
+; array, and any indices beyond that are stored in a fast alist.
 ;
 ; In practice, the array is usually going to be big enough to store all of the
 ; elements we want.  For our main test file, the introduction of this stobj has
@@ -629,9 +634,9 @@
 ;
 ; So that's a pretty good savings.
 
-(defconst *har-max-array-size* 
+(defconst *har-max-array-size*
   ;; This is the maximum size of an array to allocate when we create the local
-  ;; stobj for har.  We only create one this big if necessary.  ACL2 limits us 
+  ;; stobj for har.  We only create one this big if necessary.  ACL2 limits us
   ;; to 2^28-1 entries.
   (1- (expt 2 28)))
 
@@ -683,7 +688,7 @@
                   :stobjs (har$ state)))
 
 ; Inputs.
-;   - Channel points to an instructions file encoded as 24-bit integers.  
+;   - Channel points to an instructions file encoded as 24-bit integers.
 ;   - State is the ACL2 state.
 ;   - Honsp says whether to use "hons" or "cons" when rebuilding the object
 ;   - Curr-max is the maximum index for which we have reconstructed an object
@@ -696,9 +701,9 @@
           (if (not sub1)
               ;; Proper termination, just out of instructions.
               (mv har$ state)
-            (b* (((mv sub2 state)   
+            (b* (((mv sub2 state)
                   (read-24ule channel state))
-                 (sub1-resolve 
+                 (sub1-resolve
                   ;; Basic sanity check
                   (cond ((and (integerp sub1)
                               (< (the (unsigned-byte 24) sub1)
@@ -706,7 +711,7 @@
                          (har$-get sub1 har$ hlen))
                         (t
                          (er hard? 'har-read-insts24 "Illegal index ~x0.~%" sub1))))
-                 (sub2-resolve 
+                 (sub2-resolve
                   ;; Basic sanity check
                   (cond ((and (integerp sub2)
                               (< (the (unsigned-byte 24) sub2)
@@ -732,9 +737,9 @@
           (if (not sub1)
               ;; Proper termination, just out of instructions.
               (mv har$ state)
-            (b* (((mv sub2 state)   
+            (b* (((mv sub2 state)
                   (read-32ule channel state))
-                 (sub1-resolve 
+                 (sub1-resolve
                   ;; Basic sanity check
                   (cond ((and (integerp sub1)
                               (< (the (unsigned-byte 32) sub1)
@@ -742,7 +747,7 @@
                          (har$-get sub1 har$ hlen))
                         (t
                          (er hard? 'har-read-insts24 "Illegal index ~x0.~%" sub1))))
-                 (sub2-resolve 
+                 (sub2-resolve
                   ;; Basic sanity check
                   (cond ((and (integerp sub2)
                               (< (the (unsigned-byte 32) sub2)
@@ -757,17 +762,17 @@
                 (har-read-insts32 honsp (+ 1 curr-max) channel state har$ hlen)))))
 
 (defun har-read-instrs (honsp num-atoms max-index atom-lst filename state)
-  (declare (xargs :mode :program 
+  (declare (xargs :mode :program
                   :stobjs state))
   (mv-let (channel state)
           (open-input-channel filename :byte state)
           (if (not channel)
               (mv (er hard? 'har-read-instrs "Unable to open ~x0.~%" filename)
                   state)
-            (b* ((arrsize            
+            (b* ((arrsize
                   (max 1 (min max-index *har-max-array-size*)))
                  ((mv result state)
-                  (with-local-stobj 
+                  (with-local-stobj
                    har$
                    (mv-let (result state har$)
                            (b* ((- (cw "; har-read-instrs: allocating ~x0-element array for ~x1 indices.~%"
@@ -788,7 +793,7 @@
                            (mv result state))))
                  (state (close-input-channel channel state)))
                 (mv result state)))))
-                 
+
 (defun har-read-objects (channel state acc)
   (declare (xargs :mode :program :stobjs state))
   (mv-let (eofp obj state)
@@ -838,5 +843,5 @@
 
 (defmacro har-unzip (filename &key honsp)
   "See :doc hons-archive"
-  `(har-unzip-fn ',honsp ,filename state)) 
+  `(har-unzip-fn ',honsp ,filename state))
 

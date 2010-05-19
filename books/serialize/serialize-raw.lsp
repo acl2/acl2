@@ -1,7 +1,10 @@
 ; Serializing ACL2 Objects
-; Copyright (C) 2009 by Centaur Technology 
+; Copyright (C) 2009-2010 Centaur Technology
 ;
-; Contact: Jared Davis <jared@cs.utexas.edu>
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -11,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "SERIALIZE")
 
@@ -26,7 +31,7 @@
 (defparameter *verbose* nil)
 
 (defmacro maybe-time (form)
-  `(if *verbose* 
+  `(if *verbose*
        (time ,form)
      ,form))
 
@@ -47,7 +52,7 @@
 ; spent in gather-atoms anyway.)
 ;
 ; Similarly, our decoding functions operate by reading a byte at a time.  This
-; is always done using the decoder-read macro.  
+; is always done using the decoder-read macro.
 ;
 ;   - On CCL (other than Windows, where CCL:MAP-FILE-TO-OCTET-VECTOR is
 ;     undefined), we optimize decoder-read by using memory-mapped files.  The
@@ -55,7 +60,7 @@
 ;     is our current position while reading the file.  This provides a (very
 ;     modest) improvement.
 ;
-;   - On other Lisps, we use an ordinary stream, *decode-stream*, and read 
+;   - On other Lisps, we use an ordinary stream, *decode-stream*, and read
 ;     from it using read-byte.
 
 (defparameter *encode-stream* nil)
@@ -129,7 +134,7 @@
 ; remaining seven bits being the contents of the number.  This imposes an
 ; overhead of 1/8 the bit length of a number, but I think that's tolerable, and
 ; I think this probably is a good solution in general."
-  
+
   (if (< n 128)
       (encoder-write n)
     (let ((low  (the (unsigned-byte 8) (logand (the integer n) #x7F)))
@@ -172,7 +177,7 @@
 (defun nat-list-byte-decode/load ()
   (let ((len (nat-byte-decode)))
     (maybe-print "; Decoding ~a naturals.~%" len)
-    (loop for i from 1 to len 
+    (loop for i from 1 to len
           do
           (setf (svref *decode-array* *decode-free*)
                 (nat-byte-decode))
@@ -219,7 +224,7 @@
 (defun rational-list-byte-decode/load ()
   (let ((len (nat-byte-decode)))
     (maybe-print "; Decoding ~a rationals.~%" len)
-    (loop for i from 1 to len 
+    (loop for i from 1 to len
           do
           (setf (svref *decode-array* *decode-free*)
                 (rational-byte-decode))
@@ -281,11 +286,11 @@
     (dolist (elem x)
       (encoder-write (the (unsigned-byte 8)
                        (char-code (the character elem)))))))
-  
+
 (defun char-list-byte-decode/load ()
   (let ((len (nat-byte-decode)))
     (maybe-print "; Decoding ~a characters.~%" len)
-    (loop for i from 1 to len 
+    (loop for i from 1 to len
           do
           (setf (svref *decode-array* *decode-free*)
                 (code-char (decoder-read)))
@@ -312,7 +317,7 @@
     (let ((len-1 (- len 1)))
       (declare (type fixnum len-1))
       (loop for n fixnum from 0 to len-1 do
-            (encoder-write 
+            (encoder-write
              (the (unsigned-byte 8)
                (char-code (the character (char x n)))))))))
 
@@ -326,7 +331,7 @@
     (loop for i fixnum from 0 to len-1
           do
           (setf (schar str i)
-                (the character 
+                (the character
                   (code-char (decoder-read)))))
     str))
 
@@ -357,11 +362,11 @@
 ; individually, since most of the time an object will probably contain lots of
 ; symbols from the same package.  So, our basic approach is to organize the
 ; symbols into groups by their package names, and then for each package we
-; write out: the name of the package, and the list of symbol names.  
+; write out: the name of the package, and the list of symbol names.
 ;
 ; This function should be given PKG, the name of the package these symbols are
 ; coming from, and X, the list of symbols that live in this package.
-  
+
   (let ((len (length x)))
     (maybe-print ";; Encoding ~a symbols for ~a package.~%" len pkg)
     (string-byte-encode pkg)
@@ -374,7 +379,7 @@
          (len      (nat-byte-decode))
          (stop     (the fixnum (+ *decode-free* len))))
     (maybe-print ";; Decoding ~a symbols for ~a package.~%" len pkg-name)
-    ;; We call pkg-witness to ensure the package is known to ACL2, and to 
+    ;; We call pkg-witness to ensure the package is known to ACL2, and to
     ;; justify our use of raw intern below.
     (acl2::pkg-witness pkg-name)
     (loop until (= (the fixnum *decode-free*)
@@ -385,7 +390,7 @@
           (incf *decode-free*))))
 
 (defun symbol-package-alist-byte-encode (alist)
-  
+
 ; Alist is an alist mapping package-names to lists of symbols.
   (let ((len (length alist)))
     (maybe-print "; Encoding symbols for ~a packages.~%" len)
@@ -404,7 +409,7 @@
 
 
 (defun inst-list-byte-encode (x)
-  
+
 ; X is a list of instructions, which are (nat . nat) pairs.
 
   (let ((len (length x)))
@@ -423,7 +428,7 @@
     (maybe-print "; Decoding ~a consing instructions.~%" len)
     (cond #+ccl
           ((eq honsp :static) ; ccl only
-           (progn 
+           (progn
              (maybe-print ";; Building static conses.~%")
              (loop for i fixnum from 1 to len do
                    (let* ((car-index (nat-byte-decode))
@@ -455,7 +460,7 @@
                      (setf (svref *decode-array* *decode-free*)
                            (cons car-obj cdr-obj))
                      (incf *decode-free*))))))))
-      
+
 
 
 
@@ -466,19 +471,19 @@
 ; COMPRESSION.
 ;
 ; Given a valid ACL2 object, (gather-atoms x) quickly collects a list of all
-; the atoms in the object, without duplication.  
+; the atoms in the object, without duplication.
 ;
 ; The atoms are partitioned into lists by their types, so that we separately
 ; return the symbols, naturals, non-natural rationals, strings, and finally
 ; characters found in the object.
-;    
+;
 ; Our implementation involves four hash tables, each of which only associates
 ; some keys with T.
 ;
 ;  - The SYM hash table is used to store symbols we have seen
 ;  - The EQL hash table is used to store numbers and characters
 ;  - The STRING hash table is used to store strings
-;  - The CONS hash table is used to store conses 
+;  - The CONS hash table is used to store conses
 ;
 ; Invariant 1.  Every symbol we have seen is in the SYM hash table.
 ; Invariant 2.  Every number/character we have seen is in the EQL hash table.
@@ -546,28 +551,28 @@
               (> (hash-table-size *gather-atoms-seen-eql*) *gather-atoms-size-eql*)
               (> (hash-table-size *gather-atoms-seen-string*) *gather-atoms-size-string*)
               (> (hash-table-size *gather-atoms-seen-cons*) *gather-atoms-size-cons*))
-      
+
       ;; If this is the first time we've seen any resize, print a help message.
       (unless *gather-atoms-size-debug-help-printed*
         (format t ";; Note: hash-table resizes detected.  For better performance, consider ~%")
         (format t ";; larger table sizes.  See :doc SERIALIZE::SERIALIZE.~%")
         (setf *gather-atoms-size-debug-help-printed* t))
-    
+
       (when (> (hash-table-size *gather-atoms-seen-sym*) *gather-atoms-size-sym*)
         (format t ";; Note: symbol-table has grown from ~a to ~a.~%"
-                *gather-atoms-size-sym* 
+                *gather-atoms-size-sym*
                 (hash-table-size *gather-atoms-seen-sym*))
-        (setf *gather-atoms-size-sym* 
+        (setf *gather-atoms-size-sym*
               (hash-table-size *gather-atoms-seen-sym*)))
-      
+
       (when (> (hash-table-size *gather-atoms-seen-eql*) *gather-atoms-size-eql*)
         (format t ";; Note: number-table has grown from ~a to ~a.~%"
                 *gather-atoms-size-eql*
                 (hash-table-size *gather-atoms-seen-eql*))
         (setf *gather-atoms-size-eql*
               (hash-table-size *gather-atoms-seen-eql*)))
-      
-      (when (> (hash-table-size *gather-atoms-seen-string*) 
+
+      (when (> (hash-table-size *gather-atoms-seen-string*)
                *gather-atoms-size-string*)
         (format t ";; Note: string-table has grown from ~a to ~a.~%"
                 *gather-atoms-size-string*
@@ -575,7 +580,7 @@
         (setf *gather-atoms-size-string*
               (hash-table-size *gather-atoms-seen-string*)))
 
-      (when (> (hash-table-size *gather-atoms-seen-cons*) 
+      (when (> (hash-table-size *gather-atoms-seen-cons*)
                *gather-atoms-size-cons*)
         (format t ";; Note: cons-table has grown from ~a to ~a.~%"
                 *gather-atoms-size-cons*
@@ -599,7 +604,7 @@
 ; lists of symbols that are found in that package.  After this is done, we
 ; convert the hash table into an alist using a simple maphash.  Because of the
 ; invariants above, the symbols in the hash table are unique.
- 
+
 (defvar *gathered-symbols-ht*)
 (defparameter *gathered-symbols-alist* nil)
 (defparameter *gathered-naturals* nil)
@@ -645,7 +650,7 @@
            (setf (gethash x *gather-atoms-seen-eql*) t)
            (cond ((natp x)
                   (push x *gathered-naturals*))
-                 ((characterp x) 
+                 ((characterp x)
                   (push x *gathered-chars*))
                  ((rationalp x)
                   (push x *gathered-rationals*))
@@ -680,7 +685,7 @@
 ; Here is the story for strings.
 ;
 ; To avoid #'equal hashing, we only used EQ to detect whether strings had
-; already been seen when we gathered atoms, so the *gathered-strings* 
+; already been seen when we gathered atoms, so the *gathered-strings*
 ; accumulator may have various strings which are EQUAL-but-not-EQ.
 ;
 ; We also want to avoid #'equal hashing when we build our consing instructions,
@@ -689,7 +694,7 @@
 ; This function is called with (sort *gathered-strings*) as its input.  Because
 ; of that, we only need to look at adjacent strings to see if they are
 ; EQUAL-but-not-EQ.  We are going to add an entry for every string to
-; *atom-map-string*, but we do something tricky: if the string is EQUAL to 
+; *atom-map-string*, but we do something tricky: if the string is EQUAL to
 ; its neighbor, we do not increment the *free-index*.
 ;
 ; In other words, given a list like ("foo" "foo" "bar") of non-EQ strings, we
@@ -712,7 +717,7 @@
           ;; Not (STR1 STR1 ...), so increment and keep going
           (progn
             (incf *free-index*)
-            (cons (car x) 
+            (cons (car x)
                   (make-atom-map-for-strings (cdr x))))
         ;; (STR1 STR1 ...), so treat it as (STR1 ...)
         (make-atom-map-for-strings (cdr x))))))
@@ -741,7 +746,7 @@
 
   ;; Strings get sorted then added with our custom routine.
   (let ((sorted-strings (maybe-time (sort *gathered-strings* #'string<))))
-    (setf *gathered-strings* 
+    (setf *gathered-strings*
           (maybe-time (make-atom-map-for-strings sorted-strings))))
 
   ;; Turn the hash table of symbols into an alist so that they're in the
@@ -756,7 +761,7 @@
       (incf *free-index*))))
 
 
-; Once all the atoms have been assigned indices, we are going to create a list 
+; Once all the atoms have been assigned indices, we are going to create a list
 ; of instructions for reassembling the conses in the object.  We keep incrementing
 ; *free-index* as we go, so that the atoms and conses are in a shared index-space.
 
@@ -806,7 +811,7 @@
 
 
 (defun write-fn (filename obj verbosep symbol-table-size number-table-size
-                          string-table-size cons-table-size package-table-size 
+                          string-table-size cons-table-size package-table-size
                           state)
 ; X is an ACL2 object to write into filename.
 
@@ -828,7 +833,7 @@
         (*atom-map-string*          (make-hash-table :test 'eq :size string-table-size))
         (*cons-table*               (make-hash-table :test 'eq :size cons-table-size))
         (*cons-instructions*        nil)
-        (*encode-stream*            (open filename 
+        (*encode-stream*            (open filename
                                           :direction :output
                                           :if-exists :supersede
                                           :element-type '(unsigned-byte 8))))
@@ -847,7 +852,7 @@
           (*gather-atoms-size-debug-current*      30000))
 
       (maybe-print "; Table sizes: symbols ~a; numbers ~a; strings ~a; conses ~a; packages ~a.~%"
-                   symbol-table-size 
+                   symbol-table-size
                    number-table-size
                    string-table-size
                    cons-table-size
@@ -925,10 +930,10 @@
 
     (maybe-print "; Opening file.~%")
 
-    ;; Ugly.  In most Lisps, we just use ordinary streams.  In CCL, we use a 
+    ;; Ugly.  In most Lisps, we just use ordinary streams.  In CCL, we use a
     ;; memory-mapped file.
     #-(and ccl (not mswindows))
-    (setf *decode-stream* (open filename 
+    (setf *decode-stream* (open filename
                                 :direction :input
                                 :element-type '(unsigned-byte 8)
                                 :if-does-not-exist :error))
@@ -954,7 +959,7 @@
       (maybe-print "; Max index is ~a.~%" max-index)
       (maybe-time (decode-and-load honsp))
       (check-magic-number filename)
-      
+
       (maybe-print "; Closing file.~%")
       #-(and ccl (not mswindows)) (close *decode-stream*)
       #+(and ccl (not mswindows)) (ccl::unmap-octet-vector mapped-file)
@@ -967,7 +972,7 @@
       (svref *decode-array* (- max-index 1)))))
 
 (defun read-fn (filename honsp verbosep state)
-  (mv (actually-read filename honsp verbosep) 
+  (mv (actually-read filename honsp verbosep)
       state))
 
 

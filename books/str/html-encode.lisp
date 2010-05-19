@@ -1,6 +1,10 @@
 ; ACL2 String Library
-; Copyright (C) 2009 Centaur Technology
-; Contact: jared@cs.utexas.edu
+; Copyright (C) 2009-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -10,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
 (include-book "tools/bstar" :dir :system)
@@ -57,13 +63,13 @@
  (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 
  (defund distance-to-tab (col tabsize)
-   (declare (xargs :guard (and (natp col) 
+   (declare (xargs :guard (and (natp col)
                                (posp tabsize))))
    (mbe :logic
         (nfix (- tabsize (rem col tabsize)))
-        :exec 
+        :exec
         (- tabsize (rem col tabsize)))))
- 
+
 
 
 (defund html-encode-chars-aux (x col tabsize acc)
@@ -96,8 +102,8 @@
               (+ 1 col)))
        tabsize
        (case char1
-         ;; Cosmetic: avoid inserting &nbsp; unless the last char is a 
-         ;; space or newline.  This makes the HTML a little easier to 
+         ;; Cosmetic: avoid inserting &nbsp; unless the last char is a
+         ;; space or newline.  This makes the HTML a little easier to
          ;; read.
          (#\Space   (if (or (atom acc)
                             (eql (car acc) #\Space)
@@ -130,9 +136,9 @@
           acc)
     (let ((char1 (char x n)))
       (html-encode-string-aux
-       x 
+       x
        (mbe :logic (+ 1 (nfix n)) :exec (+ 1 n))
-       xl 
+       xl
        (cond ((eql char1 #\Newline)
               0)
              ((eql char1 #\Tab)
@@ -141,8 +147,8 @@
               (+ 1 col)))
        tabsize
        (case char1
-         ;; Cosmetic: avoid inserting &nbsp; unless the last char is a 
-         ;; space or newline.  This makes the HTML a little easier to 
+         ;; Cosmetic: avoid inserting &nbsp; unless the last char is a
+         ;; space or newline.  This makes the HTML a little easier to
          ;; read.
          (#\Space   (if (or (atom acc)
                             (eql (car acc) #\Space)
@@ -209,7 +215,7 @@ tab:	  <boo> & \"foo\" blah blah")
           (declare (ignore col))
           (reverse (coerce acc 'string))))
 
-(defthm stringp-of-html-encode-string 
+(defthm stringp-of-html-encode-string
   (stringp (html-encode-string x tabsize))
   :rule-classes :type-prescription
   :hints(("Goal" :in-theory (enable html-encode-string))))

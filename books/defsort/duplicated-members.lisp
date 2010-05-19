@@ -1,7 +1,10 @@
 ; Defsort - Defines a stable sort when given a comparison function
 ; Copyright (C) 2008 Centaur Technology
 ;
-; Contact: Jared Davis <jared@cs.utexas.edu>
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -11,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
 (include-book "uniquep")
@@ -25,12 +30,12 @@
 ; duplicity is greater than 1.  It operates by sorting its argument and then
 ; scanning for adjacent duplicates, which is pretty fast.  So, the total
 ; complexity is O(n log n).
-; 
-; Hons-duplicated-members does the same thing except that it may return the 
+;
+; Hons-duplicated-members does the same thing except that it may return the
 ; elements in a different order.  It operates by building a fast alist which
-; associates each element with its duplicity, then scanning the alist for 
+; associates each element with its duplicity, then scanning the alist for
 ; objects whose duplicity is greater than 1.  If one believes that hons-acons
-; and hons-get are effectively O(1), then its efficiency is O(n).  
+; and hons-get are effectively O(1), then its efficiency is O(n).
 ;
 ; In practice, both functions are pretty good, and hons-duplicated-members
 ; tends to outperform duplicated-members by slight margins in speed and memory
@@ -46,7 +51,7 @@
          (if (atom (cddr x))
              (list (first x))
            (if (not (equal (first x) (third x)))
-               (cons (first x) 
+               (cons (first x)
                      (collect-adjacent-duplicates (cddr x)))
              (collect-adjacent-duplicates (cdr x)))))
         (t
@@ -126,7 +131,7 @@
           (implies (<<-ordered-p x)
                    (<<-ordered-p (cdr x)))
           :hints(("Goal" :in-theory (enable <<-ordered-p)))))
-  
+
  (local (defthm crock1
           (implies (no-duplicatesp-equal x)
                    (equal (duplicity a x)
@@ -134,14 +139,14 @@
                               1
                             0)))
           :hints(("Goal" :in-theory (enable duplicity)))))
-                
+
  (local (defthm crock3
           (implies (and (no-duplicatesp-equal (collect-adjacent-duplicates (cons b x)))
                         (<<-ordered-p x)
                         (<< a b)
                         (not (<< (car x) b)))
                    (<= (duplicity a x) 1))
-          :hints(("Goal" :in-theory (enable duplicity 
+          :hints(("Goal" :in-theory (enable duplicity
                                             <<-ordered-p
                                             collect-adjacent-duplicates)))))
 
@@ -170,7 +175,7 @@
 
 ;; An alternate approach to constructing the duplicated members, based upon hons,
 ;; is shown below.  We construct an alist mapping each member of the list to its
-;; duplicity, then walk the alist and see what we have found.  
+;; duplicity, then walk the alist and see what we have found.
 
 (defund hons-duplicity-alist-p (x)
   (declare (xargs :guard t))
@@ -193,7 +198,7 @@
               (hons-duplicity-alist-p x)))
   :hints(("Goal" :in-theory (enable hons-duplicity-alist-p))))
 
-(defthm alistp-when-hons-duplicity-alist-p 
+(defthm alistp-when-hons-duplicity-alist-p
   (implies (hons-duplicity-alist-p x)
            (alistp x))
   :hints(("Goal" :induct (len x))))
@@ -204,13 +209,13 @@
   (declare (xargs :guard (hons-duplicity-alist-p alist)))
   (if (atom x)
       alist
-    (hons-duplicity-alist-aux 
+    (hons-duplicity-alist-aux
      (cdr x)
      (hons-acons (car x)
                  (+ 1 (nfix (cdr (hons-get (car x) alist))))
                  alist))))
 
-(defthm hons-duplicity-alist-p-of-hons-duplicity-alist-aux 
+(defthm hons-duplicity-alist-p-of-hons-duplicity-alist-aux
   (implies (hons-duplicity-alist-p alist)
            (hons-duplicity-alist-p (hons-duplicity-alist-aux x alist)))
   :hints(("Goal" :in-theory (enable hons-duplicity-alist-aux))))
@@ -223,7 +228,7 @@
                       (cons a (+ (duplicity a x)
                                  (nfix (cdr (hons-assoc-equal a alist)))))
                     nil)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable hons-duplicity-alist-aux duplicity)
           :do-not '(generalize fertilize)
           :induct (hons-duplicity-alist-aux x alist))))
@@ -309,7 +314,7 @@
   (declare (xargs :guard t))
   (let* ((dalist (hons-duplicity-alist x))
          (result (hons-duplicated-members-aux dalist)))
-    (prog2$ 
+    (prog2$
      (flush-hons-get-hash-table-link dalist)
      result)))
 
@@ -321,7 +326,7 @@
 (defthm no-duplicatesp-equal-of-hons-duplicated-members
   (no-duplicatesp-equal (hons-duplicated-members x))
   :hints(("Goal" :in-theory (enable hons-duplicated-members))))
-         
+
 
 
 
@@ -329,7 +334,7 @@
 
 :q
 
-(defconst *test1* 
+(defconst *test1*
   (append (loop for i from 1 to 10000 collect i)
           (loop for i from 1 to 5000 collect i)
           (loop for i from 1 to 5000 collect i)))
@@ -343,20 +348,20 @@
 
 
 (defconst *test2*
-  (append (loop for i from 1 to 10000 collect (concatenate 'string 
+  (append (loop for i from 1 to 10000 collect (concatenate 'string
                                                            "foo bar baz "
                                                            (coerce (explode-atom i 10) 'string)))
-          (loop for i from 1 to 5000 collect (concatenate 'string 
+          (loop for i from 1 to 5000 collect (concatenate 'string
                                                           "foo bar baz "
                                                           (coerce (explode-atom i 10) 'string)))
-          (loop for i from 1 to 5000 collect (concatenate 'string 
+          (loop for i from 1 to 5000 collect (concatenate 'string
                                                           "foo bar baz "
                                                           (coerce (explode-atom i 10) 'string)))))
 
 
 ;; Lisp2 takes 5.06 seconds, 208 MB allocated
 (time (loop for i from 1 to 100 do (hons-duplicated-members *test2*)))
-          
+
 ;; Lisp2 takes 6.03 seconds, 313 MB allocated
 (time (loop for i from 1 to 100 do (duplicated-members *test2*)))
 

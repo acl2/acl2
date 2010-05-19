@@ -1,6 +1,10 @@
 ; ACL2 String Library
-; Copyright (C) 2009 Centaur Technology
-; Contact: jared@cs.utexas.edu
+; Copyright (C) 2009-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -10,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
 (include-book "doc")
@@ -26,16 +32,16 @@
   (if (mbe :logic (zp n)
            :exec (= n 0))
       (cons (char x 0) acc)
-    (firstn-chars-aux x 
+    (firstn-chars-aux x
                       (- n 1)
                       (cons (char x n) acc))))
 
 (defund firstn-chars (n x)
 
-  ":Doc-Section Str 
+  ":Doc-Section Str
   Efficient way to take leading characters from a string ~/
- 
-  This function is logically equal to 
+
+  This function is logically equal to
   ~bv[]
     (take (min n (length x)) (coerce x 'list)),
   ~ev[]
@@ -46,7 +52,7 @@
                   :verify-guards nil)
            (type string x))
 
-  (mbe :logic 
+  (mbe :logic
        (take (min n (length x)) (coerce x 'list))
        :exec
        (let ((n (min n (length x))))
@@ -76,7 +82,7 @@
   (declare (xargs :guard (and (natp n)
                               (stringp x))
                   :verify-guards nil))
-  (mbe :logic 
+  (mbe :logic
        (append (firstn-chars n x) y)
        :exec
        (let ((n (min n (length x))))
@@ -85,7 +91,7 @@
            (firstn-chars-aux x (- n 1) y)))))
 
 (verify-guards append-firstn-chars
-               :hints(("Goal" 
+               :hints(("Goal"
                        :in-theory (enable firstn-chars))))
 
 (defthm character-listp-of-append-firstn-chars
@@ -97,7 +103,7 @@
 
 
 
-#|| 
+#||
 
 :q
 

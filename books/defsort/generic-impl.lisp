@@ -1,7 +1,10 @@
 ; Defsort - Defines a stable sort when given a comparison function
 ; Copyright (C) 2008 Centaur Technology
 ;
-; Contact: Jared Davis <jared@cs.utexas.edu>
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -11,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
 (include-book "unicode/take" :dir :system)
@@ -30,7 +35,7 @@
           (declare (xargs :guard t))
           (natp x)))
 
- (local (defun compare< (x y) 
+ (local (defun compare< (x y)
           (declare (xargs :guard (and (comparablep x)
                                       (comparablep y))))
           (< x y)))
@@ -80,7 +85,7 @@
   (implies (and (force (comparable-listp x))
                 (force (<= (nfix n) (len x))))
            (comparable-listp (simpler-take n x)))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable simpler-take)
           :induct (simpler-take n x))))
 
@@ -100,9 +105,9 @@
            (equal (comparablep (car x))
                   (or (consp x)
                       (comparablep nil)))))
-                                      
-                           
-(defthm comparable-merge-admission 
+
+
+(defthm comparable-merge-admission
   (AND (O-P (+ (ACL2-COUNT X) (ACL2-COUNT Y)))
        (IMPLIES (AND (NOT (ATOM X))
                      (NOT (ATOM Y))
@@ -135,7 +140,7 @@
          (cons (car x) (comparable-merge (cdr x) y)))))
 
 
-(defthm comparable-merge-guards 
+(defthm comparable-merge-guards
   (and (implies (and (comparable-listp y)
                      (comparable-listp x)
                      (not (atom x))
@@ -207,13 +212,13 @@
 (defund comparable-mergesort-spec (x)
   (declare (xargs :measure (len x)
                   :hints(("Goal" :use ((:instance comparable-mergesort-spec-admission))))))
-  (cond ((atom x) 
+  (cond ((atom x)
          nil)
         ((atom (cdr x))
          (list (car x)))
         (t
          (let ((half (floor (len x) 2)))
-           (comparable-merge 
+           (comparable-merge
             (comparable-mergesort-spec (take half x))
             (comparable-mergesort-spec (nthcdr half x)))))))
 
@@ -301,16 +306,16 @@
 
 (defund comparable-mergesort-spec2 (x)
   (declare (xargs :measure (len x)
-                  :hints(("Goal" 
+                  :hints(("Goal"
                           :use ((:instance comparable-mergesort-spec-admission))
                           :in-theory (enable first-half-len)))))
-  (cond ((atom x) 
+  (cond ((atom x)
          nil)
         ((atom (cdr x))
          (list (car x)))
         (t
          (let ((half (first-half-len (len x))))
-           (comparable-merge 
+           (comparable-merge
             (comparable-mergesort-spec2 (take half x))
             (comparable-mergesort-spec2 (nthcdr half x)))))))
 
@@ -373,7 +378,7 @@
 (encapsulate
  ()
 
- 
+
  (local (defthm simpler-take-of-cdr
           (equal (simpler-take n (cdr x))
                  (cdr (simpler-take (+ 1 n) x)))
@@ -602,7 +607,7 @@
             (LET ((VAR (ASH LEN -1)))
                  (SIGNED-BYTE-P 30 VAR))))
   :rule-classes nil
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable fast-comparable-mergesort-fixnums-redefinition)
           :do-not-induct t)))
 
@@ -707,7 +712,7 @@
                                           fast-comparable-mergesort-fixnums)
                                          (fast-comparable-mergesort-fixnums-redefinition
                                           fast-comparable-mergesort-integers-redefinition))))))
-  
+
  (defthm fast-comparable-mergesort-integers-guards
    (AND
     (IMPLIES (AND (TRUE-LISTP X)
@@ -811,13 +816,13 @@
              (LET ((VAR (ASH LEN -1)))
                   (INTEGERP VAR))))
    :rule-classes nil
-   :hints(("Goal" :in-theory (disable 
+   :hints(("Goal" :in-theory (disable
                               fast-comparable-mergesort-integers-redefinition
                               fast-comparable-mergesort-fixnums-redefinition))))
 
  (local (in-theory nil))
  (verify-guards fast-comparable-mergesort-integers
-                :hints(("Goal" 
+                :hints(("Goal"
                         :use ((:instance fast-comparable-mergesort-integers-guards))))))
 
 
@@ -944,7 +949,7 @@
  ()
  (local (in-theory nil))
  (verify-guards comparable-orderedp
-                :hints(("Goal" 
+                :hints(("Goal"
                         :use ((:instance comparable-orderedp-guard))))))
 
 (defthm comparable-orderedp-when-not-consp
@@ -980,5 +985,5 @@
                                       (duplicity-lhs (lambda () (comparable-mergesort x)))
                                       (duplicity-rhs (lambda () x)))))))
 
-  
-                               
+
+

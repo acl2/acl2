@@ -1,6 +1,10 @@
 ; ACL2 String Library
-; Copyright (C) 2009 Centaur Technology
-; Contact: jared@cs.utexas.edu
+; Copyright (C) 2009-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -10,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
 (include-book "doc")
@@ -23,14 +29,14 @@
            (xargs :guard (and (natp n)
                               (character-listp acc))
                   :verify-guards nil))
-  (if (mbe :logic (zp n) 
+  (if (mbe :logic (zp n)
            :exec (= (the integer n) 0))
       acc
     (natchars-aux (the integer (truncate (the integer n) 10))
-                  (cons (the character (code-char 
-                                        (the (unsigned-byte 8) 
+                  (cons (the character (code-char
+                                        (the (unsigned-byte 8)
                                           (+ (the (unsigned-byte 8) 48)
-                                             (the (unsigned-byte 8) 
+                                             (the (unsigned-byte 8)
                                                (rem (the integer n) 10))))))
                         acc))))
 
@@ -105,17 +111,17 @@
                    do (explode-nonnegative-integer i 10 nil))))
 
 ;; 5.8 seconds, 1.1 GB allocated
-(progn (ccl::gc) 
+(progn (ccl::gc)
        (time (loop for i fixnum from 1 to 10000000
                    do (STR::natchars-aux i nil))))
 
 ;; 5.9 seconds, 1.1 GB allocated
-(progn (ccl::gc) 
+(progn (ccl::gc)
        (time (loop for i fixnum from 1 to 10000000
                    do (STR::natchars i))))
 
 ;; Was 44 seconds.  Now 6.1 seconds with CCL patch.  1.5 GB allocated
-(progn (ccl::gc) 
+(progn (ccl::gc)
        (time (loop for i fixnum from 1 to 10000000
                    do (STR::natstr i))))
 

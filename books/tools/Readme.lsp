@@ -55,7 +55,7 @@ when the number of functions to be recognized is large.
 progndollar.lisp defines PROGN$, which evaluates several forms in
 sequence for side effects.
 
-safe-case.lisp is a drop-in replacement for case, but causes an error 
+safe-case.lisp is a drop-in replacement for case, but causes an error
 if none of the cases are matched.
 
 saved-errors.lisp provides a way of customizing error messages for complex
@@ -84,21 +84,19 @@ deeply nested variable bindings.
   "{bstar,cws,defined-const,defsum,deftuple,pack,progndollar,theory-tools,types-misc}.lisp
  copyright (C) 2009 by Sol Swords <sswords@cs.utexas.edu>.
 
-flag.lisp copyright 2008 by Jared Davis <jared@cs.utexas.edu> and Sol Swords.
+{flag,safe-case}.lisp copyright 2008-2010 by Centaur Technology
 
-safe-case.lisp copyright 2008 by Jared Davis <jared@cs.utexas.edu>.
-
-This program is free software; you can redistribute it and/or 
-modify it under the terms of the GNU General Public License as 
-published by the Free Software Foundation; either version 2 of 
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License as
+published by the Free Software Foundation; either version 2 of
 the License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, 
-but WITHOUT ANY WARRANTY; without even the implied warranty of 
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public 
-License along with this program; if not, write to the Free 
+You should have received a copy of the GNU General Public
+License along with this program; if not, write to the Free
 Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 Boston, MA 02110-1301, USA."))

@@ -1,6 +1,10 @@
 ; ACL2 String Library
-; Copyright (C) 2009 Centaur Technology
-; Contact: jared@cs.utexas.edu
+; Copyright (C) 2009-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -10,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
 (include-book "digitp")
@@ -45,7 +51,7 @@
 ; A silly idea I have would be to instead multiply each character by 16, which
 ; would mean that the operation could be done via ash and logior.  I think the
 ; values produced by such a scheme would be ordered in the same way that the
-; values here are ordered.  And, rudimentary speed test suggests it could be as 
+; values here are ordered.  And, rudimentary speed test suggests it could be as
 ; much as 50% faster.  The proof seems difficult, so for now I don't have the
 ; patience to attempt it.
 
@@ -53,7 +59,7 @@
                                          (+ 1 (nfix len)))))
              (t
               (mv (nfix val) (nfix len) x)))
-       :exec 
+       :exec
        (cond ((atom x)
               (mv val len nil))
              (t
@@ -121,7 +127,7 @@
  (local (defthm lemma-1
           (equal (mv-nth 1 (parse-nat-from-charlist x val len))
                  (count-leading-digits1 x len))
-          :hints(("Goal" :in-theory (enable parse-nat-from-charlist 
+          :hints(("Goal" :in-theory (enable parse-nat-from-charlist
                                             count-leading-digits1)))))
 
  (local (defthm lemma-2
@@ -134,7 +140,7 @@
  (defthm len-of-parse-nat-from-charlist
    (equal (mv-nth 1 (parse-nat-from-charlist x val len))
           (+ (nfix len) (len (take-leading-digits x))))))
-  
+
 
 
 (defthm rest-of-parse-nat-from-charlist
@@ -149,19 +155,19 @@
 
   ":Doc-Section Str
   Mixed alphanumeric character-list less-than test~/
-  
-  We order character lists in a case-sensitive way.  But unlike a regular character-code
-  based ordering, we identify natural numbers which occur in a string, and group them 
-  together to sort them as numbers. 
 
-  That is, most string sorts, when given strings \"x0\" through \"x11\", will put them 
+  We order character lists in a case-sensitive way.  But unlike a regular character-code
+  based ordering, we identify natural numbers which occur in a string, and group them
+  together to sort them as numbers.
+
+  That is, most string sorts, when given strings \"x0\" through \"x11\", will put them
   into a peculiar order, \"x0\", \"x1\", \"x10\", \"x11\", \"x2\", \"x3\", ..., but in
   ~c[charlistnat<], the adjacent digits are grouped to produce the more human-friendly
   ordering, \"x0\", \"x1\", \"x2\", ..., \"x9\", \"x10\", \"x11\".
 
   We consider leading zeroes to be part of the number.  To sensibly handle such zeroes,
-  think not of grouping adjacent digits only into a natural number, but into pairs of 
-  value and length, which are to be sorted first by value and then by length.  Under 
+  think not of grouping adjacent digits only into a natural number, but into pairs of
+  value and length, which are to be sorted first by value and then by length.  Under
   this approach, a string such as \"x0\" is considered to be less than \"x00\", etc.
   ~/
   ~l[strnat<], ~pl[icharlist<]"
@@ -172,7 +178,7 @@
 
   (cond ((atom y)
          nil)
-        ((atom x) 
+        ((atom x)
          t)
         ((and (digitp (car x))
               (digitp (car y)))
@@ -197,7 +203,7 @@
          t)
         ((char< (car y) (car x))
          nil)
-        (t 
+        (t
          (charlistnat< (cdr x) (cdr y)))))
 
 (defcong charlisteqv equal (charlistnat< x y) 1
@@ -255,7 +261,7 @@
 
 
 
-(local 
+(local
  (encapsulate
   ()
 
@@ -309,7 +315,7 @@
                   (not (equal a1 a2)))
              (not (equal (+ a1 (* x1 (expt b n)))
                          (+ a2 (* x2 (expt b n))))))
-    :hints(("Goal" 
+    :hints(("Goal"
             :in-theory (enable expr)
             :use ((:instance main-lemma)))))))
 
@@ -318,7 +324,7 @@
  ()
 
 ; The main proof of trichotomy
- 
+
  (local (defthm lemma-1
           (IMPLIES (AND (NOT (EQUAL (DIGIT-LIST-VALUE X2)
                                     (DIGIT-LIST-VALUE Y2)))
@@ -358,10 +364,10 @@
                     (digit-listp x)
                     (digit-listp y)
                     (equal (len x) (len y)))
-                   (equal (equal (digit-list-value x) 
+                   (equal (equal (digit-list-value x)
                                  (digit-list-value y))
                           (equal x y)))
-          :hints(("Goal" 
+          :hints(("Goal"
                   :induct (my-induction x y)
                   :in-theory (enable digit-listp
                                      digit-list-value)))))
@@ -379,14 +385,14 @@
                                             skip-leading-digits
                                             charlisteqv
                                             digit-list-value)))))
-  
+
  (defthm charlistnat<-trichotomy-weak
    (implies (and (not (charlistnat< x y))
                  (not (charlistnat< y x)))
             (equal (charlisteqv x y)
                    t))
    :hints(("Goal" :in-theory (enable charlistnat<)))))
-         
+
 (defthm charlistnat<-trichotomy-strong
   (equal (charlistnat< x y)
          (and (not (charlisteqv x y))
@@ -400,7 +406,7 @@
 ; This is like parse-nat-from-charlist.  X is a string instead of a character
 ; list, val and len are the accumulators as before, n is our current position
 ; in x, and xl is the pre-computed length of x.  We return (mv val len) where
-; val and len are as before.  We don't return an updated index or anything, 
+; val and len are as before.  We don't return an updated index or anything,
 ; since that's easy to compute via adding len to the current index.
 
   (declare (type string x)
@@ -429,12 +435,12 @@
                                        (nfix xl))))
              (t
               (mv (nfix val) (nfix len))))
-       :exec 
+       :exec
        (cond ((= (the integer n) (the integer xl))
               (mv val len))
              (t
-              (let ((code (the (unsigned-byte 8) 
-                            (char-code (the character (char (the string x) 
+              (let ((code (the (unsigned-byte 8)
+                            (char-code (the character (char (the string x)
                                                             (the integer n)))))))
                 (declare (type (unsigned-byte 8) code))
                 (if (and (<= (the (unsigned-byte 8) 48) (the (unsigned-byte 8) code))
@@ -472,7 +478,7 @@
                       (digitp (char x (nfix n)))))
            (< 0 (mv-nth 1 (parse-nat-from-string x val len n xl))))
   :rule-classes ((:rewrite) (:linear))
-  :hints(("Goal" 
+  :hints(("Goal"
           :induct (parse-nat-from-string x val len n xl)
           :in-theory (enable parse-nat-from-string))))
 
@@ -531,7 +537,7 @@
                               (<= xn xl)
                               (<= yn yl))
                   :verify-guards nil
-                  :measure 
+                  :measure
                   (let* ((x  (if (stringp x) x ""))
                          (y  (if (stringp y) y ""))
                          (xn (nfix xn))
@@ -542,7 +548,7 @@
                   :hints(("Goal" :in-theory (disable val-of-parse-nat-from-string
                                                      len-of-parse-nat-from-string))))
            (ignorable xl yl))
-  (mbe :logic 
+  (mbe :logic
        (let* ((x  (if (stringp x) x ""))
               (y  (if (stringp y) y ""))
               (xn (nfix xn))
@@ -557,7 +563,7 @@
                      (digitp (char y yn)))
                 (b* (((mv v1 l1)
                       (parse-nat-from-string x 0 0 xn xl))
-                     ((mv v2 l2) 
+                     ((mv v2 l2)
                       (parse-nat-from-string y 0 0 yn yl)))
                     (cond ((or (< v1 v2)
                                (and (= v1 v2)
@@ -569,13 +575,13 @@
                            nil)
                           (t
                            (strnat<-aux x y (+ xn l1) (+ yn l2) xl yl)))))
-               ((char< (char x xn) 
+               ((char< (char x xn)
                        (char y yn))
                 t)
                ((char< (char y yn)
                        (char x xn))
                 nil)
-               (t 
+               (t
                 (strnat<-aux x y (+ 1 xn) (+ 1 yn) xl yl))))
        :exec
        (cond ((= (the integer yn) (the integer yl))
@@ -591,8 +597,8 @@
                          (type character char-y)
                          (type (unsigned-byte 8) code-x)
                          (type (unsigned-byte 8) code-y))
-                (cond 
-                 ((and 
+                (cond
+                 ((and
                    ;; (digitp (char x xn))
                    (<= (the (unsigned-byte 8) 48) (the (unsigned-byte 8) code-x))
                    (<= (the (unsigned-byte 8) code-x) (the (unsigned-byte 8) 57))
@@ -605,7 +611,7 @@
                                                (the integer 0)
                                                (the integer xn)
                                                (the integer xl)))
-                       ((mv v2 l2) 
+                       ((mv v2 l2)
                         (parse-nat-from-string (the string y)
                                                (the integer 0)
                                                (the integer 0)
@@ -630,7 +636,7 @@
                   t)
                  ((< (the (unsigned-byte 8) code-y) (the (unsigned-byte 8) code-x))
                   nil)
-                 (t 
+                 (t
                   (strnat<-aux (the string x)
                                (the string y)
                                (the integer (+ (the integer 1) (the integer xn)))
@@ -665,7 +671,7 @@
             (equal (strnat<-aux x y xn yn xl yl)
                    (charlistnat< (nthcdr xn (coerce x 'list))
                                  (nthcdr yn (coerce y 'list)))))
-   :hints(("Goal" 
+   :hints(("Goal"
            :induct (strnat<-aux x y xn yn xl yl)
            :expand ((charlistnat< (nthcdr xn (coerce x 'list))
                                   (nthcdr yn (coerce y 'list))))
@@ -681,9 +687,9 @@
   ":Doc-Section Str
   Mixed alphanumeric string less-than test~/
 
-  This is like ~il[charlistnat<], but for strings.  It avoids coercing the 
+  This is like ~il[charlistnat<], but for strings.  It avoids coercing the
   strings to character-lists, and is altogether pretty fast.~/
-  " 
+  "
 
   (declare (type string x)
            (type string y))
@@ -692,7 +698,7 @@
        (charlistnat< (coerce x 'list)
                      (coerce y 'list))
 
-       :exec 
+       :exec
        (strnat<-aux (the string x)
                     (the string y)
                     (the integer 0)
@@ -749,7 +755,7 @@
 (defparameter *test-strings*
   (let ((plen (length *prefixes*)))
     (loop for i from 1 to 10000 collect
-          (concatenate 'string 
+          (concatenate 'string
                        (nth (mod i plen) *prefixes*)
                        "-"
                        (coerce (explode-atom i 10) 'string)
@@ -765,14 +771,14 @@
        (symsort *test-syms*))
 
 ;; 3.308 seconds, 198,769,472 bytes allocated
-(progn 
+(progn
   (ccl::gc)
   (time (loop for i fixnum from 1 to 100 do
               (symnat<-sort *test-syms*)))
   nil)
 
 ;; 85.062 seconds, 11,405,636,416 bytes allocated
-(progn 
+(progn
   (ccl::gc)
   (time (loop for i fixnum from 1 to 100 do
               (symsort *test-syms*)))

@@ -1,5 +1,10 @@
 ; XDOC Documentation System for ACL2
-; Copyright (C) 2009 Centaur Technology
+; Copyright (C) 2009-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -9,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "XDOC")
 (include-book "defxdoc")
@@ -105,15 +112,20 @@
 ; ----------------- World Lookup Stuff --------------------------
 
 (defun get-formals (fn world)
-  (or (getprop fn 'formals nil 'current-acl2-world world)
-      (getprop fn 'macro-args nil 'current-acl2-world world)
-      (cw "; xdoc note: get-formals failed for ~s0::~s1.~%"
-          (symbol-package-name fn) (symbol-name fn))
-      (concatenate 'string
-                   "Error getting formals for "
-                   (symbol-package-name fn)
-                   "::"
-                   (symbol-name fn))))
+  (let ((formals (getprop fn 'formals :bad 'current-acl2-world world)))
+    (if (not (eq formals :bad))
+        formals
+      (let ((macro-args (getprop fn 'macro-args :bad 'current-acl2-world world)))
+        (if (not (eq macro-args :bad))
+            macro-args
+          (prog2$
+           (cw "; xdoc note: get-formals failed for ~s0::~s1.~%"
+               (symbol-package-name fn) (symbol-name fn))
+           (concatenate 'string
+                        "Error getting formals for "
+                        (symbol-package-name fn)
+                        "::"
+                        (symbol-name fn))))))))
 
 (defun get-measure (fn world)
   (let ((just (getprop fn 'justification nil 'current-acl2-world world)))
@@ -127,14 +139,15 @@
                        (symbol-name fn))))))
 
 (defun get-guard (fn world)
-  (if (getprop fn 'formals nil 'current-acl2-world world)
+  (if (not (eq (getprop fn 'formals :bad 'current-acl2-world world) :bad))
       (getprop fn 'guard nil 'current-acl2-world world)
-    (or (cw "; xdoc note: get-guard failed for ~x0.~%" fn)
-        (concatenate 'string
-                     "Error getting guard for "
-                     (symbol-package-name fn)
-                     "::"
-                     (symbol-name fn)))))
+    (prog2$
+     (cw "; xdoc note: get-guard failed for ~x0.~%" fn)
+     (concatenate 'string
+                  "Error getting guard for "
+                  (symbol-package-name fn)
+                  "::"
+                  (symbol-name fn)))))
 
 (defun get-body (fn world)
   ;; This gets the original body normalized or non-normalized body based on

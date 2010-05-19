@@ -1,6 +1,10 @@
 ; ACL2 String Library
-; Copyright (C) 2009 Centaur Technology
-; Contact: jared@cs.utexas.edu
+; Copyright (C) 2009-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -10,8 +14,10 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- 
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
+
 (in-package "STR")
 (include-book "doc")
 (include-book "unicode/prefixp" :dir :system)
@@ -44,7 +50,7 @@
            (type integer yn)
            (type integer xl)
            (type integer yl)
-           (xargs :guard (and (stringp x) 
+           (xargs :guard (and (stringp x)
                               (stringp y)
                               (natp xn)
                               (natp yn)
@@ -66,9 +72,9 @@
          nil)
         ((eql (the character (char x xn))
               (the character (char y yn)))
-         (mbe :logic (strprefixp-impl x y 
+         (mbe :logic (strprefixp-impl x y
                                       (+ (nfix xn) 1)
-                                      (+ (nfix yn) 1) 
+                                      (+ (nfix yn) 1)
                                       xl yl)
               :exec  (strprefixp-impl (the string x)
                                       (the string y)
@@ -80,7 +86,7 @@
          nil)))
 
 (defthm strprefixp-impl-elim
-  (implies (and (force (stringp x)) 
+  (implies (and (force (stringp x))
                 (force (stringp y))
                 (force (natp xn))
                 (force (natp yn))
@@ -99,9 +105,9 @@
    Case-sensitive string prefix test~/
 
    ~c[(strprefixp x y)] determines if the string x is a prefix of the string y, in
-   a case-sensitive manner.  
+   a case-sensitive manner.
 
-   Logically, this is identical to ~c[(prefixp (coerce x 'list) (coerce y 'list))], 
+   Logically, this is identical to ~c[(prefixp (coerce x 'list) (coerce y 'list))],
    but we use a more efficient implementation which avoids coercing the strings.~/
 
    ~l[istrprefixp]"

@@ -1,6 +1,10 @@
 ; ACL2 String Library
-; Copyright (C) 2009 Centaur Technology
-; Contact: jared@cs.utexas.edu
+; Copyright (C) 2009-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -10,7 +14,9 @@
 ; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
 (include-book "doc")
@@ -21,7 +27,7 @@
 
 (defund char-fix (x)
   (declare (type character x))
-  (mbe :logic (if (characterp x) 
+  (mbe :logic (if (characterp x)
                   x
                 (code-char 0))
        :exec x))
@@ -45,7 +51,7 @@
 
   ":Doc-Section Str
    Case-sensitive character equivalence test~/
- 
+
    ~c[(chareqv x y)] determines if x and y are equivalent when interpreted as characters.
    That is, non-characters are first coerced to be the zero-character, then we ask whether
    the results are equal.~/
@@ -58,7 +64,7 @@
   (mbe :logic (equal (char-fix x) (char-fix y))
        :exec (eql x y)))
 
-(defequiv chareqv 
+(defequiv chareqv
   :hints(("Goal" :in-theory (enable chareqv))))
 
 (defthm chareqv-of-char-fix
@@ -113,9 +119,9 @@
 
   ":Doc-Section Str
    Case-sensitive character-list equivalence test~/
- 
+
    ~c[(charlisteqv x y)] determines if x and y are equivalent when interpreted as character
-   lists.  That is, ~c[x] and ~c[y] must have the same length, and their elements must be 
+   lists.  That is, ~c[x] and ~c[y] must have the same length, and their elements must be
    ~il[chareqv] to one another.~/
 
    ~l[icharlisteqv]"
@@ -167,7 +173,7 @@
   :hints(("Goal" :in-theory (enable charlisteqv))))
 
 (defthm charlisteqv-of-cons-left
-  (equal (charlisteqv (cons a x) y) 
+  (equal (charlisteqv (cons a x) y)
          (and (consp y)
               (chareqv (double-rewrite a) (car y))
               (charlisteqv (double-rewrite x) (cdr y))))
