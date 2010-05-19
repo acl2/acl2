@@ -588,10 +588,15 @@
   :otf-flg t
   :hints (("goal" :do-not-induct t
                   :in-theory (disable trlstp))
-          ("subgoal 8" :use ((:instance tomissives-extract-sublst (l (totmissives trlst))
-                                (ids (tm-ids (totmissives trlst))))
-                               (:instance totmissives-extract-sublst (l trlst)
-                                (ids (v-ids trlst)))
-                               (:instance extract-sublst-identity)))))
+; Matt K.: The following subgoal hint was changed to "8.2'" from "8" because of
+; the change after ACL2 Version 3.6.1 to speed up evaluation of calls of mv-let
+; (which was a change to the way ACL2 translates mv-let expressions in theorems
+; into internal form).  It seems that this mv-let change may have affected the
+; way make-event expansion is done here.
+          ("subgoal 8.2'" :use ((:instance tomissives-extract-sublst (l (totmissives trlst))
+                                           (ids (tm-ids (totmissives trlst))))
+                                (:instance totmissives-extract-sublst (l trlst)
+                                           (ids (v-ids trlst)))
+                                (:instance extract-sublst-identity)))))
 
 (in-theory (enable update-ntkstate))#|ACL2s-ToDo-Line|#
