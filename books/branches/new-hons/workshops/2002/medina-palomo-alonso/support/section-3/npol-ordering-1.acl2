@@ -1,0 +1,22 @@
+;;; --------
+;;; Packages
+;;; --------
+
+(defconst *acl2-and-lisp-exports*
+  (union-eq *acl2-exports* *common-lisp-symbols-from-main-lisp-package*))
+
+(defpkg "TER"
+  (set-difference-eq *acl2-and-lisp-exports* '(<)))
+
+(defpkg "MON"
+  (union-eq (set-difference-eq *acl2-and-lisp-exports* '(<))
+	    '(TER::termp TER::term->o-p)))
+
+(defpkg "UPOL"
+  (union-eq *acl2-and-lisp-exports* '(MON::monomialp)))
+
+(defpkg "NPOL"
+  (union-eq (set-difference-eq *acl2-and-lisp-exports* '(<))
+	    '(MON::monomialp MON::monomial->o-p ACL2::make-ord)))
+
+(certify-book "npol-ordering-1" 5)

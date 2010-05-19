@@ -1,0 +1,6 @@
+This directory contains ACL2 books for the algorithm described in the paper
+"Reconciling Efficient Execution in an Automated Reasoning Environment".  The
+ACL2 2004 workshop contains a contribution with an updated and improved
+version (of quadratic time complexity) of that algorithm.  You can find that
+work by downloading and and extracting the workshops tarball, in directory
+workshops/2004/ruiz-et-al/.

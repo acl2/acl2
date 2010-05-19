@@ -1,0 +1,24 @@
+
+CONTENTS
+--------------------------------------------------
+
+Two subdirectories are contained in this directory.
+
+The subdirectory Exercises contains three subdirectories, each
+containing the proof scripts that provide the solutions to the
+exercises described in the aforementioned chapter. 
+
+The subdirectory Proof-Scripts contains the proof described in the
+chapter ``Design Verification of a Safety-Critical Embedded Verifer''
+of the book.
+
+
+AUTHORS
+------------------------------------------------------
+All of the files in these directories have been created by
+P.G. Bertoli and P. Traverso, with the following exceptions 
+- CRT.lisp has been kindly provided by David Russinoff.
+- private-qr-lemmas.lisp is a simple modification of the 
+  quotient-remainder-lemmas.lisp file provided with the 
+  distribution of ACL2 2.4.
+
