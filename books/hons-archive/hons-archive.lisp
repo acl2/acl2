@@ -25,7 +25,7 @@
 (local (include-book "unicode/unsigned-byte-listp" :dir :system))
 (local (include-book "unicode/signed-byte-listp" :dir :system))
 (local (include-book "arithmetic-3/bind-free/top" :dir :system))
-
+(local (include-book "tools/mv-nth" :dir :system))
 
 
 
@@ -260,8 +260,8 @@
                    (har-gather-atoms1 (car x) n tbl seen)
                    (har-gather-atoms1 (cdr x) n tbl seen))))))
 
-(defthm natp-of-car-of-har-gather-atoms1
-  (natp (car (har-gather-atoms1 x n tbl seen))))
+(defthm natp-of-har-gather-atoms1
+  (natp (mv-nth 0 (har-gather-atoms1 x n tbl seen))))
 
 (defthm alistp-of-har-gather-atoms1
   (implies (alistp tbl)
@@ -357,9 +357,9 @@
 ; set of instructions which include how to build X, itself.
 
   (if (atom x)
-      (mv (cdr (hons-get-fn-do-not-hopy x amap)) n tbl insts)
+      (mv (cdr (hons-get x amap)) n tbl insts)
 
-    (let ((lookup (hons-get-fn-do-not-hopy x tbl)))
+    (let ((lookup (hons-get x tbl)))
       (if lookup
           (mv (cdr lookup) n tbl insts)
         (b* (((mv car-index n tbl insts)
@@ -418,13 +418,13 @@
            (sub1-resolve
             (cond ((and (natp sub1)
                         (< sub1 map-size))
-                   (cdr (hons-get-fn-do-not-hopy sub1 map)))
+                   (cdr (hons-get sub1 map)))
                   (t
                    (er hard? 'har-decompress-instrs "Illegal index: ~x0.~%" sub1))))
            (sub2-resolve
             (cond ((and (natp sub2)
                         (< sub2 map-size))
-                   (cdr (hons-get-fn-do-not-hopy sub2 map)))
+                   (cdr (hons-get sub2 map)))
                   (t
                    (er hard? 'har-decompress-instrs "Illegal index: ~x0.~%" sub2))))
            (this
@@ -658,7 +658,7 @@
 
   `(if (< ,index ,len)
        (har$-datai ,index ,har)
-     (cdr (hons-get-fn-do-not-hopy ,index (har$-fal ,har)))))
+     (cdr (hons-get ,index (har$-fal ,har)))))
 
 (defmacro har$-set (index val har len)
 
