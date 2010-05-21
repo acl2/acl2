@@ -326,9 +326,59 @@ values (by Cowles) and subsequently all ACL2 objects (by Greve).
    (d-check-complex d (fix y))
    (d-check-complex d (fix z))))
 
+(defthm measure-obligation-0
+  (lexp (tarai-measure d x y z))
+  :hints (("Goal" :do-not '(preprocess) :in-theory (disable fix))))
+
+(defthm measure-obligation-1
+  (implies
+   (and
+    (d-check d x y z)
+    (> x y))
+   (L< (tarai-measure d (1- x) y z)
+       (tarai-measure d x y z)))
+  :hints (("Goal" :do-not '(preprocess) :in-theory (disable fix))))
+
+(defthm measure-obligation-2
+  (implies
+   (and
+    (d-check d x y z)
+    (> x y))
+   (L< (tarai-measure d (1- y) z x)
+       (tarai-measure d x y z)))
+  :hints (("Goal" :do-not '(preprocess) :in-theory (disable fix))))
+
+(defthm measure-obligation-3
+  (implies
+   (and
+    (d-check d x y z)
+    (> x y))
+   (L< (tarai-measure d (1- z) x y)
+       (tarai-measure d x y z)))
+  :hints (("Goal" :do-not '(preprocess) :in-theory (disable fix))))
+
+(defthm measure-obligation-4
+  (implies
+   (and
+    (d-check d x y z)
+    (> x y))
+   (L< (tarai-measure d 
+		      (tarai-open (1- x) y z)
+		      (tarai-open (1- y) z x)
+		      (tarai-open (1- z) x y))
+       (tarai-measure d x y z)))
+  :hints (("Goal" :do-not '(preprocess)
+	   :in-theory (disable L<-DEFINITION tarai-measure fix))
+	  (and stable-under-simplificationp
+	       '(:in-theory (disable fix)))))
+
 (defun tarai-induction (d x y z)
   (declare (xargs :measure (tarai-measure d x y z)
-		  :hints (("Goal" :do-not '(preprocess) :in-theory (disable fix)))
+		  :hints (("Goal" :in-theory '(measure-obligation-0
+					       measure-obligation-1
+					       measure-obligation-2
+					       measure-obligation-3
+					       measure-obligation-4)))
 		  :well-founded-relation l<))
   (cond
    ((and (d-check d x y z)

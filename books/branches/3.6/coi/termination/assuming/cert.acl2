@@ -3,7 +3,6 @@
 #| coi: Computational Object Inference                                       |#
 #|                                                                           |#
 #|===========================================================================|#
-(ld "Makefile.acl2")
 (ld "coi/alists/alist-defpkg.lsp" :dir :system)
 (ld "coi/syntax/syn-defpkg.lsp" :dir :system)
 (ld "coi/util/gensym-defpkg.lsp" :dir :system)
