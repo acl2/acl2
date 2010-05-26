@@ -17,6 +17,7 @@ DIRS =	symbol-fns \
 	gacc \
 	gensym \
         generalize \
-	quantification
+	quantification \
+	termination
 
 include ../Makefile-subdirs
