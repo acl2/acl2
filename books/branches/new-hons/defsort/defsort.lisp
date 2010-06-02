@@ -49,6 +49,7 @@
     (let* ((comparable-listp (mksym prefix "-LIST-P"))
            (orderedp         (mksym prefix "-ORDERED-P"))
            (merge            (mksym prefix "-MERGE"))
+           (merge-tr         (mksym prefix "-MERGE-TR"))
            (fixnum           (mksym prefix "-MERGESORT-FIXNUM"))
            (integer          (mksym prefix "-MERGESORT-INTEGERS"))
            (sort             (mksym prefix "-SORT"))
@@ -158,12 +159,44 @@
 
         (verify-guards ,merge
                        :hints(("Goal"
-                               :in-theory (enable ,merge) ;; yuck?
                                :use ((:functional-instance comparable-merge-guards
                                                            (compare< ,compare<)
                                                            (comparablep ,comparable-inst)
                                                            (comparable-listp ,comparable-listp-inst)
                                                            (comparable-merge ,merge))))))
+
+        (defund ,merge-tr (x y acc)
+          (declare (xargs :measure (+ (acl2-count x)
+                                      (acl2-count y))
+                          :hints(("Goal" :use ((:functional-instance comparable-merge-admission
+                                                                     (compare< ,compare<)
+                                                                     (comparablep ,comparable-inst)
+                                                                     ))))
+                          :guard ,(if comparablep
+                                      `(and (,comparable-listp x)
+                                            (,comparable-listp y)
+                                            (true-listp acc))
+                                    `(true-listp acc))
+                          :verify-guards nil))
+          (cond ((atom x)
+                 (revappend acc y))
+                ((atom y)
+                 (revappend acc x))
+                ((,compare< (car y) (car x))
+                 (,merge-tr x (cdr y) (cons (car y) acc)))
+                (t
+                 (,merge-tr (cdr x) y (cons (car x) acc)))))
+
+        (verify-guards ,merge-tr
+                       :hints(("Goal"
+                               ,@(if comparablep
+                                     `(:in-theory (enable ,comparable-listp))
+                                   nil)
+                               :use ((:functional-instance comparable-merge-tr-guards
+                                                           (compare< ,compare<)
+                                                           (comparablep ,comparable-inst)
+                                                           (comparable-listp ,comparable-listp-inst)
+                                                           (comparable-merge-tr ,merge-tr))))))
 
         (defund ,fixnum (x len)
           (declare (xargs :measure (nfix len)
@@ -172,7 +205,9 @@
                                                 (compare< ,compare<)
                                                 (comparablep ,comparable-inst)
                                                 (comparable-listp ,comparable-listp-inst)
-                                                (comparable-merge ,merge)))))
+                                                (comparable-merge ,merge)
+                                                (comparable-merge-tr ,merge-tr)
+                                                ))))
                           :guard (and (true-listp x)
                                       ,(if comparablep
                                            `(,comparable-listp x)
@@ -197,16 +232,17 @@
                                       (logand (the (signed-byte 30) len) 1)))))
                         (part1 (,fixnum x len1))
                         (part2 (,fixnum (nthcdr len1 x) len2)))
-                   (,merge part1 part2)))))
+                   (,merge-tr part1 part2 nil)))))
 
         (verify-guards ,fixnum
                        :hints(("Goal"
-                               :in-theory (enable ,fixnum ,merge) ;; yuck?
+                               :in-theory (enable ,fixnum ,merge ,merge-tr) ;; yuck?
                                :use ((:functional-instance fast-comparable-mergesort-fixnums-guards
                                                            (compare< ,compare<)
                                                            (comparablep ,comparable-inst)
                                                            (comparable-listp ,comparable-listp-inst)
                                                            (comparable-merge ,merge)
+                                                           (comparable-merge-tr ,merge-tr)
                                                            (fast-comparable-mergesort-fixnums ,fixnum))))))
 
         (defund ,integer (x len)
@@ -217,6 +253,7 @@
                                                 (comparablep ,comparable-inst)
                                                 (comparable-listp ,comparable-listp-inst)
                                                 (comparable-merge ,merge)
+                                                (comparable-merge-tr ,merge-tr)
                                                 (fast-comparable-mergesort-fixnums ,fixnum)
                                                 ))))
                           :guard (and (true-listp x)
@@ -243,16 +280,17 @@
                         (part2 (if (< (the integer len2) *mergesort-fixnum-threshold*)
                                    (,fixnum (nthcdr len1 x) len2)
                                  (,integer (nthcdr len1 x) len2))))
-                   (,merge part1 part2)))))
+                   (,merge-tr part1 part2 nil)))))
 
         (verify-guards ,integer
                        :hints(("Goal"
-                               :in-theory (enable ,integer ,merge) ;; yuck?
+                               :in-theory (enable ,integer ,merge ,merge-tr) ;; yuck?
                                :use ((:functional-instance fast-comparable-mergesort-integers-guards
                                                            (compare< ,compare<)
                                                            (comparablep ,comparable-inst)
                                                            (comparable-listp ,comparable-listp-inst)
                                                            (comparable-merge ,merge)
+                                                           (comparable-merge-tr ,merge-tr)
                                                            (fast-comparable-mergesort-fixnums ,fixnum)
                                                            (fast-comparable-mergesort-integers ,integer)
                                                            )))))
@@ -284,6 +322,7 @@
                                               (comparablep ,comparable-inst)
                                               (comparable-listp ,comparable-listp-inst)
                                               (comparable-merge ,merge)
+                                              (comparable-merge-tr ,merge-tr)
                                               (fast-comparable-mergesort-fixnums ,fixnum)
                                               (fast-comparable-mergesort-integers ,integer)
                                               (comparable-mergesort ,sort))))))
@@ -298,6 +337,7 @@
                                                        (comparablep ,comparable-inst)
                                                        (comparable-listp ,comparable-listp-inst)
                                                        (comparable-merge ,merge)
+                                                       (comparable-merge-tr ,merge-tr)
                                                        (fast-comparable-mergesort-fixnums ,fixnum)
                                                        (fast-comparable-mergesort-integers ,integer)
                                                        (comparable-mergesort ,sort))))))))
@@ -311,6 +351,7 @@
                                               (comparablep ,comparable-inst)
                                               (comparable-listp ,comparable-listp-inst)
                                               (comparable-merge ,merge)
+                                              (comparable-merge-tr ,merge-tr)
                                               (comparable-orderedp ,orderedp)
                                               (fast-comparable-mergesort-fixnums ,fixnum)
                                               (fast-comparable-mergesort-integers ,integer)
@@ -325,6 +366,7 @@
                                               (comparablep ,comparable-inst)
                                               (comparable-listp ,comparable-listp-inst)
                                               (comparable-merge ,merge)
+                                              (comparable-merge-tr ,merge-tr)
                                               (comparable-orderedp ,orderedp)
                                               (fast-comparable-mergesort-fixnums ,fixnum)
                                               (fast-comparable-mergesort-integers ,integer)
@@ -339,6 +381,7 @@
                                               (comparablep ,comparable-inst)
                                               (comparable-listp ,comparable-listp-inst)
                                               (comparable-merge ,merge)
+                                              (comparable-merge-tr ,merge-tr)
                                               (comparable-orderedp ,orderedp)
                                               (fast-comparable-mergesort-fixnums ,fixnum)
                                               (fast-comparable-mergesort-integers ,integer)

@@ -196,7 +196,6 @@
   :hints(("Goal" :in-theory (enable comparable-merge))))
 
 
-
 (defthm comparable-mergesort-spec-admission
   (AND (O-P (LEN X))
        (IMPLIES (AND (NOT (ATOM X))
@@ -225,6 +224,63 @@
 
 
 
+(defund comparable-merge-tr (x y acc)
+  (declare (xargs :measure (+ (acl2-count x)
+                              (acl2-count y))
+                  :hints(("Goal" :use ((:instance comparable-merge-admission))))
+                  :guard (and (comparable-listp x)
+                              (comparable-listp y)
+                              (true-listp acc))
+                  :verify-guards nil))
+  (cond ((atom x)
+         (revappend acc y))
+        ((atom y)
+         (revappend acc x))
+        ((compare< (car y) (car x))
+         (comparable-merge-tr x (cdr y) (cons (car y) acc)))
+        (t
+         ;; Either (car x) < (car y) or they are equivalent.  In either case,
+         ;; for stability, take (car x) first.
+         (comparable-merge-tr (cdr x) y (cons (car x) acc)))))
+
+
+(defthm comparable-merge-tr-guards
+  (AND (IMPLIES (AND (TRUE-LISTP ACC)
+                     (COMPARABLE-LISTP Y)
+                     (COMPARABLE-LISTP X)
+                     (NOT (ATOM X))
+                     (NOT (ATOM Y))
+                     (COMPARE< (CAR Y) (CAR X)))
+                (COMPARABLE-LISTP (CDR Y)))
+       (IMPLIES (AND (TRUE-LISTP ACC)
+                     (COMPARABLE-LISTP Y)
+                     (COMPARABLE-LISTP X)
+                     (NOT (ATOM X))
+                     (NOT (ATOM Y))
+                     (NOT (COMPARE< (CAR Y) (CAR X))))
+                (COMPARABLE-LISTP (CDR X))))
+  :rule-classes nil)
+
+(encapsulate
+ ()
+ (local (in-theory nil))
+ (verify-guards comparable-merge-tr
+                :hints(("Goal" :use ((:instance comparable-merge-tr-guards))))))
+
+(encapsulate
+ ()
+ (local (defthm comparable-merge-tr-removal-lemma
+          (equal (comparable-merge-tr x y acc)
+                 (revappend acc (comparable-merge x y)))
+          :hints(("Goal"
+                  :induct (comparable-merge-tr x y acc)
+                  :in-theory (enable comparable-merge-tr
+                                     comparable-merge
+                                     revappend)))))
+
+ (defthm comparable-merge-tr-removal
+   (equal (comparable-merge-tr x y nil)
+          (comparable-merge x y))))
 
 
 
@@ -233,8 +289,6 @@
 
 (encapsulate
  ()
-
-
  (defthm true-listp-of-nthcdr-weak
    (implies (true-listp x)
             (true-listp (nthcdr n x))))
@@ -377,8 +431,6 @@
 
 (encapsulate
  ()
-
-
  (local (defthm simpler-take-of-cdr
           (equal (simpler-take n (cdr x))
                  (cdr (simpler-take (+ 1 n) x)))
@@ -496,7 +548,7 @@
                               (logand (the (signed-byte 30) len) 1)))))
                 (part1 (fast-comparable-mergesort-fixnums x len1))
                 (part2 (fast-comparable-mergesort-fixnums (nthcdr len1 x) len2)))
-           (comparable-merge part1 part2)))))
+           (comparable-merge-tr part1 part2 nil)))))
 
 (defthm fast-comparable-mergesort-fixnums-redefinition
   (equal (fast-comparable-mergesort-fixnums x len)
@@ -596,7 +648,9 @@
               (LET ((PART2 (FAST-COMPARABLE-MERGESORT-FIXNUMS (NTHCDR LEN1 X)
                                                               LEN2)))
                    (AND (COMPARABLE-LISTP PART1)
-                        (COMPARABLE-LISTP PART2))))))))))
+                        (COMPARABLE-LISTP NIL)
+                        (COMPARABLE-LISTP PART2)
+                        (TRUE-LISTP NIL))))))))))
    (IMPLIES (AND (SIGNED-BYTE-P 30 LEN)
                  (<= LEN (LEN X))
                  (NATP LEN)
@@ -685,7 +739,7 @@
                 (part2 (if (< (the integer len2) *mergesort-fixnum-threshold*)
                            (fast-comparable-mergesort-fixnums (nthcdr len1 x) len2)
                          (fast-comparable-mergesort-integers (nthcdr len1 x) len2))))
-           (comparable-merge part1 part2)))))
+           (comparable-merge-tr part1 part2 nil)))))
 
 (defthm fast-comparable-mergesort-integers-redefinition
   (equal (fast-comparable-mergesort-integers x len)
@@ -805,7 +859,9 @@
                             (FAST-COMPARABLE-MERGESORT-INTEGERS (NTHCDR LEN1 X)
                                                                 LEN2))))
                 (AND (COMPARABLE-LISTP PART1)
-                     (COMPARABLE-LISTP PART2))))))))))
+                     (COMPARABLE-LISTP NIL)
+                     (COMPARABLE-LISTP PART2)
+                     (TRUE-LISTP NIL))))))))))
     (IMPLIES (AND (INTEGERP LEN)
                   (<= LEN (LEN X))
                   (NATP LEN)
