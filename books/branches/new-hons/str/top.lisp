@@ -35,6 +35,7 @@
 (include-book "natstr")
 (include-book "pad")
 (include-book "strpos")
+(include-book "strrpos")
 (include-book "strprefixp")
 (include-book "strnatless")
 (include-book "strsplit")
