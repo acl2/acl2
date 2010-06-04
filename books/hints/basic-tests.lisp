@@ -387,7 +387,8 @@
                                           "The clause with values bound to nil"
                                           'my-tester
                                           (w state)
-                                          state)))
+                                          state
+                                          nil)))
              (cond ((cdr pair) (value nil))
                    (t (assert$
                        (null (cdr clause-list))

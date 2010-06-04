@@ -430,6 +430,9 @@
 ./coi/syntax/syn-pkg.cert
 ./coi/syntax/syntax-extensions.cert
 ./coi/syntax/syntax.cert
+./coi/termination/assuming/compiler-proof.cert
+./coi/termination/assuming/compiler.cert
+./coi/termination/assuming/zero.cert
 ./coi/util/clause-processor.cert
 ./coi/util/debug.cert
 ./coi/util/defbinding.cert
@@ -1606,6 +1609,7 @@
 ./symbolic/tiny-fib/tiny.cert
 ./symbolic/tiny-triangle/tiny-triangle-correct.cert
 ./symbolic/tiny-triangle/triangle-def.cert
+./system/hl-addr-combine.cert
 ./system/pseudo-good-worldp.cert
 ./system/too-many-ifs.cert
 ./system/top.cert

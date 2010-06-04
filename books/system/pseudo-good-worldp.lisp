@@ -413,6 +413,49 @@
            (pseudo-built-in-clausesp (cdr x)))))
 
 ; -----------------------------------------------------------------
+; ATTACHMENT-RECORDS [GLOBAL-VALUE]
+
+; Attachment-records is a list of attachment records:
+
+; (defrec attachment ((fns . g) . (components . f)) nil)
+
+(defun attachment-components-pathp (path)
+
+; See the Essay on Merging Defattach Records or comments in
+; defattach-merge-into-component.
+
+  (cond ((atom path) (null path))
+        (t (and (consp (car path))
+                (pseudo-function-symbolp (caar path) nil)
+                (pseudo-function-symbolp (cdar path) nil)
+                (attachment-components-pathp (cdr path))))))
+
+(defun attachment-component-p (c)
+  (and (consp c)
+       (pseudo-function-symbol-listp (car c) nil)
+       (attachment-components-pathp (cdr c))))
+
+(defun attachment-components-p (components)
+  (cond ((atom components) (null components))
+        (t (and (attachment-component-p (car components))
+                (attachment-components-p (cdr components))))))
+
+(defun pseudo-attachment-recordp (x)
+  (case-match x
+    (('ATTACHMENT
+      (fns . g) . (components . f))
+     (and (pseudo-function-symbol-listp fns nil)
+          (pseudo-function-symbolp g nil)
+          (attachment-components-p components)
+          (pseudo-function-symbolp f nil)))
+    (& nil)))
+          
+(defun pseudo-attachment-recordsp (x)
+  (cond ((atom x) (null x))
+        (t (and (pseudo-attachment-recordp (car x))
+                (pseudo-attachment-recordsp (cdr x))))))
+
+; -----------------------------------------------------------------
 ; HALF-LENGTH-BUILT-IN-CLAUSES [GLOBAL-VALUE]
 
 ; This is always a number set to (floor n 2), where n is the length of built-in-clauses.
@@ -1300,6 +1343,7 @@
     (WELL-FOUNDED-RELATION-ALIST (pseudo-well-founded-relation-alistp val))
     (RECOGNIZER-ALIST (pseudo-recognizer-alistp val))
     (BUILT-IN-CLAUSES (pseudo-built-in-clausesp val))
+    (ATTACHMENT-RECORDS (pseudo-attachment-recordsp val))
     (HALF-LENGTH-BUILT-IN-CLAUSES (pseudo-half-length-built-in-clausesp val)) 
     (TYPE-SET-INVERTER-RULES (pseudo-type-set-inverter-rulesp val))
     (GLOBAL-ARITHMETIC-ENABLED-STRUCTURE (pseudo-global-arithmetic-enabled-structurep val))
@@ -1928,6 +1972,13 @@
   (pseudo-runic-mapping-pairs-listp val))
 
 ;-----------------------------------------------------------------
+; SIBLINGS
+
+(defun siblings-propertyp (sym val)
+  (declare (ignore sym))
+  (pseudo-function-symbol-listp val nil))
+
+;-----------------------------------------------------------------
 ; STOBJ
 
 (defun pseudo-stobjp (sym val)
@@ -2040,10 +2091,12 @@
 ;-----------------------------------------------------------------
 ; TYPE-PRESCRIPTIONS
 
+(verify-termination backchain-limit-listp)
+
 (defun pseudo-type-prescriptionp (x)
   (case-match x
     ((basic-ts (nume . term)
-               hyps
+               (hyps . backchain-limit-lst)
                (vars . rune)
                . corollary)
      (and (type-setp basic-ts)
@@ -2051,6 +2104,10 @@
               (pseudo-numep nume))
           (pseudo-termp term)
           (pseudo-term-listp hyps)
+          (or (null backchain-limit-lst)
+              (and (backchain-limit-listp backchain-limit-lst)
+                   (equal (length backchain-limit-lst)
+                          (length hyps))))
           (symbol-listp vars)
           (pseudo-runep rune)
           (pseudo-termp corollary)))
@@ -2275,6 +2332,7 @@
           (REDEFINED (redefinedp sym val))
           (REDUNDANCY-BUNDLE (pseudo-redundancy-bundlep sym val))
           (RUNIC-MAPPING-PAIRS (pseudo-runic-mapping-pairsp sym val))
+          (SIBLINGS (siblings-propertyp sym val))
           (STOBJ (pseudo-stobjp sym val))
           (STOBJ-CONSTANT (pseudo-stobj-constantp sym val))
           (STOBJ-FUNCTION (pseudo-stobj-functionp sym val))

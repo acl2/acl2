@@ -89,7 +89,7 @@
          reduce nil nil
          "Term for with-quoted-forms"
          'with-quoted-var-terms
-         (w state) state)))
+         (w state) state t)))
     (value val)))
 
 (defmacro with-quoted-forms (form)

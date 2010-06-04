@@ -99,7 +99,7 @@
                        :geneqv (if (member-eq provep '(t nil)) *geneqv-iff* nil)
                        :fnstack nil
                        :ancestors nil
-                       :backchain-limit (backchain-limit wrld)
+                       :backchain-limit (backchain-limit wrld :rewrite)
                        :simplify-clause-pot-lst nil
                        :rcnst rcnst
                        :gstack gstack

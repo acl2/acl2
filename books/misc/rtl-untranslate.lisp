@@ -97,6 +97,7 @@
                                  nil ; safe-mode
                                  nil ; gc-off
                                  nil ; hard-error-returns-nilp
+                                 t   ; okp
                                  )
                     (or (and (null erp) term1)
                         term))

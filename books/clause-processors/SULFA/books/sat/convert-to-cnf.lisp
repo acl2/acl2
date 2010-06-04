@@ -262,7 +262,14 @@
                                 "SAT internal evaluator"
                                 "get-justifying-ord"
                                 (w state)
-                                state)
+                                state
+
+; Matt K.: I added the argument aok=nil for v4-0.  Thus, attachments are
+; disallowed.  That's the conservative thing to do, and my guess is that it's
+; the necessary thing to do, at least in this case (less sure about the other
+; two below); but if necessary, this decision could be revisited.
+
+                                nil)
      (if erp
          (mv (er hard 'get-justifying-ord
                  "Error evaluating ordinal~%")
@@ -1194,7 +1201,8 @@
                                    "SAT internal evaluator"
                                    "remove-functions"
                                    (w state)
-                                   state)
+                                   state
+                                   nil) ; see comment above about aok
         (if erp 
             (mv (er hard 
                     'remove-functions 
@@ -2079,7 +2087,8 @@
                                        "SAT internal evaluator"
                                        "remove-functions?"
                                        (w state)
-                                       state)
+                                       state
+                                       nil) ; see comment above about aok
             (if erp 
                 (prog2$
                  (er hard 
