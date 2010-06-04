@@ -96,7 +96,7 @@
                            ,@extra-events
                            ,event)))))))
         (mv-let (erp trans-ans state) ; trans-ans is (cons stobjs-out values)
-                (trans-eval encap-event ctx state)
+                (trans-eval encap-event ctx state t)
                 (cond ((or erp
                            (car (cdr trans-ans))) ; erp from trans-ans
                        (proof-by-arith-1 event (cdr book-alist) ctx state))

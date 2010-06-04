@@ -60,7 +60,15 @@
                                "User create ce"
                                "sat-cl-ce"
                                (w state)
-                               state)
+                               state
+
+; Matt K.: I added the argument aok=nil for v4-0.  Thus, attachments are
+; disallowed.  That's the conservative thing to do, but I don't know if it's
+; necessary here (probably is for the next call below of
+; simple-translate-and-eval, though).  This decision could be revisited if
+; there is interest.
+
+                               nil)
     (mv erp (cdr val) state)))
 
 ;; ---------------------------------------------------
@@ -226,7 +234,8 @@
                                 "Counter-example check"
                                 "run-ce"
                                 (w state)
-                                state)
+                                state
+                                nil) ; see comment about aok above
      (cond
       (erp 
        (mv (er hard 'sat-cl-run-clause

@@ -4527,7 +4527,7 @@ To certify this book, first, create a world with the following packages:
 		 (u (1_e))
 		 (y x)))))
 
-(table acl2-defaults-table :backchain-limit 1) 
+(set-backchain-limit 1)
 
 (defthm
   Symmetry-unit-associates-pp
@@ -4564,7 +4564,7 @@ To certify this book, first, create a world with the following packages:
 			   (unit-associates-pp-witness x y)))
 		  (y z))))))
  
-(table acl2-defaults-table :backchain-limit nil)
+(set-backchain-limit nil)
  
 (defthm 
   Unit-associates-pp-is-an-equivalence 
@@ -4590,7 +4590,7 @@ To certify this book, first, create a world with the following packages:
 		(edp y)))
   :rule-classes :congruence)
 
-(table acl2-defaults-table :backchain-limit 1)
+(set-backchain-limit 1)
 
 (defthm
   Associates-pp-refines-unit-associates-pp-lemma-1
@@ -4609,7 +4609,7 @@ To certify this book, first, create a world with the following packages:
 		  (y (**_e (divides-pp-witness x y)
 			   (divides-pp-witness y x))))))))
 
-(table acl2-defaults-table :backchain-limit 2)
+(set-backchain-limit 2)
 
 (defthm
   Associates-pp-refines-unit-associates-pp-lemma-2
@@ -5231,7 +5231,7 @@ To certify this book, first, create a world with the following packages:
 
 (in-theory (disable unit-associates-pp-refines-associates-pp-lemma-1))
 
-(table acl2-defaults-table :backchain-limit 3)
+(set-backchain-limit 3)
 
 (defthm
   Prime-property-lemma
@@ -5511,7 +5511,7 @@ To certify this book, first, create a world with the following packages:
 	   :in-theory (disable (:definition reducible-pp)
 			       (:definition unit-pp)))))
 
-(table acl2-defaults-table :backchain-limit 1)
+(set-backchain-limit 1)
 
 (defthm
   Reducible-pp-**_e
@@ -5577,7 +5577,7 @@ To certify this book, first, create a world with the following packages:
   :hints (("Goal"
 	   :in-theory (disable (:definition irreducible-pp)))))
 
-(table acl2-defaults-table :backchain-limit 3)
+(set-backchain-limit 3)
 
 (defthm
   Unit-associates-pp-**_e-lst-implies-member-unit-associate-pp-1

@@ -23,7 +23,7 @@ INHIBIT ?= (set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote
 ACL2_BOOKS_DEBUG ?=
 
 # Avoid loading customization file unless environment variable is already set.
-export ACL2-CUSTOMIZATION ?= NONE
+export ACL2_CUSTOMIZATION ?= NONE
 
 # Default ACL2 to whatever is in the path
 ACL2 ?= acl2

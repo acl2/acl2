@@ -88,7 +88,7 @@ ACL2_BOOKS_MAKEFILE ?= Makefile
 ACL2_BOOKS_DEBUG ?=
 
 # Avoid loading customization file unless environment variable is already set.
-export ACL2-CUSTOMIZATION ?= NONE
+export ACL2_CUSTOMIZATION ?= NONE
 
 # Fix problem with sh on some Linux systems:
 ifeq ($(OSTYPE),linux)

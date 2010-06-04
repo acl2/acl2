@@ -2817,7 +2817,8 @@ J & George
                                                        nil
                                                        "Your command" 'sim
                                                        (acl2::w acl2::state)
-                                                       acl2::state)
+                                                       acl2::state
+                                                       nil)
                       (prog2$
                        (cond (flg nil)
                              (t (acl2::cw "~x0~%" (cdr val))))

@@ -562,7 +562,14 @@
                                 "Counter-example check"
                                 "run-ce"
                                 (w state)
-                                state)
+                                state
+
+; Matt K.: I added the argument aok=nil for v4-0.  Thus, attachments are
+; disallowed.  That's the conservative thing to do, but I don't know if it's
+; necessary here (probably is but not sure).  This decision could be revisited
+; if there is interest.
+
+                                nil)
      (cond
       (erp 
        (mv (er hard 'run-clause
@@ -585,7 +592,8 @@
                                 "Counter-example check"
                                 "run-ce"
                                 (w state)
-                                state)
+                                state
+                                nil) ; see comment about aok above
      (cond
       (erp 
        (mv (er hard 'run-clause

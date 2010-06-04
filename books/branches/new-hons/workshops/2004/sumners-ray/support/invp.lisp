@@ -623,7 +623,7 @@ NOTES/ISSUES
                                         (list :executable-counterpart op))))
                    (and nume (enabled-numep nume ens))))
              (mv-let (erp val)
-                 (ev-fncall-w op (fncall-args args) wrld nil t nil)
+                 (ev-fncall-w op (fncall-args args) wrld nil t nil nil)
                (and (not erp) (list 'quote val))))
         trm)))
 

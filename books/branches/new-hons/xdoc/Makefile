@@ -6,7 +6,9 @@ BOOKS := $(filter-out acl2-customization,$(BOOKS))
 # This is really gross.
 COMPILE_FLG := t :ttags :all
 
-all: manual/success.txt TAGS
+# Commenting out TAGS just below to avoid an error we've seen on Windows with etags missing:
+# all: manual/success.txt TAGS
+all: manual/success.txt
 
 manual/success.txt: top.cert Makefile-trans $(wildcard *.xsl) xdoc.css frames.html make-manual.lsp
 	rm -rf manual

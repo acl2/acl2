@@ -343,6 +343,9 @@ CERT_PL_CERTS := \
      coi/syntax/syn-pkg.cert \
      coi/syntax/syntax-extensions.cert \
      coi/syntax/syntax.cert \
+     coi/termination/assuming/compiler-proof.cert \
+     coi/termination/assuming/compiler.cert \
+     coi/termination/assuming/zero.cert \
      coi/util/clause-processor.cert \
      coi/util/debug.cert \
      coi/util/defbinding.cert \
@@ -1515,6 +1518,7 @@ CERT_PL_CERTS := \
      symbolic/tiny-fib/tiny.cert \
      symbolic/tiny-triangle/tiny-triangle-correct.cert \
      symbolic/tiny-triangle/triangle-def.cert \
+     system/hl-addr-combine.cert \
      system/pseudo-good-worldp.cert \
      system/too-many-ifs.cert \
      system/top.cert \
@@ -2679,6 +2683,10 @@ CERT_PL_SOURCES := \
      coi/syntax/syn-pkg.lisp  \
      coi/syntax/syntax-extensions.lisp  \
      coi/syntax/syntax.lisp  \
+     coi/termination/assuming/cert.acl2  \
+     coi/termination/assuming/compiler-proof.lisp  \
+     coi/termination/assuming/compiler.lisp  \
+     coi/termination/assuming/zero.lisp  \
      coi/util/cert.acl2  \
      coi/util/clause-processor.lisp  \
      coi/util/debug-defpkg.lsp  \
@@ -3959,6 +3967,7 @@ CERT_PL_SOURCES := \
      symbolic/tiny-fib/tiny.lisp  \
      symbolic/tiny-triangle/tiny-triangle-correct.lisp  \
      symbolic/tiny-triangle/triangle-def.lisp  \
+     system/hl-addr-combine.lisp  \
      system/pseudo-good-worldp.lisp  \
      system/too-many-ifs.lisp  \
      system/top.lisp  \
@@ -10326,6 +10335,79 @@ coi/syntax/syntax.cert : \
      coi/syntax/syntax-extensions.cert \
      coi/syntax/defevaluator.cert
 
+coi/termination/assuming/compiler-proof.cert : \
+     coi/termination/assuming/compiler-proof.lisp \
+     coi/termination/assuming/cert.acl2 \
+     coi/alists/alist-defpkg.lsp \
+     coi/alists/alist-defpkg.lsp \
+     coi/lists/list-exports.lsp \
+     coi/lists/list-exports.lsp \
+     coi/lists/list-defpkg.lsp \
+     coi/lists/list-defpkg.lsp \
+     coi/syntax/syn-defpkg.lsp \
+     coi/syntax/syn-defpkg.lsp \
+     coi/util/gensym-defpkg.lsp \
+     coi/util/gensym-defpkg.lsp \
+     coi/symbol-fns/symbol-fns-defpkg.lsp \
+     coi/symbol-fns/symbol-fns-defpkg.lsp \
+     coi/util/def-defpkg.lsp \
+     coi/util/def-defpkg.lsp \
+     coi/util/defun-defpkg.lsp \
+     coi/util/defun-defpkg.lsp \
+     coi/defpun/defminterm.cert \
+     coi/defpun/ack.cert \
+     coi/nary/nary.cert \
+     coi/util/mv-nth.cert
+
+coi/termination/assuming/compiler.cert : \
+     coi/termination/assuming/compiler.lisp \
+     coi/termination/assuming/cert.acl2 \
+     coi/alists/alist-defpkg.lsp \
+     coi/alists/alist-defpkg.lsp \
+     coi/lists/list-exports.lsp \
+     coi/lists/list-exports.lsp \
+     coi/lists/list-defpkg.lsp \
+     coi/lists/list-defpkg.lsp \
+     coi/syntax/syn-defpkg.lsp \
+     coi/syntax/syn-defpkg.lsp \
+     coi/util/gensym-defpkg.lsp \
+     coi/util/gensym-defpkg.lsp \
+     coi/symbol-fns/symbol-fns-defpkg.lsp \
+     coi/symbol-fns/symbol-fns-defpkg.lsp \
+     coi/util/def-defpkg.lsp \
+     coi/util/def-defpkg.lsp \
+     coi/util/defun-defpkg.lsp \
+     coi/util/defun-defpkg.lsp \
+     coi/syntax/syntax.cert \
+     coi/util/mv-nth.cert \
+     coi/termination/assuming/compiler-proof.cert \
+     make-event/eval.cert \
+     coi/util/pseudo-translate.cert \
+     coi/util/recursion-support.cert \
+     arithmetic/top-with-meta.cert
+
+coi/termination/assuming/zero.cert : \
+     coi/termination/assuming/zero.lisp \
+     coi/termination/assuming/cert.acl2 \
+     coi/alists/alist-defpkg.lsp \
+     coi/alists/alist-defpkg.lsp \
+     coi/lists/list-exports.lsp \
+     coi/lists/list-exports.lsp \
+     coi/lists/list-defpkg.lsp \
+     coi/lists/list-defpkg.lsp \
+     coi/syntax/syn-defpkg.lsp \
+     coi/syntax/syn-defpkg.lsp \
+     coi/util/gensym-defpkg.lsp \
+     coi/util/gensym-defpkg.lsp \
+     coi/symbol-fns/symbol-fns-defpkg.lsp \
+     coi/symbol-fns/symbol-fns-defpkg.lsp \
+     coi/util/def-defpkg.lsp \
+     coi/util/def-defpkg.lsp \
+     coi/util/defun-defpkg.lsp \
+     coi/util/defun-defpkg.lsp \
+     coi/termination/assuming/compiler.cert \
+     ordinals/lexicographic-ordering.cert
+
 coi/util/clause-processor.cert : \
      coi/util/clause-processor.lisp \
      coi/util/cert.acl2
@@ -11285,7 +11367,8 @@ hons-archive/hons-archive.cert : \
      defsort/uniquep.cert \
      unicode/unsigned-byte-listp.cert \
      unicode/signed-byte-listp.cert \
-     arithmetic-3/bind-free/top.cert
+     arithmetic-3/bind-free/top.cert \
+     tools/mv-nth.cert
 
 ihs/@logops.cert : \
      ihs/@logops.lisp \
@@ -17946,7 +18029,7 @@ str/natstr.cert : \
      str/package.lsp \
      str/package.lsp \
      str/doc.cert \
-     str/eqv.cert \
+     str/digitp.cert \
      str/char-support.cert \
      arithmetic-3/floor-mod/floor-mod.cert
 
@@ -18129,6 +18212,10 @@ symbolic/tiny-triangle/triangle-def.cert : \
      symbolic/tiny-triangle/triangle-def.lisp \
      symbolic/tiny-fib/tiny.cert
 
+system/hl-addr-combine.cert : \
+     system/hl-addr-combine.lisp \
+     arithmetic-5/top.cert
+
 system/pseudo-good-worldp.cert : \
      system/pseudo-good-worldp.lisp
 
@@ -18139,6 +18226,7 @@ system/too-many-ifs.cert : \
 
 system/top.cert : \
      system/top.lisp \
+     system/hl-addr-combine.cert \
      system/too-many-ifs.cert
 
 system/worldp-check.cert : \
@@ -18370,6 +18458,7 @@ unicode/explode-nonnegative-integer.cert : \
 
 unicode/file-measure.cert : \
      unicode/file-measure.lisp \
+     tools/mv-nth.cert \
      unicode/update-state.cert \
      unicode/open-input-channels.cert
 
@@ -18405,7 +18494,8 @@ unicode/nat-listp.cert : \
 unicode/nthcdr-bytes.cert : \
      unicode/nthcdr-bytes.lisp \
      unicode/read-byte.cert \
-     unicode/read-file-bytes.cert
+     unicode/read-file-bytes.cert \
+     tools/mv-nth.cert
 
 unicode/nthcdr.cert : \
      unicode/nthcdr.lisp \
@@ -18413,6 +18503,7 @@ unicode/nthcdr.cert : \
 
 unicode/open-input-channel.cert : \
      unicode/open-input-channel.lisp \
+     tools/mv-nth.cert \
      unicode/update-state.cert \
      unicode/open-input-channels.cert \
      arithmetic-3/bind-free/top.cert \
@@ -18445,6 +18536,7 @@ unicode/prefixp.cert : \
 
 unicode/read-byte.cert : \
      unicode/read-byte.lisp \
+     tools/mv-nth.cert \
      unicode/update-state.cert \
      unicode/open-input-channels.cert \
      unicode/unsigned-byte-listp.cert \
@@ -18452,6 +18544,7 @@ unicode/read-byte.cert : \
 
 unicode/read-char.cert : \
      unicode/read-char.lisp \
+     tools/mv-nth.cert \
      unicode/update-state.cert \
      unicode/open-input-channels.cert
 
@@ -18461,7 +18554,8 @@ unicode/read-file-bytes.cert : \
      unicode/unsigned-byte-listp.cert \
      unicode/open-input-channel.cert \
      unicode/close-input-channel.cert \
-     unicode/read-byte.cert
+     unicode/read-byte.cert \
+     tools/mv-nth.cert
 
 unicode/read-file-characters.cert : \
      unicode/read-file-characters.lisp \
@@ -18470,6 +18564,7 @@ unicode/read-file-characters.cert : \
      unicode/read-char.cert \
      unicode/close-input-channel.cert \
      unicode/revappend.cert \
+     tools/mv-nth.cert \
      unicode/rev.cert
 
 unicode/read-file-objects.cert : \
@@ -18477,7 +18572,8 @@ unicode/read-file-objects.cert : \
      unicode/file-measure.cert \
      unicode/open-input-channel.cert \
      unicode/close-input-channel.cert \
-     unicode/read-object.cert
+     unicode/read-object.cert \
+     tools/mv-nth.cert
 
 unicode/read-ints.cert : \
      unicode/read-ints.lisp \
@@ -18486,6 +18582,7 @@ unicode/read-ints.cert : \
      unicode/signed-byte-listp.cert \
      unicode/sign-byte.cert \
      unicode/combine.cert \
+     tools/mv-nth.cert \
      arithmetic-3/bind-free/top.cert
 
 unicode/read-object.cert : \
@@ -18499,6 +18596,7 @@ unicode/read-utf8.cert : \
      unicode/take-bytes.cert \
      unicode/open-input-channel.cert \
      unicode/close-input-channel.cert \
+     tools/mv-nth.cert \
      unicode/signed-byte-listp.cert \
      arithmetic-3/bind-free/top.cert
 
@@ -18579,6 +18677,7 @@ unicode/utf8-decode.cert : \
      unicode/partition.cert \
      unicode/nthcdr.cert \
      unicode/signed-byte-listp.cert \
+     tools/mv-nth.cert \
      arithmetic-3/bind-free/top.cert \
      unicode/revappend.cert
 

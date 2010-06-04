@@ -1101,7 +1101,8 @@
   (ev-fncall-w op. args. (get-current-world ls$)
                nil    ; safe-mode
                t      ; gc-off
-               nil))  ; hard-error-returns-nilp
+               nil    ; hard-error-returns-nilp
+               nil))  ; aok
 
 (defmacro kern-error (err-string node rslt)
   `(prog2$ (kern-print-stats ls$) 

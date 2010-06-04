@@ -22,9 +22,9 @@ spec.cert: ../../../rtl/rel1/lib1/top.cert
 spec.cert: rtl.cert
 spec.cert: fmul.cert
 
-fmul.lisp: compiler.cert fmul.trans
+fmul-star.lisp: fmul.lisp
 
-fmul-star.lisp fmul.lisp: compiler.cert fmul.trans
+fmul.lisp: compiler.cert fmul.trans
 	@echo '(value :q)' > workxxx
 	@echo '(LP)' >> workxxx
 	@echo '(include-book "compiler")' >> workxxx
