@@ -33,6 +33,7 @@
 (include-book "istrprefixp")
 (include-book "isubstrp")
 (include-book "natstr")
+(include-book "strline")
 (include-book "pad")
 (include-book "strpos")
 (include-book "strrpos")
