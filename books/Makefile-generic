@@ -428,10 +428,10 @@ endif
 
 .PHONY: chk-include-book-worlds
 chk-include-book-worlds:
-	@if [ -z "$(ACL2_SKIP_CHK_INCLUDE_BOOK_WORLDS)" ]; then
-	echo 'Using ACL2=$(ACL2)' ; \
+	if [ -z "$(ACL2_SKIP_CHK_INCLUDE_BOOK_WORLDS)" ]; then \
+	echo "Using ACL2=$(ACL2)" ; \
 	(rm -f *.bkchk.out > /dev/null) ; \
-	(MAKE) -s $(BOOKS_BKCHK_OUT) ACL2='$(ACL2)' ; \
+	$(MAKE) -s $(BOOKS_BKCHK_OUT) ACL2='$(ACL2)' ; \
 	fi
 
 %.bkchk.out: %.cert
