@@ -11,7 +11,7 @@
 
 
 
-#|
+#||
 
   defsimulate.lisp
   ~~~~~~~~~~~~~~~~
@@ -35,7 +35,7 @@ first argument must be the machine state. I should have changed it to last for
 lack of ambiguity, but since I have (run s n) ingrained in my brain I dont
 think I can do the change reliably.
 
-|#
+||#
 
 
 ;; OK, some generic stuff. 
@@ -494,33 +494,33 @@ think I can do the change reliably.
                      (nextt (lambda (s) (,nextt s)))
                      (run (lambda (s n) (,run s n))))
                     (s ,(lastval params)))))
-                 ("Subgoal 1"
+                  ("Subgoal 1"
+                  :use ((:instance (:definition concrete-steps-to-cutpoint)
+                                   (,(lastval params) s))))
+                  ("Subgoal 2"
                   :use ((:instance (:definition concrete-nextt-cutpoint)
                                    (,(lastval params) s))))
-                 ("Subgoal 2"
+                 ("Subgoal 3"
                   :use ((:instance exitpoint-is-cutpoint
                                    (,(lastval params) s))))
-                 ("Subgoal 3"
+                 ("Subgoal 4"
                   :use ((:instance pre-implies-assertion
                                    (,(lastval params) s))))
-                 ("Subgoal 4"
+                 ("Subgoal 5"
                   :use ((:instance pre-implies-cutpoint
                                    (,(lastval params) s))))
-                 ("Subgoal 5"
+                 ("Subgoal 6"
                   :use ((:instance assertion-implies-post
                                    (,(lastval params) s))))
-                 ("Subgoal 6"
+                 ("Subgoal 7"
                   :use ((:instance concrete-steps-to-cutpoint-tail-def
                                    (,(lastval params) s))))
                         
-                 ("Subgoal 7"
+                 ("Subgoal 8"
                   :use ((:instance assertion-invariant-over-cutpoints
                                    (,(lastval params) s))))
-                 ("Subgoal 8"
-                  :in-theory (enable ,run))
                  ("Subgoal 9"
-                  :use ((:instance (:definition concrete-steps-to-cutpoint)
-                                   (,(lastval params) s))))
+                  :in-theory (enable ,run))
                  ("Subgoal 10"
                   :use ((:instance 
                          (:definition ,(packn (list exitsteps '-tail-def)))
@@ -983,21 +983,21 @@ think I can do the change reliably.
                                   (snoc (snoc (dellast params) 's) 'i)))))
                       (s ,(lastval params)))))
                   ("Subgoal 1"
-                   :use ((:instance (:definition concrete-nextt-cutpoint)
+                   :use ((:instance (:definition concrete-steps-to-cutpoint)
                                     (,(lastval params) s))))
                   ("Subgoal 2"
-                   :use ((:instance concrete-steps-to-cutpoint-tail-def
+                   :use ((:instance (:definition concrete-nextt-cutpoint)
                                     (,(lastval params) s))))
                   ("Subgoal 3"
-                   :use ((:instance default-not-cutpoint)))
+                   :use ((:instance concrete-steps-to-cutpoint-tail-def
+                                    (,(lastval params) s))))
                   ("Subgoal 4"
+                   :use ((:instance default-not-cutpoint)))
+                  ("Subgoal 5"
                    :use ((:instance nextt-cutpoint-is-cutpoint
                                     (,(lastval params) s))))
-                  ("Subgoal 5"
-                   :in-theory (enable ,run))
                   ("Subgoal 6"
-                   :use ((:instance (:definition concrete-steps-to-cutpoint)
-                                    (,(lastval params) s))))))))
+                   :in-theory (enable ,run))))))
 
         
 
@@ -1269,6 +1269,7 @@ think I can do the change reliably.
  (local
   (defsimulate stepp :define-run? t)))
 
+
 ;; Another example. This uses all the keywords and further allows more than one
 ;; argument.
 
@@ -1320,6 +1321,7 @@ think I can do the change reliably.
 
 ;; Then get the partial correctness theorem by this approach.
  (local (defsimulate stepp :mode :total :define-run? t)))
+
 
 ;; Another example. This uses all the keywords and further allows more than one
 ;; argument.
