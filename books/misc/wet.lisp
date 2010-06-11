@@ -114,7 +114,8 @@
                                                       'trace$)
                                                   saved-specs)
                                             'with-trace-saved
-                                            state))
+                                            state
+                                            t))
                                (declare (ignore erp val))
                                state)))
     `(er-let* ((saved-specs (trace$)))
@@ -173,10 +174,11 @@
                            (defttag :trace!)
                            (trans-eval (cons 'trace$ specs)
                                        'wet
-                                       state)
+                                       state
+                                       t)
                            (mv-let
                             (erp val state)
-                            (trans-eval ',form 'wet state)
+                            (trans-eval ',form 'wet state t)
                             (cond
                              (erp
                               (let ((evisc-tuple ,(if evisc-tuple-p
