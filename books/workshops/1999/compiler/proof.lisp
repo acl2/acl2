@@ -677,7 +677,7 @@
 ;;---------------------------------------------------------------------------
 
 (defmacro forms-theorem (forms cenv env top dcls stack n)
-  `(implies (and (natp top)
+  `(implies (and (natp ,top)
 		 (wellformed-defs ,dcls (construct-genv ,dcls))
 	         (wellformed-forms ,forms (construct-genv ,dcls) ,cenv)
 		 (defined (msteps (compile-forms ,forms ,cenv ,top)
