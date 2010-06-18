@@ -20,6 +20,7 @@
 
 (in-package "SERIALIZE")
 
+(include-book "tools/include-raw" :dir :system)
 ;; (depends-on "serialize-raw.lsp")
 
 (defdoc serialize
@@ -322,18 +323,18 @@
              ,string-table-size ,cons-table-size ,package-table-size
              state))
 
-(make-event
-; (Matt K., Nov. 2009) We use make-event here because if instead we use the
-; backquoted form (without the backquote), but with "(cbd)" replacing ",cbd",
-; then (include-book "serialize/serialize" :dir :system) fails from a directory
-; other than this directory, for any Lisp such that *suppress-compile* is
-; non-nil.  (So before this change, such include-book fails for every lisp
-; except CCL, except if ":load-compiled-file nil" is specified).  The reason
-; appears to be that cbd isn't bound to this directory during loading of the
-; compiled file.)
- (let ((cbd (cbd)))
-   `(ACL2::progn!
-     (set-raw-mode t)
-     (unless (eq (get-global 'ACL2::host-lisp state) :gcl)
-       (let ((f (compile-file (ACL2::extend-pathname ,cbd "serialize-raw.lsp" state))))
-         (ACL2::load-compiled f))))))
+(ACL2::include-raw "serialize-raw.lsp")
+
+;; (make-event
+;;  (mv-let (erp val state)
+;;    (ACL2::progn!
+;;     (set-raw-mode t)
+;;     (unless (eq (get-global 'ACL2::host-lisp state) :gcl)
+;;       (let ((f (namestring
+;;                 (compile-file (ACL2::extend-pathname (cbd) "serialize-raw.lsp"
+;;                                                      state)))))
+;;         (assign serialize-raw-compiled-file f))))
+;;    (declare (ignore erp val))
+;;    (ACL2::value `(ACL2::progn!
+;;                   (set-raw-mode t)
+;;                   (ACL2::load-compiled ,(@ serialize-raw-compiled-file))))))
