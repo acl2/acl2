@@ -13,6 +13,7 @@ flag.acl2
 flag.lisp
 flag-package.lsp
 index.html
+include-raw.lisp
 mv-nth.lisp
 pack.lisp
 progndollar.lisp
@@ -45,12 +46,16 @@ forms.
 cws.lisp defines CWS, which is a shortcut for printing expressions and
 their values without typing formatting strings.
 
-defined-const.lisp defines DEFINED-CONST, which produces a defconst and a
-theorem saying what term it represents while only evaluating that term once (if
-the HONS system is present) or twice (if not.)
+defined-const.lisp defines DEFINED-CONST, which produces a defconst
+and a theorem saying what term it represents while only evaluating
+that term once (if the HONS system is present) or twice (if not.)
 
-defevaluator-fast.lisp provides a macro much like defevaluator, but much faster
-when the number of functions to be recognized is large.
+defevaluator-fast.lisp provides a macro much like defevaluator, but
+much faster when the number of functions to be recognized is large.
+
+include-raw.lisp provides a tool to load raw Lisp files inside books,
+compiling them on book certification, handling errors, etc.  A TTAG is
+required.
 
 progndollar.lisp defines PROGN$, which evaluates several forms in
 sequence for side effects.
@@ -58,8 +63,8 @@ sequence for side effects.
 safe-case.lisp is a drop-in replacement for case, but causes an error
 if none of the cases are matched.
 
-saved-errors.lisp provides a way of customizing error messages for complex
-generated events.
+saved-errors.lisp provides a way of customizing error messages for
+complex generated events.
 
 defsum and deftuple.lisp provide macros for defining product types
 with constructors, accessors, recognizers, and appropriate theorems
@@ -84,7 +89,8 @@ deeply nested variable bindings.
   "{bstar,cws,defined-const,defsum,deftuple,pack,progndollar,theory-tools,types-misc}.lisp
  copyright (C) 2009 by Sol Swords <sswords@cs.utexas.edu>.
 
-{flag,safe-case}.lisp copyright 2008-2010 by Centaur Technology
+{flag,safe-case,include-raw}.lisp copyright 2008-2010 by Centaur
+Technology
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License as
