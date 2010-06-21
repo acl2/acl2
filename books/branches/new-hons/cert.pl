@@ -350,7 +350,7 @@ foreach my $target (@targets) {
 
 @sources = sort(@sources);
 
-# Is this how do we want to nest these?  Pick a command, run it on
+# Is this how we want to nest these?  Pick a command, run it on
 # every source file, versus pick a source file, run every command?
 # This way seems more flexible; commands can be grouped together.
 foreach my $run (@run_sources) {
