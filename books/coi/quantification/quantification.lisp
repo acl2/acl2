@@ -545,6 +545,8 @@
     `(encapsulate
       ()
       
+      (local (in-theory (cons 'acl2::MV-NTH-TO-VAL (theory 'acl2::minimal-theory))))
+
       (defun-sk ,name ,args ,body 
 	,@(rekey :doc doc)
 	,@(rekey :quant-ok quant-ok)
@@ -1049,7 +1051,7 @@
       (declare (ignore zed))
       (cw "~%"))))
 
-(defun instance-hint (hints rec use-hints)
+(defun instance-hint (hints rec formulae use-hints)
   (if (consp use-hints)
       (let ((hint (car use-hints)))
 	(let ((hint `(:use ,hint)))
@@ -1058,14 +1060,14 @@
 	    (if (or rec (consp (cdr use-hints)))
 		`(:computed-hint-replacement
 		  ((instantiate-quantified-formulae-fn world stable-under-simplificationp 
-						       clause ',(cdr use-hints) ',rec ',hints acl2::pspv state))
+						       clause ',(cdr use-hints) ',rec ',hints ',formulae acl2::pspv state))
 		  ,@hint)
 	      hint))))
     nil))
 
-(defun instantiate-quantified-formulae-rec (hints qlist rec use-hints goal state)
+(defun instantiate-quantified-formulae-rec (hints qlist rec formulae use-hints goal state)
   (declare (xargs :mode :program))
-  (if (endp qlist) (let ((hint (instance-hint hints rec use-hints)))
+  (if (endp qlist) (let ((hint (instance-hint hints rec formulae use-hints)))
 		     (mv nil hint state))
     (let ((quant (car qlist)))
       (met ((alists state) (maximal-instance-matching hints :forall quant goal state))
@@ -1073,27 +1075,39 @@
 	  (declare (ignore zed))
 	  (met ((alists state) (maximal-instantiation-matching hints quant alists goal state))
 	    (let ((use-hints (alist-list-to-use-hints quant alists use-hints)))
-	      (instantiate-quantified-formulae-rec hints (cdr qlist) rec use-hints goal state))))))))
+	      (instantiate-quantified-formulae-rec hints (cdr qlist) rec formulae use-hints goal state))))))))
 
-(defun instantiate-quantified-formulae-fn (world stable goal use-hints rec hints pspv state)
+(defun filter-formulae-rec (fns qlist)
+  (if (endp qlist) nil
+    (let ((q (car qlist)))
+      (if (member (quant-name q) fns)
+	  (cons q (filter-formulae-rec fns (cdr qlist)))
+	(filter-formulae-rec fns (cdr qlist))))))
+
+(defun filter-formulae (fns qlist)
+  (if (null fns) qlist
+    (let ((fns (if (atom fns) (list fns) fns)))
+      (filter-formulae-rec fns qlist))))
+
+(defun instantiate-quantified-formulae-fn (world stable goal use-hints rec hints formulae pspv state)
   (declare (xargs :mode :program)
 	   (acl2::ignorable pspv))
   (if (not stable) (mv nil nil state)
     (if (consp use-hints)
-	(let ((hint (instance-hint hints rec use-hints)))
+	(let ((hint (instance-hint hints rec formulae use-hints)))
 	  (mv nil hint state))
-      (let ((qlist (table::get 'quant-list)))
-	(acl2::preserve-pspv (instantiate-quantified-formulae-rec hints qlist rec nil goal state)
+      (let ((qlist (filter-formulae formulae (table::get 'quant-list))))
+	(acl2::preserve-pspv (instantiate-quantified-formulae-rec hints qlist rec formulae nil goal state)
 			     :pspv pspv)))))
 
-(defmacro instantiate-quantified-formulae (&key (rec 't) (hints 'nil))
-  `(instantiate-quantified-formulae-fn world stable-under-simplificationp clause nil ',rec ',hints acl2::pspv state))
+(defmacro instantiate-quantified-formulae (&key (rec 't) (hints 'nil) (formulae 'nil))
+  `(instantiate-quantified-formulae-fn world stable-under-simplificationp clause nil ',rec ',hints ',formulae acl2::pspv state))
 
-(defmacro inst? (&key (rec 't) (hints 'nil) (when 'nil))
+(defmacro inst? (&key (rec 't) (hints 'nil) (formulae 'nil) (when 'nil))
   (if when
-      `(if ,when (instantiate-quantified-formulae :rec ,rec :hints ,hints)
+      `(if ,when (instantiate-quantified-formulae :rec ,rec :hints ,hints :formulae ,formulae)
 	 (mv nil nil state))
-    `(instantiate-quantified-formulae :rec ,rec :hints ,hints)))
+    `(instantiate-quantified-formulae :rec ,rec :hints ,hints :formulae ,formulae)))
 
 ;; skolemization
 
