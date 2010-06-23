@@ -412,8 +412,9 @@
           (car lst)
           (default-defpun-rule-classes (cdr lst))))))
 
-(defun defpun-syntax-er nil
-  '(er soft 'defpun
+(defun defpun-syntax-er-fn (state)
+  (declare (xargs :stobjs state :mode :program))
+  (er soft 'defpun
        "The proper shape of a defpun event is~%~
         (defpun g (v1 ... vn) body).~%~
         A single optional declare form may be present ~
@@ -429,6 +430,14 @@
         attached to the equality axiom constraining the new function ~
         symbol.  If the :rule-classes keyword is not specified by the ~
         keyword alist, :definition is used."))
+
+(defun defpun-syntax-er nil
+
+; Matt K. addition, June 2010: We use make-event so that an error within a
+; superior encapsulate or progn will generate a legal event and we can thus see
+; a nice error message.
+
+  `(make-event (defpun-syntax-er-fn state)))
 
 (defmacro defpun (g vars &rest rest)
   (cond

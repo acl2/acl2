@@ -147,7 +147,14 @@
              (base (defpun-make-base tests-and-base-lst))
              (test (defpun-disjoin-tests tests-and-base-lst))
              (new-body
-              (untranslate (fcons-term* 'if test base call) nil (w state))))
+
+; It is tempting to call untranslate on the appropriate IF term.  But
+; untranslate can produce an AND, OR, or NOT term from an IF.
+
+              (list 'if
+                    (untranslate test nil (w state))
+                    (untranslate base nil (w state))
+                    (untranslate call nil (w state)))))
         (if (ffnnamep ',g base)
             (mv (msg "Unable to process the suggested definition as tail ~
                       recursive.  Possible debug info: A problem call has ~
