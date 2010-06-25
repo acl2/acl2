@@ -335,7 +335,7 @@
  ()
  (define-trusted-clause-processor
    strengthen-cl-program2
-   nil
+   (f0)
    :partial-theory (encapsulate ((f0 (x) t))
                                 (local (defun f0 (x) x))
                                 (defthm f0-prop
@@ -430,17 +430,17 @@
                        cl)
                  (list term)))))
 
-(must-fail
-; F0, supporting g0, has unknown constraints from dependent clause-processor
-; strengthen-cl-program2.
- (defthm correctness-of-strengthen-cl-b
-   (implies (and (pseudo-term-listp cl)
-                 (alistp a)
-                 (evl (conjoin-clauses
-                       (clauses-result (strengthen-cl-b cl term state)))
-                      a))
-            (evl (disjoin cl) a))
-   :rule-classes :clause-processor))
+; F0, supporting g0, is constrained by strengthen-cl-b, which has unknown
+; constraints from dependent clause-processor strengthen-cl-program2.  However,
+; we do know that f0 is the only direct supporter of strengthen-cl-b.
+(defthm correctness-of-strengthen-cl-b
+  (implies (and (pseudo-term-listp cl)
+                (alistp a)
+                (evl (conjoin-clauses
+                      (clauses-result (strengthen-cl-b cl term state)))
+                     a))
+           (evl (disjoin cl) a))
+  :rule-classes :clause-processor)
 
 (defun strengthen-cl-c (cl term state)
   (declare (xargs :stobjs state :guard (consp term)))
@@ -898,9 +898,12 @@
    :hints (("Goal" :clause-processor (trivial-cl-proc cl)))
    :rule-classes nil))
 
-(must-fail ; unknown constraints in defaxiom
- (defaxiom bad
-   (true-listp (strengthen-cl-b cl term state))))
+; Unknown constraints in a defaxiom were prohibited through Version 3.6.1 of
+; ACL2.  However, now that we use the supporters of a dependent
+; clause-processor to determine ancestors, there is no longer that problem.
+(defaxiom formerly-bad
+  (true-listp (strengthen-cl-b cl term state))
+  :rule-classes nil)
 
 (must-fail ; :partial-theory must be an encapsulate
  (encapsulate ; hard error thrown below defeats must-fail without encapsulate
