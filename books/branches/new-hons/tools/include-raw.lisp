@@ -25,16 +25,29 @@
 
 (progn!
  (set-raw-mode t)
+
  (defun raw-compile (name error-on-fail on-fail state)
    (handler-case
-    (compile-file
-     (extend-pathname (cbd) name state))
+    (compile-file (extend-pathname (cbd) name state))
     (error (condition)
            (if error-on-fail
-               (let ((condition-str
-                      (format nil "~a" condition)))
+               (let ((condition-str (format nil "~a" condition)))
                  (er hard 'include-raw
                      "Compilation of ~x0 failed with the following message:~%~@1~%"
+                     name condition-str))
+             (eval `(let ((condition ',condition))
+                      (declare (ignorable condition))
+                      ,on-fail)))))
+   nil)
+
+ (defun raw-load-uncompiled (name error-on-fail on-fail state)
+   (handler-case
+    (load (extend-pathname (cbd) name state))
+    (error (condition)
+           (if error-on-fail
+               (let ((condition-str (format nil "~a" condition)))
+                 (er hard 'include-raw
+                     "Load of ~x0 failed with the following message:~%~@1~%"
                      name condition-str))
              (eval `(let ((condition ',condition))
                       (declare (ignorable condition))
@@ -50,22 +63,12 @@
              (format t "Compiled file ~a failed to load; loading uncompiled ~a.~%Message: ~a~%"
                      (namestring compiled-fname)
                      fname condition)
-             (handler-case
-              (load fname)
-              (error (condition)
-                     (if error-on-fail
-                         (let ((condition-str
-                                (format nil "~a" condition)))
-                           (er hard 'include-raw
-                               "Load of ~x0 failed with the following message:~%~@1~%"
-                               name condition-str))
-                       (eval `(let ((condition ',condition))
-                                (declare (ignorable condition))
-                                ,on-fail))))))))
+             (raw-load-uncompiled name error-on-fail on-fail state))))
    nil))
 
 
 (defmacro include-raw (fname &key
+                             (do-not-compile 'nil)
                              (on-compile-fail 'nil on-compile-fail-p)
                              (on-load-fail 'nil on-load-fail-p))
   ":doc-section miscellaneous
@@ -75,27 +78,35 @@ Note:  You must have a TTAG defined in order to use this macro.
 
 Usage:
 ~bv[]
- (include-raw ``my-raw-lisp-file.lsp'')
- (include-raw ``a-raw-lisp-file.lsp''
+ (include-raw \"my-raw-lisp-file.lsp\")
+ (include-raw \"a-raw-lisp-file.lsp\"
               :on-compile-fail
-              (format t ``Compilation failed with message ~a~%''
+              (format t \"Compilation failed with message ~a~%\"
                       condition)
               :on-load-fail
-              (cw ``Oh well, the load failed~%''))
+              (cw \"Oh well, the load failed~%\"))
+ (include-raw \"another-raw-lisp-file.lsp\"
+              :do-not-compile t)
 ~ev[]
 
 The path of the raw Lisp file must be given relative to the book containing the
 include-raw form.
 
-The raw Lisp file will be compiled and loaded when the containing book is
-certified.  When including the book, the compiled file will be loaded if
-possible, otherwise the original file will be loaded instead.  By default, if
-either compilation or loading fails, an error will occur.  However, passing the
-optional keywords :on-compile-fail and/or :on-load-fail suppresses the error
-for failed compilation or loading, respectively, and evaluates the term given
-by the keyword argument instead.  When evaluating this term, the variable
-~c[CONDITION] is bound to a value describing the failure; see Common Lisp
-documentation on ~c[HANDLER-CASE].
+By default, the raw Lisp file will be compiled and loaded when the containing
+book is certified.  When including the book, the compiled file will be loaded
+if possible, otherwise the original file will be loaded instead.  By default,
+if either compilation or loading fails, an error will occur.
+
+The optional keywords ~c[:on-compile-fail] and/or ~c[:on-load-fail] may be used
+to suppress the error for failed compilation or loading, respectively; their
+argument is a term which will be evaluated in lieu of producing an error.  When
+evaluating this term, the variable ~c[CONDITION] is bound to a value describing
+the failure; see Common Lisp documentation on ~c[HANDLER-CASE].
+
+The optional keyword ~c[:do-not-compile] may be used to suppress compilation.
+In this case, during book certification the file will just be loaded using
+~c[load].  Similarly, during include-book we will only load the lisp file, and
+not try to load a compiled file.
 
 One further note:  In most or all Lisps, compiling foo.lisp and foo.lsp results
 in the same compiled file (named foo.fasl, or something similar depending on
@@ -130,10 +141,12 @@ using this tool and depending on compilation.~/~/"
         ;; customize what happens in each of these situations.
         (progn!
          (set-raw-mode t)
-         (raw-compile ,fname ,(not on-compile-fail-p)
-                      ',on-compile-fail state))
+         (unless ,do-not-compile
+           (raw-compile ,fname ,(not on-compile-fail-p)
+                        ',on-compile-fail state)))
         (declare (ignore erp val))
         (value '(value-triple :invisible))))
+
      (progn!
       (set-raw-mode t)
       ;; According to Matt K., *hcomp-fn-restore-ht* is nonnil only when
@@ -141,6 +154,7 @@ using this tool and depending on compilation.~/~/"
       ;; the include-book are being processed to run this, so that our compiled
       ;; file isn't loaded twice.
       (when (null *hcomp-fn-restore-ht*)
-        (raw-load ,fname ,(not on-load-fail-p) ',on-load-fail state))
+        (,(if do-not-compile 'raw-load-uncompiled 'raw-load)
+         ,fname ,(not on-load-fail-p) ',on-load-fail state))
       (value-triple ,fname))))
 

@@ -41,38 +41,6 @@
 (defabbrev gentle-cdaddr (x) (gentle-cdr (gentle-caddr x)))
 (defabbrev gentle-cddddr (x) (gentle-cdr (gentle-cdddr x)))
 
-(defn gentle-binary-+ (x y)
-  (mbe :logic (+ x y)
-       :exec (if (acl2-numberp x)
-                 (if (acl2-numberp y)
-                     (+ x y)
-                   x)
-               (if (acl2-numberp y)
-                   y
-                 0))))
-
-(defmacro gentle-+ (&rest r)
-  (cond ((atom r) 0)
-        ((atom (cdr r)) `(gentle-binary-+ 0 ,(car r)))
-        ((atom (cddr r)) `(gentle-binary-+ ,(car r) ,(cadr r)))
-        (t `(gentle-binary-+ ,(car r) (gentle-+ ,@(cdr r))))))
-
-(defn gentle-binary-- (x y)
-
-; [Jared]: BOZO consider changing this so that it agrees with the current
-; logical definition of minus.  This would allow us to avoid introducing a new,
-; incompatible concept.
-
-
-  (if (and (acl2-numberp x)
-           (acl2-numberp y))
-      (- x y)
-    0))
-
-(defmacro gentle-- (x &optional y)
-  (cond ((null y) `(gentle-unary-- ,x))
-        (t `(gentle-binary-- ,x (gentle-+ ,y)))))
-
 (defn gentle-revappend (x y)
   (mbe :logic (revappend x y)
        :exec (if (atom x)
@@ -109,11 +77,6 @@
             (cdr (car l)))
           (gentle-strip-cdrs (cdr l)))))
 
-(defn gentle-length (l)
-  (mbe :logic (length l)
-       :exec (if (stringp l)
-                 (length l)
-               (len l))))
 
 (defn gentle-member-eq (x y)
   (declare (xargs :guard (symbolp x)))
@@ -147,25 +110,12 @@
                     (gentle-member-eql x y))
                    (t (gentle-member-equal x y)))))
 
+(defn gentle-last (l)
+  (mbe :logic (last l)
+       :exec (if (or (atom l) (atom (cdr l)))
+                 l
+               (gentle-last (cdr l)))))
 
-(defn const-list-acc (n const acc)
-
-; [Jared]: BOZO As above, I find the use of hons kind of odd here.  Why should
-; these be honses?  Or why not rename this hons-make-list-acc, etc.
-
-  (mbe :logic (make-list-ac n const acc)
-       :exec (cond ((not (posp n))
-                    acc)
-                   (t
-                    (const-list-acc (1- n) const (hons const acc))))))
-
-(defn nil-list (n)
-  (mbe :logic (make-list n :initial-element nil)
-       :exec (const-list-acc n nil nil)))
-
-(defn t-list (n)
-  (mbe :logic (make-list n :initial-element t)
-       :exec (const-list-acc n t nil)))
 
 
 (defn gentle-take (n l)
@@ -173,98 +123,68 @@
  "Unlike TAKE, GENTLE-TAKE fills at the end with NILs, if necessary, to
  always return a list n long."
 
-; [Jared]: BOZO hons/cons behavior.  Note that the nil-list it constructs will
-; be HONSes, since const-list-acc is used, but that the rest of the list will
-; be CONSes??  Wouldn't it be more sensible to use make-list in the atom case,
-; so that conses are always returned?
-
-; [Jared]: BOZO Using the name gentle-take for a function that isn't logically
-; equal to take is unfortunate.
+; [Jared]: Note that previously this function had a very strange hons/cons
+; behavior; most of the list it created was conses, but if we hit the base
+; case, the list of NILs were HONSes because of const-list-acc being used.  I
+; changed this to use an ordinary make-list in the base case, so now the list
+; it returns is always composed entirely of conses.
 
  (cond ((not (posp n))
         nil)
        ((atom l)
-        (nil-list n))
+        (make-list n))
        (t
         (cons (car l)
               (gentle-take (1- n) (cdr l))))))
 
-(defn make-same-length (v1 v2)
-  (let ((l1 (len v1))
-        (l2 (len v2)))
-    (cond ((= l1 l2) (mv v1 v2))
-          ((< l1 l2) (mv (gentle-take l2 v1) v2))
-          (t         (mv v1 (gentle-take l1 v2))))))
+(defthm true-listp-of-make-list-ac
+  (equal (true-listp (make-list-ac n val ac))
+         (true-listp ac))
+  :rule-classes ((:rewrite)
+                 (:type-prescription
+                  :corollary
+                  (implies (true-listp ac)
+                           (true-listp (make-list-ac n val ac))))))
 
-(defn gentle-last (l)
-  (mbe :logic (last l)
-       :exec (if (or (atom l) (atom (cdr l)))
-                 l
-               (gentle-last (cdr l)))))
-
-(defn gentle-butlast (l n)
-
-; [Jared]: BOZO not equal to butlast, due to the use of gentle-take.  Is there
-; a reason to prefer this behavior?  Why not just make a butlast with guard t?
-
-  (gentle-take (gentle-- (gentle-length l) n) l))
+(defthm true-listp-of-gentle-take
+  (true-listp (gentle-take n l))
+  :rule-classes :type-prescription)
 
 
-(defn gentle-assoc-eq (x y)
 
-; [Jared]: I don't particularly like using hons-assoc-equal as a normal form,
-; but I guess it's fine.
+; (mu-defn ...) is like (mutual-recursion ...), but for a list of "defn" rather
+; than "defun" calls.
 
-  (declare (xargs :guard (symbolp x)))
-  (mbe :logic
-       (hons-assoc-equal x y)
-       :exec
-       (if (atom y)
-           nil
-         (if (and (consp (car y))
-                  (eq x (caar y)))
-             (car y)
-           (gentle-assoc-eq x (cdr y))))))
+(defn defnp (x)
+  (and (consp x)
+       (symbolp (car x))
+       (eq (car x) 'defn)
+       (consp (cdr x))
+       (symbolp (cadr x))
+       (consp (cddr x))
+       (symbol-listp (caddr x))
+       (consp (cdddr x))
+       (true-listp (cdddr x))))
 
-(defn gentle-assoc-eql (x y)
-  (declare (xargs :guard (eqlablep x)))
-  (mbe :logic
-       (hons-assoc-equal x y)
-       :exec
-       (if (atom y)
-           nil
-         (if (and (consp (car y))
-                  (eql x (caar y)))
-             (car y)
-           (gentle-assoc-eql x (cdr y))))))
+(defn defn-listp (x)
+  (if (atom x)
+      (null x)
+    (and (defnp (car x))
+         (defn-listp (cdr x)))))
 
+(defun mu-defn-fn (l)
+  (declare (xargs :guard (defn-listp l)))
+  (if (atom l) nil
+    (cons `(defun
+             ,(cadr (car l))
+             ,(caddr (car l))
+             (declare (xargs :guard t))
+             ,@(cdddr (car l)))
+          (mu-defn-fn (cdr l)))))
 
-(defn gentle-assoc-help (x y)
+(defmacro mu-defn (&rest l)
+  `(mutual-recursion ,@(mu-defn-fn l)))
 
-; [Jared]: BOZO as in gentle-member-equal, I find the use of hons-equal kind of
-; odd here.  My objection is merely that hons stuff is "spilling over" into
-; these gentle definitions that wouldn't appear to have any connection to hons
-; just by their names.
-
-  (mbe :logic
-       (hons-assoc-equal x y)
-       :exec
-       (if (atom y)
-           nil
-         (if (and (consp (car y))
-                  (hons-equal x (caar y)))
-             (car y)
-           (gentle-assoc-help x (cdr y))))))
-
-(defn gentle-assoc (x y)
-  (mbe :logic
-       (hons-assoc-equal x y)
-       :exec
-       (cond ((symbolp x) (gentle-assoc-eq x y))
-             ((or (acl2-numberp x)
-                  (characterp x))
-              (gentle-assoc-eql x y))
-             (t (gentle-assoc-help x y)))))
 
 
 
@@ -321,3 +241,130 @@
 ;;          (if (equal a b)
 ;;              v
 ;;            (gentle-g a l))))
+
+
+;; (defn gentle-binary-+ (x y)
+;;   (mbe :logic (+ x y)
+;;        :exec (if (acl2-numberp x)
+;;                  (if (acl2-numberp y)
+;;                      (+ x y)
+;;                    x)
+;;                (if (acl2-numberp y)
+;;                    y
+;;                  0))))
+
+;; (defmacro gentle-+ (&rest r)
+;;   (cond ((atom r) 0)
+;;         ((atom (cdr r)) `(gentle-binary-+ 0 ,(car r)))
+;;         ((atom (cddr r)) `(gentle-binary-+ ,(car r) ,(cadr r)))
+;;         (t `(gentle-binary-+ ,(car r) (gentle-+ ,@(cdr r))))))
+
+
+
+;; (defn gentle-binary-- (x y)
+
+;; ; [Jared]: BOZO consider changing this so that it agrees with the current
+;; ; logical definition of minus.  This would allow us to avoid introducing a new,
+;; ; incompatible concept.
+
+;;   (if (and (acl2-numberp x)
+;;            (acl2-numberp y))
+;;       (- x y)
+;;     0))
+
+;; (defmacro gentle-- (x &optional y)
+;;   (cond ((null y) `(gentle-unary-- ,x))
+;;         (t `(gentle-binary-- ,x (gentle-+ ,y)))))
+
+
+;; (defn gentle-butlast (l n)
+
+;; ; [Jared]: BOZO not equal to butlast, due to the use of gentle-take.  Is there
+;; ; a reason to prefer this behavior?  Why not just make a butlast with guard t?
+
+;;   (gentle-take (gentle-- (gentle-length l) n) l))
+
+
+
+;; (defn gentle-assoc-eq (x y)
+
+;; ; [Jared]: I don't particularly like using hons-assoc-equal as a normal form,
+;; ; but I guess it's fine.
+
+;;   (declare (xargs :guard (symbolp x)))
+;;   (mbe :logic
+;;        (hons-assoc-equal x y)
+;;        :exec
+;;        (if (atom y)
+;;            nil
+;;          (if (and (consp (car y))
+;;                   (eq x (caar y)))
+;;              (car y)
+;;            (gentle-assoc-eq x (cdr y))))))
+
+;; (defn gentle-assoc-eql (x y)
+;;   (declare (xargs :guard (eqlablep x)))
+;;   (mbe :logic
+;;        (hons-assoc-equal x y)
+;;        :exec
+;;        (if (atom y)
+;;            nil
+;;          (if (and (consp (car y))
+;;                   (eql x (caar y)))
+;;              (car y)
+;;            (gentle-assoc-eql x (cdr y))))))
+
+
+;; (defn gentle-assoc-help (x y)
+
+;; ; [Jared]: BOZO as in gentle-member-equal, I find the use of hons-equal kind of
+;; ; odd here.  My objection is merely that hons stuff is "spilling over" into
+;; ; these gentle definitions that wouldn't appear to have any connection to hons
+;; ; just by their names.
+
+;;   (mbe :logic
+;;        (hons-assoc-equal x y)
+;;        :exec
+;;        (if (atom y)
+;;            nil
+;;          (if (and (consp (car y))
+;;                   (hons-equal x (caar y)))
+;;              (car y)
+;;            (gentle-assoc-help x (cdr y))))))
+
+;; (defn gentle-assoc (x y)
+;;   (mbe :logic
+;;        (hons-assoc-equal x y)
+;;        :exec
+;;        (cond ((symbolp x) (gentle-assoc-eq x y))
+;;              ((or (acl2-numberp x)
+;;                   (characterp x))
+;;               (gentle-assoc-eql x y))
+;;              (t (gentle-assoc-help x y)))))
+
+
+
+;; (defn const-list-acc (n const acc)
+
+;; ; [Jared]: BOZO As above, I find the use of hons kind of odd here.  Why should
+;; ; these be honses?  Or why not rename this hons-make-list-acc, etc.
+
+;; redundant with hons-make-list-acc
+
+;; ;; Only used in nil-list and t-list
+
+;;   (mbe :logic (make-list-ac n const acc)
+;;        :exec (cond ((not (posp n))
+;;                     acc)
+;;                    (t
+;;                     (const-list-acc (1- n) const (hons const acc))))))
+
+
+;; (defn gentle-length (l)
+;;   (mbe :logic (length l)
+;;        :exec (if (stringp l)
+;;                  (length l)
+;;                (len l))))
+
+
+;; [Jared]: moved make-same-length to g.lsp (the only place it was used)

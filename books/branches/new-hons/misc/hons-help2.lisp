@@ -29,10 +29,6 @@
 
 (def-macro-alias hut hons-acons 3)
 
-(def-macro-alias hhut hons-acons! 3)
-
-(def-macro-alias hhshrink-alist hons-shrink-alist! 2)
-
 (def-macro-alias hshrink-alist hons-shrink-alist 2)
 
 ; From hons-help.lisp:
@@ -44,30 +40,6 @@
   `(hons-list* ,@x))
 
 
-(def-macro-alias member-hqual hons-member-equal 2)
-
-(def-macro-alias binary-hppend hons-binary-append 2)
-
-(defmacro hppend (&rest args)
-  `(hons-append ,@args))
-
-(def-macro-alias revhppend hons-revappend 2)
-
-(def-macro-alias heverse hons-reverse 1)
-
-
-(def-macro-alias hut-list hons-put-list 3)
-
-(def-macro-alias hintersection hons-intersection 2)
-
-(def-macro-alias hunion hons-union 2)
-
-
-(def-macro-alias hopy-r hons-copy-r 1)
-
-(def-macro-alias hopy-list-r hons-copy-list-r 1)
-
-
 
 ;; [Jared]: Removed these
 
@@ -76,3 +48,15 @@
 ;; (def-macro-alias hetprop hons-getprop 3)
 ;; (def-macro-alias hutprop hons-putprop 4)
 ;; (def-macro-alias hmerge-sort hons-merge-sort 2)
+;; (def-macro-alias hhshrink-alist hons-shrink-alist! 2)
+;; (def-macro-alias hopy-r hons-copy-r 1)
+;; (def-macro-alias hopy-list-r hons-copy-list-r 1)
+;; (def-macro-alias member-hqual hons-member-equal 2)
+;; (def-macro-alias binary-hppend hons-binary-append 2)
+;; (def-macro-alias hunion hons-union 2)
+;; (def-macro-alias heverse hons-reverse 1)
+;; (def-macro-alias hut-list hons-put-list 3)
+;; (def-macro-alias hintersection hons-intersection 2)
+;; (def-macro-alias revhppend hons-revappend 2)
+;; (defmacro hppend (&rest args) `(hons-append ,@args))
+;; (def-macro-alias hhut hons-acons! 3)
