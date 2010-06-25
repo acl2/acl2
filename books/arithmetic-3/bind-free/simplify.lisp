@@ -170,15 +170,7 @@
     (make-product (set-difference-equal (factors sum)
                                         common-factors))))
 
-(defun intersection-equal (x y)
-  (declare (xargs :guard (and (true-listp x)
-                              (true-listp y))))
-  (cond ((endp x)
-         nil)
-        ((member-equal (car x) y)
-         (cons (car x) (intersection-equal (cdr x) y)))
-        (t
-         (intersection-equal (cdr x) y))))
+; Intersection-equal was added to ACL2 in Version 4.0.
 
 (defun common-factors-aaa (factors sum)
   (declare (xargs :measure (acl2-count sum)

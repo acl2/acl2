@@ -903,15 +903,7 @@
         (t
          (list 'BINARY-* (car factors) (make-product (cdr factors))))))
 
-(defun intersection-equal (x y)
-  (declare (xargs :guard (and (true-listp x)
-                              (true-listp y))))
-  (cond ((endp x)
-         nil)
-        ((member-equal (car x) y)
-         (cons (car x) (intersection-equal (cdr x) y)))
-        (t
-         (intersection-equal (cdr x) y))))
+; Intersection-equal was added to ACL2 in Version 4.0.
 
 (defun set-equal (x y)
   (declare (xargs :guard t))
