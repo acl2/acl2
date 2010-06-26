@@ -1041,6 +1041,11 @@
 (defun attachment-propertyp (sym val)
   (declare (ignore sym))
   (or (pseudo-function-symbolp val nil)
+      (and (consp val)
+           (eq (car val) :attachment-disallowed)
+           (or (stringp (cdr val))
+               (and (true-listp (cdr val)) ; msg
+                    (stringp (cadr val)))))
 
 ; We really should check in the next case val associates
 ; pseudo-function-symbolps with pseudo-function-symbolp.
