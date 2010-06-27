@@ -914,20 +914,23 @@
     :partial-theory (car nil)
     :ttag my-ttag)))
 
-; Non-executable clause-processors are illegal.
+; Non-executable clause-processors were illegal, but that is no longer the case
+; starting with v4-0 because we want to support attachments.
 
 (defun-nx trivial-cl-proc-nonexec (cl)
   (list cl))
 
-(must-fail
- (defthm correctness-of-trivial-cl-proc-nonexec
-   (implies (and (pseudo-term-listp cl)
-                 (alistp a)
-                 (ev3 (conjoin-clauses
-                       (trivial-cl-proc-nonexec cl))
-                      a))
-            (ev3 (disjoin cl) a))
-   :rule-classes :clause-processor))
+(encapsulate
+ ()
+ (local
+  (defthm correctness-of-trivial-cl-proc-nonexec
+    (implies (and (pseudo-term-listp cl)
+                  (alistp a)
+                  (ev3 (conjoin-clauses
+                        (trivial-cl-proc-nonexec cl))
+                       a))
+             (ev3 (disjoin cl) a))
+    :rule-classes :clause-processor)))
 
 (defun-nx strengthen-cl-nonexec (cl term)
 ; sad that we can't translate term first
@@ -944,11 +947,13 @@
                      `(translate ',term t t t 'top-level (w state) state))
                  (list cl)))))
 
-(must-fail ; non-executable
- (define-trusted-clause-processor
-   strengthen-cl-nonexec
-   nil
-   :ttag my-ttag))
+(encapsulate
+ ()
+ (local ; non-executable is OK starting with v4-0
+  (define-trusted-clause-processor
+    strengthen-cl-nonexec
+    nil
+    :ttag my-ttag)))
 
 ; Now verify the original (trusted) clause processor.
 
