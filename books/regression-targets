@@ -434,7 +434,7 @@
 ./coi/syntax/syntax.cert
 ./coi/termination/assuming/compiler-proof.cert
 ./coi/termination/assuming/compiler.cert
-./coi/termination/assuming/complex.cert
+# ./coi/termination/assuming/complex.cert # see Makefile in that directory
 ./coi/termination/assuming/zero.cert
 ./coi/util/clause-processor.cert
 ./coi/util/debug.cert

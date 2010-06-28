@@ -347,7 +347,6 @@ CERT_PL_CERTS := \
      coi/syntax/syntax.cert \
      coi/termination/assuming/compiler-proof.cert \
      coi/termination/assuming/compiler.cert \
-     coi/termination/assuming/complex.cert \
      coi/termination/assuming/zero.cert \
      coi/util/clause-processor.cert \
      coi/util/debug.cert \
@@ -2694,7 +2693,6 @@ CERT_PL_SOURCES := \
      coi/termination/assuming/cert.acl2  \
      coi/termination/assuming/compiler-proof.lisp  \
      coi/termination/assuming/compiler.lisp  \
-     coi/termination/assuming/complex.lisp  \
      coi/termination/assuming/zero.lisp  \
      coi/util/cert.acl2  \
      coi/util/clause-processor.lisp  \
@@ -10408,30 +10406,6 @@ coi/termination/assuming/compiler.cert : \
      coi/util/pseudo-translate.cert \
      coi/util/recursion-support.cert \
      arithmetic/top-with-meta.cert
-
-coi/termination/assuming/complex.cert : \
-     coi/termination/assuming/complex.lisp \
-     coi/termination/assuming/cert.acl2 \
-     coi/alists/alist-defpkg.lsp \
-     coi/alists/alist-defpkg.lsp \
-     coi/lists/list-exports.lsp \
-     coi/lists/list-exports.lsp \
-     coi/lists/list-defpkg.lsp \
-     coi/lists/list-defpkg.lsp \
-     coi/syntax/syn-defpkg.lsp \
-     coi/syntax/syn-defpkg.lsp \
-     coi/util/gensym-defpkg.lsp \
-     coi/util/gensym-defpkg.lsp \
-     coi/symbol-fns/symbol-fns-defpkg.lsp \
-     coi/symbol-fns/symbol-fns-defpkg.lsp \
-     coi/util/def-defpkg.lsp \
-     coi/util/def-defpkg.lsp \
-     coi/util/defun-defpkg.lsp \
-     coi/util/defun-defpkg.lsp \
-     coi/termination/assuming/compiler.cert \
-     ordinals/ordinal-definitions.cert \
-     ordinals/lexicographic-ordering.cert \
-     arithmetic-5/top.cert
 
 coi/termination/assuming/zero.cert : \
      coi/termination/assuming/zero.lisp \
