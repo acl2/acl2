@@ -748,7 +748,7 @@ sub add_deps {
     
     # If there is an .image file corresponding to this file or a
     # cert.image in this file's directory, add a dependency on the
-    # ACL2 image specified in that file.
+    # ACL2 image specified in that file and the .image file itself.
     my $imagefile = $base . ".image";
     if (! -e $imagefile) {
 	$imagefile = rel_path(dirname($base), "cert.image");
@@ -758,6 +758,7 @@ sub add_deps {
     }
 
     if ($imagefile) {
+	push(@{$deps}, canonical_path($imagefile));
 	if (open(my $im, "<", $imagefile)) {
 	    my $line = <$im>;
 	    chomp $line;

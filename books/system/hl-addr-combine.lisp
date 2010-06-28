@@ -288,6 +288,7 @@
                                   (a b)
                                   (b a)))))))
 
+
 (defund hl-addr-combine (a b)
 
 ; (hl-addr-combine a b) is a one-to-one mapping from N^2 to Z
@@ -311,38 +312,44 @@
 ; subtract a big number so that our hash results "start" from the "most
 ; negative" fixnums and count upwards.  Of course, even with this, we will need
 ; to produce bignums for some arguments.
-
-; Change from Boyer's ADDR-FOR hashing scheme.  We now use the small case even
+;
+; Change #1 from the ADDR-FOR hashing scheme.  We now use the small case even
 ; when a == 2^30-1 or b == 2^30-1.  This "fixes" a corner case that wasn't
 ; really a problem.  Specifically, previously, if a = 2^30-1 and b=0, then the
 ; large case was triggered, but produced a negative result!  This was not
 ; exactly a problem, because the resulting bit pattern could never be generated
 ; by the small case.  However, it was still ugly, and it seemed easier to fix
 ; than to argue in a separate, special case.
+;
+; Change #2.  We now just negate the answer in the small case, rather than
+; subtracting 2^60.  This might be negligibly faster.
+;
+; Change #3.  We subtract (2^59 + 2^29 - 1) from the large case result, rather
+; than 2^59.  This should result in slightly more of the available fixnum space
+; being used.
 
   (declare (xargs :guard (and (natp a)
                               (natp b))))
   (mbe :logic
        (if (and (< a (expt 2 30))
                 (< b (expt 2 30)))
-           ;; Small Case.  Always produces a negative result.
-           (- (+ (* a (expt 2 30)) b)
-              (expt 2 60))
-         ;; Large Case.  Always produces a positive result.
+           ;; Small Case.  Result is usually negative (but might be 0)
+           (- (+ (* a (expt 2 30)) b))
+         ;; Large Case.  Result is always greater than 0.
          (- (hl-nat-combine a b)
-            (/ (expt 2 60) 2)))
+            (+ (expt 2 59) (expt 2 29) -1)))
        :exec
        (if (and (< a 1073741824)
                 (< b 1073741824))
            ;; Optimized version of the small case
            (the (signed-byte 61)
-             (+ (the (signed-byte 61)
+             (- (the (signed-byte 61)
                   (logior (the (signed-byte 61)
                             (ash (the (signed-byte 31) a) 30))
-                          (the (signed-byte 31) b)))
-                (the (signed-byte 61) -1152921504606846976)))
+                          (the (signed-byte 31) b)))))
          ;; Large case.
-         (- (hl-nat-combine a b) 576460752303423488))))
+         (- (hl-nat-combine a b)
+            576460752840294399))))
 
 
 (encapsulate
@@ -356,12 +363,12 @@
 
  (local (in-theory (enable hl-addr-combine)))
 
- (local (defthm small-case-negative
+ (local (defthm small-case-non-positive
           (implies (and (< a (expt 2 30))
                         (< b (expt 2 30))
                         (natp a)
                         (natp b))
-                   (< (hl-addr-combine a b) 0))))
+                   (<= (hl-addr-combine a b) 0))))
 
  (local
   (encapsulate
@@ -407,7 +414,7 @@
                        (not (< b (expt 2 30))))
                    (natp a)
                    (natp b))
-              (<= 0 (hl-addr-combine a b)))
+              (< 0 (hl-addr-combine a b)))
      :hints(("Goal"
              :use ((:instance monotonicity-corollary-1)
                    (:instance monotonicity-corollary-2)))))))
@@ -453,7 +460,7 @@
                    (and (equal a c)
                         (equal b d))))
    :hints(("Goal"
-           :cases (;; both small case
+           :cases ( ;; both small case
                    (and (< a (expt 2 30))
                         (< b (expt 2 30))
                         (< c (expt 2 30))
@@ -464,10 +471,10 @@
                         (or (<= (expt 2 30) c)
                             (<= (expt 2 30) d)))))
           ("Subgoal 3" ;; One large, one small
-           :in-theory (disable small-case-negative
+           :in-theory (disable small-case-non-positive
                                large-case-positive)
-           :use ((:instance small-case-negative (a a) (b b))
-                 (:instance small-case-negative (a c) (b d))
+           :use ((:instance small-case-non-positive (a a) (b b))
+                 (:instance small-case-non-positive (a c) (b d))
                  (:instance large-case-positive (a a) (b b))
                  (:instance large-case-positive (a c) (b d)))))))
 

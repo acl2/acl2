@@ -11,6 +11,7 @@ bv-add.lisp
 decomp-hint.lisp
 equality.acl2
 equality.lisp
+ev-theoremp.lisp
 generalize.acl2
 generalize.lisp
 join-thms.lisp
@@ -19,6 +20,7 @@ null-fail-hints.lisp
 replace-defined-consts.acl2
 replace-defined-consts.lisp
 replace-impl.lisp
+term-patterns.lisp
 use-by-hint.lisp
 ")
  (:TITLE    "Clause processor examples")
@@ -54,6 +56,12 @@ properties of a cons tree by systematically structurally decomposing it.
 Book equality.lisp illustrates the use of clause processors to deal with
 equality reasoning.
 
+Book ev-theoremp.lisp supports reasoning about evaluators and falsifiers.
+A falsifier is a Skolem function that produces a variable assignment to 
+falsify a term's evaluation, if there is such an assignment.  Therefore,
+if a term's evaluation under its falsification is true, then it is a
+theorem, i.e. true under all assignments.
+
 Book generalize.lisp provides a generalization clause processor.
 
 Book join-thms.lisp automates the introduction of certain theorems about
@@ -72,6 +80,9 @@ defined constants (see tools/defined-const.lisp) with their definitions.
 
 Book replace-impl.lisp introduces a clause processor that replaces a hyp
 with something implied by that hyp.
+
+Book term-patterns.lisp introduces a table and algorithm for syntactically
+recognizing categories of terms that may be extended or changed by the user.
 
 Book use-by-hint introduces a computed hint to apply a particular :by hint
 as signalled by a logically meaningless hyp placed in the clause, so that a

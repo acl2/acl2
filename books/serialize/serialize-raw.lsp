@@ -20,6 +20,8 @@
 
 (in-package "SERIALIZE")
 
+#-GCL
+(progn
 ;; Jared thinks it isn't worth doing this for now.
 ;;
 ;; (eval-when #-cltl2 (compile)
@@ -975,8 +977,4 @@
   (mv (actually-read filename honsp verbosep)
       state))
 
-
-
-
-
-
+) ;; end #-GCL progn

@@ -53,12 +53,14 @@ use FindBin qw($RealBin);
 
 my $HELP_MESSAGE = "
 
- critpath.pl [OPTIONS] <top-book>
+ critpath.pl [OPTIONS] <top-book1> <top-book2> ... 
 
- This program displays the longest dependency chain leading up to a certified
- book, measured in sequential certification time.  This is the amount of time
- it would take to certify your book if you had as many parallel processors as
- could be used, each running at a fixed speed.
+ This program displays the longest dependency chain leading up to any of the
+ top-books specified, measured in sequential certification time.  This is the
+ amount of time it would take to certify your book if you had as many parallel
+ processors as could be used, each running at a fixed speed.  Additionally, by
+ default, it then displays the complete list of dependencies, sorted by
+ cumulative certification time.
 
  Steps for using this program:
 

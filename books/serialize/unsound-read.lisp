@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "SERIALIZE")
-(include-book "serialize" :ttags (:serialize))
+(include-book "serialize" :ttags :all)
 
 (defttag :unsound-read)
 
@@ -40,8 +40,5 @@
 (defmacro unsound-read (filename &key honsp verbosep)
   `(unsound-read-fn ,filename ,honsp ,verbosep))
 
-(ACL2::progn!
- (set-raw-mode t)
- (unless (eq (get-global 'ACL2::host-lisp state) :gcl)
-   (let ((f (compile-file (ACL2::extend-pathname (cbd) "unsound-read-raw.lsp" state))))
-     (ACL2::load-compiled f))))
+; (depends-on "unsound-read-raw.lsp")
+(acl2::include-raw "unsound-read-raw.lsp")

@@ -1114,11 +1114,7 @@
 (defn vars (term var-order)
   (declare (xargs :guard (and (good-to-if-p term)
                               (eqlable-listp var-order))))
-  (hopy-list-r (vars-help term var-order)))
-
-(defthm eqlable-listp-hons-copy-list-r
-  (implies (eqlable-listp x)
-           (eqlable-listp (hons-copy-list-r x))))
+  (hons-copy (vars-help term var-order)))
 
 (defthm eqlable-listp-vars
   (implies (and (good-to-if-p term)

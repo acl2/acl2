@@ -100,6 +100,7 @@ proofstyles: arithmetic-2 ordinals misc top-with-meta-cert
 concurrent-programs/bakery: misc ordinals
 concurrent-programs/german-protocol: misc
 deduction/passmore: 
+serialize: tools
 clause-processors: top-with-meta-cert make-event arithmetic-3 textbook arithmetic \
 	misc tools data-structures arithmetic-5
 quadratic-reciprocity: rtl

@@ -350,7 +350,7 @@ B*-BINDERS: List of the available directives usable in B*.~/
          (decls-and-doc (butlast rest 1))
          (body (car (last rest)))
          (decls (remove-strings decls-and-doc))
-         (doc (get-string decls-and-doc))
+         (doc (car (get-string decls-and-doc)))
          (doc-sectionp (and doc 
                             (equal (string-upcase (subseq doc 0 12))
                                    ":DOC-SECTION"))))
@@ -421,9 +421,10 @@ Pattern constructor ~x0 needs exactly one binding expression, but was given ~x1~
     (cons (list (car args) (list (car destructors) binding))
           (destructor-binding-list (cdr args) (cdr destructors) binding))))
 
-(defmacro def-patbind-macro (binder destructors)
-  (let ((len (length destructors)))
-    `(def-b*-binder ,binder
+(defmacro def-patbind-macro (binder destructors &rest rst)
+  (let ((len (length destructors))
+        (doc (get-string rst)))
+    `(def-b*-binder ,binder ,@doc
        (declare (xargs :guard
                        (destructure-guard ,binder args forms ,len)))
        (let* ((binding (car forms))
@@ -475,7 +476,23 @@ Pattern constructor ~x0 needs exactly one binding expression, but was given ~x1~
           
 
 
-(defmacro patbind-mv (args forms rest-expr)
+(def-b*-binder mv
+  " B* binder for multiple values~/
+Usage example:
+~bv[]
+ (b* (((mv a b c) (form-returning-three-values)))
+    form)
+~ev[]
+is equivalent to
+~bv[]
+ (mv-let (a b c) (form-returning-three-values)
+   form).
+~ev[]
+
+~l[B*] for background.
+
+The MV binder only makes sense as a top-level binding, but each of its
+arguments may be a recursive binding.~/~/"
   (declare (xargs :guard (destructure-guard mv args forms nil)))
   (mv-let (vars binders ignores ignorables freshvars)
     (var-ignore-list-for-patbind-mv args 0 nil nil nil nil nil)
@@ -487,7 +504,24 @@ Pattern constructor ~x0 needs exactly one binding expression, but was given ~x1~
         (b* ,binders
           (check-vars-not-free ,freshvars ,rest-expr))))))
 
-(def-patbind-macro cons (car cdr))
+(def-patbind-macro cons (car cdr)
+  "B* binder for CONS decomposition using CAR/CDR~/
+Usage:
+~bv[]
+ (b* (((cons a b) (binding-form))) (result-form))
+~ev[]
+is equivalent to
+~bv[]
+ (let* ((tmp (binding-form))
+        (a (car tmp))
+        (b (cdr tmp)))
+    (result-form))
+~ev[]
+
+~l[B*] for background.
+
+Each of the arguments to the CONS binder may be a recursive binder, and CONS
+may be nested inside other bindings.~/~/")
 
 (defun nths-binding-list (args n form)
   (if (atom args)
@@ -496,7 +530,24 @@ Pattern constructor ~x0 needs exactly one binding expression, but was given ~x1~
           (nths-binding-list (cdr args) (1+ n) form))))
 
 
-(defmacro patbind-nths (args forms rest-expr)
+(def-b*-binder nths
+  "B* binder for list decomposition using NTH~/
+Usage:
+~bv[]
+ (b* (((nths a b c) lst)) form)
+~ev[]
+is equivalent to
+~bv[]
+ (b* ((a (nth 0 lst))
+      (b (nth 1 lst))
+      (c (nth 2 lst)))
+   form).
+~ev[]
+
+~l[B*] for background.
+
+Each of the arguments to the NTHS binder may be a recursive binder, and NTHS
+may be nested inside other bindings.~/~/"
   (declare (xargs :guard (destructure-guard nths args forms nil)))
   (let* ((binding (car forms))
          (evaledp (or (atom binding) (eq (car binding) 'quote)))
@@ -513,20 +564,129 @@ Pattern constructor ~x0 needs exactly one binding expression, but was given ~x1~
 
 
 
-(defmacro patbind-list (args forms rest-expr)
+(def-b*-binder list
+  "B* binder for list decomposition using CAR/CDR~/
+Usage:
+~bv[]
+ (b* (((list a b c) lst)) form)
+~ev[]
+is equivalent to
+~bv[]
+ (b* ((a (car lst))
+      (tmp1 (cdr lst))
+      (b (car tmp1))
+      (tmp2 (cdr tmp1))
+      (c (car tmp2)))
+   form).
+~ev[]
+
+~l[B*] for background.
+
+Each of the arguments to the LIST binder may be a recursive binder, and LIST
+may be nested inside other bindings.~/~/"
   (declare (xargs :guard (destructure-guard list args forms nil)))
   (if (atom args)
       rest-expr
     `(patbind-cons (,(car args) (list . ,(cdr args))) ,forms ,rest-expr)))
 
-(defmacro patbind-list* (args forms rest-expr)
+(def-b*-binder list*
+  "B* binder for list* decomposition using CAR/CDR~/
+Usage:
+~bv[]
+ (b* (((list* a b c) lst)) form)
+~ev[]
+is equivalent to
+~bv[]
+ (b* ((a (car lst))
+      (tmp1 (cdr lst))
+      (b (car tmp1))
+      (c (cdr tmp1)))
+   form).
+~ev[]
+
+~l[B*] for background.
+
+Each of the arguments to the LIST* binder may be a recursive binder, and LIST*
+may be nested inside other bindings.~/~/"
   (declare (xargs :guard (and (consp args)
                               (destructure-guard list* args forms nil))))
   (if (atom (cdr args))
       `(patbind ,(car args) ,forms ,rest-expr)
     `(patbind-cons (,(car args) (list* . ,(cdr args))) ,forms ,rest-expr)))
 
-(defmacro patbind-er (args forms rest-expr)
+
+
+(defun assigns-for-assocs (args alist)
+  (if (atom args)
+      nil
+    (cons (if (consp (car args))
+              `(,(caar args) (cdr (assoc ,(cadar args) ,alist)))
+            (mv-let (sym ign)
+              (decode-varname-for-patbind (car args))
+              (declare (ignore ign))
+              `(,(car args) (cdr (assoc ',sym ,alist)))))
+          (assigns-for-assocs (cdr args) alist))))
+
+(def-b*-binder assocs
+  "B* binder for alist values~/
+Usage:
+~bv[]
+ (b* (((assoc (a akey) b (c 'foo)) alst)) form)
+~ev[]
+is equivalent to
+~bv[]
+ (b* ((a (cdr (assoc akey alst)))
+      (b (cdr (assoc 'b alst)))
+      (c (cdr (assoc 'foo alst))))
+   form).
+~ev[]
+
+~l[B*] for background.
+
+The arguments to the ASSOCS binder should be either single symbols or pairs
+~c[(VAR KEY)].  In the pair form, ~c[VAR] is assigned to the associated value
+of ~c[KEY] in the bound object, which should be an alist.  Note that ~c[KEY]
+does not get quoted; it may itself be some expression.  An argument consisting
+of the single symbol ~c[VAR] is equivalent to the pair ~c[(VAR 'VAR)].
+
+Each of the arguments in the ~c[VAR] position of the pair form may be a
+recursive binder, and ASSOCS may be nested inside other bindings.~/~/"
+  (mv-let (pre-bindings name rest)
+    (if (and (consp (car forms))
+             (not (eq (caar forms) 'quote)))
+        (mv `((?tmp-for-assocs ,(car forms)))
+            'tmp-for-assocs
+            `(check-vars-not-free (tmp-for-assocs)
+                            ,rest-expr))
+      (mv nil (car forms) rest-expr))
+    `(b* (,@pre-bindings
+          . ,(assigns-for-assocs args name))
+       ,rest)))
+
+
+(def-b*-binder er
+  "B* binder for error triples~/
+Usage:
+~bv[]
+ (b* (((er x) (error-triple-form))) (result-form))
+~ev[]
+is equivalent to
+~bv[]
+ (er-let* ((x (error-triple-form))) (result-form)),
+~ev[]
+which itself is approximately equivalent to
+~bv[]
+ (mv-let (erp x state)
+         (error-triple-form)
+     (if erp
+         (mv erp x state)
+       (result-form)))
+~ev[]
+
+~l[B*] for background.
+
+The ER binder only makes sense as a top-level binding, but its argument may be
+a recursive binding.~/~/"
   (declare (xargs :guard (destructure-guard er args forms 1)))
   `(mv-let (patbind-er-fresh-variable-for-erp
             patbind-er-fresh-variable-for-val
@@ -543,7 +703,18 @@ Pattern constructor ~x0 needs exactly one binding expression, but was given ~x1~
                   patbind-er-fresh-variable-for-erp)
                  ,rest-expr)))))
 
-(defmacro patbind-state-global (args forms rest-expr)
+(def-b*-binder state-global
+  "B* binder for state globals~/
+Usage:
+~bv[]
+ (b* (((state-global x) (value-form))) (result-form))
+~ev[]
+is equivalent to
+~bv[]
+ (state-global-let* ((x (value-form))) (result-form)).
+~ev[]
+
+~l[B*] for background.~/~/"
   (declare (xargs :guard
                   (and (destructure-guard
                         state-global args forms 1)
@@ -556,43 +727,106 @@ Pattern constructor ~x0 needs a single argument which is a symbol, but got ~x1~%
     ,rest-expr))
 
 
-(defmacro patbind-when (args forms rest-expr)
+(def-b*-binder when
+  "B* control flow operator~/
+Usage:
+~bv[]
+ (b* (((when (condition-form))
+        (early-form1) ... (early-formN))
+      ... rest of bindings ...)
+   (late-result-form))
+~ev[]
+is equivalent to
+~bv[]
+ (if (condition-form)
+     (progn$ (early-form1) ... (early-formN))
+   (b* (... rest of bindings ...)
+     (late-result-form)))
+~ev[]
+
+~l[B*] for background.
+
+Effectively, this provides a way to exit early from the sequence of
+computations represented by a list of B* binders.~/~/"
   (declare (xargs :guard (and (consp args) (eq (cdr args) nil))))
   `(if ,(car args)
        (progn$ . , forms)
      ,rest-expr))
 
-(defmacro patbind-if (args forms rest-expr)
+(def-b*-binder if
+  "B* control flow operator~/
+The B* binders IF and WHEN are exactly equivalent.  ~l[PATBIND-WHEN].~/~/"
   (declare (xargs :guard (and (consp args) (eq (cdr args) nil))))
   `(if ,(car args)
        (progn$ . ,forms)
      ,rest-expr))
 
-(defmacro patbind-unless (args forms rest-expr)
+(def-b*-binder unless
+  "B* control flow operator~/
+The B* binder UNLESS is exactly like WHEN, but negates the condition so that
+the early exit is taken when the condition is false.  ~l[PATBIND-WHEN].~/~/"
   (declare (xargs :guard (and (consp args) (eq (cdr args) nil))))
   `(if ,(car args)
        ,rest-expr
      (progn$ . ,forms)))
   
 (def-b*-binder run-when
+  "B* conditional execution operator~/
+Usage:
+~bv[]
+ (b* (((run-when (condition-form)) (run-form1) ... (run-formn)))
+   (result-form))
+~ev[]
+is equivalent to
+~bv[]
+ (prog2$ (and (condition-form)
+              (progn$ (run-form1) ... (run-formn)))
+         (result-form)).
+~ev[]
+
+~l[B*] for background.~/~/"
   (declare (xargs :guard (and (consp args) (eq (cdr args) nil))))
   `(prog2$ (and ,(car args)
                (progn$ . , forms))
            ,rest-expr))
 
 (def-b*-binder run-if
+  "B* conditional execution operator~/
+The B* binders RUN-IF and RUN-WHEN are exactly equivalent.
+~l[PATBIND-RUN-WHEN].~/~/"
   (declare (xargs :guard (and (consp args) (eq (cdr args) nil))))
   `(prog2$ (and ,(car args)
                 (progn$ . ,forms))
            ,rest-expr))
 
 (def-b*-binder run-unless
+  "B* control flow operator~/
+The B* binder RUN-UNLESS is exactly like RUN-WHEN, but negates the condition so
+that the extra forms are run when the condition is false.
+~l[PATBIND-RUN-WHEN].~/~/"
   (declare (Xargs :guard (and (consp args) (eq (cdr args) nil))))
   `(prog2$ (or ,(car args)
                (progn$ . ,forms))
            ,rest-expr))
 
-(defmacro patbind-the (args forms rest-expr)
+(def-b*-binder the
+  "B* type declaration operator~/
+Usage:
+~bv[]
+ (b* (((the integer x) (form))) (result-form))
+~ev[]
+is equivalent to
+~bv[]
+ (let ((x (form)))
+   (declare (type integer x))
+   (result-form))
+~ev[]
+
+~l[B*] for background.
+
+The THE binder form only makes sense on variables, though those variables may
+be prefixed with the ? or ?! operators to make them ignorable or ignored.
+However, it may be nested within other binder forms.~/~/"
   (declare (xargs :guard
                   (and (destructure-guard the args forms 2)
                        (or (translate-declaration-to-guard

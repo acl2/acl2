@@ -81,8 +81,6 @@
     `(ansfl ,(ansfl-last-list r (gentle-cdr bindings))
             ,(gentle-caar bindings))))
 
-
-
 (defmacro het* (bindings &rest r)
 
 ; [Jared]: BOZO please document this.
@@ -92,8 +90,8 @@
 ; it.
 
   `(let* ,bindings
-     ,@(gentle-butlast r 1)
-     ,(ansfl-last-list (car (gentle-last r)) bindings)))
+     ,@(butlast r 1)
+     ,(ansfl-last-list (car (last r)) bindings)))
 
 (defmacro with-fast-list (var term name form)
   `(let ((,var (hons-put-list
@@ -175,45 +173,23 @@
         (t
          (list 'hons (car x) (cons 'hons-list* (cdr x))))))
 
-(defn hons-make-list (n a e)
+(defn hons-make-list-acc (n val ac)
   ":Doc-Section Hons-and-Memoization
 
-  Honses A onto E N times.~/
-  (HONS-MAKE-LIST n a e) is the result of N times honsing A onto E.
-  Equal to (hons-append (make-list n :initial-element n) e).~/~/"
+  ~c[(HONS-MAKE-LIST-ACC n obj acc)] honses obj onto acc N times.
+  Equal to (hons-append (make-list n :initial-element n) e).~/~/~/"
 
-; [Jared]: BOZO identical to const-list-acc in gentle.lisp.  Probably this
-; function is fine, and const-list-acc should be eliminated?
-
-; [Jared]: BOZO consider renaming to hons-make-list-acc, and introducing
-; hons-make-list with arguments identical to make-list.
-
-  (mbe :logic (make-list-ac n a e)
+  (mbe :logic (make-list-ac n val ac)
        :exec (if (not (posp n))
-                 e
-               (hons-make-list (1- n) a (hons a e)))))
+                 ac
+               (hons-make-list-acc (1- n) val (hons val ac)))))
 
-
-(defn hons-take (n l)
+(defmacro hons-make-list (size &key initial-element)
   ":Doc-Section Hons-and-Memoization
+  Like ~ilc[make-list], but produces honses.~/~/~/"
 
- First n elements of l~/
+  `(hons-make-list-acc ,size ,initial-element nil))
 
- (HONS-TAKE n l) returns a honsed list of the first N elements of L.
- To always return a list of n elements, HONS-TAKE fills at the end
- with NIL, if necessary.~/~/"
-
-; [Jared]: Changed this to use hons-make-list.  The current definition agrees
-; with gentle-take, but not with take.  BOZO is there a good reason to have
-; this nil behavior?  It seems nicer to make it agree with take instead.
-
- (cond ((not (posp n))
-        nil)
-       ((atom l)
-        (hons-make-list n nil nil))
-       (t
-        (hons (car l)
-              (hons-take (1- n) (cdr l))))))
 
 
 
@@ -230,18 +206,6 @@
        :exec (cond ((atom y) nil)
                    ((hons-equal x (car y)) y)
                    (t (hons-member-equal x (cdr y))))))
-
-(defn hons-remove-equal-cons (x y)
-  "REMOVE-EQUAL using HONS-EQUAL for each equality check, produces CONSES"
-
-; [Jared]: BOZO. It would be really nice to change this to return nil in the
-; base case, so that it could be MBE equal to remove-equal, and hence we would
-; not be introducing yet another function symbol.
-
-  (cond ((atom y) y)
-        ((hons-equal x (car y))
-         (hons-remove-equal-cons x (cdr y)))
-        (t (cons (car y) (hons-remove-equal-cons x (cdr y))))))
 
 
 
@@ -343,46 +307,6 @@
   (implies (alistp fal)
            (equal (hons-sublis fal x)
                   (sublis fal x))))
-
-
-
-
-; MAKING HONSES FROM CONSES ------------------------------------------------
-
-(defn hons-copy-list-cons (x)
-
-; [Jared]: BOZO is this fluff?  Do we really need this?  It's used in make-rom,
-; so maybe it should be moved over there.
-
-  (mbe :logic x
-       :exec (cond ((atom x) x)
-                   (t (cons (hons-copy (car x))
-                            (hons-copy-list-cons (cdr x)))))))
-
-(defn hons-copy-r (x)
-
-; [Jared]: I don't understand this comment or why hons-copy-r is
-; better than hons-copy.
-
-; This is an "under the hood" remark.  If the system is built with
-; *break-honsp* non-NIL, then one will be rudely interrupted whenever
-; HONSP returns NIL.  So if you wish to copy a CONS structure into a
-; HONS structure, use HONS-COPY-R instead of HONS-COPY.
-
-  ;; r stands for recursive
-  (mbe :logic x
-       :exec (if (atom x) 
-                 x
-               (hons (hons-copy-r (car x))
-                     (hons-copy-r (cdr x))))))
-
-(defn hons-copy-list-r (x)
-  ;; r stands for recursive
-  (mbe :logic x
-       :exec (if (atom x)
-                 x
-               (hons (car x)
-                     (hons-copy-list-r (cdr x))))))
 
 
 
@@ -515,19 +439,22 @@
          (if (hons-member-equal (car l2) l1)
              l1
            (cons (car l2) l1)))
-        (t (let ((len1 (len l1))
-                 (len2 (len l2)))
-             (cond ((and (>= len2 len1)
-                         (>= len2 *magic-number-for-hashing*))
-                    (with-fast-list
-                     fl2 l2 '*hons-union*
-                     (hons-union1 l1 fl2 l2)))
-                   ((and (>= len1 len2)
-                         (>= len1 *magic-number-for-hashing*))
-                    (with-fast-list
-                     fl1 l1 '*hons-union*
-                     (hons-union1 l2 fl1 l1)))
-                   (t (hons-union2 l1 l2 l2)))))))
+        (t
+         ;; [Jared]: calling len on both lists seems inefficient; we could
+         ;; write a cdr-both style function that determines which is longer
+         (let ((len1 (len l1))
+               (len2 (len l2)))
+           (cond ((and (>= len2 len1)
+                       (>= len2 *magic-number-for-hashing*))
+                  (with-fast-list
+                   fl2 l2 '*hons-union*
+                   (hons-union1 l1 fl2 l2)))
+                 ((and (>= len1 len2)
+                       (>= len1 *magic-number-for-hashing*))
+                  (with-fast-list
+                   fl1 l1 '*hons-union*
+                   (hons-union1 l2 fl1 l1)))
+                 (t (hons-union2 l1 l2 l2)))))))
 
 (defn hons-union-list (l)
   (if (atom l)
@@ -561,6 +488,8 @@
 
 ; DEFHONST -----------------------------------------------------------------
 
+;; [Jared]: bozo new hons means defhonst changes...
+
 ;; Defhonst is like defconst.
 
 ;; The record for all defhonst values is kept in the ACL2 global
@@ -573,18 +502,23 @@
 ; It seems there are a couple of consequences of using defhonst, e.g.,
 ; persistent hons table, evisceration, etc.
 
-(defmacro update-defhonst (f r)
-  `(let ((f ,f) (r ,r))
-     (pprogn
-      (f-put-global
-       'defhonst
-       (hons (hons (cadr r)
-                   (concatenate 'string "," (symbol-name f)))
-             (if (boundp-global 'defhonst state)
-                 (get-global 'defhonst state)
-               nil))
-       state)
-      (value f))))
+
+;; [Jared]: removed this, but not sure what it was for.
+
+;; (defmacro update-defhonst (f r)
+;;   `(let ((f ,f) (r ,r))
+;;      (pprogn
+;;       (f-put-global
+;;        'defhonst
+;;        (hons (hons (cadr r)
+;;                    (concatenate 'string "," (symbol-name f)))
+;;              (if (boundp-global 'defhonst state)
+;;                  (get-global 'defhonst state)
+;;                nil))
+;;        state)
+;;       (value f))))
+
+
 
 (defmacro defhonst (name form &key (evisc 'nil eviscp) check doc)
 
@@ -593,7 +527,8 @@
   `(with-output
     :off summary
     (progn
-      (defconst ,name (hons-copy ,form) ,doc)
+      ;; [Jared]: switched to hons-copy-persistent
+      (defconst ,name (hons-copy-persistent ,form) ,doc)
       (table evisc-table
              ,name
              ,(if eviscp
@@ -602,15 +537,17 @@
                   (if (may-need-slashes str)
                       (concatenate 'string "#.|" str "|")
                     (concatenate 'string "#." str)))))
-      (table persistent-hons-table
-             (let ((x ,name))
-               (if (or (consp x) (stringp x))
 
-; honsp-check without check
+;; [Jared]: removed the table event
+;;       (table persistent-hons-table
+;;              (let ((x ,name))
+;;                (if (or (consp x) (stringp x))
 
-                   x
-                 nil))
-             t)
+;; ; honsp-check without check
+
+;;                    x
+;;                  nil))
+;;              t)
       ,@(and check
              `((assert-event ,check)))
       (value-triple ',name))))
@@ -624,38 +561,6 @@
 ; have to do with hons?  Can we move this elsewhere?
 
 
-; (mu-defn ...) is like (mutual-recursion ...), but for a list of "defn" rather
-; than "defun" calls.
-
-(defn defnp (x)
-  (and (consp x)
-       (symbolp (car x))
-       (eq (car x) 'defn)
-       (consp (cdr x))
-       (symbolp (cadr x))
-       (consp (cddr x))
-       (symbol-listp (caddr x))
-       (consp (cdddr x))
-       (true-listp (cdddr x))))
-
-(defn defn-listp (x)
-  (if (atom x)
-      (null x)
-    (and (defnp (car x))
-         (defn-listp (cdr x)))))
-
-(defun mu-defn-fn (l)
-  (declare (xargs :guard (defn-listp l)))
-  (if (atom l) nil
-    (cons `(defun
-             ,(cadr (car l))
-             ,(caddr (car l))
-             (declare (xargs :guard t))
-             ,@(cdddr (car l)))
-          (mu-defn-fn (cdr l)))))
-
-(defmacro mu-defn (&rest l)
-  `(mutual-recursion ,@(mu-defn-fn l)))
 
 
 
@@ -958,3 +863,80 @@
 ;; (defn hons-merge-sort (a h)
 ;; ; BOZO Jared thinks this is never used.
 ;;   (hons-copy (merge-sort a h)))
+
+
+
+
+;; (defn hons-take (n l)
+;;   ":Doc-Section Hons-and-Memoization
+
+;;  First n elements of l~/
+
+;;  (HONS-TAKE n l) returns a honsed list of the first N elements of L.
+;;  To always return a list of n elements, HONS-TAKE fills at the end
+;;  with NIL, if necessary.~/~/"
+
+;; ; [Jared]: Changed this to use hons-make-list.  The current definition agrees
+;; ; with gentle-take, but not with take.  BOZO is there a good reason to have
+;; ; this nil behavior?  It seems nicer to make it agree with take instead.
+
+;;  (cond ((not (posp n))
+;;         nil)
+;;        ((atom l)
+;;         (hons-make-list-acc n nil nil))
+;;        (t
+;;         (hons (car l)
+;;               (hons-take (1- n) (cdr l))))))
+
+
+;; (defn nil-list (n)
+;;   (mbe :logic (make-list n :initial-element nil)
+;;        :exec (hons-make-list-acc n nil nil)))
+
+
+
+
+;;; [Jared]: hons-copy-r and hons-copy-list-r are not needed in the new hons
+;;; system; just use hons-copy instead.
+
+;; (defn hons-copy-r (x)
+
+;; ; [Jared]: I don't understand this comment or why hons-copy-r is
+;; ; better than hons-copy.
+
+;; ; This is an "under the hood" remark.  If the system is built with
+;; ; *break-honsp* non-NIL, then one will be rudely interrupted whenever
+;; ; HONSP returns NIL.  So if you wish to copy a CONS structure into a
+;; ; HONS structure, use HONS-COPY-R instead of HONS-COPY.
+
+;;   ;; r stands for recursive
+;;   (mbe :logic x
+;;        :exec (if (atom x) 
+;;                  x
+;;                (hons (hons-copy-r (car x))
+;;                      (hons-copy-r (cdr x))))))
+
+;; (defn hons-copy-list-r (x)
+;;   ;; r stands for recursive
+;;   (mbe :logic x
+;;        :exec (if (atom x)
+;;                  x
+;;                (hons (car x)
+;;                      (hons-copy-list-r (cdr x))))))
+
+
+
+;;; [Jared]: this doesn't seem to be used
+
+;; (defn hons-remove-equal-cons (x y)
+;;   "REMOVE-EQUAL using HONS-EQUAL for each equality check, produces CONSES"
+
+;; ; [Jared]: BOZO. It would be really nice to change this to return nil in the
+;; ; base case, so that it could be MBE equal to remove-equal, and hence we would
+;; ; not be introducing yet another function symbol.
+
+;;   (cond ((atom y) y)
+;;         ((hons-equal x (car y))
+;;          (hons-remove-equal-cons x (cdr y)))
+;;         (t (cons (car y) (hons-remove-equal-cons x (cdr y))))))
+
