@@ -431,9 +431,12 @@
                 (attachment-components-pathp (cdr path))))))
 
 (defun attachment-component-p (c)
-  (and (consp c)
-       (pseudo-function-symbol-listp (car c) nil)
-       (attachment-components-pathp (cdr c))))
+  (case-match c
+    (('ATTACHMENT-COMPONENT
+      (ext-anc . ord-anc) . path)
+     (and (pseudo-function-symbol-listp ext-anc nil)
+          (pseudo-function-symbol-listp ord-anc nil)
+          (attachment-components-pathp path)))))
 
 (defun attachment-components-p (components)
   (cond ((atom components) (null components))
@@ -443,11 +446,12 @@
 (defun pseudo-attachment-recordp (x)
   (case-match x
     (('ATTACHMENT
-      (fns . g) . (components . f))
-     (and (pseudo-function-symbol-listp fns nil)
+      (g . ext-succ) . (components . pairs))
+     (and (pseudo-function-symbol-listp ext-succ nil)
           (pseudo-function-symbolp g nil)
           (attachment-components-p components)
-          (pseudo-function-symbolp f nil)))
+          (symbol-alistp pairs)
+          (r-symbol-alistp pairs)))
     (& nil)))
           
 (defun pseudo-attachment-recordsp (x)
