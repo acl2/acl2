@@ -244,6 +244,7 @@
 ./clause-processors/bv-add.cert
 ./clause-processors/decomp-hint.cert
 ./clause-processors/equality.cert
+./clause-processors/ev-theoremp.cert
 ./clause-processors/generalize.cert
 ./clause-processors/join-thms.cert
 ./clause-processors/multi-env-trick.cert
@@ -251,6 +252,7 @@
 ./clause-processors/nvalues-thms.cert
 ./clause-processors/replace-defined-consts.cert
 ./clause-processors/replace-impl.cert
+./clause-processors/term-patterns.cert
 ./clause-processors/use-by-hint.cert
 ./coi/adviser/adviser-pkg.cert
 ./coi/adviser/adviser.cert
@@ -432,6 +434,7 @@
 ./coi/syntax/syntax.cert
 ./coi/termination/assuming/compiler-proof.cert
 ./coi/termination/assuming/compiler.cert
+./coi/termination/assuming/complex.cert
 ./coi/termination/assuming/zero.cert
 ./coi/util/clause-processor.cert
 ./coi/util/debug.cert
@@ -1588,9 +1591,11 @@
 ./str/isubstrp.cert
 ./str/natstr.cert
 ./str/pad.cert
+./str/strline.cert
 ./str/strnatless.cert
 ./str/strpos.cert
 ./str/strprefixp.cert
+./str/strrpos.cert
 ./str/strsplit.cert
 ./str/substrp.cert
 ./str/top.cert
@@ -1647,6 +1652,7 @@
 ./tools/defsum.cert
 ./tools/deftuple.cert
 ./tools/flag.cert
+./tools/include-raw.cert
 ./tools/mv-nth.cert
 ./tools/pack.cert
 ./tools/pattern-match.cert

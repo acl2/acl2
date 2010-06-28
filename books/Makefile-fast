@@ -157,6 +157,7 @@ CERT_PL_CERTS := \
      clause-processors/bv-add.cert \
      clause-processors/decomp-hint.cert \
      clause-processors/equality.cert \
+     clause-processors/ev-theoremp.cert \
      clause-processors/generalize.cert \
      clause-processors/join-thms.cert \
      clause-processors/multi-env-trick.cert \
@@ -164,6 +165,7 @@ CERT_PL_CERTS := \
      clause-processors/nvalues-thms.cert \
      clause-processors/replace-defined-consts.cert \
      clause-processors/replace-impl.cert \
+     clause-processors/term-patterns.cert \
      clause-processors/use-by-hint.cert \
      coi/adviser/adviser-pkg.cert \
      coi/adviser/adviser.cert \
@@ -345,6 +347,7 @@ CERT_PL_CERTS := \
      coi/syntax/syntax.cert \
      coi/termination/assuming/compiler-proof.cert \
      coi/termination/assuming/compiler.cert \
+     coi/termination/assuming/complex.cert \
      coi/termination/assuming/zero.cert \
      coi/util/clause-processor.cert \
      coi/util/debug.cert \
@@ -1497,9 +1500,11 @@ CERT_PL_CERTS := \
      str/isubstrp.cert \
      str/natstr.cert \
      str/pad.cert \
+     str/strline.cert \
      str/strnatless.cert \
      str/strpos.cert \
      str/strprefixp.cert \
+     str/strrpos.cert \
      str/strsplit.cert \
      str/substrp.cert \
      str/top.cert \
@@ -1556,6 +1561,7 @@ CERT_PL_CERTS := \
      tools/defsum.cert \
      tools/deftuple.cert \
      tools/flag.cert \
+     tools/include-raw.cert \
      tools/mv-nth.cert \
      tools/pack.cert \
      tools/pattern-match.cert \
@@ -2437,6 +2443,7 @@ CERT_PL_SOURCES := \
      clause-processors/bv-add.lisp  \
      clause-processors/decomp-hint.lisp  \
      clause-processors/equality.lisp  \
+     clause-processors/ev-theoremp.lisp  \
      clause-processors/generalize.acl2  \
      clause-processors/generalize.lisp  \
      clause-processors/join-thms.lisp  \
@@ -2446,6 +2453,7 @@ CERT_PL_SOURCES := \
      clause-processors/replace-defined-consts.acl2  \
      clause-processors/replace-defined-consts.lisp  \
      clause-processors/replace-impl.lisp  \
+     clause-processors/term-patterns.lisp  \
      clause-processors/use-by-hint.lisp  \
      coi/adviser/adviser-defpkg.lsp  \
      coi/adviser/adviser-pkg.lisp  \
@@ -2686,6 +2694,7 @@ CERT_PL_SOURCES := \
      coi/termination/assuming/cert.acl2  \
      coi/termination/assuming/compiler-proof.lisp  \
      coi/termination/assuming/compiler.lisp  \
+     coi/termination/assuming/complex.lisp  \
      coi/termination/assuming/zero.lisp  \
      coi/util/cert.acl2  \
      coi/util/clause-processor.lisp  \
@@ -3907,6 +3916,7 @@ CERT_PL_SOURCES := \
      serialize/serialize-tests.lisp  \
      serialize/serialize.acl2  \
      serialize/serialize.lisp  \
+     serialize/unsound-read-raw.lsp  \
      serialize/unsound-read.acl2  \
      serialize/unsound-read.lisp  \
      sorting/bsort.lisp  \
@@ -3943,9 +3953,11 @@ CERT_PL_SOURCES := \
      str/natstr.lisp  \
      str/package.lsp  \
      str/pad.lisp  \
+     str/strline.lisp  \
      str/strnatless.lisp  \
      str/strpos.lisp  \
      str/strprefixp.lisp  \
+     str/strrpos.lisp  \
      str/strsplit.lisp  \
      str/substrp.lisp  \
      str/top.lisp  \
@@ -4009,6 +4021,8 @@ CERT_PL_SOURCES := \
      tools/flag-package.lsp  \
      tools/flag.acl2  \
      tools/flag.lisp  \
+     tools/include-raw.acl2  \
+     tools/include-raw.lisp  \
      tools/mv-nth.lisp  \
      tools/pack.lisp  \
      tools/pattern-match.lisp  \
@@ -5697,6 +5711,11 @@ clause-processors/equality.cert : \
      arithmetic/top.cert \
      make-event/eval.cert
 
+clause-processors/ev-theoremp.cert : \
+     clause-processors/ev-theoremp.lisp \
+     misc/untranslate-patterns.cert \
+     clause-processors/join-thms.cert
+
 clause-processors/generalize.cert : \
      clause-processors/generalize.lisp \
      clause-processors/generalize.acl2 \
@@ -5742,6 +5761,10 @@ clause-processors/replace-defined-consts.cert : \
 
 clause-processors/replace-impl.cert : \
      clause-processors/replace-impl.lisp
+
+clause-processors/term-patterns.cert : \
+     clause-processors/term-patterns.lisp \
+     tools/flag.cert
 
 clause-processors/use-by-hint.cert : \
      clause-processors/use-by-hint.lisp \
@@ -10385,6 +10408,30 @@ coi/termination/assuming/compiler.cert : \
      coi/util/pseudo-translate.cert \
      coi/util/recursion-support.cert \
      arithmetic/top-with-meta.cert
+
+coi/termination/assuming/complex.cert : \
+     coi/termination/assuming/complex.lisp \
+     coi/termination/assuming/cert.acl2 \
+     coi/alists/alist-defpkg.lsp \
+     coi/alists/alist-defpkg.lsp \
+     coi/lists/list-exports.lsp \
+     coi/lists/list-exports.lsp \
+     coi/lists/list-defpkg.lsp \
+     coi/lists/list-defpkg.lsp \
+     coi/syntax/syn-defpkg.lsp \
+     coi/syntax/syn-defpkg.lsp \
+     coi/util/gensym-defpkg.lsp \
+     coi/util/gensym-defpkg.lsp \
+     coi/symbol-fns/symbol-fns-defpkg.lsp \
+     coi/symbol-fns/symbol-fns-defpkg.lsp \
+     coi/util/def-defpkg.lsp \
+     coi/util/def-defpkg.lsp \
+     coi/util/defun-defpkg.lsp \
+     coi/util/defun-defpkg.lsp \
+     coi/termination/assuming/compiler.cert \
+     ordinals/ordinal-definitions.cert \
+     ordinals/lexicographic-ordering.cert \
+     arithmetic-5/top.cert
 
 coi/termination/assuming/zero.cert : \
      coi/termination/assuming/zero.lisp \
@@ -17794,6 +17841,7 @@ serialize/serialize.cert : \
      serialize/serialize.acl2 \
      serialize/package.lsp \
      serialize/package.lsp \
+     tools/include-raw.cert \
      serialize/serialize-raw.lsp
 
 serialize/unsound-read.cert : \
@@ -17801,7 +17849,8 @@ serialize/unsound-read.cert : \
      serialize/unsound-read.acl2 \
      serialize/package.lsp \
      serialize/package.lsp \
-     serialize/serialize.cert
+     serialize/serialize.cert \
+     serialize/unsound-read-raw.lsp
 
 sorting/bsort.cert : \
      sorting/bsort.lisp \
@@ -18041,6 +18090,15 @@ str/pad.cert : \
      str/doc.cert \
      str/arithmetic.cert
 
+str/strline.cert : \
+     str/strline.lisp \
+     str/cert.acl2 \
+     str/package.lsp \
+     str/package.lsp \
+     str/doc.cert \
+     make-event/assert.cert \
+     str/arithmetic.cert
+
 str/strnatless.cert : \
      str/strnatless.lisp \
      str/cert.acl2 \
@@ -18069,6 +18127,14 @@ str/strprefixp.cert : \
      str/doc.cert \
      unicode/prefixp.cert \
      unicode/nthcdr.cert \
+     str/arithmetic.cert
+
+str/strrpos.cert : \
+     str/strrpos.lisp \
+     str/cert.acl2 \
+     str/package.lsp \
+     str/package.lsp \
+     str/strprefixp.cert \
      str/arithmetic.cert
 
 str/strsplit.cert : \
@@ -18108,8 +18174,10 @@ str/top.cert : \
      str/istrprefixp.cert \
      str/isubstrp.cert \
      str/natstr.cert \
+     str/strline.cert \
      str/pad.cert \
      str/strpos.cert \
+     str/strrpos.cert \
      str/strprefixp.cert \
      str/strnatless.cert \
      str/strsplit.cert \
@@ -18361,6 +18429,10 @@ tools/flag.cert : \
      tools/flag.acl2 \
      tools/flag-package.lsp \
      tools/flag-package.lsp
+
+tools/include-raw.cert : \
+     tools/include-raw.lisp \
+     tools/include-raw.acl2
 
 tools/mv-nth.cert : \
      tools/mv-nth.lisp
