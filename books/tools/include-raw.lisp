@@ -27,6 +27,9 @@
  (set-raw-mode t)
 
  (defun raw-compile (name error-on-fail on-fail state)
+   #-cltl2
+   (compile-file (extend-pathname (cbd) name state))
+   #+cltl2
    (handler-case
     (compile-file (extend-pathname (cbd) name state))
     (error (condition)
@@ -41,6 +44,9 @@
    nil)
 
  (defun raw-load-uncompiled (name error-on-fail on-fail state)
+   #-cltl2
+   (load (extend-pathname (cbd) name state))
+   #+cltl2
    (handler-case
     (load (extend-pathname (cbd) name state))
     (error (condition)
@@ -57,6 +63,9 @@
  (defun raw-load (name error-on-fail on-fail state)
    (let* ((fname (extend-pathname (cbd) name state))
           (compiled-fname (compile-file-pathname fname)))
+     #-cltl2
+     (load compiled-fname)
+     #+cltl2
      (handler-case
       (load compiled-fname)
       (error (condition)
@@ -101,7 +110,9 @@ The optional keywords ~c[:on-compile-fail] and/or ~c[:on-load-fail] may be used
 to suppress the error for failed compilation or loading, respectively; their
 argument is a term which will be evaluated in lieu of producing an error.  When
 evaluating this term, the variable ~c[CONDITION] is bound to a value describing
-the failure; see Common Lisp documentation on ~c[HANDLER-CASE].
+the failure; see Common Lisp documentation on ~c[HANDLER-CASE].  (Note: for
+non-ansi-compliant Common Lisp implementations, such as GCL 2.6.*, no such
+error handling is provided.)
 
 The optional keyword ~c[:do-not-compile] may be used to suppress compilation.
 In this case, during book certification the file will just be loaded using
