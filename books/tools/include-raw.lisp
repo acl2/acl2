@@ -64,15 +64,16 @@
    (let* ((fname (extend-pathname (cbd) name state))
           (compiled-fname (compile-file-pathname fname)))
      #-cltl2
-     (load compiled-fname)
+     (load-compiled compiled-fname)
      #+cltl2
      (handler-case
-      (load compiled-fname)
+      (load-compiled compiled-fname)
       (error (condition)
-             (format t "Compiled file ~a failed to load; loading uncompiled ~a.~%Message: ~a~%"
-                     (namestring compiled-fname)
-                     fname condition)
-             (raw-load-uncompiled name error-on-fail on-fail state))))
+             (progn
+               (format t "Compiled file ~a failed to load; loading uncompiled ~a.~%Message: ~a~%"
+                       (namestring compiled-fname)
+                       fname condition)
+               (raw-load-uncompiled name error-on-fail on-fail state)))))
    nil))
 
 
@@ -152,7 +153,8 @@ using this tool and depending on compilation.~/~/"
         ;; customize what happens in each of these situations.
         (progn!
          (set-raw-mode t)
-         (unless ,do-not-compile
+         (if ,do-not-compile
+             (mv nil nil state)
            (raw-compile ,fname ,(not on-compile-fail-p)
                         ',on-compile-fail state)))
         (declare (ignore erp val))

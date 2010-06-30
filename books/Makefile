@@ -1,5 +1,5 @@
-#; ACL2 Version 3.6.1 -- A Computational Logic for Applicative Common Lisp
-#; Copyright (C) 2009  University of Texas at Austin
+#; ACL2 Version 4.0 -- A Computational Logic for Applicative Common Lisp
+#; Copyright (C) 2010  University of Texas at Austin
 
 #; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 #; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
@@ -385,6 +385,30 @@ lx64fsl-aux:
 	fi \
 	done
 
+.PHONY: lx32fsl
+lx32fsl:
+	@date ; $(TIME) $(MAKE) lx32fsl-aux ; date
+
+.PHONY: lx32fsl-aux
+lx32fsl-aux:
+	@for dir in $(DIRS1) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) lx32fsl ; \
+	cd ..) ; \
+	fi \
+	done
+	@$(MAKE) top-with-meta-lx32fsl
+	@for dir in $(DIRS2_EXCEPT_WK) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) lx32fsl ; \
+	cd ..) ; \
+	fi \
+	done
+
 # Certify all books that need certification.  If you want to get a total time
 # for certifying all books, then first do "make clean".
 .PHONY: all-plus
@@ -612,6 +636,30 @@ all-lx64fsl-aux:
 	fi \
 	done
 
+.PHONY: all-lx32fsl
+all-lx32fsl:
+	@date ; $(TIME) $(MAKE) all-lx32fsl-aux ; date
+
+.PHONY: all-lx32fsl-aux
+all-lx32fsl-aux:
+	@for dir in $(DIRS1) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) lx32fsl ; \
+	cd ..) ; \
+	fi \
+	done
+	@$(MAKE) top-with-meta-lx32fsl
+	@for dir in $(DIRS2) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) lx32fsl ; \
+	cd ..) ; \
+	fi \
+	done
+
 .PHONY: all-o
 all-o:
 	@date ; $(TIME) $(MAKE) all-o-aux ; date
@@ -680,6 +728,10 @@ top-with-meta-dx64fsl:
 .PHONY: top-with-meta-lx64fsl
 top-with-meta-lx64fsl:
 	cd arithmetic ; $(MAKE) top-with-meta.lx64fsl
+
+.PHONY: top-with-meta-lx32fsl
+top-with-meta-lx32fsl:
+	cd arithmetic ; $(MAKE) top-with-meta.lx32fsl
 
 # Clean all books, not only the "basic" ones.
 .PHONY: clean
