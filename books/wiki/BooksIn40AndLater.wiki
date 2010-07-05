@@ -1,0 +1,11 @@
+#summary Book information for Versions 4.0 and later of ACL2
+
+= Introduction =
+
+Please see the Source tab for information about changes to books.
+
+Version 4.0 of ACL2 corresponds to r544.
+
+= Details =
+
+Version 4.0 of ACL2 corresponds to svn revision r544.
