@@ -131,3 +131,5 @@
 (defmacro strnat< (x y) `(STR::strnat< ,x ,y))
 (add-macro-alias strnat< STR::strnat<)
 
+(defmacro strtok (x y) `(STR::strtok ,x ,y))
+(add-macro-alias strtok STR::strtok)
