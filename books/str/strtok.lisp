@@ -80,6 +80,23 @@
           :induct (strtok-aux x n xl delimiters curr acc))))
 
 (defund strtok (x delimiters)
+  ":Doc-Section Str
+  Tokenize a string with character delimiters~/
+
+  ~c[(strtok x delimiters)] splits the string ~c[x] into a list of substrings,
+  based on ~c[delimiters], a list of characters.  This is somewhat similar to
+  repeatedly calling the ~c[strtok] function in C.
+
+  Example:
+  ~bv[]
+    (strtok \"foo bar, baz!\" (list #\\Space #\\, #\\!))
+      -->
+    (\"foo\" \"bar\" \"baz\")
+  ~ev[]
+
+  Note that no all of the characters in ~c[delimiters] are removed, and no
+  empty strings are ever found in ~c[strtok]'s output.~/~/"
+
   (declare (xargs :guard (and (stringp x)
                               (character-listp delimiters))))
   (reverse (strtok-aux x 0 (length x) delimiters nil nil)))
