@@ -59,6 +59,38 @@
                       (the integer xl)
                       (the integer yl)))))
 
+
+(defthm strpos-fast-type
+  (or (and (integerp (strpos-fast x y n xl yl))
+           (<= 0 (strpos-fast x y n xl yl)))
+      (not (strpos-fast x y n xl yl)))
+  :rule-classes :type-prescription)
+
+(defthm strpos-fast-upper-bound-weak
+  (implies (and (<= n (length y))
+                (= yl (length y)))
+           (<= (strpos-fast x y n xl yl)
+               yl))
+  :rule-classes ((:rewrite) (:linear))
+  :hints(("Goal"
+          :in-theory (enable strpos-fast)
+          :induct (strpos-fast x y n xl yl))))
+
+(defthm strpos-fast-upper-bound-strong
+  (implies (and (stringp x)
+                (posp yl)
+                (posp xl)
+                (= xl (length x))
+                (= yl (length y)))
+           (< (strpos-fast x y n xl yl)
+              yl))
+  :rule-classes ((:rewrite) (:linear))
+  :hints(("Goal"
+          :in-theory (enable strpos-fast)
+          :induct (strpos-fast x y n xl yl))))
+
+
+
 (defund strpos (x y)
 
   ":Doc-Section Str
@@ -166,3 +198,23 @@
             (and (natp (strpos x y))
                  (<= (strpos x y) m)))
    :hints(("Goal" :in-theory (enable strpos)))))
+
+
+(defthm strpos-upper-bound-weak
+  (implies (and (force (stringp x))
+                (force (stringp y)))
+           (<= (strpos x y)
+               (len (coerce y 'list))))
+  :rule-classes ((:rewrite) (:linear))
+  :hints(("Goal" :in-theory (enable strpos))))
+
+(defthm strpos-upper-bound-strong
+  (implies (and (force (stringp x))
+                (force (stringp y))
+                (not (equal x ""))
+                (not (equal y "")))
+           (< (strpos x y)
+              (len (coerce y 'list))))
+  :rule-classes ((:rewrite) (:linear))
+  :hints(("Goal" :in-theory (enable strpos))))
+

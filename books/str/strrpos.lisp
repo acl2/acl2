@@ -59,13 +59,13 @@
                        (the integer xl)
                        (the integer yl)))))
 
-(defthm strpos-fast-type
+(defthm strrpos-fast-type
   (or (and (integerp (strrpos-fast x y n xl yl))
            (<= 0 (strrpos-fast x y n xl yl)))
       (not (strrpos-fast x y n xl yl)))
   :rule-classes :type-prescription)
 
-(defthm strpos-fast-upper-bound
+(defthm strrpos-fast-upper-bound
   (implies (force (natp n))
            (<= (strrpos-fast x y n xl yl) n))
   :rule-classes :linear
@@ -76,9 +76,10 @@
                 (equal xl (length x))
                 (equal yl (length y))
                 (natp n))
-           (equal (STRRPOS-FAST X Y n xl yl)
+           (equal (strrpos-fast x y n xl yl)
                   n))
   :hints(("Goal" :in-theory (enable strrpos-fast))))
+
 
 
 
@@ -185,10 +186,48 @@
  (defthm completeness-of-strrpos
    (implies (and (prefixp (coerce x 'list)
                           (nthcdr m (coerce y 'list)))
-                 (< m (len y))
+                 (<= m (len y))
                  (force (natp m))
                  (force (stringp x))
                  (force (stringp y)))
             (and (natp (strrpos x y))
                  (>= (strrpos x y) m)))
    :hints(("Goal" :in-theory (enable strrpos)))))
+
+
+(defthm strrpos-upper-bound-weak
+   (implies (and (force (stringp x))
+                 (force (stringp y)))
+            (<= (strrpos x y)
+                (len (coerce y 'list))))
+   :rule-classes ((:rewrite) (:linear))
+   :hints(("Goal" :in-theory (enable strrpos))))
+
+
+(encapsulate
+ ()
+ (local (defthm lemma
+          (implies (and (stringp x)
+                        (stringp y)
+                        (posp xl)
+                        (posp yl)
+                        (natp n)
+                        (<= n (length y))
+                        (= xl (length x))
+                        (= yl (length y)))
+                   (< (strrpos-fast x y n xl yl) yl))
+          :hints(("Goal"
+                  :in-theory (enable strrpos-fast)
+                  :induct (strrpos-fast x y n xl yl)))))
+
+ (defthm strrpos-upper-bound-strong
+   (implies (and (not (equal y ""))
+                 (not (equal x ""))
+                 (force (stringp x))
+                 (force (stringp y)))
+            (< (strrpos x y)
+               (len (coerce y 'list))))
+   :rule-classes ((:rewrite) (:linear))
+   :hints(("Goal" :in-theory (enable strrpos)))))
+
+
