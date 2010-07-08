@@ -14,7 +14,8 @@
 (defmacro defkun (name args body)
 
 ; The use of this macro defines a macro and function pair that allow a
-; programming style of passing keyword arguments to function calls.
+; programming style of passing keyword arguments to non-recursive function
+; calls.
 
   (mv-let (non-keyed-args keyed-args)
     (parse-keyed-arguments args)
@@ -22,9 +23,9 @@
            (args-list (append non-keyed-args keyed-args)))
       `(progn 
          (defun ,fname ,(append non-keyed-args keyed-args) 
-           ,(subst fname name body))
+           ,body)
          (defmacro ,name ,args 
-           (list (quote ,fname)  ,@args-list))
+           (list (quote ,fname) ,@args-list))
          (add-macro-alias ,name ,fname)))))
 
 #|

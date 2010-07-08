@@ -54,7 +54,7 @@ that term once (if the HONS system is present) or twice (if not.)
 
 define-keyed-function.lisp defines macro DEFKUN, which defines a 
 macro and function pair that allow a programming style of passing 
-keyword arguments to function calls.
+keyword arguments to non-recursive function calls.
 
 defevaluator-fast.lisp provides a macro much like defevaluator, but
 much faster when the number of functions to be recognized is large.
