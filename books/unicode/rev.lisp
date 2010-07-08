@@ -72,6 +72,10 @@
          (consp x))
   :hints(("Goal" :induct (len x))))
 
+(defthm rev-under-iff
+  (iff (rev x) (consp x))
+  :hints(("Goal" :induct (len x))))
+
 (defthm revappend-removal
   (equal (revappend x y)
          (append (rev x) y)))
@@ -91,3 +95,31 @@
   (equal (character-listp (rev x))
          (character-listp (list-fix x)))
   :hints(("Goal" :induct (len x))))
+
+
+(encapsulate
+ ()
+ (local (defun cdr-cdr-induction (x y)
+          (if (or (atom x)
+                  (atom y))
+              nil
+            (cdr-cdr-induction (cdr x) (cdr y)))))
+
+ (local (defthm lemma
+          (equal (equal (list a) (append y (list b)))
+                 (and (atom y)
+                      (equal a b)))))
+
+ (local (defthm lemma2
+          (implies (and (true-listp x)
+                        (true-listp y))
+                   (equal (equal (append x (list a))
+                                 (append y (list b)))
+                          (and (equal x y)
+                               (equal a b))))
+          :hints(("Goal" :induct (cdr-cdr-induction x y)))))
+
+ (defthm equal-of-rev-and-rev
+   (equal (equal (rev x) (rev y))
+          (equal (list-fix x) (list-fix y)))
+   :hints(("Goal" :induct (cdr-cdr-induction x y)))))

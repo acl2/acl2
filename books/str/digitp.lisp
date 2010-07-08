@@ -20,6 +20,7 @@
 
 (in-package "STR")
 (include-book "eqv")
+(include-book "unicode/list-fix" :dir :system)
 (local (include-book "arithmetic"))
 
 
@@ -109,6 +110,11 @@
                   (equal x y)))
   :hints(("Goal" :in-theory (enable digit-val digitp char-fix))))
 
+(defthm digit-val-of-digit-to-char
+  (implies (and (natp n)
+                (< n 10))
+           (equal (digit-val (digit-to-char n))
+                  n)))
 
 
 (defund digit-listp (x)
@@ -139,6 +145,11 @@
          (and (digitp a)
               (digit-listp x)))
   :hints(("Goal" :in-theory (enable digit-listp))))
+
+(defthm digit-listp-of-revappend
+  (implies (and (digit-listp x)
+                (digit-listp y))
+           (digit-listp (revappend x y))))
 
 (defcong charlisteqv equal (digit-listp x) 1
   :hints(("Goal" :in-theory (enable charlisteqv))))
@@ -222,6 +233,13 @@
 (verify-guards digit-list-value
                :hints(("Goal" :in-theory (enable digit-list-value))))
 
+(defthm digit-list-value-of-append
+  (equal (digit-list-value (append x (list a)))
+         (+ (* 10 (digit-list-value x))
+            (digit-val a)))
+  :hints(("Goal" :in-theory (enable digit-list-value))))
+
+
 
 (defund skip-leading-digits (x)
   (declare (xargs :guard (character-listp x)
@@ -288,6 +306,12 @@
 (defthm bound-of-len-of-take-leading-digits
   (<= (len (take-leading-digits x)) (len x))
   :rule-classes :linear
+  :hints(("Goal" :in-theory (enable take-leading-digits))))
+
+(defthm take-leading-digits-when-digit-listp
+  (implies (digit-listp x)
+           (equal (take-leading-digits x)
+                  (list-fix x)))
   :hints(("Goal" :in-theory (enable take-leading-digits))))
 
 
