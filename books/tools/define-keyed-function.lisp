@@ -22,7 +22,7 @@
            (args-list (append non-keyed-args keyed-args)))
       `(progn 
          (defun ,fname ,(append non-keyed-args keyed-args) 
-           ,(subst name fname body))
+           ,(subst fname name body))
          (defmacro ,name ,args 
            (list (quote ,fname)  ,@args-list))
          (add-macro-alias ,name ,fname)))))
