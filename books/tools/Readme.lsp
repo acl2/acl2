@@ -6,6 +6,7 @@ Readme.lsp
 bstar.lisp
 cws.lisp
 defevaluator-fast.lisp
+define-keyed-function.lisp
 defined-const.lisp
 defsum.lisp
 deftuple.lisp
@@ -30,6 +31,7 @@ with-quoted-forms.lisp
  (:AUTHOR/S
   "Sol Swords"
   "Jared Davis"
+  "David L. Rager"
   )
  (:KEYWORDS
   "macro"
@@ -49,6 +51,10 @@ their values without typing formatting strings.
 defined-const.lisp defines DEFINED-CONST, which produces a defconst
 and a theorem saying what term it represents while only evaluating
 that term once (if the HONS system is present) or twice (if not.)
+
+define-keyed-function.lisp defines macro DEFKUN, which defines a 
+macro and function pair that allow a programming style of passing 
+keyword arguments to function calls.
 
 defevaluator-fast.lisp provides a macro much like defevaluator, but
 much faster when the number of functions to be recognized is large.
@@ -88,6 +94,9 @@ deeply nested variable bindings.
  (:PERMISSION
   "{bstar,cws,defined-const,defsum,deftuple,pack,progndollar,theory-tools,types-misc}.lisp
  copyright (C) 2009 by Sol Swords <sswords@cs.utexas.edu>.
+
+{define-keyed-function}.lisp copyright (C) 2010 by David L. Rager
+<ragerdl@cs.utexas.edu>.
 
 {flag,safe-case,include-raw}.lisp copyright 2008-2010 by Centaur
 Technology
