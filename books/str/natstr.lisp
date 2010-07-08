@@ -198,6 +198,11 @@
          (nfix n))
   :hints(("Goal" :in-theory (enable natstr))))
 
+(defthm natstr-nonempty
+  (not (equal (natstr n) ""))
+  :hints(("Goal" :in-theory (enable natstr))))
+
+
 
 #|
 
