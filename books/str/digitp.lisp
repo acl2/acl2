@@ -146,13 +146,23 @@
               (digit-listp x)))
   :hints(("Goal" :in-theory (enable digit-listp))))
 
-(defthm digit-listp-of-revappend
-  (implies (and (digit-listp x)
-                (digit-listp y))
-           (digit-listp (revappend x y))))
-
 (defcong charlisteqv equal (digit-listp x) 1
   :hints(("Goal" :in-theory (enable charlisteqv))))
+
+(defthm digit-listp-of-revappend
+  (equal (digit-listp (revappend x y))
+         (and (digit-listp x)
+              (digit-listp y))))
+
+(defthm digit-listp-of-append
+  (equal (digit-listp (append x y))
+         (and (digit-listp x)
+              (digit-listp y))))
+
+(defthm digit-listp-of-nthcdr
+  (implies (digit-listp x)
+           (digit-listp (nthcdr n x))))
+
 
 
 
