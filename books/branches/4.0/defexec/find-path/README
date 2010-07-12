@@ -1,0 +1,21 @@
+These files contain an optimized version of a program that searches
+for a path in a graph.  It is the subject of 2 ACL2 workshop papers,
+one in 2000 by Matt Wilding and one in 2003 by David Greve and Matt
+Wilding, that describe using ACL2 features to build fast and
+verifiable software.
+
+A makefile creates books from two files
+
+  fpst.lisp - definition of the optimized pathfinder and proof that 
+  it is equivalent to previously distributed version
+
+  run-fpst.lisp - definitions that provide for benchmarking the
+  pathfinder
+
+This proof relies upon books developed by J Moore that are freely
+available and documented in the chapter "An Exercise in Graph Theory"
+in the book "Computer-Aided Reasoning: ACL2 Case Studies".
+
+David Greve
+Matt Wilding
+June 2003

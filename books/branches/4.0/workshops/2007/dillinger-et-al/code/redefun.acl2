@@ -1,0 +1,4 @@
+(include-book "defcode" :ttags ((defcode)))
+
+
+(ACL2::CERTIFY-BOOK "redefun" ACL2::? T :TTAGS ((DEFCODE)))

@@ -1,0 +1,9 @@
+;; IVY operation: DISPROVE
+;;
+;; Find a counterexample to "all groups are commutative".
+
+(imp (and (all x (= (f (e) x) x))
+	  (all x (= (f (g x) x) (e)))
+	  (all x (all y (all z (= (f (f x y) z) (f x (f y z)))))))
+
+     (all x (all y (= (f x y) (f y x)))))

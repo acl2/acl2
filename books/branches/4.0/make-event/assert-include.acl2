@@ -1,0 +1,3 @@
+(defun bar (x) x)
+
+(certify-book "assert-include" 1)
