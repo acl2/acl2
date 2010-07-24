@@ -1597,6 +1597,7 @@
 ./str/strprefixp.cert
 ./str/strrpos.cert
 ./str/strsplit.cert
+./str/strtok.cert
 ./str/substrp.cert
 ./str/top.cert
 ./symbolic/generic/assertions.cert
@@ -1648,6 +1649,7 @@
 ./tools/bstar.cert
 ./tools/cws.cert
 ./tools/defevaluator-fast.cert
+./tools/define-keyed-function.cert
 ./tools/defined-const.cert
 ./tools/defsum.cert
 ./tools/deftuple.cert

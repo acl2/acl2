@@ -1505,6 +1505,7 @@ CERT_PL_CERTS := \
      str/strprefixp.cert \
      str/strrpos.cert \
      str/strsplit.cert \
+     str/strtok.cert \
      str/substrp.cert \
      str/top.cert \
      symbolic/generic/assertions.cert \
@@ -1556,6 +1557,7 @@ CERT_PL_CERTS := \
      tools/bstar.cert \
      tools/cws.cert \
      tools/defevaluator-fast.cert \
+     tools/define-keyed-function.cert \
      tools/defined-const.cert \
      tools/defsum.cert \
      tools/deftuple.cert \
@@ -3957,6 +3959,7 @@ CERT_PL_SOURCES := \
      str/strprefixp.lisp  \
      str/strrpos.lisp  \
      str/strsplit.lisp  \
+     str/strtok.lisp  \
      str/substrp.lisp  \
      str/top.lisp  \
      symbolic/generic/assertions.lisp  \
@@ -4013,6 +4016,7 @@ CERT_PL_SOURCES := \
      tools/bstar.lisp  \
      tools/cws.lisp  \
      tools/defevaluator-fast.lisp  \
+     tools/define-keyed-function.lisp  \
      tools/defined-const.lisp  \
      tools/defsum.lisp  \
      tools/deftuple.lisp  \
@@ -17946,6 +17950,7 @@ str/digitp.cert : \
      str/package.lsp \
      str/package.lsp \
      str/eqv.cert \
+     unicode/list-fix.cert \
      str/arithmetic.cert
 
 str/doc.cert : \
@@ -18054,7 +18059,10 @@ str/natstr.cert : \
      str/doc.cert \
      str/digitp.cert \
      str/char-support.cert \
-     arithmetic-3/floor-mod/floor-mod.cert
+     unicode/revappend.cert \
+     arithmetic-3/floor-mod/floor-mod.cert \
+     unicode/rev.cert \
+     unicode/coerce.cert
 
 str/pad.cert : \
      str/pad.lisp \
@@ -18121,6 +18129,16 @@ str/strsplit.cert : \
      tools/mv-nth.cert \
      make-event/assert.cert
 
+str/strtok.cert : \
+     str/strtok.lisp \
+     str/cert.acl2 \
+     str/package.lsp \
+     str/package.lsp \
+     str/doc.cert \
+     make-event/assert.cert \
+     str/arithmetic.cert \
+     unicode/revappend.cert
+
 str/substrp.cert : \
      str/substrp.lisp \
      str/cert.acl2 \
@@ -18155,6 +18173,7 @@ str/top.cert : \
      str/strprefixp.cert \
      str/strnatless.cert \
      str/strsplit.cert \
+     str/strtok.cert \
      str/substrp.cert
 
 symbolic/generic/assertions.cert : \
@@ -18384,6 +18403,9 @@ tools/cws.cert : \
 
 tools/defevaluator-fast.cert : \
      tools/defevaluator-fast.lisp
+
+tools/define-keyed-function.cert : \
+     tools/define-keyed-function.lisp
 
 tools/defined-const.cert : \
      tools/defined-const.lisp
