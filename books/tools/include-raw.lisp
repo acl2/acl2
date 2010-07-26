@@ -70,7 +70,7 @@
       (load-compiled compiled-fname)
       (error (condition)
              (progn
-               (format t "Compiled file ~a failed to load; loading uncompiled ~a.~%Message: ~a~%"
+               (format t "Compiled file ~a did not load; loading uncompiled ~a.~%Message: ~a~%"
                        (namestring compiled-fname)
                        fname condition)
                (raw-load-uncompiled name error-on-fail on-fail state)))))
@@ -130,30 +130,30 @@ using this tool and depending on compilation.~/~/"
       (mv-let (erp val state)
         ;; This progn!, including the compilation of the file to be loaded,
         ;; will only happen during make-event expansion; that is, during
-        ;; certification, top-level evaluation, or uncertified inclusion (any
-        ;; other situations?)  Is this correct behavior?
-        ;;  - It is intentional that this _does_ happen during
-        ;; certification, which seems like a good time to compile files
+        ;; certification, top-level evaluation, or uncertified inclusion.
+        ;; Furthermore, we check that ACL2 is currently certifying a book and
+        ;; only perform the compilation if this is the case.  Why?
+        ;;  - Book certification seems like a good time to compile files
         ;; associated with the book being certified; in particular, hopefully
-        ;; the same book is not being certified multiple times simultaneously.
+        ;; the same book is not being certified multiple times simultaneously,
+        ;; and no other book includes the same raw file.
         ;;  - It is intentional that this does _not_ happen during
         ;; certified inclusion, because this may interfere with parallel
         ;; certification: certifications of several files may simultaneously
         ;; include the containing book and try to compile the file, stomping
         ;; over each other's output.  Furthermore, if the book is certified,
         ;; then the compiled file should already exist.
-        ;;  - In top-level evaluation/uncertified inclusion, it seems like a
-        ;; toss-up.  We prefer to perform the compilation to ensure the
-        ;; compiled file exists, so that compiled code is loaded and
-        ;; subsequent performance (in Lisps that don't compile automatically)
-        ;; is similar to that obtained by loading the certified book.  On the
-        ;; other hand, it might be argued that include-book should never cause
-        ;; a file to be written, on the grounds that it's likely an unexpected
-        ;; side-effect.  Perhaps in the future we might allow the user to
+        ;;  - In top-level evaluation/uncertified inclusion, the situation is a
+        ;; bit more nuanced; it would be nice to load a compiled version of the
+        ;; file.  However, we do not compile in these situations because
+        ;; writing to the filesystem seems likely to be an unintended
+        ;; consequence of including a book or running an "include-raw" command
+        ;; at the top level.  Perhaps in the future we might allow the user to
         ;; customize what happens in each of these situations.
         (progn!
          (set-raw-mode t)
-         (if ,do-not-compile
+         (if (or (not (f-get-global 'certify-book-info state))
+                 ,do-not-compile)
              (mv nil nil state)
            (raw-compile ,fname ,(not on-compile-fail-p)
                         ',on-compile-fail state)))
