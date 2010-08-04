@@ -5,6 +5,7 @@ Makefile
 Readme.lsp
 bstar.lisp
 cws.lisp
+defconsts.lisp
 defevaluator-fast.lisp
 define-keyed-function.lisp
 defined-const.lisp
@@ -47,6 +48,9 @@ forms.
 
 cws.lisp defines CWS, which is a shortcut for printing expressions and
 their values without typing formatting strings.
+
+defconsts.lisp defines DEFCONSTS, which is like defconst but can cope
+with functions that return multiple values.
 
 defined-const.lisp defines DEFINED-CONST, which produces a defconst
 and a theorem saying what term it represents while only evaluating
@@ -98,7 +102,7 @@ deeply nested variable bindings.
 {define-keyed-function}.lisp copyright (C) 2010 by David L. Rager
 <ragerdl@cs.utexas.edu>.
 
-{flag,safe-case,include-raw}.lisp copyright 2008-2010 by Centaur
+{defconsts,flag,safe-case,include-raw}.lisp copyright 2008-2010 by Centaur
 Technology
 
 This program is free software; you can redistribute it and/or
