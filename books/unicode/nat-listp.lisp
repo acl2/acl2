@@ -28,7 +28,8 @@
 
 (defthm nat-listp-when-not-consp
   (implies (not (consp x))
-           (nat-listp x))
+           (equal (nat-listp x)
+                  t))
   :hints(("Goal" :in-theory (enable nat-listp))))
 
 (defthm nat-listp-of-cons
