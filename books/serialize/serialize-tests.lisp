@@ -123,6 +123,8 @@
             (map-intern base (cdr strs)))
     nil))
 
+(comp t) ; at the least, need to compile nats for GCL on a Mac
+
 (defconst *test*
   (let* ((nats         (nats 0 1000))
          (negatives    (map-negate nats))
