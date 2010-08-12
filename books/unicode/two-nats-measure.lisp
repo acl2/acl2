@@ -41,3 +41,52 @@
                   (< (nfix b) (nfix d)))))
   :hints(("Goal" :in-theory (enable two-nats-measure))))
 
+
+
+(defund nat-list-measure (a)
+  (declare (xargs :guard t
+                  :verify-guards nil))
+  (if (atom a)
+      (nfix a)
+    (make-ord (len a) (+ 1 (nfix (car a)))
+              (nat-list-measure (cdr a)))))
+
+(in-theory (disable (:executable-counterpart nat-list-measure)))
+
+(defthm consp-nat-list-measure
+  (equal (consp (nat-list-measure a))
+         (consp a))
+  :hints(("Goal" :in-theory (enable nat-list-measure))))
+
+(defthm atom-caar-nat-list-measure
+  (equal (caar (nat-list-measure a))
+         (and (consp a)
+              (len a)))
+  :hints(("Goal" :in-theory (enable nat-list-measure))))
+
+(defthm o-p-of-nat-list-measure
+  (o-p (nat-list-measure a))
+  :hints(("Goal" :in-theory (enable o-p nat-list-measure))))
+
+(defthm o<-of-nat-list-measure
+  (equal (o< (nat-list-measure a)
+             (nat-list-measure b))
+         (or (< (len a) (len b))
+             (and (equal (len a) (len b))
+                  (if (consp a)
+                      (or (< (nfix (car a)) (nfix (car b)))
+                          (and (equal (nfix (car a)) (nfix (car b)))
+                               (o< (nat-list-measure (cdr a))
+                                   (nat-list-measure (cdr b)))))
+                    (< (nfix a) (nfix b))))))
+  :hints(("Goal" :in-theory (enable nat-list-measure))))
+
+(defun nat-list-< (a b)
+  (o< (nat-list-measure a) (nat-list-measure b)))
+
+(defthm nat-list-wfr
+  (and (o-p (nat-list-measure x))
+       (implies (nat-list-< x y)
+                (o< (nat-list-measure x)
+                    (nat-list-measure y))))
+  :rule-classes :well-founded-relation)
