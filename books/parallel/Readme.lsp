@@ -4,6 +4,8 @@
 Makefile
 Readme.lsp
 fibonacci.lisp
+futures-st.lisp
+futures-st-raw.lsp
 matrix-multiplication-parallel.lisp
 matrix-multiplication-serial.lisp
 matrix-multiplication-setup.lisp
@@ -12,13 +14,25 @@ stress-tests.lisp")
  (:TITLE    "Simple examples and tests of parallelism primitives")
  (:AUTHOR/S "David Rager")
  (:KEYWORDS ; non-empty list of keywords, case-insensitive
-   "parallelism" "parallel" "pand" "por" "plet" "pargs" "performance")
- (:ABSTRACT "
-These files illustrate and check the use of parallelism primitives.")
+   "parallelism" "parallel" "pand" "por" "plet" "pargs" "performance" "futures")
+ (:ABSTRACT "Generally speaking, these files illustrate and check the use of
+parallelism primitives.
+
+futures-st.lisp serves as a wrapper for the raw Lisp file for a single-threaded
+futures library.  It isn't much use except as a model for the multi-threaded
+futures library, which should be installed into the books library before the
+next ACL2 release.
+
+futures-st-raw.lsp defines the implementation for the single-threaded futures
+library.  Include futures-st.lisp to use this library.
+")
   (:PERMISSION ; author/s permission for distribution and copying:
 "parallel
 Copyright (C) 2008 University of Texas at Austin
 for files not explicitly copyrighted otherwise
+
+{futures-st}.lisp and {futures-st-raw}.lsp copyright (C) 2010 by David L. Rager
+<ragerdl@cs.utexas.edu>.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
