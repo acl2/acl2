@@ -174,9 +174,24 @@
 (defthm logand-bounds-pos
   (implies (and (integerp x) 
 		(integerp y)
-		(< 0 x))
+		(<= 0 x))
 	   (<= (logand x y) x))
-  :hints (("Goal" :in-theory (enable logand))))
+  :hints (("Goal" :in-theory (enable logand)))
+  :rule-classes ((:rewrite)
+		 (:linear)
+		 (:rewrite
+		  :corollary
+		  (implies (and (integerp x) 
+				(integerp y)
+				(<= 0 y))
+			   (<= (logand x y) y)))
+		 
+		 (:linear
+		  :corollary
+		  (implies (and (integerp x) 
+				(integerp y)
+				(<= 0 y))
+			   (<= (logand x y) y)))))
 
 (defthm logand-bounds-neg
   (implies (and (integerp x)
@@ -184,14 +199,31 @@
 		(< x 0)
 		(< y 0))
 	   (<= (logand x y) x))
-  :hints (("Goal" :in-theory (enable logand))))
+  :hints (("Goal" :in-theory (enable logand)))
+  :rule-classes ((:rewrite)
+		 (:linear)
+		 (:rewrite
+		  :corollary
+		  (implies (and (integerp x)
+				(integerp y)
+				(< x 0)
+				(< y 0))
+			   (<= (logand x y) y)))
+		 (:linear
+		  :corollary
+		  (implies (and (integerp x)
+				(integerp y)
+				(< x 0)
+				(< y 0))
+			   (<= (logand x y) y)))))
 
 (defthm |(equal (logand x y) -1)|
   (equal (equal (logand x y) -1)
 	 (and (equal x -1)
 	      (equal y -1))))
 
-;;; Do |(< 0 (logand x y))| and |(< (logand x y) (expt 2 n))|
+;;; Is there a nice rule for (< 0 (logand x y))
+;;; Do |(< (logand x y) (expt 2 n))|
 
 (defthm |(< (logand x y) 0)|
   (equal (< (logand x y) 0)
@@ -731,6 +763,36 @@ and variants
 (defthm logior-bounds-pos
   (implies (and (integerp x)
 		(integerp y)
+		(<= 0 x)
+		(<= 0 y))
+	   (<= x (logior x y)))
+  :hints (("Goal" :in-theory (e/d (logior
+				   lognot)
+				  (;lognot-logand
+				   logand-bounds-neg))
+	   :use (:instance logand-bounds-neg
+			   (X (+ -1 (- x)))
+			   (y (+ -1 (- y))))))
+  :rule-classes ((:rewrite)
+		 (:linear)
+		 (:rewrite
+		  :corollary
+		  (implies (and (integerp x)
+				(integerp y)
+				(<= 0 x)
+				(<= 0 y))
+			   (<= y (logior x y))))
+		 (:linear
+		  :corollary
+		  (implies (and (integerp x)
+				(integerp y)
+				(<= 0 x)
+				(<= 0 y))
+			   (<= y (logior x y))))))
+
+(defthm logior-bounds-neg
+  (implies (and (integerp x)
+		(integerp y)
 		(< 0 x)
 		(< 0 y))
 	   (<= x (logior x y)))
@@ -740,7 +802,23 @@ and variants
 				   logand-bounds-neg))
 	   :use (:instance logand-bounds-neg
 			   (X (+ -1 (- x)))
-			   (y (+ -1 (- y)))))))
+			   (y (+ -1 (- y))))))
+  :rule-classes ((:rewrite)
+		 (:linear)
+		 (:rewrite
+		  :corollary
+		  (implies (and (integerp x)
+				(integerp y)
+				(< x 0)
+				(< y 0))
+			   (<= y (logior x y))))
+		 (:linear
+		  :corollary
+		  (implies (and (integerp x)
+				(integerp y)
+				(< x 0)
+				(< y 0))
+			   (<= y (logior x y))))))
 
 (defthm |(equal (logior x y) 0)|
   (implies (and (integerp x)
@@ -767,12 +845,29 @@ and variants
 		  (implies (and (integerp x)
 				(integerp y)
 				(< y 0))
-			   (< (logior x y) 0)))
+			   (< (logior x y) 0)))))
+
+(defthm |(< 0 (logior x y))|
+  (implies (and (integerp x)
+		(integerp y))
+	   (equal (< 0 (logior x y))
+		  (or (and (< 0 x)
+			   (<= 0 y))
+		      (and (<= 0 x)
+			   (< 0 y)))))
+  :rule-classes ((:rewrite)
 		 (:type-prescription
 		  :corollary
 		  (implies (and (integerp x)
 				(integerp y)
 				(< 0 x)
+				(<= 0 y))
+			   (< 0 (logior x y))))
+		 (:type-prescription
+		  :corollary
+		  (implies (and (integerp x)
+				(integerp y)
+				(<= 0 x)
 				(< 0 y))
 			   (< 0 (logior x y))))))
 
@@ -1717,3 +1812,4 @@ and variants
 		    i)))
 
 (in-theory (disable lognot))
+

@@ -510,6 +510,16 @@
   (declare (ignore match))
   x)
 
+;;; Under some unusual circumstances, it is possible for terms of the
+;;; form (acl2-numberp (bubble-down x match)) to appear in a goal.  I
+;;; think |(acl2-numberp (bubble-down x match))| should be a rewrite
+;;; rule, rather than a type-prescription rule, but this is subject to
+;;; revision.
+
+(defthm |(acl2-numberp (bubble-down x match))|
+  (equal (acl2-numberp (bubble-down x match))
+	 (acl2-numberp x)))
+
 (defthm bubble-down-+-problem-finder
     (implies (equal x x)
              (equal (+ (bubble-down x match) y)
@@ -523,9 +533,32 @@
    t)
  :error nil)
 
+;;; Bubble-down-+-bubble-down used to be an abreviation rule, but this
+;;; would cause loops with a thm like the following:
+;;;
+;;; (thm (equal xxx
+;;;           (+
+;;;            (BUBBLE-DOWN
+;;;             x
+;;;             x)
+;;;            (BUBBLE-DOWN
+;;;             y
+;;;             y)
+;;;            (BUBBLE-DOWN
+;;;             z
+;;;             z)
+;;;            )))
+;;;
+;;; Bubble-down-+-bubble-down would fire during preprocessing, where rules
+;;; like bubble-down-+-match-1 would not be used.  (The above thm is a
+;;; distilliation from a much larger example sent me by J Moore.  How the
+;;; original example came about, I do not know.)  So I added a trivial
+;;; hypothesis to prevent such from happening.
+
 (defthm bubble-down-+-bubble-down
-    (equal (+ (bubble-down x match) y z)
-           (+ y (bubble-down x match) z)))
+  (implies (equal x x)
+	   (equal (+ (bubble-down x match) y z)
+		  (+ y (bubble-down x match) z))))
 
 (defthm bubble-down-+-match-1
     (implies (syntaxp (equal match y))
@@ -565,8 +598,9 @@
  :error nil)
 
 (defthm bubble-down-*-bubble-down
-    (equal (* (bubble-down x match) y z)
-           (* y (bubble-down x match) z)))
+  (implies (equal x x)
+	   (equal (* (bubble-down x match) y z)
+		  (* y (bubble-down x match) z))))
 
 (defthm bubble-down-*-match-1
     (implies (syntaxp (equal match y))
@@ -600,3 +634,4 @@
 	  (not (active-runep '(:executable-counterpart bubble-down))))
    t)
  :error nil)
+
