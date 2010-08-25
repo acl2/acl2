@@ -110,7 +110,7 @@ models/jvm/m5: top-with-meta-cert ordinals misc ihs
 # models/jvm/m5 is needed for paco/books, not paco
 paco: ihs ordinals top-with-meta-cert
 hacking: misc
-parallel: make-event
+parallel: make-event tools
 security: make-event arithmetic-3
 sorting: arithmetic-3/extra
 tools: arithmetic-5 misc
