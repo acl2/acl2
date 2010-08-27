@@ -122,6 +122,9 @@
 (defmacro strrpos (x y) `(STR::strrpos ,x ,y))
 (add-macro-alias strrpos STR::strrpos)
 
+(defmacro strsubst (x y z) `(STR::strsubst ,x ,y ,z))
+(add-macro-alias strsubst STR::strsubst)
+
 (defmacro strprefixp (x y) `(STR::strprefixp ,x ,y))
 (add-macro-alias strprefixp STR::strprefixp)
 

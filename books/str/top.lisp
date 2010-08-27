@@ -40,6 +40,7 @@
 (include-book "strprefixp")
 (include-book "strnatless")
 (include-book "strsplit")
+(include-book "strsubst")
 (include-book "strtok")
 (include-book "substrp")
 
