@@ -39,6 +39,24 @@ this file for inlining into the current book.
 
 |#
 
+;harshrc (July 1 2010)
+;helper function
+;removes a single (first) entry from the alist given the key
+(defun remove-entry-by-key (key alist)
+  (if (endp alist)
+      nil
+    (if (eq key (caar alist))
+        (cdr alist)
+      (cons (car alist)
+            (remove-entry-by-key key (cdr alist))))))
+
+(defun generate-add-include-book-dir-calls (dir-alist)
+  (if (or (endp dir-alist) t)
+      nil
+    (cons `(add-include-book-dir ,(caar dir-alist);kwd
+                                 ,(cdar dir-alist));dir
+          (generate-add-include-book-dir-calls (cdr dir-alist)))))
+          
 
 ; this is the guts of reading a book .lisp file and turning it into a progn or
 ; an encapsulate
@@ -48,7 +66,12 @@ this file for inlining into the current book.
   (let* ((ctx 'inline-book)
          (wrld0 (w state))
          (saved-acl2-defaults-table
-          (table-alist 'acl2-defaults-table wrld0)))
+          (table-alist 'acl2-defaults-table wrld0))
+         (saved-acl2-defaults-table-minus-book-dir-alist;hack 
+          (remove-entry-by-key :INCLUDE-BOOK-DIR-ALIST saved-acl2-defaults-table))
+         (saved-book-dir-alist (cdr (assoc-eq :include-book-dir-alist
+                                              saved-acl2-defaults-table)))
+         )
     (er-let*
       ((dir-value
         (cond (dir (include-book-dir-with-chk soft ctx dir))
@@ -60,19 +83,21 @@ this file for inlining into the current book.
        (er-progn
         (chk-book-name user-book-name full-book-name ctx state)
         (chk-input-object-file full-book-name ctx state)
-        (er-let*
-          ((ev-lst (read-object-file full-book-name ctx state)))
+        (er-let* ((ev-lst (read-object-file full-book-name ctx state)))
           (value `(,@ (if respect-localp '(encapsulate ()) '(progn))
-                   ,@ (if (eq :logic
-                              (cdr (assoc-eq :defun-mode saved-acl2-defaults-table)))
-                        nil
-                        '((logic))) ; put into defun-mode :logic, as include-book does 
-                   ,@ (cdr ev-lst) ; skip in-package
-                   ,@ (if respect-localp
-                        '() ; acl2-defaults-table automatically reset by encapsulate 
-                        `((table acl2-defaults-table nil
-                                 ',saved-acl2-defaults-table :clear)))
-                   (value-triple ',full-book-name)))))))))
+                      ,@ (if (eq :logic
+                                 (cdr (assoc-eq :defun-mode saved-acl2-defaults-table)))
+                             nil
+                           '((logic))) ; put into defun-mode :logic, as include-book does 
+                         ,@ (cdr ev-lst) ; skip in-package
+                            ,@ (if respect-localp
+                                   '() ; acl2-defaults-table automatically reset by encapsulate 
+                                 (cons `(table acl2-defaults-table nil
+                                               ',saved-acl2-defaults-table-minus-book-dir-alist;hack
+                                               :clear)
+                                       ;;now restore the include-book-dir-alist field
+                                       (generate-add-include-book-dir-calls saved-book-dir-alist)))
+                               (value-triple ',full-book-name)))))))))
 
 ; for inlining this book in other books (see intro)
 (defmacro compute-inline-book-value (user-book-name
@@ -121,3 +146,4 @@ this file for inlining into the current book.
                             ',dir
                             t
                             state)))
+
