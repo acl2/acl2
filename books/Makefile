@@ -55,7 +55,7 @@ DIRS1 = cowles arithmetic meta
 # We rely on DIRS3 being a subset of DIRS2 in the dependence of DIRS2 on
 # top-with-meta-cert.
 DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-5 \
-	misc models/jvm/m5 proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
+	misc models/jvm/m1 models/jvm/m5 proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
 	fix-cert finite-set-theory finite-set-theory/osets powerlists textbook \
 	defexec symbolic \
 	data-structures/memories unicode str concurrent-programs/bakery \
@@ -106,6 +106,7 @@ clause-processors: top-with-meta-cert make-event arithmetic-3 textbook arithmeti
 quadratic-reciprocity: rtl
 misc/misc2: rtl make-event coi top-with-meta-cert
 hints: make-event
+models/jvm/m1: arithmetic-3
 models/jvm/m5: top-with-meta-cert ordinals misc ihs
 # models/jvm/m5 is needed for paco/books, not paco
 paco: ihs ordinals top-with-meta-cert
