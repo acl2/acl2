@@ -18,3 +18,8 @@ clean: moved-clean
 
 moved-clean:
 	rm -f moved/*.cert
+
+# We skip all books for "make fasl" etc., i.e., for compiling
+# already-certified books, because of the unusual nature of this
+# directory.
+BOOKS_SKIP_COMP := $(BOOKS)

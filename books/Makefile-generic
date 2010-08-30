@@ -118,17 +118,28 @@ BOOKS := $(patsubst %.lisp, %, $(wildcard *.lisp))
 # and the variables below will automatically be updated accordingly.
 
 BOOKS_CERT    = $(patsubst %, %.cert,    $(BOOKS))
-BOOKS_FASL    = $(patsubst %, %.fasl,    $(BOOKS))
-BOOKS_FAS     = $(patsubst %, %.fas,     $(BOOKS))
-BOOKS_SPARCF  = $(patsubst %, %.sparcf,  $(BOOKS))
-BOOKS_UFSL    = $(patsubst %, %.ufsl,    $(BOOKS))
-BOOKS_DFSL    = $(patsubst %, %.dfsl,    $(BOOKS))
-BOOKS_D64FSL  = $(patsubst %, %.d64fsl,  $(BOOKS))
-BOOKS_DX64FSL = $(patsubst %, %.dx64fsl, $(BOOKS))
-BOOKS_LX64FSL = $(patsubst %, %.lx64fsl, $(BOOKS))
-BOOKS_LX32FSL = $(patsubst %, %.lx32fsl, $(BOOKS))
-BOOKS_X86F    = $(patsubst %, %.x86f,    $(BOOKS))
-BOOKS_O       = $(patsubst %, %.o,       $(BOOKS))
+
+# As above with BOOKS_CERT, we use '=' for all of the following so
+# that BOOKS_COMP can be redefined locally in the local Makefile, by
+# setting BOOKS_SKIP_COMP in that local Makefile.  For example, by placing
+# BOOKS_SKIP_COMP := foo bar
+# after the include of Makefile-generic, one arranges that books foo
+# and bar will NOT be compiled in other Lisps.
+
+BOOKS_SKIP_COMP := 
+BOOKS_COMP    = $(filter-out $(BOOKS_SKIP_COMP),$(BOOKS))
+BOOKS_FASL    = $(patsubst %, %.fasl,    $(BOOKS_COMP))
+BOOKS_FAS     = $(patsubst %, %.fas,     $(BOOKS_COMP))
+BOOKS_SPARCF  = $(patsubst %, %.sparcf,  $(BOOKS_COMP))
+BOOKS_UFSL    = $(patsubst %, %.ufsl,    $(BOOKS_COMP))
+BOOKS_DFSL    = $(patsubst %, %.dfsl,    $(BOOKS_COMP))
+BOOKS_D64FSL  = $(patsubst %, %.d64fsl,  $(BOOKS_COMP))
+BOOKS_DX64FSL = $(patsubst %, %.dx64fsl, $(BOOKS_COMP))
+BOOKS_LX64FSL = $(patsubst %, %.lx64fsl, $(BOOKS_COMP))
+BOOKS_LX32FSL = $(patsubst %, %.lx32fsl, $(BOOKS_COMP))
+BOOKS_X86F    = $(patsubst %, %.x86f,    $(BOOKS_COMP))
+BOOKS_O       = $(patsubst %, %.o,       $(BOOKS_COMP))
+
 BOOKS_LISP    = $(patsubst %, %.lisp,    $(BOOKS))
 BOOKS_BKCHK_OUT = $(patsubst %, %.bkchk.out, $(BOOKS))
 

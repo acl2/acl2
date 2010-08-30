@@ -9,3 +9,7 @@ include ../Makefile-generic
 # such using one host Lisp may report uncertified books when
 # certification was done with an ACL2 based on a different host Lisp.
 # This seems like a reasonably harmless state of affairs, however.
+# We do prevent failed attempts to compile for multiple Lisps, as
+# follows:
+
+BOOKS_SKIP_COMP := evalable-ld-printing
