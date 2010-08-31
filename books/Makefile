@@ -106,7 +106,7 @@ clause-processors: top-with-meta-cert make-event arithmetic-3 textbook arithmeti
 quadratic-reciprocity: rtl
 misc/misc2: rtl make-event coi top-with-meta-cert
 hints: make-event
-models/jvm/m1: arithmetic-3
+models/jvm/m1: arithmetic-3/extra
 models/jvm/m5: top-with-meta-cert ordinals misc ihs
 # models/jvm/m5 is needed for paco/books, not paco
 paco: ihs ordinals top-with-meta-cert
