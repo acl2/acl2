@@ -23,7 +23,7 @@ include $(BOOKS_DIR)/Makefile-generic
 INHIBIT = (assign inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event)))
 # We need to assign BOOKS in order to avoid attempting to certify the non-book
 # model-macro-aliases.lisp.
-BOOKS = bvecp-raw bvecp common model-defs model-eq model-macros model-raw model package-defs
+BOOKS = bvecp-raw bvecp common model-eq model-macros model-raw model package-defs
 
 model-eq.lisp bvecp.lisp: model-defs.lisp
 
