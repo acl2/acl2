@@ -636,6 +636,8 @@ CERT_PL_CERTS := \
      misc/transfinite.cert \
      misc/untranslate-patterns.cert \
      misc/wet.cert \
+     models/jvm/m1/m1-story.cert \
+     models/jvm/m1/problem-set-1-answers.cert \
      models/jvm/m5/apprentice-state.cert \
      models/jvm/m5/demo.cert \
      models/jvm/m5/idemo.cert \
@@ -675,6 +677,7 @@ CERT_PL_CERTS := \
      paco/type-set.cert \
      paco/utilities.cert \
      parallel/fibonacci.cert \
+     parallel/futures-st.cert \
      parallel/matrix-multiplication-parallel.cert \
      parallel/matrix-multiplication-serial.cert \
      parallel/matrix-multiplication-setup.cert \
@@ -1505,6 +1508,7 @@ CERT_PL_CERTS := \
      str/strprefixp.cert \
      str/strrpos.cert \
      str/strsplit.cert \
+     str/strsubst.cert \
      str/strtok.cert \
      str/substrp.cert \
      str/top.cert \
@@ -1556,6 +1560,7 @@ CERT_PL_CERTS := \
      textbook/chap6/selected-solutions.cert \
      tools/bstar.cert \
      tools/cws.cert \
+     tools/defconsts.cert \
      tools/defevaluator-fast.cert \
      tools/define-keyed-function.cert \
      tools/defined-const.cert \
@@ -3055,6 +3060,10 @@ CERT_PL_SOURCES := \
      misc/transfinite.lisp  \
      misc/untranslate-patterns.lisp  \
      misc/wet.lisp  \
+     models/jvm/m1/m1-story.acl2  \
+     models/jvm/m1/m1-story.lisp  \
+     models/jvm/m1/problem-set-1-answers.acl2  \
+     models/jvm/m1/problem-set-1-answers.lisp  \
      models/jvm/m5/apprentice-state.acl2  \
      models/jvm/m5/apprentice-state.lisp  \
      models/jvm/m5/demo.acl2  \
@@ -3117,6 +3126,7 @@ CERT_PL_SOURCES := \
      paco/utilities.acl2  \
      paco/utilities.lisp  \
      parallel/fibonacci.lisp  \
+     parallel/futures-st.lisp  \
      parallel/matrix-multiplication-parallel.lisp  \
      parallel/matrix-multiplication-serial.lisp  \
      parallel/matrix-multiplication-setup.lisp  \
@@ -3959,6 +3969,7 @@ CERT_PL_SOURCES := \
      str/strprefixp.lisp  \
      str/strrpos.lisp  \
      str/strsplit.lisp  \
+     str/strsubst.lisp  \
      str/strtok.lisp  \
      str/substrp.lisp  \
      str/top.lisp  \
@@ -4015,6 +4026,7 @@ CERT_PL_SOURCES := \
      textbook/chap6/selected-solutions.lisp  \
      tools/bstar.lisp  \
      tools/cws.lisp  \
+     tools/defconsts.lisp  \
      tools/defevaluator-fast.lisp  \
      tools/define-keyed-function.lisp  \
      tools/defined-const.lisp  \
@@ -11914,6 +11926,17 @@ misc/untranslate-patterns.cert : \
 misc/wet.cert : \
      misc/wet.lisp
 
+models/jvm/m1/m1-story.cert : \
+     models/jvm/m1/m1-story.lisp \
+     models/jvm/m1/m1-story.acl2 \
+     models/jvm/m1/problem-set-1-answers.cert \
+     models/jvm/m1/problem-set-1-answers.cert \
+     arithmetic-3/extra/top-ext.cert
+
+models/jvm/m1/problem-set-1-answers.cert : \
+     models/jvm/m1/problem-set-1-answers.lisp \
+     models/jvm/m1/problem-set-1-answers.acl2
+
 models/jvm/m5/apprentice-state.cert : \
      models/jvm/m5/apprentice-state.lisp \
      models/jvm/m5/apprentice-state.acl2 \
@@ -12142,6 +12165,10 @@ paco/utilities.cert : \
 parallel/fibonacci.cert : \
      parallel/fibonacci.lisp \
      make-event/assert.cert
+
+parallel/futures-st.cert : \
+     parallel/futures-st.lisp \
+     tools/include-raw.cert
 
 parallel/matrix-multiplication-parallel.cert : \
      parallel/matrix-multiplication-parallel.lisp \
@@ -18129,6 +18156,15 @@ str/strsplit.cert : \
      tools/mv-nth.cert \
      make-event/assert.cert
 
+str/strsubst.cert : \
+     str/strsubst.lisp \
+     str/cert.acl2 \
+     str/package.lsp \
+     str/package.lsp \
+     str/cat.cert \
+     str/strprefixp.cert \
+     str/arithmetic.cert
+
 str/strtok.cert : \
      str/strtok.lisp \
      str/cert.acl2 \
@@ -18173,6 +18209,7 @@ str/top.cert : \
      str/strprefixp.cert \
      str/strnatless.cert \
      str/strsplit.cert \
+     str/strsubst.cert \
      str/strtok.cert \
      str/substrp.cert
 
@@ -18400,6 +18437,10 @@ tools/bstar.cert : \
 tools/cws.cert : \
      tools/cws.lisp \
      tools/progndollar.cert
+
+tools/defconsts.cert : \
+     tools/defconsts.lisp \
+     tools/bstar.cert
 
 tools/defevaluator-fast.cert : \
      tools/defevaluator-fast.lisp

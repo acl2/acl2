@@ -161,6 +161,7 @@
 ./arithmetic-3/pass1/prefer-times.cert
 ./arithmetic-3/pass1/top.cert
 ./arithmetic-3/top.cert
+# arithmetic-4/ omitted (along with all its subdirectories)
 ./arithmetic-5/lib/basic-ops/arithmetic-theory.cert
 ./arithmetic-5/lib/basic-ops/banner.cert
 ./arithmetic-5/lib/basic-ops/basic.cert
@@ -725,6 +726,8 @@
 ./misc/transfinite.cert
 ./misc/untranslate-patterns.cert
 ./misc/wet.cert
+./models/jvm/m1/m1-story.cert
+./models/jvm/m1/problem-set-1-answers.cert
 ./models/jvm/m5/apprentice-state.cert
 # ./models/jvm/m5/apprentice.cert (generated only at UT)
 ./models/jvm/m5/demo.cert
@@ -766,6 +769,7 @@
 ./paco/type-set.cert
 ./paco/utilities.cert
 ./parallel/fibonacci.cert
+./parallel/futures-st.cert
 ./parallel/matrix-multiplication-parallel.cert
 ./parallel/matrix-multiplication-serial.cert
 ./parallel/matrix-multiplication-setup.cert
@@ -1597,6 +1601,7 @@
 ./str/strprefixp.cert
 ./str/strrpos.cert
 ./str/strsplit.cert
+./str/strsubst.cert
 ./str/strtok.cert
 ./str/substrp.cert
 ./str/top.cert
@@ -1648,6 +1653,7 @@
 ./textbook/chap6/selected-solutions.cert
 ./tools/bstar.cert
 ./tools/cws.cert
+./tools/defconsts.cert
 ./tools/defevaluator-fast.cert
 ./tools/define-keyed-function.cert
 ./tools/defined-const.cert
