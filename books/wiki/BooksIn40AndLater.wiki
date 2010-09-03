@@ -6,6 +6,10 @@ Please see the Source tab for information about changes to books.
 
 Version 4.0 of ACL2 corresponds to r544.
 
+Version 4.1 of ACL2 corresponds to r578.
+
 = Details =
 
 Version 4.0 of ACL2 corresponds to svn revision r544.
+
+Version 4.1 of ACL2 corresponds to svn revision r578.
