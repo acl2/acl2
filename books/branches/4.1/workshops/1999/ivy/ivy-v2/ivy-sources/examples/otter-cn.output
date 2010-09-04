@@ -1,0 +1,702 @@
+----- Otter 3.0.6, Feb 2000 -----
+The process was started by mccune on lemma.mcs.anl.gov, Mon Feb 21 15:22:22 2000
+The command was "../../otter-3.0.6/source/otter".  The process ID is 27140.
+
+set(build_proof_object_2).
+   dependent: set(build_proof_object).
+   dependent: set(order_history).
+set(hyper_res).
+clear(back_sub).
+assign(pick_given_ratio,3).
+assign(max_proofs,3).
+assign(max_weight,16).
+clear(print_kept).
+WARNING: set(order_history) flag already set.
+set(order_history).
+assign(max_mem,1500).
+op(800,yfx,->).
+
+list(usable).
+1 [] -P(x->y)| -P(x)|P(y).
+end_of_list.
+
+list(sos).
+2 [] P(x->y-> (y->z-> (x->z))).
+3 [] P(-x->x->x).
+4 [] P(x-> (-x->y)).
+end_of_list.
+
+list(passive).
+5 [] -P(a->a).
+6 [] -P(b-> (a->b)).
+7 [] -P(a->b->c-> (b->c)).
+end_of_list.
+
+======= end of input processing =======
+
+=========== start of search ===========
+
+given clause #1: (wt=12) 2 [] P(x->y-> (y->z-> (x->z))).
+
+given clause #2: (wt=7) 3 [] P(-x->x->x).
+
+given clause #3: (wt=7) 4 [] P(x-> (-x->y)).
+
+given clause #4: (wt=10) 10 [hyper,1,4.1,4.1] P(-(x-> (-x->y))->z).
+
+given clause #5: (wt=16) 8 [hyper,1,2.1,2.1] P(x->y-> (z->y)->u-> (z->x->u)).
+
+given clause #6: (wt=10) 12 [hyper,1,4.1,3.1] P(-(-x->x->x)->y).
+
+given clause #7: (wt=11) 9 [hyper,1,2.1,3.1] P(x->y-> (-x->x->y)).
+
+given clause #8: (wt=10) 24 [hyper,1,9.1,4.1] P(-x->x-> (-x->y)).
+
+given clause #9: (wt=11) 11 [hyper,1,2.1,4.1] P(-x->y->z-> (x->z)).
+
+----> UNIT CONFLICT at   0.02 sec ----> 35 [binary,34.1,5.1] $F.
+
+Length of proof is 2.  Level of proof is 2.
+
+---------------- PROOF ----------------
+
+1 [] -P(x->y)| -P(x)|P(y).
+2 [] P(x->y-> (y->z-> (x->z))).
+3 [] P(-x->x->x).
+4 [] P(x-> (-x->y)).
+5 [] -P(a->a).
+11 [hyper,1,2.1,4.1] P(-x->y->z-> (x->z)).
+34 [hyper,1,11.1,3.1] P(x->x).
+35 [binary,34.1,5.1] $F.
+
+------------ end of proof -------------
+
+
+;; BEGINNING OF PROOF OBJECT
+(
+(1 (input) (or (not (P (-> v0 v1))) (or (not (P v0)) (P v1))) (1))
+(2 (input) (P (-> (-> v0 v1) (-> (-> v1 v2) (-> v0 v2)))) (2))
+(3 (input) (P (-> (-> (- v0) v0) v0)) (3))
+(4 (input) (P (-> v0 (-> (- v0) v1))) (4))
+(5 (input) (not (P (-> (a) (a)))) (5))
+(6 (instantiate 1 ((v0 . (-> v64 v65))(v1 . (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66))))) NIL)
+(7 (instantiate 2 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(8 (resolve 6 (1) 7 ()) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(9 (instantiate 8 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> v0 v1))) (P (-> (-> v1 v2) (-> v0 v2)))) NIL)
+(10 (instantiate 9 ((v0 . v64)(v1 . (-> (- v64) v65)))) (or (not (P (-> v64 (-> (- v64) v65)))) (P (-> (-> (-> (- v64) v65) v2) (-> v64 v2)))) NIL)
+(11 (instantiate 4 ((v0 . v64)(v1 . v65))) (P (-> v64 (-> (- v64) v65))) NIL)
+(12 (resolve 10 (1) 11 ()) (P (-> (-> (-> (- v64) v65) v2) (-> v64 v2))) NIL)
+(13 (instantiate 12 ((v64 . v0)(v65 . v1))) (P (-> (-> (-> (- v0) v1) v2) (-> v0 v2))) (11))
+(14 (instantiate 1 ((v0 . (-> (-> (- v64) v65) v66))(v1 . (-> v64 v66)))) (or (not (P (-> (-> (-> (- v64) v65) v66) (-> v64 v66)))) (or (not (P (-> (-> (- v64) v65) v66))) (P (-> v64 v66)))) NIL)
+(15 (instantiate 13 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> (-> (- v64) v65) v66) (-> v64 v66))) NIL)
+(16 (resolve 14 (1) 15 ()) (or (not (P (-> (-> (- v64) v65) v66))) (P (-> v64 v66))) NIL)
+(17 (instantiate 16 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> (-> (- v0) v1) v2))) (P (-> v0 v2))) NIL)
+(18 (instantiate 17 ((v0 . v64)(v1 . v64)(v2 . v64))) (or (not (P (-> (-> (- v64) v64) v64))) (P (-> v64 v64))) NIL)
+(19 (instantiate 3 ((v0 . v64))) (P (-> (-> (- v64) v64) v64)) NIL)
+(20 (resolve 18 (1) 19 ()) (P (-> v64 v64)) NIL)
+(21 (instantiate 20 ((v64 . v0))) (P (-> v0 v0)) (34))
+(22 (instantiate 21 ((v0 . (a)))) (P (-> (a) (a))) NIL)
+(23 (resolve 5 () 22 ()) false (35))
+)
+;; END OF PROOF OBJECT
+
+given clause #10: (wt=4) 34 [hyper,1,11.1,3.1] P(x->x).
+
+given clause #11: (wt=7) 37 [hyper,1,4.1,34.1] P(-(x->x)->y).
+
+given clause #12: (wt=10) 33 [hyper,1,11.1,4.1] P(x-> (-(-x->y)->z)).
+
+given clause #13: (wt=15) 13 [hyper,1,4.1,2.1] P(-(x->y-> (y->z-> (x->z)))->u).
+
+given clause #14: (wt=10) 39 [hyper,1,4.1,37.1] P(-(-(x->x)->y)->z).
+
+given clause #15: (wt=11) 29 [hyper,1,8.1,11.1] P(x-> -y-> (y-> (x->z))).
+
+given clause #16: (wt=9) 52 [hyper,1,11.1,29.1] P(x-> (y-> (-x->z))).
+
+given clause #17: (wt=13) 14 [hyper,1,4.1,10.1] P(-(-(x-> (-x->y))->z)->u).
+
+given clause #18: (wt=9) 56 [hyper,1,29.1,37.1] P(x-> (-(y->y)->z)).
+
+given clause #19: (wt=11) 32 [hyper,1,11.1,9.1] P(x-> (-(-x)-> -x->y)).
+
+given clause #20: (wt=11) 36 [hyper,1,11.1,2.1] P(x-> (y->z-> (-x->z))).
+
+given clause #21: (wt=14) 15 [hyper,1,2.1,10.1] P(x->y-> (-(z-> (-z->u))->y)).
+
+given clause #22: (wt=11) 40 [hyper,1,2.1,37.1] P(x->y-> (-(z->z)->y)).
+
+given clause #23: (wt=12) 55 [hyper,1,29.1,39.1] P(x-> (-(-(y->y)->z)->u)).
+
+given clause #24: (wt=12) 57 [hyper,1,29.1,12.1] P(x-> (-(-y->y->y)->z)).
+
+given clause #25: (wt=16) 16 [hyper,1,8.1,8.1] P(x-> (y->z)-> (u->y-> (x-> (u->z)))).
+
+given clause #26: (wt=12) 58 [hyper,1,29.1,10.1] P(x-> (-(y-> (-y->z))->u)).
+
+given clause #27: (wt=12) 61 [hyper,1,11.1,52.1] P(x-> (y-> (-(-x->z)->u))).
+
+given clause #28: (wt=12) 62 [hyper,1,9.1,52.1] P(-x->x-> (y-> (-x->z))).
+
+given clause #29: (wt=15) 17 [hyper,1,8.1,4.1] P(x->y-> (-(y->z-> (x->z))->u)).
+
+given clause #30: (wt=12) 63 [hyper,1,4.1,52.1] P(-(x-> (y-> (-x->z)))->u).
+
+given clause #31: (wt=12) 75 [hyper,1,4.1,56.1] P(-(x-> (-(y->y)->z))->u).
+
+given clause #32: (wt=13) 19 [hyper,1,4.1,12.1] P(-(-(-x->x->x)->y)->z).
+
+given clause #33: (wt=16) 18 [hyper,1,8.1,2.1] P(x->y-> (x->z->u-> (y->z->u))).
+
+given clause #34: (wt=13) 25 [hyper,1,9.1,3.1] P(-(-x->x)-> (-x->x)->x).
+
+given clause #35: (wt=13) 27 [hyper,1,4.1,24.1] P(-(-x->x-> (-x->y))->z).
+
+given clause #36: (wt=13) 38 [hyper,1,9.1,37.1] P(-(-(x->x))-> -(x->x)->y).
+
+given clause #37: (wt=14) 20 [hyper,1,2.1,12.1] P(x->y-> (-(-z->z->z)->y)).
+
+given clause #38: (wt=13) 42 [hyper,1,11.1,33.1] P(x-> (-(-(-x->y)->z)->u)).
+
+given clause #39: (wt=13) 43 [hyper,1,9.1,33.1] P(-x->x-> (-(-x->y)->z)).
+
+given clause #40: (wt=13) 44 [hyper,1,4.1,33.1] P(-(x-> (-(-x->y)->z))->u).
+
+given clause #41: (wt=16) 21 [hyper,1,9.1,9.1] P(-(x->y)-> (x->y)-> (-x->x->y)).
+
+given clause #42: (wt=13) 46 [hyper,1,33.1,37.1] P(-(-(-(x->x)->y)->z)->u).
+
+given clause #43: (wt=13) 64 [hyper,1,2.1,52.1] P(x-> (-y->z)->u-> (y->u)).
+
+given clause #44: (wt=12) 122 [hyper,1,64.1,4.1] P(x-> (-(y-> (-x->z))->u)).
+
+given clause #45: (wt=14) 22 [hyper,1,4.1,9.1] P(-(x->y-> (-x->x->y))->z).
+
+given clause #46: (wt=13) 76 [hyper,1,2.1,56.1] P(-(x->x)->y->z-> (u->z)).
+
+given clause #47: (wt=6) 132 [hyper,1,76.1,3.1] P(x-> (y->y)).
+
+given clause #48: (wt=9) 131 [hyper,1,76.1,21.1] P(x-> (-y->y->y)).
+
+given clause #49: (wt=15) 23 [hyper,1,2.1,9.1] P(-x->x->y->z-> (x->y->z)).
+
+given clause #50: (wt=9) 141 [hyper,1,4.1,132.1] P(-(x-> (y->y))->z).
+
+given clause #51: (wt=10) 140 [hyper,1,16.1,132.1] P(x->y-> (z-> (x->y))).
+
+given clause #52: (wt=8) 162 [hyper,1,140.1,132.1] P(x-> (y-> (z->z))).
+
+given clause #53: (wt=16) 26 [hyper,1,9.1,24.1] P(-(-x->x)-> (-x->x)-> (-x->y)).
+
+given clause #54: (wt=9) 181 [hyper,1,140.1,4.1] P(x-> (y-> (-y->z))).
+
+given clause #55: (wt=10) 142 [hyper,1,2.1,132.1] P(x->x->y-> (z->y)).
+
+given clause #56: (wt=10) 183 [hyper,1,140.1,162.1] P(x-> (y-> (z-> (u->u)))).
+
+given clause #57: (wt=14) 28 [hyper,1,2.1,24.1] P(-x->y->z-> (-x->x->z)).
+
+given clause #58: (wt=11) 129 [hyper,1,76.1,62.1] P(x-> (y-> (-(z->z)->u))).
+
+given clause #59: (wt=11) 135 [hyper,1,52.1,132.1] P(x-> (-(y-> (z->z))->u)).
+
+given clause #60: (wt=11) 154 [hyper,1,64.1,140.1] P(x-> (y-> (z-> (-x->u)))).
+
+given clause #61: (wt=14) 30 [hyper,1,4.1,11.1] P(-(-x->y->z-> (x->z))->u).
+
+given clause #62: (wt=11) 163 [hyper,1,140.1,131.1] P(x-> (y-> (-z->z->z))).
+
+given clause #63: (wt=11) 171 [hyper,1,140.1,52.1] P(x-> (y-> (z-> (-y->u)))).
+
+given clause #64: (wt=11) 190 [hyper,1,4.1,162.1] P(-(x-> (y-> (z->z)))->u).
+
+given clause #65: (wt=15) 31 [hyper,1,2.1,11.1] P(x->y->z-> (-x->u->y->z)).
+
+given clause #66: (wt=10) 249 [hyper,1,31.1,3.1] P(-(-x)->y->x->x).
+
+given clause #67: (wt=11) 192 [hyper,1,140.1,181.1] P(x-> (y-> (z-> (-z->u)))).
+
+given clause #68: (wt=12) 137 [hyper,1,33.1,132.1] P(-(-(x-> (y->y))->z)->u).
+
+given clause #69: (wt=16) 41 [hyper,1,33.1,33.1] P(-(-(x-> (-(-x->y)->z))->u)->v).
+
+given clause #70: (wt=12) 147 [hyper,1,4.1,131.1] P(-(x-> (-y->y->y))->z).
+
+given clause #71: (wt=12) 153 [hyper,1,140.1,140.1] P(x-> (y->z-> (u-> (y->z)))).
+
+given clause #72: (wt=12) 174 [hyper,1,140.1,33.1] P(x-> (y-> (-(-y->z)->u))).
+
+given clause #73: (wt=14) 45 [hyper,1,2.1,33.1] P(-(-x->y)->z->u-> (x->u)).
+
+given clause #74: (wt=12) 178 [hyper,1,140.1,24.1] P(x-> (-y->y-> (-y->z))).
+
+given clause #75: (wt=12) 191 [hyper,1,2.1,162.1] P(x-> (y->y)->z-> (u->z)).
+
+given clause #76: (wt=12) 197 [hyper,1,4.1,181.1] P(-(x-> (y-> (-y->z)))->u).
+
+given clause #77: (wt=16) 47 [hyper,1,33.1,24.1] P(-(-(-x->x-> (-x->y))->z)->u).
+
+given clause #78: (wt=12) 199 [hyper,1,140.1,142.1] P(x-> (y->y->z-> (u->z))).
+
+given clause #79: (wt=12) 202 [hyper,1,140.1,183.1] P(x-> (y-> (z-> (u-> (v->v))))).
+
+given clause #80: (wt=12) 251 [hyper,1,140.1,249.1] P(x-> (-(-y)->z->y->y)).
+
+given clause #81: (wt=16) 48 [hyper,1,33.1,12.1] P(-(-(-(-x->x->x)->y)->z)->u).
+
+given clause #82: (wt=12) 256 [hyper,1,8.1,249.1] P(x-> -(-(x->y))-> (x->y)).
+
+given clause #83: (wt=13) 87 [hyper,1,16.1,56.1] P(x-> -(y->y)-> (z-> (x->u))).
+
+given clause #84: (wt=13) 89 [hyper,1,16.1,52.1] P(x->y-> (z-> (x-> (-z->u)))).
+
+given clause #85: (wt=16) 49 [hyper,1,33.1,10.1] P(-(-(-(x-> (-x->y))->z)->u)->v).
+
+given clause #86: (wt=13) 121 [hyper,1,64.1,16.1] P(x-> (y-> -x-> (z-> (y->u)))).
+
+given clause #87: (wt=13) 123 [hyper,1,64.1,2.1] P(x-> (-x->y->z-> (u->z))).
+
+given clause #88: (wt=13) 139 [hyper,1,17.1,132.1] P(-(x->x->y-> (z->y))->u).
+
+given clause #89: (wt=16) 50 [hyper,1,33.1,39.1] P(-(-(-(-(x->x)->y)->z)->u)->v).
+
+given clause #90: (wt=13) 146 [hyper,1,16.1,131.1] P(x-> (-y->y)-> (z-> (x->y))).
+
+given clause #91: (wt=8) 308 [hyper,1,64.1,146.1] P(x-> (y-> (z->x))).
+
+given clause #92: (wt=8) 322 [hyper,1,146.1,308.1] P(x-> (y-> (z->y))).
+
+----> UNIT CONFLICT at   0.23 sec ----> 361 [binary,360.1,6.1] $F.
+
+Length of proof is 17.  Level of proof is 10.
+
+---------------- PROOF ----------------
+
+1 [] -P(x->y)| -P(x)|P(y).
+2 [] P(x->y-> (y->z-> (x->z))).
+3 [] P(-x->x->x).
+4 [] P(x-> (-x->y)).
+6 [] -P(b-> (a->b)).
+8 [hyper,1,2.1,2.1] P(x->y-> (z->y)->u-> (z->x->u)).
+9 [hyper,1,2.1,3.1] P(x->y-> (-x->x->y)).
+11 [hyper,1,2.1,4.1] P(-x->y->z-> (x->z)).
+16 [hyper,1,8.1,8.1] P(x-> (y->z)-> (u->y-> (x-> (u->z)))).
+21 [hyper,1,9.1,9.1] P(-(x->y)-> (x->y)-> (-x->x->y)).
+29 [hyper,1,8.1,11.1] P(x-> -y-> (y-> (x->z))).
+34 [hyper,1,11.1,3.1] P(x->x).
+37 [hyper,1,4.1,34.1] P(-(x->x)->y).
+52 [hyper,1,11.1,29.1] P(x-> (y-> (-x->z))).
+56 [hyper,1,29.1,37.1] P(x-> (-(y->y)->z)).
+64 [hyper,1,2.1,52.1] P(x-> (-y->z)->u-> (y->u)).
+76 [hyper,1,2.1,56.1] P(-(x->x)->y->z-> (u->z)).
+131 [hyper,1,76.1,21.1] P(x-> (-y->y->y)).
+146 [hyper,1,16.1,131.1] P(x-> (-y->y)-> (z-> (x->y))).
+308 [hyper,1,64.1,146.1] P(x-> (y-> (z->x))).
+322 [hyper,1,146.1,308.1] P(x-> (y-> (z->y))).
+360 [hyper,1,322.1,322.1] P(x-> (y->x)).
+361 [binary,360.1,6.1] $F.
+
+------------ end of proof -------------
+
+
+;; BEGINNING OF PROOF OBJECT
+(
+(1 (input) (or (not (P (-> v0 v1))) (or (not (P v0)) (P v1))) (1))
+(2 (input) (P (-> (-> v0 v1) (-> (-> v1 v2) (-> v0 v2)))) (2))
+(3 (input) (P (-> (-> (- v0) v0) v0)) (3))
+(4 (input) (P (-> v0 (-> (- v0) v1))) (4))
+(5 (input) (not (P (-> (b) (-> (a) (b))))) (6))
+(6 (instantiate 1 ((v0 . (-> v64 v65))(v1 . (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66))))) NIL)
+(7 (instantiate 2 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(8 (resolve 6 (1) 7 ()) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(9 (instantiate 8 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> v0 v1))) (P (-> (-> v1 v2) (-> v0 v2)))) NIL)
+(10 (instantiate 9 ((v0 . (-> v64 v65))(v1 . (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66))))) (P (-> (-> (-> (-> v65 v66) (-> v64 v66)) v2) (-> (-> v64 v65) v2)))) NIL)
+(11 (instantiate 2 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(12 (resolve 10 (1) 11 ()) (P (-> (-> (-> (-> v65 v66) (-> v64 v66)) v2) (-> (-> v64 v65) v2))) NIL)
+(13 (instantiate 12 ((v2 . v3)(v64 . v2)(v65 . v0)(v66 . v1))) (P (-> (-> (-> (-> v0 v1) (-> v2 v1)) v3) (-> (-> v2 v0) v3))) (8))
+(14 (instantiate 1 ((v0 . (-> v64 v65))(v1 . (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66))))) NIL)
+(15 (instantiate 2 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(16 (resolve 14 (1) 15 ()) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(17 (instantiate 16 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> v0 v1))) (P (-> (-> v1 v2) (-> v0 v2)))) NIL)
+(18 (instantiate 17 ((v0 . (-> (- v64) v64))(v1 . v64))) (or (not (P (-> (-> (- v64) v64) v64))) (P (-> (-> v64 v2) (-> (-> (- v64) v64) v2)))) NIL)
+(19 (instantiate 3 ((v0 . v64))) (P (-> (-> (- v64) v64) v64)) NIL)
+(20 (resolve 18 (1) 19 ()) (P (-> (-> v64 v2) (-> (-> (- v64) v64) v2))) NIL)
+(21 (instantiate 20 ((v2 . v1)(v64 . v0))) (P (-> (-> v0 v1) (-> (-> (- v0) v0) v1))) (9))
+(22 (instantiate 1 ((v0 . (-> v64 v65))(v1 . (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66))))) NIL)
+(23 (instantiate 2 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(24 (resolve 22 (1) 23 ()) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(25 (instantiate 24 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> v0 v1))) (P (-> (-> v1 v2) (-> v0 v2)))) NIL)
+(26 (instantiate 25 ((v0 . v64)(v1 . (-> (- v64) v65)))) (or (not (P (-> v64 (-> (- v64) v65)))) (P (-> (-> (-> (- v64) v65) v2) (-> v64 v2)))) NIL)
+(27 (instantiate 4 ((v0 . v64)(v1 . v65))) (P (-> v64 (-> (- v64) v65))) NIL)
+(28 (resolve 26 (1) 27 ()) (P (-> (-> (-> (- v64) v65) v2) (-> v64 v2))) NIL)
+(29 (instantiate 28 ((v64 . v0)(v65 . v1))) (P (-> (-> (-> (- v0) v1) v2) (-> v0 v2))) (11))
+(30 (instantiate 1 ((v0 . (-> (-> (-> v64 v65) (-> v66 v65)) v67))(v1 . (-> (-> v66 v64) v67)))) (or (not (P (-> (-> (-> (-> v64 v65) (-> v66 v65)) v67) (-> (-> v66 v64) v67)))) (or (not (P (-> (-> (-> v64 v65) (-> v66 v65)) v67))) (P (-> (-> v66 v64) v67)))) NIL)
+(31 (instantiate 13 ((v0 . v64)(v1 . v65)(v2 . v66)(v3 . v67))) (P (-> (-> (-> (-> v64 v65) (-> v66 v65)) v67) (-> (-> v66 v64) v67))) NIL)
+(32 (resolve 30 (1) 31 ()) (or (not (P (-> (-> (-> v64 v65) (-> v66 v65)) v67))) (P (-> (-> v66 v64) v67))) NIL)
+(33 (instantiate 32 ((v64 . v0)(v65 . v1)(v66 . v2)(v67 . v3))) (or (not (P (-> (-> (-> v0 v1) (-> v2 v1)) v3))) (P (-> (-> v2 v0) v3))) NIL)
+(34 (instantiate 33 ((v0 . (-> v64 v65))(v1 . (-> v66 v65))(v3 . (-> (-> v66 v64) (-> v2 (-> v66 v65)))))) (or (not (P (-> (-> (-> (-> v64 v65) (-> v66 v65)) (-> v2 (-> v66 v65))) (-> (-> v66 v64) (-> v2 (-> v66 v65)))))) (P (-> (-> v2 (-> v64 v65)) (-> (-> v66 v64) (-> v2 (-> v66 v65)))))) NIL)
+(35 (instantiate 13 ((v0 . v64)(v1 . v65)(v2 . v66)(v3 . (-> v2 (-> v66 v65))))) (P (-> (-> (-> (-> v64 v65) (-> v66 v65)) (-> v2 (-> v66 v65))) (-> (-> v66 v64) (-> v2 (-> v66 v65))))) NIL)
+(36 (resolve 34 (1) 35 ()) (P (-> (-> v2 (-> v64 v65)) (-> (-> v66 v64) (-> v2 (-> v66 v65))))) NIL)
+(37 (instantiate 36 ((v2 . v0)(v64 . v1)(v65 . v2)(v66 . v3))) (P (-> (-> v0 (-> v1 v2)) (-> (-> v3 v1) (-> v0 (-> v3 v2))))) (16))
+(38 (instantiate 1 ((v0 . (-> v64 v65))(v1 . (-> (-> (- v64) v64) v65)))) (or (not (P (-> (-> v64 v65) (-> (-> (- v64) v64) v65)))) (or (not (P (-> v64 v65))) (P (-> (-> (- v64) v64) v65)))) NIL)
+(39 (instantiate 21 ((v0 . v64)(v1 . v65))) (P (-> (-> v64 v65) (-> (-> (- v64) v64) v65))) NIL)
+(40 (resolve 38 (1) 39 ()) (or (not (P (-> v64 v65))) (P (-> (-> (- v64) v64) v65))) NIL)
+(41 (instantiate 40 ((v64 . v0)(v65 . v1))) (or (not (P (-> v0 v1))) (P (-> (-> (- v0) v0) v1))) NIL)
+(42 (instantiate 41 ((v0 . (-> v64 v65))(v1 . (-> (-> (- v64) v64) v65)))) (or (not (P (-> (-> v64 v65) (-> (-> (- v64) v64) v65)))) (P (-> (-> (- (-> v64 v65)) (-> v64 v65)) (-> (-> (- v64) v64) v65)))) NIL)
+(43 (instantiate 21 ((v0 . v64)(v1 . v65))) (P (-> (-> v64 v65) (-> (-> (- v64) v64) v65))) NIL)
+(44 (resolve 42 (1) 43 ()) (P (-> (-> (- (-> v64 v65)) (-> v64 v65)) (-> (-> (- v64) v64) v65))) NIL)
+(45 (instantiate 44 ((v64 . v0)(v65 . v1))) (P (-> (-> (- (-> v0 v1)) (-> v0 v1)) (-> (-> (- v0) v0) v1))) (21))
+(46 (instantiate 1 ((v0 . (-> (-> (-> v64 v65) (-> v66 v65)) v67))(v1 . (-> (-> v66 v64) v67)))) (or (not (P (-> (-> (-> (-> v64 v65) (-> v66 v65)) v67) (-> (-> v66 v64) v67)))) (or (not (P (-> (-> (-> v64 v65) (-> v66 v65)) v67))) (P (-> (-> v66 v64) v67)))) NIL)
+(47 (instantiate 13 ((v0 . v64)(v1 . v65)(v2 . v66)(v3 . v67))) (P (-> (-> (-> (-> v64 v65) (-> v66 v65)) v67) (-> (-> v66 v64) v67))) NIL)
+(48 (resolve 46 (1) 47 ()) (or (not (P (-> (-> (-> v64 v65) (-> v66 v65)) v67))) (P (-> (-> v66 v64) v67))) NIL)
+(49 (instantiate 48 ((v64 . v0)(v65 . v1)(v66 . v2)(v67 . v3))) (or (not (P (-> (-> (-> v0 v1) (-> v2 v1)) v3))) (P (-> (-> v2 v0) v3))) NIL)
+(50 (instantiate 49 ((v0 . (- v64))(v1 . v65)(v3 . (-> v64 (-> v2 v65))))) (or (not (P (-> (-> (-> (- v64) v65) (-> v2 v65)) (-> v64 (-> v2 v65))))) (P (-> (-> v2 (- v64)) (-> v64 (-> v2 v65))))) NIL)
+(51 (instantiate 29 ((v0 . v64)(v1 . v65)(v2 . (-> v2 v65)))) (P (-> (-> (-> (- v64) v65) (-> v2 v65)) (-> v64 (-> v2 v65)))) NIL)
+(52 (resolve 50 (1) 51 ()) (P (-> (-> v2 (- v64)) (-> v64 (-> v2 v65)))) NIL)
+(53 (instantiate 52 ((v2 . v0)(v64 . v1)(v65 . v2))) (P (-> (-> v0 (- v1)) (-> v1 (-> v0 v2)))) (29))
+(54 (instantiate 1 ((v0 . (-> (-> (- v64) v65) v66))(v1 . (-> v64 v66)))) (or (not (P (-> (-> (-> (- v64) v65) v66) (-> v64 v66)))) (or (not (P (-> (-> (- v64) v65) v66))) (P (-> v64 v66)))) NIL)
+(55 (instantiate 29 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> (-> (- v64) v65) v66) (-> v64 v66))) NIL)
+(56 (resolve 54 (1) 55 ()) (or (not (P (-> (-> (- v64) v65) v66))) (P (-> v64 v66))) NIL)
+(57 (instantiate 56 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> (-> (- v0) v1) v2))) (P (-> v0 v2))) NIL)
+(58 (instantiate 57 ((v0 . v64)(v1 . v64)(v2 . v64))) (or (not (P (-> (-> (- v64) v64) v64))) (P (-> v64 v64))) NIL)
+(59 (instantiate 3 ((v0 . v64))) (P (-> (-> (- v64) v64) v64)) NIL)
+(60 (resolve 58 (1) 59 ()) (P (-> v64 v64)) NIL)
+(61 (instantiate 60 ((v64 . v0))) (P (-> v0 v0)) (34))
+(62 (instantiate 1 ((v0 . v64)(v1 . (-> (- v64) v65)))) (or (not (P (-> v64 (-> (- v64) v65)))) (or (not (P v64)) (P (-> (- v64) v65)))) NIL)
+(63 (instantiate 4 ((v0 . v64)(v1 . v65))) (P (-> v64 (-> (- v64) v65))) NIL)
+(64 (resolve 62 (1) 63 ()) (or (not (P v64)) (P (-> (- v64) v65))) NIL)
+(65 (instantiate 64 ((v64 . v0)(v65 . v1))) (or (not (P v0)) (P (-> (- v0) v1))) NIL)
+(66 (instantiate 65 ((v0 . (-> v64 v64)))) (or (not (P (-> v64 v64))) (P (-> (- (-> v64 v64)) v1))) NIL)
+(67 (instantiate 61 ((v0 . v64))) (P (-> v64 v64)) NIL)
+(68 (resolve 66 (1) 67 ()) (P (-> (- (-> v64 v64)) v1)) NIL)
+(69 (instantiate 68 ((v64 . v0))) (P (-> (- (-> v0 v0)) v1)) (37))
+(70 (instantiate 1 ((v0 . (-> (-> (- v64) v65) v66))(v1 . (-> v64 v66)))) (or (not (P (-> (-> (-> (- v64) v65) v66) (-> v64 v66)))) (or (not (P (-> (-> (- v64) v65) v66))) (P (-> v64 v66)))) NIL)
+(71 (instantiate 29 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> (-> (- v64) v65) v66) (-> v64 v66))) NIL)
+(72 (resolve 70 (1) 71 ()) (or (not (P (-> (-> (- v64) v65) v66))) (P (-> v64 v66))) NIL)
+(73 (instantiate 72 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> (-> (- v0) v1) v2))) (P (-> v0 v2))) NIL)
+(74 (instantiate 73 ((v1 . (- v65))(v2 . (-> v65 (-> (- v0) v66))))) (or (not (P (-> (-> (- v0) (- v65)) (-> v65 (-> (- v0) v66))))) (P (-> v0 (-> v65 (-> (- v0) v66))))) NIL)
+(75 (instantiate 53 ((v0 . (- v0))(v1 . v65)(v2 . v66))) (P (-> (-> (- v0) (- v65)) (-> v65 (-> (- v0) v66)))) NIL)
+(76 (resolve 74 (1) 75 ()) (P (-> v0 (-> v65 (-> (- v0) v66)))) NIL)
+(77 (instantiate 76 ((v65 . v1)(v66 . v2))) (P (-> v0 (-> v1 (-> (- v0) v2)))) (52))
+(78 (instantiate 1 ((v0 . (-> v64 (- v65)))(v1 . (-> v65 (-> v64 v66))))) (or (not (P (-> (-> v64 (- v65)) (-> v65 (-> v64 v66))))) (or (not (P (-> v64 (- v65)))) (P (-> v65 (-> v64 v66))))) NIL)
+(79 (instantiate 53 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 (- v65)) (-> v65 (-> v64 v66)))) NIL)
+(80 (resolve 78 (1) 79 ()) (or (not (P (-> v64 (- v65)))) (P (-> v65 (-> v64 v66)))) NIL)
+(81 (instantiate 80 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> v0 (- v1)))) (P (-> v1 (-> v0 v2)))) NIL)
+(82 (instantiate 81 ((v0 . (- (-> v64 v64))))) (or (not (P (-> (- (-> v64 v64)) (- v1)))) (P (-> v1 (-> (- (-> v64 v64)) v2)))) NIL)
+(83 (instantiate 69 ((v0 . v64)(v1 . (- v1)))) (P (-> (- (-> v64 v64)) (- v1))) NIL)
+(84 (resolve 82 (1) 83 ()) (P (-> v1 (-> (- (-> v64 v64)) v2))) NIL)
+(85 (instantiate 84 ((v1 . v0)(v64 . v1))) (P (-> v0 (-> (- (-> v1 v1)) v2))) (56))
+(86 (instantiate 1 ((v0 . (-> v64 v65))(v1 . (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66))))) NIL)
+(87 (instantiate 2 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(88 (resolve 86 (1) 87 ()) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(89 (instantiate 88 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> v0 v1))) (P (-> (-> v1 v2) (-> v0 v2)))) NIL)
+(90 (instantiate 89 ((v0 . v64)(v1 . (-> v65 (-> (- v64) v66))))) (or (not (P (-> v64 (-> v65 (-> (- v64) v66))))) (P (-> (-> (-> v65 (-> (- v64) v66)) v2) (-> v64 v2)))) NIL)
+(91 (instantiate 77 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> v64 (-> v65 (-> (- v64) v66)))) NIL)
+(92 (resolve 90 (1) 91 ()) (P (-> (-> (-> v65 (-> (- v64) v66)) v2) (-> v64 v2))) NIL)
+(93 (instantiate 92 ((v2 . v3)(v64 . v1)(v65 . v0)(v66 . v2))) (P (-> (-> (-> v0 (-> (- v1) v2)) v3) (-> v1 v3))) (64))
+(94 (instantiate 1 ((v0 . (-> v64 v65))(v1 . (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66))))) NIL)
+(95 (instantiate 2 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(96 (resolve 94 (1) 95 ()) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(97 (instantiate 96 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> v0 v1))) (P (-> (-> v1 v2) (-> v0 v2)))) NIL)
+(98 (instantiate 97 ((v0 . v64)(v1 . (-> (- (-> v65 v65)) v66)))) (or (not (P (-> v64 (-> (- (-> v65 v65)) v66)))) (P (-> (-> (-> (- (-> v65 v65)) v66) v2) (-> v64 v2)))) NIL)
+(99 (instantiate 85 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> v64 (-> (- (-> v65 v65)) v66))) NIL)
+(100 (resolve 98 (1) 99 ()) (P (-> (-> (-> (- (-> v65 v65)) v66) v2) (-> v64 v2))) NIL)
+(101 (instantiate 100 ((v64 . v3)(v65 . v0)(v66 . v1))) (P (-> (-> (-> (- (-> v0 v0)) v1) v2) (-> v3 v2))) (76))
+(102 (instantiate 1 ((v0 . (-> (-> (- (-> v64 v64)) v65) v66))(v1 . (-> v67 v66)))) (or (not (P (-> (-> (-> (- (-> v64 v64)) v65) v66) (-> v67 v66)))) (or (not (P (-> (-> (- (-> v64 v64)) v65) v66))) (P (-> v67 v66)))) NIL)
+(103 (instantiate 101 ((v0 . v64)(v1 . v65)(v2 . v66)(v3 . v67))) (P (-> (-> (-> (- (-> v64 v64)) v65) v66) (-> v67 v66))) NIL)
+(104 (resolve 102 (1) 103 ()) (or (not (P (-> (-> (- (-> v64 v64)) v65) v66))) (P (-> v67 v66))) NIL)
+(105 (instantiate 104 ((v64 . v0)(v65 . v1)(v66 . v2)(v67 . v3))) (or (not (P (-> (-> (- (-> v0 v0)) v1) v2))) (P (-> v3 v2))) NIL)
+(106 (instantiate 105 ((v0 . v65)(v1 . (-> v65 v65))(v2 . (-> (-> (- v65) v65) v65)))) (or (not (P (-> (-> (- (-> v65 v65)) (-> v65 v65)) (-> (-> (- v65) v65) v65)))) (P (-> v3 (-> (-> (- v65) v65) v65)))) NIL)
+(107 (instantiate 45 ((v0 . v65)(v1 . v65))) (P (-> (-> (- (-> v65 v65)) (-> v65 v65)) (-> (-> (- v65) v65) v65))) NIL)
+(108 (resolve 106 (1) 107 ()) (P (-> v3 (-> (-> (- v65) v65) v65))) NIL)
+(109 (instantiate 108 ((v3 . v0)(v65 . v1))) (P (-> v0 (-> (-> (- v1) v1) v1))) (131))
+(110 (instantiate 1 ((v0 . (-> v64 (-> v65 v66)))(v1 . (-> (-> v67 v65) (-> v64 (-> v67 v66)))))) (or (not (P (-> (-> v64 (-> v65 v66)) (-> (-> v67 v65) (-> v64 (-> v67 v66)))))) (or (not (P (-> v64 (-> v65 v66)))) (P (-> (-> v67 v65) (-> v64 (-> v67 v66)))))) NIL)
+(111 (instantiate 37 ((v0 . v64)(v1 . v65)(v2 . v66)(v3 . v67))) (P (-> (-> v64 (-> v65 v66)) (-> (-> v67 v65) (-> v64 (-> v67 v66))))) NIL)
+(112 (resolve 110 (1) 111 ()) (or (not (P (-> v64 (-> v65 v66)))) (P (-> (-> v67 v65) (-> v64 (-> v67 v66))))) NIL)
+(113 (instantiate 112 ((v64 . v0)(v65 . v1)(v66 . v2)(v67 . v3))) (or (not (P (-> v0 (-> v1 v2)))) (P (-> (-> v3 v1) (-> v0 (-> v3 v2))))) NIL)
+(114 (instantiate 113 ((v0 . v64)(v1 . (-> (- v65) v65))(v2 . v65))) (or (not (P (-> v64 (-> (-> (- v65) v65) v65)))) (P (-> (-> v3 (-> (- v65) v65)) (-> v64 (-> v3 v65))))) NIL)
+(115 (instantiate 109 ((v0 . v64)(v1 . v65))) (P (-> v64 (-> (-> (- v65) v65) v65))) NIL)
+(116 (resolve 114 (1) 115 ()) (P (-> (-> v3 (-> (- v65) v65)) (-> v64 (-> v3 v65)))) NIL)
+(117 (instantiate 116 ((v3 . v0)(v64 . v2)(v65 . v1))) (P (-> (-> v0 (-> (- v1) v1)) (-> v2 (-> v0 v1)))) (146))
+(118 (instantiate 1 ((v0 . (-> (-> v64 (-> (- v65) v66)) v67))(v1 . (-> v65 v67)))) (or (not (P (-> (-> (-> v64 (-> (- v65) v66)) v67) (-> v65 v67)))) (or (not (P (-> (-> v64 (-> (- v65) v66)) v67))) (P (-> v65 v67)))) NIL)
+(119 (instantiate 93 ((v0 . v64)(v1 . v65)(v2 . v66)(v3 . v67))) (P (-> (-> (-> v64 (-> (- v65) v66)) v67) (-> v65 v67))) NIL)
+(120 (resolve 118 (1) 119 ()) (or (not (P (-> (-> v64 (-> (- v65) v66)) v67))) (P (-> v65 v67))) NIL)
+(121 (instantiate 120 ((v64 . v0)(v65 . v1)(v66 . v2)(v67 . v3))) (or (not (P (-> (-> v0 (-> (- v1) v2)) v3))) (P (-> v1 v3))) NIL)
+(122 (instantiate 121 ((v0 . v64)(v1 . v65)(v2 . v65)(v3 . (-> v66 (-> v64 v65))))) (or (not (P (-> (-> v64 (-> (- v65) v65)) (-> v66 (-> v64 v65))))) (P (-> v65 (-> v66 (-> v64 v65))))) NIL)
+(123 (instantiate 117 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 (-> (- v65) v65)) (-> v66 (-> v64 v65)))) NIL)
+(124 (resolve 122 (1) 123 ()) (P (-> v65 (-> v66 (-> v64 v65)))) NIL)
+(125 (instantiate 124 ((v64 . v2)(v65 . v0)(v66 . v1))) (P (-> v0 (-> v1 (-> v2 v0)))) (308))
+(126 (instantiate 1 ((v0 . (-> v64 (-> (- v65) v65)))(v1 . (-> v66 (-> v64 v65))))) (or (not (P (-> (-> v64 (-> (- v65) v65)) (-> v66 (-> v64 v65))))) (or (not (P (-> v64 (-> (- v65) v65)))) (P (-> v66 (-> v64 v65))))) NIL)
+(127 (instantiate 117 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 (-> (- v65) v65)) (-> v66 (-> v64 v65)))) NIL)
+(128 (resolve 126 (1) 127 ()) (or (not (P (-> v64 (-> (- v65) v65)))) (P (-> v66 (-> v64 v65)))) NIL)
+(129 (instantiate 128 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> v0 (-> (- v1) v1)))) (P (-> v2 (-> v0 v1)))) NIL)
+(130 (instantiate 129 ((v0 . v64)(v1 . (-> v66 v64)))) (or (not (P (-> v64 (-> (- (-> v66 v64)) (-> v66 v64))))) (P (-> v2 (-> v64 (-> v66 v64))))) NIL)
+(131 (instantiate 125 ((v0 . v64)(v1 . (- (-> v66 v64)))(v2 . v66))) (P (-> v64 (-> (- (-> v66 v64)) (-> v66 v64)))) NIL)
+(132 (resolve 130 (1) 131 ()) (P (-> v2 (-> v64 (-> v66 v64)))) NIL)
+(133 (instantiate 132 ((v2 . v0)(v64 . v1)(v66 . v2))) (P (-> v0 (-> v1 (-> v2 v1)))) (322))
+(134 (instantiate 1 ((v0 . v64)(v1 . (-> v65 (-> v66 v65))))) (or (not (P (-> v64 (-> v65 (-> v66 v65))))) (or (not (P v64)) (P (-> v65 (-> v66 v65))))) NIL)
+(135 (instantiate 133 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> v64 (-> v65 (-> v66 v65)))) NIL)
+(136 (resolve 134 (1) 135 ()) (or (not (P v64)) (P (-> v65 (-> v66 v65)))) NIL)
+(137 (instantiate 136 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P v0)) (P (-> v1 (-> v2 v1)))) NIL)
+(138 (instantiate 137 ((v0 . (-> v64 (-> v65 (-> v66 v65)))))) (or (not (P (-> v64 (-> v65 (-> v66 v65))))) (P (-> v1 (-> v2 v1)))) NIL)
+(139 (instantiate 133 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> v64 (-> v65 (-> v66 v65)))) NIL)
+(140 (resolve 138 (1) 139 ()) (P (-> v1 (-> v2 v1))) NIL)
+(141 (instantiate 140 ((v1 . v0)(v2 . v1))) (P (-> v0 (-> v1 v0))) (360))
+(142 (instantiate 141 ((v0 . (b))(v1 . (a)))) (P (-> (b) (-> (a) (b)))) NIL)
+(143 (resolve 5 () 142 ()) false (361))
+)
+;; END OF PROOF OBJECT
+
+given clause #93: (wt=14) 51 [hyper,1,2.1,39.1] P(x->y-> (-(-(z->z)->u)->y)).
+
+given clause #94: (wt=6) 360 [hyper,1,322.1,322.1] P(x-> (y->x)).
+
+----> UNIT CONFLICT at   0.26 sec ----> 387 [binary,386.1,7.1] $F.
+
+Length of proof is 18.  Level of proof is 11.
+
+---------------- PROOF ----------------
+
+1 [] -P(x->y)| -P(x)|P(y).
+2 [] P(x->y-> (y->z-> (x->z))).
+3 [] P(-x->x->x).
+4 [] P(x-> (-x->y)).
+7 [] -P(a->b->c-> (b->c)).
+8 [hyper,1,2.1,2.1] P(x->y-> (z->y)->u-> (z->x->u)).
+9 [hyper,1,2.1,3.1] P(x->y-> (-x->x->y)).
+11 [hyper,1,2.1,4.1] P(-x->y->z-> (x->z)).
+16 [hyper,1,8.1,8.1] P(x-> (y->z)-> (u->y-> (x-> (u->z)))).
+21 [hyper,1,9.1,9.1] P(-(x->y)-> (x->y)-> (-x->x->y)).
+29 [hyper,1,8.1,11.1] P(x-> -y-> (y-> (x->z))).
+34 [hyper,1,11.1,3.1] P(x->x).
+37 [hyper,1,4.1,34.1] P(-(x->x)->y).
+52 [hyper,1,11.1,29.1] P(x-> (y-> (-x->z))).
+56 [hyper,1,29.1,37.1] P(x-> (-(y->y)->z)).
+64 [hyper,1,2.1,52.1] P(x-> (-y->z)->u-> (y->u)).
+76 [hyper,1,2.1,56.1] P(-(x->x)->y->z-> (u->z)).
+131 [hyper,1,76.1,21.1] P(x-> (-y->y->y)).
+146 [hyper,1,16.1,131.1] P(x-> (-y->y)-> (z-> (x->y))).
+308 [hyper,1,64.1,146.1] P(x-> (y-> (z->x))).
+322 [hyper,1,146.1,308.1] P(x-> (y-> (z->y))).
+360 [hyper,1,322.1,322.1] P(x-> (y->x)).
+386 [hyper,1,2.1,360.1] P(x->y->z-> (y->z)).
+387 [binary,386.1,7.1] $F.
+
+------------ end of proof -------------
+
+
+;; BEGINNING OF PROOF OBJECT
+(
+(1 (input) (or (not (P (-> v0 v1))) (or (not (P v0)) (P v1))) (1))
+(2 (input) (P (-> (-> v0 v1) (-> (-> v1 v2) (-> v0 v2)))) (2))
+(3 (input) (P (-> (-> (- v0) v0) v0)) (3))
+(4 (input) (P (-> v0 (-> (- v0) v1))) (4))
+(5 (input) (not (P (-> (-> (-> (a) (b)) (c)) (-> (b) (c))))) (7))
+(6 (instantiate 1 ((v0 . (-> v64 v65))(v1 . (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66))))) NIL)
+(7 (instantiate 2 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(8 (resolve 6 (1) 7 ()) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(9 (instantiate 8 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> v0 v1))) (P (-> (-> v1 v2) (-> v0 v2)))) NIL)
+(10 (instantiate 9 ((v0 . (-> v64 v65))(v1 . (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66))))) (P (-> (-> (-> (-> v65 v66) (-> v64 v66)) v2) (-> (-> v64 v65) v2)))) NIL)
+(11 (instantiate 2 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(12 (resolve 10 (1) 11 ()) (P (-> (-> (-> (-> v65 v66) (-> v64 v66)) v2) (-> (-> v64 v65) v2))) NIL)
+(13 (instantiate 12 ((v2 . v3)(v64 . v2)(v65 . v0)(v66 . v1))) (P (-> (-> (-> (-> v0 v1) (-> v2 v1)) v3) (-> (-> v2 v0) v3))) (8))
+(14 (instantiate 1 ((v0 . (-> v64 v65))(v1 . (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66))))) NIL)
+(15 (instantiate 2 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(16 (resolve 14 (1) 15 ()) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(17 (instantiate 16 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> v0 v1))) (P (-> (-> v1 v2) (-> v0 v2)))) NIL)
+(18 (instantiate 17 ((v0 . (-> (- v64) v64))(v1 . v64))) (or (not (P (-> (-> (- v64) v64) v64))) (P (-> (-> v64 v2) (-> (-> (- v64) v64) v2)))) NIL)
+(19 (instantiate 3 ((v0 . v64))) (P (-> (-> (- v64) v64) v64)) NIL)
+(20 (resolve 18 (1) 19 ()) (P (-> (-> v64 v2) (-> (-> (- v64) v64) v2))) NIL)
+(21 (instantiate 20 ((v2 . v1)(v64 . v0))) (P (-> (-> v0 v1) (-> (-> (- v0) v0) v1))) (9))
+(22 (instantiate 1 ((v0 . (-> v64 v65))(v1 . (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66))))) NIL)
+(23 (instantiate 2 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(24 (resolve 22 (1) 23 ()) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(25 (instantiate 24 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> v0 v1))) (P (-> (-> v1 v2) (-> v0 v2)))) NIL)
+(26 (instantiate 25 ((v0 . v64)(v1 . (-> (- v64) v65)))) (or (not (P (-> v64 (-> (- v64) v65)))) (P (-> (-> (-> (- v64) v65) v2) (-> v64 v2)))) NIL)
+(27 (instantiate 4 ((v0 . v64)(v1 . v65))) (P (-> v64 (-> (- v64) v65))) NIL)
+(28 (resolve 26 (1) 27 ()) (P (-> (-> (-> (- v64) v65) v2) (-> v64 v2))) NIL)
+(29 (instantiate 28 ((v64 . v0)(v65 . v1))) (P (-> (-> (-> (- v0) v1) v2) (-> v0 v2))) (11))
+(30 (instantiate 1 ((v0 . (-> (-> (-> v64 v65) (-> v66 v65)) v67))(v1 . (-> (-> v66 v64) v67)))) (or (not (P (-> (-> (-> (-> v64 v65) (-> v66 v65)) v67) (-> (-> v66 v64) v67)))) (or (not (P (-> (-> (-> v64 v65) (-> v66 v65)) v67))) (P (-> (-> v66 v64) v67)))) NIL)
+(31 (instantiate 13 ((v0 . v64)(v1 . v65)(v2 . v66)(v3 . v67))) (P (-> (-> (-> (-> v64 v65) (-> v66 v65)) v67) (-> (-> v66 v64) v67))) NIL)
+(32 (resolve 30 (1) 31 ()) (or (not (P (-> (-> (-> v64 v65) (-> v66 v65)) v67))) (P (-> (-> v66 v64) v67))) NIL)
+(33 (instantiate 32 ((v64 . v0)(v65 . v1)(v66 . v2)(v67 . v3))) (or (not (P (-> (-> (-> v0 v1) (-> v2 v1)) v3))) (P (-> (-> v2 v0) v3))) NIL)
+(34 (instantiate 33 ((v0 . (-> v64 v65))(v1 . (-> v66 v65))(v3 . (-> (-> v66 v64) (-> v2 (-> v66 v65)))))) (or (not (P (-> (-> (-> (-> v64 v65) (-> v66 v65)) (-> v2 (-> v66 v65))) (-> (-> v66 v64) (-> v2 (-> v66 v65)))))) (P (-> (-> v2 (-> v64 v65)) (-> (-> v66 v64) (-> v2 (-> v66 v65)))))) NIL)
+(35 (instantiate 13 ((v0 . v64)(v1 . v65)(v2 . v66)(v3 . (-> v2 (-> v66 v65))))) (P (-> (-> (-> (-> v64 v65) (-> v66 v65)) (-> v2 (-> v66 v65))) (-> (-> v66 v64) (-> v2 (-> v66 v65))))) NIL)
+(36 (resolve 34 (1) 35 ()) (P (-> (-> v2 (-> v64 v65)) (-> (-> v66 v64) (-> v2 (-> v66 v65))))) NIL)
+(37 (instantiate 36 ((v2 . v0)(v64 . v1)(v65 . v2)(v66 . v3))) (P (-> (-> v0 (-> v1 v2)) (-> (-> v3 v1) (-> v0 (-> v3 v2))))) (16))
+(38 (instantiate 1 ((v0 . (-> v64 v65))(v1 . (-> (-> (- v64) v64) v65)))) (or (not (P (-> (-> v64 v65) (-> (-> (- v64) v64) v65)))) (or (not (P (-> v64 v65))) (P (-> (-> (- v64) v64) v65)))) NIL)
+(39 (instantiate 21 ((v0 . v64)(v1 . v65))) (P (-> (-> v64 v65) (-> (-> (- v64) v64) v65))) NIL)
+(40 (resolve 38 (1) 39 ()) (or (not (P (-> v64 v65))) (P (-> (-> (- v64) v64) v65))) NIL)
+(41 (instantiate 40 ((v64 . v0)(v65 . v1))) (or (not (P (-> v0 v1))) (P (-> (-> (- v0) v0) v1))) NIL)
+(42 (instantiate 41 ((v0 . (-> v64 v65))(v1 . (-> (-> (- v64) v64) v65)))) (or (not (P (-> (-> v64 v65) (-> (-> (- v64) v64) v65)))) (P (-> (-> (- (-> v64 v65)) (-> v64 v65)) (-> (-> (- v64) v64) v65)))) NIL)
+(43 (instantiate 21 ((v0 . v64)(v1 . v65))) (P (-> (-> v64 v65) (-> (-> (- v64) v64) v65))) NIL)
+(44 (resolve 42 (1) 43 ()) (P (-> (-> (- (-> v64 v65)) (-> v64 v65)) (-> (-> (- v64) v64) v65))) NIL)
+(45 (instantiate 44 ((v64 . v0)(v65 . v1))) (P (-> (-> (- (-> v0 v1)) (-> v0 v1)) (-> (-> (- v0) v0) v1))) (21))
+(46 (instantiate 1 ((v0 . (-> (-> (-> v64 v65) (-> v66 v65)) v67))(v1 . (-> (-> v66 v64) v67)))) (or (not (P (-> (-> (-> (-> v64 v65) (-> v66 v65)) v67) (-> (-> v66 v64) v67)))) (or (not (P (-> (-> (-> v64 v65) (-> v66 v65)) v67))) (P (-> (-> v66 v64) v67)))) NIL)
+(47 (instantiate 13 ((v0 . v64)(v1 . v65)(v2 . v66)(v3 . v67))) (P (-> (-> (-> (-> v64 v65) (-> v66 v65)) v67) (-> (-> v66 v64) v67))) NIL)
+(48 (resolve 46 (1) 47 ()) (or (not (P (-> (-> (-> v64 v65) (-> v66 v65)) v67))) (P (-> (-> v66 v64) v67))) NIL)
+(49 (instantiate 48 ((v64 . v0)(v65 . v1)(v66 . v2)(v67 . v3))) (or (not (P (-> (-> (-> v0 v1) (-> v2 v1)) v3))) (P (-> (-> v2 v0) v3))) NIL)
+(50 (instantiate 49 ((v0 . (- v64))(v1 . v65)(v3 . (-> v64 (-> v2 v65))))) (or (not (P (-> (-> (-> (- v64) v65) (-> v2 v65)) (-> v64 (-> v2 v65))))) (P (-> (-> v2 (- v64)) (-> v64 (-> v2 v65))))) NIL)
+(51 (instantiate 29 ((v0 . v64)(v1 . v65)(v2 . (-> v2 v65)))) (P (-> (-> (-> (- v64) v65) (-> v2 v65)) (-> v64 (-> v2 v65)))) NIL)
+(52 (resolve 50 (1) 51 ()) (P (-> (-> v2 (- v64)) (-> v64 (-> v2 v65)))) NIL)
+(53 (instantiate 52 ((v2 . v0)(v64 . v1)(v65 . v2))) (P (-> (-> v0 (- v1)) (-> v1 (-> v0 v2)))) (29))
+(54 (instantiate 1 ((v0 . (-> (-> (- v64) v65) v66))(v1 . (-> v64 v66)))) (or (not (P (-> (-> (-> (- v64) v65) v66) (-> v64 v66)))) (or (not (P (-> (-> (- v64) v65) v66))) (P (-> v64 v66)))) NIL)
+(55 (instantiate 29 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> (-> (- v64) v65) v66) (-> v64 v66))) NIL)
+(56 (resolve 54 (1) 55 ()) (or (not (P (-> (-> (- v64) v65) v66))) (P (-> v64 v66))) NIL)
+(57 (instantiate 56 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> (-> (- v0) v1) v2))) (P (-> v0 v2))) NIL)
+(58 (instantiate 57 ((v0 . v64)(v1 . v64)(v2 . v64))) (or (not (P (-> (-> (- v64) v64) v64))) (P (-> v64 v64))) NIL)
+(59 (instantiate 3 ((v0 . v64))) (P (-> (-> (- v64) v64) v64)) NIL)
+(60 (resolve 58 (1) 59 ()) (P (-> v64 v64)) NIL)
+(61 (instantiate 60 ((v64 . v0))) (P (-> v0 v0)) (34))
+(62 (instantiate 1 ((v0 . v64)(v1 . (-> (- v64) v65)))) (or (not (P (-> v64 (-> (- v64) v65)))) (or (not (P v64)) (P (-> (- v64) v65)))) NIL)
+(63 (instantiate 4 ((v0 . v64)(v1 . v65))) (P (-> v64 (-> (- v64) v65))) NIL)
+(64 (resolve 62 (1) 63 ()) (or (not (P v64)) (P (-> (- v64) v65))) NIL)
+(65 (instantiate 64 ((v64 . v0)(v65 . v1))) (or (not (P v0)) (P (-> (- v0) v1))) NIL)
+(66 (instantiate 65 ((v0 . (-> v64 v64)))) (or (not (P (-> v64 v64))) (P (-> (- (-> v64 v64)) v1))) NIL)
+(67 (instantiate 61 ((v0 . v64))) (P (-> v64 v64)) NIL)
+(68 (resolve 66 (1) 67 ()) (P (-> (- (-> v64 v64)) v1)) NIL)
+(69 (instantiate 68 ((v64 . v0))) (P (-> (- (-> v0 v0)) v1)) (37))
+(70 (instantiate 1 ((v0 . (-> (-> (- v64) v65) v66))(v1 . (-> v64 v66)))) (or (not (P (-> (-> (-> (- v64) v65) v66) (-> v64 v66)))) (or (not (P (-> (-> (- v64) v65) v66))) (P (-> v64 v66)))) NIL)
+(71 (instantiate 29 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> (-> (- v64) v65) v66) (-> v64 v66))) NIL)
+(72 (resolve 70 (1) 71 ()) (or (not (P (-> (-> (- v64) v65) v66))) (P (-> v64 v66))) NIL)
+(73 (instantiate 72 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> (-> (- v0) v1) v2))) (P (-> v0 v2))) NIL)
+(74 (instantiate 73 ((v1 . (- v65))(v2 . (-> v65 (-> (- v0) v66))))) (or (not (P (-> (-> (- v0) (- v65)) (-> v65 (-> (- v0) v66))))) (P (-> v0 (-> v65 (-> (- v0) v66))))) NIL)
+(75 (instantiate 53 ((v0 . (- v0))(v1 . v65)(v2 . v66))) (P (-> (-> (- v0) (- v65)) (-> v65 (-> (- v0) v66)))) NIL)
+(76 (resolve 74 (1) 75 ()) (P (-> v0 (-> v65 (-> (- v0) v66)))) NIL)
+(77 (instantiate 76 ((v65 . v1)(v66 . v2))) (P (-> v0 (-> v1 (-> (- v0) v2)))) (52))
+(78 (instantiate 1 ((v0 . (-> v64 (- v65)))(v1 . (-> v65 (-> v64 v66))))) (or (not (P (-> (-> v64 (- v65)) (-> v65 (-> v64 v66))))) (or (not (P (-> v64 (- v65)))) (P (-> v65 (-> v64 v66))))) NIL)
+(79 (instantiate 53 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 (- v65)) (-> v65 (-> v64 v66)))) NIL)
+(80 (resolve 78 (1) 79 ()) (or (not (P (-> v64 (- v65)))) (P (-> v65 (-> v64 v66)))) NIL)
+(81 (instantiate 80 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> v0 (- v1)))) (P (-> v1 (-> v0 v2)))) NIL)
+(82 (instantiate 81 ((v0 . (- (-> v64 v64))))) (or (not (P (-> (- (-> v64 v64)) (- v1)))) (P (-> v1 (-> (- (-> v64 v64)) v2)))) NIL)
+(83 (instantiate 69 ((v0 . v64)(v1 . (- v1)))) (P (-> (- (-> v64 v64)) (- v1))) NIL)
+(84 (resolve 82 (1) 83 ()) (P (-> v1 (-> (- (-> v64 v64)) v2))) NIL)
+(85 (instantiate 84 ((v1 . v0)(v64 . v1))) (P (-> v0 (-> (- (-> v1 v1)) v2))) (56))
+(86 (instantiate 1 ((v0 . (-> v64 v65))(v1 . (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66))))) NIL)
+(87 (instantiate 2 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(88 (resolve 86 (1) 87 ()) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(89 (instantiate 88 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> v0 v1))) (P (-> (-> v1 v2) (-> v0 v2)))) NIL)
+(90 (instantiate 89 ((v0 . v64)(v1 . (-> v65 (-> (- v64) v66))))) (or (not (P (-> v64 (-> v65 (-> (- v64) v66))))) (P (-> (-> (-> v65 (-> (- v64) v66)) v2) (-> v64 v2)))) NIL)
+(91 (instantiate 77 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> v64 (-> v65 (-> (- v64) v66)))) NIL)
+(92 (resolve 90 (1) 91 ()) (P (-> (-> (-> v65 (-> (- v64) v66)) v2) (-> v64 v2))) NIL)
+(93 (instantiate 92 ((v2 . v3)(v64 . v1)(v65 . v0)(v66 . v2))) (P (-> (-> (-> v0 (-> (- v1) v2)) v3) (-> v1 v3))) (64))
+(94 (instantiate 1 ((v0 . (-> v64 v65))(v1 . (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66))))) NIL)
+(95 (instantiate 2 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(96 (resolve 94 (1) 95 ()) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(97 (instantiate 96 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> v0 v1))) (P (-> (-> v1 v2) (-> v0 v2)))) NIL)
+(98 (instantiate 97 ((v0 . v64)(v1 . (-> (- (-> v65 v65)) v66)))) (or (not (P (-> v64 (-> (- (-> v65 v65)) v66)))) (P (-> (-> (-> (- (-> v65 v65)) v66) v2) (-> v64 v2)))) NIL)
+(99 (instantiate 85 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> v64 (-> (- (-> v65 v65)) v66))) NIL)
+(100 (resolve 98 (1) 99 ()) (P (-> (-> (-> (- (-> v65 v65)) v66) v2) (-> v64 v2))) NIL)
+(101 (instantiate 100 ((v64 . v3)(v65 . v0)(v66 . v1))) (P (-> (-> (-> (- (-> v0 v0)) v1) v2) (-> v3 v2))) (76))
+(102 (instantiate 1 ((v0 . (-> (-> (- (-> v64 v64)) v65) v66))(v1 . (-> v67 v66)))) (or (not (P (-> (-> (-> (- (-> v64 v64)) v65) v66) (-> v67 v66)))) (or (not (P (-> (-> (- (-> v64 v64)) v65) v66))) (P (-> v67 v66)))) NIL)
+(103 (instantiate 101 ((v0 . v64)(v1 . v65)(v2 . v66)(v3 . v67))) (P (-> (-> (-> (- (-> v64 v64)) v65) v66) (-> v67 v66))) NIL)
+(104 (resolve 102 (1) 103 ()) (or (not (P (-> (-> (- (-> v64 v64)) v65) v66))) (P (-> v67 v66))) NIL)
+(105 (instantiate 104 ((v64 . v0)(v65 . v1)(v66 . v2)(v67 . v3))) (or (not (P (-> (-> (- (-> v0 v0)) v1) v2))) (P (-> v3 v2))) NIL)
+(106 (instantiate 105 ((v0 . v65)(v1 . (-> v65 v65))(v2 . (-> (-> (- v65) v65) v65)))) (or (not (P (-> (-> (- (-> v65 v65)) (-> v65 v65)) (-> (-> (- v65) v65) v65)))) (P (-> v3 (-> (-> (- v65) v65) v65)))) NIL)
+(107 (instantiate 45 ((v0 . v65)(v1 . v65))) (P (-> (-> (- (-> v65 v65)) (-> v65 v65)) (-> (-> (- v65) v65) v65))) NIL)
+(108 (resolve 106 (1) 107 ()) (P (-> v3 (-> (-> (- v65) v65) v65))) NIL)
+(109 (instantiate 108 ((v3 . v0)(v65 . v1))) (P (-> v0 (-> (-> (- v1) v1) v1))) (131))
+(110 (instantiate 1 ((v0 . (-> v64 (-> v65 v66)))(v1 . (-> (-> v67 v65) (-> v64 (-> v67 v66)))))) (or (not (P (-> (-> v64 (-> v65 v66)) (-> (-> v67 v65) (-> v64 (-> v67 v66)))))) (or (not (P (-> v64 (-> v65 v66)))) (P (-> (-> v67 v65) (-> v64 (-> v67 v66)))))) NIL)
+(111 (instantiate 37 ((v0 . v64)(v1 . v65)(v2 . v66)(v3 . v67))) (P (-> (-> v64 (-> v65 v66)) (-> (-> v67 v65) (-> v64 (-> v67 v66))))) NIL)
+(112 (resolve 110 (1) 111 ()) (or (not (P (-> v64 (-> v65 v66)))) (P (-> (-> v67 v65) (-> v64 (-> v67 v66))))) NIL)
+(113 (instantiate 112 ((v64 . v0)(v65 . v1)(v66 . v2)(v67 . v3))) (or (not (P (-> v0 (-> v1 v2)))) (P (-> (-> v3 v1) (-> v0 (-> v3 v2))))) NIL)
+(114 (instantiate 113 ((v0 . v64)(v1 . (-> (- v65) v65))(v2 . v65))) (or (not (P (-> v64 (-> (-> (- v65) v65) v65)))) (P (-> (-> v3 (-> (- v65) v65)) (-> v64 (-> v3 v65))))) NIL)
+(115 (instantiate 109 ((v0 . v64)(v1 . v65))) (P (-> v64 (-> (-> (- v65) v65) v65))) NIL)
+(116 (resolve 114 (1) 115 ()) (P (-> (-> v3 (-> (- v65) v65)) (-> v64 (-> v3 v65)))) NIL)
+(117 (instantiate 116 ((v3 . v0)(v64 . v2)(v65 . v1))) (P (-> (-> v0 (-> (- v1) v1)) (-> v2 (-> v0 v1)))) (146))
+(118 (instantiate 1 ((v0 . (-> (-> v64 (-> (- v65) v66)) v67))(v1 . (-> v65 v67)))) (or (not (P (-> (-> (-> v64 (-> (- v65) v66)) v67) (-> v65 v67)))) (or (not (P (-> (-> v64 (-> (- v65) v66)) v67))) (P (-> v65 v67)))) NIL)
+(119 (instantiate 93 ((v0 . v64)(v1 . v65)(v2 . v66)(v3 . v67))) (P (-> (-> (-> v64 (-> (- v65) v66)) v67) (-> v65 v67))) NIL)
+(120 (resolve 118 (1) 119 ()) (or (not (P (-> (-> v64 (-> (- v65) v66)) v67))) (P (-> v65 v67))) NIL)
+(121 (instantiate 120 ((v64 . v0)(v65 . v1)(v66 . v2)(v67 . v3))) (or (not (P (-> (-> v0 (-> (- v1) v2)) v3))) (P (-> v1 v3))) NIL)
+(122 (instantiate 121 ((v0 . v64)(v1 . v65)(v2 . v65)(v3 . (-> v66 (-> v64 v65))))) (or (not (P (-> (-> v64 (-> (- v65) v65)) (-> v66 (-> v64 v65))))) (P (-> v65 (-> v66 (-> v64 v65))))) NIL)
+(123 (instantiate 117 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 (-> (- v65) v65)) (-> v66 (-> v64 v65)))) NIL)
+(124 (resolve 122 (1) 123 ()) (P (-> v65 (-> v66 (-> v64 v65)))) NIL)
+(125 (instantiate 124 ((v64 . v2)(v65 . v0)(v66 . v1))) (P (-> v0 (-> v1 (-> v2 v0)))) (308))
+(126 (instantiate 1 ((v0 . (-> v64 (-> (- v65) v65)))(v1 . (-> v66 (-> v64 v65))))) (or (not (P (-> (-> v64 (-> (- v65) v65)) (-> v66 (-> v64 v65))))) (or (not (P (-> v64 (-> (- v65) v65)))) (P (-> v66 (-> v64 v65))))) NIL)
+(127 (instantiate 117 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 (-> (- v65) v65)) (-> v66 (-> v64 v65)))) NIL)
+(128 (resolve 126 (1) 127 ()) (or (not (P (-> v64 (-> (- v65) v65)))) (P (-> v66 (-> v64 v65)))) NIL)
+(129 (instantiate 128 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> v0 (-> (- v1) v1)))) (P (-> v2 (-> v0 v1)))) NIL)
+(130 (instantiate 129 ((v0 . v64)(v1 . (-> v66 v64)))) (or (not (P (-> v64 (-> (- (-> v66 v64)) (-> v66 v64))))) (P (-> v2 (-> v64 (-> v66 v64))))) NIL)
+(131 (instantiate 125 ((v0 . v64)(v1 . (- (-> v66 v64)))(v2 . v66))) (P (-> v64 (-> (- (-> v66 v64)) (-> v66 v64)))) NIL)
+(132 (resolve 130 (1) 131 ()) (P (-> v2 (-> v64 (-> v66 v64)))) NIL)
+(133 (instantiate 132 ((v2 . v0)(v64 . v1)(v66 . v2))) (P (-> v0 (-> v1 (-> v2 v1)))) (322))
+(134 (instantiate 1 ((v0 . v64)(v1 . (-> v65 (-> v66 v65))))) (or (not (P (-> v64 (-> v65 (-> v66 v65))))) (or (not (P v64)) (P (-> v65 (-> v66 v65))))) NIL)
+(135 (instantiate 133 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> v64 (-> v65 (-> v66 v65)))) NIL)
+(136 (resolve 134 (1) 135 ()) (or (not (P v64)) (P (-> v65 (-> v66 v65)))) NIL)
+(137 (instantiate 136 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P v0)) (P (-> v1 (-> v2 v1)))) NIL)
+(138 (instantiate 137 ((v0 . (-> v64 (-> v65 (-> v66 v65)))))) (or (not (P (-> v64 (-> v65 (-> v66 v65))))) (P (-> v1 (-> v2 v1)))) NIL)
+(139 (instantiate 133 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> v64 (-> v65 (-> v66 v65)))) NIL)
+(140 (resolve 138 (1) 139 ()) (P (-> v1 (-> v2 v1))) NIL)
+(141 (instantiate 140 ((v1 . v0)(v2 . v1))) (P (-> v0 (-> v1 v0))) (360))
+(142 (instantiate 1 ((v0 . (-> v64 v65))(v1 . (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66))))) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66))))) NIL)
+(143 (instantiate 2 ((v0 . v64)(v1 . v65)(v2 . v66))) (P (-> (-> v64 v65) (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(144 (resolve 142 (1) 143 ()) (or (not (P (-> v64 v65))) (P (-> (-> v65 v66) (-> v64 v66)))) NIL)
+(145 (instantiate 144 ((v64 . v0)(v65 . v1)(v66 . v2))) (or (not (P (-> v0 v1))) (P (-> (-> v1 v2) (-> v0 v2)))) NIL)
+(146 (instantiate 145 ((v0 . v64)(v1 . (-> v65 v64)))) (or (not (P (-> v64 (-> v65 v64)))) (P (-> (-> (-> v65 v64) v2) (-> v64 v2)))) NIL)
+(147 (instantiate 141 ((v0 . v64)(v1 . v65))) (P (-> v64 (-> v65 v64))) NIL)
+(148 (resolve 146 (1) 147 ()) (P (-> (-> (-> v65 v64) v2) (-> v64 v2))) NIL)
+(149 (instantiate 148 ((v64 . v1)(v65 . v0))) (P (-> (-> (-> v0 v1) v2) (-> v1 v2))) (386))
+(150 (instantiate 149 ((v0 . (a))(v1 . (b))(v2 . (c)))) (P (-> (-> (-> (a) (b)) (c)) (-> (b) (c)))) NIL)
+(151 (resolve 5 () 150 ()) false (387))
+)
+;; END OF PROOF OBJECT
+
+Search stopped by max_proofs option.
+
+============ end of search ============
+
+-------------- statistics -------------
+clauses given                 94
+clauses generated           5345
+  hyper_res generated       5345
+demod & eval rewrites          0
+clauses wt,lit,sk delete    1477
+tautologies deleted            0
+clauses forward subsumed    3491
+  (subsumed by sos)          447
+unit deletions                 0
+factor simplifications         0
+clauses kept                 377
+new demodulators               0
+empty clauses                  3
+clauses back demodulated       0
+clauses back subsumed          0
+usable size                   95
+sos size                     286
+demodulators size              0
+passive size                   3
+hot size                       0
+Kbytes malloced              766
+
+----------- times (seconds) -----------
+user CPU time          0.28          (0 hr, 0 min, 0 sec)
+system CPU time        0.09          (0 hr, 0 min, 0 sec)
+wall-clock time        0             (0 hr, 0 min, 0 sec)
+input time             0.00
+  clausify time        0.00
+hyper_res time         0.09
+pre_process time       0.16
+  renumber time        0.02
+  demod time           0.03
+  order equalities     0.00
+  unit deleletion      0.00
+  factor simplify      0.00
+  weigh cl time        0.01
+  hints keep time      0.00
+  sort lits time       0.00
+  forward subsume      0.01
+  delete cl time       0.02
+  keep cl time         0.00
+    hints time         0.00
+  print_cl time        0.00
+  conflict time        0.04
+  new demod time       0.00
+post_process time      0.00
+  back demod time      0.00
+  back subsume         0.00
+  factor time          0.00
+  unindex time         0.00
+
+That finishes the proof of the theorem.
+
+Process 27140 finished Mon Feb 21 15:22:22 2000

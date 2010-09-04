@@ -1,0 +1,4 @@
+(include-book "auxilary")
+(include-book "syn-pkg")
+(include-book "../lists/list-top")
+(certify-book "syntax-extensions" 3)

@@ -1,0 +1,15 @@
+After certifying "gauss", you can run the program in ACL2, for example
+as follows.
+
+(include-bonok "gauss")
+(acl2-loop (s* :input1 10000))
+(g :asn (acl2-top-inv (s* :input1 10000)))
+
+Note that we have done a few hand-edits to create this directory:
+
+- Deleted initial ACL2s preamble comment from gauss-fns.lisp and
+  gauss-work.lisp
+- Deleted unnecessary add-include-book-dir, :dir, and include-books
+  forms from gauss-fns.acl2, gauss-work.acl2, and gauss-work.lisp
+- Copied preliminaries.{acl2,lisp} and generic-loop-inv.lisp from
+  another directory

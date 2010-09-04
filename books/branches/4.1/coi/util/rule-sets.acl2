@@ -1,0 +1,11 @@
+#|-*-Lisp-*-=================================================================|#
+#|                                                                           |#
+#| coi: Computational Object Inference                                       |#
+#|                                                                           |#
+#|===========================================================================|#
+
+(ld "cert.acl2")
+(ld "rule-sets-defpkg.lsp")
+(ld "table-defpkg.lsp")
+(ld "def-defpkg.lsp")
+(certify-book "rule-sets" ?)

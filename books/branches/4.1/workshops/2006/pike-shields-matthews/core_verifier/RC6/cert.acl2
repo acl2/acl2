@@ -1,0 +1,1 @@
+(add-include-book-dir :super-ihs "/Users/leepike/shade/aamp/model/super-ihs/") (add-include-book-dir :books "/Users/leepike/shade/acl2_scratch/core_verifier/books/")
