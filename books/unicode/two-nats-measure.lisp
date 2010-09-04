@@ -68,17 +68,28 @@
   (o-p (nat-list-measure a))
   :hints(("Goal" :in-theory (enable o-p nat-list-measure))))
 
+
+(defun cons-list-or-quotep (x)
+  (if (atom x)
+      (equal x nil)
+    (case (car x)
+      (quote t)
+      (cons (and (eql (len x) 3)
+                 (cons-list-or-quotep (third x)))))))
+
 (defthm o<-of-nat-list-measure
-  (equal (o< (nat-list-measure a)
-             (nat-list-measure b))
-         (or (< (len a) (len b))
-             (and (equal (len a) (len b))
-                  (if (consp a)
-                      (or (< (nfix (car a)) (nfix (car b)))
-                          (and (equal (nfix (car a)) (nfix (car b)))
-                               (o< (nat-list-measure (cdr a))
-                                   (nat-list-measure (cdr b)))))
-                    (< (nfix a) (nfix b))))))
+  (implies (syntaxp (and (cons-list-or-quotep a)
+                         (cons-list-or-quotep b)))
+           (equal (o< (nat-list-measure a)
+                      (nat-list-measure b))
+                  (or (< (len a) (len b))
+                      (and (equal (len a) (len b))
+                           (if (consp a)
+                               (or (< (nfix (car a)) (nfix (car b)))
+                                   (and (equal (nfix (car a)) (nfix (car b)))
+                                        (o< (nat-list-measure (cdr a))
+                                            (nat-list-measure (cdr b)))))
+                             (< (nfix a) (nfix b)))))))
   :hints(("Goal" :in-theory (enable nat-list-measure))))
 
 (defun nat-list-< (a b)
@@ -90,3 +101,27 @@
                 (o< (nat-list-measure x)
                     (nat-list-measure y))))
   :rule-classes :well-founded-relation)
+
+
+(defthm open-nat-list-<
+  (implies (syntaxp (and (cons-list-or-quotep a)
+                         (cons-list-or-quotep b)))
+           (equal (nat-list-< a b)
+                  (or (< (len a) (len b))
+                      (and (equal (len a) (len b))
+                           (if (consp a)
+                               (or (< (nfix (car a)) (nfix (car b)))
+                                   (and (equal (nfix (car a)) (nfix (car b)))
+                                        (nat-list-< (cdr a) (cdr b))))
+                             (< (nfix a) (nfix b)))))))
+  :hints (("goal" :use o<-of-nat-list-measure
+           :in-theory (disable o<-of-nat-list-measure))))
+
+(defthm natp-nat-list-<
+  (implies (and (atom a) (atom b))
+           (equal (nat-list-< a b)
+                  (< (nfix a) (nfix b))))
+  :hints (("goal" :use o<-of-nat-list-measure
+           :in-theory (disable o<-of-nat-list-measure))))
+
+(in-theory (disable nat-list-<))
