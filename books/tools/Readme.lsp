@@ -5,6 +5,7 @@ Makefile
 Readme.lsp
 bstar.lisp
 cws.lisp
+def-functional-instance.lisp
 defconsts.lisp
 defevaluator-fast.lisp
 define-keyed-function.lisp
@@ -17,6 +18,7 @@ flag-package.lsp
 index.html
 include-raw.lisp
 mv-nth.lisp
+oracle-eval.lisp
 pack.lisp
 progndollar.lisp
 rulesets.lisp
@@ -48,6 +50,9 @@ forms.
 
 cws.lisp defines CWS, which is a shortcut for printing expressions and
 their values without typing formatting strings.
+
+def-functional-instance.lisp provides a simple utility for proving
+functional instantiations of existing theorems.
 
 defconsts.lisp defines DEFCONSTS, which is like defconst but can cope
 with functions that return multiple values.
@@ -84,16 +89,22 @@ whereas DEFTUPLE defines a simple product type (tuple.)
 Types-misc.lisp and theory-tools.lisp both exist primarily as support
 for defsum and deftuple.
 
+oracle-eval.lisp provides a logic-mode function that can evaluate
+ACL2 terms that return a single non-stobj value.  The logic definition
+of this function just reads the oracle, and so nothing is known about
+its result.
+
 pattern-match.lisp provides user-extensible pattern-matching
 functionality, especially useful for writing functions that deal with
 sum-of-products data structures as defined by defsum.
 
-stobj-help.lisp provides a make-event which proves some useful rules about a
-stobj, such as type theorems, access/update rewrite rules, etc.
+stobj-help.lisp provides a make-event which proves some useful rules
+about a stobj, such as type theorems, access/update rewrite rules,
+etc.
 
-with-quoted-forms.lisp provides a macro that may be useful for computing
-complicated :USE hints where the terms used in the substitutions result from
-deeply nested variable bindings.
+with-quoted-forms.lisp provides a macro that may be useful for
+computing complicated :USE hints where the terms used in the
+substitutions result from deeply nested variable bindings.
 ")
  (:PERMISSION
   "{bstar,cws,defined-const,defsum,deftuple,pack,progndollar,theory-tools,types-misc}.lisp
@@ -102,8 +113,9 @@ deeply nested variable bindings.
 {define-keyed-function}.lisp copyright (C) 2010 by David L. Rager
 <ragerdl@cs.utexas.edu>.
 
-{defconsts,flag,safe-case,include-raw}.lisp copyright 2008-2010 by Centaur
-Technology
+{def-functional-instance,defconsts,flag,oracle-eval,safe-case,include-raw}.lisp
+copyright
+2008-2010 by Centaur Technology
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License as

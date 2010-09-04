@@ -21,6 +21,7 @@ replace-defined-consts.acl2
 replace-defined-consts.lisp
 replace-impl.lisp
 term-patterns.lisp
+unify-subst.lisp
 use-by-hint.lisp
 ")
  (:TITLE    "Clause processor examples")
@@ -86,9 +87,12 @@ recognizing categories of terms that may be extended or changed by the user.
 
 Book use-by-hint introduces a computed hint to apply a particular :by hint
 as signalled by a logically meaningless hyp placed in the clause, so that a
-clause processor can produce clauses that are copies of statements of existing
-theorems.
-")
+clause processor can produce clauses that are copies of statements of
+existing theorems.
+
+Book unify-subst introduces functions for term unification and substitution,
+and proves theorems about them that may be useful in defining clause
+processors.")
  (:PERMISSION
   "Clause processor examples
 Copyright (C) 2007 by:
@@ -99,6 +103,8 @@ Copyright (C) 2007 by:
                                           multi-env-trick.lisp,
                                           replace-defined-const.lisp,
                                           use-by-hint.lisp)
+
+Copyright 2010 by Centaur Technology:     unify-subst.lisp
 
 This program is free software; you can redistribute it and/or 
 modify it under the terms of the GNU General Public License as 
