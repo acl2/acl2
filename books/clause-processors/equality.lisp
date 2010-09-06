@@ -272,22 +272,6 @@
             (equal (evl-list (pseudo-term-list-substitute-alist x alist) env)
                    (evl-list x env)))
    :hints(("Goal" :use ((:instance lemma (flag 'list)))))))
-                  
-(defun repeat (x n)
-  (declare (xargs :guard (natp n)))
-  (if (zp n)
-      nil
-    (cons x (repeat x (- n 1)))))
-
-(encapsulate
- ()
- (local (include-book "arithmetic/top" :dir :system))
- 
- (defthm repeat-of-plus1
-   (implies (force (natp n))
-            (equal (repeat x (+ 1 n))
-                   (cons x (repeat x n))))
-   :hints(("Goal" :expand (repeat x (+ 1 n))))))
 
 (defthm lemma
   (implies (not (or-list (evl-list clause env)))
