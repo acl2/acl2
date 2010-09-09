@@ -33,11 +33,15 @@
        (or (member-equal x a)
            (member-equal x b))))
 
+;; Note: inesrting double-rewrites here because A and B are now in a
+;; set-equivalence context within intersectp-equal, whereas they weren't
+;; within no-duplicatesp-equal.
 (defthm no-duplicatesp-equal-append-iff
   (iff (no-duplicatesp-equal (append a b))
        (and (no-duplicatesp-equal a)
             (no-duplicatesp-equal b)
-            (not (intersectp-equal a b)))))
+            (not (intersectp-equal (double-rewrite a)
+                                   (double-rewrite b))))))
 
 (defthm intersectp-equal-append1
   (equal (intersectp-equal (append a b) c)
