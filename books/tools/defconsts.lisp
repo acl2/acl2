@@ -72,6 +72,14 @@ in the certificate file instead of being recomputed.~/")
          (equal (len (revappend x y))
                 (+ (len x) (len y)))))
 
+(local (defthm symbolp-of-car-when-symbol-listp
+         (implies (symbol-listp x)
+                  (symbolp (car x)))))
+
+(local (defthm symbol-listp-of-cdr-when-symbol-listp
+         (implies (symbol-listp x)
+                  (symbol-listp (cdr x)))))
+
 (local (defthm symbol-listp-of-revappend
          (implies (and (force (symbol-listp x))
                        (force (symbol-listp y)))
@@ -80,6 +88,14 @@ in the certificate file instead of being recomputed.~/")
 (local (defthm symbol-listp-of-remove
          (implies (force (symbol-listp x))
                   (symbol-listp (remove a x)))))
+
+(local (defthm symbol-listp-of-last
+         (implies (force (symbol-listp x))
+                  (symbol-listp (last x)))))
+
+(local (defthm symbol-listp-of-set-difference-eq
+         (implies (force (symbol-listp x))
+                  (symbol-listp (set-difference-eq x y)))))
 
 ; Bah.  Re-prove character-listp-of-explode-atom here instead of just including
 ; unicode/explode-atom, because otherwise acl2's Makefile-generic wouldn't be
@@ -117,6 +133,11 @@ in the certificate file instead of being recomputed.~/")
 (local (defthm symbol-listp-when-defconsts-check-names
          (implies (defconsts-check-names x)
                   (symbol-listp x))
+         :hints(("Goal" :in-theory (enable defconsts-check-names)))))
+
+(local (defthm symbolp-when-defconsts-check-names-singleton
+         (implies (defconsts-check-names (list x))
+                  (symbolp x))
          :hints(("Goal" :in-theory (enable defconsts-check-names)))))
 
 
@@ -210,6 +231,12 @@ in the certificate file instead of being recomputed.~/")
         (t
          (cons (car x) (defconsts-replace-amps (cdr x) (cdr fresh-syms))))))
 
+(defthm symbol-listp-of-defconsts-replace-amps
+  (implies (and (symbol-listp x)
+                (symbol-listp fresh-syms))
+           (symbol-listp (defconsts-replace-amps x fresh-syms)))
+  :hints(("Goal" :in-theory (enable defconsts-replace-amps))))
+
 (defund defconsts-make-defconsts (x)
   ;; (*foo* *bar* & & baz)
   ;;   -->
@@ -240,7 +267,7 @@ in the certificate file instead of being recomputed.~/")
        (nconsts (len consts))
        (fresh   (reverse (defconsts-make-n-fresh-symbols nconsts)))
 
-       (illegal (intersection-equal fresh consts))
+       (illegal (intersection-eq fresh consts))
        ((when illegal)
         (er hard? 'defconsts "Illegal to use ~&0.~%" illegal))
 
@@ -251,7 +278,7 @@ in the certificate file instead of being recomputed.~/")
        (amp-free  (defconsts-replace-amps star-free fresh))
 
        ;; Make "ignore" declaration for any fresh vars we introduced:
-       (temps     (intersection-equal amp-free fresh))
+       (temps     (intersection-eq amp-free fresh))
        (idecl     (and temps `((declare (ignore . ,temps)))))
 
        ;; Actual list of things to introduce:
@@ -270,6 +297,32 @@ in the certificate file instead of being recomputed.~/")
                                    stobjs-nostate)
                          event))
 
+       ;; We now generate a nice summary string
+       ;; real-syms is (*foo* *bar* ...) with no stobjs and no amps.
+       (real-syms (set-difference-eq (remove '& consts) stobjs))
+       (real1     (car real-syms))
+       (dc        (symbol-name 'defconsts))
+       (summary   (cond ((atom real-syms)
+                         ;; Just stobjs or nothing, we just elide everything
+                         (concatenate 'string
+                                      "(" dc " ...)"))
+                        ((atom (cdr consts))
+                         ;; Just *foo* and no other args
+                         (concatenate 'string
+                                      "(" dc " " (symbol-name real1) " ...)"))
+                        ((equal real1 (car consts))
+                         ;; *foo* is first but there are other args
+                         (concatenate 'string
+                                      "(" dc " (" (symbol-name real1) " ...) ...)"))
+                        ((equal (car (last consts)) real1)
+                         ;; *foo* is the only real arg, and comes last
+                         (concatenate 'string
+                                      "(" dc " (... " (symbol-name real1) ") ...)"))
+                        (t
+                         ;; *foo* is neither first nor last
+                         (concatenate 'string
+                                      "(" dc " (... " (symbol-name real1) "...) ...)"))))
+
        ;; Use let or mv-let depending on how many constants there are.
        (form (if (= (len consts) 1)
                  `(let ((,(car amp-free) ,body))
@@ -280,7 +333,9 @@ in the certificate file instead of being recomputed.~/")
                         ,@idecl
                         ,ret))))
 
-      `(make-event ,form)))
+      `(make-event (time$ ,form
+                          :msg "; ~s0: ~st seconds, ~sa bytes~%"
+                          :args (list ,summary)))))
 
 (defmacro defconsts (consts body)
   (defconsts-fn consts body))
