@@ -7,3 +7,8 @@ BOOKS = mv-nth iff syntaxp ith fixequiv ifixequiv nfixequiv table \
 	in-conclusion implies extra-info extra-info-test ifdef \
         recursion-support
 -include Makefile-deps
+
+clean: clean-coi-extras
+
+clean-coi-extras:
+	rm -f Makefile.*

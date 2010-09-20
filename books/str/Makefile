@@ -14,3 +14,8 @@ doc: top.cert
 	echo '(quit)' >> doc/workxxx
 	cd doc; ACL2_SYSTEM_BOOKS=$(abspath $(ACL2_SYSTEM_BOOKS)) $(abspath $(ACL2)) < workxxx
 	ls doc/acl2-doc-index.html
+
+clean: clean-more
+
+clean-more:
+	rm -rf TAGS

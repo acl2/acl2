@@ -8,3 +8,8 @@ BOOKS = acl2-count basic memberp \
 	listset-induction \
 	mv-nth
 -include Makefile-deps
+
+clean: clean-coi-extras
+
+clean-coi-extras:
+	rm -f Makefile.*

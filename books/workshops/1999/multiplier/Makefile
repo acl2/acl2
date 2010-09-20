@@ -40,5 +40,8 @@ fmul.cert: rtl.cert
 
 clean: clean-more
 
+# Added by Matt K. Sept. 2010 because many *.tem files were lying around:
+# rm -f *.tem
 clean-more:
 	rm -f fmul.lisp fmul-star.lisp
+	rm -f *.tem
