@@ -12,6 +12,7 @@ define-keyed-function.lisp
 defined-const.lisp
 defsum.lisp
 deftuple.lisp
+do-not.lisp
 flag.acl2
 flag.lisp
 flag-package.lsp
@@ -61,12 +62,16 @@ defined-const.lisp defines DEFINED-CONST, which produces a defconst
 and a theorem saying what term it represents while only evaluating
 that term once (if the HONS system is present) or twice (if not.)
 
-define-keyed-function.lisp defines macro DEFKUN, which defines a 
-macro and function pair that allow a programming style of passing 
+define-keyed-function.lisp defines macro DEFKUN, which defines a
+macro and function pair that allow a programming style of passing
 keyword arguments to function calls.
 
 defevaluator-fast.lisp provides a macro much like defevaluator, but
 much faster when the number of functions to be recognized is large.
+
+do-not.lisp provides DO-NOT-HINT, a computed hint that can give
+:do-not and :do-not-induct hints throughout several proofs to reduce your
+typing burden.
 
 include-raw.lisp provides a tool to load raw Lisp files inside books,
 compiling them on book certification, handling errors, etc.  A TTAG is
