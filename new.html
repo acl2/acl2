@@ -1,0 +1,160 @@
+<HTML>
+<HEAD><TITLE>ACL2 Version 4.1 News</TITLE></HEAD>
+
+<BODY TEXT="#000000">
+<BODY BGCOLOR="#FFFFFF">
+
+<H1><A NAME="top"><a href="http://www.cs.utexas.edu/users/moore/acl2/">ACL2</a> Version 4.1 News</A></H1>
+
+<H2>Table of Contents</H2>
+
+<ul>
+
+<LI><A HREF="#acl2-books">ACL2 Books Repository</A></LI>
+<LI><A HREF="#performance">Performance Comparisons</A></LI>
+<LI><A HREF="#courses">ACL2 Course Materials</A></LI>
+
+</ul>
+
+<A NAME="acl2-books"><H2>ACL2 Books Repository</H2></A>
+
+The <A HREF="http://acl2-books.googlecode.com/">acl2-books Google
+group</A> allows you to contribute ACL2 books (input files), and also
+to update to the latest version if you don't want to wait for the next
+ACL2 release.  Quoting from that <A
+HREF="http://acl2-books.googlecode.com/">web site</A>:
+
+<blockquote>
+
+This site is for community-driven development for the basic ACL2 libraries,
+which deal with topics like arithmetic, data structures, and hardware
+modelling. We're working with the authors of ACL2 and our changes are
+eventually incorporated into official ACL2 releases.
+
+</blockquote>
+
+<p>
+
+<A NAME="performance"><H2>Performance Comparisons</H2></A>
+
+<p>
+
+The various cases below correspond to runs of the ACL2 regression
+suite (distributed and <a
+href="distrib/acl2-sources/books/workshops.tar.gz">workshop</a> books)
+for ACL2 executables built on different platforms, as indicated.  Not
+shown are results of testing on Windows and Mac OS X or of running
+with safety 3 using CCL.
+<p>
+
+Statistics shown below are for running <code>make regression</code>.
+Each 32-bit Linux regression reported below was run with
+<code>make</code> option <code>-j 8</code> on an 8-core 2.2 GHz AMD
+Opteron (tm) Processor 850 running Ubuntu Linux.  Each 64-bit Linux
+regression reported below was run with <code>make</code> option
+<code>-j 24</code> on a 2.6GHz machine with four processors, each a
+Six-Core AMD Opteron(tm) Processor 8435.  Also, the 64-bit runs
+skipped directory books/clause-processors/SULFA/.  So comparisons
+between a 32-bit run and 64-bit run are ill-advised.
+
+<p>
+
+<H3>32-bit Linux runs using make -j 8</H3>
+
+<ul>
+
+<li>Allegro Common Lisp (Allegro CL), Version 8.0:<br>
+<pre>21507.912u 391.984s 1:18:32.06 464.7%	0+0k 0+968536io 0pf+0w</pre></li>
+
+<li>CCL Version 1.6-dev-r13902M-trunk:<br>
+<pre>26377.076u 409.081s 1:39:44.37 447.6%	0+0k 169240+915072io 216pf+0w</pre></li>
+
+<li>Gnu Common Lisp (GCL), Version 2.6.7:<br>
+<pre>22751.109u 1088.488s 1:12:12.10 550.3%	0+0k 114952+2174256io 0pf+0w</pre></li>
+
+<li>CMU Common Lisp (CMUCL), Version 19e:<br>
+<pre>25421.292u 1571.322s 1:36:34.76 465.8%	0+0k 182680+1074336io 243pf+0w</pre></li>
+
+</ul>
+
+<H3>64-bit Linux runs using make -j 24</H3>
+
+Note: We ran regression using CLISP 2.41 as well, but without the
+<code>workshops/</code> books.  The user time alone was 66869.515u.
+
+<ul>
+
+<li>CCL Version 1.6-dev-r13902M-trunk:<br>
+<pre>17874.477u 310.343s 1:08:15.93 443.9%	0+0k 253168+656968io 1197pf+0w</pre></li>
+
+<li>Gnu Common Lisp (GCL), Version 2.6.7:<br>
+<pre>45138.004u 2625.456s 1:20:57.38 983.3%	0+0k 335608+1997728io 0pf+0w</pre></li>
+
+<li>SBCL Version 1.0.37:<br>
+<pre>22349.060u 1172.229s 1:01:30.15 637.4%	0+0k 56936+837904io 0pf+0w</pre></li>
+
+</ul>
+
+<p>
+
+<A NAME="courses"><H2>ACL2 Course Materials</H2></A>
+
+At some point, perhaps "ACL2 Course Materials" may be a top-level link on the
+ACL2 home page.  For now, we provide some links.
+
+<ul>
+
+<li>The following two interfaces to ACL2 support the teaching of ACL2
+to undergraduates:
+
+  <ul>
+
+  <li>The <a href="http://acl2s.peterd.org/acl2s/">ACL2 Sedan
+  (ACL2s)</a></li>
+
+  <li><a href="http://www.ccs.neu.edu/home/cce/acl2/">DrACuLa</a></li>
+
+  </ul>
+
+<li>Here is a link to the <a
+href="http://www.faculty.idc.ac.il/yishai/reasoning/">web
+page for Yishai Feldman's Computer-Aided Reasoning course at The Interdisciplinary Center, Herzliya</a>.</li>
+
+<li>John Cowles, <a href="http://www.cs.uwyo.edu/~cowles/jvm-acl2/">COSC5010:
+Formalizing the JVM in ACL2</a>, Univ. of Wyoming.</li>
+
+<li>Links to some of Warren Hunt's courses, many of which use ACL2, may be found <a
+href="http://www.cs.utexas.edu/users/hunt/class/index.html">here</a>.</li>
+
+<li><a
+href="http://www.ccs.neu.edu/home/pete/courses/Logic-and-Computation/2008-Spring/">Logic
+and Computation</a>, a freshman class taught by Pete Manolios and Riccardo
+Pucella at Northeastern.</li>
+
+<li>Here are links to web pages for courses taught by Pete Manolios at
+Georgia Tech:
+<ul>
+<li><a href="http://www.cc.gatech.edu/~manolios/courses/Computational-Logic/2005-Spring/">CS 8803 Computational Logic
+(Spring 2005)</a></li>
+<li><a
+href="http://www.cc.gatech.edu/fac/Pete.Manolios/courses/Hardware-Verification-Seminar/2004-Fall/">CS
+8001 Hardware Verification Fall 2004</a></li>
+<li><a href="http://www.ccs.neu.edu/home/pete/courses/Processor-design/2002-Fall/">CS 3220 Processor Design.</a></li>
+</li>
+</ul>
+
+<li>Links to some of J Moore's courses, many of which use ACL2, may be found <a
+href="http://www.cs.utexas.edu/users/moore/classes/index.html">here</a>.</li>
+
+<li><a href="http://www.cs.ou.edu/~rlpage/SEcollab/">A course taught by Rex Page at the
+Univ. of Oklahoma, and related links.</a></li>
+
+<li><a href="http://www.stanford.edu/~ewsmith/acl2/">Eric Smith's web page for a class at Stanford</a></li>
+
+</ul>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
+</BODY>
+</HTML>

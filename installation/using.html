@@ -1,0 +1,328 @@
+<HTML>
+<HEAD><TITLE>ACL2 Version 4.1 Installation Guide: Using ACL2</TITLE></HEAD>
+
+<BODY TEXT="#000000">
+<BODY BGCOLOR="#FFFFFF">
+
+<H1>Using ACL2</A></H1>
+
+<b><font>[<a href="installation.html">Back to main page of Installation Guide.</a>]</font></b>
+
+<p>
+
+<B>Table of Contents</B><BR>
+
+<UL>
+  <LI><A HREF="#Invoking">Invoking ACL2</A>
+  <UL>
+    <LI><A HREF="#Starting">When ACL2 Starts Up</A>
+  </UL>
+  <LI><A HREF="#Testing">Testing ACL2</A>
+  <LI><A HREF="#Certifying">Certifying ACL2 Books</A>
+  <LI><A HREF="#Documentation">Documentation</A>
+</UL>
+
+<p><hr size=3 noshade><p>
+
+Here we begin with a discussion of how to <A HREF="#Invoking">invoke ACL2</A>
+interactively.  We then discuss <A HREF="#Testing">testing</A> as well as the
+<A HREF="#Certifying">certification</A> of ACL2 <em>books</em> that come with
+the distribution.  We conclude with a discussion of the <A
+HREF="#Documentation">documentation</A>.
+
+<BR><HR><BR>
+<H3><A NAME="Invoking">Invoking ACL2</A></H3>
+
+At this point, <I>dir</I> has a subdirectory called <code>acl2-sources</code>.
+The sources and perhaps an executable image are located on that subdirectory.
+However, if you have not saved an image but instead use the directions
+for <A HREF="obtaining-and-installing.html#Running">Running Without Building an Executable Image</A>, skip
+to <A HREF="#Starting">When ACL2 Starts Up</A> below.
+
+<P>
+
+The executable image is called <code>acl2-sources/saved_acl2</code>.  You can
+invoke ACL2 by running that image, e.g.,
+
+<BR><BR>
+<CODE>mycomputer% </CODE><I>dir</I><CODE>/acl2-sources/saved_acl2</CODE>
+<BR><BR>
+
+If on a Unix/Linux system, then to make it easy to invoke ACL2 by typing a
+short command, e.g.,
+
+<BR><BR>
+<CODE>mycomputer% acl2</CODE>
+<BR><BR>
+
+you may want to install an executable file on your path, e.g.,
+<code>/usr/local/bin/acl2</code>, containing the following two lines:
+
+<BR><BR>
+<CODE>#!/bin/csh -f</CODE><BR>
+<I>dir</I><CODE>/acl2-sources/saved_acl2</CODE><BR>
+<BR><BR>
+
+Note: A carriage return in the file after the last line above is important!
+<P>
+
+<BR>
+<H4><A NAME="Starting">When ACL2 Starts Up</A></H4>
+
+When you invoke ACL2, you should see the host Common Lisp 
+print a header concerning the ACL2 version, license and copyright.
+<P>
+Some hosts then automatically enter the ACL2 ``command loop,'' an ACL2
+read-eval-print loop with the prompt:
+<PRE>
+ACL2 !>
+</PRE>
+Other hosts will leave you in Common Lisp's read-eval-print loop.
+If yours is one of the latter, evaluate the Common Lisp expression
+<CODE>(ACL2::LP)</CODE> or simply <CODE>(LP)</CODE> if the current
+package is <CODE>"ACL2"</CODE>.
+<P>
+Once in the ACL2 command loop, you can type an ACL2 term, typically
+followed by ``return'' or ``enter,'' and ACL2 will evaluate the term,
+print its value, and prompt you for another one.  Below are three
+simple interactions:
+<PRE>
+ACL2 !>t
+T
+ACL2 !>'abc
+ABC
+ACL2 !>(+ 2 2)
+4
+</PRE>
+<P>
+
+To get out of the ACL2 command loop, type the <code>:q</code> command.
+This returns you to the host Common Lisp.  We sometimes call this
+``raw Lisp.''  You may re-enter the command loop with
+<code>(LP)</code> as above.
+
+<P>
+Note that when you are in raw Lisp you can overwrite or destroy ACL2
+by executing inappropriate Common Lisp expressions.  <B>All bets are
+off once you've exited our loop.</B> That said, many users do it.
+For example, you might exit our loop, activate some debugging or trace
+features in raw Lisp, and then reenter our loop.  While developing
+proofs or tracking down problems, this is reasonable behavior.
+
+<P>
+Now you are ready to <A HREF="#Testing">test</A> your image.
+
+<BR><HR><BR>
+<H3><A NAME="Testing">Testing ACL2</A></H3>
+
+<P>
+An easy way to test the theorem prover is to
+type the following term to the ACL2 command loop:
+<PRE>
+:mini-proveall
+</PRE>
+This will cause a moderately long sequence of commands to be processed, each of
+which is first printed out as though you had typed it.  Each will print some
+text, generally a proof of some conjecture.  None should fail.
+
+<P>
+A more elaborate test is to <A NAME="#Certifying">certify the ``books''</A>
+that come with the distribution, which is a good idea anyhow; this is our next
+topic.  On a Unix/Linux system, you can also certify just a small but useful
+subset of the books in a few minutes by executing, in directory
+<i>dir</i>/<code>acl2-sources</code>:
+<pre>
+make certify-books-short
+</pre>
+
+<BR><HR><BR>
+<H3><A NAME="Certifying">Certifying ACL2 Books</A></H3>
+
+<!-- NOTE to developers: v4-1 below indicates a normal release, which is OK. -->
+<!-- Do not edit that for incremental releases. -->
+
+The ``books'' that come with the distribution have been contributed mainly by
+users and are on the subdirectory <CODE>acl2-sources/books</CODE>.  See <A
+HREF="http://www.cs.utexas.edu/users/moore/acl2/v4-1/distrib/acl2-sources/books/Readme.html"><CODE>acl2-sources/books/Readme.html</CODE></A>
+for information.  The general topic of books is discussed thoroughly in the
+ACL2 documentation; see the <CODE>BOOKS</CODE> node in the documentation tree.
+
+<P>
+Books should be ``certified'' before they are used.  We do not distribute
+certificates with our books, mainly because certification produces compiled
+code specific to the host.  You should certify the books locally, both as a test of
+your ACL2 image and because books generally need to be certified before they
+can be used.
+
+<P>
+It is easy to re-certify all the distributed books in Unix/Linux.  We recommend you
+do this.  If you have entered ACL2, exit to the operating system, e.g., by
+control-d in many systems.
+
+<P>
+While connected to <I>dir</I><CODE>/acl2-sources</CODE>, execute
+<PRE>
+make certify-books
+</PRE>
+
+This will generate minimal output to the screen and will probably take an hour
+or two.  Failure is indicated by the presence of <code>**CERTIFICATION FAILED**</code> in the log.
+
+<P>
+
+To remove the files thus created, invoke:
+<PRE>
+make clean-books
+</PRE>
+
+<P>
+The <CODE>certify-books</CODE> target does not cause workshop books to be
+certified.  If you want to certify those books as well, you will first need to
+<a
+href="http://www.cs.utexas.edu/users/moore/acl2/v4-1/distrib/acl2-sources/books/workshops.tar.gz">download
+the gzipped tar file</a> to the <CODE>books/</CODE> directory, and then gunzip
+and extract it.  You can certify all the books, including books for the
+workshops (including those from the 1999 workshop as described in the
+(hardbound) book <A
+HREF="http://www.cs.utexas.edu/users/moore/publications/acl2-books/acs/index.html"><EM>Computer-Aided
+Reasoning: ACL2 Case Studies</EM></A>), using the command:
+
+<PRE>
+make regression
+</PRE>
+
+<P>
+By default, certification uses the image
+<I>dir</I><CODE>/acl2-sources/saved_acl2</CODE>.  You may specify any ACL2
+image, as long as it is either a command on your Unix/Linux path or an absolute file
+name, for example as follows.
+
+<PRE>
+make certify-books ACL2=my-acl2
+
+make regression ACL2=/u/smith/projects/acl2/saved_acl2
+</PRE>
+
+<P>
+We apologize to non-Unix/Linux users: we do not provide non-Unix/Linux
+instructions for recertifying the distributed books.  The
+certification methods provided by the authors of the books vary
+greatly and we codified them in the Unix/Linux makefile (GNUmakefile) used above.  Most
+subdirectories of <CODE>acl2-sources/books</CODE> contain either a
+<CODE>README</CODE> file or a <CODE>certify.lsp</CODE> file.  Users
+who wish to certify one of these books and who cannot figure out (from
+these scant clues) what to type to ACL2 should not hesitate to contact
+the authors.
+
+<P>
+Next proceed to the section on <A HREF="#Documentation">Documentation</A>.
+
+<BR><HR><BR>
+<H3><A NAME="Documentation">Documentation</A></H3>
+
+<P>
+ACL2's documentation is a hypertext document that, if printed in book
+form, is about 1100 pages or more than 2 megabytes of text.  Its
+hypertext character makes it far more pleasing to read with an
+interactive browser.  The documentation is available in four formats:
+HTML, Texinfo, Postscript and ACL2 documentation strings.  All of this
+material is copyrighted by the University of Texas at Austin and is
+derived under the GNU General Public License from material copyrighted
+by Computational Logic, Inc.
+
+<P>
+Two Web-based guided tours of ACL2 are available from the home page
+noted below.  If you are already familiar with Nqthm, you might find
+it useful to look at the documentation node
+<CODE>NQTHM-TO-ACL2</CODE>.  Another useful documentation topic for
+beginning ACL2 users is the node <CODE>TUTORIAL</CODE>.
+
+<P>
+<B>HTML</B>
+<P>
+The ACL2 Home Page is
+<P>
+<CODE><A HREF="http://www.cs.utexas.edu/users/moore/acl2/index.html">http://www.cs.utexas.edu/users/moore/acl2/index.html</A></CODE>
+<P>
+
+The home page provides a selected bibliography, a search button (near the top
+of the page), guided tours of the system, and the complete hypertext
+documentation tree.
+
+<P>
+Once you have installed ACL2, the HTML form of the documentation is
+available locally as
+<I>dir</I><CODE>/acl2-sources/doc/HTML/acl2-doc.html</CODE>.
+<BR><BR>
+We urge you to browse your local copy of the documentation rather than
+our Web copy, simply to reduce Web traffic and the demand on our
+server.  (Macintosh users using MacOS 9 and earlier may, however, find
+filenames being truncated and hence will want to avoid the local
+documentation.)
+
+<P><B>Emacs Info</B><P>
+
+This is a very convenient format for accessing the ACL2 documentation from
+within Emacs.  In Emacs, invoke
+<PRE>
+meta-x info
+</PRE>
+and then, if you are unfamiliar with Info, type
+<PRE>
+control-h m
+</PRE>
+to see a list of commands available.  In particular, type
+<BR><BR>
+<CODE>g (</CODE><I>dir</I><CODE>/acl2-sources/doc/EMACS/acl2-doc-emacs.info)TOP</CODE><BR><BR>
+to enter the ACL2 documentation.  Alternatively, your system administrator can
+add an ACL2 node to the top-level Info menu.  The appropriate entry might read:
+<BR><BR>
+<CODE>* ACL2 i.j: (</CODE><I>dir</I><CODE>/acl2-sources/doc/EMACS/acl2-doc-emacs).</CODE><BR>
+&nbsp &nbsp &nbsp &nbsp &nbsp <CODE>Documentation for ACL2 version i.j.</CODE>
+<BR><BR>
+
+Note: The Emacs Info and Postscript versions of our documentation were
+created using the file <CODE>acl2-sources/doc/texinfo.tex</CODE> which
+is copyrighted by the Free Software Foundation, Inc.  (See that file
+for copyright and license information.)
+
+<P>
+
+Users new to emacs may find it helpful to load into emacs the file
+</CODE><I>dir</I><CODE>/acl2-sources/emacs/emacs-acl2.el</CODE>.  Utilities
+offered by this file are documented near the top of the file.
+
+<P><B>Postscript</B><P>
+
+The Postscript version of the documentation is not included in our normal
+distribution because it is so much less useful than the hyper-text versions.
+But a <A
+HREF="http://www.cs.utexas.edu/users/moore/publications/acl2-book.ps.gz">gzipped
+Postscript (1.2 MB)</A> version is available.  It prints as a book of about 1000
+pages and contains a Table of Contents and an index to all documented topics.
+
+<P><B>ACL2 Documentation Strings</B><P>
+
+The ACL2 system has facilities for browsing the documentation.  When you are in
+the ACL2 command loop, you may query the documentation on a given topic by
+typing the command
+<BR><BR>
+<CODE>:doc </CODE><I>topic</I>
+<BR><BR>
+where <I>topic</I> is the Lisp symbol naming the topic you want to
+learn about.  To learn more about the on-line documentation, type
+<CODE>:help</CODE> and then return.
+
+<P>
+Note, however, that you may find it more convenient to view the documentation
+in a web browser (starting at <CODE>doc/HTML/acl2-doc.html</CODE>) or in Emacs
+info (starting at <CODE>doc/EMACS/acl2-doc-emacs.info</CODE>).
+
+<p>
+
+<b><font size="+2">[<a href="installation.html">Back to Installation Guide.</a>]</font></b>
+
+<BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR>
+
+</BODY>
+</HTML>
