@@ -25,7 +25,7 @@
 ; file Sources/ACL2/acl2-hacks/no-fertilize.lisp for details.
 
 (in-package "ACL2")
-(include-book "tools/bstar" :dir :system)
+(include-book "bstar")
 
 (defun strip-quotes-for-do-not (x)
   ;; Turn any quoted arguments into unquoted args, so that
