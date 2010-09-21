@@ -3192,6 +3192,7 @@ define-keyed-function.lisp
 defined-const.lisp
 defsum.lisp
 deftuple.lisp
+do-not.lisp
 flag-package.lsp
 flag.acl2
 flag.lisp
