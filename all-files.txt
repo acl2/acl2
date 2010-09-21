@@ -3,6 +3,7 @@ GPL2
 LICENSE
 Makefile
 # README-images.html -- developer file
+# The following is distributed but is not in the repository:
 TAGS
 acl2-check.lisp
 acl2-fns.lisp
@@ -69,6 +70,7 @@ prove.lisp
 # release.cmds.incl -- developer file
 rewrite.lisp
 save-gprof.lsp
+# The following is distributed but is not in the repository:
 saved
 simplify.lisp
 sum-list-example.lisp
@@ -3314,9 +3316,12 @@ xdoc.el
 xdoc.js
 
 doc:
+# The following is distributed but is not in the repository:
 EMACS
+# The following is distributed but is not in the repository:
 HTML
 README
+# The following is distributed but is not in the repository:
 TEX
 create-acl2-html
 create-acl2-texinfo
@@ -3325,11 +3330,13 @@ texinfo.tex
 write-acl2-html.lisp
 write-acl2-texinfo.lisp
 
+# The following is distributed but is not in the repository:
 doc/EMACS:
 acl2-doc-emacs.info
 acl2-doc-emacs.info-*
 # acl2-doc-emacs.texinfo -- optional temporary file
 
+# The following is distributed but is not in the repository:
 doc/HTML:
 LICENSE
 installation
@@ -3346,6 +3353,7 @@ using.html
 windows-gcl-jared.html
 windows7.html
 
+# The following is distributed but is not in the repository:
 doc/TEX:
 # No longer distribute: acl2-book.dvi.gz
 # No longer distribute: acl2-book.ps.gz (but available from publications page)
