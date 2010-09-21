@@ -4,7 +4,7 @@
 PERL ?= perl
 
 # Your SAT solver executable
-SAT_SOLVER ?= ${PWD}/../../../../aux/minisat2/${HOSTTYPE}/minisat/core/minisat
+SAT_SOLVER ?= ${PWD}/../../../aux/minisat2/${HOSTTYPE}/minisat/core/minisat
 
 # Either "minisat" or "zchaff"
 SAT_SOLVER_TYPE ?= minisat
