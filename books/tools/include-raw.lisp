@@ -162,11 +162,11 @@ using this tool and depending on compilation.~/~/"
 
      (progn!
       (set-raw-mode t)
-      ;; According to Matt K., *hcomp-fn-restore-ht* is nonnil only when
+      ;; According to Matt K., *hcomp-fn-macro-restore-ht* is nonnil only when
       ;; loading a book's compiled file.  We want to wait until the events of
       ;; the include-book are being processed to run this, so that our compiled
       ;; file isn't loaded twice.
-      (when (null *hcomp-fn-restore-ht*)
+      (when (null *hcomp-fn-macro-restore-ht*)
         (,(if do-not-compile 'raw-load-uncompiled 'raw-load)
          ,fname ,(not on-load-fail-p) ',on-load-fail state))
       (value-triple ,fname))))
