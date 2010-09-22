@@ -126,6 +126,8 @@ BOOKS_CERT    = $(patsubst %, %.cert,    $(BOOKS))
 # after the include of Makefile-generic, one arranges that books foo
 # and bar will NOT be compiled in other Lisps.
 
+# Keep the following compiled file extensions in sync with those
+# mentioned in the 'clean' target in ../GNUmakefile.
 BOOKS_SKIP_COMP := 
 BOOKS_COMP    = $(filter-out $(BOOKS_SKIP_COMP),$(BOOKS))
 BOOKS_FASL    = $(patsubst %, %.fasl,    $(BOOKS_COMP))
