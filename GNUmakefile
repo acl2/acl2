@@ -673,12 +673,25 @@ HTML:
 
 .PHONY: clean
 clean:
-# Does not remove TAGS, and does not remove executable or corresponding scripts
-# (since there could be many executables that one prefers not to delete).
-	rm -f *.o *#* *.c *.h *.data gazonk.* workxxx workyyy \
-	  *.lbin *.sbin *.fasl *.wfasl *.fas *.lib *.sparcf *.ufsl *.x86f *.dfsl *.fn acl2-status.txt \
-	  *.log TMP* saved/*
-	rm -f *~ */*~ */*/*~ */*/*/*~
+# Does not remove executable or corresponding scripts
+# (since there could be many executables that one prefers not to delete),
+# except for *osaved_acl2* files.
+	rm -f *.o *#* *.c *.h *.data gazonk.* workxxx workyyy *.lib \
+	  *.fasl *.fas *.sparcf *.ufsl *.dfsl \
+	  *.d64fsl *.dx64fsl *.lx64fsl \
+	  *.lx32fsl *.x86f *.o \
+	  TAGS acl2-status.txt acl2r.lisp acl2-proclaims.lisp .acl2rc \
+	  *osaved_acl2 *osaved_acl2.* \
+	  *.log TMP*
+	rm -rf saved
+	rm -f doc/*.o doc/*#* doc/*.c doc/*.h doc/*.data doc/gazonk.* \
+	   doc/workxxx doc/workyyy doc/*.lib \
+	   doc/*.fasl doc/*.fas doc/*.sparcf doc/*.ufsl doc/*.dfsl \
+	   doc/*.d64fsl doc/*.dx64fsl doc/*.lx64fsl \
+	   doc/*.lx32fsl doc/*.x86f doc/*.o \
+	   doc/*.cert doc/*.out \
+	   doc/*.log doc/TMP*
+	rm -rf doc/TEX doc/HTML doc/EMACS
 
 .PHONY: red
 red:    compile-ok
