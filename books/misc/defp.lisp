@@ -134,7 +134,9 @@
 (defmacro defp (g vars body &key (rule-classes ':definition))
   `(make-event
     (er-progn
-     (defstub ,g ,vars t)
+     (if (function-symbolp ',g (w state))
+         (value nil)
+       (defstub ,g ,vars t))
      (er-let*
       ((tbody0 (translate ',body t t nil '(defp . ,g) (w state) state)))
       (let* ((tbody (remove-lambdas tbody0))
