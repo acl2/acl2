@@ -434,7 +434,7 @@ implementations.")
     ~% are welcome to redistribute it under certain conditions.  For details,~
     ~% see the GNU General Public License.~%"
    "~% WARNING: Do not redistribute.  This is NOT an ACL2 release; it is,~
-    ~% rather, an svn distribution, $Rev: $.~
+    ~% rather, an svn distribution, $Revision$.~
     ~% The authors of ACL2 consider svn distributions to be experimental.~%"
    "~a"
    #+hons
