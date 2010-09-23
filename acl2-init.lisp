@@ -429,13 +429,17 @@ implementations.")
   (concatenate
    'string
    "~% ~a built ~a.~
-   ~% Copyright (C) 2010  University of Texas at Austin~
-   ~% ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and you~
-   ~% are welcome to redistribute it under certain conditions.  For details,~
-   ~% see the GNU General Public License.~%~
-    ~a"
+    ~% Copyright (C) 2010  University of Texas at Austin"
+   "~% ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and you~
+    ~% are welcome to redistribute it under certain conditions.  For details,~
+    ~% see the GNU General Public License.~%"
+   "~% WARNING: Do not redistribute.  This is NOT an ACL2 release; it is,~
+    ~% rather, an svn distribution, $Revision: $.~
+    ~% The authors of ACL2 consider svn distributions to be experimental.~%"
+   "~a"
    #+hons
-   "~%~% Experimental modification for HONS, memoization, and applicative hash tables.~%"
+   "~%~% Experimental modification for HONS, memoization, and applicative hash~
+    ~% tables.~%"
    #+acl2-par
    "~%~% Experimental modification for parallel evaluation.  Please expect at~
     ~% most limited maintenance for this version~%"
