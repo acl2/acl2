@@ -48,41 +48,6 @@
                   nil))
   :hints(("Goal" :in-theory (enable nth))))
 
-(defthm nthcdr-of-nthcdr
-  (equal (nthcdr a (nthcdr b x))
-         (nthcdr (+ (nfix a) (nfix b)) x)))
-
-(encapsulate
- ()
- (local (defthmd lemma1
-          (implies (true-listp x)
-                   (true-listp (nthcdr n x)))
-          :hints(("Goal" :in-theory (enable nthcdr)))))
-
- (local (defthmd lemma2
-          (implies (< (len x) (nfix n))
-                   (true-listp (nthcdr n x)))
-          :hints(("Goal" :in-theory (enable nthcdr)))))
-
- (local (defthmd lemma3
-          (implies (and (not (true-listp x))
-                        (not (< (len x) (nfix n))))
-                   (not (true-listp (nthcdr n x))))
-          :hints(("Goal" :in-theory (enable nthcdr)))))
-
- (defthm true-listp-of-nthcdr
-   (equal (true-listp (nthcdr n x))
-          (or (true-listp x)
-              (< (len x) (nfix n))))
-   :rule-classes ((:rewrite)
-                  (:type-prescription :corollary (implies (true-listp x)
-                                                          (true-listp (nthcdr n x)))))
-   :hints(("Goal"
-           :in-theory (disable nthcdr)
-           :use ((:instance lemma1)
-                 (:instance lemma2)
-                 (:instance lemma3))))))
-
 (defthm character-listp-of-repeat
   (implies (characterp x)
            (character-listp (acl2::repeat x n)))
@@ -121,7 +86,7 @@
   (implies (and (stringp x)
                 (not (equal x "")))
            (< 0 (len (coerce x 'list))))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable coerce-inverse-2)
           :use ((:instance coerce-inverse-2)))))
 

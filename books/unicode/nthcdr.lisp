@@ -19,9 +19,41 @@
 
 (encapsulate
  ()
- (local (include-book "arithmetic-3/bind-free/top" :dir :system))
+ (local (defthmd lemma1
+          (implies (true-listp x)
+                   (true-listp (nthcdr n x)))
+          :hints(("Goal" :in-theory (enable nthcdr)))))
 
- (defthm nthcdr-of-non-consp
+ (local (defthmd lemma2
+          (implies (< (len x) (nfix n))
+                   (true-listp (nthcdr n x)))
+          :hints(("Goal" :in-theory (enable nthcdr)))))
+
+ (local (defthmd lemma3
+          (implies (and (not (true-listp x))
+                        (not (< (len x) (nfix n))))
+                   (not (true-listp (nthcdr n x))))
+          :hints(("Goal" :in-theory (enable nthcdr)))))
+
+ (defthm true-listp-of-nthcdr
+   (equal (true-listp (nthcdr n x))
+          (or (true-listp x)
+              (< (len x) (nfix n))))
+   :rule-classes ((:rewrite)
+                  (:type-prescription :corollary (implies (true-listp x)
+                                                          (true-listp (nthcdr n x)))))
+   :hints(("Goal"
+           :in-theory (disable nthcdr)
+           :use ((:instance lemma1)
+                 (:instance lemma2)
+                 (:instance lemma3))))))
+
+(defthm nthcdr-when-not-natp
+  (implies (not (natp n))
+           (equal (nthcdr n x)
+                  x)))
+
+(defthm nthcdr-when-non-consp
    (implies (not (consp x))
             (equal (nthcdr n x)
                    (if (zp n)
@@ -29,34 +61,42 @@
                      nil)))
    :hints (("Goal" :in-theory (enable nthcdr))))
 
- (defthm consp-of-nthcdr
-   (equal (consp (nthcdr n l))
-          (< (nfix n) (len l)))
-   :hints (("Goal" :in-theory (enable nthcdr)))))
+(local (defthm equal-len-0
+         (equal (equal (len x) 0)
+                (atom x))))
 
-;; arithmetic-3 loops??
+(encapsulate
+ ()
+ (local (defthmd l0
+          (implies (< (nfix n) (len x))
+                   (consp (nthcdr n x)))
+          :hints(("Goal" :induct (nthcdr n x)))))
+
+ (local (defthmd l1
+          (implies (not (< (nfix n) (len x)))
+                   (not (consp (nthcdr n x))))
+          :hints(("goal" :induct (nthcdr n x)))))
+
+ (defthm consp-of-nthcdr
+   (equal (consp (nthcdr n x))
+          (< (nfix n) (len x)))
+   :hints(("Goal" :use ((:instance l0)
+                        (:instance l1))))))
+
 (defthm len-of-nthcdr
   (equal (len (nthcdr n l))
-         (if (natp n)
-             (max 0 (- (len l) n))
-           (len l)))
+         (nfix (- (len l) (nfix n))))
   :hints (("Goal" :in-theory (enable nthcdr))))
 
-(defthm nthcdr-of-1
-  (equal (nthcdr 1 x)
-         (cdr x)))
-
-(defthm nthcdr-of-2
-  (equal (nthcdr 2 x)
-         (cddr x)))
-
-(defthm nthcdr-of-3
-  (equal (nthcdr 3 x)
-         (cdddr x)))
-
-(defthm nthcdr-of-4
-  (equal (nthcdr 4 x)
-         (cddddr x)))
+(defthm open-small-nthcdr
+  (implies (syntaxp (and (quotep n)
+                         (natp (unquote n))
+                         (< (unquote n) 5)))
+           (equal (nthcdr n x)
+                  (if (zp n)
+                      x
+                    (nthcdr (+ -1 n) (cdr x)))))
+  :hints(("Goal" :in-theory (enable nthcdr))))
 
 (local (defthm acl2-count-of-cdr
          (implies (consp x)
@@ -95,7 +135,8 @@
   :rule-classes :linear)
 
 (defthm car-of-nthcdr
-  (equal (car (nthcdr i x)) (nth i x)))
+  (equal (car (nthcdr i x))
+         (nth i x)))
 
 (defthm nthcdr-of-cdr
   (equal (nthcdr i (cdr x))
@@ -103,4 +144,10 @@
 
 (defthm nthcdr-when-less-than-len-under-iff
   (implies (< (nfix n) (len x))
-           (iff (nthcdr n x) t)))
+           (iff (nthcdr n x)
+                t)))
+
+(defthm nthcdr-of-nthcdr
+  (equal (nthcdr a (nthcdr b x))
+         (nthcdr (+ (nfix a) (nfix b)) x))
+  :hints(("Goal" :induct (nthcdr b x))))
