@@ -21760,12 +21760,12 @@ J
   greater than or equal to the length of ~c[l], then ~c[mv-nth] returns
   ~c[nil].~/
 
-  ~c[(Mv-nth n l)] has a ~il[guard] that ~c[n] is a non-negative integer and
-  ~c[l] is a ~ilc[true-listp].
+  ~c[(Mv-nth n l)] has a ~il[guard] that ~c[n] is a non-negative integer.
 
-  ~c[Mv-nth] is equivalent to the Common Lisp function ~ilc[nth], but is used by
-  ACL2 to access the nth value returned by a multiply valued expression.  For
-  an example of the use of ~c[mv-nth], try
+  ~c[Mv-nth] is equivalent to the Common Lisp function ~ilc[nth] (although
+  without the guard condition that the list is a ~ilc[true-listp]), but is used
+  by ACL2 to access the nth value returned by a multiply valued expression.
+  For an example of the use of ~c[mv-nth], try
   ~bv[]
   ACL2 !>:trans1 (mv-let (erp val state)
                          (read-object ch state)

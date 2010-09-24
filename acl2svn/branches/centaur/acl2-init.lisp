@@ -429,13 +429,31 @@ implementations.")
   (concatenate
    'string
    "~% ~a built ~a.~
-   ~% Copyright (C) 2010  University of Texas at Austin~
-   ~% ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and you~
-   ~% are welcome to redistribute it under certain conditions.  For details,~
-   ~% see the GNU General Public License.~%~
-    ~a"
+    ~% Copyright (C) 2010  University of Texas at Austin"
+   "~% ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and you~
+    ~% are welcome to redistribute it under certain conditions.  For details,~
+    ~% see the GNU General Public License.~%"
+
+; NOTE: Comment out the next string if doing an ACL2 release.  Be sure to do no
+; further svn commits until after the release.  Do an svn commit of everything
+; immediately after the release, with a message (svn commit -m argument) saying
+; which release it is:
+
+;   svn commit -m 'Committing ACL2 Version 4.1'
+
+; Then, uncomment the following string and do a new commit:
+
+;   svn commit -m \
+;   'Modifying banner to assert once again that svn releases are experimental.'
+
+   "~% WARNING: Do not redistribute.  This is NOT an ACL2 release; it is,~
+    ~% rather, an svn distribution, $Revision$.~
+    ~% The authors of ACL2 consider svn distributions to be experimental.~%"
+
+   "~a"
    #+hons
-   "~%~% Experimental modification for HONS, memoization, and applicative hash tables.~%"
+   "~%~% Experimental modification for HONS, memoization, and applicative hash~
+    ~% tables.~%"
    #+acl2-par
    "~%~% Experimental modification for parallel evaluation.  Please expect at~
     ~% most limited maintenance for this version~%"

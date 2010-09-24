@@ -9,11 +9,13 @@
 
 rm -f doc/workxxx
 
-# It is our convention to keep the .fig and .gif files in acl2/graphics/
-# (note version independence).  As part of this creation, we copy the *.gif
-# files from that source to the doc/HTML subdirectory where they will
-# reside for convenient HTML access.  We delete the copies on doc/HTML
-# every time we rebuild, because the definitive copies are on acl2/graphics/.
+# It is our convention to keep the .fig and .gif files in graphics/
+# (under the main ACL2 source directory), but only in the development
+# directory at UT (not distributed with releases).  As part of this
+# creation, we copy the *.gif files from that source to the doc/HTML
+# subdirectory where they will reside for convenient HTML access.  We
+# delete the copies on doc/HTML every time we rebuild, because the
+# definitive copies are in graphics/.
 
 rm -f doc/HTML/*.gif
 
@@ -27,7 +29,7 @@ chmod 775 doc/HTML
 
 # Now copy the definitive .gif files over to doc/HTML.
 
-cp ../graphics/*.gif doc/HTML
+cp -p graphics/*.gif doc/HTML
 
 # Copy the license down to the doc/HTML so the home page can reference it.
 
