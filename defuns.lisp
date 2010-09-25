@@ -41,18 +41,18 @@
   (non-executablep names bodies bindings known-stobjs-lst ctx wrld state)
   (cond ((null bodies) (trans-value nil))
         (t (trans-er-let*
-            ((x (translate1 (car bodies)
-                            (if non-executablep t (car names))
-                            (if non-executablep nil bindings)
-                            (car known-stobjs-lst)
-                            (if (and (consp ctx)
-                                     (equal (car ctx)
-                                            *mutual-recursion-ctx-string*))
-                                (msg "( MUTUAL-RECURSION ... ( DEFUN ~x0 ...) ~
+            ((x (translate1-cmp (car bodies)
+                                (if non-executablep t (car names))
+                                (if non-executablep nil bindings)
+                                (car known-stobjs-lst)
+                                (if (and (consp ctx)
+                                         (equal (car ctx)
+                                                *mutual-recursion-ctx-string*))
+                                    (msg "( MUTUAL-RECURSION ... ( DEFUN ~x0 ...) ~
                                       ...)"
-                                     (car names))
-                              ctx)
-                            wrld state))
+                                         (car names))
+                                  ctx)
+                                wrld state))
              (y (translate-bodies1 non-executablep
                                    (cdr names)
                                    (cdr bodies)
@@ -68,12 +68,13 @@
 ; translations and the final bindings from translate.
 
   (declare (xargs :guard (true-listp bodies)))
-  (mv-let (erp lst bindings state)
+  (mv-let (erp lst bindings)
           (translate-bodies1 non-executablep names bodies
                              (pairlis$ names names)
                              known-stobjs-lst
                              ctx wrld state)
-          (cond (erp (mv t nil state))
+          (cond (erp ; erp is a ctx, lst is a msg
+                 (er soft erp "~@0" lst))
                 (non-executablep (value (cons lst (pairlis-x2 names '(nil)))))
                 (t (value (cons lst bindings))))))
 

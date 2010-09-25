@@ -365,182 +365,11 @@
 
 (defconst *macro-expansion-ctx* "macro expansion")
 
-(defun chk-length-and-keys (actuals form state)
-  (cond ((null actuals)
-         (value nil))
-        ((null (cdr actuals))
-         (er soft *macro-expansion-ctx*
-             "A non-even key/value arglist was encountered while ~
-              macro expanding ~x0.  The argument list for ~x1 is ~
-              ~%~F2."
-             form
-             (car form)
-             (macro-args (car form) (w state))))
-        ((keywordp (car actuals))
-         (chk-length-and-keys (cddr actuals) form state))
-        (t (er soft *macro-expansion-ctx*
-               "A non-keyword was encountered while macro expanding ~
-                ~x0 where a keyword was expected.  The formal ~
-                parameters list for ~x1 is ~%~F2."
-               form
-               (car form)
-               (macro-args (car form) (w state))))))
-
 (defun remove-keyword (word l)
   (cond ((null l) nil)
         ((eq word (car l))
          (remove-keyword word (cddr l)))
         (t (list* (car l) (cadr l) (remove-keyword word (cddr l))))))
-
-(defun bind-macro-args-keys1 (args actuals allow-flg alist form state)
-  (cond ((null args)
-         (cond ((or (null actuals) allow-flg)
-                (value alist))
-               (t (er soft *macro-expansion-ctx*
-                      "Illegal key/value args ~x0 in macro expansion ~
-                       of ~x1.  The argument list for ~x2 is ~%~F3."
-                      actuals form
-                      (car form)
-                      (macro-args (car form) (w state))))))
-        ((eq (car args) '&allow-other-keys)
-         (value alist))
-        (t (let* ((formal (cond ((atom (car args))
-                                 (car args))
-                                ((atom (caar args))
-                                 (caar args))
-                                (t (cadr (caar args)))))
-                  (key (cond ((atom (car args))
-                              (intern (symbol-name (car args))
-                                      "KEYWORD"))
-                             ((atom (car (car args)))
-                              (intern (symbol-name (caar args))
-                                      "KEYWORD"))
-                             (t (caaar args))))
-                  (tl (assoc-keyword key actuals))
-                  (alist (cond ((and (consp (car args))
-                                     (= 3 (length (car args))))
-                                (cons (cons (caddr (car args))
-                                            (not (null tl)))
-                                      alist))
-                               (t alist))))
-             (pprogn
-              (cond ((assoc-keyword key (cddr tl))
-                     (warning$ *macro-expansion-ctx* "Duplicate-Keys"
-                              "The keyword argument ~x0 occurs twice in ~x1.  ~
-                               This situation is explicitly allowed in Common ~
-                               Lisp (see CLTL2, page 80) but it often suggests ~
-                               a mistake was made.  The leftmost value for ~x0 ~
-                               is used."
-                              key form))
-                    (t state))
-              (bind-macro-args-keys1
-               (cdr args)
-               (remove-keyword key actuals)
-               allow-flg
-               (cons (cons formal
-                           (cond (tl (cadr tl))
-                                 ((atom (car args))
-                                  nil)
-                                 ((> (length (car args)) 1)
-                                  (cadr (cadr (car args))))
-                                 (t nil)))
-                     alist)
-               form state))))))
-
-(defun bind-macro-args-keys (args actuals alist form state)
-  (er-progn (chk-length-and-keys actuals form state)
-            (cond ((assoc-keyword :allow-other-keys
-                                  (cdr (assoc-keyword :allow-other-keys
-                                                      actuals)))
-                   (er soft *macro-expansion-ctx*
-                       "ACL2 prohibits multiple :allow-other-keys ~
-                        because implementations differ significantly ~
-                        concerning which value to take."))
-                  (t (value nil)))
-            (bind-macro-args-keys1
-             args actuals
-             (let ((tl
-                    (assoc-keyword :allow-other-keys actuals)))
-               (and tl (cadr tl)))
-             alist form state)))
-
-(defun bind-macro-args-after-rest (args actuals alist form state)
-  (cond
-   ((null args) (value alist))
-   ((eq (car args) '&key)
-    (bind-macro-args-keys (cdr args) actuals alist form state))
-   (t (er soft *macro-expansion-ctx*
-          "Only keywords and values may follow &rest or &body; error ~
-           in macro expansion of ~x0."
-          form))))
-
-(defun bind-macro-args-optional (args actuals alist form state)
-  (cond ((null args)
-         (cond ((null actuals)
-                (value alist))
-               (t (er soft *macro-expansion-ctx*
-                      "Wrong number of args in macro expansion of ~x0."
-                      form))))
-        ((eq (car args) '&key)
-         (bind-macro-args-keys (cdr args) actuals alist form state))
-        ((member (car args) '(&rest &body))
-         (bind-macro-args-after-rest
-          (cddr args) actuals
-          (cons (cons (cadr args) actuals) alist)
-          form state))
-        ((symbolp (car args))
-         (bind-macro-args-optional
-          (cdr args) (cdr actuals)
-          (cons (cons (car args) (car actuals))
-                alist)
-          form state))
-        (t (let ((alist (cond ((equal (length (car args)) 3)
-                               (cons (cons (caddr (car args))
-                                           (not (null actuals)))
-                                     alist))
-                              (t alist))))
-             (bind-macro-args-optional
-              (cdr args) (cdr actuals)
-              (cons (cons (car (car args))
-                          (cond (actuals (car actuals))
-                                ((>= (length (car args)) 2)
-                                 (cadr (cadr (car args))))
-                                (t nil)))
-                    alist)
-              form state)))))
-
-(defun bind-macro-args1 (args actuals alist form state)
-  (cond ((null args)
-         (cond ((null actuals)
-                (value alist))
-               (t (er soft *macro-expansion-ctx*
-                      "Wrong number of args in macro expansion of ~x0."
-                      form))))
-        ((member-eq (car args) '(&rest &body))
-         (bind-macro-args-after-rest
-          (cddr args) actuals
-          (cons (cons (cadr args) actuals) alist)
-          form state))
-        ((eq (car args) '&optional)
-         (bind-macro-args-optional (cdr args) actuals alist form state))
-        ((eq (car args) '&key)
-         (bind-macro-args-keys (cdr args) actuals alist form state))
-        ((null actuals)
-         (er soft *macro-expansion-ctx*
-             "Wrong number of args in macro expansion of ~x0."
-             form))
-        (t (bind-macro-args1 (cdr args) (cdr actuals)
-                             (cons (cons (car args) (car actuals))
-                                   alist)
-                             form state))))
-
-(defun bind-macro-args (args form state)
-  (cond ((and (consp args)
-              (eq (car args) '&whole))
-         (bind-macro-args1 (cddr args) (cdr form)
-                           (list (cons (cadr args) form))
-                           form state))
-        (t (bind-macro-args1 args (cdr form) nil form state))))
 
 (defun ev-fncall-null-body-er (fn latches)
   (mv t
@@ -985,7 +814,6 @@
            '((a . 1))
            '(NIL NIL
                  ((ACCUMULATED-TTREE)
-                  (ACCUMULATED-WARNINGS)
                   (AXIOMSP)
                   (BDDNOTES)
                   (CERTIFY-BOOK-FILE)
@@ -1350,6 +1178,10 @@
 (defun all-attachments (wrld)
   (attachment-record-pairs (global-val 'attachment-records wrld)
                            nil))
+
+(defun gc-off (state)
+  (member-eq (f-get-global 'guard-checking-on state)
+             '(nil :none)))
 
 (mutual-recursion
 
@@ -2155,8 +1987,7 @@
 
        (ev-fncall-rec fn args (w state) (big-n)
                       (f-get-global 'safe-mode state)
-                      (member-eq (f-get-global 'guard-checking-on state)
-                                 '(nil :none))
+                      (gc-off state)
                       latches hard-error-returns-nilp aok)))
   
 (defun ev (form alist state latches hard-error-returns-nilp aok)
@@ -2190,8 +2021,7 @@
        (ev-rec form alist
                (w state) (big-n)
                (f-get-global 'safe-mode state)
-               (member-eq (f-get-global 'guard-checking-on state)
-                          '(nil :none))
+               (gc-off state)
                latches hard-error-returns-nilp aok)))
 
 (defun ev-lst (lst alist state latches hard-error-returns-nilp aok)
@@ -2208,8 +2038,7 @@
                    (w state)
                    (big-n)
                    (f-get-global 'safe-mode state)
-                   (member-eq (f-get-global 'guard-checking-on state)
-                              '(nil :none))
+                   (gc-off state)
                    latches hard-error-returns-nilp aok)))
 
 (defun ev-fncall-w (fn args w safe-mode gc-off hard-error-returns-nilp aok)
@@ -3005,24 +2834,312 @@
 ;   they have been checked in whichever of the two worlds is the
 ;   extension.
 
-(defun macroexpand1 (x ctx state)
-  (let ((w (w state)))
-    (er-let*
+; Essay on Context-message Pairs
+
+; Recall that translate returns state, which might be modified.  It can be
+; useful to have a version of translate that does not return state, for example
+; in development of a parallel version of the waterfall (Ph.D. research by
+; David Rager ongoing in 2010).  Starting after Version_4.1, we provide a
+; version of translate that does not return state.  More generally, we support
+; an analogy of the "error triples" programming idiom: rather than passing
+; around triples (mv erp val state), we pass around pairs (mv ctx msg), as
+; described below.  If foo is a function that returns an error triple, we may
+; introduce foo-cmp as the analogous function that returns a message pair.  We
+; try to avoid code duplication, for example by using the wrapper
+; cmp-to-error-triple.
+
+; An error is indicated when the context (first) component of a context-message
+; pair is non-nil.  There are two possibilities in this case.  The second
+; component can be nil, indicating that the error does not cause a message to
+; be printed.  Otherwise, the first component is a context suitable for er and
+; such, while the second component is a message (fmt-string . fmt-args),
+; suitable as a ~@ fmt argument.
+
+(defun silent-error (state)
+  (mv t nil state))
+
+(defmacro cmp-to-error-triple (form)
+
+; Here we convert a context-message pair (see the Essay on Context-message
+; Pairs) to an error triple, printing an error message if one is called for.
+; See also the analogue cmp-plus-bindings-to-trans-tuple.
+
+  `(assert$ (not (eq ctx t))
+            (mv-let (ctx msg-or-val)
+                    ,form
+                    (cond (ctx (cond (msg-or-val (er soft ctx "~@0" msg-or-val))
+                                     (t (silent-error state))))
+                          (t (value msg-or-val))))))
+
+(defmacro er-cmp (ctx str &rest args)
+  `(mv ,ctx (msg ,str ,@args)))
+
+(defmacro value-cmp (x)
+  `(mv nil ,x))
+
+(defun er-progn-fn-cmp (lst)
+
+; Warning: Keep this in sync with er-progn-fn.
+
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        ((endp (cdr lst)) (car lst))
+        (t (list 'mv-let
+                 '(er-progn-not-to-be-used-elsewhere-ctx
+                   er-progn-not-to-be-used-elsewhere-msg)
+                 (car lst)
+; Avoid possible warning after optimized compilation:
+                 '(declare (ignorable er-progn-not-to-be-used-elsewhere-msg))
+                 (list 'if
+                       'er-progn-not-to-be-used-elsewhere-ctx
+                       '(mv er-progn-not-to-be-used-elsewhere-ctx
+                            er-progn-not-to-be-used-elsewhere-msg)
+                       (list 'check-vars-not-free
+                             '(er-progn-not-to-be-used-elsewhere-ctx
+                               er-progn-not-to-be-used-elsewhere-msg)
+                             (er-progn-fn-cmp (cdr lst))))))))
+
+(defmacro er-progn-cmp (&rest lst)
+  (declare (xargs :guard (and (true-listp lst)
+                              lst)))
+  (er-progn-fn-cmp lst))
+
+(defmacro er-let*-cmp (alist body)
+
+; Warning: Keep this in sync with er-let*.
+
+; This macro introduces the variable er-let-star-use-nowhere-else.
+; The user who uses that variable in his forms is likely to be
+; disappointed by the fact that we rebind it.
+
+  (declare (xargs :guard (and (doubleton-list-p alist)
+                              (symbol-alistp alist))))
+  (cond ((null alist)
+         (list 'check-vars-not-free
+               '(er-let-star-use-nowhere-else)
+               body))
+        (t (list 'mv-let
+                 (list 'er-let-star-use-nowhere-else
+                       (caar alist))
+                 (cadar alist)
+                 (list 'cond
+                       (list 'er-let-star-use-nowhere-else
+                             (list 'mv
+                                   'er-let-star-use-nowhere-else
+                                   (caar alist)))
+                       (list t (list 'er-let*-cmp (cdr alist) body)))))))
+
+(defun warning1-cmp (ctx summary str alist state)
+
+; This function has the same effect as warning1, except that printing is in a
+; wormhole and hence doesn't modify state.
+
+  (warning1-form t))
+
+(defmacro warning$-cmp (&rest args)
+
+; Warning: Keep this in sync with warning$.
+
+  (list 'warning1-cmp
+        (car args)
+
+; We seem to have seen a GCL 2.6.7 compiler bug, laying down bogus calls of
+; load-time-value, when replacing (consp (cadr args)) with (and (consp (cadr
+; args)) (stringp (car (cadr args)))).  But it seems fine to have the semantics
+; of warning$ be that conses are quoted in the second argument position.
+
+        (if (consp (cadr args))
+            (kwote (cadr args))
+          (cadr args))
+        (caddr args)
+        (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
+                             #\5 #\6 #\7 #\8 #\9)
+                           (cdddr args))
+        'state))
+
+(defun chk-length-and-keys (actuals form state)
+  (cond ((null actuals)
+         (value-cmp nil))
+        ((null (cdr actuals))
+         (er-cmp *macro-expansion-ctx*
+                 "A non-even key/value arglist was encountered while macro ~
+                  expanding ~x0.  The argument list for ~x1 is ~%~F2."
+                 form
+                 (car form)
+                 (macro-args (car form) (w state))))
+        ((keywordp (car actuals))
+         (chk-length-and-keys (cddr actuals) form state))
+        (t (er-cmp *macro-expansion-ctx*
+                   "A non-keyword was encountered while macro expanding ~x0 ~
+                    where a keyword was expected.  The formal parameters list ~
+                    for ~x1 is ~%~F2."
+                   form
+                   (car form)
+                   (macro-args (car form) (w state))))))
+
+(defun bind-macro-args-keys1 (args actuals allow-flg alist form state)
+  (cond ((null args)
+         (cond ((or (null actuals) allow-flg)
+                (value-cmp alist))
+               (t (er-cmp *macro-expansion-ctx*
+                          "Illegal key/value args ~x0 in macro expansion of ~
+                           ~x1.  The argument list for ~x2 is ~%~F3."
+                          actuals form
+                          (car form)
+                          (macro-args (car form) (w state))))))
+        ((eq (car args) '&allow-other-keys)
+         (value-cmp alist))
+        (t (let* ((formal (cond ((atom (car args))
+                                 (car args))
+                                ((atom (caar args))
+                                 (caar args))
+                                (t (cadr (caar args)))))
+                  (key (cond ((atom (car args))
+                              (intern (symbol-name (car args))
+                                      "KEYWORD"))
+                             ((atom (car (car args)))
+                              (intern (symbol-name (caar args))
+                                      "KEYWORD"))
+                             (t (caaar args))))
+                  (tl (assoc-keyword key actuals))
+                  (alist (cond ((and (consp (car args))
+                                     (= 3 (length (car args))))
+                                (cons (cons (caddr (car args))
+                                            (not (null tl)))
+                                      alist))
+                               (t alist))))
+             (prog2$
+              (cond ((assoc-keyword key (cddr tl))
+                     (warning$-cmp *macro-expansion-ctx* "Duplicate-Keys"
+                                   "The keyword argument ~x0 occurs twice in ~
+                                    ~x1.  This situation is explicitly ~
+                                    allowed in Common Lisp (see CLTL2, page ~
+                                    80) but it often suggests a mistake was ~
+                                    made.  The leftmost value for ~x0 is used."
+                                   key form))
+                    (t nil))
+              (bind-macro-args-keys1
+               (cdr args)
+               (remove-keyword key actuals)
+               allow-flg
+               (cons (cons formal
+                           (cond (tl (cadr tl))
+                                 ((atom (car args))
+                                  nil)
+                                 ((> (length (car args)) 1)
+                                  (cadr (cadr (car args))))
+                                 (t nil)))
+                     alist)
+               form state))))))
+
+(defun bind-macro-args-keys (args actuals alist form state)
+  (er-progn-cmp
+   (chk-length-and-keys actuals form state)
+   (cond ((assoc-keyword :allow-other-keys
+                         (cdr (assoc-keyword :allow-other-keys
+                                             actuals)))
+          (er-cmp *macro-expansion-ctx*
+                  "ACL2 prohibits multiple :allow-other-keys because ~
+                            implementations differ significantly concerning ~
+                            which value to take."))
+         (t (value-cmp nil)))
+   (bind-macro-args-keys1
+    args actuals
+    (let ((tl
+           (assoc-keyword :allow-other-keys actuals)))
+      (and tl (cadr tl)))
+    alist form state)))
+
+(defun bind-macro-args-after-rest (args actuals alist form state)
+  (cond
+   ((null args) (value-cmp alist))
+   ((eq (car args) '&key)
+    (bind-macro-args-keys (cdr args) actuals alist form state))
+   (t (er-cmp *macro-expansion-ctx*
+              "Only keywords and values may follow &rest or &body; error in ~
+               macro expansion of ~x0."
+              form))))
+
+(defun bind-macro-args-optional (args actuals alist form state)
+  (cond ((null args)
+         (cond ((null actuals)
+                (value-cmp alist))
+               (t (er-cmp *macro-expansion-ctx*
+                          "Wrong number of args in macro expansion of ~x0."
+                          form))))
+        ((eq (car args) '&key)
+         (bind-macro-args-keys (cdr args) actuals alist form state))
+        ((member (car args) '(&rest &body))
+         (bind-macro-args-after-rest
+          (cddr args) actuals
+          (cons (cons (cadr args) actuals) alist)
+          form state))
+        ((symbolp (car args))
+         (bind-macro-args-optional
+          (cdr args) (cdr actuals)
+          (cons (cons (car args) (car actuals))
+                alist)
+          form state))
+        (t (let ((alist (cond ((equal (length (car args)) 3)
+                               (cons (cons (caddr (car args))
+                                           (not (null actuals)))
+                                     alist))
+                              (t alist))))
+             (bind-macro-args-optional
+              (cdr args) (cdr actuals)
+              (cons (cons (car (car args))
+                          (cond (actuals (car actuals))
+                                ((>= (length (car args)) 2)
+                                 (cadr (cadr (car args))))
+                                (t nil)))
+                    alist)
+              form state)))))
+
+(defun bind-macro-args1 (args actuals alist form state)
+  (cond ((null args)
+         (cond ((null actuals)
+                (value-cmp alist))
+               (t (er-cmp *macro-expansion-ctx*
+                      "Wrong number of args in macro expansion of ~x0."
+                      form))))
+        ((member-eq (car args) '(&rest &body))
+         (bind-macro-args-after-rest
+          (cddr args) actuals
+          (cons (cons (cadr args) actuals) alist)
+          form state))
+        ((eq (car args) '&optional)
+         (bind-macro-args-optional (cdr args) actuals alist form state))
+        ((eq (car args) '&key)
+         (bind-macro-args-keys (cdr args) actuals alist form state))
+        ((null actuals)
+         (er-cmp *macro-expansion-ctx*
+             "Wrong number of args in macro expansion of ~x0."
+             form))
+        (t (bind-macro-args1 (cdr args) (cdr actuals)
+                             (cons (cons (car args) (car actuals))
+                                   alist)
+                             form state))))
+
+(defun bind-macro-args (args form state)
+  (cond ((and (consp args)
+              (eq (car args) '&whole))
+         (bind-macro-args1 (cddr args) (cdr form)
+                           (list (cons (cadr args) form))
+                           form state))
+        (t (bind-macro-args1 args (cdr form) nil form state))))
+
+(defun macroexpand1-cmp (x ctx state)
+  (let* ((w (w state))
+         (safe-mode (not (global-val 'boot-strap-flg w)))
+         (gc-off (gc-off state)))
+    (er-let*-cmp
      ((alist (bind-macro-args
               (macro-args (car x) w)
               x state)))
-     (state-global-let*
-      ((safe-mode
+     (mv-let (erp guard-val)
+             (ev-w (guard (car x) nil w) alist w t gc-off nil
 
-; In order to build a profiling image for GCL, we have observed a need to avoid
-; going into safe-mode when building the system.  Replace this value by t if
-; you want to test ACL2's macroexpansion of its own macros during system build.
-
-        (not (global-val 'boot-strap-flg w))))
-      (mv-let (erp guard-val latches)
-              (ev (guard (car x) nil w) alist state nil nil
-
-; It is probably critical to use nil for the aok argument of this ev call.
+; It is probably critical to use nil for the aok argument of this call.
 ; Otherwise, one can imagine a book with sequence of events
 ;   (local EVENT0)
 ;   (defattach ...)
@@ -3031,45 +3148,42 @@
 ; different event to be exported from the book, for EVENT0, than the local one
 ; originally admitted.
 
-                  nil)
-              (declare (ignore latches))
-              (cond
-               (erp (pprogn
-                     (error-fms nil ctx (car guard-val) (cdr guard-val) state)
-                     (er soft ctx
-                         "In the attempt to macroexpand the form ~x0 ~
-                          evaluation of the guard, ~x1, for ~x2 caused an ~
-                          error."
-                         x
-                         (guard (car x) nil w)
-                         (car x))))
-               ((null guard-val)
-                (er soft ctx
-                    "In the attempt to macroexpand the form ~x0 the guard, ~
-                     ~x1, for ~x2 failed."
-                    x
-                    (guard (car x) nil w)
-                    (car x)))
-               (t (mv-let (erp expansion latches)
-                          (ev (getprop (car x) 'macro-body
-                                       '(:error "Apparently macroexpand1 was ~
+                   nil)
+             (cond
+              (erp (er-cmp ctx
+                           "In the attempt to macroexpand the form ~x0 ~
+                            evaluation of the guard, ~x1, for ~x2 caused the ~
+                            following error:~|~%~@1"
+                           x
+                           guard-val))
+              ((null guard-val)
+               (er-cmp ctx
+                       "In the attempt to macroexpand the form ~x0 the guard, ~
+                        ~x1, for ~x2 failed."
+                       x
+                       (guard (car x) nil w)
+                       (car x)))
+              (t (mv-let (erp expansion)
+                         (ev-w (getprop (car x) 'macro-body
+                                        '(:error "Apparently macroexpand1 was ~
                                                  called where there was no ~
                                                  macro-body.")
-                                       'current-acl2-world w)
-                              alist state nil nil nil)
-                          (declare (ignore latches))
-                          (cond (erp
-                                 (pprogn
-                                  (error-fms nil ctx (car expansion)
-                                             (cdr expansion) state)
-                                  (er soft ctx
-                                      "In the attempt to macroexpand the form ~
-                                       ~x0, evaluation of the macro body ~
-                                       caused an error."
-                                      x)))
-                                (t (mv nil expansion state)))))))))))
+                                        'current-acl2-world w)
+                             alist w safe-mode gc-off nil nil)
+                         (cond (erp
+                                (er-cmp ctx
+                                        "In the attempt to macroexpand the ~
+                                         form ~x0, evaluation of the macro ~
+                                         body caused the following ~
+                                         error:~|~%~@1"
+                                        x
+                                        expansion))
+                               (t (value-cmp expansion))))))))))
 
-(defun chk-declare (form ctx state)
+(defun macroexpand1 (x ctx state)
+  (cmp-to-error-triple (macroexpand1-cmp x ctx state)))
+
+(defun chk-declare (form ctx)
   (let ((msg
          "An expression has occurred where we expect a form whose car is ~
           DECLARE; yet, that expression is ~x0.  This problem generally is ~
@@ -3079,23 +3193,23 @@
           macroexpansion is applied to declarations.  See :DOC declare."))
     (cond ((or (not (consp form))
                (not (symbolp (car form))))
-           (er soft ctx msg form))
+           (er-cmp ctx msg form))
           ((eq (car form) 'declare)
            (cond ((not (true-listp form))
-                  (er soft ctx
-                      "A declaration must be a true-list but ~x0 is not.
-                       See :DOC declare."
-                      form))
-                 (t (value form))))
-          (t (er soft ctx msg form)))))
+                  (er-cmp ctx
+                          "A declaration must be a true-list but ~x0 is not.  ~
+                           See :DOC declare."
+                          form))
+                 (t (value-cmp form))))
+          (t (er-cmp ctx msg form)))))
 
-(defun collect-dcls (l state ctx)
-  (cond ((null l) (value nil))
-        (t (er-let*
+(defun collect-dcls (l ctx)
+  (cond ((null l) (value-cmp nil))
+        (t (er-let*-cmp
             ((expansion
-              (chk-declare (car l) ctx state))
-             (rst (collect-dcls (cdr l) state ctx)))
-            (value (append (cdr expansion) rst))))))
+              (chk-declare (car l) ctx))
+             (rst (collect-dcls (cdr l) ctx)))
+            (value-cmp (append (cdr expansion) rst))))))
 
 ; The following alist maps "binders" to the permitted types of
 ; declarations at the top-level of the binding environment.
@@ -3194,34 +3308,35 @@
 ; a binder, as listed in acceptable-dcls-alist.
 
   (cond
-   ((null l) (value nil))
-   (t (er-progn
+   ((null l) (value-cmp nil))
+   (t (er-progn-cmp
        (let ((entry (car l)))
          (cond
           ((not (consp entry))
-           (er soft ctx
-               "Each element of a declaration must be a cons, but ~x0 ~
-                is not.  See :DOC declare." entry))
+           (er-cmp ctx
+                   "Each element of a declaration must be a cons, but ~x0 is ~
+                    not.  See :DOC declare."
+                   entry))
           (t (let ((dcl (car entry))
                    (temp (cdr (assoc-eq binder (acceptable-dcls-alist
                                                 state)))))
                (cond
                 ((not (member-eq dcl temp))
-                 (er soft ctx
-                     "The only acceptable declaration~#0~[~/s~] at the ~
-                      top-level of ~#1~[an FLET binding~/a ~x2 form~] ~
-                      ~#0~[is~/are~] ~*3.  The declaration ~x4 is thus ~
-                      unacceptable here.  See :DOC declare."
-                     temp
-                     (if (eq binder 'flet) 0 1)
-                     binder
-                     (tilde-*-conjunction-phrase temp
-                                                 *dcl-explanation-alist*)
-                     entry))
+                 (er-cmp ctx
+                         "The only acceptable declaration~#0~[~/s~] at the ~
+                          top-level of ~#1~[an FLET binding~/a ~x2 form~] ~
+                          ~#0~[is~/are~] ~*3.  The declaration ~x4 is thus ~
+                          unacceptable here.  See :DOC declare."
+                         temp
+                         (if (eq binder 'flet) 0 1)
+                         binder
+                         (tilde-*-conjunction-phrase temp
+                                                     *dcl-explanation-alist*)
+                         entry))
                 ((not (true-listp entry))
-                 (er soft ctx
-                     "Each element of a declartion must end in NIL ~
-                      but ~x0 does not.  See :DOC declare." entry))
+                 (er-cmp ctx
+                         "Each element of a declartion must end in NIL but ~
+                          ~x0 does not.  See :DOC declare." entry))
                 (t
                  (case
                   dcl
@@ -3230,61 +3345,62 @@
 
 ; should check we are binding a variable of a let
 
-                          (value nil))
-                         (t (er soft ctx
-                                "The declaration ~x0 is illegal except in a ~
-                                 hons-enabled ACL2 executable.  See :DOC ~
-                                 hons-and-memoization."
-                                dcl))))
+                          (value-cmp nil))
+                         (t (er-cmp ctx
+                                    "The declaration ~x0 is illegal except in ~
+                                     a hons-enabled ACL2 executable.  See ~
+                                     :DOC hons-and-memoization."
+                                    dcl))))
                   (optimize
-                   (cond ((optimize-alistp (cdr entry)) (value nil))
-                         (t (er soft ctx
-                                "Each element in the list following an ~
-                                 OPTIMIZE declaration must be either a symbol ~
-                                 or a pair of the form (quality value), where ~
-                                 quality is a symbol and value is an integer ~
-                                 between 0 and 3.  Your OPTIMIZE declaration, ~
-                                 ~x0, does not meet this requirement."
-                                entry))))
+                   (cond ((optimize-alistp (cdr entry)) (value-cmp nil))
+                         (t (er-cmp ctx
+                                    "Each element in the list following an ~
+                                     OPTIMIZE declaration must be either a ~
+                                     symbol or a pair of the form (quality ~
+                                     value), where quality is a symbol and ~
+                                     value is an integer between 0 and 3.  ~
+                                     Your OPTIMIZE declaration, ~x0, does not ~
+                                     meet this requirement."
+                                    entry))))
                   ((ignore ignorable)
                    (cond ((subsetp (cdr entry) vars)
-                          (value nil))
-                         (t (er soft ctx
-                                "The variables of an ~x0 declaration must ~
-                                 be introduced in the immediately superior ~
-                                 lexical environment, but ~&1, which ~
-                                 ~#1~[is~/are~] said to be ~#2~[ignored~/ignorable~] in ~x3, ~
-                                 ~#1~[is~/are~] not bound immediately above ~
-                                 the declaration.  See :DOC declare."
-                                dcl
-                                (set-difference-equal (cdr entry) vars)
-                                (if (eq dcl 'ignore) 0 1)
-                                entry))))
+                          (value-cmp nil))
+                         (t (er-cmp ctx
+                                    "The variables of an ~x0 declaration must ~
+                                     be introduced in the immediately ~
+                                     superior lexical environment, but ~&1, ~
+                                     which ~#1~[is~/are~] said to be ~
+                                     ~#2~[ignored~/ignorable~] in ~x3, ~
+                                     ~#1~[is~/are~] not bound immediately ~
+                                     above the declaration.  See :DOC declare."
+                                    dcl
+                                    (set-difference-equal (cdr entry) vars)
+                                    (if (eq dcl 'ignore) 0 1)
+                                    entry))))
                   (type
                    (cond
                     ((not (>= (length entry) 3))
-                     (er soft ctx
-                         "The length of a type declaration must be at ~
-                          least 3, but ~x0 does not satisfy this ~
-                          condition.  See :DOC declare."
-                         entry))
+                     (er-cmp ctx
+                             "The length of a type declaration must be at ~
+                              least 3, but ~x0 does not satisfy this ~
+                              condition.  See :DOC declare."
+                             entry))
                     ((collect-non-legal-variableps (cddr entry))
-                     (er soft ctx
-                         "Only the types of variables can be declared ~
-                          by TYPE declarations such as ~x0.  But ~&1 ~
-                          ~#1~[is not a legal ACL2 variable ~
-                          symbol~/are not legal ACL2 variable ~
-                          symbols~].  See :DOC declare."
-                         entry
-                         (collect-non-legal-variableps (cddr entry))))
+                     (er-cmp ctx
+                             "Only the types of variables can be declared by ~
+                              TYPE declarations such as ~x0.  But ~&1 ~#1~[is ~
+                              not a legal ACL2 variable symbol~/are not legal ~
+                              ACL2 variable symbols~].  See :DOC declare."
+                             entry
+                             (collect-non-legal-variableps (cddr entry))))
                     ((not (subsetp (cddr entry) vars))
-                     (er soft ctx
-                         "The variables declared in a type ~
-                          declaration, such as ~x0, must be bound ~
-                          immediately above, but ~&1 ~#1~[is~/are~] ~
-                          not bound.  See :DOC declare."
-                         entry
-                         (set-difference-equal (cddr entry) vars)))
+                     (er-cmp ctx
+                             "The variables declared in a type declaration, ~
+                              such as ~x0, must be bound immediately above, ~
+                              but ~&1 ~#1~[is~/are~] not bound.  See :DOC ~
+                              declare."
+                             entry
+                             (set-difference-equal (cddr entry) vars)))
                     ((not (translate-declaration-to-guard (cadr entry)
                                                           'var
                                                           (w state)))
@@ -3306,56 +3422,56 @@
 ; because it is not misleading and it is likely to be only for THE, where the
 ; user did not use an explicit declaration (which was generated by us).
 
-                       (er soft ctx
-                           "~x0 fails to be a legal type-spec.  See :MORE-DOC ~
-                            type-spec."
-                           (caddr (cadr entry))))
+                       (er-cmp ctx
+                               "~x0 fails to be a legal type-spec.  See ~
+                                :MORE-DOC type-spec."
+                               (caddr (cadr entry))))
                       ((weak-satisfies-type-spec-p (cadr entry))
-                       (er soft ctx
-                           "In the declaration ~x0, ~x1 fails to be a legal ~
-                            type-spec because the symbol ~x2 is not a known ~
-                            function symbol~@3.  See :MORE-DOC type-spec."
-                           entry (cadr entry) (cadr (cadr entry))
-                           (if (eq (getprop (cadr (cadr entry)) 'macro-args t
-                                            'current-acl2-world (w state))
-                                   t)
-                               ""
-                             "; rather, it is the name of a macro")))
+                       (er-cmp ctx
+                               "In the declaration ~x0, ~x1 fails to be a ~
+                                legal type-spec because the symbol ~x2 is not ~
+                                a known function symbol~@3.  See :MORE-DOC ~
+                                type-spec."
+                               entry (cadr entry) (cadr (cadr entry))
+                               (if (eq (getprop (cadr (cadr entry)) 'macro-args t
+                                                'current-acl2-world (w state))
+                                       t)
+                                   ""
+                                 "; rather, it is the name of a macro")))
                       (t
-                       (er soft ctx
-                           "In the declaration ~x0, ~x1 fails to be a legal ~
-                            type-spec.  See :MORE-DOC type-spec."
-                           entry (cadr entry)))))
-                    (t (value nil))))
+                       (er-cmp ctx
+                               "In the declaration ~x0, ~x1 fails to be a ~
+                                legal type-spec.  See :MORE-DOC type-spec."
+                               entry (cadr entry)))))
+                    (t (value-cmp nil))))
                   (xargs
                    (cond
                     ((not (keyword-value-listp (cdr entry)))
-                     (er soft ctx
-                         "The proper form of the ACL2 declaration is ~
-                          (XARGS :key1 val1 ... :keyn valn), where ~
-                          each :keyi is a keyword and no key occurs ~
-                          twice.  Your ACL2 declaration, ~x0, is not ~
-                          of this form.  See :DOC xargs."
-                         entry))
+                     (er-cmp ctx
+                             "The proper form of the ACL2 declaration is ~
+                              (XARGS :key1 val1 ... :keyn valn), where each ~
+                              :keyi is a keyword and no key occurs twice.  ~
+                              Your ACL2 declaration, ~x0, is not of this ~
+                              form.  See :DOC xargs."
+                             entry))
                     ((not (no-duplicatesp-equal (evens (cdr entry))))
-                     (er soft ctx
-                         "Even though Common Lisp permits duplicate ~
-                          occurrences of keywords in keyword/actual ~
-                          lists, all but the left-most occurrence are ~
-                          ignored.  You have duplicate occurrences of ~
-                          the keyword~#0~[~/s~] ~&0 in your ~
-                          declaration ~x1.  This suggests a mistake ~
-                          has been made."
-                         (duplicates (evens (cdr entry)))
-                         entry))
-                    (t (value nil))))
+                     (er-cmp ctx
+                             "Even though Common Lisp permits duplicate ~
+                              occurrences of keywords in keyword/actual ~
+                              lists, all but the left-most occurrence are ~
+                              ignored.  You have duplicate occurrences of the ~
+                              keyword~#0~[~/s~] ~&0 in your declaration ~x1.  ~
+                              This suggests a mistake has been made."
+                             (duplicates (evens (cdr entry)))
+                             entry))
+                    (t (value-cmp nil))))
                   (otherwise
-                   (mv (er hard 'chk-dcl-lst
+                   (mv t
+                       (er hard! 'chk-dcl-lst
                            "Implementation error: A declaration, ~x0, is ~
                             mentioned in acceptable-dcls-alist but not in ~
                             chk-dcl-lst."
-                           dcl)
-                       nil state)))))))))
+                           dcl))))))))))
        (chk-dcl-lst (cdr l) vars binder state ctx)))))
 
 (defun number-of-strings (l)
@@ -3375,7 +3491,7 @@
         ((stringp (car l)) (list (car l)))
         (t (get-string (cdr l)))))
 
-(defun collect-declarations (lst vars binder state ctx)
+(defun collect-declarations-cmp (lst vars binder state ctx)
 
 ; Lst is a list of (DECLARE ...) forms, and/or documentation strings.
 ; We check that the elements are declarations of the types appropriate
@@ -3400,21 +3516,23 @@
                 1
               0))
          (cond ((member-eq binder *documentation-strings-permitted*)
-                (er soft ctx
-                    "At most one documentation string is permitted at ~
-                     the top-level of ~x0 but you have provided ~n1."
-                    binder
-                    (number-of-strings lst)))
+                (er-cmp ctx
+                        "At most one documentation string is permitted at the ~
+                         top-level of ~x0 but you have provided ~n1."
+                        binder
+                        (number-of-strings lst)))
                (t
-                (er soft ctx
-                    "Documentation strings are not permitted in ~x0 ~
-                     forms."
-                    binder))))
+                (er-cmp ctx
+                        "Documentation strings are not permitted in ~x0 forms."
+                        binder))))
         (t
-         (er-let*
-          ((dcls (collect-dcls (remove-strings lst) state ctx)))
-          (er-progn (chk-dcl-lst dcls vars binder state ctx)
-                    (value (append (get-string lst) dcls)))))))
+         (er-let*-cmp
+          ((dcls (collect-dcls (remove-strings lst) ctx)))
+          (er-progn-cmp (chk-dcl-lst dcls vars binder state ctx)
+                        (value-cmp (append (get-string lst) dcls)))))))
+
+(defun collect-declarations (lst vars binder state ctx)
+  (cmp-to-error-triple (collect-declarations-cmp lst vars binder state ctx)))
 
 (defun listify (l)
   (cond ((null l) *nil*)
@@ -3685,25 +3803,27 @@
 ; For comments on translate, look after the following nest.
 
 (defmacro trans-er (&rest args)
-; Like er but returns 4 values, the additional one being the current value of
-; bindings.  See also trans-er+ and trans-er+?.
-  `(mv-let (erp val state)
-           (er ,@args)
-           (mv erp val bindings state)))
 
-(defmacro trans-er+ (form soft ctx str &rest args)
+; Like er-cmp but returns 3 values, the additional one being the current value
+; of bindings.  See also trans-er+ and trans-er+?.
+
+  `(mv-let (ctx msg-or-val)
+           (er-cmp ,@args)
+           (mv ctx msg-or-val bindings)))
+
+(defmacro trans-er+ (form ctx str &rest args)
 
 ; This macro is like trans-er, but it also prints the offending context, form,
 ; which could be the untranslated term or a surrounding term, etc.
 
-  `(mv-let (erp val state)
-           (er ,soft ,ctx
-               "~@0  Note:  This error occurred in the context ~x1."
-               (msg ,str ,@args)
-               ,form)
-           (mv erp val bindings state)))
+  `(mv-let (ctx msg-or-val)
+           (er-cmp ,ctx
+                   "~@0  Note:  This error occurred in the context ~x1."
+                   (msg ,str ,@args)
+                   ,form)
+           (mv ctx msg-or-val bindings)))
 
-(defmacro trans-er+? (cform x soft ctx str &rest args)
+(defmacro trans-er+? (cform x ctx str &rest args)
 
 ; This macro behaves as trans-er+ using cform, if x and cform are distinct (in
 ; which case cform can provide context beyond x); else it behaves as trans-er.
@@ -3715,17 +3835,21 @@
   (declare (xargs :guard (and (symbolp cform)
                               (symbolp x))))
   `(cond ((equal ,x ,cform)
-          (trans-er ,soft ,ctx ,str ,@args))
+          (trans-er ,ctx ,str ,@args))
          (t
-          (trans-er+ ,cform ,soft ,ctx ,str ,@args))))
+          (trans-er+ ,cform ,ctx ,str ,@args))))
 
-(defmacro trans-value (x)
-; Like value but returns 4 values, erp, x, bindings, and state.
-  `(mv nil ,x bindings state))
+(defmacro trans-value (x &optional (bindings 'bindings))
+
+; Like value-cmp but returns 3 values, erp, x, and bindings.
+
+  `(mv nil ,x ,bindings))
 
 (defmacro trans-er-let* (alist body)
-; Like er-let* but deals in trans-er's 4-tuples and binds and
-; returns bindings.
+
+; Like er-let*-cmp but deals in trans-er's 3-tuples and binds and returns
+; bindings.
+
   (declare (xargs :guard (alistp alist)))
   (cond ((null alist)
          (list 'check-vars-not-free
@@ -3734,16 +3858,14 @@
         (t (list 'mv-let
                  (list 'er-let-star-use-nowhere-else
                        (caar alist)
-                       'bindings
-                       'state)
+                       'bindings)
                  (cadar alist)
                  (list 'cond
                        (list 'er-let-star-use-nowhere-else
                              (list 'mv
                                    'er-let-star-use-nowhere-else
                                    (caar alist)
-                                   'bindings
-                                   'state))
+                                   'bindings))
                        (list t (list 'trans-er-let* (cdr alist) body)))))))
 
 (defun hide-ignored-actuals (ignore-vars bound-vars value-forms)
@@ -4210,15 +4332,18 @@
 ; move it to before prove.lisp when we added hint functions, and then we had to
 ; move it before translate11 when we introduced flet.
 
-(defun chk-no-duplicate-defuns (lst ctx state)
+(defun chk-no-duplicate-defuns-cmp (lst ctx)
   (declare (xargs :guard (true-listp lst)))
   (cond ((no-duplicatesp lst)
-         (value nil))
-        (t (er soft ctx
-               "We do not permit duplications among the list of ~
-                symbols being defined.  Thus, you cannot define ~&0 ~
-                simultaneously."
-               lst)))) 
+         (value-cmp nil))
+        (t (er-cmp ctx
+                   "We do not permit duplications among the list of symbols ~
+                    being defined.  Thus, you cannot define ~&0 ~
+                    simultaneously."
+                   lst))))
+
+(defun chk-no-duplicate-defuns (lst ctx state)
+  (cmp-to-error-triple (chk-no-duplicate-defuns-cmp lst ctx))) 
 
 (defun chk-state-ok-msg (wrld)
 
@@ -4257,6 +4382,18 @@
                          it ~@2."
                         args culprit explan)))))
 
+(defun msg-to-cmp (ctx msg)
+
+; Convert a given context and message to a corresponding context-message pair
+; (see the Essay on Context-message Pairs).
+
+  (assert$ ctx
+           (cond (msg (mv ctx msg))
+                 (t (mv nil nil)))))
+
+(defun chk-arglist-cmp (args chk-state ctx wrld)
+  (msg-to-cmp ctx (chk-arglist-msg args chk-state wrld)))
+
 (defun chk-arglist (args chk-state ctx wrld state)
   (let ((msg (chk-arglist-msg args chk-state wrld)))
     (cond (msg (er soft ctx "~@0" msg))
@@ -4287,7 +4424,7 @@
                "~x0 is evidently a logical name but of undetermined type."
                name))))
 
-(defun chk-all-but-new-name (name ctx new-type w state)
+(defun chk-all-but-new-name-cmp (name ctx new-type w)
 
 ; We allow new-type to be NIL.  Currently, its only uses are to allow
 ; redefinition of functions, macros, and consts residing in the main Lisp
@@ -4295,12 +4432,13 @@
 ; do not introduce functions, macros, or constants.
 
   (cond ((not (symbolp name))
-         (er soft ctx
-             "Names must be symbols and ~x0 is not."
-             name))
+         (er-cmp ctx
+                 "Names must be symbols and ~x0 is not."
+                 name))
         ((keywordp name)
-         (er soft ctx
-             "Keywords, such as ~x0, may not be defined or constrained." name))
+         (er-cmp ctx
+                 "Keywords, such as ~x0, may not be defined or constrained."
+                 name))
         ((and (member-eq new-type '(function const stobj macro
                                              constrained-function))
               (equal *main-lisp-package-name* (symbol-package-name name))
@@ -4311,57 +4449,60 @@
 
                (not (eq new-type 'function))
                (not (eq (logical-name-type name w t) 'function))))
-         (er soft ctx
-             "Symbols in the main Lisp package, such as ~x0, may not ~
-              be defined or constrained."
-             name))
-        (t (value nil))))
+         (er-cmp ctx
+                 "Symbols in the main Lisp package, such as ~x0, may not be ~
+                  defined or constrained."
+                 name))
+        (t (value-cmp nil))))
 
-(defun chk-defuns-tuples (lst local-p ctx wrld state)
+(defun chk-all-but-new-name (name ctx new-type w state)
+  (cmp-to-error-triple (chk-all-but-new-name-cmp name ctx new-type w)))
+
+(defun chk-defuns-tuples-cmp (lst local-p ctx wrld state)
   (cond ((atom lst)
 
 ; This error message can never arise because we know terms are true
 ; lists.
 
-         (cond ((eq lst nil) (value nil))
-               (t (er soft ctx
-                      "A list of definitions must be a true list."))))
+         (cond ((eq lst nil) (value-cmp nil))
+               (t (er-cmp ctx
+                          "A list of definitions must be a true list."))))
         ((not (true-listp (car lst)))
-         (er soft ctx
-             "Each~#0~[ local~/~] definition must be a true list and ~x1 is ~
-              not."
-             (if local-p 0 1)
-             (if local-p (car lst) (cons 'DEFUN (car lst)))))
+         (er-cmp ctx
+                 "Each~#0~[ local~/~] definition must be a true list and ~x1 ~
+                  is not."
+                 (if local-p 0 1)
+                 (if local-p (car lst) (cons 'DEFUN (car lst)))))
         ((not (>= (length (car lst))
                   3))
-         (er soft ctx
-             "A definition must be given three or more arguments, but ~x0 has ~
-              length only ~x1."
-             (car lst)
-             (length (car lst))))
-        (t (er-progn
-            (chk-all-but-new-name (caar lst) ctx 'function wrld state)
-            (chk-arglist (cadar lst) nil ctx wrld state)
-            (er-let*
-             ((edcls (collect-declarations
+         (er-cmp ctx
+                 "A definition must be given three or more arguments, but ~x0 ~
+                  has length only ~x1."
+                 (car lst)
+                 (length (car lst))))
+        (t (er-progn-cmp
+            (chk-all-but-new-name-cmp (caar lst) ctx 'function wrld)
+            (chk-arglist-cmp (cadar lst) nil ctx wrld)
+            (er-let*-cmp
+             ((edcls (collect-declarations-cmp
                       (butlast (cddar lst) 1)
                       (cadar lst)
                       (if local-p 'flet 'defuns)
                       state ctx))
-              (rst (chk-defuns-tuples (cdr lst) local-p ctx wrld state)))
-             (value (cons (list* (caar lst)
-                                 (cadar lst)
-                                 (if (stringp (car edcls))
-                                     (car edcls)
-                                   nil)
-                                 (if (stringp (car edcls))
-                                     (cdr edcls)
-                                   edcls)
-                                 (last (car lst)))
-                          rst)))))))
+              (rst (chk-defuns-tuples-cmp (cdr lst) local-p ctx wrld state)))
+             (value-cmp (cons (list* (caar lst)
+                                     (cadar lst)
+                                     (if (stringp (car edcls))
+                                         (car edcls)
+                                       nil)
+                                     (if (stringp (car edcls))
+                                         (cdr edcls)
+                                       edcls)
+                                     (last (car lst)))
+                              rst)))))))
 
-(defun silent-error (state)
-  (mv t nil state))
+(defun chk-defuns-tuples (lst local-p ctx wrld state)
+  (cmp-to-error-triple (chk-defuns-tuples-cmp lst local-p ctx wrld state)))
 
 (defun non-trivial-encapsulate-ee-entries (embedded-event-lst)
   (cond ((endp embedded-event-lst)
@@ -4433,12 +4574,12 @@
 ; This check may not be necessary, because of our other checks.  But the
 ; symbols above are not covered by our check for the 'predefined property.
 
-      (trans-er+ form soft ctx
+      (trans-er+ form ctx
                  "An FLET form has attempted to bind ~x0.  However, this ~
                   symbol must not be FLET-bound."
                  name))
      ((getprop name 'predefined nil 'current-acl2-world w)
-      (trans-er+ form soft ctx
+      (trans-er+ form ctx
                  "An FLET form has attempted to bind ~x0, which is predefined ~
                   in ACL2 hence may not be FLET-bound."
                  name))
@@ -4456,7 +4597,9 @@
                         ((macro-function name) "macro")
                         (t "function"))
                   (if (special-form-or-op-p name) 0 1))
-              (mv t nil nil state)))
+              (mv t
+                  nil ; empty "message": see the Essay on Context-message Pairs
+                  nil)))
      (t
       (trans-er-let*
        ((tdcls (translate11-lst (translate-dcl-lst edcls w)
@@ -4492,7 +4635,7 @@
 ;         ((and (not (eq stobjs-out t))
 ;               stobjs-bound
 ;               (not (consp stobjs-out)))
-;          (trans-er soft ctx
+;          (trans-er ctx
 ;                    "~@0"
 ;                    (unknown-binding-msg
 ;                     stobjs-bound
@@ -4507,7 +4650,7 @@
 ; Warning: Before changing this case, see the comment above about the
 ; commented-out preceding case.
 
-           (trans-er+ form soft ctx
+           (trans-er+ form ctx
                       "We are unable to determine the output signature for an ~
                        FLET-binding of ~x0.  You may be able to remedy the ~
                        situation by rearranging the order of the branches of ~
@@ -4522,7 +4665,7 @@
                 (not (subsetp-eq stobjs-bound
                                  (collect-non-x nil stobjs-out))))
            (let ((stobjs-returned (collect-non-x nil stobjs-out)))
-             (trans-er+ form soft ctx
+             (trans-er+ form ctx
                         "The single-threaded object~#0~[ ~&0 is a formal~/s ~
                          ~&0 are formals~] of an FLET-binding of ~x3.  It is ~
                          a requirement that ~#0~[this object~/these objects~] ~
@@ -4535,7 +4678,7 @@
                        stobjs-returned
                        name)))
           ((intersectp-eq used-vars ignore-vars)
-           (trans-er+ form soft ctx
+           (trans-er+ form ctx
                       "Contrary to the declaration that ~#0~[it is~/they ~
                        are~] IGNOREd, the variable~#0~[ ~&0 is~/s ~&0 are~] ~
                        used in the body of an FLET-binding of ~x1, whose ~
@@ -4557,7 +4700,7 @@
                            (table-alist 'acl2-defaults-table w))))))
              (cond
               ((null ignore-ok)
-               (trans-er+ form soft ctx
+               (trans-er+ form ctx
                           "The variable~#0~[ ~&0 is~/s ~&0 are~] not used in ~
                            the body of the LET expression that binds ~&1.  ~
                            But ~&0 ~#0~[is~/are~] not declared IGNOREd or ~
@@ -4565,18 +4708,19 @@
                          diff
                          bound-vars))
               (t
-               (pprogn
+               (prog2$
                 (cond
                  ((eq ignore-ok :warn)
-                  (warning$ ctx "Ignored-variables"
-                            "The variable~#0~[ ~&0 is~/s ~&0 are~] not used ~
-                             in the body of an FLET-binding of ~x1 that binds ~
-                             ~&2.  But ~&0 ~#0~[is~/are~] not declared ~
-                             IGNOREd or IGNORABLE.  See :DOC set-ignore-ok."
-                            diff
-                            name
-                            bound-vars))
-                 (t state))
+                  (warning$-cmp ctx "Ignored-variables"
+                                "The variable~#0~[ ~&0 is~/s ~&0 are~] not ~
+                                 used in the body of an FLET-binding of ~x1 ~
+                                 that binds ~&2.  But ~&0 ~#0~[is~/are~] not ~
+                                 declared IGNOREd or IGNORABLE.  See :DOC ~
+                                 set-ignore-ok."
+                                diff
+                                name
+                                bound-vars))
+                 (t nil))
                 (let* ((tbody
                         (cond
                          (tdcls
@@ -4602,7 +4746,7 @@
 ; of variables that are declared special in Common Lisp.  There might not be
 ; such an issue, but we haven't thought about it.
 
-                    (trans-er+ form soft ctx
+                    (trans-er+ form ctx
                                "The variable~#0~[ ~&0 is~/s ~&0 are~] used in ~
                                 the body of an FLET-binding of ~x1 that only ~
                                 binds ~&2.  In ACL2, every variable occurring ~
@@ -4615,50 +4759,50 @@
                               name
                               bound-vars))
                    (t
-                    (mv nil
-                        (list* name
-                               (make-lambda bound-vars tbody)
-                               stobjs-out)
-                        (if (eq new-stobjs-out t)
-                            bindings
-                          (delete-assoc-eq new-stobjs-out bindings))
-                        state))))))))))))))))
+                    (trans-value
+                     (list* name
+                            (make-lambda bound-vars tbody)
+                            stobjs-out)
+                     (if (eq new-stobjs-out t)
+                         bindings
+                       (delete-assoc-eq new-stobjs-out
+                                        bindings))))))))))))))))))
 
 (defun translate11-flet (x stobjs-out bindings inclp known-stobjs flet-alist
                            ctx w state)
   (cond
    ((not (eql (length x) 3))
-    (trans-er soft ctx
+    (trans-er ctx
               "An FLET form must have the form (flet bindings body), where ~
                bindings is a list of local function definitions, but ~x0 does ~
                not have this form.  See :DOC flet."
               x))
    (t
-    (let ((err-string
-           "The above error indicates a problem with the form ~p0."))
-      (mv-let
-       (erp fives state)
-       (chk-defuns-tuples (cadr x) t ctx w state)
-       (mv-let
-        (erp ignored-val state)
-        (if erp
-            (silent-error state)
+    (mv-let
+     (erp fives)
+     (chk-defuns-tuples-cmp (cadr x) t ctx w state)
+     (mv-let
+      (erp ignored-val)
+      (if erp ; erp is a ctx and fives is a msg
+          (mv erp fives)
 
 ; Note that we do not need to call chk-xargs-keywords, since
 ; acceptable-dcls-alist guarantees that xargs is illegal.
 
-          (chk-no-duplicate-defuns (strip-cars fives) ctx state))
-        (declare (ignore ignored-val))
-        (cond
-         (erp (trans-er soft ctx err-string x))
-         (t
-          (trans-er-let*
-           ((flet-alist (translate11-flet-alist x fives stobjs-out bindings
-                                                known-stobjs flet-alist ctx w
-                                                state)))
-           (translate11 (car (last x)) ; (nth 2 x) as of this writing
-                        stobjs-out bindings inclp known-stobjs flet-alist x
-                        ctx w state))))))))))
+        (chk-no-duplicate-defuns-cmp (strip-cars fives) ctx))
+      (declare (ignore ignored-val))
+      (cond
+       (erp (trans-er ctx
+                      "The above error indicates a problem with the form ~p0."
+                      x))
+       (t
+        (trans-er-let*
+         ((flet-alist (translate11-flet-alist x fives stobjs-out bindings
+                                              known-stobjs flet-alist ctx w
+                                              state)))
+         (translate11 (car (last x)) ; (nth 2 x) as of this writing
+                      stobjs-out bindings inclp known-stobjs flet-alist x
+                      ctx w state)))))))))
 
 (defun translate11-mv-let (x stobjs-out bindings inclp known-stobjs
                              local-stobj local-stobj-creator flet-alist
@@ -4676,20 +4820,20 @@
   (cond
    ((not (and (true-listp (cadr x))
               (> (length (cadr x)) 1)))
-    (trans-er soft ctx
+    (trans-er ctx
               "The first form in an MV-LET expression must be a true list of ~
                length 2 or more.  ~x0 does not meet these conditions."
               (cadr x)))
    ((not (arglistp (cadr x)))
     (mv-let (culprit explan)
             (find-first-bad-arg (cadr x))
-            (trans-er soft ctx
+            (trans-er ctx
                       "The first form in an MV-LET expression must be a list ~
                        of distinct variables of length 2 or more, but ~x0 ~
                        does not meet these conditions.  The element ~x1 ~@2."
                       x culprit explan)))
    ((not (>= (length x) 4))
-    (trans-er soft ctx
+    (trans-er ctx
               "An MV-LET expression has the form (mv-let (var var var*) form ~
                dcl* form) but ~x0 does not have sufficient length to meet ~
                this condition."
@@ -4727,11 +4871,11 @@
               stobjs-bound0))
            (body (car (last x))))
       (mv-let
-       (erp edcls state)
-       (collect-declarations (butlast (cdddr x) 1)
-                             (cadr x) 'mv-let state ctx)
+       (erp edcls)
+       (collect-declarations-cmp (butlast (cdddr x) 1)
+                                 (cadr x) 'mv-let state ctx)
        (cond
-        (erp (mv t nil bindings state))
+        (erp (trans-er erp edcls))
         (t
          (trans-er-let*
           ((tcall (translate11 (caddr x)
@@ -4759,13 +4903,13 @@
             (cond
              ((and local-stobj
                    (not (member-eq local-stobj ignore-vars)))
-              (trans-er+ x soft ctx
+              (trans-er+ x ctx
                          "A local-stobj must be declared ignored, but ~x0 is ~
                           not.  See :DOC with-local-stobj."
                          local-stobj))
              ((and stobjs-bound
                    (not (consp stobjs-out)))
-              (trans-er+ x soft ctx
+              (trans-er+ x ctx
                          "~@0"
                          (unknown-binding-msg
                           stobjs-bound "an MV-LET" "the MV-LET" "the MV-LET")))
@@ -4773,7 +4917,7 @@
                    (not (subsetp stobjs-bound
                                  (collect-non-x nil stobjs-out))))
               (let ((stobjs-returned (collect-non-x nil stobjs-out)))
-                (trans-er+ x soft ctx
+                (trans-er+ x ctx
                            "The single-threaded object~#0~[ ~&0 has~/s ~&0 ~
                             have~] been bound in an MV-LET.  It is a ~
                             requirement that ~#0~[this object~/these ~
@@ -4786,7 +4930,7 @@
                            (zero-one-or-more stobjs-returned)
                            stobjs-returned)))
              ((intersectp-eq used-vars ignore-vars)
-              (trans-er+ x soft ctx
+              (trans-er+ x ctx
                          "Contrary to the declaration that ~#0~[it is~/they ~
                           are~] IGNOREd, the variable~#0~[ ~&0 is~/s ~&0 ~
                           are~] used in the MV-LET expression that binds ~&1."
@@ -4806,7 +4950,7 @@
                               (table-alist 'acl2-defaults-table w))))))
                 (cond
                  ((null ignore-ok)
-                  (trans-er+ x soft ctx
+                  (trans-er+ x ctx
                              "The variable~#0~[ ~&0 is~/s ~&0 are~] not used ~
                               in the body of the MV-LET expression that binds ~
                               ~&1.  But ~&0 ~#0~[is~/are~] not declared ~
@@ -4814,17 +4958,18 @@
                              diff
                              bound-vars))
                  (t
-                  (pprogn
+                  (prog2$
                    (cond
                     ((eq ignore-ok :warn)
-                     (warning$ ctx "Ignored-variables"
-                               "The variable~#0~[ ~&0 is~/s ~&0 are~] not used ~
-                                in the body of the MV-LET expression that ~
-                                binds ~&1. But ~&0 ~#0~[is~/are~] not declared ~
-                                IGNOREd or IGNORABLE.  See :DOC set-ignore-ok."
-                               diff
-                               bound-vars))
-                    (t state))
+                     (warning$-cmp ctx "Ignored-variables"
+                                   "The variable~#0~[ ~&0 is~/s ~&0 are~] not ~
+                                    used in the body of the MV-LET expression ~
+                                    that binds ~&1. But ~&0 ~#0~[is~/are~] ~
+                                    not declared IGNOREd or IGNORABLE.  See ~
+                                    :DOC set-ignore-ok."
+                                   diff
+                                   bound-vars))
+                    (t nil))
                    (let* ((tbody
                            (cond
                             (tdcls
@@ -4889,7 +5034,7 @@
    ((not (and (true-listp x)
               (equal (length x) 2)
               (equal (car x) 'quote)))
-    (trans-er soft ctx
+    (trans-er ctx
               "The first argument to wormhole-eval must be a QUOTE expression ~
                containing the name of the wormhole in question and ~x0 is not ~
                quoted."
@@ -4897,7 +5042,7 @@
    ((not (and (true-listp y)
               (equal (length y) 2)
               (equal (car y) 'quote)))
-    (trans-er soft ctx
+    (trans-er ctx
               "The second argument to wormhole-eval must be a QUOTE ~
                expression containing a LAMBDA expression and ~x0 is not ~
                quoted."
@@ -4907,7 +5052,7 @@
               (equal (car (cadr y)) 'lambda)
               (true-listp (cadr (cadr y)))
               (<= (length (cadr (cadr y))) 1)))
-    (trans-er soft ctx
+    (trans-er ctx
               "The second argument to wormhole-eval must be a QUOTE ~
                expression containing a LAMBDA expression with at most one ~
                formal, e.g., the second argument must be either of the form ~
@@ -4920,7 +5065,7 @@
          ((not (arglistp lambda-formals))
           (mv-let (culprit explan)
                   (find-first-bad-arg lambda-formals)
-                  (trans-er soft ctx
+                  (trans-er ctx
                             "The quoted lambda expression, ~x0, supplied to ~
                              wormhole-eval is improper because it binds ~x1, ~
                              which ~@2."
@@ -4931,7 +5076,7 @@
 ; Whs is either nil or the legal variable name bound by the lambda.
 
             (mv-let
-               (body-erp tlambda-body body-bindings state)
+               (body-erp tlambda-body body-bindings)
                (translate11 lambda-body
                             '(nil)           ; stobjs-out
                             nil              ; bindings
@@ -4941,10 +5086,10 @@
                             x ctx w state)
                (declare (ignore body-bindings))
                (cond
-                (body-erp (mv body-erp tlambda-body bindings state))
+                (body-erp (mv body-erp tlambda-body bindings))
                 ((and whs
                       (not (member-eq whs (all-vars tlambda-body))))
-                 (trans-er soft ctx
+                 (trans-er ctx
                            "The form ~x0 is an improper quoted lambda ~
                             expression for wormhole-eval because it binds but ~
                             does not use ~x1, which is understood to be the ~
@@ -4985,7 +5130,7 @@
        ((consp stobjs-out2)
         (cond
          ((not (equal stobjs-out stobjs-out2))
-          (trans-er+ form soft ctx
+          (trans-er+ form ctx
                      "It is illegal to invoke ~@0 here because of a signature ~
                       mismatch.  This function returns a result of shape ~x1 ~
                       where a result of shape ~x2 is required."
@@ -5111,7 +5256,7 @@
 
   (cond
    ((f-big-clock-negative-p state)
-    (trans-er+ x soft ctx
+    (trans-er+ x ctx
                "Translate ran out of time!  This is almost certainly caused ~
                 by a loop in macro expansion."))
 
@@ -5128,7 +5273,7 @@
              (not (keywordp x))
              (not vc))
         (trans-er+? cform x
-                    soft ctx
+                    ctx
                     "The symbol ~x0 is being used as a variable or constant ~
                      symbol but does not have the proper syntax.  Such names ~
                      must ~@1.  See :DOC name."
@@ -5137,7 +5282,7 @@
        ((and (eq vc 'constant)
              (not const))
         (trans-er+? cform x
-                    soft ctx
+                    ctx
                     "The symbol ~x0 (in package ~x1) has the syntax of a ~
                      constant, but has not been defined."
                     x
@@ -5145,7 +5290,7 @@
 
        ((and (not (atom x)) (not (termp x w)))
         (trans-er+? cform x
-                    soft ctx
+                    ctx
                     "The proper form of a quoted constant is (quote x), but ~
                      ~x0 is not of this form."
                     x))
@@ -5172,7 +5317,7 @@
               (cond
                ((cdr stobjs-out)
                 (trans-er+? cform x
-                            soft ctx
+                            ctx
                             "One value, ~x0, is being returned where ~x1 ~
                              values were expected."
                             x (length stobjs-out)))
@@ -5187,7 +5332,7 @@
 ; *the-live-state*.
 
                 (trans-er+? cform x
-                            soft ctx
+                            ctx
                             "A single-threaded object, namely ~x0, is being ~
                              used where an ordinary object is expected."
                             transx))
@@ -5197,34 +5342,33 @@
                 (cond
                  ((stobjp transx known-stobjs w)
                   (trans-er+? cform x
-                              soft ctx
+                              ctx
                               "The single-threaded object ~x0 is being used ~
                                where the single-threaded object ~x1 was ~
                                expected."
                               transx (car stobjs-out)))
                  (t
                   (trans-er+? cform x
-                              soft ctx
+                              ctx
                               "The ordinary object ~x0 is being used where ~
                                the single-threaded object ~x1 was expected."
                               transx (car stobjs-out)))))
                (t (trans-value transx))))
              (t                              ;;; (3)
-              (let ((bindings
-                     (translate-bind
-                      stobjs-out
-                      (list (if (stobjp transx known-stobjs w) transx nil))
-                      bindings)))
-                (trans-value transx)))))))))
+              (trans-value transx
+                           (translate-bind
+                            stobjs-out
+                            (list (if (stobjp transx known-stobjs w) transx nil))
+                            bindings)))))))))
    ((not (true-listp (cdr x)))
-    (trans-er soft ctx
+    (trans-er ctx
               "Function applications in ACL2 must end in NIL.  ~x0 is ~
                not of this form."
               x))
    ((not (symbolp (car x)))
     (cond ((or (not (consp (car x)))
                (not (eq (caar x) 'lambda)))
-           (trans-er soft ctx
+           (trans-er ctx
                      "Function applications in ACL2 must begin with a ~
                       symbol or LAMBDA expression.  ~x0 is not of ~
                       this form."
@@ -5232,11 +5376,11 @@
           ((or (not (true-listp (car x)))
                (not (>= (length (car x)) 3))
                (not (true-listp (cadr (car x)))))
-           (trans-er soft ctx
+           (trans-er ctx
                      "Illegal LAMBDA expression: ~x0."
                      x))
           ((not (= (length (cadr (car x))) (length (cdr x))))
-           (trans-er+ x soft ctx
+           (trans-er+ x ctx
                       "The LAMBDA expression ~x0 takes ~#1~[no arguments~/1 ~
                        argument~/~x2 arguments~] and is being passed ~#3~[no ~
                        arguments~/1 argument~/~x4 arguments~]."
@@ -5266,12 +5410,12 @@
 
                  32)))
         (cond ((< (length (cdr x)) 2)
-               (trans-er soft ctx
+               (trans-er ctx
                          "MV must be given at least two arguments, but ~x0 has ~
                           fewer than two arguments."
                          x))
               (t
-               (trans-er soft ctx
+               (trans-er ctx
                          "MV must be given no more than 32 arguments; thus ~x0 ~
                           has too many arguments."
                          x))))
@@ -5279,7 +5423,7 @@
         (cond
          ((not (int= (length stobjs-out) (length (cdr x))))
           (trans-er+? cform x
-                      soft ctx
+                      ctx
                       "The expected number of return values for ~x0 is ~x1 ~
                        but the actual number of return values is ~x2."
                       x
@@ -5304,7 +5448,7 @@
 
             (cond
              ((not (no-duplicatesp (collect-non-x nil new-stobjs-out)))
-              (trans-er soft ctx
+              (trans-er ctx
                         "It is illegal to return more than one ~
                          reference to a given single-threaded object ~
                          in an MV form.  The form ~x0 is thus illegal."
@@ -5332,7 +5476,7 @@
            (stobjs-out (translate-deref stobjs-out bindings))
            (stobjs-out2 (translate-deref (cddr entry) bindings)))
       (cond ((not (eql (length formals) (length (cdr x))))
-             (trans-er soft ctx
+             (trans-er ctx
                        "FLET-bound local function ~x0 takes ~#1~[no ~
                         arguments~/1 argument~/~x2 arguments~] but in the ~
                         call ~x3 it is given ~#4~[no arguments~/1 ~
@@ -5355,7 +5499,7 @@
    ((and bindings
          (not (eq (caar bindings) :stobjs-out))
          (member-eq (car x) '(defun defmacro in-package progn)))
-    (trans-er+ x soft ctx
+    (trans-er+ x ctx
                "We do not permit the use of ~x0 inside of code to be executed ~
                 by Common Lisp because its Common Lisp meaning differs from ~
                 its ACL2 meaning."
@@ -5371,7 +5515,7 @@
                        set-body table theory-invariant
                        include-book certify-book value-triple
                        local make-event with-output progn!)))
-    (trans-er+ x soft ctx
+    (trans-er+ x ctx
                "We do not permit the use of ~x0 inside of code to be executed ~
                 by Common Lisp because its Common Lisp runtime value and ~
                 effect differs from its ACL2 meaning."
@@ -5404,7 +5548,7 @@
 ; But we haven't thought through whether closures really respect superior FLET
 ; bindings, so for now we simply punt.
 
-      (trans-er+ x soft ctx
+      (trans-er+ x ctx
                  "~x0 may not be called in the scope of ~x1.  If you want ~
                   support for that capability, please contact the ACL2 ~
                   implementors."
@@ -5412,7 +5556,7 @@
                  'flet))
      (t
       (let ((form (car (last x))))
-        (trans-er+ x soft ctx
+        (trans-er+ x ctx
                    "~x0 may only be used when its form argument is a function ~
                     call, unlike the argument ~x1.~@2  See :DOC pargs."
                    'pargs
@@ -5426,7 +5570,7 @@
                      ""))))))
    ((eq (car x) 'translate-and-test)
     (cond ((not (equal (length x) 3))
-           (trans-er+ x soft ctx
+           (trans-er+ x ctx
                       "TRANSLATE-AND-TEST requires exactly two arguments."))
           (t (trans-er-let*
               ((ans (translate11 (caddr x) stobjs-out bindings inclp
@@ -5439,26 +5583,30 @@
 ; of the test.
 
               (mv-let
-               (test-erp test-term test-bindings state)
+               (test-erp test-term test-bindings)
                (translate11 (list (cadr x) 'form)
                            '(nil) nil inclp known-stobjs flet-alist x ctx w
                            state)
                (declare (ignore test-bindings))
                (cond
-                (test-erp (mv test-erp test-term bindings state))
+                (test-erp (mv test-erp test-term bindings))
                 (t
-                 (mv-let (erp msg latches)
-                         (ev test-term (list (cons 'form ans)) state nil nil
+                 (mv-let (erp msg)
+                         (ev-w test-term
+                               (list (cons 'form ans))
+                               w
+                               (f-get-global 'safe-mode state)
+                               (gc-off state)
+                               nil
 
-; We are conservative here, using nil for the aok argument of ev in case the
-; intended test-term is to be considered in the current theory, without
+; We are conservative here, using nil for the following AOK argument in case
+; the intended test-term is to be considered in the current theory, without
 ; attachments.
 
-                             nil)
-                         (declare (ignore latches))
+                               nil)
                          (cond
                           (erp
-                           (trans-er+ x soft ctx
+                           (trans-er+ x ctx
                                       "The attempt to evaluate the ~
                                        TRANSLATE-AND-TEST test, ~x0, when ~
                                        FORM is ~x1, failed with the ~
@@ -5466,7 +5614,7 @@
                                       (cadr x) ans msg))
                           ((or (consp msg)
                                (stringp msg))
-                           (trans-er+ x soft ctx "~@0" msg))
+                           (trans-er+ x ctx "~@0" msg))
                           (t (trans-value ans)))))))))))
    ((eq (car x) 'with-local-stobj)
 
@@ -5480,20 +5628,20 @@
             (parse-with-local-stobj (cdr x))
             (cond
              (erp
-              (trans-er soft ctx
+              (trans-er ctx
                         "Ill-formed with-local-stobj form, ~x0.  ~
                          See :DOC with-local-stobj."
                         x))
              ((not (and st
                         (eq st (stobj-creatorp creator w))))
-              (trans-er soft ctx
+              (trans-er ctx
                         "Illegal with-local-stobj form, ~x0.  The first ~
                          argument must be the name of a stobj other than ~
                          STATE and the third, if supplied, must be its ~
                          creator function.  See :DOC with-local-stobj."
                         x))
              ((eq stobjs-out :stobjs-out)
-              (trans-er soft ctx
+              (trans-er ctx
                         "Calls of with-local-stobj, such as ~x0, cannot be ~
                          evaluated directly in the top-level loop.  ~
                          See :DOC with-local-stobj."
@@ -5504,7 +5652,7 @@
                                   state)))))
    ((and (assoc-eq (car x) *ttag-fns-and-macros*)
          (not (ttag w)))
-    (trans-er+ x soft ctx
+    (trans-er+ x ctx
                "The ~x0 ~s1 cannot be called unless a trust tag is in effect. ~
                 ~ See :DOC defttag.~@2"
                (car x)
@@ -5518,7 +5666,7 @@
      ((and (eq stobjs-out :stobjs-out)
            (member-eq (car x) '(pand por pargs plet))
            (eq (f-get-global 'parallel-evaluation-enabled state) t))
-      (trans-er soft ctx
+      (trans-er ctx
                 "Parallel evaluation is enabled, but is not implemented for ~
                  calls of parallelism primitives (~&0) made directly in the ~
                  ACL2 top-level loop, as opposed to being made inside a ~
@@ -5540,14 +5688,14 @@
 ; (setf (cadr (assoc 'global-value (get 'untouchable-fns *current-acl2-world-key*)))
 ;       nil)
       
-      (trans-er+ x soft ctx
+      (trans-er+ x ctx
                  "It is illegal to call ~x0 because it has been placed on ~
                   untouchable-fns."
                  (car x)))
      (t
-      (mv-let (erp expansion state)
-              (macroexpand1 x ctx state)
-              (cond (erp (mv t nil bindings state))
+      (mv-let (erp expansion)
+              (macroexpand1-cmp x ctx state)
+              (cond (erp (mv erp expansion bindings))
                     (t (translate11 expansion stobjs-out bindings inclp
                                     known-stobjs flet-alist x ctx w
                                     (f-decrement-big-clock state))))))))
@@ -5566,7 +5714,7 @@
     (cond
      ((not (and (>= (length x) 3)
                 (doubleton-list-p (cadr x))))
-      (trans-er soft ctx
+      (trans-er ctx
                 "The proper form of a let is (let bindings dcl ... ~
                  dcl body), where bindings has the form ((v1 term) ~
                  ... (vn term)) and the vi are distinct variables, ~
@@ -5576,7 +5724,7 @@
      ((not (arglistp (strip-cars (cadr x))))
       (mv-let (culprit explan)
               (find-first-bad-arg (strip-cars (cadr x)))
-              (trans-er soft ctx
+              (trans-er ctx
                         "The form ~x0 is an improper let expression ~
                          because it attempts to bind ~x1, which ~@2."
                         x culprit explan)))
@@ -5585,7 +5733,7 @@
            (not (all-nils (compute-stobj-flags (strip-cars (cadr x))
                                                known-stobjs
                                                w))))
-      (trans-er soft ctx
+      (trans-er ctx
                 "A single-threaded object name, such as ~x0, may be ~
                  LET-bound only when it is the only binding in the ~
                  LET, but ~x1 binds more than one variable."
@@ -5602,11 +5750,11 @@
                                                         w)))
                (body (car (last x))))
           (mv-let
-           (erp edcls state)
-           (collect-declarations (butlast (cddr x) 1)
-                                 bound-vars 'let state ctx)
+           (erp edcls)
+           (collect-declarations-cmp (butlast (cddr x) 1)
+                                     bound-vars 'let state ctx)
            (cond
-            (erp (mv t nil bindings state))
+            (erp (mv erp edcls bindings))
             (t
              (trans-er-let*
               ((value-forms
@@ -5659,7 +5807,7 @@
                  ((and (not (eq stobjs-out t))
                        stobjs-bound
                        (not (consp stobjs-out)))
-                  (trans-er+ x soft ctx
+                  (trans-er+ x ctx
                              "~@0"
                              (unknown-binding-msg
                               stobjs-bound "a LET" "the LET" "the LET")))
@@ -5668,7 +5816,7 @@
                        (not (subsetp-eq stobjs-bound
                                         (collect-non-x nil stobjs-out))))
                   (let ((stobjs-returned (collect-non-x nil stobjs-out)))
-                    (trans-er+ x soft ctx
+                    (trans-er+ x ctx
                                "The single-threaded object~#0~[ ~&0 has~/s ~
                                 ~&0 have~] been bound in a LET.  It is a ~
                                 requirement that ~#0~[this object~/these ~
@@ -5681,7 +5829,7 @@
                                (zero-one-or-more stobjs-returned)
                                stobjs-returned)))
                  ((intersectp-eq used-vars ignore-vars)
-                  (trans-er+ x soft ctx
+                  (trans-er+ x ctx
                              "Contrary to the declaration that ~#0~[it ~
                               is~/they are~] IGNOREd, the variable~#0~[ ~&0 ~
                               is~/s ~&0 are~] used in the body of the LET ~
@@ -5705,7 +5853,7 @@
                                   (table-alist 'acl2-defaults-table w))))))
                     (cond
                      ((null ignore-ok)
-                      (trans-er+ x soft ctx
+                      (trans-er+ x ctx
                                  "The variable~#0~[ ~&0 is~/s ~&0 are~] not ~
                                   used in the body of the LET expression that ~
                                   binds ~&1.  But ~&0 ~#0~[is~/are~] not ~
@@ -5714,18 +5862,18 @@
                                  diff
                                  bound-vars))
                      (t
-                      (pprogn
+                      (prog2$
                        (cond
                         ((eq ignore-ok :warn)
-                         (warning$ ctx "Ignored-variables"
-                                   "The variable~#0~[ ~&0 is~/s ~&0 are~] not ~
-                                    used in the body of the LET expression ~
-                                    that binds ~&1.  But ~&0 ~#0~[is~/are~] ~
-                                    not declared IGNOREd or IGNORABLE.  See ~
-                                    :DOC set-ignore-ok."
-                                   diff
-                                   bound-vars))
-                        (t state))
+                         (warning$-cmp ctx "Ignored-variables"
+                                       "The variable~#0~[ ~&0 is~/s ~&0 are~] ~
+                                        not used in the body of the LET ~
+                                        expression that binds ~&1.  But ~&0 ~
+                                        ~#0~[is~/are~] not declared IGNOREd ~
+                                        or IGNORABLE.  See :DOC set-ignore-ok."
+                                       diff
+                                       bound-vars))
+                        (t nil))
                        (let* ((tbody
                                (cond
                                 (tdcls
@@ -5762,7 +5910,7 @@
    ((and (not (eq stobjs-out t))
          (null (cdr x)) ; optimization
          (stobj-creatorp (car x) w))
-    (trans-er+ x soft ctx
+    (trans-er+ x ctx
                "It is illegal to call ~x0 in this context because it is a ~
                 stobj creator.  Stobj creators cannot be called directly ~
                 except in theorems.  If you did not explicitly call a stobj ~
@@ -5775,13 +5923,13 @@
     (cond ((and (member-eq (car x) (global-val 'untouchable-fns w))
                 (not (eq (f-get-global 'temp-touchable-fns state) t))
                 (not (member-eq (car x) (f-get-global 'temp-touchable-fns state))))
-           (trans-er+ x soft ctx
+           (trans-er+ x ctx
                       "It is illegal to call ~x0 because it has been placed ~
                        on untouchable-fns."
                       (car x)))
           ((eq (car x) 'if)
            (cond ((stobjp (cadr x) known-stobjs w)
-                  (trans-er+ x soft ctx
+                  (trans-er+ x ctx
                              "It is illegal to test on a single-threaded ~
                               object such as ~x0."
                              (cadr x)))
@@ -5827,7 +5975,7 @@
 ; (cadddr x).  So it seems that such a relaxation would not be of much value.
 
            (cond ((not (eq stobjs-out t))
-                  (trans-er soft ctx
+                  (trans-er ctx
                             "A call to synp is not allowed here.  This ~
                              call may have come from the use of syntaxp ~
                              or bind-free within a function definition ~
@@ -5882,15 +6030,15 @@
                                       (trans-value 
                                        (fcons-term* 'synp quoted-vars quoted-user-form
                                                     (kwote term-to-be-evaluated))))
-                                     (t (trans-er soft ctx
+                                     (t (trans-er ctx
                                                   *synp-trans-err-string*
                                                   x))))))
                            (t
-                            (trans-er soft ctx
+                            (trans-er ctx
                                       *synp-trans-err-string*
                                       x))))))
                  (t
-                  (trans-er soft ctx
+                  (trans-er ctx
                             *synp-trans-err-string*
                             x))))
           ((eq (car x) 'prog2$)
@@ -5933,7 +6081,7 @@
 ; complain if stobjs-out is t, for example because we are processing a defun
 ; with xargs declaration :non-executable t.
 
-             (trans-er+ x soft ctx
+             (trans-er+ x ctx
                         "It is illegal to call ~x0 (~x1) under an encapsulate ~
                          event with a non-empty signature."
                         'must-be-equal 'mbe))
@@ -5960,14 +6108,14 @@
                          (and (symbolp fn)
                               (not (member-eq fn *ec-call-bad-ops*))
                               (function-symbolp fn w)))))
-             (trans-er soft ctx
+             (trans-er ctx
                        "A call of ~x0 must only be made on an argument of the ~
                         form (FN ARG1 ... ARGK), where FN is a known function ~
                         in the current ACL2 world other than ~v1.  The call ~
                         ~x2 is thus illegal."
                        'ec-call *ec-call-bad-ops* x))
             ((assoc-eq (car (cadr x)) flet-alist)
-             (trans-er soft ctx
+             (trans-er ctx
                        "A call of ~x0 is illegal when made on a call of a ~
                         function bound by ~x1.  The call ~x2 is thus illegal."
                        'ec-call 'flet x))
@@ -5986,7 +6134,7 @@
             (cond ((not (and (quotep arg1)
                              (integerp (unquote arg1))
                              (<= 2 (unquote arg1))))
-                   (trans-er soft ctx
+                   (trans-er ctx
                              "A call of ~x0 can only be made when the first ~
                               argument is explicitly a natural number.  The ~
                               call ~x1 is thus illegal."
@@ -6037,7 +6185,7 @@
                             (eq (car (cadr x)) 'quote)
                             (null (cddr (cadr x)))
                             (symbolp (cadr (cadr x)))))
-                  (trans-er+ x soft ctx
+                  (trans-er+ x ctx
                              "The first arg of ~x0 must be a quoted symbol, ~
                               unlike ~x1.  We make this requirement in ~
                               support of untouchable-vars."
@@ -6048,7 +6196,7 @@
                        (not (member-eq (cadr (cadr x))
                                        (f-get-global 'temp-touchable-vars
                                                      state))))
-                  (trans-er soft ctx
+                  (trans-er ctx
                             "State global variable ~x0 has been rendered ~
                              untouchable and thus may not be directly ~
                              altered, as in ~x1.~@2"
@@ -6066,7 +6214,7 @@
                                           set-fn))
                                     (t "")))))
                  (t
-                  (trans-er soft ctx
+                  (trans-er ctx
                             "Built-in state global variables may not be made ~
                              unbound, as in ~x1."
                             (cadr (cadr x))
@@ -6080,7 +6228,7 @@
                                bindings inclp known-stobjs (car x) flet-alist
                                ctx w state)))))
    ((arity (car x) w)
-    (trans-er soft ctx
+    (trans-er ctx
               "~x0 takes ~#1~[no arguments~/1 argument~/~x2 ~
                arguments~] but in the call ~x3 it is given ~#4~[no ~
                arguments~/1 argument~/~x5 arguments~].   The formal ~
@@ -6094,7 +6242,7 @@
               (formals (car x) w)
               nil))
    ((eq (car x) 'declare)
-    (trans-er soft ctx
+    (trans-er ctx
               "It is illegal to use DECLARE as a function symbol, as ~
                in ~x0.  DECLARE forms are permitted only in very ~
                special places, e.g., before the bodies of function ~
@@ -6105,7 +6253,7 @@
                the body in the DECLARE form or closing the superior ~
                form before typing the body."
               x))
-   (t (trans-er+ x soft ctx
+   (t (trans-er+ x ctx
                  "The symbol ~x0 (in package ~x1) has neither a function nor ~
                   macro definition in ACL2.  ~#2~[Please define ~
                   it.~/Moreover, this symbol is in the main Lisp package; ~
@@ -6196,7 +6344,7 @@
 ; though it has the right name.
 
                 (let ((known-stobjs (collect-non-x nil known-stobjs)))
-                  (trans-er+ cform soft ctx
+                  (trans-er+ cform ctx
                              "The form ~x0 is being used~#1~[ ~/, as an ~
                               argument to a call of ~x2,~/, ~@2,~] where the ~
                               single-threaded object of that name is ~
@@ -6211,7 +6359,7 @@
                                    ((null (cdr known-stobjs)) 1)
                                    (t 2))
                              known-stobjs)))
-               (t (trans-er+ cform soft ctx
+               (t (trans-er+ cform ctx
                              "The form ~x0 is being used~#1~[ ~/, as an ~
                               argument to a call of ~x2,~/, ~@2,~] where the ~
                               single-threaded object ~x3 is required.  Note ~
@@ -6247,7 +6395,7 @@
 
 )
 
-(defun translate1 (x stobjs-out bindings known-stobjs ctx w state)
+(defun translate1-cmp (x stobjs-out bindings known-stobjs ctx w state)
 
 ; Stobjs-out should be t, a proper STOBJS-OUT setting, a function symbol,
 ; or the symbol :stobjs-out.
@@ -6289,6 +6437,18 @@
 ; recover the bindings.
 
   (translate11 x stobjs-out bindings nil known-stobjs nil x ctx w state))
+
+(defun translate1 (x stobjs-out bindings known-stobjs ctx w state)
+  (mv-let (erp msg-or-val bindings)
+          (translate1-cmp x stobjs-out bindings known-stobjs ctx w state)
+          (cond (erp ; erp is a ctx and val is a msg
+                 (mv-let (erp0 val state)
+                         (er soft erp
+                             "~@0"
+                             msg-or-val)
+                         (declare (ignore erp0 val))
+                         (mv t nil bindings state)))
+                (t (mv nil msg-or-val bindings state)))))
 
 (defun collect-programs (names wrld)
 ; Names is a list of function symbols.  Collect the :program ones.
@@ -6348,6 +6508,29 @@
 (defmacro all-fnnames-lst (lst)
   `(all-fnnames1 t ,lst nil))
 
+(defun translate-cmp (x stobjs-out logic-modep known-stobjs ctx w state)
+
+; See translate.  Here we return a context-message pair; see the Essay on
+; Context-message Pairs.
+
+  (mv-let (erp val bindings)
+          (translate1-cmp x stobjs-out nil known-stobjs ctx w state)
+          (declare (ignore bindings))
+          (cond (erp ; erp is a ctx and val is a msg
+                 (mv erp val))
+                ((and logic-modep
+                      (program-termp val w))
+                 (er-cmp ctx
+                         "Function symbols of mode :program are not allowed ~
+                          in the present context.  Yet, the function ~
+                          symbol~#0~[ ~&0 occurs~/s ~&0 occur~] in the ~
+                          translation of the form~|~%  ~x1,~%~%which is~|~%  ~
+                          ~x2."
+                         (collect-programs (all-fnnames val) w)
+                         x
+                         val))
+                (t (value-cmp val)))))
+
 (defun translate (x stobjs-out logic-modep known-stobjs ctx w state)
 
 ; This is the toplevel entry into translation throughout ACL2,
@@ -6374,21 +6557,8 @@
 ; stobj names in world w).  A name is considered a stobj only if it
 ; is in this list.
 
-  (mv-let (erp val bindings state)
-          (translate1 x stobjs-out nil known-stobjs ctx w state)
-          (declare (ignore bindings))
-          (cond (erp (mv t nil state))
-                ((and logic-modep
-                      (program-termp val w))
-                 (er soft ctx
-                     "Function symbols of mode :program are not allowed in ~
-                      the present context.  Yet, the function symbol~#0~[ ~&0 ~
-                      occurs~/s ~&0 occur~] in the translation of the ~
-                      form~|~%  ~x1,~%~%which is~|~%  ~x2."
-                     (collect-programs (all-fnnames val) w)
-                     x
-                     val))
-                (t (value val)))))
+  (cmp-to-error-triple
+   (translate-cmp x stobjs-out logic-modep known-stobjs ctx w state)))
 
 ; We now move on to the definition of the function trans-eval, which
 ; evaluates a form containing references to the free variable STATE,

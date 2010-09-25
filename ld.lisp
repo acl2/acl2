@@ -126,9 +126,7 @@
                             (f-get-global 'ld-skip-proofsp state)
                             (and (not (raw-mode-p state))
                                  (default-defun-mode (w state)))
-                            (not (member-eq (f-get-global 'guard-checking-on
-                                                          state)
-                                            '(nil :none)))
+                            (not (gc-off state))
 
 ; There is no need to memoize the binding of #\r for the purpose of checking if
 ; the prompt is current, since it never changes during a given session.  Of
@@ -1190,6 +1188,11 @@
                state))
           (t (mv action :error state)))))
 
+(defun initialize-accumulated-warnings ()
+  #-acl2-loop-only
+  (setq *accumulated-warnings* nil)
+  nil)
+
 (defun ld-read-eval-print (state)
 
 ; This is LD's read-eval-print step.  We read a form from standard-oi, eval it,
@@ -1240,8 +1243,8 @@
             ((eq ans :return) (mv :return :filter state))
             (t (pprogn
                 (cond ((<= (f-get-global 'ld-level state) 1)
-                       (pprogn (initialize-timers state)
-                               (f-put-global 'accumulated-warnings nil state)))
+                       (prog2$ (initialize-accumulated-warnings)
+                               (initialize-timers state)))
                       (t state))
                 (f-put-global 'last-make-event-expansion nil state)
                 (let* ((old-wrld (w state))
@@ -16677,6 +16680,11 @@
 ; syntax of mv-let.  It's not clear that any of this actually caused problems,
 ; however.
 
+; Modified (in function tilde-*-book-check-sums-phrase1) the printing of
+; include-book errors due to mismatch of sub-book's certificate with parent
+; books' certificate, so that a full-book-name is used instead of a
+; familiar-name.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -16713,6 +16721,12 @@
   ~ev[]
 
   ~st[NEW FEATURES]
+
+  (For system hackers) There are new versions of system functions
+  ~c[translate1] and ~c[translate], namely ~c[translate1-cmp] and
+  ~c[translate-cmp] respectively, that do not return ~ilc[state].  See the
+  Essay on Context-message Pairs for relevant information.  Thanks to David
+  Rager for collaborating on this enhancement.
 
   ~st[HEURISTIC IMPROVEMENTS]
 

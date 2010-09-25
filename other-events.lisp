@@ -656,6 +656,8 @@
 
 (defun chk-macro-arglist-msg (args chk-state wrld)
 
+; This "-msg" function supports the book books/misc/defmac.lisp.
+
 ; Any modification to this function and its subordinates must cause
 ; one to reflect on the two function nests bind-macro-args...  and
 ; macro-vars... because they assume the presence of the structure that
@@ -10734,7 +10736,7 @@ The following all cause errors.
                  (msg "-- its certificate requires the book \"~s0\" with ~
                       certificate annotations~|  ~x1~|and check sum ~x2, but ~
                       we have included ~@3~@4"
-                      familiar-name
+                      full-book-name
                       (cadr reqd-entry)  ;;; cert-annotations
                       (cddr reqd-entry) ;;; ev-lst-chk-sum
                       (cond

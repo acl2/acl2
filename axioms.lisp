@@ -22705,6 +22705,10 @@ J
     pathname-unix-to-os
     hcomp-build-from-portcullis
     defconst-val
+    push-warning-frame
+    pop-warning-frame
+    push-warning
+    initialize-accumulated-warnings
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
@@ -22978,7 +22982,6 @@ J
 
   `((abbrev-evisc-tuple . :default)
     (accumulated-ttree . nil) ; just what succeeded; tracking the rest is hard
-    (accumulated-warnings . nil)
     (acl2-raw-mode-p . nil)
 
     (acl2-version .

@@ -15924,7 +15924,6 @@ End of statistical and related information related to image size.
                                        ;;;   actually traced, e.g. trace! macro
             timer-alist                ;;; preserve accumulated summary info
             main-timer                 ;;; preserve accumulated summary info
-            accumulated-warnings       ;;; preserve accumulated summary info
             verbose-theory-warning     ;;; for warning on disabled mv-nth etc.
             more-doc-state             ;;; for proof-checker :more command
 
