@@ -75,6 +75,7 @@ save-gprof.lsp
 saved
 simplify.lisp
 sum-list-example.lisp
+# svnc -- under svn control, but not distributed
 translate.lisp
 tutorial.lisp
 type-set-a.lisp
