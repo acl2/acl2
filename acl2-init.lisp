@@ -431,6 +431,10 @@ implementations.")
     ~% The authors of ACL2 consider svn distributions to be experimental.~%")
 
 (defun acl2-svn-revision-string ()
+
+; Delete file acl2-svn.txt before doing a release.  Otherwise, we expect that
+; file to contain a string such as "$Revision$".
+
   (let ((file "acl2-svn.txt"))
     (cond ((probe-file file)
            (format nil *acl2-svn-revision-string*
