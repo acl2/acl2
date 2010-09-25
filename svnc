@@ -14,9 +14,9 @@ if [ $# -lt 1 ] ; then \
     echo "Usage: svnc msg [file file ...]" ; \
     exit 1 ; \
 elif [ $# -eq 1 ] ; then \
-    svn commit -m \'"$1"\'
+    svn commit -m "$1"
 else \
     export msg="$1"
     shift 1
-    svn commit -m \'"$msg"\' $* acl2-svn.txt
+    svn commit -m "$msg" $* acl2-svn.txt
 fi
