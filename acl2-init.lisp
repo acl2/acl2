@@ -433,7 +433,7 @@ implementations.")
 (defun acl2-svn-revision-string ()
 
 ; Delete file acl2-svn.txt before doing a release.  Otherwise, we expect that
-; file to contain a string such as "$Revision$".
+; file to contain a string of the form "$Revision: n $".
 
   (let ((file "acl2-svn.txt"))
     (cond ((probe-file file)
