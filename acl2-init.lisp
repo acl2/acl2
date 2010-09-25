@@ -425,6 +425,20 @@ implementations.")
 (defvar *saved-build-date-lst*)
 (defvar *saved-mode*)
 
+(defconstant *acl2-svn-revision-string*
+   "~% WARNING: Do not redistribute.  This is NOT an ACL2 release; it is,~
+    ~% rather, an svn distribution, ~a.~
+    ~% The authors of ACL2 consider svn distributions to be experimental.~%")
+
+(defun acl2-svn-revision-string ()
+  (let ((file "acl2-svn.txt"))
+    (cond ((probe-file file)
+           (format nil *acl2-svn-revision-string*
+                   (with-open-file
+                    (str file :direction :input)
+                    (read str))))
+          (t ""))))
+
 (defvar *saved-string*
   (concatenate
    'string
@@ -446,9 +460,7 @@ implementations.")
 ;   svn commit -m \
 ;   'Modifying banner to assert once again that svn releases are experimental.'
 
-   "~% WARNING: Do not redistribute.  This is NOT an ACL2 release; it is,~
-    ~% rather, an svn distribution, $Revision$.~
-    ~% The authors of ACL2 consider svn distributions to be experimental.~%"
+   (acl2-svn-revision-string)
 
    "~a"
    #+hons
