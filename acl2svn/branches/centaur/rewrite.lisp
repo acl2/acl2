@@ -8001,8 +8001,7 @@ and found premature forcing killed us.
       "P"
     (case (default-defun-mode (w state))
       (:logic
-       (if (member-eq (f-get-global 'guard-checking-on state)
-                      '(nil :none))
+       (if (gc-off state)
            (if (ld-skip-proofsp state)
                "s"
              "")
@@ -8010,8 +8009,7 @@ and found premature forcing killed us.
              "!s"
            "!")))
       (otherwise ; :program
-       (if (member-eq (f-get-global 'guard-checking-on state)
-                      '(nil :none))
+       (if (gc-off state)
            (if (ld-skip-proofsp state)
                "ps"
              "p")

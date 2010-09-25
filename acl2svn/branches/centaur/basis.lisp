@@ -6043,6 +6043,13 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
 ; col and state.
 
   (declare (type (signed-byte 30) col))
+
+; The following bit of raw-Lisp code can be useful when observing
+; "ACL2 Error in T:".
+
+; #-acl2-loop-only
+; (when (eq ctx t) (break))
+
   (the2s
    (signed-byte 30)
    (cond ((output-in-infixp state)
@@ -6113,10 +6120,14 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
             (newline chan state)
             (newline chan state))))
 
+#-acl2-loop-only
+(defvar *accumulated-warnings* nil)
+
 (defun push-warning-frame (state)
-  (f-put-global 'accumulated-warnings
-                (cons nil (f-get-global 'accumulated-warnings state))
-                state))
+  #-acl2-loop-only
+  (setq *accumulated-warnings*
+        (cons nil *accumulated-warnings*))
+  state)
 
 (defun absorb-frame (lst stk)
   (if (consp stk)
@@ -6131,33 +6142,45 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
 ; event's summary.  Accum-p should be nil if and only if the sub-event whose
 ; warning frame we are popping had its warnings suppressed.
 
-  (let ((stk (f-get-global 'accumulated-warnings state)))
+; Starting after Version_4.1, we use the ACL2 oracle to explain warning frames.
+; Previously we kept these frames with a state global variable,
+; 'accumulated-warnings, rather than in the raw lisp variable,
+; *accumulated-warnings*.  But then we introduced warning$-cmp to support the
+; definitions of translate1-cmp and translate-cmp, which do not modify the ACL2
+; state.  Since warning$-cmp uses a wormhole, the warning frames based on a
+; state global variable were unavailable when printing warning summaries.
+
+  #+acl2-loop-only
+  (declare (ignore accum-p))
+  #+acl2-loop-only
+  (mv-let (erp val state)
+          (read-acl2-oracle state)
+          (declare (ignore erp))
+          (mv val state))
+  #-acl2-loop-only
+  (let ((stk *accumulated-warnings*))
     (cond ((consp stk)
-           (pprogn
-            (f-put-global 'accumulated-warnings
-                          (if accum-p
-                              (absorb-frame (car stk) (cdr stk))
-                            (cdr stk))
-                          state)
-            (mv (car stk) state)))
+           (progn (setq *accumulated-warnings*
+                        (if accum-p
+                            (absorb-frame (car stk)
+                                          (cdr stk))
+                          (cdr stk)))
+                  (mv (car stk) state)))
           (t (mv (er hard 'pop-warning-frame
                      "The 'accumulated-warnings stack is empty.")
                  state)))))
 
 (defun push-warning (summary state)
-  (let ((stk (f-get-global 'accumulated-warnings state)))
-    (cond ((consp stk)
-           (f-put-global 'accumulated-warnings
-                         (cons (add-to-set-equal summary (car stk))
-                               (cdr stk))
-                         state))
-          (t 
+  #+acl2-loop-only
+  (declare (ignore summary))
+  #-acl2-loop-only
+  (when (consp *accumulated-warnings*)
 
-; We used to cause an error, shown below, in this situation.  But WARNINGs are
-; increasingly used by non-events, such as :trans and (thm ...) and rather than
-; protect them all with push-warning-frame/pop-warning-frame we are just
-; adopting the policy of not pushing warnings if the stack isn't set up for
-; them.  Here is the old code.
+; We used to cause an error, shown below, if the above test fails.  But
+; WARNINGs are increasingly used by non-events, such as :trans and (thm ...)
+; and rather than protect them all with push-warning-frame/pop-warning-frame we
+; are just adopting the policy of not pushing warnings if the stack isn't set
+; up for them.  Here is the old code.
 
 ;            (prog2$ (er hard 'push-warning
 ;                        "The 'accumulated-warnings stack is empty but we were ~
@@ -6165,7 +6188,10 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
 ;                        summary)
 ;                     state)
 
-           state))))
+    (setq *accumulated-warnings*
+          (cons (add-to-set-equal summary (car *accumulated-warnings*))
+                (cdr *accumulated-warnings*))))
+  state)
 
 (defun member-string-equal (str lst)
   (cond
@@ -7401,33 +7427,39 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
               (fmt-in-ctx ctx col channel state)
               (fmt-abbrev str alist col channel state "~%~%"))))))
 
-(defun warning1 (ctx summary str alist state)
+(defmacro warning1-form (commentp)
 
-; This function prints the "ACL2 Warning" banner and ctx, then the
-; user's summary, str and alist, and then two carriage returns.
+; See warning1.
 
-  (mv-let
-   (check-warning-off summary)
-   (cond ((consp summary)
-          (mv nil (car summary)))
-         (t (mv t summary)))
-   (cond
-    ((and check-warning-off
-          (warning-off-p summary state))
-     state)
+  `(mv-let
+    (check-warning-off summary)
+    (cond ((consp summary)
+           (mv nil (car summary)))
+          (t (mv t summary)))
+    (cond
+     ((and check-warning-off
+           (warning-off-p summary state))
+      ,(if commentp nil 'state))
 
 ; Note:  There are two io? expressions below.  They are just alike except
 ; that the first uses the token WARNING! and the other uses WARNING.  Keep
 ; them that way!
 
-    ((and summary
-          (member-string-equal summary *uninhibited-warning-summaries*))
-     (io? WARNING! nil state
-          (summary ctx alist str)
-          (warning1-body ctx summary str alist state)))
-    (t (io? WARNING nil state
-            (summary ctx alist str)
-            (warning1-body ctx summary str alist state))))))
+     ((and summary
+           (member-string-equal summary *uninhibited-warning-summaries*))
+      (io? WARNING! ,commentp state
+           (summary ctx alist str)
+           (warning1-body ctx summary str alist state)))
+     (t (io? WARNING ,commentp state
+             (summary ctx alist str)
+             (warning1-body ctx summary str alist state))))))
+
+(defun warning1 (ctx summary str alist state)
+
+; This function prints the "ACL2 Warning" banner and ctx, then the
+; user's summary, str and alist, and then two carriage returns.
+
+  (warning1-form nil))
 
 (defmacro warning$ (&rest args)
 

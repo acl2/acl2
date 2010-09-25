@@ -1137,11 +1137,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 (defmacro gv (fn args val)
   (sublis `((funny-fn . ,fn)
             (funny-args . ,args))
-          `(let ((gc-on
-                  (not (member (f-get-global 'guard-checking-on
-                                             *the-live-state*)
-                               '(nil :none)
-                               :test 'eq))))
+          `(let ((gc-on (not (gc-off *the-live-state*))))
              (if (or gc-on
                      (f-get-global 'safe-mode *the-live-state*))
                  (throw-raw-ev-fncall
