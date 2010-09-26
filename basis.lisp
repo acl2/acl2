@@ -7391,7 +7391,7 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
 
     "Compiled file"))
 
-(defun warning-off-p (summary state)
+(defun warning-off-p1 (summary wrld ld-skip-proofsp)
 
 ; This function is used by warning$ to determine whether a given warning should
 ; be printed.  See also warning-disabled-p, which we can use to avoid needless
@@ -7401,15 +7401,84 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
            (member-string-equal
             summary
             (cdr (assoc-eq :inhibit-warnings
-                           (table-alist 'acl2-defaults-table
-                                        (w state))))))
-      (and (or (eq (ld-skip-proofsp state) 'include-book)
-               (eq (ld-skip-proofsp state) 'include-book-with-locals)
-               (eq (ld-skip-proofsp state) 'initialize-acl2))
+                           (table-alist 'acl2-defaults-table wrld)))))
+      (and (or (eq ld-skip-proofsp 'include-book)
+               (eq ld-skip-proofsp 'include-book-with-locals)
+               (eq ld-skip-proofsp 'initialize-acl2))
            (not (and summary
                      (member-string-equal
                       summary
                       *uninhibited-warning-summaries*))))))
+
+(defun warning-off-p (summary state)
+  (warning-off-p1 summary (w state) (ld-skip-proofsp state)))
+
+(defrec state-vars
+
+; Warning: Keep this in sync with default-state-vars.
+
+  ((hons-enabled safe-mode . temp-touchable-vars)
+   .
+   (guard-checking-on ld-skip-proofsp
+                      temp-touchable-fns . parallel-evaluation-enabled))
+  nil)
+
+(defmacro default-state-vars
+  (state-p &key
+           (hons-enabled 'nil hons-enabled-p)
+           (safe-mode 'nil safe-mode-p)
+           (temp-touchable-vars 'nil temp-touchable-vars-p)
+           (guard-checking-on 't guard-checking-on-p)
+           (ld-skip-proofsp 'nil ld-skip-proofsp-p)
+           (temp-touchable-fns 'nil temp-touchable-fns-p)
+           (parallel-evaluation-enabled 'nil parallel-evaluation-enabled-p))
+
+; Warning: Keep this in sync with state-vars.
+
+; State-p is true when by default, we want to use the values of the relevant
+; state globals.  Otherwise we use the specified defaults, which are supplied
+; above for convenience but can be changed there (i.e., in this code) if better
+; default values are found.
+
+  (cond (state-p
+         `(make state-vars
+                :hons-enabled
+                ,(if hons-enabled-p
+                     hons-enabled
+                   '(f-get-global 'hons-enabled state))
+                :safe-mode
+                ,(if safe-mode-p
+                     safe-mode
+                   '(f-get-global 'safe-mode state))
+                :temp-touchable-vars
+                ,(if temp-touchable-vars-p
+                     temp-touchable-vars
+                   '(f-get-global 'temp-touchable-vars state))
+                :guard-checking-on
+                ,(if guard-checking-on-p
+                     guard-checking-on
+                   '(f-get-global 'guard-checking-on state))
+                :ld-skip-proofsp
+                ,(if ld-skip-proofsp-p
+                     ld-skip-proofsp
+                   '(f-get-global 'ld-skip-proofsp state))
+                :temp-touchable-fns
+                ,(if temp-touchable-fns-p
+                     temp-touchable-fns
+                   '(f-get-global 'temp-touchable-fns state))
+                :parallel-evaluation-enabled
+                ,(if parallel-evaluation-enabled-p
+                     parallel-evaluation-enabled
+                   '(f-get-global 'parallel-evaluation-enabled state))))
+        (t
+         `(make state-vars
+                :hons-enabled ,hons-enabled
+                :safe-mode ,safe-mode
+                :temp-touchable-vars ,temp-touchable-vars
+                :guard-checking-on ,guard-checking-on
+                :ld-skip-proofsp ,ld-skip-proofsp
+                :temp-touchable-fns ,temp-touchable-fns
+                :parallel-evaluation-enabled ,parallel-evaluation-enabled))))
 
 (defun warning1-body (ctx summary str alist state)
   (let ((channel (f-get-global 'proofs-co state)))
@@ -7438,7 +7507,12 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
           (t (mv t summary)))
     (cond
      ((and check-warning-off
-           (warning-off-p summary state))
+           ,(if commentp
+                '(warning-off-p1 summary
+                                 wrld
+                                 (access state-vars state-vars
+                                         :ld-skip-proofsp))
+              '(warning-off-p summary state)))
       ,(if commentp nil 'state))
 
 ; Note:  There are two io? expressions below.  They are just alike except

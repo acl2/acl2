@@ -38,7 +38,7 @@
   "( MUTUAL-RECURSION ( DEFUN ~x0 ...) ...)")
 
 (defun translate-bodies1
-  (non-executablep names bodies bindings known-stobjs-lst ctx wrld state)
+  (non-executablep names bodies bindings known-stobjs-lst ctx wrld state-vars)
   (cond ((null bodies) (trans-value nil))
         (t (trans-er-let*
             ((x (translate1-cmp (car bodies)
@@ -52,13 +52,13 @@
                                       ...)"
                                          (car names))
                                   ctx)
-                                wrld state))
+                                wrld state-vars))
              (y (translate-bodies1 non-executablep
                                    (cdr names)
                                    (cdr bodies)
                                    bindings
                                    (cdr known-stobjs-lst)
-                                   ctx wrld state)))
+                                   ctx wrld state-vars)))
             (trans-value (cons x y))))))
 
 (defun translate-bodies
@@ -72,7 +72,7 @@
           (translate-bodies1 non-executablep names bodies
                              (pairlis$ names names)
                              known-stobjs-lst
-                             ctx wrld state)
+                             ctx wrld (default-state-vars t))
           (cond (erp ; erp is a ctx, lst is a msg
                  (er soft erp "~@0" lst))
                 (non-executablep (value (cons lst (pairlis-x2 names '(nil)))))

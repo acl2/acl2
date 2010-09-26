@@ -16724,8 +16724,8 @@
 
   (For system hackers) There are new versions of system functions
   ~c[translate1] and ~c[translate], namely ~c[translate1-cmp] and
-  ~c[translate-cmp] respectively, that do not return ~ilc[state].  See the
-  Essay on Context-message Pairs for relevant information.  Thanks to David
+  ~c[translate-cmp] respectively, that do not take or return ~ilc[state].  See
+  the Essay on Context-message Pairs for relevant information.  Thanks to David
   Rager for collaborating on this enhancement.
 
   ~st[HEURISTIC IMPROVEMENTS]
