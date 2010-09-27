@@ -6435,47 +6435,45 @@
 
 (defun translate1-cmp (x stobjs-out bindings known-stobjs ctx w state-vars)
 
-; Stobjs-out should be t, a proper STOBJS-OUT setting, a function symbol,
-; or the symbol :stobjs-out.
+; See also translate1 for a corresponding version that also returns state.
 
-; Stobjs-out t means we do not enforce mv-let or stobjs restrictions.
-; A proper STOBJS-OUT setting (a list of stobj flags) enforces the
-; given restrictions.  A function symbol means we enforce the rules
-; and determine the stobjs-out, binding the symbol in the returned
-; bindings alist.  In addition, a function symbol tells us we are in a
-; definition body and enforce certain rules prohibiting calls of
-; functions like DEFUN and IN-PACKAGE.  The symbol :stobjs-out --
-; which is not a function symbol -- has the same meaning as a function
-; symbol except that it tells us we are NOT processing a definition
-; body.  As is noted below, if the initial stobjs-out is :stobjs-out,
-; bindings MUST be '((:stobjs-out . :stobjs-out)) and we use 
-; (eq (caar bindings) :stobjs-out) to determine that we are not in
-; a definition.  [Note: as this function recurs, bindings may grow
-; because we add new bindings with cons; but in the case of :stobjs-out
-; it will always contain just that one key.]
+; Stobjs-out should be t, a proper STOBJS-OUT setting, a function symbol, or
+; the symbol :stobjs-out.
 
-; CAUTION:  If you call this function with stobjs-out being a symbol, say
-; fn, make sure that 
+; Stobjs-out t means we do not enforce mv-let or stobjs restrictions.  A proper
+; STOBJS-OUT setting (a list of stobj flags) enforces the given restrictions.
+; A function symbol means we enforce the rules and determine the stobjs-out,
+; binding the symbol in the returned bindings alist.  In addition, a function
+; symbol tells us we are in a definition body and enforce certain rules
+; prohibiting calls of functions like DEFUN and IN-PACKAGE.  The symbol
+; :stobjs-out -- which is not a function symbol -- has the same meaning as a
+; function symbol except that it tells us we are NOT processing a definition
+; body.  As is noted below, if the initial stobjs-out is :stobjs-out, bindings
+; MUST be '((:stobjs-out . :stobjs-out)) and we use (eq (caar bindings)
+; :stobjs-out) to determine that we are not in a definition.  [Note: as this
+; function recurs, bindings may grow because we add new bindings with cons; but
+; in the case of :stobjs-out it will always contain just that one key.]
+
+; CAUTION: If you call this function with stobjs-out being a symbol, say fn,
+; make sure that
+
 ; (a) fn is bound to itself in bindings, e.g., bindings = ((fn . fn)), and
-; (b) fn is not an existing function name in w, in particular, it must not
-;     have a STOBJS-OUT setting, since that is what we use fn to compute.
+; (b) fn is not an existing function name in w, in particular, it must not have
+;     a STOBJS-OUT setting, since that is what we use fn to compute.
 
-; In general, bindings is a list of pairs, one for each fn in the
-; clique being introduced, and each is initially bound to itself.  If
-; a function symbol is not bound in bindings, its STOBJS-OUT is
-; obtained from w.
+; In general, bindings is a list of pairs, one for each fn in the clique being
+; introduced, and each is initially bound to itself.  If a function symbol is
+; not bound in bindings, its STOBJS-OUT is obtained from w.
 
-; Known-stobjs is either a list of stobj names or T (meaning, all
-; stobj names in world w).  A name is considered a stobj only if it
-; is in this list.
+; Known-stobjs is either a list of stobj names or T (meaning, all stobj names
+; in world w).  A name is considered a stobj only if it is in this list.
 
-; State-vars is a state-vars record, typically (default-state-vars t)
-; unless one does not have state available, and then (default-state-vars nil).
+; State-vars is a state-vars record, typically (default-state-vars t) unless
+; one does not have state available, and then (default-state-vars nil).
 
-; We return (mv erp transx bindings state), where transx is the
-; translation and bindings has been modified to bind every fn
-; (ultimately) to a proper stobjs out setting.  Use translate-deref to
-; recover the bindings.
+; We return (mv erp transx bindings), where transx is the translation and
+; bindings has been modified to bind every fn (ultimately) to a proper stobjs
+; out setting.  Use translate-deref to recover the bindings.
 
   (translate11 x stobjs-out bindings nil known-stobjs nil x ctx w state-vars))
 
