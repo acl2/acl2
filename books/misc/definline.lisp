@@ -15,9 +15,9 @@
     (definline car-alias (x)
       (car x))
   ~ev[]~/
-  ~c[definline] is the same as ~il[defun], but also issues a Common Lisp ``declaim''
+  ~c[definline] is the same as ~il[defun], but also issues a Common Lisp ``proclaim''
   form instructing the compiler to inline later calls to this function.  Some Lisps 
-  ignore these ``declaim'' forms and make inlining worthless.  However, inlining 
+  ignore these ``proclaim'' forms and make inlining worthless.  However, inlining 
   may provide significant gains on other Lisps.
 
   Inlining is usually beneficial for ``small'' non-recursive functions which are
@@ -29,37 +29,46 @@
   ~/
   This is a ~il[defund]-like version of ~il[definline].")
 
-(defun proclaim-inline (name)
-  (declare (xargs :guard t)
-           (ignore name))
-  (cw "Warning: proclaim-inline has not been redefined and is doing nothing."))
+
+(defun redefine-inline-fn (name state)
+  ;; has an under-the-hood definition
+  (declare (xargs :guard t :stobjs state)
+           (ignorable state))
+  (prog2$
+   (cw "Warning: redefine-inline-fn has not been redefined and is doing nothing.")
+   name))
+
+(defmacro redefine-inline (name)
+  `(make-event (let ((name (redefine-inline-fn ',name state)))
+                 (value `(value-triple ',name)))
+               :check-expansion t))
+
+(defmacro definline (name &rest args)
+  `(progn (defun ,name ,@args)
+          (redefine-inline ,name)))
+
+(defmacro definlined (name &rest args)
+  `(progn (defund ,name ,@args)
+          (redefine-inline ,name)))
 
 (defttag definline)
 
 (progn!
  (set-raw-mode t)
- (defun proclaim-inline (name)
-   (progn
+ (defun redefine-inline-fn (name state)
+   (unless (live-state-p state)
+     (er hard? 'redefine-inline-fn
+         "redefine-inline-fn can only be called on live states."))
+   (unless (symbolp name)
+     (er hard? 'redefine-inline-fn
+         "expected ~x0 to be a symbol." name))
+   (let ((def (get-def name (w state))))
+     (unless def
+       (er hard? 'redefine-inline-fn "~x0 does not appear to be defined."))
      (eval `(proclaim '(inline ,name)))
-     nil)))
+     (eval (cons 'defun def)))
+   name))
 
-(defun definline-fn (defun-fn args)
-  (declare (xargs :mode :program))
-  (if (not (consp args))
-      ;; This is the same message "defun" gives when it's unhappy.
-      (ACL2::er hard 'definline "A definition must be given three or more arguments, ~
-                                but ~x0 has length only 0.~%" args)
-    (let ((name (first args)))
-      (if (symbolp name)
-          `(progn
-             (value-triple (proclaim-inline ',name))
-             (,defun-fn ,@args))
-        ;; This is the same message "defun" gives when it's unhappy.
-        (ACL2::er hard 'definline "Names must be symbols and ~x0 is not.~%" name)))))
+(defttag nil)
 
-(defmacro definline (&rest args)
-  (definline-fn 'defun args))
-
-(defmacro definlined (&rest args)
-  (definline-fn 'defund args))
 
