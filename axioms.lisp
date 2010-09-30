@@ -36354,13 +36354,15 @@ in :type-prescription rules are specified with :type-prescription (and/or
   (~pl[set-guard-checking], or evaluate ~c[*guard-checking-values*] to see the
   list of such values), and ~c[form] is a form to be evaluated as though we had
   first executed ~c[(set-guard-checking val)].  Of course, this gaurd-checking
-  setting is active only during evaluation of ~c[form]."
+  setting is active only during evaluation of ~c[form], and is ignored once
+  evaluation passes into raw Lisp functions (~pl[guards-and-evaluation])."
 
   (declare (xargs :guard t))
   (prog2$ (or (member-eq val *guard-checking-values*)
               (hard-error 'with-guard-checking
                           "~@0"
-                          (list (cons #\0 (tilde-@-guard-checking-phrase val)))))
+                          (list (cons #\0 (tilde-@-guard-checking-phrase
+                                           val)))))
           form))
 
 #-acl2-loop-only
@@ -36371,6 +36373,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
   (let ((v (global-symbol 'guard-checking-on)))
     `(let ((,v ,val))
        (declare (special ,v))
+       (assert (member-eq ,v *guard-checking-values*)) ; checked by logic code
        ,form)))
 
 (defun abort! ()

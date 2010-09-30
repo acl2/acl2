@@ -1195,7 +1195,7 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
             qname
             (list 'quote (list 'lambda formals (oneify body fns w)))
             *nil*)))
-   ((eq (car x) 'with-prover-time-limit) ; treat with-guard-checking normally
+   ((member-eq (car x) '(with-guard-checking with-prover-time-limit))
     (list (car x) (oneify (cadr x) fns w) (oneify (caddr x) fns w)))
    (t
     (let ((arg-forms (oneify-lst (cdr x) fns w)))

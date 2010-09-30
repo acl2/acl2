@@ -16749,6 +16749,9 @@
   those errors (which basically was that ACL2 was attempting to quit while
   already in the process of quitting).
 
+  Fixed a bug in ~ilc[with-guard-checking], which was being ignored in function
+  bodies.
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   ~st[EMACS SUPPORT]
