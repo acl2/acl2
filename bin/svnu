@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Usage: ./svnu [arg1] ... [argk]
+# which should be equivalent to
+# svn update --ignore-externals [arg1] ... [argk]
+# except that file acl2-svn.txt is always updated.
+
+rm -f acl2-svn.txt
+svn update --ignore-externals $*
