@@ -36366,9 +36366,6 @@ in :type-prescription rules are specified with :type-prescription (and/or
           form))
 
 #-acl2-loop-only
-(fmakunbound 'with-guard-checking) ; avoid warning in loading patch file
-
-#-acl2-loop-only
 (defmacro with-guard-checking (val form)
   (let ((v (global-symbol 'guard-checking-on)))
     `(let ((,v ,val))
