@@ -16685,6 +16685,8 @@
 ; books' certificate, so that a full-book-name is used instead of a
 ; familiar-name.
 
+; Added brief documentation for quote, following email from Sandip Ray.
+
   :Doc
   ":Doc-Section release-notes
 

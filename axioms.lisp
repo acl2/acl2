@@ -35895,6 +35895,14 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   ~c[(symbolp x)] is true if and only if ~c[x] is a symbol.~/~/")
 
+(defdoc quote
+  ":Doc-Section ACL2::Programming
+
+  create a constant~/
+
+  The form ~c[(quote x)] evaluates to ~c[x].  See any Common Lisp
+  documentation.~/~/")
+
 (defun double-rewrite (x)
   (declare (xargs :guard t))
   ":Doc-Section Miscellaneous
