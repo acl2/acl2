@@ -210,10 +210,14 @@
       (and val
            (er hard 'set-parallel-evaluation-fn
                "Parallelism can only be enabled in CCL or threaded SBCL. ~
-                The current Lisp is neither of the two and parallelism will ~
-                remain disabled.  Note that you can submit parallelism ~
-                primitives at the top level when parallel evaluation is ~
-                disabled.~%"))
+                Additionally, the feature :ACL2-PAR must be set when ~
+                compiling ACL2 (for example, by using `~c[make]' with ~
+                argument ~c[ACL2_PAR=t]). Either the current Lisp is neither ~
+                CCL nor threaded SBCL, or this feature is missing.  ~
+                Consequently, parallelism will remain disabled.  Note that ~
+                you can submit parallelism primitives at the top level when ~
+                parallel evaluation is disabled, although they will not ~
+                result in any parallel evaluation.~%"))
       (set-parallel-evaluation-fn
        (cond ((consp val) (cadr val))
              (t val))
