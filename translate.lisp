@@ -1980,70 +1980,6 @@
                      (cdr (assoc-eq 'state clean-latches)))
                clean-latches))))))))))
 
-(defun ev-fncall (fn args state latches hard-error-returns-nilp aok)
-  (declare (xargs :guard (state-p state)))
-  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state))
-                         (*raw-guard-warningp* (raw-guard-warningp-binding)))
-       #+acl2-loop-only ()
-
-; See the comment in ev for why we don't check the time limit here.
-
-       (ev-fncall-rec fn args (w state) (big-n)
-                      (f-get-global 'safe-mode state)
-                      (gc-off state)
-                      latches hard-error-returns-nilp aok)))
-  
-(defun ev (form alist state latches hard-error-returns-nilp aok)
-  (declare (xargs :guard (and (state-p state)
-                              (termp form (w state))
-                              (symbol-alistp alist))))
-  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state))
-                         (*raw-guard-warningp* (raw-guard-warningp-binding)))
-       #+acl2-loop-only ()
-
-; At one time we called time-limit4-reached-p here so that we can quit if we
-; are out of time.  But we were then able to get into an infinite loop as
-; follows:
-
-; (defun foo (x) (cons x x))
-; :brr t
-; :monitor (:definition foo) t
-; (ld '((thm (equal (foo x) (cons x x)))))
-; [Hit control-c repeatedly.]
-
-; We didn't analyze this issue completely (presumably has something to do with
-; cleaning up), but a simple solution is to avoid this time-limit check.
-
-;       (cond
-;        ((time-limit4-reached-p
-;          "Out of time in the evaluator (ev).") ; nil, or throws
-;         (mv t ; value shouldn't matter
-;             (cons "Implementation error" nil)
-;             latches))
-;        (t
-       (ev-rec form alist
-               (w state) (big-n)
-               (f-get-global 'safe-mode state)
-               (gc-off state)
-               latches hard-error-returns-nilp aok)))
-
-(defun ev-lst (lst alist state latches hard-error-returns-nilp aok)
-  (declare (xargs :guard (and (state-p state)
-                              (term-listp lst (w state))
-                              (symbol-alistp alist))))
-  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state))
-                         (*raw-guard-warningp* (raw-guard-warningp-binding)))
-       #+acl2-loop-only ()
-
-; See the comment in ev for why we don't check the time limit here.
-
-       (ev-rec-lst lst alist
-                   (w state)
-                   (big-n)
-                   (f-get-global 'safe-mode state)
-                   (gc-off state)
-                   latches hard-error-returns-nilp aok)))
-
 (defun ev-fncall-w (fn args w safe-mode gc-off hard-error-returns-nilp aok)
   (declare (xargs :guard (plist-worldp w)))
 
@@ -2600,6 +2536,70 @@
 ;; of rationalp.  I also added complexp, realp, and floor1.
 
 )
+
+(defun ev-fncall (fn args state latches hard-error-returns-nilp aok)
+  (declare (xargs :guard (state-p state)))
+  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state))
+                         (*raw-guard-warningp* (raw-guard-warningp-binding)))
+       #+acl2-loop-only ()
+
+; See the comment in ev for why we don't check the time limit here.
+
+       (ev-fncall-rec fn args (w state) (big-n)
+                      (f-get-global 'safe-mode state)
+                      (gc-off state)
+                      latches hard-error-returns-nilp aok)))
+  
+(defun ev (form alist state latches hard-error-returns-nilp aok)
+  (declare (xargs :guard (and (state-p state)
+                              (termp form (w state))
+                              (symbol-alistp alist))))
+  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state))
+                         (*raw-guard-warningp* (raw-guard-warningp-binding)))
+       #+acl2-loop-only ()
+
+; At one time we called time-limit4-reached-p here so that we can quit if we
+; are out of time.  But we were then able to get into an infinite loop as
+; follows:
+
+; (defun foo (x) (cons x x))
+; :brr t
+; :monitor (:definition foo) t
+; (ld '((thm (equal (foo x) (cons x x)))))
+; [Hit control-c repeatedly.]
+
+; We didn't analyze this issue completely (presumably has something to do with
+; cleaning up), but a simple solution is to avoid this time-limit check.
+
+;       (cond
+;        ((time-limit4-reached-p
+;          "Out of time in the evaluator (ev).") ; nil, or throws
+;         (mv t ; value shouldn't matter
+;             (cons "Implementation error" nil)
+;             latches))
+;        (t
+       (ev-rec form alist
+               (w state) (big-n)
+               (f-get-global 'safe-mode state)
+               (gc-off state)
+               latches hard-error-returns-nilp aok)))
+
+(defun ev-lst (lst alist state latches hard-error-returns-nilp aok)
+  (declare (xargs :guard (and (state-p state)
+                              (term-listp lst (w state))
+                              (symbol-alistp alist))))
+  (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state))
+                         (*raw-guard-warningp* (raw-guard-warningp-binding)))
+       #+acl2-loop-only ()
+
+; See the comment in ev for why we don't check the time limit here.
+
+       (ev-rec-lst lst alist
+                   (w state)
+                   (big-n)
+                   (f-get-global 'safe-mode state)
+                   (gc-off state)
+                   latches hard-error-returns-nilp aok)))
 
 (defun untranslate (term iff-flg wrld)
   (let ((user-untranslate

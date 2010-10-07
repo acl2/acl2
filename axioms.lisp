@@ -39224,18 +39224,18 @@ Lisp definition."
 ; raw Lisp (without ACL2) to try this out.
 
 #||
-(defmacro time-in-raw-lisp (x k)
-  `(progn (print ,k) (time ,x)))
+ (defmacro time-in-raw-lisp (x k)
+   `(progn (print ,k) (time ,x)))
 
-(defun ev (x)
-  (cond ((atom x)
-         (eval x))
-        ((eq (car x) 'time$-logic)
-         (let ((val (ev (caddr x))))
-           (time-in-raw-lisp (ev (cadr x)) val)))
-        (t ; for simplicity, assume x has no macro calls
-         (apply (car x)
-                (loop for y in (cdr x) collect (ev y))))))
+ (defun ev (x)
+   (cond ((atom x)
+          (eval x))
+         ((eq (car x) 'time$-logic)
+          (let ((val (ev (caddr x))))
+            (time-in-raw-lisp (ev (cadr x)) val)))
+         (t ; for simplicity, assume x has no macro calls
+          (apply (car x)
+                 (loop for y in (cdr x) collect (ev y))))))
 ||#
 
 ; Finally, note that the timing argument is actually the last argument of
