@@ -432,16 +432,22 @@ implementations.")
 
 (defun acl2-svn-revision-string ()
 
-; Delete file acl2-svn.txt before doing a release.  Otherwise, we expect that
-; file to contain a string of the form "$Revision: n $".
+; Put symbol :release into file acl2-startup-info.txt before doing a release.
+; Otherwise, we expect that file to contain a string of the form
+; "$Revision: n $".
 
-  (let ((file "acl2-svn.txt"))
+  (let ((file "acl2-startup-info.txt"))
     (cond ((probe-file file)
-           (format nil *acl2-svn-revision-string*
-                   (with-open-file
-                    (str file :direction :input)
-                    (read str))))
-          (t ""))))
+           (let ((val (with-open-file
+                       (str file :direction :input)
+                       (read str))))
+             (cond ((eq val :release)
+                    "")
+                   ((stringp val)
+                    (format nil *acl2-svn-revision-string* val))
+                   (t (error "Illegal value in file ~s: ~s"
+                             file val)))))
+          (t (error "File ~s appears not to exist." file)))))
 
 (defvar *saved-string*
   (concatenate

@@ -3,7 +3,7 @@
 # Usage: ./svnu [arg1] ... [argk]
 # which should be equivalent to
 # svn update --ignore-externals [arg1] ... [argk]
-# except that file acl2-svn.txt is always updated.
+# except that file acl2-startup-info.txt is always updated.
 
-rm -f acl2-svn.txt
+rm -f acl2-startup-info.txt
 svn update --ignore-externals $*

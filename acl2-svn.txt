@@ -1,2 +1,0 @@
-"$Revision$"
-Thu Sep 30 17:49:20 CDT 2010

@@ -3,12 +3,12 @@
 # Usage: svnc msg [file file ...]
 # which should be equivalent to
 # svn commit -m msg [file file ...]
-# except that file acl2-svn.txt is always updated, with
+# except that file acl2-startup-info.txt is always updated, with
 # a time stamp so that it will always be committed.
 
-rm -f acl2-svn.txt
-echo '"$Revision: $"' > acl2-svn.txt
-date >> acl2-svn.txt
+rm -f acl2-startup-info.txt
+echo '"$Revision: $"' > acl2-startup-info.txt
+date >> acl2-startup-info.txt
 
 if [ $# -lt 1 ] ; then \
     echo "Usage: svnc msg [file file ...]" ; \
@@ -18,5 +18,5 @@ elif [ $# -eq 1 ] ; then \
 else \
     export msg="$1"
     shift 1
-    svn commit -m "$msg" $* acl2-svn.txt
+    svn commit -m "$msg" $* acl2-startup-info.txt
 fi

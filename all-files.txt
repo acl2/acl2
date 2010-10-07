@@ -10,7 +10,7 @@ acl2-fns.lisp
 acl2-init.lisp
 # acl2-proclaims.lisp -- generated file
 # acl2-status.txt -- generated file
-# acl2-svn.txt -- under svn control, but not distributed
+acl2-startup-info.txt
 acl2.lisp
 # acl2r.lisp -- generated file
 akcl-acl2-trace.lisp
