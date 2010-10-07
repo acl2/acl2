@@ -458,17 +458,8 @@ implementations.")
     ~% are welcome to redistribute it under certain conditions.  For details,~
     ~% see the GNU General Public License.~%"
 
-; NOTE: Comment out the next string if doing an ACL2 release.  Be sure to do no
-; further svn commits until after the release.  Do an svn commit of everything
-; immediately after the release, with a message (svn commit -m argument) saying
-; which release it is:
-
-;   svn commit -m 'Committing ACL2 Version 4.1'
-
-; Then, uncomment the following string and do a new commit:
-
-;   svn commit -m \
-;   'Modifying banner to assert once again that svn releases are experimental.'
+; The following is empty if acl2-startup-info.txt begins with the symbol
+; :release.
 
    (acl2-svn-revision-string)
 
