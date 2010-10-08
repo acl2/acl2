@@ -232,71 +232,139 @@
               (throw-away-keyword-parts (cdr args))))
     nil))
 
+(defun assoc-flag-in-thmparts (flag thmparts)
+  (if (atom thmparts)
+      nil
+    (cond ((eq (caar thmparts) 'defthm)
+           (if (eq (extract-keyword-from-args :flag (car thmparts))
+                   flag)
+               (car thmparts)
+             (assoc-flag-in-thmparts flag (cdr thmparts))))
+          ((eq (caar thmparts) flag) (car thmparts))
+          (t (assoc-flag-in-thmparts flag (cdr thmparts))))))
+
 (defun pair-up-cases-with-thmparts (alist thmparts)
-  ;; Each thmpart is an thing like (flag <thm-body> :name ... :rule-classes ... :doc ...)
+  ;; Each thmpart is an thing like
+  ;; _either_ (flag <thm-body> :name ... :rule-classes ... :doc ...)
+  ;;;    (for backwards compatibility)
+  ;; _or_  (defthm <thmname> <thm-body> :flag ... :rule-classes ... :doc ...)
+  
   (if (consp alist)
       (let* ((flag   (cdar alist))
-             (lookup (assoc-eq flag thmparts)))
+             (lookup (assoc-flag-in-thmparts flag thmparts)))
         (if (not lookup)
             (er hard 'pair-up-cases-with-thmparts
                 "Expected there to be a case for the flag ~s0.~%" flag)
-          (if (consp (cdr alist))
-              (cons `(,flag ,(cadr lookup))
-                    (pair-up-cases-with-thmparts (cdr alist) thmparts))
-            (list `(otherwise ,(cadr lookup))))))
+          (let ((body (if (eq (car lookup) 'defthm)
+                          ;; (defthm name body ...)
+                          (caddr lookup)
+                        ;; (flag body ...)
+                        (cadr lookup))))
+            (if (consp (cdr alist))
+                (cons `(,flag ,body)
+                      (pair-up-cases-with-thmparts (cdr alist) thmparts))
+              (list `(otherwise ,body))))))
     (er hard 'pair-up-cases-with-thmparts
         "Never get here.")))
 
-(defun make-defthm-macro-fn-aux (name flag-var alist thmparts)
+(defun make-defthm-macro-fn-aux (name explicit-namep flag-var alist thmparts)
   ;; We have just proven the lemma and it's time to instantiate it to
   ;; give us each thm.
   (if (consp alist)
       (let* ((flag (cdar alist))
-             (lookup (assoc-eq flag thmparts)))
-        ;; Not checking for lookup, already did it when we did cases.
-        (let ((this-name (or (extract-keyword-from-args :name (cddr lookup))
-                             (intern-in-package-of-symbol
-                              (concatenate 'string
-                                           (symbol-name name)
-                                           "-"
-                                           (symbol-name flag))
-                              name)))
-              (rule-classes (let ((mem (member :rule-classes (cddr lookup))))
-                              (if mem (cadr mem) :rewrite)))
-              (doc          (extract-keyword-from-args :doc (cddr lookup)))
-              (skip (extract-keyword-from-args :skip (cddr lookup))))
-          (if skip
-              (make-defthm-macro-fn-aux name flag-var (cdr alist) thmparts)
+             (lookup (assoc-flag-in-thmparts flag thmparts)))
+        (if (extract-keyword-from-args :skip (cddr lookup))
+            (make-defthm-macro-fn-aux name explicit-namep flag-var (cdr alist) thmparts)
+          ;; Not checking for lookup, already did it when we did cases.
+          (let ((this-name
+                 (if (eq (car lookup) 'defthm)
+                     (cadr lookup)
+                   (or (extract-keyword-from-args :name (cddr lookup))
+                       (if explicit-namep
+                           (intern-in-package-of-symbol
+                            (concatenate 'string
+                                         (symbol-name name)
+                                         "-"
+                                         (symbol-name flag))
+                            name)
+                         (er hard name
+                             "Expected an explicit name for each theorem, ~
+since no general name was given.~%")))))
+                (body (if (eq (car lookup) 'defthm)
+                          (caddr lookup)
+                        (cadr lookup)))
+                (rule-classes (let ((mem (member :rule-classes (cddr lookup))))
+                                (if mem (cadr mem) :rewrite)))
+                (doc          (extract-keyword-from-args :doc (cddr lookup))))
             (cons `(defthm ,this-name
-                     ,(cadr lookup)
+                     ,body
                      :rule-classes ,rule-classes
                      :doc ,doc
                      :hints(("Goal"
                              :in-theory (theory 'minimal-theory)
                              :use ((:instance ,name (,flag-var ',flag))))))
-                  (make-defthm-macro-fn-aux name flag-var (cdr alist) thmparts)))))
+                  (make-defthm-macro-fn-aux name explicit-namep flag-var (cdr alist) thmparts)))))
     nil))
 
-(defun make-defthm-macro-fn (name args alist flag-var)
-  (let ((thmparts (throw-away-keyword-parts args)))
+
+(defun make-defthm-macro-fn (macro-name args alist flag-var flag-fncall)
+  (let* ((explicit-namep (symbolp (car args)))
+         (name (if explicit-namep
+                   (car args)
+                 (intern-in-package-of-symbol
+                  (concatenate 'string "LEMMA-FOR-" (symbol-name macro-name))
+                  macro-name)))
+         (args (if (symbolp (car args))
+                   (cdr args)
+                 args))
+         (thmparts (throw-away-keyword-parts args))
+         (instructions (extract-keyword-from-args :instructions args))
+         (user-hints (extract-keyword-from-args :hints args))
+         (hints (and (not instructions)
+                     (if (and (consp (car user-hints))
+                              (stringp (caar user-hints))
+                              (equal (string-upcase (caar user-hints))
+                                     "GOAL"))
+                         ;; First hint is for goal.
+                         (if (extract-keyword-from-args :induct (car user-hints))
+                             ;; Explicit induct hint is provided; do not override.
+                             user-hints
+                           ;; Provide our induct hint in addition to the hints
+                           ;; provided in goal.
+                           (cons `("Goal" :induct ,flag-fncall
+                                   . ,(cdar user-hints))
+                                 (cdr user-hints)))
+                       ;; No goal hint; cons our induction hint onto the rest.
+                       (cons `("Goal" :induct ,flag-fncall)
+                             user-hints)))))
+
     `(progn
        (encapsulate
         ()
         (local (defthm ,name
                  (case ,flag-var . ,(pair-up-cases-with-thmparts alist thmparts))
                  :rule-classes nil
-                 ;; user must give induction scheme.  lolol.
-                 :hints ,(extract-keyword-from-args :hints args)
-                 :instructions ,(extract-keyword-from-args :instructions args)
+                 :hints ,hints
+                 :instructions ,instructions
                  :otf-flg ,(extract-keyword-from-args :otf-flg args)))
 
-        . ,(make-defthm-macro-fn-aux name flag-var alist thmparts))
+        . ,(make-defthm-macro-fn-aux name explicit-namep flag-var alist thmparts))
        (value-triple ',name))))
 
-(defun make-defthm-macro (real-macro-name alist flag-var)
-  `(defmacro ,real-macro-name (name &rest args)
-     (declare (xargs :guard (symbolp name)))
-     (make-defthm-macro-fn name args ',alist ',flag-var)))
+(defun keyword-or-true-list-listp (x)
+  (if (atom x)
+      (eq x nil)
+    (and (or (keywordp (car x))
+             (true-listp (car x)))
+         (keyword-or-true-list-listp (cdr x)))))
+
+(defun make-defthm-macro (real-macro-name alist flag-var flag-fncall)
+  `(defmacro ,real-macro-name (&rest args) ;; was (name &rest args)
+     (declare (xargs :guard (and (consp args)
+                                 (or (symbolp (car args))
+                                     (true-listp (car args)))
+                                 (keyword-or-true-list-listp (cdr args)))))
+     (make-defthm-macro-fn ',real-macro-name args ',alist ',flag-var ',flag-fncall)))
 
 (defun make-cases-for-equiv (alist world)
   (if (consp alist)
@@ -360,7 +428,8 @@
 
       (,(if local 'local 'id)
        ,(make-flag-body flag-fn-name flag-var alist hints world))
-      ,(make-defthm-macro defthm-macro-name alist flag-var)
+      ,(make-defthm-macro defthm-macro-name alist flag-var
+                          `(,flag-fn-name ,flag-var . ,formals))
 
       (,(if local 'local 'id)
        (with-output
@@ -414,6 +483,89 @@
                              ',local
                              (w state))))
 
+(defdoc make-flag
+":doc-section miscellaneous
+Make-flag: create a flag-based induction scheme for a mutual recursion~/
+
+Usage:
+~bv[]
+ (FLAG::make-flag flag-pseudo-termp
+                  pseudo-termp
+                  :flag-var flag
+                  :flag-mapping ((pseudo-termp . term)
+                                 (pseudo-term-listp . list))
+                 ;; :hints {for the measure theorem}
+                  :defthm-macro-name defthm-pseudo-termp
+                  )
+~ev[]
+
+Here pseudo-termp is the name of a function in a mutually recursive clique.  In
+this case, the clique has two functions, pseudo-termp and pseudo-term-listp.
+The name of the newly generated flag function will be flag-pseudo-termp.
+
+The other arguments are optional:
+ * flag-var specifies the name of the variable to use for the flag.
+ * flag-mapping specifies short names to identify with each of the functions of
+the clique.  In absence of these names, the function names themselves will be
+used.
+ * defthm-macro-name: Make-flag creates a macro that is useful for proving
+theorems about the mutual recursion.  This argument provides the name of this
+macro.
+~/
+
+Using the generated defthm macro:
+
+To prove an inductive theorem about a mutually-recursive function, usually one
+has to effectively prove a different theorem about each function in the mutual
+recursion, but do them all at once inside a single induction.  The defthm macro
+automates this process.
+
+Here are some examples of its usage with the flag-pseudo-termp example above.
+
+~bv[]
+ (defthm-pseudo-termp type-of-pseudo-termp
+   (term (booleanp (pseudo-termp x))
+         :rule-classes :rewrite
+         :doc nil)
+   (list (booleanp (pseudo-term-listp lst)))
+   :hints ((\"goal\" :expand (pseudo-term-listp lst))))
+~ev[]
+
+The above form produces two theorems named, respectively,
+type-of-pseudo-termp-term and type-of-pseudo-termp-list.  The hints provided
+are modified automatically by the defthm macro in order to provide an induction
+scheme.  However, this induction scheme assumes you're using the formals of the
+flag function as the variable names of the theorem.  Otherwise, you'll have to
+provide your own induction hint, as follows.  We also use an alternative syntax
+in this example:
+
+~bv[]
+ (defthm-pseudo-termp
+     ;; name in top-level form is optional if names for each theorem are provided
+   (defthm type-of-pseudo-termp
+     (booleanp (pseudo-termp term))
+     :flag term)
+   (defthm type-of-pseudo-term-listp
+     (booleanp (pseudo-term-listp termlist))
+     :flag term)
+   :hints ((\"goal\" :induct (flag-pseudo-termp flag term termlist))))
+~ev[]
+
+Here we only export the theorem about pseudo-termp, and skip the one about
+pseudo-term-listp.  We're also mixing the allowed syntaxes:
+
+~bv[]
+ (defthm-pseudo-termp
+     ;; name in top-level form is optional if names for each theorem are provided
+   (defthm type-of-pseudo-termp
+     (booleanp (pseudo-termp x))
+     :flag term)
+   (list
+     (booleanp (pseudo-term-listp x))
+     :skip t)
+   :hints ((\"goal\" :induct (flag-pseudo-termp flag term termlist))))
+~ev[]
+~/ ")
 
 ;; Accessors for the records stored in the flag-fns table
 (defun flag-present (fn world)
@@ -437,6 +589,7 @@
 
 (logic) ;; so local events aren't skipped
 
+#!ACL2
 (local
 
 ; A couple tests to make sure things are working.
@@ -460,14 +613,49 @@
   (in-theory (disable (:type-prescription pseudo-termp)
                       (:type-prescription pseudo-term-listp)))
 
-  (defthm-pseudo-termp type-of-pseudo-termp
-    (term (booleanp (pseudo-termp x))
-          :rule-classes :rewrite
-          :doc nil)
-    (list (booleanp (pseudo-term-listp lst))
-          )
-    :hints(("Goal"
-            :induct (flag-pseudo-termp flag x lst))))
+  ;; A few syntactic variations on defining the same theorems:
+  (encapsulate
+   nil
+   (local (defthm-pseudo-termp type-of-pseudo-termp
+            (term (booleanp (pseudo-termp x))
+                  :rule-classes :rewrite
+                  :doc nil)
+            (list (booleanp (pseudo-term-listp lst))))))
+
+  (encapsulate
+   nil
+   (local (defthm-pseudo-termp
+            (term (booleanp (pseudo-termp x))
+                  :rule-classes :rewrite
+                  :doc nil
+                  :name type-of-pseudo-termp)
+            (list (booleanp (pseudo-term-listp lst))
+                  :skip t))))
+
+  (encapsulate
+   nil
+   (local (defthm-pseudo-termp
+            (defthm type-of-pseudo-termp
+              (booleanp (pseudo-termp x))
+              :rule-classes :rewrite
+              :doc nil
+              :flag term)
+            (defthm type-of-pseudo-term-listp
+              (booleanp (pseudo-term-listp lst))
+              :flag list
+              :skip t))))
+
+  (encapsulate
+   nil
+   (local (defthm-pseudo-termp
+            (defthm type-of-pseudo-termp
+              (booleanp (pseudo-termp x))
+              :rule-classes :rewrite
+              :doc nil
+              :flag term)
+            (list
+              (booleanp (pseudo-term-listp lst))
+              :skip t))))
 
 
 
