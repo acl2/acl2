@@ -97,7 +97,41 @@
   (equal (hide x) x)
   :hints (("goal" :expand ((hide x)))))
 
+
+
+(defun acl2::flag-is (x)
+  (declare (ignore x))
+  t)
+
+(in-theory (disable acl2::flag-is (acl2::flag-is) (:type-prescription acl2::flag-is)))
+
+(defevaluator flag-is-cp-ev flag-is-cp-ev-lst ((if a b c) (acl2::flag-is x) (not x)))
+
+(defun flag-is-cp (clause name)
+  (declare (xargs :guard t))
+  (list (cons `(not (acl2::flag-is ',name))
+              clause)))
+
+(defthm flag-is-cp-correct
+  (implies (and (pseudo-term-listp clause)
+                (alistp al)
+                (flag-is-cp-ev (acl2::conjoin-clauses
+                                (flag-is-cp clause name))
+                               al))
+           (flag-is-cp-ev (acl2::disjoin clause) al))
+  :hints (("goal" :expand ((:free (a b) (acl2::disjoin (cons a b))))
+           :in-theory (enable acl2::disjoin2 acl2::flag-is)
+           :do-not-induct t))
+  :rule-classes :clause-processor)
+
+
+
+
 (program)
+
+
+
+
 
 (defmacro id (form) form)
 
@@ -232,16 +266,96 @@
               (throw-away-keyword-parts (cdr args))))
     nil))
 
+
+
+
+
+(defun translate-subgoal-to-computed-hints (hints)
+  (declare (xargs :mode :program))
+  (if (atom hints)
+      nil
+    (cons (if (and (consp (car hints))
+                   (stringp (caar hints)))
+              (let ((id (acl2::parse-clause-id (caar hints))))
+                `(and (equal id ',id)
+                      ',(cdar hints)))
+            (car hints))
+          (translate-subgoal-to-computed-hints (cdr hints)))))
+
+(defun find-flag-hyps (flagname clause)
+  (declare (xargs :mode :program))
+  (if (atom clause)
+      (mv nil nil)
+    (let ((lit (car clause)))
+      (flet ((eql-hyp-case
+              (a b flagname clause)
+              (cond ((and (equal a flagname) (quotep b))
+                     (mv b nil))
+                    ((and (equal b flagname) (quotep a))
+                     (mv a nil))
+                    (t (find-flag-hyps flagname (cdr clause)))))
+             (uneql-hyp-case
+              (a b flagname clause)
+              (mv-let (equiv rest)
+                (find-flag-hyps flagname (cdr clause))
+                (if equiv
+                    (mv equiv nil)
+                  (cond ((and (equal a flagname) (quotep b))
+                         (mv nil (cons b rest)))
+                        ((and (equal b flagname) (quotep a))
+                         (mv nil (cons a rest)))
+                        (t (mv nil rest)))))))
+      (case-match lit
+        (('not ('equal a b))
+         (eql-hyp-case a b flagname clause))
+        (('not ('eql a b))
+         (eql-hyp-case a b flagname clause))
+        (('equal a b)
+         (uneql-hyp-case a b flagname clause))
+        (('eql a b)
+         (uneql-hyp-case a b flagname clause))
+        (& (find-flag-hyps flagname (cdr clause))))))))
+
+(defun flag-hint-cases-fn (flagname cases clause)
+  (declare (xargs :mode :program))
+  (mv-let (equiv inequivs)
+    (find-flag-hyps flagname clause)
+    (let ((flagval (or equiv
+                       (let* ((possibilities (strip-cars cases))
+                              (not-ruled-out
+                               (set-difference-eq possibilities
+                                                  (acl2::strip-cadrs inequivs))))
+                         (and (eql (len not-ruled-out) 1)
+                              (list 'quote (car not-ruled-out)))))))
+      (and flagval
+           (let ((hints (cdr (assoc (cadr flagval) cases))))
+             `(:computed-hint-replacement
+               ,(translate-subgoal-to-computed-hints hints)
+               :clause-processor (flag-is-cp clause ,flagval)))))))
+
+(defmacro flag-hint-cases (flagname &rest cases)
+  `(flag-hint-cases-fn ',flagname ',cases clause))
+
+
+
+
+(defun flag-from-thmpart (thmpart)
+  (if (eq (car thmpart) 'defthm)
+      (extract-keyword-from-args :flag thmpart)
+    (car thmpart)))
+
 (defun assoc-flag-in-thmparts (flag thmparts)
   (if (atom thmparts)
       nil
-    (cond ((eq (caar thmparts) 'defthm)
-           (if (eq (extract-keyword-from-args :flag (car thmparts))
-                   flag)
-               (car thmparts)
-             (assoc-flag-in-thmparts flag (cdr thmparts))))
-          ((eq (caar thmparts) flag) (car thmparts))
-          (t (assoc-flag-in-thmparts flag (cdr thmparts))))))
+    (if (eq (flag-from-thmpart (car thmparts)) flag)
+        (car thmparts)
+      (assoc-flag-in-thmparts flag (cdr thmparts)))))
+
+
+
+
+
+
 
 (defun pair-up-cases-with-thmparts (alist thmparts)
   ;; Each thmpart is an thing like
@@ -266,6 +380,24 @@
               (list `(otherwise ,body))))))
     (er hard 'pair-up-cases-with-thmparts
         "Never get here.")))
+
+
+(defun pair-up-cases-with-hints (alist thmparts)
+  ;; Each thmpart is an thing like
+  ;; _either_ (flag <thm-body> :name ... :rule-classes ... :doc ...)
+  ;;;    (for backwards compatibility)
+  ;; _or_  (defthm <thmname> <thm-body> :flag ... :rule-classes ... :doc ...)
+  
+  (if (consp alist)
+      (let* ((flag   (cdar alist))
+             (lookup (assoc-flag-in-thmparts flag thmparts)))
+        (if (not lookup)
+            (er hard 'pair-up-cases-with-hints
+                "Expected there to be a case for the flag ~s0.~%" flag)
+          (let ((hints (extract-keyword-from-args :hints lookup)))
+            (cons (cons flag hints)
+                  (pair-up-cases-with-hints (cdr alist) thmparts)))))
+    nil))
 
 (defun make-defthm-macro-fn-aux (name explicit-namep flag-var alist thmparts)
   ;; We have just proven the lemma and it's time to instantiate it to
@@ -321,22 +453,27 @@ since no general name was given.~%")))))
          (instructions (extract-keyword-from-args :instructions args))
          (user-hints (extract-keyword-from-args :hints args))
          (hints (and (not instructions)
-                     (if (and (consp (car user-hints))
-                              (stringp (caar user-hints))
-                              (equal (string-upcase (caar user-hints))
-                                     "GOAL"))
-                         ;; First hint is for goal.
-                         (if (extract-keyword-from-args :induct (car user-hints))
-                             ;; Explicit induct hint is provided; do not override.
-                             user-hints
-                           ;; Provide our induct hint in addition to the hints
-                           ;; provided in goal.
-                           (cons `("Goal" :induct ,flag-fncall
-                                   . ,(cdar user-hints))
-                                 (cdr user-hints)))
-                       ;; No goal hint; cons our induction hint onto the rest.
-                       (cons `("Goal" :induct ,flag-fncall)
-                             user-hints)))))
+                     (append
+                      (if (and (consp (car user-hints))
+                               (stringp (caar user-hints))
+                               (equal (string-upcase (caar user-hints))
+                                      "GOAL"))
+                          ;; First hint is for goal.
+                          (if (extract-keyword-from-args :induct (car user-hints))
+                              ;; Explicit induct hint is provided; do not override.
+                              user-hints
+                            ;; Provide our induct hint in addition to the hints
+                            ;; provided in goal.
+                            (cons `("Goal" :induct ,flag-fncall
+                                    . ,(cdar user-hints))
+                                  (cdr user-hints)))
+                        ;; No goal hint; cons our induction hint onto the rest.
+                        (cons `("Goal" :induct ,flag-fncall)
+                              user-hints))
+                      (list
+                       `(flag-hint-cases
+                         ,flag-var
+                         . ,(pair-up-cases-with-hints alist thmparts)))))))
 
     `(progn
        (encapsulate
@@ -542,19 +679,58 @@ in this example:
 ~ev[]
 
 Here we only export the theorem about pseudo-termp, and skip the one about
-pseudo-term-listp.  We're also mixing the allowed syntaxes:
+pseudo-term-listp: putting the keyword argument ~c[:skip t] on any of the
+lemmas causes this behavior.  We're also mixing the allowed syntaxes:
 
 ~bv[]
  (defthm-pseudo-termp
      ;; name in top-level form is optional if names for each theorem are provided
    (defthm type-of-pseudo-termp
-     (booleanp (pseudo-termp x))
+     (booleanp (pseudo-termp term))
      :flag term)
    (list
-     (booleanp (pseudo-term-listp x))
+     (booleanp (pseudo-term-listp termlist))
      :skip t)
    :hints ((\"goal\" :induct (flag-pseudo-termp flag term termlist))))
 ~ev[]
+
+You may also provide (computed) hints to the separate theorems, as follows:
+
+~bv[]
+ (local (in-theory (disable pseudo-termp pseudo-term-listp)))
+ (defthm-pseudo-termp
+     ;; name in top-level form is optional if names for each theorem are provided
+   (defthm type-of-pseudo-termp
+     (booleanp (pseudo-termp x))
+     :hints ('(:expand ((pseudo-termp x))))
+     :flag term)
+   (defthm type-of-pseudo-term-listp
+     (booleanp (pseudo-term-listp lst))
+     :hints ('(:expand ((pseudo-term-listp lst))))
+     :skip t))
+~ev[]
+
+These are used during the mutually inductive proof.  Under the top-level
+induction, we check the clause for the current subgoal to determine the
+hypothesized setting of the flag variable, and provide the computed hints for
+the appropriate case.
+
+If you provide both a top-level hints form and hints on some or all of the
+separate theorems, both sets of hints have an effect; try :trans1 on such a
+defthm-flag-fn form to see what you get.
+
+You may use subgoal hints as well as computed hints, but they will not have any
+effect if the particular subgoal does not occur when those hints are in
+effect.  We simply translate subgoal hints to computed hints:
+~bv[]
+ (\"Subgoal *1/5.2\" :in-theory (theory 'foo))
+~ev[]
+becomes
+~bv[]
+ (and (equal id (parse-clause-id \"Subgoal *1/5.2\"))
+      '(:in-theory (theory 'foo))).
+~ev[]
+
 ~/ ")
 
 ;; Accessors for the records stored in the flag-fns table
@@ -611,6 +787,18 @@ pseudo-term-listp.  We're also mixing the allowed syntaxes:
                   :rule-classes :rewrite
                   :doc nil)
             (list (booleanp (pseudo-term-listp lst))))))
+
+
+  (encapsulate
+   nil
+   (local (in-theory (disable pseudo-termp pseudo-term-listp)))
+   (local (defthm-pseudo-termp type-of-pseudo-termp
+            (term (booleanp (pseudo-termp x))
+                  :hints ('(:expand ((pseudo-termp x))))
+                  :rule-classes :rewrite
+                  :doc nil)
+            (list (booleanp (pseudo-term-listp lst))
+                  :hints ('(:expand ((pseudo-term-listp lst))))))))
 
   (encapsulate
    nil
