@@ -23,15 +23,54 @@
 (local (include-book "arithmetic"))
 (local (include-book "unicode/take" :dir :system))
 
+
+; Redefinition targets (see fast-cat.lisp)
+;
+; Defining FAST-STRING-APPEND and FAST-STRING-APPEND-LST in the logic here
+; allows you to (include-book "str/cat" ...) and use STR::CAT in ordinary books
+; without trust tags.  But, when more performance is desired, you can
+; additionally (include-book "str/fast-cat"), with a trust-tag, to make
+; STR::CAT faster, at least in CCL.
+
+(defun fast-string-append (str1 str2)
+  ;; Redefined under-the-hood in fast-cat.lisp
+  (declare (xargs :guard (and (stringp str1)
+                              (stringp str2))))
+  (string-append str1 str2))
+
+(defun fast-string-append-lst (x)
+  ;; Redefined under-the-hood in fast-cat.lisp
+  (declare (xargs :guard (string-listp x)))
+  (string-append-lst x))
+
+(defmacro fast-concatenate (result-type &rest sequences)
+  (declare (xargs :guard (member-equal result-type '('string 'list))))
+  (cond ((equal result-type ''string)
+         (cond ((and sequences
+                     (cdr sequences)
+                     (null (cddr sequences)))
+                (list 'fast-string-append
+                      (car sequences)
+                      (cadr sequences)))
+               (t
+                (list 'fast-string-append-lst
+                      (cons 'list sequences)))))
+        (t
+         `(append (list . ,sequences)))))
+
+
 (defmacro cat (&rest args)
 
   ":Doc-Section Str
   Concatenate strings~/
 
   ~c[(cat x y z ...)] is identical to ~c[(concatenate 'string x y z ...)], but
-  has a somewhat shorter name. ~/ "
+  has a somewhat shorter name.
 
-  `(concatenate 'string . ,args))
+  Including the optional book \"str/fast-cat\" from :dir :system may speed up
+  calls to ~c[str::cat].  ~/ "
+
+  `(fast-concatenate 'string . ,args))
 
 
 (defund append-chars-aux (x n y)
