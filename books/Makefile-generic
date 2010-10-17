@@ -393,8 +393,13 @@ dependencies:
 
 .PHONY: clean
 clean:
+	rm -f workxxx*
+	rm -f *@expansion.lsp
+	rm -f *.out
+	rm -f *.date
+	rm -f *.cert
+	rm -f *.cert.temp
 	rm -f Makefile-deps
-	rm -f *.cert *.cert.temp
 	rm -f *.h
 	rm -f *.c
 	rm -f *.o
@@ -404,9 +409,11 @@ clean:
 	rm -f *.ufsl
 	rm -f *.pfsl
 	rm -f *.dfsl
+	rm -f *.dx32fsl
+	rm -f *.lx32fsl
 	rm -f *.d64fsl
 	rm -f *.dx64fsl
-	rm -f *.lx64fsl *.lx32fsl
+	rm -f *.lx64fsl
 	rm -f *.bin
 	rm -f *.sparcf
 	rm -f *.axpf
@@ -414,13 +421,9 @@ clean:
 	rm -f *.ppcf
 	rm -f *.fas
 	rm -f *.lib
-	rm -f *.out
-	rm -f *.date
 	rm -f *.log
 	rm -f TMP*.*
-	rm -f *@expansion.lsp
 	rm -f temp-emacs-file.lsp
-	rm -f workxxx*
 
 ifdef FAST_DEPS_FOR_CLEAN
 # Note that Makefile-deps will be deleted by the clean target

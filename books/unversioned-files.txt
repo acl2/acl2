@@ -1,7 +1,13 @@
-Makefile-deps
+workxxx*
+*@expansion.lsp
+*.out
+*.date
 *.cert
+*.cert.temp
+Makefile-deps
 *.h
 *.c
+*.data
 *.o
 *.sbin
 *.lbin
@@ -9,6 +15,8 @@ Makefile-deps
 *.ufsl
 *.pfsl
 *.dfsl
+*.dx32fsl
+*.lx32fsl
 *.d64fsl
 *.dx64fsl
 *.lx64fsl
@@ -19,10 +27,7 @@ Makefile-deps
 *.ppcf
 *.fas
 *.lib
-*.out
-*.date
 *.log
 TMP*.*
-*@expansion.lsp
 temp-emacs-file.lsp
-workxxx*
+*~
