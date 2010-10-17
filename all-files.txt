@@ -3039,6 +3039,8 @@ char-support.lisp
 digitp.lisp
 doc.lisp
 eqv.lisp
+fast-cat.acl2
+fast-cat.lisp
 firstn-chars.lisp
 gpl.txt
 html-encode.lisp
