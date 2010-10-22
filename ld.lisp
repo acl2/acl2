@@ -16789,6 +16789,10 @@
 
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
+  There is new ~c[Makefile] support for certifying just some of the distributed
+  books.  ~l[book-makefiles], in particular discussion of the variable
+  ~c[ACL2_BOOK_DIRS].  Thanks to Sandip Ray for requesting this enhancement.
+
   ~st[EMACS SUPPORT]
 
   ~st[EXPERIMENTAL VERSIONS]
