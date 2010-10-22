@@ -1585,6 +1585,9 @@ oprof.lisp
 priorities.lisp
 problem13.lisp
 process-book-readme.lisp
+profiling-raw.lsp
+profiling.acl2
+profiling.lisp
 qi-correct.lisp
 qi.lisp
 radix.acl2

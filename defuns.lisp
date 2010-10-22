@@ -61,6 +61,46 @@
                                    ctx wrld state-vars)))
             (trans-value (cons x y))))))
 
+(defun throw-nonexec-error-p (body)
+
+; We recognize terms that could result from translating (prog2$
+; (throw-nonexec-error 'name ...) ...), i.e., terms of the form
+; (return-last 'progn (throw-non-exec-error ...) ...).
+
+  (and (not (variablep body))
+;      (not (fquotep body))
+       (eq (ffn-symb body) 'return-last)
+       (quotep (fargn body 1))
+       (eq (unquote (fargn body 1)) 'progn)
+       (let ((prog2$-arg1 (fargn body 2)))
+         (and (not (variablep prog2$-arg1))
+;             (not (fquotep prog2$-arg1))
+              (eq (ffn-symb prog2$-arg1)
+                  'throw-nonexec-error)))))
+
+(defun chk-non-executable-bodies (names bodies ctx state)
+
+; Note that bodies are untranslated.
+
+  (cond ((endp bodies)
+         (value nil))
+        (t (let ((body (car bodies)))
+
+; Body should be, in essence, (prog2$ (throw-nonexec-error 'name (list
+; . formals)) ...) -- as laid down by defun-nx-fn.  But we do not insist on the
+; use of name and formals in the arguments to throw-nonexec-error, since the
+; choice of those arguments does not affect soundness.
+
+             (cond ((throw-nonexec-error-p body)
+                    (chk-non-executable-bodies (cdr names) (cdr bodies) ctx
+                                               state))
+                   (t (er soft ctx
+                          "The body of a defun that is marked :non-executable ~
+                           t must be of the form (prog2$ (throw-nonexec-error ~
+                           ...).  The definition of ~x0 is thus illegal.  See ~
+                           :DOC defun-nx."
+                          (car names))))))))
+
 (defun translate-bodies
   (non-executablep names bodies known-stobjs-lst ctx wrld state)
 
@@ -75,7 +115,11 @@
                              ctx wrld (default-state-vars t))
           (cond (erp ; erp is a ctx, lst is a msg
                  (er soft erp "~@0" lst))
-                (non-executablep (value (cons lst (pairlis-x2 names '(nil)))))
+                (non-executablep
+                 (er-progn
+                  (chk-non-executable-bodies
+                   names lst ctx state)
+                  (value (cons lst (pairlis-x2 names '(nil))))))
                 (t (value (cons lst bindings))))))
 
 ; The next section develops our check that mutual recursion is
@@ -150,9 +194,9 @@
 (defun ffnnamep-mod-mbe (fn term)
 
 ; We determine whether the function fn (possibly a lambda-expression) is used
-; as a function in term', the result of expanding must-be-equal calls in term.
-; Keep this in sync with the ffnnamep nest.  Unlike ffnnamep, we assume here
-; that fn is a symbolp.
+; as a function in term', the result of expanding mbe calls (and equivalent
+; calls) in term.  Keep this in sync with the ffnnamep nest.  Unlike ffnnamep,
+; we assume here that fn is a symbolp.
 
   (cond ((variablep term) nil)
         ((fquotep term) nil)
@@ -160,8 +204,10 @@
          (or (ffnnamep-mod-mbe fn (lambda-body (ffn-symb term)))
              (ffnnamep-mod-mbe-lst fn (fargs term))))
         ((eq (ffn-symb term) fn) t)
-        ((eq (ffn-symb term) 'must-be-equal)
-         (ffnnamep-mod-mbe fn (fargn term 1)))
+        ((and (eq (ffn-symb term) 'return-last)
+              (quotep (fargn term 1))
+              (eq (unquote (fargn term 1)) 'mbe1-raw))
+         (ffnnamep-mod-mbe fn (fargn term 3)))
         (t (ffnnamep-mod-mbe-lst fn (fargs term)))))
 
 (defun ffnnamep-mod-mbe-lst (fn l)
@@ -387,13 +433,17 @@
          (reverse tests)
          (all-calls names (fargn body 1) alist nil)
          branch-result)))))
-   ((eq (ffn-symb body) 'must-be-equal)
+   ((and (eq (ffn-symb body) 'return-last)
+              (quotep (fargn body 1))
+              (eq (unquote (fargn body 1)) 'mbe1-raw))
 
-; It is sound to treat must-be-equal as a macro for logic purposes.  We do so
-; both for induction and for termination.
+; It is sound to treat return-last as a macro for logic purposes.  We do so for
+; (return-last 'mbe1-raw exec logic) both for induction and for termination.
+; We could probably do this for any return-last call, but for legacy reasons
+; (before introduction of return-last after v4-1) we restrict to 'mbe1-raw.
 
     (termination-machine names
-                         (fargn body 1)
+                         (fargn body 3) ; (return-last 'mbe1-raw exec logic)
                          alist
                          tests
                          ruler-extenders))
@@ -1303,7 +1353,9 @@
         (fquotep body)
         (and (not (flambda-applicationp body))
              (not (eq (ffn-symb body) 'if))
-             (not (eq (ffn-symb body) 'must-be-equal))
+             (not (and (eq (ffn-symb body) 'return-last)
+                       (quotep (fargn body 1))
+                       (eq (unquote (fargn body 1)) 'mbe1-raw)))
              (not (member-eq-all (ffn-symb body) ruler-extenders))))
     (mv (and merge-p ; optimization
              (ffnnamesp names body))
@@ -1389,12 +1441,15 @@
                 (or flg
                     (ffnnamesp-lst names (fargs body))))
            temp)))))
-   ((eq (ffn-symb body) 'must-be-equal)
+   ((and (eq (ffn-symb body) 'return-last)
+         (quotep (fargn body 1))
+         (eq (unquote (fargn body 1)) 'mbe1-raw))
 
-; It is sound to treat must-be-equal as a macro for logic purposes.
+; See the comment in termination-machine about it being sound to treat
+; return-last as a macro.
 
     (induction-machine-for-fn1 names
-                               (fargn body 1)
+                               (fargn body 3)
                                alist
                                test-alist
                                calls
@@ -1517,9 +1572,14 @@
 ; special cases below for mv-list,prog2$ and arity 1.  It is needed in order to
 ; handle :no-calls (used above).
 
-            (cond ((and (member-eq (ffn-symb body) '(mv-list prog2$))
+            (cond ((and (eq (ffn-symb body) 'mv-list)
                         (not (ffnnamesp names (fargn body 1))))
                    (mv merge-p (list (fargn body 2))))
+                  ((and (eq (ffn-symb body) 'return-last)
+                        (quotep (fargn body 1))
+                        (eq (unquote (fargn body 1)) 'progn)
+                        (not (ffnnamesp names (fargn body 2))))
+                   (mv merge-p (list (fargn body 3))))
                   ((null (cdr (fargs body)))
                    (mv merge-p (list (fargn body 1))))
                   (t (mv t (fargs body))))
@@ -2431,7 +2491,14 @@
 ; for compatibility's sake.
 
                               (abbreviationp
-                               (not (all-nils (stobjs-out fn wrld)))
+                               (not (all-nils
+
+; We call getprop rather than calling stobjs-out, because this code may run
+; with fn = return-last, and the function stobjs-out causes an error in that
+; case.  We don't mind treating return-last as an ordinary function here.
+
+                                     (getprop fn 'stobjs-out '(nil)
+                                              'current-acl2-world wrld)))
                                vars-bag
                                body)))
           (rule
@@ -2513,9 +2580,9 @@
 ; We store the body property for each name in names.  It is set to the
 ; normalized body.  Normalization expands some nonrecursive functions, namely
 ; those on *expandable-boot-strap-non-rec-fns*, which includes old favorites
-; like EQ and ATOM.  In addition, we eliminate all the PROG2$s, MUST-BE-EQUALs,
-; EC-CALLs, and THEs from the body.  This can be seen as just an optimization
-; of expanding nonrec fns.
+; like EQ and ATOM.  In addition, we eliminate all the RETURN-LASTs and THEs
+; from the body.  This can be seen as just an optimization of expanding nonrec
+; fns.
 
 ; We add a definition rule equating the call of name with its normalized body.
 
@@ -4380,10 +4447,17 @@
         ((flambda-applicationp x)
          (all-fnnames1-exec nil (lambda-body (ffn-symb x))
                             (all-fnnames1-exec t (fargs x) acc)))
-        ((eq (ffn-symb x) 'must-be-equal)
-         (all-fnnames1-exec nil (fargn x 2) acc))
-        ((eq (ffn-symb x) 'ec-call)
-         (all-fnnames1-exec t (fargs (fargn x 1)) acc))
+        ((eq (ffn-symb x) 'return-last)
+         (cond ((equal (fargn x 1) '(quote mbe1-raw))
+                (all-fnnames1-exec nil (fargn x 2) acc))
+               ((and (equal (fargn x 1) '(quote ec-call1-raw))
+                     (nvariablep (fargn x 3))
+                     (not (fquotep (fargn x 3)))
+                     (not (flambdap (ffn-symb (fargn x 3)))))
+                (all-fnnames1-exec t (fargs (fargn x 3)) acc))
+               (t (all-fnnames1-exec t
+                                     (fargs x)
+                                     (add-to-set-eq (ffn-symb x) acc)))))
         (t
          (all-fnnames1-exec t (fargs x)
                             (add-to-set-eq (ffn-symb x) acc)))))
@@ -5438,7 +5512,12 @@ when submitted as :ideal, pointing out that they can never be
 ; output is a single value.
 
   (and (all-nils (stobjs-in fn wrld))
-       (null (cdr (stobjs-out fn wrld)))))
+
+; We call getprop rather than calling stobjs-out, because this code may run
+; with fn = return-last, and the function stobjs-out causes an error in that
+; case.  We don't mind treating return-last as an ordinary function here.
+
+       (null (cdr (getprop fn 'stobjs-out '(nil) 'current-acl2-world wrld)))))
 
 (defun all-simple-signaturesp (names wrld)
   (cond ((endp names) t)
@@ -5455,7 +5534,14 @@ when submitted as :ideal, pointing out that they can never be
            (cons #\0
                  (cons (car names)
                        (prettyify-stobj-flags (stobjs-in (car names) wrld))))
-           (cons #\1 (prettyify-stobjs-out (stobjs-out (car names) wrld))))
+           (cons #\1 (prettyify-stobjs-out
+
+; We call getprop rather than calling stobjs-out, because this code may run
+; with fn = return-last, and the function stobjs-out causes an error in that
+; case.  We don't mind treating return-last as an ordinary function here.
+
+                      (getprop (car names) 'stobjs-out '(nil)
+                               'current-acl2-world wrld))))
           (proofs-co state)
           state
           nil)
@@ -7122,11 +7208,11 @@ when submitted as :ideal, pointing out that they can never be
 
 ; The following book certified in ACL2 Version_3.3 built on SBCL, where we have
 ; #+acl2-mv-as-values and also we load compiled files.  In this case the
-; problem is that while ACL2 defines prog2$ as a macro in #-acl2-loop-only, for
-; proper multiple-value handling, nevertheless that definition is overridden by
-; the compiled definition loaded by the compiled file associated with the book
-; "prog2" (not shown here, but containing the redundant #+acl2-loop-only
-; definition of prog2$).
+; problem was that while ACL2 defined prog2$ as a macro in #-acl2-loop-only,
+; for proper multiple-value handling, nevertheless that definition was
+; overridden by the compiled definition loaded by the compiled file associated
+; with the book "prog2" (not shown here, but containing the redundant
+; #+acl2-loop-only definition of prog2$).
 
 ; (in-package "ACL2")
 ;
@@ -7151,6 +7237,9 @@ when submitted as :ideal, pointing out that they can never be
 ;   nil
 ;   :hints (("Goal" :use (foo-fact foo-fact-bogus)))
 ;   :rule-classes nil)
+
+; After Version_4.1, prog2$ became just a macro whose calls expanded to forms
+; (return-last 'progn ...).  But the idea illustrated above is still relevant.
 
 ; We make this restriction for functions whose #+acl2-loop-only and
 ; #-acl2-loop-only definitions disagree.  See
@@ -7249,33 +7338,7 @@ when submitted as :ideal, pointing out that they can never be
                                state))
                      (mv erp1 val1 state))))))
 
-(defun chk-non-executable-bodies (names bodies ctx state)
-  (cond ((endp bodies)
-         (value nil))
-        (t (let ((body (car bodies)))
-
-; Body should be (prog2$ (throw-nonexec-error 'name (list . formals)) ...), as
-; laid down by defun-nx-fn, but we do not insist on the use of name and formals
-; in the arguments to throw-nonexec-error, since the choice of those arguments
-; does not affect soundness.
-
-             (cond ((and (not (variablep body))
-;                        (not (fquotep body))
-                         (eq (ffn-symb body) 'prog2$)
-                         (let ((arg1 (fargn body 1)))
-                           (and (not (variablep arg1))
-;                               (not (fquotep arg1))
-                                (eq (ffn-symb arg1) 'throw-nonexec-error))))
-                    (chk-non-executable-bodies (cdr names) (cdr bodies) ctx
-                                               state))
-                   (t (er soft ctx
-                          "The body of a defun that is marked :non-executable ~
-                           t must be of the form (prog2$ (throw-nonexec-error ~
-                           ...).  The definition of ~x0 is thus illegal.  See ~
-                           :DOC defun-nx."
-                          (car names))))))))
-
-(defun get-and-chk-non-executablep (fives defun-mode ctx state)
+(defun get-and-shallow-chk-non-executablep (fives defun-mode ctx state)
   (er-let* ((non-executablep (get-unambiguous-xargs-flg :NON-EXECUTABLE
                                                         fives
                                                         nil ctx state)))
@@ -7290,11 +7353,6 @@ when submitted as :ideal, pointing out that they can never be
                   (er soft ctx
                       ":NON-EXECUTABLE functions must be defined in :LOGIC ~
                        mode."))
-                 (non-executablep
-                  (er-progn
-                   (chk-non-executable-bodies
-                    (get-names fives) (get-bodies fives) ctx state)
-                   (value non-executablep)))
                  (t (value non-executablep)))))
 
 (defun chk-acceptable-defuns0 (fives ctx wrld state)
@@ -7309,7 +7367,7 @@ when submitted as :ideal, pointing out that they can never be
                                            (default-defun-mode wrld)
                                            ctx state))
     (non-executablep
-     (get-and-chk-non-executablep fives defun-mode ctx state))
+     (get-and-shallow-chk-non-executablep fives defun-mode ctx state))
     (verify-guards (get-unambiguous-xargs-flg :VERIFY-GUARDS
                                               fives
                                               '(unspecified)
@@ -7326,15 +7384,15 @@ when submitted as :ideal, pointing out that they can never be
            (if (eq verify-guards nil)
                (value nil)
              (er soft ctx
-                 "When the :MODE is :program, the only legal ~
-                     :VERIFY-GUARDS setting is NIL.  ~x0 is illegal."
+                 "When the :MODE is :program, the only legal :VERIFY-GUARDS ~
+                  setting is NIL.  ~x0 is illegal."
                  verify-guards)))
           ((or (eq verify-guards nil)
                (eq verify-guards t))
            (value nil))
           (t (er soft ctx
                  "The legal :VERIFY-GUARD settings are NIL and T.  ~x0 is ~
-                     illegal."
+                  illegal."
                  verify-guards)))
     (let* ((symbol-class (cond ((eq defun-mode :program) :program)
                                ((consp verify-guards)
@@ -8823,6 +8881,10 @@ when submitted as :ideal, pointing out that they can never be
        (let ((wrld (w state))
              (channel (standard-co state)))
          (cond
+          ((eq name 'return-last)
+           (pprogn (fms "Special form, basic to ACL2.  See :DOC return-last."
+                        nil channel state nil)
+                   (value name)))
           ((and (symbolp name)
                 (function-symbolp name wrld))
            (let* ((formals (formals name wrld))

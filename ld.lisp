@@ -200,12 +200,13 @@
 ; allowing these in arbitrary positions of embedded event forms, though in that
 ; case we should be careful to check that nested calls work well.
 
-             (cond ((consp form)
-                    (case (car form)
-                      (time$ (cadr form))
-                      (with-prover-time-limit (caddr form))
-                      (otherwise form)))
-                   (t form))
+             (case-match form
+               (('return-last ('quote sym) & x)
+                (case sym
+                  ((time$1-raw with-prover-time-limit1-raw)
+                   x)
+                  (otherwise form)))
+               (& form))
              wrld 'top-level state
              (primitive-event-macros))
             (pprogn
@@ -16687,6 +16688,8 @@
 
 ; Added brief documentation for quote, following email from Sandip Ray.
 
+; Eliminated inclp argument of functions in the translate11 nest.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -16722,6 +16725,29 @@
   (verify-guards forall-a-b-foo)
   ~ev[]
 
+  The implementations of ~ilc[prog2$], ~ilc[time$],
+  ~ilc[with-prover-time-limit], ~ilc[with-guard-checking], ~ilc[mbe] (and
+  ~ilc[must-be-equal]), and ~ilc[ec-call] have changed.  See the discussion
+  below of the new utility, ~ilc[return-last].  A consequence is that
+  ~ilc[trace$] is explicitly disallowed for these and related symbols, which
+  formerly could cause hard Lisp errors, because they are now macros.  Tracing
+  of return-last is also disallowed.  Another consequence is that time$ now
+  prints a more abbreviated message by default, but a version of the old
+  behavior can be obtained with ~c[:mintime nil].
+
+  The following utilities no longer print an observation about raw-mode
+  transitions: ~c[set-raw-mode-on], ~ilc[set-raw-mode-on!], ~ilc[set-raw-mode],
+  and ~c[set-raw-mode-off].  Thanks to Jared Davis for suggestion this change
+  in the case of ~ilc[include-book] (which proved awkward to restrict to that
+  case).
+
+  The system function ~c[translate-and-test] now permits its ~c[LAMBDA] form to
+  refer to the variable ~c[WORLD], which is bound to the current ACL2 logical
+  ~il[world].
+
+  Modified abort handling to avoid talking about an interrupt when the error
+  was caused by a Lisp error rather than an interrupt.
+
   ~st[NEW FEATURES]
 
   (For system hackers) There are new versions of system functions
@@ -16729,6 +16755,15 @@
   ~c[translate-cmp] respectively, that do not take or return ~ilc[state].  See
   the Essay on Context-message Pairs for relevant information.  Thanks to David
   Rager for collaborating on this enhancement.
+
+  A new utility, ~ilc[return-last], is now the unique ACL2 function that can
+  pass back a multiple value result from one of its arguments.  Thus, now the
+  following are macros whose calls ultimately expand to calls of
+  ~ilc[return-last]: ~ilc[prog2$], ~ilc[time$], ~ilc[with-prover-time-limit],
+  ~ilc[with-guard-checking], ~ilc[mbe] (and ~ilc[must-be-equal]), and
+  ~ilc[ec-call].  With an active trust tag, an advanced user can now write code
+  that has side effects in raw Lisp; ~pl[return-last].  Thanks to Jared Davis
+  for requesting this feature.
 
   ~st[HEURISTIC IMPROVEMENTS]
 

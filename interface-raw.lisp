@@ -705,15 +705,24 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
 
 ; WARNING: Any hand-coded *1* definitions for other than the primitives, such
 ; as the one for mv-list (see below), must be handled in add-trip and
-; compile-uncompiled-*1*-defuns (see the handling there of mv-list)
+; compile-uncompiled-*1*-defuns (see the handling there of mv-list).
 
-; We must hand-code the *1* function for mv-list, because otherwise it will
-; simply call mv-list, which can be wrong; see the comment in the #+(and (not
-; acl2-loop-only) acl2-mv-as-values) definition of the macro mv-list.
+; We must hand-code the *1* functions for mv-list and return-last, because
+; otherwise they will simply call mv-list and return-last (resp.), which can be
+; wrong: in the case of return-last, we need the first argument to be a quotep
+; for the raw-Lisp macro return-last to do more than lay down a progn.
 
 (defun-*1* mv-list (input-arity x)
   (declare (ignore input-arity))
   x)
+
+(defun-*1* return-last (qfn x y)
+  (declare (ignore qfn x))
+
+; We could lay down (progn x y), but since x is already evaluated, that's just
+; equivalent to y.
+
+  y)
 
 ; We must hand-code the *1* function for wormhole-eval because if it were
 ; automatically generated it would look like this:
@@ -1073,6 +1082,31 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
             (cddr (car x)))
      fns
      w))
+   ((eq (car x) 'return-last)
+    (let* ((qfn (and (consp (cdr x))
+                     (cadr x)))
+           (fn (or (and (consp qfn)
+                        (eq (car qfn) 'quote)
+                        (consp (cdr qfn))
+                        (cadr qfn))
+                   'progn)))
+      (cond ((or (eq fn 'ec-call1-raw)
+                 (eq fn 'mbe1-raw))
+
+; In the case of ec-call1-raw, we are already oneifying the last argument -- we
+; don't want to call return-last on top of that, or we'll be attempting to take
+; the *1*-symbol of the *1*-symbol!  In the case of mbe1-raw, we want to be
+; sure to return only the logic code, not the exec code, as one would expect
+; for in-the-logic evaluation of an mbe call.
+
+             (oneify (car (last x)) fns w))
+            (t
+
+; Since fn is not 'ec-call1-raw, the guard of return-last is automatically met
+; for the arguments.
+
+             (let ((args (oneify-lst (cddr x) fns w)))
+               (cons fn args))))))
    ((or (member-eq (car x) *oneify-primitives*)
 
 ; Note that safe-mode for make-event will require addition of the following two
@@ -1144,21 +1178,6 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
                (oneify-lst (cddr x) fns w))
       (cons (car x)
             (oneify-lst (cdr x) fns w))))
-   ((eq (car x) 'time$)
-    (list* 'time$
-           (oneify (cadr x) fns w)
-           (let ((looking-at-keyword t)
-                 (ans nil))
-             (dolist (arg (cddr x))
-               (push (cond (looking-at-keyword
-                            (if (eq arg :MINTIME)
-                                :REAL-MINTIME
-                              arg))
-                           (t
-                            (oneify arg fns w)))
-                     ans)
-               (setq looking-at-keyword (not looking-at-keyword)))
-             (reverse ans))))
    ((eq (car x) 'throw-or-attach) ; already handled in oneify-cltl-code
     (interface-er
      "Implementation error: Unexpected call of throw-or-attach in oneify:~%~x0"
@@ -1166,17 +1185,6 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
    ((and (getprop (car x) 'macro-body nil 'current-acl2-world w)
          (not (member-eq (car x) fns)))
     (oneify (macroexpand1! x) fns w))
-   ((or (eq (car x) 'must-be-equal) ; (must-be-equal logic exec)
-        (eq (car x) 'ec-call))
-    (oneify (cadr x) fns w))
-   ((eq (car x) 'prog2$)
-
-; We need to avoid dropping values in the multiple-value case when
-; #+acl2-mv-as-values.  But this seems like a reasonable step to take in
-; general.
-
-    (let ((args (oneify-lst (cdr x) fns w)))
-      (cons 'progn args)))
    ((eq (car x) 'wormhole-eval)
 
 ; We know that in a well-formed term (wormhole-eval x y z), x is a quoted
@@ -1195,8 +1203,6 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
             qname
             (list 'quote (list 'lambda formals (oneify body fns w)))
             *nil*)))
-   ((member-eq (car x) '(with-guard-checking with-prover-time-limit))
-    (list (car x) (oneify (cadr x) fns w) (oneify (caddr x) fns w)))
    (t
     (let ((arg-forms (oneify-lst (cdr x) fns w)))
       (cons (*1*-symbol (car x)) arg-forms)))))
@@ -4834,7 +4840,7 @@ FORWARD-CHAINING-RULES                               245442
 
 ; Note that names of macros are fboundp, so we can get away with symbols that
 ; are defined to be macros in raw Lisp but functions in the logic (e.g.,
-; must-be-equal).
+; return-last).
 
                          (interface-er "~x0 is not fboundp!"
                                        (car def)))
@@ -4843,11 +4849,12 @@ FORWARD-CHAINING-RULES                               245442
 ; any) function's corresponding *1* function has been defined.  So we take care
 ; of that now.
 
-; For explanation of the special handling of mv-list just below, see the
-; comment in the #+(and (not acl2-loop-only) acl2-mv-as-values) definition of
-; the mv-list macro in raw Lisp.
+                     (or (member-eq (car def)
 
-                     (or (member-eq (car def) '(mv-list wormhole-eval))
+; For explanation of the special handling of the following function symbols,
+; see the comments in their defun-*1* forms.
+
+                                    '(mv-list return-last wormhole-eval))
                          (setq new-defs
                                (cons (list* 'oneify-cltl-code
                                             defun-mode
@@ -6698,14 +6705,16 @@ Missing functions:
            (when btp (format t "~%NOTE: See above for backtrace.~%"))
            (format t
                    "~&***********************************************~&")
-           (format t
-                   "~%If you didn't cause an explicit interrupt (Control-C),~%~
-                    then the root cause may be call of a :program mode~%~
-                    function that has the wrong guard specified, or even no~%~
-                    guard specified (i.e., an implicit guard of t).~%~
-                    See :DOC guards.~&")
+           (unless *acl2-error-p*
+             (format
+              t
+              "~%If you didn't cause an explicit interrupt (Control-C),~%~
+               then the root cause may be call of a :program mode~%~
+               function that has the wrong guard specified, or even no~%~
+               guard specified (i.e., an implicit guard of t).~%~
+               See :DOC guards.~&"))
            (when (not (member-eq 'set-debugger-enable-fn
-;				 (global-val 'untouchable-fns (w state))
+;                                (global-val 'untouchable-fns (w state))
                                  (getprop 'untouchable-fns 'global-value nil
                                           'current-acl2-world (w state))))
              (format t
@@ -7357,7 +7366,9 @@ Missing functions:
                            (eq (caddr trip) 'defuns))
                       (dolist
                         (x (cdddr (cddr trip)))
-                        (when (not (member-eq (car x) '(mv-list wormhole-eval)))
+                        (when (not (member-eq
+                                    (car x)
+                                    '(mv-list return-last wormhole-eval)))
                           (let ((*1*fn (*1*-symbol (car x))))
                             (cond
                              ((and (fboundp *1*fn)
@@ -7700,18 +7711,25 @@ Missing functions:
 
 (defun-one-output get-stobjs-out-for-declare-form (fn)
 
+; Warning: Keep this in sync with stobjs-out.
+
 ; This function is used in acl2-fns.lisp.
 
-; Here we open-code stobjs-out, except that we allow for the possibility that
-; fn is defined in raw Lisp.
+; Here we essentially open-code stobjs-out, except that we allow for the
+; possibility that fn is defined in raw Lisp.
 
-  (if (eq fn 'cons)
+  (cond ((eq fn 'cons)
 ; We call this function on cons so often we optimize it.
-      '(nil)
-    (let ((w (w *the-live-state*)))
-      (or (getprop fn 'stobjs-out nil 'current-acl2-world w)
-          (and (getprop fn 'symbol-class nil 'current-acl2-world w)
-               '(nil))))))
+         '(nil))
+        ((eq fn 'return-last)
+         (interface-er "Implementation error in ~
+                        get-stobjs-out-for-declare-form: Attempted to find ~
+                        stobjs-out for ~x0."
+                       'return-last))
+        (t (let ((w (w *the-live-state*)))
+             (or (getprop fn 'stobjs-out nil 'current-acl2-world w)
+                 (and (getprop fn 'symbol-class nil 'current-acl2-world w)
+                      '(nil)))))))
 
 ; The definition of fix-trace and its subfunction fix-trace-untrace can go
 ; anywhere, but since they are raw Lisp, we will put them in this file.

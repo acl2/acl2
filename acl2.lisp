@@ -993,6 +993,11 @@ ACL2 from scratch.")
 #. to cause evaluation during READing (b) and to define our own version
 of backquote.")
 
+(defparameter *host-readtable*
+  (copy-readtable)
+  "*host-readtable* is the original readtable provided by the host Lisp,
+which is saved just in case it's needed later.")
+
 (defun define-sharp-dot ()
   (set-dispatch-macro-character
    #\#

@@ -405,27 +405,10 @@
 
   nil)
 
-; The macros MEMOIZE-LET, MEMOIZE-ON, and MEMOIZE-OFF have the utterly
-; bizarre property that if evaluated at the top level of the ACL2
-; loop, they really, really do nothing but evaluate form, as their
-; semantics suggest.  However, if they are used within an ACL2
-; function and either (a) that function is executed in program mode or
-; (b) that function is known to be Common Lisp compliant and is
-; executed in any mode, then there may be "under the hood" effects
-; that, though not changing the semantics of what ACL2 returns, may
-; affect the speed and/or space utilization of the computation.
-
-#+(or acl2-loop-only (not hons))
-(defmacro memoize-let (fn form)
-  (declare (ignore fn))
-
-; MEMOIZE-LET evaluates form.  At the beginning of that evaluation, no
-; old values are remembered of calls of the symbol fn.  Afterwards,
-; those old values will be restored if no stobjs have been altered,
-; but all newer memoized values are forgotten.  The symbol fn must be
-; memoized before MEMOIZE-LET is called.
-
-  form)
+; The macros MEMOIZE-LET, MEMOIZE-ON, and MEMOIZE-OFF typically cause
+; "under the hood" effects that, though not changing the semantics of
+; what ACL2 returns, may affect the speed and/or space utilization of
+; the computation.
 
 ; The functions memoize and unmemoize have rather innocent looking
 ; semantics.  But under the hood, they enable and disable memoization.
@@ -517,11 +500,14 @@
         (cond ((not (and
                      (symbolp fn)
                      (not (eq t formals))
-                     (not (eq t (getprop
-                                 fn 'stobjs-in t
+                     (not (eq t (getprop fn 'stobjs-in t
                                  'current-acl2-world wrld)))
-                     (not (eq t (getprop
-                                 fn 'stobjs-out t
+                     (not (eq t (getprop fn 'stobjs-out t
+
+; Normally we would avoid getting the stobjs-out of return-last.  But
+; return-last will eventually be rejected for mamoization anyhow (by
+; memoize-table-chk).
+
                                  'current-acl2-world wrld)))
                      (cltl-def-from-name fn nil wrld)))
                (er hard 'memoize
@@ -891,8 +877,12 @@
            (value-triple
             (deref-macro-name ,fn (macro-aliases (w state)))))))
 
-#+(or acl2-loop-only (not hons))
-(defn memoize-on (fn x)
+#-hons
+(defmacro memoize-on-raw (fn form)
+  (declare (ignore fn))
+  form)
+
+(defmacro memoize-on (fn form)
 
 ; MEMOIZE-ON evaluates x.  During the evaluation the symbol fn has as
 ; its symbol-function what it had immediately AFTER the memoization of
@@ -900,11 +890,14 @@
 ; evaluation and later.  Warning: to use MEMOIZE-ON, fn must already
 ; be memoized.
 
-  (declare (ignore fn))
-  x)
+  `(return-last 'memoize-on-raw ,fn ,form))
 
-#+(or acl2-loop-only (not hons))
-(defn memoize-off (fn x)
+#-hons
+(defmacro memoize-off-raw (fn form)
+  (declare (ignore fn))
+  form)
+
+(defmacro memoize-off (fn form)
 
 ; MEMOIZE-OFF evaluates x.  During the evaluation the symbol fn has as
 ; its symbol-function what it had immediately BEFORE the memoization
@@ -912,8 +905,22 @@
 ; the evaluation.  Warning: to use MEMOIZE-OFF, fn must already be
 ; memoized."
 
+  `(return-last 'memoize-off-raw ,fn ,form))
+
+#-hons
+(defmacro memoize-let-raw (fn form)
   (declare (ignore fn))
-  x)
+  form)
+
+(defmacro memoize-let (fn form)
+
+; MEMOIZE-LET evaluates form.  At the beginning of that evaluation, no
+; old values are remembered of calls of the symbol fn.  Afterwards,
+; those old values will be restored if no stobjs have been altered,
+; but all newer memoized values are forgotten.  The symbol fn must be
+; memoized before MEMOIZE-LET is called.
+
+  `(return-last 'memoize-let-raw ,fn ,form))
 
 (defmacro memoizedp (fn)
   (declare (xargs :guard t))

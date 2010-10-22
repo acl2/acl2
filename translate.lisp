@@ -475,6 +475,14 @@
 
 #-acl2-loop-only
 (defun raw-ev-fncall (fn args latches hard-error-returns-nilp aok)
+
+  (when (eq fn 'return-last)
+
+; Things work out fine for (return-last ... (mv ...)), because the mv returns a
+; list and we just pass that along.
+
+    (return-from raw-ev-fncall
+      (mv nil (car (last args)) latches)))
   (let ((*aokp* aok))
     (the #+acl2-mv-as-values (values t t t)
          #-acl2-mv-as-values t
@@ -511,11 +519,6 @@
                              (apply applied-fn args)
                              #+acl2-mv-as-values
                              (cond ((null (cdr stobjs-out))
-
-; This case works fine for (prog2$ ... (mv ...)), even though the stobjs-out of
-; prog2$ suggests a single value, because the mv returns a list and prog2$ just
-; passes that along.
-
                                     (apply applied-fn args))
                                    (t (multiple-value-list
                                        (apply applied-fn args)))))
@@ -1186,6 +1189,34 @@
 (defun gc-off (state)
   (gc-off1 (f-get-global 'guard-checking-on state)))
 
+#-acl2-loop-only
+(progn
+  (defvar *return-last-arg2*)
+  (defvar *return-last-arg3*)
+  (defvar *return-last-alist*)
+  (defvar *return-last-fn-w*)
+  (defvar *return-last-fn-big-n*)
+  (defvar *return-last-fn-safe-mode*)
+  (defvar *return-last-fn-gc-off*)
+  (defvar *return-last-fn-latches*)
+  (defvar *return-last-fn-hard-error-returns-nilp*)
+  (defvar *return-last-fn-aok*))
+
+(defun return-last-lookup (sym wrld)
+
+; Keep this in sync with chk-return-last-entry and with the comment about these
+; macros in *initial-return-last-table*.
+
+  (assert$
+   (and (symbolp sym) sym) ; otherwise we shouldn't call return-last-lookup
+   (case sym
+     (progn 'prog2$)
+     (mbe1-raw 'mbe1)
+     (ec-call1-raw 'ec-call1)
+     (with-guard-checking1-raw 'with-guard-checking1)
+     (otherwise
+      (cdr (assoc-eq sym (table-alist 'return-last-table wrld)))))))
+
 (mutual-recursion
 
 ; Here we combine what may naturally be thought of as two separate
@@ -1435,6 +1466,8 @@
                        aok)
                (cond
                 (er (mv er val latches))
+                ((eq fn 'return-last) ; avoid taking stobjs-out of return-last
+                 (mv nil val latches))
                 (t (mv nil
                        val
                        (latch-stobjs
@@ -1474,6 +1507,72 @@
                                   latches)))))))
   (ev-fncall-rec-logical fn args w big-n safe-mode gc-off latches
                          hard-error-returns-nilp aok))
+
+(defun ev-rec-return-last (fn arg2 arg3 alist w big-n safe-mode gc-off latches
+                              hard-error-returns-nilp aok)
+
+; This function should only be called when fn is a key of return-last-table,
+; and is not mbe1-raw (which is handled directly in ev-rec, to avoid executing
+; the :exec code).  Moreover, we get here only when the original return-last
+; form is given a quoted first argument, so that ev-rec evaluation will treat
+; return-last similarly to how it is treated in raw Lisp.  See the comment in
+; ev-rec about how we leave it to the user not to remove a key from
+; return-last-table before passing quotation of that key as the first argument
+; of a return-last call.
+
+  (assert$
+   (not (eq fn 'mbe1-raw))
+   (mv-let
+    (er arg2-val latches)
+    (ev-rec arg2 alist w (decrement-big-n big-n) safe-mode gc-off latches
+            hard-error-returns-nilp aok)
+    (cond (er (mv er arg2-val latches))
+          (t (case fn
+
+; We provide efficient handling for some common primitive cases.  Keep these
+; cases in sync with corresponding cases in the #-acl2-loop-only definition of
+; return-last.  Note however that mbe1-raw is already handled in ev-rec; we
+; thus know that fn is not mbe1-raw.
+
+; In the case of ec-call1 we expect ev-rec to call the appropriate *1* function
+; anyhow, so we can treat it as a progn.
+
+               ((progn ec-call1-raw)
+                (ev-rec arg3 alist w (decrement-big-n big-n) safe-mode gc-off
+                        latches hard-error-returns-nilp aok))
+               (with-guard-checking1-raw
+                (return-last
+                 'with-guard-checking1-raw
+                 arg2-val
+                 (ev-rec arg3 alist w (decrement-big-n big-n) safe-mode
+                         (gc-off1 arg2-val)
+                         latches hard-error-returns-nilp aok)))
+               (otherwise
+                #+acl2-loop-only
+                (ev-rec arg3 alist w (decrement-big-n big-n)
+                        safe-mode gc-off latches hard-error-returns-nilp aok)
+                #-acl2-loop-only
+                (let ((*return-last-arg2* arg2-val)
+                      (*return-last-arg3* arg3)
+                      (*return-last-alist* alist)
+                      (*return-last-fn-w* w)
+                      (*return-last-fn-big-n* big-n)
+                      (*return-last-fn-safe-mode* safe-mode)
+                      (*return-last-fn-gc-off* gc-off)
+                      (*return-last-fn-latches* latches)
+                      (*return-last-fn-hard-error-returns-nilp*
+                       hard-error-returns-nilp)
+                      (*return-last-fn-aok* aok))
+                  (eval `(,fn *return-last-arg2*
+                              (ev-rec *return-last-arg3*
+                                      *return-last-alist*
+                                      *return-last-fn-w*
+                                      *return-last-fn-big-n*
+                                      *return-last-fn-safe-mode*
+                                      *return-last-fn-gc-off*
+                                      *return-last-fn-latches*
+                                      *return-last-fn-hard-error-returns-nilp*
+                                      *return-last-fn-aok*)))))))))))
 
 (defun ev-rec (form alist w big-n safe-mode gc-off latches
                     hard-error-returns-nilp aok)
@@ -1551,7 +1650,9 @@
                   (body (lambda-body (cadr (fargn form 2))))
                   (alist (if formals
                              (cons (cons whs
-                                         (cdr (assoc-equal name *wormhole-status-alist*)))
+                                         (cdr (assoc-equal
+                                               name
+                                               *wormhole-status-alist*)))
                                    alist)
                              alist)))
              (mv-let (body-er body-val latches)
@@ -1562,7 +1663,8 @@
                      (cond
                       (body-er (mv t body-val latches))
                       (t (setq *wormhole-status-alist*
-                               (put-assoc-equal name body-val *wormhole-status-alist*))
+                               (put-assoc-equal name body-val
+                                                *wormhole-status-alist*))
                          (mv nil nil latches)))))))
         ((eq (ffn-symb form) 'if)
          (mv-let (test-er test latches)
@@ -1584,130 +1686,47 @@
                              latches
                              hard-error-returns-nilp
                              aok)))))
-        ((eq (ffn-symb form) 'must-be-equal)
-
-; Must-be-equal is a macro in raw Lisp, so we treat it as a macro here.
-; Otherwise, the evaluation of (ev-fncall 'f '(-1) state nil t t) goes into an
-; infinite loop during the processing of the following.
-
-; (defun f (x)
-;   (declare (xargs :guard
-;                   (and (integerp x) (<= 0 x) )))
-;   (mbe :logic (if (zp x) 1 (* x (f (- x 1))))
-;        :exec (if (= x 0) 1 (* x (f (- x 1))))))
-
-         (ev-rec (fargn form 1) alist
-                 w (decrement-big-n big-n) safe-mode gc-off
-                 latches
-                 hard-error-returns-nilp
-                 aok))
-        #-acl2-loop-only
-        ((eq (ffn-symb form) 'time$-logic)
-         (mv-let (args-er args latches)
-                 (ev-rec-lst (butlast (fargs form) 1) alist
-                             w (decrement-big-n big-n) safe-mode gc-off
-                             latches
-                             hard-error-returns-nilp
-                             aok)
-                 (cond
-                  (args-er (mv t args latches))
-                  (t (our-time
-                      (ev-rec (fargn form 6) ; timing argument
-                              alist w (decrement-big-n big-n) safe-mode gc-off
-                              latches hard-error-returns-nilp aok)
-                      :real-mintime (nth 0 args)
-                      :run-mintime  (nth 1 args)
-                      :minalloc     (nth 2 args)
-                      :msg          (nth 3 args)
-                      :args         (nth 4 args))))))
         ((eq (ffn-symb form) 'mv-list)
          (ev-rec (fargn form 2) alist
                  w (decrement-big-n big-n) safe-mode gc-off
                  latches hard-error-returns-nilp aok))
-        #+(and hons (not acl2-loop-only))
-        ((member-eq (ffn-symb form) '(memoize-on memoize-off))
-         (mv-let (first-er first-val first-latches)
-                 (ev-rec (fargn form 1) alist
-                         w (decrement-big-n big-n) safe-mode gc-off
-                         latches hard-error-returns-nilp aok)
-                 (cond
-                  (first-er (mv first-er first-val first-latches))
-                  (t (cond ((eq (ffn-symb form) 'memoize-on)
-                            (memoize-on
-                             first-val
-                             (ev-rec (fargn form 2) alist
-                                     w (decrement-big-n big-n)
-                                     safe-mode gc-off
-                                     first-latches hard-error-returns-nilp
-                                     aok)))
-                           (t
-                            (memoize-off
-                             first-val
-                             (ev-rec (fargn form 2) alist
-                                     w (decrement-big-n big-n)
-                                     safe-mode gc-off
-                                     first-latches
-                                     hard-error-returns-nilp
-                                     aok))))))))
-        #-acl2-loop-only
-        ((eq (ffn-symb form) 'with-prover-time-limit)
-         (mv-let (first-er first-val first-latches)
-                 (ev-rec (fargn form 1) alist
-                         w (decrement-big-n big-n) safe-mode gc-off
-                         latches
-                         hard-error-returns-nilp
-                         aok)
-                 (cond
-                  (first-er (mv first-er first-val first-latches))
+        ((eq (ffn-symb form) 'return-last)
+         (let ((fn (and (quotep (fargn form 1))
+                        (unquote (fargn form 1)))))
+           (cond
+            ((and fn (symbolp fn))
 
-; Warning: Keep the rest of the with-prover-time-limit case in sync with both
-; the logic and raw Lisp definitions of with-prover-time-limit.
+; Translate11 will generally ensure that the value of (return-last-lookup fn w)
+; is not nil.  What happens if the user (with an active trust tag) removes the
+; association of a key in return-last-table with a non-nil value?  The
+; resulting state will be a weird one, in which a direct evaluation of the
+; return-last form in raw Lisp will continue to take effect.  So we match that
+; behavior here, rather than requiring (return-last-lookup fn w) to be non-nil.
+; We leave it to translate11 to enforce this requirement on return-last calls,
+; and we leave it to the user not to remove a key from return-last-table before
+; passing quotation of that key as the first argument of a return-last call.
 
-                  ((let ((time (if (and (consp first-val)
-                                        (null (cdr first-val)))
-                                   (car first-val)
-                                 first-val)))
-                     (not (and (rationalp time)
-                               (< 0 time))))
-                   (mv t
-                       (msg
-                        "The first argument to ~x0 must evaluate to a ~
-                         non-negative rational number or a list containing ~
-                         such a number, but such an argument has evaluated to ~
-                         ~x1."
-                        'with-prover-time-limit first-val)
-                       latches))
-                  (t
-                   (with-prover-time-limit
-                    first-val
-                    (ev-rec (fargn form 2) alist
-                            w (decrement-big-n big-n) safe-mode gc-off
-                            latches
-                            hard-error-returns-nilp
-                            aok))))))
-        #-acl2-loop-only
-        ((eq (ffn-symb form) 'with-guard-checking)
-         (mv-let (first-er first-val first-latches)
-                 (ev-rec (fargn form 1) alist
-                         w (decrement-big-n big-n) safe-mode gc-off
-                         latches
-                         hard-error-returns-nilp
-                         aok)
-                 (cond
-                  (first-er (mv first-er first-val first-latches))
-                  ((not (member-eq first-val *guard-checking-values*))
-                   (mv t
-                       (tilde-@-guard-checking-phrase first-val)
-                       latches))
-                  (t
-                   (with-guard-checking
-                    first-val
-                    (ev-rec (fargn form 2) alist
-                            w (decrement-big-n big-n) safe-mode
-                            (member-eq first-val '(nil :none))
-                            latches
-                            hard-error-returns-nilp
-                            aok))))))
+             (cond
+              ((eq fn 'mbe1-raw)
+
+; We avoid running the exec code, just as we do in the handling of the mbe1-raw
+; case by oneify.
+
+               (ev-rec (fargn form 3) ; optimization: avoid exec argument
+                       alist w (decrement-big-n big-n) safe-mode gc-off latches
+                       hard-error-returns-nilp aok))
+              (t (ev-rec-return-last fn (fargn form 2) (fargn form 3)
+                                     alist w big-n safe-mode gc-off latches
+                                     hard-error-returns-nilp aok))))
+            (t ; first arg is not quotep with special behavior; treat as progn
+             (mv-let (args-er args latches)
+                     (ev-rec-lst (fargs form) alist
+                                 w (decrement-big-n big-n) safe-mode gc-off
+                                 latches
+                                 hard-error-returns-nilp
+                                 aok)
+                     (cond (args-er (mv t args latches))
+                           (t (mv nil (car (last args)) latches))))))))
         (t (mv-let (args-er args latches)
                    (ev-rec-lst (fargs form) alist
                                w (decrement-big-n big-n) safe-mode gc-off
@@ -2240,15 +2259,15 @@
 
   (let ((term (if preprocess-fn
                   (mv-let (erp term1)
-                    (ev-fncall-w preprocess-fn
-                                 (list term wrld)
-                                 wrld
-                                 nil ; safe-mode
-                                 nil ; gc-off
-                                 nil ; hard-error-returns-nilp
-                                 t)
-                    (or (and (null erp) term1)
-                        term))
+                          (ev-fncall-w preprocess-fn
+                                       (list term wrld)
+                                       wrld
+                                       nil ; safe-mode
+                                       nil ; gc-off
+                                       nil ; hard-error-returns-nilp
+                                       t)
+                          (or (and (null erp) term1)
+                              term))
                 term)))
     (cond ((variablep term) term)
           ((fquotep term)
@@ -2399,25 +2418,40 @@
 ; can use it here and output something that the user will recognise.
 
            (cadr (fargn term 2)))
-          (t
-           (let ((op (cdr (assoc-eq (ffn-symb term) binop-tbl))))
-             (cond
-              (op (cons op
-                        (untranslate1-lst
-                         (cond ((and (cdr (fargs term))
-                                     (null (cddr (fargs term))))
-                                (right-associated-args (ffn-symb term) term))
-                               (t (fargs term)))
-                         nil binop-tbl preprocess-fn wrld)))
-              (t
-               (mv-let (fn guts)
-                 (car-cdr-nest term)
-                 (cond (fn (list fn (untranslate1 guts nil binop-tbl
-                                                  preprocess-fn wrld))) 
-                       (t (cons (ffn-symb term)
-                                (untranslate1-lst (fargs term) nil
-                                                  binop-tbl preprocess-fn
-                                                  wrld))))))))))))
+          (t (cond ((and (eq (ffn-symb term) 'return-last)
+                         (quotep (fargn term 1))
+                         (let* ((key (unquote (fargn term 1)))
+                                (fn (and (symbolp key)
+                                         key
+                                         (return-last-lookup key wrld))))
+                           (and fn
+                                (cons fn
+                                      (untranslate1-lst (cdr (fargs term)) nil
+                                                        binop-tbl preprocess-fn
+                                                        wrld))))))
+                   (t (let ((op (cdr (assoc-eq (ffn-symb term) binop-tbl))))
+                        (cond
+                         (op (cons op
+                                   (untranslate1-lst
+                                    (cond
+                                     ((and (cdr (fargs term))
+                                           (null (cddr (fargs term))))
+                                      (right-associated-args (ffn-symb term)
+                                                             term))
+                                     (t (fargs term)))
+                                    nil binop-tbl preprocess-fn wrld)))
+                         (t
+                          (mv-let
+                           (fn guts)
+                           (car-cdr-nest term)
+                           (cond (fn (list fn
+                                           (untranslate1 guts nil binop-tbl
+                                                         preprocess-fn wrld))) 
+                                 (t (cons (ffn-symb term)
+                                          (untranslate1-lst (fargs term) nil
+                                                            binop-tbl
+                                                            preprocess-fn
+                                                            wrld))))))))))))))
 
 (defun untranslate-cons1 (term binop-tbl preprocess-fn wrld)
 
@@ -3971,19 +4005,19 @@
 
 ; STOBJS-OUT is a list of stobj flags indicating both the multiplicity
 ; and which outputs are which stobjs and which stobjs are returned.
-; Every function must have a STOBJS-OUT property.
+; Every function must have a STOBJS-OUT property.  Note however that
+; return-last effectively has no such property -- an error is caused
+; if the function stobjs-out is applied to it -- as it always returns
+; its last argument (possibly a multiple value) and should generally
+; be considered as not having stobjs-out.
 
 ; During translation we generally have a stobj flag associated with
 ; the term we are translating, indicating the expected stobj, if any,
-; produced by the term.  The precise meaning of the stobj flag is
-; determined by another variable, named ``inclp'' in translate11.  The
-; name stands for ``inclusive'' as opposed to ``exclusive.''  Consider
-; a stobj flag, $s, that is non-nil, i.e., is a stobj name.  Suppose
-; inclp is nil.  Then the term occupying the corresponding slot MUST
-; be the stobj name $s.  On the other hand, if inclp is t, then the
-; term occupying the slot MAY be a the stobj name $s.  We think of the
-; stobj flags as having the exclusive (inclp=nil) meaning:  the indicated
-; stobj name is the only term that can be passed into that slot.
+; produced by the term.  Consider a stobj flag, $s, that is non-nil,
+; i.e., is a stobj name.  Then the term occupying the corresponding
+; slot MUST be the stobj name $s.  We think of the stobj flags as
+; meaning that the indicated stobj name is the only term that can be
+; passed into that slot.
 
 ; But a function fn which takes in a stobj, $s, but which does not
 ; return a modified $s, may in fact be called on any object.  Our
@@ -4000,7 +4034,8 @@
 ; calls.  If a function returns a stobj, we INSIST that a stobj
 ; (indeed, ``the stobj'') was supplied.  But if a function does not
 ; return a stobj, then we don't care if the stobj went in or if some
-; random object went in.
+; random object went in.  Well, we say that... but after Version_4.1 we
+; eliminated the INCLP argument to functions in the translate11 nest.
 
 (defun compute-stobj-flags (lst known-stobjs w)
 
@@ -4014,31 +4049,6 @@
                (compute-stobj-flags (cdr lst) known-stobjs w)))
         (t (cons nil
                  (compute-stobj-flags (cdr lst) known-stobjs w)))))
-
-(defun compute-inclp-lst1 (stobjs-in stobjs-out)
-  (cond ((endp stobjs-in) nil)
-        ((car stobjs-in)
-         (cons (not (member-eq (car stobjs-in) stobjs-out)) 
-               (compute-inclp-lst1 (cdr stobjs-in) stobjs-out)))
-        (t (cons nil 
-                 (compute-inclp-lst1 (cdr stobjs-in) stobjs-out)))))
-
-(defun compute-inclp-lst (stobjs-in stobjs-out)
-
-; This function essentially computes a list of Booleans in 1:1
-; correspondence with stobjs-in, indicating the ``inclp'' sense of
-; each stobj flag.  Suppose we have a fn with the indicated stobjs-in
-; and stobjs-out.  If a stobj comes in but does not go out, then we
-; can change the sense of that stobj-in flag from the normal
-; "exclusive" (inclp = nil) to "inclusive" (inclp = t).  If a stobj
-; flag is nil it doesn't matter what the corresponding inclp is, and
-; we choose nil.  If no stobjs come out at all, then we could compute
-; (t t ... t) but instead just return t, which is treated as (t t
-; ... t) by translate11-lst.  See the Essay on STOBJS-IN and
-; STOBJS-OUT.
-
-  (cond ((all-nils stobjs-out) t)
-        (t (compute-inclp-lst1 stobjs-in stobjs-out))))
 
 (defun prettyify-stobj-flags (lst)
 
@@ -4279,6 +4289,15 @@
        trace$-fn-general untrace$-fn-general untrace$-fn1 maybe-untrace$-fn
        memoize-on memoize-off ; especially relevant for #+hons
        set-w acl2-unwind-protect
+
+; We know that calls of mv-list in function bodies are checked syntactically to
+; satisfy arity and syntactic requirements, so it is safe to call it in raw
+; Lisp rather than somehow considering its *1* function.  We considered adding
+; return-last as well, but not only does return-last have a guard other than T,
+; but indeed (return-last 'mbe1-raw exec logic) macroexpands in raw Lisp to
+; exec, which isn't what we want in oneified code.
+
+       mv-list
        ))
 
 (defconst *macros-for-nonexpansion-in-raw-lisp*
@@ -4331,17 +4350,6 @@
     or and list 
 ;   local
 ;   defdoc
-
-; We know that calls of mv-list in function bodies are checked syntactically to
-; satisfy arity and syntactic requirements, so it is safe to call mv-list in
-; raw Lisp without oneifying it.
-
-    mv-list
-
-; It is tempting to put time$ on this list.  But time$ has keyword arguments,
-; which oneify would quote, creating a call of time$ with quoted keyword
-; arguments, which can cause a hard Lisp error during compilation.  So we
-; handle time$ directly in oneify.
 
     ))
 
@@ -4539,12 +4547,16 @@
 ; We are conservative here, avoiding (ec-call (fn ...)) when we are the least
 ; bit nervous about that.  Reasons to be nervous are special treatment of a
 ; function symbol by guard-clauses (if) or special treatment in oneify
-; (with-prover-time-limit, with-guard-checking, prog2$, and anything in
-; *oneify-primitives*).
+; (return-last and anything in *oneify-primitives*).
 
-  (union-equal '(ec-call if with-prover-time-limit with-guard-checking prog2$
-                         mv-list must-be-equal wormhole-eval)
+  (union-equal '(if wormhole-eval return-last)
                *oneify-primitives*))
+
+(defmacro return-last-call (fn &rest args)
+  `(fcons-term* 'return-last ',fn ,@args))
+
+(defmacro prog2$-call (x y)
+  `(fcons-term* 'return-last ''progn ,x ,y))
 
 (defun name-dropper (lst)
 
@@ -4559,8 +4571,16 @@
 
   (cond ((endp lst) *nil*)
         ((endp (cdr lst)) (car lst))
-        (t (fcons-term* 'prog2$ (car lst)
+        (t (prog2$-call (car lst)
                         (name-dropper (cdr lst))))))
+
+(defun first-assoc-eq (keys alist)
+  (declare (xargs :guard (and (alistp alist)
+                              (symbol-listp keys))))
+  (cond ((endp keys)
+         nil)
+        (t (or (assoc-eq (car keys) alist)
+               (first-assoc-eq (cdr keys) alist)))))
 
 (mutual-recursion
 
@@ -4626,7 +4646,6 @@
        ((tdcls (translate11-lst (translate-dcl-lst edcls wrld)
                                 nil           ;;; '(nil ... nil)
                                 bindings
-                                nil ; inclp
                                 known-stobjs
                                 "in a DECLARE form in an FLET binding"
                                 flet-alist form ctx wrld state-vars))
@@ -4635,7 +4654,7 @@
                                 bindings
                               (translate-bind new-stobjs-out new-stobjs-out
                                               bindings))
-                            nil known-stobjs
+                            known-stobjs
                             flet-alist form ctx wrld state-vars)))
        (let ((stobjs-bound
               (collect-non-x nil (compute-stobj-flags bound-vars
@@ -4752,9 +4771,7 @@
 
                                    tbody)
                                   (t
-                                   (fcons-term* 'prog2$
-                                                guardian
-                                                tbody)))))
+                                   (prog2$-call guardian tbody)))))
                          (t tbody)))
                        (body-vars (all-vars tbody))
                        (extra-body-vars (set-difference-eq
@@ -4789,7 +4806,7 @@
                        (delete-assoc-eq new-stobjs-out
                                         bindings))))))))))))))))))
 
-(defun translate11-flet (x stobjs-out bindings inclp known-stobjs flet-alist
+(defun translate11-flet (x stobjs-out bindings known-stobjs flet-alist
                            ctx wrld state-vars)
   (cond
    ((not (eql (length x) 3))
@@ -4802,30 +4819,50 @@
     (mv-let
      (erp fives)
      (chk-defuns-tuples-cmp (cadr x) t ctx wrld state-vars)
-     (mv-let
-      (erp ignored-val)
-      (if erp ; erp is a ctx and fives is a msg
-          (mv erp fives)
+     (let ((names (strip-cars fives)))
+       (mv-let
+        (erp ignored-val)
+        (if erp ; erp is a ctx and fives is a msg
+            (mv erp fives)
 
 ; Note that we do not need to call chk-xargs-keywords, since
 ; acceptable-dcls-alist guarantees that xargs is illegal.
 
-        (chk-no-duplicate-defuns-cmp (strip-cars fives) ctx))
-      (declare (ignore ignored-val))
-      (cond
-       (erp (trans-er ctx
-                      "The above error indicates a problem with the form ~p0."
-                      x))
-       (t
-        (trans-er-let*
-         ((flet-alist (translate11-flet-alist x fives stobjs-out bindings
-                                              known-stobjs flet-alist ctx wrld
-                                              state-vars)))
-         (translate11 (car (last x)) ; (nth 2 x) as of this writing
-                      stobjs-out bindings inclp known-stobjs flet-alist x
-                      ctx wrld state-vars)))))))))
+          (chk-no-duplicate-defuns-cmp names ctx))
+        (declare (ignore ignored-val))
+        (cond
+         (erp (trans-er ctx
+                        "The above error indicates a problem with the form ~p0."
+                        x))
+         ((first-assoc-eq names (table-alist 'return-last-table wrld))
 
-(defun translate11-mv-let (x stobjs-out bindings inclp known-stobjs
+; What horrors may lie ahead, for example, with
+; (flet ((ec-call1-raw ....)) (ec-call ...))?  The problem is that ec-call
+; expands to a call of ec-call1-raw, but only through several steps that the
+; user might not notice, and only in raw Lisp.  Of course it's doubtful that
+; someone would flet-bound ec-call1-raw; but it isn't hard to imagine a binding
+; whose error isn't so obvious.  Of course, someday a serious system hacker
+; might want to flet ec-call1-raw; in that case, with a trust tag that person
+; can also edit the code here!
+
+          (trans-er ctx
+                    "It is illegal for FLET to bind a symbol that is given ~
+                     special handling by ~x0.  The FLET-binding~#1~[ is~/s ~
+                     are~] thus illegal for ~&1.  See :DOC return-last-table."
+                    'return-last
+                    (intersection-eq
+                     names
+                     (strip-cars (table-alist 'return-last-table wrld)))))
+         (t
+          (trans-er-let*
+           ((flet-alist (translate11-flet-alist x fives stobjs-out bindings
+                                                known-stobjs flet-alist ctx wrld
+                                                state-vars)))
+           (translate11 (car (last x)) ; (nth 2 x) as of this writing
+                        stobjs-out bindings known-stobjs flet-alist x
+                        ctx wrld state-vars))))))))))
+
+(defun translate11-mv-let (x stobjs-out bindings known-stobjs
                              local-stobj local-stobj-creator flet-alist
                              ctx wrld state-vars)
 
@@ -4901,18 +4938,17 @@
          (trans-er-let*
           ((tcall (translate11 (caddr x)
                                bound-stobjs-out
-                               bindings inclp
+                               bindings
                                producer-known-stobjs
                                flet-alist x ctx wrld state-vars))
            (tdcls (translate11-lst (translate-dcl-lst edcls wrld)
                                    (if (eq stobjs-out t)
                                        t
                                      nil)          ;;; '(nil ... nil)
-                                   bindings
-                                   inclp known-stobjs
+                                   bindings known-stobjs
                                    "in a DECLARE form in an MV-LET"
                                    flet-alist x ctx wrld state-vars))
-           (tbody (translate11 body stobjs-out bindings inclp
+           (tbody (translate11 body stobjs-out bindings
                                known-stobjs flet-alist x ctx wrld state-vars)))
           (let ((used-vars (union-eq (all-vars tbody)
                                      (all-vars1-lst tdcls nil)))
@@ -5000,8 +5036,7 @@
 ; See the comment about THE in dcl-guardian.
 
                                       tbody)
-                                     (t
-                                      (fcons-term* 'prog2$ guardian tbody)))))
+                                     (t (prog2$-call guardian tbody)))))
                             (t tbody)))
                           (body-vars (all-vars tbody))
                           (extra-body-vars
@@ -5042,7 +5077,7 @@
                                tcall)
                              extra-body-vars))))))))))))))))))
 
-(defun translate11-wormhole-eval (x y z bindings inclp flet-alist ctx wrld
+(defun translate11-wormhole-eval (x y z bindings flet-alist ctx wrld
                                     state-vars)
 
 ; The three arguments of wormhole-eval are x y and z.  Here, z has been
@@ -5101,8 +5136,7 @@
                (body-erp tlambda-body body-bindings)
                (translate11 lambda-body
                             '(nil)           ; stobjs-out
-                            nil              ; bindings
-                            inclp
+                            nil
                             '(state) ; known-stobjs
                             flet-alist
                             x ctx wrld state-vars)
@@ -5138,7 +5172,7 @@
                                     (remove1-eq whs (all-vars tlambda-body))
                                     (all-vars tlambda-body)))))))))))))))
 
-(defun translate11-call (form fn args stobjs-out stobjs-out2 bindings inclp
+(defun translate11-call (form fn args stobjs-out stobjs-out2 bindings
                               known-stobjs msg flet-alist ctx wrld state-vars)
   (let ((stobjs-in
          (if (consp fn)
@@ -5175,9 +5209,6 @@
                                           args)
                                       stobjs-in
                                       bindings
-                                      (compute-inclp-lst
-                                       stobjs-in
-                                       stobjs-out)
                                       known-stobjs
                                       msg flet-alist form ctx wrld
                                       state-vars)))
@@ -5185,7 +5216,7 @@
                     (translate11-wormhole-eval (car args)
                                                (cadr args)
                                                (caddr targs)
-                                               bindings inclp flet-alist ctx wrld
+                                               bindings flet-alist ctx wrld
                                                state-vars))
                    (t (trans-value (fcons-term fn targs))))))))
        (t
@@ -5194,7 +5225,7 @@
           (trans-er-let*
            ((args (translate11-lst args
                                    stobjs-in
-                                   bindings inclp known-stobjs
+                                   bindings known-stobjs
                                    msg flet-alist form ctx wrld state-vars)))
            (trans-value (fcons-term fn args)))))))
      ((consp stobjs-out2)
@@ -5205,13 +5236,13 @@
                                       (list *nil* *nil* (nth 2 args))
                                       args)
                                   stobjs-in
-                                  bindings inclp known-stobjs
+                                  bindings known-stobjs
                                   msg flet-alist form ctx wrld state-vars)))
          (cond ((eq fn 'wormhole-eval)
                 (translate11-wormhole-eval (car args)
                                            (cadr args)
                                            (caddr targs)
-                                           bindings inclp flet-alist ctx wrld
+                                           bindings flet-alist ctx wrld
                                            state-vars))
                (t (trans-value (fcons-term fn targs)))))))
      (t (let ((bindings
@@ -5219,11 +5250,11 @@
           (trans-er-let*
            ((args (translate11-lst args
                                    stobjs-in
-                                   bindings inclp known-stobjs
+                                   bindings known-stobjs
                                    msg flet-alist form ctx wrld state-vars)))
            (trans-value (fcons-term fn args))))))))
 
-(defun translate11 (x stobjs-out bindings inclp known-stobjs flet-alist
+(defun translate11 (x stobjs-out bindings known-stobjs flet-alist
                       cform ctx wrld state-vars)
 
 ; Bindings is an alist binding symbols either to their corresponding
@@ -5258,14 +5289,6 @@
 ; T always deferences to t and nothing else dereferences to t.  So you
 ; can check (eq stobjs-out t) without dereferencing to know whether we
 ; care about the stobjs-out conditions.
-
-; Inclp is t or nil and changes the precise meaning of a non-nil stobj
-; flag, $s.  If inclp is nil, then $s means that the given stobj MUST
-; appear in the corresponding slot.  If inclp is t, then $s means that
-; the given stobj MAY appear in the corresponding slot.  At the
-; moment, inclp is always set to nil initially and is set to t only
-; when this function, in some recursive call, has determined that it
-; is safe to allow non-live stobjs into stobj positions.
 
 ; Known-stobjs is a subset of the list of all stobjs known in world wrld,
 ; or else known-stobjs is T and denotes all the stobjs in wrld.  A name
@@ -5344,22 +5367,13 @@
                             x (length stobjs-out)))
                ((and (null (car stobjs-out))
                      (stobjp transx known-stobjs wrld))
-
-; Warning: We ignore the inclp flag in this case.  Even if inclp = t,
-; which permits non-stobjs into stobj slots, we still prohibit stobjs
-; from going into non-stobj slots.  Why?  Because the stobj in
-; question might be a live one and might be treated ``surprisingly''
-; by non-stobj functions, e.g., we might take the car of
-; *the-live-state*.
-
                 (trans-er+? cform x
                             ctx
                             "A single-threaded object, namely ~x0, is being ~
                              used where an ordinary object is expected."
                             transx))
                ((and (car stobjs-out)
-                     (not (or inclp
-                              (eq (car stobjs-out) transx))))
+                     (not (eq (car stobjs-out) transx)))
                 (cond
                  ((stobjp transx known-stobjs wrld)
                   (trans-er+? cform x
@@ -5416,7 +5430,7 @@
               (list* 'let
                      (listlis (cadr (car x)) (cdr x))
                      (cddr (car x)))
-              stobjs-out bindings inclp known-stobjs flet-alist x ctx wrld
+              stobjs-out bindings known-stobjs flet-alist x ctx wrld
               state-vars))))
    ((and (not (eq stobjs-out t)) (eq (car x) 'mv))
 
@@ -5454,9 +5468,8 @@
                       (length (cdr x))))
          (t
           (trans-er-let*
-           ((args (translate11-lst (cdr x) stobjs-out bindings
-                                   inclp known-stobjs 'mv flet-alist x ctx wrld
-                                   state-vars)))
+           ((args (translate11-lst (cdr x) stobjs-out bindings known-stobjs 'mv
+                                   flet-alist x ctx wrld state-vars)))
            (trans-value (listify args))))))
        (t (let* ((new-stobjs-out (compute-stobj-flags (cdr x)
                                                       known-stobjs
@@ -5480,11 +5493,11 @@
               (trans-er-let*
                ((args
                  (translate11-lst (cdr x) new-stobjs-out
-                                  bindings inclp known-stobjs
+                                  bindings known-stobjs
                                   'mv flet-alist x ctx wrld state-vars)))
                (trans-value (listify args))))))))))
    ((eq (car x) 'mv-let)
-    (translate11-mv-let x stobjs-out bindings inclp known-stobjs
+    (translate11-mv-let x stobjs-out bindings known-stobjs
                         nil nil ; stobj info
                         flet-alist ctx wrld state-vars))
    ((assoc-eq (car x) flet-alist)
@@ -5515,7 +5528,7 @@
                        nil))
             (t
              (translate11-call x lambda-fn (cdr x) stobjs-out stobjs-out2
-                               bindings inclp known-stobjs
+                               bindings known-stobjs
                                (msg "a call of FLET-bound function ~x0"
                                     (car x))
                                flet-alist ctx wrld state-vars)))))
@@ -5597,7 +5610,7 @@
            (trans-er+ x ctx
                       "TRANSLATE-AND-TEST requires exactly two arguments."))
           (t (trans-er-let*
-              ((ans (translate11 (caddr x) stobjs-out bindings inclp
+              ((ans (translate11 (caddr x) stobjs-out bindings
                                  known-stobjs flet-alist x ctx wrld
                                  state-vars)))
 
@@ -5610,7 +5623,7 @@
               (mv-let
                (test-erp test-term test-bindings)
                (translate11 (list (cadr x) 'form)
-                           '(nil) nil inclp known-stobjs flet-alist x ctx wrld
+                           '(nil) nil known-stobjs flet-alist x ctx wrld
                            state-vars)
                (declare (ignore test-bindings))
                (cond
@@ -5618,7 +5631,8 @@
                 (t
                  (mv-let (erp msg)
                          (ev-w test-term
-                               (list (cons 'form ans))
+                               (list (cons 'form ans)
+                                     (cons 'world wrld))
                                wrld
                                (access state-vars state-vars :safe-mode)
                                (gc-off1 (access state-vars state-vars
@@ -5673,7 +5687,7 @@
                          See :DOC with-local-stobj."
                         x))
              (t
-              (translate11-mv-let mv-let-form stobjs-out bindings inclp
+              (translate11-mv-let mv-let-form stobjs-out bindings
                                   known-stobjs st creator flet-alist ctx wrld
                                   state-vars)))))
    ((and (assoc-eq (car x) *ttag-fns-and-macros*)
@@ -5725,7 +5739,7 @@
       (mv-let (erp expansion)
               (macroexpand1-cmp x ctx wrld state-vars)
               (cond (erp (mv erp expansion bindings))
-                    (t (translate11 expansion stobjs-out bindings inclp
+                    (t (translate11 expansion stobjs-out bindings
                                     known-stobjs flet-alist x ctx wrld
                                     state-vars)))))))
    ((eq (car x) 'let)
@@ -5797,34 +5811,26 @@
                        (trans-er-let*
                         ((val (translate11 (cadr (car (cadr x)))
                                            (list (car bound-vars))
-                                           bindings
-
-; One might be tempted to allow the stobj name to be bound to anything
-; (i.e., inclp = t) if no stobjs come out.  But we have a rule that
-; says if a stobj name is bound it must come out.  (See the big error
-; messages below, for example.)  So I don't implement the inclusive
-; treatment of LET bindings.
-
-                                           inclp known-stobjs flet-alist
+                                           bindings known-stobjs flet-alist
                                            x ctx wrld state-vars)))
                         (trans-value (list val))))
                       (t (translate11-lst (strip-cadrs (cadr x))
                                           (if (eq stobjs-out t)
                                               t
                                             nil)       ;;; '(nil ... nil)
-                                          bindings inclp known-stobjs
+                                          bindings known-stobjs
                                           "in a LET binding (or ~
                                            LAMBDA application)"
                                           flet-alist x ctx wrld state-vars))))
                (tbody
-                (translate11 body stobjs-out bindings inclp known-stobjs
+                (translate11 body stobjs-out bindings known-stobjs
                              flet-alist x ctx wrld state-vars))
                (tdcls (translate11-lst
                        (translate-dcl-lst edcls wrld)
                        (if (eq stobjs-out t)
                            t
                          nil)         ;;; '(nil ... nil)
-                       bindings inclp known-stobjs
+                       bindings known-stobjs
                        "in a DECLARE form in a LET (or LAMBDA)"
                        flet-alist x ctx wrld state-vars)))
               (let ((used-vars (union-eq (all-vars tbody)
@@ -5912,10 +5918,7 @@
 ; See the comment about THE in dcl-guardian.
 
                                           tbody)
-                                         (t
-                                          (fcons-term* 'prog2$
-                                                       guardian
-                                                       tbody)))))
+                                         (t (prog2$-call guardian tbody)))))
                                 (t tbody)))
                               (body-vars (all-vars tbody))
                               (extra-body-vars (set-difference-eq
@@ -5934,7 +5937,7 @@
                                   ignore-vars bound-vars value-forms)
                                  extra-body-vars)))))))))))))))))))
    ((eq (car x) 'flet) ; (flet bindings form)
-    (translate11-flet x stobjs-out bindings inclp known-stobjs flet-alist ctx
+    (translate11-flet x stobjs-out bindings known-stobjs flet-alist ctx
                       wrld state-vars))
    ((and (not (eq stobjs-out t))
          (null (cdr x)) ; optimization
@@ -5974,13 +5977,13 @@
                                          (if (eq stobjs-out t)
                                              t
                                            '(nil))
-                                         bindings inclp known-stobjs
+                                         bindings known-stobjs
                                          flet-alist x ctx wrld state-vars))
                       (arg2 (translate11 (caddr x)
-                                         stobjs-out bindings inclp known-stobjs
+                                         stobjs-out bindings known-stobjs
                                          flet-alist x ctx wrld state-vars))
                       (arg3 (translate11 (cadddr x)
-                                         stobjs-out bindings inclp known-stobjs
+                                         stobjs-out bindings known-stobjs
                                          flet-alist x ctx wrld state-vars)))
                      (trans-value (fcons-term* 'if arg1 arg2 arg3))))))
           ((eq (car x) 'synp)
@@ -6021,20 +6024,17 @@
                    ((quoted-vars (translate11 (cadr x)
                                               '(nil) ; stobjs-out
                                               bindings
-                                              inclp
                                               '(state) ; known-stobjs
                                               flet-alist x ctx wrld state-vars))
                     (quoted-user-form (translate11 (caddr x)
                                                    '(nil) ; stobjs-out
                                                    bindings
-                                                   inclp
                                                    '(state) ; known-stobjs
                                                    flet-alist x ctx wrld
                                                    state-vars))
                     (quoted-term (translate11 (cadddr x)
                                               '(nil) ; stobjs-out
                                               bindings
-                                              inclp
                                               '(state) ; known-stobjs
                                               flet-alist x ctx wrld state-vars)))
                    (let ((quoted-term (if (quotep quoted-term)
@@ -6046,7 +6046,6 @@
                                (translate11 (cadr quoted-term)
                                             '(nil) ; stobjs-out
                                             bindings
-                                            inclp
                                             '(state) ; known-stobjs
                                             flet-alist x ctx wrld state-vars)))
                              (let ((quoted-vars (if (quotep quoted-vars)
@@ -6074,95 +6073,11 @@
                   (trans-er ctx
                             *synp-trans-err-string*
                             x))))
-          ((eq (car x) 'prog2$)
-           (trans-er-let*
-            ((arg1 (translate11 (cadr x)
-                                (if (eq stobjs-out t)
-                                    t
-                                  '(nil))
-                                bindings inclp known-stobjs flet-alist x
-                                ctx wrld state-vars))
-             (arg2 (translate11 (caddr x)
-                                stobjs-out bindings inclp known-stobjs
-                                flet-alist x ctx wrld state-vars)))
-            (trans-value (fcons-term* 'prog2$ arg1 arg2))))
-          ((eq (car x) 'time$-logic)
-           (trans-er-let*
-            ((aux-args (translate11-lst
-                        (butlast (cdr x) 1)
-                        (if (eq stobjs-out t)
-                            t
-                          '(nil))
-                        bindings inclp known-stobjs nil flet-alist x ctx wrld
-                        state-vars))
-             (timing-arg (translate11 (car (last (cdr x)))
-                                      stobjs-out bindings inclp known-stobjs
-                                      flet-alist x ctx wrld state-vars)))
-            (trans-value (fcons-term (car x)
-                                     (append aux-args (list timing-arg))))))
-          ((eq (car x) 'must-be-equal)
-           (cond
-            ((and (not (eq (access state-vars state-vars :ld-skip-proofsp)
-                           'include-book))
-                  (not (eq stobjs-out t))
-                  (non-trivial-encapsulate-ee-entries
-                   (global-val 'embedded-event-lst wrld)))
-
-; See the example in the comment near the top of (deflabel note-3-4 ...).  We
-; don't complain when in include-book or the second pass of an encapsulate
-; since we have already checked legality on an earlier pass.  We also don't
-; complain if stobjs-out is t, for example because we are processing a defun
-; with xargs declaration :non-executable t.
-
-             (trans-er+ x ctx
-                        "It is illegal to call ~x0 (~x1) under an encapsulate ~
-                         event with a non-empty signature."
-                        'must-be-equal 'mbe))
-            (t
-
-; We need to know that the first argument of must-be-equal has the same
-; signature as the second argument.  If for example we have (mv-let (x y)
-; (must-be-equal <logic-form> <exec-form>)), but <exec-form> had signature *,
-; then Common Lisp would get confused during evaluation.
-
-             (trans-er-let*
-              ((arg1 (translate11 (cadr x)
-                                  stobjs-out bindings inclp known-stobjs
-                                  flet-alist x ctx wrld state-vars)) 
-               (arg2 (translate11 (caddr x)
-                                  stobjs-out bindings inclp known-stobjs
-                                  flet-alist x ctx wrld state-vars)))
-              (trans-value (fcons-term* 'must-be-equal arg1 arg2))))))
-          ((eq (car x) 'ec-call)
-           (cond
-            ((not (and (consp (cdr x))
-                       (consp (cadr x))
-                       (let ((fn (car (cadr x))))
-                         (and (symbolp fn)
-                              (not (member-eq fn *ec-call-bad-ops*))
-                              (function-symbolp fn wrld)))))
-             (trans-er ctx
-                       "A call of ~x0 must only be made on an argument of the ~
-                        form (FN ARG1 ... ARGK), where FN is a known function ~
-                        in the current ACL2 world other than ~v1.  The call ~
-                        ~x2 is thus illegal."
-                       'ec-call *ec-call-bad-ops* x))
-            ((assoc-eq (car (cadr x)) flet-alist)
-             (trans-er ctx
-                       "A call of ~x0 is illegal when made on a call of a ~
-                        function bound by ~x1.  The call ~x2 is thus illegal."
-                       'ec-call 'flet x))
-            (t
-             (trans-er-let*
-              ((arg1 (translate11 (cadr x)
-                                  stobjs-out bindings inclp known-stobjs
-                                  flet-alist x ctx wrld state-vars)))
-              (trans-value (fcons-term* (car x) arg1))))))
           ((and (eq (car x) 'mv-list)
                 (not (eq stobjs-out t)))
            (trans-er-let*
             ((arg1 (translate11 (cadr x)
-                                stobjs-out bindings inclp known-stobjs
+                                stobjs-out bindings known-stobjs
                                 flet-alist x ctx wrld state-vars)))
             (cond ((not (and (quotep arg1)
                              (integerp (unquote arg1))
@@ -6177,28 +6092,146 @@
                     ((arg2 (translate11 (caddr x)
                                         (make-list (unquote arg1)
                                                    :initial-element nil)
-                                        bindings inclp known-stobjs
+                                        bindings known-stobjs
                                         flet-alist x ctx wrld state-vars)))
                     (trans-value (fcons-term* 'mv-list arg1 arg2)))))))
-          ((member-eq (car x) '(memoize-on memoize-off ; relevant for #+hons
-                                with-prover-time-limit
-                                with-guard-checking))
-           (trans-er-let*
-            ((arg1 (translate11 (cadr x)
-                                (if (eq stobjs-out t)
-                                    t
-                                  '(nil))
-                                bindings inclp known-stobjs
-                                flet-alist x ctx wrld state-vars))
-             (arg2 (translate11 (caddr x)
-                                stobjs-out bindings inclp known-stobjs
-                                flet-alist x ctx wrld state-vars)))
-            (trans-value (fcons-term* (car x) arg1 arg2))))
           ((eq stobjs-out t)
            (trans-er-let*
-            ((args (translate11-lst (cdr x) t bindings inclp known-stobjs
+            ((args (translate11-lst (cdr x) t bindings known-stobjs
                                     nil flet-alist x ctx wrld state-vars)))
             (trans-value (fcons-term (car x) args))))
+          ((eq (car x) 'return-last) ; and stobjs-out is not t
+           (let* ((arg1 (nth 1 x))
+                  (key (and (consp arg1)
+                            (eq (car arg1) 'quote)
+                            (consp (cdr arg1))
+                            (cadr arg1)))
+                  (keyp (and (symbolp key) key)))
+             (trans-er-let*
+              ((targ1 (translate11 arg1
+                                   '(nil) bindings known-stobjs
+                                   flet-alist x ctx wrld state-vars)))
+              (cond
+               ((and keyp (not (equal targ1 arg1))) ; an optional extra check
+                (trans-er ctx
+                          "Implementation error: We have thought that a ~
+                           quotep must translate to itself, but ~x0 did not!"
+                          (nth 1 x)))
+               ((eq key 'mbe1-raw)
+                (cond
+                 ((and (not (eq (access state-vars state-vars :ld-skip-proofsp)
+                                'include-book))
+                       (non-trivial-encapsulate-ee-entries
+                        (global-val 'embedded-event-lst wrld)))
+
+; See the example in the comment near the top of (deflabel note-3-4 ...).  We
+; don't complain when in include-book or the second pass of an encapsulate
+; since we have already checked legality on an earlier pass.  We also don't
+; complain if stobjs-out is t, for example because we are processing a defun
+; with xargs declaration :non-executable t.
+
+                  (trans-er+ x ctx
+                             "It is illegal to call ~x0 (~x1) under an ~
+                              encapsulate event with a non-empty signature."
+                             'mbe1 'mbe))
+                 (t
+
+; We need to know that the two arguments of mbe1 have the same signature.  If
+; for example we have (mv-let (x y) (mbe1 <exec-form> <logic-form>)), but
+; <exec-form> has signature *, then Common Lisp will get confused during
+; evaluation.
+
+                  (trans-er-let*
+                   ((targ2 (translate11 (nth 2 x)
+                                        stobjs-out bindings known-stobjs
+                                        flet-alist x ctx wrld state-vars)) 
+                    (targ3 (translate11 (nth 3 x)
+                                        stobjs-out bindings known-stobjs
+                                        flet-alist x ctx wrld state-vars)))
+                   (trans-value
+                    (fcons-term* 'return-last targ1 targ2 targ3))))))
+               ((and (eq key 'ec-call1-raw)
+                     (not (let* ((call (car (last x)))
+                                 (fn (and (consp call)
+                                          (car call))))
+                            (and (symbolp fn)
+                                 (not (member-eq fn *ec-call-bad-ops*))
+                                 (function-symbolp fn wrld)))))
+                (trans-er ctx
+                          "A call of ~x0 (including macroexpansion of such a ~
+                           call) must only be made on an argument of the form ~
+                           (FN ...), where FN is a known function symbol of ~
+                           the current ACL2 world not belonging to the list ~
+                           that is the value of the constant ~x1.  The ~
+                           argument ~x2 is thus illegal for ~x0, because ~@3."
+                          'ec-call '*ec-call-bad-ops* (car (last x))
+                          (let* ((call (car (last x)))
+                                 (fn (and (consp call)
+                                          (car call))))
+                            (cond ((not (symbolp fn))
+                                   (msg "~x0 is not a symbol" fn))
+                                  ((member-eq fn *ec-call-bad-ops*)
+                                   (msg "~x0 belongs to the above list" fn))
+                                  ((atom call)
+                                   (msg "~x0 does not have the form of a ~
+                                          function call"
+                                        call))
+                                  ((eq (getprop fn 'macro-args t
+                                                'current-acl2-world wrld)
+                                       t)
+                                   (assert$
+                                    (not (function-symbolp fn wrld))
+                                    (msg "~x0 is not a function symbol"
+                                         fn)))
+                                  (t (msg "~x0 is a macro, not a function ~
+                                           symbol"
+                                          fn))))))
+               ((and keyp (not (return-last-lookup key wrld)))
+
+; In an early implementation of return-last, we insisted that keyp be true.  But
+; when we attempted to update the "GL" work of Sol Swords to use return-last,
+; we encountered the creation of symbolic terms (presumably for some sort of
+; meta reasoning) for which the first argument was not quoted.  Rather than try
+; to understand whether this was necessary, we decided that others might also
+; want to write meta-level functions that cons up return-last terms without a
+; quoted first argument; and since it is easy to support that, we do so.
+
+                (trans-er ctx
+                          "The symbol ~x0 is specified in the first argument ~
+                           of the form ~x1.  But ~x0 is not associated in the ~
+                           table ~x2 with a non-nil symbol.  See :DOC ~
+                           return-last."
+                          key x 'return-last-table))
+               (t
+                (mv-let
+                 (erp targ2 targ2-bindings)
+                 (translate11 (nth 2 x)
+                              '(nil) bindings known-stobjs
+                              flet-alist x ctx wrld state-vars)
+                 (declare (ignore targ2-bindings))
+                 (cond
+                  (erp (mv erp targ2 bindings))
+                  (t
+                   (trans-er-let*
+                    ((targ3 (translate11
+                             (nth 3 x)
+                             stobjs-out bindings
+                             known-stobjs ; for return-last call's last arg
+                             flet-alist x ctx wrld state-vars)))
+                    (cond
+                     ((and (eq key 'ec-call1-raw)
+                           keyp ; should always be true (but playing it safe)
+                           (not (and (nvariablep targ3)
+                                     (not (fquotep targ3))
+                                     (symbolp (ffn-symb targ3))
+                                     (function-symbolp (ffn-symb targ3) wrld))))
+                      (trans-er ctx
+                                "The argument of ~x0 must be a call of a ~
+                                 known function symbol, but ~x1 is not."
+                                'ec-call targ3))
+                     (t (trans-value
+                         (fcons-term* 'return-last
+                                      targ1 targ2 targ3)))))))))))))
           ((and (member-eq (car x) '(makunbound-global put-global))
                 (not (eq (access state-vars state-vars :temp-touchable-vars)
                          t))
@@ -6259,7 +6292,7 @@
                                 (cond (temp temp)
                                       (t (stobjs-out (car x) wrld))))))
              (translate11-call x (car x) (cdr x) stobjs-out stobjs-out2
-                               bindings inclp known-stobjs (car x) flet-alist
+                               bindings known-stobjs (car x) flet-alist
                                ctx wrld state-vars)))))
    ((arity (car x) wrld)
     (trans-er ctx
@@ -6299,7 +6332,7 @@
                      1
                    0)))))
 
-(defun translate11-lst (lst stobjs-out bindings inclp-lst known-stobjs
+(defun translate11-lst (lst stobjs-out bindings known-stobjs
                             msg flet-alist cform ctx wrld state-vars)
 
 ; WARNING: This function's treatment of stobjs-out is unusual:
@@ -6318,13 +6351,6 @@
 ; flg -- except that x ``is'' a stobj, flg, only if x is flg and x is
 ; among known-stobjs (with proper treatment of known-stobjs = t).
 
-; Inclp-lst is thought of as being a list in 1:1 correspondence with
-; lst which supplies the inclp flag for each element of lst.  However,
-; if inclp-lst is t it is treated as (t t ... t) and if inclp-lst is
-; nil it is treated as (nil nil ... nil).  We exploit the fact that
-; (car nil) = (cdr nil) = nil and so have to take special care only
-; for t.
-
 ; Msg is used to describe the form that contains the list, lst, of
 ; forms being translated.  It is only used if an error is caused when
 ; some element of lst violates the stobj restrictions of stobjs-out.
@@ -6340,18 +6366,10 @@
   (cond ((atom lst) (trans-value nil))
         ((eq stobjs-out t)
          (trans-er-let*
-          ((x (translate11 (car lst) t bindings
-                           (if (eq inclp-lst t)
-                               t
-                             (car inclp-lst))
-                           known-stobjs flet-alist (car lst) ctx
-                           wrld state-vars))
-           (y (translate11-lst (cdr lst) t bindings
-                               (if (eq inclp-lst t)
-                                   t
-                                 (cdr inclp-lst))
-                               known-stobjs msg flet-alist cform ctx wrld
-                               state-vars)))
+          ((x (translate11 (car lst) t bindings known-stobjs flet-alist
+                           (car lst) ctx wrld state-vars))
+           (y (translate11-lst (cdr lst) t bindings known-stobjs msg flet-alist
+                               cform ctx wrld state-vars)))
           (trans-value (cons x y))))
         ((car stobjs-out)
          (trans-er-let*
@@ -6408,27 +6426,15 @@
                              msg
                              (car stobjs-out)))))
            (y (translate11-lst (cdr lst) (cdr stobjs-out)
-                               bindings
-                               (if (eq inclp-lst t)
-                                   t
-                                 (cdr inclp-lst))
-                               known-stobjs msg flet-alist cform ctx wrld
-                               state-vars)))
+                               bindings known-stobjs msg flet-alist cform ctx
+                               wrld state-vars)))
           (trans-value (cons x y))))
         (t (trans-er-let*
-            ((x (translate11 (car lst) '(nil) bindings
-                             (if (eq inclp-lst t)
-                                 t
-                               (car inclp-lst))
-                             known-stobjs flet-alist (car lst) ctx wrld
-                             state-vars))
+            ((x (translate11 (car lst) '(nil) bindings known-stobjs flet-alist
+                             (car lst) ctx wrld state-vars))
              (y (translate11-lst (cdr lst) (cdr stobjs-out)
-                                 bindings
-                                 (if (eq inclp-lst t)
-                                     t
-                                   (cdr inclp-lst))
-                                 known-stobjs msg flet-alist cform
-                                 ctx wrld state-vars)))
+                                 bindings known-stobjs msg flet-alist cform ctx
+                                 wrld state-vars)))
             (trans-value (cons x y))))))
 
 )
@@ -6475,7 +6481,7 @@
 ; bindings has been modified to bind every fn (ultimately) to a proper stobjs
 ; out setting.  Use translate-deref to recover the bindings.
 
-  (translate11 x stobjs-out bindings nil known-stobjs nil x ctx w state-vars))
+  (translate11 x stobjs-out bindings known-stobjs nil x ctx w state-vars))
 
 (defun translate1 (x stobjs-out bindings known-stobjs ctx w state)
   (mv-let (erp msg-or-val bindings)
@@ -6527,7 +6533,7 @@
 
 ; Flg is nil for all-fnnames, t for all-fnnames-lst.  Note that this includes
 ; function names occuring in the :exec part of an mbe.  Keep this in sync with
-; all-fnnames1-mbe-exec.
+; all-fnnames1-exec.
 
   (cond (flg ; x is a list of terms
          (cond ((null x) acc)

@@ -346,11 +346,8 @@
                                                 body)
                                           expanded-args)
                               ttree)))))))
-        ((member-eq fn '(iff synp prog2$ must-be-equal ec-call mv-list
-                             time$-logic
-                             memoize-on memoize-off ; esp. relevant for #+hons
-                             with-prover-time-limit with-guard-checking
-                             wormhole-eval force case-split double-rewrite))
+        ((member-eq fn '(iff synp mv-list return-last wormhole-eval force
+                         case-split double-rewrite))
 
 ; The list above is an arbitrary subset of *expandable-boot-strap-non-rec-fns*.
 ; Once upon a time we used the entire list here, but Bishop Brock complained
@@ -2075,14 +2072,6 @@
                "Implementation error: Missing case in apply-top-hints-clause.")
            nil nil nil))))
 
-(defun first-assoc-eq (keys alist)
-  (declare (xargs :guard (and (alistp alist)
-                              (symbol-listp keys))))
-  (cond ((endp keys)
-         nil)
-        (t (or (assoc-eq (car keys) alist)
-               (first-assoc-eq (cdr keys) alist)))))
-
 (defun apply-top-hints-clause (cl-id cl hist pspv wrld ctx state)
 
 ; This is a standard clause processor of the waterfall.  It is odd in that it
@@ -3646,10 +3635,10 @@
                              (genvar whs (symbol-name whs) nil
                                      (all-vars1-lst clause
                                                     (all-vars name-dropper-term)))
-                             nil))
+                           nil))
                 (new-body (if (eq whs new-var)
                               body
-                              (subst-var new-var whs body))))
+                            (subst-var new-var whs body))))
            (guard-clauses new-body debug-info stobj-optp clause wrld ttree)))
 
 ; At one time we optimized away the guards on (nth 'n MV) if n is an
@@ -3699,16 +3688,36 @@
                                       (sr-limit wrld))))
            (mv-let
             (cl-set1 ttree)
-            (guard-clauses-lst (cond ((eq (ffn-symb term) 'must-be-equal)
+            (guard-clauses-lst
+             (cond
+              ((and (eq (ffn-symb term) 'return-last)
+                    (quotep (fargn term 1)))
+               (case (unquote (fargn term 1))
+                 (mbe1-raw
 
-; Since (must-be-equal x y) macroexpands to y in raw Common Lisp, we need only
-; verify guards for the :exec part of an mbe call.
+; Since (return-last 'mbe1-raw exec logic) macroexpands to exec in raw Common
+; Lisp, we need only verify guards for the :exec part of an mbe call.
 
-                                      (cdr (fargs term)))
-                                     ((eq (ffn-symb term) 'ec-call)
-                                      (fargs (fargn term 1)))
-                                     (t (fargs term)))
-                               debug-info stobj-optp clause wrld ttree)
+                  (list (fargn term 2)))
+                 (ec-call1-raw
+
+; Since (return-last 'ec-call1-raw ign (fn arg1 ... argk)) macroexpands to
+; (*1*fn arg1 ... argk) in raw Common Lisp, we need only verify guards for the
+; argi.
+
+                  (fargs (fargn term 3)))
+                 (otherwise
+
+; Consider the case that (fargn term 1) is not syntactically equal to 'mbe1-raw
+; or 'ec-call1-raw but reduces to one of these.  Even then, return-last is a
+; macro in Common Lisp, so we shouldn't produce the reduced obligations for
+; either of the two cases above.  But this is a minor issue anyhow, because
+; it's certainly safe to avoid those reductions, so in the worst case we would
+; still be sound, even if producing excessively strong guard obligations.
+
+                  (fargs term))))
+              (t (fargs term)))
+             debug-info stobj-optp clause wrld ttree)
             (mv (conjoin-clause-sets+
                  debug-info
                  cl-set1

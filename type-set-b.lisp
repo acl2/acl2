@@ -1417,13 +1417,13 @@
            (sublis-var! alist (fargn term 3) ens wrld ttree)
            (declare (ignore flg3))
 
-; We optimize (if x y y) just because we can.  We could do a lot more if-optimization
-; here if it turns out to be needed.
+; We optimize (if x y y) just because we can.  We could do a lot more
+; if-optimization here if it turns out to be needed.
 
            (cond ((equal arg2 arg3)
 
-; If arg2 and arg3 are the same, then they are both quotes or not, so flg2 suffices for
-; the resulting flag.
+; If arg2 and arg3 are the same, then they are both quotes or not, so flg2
+; suffices for the resulting flag.
 
                   (mv arg2 flg2 ttree))
                  (t (mv (fcons-term* 'if arg1 arg2 arg3)
@@ -3153,7 +3153,7 @@
 
 ; If we ever make 1+ and 1- functions again, they should go back on this list.
 
-    synp plusp minusp listp prog2$ must-be-equal ec-call mv-list time$-logic
+    synp plusp minusp listp return-last mv-list
 
 ; We added the-error for Version_4.0.  Before that change, but after
 ; changing constraint-info to avoid calling remove-guard-holders on a
@@ -3163,11 +3163,7 @@
 ; (defsort :compare< << :prefix <<) failed from distributed book
 ; defsort/uniquep.lisp.
 
-    the-error
-    with-prover-time-limit with-guard-checking
-    wormhole-eval
-    memoize-on memoize-off ; especially relevant for #+hons
-    force case-split double-rewrite))
+    the-error wormhole-eval force case-split double-rewrite))
 
 ; Warning: All functions listed above must be defun'd non-recursively
 ; before deftheory definition-minimal-theory!
@@ -10946,10 +10942,10 @@ gbc time        :      8.930 secs
 
 ; Rockwell Addition: We will get rid of certain functions like THE and
 ; HARD-ERROR in terms being processed by the theorem prover.  See
-; remove-guard-holders and the Essay on the Removal of Guard Holders
-; before it.  That code will eliminate prog2$ from terms before
-; normalize ever sees it.  So I dropped the first case of the old
-; code here.
+; remove-guard-holders and the Essay on the Removal of Guard Holders before it.
+; That code will eliminate prog2$ (more accurately and more generally,
+; return-last) from terms before normalize ever sees it.  So I dropped the
+; first case of the old code here.
 
   (mv-let (n if-expr)
           (first-if (fargs term) 0)

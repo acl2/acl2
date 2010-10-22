@@ -574,7 +574,7 @@
           (cons new-code new-data))
       (cons new-code new-data)))
 
-#|
+#||
 (defthm wormhole-status-guarantees
   (if (or (eq code :enter)
           (eq code :skip))
@@ -603,7 +603,7 @@
   :rule-classes nil)
 
 (verify-guards wormhole-status-guarantees)
-|#
+||#
 
 ; In particular, given a legal code, set-wormhole-entry-code preserves
 ; wormhole-statusp and always returns an object with the given entry code
@@ -611,9 +611,6 @@
 ; these functions are verified.  Thus, they can be called safely even if the
 ; user has messed up our wormhole status.  Of course, if the user has messed up
 ; the status, there is no guarantee about what happens inside the wormhole.
-
-
-
 
 #+acl2-loop-only
 (defun wormhole-eval (qname qlambda free-vars)
@@ -8597,12 +8594,18 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
 
 (defun stobjs-out (fn w)
 
+; Warning: keep this in sync with get-stobjs-out-for-declare-form.
+
 ; See the Essay on STOBJS-IN and STOBJS-OUT.
 
-  (if (eq fn 'cons)
+  (cond ((eq fn 'cons)
 ; We call this function on cons so often we optimize it.
-      '(nil)
-    (getprop fn 'stobjs-out '(nil) 'current-acl2-world w)))
+         '(nil))
+        ((eq fn 'return-last)
+         (er hard! 'stobjs-out
+             "Implementation error: Attempted to find stobjs-out for ~x0."
+             'return-last))
+        (t (getprop fn 'stobjs-out '(nil) 'current-acl2-world w))))
 
 ; With stobjs-out defined, we can define user-defined-functions-table.
 
@@ -8691,6 +8694,12 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
                 (all-nils (cdr lst))))))
 
 (defconst *user-defined-functions-table-keys*
+
+; Although it would be very odd to add return-last to this list, we state here
+; explicitly that it is illegal to do so, because user-defined-functions-table
+; has a :guard that relies on this in order to avoid applying stobjs-out to
+; return-last.
+
   '(untranslate untranslate-lst untranslate-preprocess))
 
 (table user-defined-functions-table nil nil
@@ -11407,6 +11416,8 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
              term)))
    ((fquotep term)
     nil)
+   ((eq (ffn-symb term) 'return-last)
+    (term-stobjs-out (car (last (fargs term))) alist wrld))
    (t (let ((fn (ffn-symb term)))
         (cond
          ((member-eq fn '(nth mv-nth))

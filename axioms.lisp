@@ -1312,6 +1312,8 @@
 ; We get ready to handle errors in such a way that they return to the
 ; top level logic loop if we are under it.
 
+(defvar *acl2-error-p* nil)
+
 (defun interface-er (&rest args)
 
 ; This function can conceivably be called before ACL2 has been fully
@@ -1321,7 +1323,8 @@
   (cond
    ((macro-function 'er)
     (eval
-     `(let ((state *the-live-state*))
+     `(let ((state *the-live-state*)
+            (*acl2-error-p* t))
         (er soft 'acl2-interface
             ,@(let (ans)
                 (dolist (a args)
@@ -2991,297 +2994,6 @@
                   :guard (or (consp x) (equal x nil))))
   (atom x))
 
-#-acl2-loop-only
-(defmacro must-be-equal (logic exec)
-
-; We rely on this macroexpansion in raw Common Lisp.  See in particular the
-; code and comment on must-be-equal in guard-clauses.
-
-  (declare (ignore logic))
-  exec)
-
-#+acl2-loop-only
-(defun must-be-equal (logic exec)
-
-  ":Doc-Section ACL2::Programming
-
-  attach code for execution~/~/
-
-  The form ~c[(must-be-equal logic exec)] evaluates to ~c[logic] in the ACL2
-  logic but evaluates to ~c[exec] in raw Lisp.  The point is to be able to
-  write one definition to reason about logically but another for evaluation.
-  Please ~pl[mbe] and ~pl[mbt] for appropriate macros to use, rather than
-  calling ~c[must-be-equal] directly, since it is easy to commute the arguments
-  of ~c[must-be-equal] by accident.
-
-  The guard for ~c[(must-be-equal x y)] is ~c[(equal x y)]."
-
-  (declare (ignore exec)
-           (xargs :guard (equal logic exec)
-
-; By setting the :mode to :logic, we ensure that this definition will be
-; redundant in pass 2 of initialization.  That probably isn't important, but it
-; could conceivably avoid difficulties in add-trip.
-
-                  :mode :logic))
-  logic)
-
-(defmacro mbe (&key (exec 'nil exec-p) (logic 'nil logic-p))
-
-  ":Doc-Section ACL2::Programming
-
-  attach code for execution~/
-
-  The macro ~c[mbe] (``must be equal'') can be used in function definitions in
-  order to cause evaluation to use alternate code to that provided for the
-  logic.  An example is given below.  However, the use of ~c[mbe] can lead to
-  non-terminating computations.  ~l[defexec], perhaps after reading the present
-  documentation, for a way to guarantee termination (at least theoretically).
-
-  In the ACL2 logic, ~c[(mbe :exec exec-code :logic logic-code)] equals
-  ~c[logic-code]; the value of ~c[exec-code] is ignored.  However, in raw Lisp
-  it is the other way around:  this form macroexpands simply to ~c[exec-code].
-  ACL2's ~il[guard] verification mechanism ensures that the raw Lisp code is
-  only evaluated when appropriate, since the guard proof obligations generated
-  for this call of ~c[mbe] are ~c[(equal exec-code logic-code)] together with
-  the guard proof obligations from ~c[exec-code].  ~l[verify-guards] and, for
-  general discussion of guards, ~pl[guard].
-
-  Warning for nested ~ilc[mbe] calls: The equality of ~c[:exec] and ~c[:logic]
-  code is not checked in the scope of superior ~c[:logic] code, as for the
-  equality of ~c[x] and ~c[y] in the following.
-  ~bv[]
-  (mbe :logic 
-       (mbe :logic x :exec y)
-       :exec
-       z)
-  ~ev[]
-
-  The form ~c[(mbe :exec exec-code :logic logic-code)] expands in the logic to
-  the function call ~c[(]~ilc[must-be-equal]~c[ logic-code exec-code)].  The guard for
-  ~c[(must-be-equal logic exec)] is ~c[(equal logic exec)].  We recommend that
-  you use ~c[mbe] instead of ~ilc[must-be-equal] because the use of keywords
-  eliminates errors caused by unintentially reversing the order of arguments.
-  The ~c[:exec] and the ~c[:logic] code in an ~c[mbe] call must have the same
-  return type; for example, one cannot return ~c[(]~ilc[mv]~c[ * *)] while the
-  other returns just a single value.
-
-  Also ~pl[mbt], which stands for ``must be true.''  You may find it more
-  natural to use ~ilc[mbt] for certain applications, as described in its
-  ~il[documentation].~/
-
-  Here is an example of the use of ~c[mbe].  Suppose that you want to define
-  factorial in the usual recursive manner, as follows.
-  ~bv[]
-  (defun fact (n)
-    (if (zp n)
-        1
-      (* n (fact (1- n)))))
-  ~ev[]
-  But perhaps you want to be able to execute calls of ~c[fact] on large
-  arguments that cause stack overflows, perhaps during proofs.  (This isn't a
-  particularly realistic example, but it should serve.)  So, instead you can
-  define this tail-recursive version of factorial:
-  ~bv[]
-  (defun fact1 (n acc)
-    (declare (xargs :guard (and (integerp n) (>= n 0) (integerp acc))))
-    (if (zp n)
-        acc
-      (fact1 (1- n) (* n acc))))
-  ~ev[]
-  We are now ready to define ~c[fact] using ~c[mbe].  Our intention is that
-  logically, ~c[fact] is as shown in the first definition above, but that
-  ~c[fact] should be executed by calling ~c[fact1].  Notice that we defer
-  ~il[guard] verification, since we are not ready to prove the correspondence
-  between ~c[fact1] and ~c[fact].
-  ~bv[]
-  (defun fact (n)
-    (declare (xargs :guard (and (integerp n) (>= n 0))
-                    :verify-guards nil))
-    (mbe :exec  (fact1 n 1)
-         :logic (if (zp n)
-                    1
-                  (* n (fact (1- n))))))
-  ~ev[]
-  Next, we prove the necessary correspondence lemmas.  Notice the inclusion of
-  a standard book to help with the arithmetic reasoning.
-  ~bv[]
-  (include-book \"books/arithmetic/top-with-meta\")
-
-  (defthm fact1-fact
-    (implies (integerp acc)
-             (equal (fact1 n acc)
-                    (* acc (fact n)))))
-  ~ev[]
-  We may now do guard verification for ~c[fact], which will allow the execution
-  of the raw Lisp ~c[fact] function, where the above ~c[mbe] call expands
-  simply to ~c[(fact1 n 1)].
-  ~bv[]
-  (verify-guards fact)
-  ~ev[]
-  Now that guards have been verified, a trace of function calls illustrates
-  that the evaluation of calls of ~c[fact] is passed to evaluation of calls of
-  ~c[fact1].  The outermost call below is of the logical function stored for
-  the definition of ~c[fact]; all the others are of actual raw Common Lisp
-  functions.
-  ~bv[]
-  ACL2 !>(trace$ fact fact1)
-  NIL
-  ACL2 !>(fact 3)
-  1> (ACL2_*1*_ACL2::FACT 3)
-    2> (FACT 3)
-      3> (FACT1 3 1)
-        4> (FACT1 2 3)
-          5> (FACT1 1 6)
-            6> (FACT1 0 6)
-            <6 (FACT1 6)
-          <5 (FACT1 6)
-        <4 (FACT1 6)
-      <3 (FACT1 6)
-    <2 (FACT 6)
-  <1 (ACL2_*1*_ACL2::FACT 6)
-  6
-  ACL2 !>
-  ~ev[]
-
-  You may occasionally get warnings when you compile functions defined using
-  ~c[mbe].  (For commands that invoke the compiler, ~pl[compilation].)  These
-  can be inhibited by using an ~c[ignorable] ~ilc[declare] form.  Here is a
-  simple but illustrative example.  Note that the declarations can optionally
-  be separated into two ~ilc[declare] forms.
-  ~bv[]
-  (defun foo (x y)
-    (declare (ignorable x)
-             (xargs :guard (equal x y)))
-    (mbe :logic x :exec y))
-  ~ev[]
-
-  Finally, we observe that when the body of a function contains a term of the
-  form ~c[(mbe :exec exec-code :logic logic-code)], the user is very unlikely
-  to see any logical difference than if this were replaced by ~c[logic-code].
-  ACL2 takes various steps to ensure this.  For example, the proof obligations
-  generated for admitting a function treat the above ~c[mbe] term simply as
-  ~c[logic-code].  Function expansion, ~c[:use] ~il[hints],
-  ~c[:]~ilc[definition] rules, generation of ~il[constraint]s for functional
-  instantiation, and creation of rules of class ~c[:]~ilc[rewrite] and
-  ~c[:]~ilc[forward-chaining] also treat ~c[mbe] calls as their ~c[:logic]
-  code."
-
-  (declare (xargs :guard (and exec-p logic-p))
-
-; OpenMCL Versions 14.2 and 14.3 (CCL), CMUCL Version 19b, and SBCL Version
-; 0.9.8 (other versions of these too, most likely) produce a warning with the
-; following ignore declaration, but we don't know why.  We tried using
-; "ignorable" instead of "ignore" for CMUCL, but that didn't help.  So we
-; eliminate the ignore declaration in these cases with the #- directive below.
-
-           #-(and (or ccl cmu sbcl) (not acl2-loop-only))
-           (ignore exec-p logic-p))
-  `(must-be-equal ,logic ,exec))
-
-(defmacro mbt (x)
-
-  ":Doc-Section ACL2::Programming
-
-  introduce a test not to be evaluated~/
-
-  The macro ~c[mbt] (``must be true'') can be used in order to add code in
-  order to admit function definitions in ~c[:]~ilc[logic] mode, without paying
-  a cost in execution efficiency.  Examples below illustrate its intended use.
-
-  Semantically, ~c[(mbt x)] equals ~c[x].  However, in raw Lisp ~c[(mbt x)]
-  ignores ~c[x] entirely, and macroexpands to ~c[t].  ACL2's ~il[guard]
-  verification mechanism ensures that the raw Lisp code is only evaluated when
-  appropriate, since a guard proof obligation ~c[(equal x t)] is generated.
-  ~l[verify-guards] and, for general discussion of guards, ~pl[guard].
-
-  Also ~pl[mbe], which stands for ``must be equal.''  Although ~c[mbt] is more
-  natural in many cases, ~c[mbe] has more general applicability.  In fact,
-  ~c[(mbt x)] is essentially defined to be ~c[(mbe :logic x :exec t)].~/
-
-  We can illustrate the use of ~c[mbt] on the following generic example, where
-  ~c[<g>], ~c[<test>], ~c[<rec-x>], and ~c[<base>] are intended to be terms
-  involving only the variable ~c[x].
-  ~bv[]
-  (defun foo (x)
-    (declare (xargs :guard <g>))
-    (if <test>
-        (foo <rec-x>)
-      <base>))
-  ~ev[]
-  In order to admit this function, ACL2 needs to discharge the proof obligation
-  that ~c[<rec-x>] is smaller than ~c[x], namely:
-  ~bv[]
-  (implies <test>
-           (o< (acl2-count ~c[<rec-x>])
-                (acl2-count x)))
-  ~ev[]
-  But suppose we need to know that ~c[<g>] is true in order to prove this.
-  Since ~c[<g>] is only the ~il[guard], it is not part of the logical
-  definition of ~c[foo].  A solution is to add the guard to the definition of
-  ~c[foo], as follows.
-  ~bv[]
-  (defun foo (x)
-    (declare (xargs :guard <g>))
-    (if (mbt <g>)
-        (if <test>
-            (foo <rec-x>)
-          <base>)
-      nil))
-  ~ev[]
-  If we do this using ~c[<g>] rather than ~c[(mbt <g>)], then evaluation of
-  every recursive call of ~c[foo] will cause the evaluation of (the appropriate
-  instance of) ~c[<g>].  But since ~c[(mbt <g>)] expands to ~c[t] in raw Lisp,
-  then once we verify the guards of ~c[foo], the evaluations of ~c[<g>] will be
-  avoided (except at the top level, when we check the guard before allowing
-  evaluation to take place in Common Lisp).
-
-  Other times, the guard isn't the issue, but rather, the problem is that a
-  recursive call has an argument that itself is a recursive call.  For example,
-  suppose that ~c[<rec-x>] is of the form ~c[(foo <expr>)].  There is no way we
-  can hope to discharge the termination proof obligation shown above.  A
-  standard solution is to add some version of this test:
-  ~bv[]
-  (mbt (o< (acl2-count ~c[<rec-x>]) (acl2-count x)))
-  ~ev[]
-  Here is a specific example based on one sent by Vernon Austel.
-  ~bv[]
-  (defun recurX2 (n)
-    (declare (xargs :guard (and (integerp n) (<= 0 n))
-                    :verify-guards nil))
-    (cond ((zp n) 0)
-          (t (let ((call (recurX2 (1- n))))
-               (if (mbt (< (acl2-count call) n))
-                   (recurX2 call)
-                 1 ;; this branch is never actually taken
-                 )))))
-
-  (defthm recurX2-0
-   (equal (recurX2 n) 0))
-
-  (verify-guards recurX2)
-  ~ev[]
-  If you ~c[(]~ilc[trace$]~c[ acl2-count)], you will see that evaluation of
-  ~c[(recurX2 2)] causes several calls of ~ilc[acl2-count] before the
-  ~ilc[verify-guards].  But this evaluation does not call ~c[acl2-count] after
-  the ~c[verify-guards], because the ACL2 evaluation mechanism uses raw Lisp to
-  do the evaluation, and the form ~c[(mbt (< (acl2-count call) n))]
-  macroexpands to ~c[t] in Common Lisp.
-
-  You may occasionally get warnings when you compile functions defined using
-  ~c[mbt].  (For commands that invoke the compiler, ~pl[compilation].)  These
-  can be inhibited by using an ~c[ignorable] ~ilc[declare] form.  Here is a
-  simple but illustrative example.  Note that the declarations can optionally
-  be separated into two ~ilc[declare] forms.
-  ~bv[]
-  (defun foo (x y)
-    (declare (ignorable x)
-             (xargs :guard (equal x t)))
-    (and (mbt x) y))
-  ~ev[]"
-
-  `(must-be-equal ,x t))
-
 (defun member-equal (x lst)
 
   ":Doc-Section ACL2::Programming
@@ -4272,32 +3984,382 @@
       x))
 
 #+acl2-loop-only
-(defun prog2$ (x y)
+(defun return-last (fn eager-arg last-arg)
 
-; This odd little duck is not as useless as it seems.  The original
-; purpose of this function was to serve as a messenger for translate
-; to use to send a message to the guard checker.  Guards that are
-; created by declarations in lets and other places are put into the
-; first arg of a prog2$.  Once the guards required by x have been
-; noted, x's value may be ignored.  If this function is changed,
-; consider the places it is mentioned, including the mention of
-; 'prog2$ in distribute-first- if.
+; Return-last is the one "function" in ACL2 that has no fixed output
+; signature.  Rather, (return-last expr1 expr2) inherits its stobjs-out from
+; expr2.  Because of this, we make it illegal to call stobjs-out on the symbol
+; return-last.
 
-; We have since found other uses for this function, which are
-; documented in the doc string below.
+; The following little example provides a small check on our handling of
+; return-last, both via ev-rec (for evaluating top-level forms) and via more
+; direct function evaluation (either *1* functions or their raw Lisp
+; counterparts).
+
+#||
+ (defun foo (x)
+   (time$ (mbe :logic (prog2$ (cw "**LOGIC~%") x)
+               :exec (prog2$ (cw "**EXEC~%") x))))
+ (defun bar (x) (foo x))
+ (foo 3) ; logic
+ (bar 3) ; logic
+ (verify-guards foo)
+ (foo 3) ; exec
+ (bar 3) ; exec
+||#
+
+  ":Doc-Section Programming
+
+  return the last argument, perhaps with side effects~/
+
+  ~c[Return-last] is an ACL2 function that returns its last argument.  It is
+  used to implement common utilities such as ~ilc[prog2$] and ~ilc[time$].  For
+  most users, this may already be more than one needs to know about
+  ~c[return-last]; for example, ACL2 tends to avoid printing calls of
+  ~c[return-last] in its output, printing calls of ~ilc[prog2$] or
+  ~ilc[time$] (or other such utilities) instead.
+
+  If you encounter a call of ~c[return-last], then you may find it most useful
+  to consider ~c[return-last] simply as a function defined by the following
+  equation.
+  ~bv[]
+  (equal (return-last x y z) z)
+  ~ev[]
+  It may also be useful to know that unlike other ACL2 functions,
+  ~c[return-last] can take a multiple value as its last argument, in which case
+  this multiple value is returned.  The following contrived definition
+  illustrates this point.
+  ~bv[]
+  ACL2 !>(defun foo (fn x y z)
+           (return-last fn x (mv y z)))
+
+  Since FOO is non-recursive, its admission is trivial.  We observe that
+  the type of FOO is described by the theorem 
+  (AND (CONSP (FOO FN X Y Z)) (TRUE-LISTP (FOO FN X Y Z))).  We used
+  primitive type reasoning.
+
+  (FOO * * * *) => (MV * *).
+
+  Summary
+  Form:  ( DEFUN FOO ...)
+  Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+  Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+   FOO
+  ACL2 !>(foo 'bar 3 4 5)
+  (4 5)
+  ACL2 !>(mv-let (a b)
+                 (foo 'bar 3 4 5)
+                 (cons b a))
+  (5 . 4)
+  ACL2 !>
+  ~ev[]
+
+  Most readers would be well served to avoid reading the rest of this
+  documentation of ~c[return-last].  For reference, however, below we document
+  it in some detail.  We include some discussion of its behavior in raw Lisp,
+  because we expect that most who read further are working with raw Lisp
+  code (and trust tags).~/
+
+  ~c[Return-last] is an ACL2 function that can arise from macroexpansion of
+  certain utilities that return their last argument, which may be a multiple
+  value.  Consider for example the simplest of these, ~ilc[prog2$]:
+  ~bv[]
+  ACL2 !>:trans1 (prog2$ (cw \"Some CW printing...~~%\") (+ 3 4))
+   (RETURN-LAST 'PROGN
+                (CW \"Some CW printing...~~%\")
+                (+ 3 4))
+  ACL2 !>
+  ~ev[]
+  Notice that a call of ~c[prog2$] macroexpands to a call of ~c[return-last] in
+  which the first argument is ~c[(quote progn)].  Although ~c[return-last] is a
+  function in the ACL2 world, it is implemented ``under the hood'' as a macro
+  in raw Lisp, as the following log (continuing the example above) illustrates.
+  ~bq[]
+  ACL2 !>:q
+
+  Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
+  ? [RAW LISP] (macroexpand-1 '(RETURN-LAST 'PROGN
+                                             (CW \"Some CW printing...~~%\")
+                                             (+ 3 4)))
+  (PROGN (CW \"Some CW printing...~~%\") (+ 3 4))
+  T
+  ? [RAW LISP] 
+  ~eq[]
+  Thus, the original ~c[prog2$] call generates a corresponding call of
+  ~c[progn] in raw Lisp, which in turn causes evaluation of each argument and
+  returns whatever is returned by evaluation of the last (second) argument.
+
+  In general, a form ~c[(return-last (quote F) X Y)] macroexpands to
+  ~c[(F X Y)], where ~c[F] is defined in raw Lisp to return its last argument.
+  The case that ~c[F] is ~c[progn] is a bit misleading, because it is so
+  simple.  More commonly, macroexpansion produces a call of a macro defined in
+  raw Lisp that may produce side effects.  Consider for example the ACL2
+  utility ~ilc[with-guard-checking], which is intended to change the
+  guard-checking mode to the indicated value (~pl[with-guard-checking]).
+  ~bq[]
+  ACL2 !>(with-guard-checking :none (car 3)) ; no guard violation
+  NIL
+  ACL2 !>:trans1 (with-guard-checking :none (car 3))
+   (WITH-GUARD-CHECKING1 (CHK-WITH-GUARD-CHECKING-ARG :NONE)
+                         (CAR 3))
+  ACL2 !>:trans1 (WITH-GUARD-CHECKING1 (CHK-WITH-GUARD-CHECKING-ARG :NONE)
+                                       (CAR 3))
+   (RETURN-LAST 'WITH-GUARD-CHECKING1-RAW
+                (CHK-WITH-GUARD-CHECKING-ARG :NONE)
+                (CAR 3))
+  ACL2 !>:q
+
+  Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
+  ? [RAW LISP] (macroexpand-1
+                '(RETURN-LAST 'WITH-GUARD-CHECKING1-RAW
+                               (CHK-WITH-GUARD-CHECKING-ARG :NONE)
+                               (CAR 3)))
+  (WITH-GUARD-CHECKING1-RAW (CHK-WITH-GUARD-CHECKING-ARG :NONE) (CAR 3))
+  T
+  ? [RAW LISP] (pprint
+                (macroexpand-1
+                 '(WITH-GUARD-CHECKING1-RAW
+                   (CHK-WITH-GUARD-CHECKING-ARG :NONE)
+                   (CAR 3))))
+
+  (LET ((ACL2_GLOBAL_ACL2::GUARD-CHECKING-ON
+         (CHK-WITH-GUARD-CHECKING-ARG :NONE)))
+    (DECLARE (SPECIAL ACL2_GLOBAL_ACL2::GUARD-CHECKING-ON))
+    (CAR 3))
+  ? [RAW LISP] 
+  ~eq[]
+  The above raw Lisp code binds the state global variable ~c[guard-checking-on]
+  to ~c[:none], as ~c[chk-with-guard-checking-arg] is just the identity
+  function except for causing a hard error for an illegal input.
+
+  ~st[Aside].  ACL2 has a custom evaluator for forms submitted to its top-level
+  loop.  While it is beyond the scope of this discussion to describe in detail
+  how that evaluator works, it is important to note that it respects the
+  intention of ~c[return-last].  For example, a call of ~ilc[time$]
+  macroexpands in ACL2 to a call of the form ~c[(return-last 'time$1-raw & &)],
+  which in turn times evaluation of the last argument of that form.
+  ~st[End of aside.]
+
+  You can extend the behavior of ~c[return-last] by putting a suitable entry in
+  a ~il[table] provided by ACL2, provided there is an active trust
+  tag (~pl[defttag]); ~pl[return-last-table].  However, it is probably more
+  convenient to use a macro that is provided for that purpose;
+  ~pl[defmacro-last].  We describe the distributed book
+  ~c[books/misc/profiling.lisp] in order to illustrate how this works.  The
+  events in that book are as follows, and are described below.
+  ~bv[]
+  (defttag :profiling)
+
+  (progn!
+   (set-raw-mode t)
+   (load (concatenate 'string (cbd) \"profiling-raw.lsp\")))
+
+  (defmacro-last with-profiling)
+  ~ev[]
+  The first event introduces a trust tag.  The second loads a file into raw
+  Lisp that defines a macro, ~c[with-profiling-raw], which can do profiling for
+  the form to be evaluated.  The third introduces an ACL2 macro
+  ~c[with-profiling], whose calls expand into calls of the form
+  ~c[(return-last (quote with-profiling-raw) & &)].  The third event also
+  extends ~ilc[return-last-table] so that these calls will expand in raw Lisp
+  to calls of ~c[with-profiling-raw].
+
+  The example above illustrates the following methodology for introducing a
+  macro that returns its last argument but produces useful side-effects with
+  raw Lisp code.
+  ~bq[]
+  (1) Introduce a trust tag (~pl[defttag]).
+
+  (2) Using ~ilc[progn!], load into raw Lisp a file defining a macro,
+  ~c[RAW-NAME], that takes two arguments, returning its last (second) argument
+  but using the first argument to produce desired side effects during
+  evaluation of that last argument.
+
+  (3) Evaluate the form ~c[(defmacro-last NAME :raw RAW-NAME)].  This will
+  introduce ~c[NAME] as an ACL2 macro that expands to a corresponding call of
+  ~c[RAW-NAME] (see (2) above) in raw Lisp.  The specification of keyword value
+  of ~c[:raw] as ~c[RAW-NAME] may be omitted if ~c[RAW-NAME] is the result of
+  modifying the symbol ~c[NAME] by suffixing the string ~c[\"-RAW\"] to the
+  ~ilc[symbol-name] of ~c[NAME].~eq[]
+
+  It is useful to explore what is done by ~c[defmacro-last].
+  ~bv[]
+  ACL2 !>:trans1 (defmacro-last with-profiling)
+   (PROGN (DEFMACRO WITH-PROFILING (X Y)
+                    (LIST 'RETURN-LAST
+                          (LIST 'QUOTE 'WITH-PROFILING-RAW)
+                          X Y))
+          (TABLE RETURN-LAST-TABLE 'WITH-PROFILING-RAW
+                 'WITH-PROFILING))
+  ACL2 !>:trans1 (with-profiling '(assoc-eq fgetprop rewrite) (mini-proveall))
+   (RETURN-LAST 'WITH-PROFILING-RAW
+                '(ASSOC-EQ FGETPROP REWRITE)
+                (MINI-PROVEALL))
+  ACL2 !>:q
+
+  Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
+  ? [RAW LISP] (macroexpand-1
+                '(RETURN-LAST 'WITH-PROFILING-RAW
+                               '(ASSOC-EQ FGETPROP REWRITE)
+                               (MINI-PROVEALL)))
+  (WITH-PROFILING-RAW '(ASSOC-EQ FGETPROP REWRITE) (MINI-PROVEALL))
+  T
+  ? [RAW LISP] 
+  ~ev[]
+  To understand the macro ~c[with-profiling-raw] you could look at the
+  distributed file loaded above: ~c[books/misc/profiling-raw.lsp].  If you wish
+  to automate certification of such a book with makefiles (~pl[book-makefiles],
+  perhaps contributing such a book to the ACL2 books repository (see
+  ~url[http://acl2-books.googlecode.com/]), you may also wish to look at
+  distributed file ~c[books/misc/Makefile], where you'll notice the following
+  extra `~c[make]' dependency:
+  ~bv[]
+  profiling.cert: profiling-raw.lsp
+  ~ev[]
+
+  We mentioned above that ACL2 tends to print calls of ~ilc[prog2$] or
+  ~ilc[time$] (or other such utilities) instead of calls of ~c[return-last].
+  Here we elaborate that point.  ACL2's `~c[untranslate]' utility treats
+  ~c[(return-last (quote F) X Y)] as ~c[(F X Y)] if ~c[F] is a key in
+  ~c[return-last-table].  However, it is generally rare to encounter such a
+  term during a proof, since calls of ~c[return-last] are generally expanded
+  away early during a proof.
+
+  Calls of ~c[return-last] that occur in code ~-[] forms submitted in the
+  top-level ACL2 loop, and definition bodies other than those marked as
+  ~ilc[non-executable] (~pl[defun-nx]) ~-[] have the following restriction: if
+  the first argument is of the form ~c[(quote F)], then ~c[F] must be an entry
+  in ~c[return-last-table].  There are however four exceptions: the following
+  symbols are considered to be keys of ~c[return-last-table] even if they are
+  no longer associated with non-~c[nil] values, say because of a ~ilc[table]
+  event with keyword ~c[:clear].
+  ~bq[]
+  * ~c[progn], associated with ~ilc[prog2$]~nl[]
+  * ~c[mbe1-raw], associated with ~c[mbe1], a version of ~c[mbe]~nl[]
+  * ~c[ec-call1-raw], associated with ~c[ec-call1] (a variant of
+  ~ilc[ec-call])~nl[]
+  * ~c[with-guard-checking1-raw], associated with ~c[with-guard-checking1] (a
+  variant of ~ilc[with-guard-checking])
+  ~eq[]
+
+  Note that because of its special status, it is illegal to trace
+  ~c[return-last].
+
+  We conclude by warning that as a user, you take responsibility for not
+  compromising the soundness or error handling of ACL2 when you define a macro
+  in raw Lisp and especially when you install it as a key of
+  ~ilc[return-last-table], either directly or (more likely) using
+  ~ilc[defmacro-last].  In particular, be sure that you are defining a macro of
+  two arguments that always returns the value of its last argument, even that
+  last argument evaluates to a multiple value.  The following would, for
+  example, be wrong, especially in certain Lisps (including CCL and SBCL).
+  ~bv[]
+  (defttag t)
+  (progn!
+   (set-raw-mode t)
+   (defmacro foo-raw (x y)
+     `(prog1 ;; wrong!
+          ,y
+        (cw \"Message showing argument 1: ~~x0~~%\" ,x))))
+  (defmacro-last foo)
+  ~ev[]
+  We then can wind up with a hard Lisp error:
+  ~bv[]
+  ACL2 !>(foo 3 (mv 4 5))
+  Message showing argument 1: 3
+
+  ***********************************************
+  ************ ABORTING from raw Lisp ***********
+  Error:  value NIL is not of the expected type REAL.
+  ***********************************************
+
+  If you didn't cause an explicit interrupt (Control-C),
+  then the root cause may be call of a :program mode
+  function that has the wrong guard specified, or even no
+  guard specified (i.e., an implicit guard of t).
+  See :DOC guards.
+
+  To enable breaks into the debugger (also see :DOC acl2-customization):
+  (SET-DEBUGGER-ENABLE T)
+  ACL2 !>
+  ~ev[]
+  Better would be:
+  ~bv[]
+  (progn!
+   (set-raw-mode t)
+   (defmacro foo-raw (x y)
+     `(our-multiple-value-prog1 ;; better
+       ,y
+       (cw \"Message showing argument 1: ~~x0~~%\" ,x))))
+  ~ev[]~/"
+
+  (declare (ignore fn eager-arg)
+           (xargs :guard
+
+; Warning: If you change this guard, also consider changing the handling of
+; return-last in oneify, which assumes that the guard is t except for the
+; 'mbe1-raw case.
+
+; We produce a guard to handle the mbe1 case (from expansion of mbe forms).  In
+; practice, fn is likely to be a constant, in which case we expect this guard
+; to resolve to its true branch or its false branch.
+
+                  (if (equal fn 'mbe1-raw)
+                      (equal last-arg eager-arg)
+                    t)
+                  :mode :logic))
+  last-arg)
+
+#-acl2-loop-only
+(defmacro return-last (qfn arg2 arg3)
+  (let ((fn (and (consp qfn)
+                 (eq (car qfn) 'quote)
+                 (consp (cdr qfn))
+                 (symbolp (cadr qfn))
+                 (null (cddr qfn))
+                 (cadr qfn))))
+    (cond ((and fn (fboundp fn))
+
+; Translation for evaluation requires that if the first argument is a quoted
+; non-nil symbol, then that symbol (here, fn) must be a key in
+; return-last-table.  The function chk-return-last-entry checks that when fn
+; was added to the table, it was fboundp in raw Lisp.  Note that fboundp holds
+; for functions, macros, and special operators.
+
+; An alternative may seem to be to lay down code that checks to see if fn is in
+; return-last-table, and if not then replace it by progn.  But during early
+; load of compiled files we skip table events (which are always skipped in raw
+; Lisp), yet the user may expect a call of return-last on a quoted symbol to
+; have the desired side-effects in that case.
+
+           (list fn arg2 arg3))
+          (t (list 'progn arg2 arg3)))))
+
+(defmacro prog2$ (x y)
+
+; This odd little duck is not as useless as it may seem.  Its original purpose
+; was to serve as a messenger for translate to use to send a message to the
+; guard checker.  Guards that are created by declarations in lets and other
+; places are put into the first arg of a prog2$.  Once the guards required by x
+; have been noted, x's value may be ignored.  If this definition is changed,
+; consider the places prog2$ is mentioned, including the mention of 'prog2$ in
+; distribute-first-if.
+
+; We have since found other uses for prog2$, which are documented in the doc
+; string below.
 
   ":Doc-Section ACL2::Programming
 
   execute two forms and return the value of the second one~/
 
-  ~l[hard-error], ~pl[illegal], and ~pl[cw] for examples of functions
-  to call in the first argument of ~c[prog2$].~/
+  ~l[hard-error], ~pl[illegal], and ~pl[cw] for examples of functions to call
+  in the first argument of ~c[prog2$].~/
 
   Semantically, ~c[(Prog2$ x y)] equals ~c[y]; the value of ~c[x] is ignored.
   However, ~c[x] is first evaluated for side effect.  Since the ACL2
-  ~il[programming] language is applicative, there can be no logical impact
-  of evaluating ~c[x].  However, ~c[x] may involve a call of a function such
-  as ~ilc[hard-error] or ~ilc[illegal], which can cause so-called ``hard errors'',
+  ~il[programming] language is applicative, there can be no logical impact of
+  evaluating ~c[x].  However, ~c[x] may involve a call of a function such as
+  ~ilc[hard-error] or ~ilc[illegal], which can cause so-called ``hard errors'',
   or a call of ~ilc[cw] to perform output.
 
   Here is a simple, contrived example using ~ilc[hard-error].  The intention
@@ -4347,19 +4409,316 @@
        (print-terms (cdr terms) iff-flg wrld))))
   ~ev[]~/"
 
-  (declare (ignore x)
-           (xargs :mode :logic :guard t))
-  y)
+  `(return-last 'progn ,x ,y))
 
 #-acl2-loop-only
-(defmacro prog2$ (x y)
+(defmacro mbe1-raw (exec logic)
 
-; We need to make prog2$ a macro in raw Lisp when feature acl2-mv-as-values is
-; set, because otherwise we will lose multiple values returned during the
-; computation of y.  So we might as well make prog2$ a macro in raw Lisp
-; unconditionally, for consistency.
+; We rely on this macroexpansion in raw Common Lisp.  See in particular the
+; code and comment regarding mbe1-raw in guard-clauses.
 
-  (list 'progn x y))
+  (declare (ignore logic))
+  exec)
+
+(defmacro mbe1 (exec logic)
+
+; See also must-be-equal.
+
+; Suppose that during a proof we encounter a term such as (return-last
+; 'mbe1-raw exec logic), but we don't know that logic and exec are equal.
+; Fortunately, ev-rec will only evaluate the logic code for this return-last
+; form, as one might expect.
+
+  ":Doc-Section ACL2::Programming
+
+  attach code for execution~/
+
+  The form ~c[(mbe1 exec logic)] is equivalent to the forms
+  ~c[(mbe :logic logic :exec exec)] and ~c[(must-be-equal logic exec)].
+  ~l[mbe].~/~/"
+
+  `(return-last 'mbe1-raw ,exec ,logic))
+
+(defmacro must-be-equal (logic exec)
+
+; We handle must-be-equal using return-last, so that must-be-equal isn't a
+; second function that needs special stobjs-out handling.  But then we need a
+; version of must-be-equal with the logic input as the last argument, since
+; that is what is returned in the logic.  We call that mbe1, but we leave
+; must-be-equal as we move the the return-last implementation (after v4-1,
+; released Sept., 2010), since must-be-equal has been around since v2-8 (March,
+; 2004).
+
+  ":Doc-Section ACL2::Programming
+
+  attach code for execution~/~/
+
+  The form ~c[(must-be-equal logic exec)] evaluates to ~c[logic] in the ACL2
+  logic but evaluates to ~c[exec] in raw Lisp.  The point is to be able to
+  write one definition to reason about logically but another for evaluation.
+  Please ~pl[mbe] and ~pl[mbt] for appropriate macros to use, rather than
+  calling ~c[must-be-equal] directly, since it is easy to commute the arguments
+  of ~c[must-be-equal] by accident.
+
+  In essence, the guard for ~c[(must-be-equal x y)] is ~c[(equal x y)].
+  However, note that ~c[must-be-equal] is a macro:
+  ~c[(must-be-equal logic exec)] expands to ~c[(mbe1 exec logic)], which
+  expands to a call of ~ilc[return-last]."
+
+  `(mbe1 ,exec ,logic))
+
+(defmacro mbe (&key (exec 'nil exec-p) (logic 'nil logic-p))
+
+  ":Doc-Section ACL2::Programming
+
+  attach code for execution~/
+
+  The macro ~c[mbe] (``must be equal'') can be used in function definitions in
+  order to cause evaluation to use alternate code to that provided for the
+  logic.  An example is given below.  However, the use of ~c[mbe] can lead to
+  non-terminating computations.  ~l[defexec], perhaps after reading the present
+  documentation, for a way to guarantee termination (at least theoretically).
+
+  In the ACL2 logic, ~c[(mbe :exec exec-code :logic logic-code)] equals
+  ~c[logic-code]; the value of ~c[exec-code] is ignored.  However, in raw Lisp
+  it is the other way around:  this form macroexpands simply to ~c[exec-code].
+  ACL2's ~il[guard] verification mechanism ensures that the raw Lisp code is
+  only evaluated when appropriate, since the guard proof obligations generated
+  for this call of ~c[mbe] are ~c[(equal exec-code logic-code)] together with
+  the guard proof obligations from ~c[exec-code].  ~l[verify-guards] and, for
+  general discussion of guards, ~pl[guard].
+
+  Warning for nested ~ilc[mbe] calls: The equality of ~c[:exec] and ~c[:logic]
+  code is not checked in the scope of superior ~c[:logic] code, as for the
+  equality of ~c[x] and ~c[y] in the following.
+  ~bv[]
+  (mbe :logic 
+       (mbe :logic x :exec y)
+       :exec
+       z)
+  ~ev[]
+
+  The form ~c[(mbe :exec exec-code :logic logic-code)] macroexpands in ACL2 to
+  a form that generates the guard proof obligation
+  ~c[(equal logic-code exec-code).  The ~c[:exec] and the ~c[:logic] code in an
+  ~c[mbe] call must have the same return type; for example, one cannot return
+  ~c[(]~ilc[mv]~c[ * *)] while the other returns just a single value.
+
+  Also ~pl[mbt], which stands for ``must be true.''  You may find it more
+  natural to use ~ilc[mbt] for certain applications, as described in its
+  ~il[documentation].~/
+
+  Here is an example of the use of ~c[mbe].  Suppose that you want to define
+  factorial in the usual recursive manner, as follows.
+  ~bv[]
+  (defun fact (n)
+    (if (zp n)
+        1
+      (* n (fact (1- n)))))
+  ~ev[]
+  But perhaps you want to be able to execute calls of ~c[fact] on large
+  arguments that cause stack overflows, perhaps during proofs.  (This isn't a
+  particularly realistic example, but it should serve.)  So, instead you can
+  define this tail-recursive version of factorial:
+  ~bv[]
+  (defun fact1 (n acc)
+    (declare (xargs :guard (and (integerp n) (>= n 0) (integerp acc))))
+    (if (zp n)
+        acc
+      (fact1 (1- n) (* n acc))))
+  ~ev[]
+  We are now ready to define ~c[fact] using ~c[mbe].  Our intention is that
+  logically, ~c[fact] is as shown in the first definition above, but that
+  ~c[fact] should be executed by calling ~c[fact1].  Notice that we defer
+  ~il[guard] verification, since we are not ready to prove the correspondence
+  between ~c[fact1] and ~c[fact].
+  ~bv[]
+  (defun fact (n)
+    (declare (xargs :guard (and (integerp n) (>= n 0))
+                    :verify-guards nil))
+    (mbe :exec  (fact1 n 1)
+         :logic (if (zp n)
+                    1
+                  (* n (fact (1- n))))))
+  ~ev[]
+  Next, we prove the necessary correspondence lemmas.  Notice the inclusion of
+  a standard book to help with the arithmetic reasoning.
+  ~bv[]
+  (include-book \"books/arithmetic/top-with-meta\")
+
+  (defthm fact1-fact
+    (implies (integerp acc)
+             (equal (fact1 n acc)
+                    (* acc (fact n)))))
+  ~ev[]
+  We may now do guard verification for ~c[fact], which will allow the execution
+  of the raw Lisp ~c[fact] function, where the above ~c[mbe] call expands
+  simply to ~c[(fact1 n 1)].
+  ~bv[]
+  (verify-guards fact)
+  ~ev[]
+  Now that guards have been verified, a trace of function calls illustrates
+  that the evaluation of calls of ~c[fact] is passed to evaluation of calls of
+  ~c[fact1].  The outermost call below is of the logical function stored for
+  the definition of ~c[fact]; all the others are of actual raw Common Lisp
+  functions.
+  ~bv[]
+  ACL2 !>(trace$ fact fact1)
+  NIL
+  ACL2 !>(fact 3)
+  1> (ACL2_*1*_ACL2::FACT 3)
+    2> (FACT 3)
+      3> (FACT1 3 1)
+        4> (FACT1 2 3)
+          5> (FACT1 1 6)
+            6> (FACT1 0 6)
+            <6 (FACT1 6)
+          <5 (FACT1 6)
+        <4 (FACT1 6)
+      <3 (FACT1 6)
+    <2 (FACT 6)
+  <1 (ACL2_*1*_ACL2::FACT 6)
+  6
+  ACL2 !>
+  ~ev[]
+
+  You may occasionally get warnings when you compile functions defined using
+  ~c[mbe].  (For commands that invoke the compiler, ~pl[compilation].)  These
+  can be inhibited by using an ~c[ignorable] ~ilc[declare] form.  Here is a
+  simple but illustrative example.  Note that the declarations can optionally
+  be separated into two ~ilc[declare] forms.
+  ~bv[]
+  (defun foo (x y)
+    (declare (ignorable x)
+             (xargs :guard (equal x y)))
+    (mbe :logic x :exec y))
+  ~ev[]
+
+  Finally, we observe that when the body of a function contains a term of the
+  form ~c[(mbe :exec exec-code :logic logic-code)], the user is very unlikely
+  to see any logical difference than if this were replaced by ~c[logic-code].
+  ACL2 takes various steps to ensure this.  For example, the proof obligations
+  generated for admitting a function treat the above ~c[mbe] term simply as
+  ~c[logic-code].  Function expansion, ~c[:use] ~il[hints],
+  ~c[:]~ilc[definition] rules, generation of ~il[constraint]s for functional
+  instantiation, and creation of rules of class ~c[:]~ilc[rewrite] and
+  ~c[:]~ilc[forward-chaining] also treat ~c[mbe] calls as their ~c[:logic]
+  code."
+
+  (declare (xargs :guard (and exec-p logic-p))
+
+; OpenMCL Versions 14.2 and 14.3 (CCL), CMUCL Version 19b, and SBCL Version
+; 0.9.8 (other versions of these too, most likely) produce a warning with the
+; following ignore declaration, but we don't know why.  We tried using
+; "ignorable" instead of "ignore" for CMUCL, but that didn't help.  So we
+; eliminate the ignore declaration in these cases with the #- directive below.
+
+           #-(and (or ccl cmu sbcl) (not acl2-loop-only))
+           (ignore exec-p logic-p))
+  `(mbe1 ,exec ,logic))
+
+(defmacro mbt (x)
+
+  ":Doc-Section ACL2::Programming
+
+  introduce a test not to be evaluated~/
+
+  The macro ~c[mbt] (``must be true'') can be used in order to add code in
+  order to admit function definitions in ~c[:]~ilc[logic] mode, without paying
+  a cost in execution efficiency.  Examples below illustrate its intended use.
+
+  Semantically, ~c[(mbt x)] equals ~c[x].  However, in raw Lisp ~c[(mbt x)]
+  ignores ~c[x] entirely, and macroexpands to ~c[t].  ACL2's ~il[guard]
+  verification mechanism ensures that the raw Lisp code is only evaluated when
+  appropriate, since a guard proof obligation ~c[(equal x t)] is generated.
+  ~l[verify-guards] and, for general discussion of guards, ~pl[guard].
+
+  Also ~pl[mbe], which stands for ``must be equal.''  Although ~c[mbt] is more
+  natural in many cases, ~c[mbe] has more general applicability.  In fact,
+  ~c[(mbt x)] is essentially defined to be ~c[(mbe :logic x :exec t)].~/
+
+  We can illustrate the use of ~c[mbt] on the following generic example, where
+  ~c[<g>], ~c[<test>], ~c[<rec-x>], and ~c[<base>] are intended to be terms
+  involving only the variable ~c[x].
+  ~bv[]
+  (defun foo (x)
+    (declare (xargs :guard <g>))
+    (if <test>
+        (foo <rec-x>)
+      <base>))
+  ~ev[]
+  In order to admit this function, ACL2 needs to discharge the proof obligation
+  that ~c[<rec-x>] is smaller than ~c[x], namely:
+  ~bv[]
+  (implies <test>
+           (o< (acl2-count ~c[<rec-x>])
+                (acl2-count x)))
+  ~ev[]
+  But suppose we need to know that ~c[<g>] is true in order to prove this.
+  Since ~c[<g>] is only the ~il[guard], it is not part of the logical
+  definition of ~c[foo].  A solution is to add the guard to the definition of
+  ~c[foo], as follows.
+  ~bv[]
+  (defun foo (x)
+    (declare (xargs :guard <g>))
+    (if (mbt <g>)
+        (if <test>
+            (foo <rec-x>)
+          <base>)
+      nil))
+  ~ev[]
+  If we do this using ~c[<g>] rather than ~c[(mbt <g>)], then evaluation of
+  every recursive call of ~c[foo] will cause the evaluation of (the appropriate
+  instance of) ~c[<g>].  But since ~c[(mbt <g>)] expands to ~c[t] in raw Lisp,
+  then once we verify the guards of ~c[foo], the evaluations of ~c[<g>] will be
+  avoided (except at the top level, when we check the guard before allowing
+  evaluation to take place in Common Lisp).
+
+  Other times, the guard isn't the issue, but rather, the problem is that a
+  recursive call has an argument that itself is a recursive call.  For example,
+  suppose that ~c[<rec-x>] is of the form ~c[(foo <expr>)].  There is no way we
+  can hope to discharge the termination proof obligation shown above.  A
+  standard solution is to add some version of this test:
+  ~bv[]
+  (mbt (o< (acl2-count ~c[<rec-x>]) (acl2-count x)))
+  ~ev[]
+  Here is a specific example based on one sent by Vernon Austel.
+  ~bv[]
+  (defun recurX2 (n)
+    (declare (xargs :guard (and (integerp n) (<= 0 n))
+                    :verify-guards nil))
+    (cond ((zp n) 0)
+          (t (let ((call (recurX2 (1- n))))
+               (if (mbt (< (acl2-count call) n))
+                   (recurX2 call)
+                 1 ;; this branch is never actually taken
+                 )))))
+
+  (defthm recurX2-0
+   (equal (recurX2 n) 0))
+
+  (verify-guards recurX2)
+  ~ev[]
+  If you ~c[(]~ilc[trace$]~c[ acl2-count)], you will see that evaluation of
+  ~c[(recurX2 2)] causes several calls of ~ilc[acl2-count] before the
+  ~ilc[verify-guards].  But this evaluation does not call ~c[acl2-count] after
+  the ~c[verify-guards], because the ACL2 evaluation mechanism uses raw Lisp to
+  do the evaluation, and the form ~c[(mbt (< (acl2-count call) n))]
+  macroexpands to ~c[t] in Common Lisp.
+
+  You may occasionally get warnings when you compile functions defined using
+  ~c[mbt].  (For commands that invoke the compiler, ~pl[compilation].)  These
+  can be inhibited by using an ~c[ignorable] ~ilc[declare] form.  Here is a
+  simple but illustrative example.  Note that the declarations can optionally
+  be separated into two ~ilc[declare] forms.
+  ~bv[]
+  (defun foo (x y)
+    (declare (ignorable x)
+             (xargs :guard (equal x t)))
+    (and (mbt x) y))
+  ~ev[]"
+
+  `(mbe1 t ,x))
 
 (deflabel Other
   :doc
@@ -4383,29 +4742,22 @@
   acl2 mailing list, ~c[acl2@utlists.utexas.edu], which tends to have wider
   distribution.~/~/")
 
-#+acl2-loop-only
-(defun ec-call (x)
+#-acl2-loop-only
+(defmacro ec-call1-raw (ign x)
+  (declare (ignore ign))
+  (assert (and (consp x) (symbolp (car x)))) ; checked by translate11
+  (cons (*1*-symbol (car x))
+        (cdr x)))
 
-; It is instructive to consider (ec-call (must-be-equal term1 term2)).  This
-; call of must-be-equal is treated as an ordinary function in the logic whose
-; guard requires that term1 and term2 have equal values.  Without the
-; surrounding ec-call, a special case in guard-clauses would avoid considering
-; the guards for term1.  However, since the raw Lisp definition of bar calls
-; the function *1*must-be-equal rather than the macro must-be-equal, the guards
-; must be verified for term1 as well.  Hence, we do not give any special
-; treatment to the ec-call term above.  You can see what goes wrong if we
-; ignore the guards for term1 by running the following example.
+(defmacro ec-call1 (ign x)
 
-; (skip-proofs
-;  (defun bar (x)
-;    (declare (xargs :guard t))
-;    (ec-call (must-be-equal (consp (append x x))
-;                            (consp x)))))
-; (bar 3)
+; We introduce ec-call1 inbetween the utlimate macroexpansion of an ec-call
+; form to a return-last form, simply because untranslate will produce (ec-call1
+; nil x) from (return-last 'ec-call1-raw nil x).
 
-; The above discussion is a comment because it seems too obscure to put in the
-; documentation, especially since (ec-call (mbe ...)) would much more likely
-; occur instead.  (And since mbe is a macro, that is not an issue.)
+  `(return-last 'ec-call1-raw ,ign ,x))
+
+(defmacro ec-call (x)
 
   ":Doc-Section ACL2::Programming
 
@@ -4415,20 +4767,19 @@
   utility is intended for users who are familiar with guards.  ~l[guard] for a
   general discussion of guards.
 
-  Logically, ~c[ec-call] is the identity function; indeed, during proofs it
-  behaves more like the identity macro, in the sense that ~c[(ec-call TERM)] is
-  typically replaced quickly by ~c[TERM] during a proof attempt.  However,
-  ~c[ec-call] causes function calls to be evaluated in the ACL2 logic rather
-  than raw Lisp, as explained below.~/
+  Logically, ~c[ec-call] behaves like the identity macro; during proofs,
+  ~c[(ec-call TERM)] is typically replaced quickly by ~c[TERM] during a proof
+  attempt.  However, ~c[ec-call] causes function calls to be evaluated in the
+  ACL2 logic rather than raw Lisp, as explained below.~/
 
   ~bv[]
   General Form:
   (ec-call (fn term1 ... termk))
   ~ev[]
   where ~c[fn] is a known function symbol other than those in the list that is
-  the value of the constant ~c[*ec-call-bad-ops*].  Semantically,
-  ~c[(ec-call (fn term1 ... termk))] equals ~c[(fn term1 ... termk)].  However,
-  this use of ~c[ec-call] has two effects.
+  the value of the constant ~c[*ec-call-bad-ops*].  In particular, ~c[fn] is
+  not a macro.  Semantically, ~c[(ec-call (fn term1 ... termk))] equals
+  ~c[(fn term1 ... termk)].  However, this use of ~c[ec-call] has two effects.
   ~bq[]
 
   (1) ~il[Guard] verification generates no proof obligations from the guard of
@@ -4476,14 +4827,16 @@
   ACL2 !>(foo '(2 3 4 5) '(6 7))
 
 
-  ACL2 Error in TOP-LEVEL:  The guard for the function symbol FOO, which
-  is (CONSP Y), is violated by the arguments in the call (FOO '(4 5) NIL).
-  See :DOC trace for a useful debugging utility.  See :DOC set-guard-
-  checking for information about suppressing this check with (set-guard-
-  checking :none), as recommended for new users.
-  
+  ACL2 Error in TOP-LEVEL:  The guard for the function call (FOO X Y),
+  which is (CONSP Y), is violated by the arguments in the call 
+  (FOO '(4 5) NIL).  To debug see :DOC print-gv, see :DOC trace, and
+  see :DOC wet.  See :DOC set-guard-checking for information about suppressing
+  this check with (set-guard-checking :none), as recommended for new
+  users.
+
+  ACL2 !>  
   ~ev[]
-  The error above arises because eventually, foo recurs down to a value of
+  The error above arises because eventually, ~c[foo] recurs down to a value of
   parameter ~c[y] that violates the guard.  This is clear from tracing
   (~pl[trace$] and ~pl[trace]).  Each call of the executable counterpart of
   ~c[foo] (the so-called ``*1*'' function for ~c[foo]) checks the guard and
@@ -4501,11 +4854,12 @@
           5> (ACL2_*1*_ACL2::FOO (4 5) NIL)
 
 
-  ACL2 Error in TOP-LEVEL:  The guard for the function symbol FOO, which
-  is (CONSP Y), is violated by the arguments in the call (FOO '(4 5) NIL).
-  See :DOC trace for a useful debugging utility.  See :DOC set-guard-
-  checking for information about suppressing this check with (set-guard-
-  checking :none), as recommended for new users.
+  ACL2 Error in TOP-LEVEL:  The guard for the function call (FOO X Y),
+  which is (CONSP Y), is violated by the arguments in the call 
+  (FOO '(4 5) NIL).  To debug see :DOC print-gv, see :DOC trace, and
+  see :DOC wet.  See :DOC set-guard-checking for information about suppressing
+  this check with (set-guard-checking :none), as recommended for new
+  users.
 
   ACL2 !>
   ~ev[]
@@ -4539,22 +4893,7 @@
   ~/"
 
   (declare (xargs :guard t))
-  x)
-
-#-acl2-loop-only
-(defmacro ec-call (x)
-  (if (and (consp x)
-           (symbolp (car x)))
-      (cons (*1*-symbol (car x))
-            (cdr x))
-
-; We might want to cause an error in the following case.  But then we would
-; have to take special measures to avoid that error when defining the *1*
-; function for ec-call during the boot-strap.  The case below should never
-; arise in any other case, anyhow; translate insists that ec-call be applied
-; only to function calls.
-
-    x))
+  `(ec-call1 nil ,x))
 
 #+acl2-loop-only
 (defmacro / (x &optional (y 'nil binary-casep))
@@ -4905,7 +5244,7 @@
 ;; RAG - After adding the non-standard predicates, this number grew to 110.
 
 (defconst *force-xnume*
-  (let ((x 123))
+  (let ((x 120))
     #+:non-standard-analysis
     (+ x 12)
     #-:non-standard-analysis
@@ -22099,10 +22438,6 @@ J
   ~c[multiple-value-list].~/"
 
   (declare (xargs :guard t
-
-; WARNING: Do not remove :mode :logic, or we may wind up with the wrong *1*
-; definition of mv-list!  See the comment about mv-list in add-trip.
-
                   :mode :logic)
            (ignore input-arity))
   x)
@@ -22585,7 +22920,8 @@ J
     (untrace . 1)
     (set-raw-mode-on . 3)
     (set-raw-mode-off . 3)
-    (mv-list . 1)))
+    (mv-list . 1)
+    (return-last . :last)))
 
 (defconst *initial-checkpoint-processors*
 
@@ -22633,7 +22969,7 @@ J
     open-trace-file-fn ; *trace-output*
     set-trace-evisc-tuple ; *trace-evisc-tuple*
     ev-fncall-w ; *the-live-state*
-    ev-rec ; time
+    ev-rec ; wormhole-eval
     setup-simplify-clause-pot-lst1 ; dmr-flush
     save-exec ; save-exec-raw, etc.
     cw-gstack-fn ; *deep-gstack*
@@ -22709,6 +23045,8 @@ J
     pop-warning-frame
     push-warning
     initialize-accumulated-warnings
+    ev-rec-return-last
+    chk-return-last-entry
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
@@ -22779,10 +23117,7 @@ J
     big-clock-negative-p peek-char$ shrink-32-bit-integer-stack read-run-time
     read-byte$ read-idate t-stack-length1 print-object$
 
-    ec-call prog2$ mv-list must-be-equal with-prover-time-limit
-    with-guard-checking
-
-; It is tempting to add time$-logic, but it has no raw code!
+    mv-list return-last
 
 ; The following were discovered after we included functions defined in
 ; #+acl2-loop-only whose definitions are missing (or defined with
@@ -22877,7 +23212,6 @@ J
     trace!
     with-live-state
     with-output-object-channel-sharing
-    time$
     with-hcomp-bindings
     with-hcomp-ht-bindings
     redef+
@@ -29852,16 +30186,90 @@ in :type-prescription rules are specified with :type-prescription (and/or
                 (absolute-pathname-string-p (cdar x) t os)
                 (include-book-dir-alistp (cdr x) os)))))
 
-(defun legal-ruler-extenders-p (x)
-  (declare (xargs :guard t))
-  (cond ((atom x)
-         (null x))
-        ((keywordp (car x))
-         (and (eq (car x) :lambdas)
-              (legal-ruler-extenders-p (cdr x))))
-        ((symbolp (car x))
-         (legal-ruler-extenders-p (cdr x)))
-        (t nil)))
+(defun illegal-ruler-extenders-values (x wrld)
+  (declare (xargs :guard (and (symbol-listp x)
+                              (plist-worldp wrld))))
+  (cond ((endp x) nil) 
+        ((or (eq (car x) :lambdas)
+             (function-symbolp (car x) wrld))
+         (illegal-ruler-extenders-values (cdr x) wrld))
+        (t (cons (car x)
+                 (illegal-ruler-extenders-values (cdr x) wrld)))))
+
+(defun intersection-eq (l1 l2)
+  (declare (xargs :guard
+                  (and (symbol-listp l1)
+                       (symbol-listp l2))))
+  (cond ((endp l1) nil)
+        ((member-eq (car l1) l2)
+         (cons (car l1)
+               (intersection-eq (cdr l1) l2)))
+        (t (intersection-eq (cdr l1) l2))))
+
+(defun intersection-equal (l1 l2)
+  (declare (xargs :guard
+                  (and (true-listp l1)
+                       (true-listp l2))))
+  (cond ((endp l1) nil)
+        ((member-equal (car l1) l2)
+         (cons (car l1)
+               (intersection-equal (cdr l1) l2)))
+        (t (intersection-equal (cdr l1) l2))))
+
+(defun table-alist (name wrld)
+
+; Return the named table as an alist.
+
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp wrld))))
+  (getprop name 'table-alist nil 'current-acl2-world wrld))
+
+(defun ruler-extenders-msg (x wrld)
+
+; This message, if not nil, is passed to chk-ruler-extenders.
+
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (symbol-alistp (fgetprop 'return-last-table
+                                                       'table-alist
+                                                       nil wrld)))))
+  (cond ((member-eq x '(:ALL :BASIC :LAMBDAS))
+         nil)
+        ((and (consp x)
+              (eq (car x) 'quote))
+         (msg "~x0 has a superfluous QUOTE, which you may wish to remove"
+              x))
+        ((not (symbol-listp x))
+         (msg "~x0 is not a true list of symbols" x))
+        (t (let* ((vals (illegal-ruler-extenders-values x wrld))
+                  (suspects
+                   (and vals
+                        (intersection-eq
+                         (list* 'prog2$ 'ec-call ; common mistakes?
+                                (strip-cdrs (table-alist 'return-last-table
+                                                         wrld)))
+                         vals))))
+             (cond (vals
+                    (msg "~&0 ~#0~[is not a~/are not~] legal ruler-extenders ~
+                          value~#0~[~/s~].~@1"
+                         vals
+                         (cond (suspects
+                                (msg "  Note in particular that ~&0 ~#0~[is a ~
+                                      macro~/are macros~] that may expand to ~
+                                      calls of ~x1, which you may want to ~
+                                      specify instead~"
+                                     suspects 'return-last))
+                               (t ""))))
+                   (t nil))))))
+
+(defmacro chk-ruler-extenders (x soft ctx wrld)
+  (let ((err-str "The proposed ruler-extenders is illegal because ~@0."))
+    `(let ((ctx ,ctx)
+           (err-str ,err-str)
+           (msg (ruler-extenders-msg ,x ,wrld)))
+       (cond (msg ,(cond ((eq soft 'soft) `(er soft ctx err-str msg))
+                         (t `(illegal ctx err-str (list (cons #\0 msg))))))
+             (t ,(cond ((eq soft 'soft) '(value t))
+                       (t t)))))))
 
 (table acl2-defaults-table nil nil
 
@@ -29984,7 +30392,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
               (null (assoc-eq :SYSTEM val))))
         ((eq key :ruler-extenders)
          (or (eq val :all)
-             (legal-ruler-extenders-p val)))
+             (chk-ruler-extenders val hard 'acl2-defaults-table world)))
         (t nil)))
 
 (deflabel acl2-defaults-table
@@ -30279,14 +30687,6 @@ in :type-prescription rules are specified with :type-prescription (and/or
   to do so using ~il[command]s that are not inside ~il[books].  It may be useful
   to set your favorite defaults in your ~ilc[acl2-customization] file;
   ~pl[acl2-customization].")
-
-(defun table-alist (name wrld)
-
-; Return the named table as an alist.
-
-  (declare (xargs :guard (and (symbolp name)
-                              (plist-worldp wrld))))
-  (getprop name 'table-alist nil 'current-acl2-world wrld))
 
 #+acl2-loop-only
 (defmacro set-enforce-redundancy (x)
@@ -31239,7 +31639,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
     (set-ruler-extenders :all)
 
     ; or, for example:
-    (set-ruler-extenders '(cons prog2$))
+    (set-ruler-extenders '(cons return-last))
   ~ev[]
   You can call the function ~ilc[default-ruler-extenders] as follows to see the
   current global default set of ruler-extenders:
@@ -31294,7 +31694,8 @@ in :type-prescription rules are specified with :type-prescription (and/or
   ~ev[]
   As a convenience, ACL2 allows the symbol ~c[:lambdas] in place of
   ~c[(:lambdas)], and in fact the former will also include the default
-  ruler-extenders: ~ilc[PROG2$], ~ilc[EC-CALL], and ~ilc[MV-LIST].
+  ruler-extenders: ~ilc[RETURN-LAST] (which comes from macroexpansion of calls
+  of ~ilc[PROG2$], ~ilc[EC-CALL], and others) and ~ilc[MV-LIST].
 
   IMPORTANT REMARKS.  (1) Notice that the argument to ~c[set-ruler-extenders]
   is evaluated, but the argument to ~c[:RULER-EXTENDERS] in ~c[XARGS] is not
@@ -31524,8 +31925,8 @@ in :type-prescription rules are specified with :type-prescription (and/or
   evaluates to a list, does not necessarily include the default ruler-extenders
   ~-[] i.e., those included for the argument, ~c[:basic] ~-[] which are the
   elements of the list constant ~c[*basic-ruler-extenders*], namely
-  ~ilc[prog2$] and ~ilc[ec-call].  You may, of course, include these explicitly
-  in your list argument.
+  ~ilc[return-last] and ~ilc[mv-list].  You may, of course, include these
+  explicitly in your list argument.
 
   We conclude our discussion by noting that the set of ruler-extenders can
   affect the induction scheme that is stored with a recursive definition.  The
@@ -31584,26 +31985,28 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
 #+acl2-loop-only
 (defmacro set-ruler-extenders (x)
+
+; It seems a bit sad to evaluate x twice, but that seems kind of unavoidable if
+; we are to use a table event to set the acl2-defaults-table, since WORLD is
+; not available for the expression of that event.
+
   `(state-global-let*
     ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
-    (progn
-      (table acl2-defaults-table :ruler-extenders
-             (let ((x0 ,x))
-               (case x0
+    (er-progn
+     (chk-ruler-extenders ,x soft 'set-ruler-extenders (w state))
+     (progn
+       (table acl2-defaults-table :ruler-extenders
+              (let ((x0 ,x))
+                (case x0
 
 ; If keywords other than :ALL, :BASIC, and :LAMBDAS are supported, then also
 ; change get-ruler-extenders1.
 
-                 (:all :all)
-                 (:lambdas (cons :lambdas *basic-ruler-extenders*))
-                 (:basic *basic-ruler-extenders*)
-                 (otherwise (if (legal-ruler-extenders-p x0)
-                                x0
-                              (er hard 'set-ruler-extenders
-                                  "Illegal argument to set-ruler-extenders: ~
-                                   ~x0.  See :DOC set-ruler-extenders."
-                                  x0))))))
-      (table acl2-defaults-table :ruler-extenders))))
+                  (:all :all)
+                  (:lambdas (cons :lambdas *basic-ruler-extenders*))
+                  (:basic *basic-ruler-extenders*)
+                  (otherwise x0))))
+       (table acl2-defaults-table :ruler-extenders)))))
 
 #-acl2-loop-only
 (defmacro set-ruler-extenders (x)
@@ -36142,10 +36545,47 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
 )
 
-#+acl2-loop-only
-(defun with-prover-time-limit (time form)
+(defun chk-with-prover-time-limit-arg (time)
+  (declare (xargs :guard t))
+  (or (let ((time (if (and (consp time)
+                           (null (cdr time)))
+                      (car time)
+                    time)))
+        (and (rationalp time)
+             (< 0 time)
+             time))
+      (hard-error 'with-prover-time-limit
+                  "The first argument to ~x0 must evaluate to a non-negative ~
+                   rational number or a list containing such a number, but ~
+                   such an argument has evaluated to ~x1."
+                  (list (cons #\0 'with-prover-time-limit)
+                        (cons #\1 time)))))
 
-; Warning: Keep this in sync with the with-prover-time-limit case in ev-rec.
+#-acl2-loop-only
+(defmacro with-prover-time-limit1-raw (time form)
+
+; This macro does not check that time is of a suitable form (see :doc
+; with-prover-time-limit).  However, with-prover-time-limit lays down a call of
+; chk-with-prover-time-limit-arg, which is called before return-last passes
+; control to the present macro.
+
+  (let ((time-limit-var (gensym)))
+    `(let* ((,time-limit-var ,time)
+            (temp (+ (get-internal-run-time)
+                     (* internal-time-units-per-second
+                        (if (consp ,time-limit-var)
+                            (car ,time-limit-var)
+                          ,time-limit-var))))
+            (*acl2-time-limit* (if (or (consp ,time-limit-var)
+                                       (null *acl2-time-limit*))
+                                   temp
+                                 (min temp *acl2-time-limit*))))
+       ,form)))
+
+(defmacro with-prover-time-limit1 (time form)
+  `(return-last 'with-prover-time-limit1-raw ,time ,form))
+
+(defmacro with-prover-time-limit (time form)
 
   ":Doc-Section Other
 
@@ -36189,13 +36629,13 @@ in :type-prescription rules are specified with :type-prescription (and/or
   allowed to push that time further into the future unless the inner time is
   specified as a list containing a rational, rather than as a rational.
 
-  Although ~c[with-prover-time-limit] is an ACL2 function ~-[] in particular it
-  evaluates both its arguments ~-[] nevertheless, it is not a standard function
-  in some respects.  (1) The value of its first (time limit) argument affects
-  the evaluation of its second argument (by causing an error during that
-  evaluation if the time for completion is insufficient).  (2) The second
+  Although ~c[with-prover-time-limit] behaves like an ACL2 function in the
+  sense that it evaluates both its arguments, it is however actually a macro
+  that behaves as follows.  (1) The value of its first (time limit) argument
+  affects the evaluation of its second argument (by causing an error during
+  that evaluation if the time for completion is insufficient).  (2) The second
   argument can return multiple values (~pl[mv]), which are then returned by the
-  call of ~c[with-prover-time-limit]. (3) Thus, there is not a fixed number of
+  call of ~c[with-prover-time-limit] . (3) Thus, there is not a fixed number of
   values returned by ~c[with-prover-time-limit].
 
   If you find that the time limit appears to be implemented too loosely, you
@@ -36223,44 +36663,8 @@ in :type-prescription rules are specified with :type-prescription (and/or
   future results from ~c[read-acl2-oracle] are independent of the one just
   obtained.~/"
 
-  (declare (xargs :guard (let ((time (if (and (consp time)
-                                              (null (cdr time)))
-                                         (car time)
-                                       time)))
-                           (and (rationalp time)
-                                (< 0 time)))))
-  (prog2$ (or (let ((time (if (and (consp time)
-                                   (null (cdr time)))
-                              (car time)
-                            time)))
-                (and (rationalp time)
-                     (< 0 time)))
-              (illegal 'with-prover-time-limit
-                       "The first argument to ~x0 must evaluate to a ~
-                        non-negative rational number or a list containing ~
-                        such a number, but such an argument has evaluated to ~
-                        ~x1."
-                       (list (cons #\0 'with-prover-time-limit)
-                             (cons #\1 time))))
-          form))
-
-#-acl2-loop-only
-(defmacro with-prover-time-limit (time form)
-
-; Warning: Keep this in sync with the with-prover-time-limit case in ev-rec.
-
-  (let ((time-limit-var (gensym)))
-    `(let* ((,time-limit-var ,time)
-            (temp (+ (get-internal-run-time)
-                     (* internal-time-units-per-second
-                        (if (consp ,time-limit-var)
-                            (car ,time-limit-var)
-                          ,time-limit-var))))
-            (*acl2-time-limit* (if (or (consp ,time-limit-var)
-                                       (null *acl2-time-limit*))
-                                   temp
-                                 (min temp *acl2-time-limit*))))
-       ,form)))
+  `(with-prover-time-limit1 (chk-with-prover-time-limit-arg ,time)
+                            ,form))
 
 #-acl2-loop-only
 (defparameter *time-limit-tags* nil)
@@ -36328,14 +36732,33 @@ in :type-prescription rules are specified with :type-prescription (and/or
 (defconst *guard-checking-values*
   '(t nil :nowarn :all :none))
 
-(defun tilde-@-guard-checking-phrase (val)
+(defun chk-with-guard-checking-arg (val)
   (declare (xargs :guard t))
-  (msg "The first argument to ~x0 must evaluate to one of ~v1.  But such an ~
-        argument has evaluated to ~x2."
-       'with-guard-checking *guard-checking-values* val))
+  (cond ((member-eq val *guard-checking-values*)
+         val)
+        (t (hard-error 'with-guard-checking
+                       "The first argument to ~x0 must evaluate to one of ~
+                        ~v1.  But such an argument has evaluated to ~x2."
+                       (list (cons #\0 'with-guard-checking)
+                             (cons #\1 *guard-checking-values*)
+                             (cons #\2 val))))))
 
-#+acl2-loop-only
-(defun with-guard-checking (val form)
+#-acl2-loop-only
+(defmacro with-guard-checking1-raw (val form)
+
+; This macro does not check that val is a member of *guard-checking-values*.
+; However, with-guard-checking lays down a call of chk-with-guard-checking-arg,
+; which is called before return-last passes control to the present macro.
+
+  (let ((v (global-symbol 'guard-checking-on)))
+    `(let ((,v ,val))
+       (declare (special ,v))
+       ,form)))
+
+(defmacro with-guard-checking1 (val form)
+  `(return-last 'with-guard-checking1-raw ,val ,form))
+
+(defmacro with-guard-checking (val form)
 
   ":Doc-Section switches-parameters-and-modes
 
@@ -36358,20 +36781,8 @@ in :type-prescription rules are specified with :type-prescription (and/or
   evaluation passes into raw Lisp functions (~pl[guards-and-evaluation])."
 
   (declare (xargs :guard t))
-  (prog2$ (or (member-eq val *guard-checking-values*)
-              (hard-error 'with-guard-checking
-                          "~@0"
-                          (list (cons #\0 (tilde-@-guard-checking-phrase
-                                           val)))))
-          form))
-
-#-acl2-loop-only
-(defmacro with-guard-checking (val form)
-  (let ((v (global-symbol 'guard-checking-on)))
-    `(let ((,v ,val))
-       (declare (special ,v))
-       (assert (member-eq ,v *guard-checking-values*)) ; checked by logic code
-       ,form)))
+  `(with-guard-checking1 (chk-with-guard-checking-arg ,val)
+                         ,form))
 
 (defun abort! ()
 
@@ -36807,26 +37218,6 @@ in :type-prescription rules are specified with :type-prescription (and/or
   (cond ((member-equal x l)
          l)
         (t (cons x l))))
-
-(defun intersection-eq (l1 l2)
-  (declare (xargs :guard
-                  (and (symbol-listp l1)
-                       (symbol-listp l2))))
-  (cond ((endp l1) nil)
-        ((member-eq (car l1) l2)
-         (cons (car l1)
-               (intersection-eq (cdr l1) l2)))
-        (t (intersection-eq (cdr l1) l2))))
-
-(defun intersection-equal (l1 l2)
-  (declare (xargs :guard
-                  (and (true-listp l1)
-                       (true-listp l2))))
-  (cond ((endp l1) nil)
-        ((member-equal (car l1) l2)
-         (cons (car l1)
-               (intersection-equal (cdr l1) l2)))
-        (t (intersection-equal (cdr l1) l2))))
 
 (defun evens (l)
   (declare (xargs :guard (true-listp l)))
@@ -39199,49 +39590,24 @@ Lisp definition."
 ; It is tempting to define (time$ x ...) to be a macro expanding to x in the
 ; logic.  But then translate will eliminate time$; yet some version of time$
 ; needs to be a function, so that it is still around for ev-rec to see.  If it
-; weren't for ev-rec, time$ could be a macro as long as it is left alone by
+; weren't for ev-rec, time$ could be a macro as long as it were left alone by
 ; oneify, i.e., on the list *macros-for-nonexpansion-in-raw-lisp*.
 
-; So, we need some version of time$ to be a function in the logic.  On the
+; So, we need some way to represent time$ as a function in the logic.  On the
 ; other hand, we cannot define time$ as a function in raw Lisp, because then
 ; its arguments will be evaluated before there is any opportunity to set things
 ; up to get timing information.
 
-; Thus, we expand the macro time$ in two ways: in the logic, to a call of
-; time$-logic; and in raw Lisp, to a call of our-time, which is our primitive
-; timing macro.  For time$, time$-logic, and our-time, the first argument is
-; the one whose evaluation is to be timed, and we will call that the "timing
-; argument"; we will call the others the "auxiliary arguments".  Time$-logic is
-; defined simply to return its timing argument.  (Our-time x ...) expands to a
-; let expression that binds variables for all the auxiliary arguments, whose
-; let-body times the evaluation of the timing argument.  When ev-rec encounters
-; a call of time$-logic, it evaluates all the auxiliary arguments with ev-rec
-; and then calls our-time as follows: the timing argument is the ev-rec of the
-; original timing argument, and the auxiliary arguments are the ev-rec results
-; for the original auxiliary arguments.
+; Consider also the issue of keyword arguments.  We want time$ to take keyword
+; arguments, but on the other hand, we do not allow functions with keyword
+; arguments.  So again we see that time$ needs to be a macro.
 
-; The following toy implementation gives the idea.  Just start your favorite
-; raw Lisp (without ACL2) to try this out.
-
-#||
- (defmacro time-in-raw-lisp (x k)
-   `(progn (print ,k) (time ,x)))
-
- (defun ev (x)
-   (cond ((atom x)
-          (eval x))
-         ((eq (car x) 'time$-logic)
-          (let ((val (ev (caddr x))))
-            (time-in-raw-lisp (ev (cadr x)) val)))
-         (t ; for simplicity, assume x has no macro calls
-          (apply (car x)
-                 (loop for y in (cdr x) collect (ev y))))))
-||#
-
-; Finally, note that the timing argument is actually the last argument of
-; time$-logic, not the first, simply for convenience.  (When we added keyword
-; arguments to time$, this saved us from having to change elide-locals-rec or
-; fns-and-macros-that-return-last.)
+; Thus, we define time$ to be a macro that expands to a corresponding call of
+; time$1, which in turn expands to a call (return-last 'time$1 & &).
+; Return-last is a function in the logic but is a macro in raw Lisp.  Since
+; return-last is a function in the logic, it does not take keyword arguments;
+; for convenience we define a macro our-time to be the keyword version of the
+; raw Lisp macro time$1.
 
 ; The following examples make a nice little test suite.  Run each form and
 ; observe whether the output is consistent with the comments attached to the
@@ -39252,11 +39618,12 @@ Lisp definition."
   (declare (xargs :guard (natp n) :verify-guards nil))
   (make-list n))
 (time$ (length (f 100))) ; times an ev-rec call
-(time$ (length (f 100)) :mintime 0) ; times an ev-rec call
-(defun g (x custom-p)
+(time$ (length (f 100)) :mintime 0) ; same as above
+(time$ (length (f 100)) :mintime nil) ; native time output
+(defun g (x native-p)
   (declare (xargs :guard (natp x) :verify-guards nil))
-  (if custom-p
-      (len (time$ (f x) :mintime 0))
+  (if native-p
+      (len (time$ (f x) :mintime nil))
     (len (time$ (f x)))))
 (g 100 nil) ; time a *1*f call
 (g 100 t) ; time a *1*f call
@@ -39268,25 +39635,29 @@ Lisp definition."
 (g 100 t) ; times a call of f
 ; Check unnormalized and normalized bodies:
 (assert-event (equal (body 'g nil (w state))
-                     '(IF CUSTOM-P
-                          (LEN (TIME$-LOGIC '0
-                                            'NIL
-                                            'NIL
-                                            'NIL
-                                            'NIL
-                                            (F X)))
-                          (LEN (TIME$-LOGIC 'NIL
-                                            'NIL
-                                            'NIL
-                                            'NIL
-                                            'NIL
-                                            (F X))))))
+                     '(IF NATIVE-P
+                          (LEN (RETURN-LAST
+                                'TIME$1-RAW
+                                (CONS 'NIL
+                                      (CONS 'NIL
+                                            (CONS 'NIL
+                                                  (CONS 'NIL
+                                                        (CONS 'NIL 'NIL)))))
+                                (F X)))
+                          (LEN (RETURN-LAST
+                                'TIME$1-RAW
+                                (CONS '0
+                                      (CONS 'NIL
+                                            (CONS 'NIL
+                                                  (CONS 'NIL
+                                                        (CONS 'NIL 'NIL)))))
+                                (F X))))))
 (assert-event (equal (body 'g t (w state))
                      '(LEN (F X))))
-(time$ 3 :real-mintime 0) ; prints custom timing message
-(time$ 3 :minalloc 0) ; prints custom timing message
+(time$ 3 :mintime nil) ; prints verbose, native timing message
+(time$ 3 :minalloc 0) ; prints usual timing message
 (time$ 3 :mintime 0 :real-mintime 0) ; error
-(time$ 3 :mintime 0 :run-mintime 0) ; prints custom timing message
+(time$ 3 :mintime 0 :run-mintime 0) ; prints usual timing message
 (time$ 3 :real-mintime 1) ; no timing output
 (time$ 3 :run-mintime 1) ; no timing output
 (time$ 3 :minalloc 10000) ; no timing output if :minalloc is supported
@@ -39306,8 +39677,8 @@ Lisp definition."
               :minalloc alloc
               :msg msg
               :args args)))
-(h 1000000 nil nil nil nil nil) ; built-in time msg
-(h 1000000 0 nil nil nil nil) ; default custom time msg
+(h 1000000 nil nil nil nil nil) ; native time msg
+(h 1000000 0 nil nil nil nil) ; usual time msg
 (h 1000000 nil nil nil ; custom time msg, as indicated
    "The execution of ~xf took ~st seconds (in real time; ~sc sec. run time), ~
     and allocated ~sa bytes.  In an unrelated note, bar currently has the ~
@@ -39317,8 +39688,32 @@ Lisp definition."
 
 ; End of Essay on the Implementation of Time$
 
+#-acl2-loop-only
+(defmacro time$1-raw (val x)
+  (let ((val-var (gensym))
+        (real-mintime-var (gensym))
+        (run-mintime-var (gensym))
+        (minalloc-var (gensym))
+        (msg-var (gensym))
+        (args-var (gensym)))
+    `(let* ((,val-var ,val)
+            (,real-mintime-var (pop ,val-var))
+            (,run-mintime-var (pop ,val-var))
+            (,minalloc-var (pop ,val-var))
+            (,msg-var (pop ,val-var))
+            (,args-var (pop ,val-var)))
+       (our-time ,x
+                 :real-mintime ,real-mintime-var
+                 :run-mintime ,run-mintime-var
+                 :minalloc ,minalloc-var
+                 :msg ,msg-var
+                 :args ,args-var))))
+
+(defmacro time$1 (val form)
+  `(return-last 'time$1-raw ,val ,form))
+
 (defmacro time$ (x &key
-                   (mintime 'nil mintime-p)
+                   (mintime '0 mintime-p)
                    (real-mintime 'nil real-mintime-p)
                    run-mintime minalloc msg args)
 
@@ -39359,7 +39754,7 @@ Lisp definition."
          :msg \"Hello ~~s0, ~~s1 World.\"
          :args (list \"Moon\" \"Goodbye\"))
 
-  ; Print default custom timing message.
+  ; Print default custom timing message (same as omitting :mintime 0):
   (time$ (foo)
          :mintime 0)
 
@@ -39387,16 +39782,13 @@ Lisp definition."
   its evaluation.
 
   The simplest form is ~c[(time$ x)], which will call the ~c[time] utility in
-  the underlying Lisp.  The particular message you see varies from Lisp to
-  Lisp, and may contain detailed, implementation-specific data such as the
+  the underlying Lisp, and will print a small default message.  If you want to
+  see a message printed by the host Lisp, use ~c[(time$ x :mintime nil)]
+  instead, which may provide detailed, implementation-specific data such as the
   amounts of time spent in user and system mode, the gc time, the number of
-  page faults encountered, and so on.
-
-  Without any keyword arguments, ~c[time$] often prints a rather verbose
-  message.  However, if ~c[time$] is provided with at least one keyword
-  argument, then it will display a custom message, either provided by ACL2 or
+  page faults encountered, and so on.  Of you can create a custom message,
   configured using the ~c[:msg] and ~c[:args] parameters.  ~c[Time$] can also
-  made to report timing information only conditionally: the
+  be made to report timing information only conditionally: the
   ~c[:real-mintime] (or equivalently, ~c[:mintime]), ~c[:run-mintime], and
   ~c[:minalloc] arguments can be used to avoid reporting timing information for
   computations that take a small amount of time (perhaps as might be expected
@@ -39479,8 +39871,9 @@ Lisp definition."
   ~il[trace] file (~pl[open-trace-file]), then you can expect to find the
   ~c[time$] output there.
 
-  (2) You may see that the form being timed is a call of the ACL2 evaluator
-  function ~c[ev-rec].  This is normal.~/
+  (2) Unless the ~c[:msg] argument is supplied, an explicit call of ~c[time$]
+  in the the top-level loop will show that form being timed is a call of the
+  ACL2 evaluator function ~c[ev-rec].  This is normal.~/
 
   :cited-by ACL2::Programming"
 
@@ -39493,20 +39886,8 @@ Lisp definition."
         'time$))
    (t
     (let ((real-mintime (or real-mintime mintime)))
-      #+acl2-loop-only
-      `(time$-logic ,real-mintime ,run-mintime ,minalloc ,msg ,args ,x)
-      #-acl2-loop-only
-      `(our-time ,x
-                 :real-mintime ,real-mintime
-                 :run-mintime ,run-mintime
-                 :minalloc ,minalloc
-                 :msg ,msg
-                 :args ,args)))))
-
-(defun time$-logic (real-mintime run-mintime minalloc msg args x)
-  (declare (ignore real-mintime run-mintime minalloc msg args)
-           (xargs :guard t))
-  x)
+      `(time$1 (list ,real-mintime ,run-mintime ,minalloc ,msg ,args)
+               ,x)))))
 
 #-acl2-loop-only
 (progn
@@ -39605,26 +39986,19 @@ Lisp definition."
            (,g-args ,args))
        (cond
         ((not (or ,g-real-mintime ,g-run-mintime ,g-minalloc ,g-msg ,g-args))
-
-; We time the form with restricted *print-level* and *print-length* since CCL,
-; and perhaps other Lisps, may otherwise print the form in full.  If the user
-; doesn't like this elision, :args t will use our custom printer instead.
-
-         (let ((*print-level* 4)
-               (*print-length* 4))
-           #+(or allegro clisp)
+         #+(or allegro clisp)
 
 ; For Allegro and CLISP, the time utilities are such that it can be useful to
 ; print a newline before printing a top-level result.  Note that we can use
 ; prog1 for these Lisps today (Sept. 2009), but we consider the possibility of
 ; #+acl2-mv-as-values for these lisps in the future.
 
-           (our-multiple-value-prog1
-            (time ,x)
-            (when (eq *trace-output* *terminal-io*)
-              (newline *standard-co* *the-live-state*)))
-           #-(or allegro clisp)
-           (time ,x)))
+         (our-multiple-value-prog1
+          (time ,x)
+          (when (eq *trace-output* *terminal-io*)
+            (newline *standard-co* *the-live-state*)))
+         #-(or allegro clisp)
+         (time ,x))
         ((and ,g-real-mintime (not (rationalp ,g-real-mintime)))
          (interface-er
           "Illegal call of ~x0: :real-mintime must be nil or a rational, but ~
@@ -39684,18 +40058,23 @@ Lisp definition."
                                               #-ccl
                                               "[unknown]")
                                         (cons #\f ',x)
+                                        (cons #\e (evisc-tuple
+                                                   3 2
+                                                   (world-evisceration-alist
+                                                    *the-live-state* nil)
+                                                   nil))
                                         (and ,g-msg
                                              (pairlis$ '(#\0 #\1 #\2 #\3 #\4
                                                          #\5 #\6 #\7 #\8 #\9)
                                                        ,g-args))))
                           (,g-msg (or ,g-msg
                                       #+ccl
-                                      "; ~xf took ~st seconds realtime, ~sc ~
-                                       seconds runtime (~sa bytes ~
+                                      "; ~Xfe took ~|; ~st seconds realtime, ~
+                                       ~sc seconds runtime~|; (~sa bytes ~
                                        allocated).~%"
                                       #-ccl
-                                      "; ~xf took ~st seconds realtime, ~sc ~
-                                       seconds runtime.~%")))
+                                      "; ~Xfe took~|; ~st seconds realtime, ~
+                                       ~sc seconds runtime.~%")))
                      (fmt-to-comment-window
                       ,g-msg alist 0
                       (abbrev-evisc-tuple *the-live-state*)))))))))))))
