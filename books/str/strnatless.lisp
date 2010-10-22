@@ -231,33 +231,42 @@
 
  (local (defthm char<-nonsense-2
           (implies (and (char< a y)
-                        (not (char< a z))
+                        (not (digitp a))
                         (digitp y)
                         (digitp z))
-                   (digitp a))
+                   (char< a z))
           :hints(("Goal" :in-theory (enable char< digitp)))))
 
  (local (defthm char<-nonsense-3
-          (implies (and (not (char< x a))
+          (implies (and 
                         (char< y a)
                         (digitp x)
-                        (digitp y))
-                   (digitp a))
+                        (digitp y)
+                        (not (digitp a)))
+                   (char< x a))
           :hints(("Goal" :in-theory (enable char< digitp)))))
 
  (local (defthm char<-nonsense-4
           (implies (and (digitp x)
                         (digitp z)
                         (char< x y)
-                        (char< y z))
-                   (digitp y))
+                        (not (digitp y)))
+                   (not (char< y z)))
+;                    (digitp y))
           :hints(("Goal" :in-theory (enable digitp char<)))))
 
  (defthm charlistnat<-transitive
    (implies (and (charlistnat< x y)
                  (charlistnat< y z))
             (charlistnat< x z))
-   :hints(("Goal" :in-theory (enable charlistnat<)))))
+   :hints(("Goal" :in-theory (e/d ((:induction charlistnat<))
+                                  (expt charlistnat<-antisymmetric
+                                        take-leading-digits-when-digit-listp
+                                        default-+-2 default-+-1))
+           :induct t
+           :expand ((:free (y) (charlistnat< x y))
+                    (:free (z) (charlistnat< y z)))
+           ))))
 
 
 
@@ -644,12 +653,34 @@
                                (the integer xl)
                                (the integer yl)))))))))
 
-(verify-guards strnat<-aux
-               :hints((and stable-under-simplificationp
-                           '(:in-theory (enable digitp
-                                                digit-val
-                                                char-fix
-                                                char<)))))
+(encapsulate
+  nil
+  (local (in-theory (disable acl2::nth-when-bigger
+                             take-leading-digits-when-digit-listp
+                             digit-listp-when-not-consp
+                             (:type-prescription character-listp)
+                             (:type-prescription eqlable-listp)
+                             (:type-prescription atom-listp)
+                             (:type-prescription digitp)
+                             (:type-prescription strnat<-aux)
+                             (:type-prescription char<)
+                             default-char-code
+                             char<-antisymmetric
+                             char<-trichotomy-strong
+                             default-coerce-2 default-coerce-1
+                             default-<-1 default-<-2
+                             default-+-1 default-+-2
+                             acl2::open-small-nthcdr
+                             acl2::nthcdr-when-not-natp
+                             acl2::nthcdr-when-non-consp
+                             ACL2::|x < y  =>  0 < -x+y|
+                             nthcdr len nth not)))
+  (verify-guards strnat<-aux
+    :hints((and stable-under-simplificationp
+                '(:in-theory (enable digitp
+                                     digit-val
+                                     char-fix
+                                     char<))))))
 
 (encapsulate
  ()
@@ -674,9 +705,17 @@
    :hints(("Goal"
            :induct (strnat<-aux x y xn yn xl yl)
            :expand ((charlistnat< (nthcdr xn (coerce x 'list))
-                                  (nthcdr yn (coerce y 'list))))
+                                  (nthcdr yn (coerce y 'list)))
+                    (:free (xl yl) (strnat<-aux x y xn yn xl yl)))
            :in-theory (e/d (strnat<-aux charlistnat<)
-                           ())
+                           (charlistnat<-antisymmetric
+                            charlistnat<-trichotomy-strong
+                            take-leading-digits-when-digit-listp
+                            digit-listp-when-not-consp
+                            charlistnat<
+                            (:definition strnat<-aux)
+                            default-+-1 default-+-2
+                            acl2::nth-when-bigger))
            :do-not '(generalize fertilize)))))
 
 
