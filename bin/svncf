@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# This is the same as svnc except that the message is replaced by a
+# filename containing the message.
+
+# Usage: svncf msgfile [file file ...]
+# which should be equivalent to
+# svn commit -F msgfile [file file ...]
+# except that file acl2-startup-info.txt is always updated, with
+# a time stamp so that it will always be committed.
+
+rm -f acl2-startup-info.txt
+echo '"$Revision: $"' > acl2-startup-info.txt
+date >> acl2-startup-info.txt
+
+if [ $# -lt 1 ] ; then \
+    echo "Usage: svnc msgfile [file file ...]" ; \
+    exit 1 ; \
+elif [ $# -eq 1 ] ; then \
+    svn commit -F "$1"
+else \
+    export msgfile="$1"
+    shift 1
+    svn commit -F "$msgfile" $* acl2-startup-info.txt
+fi
