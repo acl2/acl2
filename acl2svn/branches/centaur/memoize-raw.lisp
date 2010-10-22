@@ -853,71 +853,6 @@
              req)))
      (t nil))))
 
-(defg fns-and-macros-that-return-last
-
-; The ACL2 'functions' in FNS-AND-MACROS-THAT-RETURN-LAST, like the
-; function IF, do not return a fixed number of values.  This should
-; scare the ACL2 reader half to death.  The current value of
-; FNS-AND-MACROS-THAT-RETURN-LAST was calculated with this raw Lisp
-; code:
- 
-#||
-  
- (loop for x in 
-  (functions-defined-in-file "stp:acl2;axioms.lisp")
-  when (and (macro-function x)
-            (not (eq t (fgetprop x 'formals t 
-                                    (w *the-live-state*)))))
-  collect x)
-
-||#
-
-; The members of FNS-AND-MACROS-THAT-RETURN-LAST all have a
-; 'predefined property of T, and thus (for example) are illegal for
-; FLET.
-
-; The logical meanings of the members of
-; FNS-AND-MACROS-THAT-RETURN-LAST are given by this theorem:
-
-#||
-  (thm
-   (and 
-    (equal (progn x ... y) y)
-    (equal (must-be-equal x y) x)
-    (equal (prog2$ x y) y)
-    (equal (time$-logic ... y) y)
-    (equal (with-prover-time-limit x y) y)))
-||#
-
-; Furthermore, guard checking ensures that when MUST-BE-EQUAL is
-; called within guard-checked code, MUST-BE-EQUAL's two arguments will
-; be EQUAL, so the value of either argument may be returned.
-
-; GTRANS compiles a call to a member of
-; FNS-AND-MACROS-THAT-RETURN-LAST as though it were simply a call of
-; the last argument.  However, the overly scrupulous may detect that
-; some supposedly undetectable behavior takes place, or vice versa;
-; are we talking Alice in Wonderland?  For example, TIME$'s message
-; will not get printed, and a computation requested via a call of
-; WITH-PROVER-TIME-LIMIT will NOT be stopped, as requested, from
-; running over the given time-limit.  This behavior can be thought of
-; as somewhat like the treatment of:
-
-;        (thm (equal (time$ 1) 1))
-
-; in which TIME$ does not print because ACL2 is proving a theorem
-; rather than executing code, whatever that undetectable difference
-; may mean.  That we find our selves talking this way may be of some
-; relief to those who have been deemed insane for asserting that
-; anathema are those who do not believe that for certain x, y, and p,
-; x=y, p(x), and -p(y).  Cf. the Athanasian Creed.
-
-; NUMBER-OF-RETURN-VALUES-FORM depends upon
-; FNS-AND-MACROS-THAT-RETURN-LAST.
-
-  '(must-be-equal prog2$ time$-logic ec-call with-prover-time-limit
-                  with-guard-checking))
-
 (defn1 number-of-return-values (fn)
 
 ; A NIL value returned by NUMBER-OF-RETURN-VALUES means 'don't know'.
@@ -929,8 +864,7 @@
     (cond
      ((not (symbolp fn)) nil)
      ((and (consp pair) (integerp (cdr pair))) (cdr pair))
-     ((or (member fn '(let let* mv-let progn if))
-          (member fn fns-and-macros-that-return-last))
+     ((member fn '(let let* mv-let progn if return-last))
       (ofe "number-of-return-values: It is curious to ask about ~
             'the' number of return values of ~a because the answer ~
             is that it depends."
@@ -2868,8 +2802,8 @@ the calls took.")
         ((member fn (eval '(old-trace)))
          (ofn "~%;~10ta member of (old-trace), and it will so ~
                continue."))
-        ((member fn fns-and-macros-that-return-last)
-         "a member of FNS-AND-MACROS-THAT-RETURN-LAST.")
+        ((eq fn 'return-last)
+         "the function RETURN-LAST.")
         ((gethash fn *never-profile-ht*)
          (ofn "~%;~10tin *NEVER-PROFILE-HT*."))
         ((gethash fn *profile-reject-ht*)
@@ -3678,8 +3612,8 @@ the calls took.")
       (ofd "~%; Memoize-fn:  Old-untracing ~s before memoizing it."
            fn)
       (eval `(old-untrace ,fn)))
-    (when (member fn fns-and-macros-that-return-last)
-      (ofe "Memoize-fn: ~a is in FNS-AND-MACROS-THAT-RETURN-LAST."
+    (when (eq fn 'return-last)
+      (ofe "Memoize-fn: RETURN-LAST may not be memoized."
            fn))
     #+Clozure
     (when (multiple-value-bind (req opt restp keys)
@@ -4082,7 +4016,7 @@ the calls took.")
                         :tablename tablename
                         :ponstablename ponstablename
                         :old-fn old-fn
-                        :memoized-fn old-fn
+                        :memoized-fn (symbol-function fn)
                         :condition condition
                         :inline inline
                         :num fnn
@@ -4538,7 +4472,7 @@ the calls took.")
 (defn1 not-memoized-error (f)
   (ofe "NOT-MEMOIZED-ERROR:  ~s is not memoized." f))
 
-(defmacro memoize-let (fn form)
+(defmacro memoize-let-raw (fn form)
   (let ((fn-name (gensym "FN-NAME"))
         (tablevalue (gensym "TABLEVALUE"))
         (ponstablevalue (gensym "PONSTABLEVALUE"))
@@ -4584,7 +4518,7 @@ the calls took.")
 
 ; MEMOIZE-ON AND MEMOIZE-OFF
 
-(defmacro memoize-on (fn x)
+(defmacro memoize-on-raw (fn x)
   `(let* ((,*mo-f* ,fn) (,*mo-h* (memoizedp-raw ,*mo-f*)))
      (unless ,*mo-h* (not-memoized-error ,*mo-f*))
      (let ((,*mo-o* (symbol-function (the symbol ,*mo-f*))))
@@ -4595,7 +4529,7 @@ the calls took.")
                   ,x)
          (setf (symbol-function (the symbol ,*mo-f*)) ,*mo-o*)))))
 
-(defmacro memoize-off (fn x)
+(defmacro memoize-off-raw (fn x)
   `(let* ((,*mo-f* ,fn) (,*mo-h* (memoizedp-raw ,*mo-f*)))
        (unless ,*mo-h* (not-memoized-error ,*mo-f*))
        (let ((,*mo-o* (symbol-function (the symbol ,*mo-f*))))

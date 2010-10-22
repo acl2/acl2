@@ -2953,6 +2953,32 @@
 
 ; End of performance data.
 
+(defconst *initial-return-last-table*
+  '((time$1-raw . time$1)
+    (memoize-on-raw . memoize-on)
+    (memoize-off-raw . memoize-off)
+    (memoize-let-raw . memoize-let)
+    (with-prover-time-limit1-raw . with-prover-time-limit1)
+
+; Keep the following comment in sync with *initial-return-last-table* and with
+; chk-return-last-entry.
+
+; The following could be omitted since return-last gives them each special
+; handling: prog2$ and mbe1 are used during the boot-strap before tables are
+; supported, and ec-call1 and (in ev-rec-return-last) with-guard-checking gets
+; special handling.  It is harmless though to include them explicitly, in
+; particular at the end so that they do not add time in the expected case of
+; finding one of the other entries in the table.  If we decide to avoid special
+; handling (which we have a right to do, by the way, since users who modify
+; return-last-table are supposed to know what they are doing, as a trust tag is
+; needed), then we should probably move these entries to the top where they'll
+; be seen more quickly.
+
+    (progn . prog2$)
+    (mbe1-raw . mbe1)
+    (ec-call1-raw . ec-call1)
+    (with-guard-checking1-raw . with-guard-checking1)))
+
 (defun end-prehistoric-world (wrld)
   (let* ((wrld1 (global-set-lst
                  (list (list 'untouchable-fns
@@ -2979,7 +3005,10 @@
                  (putprop 'acl2-defaults-table
                           'table-alist
                           *initial-acl2-defaults-table*
-                          wrld)))
+                          (putprop 'return-last-table
+                                   'table-alist
+                                   *initial-return-last-table*
+                                   wrld))))
          (wrld2 (update-current-theory (current-theory1 wrld nil nil) wrld1))
          (wrld3 (putprop-x-lst1
                  *unattachable-primitives* 'attachment
@@ -4917,28 +4946,15 @@
                    (list (rebuild-expansion (cdr wrappers) form))))))
 
 (defun set-raw-mode-on (state)
-  (let ((ctx 'set-raw-mode-on))
-    (pprogn
-     (cond ((raw-mode-p state)
-            (observation ctx
-                         "No change, as raw mode is already on.~|"))
-           (t
-            (pprogn (observation ctx
-                                 "Entering raw-mode.~|")
-                    (f-put-global 'acl2-raw-mode-p t state))))
-     (value :invisible))))
+  (pprogn (cond ((raw-mode-p state) state)
+                (t (f-put-global 'acl2-raw-mode-p t state)))
+          (value :invisible)))
 
 (defun set-raw-mode-off (state)
-  (let ((ctx 'set-raw-mode-off))
-    (pprogn
-     (cond ((raw-mode-p state)
-            (pprogn (observation ctx
-                                 "Leaving raw-mode.~|")
-                    (f-put-global 'acl2-raw-mode-p nil state)))
-           (t
-            (observation ctx
-                         "No change, as raw mode is already off.~|")))
-     (value :invisible))))
+  (pprogn (cond ((raw-mode-p state)
+                 (f-put-global 'acl2-raw-mode-p nil state))
+                (t state))
+          (value :invisible)))
 
 (defmacro set-raw-mode-on! ()
 
@@ -5246,6 +5262,8 @@
                            arity1 arity2 min-arity form)
                  min-arity))))
         arity1)))
+   ((eq (car form) 'return-last)
+    (raw-arity (car (last form)) wrld state))
    (t (let ((arity (cdr (assoc-eq (car form)
                                   (f-get-global 'raw-arity-alist state)))))
         (cond
@@ -5420,7 +5438,7 @@
                  (elide-locals-rec (cadr form))
                  (cond (changed-p (mv t (list (car form) x)))
                        (t (mv nil form)))))
-        ((member-eq (car form) '(with-output record-expansion time$-logic))
+        ((member-eq (car form) '(with-output record-expansion time$1))
          (mv-let (changed-p x)
                  (elide-locals-rec (car (last form)))
                  (cond (changed-p (mv t (append (butlast form 1) (list x))))
@@ -9347,11 +9365,13 @@ The following all cause errors.
 ; Here, we use (ignore-errors (truename x)) instead of (probe-file x) because
 ; we have seen CLISP 2.48 cause an error when probe-file is called on a
 ; directory name.  Unfortunately, we can't do that with GCL 2.6.7, which
-; doesn't have ignore-errors.  But there, we can apparently call truename on
-; any name without error.
+; doesn't have ignore-errors.
 
          #+gcl
-         (truename x)
+         (if (fboundp 'si::stat) ; try to avoid some errors
+             (and (funcall 'si::stat x)
+                  (truename x))
+           (truename x))
          #-gcl
          (ignore-errors (truename x))))
     (and truename
@@ -20952,6 +20972,10 @@ The following all cause errors.
 ; Returns nil for functions unknown to ACL2.
 
   (let ((stobjs-out
+
+; Return-last cannot be traced, so it is harmless to get the stobjs-out here
+; without checking if name is return-last.
+
          (getprop name 'stobjs-out nil 'current-acl2-world (w state))))
     (and stobjs-out
          (length stobjs-out))))
@@ -21212,14 +21236,19 @@ The following all cause errors.
            integer value.  The value ~x0 is thus illegal."
           (cadr multiplicity-tail)))
      ((and predefined
-           (and notinline-tail
-                (not (eq (cadr notinline-tail) :fncall)))
-           (or (member-eq fn (f-get-global 'program-fns-with-raw-code
-                                           state))
-               (member-eq fn (f-get-global 'logic-fns-with-raw-code
-                                           state))
-               (not (ttag wrld))))
+           (or (eq fn 'return-last)
+               (and notinline-tail
+                    (not (eq (cadr notinline-tail) :fncall))
+                    (or (member-eq fn (f-get-global 'program-fns-with-raw-code
+                                                    state))
+                        (member-eq fn (f-get-global 'logic-fns-with-raw-code
+                                                    state))
+                        (not (ttag wrld))))))
       (cond
+       ((eq fn 'return-last)
+        (er soft ctx
+            "Due to its special nature, tracing of ~x0 is not allowed."
+            fn))
        ((or (member-eq fn (f-get-global 'program-fns-with-raw-code
                                         state))
             (member-eq fn (f-get-global 'logic-fns-with-raw-code
@@ -21684,7 +21713,8 @@ The following all cause errors.
        (chk-trace-options fn predefined trace-options formals ctx wrld state)
        (declare (ignore val))
        (if erp
-           (if (ttag wrld)
+           (if (or (ttag wrld)
+                   (eq fn 'return-last))
                (value nil)
              (er very-soft ctx
                  "It is possible that you can use TRACE! to avoid the above ~
@@ -23065,7 +23095,7 @@ The following all cause errors.
                     (... (fn (destr x)) ...)
                   ...)))
   ~ev[]
-  Here ``~ilc[mbe]'' stands for ``must-be-equal'' and, roughly speaking, its
+  Here ``~ilc[mbe]'' stands for ``must be equal'' and, roughly speaking, its
   call above is logically equal to the ~c[:logic] form but is evaluated using
   the ~c[:exec] form when the guard holds.  ~l[mbe].  The effect is thus to
   define ~c[fn] as shown in the ~ilc[defun] form above, but to cause execution
@@ -27698,5 +27728,103 @@ The following all cause errors.
                   (install-event :attachments-recorded event-form 'defattach 0
                                  ttree cltl-cmd nil ctx wrld4 state))))))))
 
+; We now provide support for return-last.
 
+(defun chk-return-last-entry (key val wrld)
 
+; Key is a symbol such as prog2$ that has a macro definition in raw Lisp that
+; takes two arguments.  Val is either nil, denoting that key is not in the
+; table; t, denoting that key is in the table and no check needs to be made on
+; calls of the form (return-last 'key arg1 arg2); or else val is a term
+; mentioning at most the variables arg1, arg2, and world, which is to be
+; evaluated at translate time to determine if the above return-last call is
+; legal.
+
+  (declare (xargs :guard (plist-worldp wrld)
+                  :mode :program))
+  (cond ((ttag wrld)
+         (and (symbolp key)
+              key
+              (symbolp val)
+              (or (not (member-eq key '(progn mbe1-raw ec-call1-raw
+                                              with-guard-checking1-raw)))
+
+; Keep the list above in sync with the comment about these macros in
+; *initial-return-last-table* and with return-last-lookup.
+
+                  (er hard! 'chk-return-last-entry
+                      "The proposed key ~x0 for ~x1 is illegal because it is ~
+                       given special treatment.  See :DOC return-last."
+                      key 'return-last-table))
+              (or (null val)
+                  (getprop val 'macro-body nil 'current-acl2-world wrld)
+                  (er hard! 'chk-return-last-entry
+                      "The proposed value ~x0 for key ~x1 in ~x2 is illegal ~
+                       because this value is not the name of a macro known to ~
+                       ACL2.  See :DOC return-last and (for the above point ~
+                       made explicitly) see :DOC return-last-table."
+                      val key 'return-last))
+              #-acl2-loop-only
+              (or (fboundp key)
+
+; Note that fboundp holds for functions, macros, and special operators.
+
+                  (er hard! 'chk-return-last-entry
+                      "The proposed key ~x0 for ~x1 is illegal because it is ~
+                       does not have a Common Lisp definition.    See :DOC ~
+                       return-last and (for the above point made explicitly) ~
+                       see :DOC return-last-table."
+                      key 'return-last-table))
+              t))
+        (t (er hard! 'chk-return-last-entry
+               "It is illegal to modify the table, ~x0, unless there is an ~
+                active trust tag.  See :DOC return-last and see :DOC ~
+                return-last-table."
+               'return-last-table))))
+
+(table return-last-table nil nil
+       :guard
+       (chk-return-last-entry key val world))
+
+(defdoc return-last-table
+  ":Doc-Section switches-parameters-and-modes
+
+  install special raw Lisp behavior~/
+
+  Please first ~pl[return-last] for background.
+
+  This ~il[table] is for advanced users only, and requires an active trust
+  tag (~pl[defttag]).  We recommend that you do not modify this table directly,
+  but instead use the macro ~c[defmacro-last].  ~l[return-last] for relevant
+  discussion.  Here we augment that discussion with some highly technical
+  observations that can probably be ignored if you use ~c[defmacro-last].~/
+
+  This ~il[table] has a ~c[:guard] requiring that each key be a symbol defined
+  in raw Lisp, generally as a macro, and requiring that each non-~c[nil] value
+  be associated with a symbol that names a macro defined in ACL2.  The table
+  can only be modified when there is an active trust tag; ~pl[defttag].  If a
+  key is associated with the value ~c[nil], then that key is treated as though
+  it were not in the table.
+
+  Note that keys of this table are not eligible to be bound by ~ilc[flet].  The
+  current value of this table may be obtained by evaluating the form
+  ~c[(table-alist 'return-last-table (w state))].  The built-in constant
+  ~c[*initial-return-last-table*] holds the initial value of this table.~/")
+
+(defmacro defmacro-last (fn &key raw)
+
+  ":Doc-Section Programming
+
+  define a macro that returns its last argument, but with side effects~/
+
+  This is an advanced feature that requires a trust tag.  For explanation,
+  including an example, ~pl[return-last].~/~/"
+
+  (declare (xargs :guard (and (symbolp fn)
+                              (symbolp raw))))
+  (let ((raw (or raw (intern-in-package-of-symbol
+                      (concatenate 'string (symbol-name fn) "-RAW")
+                      fn))))
+    `(progn (defmacro ,fn (x y)
+              (list 'return-last (list 'quote ',raw) x y))
+            (table return-last-table ',raw ',fn))))

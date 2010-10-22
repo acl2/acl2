@@ -4072,10 +4072,7 @@
 
 ; If we ever make 1+ and 1- functions again, they should go back on this list.
 
-                             zerop plusp minusp listp prog2$ must-be-equal
-                             ec-call mv-list time$-logic
-                             memoize-on memoize-off ; esp. relevant for #+hons
-                             with-prover-time-limit with-guard-checking
+                             zerop plusp minusp listp mv-list return-last
                              wormhole-eval force case-split double-rewrite)
                            atm)
                 (possible-trivial-clause-p (cdr cl))))))

@@ -3529,12 +3529,14 @@
   Forward chaining rules are generated from the corollary term as follows.
   First, every ~ilc[let] expression is expanded away (hence, so is every
   ~ilc[let*] and ~ilc[lambda] expression), as is every call of a so-called
-  ``guard holder'' (~ilc[must-be-equal], ~ilc[prog2$], ~ilc[ec-call],
-  ~ilc[mv-list], ~ilc[the]).  If the resulting term has the form
-  ~c[(implies hyp concl)], then ~c[concl] is treated as a conjunction, with one
-  forward chaining rule with hypothesis ~c[hyp] created for each conjunct.  In
-  the other case, where the corollary term is not an ~ilc[implies], we process
-  it as we process the conclusion in the first case.
+  ``guard holder,'' ~ilc[mv-list] or ~ilc[return-last] (the latter resulting
+  from macroexpansion of calls of ~ilc[prog2$], ~ilc[must-be-equal] or
+  ~ilc[mbe]), ~ilc[ec-call], and a few others), or `~ilc[the]'.  If the
+  resulting term has the form ~c[(implies hyp concl)], then ~c[concl] is
+  treated as a conjunction, with one forward chaining rule with hypothesis
+  ~c[hyp] created for each conjunct.  In the other case, where the corollary
+  term is not an ~ilc[implies], we process it as we process the conclusion in
+  the first case.
 
   The ~c[:trigger-terms] field of a ~c[:forward-chaining] rule class object
   should be a non-empty list of terms, if provided, and should have certain
@@ -5984,7 +5986,15 @@ this problem.  [It contains a truly trivial edit we've made, not important.]
                (tautologyp
                 (fcons-term*
                  'implies
-                 (let ((stobjs-out (stobjs-out fn wrld))
+                 (let ((stobjs-out
+
+; Perhaps we should be concerned here about calling stobjs-out in the case that
+; fn is return-last, since that will cause an error.  But it would be very
+; surprising to use return-last as a metafunction or clause-processor function,
+; and there is no soundness issue even if so: at worst we get a strange error
+; message.
+
+                        (stobjs-out fn wrld))
                        (pseudo-termp-hyp
                         (fcons-term pseudo-termp-predicate
                                     (list (car (formals fn wrld))))))
@@ -6043,6 +6053,17 @@ this problem.  [It contains a truly trivial edit we've made, not important.]
          (& (mv *t* nil nil nil nil nil nil)))
        (cond ((null eqv)
               (er soft ctx str name (untranslate term t wrld)))
+             ((eq fn 'return-last)
+
+; Ev-fncall-meta calls ev-fncall!.  We could make an exception for return-last,
+; calling ev-fncall instead, but for now we avoid that runtime overhead by
+; excluding return-last.  It's a bit difficult to imagine that anyone would
+; use return-last as a metafunction anyhow.
+
+              (er soft ctx
+                  "It is illegal to use ~x0 as a metafunction, as specified ~
+                   by ~x1.  See :DOC meta."
+                  'return-last name))
              ((not (and (not (flambdap eqv))
                         (equivalence-relationp eqv wrld)
                         (variablep x)

@@ -3959,13 +3959,8 @@ and found premature forcing killed us.
 
 ; If we ever make 1+ and 1- functions again, they should go back on this list.
 
-               zerop
-               synp
-               plusp minusp listp prog2$ must-be-equal ec-call mv-list
-               time$-logic
-               memoize-on memoize-off ; especially relevant for #+hons
-               with-prover-time-limit with-guard-checking
-               wormhole-eval force case-split double-rewrite)
+               zerop synp return-last plusp minusp listp mv-list wormhole-eval
+               force case-split double-rewrite)
              term wrld)))))
 
 (defun make-true-list-cons-nest (term-lst)
@@ -8735,11 +8730,16 @@ and found premature forcing killed us.
 ; This function is logically equivalent to ev-fncall.  However, it is
 ; much faster because it can only be used for certain fn and args: fn
 ; is a Common Lisp compliant function, not trafficking in stobjs,
-; defined in raw Lisp.  The args satisfy the guard of fn.
+; defined as a function in raw Lisp.  The args satisfy the guard of fn.
+
+; Note that return-last is not defined as a function in raw Lisp, so fn should
+; not be return-last.  That is also important so that we do not take the
+; stobjs-out of return-last, which causes an error.
 
   (declare (xargs :guard
                   (let ((wrld (w state)))
                     (and (symbolp fn)
+                         (not (eq fn 'return-last))
                          (function-symbolp fn wrld)
                          (all-nils (stobjs-in fn wrld))
                          (equal (stobjs-out fn wrld) '(nil))
@@ -9065,9 +9065,9 @@ and found premature forcing killed us.
 ; our criterion for using attachments in meta-level reasoning.  Above, we argue
 ; that we can restrict to attachments to functions ancestral in metafunctions
 ; or clause-processors.  But how do we know that evaluation produces theorems
-; in the resulting evaluation history?  If raw-Lisp functions for installed by
-; ACL2 involve mbe, then we need to know that their guards hold.  Thus we need
-; to know that the guard proof obligation holds when a function is calling its
+; in the resulting evaluation history?  If raw-Lisp functions installed by ACL2
+; involve mbe, then we need to know that their guards hold.  Thus we need to
+; know that the guard proof obligation holds when a function is calling its
 ; attachment.  This was in essence proved when the defattach event was
 ; admitted, but after applying the entire functional substitution of that
 ; event.  Thus, we include guards in our notion of ancestor so that this guard
@@ -11795,14 +11795,16 @@ and found premature forcing killed us.
   Note: One ~c[:rewrite] rule class object might create many rewrite rules from
   the ~c[:]~ilc[corollary] formula.  To create the rules, we first translate
   the formula, expanding all macros (~pl[trans]) and also expanding away calls
-  of all so-called ``guard-holders'': ~ilc[prog2$], ~ilc[must-be-equal] (also
-  ~pl[mbe]), ~ilc[ec-call], and ~ilc[mv-list].  Next, we eliminate all
-  ~c[lambda]s; one may think of this step as simply substituting away every
-  ~ilc[let], ~ilc[let*], and ~ilc[mv-let] in the formula.  We then flatten the
-  ~ilc[AND] and ~ilc[IMPLIES] structure of the formula; for example, if the
-  hypothesis or conclusion is of the form ~c[(and (and term1 term2) term3)],
-  then we replace that by the ``flat'' term ~c[(and term1 term2 term3)].  (The
-  latter is actually an abbreviation for the right-associated term
+  of all so-called ``guard holders,'' ~ilc[mv-list] and ~ilc[return-last] (the
+  latter resulting from calls of ~ilc[prog2$], ~ilc[must-be-equal] or
+  ~ilc[mbe]), ~ilc[ec-call], and a few others), as well as expansions of the
+  macro `~ilc[the]'.  Next, we eliminate all ~c[lambda]s; one may think of this
+  step as simply substituting away every ~ilc[let], ~ilc[let*], and
+  ~ilc[mv-let] in the formula.  We then flatten the ~ilc[AND] and ~ilc[IMPLIES]
+  structure of the formula; for example, if the hypothesis or conclusion is of
+  the form ~c[(and (and term1 term2) term3)], then we replace that by the
+  ``flat'' term ~c[(and term1 term2 term3)].  (The latter is actually an
+  abbreviation for the right-associated term
   ~c[(and term1 (and term2 term3))].)  The result is a conjunction of formulas,
   each of the form
   ~bv[]

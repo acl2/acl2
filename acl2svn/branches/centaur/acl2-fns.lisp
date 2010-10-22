@@ -376,6 +376,8 @@
     'character)
    ((atom form)
     t)
+   ((eq (car form) 'return-last)
+    (output-type-for-declare-form-rec (cadr (last form)) flet-alist))
    ((assoc (car form) flet-alist :test 'eq)
     (cdr (assoc (car form) flet-alist :test 'eq)))
    ((member (car form) '(flet labels)
@@ -493,8 +495,8 @@
 ; We return a list of output types, one per value.  So if #-acl2-mv-as-values,
 ; then we always return a list of length one.
 
-  #-acl2-mv-as-values
-  (declare (ignore fn))
+  (when (eq fn 'return-last)
+    (return-from output-type-for-declare-form '*))
   #-acl2-mv-as-values
   (let* ((*acl2-output-type-abort* nil) ; protect for call on next line
          (result (output-type-for-declare-form-rec form nil)))

@@ -425,6 +425,30 @@ implementations.")
 (defvar *saved-build-date-lst*)
 (defvar *saved-mode*)
 
+(defconstant *acl2-svn-revision-string*
+   "~% WARNING: Do not redistribute.  This is NOT an ACL2 release; it is,~
+    ~% rather, an svn distribution, ~a.~
+    ~% The authors of ACL2 consider svn distributions to be experimental.~%")
+
+(defun acl2-svn-revision-string ()
+
+; Put symbol :release into file acl2-startup-info.txt before doing a release.
+; Otherwise, we expect that file to contain a string of the form
+; "$Revision: n $".
+
+  (let ((file "acl2-startup-info.txt"))
+    (cond ((probe-file file)
+           (let ((val (with-open-file
+                       (str file :direction :input)
+                       (read str))))
+             (cond ((eq val :release)
+                    "")
+                   ((stringp val)
+                    (format nil *acl2-svn-revision-string* val))
+                   (t (error "Illegal value in file ~s: ~s"
+                             file val)))))
+          (t (error "File ~s appears not to exist." file)))))
+
 (defvar *saved-string*
   (concatenate
    'string
@@ -434,21 +458,10 @@ implementations.")
     ~% are welcome to redistribute it under certain conditions.  For details,~
     ~% see the GNU General Public License.~%"
 
-; NOTE: Comment out the next string if doing an ACL2 release.  Be sure to do no
-; further svn commits until after the release.  Do an svn commit of everything
-; immediately after the release, with a message (svn commit -m argument) saying
-; which release it is:
+; The following is empty if acl2-startup-info.txt begins with the symbol
+; :release.
 
-;   svn commit -m 'Committing ACL2 Version 4.1'
-
-; Then, uncomment the following string and do a new commit:
-
-;   svn commit -m \
-;   'Modifying banner to assert once again that svn releases are experimental.'
-
-   "~% WARNING: Do not redistribute.  This is NOT an ACL2 release; it is,~
-    ~% rather, an svn distribution, $Revision$.~
-    ~% The authors of ACL2 consider svn distributions to be experimental.~%"
+   (acl2-svn-revision-string)
 
    "~a"
    #+hons

@@ -799,11 +799,10 @@
 ; we X is considered normed with respect to HS.
 
   (let* ((idx (ccl::%staticp x)))
-    (declare (fixnum idx))
     (and idx
          (let ((sbits (hl-hspace-sbits hs)))
-           (and (< idx (the fixnum (length sbits)))
-                (= 1   (the fixnum (aref sbits idx))))))))
+           (and (< (the fixnum idx) (the fixnum (length sbits)))
+                (= 1 (the fixnum (aref sbits (the fixnum idx)))))))))
 
 #-static-hons
 (defabbrev hl-hspace-find-alist-for-cdr (b ctables)

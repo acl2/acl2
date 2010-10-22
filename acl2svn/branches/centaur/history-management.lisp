@@ -11739,9 +11739,9 @@ End of statistical and related information related to image size.
   :none)
 
 (defconst *basic-ruler-extenders*
-  '(ec-call mv-list prog2$))
+  '(mv-list return-last))
 
-(defun get-ruler-extenders1 (r edcls default ctx state)
+(defun get-ruler-extenders1 (r edcls default ctx wrld state)
 
 ; This function is analogous to get-measures1, but for obtaining the
 ; :ruler-extenders xarg.
@@ -11752,7 +11752,7 @@ End of statistical and related information related to image size.
         ((eq (caar edcls) 'xargs)
          (let ((temp (assoc-keyword :RULER-EXTENDERS (cdar edcls))))
            (cond ((null temp)
-                  (get-ruler-extenders1 r (cdr edcls) default ctx state))
+                  (get-ruler-extenders1 r (cdr edcls) default ctx wrld state))
                  (t
                   (let ((r0 (cadr temp)))
                     (cond
@@ -11770,39 +11770,29 @@ End of statistical and related information related to image size.
                                              *basic-ruler-extenders*)))
                                ((eq r0 :ALL)
                                 (value :ALL))
-                               ((and (consp r0)
-                                     (eq (car r0) 'quote))
-                                (er soft ctx
-                                    "The XARGS value for :RULER-EXTENDERS is ~
-                                     not evaluated, but you have supplied a ~
-                                     value of the form (QUOTE ...): ~x0.  ~
-                                     Consider removing the QUOTE."
-                                    r0))
-                               ((legal-ruler-extenders-p r0) ; includes :all
-                                (value r0))
-                               (t
-                                (er soft ctx
-                                    "Illegal value for :RULER-EXTENDERS: ~x0. ~
-                                     ~ See :DOC ruler-extenders."
-                                    r0)))))
+                               (t (er-progn
+                                   (chk-ruler-extenders r0 soft ctx wrld)
+                                   (value r0))))))
                        (get-ruler-extenders1 r1 (cdr edcls) default ctx
-                                             state)))
+                                             wrld state)))
                      ((equal r r0)
-                      (get-ruler-extenders1 r (cdr edcls) default ctx state))
+                      (get-ruler-extenders1 r (cdr edcls) default ctx wrld
+                                            state))
                      (t (er soft ctx
                             "It is illegal to declare two different ~
                              ruler-extenders for the admission of a single ~
                              function.  But you have specified ~
                              :RULER-EXTENDERS ~x0 and :RULER-EXTENDERS ~x1."
                             r r0))))))))
-        (t (get-ruler-extenders1 r (cdr edcls) default ctx state))))
+        (t (get-ruler-extenders1 r (cdr edcls) default ctx wrld state))))
 
-(defun get-ruler-extenders2 (lst default ctx state)
+(defun get-ruler-extenders2 (lst default ctx wrld state)
   (cond ((null lst) (value nil))
         (t (er-let* ((r (get-ruler-extenders1
                          *no-ruler-extenders* (fourth (car lst)) default ctx
-                         state))
-                     (rst (get-ruler-extenders2 (cdr lst) default ctx state)))
+                         wrld state))
+                     (rst (get-ruler-extenders2 (cdr lst) default ctx wrld
+                                                state)))
                     (value (cons r rst))))))
 
 (defmacro default-ruler-extenders-from-table (alist)
@@ -11844,8 +11834,9 @@ End of statistical and related information related to image size.
   (cond
    ((eq symbol-class :program)
     (value (make-list (length lst) :initial-element *no-ruler-extenders*)))
-   (t (get-ruler-extenders2 lst (default-ruler-extenders (w state)) ctx
-                            state))))
+   (t (let ((wrld (w state)))
+        (get-ruler-extenders2 lst (default-ruler-extenders wrld) ctx wrld
+                              state)))))
 
 (defun get-hints1 (edcls)
 
@@ -13253,10 +13244,8 @@ End of statistical and related information related to image size.
         EQL ENDP            ;;; used in MEMBER
         ATOM                ;;; used in ENDP
         BAD-ATOM            ;;; used in several defaxioms
-        MUST-BE-EQUAL       ;;; affects constraints (see remove-guard-holders1)
-        EC-CALL             ;;; affects constraints (see remove-guard-holders1)
+        RETURN-LAST         ;;; affects constraints (see remove-guard-holders1)
         MV-LIST             ;;; affects constraints (see remove-guard-holders1)
-        PROG2$              ;;; affects constraints (see remove-guard-holders1)
                                                
 ; We do not want vestiges of the non-standard version in the standard version.
 
@@ -13339,27 +13328,23 @@ End of statistical and related information related to image size.
 ; case that for any axiomatic event e, (remove-guard-holders e) can be
 ; substituted for e without changing the logical power of the set of axioms.
 ; Actually, we want to view the logical axiom added by e as though
-; remove-guard-holders had been applied to it, and hence PROG2$,
-; MUST-BE-EQUAL, EC-CALL, and MV-LIST appear in *non-instantiable-primitives*.
+; remove-guard-holders had been applied to it, and hence RETURN-LAST and
+; MV-LIST appear in *non-instantiable-primitives*.
 
   (cond
    ((variablep term) term)
    ((fquotep term) term)
-   ((or (eq (ffn-symb term) 'PROG2$)
+   ((or (eq (ffn-symb term) 'RETURN-LAST)
         (eq (ffn-symb term) 'MV-LIST))
 
-; Recall that PROG2$ function is used to attach the dcl-guardian of a
-; LET to the body of the LET for guard generation purposes.  A typical
-; call of PROG2$ is (PROG2$ dcl-guardian body), where dcl-guardian has
-; a lot of IFs in it.  Rather than distribute them over PROG2$ and
-; then when we finally get to the bottom with things like (prog2$
-; (illegal ...) body) and (prog2$ T body), we just open up the prog2$
-; early, throwing away the dcl-guardian.
+; Recall that PROG2$ (hence, RETURN-LAST) is used to attach the dcl-guardian of
+; a LET to the body of the LET for guard generation purposes.  A typical call
+; of PROG2$ is (PROG2$ dcl-guardian body), where dcl-guardian has a lot of IFs
+; in it.  Rather than distribute them over PROG2$ and then when we finally get
+; to the bottom with things like (prog2$ (illegal ...) body) and (prog2$ T
+; body), we just open up the prog2$ early, throwing away the dcl-guardian.
 
-    (remove-guard-holders1 (fargn term 2)))
-   ((or (eq (ffn-symb term) 'MUST-BE-EQUAL) ; (must-be-equal logic exec)
-        (eq (ffn-symb term) 'EC-CALL))
-    (remove-guard-holders1 (fargn term 1)))
+    (remove-guard-holders1 (car (last (fargs term)))))
    ((flambdap (ffn-symb term))
     (case-match
      term
@@ -13388,9 +13373,7 @@ End of statistical and related information related to image size.
   (cond
    ((variablep term) nil)
    ((fquotep term) nil)
-   ((or (eq (ffn-symb term) 'PROG2$)
-        (eq (ffn-symb term) 'MUST-BE-EQUAL)
-        (eq (ffn-symb term) 'EC-CALL)
+   ((or (eq (ffn-symb term) 'RETURN-LAST)
         (eq (ffn-symb term) 'MV-LIST))
     t)
    ((flambdap (ffn-symb term))
@@ -13469,9 +13452,10 @@ End of statistical and related information related to image size.
 ; Warning: Do not apply remove-guard-holders to body.  We rely on having all
 ; ancestors of body present in the constraint-info in our calculation of
 ; immediate-canonical-ancestors.  In particular, all function symbols in a call
-; of must-be-equal must be collected here, to support the correct use of
-; attachments in calls of metafunctions and clause-processor functions; see the
-; remark about must-be-equal in the Essay on Correctness of Meta Reasoning.
+; of return-last, especially one generated by mbe, must be collected here, to
+; support the correct use of attachments in calls of metafunctions and
+; clause-processor functions; see the remark about mbe in the Essay on
+; Correctness of Meta Reasoning.
 
                (mv nil (mcons-term* 'equal
                                     (cons-term fn (formals fn wrld))
@@ -16542,6 +16526,7 @@ End of statistical and related information related to image size.
                     (equal (arity term wrld) 4)
                     (equal (arity term wrld) 7))
                 (all-nils (stobjs-in term wrld))
+                (not (eq term 'return-last)) ; avoid taking stobjs-out
                 (equal (stobjs-out term wrld) '(nil)))
            (value
             (cond
@@ -20758,6 +20743,10 @@ End of statistical and related information related to image size.
                           ,(getprop key 'stobjs-in t 'current-acl2-world
                                     wrld) ; stobjs-in
                           ,(getprop key 'stobjs-out t 'current-acl2-world
+
+; Normally we would avoid getting the stobjs-out of return-last.  But
+; return-last is rejected for mamoization anyhow (by memoize-table-chk).
+
                                     wrld) ; stobjs-out
                           ,(and (symbolp condition)
                                 condition
