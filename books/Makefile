@@ -49,11 +49,7 @@ TIME = time
 
 # Note: arithmetic-4 could be added in analogy to arithmetic-5.
 
-# First directories of books to certify:
 DIRS1 = cowles arithmetic meta
-# Additional directories, where DIRS3 prunes out those not distributed.
-# We rely on DIRS3 being a subset of DIRS2 in the dependence of DIRS2 on
-# top-with-meta-cert.
 DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-5 \
 	misc models/jvm/m1 models/jvm/m5 proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
 	fix-cert finite-set-theory finite-set-theory/osets powerlists textbook \
@@ -66,7 +62,17 @@ DIRS2_EXCEPT_WK = $(DIRS2_EXCEPT_WK_COI) coi misc/misc2
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 SHORTDIRS2 = ordinals data-structures bdd
 
-.PHONY: $(DIRS1) $(DIRS2) $(DIRS2_EXCEPT_WK)
+# The following can be any subset of DIRS2, and can be set by the user
+# on the command line, e.g., from the ACL2 sources directory:
+#   make -j 8 regression ACL2_BOOK_DIRS='symbolic paco'
+# The directory dependencies (below) should guarantee that all
+# necessary supporting directories are made before the ones specified
+# explicitly in ACL2_BOOK_DIRS.
+ACL2_BOOK_DIRS ?= DIRS2
+
+# Since we have specified that ACL2_BOOK_DIRS is to be a subset of
+# DIRS2, we do need to add it explicitly on the next line.
+.PHONY: $(DIRS1) $(DIRS2)
 
 # Same as all-plus below, using DIRS2_EXCEPT_WK instead of DIRS2.  Much faster!!  Omits
 # books less likely to be needed, in particular, under workshops/.
@@ -413,7 +419,7 @@ lx32fsl-aux:
 # Certify all books that need certification.  If you want to get a total time
 # for certifying all books, then first do "make clean".
 .PHONY: all-plus
-all-plus: $(DIRS1) $(DIRS2)
+all-plus: $(DIRS1) $(ACL2_BOOK_DIRS)
 
 # Keep the following three pairs in sync with the two targets just above.
 # They will create compiled files for books that may have already been
