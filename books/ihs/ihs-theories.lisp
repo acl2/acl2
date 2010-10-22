@@ -57,7 +57,10 @@
   (defun-theory
     '(IFF NOT IMPLIES EQ ATOM EQL = /= NULL ENDP
           ZEROP SYNP PLUSP MINUSP
-	  LISTP PROG2$ FORCE CASE-SPLIT))
+	  LISTP
+          ;; Changed by Matt K. after v4-1, from PROG2$ to:
+          RETURN-LAST
+          FORCE CASE-SPLIT))
   :doc ":doc-section ihs-theories
   Functions whose definitions are \"built in\" to Acl2.~/~/
 

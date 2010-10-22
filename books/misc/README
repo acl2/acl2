@@ -332,6 +332,12 @@ process-book-readme.lisp -- checker for Readme.lsp for user-contributed books
 
 ===============================================================================
 
+profiling.lisp -- support for profiling functions in some host Lisps
+
+See the documentation at the top of the file.
+
+===============================================================================
+
 radix.lisp -- support for radix conversion
 
 ===============================================================================
