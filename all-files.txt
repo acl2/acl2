@@ -1544,6 +1544,7 @@ README
 bash.lisp
 beta-reduce.lisp
 book-thms.lisp
+check-acl2-exports.lisp
 computed-hint-rewrite.lisp
 computed-hint.lisp
 csort.lisp

@@ -1097,7 +1097,7 @@
 ; lisp global variable) so that if an abort happens while executing in a
 ; wormhole and we get ripped all the way out because of perfectly timed
 ; aborts, the undo cleanup form(s) will be at their proper places on the stack
-; of cleanup forms and it will just look certain acl2-unwind-protects were
+; of cleanup forms and it will just look like certain acl2-unwind-protects were
 ; interrupted.  See the discussion in and around LD-FN.  The value of
 ; *wormhole-cleanup-form* is (PROGN save-globals undo-form1 ... undo-formk
 ; safety-set STATE).  The individual undo-formi are created and added to the

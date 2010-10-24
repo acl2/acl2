@@ -16748,6 +16748,15 @@
   Modified abort handling to avoid talking about an interrupt when the error
   was caused by a Lisp error rather than an interrupt.
 
+  The value of the constant ~c[*acl2-exports*], which is still a list, has been
+  extended significantly, though only with the addition of symbols that one
+  might reasonably have expected all along to belong to this list.  A new
+  distributed book, ~c[books/misc/check-acl2-exports.lisp], checks (at
+  certification time) that no documented constant, macro, or function symbol in
+  the ~c[\"ACL2\"] package has been accidentally omitted from
+  ~c[*acl2-exports*].  Thanks to Dave Greve for helpful discussions related to
+  this change.
+
   ~st[NEW FEATURES]
 
   (For system hackers) There are new versions of system functions
