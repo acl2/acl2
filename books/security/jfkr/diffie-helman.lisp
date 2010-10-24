@@ -107,7 +107,7 @@
                            (equal (mod (expt (mod x b) (+ 1 y)) b)
                                   (mod (expt x (+ 1 y)) b))))))
 
-(local (defthm mod-expt
+(local (defthm mod-expt-thm
          (implies (and (integerp x)
                        (< 0 x)
                        (integerp y)

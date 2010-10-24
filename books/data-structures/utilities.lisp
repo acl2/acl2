@@ -106,7 +106,8 @@
   #|red|#				; Now PROGRAM
 ; set-difference-equal
 ; symbol-listp
-  untranslate)
+; untranslate
+  )
 
 
 ;;;****************************************************************************

@@ -62,6 +62,10 @@ book-thms.lisp -- returns theorems and axioms at the top level of an included
 
 ===============================================================================
 
+check-acl2-exports.lisp -- check for accidental omissions from *acl2-exports*
+
+===============================================================================
+
 computed-hint-rewrite.lisp -- interface to the rewriter for computed hints
 
 ===============================================================================
