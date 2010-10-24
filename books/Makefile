@@ -68,7 +68,7 @@ SHORTDIRS2 = ordinals data-structures bdd
 # The directory dependencies (below) should guarantee that all
 # necessary supporting directories are made before the ones specified
 # explicitly in ACL2_BOOK_DIRS.
-ACL2_BOOK_DIRS ?= DIRS2
+ACL2_BOOK_DIRS ?= $(DIRS2)
 
 # Since we have specified that ACL2_BOOK_DIRS is to be a subset of
 # DIRS2, we do need to add it explicitly on the next line.
