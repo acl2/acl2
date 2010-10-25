@@ -16757,6 +16757,10 @@
   ~c[*acl2-exports*].  Thanks to Dave Greve for helpful discussions related to
   this change.
 
+  Improved the built-in `~c[untranslate]' functions to produce ~c[let*]
+  expressions when appropriate (more to help with tools that call
+  ~c[untranslate] and the like, than to help with proof output).'
+
   ~st[NEW FEATURES]
 
   (For system hackers) There are new versions of system functions
