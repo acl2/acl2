@@ -1217,6 +1217,20 @@
      (otherwise
       (cdr (assoc-eq sym (table-alist 'return-last-table wrld)))))))
 
+(defun make-let-or-let* (bindings body)
+  (declare (xargs :guard (doubleton-list-p bindings)))
+  (cond ((and bindings (null (cdr bindings)))
+         (case-match body
+           (('let ((& &)) x)
+            `(let* (,@bindings
+                    ,@(cadr body))
+               ,x))
+           (('let* rest-bindings x)
+            `(let* ,(cons (car bindings) rest-bindings)
+               ,x))
+           (& (make-let bindings body))))
+        (t (make-let bindings body))))
+
 (mutual-recursion
 
 ; Here we combine what may naturally be thought of as two separate
@@ -2280,7 +2294,7 @@
                   (cadr term))
                  (t term)))
           ((flambda-applicationp term)
-           (make-let
+           (make-let-or-let*
             (collect-non-trivial-bindings (lambda-formals (ffn-symb term))
                                           (untranslate1-lst (fargs term)
                                                             nil

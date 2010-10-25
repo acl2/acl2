@@ -15499,7 +15499,37 @@ The following all cause errors.
   This topic describes the ACL2 methodology for using makefiles to assist in
   the automation of the certification of collections of ACL2 ~il[books].  We
   assume here a familiarity with Unix/Linux ~c[make].  We also assume that you
-  are using GNU ~c[make] rather than some other flavor of ~c[make].~/
+  are using GNU ~c[make] rather than some other flavor of ~c[make].
+
+  The basic idea is to stand in the ACL2 sources directory and submit the
+  following command, in order to certify all the distributed ~il[books] (and
+  also all books under ~c[books/workshops/], if these were downloaded).
+  ~bv[]
+  make regression
+  ~ev[]
+  For each book ~c[foo.lisp] in the distribution, a file ~c[foo.out] in the
+  same directory will contain the output from the corresponding certification
+  attempt.
+
+  By default, the ACL2 executable used is the file ~c[saved_acl2] in the ACL2
+  sources directory.  But you can specify another instead:
+  ~bv[]
+  make regression ACL2=<your_favorite_acl2_executable>
+  ~ev[]
+  If you have a multi-processor machine or the like, then you can use the
+  ~c[-j] option to obtain ~c[make]-level parallelism by specifying the number
+  of processes:
+  ~bv[]
+  make -j 8 regression
+  ~ev[]
+  You can also specify just the directories you want, among those offered in
+  ~c[Makefile].  For example:
+  ~bv[]
+  make -j 8 regression ACL2_BOOK_DIRS='symbolic paco'
+  ~ev[]
+
+  We now discuss how to create suitable makefiles in individual directories
+  containing certifiable ~il[books].~/
 
   ACL2's regression suite is run using ~c[Makefile]s that include
   ~c[books/Makefile-generic].  You can look at existing ~c[Makefile]s to

@@ -18449,7 +18449,33 @@ End of statistical and related information related to image size.
   terminates without error then it reports that the proof would have
   succeeded had the indicated goals been proved and it prints an
   appropriate ~il[defthm] form to define each of the ~c[:by] names.  The
-  ``name'' ~c[nil] means ``make up a name.''
+  ``name'' ~c[nil] means ``make up a name.''  Here is an example (admittedly
+  contrived for illustration purposes).
+  ~bv[]
+  ACL2 !>(thm (equal (append (append x y) z)
+                     (append x y z))
+              :hints ((\"Subgoal *1/2'\" :by nil)))
+
+  Name the formula above *1.
+
+  [[... output omitted here ...]]
+
+  [Note:  A hint was supplied for our processing of the goal below. 
+  Thanks!]
+
+  Subgoal *1/2'
+  (IMPLIES (AND (CONSP X)
+                (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                       (APPEND (CDR X) Y Z)))
+           (EQUAL (APPEND (APPEND X Y) Z)
+                  (APPEND X Y Z))).
+
+  But we have been asked to pretend that this goal is subsumed by the
+  yet-to-be-proved |THM Subgoal *1/2'|.
+
+  Subgoal *1/1
+  [[... proof goes on; further output omitted here ...]]
+  ~ev[]
 
   The system does not attempt to check the uniqueness of the ~c[:by] names
   (supplied or made up), since by the time those goals are proved the
