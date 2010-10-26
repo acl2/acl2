@@ -25585,7 +25585,15 @@ The following all cause errors.
             ,@declares
             ,form))
          (ld '((top-level-fn state))
-             :ld-post-eval-print :command-conventions)
+             :ld-post-eval-print :command-conventions
+
+; If top-level-fn causes an error, the default :ld-error-action of :return!
+; will return a value of the form (mv nil (:STOP-LD ...) state), which will be
+; passed up.  (See :DOC ld-error-action.)  The silent-error below will thus
+; never be executed, and hence we will not roll back top-level-fn.  So we
+; provide :ld-error-action :error here.
+
+             :ld-error-action :error)
          (silent-error state))
        :ld-pre-eval-print nil
        :ld-post-eval-print nil

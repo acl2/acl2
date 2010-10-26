@@ -16800,6 +16800,10 @@
   Fixed a bug in ~ilc[with-guard-checking], which was being ignored in function
   bodies.
 
+  Fixed a bug in ~ilc[top-level], which was not reverting the logical
+  ~il[world] when an error resulted from evaluation of the given form.  Thanks
+  to Jared Davis for bringing this bug to our attention.
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   There is new ~c[Makefile] support for certifying just some of the distributed

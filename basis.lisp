@@ -12825,7 +12825,7 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
   where ~c[nil] is the error component and whose ``value component'', ~c[val]
   is a ~ilc[cons] pair whose ~ilc[car] is the symbol ~c[:STOP-LD].  Let ~c[val]
   be the pair ~c[(:STOP-LD . x)].  Then the call of ~c[ld] returns the error
-  tripls ~c[(mv nil (:STOP-LD n . x) state)], where ~c[n] is the value of
+  triple ~c[(mv nil (:STOP-LD n . x) state)], where ~c[n] is the value of
   ~ilc[state] global variable ~c['ld-level] at the time of termination.  The
   following example illustrates how this works.
   ~bv[]
