@@ -22,6 +22,8 @@ includes a previous book.
     not nil.
 + proof-by-arith.lisp
     Search among different proof strategies.
++ defrule.lisp
+    Expand macros before generating a rewrite rule
 + gen-defun.lisp
     Generate events and event names based on the current logical world.
   gen-defun-check.lisp
