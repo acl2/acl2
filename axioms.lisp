@@ -14763,7 +14763,8 @@ J
   that produce expansions that refer to ~ilc[state] or other single-threaded
   objects (~pl[stobj]) or variables not among the macro's arguments.
   See the ~c[git] example above.  For a related utility that avoids this
-  ~ilc[state] restriction, ~pl[make-event].~/"
+  ~ilc[state] restriction, for example allowing expansion of macros when
+  generating the body of an event, ~pl[make-event].~/"
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
