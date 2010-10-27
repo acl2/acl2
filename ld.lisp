@@ -16810,6 +16810,12 @@
   books.  ~l[book-makefiles], in particular discussion of the variable
   ~c[ACL2_BOOK_DIRS].  Thanks to Sandip Ray for requesting this enhancement.
 
+  The ~il[documentation] for ~ilc[make-event] now points to a new book,
+  ~c[books/make-event/defrule.lisp], that shows how ~c[make-event] can be used to
+  do macroexpansion before generating ~il[events].  Thanks to Carl Eastlund for
+  useful interaction on the acl2-help mailing list that led us to add this
+  example.
+
   ~st[EMACS SUPPORT]
 
   ~st[EXPERIMENTAL VERSIONS]

@@ -1488,6 +1488,7 @@ basic.lisp
 defconst-fast-examples.lisp
 defconst-fast.lisp
 defrefine.lisp
+defrule.lisp
 defspec.lisp
 dotimes.lisp
 embeddable-event-forms.lisp

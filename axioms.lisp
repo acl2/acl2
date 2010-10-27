@@ -16675,9 +16675,11 @@ J
   in order to understand ~c[make-event], perhaps before continuing to read this
   documentation.  For example, ~c[eval.lisp] contains definitions of macros
   ~c[must-succeed] and ~c[must-fail] that are useful for testing and are used
-  in many other books in that directory, especially ~c[eval-tests.lisp].  Other
-  than the examples, the explanations here should suffice for most users.  If
-  you want explanations of subtler details, ~pl[make-event-details].
+  in many other books in that directory, especially ~c[eval-tests.lisp].
+  Another example, ~c[defrule.lisp], shows how ~c[make-event] can be used to do
+  macroexpansion before generating ~il[events].  Other than the examples, the
+  explanations here should suffice for most users.  If you want explanations of
+  subtler details, ~pl[make-event-details].
 
   ~c[Make-event] is related to Lisp macroexpansion in the sense that its
   argument is evaluated to obtain an expansion result, which is evaluated
