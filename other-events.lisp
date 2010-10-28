@@ -6227,7 +6227,8 @@
 (defun update-for-redo-flat (n ev-lst state)
 
 ; Here we update the state globals 'redo-flat-succ and 'redo-flat-fail on
-; behalf of a failure of progn or encapsulate.
+; behalf of a failure of progn, encapsulate, or certify-book.  N is the
+; zero-based index of the event in ev-lst that failed.
 
   (assert$ (and (natp n)
                 (< n (length ev-lst)))
@@ -6251,19 +6252,19 @@
 
   ":Doc-Section Events
 
-  redo up through a failure in an ~ilc[encapsulate] or ~ilc[progn]~/
+  redo on failure of a ~ilc[progn], ~ilc[encapsulate], or ~ilc[certify-book]~/
 
-  When one submits an ~ilc[encapsulate] or ~ilc[progn] event and one of its
-  sub-events fails, ACL2 restores its logical ~il[world] as though the
-  ~c[encapsulate] or ~c[progn] had not been run.  But sometimes one would like
-  to debug the failure by re-executing all sub-events that succeeded up to the
-  point of failure, and then re-executing the failed sub-event.  Said
-  differently, imagine that the top-level ~c[encapsulate] or ~c[progn] form, as
-  well as all such sub-forms, were flattened into a list of events that were
-  then submitted to ACL2 up to the point of failure.  This would put us in the
-  state in which the original failed event had failed, so we could now submit
-  that failed event and try modifying it, or first proving additional events,
-  in order to get it admitted.
+  When one submits an ~ilc[encapsulate], ~ilc[progn], or ~ilc[certify-book]
+  command and there is a failure, ACL2 restores its logical ~il[world] as
+  though the command had not been run.  But sometimes one would like to debug
+  the failure by re-executing all sub-events that succeeded up to the point of
+  failure, and then re-executing the failed sub-event.  Said differently,
+  imagine that the ~il[events] under an ~c[encapsulate], ~c[progn], or
+  ~c[certify-book] form were flattened into a list of events that were then
+  submitted to ACL2 up to the point of failure.  This would put us in the state
+  in which the original failed event had failed, so we could now submit that
+  failed event and try modifying it, or first proving additional events, in
+  order to get it admitted.
 
   ~c[Redo-flat] is provided for this purpose.  Consider the following (rather
   nonsensical) example, in which the ~ilc[defun] of ~c[f3] fails (the body is
@@ -6316,7 +6317,7 @@
   For the example above, this command produces the following output.
   ~bv[]
 
-  List of events (from encapsulate or progn) preceding the failure:
+  List of events preceding the failure:
 
   ((DEFUN F1 (X) X)
    (ENCAPSULATE NIL
@@ -6342,20 +6343,15 @@
   because these are contained in successful ~c[encapsulate] sub-events, which
   are therefore not flattened.  The ~ilc[progn] and two ~ilc[encapsulate]
   events surrounding the definition of ~c[f3] are, however, flattened, because
-  that definition failed to be admitted.
-
-  Unfortunately, an event must actually fail in order for ~c[redo-flat] to
-  work.  So if the system is ``stuck'' on an event, then you may find it
-  helpful to insert an illegal event just in front of it before submitting the
-  ~ilc[encapsulate] or ~ilc[progn].~/~/"
+  that definition failed to be admitted.~/~/"
 
   `(if (null (f-get-global 'redo-flat-fail state))
-       (pprogn (fms "There is no failure saved from an encapsulate or progn.~|"
+       (pprogn (fms "There is no failure saved from an encapsulate, progn, or ~
+                     certify-book.~|"
                     nil (standard-co state) state nil)
                (value :invisible))
      ,(if show
-          `(pprogn (fms "List of events (from encapsulate or progn) preceding ~
-                         the failure:~|~%~x0~|"
+          `(pprogn (fms "List of events preceding the failure:~|~%~x0~|"
                         (list (cons #\0 (f-get-global 'redo-flat-succ state)))
                         (standard-co state) state (ld-evisc-tuple state))
                    (fms "Failed event:~|~%~x0~|"
@@ -6371,12 +6367,16 @@
                       ,@(and succ (list (list 'list ''ld
                                               (list 'cons
                                                     ''list
-                                                    (list 'kwote-lst 'redo-flat-succ))
-                                              :ld-skip-proofsp succ-ld-skip-proofsp)))
+                                                    (list 'kwote-lst
+                                                          'redo-flat-succ))
+                                              :ld-skip-proofsp
+                                              succ-ld-skip-proofsp)))
                       ,@(and fail (list (list 'list ''ld
                                               (list 'list
                                                     ''list
-                                                    (list 'list ''quote 'redo-flat-fail))
+                                                    (list 'list
+                                                          ''quote
+                                                          'redo-flat-fail))
                                               :ld-error-action :continue
                                               :ld-pre-eval-print t)))
                       ,@(and pbt succ label
@@ -6558,7 +6558,8 @@
                  (mv-let
                   (erp val expansion-alist final-kpa state)
                   (pprogn
-                   (cond ((eq caller 'encapsulate-pass-1)
+                   (cond ((or (eq caller 'encapsulate-pass-1)
+                              (eq caller 'certify-book))
                           (pprogn (f-put-global 'redo-flat-succ nil state)
                                   (f-put-global 'redo-flat-fail nil state)))
                          (t state))
@@ -6579,8 +6580,11 @@
                                          (t nil))
                                    ctx (proofs-co state) state))
                   (cond (erp (pprogn
-                              (cond ((eq caller 'encapsulate-pass-1)
-                                     (update-for-redo-flat val ev-lst state))
+                              (cond ((or (eq caller 'encapsulate-pass-1)
+                                         (eq caller 'certify-book))
+                                     (update-for-redo-flat (- val index)
+                                                           ev-lst
+                                                           state))
                                     (t state))
                               (mv erp val state)))
                         (t (er-progn
@@ -14539,6 +14543,9 @@ The following all cause errors.
   event.  If you don't want its included ~il[events] in your present
   ~il[world], simply execute ~c[:]~ilc[ubt] ~c[:here] afterwards.
 
+  A utility is provided to assist in debugging failures of ~c[certify-book];
+  ~pl[redo-flat].)
+
   ~c[Certify-book] requires that the default ~il[defun-mode]
   (~pl[default-defun-mode]) be ~c[:]~ilc[logic] when certification is
   attempted.  If the mode is not ~c[:]~ilc[logic], an error is signalled.
@@ -14549,7 +14556,7 @@ The following all cause errors.
   certified.
 
   Certification occurs in some logical ~il[world], called the ``certification
-  ~il[world].'' That ~il[world] must contain the ~ilc[defpkg]s needed to read
+  ~il[world].''  That ~il[world] must contain the ~ilc[defpkg]s needed to read
   and execute the forms in the book.  The ~il[command]s necessary to recreate
   that ~il[world] from the ACL2 initial ~il[world] will be copied into the
   ~il[certificate] created for the book.  Those ~il[command]s will be

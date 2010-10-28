@@ -16767,6 +16767,9 @@
   expressions when appropriate (more to help with tools that call
   ~c[untranslate] and the like, than to help with proof output).'
 
+  The utility ~ilc[redo-flat] now works for ~ilc[certify-book] failures, just
+  as it continues to work for failures of ~ilc[encapsulate] and ~ilc[progn].
+
   ~st[NEW FEATURES]
 
   (For system hackers) There are new versions of system functions
