@@ -24445,6 +24445,8 @@ J
 ; see no reason why this can't work, but we prefer not to mess with this very
 ; stable code unless/until there is a reason.  (Note that we however do not
 ; have in mind any potential change to the logic code for state-global-let*.)
+; See state-free-global-let* for such a variant that is appropriate to use when
+; state is not available.
 
 ; A typical use is (state-global-let* ((<var1> <form1>) ...  (<vark> <formk>))
 ; <body>).  Bindings thus are in the style of let* (but see the discussion of

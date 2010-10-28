@@ -2042,11 +2042,9 @@
 
    (t
     #-acl2-loop-only
-    (let ((state *the-live-state*)
-          (*ev-shortcut-okp* t)
-          (*raw-guard-warningp* (raw-guard-warningp-binding))
-          erp0 val0)
-      (state-global-let*
+    (let ((*ev-shortcut-okp* t)
+          (*raw-guard-warningp* (raw-guard-warningp-binding)))
+      (state-free-global-let*
        ((safe-mode safe-mode)
         (guard-checking-on
 
@@ -2068,15 +2066,7 @@
                            args
                            '<wrld>
                            safe-mode gc-off hard-error-returns-nilp aok)))
-
-; The rather funky use of setq below is a consequence of our use of
-; state-global-let* above, which requires an error triple as produced by (value
-; t) below.
-
-               (setq erp0 erp)
-               (setq val0 val)
-               (value t))))
-      (mv erp0 val0))
+               (mv erp val)))))
     #+acl2-loop-only
     (mv-let
      (erp val latches)
@@ -2712,6 +2702,32 @@
                         (untranslate-preprocess-fn wrld)
                         wrld))))
 
+#-acl2-loop-only
+(defmacro state-free-global-let* (bindings body)
+
+; This raw Lisp macro is a variant of state-global-let* that should be used
+; only when state is *not* lexically available, or at least not a formal
+; parameter of the enclosing function.  It is used to bind state globals that
+; may have raw-Lisp side effects.  If state were available this sort of binding
+; could be inappropriate, since one could observe a change in state globals
+; under the state-free-global-let* that was not justified by the logic.
+
+; State-free-global-let* provides a nice alternative to state-global-let* when
+; we want to avoid involving the acl2-unwind-protect mechanism, for example
+; during parallel evaluation.
+
+  (cond
+   ((null bindings) body)
+   (t (let (bs syms)
+        (dolist (binding bindings)
+          (let ((sym (global-symbol (car binding))))
+            (push (list sym (cadr binding))
+                  bs)
+            (push sym syms)))
+        `(let* ,(nreverse bs)
+           (declare (special ,@(nreverse syms)))
+           ,body)))))
+
 (defun ev-w (form alist w safe-mode gc-off hard-error-returns-nilp aok)
 
 ; WARNING: Do not call this function if alist contains the live state
@@ -2734,11 +2750,9 @@
 ; See the comment in ev for why we don't check the time limit here.
 
   #-acl2-loop-only
-  (let ((state *the-live-state*)
-        (*ev-shortcut-okp* t)
-        (*raw-guard-warningp* (raw-guard-warningp-binding))
-        erp0 val0)
-    (state-global-let*
+  (let ((*ev-shortcut-okp* t)
+        (*raw-guard-warningp* (raw-guard-warningp-binding)))
+    (state-free-global-let*
      ((safe-mode safe-mode)
       (guard-checking-on
 
@@ -2755,19 +2769,11 @@
               hard-error-returns-nilp
               aok)
       (progn (when latches
-               (er hard 'ev-w
+               (er hard! 'ev-w
                    "The call ~x0 returned non-nil latches."
                    (list 'ev-w form alist '<wrld> safe-mode gc-off
                          hard-error-returns-nilp aok)))
-
-; The rather funky use of setq below is a consequence of our use of
-; state-global-let* above, which requires an error triple as produced by (value
-; t) below.
-
-             (setq erp0 erp)
-             (setq val0 val)
-             (value t))))
-    (mv erp0 val0))
+             (mv erp val)))))
   #+acl2-loop-only
   (mv-let (erp val latches)
           (ev-rec form alist w (big-n) safe-mode gc-off
@@ -2791,11 +2797,9 @@
 ; See the comment in ev for why we don't check the time limit here.
 
   #-acl2-loop-only
-  (let ((state *the-live-state*)
-        (*ev-shortcut-okp* t)
-        (*raw-guard-warningp* (raw-guard-warningp-binding))
-        erp0 val0)
-    (state-global-let*
+  (let ((*ev-shortcut-okp* t)
+        (*raw-guard-warningp* (raw-guard-warningp-binding)))
+    (state-free-global-let*
      ((safe-mode safe-mode)
       (guard-checking-on
 
@@ -2816,15 +2820,7 @@
                    "The call ~x0 returned non-nil latches."
                    (list 'ev-w-lst lst alist '<wrld> safe-mode gc-off
                          hard-error-returns-nilp aok)))
-
-; The rather funky use of setq below is a consequence of our use of
-; state-global-let* above, which requires an error triple as produced by (value
-; t) below.
-
-             (setq erp0 erp)
-             (setq val0 val)
-             (value t))))
-    (mv erp0 val0))
+             (mv erp val)))))
   #+acl2-loop-only
   (mv-let (erp val latches)
           (ev-rec-lst lst alist w (big-n) safe-mode gc-off
