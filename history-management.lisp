@@ -20075,11 +20075,75 @@ End of statistical and related information related to image size.
 ; ``TTAG NOTE'' mechanism for determining which files need to be inspected in
 ; order to validate the proper use of ttags.
 
-; The following is a potentially useful utility, so we include it in the ACL2
-; sources rather than in books/hacking/hacker.lisp.  Thanks to Peter Dillinger for
-; his contribution.
+; There is a subtlety to the handling of trust tags by include-book in the case
+; of uncertified books.  Consider the following example.  We have two books,
+; sub.lisp and top.lisp, but we will be considering two versions of sub.lisp,
+; as indicated.
+
+; sub.lisp
+#||
+(in-package "ACL2")
+; (defttag :sub-ttag1) ; will be uncommented later
+(defun f (x) x)
+||#
+
+; top.lisp
+#||
+(in-package "ACL2")
+(encapsulate
+ () ;; start lemmas for sub
+
+ (include-book "sub")
+ )
+||#
+
+; Now take the following steps:
+
+; In a fresh ACL2 session:
+; (certify-book "sub")
+; (u)
+; (certify-book "top")
+
+; Now edit sub.lisp by uncommenting the defttag form.  Then, in a fresh ACL2
+; session:
+; (certify-book "sub" 0 t :ttags :all)
+; (u)
+; (include-book "top")
+
+; The (include-book "top") form will fail when the attempt is made to include
+; the book "sub".  To see why, first consider what happens when a superior book
+; "top" includes a subsidiary certified book "sub".  When include-book-fn1 is
+; called in support of including "sub", the second call of
+; chk-acceptable-ttags1 therein uses the certificate's ttags, stored in
+; variable cert-ttags, to refine the state global 'ttags-allowed.  After that
+; check and refinement, which prints ttag notes based on cert-ttags,
+; ttags-allowed is bound to cert-ttags for the inclusion of "sub", with further
+; ttag notes omitted during that inclusion.
+
+; Returning to our example, the recertification of "sub" results in the
+; addition of a ttag for "sub" that has not yet been noticed for "top".  So
+; when we include "top", state global ttags-allowed is bound to nil, since that
+; is the cert-ttags for "top".  When sub is encountered, its additional ttag is
+; not allowed (because ttags-allowed is nil), and we get an error.
+
+; In a way, this error is unfortunate; after all, top is uncertified, and we
+; wish to allow inclusion of uncertified books (with a suitable warning).  But
+; it seems non-trivial to re-work the scheme described above.  In particular,
+; it seems that we would have to avoid binding ttags-allowed to nil when
+; including "top", before we realize that "top" is uncertified.  (The check on
+; sub-book checksums occurs after events are processed.)  We could eliminate
+; this "barrier" under which we report no further ttag notes, but that could
+; generate a lot of ttag notes -- even if we defer, we may be tempted to print
+; a note for each defttag encountered in a different sub-book.
+
+; That said, if the need is great enough for us to avoid the error described
+; above, we'll figure out something.
 
 (defmacro ttags-seen ()
+
+; The following is a potentially useful utility, which we choose to include in
+; the ACL2 sources rather than in books/hacking/hacker.lisp.  Thanks to Peter
+; Dillinger for his contribution.
 
   ":Doc-Section Miscellaneous
 
@@ -20452,9 +20516,12 @@ End of statistical and related information related to image size.
             "")
            (t
             (msg "  This error is unusual since it is occurring while ~
-                  including a certified book, in this case, the book ~x0.  ~
-                  See :DOC make-event-details, section ``A note on ttags,'' ~
-                  for an explanation."
+                  including a book that appears to have been certified, in ~
+                  this case, the book ~x0.  Most likely, that book needs to ~
+                  be recertified, though a temporary workaround may be to ~
+                  delete its certificate (i.e., its .cert file).  Otherwise ~
+                  see :DOC make-event-details, section ``A note on ttags,'' ~
+                  for a possible explanation."
                  (f-get-global 'skip-notify-on-defttag state))))))
      (t
       (pprogn

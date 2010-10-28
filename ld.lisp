@@ -16690,6 +16690,12 @@
 
 ; Eliminated inclp argument of functions in the translate11 nest.
 
+; Made minor changes in include-book-fn1 that could conceivably affect handling
+; of uncertified books with stale certificates.  But since this may be rare,
+; and it doesn't seem important to invest time to come up with an example
+; illustrating such a change in behavior, we merely leave this comment rather
+; than adding to the :doc string below.
+
   :Doc
   ":Doc-Section release-notes
 

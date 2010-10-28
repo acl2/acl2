@@ -12823,12 +12823,6 @@ The following all cause errors.
                                  (not (warning-off-p "Ttags" state))))
                            (ttags (if (eq ttags :default) :all ttags)))
 
-; It is possible for cert-annotations to be nil now.  That is because cert-obj
-; was nil.  But we never use it if cert-obj is nil, except for cert-ttags.
-; Now, cert-obj is nil when we are including an uncertified book; so the fact
-; that the calls of chk-ttags-for-include-book and chk-acceptable-ttags are
-; trivial, in this case, is not a problem.
-
                       #-acl2-loop-only
                       (when (and (not certified-p)
                                  (not behalf-of-certify-flg)
@@ -12850,57 +12844,62 @@ The following all cause errors.
                       (er-let*
                        ((ttags (chk-well-formed-ttags ttags directory-name ctx
                                                       state))
-                        (ttags-info ; this value is ignored if cert-obj=nil
-                         (er-progn
-                          (cond
-                           ((or cert-obj-skipped-proofsp
-                                (and cert-obj
-                                     (cdr (assoc-eq
-                                           :axiomsp
-                                           cert-annotations))))
-                            (chk-cert-annotations
-                             cert-annotations
-                             nil
-                             (access cert-obj cert-obj :cmds)
-                             full-book-name
-                             suspect-book-action-alist
-                             ctx state))
-                           (t (value nil)))
-                          (cond
-                           ((null cert-obj)
-                            (value nil))
-                           (t
-                            (er-progn
+                        (ignored-val
+                         (cond
+                          ((or cert-obj-skipped-proofsp
+                               (and cert-obj
+                                    (cdr (assoc-eq
+                                          :axiomsp
+                                          cert-annotations))))
+                           (chk-cert-annotations
+                            cert-annotations
+                            nil
+                            (access cert-obj cert-obj :cmds)
+                            full-book-name
+                            suspect-book-action-alist
+                            ctx state))
+                          (t (value nil))))
+                        (ttags-info ; this value is ignored if not certified-p
+                         (cond
+                          ((not certified-p)
+                           (value nil))
+                          (t
+                           (er-progn
 
 ; We check that the ttags supplied as an argument to include-book are
 ; sufficiently inclusive to allow the ttags from the certificate.  No global
 ; state is updated, not even 'ttags-allowed; this is just a check.
 
-                             (chk-acceptable-ttags1
-                              cert-ttags
-                              nil ; the active-book-name is irrelevant
-                              ttags
-                              nil    ; ttags-seen is irrelevant
-                              :quiet ; do not print ttag notes
-                              ctx state)
+                            (chk-acceptable-ttags1
+                             cert-ttags
+                             nil ; the active-book-name is irrelevant
+                             ttags
+                             nil    ; ttags-seen is irrelevant
+                             :quiet ; do not print ttag notes
+                             ctx state)
 
 ; From the check just above, we know that the ttags supplied as arguments are
 ; sufficient to allow the certificate's ttags.  We next check that the global
 ; ttags-allowed are also sufficient to allow the certificate's ttags.  The
-; following call returns a pair to be bouund to ttags-info (above), consisting
+; following call returns a pair to be bound to ttags-info (above), consisting
 ; of a refined ttags-allowed and an extended ttags-seen.  It prints all
 ; relevant ttag notes if the book is certified; below, we bind
 ; skip-notify-on-defttag in that case so that we don't see ttag notes for
 ; individual events in the book.
 
-                             (chk-acceptable-ttags1
-                              cert-ttags active-book-name
-                              (f-get-global 'ttags-allowed state)
-                              old-ttags-seen
-                              (if warn-for-ttags-default
-                                  (cons ctx full-book-name)
-                                t)
-                              ctx state))))))
+                            (chk-acceptable-ttags1
+
+; With some effort, perhaps we could find a way to avoid causing an error when
+; this call of chk-acceptable-ttags1 returns an error.  But that would take
+; some effort; see the Essay on Trust Tags (Ttags).
+
+                             cert-ttags active-book-name
+                             (f-get-global 'ttags-allowed state)
+                             old-ttags-seen
+                             (if warn-for-ttags-default
+                                 (cons ctx full-book-name)
+                               t)
+                             ctx state)))))
                         (skip-proofsp
 
 ; At one time we bound this variable to 'initialize-acl2 if (or cert-obj
@@ -12929,11 +12928,12 @@ The following all cause errors.
                          (state-global-let*
                           ((axiomsp nil)
                            (ttags-allowed
-                            (if cert-obj
+                            (if certified-p
                                 cert-ttags
                               (f-get-global 'ttags-allowed state)))
-                           (skip-notify-on-defttag (and cert-obj
-                                                        full-book-name))
+                           (skip-notify-on-defttag
+                            (and ttags-info ; hence certified-p
+                                 full-book-name))
                            (connected-book-directory directory-name)
                            (match-free-error nil)
                            (guard-checking-on nil)
@@ -12976,7 +12976,7 @@ The following all cause errors.
                                   (or certified-p
                                       behalf-of-certify-flg))
                              ctx state))
-                           (value (if cert-obj
+                           (value (if ttags-info ; hence certified-p
                                       (car ttags-info)
                                     (f-get-global 'ttags-allowed
                                                   state)))))))
@@ -12996,7 +12996,7 @@ The following all cause errors.
                           ((certified-p
                             (cond
                              ((and
-                               cert-obj
+                               certified-p
                                (not (include-book-alist-subsetp
                                      (unmark-and-delete-local-included-books
                                       (cdr post-alist))
@@ -13233,7 +13233,7 @@ The following all cause errors.
                                                  wrld3)))
                                               wrld3))))))
                                         (wrld5
-                                         (if cert-obj
+                                         (if ttags-info ; hence certified-p
                                              (global-set?
                                               'ttags-seen
                                               (cdr ttags-info)
