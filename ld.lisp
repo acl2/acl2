@@ -16770,6 +16770,12 @@
   The utility ~ilc[redo-flat] now works for ~ilc[certify-book] failures, just
   as it continues to work for failures of ~ilc[encapsulate] and ~ilc[progn].
 
+  The following only affects users who use trust tags to add to list values of
+  either of the ~ilc[state] global variables ~c[program-fns-with-raw-code] or
+  ~c[logic-fns-with-raw-code].  For functions that belong to either of the
+  above two lists, ~c[trace$] will supply a default value of ~c[:fncall] to
+  keyword ~c[:notinline], to avoid discarding raw-Lisp code for the function.
+
   ~st[NEW FEATURES]
 
   (For system hackers) There are new versions of system functions

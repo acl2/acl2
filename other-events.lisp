@@ -21509,9 +21509,12 @@ The following all cause errors.
          (notinline-fncall
           (cond (notinline-tail
                  (eq (cadr notinline-tail) :fncall))
-                ((not def) ; then no choice in the matter!
-                 t)
-                (predefined
+                ((or (not def) ; then no choice in the matter!
+                     predefined
+                     (member-eq fn (f-get-global 'program-fns-with-raw-code
+                                                 *the-live-state*))
+                     (member-eq fn (f-get-global 'logic-fns-with-raw-code
+                                                 *the-live-state*)))
                  t)
                 (t nil)))
          (gcond (and cond-tail (acl2-gentemp "COND")))
@@ -22345,7 +22348,10 @@ The following all cause errors.
   function to call its original definition.  Without this special value, the
   new installed definition for the traced function will include the body of the
   original definition.  This ~c[:fncall] behavior is the default for functions
-  whose definitions are built into ACL2.
+  whose definitions are built into ACL2 and for functions that have been added
+  (using a trust tag, an advanced feature, so most users can probably ignore
+  this case) to either of the ~ilc[state] global variables
+  ~c[program-fns-with-raw-code] or ~c[logic-fns-with-raw-code].
 
   The legal values for ~c[:notinline] are ~c[t] (the default), ~c[nil], and
   ~c[:fncall].
