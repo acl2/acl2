@@ -2702,32 +2702,6 @@
                         (untranslate-preprocess-fn wrld)
                         wrld))))
 
-#-acl2-loop-only
-(defmacro state-free-global-let* (bindings body)
-
-; This raw Lisp macro is a variant of state-global-let* that should be used
-; only when state is *not* lexically available, or at least not a formal
-; parameter of the enclosing function.  It is used to bind state globals that
-; may have raw-Lisp side effects.  If state were available this sort of binding
-; could be inappropriate, since one could observe a change in state globals
-; under the state-free-global-let* that was not justified by the logic.
-
-; State-free-global-let* provides a nice alternative to state-global-let* when
-; we want to avoid involving the acl2-unwind-protect mechanism, for example
-; during parallel evaluation.
-
-  (cond
-   ((null bindings) body)
-   (t (let (bs syms)
-        (dolist (binding bindings)
-          (let ((sym (global-symbol (car binding))))
-            (push (list sym (cadr binding))
-                  bs)
-            (push sym syms)))
-        `(let* ,(nreverse bs)
-           (declare (special ,@(nreverse syms)))
-           ,body)))))
-
 (defun ev-w (form alist w safe-mode gc-off hard-error-returns-nilp aok)
 
 ; WARNING: Do not call this function if alist contains the live state
