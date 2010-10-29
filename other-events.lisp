@@ -6343,7 +6343,12 @@
   because these are contained in successful ~c[encapsulate] sub-events, which
   are therefore not flattened.  The ~ilc[progn] and two ~ilc[encapsulate]
   events surrounding the definition of ~c[f3] are, however, flattened, because
-  that definition failed to be admitted.~/~/"
+  that definition failed to be admitted.
+
+  Normally, ~c[redo-flat] will have the desired effect even if you interrupted
+  a proof (with control-c).  However, ~c[redo-flat] will not produce the
+  desired result after an interrupt if you have enabled the debugger using
+  ~c[(set-debugger-enable t)],~/~/"
 
   `(if (null (f-get-global 'redo-flat-fail state))
        (pprogn (fms "There is no failure saved from an encapsulate, progn, or ~
