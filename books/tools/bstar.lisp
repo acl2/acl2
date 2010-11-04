@@ -747,11 +747,28 @@ is equivalent to
 ~l[B*] for background.
 
 Effectively, this provides a way to exit early from the sequence of
-computations represented by a list of B* binders.~/~/"
+computations represented by a list of B* binders.
+
+In the special case where no early-forms are provided, the condition itself is
+returned.  I.e.,
+~bv[]
+ (b* (((when (condition-form)))
+      ... rest of bindings)
+    (late-result-form))
+~ev[]
+is equivalent to
+~bv[]
+ (or (condition-form)
+     (b* (... rest of bindings ...)
+        (late-result-form)))
+~ev[]
+~/~/"
   (declare (xargs :guard (and (consp args) (eq (cdr args) nil))))
-  `(if ,(car args)
-       (progn$ . , forms)
-     ,rest-expr))
+  (if forms
+      `(if ,(car args)
+           (progn$ . , forms)
+         ,rest-expr)
+    `(or ,(car args) ,rest-expr)))
 
 (def-b*-binder if
   "B* control flow operator~/
