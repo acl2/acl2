@@ -646,46 +646,67 @@ then also ignore case if that argument is positive, else do not ignore case."
 	     (setq fill-column 79)))
 ; Formerly: (set-default 'fill-column 79)
 
-; From Boyer?  See documentation for fill-format-string.  This is useful both
-; for format and for ACL2's printing functions fmt and fms.
+; The function fill-format-string below probably originated from Bob
+; Boyer in the early 1990s.  See documentation for fill-format-string.
+; This is useful both for format and for ACL2's printing functions fmt
+; and fms.  Enhanced Nov. 2010 by incorporating a version of code from
+; Jared Davis, so that this works even when the cursor is within the
+; string rather at the start of it.
 (define-key ctl-t-keymap "f" 'fill-format-string)
 
 (defun fill-format-string ()
 
-  "Remove the ~<newline>'s from a Lisp format statement, and
-put in new ones, after any space, in such a way that
-the next space does not pass fill-column."
+  "Remove the ~<newline>'s from a Lisp format string, and put in new
+ones, after any space, in such a way that the next space does not pass
+fill-column.  The point (i.e., the cursor) should initially be at the
+start of the string or anywhere within the string (but not on the
+closing double-quote).  The final position of the cursor is the
+beginning of the string that was processed."
 
   (interactive "")
 
-  (or (equal (char-after (point)) 34)
-      (error "Call fill-format-string immediately in front of a string."))
-  (let ((start-point (point))
-	(fill (make-string (+ 1 (current-column)) 32)))
-    (forward-sexp 1)
-    (let ((end-point (point))
-	  (new-end nil))
-      (save-restriction
-	(narrow-to-region (+ 1 start-point)
-			  (- end-point 1))
-	(goto-char (point-min))
-	(while (re-search-forward "~\n" nil t)
-	  (delete-char -2)
-	  (while (or (looking-at " ")
-		     (looking-at "\t")
-		     (looking-at "\n"))
-	    (delete-char 1)))
-	(goto-char (point-max))
-	(setq new-end (point)))
-      (save-restriction
-	(beginning-of-line)
-	(narrow-to-region (point)
-			  new-end)
-	(goto-char (+ 1 start-point))
-	(while (re-search-forward "[ \t]" nil t)
-	  (cond ((next-break-too-far)
-		 (insert "~\n")
-		 (insert fill))))))))
+; First move the point to the beginning of the string, if possible.
+
+  (or (and (equal (char-after (point)) ?\")
+	   (not (equal (char-before (point)) ?\\)))
+      (let ((pos (point))
+	    (not-done t))
+	(while not-done
+	  (if (> pos 0)
+	      (if (equal (char-after pos) ?\")
+		  (if (equal (char-before pos) ?\\)
+		      (setq pos (1- pos))
+		    (goto-char pos)
+		    (setq not-done nil))
+		(setq pos (1- pos)))
+	    (error "Cannot find beginning of a format string to fill.")))))
+  (save-excursion
+    (let ((start-point (point))
+	  (fill (make-string (+ 1 (current-column)) ? )))
+      (forward-sexp 1)
+      (let ((end-point (point))
+	    (new-end nil))
+	(save-restriction
+	  (narrow-to-region (+ 1 start-point)
+			    (- end-point 1))
+	  (goto-char (point-min))
+	  (while (re-search-forward "~\n" nil t)
+	    (delete-char -2)
+	    (while (or (looking-at " ")
+		       (looking-at "\t")
+		       (looking-at "\n"))
+	      (delete-char 1)))
+	  (goto-char (point-max))
+	  (setq new-end (point)))
+	(save-restriction
+	  (beginning-of-line)
+	  (narrow-to-region (point)
+			    new-end)
+	  (goto-char (+ 1 start-point))
+	  (while (re-search-forward "[ \t]" nil t)
+	    (cond ((next-break-too-far)
+		   (insert "~\n")
+		   (insert fill)))))))))
 
 (defun next-break-too-far ()
   (let ((p (point)))
