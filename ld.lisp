@@ -16795,6 +16795,13 @@
 
   ~st[HEURISTIC IMPROVEMENTS]
 
+  We have slightly improved the so-called ``~il[type-set]'' heuristics to work
+  a bit harder on terms of the form ~c[(rec term)], where ~c[rec] is a
+  so-called ``compound-recognizer'' function, that is, a function with a
+  corresponding enabled ~c[:]~ilc[compound-recognizer] rule.  Thanks to Jared
+  Davis for sending a helpful example (found, in essence, in the modified
+  function ~c[type-set-rec], source file ~c[type-set-b.lisp]).
+
   ~st[BUG FIXES]
 
   Fixed a bug that could occur when including a book that attempts to redefine

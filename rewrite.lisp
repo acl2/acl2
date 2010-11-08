@@ -3061,8 +3061,7 @@
 ; This code is a bit contorted because we have found (specifically, in
 ; (verify-guards exec-send ...) in
 ; books/workshops/2000/lusk-mccune/lusk-mccune-final/stepproc1.lisp) that the
-; ts= call below is noticeably more efficient than the (not (ts-intersectp
-; ...)).
+; ts= call below is noticeably more efficient than the (ts-disjointp ...).
 
                (let ((rw-equivp (cond ((and (eq (ffn-symb (car entry))
                                                 'hide)
@@ -3074,7 +3073,7 @@
                                        (car entry)))))
                  (cond
                   ((if rw-equivp
-                       (not (ts-intersectp (cadr entry) *ts-nil*))
+                       (ts-disjointp (cadr entry) *ts-nil*)
                      (ts= (cadr entry) *ts-t*))
                    (let* ((equiv-term
                            (cond (rw-equivp (fargn (fargn (car entry) 1)
@@ -3340,7 +3339,7 @@ and found premature forcing killed us.
     (cond ((ts= ts *ts-nil*)
            (mv *nil* (cons-tag-trees ts-ttree ttree)))
           ((and (equal geneqv *geneqv-iff*)
-                (not (ts-intersectp ts *ts-nil*)))
+                (ts-disjointp ts *ts-nil*))
            (mv *t* (cons-tag-trees ts-ttree ttree)))
           (t
            (mv term ttree)))))
@@ -12676,7 +12675,7 @@ and found premature forcing killed us.
 ; The commented-out case just below, here explicitly before we added the above
 ; call of type-set-equalo, is handled by that call.
 
-;           ((not (ts-intersectp ts-lhs ts-rhs))
+;           ((ts-disjointp ts-lhs ts-rhs)
 ;            (mv *nil* (puffert ttree+)))
 
              ((equal-x-cons-x-yp lhs rhs)

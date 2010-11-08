@@ -6323,6 +6323,9 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
   (list 'the-type-set
         (cons 'logand (list-of-the-type-set x))))
 
+(defmacro ts-disjointp (&rest x)
+  (list 'ts= (cons 'ts-intersection x) '*ts-empty*))
+
 (defmacro ts-intersectp (&rest x)
   (list 'not (list 'ts= (cons 'ts-intersection x) '*ts-empty*)))
 
