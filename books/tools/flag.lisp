@@ -505,6 +505,16 @@ since no general name was given.~%")))))
     nil))
 
 
+
+; LEGACY HINT.  We found cases where EXPAND-CALLS-COMPUTED-HINT was too
+; aggressive and expanded 'inner' terms that shouldn't have been expanded.
+; We now FLAG-EXPAND-COMPUTED-HINT instead, which is more targetted for
+; exactly the expansions we want.
+
+; BOZO we are leaving expand-calls-computed-hint here only because Sol
+; uses it in other places; we may wish to clean this up eventually and
+; move it to some more appropriate file.
+
 ;; Collects up any calls of functions listed in FNS that are present in x.
 (mutual-recursion
  (defun find-calls-of-fns-term (x fns acc)
@@ -526,6 +536,27 @@ since no general name was given.~%")))))
  (let ((expand-list (find-calls-of-fns-term (car (last clause)) fns nil)))
    `(:expand ,expand-list)))
 
+
+
+; NEW HINT: this more limited hint seems to be better.
+
+(defun flag-expand-computed-hint (stable-under-simplificationp clause fns)
+  (and stable-under-simplificationp
+       (let ((conclusion (car (last clause))))
+         (case-match conclusion
+           (('equal lhs rhs)
+            (let* ((expands (if (and (consp lhs)
+                                     (member (car lhs) fns))
+                                (list lhs)
+                              nil))
+                   (expands (if (and (consp rhs)
+                                     (member (car rhs) fns))
+                                (cons rhs expands)
+                              expands)))
+              (and expands
+                   `(:expand ,expands))))
+           (&
+            nil)))))
 
 (defun flag-table-events (alist entry)
   (if (atom alist)
@@ -582,10 +613,10 @@ since no general name was given.~%")))))
                         ;; from an equality, which were unprovable.  So, turn
                         ;; off forcing.
                         (:executable-counterpart force))))
-                    (and stable-under-simplificationp
-                         (expand-calls-computed-hint ACL2::clause
-                                                     ',(cons flag-fn-name
-                                                             (strip-cars alist)))))))))
+                    (flag-expand-computed-hint stable-under-simplificationp
+                                               ACL2::clause
+                                               ',(cons flag-fn-name
+                                                       (strip-cars alist))))))))
 
       (progn . ,(flag-table-events alist `(,flag-fn-name
                                            ,alist
