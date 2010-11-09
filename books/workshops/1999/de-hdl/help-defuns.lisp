@@ -65,7 +65,7 @@
   (declare (xargs :guard (symbol-listp l)))
   (cond ((endp l) t)
 	((member-eq (car l) (cdr l)) nil)
-	(t (no-duplicatesp-equal (cdr l)))))
+	(t (no-duplicatesp-eq (cdr l)))))
 
 (defun disjoint-eq (a b)
   (declare (xargs :guard (two-symbol-listp a b)))

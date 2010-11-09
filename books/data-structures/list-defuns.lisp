@@ -110,7 +110,7 @@
 ;   memberp-eq                No    boolesn
 ;   memberp-equal             No    boolean
 ; no-duplicatesp (eql)        Yes   boolean
-;   no-duplicatesp-eq         No    boolean
+;   no-duplicatesp-eq         Yes   boolean
 ;   no-duplicatesp-equal      Yes   boolean
 ; true-listp                  Yes   boolean
 ;
@@ -182,7 +182,7 @@
   (declare (xargs :guard (symbol-listp l)))
   (cond ((endp l) t)
 	((member-eq (car l) (cdr l)) nil)
-	(t (no-duplicatesp-equal (cdr l)))))
+	(t (no-duplicatesp-eq (cdr l)))))
 
 (defun nth-seg (i j l)
   "The sublist of L beginning at offset I for length J."
