@@ -16776,6 +16776,35 @@
   above two lists, ~c[trace$] will supply a default value of ~c[:fncall] to
   keyword ~c[:notinline], to avoid discarding raw-Lisp code for the function.
 
+  The ~il[guard] of the macro ~ilc[intern] has been strengthened so that its
+  second argument may no longer be either the symbol
+  ~c[*main-lisp-package-name*] or the string ~c[\"COMMON-LISP\"].  That change
+  supports another change, namely that the following symbols in the
+  ~c[\"COMMON-LISP\"] package are no longer allowed into ACL2: symbols in that
+  package that are not members of the list constant
+  ~c[*common-lisp-symbols-from-main-lisp-package*] yet are imported into the
+  ~c[\"COMMON-LISP\"] package from another package.  ~l[pkg-imports] and
+  ~pl[symbol-package-name].  To see why we made that change, consider for
+  example the following theorem, which ACL2 was able to prove when the host
+  Lisp is GCL.
+  ~bv[]
+  (let ((x \"ALLOCATE\") (y 'car))
+    (implies (and (stringp x)
+                  (symbolp y)
+                  (equal (symbol-package-name y)
+                         \"COMMON-LISP\"))
+             (equal (symbol-package-name (intern-in-package-of-symbol x y))
+                    \"SYSTEM\")))
+  ~ev[]
+  Now suppose that one includes a book with this theorem (with
+  ~c[:]~ilc[rule-classes] ~c[nil]), using an ACL2 built on top of a different
+  host Lisp, say CCL, that does not import the symbol ~c[SYSTEM::ALLOCATE] into
+  the ~c[\"COMMON-LISP\"] package.  Then then one can prove ~c[nil] by giving
+  this theorem as a ~c[:use] hint.
+
+  The axioms introduced by ~ilc[defpkg] have changed.  See the discussion of
+  ~ilc[pkg-imports] under ``NEW FEATURES'' below.
+
   ~st[NEW FEATURES]
 
   (For system hackers) There are new versions of system functions
@@ -16792,6 +16821,20 @@
   ~ilc[ec-call].  With an active trust tag, an advanced user can now write code
   that has side effects in raw Lisp; ~pl[return-last].  Thanks to Jared Davis
   for requesting this feature.
+
+  A new function, ~ilc[pkg-imports], specifies the list of symbols imported
+  into a given package.  The axioms for ~ilc[defpkg] have been strengthened,
+  taking advantage of this function.  Now one can prove theorems using ACL2
+  that we believe could not previously be proved using ACL2, for example the
+  following.
+  ~bv[]
+  (equal (symbol-package-name (intern-in-package-of-symbol str t))
+         (symbol-package-name (intern-in-package-of-symbol str nil)))
+  ~ev[]
+  Thanks to Sol Swords for a helpful report, which included the example above.
+  ~l[pkg-imports] and ~pl[defpkg].
+
+  Added function ~ilc[no-duplicatesp-eq].
 
   ~st[HEURISTIC IMPROVEMENTS]
 

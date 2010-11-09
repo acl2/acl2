@@ -13237,7 +13237,6 @@ End of statistical and related information related to image size.
         FIX                 ;;; used in DEFAULT-+-2
         BOOLEANP            ;;; used in BOOLEANP-CHARACTERP
         CHARACTER-LISTP     ;;; used in CHARACTER-LISTP-COERCE
-        MEMBER-SYMBOL-NAME  ;;; used in ACL2-PACKAGE
         FORCE               ;;; just nice to protect
         CASE-SPLIT          ;;; just nice to protect
         MAKE-CHARACTER-LIST ;;; used in COMPLETION-OF-COERCE
@@ -13246,6 +13245,15 @@ End of statistical and related information related to image size.
         BAD-ATOM            ;;; used in several defaxioms
         RETURN-LAST         ;;; affects constraints (see remove-guard-holders1)
         MV-LIST             ;;; affects constraints (see remove-guard-holders1)
+
+; The next six are used in built-in defpkg axioms.
+
+        MEMBER-SYMBOL-NAME
+        SYMBOL-PACKAGE-NAME
+        INTERN-IN-PACKAGE-OF-SYMBOL
+        PKG-IMPORTS
+        SYMBOL-LISTP
+        NO-DUPLICATESP-EQ
                                                
 ; We do not want vestiges of the non-standard version in the standard version.
 
@@ -15462,7 +15470,7 @@ End of statistical and related information related to image size.
     coerce cons consp denominator equal
     #+:non-standard-analysis floor1
     if imagpart integerp
-    intern-in-package-of-symbol numerator pkg-witness rationalp
+    intern-in-package-of-symbol numerator pkg-witness pkg-imports rationalp
     #+:non-standard-analysis realp
     realpart stringp symbol-name symbol-package-name symbolp
     #+:non-standard-analysis standardp

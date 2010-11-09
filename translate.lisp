@@ -1402,6 +1402,11 @@
                     (rationalp x))
                 (mv nil (numerator x) latches))
                (t (ev-fncall-guard-er fn args w latches safep))))
+        (PKG-IMPORTS
+         (cond ((or guard-checking-off
+                    (stringp x))
+                (mv nil (pkg-imports x) latches))
+               (t (ev-fncall-guard-er fn args w latches safep))))
         (PKG-WITNESS
          (cond ((or guard-checking-off
                     (and (stringp x) (not (equal x ""))))
@@ -2218,7 +2223,12 @@
      "The call ~x0 is illegal because the second argument is not the name of a ~
       package currently known to ACL2."
      (list 'pkg-witness (cadr val))))
-
+   ((and (consp val)
+         (eq (car val) 'pkg-imports-er))
+    (msg
+     "The call ~x0 is illegal because the argument is not the name of a ~
+      package currently known to ACL2."
+     (list 'pkg-imports (cadr val))))
    ((and (consp val)
          (eq (car val) 'program-only-er))
     (msg

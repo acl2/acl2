@@ -2022,32 +2022,13 @@
 ; Defpkg adds an axiom, labelled ax below.  We make a :REWRITE rule out of ax.
 ; Warning: If the axiom added by defpkg changes, be sure to consider the
 ; initial packages that are not defined with defpkg, e.g., "ACL2".  In
-; particular, for each primitive package in *initial-known-package-alist*
-; (except for the "COMMON-LISP" package) there is a defaxiom in axioms.lisp
-; exactly analogous to the add-rule below.  So if you change this code, change
-; that code.
+; particular, for each primitive package in *initial-known-package-alist* there
+; is a defaxiom in axioms.lisp exactly analogous to the add-rule below.  So if
+; you change this code, change that code.
 
                        (ax
-                        `(implies
-                          ,(if (null imports)
-                               `(if (stringp x)
-                                    (if (symbolp y)
-                                        (equal (symbol-package-name y)
-                                               (quote ,name))
-                                      ,*nil*)
-                                  ,*nil*)
-                             `(if (stringp x)
-                                  (if (not (member-symbol-name
-                                            x (quote ,imports)))
-                                      (if (symbolp y)
-                                          (equal (symbol-package-name y)
-                                                 (quote ,name))
-                                        ,*nil*)
-                                    ,*nil*)
-                                ,*nil*))
-                          (equal (symbol-package-name
-                                  (intern-in-package-of-symbol x y))
-                                 (quote ,name))))
+                        `(equal (pkg-imports (quote ,name))
+                                (quote ,imports)))
                        (w2
                         (add-rules
                          (packn (cons name '("-PACKAGE")))

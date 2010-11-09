@@ -716,15 +716,22 @@ ACL2 from scratch.")
 
 ; Next we define the initial global and *1* packages.
 
+(defconstant *main-lisp-package*
+  (find-package "COMMON-LISP"))
+
+(defconstant *main-lisp-package-name-raw*
+; Keep this in sync with *main-lisp-package-name*.
+  "COMMON-LISP")
+
 ; Keep the following in sync with *main-lisp-package-name*.
-(make-global-package "COMMON-LISP")
+(make-global-package *main-lisp-package-name-raw*)
 (make-global-package "KEYWORD")
 (make-global-package "ACL2")
 (make-global-package "ACL2-INPUT-CHANNEL")
 (make-global-package "ACL2-OUTPUT-CHANNEL")
 
 ; Keep the following in sync with *main-lisp-package-name*.
-(make-*1*-package "COMMON-LISP")
+(make-*1*-package *main-lisp-package-name-raw*)
 ; Functions cannot be defined in the keyword package, so we do not do so.
 ;  (make-*1*-package "KEYWORD")
 (make-*1*-package "ACL2")
@@ -738,8 +745,13 @@ ACL2 from scratch.")
 (defparameter acl2::*initial-lisp-symbol-mark*
   'acl2_invisible::initial-lisp-symbol-mark)
 
-(dolist (sym *copy-of-common-lisp-symbols-from-main-lisp-package*)
-        (setf (get sym *initial-lisp-symbol-mark*) "COMMON-LISP"))
+(let ((cl-pkg-name *main-lisp-package-name-raw*))
+  (dolist (sym *copy-of-common-lisp-symbols-from-main-lisp-package*)
+
+; We support the Invariant on Symbols in the Common Lisp Package.  See the long
+; comment about this invariant in the symbolp case of bad-lisp-objectp.
+
+    (setf (get sym *initial-lisp-symbol-mark*) cl-pkg-name)))
 
 (defconstant *acl2-package* (find-package "ACL2"))
 

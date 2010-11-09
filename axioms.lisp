@@ -5244,7 +5244,7 @@
 ;; RAG - After adding the non-standard predicates, this number grew to 110.
 
 (defconst *force-xnume*
-  (let ((x 120))
+  (let ((x 122))
     #+:non-standard-analysis
     (+ x 12)
     #-:non-standard-analysis
@@ -6442,6 +6442,23 @@ Induction Schema:   (and (implies (not (consp x)) (p x))
   (cond ((endp l) t)
         ((member (car l) (cdr l)) nil)
         (t (no-duplicatesp (cdr l)))))
+
+(defun no-duplicatesp-eq (l)
+
+  ":Doc-Section ACL2::Programming
+
+  check for duplicates in a list (using ~c[eq] for equality)~/
+
+  ~c[(no-duplicatesp-eq l)] is true if and only if no member of ~c[l] occurs
+  twice in ~c[l].~/
+
+  ~c[(no-duplicatesp l)] has a ~il[guard] of ~c[(symbol-listp l)].  Membership
+  is tested using ~ilc[member-eq], hence using ~ilc[eq] as the test.~/"
+
+  (declare (xargs :guard (symbol-listp l)))
+  (cond ((endp l) t)
+        ((member-eq (car l) (cdr l)) nil)
+        (t (no-duplicatesp-eq (cdr l)))))
 
 #+acl2-loop-only
 (defun assoc (x alist)
@@ -8223,7 +8240,9 @@ J
 ; defparameter for *ever-known-package-alist* above, consider changing
 ; symbol-package-name, and perhaps adjust the check for "LISP" in defpkg-fn.
 
-(defconst *main-lisp-package-name* "COMMON-LISP")
+(defconst *main-lisp-package-name*
+; Keep this in sync with *main-lisp-package-name-raw*.
+  "COMMON-LISP")
 
 ; Warning: If you add primitive packages to this list, be sure to add
 ; the defaxioms that would be done by defpkg.  For example, below you
@@ -8244,6 +8263,15 @@ J
         (make-package-entry :name "ACL2"
                             :imports *common-lisp-symbols-from-main-lisp-package*)
         (make-package-entry :name *main-lisp-package-name*
+
+; From a logical perspective, ACL2 pretends that no symbols are imported into
+; the main Lisp package, "COMMON-LISP".  This perspective is implemented by
+; bad-lisp-objectp, as described in a comment there about maintaining the
+; Invariant on Symbols in the Common Lisp Package.  In short, every good ACL2
+; symbol not in a package known to ACL2 must be imported into the main Lisp
+; package and must have "COMMON-LISP" as its *initial-lisp-symbol-mark*
+; property.
+
                             :imports nil)
         (make-package-entry :name "KEYWORD"
                             :imports nil)))
@@ -8655,13 +8683,16 @@ J
 
            "ACL2")))
 
-;  member-symbol-name is used in the defpkg axiom.
+; Member-symbol-name is used in defpkg axioms.  We keep it disabled in order to
+; avoid stack overflows, for example in the proof of theorem
+; symbol-listp-raw-acl2-exports in file books/misc/check-acl2-exports.lisp.
 
 (defun member-symbol-name (str l)
   (declare (xargs :guard (symbol-listp l)))
   (cond ((endp l) nil)
         ((equal str (symbol-name (car l))) l)
         (t (member-symbol-name str (cdr l)))))
+(in-theory (disable member-symbol-name)) ; defund is not yet available here
 
 (defthm symbol-equality
 
@@ -8688,6 +8719,41 @@ J
                 (symbolp any-symbol))
            (equal (symbol-name (intern-in-package-of-symbol s any-symbol)) s)))
 
+(defaxiom symbol-package-name-intern-in-package-of-symbol
+  (implies (and (stringp x)
+                (symbolp y)
+                (not (member-symbol-name
+                      x
+                      (pkg-imports (symbol-package-name y)))))
+           (equal (symbol-package-name (intern-in-package-of-symbol x y))
+                  (symbol-package-name y))))
+
+(defaxiom intern-in-package-of-symbol-is-identity
+  (implies (and (stringp x)
+                (symbolp y)
+                (member-symbol-name
+                 x
+                 (pkg-imports (symbol-package-name y))))
+           (equal (intern-in-package-of-symbol x y)
+                  (car (member-symbol-name
+                        x
+                        (pkg-imports (symbol-package-name y)))))))
+
+(defaxiom symbol-listp-pkg-imports
+  (symbol-listp (pkg-imports pkg))
+  :rule-classes ((:forward-chaining :trigger-terms ((pkg-imports pkg)))))
+
+(defaxiom no-duplicatesp-eq-pkg-imports
+  (no-duplicatesp-eq (pkg-imports pkg))
+  :rule-classes :rewrite)
+
+(defaxiom completion-of-pkg-imports
+  (equal (pkg-imports x)
+         (if (stringp x)
+             (pkg-imports x)
+           nil))
+  :rule-classes nil)
+
 ; These axioms are just the ones that would be added by defpkg had the packages
 ; in question been introduced that way.
 
@@ -8695,42 +8761,20 @@ J
 ; probably visit the same change to the rules added by defpkg.
 
 (defaxiom acl2-input-channel-package
-  (implies (and (stringp x)
-                (symbolp y)
-                (equal (symbol-package-name y)
-                       "ACL2-INPUT-CHANNEL"))
-           (equal (symbol-package-name (intern-in-package-of-symbol x y))
-                  "ACL2-INPUT-CHANNEL")))
+  (equal (pkg-imports "ACL2-INPUT-CHANNEL")
+         nil))
 
 (defaxiom acl2-output-channel-package
-  (implies (and (stringp x)
-                (symbolp y)
-                (equal (symbol-package-name y)
-                       "ACL2-OUTPUT-CHANNEL"))
-           (equal (symbol-package-name (intern-in-package-of-symbol x y))
-                  "ACL2-OUTPUT-CHANNEL")))
+  (equal (pkg-imports "ACL2-OUTPUT-CHANNEL")
+         nil))
 
 (defaxiom acl2-package
-  (implies (and (stringp x)
-                (not (member-symbol-name
-                      x
-                      *common-lisp-symbols-from-main-lisp-package*))
-                (symbolp y)
-                (equal (symbol-package-name y)
-                       "ACL2"))
-           (equal (symbol-package-name (intern-in-package-of-symbol x y))
-                  "ACL2")))
+  (equal (pkg-imports "ACL2")
+         *common-lisp-symbols-from-main-lisp-package*))
 
 (defaxiom keyword-package
-  (implies (and (stringp x)
-                (symbolp y)
-                (equal (symbol-package-name y)
-                       "KEYWORD"))
-           (equal (symbol-package-name (intern-in-package-of-symbol x y))
-                  "KEYWORD")))
-
-; Adding a similar axiom for pkg "COMMON-LISP" would be wrong.  We do not
-; know what the imports to "COMMON-LISP" are, they differ from lisp to lisp.
+  (equal (pkg-imports "KEYWORD")
+         nil))
 
 ; The following two axioms are probably silly.  But at least they may provide
 ; steps towards building up the ACL2 objects constructively from a few
@@ -8791,21 +8835,105 @@ J
 
   (declare (type string str)
            (type symbol sym))
-  (let ((ans
+  (let ((pkg (symbol-package sym)))
+    (multiple-value-bind
+     (ans status)
+     (intern str
 
-; Bob Boyer notes that intern returns more than one value, so we may get better
-; efficiency (at least in GCL) by this let-binding trick, which throws away all
-; but the first value.
+; At one time we said here that we do not use symbol-package-name below because
+; for the main Lisp package, it may return the name of a non-existent package,
+; in particular for GCL: we have (symbol-package-name 'car) = "COMMON-LISP",
+; which is not the name of a package, while (symbol-name (symbol-package 'car))
+; = "LISP", which is.  However, for quite some time now (it is 2010 as we write
+; this) a call of rename-package in acl2.lisp has made that comment obsolete.
+; Nevertheless, we intern in the symbol-package, since that seems slightly more
+; efficient.
 
-         (intern str
+             pkg)
+     (declare (ignore status))
 
-; We do not use symbol-package-name below because for the main Lisp package, it
-; may return the name of a non-existent package.  In particular, for GCL we
-; have (symbol-package-name 'car) = "COMMON-LISP", which is not the name of a
-; package, while (symbol-name (symbol-package 'car)) = "LISP", which is.
+; We next guarantee that if sym is an ACL2 object then so is ans.  We assume
+; that every import of a symbols into a package known to ACL2 is via defpkg,
+; except perhaps for imports into the "COMMON-LISP" package.  So unless sym
+; resides in the "COMMON-LISP" package (whether natively or not), the
+; symbol-package of sym is one of those known to ACL2.  Thus, the only case of
+; concern is the case that sym resides in the "COMMON-LISP" package.  Since sym
+; is an ACL2 object, then by the Invariant on Symbols in the Common Lisp
+; Package (see bad-lisp-objectp), its symbol-package is *main-lisp-package* or
+; else its *initial-lisp-symbol-mark* property is "COMMON-LISP".  So we set the
+; *initial-lisp-symbol-mark* for ans in each of these sub-cases, which
+; preserves the above invariant.
 
-                 (symbol-package sym))))
-    ans))
+     (when (and (or (get sym *initial-lisp-symbol-mark*)
+                    (eq pkg *main-lisp-package*))
+                (not (get ans *initial-lisp-symbol-mark*)))
+       (setf (get ans *initial-lisp-symbol-mark*)
+             *main-lisp-package-name-raw*))
+     ans)))
+
+(defdoc pkg-imports
+  ":Doc-Section ACL2::Programming
+
+  list of symbols imported into a given package~/
+
+  Completion Axiom:
+  ~bv[]
+  (equal (pkg-imports x)
+         (if (stringp x)
+             (pkg-imports x)
+           nil))
+  ~ev[]~/
+  ~il[Guard] for ~c[(pkg-imports x)]:
+  ~bv[]
+  (stringp x)
+  ~ev[]
+
+  ~c[(Pkg-imports pkg)] returns a duplicate-free list of all symbols imported
+  into ~c[pkg], which should be the name of a package known to ACL2.  For
+  example, suppose ~c[\"MY-PKG\"] was created by
+  ~bv[]
+  (defpkg \"MY-PKG\" '(ACL2::ABC LISP::CAR)).
+  ~ev[]
+  Then ~c[(pkg-imports \"MY-PKG\")] equals the list ~c[(ACL2::ABC LISP::CAR)].
+
+  If ~c[pkg] is not a string, then ~c[(pkg-imports pkg)] is ~c[nil].  If
+  ~c[pkg] is a string but not the name of a package known to ACL2, then the
+  value of the form ~c[(pkg-imports pkg)] is unspecified, and it evaluation
+  will fail to yield a value.  By ``the symbols imported into ~c[pkg]'' we mean
+  the symbols imported into ~c[pkg] by the ~ilc[defpkg] event that introduced
+  ~c[pkg].  There are no imports for built-in packages except for the
+  ~c[\"ACL2\"] package, which imports the symbols in the list value of the
+  constant ~c[*common-lisp-symbols-from-main-lisp-package*].  In particular,
+  this is the case for the ~c[\"COMMON-LISP\"] package.  Users familiar with
+  Common Lisp may find this surprising, since in actual Common Lisp
+  implementations it is often the case that many symbols in that package are
+  imported from other packages.  However, ACL2 treats all symbols in the
+  constant ~c[*common-lisp-symbols-from-main-lisp-package*] as having a
+  ~ilc[symbol-package-name] of ~c[\"COMMON-LISP\"], as though they were not
+  imported.  ACL2 admits a symbol imported into in the ~c[\"COMMON-LISP\"]
+  package only if it belongs to that list: any attempt to read any other symbol
+  imported into the ~c[\"COMMON-LISP\"] package, or to produce such a symbol
+  with ~ilc[intern$] or ~ilc[intern-in-package-of-symbol], will cause an
+  error.
+
+  The following axioms formalize properties of ~c[pkg-imports] discussed above
+  (use ~c[:]~ilc[pe] to view them).
+  ~bv[]
+  symbol-package-name-intern-in-package-of-symbol
+  intern-in-package-of-symbol-is-identity
+  symbol-listp-pkg-imports
+  no-duplicatesp-pkg-imports
+  completion-of-pkg-imports
+  ~ev[]")
+
+#-acl2-loop-only
+(defun-one-output pkg-imports (pkg)
+  (declare (type string pkg))
+  (let ((entry (find-non-hidden-package-entry pkg
+                                              (known-package-alist
+                                               *the-live-state*))))
+    (cond (entry (package-entry-imports entry))
+          (t (throw-raw-ev-fncall (list 'pkg-imports-er pkg))))))
 
 (defdoc pkg-witness
   ":Doc-Section ACL2::Programming
@@ -13751,13 +13879,18 @@ J
   returns that symbol (which is uniquely determined by the restriction
   on the imports list above).  ~l[intern-in-package-of-symbol].
 
+  Upon admission of a ~c[defpkg] event, the function ~c[pkg-imports] is
+  extended to compute a list of all symbols imported into the given package,
+  without duplicates.
+
   ~c[Defpkg] is the only means by which an ACL2 user can create a new
   package or specify what it imports.  That is, ACL2 does not support
   the Common Lisp functions ~c[make-package] or ~c[import].  Currently, ACL2
   does not support exporting at all.
 
-  The Common Lisp function ~ilc[intern] is weakly supported by ACL2.
-  ~l[intern].
+  The Common Lisp function ~ilc[intern] is weakly supported by ACL2;
+  ~pl[intern].  A more general form of that function is also provided:
+  ~pl[intern$].
 
   We now explain the two exceptions to the newness rule for package
   names.  The careful experimenter will note that if a package is
@@ -29751,26 +29884,24 @@ in :type-prescription rules are specified with :type-prescription (and/or
 #-acl2-loop-only
 (defun-one-output bad-lisp-objectp (x)
 
-; This routine does a root and branch exploration of x and guarantees
-; that x is composed entirely of complex rationals, rationals, 8-bit
-; characters that are "canonical" in the sense that they are the
-; result of applying code-char to their character code, strings of
-; such characters, symbols made from such strings (and "interned" in a
-; package known to ACL2) and conses of the foregoing.
+; This routine does a root and branch exploration of x and guarantees that x is
+; composed entirely of complex rationals, rationals, 8-bit characters that are
+; "canonical" in the sense that they are the result of applying code-char to
+; their character code, strings of such characters, symbols made from such
+; strings (and "interned" in a package known to ACL2) and conses of the
+; foregoing.
 
-; We return nil or non-nil.  If nil, then x is a legal ACL2 object.
-; If we return non-nil, then x is a bad object and the answer is a
-; message, msg, such that (fmt "~@0" (list (cons #\0 msg)) ...)  will
-; explain why.
+; We return nil or non-nil.  If nil, then x is a legal ACL2 object.  If we
+; return non-nil, then x is a bad object and the answer is a message, msg, such
+; that (fmt "~@0" (list (cons #\0 msg)) ...)  will explain why.
 
-; All of our ACL2 code other than this routine assumes that we are
-; manipulating non-bad objects, except for symbols in the invisible
-; package, e.g. state and the invisible array mark.  We make these
-; restrictions for portability's sake.  If a Lisp expression is a
-; theorem on a Symbolics machine we want it to be a theorem on a Sun.
-; Thus, we can't permit such constants as #\Circle-Plus.  We also
-; assume (and check in chk-suitability-of-this-common-lisp) that all
-; of the characters mentioned above are distinct.
+; All of our ACL2 code other than this routine assumes that we are manipulating
+; non-bad objects, except for symbols in the invisible package, e.g. state and
+; the invisible array mark.  We make these restrictions for portability's sake.
+; If a Lisp expression is a theorem on a Symbolics machine we want it to be a
+; theorem on a Sun.  Thus, we can't permit such constants as #\Circle-Plus.  We
+; also assume (and check in chk-suitability-of-this-common-lisp) that all of
+; the characters mentioned above are distinct.
 
   (cond ((consp x)
          (or (bad-lisp-objectp (car x))
@@ -29833,27 +29964,59 @@ in :type-prescription rules are specified with :type-prescription (and/or
          (cond
           ((eq x nil) nil) ; seems like useful special case for true lists
           ((bad-lisp-objectp (symbol-name x)))
-          ((null (symbol-package x))
-           (cons "Uninterned symbols such as the one CLTL displays as ~s0 are ~
-                  not allowed in ACL2."
-                 (list (cons #\0 (format nil "~s" x)))))
-          ((not (or (get x *initial-lisp-symbol-mark*)
-                    (find-non-hidden-package-entry
-                     (package-name (symbol-package x))
-                     (known-package-alist *the-live-state*))
-                    #+gcl
-                    (and (equal (symbol-package x) (find-package "LISP"))
-                         (setf (get x *initial-lisp-symbol-mark*)
-                               "COMMON-LISP"))))
-           (cons "The symbol CLTL displays as ~s0 is not in any of the ~
-                  packages known to ACL2."
-                 (list (cons #\0 (format nil "~s" x)))))
-          ((not (eq x (intern (symbol-name x) (symbol-package x))))
-           (cons "The symbol ~x0 fails to satisfy the property that it be eq ~
-                  to the result of interning its symbol-name in its symbol ~
-                  package.  Such a symbol is illegal in ACL2."
-                 (list (cons #\0 (format nil "~s" x)))))
-          (t nil)))
+          (t (let ((pkg (symbol-package x)))
+               (cond
+                ((null pkg)
+                 (cons "Uninterned symbols such as the one CLTL displays as ~
+                        ~s0 are not allowed in ACL2."
+                       (list (cons #\0 (format nil "~s" x)))))
+                ((not (eq x (intern (symbol-name x) pkg)))
+                 (cons "The symbol ~x0 fails to satisfy the property that it ~
+                        be eq to the result of interning its symbol-name in ~
+                        its symbol package.  Such a symbol is illegal in ACL2."
+                       (list (cons #\0 (format nil "~s" x)))))
+                ((or (eq pkg *main-lisp-package*)
+                     (get x *initial-lisp-symbol-mark*))
+                 nil)
+                ((not (find-non-hidden-package-entry
+                       (package-name pkg)
+                       (known-package-alist *the-live-state*)))
+
+; We maintain the following Invariant on Symbols in the Common Lisp Package: If
+; a symbol arising in ACL2 evaluation or state resides in *main-lisp-package*,
+; then either its symbol-package is *main-lisp-package* or else its
+; *initial-lisp-symbol-mark* property is "COMMON-LISP".  This invariant
+; supports the notion that in the ACL2 logic, there are no symbols imported
+; into the "COMMON-LISP" package: that is, the symbol-package-name of a symbol
+; residing in the "COMMON-LISP" package is necessarily "COMMON-LISP".  See the
+; axiom common-lisp-package, and see the (raw Lisp) definition of
+; symbol-package-name.
+
+; With the above comment in mind, consider the possibility of allowing here the
+; sub-case (eq x (intern (symbol-name x) *main-lisp-package*)).  Now, the
+; implementation of symbol-package-name is based on package-name for symbols
+; whose *initial-lisp-symbol-mark* is not set; so if we allow such a sub-case,
+; then the computed symbol-package-name would be wrong on symbols such as
+; SYSTEM::ALLOCATE (in GCL) or CLOS::CLASS-DIRECT-DEFAULT-INITARGS (in CLISP),
+; which are imported into the "COMMON-LISP" package but do not belong to the
+; list *common-lisp-symbols-from-main-lisp-package*.  One solution may seem to
+; be to include code here, in this sub-case, that sets the
+; *initial-lisp-symbol-mark* property on such a symbol; but that is not
+; acceptable because include-book bypasses bad-lisp-objectp (see
+; chk-bad-lisp-object).  Our remaining option is to change the implementation
+; of symbol-package-name to comprehend symbols like the two above, say by
+; looking up the name of the symbol-package in find-non-hidden-package-entry
+; and then doing the above eq test when the package name is not found.  But
+; this lookup could produce undesirable performance degradation for
+; symbol-package-name.  So instead, we will consider symbols like the two above
+; to be bad Lisp objects, with the assumption that it is rare to encounter such
+; a symbol, i.e.: a symbol violating the above Invariant on Symbols in the
+; Common Lisp Package.
+
+                 (cons "The symbol CLTL displays as ~s0 is not in any of the ~
+                        packages known to ACL2."
+                       (list (cons #\0 (format nil "~s" x)))))
+                (t nil))))))
         ((stringp x)
          (cond
           ((not (simple-string-p x))
@@ -36303,6 +36466,11 @@ in :type-prescription rules are specified with :type-prescription (and/or
   ":Doc-Section ACL2::Programming
 
   the name of the package of a symbol (a string)~/
+
+  WARNING: While ~c[symbol-package-name] behaves properly on all ACL2 objects,
+  it may give surprising results when called in raw Lisp.  More details
+  ~pl[pkg-imports], in particula the discussion there of the
+  ~c[\"COMMON-LISP\"] package.
 
   Completion Axiom:
   ~bv[]

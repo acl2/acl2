@@ -1106,25 +1106,27 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; The following function used to be defined in axioms.lisp (with
 ; #-acl2-loop-only), but we need it here.
 
-(defconstant *main-lisp-package*
-  (find-package "COMMON-LISP"))
-
 (defun symbol-package-name (x)
+
+; Warning: This function assumes that x is not a bad-lisp-objectp.  In
+; particular, see the Invariant on Symbols in the Common Lisp Package,
+; discussed in a comment in bad-lisp-objectp, which allows us to assume that if
+; x resides in the "COMMON-LISP" package and does not have its
+; *initial-lisp-symbol-mark* property set, then its symbol-package is the
+; *main-lisp-package*.
+
   (cond ((get x *initial-lisp-symbol-mark*))
         ((let ((p (symbol-package x)))
+           (cond ((eq p *main-lisp-package*)
 
-; The following code should be kept in sync with the gcl-only code in the
-; vicinity of the calls of rename-package in acl2.lisp, and with the definition
-; of *main-lisp-package-name*.  The point is that the low-level package name
-; for Lisp symbols is "LISP" in GCL but we want to treat it as "COMMON-LISP" in
-; all Lisp implementations.  Thus, the extra test for the *main-lisp-package*
-; is probably not necessary except for GCL, but we go ahead for the sake of
-; uniformity and robustness.
+; We could just return *main-lisp-package-name-raw* in this case (but do not
+; skip this case, since in GCL, (package-name *main-lisp-package*) is "LISP",
+; not "COMMON-LISP" (which is what we need here).  But we go ahead and set
+; *initial-lisp-symbol-mark* in order to bypass this code next time.
 
-           (if (eq p *main-lisp-package*)
-               (setf (get x *initial-lisp-symbol-mark*)
-                     "COMMON-LISP")
-             (and p (package-name p)))))
+                  (setf (get x *initial-lisp-symbol-mark*)
+                        *main-lisp-package-name-raw*))
+                 (t (and p (package-name p))))))
 
 ; We use ERROR now because we cannot print symbols without packages
 ; with ACL2 functions.

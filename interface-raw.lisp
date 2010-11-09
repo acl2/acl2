@@ -921,10 +921,13 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
 (defun-*1* intern-in-package-of-symbol (x y)
   (if (and (stringp x)
            (symbolp y))
-      (let ((ans (intern x (symbol-package y))))
-; See comment in intern-in-package-of-symbol for an explanation of this trick.
-        ans)
+      (intern-in-package-of-symbol x y)
     (gv intern-in-package-of-symbol (x y) nil)))
+
+(defun-*1* pkg-imports (pkg)
+  (if (stringp pkg)
+      (pkg-imports pkg)
+    (gv pkg-witness (pkg) nil)))
 
 (defun-*1* pkg-witness (pkg)
   (if (stringp pkg)

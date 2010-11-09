@@ -1768,6 +1768,7 @@
     (integerp (x) 't)
     (intern-in-package-of-symbol (str sym) (if (stringp str) (symbolp sym) 'nil))
     (numerator (x) (rationalp x))
+    (pkg-imports (pkg) (stringp pkg))
     (pkg-witness (pkg) (if (stringp pkg) (not (equal pkg '"")) 'nil))
     (rationalp (x) 't)
     #+:non-standard-analysis
@@ -1872,7 +1873,7 @@
                      (t *0*)))
 
 ; We need to obtain (known-package-alist state) in order to evaluate
-; pkg-witness, so we do not give it any special treatment.
+; pkg-witness and pkg-imports, so we do not give them any special treatment.
 
     (rationalp (kwote (rationalp x)))
     #+:non-standard-analysis
