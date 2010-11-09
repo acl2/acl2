@@ -16696,6 +16696,11 @@
 ; illustrating such a change in behavior, we merely leave this comment rather
 ; than adding to the :doc string below.
 
+; Modified the implementation of print-indented-list by having it call new
+; function print-indented-list-msg, which in turn is used directly in the new
+; "error message for free variables" described in this :doc topic (in
+; tilde-@-free-vars-phrase, called by chk-free-vars).
+
   :Doc
   ":Doc-Section release-notes
 
@@ -16804,6 +16809,11 @@
 
   The axioms introduced by ~ilc[defpkg] have changed.  See the discussion of
   ~ilc[pkg-imports] under ``NEW FEATURES'' below.
+
+  The error message for free variables (e.g., in definition bodies and guards)
+  now supplies additional information when there are governing IF conditions.
+  Thanks to Jared Davis for requesting this enhancement and collaborating in
+  its design.
 
   ~st[NEW FEATURES]
 

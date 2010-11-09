@@ -6281,20 +6281,31 @@ End of statistical and related information related to image size.
 
   (list 'pcb-fn cd 'state))
 
-(defun print-indented-list (objects indent last-col channel evisc-tuple state)
+(defun print-indented-list-msg (objects indent final-string)
 
 ; Indents the indicated number of spaces, then prints the first object, then
-; prints a newline; then, recurs.
+; prints a newline; then, recurs.  Finally, prints the string final-string.  If
+; final-string is punctuation as represented by fmt directive ~y, then it will
+; be printed just after the last object.
 
   (cond
-   ((null objects) (mv last-col state))
-   (t (mv-let (last-col state)
-              (fmt1 "~_0~y1"
-                    (list (cons #\0 indent)
-                          (cons #\1 (car objects)))
-                    0 channel state evisc-tuple)
-              (print-indented-list (cdr objects) indent last-col channel
-                                   evisc-tuple state)))))
+   ((null objects) "")
+   ((and final-string (null (cdr objects)))
+    (msg (concatenate 'string "~_0~y1" final-string)
+         indent
+         (car objects)))
+   (t
+    (msg "~_0~y1~@2"
+         indent
+         (car objects)
+         (print-indented-list-msg (cdr objects) indent final-string)))))
+
+(defun print-indented-list (objects indent last-col channel evisc-tuple state)
+  (cond ((null objects)
+         (mv last-col state))
+        (t (fmt1 "~@0"
+                 (list (cons #\0 (print-indented-list-msg objects indent nil)))
+                 0 channel state evisc-tuple))))
 
 (defun print-book-path (book-path indent channel state)
   (assert$
@@ -12125,16 +12136,87 @@ End of statistical and related information related to image size.
         (t (cons (fifth (car lst))
                  (get-bodies (cdr lst))))))
 
+(mutual-recursion
+
+(defun find-nontrivial-rulers (var term)
+
+; Returns a non-empty list of rulers governing an occurrence of var in term, if
+; such exists.  Otherwise returns :none if var occurs in term and nil if var
+; does not occur in term.
+
+  (cond ((variablep term)
+         (if (eq var term) :none nil))
+        ((fquotep term)
+         nil)
+        ((eq (ffn-symb term) 'if)
+         (let ((x (find-nontrivial-rulers var (fargn term 2))))
+           (cond (x (cons (fargn term 1)
+                          (if (eq x :none)
+                              nil
+                            x)))
+                 (t (let ((x (find-nontrivial-rulers var (fargn term 3))))
+                      (cond (x (cons (dumb-negate-lit (fargn term 1))
+                                     (if (eq x :none)
+                                         nil
+                                       x)))
+                            (t
+                             (find-nontrivial-rulers var (fargn term 1)))))))))
+        (t (find-nontrivial-rulers-lst var (fargs term) nil))))
+
+(defun find-nontrivial-rulers-lst (var termlist flg)
+  (cond ((endp termlist) flg)
+        (t (let ((x (find-nontrivial-rulers var (car termlist))))
+             (cond ((or (null x)
+                        (eq x :none))
+                    (find-nontrivial-rulers-lst var (cdr termlist) (or flg x)))
+                   (t x))))))
+)
+
+(defun tilde-@-free-vars-phrase (vars term wrld)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (pseudo-termp term)
+                              (nvariablep term)
+                              (not (fquotep term))
+                              (plist-worldp wrld))))
+  (cond ((endp vars) "")
+        (t (let ((rulers (find-nontrivial-rulers (car vars) term)))
+             (assert$
+              rulers ; (car vars) occurs in term, so expect :none if no rulers
+              (cond ((eq rulers :none)
+                     (tilde-@-free-vars-phrase (cdr vars) term wrld))
+                    ((null (cdr rulers))
+                     (msg "  Note that ~x0 occurs in the context of condition ~
+                           ~x1 from a surrounding IF test."
+                          (car vars)
+                          (untranslate (car rulers) t wrld)))
+                    (t
+                     (msg "  Note that ~x0 occurs in the following context, ~
+                           i.e., governed by these conditions from ~
+                           surrounding IF tests.~|~%  (AND~|~@1"
+                          (car vars)
+                          (print-indented-list-msg
+                           (untranslate-lst rulers t wrld)
+                           3
+                           ")")))))))))
+
 (defun chk-free-vars (name formals term loc-str ctx state)
   (declare (xargs :guard (and (symbol-listp formals)
                               (pseudo-termp term))))
   (cond ((subsetp (all-vars term) formals) (value nil))
-        (t (er soft ctx
-               "The ~@0 ~x1 contains ~#2~[a free occurrence of the ~
-                variable symbol~/free occurrences of the variable ~
-                symbols~] ~&2."
-               loc-str name 
-               (set-difference-eq (all-vars term) formals)))))
+        ((variablep term)
+         (er soft ctx
+             "The ~@0 ~x1 is a free variable occurrence."
+             loc-str name))
+        (t (assert$
+            (not (fquotep term))
+            (let ((vars (set-difference-eq (all-vars term) formals)))
+              (er soft ctx
+                  "The ~@0 ~x1 contains ~#2~[a free occurrence of the ~
+                   variable symbol~/free occurrences of the variable ~
+                   symbols~] ~&2.~@3"
+                  loc-str name 
+                  (set-difference-eq vars formals)
+                  (tilde-@-free-vars-phrase vars term (w state))))))))
 
 (defun chk-declared-ignores (name ignores term loc-str ctx state)
   (declare (xargs :guard (and (symbol-listp ignores)
