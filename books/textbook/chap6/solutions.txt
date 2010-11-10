@@ -1885,11 +1885,31 @@ There are k induction steps, one for each q_i.  The first induction
 step is:
 
 Induction step 1:
-(implies (and (not q_1)
+(implies (and q_1
               (phi delta_{1,1,1} ... delta_{1,1,n})
               ...
               (phi delta_{1,h_1,1} ... delta_{1,h_1,n}))
          (phi v_1 ... v_n))
+
+The other induction steps are:
+
+Induction step 2:
+(implies (and (not q_1)
+              q2
+              (phi delta_{2,1,1} ... delta_{2,1,n})
+              ...
+              (phi delta_{2,h_2,1} ... delta_{2,h_2,n}))
+        (phi v_1 ... v_n))
+
+...
+
+Induction step k:
+(implies (and (not q_1) (not q_2) ... (not q_{k-1})
+              q_k
+              (phi delta_{k,1,1} ... delta_{k,1,n})
+              ...
+              (phi delta_{k,h_k,1} ... delta_{k,h_k,n}))
+        (phi v_1 ... v_n))
 
 Observe that the first induction step has h_1 induction hypotheses.
 In general, the ith induction step provides h_i induction hypotheses.
