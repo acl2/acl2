@@ -29,11 +29,10 @@
 ;; This comment fools the dependency scanner into thinking that this book
 ;; depends on lots of arithmetic books.
 #||
-(include-book "arithmetic-3/bind-free/top" :dir :system)
-(include-book "arithmetic-3/floor-mod/floor-mod" :dir :system)
 (include-book "arithmetic/top-with-meta" :dir :system)
-(include-book "rtl/rel5/arithmetic/top" :dir :system)
-(include-book "arithmetic-3/bind-free/top" :dir :system)
+(include-book "arithmetic-3/top" :dir :system)
+(include-book "rtl/rel8/arithmetic/top" :dir :system)
+(include-book "arithmetic-5/top" :dir :system)
 ||#
 
 (in-package "ACL2")
@@ -52,22 +51,23 @@
 ; Here is the default list of books to try including, each of which is
 ; associated with a list of events to execute after including the book.
 
-  '(("arithmetic-3/bind-free/top")
-    ("arithmetic-3/floor-mod/floor-mod")
-    ("arithmetic/top-with-meta")
-    ("rtl/rel5/arithmetic/top")
-    ("arithmetic-3/bind-free/top"
+  '(("arithmetic/top-with-meta")
+    ("arithmetic-3/top")
+    ("rtl/rel8/arithmetic/top")
+    ("arithmetic-3/top"
      (set-default-hints
       '((nonlinearp-default-hint
          stable-under-simplificationp
          hist
          pspv))))
-    ("arithmetic-3/floor-mod/floor-mod"
+    ("arithmetic-5/top")
+    ("arithmetic-5/top"
      (set-default-hints
-      '((nonlinearp-default-hint
-         stable-under-simplificationp
-         hist
-         pspv))))))
+     '((nonlinearp-default-hint++ 
+        id
+        stable-under-simplificationp
+        hist
+        nil))))))
 
 (defun proof-by-arith-1 (event book-alist ctx state)
   (declare (xargs :mode :program :stobjs state))
@@ -172,7 +172,7 @@
 
 ; Test of non-trivial alist entry:
 (proof-by-arith
- (defthm easy
+ (defthm |proof-by-arith.lisp easy|
    (equal (+ x y (- x))
           (fix y))
    :rule-classes nil)
@@ -183,3 +183,9 @@
        stable-under-simplificationp
        hist
        pspv))))))
+
+; Requires a few tries:
+(proof-by-arith
+ (defthm |proof-by-arith.lisp harder|
+   (implies (and (rationalp a) (rationalp b) (<= 0 a) (< a b))
+            (< (* a a) (* b b)))))
