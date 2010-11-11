@@ -489,6 +489,8 @@ books/clause-processors:
 Makefile
 Readme.lsp
 SULFA
+autohide.acl2
+autohide.lisp
 basic-examples.acl2
 basic-examples.lisp
 bv-add-common.lisp
