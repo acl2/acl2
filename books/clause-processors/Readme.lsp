@@ -3,6 +3,8 @@
 .:
 Makefile
 Readme.lsp
+autohide.acl2
+autohide.lisp
 basic-examples.acl2
 basic-examples.lisp
 bv-add-common.lisp
@@ -44,6 +46,10 @@ paper:
      (C. Benzmueller, B. Fischer, and G. Sutcliffe, editors), CEUR
      Workshop Proceedings Vol. 212, Phnom Penh, Cambodia, pp. 7-26,
      November 2006, http://ceur-ws.org/Vol-212/.
+
+Book autohide.lisp introduces a verified clause processor (and a default
+hint for using it) that instructs ACL2 to automatically wrap any calls
+of certain functions in HIDE.
 
 Book basic-examples.lisp contains many examples of correct and incorrect
 definitions and uses of trivial trusted and verified clause processors.
@@ -104,7 +110,8 @@ Copyright (C) 2007 by:
                                           replace-defined-const.lisp,
                                           use-by-hint.lisp)
 
-Copyright 2010 by Centaur Technology:     unify-subst.lisp
+Copyright 2010 by Centaur Technology:    (autohide.lisp,
+                                          unify-subst.lisp)
 
 This program is free software; you can redistribute it and/or 
 modify it under the terms of the GNU General Public License as 
