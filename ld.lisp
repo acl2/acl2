@@ -16815,6 +16815,8 @@
   Thanks to Jared Davis for requesting this enhancement and collaborating in
   its design.
 
+  The command ~c[:]~ilc[redef-] now turns off redefinition.
+
   ~st[NEW FEATURES]
 
   (For system hackers) There are new versions of system functions

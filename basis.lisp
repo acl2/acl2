@@ -12171,6 +12171,7 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
               (set-temp-touchable-fns nil state)
               (defttag nil)
               (logic)
+              (set-ld-redefinition-action nil state)
               (set-state-ok nil)))))
 
 (defun chk-current-package (val ctx state)
