@@ -1,8 +1,11 @@
 ; See profiling.lisp for information on how to use with-profiling.
 
+; We have seen problems on Windows CCL, so we avoid Windows here.  It would be
+; great if someone cares to look into this.
+
 (in-package "ACL2")
 
-#+ccl
+#+(and ccl (not mswindows))
 (let ((ccl-dir (ccl::getenv "CCL_DEFAULT_DIRECTORY"))
       (*readtable* *host-readtable*))
   (assert ccl-dir)
@@ -13,10 +16,10 @@
     (load (concatenate 'string prof-dir "profiler.lisp"))))
 
 ; May be needed with Linux (gb suggestion):
-#+ccl
+#+(and ccl (not mswindows))
 (ignore-errors (profiler::open-shared-library "librt.so"))
 
-#+(or ccl sbcl)
+#+(and (not mswindows) (or ccl sbcl))
 (defmacro with-profiling-raw (syms form)
   (let ((prof #+ccl 'profiler::profile
               #+sbcl 'sb-profile:profile)
@@ -91,7 +94,7 @@
              (,report)
            (eval (cons ',unprof unprof-fns)))))))
 
-#-(or ccl sbcl)
+#-(and (not mswindows) (or ccl sbcl))
 (defmacro with-profiling-raw (syms form)
   `(with-live-state
     (progn
@@ -100,8 +103,11 @@
         ((:ccl :sbcl) state)
         (t (warning$ 'with-profiling nil
                      "The macro WITH-PROFILING does not do any profiling in ~
-                      this host Lisp:  (@ host-lisp) = ~x0."
-                     (f-get-global 'host-lisp state))))
+                      this host Lisp and OS:~|  ~x0 = ~x1.~|  ~x2 = ~x3"
+                     '(f-get-global 'host-lisp state)
+                     (f-get-global 'host-lisp state)
+                     '(os (w state))
+                     (os (w state)))))
       (our-multiple-value-prog1
        ,form
 
@@ -114,7 +120,7 @@
 ; people to avoid such futile attempts.
 
        ,(protect-mv
-         `(warning$ 'with-profiling nil
-                    "To repeat the warning above:  The macro WITH-PROFILING ~
-                     does not do any profiling in this host Lisp."
-                    (f-get-global 'host-lisp state)))))))
+         `(warning$
+           'with-profiling nil
+           "To repeat the warning above:  The macro WITH-PROFILING does not ~
+            do any profiling on this host Lisp and platform."))))))
