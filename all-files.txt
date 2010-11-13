@@ -1683,6 +1683,8 @@ books/ordinals:
 Makefile
 copyright
 e0-ordinal.lisp
+lexicographic-book.lisp
+lexicographic-ordering-without-arithmetic.lisp
 lexicographic-ordering.lisp
 limits.lisp
 ordinal-addition.lisp
