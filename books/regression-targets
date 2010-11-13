@@ -239,6 +239,7 @@
 ./bdd/hamming.cert
 ./bdd/pg-theory.cert
 # Omitting clause-processors/SULFA/ (and all its subdirectories)
+./clause-processors/autohide.cert
 ./clause-processors/basic-examples.cert
 ./clause-processors/bv-add-common.cert
 ./clause-processors/bv-add-tests.cert
@@ -254,6 +255,7 @@
 ./clause-processors/replace-defined-consts.cert
 ./clause-processors/replace-impl.cert
 ./clause-processors/term-patterns.cert
+./clause-processors/unify-subst.cert
 ./clause-processors/use-by-hint.cert
 ./coi/adviser/adviser-pkg.cert
 ./coi/adviser/adviser.cert
@@ -503,6 +505,7 @@
 ./data-structures/memories/memory.cert
 ./data-structures/memories/memtree.cert
 ./data-structures/memories/private.cert
+./data-structures/no-duplicates.cert
 ./data-structures/number-list-defthms.cert
 ./data-structures/number-list-defuns.cert
 ./data-structures/number-list-theory.cert
@@ -623,6 +626,7 @@
 ./make-event/defconst-fast-examples.cert
 ./make-event/defconst-fast.cert
 ./make-event/defrefine.cert
+./make-event/defrule.cert
 ./make-event/defspec.cert
 ./make-event/dotimes.cert
 ./make-event/embeddable-event-forms.cert
@@ -665,6 +669,7 @@
 ./misc/bash.cert
 ./misc/beta-reduce.cert
 ./misc/book-thms.cert
+./misc/check-acl2-exports.cert
 ./misc/computed-hint-rewrite.cert
 ./misc/computed-hint.cert
 ./misc/csort.cert
@@ -704,6 +709,7 @@
 ./misc/priorities.cert
 ./misc/problem13.cert
 ./misc/process-book-readme.cert
+./misc/profiling.cert
 ./misc/qi-correct.cert
 ./misc/qi.cert
 ./misc/radix.cert
@@ -743,6 +749,8 @@
 ./models/jvm/m5/utilities.cert
 # omitting nonstd/ (and all its subdirectories)
 ./ordinals/e0-ordinal.cert
+./ordinals/lexicographic-book.cert
+./ordinals/lexicographic-ordering-without-arithmetic.cert
 ./ordinals/lexicographic-ordering.cert
 ./ordinals/limits.cert
 ./ordinals/ordinal-addition.cert
@@ -1584,6 +1592,7 @@
 ./str/digitp.cert
 ./str/doc.cert
 ./str/eqv.cert
+./str/fast-cat.cert
 ./str/firstn-chars.cert
 ./str/html-encode.cert
 ./str/ieqv.cert
@@ -1653,15 +1662,18 @@
 ./textbook/chap6/selected-solutions.cert
 ./tools/bstar.cert
 ./tools/cws.cert
+./tools/def-functional-instance.cert
 ./tools/defconsts.cert
 ./tools/defevaluator-fast.cert
 ./tools/define-keyed-function.cert
 ./tools/defined-const.cert
 ./tools/defsum.cert
 ./tools/deftuple.cert
+./tools/do-not.cert
 ./tools/flag.cert
 ./tools/include-raw.cert
 ./tools/mv-nth.cert
+./tools/oracle-eval.cert
 ./tools/pack.cert
 ./tools/pattern-match.cert
 ./tools/progndollar.cert

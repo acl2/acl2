@@ -151,6 +151,7 @@ CERT_PL_CERTS := \
      bdd/cbf.cert \
      bdd/hamming.cert \
      bdd/pg-theory.cert \
+     clause-processors/autohide.cert \
      clause-processors/basic-examples.cert \
      clause-processors/bv-add-common.cert \
      clause-processors/bv-add-tests.cert \
@@ -166,6 +167,7 @@ CERT_PL_CERTS := \
      clause-processors/replace-defined-consts.cert \
      clause-processors/replace-impl.cert \
      clause-processors/term-patterns.cert \
+     clause-processors/unify-subst.cert \
      clause-processors/use-by-hint.cert \
      coi/adviser/adviser-pkg.cert \
      coi/adviser/adviser.cert \
@@ -414,6 +416,7 @@ CERT_PL_CERTS := \
      data-structures/memories/memory.cert \
      data-structures/memories/memtree.cert \
      data-structures/memories/private.cert \
+     data-structures/no-duplicates.cert \
      data-structures/number-list-defthms.cert \
      data-structures/number-list-defuns.cert \
      data-structures/number-list-theory.cert \
@@ -533,6 +536,7 @@ CERT_PL_CERTS := \
      make-event/defconst-fast-examples.cert \
      make-event/defconst-fast.cert \
      make-event/defrefine.cert \
+     make-event/defrule.cert \
      make-event/defspec.cert \
      make-event/dotimes.cert \
      make-event/embeddable-event-forms.cert \
@@ -575,6 +579,7 @@ CERT_PL_CERTS := \
      misc/bash.cert \
      misc/beta-reduce.cert \
      misc/book-thms.cert \
+     misc/check-acl2-exports.cert \
      misc/computed-hint-rewrite.cert \
      misc/computed-hint.cert \
      misc/csort.cert \
@@ -614,6 +619,7 @@ CERT_PL_CERTS := \
      misc/priorities.cert \
      misc/problem13.cert \
      misc/process-book-readme.cert \
+     misc/profiling.cert \
      misc/qi-correct.cert \
      misc/qi.cert \
      misc/radix.cert \
@@ -651,6 +657,8 @@ CERT_PL_CERTS := \
      models/jvm/m5/universal.cert \
      models/jvm/m5/utilities.cert \
      ordinals/e0-ordinal.cert \
+     ordinals/lexicographic-book.cert \
+     ordinals/lexicographic-ordering-without-arithmetic.cert \
      ordinals/lexicographic-ordering.cert \
      ordinals/limits.cert \
      ordinals/ordinal-addition.cert \
@@ -1491,6 +1499,7 @@ CERT_PL_CERTS := \
      str/digitp.cert \
      str/doc.cert \
      str/eqv.cert \
+     str/fast-cat.cert \
      str/firstn-chars.cert \
      str/html-encode.cert \
      str/ieqv.cert \
@@ -1560,15 +1569,18 @@ CERT_PL_CERTS := \
      textbook/chap6/selected-solutions.cert \
      tools/bstar.cert \
      tools/cws.cert \
+     tools/def-functional-instance.cert \
      tools/defconsts.cert \
      tools/defevaluator-fast.cert \
      tools/define-keyed-function.cert \
      tools/defined-const.cert \
      tools/defsum.cert \
      tools/deftuple.cert \
+     tools/do-not.cert \
      tools/flag.cert \
      tools/include-raw.cert \
      tools/mv-nth.cert \
+     tools/oracle-eval.cert \
      tools/pack.cert \
      tools/pattern-match.cert \
      tools/progndollar.cert \
@@ -2442,12 +2454,15 @@ CERT_PL_SOURCES := \
      bdd/cbf.lisp  \
      bdd/hamming.lisp  \
      bdd/pg-theory.lisp  \
+     clause-processors/autohide.acl2  \
+     clause-processors/autohide.lisp  \
      clause-processors/basic-examples.acl2  \
      clause-processors/basic-examples.lisp  \
      clause-processors/bv-add-common.lisp  \
      clause-processors/bv-add-tests.lisp  \
      clause-processors/bv-add.lisp  \
      clause-processors/decomp-hint.lisp  \
+     clause-processors/equality.acl2  \
      clause-processors/equality.lisp  \
      clause-processors/ev-theoremp.lisp  \
      clause-processors/generalize.acl2  \
@@ -2460,6 +2475,8 @@ CERT_PL_SOURCES := \
      clause-processors/replace-defined-consts.lisp  \
      clause-processors/replace-impl.lisp  \
      clause-processors/term-patterns.lisp  \
+     clause-processors/unify-subst.acl2  \
+     clause-processors/unify-subst.lisp  \
      clause-processors/use-by-hint.lisp  \
      coi/adviser/adviser-defpkg.lsp  \
      coi/adviser/adviser-pkg.lisp  \
@@ -2798,6 +2815,7 @@ CERT_PL_SOURCES := \
      data-structures/memories/memtree.lisp  \
      data-structures/memories/package.lsp  \
      data-structures/memories/private.lisp  \
+     data-structures/no-duplicates.lisp  \
      data-structures/number-list-defthms.lisp  \
      data-structures/number-list-defuns.lisp  \
      data-structures/number-list-theory.lisp  \
@@ -2945,6 +2963,7 @@ CERT_PL_SOURCES := \
      make-event/defconst-fast-examples.lisp  \
      make-event/defconst-fast.lisp  \
      make-event/defrefine.lisp  \
+     make-event/defrule.lisp  \
      make-event/defspec.lisp  \
      make-event/dotimes.lisp  \
      make-event/embeddable-event-forms.lisp  \
@@ -2991,6 +3010,7 @@ CERT_PL_SOURCES := \
      misc/bash.lisp  \
      misc/beta-reduce.lisp  \
      misc/book-thms.lisp  \
+     misc/check-acl2-exports.lisp  \
      misc/computed-hint-rewrite.lisp  \
      misc/computed-hint.lisp  \
      misc/csort.lisp  \
@@ -3036,6 +3056,8 @@ CERT_PL_SOURCES := \
      misc/priorities.lisp  \
      misc/problem13.lisp  \
      misc/process-book-readme.lisp  \
+     misc/profiling.acl2  \
+     misc/profiling.lisp  \
      misc/qi-correct.lisp  \
      misc/qi.lisp  \
      misc/radix.acl2  \
@@ -3087,6 +3109,8 @@ CERT_PL_SOURCES := \
      models/jvm/m5/utilities.acl2  \
      models/jvm/m5/utilities.lisp  \
      ordinals/e0-ordinal.lisp  \
+     ordinals/lexicographic-book.lisp  \
+     ordinals/lexicographic-ordering-without-arithmetic.lisp  \
      ordinals/lexicographic-ordering.lisp  \
      ordinals/limits.lisp  \
      ordinals/ordinal-addition.lisp  \
@@ -3951,6 +3975,8 @@ CERT_PL_SOURCES := \
      str/digitp.lisp  \
      str/doc.lisp  \
      str/eqv.lisp  \
+     str/fast-cat.acl2  \
+     str/fast-cat.lisp  \
      str/firstn-chars.lisp  \
      str/html-encode.lisp  \
      str/ieqv.lisp  \
@@ -4026,18 +4052,22 @@ CERT_PL_SOURCES := \
      textbook/chap6/selected-solutions.lisp  \
      tools/bstar.lisp  \
      tools/cws.lisp  \
+     tools/def-functional-instance.lisp  \
      tools/defconsts.lisp  \
      tools/defevaluator-fast.lisp  \
      tools/define-keyed-function.lisp  \
      tools/defined-const.lisp  \
      tools/defsum.lisp  \
      tools/deftuple.lisp  \
+     tools/do-not.lisp  \
      tools/flag-package.lsp  \
      tools/flag.acl2  \
      tools/flag.lisp  \
      tools/include-raw.acl2  \
      tools/include-raw.lisp  \
      tools/mv-nth.lisp  \
+     tools/oracle-eval.acl2  \
+     tools/oracle-eval.lisp  \
      tools/pack.lisp  \
      tools/pattern-match.lisp  \
      tools/progndollar.lisp  \
@@ -5694,6 +5724,16 @@ bdd/pg-theory.cert : \
      bdd/pg-theory.lisp \
      bdd/bdd-primitives.cert
 
+clause-processors/autohide.cert : \
+     clause-processors/autohide.lisp \
+     clause-processors/autohide.acl2 \
+     tools/flag-package.lsp \
+     tools/flag-package.lsp \
+     clause-processors/join-thms.cert \
+     tools/flag.cert \
+     tools/do-not.cert \
+     clause-processors/equality.cert
+
 clause-processors/basic-examples.cert : \
      clause-processors/basic-examples.lisp \
      clause-processors/basic-examples.acl2 \
@@ -5722,7 +5762,10 @@ clause-processors/decomp-hint.cert : \
 
 clause-processors/equality.cert : \
      clause-processors/equality.lisp \
-     arithmetic/top.cert \
+     clause-processors/equality.acl2 \
+     tools/flag-package.lsp \
+     tools/flag-package.lsp \
+     tools/flag.cert \
      make-event/eval.cert
 
 clause-processors/ev-theoremp.cert : \
@@ -5779,6 +5822,14 @@ clause-processors/replace-impl.cert : \
 clause-processors/term-patterns.cert : \
      clause-processors/term-patterns.lisp \
      tools/flag.cert
+
+clause-processors/unify-subst.cert : \
+     clause-processors/unify-subst.lisp \
+     clause-processors/unify-subst.acl2 \
+     tools/flag-package.lsp \
+     tools/flag-package.lsp \
+     tools/flag.cert \
+     tools/mv-nth.cert
 
 clause-processors/use-by-hint.cert : \
      clause-processors/use-by-hint.lisp \
@@ -10867,6 +10918,9 @@ data-structures/memories/private.cert : \
      data-structures/memories/package.lsp \
      data-structures/memories/package.lsp
 
+data-structures/no-duplicates.cert : \
+     data-structures/no-duplicates.lisp
+
 data-structures/number-list-defthms.cert : \
      data-structures/number-list-defthms.lisp \
      data-structures/number-list-defuns.cert \
@@ -11509,6 +11563,9 @@ make-event/defrefine.cert : \
      make-event/defrefine.lisp \
      make-event/eval.cert
 
+make-event/defrule.cert : \
+     make-event/defrule.lisp
+
 make-event/defspec.cert : \
      make-event/defspec.lisp \
      make-event/eval.cert
@@ -11616,11 +11673,10 @@ make-event/portcullis-expansion.cert : \
 
 make-event/proof-by-arith.cert : \
      make-event/proof-by-arith.lisp \
-     arithmetic-3/bind-free/top.cert \
-     arithmetic-3/floor-mod/floor-mod.cert \
      arithmetic/top-with-meta.cert \
-     rtl/rel5/arithmetic/top.cert \
-     arithmetic-3/bind-free/top.cert
+     arithmetic-3/top.cert \
+     rtl/rel8/arithmetic/top.cert \
+     arithmetic-5/top.cert
 
 make-event/read-from-file.cert : \
      make-event/read-from-file.lisp \
@@ -11682,6 +11738,9 @@ misc/beta-reduce.cert : \
 
 misc/book-thms.cert : \
      misc/book-thms.lisp
+
+misc/check-acl2-exports.cert : \
+     misc/check-acl2-exports.lisp
 
 misc/computed-hint-rewrite.cert : \
      misc/computed-hint-rewrite.lisp
@@ -11843,6 +11902,10 @@ misc/problem13.cert : \
 
 misc/process-book-readme.cert : \
      misc/process-book-readme.lisp
+
+misc/profiling.cert : \
+     misc/profiling.lisp \
+     misc/profiling.acl2
 
 misc/qi-correct.cert : \
      misc/qi-correct.lisp \
@@ -12013,9 +12076,19 @@ ordinals/e0-ordinal.cert : \
      ordinals/ordinal-definitions.cert \
      ordinals/ordinal-isomorphism.cert
 
+ordinals/lexicographic-book.cert : \
+     ordinals/lexicographic-book.lisp \
+     ordinals/ordinals-without-arithmetic.cert \
+     ordinals/top-with-meta.cert
+
+ordinals/lexicographic-ordering-without-arithmetic.cert : \
+     ordinals/lexicographic-ordering-without-arithmetic.lisp \
+     ordinals/lexicographic-book.cert
+
 ordinals/lexicographic-ordering.cert : \
      ordinals/lexicographic-ordering.lisp \
-     ordinals/ordinals.cert
+     ordinals/top-with-meta.cert \
+     ordinals/lexicographic-book.cert
 
 ordinals/limits.cert : \
      ordinals/limits.lisp \
@@ -17995,6 +18068,15 @@ str/eqv.cert : \
      str/arithmetic.cert \
      str/char-support.cert
 
+str/fast-cat.cert : \
+     str/fast-cat.lisp \
+     str/fast-cat.acl2 \
+     str/cert.acl2 \
+     str/cert.acl2 \
+     str/package.lsp \
+     str/package.lsp \
+     str/cat.cert
+
 str/firstn-chars.cert : \
      str/firstn-chars.lisp \
      str/cert.acl2 \
@@ -18438,6 +18520,10 @@ tools/cws.cert : \
      tools/cws.lisp \
      tools/progndollar.cert
 
+tools/def-functional-instance.cert : \
+     tools/def-functional-instance.lisp \
+     tools/bstar.cert
+
 tools/defconsts.cert : \
      tools/defconsts.lisp \
      tools/bstar.cert
@@ -18461,6 +18547,10 @@ tools/deftuple.cert : \
      tools/types-misc.cert \
      tools/bstar.cert
 
+tools/do-not.cert : \
+     tools/do-not.lisp \
+     tools/bstar.cert
+
 tools/flag.cert : \
      tools/flag.lisp \
      tools/flag.acl2 \
@@ -18473,6 +18563,10 @@ tools/include-raw.cert : \
 
 tools/mv-nth.cert : \
      tools/mv-nth.lisp
+
+tools/oracle-eval.cert : \
+     tools/oracle-eval.lisp \
+     tools/oracle-eval.acl2
 
 tools/pack.cert : \
      tools/pack.lisp
@@ -18607,8 +18701,7 @@ unicode/nthcdr-bytes.cert : \
      tools/mv-nth.cert
 
 unicode/nthcdr.cert : \
-     unicode/nthcdr.lisp \
-     arithmetic-3/bind-free/top.cert
+     unicode/nthcdr.lisp
 
 unicode/open-input-channel.cert : \
      unicode/open-input-channel.lisp \
