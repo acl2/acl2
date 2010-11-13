@@ -32709,9 +32709,9 @@ in :type-prescription rules are specified with :type-prescription (and/or
   :set-backchain-limit 500  ; allow backchaining to a depth of no more
                             ; than 500 for rewriting hypotheses
   (set-backchain-limit 500) ; same as above
-  :set-backchain-limit (nil 500)
+  :set-backchain-limit (500 500)
                             ; same as above
-  (set-backchain-limit '(nil 500))
+  (set-backchain-limit '(500 500))
                             ; same as above
   (set-backchain-limit '(3 500))
                             ; allow type-set backchaining to a depth of no more
@@ -39189,6 +39189,7 @@ Lisp definition."
             :hands-off
             :in-theory
             :nonlinearp
+            :backchain-limit-rw
             :reorder
             :backtrack
             :induct)))

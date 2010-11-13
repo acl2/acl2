@@ -7975,6 +7975,7 @@ when submitted as :ideal, pointing out that they can never be
 (link-doc-to-keyword cases miscellaneous hints)
 (link-doc-to-keyword by miscellaneous hints)
 (link-doc-to-keyword nonlinearp miscellaneous hints)
+(link-doc-to-keyword backchain-limit-rw miscellaneous hints)
 (link-doc-to-keyword reorder miscellaneous hints)
 (link-doc-to-keyword no-thanks miscellaneous hints)
 (link-doc-to-keyword backtrack miscellaneous hints)

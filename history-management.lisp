@@ -15788,6 +15788,16 @@ End of statistical and related information related to image size.
          ~x0 is neither of these."
         arg)))
 
+(defun translate-backchain-limit-rw-hint (arg ctx wrld state)
+  (declare (ignore wrld))
+  (if (or (natp arg)
+          (equal arg nil))
+      (value arg)
+    (er soft ctx
+        "The only legal values for a :backchain-limit-rw hint are NIL and ~
+         natural numbers, but ~x0 is neither of these."
+        arg)))
+
 (defun translate-no-thanks-hint (arg ctx wrld state)
   (declare (ignore ctx wrld))
   (value arg))
@@ -16858,6 +16868,8 @@ End of statistical and related information related to image size.
         (translate-reorder-hint arg ctx wrld state))
        (:backtrack
         (translate-backtrack-hint name-tree arg ctx wrld state))
+       (:backchain-limit-rw
+        (translate-backchain-limit-rw-hint arg ctx wrld state))
        (:error
 
 ; We know this case never happens.  The error is caught and signalled
@@ -18234,6 +18246,7 @@ End of statistical and related information related to image size.
            :cases ((true-listp a) (consp a))
            :by (:instance rev-rev (x (cdr z)))
            :nonlinearp t
+           :backchain-limit-rw 3
            :reorder (4 7 2)
            :case-split-limitations (20 10)
            :no-op t
@@ -18652,6 +18665,13 @@ End of statistical and related information related to image size.
   ~c[:NONLINEARP]~nl[]
   ~c[Value] is ~c[t] or ~c[nil], indicating whether ~il[non-linear-arithmetic]
   is active.  The default value is ~c[nil].  ~l[non-linear-arithmetic].
+
+  ~c[:BACKCHAIN-LIMIT-RW]~nl[]
+  ~c[Value] is a natural number or ~c[nil], indicating the level of
+  backchaining for ~il[rewrite], ~il[meta], and ~il[linear] rules.  This
+  overrides, for the current goal and (as with ~c[:]~ilc[in-theory] hints)
+  descendent goals, the default ~il[backchain-limit]
+  (~pl[set-backchain-limit]).
 
   ~c[:REORDER]~nl[]
   ~c[Value] is a list of positive integers without duplicates, corresponding to

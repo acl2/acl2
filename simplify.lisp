@@ -3010,7 +3010,8 @@
                         :wrld wrld
                         :fnstack nil
                         :ancestors nil
-                        :backchain-limit (backchain-limit wrld :rewrite)
+                        :backchain-limit (access rewrite-constant rcnst
+                                                 :backchain-limit-rw)
                         :simplify-clause-pot-lst simplify-clause-pot-lst
                         :rcnst rcnst
                         :gstack gstack
@@ -4401,7 +4402,8 @@
                               :wrld wrld
                               :fnstack nil
                               :ancestors new-ancestors
-                              :backchain-limit (backchain-limit wrld :rewrite)
+                              :backchain-limit (access rewrite-constant rcnst
+                                                       :backchain-limit-rw)
                               :simplify-clause-pot-lst simplify-clause-pot-lst
                               :rcnst rcnst
                               :gstack gstack
@@ -4987,7 +4989,8 @@
              :wrld wrld
              :fnstack nil
              :ancestors nil
-             :backchain-limit (backchain-limit wrld :rewrite)
+             :backchain-limit (access rewrite-constant rcnst
+                                      :backchain-limit-rw)
              :simplify-clause-pot-lst nil
              :pot-lst-terms nil
              :rcnst rcnst

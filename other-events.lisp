@@ -24189,28 +24189,6 @@ The following all cause errors.
                                    (list 'quote new)))
                    (value new))))))))))
 
-(defconst *hint-keywords*
-
-; This constant contains all the legal hint keywords as well as
-; :computed-hints-replacement.
-
-  (append *top-hint-keywords*
-          '(:computed-hints-replacement
-            :error
-            :no-op
-            :no-thanks
-            :expand
-            :case-split-limitations
-            :restrict
-            :do-not
-            :do-not-induct
-            :hands-off
-            :in-theory
-            :nonlinearp
-            :reorder
-            :backtrack
-            :induct)))
-
 (defun add-custom-keyword-hint-fn (key uterm1 uterm2 state)
 
 ; We translate uterm1 and uterm2 to check the syntactic requirements and we

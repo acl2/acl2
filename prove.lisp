@@ -7529,7 +7529,8 @@
                    :current-enabled-structure ,ens
                    :oncep-override (match-free-override ,wrld)
                    :case-split-limitations (case-split-limitations ,wrld)
-                   :nonlinearp (non-linearp ,wrld))
+                   :nonlinearp (non-linearp ,wrld)
+                   :backchain-limit-rw (backchain-limit ,wrld :rewrite))
            ,@args))
 
 (defmacro make-pspv (ens wrld &rest args)

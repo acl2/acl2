@@ -16699,6 +16699,8 @@
 ; "error message for free variables" described in this :doc topic (in
 ; tilde-@-free-vars-phrase, called by chk-free-vars).
 
+; Fixed bugs in :doc set-backchain-limit.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -16845,6 +16847,13 @@
   ~l[pkg-imports] and ~pl[defpkg].
 
   Added function ~ilc[no-duplicatesp-eq].
+
+  Added a new hint keyword, ~c[:][backchain-limit-rw], to control the level of
+  backchaining for ~il[rewrite], ~il[meta], and ~il[linear] rules.  This
+  overrides, for the current goal and (as with ~c[:]~ilc[in-theory] hints)
+  descendent goals, the default ~il[backchain-limit]
+  (~pl[set-backchain-limit]).  Thanks to Jared Davis for requesting this
+  feature.
 
   ~st[HEURISTIC IMPROVEMENTS]
 

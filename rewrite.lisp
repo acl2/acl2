@@ -4975,7 +4975,7 @@ and found premature forcing killed us.
 ; really constant during rewriting.  The active-theory is frequently
 ; toggled.
 
-  (active-theory
+  ((active-theory . backchain-limit-rw)
    current-enabled-structure
    (pt restrictions-alist . expand-lst)
    (force-info fns-to-be-ignored-by-rewrite . terms-to-be-ignored-by-rewrite)
@@ -5055,6 +5055,7 @@ and found premature forcing killed us.
         :fns-to-be-ignored-by-rewrite nil
         :current-enabled-structure nil
         :active-theory :standard
+        :backchain-limit-rw nil
         :nonlinearp nil
         :oncep-override :clear))
 
