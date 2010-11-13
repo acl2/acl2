@@ -9375,7 +9375,7 @@ The following all cause errors.
                                   #+gcl :ROOT
                                   #-gcl :ABSOLUTE))
                          (let* ((mswindows-drive
-                                 (f-get-global 'mswindows-drive state))
+                                 (mswindows-drive (namestring truename) state))
                                 (tmp (if mswindows-drive
                                          (concatenate 'string mswindows-drive "/")
                                        "/")))

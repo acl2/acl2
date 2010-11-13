@@ -1470,10 +1470,8 @@
           "ld-fn"
           (pprogn (f-put-global 'ld-level new-ld-level state)
                   (ld-fn-body standard-oi0 new-ld-specials-alist state))
-          (pprogn (f-put-global 'ld-level old-ld-level state)
-                  (f-put-global 'connected-book-directory old-cbd state))
-          (pprogn (f-put-global 'ld-level old-ld-level state)
-                  (f-put-global 'connected-book-directory old-cbd state))))))))
+          (f-put-global 'ld-level old-ld-level state)
+          (f-put-global 'ld-level old-ld-level state)))))))
 
 (defun ld-fn-alist (alist state)
   (let ((standard-oi (cdr (assoc 'standard-oi alist)))
@@ -1592,9 +1590,7 @@
                                 (LAMBDA
                                  NIL
                                  (pprogn
-                                  (f-put-global 'ld-level old-ld-level state)
-                                  (f-put-global 'connected-book-directory
-                                                old-cbd state))))))
+                                  (f-put-global 'ld-level old-ld-level state))))))
                      *ACL2-UNWIND-PROTECT-STACK*
                      'LD-FN)
                     (TAGBODY
@@ -1611,9 +1607,11 @@
                                                                   alist))
                                                    new-ld-specials-alist state)
                                        (PROGN
-                                        (f-put-global 'connected-book-directory
-                                                      old-cbd
-                                                      state)
+                                        (WHEN bind-flg
+                                              (f-put-global
+                                               'connected-book-directory
+                                               old-cbd
+                                               state))
                                         (SETQ LD-ERP ERP)
                                         (SETQ LD-VAL VAL)
                                         NIL))))
@@ -16866,7 +16864,8 @@
 
   (Windows only) Fixed handling of the Windows drive so that an executable
   image saved on one machine can be used on another, even with a different
-  drive.  Thanks to Harsh Raju Chamarthi for reporting this issue.
+  drive.  Thanks to Harsh Raju Chamarthi for reporting this issue and doing a
+  lot of testing and collaboration to help us get this right.
 
   Made a change to avoid possible low-level errors, such as bus errors, when
   quitting ACL2 by calling ~ilc[good-bye] or its synonyms.  This was occurring
@@ -16880,6 +16879,10 @@
   Fixed a bug in ~ilc[top-level], which was not reverting the logical
   ~il[world] when an error resulted from evaluation of the given form.  Thanks
   to Jared Davis for bringing this bug to our attention.
+
+  Fixed a long-standing bug (back through Version  2.7) that was discarding
+  changes to the connected book directory (~pl[cbd]) when exiting and then
+  re-entering the top-level ACL2 loop (with ~ilc[lp]).
 
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 

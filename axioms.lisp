@@ -23538,9 +23538,11 @@ J
                   #+clisp :clisp
                   #+cmu :cmu
                   #-(or gcl ccl sbcl allegro clisp cmu)
-                  (illegal "The underlying host Lisp appears not to support ~
+                  (illegal '*initial-global-table*
+                           "The underlying host Lisp appears not to support ~
                             ACL2.  Feel free to contact the ACL2 implementors ~
-                            to request such support.")))
+                            to request such support."
+                           nil)))
     (in-local-flg . nil)
     (in-prove-flg . nil)
     (in-verify-flg . nil)
@@ -23569,7 +23571,6 @@ J
     (more-doc-max-lines . 45)
     (more-doc-min-lines . 35)
     (more-doc-state . nil)
-    (mswindows-drive . nil) ; for #+mswindows, to be set at start-up
     (parallel-evaluation-enabled . ; GCL 2.6.6 breaks with only 2 lines below
                                  #+acl2-par
                                  t
@@ -28040,6 +28041,35 @@ J
   (declare (xargs :guard (state-p state)))
   (f-get-global 'current-acl2-world state))
 
+(defun mswindows-drive1 (filename)
+  (declare (xargs :mode :program))
+  (let ((pos-colon (position #\: filename))
+        (pos-sep (position *directory-separator* filename)))
+    (cond (pos-colon (cond ((eql pos-sep (1+ pos-colon))
+                            (subseq filename 0 pos-sep))
+                           (t (illegal 'mswindows-drive1
+                                       "Implementation error: Unable to ~
+                                        compute mswindows-drive for ~
+                                        cbd:~%~x0~%(Implementor should see ~
+                                        function mswindows-drive),"
+                                       (list (cons #\0 filename))))))
+          (t nil))))
+
+(defun mswindows-drive (filename state)
+
+; We get the drive from filename if possible, else from cbd.
+
+  (declare (xargs :mode :program))
+  (or (and (eq (os (w state)) :mswindows)
+           (or (and filename (mswindows-drive1 filename))
+               (let ((cbd (f-get-global 'connected-book-directory state)))
+                 (cond (cbd (mswindows-drive1 cbd))
+                       (t (illegal 'mswindows-drive
+                                   "Implementation error: Cbd is nil when ~
+                                    attempting to set mswindows-drive."
+                                   nil))))))
+      ""))
+
 (defun pathname-os-to-unix (str os state)
 
 ; This function takes a pathname string in the host OS syntax and converts it
@@ -28074,8 +28104,7 @@ J
 ; environment variable ACL2_SYSTEM_BOOKS, which might already have a drive that
 ; differs from that of the user.
 
-             (string-append (or (f-get-global 'mswindows-drive state)
-                                "")
+             (string-append (mswindows-drive nil state)
                             str0))
             (t
              str0)))))
@@ -28138,7 +28167,7 @@ J
                        str0
                      (string-append ":" str0))
                  (if sep-is-first
-                     (string-append (f-get-global 'mswindows-drive state)
+                     (string-append (mswindows-drive nil state)
                                     str0)
                    str0))))))
         (otherwise (os-er os 'pathname-unix-to-os))))))
@@ -30332,8 +30361,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 (defun absolute-pathname-string-p (str directoryp os)
 
 ; Str is a Unix-style pathname.  However, on Windows, Unix-style absolute
-; pathnames may start with a prefix such as "c:", the value of state global
-; mswindows-drive.
+; pathnames may start with a prefix such as "c:"; see mswindows-drive.
 
 ; Directoryp is non-nil when we require str to represent a directory in ACL2
 ; with Unix-style syntax, returning nil otherwise.
