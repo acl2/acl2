@@ -16907,9 +16907,9 @@
 
   ~st[EMACS SUPPORT]
 
-  Incorporated a version of changes from Jared to the control-t f emacs utility
-  (distributed file ~c[emacs/emacs-acl2.el], so that one can fill a format
-  string from anywhere within the string.
+  Incorporated a version of changes from Jared Davis to the ~c[control-t f]
+  emacs utility (distributed file ~c[emacs/emacs-acl2.el]), so that one can
+  fill a format string from anywhere within the string.
 
   ~st[EXPERIMENTAL VERSIONS]
 
