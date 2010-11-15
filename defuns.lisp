@@ -9057,7 +9057,7 @@ when submitted as :ideal, pointing out that they can never be
              (car lst)))
         ((not (member-eq (caar lst) clique))
          (er soft ctx
-             "The functions symbols whose termination is to be verified must ~
+             "The function symbols whose termination is to be verified must ~
               all be members of the same clique of mutually recursive ~
               functions.  ~x0 is not in the clique of ~x1.  The clique of ~x1 ~
               consists of ~&2.  See :DOC verify-termination."
