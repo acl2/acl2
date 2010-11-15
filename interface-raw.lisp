@@ -6945,17 +6945,20 @@ Missing functions:
             (let ((old-infixp (f-get-global 'infixp *the-live-state*)))
               (f-put-global 'infixp nil *the-live-state*)
               (with-suppression ; package locks, not just warnings, for read
-               (ld-fn (put-assoc-eq
-                       'standard-oi
-                       (if (and raw-p (not (raw-mode-p state)))
-                           (cons '(set-raw-mode t)
-                                 customization-full-file-name)
-                         customization-full-file-name)
-                       (put-assoc-eq
-                        'ld-error-action :return
-                        (f-get-ld-specials *the-live-state*)))
-                      *the-live-state*
-                      nil))
+               (state-free-global-let*
+                ((connected-book-directory
+                  (f-get-global 'connected-book-directory state)))
+                (ld-fn (put-assoc-eq
+                        'standard-oi
+                        (if (and raw-p (not (raw-mode-p state)))
+                            (cons '(set-raw-mode t)
+                                  customization-full-file-name)
+                          customization-full-file-name)
+                        (put-assoc-eq
+                         'ld-error-action :return
+                         (f-get-ld-specials *the-live-state*)))
+                       *the-live-state*
+                       nil)))
               (f-put-global 'infixp old-infixp *the-live-state*)))))
         (f-put-global 'standard-oi
                       (if (and raw-p (not (raw-mode-p state)))
