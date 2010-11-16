@@ -3811,9 +3811,9 @@
   to ~c[fn] and ~c[hyp-fn] should be identical.  In the most common case, both
   take a single argument, ~c[x], which denotes the term to be simplified.  If
   ~c[fn] and/or ~c[hyp-fn] are ~il[guard]ed, their ~il[guard]s should be
-  (implied by) ~ilc[pseudo-termp].  ~l[pseudo-termp].  We say the
-  theorem above is a ``metatheorem'' or ``metalemma'' and ~c[fn] is a
-  ``metafunction'', and ~c[hyp-fn] is a ``hypothesis metafunction''.
+  trivially implied by ~ilc[pseudo-termp]. We say the theorem above is a
+  ``metatheorem'' or ``metalemma'' and ~c[fn] is a ``metafunction'', and
+  ~c[hyp-fn] is a ``hypothesis metafunction''.
 
   If ``~c[...]'' is empty, i.e., the metafunctions take just one argument, we
   say they are ``vanilla flavored.''  If ``~c[...]'' is non-empty, we say the
@@ -5974,7 +5974,7 @@ this problem.  [It contains a truly trivial edit we've made, not important.]
 ; we trust that the writer of :meta and :clause-processor rules knows better
 ; than to attach to functions that cannot be executed.
 
-  (let ((guard (guard fn nil wrld))
+  (let ((guard (guard fn t wrld))
         (pseudo-termp-predicate
          (case rule-type
            (:meta 'pseudo-termp)
@@ -5984,26 +5984,10 @@ this problem.  [It contains a truly trivial edit we've made, not important.]
                    Please contact the ACL2 implementors.")))))
     (cond ((or (equal guard *t*)
                (tautologyp
-                (fcons-term*
-                 'implies
-                 (let ((stobjs-out
-
-; Perhaps we should be concerned here about calling stobjs-out in the case that
-; fn is return-last, since that will cause an error.  But it would be very
-; surprising to use return-last as a metafunction or clause-processor function,
-; and there is no soundness issue even if so: at worst we get a strange error
-; message.
-
-                        (stobjs-out fn wrld))
-                       (pseudo-termp-hyp
-                        (fcons-term pseudo-termp-predicate
-                                    (list (car (formals fn wrld))))))
-                   (cond (stobjs-out
-                          (conjoin2 pseudo-termp-hyp
-                                    (conjoin
-                                     (stobj-recognizer-terms (cddr stobjs-out) wrld))))
-                         (t pseudo-termp-hyp)))
-                 guard)
+                (fcons-term* 'implies
+                             (fcons-term* pseudo-termp-predicate
+                                          (car (formals fn wrld)))
+                             guard)
                 wrld))
            (value nil))
           (t (er soft ctx

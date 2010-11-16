@@ -16902,6 +16902,16 @@
   example (for which we are grateful) illustrating that this behavior could
   occur.  This has been fixed.
 
+  Fixed a bug in a proof obligation generated for ~c[:]~ilc[meta] and
+  ~c[:]~ilc[clause-processor] rules, that the ~il[guard] on the metafunction or
+  clause-processor function, ~c[fn], holds under suitable assumptions.  Those
+  assumptions include not only that the first argument of ~c[fn] satisfies
+  ~ilc[pseudo-termp], but also that all ~il[stobj] inputs satisfy the
+  corresponding stobj recognizer predicates.  We had erroneously considered
+  stobj outputs of ~c[fn] instead of stobj inputs.  Thanks to Sol Swords for
+  bringing this bug to our attention with a simple example, and correctly
+  pointing us to the bug in our code.
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   There is new ~c[Makefile] support for certifying just some of the distributed
