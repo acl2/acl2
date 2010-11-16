@@ -1510,13 +1510,16 @@
 ; This macro allows, in raw Lisp for underlying Common Lisp implementations
 ; where we know how to do this, the interrupting of evaluation of any of the
 ; given forms.  We expect this behavior to take priority over any enclosing
-; call of without-interrupts (which we define for #+acl2-par only.
+; call of without-interrupts.
 
-  #+(and ccl acl2-par)
+  #+ccl
   `(ccl:with-interrupts-enabled ,@forms)
-  #+(and sbcl sb-thread acl2-par) 
+  #+sbcl
   `(sb-sys:with-interrupts ,@forms)
-  #-acl2-par
+  #+gcl
+  `(let ((system:*interrupt-enable* t))
+     ,@forms)
+  #-(or ccl sbcl gcl)
   `(progn ,@forms))
 
 (defun ld-fn0 (alist state bind-flg)

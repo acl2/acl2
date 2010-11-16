@@ -6742,7 +6742,8 @@ Missing functions:
                   (setq *acl2-time-limit* 0)
                   (invoke-restart 'continue))
                  (t
-                  (throw 'local-top-level :our-abort)))))))
+                  (ignore-errors ; might not be in scope of catch
+                    (throw 'local-top-level :our-abort))))))))
 
 #-(and gcl (not ansi-cl))
 (setq *debugger-hook* 'our-abort)
