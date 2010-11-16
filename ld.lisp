@@ -16896,6 +16896,12 @@
   changes to the connected book directory (~pl[cbd]) when exiting and then
   re-entering the top-level ACL2 loop (with ~ilc[lp]).
 
+  In some host Lisps, it has been possible to be in a situation where it is
+  impossible to interrupt checkpoint printing during the summary.  We had
+  thought this solved when the host Lisp was CCL, but Sol Swords sent us an
+  example (for which we are grateful) illustrating that this behavior could
+  occur.  This has been fixed.
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   There is new ~c[Makefile] support for certifying just some of the distributed
