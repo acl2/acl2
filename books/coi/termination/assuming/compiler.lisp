@@ -1650,7 +1650,7 @@
 
 (defun translate-extract (fn args body state)
   (declare (xargs :mode :program))
-  (met ((err TBody state) (pseudo-translate body state))
+  (met ((err TBody) (pseudo-translate body (list (cons fn args)) (w state)))
     #+joe(with-ctx-summarized `(translate-extract ,fn)
 			      (TRANSLATE body T T T CTX (w state) state))
        (met ((key val term spec steps) (compute-fn-spec fn 0 0 TBody nil nil))
