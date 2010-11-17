@@ -43,6 +43,7 @@
 (include-book "strsubst")
 (include-book "strtok")
 (include-book "substrp")
+(include-book "suffixp")
 
 
 

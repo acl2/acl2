@@ -128,6 +128,9 @@
 (defmacro strprefixp (x y) `(STR::strprefixp ,x ,y))
 (add-macro-alias strprefixp STR::strprefixp)
 
+(defmacro strsuffixp (x y) `(STR::strsuffixp ,x ,y))
+(add-macro-alias strprefixp STR::strsuffixp)
+
 (defmacro substrp (x y) `(STR::substrp ,x ,y))
 (add-macro-alias substrp STR::substrp)
 
