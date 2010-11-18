@@ -1125,7 +1125,7 @@
 (defun vals-to-thms-rec (n vals fapp)
   (declare (type (integer 0 *) n))
   (if (consp vals)
-      (append (translate-declaration-to-guard-list (car vals) `(val ,n ,fapp))
+      (append (translate-declaration-to-guard-list (car vals) `(val ',n ,fapp))
 	      (vals-to-thms-rec (1+ n) (cdr vals) fapp))
     nil))
 
