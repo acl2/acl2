@@ -16867,6 +16867,12 @@
   Davis for sending a helpful example (found, in essence, in the modified
   function ~c[type-set-rec], source file ~c[type-set-b.lisp]).
 
+  We made three heuristic improvements in the way contexts (so-called
+``type-alists'') are computed from goals (``clauses'').  Although these changes
+  did not noticeably affect timing results for the ACL2 regression suite, they
+  can be very helpful for goals with many hypotheses.  Thanks to Dave Greve for
+  sending a useful example (one where we found a goal with 233 hypotheses!).
+
   ~st[BUG FIXES]
 
   Fixed a bug that could occur when including a book that attempts to redefine

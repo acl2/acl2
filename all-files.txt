@@ -3072,6 +3072,7 @@ strsplit.lisp
 strsubst.lisp
 strtok.lisp
 substrp.lisp
+suffixp.lisp
 timetest.lsp
 top.lisp
 

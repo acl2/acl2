@@ -1623,7 +1623,7 @@
         (mv nil type-alist mbt-fc-derivations)
       (mv-let (contradictionp xtype-alist ttree)
               (reconsider-type-alist type-alist type-alist nil ens wrld nil
-                                     nil nil)
+                                     nil)
               (cond
                (contradictionp (mv t ttree nil))
                (t (mv nil xtype-alist mbt-fc-derivations))))))

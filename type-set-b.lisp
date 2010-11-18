@@ -2516,6 +2516,12 @@
 ; The recognizer alist contains records of the following form:
 
 (defrec recognizer-tuple
+
+; Warning: In type-set-rec, we assume that the car of a recognizer-tuple cannot
+; be the keyword :SKIP-LOOKUP.  Do not change the shape of this record to
+; violate that assumption!  Visit all occurrences of :SKIP-LOOKUP if any such
+; change is contemplated.
+
   (fn (nume . true-ts)
       (false-ts . strongp)
       . rune)
@@ -6973,11 +6979,21 @@ gbc time        :      8.930 secs
 
   (mv-let
    (ts0 ttree0)
-   (assoc-type-alist x type-alist w)
+   (cond ((and (consp dwp)
+               (eq (car dwp) :SKIP-LOOKUP))
+
+; This case arises from reconsider-type-alist.  We found that by avoiding this
+; lookup, we can avoid quadratic blow-up (distinct from the quadratic blow-up
+; mentioned in a comment in reconsider-type-alist).  With this change, we saw a
+; decrease of 20.1% in time spent for an example from Dave Greve.
+
+          (mv (cadr dwp) (cddr dwp)))
+         (t (assoc-type-alist x type-alist w)))
    (cond
     ((and ts0
           (or (not dwp)
               (and (consp dwp)
+                   (not (eq (car dwp) :SKIP-LOOKUP))
 
 ; Dwp is a recognizer-tuple for some recognizer, fn; see the self-recursive
 ; call of type-set-rec below, just above the call of type-set-recognizer, for
@@ -7100,7 +7116,10 @@ gbc time        :      8.930 secs
             (recog-tuple (most-recent-enabled-recog-tuple
                           fn
                           (global-val 'recognizer-alist w)
-                          ens)))
+                          ens))
+            (dwp (if (and (consp dwp) (eq (car dwp) :SKIP-LOOKUP))
+                     nil
+                   dwp)))
        (cond
         (recog-tuple
          (mv-let
@@ -10309,9 +10328,21 @@ gbc time        :      8.930 secs
         (t (duplicate-keysp (cdr alist)))))
 
 (defun clean-type-alist (type-alist)
-  (if (duplicate-keysp type-alist)
-      (reverse (clean-up-alist type-alist nil))
-      type-alist))
+
+; We obtained a 12.4% decrease in the time for an example from Dave Greve, by
+; avoiding the expense of duplicate-keysp in the commented code below.  In that
+; example we found a type-alist with 234 members; thus, the speedup is the
+; result of eliminating the quadratic behavior of duplicate-keysp and/or
+; clean-up-alist (probably the former).  The regression suite did not slow down
+; as a result of eliminating this "optimization", which presumably had been
+; intended to keep the type-alist small by eliminating duplicate keys (though
+; it seems quite possible that such duplication was infrequent).
+
+; (if (duplicate-keysp type-alist)
+;     (reverse (clean-up-alist type-alist nil))
+;     type-alist))
+
+  type-alist)
 
 (defun type-alist-equality-loop-exit (type-alist)
   (er hard 'type-alist-equality-loop-exit
@@ -10352,32 +10383,57 @@ gbc time        :      8.930 secs
              (t
               (mv nil type-alist nil))))))
 
-(defun reconsider-type-alist (type-alist xtype-alist force-flg ens w seen
-                              pot-lst pt)
+(defun put-assoc-equal-ts (term ts ttree type-alist)
+  (declare (xargs :guard (alistp type-alist)))
+  (cond ((endp type-alist) (list (list* term ts ttree)))
+        ((equal term (caar type-alist))
+         (let ((ts1 (ts-intersection ts (cadar type-alist))))
+           (cond ((ts= ts1 (cadar type-alist))
+                  type-alist)
+                 (t (cons (list* term ts ttree)
+                          (cdr type-alist))))))
+        (t (cons (car type-alist)
+                 (put-assoc-equal-ts term ts ttree (cdr type-alist))))))
+
+(defun reconsider-type-alist (type-alist xtype-alist force-flg ens w pot-lst
+                                         pt)
 
 ; We return (mv contradictionp xtype-alist' ttree) where either contradictionp
 ; is t and ttree explains, or else those two are nil and xtype-alist' is a
 ; strengthening of xtype-alist obtained by retyping every term in it, under
 ; type-alist, using double whammy.
 
+; Through Version_4.1, we accumulated an argument, seen, that accumulated keys
+; of type-alist in order to avoid considering a key more than once.  However,
+; the apparent gain can be offset by the quadratic nature of a corresponding
+; test, (member-equal (caar type-alist) seen).  Indeed, we decreased the time
+; by 13.7% in our preliminary removal of "seen", in an example from Dave Greve,
+; without noticeable impact on the regression suite.
+
   (cond ((null type-alist)
          (mv nil xtype-alist nil))
-        ((or (member-equal (caar type-alist) seen)
-             (and (nvariablep (caar type-alist))
-                  (not (fquotep (caar type-alist)))
-                  (eq (ffn-symb (caar type-alist)) 'IF)))
+        ((and (nvariablep (caar type-alist))
+              (not (fquotep (caar type-alist)))
+              (eq (ffn-symb (caar type-alist)) 'IF))
 
 ; Through Version_2.5 we retyped IF expressions.  But with the introduction
 ; of assume-true-false-if it became both prohibitively expensive and
 ; practically unnecessary.   So we don't do it anymore.
 
          (reconsider-type-alist (cdr type-alist)
-                                xtype-alist force-flg ens w seen
-                                pot-lst pt))
+                                xtype-alist force-flg ens w pot-lst pt))
         (t
          (mv-let (ts ttree)
                  (type-set (caar type-alist)
-                           force-flg t xtype-alist ens w nil pot-lst pt)
+                           force-flg
+                           (cons :SKIP-LOOKUP
+
+; See type-set-rec for a discussion of :SKIP-LOOKUP.  Warning: Do not change
+; this car to another value without seeing the warning in recognizer-tuple.
+
+                                 (cdar type-alist))
+                           xtype-alist ens w nil pot-lst
+                           pt)
 
 ; We are looking at a triple (term1 ts1 . ttree1).  So we obtain the type-set
 ; of term1, ts, using the double whammy.  That guarantees to intersect ts1 with
@@ -10394,13 +10450,12 @@ gbc time        :      8.930 secs
                   ((ts= ts *ts-empty*) (mv t nil ttree))
                   (t (reconsider-type-alist
                       (cdr type-alist)
-                      (if (ts= ts (cadar type-alist))
-                          xtype-alist
-                          (extend-type-alist (caar type-alist) ts ttree
-                                             xtype-alist w))
-                      force-flg ens w
-                      (cons (caar type-alist) seen)
-                      pot-lst pt)))))))
+                      (cond ((ts-subsetp (cadar type-alist) ts)
+                             xtype-alist)
+                            (t
+                             (put-assoc-equal-ts (caar type-alist)
+                                                 ts ttree xtype-alist)))
+                      force-flg ens w pot-lst pt)))))))
 
 (defun type-alist-clause-finish1 (lits ttree-lst force-flg type-alist ens wrld)
 
@@ -10457,8 +10512,7 @@ gbc time        :      8.930 secs
           (t
            (mv-let (contradictionp new-type-alist ttree)
              (reconsider-type-alist type-alist type-alist
-                                    force-flg ens wrld nil
-                                    pot-lst pt)
+                                    force-flg ens wrld pot-lst pt)
              (cond (contradictionp
                     (mv contradictionp new-type-alist ttree))
                    ((or (equal new-type-alist type-alist)
@@ -10475,8 +10529,8 @@ gbc time        :      8.930 secs
 
                    (t
                     (reconsider-type-alist new-type-alist new-type-alist
-                                           force-flg ens wrld nil
-                                           pot-lst pt))))))))
+                                           force-flg ens wrld pot-lst
+                                           pt))))))))
 
 ; Essay on Repetitive Typing
 
