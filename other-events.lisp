@@ -26153,10 +26153,11 @@ The following all cause errors.
 (defun process-defattach-args1 (args ctx wrld state erasures explicit-erasures
                                      attachment-alist helper-alist-lst)
 
-; We accumulate into three arguments as follows:
+; We accumulate into four arguments as follows:
 
 ; - erasures: existing attachment pairs that need to be removed (perhaps before
 ;   reattachment to the cars of some of these pairs)
+; - explicit-erasures: functions associated with nil, for explicit de-attachment
 ; - attachment-alist: list of pairs (f . g) where g is to be attached to f;
 ; - helper-alist-lst: list of alists corresponding positionally to
 ;   attachment-alist, where each element is used for the corresponding proof
@@ -26246,10 +26247,7 @@ The following all cause errors.
                     (t ; at-alist is a legitimate attachment alist
                      (let* ((erasures (cond
                                        ((consp at-alist)
-                                        (assert$
-                                         (not (intersection-domains at-alist
-                                                                    erasures))
-                                         (append at-alist erasures)))
+                                        (append at-alist erasures))
                                        (t erasures)))
                             (constraint-lst
                              (getprop f 'constraint-lst t 'current-acl2-world
@@ -26528,8 +26526,8 @@ The following all cause errors.
                                           attachment-alist-exec
                                           helper-alist-lst-exec))))))))))))
 
-(defun prove-defattach-guards1 (i n attachment-alist helpers-lst
-                                  ctx ens wrld state ttree)
+(defun prove-defattach-guards1 (i n attachment-alist-tail attachment-alist
+                                  helpers-lst ctx ens wrld state ttree)
 
 ; This function is similar to prove-corollaries1, but for the proof obligations
 ; arising from a defattach stating that for each attachment pair <f,g>, the
@@ -26537,7 +26535,7 @@ The following all cause errors.
 ; comments.  We are currently working on the ith our of n such proofs.
 
   (cond
-   ((null attachment-alist)
+   ((null attachment-alist-tail)
     (pprogn
      (io? event nil state
           (n)
@@ -26547,8 +26545,8 @@ The following all cause errors.
                      (cons #\1 n))
                (proofs-co state) state nil))
      (value ttree)))
-   (t (let* ((f (caar attachment-alist))
-             (g (cdar attachment-alist))
+   (t (let* ((f (caar attachment-alist-tail))
+             (g (cdar attachment-alist-tail))
              (goal (sublis-fn-simple attachment-alist
                                      (fcons-term* 'implies
                                                   (guard f nil wrld)
@@ -26585,7 +26583,8 @@ The following all cause errors.
                                    hints ens wrld ctx state)))))
           (prove-defattach-guards1 (1+ i)
                                    n
-                                   (cdr attachment-alist)
+                                   (cdr attachment-alist-tail)
+                                   attachment-alist
                                    (cdr helpers-lst)
                                    ctx ens wrld state
                                    (cons-tag-trees ttree1 ttree))))))))
@@ -26616,8 +26615,8 @@ The following all cause errors.
                           obligations.~%"
                          (list (cons #\0 n))
                          (proofs-co state) state nil))))
-      (prove-defattach-guards1 1 n attachment-alist helpers-lst ctx
-                               ens wrld state nil)))))
+      (prove-defattach-guards1 1 n attachment-alist attachment-alist
+                               helpers-lst ctx ens wrld state nil)))))
 
 (defun defattach-constraint-rec (alist full-alist proved-fnl-insts-alist
                                        constraint event-names

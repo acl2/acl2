@@ -16918,6 +16918,10 @@
   bringing this bug to our attention with a simple example, and correctly
   pointing us to the bug in our code.
 
+  Fixed two bugs in ~ilc[defattach]: wasn't always applying the full functional
+  substitution when generating guard proof obligation, and hit assertion when
+  reattaching to more than one function.
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   There is new ~c[Makefile] support for certifying just some of the distributed
