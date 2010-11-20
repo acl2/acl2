@@ -538,6 +538,14 @@
 
 ; The order of these files determines compilation order.
 
+; Note regarding backups at UT CS:
+
+; Even though it's convenient to refer to our UT CS development directory as
+; /projects/acl2/devel/, we'll need to get backups from
+; /v/filer4b/v11q002/acl2space/acl2/.snapshot/*/devel, not from
+; /projects/acl2/.snapshot/*/devel.  The latter is just a soft link to
+; /projects/acl2/devel, i.e., to /v/filer4b/v11q002/acl2space/acl2/devel.
+
   '(
     #+acl2-par "multi-threading-raw"
     "axioms"
