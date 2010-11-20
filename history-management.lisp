@@ -18379,8 +18379,11 @@ End of statistical and related information related to image size.
   ~c[:HANDS-OFF]~nl[]
   ~c[Value] is a true list of function symbols or lambda expressions,
   indicating that under the specified goal applications of these
-  functions are not to be rewritten.  ~c[Value] may also be a single
-  function symbol or lambda expression instead of a list.
+  functions are not to be rewritten.  Note however that subterms will still be
+  rewritten; ~pl[hide] if that is not what is intended.  (The distributed book
+  ~c[books/clause-processors/autohide.lisp] from Jared Davis may also be
+  helpful in that case.) ~c[Value] may also be a single function symbol or
+  lambda expression instead of a list.
 
   ~c[:]~ilc[IN-THEORY]~nl[]
   ~c[Value] is a ``theory expression,'' i.e., a term having at most the
