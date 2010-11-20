@@ -1871,7 +1871,7 @@ nil)))))
 channel
 state
 nil)
-)))
+))
 
     
 (defun make-simul (name-ent name_architecture

@@ -5,6 +5,7 @@
 
 DIRS =  cowles-flat/support \
 	cowles-primrec/support \
+        georgelin-borrione-ostier/support \
 	kaufmann-sumners/support \
 	manolios-kaufmann/support \
 	martin-alonso-hidalgo-ruiz/support \

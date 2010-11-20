@@ -258,7 +258,7 @@ ACL2 !>(profondeur '((snot (b))
   `(naturalp ,x))
 
 (defmacro positivep (x)
-  `(and (integerp ,x) (>= ,x 1))))
+  `(and (integerp ,x) (>= ,x 1)))
 
 (defun array-bitp1 (X N)
   (declare (type integer N))
