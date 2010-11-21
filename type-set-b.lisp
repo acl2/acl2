@@ -1184,7 +1184,7 @@
 ; Neumann array associated with array-name is in fact theory-array.
 ; Thus the above expression executes quickly.  To get a new array
 ; name, should one ever be needed, it suffices to increment the
-; array-name-suffix and built a name from that new value.
+; array-name-suffix and build a name from that new value.
 
 ; The theory-array of an enabled-structure for a given common theory
 ; is (except for the header entry) just the augmented runic theory
