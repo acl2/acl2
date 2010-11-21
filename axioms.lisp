@@ -8876,7 +8876,7 @@ J
 
   list of symbols imported into a given package~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-pkg-imports]):
   ~bv[]
   (equal (pkg-imports x)
          (if (stringp x)
@@ -35943,7 +35943,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   addition function~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-+]):
   ~bv[]
   (equal (binary-+ x y)
          (if (acl2-numberp x)
@@ -35969,7 +35969,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   multiplication function~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-*]):
   ~bv[]
   (equal (binary-* x y)
          (if (acl2-numberp x)
@@ -36022,7 +36022,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   arithmetic negation function~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-unary-minus]):
   ~bv[]
   (equal (unary-- x)
          (if (acl2-numberp x)
@@ -36044,7 +36044,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   reciprocal function~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-unary-/]):
   ~bv[]
   (equal (unary-/ x)
          (if (and (acl2-numberp x)
@@ -36068,7 +36068,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   less-than~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-<]):
   ~bv[]
   (equal (< x y)
          (if (and (rationalp x)
@@ -36098,7 +36098,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   returns the first element of a non-empty list, else ~c[nil]~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-car]):
   ~bv[]
   (equal (car x)
          (cond
@@ -36117,7 +36117,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   returns the second element of a ~ilc[cons] pair, else ~c[nil]~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-cdr]):
   ~bv[]
   (equal (cdr x)
          (cond
@@ -36136,7 +36136,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   the numeric code for a given character~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-char-code]):
   ~bv[]
   (equal (char-code x)
          (if (characterp x)
@@ -36162,7 +36162,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   the character corresponding to a given numeric code~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-code-char]):
   ~bv[]
   (equal (code-char x)
          (if (and (integerp x)
@@ -36220,7 +36220,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   A completion axiom that shows what ~c[complex] returns on arguments
   violating its ~il[guard] (which says that both arguments are rational
-  numbers) is the following.
+  numbers) is the following, named ~c[completion-of-complex].
   ~bv[]
   (equal (complex x y)
          (complex (if (rationalp x) x 0)
@@ -36270,7 +36270,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   coerce a character list to a string and a string to a list~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-coerce]):
   ~bv[]
   (equal (coerce x y)
          (cond
@@ -36301,7 +36301,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   divisor of a ratio in lowest terms~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-denominator]):
   ~bv[]
   (equal (denominator x)
          (if (rationalp x)
@@ -36346,7 +36346,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   imaginary part of a complex number~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-imagpart]):
   ~bv[]
   (equal (imagpart x)
          (if (acl2-numberp x)
@@ -36371,7 +36371,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   create a symbol with a given name~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-intern-in-package-of-symbol]):
   ~bv[]
   (equal (intern-in-package-of-symbol x y)
          (if (and (stringp x)
@@ -36427,7 +36427,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   dividend of a ratio in lowest terms~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-numerator]):
   ~bv[]
   (equal (numerator x)
          (if (rationalp x)
@@ -36453,7 +36453,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   real part of a complex number~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-realpart]):
   ~bv[]
   (equal (realpart x)
          (if (acl2-numberp x)
@@ -36478,7 +36478,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   the name of a symbol (a string)~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-symbol-name]):
   ~bv[]
   (equal (symbol-name x)
          (if (symbolp x)
@@ -36501,7 +36501,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
   ~pl[pkg-imports], in particula the discussion there of the
   ~c[\"COMMON-LISP\"] package.
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-symbol-package-name]):
   ~bv[]
   (equal (symbol-package-name x)
          (if (symbolp x)

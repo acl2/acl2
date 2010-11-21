@@ -749,7 +749,8 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
   (declare (ignore qname qlambda free-vars))
   nil)
 
-; Keep the rest of these in sync with the -completion axioms in axioms.lisp.
+; Keep the rest of these in sync with the completion-of-* axioms in
+; axioms.lisp.
 
 (defun-*1* acl2-numberp (x)
   (numberp x))
