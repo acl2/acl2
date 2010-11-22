@@ -778,7 +778,8 @@
           :current-enabled-structure ens
           :oncep-override (match-free-override wrld)
           :force-info t
-          :nonlinearp (non-linearp wrld)))
+          :nonlinearp (non-linearp wrld)
+          :backchain-limit-rw (backchain-limit wrld :rewrite)))
 
 (defun make-new-goals-fixed-hyps (termlist hyps goal-name start-index)
   ;; similar to make-new-goals

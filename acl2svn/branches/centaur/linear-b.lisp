@@ -609,9 +609,9 @@
                                                nil))))
                         ((if (ts-subsetp ts-lhs *ts-acl2-number*)
                              (or (ts-subsetp ts-rhs *ts-acl2-number*)
-                                 (not (ts-intersectp ts-lhs *ts-zero*)))
+                                 (ts-disjointp ts-lhs *ts-zero*))
                            (and (ts-subsetp ts-rhs *ts-acl2-number*)
-                                (not (ts-intersectp ts-rhs *ts-zero*))))
+                                (ts-disjointp ts-rhs *ts-zero*)))
 
 ; (implies (and (not (equal lhs rhs))
 ;               (or (and (acl2-numberp lhs)

@@ -2022,32 +2022,13 @@
 ; Defpkg adds an axiom, labelled ax below.  We make a :REWRITE rule out of ax.
 ; Warning: If the axiom added by defpkg changes, be sure to consider the
 ; initial packages that are not defined with defpkg, e.g., "ACL2".  In
-; particular, for each primitive package in *initial-known-package-alist*
-; (except for the "COMMON-LISP" package) there is a defaxiom in axioms.lisp
-; exactly analogous to the add-rule below.  So if you change this code, change
-; that code.
+; particular, for each primitive package in *initial-known-package-alist* there
+; is a defaxiom in axioms.lisp exactly analogous to the add-rule below.  So if
+; you change this code, change that code.
 
                        (ax
-                        `(implies
-                          ,(if (null imports)
-                               `(if (stringp x)
-                                    (if (symbolp y)
-                                        (equal (symbol-package-name y)
-                                               (quote ,name))
-                                      ,*nil*)
-                                  ,*nil*)
-                             `(if (stringp x)
-                                  (if (not (member-symbol-name
-                                            x (quote ,imports)))
-                                      (if (symbolp y)
-                                          (equal (symbol-package-name y)
-                                                 (quote ,name))
-                                        ,*nil*)
-                                    ,*nil*)
-                                ,*nil*))
-                          (equal (symbol-package-name
-                                  (intern-in-package-of-symbol x y))
-                                 (quote ,name))))
+                        `(equal (pkg-imports (quote ,name))
+                                (quote ,imports)))
                        (w2
                         (add-rules
                          (packn (cons name '("-PACKAGE")))
@@ -6227,7 +6208,8 @@
 (defun update-for-redo-flat (n ev-lst state)
 
 ; Here we update the state globals 'redo-flat-succ and 'redo-flat-fail on
-; behalf of a failure of progn or encapsulate.
+; behalf of a failure of progn, encapsulate, or certify-book.  N is the
+; zero-based index of the event in ev-lst that failed.
 
   (assert$ (and (natp n)
                 (< n (length ev-lst)))
@@ -6251,19 +6233,19 @@
 
   ":Doc-Section Events
 
-  redo up through a failure in an ~ilc[encapsulate] or ~ilc[progn]~/
+  redo on failure of a ~ilc[progn], ~ilc[encapsulate], or ~ilc[certify-book]~/
 
-  When one submits an ~ilc[encapsulate] or ~ilc[progn] event and one of its
-  sub-events fails, ACL2 restores its logical ~il[world] as though the
-  ~c[encapsulate] or ~c[progn] had not been run.  But sometimes one would like
-  to debug the failure by re-executing all sub-events that succeeded up to the
-  point of failure, and then re-executing the failed sub-event.  Said
-  differently, imagine that the top-level ~c[encapsulate] or ~c[progn] form, as
-  well as all such sub-forms, were flattened into a list of events that were
-  then submitted to ACL2 up to the point of failure.  This would put us in the
-  state in which the original failed event had failed, so we could now submit
-  that failed event and try modifying it, or first proving additional events,
-  in order to get it admitted.
+  When one submits an ~ilc[encapsulate], ~ilc[progn], or ~ilc[certify-book]
+  command and there is a failure, ACL2 restores its logical ~il[world] as
+  though the command had not been run.  But sometimes one would like to debug
+  the failure by re-executing all sub-events that succeeded up to the point of
+  failure, and then re-executing the failed sub-event.  Said differently,
+  imagine that the ~il[events] under an ~c[encapsulate], ~c[progn], or
+  ~c[certify-book] form were flattened into a list of events that were then
+  submitted to ACL2 up to the point of failure.  This would put us in the state
+  in which the original failed event had failed, so we could now submit that
+  failed event and try modifying it, or first proving additional events, in
+  order to get it admitted.
 
   ~c[Redo-flat] is provided for this purpose.  Consider the following (rather
   nonsensical) example, in which the ~ilc[defun] of ~c[f3] fails (the body is
@@ -6316,7 +6298,7 @@
   For the example above, this command produces the following output.
   ~bv[]
 
-  List of events (from encapsulate or progn) preceding the failure:
+  List of events preceding the failure:
 
   ((DEFUN F1 (X) X)
    (ENCAPSULATE NIL
@@ -6344,18 +6326,18 @@
   events surrounding the definition of ~c[f3] are, however, flattened, because
   that definition failed to be admitted.
 
-  Unfortunately, an event must actually fail in order for ~c[redo-flat] to
-  work.  So if the system is ``stuck'' on an event, then you may find it
-  helpful to insert an illegal event just in front of it before submitting the
-  ~ilc[encapsulate] or ~ilc[progn].~/~/"
+  Normally, ~c[redo-flat] will have the desired effect even if you interrupted
+  a proof (with control-c).  However, ~c[redo-flat] will not produce the
+  desired result after an interrupt if you have enabled the debugger using
+  ~c[(set-debugger-enable t)],~/~/"
 
   `(if (null (f-get-global 'redo-flat-fail state))
-       (pprogn (fms "There is no failure saved from an encapsulate or progn.~|"
+       (pprogn (fms "There is no failure saved from an encapsulate, progn, or ~
+                     certify-book.~|"
                     nil (standard-co state) state nil)
                (value :invisible))
      ,(if show
-          `(pprogn (fms "List of events (from encapsulate or progn) preceding ~
-                         the failure:~|~%~x0~|"
+          `(pprogn (fms "List of events preceding the failure:~|~%~x0~|"
                         (list (cons #\0 (f-get-global 'redo-flat-succ state)))
                         (standard-co state) state (ld-evisc-tuple state))
                    (fms "Failed event:~|~%~x0~|"
@@ -6371,12 +6353,16 @@
                       ,@(and succ (list (list 'list ''ld
                                               (list 'cons
                                                     ''list
-                                                    (list 'kwote-lst 'redo-flat-succ))
-                                              :ld-skip-proofsp succ-ld-skip-proofsp)))
+                                                    (list 'kwote-lst
+                                                          'redo-flat-succ))
+                                              :ld-skip-proofsp
+                                              succ-ld-skip-proofsp)))
                       ,@(and fail (list (list 'list ''ld
                                               (list 'list
                                                     ''list
-                                                    (list 'list ''quote 'redo-flat-fail))
+                                                    (list 'list
+                                                          ''quote
+                                                          'redo-flat-fail))
                                               :ld-error-action :continue
                                               :ld-pre-eval-print t)))
                       ,@(and pbt succ label
@@ -6558,7 +6544,8 @@
                  (mv-let
                   (erp val expansion-alist final-kpa state)
                   (pprogn
-                   (cond ((eq caller 'encapsulate-pass-1)
+                   (cond ((or (eq caller 'encapsulate-pass-1)
+                              (eq caller 'certify-book))
                           (pprogn (f-put-global 'redo-flat-succ nil state)
                                   (f-put-global 'redo-flat-fail nil state)))
                          (t state))
@@ -6579,8 +6566,11 @@
                                          (t nil))
                                    ctx (proofs-co state) state))
                   (cond (erp (pprogn
-                              (cond ((eq caller 'encapsulate-pass-1)
-                                     (update-for-redo-flat val ev-lst state))
+                              (cond ((or (eq caller 'encapsulate-pass-1)
+                                         (eq caller 'certify-book))
+                                     (update-for-redo-flat (- val index)
+                                                           ev-lst
+                                                           state))
                                     (t state))
                               (mv erp val state)))
                         (t (er-progn
@@ -9385,7 +9375,7 @@ The following all cause errors.
                                   #+gcl :ROOT
                                   #-gcl :ABSOLUTE))
                          (let* ((mswindows-drive
-                                 (f-get-global 'mswindows-drive state))
+                                 (mswindows-drive (namestring truename) state))
                                 (tmp (if mswindows-drive
                                          (concatenate 'string mswindows-drive "/")
                                        "/")))
@@ -12823,12 +12813,6 @@ The following all cause errors.
                                  (not (warning-off-p "Ttags" state))))
                            (ttags (if (eq ttags :default) :all ttags)))
 
-; It is possible for cert-annotations to be nil now.  That is because cert-obj
-; was nil.  But we never use it if cert-obj is nil, except for cert-ttags.
-; Now, cert-obj is nil when we are including an uncertified book; so the fact
-; that the calls of chk-ttags-for-include-book and chk-acceptable-ttags are
-; trivial, in this case, is not a problem.
-
                       #-acl2-loop-only
                       (when (and (not certified-p)
                                  (not behalf-of-certify-flg)
@@ -12850,57 +12834,62 @@ The following all cause errors.
                       (er-let*
                        ((ttags (chk-well-formed-ttags ttags directory-name ctx
                                                       state))
-                        (ttags-info ; this value is ignored if cert-obj=nil
-                         (er-progn
-                          (cond
-                           ((or cert-obj-skipped-proofsp
-                                (and cert-obj
-                                     (cdr (assoc-eq
-                                           :axiomsp
-                                           cert-annotations))))
-                            (chk-cert-annotations
-                             cert-annotations
-                             nil
-                             (access cert-obj cert-obj :cmds)
-                             full-book-name
-                             suspect-book-action-alist
-                             ctx state))
-                           (t (value nil)))
-                          (cond
-                           ((null cert-obj)
-                            (value nil))
-                           (t
-                            (er-progn
+                        (ignored-val
+                         (cond
+                          ((or cert-obj-skipped-proofsp
+                               (and cert-obj
+                                    (cdr (assoc-eq
+                                          :axiomsp
+                                          cert-annotations))))
+                           (chk-cert-annotations
+                            cert-annotations
+                            nil
+                            (access cert-obj cert-obj :cmds)
+                            full-book-name
+                            suspect-book-action-alist
+                            ctx state))
+                          (t (value nil))))
+                        (ttags-info ; this value is ignored if not certified-p
+                         (cond
+                          ((not certified-p)
+                           (value nil))
+                          (t
+                           (er-progn
 
 ; We check that the ttags supplied as an argument to include-book are
 ; sufficiently inclusive to allow the ttags from the certificate.  No global
 ; state is updated, not even 'ttags-allowed; this is just a check.
 
-                             (chk-acceptable-ttags1
-                              cert-ttags
-                              nil ; the active-book-name is irrelevant
-                              ttags
-                              nil    ; ttags-seen is irrelevant
-                              :quiet ; do not print ttag notes
-                              ctx state)
+                            (chk-acceptable-ttags1
+                             cert-ttags
+                             nil ; the active-book-name is irrelevant
+                             ttags
+                             nil    ; ttags-seen is irrelevant
+                             :quiet ; do not print ttag notes
+                             ctx state)
 
 ; From the check just above, we know that the ttags supplied as arguments are
 ; sufficient to allow the certificate's ttags.  We next check that the global
 ; ttags-allowed are also sufficient to allow the certificate's ttags.  The
-; following call returns a pair to be bouund to ttags-info (above), consisting
+; following call returns a pair to be bound to ttags-info (above), consisting
 ; of a refined ttags-allowed and an extended ttags-seen.  It prints all
 ; relevant ttag notes if the book is certified; below, we bind
 ; skip-notify-on-defttag in that case so that we don't see ttag notes for
 ; individual events in the book.
 
-                             (chk-acceptable-ttags1
-                              cert-ttags active-book-name
-                              (f-get-global 'ttags-allowed state)
-                              old-ttags-seen
-                              (if warn-for-ttags-default
-                                  (cons ctx full-book-name)
-                                t)
-                              ctx state))))))
+                            (chk-acceptable-ttags1
+
+; With some effort, perhaps we could find a way to avoid causing an error when
+; this call of chk-acceptable-ttags1 returns an error.  But that would take
+; some effort; see the Essay on Trust Tags (Ttags).
+
+                             cert-ttags active-book-name
+                             (f-get-global 'ttags-allowed state)
+                             old-ttags-seen
+                             (if warn-for-ttags-default
+                                 (cons ctx full-book-name)
+                               t)
+                             ctx state)))))
                         (skip-proofsp
 
 ; At one time we bound this variable to 'initialize-acl2 if (or cert-obj
@@ -12929,11 +12918,12 @@ The following all cause errors.
                          (state-global-let*
                           ((axiomsp nil)
                            (ttags-allowed
-                            (if cert-obj
+                            (if certified-p
                                 cert-ttags
                               (f-get-global 'ttags-allowed state)))
-                           (skip-notify-on-defttag (and cert-obj
-                                                        full-book-name))
+                           (skip-notify-on-defttag
+                            (and ttags-info ; hence certified-p
+                                 full-book-name))
                            (connected-book-directory directory-name)
                            (match-free-error nil)
                            (guard-checking-on nil)
@@ -12976,7 +12966,7 @@ The following all cause errors.
                                   (or certified-p
                                       behalf-of-certify-flg))
                              ctx state))
-                           (value (if cert-obj
+                           (value (if ttags-info ; hence certified-p
                                       (car ttags-info)
                                     (f-get-global 'ttags-allowed
                                                   state)))))))
@@ -12996,7 +12986,7 @@ The following all cause errors.
                           ((certified-p
                             (cond
                              ((and
-                               cert-obj
+                               certified-p
                                (not (include-book-alist-subsetp
                                      (unmark-and-delete-local-included-books
                                       (cdr post-alist))
@@ -13233,7 +13223,7 @@ The following all cause errors.
                                                  wrld3)))
                                               wrld3))))))
                                         (wrld5
-                                         (if cert-obj
+                                         (if ttags-info ; hence certified-p
                                              (global-set?
                                               'ttags-seen
                                               (cdr ttags-info)
@@ -14539,6 +14529,9 @@ The following all cause errors.
   event.  If you don't want its included ~il[events] in your present
   ~il[world], simply execute ~c[:]~ilc[ubt] ~c[:here] afterwards.
 
+  A utility is provided to assist in debugging failures of ~c[certify-book];
+  ~pl[redo-flat].)
+
   ~c[Certify-book] requires that the default ~il[defun-mode]
   (~pl[default-defun-mode]) be ~c[:]~ilc[logic] when certification is
   attempted.  If the mode is not ~c[:]~ilc[logic], an error is signalled.
@@ -14549,7 +14542,7 @@ The following all cause errors.
   certified.
 
   Certification occurs in some logical ~il[world], called the ``certification
-  ~il[world].'' That ~il[world] must contain the ~ilc[defpkg]s needed to read
+  ~il[world].''  That ~il[world] must contain the ~ilc[defpkg]s needed to read
   and execute the forms in the book.  The ~il[command]s necessary to recreate
   that ~il[world] from the ACL2 initial ~il[world] will be copied into the
   ~il[certificate] created for the book.  Those ~il[command]s will be
@@ -21502,9 +21495,12 @@ The following all cause errors.
          (notinline-fncall
           (cond (notinline-tail
                  (eq (cadr notinline-tail) :fncall))
-                ((not def) ; then no choice in the matter!
-                 t)
-                (predefined
+                ((or (not def) ; then no choice in the matter!
+                     predefined
+                     (member-eq fn (f-get-global 'program-fns-with-raw-code
+                                                 *the-live-state*))
+                     (member-eq fn (f-get-global 'logic-fns-with-raw-code
+                                                 *the-live-state*)))
                  t)
                 (t nil)))
          (gcond (and cond-tail (acl2-gentemp "COND")))
@@ -22338,7 +22334,10 @@ The following all cause errors.
   function to call its original definition.  Without this special value, the
   new installed definition for the traced function will include the body of the
   original definition.  This ~c[:fncall] behavior is the default for functions
-  whose definitions are built into ACL2.
+  whose definitions are built into ACL2 and for functions that have been added
+  (using a trust tag, an advanced feature, so most users can probably ignore
+  this case) to either of the ~ilc[state] global variables
+  ~c[program-fns-with-raw-code] or ~c[logic-fns-with-raw-code].
 
   The legal values for ~c[:notinline] are ~c[t] (the default), ~c[nil], and
   ~c[:fncall].
@@ -24190,28 +24189,6 @@ The following all cause errors.
                                    (list 'quote new)))
                    (value new))))))))))
 
-(defconst *hint-keywords*
-
-; This constant contains all the legal hint keywords as well as
-; :computed-hints-replacement.
-
-  (append *top-hint-keywords*
-          '(:computed-hints-replacement
-            :error
-            :no-op
-            :no-thanks
-            :expand
-            :case-split-limitations
-            :restrict
-            :do-not
-            :do-not-induct
-            :hands-off
-            :in-theory
-            :nonlinearp
-            :reorder
-            :backtrack
-            :induct)))
-
 (defun add-custom-keyword-hint-fn (key uterm1 uterm2 state)
 
 ; We translate uterm1 and uterm2 to check the syntactic requirements and we
@@ -25585,7 +25562,15 @@ The following all cause errors.
             ,@declares
             ,form))
          (ld '((top-level-fn state))
-             :ld-post-eval-print :command-conventions)
+             :ld-post-eval-print :command-conventions
+
+; If top-level-fn causes an error, the default :ld-error-action of :return!
+; will return a value of the form (mv nil (:STOP-LD ...) state), which will be
+; passed up.  (See :DOC ld-error-action.)  The silent-error below will thus
+; never be executed, and hence we will not roll back top-level-fn.  So we
+; provide :ld-error-action :error here.
+
+             :ld-error-action :error)
          (silent-error state))
        :ld-pre-eval-print nil
        :ld-post-eval-print nil
@@ -26168,10 +26153,11 @@ The following all cause errors.
 (defun process-defattach-args1 (args ctx wrld state erasures explicit-erasures
                                      attachment-alist helper-alist-lst)
 
-; We accumulate into three arguments as follows:
+; We accumulate into four arguments as follows:
 
 ; - erasures: existing attachment pairs that need to be removed (perhaps before
 ;   reattachment to the cars of some of these pairs)
+; - explicit-erasures: functions associated with nil, for explicit de-attachment
 ; - attachment-alist: list of pairs (f . g) where g is to be attached to f;
 ; - helper-alist-lst: list of alists corresponding positionally to
 ;   attachment-alist, where each element is used for the corresponding proof
@@ -26261,10 +26247,7 @@ The following all cause errors.
                     (t ; at-alist is a legitimate attachment alist
                      (let* ((erasures (cond
                                        ((consp at-alist)
-                                        (assert$
-                                         (not (intersection-domains at-alist
-                                                                    erasures))
-                                         (append at-alist erasures)))
+                                        (append at-alist erasures))
                                        (t erasures)))
                             (constraint-lst
                              (getprop f 'constraint-lst t 'current-acl2-world
@@ -26543,8 +26526,8 @@ The following all cause errors.
                                           attachment-alist-exec
                                           helper-alist-lst-exec))))))))))))
 
-(defun prove-defattach-guards1 (i n attachment-alist helpers-lst
-                                  ctx ens wrld state ttree)
+(defun prove-defattach-guards1 (i n attachment-alist-tail attachment-alist
+                                  helpers-lst ctx ens wrld state ttree)
 
 ; This function is similar to prove-corollaries1, but for the proof obligations
 ; arising from a defattach stating that for each attachment pair <f,g>, the
@@ -26552,7 +26535,7 @@ The following all cause errors.
 ; comments.  We are currently working on the ith our of n such proofs.
 
   (cond
-   ((null attachment-alist)
+   ((null attachment-alist-tail)
     (pprogn
      (io? event nil state
           (n)
@@ -26562,8 +26545,8 @@ The following all cause errors.
                      (cons #\1 n))
                (proofs-co state) state nil))
      (value ttree)))
-   (t (let* ((f (caar attachment-alist))
-             (g (cdar attachment-alist))
+   (t (let* ((f (caar attachment-alist-tail))
+             (g (cdar attachment-alist-tail))
              (goal (sublis-fn-simple attachment-alist
                                      (fcons-term* 'implies
                                                   (guard f nil wrld)
@@ -26600,7 +26583,8 @@ The following all cause errors.
                                    hints ens wrld ctx state)))))
           (prove-defattach-guards1 (1+ i)
                                    n
-                                   (cdr attachment-alist)
+                                   (cdr attachment-alist-tail)
+                                   attachment-alist
                                    (cdr helpers-lst)
                                    ctx ens wrld state
                                    (cons-tag-trees ttree1 ttree))))))))
@@ -26631,8 +26615,8 @@ The following all cause errors.
                           obligations.~%"
                          (list (cons #\0 n))
                          (proofs-co state) state nil))))
-      (prove-defattach-guards1 1 n attachment-alist helpers-lst ctx
-                               ens wrld state nil)))))
+      (prove-defattach-guards1 1 n attachment-alist attachment-alist
+                               helpers-lst ctx ens wrld state nil)))))
 
 (defun defattach-constraint-rec (alist full-alist proved-fnl-insts-alist
                                        constraint event-names

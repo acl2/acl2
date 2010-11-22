@@ -1184,7 +1184,7 @@
 ; Neumann array associated with array-name is in fact theory-array.
 ; Thus the above expression executes quickly.  To get a new array
 ; name, should one ever be needed, it suffices to increment the
-; array-name-suffix and built a name from that new value.
+; array-name-suffix and build a name from that new value.
 
 ; The theory-array of an enabled-structure for a given common theory
 ; is (except for the header entry) just the augmented runic theory
@@ -2516,6 +2516,12 @@
 ; The recognizer alist contains records of the following form:
 
 (defrec recognizer-tuple
+
+; Warning: In type-set-rec, we assume that the car of a recognizer-tuple cannot
+; be the keyword :SKIP-LOOKUP.  Do not change the shape of this record to
+; violate that assumption!  Visit all occurrences of :SKIP-LOOKUP if any such
+; change is contemplated.
+
   (fn (nume . true-ts)
       (false-ts . strongp)
       . rune)
@@ -2802,15 +2808,15 @@
                (t (mv *ts-nil* (puffert ttree1)))))
         ((quotep (fargn term 2))
          (mv *ts-string* (puffert ttree0)))
-        ((not (ts-intersectp *ts-non-t-non-nil-symbol* ts2))
+        ((ts-disjointp *ts-non-t-non-nil-symbol* ts2)
 ; Observe that the first argument (and its ttree1) don't matter here.
          (mv *ts-string* (puffert ttree2)))
         (t (mv (ts-union *ts-true-list* *ts-string*) (puffert ttree0)))))
 
 (defun type-set-intern-in-package-of-symbol (ts1 ts2 ttree1 ttree2 ttree0)
-  (cond ((not (ts-intersectp ts1 *ts-string*))
+  (cond ((ts-disjointp ts1 *ts-string*)
          (mv *ts-nil* (puffert ttree1)))
-        ((not (ts-intersectp ts2 *ts-symbol*))
+        ((ts-disjointp ts2 *ts-symbol*)
          (mv *ts-nil* (puffert ttree2)))
         (t (mv *ts-symbol* (puffert ttree0)))))
 
@@ -2895,7 +2901,7 @@
 ; characterp, then its code is 0.  If x is a character, its code
 ; might be 0 or positive.
 
-  (cond ((not (ts-intersectp ts *ts-character*))
+  (cond ((ts-disjointp ts *ts-character*)
          (mv *ts-zero* (puffert ttree)))
         (t (mv *ts-non-negative-integer* (puffert ttree0)))))
 
@@ -6973,14 +6979,38 @@ gbc time        :      8.930 secs
 
   (mv-let
    (ts0 ttree0)
-   (assoc-type-alist x type-alist w)
+   (cond ((and (consp dwp)
+               (eq (car dwp) :SKIP-LOOKUP))
+
+; This case arises from reconsider-type-alist.  We found that by avoiding this
+; lookup, we can avoid quadratic blow-up (distinct from the quadratic blow-up
+; mentioned in a comment in reconsider-type-alist).  With this change, we saw a
+; decrease of 20.1% in time spent for an example from Dave Greve.
+
+          (mv (cadr dwp) (cddr dwp)))
+         (t (assoc-type-alist x type-alist w)))
    (cond
-    ((and ts0 (not dwp))
+    ((and ts0
+          (or (not dwp)
+              (and (consp dwp)
+                   (not (eq (car dwp) :SKIP-LOOKUP))
+
+; Dwp is a recognizer-tuple for some recognizer, fn; see the self-recursive
+; call of type-set-rec below, just above the call of type-set-recognizer, for
+; relevant explanation.  We are satisfied if this record decides whether an
+; object of type ts0 definitely does, or does not, satisfy fn.  Objects whose
+; type is disjoint from that of :true-ts must falsify fn, while those whose
+; type is disjoint from that of :false-ts must satisfy fn; see
+; recognizer-tuple.
+
+                   (or (ts-disjointp
+                        ts0
+                        (access recognizer-tuple dwp :true-ts))
+                       (ts-disjointp
+                        ts0
+                        (access recognizer-tuple dwp :false-ts))))))
      (mv ts0 (cons-tag-trees ttree ttree0)))
-    (t
-     (let ((dwp nil))
-       (cond
-        ((variablep x)
+    ((variablep x)
 
 ; Warning: You may be tempted to change ttree below to nil on the
 ; grounds that we are not using any information about x to say its
@@ -6989,10 +7019,10 @@ gbc time        :      8.930 secs
 ; deriving x and passed the associated ttree to type-set in good
 ; faith.  We are obliged to pass it on.
 
-         (type-set-finish x ts0 ttree0 *ts-unknown* ttree type-alist))
-        ((fquotep x)
-         (type-set-finish x ts0 ttree0 (type-set-quote (cadr x)) ttree type-alist))
-        ((flambda-applicationp x)
+     (type-set-finish x ts0 ttree0 *ts-unknown* ttree type-alist))
+    ((fquotep x)
+     (type-set-finish x ts0 ttree0 (type-set-quote (cadr x)) ttree type-alist))
+    ((flambda-applicationp x)
 
 ; Once upon a time, we tried to do this by using subcor-var to replace
 ; the actuals by the formals and then take the type-set of the body.
@@ -7001,16 +7031,18 @@ gbc time        :      8.930 secs
 ; type-set of the body under a type-alist obtained from the actuals.
 ; We have to be careful to avoid forcing and use of the pot-lst.
 
-         (mv-let (ts1 ttree1)
-                 (type-set-rec (lambda-body (ffn-symb x))
-                               nil ; avoid forcing in lambda-body context
-                               dwp
-                               (zip-variable-type-alist
-                                (lambda-formals (ffn-symb x))
-                                (type-set-lst
-                                 (fargs x)
-                                 force-flg dwp type-alist ancestors ens w
-                                 pot-lst pt backchain-limit))
+     (mv-let (ts1 ttree1)
+             (type-set-rec (lambda-body (ffn-symb x))
+                           nil ; avoid forcing in lambda-body context
+                           nil ; dwp
+                           (zip-variable-type-alist
+                            (lambda-formals (ffn-symb x))
+                            (type-set-lst
+                             (fargs x)
+                             force-flg
+                             nil ; dwp
+                             type-alist ancestors ens w
+                             pot-lst pt backchain-limit))
 
 ; Here is the motivation of the t-ancestors hack.  We cannot compare subterms
 ; of the lambda body to terms on the current ancestors because the lambda
@@ -7023,18 +7055,18 @@ gbc time        :      8.930 secs
 
 ; Here is the one place we initiate the t-ancestors hack.
 
-                               t ;;; t-ancestors hack
-                               ens w ttree
+                           t ;;; t-ancestors hack
+                           ens w ttree
 
 ; The pot-lst is not valid in the current context, because the body is not
 ; instantiated with the actuals.  So we replace it with nil.
 
-                               nil
-                               pt
-                               backchain-limit)
-                 (type-set-finish x ts0 ttree0 ts1 ttree1 type-alist)))
+                           nil
+                           pt
+                           backchain-limit)
+             (type-set-finish x ts0 ttree0 ts1 ttree1 type-alist)))
         
- #||       ((flambda-applicationp x)
+;     ((flambda-applicationp x)
 
 ; Note: Once upon a time, assumptions only recorded the term forced and not the
 ; type-alist involved.  We could get away with that because rewrite-atm would
@@ -7055,7 +7087,7 @@ gbc time        :      8.930 secs
 ;;;                                    (fargs x)
 ;;;                                    (lambda-body (ffn-symb x)))
 ;;;                        force-flg
-;;;                        dwp
+;;;                        nil ; dwp
 ;;;                        type-alist
 ;;;                        ancestors
 ;;;                        ens w ttree pot-lst pt backchain-limit)
@@ -7068,55 +7100,136 @@ gbc time        :      8.930 secs
 ; we take the efficient AND braindead approach of saying we simply
 ; don't know anything about a lambda application.
 
-;;;      (type-set-finish x ts0 ttree0 *ts-unknown* ttree type-alist))||#
+;      (type-set-finish x ts0 ttree0 *ts-unknown* ttree type-alist))
 
-        ((eq (ffn-symb x) 'not)
-         (mv-let (ts1 ttree1)
-                 (type-set-rec (fargn x 1) force-flg dwp type-alist ancestors
-                               ens w ttree pot-lst pt backchain-limit)
-                 (mv-let (ts1 ttree1)
-                         (type-set-not ts1 ttree1 ttree)
-                         (type-set-finish x ts0 ttree0 ts1 ttree1 type-alist))))
-        (t
-         (let* ((fn (ffn-symb x))
-                (recog-tuple
-                 (most-recent-enabled-recog-tuple fn
-                                                  (global-val 'recognizer-alist w)
-                                                  ens)))
-           (cond
-            (recog-tuple
-             (mv-let
-              (ts1 ttree1)
-              (type-set-rec (fargn x 1) force-flg dwp type-alist ancestors
-                            ens w ttree pot-lst pt backchain-limit)
-              (mv-let
-               (ts1 ttree1)
-               (type-set-recognizer recog-tuple ts1 ttree1 ttree)
-               (mv-let (ts ttree)
-                       (type-set-finish x ts0 ttree0 ts1 ttree1 type-alist)
+    ((eq (ffn-symb x) 'not)
+     (mv-let (ts1 ttree1)
+             (type-set-rec (fargn x 1) force-flg
+                           nil ; dwp
+                           type-alist ancestors
+                           ens w ttree pot-lst pt backchain-limit)
+             (mv-let (ts1 ttree1)
+                     (type-set-not ts1 ttree1 ttree)
+                     (type-set-finish x ts0 ttree0 ts1 ttree1 type-alist))))
+    (t
+     (let* ((fn (ffn-symb x))
+            (recog-tuple (most-recent-enabled-recog-tuple
+                          fn
+                          (global-val 'recognizer-alist w)
+                          ens))
+            (dwp (if (and (consp dwp) (eq (car dwp) :SKIP-LOOKUP))
+                     nil
+                   dwp)))
+       (cond
+        (recog-tuple
+         (mv-let
+          (ts1 ttree1)
+          (type-set-rec (fargn x 1) force-flg
+                        (and (or force-flg dwp)
+
+; The example below, essentially from Jared Davis, motivates our passing a
+; non-nil value of dwp here.
+
+; (progn
+;   (defstub foo-p (x) t)
+;   (defstub bar-p (x) t)
+;   (defstub foo->field (x) t)
+;   (defaxiom foo-p-type
+;     (booleanp (foo-p x))
+;     :rule-classes :type-prescription)
+;   (defaxiom bar-p-type
+;     (booleanp (bar-p x))
+;     :rule-classes :type-prescription)
+;   (defaxiom foo->field-type
+;     (implies (force (foo-p x))
+;              (or (stringp (foo->field x))
+;                  (not (foo->field x))))
+;     :rule-classes :type-prescription)
+;   (defaxiom bar-p-when-stringp
+;     (implies (stringp x)
+;              (bar-p x))))
+
+; We then would like to see a forcing round for the following.  But we don't
+; get that if we use dwp=nil, as was done through Version_4.1.
+
+; (thm (implies (foo->field x)
+;               (bar-p (foo->field x))))
+
+; But we do not pass recog-tuple in every case -- see (or force-flg dwp) above
+; -- because that causes significant slowdown.  Here are some statistics on the
+; regression suite, using a development version of ACL2 in early November,
+; 2010, running with 'make' option "-j 4" on a 2-core multi-threaded MacBook
+; Pro i7.
+
+; Before any change:
+
+;   real  83m26.179s
+;   user 276m28.269s
+;   sys   17m16.883s
+
+; New version:
+
+;   real  83m11.087s
+;   user 277m13.043s
+;   sys  17m21.616s
+
+; Using dwp=t here, with Version_4.1 code just under assoc-type-alist near the
+; top of this function:
+
+;   real 104m24.803s
+;   user 303m7.784s
+;   sys   17m59.079s
+
+; Using dwp=recog-tuple here, with the same new code just under
+; assoc-type-alist near the top of this function, but without conditionalizing
+; on (or force-flg dwp).  (Did two timings in case the machine went to sleep
+; during the first.)
+
+;   real 103m17.474s / 102m48.885s
+;   user 299m40.781s / 300m32.856s
+;   sys   18m5.536s  /  18m6.812s
+
+; Finally, we remark on why we conditionalize above on the disjunction (or
+; force-flg dwp).  A non-nil value of dwp seems an appropriate reason to
+; propagate a double-whammy heuristic to the argument of a recognizer.  But
+; that alone doesn't suffice for Jared's example; however, force-flg does.  The
+; dwp and force-flg parameters seem like the obvious conditions for enabling
+; the use of recog-tuple for dwp, and proofs don't noticeably slow down when
+; using their disjunction; so that is what we do.
+
+                             recog-tuple)
+                        type-alist ancestors
+                        ens w ttree pot-lst pt backchain-limit)
+          (mv-let
+           (ts1 ttree1)
+           (type-set-recognizer recog-tuple ts1 ttree1 ttree)
+           (mv-let (ts ttree)
+                   (type-set-finish x ts0 ttree0 ts1 ttree1 type-alist)
 
 ; At this point, ts is the intersection of the type-alist information and the
 ; recog information.  Unless ts is t or nil we also try any type-prescription
 ; rules we have about this function symbol.
 
-                       (cond
-                        ((or (ts= ts *ts-t*)
-                             (ts= ts *ts-nil*))
-                         (mv ts ttree))
-                        (t
+                   (cond
+                    ((or (ts= ts *ts-t*)
+                         (ts= ts *ts-nil*))
+                     (mv ts ttree))
+                    (t
 
 ; WARNING: There is another call of type-set-with-rules below, in the normal
 ; case.  This call is for the recognizer function case.  If you change this
 ; one, change that one!
 
-                         (mv-let
-                          (ts2 ttree2)
-                          (type-set-with-rules
-                           (getprop fn 'type-prescriptions nil 'current-acl2-world w)
-                           x force-flg dwp type-alist ancestors ens w
-                           *ts-unknown* ttree pot-lst pt backchain-limit)
-                          (mv (ts-intersection ts ts2) ttree2))))))))
-            ((eq fn 'if)
+                     (mv-let
+                      (ts2 ttree2)
+                      (type-set-with-rules
+                       (getprop fn 'type-prescriptions nil 'current-acl2-world w)
+                       x force-flg
+                       nil ; dwp
+                       type-alist ancestors ens w
+                       *ts-unknown* ttree pot-lst pt backchain-limit)
+                      (mv (ts-intersection ts ts2) ttree2))))))))
+        ((eq fn 'if)
 
 ; It is possible that the if-expression x is on the type-alist. It
 ; would get there if we had gone through an earlier assume-true-false
@@ -7125,74 +7238,74 @@ gbc time        :      8.930 secs
 ; and then finish as usual by anding it with ts0, the type-set of x
 ; itself as recorded on the type-alist, as appropriate.
 
-             (mv-let
-              (ts1 ttree1)
-              (mv-let
-               (must-be-true
-                must-be-false
-                true-type-alist
-                false-type-alist
-                ttree1)
-               (assume-true-false-rec (fargn x 1)
-                                      nil
-                                      force-flg
-                                      dwp
-                                      type-alist
-                                      ancestors
-                                      ens
-                                      w
-                                      pot-lst pt nil
-                                      backchain-limit)
+         (mv-let
+          (ts1 ttree1)
+          (mv-let
+           (must-be-true
+            must-be-false
+            true-type-alist
+            false-type-alist
+            ttree1)
+           (assume-true-false-rec (fargn x 1)
+                                  nil
+                                  force-flg
+                                  nil ; dwp
+                                  type-alist
+                                  ancestors
+                                  ens
+                                  w
+                                  pot-lst pt nil
+                                  backchain-limit)
 
 ; If must-be-true or must-be-false is set, then ttree1 explains the
 ; derivation of that result.  If neither is derived, then ttree1 is
 ; nil and we can ignore it.
 
-               (cond (must-be-true
-                      (type-set-rec (fargn x 2)
-                                    force-flg
-                                    dwp
-                                    true-type-alist
-                                    ancestors
-                                    ens
-                                    w
-                                    (cons-tag-trees ttree1 ttree)
-                                    pot-lst pt backchain-limit))
-                     (must-be-false
-                      (type-set-rec (fargn x 3)
-                                    force-flg
-                                    dwp
-                                    false-type-alist
-                                    ancestors
-                                    ens
-                                    w
-                                    (cons-tag-trees ttree1 ttree)
-                                    pot-lst pt backchain-limit))
-                     (t (mv-let (ts1 ttree)
-                                (type-set-rec (fargn x 2)
-                                              force-flg
-                                              dwp
-                                              true-type-alist
-                                              ancestors
-                                              ens
-                                              w
-                                              ttree
-                                              pot-lst pt backchain-limit)
-                                (mv-let (ts2 ttree)
-                                        (type-set-rec (fargn x 3)
-                                                      force-flg
-                                                      dwp
-                                                      false-type-alist
-                                                      ancestors
-                                                      ens
-                                                      w
-                                                      ttree
-                                                      pot-lst pt
-                                                      backchain-limit)
-                                        (mv (ts-union ts1 ts2)
-                                            ttree))))))
-               (type-set-finish x ts0 ttree0 ts1 ttree1 type-alist)))
-            ((member-eq fn *expandable-boot-strap-non-rec-fns*)
+           (cond (must-be-true
+                  (type-set-rec (fargn x 2)
+                                force-flg
+                                nil ; dwp
+                                true-type-alist
+                                ancestors
+                                ens
+                                w
+                                (cons-tag-trees ttree1 ttree)
+                                pot-lst pt backchain-limit))
+                 (must-be-false
+                  (type-set-rec (fargn x 3)
+                                force-flg
+                                nil ; dwp
+                                false-type-alist
+                                ancestors
+                                ens
+                                w
+                                (cons-tag-trees ttree1 ttree)
+                                pot-lst pt backchain-limit))
+                 (t (mv-let (ts1 ttree)
+                            (type-set-rec (fargn x 2)
+                                          force-flg
+                                          nil ; dwp
+                                          true-type-alist
+                                          ancestors
+                                          ens
+                                          w
+                                          ttree
+                                          pot-lst pt backchain-limit)
+                            (mv-let (ts2 ttree)
+                                    (type-set-rec (fargn x 3)
+                                                  force-flg
+                                                  nil ; dwp
+                                                  false-type-alist
+                                                  ancestors
+                                                  ens
+                                                  w
+                                                  ttree
+                                                  pot-lst pt
+                                                  backchain-limit)
+                                    (mv (ts-union ts1 ts2)
+                                        ttree))))))
+          (type-set-finish x ts0 ttree0 ts1 ttree1 type-alist)))
+        ((member-eq fn *expandable-boot-strap-non-rec-fns*)
 
 ; For these particular functions we actually substitute the actuals
 ; for the formals into the guarded body and dive into the body to get
@@ -7201,21 +7314,21 @@ gbc time        :      8.930 secs
 ; encounter them during the early type-prescription work and
 ; pre-verify-guard work, and so think it is worthwhile to handle them.
 
-             (mv-let (ts1 ttree1)
-                     (type-set-rec (subcor-var (formals fn w)
-                                               (fargs x)
-                                               (body fn t w))
-                                   force-flg
-                                   dwp
-                                   type-alist
-                                   ancestors
-                                   ens
-                                   w
-                                   ttree
-                                   pot-lst pt
-                                   backchain-limit)
-                     (type-set-finish x ts0 ttree0 ts1 ttree1 type-alist)))
-            (t 
+         (mv-let (ts1 ttree1)
+                 (type-set-rec (subcor-var (formals fn w)
+                                           (fargs x)
+                                           (body fn t w))
+                               force-flg
+                               nil ; dwp
+                               type-alist
+                               ancestors
+                               ens
+                               w
+                               ttree
+                               pot-lst pt
+                               backchain-limit)
+                 (type-set-finish x ts0 ttree0 ts1 ttree1 type-alist)))
+        (t 
 
 ; Otherwise, we apply all known type-prescriptions and conclude with
 ; whatever is builtin about fn.
@@ -7230,14 +7343,16 @@ gbc time        :      8.930 secs
 ; WARNING:  There is another call of type-set-with-rules above, in the
 ; recog-tuple case.  If you change this one, change that one!
 
-             (mv-let (ts1 ttree1)
-                     (type-set-with-rules
-                      (getprop fn 'type-prescriptions nil 'current-acl2-world w)
-                      x force-flg dwp type-alist ancestors ens w
-                      *ts-unknown* ttree
-                      pot-lst pt backchain-limit)
-                     (type-set-finish x ts0 ttree0 ts1 ttree1
-                                      type-alist))))))))))))
+         (mv-let (ts1 ttree1)
+                 (type-set-with-rules
+                  (getprop fn 'type-prescriptions nil 'current-acl2-world w)
+                  x force-flg
+                  nil ; dwp
+                  type-alist ancestors ens w
+                  *ts-unknown* ttree
+                  pot-lst pt backchain-limit)
+                 (type-set-finish x ts0 ttree0 ts1 ttree1
+                                  type-alist)))))))))
 
 (defun type-set-lst (x force-flg dwp type-alist ancestors ens w
                      pot-lst pt backchain-limit)
@@ -8312,7 +8427,7 @@ gbc time        :      8.930 secs
                                  (mv-atf not-flg nil t
                                          nil type-alist
                                          xttree x-ts-ttree))
-                                ((not (ts-intersectp x-ts *ts-nil*))
+                                ((ts-disjointp x-ts *ts-nil*)
                                  (mv (er hard 'assume-true-false-if
                                          "We did not believe that this could ~
                                           happen.  Please send the authors of ~
@@ -8339,7 +8454,7 @@ gbc time        :      8.930 secs
 
                   (mv-let (x-ts x-ts-ttree)
                           (look-in-type-alist x type-alist w)
-                          (cond ((not (ts-intersectp x-ts *ts-nil*))
+                          (cond ((ts-disjointp x-ts *ts-nil*)
                                  (mv-atf not-flg t nil
                                          type-alist nil
                                          xttree x-ts-ttree))
@@ -8421,7 +8536,7 @@ gbc time        :      8.930 secs
                                           fb-fta type-alist
                                           tb-ttree)
                                          xttree x-ts-ttree))
-                                ((not (ts-intersectp x-ts *ts-nil*))
+                                ((ts-disjointp x-ts *ts-nil*)
                                  (mv-atf not-flg t nil
                                          type-alist nil
                                          xttree x-ts-ttree))
@@ -8444,7 +8559,7 @@ gbc time        :      8.930 secs
                                  (mv-atf not-flg nil t
                                          nil type-alist
                                          xttree x-ts-ttree))
-                                ((not (ts-intersectp x-ts *ts-nil*))
+                                ((ts-disjointp x-ts *ts-nil*)
                                  (mv-atf not-flg t nil
                                          (infect-new-type-alist-entries
                                           fb-tta type-alist
@@ -8470,7 +8585,7 @@ gbc time        :      8.930 secs
                                           tb-fta type-alist
                                           fb-ttree)
                                          xttree x-ts-ttree))
-                                ((not (ts-intersectp x-ts *ts-nil*))
+                                ((ts-disjointp x-ts *ts-nil*)
                                  (mv-atf not-flg t nil
                                          type-alist nil
                                          xttree x-ts-ttree))
@@ -8493,7 +8608,7 @@ gbc time        :      8.930 secs
                                  (mv-atf not-flg nil t
                                          nil type-alist
                                          xttree x-ts-ttree))
-                                ((not (ts-intersectp x-ts *ts-nil*))
+                                ((ts-disjointp x-ts *ts-nil*)
                                  (mv-atf not-flg t nil
                                          (infect-new-type-alist-entries
                                           tb-tta type-alist
@@ -8515,7 +8630,7 @@ gbc time        :      8.930 secs
                                  (mv-atf not-flg nil t
                                          nil type-alist
                                          xttree x-ts-ttree))
-                                ((not (ts-intersectp x-ts *ts-nil*))
+                                ((ts-disjointp x-ts *ts-nil*)
                                  (mv-atf not-flg t nil
                                          type-alist nil
                                          xttree x-ts-ttree))
@@ -8698,7 +8813,7 @@ gbc time        :      8.930 secs
              (cond
               ((and ts (ts= ts *ts-nil*))
                (mv-atf xnot-flg nil t nil type-alist ttree xttree))
-              ((and ts (not (ts-intersectp ts *ts-nil*)))
+              ((and ts (ts-disjointp ts *ts-nil*))
                (mv-atf xnot-flg t nil type-alist nil ttree xttree))
               (t
                (mv-let
@@ -9082,7 +9197,7 @@ gbc time        :      8.930 secs
           (cond
            ((ts= ts0 *ts-nil*)
             (mv-atf xnot-flg nil t nil type-alist ttree xttree))
-           ((not (ts-intersectp ts0 *ts-nil*))
+           ((ts-disjointp ts0 *ts-nil*)
             (mv-atf xnot-flg t nil type-alist nil ttree xttree))
            (t
             (mv-let
@@ -9660,7 +9775,7 @@ gbc time        :      8.930 secs
 
           (cond ((ts= ts *ts-nil*)
                  (mv-atf not-flg nil t nil type-alist ttree xttree))
-                ((not (ts-intersectp ts *ts-nil*))
+                ((ts-disjointp ts *ts-nil*)
                  (mv-atf not-flg t nil type-alist nil ttree xttree))
                 (t
 
@@ -9987,7 +10102,7 @@ gbc time        :      8.930 secs
     ((ts= ts *ts-nil*)
      (mv :known-false
          (cons-tag-trees ttree tag-tree)))
-    ((not (ts-intersectp ts *ts-nil*))
+    ((ts-disjointp ts *ts-nil*)
      (mv :known-true
          (cons-tag-trees ttree tag-tree)))
     (t (mv-let
@@ -10213,9 +10328,21 @@ gbc time        :      8.930 secs
         (t (duplicate-keysp (cdr alist)))))
 
 (defun clean-type-alist (type-alist)
-  (if (duplicate-keysp type-alist)
-      (reverse (clean-up-alist type-alist nil))
-      type-alist))
+
+; We obtained a 12.4% decrease in the time for an example from Dave Greve, by
+; avoiding the expense of duplicate-keysp in the commented code below.  In that
+; example we found a type-alist with 234 members; thus, the speedup is the
+; result of eliminating the quadratic behavior of duplicate-keysp and/or
+; clean-up-alist (probably the former).  The regression suite did not slow down
+; as a result of eliminating this "optimization", which presumably had been
+; intended to keep the type-alist small by eliminating duplicate keys (though
+; it seems quite possible that such duplication was infrequent).
+
+; (if (duplicate-keysp type-alist)
+;     (reverse (clean-up-alist type-alist nil))
+;     type-alist))
+
+  type-alist)
 
 (defun type-alist-equality-loop-exit (type-alist)
   (er hard 'type-alist-equality-loop-exit
@@ -10256,32 +10383,57 @@ gbc time        :      8.930 secs
              (t
               (mv nil type-alist nil))))))
 
-(defun reconsider-type-alist (type-alist xtype-alist force-flg ens w seen
-                              pot-lst pt)
+(defun put-assoc-equal-ts (term ts ttree type-alist)
+  (declare (xargs :guard (alistp type-alist)))
+  (cond ((endp type-alist) (list (list* term ts ttree)))
+        ((equal term (caar type-alist))
+         (let ((ts1 (ts-intersection ts (cadar type-alist))))
+           (cond ((ts= ts1 (cadar type-alist))
+                  type-alist)
+                 (t (cons (list* term ts ttree)
+                          (cdr type-alist))))))
+        (t (cons (car type-alist)
+                 (put-assoc-equal-ts term ts ttree (cdr type-alist))))))
+
+(defun reconsider-type-alist (type-alist xtype-alist force-flg ens w pot-lst
+                                         pt)
 
 ; We return (mv contradictionp xtype-alist' ttree) where either contradictionp
 ; is t and ttree explains, or else those two are nil and xtype-alist' is a
 ; strengthening of xtype-alist obtained by retyping every term in it, under
 ; type-alist, using double whammy.
 
+; Through Version_4.1, we accumulated an argument, seen, that accumulated keys
+; of type-alist in order to avoid considering a key more than once.  However,
+; the apparent gain can be offset by the quadratic nature of a corresponding
+; test, (member-equal (caar type-alist) seen).  Indeed, we decreased the time
+; by 13.7% in our preliminary removal of "seen", in an example from Dave Greve,
+; without noticeable impact on the regression suite.
+
   (cond ((null type-alist)
          (mv nil xtype-alist nil))
-        ((or (member-equal (caar type-alist) seen)
-             (and (nvariablep (caar type-alist))
-                  (not (fquotep (caar type-alist)))
-                  (eq (ffn-symb (caar type-alist)) 'IF)))
+        ((and (nvariablep (caar type-alist))
+              (not (fquotep (caar type-alist)))
+              (eq (ffn-symb (caar type-alist)) 'IF))
 
 ; Through Version_2.5 we retyped IF expressions.  But with the introduction
 ; of assume-true-false-if it became both prohibitively expensive and
 ; practically unnecessary.   So we don't do it anymore.
 
          (reconsider-type-alist (cdr type-alist)
-                                xtype-alist force-flg ens w seen
-                                pot-lst pt))
+                                xtype-alist force-flg ens w pot-lst pt))
         (t
          (mv-let (ts ttree)
                  (type-set (caar type-alist)
-                           force-flg t xtype-alist ens w nil pot-lst pt)
+                           force-flg
+                           (cons :SKIP-LOOKUP
+
+; See type-set-rec for a discussion of :SKIP-LOOKUP.  Warning: Do not change
+; this car to another value without seeing the warning in recognizer-tuple.
+
+                                 (cdar type-alist))
+                           xtype-alist ens w nil pot-lst
+                           pt)
 
 ; We are looking at a triple (term1 ts1 . ttree1).  So we obtain the type-set
 ; of term1, ts, using the double whammy.  That guarantees to intersect ts1 with
@@ -10298,13 +10450,12 @@ gbc time        :      8.930 secs
                   ((ts= ts *ts-empty*) (mv t nil ttree))
                   (t (reconsider-type-alist
                       (cdr type-alist)
-                      (if (ts= ts (cadar type-alist))
-                          xtype-alist
-                          (extend-type-alist (caar type-alist) ts ttree
-                                             xtype-alist w))
-                      force-flg ens w
-                      (cons (caar type-alist) seen)
-                      pot-lst pt)))))))
+                      (cond ((ts-subsetp (cadar type-alist) ts)
+                             xtype-alist)
+                            (t
+                             (put-assoc-equal-ts (caar type-alist)
+                                                 ts ttree xtype-alist)))
+                      force-flg ens w pot-lst pt)))))))
 
 (defun type-alist-clause-finish1 (lits ttree-lst force-flg type-alist ens wrld)
 
@@ -10361,8 +10512,7 @@ gbc time        :      8.930 secs
           (t
            (mv-let (contradictionp new-type-alist ttree)
              (reconsider-type-alist type-alist type-alist
-                                    force-flg ens wrld nil
-                                    pot-lst pt)
+                                    force-flg ens wrld pot-lst pt)
              (cond (contradictionp
                     (mv contradictionp new-type-alist ttree))
                    ((or (equal new-type-alist type-alist)
@@ -10379,8 +10529,8 @@ gbc time        :      8.930 secs
 
                    (t
                     (reconsider-type-alist new-type-alist new-type-alist
-                                           force-flg ens wrld nil
-                                           pot-lst pt))))))))
+                                           force-flg ens wrld pot-lst
+                                           pt))))))))
 
 ; Essay on Repetitive Typing
 
@@ -10690,7 +10840,7 @@ gbc time        :      8.930 secs
                            (type-set term2 nil nil type-alist ens wrld ttree
                                      nil nil)
                            (cond
-                            ((not (ts-intersectp ts1 ts2))
+                            ((ts-disjointp ts1 ts2)
                              (mv t ttree))
                             ((equal-x-cons-x-yp term1 term2)
 

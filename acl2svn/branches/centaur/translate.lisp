@@ -1402,6 +1402,11 @@
                     (rationalp x))
                 (mv nil (numerator x) latches))
                (t (ev-fncall-guard-er fn args w latches safep))))
+        (PKG-IMPORTS
+         (cond ((or guard-checking-off
+                    (stringp x))
+                (mv nil (pkg-imports x) latches))
+               (t (ev-fncall-guard-er fn args w latches safep))))
         (PKG-WITNESS
          (cond ((or guard-checking-off
                     (and (stringp x) (not (equal x ""))))
@@ -2042,11 +2047,9 @@
 
    (t
     #-acl2-loop-only
-    (let ((state *the-live-state*)
-          (*ev-shortcut-okp* t)
-          (*raw-guard-warningp* (raw-guard-warningp-binding))
-          erp0 val0)
-      (state-global-let*
+    (let ((*ev-shortcut-okp* t)
+          (*raw-guard-warningp* (raw-guard-warningp-binding)))
+      (state-free-global-let*
        ((safe-mode safe-mode)
         (guard-checking-on
 
@@ -2068,15 +2071,7 @@
                            args
                            '<wrld>
                            safe-mode gc-off hard-error-returns-nilp aok)))
-
-; The rather funky use of setq below is a consequence of our use of
-; state-global-let* above, which requires an error triple as produced by (value
-; t) below.
-
-               (setq erp0 erp)
-               (setq val0 val)
-               (value t))))
-      (mv erp0 val0))
+               (mv erp val)))))
     #+acl2-loop-only
     (mv-let
      (erp val latches)
@@ -2228,7 +2223,12 @@
      "The call ~x0 is illegal because the second argument is not the name of a ~
       package currently known to ACL2."
      (list 'pkg-witness (cadr val))))
-
+   ((and (consp val)
+         (eq (car val) 'pkg-imports-er))
+    (msg
+     "The call ~x0 is illegal because the argument is not the name of a ~
+      package currently known to ACL2."
+     (list 'pkg-imports (cadr val))))
    ((and (consp val)
          (eq (car val) 'program-only-er))
     (msg
@@ -2734,11 +2734,9 @@
 ; See the comment in ev for why we don't check the time limit here.
 
   #-acl2-loop-only
-  (let ((state *the-live-state*)
-        (*ev-shortcut-okp* t)
-        (*raw-guard-warningp* (raw-guard-warningp-binding))
-        erp0 val0)
-    (state-global-let*
+  (let ((*ev-shortcut-okp* t)
+        (*raw-guard-warningp* (raw-guard-warningp-binding)))
+    (state-free-global-let*
      ((safe-mode safe-mode)
       (guard-checking-on
 
@@ -2755,19 +2753,11 @@
               hard-error-returns-nilp
               aok)
       (progn (when latches
-               (er hard 'ev-w
+               (er hard! 'ev-w
                    "The call ~x0 returned non-nil latches."
                    (list 'ev-w form alist '<wrld> safe-mode gc-off
                          hard-error-returns-nilp aok)))
-
-; The rather funky use of setq below is a consequence of our use of
-; state-global-let* above, which requires an error triple as produced by (value
-; t) below.
-
-             (setq erp0 erp)
-             (setq val0 val)
-             (value t))))
-    (mv erp0 val0))
+             (mv erp val)))))
   #+acl2-loop-only
   (mv-let (erp val latches)
           (ev-rec form alist w (big-n) safe-mode gc-off
@@ -2791,11 +2781,9 @@
 ; See the comment in ev for why we don't check the time limit here.
 
   #-acl2-loop-only
-  (let ((state *the-live-state*)
-        (*ev-shortcut-okp* t)
-        (*raw-guard-warningp* (raw-guard-warningp-binding))
-        erp0 val0)
-    (state-global-let*
+  (let ((*ev-shortcut-okp* t)
+        (*raw-guard-warningp* (raw-guard-warningp-binding)))
+    (state-free-global-let*
      ((safe-mode safe-mode)
       (guard-checking-on
 
@@ -2816,15 +2804,7 @@
                    "The call ~x0 returned non-nil latches."
                    (list 'ev-w-lst lst alist '<wrld> safe-mode gc-off
                          hard-error-returns-nilp aok)))
-
-; The rather funky use of setq below is a consequence of our use of
-; state-global-let* above, which requires an error triple as produced by (value
-; t) below.
-
-             (setq erp0 erp)
-             (setq val0 val)
-             (value t))))
-    (mv erp0 val0))
+             (mv erp val)))))
   #+acl2-loop-only
   (mv-let (erp val latches)
           (ev-rec-lst lst alist w (big-n) safe-mode gc-off

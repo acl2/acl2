@@ -2723,6 +2723,12 @@
                            ((assoc-eq :nonlinearp hint-settings)
                             (cdr (assoc-eq :nonlinearp hint-settings)))
                            (t (access rewrite-constant rcnst :nonlinearp)))
+                          :backchain-limit-rw
+                          (cond
+                           ((assoc-eq :backchain-limit-rw hint-settings)
+                            (cdr (assoc-eq :backchain-limit-rw hint-settings)))
+                           (t (access rewrite-constant rcnst
+                                      :backchain-limit-rw)))
                           :case-split-limitations
                           (cond
                            ((assoc-eq :case-split-limitations hint-settings)

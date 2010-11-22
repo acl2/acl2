@@ -489,6 +489,8 @@ books/clause-processors:
 Makefile
 Readme.lsp
 SULFA
+autohide.acl2
+autohide.lisp
 basic-examples.acl2
 basic-examples.lisp
 bv-add-common.lisp
@@ -1488,6 +1490,7 @@ basic.lisp
 defconst-fast-examples.lisp
 defconst-fast.lisp
 defrefine.lisp
+defrule.lisp
 defspec.lisp
 dotimes.lisp
 embeddable-event-forms.lisp
@@ -1680,6 +1683,8 @@ books/ordinals:
 Makefile
 copyright
 e0-ordinal.lisp
+lexicographic-book.lisp
+lexicographic-ordering-without-arithmetic.lisp
 lexicographic-ordering.lisp
 limits.lisp
 ordinal-addition.lisp
@@ -3067,6 +3072,7 @@ strsplit.lisp
 strsubst.lisp
 strtok.lisp
 substrp.lisp
+suffixp.lisp
 timetest.lsp
 top.lisp
 

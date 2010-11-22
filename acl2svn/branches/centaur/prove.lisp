@@ -7016,7 +7016,7 @@
   ~pl[set-gag-mode], and ~pl[set-saved-output].
 
   For information on a tool to help debug failures of ~ilc[encapsulate] and
-  ~ilc[progn] events, ~pl[redo-flat].
+  ~ilc[progn] events, as well as ~ilc[certify-book] failures, ~pl[redo-flat].
 
   See also the book ``Computer-Aided Reasoning: An Approach'' (Kaufmann,
   Manolios, Moore), as well as the discussion of how to read Nqthm proofs and how
@@ -7529,7 +7529,8 @@
                    :current-enabled-structure ,ens
                    :oncep-override (match-free-override ,wrld)
                    :case-split-limitations (case-split-limitations ,wrld)
-                   :nonlinearp (non-linearp ,wrld))
+                   :nonlinearp (non-linearp ,wrld)
+                   :backchain-limit-rw (backchain-limit ,wrld :rewrite))
            ,@args))
 
 (defmacro make-pspv (ens wrld &rest args)

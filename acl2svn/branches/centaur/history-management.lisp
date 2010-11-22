@@ -6281,20 +6281,31 @@ End of statistical and related information related to image size.
 
   (list 'pcb-fn cd 'state))
 
-(defun print-indented-list (objects indent last-col channel evisc-tuple state)
+(defun print-indented-list-msg (objects indent final-string)
 
 ; Indents the indicated number of spaces, then prints the first object, then
-; prints a newline; then, recurs.
+; prints a newline; then, recurs.  Finally, prints the string final-string.  If
+; final-string is punctuation as represented by fmt directive ~y, then it will
+; be printed just after the last object.
 
   (cond
-   ((null objects) (mv last-col state))
-   (t (mv-let (last-col state)
-              (fmt1 "~_0~y1"
-                    (list (cons #\0 indent)
-                          (cons #\1 (car objects)))
-                    0 channel state evisc-tuple)
-              (print-indented-list (cdr objects) indent last-col channel
-                                   evisc-tuple state)))))
+   ((null objects) "")
+   ((and final-string (null (cdr objects)))
+    (msg (concatenate 'string "~_0~y1" final-string)
+         indent
+         (car objects)))
+   (t
+    (msg "~_0~y1~@2"
+         indent
+         (car objects)
+         (print-indented-list-msg (cdr objects) indent final-string)))))
+
+(defun print-indented-list (objects indent last-col channel evisc-tuple state)
+  (cond ((null objects)
+         (mv last-col state))
+        (t (fmt1 "~@0"
+                 (list (cons #\0 (print-indented-list-msg objects indent nil)))
+                 0 channel state evisc-tuple))))
 
 (defun print-book-path (book-path indent channel state)
   (assert$
@@ -12125,16 +12136,87 @@ End of statistical and related information related to image size.
         (t (cons (fifth (car lst))
                  (get-bodies (cdr lst))))))
 
+(mutual-recursion
+
+(defun find-nontrivial-rulers (var term)
+
+; Returns a non-empty list of rulers governing an occurrence of var in term, if
+; such exists.  Otherwise returns :none if var occurs in term and nil if var
+; does not occur in term.
+
+  (cond ((variablep term)
+         (if (eq var term) :none nil))
+        ((fquotep term)
+         nil)
+        ((eq (ffn-symb term) 'if)
+         (let ((x (find-nontrivial-rulers var (fargn term 2))))
+           (cond (x (cons (fargn term 1)
+                          (if (eq x :none)
+                              nil
+                            x)))
+                 (t (let ((x (find-nontrivial-rulers var (fargn term 3))))
+                      (cond (x (cons (dumb-negate-lit (fargn term 1))
+                                     (if (eq x :none)
+                                         nil
+                                       x)))
+                            (t
+                             (find-nontrivial-rulers var (fargn term 1)))))))))
+        (t (find-nontrivial-rulers-lst var (fargs term) nil))))
+
+(defun find-nontrivial-rulers-lst (var termlist flg)
+  (cond ((endp termlist) flg)
+        (t (let ((x (find-nontrivial-rulers var (car termlist))))
+             (cond ((or (null x)
+                        (eq x :none))
+                    (find-nontrivial-rulers-lst var (cdr termlist) (or flg x)))
+                   (t x))))))
+)
+
+(defun tilde-@-free-vars-phrase (vars term wrld)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (pseudo-termp term)
+                              (nvariablep term)
+                              (not (fquotep term))
+                              (plist-worldp wrld))))
+  (cond ((endp vars) "")
+        (t (let ((rulers (find-nontrivial-rulers (car vars) term)))
+             (assert$
+              rulers ; (car vars) occurs in term, so expect :none if no rulers
+              (cond ((eq rulers :none)
+                     (tilde-@-free-vars-phrase (cdr vars) term wrld))
+                    ((null (cdr rulers))
+                     (msg "  Note that ~x0 occurs in the context of condition ~
+                           ~x1 from a surrounding IF test."
+                          (car vars)
+                          (untranslate (car rulers) t wrld)))
+                    (t
+                     (msg "  Note that ~x0 occurs in the following context, ~
+                           i.e., governed by these conditions from ~
+                           surrounding IF tests.~|~%  (AND~|~@1"
+                          (car vars)
+                          (print-indented-list-msg
+                           (untranslate-lst rulers t wrld)
+                           3
+                           ")")))))))))
+
 (defun chk-free-vars (name formals term loc-str ctx state)
   (declare (xargs :guard (and (symbol-listp formals)
                               (pseudo-termp term))))
   (cond ((subsetp (all-vars term) formals) (value nil))
-        (t (er soft ctx
-               "The ~@0 ~x1 contains ~#2~[a free occurrence of the ~
-                variable symbol~/free occurrences of the variable ~
-                symbols~] ~&2."
-               loc-str name 
-               (set-difference-eq (all-vars term) formals)))))
+        ((variablep term)
+         (er soft ctx
+             "The ~@0 ~x1 is a free variable occurrence."
+             loc-str name))
+        (t (assert$
+            (not (fquotep term))
+            (let ((vars (set-difference-eq (all-vars term) formals)))
+              (er soft ctx
+                  "The ~@0 ~x1 contains ~#2~[a free occurrence of the ~
+                   variable symbol~/free occurrences of the variable ~
+                   symbols~] ~&2.~@3"
+                  loc-str name 
+                  (set-difference-eq vars formals)
+                  (tilde-@-free-vars-phrase vars term (w state))))))))
 
 (defun chk-declared-ignores (name ignores term loc-str ctx state)
   (declare (xargs :guard (and (symbol-listp ignores)
@@ -13237,7 +13319,6 @@ End of statistical and related information related to image size.
         FIX                 ;;; used in DEFAULT-+-2
         BOOLEANP            ;;; used in BOOLEANP-CHARACTERP
         CHARACTER-LISTP     ;;; used in CHARACTER-LISTP-COERCE
-        MEMBER-SYMBOL-NAME  ;;; used in ACL2-PACKAGE
         FORCE               ;;; just nice to protect
         CASE-SPLIT          ;;; just nice to protect
         MAKE-CHARACTER-LIST ;;; used in COMPLETION-OF-COERCE
@@ -13246,6 +13327,15 @@ End of statistical and related information related to image size.
         BAD-ATOM            ;;; used in several defaxioms
         RETURN-LAST         ;;; affects constraints (see remove-guard-holders1)
         MV-LIST             ;;; affects constraints (see remove-guard-holders1)
+
+; The next six are used in built-in defpkg axioms.
+
+        MEMBER-SYMBOL-NAME
+        SYMBOL-PACKAGE-NAME
+        INTERN-IN-PACKAGE-OF-SYMBOL
+        PKG-IMPORTS
+        SYMBOL-LISTP
+        NO-DUPLICATESP-EQ
                                                
 ; We do not want vestiges of the non-standard version in the standard version.
 
@@ -15462,7 +15552,7 @@ End of statistical and related information related to image size.
     coerce cons consp denominator equal
     #+:non-standard-analysis floor1
     if imagpart integerp
-    intern-in-package-of-symbol numerator pkg-witness rationalp
+    intern-in-package-of-symbol numerator pkg-witness pkg-imports rationalp
     #+:non-standard-analysis realp
     realpart stringp symbol-name symbol-package-name symbolp
     #+:non-standard-analysis standardp
@@ -15696,6 +15786,16 @@ End of statistical and related information related to image size.
     (er soft ctx
         "The only legal values for a :nonlinearp hint are T and NIL, but ~
          ~x0 is neither of these."
+        arg)))
+
+(defun translate-backchain-limit-rw-hint (arg ctx wrld state)
+  (declare (ignore wrld))
+  (if (or (natp arg)
+          (equal arg nil))
+      (value arg)
+    (er soft ctx
+        "The only legal values for a :backchain-limit-rw hint are NIL and ~
+         natural numbers, but ~x0 is neither of these."
         arg)))
 
 (defun translate-no-thanks-hint (arg ctx wrld state)
@@ -16768,6 +16868,8 @@ End of statistical and related information related to image size.
         (translate-reorder-hint arg ctx wrld state))
        (:backtrack
         (translate-backtrack-hint name-tree arg ctx wrld state))
+       (:backchain-limit-rw
+        (translate-backchain-limit-rw-hint arg ctx wrld state))
        (:error
 
 ; We know this case never happens.  The error is caught and signalled
@@ -18144,6 +18246,7 @@ End of statistical and related information related to image size.
            :cases ((true-listp a) (consp a))
            :by (:instance rev-rev (x (cdr z)))
            :nonlinearp t
+           :backchain-limit-rw 3
            :reorder (4 7 2)
            :case-split-limitations (20 10)
            :no-op t
@@ -18276,8 +18379,11 @@ End of statistical and related information related to image size.
   ~c[:HANDS-OFF]~nl[]
   ~c[Value] is a true list of function symbols or lambda expressions,
   indicating that under the specified goal applications of these
-  functions are not to be rewritten.  ~c[Value] may also be a single
-  function symbol or lambda expression instead of a list.
+  functions are not to be rewritten.  Note however that subterms will still be
+  rewritten; ~pl[hide] if that is not what is intended.  (The distributed book
+  ~c[books/clause-processors/autohide.lisp] from Jared Davis may also be
+  helpful in that case.) ~c[Value] may also be a single function symbol or
+  lambda expression instead of a list.
 
   ~c[:]~ilc[IN-THEORY]~nl[]
   ~c[Value] is a ``theory expression,'' i.e., a term having at most the
@@ -18562,6 +18668,13 @@ End of statistical and related information related to image size.
   ~c[:NONLINEARP]~nl[]
   ~c[Value] is ~c[t] or ~c[nil], indicating whether ~il[non-linear-arithmetic]
   is active.  The default value is ~c[nil].  ~l[non-linear-arithmetic].
+
+  ~c[:BACKCHAIN-LIMIT-RW]~nl[]
+  ~c[Value] is a natural number or ~c[nil], indicating the level of
+  backchaining for ~il[rewrite], ~il[meta], and ~il[linear] rules.  This
+  overrides, for the current goal and (as with ~c[:]~ilc[in-theory] hints)
+  descendent goals, the default ~il[backchain-limit]
+  (~pl[set-backchain-limit]).
 
   ~c[:REORDER]~nl[]
   ~c[Value] is a list of positive integers without duplicates, corresponding to
@@ -20075,11 +20188,75 @@ End of statistical and related information related to image size.
 ; ``TTAG NOTE'' mechanism for determining which files need to be inspected in
 ; order to validate the proper use of ttags.
 
-; The following is a potentially useful utility, so we include it in the ACL2
-; sources rather than in books/hacking/hacker.lisp.  Thanks to Peter Dillinger for
-; his contribution.
+; There is a subtlety to the handling of trust tags by include-book in the case
+; of uncertified books.  Consider the following example.  We have two books,
+; sub.lisp and top.lisp, but we will be considering two versions of sub.lisp,
+; as indicated.
+
+; sub.lisp
+#||
+(in-package "ACL2")
+; (defttag :sub-ttag1) ; will be uncommented later
+(defun f (x) x)
+||#
+
+; top.lisp
+#||
+(in-package "ACL2")
+(encapsulate
+ () ;; start lemmas for sub
+
+ (include-book "sub")
+ )
+||#
+
+; Now take the following steps:
+
+; In a fresh ACL2 session:
+; (certify-book "sub")
+; (u)
+; (certify-book "top")
+
+; Now edit sub.lisp by uncommenting the defttag form.  Then, in a fresh ACL2
+; session:
+; (certify-book "sub" 0 t :ttags :all)
+; (u)
+; (include-book "top")
+
+; The (include-book "top") form will fail when the attempt is made to include
+; the book "sub".  To see why, first consider what happens when a superior book
+; "top" includes a subsidiary certified book "sub".  When include-book-fn1 is
+; called in support of including "sub", the second call of
+; chk-acceptable-ttags1 therein uses the certificate's ttags, stored in
+; variable cert-ttags, to refine the state global 'ttags-allowed.  After that
+; check and refinement, which prints ttag notes based on cert-ttags,
+; ttags-allowed is bound to cert-ttags for the inclusion of "sub", with further
+; ttag notes omitted during that inclusion.
+
+; Returning to our example, the recertification of "sub" results in the
+; addition of a ttag for "sub" that has not yet been noticed for "top".  So
+; when we include "top", state global ttags-allowed is bound to nil, since that
+; is the cert-ttags for "top".  When sub is encountered, its additional ttag is
+; not allowed (because ttags-allowed is nil), and we get an error.
+
+; In a way, this error is unfortunate; after all, top is uncertified, and we
+; wish to allow inclusion of uncertified books (with a suitable warning).  But
+; it seems non-trivial to re-work the scheme described above.  In particular,
+; it seems that we would have to avoid binding ttags-allowed to nil when
+; including "top", before we realize that "top" is uncertified.  (The check on
+; sub-book checksums occurs after events are processed.)  We could eliminate
+; this "barrier" under which we report no further ttag notes, but that could
+; generate a lot of ttag notes -- even if we defer, we may be tempted to print
+; a note for each defttag encountered in a different sub-book.
+
+; That said, if the need is great enough for us to avoid the error described
+; above, we'll figure out something.
 
 (defmacro ttags-seen ()
+
+; The following is a potentially useful utility, which we choose to include in
+; the ACL2 sources rather than in books/hacking/hacker.lisp.  Thanks to Peter
+; Dillinger for his contribution.
 
   ":Doc-Section Miscellaneous
 
@@ -20452,9 +20629,12 @@ End of statistical and related information related to image size.
             "")
            (t
             (msg "  This error is unusual since it is occurring while ~
-                  including a certified book, in this case, the book ~x0.  ~
-                  See :DOC make-event-details, section ``A note on ttags,'' ~
-                  for an explanation."
+                  including a book that appears to have been certified, in ~
+                  this case, the book ~x0.  Most likely, that book needs to ~
+                  be recertified, though a temporary workaround may be to ~
+                  delete its certificate (i.e., its .cert file).  Otherwise ~
+                  see :DOC make-event-details, section ``A note on ttags,'' ~
+                  for a possible explanation."
                  (f-get-global 'skip-notify-on-defttag state))))))
      (t
       (pprogn

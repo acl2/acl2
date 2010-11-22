@@ -5244,7 +5244,7 @@
 ;; RAG - After adding the non-standard predicates, this number grew to 110.
 
 (defconst *force-xnume*
-  (let ((x 120))
+  (let ((x 122))
     #+:non-standard-analysis
     (+ x 12)
     #-:non-standard-analysis
@@ -6442,6 +6442,23 @@ Induction Schema:   (and (implies (not (consp x)) (p x))
   (cond ((endp l) t)
         ((member (car l) (cdr l)) nil)
         (t (no-duplicatesp (cdr l)))))
+
+(defun no-duplicatesp-eq (l)
+
+  ":Doc-Section ACL2::Programming
+
+  check for duplicates in a list (using ~c[eq] for equality)~/
+
+  ~c[(no-duplicatesp-eq l)] is true if and only if no member of ~c[l] occurs
+  twice in ~c[l].~/
+
+  ~c[(no-duplicatesp l)] has a ~il[guard] of ~c[(symbol-listp l)].  Membership
+  is tested using ~ilc[member-eq], hence using ~ilc[eq] as the test.~/"
+
+  (declare (xargs :guard (symbol-listp l)))
+  (cond ((endp l) t)
+        ((member-eq (car l) (cdr l)) nil)
+        (t (no-duplicatesp-eq (cdr l)))))
 
 #+acl2-loop-only
 (defun assoc (x alist)
@@ -8223,7 +8240,9 @@ J
 ; defparameter for *ever-known-package-alist* above, consider changing
 ; symbol-package-name, and perhaps adjust the check for "LISP" in defpkg-fn.
 
-(defconst *main-lisp-package-name* "COMMON-LISP")
+(defconst *main-lisp-package-name*
+; Keep this in sync with *main-lisp-package-name-raw*.
+  "COMMON-LISP")
 
 ; Warning: If you add primitive packages to this list, be sure to add
 ; the defaxioms that would be done by defpkg.  For example, below you
@@ -8244,6 +8263,15 @@ J
         (make-package-entry :name "ACL2"
                             :imports *common-lisp-symbols-from-main-lisp-package*)
         (make-package-entry :name *main-lisp-package-name*
+
+; From a logical perspective, ACL2 pretends that no symbols are imported into
+; the main Lisp package, "COMMON-LISP".  This perspective is implemented by
+; bad-lisp-objectp, as described in a comment there about maintaining the
+; Invariant on Symbols in the Common Lisp Package.  In short, every good ACL2
+; symbol not in a package known to ACL2 must be imported into the main Lisp
+; package and must have "COMMON-LISP" as its *initial-lisp-symbol-mark*
+; property.
+
                             :imports nil)
         (make-package-entry :name "KEYWORD"
                             :imports nil)))
@@ -8655,13 +8683,16 @@ J
 
            "ACL2")))
 
-;  member-symbol-name is used in the defpkg axiom.
+; Member-symbol-name is used in defpkg axioms.  We keep it disabled in order to
+; avoid stack overflows, for example in the proof of theorem
+; symbol-listp-raw-acl2-exports in file books/misc/check-acl2-exports.lisp.
 
 (defun member-symbol-name (str l)
   (declare (xargs :guard (symbol-listp l)))
   (cond ((endp l) nil)
         ((equal str (symbol-name (car l))) l)
         (t (member-symbol-name str (cdr l)))))
+(in-theory (disable member-symbol-name)) ; defund is not yet available here
 
 (defthm symbol-equality
 
@@ -8688,6 +8719,41 @@ J
                 (symbolp any-symbol))
            (equal (symbol-name (intern-in-package-of-symbol s any-symbol)) s)))
 
+(defaxiom symbol-package-name-intern-in-package-of-symbol
+  (implies (and (stringp x)
+                (symbolp y)
+                (not (member-symbol-name
+                      x
+                      (pkg-imports (symbol-package-name y)))))
+           (equal (symbol-package-name (intern-in-package-of-symbol x y))
+                  (symbol-package-name y))))
+
+(defaxiom intern-in-package-of-symbol-is-identity
+  (implies (and (stringp x)
+                (symbolp y)
+                (member-symbol-name
+                 x
+                 (pkg-imports (symbol-package-name y))))
+           (equal (intern-in-package-of-symbol x y)
+                  (car (member-symbol-name
+                        x
+                        (pkg-imports (symbol-package-name y)))))))
+
+(defaxiom symbol-listp-pkg-imports
+  (symbol-listp (pkg-imports pkg))
+  :rule-classes ((:forward-chaining :trigger-terms ((pkg-imports pkg)))))
+
+(defaxiom no-duplicatesp-eq-pkg-imports
+  (no-duplicatesp-eq (pkg-imports pkg))
+  :rule-classes :rewrite)
+
+(defaxiom completion-of-pkg-imports
+  (equal (pkg-imports x)
+         (if (stringp x)
+             (pkg-imports x)
+           nil))
+  :rule-classes nil)
+
 ; These axioms are just the ones that would be added by defpkg had the packages
 ; in question been introduced that way.
 
@@ -8695,42 +8761,20 @@ J
 ; probably visit the same change to the rules added by defpkg.
 
 (defaxiom acl2-input-channel-package
-  (implies (and (stringp x)
-                (symbolp y)
-                (equal (symbol-package-name y)
-                       "ACL2-INPUT-CHANNEL"))
-           (equal (symbol-package-name (intern-in-package-of-symbol x y))
-                  "ACL2-INPUT-CHANNEL")))
+  (equal (pkg-imports "ACL2-INPUT-CHANNEL")
+         nil))
 
 (defaxiom acl2-output-channel-package
-  (implies (and (stringp x)
-                (symbolp y)
-                (equal (symbol-package-name y)
-                       "ACL2-OUTPUT-CHANNEL"))
-           (equal (symbol-package-name (intern-in-package-of-symbol x y))
-                  "ACL2-OUTPUT-CHANNEL")))
+  (equal (pkg-imports "ACL2-OUTPUT-CHANNEL")
+         nil))
 
 (defaxiom acl2-package
-  (implies (and (stringp x)
-                (not (member-symbol-name
-                      x
-                      *common-lisp-symbols-from-main-lisp-package*))
-                (symbolp y)
-                (equal (symbol-package-name y)
-                       "ACL2"))
-           (equal (symbol-package-name (intern-in-package-of-symbol x y))
-                  "ACL2")))
+  (equal (pkg-imports "ACL2")
+         *common-lisp-symbols-from-main-lisp-package*))
 
 (defaxiom keyword-package
-  (implies (and (stringp x)
-                (symbolp y)
-                (equal (symbol-package-name y)
-                       "KEYWORD"))
-           (equal (symbol-package-name (intern-in-package-of-symbol x y))
-                  "KEYWORD")))
-
-; Adding a similar axiom for pkg "COMMON-LISP" would be wrong.  We do not
-; know what the imports to "COMMON-LISP" are, they differ from lisp to lisp.
+  (equal (pkg-imports "KEYWORD")
+         nil))
 
 ; The following two axioms are probably silly.  But at least they may provide
 ; steps towards building up the ACL2 objects constructively from a few
@@ -8791,21 +8835,105 @@ J
 
   (declare (type string str)
            (type symbol sym))
-  (let ((ans
+  (let ((pkg (symbol-package sym)))
+    (multiple-value-bind
+     (ans status)
+     (intern str
 
-; Bob Boyer notes that intern returns more than one value, so we may get better
-; efficiency (at least in GCL) by this let-binding trick, which throws away all
-; but the first value.
+; At one time we said here that we do not use symbol-package-name below because
+; for the main Lisp package, it may return the name of a non-existent package,
+; in particular for GCL: we have (symbol-package-name 'car) = "COMMON-LISP",
+; which is not the name of a package, while (symbol-name (symbol-package 'car))
+; = "LISP", which is.  However, for quite some time now (it is 2010 as we write
+; this) a call of rename-package in acl2.lisp has made that comment obsolete.
+; Nevertheless, we intern in the symbol-package, since that seems slightly more
+; efficient.
 
-         (intern str
+             pkg)
+     (declare (ignore status))
 
-; We do not use symbol-package-name below because for the main Lisp package, it
-; may return the name of a non-existent package.  In particular, for GCL we
-; have (symbol-package-name 'car) = "COMMON-LISP", which is not the name of a
-; package, while (symbol-name (symbol-package 'car)) = "LISP", which is.
+; We next guarantee that if sym is an ACL2 object then so is ans.  We assume
+; that every import of a symbols into a package known to ACL2 is via defpkg,
+; except perhaps for imports into the "COMMON-LISP" package.  So unless sym
+; resides in the "COMMON-LISP" package (whether natively or not), the
+; symbol-package of sym is one of those known to ACL2.  Thus, the only case of
+; concern is the case that sym resides in the "COMMON-LISP" package.  Since sym
+; is an ACL2 object, then by the Invariant on Symbols in the Common Lisp
+; Package (see bad-lisp-objectp), its symbol-package is *main-lisp-package* or
+; else its *initial-lisp-symbol-mark* property is "COMMON-LISP".  So we set the
+; *initial-lisp-symbol-mark* for ans in each of these sub-cases, which
+; preserves the above invariant.
 
-                 (symbol-package sym))))
-    ans))
+     (when (and (or (get sym *initial-lisp-symbol-mark*)
+                    (eq pkg *main-lisp-package*))
+                (not (get ans *initial-lisp-symbol-mark*)))
+       (setf (get ans *initial-lisp-symbol-mark*)
+             *main-lisp-package-name-raw*))
+     ans)))
+
+(defdoc pkg-imports
+  ":Doc-Section ACL2::Programming
+
+  list of symbols imported into a given package~/
+
+  Completion Axiom (~c[completion-of-pkg-imports]):
+  ~bv[]
+  (equal (pkg-imports x)
+         (if (stringp x)
+             (pkg-imports x)
+           nil))
+  ~ev[]~/
+  ~il[Guard] for ~c[(pkg-imports x)]:
+  ~bv[]
+  (stringp x)
+  ~ev[]
+
+  ~c[(Pkg-imports pkg)] returns a duplicate-free list of all symbols imported
+  into ~c[pkg], which should be the name of a package known to ACL2.  For
+  example, suppose ~c[\"MY-PKG\"] was created by
+  ~bv[]
+  (defpkg \"MY-PKG\" '(ACL2::ABC LISP::CAR)).
+  ~ev[]
+  Then ~c[(pkg-imports \"MY-PKG\")] equals the list ~c[(ACL2::ABC LISP::CAR)].
+
+  If ~c[pkg] is not a string, then ~c[(pkg-imports pkg)] is ~c[nil].  If
+  ~c[pkg] is a string but not the name of a package known to ACL2, then the
+  value of the form ~c[(pkg-imports pkg)] is unspecified, and it evaluation
+  will fail to yield a value.  By ``the symbols imported into ~c[pkg]'' we mean
+  the symbols imported into ~c[pkg] by the ~ilc[defpkg] event that introduced
+  ~c[pkg].  There are no imports for built-in packages except for the
+  ~c[\"ACL2\"] package, which imports the symbols in the list value of the
+  constant ~c[*common-lisp-symbols-from-main-lisp-package*].  In particular,
+  this is the case for the ~c[\"COMMON-LISP\"] package.  Users familiar with
+  Common Lisp may find this surprising, since in actual Common Lisp
+  implementations it is often the case that many symbols in that package are
+  imported from other packages.  However, ACL2 treats all symbols in the
+  constant ~c[*common-lisp-symbols-from-main-lisp-package*] as having a
+  ~ilc[symbol-package-name] of ~c[\"COMMON-LISP\"], as though they were not
+  imported.  ACL2 admits a symbol imported into in the ~c[\"COMMON-LISP\"]
+  package only if it belongs to that list: any attempt to read any other symbol
+  imported into the ~c[\"COMMON-LISP\"] package, or to produce such a symbol
+  with ~ilc[intern$] or ~ilc[intern-in-package-of-symbol], will cause an
+  error.
+
+  The following axioms formalize properties of ~c[pkg-imports] discussed above
+  (use ~c[:]~ilc[pe] to view them).
+  ~bv[]
+  symbol-package-name-intern-in-package-of-symbol
+  intern-in-package-of-symbol-is-identity
+  symbol-listp-pkg-imports
+  no-duplicatesp-pkg-imports
+  completion-of-pkg-imports
+  ~ev[]")
+
+#-acl2-loop-only
+(defun-one-output pkg-imports (pkg)
+  (declare (type string pkg))
+  (let ((entry (find-non-hidden-package-entry pkg
+                                              (known-package-alist
+                                               *the-live-state*))))
+    (cond (entry (package-entry-imports entry))
+          (t (throw-raw-ev-fncall (list 'pkg-imports-er pkg))))))
 
 (defdoc pkg-witness
   ":Doc-Section ACL2::Programming
@@ -13751,13 +13879,18 @@ J
   returns that symbol (which is uniquely determined by the restriction
   on the imports list above).  ~l[intern-in-package-of-symbol].
 
+  Upon admission of a ~c[defpkg] event, the function ~c[pkg-imports] is
+  extended to compute a list of all symbols imported into the given package,
+  without duplicates.
+
   ~c[Defpkg] is the only means by which an ACL2 user can create a new
   package or specify what it imports.  That is, ACL2 does not support
   the Common Lisp functions ~c[make-package] or ~c[import].  Currently, ACL2
   does not support exporting at all.
 
-  The Common Lisp function ~ilc[intern] is weakly supported by ACL2.
-  ~l[intern].
+  The Common Lisp function ~ilc[intern] is weakly supported by ACL2;
+  ~pl[intern].  A more general form of that function is also provided:
+  ~pl[intern$].
 
   We now explain the two exceptions to the newness rule for package
   names.  The careful experimenter will note that if a package is
@@ -14763,7 +14896,8 @@ J
   that produce expansions that refer to ~ilc[state] or other single-threaded
   objects (~pl[stobj]) or variables not among the macro's arguments.
   See the ~c[git] example above.  For a related utility that avoids this
-  ~ilc[state] restriction, ~pl[make-event].~/"
+  ~ilc[state] restriction, for example allowing expansion of macros when
+  generating the body of an event, ~pl[make-event].~/"
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -16675,9 +16809,11 @@ J
   in order to understand ~c[make-event], perhaps before continuing to read this
   documentation.  For example, ~c[eval.lisp] contains definitions of macros
   ~c[must-succeed] and ~c[must-fail] that are useful for testing and are used
-  in many other books in that directory, especially ~c[eval-tests.lisp].  Other
-  than the examples, the explanations here should suffice for most users.  If
-  you want explanations of subtler details, ~pl[make-event-details].
+  in many other books in that directory, especially ~c[eval-tests.lisp].
+  Another example, ~c[defrule.lisp], shows how ~c[make-event] can be used to do
+  macroexpansion before generating ~il[events].  Other than the examples, the
+  explanations here should suffice for most users.  If you want explanations of
+  subtler details, ~pl[make-event-details].
 
   ~c[Make-event] is related to Lisp macroexpansion in the sense that its
   argument is evaluated to obtain an expansion result, which is evaluated
@@ -18366,12 +18502,12 @@ J
   discussion we assume that each ~c[gi] is non-~c[nil] (otherwise first remove
   all attachment pairs ~c[<fi,gi>] for which ~c[gi] is nil).  Let ~c[s] be the
   functional substitution mapping each ~c[fi] to ~c[gi].  For any term ~c[u],
-  we write ~c[u\s] for the result of applying ~c[s] to ~c[u]; that is, ~c[u\s]
-  is the ``functional instance'' obtained by replacing each ~c[fi] by ~c[gi] in
-  ~c[u].  Let ~c[G_fi] and ~c[G_gi] be the guards of ~c[fi] and ~c[gi],
-  respectively.  ACL2 first proves, for each ~c[i] (in order), the formula
-  ~c[(implies G_fi G_gi)\s].  If this sequence of proofs succeeds, then the
-  remaining formula to prove is the functional instance ~c[C\s] of the
+  we write ~c[u\\s] for the result of applying ~c[s] to ~c[u]; that is,
+  ~c[u\\s] is the ``functional instance'' obtained by replacing each ~c[fi] by
+  ~c[gi] in ~c[u].  Let ~c[G_fi] and ~c[G_gi] be the guards of ~c[fi] and
+  ~c[gi], respectively.  ACL2 first proves, for each ~c[i] (in order), the
+  formula ~c[(implies G_fi G_gi)\\s].  If this sequence of proofs succeeds, then
+  the remaining formula to prove is the functional instance ~c[C\\s] of the
   conjunction ~c[C] of the constraints on the symbols ~c[fi]; ~pl[constraint].
   This last proof obligation is thus similar to the one generated by functional
   instantiation (~pl[constraint]).  As with functional instantiation, ACL2
@@ -23402,9 +23538,11 @@ J
                   #+clisp :clisp
                   #+cmu :cmu
                   #-(or gcl ccl sbcl allegro clisp cmu)
-                  (illegal "The underlying host Lisp appears not to support ~
+                  (illegal '*initial-global-table*
+                           "The underlying host Lisp appears not to support ~
                             ACL2.  Feel free to contact the ACL2 implementors ~
-                            to request such support.")))
+                            to request such support."
+                           nil)))
     (in-local-flg . nil)
     (in-prove-flg . nil)
     (in-verify-flg . nil)
@@ -23433,7 +23571,6 @@ J
     (more-doc-max-lines . 45)
     (more-doc-min-lines . 35)
     (more-doc-state . nil)
-    (mswindows-drive . nil) ; for #+mswindows, to be set at start-up
     (parallel-evaluation-enabled . ; GCL 2.6.6 breaks with only 2 lines below
                                  #+acl2-par
                                  t
@@ -24442,6 +24579,8 @@ J
 ; see no reason why this can't work, but we prefer not to mess with this very
 ; stable code unless/until there is a reason.  (Note that we however do not
 ; have in mind any potential change to the logic code for state-global-let*.)
+; See state-free-global-let* for such a variant that is appropriate to use when
+; state is not available.
 
 ; A typical use is (state-global-let* ((<var1> <form1>) ...  (<vark> <formk>))
 ; <body>).  Bindings thus are in the style of let* (but see the discussion of
@@ -24482,6 +24621,33 @@ J
       (pprogn
        ,@(state-global-let*-cleanup bindings 0)
        state))))
+
+#-acl2-loop-only
+(defmacro state-free-global-let* (bindings body)
+
+; This raw Lisp macro is a variant of state-global-let* that should be used
+; only when state is *not* lexically available, or at least not a formal
+; parameter of the enclosing function or not something we care about tracking
+; (because we are in raw Lisp).  It is used to bind state globals that may have
+; raw-Lisp side effects.  If state were available this sort of binding could be
+; inappropriate, since one could observe a change in state globals under the
+; state-free-global-let* that was not justified by the logic.
+
+; State-free-global-let* provides a nice alternative to state-global-let* when
+; we want to avoid involving the acl2-unwind-protect mechanism, for example
+; during parallel evaluation.
+
+  (cond
+   ((null bindings) body)
+   (t (let (bs syms)
+        (dolist (binding bindings)
+          (let ((sym (global-symbol (car binding))))
+            (push (list sym (cadr binding))
+                  bs)
+            (push sym syms)))
+        `(let* ,(nreverse bs)
+           (declare (special ,@(nreverse syms)))
+           ,body)))))
 
 ; With state-global-let* defined, we may now define a few more primitives and
 ; finish some unfinished business.
@@ -27876,6 +28042,35 @@ J
   (declare (xargs :guard (state-p state)))
   (f-get-global 'current-acl2-world state))
 
+(defun mswindows-drive1 (filename)
+  (declare (xargs :mode :program))
+  (let ((pos-colon (position #\: filename))
+        (pos-sep (position *directory-separator* filename)))
+    (cond (pos-colon (cond ((eql pos-sep (1+ pos-colon))
+                            (subseq filename 0 pos-sep))
+                           (t (illegal 'mswindows-drive1
+                                       "Implementation error: Unable to ~
+                                        compute mswindows-drive for ~
+                                        cbd:~%~x0~%(Implementor should see ~
+                                        function mswindows-drive),"
+                                       (list (cons #\0 filename))))))
+          (t nil))))
+
+(defun mswindows-drive (filename state)
+
+; We get the drive from filename if possible, else from cbd.
+
+  (declare (xargs :mode :program))
+  (or (and (eq (os (w state)) :mswindows)
+           (or (and filename (mswindows-drive1 filename))
+               (let ((cbd (f-get-global 'connected-book-directory state)))
+                 (cond (cbd (mswindows-drive1 cbd))
+                       (t (illegal 'mswindows-drive
+                                   "Implementation error: Cbd is nil when ~
+                                    attempting to set mswindows-drive."
+                                   nil))))))
+      ""))
+
 (defun pathname-os-to-unix (str os state)
 
 ; This function takes a pathname string in the host OS syntax and converts it
@@ -27910,8 +28105,7 @@ J
 ; environment variable ACL2_SYSTEM_BOOKS, which might already have a drive that
 ; differs from that of the user.
 
-             (string-append (or (f-get-global 'mswindows-drive state)
-                                "")
+             (string-append (mswindows-drive nil state)
                             str0))
             (t
              str0)))))
@@ -27974,7 +28168,7 @@ J
                        str0
                      (string-append ":" str0))
                  (if sep-is-first
-                     (string-append (f-get-global 'mswindows-drive state)
+                     (string-append (mswindows-drive nil state)
                                     str0)
                    str0))))))
         (otherwise (os-er os 'pathname-unix-to-os))))))
@@ -29720,26 +29914,24 @@ in :type-prescription rules are specified with :type-prescription (and/or
 #-acl2-loop-only
 (defun-one-output bad-lisp-objectp (x)
 
-; This routine does a root and branch exploration of x and guarantees
-; that x is composed entirely of complex rationals, rationals, 8-bit
-; characters that are "canonical" in the sense that they are the
-; result of applying code-char to their character code, strings of
-; such characters, symbols made from such strings (and "interned" in a
-; package known to ACL2) and conses of the foregoing.
+; This routine does a root and branch exploration of x and guarantees that x is
+; composed entirely of complex rationals, rationals, 8-bit characters that are
+; "canonical" in the sense that they are the result of applying code-char to
+; their character code, strings of such characters, symbols made from such
+; strings (and "interned" in a package known to ACL2) and conses of the
+; foregoing.
 
-; We return nil or non-nil.  If nil, then x is a legal ACL2 object.
-; If we return non-nil, then x is a bad object and the answer is a
-; message, msg, such that (fmt "~@0" (list (cons #\0 msg)) ...)  will
-; explain why.
+; We return nil or non-nil.  If nil, then x is a legal ACL2 object.  If we
+; return non-nil, then x is a bad object and the answer is a message, msg, such
+; that (fmt "~@0" (list (cons #\0 msg)) ...)  will explain why.
 
-; All of our ACL2 code other than this routine assumes that we are
-; manipulating non-bad objects, except for symbols in the invisible
-; package, e.g. state and the invisible array mark.  We make these
-; restrictions for portability's sake.  If a Lisp expression is a
-; theorem on a Symbolics machine we want it to be a theorem on a Sun.
-; Thus, we can't permit such constants as #\Circle-Plus.  We also
-; assume (and check in chk-suitability-of-this-common-lisp) that all
-; of the characters mentioned above are distinct.
+; All of our ACL2 code other than this routine assumes that we are manipulating
+; non-bad objects, except for symbols in the invisible package, e.g. state and
+; the invisible array mark.  We make these restrictions for portability's sake.
+; If a Lisp expression is a theorem on a Symbolics machine we want it to be a
+; theorem on a Sun.  Thus, we can't permit such constants as #\Circle-Plus.  We
+; also assume (and check in chk-suitability-of-this-common-lisp) that all of
+; the characters mentioned above are distinct.
 
   (cond ((consp x)
          (or (bad-lisp-objectp (car x))
@@ -29802,27 +29994,59 @@ in :type-prescription rules are specified with :type-prescription (and/or
          (cond
           ((eq x nil) nil) ; seems like useful special case for true lists
           ((bad-lisp-objectp (symbol-name x)))
-          ((null (symbol-package x))
-           (cons "Uninterned symbols such as the one CLTL displays as ~s0 are ~
-                  not allowed in ACL2."
-                 (list (cons #\0 (format nil "~s" x)))))
-          ((not (or (get x *initial-lisp-symbol-mark*)
-                    (find-non-hidden-package-entry
-                     (package-name (symbol-package x))
-                     (known-package-alist *the-live-state*))
-                    #+gcl
-                    (and (equal (symbol-package x) (find-package "LISP"))
-                         (setf (get x *initial-lisp-symbol-mark*)
-                               "COMMON-LISP"))))
-           (cons "The symbol CLTL displays as ~s0 is not in any of the ~
-                  packages known to ACL2."
-                 (list (cons #\0 (format nil "~s" x)))))
-          ((not (eq x (intern (symbol-name x) (symbol-package x))))
-           (cons "The symbol ~x0 fails to satisfy the property that it be eq ~
-                  to the result of interning its symbol-name in its symbol ~
-                  package.  Such a symbol is illegal in ACL2."
-                 (list (cons #\0 (format nil "~s" x)))))
-          (t nil)))
+          (t (let ((pkg (symbol-package x)))
+               (cond
+                ((null pkg)
+                 (cons "Uninterned symbols such as the one CLTL displays as ~
+                        ~s0 are not allowed in ACL2."
+                       (list (cons #\0 (format nil "~s" x)))))
+                ((not (eq x (intern (symbol-name x) pkg)))
+                 (cons "The symbol ~x0 fails to satisfy the property that it ~
+                        be eq to the result of interning its symbol-name in ~
+                        its symbol package.  Such a symbol is illegal in ACL2."
+                       (list (cons #\0 (format nil "~s" x)))))
+                ((or (eq pkg *main-lisp-package*)
+                     (get x *initial-lisp-symbol-mark*))
+                 nil)
+                ((not (find-non-hidden-package-entry
+                       (package-name pkg)
+                       (known-package-alist *the-live-state*)))
+
+; We maintain the following Invariant on Symbols in the Common Lisp Package: If
+; a symbol arising in ACL2 evaluation or state resides in *main-lisp-package*,
+; then either its symbol-package is *main-lisp-package* or else its
+; *initial-lisp-symbol-mark* property is "COMMON-LISP".  This invariant
+; supports the notion that in the ACL2 logic, there are no symbols imported
+; into the "COMMON-LISP" package: that is, the symbol-package-name of a symbol
+; residing in the "COMMON-LISP" package is necessarily "COMMON-LISP".  See the
+; axiom common-lisp-package, and see the (raw Lisp) definition of
+; symbol-package-name.
+
+; With the above comment in mind, consider the possibility of allowing here the
+; sub-case (eq x (intern (symbol-name x) *main-lisp-package*)).  Now, the
+; implementation of symbol-package-name is based on package-name for symbols
+; whose *initial-lisp-symbol-mark* is not set; so if we allow such a sub-case,
+; then the computed symbol-package-name would be wrong on symbols such as
+; SYSTEM::ALLOCATE (in GCL) or CLOS::CLASS-DIRECT-DEFAULT-INITARGS (in CLISP),
+; which are imported into the "COMMON-LISP" package but do not belong to the
+; list *common-lisp-symbols-from-main-lisp-package*.  One solution may seem to
+; be to include code here, in this sub-case, that sets the
+; *initial-lisp-symbol-mark* property on such a symbol; but that is not
+; acceptable because include-book bypasses bad-lisp-objectp (see
+; chk-bad-lisp-object).  Our remaining option is to change the implementation
+; of symbol-package-name to comprehend symbols like the two above, say by
+; looking up the name of the symbol-package in find-non-hidden-package-entry
+; and then doing the above eq test when the package name is not found.  But
+; this lookup could produce undesirable performance degradation for
+; symbol-package-name.  So instead, we will consider symbols like the two above
+; to be bad Lisp objects, with the assumption that it is rare to encounter such
+; a symbol, i.e.: a symbol violating the above Invariant on Symbols in the
+; Common Lisp Package.
+
+                 (cons "The symbol CLTL displays as ~s0 is not in any of the ~
+                        packages known to ACL2."
+                       (list (cons #\0 (format nil "~s" x)))))
+                (t nil))))))
         ((stringp x)
          (cond
           ((not (simple-string-p x))
@@ -30138,8 +30362,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 (defun absolute-pathname-string-p (str directoryp os)
 
 ; Str is a Unix-style pathname.  However, on Windows, Unix-style absolute
-; pathnames may start with a prefix such as "c:", the value of state global
-; mswindows-drive.
+; pathnames may start with a prefix such as "c:"; see mswindows-drive.
 
 ; Directoryp is non-nil when we require str to represent a directory in ACL2
 ; with Unix-style syntax, returning nil otherwise.
@@ -32487,9 +32710,9 @@ in :type-prescription rules are specified with :type-prescription (and/or
   :set-backchain-limit 500  ; allow backchaining to a depth of no more
                             ; than 500 for rewriting hypotheses
   (set-backchain-limit 500) ; same as above
-  :set-backchain-limit (nil 500)
+  :set-backchain-limit (500 500)
                             ; same as above
-  (set-backchain-limit '(nil 500))
+  (set-backchain-limit '(500 500))
                             ; same as above
   (set-backchain-limit '(3 500))
                             ; allow type-set backchaining to a depth of no more
@@ -35720,7 +35943,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   addition function~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-+]):
   ~bv[]
   (equal (binary-+ x y)
          (if (acl2-numberp x)
@@ -35746,7 +35969,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   multiplication function~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-*]):
   ~bv[]
   (equal (binary-* x y)
          (if (acl2-numberp x)
@@ -35799,7 +36022,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   arithmetic negation function~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-unary-minus]):
   ~bv[]
   (equal (unary-- x)
          (if (acl2-numberp x)
@@ -35821,7 +36044,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   reciprocal function~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-unary-/]):
   ~bv[]
   (equal (unary-/ x)
          (if (and (acl2-numberp x)
@@ -35845,7 +36068,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   less-than~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-<]):
   ~bv[]
   (equal (< x y)
          (if (and (rationalp x)
@@ -35875,7 +36098,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   returns the first element of a non-empty list, else ~c[nil]~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-car]):
   ~bv[]
   (equal (car x)
          (cond
@@ -35894,7 +36117,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   returns the second element of a ~ilc[cons] pair, else ~c[nil]~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-cdr]):
   ~bv[]
   (equal (cdr x)
          (cond
@@ -35913,7 +36136,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   the numeric code for a given character~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-char-code]):
   ~bv[]
   (equal (char-code x)
          (if (characterp x)
@@ -35939,7 +36162,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   the character corresponding to a given numeric code~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-code-char]):
   ~bv[]
   (equal (code-char x)
          (if (and (integerp x)
@@ -35997,7 +36220,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   A completion axiom that shows what ~c[complex] returns on arguments
   violating its ~il[guard] (which says that both arguments are rational
-  numbers) is the following.
+  numbers) is the following, named ~c[completion-of-complex].
   ~bv[]
   (equal (complex x y)
          (complex (if (rationalp x) x 0)
@@ -36047,7 +36270,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   coerce a character list to a string and a string to a list~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-coerce]):
   ~bv[]
   (equal (coerce x y)
          (cond
@@ -36078,7 +36301,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   divisor of a ratio in lowest terms~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-denominator]):
   ~bv[]
   (equal (denominator x)
          (if (rationalp x)
@@ -36123,7 +36346,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   imaginary part of a complex number~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-imagpart]):
   ~bv[]
   (equal (imagpart x)
          (if (acl2-numberp x)
@@ -36148,7 +36371,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   create a symbol with a given name~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-intern-in-package-of-symbol]):
   ~bv[]
   (equal (intern-in-package-of-symbol x y)
          (if (and (stringp x)
@@ -36204,7 +36427,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   dividend of a ratio in lowest terms~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-numerator]):
   ~bv[]
   (equal (numerator x)
          (if (rationalp x)
@@ -36230,7 +36453,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   real part of a complex number~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-realpart]):
   ~bv[]
   (equal (realpart x)
          (if (acl2-numberp x)
@@ -36255,7 +36478,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   the name of a symbol (a string)~/
 
-  Completion Axiom:
+  Completion Axiom (~c[completion-of-symbol-name]):
   ~bv[]
   (equal (symbol-name x)
          (if (symbolp x)
@@ -36273,7 +36496,12 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   the name of the package of a symbol (a string)~/
 
-  Completion Axiom:
+  WARNING: While ~c[symbol-package-name] behaves properly on all ACL2 objects,
+  it may give surprising results when called in raw Lisp.  More details
+  ~pl[pkg-imports], in particula the discussion there of the
+  ~c[\"COMMON-LISP\"] package.
+
+  Completion Axiom (~c[completion-of-symbol-package-name]):
   ~bv[]
   (equal (symbol-package-name x)
          (if (symbolp x)
@@ -38962,6 +39190,7 @@ Lisp definition."
             :hands-off
             :in-theory
             :nonlinearp
+            :backchain-limit-rw
             :reorder
             :backtrack
             :induct)))

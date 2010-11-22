@@ -433,10 +433,10 @@
 ; condition variables.  The structure sbcl-semaphore implements the data for
 ; this wrapper.
 
-; Followup: SBCL has recently implemented semaphores, and the parallelism code
-; should maybe be changed to reflect this.  It probably depends on whether
-; their implementation provides previously discussed
-; semaphore-nofication-object's.
+; Followup: SBCL has recently (as of November 2010) implemented semaphores, and
+; the parallelism code could be changed to reflect this.  However, since SBCL
+; does not implement semaphore-nofication-object's, we choose to stick with our
+; own implementation of semaphores for now.
 
   (declare (ignore name))
   #+ccl

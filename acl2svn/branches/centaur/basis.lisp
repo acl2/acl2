@@ -1768,6 +1768,7 @@
     (integerp (x) 't)
     (intern-in-package-of-symbol (str sym) (if (stringp str) (symbolp sym) 'nil))
     (numerator (x) (rationalp x))
+    (pkg-imports (pkg) (stringp pkg))
     (pkg-witness (pkg) (if (stringp pkg) (not (equal pkg '"")) 'nil))
     (rationalp (x) 't)
     #+:non-standard-analysis
@@ -1872,7 +1873,7 @@
                      (t *0*)))
 
 ; We need to obtain (known-package-alist state) in order to evaluate
-; pkg-witness, so we do not give it any special treatment.
+; pkg-witness and pkg-imports, so we do not give them any special treatment.
 
     (rationalp (kwote (rationalp x)))
     #+:non-standard-analysis
@@ -6322,6 +6323,9 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
 (defmacro ts-intersection0 (&rest x)
   (list 'the-type-set
         (cons 'logand (list-of-the-type-set x))))
+
+(defmacro ts-disjointp (&rest x)
+  (list 'ts= (cons 'ts-intersection x) '*ts-empty*))
 
 (defmacro ts-intersectp (&rest x)
   (list 'not (list 'ts= (cons 'ts-intersection x) '*ts-empty*)))
@@ -12167,6 +12171,7 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
               (set-temp-touchable-fns nil state)
               (defttag nil)
               (logic)
+              (set-ld-redefinition-action nil state)
               (set-state-ok nil)))))
 
 (defun chk-current-package (val ctx state)
@@ -12825,7 +12830,7 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
   where ~c[nil] is the error component and whose ``value component'', ~c[val]
   is a ~ilc[cons] pair whose ~ilc[car] is the symbol ~c[:STOP-LD].  Let ~c[val]
   be the pair ~c[(:STOP-LD . x)].  Then the call of ~c[ld] returns the error
-  tripls ~c[(mv nil (:STOP-LD n . x) state)], where ~c[n] is the value of
+  triple ~c[(mv nil (:STOP-LD n . x) state)], where ~c[n] is the value of
   ~ilc[state] global variable ~c['ld-level] at the time of termination.  The
   following example illustrates how this works.
   ~bv[]

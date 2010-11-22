@@ -1470,10 +1470,8 @@
           "ld-fn"
           (pprogn (f-put-global 'ld-level new-ld-level state)
                   (ld-fn-body standard-oi0 new-ld-specials-alist state))
-          (pprogn (f-put-global 'ld-level old-ld-level state)
-                  (f-put-global 'connected-book-directory old-cbd state))
-          (pprogn (f-put-global 'ld-level old-ld-level state)
-                  (f-put-global 'connected-book-directory old-cbd state))))))))
+          (f-put-global 'ld-level old-ld-level state)
+          (f-put-global 'ld-level old-ld-level state)))))))
 
 (defun ld-fn-alist (alist state)
   (let ((standard-oi (cdr (assoc 'standard-oi alist)))
@@ -1512,13 +1510,16 @@
 ; This macro allows, in raw Lisp for underlying Common Lisp implementations
 ; where we know how to do this, the interrupting of evaluation of any of the
 ; given forms.  We expect this behavior to take priority over any enclosing
-; call of without-interrupts (which we define for #+acl2-par only.
+; call of without-interrupts.
 
-  #+(and ccl acl2-par)
+  #+ccl
   `(ccl:with-interrupts-enabled ,@forms)
-  #+(and sbcl sb-thread acl2-par) 
+  #+sbcl
   `(sb-sys:with-interrupts ,@forms)
-  #-acl2-par
+  #+gcl
+  `(let ((system:*interrupt-enable* t))
+     ,@forms)
+  #-(or ccl sbcl gcl)
   `(progn ,@forms))
 
 (defun ld-fn0 (alist state bind-flg)
@@ -1592,9 +1593,7 @@
                                 (LAMBDA
                                  NIL
                                  (pprogn
-                                  (f-put-global 'ld-level old-ld-level state)
-                                  (f-put-global 'connected-book-directory
-                                                old-cbd state))))))
+                                  (f-put-global 'ld-level old-ld-level state))))))
                      *ACL2-UNWIND-PROTECT-STACK*
                      'LD-FN)
                     (TAGBODY
@@ -1611,9 +1610,11 @@
                                                                   alist))
                                                    new-ld-specials-alist state)
                                        (PROGN
-                                        (f-put-global 'connected-book-directory
-                                                      old-cbd
-                                                      state)
+                                        (WHEN bind-flg
+                                              (f-put-global
+                                               'connected-book-directory
+                                               old-cbd
+                                               state))
                                         (SETQ LD-ERP ERP)
                                         (SETQ LD-VAL VAL)
                                         NIL))))
@@ -16690,6 +16691,19 @@
 
 ; Eliminated inclp argument of functions in the translate11 nest.
 
+; Made minor changes in include-book-fn1 that could conceivably affect handling
+; of uncertified books with stale certificates.  But since this may be rare,
+; and it doesn't seem important to invest time to come up with an example
+; illustrating such a change in behavior, we merely leave this comment rather
+; than adding to the :doc string below.
+
+; Modified the implementation of print-indented-list by having it call new
+; function print-indented-list-msg, which in turn is used directly in the new
+; "error message for free variables" described in this :doc topic (in
+; tilde-@-free-vars-phrase, called by chk-free-vars).
+
+; Fixed bugs in :doc set-backchain-limit.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -16761,6 +16775,51 @@
   expressions when appropriate (more to help with tools that call
   ~c[untranslate] and the like, than to help with proof output).'
 
+  The utility ~ilc[redo-flat] now works for ~ilc[certify-book] failures, just
+  as it continues to work for failures of ~ilc[encapsulate] and ~ilc[progn].
+
+  The following only affects users who use trust tags to add to list values of
+  either of the ~ilc[state] global variables ~c[program-fns-with-raw-code] or
+  ~c[logic-fns-with-raw-code].  For functions that belong to either of the
+  above two lists, ~c[trace$] will supply a default value of ~c[:fncall] to
+  keyword ~c[:notinline], to avoid discarding raw-Lisp code for the function.
+
+  The ~il[guard] of the macro ~ilc[intern] has been strengthened so that its
+  second argument may no longer be either the symbol
+  ~c[*main-lisp-package-name*] or the string ~c[\"COMMON-LISP\"].  That change
+  supports another change, namely that the following symbols in the
+  ~c[\"COMMON-LISP\"] package are no longer allowed into ACL2: symbols in that
+  package that are not members of the list constant
+  ~c[*common-lisp-symbols-from-main-lisp-package*] yet are imported into the
+  ~c[\"COMMON-LISP\"] package from another package.  ~l[pkg-imports] and
+  ~pl[symbol-package-name].  To see why we made that change, consider for
+  example the following theorem, which ACL2 was able to prove when the host
+  Lisp is GCL.
+  ~bv[]
+  (let ((x \"ALLOCATE\") (y 'car))
+    (implies (and (stringp x)
+                  (symbolp y)
+                  (equal (symbol-package-name y)
+                         \"COMMON-LISP\"))
+             (equal (symbol-package-name (intern-in-package-of-symbol x y))
+                    \"SYSTEM\")))
+  ~ev[]
+  Now suppose that one includes a book with this theorem (with
+  ~c[:]~ilc[rule-classes] ~c[nil]), using an ACL2 built on top of a different
+  host Lisp, say CCL, that does not import the symbol ~c[SYSTEM::ALLOCATE] into
+  the ~c[\"COMMON-LISP\"] package.  Then then one can prove ~c[nil] by giving
+  this theorem as a ~c[:use] hint.
+
+  The axioms introduced by ~ilc[defpkg] have changed.  See the discussion of
+  ~ilc[pkg-imports] under ``NEW FEATURES'' below.
+
+  The error message for free variables (e.g., in definition bodies and guards)
+  now supplies additional information when there are governing IF conditions.
+  Thanks to Jared Davis for requesting this enhancement and collaborating in
+  its design.
+
+  The command ~c[:]~ilc[redef-] now turns off redefinition.
+
   ~st[NEW FEATURES]
 
   (For system hackers) There are new versions of system functions
@@ -16778,7 +16837,41 @@
   that has side effects in raw Lisp; ~pl[return-last].  Thanks to Jared Davis
   for requesting this feature.
 
+  A new function, ~ilc[pkg-imports], specifies the list of symbols imported
+  into a given package.  The axioms for ~ilc[defpkg] have been strengthened,
+  taking advantage of this function.  Now one can prove theorems using ACL2
+  that we believe could not previously be proved using ACL2, for example the
+  following.
+  ~bv[]
+  (equal (symbol-package-name (intern-in-package-of-symbol str t))
+         (symbol-package-name (intern-in-package-of-symbol str nil)))
+  ~ev[]
+  Thanks to Sol Swords for a helpful report, which included the example above.
+  ~l[pkg-imports] and ~pl[defpkg].
+
+  Added function ~ilc[no-duplicatesp-eq].
+
+  Added a new hint keyword, ~c[:][backchain-limit-rw], to control the level of
+  backchaining for ~il[rewrite], ~il[meta], and ~il[linear] rules.  This
+  overrides, for the current goal and (as with ~c[:]~ilc[in-theory] hints)
+  descendent goals, the default ~il[backchain-limit]
+  (~pl[set-backchain-limit]).  Thanks to Jared Davis for requesting this
+  feature.
+
   ~st[HEURISTIC IMPROVEMENTS]
+
+  We have slightly improved the so-called ``~il[type-set]'' heuristics to work
+  a bit harder on terms of the form ~c[(rec term)], where ~c[rec] is a
+  so-called ``compound-recognizer'' function, that is, a function with a
+  corresponding enabled ~c[:]~ilc[compound-recognizer] rule.  Thanks to Jared
+  Davis for sending a helpful example (found, in essence, in the modified
+  function ~c[type-set-rec], source file ~c[type-set-b.lisp]).
+
+  We made three heuristic improvements in the way contexts (so-called
+``type-alists'') are computed from goals (``clauses'').  Although these changes
+  did not noticeably affect timing results for the ACL2 regression suite, they
+  can be very helpful for goals with many hypotheses.  Thanks to Dave Greve for
+  sending a useful example (one where we found a goal with 233 hypotheses!).
 
   ~st[BUG FIXES]
 
@@ -16789,7 +16882,8 @@
 
   (Windows only) Fixed handling of the Windows drive so that an executable
   image saved on one machine can be used on another, even with a different
-  drive.  Thanks to Harsh Raju Chamarthi for reporting this issue.
+  drive.  Thanks to Harsh Raju Chamarthi for reporting this issue and doing a
+  lot of testing and collaboration to help us get this right.
 
   Made a change to avoid possible low-level errors, such as bus errors, when
   quitting ACL2 by calling ~ilc[good-bye] or its synonyms.  This was occurring
@@ -16800,13 +16894,51 @@
   Fixed a bug in ~ilc[with-guard-checking], which was being ignored in function
   bodies.
 
+  Fixed a bug in ~ilc[top-level], which was not reverting the logical
+  ~il[world] when an error resulted from evaluation of the given form.  Thanks
+  to Jared Davis for bringing this bug to our attention.
+
+  Fixed a long-standing bug (back through Version  2.7) that was discarding
+  changes to the connected book directory (~pl[cbd]) when exiting and then
+  re-entering the top-level ACL2 loop (with ~ilc[lp]).
+
+  In some host Lisps, it has been possible to be in a situation where it is
+  impossible to interrupt checkpoint printing during the summary.  We had
+  thought this solved when the host Lisp was CCL, but Sol Swords sent us an
+  example (for which we are grateful) illustrating that this behavior could
+  occur.  This has been fixed.
+
+  Fixed a bug in a proof obligation generated for ~c[:]~ilc[meta] and
+  ~c[:]~ilc[clause-processor] rules, that the ~il[guard] on the metafunction or
+  clause-processor function, ~c[fn], holds under suitable assumptions.  Those
+  assumptions include not only that the first argument of ~c[fn] satisfies
+  ~ilc[pseudo-termp], but also that all ~il[stobj] inputs satisfy the
+  corresponding stobj recognizer predicates.  We had erroneously considered
+  stobj outputs of ~c[fn] instead of stobj inputs.  Thanks to Sol Swords for
+  bringing this bug to our attention with a simple example, and correctly
+  pointing us to the bug in our code.
+
+  Fixed two bugs in ~ilc[defattach]: wasn't always applying the full functional
+  substitution when generating guard proof obligation, and hit assertion when
+  reattaching to more than one function.
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   There is new ~c[Makefile] support for certifying just some of the distributed
   books.  ~l[book-makefiles], in particular discussion of the variable
   ~c[ACL2_BOOK_DIRS].  Thanks to Sandip Ray for requesting this enhancement.
 
+  The ~il[documentation] for ~ilc[make-event] now points to a new book,
+  ~c[books/make-event/defrule.lisp], that shows how ~c[make-event] can be used to
+  do macroexpansion before generating ~il[events].  Thanks to Carl Eastlund for
+  useful interaction on the acl2-help mailing list that led us to add this
+  example.
+
   ~st[EMACS SUPPORT]
+
+  Incorporated a version of changes from Jared Davis to the ~c[control-t f]
+  emacs utility (distributed file ~c[emacs/emacs-acl2.el]), so that one can
+  fill a format string from anywhere within the string.
 
   ~st[EXPERIMENTAL VERSIONS]
 
