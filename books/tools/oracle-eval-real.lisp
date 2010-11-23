@@ -22,7 +22,7 @@
 
 (in-package "ACL2")
 
-;; Oracle-eval is a function that logically just reads the
+;; Real-oracle-eval is a function that logically just reads the
 ;; state's oracle to produce a result and an error term.  However,
 ;; under the hood it actually evaluates the given term under the given
 ;; alist using simple-translate-and-eval.  This allows logic-mode
@@ -37,24 +37,7 @@
 
 (remove-untouchable 'read-acl2-oracle t)
 
-(defun oracle-eval (term alist state)
-  ":Doc-Section Programming
-Evaluate a term and return its result, logically obtained by reading
-the state's oracle.~/
-
-General form:
-~bv[]
- (oracle-eval term alist state) --> (mv error val state)
-~ev[]
-
-In the logic, this function reads from the ACL2 oracle twice, to
-obtain the error message, if any, and the value.  In the execution, we
-instead evaluate the term and return its result.  We believe this is
-sound.
-
-The term can involve free variables that appear in the alist, and can
-also take state, but it must return a single non-stobj value.
-Therefore, it cannot modify state.~/~/"
+(defun real-oracle-eval (term alist state)
   (declare (Xargs :guard t
                   :stobjs state
                   :guard-hints (("goal" :in-theory (enable read-acl2-oracle))))
@@ -75,18 +58,18 @@ Therefore, it cannot modify state.~/~/"
            (state-p1 (mv-nth 2 (read-acl2-oracle state))))
   :hints(("Goal" :in-theory (enable read-acl2-oracle))))
 
-(defthm state-p1-of-oracle-eval
+(defthm state-p1-of-real-oracle-eval
   (implies (state-p1 state)
-           (state-p1 (mv-nth 2 (oracle-eval term alist state)))))
+           (state-p1 (mv-nth 2 (real-oracle-eval term alist state)))))
 
-(in-theory (disable oracle-eval))
+(in-theory (disable real-oracle-eval))
 
 (progn!
  (set-raw-mode t)
- (defun oracle-eval (term alist state)
+ (defun real-oracle-eval (term alist state)
    (mv-let (erp translation-and-val state)
      (simple-translate-and-eval
-      term alist '(state) "The given term" 'oracle-eval (w state) state t)
+      term alist '(state) "The given term" 'real-oracle-eval (w state) state t)
      (if erp
          (mv erp nil state)
        (mv nil (cdr translation-and-val) state)))))

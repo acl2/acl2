@@ -1,2 +1,0 @@
-
-(certify-book "oracle-eval" ? t :ttags :all)

@@ -19,7 +19,10 @@ flag-package.lsp
 index.html
 include-raw.lisp
 mv-nth.lisp
+oracle-eval.acl2
 oracle-eval.lisp
+oracle-eval-real.acl2
+oracle-eval-real.lisp
 pack.lisp
 progndollar.lisp
 rulesets.lisp
