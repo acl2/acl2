@@ -1520,6 +1520,7 @@ CERT_PL_CERTS := \
      str/strsubst.cert \
      str/strtok.cert \
      str/substrp.cert \
+     str/suffixp.cert \
      str/top.cert \
      symbolic/generic/assertions.cert \
      symbolic/generic/defsimulate.cert \
@@ -1580,6 +1581,7 @@ CERT_PL_CERTS := \
      tools/flag.cert \
      tools/include-raw.cert \
      tools/mv-nth.cert \
+     tools/oracle-eval-real.cert \
      tools/oracle-eval.cert \
      tools/pack.cert \
      tools/pattern-match.cert \
@@ -1925,6 +1927,10 @@ CERT_PL_CERTS := \
      workshops/2002/cowles-primrec/support/fix.cert \
      workshops/2002/cowles-primrec/support/primitive.cert \
      workshops/2002/cowles-primrec/support/tail.cert \
+     workshops/2002/georgelin-borrione-ostier/support/acl2-transl.cert \
+     workshops/2002/georgelin-borrione-ostier/support/generates-functions.cert \
+     workshops/2002/georgelin-borrione-ostier/support/generates-theorems.cert \
+     workshops/2002/georgelin-borrione-ostier/support/utils.cert \
      workshops/2002/kaufmann-sumners/support/records.cert \
      workshops/2002/kaufmann-sumners/support/records0.cert \
      workshops/2002/kaufmann-sumners/support/sets.cert \
@@ -3998,6 +4004,7 @@ CERT_PL_SOURCES := \
      str/strsubst.lisp  \
      str/strtok.lisp  \
      str/substrp.lisp  \
+     str/suffixp.lisp  \
      str/top.lisp  \
      symbolic/generic/assertions.lisp  \
      symbolic/generic/defsimulate.lisp  \
@@ -4066,7 +4073,8 @@ CERT_PL_SOURCES := \
      tools/include-raw.acl2  \
      tools/include-raw.lisp  \
      tools/mv-nth.lisp  \
-     tools/oracle-eval.acl2  \
+     tools/oracle-eval-real.acl2  \
+     tools/oracle-eval-real.lisp  \
      tools/oracle-eval.lisp  \
      tools/pack.lisp  \
      tools/pattern-match.lisp  \
@@ -4476,6 +4484,10 @@ CERT_PL_SOURCES := \
      workshops/2002/cowles-primrec/support/fix.lisp  \
      workshops/2002/cowles-primrec/support/primitive.lisp  \
      workshops/2002/cowles-primrec/support/tail.lisp  \
+     workshops/2002/georgelin-borrione-ostier/support/acl2-transl.lisp  \
+     workshops/2002/georgelin-borrione-ostier/support/generates-functions.lisp  \
+     workshops/2002/georgelin-borrione-ostier/support/generates-theorems.lisp  \
+     workshops/2002/georgelin-borrione-ostier/support/utils.lisp  \
      workshops/2002/kaufmann-sumners/support/records.lisp  \
      workshops/2002/kaufmann-sumners/support/records0.lisp  \
      workshops/2002/kaufmann-sumners/support/sets.lisp  \
@@ -18265,6 +18277,14 @@ str/substrp.cert : \
      str/strpos.cert \
      str/arithmetic.cert
 
+str/suffixp.cert : \
+     str/suffixp.lisp \
+     str/cert.acl2 \
+     str/package.lsp \
+     str/package.lsp \
+     str/strprefixp.cert \
+     make-event/assert.cert
+
 str/top.cert : \
      str/top.lisp \
      str/cert.acl2 \
@@ -18293,7 +18313,8 @@ str/top.cert : \
      str/strsplit.cert \
      str/strsubst.cert \
      str/strtok.cert \
-     str/substrp.cert
+     str/substrp.cert \
+     str/suffixp.cert
 
 symbolic/generic/assertions.cert : \
      symbolic/generic/assertions.lisp \
@@ -18564,9 +18585,13 @@ tools/include-raw.cert : \
 tools/mv-nth.cert : \
      tools/mv-nth.lisp
 
+tools/oracle-eval-real.cert : \
+     tools/oracle-eval-real.lisp \
+     tools/oracle-eval-real.acl2
+
 tools/oracle-eval.cert : \
      tools/oracle-eval.lisp \
-     tools/oracle-eval.acl2
+     tools/oracle-eval-real.cert
 
 tools/pack.cert : \
      tools/pack.lisp
@@ -20317,6 +20342,27 @@ workshops/2002/cowles-primrec/support/primitive.cert : \
 
 workshops/2002/cowles-primrec/support/tail.cert : \
      workshops/2002/cowles-primrec/support/tail.lisp
+
+workshops/2002/georgelin-borrione-ostier/support/acl2-transl.cert : \
+     workshops/2002/georgelin-borrione-ostier/support/acl2-transl.lisp \
+     workshops/2002/georgelin-borrione-ostier/support/utils.cert \
+     workshops/2002/georgelin-borrione-ostier/support/generates-functions.cert \
+     workshops/2002/georgelin-borrione-ostier/support/generates-theorems.cert
+
+workshops/2002/georgelin-borrione-ostier/support/generates-functions.cert : \
+     workshops/2002/georgelin-borrione-ostier/support/generates-functions.lisp \
+     workshops/2002/georgelin-borrione-ostier/support/utils.cert
+
+workshops/2002/georgelin-borrione-ostier/support/generates-theorems.cert : \
+     workshops/2002/georgelin-borrione-ostier/support/generates-theorems.lisp \
+     workshops/2002/georgelin-borrione-ostier/support/utils.cert
+
+workshops/2002/georgelin-borrione-ostier/support/utils.cert : \
+     workshops/2002/georgelin-borrione-ostier/support/utils.lisp \
+     arithmetic/top.cert \
+     ihs/ihs-definitions.cert \
+     ihs/ihs-lemmas.cert \
+     misc/expander.cert
 
 workshops/2002/kaufmann-sumners/support/records.cert : \
      workshops/2002/kaufmann-sumners/support/records.lisp \

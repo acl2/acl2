@@ -1673,6 +1673,7 @@
 ./tools/flag.cert
 ./tools/include-raw.cert
 ./tools/mv-nth.cert
+./tools/oracle-eval-real.cert
 ./tools/oracle-eval.cert
 ./tools/pack.cert
 ./tools/pattern-match.cert
@@ -2019,6 +2020,10 @@
 ./workshops/2002/cowles-primrec/support/fix.cert
 ./workshops/2002/cowles-primrec/support/primitive.cert
 ./workshops/2002/cowles-primrec/support/tail.cert
+./workshops/2002/georgelin-borrione-ostier/support/acl2-transl.cert
+./workshops/2002/georgelin-borrione-ostier/support/generates-functions.cert
+./workshops/2002/georgelin-borrione-ostier/support/generates-theorems.cert
+./workshops/2002/georgelin-borrione-ostier/support/utils.cert
 ./workshops/2002/kaufmann-sumners/support/records.cert
 ./workshops/2002/kaufmann-sumners/support/records0.cert
 ./workshops/2002/kaufmann-sumners/support/sets.cert
