@@ -16953,6 +16953,11 @@
   substitution when generating guard proof obligation, and hit assertion when
   reattaching to more than one function.
 
+  Fixed a raw Lisp error that could be caused by including a book using
+  ~ilc[make-event] to define a function symbol in a locally-introduced package.
+  An example appears in a comment in ACL2 source function
+  ~c[write-expansion-file].
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   There is new ~c[Makefile] support for certifying just some of the distributed

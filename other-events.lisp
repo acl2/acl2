@@ -13555,6 +13555,7 @@ The following all cause errors.
 
 (defun write-expansion-file (portcullis-cmds declaim-list new-fns-exec
                                              expansion-filename expansion-alist
+                                             expansion-alist-pkg-names
                                              ev-lst ctx state)
 
 ; Expansion-filename is the expansion file for a certified book (or, a book
@@ -13565,7 +13566,7 @@ The following all cause errors.
 ; cannot open it.
 
   #+acl2-loop-only
-  (declare (ignore new-fns-exec))
+  (declare (ignore new-fns-exec expansion-alist-pkg-names))
   (with-output-object-channel-sharing
    ch expansion-filename
    (cond
@@ -13617,6 +13618,20 @@ The following all cause errors.
                            "ACL2" "COMMON-LISP" "KEYWORD")))
                (push `(maybe-introduce-empty-pkg-1 ,pkg-name) ans1)
                (push `(maybe-introduce-empty-pkg-2 ,pkg-name) ans2))))
+         (dolist (pkg-name expansion-alist-pkg-names)
+
+; To see why we need these forms, consider the following book.
+
+; (in-package "ACL2")
+; (local (include-book "arithmetic/equalities" :dir :system))
+; (make-event (list 'defun (intern$ "FOO" "ACL2-ASG") '(x) 'x))
+
+; Without these forms, we get a hard Lisp error when include-book attempts to
+; load the compiled file, because *hcomp-fn-alist* is defined using the symbol
+; acl2-asg::foo, which is in a package not yet known at the time of the load.
+
+           (push `(maybe-introduce-empty-pkg-1 ,pkg-name) ans1)
+           (push `(maybe-introduce-empty-pkg-2 ,pkg-name) ans2))
          (print-objects ans1 ch state)
          (print-objects ans2 ch state))
        #-acl2-loop-only
@@ -13752,17 +13767,16 @@ The following all cause errors.
 
 (defun expansion-alist-pkg-names0 (x base-kpa acc)
   (cond ((consp x)
-         (expansion-alist-pkg-names0 (cdr x) base-kpa
-                                     (expansion-alist-pkg-names0 (car x) base-kpa
-                                                                 acc)))
+         (expansion-alist-pkg-names0
+          (cdr x) base-kpa
+          (expansion-alist-pkg-names0 (car x) base-kpa acc)))
         ((and x ; optimization
               (symbolp x))
          (let ((name (symbol-package-name x)))
            (cond ((or (member-equal name acc)
                       (find-package-entry name base-kpa))
                   acc)
-                 (t
-                  (cons name acc)))))
+                 (t (cons name acc)))))
         (t acc)))
 
 #+(and hons (not acl2-loop-only))
@@ -14406,7 +14420,9 @@ The following all cause errors.
                                          new-fns
                                          (expansion-filename
                                           full-book-name nil state)
-                                         expansion-alist ev-lst ctx state)
+                                         expansion-alist
+                                         expansion-alist-pkg-names
+                                         ev-lst ctx state)
                                         #-acl2-loop-only
                                         (let ((cert-file
                                                (pathname-unix-to-os
