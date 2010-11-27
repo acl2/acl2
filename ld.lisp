@@ -16704,6 +16704,14 @@
 
 ; Fixed bugs in :doc set-backchain-limit.
 
+; A potential soundness hole was plugged in the proof-checker by making
+; variable pc-assign untouchable.  But we don't mention this in the release
+; notes proper because we have not been able to exploit this potential hole.
+
+; Changed fmt-abbrev1 to print the message about :DOC set-iprint in column 0
+; after a newline, because otherwise the new message printed immediately after
+; evaluating (retrieve ...) looks odd.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -16820,7 +16828,17 @@
 
   The command ~c[:]~ilc[redef-] now turns off redefinition.
 
+  Improved proof output in the case of a ~c[:]~ilc[clause-processor] hint that
+  proves the goal, so that the clause-processor function name is printed.
+
+  The ~ilc[proof-checker] command `~c[then]' now stops at the first failure (if
+  any).
+
   ~st[NEW FEATURES]
+
+  A new hint, ~c[:]~ilc[instructions], allows use of the ~il[proof-checker] at
+  the level of ~il[hints] to the prover.  Thanks to Pete Manolios for
+  requesting this feature (in 2001!).  ~l[instructions].
 
   (For system hackers) There are new versions of system functions
   ~c[translate1] and ~c[translate], namely ~c[translate1-cmp] and
@@ -16874,6 +16892,15 @@
   sending a useful example (one where we found a goal with 233 hypotheses!).
 
   ~st[BUG FIXES]
+
+  Fixed a long-standing soundness bug caused by the interaction of ~ilc[force]d
+  hypotheses with destructor ~il[elim]ination.  The fix was to avoid using
+  forcing when building the context (so-called ``type-alist'') when the goal is
+  considered for destructor elimination; those who are interested can see a
+  discussion in source function ~c[eliminate-destructors-clause1], which
+  includes a proof of ~c[nil] that no longer succeeds.  A similar fix was made
+  for generalization, though we have not exploited the previous code to prove
+  ~c[nil] in that case.
 
   Fixed a bug that could occur when including a book that attempts to redefine
   a function as a macro, or vice-versa.  (For details of the issue, see the
@@ -23095,10 +23122,9 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                                         (list 'quote inhibit-flg))
                                        (t (er hard 'set-saved-output
                                               "Illegal second argument to ~
-                                               set-saved-output (must be ~x0, ~
-                                               ~x1, ~x2, or a true-listp): ~
-                                               ~x3."
-                                              t :all :normal
+                                               set-saved-output (must be ~v0, ~
+                                               or a true-listp): ~x1."
+                                              '(t :all :normal :same)
                                               inhibit-flg-original)))
                                 state))))))
 

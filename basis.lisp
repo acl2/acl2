@@ -5986,8 +5986,8 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
                                              state)
                                (assert$
                                 (not (iprint-enabledp state))
-                                "  (See :DOC set-iprint to be able to ~
-                                         see elided values in this message.)"))
+                                "~|(See :DOC set-iprint to be able to see ~
+                                 elided values in this message.)"))
                               (t "")))
                   (cons #\1 suffix-msg))
                  col channel state nil))))
@@ -7631,6 +7631,37 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
                 str
                 (default-defun-mode-from-state state))
    (mv nil nil state)))
+
+(defun chk-inhibit-output-lst (lst ctx state)
+  (cond ((not (true-listp lst))
+         (er soft ctx
+             "The argument to set-inhibit-output-lst must evaluate to a ~
+              true-listp, unlike ~x0."
+             lst))
+        ((not (subsetp-eq lst *valid-output-names*))
+         (er soft ctx
+             "The argument to set-inhibit-output-lst must evaluate to a ~
+              subset of the list ~X01, but ~x2 contains ~&3."
+             *valid-output-names*
+             nil
+             lst
+             (set-difference-eq lst *valid-output-names*)))
+        (t (let ((lst (if (member-eq 'warning! lst)
+                          (add-to-set-eq 'warning lst)
+                        lst)))
+             (pprogn (cond ((and (member-eq 'prove lst)
+                                 (not (member-eq 'proof-tree lst))
+                                 (member-eq 'proof-tree
+                                            (f-get-global 'inhibit-output-lst
+                                                          state)))
+                            (warning$ ctx nil
+                                      "The printing of proof-trees is being ~
+                                       enabled while the printing of proofs ~
+                                       is being disabled.  You may want to ~
+                                       execute :STOP-PROOF-TREE in order to ~
+                                       inhibit proof-trees as well."))
+                           (t state))
+                     (value lst))))))
 
 ;                             CHECK SUMS
 

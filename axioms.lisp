@@ -8692,7 +8692,9 @@ J
   (cond ((endp l) nil)
         ((equal str (symbol-name (car l))) l)
         (t (member-symbol-name str (cdr l)))))
-(in-theory (disable member-symbol-name)) ; defund is not yet available here
+
+; Defund is not yet available here:
+(in-theory (disable member-symbol-name))
 
 (defthm symbol-equality
 
@@ -10469,7 +10471,7 @@ J
                                     ',form))))
                              (t ,form)))))
                `(state-global-let*
-                 ((safe-mode t))
+                 ((safe-mode (not (global-val 'boot-strap-flg (w state)))))
                  (value ,form))))))
 
 #+acl2-loop-only
@@ -18283,6 +18285,9 @@ J
 
 ; See the Essay on Defattach.
 
+; Developer note: A substantial test suite is stored at UT CS, file
+; /projects/acl2/devel-misc/patches/defattach/test.lisp.
+
   ":Doc-Section Events
 
   execute constrained functions using corresponding attached functions~/
@@ -23397,7 +23402,8 @@ J
   form
   #-acl2-loop-only
   `(progn
-     (or (eq (symbol-value 'state) *the-live-state*)
+     (or ;; add if needed, e.g. when doing the build: (not (boundp 'state))
+         (eq (symbol-value 'state) *the-live-state*)
          (error "Implementation error:~%~p
                  Illegal use of with-live-state on state that is not live."
                 ',form))
@@ -23577,6 +23583,7 @@ J
                                  #-acl2-par
                                  nil)
     (pc-output . nil)
+    (pc-ss-alist . nil)
     (ppr-flat-right-margin . 40)
     (print-base . 10)
     (print-case . :upcase)
@@ -29767,6 +29774,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
     raw-include-book-dir-alist
     deferred-ttag-notes
     deferred-ttag-notes-saved
+    pc-assign
     ))
 
 (defun union-eq (lst1 lst2)
@@ -32437,40 +32445,10 @@ in :type-prescription rules are specified with :type-prescription (and/or
   intended)."
 
   `(with-live-state
-    (let ((lst ,lst)
-          (ctx 'set-inhibit-output-lst))
-      (cond ((not (true-listp lst))
-             (er soft ctx
-                 "The argument to set-inhibit-output-lst must evaluate to a ~
-                  true-listp, unlike ~x0."
-                 lst))
-            ((not (subsetp-eq lst *valid-output-names*))
-             (er soft ctx
-                 "The argument to set-inhibit-output-lst must evaluate to a ~
-                  subset of the list ~X01, but ~x2 contains ~&3."
-                 *valid-output-names*
-                 nil
-                 lst
-                 (set-difference-eq lst *valid-output-names*)))
-            (t (let ((lst (if (member-eq 'warning! lst)
-                              (add-to-set-eq 'warning lst)
-                            lst)))
-                 (pprogn (cond ((and (member-eq 'prove lst)
-                                     (not (member-eq 'proof-tree lst))
-                                     (member-eq 'proof-tree
-                                                (f-get-global
-                                                 'inhibit-output-lst
-                                                 state)))
-                                (warning$ ctx nil
-                                          "The printing of proof-trees is ~
-                                           being enabled while the printing ~
-                                           of proofs is being disabled.  You ~
-                                           may want to execute ~
-                                           :STOP-PROOF-TREE in order to ~
-                                           inhibit proof-trees as well."))
-                               (t state))
-                         (f-put-global 'inhibit-output-lst lst state)
-                         (value lst))))))))
+    (let ((ctx 'set-inhibit-output-lst))
+      (er-let* ((lst (chk-inhibit-output-lst ,lst ctx state)))
+        (pprogn (f-put-global 'inhibit-output-lst lst state)
+                (value lst))))))
 
 (defmacro set-inhibited-summary-types (lst)
 
@@ -40867,3 +40845,11 @@ Lisp definition."
 ; local also avoids its evaluation in raw Lisp when compiled files are loaded.
 (local
  (defattach too-many-ifs-post-rewrite-wrapper too-many-ifs-post-rewrite))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; End of Attachments section; don't add anything below before modifying the
+;;; comment above stating:
+;;; "The remainder of this file involves boot-strapping the use of
+;;; attachments."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+

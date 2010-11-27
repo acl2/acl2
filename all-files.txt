@@ -3214,7 +3214,8 @@ include-raw.acl2
 include-raw.lisp
 index.html
 mv-nth.lisp
-oracle-eval.acl2
+oracle-eval-real.acl2
+oracle-eval-real.lisp
 oracle-eval.lisp
 pack.lisp
 pattern-match.lisp

@@ -16010,6 +16010,7 @@ End of statistical and related information related to image size.
             main-timer                 ;;; preserve accumulated summary info
             verbose-theory-warning     ;;; for warning on disabled mv-nth etc.
             more-doc-state             ;;; for proof-checker :more command
+            pc-ss-alist                ;;; for saves under :instructions hints
 
 ; Note that tainted-okp is deliberately omitted from this list of exceptions,
 ; since its global value is the one that should be used during event
@@ -18243,6 +18244,7 @@ End of statistical and related information related to image size.
                    (f assoc)))
            :bdd (:vars (c a0 b0 a1 b1) :prove nil :bdd-constructors (cons))
            :clause-processor (:function cl-proc :hint (my-hint clause))
+           :instructions (:x :prove)
            :cases ((true-listp a) (consp a))
            :by (:instance rev-rev (x (cdr z)))
            :nonlinearp t
@@ -18513,6 +18515,13 @@ End of statistical and related information related to image size.
   ~c[(print-clause-processor-rules)], and you can see the names of all trusted
   clause-processors by issuing the command
   ~c[(table trusted-clause-processor-table)].
+
+  ~c[:INSTRUCTIONS]
+
+  ~c[Value] is a list of ~il[proof-checker] instructions; ~pl[instructions].
+  Unlike other hint keywords described here, this one is actually a custom
+  keyword hint (~pl[custom-keyword-hints]) that generates a suitable
+  ~c[:]~ilc[clause-processor] hint.
 
   ~c[:CASES]~nl[]
   ~c[Value] is a non-empty list of terms.  For each term in the list, a

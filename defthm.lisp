@@ -9624,7 +9624,8 @@ this problem.  [It contains a truly trivial edit we've made, not important.]
                  define-trusted-clause-processor.")
         (ctx 'trusted-clause-processor-table-guard))
     (cond
-     ((not (ttag wrld))
+     ((not (or (ttag wrld)
+               (global-val 'boot-strap-flg wrld)))
       (er hard ctx er-msg
           "there is not an active ttag (also see :DOC ttag)"))
      ((not (symbolp key))

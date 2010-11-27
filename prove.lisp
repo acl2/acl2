@@ -2484,28 +2484,31 @@
 ; result of splitting on the literals in term-list and hint is the translated
 ; form of a :clause-processor hint.
 
-                (verified-p (access clause-processor-hint
-                                    (car clause-processor-obj)
-                                    :verified-p))
-                (new-clauses (cdr clause-processor-obj)))
+                (verified-p-msg (cond ((access clause-processor-hint
+                                               (car clause-processor-obj)
+                                               :verified-p)
+                                       "verified")
+                                      (t "trusted")))
+                (new-clauses (cdr clause-processor-obj))
+                (cl-proc-fn (ffn-symb (access clause-processor-hint
+                                              (car clause-processor-obj)
+                                              :term))))
            (cond
             (new-clauses
              (fms "We now apply the ~@0 :CLAUSE-PROCESSOR function ~x1 to ~
                    produce ~n2 new subgoal~#3~[~/s~].~|"
-                  (list (cons #\0 (cond (verified-p "verified")
-                                        (t "trusted")))
-                        (cons #\1 (ffn-symb (access clause-processor-hint
-                                                    (car clause-processor-obj)
-                                                    :term)))
+                  (list (cons #\0 verified-p-msg)
+                        (cons #\1 cl-proc-fn)
                         (cons #\2 (length new-clauses))
                         (cons #\3 (if (cdr new-clauses) 1 0)))
                   (proofs-co state)
                   state
                   (term-evisc-tuple nil state)))
             (t
-             (fms "But the supplied :CLAUSE-PROCESSOR hint replaces this goal ~
+             (fms "But the ~@0 :CLAUSE-PROCESSOR function ~x1 replaces this goal ~
                    by T.~|"
-                  nil
+                  (list (cons #\0 verified-p-msg)
+                        (cons #\1 cl-proc-fn))
                   (proofs-co state)
                   state
                   nil)))))
