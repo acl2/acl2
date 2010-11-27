@@ -6457,6 +6457,51 @@ when submitted as :ideal, pointing out that they can never be
   (redundant-or-reclassifying-defunsp10 defun-mode symbol-class ld-skip-proofsp
                                         t def-lst wrld ans))
 
+(defun recover-defs-lst (fn wrld)
+
+; Fn is a :program function symbol in wrld.  Thus, it was introduced by defun.
+; (Constrained, defchoose, and :non-executable functions are :logic.)  We
+; return the defs-lst that introduced it fn.  We recover this from the
+; cltl-command for fn.
+
+  (let ((val
+         (scan-to-cltl-command
+          (cdr (lookup-world-index 'event
+                                   (getprop fn 'absolute-event-number
+                                            '(:error "See ~
+                                                      RECOVER-DEFS-LST.")
+                                            'current-acl2-world wrld)
+                                   wrld)))))
+    (cond ((and (consp val)
+                (eq (car val) 'defuns))
+
+; Val is of the form (defuns defun-mode-flg ignorep def1 ... defn).  If
+; defun-mode-flg is non-nil then the parent event was (defuns def1 ... defn)
+; and the defun-mode was defun-mode-flg.  If defun-mode-flg is nil, the parent
+; was an encapsulate, defchoose, or :non-executable.  In the former case we
+; return (def1 ... defn); in the latter we return nil.
+
+           (cond ((cadr val) (cdddr val))
+                 (t nil)))
+          (t (er hard 'recover-defs-lst
+                 "We failed to find the expected CLTL-COMMAND for the ~
+                  introduction of ~x0."
+                 fn)))))
+
+(defun get-clique (fn wrld)
+
+; Fn must be a function symbol.  We return the list of mutually recursive fns
+; in the clique containing fn, according to their original definitions.  If fn
+; is :program we have to look for the cltl-command and recover the clique from
+; the defs-lst.  Otherwise, we can use the 'recursivep property.
+
+  (cond ((programp fn wrld)
+         (let ((defs (recover-defs-lst fn wrld)))
+           (strip-cars defs)))
+        (t (let ((recp (getprop fn 'recursivep nil 'current-acl2-world wrld)))
+             (cond ((null recp) (list fn))
+                   (t recp))))))
+
 (defun redundant-or-reclassifying-defunsp0 (defun-mode symbol-class
                                              ld-skip-proofsp chk-measure-p
                                              def-lst wrld)
@@ -6488,8 +6533,15 @@ when submitted as :ideal, pointing out that they can never be
                            (t (msg "for :logic mode definitions to be ~
                                     redundant, if one is defined with ~
                                     mutual-recursion then both must be ~
-                                    defined mutually-recursively with the ~
-                                    same functions.~|~%"))))
+                                    defined in the same mutual-recursion.~|~%"))))
+                         ((and (eq ans 'reclassifying)
+                               (not (set-equalp-eq (strip-cars def-lst)
+                                                   (get-clique (caar def-lst)
+                                                               wrld))))
+                          (msg "for reclassifying :program mode definitions ~
+                                to :logic mode, if one is defined with ~
+                                mutual-recursion then both must be defined in ~
+                                the same mutual-recursion.~|~%"))
                          (t ans)))))))))
 
 (defun redundant-or-reclassifying-defunsp (defun-mode symbol-class
@@ -6501,12 +6553,12 @@ when submitted as :ideal, pointing out that they can never be
 ; defun-mode is :logic.  We return nil otherwise.
 
 ; We start to answer this question by independently considering each def in
-; def-lst.  We then add an additional requirement (but see the Historical
-; Plaque below) for :logic mode definitions: if the old and new definition are
-; in different mutual-recursion nests (or if one is in a mutual-recursion with
-; other definitions and the other is not), then the new definition is not
-; redundant.  To see why we make this additional restriction, consider the
-; following example.
+; def-lst.  We then add additional requirements pertaining to mutual-recursion.
+; The first is for :logic mode definitions (but see the Historical Plaque
+; below): if the old and new definition are in different mutual-recursion nests
+; (or if one is in a mutual-recursion with other definitions and the other is
+; not), then the new definition is not redundant.  To see why we make this
+; additional restriction, consider the following example.
 
 ; (encapsulate
 ;  ()
@@ -6536,6 +6588,16 @@ when submitted as :ideal, pointing out that they can never be
 ; sort.  A more "practical" reason for this restriction is that it seems to
 ; make the underlying theory significantly easier to work out.
 
+; A second requirement is that we do not reclassify from :program mode to
+; :logic mode for a proper subset of a mutual-recursion nest.  This restriction
+; may be overly conservative, but then again, we expect it to be rare that it
+; would affect anyone.  While we do not have a definitive reason for this
+; restriction, consider for example induction schemes, which are stored for
+; single recursion but not mutual-recursion.  Although this issue may be fully
+; handled by the restriction on redundancy described above, we see this as just
+; one possible pitfall, so we prefer to maintain the invariant that all
+; functions in a mutual-recursion nest have the same defun-mode.
+
 ; Note: Our redundancy check for definitions is based on the untranslated
 ; terms.  This is different from, say, theorems, where we compare translated
 ; terms.  The reason is that we do not store the translated versions of
@@ -6548,7 +6610,7 @@ when submitted as :ideal, pointing out that they can never be
 ; the feature.
 
 ; Note: There is a possible bug lurking here.  If the host Common Lisp expands
-; macros before storing the symbol-function, then it is we could recognize as
+; macros before storing the symbol-function, then we could recognize as
 ; "redundant" an identical defun that, if actually passed to the underlying
 ; Common Lisp, would result in the storage of a different symbol-function
 ; because of the earlier redefinition of some macro used in the "redundant"
@@ -9079,53 +9141,6 @@ when submitted as :ideal, pointing out that they can never be
         (t (and (eq defun-mode :logic)
                 (uniform-defun-modes defun-mode (cdr clique) wrld)))))
 
-(defun recover-defs-lst (fn wrld state)
-
-; Fn is a :program function symbol in wrld.  Thus, it was introduced by defun.
-; (Constrained, defchoose, and :non-executable functions are :logic.)  We
-; return the defs-lst that introduced it fn.  We recover this from the
-; cltl-command for fn.
-
-  (let ((val
-         (scan-to-cltl-command
-          (cdr (lookup-world-index 'event
-                                   (getprop fn 'absolute-event-number
-                                            '(:error "See ~
-                                                      RECOVER-DEFS-LST.")
-                                            'current-acl2-world wrld)
-                                   wrld)))))
-    (cond ((and (consp val)
-                (eq (car val) 'defuns))
-
-; Val is of the form (defuns defun-mode-flg ignorep def1 ... defn).  If
-; defun-mode-flg is non-nil then the parent event was (defuns def1 ... defn)
-; and the defun-mode was defun-mode-flg.  If defun-mode-flg is nil, the parent
-; was an encapsulate, defchoose, or :non-executable.  In the former case we
-; return (def1 ... defn); in the latter we return nil.
-
-           (cond ((cadr val) (value (cdddr val)))
-                 (t (value nil))))
-          (t (value
-              (er hard 'recover-defs-lst
-                  "We failed to find the expected CLTL-COMMAND for the ~
-                   introduction of ~x0."
-                  fn))))))
-
-(defun get-clique (fn wrld state)
-
-; Fn must be a function symbol.  We return the list of mutually recursive fns
-; in the clique containing fn, according to their original definitions.  If fn
-; is :program we have to look for the cltl-command and recover the clique from
-; the defs-lst.  Otherwise, we can use the 'recursivep property.
-
-  (cond ((programp fn wrld)
-         (er-let* ((defs (recover-defs-lst fn wrld state)))
-                  (value (strip-cars defs))))
-        (t (let ((recp (getprop fn 'recursivep nil
-                                'current-acl2-world wrld)))
-             (value (cond ((null recp) (list fn))
-                          (t recp)))))))
-
 (defun chk-acceptable-verify-termination (lst ctx wrld state)
 
 ; We check that lst is acceptable input for verify-termination.  To be
@@ -9140,11 +9155,11 @@ when submitted as :ideal, pointing out that they can never be
          (symbolp (caar lst)))
     (cond
      ((function-symbolp (caar lst) wrld)
-      (er-let* ((clique (get-clique (caar lst) wrld state)))
+      (let ((clique (get-clique (caar lst) wrld)))
         (cond
          ((not (uniform-defun-modes (fdefun-mode (caar lst) wrld)
-                                clique
-                                wrld))
+                                    clique
+                                    wrld))
           (er soft ctx
               "The function ~x0 is ~#1~[:program~/:logic~] but some ~
                member of its clique of mutually recursive peers is not.  The ~
@@ -9159,7 +9174,8 @@ when submitted as :ideal, pointing out that they can never be
               (caar lst)
               (if (programp (caar lst) wrld) 0 1)
               clique))
-         (t (chk-acceptable-verify-termination1 lst clique (caar lst) ctx wrld state)))))
+         (t (chk-acceptable-verify-termination1 lst clique (caar lst) ctx wrld
+                                                state)))))
      (t (er soft ctx
             "The symbol ~x0 is not a function symbol in the current ACL2 world."
             (caar lst)))))
@@ -9198,9 +9214,8 @@ when submitted as :ideal, pointing out that they can never be
          (wrld (w state)))
     (er-progn
      (chk-acceptable-verify-termination lst ctx wrld state)
-     (er-let*
-      ((defs-lst (recover-defs-lst (caar lst) wrld state)))
-      (value (make-verify-termination-defs-lst defs-lst lst state))))))
+     (let ((defs-lst (recover-defs-lst (caar lst) wrld)))
+       (value (make-verify-termination-defs-lst defs-lst lst state))))))
 
 (defun verify-termination-boot-strap-fn (lst state event-form)
   (cond

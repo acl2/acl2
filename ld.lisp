@@ -16834,6 +16834,10 @@
   The ~ilc[proof-checker] command `~c[then]' now stops at the first failure (if
   any).
 
+  It is no longer permitted to submit definitions in ~c[:logic] mode for merely
+  part of an existing ~ilc[mutual-recursion] event.  Such an action left the
+  user in an odd state and seemed a potential soundness hole.
+
   ~st[NEW FEATURES]
 
   A new hint, ~c[:]~ilc[instructions], allows use of the ~il[proof-checker] at
