@@ -4188,6 +4188,11 @@ FORWARD-CHAINING-RULES                               245442
         'include-book
         *load-compiled-file-values*
         load-compiled-file))
+  (when *compiling-certified-file*
+
+; See the comment below related to *compiling-certified-file*.
+
+    (return-from include-book-raw nil))
   (let* ((raw-mode-p (raw-mode-p state))
          (load-compiled-file
           (cond ((null (f-get-global 'compiler-enabled state))
@@ -4227,12 +4232,26 @@ FORWARD-CHAINING-RULES                               245442
                state)))
      (declare (ignore ignore-familiar-name))
      (cond
-      ((assoc-equal full-book-name
+      ((assoc-equal (namestring (our-truename full-book-name))
                     (global-val 'include-book-alist (w state)))
 
-; The test above may be incomplete because full-book-name may be a soft link to
-; a name in the 'include-book-alist.  But at worst, we will be re-loading a
-; book that was already loaded, which should be harmless.
+; In ACL2 Version_4.1 running on Allegro CL, we got an error when attempting to
+; certify the following book.
+
+; (in-package "ACL2")
+; (include-book "coi/lists/memberp" :dir :system)
+
+; The problem was that truename is (one might say) broken in Allegro CL.
+; Fortunately, Allegro CL provides an alternative that seems to work --
+; excl::pathname-resolve-symbolic-links -- and we now use that function (see
+; our-truename).  The problem goes away if that function is applied to
+; full-book-name under the call of assoc-equal below.  But the error occurred
+; in the context of loading a file just compiled from a book, and in that
+; context there is no reason to execute any raw-Lisp include-book.  Thus, we
+; short-circuit in that case -- see the use of *compiling-certified-file* above
+; -- and now we never even get to the above assoc-equal test in that case.
+
+; A final comment in the case that we really do get to this point:
 
 ; Since all relevant values have been defined, there is no need to transfer to
 ; hash tables (as per the Essay on Hash Table Support for Compilation).  This
@@ -6804,11 +6823,11 @@ Missing functions:
 ; by brute force.
 
                      #+(and mcl (not ccl))
-                     (truename
+                     (our-truename
                       (common-lisp::translate-logical-pathname
                        (user-homedir-pathname)))
                      #-(and mcl (not ccl))
-                     (truename (user-homedir-pathname)))
+                     (our-truename (user-homedir-pathname)))
                     (os (w *the-live-state*))
                     *the-live-state*)
                    "acl2-customization"))
@@ -6825,11 +6844,12 @@ Missing functions:
 
 (defun lp (&rest args)
 
-; This function can only be called from within raw lisp, because no
-; ACL2 function mentions it.  Thus, we assume we are in raw lisp.
-; This is the top-level entry to ACL2.  Note that truename can cause an error
-; in some Common Lisps when the given file or directory does not exist.  Hence,
-; we sometimes call truename on "" rather than on a file name.
+; This function can only be called from within raw lisp, because no ACL2
+; function mentions it.  Thus, we assume we are in raw lisp.  This is the
+; top-level entry to ACL2.  Note that truename can cause an error in some
+; Common Lisps when the given file or directory does not exist, in which case
+; our-truename will generally return nil.  Hence, we sometimes call
+; our-truename on "" rather than on a file name.
 
   (let ((state *the-live-state*)
         #+(and gcl (not ansi-cl))
@@ -6875,7 +6895,8 @@ Missing functions:
                                                   "NIL")))))
                (user-home-dir-path (user-homedir-pathname))
                (user-home-dir0 (and user-home-dir-path
-                                    (namestring (truename user-home-dir-path))))
+                                    (namestring
+                                     (our-truename user-home-dir-path))))
                (user-home-dir (if (eql (char user-home-dir0
                                              (1- (length user-home-dir0)))
                                        *directory-separator*)
@@ -7220,14 +7241,16 @@ Missing functions:
          (gcl-flg
           #+gcl
           (compile-file
-           (namestring (truename (pathname-unix-to-os fn-file state)))
+           (namestring (our-truename (pathname-unix-to-os fn-file state)))
            :c-file t :h-file t)
           #-gcl
           (er hard 'compile-uncompiled-defuns
               "The gcl-flg argument to compile-uncompiled-defuns is only ~
                legal when running under GCL."))
          (t
-          (let ((lisp-file (namestring (truename (pathname-unix-to-os fn-file state)))))
+          (let ((lisp-file
+                 (namestring (our-truename (pathname-unix-to-os fn-file
+                                                                state)))))
             (compile-file lisp-file)
             (when (not (keep-tmp-files state))
               (delete-file lisp-file)
@@ -7447,7 +7470,7 @@ Missing functions:
          (gcl-flg
           #+gcl
           (compile-file
-           (namestring (truename (pathname-unix-to-os fn-file state)))
+           (namestring (our-truename (pathname-unix-to-os fn-file state)))
            :c-file t :h-file t)
           #-gcl
           (er hard 'compile-uncompiled-defuns
@@ -7455,7 +7478,8 @@ Missing functions:
                legal when running under GCL."))
          (t
           (let ((lisp-file
-                 (namestring (truename (pathname-unix-to-os fn-file state)))))
+                 (namestring (our-truename (pathname-unix-to-os fn-file
+                                                                state)))))
             (compile-file lisp-file)
             (when (not (keep-tmp-files state))
               (delete-file lisp-file)

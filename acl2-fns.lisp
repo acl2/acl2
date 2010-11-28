@@ -1192,6 +1192,42 @@ notation causes an error and (b) the use of ,. is not permitted."
   #+apple (return-from get-os :apple)
   #-(or unix apple mswindows) nil)
 
+(defun our-truename (filename)
+
+; This function is intended to return nil if filename does not exist.  We thus
+; rely on the CL HyperSpec, where it says of truename that "An error of type
+; file-error is signaled if an appropriate file cannot be located within the
+; file system for the given filespec"; and we also rely on the Allegro CL
+; documentation for function pathname-resolve-symbolic-links, which says: "When
+; pathname names a non-existent pathname, an error is signaled...."
+
+; We return (ignore-errors (truename x)) instead of (probe-file x) because we
+; have seen CLISP 2.48 cause an error when probe-file is called on a directory
+; name.  Unfortunately, we can't do that with GCL 2.6.7, which doesn't have
+; ignore-errors.  Also unfortunately, Allegro CL 8.0 (also probably earlier
+; versions, and maybe later versions) does not fully resolve symbolic links
+; using truename, even with value T for keyword :follow-symlinks.
+
+; We use funcall below to avoid the chance of compiler warnings.
+
+  #+allegro
+  (when (fboundp 'excl::pathname-resolve-symbolic-links)
+    (return-from our-truename
+                 (ignore-errors
+                  (funcall 'excl::pathname-resolve-symbolic-links
+                           filename))))
+  #+(and gcl (not cltl2))
+  (if (fboundp 'si::stat) ; try to avoid some errors
+      (and (funcall 'si::stat x)
+           (truename x))
+    (truename x))
+  #-(and gcl (not cltl2))
+
+; Here we also catch the case of #+allegro if
+; excl::pathname-resolve-symbolic-links is not defined.
+
+  (ignore-errors (truename filename)))
+
 (defun our-pwd ()
 
 ; Warning: Do not be tempted to use (getenv$-raw "PWD").  The PWD environment
@@ -1199,7 +1235,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; make invokes another make in a different directory.
 
   (qfuncall pathname-os-to-unix
-            (namestring (truename ""))
+            (namestring (our-truename ""))
             (get-os)
             *the-live-state*))
 

@@ -16712,6 +16712,13 @@
 ; after a newline, because otherwise the new message printed immediately after
 ; evaluating (retrieve ...) looks odd.
 
+; Introduced new function our-truename, which we use in place of truename.
+; This was done in support of the item below mentioning "truename", about
+; "certain errors in including books".
+
+; Fixed documentation and error message for the case that only some functions
+; in a mutual-recursion are non-executable.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -16957,6 +16964,13 @@
   ~ilc[make-event] to define a function symbol in a locally-introduced package.
   An example appears in a comment in ACL2 source function
   ~c[write-expansion-file].
+
+  Made a change that can prevent an error near the end of book certification
+  when the underlying Host Lisp is Allegro Common Lisp, in the case that
+  environment variable ~c[ACL2_SYSTEM_BOOKS] has been set to the name of a
+  directory with a parent that is a soft link.  Thanks to Dave Greve for
+  supplying an example to led us to this fix, which involves avoiding Allegro
+  CL's implementation of the Common Lisp function, ~c[truename].
 
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 

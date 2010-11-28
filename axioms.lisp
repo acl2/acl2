@@ -10768,10 +10768,14 @@ J
       (if (zp y) y (foo (1- y))))))
   ~ev[]
 
-  The ~ilc[guard] analysis must also be done for all of the functions at
-  the same time.  If any one of the ~ilc[defun]s specifies the
-  ~c[:]~ilc[verify-guards] ~c[xarg] to be ~c[nil], then ~il[guard] verification is
-  omitted for all of the functions.
+  The ~ilc[guard] analysis must also be done for all of the functions at the
+  same time.  If any one of the ~ilc[defun]s specifies the
+  ~c[:]~ilc[verify-guards] ~c[xarg] to be ~c[nil], then ~il[guard] verification
+  is omitted for all of the functions.  Similarly, if any one of the
+  ~ilc[defun]s specifies the ~c[:non-executable] ~c[xarg] to be ~c[t], or if
+  any of the definitions uses ~ilc[defun-nx] or ~c[defund-nx], then every one
+  of the definitions will be treated as though it specifies a
+  ~c[:non-executable] ~c[xarg] of ~c[t].
 
   Technical Note: Each ~c[defi] above must be of the form ~c[(defun ...)].  In
   particular, it is not permitted for a ~c[defi] to be a form that will

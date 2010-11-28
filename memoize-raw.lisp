@@ -5989,7 +5989,7 @@ the calls took.")
 
           )
       (compact-print-stream data stream))
-    (namestring (truename stream))))
+    (namestring (our-truename stream))))
   
 (defun ns-=-reader (stream subchar arg)
   

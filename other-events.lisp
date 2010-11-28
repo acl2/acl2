@@ -9350,20 +9350,7 @@ The following all cause errors.
 ; that is not a directory, or if the "true" name cannot be determined, in which
 ; case return nil.
 
-  (let ((truename
-
-; Here, we use (ignore-errors (truename x)) instead of (probe-file x) because
-; we have seen CLISP 2.48 cause an error when probe-file is called on a
-; directory name.  Unfortunately, we can't do that with GCL 2.6.7, which
-; doesn't have ignore-errors.
-
-         #+gcl
-         (if (fboundp 'si::stat) ; try to avoid some errors
-             (and (funcall 'si::stat x)
-                  (truename x))
-           (truename x))
-         #-gcl
-         (ignore-errors (truename x))))
+  (let ((truename (our-truename x)))
     (and truename
          (let ((dir (pathname-directory truename))
                (name (pathname-name truename))

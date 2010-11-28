@@ -247,8 +247,9 @@ implementations.")
 
          (setq source-directory
                (subseq source-directory 0 (1- (length source-directory))))))
-  (cond ((not (equal (namestring (truename (format nil "~a/" source-directory)))
-                     (namestring (truename ""))))
+  (cond ((not (equal (namestring (our-truename
+                                  (format nil "~a/" source-directory)))
+                     (namestring (our-truename ""))))
          (error "We expected to be in the directory~%~s~%~
                  but instead are apparently in the directory~%~s .~%~
                  Either issue, in Unix, the command~%~
@@ -257,7 +258,7 @@ implementations.")
                  which the function COPY-DISTRIBUTION was called,~%~
                  in order to give it the correct second argument."
                 source-directory
-                (namestring (truename ""))
+                (namestring (our-truename ""))
                 source-directory)))
 
 ; Next, check that everything exists that is supposed to.
@@ -1252,7 +1253,7 @@ implementations.")
                       ("~a~%"
                        (let ((default-dir
                                (or (ccl::getenv "CCL_DEFAULT_DIRECTORY")
-                                   (let ((path (truename "ccl:")))
+                                   (let ((path (our-truename "ccl:")))
                                      (and path
                                           (qfuncall pathname-os-to-unix
                                                     (namestring path)

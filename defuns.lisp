@@ -96,7 +96,8 @@
                                                state))
                    (t (er soft ctx
                           "The body of a defun that is marked :non-executable ~
-                           t must be of the form (prog2$ (throw-nonexec-error ~
+                           t (perhaps implicitly, by the use of defun-nx) ~
+                           must be of the form (prog2$ (throw-nonexec-error ~
                            ...).  The definition of ~x0 is thus illegal.  See ~
                            :DOC defun-nx."
                           (car names))))))))
