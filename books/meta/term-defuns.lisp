@@ -24,10 +24,13 @@
 
 (set-verify-guards-eagerness 2)
 
-(defthm append-true-listp-type-prescription
-  (implies (true-listp y)
-           (true-listp (append x y)))
-  :rule-classes :type-prescription)
+; Jared removed this rule because (1) it's slow, and (2) there's an identical rule
+; that is built into ACL2, TRUE-LISTP-APPEND.
+
+;; (defthm append-true-listp-type-prescription
+;;   (implies (true-listp y)
+;;            (true-listp (append x y)))
+;;   :rule-classes :type-prescription)
 
 (defun memb (a x)
   (if (consp x)

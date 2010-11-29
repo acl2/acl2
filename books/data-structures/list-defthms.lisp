@@ -302,10 +302,14 @@
 (defthm true-listp-append-rewrite
   (equal (true-listp (append a b))
 	 (true-listp b))
-  :rule-classes ((:rewrite) 
-		 (:type-prescription :corollary 
-				     (implies (true-listp b)
-					      (true-listp (append a b))))))
+  :rule-classes ((:rewrite)
+
+; Jared removed this corollary because (1) it's slow, and (2) there's an identical
+; rule that is built into ACL2, TRUE-LISTP-APPEND.
+;;		 (:type-prescription :corollary
+;;				     (implies (true-listp b)
+;;					      (true-listp (append a b))))
+  ))
 
 (defthm true-listp-revappend
   (equal (true-listp (revappend a b))
