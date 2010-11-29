@@ -15827,7 +15827,7 @@ The following all cause errors.
   ~bv[]
   Examples:
   ACL2 !>(defstub subr1 (* * state) => (mv * state))
-  ACL2 !>(defstub add-hash (* * hash-table) => hash-table)~/
+  ACL2 !>(defstub add-hash (* * hashtable) => hashtable)~/
 
   General Forms:
   (defstub name args-sig => output-sig)
@@ -26161,7 +26161,7 @@ The following all cause errors.
 ; - erasures: existing attachment pairs that need to be removed (perhaps before
 ;   reattachment to the cars of some of these pairs)
 ; - explicit-erasures: functions associated with nil, for explicit de-attachment
-; - attachment-alist: list of pairs (f . g) where g is to be attached to f;
+; - attachment-alist: list of pairs (f . g) where g is to be attached to f
 ; - helper-alist-lst: list of alists corresponding positionally to
 ;   attachment-alist, where each element is used for the corresponding proof
 ;   that the guard of f implies the guard of g, and/or to specify :attach nil,
@@ -26267,7 +26267,7 @@ The following all cause errors.
                                "The function symbol ~x0 has been associated ~
                                 with NIL in a defattach event, yet keyword ~
                                 argument~#1~[ ~&1 has~/s ~&1 have~] been ~
-                                supplied for this assocation, which is ~
+                                supplied for this association, which is ~
                                 illegal.~@2"
                                f
                                (strip-cars helper-alist)

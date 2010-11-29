@@ -6403,7 +6403,7 @@ when submitted as :ideal, pointing out that they can never be
                        wrld)))
                    (t
 
-; Note that :non-executable definitions always have mode :logic, we we do not
+; Note that :non-executable definitions always have mode :logic, so we do not
 ; have to think about the 'reclassifying case.
 
                     'redundant)))
@@ -6462,7 +6462,7 @@ when submitted as :ideal, pointing out that they can never be
 
 ; Fn is a :program function symbol in wrld.  Thus, it was introduced by defun.
 ; (Constrained, defchoose, and :non-executable functions are :logic.)  We
-; return the defs-lst that introduced it fn.  We recover this from the
+; return the defs-lst that introduced fn.  We recover this from the
 ; cltl-command for fn.
 
   (let ((val
@@ -9148,7 +9148,7 @@ when submitted as :ideal, pointing out that they can never be
 ; acceptable, lst must be of the form ((fn . dcls) ...) where each fn is the
 ; name of a function, all of which are in the same clique and have the same
 ; defun-mode and each dcls is a plausible-dclsp as above.  We cause an error or
-; return nil
+; return nil.
 
   (cond
    ((and (consp lst)

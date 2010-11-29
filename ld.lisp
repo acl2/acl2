@@ -16897,10 +16897,11 @@
   function ~c[type-set-rec], source file ~c[type-set-b.lisp]).
 
   We made three heuristic improvements in the way contexts (so-called
-``type-alists'') are computed from goals (``clauses'').  Although these changes
-  did not noticeably affect timing results for the ACL2 regression suite, they
-  can be very helpful for goals with many hypotheses.  Thanks to Dave Greve for
-  sending a useful example (one where we found a goal with 233 hypotheses!).
+  ``type-alists'') are computed from goals (``clauses'').  Although these
+  changes did not noticeably affect timing results for the ACL2 regression
+  suite, they can be very helpful for goals with many hypotheses.  Thanks to
+  Dave Greve for sending a useful example (one where we found a goal with 233
+  hypotheses!).
 
   ~st[BUG FIXES]
 
@@ -16956,9 +16957,9 @@
   bringing this bug to our attention with a simple example, and correctly
   pointing us to the bug in our code.
 
-  Fixed two bugs in ~ilc[defattach]: wasn't always applying the full functional
-  substitution when generating guard proof obligation, and hit assertion when
-  reattaching to more than one function.
+  Fixed two bugs in ~ilc[defattach]: we hadn't always been applying the full
+  functional substitution when generating guard proof obligations, and we had
+  been able to hit an assertion when reattaching to more than one function.
 
   Fixed a raw Lisp error that could be caused by including a book using
   ~ilc[make-event] to define a function symbol in a locally-introduced package.
