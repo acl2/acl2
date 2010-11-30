@@ -145,9 +145,17 @@ BOOKS_O       = $(patsubst %, %.o,       $(BOOKS_COMP))
 BOOKS_LISP    = $(patsubst %, %.lisp,    $(BOOKS))
 BOOKS_BKCHK_OUT = $(patsubst %, %.bkchk.out, $(BOOKS))
 
-#  This tells make to expect `suffix rules' for these file suffixes.
+#  This rule certifies every book in BOOKS.  If the dependencies are set up
+#  correctly then the order of the books in BOOKS won't matter.
 
-.SUFFIXES: .cert .lisp
+.PHONY: all
+all:
+	@if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
+	then \
+		echo "[Makefile-generic]: Preparing to make 'all'" ;\
+	fi
+	@echo 'Using ACL2=$(ACL2)'
+	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) $(BOOKS_CERT) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)'
 
 #  This rule tells how to get <book>.cert from <book>.lisp, either by running
 #  ACL2 on the <book>.acl2 file (if it exists) or using the default command
@@ -156,8 +164,16 @@ BOOKS_BKCHK_OUT = $(patsubst %, %.bkchk.out, $(BOOKS))
 #  package, which can cause a problem if .acl2 files in our regressions suite
 #  execute (LP) instead of (ACL2::LP).  We deal with these issues below.
 
-.lisp.cert:
-	@echo "Making `pwd`/$*.cert on `date`"
+# Keep this %.cert target in sync with the %.acl2x target below.  The
+# reason they are not combined is that GNU Make would then consider
+# equivalent for purposes of dependency tracking: at least, we got
+# regression failures in the make-event/ directory for
+#   make -j <n> double-cert-test.cert
+# with n>1: after making double-cert-test-1.acl2x, GNU Make thought it
+# was OK to start making double-cert-test.cert without first making
+# double-cert-test-1.cert.
+%.cert: %.lisp
+	@echo "Making `pwd`/$@ on `date`"
 	@rm -f $*.cert
 	@echo '(acl2::value :q)' > workxxx.$(*F)
 	@echo '(in-package "ACL2")' >> workxxx.$(*F)
@@ -186,37 +202,58 @@ BOOKS_BKCHK_OUT = $(patsubst %, %.bkchk.out, $(BOOKS))
 	  echo "" ;\
 	fi	
 	@($(ACL2) < workxxx.$(*F) 2>&1) > $*.out
-	@rm -f workxxx.$(*F)
-	@((test -f $<) && (ls -al $*.cert)) || \
-            (echo "**CERTIFICATION FAILED** for `pwd`/$*.lisp" ;\
+	@((test -f $<) && (ls -al $@)) || \
+            (echo "**CERTIFICATION FAILED** for `pwd`/$@" ;\
 	     echo "" ;\
 	     tail -300 $*.out | sed 's/^/   | /' ;\
 	     echo "" ;\
 	     echo "" ;\
-	     echo "**CERTIFICATION FAILED** for `pwd`/$*.lisp" ;\
+	     echo "**CERTIFICATION FAILED** for `pwd`/$@" ;\
              exit 1)
-# The following code can replace the line just above.  However, it is a bit
-# complicated by our having seen sh on Sun/Solaris 5.9 fail to recognize -nt,
-# which is this code uses csh instead of sh if possible.  At any rate, the test
-# on file dates seems unnecessary since we remove the .cert file immediately
-# upon entering this target.
-#	@if [ `which csh` ] ; then \
-#	csh -c "((test -f $< -a ! $< -nt $@ ) && (ls -al $*.cert))" || ($(MAKE) -s --no-print-directory FAILED FAILED_BOOK=`pwd`/$*.lisp) ; \
-#	else \
-#	((test -f $< -a ! $< -nt $@ ) && (ls -al $*.cert)) || ($(MAKE) -s --no-print-directory FAILED FAILED_BOOK=`pwd`/$*.lisp) ; \
-#	fi
+	@rm -f workxxx.$(*F)
 
-#  This rule certifies every book in BOOKS.  If the dependencies are set up
-#  correctly then the order of the books in BOOKS won't matter.
-
-.PHONY: all
-all:
+# Keep this %.acl2x target in sync with the %.cert target above; see
+# the comment there.
+%.acl2x: %.lisp
+	@echo "Making `pwd`/$@ on `date`"
+	@rm -f $*.cert
+	@echo '(acl2::value :q)' > workxxx.$(*F)
+	@echo '(in-package "ACL2")' >> workxxx.$(*F)
+	@echo '(acl2::lp)' >> workxxx.$(*F)
+	@echo '(acl2::set-write-acl2x acl2::t acl2::state)' >> workxxx.$(*F)
+	@echo '$(INHIBIT)' >> workxxx.$(*F)
+	@if [ -f $*.acl2 ] ; \
+	then \
+	  cat $*.acl2 >> workxxx.$(*F) ; \
+	elif [ -f cert.acl2 ] ; \
+	then \
+	  cat cert.acl2 >> workxxx.$(*F) ; \
+	  echo "" >> workxxx.$(*F) ; \
+	  echo '(certify-book "$*" ? $(COMPILE_FLG))' >> workxxx.$(*F) ; \
+	else \
+	  echo "" >> workxxx.$(*F) ; \
+	  echo '(certify-book! "$*" 0 $(COMPILE_FLG))' >> workxxx.$(*F) ; \
+	fi
+	@echo "" >> workxxx.$(*F)
+	@echo '(acl2::value :q)' >> workxxx.$(*F)
+	@echo '(acl2::exit-lisp)' >> workxxx.$(*F)
 	@if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
 	then \
-		echo "[Makefile-generic]: Preparing to make 'all'" ;\
-	fi
-	@echo 'Using ACL2=$(ACL2)'
-	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) $(BOOKS_CERT) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)'
+	  echo "[Makefile-generic]: certify book commands:" ;\
+	  echo "" ;\
+	  cat workxxx.$(*F) ;\
+	  echo "" ;\
+	fi	
+	@($(ACL2) < workxxx.$(*F) 2>&1) > $@.out
+	@((test -f $<) && (ls -al $@)) || \
+            (echo "**CERTIFICATION FAILED** for `pwd`/$@" ;\
+	     echo "" ;\
+	     tail -300 $@.out | sed 's/^/   | /' ;\
+	     echo "" ;\
+	     echo "" ;\
+	     echo "**CERTIFICATION FAILED** for `pwd`/$@" ;\
+             exit 1)
+	@rm -f workxxx.$(*F)
 
 # The following rules are useful when books have been certified in one lisp,
 # but we would also like their compiled files to exist in the other lisp.
@@ -399,6 +436,7 @@ clean:
 	rm -f *.date
 	rm -f *.cert
 	rm -f *.cert.temp
+	rm -f *.acl2x
 	rm -f Makefile-deps
 	rm -f *.h
 	rm -f *.c

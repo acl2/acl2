@@ -10,7 +10,11 @@
 ;bzo make this local?
 (include-book "arithmetic/top-with-meta" :dir :system) 
 
-(in-theory (disable acl2::append-true-listp-type-prescription)) ;we have a better rule
+; Modified by Matt K. after Jared D.'s check-in to acl2-books svn revision 633,
+; which removed the following rule: I disabled the relatively new built-in rule
+; instead.
+; (in-theory (disable acl2::append-true-listp-type-prescription)) ;we have a better rule
+(in-theory (disable (:type-prescription acl2::true-listp-append)))
 
 ;;
 ;; BLK-REC

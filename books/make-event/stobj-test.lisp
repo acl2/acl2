@@ -32,8 +32,9 @@
                    (declare (ignore erp val))
                    (mv nil '(value-triple 100) state st)))))
 
-; The following succeeds during certification and is ignored during
-; include-book.
-(value-triple (prog2$ (cw "CHECKING LAST VALUE-TRIPLE~%")
-                      (or (equal (fld st) 17)
-                          (er hard 'top "OUCH"))))
+; The following succeeds during certification (well, at least when writing the
+; .acl2x file) and is ignored during include-book.
+(value-triple (or (not (f-get-global 'write-acl2x state))
+                  (prog2$ (cw "CHECKING LAST VALUE-TRIPLE~%")
+                          (or (equal (fld st) 17)
+                              (er hard 'top "OUCH")))))

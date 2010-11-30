@@ -31,7 +31,12 @@
 ;            DEFAULT-CDR
         ;    DEFAULT-CAR
             (:TYPE-PRESCRIPTION BINARY-APPEND)
-            (:TYPE-PRESCRIPTION acl2::APPEND-TRUE-LISTP-TYPE-PRESCRIPTION)
+
+; Modified by Matt K. after Jared D.'s check-in to acl2-books svn revision 633,
+; which removed the following rule: I disabled the relatively new built-in rule
+; instead.
+;           (:TYPE-PRESCRIPTION acl2::APPEND-TRUE-LISTP-TYPE-PRESCRIPTION)
+            (:type-prescription acl2::true-listp-append)
             ))
 
 (in-theory (disable

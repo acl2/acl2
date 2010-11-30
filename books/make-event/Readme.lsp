@@ -16,6 +16,9 @@ includes a previous book.
     (include-book "basic") ; no checking of expansions
   basic-pkg.lisp
   basic-pkg-check.lisp
++ double-cert-test-1.lisp, double-cert-test.lisp
+    Certification that ultimately avoids need for trust tags; see
+    :DOC set-write-acl2x.
 + read-from-file.lisp
     Create events by reading a file.  Includes remark explaining why we enable
     proofs during evaluation of the expansion result when :check-expansion is
@@ -114,6 +117,9 @@ defconst-fast-examples.lisp
 defconst-fast.lisp
 defrefine.lisp
 dotimes.lisp
+double-cert-test-1.acl2
+double-cert-test-1.lisp
+double-cert-test.lisp
 embeddable-event-forms.lisp
 eval-check-tests.lisp
 eval-check.lisp

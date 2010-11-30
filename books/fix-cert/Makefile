@@ -1,10 +1,11 @@
-include ../Makefile-generic
--include Makefile-deps
-
 # This copies the .cert files as they are, but doesn't get them into their
-# final state.
+# final state.  We put this rule before the inclusion of Makefile-generic,
+# so that it will take priority over the rule for target %.cert in that file.
 moved/%.cert: %.cert
 	cp -v $^ $@
+
+include ../Makefile-generic
+-include Makefile-deps
 
 # Certifying this one actually updates the moved/*.cert files to reflect
 # their new location.
