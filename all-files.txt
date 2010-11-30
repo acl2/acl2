@@ -1493,6 +1493,9 @@ defrefine.lisp
 defrule.lisp
 defspec.lisp
 dotimes.lisp
+double-cert-test-1.acl2
+double-cert-test-1.lisp
+double-cert-test.lisp
 embeddable-event-forms.lisp
 eval-check-tests.lisp
 eval-check.lisp

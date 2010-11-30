@@ -16887,6 +16887,13 @@
   (~pl[set-backchain-limit]).  Thanks to Jared Davis for requesting this
   feature.
 
+  Support is now provided for creating and certifying books that do not depend
+  on trust tags, in the case that the only use of trust tags is during
+  ~ilc[make-event] expansion.  ~l[set-write-acl2x].
+
+  Function ~c[(file-write-date$ filename state)] has been added, giving the
+  write date of the given file.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   We have slightly improved the so-called ``~il[type-set]'' heuristics to work

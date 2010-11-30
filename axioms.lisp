@@ -23294,6 +23294,7 @@ J
     position-eq position-equal
     take
     canonical-pathname
+    file-write-date$
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -23657,6 +23658,7 @@ J
     (window-interfacep . nil)
     (wormhole-name . nil)
     (wormhole-status . nil)
+    (write-acl2x . nil)
     (writes-okp . t)))
 
 #+acl2-loop-only ; not during compilation
@@ -36994,6 +36996,112 @@ in :type-prescription rules are specified with :type-prescription (and/or
   `(with-guard-checking1 (chk-with-guard-checking-arg ,val)
                          ,form))
 
+(defun set-write-acl2x (flg state)
+
+  ":Doc-Section switches-parameters-and-modes
+
+  cause ~ilc[certify-book] to write out a ~c[.acl2x] file~/
+
+  ~bv[]
+  General Forms:
+  (set-write-acl2x t state)
+  (set-write-acl2x nil state)
+  ~ev[]
+
+  This command is provided for those who use trust tags (~pl[defttag]) to
+  perform ~ilc[make-event] expansions, yet wish to create certified books that
+  do not depend on trust tags.  This is accomplished using two runs of
+  ~ilc[certify-book] on a book, say ~c[foo.lisp].  In the first run, a file
+  ~c[foo.acl2x] is written that contains all ~ilc[make-event] expansions, but
+  ~c[foo.cert] is not written.  In the second certification, no
+  ~ilc[make-event] expansion takes place, because ~c[foo.acl2x] supplies the
+  expansions.  The command ~c[(set-write-acl2x t state)] should be evaluated
+  before the first certification, setting ~ilc[state] global ~c[write-acl2x] to
+  ~c[t], to enable writing of ~c[foo.acl2x]; and the command
+  ~c[(set-write-acl2x nil state)] may be evaluated before the second
+  run (though this is not necessary in a fresh ACL2 session) in order to
+  complete the certification (writing out ~c[foo.cert]) using ~c[foo.acl2x] to
+  supply the ~ilc[make-event] expansions.
+
+  If you use this two-runs approach with scripts such as makefiles, then you
+  may wish to provide a single ~ilc[certify-book] command to use for both runs.
+  For that purpose, ~ilc[certify-book] supports the keyword argument
+  ~c[:ttagsx].  If this argument is supplied and ~c[write-acl2x] is true, then
+  this argument is treated as the ~c[:ttags] argument, overriding a ~c[:ttags]
+  argument if present.  That is, for the two runs, ~c[:ttagsx] may be used to
+  specify the trust tags used in the first certification while ~c[:ttags]
+  specifies the trust tags, if any (else ~c[:ttags] may be omitted), used in
+  the second certification.
+
+  If you wish to use built-in ACL2 Makefile support (~pl[book-makefiles]),
+  simply add a dependency like the following to the Makefile in your directory
+  of ~il[books]:
+
+  ~bv[]
+  foo.cert: foo.acl2x
+  ~ev[]
+
+  Note that ~ilc[include-book] is not affected by ~c[set-write-acl2x], other
+  than through the indirect effect on ~ilc[certify-book].  More precisely: All
+  expansions will be stored in the ~il[certificate] file, so ~ilc[include-book]
+  does not depend on the ~c[foo.acl2x] file.~/
+
+  An example of how to put this all together may be found in distributed book
+  ~c[books/make-event/double-cert-test-1.lisp].  There, we see the following
+  form.
+  ~bv[]
+  (make-event
+   (progn (defttag :my-ttag)
+          (progn! (let ((val (sys-call \"pwd\" nil)))
+                    (value (list 'defun 'foo () val))))))
+  ~ev[]
+  Imagine that in place of the binding computed using ~ilc[sys-call], which by
+  the way requires a trust tag, is some computation of your choice (such as
+  reading forms from a file) that is used to construct your own event,
+  in place of the ~ilc[defun] event constructed above.  The ~c[Makefile] in
+  that directory contains the following added dependency, so that file
+  ~c[double-cert-test-1.acl2x] will be created:
+  ~bv[]
+  double-cert-test-1.cert: double-cert-test-1.acl2x
+  ~ev[]
+  There is also the file ~c[double-cert-test-1.acl2] in that directory, which
+  contains a single form as follows.
+  ~bv[]
+  (certify-book \"double-cert-test-1\" ? t :ttagsx :all :ttags nil)
+  ~ev[]
+  Thus, a call of ~c[make] first creates file ~c[double-cert-test-1.acl2x],
+  which uses the above ~c[:ttagsx] argument in order to support the use of
+  ~ilc[defttag] during ~ilc[make-event] expansion.  Then, ~c[make] goes on to
+  cause a second certification in which no trust tags are involved.  As a
+  result, the parent book ~c[double-cert-test.lisp] is ultimately certified
+  without requiring any trust tags.
+
+  The discussion above is probably sufficient for most users of the two-run
+  approach it describes.  We conclude with further details for those who want
+  more information.  Those who wish to see a yet lower-level explanation of how
+  all this works are invited to read the comment in the ACL2 source code
+  entitled ``Essay on .acl2x Files (Double Certification).
+
+  Consider the ~c[.acl2x] (pronounced ``dot-acl2x'') file produced by the first
+  run as described above.  It contains a single expression, which is an
+  association list whose keys are all positive integers, which occur in
+  increasing order.  When the ~c[.acl2x] file is present and at least as recent
+  as the corresponding ~c[.lisp] file, then for a subsequent ~ilc[certify-book]
+  when ~c[write-acl2x] is ~c[nil] (the default), that association list will be
+  applied to the top-level events in the book, as follows.  Suppose the entry
+  ~c[(n . ev)] belongs to the association list in the ~c[.acl2x] file.  Then
+  ~c[n] is a positive integer, and the ~c[n]th top-level event in the book ~-[]
+  where the ~c[0]th event is the initial ~ilc[in-package] form ~-[] will be
+  replaced by ~c[ev].  In practice, ~c[ev] is the ~ilc[make-event] expansion
+  created during certification for the ~c[nth] top-level event in the book; and
+  this will always be the case if the ~c[.acl2x] file is created by
+  ~ilc[certify-book] after execution of the form ~c[(set-write-acl2x t state)].
+  However, you are welcome to associate indices manually with any ~il[events]
+  you wish into the alist stored in the ~c[.acl2x] file.~/"
+
+  (declare (xargs :guard (booleanp flg)))
+  (f-put-global 'write-acl2x flg state))
+
 (defun abort! ()
 
   ":Doc-Section Miscellaneous
@@ -40392,6 +40500,23 @@ Lisp definition."
    (read-acl2-oracle state)
    #-acl2-loop-only
    (value (cdr (assoc-equal name *wormhole-status-alist*))))
+
+(defun file-write-date$ (file state)
+  (declare (xargs :guard (stringp file)
+                  :stobjs state))
+  #+(and (not acl2-loop-only) cltl2)
+  (mv (ignore-errors (file-write-date file)) state)
+  #+(and (not acl2-loop-only) (not cltl2))
+  (mv (file-write-date file) state)
+  #+acl2-loop-only
+  (declare (ignore file))
+  #+acl2-loop-only
+  (mv-let (erp val state)
+          (read-acl2-oracle state)
+          (mv (and (null erp)
+                   (posp val)
+                   val)
+              state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachments:
