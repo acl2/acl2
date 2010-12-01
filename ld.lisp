@@ -16719,6 +16719,9 @@
 ; Fixed documentation and error message for the case that only some functions
 ; in a mutual-recursion are non-executable.
 
+; Improved error message for forms such as (defattach f g :hints ...), in which
+; the first argument is a symbol but there are more than two arguments.
+
   :Doc
   ":Doc-Section release-notes
 

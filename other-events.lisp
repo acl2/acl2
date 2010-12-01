@@ -26772,10 +26772,28 @@ The following all cause errors.
 ; Args is known to be a true-listp, as it comes from a macro call.
 
   (cond
-   ((and (int= (length args) 2)
-         (symbol-listp args)
-         (not (keywordp (car args))))
-    (process-defattach-args `((,(car args) ,(cadr args))) ctx state))
+   ((symbolp (car args)) ; (defattach f ...)
+    (cond
+     ((and (not (keywordp (car args)))
+           (consp (cdr args))
+           (symbolp (cadr args))
+           (not (keywordp (cadr args)))) ; (defattach f g ...)
+      (cond
+       ((null (cddr args))
+        (process-defattach-args `((,(car args) ,(cadr args))) ctx state))
+       (t
+        (er soft ctx
+            "Illegal arguments for defattach.  Note that if the first ~
+             argument is a symbol, then there should be only two arguments, ~
+             both of them symbols.  Perhaps you intended one of the following ~
+             two forms:~|  ~y0or~|  ~y1.~|See :DOC defattach."
+            `(defattach (,(car args) ,(cadr args)) ,@(cddr args))
+            `(defattach (,(car args) ,(cadr args) ,@(cddr args)))))))
+     (t
+      (er soft ctx
+          "Illegal defattach form.  If the first argument is a symbol, then ~
+           there must be exactly two arguments, both of which are non-keyword ~
+           symbols.  See :DOC defattach."))))
    (t
     (mv-let (args constraint-kwd-alist)
             (split-at-first-keyword args)
