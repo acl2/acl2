@@ -1218,9 +1218,17 @@ notation causes an error and (b) the use of ,. is not permitted."
                            filename))))
   #+(and gcl (not cltl2))
   (if (fboundp 'si::stat) ; try to avoid some errors
-      (and (funcall 'si::stat x)
-           (truename x))
-    (truename x))
+      (and (or (funcall 'si::stat filename)
+
+; But filename might be a directory, in which case the si::stat call above
+; could return nil; so we try again.
+
+               (and (or (equal filename "")
+                        (not (eql (char filename (1- (length filename)))
+                                  #\/)))
+                    (funcall 'si::stat (concatenate 'string filename "/"))))
+           (truename filename))
+    (truename filename))
   #-(and gcl (not cltl2))
 
 ; Here we also catch the case of #+allegro if
