@@ -65,7 +65,7 @@
 
 (defmacro ansfl-list (l x)
 
-; [Jared]: BOZO please document this.  It's used.
+; (ansfl-list (a b c ...) x) -- frees a, b, c, ..., returns x
 
   (if (atom l)
       x
@@ -76,6 +76,12 @@
 (defn ansfl-last-list (r bindings)
 
 ; [Jared]: BOZO please document this.  It's used in het*.
+
+; bindings is an alist.  in het* the bindings are names being bound
+; like in a let*.
+;
+; all of the names being bound are freed, then we return r.
+
   (if (atom bindings)
       r
     `(ansfl ,(ansfl-last-list r (gentle-cdr bindings))
@@ -83,26 +89,29 @@
 
 (defmacro het* (bindings &rest r)
 
-; [Jared]: BOZO please document this.
-
 ; This implementation of het* is somewhat defective in that it is
 ; incapable of returning multiple values.  We cannot see how to fix
 ; it.
+
+; this is basically let*, but we try to fast-alist-free everything that gets
+; bound.  which works out, in a weird kind of way, for anything that
+; isn't a fast alist anyway, but is really pretty gross.
 
   `(let* ,bindings
      ,@(butlast r 1)
      ,(ansfl-last-list (car (last r)) bindings)))
 
 (defmacro with-fast-list (var term name form)
+
+; bind a variable to a fast-alist created by binding every element of term to t,
+; with the final name name.  then run form and free var.
+
   `(let ((,var (hons-put-list
                 ,term
                 t
                 ,name)))
      (ansfl ,form ,var)))
 
-(defmacro with-fast-alist (var l1 l2 name form)
-  `(let ((,var (hons-put-list ,l1 ,l2 ,name)))
-     (ansfl ,form ,var)))
 
 (defn hons-put-list (keys values l)
 
@@ -940,3 +949,13 @@
 ;;          (hons-remove-equal-cons x (cdr y)))
 ;;         (t (cons (car y) (hons-remove-equal-cons x (cdr y))))))
 
+
+
+
+
+;; [Jared and Sol] deleting this because it's never used and we have a new fancy
+;; thing called with-fast-alist that is better
+
+;; (defmacro with-fast-alist (var l1 l2 name form)
+;;   `(let ((,var (hons-put-list ,l1 ,l2 ,name)))
+;;      (ansfl ,form ,var)))
