@@ -11212,11 +11212,66 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
                                        (cadar alist)
                                        wrld)))))
 
+(defun cons-term1-alist-mv2 (alist)
+  (declare (xargs :guard (alistp alist)))
+  (cond ((endp alist) nil)
+        (t (cons (let ((entry (car alist)))
+                   (case-match entry
+                     ((fn term)
+                      `(,fn (mv t ,term)))
+                     (& (er hard? 'cons-term1-alist-mv2
+                            "Unexpected case!"))))
+                 (cons-term1-alist-mv2 (cdr alist))))))
+
+(defconst *cons-term1-alist-mv2*
+  (cons-term1-alist-mv2 *cons-term1-alist*))
+
+(defmacro cons-term2-body-mv2 ()
+  `(let ((x (cadr (car args)))
+         (y (cadr (cadr args))))
+     (case fn
+       ,@*cons-term1-alist-mv2*
+       (otherwise (mv nil form)))))
+
+(defun cons-term2-mv2 (fn args form)
+  (cons-term2-body-mv2))
+
 (mutual-recursion
 
-(defun sublis-var (alist form)
+(defun sublis-var1 (alist form)
   (declare (xargs :guard (and (symbol-alistp alist)
                               (pseudo-termp form))))
+  (cond ((variablep form)
+         (let ((a (assoc-eq form alist)))
+           (cond (a (mv (not (eq form (cdr a)))
+                        (cdr a)))
+                 (t (mv nil form)))))
+        ((fquotep form)
+         (mv nil form))
+        (t (mv-let (changedp lst)
+                   (sublis-var1-lst alist (fargs form))
+                   (let ((fn (ffn-symb form)))
+                     (cond (changedp (mv t (cons-term fn lst)))
+                           ((and (symbolp fn) ; optimization
+                                 (quote-listp lst))
+                            (cons-term2-mv2 fn lst form))
+                           (t (mv nil form))))))))
+
+(defun sublis-var1-lst (alist l)
+  (declare (xargs :guard (and (symbol-alistp alist)
+                              (pseudo-term-listp l))))
+  (cond ((null l)
+         (mv nil nil))
+        (t (mv-let (changedp1 term)
+                   (sublis-var1 alist (car l))
+                   (mv-let (changedp2 lst)
+                           (sublis-var1-lst alist (cdr l))
+                           (cond ((or changedp1 changedp2)
+                                  (mv t (cons term lst)))
+                                 (t (mv nil l))))))))
+)
+
+(defun sublis-var (alist form)
 
 ; The two following comments come from the nqthm version of this
 ; function and do not necessarily pertain to ACL2 (but see below).
@@ -11234,24 +11289,16 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
 ;   The sublis-var below normalizes the explicit constant
 ;   constructors in evaled-hyp, e.g., (cons '1 '2) becomes '(1 . 2).
 
-  (cond ((variablep form)
-         (let ((a (assoc-eq form alist)))
-           (cond (a (cdr a))
-                 (t form))))
-        ((fquotep form)
-         form)
-        (t (cons-term (ffn-symb form)
-                      (sublis-var-lst alist (fargs form))))))
+  (mv-let (changedp val)
+          (sublis-var1 alist form)
+          (declare (ignore changedp))
+          val))
 
 (defun sublis-var-lst (alist l)
-  (declare (xargs :guard (and (symbol-alistp alist)
-                              (pseudo-term-listp l))))
-  (if (null l)
-      nil
-    (cons (sublis-var alist (car l))
-          (sublis-var-lst alist (cdr l)))))
-
-)
+  (mv-let (changedp val)
+          (sublis-var1-lst alist l)
+          (declare (ignore changedp))
+          val))
 
 (defun subcor-var1 (vars terms var)
   (declare (xargs :guard (and (true-listp vars)

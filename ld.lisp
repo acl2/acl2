@@ -16913,6 +16913,10 @@
   Dave Greve for sending a useful example (one where we found a goal with 233
   hypotheses!).
 
+  The algorithm for substituting alists into terms was modified.  This change
+  is unlikely to affect many users, but in one example it resulted in a
+  speed-up of about 21%.  Thanks to Dave Greve for supplying that example.
+
   ~st[BUG FIXES]
 
   Fixed a long-standing soundness bug caused by the interaction of ~ilc[force]d
