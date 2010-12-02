@@ -641,7 +641,7 @@ sub scan_ld {
 	}
 	close($ld);
     } else {
-	print "Warning: Could not open $fname: $!\n";
+	print "Warning: scan_ld: Could not open $fname: $!\n";
     }
 }
 
@@ -667,67 +667,19 @@ sub scan_book {
 	    }
 	    close($lisp);
 	} else {
-	    print "Warning: Could not open $fname: $!\n";
+	    print "Warning: scan_book: Could not open $fname: $!\n";
 	}
     }
 }
     
 
-    
-    
-
-# During a dependency search, this is run with $target set to each
-# cert and source file in the dependencies of the top-level targets.
-# If the target has been seen before, then it returns immediately.
-sub add_deps {
-    my $target = shift;
-    my $seen = shift;
-    my $sources = shift;
-
-
-    if (exists $seen->{$target}) {
-	# We've already calculated this file's dependencies.
-	return;
-    }
-
-    if ($target !~ /\.cert$/) {
-	push(@{$sources}, $target);
-	$seen->{$target} = 0;
-	return;
-    }
-
-    if (excludep($target)) {
-	$seen->{$target} = 0;
-	return;
-    }
-
-    print "add_deps $target\n" if $debugging;
-
-    my $local_dirs = {};
-    my $base = $target;
-    $base =~ s/\.cert$//;
-    my $pfile = $base . ".p";
+# Find dependencies o
+sub find_deps {
+    my $base = shift;
     my $lispfile = $base . ".lisp";
 
-    # Clean the cert and out files if we're cleaning.
-    if ($clean_certs) {
-	my $outfile = $base . ".out";
-	my $timefile = $base . ".time";
-	my $compfile = $base . ".lx64fsl";
-	unlink($target) if (-e $target);
-	unlink($outfile) if (-e $outfile);
-	unlink($timefile) if (-e $timefile);
-	unlink($compfile) if (-e $compfile);
-    }
-
-    # First check that the corresponding .lisp file exists.
-    if (! -e $lispfile) {
-	print "Error: Need $lispfile to build $target.\n";
-	return;
-    }
-
-    $seen->{$target} = [ $lispfile ];
-    my $deps = $seen->{$target};
+    my $deps = [ $lispfile ];
+    my $local_dirs = {};
 
     # If a corresponding .acl2 file exists or otherwise if a
     # cert.acl2 file exists in the directory, we need to scan that for dependencies as well.
@@ -773,9 +725,66 @@ sub add_deps {
 	    }
 	    close $im;
 	} else {
-	    print "Warning: Could not open $imagefile: $!\n";
+	    print "Warning: find_deps: Could not open image file $imagefile: $!\n";
 	}
     }
+
+    return $deps;
+
+}    
+    
+
+# During a dependency search, this is run with $target set to each
+# cert and source file in the dependencies of the top-level targets.
+# If the target has been seen before, then it returns immediately.
+sub add_deps {
+    my $target = shift;
+    my $seen = shift;
+    my $sources = shift;
+
+
+    if (exists $seen->{$target}) {
+	# We've already calculated this file's dependencies.
+	return;
+    }
+
+    if ($target !~ /\.cert$/) {
+	push(@{$sources}, $target);
+	$seen->{$target} = 0;
+	return;
+    }
+
+    if (excludep($target)) {
+	$seen->{$target} = 0;
+	return;
+    }
+
+    print "add_deps $target\n" if $debugging;
+
+    my $local_dirs = {};
+    my $base = $target;
+    $base =~ s/\.cert$//;
+    my $lispfile = $base . ".lisp";
+
+    # Clean the cert and out files if we're cleaning.
+    if ($clean_certs) {
+	my $outfile = $base . ".out";
+	my $timefile = $base . ".time";
+	my $compfile = $base . ".lx64fsl";
+	unlink($target) if (-e $target);
+	unlink($outfile) if (-e $outfile);
+	unlink($timefile) if (-e $timefile);
+	unlink($compfile) if (-e $compfile);
+    }
+
+    # First check that the corresponding .lisp file exists.
+    if (! -e $lispfile) {
+	print "Error: Need $lispfile to build $target.\n";
+	return;
+    }
+
+    my $deps = find_deps($base);
+    $seen->{$target} = $deps;
 
     if ($print_deps) {
 	print "Dependencies for $target:\n";

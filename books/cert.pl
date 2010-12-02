@@ -58,7 +58,9 @@ push (@orig_cmd_line_args, @ARGV);
 
 my $base_path = 0;
 
+my @user_targets = ();
 my @targets = ();
+my @deps_of = ();
 my $jobs = 1;
 my $no_build = 0;
 my $no_makefile = 0;
@@ -140,7 +142,7 @@ and options are as follows:
            default is Makefile-tmp.
 
    --verbose-deps
-   -vthe path to this executable
+   -v
            Print out dependency information as it\'s discovered.
 
    --makefile-only
@@ -195,6 +197,13 @@ and options are as follows:
            Add as targets the files listed in <file>.  Whitespace is
            ignored, # comments out the rest of a line, and filenames
            are listed one per line.
+
+   --deps-of <file>
+   -p <file>
+           Add as targets the dependencies of file.  That is, file is
+           not itself added as a target, but anything necessary for
+           its certification will be.
+
 
    --quiet
    -q
@@ -281,8 +290,9 @@ GetOptions ("help|h"               => sub { print $summary_str;
 	    "make-args=s"          => \@make_args,
             "keep-going|k"         => \$keep_going,
 	    "targets|t=s"          => sub { shift;
-					    read_targets(shift, \@targets);
+					    read_targets(shift, \@user_targets);
 					},
+	    "deps-of|p=s"          => \@deps_of,
 	    "debug"                => \$certlib_opts{"debugging"}
 	    );
 
@@ -329,10 +339,27 @@ certlib_add_dir("SYSTEM", $acl2_books);
 # and ACL2 environment variables to match our assumption.
 $ENV{"ACL2_SYSTEM_BOOKS"} = $acl2_books;
 
-push(@targets, @ARGV);
+push(@user_targets, @ARGV);
 
 my %seen = ( );
 my @sources = ( );
+
+sub to_basename {
+    my $name = shift;
+    $name = canonical_path($name);
+    $name =~ s/\.(lisp|cert)$//;
+    return $name;
+}
+
+foreach my $target (@user_targets) {
+    push (@targets, to_basename($target) . ".cert");
+}
+
+foreach my $top (@deps_of) {
+    my $deps = find_deps(to_basename($top));
+    push (@targets, @{$deps});
+}
+
 
 unless (@targets) {
     print "\nError: No targets provided.\n";
@@ -341,10 +368,7 @@ unless (@targets) {
 }
 
 
-
 foreach my $target (@targets) {
-    $target = canonical_path($target);
-    $target =~ s/\.lisp$/.cert/;
     add_deps($target, \%seen, \@sources);
 }
 
