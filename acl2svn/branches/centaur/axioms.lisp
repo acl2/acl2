@@ -8692,7 +8692,9 @@ J
   (cond ((endp l) nil)
         ((equal str (symbol-name (car l))) l)
         (t (member-symbol-name str (cdr l)))))
-(in-theory (disable member-symbol-name)) ; defund is not yet available here
+
+; Defund is not yet available here:
+(in-theory (disable member-symbol-name))
 
 (defthm symbol-equality
 
@@ -10469,7 +10471,7 @@ J
                                     ',form))))
                              (t ,form)))))
                `(state-global-let*
-                 ((safe-mode t))
+                 ((safe-mode (not (global-val 'boot-strap-flg (w state)))))
                  (value ,form))))))
 
 #+acl2-loop-only
@@ -10766,10 +10768,14 @@ J
       (if (zp y) y (foo (1- y))))))
   ~ev[]
 
-  The ~ilc[guard] analysis must also be done for all of the functions at
-  the same time.  If any one of the ~ilc[defun]s specifies the
-  ~c[:]~ilc[verify-guards] ~c[xarg] to be ~c[nil], then ~il[guard] verification is
-  omitted for all of the functions.
+  The ~ilc[guard] analysis must also be done for all of the functions at the
+  same time.  If any one of the ~ilc[defun]s specifies the
+  ~c[:]~ilc[verify-guards] ~c[xarg] to be ~c[nil], then ~il[guard] verification
+  is omitted for all of the functions.  Similarly, if any one of the
+  ~ilc[defun]s specifies the ~c[:non-executable] ~c[xarg] to be ~c[t], or if
+  any of the definitions uses ~ilc[defun-nx] or ~c[defund-nx], then every one
+  of the definitions will be treated as though it specifies a
+  ~c[:non-executable] ~c[xarg] of ~c[t].
 
   Technical Note: Each ~c[defi] above must be of the form ~c[(defun ...)].  In
   particular, it is not permitted for a ~c[defi] to be a form that will
@@ -18283,6 +18289,9 @@ J
 
 ; See the Essay on Defattach.
 
+; Developer note: A substantial test suite is stored at UT CS, file
+; /projects/acl2/devel-misc/patches/defattach/test.lisp.
+
   ":Doc-Section Events
 
   execute constrained functions using corresponding attached functions~/
@@ -23285,6 +23294,7 @@ J
     position-eq position-equal
     take
     canonical-pathname
+    file-write-date$
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -23397,7 +23407,8 @@ J
   form
   #-acl2-loop-only
   `(progn
-     (or (eq (symbol-value 'state) *the-live-state*)
+     (or ;; add if needed, e.g. when doing the build: (not (boundp 'state))
+         (eq (symbol-value 'state) *the-live-state*)
          (error "Implementation error:~%~p
                  Illegal use of with-live-state on state that is not live."
                 ',form))
@@ -23577,6 +23588,7 @@ J
                                  #-acl2-par
                                  nil)
     (pc-output . nil)
+    (pc-ss-alist . nil)
     (ppr-flat-right-margin . 40)
     (print-base . 10)
     (print-case . :upcase)
@@ -23646,6 +23658,7 @@ J
     (window-interfacep . nil)
     (wormhole-name . nil)
     (wormhole-status . nil)
+    (write-acl2x . nil)
     (writes-okp . t)))
 
 #+acl2-loop-only ; not during compilation
@@ -29767,6 +29780,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
     raw-include-book-dir-alist
     deferred-ttag-notes
     deferred-ttag-notes-saved
+    pc-assign
     ))
 
 (defun union-eq (lst1 lst2)
@@ -32437,40 +32451,10 @@ in :type-prescription rules are specified with :type-prescription (and/or
   intended)."
 
   `(with-live-state
-    (let ((lst ,lst)
-          (ctx 'set-inhibit-output-lst))
-      (cond ((not (true-listp lst))
-             (er soft ctx
-                 "The argument to set-inhibit-output-lst must evaluate to a ~
-                  true-listp, unlike ~x0."
-                 lst))
-            ((not (subsetp-eq lst *valid-output-names*))
-             (er soft ctx
-                 "The argument to set-inhibit-output-lst must evaluate to a ~
-                  subset of the list ~X01, but ~x2 contains ~&3."
-                 *valid-output-names*
-                 nil
-                 lst
-                 (set-difference-eq lst *valid-output-names*)))
-            (t (let ((lst (if (member-eq 'warning! lst)
-                              (add-to-set-eq 'warning lst)
-                            lst)))
-                 (pprogn (cond ((and (member-eq 'prove lst)
-                                     (not (member-eq 'proof-tree lst))
-                                     (member-eq 'proof-tree
-                                                (f-get-global
-                                                 'inhibit-output-lst
-                                                 state)))
-                                (warning$ ctx nil
-                                          "The printing of proof-trees is ~
-                                           being enabled while the printing ~
-                                           of proofs is being disabled.  You ~
-                                           may want to execute ~
-                                           :STOP-PROOF-TREE in order to ~
-                                           inhibit proof-trees as well."))
-                               (t state))
-                         (f-put-global 'inhibit-output-lst lst state)
-                         (value lst))))))))
+    (let ((ctx 'set-inhibit-output-lst))
+      (er-let* ((lst (chk-inhibit-output-lst ,lst ctx state)))
+        (pprogn (f-put-global 'inhibit-output-lst lst state)
+                (value lst))))))
 
 (defmacro set-inhibited-summary-types (lst)
 
@@ -37012,6 +36996,112 @@ in :type-prescription rules are specified with :type-prescription (and/or
   `(with-guard-checking1 (chk-with-guard-checking-arg ,val)
                          ,form))
 
+(defun set-write-acl2x (flg state)
+
+  ":Doc-Section switches-parameters-and-modes
+
+  cause ~ilc[certify-book] to write out a ~c[.acl2x] file~/
+
+  ~bv[]
+  General Forms:
+  (set-write-acl2x t state)
+  (set-write-acl2x nil state)
+  ~ev[]
+
+  This command is provided for those who use trust tags (~pl[defttag]) to
+  perform ~ilc[make-event] expansions, yet wish to create certified books that
+  do not depend on trust tags.  This is accomplished using two runs of
+  ~ilc[certify-book] on a book, say ~c[foo.lisp].  In the first run, a file
+  ~c[foo.acl2x] is written that contains all ~ilc[make-event] expansions, but
+  ~c[foo.cert] is not written.  In the second certification, no
+  ~ilc[make-event] expansion takes place, because ~c[foo.acl2x] supplies the
+  expansions.  The command ~c[(set-write-acl2x t state)] should be evaluated
+  before the first certification, setting ~ilc[state] global ~c[write-acl2x] to
+  ~c[t], to enable writing of ~c[foo.acl2x]; and the command
+  ~c[(set-write-acl2x nil state)] may be evaluated before the second
+  run (though this is not necessary in a fresh ACL2 session) in order to
+  complete the certification (writing out ~c[foo.cert]) using ~c[foo.acl2x] to
+  supply the ~ilc[make-event] expansions.
+
+  If you use this two-runs approach with scripts such as makefiles, then you
+  may wish to provide a single ~ilc[certify-book] command to use for both runs.
+  For that purpose, ~ilc[certify-book] supports the keyword argument
+  ~c[:ttagsx].  If this argument is supplied and ~c[write-acl2x] is true, then
+  this argument is treated as the ~c[:ttags] argument, overriding a ~c[:ttags]
+  argument if present.  That is, for the two runs, ~c[:ttagsx] may be used to
+  specify the trust tags used in the first certification while ~c[:ttags]
+  specifies the trust tags, if any (else ~c[:ttags] may be omitted), used in
+  the second certification.
+
+  If you wish to use built-in ACL2 Makefile support (~pl[book-makefiles]),
+  simply add a dependency like the following to the Makefile in your directory
+  of ~il[books]:
+
+  ~bv[]
+  foo.cert: foo.acl2x
+  ~ev[]
+
+  Note that ~ilc[include-book] is not affected by ~c[set-write-acl2x], other
+  than through the indirect effect on ~ilc[certify-book].  More precisely: All
+  expansions will be stored in the ~il[certificate] file, so ~ilc[include-book]
+  does not depend on the ~c[foo.acl2x] file.~/
+
+  An example of how to put this all together may be found in distributed book
+  ~c[books/make-event/double-cert-test-1.lisp].  There, we see the following
+  form.
+  ~bv[]
+  (make-event
+   (progn (defttag :my-ttag)
+          (progn! (let ((val (sys-call \"pwd\" nil)))
+                    (value (list 'defun 'foo () val))))))
+  ~ev[]
+  Imagine that in place of the binding computed using ~ilc[sys-call], which by
+  the way requires a trust tag, is some computation of your choice (such as
+  reading forms from a file) that is used to construct your own event,
+  in place of the ~ilc[defun] event constructed above.  The ~c[Makefile] in
+  that directory contains the following added dependency, so that file
+  ~c[double-cert-test-1.acl2x] will be created:
+  ~bv[]
+  double-cert-test-1.cert: double-cert-test-1.acl2x
+  ~ev[]
+  There is also the file ~c[double-cert-test-1.acl2] in that directory, which
+  contains a single form as follows.
+  ~bv[]
+  (certify-book \"double-cert-test-1\" ? t :ttagsx :all :ttags nil)
+  ~ev[]
+  Thus, a call of ~c[make] first creates file ~c[double-cert-test-1.acl2x],
+  which uses the above ~c[:ttagsx] argument in order to support the use of
+  ~ilc[defttag] during ~ilc[make-event] expansion.  Then, ~c[make] goes on to
+  cause a second certification in which no trust tags are involved.  As a
+  result, the parent book ~c[double-cert-test.lisp] is ultimately certified
+  without requiring any trust tags.
+
+  The discussion above is probably sufficient for most users of the two-run
+  approach it describes.  We conclude with further details for those who want
+  more information.  Those who wish to see a yet lower-level explanation of how
+  all this works are invited to read the comment in the ACL2 source code
+  entitled ``Essay on .acl2x Files (Double Certification).
+
+  Consider the ~c[.acl2x] (pronounced ``dot-acl2x'') file produced by the first
+  run as described above.  It contains a single expression, which is an
+  association list whose keys are all positive integers, which occur in
+  increasing order.  When the ~c[.acl2x] file is present and at least as recent
+  as the corresponding ~c[.lisp] file, then for a subsequent ~ilc[certify-book]
+  when ~c[write-acl2x] is ~c[nil] (the default), that association list will be
+  applied to the top-level events in the book, as follows.  Suppose the entry
+  ~c[(n . ev)] belongs to the association list in the ~c[.acl2x] file.  Then
+  ~c[n] is a positive integer, and the ~c[n]th top-level event in the book ~-[]
+  where the ~c[0]th event is the initial ~ilc[in-package] form ~-[] will be
+  replaced by ~c[ev].  In practice, ~c[ev] is the ~ilc[make-event] expansion
+  created during certification for the ~c[nth] top-level event in the book; and
+  this will always be the case if the ~c[.acl2x] file is created by
+  ~ilc[certify-book] after execution of the form ~c[(set-write-acl2x t state)].
+  However, you are welcome to associate indices manually with any ~il[events]
+  you wish into the alist stored in the ~c[.acl2x] file.~/"
+
+  (declare (xargs :guard (booleanp flg)))
+  (f-put-global 'write-acl2x flg state))
+
 (defun abort! ()
 
   ":Doc-Section Miscellaneous
@@ -40411,6 +40501,23 @@ Lisp definition."
    #-acl2-loop-only
    (value (cdr (assoc-equal name *wormhole-status-alist*))))
 
+(defun file-write-date$ (file state)
+  (declare (xargs :guard (stringp file)
+                  :stobjs state))
+  #+(and (not acl2-loop-only) cltl2)
+  (mv (ignore-errors (file-write-date file)) state)
+  #+(and (not acl2-loop-only) (not cltl2))
+  (mv (file-write-date file) state)
+  #+acl2-loop-only
+  (declare (ignore file))
+  #+acl2-loop-only
+  (mv-let (erp val state)
+          (read-acl2-oracle state)
+          (mv (and (null erp)
+                   (posp val)
+                   val)
+              state)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachments:
 ;;; The remainder of this file involves boot-strapping the use of attachments.
@@ -40867,3 +40974,11 @@ Lisp definition."
 ; local also avoids its evaluation in raw Lisp when compiled files are loaded.
 (local
  (defattach too-many-ifs-post-rewrite-wrapper too-many-ifs-post-rewrite))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; End of Attachments section; don't add anything below before modifying the
+;;; comment above stating:
+;;; "The remainder of this file involves boot-strapping the use of
+;;; attachments."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+

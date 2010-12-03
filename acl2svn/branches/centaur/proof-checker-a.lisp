@@ -32,16 +32,20 @@
 ; need to be careful.  We'll manage this by keeping state-stack as a PC global,
 ; updating pc-output upon entry to reflect the latest value of state-stack.
 
-(defmacro pc-value (val)
-  `(cdr (assoc-eq ',val
-                  (f-get-global 'pc-output state))))
+(defmacro pc-value (sym)
+  (cond ((eq sym 'ss-alist)
+         '(f-get-global 'pc-ss-alist state))
+        (t `(cdr (assoc-eq ',sym
+                           (f-get-global 'pc-output state))))))
 
 (defmacro pc-assign (key val)
-  `(f-put-global
-    'pc-output
-    (put-assoc-eq ',key ,val
-                  (f-get-global 'pc-output state))
-    state))
+  (cond ((eq key 'ss-alist)
+         `(f-put-global 'pc-ss-alist ,val state))
+        (t `(f-put-global
+             'pc-output
+             (put-assoc-eq ',key ,val
+                           (f-get-global 'pc-output state))
+             state))))
 
 (defun initialize-pc-acl2 (state)
   (er-progn
@@ -51,6 +55,7 @@
     (pc-assign old-ss nil)
     (pc-assign state-stack nil)
     (pc-assign next-pc-enabled-array-suffix 0)
+    (pc-assign pc-depth 0) ; for the proof-checker-cl-proc clause-processor
     (assign in-verify-flg nil))))
 
 (defmacro state-stack ()
@@ -184,10 +189,7 @@
 
 (defun intern-in-keyword-package (sym)
   (declare (xargs :guard (symbolp sym)))
-  (let ((ans
-; See comment in intern-in-package-of-symbol for an explanation of this trick.
-         (intern (symbol-name sym) "KEYWORD")))
-    ans))
+  (intern (symbol-name sym) "KEYWORD"))
 
 (defun make-pretty-pc-command (x)
   (declare (xargs :guard (symbolp x)))
@@ -657,10 +659,9 @@
                 state
               (let ((unproved-deps (current-all-deps name new-names)))
                 (if unproved-deps
-                    (fms0 "~|~%The proof of the current goal, ~x0, has ~
-                                been completed.  However, the following ~
-                                subgoals remain to be proved:~%~ ~ ~&1.~%Now ~
-                                proving ~x2.~%"
+                    (fms0 "~|~%The proof of the current goal, ~x0, has been ~
+                           completed.  However, the following subgoals remain ~
+                           to be proved:~%~ ~ ~&1.~%Now proving ~x2.~%"
                           (list (cons #\0 name)
                                 (cons #\1 unproved-deps)
                                 (cons #\2 (access goal (car goals)
@@ -675,7 +676,7 @@
                             0 nil)
                     (pprogn
                      (fms0 "~|*!*!*!*!*!*!* All goals have been proved! ~
-                                 *!*!*!*!*!*!*~%")
+                            *!*!*!*!*!*!*~%")
                      (if (f-get-global 'in-verify-flg state)
                          (fms0 "You may wish to exit.~%")
                        state)))))))))
@@ -899,11 +900,11 @@
                          (pprogn (io? proof-checker nil state
                                       (instr goal-name)
                                       (fms0 "~|AHA!  A contradiction has been ~
-                                           discovered in the hypotheses of ~
-                                           goal ~x0 in the course of executing ~
-                                           instruction ~x1, in the process of ~
-                                           preparing to deal with forced ~
-                                           assumptions.~|"
+                                             discovered in the hypotheses of ~
+                                             goal ~x0 in the course of ~
+                                             executing instruction ~x1, in ~
+                                             the process of preparing to deal ~
+                                             with forced assumptions.~|"
                                             (list (cons #\0 goal-name)
                                                   (cons #\0 instr))
                                             0 nil))
@@ -946,9 +947,9 @@
                                       (io? proof-checker nil state
                                            (forced-goals)
                                            (fms0
-                                            "~|NOTE (forcing):  Creating ~n0 new ~
-                                           ~#1~[~/goal~/goals~] due to forcing ~
-                                           assumptions.~%"
+                                            "~|NOTE (forcing):  Creating ~n0 ~
+                                             new ~#1~[~/goal~/goals~] due to ~
+                                             forcing assumptions.~%"
                                             (list
                                              (cons #\0 (length forced-goals))
                                              (cons #\1
@@ -1105,7 +1106,8 @@
 
 (defconst *pc-complete-signal* 'acl2-pc-complete)
 
-(defun pc-main-loop (instr-list quit-conditions last-value print-prompt-and-instr-flg state)
+(defun pc-main-loop (instr-list quit-conditions last-value
+                                print-prompt-and-instr-flg state)
   ;; Returns an error triple whose state has
   ;; the new state-stack "installed".  Here instr-list is a (true) list of
   ;; instructions or else is a non-NIL atom, probably *standard-oi*,
@@ -1121,9 +1123,6 @@
   ;; is always obeyed if 'exit is a quit-condition.
   ;;  This only returns non-nil if we exit successfully,
   ;; or if all instructions succeed (null erp, non-nil value) without error.
-
-;;;;  (declare (xargs :guard instr-list));; instr-list should not be nil
-;;;;  I can't see why instr-list needs to be non-nil any longer!
 
   (if (null instr-list)
       (mv nil last-value state)
@@ -1199,6 +1198,12 @@
                           nil))
     (pc-assign old-ss nil)))
 
+(defun pc-main (term raw-term event-name rule-classes instr-list
+                     quit-conditions print-prompt-and-instr-flg state)
+  (pprogn (install-initial-state-stack term raw-term event-name rule-classes)
+          (pc-main-loop instr-list quit-conditions t print-prompt-and-instr-flg
+                        state)))
+
 (defun pc-top (raw-term event-name rule-classes instr-list quit-conditions state)
   ;; Here instr-list can have a non-nil last cdr, meaning "proceed
   ;; interactively".
@@ -1213,8 +1218,8 @@
 
           (if erp
               (mv t nil state)
-            (pprogn (install-initial-state-stack term raw-term event-name rule-classes)
-                    (pc-main-loop instr-list quit-conditions t t state)))))
+            (pc-main term raw-term event-name rule-classes instr-list
+                     quit-conditions t state))))
 
 (mutual-recursion
 
@@ -1383,12 +1388,25 @@
 
   ~/
 
-  This is an interactive system for checking theorems in ACL2.  One
-  enters it using VERIFY; ~pl[verify].  The result of an
-  interactive session is a ~ilc[defthm] event with an ~c[:]~ilc[instructions]
-  parameter supplied; see the documentation for proof-checker command
-  ~c[exit] (in package ~c[\"ACL2-PC\"]).  Such an event can be replayed later
-  in a new ACL2 session with the ``proof-checker'' loaded.
+  This is an interactive system for checking ACL2 theorems, or at least
+  exploring their proofs.  One enters it using the ~c[VERIFY] command
+  (~pl[verify]), and then invokes commands at the resulting prompt to operate
+  on a stack of goals, starting with the single goal that was supplied to
+  ~c[VERIFY].  The final command (or ``instruction'') can be an ~c[exit]
+  command, which can print out a ~ilc[defthm] event if the goal stack is empty;
+  ~pl[proof-checker-commands], in particular the ~c[exit] command.  That
+  resulting ~c[defthm] event includes an ~c[:]~ilc[instructions] parameter,
+  which directs replay of the proof-checker commands (for example during
+  certification of a book containing that event; ~pl[books]).
+
+  If you exit the proof-checker interactive loop, you may re-enter that session
+  at the same point using the command ~c[(verify)], i.e., with no arguments.
+  The commands ~c[save] and ~c[retrieve] may be invoked to manage more than one
+  session.
+
+  The proof-checker can be invoked on a specific subgoal, and the resulting
+  ~c[:instructions] can be given as a hint to the theorem prover for that
+  subgoal.  ~l[instructions].
 
   A tutorial is available on the world-wide web:~nl[]
   ~url[http://www.cs.utexas.edu/users/kaufmann/tutorial/rev3.html].~nl[]
@@ -1401,7 +1419,10 @@
   described in that documentation.
 
   Individual proof-checker commands are documented in subsection
-  ~il[proof-checker-commands]."
+  ~il[proof-checker-commands].  When inside the interactive loop (i.e., after
+  executing ~ilc[verify]), you may use the ~ilc[help] command to get a list of
+  legal instructions and ~c[(help instr)] to get help for the instruction
+  ~c[instr]."
 
   (declare (ignore term wrld))
   (cond
@@ -1532,24 +1553,581 @@
   ":Doc-Section Proof-checker
 
   instructions to the proof checker~/
+
+  ~l[proof-checker] for an introduction to the interactive ``proof-checker''
+  goal manager, which supports much more direct control of the proof process
+  than is available by direct calls to the prover (as are normally made using
+  ~ilc[defthm] or ~ilc[thm]).  In brief, typical use is to evaluate the form
+  ~c[(verify SOME-GOAL)], where ~c[SOME-GOAL] is a formula (i.e., term) that
+  you would like to prove.  Various commands (instructions) are available at
+  the resulting prompt; ~pl[proof-checker-commands].  When the proof is
+  completed, suitable invocation of the ~c[exit] command will print out a form
+  containing an ~c[:instructions] field that provides the instructions that you
+  gave interactively, so that this form can be evaluated non-interactively.
+
+  Thus, also ~pl[defthm] for the role of ~c[:instructions] in place of
+  ~c[:]~ilc[hints].  As illustrated by the following example, the value
+  associated with ~c[:instructions] is a list of ~il[proof-checker] commands.
+
   ~bv[]
   Example:
-  :instructions (induct prove promote (dive 1) x
-                        (dive 2) = top (drop 2) prove)
-  ~ev[]~/
+  (defthm associativity-of-append
+          (equal (append (append x y) z)
+                 (append x (append y z)))
+          :instructions
+          (:induct (:dv 1) (:dv 1) :x :up :x (:dv 2) := (:drop 2)
+           :top (:dv 2) :x :top :s :bash))
+  ~ev[]
 
-  ~l[defthm] for the role of ~c[:instructions] in place of
-  ~c[:]~ilc[hints].  As illustrated by the example above, the value
-  associated with ~c[:instructions] is a list of ~il[proof-checker]
-  commands.  At the moment the best way to understand the idea of the
-  interactive proof-checker (~pl[proof-checker] and
-  ~pl[verify]) is probably to read the first 11 pages of CLI
-  Technical Report 19, which describes the corresponding facility for
-  Nqthm.
+  When you are inside the interactive loop (i.e., after executing
+  ~ilc[verify]), you may invoke ~ilc[help] to get a list of legal instructions
+  and ~c[(help instr)] to get help for the instruction ~c[instr].
 
-  When inside the interactive loop (i.e., after executing ~ilc[verify]),
-  use ~ilc[help] to get a list of legal instructions and ~c[(help instr)]
-  to get help for the instruction ~c[instr].")
+  Below, we describe a capability for supplying ~c[:instructions] as
+  ~c[:]~ilc[hints].~/
+
+  The most basic utilities for directing the discharge of a proof obligation
+  are ~c[:]~ilc[hints] and (less commonly) ~c[:instructions].  Individual
+  instructions may call the prover with ~c[:hints]; in that sense, prover hints
+  may occur inside instructions.  We now describe how, on the other hand,
+  instructions may occur inside hints.
+
+  ACL2 supports ~c[:instructions] as a hints keyword.  The following example
+  forms the basis for our running example.  This example does not actually need
+  hints, but imagine that the inductive step ~-[] which is \"Subgoal *1/2\"
+  ~-[] was proving difficult.  You could submit that goal to ~ilc[verify], do
+  an interactive proof, submit ~c[(exit t)] to obtain the list of
+  ~c[:instructions] (answering with `N' at the prompt, to complete the exit),
+  and then paste in those instructions.  When you submit the result event, you
+  might see the following.  Below we'll explain the hint processing.
+  ~bv[]
+  ACL2 !>(thm (equal (append (append x y) z)
+                     (append x (append y z)))
+              :hints ((\"Subgoal *1/2\"
+                       :instructions
+                       (:promote (:dv 1) (:dv 1) :x :up :x (:dv 2) :=
+                        (:drop 2) :top (:dv 2) :x :top :s))))
+
+  Name the formula above *1.
+
+  Perhaps we can prove *1 by induction.  Three induction schemes are
+  suggested by this conjecture.  Subsumption reduces that number to two.
+  However, one of these is flawed and so we are left with one viable
+  candidate.  
+
+  We will induct according to a scheme suggested by (BINARY-APPEND X Y).
+  This suggestion was produced using the :induction rule BINARY-APPEND.
+  If we let (:P X Y Z) denote *1 above then the induction scheme we'll
+  use is
+  (AND (IMPLIES (AND (NOT (ENDP X)) (:P (CDR X) Y Z))
+                (:P X Y Z))
+       (IMPLIES (ENDP X) (:P X Y Z))).
+  This induction is justified by the same argument used to admit BINARY-APPEND.
+  When applied to the goal at hand the above induction scheme produces
+  two nontautological subgoals.
+
+  [Note:  A hint was supplied for our processing of the goal below. 
+  Thanks!]
+
+  Subgoal *1/2
+  (IMPLIES (AND (NOT (ENDP X))
+                (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                       (APPEND (CDR X) Y Z)))
+           (EQUAL (APPEND (APPEND X Y) Z)
+                  (APPEND X Y Z))).
+
+  But the trusted :CLAUSE-PROCESSOR function PROOF-CHECKER-CL-PROC replaces
+  this goal by T.
+
+  Subgoal *1/1
+  (IMPLIES (ENDP X)
+           (EQUAL (APPEND (APPEND X Y) Z)
+                  (APPEND X Y Z))).
+
+  By the simple :definition ENDP we reduce the conjecture to
+
+  Subgoal *1/1'
+  (IMPLIES (NOT (CONSP X))
+           (EQUAL (APPEND (APPEND X Y) Z)
+                  (APPEND X Y Z))).
+
+  But simplification reduces this to T, using the :definition BINARY-APPEND
+  and primitive type reasoning.
+
+  That completes the proof of *1.
+
+  Q.E.D.
+
+  Summary
+  Form:  ( THM ...)
+  Rules: ((:DEFINITION BINARY-APPEND)
+          (:DEFINITION ENDP)
+          (:DEFINITION NOT)
+          (:FAKE-RUNE-FOR-TYPE-SET NIL)
+          (:INDUCTION BINARY-APPEND))
+  Time:  0.02 seconds (prove: 0.01, print: 0.01, other: 0.00)
+
+  Proof succeeded.
+  ACL2 !>
+  ~ev[]
+
+  To understand how the ~c[:instructions] supplied above were processed,
+  observe proof-checker instruction interpreter may be viewed as a
+  ``clause-processor'': a function that takes an input goal and returns a list
+  of goals (which can be the empty list).  Such a function has the property
+  that if all goals in that returned list are theorems, then so is the input
+  goal.  This view of the proof-checker instruction interpreter as a
+  clause-processor leads to the following crucial observation.
+
+  ~st[IMPORTANT!].  Each call of the proof-checker instruction interpreter is
+  treated as a standalone clause-processor that is insensitive to the
+  surrounding prover environment.  In particular:~bq[]
+
+  o The proof-checker's theory is not sensitive to ~c[:in-theory] ~il[hints]
+  already processed in the surrounding proof.  Indeed, the current theory for
+  which proof-checker commands are processed is just the current theory of the
+  ACL2 logical ~il[world], i.e., the value of ~c[(current-theory :here)].
+  Moreover, references to ~c[(current-theory :here)] in a proof-checker
+  ~c[in-theory] command, even implicit references such as provided by
+  ~ilc[enable] and ~ilc[disable] expressions, are also references to the
+  current theory of the ACL2 logical ~il[world].
+
+  o The ~il[rune]s used during an ~c[:instructions] hint are not tracked beyond
+  that hint, hence may not show up in the summary of the overall proof.  Again,
+  think of the ~c[:instructions] hint as a ~il[clause-processor] call, which
+  has some effect not tracked by the surrounding proof other than for the child
+  goals that it returns.~eq[]
+
+  We continue now with our discussion of the proof-checker instruction
+  interpreter as a clause-processor.
+
+  In the example above, the input goal (~c[\"Subgoal *1/2\"]) was processed by
+  the proof-checker instruction interpreter.  The result was the empty goal
+  stack, therefore proving the goal, as reported in the output, which we
+  repeat here.
+  ~bv[]
+  [Note:  A hint was supplied for our processing of the goal below. 
+  Thanks!]
+
+  Subgoal *1/2
+  (IMPLIES (AND (NOT (ENDP X))
+                (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                       (APPEND (CDR X) Y Z)))
+           (EQUAL (APPEND (APPEND X Y) Z)
+                  (APPEND X Y Z))).
+
+  But the trusted :CLAUSE-PROCESSOR function PROOF-CHECKER-CL-PROC replaces
+  this goal by T.
+  ~ev[]
+
+  ~st[Remark.]  This brief remark can probably be ignored, but we include it
+  for completeness.  The ~c[:CLAUSE-PROCESSOR] message above may be surprising,
+  since the hint attached to ~c[\"Subgoal *1/2\"] is an ~c[:instructions] hint,
+  not a ~c[:clause-processor] hint.  But ~c[:instructions] is actually a custom
+  keyword hint (~pl[custom-keyword-hints]), and may be thought of as a macro
+  that expands to a ~c[:]~ilc[clause-processor] hint, one that specifies
+  ~c[proof-checker-cl-proc] as the clause-processor function.  The keen
+  observer may notice that the clause-processor is referred to as ``trusted''
+  in the above output.  Normally one needs a trust tag (~pl[defttag]) to
+  install a trusted clause-processor, but that is not the case for the built-in
+  clause-processor, ~c[proof-checker-cl-proc].  Finally, we note that
+  ~c[:instructions] ~il[hints] are ``spliced'' in: the appropriate
+  ~c[:]~ilc[clause-processor] hint replaces the ~c[:instructions] hint, and the
+  other hints remain intact.  It may seems surprising that one can thus, for
+  example, use ~c[:instructions] and ~c[:in-theory] together; but although the
+  ~c[:in-theory] hint will have no effect on execution of the ~c[:instructions]
+  (see first bullet above), the ~c[:in-theory] hint will apply in the usual
+  manner to any child goes (~pl[hints-and-the-waterfall]).  End of Remark.
+
+  Now consider the case that the supplied instructions do not prove the goal.
+  That is, suppose that the execution of those instructions results in a
+  non-empty goal stack.  In that case, the resulting goals become children of
+  the input goals.  The following edited log provides an illustration using a
+  modification of the above example, this time with a single instruction that
+  splits into two cases.
+  ~bv[]
+  ACL2 !>(thm (equal (append (append x y) z)
+                     (append x (append y z)))
+              :hints ((\"Subgoal *1/2\"
+                       :instructions
+                       ((:casesplit (equal x y))))))
+
+  [[ ... output omitted ... ]]
+
+  Subgoal *1/2
+  (IMPLIES (AND (NOT (ENDP X))
+                (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                       (APPEND (CDR X) Y Z)))
+           (EQUAL (APPEND (APPEND X Y) Z)
+                  (APPEND X Y Z))).
+
+  We now apply the trusted :CLAUSE-PROCESSOR function PROOF-CHECKER-CL-PROC
+  to produce two new subgoals.
+
+  Subgoal *1/2.2
+
+  [[ ... output omitted ... ]]
+
+  Subgoal *1/2.1
+
+  [[ ... output omitted ... ]]
+  ~ev[]
+
+  We have seen that an ~c[:instructions] hint may produce zero or more
+  subgoals.  There may be times where you wish to insist that it produce zero
+  subgoals, i.e., that it prove the desired goal.  The proof-checker
+  `~c[finish]' command works nicely for this purpose.  For example, the
+  following form is successfully admitted, but if you delete some of the
+  commands (for example, the ~c[:s] command at the end), you will see an
+  informative error message.
+  ~bv[]
+  (thm (equal (append (append x y) z)
+              (append x (append y z)))
+       :hints ((\"Subgoal *1/2\"
+                :instructions
+                ((finish :promote (:dv 1) (:dv 1) :x :up :x (:dv 2) :=
+                         (:drop 2) :top (:dv 2) :x :top :s)))))
+  ~ev[]
+
+  If an :instructions hint of the form ~c[((finish ...))] fails to prove the
+  goal, the clause-processor is deemed to have caused an error.  Indeed, any
+  ``failure'' of a supplied proof-checker instruction will be deemed to cause
+  an error.  In this case, you should see an error message such as the
+  following:
+  ~bv[]
+
+  Saving proof-checker error state; see :DOC instructions.  To retrieve:
+
+  (RETRIEVE :ERROR1)
+
+  ~ev[]
+  In this case, you can evaluate the indicated ~ilc[retrieve] command in the
+  ACL2 read-eval-print loop, to get to the point of failure.
+
+  You may have noticed that there is no output from the proof-checker in the
+  examples above.  This default behavior prevents confusion that could arise
+  from use of proof-checker commands that call the theorem prover such as
+  ~c[prove], ~c[bash], ~c[split], and ~c[induct].  These commands produce
+  output for what amounts to a fresh proof attempt, which could confuse
+  attempts to understand the surrounding proof log.  You can override the
+  default behavior by providing a command of the form
+  ~bv[]
+  ~c[(comment inhibit-output-lst VAL)]
+  ~ev[]
+  where ~c[VAL] is either the keyword ~c[:SAME] (indicating that no change
+  should be made to which output is inhibited) or else is a legal value for
+  inhibited output; ~pl[set-inhibit-output-lst].  The following two variants of
+  the immediately preceding ~c[THM] form will each produce output from the
+  proof-checker commands, assuming in the first variant that output hasn't
+  already been inhibited.
+  ~bv[]
+  (thm (equal (append (append x y) z)
+                     (append x (append y z)))
+              :hints ((\"Subgoal *1/2\"
+                       :instructions
+                       ((comment inhibit-output-lst :same)
+                        (:casesplit (equal x y))))))
+
+  (thm (equal (append (append x y) z)
+                     (append x (append y z)))
+              :hints ((\"Subgoal *1/2\"
+                       :instructions
+                       ((comment inhibit-output-lst (proof-tree))
+                        (:casesplit (equal x y))))))
+  ~ev[]
+  Note that such a ~c[comment] instruction must be provided explicitly (i.e.,
+  not by way of a proof-checker ~il[macro-command]) as the first instruction,
+  in order to have the effect on inhibited output that is described above.
+
+  The following contrived example gives a sense of how one might want to use
+  ~c[:instructions] within ~c[:]~ilc[hints].  If you submit the following
+  theorem
+  ~bv[]
+  (thm (implies (true-listp x)
+                (equal (reverse (reverse x)) x)))
+  ~ev[]
+  then you will see the following checkpoint printed with the summary.
+  ~bv[]
+  Subgoal *1/3''
+  (IMPLIES (AND (CONSP X)
+                (EQUAL (REVAPPEND (REVAPPEND (CDR X) NIL) NIL)
+                       (CDR X))
+                (TRUE-LISTP (CDR X)))
+           (EQUAL (REVAPPEND (REVAPPEND (CDR X) (LIST (CAR X)))
+                             NIL)
+                  X))
+  ~ev[]
+  This suggests proving the following theorem.  Here we state it using
+  ~ilc[defthmd], so that it is immediately disabled.  Normally disabling would
+  be unnecessary, but for our contrived example it is useful to imagine
+  disabling it, say because we are following a methodology that tends to keep
+  ~il[rewrite] rules disabled.
+  ~bv[]
+  (defthmd revappend-revappend
+    (equal (revappend (revappend x y) z)
+           (revappend y (append x z))))
+  ~ev[]
+  We might then enter the ~il[proof-checker] to prove the original theorem
+  interactively, as follows.
+  ~bv[]
+  ACL2 !>(verify (implies (true-listp x)
+                          (equal (reverse (reverse x)) x)))
+  ->: bash
+  ***** Now entering the theorem prover *****
+
+  [Note:  A hint was supplied for our processing of the goal above. 
+  Thanks!]
+
+  This simplifies, using the :definition REVERSE and the :type-prescription
+  rule REVAPPEND, to
+
+  Goal'
+  (IMPLIES (TRUE-LISTP X)
+           (EQUAL (REVAPPEND (REVAPPEND X NIL) NIL)
+                  X)).
+
+  But we have been asked to pretend that this goal is subsumed by the
+  yet-to-be-proved |PROOF-CHECKER Goal'|.
+
+  Q.E.D.
+
+
+  Creating one new goal:  (MAIN . 1).
+
+  The proof of the current goal, MAIN, has been completed.  However,
+  the following subgoals remain to be proved:
+    (MAIN . 1).
+  Now proving (MAIN . 1).
+  ->: th
+  *** Top-level hypotheses:
+  1. (TRUE-LISTP X)
+
+  The current subterm is:
+  (EQUAL (REVAPPEND (REVAPPEND X NIL) NIL)
+         X)
+  ->: 1
+  ->: sr ; show-rewrites
+
+  1. REVAPPEND-REVAPPEND (disabled)
+    New term: (REVAPPEND NIL (APPEND X NIL))
+    Hypotheses: <none>
+    Equiv: EQUAL
+
+  2. REVAPPEND
+    New term: (AND (CONSP (REVAPPEND X NIL))
+                   (REVAPPEND (CDR (REVAPPEND X NIL))
+                              (LIST (CAR (REVAPPEND X NIL)))))
+    Hypotheses: <none>
+    Equiv: EQUAL
+  ->: (r 1) ; rewrite with rule #1 above
+  Rewriting with REVAPPEND-REVAPPEND.
+  ->: exit
+  Exiting....
+   NIL
+  ACL2 !>(verify (implies (true-listp x)
+                          (equal (reverse (reverse x)) x)))
+  ->: bash
+  ***** Now entering the theorem prover *****
+
+  [Note:  A hint was supplied for our processing of the goal above. 
+  Thanks!]
+
+  This simplifies, using the :definition REVERSE and the :type-prescription
+  rule REVAPPEND, to
+
+  Goal'
+  (IMPLIES (TRUE-LISTP X)
+           (EQUAL (REVAPPEND (REVAPPEND X NIL) NIL)
+                  X)).
+
+  But we have been asked to pretend that this goal is subsumed by the
+  yet-to-be-proved |PROOF-CHECKER Goal'|.
+
+  Q.E.D.
+
+
+  Creating one new goal:  (MAIN . 1).
+
+  The proof of the current goal, MAIN, has been completed.  However,
+  the following subgoals remain to be proved:
+    (MAIN . 1).
+  Now proving (MAIN . 1).
+  ->: th
+  *** Top-level hypotheses:
+  1. (TRUE-LISTP X)
+
+  The current subterm is:
+  (EQUAL (REVAPPEND (REVAPPEND X NIL) NIL)
+         X)
+  ->: p
+  (EQUAL (REVAPPEND (REVAPPEND X NIL) NIL)
+         X)
+  ->: 1
+  ->: p
+  (REVAPPEND (REVAPPEND X NIL) NIL)
+  ->: sr ; show-rewrites
+
+  1. REVAPPEND-REVAPPEND (disabled)
+    New term: (REVAPPEND NIL (APPEND X NIL))
+    Hypotheses: <none>
+    Equiv: EQUAL
+
+  2. REVAPPEND
+    New term: (AND (CONSP (REVAPPEND X NIL))
+                   (REVAPPEND (CDR (REVAPPEND X NIL))
+                              (LIST (CAR (REVAPPEND X NIL)))))
+    Hypotheses: <none>
+    Equiv: EQUAL
+  ->: (r 1) ; rewrite with rule #1 above
+  Rewriting with REVAPPEND-REVAPPEND.
+  ->: p
+  (REVAPPEND NIL (APPEND X NIL))
+  ->: top
+  ->: prove ; finish the proof
+  ***** Now entering the theorem prover *****
+
+  But simplification reduces this to T, using the :definition REVAPPEND,
+  the :executable-counterpart of CONSP, primitive type reasoning and
+  the :rewrite rule APPEND-TO-NIL.
+
+  Q.E.D.
+
+  *!*!*!*!*!*!* All goals have been proved! *!*!*!*!*!*!*
+  You may wish to exit.
+  ->: (exit t) ; to get :instructions; could give name, or (exit t nil t)
+  (DEFTHM T
+          (IMPLIES (TRUE-LISTP X)
+                   (EQUAL (REVERSE (REVERSE X)) X))
+          :INSTRUCTIONS (:BASH (:DV 1)
+                               (:REWRITE REVAPPEND-REVAPPEND)
+                               :TOP :PROVE))
+
+  ACL2 Query (ACL2-PC::EXIT):  
+  Do you want to submit this event?  Possible replies are:
+  Y (Yes), R (yes and Replay commands), N (No, but exit), A (Abort exiting).
+     (Y, R, N or A):  n
+   NIL
+  ACL2 !>(thm
+          (IMPLIES (TRUE-LISTP X)
+                   (EQUAL (REVERSE (REVERSE X)) X))
+          :hints ((\"Goal\"
+                   :INSTRUCTIONS ; copy what was printed above:
+                   (:BASH (:DV 1)
+                          (:REWRITE REVAPPEND-REVAPPEND)
+                          :TOP :PROVE))))
+
+  [Note:  A hint was supplied for our processing of the goal above. 
+  Thanks!]
+
+  But the trusted :CLAUSE-PROCESSOR function PROOF-CHECKER-CL-PROC replaces
+  this goal by T.
+
+  Q.E.D.
+
+  Summary
+  Form:  ( THM ...)
+  Rules: NIL
+  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+
+  Proof succeeded.
+  ACL2 !>
+  ~ev[]
+
+  Finally we present an even more contrived example, based on the one above.
+  This example illustrates that there is actually no limit imposed on the
+  nesting of ~c[:instructions] within ~c[:]~ilc[hints] within
+  ~c[:instructions], and so on.  Notice the indication of nesting levels:
+  ``~c[1>]'' to ``~c[<1]'' for output from nesting level 1, and ``~c[2>]'' to
+  ``~c[<2]'' for output from nesting level 2.
+  ~bv[]
+  (thm (implies (true-listp x)
+                (equal (reverse (reverse x)) x))
+       :hints ((\"Goal\"
+                :instructions
+                ((comment inhibit-output-lst :same)
+                 (:prove
+                  :hints ((\"Goal\" :in-theory (disable append))
+                          (\"Subgoal *1/3''\"
+                           :instructions
+                           ((comment inhibit-output-lst :same)
+                            :bash
+                            (:dv 1)
+                            (:rewrite revappend-revappend)))))))))
+  ~ev[]
+  Here is an edited version of the resulting log.
+  ~bv[]
+
+  [Note:  A hint was supplied for our processing of the goal above. 
+  Thanks!]
+
+  [[1> Executing proof-checker instructions]]
+
+  ->: (COMMENT INHIBIT-OUTPUT-LST :SAME)
+  ->: (:PROVE
+           :HINTS
+           ((\"Goal\" :IN-THEORY (DISABLE APPEND))
+            (\"Subgoal *1/3''\" :INSTRUCTIONS ((COMMENT INHIBIT-OUTPUT-LST :SAME)
+                                             :BASH (:DV 1)
+                                             (:REWRITE REVAPPEND-REVAPPEND)))))
+  ***** Now entering the theorem prover *****
+
+  [[ ... output omitted ... ]]
+
+  [Note:  A hint was supplied for our processing of the goal below. 
+  Thanks!]
+
+  Subgoal *1/3''
+  (IMPLIES (AND (CONSP X)
+                (EQUAL (REVAPPEND (REVAPPEND (CDR X) NIL) NIL)
+                       (CDR X))
+                (TRUE-LISTP (CDR X)))
+           (EQUAL (REVAPPEND (REVAPPEND (CDR X) (LIST (CAR X)))
+                             NIL)
+                  X)).
+
+  [[2> Executing proof-checker instructions]]
+
+  ->: (COMMENT INHIBIT-OUTPUT-LST :SAME)
+  ->: :BASH
+  ***** Now entering the theorem prover *****
+
+  [Note:  A hint was supplied for our processing of the goal above. 
+  Thanks!]
+
+  But we have been asked to pretend that this goal is subsumed by the
+  yet-to-be-proved |PROOF-CHECKER Goal|.
+
+  Q.E.D.
+
+
+  Creating one new goal:  (MAIN . 1).
+
+  The proof of the current goal, MAIN, has been completed.  However,
+  the following subgoals remain to be proved:
+    (MAIN . 1).
+  Now proving (MAIN . 1).
+  ->: (:DV 1)
+  ->: (:REWRITE REVAPPEND-REVAPPEND)
+  Rewriting with REVAPPEND-REVAPPEND.
+
+  [[<2 Completed proof-checker instructions]]
+
+  We now apply the trusted :CLAUSE-PROCESSOR function PROOF-CHECKER-CL-PROC
+  to produce one new subgoal.
+
+  Subgoal *1/3'''
+
+  [[ ... output omitted ... ]]
+
+  [[<1 Completed proof-checker instructions]]
+  ~ev[]
+  The nesting levels are independent of whether or not output is enabled; for
+  example, if the first ~c[(comment ...)] form below is omitted, then we will
+  see only the output bracketed by ``~c[2>]'' to ``~c[<2]''.  Note also that
+  these levels are part of the error states saved for access by ~ilc[retrieve]
+  (as indicated above); for example, a failure at level 1 would be associated
+  with symbol ~c[:ERROR1] as indicated above, while a failure at level 2 would
+  be associated with symbol ~c[:ERROR2].~/")
 
 ; Finally, here is some stuff that is needed not only for the proof-checker but
 ; also for :pl.

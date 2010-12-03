@@ -293,6 +293,10 @@
                      (mv (or erp (car vals)) (cadr vals) state)
                    (mv erp vals state)))))))
 
+(define-pc-primitive fail-primitive ()
+  (declare (ignore pc-state))
+  (mv nil state))
+
 (define-pc-macro fail (&optional hard)
 
   "cause a failure~/
@@ -313,7 +317,7 @@
 
   (if hard
       (value '(lisp (mv hard nil state)))
-    (value '(lisp nil))))
+    (value 'fail-primitive)))
 
 (define-pc-macro illegal (instr)
 
@@ -3557,9 +3561,10 @@
                          (mv erp val state))
                        (if (and protect-flg
                                 (or erp (null val)))
-                           (pprogn (print-no-change "SEQUENCE failed, with protection on.  ~
-                                                   Reverting back to existing state of ~
-                                                   the proof-checker.~|")
+                           (pprogn (print-no-change
+                                    "SEQUENCE failed, with protection on.  ~
+                                     Reverting back to existing state of the ~
+                                     proof-checker.~|")
                                    ;; **** consider improving message above, say by printing
                                    ;; entire instruction with appropriate evisceration
                                    (pc-assign state-stack saved-ss)
@@ -5589,14 +5594,23 @@
          (old-rule-classes (cadr triple))
          (old-raw-term (caddr triple)))
     (pc-assign state-stack
-                     (change-last state-stack
-                                  (change pc-state
-                                          (car (last state-stack))
-                                          :instruction
-                                          (list :start
-                                                (list (or event-name old-event-name)
-                                                      (or rule-classes old-rule-classes)
-                                                      old-raw-term)))))))
+               (change-last state-stack
+                            (change pc-state
+                                    (car (last state-stack))
+                                    :instruction
+                                    (list :start
+                                          (list (or event-name old-event-name)
+                                                (or rule-classes old-rule-classes)
+                                                old-raw-term)))))))
+
+(defun save-fn (name ss-alist state)
+  (pprogn
+   (assign-event-name-and-rule-classes name nil state)
+   (pc-assign
+    ss-alist
+    (put-assoc-eq name
+                  (cons (state-stack) (old-ss))
+                  ss-alist))))
 
 (define-pc-macro save (&optional name do-it-flg)
 
@@ -5637,14 +5651,8 @@
                   (mv nil t state))
                 (declare (ignore erp))
                 (if reply
-                    (pprogn
-                     (assign-event-name-and-rule-classes name nil state)
-                     (pc-assign
-                      ss-alist
-                      (put-assoc-eq name
-                                    (cons (state-stack) (old-ss))
-                                    ss-alist))
-                     (value :succeed))
+                    (pprogn (save-fn name ss-alist state)
+                            (value :succeed))
                   (pprogn (print-no-change "save aborted.")
                           (value :fail))))
       (pprogn (print-no-change "You can't SAVE with no argument, because you didn't ~
@@ -5698,7 +5706,7 @@
 
 (defun unsave-fn (name state)
   (pc-assign ss-alist
-                   (delete-assoc-eq name (ss-alist))))
+             (delete-assoc-eq name (ss-alist))))
 
 (defmacro unsave (name)
   ":Doc-Section Proof-checker
@@ -5752,6 +5760,16 @@
                           state-stack alist.~%"
                          (list (cons #\0 name)))))))
 
+(defun show-retrieved-goal (state-stack state)
+  (let ((raw-term (caddr (event-name-and-types-and-raw-term state-stack))))
+    (assert$ raw-term
+             (fmt-abbrev "~|~%Resuming proof attempt for~|~y0."
+                         (list (cons #\0 raw-term))
+                         0
+                         (proofs-co state)
+                         state
+                         "~%"))))
+
 (defun retrieve-fn (name state)
   (let ((ss-alist (ss-alist)))
     (cond
@@ -5788,6 +5806,7 @@
         (if saved-ss
             (pprogn (pc-assign old-ss saved-old-ss)
                     (pc-assign state-stack saved-ss)
+                    (show-retrieved-goal saved-ss state)
                     (verify))
           (pprogn (io? proof-checker nil state
                        (name)
@@ -6207,7 +6226,7 @@
 
   See documentation for ~c[then].~/ "
 
-  (value (cons 'do-all
+  (value (cons 'do-strict
                (run-instr-on-goals-guts
                 (if must-succeed-flg instr (list :succeed instr))
                 (set-difference-equal (goal-names (goals t))
@@ -6225,8 +6244,9 @@
   ~ev[]
   Run ~c[first-instruction], and then run ~c[completion] (another
   instruction) on each subgoal created by ~c[first-instruction].  If
-  ~c[must-succeed-flg] is supplied and not ~c[nil], then immediately remove
-  the effects of each invocation of ~c[completion] that ``fails''.
+  ~c[must-succeed-flg] is supplied and not ~c[nil], then halt at the first
+  ``failure'' and remove the effects of the invocation of ~c[completion] that
+  ``failed''.
 
   The default for completion is ~c[reduce]."
 
@@ -6749,22 +6769,19 @@
 
 (define-pc-macro check-proved-goal (goal-name cmd)
   (if (member-equal goal-name (goal-names (goals)))
-      (mv-let
-       (erp val state)
-       (er soft 'check-proved
-           "The command ~x0 failed to prove the goal ~x1."
-           cmd
-           goal-name)
-       (declare (ignore erp val))
-       (value 'fail))
+      (er soft 'check-proved
+          "The command ~x0 failed to prove the goal ~x1."
+          cmd
+          goal-name)
     (value 'succeed)))
 
 (define-pc-macro check-proved (x)
   (when-goals-trip
    (let ((goal-name (goal-name)))
-     (value `(protect
-              ,x
-              (quiet (check-proved-goal ,goal-name ,x)))))))
+     (value
+      `(do-all
+        ,x
+        (quiet (check-proved-goal ,goal-name ,x)))))))
 
 (define-pc-atomic-macro forwardchain (hypn &optional hints quiet-flg)
 
@@ -7106,3 +7123,147 @@
   (value (if raw-term
              `(wrap (induct ,raw-term))
            `(wrap induct))))
+
+(define-pc-macro finish-error (instrs)
+  (er soft 'finish
+      "~%The following instruction list created at least one subgoal:~|~x0~|"
+      instrs))
+
+(define-pc-macro finish (&rest instrs)
+
+  "require completion of instructions; save error if inside ~c[:]~ilc[hints]~/
+  ~bv[]
+  Example:
+  (finish induct prove bash)~/
+
+  General Form:
+  (finish &rest instructions)
+  ~ev[]
+  Run the indicated instructions, stopping at the first failure.  If there is
+  any failure, or if any new goals are created and remain at the end of the
+  indicated instructions, then consider the call of ~c[finish] to be a
+  failure.  ~l[proof-checker-commands] and visit the documentation for
+  ~c[sequence] for a discussion of the notion of ``failure'' for proof-checker
+  commands."
+
+  (value `(then (check-proved (do-strict ,@instrs))
+                (finish-error ,instrs)
+                t)))
+
+; Support for :instructions as hints
+
+(defun goals-to-clause-list (goals)
+  (if (endp goals)
+      nil
+    (cons (append (dumb-negate-lit-lst (access goal (car goals) :hyps))
+                  (list (access goal (car goals) :conc)))
+          (goals-to-clause-list (cdr goals)))))
+
+(defun proof-checker-clause-list (state)
+  (goals-to-clause-list (goals)))
+
+(defun proof-checker-cl-proc (cl instr-list state)
+  (let ((ctx 'proof-checker-cl-proc))
+    (cond
+     ((null cl)
+      (er soft ctx
+          "There is no legal way to prove a goal of NIL!"))
+     (t
+      (let ((term (make-implication (dumb-negate-lit-lst (butlast cl 1))
+                                    (car (last cl))))
+            (wrld (w state))
+            (new-pc-depth (1+ (pc-value pc-depth))))
+        (er-let* ((new-inhibit-output-lst
+                   (cond
+                    ((and (consp instr-list)
+                          (true-listp (car instr-list))
+                          (eq (make-pretty-pc-command (caar instr-list))
+                              :COMMENT)
+                          (eq (cadar instr-list) 'inhibit-output-lst))
+                     (cond ((eq (caddar instr-list) :same)
+                            (value (f-get-global 'inhibit-output-lst state)))
+                           (t (chk-inhibit-output-lst (caddar instr-list)
+                                                      :instructions
+                                                      state))))
+                    (t (value (union-eq '(prove proof-tree proof-checker)
+                                        (f-get-global 'inhibit-output-lst
+                                                      state))))))
+                  (outputp (value (not (subsetp-eq
+                                        '(prove proof-checker proof-tree)
+                                        new-inhibit-output-lst)))))
+          (state-global-let*
+           ((inhibit-output-lst new-inhibit-output-lst)
+            (pc-output (f-get-global 'pc-output state)))
+           (mv-let
+            (erp clause-list state)
+            (pprogn (pc-assign pc-depth new-pc-depth)
+                    (cond (outputp
+                           (io? prove nil state
+                                (new-pc-depth)
+                                (fms0 "~|~%[[~x0> Executing ~
+                                            proof-checker instructions]]~%~%"
+                                      (list (cons #\0 new-pc-depth)))))
+                          (t state))
+                    (pc-assign next-pc-enabled-array-suffix
+                               (1+ (pc-value
+                                    next-pc-enabled-array-suffix)))
+                    (mv-let
+                     (erp pc-val state)
+                     (pc-main term
+                              (untranslate term t wrld)
+                              nil ; event-name
+                              nil ; rule-classes
+                              instr-list
+                              '(signal value) ; quit-conditions
+                              t ; print-prompt-and-instr-flg, suitable for :pso
+                              state)
+                     (pprogn
+                      (cond (outputp (io? prove nil state
+                                          (new-pc-depth)
+                                          (fms0 "~|~%[[<~x0 Completed ~
+                                                 proof-checker ~
+                                                 instructions]]~%"
+                                                (list (cons #\0 new-pc-depth)))))
+                            (t state))
+                      (cond ((or erp (null pc-val))
+                             (let ((name (intern
+                                          (concatenate
+                                           'string
+                                           "ERROR"
+                                           (coerce (explode-atom new-pc-depth
+                                                                 10)
+                                                   'string))
+                                          "KEYWORD")))
+                               (pprogn
+                                (io? error nil state
+                                     (name)
+                                     (fms0 "~%Saving proof-checker error ~
+                                            state; see :DOC instructions.  To ~
+                                            retrieve:~|~x0"
+                                           (list (cons #\0 `(retrieve ,name)))))
+                                (save-fn name (ss-alist) state)
+                                (er soft ctx
+                                    "The above :INSTRUCTIONS hint failed.  ~
+                                     For a discussion of ``failed'', follow ~
+                                     the link to the SEQUENCE command under ~
+                                     :DOC proof-checker-commands."))))
+                            (t (value (proof-checker-clause-list
+                                       state)))))))
+            (cond (erp (silent-error state))
+                  (t (value clause-list)))))))))))
+
+#+acl2-loop-only
+(define-trusted-clause-processor
+  proof-checker-cl-proc
+  nil)
+
+#+acl2-loop-only
+(add-custom-keyword-hint :instructions
+                         (splice-keyword-alist
+                          :instructions
+                          (list :clause-processor
+                                (list :function
+                                      'proof-checker-cl-proc
+                                      :hint
+                                      (kwote val)))
+                          keyword-alist))

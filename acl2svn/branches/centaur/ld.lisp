@@ -16704,6 +16704,24 @@
 
 ; Fixed bugs in :doc set-backchain-limit.
 
+; A potential soundness hole was plugged in the proof-checker by making
+; variable pc-assign untouchable.  But we don't mention this in the release
+; notes proper because we have not been able to exploit this potential hole.
+
+; Changed fmt-abbrev1 to print the message about :DOC set-iprint in column 0
+; after a newline, because otherwise the new message printed immediately after
+; evaluating (retrieve ...) looks odd.
+
+; Introduced new function our-truename, which we use in place of truename.
+; This was done in support of the item below mentioning "truename", about
+; "certain errors in including books".
+
+; Fixed documentation and error message for the case that only some functions
+; in a mutual-recursion are non-executable.
+
+; Improved error message for forms such as (defattach f g :hints ...), in which
+; the first argument is a symbol but there are more than two arguments.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -16820,7 +16838,21 @@
 
   The command ~c[:]~ilc[redef-] now turns off redefinition.
 
+  Improved proof output in the case of a ~c[:]~ilc[clause-processor] hint that
+  proves the goal, so that the clause-processor function name is printed.
+
+  The ~ilc[proof-checker] command `~c[then]' now stops at the first failure (if
+  any).
+
+  It is no longer permitted to submit definitions in ~c[:logic] mode for merely
+  part of an existing ~ilc[mutual-recursion] event.  Such an action left the
+  user in an odd state and seemed a potential soundness hole.
+
   ~st[NEW FEATURES]
+
+  A new hint, ~c[:]~ilc[instructions], allows use of the ~il[proof-checker] at
+  the level of ~il[hints] to the prover.  Thanks to Pete Manolios for
+  requesting this feature (in 2001!).  ~l[instructions].
 
   (For system hackers) There are new versions of system functions
   ~c[translate1] and ~c[translate], namely ~c[translate1-cmp] and
@@ -16858,6 +16890,13 @@
   (~pl[set-backchain-limit]).  Thanks to Jared Davis for requesting this
   feature.
 
+  Support is now provided for creating and certifying books that do not depend
+  on trust tags, in the case that the only use of trust tags is during
+  ~ilc[make-event] expansion.  ~l[set-write-acl2x].
+
+  Function ~c[(file-write-date$ filename state)] has been added, giving the
+  write date of the given file.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   We have slightly improved the so-called ``~il[type-set]'' heuristics to work
@@ -16868,12 +16907,26 @@
   function ~c[type-set-rec], source file ~c[type-set-b.lisp]).
 
   We made three heuristic improvements in the way contexts (so-called
-``type-alists'') are computed from goals (``clauses'').  Although these changes
-  did not noticeably affect timing results for the ACL2 regression suite, they
-  can be very helpful for goals with many hypotheses.  Thanks to Dave Greve for
-  sending a useful example (one where we found a goal with 233 hypotheses!).
+  ``type-alists'') are computed from goals (``clauses'').  Although these
+  changes did not noticeably affect timing results for the ACL2 regression
+  suite, they can be very helpful for goals with many hypotheses.  Thanks to
+  Dave Greve for sending a useful example (one where we found a goal with 233
+  hypotheses!).
+
+  The algorithm for substituting alists into terms was modified.  This change
+  is unlikely to affect many users, but in one example it resulted in a
+  speed-up of about 21%.  Thanks to Dave Greve for supplying that example.
 
   ~st[BUG FIXES]
+
+  Fixed a long-standing soundness bug caused by the interaction of ~ilc[force]d
+  hypotheses with destructor ~il[elim]ination.  The fix was to avoid using
+  forcing when building the context (so-called ``type-alist'') when the goal is
+  considered for destructor elimination; those who are interested can see a
+  discussion in source function ~c[eliminate-destructors-clause1], which
+  includes a proof of ~c[nil] that no longer succeeds.  A similar fix was made
+  for generalization, though we have not exploited the previous code to prove
+  ~c[nil] in that case.
 
   Fixed a bug that could occur when including a book that attempts to redefine
   a function as a macro, or vice-versa.  (For details of the issue, see the
@@ -16918,9 +16971,21 @@
   bringing this bug to our attention with a simple example, and correctly
   pointing us to the bug in our code.
 
-  Fixed two bugs in ~ilc[defattach]: wasn't always applying the full functional
-  substitution when generating guard proof obligation, and hit assertion when
-  reattaching to more than one function.
+  Fixed two bugs in ~ilc[defattach]: we hadn't always been applying the full
+  functional substitution when generating guard proof obligations, and we had
+  been able to hit an assertion when reattaching to more than one function.
+
+  Fixed a raw Lisp error that could be caused by including a book using
+  ~ilc[make-event] to define a function symbol in a locally-introduced package.
+  An example appears in a comment in ACL2 source function
+  ~c[write-expansion-file].
+
+  Made a change that can prevent an error near the end of book certification
+  when the underlying Host Lisp is Allegro Common Lisp, in the case that
+  environment variable ~c[ACL2_SYSTEM_BOOKS] has been set to the name of a
+  directory with a parent that is a soft link.  Thanks to Dave Greve for
+  supplying an example to led us to this fix, which involves avoiding Allegro
+  CL's implementation of the Common Lisp function, ~c[truename].
 
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
@@ -23095,10 +23160,9 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                                         (list 'quote inhibit-flg))
                                        (t (er hard 'set-saved-output
                                               "Illegal second argument to ~
-                                               set-saved-output (must be ~x0, ~
-                                               ~x1, ~x2, or a true-listp): ~
-                                               ~x3."
-                                              t :all :normal
+                                               set-saved-output (must be ~v0, ~
+                                               or a true-listp): ~x1."
+                                              '(t :all :normal :same)
                                               inhibit-flg-original)))
                                 state))))))
 

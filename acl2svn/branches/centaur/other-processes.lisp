@@ -1320,79 +1320,107 @@
                                var-to-runes-alist
                                (cons-tag-trees ttree0 ttree))))))))))))
 
-(defun eliminate-destructors-clause1
-  (cl eliminables avoid-vars ens wrld top-flg)
+(defun eliminate-destructors-clause1 (cl eliminables avoid-vars ens wrld
+                                         top-flg)
 
-; Cl is a clause we are trying to prove.  Eliminables is the set of
-; variables on which we will permit a destructor elimination.
-; Avoid-vars is a list of variable names we are to avoid when
-; generating new names.  In addition, we avoid the variables in cl.
-; We look for an eliminable destructor, select the highest scoring one
-; and get its instantiated rule, split on the hyps of that rule to
-; produce a "pathological" case of cl for each hyp and apply the rule
-; to cl to produce the "normal" elim case.  Then we iterate until
-; there is nothing more to eliminate.
+; Cl is a clause we are trying to prove.  Eliminables is the set of variables
+; on which we will permit a destructor elimination.  Avoid-vars is a list of
+; variable names we are to avoid when generating new names.  In addition, we
+; avoid the variables in cl.  We look for an eliminable destructor, select the
+; highest scoring one and get its instantiated rule, split on the hyps of that
+; rule to produce a "pathological" case of cl for each hyp and apply the rule
+; to cl to produce the "normal" elim case.  Then we iterate until there is
+; nothing more to eliminate.
 
-; The handling of the eliminables needs explanation however.  At the
-; top-level (when top-flg is t) eliminables is the set of all
-; variables occurring in cl except those historically introduced by
-; destructor elimination.  It is with respect to that set that we
-; select our first elimination rule.  Thereafter (when top-flg is nil)
-; the set of eliminables is always just the set of variables we have
-; introduced into the clauses.  We permit these variables to be
-; eliminated by this elim and this elim only.  For example, the
-; top-level entry might permit elimination of (CAR X) and of (CAR Y).
-; Suppose we choose X, introducing A and B.  Then on the second
-; iteration, we'll allow eliminations of A and B, but not of Y.
+; The handling of the eliminables needs explanation however.  At the top-level
+; (when top-flg is t) eliminables is the set of all variables occurring in cl
+; except those historically introduced by destructor elimination.  It is with
+; respect to that set that we select our first elimination rule.  Thereafter
+; (when top-flg is nil) the set of eliminables is always just the set of
+; variables we have introduced into the clauses.  We permit these variables to
+; be eliminated by this elim and this elim only.  For example, the top-level
+; entry might permit elimination of (CAR X) and of (CAR Y).  Suppose we choose
+; X, introducing A and B.  Then on the second iteration, we'll allow
+; eliminations of A and B, but not of Y.
 
-; We return three things.  The first is a set of clauses to prove
-; instead of cl.  The second is the set of variable names introduced
-; by this destructor elimination step.  The third is an "elim-sequence
-; list" that documents this step.  If the list is nil, it means we did
-; nothing.  Otherwise it is a list, in order, of the "elim-sequence
-; elements" described in apply-instantiated-elim-rule above.  This list
-; should become the 'elim-sequence entry in the ttree for this elim
-; process.
+; We return three things.  The first is a set of clauses to prove instead of
+; cl.  The second is the set of variable names introduced by this destructor
+; elimination step.  The third is an "elim-sequence list" that documents this
+; step.  If the list is nil, it means we did nothing.  Otherwise it is a list,
+; in order, of the "elim-sequence elements" described in
+; apply-instantiated-elim-rule above.  This list should become the
+; 'elim-sequence entry in the ttree for this elim process.
 
 ; Historical Remark on Nqthm.
 
-; This code is spiritually very similar to that of Nqthm.  However, it
-; is much more elegant and easy to understand.  Nqthm managed the
-; "iteration" with a "todo" list which grew and then shrank.  In
-; addition, while we select the best rule on each round from scratch,
-; Nqthm kept an ordered list of candidates (which it culled
-; appropriately when eliminations removed some of them from the clause
-; or when the crucial variables were no longer among eliminables).
-; Finally, and most obscurely, Nqthm used an incrutable test on the
-; "process history" (related to our elim-sequence) and a subtle
-; invariant about the candidates to switch from our top-flg t mode to
-; top-flg nil mode.  We have spent about a week coding destructor
-; elimination in ACL2 and we have thrown away more code that we have
-; kept as we at first transcribed and then repeatedly refined the
-; Nqthm code.  We are much happier with the current code than Nqthm's
-; and believe it will be much easier to modify in the future.  Oh, one
-; last remark: Nqthm's destructor elimination code had almost no
-; comments and everything was done in a single big function with lots
-; of ITERATEs.  It is no wonder it was so hard to decode.
+; This code is spiritually very similar to that of Nqthm.  However, it is much
+; more elegant and easy to understand.  Nqthm managed the "iteration" with a
+; "todo" list which grew and then shrank.  In addition, while we select the
+; best rule on each round from scratch, Nqthm kept an ordered list of
+; candidates (which it culled appropriately when eliminations removed some of
+; them from the clause or when the crucial variables were no longer among
+; eliminables).  Finally, and most obscurely, Nqthm used an incrutable test on
+; the "process history" (related to our elim-sequence) and a subtle invariant
+; about the candidates to switch from our top-flg t mode to top-flg nil mode.
+; We have spent about a week coding destructor elimination in ACL2 and we have
+; thrown away more code that we have kept as we at first transcribed and then
+; repeatedly refined the Nqthm code.  We are much happier with the current code
+; than Nqthm's and believe it will be much easier to modify in the future.  Oh,
+; one last remark: Nqthm's destructor elimination code had almost no comments
+; and everything was done in a single big function with lots of ITERATEs.  It
+; is no wonder it was so hard to decode.
 
-; Our first step is to get the type-alist of cl.  It is used in two
-; different ways: to identify contradictory hypotheses of candidate
-; :ELIM lemmas and to generate names for new variables.
+; Our first step is to get the type-alist of cl.  It is used in two different
+; ways: to identify contradictory hypotheses of candidate :ELIM lemmas and to
+; generate names for new variables.
 
   (mv-let
     (contradictionp type-alist ttree)
-    (type-alist-clause cl nil t nil ens wrld
+    (type-alist-clause cl nil
+
+; The force-flg must be nil, or else apply-instantiated-elim-rule may call
+; generalize1 with a type-alist whose ttrees are not all assumption-free,
+; resulting in the return of such a ttree by generalize1 (contrary to its
+; specification).  The following example was admitted in Version_2.4 and
+; Version_4.1, and presumably versions inbetween and perhaps older.
+
+; (progn
+;   (defun app (x y)
+;     (if (consp x)
+;         (cons (car x) (app (cdr x) y))
+;       y))
+;   (defun rev (x)
+;     (if (consp x)
+;         (app (rev (cdr x)) (cons (car x) nil))
+;       x))
+;   (defthm rev-type
+;     (implies (force (true-listp x))
+;              (true-listp (rev x)))
+;     :rule-classes :type-prescription)
+;   (defthm false
+;     (equal (rev (rev x)) x)
+;     :rule-classes nil)
+;   (defthm true
+;     (equal (rev (rev '(a b . c)))
+;            '(a b))
+;     :rule-classes nil)
+;   (defthm bug
+;     nil
+;     :hints (("Goal" :use (true (:instance false (x '(a b . c))))))
+;     :rule-classes nil))
+
+                       nil ; force-flg; see comment above
+                       nil ens wrld
                        nil nil)
     (declare (ignore ttree))
     (cond
      (contradictionp
 
-; This is unusual.  We don't really expect to find a contradiction
-; here.  We'll return an answer indicating that we didn't do anything.
-; We ignore the possibly non-nil ttree here, which is valid given that
-; we are returning the same goal clause rather than actually relying
-; on the contradiction.  We thus ignore ttree everywhere because it is
-; nil when contradictionp is nil.
+; This is unusual.  We don't really expect to find a contradiction here.  We'll
+; return an answer indicating that we didn't do anything.  We ignore the
+; possibly non-nil ttree here, which is valid given that we are returning the
+; same goal clause rather than actually relying on the contradiction.  We thus
+; ignore ttree everywhere because it is nil when contradictionp is nil.
 
       (mv (list cl) nil nil))
      (t
@@ -1406,17 +1434,15 @@
                                     (access elim-rule rule :hyps)
                                     cl nil)))
 
-; Clauses1 is a set of clauses obtained by splitting on the
-; instantiated hyps of the rule.  It contains n clauses, each obtained
-; by adding one member of inst-hyps to cl.  (If any of these new
-; clauses is a tautology, it will be deleted, thus there may not be as
-; many clauses as there are inst-hyps.)  Because these n clauses are
-; all "pathological" wrt the destructor term, e.g., we're assuming
-; (not (consp x)) in a clause involving (car x), we do no further
-; elimination down those paths.  Note the special case where
+; Clauses1 is a set of clauses obtained by splitting on the instantiated hyps
+; of the rule.  It contains n clauses, each obtained by adding one member of
+; inst-hyps to cl.  (If any of these new clauses is a tautology, it will be
+; deleted, thus there may not be as many clauses as there are inst-hyps.)
+; Because these n clauses are all "pathological" wrt the destructor term, e.g.,
+; we're assuming (not (consp x)) in a clause involving (car x), we do no
+; further elimination down those paths.  Note the special case where
 ; contradictionp is true, meaning that we have ascertained that the
 ; pathological cases are all impossible.
-
 
                      (cond
                       ((equal new-clause *true-clause*)
@@ -2549,13 +2575,12 @@
 
 ; A standard clause processor of the waterfall.
 
-; We return 4 values.  The first is a signal that is either 'hit, or
-; 'miss.  When the signal is 'miss, the other 3 values are irrelevant.
-; When the signal is 'hit, the second result is the list of new
-; clauses, the third is a ttree that will become that component of the
-; history-entry for this generalization, and the fourth is an
-; unmodified pspv.  (We return the fourth thing to adhere to the
-; convention used by all clause processors in the waterfall (q.v.).)
+; We return 4 values.  The first is a signal that is either 'hit, or 'miss.
+; When the signal is 'miss, the other 3 values are irrelevant.  When the signal
+; is 'hit, the second result is the list of new clauses, the third is a ttree
+; that will become that component of the history-entry for this generalization,
+; and the fourth is an unmodified pspv.  (We return the fourth thing to adhere
+; to the convention used by all clause processors in the waterfall (q.v.).)
 ; The ttree we return is 'assumption-free.
 
   (declare (ignore state))
@@ -2575,23 +2600,30 @@
          (t
           (mv-let
            (contradictionp type-alist ttree)
-           (type-alist-clause cl nil t nil ens wrld
+           (type-alist-clause cl nil
+
+; The force-flg probably needs to be nil, to avoid an inappropriate call of
+; generalize1.  See the comment about a similar call of type-alist-clause in
+; eliminate-destructors-clause1.
+
+                              nil ; force-flg
+                              nil ens wrld
                               nil nil)
            (declare (ignore ttree))
            (cond
             (contradictionp
 
-; We compute the type-alist of the clause to allow us to generate nice
-; variable names and to restrict the coming generalization.  We know
-; that a contradiction cannot arise, because this clause survived
-; simplification.  However, we will return an accurate answer just to
-; be rugged.  We'll report that we couldn't do anything!  That's
-; really funny.  We just proved our goal and we're saying we can't do
-; anything.  But if we made this fn sometimes return the empty set of
-; clauses we'd want to fix the io handler for it and we'd have to
-; respect the 'assumptions in the ttree and we don't.  Do we?  As
-; usual, we ignore the ttree in this case, and hence we ignore it
-; totally since it is known to be nil when contradictionp is nil.
+; We compute the type-alist of the clause to allow us to generate nice variable
+; names and to restrict the coming generalization.  A contradiction will not
+; arise if this clause survived simplification (which it has, unless :do-not
+; hints specified that simplification was not to be used).  However, we will
+; return an accurate answer just to be rugged.  We'll report that we couldn't
+; do anything!  That's really funny.  We just proved our goal and we're saying
+; we can't do anything.  But if we made this fn sometimes return the empty set
+; of clauses we'd want to fix the io handler for it and we'd have to respect
+; the 'assumptions in the ttree and we don't.  Do we?  As usual, we ignore the
+; ttree in this case, and hence we ignore it totally since it is known to be
+; nil when contradictionp is nil.
 
              (mv 'miss nil nil nil))
             (t
