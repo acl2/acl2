@@ -433,7 +433,7 @@ implementations.")
 (defun acl2-svn-revision-string ()
 
 ; Put symbol :release into file acl2-startup-info.txt before doing a release.
-; Otherwise, we expect that file to contain a string of the form
+; Otherwise, we expect that file to start with a string of the form
 ; "$Revision: n $".
 
   (let ((file "acl2-startup-info.txt"))

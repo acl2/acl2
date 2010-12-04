@@ -1210,8 +1210,6 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; versions, and maybe later versions) does not fully resolve symbolic links
 ; using truename, even with value T for keyword :follow-symlinks.
 
-; We use funcall below to avoid compiler warnings.
-
 ; Finally, consider namestringp.  If nil, then as above we either return nil or
 ; the truename (a pathname object).  Otherwise, we return the namestring of
 ; such a truename, with the following treatment if that truename is nil: return
@@ -1222,11 +1220,11 @@ notation causes an error and (b) the use of ,. is not permitted."
           #+allegro
           ((fboundp 'excl::pathname-resolve-symbolic-links)
            (ignore-errors
-            (funcall 'excl::pathname-resolve-symbolic-links
-                     filename)))
+            (qfuncall excl::pathname-resolve-symbolic-links
+                      filename)))
           #+(and gcl (not cltl2))
           ((fboundp 'si::stat) ; try to avoid some errors
-           (and (or (funcall 'si::stat filename)
+           (and (or (qfuncall si::stat filename)
 
 ; But filename might be a directory, in which case the si::stat call above
 ; could return nil; so we try again.
@@ -1234,7 +1232,8 @@ notation causes an error and (b) the use of ,. is not permitted."
                     (and (or (equal filename "")
                              (not (eql (char filename (1- (length filename)))
                                        #\/)))
-                         (funcall 'si::stat (concatenate 'string filename "/"))))
+                         (qfuncall si::stat
+                                   (concatenate 'string filename "/"))))
                 (truename filename)))
           #+(and gcl (not cltl2))
           (t (truename filename))
@@ -1249,8 +1248,8 @@ notation causes an error and (b) the use of ,. is not permitted."
            truename)
           ((null truename)
            (cond ((eq namestringp :safe) nil)
-                 (t (funcall
-                     'interface-er
+                 (t (qfuncall
+                     interface-er
                      "Unable to obtain the truename of file ~x0."
                      filename))))
           (t (namestring truename)))))
