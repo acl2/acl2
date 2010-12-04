@@ -4232,8 +4232,10 @@ FORWARD-CHAINING-RULES                               245442
                state)))
      (declare (ignore ignore-familiar-name))
      (cond
-      ((assoc-equal (namestring (our-truename full-book-name))
-                    (global-val 'include-book-alist (w state)))
+      ((let ((true-full-book-name (our-truename full-book-name :safe)))
+         (and true-full-book-name
+              (assoc-equal true-full-book-name
+                           (global-val 'include-book-alist (w state)))))
 
 ; In ACL2 Version_4.1 running on Allegro CL, we got an error when attempting to
 ; certify the following book.
@@ -6816,18 +6818,18 @@ Missing functions:
 ; analogous function that takes pathnames for the host operating system.
 
                    (pathname-os-to-unix
-                    (namestring
 
 ; MCL does not seem to handle calls of truename correctly on logical pathnames.
 ; We should think some more about this, but for now, let's solve this problem
 ; by brute force.
 
-                     #+(and mcl (not ccl))
-                     (our-truename
-                      (common-lisp::translate-logical-pathname
-                       (user-homedir-pathname)))
-                     #-(and mcl (not ccl))
-                     (our-truename (user-homedir-pathname)))
+                    #+(and mcl (not ccl))
+                    (our-truename
+                     (common-lisp::translate-logical-pathname
+                      (user-homedir-pathname))
+                     t)
+                    #-(and mcl (not ccl))
+                    (our-truename (user-homedir-pathname) t)
                     (os (w *the-live-state*))
                     *the-live-state*)
                    "acl2-customization"))
@@ -6895,8 +6897,7 @@ Missing functions:
                                                   "NIL")))))
                (user-home-dir-path (user-homedir-pathname))
                (user-home-dir0 (and user-home-dir-path
-                                    (namestring
-                                     (our-truename user-home-dir-path))))
+                                    (our-truename user-home-dir-path t)))
                (user-home-dir (if (eql (char user-home-dir0
                                              (1- (length user-home-dir0)))
                                        *directory-separator*)
@@ -7241,7 +7242,7 @@ Missing functions:
          (gcl-flg
           #+gcl
           (compile-file
-           (namestring (our-truename (pathname-unix-to-os fn-file state)))
+           (our-truename (pathname-unix-to-os fn-file state) t)
            :c-file t :h-file t)
           #-gcl
           (er hard 'compile-uncompiled-defuns
@@ -7249,8 +7250,8 @@ Missing functions:
                legal when running under GCL."))
          (t
           (let ((lisp-file
-                 (namestring (our-truename (pathname-unix-to-os fn-file
-                                                                state)))))
+                 (our-truename (pathname-unix-to-os fn-file state)
+                               t)))
             (compile-file lisp-file)
             (when (not (keep-tmp-files state))
               (delete-file lisp-file)
@@ -7470,7 +7471,7 @@ Missing functions:
          (gcl-flg
           #+gcl
           (compile-file
-           (namestring (our-truename (pathname-unix-to-os fn-file state)))
+           (our-truename (pathname-unix-to-os fn-file state) t)
            :c-file t :h-file t)
           #-gcl
           (er hard 'compile-uncompiled-defuns
@@ -7478,8 +7479,7 @@ Missing functions:
                legal when running under GCL."))
          (t
           (let ((lisp-file
-                 (namestring (our-truename (pathname-unix-to-os fn-file
-                                                                state)))))
+                 (our-truename (pathname-unix-to-os fn-file state) t)))
             (compile-file lisp-file)
             (when (not (keep-tmp-files state))
               (delete-file lisp-file)

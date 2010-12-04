@@ -1192,7 +1192,9 @@ notation causes an error and (b) the use of ,. is not permitted."
   #+apple (return-from get-os :apple)
   #-(or unix apple mswindows) nil)
 
-(defun our-truename (filename)
+(defun our-truename (filename &optional namestringp)
+
+; For now, assume that namestringp is not supplied.
 
 ; This function is intended to return nil if filename does not exist.  We thus
 ; rely on the CL HyperSpec, where it says of truename that "An error of type
@@ -1208,33 +1210,50 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; versions, and maybe later versions) does not fully resolve symbolic links
 ; using truename, even with value T for keyword :follow-symlinks.
 
-; We use funcall below to avoid the chance of compiler warnings.
+; We use funcall below to avoid compiler warnings.
 
-  #+allegro
-  (when (fboundp 'excl::pathname-resolve-symbolic-links)
-    (return-from our-truename
-                 (ignore-errors
-                  (funcall 'excl::pathname-resolve-symbolic-links
-                           filename))))
-  #+(and gcl (not cltl2))
-  (if (fboundp 'si::stat) ; try to avoid some errors
-      (and (or (funcall 'si::stat filename)
+; Finally, consider namestringp.  If nil, then as above we either return nil or
+; the truename (a pathname object).  Otherwise, we return the namestring of
+; such a truename, with the following treatment if that truename is nil: return
+; nil if namestringp is :safe, else cause an error.
+
+  (let ((truename
+         (cond
+          #+allegro
+          ((fboundp 'excl::pathname-resolve-symbolic-links)
+           (ignore-errors
+            (funcall 'excl::pathname-resolve-symbolic-links
+                     filename)))
+          #+(and gcl (not cltl2))
+          ((fboundp 'si::stat) ; try to avoid some errors
+           (and (or (funcall 'si::stat filename)
 
 ; But filename might be a directory, in which case the si::stat call above
 ; could return nil; so we try again.
 
-               (and (or (equal filename "")
-                        (not (eql (char filename (1- (length filename)))
-                                  #\/)))
-                    (funcall 'si::stat (concatenate 'string filename "/"))))
-           (truename filename))
-    (truename filename))
-  #-(and gcl (not cltl2))
+                    (and (or (equal filename "")
+                             (not (eql (char filename (1- (length filename)))
+                                       #\/)))
+                         (funcall 'si::stat (concatenate 'string filename "/"))))
+                (truename filename)))
+          #+(and gcl (not cltl2))
+          (t (truename filename))
+          #-(and gcl (not cltl2))
+          (t
 
 ; Here we also catch the case of #+allegro if
 ; excl::pathname-resolve-symbolic-links is not defined.
 
-  (ignore-errors (truename filename)))
+           (ignore-errors (truename filename))))))
+    (cond ((null namestringp)
+           truename)
+          ((null truename)
+           (cond ((eq namestringp :safe) nil)
+                 (t (funcall
+                     'interface-er
+                     "Unable to obtain the truename of file ~x0."
+                     filename))))
+          (t (namestring truename)))))
 
 (defun our-pwd ()
 
@@ -1243,7 +1262,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; make invokes another make in a different directory.
 
   (qfuncall pathname-os-to-unix
-            (namestring (our-truename ""))
+            (our-truename "" t)
             (get-os)
             *the-live-state*))
 
