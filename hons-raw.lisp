@@ -1831,7 +1831,6 @@ To avoid the following break and get only the above warning:~%  ~a~%"
                                               cdr-ht-eql seen-ht))
                 (b (hl-hspace-classic-restore (cdr x) nil-ht cdr-ht
                                               cdr-ht-eql seen-ht)))
-           (declare (ignore a))
            (setf (gethash x seen-ht) t) ;; Mark X as seen.
            (if (eq b nil)
                (setf (gethash a nil-ht) x)
