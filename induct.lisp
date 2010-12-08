@@ -2677,13 +2677,16 @@
 ; the hint settings into the pspv it returns.  Most of the content of
 ; the hint-settings is loaded into the rewrite-constant of the pspv.
 
-(defun load-hint-settings-into-rcnst (hint-settings rcnst wrld ctx state)
+(defun load-hint-settings-into-rcnst (hint-settings rcnst cl-id wrld ctx state)
 
-; Certain user supplied hint settings find their way into the
-; rewrite-constant.  They are :expand, :restrict, :hands-off, and
-; :in-theory.  Our convention is that if a given hint key/val is
-; provided it replaces what was in the rcnst.  Otherwise, we leave the
-; corresponding field of rcnst unchanged.
+; Certain user supplied hint settings find their way into the rewrite-constant.
+; They are :expand, :restrict, :hands-off, and :in-theory.  Our convention is
+; that if a given hint key/val is provided it replaces what was in the rcnst.
+; Otherwise, we leave the corresponding field of rcnst unchanged.
+
+; Cl-id is either a clause-id or nil.  If it is a clause-id and we install a
+; new enabled structure, then we we will use that clause-id to build the array
+; name, rather than simply incrementing a suffix.
 
   (er-let* ((new-ens
              (cond
@@ -2693,7 +2696,7 @@
                 (cdr (assoc-eq :in-theory hint-settings))
                 nil
                 (access rewrite-constant rcnst :current-enabled-structure)
-                t
+                (or cl-id t)
                 nil
                 wrld ctx state))
               (t (value (access rewrite-constant rcnst
@@ -2752,8 +2755,8 @@
 
 ; Thus, a given hint-settings causes us to modify the pspv as follows:
 
-(defun load-hint-settings-into-pspv (increment-flg hint-settings pspv wrld ctx
-                                                   state)
+(defun load-hint-settings-into-pspv (increment-flg hint-settings pspv cl-id
+                                                   wrld ctx state)
 
 ; We load the hint-settings into the rewrite-constant of pspv, thereby making
 ; available the :expand, :case-split-limitations, :restrict, :hands-off, and
@@ -2773,7 +2776,7 @@
   (er-let* ((rcnst (load-hint-settings-into-rcnst
                     hint-settings
                     (access prove-spec-var pspv :rewrite-constant)
-                    wrld ctx state)))
+                    cl-id wrld ctx state)))
            (value
             (change prove-spec-var pspv
                     :rewrite-constant rcnst
@@ -2793,9 +2796,35 @@
 ; and pool etc), and then restore the hint settings as they were in pspv1.
 ; In this example, new-pspv would be pspv3 and old-pspv would be pspv1.
 
-  (change prove-spec-var new-pspv
-          :rewrite-constant (access prove-spec-var old-pspv :rewrite-constant)
-          :hint-settings (access prove-spec-var old-pspv :hint-settings)))
+; We would like the garbage collector to free up space from obsolete arrays of
+; enabled-structures.  This may be especially important with potentially many
+; such arrays associated with different names, due to the new method of
+; creating array names after Version_4.1, where the name is typically based on
+; the clause-id.  Previously, the enabled-structure array names were created
+; based on just a few possible suffixes, so it didn't seem important to make
+; garbage -- each time such a name was re-used, the previous array for that
+; name became garbage.  If we change how this is done, revisit the sentence
+; about this function in the Essay on Enabling, Enabled Structures, and
+; Theories.
+
+  (let* ((old-rcnst (access prove-spec-var old-pspv
+                            :rewrite-constant))
+         (old-ens (access rewrite-constant old-rcnst
+                          :current-enabled-structure))
+         (old-name (access enabled-structure old-ens
+                           :array-name))
+         (new-rcnst (access prove-spec-var new-pspv
+                            :rewrite-constant))
+         (new-ens (access rewrite-constant new-rcnst
+                          :current-enabled-structure))
+         (new-name (access enabled-structure new-ens
+                           :array-name)))
+    (prog2$ (cond ((equal old-name new-name) nil)
+                  (t (flush-compress new-name)))
+            (change prove-spec-var new-pspv
+                    :rewrite-constant old-rcnst
+                    :hint-settings (access prove-spec-var old-pspv
+                                           :hint-settings)))))
 
 (defun remove-trivial-clauses (clauses wrld)
   (cond
@@ -2918,7 +2947,7 @@
                  (if induct-hint-val
                      (delete-assoc-eq :induct hint-settings)
                    hint-settings)
-                 pspv wrld ctx state)
+                 pspv nil wrld ctx state)
      (cond
       (erp (mv 'lose nil pspv state))
       (t

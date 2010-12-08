@@ -6675,43 +6675,6 @@
                    message-lst
                    char-alist))))
 
-; CLAUSE IDENTIFICATION
-
-; Before we can write the function that prints a description of
-; simplify-clause's output, we must be able to identify clauses.  This raises
-; some issues that are more understandable later, namely, the notion of the
-; pool.  See Section PUSH-CLAUSE and The Pool.
-
-; Associated with every clause in the waterfall is a unique object
-; called the clause identifier or clause-id.  These are printed out
-; at the user in a certain form, e.g.,
-
-; [3]Subgoal *2.1/5.7.9.11'''
-
-; but the internal form of these ids is:
-
-(defrec clause-id ((forcing-round . pool-lst) case-lst . primes) t)
-
-; where forcing-round is a natural number, pool-lst and case-lst are generally
-; true-lists of non-zero naturals (though elements of case-lst can be of the
-; form Dk in the case of a dijunctive split) and primes is a natural.  The
-; pool-lst is indeed a pool-lst.  (See the function pool-lst.) The case-lst is
-; structurally analogous.
-
-; A useful constant, the first clause-id:
-
-(defconst *initial-clause-id*
-  (make clause-id
-        :forcing-round 0
-        :pool-lst nil
-        :case-lst nil
-        :primes 0))
-
-; Note: If this changes, inspect every use of it.  As of this writing there is
-; one place where we avoid a make clause-id and use *initial-clause-id* instead
-; because we know the forcing-round is 0 and pool-lst and case-lst fields are
-; both nil and the primes field is 0.
-
 (defun tilde-@-pool-name-phrase (forcing-round pool-lst)
 
 ; We use this function to create the printed representation from the
@@ -6756,6 +6719,9 @@
                  (tilde-@-pool-name-phrase-lst forcing-round (cdr lst))))))
 
 (defun tilde-@-clause-id-phrase (id)
+
+; Warning: Keep this in sync with string-for-tilde-@-clause-id-phrase (and its
+; subfunctions).
 
 ; Id is a clause-id.  This function builds a tilde-@ object that when printed
 ; will display the clause id in its external form.
@@ -6840,60 +6806,6 @@
                      (t (access clause-id id :primes))))
          (cons #\n
                (access clause-id id :primes)))))
-
-; Because of the way :DO-NOT-INDUCT name hints are implemented, we need to be
-; able to produce a literal atom of the form |name clause-id| where clause-id
-; is what tilde-@-clause-id-phrase will print on id.  Therefore, we now
-; virtually repeat the definition of tilde-@-clause-id-phrase, except this time
-; building a string.  We could use this to print all clause ids.  But that is
-; slow because it involves consing up strings.  So we suffer the inconvenience
-; of duplication.  If tilde-@-clause-id-phrase is changed, be sure to change
-; the functions below.
-
-(defun string-for-tilde-@-clause-id-phrase/periods (lst)
-  (declare (xargs :guard (true-listp lst)))
-  (cond
-   ((null lst) nil)
-   ((null (cdr lst)) (explode-atom (car lst) 10))
-   (t (append (explode-atom (car lst) 10)
-              (cons #\.
-                    (string-for-tilde-@-clause-id-phrase/periods
-                     (cdr lst)))))))
-
-(defun string-for-tilde-@-clause-id-phrase/primes (n)
-  (declare (xargs :guard (and (integerp n) (>= n 0))))
-  (cond ((= n 0) nil)
-        ((= n 1) '(#\'))
-        ((= n 2) '(#\' #\'))
-        ((= n 3) '(#\' #\' #\'))
-        (t (cons #\' (append (explode-atom n 10) '(#\'))))))
-
-(defun string-for-tilde-@-clause-id-phrase (id)
-  (coerce
-   (append
-    (if (= (access clause-id id :forcing-round) 0)
-        nil
-        `(#\[ ,@(explode-atom (access clause-id id :forcing-round) 10) #\]))
-    (cond ((null (access clause-id id :pool-lst))
-           (cond ((null (access clause-id id :case-lst))
-                  (append '(#\G #\o #\a #\l)
-                          (string-for-tilde-@-clause-id-phrase/primes
-                           (access clause-id id :primes))))
-                 (t (append '(#\S #\u #\b #\g #\o #\a #\l #\Space)
-                            (string-for-tilde-@-clause-id-phrase/periods
-                             (access clause-id id :case-lst))
-                            (string-for-tilde-@-clause-id-phrase/primes
-                             (access clause-id id :primes))))))
-          (t (append
-              '(#\S #\u #\b #\g #\o #\a #\l #\Space #\*)
-              (string-for-tilde-@-clause-id-phrase/periods
-               (access clause-id id :pool-lst))
-              (cons #\/
-                    (append (string-for-tilde-@-clause-id-phrase/periods
-                             (access clause-id id :case-lst))
-                            (string-for-tilde-@-clause-id-phrase/primes
-                             (access clause-id id :primes))))))))
-   'string))
 
 (defrec bddnote
   (cl-id goal-term mx-id err-string fmt-alist cst term bdd-call-stack ttree)

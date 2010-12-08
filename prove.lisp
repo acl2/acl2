@@ -5139,16 +5139,21 @@
   (let ((ens1 (access rewrite-constant rcnst1 :current-enabled-structure))
         (ens2 (access rewrite-constant rcnst2 :current-enabled-structure)))
     (cond
-     ((eql (access enabled-structure ens1 :array-name-suffix)
-           (access enabled-structure ens2 :array-name-suffix))
+     ((equal (access enabled-structure ens1 :array-name)
+             (access enabled-structure ens2 :array-name))
 
 ; We want to avoid printing a warning in those cases where we have not really
 ; created a new enabled structure.  In this case, the enabled structures could
 ; still in principle be different, in which case we are missing some possible
 ; warnings.  In practice, this function is only called when ens2 is either
 ; identical to ens1 or is created from ens1 by a call of
-; load-theory-into-enabled-structure where incrmt-array-name-flg is t, in which
+; load-theory-into-enabled-structure that creates a new array name, in which
 ; case the eql test above will fail.
+
+; Warning: Through Version_4.1 we compared :array-name-suffix fields.  But now
+; that the waterfall can be parallelized, the suffix might not change when we
+; install a new theory array; consider load-theory-into-enabled-structure in
+; the case that its incrmt-array-name-info argument is a clause-id.
 
       state)
      (t
@@ -5731,7 +5736,7 @@
     (waterfall-print-clause goal-already-printedp cl-id clause state)
     (mv-let
      (erp new-pspv-1 state)
-     (load-hint-settings-into-pspv t hint-settings pspv wrld ctx state)
+     (load-hint-settings-into-pspv t hint-settings pspv cl-id wrld ctx state)
      (cond
       (erp (mv 'error pspv nil state))
       (t

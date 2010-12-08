@@ -1133,36 +1133,32 @@
               (convert-theory-to-unordered-mapping-pairs lst wrld)))
             wrld))))
 
-; We now develop the foundations of the concept that a rune is
-; "enabled" in the current theory.  In ACL2, the user can get "into" a
-; theory with the in-theory event, which is similar in spirit to
-; in-package but selects a theory as the "current" theory.  A rune is
-; said to be "enabled" if it is a member of the runic theory
-; corresponding to the current (common) theory and is said to be
+; We now develop the foundations of the concept that a rune is "enabled" in the
+; current theory.  In ACL2, the user can get "into" a theory with the in-theory
+; event, which is similar in spirit to in-package but selects a theory as the
+; "current" theory.  A rune is said to be "enabled" if it is a member of the
+; runic theory corresponding to the current (common) theory and is said to be
 ; "disabled" otherwise.
 
 ; Historical Note about Nqthm
 
-; Nqthm had no explicit notion of the current theory.  However,
-; implicitly, nqthm contained a current theory and the events ENABLE
-; and DISABLE allowed the user to add a name to it or delete a name
-; from it.  The experimental xnqthm, mentioned elsewhere in this
-; system, introduced the notion of theories and tied them to enabling
-; and disabling, following suggestions and patches implemented by Bill
-; Bevier during the Kit proofs (and implemented in Pc-Nqthm, and
-; extended in Nqthm-1992).  The ACL2 notion of theory is much richer
-; because it allows one to compute the value of theories using
-; functions defined within the logic.  (end of note)
+; Nqthm had no explicit notion of the current theory.  However, implicitly,
+; nqthm contained a current theory and the events ENABLE and DISABLE allowed
+; the user to add a name to it or delete a name from it.  The experimental
+; xnqthm, mentioned elsewhere in this system, introduced the notion of theories
+; and tied them to enabling and disabling, following suggestions and patches
+; implemented by Bill Bevier during the Kit proofs (and implemented in
+; Pc-Nqthm, and extended in Nqthm-1992).  The ACL2 notion of theory is much
+; richer because it allows one to compute the value of theories using functions
+; defined within the logic.  (end of note)
 
-; Suppose we have a theory which has been selected as current.  This
-; may be the globally current theory, as set by the in-theory event,
-; or it may be a locally current theory, as set by the in-theory hint
-; to defthm or defun.  We must somehow process the current theory so
-; that we can quickly answer the question "is rune enabled?"  We now
-; develop the code for doing that.
+; Suppose we have a theory which has been selected as current.  This may be the
+; globally current theory, as set by the in-theory event, or it may be a
+; locally current theory, as set by the in-theory hint to defthm or defun.  We
+; must somehow process the current theory so that we can quickly answer the
+; question "is rune enabled?"  We now develop the code for doing that.
 
-; The structure defined below is used as a fast way to represent a
-; theory:
+; The structure defined below is used as a fast way to represent a theory:
 
 (defrec enabled-structure
 
@@ -1173,85 +1169,80 @@
    array-name-root . array-name-suffix)
   t)
 
-; The following invariant is maintained in all instances of this
-; structure.  Theory-array is an array1p whose array length is
-; array-length.  Furthermore array-name is a symbol of the form rootj,
-; root is the array-name-root (as a list of characters) and j is the
-; array-name-suffix.  Thus, if i is a nonnegative integer less than
-; array-length, then (acl2-aref1 array-name theory-array i) has a
-; satisfied guard.  Furthermore, important to efficiency but
-; irrelevant to correctness, it will always be the case that the von
-; Neumann array associated with array-name is in fact theory-array.
-; Thus the above expression executes quickly.  To get a new array
-; name, should one ever be needed, it suffices to increment the
-; array-name-suffix and build a name from that new value.
+; The following invariant is maintained in all instances of this structure.
+; Theory-array is an array1p whose array length is array-length.  Furthermore
+; array-name is a symbol of the form rootj, root is the array-name-root (as a
+; list of characters) and j is the array-name-suffix (which however is not
+; always used; see load-theory-into-enabled-structure).  Thus, if i is a
+; nonnegative integer less than array-length, then (acl2-aref1 array-name
+; theory-array i) has a satisfied guard.  Furthermore, important to efficiency
+; but irrelevant to correctness, it will always be the case that the von
+; Neumann array associated with array-name is in fact theory-array.  Thus the
+; above expression executes quickly.  To get a new array name, should one ever
+; be needed, it can suffice to increment the array-name-suffix and build a name
+; from that new value.  However, if we hope to use parallel evaluation in the
+; waterfall, we instead make a unique name based on each clause-id.  See
+; load-theory-into-enabled-structure.
 
-; The theory-array of an enabled-structure for a given common theory
-; is (except for the header entry) just the augmented runic theory
-; corresponding to the given common theory.  That is, the ACL2 array
-; alist we need to construct for a theory maps each array index to a
-; non-nil value.  The non-nil value we choose is in fact the
-; corresponding rune.  It would suffice, for purposes of enabling, to
-; store T in the array to signify enabledness.  By storing the rune
-; itself we make it possible to determine what runic theory is in the
-; array.  (There is no general purpose way to map from a nume to its
-; rune (short of looking through the whole world).)
+; The theory-array of an enabled-structure for a given common theory is (except
+; for the header entry) just the augmented runic theory corresponding to the
+; given common theory.  That is, the ACL2 array alist we need to construct for
+; a theory maps each array index to a non-nil value.  The non-nil value we
+; choose is in fact the corresponding rune.  It would suffice, for purposes of
+; enabling, to store T in the array to signify enabledness.  By storing the
+; rune itself we make it possible to determine what runic theory is in the
+; array.  (There is no general purpose way to map from a nume to its rune
+; (short of looking through the whole world).)
 
-; The global variable 'global-enabled-structure contains an instance
-; of the enabled-structure record in which the array-name is
-; ENABLED-ARRAY-0, array-name-root is the list of characters in
-; "ENABLED-ARRAY-" and the array-name-suffix is 0.  A rune with
-; nume n is (globally) enabled in the current world iff either n is
-; greater than the index-of-last-enabling or array[n] is non-nil.
-; This is just the computation done by enabled-numep, below.
+; The global variable 'global-enabled-structure contains an instance of the
+; enabled-structure record in which the array-name is ENABLED-ARRAY-0,
+; array-name-root is the list of characters in "ENABLED-ARRAY-" and the
+; array-name-suffix is 0.  A rune with nume n is (globally) enabled in the
+; current world iff either n is greater than the index-of-last-enabling or
+; array[n] is non-nil.  This is just the computation done by enabled-numep,
+; below.
 
-; The in-theory event loads the 'global-enabled-structure with
-; the theory-value and sets the index-of-last-enabling to the maximum
-; nume at that time.  This structure is passed into prove and
-; thus into rewrite, etc.
+; The in-theory event loads the 'global-enabled-structure with the theory-value
+; and sets the index-of-last-enabling to the maximum nume at that time.  This
+; structure is passed into prove and thus into rewrite, etc.
 
 ; When an in-theory hint setting is provided we change the array name
-; from ENABLED-ARRAY-j to ENABLED-ARRAY-j+1 (changing suffix
-; appropriately) and load the local theory into that structure.  After
-; we have done a few proofs with local in-theory hint settings, these
-; auxiliary arrays will have been allocated and won't be deallocated.
+; appropriately and load the local theory into that structure.  We flush each
+; such array in order to allow it to be garbage collected; see
+; restore-hint-settings-in-pspv.
 
 ; Historical Note about Nqthm
 
-; In nqthm we solved this problem by having a list of temporarily
-; disabled names which was bound when there were local enabling hint
-; settings.  That implementation suffered because if hundreds of names
-; were enabled locally the time spent searching the list was
-; excessive.  In xnqthm we solved that problem by storing the enabled
-; status on the property list of each name.  We could do that here.
-; However, that implementation suffered from the fact that if a proof
-; attempt was aborted then we had to carefully clean up the property
-; list structures so that they once again reflected the current
-; (global) theory.  The beauty of the ACL2 approach is that local hint
-; settings have no affect on the global theory and yet involve no
-; overhead.
+; In nqthm we solved this problem by having a list of temporarily disabled
+; names which was bound when there were local enabling hint settings.  That
+; implementation suffered because if hundreds of names were enabled locally the
+; time spent searching the list was excessive.  In xnqthm we solved that
+; problem by storing the enabled status on the property list of each name.  We
+; could do that here.  However, that implementation suffered from the fact that
+; if a proof attempt was aborted then we had to carefully clean up the property
+; list structures so that they once again reflected the current (global)
+; theory.  The beauty of the ACL2 approach is that local hint settings have no
+; affect on the global theory and yet involve no overhead.
 
-; A delicacy of the current implementation however concerns the
-; relation between the global enabled structure and undoing.  If the
-; world is backed up to some previous point, the
-; 'global-enabled-structure extant there is exposed and we are
-; apparently ready to roll.  However, the von Neumann array named by
-; that structure may be out-dated in the sense that it contains a now
-; undone theory.  Technically there is nothing wrong with this, but if
-; we let it persist things would be very slow because the attempt to
-; access the applicative array would detect that the von Neumann array
-; is out of date and would result in a linear search of the
-; applicative array.  We must therefore compress the applicative array
-; (and hence reload the von Neumann one) whenever we back up.
+; A delicacy of the current implementation however concerns the relation
+; between the global enabled structure and undoing.  If the world is backed up
+; to some previous point, the 'global-enabled-structure extant there is exposed
+; and we are apparently ready to roll.  However, the von Neumann array named by
+; that structure may be out-dated in the sense that it contains a now undone
+; theory.  Technically there is nothing wrong with this, but if we let it
+; persist things would be very slow because the attempt to access the
+; applicative array would detect that the von Neumann array is out of date and
+; would result in a linear search of the applicative array.  We must therefore
+; compress the applicative array (and hence reload the von Neumann one)
+; whenever we back up.
 
-; Finally, there is one last problem.  Eventually the array-size of
-; the array in one of these structures will be too small.  This
-; manifests itself when the maximum rule index at the time we load the
-; structure is equal to or greater than the array-length.  At that
-; time we grow the array size by 500.
+; Finally, there is one last problem.  Eventually the array-size of the array
+; in one of these structures will be too small.  This manifests itself when the
+; maximum rule index at the time we load the structure is equal to or greater
+; than the array-length.  At that time we grow the array size by 500.
 
-; Here is how we use an enabled structure, ens, to determine if a nume,
-; rune, or function is enabled.
+; Here is how we use an enabled structure, ens, to determine if a nume, rune,
+; or function is enabled.
 
 (defun enabled-numep (nume ens)
 
@@ -1270,12 +1261,11 @@
 
 (defun enabled-arith-numep (nume ens)
 
-; This function takes a nume (or nil) and determines if it is enabled
-; in the enabled structure ens.  We treat nil as though it were
-; enabled.  In current usage, ens is always the global arithmetic
-; theory.  Any nume created since the most recent in-arithmetic-theory
-; is considered disabled.  The normal enabled-numep would treat these
-; more recent numes as enabled.
+; This function takes a nume (or nil) and determines if it is enabled in the
+; enabled structure ens.  We treat nil as though it were enabled.  In current
+; usage, ens is always the global arithmetic theory.  Any nume created since
+; the most recent in-arithmetic-theory is considered disabled.  The normal
+; enabled-numep would treat these more recent numes as enabled.
 
 ; Our calls of the-fixnum assume that nume is less than about 2 billion.  That
 ; seems like a safe assumption!
@@ -1687,23 +1677,124 @@
                          ctx
                          state))
 
+; CLAUSE IDENTIFICATION
+
+; Before we can write the function that prints a description of
+; simplify-clause's output, we must be able to identify clauses.  This raises
+; some issues that are more understandable later, namely, the notion of the
+; pool.  See Section PUSH-CLAUSE and The Pool.
+
+; Associated with every clause in the waterfall is a unique object
+; called the clause identifier or clause-id.  These are printed out
+; at the user in a certain form, e.g.,
+
+; [3]Subgoal *2.1/5.7.9.11'''
+
+; but the internal form of these ids is:
+
+(defrec clause-id ((forcing-round . pool-lst) case-lst . primes) t)
+
+; where forcing-round is a natural number, pool-lst and case-lst are generally
+; true-lists of non-zero naturals (though elements of case-lst can be of the
+; form Dk in the case of a dijunctive split) and primes is a natural.  The
+; pool-lst is indeed a pool-lst.  (See the function pool-lst.) The case-lst is
+; structurally analogous.
+
+; A useful constant, the first clause-id:
+
+(defconst *initial-clause-id*
+
+; Note: If this changes, inspect every use of it.  As of this writing there is
+; one place where we avoid a make clause-id and use *initial-clause-id* instead
+; because we know the forcing-round is 0 and pool-lst and case-lst fields are
+; both nil and the primes field is 0.
+
+  (make clause-id
+        :forcing-round 0
+        :pool-lst nil
+        :case-lst nil
+        :primes 0))
+
+; Because of the way :DO-NOT-INDUCT name hints are implemented, and because of
+; the way we create names of theory arrays, we need to be able to produce a
+; string representing a given clause-id.  In the case of the above
+; :DO-NOT-INDUCT, we use this to form a literal atom of the form |name
+; clause-id| where clause-id is what tilde-@-clause-id-phrase will print on id.
+; Therefore, we now virtually repeat the definition of
+; tilde-@-clause-id-phrase, except this time building a string.  We could use
+; this to print all clause ids.  But that is slow because it involves consing
+; up strings.  So we suffer the inconvenience of duplication.  If
+; tilde-@-clause-id-phrase is changed, be sure to change the functions below.
+
+(defun chars-for-tilde-@-clause-id-phrase/periods (lst)
+  (declare (xargs :guard (true-listp lst)))
+  (cond
+   ((null lst) nil)
+   ((null (cdr lst)) (explode-atom (car lst) 10))
+   (t (append (explode-atom (car lst) 10)
+              (cons #\.
+                    (chars-for-tilde-@-clause-id-phrase/periods
+                     (cdr lst)))))))
+
+(defun chars-for-tilde-@-clause-id-phrase/primes (n)
+  (declare (xargs :guard (and (integerp n) (>= n 0))))
+  (cond ((= n 0) nil)
+        ((= n 1) '(#\'))
+        ((= n 2) '(#\' #\'))
+        ((= n 3) '(#\' #\' #\'))
+        (t (cons #\' (append (explode-atom n 10) '(#\'))))))
+
+(defun chars-for-tilde-@-clause-id-phrase (id)
+  (append
+   (if (= (access clause-id id :forcing-round) 0)
+       nil
+     `(#\[ ,@(explode-atom (access clause-id id :forcing-round) 10) #\]))
+   (cond ((null (access clause-id id :pool-lst))
+          (cond ((null (access clause-id id :case-lst))
+                 (append '(#\G #\o #\a #\l)
+                         (chars-for-tilde-@-clause-id-phrase/primes
+                          (access clause-id id :primes))))
+                (t (append '(#\S #\u #\b #\g #\o #\a #\l #\Space)
+                           (chars-for-tilde-@-clause-id-phrase/periods
+                            (access clause-id id :case-lst))
+                           (chars-for-tilde-@-clause-id-phrase/primes
+                            (access clause-id id :primes))))))
+         (t (append
+             '(#\S #\u #\b #\g #\o #\a #\l #\Space #\*)
+             (chars-for-tilde-@-clause-id-phrase/periods
+              (access clause-id id :pool-lst))
+             (cons #\/
+                   (append (chars-for-tilde-@-clause-id-phrase/periods
+                            (access clause-id id :case-lst))
+                           (chars-for-tilde-@-clause-id-phrase/primes
+                            (access clause-id id :primes)))))))))
+
+(defun string-for-tilde-@-clause-id-phrase (id)
+
+; Warning: Keep this in sync with tilde-@-clause-id-phrase.
+
+  (coerce (chars-for-tilde-@-clause-id-phrase id)
+          'string))
+
 (defun load-theory-into-enabled-structure
-  (theory-expr theory augmented-p ens incrmt-array-name-flg
+  (theory-expr theory augmented-p ens incrmt-array-name-info
                index-of-last-enabling wrld ctx state)
 
 ; Note: Theory must be a runic theory if augmented-p is nil and otherwise an
 ; augmented runic theory, but never a common theory.
 
 ; We do exactly what the name of this function says, we load the given theory
-; into the enabled structure ens.  If incrmt-array-name-flg is t we increment
-; the array name suffix.  Otherwise, we use the same name.  Loading consists of
-; augmenting the theory (if augmented-p is nil) to convert it into a list of
-; pairs, (nume . rune), mapping numes to their runes, and then compressing it
-; into the named array.  We set the index of last enabling to be the highest
-; existing nume in wrld right now unless index-of-last-enabling is non-nil, in
-; which case we use that (which should be a natp).  Thus, any name introduced
-; after this is enabled relative to this ens.  If the array of the ens is too
-; short, we extend it by 500.
+; into the enabled structure ens.  If incrmt-array-name-info is t we increment
+; the array name suffix.  If incrmt-array-name-info is non-boolean, then it is
+; a clause-id that we use to create a new name uniquely determined by that
+; clause-id.  Otherwise, we use the same name.  Loading consists of augmenting
+; the theory (if augmented-p is nil) to convert it into a list of pairs, (nume
+; . rune), mapping numes to their runes, and then compressing it into the named
+; array.  We set the index of last enabling to be the highest existing nume in
+; wrld right now unless index-of-last-enabling is non-nil, in which case we use
+; that (which should be a natp).  Thus, any name introduced after this is
+; enabled relative to this ens.  If the array of the ens is too short, we
+; extend it by 500.
 
 ; A Refresher Course on ACL2 One Dimensional Arrays:
 
@@ -1724,15 +1815,22 @@
          (new-d (cond ((< n d) d)
                       (t (+ d (* 500 (1+ (floor (- n d) 500)))))))
          (root (access enabled-structure ens :array-name-root))
-         (suffix (cond (incrmt-array-name-flg
+         (suffix (cond ((eq incrmt-array-name-info t)
                         (1+ (access enabled-structure ens :array-name-suffix)))
                        (t (access enabled-structure ens :array-name-suffix))))
-         (name (cond (incrmt-array-name-flg
+         (name (cond ((eq incrmt-array-name-info t)
                       (intern (coerce
                                (append root
                                        (explode-nonnegative-integer suffix
                                                                     10
                                                                     nil))
+                               'string)
+                              "ACL2"))
+                     (incrmt-array-name-info ; must be a clause-id
+                      (intern (coerce
+                               (append root
+                                       (chars-for-tilde-@-clause-id-phrase
+                                        incrmt-array-name-info))
                                'string)
                               "ACL2"))
                      (t (access enabled-structure ens :array-name))))

@@ -16722,6 +16722,10 @@
 ; Improved error message for forms such as (defattach f g :hints ...), in which
 ; the first argument is a symbol but there are more than two arguments.
 
+; Changed the names of the arrays stored in enabled-structures that are created
+; by hints during the waterfall.  We did this with David Rager, in order to
+; support parallel evaluation for the waterfall.
+
   :Doc
   ":Doc-Section release-notes
 
