@@ -6253,7 +6253,7 @@ gbc time        :      8.930 secs
   ~ev[]
   It may be surprising that no data is displayed for the corresponding
   ~c[:CONC] xrune.  The explanation, however, is simple: the hypothesis never
-  rewrte to true, so the conclusion was never rewritten.  This is consistent
+  rewrote to true, so the conclusion was never rewritten.  This is consistent
   with the marking as ``useless'' of all ~c[:frames] and ~c[:tries] for the
   rune and the hypothesis xrune.  Note by the way, once again, that the
   hypothesis xrune does not contribute to any ~c[:frames] count.

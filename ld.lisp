@@ -17002,6 +17002,9 @@
   binding such a free variable to a new variable of the form ~c[???-Y], the new
   variable is now of the form ~c[UNBOUND-FREE-Y].
 
+  Fixed a bug that could inhibit the printing of certain theory warnings (and
+  probably, in the other direction, cause inappropriate such printing).
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   There is new ~c[Makefile] support for certifying just some of the distributed

@@ -5135,6 +5135,7 @@
                              ctx wrld state)))
 
 (defun maybe-warn-about-theory-from-rcnsts (rcnst1 rcnst2 ctx ens wrld state)
+  (declare (ignore ens))
   (let ((ens1 (access rewrite-constant rcnst1 :current-enabled-structure))
         (ens2 (access rewrite-constant rcnst2 :current-enabled-structure)))
     (cond
@@ -5156,7 +5157,7 @@
 ; The most coherent thing to do is contruct the warning in an analogous manner,
 ; which is why we use ens below rather than ens1.
 
-      (maybe-warn-about-theory-simple ens ens2 ctx wrld state)))))
+      (maybe-warn-about-theory-simple ens1 ens2 ctx wrld state)))))
 
 (defun waterfall-print-clause-body (cl-id clause state)
   (pprogn
