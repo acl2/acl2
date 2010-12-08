@@ -65,7 +65,7 @@
                 (mv nil state))
                (t (thanks-for-the-hint nil hint-settings state))) ;BB
          (er-let* ((pspv (load-hint-settings-into-pspv
-                          t hint-settings saved-pspv wrld ctx state)))
+                          t hint-settings saved-pspv nil wrld ctx state)))
            (cond
             ((intersectp-eq
               '(:do-not-induct :do-not :induct :use :cases :by)
