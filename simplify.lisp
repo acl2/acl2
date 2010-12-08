@@ -1098,30 +1098,36 @@
                      ens force-flg wrld state ttree-list acc1 acc2 acc3 acc4
                      oncep))
                    (t
-                    (mv-let
-                     (force-flg ttree)
-                     (cond
-                      ((or (not forcep1) (not force-flg))
-                       (mv nil ttree))
-                      (t
-                       (force-assumption
-                        rune
-                        target
-                        (sublis-var-and-mark-free unify-subst hyp)
-                        type-alist nil
-                        (immediate-forcep forcer-fn ens)
-                        force-flg
-                        ttree)))
-                     (cond
-                      (force-flg
-                       (mult-relieve-fc-hyps
-                        rune target (cdr hyps) concls unify-subst type-alist
-                        ens force-flg wrld state ttree
-                        acc1 acc2 acc3 acc4 oncep))
-                      (t (mv (cons *t* acc1)
-                             (cons hyps acc2)
-                             (cons unify-subst acc3)
-                             (cons ttree acc4)))))))))
+                    (let ((fully-bound-unify-subst
+                           (if (and forcep1 force-flg)
+                               (bind-free-vars-to-unbound-free-vars
+                                (all-vars hyp)
+                                unify-subst)
+                               unify-subst)))
+                      (mv-let
+                       (force-flg ttree)
+                       (cond
+                        ((or (not forcep1) (not force-flg))
+                         (mv nil ttree))
+                        (t
+                         (force-assumption
+                          rune
+                          target
+                          (sublis-var fully-bound-unify-subst hyp)
+                          type-alist nil
+                          (immediate-forcep forcer-fn ens)
+                          force-flg
+                          ttree)))
+                       (cond
+                        (force-flg
+                         (mult-relieve-fc-hyps
+                          rune target (cdr hyps) concls fully-bound-unify-subst
+                          type-alist ens force-flg wrld state ttree
+                          acc1 acc2 acc3 acc4 oncep))
+                        (t (mv (cons *t* acc1)
+                               (cons hyps acc2)
+                               (cons unify-subst acc3)
+                               (cons ttree acc4))))))))))
          (t (let ((inst-hyp (sublis-var unify-subst hyp)))
               (mv-let (ts ttree1)
                       (type-set inst-hyp force-flg nil type-alist ens wrld nil

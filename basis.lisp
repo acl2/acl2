@@ -8343,6 +8343,10 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
                                                         718273893))
                                         #x7FFFFFFF)))))))
 
+#-(or acl2-loop-only hons)
+(defvar *fchecksum-symbol-memo*
+  nil)
+
 (defun fchecksum-atom (x)
 
 ; X is any atom.  We compute a "functional checksum" of X.
@@ -8366,17 +8370,26 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
              (declare (type (signed-byte 32) abs-code))
              (times-mod-m31 abs-code 283748912)))
           ((symbolp x)
-           (let* ((pkg-code (fchecksum-string (symbol-package-name x)))
-                  (sym-code (fchecksum-string (symbol-name x)))
-                  (pkg-code-scramble
+           (cond
+            #-(or hons acl2-loop-only)
+            ((and *fchecksum-symbol-memo*
+                  (gethash x *fchecksum-symbol-memo*)))
+            (t
+             (let* ((pkg-code (fchecksum-string (symbol-package-name x)))
+                    (sym-code (fchecksum-string (symbol-name x)))
+                    (pkg-code-scramble
 
 ; We scramble the bits of pkg-code so that it matters that they are in order.
 ; To do this, we multiply by another primitive root and mod out by M31.
 
-                   (times-mod-m31 pkg-code 938187814)))
-             (declare (type (signed-byte 32)
-                            pkg-code sym-code pkg-code-scramble))
-             (logxor pkg-code-scramble sym-code)))
+                     (times-mod-m31 pkg-code 938187814)))
+               (declare (type (signed-byte 32)
+                              pkg-code sym-code pkg-code-scramble))
+               (cond #-(or hons acl2-loop-only)
+                     (*fchecksum-symbol-memo*
+                      (setf (gethash x *fchecksum-symbol-memo*)
+                            (logxor pkg-code-scramble sym-code)))
+                     (t (logxor pkg-code-scramble sym-code)))))))
           ((stringp x)
            (fchecksum-string x))
           ((characterp x) ; just scramble using another primitive root

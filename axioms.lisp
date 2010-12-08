@@ -23192,6 +23192,7 @@ J
     initialize-accumulated-warnings
     ev-rec-return-last
     chk-return-last-entry
+    fchecksum-atom
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*

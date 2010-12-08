@@ -3115,7 +3115,7 @@
                                   unify-subst
                                   type-alist
                                   nil ens wrld nil ttree
-                                  nil nil backchain-limit)
+                                  nil nil backchain-limit 1)
            (cond
             (relieve-hyps-ans 
 

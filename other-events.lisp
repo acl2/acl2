@@ -12613,9 +12613,15 @@ The following all cause errors.
          (old-skip-proofs-seen (global-val 'skip-proofs-seen wrld0))
          (active-book-name (active-book-name wrld0 state))
          (old-ttags-seen (global-val 'ttags-seen wrld0))
-         #-acl2-loop-only (*inside-include-book-fn* (if behalf-of-certify-flg
-                                                        'hcomp-build
-                                                      t))
+         #-(or acl2-loop-only hons)
+         (*fchecksum-symbol-memo*
+          (if *inside-include-book-fn*
+              *fchecksum-symbol-memo*
+            (make-hash-table :test 'eq)))
+         #-acl2-loop-only
+         (*inside-include-book-fn* (if behalf-of-certify-flg
+                                       'hcomp-build
+                                     t))
          (old-include-book-path
           (global-val 'include-book-path wrld0))
          (saved-acl2-defaults-table

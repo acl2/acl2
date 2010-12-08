@@ -5424,43 +5424,35 @@
           (term-and-typ-to-lookup hyp wrld)
           (search-type-alist term typ type-alist unify-subst ttree wrld)))
 
-(mutual-recursion
+(defun bind-free-vars-to-unbound-free-vars (vars alist)
 
-(defun sublis-var-and-mark-free (alist form)
+; For every var in vars that is not bound in alist, create the binding
+; (var . UNBOUND-FREE-var) and add that binding to alist.  Return the
+; extended alist.  We use this function to instantiate free vars in
+; FORCEd and CASE-SPLIT hypotheses.  In that application, vars will be
+; the list of all vars occuring in the hyp and alist will be the
+; unify-subst.  The name ``unbound free var'' is a little odd out of
+; context but we hope it will make the user realize that the variable
+; occurred freely and we couldn't find a binding for it to make the hyp
+; true before forcing or splitting.
 
-; This function is rather odd: it is equivalent to (sublis-var alist'
-; form) where alist' is derived from alist by adding a pair (var .
-; ???-var) for each variable var in form that is not assigned a value
-; by alist.  Thus it creates an instance of form.  However, the free
-; vars of form are assigned essentially arbitrary variable values and
-; while no two free vars are identified by this process, there is no
-; guarantee that the variables introduced in their stead are "new."
-; For example, ???-var may come into the instantiated term via alist.
-; The only reason for this function is to highlight the free vars in a
-; term upon which we will split, in the half-hearted hope that the
-; user will spot it.
-
-  (cond ((variablep form)
-         (let ((a (assoc-eq form alist)))
-           (cond (a (cdr a))
-                 (t (packn (list "???-" form))))))
-        ((fquotep form)
-         form)
-        (t (cons-term (ffn-symb form)
-                      (sublis-var-and-mark-free-lst alist (fargs form))))))
-
-(defun sublis-var-and-mark-free-lst (alist l)
-  (if (null l)
-      nil
-    (cons (sublis-var-and-mark-free alist (car l))
-          (sublis-var-and-mark-free-lst alist (cdr l)))))
-
-)
+  (cond ((endp vars) alist)
+        ((assoc-eq (car vars) alist)
+         (bind-free-vars-to-unbound-free-vars (cdr vars) alist))
+        (t (bind-free-vars-to-unbound-free-vars
+            (cdr vars)
+            (cons (cons (car vars)
+                        (packn (list "UNBOUND-FREE-" (car vars))))
+                  alist)))))
 
 ; The Accumulated Persistence Essay
 
-; We now develop the code needed to track accumulated-persistence.
-; To activate accumulated-persistence, you must first call
+; We now develop the code needed to track accumulated-persistence.  The
+; documentation topic for accumulated-persistence serves as a useful
+; introduction to what is implemented by the code, and is a good starting point
+; before reading this Essay.
+
+; A typical use of this utility is as follows.
 
 ; >(accumulated-persistence t)              ; activate and initialize
 ; > ...                                     ; do proofs
@@ -5483,6 +5475,9 @@
 ; where k is 1, we naturally use a let instead of an mv-let.)  However, we
 ; insert some additional code to accumulate the persistence of rune.
 
+; There are optional arguments of with-accumulated-persistence not described in
+; this essay, but whose meaning is pretty clear from the code.
+
 ; The implementation of accumulated-persistence is as follows.  First, the
 ; necessary global data structures are maintained as the status of a wormhole
 ; called 'accumulated-persistence.  As usual with a wormhole status, it is of
@@ -5498,6 +5493,73 @@
 ; kept in a single accp-info record, which is the value of the wormhole-data
 ; field of wormhole-status:
 
+; If accumulated persistence is enabled then we give special treatment to
+; hypotheses and conclusions of rules.  Each is represented as an ``extended
+; rune'' (``xrune''), which provides an accumulation site for work done on
+; behalf of that hypothesis or conclusion.  Thus, we actually traffic in
+; xrunes, where an xrune is either a rune, a hyp-xrune (:hyp rune , n) where n
+; is a positive integer, or a conc-xrune (:conc . rune).  The hyp-xrune (:hyp
+; rune . n) is used in accumulated-persistence for recording the work done on
+; behalf of the nth hypothesis of rune, while the conc-xrune (:conc . rune)
+; records the work done on behalf of the right-hand-side of the rune.  Note
+; that :doc accumulated-persistence says that a hyp-xrune is (:hyp n . rune)
+; rather than (:hyp rune . n), but we found the latter form much more
+; convenient for sorting.  Still, we present (:hyp n . rune) to the user by
+; calling prettyify-xrune.
+
+(defabbrev x-xrunep (xrune) ; extended xrunep
+  (or (eq (car xrune) :hyp)
+      (eq (car xrune) :conc)))
+
+(defabbrev hyp-xrune (n rune)
+  (assert$ (not (x-xrunep rune))
+           (list* :hyp rune n)))
+
+(defabbrev hyp-xrune-rune (xrune)
+  (assert$ (and (x-xrunep xrune)
+                (eq (car xrune) :hyp))
+           (cadr xrune)))
+
+(defabbrev conc-xrune (rune)
+  (assert$ (not (x-xrunep rune))
+           (list* :conc rune)))
+
+(defabbrev conc-xrune-rune (xrune)
+  (assert$ (and (x-xrunep xrune)
+                (eq (car xrune) :conc))
+           (cdr xrune)))
+
+(defabbrev xrune-rune (xrune)
+  (cond ((x-xrunep xrune)
+         (if (eq (car xrune) :hyp)
+             (cadr xrune)
+           (cdr xrune)))
+        (t xrune)))
+
+(defabbrev rune= (rune1 rune2)
+  (and (eq (car rune1) (car rune2))
+       (equal (cdr rune1) (cdr rune2))))
+
+(defabbrev xrune= (xrune1 xrune2)
+  (cond ((eq (car xrune1) :hyp)
+         (and (eq (car xrune2) :hyp)
+              (rune= (cadr xrune1) (cadr xrune2))
+              (eql (cddr xrune1) (cddr xrune2))))
+        ((eq (car xrune1) :conc)
+         (and (eq (car xrune2) :conc)
+              (rune= (cdr xrune1) (cdr xrune2))))
+        (t (rune= xrune1 xrune2))))
+
+(defun prettyify-xrune (xrune)
+
+; We sort :hyp xrunes first by their rune (see sort-xrune-alist-by-rune), which
+; is why a hyp xrune is of the form (:hyp rune . n) rather than (:hyp n
+; . rune).  But the latter is more pleasant to view.
+
+  (cond ((eq (car xrune) :hyp)
+         (list* :hyp (cddr xrune) (cadr xrune)))
+        (t xrune)))
+
 (defrec accp-info
 
 ; The "s" and "f" suffixes below suggest "success" and "failure", though a
@@ -5506,7 +5568,8 @@
 ; description of fields.
 
   (((cnt-s . cnt-f) . (stack-s . stack-f))
-   rune-stack
+   xrune-stack
+   xrunep
    .
    totals)
   t)
@@ -5519,51 +5582,90 @@
 
 ; Stack-s (resp. stack-f) is a stack of old values of cnt-s (resp. cnt-f).
 
-; Rune-stack is a list of runes corresponding to stack-s and stack-f, where
-; each rune corresponds to a call of push-accp made on behalf of that rune.
+; Xrune-stack is a list of xrunes corresponding to stack-s and stack-f, where
+; each xrune corresponds to a call of push-accp made on behalf of that xrune.
+
+; Xrunep is true if we are to collect information for hypothesis and conclusion
+; xrunes, and is nil otherwise.
 
 ; Totals is a stack of the accumulated totals, initially '(nil); it is one
 ; longer than the common length of stack-s and stack-f.  Each element of the
-; stack is a list associating runes with totals accumulated for a corresponding
-; rune (i.e., an ancestral call of push-accp), as follows.
+; stack is a list associating xrunes with totals accumulated for a
+; corresponding xrune (i.e., an ancestral call of push-accp), as follows.
 
 (defrec accp-entry
+
+; Warning.  We construct lists of such entries that we refer to as alists.
+; Before changing the shape of this record, consider whether we are relying on
+; it being a record whose car is its :xrune field.  See for example
+; sort-xrune-alist-by-rune1.
 
 ; The "s" and "f" suffixes below suggest "success" and "failure", though a
 ; better distinction is between "useful work" and "useless work".  Our
 ; user-level reports say "useful" and "useless".  See just below for a further
 ; description of the fields.
 
-  (rune . ((n-s . ap-s)
-           .
-           (n-f . ap-f)))
+  (xrune . ((n-s . ap-s)
+            .
+            (n-f . ap-f)))
   t)
 
 ; Each element of stack-s (resp. stack-f) corresponds to an attempt to apply a
-; certain rune and the element is the value of cnt-s (resp. cnt-f) at the time
+; certain xrune and the element is the value of cnt-s (resp. cnt-f) at the time
 ; the attempt started.  When the attempt is successful, we increase cnt-s,
-; first by one and then by the difference of the current value of cnt-s with
-; the old value (on top of stack-s) to find out how many lemmas were usefully
-; tried under that rune, and we accumulate that difference into the success
-; fields of the current totals for that rune; similarly for cnt-f and useless
-; tries.  When the attempt fails, all accumulation is into the failure
-; (useless) fields of the totals.  The accumulated totals is a stack of lists,
-; each of which contains elements associating runes with values n-s, ap-s, n-f,
-; and ap-f, where n-s is the number of times rune was pushed onto the stack and
-; successfully applied, ap-s is the accumulated persistence of useful
-; applications of that rune (the total number of applications while that rune
-; was on the stack, not yet including such applications that are recorded in
-; more recent stack frames), and n-f and ap-f are similar but for failed
-; applications of that rune.
+; first by one if we have a rune rather than a hyp-xrune or conc-xrune, and then
+; by the difference of the current value of cnt-s with the old value (on top of
+; stack-s) to find out how many lemmas were usefully tried under that xrune,
+; and we accumulate that difference into the success fields of the current
+; totals for that xrune; similarly for cnt-f and useless tries.  When the
+; attempt fails, all accumulation is into the failure (useless) fields of the
+; totals.  The accumulated totals is a stack of lists, each of which contains
+; elements associating xrunes with values n-s, ap-s, n-f, and ap-f, where n-s
+; is the number of times xrune was pushed onto the stack and successfully
+; applied, ap-s is the accumulated persistence of useful applications of that
+; xrune (the total number of applications while that xrune was on the stack,
+; not yet including such applications that are recorded in more recent stack
+; frames), and n-f and ap-f are similar but for failed applications of that
+; xrune.
 
 ; Performance: We have seen (Version_3.2.1) about a 50% increase in time with
-; accumulated-persistence turned on, in very limited experiments.
+; accumulated-persistence turned on, in very limited experiments.  In later
+; versions we have found a significantly smaller increase unless enhanced
+; statistics are gathered.  Here are results using code developed after
+; Version_4.1, using Allegro CL.
 
-(defabbrev rune= (rune1 rune2)
-  (and (eq (car rune1) (car rune2))
-       (equal (cdr rune1) (cdr rune2))))
+#||
+In directory /projects/acl2/devel/books/workshops/2004/legato/support/
+(see below for discussion of which forms were submitted for each experiment).
 
-(defun merge-accumulated-persistence-aux (rune entry alist)
+(set-inhibit-output-lst '(prove proof-tree))
+;; (ld "/projects/acl2/devel-misc/patches/accumulated-persistence-hyps-rhs/patch.lisp")
+;; (value :q)
+;;; (load "/projects/acl2/devel-misc/patches/accumulated-persistence-hyps-rhs/patch.fasl")
+;; (load "/projects/acl2/devel-misc/patches/accumulated-persistence-hyps-rhs/old.fasl")
+;; (lp)
+; (accumulated-persistence t)
+(time$ (ld "proof-by-generalization-mult.lisp"))
+
+No accp (skip commented forms)
+; 97.01 seconds realtime, 95.54 seconds runtime.
+
+Old accp (include only one commented form, (accumulated-persistence t))
+; 114.82 seconds realtime, 113.46 seconds runtime.
+
+New accp (include all commented forms except ;;;)
+; 164.95 seconds realtime, 163.69 seconds runtime.
+
+New accp (include all commented forms)
+; 165.09 seconds realtime, 163.90 seconds runtime.
+
+The results above were based on code that always gave results for a :conc
+xrune.  We now skip that xrune if there are no hypotheses, but that didn't make
+much difference:
+; 164.84 seconds realtime, 163.50 seconds runtime.
+||#
+
+(defun merge-accumulated-persistence-aux (xrune entry alist)
   (cond ((endp alist)
 
 ; See the comment below merge-accumulated-persistence for an attempt we made to
@@ -5571,9 +5673,9 @@
 ; rather than just pushing the entry on the front).
 
          (list entry))
-        ((rune= rune (access accp-entry (car alist) :rune))
+        ((xrune= xrune (access accp-entry (car alist) :xrune))
          (cons (make accp-entry
-                     :rune rune
+                     :xrune xrune
                      :n-s (+ (access accp-entry entry :n-s)
                              (access accp-entry (car alist) :n-s))
                      :ap-s (+ (access accp-entry entry :ap-s)
@@ -5584,21 +5686,21 @@
                               (access accp-entry (car alist) :ap-f)))
                (cdr alist)))
         (t (cons (car alist)
-                 (merge-accumulated-persistence-aux rune entry (cdr alist))))))
+                 (merge-accumulated-persistence-aux xrune entry (cdr alist))))))
 
 (defun merge-accumulated-persistence-rec (new-alist old-alist)
   (cond ((endp new-alist) old-alist)
         (t (merge-accumulated-persistence-rec
             (cdr new-alist)
             (merge-accumulated-persistence-aux
-             (access accp-entry (car new-alist) :rune)
+             (access accp-entry (car new-alist) :xrune)
              (car new-alist)
              old-alist)))))
 
 (defun merge-accumulated-persistence (new-alist old-alist)
 
-; We tried an approach using sorting with rune-<, but it was much more
-; expensive.  We used as an example:
+; We tried an approach using sorting with rune-< (before we considered xrunes),
+; but it was much more expensive.  We used as an example:
 ; cd books/workshops/2004/legato/support/
 ; acl2::(set-inhibit-output-lst '(prove proof-tree))
 ; (accumulated-persistence t)
@@ -5633,6 +5735,9 @@
         (t (merge-accumulated-persistence-rec new-alist old-alist))))
 
 #||
+
+This multi-line comment was written before the introduction of xrunes, and we
+have left it unchanged from that time.
 
 The following alternate code doesn't do as well, even though it uses nconc.
 The nconc version doesn't even seem much better on space (in fact worse in an
@@ -5705,20 +5810,20 @@ gbc time        :      8.930 secs
 
 ||#
 
-(defun add-accumulated-persistence-s (rune delta-s delta-f alist original-alist
-                                           acc)
+(defun add-accumulated-persistence-s (xrune delta-s delta-f alist
+                                            original-alist acc)
 
 ; Warning: Keep this in sync with add-accumulated-persistence-f.
 
   (cond ((null alist)
          (cons (make accp-entry
-                     :rune rune
+                     :xrune xrune
                      :n-s  1
                      :ap-s (+ delta-f delta-s)
                      :n-f  0
                      :ap-f 0)
                original-alist))
-        ((rune= rune (access accp-entry (car alist) :rune))
+        ((xrune= xrune (access accp-entry (car alist) :xrune))
          (cons (change accp-entry (car alist)
                        :ap-f 0 ; no change in :n-f
                        :n-s  (1+ (access accp-entry (car alist) :n-s))
@@ -5729,11 +5834,11 @@ gbc time        :      8.930 secs
                                         :ap-f)))
                (revappend acc (cdr alist))))
         (t (add-accumulated-persistence-s
-            rune delta-s delta-f (cdr alist) original-alist
+            xrune delta-s delta-f (cdr alist) original-alist
             (cons (car alist) acc)))))
 
-(defun add-accumulated-persistence-f (rune delta-s delta-f alist original-alist
-                                           acc)
+(defun add-accumulated-persistence-f (xrune delta-s delta-f alist
+                                            original-alist acc)
 
 ; Warning: Keep this in sync with add-accumulated-persistence-s.
 
@@ -5742,13 +5847,13 @@ gbc time        :      8.930 secs
 
   (cond ((null alist)
          (cons (make accp-entry
-                     :rune rune
+                     :xrune xrune
                      :n-s  0
                      :ap-s 0
                      :n-f  1
                      :ap-f (+ delta-f delta-s))
                original-alist))
-        ((rune= rune (access accp-entry (car alist) :rune))
+        ((xrune= xrune (access accp-entry (car alist) :xrune))
          (cons (change accp-entry (car alist)
                        :n-f  (1+ (access accp-entry (car alist) :n-f))
                        :ap-f (assert$
@@ -5759,7 +5864,7 @@ gbc time        :      8.930 secs
                                          :ap-f))))
                (revappend acc (cdr alist))))
         (t (add-accumulated-persistence-f
-            rune delta-s delta-f (cdr alist) original-alist
+            xrune delta-s delta-f (cdr alist) original-alist
             (cons (car alist) acc)))))
 
 (defun accumulated-persistence-make-failures (alist)
@@ -5774,13 +5879,14 @@ gbc time        :      8.930 secs
                        :ap-s 0)
                (accumulated-persistence-make-failures (cdr alist))))))
 
-(defun add-accumulated-persistence (rune success-p delta-s delta-f alist-stack)
+(defun add-accumulated-persistence (xrune success-p delta-s delta-f
+                                          alist-stack)
 
 ; Alist-stack is a list of lists of accp-entry records.  First, we modify the
 ; top of alist-stack to record everything as useless (failure) if success-p is
 ; nil.  Then, we merge that modification into the second element of
-; alist-stack, after incrementing by 1 for the given rune's :n-s or :n-f and by
-; delta for its :ap-s or :ap-f, according to success-p.
+; alist-stack, after incrementing by 1 for the given xrune's :n-s or :n-f and
+; by delta for its :ap-s or :ap-f, according to success-p.
 
   (assert$
    (cdr alist-stack)
@@ -5790,10 +5896,10 @@ gbc time        :      8.930 secs
           (new-alist (cond
                       (success-p
                        (add-accumulated-persistence-s
-                        rune delta-s delta-f alist alist nil))
+                        xrune delta-s delta-f alist alist nil))
                       (t
                        (add-accumulated-persistence-f
-                        rune delta-s delta-f alist alist nil)))))
+                        xrune delta-s delta-f alist alist nil)))))
      (cons (merge-accumulated-persistence new-alist (cadr alist-stack))
            (cddr alist-stack)))))
 
@@ -5823,8 +5929,11 @@ gbc time        :      8.930 secs
                                            ; below).  The `a' versions avoid
                                            ; showing the useful/useless
                                            ; breakdown.
-  
+
   ~ev[]~/
+
+  See the end of this item for a discussion of ``enhanced statistics
+  gathering,'' which can be useful for more fine-grained proof debugging.
 
   Generally speaking, the more ACL2 knows, the slower it runs.  That is because
   the search space grows with the number of alternative rules.  Often, the
@@ -5854,22 +5963,22 @@ gbc time        :      8.930 secs
 
   Consider a ~c[:]~ilc[rewrite] rule named ~ilc[rune].  For simplicity, let us
   imagine that ~ilc[rune] is tried only once in the period during which
-  accumulated persistence is being ~il[monitor]ed.  Recall that to apply a
-  rewrite rule we must match the left-hand side of the conclusion to some term
-  we are trying to rewrite, establish the hypotheses of ~ilc[rune] by
-  rewriting, and, if successful, then rewrite the right-hand side of the
-  conclusion.  We say ~ilc[rune] is ``being tried'' from the time we have
-  matched its left-hand side to the time we have either abandoned the attempt
-  or finished rewriting its right-hand side.  (By ``match'' we mean to include
-  any loop-stopper requirement; ~pl[loop-stopper].)  During that period of time
-  other rules might be tried, e.g., to establish the hypotheses.  The rules
-  tried while ~ilc[rune] is being tried are ``billed'' to ~ilc[rune] in the
-  sense that they are being considered here only because of the demands of
-  ~ilc[rune].  Thus, if no other rules are tried during that period, the
-  accumulated persistence of ~ilc[rune] is ~c[1] ~-[] we ``bill'' ~ilc[rune]
-  once for its own application attempt.  If, on the other hand, we tried ~c[10]
-  rules on behalf of that application of ~ilc[rune], then ~ilc[rune]'s
-  accumulated persistence would be ~c[11].
+  accumulated persistence is being monitored.  Recall that to apply a rewrite
+  rule we must match the left-hand side of the conclusion to some term we are
+  trying to rewrite, establish the hypotheses of ~ilc[rune] by rewriting, and,
+  if successful, then rewrite the right-hand side of the conclusion.  We say
+  ~ilc[rune] is ``being tried'' from the time we have matched its left-hand
+  side to the time we have either abandoned the attempt or finished rewriting
+  its right-hand side.  (By ``match'' we mean to include any loop-stopper
+  requirement; ~pl[loop-stopper].)  During that period of time other rules
+  might be tried, e.g., to establish the hypotheses.  The rules tried while
+  ~ilc[rune] is being tried are ``billed'' to ~ilc[rune] in the sense that they
+  are being considered here only because of the demands of ~ilc[rune].  Thus,
+  if no other rules are tried during that period, the accumulated persistence
+  of ~ilc[rune] is ~c[1] ~-[] we ``bill'' ~ilc[rune] once for its own
+  application attempt.  If, on the other hand, we tried ~c[10] rules on behalf
+  of that application of ~ilc[rune], then ~ilc[rune]'s accumulated persistence
+  would be ~c[11].
 
   One way to envision accumulated persistence is to imagine that every
   time a ~il[rune] is tried it is pushed onto a stack.  The rules tried on
@@ -6009,6 +6118,151 @@ gbc time        :      8.930 secs
   There are other subtleties in how rune applications are tallied, documented
   elsewhere:  ~pl[accumulated-persistence-subtleties].
 
+  We conclude with a discussion of ``enhanced'' statistics gathering, which is
+  enabled by supplying ~c[accumulated-persistence] the argument ~c[:ALL]:
+  ~bv[]
+  (accumulated-persistence :all)
+  ~ev[]
+  At some additional performance expense (but probably well under a factor of
+  2 altogether), ACL2 then gathers additional statistics for individual
+  hypotheses of rules as well as their conclusions.  To understand how this
+  works, suppose ~c[rn] is a ~il[rune].  Then we prepend the keyword ~c[:CONC]
+  to ~c[rn] to form what we call its ``conclusion xrune'', and for its ~c[I]-th
+  hypothesis we prepend ~c[:HYP I] to ~c[rn] to form its ~c[I]-th ``hypothesis
+  xrune.''  Here, ``xrune'' is pronounced ``ex rune'', and is mnemonic for
+  ``extended rune.''  For example, if ~c[(REWRiTE FOO)] is a ~il[rune] then
+  ~c[(:CONC REWRiTE FOO)] is its conclusion xrune, and ~c[(:HYP 2 REWRiTE FOO)]
+  is a hypothesis xrune corresponding to the second hypothesis of the
+  corresponding rewrite rule.
+
+  With ~c[(accumulated-persistence :all)], we instruct ACL2 to track not only
+  runes but also xrunes.  Then, ~c[(show-accumulated-persistence)] will display
+  information for all xrunes in a format that we consider to be ``raw'', in the
+  sense that data for xrunes are displayed just as for runes.  But a ``merged''
+  format is also available.  Here is a summary of display commands, followed
+  below by further discussion.
+
+  ~bv[]
+    (show-accumulated-persistence :frames t) ; t is optional, i.e., the default
+       ; Display enhanced statistics sorted by frames, in a ``raw'' format.
+    (show-accumulated-persistence :frames :merge)
+       ; Display enhanced statistics sorted by frames, in a ``merged'' format.
+    (show-accumulated-persistence :frames nil)
+       ; Display regular statistics sorted by frames, without the enhancements.
+
+    ; More generally, the descriptions just above apply for any legal first
+    ; argument:
+
+    (show-accumulated-persistence KEY t)
+    (show-accumulated-persistence KEY :merge)
+    (show-accumulated-persistence KEY nil)
+
+    ; Note also these alternate forms, equivalent to the first of the two forms
+    ; just above, i.e., the form with second argument of t:
+    (show-accumulated-persistence KEY :raw)
+    (show-accumulated-persistence KEY)
+  ~ev[]
+
+  There is a significant difference between how runes are tracked and how ACL2
+  tracks hypothesis and conclusion xrunes: unlike regular runes, these xrunes
+  do not contribute to the accumulated ~c[:frames] counts.  Rather, they serve
+  as accumulation sites without contributing their ~c[:tries] to any
+  accumulation.  Consider for example the snippet below, taken from a report
+  created with the ~c[:merge] option (to be discussed further below), i.e., by
+  evaluating the form ~c[(show-accumulated-persistence :frames :merge)].
+  ~bv[]
+     :frames   :tries    :ratio  rune
+     --------------------------------
+         462      211 (    2.18) (:REWRITE PERM-MEM)
+          13        6    [useful]
+         449      205    [useless]
+        .............................
+         251       47 (    5.34) (:HYP 2 :REWRITE PERM-MEM)
+           6        6    [useful]
+         245       41    [useless]
+        .............................
+           0      211 (    0.00) (:HYP 1 :REWRITE PERM-MEM)
+           0        6    [useful]
+           0      205    [useless]
+        .............................
+           0        7 (    0.00) (:CONC :REWRITE PERM-MEM)
+           0        6    [useful]
+           0        1    [useless]
+     --------------------------------
+  ~ev[]
+  Notice that while ~c[:tries] are recorded for the xrune
+  ~c[(:HYP 1 :REWRITE PERM-MEM)], no ~c[:frames] are recorded.  This is because
+  no stack frames were built for runes while this xrune was on the stack ~-[]
+  only for the xrune itself, which as we explained above is not accumulated
+  into the total ~c[:frames] counts.  As it turns out, this lack of stack
+  frames is explained by the fact that the rewrite rule ~c[PERM-MEM] has a free
+  variable in the first hypothesis.
+  ~bv[]
+  ACL2 !>:pe perm-mem
+           18  (DEFTHM PERM-MEM
+                       (IMPLIES (AND (PERM X Y) (MEM A X))
+                                (MEM A Y))
+                       :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
+  ACL2 !>
+  ~ev[]
+  The second hypothesis, however, does cause additional rewriting in order to
+  rewrite it to true, resulting in 251 stack frames for runes.  We see that the
+  conclusion does not lead to creation any rune stack frames, which might seem
+  to suggest that only 251 stack frames for runes were created on behalf of
+  this rule application ~-[] yet, we see that 462 frames were actually
+  created.  The difference is the 211 frames created for the rewrite rule
+  itself.  Even if the total had been a bit more than 462, one need not be
+  surprised, as there could be some work recorded during application of the
+  rewrite rule, such as type-prescription reasoning, that is not done during
+  rewriting of a hypothesis or the conclusion.
+
+  Now suppose we have executed ~c[(accumulated-persistence :all)] and attempted
+  some proofs, and now we are ready to see statistics.  The form
+  ~c[(show-accumulated-persistence)] displays statistics exactly as described
+  above, treating these extra xrunes just as though they are runes; similarly
+  for the form ~c[(show-accumulated-persistence KEY)], for any legal ~c[KEY].
+  A second optional argument may however be supplied to
+  ~c[show-accumulated-persistence].  The default for that second argument is
+  ~c[t], and a second argument of ~c[:raw] is treated the same as ~c[t]; thus,
+  these arguments provide the behavior just described, where data for xrunes
+  are displayed just as for runes.  You may restrict output to runes, ignoring
+  hypothesis and conclusion xrunes, by giving a second argument of ~c[nil].
+  (This gives the same behavior as if we had started with the command
+  ~c[(accumulated-persistence t)] instead of the command
+  ~c[(accumulated-persistence :all)].)  Finally, you may give a second argument
+  of ~c[:merge], in which case output will be sorted and displayed as though
+  only runes were tracked (not the extra xrunes), but each data item for a
+  non-rune xrune will be merged so that it is displayed in suitable order just
+  below its corresponding rune, as in the ~c[PERM-MEM] example displayeda
+  above.
+
+  We close by mentioning two aspect of enhanced statistics display for
+  ~c[:CONC] xrunes that have potential to be confusing.  First consider the
+  following example.
+  ~bv[]
+       :frames   :tries    :ratio  rune
+     --------------------------------
+          14        4 (    3.50) (:REWRITE DEFAULT-+-2)
+           0        0    [useful]
+          14        4    [useless]
+        .............................
+          10        4 (    2.50) (:HYP 1 :REWRITE DEFAULT-+-2)
+           0        0    [useful]
+          10        4    [useless]
+     --------------------------------
+  ~ev[]
+  It may be surprising that no data is displayed for the corresponding
+  ~c[:CONC] xrune.  The explanation, however, is simple: the hypothesis never
+  rewrte to true, so the conclusion was never rewritten.  This is consistent
+  with the marking as ``useless'' of all ~c[:frames] and ~c[:tries] for the
+  rune and the hypothesis xrune.  Note by the way, once again, that the
+  hypothesis xrune does not contribute to any ~c[:frames] count.
+
+  Another reason not to see data displayed for a ~c[:CONC] xrune is that if a
+  rule has no hypotheses, then no such data is collected.  This decision was
+  made because in the case of no hypotheses, we expect it to be very rare that
+  information for the ~c[:CONC] xrune will add any useful insight.
+
   Users are encouraged to think about other meters we could install in ACL2 to
   help diagnose performance problems."
 
@@ -6016,18 +6270,23 @@ gbc time        :      8.930 secs
 ; accumulated-persistence wormhole is non-nil.  If accummulated persistence is
 ; not enabled, the data is nil.
 
-  `(wormhole-eval 'accumulated-persistence
-                  '(lambda (whs)
-                     (set-wormhole-data whs
-                       (if ,flg
-                            (make accp-info
-                                  :cnt-s 0
-                                  :cnt-f 0
-                                  :stack-s nil
-                                  :stack-f nil
-                                  :totals '(nil))
-                            nil)))
-                  nil))
+  (declare (xargs :guard (member-equal flg '(t 't nil 'nil :all ':all))))
+  (let* ((flg (if (consp flg) (cadr flg) flg))
+         (collect-hyp-and-conc-xrunes (eq flg :all)))
+    `(wormhole-eval
+      'accumulated-persistence
+      '(lambda (whs)
+         (set-wormhole-data whs
+                            (if ,flg
+                                (make accp-info
+                                      :cnt-s 0
+                                      :cnt-f 0
+                                      :stack-s nil
+                                      :stack-f nil
+                                      :xrunep ,collect-hyp-and-conc-xrunes
+                                      :totals '(nil))
+                              nil)))
+      nil)))
 
 (defdoc accumulated-persistence-subtleties
 
@@ -6171,11 +6430,14 @@ gbc time        :      8.930 secs
         (t (merge-car-> (merge-sort-car-> (evens l))
                         (merge-sort-car-> (odds l))))))
 
-(defconst *accp-separator*
+(defconst *accp-major-separator*
   "   --------------------------------~%")
 
+(defconst *accp-minor-separator*
+  "      .............................~%")
+
 (defun show-accumulated-persistence-phrase0 (entry key)
-  (let* ((rune (access accp-entry entry :rune))
+  (let* ((xrune (access accp-entry entry :xrune))
          (n-s (access accp-entry entry :n-s))
          (n-f (access accp-entry entry :n-f))
          (n (+ n-s n-f))
@@ -6189,7 +6451,7 @@ gbc time        :      8.930 secs
                 (cons (floor ap n) 5)
                 (mod (floor (* 10 ap) n) 10)
                 (mod (floor (* 100 ap) n) 10)
-                rune)))
+                (prettyify-xrune xrune))))
       (case key
         ((:useless :ratio-a :frames-a :tries-a)
          (list main-msg))
@@ -6200,81 +6462,238 @@ gbc time        :      8.930 secs
                     (cons n-s 8))
                (msg "~c0 ~c1    [useless]~%"
                     (cons ap-f 10)
-                    (cons n-f 8))
-               *accp-separator*))))))
+                    (cons n-f 8))))))))
 
-(defun show-accumulated-persistence-phrase1 (key alist acc)
+(defun show-accumulated-persistence-phrase1 (key alist mergep acc)
 
 ; Alist has element of the form (x . accp-entry), where x is the key upon which
-; we sorted.
+; we sorted.  Last-rune is true (initally t, generally a rune) if and only if
+; we are calling show-accumulated-persistence with display = :merge.
 
   (cond ((null alist) acc)
         (t (show-accumulated-persistence-phrase1
             key
             (cdr alist)
-            (if (and (eq key :useless)
-                     (not (eql (access accp-entry (cdr (car alist))
-                                       :ap-s)
-                               0)))
-                acc
-              (append (show-accumulated-persistence-phrase0 (cdr (car alist))
-                                                            key)
-                      acc))))))
+            mergep
+            (cons (cond ((and mergep
+                              (cdr alist)
+                              (equal (xrune-rune
+                                      (access accp-entry
+                                              (cdr (car (cdr alist)))
+                                              :xrune))
+                                     (xrune-rune
+                                      (access accp-entry
+                                              (cdr (car alist))
+                                              :xrune))))
 
-(defun show-accumulated-persistence-phrase2 (key alist)
+; The next entry to process for extending the accumulator has the same rune as
+; the current entry in this case.
+
+                         *accp-minor-separator*)
+                        (t *accp-major-separator*))
+                  (append (show-accumulated-persistence-phrase0
+                           (cdr (car alist))
+                           key)
+                          acc))))))
+
+(defun show-accumulated-persistence-remove-useless (alist acc)
+  (cond ((null alist) (reverse acc))
+        ((not (eql (access accp-entry (cdr (car alist))
+                           :n-s)
+                   0))
+         (show-accumulated-persistence-remove-useless (cdr alist) acc))
+        (t (show-accumulated-persistence-remove-useless
+            (cdr alist)
+            (cons (car alist) acc)))))
+
+(defun show-accumulated-persistence-phrase-key (key entry lastcdr)
+  (let* ((ap-s (access accp-entry entry :ap-s))
+         (ap-f (access accp-entry entry :ap-f))
+         (ap (+ ap-s ap-f))
+         (n-s (access accp-entry entry :n-s))
+         (n-f (access accp-entry entry :n-f))
+         (n (+ n-s n-f)))
+    (case key
+      ((:frames :frames-a) (list* ap ap-s n n-s lastcdr))
+      (:frames-s (list* ap-s ap n-s n lastcdr))
+      (:frames-f (list* ap-f ap n-f n lastcdr))
+      ((:tries :tries-a) (list* n n-s ap ap-s lastcdr))
+      (:tries-s (list* n-s n ap-s ap lastcdr))
+      (:tries-f  (list* n-f n ap-f ap lastcdr))
+      (:useless (list* ap n lastcdr))
+      (otherwise (list* (/ ap n) lastcdr)))))
+
+(defun show-accumulated-persistence-phrase2-merge (key alist last-key-info)
+
+; We augment the given alist by consing a sort key onto the front of each
+; entry.  The sort key is based on both the entry and the given key, the
+; first argument of show-accumulated-persistence.
+
   (cond ((null alist) nil)
-        (t (cons (cons (let* ((ap-s (access accp-entry (car alist) :ap-s))
-                              (ap-f (access accp-entry (car alist) :ap-f))
-                              (ap (+ ap-s ap-f))
-                              (n-s (access accp-entry (car alist) :n-s))
-                              (n-f (access accp-entry (car alist) :n-f))
-                              (n (+ n-s n-f)))
-                         (case key
-                           ((:frames :frames-a) (list* ap ap-s n n-s))
-                           (:frames-s (list* ap-s ap n-s n))
-                           (:frames-f (list* ap-f ap n-f n))
-                           ((:tries :tries-a) (list* n n-s ap ap-s))
-                           (:tries-s (list* n-s n ap-s ap))
-                           (:tries-f  (list* n-f n ap-f ap))
-                           (:useless (cons ap n))
-                           (otherwise (/ ap n))))
+        ((x-xrunep (access accp-entry (car alist) :xrune))
+         (cons (cons (append last-key-info
+                             (show-accumulated-persistence-phrase-key
+                              key
+                              (car alist)
+                              nil))
+                     (car alist))
+               (show-accumulated-persistence-phrase2-merge
+                key
+                (cdr alist)
+                last-key-info)))
+        (t (let ((next-key-info
+                  (show-accumulated-persistence-phrase-key
+                   key
+                   (car alist)
+                   (list (access accp-entry (car alist) :xrune)))))
+             (cons (cons (append next-key-info '(t))
+                         (car alist))
+                   (show-accumulated-persistence-phrase2-merge
+                    key
+                    (cdr alist)
+                    next-key-info))))))
+
+(defun show-accumulated-persistence-phrase2-not-merge (key alist)
+  (cond ((null alist) nil)
+        (t (cons (cons (show-accumulated-persistence-phrase-key key
+                                                                (car alist)
+                                                                nil)
                        (car alist))
-                 (show-accumulated-persistence-phrase2 key (cdr alist))))))
+                 (show-accumulated-persistence-phrase2-not-merge
+                  key (cdr alist))))))
+
+(defun show-accumulated-persistence-phrase2 (key alist mergep)
+  (cond (mergep (show-accumulated-persistence-phrase2-merge key alist nil))
+        (t (show-accumulated-persistence-phrase2-not-merge key alist))))
+
+(defun split-xrune-alist (alist rune-alist hyp-xrune-alist conc-xrune-alist)
+
+; See sort-rune-alist-for-xrunes.
+
+  (cond ((endp alist)
+         (mv rune-alist hyp-xrune-alist conc-xrune-alist))
+        (t (let ((xrune (access accp-entry (car alist) :xrune)))
+             (case (car xrune)
+               (:hyp  (split-xrune-alist (cdr alist)
+                                         rune-alist
+                                         (cons (car alist) hyp-xrune-alist)
+                                         conc-xrune-alist))
+               (:conc (split-xrune-alist (cdr alist)
+                                         rune-alist
+                                         hyp-xrune-alist
+                                         (cons (car alist) conc-xrune-alist)))
+               (t     (split-xrune-alist (cdr alist)
+                                         (cons (car alist) rune-alist)
+                                         hyp-xrune-alist
+                                         conc-xrune-alist)))))))
+
+(defun sort-xrune-alist-by-rune1 (rune-alist hyp-xrune-alist conc-xrune-alist
+                                             acc)
+
+; Each input alist is a list of accp-entry records, sorted by lexorder --
+; indeed sorted by the cars, which are distinct xrunes.  See
+; sort-rune-alist-for-xrunes.  We return the (disjoint) union of the three
+; inputs, such that every record for a :hyp or :conc xrune is preceded by an
+; entry whose :xrune is either another such xrune or is the corresponding rune.
+
+  (cond ((endp rune-alist)
+         (assert$ (and (null hyp-xrune-alist)
+                       (null conc-xrune-alist))
+                  acc))
+        ((and hyp-xrune-alist
+              (equal (hyp-xrune-rune (caar hyp-xrune-alist))
+                     (caar rune-alist)))
+         (sort-xrune-alist-by-rune1 rune-alist
+                                    (cdr hyp-xrune-alist)
+                                    conc-xrune-alist
+                                    (cons (car hyp-xrune-alist) acc)))
+        ((and conc-xrune-alist
+              (equal (conc-xrune-rune (caar conc-xrune-alist))
+                     (caar rune-alist)))
+         (sort-xrune-alist-by-rune1 rune-alist
+                                    hyp-xrune-alist
+                                    (cdr conc-xrune-alist)
+                                    (cons (car conc-xrune-alist) acc)))
+        (t
+         (sort-xrune-alist-by-rune1 (cdr rune-alist)
+                                    hyp-xrune-alist
+                                    conc-xrune-alist
+                                    (cons (car rune-alist) acc)))))
+
+(defun sort-xrune-alist-by-rune (alist display)
+
+; Alist is a list of accp-entry records.  We sort them such that every record
+; for a :hyp or :conc xrune is preceded either by an entry whose :xrune is
+; either another such xrune or is the corresponding rune.
+
+  (cond ((not (member-eq display '(nil :merge)))
+         alist)
+        (t (mv-let (rune-alist hyp-xrune-alist conc-xrune-alist)
+                   (split-xrune-alist alist nil nil nil)
+                   (cond ((eq display nil) rune-alist)
+                         (t ; (eq display :merge)
+                          (sort-xrune-alist-by-rune1
+                           (merge-sort-lexorder rune-alist)
+                           (merge-sort-lexorder hyp-xrune-alist)
+                           (merge-sort-lexorder conc-xrune-alist)
+                           nil)))))))
 
 (defun pop-accp-fn (info success-p)
 
-; Warning: Keep the two branches below in sync.
+; Warning: Keep the branches below in sync.  We considered merging them into a
+; single branch, but the fields changed differ in each case, so we keep the
+; cases separate in order to save a few conses.
 
-  (let ((rune-stack (access accp-info info :rune-stack)))
-    (if success-p
-        (let ((new-cnt (1+ (access accp-info info :cnt-s))))
-          (change accp-info info
-                  :cnt-s new-cnt
-                  :stack-s (cdr (access accp-info info :stack-s))
-                  :stack-f (cdr (access accp-info info :stack-f))
-                  :rune-stack (cdr rune-stack)
-                  :totals (add-accumulated-persistence
-                           (car rune-stack)
-                           success-p
-                           (- new-cnt
-                              (car (access accp-info info :stack-s)))
-                           (- (access accp-info info :cnt-f)
-                              (car (access accp-info info :stack-f)))
-                           (access accp-info info :totals))))
-      (let ((new-cnt (1+ (access accp-info info :cnt-f))))
-        (change accp-info info
-                :cnt-f new-cnt
-                :stack-s (cdr (access accp-info info :stack-s))
-                :stack-f (cdr (access accp-info info :stack-f))
-                :rune-stack (cdr rune-stack)
-                :totals (add-accumulated-persistence
-                         (car rune-stack)
-                         success-p
-                         (- (access accp-info info :cnt-s)
-                            (car (access accp-info info :stack-s)))
-                         (- new-cnt
-                            (car (access accp-info info :stack-f)))
-                         (access accp-info info :totals)))))))
+  (let* ((xrune-stack (access accp-info info :xrune-stack))
+         (xrune (car xrune-stack))
+         (xp (x-xrunep xrune))
+         (new-cnt (and (not xp) ; optimization
+                       (cond (success-p
+                              (1+ (access accp-info info :cnt-s)))
+                             (t
+                              (1+ (access accp-info info :cnt-f)))))))
+    (cond
+     (xp
+      (change accp-info info
+              :stack-s (cdr (access accp-info info :stack-s))
+              :stack-f (cdr (access accp-info info :stack-f))
+              :xrune-stack (cdr xrune-stack)
+              :totals (add-accumulated-persistence
+                       xrune
+                       success-p
+                       (- (access accp-info info :cnt-s)
+                          (car (access accp-info info :stack-s)))
+                       (- (access accp-info info :cnt-f)
+                          (car (access accp-info info :stack-f)))
+                       (access accp-info info :totals))))
+     (success-p
+      (change accp-info info
+              :cnt-s new-cnt
+              :stack-s (cdr (access accp-info info :stack-s))
+              :stack-f (cdr (access accp-info info :stack-f))
+              :xrune-stack (cdr xrune-stack)
+              :totals (add-accumulated-persistence
+                       xrune
+                       success-p
+                       (- new-cnt
+                          (car (access accp-info info :stack-s)))
+                       (- (access accp-info info :cnt-f)
+                          (car (access accp-info info :stack-f)))
+                       (access accp-info info :totals))))
+     (t
+      (change accp-info info
+              :cnt-f new-cnt
+              :stack-s (cdr (access accp-info info :stack-s))
+              :stack-f (cdr (access accp-info info :stack-f))
+              :xrune-stack (cdr xrune-stack)
+              :totals (add-accumulated-persistence
+                       xrune
+                       success-p
+                       (- (access accp-info info :cnt-s)
+                          (car (access accp-info info :stack-s)))
+                       (- new-cnt
+                          (car (access accp-info info :stack-f)))
+                       (access accp-info info :totals)))))))
 
 (defun pop-accp-fn-iterate (info n)
   (if (zp n)
@@ -6292,18 +6711,20 @@ gbc time        :      8.930 secs
                                       t)
                          (1- n))))
 
-(defun show-accumulated-persistence-phrase (key accp-info)
+(defun show-accumulated-persistence-phrase (key/display accp-info)
 
 ; Alist is the accumulated totals alist from the wormhole data field of
 ; wormhole-status of the 'accumulated-persistence wormhole.  Each element is of
-; the form (rune n . ap) and we sort them into descending order on the
+; the form (xrune n . ap) and we sort them into descending order on the
 ; specified key.  Key should be one of the sortkey values from the guard of
 ; show-accumulated-persistence.
 
-  (let* ((rune-stack (access accp-info accp-info :rune-stack))
-         (accp-info (cond ((and rune-stack
+  (let* ((key (car key/display))
+         (display (cdr key/display))
+         (xrune-stack (access accp-info accp-info :xrune-stack))
+         (accp-info (cond ((and xrune-stack
                                 (member-eq key '(:frames-a :tries-a)))
-                           (pop-accp-fn-iterate accp-info (length rune-stack)))
+                           (pop-accp-fn-iterate accp-info (length xrune-stack)))
                           (t accp-info)))
          (totals (access accp-info accp-info :totals)))
     (cond
@@ -6311,25 +6732,33 @@ gbc time        :      8.930 secs
       (msg "There is no accumulated persistence to show.  Evaluate ~x0 to ~
             activate gathering of accumulated-persistence statistics.~|"
            '(accumulated-persistence t)))
-     (t (let ((main-phrase
-               (list "" "~@*" "~@*" "~@*" 
-                     (show-accumulated-persistence-phrase1
-                      key
-                      (merge-sort-lexorder
+     (t (let* ((mergep (eq display :merge))
+               (alist (merge-sort-lexorder
                        (show-accumulated-persistence-phrase2
-                        key (car (last totals))))
-                      nil))))
+                        key
+                        (sort-xrune-alist-by-rune (car (last totals))
+                                                  display)
+                        mergep)))
+               (main-phrase
+                (list "" "~@*" "~@*" "~@*" 
+                      (show-accumulated-persistence-phrase1
+                       key
+                       (if (eq key :useless)
+                           (show-accumulated-persistence-remove-useless alist
+                                                                        nil)
+                         alist)
+                       mergep
+                       nil))))
           (cond ((null (cdr totals))
                  (msg "Accumulated Persistence~@0~|~%   :frames   :tries    ~
-                       :ratio  rune~%~@1~*2"
-                      (if (and rune-stack
-                               (null (cdr totals)))
+                       :ratio  rune~%~*1~@2"
+                      (if xrune-stack
                           "" ; we merged, so don't know just what was useful
                         (msg " (~x0 :tries useful, ~x1 :tries not useful)"
                              (access accp-info accp-info :cnt-s)
                              (access accp-info accp-info :cnt-f)))
-                      *accp-separator*
-                      main-phrase))
+                      main-phrase
+                      *accp-major-separator*))
                 (t
                  (msg "Accumulated Persistence~|~%~
                        ***************************************~|~
@@ -6338,24 +6767,30 @@ gbc time        :      8.930 secs
                        *** Use :frames-a or :tries-a to get more complete ~
                            totals.~|~
                        ***************************************~|~
-                       ~%   :frames   :tries    :ratio  rune~%~@1~*2"
+                       ~%   :frames   :tries    :ratio  rune~%~*1~@2"
                       (- (+ (access accp-info accp-info
                                     :cnt-s)
                             (access accp-info accp-info
                                     :cnt-f)
-                            (length rune-stack))
+                            (length xrune-stack))
                          (+ (car (last (access accp-info accp-info
                                                :stack-s)))
                             (car (last (access accp-info accp-info
                                                :stack-f)))))
-                      *accp-separator*
-                      main-phrase))))))))
+                      main-phrase
+                      *accp-major-separator*))))))))
 
-(defmacro show-accumulated-persistence (&optional (sortkey ':frames))
-  (declare (xargs :guard (member-eq sortkey '(:ratio
-                                              :frames :frames-s :frames-f :frames-a
-                                              :tries :tries-s :tries-f :tries-a
-                                              :useless))))
+(defmacro show-accumulated-persistence (&optional (sortkey ':frames)
+                                                  (display 't))
+  (declare (xargs :guard
+                  (and (member-eq sortkey
+                                  '(:ratio
+                                    :frames :frames-s :frames-f :frames-a
+                                    :tries :tries-s :tries-f :tries-a
+                                    :useless))
+                       (member-eq display
+                                  '(t nil :raw :merge)))))
+
 ; This function engages is in a little song-and-dance about the entry code for
 ; the accumulated-persistence wormhole.  If the user has requested that we
 ; print the accumulated-persistence data, we enter the wormhole to do it --
@@ -6367,11 +6802,10 @@ gbc time        :      8.930 secs
 ; code was :SKIP, the data was nil anyway.  Once inside, if the data is
 ; :RETURN-TO-SKIP we set the entry code back to :SKIP.
 
-
   `(wormhole 'accumulated-persistence
              '(lambda (whs)
                 (set-wormhole-entry-code whs :ENTER))
-             ,sortkey
+             ',(cons sortkey display)
              '(pprogn
                (io? temporary nil state
                     nil
@@ -6394,7 +6828,7 @@ gbc time        :      8.930 secs
              :ld-query-control-alist nil
              :ld-verbose nil))
 
-(defun push-accp (rune)
+(defun push-accp (rune x-info)
   (wormhole-eval 'accumulated-persistence
                  '(lambda (whs)
 
@@ -6407,54 +6841,74 @@ gbc time        :      8.930 secs
 ; be a accp-info record.  See the Essay on Wormholes.
 
                     (let ((info (wormhole-data whs)))
-                      (if info
-                          (set-wormhole-data
-                           whs
-                           (change accp-info info
-                                   :rune-stack (cons rune (access accp-info info :rune-stack))
-                                   :stack-s (cons (access accp-info info :cnt-s)
-                                                  (access accp-info info :stack-s))
-                                   :stack-f (cons (access accp-info info :cnt-f)
-                                                  (access accp-info info :stack-f))
-                                   :totals (cons nil
-                                                 (access accp-info info :totals))))
+                      (if (and info
+                               (or (null x-info)
+                                   (access accp-info info :xrunep)))
+                          (let ((xrune (cond ((natp x-info)
+                                              (hyp-xrune x-info rune))
+                                             ((eq x-info :conc)
+                                              (conc-xrune rune))
+                                             ((null x-info)
+                                              rune)
+                                             (t (er hard 'push-accp
+                                                    "Implementation error: ~
+                                                     Bad value of x-info, ~x0."
+                                                    x-info)))))
+                            (set-wormhole-data
+                             whs
+                             (change accp-info info
+                                     :xrune-stack (cons xrune (access accp-info
+                                                                      info
+                                                                      :xrune-stack))
+                                     :stack-s (cons (access accp-info info :cnt-s)
+                                                    (access accp-info info :stack-s))
+                                     :stack-f (cons (access accp-info info :cnt-f)
+                                                    (access accp-info info :stack-f))
+                                     :totals (cons nil
+                                                   (access accp-info info :totals)))))
                           whs)))
                  rune))
 
-(defun pop-accp (success-p)
+(defun pop-accp (success-p x-info)
   (wormhole-eval 'accumulated-persistence
                  '(lambda (whs)
                     (let ((info (wormhole-data whs)))
-                      (if info
+                      (if (and info
+                               (or (null x-info)
+                                   (access accp-info info :xrunep)))
                           (set-wormhole-data whs
                                              (pop-accp-fn info success-p))
                           whs)))
                  success-p))
 
-(defmacro with-accumulated-persistence (rune vars success-p body)
-  `(let ((with-accumulated-persistence-rune ,rune))
-     (prog2$
-      (push-accp with-accumulated-persistence-rune)
-      ,(cond ((and (true-listp vars)
-                   (= (length vars) 1))
-              `(let ((,(car vars)
-                      (check-vars-not-free
-                       (with-accumulated-persistence-rune)
-                       ,body)))
-                 (prog2$
-                  (pop-accp (check-vars-not-free
-                             (with-accumulated-persistence-rune)
-                             ,success-p))
-                  ,(car vars))))
-             (t `(mv-let ,vars
-                         (check-vars-not-free
-                          (with-accumulated-persistence-rune)
-                          ,body)
-                         (prog2$
-                          (pop-accp (check-vars-not-free
-                                     (with-accumulated-persistence-rune)
-                                     ,success-p))
-                          (mv ,@vars))))))))
+(defmacro with-accumulated-persistence (rune vars success-p body
+                                             &optional
+                                             x-info
+                                             (condition 'nil condition-p))
+
+; X-info can be :conc to indicate that we are tracking the right-hand side of a
+; rule, or a positive integer n to indicate that we are tracking the nth
+; hypothesis of a rule.  Otherwise x-info should be nil.
+
+  (let ((form
+         `(prog2$
+           (push-accp ,rune ,x-info)
+           ,(cond ((and (true-listp vars)
+                        (= (length vars) 1))
+                   `(let ((,(car vars)
+                           ,body))
+                      (prog2$
+                       (pop-accp ,success-p ,x-info)
+                       ,(car vars))))
+                  (t `(mv-let ,vars
+                              ,body
+                              (prog2$
+                               (pop-accp ,success-p ,x-info)
+                               (mv ,@vars))))))))
+    (cond (condition-p
+           `(cond (,condition ,form)
+                  (t ,body)))
+          (t form))))
 
 ;; RAG - Changed the assumptions based on rational to realp.
 
@@ -7378,7 +7832,7 @@ gbc time        :      8.930 secs
 (defun type-set-relieve-hyps (rune target hyps backchain-limit-lst
                                    force-flg dwp alist type-alist
                                    ancestors ens wrld ttree ttree0 pot-lst pt
-                                   backchain-limit)
+                                   backchain-limit bkptr)
 
 ; Hyps is a list of terms, implicitly conjoined.  Alist is a substitution
 ; mapping variables in hyps to terms governed by type-alist.  Consider the
@@ -7407,7 +7861,7 @@ gbc time        :      8.930 secs
             force-flg dwp
             (cons (cons (fargn hyp 1) (fargn hyp 2)) alist)
             type-alist ancestors ens wrld ttree ttree0
-            pot-lst pt backchain-limit))
+            pot-lst pt backchain-limit (1+ bkptr)))
           (t
            (mv-let
             (lookup-hyp-ans alist ttree)
@@ -7421,8 +7875,22 @@ gbc time        :      8.930 secs
                                      force-flg dwp alist
                                      type-alist ancestors ens wrld
                                      ttree ttree0
-                                     pot-lst pt backchain-limit))
+                                     pot-lst pt backchain-limit (1+ bkptr)))
              ((free-varsp hyp alist)
+              (let ((fully-bound-alist
+                     (if (and forcep force-flg)
+                         (bind-free-vars-to-unbound-free-vars
+                          (all-vars hyp)
+                          alist)
+                         alist)))
+
+; Fully-bound-alist is an extension of alist in which all vars occurring
+; in hyp are bound to something.  A var v that occurs freely in hyp wrt
+; alist is bound in fully-bound-alist to UNBOUND-FREE-v.  But we only
+; compute the all-vars and fully-bound-alist if we're going to use it
+; below.  For sanity, fully-bound-alist is just alist if we're not
+; actually intending to use it.
+
               (mv-let
                (force-flg ttree)
                (cond
@@ -7431,21 +7899,26 @@ gbc time        :      8.930 secs
                 (t (force-assumption
                     rune
                     target
-                    (sublis-var-and-mark-free alist hyp)
+                    (sublis-var fully-bound-alist hyp)
                     type-alist
                     nil
                     (immediate-forcep (ffn-symb (car hyps)) ens)
                     force-flg
                     ttree)))
+
+; Note that force-flg has been rebound by the mv-let above.  Think of
+; it as just a temporary variable meaning (and forcep force-flg) and
+; we use it only if it is true.
+ 
                (cond
                 (force-flg
                  (type-set-relieve-hyps
                   rune target (cdr hyps) (cdr backchain-limit-lst)
                   force-flg dwp
-                  alist type-alist ancestors ens wrld
+                  fully-bound-alist type-alist ancestors ens wrld
                   ttree ttree0
-                  pot-lst pt backchain-limit))
-                (t (mv nil type-alist ttree0)))))
+                  pot-lst pt backchain-limit (1+ bkptr)))
+                (t (mv nil type-alist ttree0))))))
              (t
               (mv-let
                (not-flg atm)
@@ -7473,7 +7946,8 @@ gbc time        :      8.930 secs
                                                 force-flg dwp alist
                                                 type-alist ancestors ens wrld
                                                 ttree ttree0
-                                                pot-lst pt backchain-limit))
+                                                pot-lst pt backchain-limit
+                                                (1+ bkptr)))
                         (t (mv nil type-alist ttree0))))
                  (t
                   (mv-let
@@ -7500,7 +7974,8 @@ gbc time        :      8.930 secs
                                               force-flg dwp alist
                                               type-alist ancestors ens wrld
                                               ttree ttree0
-                                              pot-lst pt backchain-limit))
+                                              pot-lst pt backchain-limit
+                                              (1+ bkptr)))
                       (t (mv nil type-alist ttree0))))
                     ((backchain-limit-reachedp backchain-limit ancestors)
                      (mv-let
@@ -7529,86 +8004,84 @@ gbc time        :      8.930 secs
                          (cdr backchain-limit-lst)
                          force-flg dwp alist type-alist ancestors
                          ens wrld ttree ttree0 pot-lst pt
-                         backchain-limit))
+                         backchain-limit (1+ bkptr)))
                        (t (mv nil type-alist ttree0)))))
-                    (t 
+                    (t
                      (mv-let
-                      (ts1 ttree1)
-                      (type-set-rec atm1 force-flg dwp type-alist
+                      (flg type-alist ttree2)
+                      (with-accumulated-persistence
+                       rune
+                       (flg type-alist ttree2)
+                       flg
+                       (mv-let
+                        (ts1 ttree1)
+                        (type-set-rec atm1 force-flg dwp type-alist
 
 ; We know ancestors is not t here, by the tests above.
 
-                                    (push-ancestor
-                                     (if not-flg
-                                         atm1
-                                       (mcons-term* 'not atm1))
-                                     (list rune)
-                                     ancestors)
-                                    ens wrld ttree
-                                    pot-lst pt
-                                    (new-backchain-limit
-                                     (car backchain-limit-lst)
-                                     backchain-limit
-                                     ancestors))
-                      (mv-let (temp1 temp2)
-                              (assoc-type-alist atm1 type-alist wrld)
-                              (declare (ignore temp2))
-                              (let ((type-alist
-                                     (cond ((and temp1 (ts-subsetp temp1 ts1))
-                                            type-alist)
-                                           (t (extend-type-alist
-                                               ;;*** -simple
-                                               atm1 ts1 ttree1 type-alist
-                                               wrld))))
-                                    (ts (if not-flg
-                                            (cond ((ts= ts1 *ts-nil*) *ts-t*)
-                                                  ((ts-intersectp ts1 *ts-nil*)
-                                                   *ts-boolean*)
-                                                  (t *ts-nil*))
-                                          ts1)))
-                                (cond
-                                 ((ts= ts *ts-nil*) (mv nil type-alist ttree0))
-                                 ((ts-intersectp *ts-nil* ts)
-                                  (mv-let
-                                   (force-flg ttree)
-                                   (cond
-                                    ((not (and force-flg forcep))
-                                     (mv nil ttree))
-                                    (t (force-assumption
-                                        rune
-                                        target
-                                        (if not-flg
-                                            (mcons-term* 'not atm1)
-                                          atm1)
-                                        type-alist nil
-                                        (immediate-forcep
-                                         (ffn-symb (car hyps))
-                                         ens)
-                                        force-flg
-                                        ttree1)))
-                                   (cond
-                                    (force-flg
-                                     (type-set-relieve-hyps
-                                      rune
-                                      target
-                                      (cdr hyps)
-                                      (cdr backchain-limit-lst)
-                                      force-flg dwp alist type-alist ancestors
-                                      ens wrld ttree ttree0 pot-lst pt
-                                      backchain-limit))
-                                    (t (mv nil type-alist ttree0)))))
-                                 (t (type-set-relieve-hyps
-                                     rune
-                                     target
-                                     (cdr hyps)
-                                     (cdr backchain-limit-lst)
-                                     force-flg dwp alist
-                                     type-alist ancestors
-                                     ens wrld
-                                     ttree1 ttree0
-                                     pot-lst
-                                     pt
-                                     backchain-limit)))))))))))))))))))))))
+                                      (push-ancestor
+                                       (if not-flg
+                                           atm1
+                                         (mcons-term* 'not atm1))
+                                       (list rune)
+                                       ancestors)
+                                      ens wrld ttree
+                                      pot-lst pt
+                                      (new-backchain-limit
+                                       (car backchain-limit-lst)
+                                       backchain-limit
+                                       ancestors))
+                        (mv-let
+                         (temp1 temp2)
+                         (assoc-type-alist atm1 type-alist wrld)
+                         (declare (ignore temp2))
+                         (let ((type-alist
+                                (cond ((and temp1 (ts-subsetp temp1 ts1))
+                                       type-alist)
+                                      (t (extend-type-alist
+                                          ;;*** -simple
+                                          atm1 ts1 ttree1 type-alist
+                                          wrld))))
+                               (ts (if not-flg
+                                       (cond ((ts= ts1 *ts-nil*) *ts-t*)
+                                             ((ts-intersectp ts1 *ts-nil*)
+                                              *ts-boolean*)
+                                             (t *ts-nil*))
+                                     ts1)))
+                           (cond
+                            ((ts= ts *ts-nil*) (mv nil type-alist ttree0))
+                            ((ts-intersectp *ts-nil* ts)
+                             (mv-let
+                              (force-flg ttree)
+                              (cond
+                               ((not (and force-flg forcep))
+                                (mv nil ttree))
+                               (t (force-assumption
+                                   rune
+                                   target
+                                   (if not-flg
+                                       (mcons-term* 'not atm1)
+                                     atm1)
+                                   type-alist nil
+                                   (immediate-forcep
+                                    (ffn-symb (car hyps))
+                                    ens)
+                                   force-flg
+                                   ttree1)))
+                              (cond
+                               (force-flg (mv t type-alist ttree))
+                               (t (mv nil type-alist ttree0)))))
+                            (t (mv t type-alist ttree1))))))
+                       bkptr)
+                      (cond (flg (type-set-relieve-hyps
+                                  rune
+                                  target
+                                  (cdr hyps)
+                                  (cdr backchain-limit-lst)
+                                  force-flg dwp alist type-alist ancestors
+                                  ens wrld ttree2 ttree0 pot-lst pt
+                                  backchain-limit (1+ bkptr)))
+                            (t (mv nil type-alist ttree2)))))))))))))))))))))
 
 (defun extend-type-alist-with-bindings (alist force-flg dwp type-alist
                                               ancestors ens w ttree pot-lst pt
@@ -7701,19 +8174,25 @@ gbc time        :      8.930 secs
 
                                   nil
                                   ttree
-                                  pot-lst pt backchain-limit)
+                                  pot-lst pt backchain-limit 1)
            (cond
             (relieve-hyps-ans
-             (type-set-with-rule1 unify-subst
-                                  (access type-prescription tp :vars)
-                                  force-flg
-                                  dwp
-                                  type-alist ancestors ens w
-                                  (access type-prescription tp :basic-ts)
-                                  (push-lemma
-                                   (access type-prescription tp :rune)
-                                   ttree)
-                                  pot-lst pt backchain-limit))
+             (with-accumulated-persistence
+              (access type-prescription tp :rune)
+              (ts type-alist ttree)
+              (ts= ts *ts-unknown*)
+              (type-set-with-rule1 unify-subst
+                                   (access type-prescription tp :vars)
+                                   force-flg
+                                   dwp
+                                   type-alist ancestors ens w
+                                   (access type-prescription tp :basic-ts)
+                                   (push-lemma
+                                    (access type-prescription tp :rune)
+                                    ttree)
+                                   pot-lst pt backchain-limit)
+              :conc
+              hyps))
             (t (mv *ts-unknown* type-alist ttree)))))))
       (t (mv *ts-unknown* type-alist ttree)))))
    (t (mv *ts-unknown* type-alist ttree))))

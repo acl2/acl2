@@ -13260,14 +13260,25 @@ and found premature forcing killed us.
          (mv-let
           (relieve-hyp-ans failure-reason new-unify-subst new-ttree
                            allp)
-          (rewrite-entry (relieve-hyp rune target (car hyps)
-                                      unify-subst bkptr allp)
-                         :backchain-limit 
-                         (new-backchain-limit (car backchain-limit-lst)
-                                              backchain-limit
-                                              ancestors)
-                         :obj nil
-                         :geneqv nil)
+          (with-accumulated-persistence
+           rune
+           (relieve-hyp-ans failure-reason new-unify-subst new-ttree
+                            allp)
+
+; Even in the "special case" for relieve-hyp, we can mark this as a success
+; because it will ultimately be counted as a failure if the surrounding call of
+; relieve-hyps fails.
+
+           relieve-hyp-ans
+           (rewrite-entry (relieve-hyp rune target (car hyps)
+                                       unify-subst bkptr allp)
+                          :backchain-limit 
+                          (new-backchain-limit (car backchain-limit-lst)
+                                               backchain-limit
+                                               ancestors)
+                          :obj nil
+                          :geneqv nil)
+           bkptr)
           (cond
            ((eq relieve-hyp-ans t)
             (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
@@ -13436,46 +13447,56 @@ and found premature forcing killed us.
 
   (cond
    ((endp lemmas)
-    (mv-let
-     (force-flg ttree)
-     (cond
-      ((not forcep)
-       (mv nil ttree))
-      (t (force-assumption
-          rune
-          target
-          (sublis-var-and-mark-free unify-subst hyp)
-          type-alist
-          nil
-          (immediate-forcep
-           forcer-fn
-           (access rewrite-constant rcnst
-                   :current-enabled-structure))
-          force-flg
-          ttree)))
-     (cond
-      (force-flg
-       (mv-let
-        (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp)
-        (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
-                                      (cdr backchain-limit-lst)
-                                      unify-subst
-                                      (1+ bkptr)
-                                      unify-subst0 ttree0 allp)
-                       :obj nil
-                       :geneqv nil)
-        (declare (ignore failure-reason))
-        (cond (relieve-hyps-ans
-               (mv relieve-hyps-ans
-                   nil ; failure-reason-lst
-                   unify-subst1 ttree1 allp))
-              (t ; treat failure to force as failure to find any bindings
-               (mv nil
-                   nil ; failure-reason-lst
-                   unify-subst0 ttree0 allp)))))
-      (t (mv nil
-             nil ; failure-reason-lst
-             unify-subst0 ttree0 allp)))))
+
+; If we have to force this hyp, we make sure all its free vars are bound by
+; fully-bound-unify-subst, an extension of unify-subst.
+
+    (let ((fully-bound-unify-subst
+           (if force-flg
+               (bind-free-vars-to-unbound-free-vars
+                (all-vars hyp)
+                unify-subst)
+               unify-subst)))
+      (mv-let
+       (force-flg ttree)
+       (cond
+        ((not forcep)
+         (mv nil ttree))
+        (t (force-assumption
+            rune
+            target
+            (sublis-var fully-bound-unify-subst hyp)
+            type-alist
+            nil
+            (immediate-forcep
+             forcer-fn
+             (access rewrite-constant rcnst
+                     :current-enabled-structure))
+            force-flg
+            ttree)))
+       (cond
+        (force-flg
+         (mv-let
+          (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp)
+          (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
+                                        (cdr backchain-limit-lst)
+                                        fully-bound-unify-subst
+                                        (1+ bkptr)
+                                        unify-subst0 ttree0 allp)
+                         :obj nil
+                         :geneqv nil)
+          (declare (ignore failure-reason))
+          (cond (relieve-hyps-ans
+                 (mv relieve-hyps-ans
+                     nil ; failure-reason-lst
+                     unify-subst1 ttree1 allp))
+                (t ; treat failure to force as failure to find any bindings
+                 (mv nil
+                     nil ; failure-reason-lst
+                     unify-subst0 ttree0 allp)))))
+        (t (mv nil
+               nil ; failure-reason-lst
+               unify-subst0 ttree0 allp))))))
    (t
     (mv-let (winp new-unify-subst new-ttree rest-lemmas)
             (search-ground-units1
@@ -13727,33 +13748,43 @@ and found premature forcing killed us.
                               (relieve-hyps-ans
                                (mv-let
                                 (rewritten-rhs ttree)
-                                (rewrite-entry (rewrite
+                                (with-accumulated-persistence
+                                 rune
+                                 (rewritten-rhs ttree)
+
+; This rewrite of the body is considered a success unless the parent with-acc-p
+; fails.
+
+                                 t
+                                 (rewrite-entry (rewrite
 
 ; Note: The sublis-var below normalizes the explicit constant
 ; constructors in val, e.g., (cons '1 '2) becomes '(1 . 2).
 
-                                                (sublis-var nil val)
+                                                 (sublis-var nil val)
 
 ; At one point we ignored the unify-subst constructed above and used a
 ; nil here.  That was unsound if val involved free vars bound by the
 ; relief of the evaled-hyp.  We must rewrite val under the extended
 ; substitution.  Often that is just the identity substitution.
 
-                                                unify-subst
-                                                'meta)
-                                               :ttree
+                                                 unify-subst
+                                                 'meta)
+                                                :ttree
 
 ; Should we be pushing executable counterparts into ttrees when we applying
 ; metafunctions on behalf of meta rules?  NO:  We should only do that if the
 ; meta-rule's use is sensitive to whether or not they're enabled, and it's not
 ; -- all that matters is if the rule itself is enabled.
 
-                                               (push-lemma
-                                                (geneqv-refinementp
-                                                 (access rewrite-rule lemma :equiv)
-                                                 geneqv
-                                                 wrld)
-                                                (push-lemma rune ttree1)))
+                                                (push-lemma
+                                                 (geneqv-refinementp
+                                                  (access rewrite-rule lemma :equiv)
+                                                  geneqv
+                                                  wrld)
+                                                 (push-lemma rune ttree1)))
+                                 :conc
+                                 hyps)
                                 (mv t rewritten-rhs ttree)))
                               (t (mv nil term ttree))))))))
                        (t (mv (er hard 'rewrite-with-lemma
@@ -13850,11 +13881,21 @@ and found premature forcing killed us.
                             (relieve-hyps-ans
                              (mv-let
                               (rewritten-rhs ttree)
-                              (rewrite-entry
-                               (rewrite
-                                (access rewrite-rule lemma :rhs)
-                                unify-subst
-                                'rhs))
+                              (with-accumulated-persistence
+                               rune
+                               (rewritten-rhs ttree)
+
+; This rewrite of the body is considered a success unless the parent with-acc-p
+; fails.
+
+                               t
+                               (rewrite-entry
+                                (rewrite
+                                 (access rewrite-rule lemma :rhs)
+                                 unify-subst
+                                 'rhs))
+                               :conc
+                               (access rewrite-rule lemma :hyps))
                               (prog2$
                                (brkpt2 t nil unify-subst gstack rewritten-rhs
                                        ttree rcnst state)
@@ -14084,17 +14125,21 @@ and found premature forcing killed us.
                          :geneqv nil)))
                     (cond
                      (relieve-hyps-ans
-                      (mv-let
-                       (rewritten-body ttree1)
-                       (rewrite-entry (rewrite body unify-subst 'body)
-                                      :fnstack new-fnstack
-                                      :ttree ttree1)
+                      (with-accumulated-persistence
+                       rune
+                       (term-out ttree)
+                       t ; considered a success unless the parent with-acc-p fails
+                       (mv-let
+                        (rewritten-body ttree1)
+                        (rewrite-entry (rewrite body unify-subst 'body)
+                                       :fnstack new-fnstack
+                                       :ttree ttree1)
 
 ; Again, we use ttree1 to accumulate the successful rewrites and we'll
 ; return it in our answer if we like our answer.
 
-                       (cond
-                        ((null recursivep)
+                        (cond
+                         ((null recursivep)
 
 ; We are dealing with a nonrecursive fn.  If we are at the top-level of the
 ; clause but the expanded body has too many IFs in it compared to the number
@@ -14102,33 +14147,33 @@ and found premature forcing killed us.
 ; the args will be clausified out soon and then this will be permitted to
 ; open.
 
-                         (cond
-                          ((and (not (recursive-fn-on-fnstackp fnstack))
-                                (too-many-ifs-post-rewrite-wrapper
-                                 args rewritten-body))
-                           (prog2$
-                            (brkpt2 nil 'too-many-ifs-post-rewrite unify-subst
-                                    gstack rewritten-body ttree1 rcnst state)
-                            (rewrite-solidify term type-alist obj geneqv
-                                              (access rewrite-constant rcnst
-                                                      :current-enabled-structure)
-                                              wrld ttree
-                                              simplify-clause-pot-lst
-                                              (access rewrite-constant rcnst :pt))))
-                          (t (prog2$
-                              (brkpt2 t nil unify-subst gstack
-                                      rewritten-body ttree1 rcnst state)
-                              (mv rewritten-body
-                                  (push-lemma rune ttree1))))))
-                        ((rewrite-fncallp
-                          term rewritten-body
-                          (if (cdr recursivep) recursivep nil)
-                          (access rewrite-constant rcnst
-                                  :top-clause)
-                          (access rewrite-constant rcnst
-                                  :current-clause)
-                          (cdr (access rewrite-rule rule :heuristic-info)))
-                         (cond 
+                          (cond
+                           ((and (not (recursive-fn-on-fnstackp fnstack))
+                                 (too-many-ifs-post-rewrite-wrapper
+                                  args rewritten-body))
+                            (prog2$
+                             (brkpt2 nil 'too-many-ifs-post-rewrite unify-subst
+                                     gstack rewritten-body ttree1 rcnst state)
+                             (rewrite-solidify term type-alist obj geneqv
+                                               (access rewrite-constant rcnst
+                                                       :current-enabled-structure)
+                                               wrld ttree
+                                               simplify-clause-pot-lst
+                                               (access rewrite-constant rcnst :pt))))
+                           (t (prog2$
+                               (brkpt2 t nil unify-subst gstack
+                                       rewritten-body ttree1 rcnst state)
+                               (mv rewritten-body
+                                   (push-lemma rune ttree1))))))
+                         ((rewrite-fncallp
+                           term rewritten-body
+                           (if (cdr recursivep) recursivep nil)
+                           (access rewrite-constant rcnst
+                                   :top-clause)
+                           (access rewrite-constant rcnst
+                                   :current-clause)
+                           (cdr (access rewrite-rule rule :heuristic-info)))
+                          (cond 
 
 ; Once upon a time, before we were heavily involved with ACL2 proofs, we had
 ; the following code here.  Roughly speaking this code forced recursive
@@ -14185,13 +14230,13 @@ and found premature forcing killed us.
 
 ; takes forever unless you give the two disable hints shown above.
 
-                        ((contains-rewriteable-callp
-                          fn rewritten-body
-                          (if (cdr recursivep)
-                              recursivep
-                              nil)
-                          (access rewrite-constant
-                                  rcnst :terms-to-be-ignored-by-rewrite))
+                           ((contains-rewriteable-callp
+                             fn rewritten-body
+                             (if (cdr recursivep)
+                                 recursivep
+                               nil)
+                             (access rewrite-constant
+                                     rcnst :terms-to-be-ignored-by-rewrite))
 
 ; Ok, we are prepared to rewrite the once rewritten body.  But beware!  There
 ; is an infinite loop lurking here.  It can be broken by using :fnstack
@@ -14202,36 +14247,39 @@ and found premature forcing killed us.
 ; fnstack-term-member for a discussion of loop avoidance (which involved code
 ; that was here before Version_2.9).
 
-                         (mv-let (rewritten-body ttree2)
-                           (rewrite-entry (rewrite rewritten-body nil
-                                                   'rewritten-body)
-                                          :fnstack
+                            (mv-let (rewritten-body ttree2)
+                                    (rewrite-entry (rewrite rewritten-body nil
+                                                            'rewritten-body)
+                                                   :fnstack
 
 ; See the reference to fnstack in the comment above.
 
-                                          (cons (cons :TERM term)
-                                                fnstack)
-                                          :ttree (push-lemma rune
-                                                             ttree1))
-                           (prog2$
-                            (brkpt2 t nil unify-subst gstack
-                                    rewritten-body ttree2 rcnst state)
-                            (mv rewritten-body ttree2))))
-                        (t 
-                         (prog2$
-                          (brkpt2 t nil unify-subst gstack rewritten-body
-                                  ttree1 rcnst state)
-                          (mv rewritten-body
-                              (push-lemma rune ttree1))))))
-                      (t (prog2$
-                          (brkpt2 nil 'rewrite-fncallp unify-subst gstack
-                                  rewritten-body ttree1 rcnst state)
-                          (rewrite-solidify term type-alist obj geneqv
-                                            (access rewrite-constant rcnst
-                                                    :current-enabled-structure)
-                                            wrld ttree
-                                            simplify-clause-pot-lst
-                                            (access rewrite-constant rcnst :pt)))))))
+                                                   (cons (cons :TERM term)
+                                                         fnstack)
+                                                   :ttree (push-lemma rune
+                                                                      ttree1))
+                                    (prog2$
+                                     (brkpt2 t nil unify-subst gstack
+                                             rewritten-body ttree2 rcnst state)
+                                     (mv rewritten-body ttree2))))
+                           (t 
+                            (prog2$
+                             (brkpt2 t nil unify-subst gstack rewritten-body
+                                     ttree1 rcnst state)
+                             (mv rewritten-body
+                                 (push-lemma rune ttree1))))))
+                         (t (prog2$
+                             (brkpt2 nil 'rewrite-fncallp unify-subst gstack
+                                     rewritten-body ttree1 rcnst state)
+                             (rewrite-solidify term type-alist obj geneqv
+                                               (access rewrite-constant rcnst
+                                                       :current-enabled-structure)
+                                               wrld ttree
+                                               simplify-clause-pot-lst
+                                               (access rewrite-constant rcnst
+                                                       :pt))))))
+                       :conc
+                       (access rewrite-rule rule :hyps)))
                    (t (prog2$
                        (brkpt2 nil failure-reason unify-subst gstack nil
                                nil rcnst state)
@@ -14523,52 +14571,58 @@ and found premature forcing killed us.
 ; function pass nils into them.
 
   (mv-let (unify-ans unify-subst)
-    (one-way-unify (access linear-lemma lemma :max-term)
-                   term)
-    (cond
-     ((f-big-clock-negative-p state)
-      (mv nil simplify-clause-pot-lst))
-     (unify-ans
-      (with-accumulated-persistence
-       (access linear-lemma lemma :rune)
-       (contradictionp pot-lst)
-       (or contradictionp
+          (one-way-unify (access linear-lemma lemma :max-term)
+                         term)
+          (cond
+           ((f-big-clock-negative-p state)
+            (mv nil simplify-clause-pot-lst))
+           (unify-ans
+            (let ((rune (access linear-lemma lemma :rune)))
+              (with-accumulated-persistence
+               rune
+               (contradictionp pot-lst)
+               (or contradictionp
 
 ; The following mis-guarded use of eq instead of equal implies that we could be
 ; over-counting successes at the expense of failures.
 
-           (not (eq pot-lst simplify-clause-pot-lst)))
-       (mv-let
-        (relieve-hyps-ans failure-reason unify-subst ttree1)
-        (let ((rune (access linear-lemma lemma :rune)))
-          (rewrite-entry (relieve-hyps rune
-                                       term
-                                       (access linear-lemma lemma :hyps)
-                                       (access linear-lemma lemma
-                                               :backchain-limit-lst)
-                                       unify-subst
-                                       (not (oncep (access rewrite-constant
-                                                           rcnst
-                                                           :oncep-override)
-                                                   (access linear-lemma lemma
-                                                           :match-free)
-                                                   rune
-                                                   (access linear-lemma lemma
-                                                           :nume))))
-                         :obj nil
-                         :geneqv nil
-                         :ttree nil))
-        (declare (ignore failure-reason))
-        (cond
-         (relieve-hyps-ans
-          (mv-let
-           (rewritten-concl ttree2)
-           (rewrite-entry (rewrite-linear-term
-                           (access linear-lemma lemma :concl)
-                           unify-subst)
-                          :obj nil
-                          :geneqv nil
-                          :ttree ttree1)
+                   (not (eq pot-lst simplify-clause-pot-lst)))
+               (mv-let
+                (relieve-hyps-ans failure-reason unify-subst ttree1)
+                (rewrite-entry (relieve-hyps rune
+                                             term
+                                             (access linear-lemma lemma :hyps)
+                                             (access linear-lemma lemma
+                                                     :backchain-limit-lst)
+                                             unify-subst
+                                             (not (oncep (access rewrite-constant
+                                                                 rcnst
+                                                                 :oncep-override)
+                                                         (access linear-lemma lemma
+                                                                 :match-free)
+                                                         rune
+                                                         (access linear-lemma lemma
+                                                                 :nume))))
+                               :obj nil
+                               :geneqv nil
+                               :ttree nil)
+                (declare (ignore failure-reason))
+                (cond
+                 (relieve-hyps-ans
+                  (mv-let
+                   (rewritten-concl ttree2)
+                   (with-accumulated-persistence
+                    rune
+                    (rewritten-concl ttree2)
+                    t ; considered a success unless the parent with-acc-p fails
+                    (rewrite-entry (rewrite-linear-term
+                                    (access linear-lemma lemma :concl)
+                                    unify-subst)
+                                   :obj nil
+                                   :geneqv nil
+                                   :ttree ttree1)
+                    :conc
+                    (access linear-lemma lemma :hyps))
 
 ; Previous to Version_2.7, we just went ahead and used the result of
 ; (linearize rewritten-concl ...).  This had long been known to be
@@ -14654,66 +14708,66 @@ and found premature forcing killed us.
 
 ; We thank Robert Krug for providing this improvement.
 
-           (let* ((force-flg (ok-to-force rcnst))
-                  (temp-lst (linearize rewritten-concl
-                                       t
-                                       type-alist
-                                       (access rewrite-constant rcnst
-                                               :current-enabled-structure)
-                                       force-flg
-                                       wrld
-                                       (push-lemma
-                                        (access linear-lemma lemma :rune)
-                                        ttree2)
-                                       state))
-                  (lst (or temp-lst
-                           (linearize (sublis-var
-                                       unify-subst 
-                                       (access linear-lemma lemma :concl))
-                                      t
-                                      type-alist
-                                      (access rewrite-constant rcnst
-                                              :current-enabled-structure)
-                                      force-flg
-                                      wrld
-                                      (push-lemma
-                                       (access linear-lemma lemma :rune)
-                                       ttree1)
-                                      state))))
-             (cond
-              ((and (null (cdr lst))
-                    (not (new-and-ugly-linear-varsp
-                          (car lst)
-                          (<= *max-linear-pot-loop-stopper-value*
-                              (loop-stopper-value-of-var 
-                               term
-                               simplify-clause-pot-lst))
-                          term)))
-               (mv-let
-                (contradictionp new-pot-lst)
-                (add-polys (car lst)
-                           simplify-clause-pot-lst
-                           (access rewrite-constant rcnst :pt)
-                           (access rewrite-constant rcnst :nonlinearp)
-                           type-alist
-                           (access rewrite-constant rcnst
-                                   :current-enabled-structure)
-                           force-flg
-                           wrld)
-                (cond
-                 (contradictionp (mv contradictionp nil))
-                 (t (mv nil 
-                        (set-loop-stopper-values 
-                         (new-vars-in-pot-lst new-pot-lst
-                                              simplify-clause-pot-lst
-                                              nil)
-                         new-pot-lst
-                         term
-                         (loop-stopper-value-of-var
-                          term simplify-clause-pot-lst)))))))
-              (t (mv nil simplify-clause-pot-lst))))))
-         (t (mv nil simplify-clause-pot-lst))))))
-     (t (mv nil simplify-clause-pot-lst)))))
+                   (let* ((force-flg (ok-to-force rcnst))
+                          (temp-lst (linearize rewritten-concl
+                                               t
+                                               type-alist
+                                               (access rewrite-constant rcnst
+                                                       :current-enabled-structure)
+                                               force-flg
+                                               wrld
+                                               (push-lemma
+                                                rune
+                                                ttree2)
+                                               state))
+                          (lst (or temp-lst
+                                   (linearize (sublis-var
+                                               unify-subst 
+                                               (access linear-lemma lemma :concl))
+                                              t
+                                              type-alist
+                                              (access rewrite-constant rcnst
+                                                      :current-enabled-structure)
+                                              force-flg
+                                              wrld
+                                              (push-lemma
+                                               rune
+                                               ttree1)
+                                              state))))
+                     (cond
+                      ((and (null (cdr lst))
+                            (not (new-and-ugly-linear-varsp
+                                  (car lst)
+                                  (<= *max-linear-pot-loop-stopper-value*
+                                      (loop-stopper-value-of-var 
+                                       term
+                                       simplify-clause-pot-lst))
+                                  term)))
+                       (mv-let
+                        (contradictionp new-pot-lst)
+                        (add-polys (car lst)
+                                   simplify-clause-pot-lst
+                                   (access rewrite-constant rcnst :pt)
+                                   (access rewrite-constant rcnst :nonlinearp)
+                                   type-alist
+                                   (access rewrite-constant rcnst
+                                           :current-enabled-structure)
+                                   force-flg
+                                   wrld)
+                        (cond
+                         (contradictionp (mv contradictionp nil))
+                         (t (mv nil
+                                (set-loop-stopper-values 
+                                 (new-vars-in-pot-lst new-pot-lst
+                                                      simplify-clause-pot-lst
+                                                      nil)
+                                 new-pot-lst
+                                 term
+                                 (loop-stopper-value-of-var
+                                  term simplify-clause-pot-lst)))))))
+                      (t (mv nil simplify-clause-pot-lst))))))
+                 (t (mv nil simplify-clause-pot-lst)))))))
+           (t (mv nil simplify-clause-pot-lst)))))
 
 (defun add-linear-lemmas (term linear-lemmas ; &extra formals
                                rdepth

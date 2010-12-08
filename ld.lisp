@@ -16897,6 +16897,11 @@
   Function ~c[(file-write-date$ filename state)] has been added, giving the
   write date of the given file.
 
+  The ~ilc[accumulated-persistence] utility can now do finer-grained tracking,
+  providing data for individual hypotheses and the conclusion of a rule.
+  ~l[accumulated-persistence].  Thanks to Dave Greve for suggesting this
+  new capability and collaborating on its design and implementation.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   We have slightly improved the so-called ``~il[type-set]'' heuristics to work
@@ -16916,6 +16921,11 @@
   The algorithm for substituting alists into terms was modified.  This change
   is unlikely to affect many users, but in one example it resulted in a
   speed-up of about 21%.  Thanks to Dave Greve for supplying that example.
+
+  Sped up ~ilc[include-book] a bit by memoizing checksums of symbols.  (This
+  change pertains to ``normal'' ACL2 only, not the ~ilc[hons] version
+  (~pl[hons-and-memoization], where such memoization already occurred.)  We
+  found about a 23% speed-up on an example from Dave Greve.
 
   ~st[BUG FIXES]
 
@@ -16986,6 +16996,11 @@
   directory with a parent that is a soft link.  Thanks to Dave Greve for
   supplying an example to led us to this fix, which involves avoiding Allegro
   CL's implementation of the Common Lisp function, ~c[truename].
+
+  Fixed a bug that was failing to substitute fully using bindings of free
+  variables in ~ilc[force]d hypotheses.  A related change is that instead of
+  binding such a free variable to a new variable of the form ~c[???-Y], the new
+  variable is now of the form ~c[UNBOUND-FREE-Y].
 
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
