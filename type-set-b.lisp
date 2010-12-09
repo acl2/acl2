@@ -8129,47 +8129,36 @@ gbc time        :      8.930 secs
                                        (car backchain-limit-lst)
                                        backchain-limit
                                        ancestors))
-                        (mv-let
-                         (temp1 temp2)
-                         (assoc-type-alist atm1 type-alist wrld)
-                         (declare (ignore temp2))
-                         (let ((type-alist
-                                (cond ((and temp1 (ts-subsetp temp1 ts1))
-                                       type-alist)
-                                      (t (extend-type-alist
-                                          ;;*** -simple
-                                          atm1 ts1 ttree1 type-alist
-                                          wrld))))
-                               (ts (if not-flg
-                                       (cond ((ts= ts1 *ts-nil*) *ts-t*)
-                                             ((ts-intersectp ts1 *ts-nil*)
-                                              *ts-boolean*)
-                                             (t *ts-nil*))
-                                     ts1)))
-                           (cond
-                            ((ts= ts *ts-nil*) (mv nil type-alist ttree0))
-                            ((ts-intersectp *ts-nil* ts)
-                             (mv-let
-                              (force-flg ttree)
-                              (cond
-                               ((not (and force-flg forcep))
-                                (mv nil ttree))
-                               (t (force-assumption
-                                   rune
-                                   target
-                                   (if not-flg
-                                       (mcons-term* 'not atm1)
-                                     atm1)
-                                   type-alist nil
-                                   (immediate-forcep
-                                    (ffn-symb (car hyps))
-                                    ens)
-                                   force-flg
-                                   ttree1)))
-                              (cond
-                               (force-flg (mv t type-alist ttree))
-                               (t (mv nil type-alist ttree0)))))
-                            (t (mv t type-alist ttree1))))))
+                        (let ((ts (if not-flg
+                                      (cond ((ts= ts1 *ts-nil*) *ts-t*)
+                                            ((ts-intersectp ts1 *ts-nil*)
+                                             *ts-boolean*)
+                                            (t *ts-nil*))
+                                    ts1)))
+                          (cond
+                           ((ts= ts *ts-nil*) (mv nil type-alist ttree0))
+                           ((ts-intersectp *ts-nil* ts)
+                            (mv-let
+                             (force-flg ttree)
+                             (cond
+                              ((not (and force-flg forcep))
+                               (mv nil ttree))
+                              (t (force-assumption
+                                  rune
+                                  target
+                                  (if not-flg
+                                      (mcons-term* 'not atm1)
+                                    atm1)
+                                  type-alist nil
+                                  (immediate-forcep
+                                   (ffn-symb (car hyps))
+                                   ens)
+                                  force-flg
+                                  ttree)))
+                             (cond
+                              (force-flg (mv t type-alist ttree))
+                              (t (mv nil type-alist ttree0)))))
+                           (t (mv t type-alist ttree1)))))
                        bkptr)
                       (cond (flg (type-set-relieve-hyps
                                   rune

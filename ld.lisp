@@ -16931,6 +16931,12 @@
   (~pl[hons-and-memoization], where such memoization already occurred.)  We
   found about a 23% speed-up on an example from Dave Greve.
 
+  Made a small change to the algorithm used to prove hypotheses of
+  ~c[:]~ilc[type-prescription] rules (ACL2 source function
+  ~c[type-set-relieve-hyps]).  One change avoids a linear walk through the context
+  (the ``type-alist'' structure), while the other could avoid storing
+  unnecessary ~ilc[force]d assumptions (into the so-called ``tag-tree'').
+
   ~st[BUG FIXES]
 
   Fixed a long-standing soundness bug caused by the interaction of ~ilc[force]d
