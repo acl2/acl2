@@ -5540,7 +5540,7 @@ and found premature forcing killed us.
   rule if they do not occur in ~c[lhs] or in any ~c[hj] with ~c[j<i].  (To be
   precise, here we are only discussing those variables that are not in the
   scope of a ~ilc[let]/~ilc[let*]/~c[lambda] that binds them.)  We also refer
-  to these as the ~em[free variables] of the rule.  ACL2 issues a warning or
+  to these as the ~em[free variables] of the rule.  ACL2 may issue a warning or
   error when there are free variables in a rule, as described below.
   (Variables of ~c[rhs] may be considered free if they do not occur in ~c[lhs]
   or in any ~c[hj].  But we do not consider those in this discussion.)
@@ -5563,7 +5563,8 @@ and found premature forcing killed us.
   including illustration of how the user can exercise some control over it.  In
   particular, ~pl[free-variables-examples-rewrite] for an explanation of output
   from the ~il[break-rewrite] facility in the presence of rewriting failures
-  involving free variables.~/
+  involving free variables, as well as an example exploring ``binding
+  hypotheses'' as described below.~/
 
   We begin with an example.  Does the proof of the ~ilc[thm] below succeed?
   ~bv[]
@@ -5612,19 +5613,24 @@ and found premature forcing killed us.
   ~c[:forward-chaining] rules and step (3) is skipped for
   ~c[:type-prescription] rules.  First, if the hypothesis is of the form
   ~c[(force hyp0)] or ~c[(case-split hyp0)], then replace it with ~c[hyp0].
+  ~bq[]
   (1) Suppose the hypothesis has the form ~c[(equiv var term)] where ~c[var] is
   free and no variable of ~c[term] is free, and either ~c[equiv] is ~ilc[equal]
   or else ~c[equiv] is a known ~il[equivalence] relation and ~c[term] is a call
-  of ~ilc[double-rewrite].  Then bind ~c[var] to the result of rewriting
-  ~c[term] in the current context.  (2) Look for a binding of the free
-  variables of the hypothesis so that the corresponding instance of the
-  hypothesis is known to be true in the current context.  (3) Search all
-  ~ilc[enable]d, hypothesis-free rewrite rules of the form ~c[(equiv lhs rhs)],
-  where ~c[lhs] has no variables (other than those bound by ~ilc[let],
-  ~ilc[let*], or ~c[lambda]), ~c[rhs] is known to be true in the current
-  context, and ~c[equiv] is typically ~c[equal] but can be any equivalence
-  relation appropriate for the current context (~pl[congruence]); then attempt
-  to bind the free variables so that the instantiated hypothesis is ~c[lhs].
+  of ~ilc[double-rewrite].  We call this a ``binding hypothesis.''  Then bind
+  ~c[var] to the result of rewriting ~c[term] in the current context.
+
+  (2) Look for a binding of the free variables of the hypothesis so that the
+  corresponding instance of the hypothesis is known to be true in the current
+  context.
+
+  (3) Search all ~ilc[enable]d, hypothesis-free rewrite rules of the form
+  ~c[(equiv lhs rhs)], where ~c[lhs] has no variables (other than those bound
+  by ~ilc[let], ~ilc[let*], or ~c[lambda]), ~c[rhs] is known to be true in the
+  current context, and ~c[equiv] is typically ~c[equal] but can be any
+  equivalence relation appropriate for the current context (~pl[congruence]);
+  then attempt to bind the free variables so that the instantiated hypothesis
+  is ~c[lhs].~eq[]
   If all attempts fail and the original hypothesis is a call of ~ilc[force] or
   ~ilc[case-split], where forcing is enabled (~pl[force]) then the hypothesis
   is relieved, but in the split-off goals, all free variables are bound to
@@ -5729,9 +5735,9 @@ and found premature forcing killed us.
 
 (deflabel free-variables-examples-rewrite
 
-; The last example below could have been given as follows instead,
-; though this one is kind of weird since there are free variables on
-; the right-hand side of the ground unit rules.
+; The second example below could have been given as follows instead, though
+; this one is kind of weird since there are free variables on the right-hand
+; side of the ground unit rules.
 
 ;     (encapsulate
 ;      (((p1 *) => *)
@@ -5791,6 +5797,10 @@ and found premature forcing killed us.
   handled.  ~l[free-variables] for a background discussion.~/
 
   ~bv[]
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;; Example 1
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (defstub p2 (x y) t) ; introduce unconstrained function
 
   ; Get warning because of free variable.  This would be an error if you had
@@ -5930,10 +5940,9 @@ and found premature forcing killed us.
                      (p2 c d))
                 (p2 a d)))
 
-  ;;; Test searching of ground units, i.e. rewrite rules without
-  ;;; variables on the left side of the conclusion, for use in
-  ;;; relieving hypotheses with free variables.  This is a very
-  ;;; contrived example.
+  ; Test searching of ground units, i.e. rewrite rules without variables on the
+  ; left side of the conclusion, for use in relieving hypotheses with free
+  ; variables.  This is a very contrived example.
 
   (ubt! 1) ; back to the start
 
@@ -5997,14 +6006,18 @@ and found premature forcing killed us.
   ; Still succeeds.
   (thm (implies (p2 (a) y)
                 (p3 (a))))
-
-  ;;;;;;;;;;
   ~ev[]
 
-  FINALLY, here is an example illustrating the use of the ~il[break-rewrite]
-  facility to get information about handling of free variables by the
-  rewriter.  Explanation is given after this (edited) transcript.  Input
-  begins on lines with a prompt (search for ``ACL2''); the rest is output.
+  ~bv[]
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;; Example 2
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ~ev[]
+
+  The next example illustrates the use of the ~il[break-rewrite] facility
+  to get information about handling of free variables by the rewriter.
+  Explanation is given after this (edited) transcript.  Input begins on lines
+  with a prompt (search for ``ACL2''); the rest is output.
 
   ~bv[]
   ACL2 !>(encapsulate
@@ -6150,7 +6163,128 @@ and found premature forcing killed us.
   Failed because :HYP 6 rewrote to (POO X3 Y3).
   ~ev[]
   There are no more free variable bindings to try, so this concludes the output
-  from ~c[:eval].~/")
+  from ~c[:eval].
+
+  ~bv[]
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;; Example 3
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ~ev[]
+
+  The next pair of examples illustrates so-called ``binding hypotheses''
+  (~pl[free-variables]) and explores some of their subtleties.  The first shows
+  binding hypotheses in action on a simple example.  The second shows how
+  binding hypotheses interact with equivalence relations and explains the role
+  of ~ilc[double-rewrite].
+
+  Our first example sets up a theory with two user-supplied rewrite rules, one
+  of which has a binding hypothesis.  Below we explain how that binding
+  hypothesis contributes to the proof.
+
+  ~bv[]
+  ; Define some unary functions.
+  (defun f (x) (declare (ignore x)) t)
+  (defun g (x) x)
+  (defun h (x) x)
+  (defun k (x) x)
+
+  ; Prove some simple lemmas.  Note the binding hypothesis in g-rewrite.
+  (defthm f-k-h
+    (f (k (h x))))
+  (defthm g-rewrite
+         (implies (and (equal y (k x)) ; binding hypothesis
+                       (f y))
+                  (equal (g x) y)))
+
+  ; Restrict to a theory that includes the above lemmas but avoids the above
+  ; definitions.
+  (in-theory (union-theories (theory 'minimal-theory)
+                             '(f-k-h g-rewrite)))
+
+  ; Prove a theorem.
+  (thm (equal (g (h a)) (k (h a))))
+  ~ev[]
+
+  Let us look at how ACL2 uses the above binding hypothesis in the proof of the
+  preceding ~c[thm] form.  The rewriter considers the term ~c[(g (h a))] and
+  finds a match with the left-hand side of the rule ~c[g-rewrite], binding
+  ~c[x] to ~c[(h a)].  The first hypothesis binds ~c[y] to the result of
+  rewriting ~c[(k x)] in the current context, where the variable ~c[x] is bound
+  to the term ~c[(h a)]; thus ~c[y] is bound to ~c[(k (h a))].  The second
+  hypothesis, ~c[(f y)], is then rewritten under this binding, and the result
+  is ~c[t] by application of the rewrite rule ~c[f-k-h].  The rule
+  ~c[g-rewrite] is then applied under the already-mentioned binding of ~c[x] to
+  ~c[(h a)].  This rule application triggers a recursive rewrite of the
+  right-hand side of ~c[g-rewrite], which is ~c[y], in a context where ~c[y] is
+  bound (as discussed above) to ~c[(k (h a))].  The result of this rewrite is
+  that same term, ~c[(k (h a))].  The original call of ~c[equal] then trivially
+  rewrites to ~c[t].
+
+  We move on now to our second example, which is similar but involves a
+  user-defined equivalence relation.  You may find it helpful to review
+  ~c[:equivalence] rules; ~pl[equivalence].
+
+  Recall that when a hypothesis is a call of an equivalence relation other than
+  ~c[equal], the second argument must be a call of ~ilc[double-rewrite] in
+  order for the hypothesis to be treated as a binding hypothesis.  That is
+  indeed the case below; an explanation follows.
+
+  ~bv[]
+  ; Define an equivalence relation.
+  (defun my-equiv (x y) (equal x y))
+  (defequiv my-equiv) ; introduces rule MY-EQUIV-IS-AN-EQUIVALENCE
+
+  ; Define some unary functions
+  (defun f (x) (declare (ignore x)) t)
+  (defun g (x) x)
+  (defun h1 (x) x)
+  (defun h2 (x) x)
+
+  ; Prove some simple lemmas.  Note the binding hypothesis in lemma-3.
+  (defthm lemma-1
+    (my-equiv (h1 x) (h2 x)))
+  (defthm lemma-2
+    (f (h2 x)))
+  (defthm lemma-3
+         (implies (and (my-equiv y (double-rewrite x)) ; binding hypothesis
+                       (f y))
+                  (equal (g x) y)))
+
+  ; Restrict to a theory that includes the above lemmas but avoids the above
+  ; definitions.
+  (in-theory (union-theories (theory 'minimal-theory)
+                             '(lemma-1 lemma-2 lemma-3
+                                       my-equiv-is-an-equivalence)))
+
+  ; Prove a theorem.
+  (thm (equal (g (h1 a)) (h2 a)))
+  ~ev[]
+
+  The proof succeeds much as in the first example, but the following
+  observation is key: when ACL2 binds ~c[y] upon considering the first
+  hypothesis of ~c[lemma-3], it rewrites the term ~c[(double-rewrite x)] in a
+  context where it need only preserve the equivalence relation ~c[my-equiv].
+  At this point, ~c[x] is bound by applying ~c[lemma-3] to the term
+  ~c[(g (h1 a))]; so, ~c[x] is bound to ~c[(h1 a)].  The rule ~c[lemma-1] then
+  applies to rewrite this occurrence of ~c[x] to ~c[(h2 a)], but only because
+  it suffices to preserve ~c[my-equiv].  Thus ~c[y] is ultimately bound to
+  ~c[(h2 a)], and the proof succeeds as one would expect.
+
+  If we tweak the above example slightly by disabling the user's
+  ~il[equivalence] ~il[rune], then the proof of the ~ilc[thm] form fails
+  because the above rewrite of ~c[(double-rewrite x)] is done in a context
+  where it no longer suffices to preserve ~c[my-equiv] as we dive into the
+  second argument of ~c[my-equiv] in the first hypothesis of ~c[lemma-3]; so,
+  ~c[lemma-1] does not apply this time.
+
+  ~bv[]
+  (in-theory (union-theories (theory 'minimal-theory)
+                             '(lemma-1 lemma-2 lemma-3)))
+
+  ; Proof fails in this case!
+  (thm (equal (g (h1 a)) (h2 a)))
+  ~ev[]
+  ~/")
 
 (deflabel free-variables-examples-forward-chaining
 
