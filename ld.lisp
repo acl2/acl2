@@ -16743,6 +16743,14 @@
 
   ~st[CHANGES TO EXISTING FEATURES]
 
+  The ~ilc[accumulated-persistence] utility can now do finer-grained tracking,
+  providing data for individual hypotheses and the conclusion of a rule.
+  ~l[accumulated-persistence].  To try this out, evaluate the form
+  ~c[(accumulated-persistence :all)]; then ~pl[accumulated-persistence] for a
+  discussion of display options using ~c[show-accumulated-persistence].  Thanks
+  to Dave Greve for suggesting this new capability and collaborating on its
+  design and implementation.
+
   Made small changes to ~ilc[mv-nth] and ~ilc[defun-sk] in order to permit
   guard verification of functions introduced with more than one quantified
   variable in a ~ilc[defun-sk] form.  The change to ~ilc[mv-nth] is to weaken
@@ -16854,6 +16862,9 @@
 
   ~st[NEW FEATURES]
 
+  See the discussion above about new statistics that can be gathered by the
+  ~ilc[accumulated-persistence] utility.
+
   A new hint, ~c[:]~ilc[instructions], allows use of the ~il[proof-checker] at
   the level of ~il[hints] to the prover.  Thanks to Pete Manolios for
   requesting this feature (in 2001!).  ~l[instructions].
@@ -16900,11 +16911,6 @@
 
   Function ~c[(file-write-date$ filename state)] has been added, giving the
   write date of the given file.
-
-  The ~ilc[accumulated-persistence] utility can now do finer-grained tracking,
-  providing data for individual hypotheses and the conclusion of a rule.
-  ~l[accumulated-persistence].  Thanks to Dave Greve for suggesting this
-  new capability and collaborating on its design and implementation.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
