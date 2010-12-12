@@ -3823,11 +3823,13 @@
   thorough understanding of them before proceeding (at which time
   ~pl[extended-metafunctions]).
 
-  Metafunctions and (if supplied) hypothesis metafunctions must be executable.
-  That is, they cannot be constrained (i.e., introduced in the ~il[signature]
-  of ~ilc[encapsulate] ~il[events]), nor can they be ~il[declare]d
+  One might think that metafunctions and (if supplied) hypothesis metafunctions
+  must be executable: that is, not constrained (i.e., introduced in the
+  ~il[signature] of ~ilc[encapsulate] ~il[events]), and not ~il[declare]d
   ~c[:]~ilc[non-executable].  After all, there is no point in installing a
-  simplifier that cannot be run!
+  simplifier that cannot be run!  However, such a restriction is not enforced,
+  because one could introduce a metafunction using ~ilc[encapsulate] and then
+  use ~ilc[defattach] to attach it to an executable function; ~pl[defattach].
 
   We defer discussion of the case in which there is a hypothesis metafunction
   and for now address the case in which the other two hypotheses are present.
