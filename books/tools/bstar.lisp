@@ -559,6 +559,41 @@ may be nested inside other bindings.~/~/"
          (declare (ignorable ,form))
          (b* ,binders
            (check-vars-not-free (,form) ,rest-expr))))))
+
+
+
+(def-b*-binder nths*
+  "B* binder for list decomposition using NTH, with one final NTHCDR~/
+Usage:
+~bv[]
+ (b* (((nths* a b c d) lst)) form)
+~ev[]
+is equivalent to
+~bv[]
+ (b* ((a (nth 0 lst))
+      (b (nth 1 lst))
+      (c (nth 2 lst))
+      (d (nthcdr 3 lst)))
+   form).
+~ev[]
+
+~l[B*] for background.
+
+Each of the arguments to the NTHS binder may be a recursive binder, and NTHS
+may be nested inside other bindings.~/~/"
+  (declare (xargs :guard (and (destructure-guard nths args forms nil)
+                              (< 0 (len args)))))
+  (let* ((binding (car forms))
+         (evaledp (or (atom binding) (eq (car binding) 'quote)))
+         (form (if evaledp binding (pack binding)))
+         (binders (append (nths-binding-list (butlast args 1) 0 form)
+                          `((,(car (last args)) (nthcdr ,(1- (len args)) ,form))))))
+    (if evaledp
+        `(b* ,binders ,rest-expr)
+      `(let ((,form ,binding))
+         (declare (ignorable ,form))
+         (b* ,binders
+           (check-vars-not-free (,form) ,rest-expr))))))
   
 
 

@@ -243,6 +243,17 @@
 
   (hons-dups-p1 l '*hons-dups-p*))
 
+(defn hons-duplicates1 (l tab)
+  (cond ((atom l) (ansfl nil tab))
+        ((hons-get (car l) tab)
+         (cons (car l) (hons-duplicates1 (cdr l) tab)))
+        (t (hons-duplicates1 (cdr l) (hons-acons (car l) t tab)))))
+
+(defn hons-duplicates (l)
+  (hons-duplicates1 l nil))
+         
+
+
 (defn hons-remove-duplicates1 (l tab)
   (cond ((atom l)
          (ansfl nil tab))

@@ -399,29 +399,35 @@
                   (pair-up-cases-with-hints (cdr alist) thmparts)))))
     nil))
 
-(defun make-defthm-macro-fn-aux (name explicit-namep flag-var alist thmparts)
+(defun flag-thm-entry-thmname (explicit-name flag entry)
+  (if (eq (car entry) 'defthm)
+      (cadr entry)
+    (or (extract-keyword-from-args :name (cddr entry))
+        (if explicit-name
+            (intern-in-package-of-symbol
+             (concatenate 'string
+                          (symbol-name explicit-name)
+                          "-"
+                          (symbol-name flag))
+             explicit-name)
+          (er hard 'flag-thm-entry-thmname
+              "~
+Expected an explicit name for each theorem, since no general name was
+given.  The following theorem does not have a name: ~x0~%")))))
+          
+
+(defun make-defthm-macro-fn-aux (lemma-name explicit-name flag-var alist thmparts)
   ;; We have just proven the lemma and it's time to instantiate it to
   ;; give us each thm.
   (if (consp alist)
       (let* ((flag (cdar alist))
              (lookup (assoc-flag-in-thmparts flag thmparts)))
         (if (extract-keyword-from-args :skip (cddr lookup))
-            (make-defthm-macro-fn-aux name explicit-namep flag-var (cdr alist) thmparts)
+            (make-defthm-macro-fn-aux
+             lemma-name explicit-name flag-var (cdr alist) thmparts)
           ;; Not checking for lookup, already did it when we did cases.
           (let ((this-name
-                 (if (eq (car lookup) 'defthm)
-                     (cadr lookup)
-                   (or (extract-keyword-from-args :name (cddr lookup))
-                       (if explicit-namep
-                           (intern-in-package-of-symbol
-                            (concatenate 'string
-                                         (symbol-name name)
-                                         "-"
-                                         (symbol-name flag))
-                            name)
-                         (er hard name
-                             "Expected an explicit name for each theorem, ~
-since no general name was given.~%")))))
+                 (flag-thm-entry-thmname explicit-name flag lookup))
                 (body (if (eq (car lookup) 'defthm)
                           (caddr lookup)
                         (cadr lookup)))
@@ -434,22 +440,28 @@ since no general name was given.~%")))))
                      :doc ,doc
                      :hints(("Goal"
                              :in-theory (theory 'minimal-theory)
-                             :use ((:instance ,name (,flag-var ',flag))))))
-                  (make-defthm-macro-fn-aux name explicit-namep flag-var (cdr alist) thmparts)))))
+                             :use ((:instance ,lemma-name (,flag-var ',flag))))))
+                  (make-defthm-macro-fn-aux
+                   lemma-name explicit-name flag-var (cdr alist) thmparts)))))
     nil))
 
 
-(defun make-defthm-macro-fn (macro-name args alist flag-var flag-fncall)
-  (let* ((explicit-namep (symbolp (car args)))
-         (name (if explicit-namep
-                   (car args)
-                 (intern-in-package-of-symbol
-                  (concatenate 'string "LEMMA-FOR-" (symbol-name macro-name))
-                  macro-name)))
-         (args (if (symbolp (car args))
-                   (cdr args)
-                 args))
+
+(defun make-defthm-macro-fn (args alist flag-var flag-fncall)
+  (let* ((explicit-name (and (symbolp (car args)) (car args)))
+         (args (if explicit-name (cdr args) args))
          (thmparts (throw-away-keyword-parts args))
+         (name (if explicit-name
+                   (intern-in-package-of-symbol
+                    (concatenate 'string "FLAG-LEMMA-FOR-"
+                                 (symbol-name explicit-name))
+                    explicit-name)
+                 (let ((first-thmname
+                        (flag-thm-entry-thmname nil nil (car thmparts))))
+                   (intern-in-package-of-symbol
+                    (concatenate 'string "FLAG-LEMMA-FOR-"
+                                 (symbol-name  first-thmname))
+                    first-thmname))))
          (instructions (extract-keyword-from-args :instructions args))
          (user-hints (extract-keyword-from-args :hints args))
          (hints (and (not instructions)
@@ -485,13 +497,13 @@ since no general name was given.~%")))))
                  :instructions ,instructions
                  :otf-flg ,(extract-keyword-from-args :otf-flg args)))
 
-        . ,(make-defthm-macro-fn-aux name explicit-namep flag-var alist thmparts))
+        . ,(make-defthm-macro-fn-aux name explicit-name flag-var alist thmparts))
        (value-triple ',name))))
 
 
 (defun make-defthm-macro (real-macro-name alist flag-var flag-fncall)
   `(defmacro ,real-macro-name (&rest args) ;; was (name &rest args)
-     (make-defthm-macro-fn ',real-macro-name args ',alist ',flag-var ',flag-fncall)))
+     (make-defthm-macro-fn args ',alist ',flag-var ',flag-fncall)))
 
 (defun make-cases-for-equiv (alist world)
   (if (consp alist)
