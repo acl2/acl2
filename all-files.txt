@@ -1558,6 +1558,8 @@ definline.acl2
 definline.lisp
 defmac.lisp
 defopener.lisp
+defproxy-test.acl2
+defproxy-test.lisp
 defp.lisp
 defpun.lisp
 dft-ex.acl2
