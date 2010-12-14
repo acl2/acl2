@@ -25,6 +25,7 @@ basis.lisp
 bdd.lisp
 # bin -- under svn control but not distributed
 books
+boot-strap-pass-2.lisp
 build-allegro-exe.cl
 # build-lispworks
 # build-ns -- developer file
