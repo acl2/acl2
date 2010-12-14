@@ -7883,7 +7883,7 @@ gbc time        :      8.930 secs
         (t 
 
 ; Otherwise, we apply all known type-prescriptions and conclude with
-; whatever is builtin about fn.
+; whatever is built in about fn.
 
 ; Note: We do not know that 'type-prescriptions is non-nil.  Once upon
 ; a time we insisted that every fn have a type-prescription.  This
@@ -9782,7 +9782,7 @@ gbc time        :      8.930 secs
 ; In the mv-let below we effectively implement the facts that, when x
 ; is of type *ts-integer* (< x 1) is ~(< 0 x), and (< -1 x) is ~(< x
 ; 0).  By normalizing such inequalities around 0 we can more easily
-; recognize the ones covered by our builtin types.
+; recognize the ones covered by our built in types.
 
 ; WARNING: A bug once lurked here, so beware.  The term we are
 ; assuming is represented by xnot-flg and x.  We are about to

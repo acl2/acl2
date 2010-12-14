@@ -3757,43 +3757,6 @@
   else is a list of such names.  Every name in ~c[names] must have been
   previously defined as a stobj via ~c[defstobj].~/")
 
-(defun gen-formals-from-pretty-flags1 (pretty-flags i avoid)
-  (cond ((endp pretty-flags) nil)
-        ((eq (car pretty-flags) '*)
-         (let ((xi (pack2 'x i)))
-           (cond ((member-eq xi avoid)
-                  (let ((new-var (genvar 'genvar ;;; ACL2 package
-                                         "GENSYM"
-                                         1
-                                         avoid)))
-                    (cons new-var 
-                          (gen-formals-from-pretty-flags1
-                           (cdr pretty-flags)
-                           (+ i 1)
-                           (cons new-var avoid)))))
-                 (t (cons xi
-                          (gen-formals-from-pretty-flags1
-                           (cdr pretty-flags)
-                           (+ i 1)
-                           avoid))))))
-        (t (cons (car pretty-flags)
-                 (gen-formals-from-pretty-flags1
-                  (cdr pretty-flags)
-                  (+ i 1)
-                  avoid)))))
-
-(defun gen-formals-from-pretty-flags (pretty-flags)
-
-; Given a list of prettyified stobj flags, e.g., '(* * $S * STATE) we
-; generate a proposed list of formals, e.g., '(X1 X2 $S X4 STATE).  We
-; guarantee that the result is a list of symbols as long as
-; pretty-flags.  Furthermore, a non-* in pretty-flags is preserved in
-; the same slot in the output.  Furthermore, the symbol generated for
-; each * in pretty-flags is unique and not among the symbols in
-; pretty-flags.  Finally, STATE is not among the symbols we generate.
-
-  (gen-formals-from-pretty-flags1 pretty-flags 1 pretty-flags))
-
 (defconst *generic-bad-signature-string*
   "The object ~x0 is not a legal signature.  A basic signature is of one of ~
    the following two forms:  ((fn sym1 ... symn) => val) or (fn (var1 ... ~
@@ -4060,8 +4023,7 @@
                              ctx wrld state)
         (er-let*
          ((kwd-alist (translate-signature-kwd-value-list
-                      kwd-value-list fn formals stobjs ctx wrld state))
-          (wrld1 (chk-just-new-name fn 'function nil ctx wrld state)))
+                      kwd-value-list fn formals stobjs ctx wrld state)))
          (er-progn
           (cond ((not (or (symbolp val)
                           (and (consp val)
@@ -4102,12 +4064,17 @@
                    is illegal because ~&1 ~#1~[is~/are~] duplicated."
                   val
                   (duplicates (collect-non-x nil stobjs-out))))
-             (t (value (list* (list fn
-                                    formals
-                                    stobjs-in
-                                    stobjs-out)
-                              kwd-alist
-                              wrld1)))))))))))))
+             (t (er-let* ((wrld1 (chk-just-new-name fn
+                                                    (list* 'function
+                                                           stobjs-in
+                                                           stobjs-out)
+                                                    nil ctx wrld state)))
+                  (value (list* (list fn
+                                      formals
+                                      stobjs-in
+                                      stobjs-out)
+                                kwd-alist
+                                wrld1))))))))))))))
 
 (defun chk-signatures (signatures ctx wrld state)
 
@@ -6878,8 +6845,9 @@
         ((and (eq (symbol-class (car names) wrld) :common-lisp-compliant)
               (not (getprop (car names) 'constrainedp nil
                             'current-acl2-world wrld))
-              (not (getprop (car names) 'non-executablep nil
-                            'current-acl2-world wrld))
+              (not (eq (getprop (car names) 'non-executablep nil
+                                'current-acl2-world wrld)
+                       t)) ; maybe excessively conservative to allow :program?
 
 ; So, this function can be executed.  We can only trust its guard verification
 ; if the guard proof obligation can be moved forward.  We could in principle
@@ -13718,7 +13686,9 @@ The following all cause errors.
 
  ; Defun-mode-flg = nil means encapsulate or :non-executable.  In this case we
  ; do not pick up the function, but that's OK because we don't care if it is
- ; executed efficiently.
+ ; executed efficiently.  Warning: If we decide to pick it up after all, then
+ ; make sure that the symbol-class is not :program, since after Version_4.1 we
+ ; allow non-executable :program mode functions.
 
        ans)
       ((eq (symbol-class (caar (cdddr (cddar tl))) wrld) :ideal)
@@ -16024,204 +15994,6 @@ The following all cause errors.
   certifying the books, if not already up-to-date on certification).")
 
 (link-doc-to makefiles books book-makefiles)
-
-; We now use encapsulate to implement defstub.
-
-(defun defstub-ignores (formals body)
-
-; The test below is sufficient to ensure that the set-difference-equal
-; used to compute the ignored vars will not cause an error.  We return
-; a true list.  The formals and body will be checked thoroughly by the
-; encapsulate, provided we generate it!  Provided they check out, the
-; result returned is the list of ignored formals.
-
-  (if (and (symbol-listp formals)
-           (or (symbolp body)
-               (and (consp body)
-                    (symbol-listp (cdr body)))))
-      (set-difference-equal
-       formals
-       (if (symbolp body)
-           (list body)
-         (cdr body)))
-    nil))
-
-(defun defstub-body (output)
-
-; This strange little function is used to turn an output signature
-; spec (in either the old or new style) into a term.  It never causes
-; an error, even if output is ill-formed!  What it returns in that
-; case is irrelevant.  If output is well-formed, i.e., is one of:
-
-;       output               result
-; *                           nil
-; x                           x
-; state                       state
-; (mv * state *)              (mv nil state nil)
-; (mv x state y)              (mv x state y)
-
-; it replaces the *'s by nil and otherwise doesn't do anything.
-
-  (cond ((atom output)
-         (cond ((equal output '*) nil)
-               (t output)))
-        ((equal (car output) '*)
-         (cons nil (defstub-body (cdr output))))
-        (t (cons (car output) (defstub-body (cdr output))))))
-
-; The following function is used to implement a slighly generalized
-; form of macro args, namely one in which we can provide an arbitrary
-; number of ordinary arguments terminated by an arbitrary number of
-; keyword argument pairs.
-
-(defun partition-rest-and-keyword-args1 (x)
-  (cond ((endp x) (mv nil nil))
-        ((keywordp (car x))
-         (mv nil x))
-        (t (mv-let (rest keypart)
-                   (partition-rest-and-keyword-args1 (cdr x))
-                   (mv (cons (car x) rest)
-                       keypart)))))
-
-(defun partition-rest-and-keyword-args2 (keypart keys alist)
-
-; We return t if keypart is ill-formed as noted below.  Otherwise, we
-; return ((:keyn . vn) ... (:key1 . v1)).
-
-  (cond ((endp keypart) alist)
-        ((and (keywordp (car keypart))
-              (consp (cdr keypart))
-              (not (assoc-eq (car keypart) alist))
-              (member (car keypart) keys))
-         (partition-rest-and-keyword-args2 (cddr keypart)
-                                           keys
-                                           (cons (cons (car keypart)
-                                                       (cadr keypart))
-                                                 alist)))
-        (t t)))
-
-(defun partition-rest-and-keyword-args (x keys)
-
-; X is assumed to be a list of the form (a1 ... an :key1 v1 ... :keyk
-; vk), where no ai is a keyword.  We return (mv erp rest alist), where
-; erp is t iff the keyword section of x is ill-formed.  When erp is
-; nil, rest is '(a1 ... an) and alist is '((:key1 . v1) ... (:keyk
-; . vk)).
-
-; The keyword section is ill-formed if it contains a non-keyword in an
-; even numbered element, if it binds the same keyword more than once,
-; or if it binds a keyword other than those listed in keys.
-
-  (mv-let (rest keypart)
-          (partition-rest-and-keyword-args1 x)
-          (let ((alist (partition-rest-and-keyword-args2 keypart keys nil)))
-            (cond
-             ((eq alist t) (mv t nil nil))
-             (t (mv nil rest alist))))))
-
-(defmacro defstub (name &rest rst)
-
-  ":Doc-Section Events
-
-  stub-out a function symbol~/
-  ~bv[]
-  Examples:
-  ACL2 !>(defstub subr1 (* * state) => (mv * state))
-  ACL2 !>(defstub add-hash (* * hashtable) => hashtable)~/
-
-  General Forms:
-  (defstub name args-sig => output-sig)
-  (defstub name args-sig => output-sig :doc doc-string)
-  ~ev[]
-
-  ~c[Name] is a new function symbol and ~c[(name . args-sig) => output-sig)] is
-  a ~il[signature].  If the optional ~ilc[doc-string] is supplied it should be
-  a documentation string.  See also the ``Old Style'' heading below.
-
-  ~c[Defstub] macro expands into an ~ilc[encapsulate] event
-  (~pl[encapsulate]).  Thus, no axioms are available about ~c[name] but it may
-  be used wherever a function of the given signature is permitted.  Exception:
-  if ~c[output-sig] is of the form ~c[(mv ...)], then a
-  ~c[:]~ilc[type-prescription] rule is introduced stating that ~c[name] returns
-  a value satisfying ~ilc[true-listp].
-
-  Old Style:
-  ~bv[]
-  Old Style General Form:
-  (defstub name formals output)
-  (defstub name formals output :doc doc-string)
-  ~ev[] 
-  where ~c[name] is a new function symbol, ~c[formals] is its list of formal
-  parameters, and ~c[output] is either a symbol (indicating that the function
-  returns one result) or a term of the form ~c[(mv s1 ... sn)], where each
-  ~c[si] is a symbol (indicating that the function returns ~c[n] results).
-  Whether and where the symbol ~ilc[state] occurs in ~c[formals] and ~c[output]
-  indicates how the function handles ~il[state].  It should be the case that
-  ~c[(name formals output)] is in fact a signature (~pl[signature]).
-
-  Note that with the old style notation it is impossible to stub-out a function
-  that uses any single-threaded object other than state.  The old style is
-  preserved for compatibility with earlier versions of ACL2."
-
-  (mv-let (erp args key-alist)
-          (partition-rest-and-keyword-args rst '(:doc))
-          (cond
-           ((or erp
-                (not (or (equal (length args) 2)
-                         (and (equal (length args) 3)
-                              (symbol-listp (car args))
-                              (symbolp (cadr args))
-                              (equal (symbol-name (cadr args)) "=>")))))
-            `(er soft 'defstub
-                 "Defstub must be of the form (defstub name formals ~
-                  body) or (defstub name args-sig => body-sig), where ~
-                  args-sig is a true-list of symbols.  Both ~
-                  forms permit an optional, final :DOC doc-string ~
-                  argument.  See :DOC defstub."))
-           (t
-            (let ((doc (cdr (assoc-eq :doc key-alist))))
-              (cond
-               ((equal (length args) 2)
-
-; Old style
-                (let* ((formals (car args))
-                       (body (cadr args))
-                       (ignores (defstub-ignores formals body)))
-                  `(encapsulate
-                    ((,name ,formals ,body))
-                    (logic)
-                    (local
-                     (defun ,name ,formals
-                       (declare (ignore ,@ignores))
-                       ,body))
-                    ,@(and (consp body)
-                           (eq (car body) 'mv)
-                           `((defthm ,(packn-pos (list "TRUE-LISTP-" name)
-                                                 name)
-                               (true-listp (,name ,@formals))
-                               :rule-classes :type-prescription)))
-                    ,@(if doc `((defdoc ,name ,doc)) nil))))
-               (t (let* ((args-sig (car args))
-                         (body-sig (caddr args))
-                         (formals (gen-formals-from-pretty-flags args-sig))
-                         (body (defstub-body body-sig))
-                         (ignores (defstub-ignores formals body))
-                         (stobjs (collect-non-x '* args-sig)))
-                    `(encapsulate
-                      (((,name ,@args-sig) => ,body-sig))
-                      (logic)
-                      (local
-                       (defun ,name ,formals
-                         (declare (ignore ,@ignores)
-                                  (xargs :stobjs ,stobjs))
-                         ,body))
-                      ,@(and (consp body-sig)
-                             (eq (car body-sig) 'mv)
-                             `((defthm ,(packn-pos (list "TRUE-LISTP-" name)
-                                                   name)
-                                 (true-listp (,name ,@formals))
-                                 :rule-classes :type-prescription)))
-                      ,@(if doc `((defdoc ,name ,doc)) nil))))))))))
 
 ; Next we implement defchoose and defun-sk.
 
@@ -21938,11 +21710,11 @@ The following all cause errors.
                                   'current-acl2-world wrld))
          (form (cltl-def-from-name1 fn stobj-function t wrld)))
     (oneify-cltl-code
-     (cond ((eq (symbol-class fn wrld) :program)
-            :program)
-           ((or (getprop fn 'constrainedp nil 'current-acl2-world wrld)
+     (cond ((or (getprop fn 'constrainedp nil 'current-acl2-world wrld)
                 (getprop fn 'non-executablep nil 'current-acl2-world wrld))
-            nil) ; see oneify-cltl-code
+            nil)
+           ((eq (symbol-class fn wrld) :program)
+            :program) ; see oneify-cltl-code
            (t :logic))
      (cdr form)
      stobj-function
@@ -24412,19 +24184,27 @@ The following all cause errors.
                              dir
                              `(delete-include-book-dir ,keyword)))))
                (raw-p
-                (pprogn (f-put-global 'raw-include-book-dir-alist new state)
-                        (cond
-                         ((acl2-defaults-table-local-ctx-p state)
+                (pprogn (cond
+                         ((or (acl2-defaults-table-local-ctx-p state)
+                              (not (eq (f-get-global
+                                        'raw-include-book-dir-alist state)
+                                       :ignore)))
 
-; The warning below is probably irrelevant for a context such that
-; acl2-defaults-table will ultimately be discarded, because even without
-; raw-mode we will be discarding include-book-dir-alist changes.
+; We skip the warning below when in a context for which acl2-defaults-table
+; will ultimately be discarded, since the effect of add-include-book-dir would
+; disappear even without raw-mode.  We also skip the warning if we are in a
+; context where we have previously transitioned the value of
+; 'raw-include-book-dir-alist from :ignore, as either we have already given a
+; warning, or else we deemed that transition not worthy of a warning, as in the
+; state-global-let* binding of raw-include-book-dir-alist in
+; load-compiled-book.
 
                           state)
                          (t
                           (warning$ ctx "Raw-mode"
                                     "The effect of add-include-book-dir will ~
                                      disappear if you exit raw-mode.")))
+                        (f-put-global 'raw-include-book-dir-alist new state)
                         (value new)))
                (t (er-progn
                    (table-fn 'acl2-defaults-table
@@ -26362,7 +26142,39 @@ The following all cause errors.
 ; in the domain of s0 that occurs in C1 or G1 is ancestral in some element of
 ; the domain of s1, and therefore h is in the domain of s1, by the assumption
 ; about ancestors.  It follows trivially that C1\s1 is a subset of C0\s0 and
-; tat G1\s1 is a subset of G0\s0.  -|
+; that G1\s1 is a subset of G0\s0.  -|
+
+; We conclude this essay with some remarks.
+
+; Our first implementation of defattach, in Version_4.0, went through
+; considerable contortions to support what had seemed a relatively simple
+; attachment for too-many-ifs-post-rewrite (then called
+; too-many-ifs-post-rewrite-wrapper).  The problem was that during the first
+; pass of the boot-strap, the functions pseudo-termp and pseudo-term-listp were
+; in :program mode, yet were needed for the :guard of the encapsulated
+; function.  Our solution was to introduce (in Version_4.2) the notion of a
+; ``proxy'': a non-executable program-mode function, which can be easily
+; introduced using the defproxy macro, and to add keyword argument :skip-checks
+; to defattach; see :DOC defproxy.
+
+; There are circumstances where we prohibit attachments to a constrained
+; function, by associating a value (:ATTACHMENT-DISALLOWED . msg) with the
+; 'attachment property of the function, where msg may be used in error
+; messages.  This association prohibits the functions in
+; *unattachable-primitives* from receiving attachments, and it also enforces
+; some restrictions on receiving attachments in the cases of meta functions and
+; clause-processor functions; see the Essay on Correctness of Meta Reasoning.
+
+; We discuss a few aspects of how we handle this :ATTACHMENT-DISALLOWED case.
+; Source function redefinition-renewal-mode disallows redefinition when there
+; is an attachment, but allows redefinition in the :ATTACHMENT-DISALLOWED case.
+; Thus, function renew-name/overwrite preserves the 'attachment property in
+; order to preserve the prohibition of attachments; and since redefinition is
+; disallowed when there is an attachment, this is actually the only case
+; encountered in renew-name/overwrite for which there is a non-nil 'attachment
+; property.  Finally, note that while the :ATTACHMENT-DISALLOWED case can be
+; expected never to hold for a proxy, nevertheless we check this in
+; redefinition-renewal-mode before attaching to a proxy.
 
 ; End of Essay on Defattach
 
@@ -26371,8 +26183,7 @@ The following all cause errors.
 ; Warning: Keep this in sync with *defattach-keys*.
 
 ; We have already checked that kwd-value-lst is a keyword-value-listp without
-; duplicate keys each of whose keys are among :HINTS, :INSTRUCTIONS, and
-; :OTF-FLG.
+; duplicate keys each of whose keys is among *defattach-keys*.
 
   (cond
    ((endp kwd-value-lst)
@@ -26454,7 +26265,8 @@ The following all cause errors.
     nil))
 
 (defun process-defattach-args1 (args ctx wrld state erasures explicit-erasures
-                                     attachment-alist helper-alist-lst)
+                                     attachment-alist helper-alist-lst
+                                     skip-checks)
 
 ; We accumulate into four arguments as follows:
 
@@ -26479,7 +26291,11 @@ The following all cause errors.
         (t
          (let ((arg (car args))
                (see-doc "  See :DOC defattach.")
-               (ld-skip-proofsp (ld-skip-proofsp state)))
+               (ld-skip-proofsp (ld-skip-proofsp state))
+               (unless-ttag
+                (msg
+                 " (unless :SKIP-CHECKS T is specified with an active trust ~
+                  tag)")))
            (case-match arg
              ((f g . kwd-value-lst)
               (er-let*
@@ -26532,32 +26348,44 @@ The following all cause errors.
                                     symbol."
                                    f))
                              (t "")))))
-                ((not (logicalp f wrld))
-                 (er soft ctx
-                     "Only function symbols in :LOGIC mode may have ~
-                      attachments, but ~x0 is in :PROGRAM mode.~@1"
-                     f see-doc))
+                ((and (not skip-checks)
+                      (not (logicalp f wrld)))
+                 (cond ((null g)
+                        (er soft ctx
+                            "You must specify :SKIP-CHECKS T in order to use ~
+                             defattach with :PROGRAM mode functions, such as ~
+                             ~x0.~@1"
+                            f see-doc))
+                       (t
+                        (er soft ctx
+                            "Only function symbols in :LOGIC mode may have ~
+                             attachments~@0, but ~x1 is in :PROGRAM mode.~@2"
+                            unless-ttag f see-doc))))
                 (t
                  (let ((at-alist (attachment-alist f wrld)))
                    (cond
                     ((eq (car at-alist) :attachment-disallowed)
+
+; Perhaps we should allow this case if skip-checks is true.  But let's wait and
+; see if there is a reason to consider doing so.
+
                      (er soft ctx
-                         "It is illegal to attach to the constrained function ~
-                          symbol ~x0 because ~@1.~@2"
+                         "It is illegal to attach to the function symbol ~x0 ~
+                          because ~@1.~@2"
                          f
                          (cdr at-alist)
                          see-doc))
                     (t ; at-alist is a legitimate attachment alist
-                     (let* ((erasures (cond
-                                       ((consp at-alist)
-                                        (append at-alist erasures))
-                                       (t erasures)))
+                     (let* ((erasures (cond ((consp at-alist)
+                                             (append at-alist erasures))
+                                            (t erasures)))
                             (constraint-lst
                              (getprop f 'constraint-lst t 'current-acl2-world
                                       wrld))
                             (attach-pair (assoc-eq :ATTACH helper-alist)))
                        (cond
-                        ((eq constraint-lst *unknown-constraints*)
+                        ((and (not skip-checks)
+                              (eq constraint-lst *unknown-constraints*))
                          (defattach-unknown-constraints-error
                            f wrld ctx state))
                         ((null g)
@@ -26589,9 +26417,19 @@ The following all cause errors.
                                                      erasures ; updated above
                                                      (cons f explicit-erasures)
                                                      attachment-alist
-                                                     helper-alist-lst)))))
+                                                     helper-alist-lst
+                                                     skip-checks)))))
                         ((and (or (null attach-pair)
                                   (cdr attach-pair)) ; attaching for execution
+                              (not (and skip-checks
+
+; If skip-checks is true and we have a non-executable program-mode function,
+; then it is legal to attach for execution, so we can move on to the next COND
+; branch.
+
+                                        (eq (getprop f 'non-executablep nil
+                                                     'current-acl2-world wrld)
+                                            :program)))
 
 ; Is it legal to attach for execution?  A 'constraint-lst property alone isn't
 ; enough, because a defined function can have a constraint-lst; for example, g
@@ -26610,9 +26448,9 @@ The following all cause errors.
 ; constraints; but defchoose is an unusual case and for now we won't consider
 ; it.
 
-                              (or (not (getprop f 'constrainedp nil
-                                                'current-acl2-world wrld))
-                                  (eq constraint-lst t)))
+                              (or (eq constraint-lst t) ; property is missing
+                                  (not (getprop f 'constrainedp nil
+                                                'current-acl2-world wrld))))
 
 ; We cause an error: the function is not permitted an executable attachment.
 ; The only challenge is to provide a useful error message.
@@ -26664,18 +26502,20 @@ The following all cause errors.
                                             function symbol."
                                            g))
                                      (t "")))))
-                        ((not (logicalp g wrld))
+                        ((and (not skip-checks)
+                              (not (logicalp g wrld)))
                          (er soft ctx
                              "Attachments must be function symbols in :LOGIC ~
-                              mode, but ~x0 is in :PROGRAM mode.~@1"
-                             g see-doc))
-                        ((not (eq (symbol-class g wrld)
-                                  :common-lisp-compliant))
+                              mode~@0, but ~x1 is in :PROGRAM mode.~@2"
+                             unless-ttag g see-doc))
+                        ((and (not skip-checks)
+                              (not (eq (symbol-class g wrld)
+                                       :common-lisp-compliant)))
                          (er soft ctx
                              "Attachments must be guard-verified function ~
-                              symbols but ~x0 has not had its guard ~
-                              verified.~@1"
-                             g see-doc))
+                              symbols~@0, but ~x1 has not had its guard ~
+                              verified.~@2"
+                             unless-ttag g see-doc))
                         ((not (and (equal (stobjs-in f wrld)
                                           (stobjs-in g wrld))
                                    (equal (stobjs-out f wrld)
@@ -26689,19 +26529,22 @@ The following all cause errors.
                              "It is illegal to attach a function to itself, ~
                               such as ~x0.~@1"
                              f see-doc))
-                        ((eq (canonical-sibling f wrld) (canonical-sibling g wrld))
+                        ((and (not skip-checks)
+                              (eq (canonical-sibling f wrld)
+                                  (canonical-sibling g wrld)))
                          (er soft ctx
                              "The function ~x0 is an illegal attachment for ~
-                              ~x1, because the two functions were introduced ~
-                              in the same event.~@2"
-                             g f see-doc))
+                              ~x1~@2, because the two functions were ~
+                              introduced in the same event.~@3"
+                             g f unless-ttag see-doc))
                         (t
                          (process-defattach-args1
                           (cdr args) ctx wrld state
                           erasures ; updated above
                           explicit-erasures
                           (cons (cons f g) attachment-alist)
-                          (cons helper-alist helper-alist-lst))))))))))))
+                          (cons helper-alist helper-alist-lst)
+                          skip-checks)))))))))))
              (& (er soft ctx
                     "Each tuple supplied to a defattach event must be of the ~
                      form (f g . kwd-value-lst).  The tuple ~x0 is thus ~
@@ -26755,97 +26598,135 @@ The following all cause errors.
                                              aa
                                              hl)))))))
 
+(defconst *defattach-keys-plus-skip-checks*
+  (cons :skip-checks *defattach-keys*))
+
 (defun process-defattach-args (args ctx state)
 
 ; Args is known to be a true-listp, as it comes from a macro call.
 
-  (cond
-   ((symbolp (car args)) ; (defattach f ...)
+  (let ((msg "Illegal arguments for defattach.  See :DOC defattach.  Note ~
+              that if the first argument is a symbol, then there should be ~
+              only two arguments, both of them symbols.  Consider instead ~
+              executing "))
     (cond
-     ((and (not (keywordp (car args)))
-           (consp (cdr args))
-           (symbolp (cadr args))
-           (not (keywordp (cadr args)))) ; (defattach f g ...)
+     ((symbolp (car args)) ; (defattach f ...)
       (cond
-       ((null (cddr args))
-        (process-defattach-args `((,(car args) ,(cadr args))) ctx state))
+       ((and (not (keywordp (car args)))
+             (consp (cdr args))
+             (symbolp (cadr args))
+             (not (keywordp (cadr args)))) ; (defattach f g ...)
+        (cond
+         ((null (cddr args))
+          (process-defattach-args `((,(car args) ,(cadr args))) ctx state))
+         ((and (true-listp args)
+               (eql (length args) 4)
+               (eq (caddr args) :SKIP-CHECKS))
+          (er soft ctx
+              "~@0the form:~|~%~y1."
+              msg
+              `(defattach (,(car args) ,(cadr args)) ,@(cddr args))))
+         ((and (true-listp args)
+               (eql (length args) 4)
+               (eq (caddr args) :ATTACH))
+          (er soft ctx
+              "~@0the form:~|~%~y1."
+              msg
+              `(defattach (,@args))))
+         (t
+          (er soft ctx
+              "~@0one of the following two forms:~|~%~y1~ ~ or~|~y2."
+              msg
+              `(defattach (,(car args) ,(cadr args)) ,@(cddr args))
+              `(defattach (,(car args) ,(cadr args) ,@(cddr args)))))))
        (t
         (er soft ctx
-            "Illegal arguments for defattach.  Note that if the first ~
-             argument is a symbol, then there should be only two arguments, ~
-             both of them symbols.  Perhaps you intended one of the following ~
-             two forms:~|  ~y0or~|  ~y1.~|See :DOC defattach."
-            `(defattach (,(car args) ,(cadr args)) ,@(cddr args))
-            `(defattach (,(car args) ,(cadr args) ,@(cddr args)))))))
+            "Illegal defattach form.  If the first argument is a symbol, then ~
+             there must be exactly two arguments, both of which are ~
+             non-keyword symbols.  See :DOC defattach."))))
      (t
-      (er soft ctx
-          "Illegal defattach form.  If the first argument is a symbol, then ~
-           there must be exactly two arguments, both of which are non-keyword ~
-           symbols.  See :DOC defattach."))))
-   (t
-    (mv-let (args constraint-kwd-alist)
-            (split-at-first-keyword args)
-            (cond
-             ((null args)
-              (er soft ctx
-                  "Defattach must specify at least one attachment.  See :DOC ~
-                   defattach."))
-             ((not (symbol-alistp args))
-              (er soft ctx
-                  "Illegal arguments for defattach, ~x0.  See :DOC defattach."
-                  args))
-             ((duplicate-keysp-eq args)
-              (er soft ctx
-                  "A defattach event must specify attachments for distinct ~
-                   function symbols, but ~x0 is associated with a value more ~
-                   than once.  See :DOC defattach."
-                  (car (duplicate-keysp-eq args))))
-             (t (let ((wrld (w state))
-                      (ld-skip-proofsp (ld-skip-proofsp state)))
-                  (er-let*
-                   ((tuple (process-defattach-args1 args ctx wrld state nil nil
-                                                    nil nil))
-                    (constraint-helpers
-                     (cond
-                      ((or (eq ld-skip-proofsp 'include-book)
-                           (eq ld-skip-proofsp 'include-book-with-locals)
-                           (eq ld-skip-proofsp 'initialize-acl2))
-                       (value nil))
-                      ((or (not (keyword-value-listp constraint-kwd-alist))
-                           (strip-keyword-list *defattach-keys*
-                                               constraint-kwd-alist))
-                       (er soft ctx
-                           "Illegal defattach argument list.  The tail ~
-                            following the specified pairs of function symbols ~
-                            should be an alternating list of keywords and ~
-                            values (see :DOC keyword-value-listp) whose keys ~
-                            are without duplicates and all belong to the list ~
-                            ~x0.  That tail is, however, ~x1.  See :DOC ~
-                            defattach."
-                           *defattach-keys*
-                           constraint-kwd-alist))
-                      (t (translate-defattach-helpers
-                          constraint-kwd-alist
-                          "DEFATTACH constraint proof obligation"
-                          ctx wrld state)))))
-                   (let ((erasures (nth 0 tuple))
-                         (explicit-erasures (nth 1 tuple))
-                         (attachment-alist (nth 2 tuple))
-                         (helper-alist-lst (nth 3 tuple))
-                         (attach-by-default
-                          (let ((pair (assoc-eq :ATTACH constraint-helpers)))
-                            (if pair (cdr pair) t))))
-                     (mv-let (attachment-alist-exec helper-alist-lst-exec)
-                             (filter-for-attachment attachment-alist
-                                                    helper-alist-lst
-                                                    attach-by-default         
-                                                    nil nil)
-                             (value (list constraint-helpers
-                                          erasures
-                                          explicit-erasures
-                                          attachment-alist
-                                          attachment-alist-exec
-                                          helper-alist-lst-exec))))))))))))
+      (mv-let
+       (args constraint-kwd-alist)
+       (split-at-first-keyword args)
+       (cond
+        ((null args)
+         (er soft ctx
+             "Defattach must specify at least one attachment.  See :DOC ~
+              defattach."))
+        ((not (symbol-alistp args))
+         (er soft ctx
+             "Illegal arguments for defattach, ~x0.  See :DOC defattach."
+             args))
+        ((duplicate-keysp-eq args)
+         (er soft ctx
+             "A defattach event must specify attachments for distinct ~
+              function symbols, but ~x0 is associated with a value more than ~
+              once.  See :DOC defattach."
+             (car (duplicate-keysp-eq args))))
+        ((or (not (keyword-value-listp constraint-kwd-alist))
+             (strip-keyword-list *defattach-keys-plus-skip-checks*
+                                 constraint-kwd-alist))
+         (er soft ctx
+             "Illegal defattach argument list.  The tail following the ~
+              specified pairs of function symbols should be an alternating ~
+              list of keywords and values (see :DOC keyword-value-listp) ~
+              whose keys are without duplicates and all belong to the list ~
+              ~x0.  That tail is, however, ~x1.  See :DOC defattach."
+             *defattach-keys-plus-skip-checks*
+             constraint-kwd-alist))
+        (t (let* ((wrld (w state))
+                  (ld-skip-proofsp (ld-skip-proofsp state))
+                  (skip-checks
+                   (cadr (assoc-keyword :skip-checks constraint-kwd-alist)))
+                  (constraint-kwd-alist
+                   (if skip-checks
+                       (remove-keyword :skip-checks constraint-kwd-alist)
+                     constraint-kwd-alist)))
+             (cond
+              ((and skip-checks
+                    (not (eq skip-checks t)))
+               (er soft ctx
+                   "Illegal value for :SKIP-CHECKS (must be ~x0 or ~x1): ~x2."
+                   t nil skip-checks))
+              ((and skip-checks
+                    (not (or (global-val 'boot-strap-flg wrld)
+                             (ttag wrld))))
+               (er soft ctx
+                   "It is illegal to specify :SKIP-CHECKS T for defattach ~
+                    unless there is an active trust tag."))
+              (t
+               (er-let* ((tuple
+                          (process-defattach-args1 args ctx wrld state nil nil
+                                                   nil nil skip-checks))
+                         (constraint-helpers
+                          (cond
+                           ((or (eq ld-skip-proofsp 'include-book)
+                                (eq ld-skip-proofsp 'include-book-with-locals)
+                                (eq ld-skip-proofsp 'initialize-acl2))
+                            (value nil))
+                           (t (translate-defattach-helpers
+                               constraint-kwd-alist
+                               "DEFATTACH constraint proof obligation"
+                               ctx wrld state)))))
+                 (let ((erasures (nth 0 tuple))
+                       (explicit-erasures (nth 1 tuple))
+                       (attachment-alist (nth 2 tuple))
+                       (helper-alist-lst (nth 3 tuple))
+                       (attach-by-default
+                        (let ((pair (assoc-eq :ATTACH constraint-helpers)))
+                          (if pair (cdr pair) t))))
+                   (mv-let (attachment-alist-exec helper-alist-lst-exec)
+                           (filter-for-attachment attachment-alist
+                                                  helper-alist-lst
+                                                  attach-by-default         
+                                                  nil nil)
+                           (value (list constraint-helpers
+                                        erasures
+                                        explicit-erasures
+                                        attachment-alist
+                                        attachment-alist-exec
+                                        helper-alist-lst-exec
+                                        skip-checks)))))))))))))))
 
 (defun prove-defattach-guards1 (i n attachment-alist-tail attachment-alist
                                   helpers-lst ctx ens wrld state ttree)
@@ -27908,8 +27789,7 @@ The following all cause errors.
 ;   'proved-functional-instances-alist wrld);
 ; - ttree is a tag tree obtained from the proofs done on behalf of the
 ;   defattach event; and
-; - records is a list of new attachment records to install in the world if the
-;   event is admitted.
+; - records is the new list of attachment records to install in the world.
 
 ; We return an error if any function that would be in the domain of
 ; attachment-alist-exec is missing a 'constraint-lst property or has a
@@ -27934,20 +27814,24 @@ The following all cause errors.
            (attachment-alist        (nth 3 tuple))
            (attachment-alist-exec   (nth 4 tuple))
            (guard-helpers-lst       (nth 5 tuple))
+           (skip-checks             (nth 6 tuple))
            (ens (ens state))
            (ld-skip-proofsp (ld-skip-proofsp state)))
        (er-let*
-        ((records (chk-defattach-loop attachment-alist erasures wrld ctx
-                                      state))
+        ((records (cond (skip-checks (value :skipped)) ; not used
+                        (t (chk-defattach-loop attachment-alist erasures wrld
+                                               ctx state))))
          (goal/event-names/new-entries
-          (cond (attachment-alist
+          (cond ((and (not skip-checks)
+                      attachment-alist)
                  (defattach-constraint attachment-alist proved-fnl-insts-alist
                    wrld ctx state))
                 (t (value nil))))
          (goal (value (car goal/event-names/new-entries)))
          (event-names (value (cadr goal/event-names/new-entries)))
          (new-entries (value (cddr goal/event-names/new-entries)))
-         (ttree1 (cond ((or ld-skip-proofsp
+         (ttree1 (cond ((or skip-checks
+                            ld-skip-proofsp
                             (null attachment-alist-exec))
                         (value nil))
                        (t (prove-defattach-guards attachment-alist-exec
@@ -27956,7 +27840,8 @@ The following all cause errors.
          (ttree2
           (er-progn
            (chk-assumption-free-ttree ttree1 ctx state)
-           (cond ((and (not ld-skip-proofsp)
+           (cond ((and (not skip-checks)
+                       (not ld-skip-proofsp)
                        attachment-alist)
                   (prove-defattach-constraint goal event-names attachment-alist
                                               constraint-helper-alist ctx ens
@@ -27970,7 +27855,8 @@ The following all cause errors.
                       attachment-alist-exec
                       new-entries
                       (cons-tag-trees ttree1 ttree2)
-                      records)))))))))
+                      records
+                      skip-checks)))))))))
 
 (defun attachment-cltl-cmd (erasures alist)
 
@@ -28008,60 +27894,64 @@ The following all cause errors.
    (let* ((wrld (w state))
           (proved-fnl-insts-alist
            (global-val 'proved-functional-instances-alist wrld)))
-     (er-let*
-      ((tuple (chk-acceptable-defattach args proved-fnl-insts-alist ctx wrld
-                                        state)))
-      (let ((erasures              (strip-cars (nth 0 tuple)))
-            (explicit-erasures     (nth 1 tuple))
-            (attachment-alist      (nth 2 tuple))
-            (attachment-alist-exec (nth 3 tuple))
-            (new-entries           (nth 4 tuple))
-            (ttree                 (nth 5 tuple))
-            (records               (nth 6 tuple)))
-        (let* ((attachment-fns (strip-cars attachment-alist))
-               (wrld1 (putprop-x-lst1 erasures 'attachment nil wrld))
-               (wrld2 (cond (attachment-fns
-                             (putprop-x-lst1 (cdr attachment-fns)
-                                             'attachment
-                                             (car attachment-fns)
-                                             (putprop (car attachment-fns)
-                                                      'attachment
-                                                      attachment-alist
-                                                      wrld1)))
-                            (t wrld1)))
-               (wrld3 (global-set
-                       'proved-functional-instances-alist
-                       (append new-entries proved-fnl-insts-alist) 
-                       wrld2))
-               (wrld4 (global-set 'attachment-records records wrld3))
-               (cltl-cmd (attachment-cltl-cmd
-                          (set-difference-assoc-eq erasures
-                                                   attachment-alist-exec)
-                          attachment-alist-exec)))
-          (pprogn (let ((implicit-erasures
-                         (set-difference-eq erasures explicit-erasures)))
-                    (cond (implicit-erasures
-                           (observation ctx
-                                        "The pre-existing attachment~#0~[ ~
-                                         is~/s are~] being removed for ~
-                                         function~#0~[~/s~] ~&0~@1~@2."
-                                        implicit-erasures
-                                        (cond (explicit-erasures
-                                               (msg ", in addition to the ~
-                                                     association~#0~[~/s~] ~
-                                                     with nil provided ~
-                                                     explicitly for ~&0"
-                                                    explicit-erasures))
-                                              (t ""))
-                                        (cond (attachment-fns
-                                               (msg ", before adding the ~
-                                                     requested ~
-                                                     attachment~#0~[~/s~]"
-                                                    attachment-fns))
-                                              (t ""))))
-                          (t state)))
-                  (install-event :attachments-recorded event-form 'defattach 0
-                                 ttree cltl-cmd nil ctx wrld4 state))))))))
+     (er-let* ((tuple (chk-acceptable-defattach args proved-fnl-insts-alist ctx
+                                                wrld state)))
+       (let ((erasures              (strip-cars (nth 0 tuple)))
+             (explicit-erasures     (nth 1 tuple))
+             (attachment-alist      (nth 2 tuple))
+             (attachment-alist-exec (nth 3 tuple))
+             (new-entries           (nth 4 tuple))
+             (ttree                 (nth 5 tuple))
+             (records               (nth 6 tuple))
+             (skip-checks           (nth 7 tuple)))
+         (let* ((attachment-fns (strip-cars attachment-alist))
+                (wrld1 (putprop-x-lst1 erasures 'attachment nil wrld))
+                (wrld2 (cond (attachment-fns
+                              (putprop-x-lst1 (cdr attachment-fns)
+                                              'attachment
+                                              (car attachment-fns)
+                                              (putprop (car attachment-fns)
+                                                       'attachment
+                                                       attachment-alist
+                                                       wrld1)))
+                             (t wrld1)))
+                (wrld3 (cond (new-entries
+                              (global-set
+                               'proved-functional-instances-alist
+                               (append new-entries proved-fnl-insts-alist)
+                               wrld2))
+                             (t wrld2)))
+                (wrld4 (cond (skip-checks wrld3)
+                             (t (global-set 'attachment-records records
+                                            wrld3))))
+                (cltl-cmd (attachment-cltl-cmd
+                           (set-difference-assoc-eq erasures
+                                                    attachment-alist-exec)
+                           attachment-alist-exec)))
+           (pprogn (let ((implicit-erasures
+                          (set-difference-eq erasures explicit-erasures)))
+                     (cond (implicit-erasures
+                            (observation ctx
+                                         "The pre-existing attachment~#0~[ ~
+                                          is~/s are~] being removed for ~
+                                          function~#0~[~/s~] ~&0~@1~@2."
+                                         implicit-erasures
+                                         (cond (explicit-erasures
+                                                (msg ", in addition to the ~
+                                                      association~#0~[~/s~] ~
+                                                      with nil provided ~
+                                                      explicitly for ~&0"
+                                                     explicit-erasures))
+                                               (t ""))
+                                         (cond (attachment-fns
+                                                (msg ", before adding the ~
+                                                      requested ~
+                                                      attachment~#0~[~/s~]"
+                                                     attachment-fns))
+                                               (t ""))))
+                           (t state)))
+                   (install-event :attachments-recorded event-form 'defattach 0
+                                  ttree cltl-cmd nil ctx wrld4 state))))))))
 
 ; We now provide support for return-last.
 

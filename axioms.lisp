@@ -10949,7 +10949,7 @@ J
            (true-listp x))
   :rule-classes :forward-chaining)
 
-; For the encapsulate of too-many-ifs-post-rewrite-wrapper
+; For the encapsulate of too-many-ifs-post-rewrite
 (encapsulate
  ()
  (table acl2-defaults-table :defun-mode :logic)
@@ -14489,9 +14489,20 @@ J
   grep '(verify-' books/system/*.lisp
   ~ev[]
 
+  Note that if ~c[fn1] is already in ~c[:]~ilc[logic] mode, then the
+  ~c[verify-termination] call has no effect.  It is generally considered to be
+  redundant, in the sense that it returns without error; but if the ~c[fn1] is
+  a constrained function (i.e., introduced in the signature of an
+  ~ilc[encapsulate], or by ~ilc[defchoose]), then an error occurs.  This error
+  is intended to highlight unintended uses of ~c[verify-termination]; but if
+  you do not want to see an error in this case, you can write and use your own
+  macro in place of ~c[verify-termination].  The following explanation of the
+  implementation of ~c[verify-termination] may help with such a task.
+
   We conclude with a discussion of the use of ~ilc[make-event] to implement
   ~c[verify-termination].  This discussion can be skipped; we include it only
-  for the curious.
+  for those who want to create variants of ~c[verify-termination], or who are
+  interested in seeing an application of ~ilc[make-event].
 
   Consider the following proof of ~c[nil], which succeeded up through
   Version_3.4 of ACL2.
@@ -18307,6 +18318,11 @@ J
   already familiar with the use of ~c[encapsulate] to introduce constrained
   functions.
 
+  A ~c[:skip-checks] argument enables easy experimentation with ~c[defattach],
+  by permitting use of ~c[:]~ilc[program] mode functions and the skipping of
+  semantic checks.  We do not cover ~c[:skip-checks] here, as most users will
+  probably not need it; rather, ~pl[defproxy].
+
   ~st[Introductory example.]
 
   We begin with a short log illustrating the use of ~c[defattach].  Notice that
@@ -18584,12 +18600,11 @@ J
   constrained function execution.
 
   (2) ACL2 is written essentially in itself.  Thus, there is an opportunity to
-  attaching to system functions.  This is illustrated by the use of constrained
-  function ~c[too-many-ifs-post-rewrite-wrapper] in the ACL2 source code, for
-  a heuristic used in the rewriter.  Early in an ACL2 build, this function
-  receives a trivial attachment that implements a trivial heuristic.  Then late
-  in the ACL2 build, that attachment is replaced, so that the wrapper receives
-  a more interesting attachment, one which implements the desired heuristic.
+  attaching to system functions.  For example, encapsulated
+  function ~c[too-many-ifs-post-rewrite], in the ACL2 source code, receives an
+  attachment of~c[too-many-ifs-post-rewrite-builtin], which implements a
+  heuristic used in the rewriter.  To find all such examples, search the source
+  code for the string `builtin'.
 
   Over time, we expect to continue replacing ACL2 source code in a similar
   manner.  We invite the ACL2 community to assist in this ``open architecture''
@@ -18617,10 +18632,10 @@ J
   ground terms during proofs.  However, attachments can be used on code during
   the proof process, essentially when the ``program refinement'' is on theorem
   prover code rather than on functions we are reasoning about.  The attachment
-  to ~c[too-many-ifs-post-rewrite-wrapper] described above provides one example
-  of such attachments.  Meta functions and clause-processor functions can also
-  have attachments, with the restriction that no common ancestor with the
-  evaluator can have an attachment; ~pl[evaluator-restrictions].
+  to ~c[too-many-ifs-post-rewrite] described above provides one example of such
+  attachments.  Meta functions and clause-processor functions can also have
+  attachments, with the restriction that no common ancestor with the evaluator
+  can have an attachment; ~pl[evaluator-restrictions].
 
   For an attachment pair ~c[<f,g>], evaluation of ~c[f] never consults the
   ~il[guard] of ~c[f].  Rather, control passes to ~c[g], whose guard is checked
@@ -18665,6 +18680,41 @@ J
         (list 'quote args)
         'state
         (list 'quote event-form)))
+
+; Now we define defattach in raw Lisp.
+
+#-acl2-loop-only
+(progn
+
+(defun attachment-symbol (x)
+
+; Here we assume that the only use of the symbol-value of *1*f is to indicate
+; that this value is the function attached to f.
+
+  (*1*-symbol x))
+
+(defun set-attachment-symbol-form (fn val)
+  `(defparameter ,(attachment-symbol fn) ',val))
+
+(defmacro defattach (&rest args)
+  (cond
+   ((symbolp (car args))
+    (set-attachment-symbol-form (car args) (cadr args)))
+   (t
+    (let (ans)
+      (dolist (arg args)
+        (cond ((keywordp arg)
+               (return))
+              (t (push (set-attachment-symbol-form
+                        (car arg)
+                        (cond ((let ((tail (assoc-keyword :attach
+                                                          (cddr arg))))
+                                 (and tail (null (cadr tail))))
+                               nil)
+                              (t (cadr arg))))
+                       ans))))
+      (cons 'progn ans)))))
+)
 
 ; Note:  Important Boot-Strapping Invariants
 
@@ -23364,7 +23414,7 @@ J
     redef+
     redef-
     bind-acl2-time-limit
-    defattach
+    defattach defproxy
     count
     ))
 
@@ -40752,468 +40802,3 @@ Lisp definition."
   (progn (setq lisp::*break-enable* (debugger-enabledp state))
          state)
   (f-put-global 'debugger-enable val state))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Attachments:
-;;; The remainder of this file involves boot-strapping the use of attachments.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; First we define defattach in raw Lisp.
-
-#-acl2-loop-only
-(progn
-
-(defun attachment-symbol (x)
-
-; Here we assume that the only use of the symbol-value of *1*f is to indicate
-; that this value is the function attached to f.
-
-  (*1*-symbol x))
-
-(defun set-attachment-symbol-form (fn val)
-  `(defparameter ,(attachment-symbol fn) ',val))
-
-(defmacro defattach (&rest args)
-  (cond
-   ((symbolp (car args))
-    (set-attachment-symbol-form (car args) (cadr args)))
-   (t
-    (let (ans)
-      (dolist (arg args)
-        (cond ((keywordp arg)
-               (return))
-              (t (push (set-attachment-symbol-form
-                        (car arg)
-                        (cond ((let ((tail (assoc-keyword :attach
-                                                          (cddr arg))))
-                                 (and tail (null (cadr tail))))
-                               nil)
-                              (t (cadr arg))))
-                       ans))))
-      (cons 'progn ans)))))
-)
-
-; Next, we introduce (in pass-1 of the build) an encapsulated function that is
-; actually called by the rewriter.
-
-(encapsulate
- ()
- (logic) ; for pass-1 of the build
- (encapsulate
-  ((too-many-ifs-post-rewrite-wrapper (args val) t
-                                      :guard (and (pseudo-term-listp args)
-                                                  (pseudo-termp val))))
-  (local (defun too-many-ifs-post-rewrite-wrapper (args val)
-           (list args val)))))
-
-; The following trivial heuristic function is attached to the above wrapper
-; during pass-1 of the build, by the defattach just below this definition.
-
-(defun too-many-ifs-post-rewrite-prelim (args val)
-  (declare (xargs :mode :logic
-                  :guard (and (pseudo-term-listp args)
-                              (pseudo-termp val)))
-           (ignore args val))
-  nil)
-
-(defattach too-many-ifs-post-rewrite-wrapper too-many-ifs-post-rewrite-prelim)
-
-; The following events are derived from books/system/too-many-ifs.lisp.  But
-; here we provide a proof that does not depend on books.  Our approach was to
-; take the proof in the above book, eliminate the unnecessary use of an
-; arithmetic book, expand away all uses of macros and make-events, avoid use of
-; (theory 'minimal-theory) since that theory doesn't yet exist, and apply some
-; additional hand-editing in order (for example) to remove hints depending on
-; the tools/flag book.  We have left original events from the book as comments.
-
-(local
-(encapsulate ()
-
-(logic)
-
-;;; (include-book "tools/flag" :dir :system)
-
-; In the original book, but not needed for its certification:
-; (include-book "arithmetic/top-with-meta" :dir :system)
-
-; Comments like the following show events from the original book.
-
-;;; (make-flag pseudo-termp-flg
-;;;            pseudo-termp
-;;;            :flag-var flg
-;;;            :flag-mapping ((pseudo-termp . term)
-;;;                           (pseudo-term-listp . list))
-;;;            :defthm-macro-name defthm-pseudo-termp
-;;;            :local t)
-
-(local
- (defun-nx pseudo-termp-flg (flg x lst)
-   (declare (xargs :verify-guards nil
-                   :normalize nil
-                   :measure (case flg (term (acl2-count x))
-                              (otherwise (acl2-count lst)))))
-   (case flg
-     (term (if (consp x)
-               (cond ((equal (car x) 'quote)
-                      (and (consp (cdr x))
-                           (equal (cddr x) nil)))
-                     ((true-listp x)
-                      (and (pseudo-termp-flg 'list nil (cdr x))
-                           (cond ((symbolp (car x)) t)
-                                 ((true-listp (car x))
-                                  (and (equal (length (car x)) 3)
-                                       (equal (caar x) 'lambda)
-                                       (symbol-listp (cadar x))
-                                       (pseudo-termp-flg 'term (caddar x) nil)
-                                       (equal (length (cadar x))
-                                              (length (cdr x)))))
-                                 (t nil))))
-                     (t nil))
-             (symbolp x)))
-     (otherwise (if (consp lst)
-                    (and (pseudo-termp-flg 'term (car lst) nil)
-                         (pseudo-termp-flg 'list nil (cdr lst)))
-                  (equal lst nil))))))
-(local
- (defthm pseudo-termp-flg-equivalences
-   (equal (pseudo-termp-flg flg x lst)
-          (case flg (term (pseudo-termp x))
-            (otherwise (pseudo-term-listp lst))))
-   :hints
-   (("goal" :induct (pseudo-termp-flg flg x lst)))))
-(local (in-theory (disable (:definition pseudo-termp-flg))))
-
-; Added here (not present or needed in the certified book):
-(verify-termination-boot-strap max) ; and guards
-
-(verify-termination-boot-strap var-counts1)
-
-;;; (make-flag var-counts1-flg
-;;;            var-counts1
-;;;            :flag-var flg
-;;;            :flag-mapping ((var-counts1 . term)
-;;;                           (var-counts1-lst . list))
-;;;            :defthm-macro-name defthm-var-counts1
-;;;            :local t)
-
-(local
- (defun-nx var-counts1-flg (flg rhs arg lst acc)
-   (declare (xargs :verify-guards nil
-                   :normalize nil
-                   :measure (case flg (term (acl2-count rhs))
-                              (otherwise (acl2-count lst)))
-                   :hints nil
-                   :well-founded-relation o<
-                   :mode :logic)
-            (ignorable rhs arg lst acc))
-   (case flg
-     (term (cond ((equal arg rhs) (+ 1 acc))
-                 ((consp rhs)
-                  (cond ((equal 'quote (car rhs)) acc)
-                        ((equal (car rhs) 'if)
-                         (max (var-counts1-flg 'term
-                                               (caddr rhs)
-                                               arg nil acc)
-                              (var-counts1-flg 'term
-                                               (cadddr rhs)
-                                               arg nil acc)))
-                        (t (var-counts1-flg 'list
-                                            nil arg (cdr rhs)
-                                            acc))))
-                 (t acc)))
-     (otherwise (if (consp lst)
-                    (var-counts1-flg 'list
-                                     nil arg (cdr lst)
-                                     (var-counts1-flg 'term
-                                                      (car lst)
-                                                      arg nil acc))
-                  acc)))))
-(local
- (defthm
-   var-counts1-flg-equivalences
-   (equal (var-counts1-flg flg rhs arg lst acc)
-          (case flg (term (var-counts1 arg rhs acc))
-            (otherwise (var-counts1-lst arg lst acc))))))
-(local (in-theory (disable (:definition var-counts1-flg))))
-
-;;; (defthm-var-counts1 natp-var-counts1
-;;;   (term
-;;;    (implies (natp acc)
-;;;             (natp (var-counts1 arg rhs acc)))
-;;;    :rule-classes :type-prescription)
-;;;   (list
-;;;    (implies (natp acc)
-;;;             (natp (var-counts1-lst arg lst acc)))
-;;;    :rule-classes :type-prescription)
-;;;   :hints (("Goal" :induct (var-counts1-flg flg rhs arg lst acc))))
-
-(local
- (defthm natp-var-counts1
-   (case flg
-     (term (implies (natp acc)
-                    (natp (var-counts1 arg rhs acc))))
-     (otherwise (implies (natp acc)
-                         (natp (var-counts1-lst arg lst acc)))))
-   :hints (("Goal" :induct (var-counts1-flg flg rhs arg lst acc)))
-   :rule-classes nil))
-(local
- (defthm natp-var-counts1-term
-   (implies (natp acc)
-            (natp (var-counts1 arg rhs acc)))
-   :hints (("Goal" ; :in-theory (theory 'minimal-theory)
-            :use ((:instance natp-var-counts1 (flg 'term)))))
-   :rule-classes :type-prescription))
-(local
- (defthm natp-var-counts1-list
-   (implies (natp acc)
-            (natp (var-counts1-lst arg lst acc)))
-   :hints (("Goal" ; :in-theory (theory 'minimal-theory)
-            :use ((:instance natp-var-counts1 (flg 'list)))))
-   :rule-classes :type-prescription))
-
-(verify-guards var-counts1)
-
-(verify-termination-boot-strap var-counts) ; and guards
-
-;;; Since the comment about var-counts says that var-counts returns a list of
-;;; nats as long as lhs-args, I prove those facts, speculatively.
-
-; Except, we reason instead about integer-listp.  See the comment just above
-; the commented-out definition of nat-listp in the source code (file
-; rewrite.lisp).
-; (verify-termination nat-listp)
-
-(local
- (defthm integer-listp-var-counts
-   (integer-listp (var-counts lhs-args rhs))))
-
-(local
- (defthm len-var-counts
-   (equal (len (var-counts lhs-args rhs))
-          (len lhs-args))))
-
-(verify-termination-boot-strap count-ifs) ; and guards
-
-; Added here (not present or needed in the certified book):
-(verify-termination-boot-strap ifix) ; and guards
-
-; Added here (not present or needed in the certified book):
-(verify-termination-boot-strap abs) ; and guards
-
-; Added here (not present or needed in the certified book):
-(verify-termination-boot-strap expt) ; and guards
-
-; Added here (not present or needed in the certified book):
-(local (defthm natp-expt
-         (implies (and (integerp base)
-                       (integerp n)
-                       (<= 0 n))
-                  (integerp (expt base n)))
-         :rule-classes :type-prescription))
-
-; Added here (not present or needed in the certified book):
-(verify-termination-boot-strap signed-byte-p) ; and guards
-
-(verify-termination-boot-strap too-many-ifs0) ; and guards
-
-(verify-termination-boot-strap too-many-ifs-pre-rewrite) ; and guards
-
-(verify-termination-boot-strap occur-cnt-bounded)
-
-;;; (make-flag occur-cnt-bounded-flg
-;;;            occur-cnt-bounded
-;;;            :flag-var flg
-;;;            :flag-mapping ((occur-cnt-bounded . term)
-;;;                           (occur-cnt-bounded-lst . list))
-;;;            :defthm-macro-name defthm-occur-cnt-bounded
-;;;            :local t)
-
-(local
- (defun-nx occur-cnt-bounded-flg (flg term2 term1 lst a m bound-m)
-   (declare (xargs :verify-guards nil
-                   :normalize nil
-                   :measure (case flg (term (acl2-count term2))
-                              (otherwise (acl2-count lst))))
-            (ignorable term2 term1 lst a m bound-m))
-   (case flg
-     (term (cond ((equal term1 term2)
-                  (if (< bound-m a) -1 (+ a m)))
-                 ((consp term2)
-                  (if (equal 'quote (car term2))
-                      a
-                    (occur-cnt-bounded-flg 'list
-                                           nil term1 (cdr term2)
-                                           a m bound-m)))
-                 (t a)))
-     (otherwise (if (consp lst)
-                    (let ((new (occur-cnt-bounded-flg 'term
-                                                      (car lst)
-                                                      term1 nil a m bound-m)))
-                      (if (equal new -1)
-                          -1
-                        (occur-cnt-bounded-flg 'list
-                                               nil term1 (cdr lst)
-                                               new m bound-m)))
-                  a)))))
-(local
- (defthm occur-cnt-bounded-flg-equivalences
-   (equal (occur-cnt-bounded-flg flg term2 term1 lst a m bound-m)
-          (case flg
-            (term (occur-cnt-bounded term1 term2 a m bound-m))
-            (otherwise (occur-cnt-bounded-lst term1 lst a m bound-m))))))
-(local (in-theory (disable (:definition occur-cnt-bounded-flg))))
-
-;;; (defthm-occur-cnt-bounded integerp-occur-cnt-bounded
-;;;   (term
-;;;    (implies (and (integerp a)
-;;;                  (integerp m))
-;;;             (integerp (occur-cnt-bounded term1 term2 a m bound-m)))
-;;;    :rule-classes :type-prescription)
-;;;   (list
-;;;    (implies (and (integerp a)
-;;;                  (integerp m))
-;;;             (integerp (occur-cnt-bounded-lst term1 lst a m bound-m)))
-;;;    :rule-classes :type-prescription)
-;;;   :hints (("Goal" :induct (occur-cnt-bounded-flg flg term2 term1 lst a m
-;;;                                                  bound-m))))
-
-(local
- (defthm integerp-occur-cnt-bounded
-   (case flg
-     (term (implies (and (integerp a) (integerp m))
-                    (integerp (occur-cnt-bounded term1 term2 a m bound-m))))
-     (otherwise
-      (implies (and (integerp a) (integerp m))
-               (integerp (occur-cnt-bounded-lst term1 lst a m bound-m)))))
-   :rule-classes nil
-   :hints
-   (("Goal" :induct (occur-cnt-bounded-flg flg term2 term1 lst a m bound-m)))))
-(local
- (defthm integerp-occur-cnt-bounded-term
-   (implies (and (integerp a) (integerp m))
-            (integerp (occur-cnt-bounded term1 term2 a m bound-m)))
-   :rule-classes :type-prescription
-   :hints (("goal" ; :in-theory (theory 'minimal-theory)
-            :use ((:instance integerp-occur-cnt-bounded
-                             (flg 'term)))))))
-(local
- (defthm integerp-occur-cnt-bounded-list
-   (implies (and (integerp a) (integerp m))
-            (integerp (occur-cnt-bounded-lst term1 lst a m bound-m)))
-   :rule-classes :type-prescription
-   :hints (("goal" ; :in-theory (theory 'minimal-theory)
-            :use ((:instance integerp-occur-cnt-bounded
-                             (flg 'list)))))))
-
-;;; (defthm-occur-cnt-bounded signed-byte-p-30-occur-cnt-bounded-flg
-;;;   (term
-;;;    (implies (and (force (signed-byte-p 30 a))
-;;;                  (signed-byte-p 30 m)
-;;;                  (signed-byte-p 30 (+ bound-m m))
-;;;                  (force (<= 0 a))
-;;;                  (<= 0 m)
-;;;                  (<= 0 bound-m)
-;;;                  (<= a (+ bound-m m)))
-;;;             (and (<= -1 (occur-cnt-bounded term1 term2 a m bound-m))
-;;;                  (<= (occur-cnt-bounded term1 term2 a m bound-m) (+ bound-m m))))
-;;;    :rule-classes :linear)
-;;;   (list
-;;;    (implies (and (force (signed-byte-p 30 a))
-;;;                  (signed-byte-p 30 m)
-;;;                  (signed-byte-p 30 (+ bound-m m))
-;;;                  (force (<= 0 a))
-;;;                  (<= 0 m)
-;;;                  (<= 0 bound-m)
-;;;                  (<= a (+ bound-m m)))
-;;;             (and (<= -1 (occur-cnt-bounded-lst term1 lst a m bound-m))
-;;;                  (<= (occur-cnt-bounded-lst term1 lst a m bound-m) (+ bound-m m))))
-;;;    :rule-classes :linear)
-;;;   :hints (("Goal" :induct (occur-cnt-bounded-flg flg term2 term1 lst a m
-;;;                                                  bound-m))))
-
-(local
- (defthm signed-byte-p-30-occur-cnt-bounded-flg
-   (case flg
-     (term (implies (and (force (signed-byte-p 30 a))
-                         (signed-byte-p 30 m)
-                         (signed-byte-p 30 (+ bound-m m))
-                         (force (<= 0 a))
-                         (<= 0 m)
-                         (<= 0 bound-m)
-                         (<= a (+ bound-m m)))
-                    (and (<= -1
-                             (occur-cnt-bounded term1 term2 a m bound-m))
-                         (<= (occur-cnt-bounded term1 term2 a m bound-m)
-                             (+ bound-m m)))))
-     (otherwise
-      (implies (and (force (signed-byte-p 30 a))
-                    (signed-byte-p 30 m)
-                    (signed-byte-p 30 (+ bound-m m))
-                    (force (<= 0 a))
-                    (<= 0 m)
-                    (<= 0 bound-m)
-                    (<= a (+ bound-m m)))
-               (and (<= -1
-                        (occur-cnt-bounded-lst term1 lst a m bound-m))
-                    (<= (occur-cnt-bounded-lst term1 lst a m bound-m)
-                        (+ bound-m m))))))
-   :rule-classes nil
-   :hints
-   (("Goal" :induct (occur-cnt-bounded-flg flg term2 term1 lst a m bound-m)))))
-(local
- (defthm signed-byte-p-30-occur-cnt-bounded-flg-term
-   (implies (and (force (signed-byte-p 30 a))
-                 (signed-byte-p 30 m)
-                 (signed-byte-p 30 (+ bound-m m))
-                 (force (<= 0 a))
-                 (<= 0 m)
-                 (<= 0 bound-m)
-                 (<= a (+ bound-m m)))
-            (and (<= -1
-                     (occur-cnt-bounded term1 term2 a m bound-m))
-                 (<= (occur-cnt-bounded term1 term2 a m bound-m)
-                     (+ bound-m m))))
-   :rule-classes :linear
-   :hints (("Goal" ; :in-theory (theory 'minimal-theory)
-            :use ((:instance signed-byte-p-30-occur-cnt-bounded-flg
-                             (flg 'term)))))))
-(local
- (defthm signed-byte-p-30-occur-cnt-bounded-flg-list
-   (implies (and (force (signed-byte-p 30 a))
-                 (signed-byte-p 30 m)
-                 (signed-byte-p 30 (+ bound-m m))
-                 (force (<= 0 a))
-                 (<= 0 m)
-                 (<= 0 bound-m)
-                 (<= a (+ bound-m m)))
-            (and (<= -1
-                     (occur-cnt-bounded-lst term1 lst a m bound-m))
-                 (<= (occur-cnt-bounded-lst term1 lst a m bound-m)
-                     (+ bound-m m))))
-   :rule-classes :linear
-   :hints (("Goal" ; :in-theory (theory 'minimal-theory)
-            :use ((:instance signed-byte-p-30-occur-cnt-bounded-flg
-                             (flg 'list)))))))
-
-(verify-guards occur-cnt-bounded)
-
-(verify-termination-boot-strap too-many-ifs1) ; and guards
-
-(verify-termination-boot-strap too-many-ifs-post-rewrite) ; and guards
-
-)
-)
-
-; The following is labeled as local so that it is evaluated only in pass-2,
-; after too-many-ifs-post-rewrite is defined and guard-verifed.  The use of
-; local also avoids its evaluation in raw Lisp when compiled files are loaded.
-(local
- (defattach too-many-ifs-post-rewrite-wrapper too-many-ifs-post-rewrite))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; End of Attachments section; don't add anything below before modifying the
-;;; comment above stating:
-;;; "The remainder of this file involves boot-strapping the use of
-;;; attachments."
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-

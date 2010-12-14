@@ -2710,7 +2710,6 @@ The Binary Trees with Four Tips
                  STOBJS-OUT
                  SYMBOL-CLASS
                  NON-EXECUTABLEP
-                 ATTACHMENT
                  SIBLINGS
                  LEVEL-NO
                  QUICK-BLOCK-INFO
@@ -2786,6 +2785,7 @@ The Binary Trees with Four Tips
                  MACRO-ARGS
                  PREDEFINED
                  DEFAXIOM-SUPPORTER
+                 ATTACHMENT ; see Essay on Defattach re: :ATTACHMENT-DISALLOWED
                  CLAUSE-PROCESSOR))
 
 ; and these are not created by the introductory event of name (which must have
@@ -4452,20 +4452,20 @@ End of statistical and related information related to image size.
 ; ... defn'), where the defi' are computed from the defi depending on
 ; defun-mode-flg and ignorep.  Defun-Mode-flg is either nil (meaning the
 ; function is :non-executable or the parent event is an encapsulate which is
-; trying to define the executable counterparts of the constrained functions;
-; either way, the defun-mode is always :logic) or a defun-mode (meaning the
-; parent event is a DEFUNS and the defun-mode is the defun-mode of the defined
-; functions).  Ignorep is 'reclassifying, '(defstobj . stobj-name), or nil.  If
-; ignorep is nil, we add each def and its *1* counterpart, after pushing the
-; old bodies on the undo stack.  If ignorep is 'reclassifying (which means we
-; are reclassifying a :program fn to a :logic fn without changing its
-; definition -- which is probably hand coded ACL2 source), we define only the
-; *1* counterparts after pushing only the *1* counterparts on the undo stack.
-; If ignorep is '(defstobj . stobj-name) we do not add the def or its *1*
-; counterpart, but we do push both the main name and the *1* name.  This is
-; because we know defstobj will supply a symbol-function for the main name and
-; its *1* counterpart in a moment.  We use the stobj-name in the *1* body to
-; compute the stobjs-in of the function.  See the comment in add-trip.
+; trying to define the executable counterparts of the constrained functions) or
+; a defun-mode (meaning the parent event is an executable DEFUNS and the
+; defun-mode is the defun-mode of the defined functions).  Ignorep is
+; 'reclassifying, '(defstobj . stobj-name), or nil.  If ignorep is nil, we add
+; each def and its *1* counterpart, after pushing the old bodies on the undo
+; stack.  If ignorep is 'reclassifying (which means we are reclassifying a
+; :program fn to a :logic fn without changing its definition -- which is
+; probably hand coded ACL2 source), we define only the *1* counterparts after
+; pushing only the *1* counterparts on the undo stack.  If ignorep is
+; '(defstobj . stobj-name) we do not add the def or its *1* counterpart, but we
+; do push both the main name and the *1* name.  This is because we know
+; defstobj will supply a symbol-function for the main name and its *1*
+; counterpart in a moment.  We use the stobj-name in the *1* body to compute
+; the stobjs-in of the function.  See the comment in add-trip.
 
 ; One might ask why we make add-trip do the oneify to produce the *1* bodies,
 ; instead of compute them when we generate the CLTL-COMMAND.  The reason is
@@ -6971,24 +6971,56 @@ End of statistical and related information related to image size.
          mode)
         (t :erase)))
 
-(defun redefinition-renewal-mode
-  (name old-type new-type reclassifyingp ctx wrld state)
+(defun attachment-alist (fn wrld)
+  (let ((prop (getprop fn 'attachment nil 'current-acl2-world wrld)))
+    (and prop
+         (cond ((symbolp prop)
+                (getprop prop 'attachment nil 'current-acl2-world wrld))
+               ((eq (car prop) :attachment-disallowed)
+                prop) ; (cdr prop) follows "because", e.g., (msg "it is bad")
+               (t prop)))))
+
+(defun redefinition-renewal-mode (name old-type new-type reclassifyingp ctx
+                                       wrld state)
 
 ; We use 'ld-redefinition-action to determine whether the redefinition of name,
 ; currently of old-type in wrld, is to be :erase, :overwrite or
 ; :reclassifying-overwrite.  New-type is the new type name will have and
 ; reclassifyingp is a non-nil, non-cons value only if this is a :program
 ; function to identical-defp :logic function redefinition.  If this
-; redefinition is not permitted, we cause an error, using a non-cons
-; reclassifyingp for an explanatory message of the form " Note that ~@k.".
+; redefinition is not permitted, we cause an error, in which case if
+; reclassifyingp is a cons then it is an explanatory message to be printed in
+; the error message, in the context "Note that <msg>".
 
 ; The only time we permit a redefinition when ld-redefinition-action prohibits
-; it is when we return :reclassifying-overwrite.
+; it is when we return :reclassifying-overwrite, except for the case of
+; updating non-executable :program mode ("proxy") functions; see :DOC
+; defproxy.  In the latter case we have some concern about redefining inlined
+; functions, so we proclaim them notinline; see install-defs-for-add-trip.
 
 ; This function interacts with the user if necessary.  See :DOC
 ; ld-redefinition-action.
 
-  (let ((act (f-get-global 'ld-redefinition-action state)))
+  (let ((act (f-get-global 'ld-redefinition-action state))
+        (proxy-upgrade-p
+         (and (eq old-type 'function)
+              (consp new-type)
+
+; New-type is (function stobjs-in . stobjs-out); see chk-signature.
+
+              (eq (car new-type) 'function)
+              (eq (getprop name 'non-executablep nil 'current-acl2-world
+                           wrld)
+                  :program)
+
+; A non-executable :program-mode function has no logical content, so it is
+; logically safe to redefine it.  We check however that the signature hasn't
+; changed, for the practical reason that we don't want to break existing
+; calls.
+
+              (equal (stobjs-in name wrld) (cadr new-type))
+              (equal (stobjs-out name wrld) (cddr new-type))))
+        (attachment-alist (attachment-alist name wrld)))
     (cond
      ((and reclassifyingp
            (not (consp reclassifyingp)))
@@ -7000,20 +7032,53 @@ End of statistical and related information related to image size.
                   code."
                  name))
             (t (value :reclassifying-overwrite))))
-     ((null act)
+     ((and attachment-alist
+           (not (eq (car attachment-alist) :ATTACHMENT-DISALLOWED))
+
+; During the boot-strap, we may replace non-executable :program mode
+; definitions (from defproxy) without removing attachments, so that system
+; functions implemented using attachments will not be disrupted.
+
+           (not (global-val 'boot-strap-flg wrld)))
+      (er soft ctx
+          "The name ~x0 is in use as a ~@1, and it has an attachment.  Before ~
+           redefining it you must remove its attachment, for example by ~
+           executing the form ~x2.  We hope that this is not a significant ~
+           inconvenience; it seemed potentially too complex to execute such a ~
+           defattach form safely on your behalf."
+          name
+          (logical-name-type-string old-type)
+          (cond ((programp name wrld)
+                 `(defattach (,name nil) :skip-checks t))
+                (t
+                 `(defattach ,name nil)))))
+     ((and (null act)
+           (not proxy-upgrade-p))
+
+; We cause an error, with rather extensive code below designed to print a
+; helpful error message.
+
       (mv-let
        (erp val state)
        (er soft ctx
            "The name ~x0 is in use as a ~@1.~#2~[  ~/  (This name is used in ~
             the implementation of single-threaded objects.)  ~/  Note that ~
             ~@3~|~]The redefinition feature is currently off.  See :DOC ~
-            ld-redefinition-action."
+            ld-redefinition-action.~@4"
            name
            (logical-name-type-string old-type)
            (cond ((eq new-type 'stobj-live-var) 1)
                  ((consp reclassifyingp) 2)
                  (t 0))
-           reclassifyingp)
+           reclassifyingp
+           (cond ((eq (getprop name 'non-executablep nil 'current-acl2-world
+                               wrld)
+                      :program)
+                  (msg "  Note that you are attempting to upgrade a proxy, ~
+                        which is only legal using an encapsulate signature ~
+                        that matches the original signature of the function; ~
+                        see :DOC defproxy."))
+                 (t "")))
        (declare (ignore erp val))
        (er-let*
         ((ev-wrld (er-decode-logical-name name wrld ctx state)))
@@ -7060,9 +7125,10 @@ End of statistical and related information related to image size.
      ((and (hons-enabledp state) ; presumably an optimization
            (cdr (assoc-eq name (table-alist 'memoize-table wrld))))
       (er soft ctx
-          "The function ~x0 is currently memoized.  You must execute ~x1 ~
-           before attempting to redefine it."
+          "The name ~x0 is in use as a ~@1, and it is currently memoized.  ~
+           You must execute ~x2 before attempting to redefine it."
           name
+          (logical-name-type-string old-type)
           (list 'unmemoize (kwote name))))
      ((eq new-type 'package)
 
@@ -7082,8 +7148,7 @@ End of statistical and related information related to image size.
             Furthermore, the redefinition facility makes no provision for ~
            packages.  Please rename the package or :ubt ~x0.  Sorry."
           name))
-     ((null (getprop name 'absolute-event-number nil
-                     'current-acl2-world wrld))
+     ((null (getprop name 'absolute-event-number nil 'current-acl2-world wrld))
 
 ; One might think that (a) this function is only called on old names and (b)
 ; every old name has an absolute event number.  Therefore, why do we ask the
@@ -7092,38 +7157,34 @@ End of statistical and related information related to image size.
 ; form.
 
       (er soft ctx
-          "The name ~x0 appears to have been introduced in the ~
-           signature list of an encapsulate, yet is being defined ~
-           non-locally."
+          "The name ~x0 appears to have been introduced in the signature list ~
+           of an encapsulate, yet is being defined non-locally."
           name))
 
-; We do not permit any supporter of a single-threaded object
-; implementation to be redefined, except by redefining the
-; single-threaded object itself.  The main reason is that even though
-; the functions like the recognizers appear as ordinary predicates,
-; the types are really built in across the whole implementation.  So
-; its all or nothing.  Besides, I don't really want to think about the
-; weird combinations of changing a defstobj supporter to an unrelated
-; function, even if the user thinks he knows what he is doing.
+; We do not permit any supporter of a single-threaded object implementation to
+; be redefined, except by redefining the single-threaded object itself.  The
+; main reason is that even though the functions like the recognizers appear as
+; ordinary predicates, the types are really built in across the whole
+; implementation.  So it's all or nothing.  Besides, I don't really want to
+; think about the weird combinations of changing a defstobj supporter to an
+; unrelated function, even if the user thinks he knows what he is doing.
 
      ((and (defstobj-supporterp name wrld)
            (not (and (eq new-type 'stobj) 
                      (eq old-type 'stobj))))
 
-; I sweated over the logic above.  How do we get here?  Name is a
-; defstobj supporter.  Under what conditions do we permit a defstobj
-; supporter to be redefined?  Only by redefining the object name
-; itself -- not by redefining individual functions.  So we want to
-; avoid causing an error if the new and old types are both 'stobj
-; (i.e., name is the name of the single-threaded object both in the
-; old and the new worlds).
+; I sweated over the logic above.  How do we get here?  Name is a defstobj
+; supporter.  Under what conditions do we permit a defstobj supporter to be
+; redefined?  Only by redefining the object name itself -- not by redefining
+; individual functions.  So we want to avoid causing an error if the new and
+; old types are both 'stobj (i.e., name is the name of the single-threaded
+; object both in the old and the new worlds).
 
 ; WARNING: If this function does not cause an error, we proceed, in
-; chk-redefineable-namep, to renew name.  In the case of stobj names,
-; that function renews all the supporting names as well.  Thus, it is
-; important to maintain the invariant: if this function does not cause
-; an error and name is a defstobj supporter, then name is the stobj
-; name.
+; chk-redefineable-namep, to renew name.  In the case of stobj names, that
+; function renews all the supporting names as well.  Thus, it is important to
+; maintain the invariant: if this function does not cause an error and name is
+; a defstobj supporter, then name is the stobj name.
 
       (er soft ctx
           "The name ~x0 is in use supporting the implementation of ~
@@ -7134,20 +7195,52 @@ End of statistical and related information related to image size.
           (defstobj-supporterp name wrld)))
 
 ; If we get here, we know that either name is not currently a defstobj
-; supporter of any kind or else that it is the old defstobj name and
-; is being redefined as a defstobj.  
+; supporter of any kind or else that it is the old defstobj name and is being
+; redefined as a defstobj.
         
      (t
       (let ((sysdefp (acl2-system-namep name wrld)))
-
-; Sysdefp = t means name is an ACL2 system name.
-
         (cond
-         ((and sysdefp ; and (not reclassifyingp), already known here
-               (not (ttag (w state))))
+         ((and sysdefp
+               (not (ttag (w state)))
+               (not (and proxy-upgrade-p
+                         (global-val 'boot-strap-flg wrld))))
           (er soft ctx
               "Redefinition of system functions is not permitted unless there ~
                is an active trust tag (ttag).  See :DOC defttag."))
+         (proxy-upgrade-p
+
+; We erase all vestiges of the old function.  It may well be safe to return
+; :overwrite instead.  But at one time we tried that while also leaving the
+; 'attachment property unchanged by renew-name/overwrite (rather than making it
+; unbound), and we then got an error from the following sequence of events,
+; "HARD ACL2 ERROR in LOGICAL-NAME-TYPE: FOO is evidently a logical name but of
+; undetermined type."
+
+;  (defproxy foo (*) => *)
+;  (defttag t)
+;  (defun g (x) x)
+;  (defattach (foo g) :skip-checks t)
+;  (defattach (foo nil) :skip-checks t)
+;  (defstub foo (x) t)
+
+; When we promote boot-strap functions from non-executable :program mode
+; ("proxy") functions to encapsulated functions, we thus lose the 'attachment
+; property.  Outside the boot-strap, where we disallow all redefinition when
+; there is an attachment, this is not a restriction.  But in the boot-strap, we
+; will lose the 'attachment property even though the appropriate Lisp global
+; (the attachment-symbol) remains set.  This doesn't present a problem,
+; however; system functions are special, in that they can very temporarily have
+; attachments without an 'attachment property, until the redefinition in
+; progress (by an encapsulate) is complete.
+
+          (cond ((eq (car attachment-alist) :ATTACHMENT-DISALLOWED)
+                 (er soft ctx
+                     "Implementation error: It is surprising to see ~
+                      attachments disallowed for a non-executable :program ~
+                      mode function (a proxy).  See ~
+                      redefinition-renewal-mode."))
+                (t (value :erase))))
          ((eq (car act) :doit!)
           (value
            (maybe-coerce-overwrite-to-erase old-type new-type (cdr act))))
@@ -7284,17 +7377,11 @@ End of statistical and related information related to image size.
 ; Name is a non-new name in wrld.  We are about to redefine it and make its
 ; logical-name-type be new-type.  If reclassifyingp is non-nil and not a consp
 ; message (see redundant-or-reclassifying-defunp) then we know that in fact
-; this new definition is just a conversion of the existing definition.  If
-; redefinition is permitted we renew name appropriately and return the
-; resulting world.  Otherwise we cause an error.  Note that we always permit
-; redefinition of a non-system :program function name to a function (this is
-; called a temporary overwrite redefinition) because when this happens we will
-; always check (later, after we have translated the new body and determined the
-; proposed new signature) that the signature doesn't change.  If the signature
-; does change during a temporary overwrite then we will cause an error (or
-; appropriately interact with the user via 'ld-redefinition-action).  The point
-; is that it is sound to redefine non-system :program functions to functions
-; provided the signature doesn't change.
+; this new definition is just a conversion of the existing definition.
+; Redefinition is permitted if the value of 'ld-redefinition-action is not nil,
+; or if we are defining a function to replace a non-executable :program mode
+; function (such as is introduced by defproxy).  In all these non-erroneous
+; cases, we renew name appropriately and return the resulting world.
 
 ; The LD special 'ld-redefinition-action determines how we react to
 ; redefinition attempts.  See :DOC ld-redefinition-action.
@@ -7373,10 +7460,15 @@ End of statistical and related information related to image size.
 ; If name has no properties in w, then we next check that it is not
 ; defined in raw Common Lisp.
 
-    (cond ((not (chk-virgin name new-type w))
-           (er soft ctx
-               "Not a virgin name for type ~x0:  ~x1." new-type name))
-          (t (value w))))
+    (let ((actual-new-type
+           (cond ((and (consp new-type)
+                       (eq (car new-type) 'function))
+                  'function)
+                 (t new-type))))
+      (cond ((not (chk-virgin name actual-new-type w))
+             (er soft ctx
+                 "Not a virgin name for type ~x0:  ~x1." new-type name))
+            (t (value w)))))
    ((and (global-val 'boot-strap-flg w)
          (not (global-val 'boot-strap-pass-2 w))
          (or (not reclassifyingp)

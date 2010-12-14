@@ -234,16 +234,15 @@
 ;                               FILES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This is the file acl2.lisp, the first source file for ACL2.  The
-; names of the other ACL2 source files are listed under *acl2-files*.
+; This is the file acl2.lisp, the first source file for ACL2.  The names of the
+; other ACL2 source files are listed under *acl2-files*.
 
-; All of ACL2 is written in Common Lisp and we expect that ACL2 will
-; run in any Common Lisp except for those Common Lisps which fail the
-; tests we execute upon loading this file, acl2.lisp.  With the
-; exception of this and other initialiation files, files *-raw.lisp,
-; and those constructs after the #-acl2-loop-only passim only
-; (especially in the file axioms.lisp), ACL2 is written in the
-; applicative Common Lisp for which ACL2 is a verification system.
+; All of ACL2 is written in Common Lisp and we expect that ACL2 will run in any
+; Common Lisp except for those Common Lisps which fail the tests we execute
+; upon loading this file, acl2.lisp.  With the exception of this and other
+; initialiation files, files *-raw.lisp, and those constructs after the
+; #-acl2-loop-only readtime conditional, ACL2 is written in the applicative
+; Common Lisp for which ACL2 is a verification system.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                          LISP BUGS AND QUIRKS
@@ -551,6 +550,7 @@
     "axioms"
     "memoize" ; but only get special under-the-hood treatment with #+hons
     "hons"    ; but only get special under-the-hood treatment with #+hons
+    "boot-strap-pass-2"
     "basis"
     "parallel" ; but only get special under-the-hood treatment with #+acl2-par
     #+acl2-par "parallel-raw"

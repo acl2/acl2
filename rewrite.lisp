@@ -4432,7 +4432,9 @@ and found premature forcing killed us.
                                        ctx)
                           ctx)))))
 
-(defun too-many-ifs-pre-rewrite (args counts)
+(defproxy too-many-ifs-pre-rewrite (* *) => *)
+
+(defun too-many-ifs-pre-rewrite-builtin (args counts)
 
 ; See the Essay on Too-many-ifs.
 
@@ -4447,6 +4449,9 @@ and found premature forcing killed us.
                               (equal (len args) (len counts)))))
 
   (too-many-ifs0 args counts 0 'too-many-ifs-pre-rewrite))
+
+(defattach (too-many-ifs-pre-rewrite too-many-ifs-pre-rewrite-builtin)
+  :skip-checks t)
 
 #||
 ; This dead code could be deleted, but we leave it as documentation for
@@ -4526,7 +4531,7 @@ and found premature forcing killed us.
 
 (defun too-many-ifs1 (args val lhs rhs ctx)
 
-; See also too-many-ifs-post-rewrite.
+; See also too-many-ifs-post-rewrite-builtin.
 
 ; We assume (<= lhs rhs).
 
@@ -4550,7 +4555,9 @@ and found premature forcing killed us.
                        -1
                      (too-many-ifs1 (cdr args) val lhs rhs ctx)))))))))
 
-(defun too-many-ifs-post-rewrite (args val)
+(defproxy too-many-ifs-post-rewrite (* *) => *)
+
+(defun too-many-ifs-post-rewrite-builtin (args val)
 
 ; This function implements the part of the too-many-ifs heuristic after the
 ; right-hand-side of a definition has been rewritten, to see if that expansion
@@ -4559,10 +4566,13 @@ and found premature forcing killed us.
   (declare (xargs :guard (and (pseudo-term-listp args)
                               (pseudo-termp val))))
 
-  (let* ((ctx 'too-many-ifs-post-rewrite)
+  (let* ((ctx 'too-many-ifs-post-rewrite-builtin)
          (rhs (the-fixnum! (count-ifs-lst args) ctx)))
     (cond ((int= rhs 0) nil)
           (t (too-many-ifs1 args val 0 rhs ctx)))))
+
+(defattach (too-many-ifs-post-rewrite too-many-ifs-post-rewrite-builtin)
+  :skip-checks t)
 
 (defun all-args-occur-in-top-clausep (args top-clause)
   (cond ((null args) t)
@@ -14175,8 +14185,7 @@ and found premature forcing killed us.
 
               (cond
                ((and (not (recursive-fn-on-fnstackp fnstack))
-                     (too-many-ifs-post-rewrite-wrapper args
-                                                        rewritten-body))
+                     (too-many-ifs-post-rewrite args rewritten-body))
                 (rewrite-solidify term type-alist obj geneqv
                                   (access rewrite-constant rcnst
                                           :current-enabled-structure)
@@ -14283,17 +14292,18 @@ and found premature forcing killed us.
 
                           (cond
                            ((and (not (recursive-fn-on-fnstackp fnstack))
-                                 (too-many-ifs-post-rewrite-wrapper
-                                  args rewritten-body))
+                                 (too-many-ifs-post-rewrite args
+                                                            rewritten-body))
                             (prog2$
                              (brkpt2 nil 'too-many-ifs-post-rewrite unify-subst
                                      gstack rewritten-body ttree1 rcnst state)
-                             (rewrite-solidify term type-alist obj geneqv
-                                               (access rewrite-constant rcnst
-                                                       :current-enabled-structure)
-                                               wrld ttree
-                                               simplify-clause-pot-lst
-                                               (access rewrite-constant rcnst :pt))))
+                             (rewrite-solidify
+                              term type-alist obj geneqv
+                              (access rewrite-constant rcnst
+                                      :current-enabled-structure)
+                              wrld ttree
+                              simplify-clause-pot-lst
+                              (access rewrite-constant rcnst :pt))))
                            (t (prog2$
                                (brkpt2 t nil unify-subst gstack
                                        rewritten-body ttree1 rcnst state)

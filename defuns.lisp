@@ -37,8 +37,13 @@
 (defconst *mutual-recursion-ctx-string*
   "( MUTUAL-RECURSION ( DEFUN ~x0 ...) ...)")
 
-(defun translate-bodies1
-  (non-executablep names bodies bindings known-stobjs-lst ctx wrld state-vars)
+(defun translate-bodies1 (non-executablep names bodies bindings
+                                          known-stobjs-lst ctx wrld state-vars)
+
+; Non-executablep should be t or nil, to indicate whether or not the bodies are
+; to be translated for execution.  In the case of a function introduced by
+; defproxy, non-executablep will be nil.
+
   (cond ((null bodies) (trans-value nil))
         (t (trans-er-let*
             ((x (translate1-cmp (car bodies)
@@ -96,32 +101,38 @@
                                                state))
                    (t (er soft ctx
                           "The body of a defun that is marked :non-executable ~
-                           t (perhaps implicitly, by the use of defun-nx) ~
-                           must be of the form (prog2$ (throw-nonexec-error ~
-                           ...).  The definition of ~x0 is thus illegal.  See ~
-                           :DOC defun-nx."
+                           (perhaps implicitly, by the use of defun-nx) must ~
+                           be of the form (prog2$ (throw-nonexec-error ...).  ~
+                           The definition of ~x0 is thus illegal.  See :DOC ~
+                           defun-nx."
                           (car names))))))))
 
-(defun translate-bodies
-  (non-executablep names bodies known-stobjs-lst ctx wrld state)
+(defun translate-bodies (non-executablep names bodies known-stobjs-lst ctx wrld
+                                         state)
 
-; Translate the bodies given and return a pair consisting of their
-; translations and the final bindings from translate.
+; Translate the bodies given and return a pair consisting of their translations
+; and the final bindings from translate.  Note that non-executable :program
+; mode functions need to be analyzed for stobjs-out, because they are proxies
+; (see :DOC defproxy) for encapsulated functions that may replace them later,
+; and we need to guarantee to callers that those stobjs-out do not change with
+; such replacements.
 
   (declare (xargs :guard (true-listp bodies)))
   (mv-let (erp lst bindings)
-          (translate-bodies1 non-executablep names bodies
+          (translate-bodies1 (eq non-executablep t) ; not :program
+                             names bodies
                              (pairlis$ names names)
                              known-stobjs-lst
                              ctx wrld (default-state-vars t))
-          (cond (erp ; erp is a ctx, lst is a msg
-                 (er soft erp "~@0" lst))
-                (non-executablep
-                 (er-progn
-                  (chk-non-executable-bodies
-                   names lst ctx state)
-                  (value (cons lst (pairlis-x2 names '(nil))))))
-                (t (value (cons lst bindings))))))
+          (er-progn
+           (cond (erp ; erp is a ctx, lst is a msg
+                  (er soft erp "~@0" lst))
+                 (non-executablep
+                  (chk-non-executable-bodies names lst ctx state))
+                 (t (value nil)))
+           (cond ((eq non-executablep t)
+                  (value (cons lst (pairlis-x2 names '(nil)))))
+                 (t (value (cons lst bindings)))))))
 
 ; The next section develops our check that mutual recursion is
 ; sensibly used.
@@ -4364,8 +4375,9 @@
 ; Observe that when we generate the guard clauses for the body we optimize
 ; the stobj recognizers away, provided the named function is executable.
 
-                              (not (getprop name 'non-executablep nil
-                                            'current-acl2-world wrld))
+                              (not (eq (getprop name 'non-executablep nil
+                                                'current-acl2-world wrld)
+                                       t))
                               ens wrld state ttree)
       (mv (conjoin-clause-sets+ debug-p cl-set1 cl-set2) ttree))))))
 
@@ -5368,7 +5380,7 @@ when submitted as :ideal, pointing out that they can never be
          (collect-old-nameps (cdr names) wrld))
         (t (cons (car names) (collect-old-nameps (cdr names) wrld)))))
 
-(defun defuns-fn-short-cut (names docs pairs guards bodies
+(defun defuns-fn-short-cut (names docs pairs guards bodies non-executablep
                                   wrld state)
 
 ; This function is called by defuns-fn when the functions to be defined are
@@ -5385,16 +5397,21 @@ when submitted as :ideal, pointing out that they can never be
 ; Like defuns-fn0, this function returns a pair consisting of the new world and
 ; a tag tree recording the proofs that were done.
 
-  (let ((wrld (update-doc-data-base-lst
-               names docs pairs
-               (putprop-x-lst2-unless
-                names 'guard guards *t*
-                (putprop-x-lst1
-                 names 'symbol-class :program
-                 (if (global-val 'boot-strap-flg wrld)
-                     wrld
-                   (putprop-x-lst2 names 'unnormalized-body bodies wrld)))))))
-    (value (cons wrld nil))))
+  (let* ((boot-strap-flg (global-val 'boot-strap-flg wrld))
+         (wrld0 (cond (non-executablep (putprop-x-lst1 names 'non-executablep
+                                                       non-executablep
+                                                       wrld))
+                      (t wrld)))
+         (wrld1 (if boot-strap-flg
+                    wrld0
+                  (putprop-x-lst2 names 'unnormalized-body bodies wrld0)))
+         (wrld2 (update-doc-data-base-lst
+                 names docs pairs
+                 (putprop-x-lst2-unless
+                  names 'guard guards *t*
+                  (putprop-x-lst1
+                   names 'symbol-class :program wrld1)))))
+    (value (cons wrld2 nil))))
 
 ; Now we develop the output for the defun event.
 
@@ -6389,7 +6406,10 @@ when submitted as :ideal, pointing out that they can never be
                        (fetch-dcl-field :non-executable
                                         (butlast (cddr def) 1)))
                   (cond
-                   ((let ((event (cddddr (car wrld1))))
+                   ((let* ((event-tuple (cddr (car wrld1)))
+                           (event (if (symbolp (cadr event-tuple))
+                                      (cdr event-tuple) ; see make-event-tuple
+                                    (cddr event-tuple))))
                       (non-identical-defp
                        def
                        (case (car event)
@@ -6401,10 +6421,13 @@ when submitted as :ideal, pointing out that they can never be
                           (cdr event)))
                        chk-measure-p
                        wrld)))
+                   ((and (eq (symbol-class name wrld) :program)
+                         (eq defun-mode :logic))
+                    'reclassifying)
                    (t
 
-; Note that :non-executable definitions always have mode :logic, so we do not
-; have to think about the 'reclassifying case.
+; We allow "redefinition" from :logic to :program mode by treating the latter
+; as redundant.  See the comment above on this topic.
 
                     'redundant)))
                  (t nil))))
@@ -6461,33 +6484,67 @@ when submitted as :ideal, pointing out that they can never be
 (defun recover-defs-lst (fn wrld)
 
 ; Fn is a :program function symbol in wrld.  Thus, it was introduced by defun.
-; (Constrained, defchoose, and :non-executable functions are :logic.)  We
-; return the defs-lst that introduced fn.  We recover this from the
-; cltl-command for fn.
+; (Constrained and defchoose functions are :logic.)  We return the defs-lst
+; that introduced fn.  We recover this from the cltl-command for fn.
 
-  (let ((val
-         (scan-to-cltl-command
-          (cdr (lookup-world-index 'event
-                                   (getprop fn 'absolute-event-number
-                                            '(:error "See ~
-                                                      RECOVER-DEFS-LST.")
-                                            'current-acl2-world wrld)
-                                   wrld)))))
-    (cond ((and (consp val)
-                (eq (car val) 'defuns))
+; A special case is when fn is non-executable.  We started allowing
+; non-executable :program mode functions after Version_4.1, to provide an easy
+; way to use defattach, especially during the boot-strap.  We prohibit
+; reclassifying such a function symbol into :logic mode, for at least the
+; following reason: we store the true stobjs-out for non-executable :program
+; mode functions, to match attachments that may be made; but we always store a
+; stobjs-out of (nil) in the :logic mode case.  We could perhaps allow
+; reclassifying into :logic mode in cases where the stobjs-out is (nil) in the
+; :program mode function, by recovering defuns from the event.  But it seems
+; most coherent simply to disallow the upgrade.  We store a different value,
+; :program, for the 'non-executablep property for :program mode functions than
+; for :logic mode functions, where we store t.
+
+  (let ((err-str "For technical reasons, we do not attempt to recover the ~
+                  definition of a ~s0 function such as ~x1.  It is surprising ~
+                  actually that you are seeing this message; please contact ~
+                  the ACL2 implementors unless you have called ~x2 yourself.")
+        (ctx 'recover-defs-lst))
+    (cond
+     ((getprop fn 'non-executablep nil 'current-acl2-world wrld)
+
+; We shouldn't be seeing this message, as something between verify-termination
+; and this lower-level function should be handling the non-executable case
+; (which is disallowed for the reasons explained above, related to
+; stobjs-out).
+
+      (er hard ctx
+          err-str
+          "non-executable" fn 'recover-defs-lst))
+     (t
+      (let ((val
+             (scan-to-cltl-command
+              (cdr (lookup-world-index 'event
+                                       (getprop fn 'absolute-event-number
+                                                '(:error "See ~
+                                                          RECOVER-DEFS-LST.")
+                                                'current-acl2-world wrld)
+                                       wrld)))))
+        (cond ((and (consp val)
+                    (eq (car val) 'defuns))
 
 ; Val is of the form (defuns defun-mode-flg ignorep def1 ... defn).  If
 ; defun-mode-flg is non-nil then the parent event was (defuns def1 ... defn)
 ; and the defun-mode was defun-mode-flg.  If defun-mode-flg is nil, the parent
-; was an encapsulate, defchoose, or :non-executable.  In the former case we
-; return (def1 ... defn); in the latter we return nil.
+; was an encapsulate, defchoose, or :non-executable, but none of these cases
+; should occur since presumably we are only considering :program mode functions
+; that are not non-executable.
 
-           (cond ((cadr val) (cdddr val))
-                 (t nil)))
-          (t (er hard 'recover-defs-lst
-                 "We failed to find the expected CLTL-COMMAND for the ~
-                  introduction of ~x0."
-                 fn)))))
+               (cond ((cadr val) (cdddr val))
+                     (t (er hard ctx
+                            err-str
+                            "non-executable or :LOGIC mode"
+                            fn
+                            'recover-defs-lst))))
+              (t (er hard ctx
+                     "We failed to find the expected CLTL-COMMAND for the ~
+                      introduction of ~x0."
+                     fn))))))))
 
 (defun get-clique (fn wrld)
 
@@ -6540,9 +6597,15 @@ when submitted as :ideal, pointing out that they can never be
                                                    (get-clique (caar def-lst)
                                                                wrld))))
                           (msg "for reclassifying :program mode definitions ~
-                                to :logic mode, if one is defined with ~
-                                mutual-recursion then both must be defined in ~
-                                the same mutual-recursion.~|~%"))
+                                to :logic mode, an entire mutual-recursion ~
+                                clique must be reclassified.  In this case, ~
+                                the mutual-recursion that defined ~x0 also ~
+                                defined the following, not included in the ~
+                                present event: ~&1.~|~%"
+                               (caar def-lst)
+                               (set-difference-eq (get-clique (caar def-lst)
+                                                              wrld)
+                                                  (strip-cars def-lst))))
                          (t ans)))))))))
 
 (defun redundant-or-reclassifying-defunsp (defun-mode symbol-class
@@ -7401,22 +7464,27 @@ when submitted as :ideal, pointing out that they can never be
                                state))
                      (mv erp1 val1 state))))))
 
-(defun get-and-shallow-chk-non-executablep (fives defun-mode ctx state)
-  (er-let* ((non-executablep (get-unambiguous-xargs-flg :NON-EXECUTABLE
-                                                        fives
-                                                        nil ctx state)))
-           (cond ((not (or (eq non-executablep t)
-                           (eq non-executablep nil)))
-                  (er soft ctx
-                      "The :NON-EXECUTABLE flag must be T or NIL, but ~x0 is ~
-                       neither."
-                      non-executablep))
-                 ((and non-executablep
-                       (eq defun-mode :program))
-                  (er soft ctx
-                      ":NON-EXECUTABLE functions must be defined in :LOGIC ~
-                       mode."))
-                 (t (value non-executablep)))))
+(defun chk-non-executablep (defun-mode non-executablep ctx state)
+
+; We check that the value for keyword :non-executable is legal with respect to
+; the given defun-mode.
+
+  (cond ((eq non-executablep nil)
+         (value nil))
+        ((eq defun-mode :logic)
+         (cond ((eq non-executablep t)
+                (value nil))
+               (t (er soft ctx
+                      "The :NON-EXECUTABLE flag for :LOGIC mode functions ~
+                       must be ~x0 or ~x1, but ~x2 is neither."
+                      t nil non-executablep))))
+        (t ; (eq defun-mode :program)
+         (cond ((eq non-executablep :program)
+                (value nil))
+               (t (er soft ctx
+                      "The :NON-EXECUTABLE flag for :PROGRAM mode functions ~
+                       must be ~x0 or ~x1, but ~x2 is neither."
+                      :program nil non-executablep))))))
 
 (defun chk-acceptable-defuns0 (fives ctx wrld state)
 
@@ -7430,13 +7498,14 @@ when submitted as :ideal, pointing out that they can never be
                                            (default-defun-mode wrld)
                                            ctx state))
     (non-executablep
-     (get-and-shallow-chk-non-executablep fives defun-mode ctx state))
+     (get-unambiguous-xargs-flg :NON-EXECUTABLE fives nil ctx state))
     (verify-guards (get-unambiguous-xargs-flg :VERIFY-GUARDS
                                               fives
                                               '(unspecified)
                                               ctx state)))
-   (er-progn 
+   (er-progn
     (chk-defun-mode defun-mode ctx state)
+    (chk-non-executablep defun-mode non-executablep ctx state)
     (cond ((consp verify-guards)
 
 ; This means that the user did not specify a :verify-guards.  We will default
@@ -7588,7 +7657,7 @@ when submitted as :ideal, pointing out that they can never be
                                    wrld2)))))
         (er-let*
          ((bodies-and-bindings
-           (translate-bodies non-executablep
+           (translate-bodies non-executablep ; t or :program
                              names
                              (get-bodies fives)
 ; Slight abuse here, see guards translation above:
@@ -7809,9 +7878,9 @@ when submitted as :ideal, pointing out that they can never be
 ;    wrld      - a modified wrld in which the following properties
 ;                may have been stored for each fn in names:
 ;                  'formals, 'stobjs-in and 'stobjs-out
-;    non-executablep - t or nil according to whether these defuns are to
-;                  non-executable.  Non-executable defuns may violate the
-;                  translate conventions on stobjs.
+;    non-executablep - t, :program, or nil according to whether these defuns
+;                  are to be non-executable.  Defuns with non-executable t may
+;                  violate the translate conventions on stobjs.
 ;    guard-debug
 ;              - t or nil, used to add calls of EXTRA-INFO to guard conjectures
 
@@ -7951,10 +8020,12 @@ when submitted as :ideal, pointing out that they can never be
   ~pl[verify-termination].
 
   ~c[:NON-EXECUTABLE]~nl[]
-  ~c[Value] is ~c[t] or ~c[nil] (the default).  Rather than using this keyword
-  argument directly, which requires ~c[:]~ilc[logic] mode and that the
-  definitional body has a certain form, we suggest using the macro
-  ~c[defun-nx] or ~c[defund-nx]; ~pl[defun-nx].
+  ~c[Value] is normally ~c[t] or ~c[nil] (the default).  Rather than stating
+  ~c[:non-executable t] directly, which requires ~c[:]~ilc[logic] mode and that
+  the definitional body has a certain form, we suggest using the macro
+  ~c[defun-nx] or ~c[defund-nx]; ~pl[defun-nx].  A third value of
+  ~c[:non-executable] for advanced users is ~c[:program], which is generated by
+  expansion of ~c[defproxy] forms; ~pl[defproxy].
 
   ~c[:NORMALIZE]~nl[]
   Value is a flag telling ~ilc[defun] whether to propagate ~ilc[if] tests
@@ -8375,7 +8446,7 @@ when submitted as :ideal, pointing out that they can never be
            (wrld11b (update-w big-mutrec
                               (if non-executablep
                                   (putprop-x-lst1 names 'non-executablep
-                                                  t
+                                                  non-executablep
                                                   wrld11a)
                                 wrld11a))))
           (let ((wrld12
@@ -8417,20 +8488,20 @@ when submitted as :ideal, pointing out that they can never be
                         (cons-tag-trees ttree1
                                         ttree2)))))))))))))))
 
-(defun defuns-fn0
+(defun defuns-fn0 (names arglists docs pairs guards measures
+                         ruler-extenders-lst mp rel hints guard-hints std-hints
+                         otf-flg guard-debug bodies symbol-class normalizeps
+                         non-executablep #+:non-standard-analysis std-p ctx
+                         wrld state)
 
 ; WARNING: This function installs a world.  That is safe at the time of this
 ; writing because this function is only called by defuns-fn, where that call is
 ; protected by a revert-world-on-error.
 
-  (names arglists docs pairs guards measures ruler-extenders-lst mp rel hints
-         guard-hints std-hints otf-flg guard-debug bodies symbol-class
-         normalizeps non-executablep
-         #+:non-standard-analysis std-p
-         ctx wrld state)
   (cond
    ((eq symbol-class :program)
-    (defuns-fn-short-cut names docs pairs guards bodies wrld state))
+    (defuns-fn-short-cut names docs pairs guards bodies non-executablep wrld
+      state))
    (t
     (let ((ens (ens state))
           (big-mutrec (big-mutrec names)))
@@ -8674,26 +8745,38 @@ when submitted as :ideal, pointing out that they can never be
 
 ; Warning: Keep this in sync with oneify-cltl-code.
 
-; Insigs is a list of internal form signatures, e.g., ((fn1 formals1
-; stobjs-in1 stobjs-out1) ...), and we convert it to a "def-lst"
-; suitable for giving the Common Lisp version of defuns, ((fn1
-; formals1 body1) ...), where each bodyi is just a throw to
-; 'raw-ev-fncall with the signal that says there is no body.  Note
-; that the body we build (in this ACL2 code) is a Common Lisp body but
-; not an ACL2 expression!
+; Insigs is a list of internal form signatures, e.g., ((fn1 formals1 stobjs-in1
+; stobjs-out1) ...), and we convert it to a "def-lst" suitable for giving the
+; Common Lisp version of defuns, ((fn1 formals1 body1) ...), where each bodyi
+; is just a throw to 'raw-ev-fncall with the signal that says there is no body.
+; Note that the body we build (in this ACL2 code) is a Common Lisp body but not
+; an ACL2 expression!
+
+; Kwd-alist-lst is normally a list that corresponds by position to insigs, each
+; of whose elements associates keywords with values; in particular it can
+; associate :guard with the guard for the corresponding element of insigs.
+; However, kwd-alist-lst can be the atom 'non-executable-programp, which we use
+; for proxy functions (see :DOC defproxy), i.e., :program mode functions with
+; the xarg declaration :non-executable :program.
 
   (cond
    ((null insigs) nil)
    (t (cons `(,(caar insigs)
               ,(cadar insigs)
-              ,@(let ((guard (cdr (assoc-eq :guard (car kwd-alist-lst)))))
-                  (and guard
-                       `((declare (xargs :guard ,guard)))))
+              ,@(cond ((eq kwd-alist-lst 'non-executable-programp)
+                       '((declare (xargs :non-executable :program))))
+                      (t (let ((guard (cdr (assoc-eq :guard (car kwd-alist-lst)))))
+                           (and guard
+                                `((declare (xargs :guard ,guard)))))))
               ,(null-body-er+ (caar insigs)
                               (cadar insigs)
                               wrld
                               t))
-            (intro-udf-lst2 (cdr insigs) (cdr kwd-alist-lst) wrld)))))
+            (intro-udf-lst2 (cdr insigs)
+                            (if (eq kwd-alist-lst 'non-executable-programp)
+                                'non-executable-programp
+                              (cdr kwd-alist-lst))
+                            wrld)))))
 
 (defun intro-udf-lst (insigs kwd-alist-lst wrld)
 
@@ -8751,7 +8834,8 @@ when submitted as :ideal, pointing out that they can never be
                    `(defuns nil nil
                       ,@(intro-udf-lst2
                          (make-udf-insigs names wrld)
-                         nil
+                         (and (eq non-executablep :program)
+                              'non-executable-programp)
                          wrld)))
                   (t `(defuns ,(if (eq symbol-class :program)
                                    :program
@@ -9047,7 +9131,7 @@ when submitted as :ideal, pointing out that they can never be
 ; We now develop the code for verify-termination, a macro that is essentially
 ; a form of defun.
 
-(defun make-verify-termination-def (old-def new-dcls state)
+(defun make-verify-termination-def (old-def new-dcls wrld)
 
 ; Old-def is a def tuple that has previously been accepted by defuns.  For
 ; example, if is of the form (fn args ...dcls... body), where dcls is a list of
@@ -9065,16 +9149,18 @@ when submitted as :ideal, pointing out that they can never be
          (modified-old-dcls (strip-dcls
                              (add-to-set-eq :mode new-fields)
                              dcls)))
-    `(,fn ,args
-          ,@new-dcls
-          ,@(if (and (not (member-eq :mode new-fields))
-                     (eq (default-defun-mode (w state)) :program))
-                '((declare (xargs :mode :logic)))
-                nil)
-          ,@modified-old-dcls
-          ,body)))
+    (assert$
+     (not (getprop fn 'non-executablep nil 'current-acl2-world wrld))
+     `(,fn ,args
+           ,@new-dcls
+           ,@(if (and (not (member-eq :mode new-fields))
+                      (eq (default-defun-mode wrld) :program))
+                 '((declare (xargs :mode :logic)))
+               nil)
+           ,@modified-old-dcls
+           ,body))))
 
-(defun make-verify-termination-defs-lst (defs-lst lst state)
+(defun make-verify-termination-defs-lst (defs-lst lst wrld)
 
 ; Defs-lst is a list of def tuples as previously accepted by defuns.  Lst is
 ; a list of tuples supplied to verify-termination.  Each element of a list is
@@ -9087,8 +9173,8 @@ when submitted as :ideal, pointing out that they can never be
   (cond
    ((null defs-lst) nil)
    (t (let ((temp (assoc-eq (caar defs-lst) lst)))
-        (cons (make-verify-termination-def (car defs-lst) (cdr temp) state)
-              (make-verify-termination-defs-lst (cdr defs-lst) lst state))))))
+        (cons (make-verify-termination-def (car defs-lst) (cdr temp) wrld)
+              (make-verify-termination-defs-lst (cdr defs-lst) lst wrld))))))
 
 (defun chk-acceptable-verify-termination1 (lst clique fn1 ctx wrld state)
 
@@ -9146,40 +9232,65 @@ when submitted as :ideal, pointing out that they can never be
 
 ; We check that lst is acceptable input for verify-termination.  To be
 ; acceptable, lst must be of the form ((fn . dcls) ...) where each fn is the
-; name of a function, all of which are in the same clique and have the same
-; defun-mode and each dcls is a plausible-dclsp as above.  We cause an error or
-; return nil.
+; name of a function, all of which are in the same clique and are in :program
+; mode, not non-executable, where each dcls above is a plausible-dclsp.  We
+; cause an error or return (value nil).
 
   (cond
    ((and (consp lst)
          (consp (car lst))
          (symbolp (caar lst)))
     (cond
-     ((function-symbolp (caar lst) wrld)
+     ((not (function-symbolp (caar lst) wrld))
+      (er soft ctx
+          "The symbol ~x0 is not a function symbol in the current ACL2 world."
+          (caar lst)))
+     ((not (programp (caar lst) wrld))
+
+; If (caar lst) was introduced by encapsulate, then recover-defs-lst below will
+; cause an implementation error.  So we short-circuit our checks here,
+; especially given since the uniform-defun-modes assertion below suggests that
+; all functions should then be in :logic mode.  Eventually, we will generate
+; the empty list of definitions and treat the verify-termination as redundant,
+; except: as a courtesy to the user, we may cause an error here if the function
+; could not have been upgraded from :program mode.
+
+      (cond ((getprop (caar lst) 'constrainedp nil 'current-acl2-world wrld)
+             (er soft ctx
+                 "The :LOGIC mode function symbol ~x0 was originally ~
+                  introduced introduced not with DEFUN, but ~#1~[as a ~
+                  constrained function~/with DEFCHOOSE~].  So ~
+                  VERIFY-TERMINATION does not make sense for this function ~
+                  symbol."
+                 (caar lst)
+                 (cond ((getprop (caar lst) 'defchoose-axiom nil
+                                 'current-acl2-world wrld)
+                        1)
+                       (t 0))))
+            (t (value :redundant))))
+     ((getprop (caar lst) 'non-executablep nil 'current-acl2-world wrld)
+      (er soft ctx
+          "The :PROGRAM mode function symbol ~x0 is declared non-executable, ~
+           so ~x1 is not legal for this symbol.  Such functions are intended ~
+           only for hacking with defattach; see :DOC defproxy."
+          (caar lst)
+          'verify-termination
+          'defun))
+     (t
       (let ((clique (get-clique (caar lst) wrld)))
-        (cond
-         ((not (uniform-defun-modes (fdefun-mode (caar lst) wrld)
-                                    clique
-                                    wrld))
-          (er soft ctx
-              "The function ~x0 is ~#1~[:program~/:logic~] but some ~
-               member of its clique of mutually recursive peers is not.  The ~
-               clique consists of ~&2.  Since verify-termination must deal ~
-               with the entire clique, in the sense that it will either admit ~
-               into the logic all of the functions in the clique (in which ~
-               case the clique must be uniformly :program) or none of the ~
-               functions in the clique (in which case the clique must be ~
-               uniformly :logic, making verify-termination redundant).  ~
-               The clique containing ~x0 is neither.  This can only happen ~
-               because some members of the clique have been redefined."
-              (caar lst)
-              (if (programp (caar lst) wrld) 0 1)
-              clique))
-         (t (chk-acceptable-verify-termination1 lst clique (caar lst) ctx wrld
-                                                state)))))
-     (t (er soft ctx
-            "The symbol ~x0 is not a function symbol in the current ACL2 world."
-            (caar lst)))))
+        (assert$
+
+; We maintain the invariant that all functions in a mutual-recursion clique
+; have the same defun-mode.  This assertion check is not complete; for all we
+; know, lst involves two mutual-recursion nests, and only the one for (caar
+; lst) has uniform defun-modes.  But we include this simple assertion to
+; provide an extra bit of checking.
+
+         (uniform-defun-modes (fdefun-mode (caar lst) wrld)
+                              clique
+                              wrld)
+         (chk-acceptable-verify-termination1 lst clique (caar lst) ctx wrld
+                                             state))))))
    ((atom lst)
     (er soft ctx
         "Verify-termination requires at least one argument."))
@@ -9213,10 +9324,13 @@ when submitted as :ideal, pointing out that they can never be
                   (t (msg "( VERIFY-TERMINATION (~x0 ...) ...)" (caar lst)))))
                 (t (cons 'VERIFY-TERMINATION lst))))
          (wrld (w state)))
-    (er-progn
-     (chk-acceptable-verify-termination lst ctx wrld state)
-     (let ((defs-lst (recover-defs-lst (caar lst) wrld)))
-       (value (make-verify-termination-defs-lst defs-lst lst state))))))
+    (er-let* ((temp (chk-acceptable-verify-termination lst ctx wrld state)))
+      (let ((defs (if (eq temp :redundant)
+                      nil
+                    (recover-defs-lst (caar lst) wrld))))
+        (value (make-verify-termination-defs-lst
+                defs
+                lst wrld))))))
 
 (defun verify-termination-boot-strap-fn (lst state event-form)
   (cond
@@ -9261,8 +9375,10 @@ when submitted as :ideal, pointing out that they can never be
 (defun verify-termination-fn (lst state)
   (when-logic3
 
-; It is convenient to use when-logic so that we skip verify-termination during
-; pass1 of the boot-strap in axioms.lisp.
+; We originally used when-logic here so that we would skip verify-termination during
+; pass1 of the boot-strap in axioms.lisp.  Now we use
+; verify-termination-boot-strap for that purpose, but we continue the same
+; convention, since by now users might rely on it.
 
 ; We could always return a defuns form, but the user may find it more pleasing
 ; to see a defun when there is a single definition, so we return a defun form
@@ -9270,11 +9386,13 @@ when submitted as :ideal, pointing out that they can never be
 
    "VERIFY-TERMINATION"
    (er-let*
-    ((verify-termination-defs-lst (verify-termination1 lst state)))
-    (value (if (and verify-termination-defs-lst
-                    (null (cdr verify-termination-defs-lst)))
-               (cons 'defun (car verify-termination-defs-lst))
-             (cons 'defuns verify-termination-defs-lst))))))
+       ((verify-termination-defs-lst (verify-termination1 lst state)))
+     (value (cond ((null verify-termination-defs-lst)
+                   '(value-triple :redundant))
+                  ((null (cdr verify-termination-defs-lst))
+                   (cons 'defun (car verify-termination-defs-lst)))
+                  (t
+                   (cons 'defuns verify-termination-defs-lst)))))))
 
 ; When we defined instantiablep we included the comment that a certain
 ; invariant holds between it and the axioms.  The functions here are

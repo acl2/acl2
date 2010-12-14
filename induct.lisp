@@ -2394,7 +2394,7 @@
 
 ; We return a ~@ message that prints as "the relation rel (which, by name, is
 ; known to be well-founded on the domain recognized by mp)" and variants of
-; that obtained when name is nil (meaning the well-foundedness is builtin)
+; that obtained when name is nil (meaning the well-foundedness is built in)
 ; and/or mp is t (meaning the domain is the universe).
 
   (let* ((temp (assoc-eq rel (global-val 'well-founded-relation-alist wrld)))

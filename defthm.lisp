@@ -5733,15 +5733,6 @@ this problem.  [It contains a truly trivial edit we've made, not important.]
                 'illegal)
                (t 'maybe)))))
 
-(defun attachment-alist (fn wrld)
-  (let ((prop (getprop fn 'attachment nil 'current-acl2-world wrld)))
-    (and prop
-         (cond ((symbolp prop)
-                (getprop prop 'attachment nil 'current-acl2-world wrld))
-               ((eq (car prop) :attachment-disallowed)
-                prop) ; (cdr prop) follows "because", e.g., (msg "it is bad")
-               (t prop)))))
-
 (defun attached-fns (fns wrld)
   (cond ((endp fns) nil)
         (t (let ((prop (attachment-alist (car fns) wrld)))
