@@ -1739,7 +1739,8 @@
 
 (defun non-executablepp (sym val)
   (declare (ignore sym))
-  (booleanp val))
+  (or (eq val :program) ; proxy case (see :DOC defproxy)
+      (booleanp val)))
 
 ;-----------------------------------------------------------------
 ; NTH-UPDATE-REWRITER-TARGETP
@@ -2332,9 +2333,11 @@
           (LINEAR-LEMMAS (pseudo-linear-lemmasp sym val))
           (MACRO-ARGS (pseudo-macro-argsp sym val))
           (MACRO-BODY (pseudo-macro-bodyp sym val))
-          (NON-EXECUTABLEP (non-executablepp sym val))
+          (NON-EXECUTABLEP (or (eq val *acl2-property-unbound*) ; upgrade proxy
+                               (non-executablepp sym val)))
           (NTH-UPDATE-REWRITER-TARGETP (nth-update-rewriter-targetpp sym val))
-          (PREDEFINED (predefinedp sym val))
+          (PREDEFINED (or (eq val *acl2-property-unbound*) ; upgrade defproxy
+                          (predefinedp sym val)))
           (PRIMITIVE-RECURSIVE-DEFUNP (primitive-recursive-defunpp sym val))
           (QUICK-BLOCK-INFO (pseudo-quick-block-infop sym val))
           (RECURSIVEP (pseudo-recursivepp sym val))

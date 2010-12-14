@@ -115,16 +115,21 @@ See also bash.lisp and expander.lisp.
 
 ===============================================================================
 
-defpun.lisp -- define partial functions using defpun
 defp.lisp   -- define partial functions using defp
+defpun.lisp -- define partial functions using defpun
 
-These books provides macros by which you can introduce some function
-``definitions'' that do not always terminate.  In particular, the defpun macro
-allows certain tail-recursive function definitions to be admitted, and the defp
-macro builds on defpun to allow more general forms of tail recursion.
+The book defpun.lisp books provides a macro, defpun, by which you can
+introduce certain tail-recursive function ``definitions'' that do not
+always terminate.  The book defp.lisp provides a more powerful macro,
+defp, which is built on top of defpun but allows more general forms of
+tail recursion than does defpun.
 
 Details of defpun are provided by Manolios and Moore in ``Partial Functions in
 ACL2'' http://www.cs.utexas.edu/users/moore/publications/defpun/index.html
+
+===============================================================================
+
+defproxy-test.lisp -- examples of the use of defproxy
 
 ===============================================================================
 

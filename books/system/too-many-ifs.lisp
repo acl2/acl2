@@ -62,7 +62,7 @@
 
 (verify-termination too-many-ifs0) ; and guards
 
-(verify-termination too-many-ifs-pre-rewrite) ; and guards
+(verify-termination too-many-ifs-pre-rewrite-builtin) ; and guards
 
 (verify-termination occur-cnt-bounded)
 
@@ -116,7 +116,4 @@
 
 (verify-termination too-many-ifs1) ; and guards
 
-(verify-termination too-many-ifs-post-rewrite) ; and guards
-
-
-
+(verify-termination too-many-ifs-post-rewrite-builtin) ; and guards
