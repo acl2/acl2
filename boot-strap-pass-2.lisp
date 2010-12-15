@@ -521,8 +521,7 @@
   (local (defun too-many-ifs-pre-rewrite (args counts)
            (list args counts))))
 
- (defattach (too-many-ifs-pre-rewrite too-many-ifs-pre-rewrite-builtin)
-   :skip-checks t)
+(defattach (too-many-ifs-pre-rewrite too-many-ifs-pre-rewrite-builtin))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End

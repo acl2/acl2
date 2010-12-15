@@ -1624,16 +1624,6 @@ Newline
       (set 'state *the-live-state*)
       "ACL2"))))
 
-(defun load-acl2-execution-environment ()
-  (let ((*readtable* *acl2-readtable*))
-    (load-compiled (make-pathname :name "axioms"
-                                  :type (if *suppress-compile-build-time*
-                                            *lisp-extension*
-                                          *compiled-file-extension*)))
-    (load "defpkgs.lisp")
-    (in-package "ACL2")
-    "ACL2"))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            DECLARATIONS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

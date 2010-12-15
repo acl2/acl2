@@ -6100,17 +6100,18 @@ End of statistical and related information related to image size.
   function symbols introduced by the ~il[command] and are blank if no
   symbols were introduced.
 
-  At any time we can classify our function symbols into three disjoint
-  sets, which we will here name with ~il[characters].  The ``~c[P]''
-  functions are those in ~c[:]~ilc[program] mode.  The ``~c[L]'' functions are
-  those in ~c[:]~ilc[logic] mode whose ~il[guard]s have not been verified.  The
+  At any time we can classify our function symbols into disjoint sets, which we
+  will here name with ~il[characters].  The ``~c[P]'' functions are those in
+  ~c[:]~ilc[program] mode.  The ``~c[L]'' functions are those in
+  ~c[:]~ilc[logic] mode whose ~il[guard]s have not been verified.  The
   ``~c[V]'' functions are those in ~c[:]~ilc[logic] mode whose ~il[guard]s have
-  been verified.  Note that ~ilc[verify-termination] and ~ilc[verify-guards]
-  cause function symbols to be reclassified.  If a ~il[command] introduces
-  function symbols then the first mysterious character indicates the
-  class of the symbols at the time of introduction and the second
-  character indicates the current class of the symbols (if the current
-  class is different from the introductory class).
+  been verified.  You may also see the use of (lower-case) ``~c[v]'' to
+  indicate functions introduced by ~ilc[encapsulate].  Note that
+  ~ilc[verify-termination] and ~ilc[verify-guards] cause function symbols to be
+  reclassified.  If a ~il[command] introduces function symbols then the first
+  mysterious character indicates the class of the symbols at the time of
+  introduction and the second character indicates the current class of the
+  symbols (if the current class is different from the introductory class).
 
   Thus, the display
   ~bv[]

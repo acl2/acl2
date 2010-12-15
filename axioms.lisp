@@ -18604,7 +18604,7 @@ J
   function ~c[too-many-ifs-post-rewrite], in the ACL2 source code, receives an
   attachment of ~c[too-many-ifs-post-rewrite-builtin], which implements a
   heuristic used in the rewriter.  To find all such examples, search the source
-  code for the string `builtin'.
+  code for the string `-builtin'.
 
   Over time, we expect to continue replacing ACL2 source code in a similar
   manner.  We invite the ACL2 community to assist in this ``open architecture''

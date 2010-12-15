@@ -16730,6 +16730,11 @@
 ; by hints during the waterfall.  We did this with David Rager, in order to
 ; support parallel evaluation for the waterfall.
 
+; Added source file boot-strap-pass-2.lisp, processed only during pass 2 of the
+; boot-strap, which is useful for defattach.  Deleted obsolete function
+; load-acl2-execution-environment, rather than figure out whether it should
+; also load this new file (and perhaps other pass-2 files as well).
+
   :Doc
   ":Doc-Section release-notes
 
@@ -16923,8 +16928,8 @@
 
   Added function ~ilc[no-duplicatesp-eq].
 
-  Added a new hint keyword, ~c[:][backchain-limit-rw], to control the level of
-  backchaining for ~il[rewrite], ~il[meta], and ~il[linear] rules.  This
+  Added a new hint keyword, ~c[:]~ilc[backchain-limit-rw], to control the level
+  of backchaining for ~il[rewrite], ~il[meta], and ~il[linear] rules.  This
   overrides, for the current goal and (as with ~c[:]~ilc[in-theory] hints)
   descendent goals, the default ~il[backchain-limit]
   (~pl[set-backchain-limit]).  Thanks to Jared Davis for requesting this
