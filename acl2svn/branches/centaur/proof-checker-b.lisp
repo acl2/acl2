@@ -5162,7 +5162,7 @@
                              (load-hint-settings-into-rcnst
                               hint-settings
                               base-rcnst
-                              w 'acl2-pc::s state)
+                              nil w 'acl2-pc::s state)
                            (value nil))
                          (pprogn
                           (if erp

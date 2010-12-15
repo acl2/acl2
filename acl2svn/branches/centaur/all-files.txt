@@ -25,6 +25,7 @@ basis.lisp
 bdd.lisp
 # bin -- under svn control but not distributed
 books
+boot-strap-pass-2.lisp
 build-allegro-exe.cl
 # build-lispworks
 # build-ns -- developer file
@@ -1161,12 +1162,11 @@ german.lisp
 books/cowles:
 Makefile
 README
-acl2-agp.acl2
 acl2-agp.lisp
-acl2-asg.acl2
 acl2-asg.lisp
-acl2-crg.acl2
 acl2-crg.lisp
+cert.acl2
+packages.lsp
 
 books/data-structures:
 Makefile
@@ -1558,6 +1558,8 @@ definline.acl2
 definline.lisp
 defmac.lisp
 defopener.lisp
+defproxy-test.acl2
+defproxy-test.lisp
 defp.lisp
 defpun.lisp
 dft-ex.acl2

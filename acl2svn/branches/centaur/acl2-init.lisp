@@ -247,9 +247,8 @@ implementations.")
 
          (setq source-directory
                (subseq source-directory 0 (1- (length source-directory))))))
-  (cond ((not (equal (namestring (our-truename
-                                  (format nil "~a/" source-directory)))
-                     (namestring (our-truename ""))))
+  (cond ((not (equal (our-truename (format nil "~a/" source-directory) :safe)
+                     (our-truename "" t)))
          (error "We expected to be in the directory~%~s~%~
                  but instead are apparently in the directory~%~s .~%~
                  Either issue, in Unix, the command~%~
@@ -258,7 +257,7 @@ implementations.")
                  which the function COPY-DISTRIBUTION was called,~%~
                  in order to give it the correct second argument."
                 source-directory
-                (namestring (our-truename ""))
+                (our-truename "" t)
                 source-directory)))
 
 ; Next, check that everything exists that is supposed to.
@@ -434,7 +433,7 @@ implementations.")
 (defun acl2-svn-revision-string ()
 
 ; Put symbol :release into file acl2-startup-info.txt before doing a release.
-; Otherwise, we expect that file to contain a string of the form
+; Otherwise, we expect that file to start with a string of the form
 ; "$Revision: n $".
 
   (let ((file "acl2-startup-info.txt"))

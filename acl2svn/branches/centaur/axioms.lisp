@@ -10949,7 +10949,7 @@ J
            (true-listp x))
   :rule-classes :forward-chaining)
 
-; For the encapsulate of too-many-ifs-post-rewrite-wrapper
+; For the encapsulate of too-many-ifs-post-rewrite
 (encapsulate
  ()
  (table acl2-defaults-table :defun-mode :logic)
@@ -14489,9 +14489,20 @@ J
   grep '(verify-' books/system/*.lisp
   ~ev[]
 
+  Note that if ~c[fn1] is already in ~c[:]~ilc[logic] mode, then the
+  ~c[verify-termination] call has no effect.  It is generally considered to be
+  redundant, in the sense that it returns without error; but if the ~c[fn1] is
+  a constrained function (i.e., introduced in the signature of an
+  ~ilc[encapsulate], or by ~ilc[defchoose]), then an error occurs.  This error
+  is intended to highlight unintended uses of ~c[verify-termination]; but if
+  you do not want to see an error in this case, you can write and use your own
+  macro in place of ~c[verify-termination].  The following explanation of the
+  implementation of ~c[verify-termination] may help with such a task.
+
   We conclude with a discussion of the use of ~ilc[make-event] to implement
   ~c[verify-termination].  This discussion can be skipped; we include it only
-  for the curious.
+  for those who want to create variants of ~c[verify-termination], or who are
+  interested in seeing an application of ~ilc[make-event].
 
   Consider the following proof of ~c[nil], which succeeded up through
   Version_3.4 of ACL2.
@@ -18307,6 +18318,11 @@ J
   already familiar with the use of ~c[encapsulate] to introduce constrained
   functions.
 
+  A ~c[:skip-checks] argument enables easy experimentation with ~c[defattach],
+  by permitting use of ~c[:]~ilc[program] mode functions and the skipping of
+  semantic checks.  We do not cover ~c[:skip-checks] here, as most users will
+  probably not need it; rather, ~pl[defproxy].
+
   ~st[Introductory example.]
 
   We begin with a short log illustrating the use of ~c[defattach].  Notice that
@@ -18584,12 +18600,11 @@ J
   constrained function execution.
 
   (2) ACL2 is written essentially in itself.  Thus, there is an opportunity to
-  attaching to system functions.  This is illustrated by the use of constrained
-  function ~c[too-many-ifs-post-rewrite-wrapper] in the ACL2 source code, for
-  a heuristic used in the rewriter.  Early in an ACL2 build, this function
-  receives a trivial attachment that implements a trivial heuristic.  Then late
-  in the ACL2 build, that attachment is replaced, so that the wrapper receives
-  a more interesting attachment, one which implements the desired heuristic.
+  attaching to system functions.  For example, encapsulated
+  function ~c[too-many-ifs-post-rewrite], in the ACL2 source code, receives an
+  attachment of ~c[too-many-ifs-post-rewrite-builtin], which implements a
+  heuristic used in the rewriter.  To find all such examples, search the source
+  code for the string `-builtin'.
 
   Over time, we expect to continue replacing ACL2 source code in a similar
   manner.  We invite the ACL2 community to assist in this ``open architecture''
@@ -18617,10 +18632,10 @@ J
   ground terms during proofs.  However, attachments can be used on code during
   the proof process, essentially when the ``program refinement'' is on theorem
   prover code rather than on functions we are reasoning about.  The attachment
-  to ~c[too-many-ifs-post-rewrite-wrapper] described above provides one example
-  of such attachments.  Meta functions and clause-processor functions can also
-  have attachments, with the restriction that no common ancestor with the
-  evaluator can have an attachment; ~pl[evaluator-restrictions].
+  to ~c[too-many-ifs-post-rewrite] described above provides one example of such
+  attachments.  Meta functions and clause-processor functions can also have
+  attachments, with the restriction that no common ancestor with the evaluator
+  can have an attachment; ~pl[evaluator-restrictions].
 
   For an attachment pair ~c[<f,g>], evaluation of ~c[f] never consults the
   ~il[guard] of ~c[f].  Rather, control passes to ~c[g], whose guard is checked
@@ -18665,6 +18680,41 @@ J
         (list 'quote args)
         'state
         (list 'quote event-form)))
+
+; Now we define defattach in raw Lisp.
+
+#-acl2-loop-only
+(progn
+
+(defun attachment-symbol (x)
+
+; Here we assume that the only use of the symbol-value of *1*f is to indicate
+; that this value is the function attached to f.
+
+  (*1*-symbol x))
+
+(defun set-attachment-symbol-form (fn val)
+  `(defparameter ,(attachment-symbol fn) ',val))
+
+(defmacro defattach (&rest args)
+  (cond
+   ((symbolp (car args))
+    (set-attachment-symbol-form (car args) (cadr args)))
+   (t
+    (let (ans)
+      (dolist (arg args)
+        (cond ((keywordp arg)
+               (return))
+              (t (push (set-attachment-symbol-form
+                        (car arg)
+                        (cond ((let ((tail (assoc-keyword :attach
+                                                          (cddr arg))))
+                                 (and tail (null (cadr tail))))
+                               nil)
+                              (t (cadr arg))))
+                       ans))))
+      (cons 'progn ans)))))
+)
 
 ; Note:  Important Boot-Strapping Invariants
 
@@ -23132,7 +23182,6 @@ J
     memo-key1 ; *nu-memos*
     sys-call-status ; *last-sys-call-status*
     ev-fncall-meta ; *metafunction-context*
-    set-debugger-enable-fn ; lisp::*break-enable* and *debugger-hook*
     ld-loop ; *ld-level*
     print-summary ; dmr-flush
     ev ; *ev-shortcut-okp*
@@ -23159,7 +23208,6 @@ J
     dmr-stop-fn ; dmr-stop-fn-raw
     ld-print-results ; print-infix
     apply-abbrevs-to-lambda-stack ; *nth-update-tracingp*
-    break$ ; break
     flpr ; print-flat-infix
     close-trace-file-fn ; *trace-output*
     ev-fncall-rec ; raw-ev-fncall
@@ -23175,7 +23223,6 @@ J
     defstobj-field-fns-raw-defs ; call to memoize-flush when #+hons
     expansion-alist-pkg-names
     times-mod-m31 ; gcl has raw code
-    print-call-history
     iprint-ar-aref1
     prove ; #+write-arithmetic-goals
     make-event-fn
@@ -23192,6 +23239,7 @@ J
     initialize-accumulated-warnings
     ev-rec-return-last
     chk-return-last-entry
+    fchecksum-atom
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
@@ -23295,6 +23343,9 @@ J
     take
     canonical-pathname
     file-write-date$
+    print-call-history
+    set-debugger-enable-fn ; lisp::*break-enable* and *debugger-hook*
+    break$ ; break
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -23363,7 +23414,7 @@ J
     redef+
     redef-
     bind-acl2-time-limit
-    defattach
+    defattach defproxy
     count
     ))
 
@@ -40518,467 +40569,236 @@ Lisp definition."
                    val)
               state)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Attachments:
-;;; The remainder of this file involves boot-strapping the use of attachments.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Next: debugger control
 
-; First we define defattach in raw Lisp.
+(defun debugger-enable (state)
+  (declare (xargs :guard (and (state-p state)
+                              (boundp-global 'debugger-enable state))))
+  (f-get-global 'debugger-enable state))
 
-#-acl2-loop-only
-(progn
+(defun break$ ()
 
-(defun attachment-symbol (x)
+; This function gets around a bug in Allegro CL (at least in Versions 7.0 and
+; 8.0), as admitted by Franz support, and in and CMU CL.  These Lisps pay
+; attention to *debugger-hook* even when (break) is invoked, but they
+; shouldn't.
 
-; Here we assume that the only use of the symbol-value of *1*f is to indicate
-; that this value is the function attached to f.
+; Keep this in sync with break-on-error-fn.
 
-  (*1*-symbol x))
+  ":Doc-Section Other
 
-(defun set-attachment-symbol-form (fn val)
-  `(defparameter ,(attachment-symbol fn) ',val))
+  cause an immediate Lisp break~/
 
-(defmacro defattach (&rest args)
-  (cond
-   ((symbolp (car args))
-    (set-attachment-symbol-form (car args) (cadr args)))
-   (t
-    (let (ans)
-      (dolist (arg args)
-        (cond ((keywordp arg)
-               (return))
-              (t (push (set-attachment-symbol-form
-                        (car arg)
-                        (cond ((let ((tail (assoc-keyword :attach
-                                                          (cddr arg))))
-                                 (and tail (null (cadr tail))))
-                               nil)
-                              (t (cadr arg))))
-                       ans))))
-      (cons 'progn ans)))))
-)
+  ACL2 users are generally advised to avoid breaking into raw Lisp.  Advanced
+  users may, on occasion, see the need to do so.  Evaluating ~c[(break$)] will
+  have that effect.  (Exception: ~c[break$] is disabled after evaluation of
+  ~c[(set-debugger-enable :never)]; ~pl[set-debugger-enable].)~/~/"
 
-; Next, we introduce (in pass-1 of the build) an encapsulated function that is
-; actually called by the rewriter.
-
-(encapsulate
- ()
- (logic) ; for pass-1 of the build
- (encapsulate
-  ((too-many-ifs-post-rewrite-wrapper (args val) t
-                                      :guard (and (pseudo-term-listp args)
-                                                  (pseudo-termp val))))
-  (local (defun too-many-ifs-post-rewrite-wrapper (args val)
-           (list args val)))))
-
-; The following trivial heuristic function is attached to the above wrapper
-; during pass-1 of the build, by the defattach just below this definition.
-
-(defun too-many-ifs-post-rewrite-prelim (args val)
-  (declare (xargs :mode :logic
-                  :guard (and (pseudo-term-listp args)
-                              (pseudo-termp val)))
-           (ignore args val))
+  (declare (xargs :guard t))
+  #-acl2-loop-only
+  (and (not (eq (debugger-enable *the-live-state*) :never))
+       #+(and gcl (not ansi-cl))
+       (break)
+       #-(and gcl (not ansi-cl))
+       (let ((*debugger-hook* nil)
+             #+ccl ; useful for CCL revision 12090 and beyond
+             (ccl::*break-hook* nil))
+         #+ccl ; for CCL revisions before 12090
+         (declare (ignorable ccl::*break-hook*))
+         (break)))
   nil)
 
-(defattach too-many-ifs-post-rewrite-wrapper too-many-ifs-post-rewrite-prelim)
+(defun print-call-history ()
 
-; The following events are derived from books/system/too-many-ifs.lisp.  But
-; here we provide a proof that does not depend on books.  Our approach was to
-; take the proof in the above book, eliminate the unnecessary use of an
-; arithmetic book, expand away all uses of macros and make-events, avoid use of
-; (theory 'minimal-theory) since that theory doesn't yet exist, and apply some
-; additional hand-editing in order (for example) to remove hints depending on
-; the tools/flag book.  We have left original events from the book as comments.
+; We welcome suggestions from users or Lisp-specific experts for how to improve
+; this function, which is intended to give a brief but useful look at the debug
+; stack.
 
-(local
-(encapsulate ()
+  (declare (xargs :guard t))
+  #+(and ccl (not acl2-loop-only))
+  (when (fboundp 'ccl::print-call-history)
+; See CCL file lib/backtrace.lisp for more options
+    (eval '(ccl::print-call-history :detailed-p nil)))
 
-(logic)
+; It seems awkward to deal with GCL, both because of differences in debugger
+; handling and because we haven't found documentation on how to get a
+; backtrace.  For example, (system::ihs-backtrace) seems to give a much smaller
+; answer when it's invoked during (our-abort) than when it is invoked directly
+; in the debugger.
 
-;;; (include-book "tools/flag" :dir :system)
+; #+(and gcl (not acl2-loop-only))
+; (when (fboundp 'system::ihs-backtrace)
+;    (eval '(system::ihs-backtrace)))
 
-; In the original book, but not needed for its certification:
-; (include-book "arithmetic/top-with-meta" :dir :system)
+  #+(and allegro (not acl2-loop-only))
+  (when (fboundp 'tpl::do-command)
+    (eval '(tpl:do-command "zoom"
+                           :from-read-eval-print-loop nil
+                           :count t :all t)))
+  #+(and sbcl (not acl2-loop-only))
+  (when (fboundp 'sb-debug::backtrace)
+    (eval '(sb-debug::backtrace)))
+  #+(and cmucl (not acl2-loop-only))
+  (when (fboundp 'debug::backtrace)
+    (eval '(debug::backtrace)))
+  #+(and clisp (not acl2-loop-only))
+  (when (fboundp 'system::debug-backtrace)
+    (eval '(catch 'system::debug (system::debug-backtrace))))
+  nil)
 
-; Comments like the following show events from the original book.
+(defun debugger-enabledp (state)
+  (declare (xargs :guard (and (state-p state)
+                              (boundp-global 'debugger-enable state))))
+  (let ((val (f-get-global 'debugger-enable state)))
+    (and (member-eq val '(t :break :break-bt :bt-break))
+         t)))
 
-;;; (make-flag pseudo-termp-flg
-;;;            pseudo-termp
-;;;            :flag-var flg
-;;;            :flag-mapping ((pseudo-termp . term)
-;;;                           (pseudo-term-listp . list))
-;;;            :defthm-macro-name defthm-pseudo-termp
-;;;            :local t)
+(defun maybe-print-call-history (state)
+  (declare (xargs :guard (and (state-p state)
+                              (boundp-global 'debugger-enable state))))
+  (and (member-eq (f-get-global 'debugger-enable state)
+                  '(:bt :break-bt :bt-break))
+       (print-call-history)))
 
-(local
- (defun-nx pseudo-termp-flg (flg x lst)
-   (declare (xargs :verify-guards nil
-                   :normalize nil
-                   :measure (case flg (term (acl2-count x))
-                              (otherwise (acl2-count lst)))))
-   (case flg
-     (term (if (consp x)
-               (cond ((equal (car x) 'quote)
-                      (and (consp (cdr x))
-                           (equal (cddr x) nil)))
-                     ((true-listp x)
-                      (and (pseudo-termp-flg 'list nil (cdr x))
-                           (cond ((symbolp (car x)) t)
-                                 ((true-listp (car x))
-                                  (and (equal (length (car x)) 3)
-                                       (equal (caar x) 'lambda)
-                                       (symbol-listp (cadar x))
-                                       (pseudo-termp-flg 'term (caddar x) nil)
-                                       (equal (length (cadar x))
-                                              (length (cdr x)))))
-                                 (t nil))))
-                     (t nil))
-             (symbolp x)))
-     (otherwise (if (consp lst)
-                    (and (pseudo-termp-flg 'term (car lst) nil)
-                         (pseudo-termp-flg 'list nil (cdr lst)))
-                  (equal lst nil))))))
-(local
- (defthm pseudo-termp-flg-equivalences
-   (equal (pseudo-termp-flg flg x lst)
-          (case flg (term (pseudo-termp x))
-            (otherwise (pseudo-term-listp lst))))
-   :hints
-   (("goal" :induct (pseudo-termp-flg flg x lst)))))
-(local (in-theory (disable (:definition pseudo-termp-flg))))
+(defmacro set-debugger-enable (val)
 
-; Added here (not present or needed in the certified book):
-(verify-termination-boot-strap max) ; and guards
+; WARNING: Keep this documentation in sync with the initial setting of
+; 'debugger-enable in *initial-global-table* and with our-abort.
 
-(verify-termination-boot-strap var-counts1)
+  ":Doc-Section switches-parameters-and-modes
 
-;;; (make-flag var-counts1-flg
-;;;            var-counts1
-;;;            :flag-var flg
-;;;            :flag-mapping ((var-counts1 . term)
-;;;                           (var-counts1-lst . list))
-;;;            :defthm-macro-name defthm-var-counts1
-;;;            :local t)
+  control whether Lisp errors and breaks invoke the Lisp debugger~/
 
-(local
- (defun-nx var-counts1-flg (flg rhs arg lst acc)
-   (declare (xargs :verify-guards nil
-                   :normalize nil
-                   :measure (case flg (term (acl2-count rhs))
-                              (otherwise (acl2-count lst)))
-                   :hints nil
-                   :well-founded-relation o<
-                   :mode :logic)
-            (ignorable rhs arg lst acc))
-   (case flg
-     (term (cond ((equal arg rhs) (+ 1 acc))
-                 ((consp rhs)
-                  (cond ((equal 'quote (car rhs)) acc)
-                        ((equal (car rhs) 'if)
-                         (max (var-counts1-flg 'term
-                                               (caddr rhs)
-                                               arg nil acc)
-                              (var-counts1-flg 'term
-                                               (cadddr rhs)
-                                               arg nil acc)))
-                        (t (var-counts1-flg 'list
-                                            nil arg (cdr rhs)
-                                            acc))))
-                 (t acc)))
-     (otherwise (if (consp lst)
-                    (var-counts1-flg 'list
-                                     nil arg (cdr lst)
-                                     (var-counts1-flg 'term
-                                                      (car lst)
-                                                      arg nil acc))
-                  acc)))))
-(local
- (defthm
-   var-counts1-flg-equivalences
-   (equal (var-counts1-flg flg rhs arg lst acc)
-          (case flg (term (var-counts1 arg rhs acc))
-            (otherwise (var-counts1-lst arg lst acc))))))
-(local (in-theory (disable (:definition var-counts1-flg))))
+  ~bv[]
+  Forms (see below for explanations and GCL exceptions):
 
-;;; (defthm-var-counts1 natp-var-counts1
-;;;   (term
-;;;    (implies (natp acc)
-;;;             (natp (var-counts1 arg rhs acc)))
-;;;    :rule-classes :type-prescription)
-;;;   (list
-;;;    (implies (natp acc)
-;;;             (natp (var-counts1-lst arg lst acc)))
-;;;    :rule-classes :type-prescription)
-;;;   :hints (("Goal" :induct (var-counts1-flg flg rhs arg lst acc))))
+  (set-debugger-enable t)         ; enable breaks into the raw Lisp debugger
+  (set-debugger-enable :break)    ; same as above
+  :set-debugger-enable t          ; same as above
+  (set-debugger-enable :break-bt) ; as above, but print a backtrace first
+  (set-debugger-enable :bt-break) ; as above, but print a backtrace first
+  (set-debugger-enable :bt)       ; print a backtrace but do not enter debugger
+  (set-debugger-enable :never)    ; disable all breaks into the debugger
+  (set-debugger-enable nil)       ; disable debugger except when calling break$
+  ~ev[]
 
-(local
- (defthm natp-var-counts1
-   (case flg
-     (term (implies (natp acc)
-                    (natp (var-counts1 arg rhs acc))))
-     (otherwise (implies (natp acc)
-                         (natp (var-counts1-lst arg lst acc)))))
-   :hints (("Goal" :induct (var-counts1-flg flg rhs arg lst acc)))
-   :rule-classes nil))
-(local
- (defthm natp-var-counts1-term
-   (implies (natp acc)
-            (natp (var-counts1 arg rhs acc)))
-   :hints (("Goal" ; :in-theory (theory 'minimal-theory)
-            :use ((:instance natp-var-counts1 (flg 'term)))))
-   :rule-classes :type-prescription))
-(local
- (defthm natp-var-counts1-list
-   (implies (natp acc)
-            (natp (var-counts1-lst arg lst acc)))
-   :hints (("Goal" ; :in-theory (theory 'minimal-theory)
-            :use ((:instance natp-var-counts1 (flg 'list)))))
-   :rule-classes :type-prescription))
+  ~em[Introduction.]  Suppose we define ~c[foo] in ~c[:]~ilc[program] mode to
+  take the ~ilc[car] of its argument.  This can cause a raw Lisp error.  ACL2
+  will then return control to its top-level loop unless you enable the Lisp
+  debugger, as shown below (except:  the error message can be a little
+  different in GCL).
 
-(verify-guards var-counts1)
+  ~bv[]
+    ACL2 !>(defun foo (x) (declare (xargs :mode :program)) (car x))
 
-(verify-termination-boot-strap var-counts) ; and guards
+    Summary
+    Form:  ( DEFUN FOO ...)
+    Rules: NIL
+    Warnings:  None
+    Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+     FOO
+    ACL2 !>(foo 3)
+    ***********************************************
+    ************ ABORTING from raw Lisp ***********
+    Error:  Attempt to take the car of 3 which is not listp.
+    ***********************************************
 
-;;; Since the comment about var-counts says that var-counts returns a list of
-;;; nats as long as lhs-args, I prove those facts, speculatively.
+    If you didn't cause an explicit interrupt (Control-C),
+    then the root cause may be call of a :program mode
+    function that has the wrong guard specified, or even no
+    guard specified (i.e., an implicit guard of t).
+    See :DOC guards.
 
-; Except, we reason instead about integer-listp.  See the comment just above
-; the commented-out definition of nat-listp in the source code (file
-; rewrite.lisp).
-; (verify-termination nat-listp)
+    To enable breaks into the debugger (also see :DOC acl2-customization):
+    (SET-DEBUGGER-ENABLE T)
+    ACL2 !>(SET-DEBUGGER-ENABLE T)
+    <state>
+    ACL2 !>(foo 3)
+    Error: Attempt to take the car of 3 which is not listp.
+      [condition type: TYPE-ERROR]
 
-(local
- (defthm integer-listp-var-counts
-   (integer-listp (var-counts lhs-args rhs))))
+    Restart actions (select using :continue):
+     0: Abort entirely from this (lisp) process.
+    [Current process: Initial Lisp Listener]
+    [1] ACL2(1): [RAW LISP] 
+  ~ev[]~/
 
-(local
- (defthm len-var-counts
-   (equal (len (var-counts lhs-args rhs))
-          (len lhs-args))))
+  ~em[Details.]  ACL2 usage is intended to take place inside the ACL2
+  read-eval-print loop (~pl[lp]).  Indeed, in most Lisp implementations ACL2
+  comes up inside that loop, as evidenced by the prompt:
+  ~bv[]
+  ACL2 !>
+  ~ev[]
+  However, one can occasionally hit a raw Lisp error.  Here is the above
+  example again, this time for a GCL implementation, which unfortunately gives
+  a slightly less aesthetic report.
+  ~bv[]
+    ACL2 !>(foo 3)
 
-(verify-termination-boot-strap count-ifs) ; and guards
+    Error: 3 is not of type LIST.
+    Fast links are on: do (si::use-fast-links nil) for debugging
+    Error signalled by CAR.
+    Backtrace: funcall > system:top-level > lisp:lambda-closure > lp > acl2_*1*_acl2::foo > foo > car > system:universal-error-handler > system::break-level-for-acl2 > let* > UNLESS
+    ACL2 !>
+  ~ev[]
 
-; Added here (not present or needed in the certified book):
-(verify-termination-boot-strap ifix) ; and guards
+  Here, the user has defined ~c[foo] in ~c[:]~ilc[program] mode, with an
+  implicit ~il[guard] of ~c[t].  The ACL2 evaluator therefore called the Lisp
+  evaluator, which expected ~c[nil] or a ~ilc[consp] argument to ~ilc[car].
 
-; Added here (not present or needed in the certified book):
-(verify-termination-boot-strap abs) ; and guards
+  By default, ACL2 will return to its top-level loop (at the same level of
+  ~ilc[LD]) when there is a raw Lisp error, as though a call of ~ilc[ER] with
+  flag ~c[HARD] has been evaluated.  If instead you want to enter the raw Lisp
+  debugger in such cases, evaluate the following form.
+  ~bv[]
+  (set-debugger-enable t)
+  ~ev[]
+  You can subsequently return to the default behavior with:
+  ~bv[]
+  (set-debugger-enable nil)
+  ~ev[]
+  Either way, you can enter the Lisp debugger from within the ACL2 loop by
+  evaluating ~c[(]~ilc[break$]~c[)].  If you want ~c[break$] disabled, then
+  evaluate the following, which disables entry to the Lisp debugger not only
+  for Lisp errors but also when executing ~c[(break$)].
+  ~bv[]
+  (set-debugger-enable :never)
+  ~ev[]
 
-; Added here (not present or needed in the certified book):
-(verify-termination-boot-strap expt) ; and guards
+  The discussion above also applies to interrupts (from ~c[Control-C]) in some,
+  but not all, host Common Lisps.
 
-; Added here (not present or needed in the certified book):
-(local (defthm natp-expt
-         (implies (and (integerp base)
-                       (integerp n)
-                       (<= 0 n))
-                  (integerp (expt base n)))
-         :rule-classes :type-prescription))
+  It remains to discuss options ~c[:break], ~c[:bt], ~c[:break-bt], and
+  ~c[:bt-break].  Option ~c[:break] is synonymous with option ~c[t], while
+  option ~c[:bt] prints a backtrace (except in GCL, where a backtrace is
+  already printed for ~c[:break]).  Options ~c[:break-bt] and ~c[:bt-break] are
+  equivalent, and each has the combined effect of ~c[:bt] and ~c[:break]: a
+  backtrace is printed and then the debugger is entered.
 
-; Added here (not present or needed in the certified book):
-(verify-termination-boot-strap signed-byte-p) ; and guards
+  Note that ~c[set-debugger-enable] applies not only to raw Lisp errors, but
+  also to ACL2 errors: those affected by ~ilc[break-on-error].  However, for
+  ACL2 errors, entering the debugger is controlled only by ~c[break-on-error],
+  not by ~c[set-debugger-enable]; so for ACL2 errors, ~c[set-debugger-enable]
+  values of ~c[:bt], ~c[:break-bt], and ~c[:bt-break] have the same effect
+  (namely, of causing a backtrace to be printed, other than for GCL).
 
-(verify-termination-boot-strap too-many-ifs0) ; and guards
+  Remark for Common Lisp hackers (except for GCL).  You can customize the form
+  of the backtrace printed by entering raw Lisp (with ~c[:q]) and then
+  redefining function ~c[print-call-history], whose definition immediately
+  precedes that of ~c[break-on-error] in ACL2 source file ~c[ld.lisp].  Of
+  course, all bets are off when defining any function in raw Lisp, but as a
+  practical matter you are probably fine as long as your books are ultimately
+  certified with an unmodified copy of ACL2.  If you come up with improvements
+  to ~c[print-call-history], please pass them along to the ACL2 implementors."
 
-(verify-termination-boot-strap too-many-ifs-pre-rewrite) ; and guards
+  `(set-debugger-enable-fn ,val state))
 
-(verify-termination-boot-strap occur-cnt-bounded)
-
-;;; (make-flag occur-cnt-bounded-flg
-;;;            occur-cnt-bounded
-;;;            :flag-var flg
-;;;            :flag-mapping ((occur-cnt-bounded . term)
-;;;                           (occur-cnt-bounded-lst . list))
-;;;            :defthm-macro-name defthm-occur-cnt-bounded
-;;;            :local t)
-
-(local
- (defun-nx occur-cnt-bounded-flg (flg term2 term1 lst a m bound-m)
-   (declare (xargs :verify-guards nil
-                   :normalize nil
-                   :measure (case flg (term (acl2-count term2))
-                              (otherwise (acl2-count lst))))
-            (ignorable term2 term1 lst a m bound-m))
-   (case flg
-     (term (cond ((equal term1 term2)
-                  (if (< bound-m a) -1 (+ a m)))
-                 ((consp term2)
-                  (if (equal 'quote (car term2))
-                      a
-                    (occur-cnt-bounded-flg 'list
-                                           nil term1 (cdr term2)
-                                           a m bound-m)))
-                 (t a)))
-     (otherwise (if (consp lst)
-                    (let ((new (occur-cnt-bounded-flg 'term
-                                                      (car lst)
-                                                      term1 nil a m bound-m)))
-                      (if (equal new -1)
-                          -1
-                        (occur-cnt-bounded-flg 'list
-                                               nil term1 (cdr lst)
-                                               new m bound-m)))
-                  a)))))
-(local
- (defthm occur-cnt-bounded-flg-equivalences
-   (equal (occur-cnt-bounded-flg flg term2 term1 lst a m bound-m)
-          (case flg
-            (term (occur-cnt-bounded term1 term2 a m bound-m))
-            (otherwise (occur-cnt-bounded-lst term1 lst a m bound-m))))))
-(local (in-theory (disable (:definition occur-cnt-bounded-flg))))
-
-;;; (defthm-occur-cnt-bounded integerp-occur-cnt-bounded
-;;;   (term
-;;;    (implies (and (integerp a)
-;;;                  (integerp m))
-;;;             (integerp (occur-cnt-bounded term1 term2 a m bound-m)))
-;;;    :rule-classes :type-prescription)
-;;;   (list
-;;;    (implies (and (integerp a)
-;;;                  (integerp m))
-;;;             (integerp (occur-cnt-bounded-lst term1 lst a m bound-m)))
-;;;    :rule-classes :type-prescription)
-;;;   :hints (("Goal" :induct (occur-cnt-bounded-flg flg term2 term1 lst a m
-;;;                                                  bound-m))))
-
-(local
- (defthm integerp-occur-cnt-bounded
-   (case flg
-     (term (implies (and (integerp a) (integerp m))
-                    (integerp (occur-cnt-bounded term1 term2 a m bound-m))))
-     (otherwise
-      (implies (and (integerp a) (integerp m))
-               (integerp (occur-cnt-bounded-lst term1 lst a m bound-m)))))
-   :rule-classes nil
-   :hints
-   (("Goal" :induct (occur-cnt-bounded-flg flg term2 term1 lst a m bound-m)))))
-(local
- (defthm integerp-occur-cnt-bounded-term
-   (implies (and (integerp a) (integerp m))
-            (integerp (occur-cnt-bounded term1 term2 a m bound-m)))
-   :rule-classes :type-prescription
-   :hints (("goal" ; :in-theory (theory 'minimal-theory)
-            :use ((:instance integerp-occur-cnt-bounded
-                             (flg 'term)))))))
-(local
- (defthm integerp-occur-cnt-bounded-list
-   (implies (and (integerp a) (integerp m))
-            (integerp (occur-cnt-bounded-lst term1 lst a m bound-m)))
-   :rule-classes :type-prescription
-   :hints (("goal" ; :in-theory (theory 'minimal-theory)
-            :use ((:instance integerp-occur-cnt-bounded
-                             (flg 'list)))))))
-
-;;; (defthm-occur-cnt-bounded signed-byte-p-30-occur-cnt-bounded-flg
-;;;   (term
-;;;    (implies (and (force (signed-byte-p 30 a))
-;;;                  (signed-byte-p 30 m)
-;;;                  (signed-byte-p 30 (+ bound-m m))
-;;;                  (force (<= 0 a))
-;;;                  (<= 0 m)
-;;;                  (<= 0 bound-m)
-;;;                  (<= a (+ bound-m m)))
-;;;             (and (<= -1 (occur-cnt-bounded term1 term2 a m bound-m))
-;;;                  (<= (occur-cnt-bounded term1 term2 a m bound-m) (+ bound-m m))))
-;;;    :rule-classes :linear)
-;;;   (list
-;;;    (implies (and (force (signed-byte-p 30 a))
-;;;                  (signed-byte-p 30 m)
-;;;                  (signed-byte-p 30 (+ bound-m m))
-;;;                  (force (<= 0 a))
-;;;                  (<= 0 m)
-;;;                  (<= 0 bound-m)
-;;;                  (<= a (+ bound-m m)))
-;;;             (and (<= -1 (occur-cnt-bounded-lst term1 lst a m bound-m))
-;;;                  (<= (occur-cnt-bounded-lst term1 lst a m bound-m) (+ bound-m m))))
-;;;    :rule-classes :linear)
-;;;   :hints (("Goal" :induct (occur-cnt-bounded-flg flg term2 term1 lst a m
-;;;                                                  bound-m))))
-
-(local
- (defthm signed-byte-p-30-occur-cnt-bounded-flg
-   (case flg
-     (term (implies (and (force (signed-byte-p 30 a))
-                         (signed-byte-p 30 m)
-                         (signed-byte-p 30 (+ bound-m m))
-                         (force (<= 0 a))
-                         (<= 0 m)
-                         (<= 0 bound-m)
-                         (<= a (+ bound-m m)))
-                    (and (<= -1
-                             (occur-cnt-bounded term1 term2 a m bound-m))
-                         (<= (occur-cnt-bounded term1 term2 a m bound-m)
-                             (+ bound-m m)))))
-     (otherwise
-      (implies (and (force (signed-byte-p 30 a))
-                    (signed-byte-p 30 m)
-                    (signed-byte-p 30 (+ bound-m m))
-                    (force (<= 0 a))
-                    (<= 0 m)
-                    (<= 0 bound-m)
-                    (<= a (+ bound-m m)))
-               (and (<= -1
-                        (occur-cnt-bounded-lst term1 lst a m bound-m))
-                    (<= (occur-cnt-bounded-lst term1 lst a m bound-m)
-                        (+ bound-m m))))))
-   :rule-classes nil
-   :hints
-   (("Goal" :induct (occur-cnt-bounded-flg flg term2 term1 lst a m bound-m)))))
-(local
- (defthm signed-byte-p-30-occur-cnt-bounded-flg-term
-   (implies (and (force (signed-byte-p 30 a))
-                 (signed-byte-p 30 m)
-                 (signed-byte-p 30 (+ bound-m m))
-                 (force (<= 0 a))
-                 (<= 0 m)
-                 (<= 0 bound-m)
-                 (<= a (+ bound-m m)))
-            (and (<= -1
-                     (occur-cnt-bounded term1 term2 a m bound-m))
-                 (<= (occur-cnt-bounded term1 term2 a m bound-m)
-                     (+ bound-m m))))
-   :rule-classes :linear
-   :hints (("Goal" ; :in-theory (theory 'minimal-theory)
-            :use ((:instance signed-byte-p-30-occur-cnt-bounded-flg
-                             (flg 'term)))))))
-(local
- (defthm signed-byte-p-30-occur-cnt-bounded-flg-list
-   (implies (and (force (signed-byte-p 30 a))
-                 (signed-byte-p 30 m)
-                 (signed-byte-p 30 (+ bound-m m))
-                 (force (<= 0 a))
-                 (<= 0 m)
-                 (<= 0 bound-m)
-                 (<= a (+ bound-m m)))
-            (and (<= -1
-                     (occur-cnt-bounded-lst term1 lst a m bound-m))
-                 (<= (occur-cnt-bounded-lst term1 lst a m bound-m)
-                     (+ bound-m m))))
-   :rule-classes :linear
-   :hints (("Goal" ; :in-theory (theory 'minimal-theory)
-            :use ((:instance signed-byte-p-30-occur-cnt-bounded-flg
-                             (flg 'list)))))))
-
-(verify-guards occur-cnt-bounded)
-
-(verify-termination-boot-strap too-many-ifs1) ; and guards
-
-(verify-termination-boot-strap too-many-ifs-post-rewrite) ; and guards
-
-)
-)
-
-; The following is labeled as local so that it is evaluated only in pass-2,
-; after too-many-ifs-post-rewrite is defined and guard-verifed.  The use of
-; local also avoids its evaluation in raw Lisp when compiled files are loaded.
-(local
- (defattach too-many-ifs-post-rewrite-wrapper too-many-ifs-post-rewrite))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; End of Attachments section; don't add anything below before modifying the
-;;; comment above stating:
-;;; "The remainder of this file involves boot-strapping the use of
-;;; attachments."
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+(defun set-debugger-enable-fn (val state)
+  (declare (xargs :guard (and (state-p state)
+                              (member-eq val '(t nil :never :break :bt
+                                                 :break-bt :bt-break)))))
+  #+(and (not acl2-loop-only)
+         (and gcl (not ansi-cl)))
+  (progn (setq lisp::*break-enable* (debugger-enabledp state))
+         state)
+  (f-put-global 'debugger-enable val state))

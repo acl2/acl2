@@ -16720,7 +16720,20 @@
 ; in a mutual-recursion are non-executable.
 
 ; Improved error message for forms such as (defattach f g :hints ...), in which
-; the first argument is a symbol but there are more than two arguments.
+; the first argument is a symbol but there are more than two arguments.  A lot
+; of defattach code was changed to support the use of :program mode functions
+; and a few other small changes were made in the process, e.g., world global
+; 'proved-functional-instances-alist isn't (needlessly) set to its existing
+; value.
+
+; Changed the names of the arrays stored in enabled-structures that are created
+; by hints during the waterfall.  We did this with David Rager, in order to
+; support parallel evaluation for the waterfall.
+
+; Added source file boot-strap-pass-2.lisp, processed only during pass 2 of the
+; boot-strap, which is useful for defattach.  Deleted obsolete function
+; load-acl2-execution-environment, rather than figure out whether it should
+; also load this new file (and perhaps other pass-2 files as well).
 
   :Doc
   ":Doc-Section release-notes
@@ -16738,6 +16751,24 @@
   many changes could be placed in more than one category.
 
   ~st[CHANGES TO EXISTING FEATURES]
+
+  The ~ilc[accumulated-persistence] utility can now do finer-grained tracking,
+  providing data for individual hypotheses and the conclusion of a rule.
+  ~l[accumulated-persistence].  To try this out, evaluate the form
+  ~c[(accumulated-persistence :all)]; then ~pl[accumulated-persistence] for a
+  discussion of display options using ~c[show-accumulated-persistence].  Thanks
+  to Dave Greve for suggesting this new capability and collaborating on its
+  design and implementation.
+
+  The ~ilc[defattach] utility now permits the use of ~c[:]~ilc[program] mode
+  functions, though this requires the use of a trust tag (~pl[defttag]).
+  ~l[defattach] and for discussion of the new capability, ~pl[defproxy],
+  which explains how part of this change involves allowing ~c[:]~ilc[program]
+  mode functions to be declared ~il[non-executable].
+
+  Redefinition (~pl[ld-redefinition-action]) is no longer permitted for
+  functions that have attachments (~pl[defattach]).  In such cases, the
+  attachment must be removed first, e.g. with ~c[(defattach foo nil)].
 
   Made small changes to ~ilc[mv-nth] and ~ilc[defun-sk] in order to permit
   guard verification of functions introduced with more than one quantified
@@ -16848,7 +16879,21 @@
   part of an existing ~ilc[mutual-recursion] event.  Such an action left the
   user in an odd state and seemed a potential soundness hole.
 
+  The function ~ilc[break$] is now in ~c[:]~ilc[logic] mode.  Thanks to Jared
+  Davis for requesting this enhancement.
+
+  The macro ~ilc[verify-termination] now provides clearer output in the case
+  that it is redundant.  More important perhaps, as a courtesy it now causes an
+  error when applied to a constrained function, since presumably such an
+  application was unintended (as the constrained function could never have been
+  in ~c[:]~ilc[program] mode).  Note that if one desires different behavior,
+  one can create one's own version of ~ilc[verify-termination] (but with a
+  different name).
+
   ~st[NEW FEATURES]
+
+  See the discussion above about new statistics that can be gathered by the
+  ~ilc[accumulated-persistence] utility.
 
   A new hint, ~c[:]~ilc[instructions], allows use of the ~il[proof-checker] at
   the level of ~il[hints] to the prover.  Thanks to Pete Manolios for
@@ -16883,8 +16928,8 @@
 
   Added function ~ilc[no-duplicatesp-eq].
 
-  Added a new hint keyword, ~c[:][backchain-limit-rw], to control the level of
-  backchaining for ~il[rewrite], ~il[meta], and ~il[linear] rules.  This
+  Added a new hint keyword, ~c[:]~ilc[backchain-limit-rw], to control the level
+  of backchaining for ~il[rewrite], ~il[meta], and ~il[linear] rules.  This
   overrides, for the current goal and (as with ~c[:]~ilc[in-theory] hints)
   descendent goals, the default ~il[backchain-limit]
   (~pl[set-backchain-limit]).  Thanks to Jared Davis for requesting this
@@ -16916,6 +16961,17 @@
   The algorithm for substituting alists into terms was modified.  This change
   is unlikely to affect many users, but in one example it resulted in a
   speed-up of about 21%.  Thanks to Dave Greve for supplying that example.
+
+  Sped up ~ilc[include-book] a bit by memoizing checksums of symbols.  (This
+  change pertains to ``normal'' ACL2 only, not the ~ilc[hons] version
+  (~pl[hons-and-memoization], where such memoization already occurred.)  We
+  found about a 23% speed-up on an example from Dave Greve.
+
+  Made a small change to the algorithm used to prove hypotheses of
+  ~c[:]~ilc[type-prescription] rules (ACL2 source function
+  ~c[type-set-relieve-hyps]).  One change avoids a linear walk through the context
+  (the ``type-alist'' structure), while the other could avoid storing
+  unnecessary ~ilc[force]d assumptions (into the so-called ``tag-tree'').
 
   ~st[BUG FIXES]
 
@@ -16986,6 +17042,19 @@
   directory with a parent that is a soft link.  Thanks to Dave Greve for
   supplying an example to led us to this fix, which involves avoiding Allegro
   CL's implementation of the Common Lisp function, ~c[truename].
+
+  Fixed a bug that was failing to substitute fully using bindings of free
+  variables in ~ilc[force]d hypotheses.  A related change is that instead of
+  binding such a free variable to a new variable of the form ~c[???-Y], the new
+  variable is now of the form ~c[UNBOUND-FREE-Y].
+
+  Fixed a bug that could inhibit the printing of certain theory warnings (and
+  probably, in the other direction, cause inappropriate such printing).
+
+  We eliminated excessive ~c[\"Raw-mode\"] warnings about
+  ~ilc[add-include-book-dir] that could be generated by the use of raw-mode
+  during ~ilc[include-book].  Thanks to Dave Greve for bringing this issue to
+  our attention.
 
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
@@ -18768,236 +18837,7 @@
                                *standard-co* state nil))))
           (value :invisible))))))
 
-; Next: debugger control.
-
-(defun debugger-enable (state)
-  (declare (xargs :guard (and (state-p state)
-                              (boundp-global 'debugger-enable state))))
-  (f-get-global 'debugger-enable state))
-
-(defun break$ ()
-
-; This function gets around a bug in Allegro CL (at least in Versions 7.0 and
-; 8.0), as admitted by Franz support, and in and CMU CL.  These Lisps pay
-; attention to *debugger-hook* even when (break) is invoked, but they
-; shouldn't.
-
-; Keep this in sync with break-on-error-fn.
-
-  ":Doc-Section Other
-
-  cause an immediate Lisp break~/
-
-  ACL2 users are generally advised to avoid breaking into raw Lisp.  Advanced
-  users may, on occasion, see the need to do so.  Evaluating ~c[(break$)] will
-  have that effect.  (Exception: ~c[break$] is disabled after evaluation of
-  ~c[(set-debugger-enable :never)]; ~pl[set-debugger-enable].)~/~/"
-
-  (declare (xargs :guard t))
-  #+acl2-loop-only nil
-  #-acl2-loop-only
-  (and (not (eq (debugger-enable *the-live-state*) :never))
-       #+(and gcl (not ansi-cl))
-       (break)
-       #-(and gcl (not ansi-cl))
-       (let ((*debugger-hook* nil)
-             #+ccl ; useful for CCL revision 12090 and beyond
-             (ccl::*break-hook* nil))
-         #+ccl ; for CCL revisions before 12090
-         (declare (ignorable ccl::*break-hook*))
-         (break))))
-
-(defun print-call-history ()
-
-; We welcome suggestions from users or Lisp-specific experts for how to improve
-; this function, which is intended to give a brief but useful look at the debug
-; stack.
-
-  #+(and ccl (not acl2-loop-only))
-  (when (fboundp 'ccl::print-call-history)
-; See CCL file lib/backtrace.lisp for more options
-    (eval '(ccl::print-call-history :detailed-p nil)))
-
-; It seems awkward to deal with GCL, both because of differences in debugger
-; handling and because we haven't found documentation on how to get a
-; backtrace.  For example, (system::ihs-backtrace) seems to give a much smaller
-; answer when it's invoked during (our-abort) than when it is invoked directly
-; in the debugger.
-
-; #+(and gcl (not acl2-loop-only))
-; (when (fboundp 'system::ihs-backtrace)
-;    (eval '(system::ihs-backtrace)))
-
-  #+(and allegro (not acl2-loop-only))
-  (when (fboundp 'tpl::do-command)
-    (eval '(tpl:do-command "zoom"
-                           :from-read-eval-print-loop nil
-                           :count t :all t)))
-  #+(and sbcl (not acl2-loop-only))
-  (when (fboundp 'sb-debug::backtrace)
-    (eval '(sb-debug::backtrace)))
-  #+(and cmucl (not acl2-loop-only))
-  (when (fboundp 'debug::backtrace)
-    (eval '(debug::backtrace)))
-  #+(and clisp (not acl2-loop-only))
-  (when (fboundp 'system::debug-backtrace)
-    (eval '(catch 'system::debug (system::debug-backtrace))))
-  nil)
-
-(defun debugger-enabledp (state)
-  (declare (xargs :guard (and (state-p state)
-                              (boundp-global 'debugger-enable state))))
-  (let ((val (f-get-global 'debugger-enable state)))
-    (and (member-eq val '(t :break :break-bt :bt-break))
-         t)))
-
-(defun maybe-print-call-history (state)
-  (and (member-eq (f-get-global 'debugger-enable state)
-                  '(:bt :break-bt :bt-break))
-       (print-call-history)))
-
-(defmacro set-debugger-enable (val)
-
-; WARNING: Keep this documentation in sync with the initial setting of
-; 'debugger-enable in *initial-global-table* and with our-abort.
-
-  ":Doc-Section switches-parameters-and-modes
-
-  control whether Lisp errors and breaks invoke the Lisp debugger~/
-
-  ~bv[]
-  Forms (see below for explanations and GCL exceptions):
-
-  (set-debugger-enable t)         ; enable breaks into the raw Lisp debugger
-  (set-debugger-enable :break)    ; same as above
-  :set-debugger-enable t          ; same as above
-  (set-debugger-enable :break-bt) ; as above, but print a backtrace first
-  (set-debugger-enable :bt-break) ; as above, but print a backtrace first
-  (set-debugger-enable :bt)       ; print a backtrace but do not enter debugger
-  (set-debugger-enable :never)    ; disable all breaks into the debugger
-  (set-debugger-enable nil)       ; disable debugger except when calling break$
-  ~ev[]
-
-  ~em[Introduction.]  Suppose we define ~c[foo] in ~c[:]~ilc[program] mode to
-  take the ~ilc[car] of its argument.  This can cause a raw Lisp error.  ACL2
-  will then return control to its top-level loop unless you enable the Lisp
-  debugger, as shown below (except:  the error message can be a little
-  different in GCL).
-
-  ~bv[]
-    ACL2 !>(defun foo (x) (declare (xargs :mode :program)) (car x))
-
-    Summary
-    Form:  ( DEFUN FOO ...)
-    Rules: NIL
-    Warnings:  None
-    Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
-     FOO
-    ACL2 !>(foo 3)
-    ***********************************************
-    ************ ABORTING from raw Lisp ***********
-    Error:  Attempt to take the car of 3 which is not listp.
-    ***********************************************
-
-    If you didn't cause an explicit interrupt (Control-C),
-    then the root cause may be call of a :program mode
-    function that has the wrong guard specified, or even no
-    guard specified (i.e., an implicit guard of t).
-    See :DOC guards.
-
-    To enable breaks into the debugger (also see :DOC acl2-customization):
-    (SET-DEBUGGER-ENABLE T)
-    ACL2 !>(SET-DEBUGGER-ENABLE T)
-    <state>
-    ACL2 !>(foo 3)
-    Error: Attempt to take the car of 3 which is not listp.
-      [condition type: TYPE-ERROR]
-
-    Restart actions (select using :continue):
-     0: Abort entirely from this (lisp) process.
-    [Current process: Initial Lisp Listener]
-    [1] ACL2(1): [RAW LISP] 
-  ~ev[]~/
-
-  ~em[Details.]  ACL2 usage is intended to take place inside the ACL2
-  read-eval-print loop (~pl[lp]).  Indeed, in most Lisp implementations ACL2
-  comes up inside that loop, as evidenced by the prompt:
-  ~bv[]
-  ACL2 !>
-  ~ev[]
-  However, one can occasionally hit a raw Lisp error.  Here is the above
-  example again, this time for a GCL implementation, which unfortunately gives
-  a slightly less aesthetic report.
-  ~bv[]
-    ACL2 !>(foo 3)
-
-    Error: 3 is not of type LIST.
-    Fast links are on: do (si::use-fast-links nil) for debugging
-    Error signalled by CAR.
-    Backtrace: funcall > system:top-level > lisp:lambda-closure > lp > acl2_*1*_acl2::foo > foo > car > system:universal-error-handler > system::break-level-for-acl2 > let* > UNLESS
-    ACL2 !>
-  ~ev[]
-
-  Here, the user has defined ~c[foo] in ~c[:]~ilc[program] mode, with an
-  implicit ~il[guard] of ~c[t].  The ACL2 evaluator therefore called the Lisp
-  evaluator, which expected ~c[nil] or a ~ilc[consp] argument to ~ilc[car].
-
-  By default, ACL2 will return to its top-level loop (at the same level of
-  ~ilc[LD]) when there is a raw Lisp error, as though a call of ~ilc[ER] with
-  flag ~c[HARD] has been evaluated.  If instead you want to enter the raw Lisp
-  debugger in such cases, evaluate the following form.
-  ~bv[]
-  (set-debugger-enable t)
-  ~ev[]
-  You can subsequently return to the default behavior with:
-  ~bv[]
-  (set-debugger-enable nil)
-  ~ev[]
-  Either way, you can enter the Lisp debugger from within the ACL2 loop by
-  evaluating ~c[(]~ilc[break$]~c[)].  If you want ~c[break$] disabled, then
-  evaluate the following, which disables entry to the Lisp debugger not only
-  for Lisp errors but also when executing ~c[(break$)].
-  ~bv[]
-  (set-debugger-enable :never)
-  ~ev[]
-
-  The discussion above also applies to interrupts (from ~c[Control-C]) in some,
-  but not all, host Common Lisps.
-
-  It remains to discuss options ~c[:break], ~c[:bt], ~c[:break-bt], and
-  ~c[:bt-break].  Option ~c[:break] is synonymous with option ~c[t], while
-  option ~c[:bt] prints a backtrace (except in GCL, where a backtrace is
-  already printed for ~c[:break]).  Options ~c[:break-bt] and ~c[:bt-break] are
-  equivalent, and each has the combined effect of ~c[:bt] and ~c[:break]: a
-  backtrace is printed and then the debugger is entered.
-
-  Note that ~c[set-debugger-enable] applies not only to raw Lisp errors, but
-  also to ACL2 errors: those affected by ~ilc[break-on-error].  However, for
-  ACL2 errors, entering the debugger is controlled only by ~c[break-on-error],
-  not by ~c[set-debugger-enable]; so for ACL2 errors, ~c[set-debugger-enable]
-  values of ~c[:bt], ~c[:break-bt], and ~c[:bt-break] have the same effect
-  (namely, of causing a backtrace to be printed, other than for GCL).
-
-  Remark for Common Lisp hackers (except for GCL).  You can customize the form
-  of the backtrace printed by entering raw Lisp (with ~c[:q]) and then
-  redefining function ~c[print-call-history], whose definition immediately
-  precedes that of ~c[break-on-error] in ACL2 source file ~c[ld.lisp].  Of
-  course, all bets are off when defining any function in raw Lisp, but as a
-  practical matter you are probably fine as long as your books are ultimately
-  certified with an unmodified copy of ACL2.  If you come up with improvements
-  to ~c[print-call-history], please pass them along to the ACL2 implementors."
-
-  `(set-debugger-enable-fn ,val state))
-
-(defun set-debugger-enable-fn (val state)
-  (declare (xargs :guard (and (state-p state)
-                              (member-eq val '(t nil :never :break :bt
-                                                 :break-bt :bt-break)))))
-  (f-put-global 'debugger-enable val state)
-  #+(and (not acl2-loop-only)
-         (and gcl (not ansi-cl)))
-  (progn (setq lisp::*break-enable* (debugger-enabledp state))
-         state))
+; Next: dmr
 
 (defun dmr-stop-fn (state)
   (declare (xargs :guard (state-p state)))
