@@ -12,6 +12,8 @@
 rm -f acl2-startup-info.txt
 echo '"$Revision: $"' > acl2-startup-info.txt
 date >> acl2-startup-info.txt
+echo -n "Books " >> acl2-startup-info.txt
+(cd books ; svn info -r head | grep ^Revision) >> acl2-startup-info.txt
 
 if [ $# -lt 1 ] ; then \
     echo "Usage: svnc msgfile [file file ...]" ; \
