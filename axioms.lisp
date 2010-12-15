@@ -18602,7 +18602,7 @@ J
   (2) ACL2 is written essentially in itself.  Thus, there is an opportunity to
   attaching to system functions.  For example, encapsulated
   function ~c[too-many-ifs-post-rewrite], in the ACL2 source code, receives an
-  attachment of~c[too-many-ifs-post-rewrite-builtin], which implements a
+  attachment of ~c[too-many-ifs-post-rewrite-builtin], which implements a
   heuristic used in the rewriter.  To find all such examples, search the source
   code for the string `builtin'.
 
