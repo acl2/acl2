@@ -302,7 +302,7 @@
         (er-let*
          ((pair (simple-translate-and-eval form nil nil
                                            "The second argument to defpkg"
-                                           ctx w state)))
+                                           ctx w state t)))
          (let ((tform (car pair))
                (imports (cdr pair)))
            (cond
