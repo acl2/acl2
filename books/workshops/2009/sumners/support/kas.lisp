@@ -54,7 +54,7 @@
 (defmacro make-hyps-and-functions (n)
   (declare (xargs :guard (natp n)))
   (cons 'progn (make-hyps-and-fns n ())))
-(make-hyps-and-functions 100)
+(make-hyps-and-functions 63) ; greater value can cause CCL compiler warnings
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #| ACL2 interface macros and functions                                        |#
