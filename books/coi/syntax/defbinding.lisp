@@ -33,7 +33,9 @@
   (declare (xargs :mode :program
 		  :guard (state-p state)))
   (let ((wrld  (access metafunction-context mfc :wrld))
-	(rcnst (access metafunction-context mfc :rcnst)))
+	(rcnst (access metafunction-context mfc :rcnst))
+        (gstack nil))
+    (declare (ignorable gstack))
     (let ((geneqv (car (geneqv-lst equiv nil 
 				   (access rewrite-constant rcnst
 					   :current-enabled-structure)
