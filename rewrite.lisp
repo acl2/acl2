@@ -13083,6 +13083,23 @@ and found premature forcing killed us.
 
 ; This function is a No-Change Loser.
 
+; Below we describe the memo argument, but first, here is an example that
+; illustrates how it is used.
+
+; (defstub p1 (x) t)
+; (defstub p2 (x) t)
+; (defstub p3 (x) t)
+; (defaxiom ax (implies (and (p1 x) (p2 y) (consp x) (symbolp y)) (p3 x)))
+; (thm (implies (and (p1 a) (p2 b) (p2 c) (consp a) (symbolp b)) (p3 a)))
+
+; In the proof of thm, a rewrite of (p3 a) triggers application of ax.  Note
+; that (p2 c) is in front of (p2 b) on the type-alist.  So, the second
+; hypothesis of ax first binds y to c.  Since (symbolp y) fails with this
+; binding, we backtrack in the relieving of hyps for ax, and now bind y to b.
+; But note that we encounter (consp x) again.  Rather than have to rewrite
+; (consp x) again, we save the fact that it was relieved when that happened the
+; first time, when y was bound to c.  How do we do this?
+
 ; Memo (called "allp" in other functions in this nest) can be an alist with
 ; entries of the form (n vars (subst0 . ttree0) ... (substk . ttreek)), where n
 ; is a bkptr, vars is (all-vars hyp0), and ttreei is the result of succesfully
@@ -13161,7 +13178,7 @@ and found premature forcing killed us.
                (t
                 (let* ((memo-active (memo-activep memo))
                        (memo-entry (and (consp memo)
-                                        (cdr (assoc-eq bkptr memo))))
+                                        (cdr (assoc bkptr memo))))
                        (hyp-vars (if memo-entry
                                      (car memo-entry)
                                    (and memo-active ; optimization
