@@ -126,7 +126,7 @@
                                   (and (not logic-p) program-p raw-p))
                               (implies doc
                                        (stringp doc))))
-           (ignore program-p))
+           (ignorable program-p))
   (let*
     ((ignorable-decl-lst
       (and ll `((declare (ignorable . ,ll)))))
