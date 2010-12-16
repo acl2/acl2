@@ -64,7 +64,7 @@
                               raw-p
                               (implies doc
                                        (stringp doc))))
-           (ignore loop-p raw-p))
+           (ignorable loop-p raw-p))
   (let*
     ((ignorable-decl-lst
       (and ll `((declare (ignorable . ,ll)))))
