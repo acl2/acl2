@@ -11196,11 +11196,13 @@ J
 
   ~l[intersectp-equal], which is logically the same function.~/
 
-  ~c[(Intersectp-eq x y)] has a ~il[guard] that ~c[x] and ~c[y] are lists of
-  symbols.~/"
+  ~c[(Intersectp-eq x y)] has a ~il[guard] that ~c[x] and ~c[y] are true lists,
+  at least one of which is a list of symbols.~/"
 
-  (declare (xargs :guard (and (symbol-listp x)
-                              (symbol-listp y))))
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp y)
+                              (or (symbol-listp x)
+                                  (symbol-listp y)))))
   (cond ((endp x) nil)
         ((member-eq (car x) y) t)
         (t (intersectp-eq (cdr x) y))))
@@ -25685,7 +25687,10 @@ J
 ; We return the elements of alist1 whose keys don't exist in the domain of
 ; alist2.
 
-  (declare (xargs :guard (and (symbol-alistp alist1) (alistp alist2))))
+  (declare (xargs :guard (and (alistp alist1)
+                              (alistp alist2)
+                              (or (symbol-alistp alist1)
+                                  (symbol-alistp alist2)))))
   (if (endp alist1)
       nil
     (if (assoc-eq (caar alist1) alist2)
@@ -29840,19 +29845,19 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   union of two lists of symbols~/
 
-  ~c[(Union-eq x y)] equals a list whose members
-  (~pl[member-eq]) contains the members of ~c[x] and the members
-  of ~c[y].  More precisely, the resulting list is the same as one
-  would get by first deleting the members of ~c[y] from ~c[x], and then
-  concatenating the result to the front of ~c[y].~/
+  ~c[(Union-eq x y)] equals a list whose members (~pl[member-eq]) contains the
+  members of ~c[x] and the members of ~c[y].  More precisely, the resulting
+  list is the same as one would get by first deleting the members of ~c[y] from
+  ~c[x], and then concatenating the result to the front of ~c[y].~/
 
-  The ~il[guard] for ~c[union-eq] requires both arguments to be true lists,
-  but in fact further requires the first list to contain only symbols,
-  as the function ~ilc[member-eq] is used to test membership (with
-  ~ilc[eq]).  ~l[union-equal].~/"
+  The ~il[guard] for ~c[union-eq] requires both arguments to be true lists and
+  at least one to be a true list of symbols, as the function ~ilc[member-eq] is
+  used to test membership (with ~ilc[eq]).  ~l[union-equal].~/"
 
-  (declare (xargs :guard (and (symbol-listp lst1)
-                              (true-listp lst2))))
+  (declare (xargs :guard (and (true-listp lst1)
+                              (true-listp lst2)
+                              (or (symbol-listp lst1)
+                                  (symbol-listp lst2)))))
   (cond ((endp lst1) lst2)
         ((member-eq (car lst1) lst2)
          (union-eq (cdr lst1) lst2))
@@ -30486,8 +30491,10 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
 (defun intersection-eq (l1 l2)
   (declare (xargs :guard
-                  (and (symbol-listp l1)
-                       (symbol-listp l2))))
+                  (and (true-listp l1)
+                       (true-listp l2)
+                       (or (symbol-listp l1)
+                           (symbol-listp l2)))))
   (cond ((endp l1) nil)
         ((member-eq (car l1) l2)
          (cons (car l1)

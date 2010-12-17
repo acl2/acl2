@@ -27173,8 +27173,10 @@ The following all cause errors.
 ; End of Essay on Merging Attachment Records
 
 (defun intersection1-eq (x y)
-  (declare (xargs :guard (and (symbol-listp x)
-                              (symbol-listp y))))
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp y)
+                              (or (symbol-listp x)
+                                  (symbol-listp y)))))
   (cond ((endp x) nil)
         ((member-eq (car x) y) (car x))
         (t (intersection1-eq (cdr x) y))))

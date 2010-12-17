@@ -16890,6 +16890,13 @@
   one can create one's own version of ~ilc[verify-termination] (but with a
   different name).
 
+  Improved the ~il[guard]s for the following functions, often weakening them,
+  to reflect more precisely the requirements for calling ~ilc[eq]:
+  ~c[alist-difference-eq], ~c[intersection-eq], ~c[intersection1-eq],
+  ~ilc[intersectp-eq], ~c[not-in-domain-eq], ~c[set-difference-assoc-eq],
+  ~c[set-equalp-eq], and ~ilc[union-eq].  Thanks to Jared Davis for pointing
+  out this issue for ~ilc[intersectp-eq].
+
   ~st[NEW FEATURES]
 
   See the discussion above about new statistics that can be gathered by the

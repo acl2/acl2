@@ -5955,8 +5955,10 @@ when submitted as :ideal, pointing out that they can never be
   (fetch-dcl-fields (list field-name) lst))
 
 (defun set-equalp-eq (lst1 lst2)
-  (declare (xargs :guard (and (symbol-listp lst1)
-                              (symbol-listp lst2))))
+  (declare (xargs :guard (and (true-listp lst1)
+                              (true-listp lst2)
+                              (or (symbol-listp lst1)
+                                  (symbol-listp lst2)))))
   (and (subsetp-eq lst1 lst2)
        (subsetp-eq lst2 lst1)))
 
