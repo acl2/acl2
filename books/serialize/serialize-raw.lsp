@@ -108,8 +108,6 @@
 
 
 
-(declaim (inline nat-byte-decode))
-
 (defun nat-byte-encode (n)
   (declare (type integer n))
 
@@ -146,13 +144,11 @@
          (logior (the (unsigned-byte 8) low) #x80)))
       (nat-byte-encode high))))
 
-(defun nat-byte-decode ()
-  (let ((shift 0)
-        (value 0)
-        (x1    (decoder-read)))
+(defun nat-byte-decode-large (shift value)
+  (let ((x1    (decoder-read)))
     ;; Note: the fixnum declaration of shift may be unsound if integers can
     ;; have more than the maximum fixnum's worth of bits.
-    (declare (type fixnum shift)
+    (declare (type integer x1)
              (type (unsigned-byte 8) x1)
              (type integer value))
     (loop while (>= x1 128)
@@ -162,6 +158,82 @@
           (setf x1 (decoder-read)))
     (incf value (ash x1 shift))
     value))
+
+(defun nat-byte-decode ()
+  #-(and ccl x86_64)
+  (nat-byte-decode-large 0 0)
+  #+(and ccl x86_64)
+  (let ((value 0)
+        (x1    (decoder-read)))
+    (declare (type fixnum value)
+             (type (unsigned-byte 8) x1))
+
+    ;; shift is 0
+    (when (< x1 128)
+      (return-from nat-byte-decode (+ value x1)))
+    (setq x1 (the fixnum (- x1 128)))
+    (setq value x1)
+
+    ;; shift is 7
+    (setq x1 (decoder-read))
+    (when (< x1 128)
+      (return-from nat-byte-decode
+                   (+ value (the fixnum (ash (the fixnum x1) 7)))))
+    (setq x1    (the fixnum (- x1 128)))
+    (setq value (the fixnum (+ value (the fixnum (ash x1 7)))))
+
+    ;; shift is 14
+    (setq x1 (decoder-read))
+    (when (< x1 128)
+      (return-from nat-byte-decode
+                   (+ value (the fixnum (ash (the fixnum x1) 14)))))
+    (setq x1    (the fixnum (- x1 128)))
+    (setq value (the fixnum (+ value (the fixnum (ash x1 14)))))
+
+    ;; shift is 21
+    (setq x1 (decoder-read))
+    (when (< x1 128)
+      (return-from nat-byte-decode
+                   (+ value (the fixnum (ash (the fixnum x1) 21)))))
+    (setq x1    (the fixnum (- x1 128)))
+    (setq value (the fixnum (+ value (the fixnum (ash x1 21)))))
+
+    ;; shift is 28
+    (setq x1 (decoder-read))
+    (when (< x1 128)
+      (return-from nat-byte-decode
+                   (+ value (the fixnum (ash (the fixnum x1) 28)))))
+    (setq x1    (the fixnum (- x1 128)))
+    (setq value (the fixnum (+ value (the fixnum (ash x1 28)))))
+
+    ;; shift is 35
+    (setq x1 (decoder-read))
+    (when (< x1 128)
+      (return-from nat-byte-decode
+                   (+ value (the fixnum (ash (the fixnum x1) 35)))))
+    (setq x1    (the fixnum (- x1 128)))
+    (setq value (the fixnum (+ value (the fixnum (ash x1 35)))))
+
+    ;; shift is 42
+    (setq x1 (decoder-read))
+    (when (< x1 128)
+      (return-from nat-byte-decode
+                   (+ value (the fixnum (ash (the fixnum x1) 42)))))
+    (setq x1    (the fixnum (- x1 128)))
+    (setq value (the fixnum (+ value (the fixnum (ash x1 42)))))
+
+    ;; shift is 49
+    (setq x1 (decoder-read))
+    (when (< x1 128)
+      (return-from nat-byte-decode
+                   (+ value (the fixnum (ash (the fixnum x1) 49)))))
+    (setq x1    (the fixnum (- x1 128)))
+    (setq value (the fixnum (+ value (the fixnum (ash x1 49)))))
+
+    ;; Since the maximal x1 is 127, the maximum safe shift is 53 bits.
+    ;; Go ahead and fall back to the bignum decoder.
+    (nat-byte-decode-large 56 value)))
+
 
 (defun nat-list-byte-encode (x)
 
