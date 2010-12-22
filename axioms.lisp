@@ -4019,9 +4019,9 @@
   ~c[return-last] in its output, printing calls of ~ilc[prog2$] or
   ~ilc[time$] (or other such utilities) instead.
 
-  If you encounter a call of ~c[return-last], then you may find it most useful
-  to consider ~c[return-last] simply as a function defined by the following
-  equation.
+  If you encounter a call of ~c[return-last] during a proof, then you may find
+  it most useful to consider ~c[return-last] simply as a function defined by
+  the following equation.
   ~bv[]
   (equal (return-last x y z) z)
   ~ev[]
@@ -4056,9 +4056,9 @@
 
   Most readers would be well served to avoid reading the rest of this
   documentation of ~c[return-last].  For reference, however, below we document
-  it in some detail.  We include some discussion of its behavior in raw Lisp,
-  because we expect that most who read further are working with raw Lisp
-  code (and trust tags).~/
+  it in some detail.  We include some discussion of its evaluation, in
+  particular its behavior in raw Lisp, because we expect that most who read
+  further are working with raw Lisp code (and trust tags).~/
 
   ~c[Return-last] is an ACL2 function that can arise from macroexpansion of
   certain utilities that return their last argument, which may be a multiple
@@ -4095,7 +4095,7 @@
   simple.  More commonly, macroexpansion produces a call of a macro defined in
   raw Lisp that may produce side effects.  Consider for example the ACL2
   utility ~ilc[with-guard-checking], which is intended to change the
-  guard-checking mode to the indicated value (~pl[with-guard-checking]).
+  ~il[guard]-checking mode to the indicated value (~pl[with-guard-checking]).
   ~bq[]
   ACL2 !>(with-guard-checking :none (car 3)) ; no guard violation
   NIL
@@ -4132,21 +4132,120 @@
   to ~c[:none], as ~c[chk-with-guard-checking-arg] is just the identity
   function except for causing a hard error for an illegal input.
 
-  ~st[Aside].  ACL2 has a custom evaluator for forms submitted to its top-level
-  loop.  While it is beyond the scope of this discussion to describe in detail
-  how that evaluator works, it is important to note that it respects the
-  intention of ~c[return-last].  For example, a call of ~ilc[time$]
-  macroexpands in ACL2 to a call of the form ~c[(return-last 'time$1-raw & &)],
-  which in turn times evaluation of the last argument of that form.
-  ~st[End of aside.]
+  The intended use of ~c[return-last] is that the second argument is evaluated
+  first in a normal manner, and then the third argument is evaluated in an
+  environment that may depend on the value of the second argument.  (For
+  example, the macro ~ilc[with-prover-time-limit] macroexpands to a call of
+  ~c[return-last] with a first argument of ~c['WITH-PROVER-TIME-LIMIT1-RAW], a
+  second argument that evaluates to a numeric time limit, and a third argument
+  that is evaluated in an environment where the theorem prover is restricted to
+  avoid running longer than that time limit.)  Although this intended usage
+  model is not strictly enforced, it is useful to keep in mind in the following
+  description of how calls of ~c[return-last] are handled by the ACL2
+  evaluator.
 
-  You can extend the behavior of ~c[return-last] by putting a suitable entry in
-  a ~il[table] provided by ACL2, provided there is an active trust
-  tag (~pl[defttag]); ~pl[return-last-table].  However, it is probably more
-  convenient to use a macro that is provided for that purpose;
-  ~pl[defmacro-last].  We describe the distributed book
-  ~c[books/misc/profiling.lisp] in order to illustrate how this works.  The
-  events in that book are as follows, and are described below.
+  When a form is submitted in the top-level loop, it is handled by ACL2's
+  custom evaluator.  That evaluator is specified to respect the semantics of
+  the expression supplied to it: briefly put, if an expression ~c[E] evaluates
+  to a value ~c[V], then the equality ~c[(equal E (quote V))] should be a
+  theorem.  Notice that this specification does not discuss the side-effects
+  that may occur when evaluating a call of ~c[return-last], so we discuss that
+  now.  Suppose that the ACL2 evaluator encounters the call
+  ~c[(return-last 'fn expr1 expr2)].  First it evaluates ~c[expr1].  If this
+  evaluation succeeds without error, then it constructs an expression of the
+  form ~c[(fn *x* ev-form)], where *x* is a Lisp variable bound to the result
+  of evaluating ~c[expr1] and ~c[ev-form] is a call of the evaluator for
+  ~c[expr2].  (Those who want implementation details are invited to look at
+  function ~c[ev-rec-return-last] in ACL2 source file ~c[translate.lisp].)
+  There are exceptions if ~c[fn] is ~c[progn], ~c[ec-call1-raw],
+  ~c[with-guard-checking1-raw], or ~c[mbe1-raw], but the main idea is the same:
+  do a reasonable job emulating the behavior of a raw-Lisp call of
+  ~c[return-last].
+
+  The following log shows how a ~ilc[time$] call can generate a call of the
+  evaluator for the last argument of ~c[return-last] (arguent ~c[expr2],
+  above).  We use ~c[:]~ilc[trans1] to show single-step macroexpansions, which
+  indicate how a call of ~ilc[time$] expands to a call of ~c[return-last].  The
+  implementation actually binds the Lisp variable ~c[*RETURN-LAST-ARG3*] to
+  ~c[expr2] before calling the ACL2 evaluator, ~c[ev-rec].
+  ~bv[]
+  ACL2 !>:trans1 (time$ (+ 3 4))
+   (TIME$1 (LIST 0 NIL NIL NIL NIL)
+           (+ 3 4))
+  ACL2 !>:trans1 (TIME$1 (LIST 0 NIL NIL NIL NIL)
+                         (+ 3 4))
+   (RETURN-LAST 'TIME$1-RAW
+                (LIST 0 NIL NIL NIL NIL)
+                (+ 3 4))
+  ACL2 !>(time$ (+ 3 4))
+  ; (EV-REC *RETURN-LAST-ARG3* ...) took 
+  ; 0.00 seconds realtime, 0.00 seconds runtime
+  ; (1,120 bytes allocated).
+  7
+  ACL2 !>
+  ~ev[]
+
+  We now show how things can go wrong in other than the ``intended use'' case
+  described above.  In the example below, the macro ~c[mac-raw] is operating
+  directly on the syntactic representation of its first argument, which it
+  obtains of course as the second argument of a ~c[return-last] call.  Again
+  this ``intended use'' of ~c[return-last] requires that argument to be
+  evaluated and then only its result is relevant; its syntax is not supposed to
+  matter.  We emphasize that only top-level evaluation depends on this
+  ``intended use''; once evaluation is passed to Lisp, the issue disappears.
+  We illustrate below how to use the ~ilc[top-level] utility to avoid this
+  issue; ~pl[top-level].  The example uses the utility ~c[defmacro-last] to
+  ``install'' special handling of the raw-Lisp macro ~c[mac-raw] by
+  ~c[return-last]; later below we discuss ~c[defmacro-last].
+  ~bv[]
+  ACL2 !>(defttag t)
+
+  TTAG NOTE: Adding ttag T from the top level loop.
+   T
+  ACL2 !>(progn!
+           (set-raw-mode t)
+           (defmacro mac-raw (x y)
+             `(progn (print (quote ,(cadr x)))
+                     (terpri) ; newline
+                     ,y)))
+
+  Summary
+  Form:  ( PROGN! (SET-RAW-MODE T) ...)
+  Rules: NIL
+  Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+   NIL
+  ACL2 !>(defmacro-last mac)
+  [[ ... output omitted ... ]]
+   RETURN-LAST-TABLE
+  ACL2 !>(return-last 'mac-raw '3 nil)
+
+  ***********************************************
+  ************ ABORTING from raw Lisp ***********
+  Error:  Fault during read of memory address #x120000300006
+  ***********************************************
+
+  If you didn't cause an explicit interrupt (Control-C),
+  then the root cause may be call of a :program mode
+  function that has the wrong guard specified, or even no
+  guard specified (i.e., an implicit guard of t).
+  See :DOC guards.
+
+  To enable breaks into the debugger (also see :DOC acl2-customization):
+  (SET-DEBUGGER-ENABLE T)
+  ACL2 !>(top-level (return-last 'mac-raw '3 nil))
+
+  3 
+  NIL
+  ACL2 !>
+  ~ev[]
+
+  We next describe how to extend the behavior of ~c[return-last].  This
+  requires an active trust tag (~pl[defttag]), and is accomplished by extending
+  a ~il[table] provided by ACL2, ~pl[return-last-table].  Rather than using
+  ~ilc[table] ~il[events] directly for this purpose, it is probably more
+  convenient to use a macro, ~c[defmacro-last].  We describe the distributed
+  book ~c[books/misc/profiling.lisp] in order to illustrate how this works.
+  The events in that book are as follows, and are described below.
   ~bv[]
   (defttag :profiling)
 
@@ -4249,9 +4348,9 @@
   compromising the soundness or error handling of ACL2 when you define a macro
   in raw Lisp and especially when you install it as a key of
   ~ilc[return-last-table], either directly or (more likely) using
-  ~ilc[defmacro-last].  In particular, be sure that you are defining a macro of
-  two arguments that always returns the value of its last argument, even that
-  last argument evaluates to a multiple value.  The following would, for
+  ~c[defmacro-last].  In particular, be sure that you are defining a macro of
+  two arguments that always returns the value of its last argument, even if
+  that last argument evaluates to a multiple value.  The following would, for
   example, be wrong, especially in certain Lisps (including CCL and SBCL).
   ~bv[]
   (defttag t)
@@ -40249,8 +40348,9 @@ Lisp definition."
   ~c[time$] output there.
 
   (2) Unless the ~c[:msg] argument is supplied, an explicit call of ~c[time$]
-  in the the top-level loop will show that form being timed is a call of the
-  ACL2 evaluator function ~c[ev-rec].  This is normal.~/
+  in the top-level loop will show that the form being timed is a call of the
+  ACL2 evaluator function ~c[ev-rec].  This is normal; the curious are invited,
+  at their own risk, to ~pl[return-last] for an explanation.~/
 
   :cited-by ACL2::Programming"
 

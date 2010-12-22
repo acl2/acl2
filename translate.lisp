@@ -1570,6 +1570,14 @@
                 #+acl2-loop-only
                 (ev-rec arg3 alist w (decrement-big-n big-n)
                         safe-mode gc-off latches hard-error-returns-nilp aok)
+
+; The following raw Lisp code is a bit odd in its use of special variables.
+; Our original motivation was to work around problems that SBCL had with large
+; quoted constants in terms passed to eval (SBCL bug 654289).  While this issue
+; was fixed in SBCL 1.0.43.19, nevertheless we believe that it is still an
+; issue for CMUCL and, for all we know, it could be an issue for future Lisps.
+; The use of special variables keeps the terms small that are passed to eval.
+
                 #-acl2-loop-only
                 (let ((*return-last-arg2* arg2-val)
                       (*return-last-arg3* arg3)
