@@ -653,7 +653,21 @@
    ((null cl-set) (mv nil ttree))
    (t (mv-let
        (built-in-clausep ttree1)
-       (built-in-clausep (car cl-set) ens oncep-override wrld state)
+       (built-in-clausep
+
+; We added defun-or-guard-verification as the caller arg of the call of
+; built-in-clausep below.  This addition is a little weird because there is no
+; such function as defun-or-guard-verification; the caller argument is only
+; used in trace reporting by forward-chaining.  If we wanted to be more precise
+; about who is responsible for this call, we'd have to change a bunch of
+; functions because this function is called by clean-up-clause-set which is in
+; turn called by prove-termination, guard-obligation-clauses, and
+; verify-valid-std-usage (which is used in the non-standard defun-fn1).  We
+; just didn't think it mattered so much as to to warrant changing all those
+; functions.
+
+        'defun-or-guard-verification
+        (car cl-set) ens oncep-override wrld state)
 
 ; Ttree is known to be 'assumption free.
 

@@ -14413,7 +14413,10 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
     pstk-var-6
     pstk-var-7
     pstk-var-8
-    pstk-var-9))
+    pstk-var-9
+    pstk-var-10
+    pstk-var-11
+    pstk-var-12))
 
 (defun pstk-bindings-and-args (args vars)
 

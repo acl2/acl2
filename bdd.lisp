@@ -3181,14 +3181,15 @@ IX.   COMPILING THIS FILE AND OTHER HELPFUL TIPS
                              wrld remove-trivial-equivalences-ttree nil)
                             (mv-let
                              (contradictionp type-alist fc-pair-lst)
-                             (forward-chain expanded-clause
-                                            nil
-                                            nil ; Let's not force
-                                            t   ; do-not-reconsiderp
-                                            wrld
-                                            ens
-                                            (match-free-override wrld)
-                                            state)
+                             (forward-chain-top 'bdd-clause
+                                                expanded-clause
+                                                nil
+                                                nil ; Let's not force
+                                                t ; do-not-reconsiderp
+                                                wrld
+                                                ens
+                                                (match-free-override wrld)
+                                                state)
                              (cond
                               (contradictionp
 

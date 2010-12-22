@@ -616,21 +616,109 @@
 
 ; Forward Chaining
 
-; ACL2 implements a rudimentary form of forward chaining -- though it
-; is getting less rudimentary as time goes on!  It sits at the
-; top-level of clause simplification.  Before we begin to rewrite the
-; literals of a clause, in the same place we set up the
-; simplify-clause-pot-lst, we forward chain from the negations of the
-; literals of the clause and construct a list of all the
-; (heuristically approved) conclusions we can derive.  Each concl is
-; paired with a tree that contains the 'lemma and 'pt dependencies.
-; That list of pairs is passed down to the rewrite-clause level, where
-; it is used to augment the type-alist before rewriting any given
-; literal.
+; ACL2 implements a rudimentary form of forward chaining -- though it is
+; getting less rudimentary as time goes on!  Its primary use is at the
+; top-level of clause simplification (simplify-clause1), where before we begin
+; to rewrite the literals of the clause (and in the same place we set up the
+; simplify-clause-pot-lst), we forward chain from the negations of the literals
+; of the clause and construct a list of all the (heuristically approved)
+; conclusions we can derive.  Each concl is paired with a tree that contains
+; the 'lemma and 'pt dependencies.  That list of pairs is passed down to the
+; rewrite-clause level, where it is used to augment the type-alist before
+; rewriting any given literal.
 
-; This is the third version of forward chaining.  For an extensive
-; comment on version II, see the historical plaque after the definition
-; of forward-chain.
+; This is the fourth (or fifth, depending on how you count) version of forward
+; chaining.  For an extensive comment on version II, see the historical plaque
+; after the definition of rewrite-clause-type-alist.  (There are also
+; historical plaques elsewhere in this code.)
+
+; The top-level interface to forward chaining is the function named
+; forward-chain.  However, forward-chain just calls forward-chain-top with one
+; more argument, a token identifying the caller.  We tend to use
+; forward-chain-top in our code so that a sensible caller is known.  But we
+; provide forward-chain, with caller 'miscellaneous, mainly for builders of
+; tools.
+
+; Besides its use in simplify-clause1, forward-chain-top is called in several
+; other places, including built-in-clausep (which is used in preprocess-clause
+; and indirectly in defun's prove-termination), bdd-clause (which is used when
+; we apply :bdd hints), get-induction-cands-from-cl-set1 (used in firing
+; induction rules while computing induction schemes), and hyps-type-alist (used
+; in show-rewrites).  All of these provide sensible caller tokens.  The caller
+; is only relevant to the trace-like reporting facility.
+
+; Basic Ideas and Terminology
+
+; Forward chaining is implemented by the function forward-chain-top.  At the
+; highest level, think of forward chaining as ``activating'' all the forward
+; chaining rules triggered by the terms in the problem and then ``advancing''
+; each activation in the context of a type-alist that tells us all the things
+; we know.  An activation is actually an object with fields such as the
+; instantiated hypothesis we're trying to relieve, the remaining hyps, the
+; unify substitution, etc.  To advance an activation we check each
+; (instantiated) hyp successively against the type-alist with type-set.  If we
+; reach the end of the hyps, we know the conclusions of the rule are all true.
+; We record these facts in ``fc-derivations''.  If we reach a hyp whose truth
+; is not known under the current type-alist, we ``suspend'' the activation.  Of
+; course, if a hyp is found to be false, we simply drop the activation.  We
+; must also handle the branching caused by free vars in a hyp -- which causes
+; an activation to split into several different activations under each of the
+; possible matches for the free vars plus to remain suspended in case
+; additional matches arise later.
+
+;  When we have advanced all the activations we have a list of still-suspended
+; activations and a list of forward-chaining derivations deduced so far.  We
+; then heuristically decide which of the derivations to keep.  This is called
+; ``approving'' the derivations and is imposed to prevent pumps like (implies
+; (p x) (p (f x))) from causing infinite forward chaining.  A key heuristic is
+; that the derived conclusion should not be worse than any conclusion used in
+; its derivation.  This means we must be able to determine which conclusions
+; were used in the derivation of another one.  We do that rather cheaply by
+; embedding ttrees in fc-derivations.  These ttrees are tainted from the
+; perspective of the rest of the code, because they have dependencies buried
+; inside them.  We discuss this when we introduce them but it gives rise to
+; such notions as an ``fcd-free'' ttree -- that is, a normal ttree as opposed
+; to one with fc-derivations containing other ttrees in it -- and ``expunging''
+; the fc-derivations from a non-fcd-free ttree to get an fcd-free ttree.  The
+; forward chaining module traffics in non-fcd-free ttrees but ultimately
+; returns fcd-free ttrees and type-alists that may be used in the rest of the
+; prover.
+
+; Once we have collected the approved derivations, we assume them all obtaining
+; a new type-alist.  Since the newly added conclusions may contain new terms,
+; we add more activations to our list of suspended activations.  Then we start
+; another ``round'' in which we try again to advance the suspended activations
+; in the context of the new type-alist.
+
+; The notion of a round is implemented by forward-chain1.  The top-level
+; forward chain just sets up the initial type-alist and the initial activations
+; and calls forward-chain1, and then expunges and elaborates the type-alist a
+; little.  The notion of advancing an activation is implemented by a nest of
+; three functions named advance-fc-activation1, 2, and 3, which roughly put,
+; are designed to relieve a single hyp, relieve a list of hyps, and relieve
+; hyps under a multiplicity of matches for free-vars.  Advancing an
+; fc-activation introduces the notion of a ``virtual activation'' to avoid
+; consing up activation objects as we move from hyp to hyp, for example.  A
+; virtual activation, v, is an ordinary activation object, o, together with
+; values held in certain local variables of the ``advance-fc-activation''
+; functions; the actual activation represented by v could be obtained by
+; writing those values to their respective fields in o.  But we don't do that
+; until it is time to suspend the virtual activation because we get blocked.
+
+; Finally, we also squirrel away certain data in a wormhole, named
+; ``fc-wormhole'' to allow us to create a ``report'' on what happened in
+; forward chaining.  Because forward chaining is called in several places and
+; is an algorithm (like resolution) in which things are happening on many
+; fronts (activations) at once, rather than a real-time trace-like facility we
+; provide an after-the-fact reporting facility.
+
+; We repeat some of this introductory material as we develop the code.  We also
+; provide prettyify-fc-activation and prettyify-fc-derivation for debugging
+; purposes even though they are not used in this code.  Prettyify-fc-derivation
+; is particularly useful because it builds a decent representation of the
+; derivation tree of conclusion produced by forward chaining and thus can help
+; you understand fc-derivations and what has actually happened in a proof
+; attempt.
 
 ; A forward chaining rule is
 
@@ -648,50 +736,281 @@
   (inst-hyp (hyps . ttree)
             unify-subst inst-trigger . rule) t)
 
-; Warning: If you reorder the fields recode suspend-fc-activation, which
-; exploits the layout to conserve conses when modifying instances.
+; Warning:  Despite the name, inst-hyp is not necessarily a term!
+; See below.
+
+; Warning: If you reorder the fields or add new ones, reconsider
+; suspend-fc-activation, which is designed to save conses by exploiting
+; the layout.  Suspend-fc-activation is correct independently of the
+; order of the fields, but may not actually save conses if they're
+; rearranged.
 
 ; An fc-activation represents an attempt to apply the given
 ; forward-chaining-rule.  Suppose a term of interest unifies with the
 ; trigger term of some rule.  Then we try to relieve the hypotheses of
-; that rule, using the current set of assumptions.  Imagine that we
-; relieve all those up to but not including hypn, producing an extended
-; unify substitution and a ttree recording the dependencies.  But then we
-; learn that hypn is not yet definitely nil or definitely non-nil.  Since
-; the list of assumptions is growing, we may be able eventually to
-; establish hypn.  Therefore, instead of just quitting and starting over
-; we suspend the attempted application of rule by producing an
-; fc-activation record that records our current state.
+; that rule, using the current set of assumptions coded in a type-alist.
+; Imagine that we relieve all those up to but not including hypn,
+; producing an extended unify substitution and a ttree recording the
+; dependencies so far.  But then we learn that hypn is not yet
+; definitely nil or definitely non-nil.  Since the list of assumptions
+; is growing, we may be able eventually to establish hypn.  Therefore,
+; instead of just quitting and starting over we suspend the attempted
+; application of rule by producing an fc-activation record containing
+; our current state.
 
-; The current unify-subst, ttree and rule are stored in the slots of
-; those names.  The inst-trigger is the term in the current problem
-; that fired this rule.  What about inst-hyps and hyps?  What do they
-; hold?  There are two cases of interest: either hypn -- the hyp we
-; are trying to establish -- contains free variables under unify-subst
-; or it does not.  If it does, then in the fc-activation, inst-hyp is
-; *t* and hyps is the cdr of the hyps of the rule that starts with
-; hypn.  If it does not, then inst-hyp is hypn/unify-subst and hyps is
-; the cdr of the rule that starts immediately after hypn.  (Because we
-; make an activation simply to begin processing a rule, there is the
-; unusual case in which the rule has no hyps.  In that case, inst-hyp
-; is *t* and hyps is nil.)
+; The current :unify-subst, :ttree and :rule are stored in the slots of
+; those names.  The :inst-trigger is the term in the current problem
+; that fired this rule.  What about :inst-hyps and :hyps?  What do they
+; hold?  There are two cases of interest depending on whether the hyp we
+; are stuck on (hypn above) contains free variables under unify-subst.
 
-(defun fc-activation (term rule ttree force-flg ens)
+; :Inst-hyp is just hypn/unify-subst if hypn contains no free variables
+; wrt unify-subst.  In that case, :hyps is the cdr of the rule's hyps
+; starting immediately after hypn.  Furthermore, :inst-hyp is never an
+; evaluable ground term (or else we would have evaluated it) or a FORCE
+; or CASE-SPLIT (or else we would have forced or split on it).  That is,
+; :inst-hyp is a term that must be true under type-alist to proceed, and
+; :hyps contains the hyps we must relieve after relieving inst-hyp.  (We
+; cannot get stuck on a hypothesis that is forced or split unless it
+; contains free variables.  So we never build an activation stuck on
+; such a hyp.)
 
-; If rule is enabled and the trigger of rule can be instantiated with some
-; substitution unify-subst to be term, then we make an fc-activation for this
-; pair, otherwise we return nil.
+; :Inst-hyp is a special marker, called the :FC-FREE-VARS marker, if
+; hypn contains free variables wrt unify-subst.  In this case, :hyps is
+; the cdr of the rule's hyps starting with the problematic hypn.  The
+; :FC-FREE-VARS marker looks like this and so is not a term:
+
+;   (:FC-FREE-VARS forcer-fn  . last-keys-seen)
+
+; Forcer-fn is nil if the hyp is not to be forced, and is either FORCE
+; or CASE-SPLIT otherwise.  (By providing for forcer-fn we can isolate
+; the handling of free vars into one piece of code.  Observe how
+; advance-fc-activation2 calls advance-fc-activation1 when the hyp in
+; question has free vars.)   The FORCE or CASE-SPLIT annotation will have
+; been stripped off of the car of :hyps, so that what is there is what
+; must be found.   Last-keys-seen is a list of all the keys ever
+; used to create matches up to now -- and thus those keys should be
+; avoided in the future.
+
+; Summary: :inst-hyp is either a term or a non-term starting with
+; :FC-FREE-VARS.  If the former, it is the fully instantiated term that
+; must be true under the current type-alist to proceed, it is not an
+; evaluable ground term (except for possibly a constant like *t*) or a
+; FORCE or CASE-SPLIT, and :hyps is the rest of the hyps.  If the
+; latter, the marker tells us how to match it without reproducing
+; matches already created and whether to force or split on it.  Note
+; that we consider it very odd and rare to see a forced or split
+; free-var hypothesis since it is either matched right away or
+; introduces UNBOUND-FREE-vars into the proof.
+
+; Historical Plaque: Forward chaining was first coded before type-set
+; could force 'assumptions.  Thus, splitting on 'assumptions was
+; uncommon, indeed, it was only done for the output of linear
+; arithmetic, where we first used the idea in the late 70's.  Thus, the
+; forward chaining mechanism was designed so as not to produce any
+; 'assumptions, i.e., so as not to call rewrite.  When type-set was
+; extended, assumption generation and handling became more wide-spread.
+; In particular, this function can generate assumptions due to the call
+; of type-set below and those assumptions are handled by the caller of
+; the forward-chaining module.  So now, except for these historical
+; comments, there is no rationale behind this function's abstinence from
+; rewrite.  Mixing forward and backward chaining so intimately might be
+; interesting.  It might also be a can of worms.  It might also be
+; inevitable.  It just isn't the most important thing to do just yet.
+
+; Historical Plaque: As of Version_4.1 we had a heuristic oversight in
+; forward chaining that allowed the presence of one (irrelevant) forward
+; chaining rule to thwart the application of a relevant forward chaining
+; rule.  Here I describe how.  Suppose we have a relevant rule whose
+; activation is blocked because it needs (FOOP x) where x is free.
+; Suppose (FOOP (A)) is derived by some irrelevant rule.  Then the
+; relevant activation advances, choosing (A) for x.  Eventually that
+; activation terminates, e.g., because we can't prove the next hyp about
+; x when x is (A).  In Version_4.1 and before, all traces of the
+; relevant activation are lost when it is advanced over (FOOP x).  So if
+; a subsequent rule derives (FOOP (B)) for us, we never make that choice
+; for x.  In summary: the irrelevant rule derives a spurious guess for x
+; and we never try the relevant rule with the right choice of x, even
+; though the choice is suggested on the eventual type-alist.  This
+; actually happened in an example distilled by Dave Greve.  The obvious
+; problem with leaving the relevant activation around, still blocked on
+; (FOOP x), is that we'll repeatedly re-discover the possiblity that x
+; is (A).  In discussing how to avoid such redundancy, Dave suggested
+; searching only the ``new'' part of each type-alist (new since the last
+; attempt to guess free vars).  However, that idea doesn't work because
+; we cannot determine what part of the type-alist is ``new'' since we do
+; not necessary just add pairs to a type-alist.  End of Plaque.
+
+; When we advance an activation we keep the inst-hyp, hyp, unify-subst,
+; and ttree fields in variables and only put them back into the activation
+; record when we decide to suspend it.  They may or may not have changed.
+
+(defun suspend-fc-activation (act inst-hyp hyps unify-subst ttree)
+
+; This function is equivalent to
+
+; (change fc-activation act
+;         :inst-hyp inst-hyp
+;         :hyps hyps
+;         :unify-subst unify-subst
+;         :ttree ttree)
+
+; This would take 4 conses given the layout:
+
+; (defrec fc-activation
+;   (inst-hyp (hyps . ttree)
+;             unify-subst inst-trigger . rule) t)
+
+; But, for example, if only inst-hyp changes, then it could be done in 1 cons.
+; So we optimize three cases: (a) where none of the fields change, (b) where
+; :unify-subst didn't change, and (c) where only :inst-hyp changed.  These
+; cases are chosen both for their estimated frequency and the fact that the
+; data structure actually permits conses to be saved.  Case (a) is perhaps most
+; common, when we make no progress relieving the hypothesis we're stuck on and
+; free variables are not involved at all.  Case (b) is when we've made progress
+; but not selected any new free variables.  Case (c) probably cannot occur --
+; if inst-hyp changed then hyps changes too -- but we coded it because it was
+; straightforward to do and because in past versions of this code it was
+; possible for inst-hyp alone to change and thus it may become possible again.
+
+; The only sense in which this function depends on the shape of
+; fc-activation records is that if the shape were rearranged these
+; optimizations might not save any conses.  The correctness of the
+; function (given its arguments) is independent of the shape of the
+; record.
+
+  (cond ((equal unify-subst (access fc-activation act :unify-subst))
+
+         (cond ((and (equal hyps (access fc-activation act :hyps))
+                     (equal ttree (access fc-activation act :ttree)))
+                (cond ((equal inst-hyp (access fc-activation act :inst-hyp))
+; Case (a) -- 0 conses
+                       act)
+                      (t
+; Case (c) -- 1 cons
+                       (change fc-activation act
+                               :inst-hyp inst-hyp))))
+               (t
+; Case (b) -- 3 conses                
+                (change fc-activation act
+                        :inst-hyp inst-hyp
+                        :hyps hyps
+                        :ttree ttree))))
+        (t
+; Otherwise -- 4 conses
+         (change fc-activation act
+                 :inst-hyp inst-hyp
+                 :hyps hyps
+                 :unify-subst unify-subst
+                 :ttree ttree))))
+
+
+
+(defun prettyify-fc-activation (act level)
+
+; This function converts an fc-activation act into a readable form and level is
+; either 1 or 2 that specifies how much detail you want to see.  What you
+; get is:
+; level  result
+; 1:     (name (trigger: inst-trigger)
+;              (:blocked-hyp k)
+;              (:reason inst-hyp) | (:reason :FREE inst-hyp' seen)
+;              )
+; 2:     (rune (trigger: inst-trigger)
+;              (:blocked-hyp k)
+;              (:reason inst-hyp) | (:reason :FREE inst-hyp' seen)
+;              (:unify-subst unify-subst))
+
+; where k is the number of the hyp that is currently blocking our
+; progress and inst-hyp' is the hyp instantiated with the unbound-free
+; extension of unify-subst and seen is the list of terms
+; already used to bind the free vars in this hyp.  As with
+; prettyify-fc-derivation, name is the basic symbol of rune or else a
+; pair of that symbol and the nat that makes this rune unique.
+
+; To see how to read a rule, look at the level 2 code.
+
+  (let* ((rune (access forward-chaining-rule
+                       (access fc-activation act :rule)
+                       :rune))
+         (name (if (null (cddr rune)) (cadr rune) (cdr rune)))
+         (inst-trigger (access fc-activation act :inst-trigger))
+         (inst-hyp (access fc-activation act :inst-hyp))
+         (hyps (access fc-activation act :hyps))
+         (unify-subst (access fc-activation act :unify-subst))
+         (pretty-subst (pairlis$ (strip-cars unify-subst)
+                                 (pairlis-x2 (strip-cdrs unify-subst) nil)))
+         (k (+ 1 (- (len (access forward-chaining-rule
+                                 (access fc-activation act :rule)
+                                 :hyps))
+                    (if (and (consp inst-hyp)
+                             (eq (car inst-hyp) :FC-FREE-VARS))
+                        (len hyps)
+                        (+ 1 (len hyps)))))))
+    (case level
+      (1 `(,name (:TRIGGER ,inst-trigger)
+                 (:BLOCKED-HYP ,k)
+                 ,(if (and (consp inst-hyp)
+                           (eq (car inst-hyp) :FC-FREE-VARS))
+                      `(:REASON :FREE ,(sublis-var
+                                        (bind-free-vars-to-unbound-free-vars
+                                         (all-vars (car hyps))
+                                         unify-subst)
+                                        (car hyps))
+                                ,(len (cddr inst-hyp)))
+                      `(:REASON ,inst-hyp))))
+      (otherwise
+       `(
+; This forward-chaining rule:
+         ,rune
+; was triggered by this term in the problem:
+         (:TRIGGER ,inst-trigger)
+; but is currently blocked waiting for hyp number k:
+         (:BLOCKED-HYP ,k)
+; which (either) contains a free var as shown or
+; which is this when fully instantiated:
+         ,(if (and (consp inst-hyp)
+                   (eq (car inst-hyp) :FC-FREE-VARS))
+              `(:REASON :FREE ,(sublis-var
+                                (bind-free-vars-to-unbound-free-vars
+                                 (all-vars (car hyps))
+                                 unify-subst)
+                                (car hyps))
+                        ,(cddr inst-hyp))
+              `(:REASON ,inst-hyp))
+; with the current unify-sustitution:
+         (:UNIFY-SUBST ,pretty-subst))))))
+
+(defun prettyify-fc-activations (acts level)
+  (cond ((endp acts) nil)
+        (t (cons (prettyify-fc-activation (car acts) level)
+                 (prettyify-fc-activations (cdr acts) level)))))
+
+(defun make-fc-activation (term rule ttree ens)
+
+; If rule is enabled and the trigger of rule can be instantiated with
+; some substitution unify-subst to be term, then we make an
+; fc-activation for this pair, otherwise we return nil.  Activations
+; have rather difficult-to-enforce rules on :inst-hyp and :hyps.  For
+; example, if the hyp upon which we're stuck contains no free vars, then
+; :inst-hyp is supposed to be the instance for which we're looking --
+; but we want to make sure that :inst-hyp cannot be settled by
+; evaluation and is not supposed to be forced or split upon.  Therefore,
+; rather than try to enforce the invariants here we just start every
+; activation with an :inst-hyp of *t*.  This way we can add new methods
+; of establishing a hyp without having to reproduce the code here.
 
 ; The initial ttree of the activation is ttree.  When we are building an
-; activation for a term in the initial clause, this ttree will be nil.  When we
-; are building an activation for a term derived by some fc derivation, the
-; ttree will contain just that 'fc-derivation.  The presence of that derivation
-; in this activation will mean that the conclusion we eventually derive cannot
-; be worse than the conclusion of the derivation from which this term sprang.
-; Once upon a time this function did not take the ttree arg and just used nil.
-; But that gave rise to infinite loops that were not stopped by our worse-than
-; hacks because the terms from which the bad terms were derived were not
-; logically dependent on their parents.
+; activation for a term in the initial clause, this ttree will be nil.
+; When we are building an activation for a term derived by some earlier
+; round, the ttree will contain its derivation, tagged 'fc-derivation as
+; described below.  The presence of that derivation in this activation
+; will mean that the conclusion we eventually derive must not be worse
+; than the conclusion of the derivation from which this term sprang.
+; Once upon a time this function did not take the ttree arg and just
+; used nil.  But that gave rise to infinite loops that were not stopped
+; by our worse-than hacks because the terms from which the bad terms
+; were derived were not logically dependent on their parents.
 
   (cond ((not (enabled-numep (access forward-chaining-rule rule :nume)
                              ens))
@@ -707,158 +1026,113 @@
                  (cond ((null unify-ans) nil)
                        (t (let ((rule-hyps
                                  (access forward-chaining-rule rule :hyps)))
-                            (cond ((or (null rule-hyps)
-                                       (free-varsp (car rule-hyps)
-                                                   unify-subst)
-                                       (and (nvariablep (car rule-hyps))
-                                            (not (fquotep (car rule-hyps)))
-                                            (or (eq (ffn-symb (car rule-hyps))
-                                                    'force)
-                                                (eq (ffn-symb (car rule-hyps))
-                                                    'case-split))
-                                            force-flg))
-                                   (make fc-activation
-                                         :inst-hyp *t*
-                                         :hyps rule-hyps
-                                         :ttree ttree
-                                         :unify-subst unify-subst
-                                         :inst-trigger term
-                                         :rule rule))
-                                  (t (make fc-activation
-                                           :inst-hyp
-                                           (sublis-var unify-subst
-                                                       (car rule-hyps))
-                                           :hyps (cdr rule-hyps)
-                                           :ttree ttree
-                                           :unify-subst unify-subst
-                                           :inst-trigger term
-                                           :rule rule))))))))))
+                            (make fc-activation
+                                  :inst-hyp *t*
+                                  :hyps rule-hyps
+                                  :ttree ttree
+                                  :unify-subst unify-subst
+                                  :inst-trigger term
+                                  :rule rule))))))))
 
-(defun fc-activation-lst (term rule-lst ttree force-flg ens)
-
-; We create a list of all the possible forward chaining activations for
-; term.
-
-  (cond ((null rule-lst) nil)
-        (t (let ((act
-                  (fc-activation term (car rule-lst) ttree force-flg ens))
-                 (rst
-                  (fc-activation-lst term (cdr rule-lst) ttree force-flg ens)))
-             (if act (cons act rst) rst)))))
-
-; A basic data structure of the forward chaining process is what we
-; call the fc-pot-lst.  It is a structure that enumerates all of the
-; subterms of the current problem -- the clause and all our derived
-; conclusions -- that have any forward chaining rules at all together
-; with their still suspended fc-activations.  It is important that the
-; list include every term that has rules, even if the rules give rise
-; to no activations.  If we omitted a subterm because it gave rise to
-; no activations then every time we generated a new subterm we would
-; have to scan its rules to see if it permits any activations.  Rather
-; than do that, we keep all possible activations (even the empty list)
-; and then only note that the subterm is not new.
+(defun make-fc-activations (term rules ttree ens activations)
+  (cond ((endp rules) activations)
+        (t (let ((act (make-fc-activation term (car rules) ttree ens)))
+             (make-fc-activations term (cdr rules) ttree ens
+                                  (if act
+                                      (cons act activations)
+                                      activations))))))
 
 (mutual-recursion
 
-(defun add-new-fc-pots (term ttree force-flg wrld ens fc-pot-lst)
+(defun collect-terms-and-activations (term ttree wrld ens trigger-terms activations)
 
-; A term consed onto the list of all fc activations for the term is
-; called an "fc pot".  We sweep term looking for every subterm of the
-; form (fn ...) where fn is not a lambda or NOT and has at least one
-; forward-chaining-rule associated with it.  We add an fc pot for each
-; such subterm to fc-pot-lst.
+; We sweep term and collect (a) every subterm starting with a function
+; symbol having forward chaining rules -- whether or not the subterm
+; triggers any activations, and (b) every activation of every forward
+; chaining rule triggered.  We accumulate those two results onto our
+; last two arguments and return (mv trigger-terms activations).  We do not
+; collect activations for the same subterm twice.
 
-  (cond ((variablep term) fc-pot-lst)
-        ((fquotep term) fc-pot-lst)
-        ((flambda-applicationp term)
-         (add-new-fc-pots (lambda-body (ffn-symb term))
-                          ttree force-flg wrld ens
-                          (add-new-fc-pots-lst (fargs term)
-                                               ttree force-flg wrld ens
-                                               fc-pot-lst)))
-        ((eq (ffn-symb term) 'not)
+  (cond ((variablep term) (mv trigger-terms activations))
+        ((fquotep term) (mv trigger-terms activations))
+        ((or (flambda-applicationp term)
+             (eq (ffn-symb term) 'not))
 
-; Because some of the NOTs in clauses are not really present, we think it
-; is confusing to allow a NOT to trigger a forward chaining.
+; We do not sweep the bodies of lambda expressions nor do we allow NOT
+; to trigger forward-chaining rules because printed clauses contain NOTs
+; that aren't really there and it would confuse the user.
 
-         (add-new-fc-pots (fargn term 1) ttree force-flg wrld ens fc-pot-lst))
-        ((assoc-equal term fc-pot-lst) fc-pot-lst)
-        (t (let ((fc-pot-lst (add-new-fc-pots-lst (fargs term)
-                                                  ttree force-flg wrld ens
-                                                  fc-pot-lst))
-                 (rules (getprop (ffn-symb term)
+; Until Version_4.1 we swept the bodies of lambda expressions for
+; triggering terms, but we see no point in doing that since the variable
+; environment is different.  Anything we derived triggered by such a
+; term is true (since we only use assumptions from the original clause
+; and true derivations) but would very likely be irrelevant because the
+; triggering term doesn't actually occur in the problem.
+
+         (collect-terms-and-activations-lst (fargs term) ttree wrld ens
+                                            trigger-terms activations))
+        (t (let ((rules (getprop (ffn-symb term)
                                  'forward-chaining-rules
                                  nil
                                  'current-acl2-world
                                  wrld)))
-             (cond ((null rules) fc-pot-lst)
-                   (t
-                    (cons (cons term
-                                (fc-activation-lst term
-                                                   rules
-                                                   ttree
-                                                   force-flg
-                                                   ens))
-                          fc-pot-lst)))))))
 
-(defun add-new-fc-pots-lst (term-lst ttree force-flg wrld ens fc-pot-lst)
-  (cond ((null term-lst) fc-pot-lst)
-        (t (add-new-fc-pots-lst (cdr term-lst)
-                                ttree force-flg wrld ens
-                                (add-new-fc-pots (car term-lst)
-                                                 ttree force-flg wrld ens
-                                                 fc-pot-lst)))))
+; If the term has rules, we collect it and add any activations it
+; triggers (though there may be none).  But first we see whether we've
+; already collected this term and don't do anything if we have.  If the
+; term doesn't have rules, we don't collect it.  In any case, unless
+; we've seen the term before, we sweep its args.
 
+             (cond
+              (rules
+               (cond
+                ((member-equal term trigger-terms)
+                 (mv trigger-terms activations))
+                (t
+                 (collect-terms-and-activations-lst
+                  (fargs term)
+                  ttree wrld ens
+                  (cons term trigger-terms)
+                  (make-fc-activations term rules ttree ens activations)))))
+              (t (collect-terms-and-activations-lst
+                  (fargs term) ttree wrld ens trigger-terms activations)))))))
+
+(defun collect-terms-and-activations-lst
+  (terms ttree wrld ens trigger-terms activations)
+  (cond
+   ((endp terms) (mv trigger-terms activations))
+   (t (mv-let (trigger-terms activations)
+              (collect-terms-and-activations (car terms)
+                                             ttree wrld ens
+                                             trigger-terms activations)
+              (collect-terms-and-activations-lst (cdr terms)
+                                                 ttree wrld ens
+                                                 trigger-terms activations)))))
 )
 
-(defun add-new-fc-pots-lst-lst
-  (term-lst ttree-lst force-flg wrld ens fc-pot-lst)
-  (cond ((null term-lst) fc-pot-lst)
-        (t (add-new-fc-pots-lst-lst
-            (cdr term-lst)
-            (cdr ttree-lst)
-            force-flg wrld ens
-            (add-new-fc-pots (car term-lst)
-                             (car ttree-lst)
-                             force-flg wrld ens
-                             fc-pot-lst)))))
+(defun collect-terms-and-activations-from-fcd-lst (fcd-lst wrld ens trigger-terms activations)
 
-; The above functions let us create a list of fc-pots, each pot
-; containing a list of activations.  We now develop the code to fire up
-; an activation and (a) derive a new conclusion, (b) abort and abandon
-; the activation, or (c) replace it by a modified activation after
-; possibly relieving some but not all of the hyps.
+; We map over a list of fc-derivations and treat each :concl as a source
+; of trigger terms, each subterm being marked with the fc-derivation tag
+; containing its derivation.  We accumulate all our changes onto the
+; last two arguments and return the extended values of those two lists.
 
-(defun suspend-fc-activation (act inst-hyp hyps unify-subst ttree)
+  (cond ((endp fcd-lst)
+         (mv trigger-terms activations))
+        (t (mv-let
+            (trigger-terms activations)
+            (collect-terms-and-activations
+             (access fc-derivation (car fcd-lst) :concl)
+             (add-to-tag-tree 'fc-derivation (car fcd-lst) nil)
+             wrld ens trigger-terms activations)
+            (collect-terms-and-activations-from-fcd-lst
+             (cdr fcd-lst)
+             wrld ens trigger-terms activations)))))
 
-; This function is equivalent to
-
-; (change fc-activation act
-;         :inst-hyp inst-hyp
-;         :hyps hyps
-;         :unify-subst unify-subst
-;         :ttree ttree)
-
-; i.e., change all the fields but :inst-trigger and :rule.  But this
-; function sometimes does fewer conses.  The cases it tries to
-; optimize are based on knowledge of how we change certain fields, but
-; the correctness of its answer is independent of usage.
-
-  (cond ((equal unify-subst (access fc-activation act :unify-subst))
-
-         (cond ((and (equal hyps (access fc-activation act :hyps))
-                     (equal inst-hyp (access fc-activation act :inst-hyp))
-                     (equal ttree (access fc-activation act :ttree)))
-                act)
-               (t (change fc-activation act
-                          :inst-hyp inst-hyp
-                          :hyps hyps
-                          :ttree ttree))))
-        (t (change fc-activation act
-                   :inst-hyp inst-hyp
-                   :hyps hyps
-                   :unify-subst unify-subst
-                   :ttree ttree))))
+; Now we develop the code to try to advance an activation.  We will
+; advance each activation as far as possible and then suspend it.  Of
+; course, many times re-suspending it is a no-op because we will have
+; made no progress at all.
 
 (mutual-recursion
 
@@ -884,17 +1158,21 @@
         (sublis-var-lstp alist (cdr l)))))
 )
 
-(defun mult-search-type-alist (rest-hyps concls term typ type-alist unify-subst
-                                         ttree oncep)
+(defun mult-search-type-alist (rest-hyps concls term typ type-alist
+                                         unify-subst ttree oncep keys-seen)
 
-; This function is a variant of search-type-alist, instead searching for all
-; instances of term that bind to a subset of typ.  It returns a list of
-; substitutions (which produce those instances) together with a corresponding
-; list of tag-trees each extending ttree.
+; This function is a variant of search-type-alist that searches for
+; all instances of term (other than those listed in keys-seen) bound to a
+; subset of type-set typ.  It returns three lists in 1:1 correspondence:
+; a list of substitutions (which produce those instances), a list of
+; tag-trees each extending ttree, and a list of the instances themselves
+; (actually EQ to the terms from the type-alist upon which
+; one-way-unify1 was called).
 
   (cond ((null type-alist)
-         (mv nil nil))
-        ((ts-subsetp (cadr (car type-alist)) typ)
+         (mv nil nil nil))
+        ((and (ts-subsetp (cadr (car type-alist)) typ)
+              (not (member-equal (car (car type-alist)) keys-seen)))
          (mv-let (ans new-unify-subst)
                  (one-way-unify1 term (car (car type-alist)) unify-subst)
                  (cond
@@ -913,23 +1191,26 @@
 
                            (mv (list new-unify-subst)
                                (list (cons-tag-trees (cddr (car type-alist))
-                                                     ttree))))
+                                                     ttree))
+                               (list (car (car type-alist)))))
 
 ; We found a new unify-subst but there may be additional interesting ones out
 ; there.
 
-                          (t (mv-let (other-unifies other-ttrees)
+                          (t (mv-let (other-unifies other-ttrees other-instances)
                                      (mult-search-type-alist rest-hyps concls
                                                              term
                                                              typ
                                                              (cdr type-alist)
                                                              unify-subst
                                                              ttree
-                                                             oncep)
+                                                             oncep
+                                                             keys-seen)
                                      (mv (cons new-unify-subst other-unifies)
                                          (cons (cons-tag-trees 
                                                 (cddr (car type-alist)) ttree)
-                                               other-ttrees)))))))
+                                               other-ttrees)
+                                         (cons (car (car type-alist)) other-instances)))))))
                        
 ; We didn't find any new substitutions; try again.
 
@@ -938,25 +1219,32 @@
                                              (cdr type-alist)
                                              new-unify-subst
                                              ttree
-                                             oncep)))))
+                                             oncep
+                                             keys-seen)))))
         (t (mult-search-type-alist rest-hyps concls term
                                    typ
                                    (cdr type-alist)
                                    unify-subst
                                    ttree
-                                   oncep))))
+                                   oncep
+                                   keys-seen))))
 
 (defun mult-lookup-hyp (hyp rest-hyps concls type-alist wrld unify-subst ttree
-                            oncep)
+                            oncep last-keys-seen)
 
-; This function is a variant of lookup-hyp, instead returning a list of
-; unify-substs and a corresponding list of tag trees.  See the comment in
-; mult-search-type-alist.
+; This function basically takes a hyp and a type-alist.  It returns (mv
+; new-unify-substs new-ttrees new-last-keys-seen), in which extensions of
+; unify-subst that make hyp true under type-alist are listed in 1:1
+; correspondence with extensions of ttree.  The function does not consider
+; type-alist entries on the keys last-keys-seen and its third result is the
+; keys it used this time.  
+
+; This function is basically a variant of lookup-hyp.
 
   (mv-let (term typ)
           (term-and-typ-to-lookup hyp wrld)
           (mult-search-type-alist rest-hyps concls term typ type-alist
-                                  unify-subst ttree oncep)))
+                                  unify-subst ttree oncep last-keys-seen)))
 
 (mutual-recursion
 
@@ -1030,245 +1318,80 @@
                               (t (mv nil (cons val rst) latches ttree))))))))))
 )
 
-(mutual-recursion
+; Forward Chaining Derivations - fc-derivations - fcds
 
-(defun mult-relieve-fc-hyps
-  (rune target hyps concls unify-subst type-alist ens force-flg wrld state
-        ttree
-        acc1 acc2 acc3 acc4 oncep)
-
-; We map over hyps and try to relieve each one.  The idea is to return four
-; results: new values for inst-hyp, hyps, unify-subst, and ttree.  If we prove
-; all the hyps, the new inst-hyp is *t* and the new hyps is nil.  If we show
-; some hyp false, the new inst-hyp is *nil*.
-
-; However, each of these results is given as a list since a free variable may
-; be bound in several ways, each of which generates a different conclusion.
-; The four lists are in lock step with each other (e.g., the first result is
-; the first element of each list).  Thus, the lists will always have the same
-; length.  Moreover, for efficiency we accumulate into the four result lists
-; that are passed in:  acc1, acc2, acc3, acc4.
-
-; We decided not to structure this function like relieve-hyps (giving
-; rise to a relieve-fc-hyp) because the answer is so complicated since it
-; is involved with state saving.
-
-; We know four ways to relieve a hyp.  If it has no free vars, we try
-; type-set and we use evaluation (if it is ground).  If it has free
-; vars, we look it up in the type-alist.  In both cases we respect
-; FORCEd and CASE-SPLITd hyps.  The way we fail determines what we return.
-
-; Note: Forward chaining was first coded before type-set could force
-; 'assumptions.  Thus, splitting on 'assumptions was uncommon, indeed,
-; it was only done for the output of linear arithmetic, where we first
-; used the idea in the late 70's.  Thus, the forward chaining
-; mechanism was designed so as not to produce any 'assumptions, i.e.,
-; so as not to call rewrite.  When type-set was extended, assumption
-; generation and handling became more wide-spread.  In particular,
-; this function can generate assumptions due to the call of type-set
-; below and those assumptions are handled by the caller of the
-; forward-chaining module.  So now, except for these historical
-; comments, there is no rationale behind this function's abstinence
-; from rewrite.  Mixing forward and backward chaining so intimately
-; might be interesting.  It might also be a can of worms.  It might
-; also be inevitable.  It just isn't the most important thing to do
-; just yet.
-
-  (cond
-   ((null hyps) (mv (cons *t* acc1)
-                    (cons nil acc2)
-                    (cons unify-subst acc3)
-                    (cons ttree acc4)))
-   (t (let* ((forcep1 (and (nvariablep (car hyps))
-                           (not (fquotep (car hyps)))
-                           (or (eq (ffn-symb (car hyps)) 'force)
-                               (eq (ffn-symb (car hyps)) 'case-split))))
-             (forcer-fn (and forcep1 (ffn-symb (car hyps))))
-             (hyp (if forcep1 (fargn (car hyps) 1) (car hyps))))
-        (cond
-         ((free-varsp hyp unify-subst)
-          (mv-let (unify-subst-list ttree-list)
-                  (mult-lookup-hyp hyp (cdr hyps) concls
-                                   type-alist wrld unify-subst ttree
-                                   oncep)
-                  (cond
-                   (unify-subst-list
-                    (mult-relieve-all-fc-hyps
-                     rune target (cdr hyps) concls unify-subst-list type-alist
-                     ens force-flg wrld state ttree-list acc1 acc2 acc3 acc4
-                     oncep))
-                   (t
-                    (let ((fully-bound-unify-subst
-                           (if (and forcep1 force-flg)
-                               (bind-free-vars-to-unbound-free-vars
-                                (all-vars hyp)
-                                unify-subst)
-                               unify-subst)))
-                      (mv-let
-                       (force-flg ttree)
-                       (cond
-                        ((or (not forcep1) (not force-flg))
-                         (mv nil ttree))
-                        (t
-                         (force-assumption
-                          rune
-                          target
-                          (sublis-var fully-bound-unify-subst hyp)
-                          type-alist nil
-                          (immediate-forcep forcer-fn ens)
-                          force-flg
-                          ttree)))
-                       (cond
-                        (force-flg
-                         (mult-relieve-fc-hyps
-                          rune target (cdr hyps) concls fully-bound-unify-subst
-                          type-alist ens force-flg wrld state ttree
-                          acc1 acc2 acc3 acc4 oncep))
-                        (t (mv (cons *t* acc1)
-                               (cons hyps acc2)
-                               (cons unify-subst acc3)
-                               (cons ttree acc4))))))))))
-         (t (let ((inst-hyp (sublis-var unify-subst hyp)))
-              (mv-let (ts ttree1)
-                      (type-set inst-hyp force-flg nil type-alist ens wrld nil
-                                nil nil)
-                      (cond ((ts= ts *ts-nil*)
-                             (mv (cons *nil* acc1)
-                                 (cons nil acc2)
-                                 (cons unify-subst acc3)
-                                 (cons ttree acc4)))
-                            ((ts-intersectp ts *ts-nil*)
-                             (cond
-                              ((free-varsp inst-hyp nil)
-                               (mv-let
-                                (force-flg ttree)
-                                (cond
-                                 ((or (not forcep1) (not force-flg))
-                                  (mv nil ttree))
-                                 (t (force-assumption
-                                     rune target inst-hyp type-alist nil
-                                     (immediate-forcep forcer-fn ens)
-                                     force-flg ttree)))
-                                (cond
-                                 (force-flg
-                                  (mult-relieve-fc-hyps
-                                   rune target (cdr hyps) concls unify-subst
-                                   type-alist ens force-flg wrld state ttree
-                                   acc1 acc2 acc3 acc4 oncep))
-                                 (t (mv (cons inst-hyp acc1)
-                                        (cons (cdr hyps) acc2)
-                                        (cons unify-subst acc3)
-                                        (cons ttree acc4))))))
-                              ((program-termp inst-hyp wrld)
-                               (mv (cons inst-hyp acc1)
-                                   (cons (cdr hyps) acc2)
-                                   (cons unify-subst acc3)
-                                   (cons ttree acc4)))
-                              (t
-                               (mv-let
-                                (erp val latches ttree1)
-                                (ev-respecting-ens
-                                 inst-hyp nil state nil nil ens wrld)
-                                (declare (ignore latches))
-
-; If the evaluation is non-erroneous and produces a non-nil val, we
-; succeeded.  But if the hyp caused an error or if it produced nil, we
-; not only fail but report that this hyp was disproved.
-
-                                (cond
-                                 ((and (not erp) val)
-                                  (mult-relieve-fc-hyps
-                                   rune target (cdr hyps) concls unify-subst
-                                   type-alist ens force-flg wrld state
-                                   (scons-tag-trees ttree1 ttree)
-                                   acc1 acc2 acc3 acc4 oncep))
-                                 (t (mv (cons *nil* acc1)
-                                        (cons nil acc2)
-                                        (cons unify-subst acc3)
-                                        (cons ttree acc4))))))))
-                            (t (mult-relieve-fc-hyps
-                                rune target (cdr hyps) concls unify-subst
-                                type-alist ens force-flg wrld state
-                                (scons-tag-trees ttree1 ttree) acc1 acc2 acc3
-                                acc4 oncep)))))))))))
-
-(defun mult-relieve-all-fc-hyps (rune target hyps concls unify-subst-list
-                                      type-alist ens force-flg wrld state
-                                      ttree-list
-                                      acc1 acc2 acc3 acc4 oncep)
-
-; This function is a helper for mult-relieve-fc-hyps.  It calls
-; mult-relieve-fc-hyps once for each element of unify-subst-list and
-; corresponding element of ttree-list, appending the respective return values
-; of mult-relieve-fc-hyps.
-
-  (if (not (consp unify-subst-list))
-      (mv acc1 acc2 acc3 acc4)
-    (mv-let (acc1 acc2 acc3 acc4)
-            (mult-relieve-fc-hyps
-             rune target hyps concls (car unify-subst-list) type-alist ens
-             force-flg wrld state (car ttree-list) acc1 acc2 acc3 acc4 oncep)
-            (mult-relieve-all-fc-hyps
-             rune target hyps concls (cdr unify-subst-list) type-alist ens
-             force-flg wrld state (cdr ttree-list) acc1 acc2 acc3 acc4
-             oncep))))
-)
-
-; Forward Chaining Derivations - fc-derivation - fcd
-
-; To implement forward chaining, especially to implement the heuristic
-; controls on which derived conclusions to keep, we have to use ttrees in
-; a rather subtle way that involves embedding a ttree in a tagged object
-; in another ttree.  These tagged objects holding ttrees are called
-; "fc-derivations".  We motivate and discuss them here.  However, no
+; To implement forward chaining, especially to implement the heuristic controls
+; on which derived conclusions to keep, we have to use ttrees in a rather
+; subtle way that involves embedding a ttree in a tagged object in another
+; ttree.  These tagged objects holding ttrees are called "fc-derivations" and a
+; ttree that (may) contain fc-derivation tags is said to be ``not fcd-free''
+; (i.e., not free of fc-derivation).  We speak of type-alists as being fcd-free
+; in the obvious way.  We motivate and discuss fc-derivation here.  However, no
 ; fc-derivation gets out of the forward chaining module.  That is, once
-; forward-chain has done its job, the ttrees seen throughout the rest of
-; the system are free of 'fc-derivations.
+; forward-chain-top has done its job, its returned ttrees are fcd-free.
 
 ; When we finally relieve all the hyps we will create the instantiated
-; conclusion, concl.  However, we do not just turn it loose in the world.
-; We need to track it for two reasons.  The first reason concerns the
-; ultimate use of such derived conclusions: when we have finished all our
-; forward chaining and go into the rewriting of literals we will need to
-; choose from among the available forward chained concls those that don't
-; depend upon the literal we are rewriting.  For this it is sufficient to
-; have the ttree of the conclusion.  The second reason is closer to home:
-; before we even get out of forward chaining we have to decide whether
-; this derived concl is worth keeping.  This is a heuristic decision,
-; aimed primarily at preventing infinite forward chaining while
-; permitting "desirable" forward chaining.  Our heuristic is based on
-; consideration of how the concl was derived.  Roughly put, we will keep
-; it unless it is worse than some concl in its derivation.  So we need to
-; record its derivation.  That derivation must contain the names of the
-; rules used and the derived conclusions used.
+; conclusion, concl.  After heuristic filtering, approved concls will find
+; their way into the type-alist by being assumed true.  But within the forward
+; chaining module we must be able to track dependencies for two reasons.  The
+; first reason concerns the ultimate use of such derived conclusions: when we
+; have finished all our forward chaining and go into the rewriting of literals
+; we will need to choose from among the available forward chained concls those
+; that don't depend upon the literal we are rewriting.  For this it is
+; sufficient to have the ttree of the conclusion with its parent tree markers.
+; But the second reason is entirely internal to forward chaining: we need loop
+; stopping heuristics and the one we use is that no conclusion is worse than
+; any of its immediate supporters (which, transitively means that no conclusion
+; is worse than any of its supporters).
 
-; The obvious thing to do is to add to the ttree of concl the name of the
-; rule used and concl itself.  That ttree will attach itself to every
-; deduction using concl and by inspecting it we will see concl itself in
-; the tree, and by induction, all the concls upon which it depends.
-; Unfortunately, this is tricky because ttrees represent sets of all the
-; things with a given tag.  Thus, for example, if we were to tag the rule
-; name with 'lemma and add it to the tree, we would not record the fact
-; that name had perhaps been used twice; the previous occurrence of
-; (lemma . name) in the tree would prevent add-to-tag-tree from changing
-; the tree.  Similarly, while each concl used would be in the set of all
-; things tagged 'concl, we couldn't tell which had been used where, how
-; many times, or by which rules.
+; So, associated with each derived conclusion is a derivation.  To keep things
+; as efficient as possible we don't make these derivations as clean as we
+; might!  Instead, we basically just store the ttree of each concl together
+; with the concl and other information in a record.  All such records at the
+; "top level" of a ttree are the immediate supporters and one must descend
+; recursively into the ttrees of the derivations to get the whole tree.
 
-; So we do something very odd (because it results in a ttree being a
-; component of an object stored in a ttree).  We make what we call an
-; "fc-derivation" which is a structure of the form:
+; This is odd because it results in a ttree being a component of an object
+; stored in a ttree.  Those interior ttrees are actually hidden from our ttree
+; scanners.  Before we leave forward chaining we must lift out any important
+; information.  But within forward chaining this structure is sufficient and
+; reasonably efficient.
+
+; An "fc-derivation" is a structure of the form:
+
+; ***************************************************************************
+; ??? The actual declaration of this record is not in simplify.list but
+; linear-a.lisp.  Change it there and delete this comment!
+; ***************************************************************************
 
 ; (defrec fc-derivation
-;   ((rune . concl) (fn-cnt . p-fn-cnt) (inst-trigger . ttree))
+;   (((concl . ttree) . (fn-cnt . p-fn-cnt))
+;    .
+;    ((inst-trigger . rune) . (fc-round . unify-subst)))
 ;   t)
+  
+; Note: This is just an 8-tipped perfectly symmetric tree.  We
+; contemplated optimizing it for access time to the pieces.  Informally,
+; we suspect concl, fn-cnt, p-fn-cnt, and ttree, are the most critical
+; because of their use in fcd-worse-than-or-equal.  We also contemplated
+; replacing ttree, inst-trigger, rune, and unify-subst by the
+; fc-activation that gave rise to this conclusion, thereby saving the
+; time of consing up so much in this record.  But (a) the activation is
+; not already consed up at the time we build this fc-derivation ``from''
+; it -- we are only holding its pieces in advance-fc-activation2.  (b)
+; To do that would slow down access to those buried pieces.  (c) And
+; risk having move the declaration of fc-activations into linear-a.lisp
+; too.  So we just tear the activation apart and put the pieces into the
+; derivation.
 
-; Rune is the name of the rule applied, concl is the instantiated conclusion.
-; Fn-cnt is the function symbol count of concl (as computed by fn-count) and
-; p-fn-cnt is the pseudo-function count (see term-order).  These are used in
-; our heuristic for deciding whether to keep a concl.  Ttree is the ttree that
-; derived concl from name.  Inst-trigger is the term in the current problem
-; that fired this rule.
+; Rune is the name of the rule applied, concl is the instantiated
+; conclusion.  Fn-cnt is the function symbol count of concl (as computed
+; by fn-count) and p-fn-cnt is the pseudo-function count (see
+; term-order).  These are used in our heuristic for deciding whether to
+; keep a concl, as are rune, concl, and inst-trigger.  Ttree is the
+; ttree that derived concl from name.  Inst-trigger is the term in the
+; current problem that fired this rule.  And fc-round is the number of
+; the forward chaining round in which this concl was derived.
 
 ; If we decide to keep concl then we make a ttree that contains its
 ; fc-derivation as its only object, tagged 'fc-derivation.  That ttree is
@@ -1278,40 +1401,131 @@
 ; by applying name to all of the derived concls in all of the
 ; 'fc-derivations in its ttree.
 
-; When the internal forward chaining process is complete we will have
-; collected a list of fc-derivations deduced from the given clause.
-; The ttree in each derivation will indicate the parent literals via
-; 'pt tags.  We can also recover the names of the forward chaining
-; rules used.  However, all of this information is not visible to the
-; standard ttree scanners because there are ttrees nested inside of
-; tagged 'fc-derivations.  For example, if during rewriting we were to
-; assume the concl of some fcd and tag it with the ttree in that fcd,
-; then that ttree might find its way into the ttree eventually
-; returned by rewrite.  That would in turn be looked at by the printer
-; to determine which lemmas got used.  And unless we coded the
-; printer's sweep to know about the ttrees inside of 'fc-derivations,
-; it would miss the forward chaining rules.  Similarly, the sweep to
-; determine if a given 'pt is used would have to go into
-; 'fc-derivations.  We have decided it is better if, upon finishing
-; our forward chaining, we convert the recursively nested ttrees in
-; 'fc-derivations to standard ttrees.  This destroys the information
-; about exactly how concl was derived from its supporters but it lifts
-; out and makes visible the 'lemmas and 'pt upon which the concl is
-; based.
+; When the forward chaining algorithm is complete we convert the
+; recursively nested ttrees in 'fc-derivations to standard ttrees.  This
+; destroys the information about exactly how concl was derived from its
+; supporters but it lifts out and makes visible the 'lemmas and 'pt upon
+; which the concl is based.
 
-(defun make-ttrees-from-fc-derivations (fc-derivations)
-  (cond ((null fc-derivations) nil)
-        (t (cons (add-to-tag-tree 'fc-derivation (car fc-derivations) nil)
-                 (make-ttrees-from-fc-derivations (cdr fc-derivations))))))
+; Here ends the essay on fc-derivations.  Now we develop the code.
+
+(defun add-fc-derivations (rune concls unify-subst inst-trigger
+                                fc-round ens wrld state ttree
+                                fcd-lst)
+
+; Suppose concls is the instantiated concls of a successful forward
+; chaining rule.  Here we convert each concl in it into an fc-derivation
+; We add each fc-derivation to the list fcd-lst and return the final
+; fcd-lst.
+
+  (cond ((null concls) fcd-lst)
+        (t (mv-let
+            (flg concl new-ttree)
+            (eval-ground-subexpressions (car concls) ens wrld state ttree)
+            (declare (ignore flg))
+            (mv-let
+             (fn-cnt p-fn-cnt)
+             (fn-count concl)
+             (add-fc-derivations rune (cdr concls) unify-subst inst-trigger 
+                                 fc-round ens wrld state ttree
+                                 (cons
+                                  (make fc-derivation
+                                        :fc-round fc-round
+                                        :rune rune
+                                        :concl concl
+                                        :fn-cnt fn-cnt
+                                        :p-fn-cnt p-fn-cnt
+                                        :inst-trigger inst-trigger
+                                        :unify-subst unify-subst
+                                        :ttree new-ttree)
+                                  fcd-lst)))))))
+
+; The following function is not used in forward chaining except as a
+; trace/debugging tool.  Given an fc-derivation, it produces a human
+; readable (at least for some humans) form of the derivation.
+
+(mutual-recursion
+
+(defun prettyify-fc-derivation (fcd level)
+
+; Level is a natural specifying how much detail we want.  ``Name'' below
+; is just the event name of the rune if there is only one
+; forward-chaining rune with that name, e.g., rune is (:FORWARD-CHAINING
+; name), or the cdr of the rune otherwise, e.g., (:FORWARD-CHAINING
+; name . 3).  The idea is to keep the prettyified version short and
+; all the runes are :FORWARD-CHAINING ones, while being unambiguous.
+
+; 1:  (fc-round concl name)
+; 2:  (fc-round concl name (:literals ...) . level-0-supporters)
+; 3:  (fc-round concl name (:literals ...) . level-3-supporters)
+; 4:  (fc-round concl rune (:unify-subst ...) 
+;                         (:literals ...) . level-4-supporters)
+
+; Look at the code for level 4 to see how you read these things.
+
+  (let* ((fc-round (access fc-derivation fcd :fc-round))
+         (concl (access fc-derivation fcd :concl))
+         (rune (access fc-derivation fcd :rune))
+         (name (if (null (cddr rune)) (cadr rune) (cdr rune)))
+         (unify-subst (access fc-derivation fcd :unify-subst))
+         (pretty-subst (pairlis$ (strip-cars unify-subst)
+                                 (pairlis-x2 (strip-cdrs unify-subst) nil))))
+    (case level
+      (1 `(,fc-round ,concl ,name))
+      (2 `(,fc-round ,concl ,name
+                     (:LITERALS ,@(collect-parents
+                                   (access fc-derivation fcd :ttree)))
+                     ,@(prettyify-fc-derivations
+                        (tagged-objects
+                         'fc-derivation
+                         (access fc-derivation fcd :ttree)
+                         nil)
+                        0)))
+      (3 `(,fc-round ,concl ,name
+                     (:LITERALS ,@(collect-parents
+                                   (access fc-derivation fcd :ttree)))
+                     ,@(prettyify-fc-derivations
+                        (tagged-objects 'fc-derivation
+                                        (access fc-derivation fcd :ttree)
+                                        nil)
+                        3)))
+      (otherwise
+       `(
+; Forward chaining round:          
+         ,fc-round
+; produced the new fact:
+         ,concl
+; via the rule
+         ,rune
+; and unify-subst:
+         (:UNIFY-SUBST ,@pretty-subst)
+; relying on these literals from the original clause to relieve some of
+; the hyps:
+         (:LITERALS ,@(collect-parents
+                       (access fc-derivation fcd :ttree)))
+; and relying on these facts from earlier rounds for the other hyps:
+         ,@(prettyify-fc-derivations
+            (tagged-objects 'fc-derivation
+                            (access fc-derivation fcd :ttree)
+                            nil)
+            4))))))
+
+(defun prettyify-fc-derivations (fcd-lst level)
+  (cond ((null fcd-lst) nil)
+        (t (cons (prettyify-fc-derivation (car fcd-lst) level)
+                 (prettyify-fc-derivations (cdr fcd-lst) level)))))
+ )
 
 (defun expunge-fc-derivations (ttree)
 
-; We copy ttree, replacing each 'fc-derivation in it by a new node which tags
-; the rule name with 'lemma and lifts out the interior ttrees and expunges
-; them.  Thus, when we are done we have a ttree with no 'fc-derivation tags,
-; but which has 'lemma tags on the set of names in the 'fc-derivations and
-; which has all of the 'pt objects and 'assumptions (for example) that were
-; recursively embedded in 'fc-derivations.
+; Ttree is a not fcd-free and we make it fcd-free.  In particular, we
+; copy ttree, replacing each 'fc-derivation in it by a new node which
+; tags the rule name with 'lemma and lifts out the interior ttrees and
+; expunges them.  Thus, when we are done we have a ttree with no
+; 'fc-derivation tags, but which has 'lemma tags on the set of names in
+; the 'fc-derivations and which has all of the 'pt objects and
+; 'assumptions (for example) that were recursively embedded in
+; 'fc-derivations.
 
 ; Note: This function must be able to find 'fc-derivations anywhere within the
 ; ttree.  In particular, before we removed ttrees from the type-alists in
@@ -1323,9 +1537,9 @@
 
 ; Once upon a time we detected an 'fc-derivation at the end of prove.  It
 ; slipped into the final proof tree as follows: Forward chaining made two
-; passes.  During the first, hyp1 was concluded.  During the second, hyp2 was
+; rounds.  During the first, hyp1 was concluded.  During the second, hyp2 was
 ; concluded and forced an assumption.  That assumption contained the type-alist
-; produced from the first pass, which had the 'fc-derivation for hyp1.  Now if
+; produced from the first round, which had the 'fc-derivation for hyp1.  Now if
 ; forward-chaining had proved the theorem, we would be in good shape.  But
 ; suppose it doesn't prove the theorem and we start rewriting.  Suppose the
 ; rewriter appeals to hyp2.  That causes it to raise the assumption.  We then
@@ -1378,296 +1592,1578 @@
         (t (cons-tag-trees (expunge-fc-derivations (car ttree))
                            (expunge-fc-derivations (cdr ttree))))))
 
-; This completes the discussion of fc-derivations and we now proceed to
-; use them in the forward chaining process.  We resume mainline
-; development by coding the functions that resume a suspended activation
-; of a forward chaining rule.
+; A Reporting Facility for Forward Chaining
 
-(defun add-fc-derivations (rune concls inst-trigger ens wrld state ttree
-                                fcd-lst)
+; We now describe our design for a reporting facility for forward chaining.
+; The facility is designed to help answer the question ``What happens with the
+; attempt to use <some forward-chaining rules>?''  where the rules of interest
+; are described with some ``criteria'' defined below.
 
-; For each concl in concls we generate an fc-derivation with the given
-; rune and ttree.  We add each fc-derivation to the list fcd-lst and
-; return the final fcd-lst.
+; What should be displayed as the answer?
 
-  (cond ((null concls) fcd-lst)
-        (t (mv-let
-            (flg concl new-ttree)
-            (eval-ground-subexpressions (car concls) ens wrld state ttree)
-            (declare (ignore flg))
-            (mv-let
-             (fn-cnt p-fn-cnt)
-             (fn-count concl)
-             (add-fc-derivations rune (cdr concls) inst-trigger
-                                 ens wrld state ttree
-                                 (cons
-                                  (make fc-derivation
-                                        :rune rune
-                                        :concl concl
-                                        :fn-cnt fn-cnt
-                                        :p-fn-cnt p-fn-cnt
-                                        :inst-trigger inst-trigger
-                                        :ttree new-ttree)
-                                  fcd-lst)))))))
+; (1) The clause being worked on (once we thought the clause-id was a good
+;      idea, but not every clause given to forward-chain-top has a clause-id).
 
-(defun mult-advance-each-fc-activation1 (new-inst-hyp-list new-hyps-list
-                                                           new-unify-subst-list
-                                                           new-ttree-list
-                                                           act ens wrld 
-                                                           state fcd-lst)
+; (2) The final status of every rule activated that met the criteria.
 
-; This function assumes we have gotten past the :inst-hyp of fc-activation act
-; (either because it is *t* or because we relieved it with the given ttree).
-; For each element in new-inst-hyp-list (and the corresponding elements of the
-; other lists), we work our way through the :hyps of act.  We eventually return
-; the two results promised by our superiors, mult-advance-fc-activation1 and
-; mult-advance-fc-activation (q.v.): a list of suspended activations to use in
-; place of act, which is nil if act is to be discontinued either because it
-; terminated or aborted; and an extended fcd-lst containing the derived
-; conclusions.
+; By ``final status'' we mean the rune, instantiated trigger, full
+; unify-substitution, and disposition of every rule that meets the criteria.
+; By ``disposition'' we mean one of these tuples:
 
-  (if (endp new-inst-hyp-list) ; shouldn't happen the first time
-      (mv nil fcd-lst)
-    (mv-let (new-act new-fcd-lst)
-            (let ((new-inst-hyp (car new-inst-hyp-list))
-                  (new-hyps (car new-hyps-list))
-                  (new-unify-subst (car new-unify-subst-list))
-                  (new-ttree (car new-ttree-list)))
-              (cond ((equal new-inst-hyp *t*)
-                     (cond ((null new-hyps)
-                            (let* ((rule (access fc-activation act :rule)))
-                              (mv nil
-                                  (add-fc-derivations
-                                   (access forward-chaining-rule rule :rune)
-                                   (sublis-var-lst new-unify-subst
-                                                   (access forward-chaining-rule
-                                                           rule
-                                                           :concls))
-                                   (access fc-activation act :inst-trigger)
-                                   ens wrld state
-                                   new-ttree
-                                   fcd-lst))))
-                           (t (mv (suspend-fc-activation act
-                                                         *t*
-                                                         new-hyps
-                                                         new-unify-subst
-                                                         new-ttree)
-                                  fcd-lst))))
-                    ((equal new-inst-hyp *nil*)
+; (a) SUCCESS ADDED <term> -- successfully fired and gave us <term>
 
-; This is the signal that we have disproved a hyp (or at least have
-; chosen to abandon this activation).
+; (b) SUCCESS REJECTED <term> -- successfully fired but conclusion <term> was
+;                                disapproved
 
-                     (mv nil fcd-lst))
-                    (t (mv (suspend-fc-activation act
-                                                  new-inst-hyp
-                                                  new-hyps
-                                                  new-unify-subst
-                                                  new-ttree)
-                           fcd-lst))))
-            (mv-let (new-acts new-fcd-lst2)
-                    (mult-advance-each-fc-activation1 (cdr new-inst-hyp-list) 
-                                                      (cdr new-hyps-list)
-                                                      (cdr new-unify-subst-list) 
-                                                      (cdr new-ttree-list)
-                                                      act ens wrld 
-                                                      state new-fcd-lst)
+; (c) BLOCKED WAITINGx <hyp> -- unable to relieve <hyp>; WAITINGx is either
+;                               WAITING or WAITING-FREE to indicate whether hyp
+;                               has free vars.  But hyp is printed with the
+;                               unify-subst applied and with UNBOUND-FREE-vars
+;                               in place of the free vars.  We include the
+;                               WAITING-FREE tag just to make it easier to
+;                               mechanically recognize the presence of free
+;                               vars.  (d) BLOCKED FALSE <hyp> -- hyp shown
+;                               false <hyp>
 
-                    (mv (if new-act (cons new-act new-acts) new-acts) 
-                        new-fcd-lst2)))))
+; The ``criteria'' is a list of triples, sometimes called a ``criterion.''
+; Each criterion consist of a rune, an inst-trigger, and a concl.  All three
+; parts of a criterion are optional and we use nil to indicate the absence of a
+; part.  An activation satisfies the criteria if it satisfies one of the
+; criterion.  An activation satisfies a criterion if it satisfies each of the
+; provided parts.  An activation satisfies the rune (inst-trigger) part if the
+; activation's rune (inst-trigger) is the criterion's rune (inst-trigger).
+; However, because of free variables we cannot always know if a still-active
+; activation will produce the conclusion of the activation we seek.  The best
+; we can do at activation time is determine whether the conclusion of the rule,
+; under the unify-subst, can be made to match the concl we seek.  Therefore, an
+; activation satisfies the concl part if the concl of its rule matches (with
+; one-way-unify1 extending unify-subst) the concl we seek.  (To be precise, fc
+; rules have :concls and we wish to know whether some member of the :concls of
+; the rule matches the concl we seek.)  This is as good as an equality check if
+; the unify-subst is complete on the variables in the concl.
 
-(defun mult-advance-fc-activation1
-  (act ttree type-alist ens oncep-override force-flg wrld state fcd-lst)
+; How can we collect and display this information?
 
-; This function assumes we have gotten past the :inst-hyp of fc-activation act
-; (either because it is *t* or because we relieved it with the given ttree).
-; It attempts to relieve the remaining hypotheses of the forward-chaining-rule
-; of act, then passes the results to mult-advance-each-fc-activation1 to return
-; a new list of fc-activations and a new fcd-lst.
+; We will work inside a wormhole named the ``fc-wormhole''.
 
-  (mv-let (new-inst-hyp-list new-hyps-list new-unify-subst-list new-ttree-list)
-    (let ((rule (access fc-activation act :rule)))
-      (mult-relieve-fc-hyps (access forward-chaining-rule
-                                    rule
-                                    :rune)
-                            (access fc-activation act :inst-trigger)
-                            (access fc-activation act :hyps)
-                            (access forward-chaining-rule
-                                    rule
-                                    :concls)
-                            (access fc-activation act :unify-subst)
-                            type-alist
-                            ens force-flg wrld state
-                            (scons-tag-trees ttree
-                                             (access fc-activation act
-                                                     :ttree))
-                            nil nil nil nil
-                            (oncep oncep-override
-                                   (access forward-chaining-rule
-                                           rule
-                                           :match-free)
-                                   (access forward-chaining-rule
-                                           rule
-                                           :rune)
-                                   (access forward-chaining-rule
-                                           rule
-                                           :nume))))
-    (mult-advance-each-fc-activation1 new-inst-hyp-list new-hyps-list
-                                      new-unify-subst-list new-ttree-list act
-                                      ens wrld state fcd-lst)))
+; The wormhole-data shall consist of an alist with the following keys:
 
-(defun mult-advance-fc-activation (act type-alist ens oncep-override force-flg
-                                       wrld state fcd-lst)
+; :CRITERIA - a list of triples
 
-; Act is an fc activation.  Fcd-lst is a list of all of the
-; fc-derivations made so far (this pass).  We try to relieve the hyps of
-; act.  We return two results.  The first is either an activation to use
-; in place of act or else is nil meaning act is being discontinued.  The
-; second is an extension of fcd-lst containing all the newly derived
-; conclusions (as fc-derivations).
+; :REPORT-ON-THE-FLYP - t if we are to print reports every time
+; forward-chain-top is called, nil if we are to just save the data for browsing
+; later.
 
-  (with-accumulated-persistence
-   (access forward-chaining-rule
-           (access fc-activation act :rule)
-           :rune)
-   (act-out fcd-lst-out)
-   t ; wart: always marked as ``useful''
-   (let ((inst-hyp (access fc-activation act :inst-hyp)))
-     (cond
-      ((equal inst-hyp *t*)
-       (mult-advance-fc-activation1
-        act nil type-alist ens oncep-override force-flg wrld state fcd-lst))
-      (t (mv-let (ts ttree)
-                 (type-set inst-hyp force-flg nil type-alist ens wrld nil nil
-                           nil)
-                 (cond ((ts= ts *ts-nil*)
-                        (mv nil fcd-lst))
-                       ((ts-intersectp ts *ts-nil*)
-                        (mv (list act) fcd-lst))
-                       (t (mult-advance-fc-activation1
-                           act ttree type-alist ens oncep-override force-flg
-                           wrld state fcd-lst)))))))))
+; :FORWARD-CHAIN-CALLS - an alist pairing a ``call number'' n to an alist with
+; the following keys.  The order of the keys in this alist is not necessarily
+; that shown below.  We manipulate the alist only with assoc-eq and
+; put-assoc-eq, but we initialize it with the keys in an ``optimized'' order.
 
-(defun advance-fc-activations (lst type-alist ens oncep-override force-flg wrld
-                                   state fcd-lst)
+;     :INPUT - all of the arguments of this call of forward-chain-top, except
+;     for WRLD, ENS, STATE.  We omit the first two because they make it hard to
+;     print the wormhole state.  We omit the last for obvious reasons.  The
+;     omission of ens makes the stored data actually inadequate to reproduce
+;     the call, since the ens used might be a locally installed :in-theory. The
+;     arguments include caller, so these are really calls of forward-chain-top!
 
-; Lst is of the form (act1 ... actn), where each acti is an fc
-; activation.  fcd-lst is a list of fc-derivations onto which we
-; accumulate any derived conclusions (as fc-derivations).  We return two
-; results: a new list of possibly advanced suspended activations and the
-; accumulated fcd-lst.
+;     :ROUNDS - how many forward-chaining rounds were used
 
-  (cond ((null lst) (mv nil fcd-lst))
-        (t (mv-let (acts fcd-lst)
-                   (advance-fc-activations (cdr lst)
-                                           type-alist
-                                           ens
-                                           oncep-override
-                                           force-flg
-                                           wrld
-                                           state
-                                           fcd-lst)
-                   (mv-let (new-acts fcd-lst)
-                           (mult-advance-fc-activation
-                            (car lst) type-alist
-                            ens oncep-override force-flg wrld state fcd-lst)
-                           (mv (append new-acts acts)
-                               fcd-lst))))))
+;     :OUTPUT - the output values returned by this call, as a triple: (flg
+;     type-alist ttree-or-fc-pairs).  The semantics of this triple is that if
+;     flg is t, then forward-chain-top found a contradiction, type-alist is nil
+;     and ttree-or-fc-pairs is an fcd-free ttree explaining the contradiction;
+;     on the other hand, if flg is nil, then forward-chain-top did not find a
+;     contradiction, type-alist is an fcd-free type-alist extending the
+;     original one with what we know and ttree-or-fc-pairs is a list of pairs
+;     of the form (concl . ttree) where each concl is a derived conclusion and
+;     its ttree is fcd-free.  See forward-chain-top.
 
-(defun advance-fc-pot-lst
-  (fc-pot-lst type-alist ens oncep-override force-flg wrld state fcd-lst)
+;     If the :OUTPUT value is nil instead of a triple, it means the call was
+;     interrupted before we stored the final values.
 
-; Fc-pot-lst is a list of fc-pots, each of the form (term act1 ...
-; actn).  We advance all the activations, producing a new fc-pot-lst and
-; an accumulated list of fc-derivations containing the derived
-; conclusions.
+; (1) :BLOCKED-FALSE-SATISFYING-ACTIVATIONS - every time we abandon a
+;      satisfying activation because its hyp is false, we add it to this list;
+;      note that we will have to do some work to install inst-hyp, etc. into
+;      the activation act0 just detected by advance-fc-activationi.
 
-  (cond ((null fc-pot-lst) (mv nil fcd-lst))
-        (t (mv-let
-            (acts fcd-lst)
-            (advance-fc-activations (cdr (car fc-pot-lst))
-                                    type-alist ens oncep-override force-flg
-                                    wrld state fcd-lst)
-            (mv-let
-             (rst-fc-pot-lst fcd-lst)
-             (advance-fc-pot-lst (cdr fc-pot-lst) type-alist ens oncep-override
-                                 force-flg wrld state fcd-lst)
-             (mv (cons (cons (car (car fc-pot-lst)) acts)
-                       rst-fc-pot-lst)
-                 fcd-lst))))))
+; (2) :ALL-SATISFYING-FC-DERIVATIONS - every time we make an fc derivation from a
+;      satisfying activation, we save the fc-derivation here.
 
-; So by applying the above function we can make one pass over an fc pot
-; list and derive a new pot list and a set of conclusions.  We now
-; develop the code for processing those conclusions.  We want to assume
-; each conclusion, tagged with a ttree that records its fc-derivation, on
-; an extension of type-alist.
+; (3) :APPROVED-SATISFYING-FC-DERIVATIONS - every time we approve a satisfying
+;     fc-derivation we save the fc-derivation here.
 
-(defun type-alist-fcd-lst (fcd-lst type-alist mbt-fc-derivations
-                                   do-not-reconsiderp force-flg ens wrld)
+; (4) :LEFTOVER-ACTIVATIONS - all activations still suspended at the
+;      termination of of forward chaining
 
-; We take a list of fc histories and assume the truth of each concl, extending
-; type-alist.  We return three results.  The first is t or nil indicating
-; whether a contradiction was found.  When a contradiction is found, the second
-; result is the ttree of that contradiction.  It may mention 'fc-derivations
-; that contain rule names that should be reported and other ttrees with
-; fc-derivations in them.  When no contradiction is found, the second result is
-; the final type-alist.  The third result is a list of ``mbt fc-derivations,''
-; which are fc-derivations whose :concls were derived by forward chaining (of
-; course) but which can be determined to be true by type-set reasoning.  These
-; mbt-fc-derivations are not reflected in the new type-alist but are reported
-; so that further forward chaining can be done from them.
+; For brevity we sometimes call the last four lists ``sites'' and number them
+; as seen.  For example, we'll ask whether an fc-derivation ``is a member of
+; site (3).''
 
-; Note that when we finish, (null fcd-lst), we reconsider the type-alist.  This
-; is analogous to type-alist-clause-finish.  We have seen an example of forward
-; chaining where we derived, in order, (< 0 x), (< x 1), (integerp x), and
-; failed to recognize the contradiction, just as type-alist-clause-finish1
-; fails to recognize that contradiction.
+; Note that there are three levels of alist here.  We call the top one ``the
+; fc-wormhole data.''  We call the second level one, the ``calls alist'', and
+; we call the third level one the ``call alist.''  That is, the fc-wormhole
+; data is an alist with two keys, one of which is :FORWARD-CHAIN-CALLS.  The
+; value of that particular key is the calls alist, which is an alist with n
+; numeric keys.  There is a key for each time forward-chain-top has been
+; called.  The calls alist is ordered with the largest key first.  Suppose k is
+; the call number of the most recent call of forward chain.  Then the value of
+; k in the calls alist is a call alist, which has :INPUT, :ROUNDS, :OUTPUT, and
+; the four sites as its keys.
+
+(defun current-fc-call-number (data)
+; See paragraph above.
+  (car (car (cdr (assoc-eq :FORWARD-CHAIN-CALLS data)))))
+
+(defun current-fc-call-alist (data)
+; See paragraph above.
+  (cdr (car (cdr (assoc-eq :FORWARD-CHAIN-CALLS data)))))
+
+(defun put-current-fc-call-alist (call-alist data)
+; See paragraph above.
+  (let* ((calls-alist (cdr (assoc-eq :FORWARD-CHAIN-CALLS data)))
+         (temp (car calls-alist))
+         (k (car temp))) ; current-fc-call-number
+    (put-assoc-eq :FORWARD-CHAIN-CALLS
+                  (cons (cons k call-alist) (cdr calls-alist))
+                  data)))
+
+; When prove is first called, we initialize the fc-wormhole data by clearing
+; the calls-alist but leaving the :CRITERIA and :REPORT-ON-THE-FLYP settings as
+; is.  The user is responsible for them.  All of our code is written to
+; optimize the case where the :CRITERIA is nil.  In that case, we come as close
+; as we can to doing nothing at all about tracking forward-chaining.
+
+; To allow the user maintain the criteria and reporting flag, we provide these
+; very basic primitives.
+
+(defun initialize-fc-wormhole-sites ()
+; This function initializez the fc-wormhole and is called in prove.
+  (wormhole-eval
+   'fc-wormhole
+   '(lambda (whs)
+      (let ((data (wormhole-data whs)))
+        (set-wormhole-data
+         whs
+         `((:CRITERIA
+            ,@(cdr (assoc-eq :criteria data)))
+           (:REPORT-ON-THE-FLYP
+            . ,(cdr (assoc-eq :REPORT-ON-THE-FLYP data)))
+           (:FORWARD-CHAIN-CALLS . nil)))))
+   nil))
+
+(defun show-fc-criteria ()
+  (wormhole-eval
+   'fc-wormhole
+   '(lambda (whs)
+      (prog2$ (cw "Forward Chaining Tracking Criteria:~%~x0~%"
+                  (cdr (assoc-eq :CRITERIA (wormhole-data whs))))
+              whs))
+   nil))
+
+(defun reset-fc-criteria ()
+
+; This user-level function resets the criteria but leaves the on-the-fly flg as
+; last set.  All data is wiped out.
+
+  (wormhole-eval
+   'fc-wormhole
+   '(lambda (whs)
+      (let ((data (wormhole-data whs)))
+        (set-wormhole-data
+         whs
+         `((:CRITERIA . nil)
+           (:REPORT-ON-THE-FLYP
+            . ,(cdr (assoc-eq :REPORT-ON-THE-FLYP data)))
+           (:FORWARD-CHAIN-CALLS . nil)))))
+   nil))
+
+(defun add-fc-criterion (rune inst-trigger concl state)
+  (cond
+   ((not (or (null rune)
+             (and (runep rune (w state))
+                  (eq (car rune) :forward-chaining))))
+    (er soft 'add-fc-criterion
+        "~x0 is not a :FORWARD-CHAINING rune."
+        rune))
+   (t (er-let*
+        ((inst-trigger
+          (cond ((null inst-trigger) (value nil))
+                (t (translate inst-trigger
+                              t t t 'add-fc-criterion (w state) state))))
+         (concl
+          (cond ((null concl) (value nil))
+                (t (translate concl
+                              t t t 'add-fc-criterion (w state) state)))))
+        (prog2$
+         (wormhole-eval
+          'fc-wormhole
+          '(lambda (whs)
+             (let* ((data (wormhole-data whs))
+                    (criteria (cdr (assoc-eq :CRITERIA data)))
+                    (criterion (list rune inst-trigger concl)))
+               (cond
+                ((member-equal criterion criteria)
+                 whs)
+                (t
+                 (set-wormhole-data
+                  whs
+                  (put-assoc-eq :CRITERIA
+                                (cons criterion criteria)
+                                data))))))
+          nil)
+        (value :invisible))))))
+
+(defun set-fc-report-flg (flg state)
+
+; This function allows the user to toggle the flag that determines whether we
+; do on-the-fly reporting or not during forward chaining.  It takes state just
+; in case we want eventually to implement some kind of state global controlling
+; fc data collection similar to what is done with gstackp for brr.
+ 
+  (declare (ignore state))
+  (wormhole-eval
+   'fc-wormhole
+   '(lambda (whs)
+      (let ((data (wormhole-data whs)))
+        (prog2$
+         (cond
+          (flg
+           (cond
+            ((cdr (assoc-eq :criteria data))
+             (cw "On-the-fly reporting of forward-chaining activity is ~
+                  enabled.  The criteria being tracked are: ~x0.~%"
+                 (cdr (assoc-eq :criteria data))))
+            (t
+             (cw "On-the-fly reporting of forward-chaining activity is enabled ~
+                  but no data will be collected because there are no criteria.~%"))))
+          ((cdr (assoc-eq :criteria data))
+           (cw "On-the-fly reporting of forward-chaining activity is disabled.  ~
+                The criteria being tracked are: ~x0.~%"
+               (cdr (assoc-eq :criteria data))))
+          (t
+           (cw "On-the-fly reporting of forward-chaining activity is disabled ~
+                but no data will be collected because there are no criteria.~%")))
+         (set-wormhole-data whs
+                            (put-assoc-eq :REPORT-ON-THE-FLYP flg data)))))
+   nil))
+
+; When forward-chain-top is called, we add a new entry to the calls-alist:
+
+(defun new-fc-call (caller cl pts force-flg do-not-reconsiderp wrld ens
+                              oncep-override)
+
+; Once upon a time we stored all the arguments (except state) in :INPUT.
+; However, that makes it really hard to print whs because it contains many
+; copies of world and ens.  So we just print those symbols, not their
+; values.  This is inadequate to reproduce the call, since the ens
+; might be local to the goal.
+
+  (declare (ignore wrld ens))
+  (wormhole-eval
+   'fc-wormhole
+   '(lambda (whs)
+      (let* ((data (wormhole-data whs))
+             (calls-alist (cdr (assoc-eq :FORWARD-CHAIN-CALLS data))))
+        (cond
+         ((cdr (assoc-eq :CRITERIA data))
+          (set-wormhole-data
+           whs
+           (put-assoc-eq
+            :FORWARD-CHAIN-CALLS
+            (cons (cons (+ 1 (or (car (car calls-alist)) 0))  ; may be first time
+                        `((:BLOCKED-FALSE-SATISFYING-ACTIVATIONS . nil)
+                          (:ALL-SATISFYING-FC-DERIVATIONS . nil)
+                          (:APPROVED-SATISFYING-FC-DERIVATIONS . nil)
+                          (:LEFTOVER-ACTIVATIONS . nil)
+                          (:INPUT
+                           . ,(list caller cl pts force-flg do-not-reconsiderp
+                                    'wrld 'ens oncep-override 'state))
+                          (:ROUNDS . nil)
+                          (:OUTPUT . nil)))
+                  calls-alist)
+            data)))
+         (t whs))))
+   nil))
+
+; As forward-chain-top operates, it monitors the activations it creates and
+; records certain information.  First, we must be able to determine whether an
+; activation satisfies the criteria.  It is convenient to here develop several
+; notions of satisfaction.  Bear with us.
+
+; Here is the definition of when an fc-activation satisfies a criterion.  It
+; uses the notion of whether some concl in the concls of a forward-chaining
+; rule matches a given term, e.g., whether the term is a ``member (modulo
+; unification)'' of the concls.
+
+(defun member-one-way-unify1 (term pat-lst unify-subst)
+
+; We return t or nil to indicate whether some member of pat-lst unifies with
+; term, extending unify-subst.
 
   (cond
-   ((null fcd-lst)
-    (if do-not-reconsiderp
-        (mv nil type-alist mbt-fc-derivations)
-      (mv-let (contradictionp xtype-alist ttree)
-              (reconsider-type-alist type-alist type-alist nil ens wrld nil
-                                     nil)
+   ((endp pat-lst) nil)
+   (t (mv-let (flg alist)
+              (one-way-unify1 (car pat-lst) term unify-subst)
+              (declare (ignore alist))
               (cond
-               (contradictionp (mv t ttree nil))
-               (t (mv nil xtype-alist mbt-fc-derivations))))))
-   (t (mv-let
-       (mbt mbf tta fta ttree)
-       (assume-true-false
-        (access fc-derivation (car fcd-lst) :concl)
-        (add-to-tag-tree 'fc-derivation
-                         (car fcd-lst)
-                         nil)
-        force-flg nil type-alist ens wrld nil nil :fta)
-       (declare (ignore fta))
-       (cond (mbf (mv t ttree mbt-fc-derivations))
-             (mbt (type-alist-fcd-lst (cdr fcd-lst)
-                                      type-alist
-                                      (add-to-set-equal (car fcd-lst)
-                                                        mbt-fc-derivations)
-                                      do-not-reconsiderp force-flg
-                                      ens wrld))
-             (t (type-alist-fcd-lst (cdr fcd-lst)
-                                    tta
-                                    mbt-fc-derivations
-                                    do-not-reconsiderp force-flg ens
-                                    wrld)))))))
+               (flg t)
+               (t (member-one-way-unify1 term (cdr pat-lst) unify-subst)))))))
 
-; When we have obtained a list of fc histories from forward chaining we
-; get the opportunity to filter it on heuristic grounds.  The problem is
-; to avoid infinite forward chaining.  So we define a predicate that
-; determines whether we wish to keep a given derivation, given the
-; current fcd-lst.
+(defun satisfying-fc-activation1p (criterion act)
+  (let ((rune (car criterion))
+        (trig (cadr criterion))
+        (concl (caddr criterion))
+        (rule (access fc-activation act :rule)))
+    (and (or (null rune)
+             (equal rune
+                    (access forward-chaining-rule rule :rune)))
+         (or (null trig)
+             (equal trig
+                    (access fc-activation act :inst-trigger)))
+         (or (null concl)
+             (member-one-way-unify1
+              concl
+              (access forward-chaining-rule rule :concls)
+              (access fc-activation act :unify-subst))))))
+
+; And then we can conjoin that across a criteria (list of ``criterions'').
+
+(defun satisfying-fc-activationp (criteria act)
+  (cond ((endp criteria) nil)
+        (t (or (satisfying-fc-activation1p (car criteria) act)
+               (satisfying-fc-activationp (cdr criteria) act)))))
+
+(defun collect-satisfying-fc-activations (criteria acts ans)
+
+; Accumulate all satisfying fc-activations in acts onto ans.
+
+  (cond ((endp acts) ans)
+        ((satisfying-fc-activationp criteria (car acts))
+         (collect-satisfying-fc-activations criteria
+                                            (cdr acts)
+                                            (cons (car acts) ans)))
+        (t (collect-satisfying-fc-activations criteria (cdr acts) ans))))  
+
+; The notion of a satisfying fc-activation applies naturally to the ``virtual
+; activations'' manipulated in advance-fc-activation1, 2, and 3, where we have
+; an activation represented by some initial version of it, act0, together with
+; the current values of fields :inst-hyp, :hyps, :unify-subst, and :ttree --
+; but without those values actually deposited in the activation.  The only one
+; of the virtual fields that is relevant to satisfiability is the unify-subst.
+
+(defun satisfying-virtual-fc-activation1p (criterion act0 unify-subst)
+
+; Here we define the analog of satisfying-fc-activationp except that the
+; activation we assess is a ``virtual'' one obtained by putting unify-subst
+; into the act0.  The functions that advance fc-activations traffic in
+; ``virtual'' activations represented by some initial act0 and the current
+; values intended to occupy the inst-hyp, hyps, unify-subst, and ttree fields.
+; But of those ``virtual'' fields, the only one that affects satisfiability is
+; unify-subst.
+
+  (let ((rune (car criterion))
+        (trig (cadr criterion))
+        (concl (caddr criterion))
+        (rule (access fc-activation act0 :rule)))
+    (and (or (null rune)
+             (equal rune
+                    (access forward-chaining-rule rule :rune)))
+         (or (null trig)
+             (equal trig
+                    (access fc-activation act0 :inst-trigger)))
+         (or (null concl)
+             (member-one-way-unify1
+              concl
+              (access forward-chaining-rule rule :concls)
+              unify-subst)))))
+
+(defun satisfying-virtual-fc-activationp (criteria act0 unify-subst)
+  (cond ((endp criteria) nil)
+        (t (or (satisfying-virtual-fc-activation1p (car criteria)
+                                                   act0 unify-subst)
+               (satisfying-virtual-fc-activationp (cdr criteria)
+                                                  act0 unify-subst)))))
+
+
+; The notion of a satisfying fc-activation extends naturally to the notion of a
+; satisfying fc-derivation.  However, by the time we get to fc-derivations we
+; can check equality of the instantiated conclusion to the concl sought.
+
+(defun satisfying-fc-derivation1p (criterion fcd)
+  (let ((rune (car criterion))
+        (trig (cadr criterion))
+        (concl (caddr criterion)))
+    (and (or (null rune)
+             (equal rune
+                    (access fc-derivation fcd :rune)))
+         (or (null trig)
+             (equal trig
+                    (access fc-derivation fcd :inst-trigger)))
+         (or (null concl)
+             (equal concl
+                    (access fc-derivation fcd :concl))))))
+
+(defun satisfying-fc-derivationp (criteria fcd)
+  (cond ((endp criteria) nil)
+        (t (or (satisfying-fc-derivation1p (car criteria) fcd)
+               (satisfying-fc-derivationp (cdr criteria) fcd)))))
+
+(defun collect-satisfying-fc-derivations (criteria fcd-lst ans)
+
+; Accumulate all satisfying fc-derivations in fcd-lst onto ans.
+
+  (cond ((endp fcd-lst) ans)
+        ((satisfying-fc-derivationp criteria (car fcd-lst))
+         (collect-satisfying-fc-derivations criteria
+                                            (cdr fcd-lst)
+                                            (cons (car fcd-lst) ans)))
+        (t (collect-satisfying-fc-derivations criteria (cdr fcd-lst) ans))))
+
+; We now define the functions that move information into the four fc-wormhole
+; sites.  We call this ``filtering'' because we only move the objects that
+; satisfy the criteria.
+
+(defun filter-satisfying-virtual-fc-activation (act0 inst-hyp hyps unify-subst ttree)
+
+; This is the function that adds an activation to the
+; :blocked-false-satisfying-activations, aka site (1), of the current
+; forward-chain-top call, provided the activation satisfies the criteria.  This
+; is called from both advance-fc-activation1 and advance-fc-activation2, which
+; are the two functions that detect false hypotheses.  Those two functions will
+; not actually have the realized activation available to them (without consing
+; it up).  Instead, they have act0, inst-hyp, hyps, unify-subst, and ttree.
+; The actual activation being considered is that obtained by putting those
+; fields into act0, something that the advance-fc-activation functions don't do
+; unnecessarily.  But we must create the actual from the virtual if we wish to
+; save the actual activation.  This function avoids creating the activation if
+; it is not satisfying.
+
+; The prefix ``filter'' in this name is a little misleading.  We generally use
+; that prefix to suggest mapping over a list and extracting the ones satisfying
+; some criteria.  But here we have just one virtual activation and we either
+; save it or not depending on whether it is satisfying.
+
+  (wormhole-eval
+   'fc-wormhole
+   '(lambda (whs)
+      (let ((criteria (cdr (assoc-eq :CRITERIA (wormhole-data whs)))))
+        (cond
+         ((null criteria) whs)
+         ((satisfying-virtual-fc-activationp
+           criteria
+           act0 unify-subst)
+; At this point we know we need the activation.  So we get comfortable.
+          (let* ((data (wormhole-data whs))
+                 (calls-alist (cdr (assoc-eq :FORWARD-CHAIN-CALLS data)))
+                 (k (car (car calls-alist)))
+                 (call-alist (cdr (car calls-alist)))
+                 (act (suspend-fc-activation act0 inst-hyp hyps
+                                             unify-subst ttree)))
+            (set-wormhole-data
+             whs
+             (put-assoc-eq
+              :FORWARD-CHAIN-CALLS
+              (cons (cons k
+                          (put-assoc-eq
+                           :BLOCKED-FALSE-SATISFYING-ACTIVATIONS
+                           (cons act
+                                 (cdr (assoc-eq
+                                       :BLOCKED-FALSE-SATISFYING-ACTIVATIONS
+                                       call-alist)))
+                           call-alist))
+                    (cdr calls-alist))
+              data))))
+         (t whs))))
+   nil))
+
+(defun filter-all-satisfying-fc-derivations (fcd-lst)
+
+; This function moves satisfying fcds from fcd-lst into site (2) of the current
+; call of forward-chain-top.
+
+; Two of our sites, (2) all-satisfying-fc-derivations and (3)
+; approved-satisfying-fc-derivations, contain fc-derivations.  The process of
+; collecting into these sites is the same: we map over some fcd-lst and cons
+; every satisfying fcd onto the appropriate site.  One possibly confusing
+; difference between the handling of these two sites is that to collect into
+; site (2) we must call this function repeatedly during forward chaining, once
+; per round, because it is only at the level of a round (forward-chain1) that
+; we know all the fc-derivations made in a round.  But the top-level
+; forward-chain-top process keeps track of all approved fc-derivations, so we
+; call the guts of this function just once on the other site at the top-level
+; (as we exit forward-chain-top) to filter site (3).
+
+  (wormhole-eval
+   'fc-wormhole
+   '(lambda (whs)
+      (let ((criteria (cdr (assoc-eq :CRITERIA (wormhole-data whs)))))
+        (cond
+         ((null criteria) whs)
+         (t
+          (let* ((data (wormhole-data whs))
+                 (calls-alist (cdr (assoc-eq :FORWARD-CHAIN-CALLS data)))
+                 (k (car (car calls-alist)))
+                 (call-alist (cdr (car calls-alist))))
+            (set-wormhole-data
+             whs
+             (put-assoc-eq
+              :FORWARD-CHAIN-CALLS
+              (cons (cons k
+                          (put-assoc-eq
+                           :ALL-SATISFYING-FC-DERIVATIONS
+                           (collect-satisfying-fc-derivations
+                            criteria
+                            fcd-lst
+                            (cdr (assoc-eq :ALL-SATISFYING-FC-DERIVATIONS
+                                           call-alist)))
+                           call-alist))
+                    (cdr calls-alist))
+              data)))))))
+   nil))
+
+(defun filter-satisfying-fc-activations (acts)
+
+; Site (4) is leftover-activations.  At the termination of forward-chaining we
+; are holding a list of all still-suspended fc-activations and this is the
+; function that filters that list into site 4 of the current call of
+; forward-chain-top.
+  
+  (wormhole-eval
+   'fc-wormhole
+   '(lambda (whs)
+      (let ((criteria (cdr (assoc-eq :CRITERIA (wormhole-data whs)))))
+        (cond
+         ((null criteria) whs)
+         (t (let* ((data (wormhole-data whs))
+                   (calls-alist (cdr (assoc-eq :FORWARD-CHAIN-CALLS data)))
+                   (k (car (car calls-alist)))
+                   (call-alist (cdr (car calls-alist))))
+              (set-wormhole-data
+               whs
+               (put-assoc-eq
+                :FORWARD-CHAIN-CALLS
+                (cons (cons k
+                            (put-assoc-eq
+                             :LEFTOVER-ACTIVATIONS
+                             (collect-satisfying-fc-activations
+                              criteria
+                              acts
+                              (cdr (assoc-eq :LEFTOVER-ACTIVATIONS
+                                             call-alist)))
+                             call-alist))
+                      (cdr calls-alist))
+                data)))))))
+   nil))
+
+; So now we have got the machinery to populate sites (1)-(4) of the
+; current call of forward-chain-top.  
+
+; When forward-chain-top is about to exit, we finish the task of recording the
+; results of the current call.  fc-exit This consists of three main parts: we
+; move some accumulated data into sites 3 and 4 (sites 1 and 2 will be
+; accumulated as we go), we generate a report that is either long or short
+; depending on the :REPORT-ON-THE-FLYP flag, and we store the returned values.
+
+; We now develop the machinery to report.  Reports take two forms, a long and short
+; form.  The short form is just:
+
+; (Forward-chaining called by caller.  See (FC-Report k).)
+
+; where caller is the token indicating the caller of forward-chain-top and k is
+; the call-number of the current call of forward-chain-top.
+
+; The long form will summarize all the activity.  We will arrange for the
+; function fc-report to print the long form after the fact and we'll print the
+; long form on the fly if the flag is set.
+
+; A difficulty with reporting is that activations branch as free variables are
+; instantiated.  Thus, a rule triggered by a given term may have many final
+; unify-substs and dispositions.  The report therefore lists every rule and
+; trigger term and then all the dispositions:
+
+;  (<rune>
+;   (:TRIGGER <inst-term>)
+;   ((:UNIFY-SUBST <pretty-subst>)
+;    (:DISPOSITION <outcome> <reason> <term>))
+;   ...
+;   ((:UNIFY-SUBST <subst>)
+;    (:DISPOSITION <outcome> <reason> <term>)))
+                 
+; We prepare this report in its raw form and will just print it.  The user may
+; want to process it further with some attachment.
+
+; When we begin to create the report we have:
+
+; (1) blocked-false-satisfying-activations - every satisfying fc-activation
+;     found to have a false hyp
+
+; (2) all-satisfying-fc-derivations - every fc-derivation that satisfies the
+;     criteria
+
+; (3) approved-satisfying-fc-derivations - the fc-derivations that both satisfy
+;     the criteria and were approved
+
+; (4) leftover-activations - all activations still suspended at the termination
+;     of forward chaining
+
+; Recall that the status of an activation consists of its unify-subst (which
+; completes the identification of the branch) and the disposition:
+
+; (a) SUCCESS ACCEPTED <term> -- successfully fired and gave us <term>
+; (b) SUCCESS REJECTED <term> -- successfully fired but conclusion <term> was disapproved
+; (c) BLOCKED WAITINGx <hyp> -- unable to relieve <hyp>
+; (d) BLOCKED FALSE <hyp> --  hyp shown false <hyp>
+
+; Our strategy will be first to collect all (rune . inst-trigger) pairs and
+; then, for each such pair, map over each of the sites (1)-(4) to collect the
+; status of that pair.
+
+; To collect all (rune . inst-trigger) pairs we have to map over sites (1),
+; (2), and (4), i.e., all blocked false activations, all fc-derivations, and
+; all still-suspended activations.
+
+(defun collect-rune-trigger-pairs-from-fc-activations (acts ans)
+  (cond ((endp acts) ans)
+        (t (collect-rune-trigger-pairs-from-fc-activations
+            (cdr acts)
+            (add-to-set-equal (cons (access forward-chaining-rule
+                                            (access fc-activation (car acts) :rule)
+                                            :rune)
+                                    (access fc-activation (car acts) :inst-trigger))
+                              ans)))))
+
+(defun collect-rune-trigger-pairs-from-fc-derivations (fcds ans)
+  (cond ((endp fcds) ans)
+        (t (collect-rune-trigger-pairs-from-fc-derivations
+            (cdr fcds)
+            (add-to-set-equal (cons (access fc-derivation (car fcds) :rune)
+                                    (access fc-derivation (car fcds) :inst-trigger))
+                              ans)))))
+
+; Once we've collected all the rune-trigger pairs, we can map over each site to
+; collect the status information for each pair.
+
+(defun prettyify-subst (alist)
+; Turn a dotted-pair alist into a doublet alist, e.g.,
+; ((X CAR A) (Y . B)) into ((X (CAR A)) (Y B)).
+  (cond ((endp alist) nil)
+        (t (cons (list (car (car alist)) (cdr (car alist)))
+                 (prettyify-subst (cdr alist))))))
+
+(defun collect-fc-status-site-1 (rune inst-trigger acts)
+
+; Acts is site (1) blocked-false-satisfying-activations - every satisfying
+; fc-activation found to have a false hyp.  Note that when we store a
+; satisfying activation at this site we put the inst-hyp (which was either
+; type-set to *ts-nil* or evaluated to *nil*) into the activation.  The hyp
+; cannot possibly have free vars in it (because we never choose instantiations
+; to falsify a hyp).  It may have a FORCE or CASE-SPLIT on it, but that's ok
+; because type-set and eval handle those functions and accurately determined
+; that the inst-hyp is false.
+
+  (cond
+   ((endp acts) nil)
+   ((and (equal rune
+                (access forward-chaining-rule
+                        (access fc-activation (car acts) :rule)
+                        :rune))
+         (equal inst-trigger
+                (access fc-activation (car acts) :inst-trigger)))
+    (cons `((:UNIFY-SUBST
+             ,(prettyify-subst (access fc-activation (car acts) :unify-subst)))
+            (:DISPOSITION BLOCKED FALSE
+                          ,(access fc-activation (car acts) :inst-hyp)))
+          (collect-fc-status-site-1 rune inst-trigger (cdr acts))))
+   (t (collect-fc-status-site-1 rune inst-trigger (cdr acts)))))
+
+(defun collect-fc-status-sites-2-3 (rune inst-trigger all-fcds approved-fcds) 
+                          
+; All-fcds is site (2) all-satisfying-fc-derivations - every fc-derivation that
+; satisfies the criteria, and approved-fcds is site (3)
+; approved-satisfying-fc-derivations - the fc-derivations that both satisfy the
+; criteria and were approved.  We map down all-fcds and use the other to
+; determine if whether each was approved or rejected.
+
+  (cond
+   ((endp all-fcds) nil)
+   ((and (equal rune
+                (access fc-derivation (car all-fcds) :rune))
+         (equal inst-trigger
+                (access fc-derivation (car all-fcds) :inst-trigger)))
+    (cons `((:UNIFY-SUBST
+             ,(prettyify-subst (access fc-derivation (car all-fcds) :unify-subst)))
+            (:DISPOSITION
+             SUCCESS
+             ,(if (member-equal (car all-fcds) approved-fcds)
+                  'APPROVED
+                  'REJECTED)
+             ,(access fc-derivation (car all-fcds) :concl)))
+          (collect-fc-status-sites-2-3 rune inst-trigger (cdr all-fcds) approved-fcds)))
+   (t (collect-fc-status-sites-2-3 rune inst-trigger (cdr all-fcds) approved-fcds))))
+
+(defun prettyify-blocked-fc-inst-hyp (inst-hyp hyps unify-subst)
+
+; The arguments are those respective fields in some fc-activation.  Hence,
+; inst-hyp is either the :FC-FREE-VAR marker (which implicitly depends on the
+; contents of the hyp and unify-subst fields) or an instantiated hyp.  We
+; recover the actual (partially) instantiated hyp we're stuck on.
+
+  (cond ((and (consp inst-hyp)
+              (eq (car inst-hyp) :FC-FREE-VARS))
+         (let ((hyp (sublis-var
+                     (bind-free-vars-to-unbound-free-vars
+                      (all-vars (car hyps))
+                      unify-subst)
+                     (car hyps))))
+           (if (cadr inst-hyp) ; then FORCE or CASE-SPLIT should be added
+               `(,(cadr inst-hyp) ,hyp)
+               hyp)))
+        (t inst-hyp)))
+
+(defun collect-fc-status-site-4 (rune inst-trigger acts)
+
+; Acts is site (4) leftover-activations - all activations still suspended at
+; the termination of forward chaining.
+
+  (cond
+   ((endp acts) nil)
+   ((and (equal rune
+                (access forward-chaining-rule
+                        (access fc-activation (car acts) :rule)
+                        :rune))
+         (equal inst-trigger
+                (access fc-activation (car acts) :inst-trigger)))
+    (let ((inst-hyp (access fc-activation (car acts) :inst-hyp)))
+      (cons `((:UNIFY-SUBST
+               ,(prettyify-subst (access fc-activation (car acts) :unify-subst)))
+              (:DISPOSITION BLOCKED
+                            ,(if (and (consp inst-hyp)
+                                      (eq (car inst-hyp) :FC-FREE-VARS))
+                                 'WAITING-FREE
+                                 'WAITING)
+                            ,(prettyify-blocked-fc-inst-hyp
+                              inst-hyp
+                              (access fc-activation (car acts) :hyps)
+                              (access fc-activation (car acts) :unify-subst))))
+            (collect-fc-status-site-4 rune inst-trigger (cdr acts)))))
+   (t (collect-fc-status-site-4 rune inst-trigger (cdr acts)))))
+
+(defun collect-fc-status (rune inst-trigger site1 site2 site3 site4)
+
+; Given a a rune and instantiated trigger term we collect the final status of
+; every activation of that pair recorded in the sites.  Every activation
+; (derivation) in the sites is known to satisfy the criteria.
+
+  `(,rune
+    (:TRIGGER ,inst-trigger)
+    ,@(collect-fc-status-site-1 rune inst-trigger site1)
+    ,@(collect-fc-status-sites-2-3 rune inst-trigger site2 site3)
+    ,@(collect-fc-status-site-4 rune inst-trigger site4)))
+  
+(defun make-fc-activity-report1 (rune-trigger-pairs site1 site2 site3 site4)
+
+; Given a list of (rune . inst-trigger) pairs and the four sites, we
+; collect the final status of each pair.
+
+  (cond ((endp rune-trigger-pairs) nil)
+        (t (cons (collect-fc-status (car (car rune-trigger-pairs))
+                                    (cdr (car rune-trigger-pairs))
+                                    site1 site2 site3 site4)
+                 (make-fc-activity-report1 (cdr rune-trigger-pairs)
+                                         site1 site2 site3 site4)))))
+
+(defun make-fc-activity-report (call-alist)
+
+; Given the data collected in the fc-wormhole by forward-chain-top, we prepare
+; the final status reports of every activation satisfying the criteria.
+
+  (let* ((site1
+          (cdr (assoc-eq :blocked-false-satisfying-activations call-alist)))
+         (site2
+          (cdr (assoc-eq :all-satisfying-fc-derivations call-alist)))
+         (site3
+          (cdr (assoc-eq :approved-satisfying-fc-derivations call-alist)))
+         (site4
+          (cdr (assoc-eq :leftover-activations call-alist)))
+         (rune-trigger-pairs
+          (collect-rune-trigger-pairs-from-fc-activations
+           site1
+           (collect-rune-trigger-pairs-from-fc-derivations
+            site2
+            (collect-rune-trigger-pairs-from-fc-activations
+             site4 nil)))))
+    (merge-sort-lexorder
+     (make-fc-activity-report1 rune-trigger-pairs site1 site2 site3 site4))))
+
+(defun fc-report1 (whs k)
+
+; We assume we are in the fc-wormhole when this function is called.  It takes
+; the wormhole status and an alleged caller number, k, and prints the report
+; for the kth call of forward-chain-top.  It returns nil.
+
+  (let* ((data (wormhole-data whs))
+         (calls-alist (cdr (assoc-eq :FORWARD-CHAIN-CALLS data)))
+         (temp (assoc-equal k calls-alist)))
+    (cond
+     ((and temp
+           (cdr (assoc-eq :OUTPUT (cdr temp))))
+      (let* ((call-alist (cdr temp))
+             (input (cdr (assoc-eq :INPUT call-alist)))
+             (caller (car input))
+             (clause (cadr input))
+             (output (cdr (assoc-eq :OUTPUT call-alist)))
+             (flg (car output))
+             (rounds (cdr (assoc-eq :ROUNDS call-alist)))
+             (activity (make-fc-activity-report call-alist)))
+        (cw "~%~
+       -----------------------------------------------------------------~%~
+       Forward Chaining Report ~x0:~%~
+       Caller: ~x1~%~
+       Clause: ~x2~%~
+       Number of Rounds: ~x3~%~
+       Contradictionp: ~x4~%~
+       Activations:~%~
+       ~x5~%~
+       -----------------------------------------------------------------~%"
+            k
+            caller
+            clause
+            rounds
+            flg
+            activity)))
+     (t (cw "~%There is no Forward Chaining Report for ~x0.~%"
+            k)))))
+
+(defun fc-report (k)
+
+; This function is intended to be called from outside the fc-wormhole,
+; by the user.
+
+  (wormhole-eval
+   'fc-wormhole
+   '(lambda (whs)
+      (let ((criteria (cdr (assoc-eq :CRITERIA (wormhole-data whs)))))
+        (cond
+         ((null criteria) whs)
+         (t (prog2$ (fc-report1 whs k) whs)))))
+   nil))
+
+; As noted above, when forward-chain-top is about to exit, we finish the task
+; of recording the results of the current call.  We move some accumulated data
+; into sites 3 and 4 (sites 1 and 2 will be accumulated as we go), we generate
+; a report that is either long or short depending on the :REPORT-ON-THE-FLYP
+; flag, and we store the returned values.
+
+(defun fc-exit (flg type-alist ttree-or-fc-pairs
+                    caller rounds all-approved-fcds all-leftover-activations)
+  
+; We exit forward-chain-top by calling this function.  Logically you can think
+; of this function as just:
+
+; (mv flg type-alist ttree-or-fc-pairs)
+    
+; The other arguments are used to report on forward-chaining.
+
+; At the time this is called we will have already fully loaded sites (1) and
+; (2), i.e., the satisfying activations with false hyps and the list of all
+; satisfying fc-derivations.  We load sites (3) and (4) -- the approved
+; satisfying fc-derivations and the (satisfying) leftover activations -- here,
+; using the supplied all-approved-fcds and all-leftover-activations arguments.
+; Then we generate a report -- long or short as appropriate -- and return.
+
+  (prog2$
+   (wormhole-eval
+    'fc-wormhole
+    '(lambda (whs)
+       (let ((criteria (cdr (assoc-eq :CRITERIA (wormhole-data whs)))))
+         (cond
+          ((null criteria) whs)
+         (t (let* ((data (wormhole-data whs))
+                   (calls-alist (cdr (assoc-eq :FORWARD-CHAIN-CALLS data)))
+                   (k (car (car calls-alist)))
+                   (call-alist (cdr (car calls-alist)))
+                   (new-data
+                    (put-assoc-eq
+                     :FORWARD-CHAIN-CALLS
+                     (cons (cons k
+                                 (put-assoc-eq
+                                  :APPROVED-SATISFYING-FC-DERIVATIONS
+                                  (collect-satisfying-fc-derivations
+                                   criteria all-approved-fcds nil)
+                                  (put-assoc-eq
+                                   :LEFTOVER-ACTIVATIONS
+                                   (collect-satisfying-fc-activations
+                                    criteria all-leftover-activations nil)
+                                   (put-assoc-eq
+                                    :ROUNDS rounds
+                                    (put-assoc-eq
+                                     :OUTPUT
+                                     (list flg type-alist ttree-or-fc-pairs)
+                                    call-alist)))))
+                           (cdr calls-alist))
+                     data))
+                   (new-whs (set-wormhole-data whs new-data)))
+              (cond
+               ((cdr (assoc-eq :REPORT-ON-THE-FLYP new-data))
+                (prog2$ (fc-report1 new-whs k)
+                        new-whs))
+               (t (prog2$
+                   (cw "~%(Forward Chaining on behalf of ~x0:  (FC-Report ~x1))~%"
+                       caller k)
+                   new-whs))))))))
+    nil)
+   (mv flg type-alist ttree-or-fc-pairs)))
+
+; Explanation of the Kernel Code for FC Advancement
+
+; The mutual-recursion nest below is the kernel code for advancing
+; fc-activations.  There is a wrapper defined afterwards.  The kernel functions
+; advance an activation along all possible threads and return a list of
+; suspensions created only when they finally get stuck on some hypothesis.  But
+; in the mutual recursion keep in mind act0, inst-hyps, hyps, unify-subst, and
+; ttree.  Initially, act0 is the fc-activation with which we started.
+; Initially, the other four were just the obvious fields extracted from this
+; activation.  But as we recur we may change the other four.  When we finally
+; get stuck, we suspend act0 by setting all four of the fields because we don't
+; know which ones have changed.  The function suspend-fc-activation optimizes
+; the construction for common cases of unchanged fields.
+
+; The mutual recursion has 3 functions or phases and their names end in 1, 2,
+; and 3.  Phase (1) works on the inst-hyp, which is either an :FC-FREE-VARS
+; marker or the instantiated hyp upon which we were stuck the last time we saw
+; this activation.  If the inst-hyp is just an instantiated hyp and we find it
+; to be true now, we enter phase (2) below to work on the other hyps.  If the
+; inst-hyp is a :FC-FREE-VARS marker and we find instances of it that are true,
+; we enter phase (3) to pursue each possible unify-subst and ttree, but we also
+; generally re-suspend in case further instances come along as the type-alist
+; grows.  Phase (2) just loops down hyps calling itself recursively.  However,
+; if it sees a hyp containing a free variable, it just manufactures an
+; appropriate inst-hyp and calls phase (1) so we don't reproduce that code.
+; Finally, Phase (3) just loops through the unify-substs and ttrees generated
+; by finding suitable instances and calls phase (2) on the rest of the hyps.
+
+; So the call graph of this nest is:
+; (1) calls
+;     (2) to go on to the rest of the hyps and
+;     (3) to pursue each choice of free vars
+; (2) calls
+;     (1) to handle free vars and
+;     (2) to go on to the rest of the hyps
+; (3) calls
+;     (2) to handle a given unify-subst and
+;     (3) to handle the rest of the unify-substs.
+
+; All of these functions accumulate suspensions of the newly advanced act0 onto
+; suspensions and derived conclusions (in the form of fc-derivations) onto
+; fcd-lst.  It is only in the base case of phase (2), when hyps is nil, that we
+; convert successful terminal fc-activations into fc-derivations.
+
+; If we're asked to FORCE or CASE-SPLIT on a hyp that contains free variables
+; and we are unable to find a true match for it on the type-alist, we
+; immediately force or split on it, binding the free variables to variables
+; with "UNBOUND-FREE-" prefixed onto the existing names.  In principle we can
+; bind the free variables of a hyp to any term.  We chose these names in the
+; hope that they catch the eye of the user when they appear in failed proofs.
+; The user was warned of this possibility when a forward-chaining rule was
+; built with a forced or split hyp containing free variables.  Also, when
+; forcing or splitting on a hypothesis containing free vars we don't produce a
+; suspension to find new instances because that would just keep spitting out
+; UNBOUND-FREE variables.
+
+(mutual-recursion
+
+(defun advance-fc-activation1
+  (act0 inst-hyp hyps unify-subst ttree                       ; key args
+         fc-round type-alist ens force-flg wrld state oncep-override   ; contextual args
+         suspensions fcd-lst)                                 ; answers
+
+; See explanation above the mutual-recursion nest.
+
+  (cond
+   ((and (consp inst-hyp)
+         (eq (car inst-hyp) :FC-FREE-VARS))
+
+    (let ((forcer-fn (cadr inst-hyp)) ; nil, FORCE, or CASE-SPLIT
+          (last-keys-seen (cddr inst-hyp)))
+
+; When inst-hyp is the marker, the hyp we are to relieve is the first one in
+; hyps.  Any FORCE or CASE-SPLIT has been removed but recorded in the forcer-fn
+; field.  Last-keys-seen is the list of all type-alist keys from which matches
+; have already been produced.
+
+      (let* ((hyp (car hyps))
+             (rule (access fc-activation act0 :rule))
+             (oncep1
+              (oncep oncep-override
+                     (access forward-chaining-rule rule :match-free)
+                     (access forward-chaining-rule rule :rune)
+                     (access forward-chaining-rule rule :nume))))
+
+; Hyp is the hypothesis we are stuck on.
+
+; We match hyp/unify-subst against the true terms in type-alist, in all
+; possible ways, obtaining lists of the extended unify-substs and their
+; respective ttrees, and a list of the key terms from the type-alist
+; used to produce these unifications.
+
+        (mv-let (new-unify-subst-list new-ttree-list new-keys-seen)
+                (mult-lookup-hyp hyp (cdr hyps)
+                                 (access forward-chaining-rule
+                                         (access fc-activation act0 :rule)
+                                         :concls)
+                                 type-alist
+                                 wrld unify-subst ttree
+                                 oncep1
+                                 last-keys-seen)
+                (cond
+                 (new-unify-subst-list
+
+; We found one or more extensions of unify-subst and pursue all of them.
+; Normally we also suspend any activation that is stuck on a free-var hyp in
+; case future type-alists permit other matches, but if this rule has explicitly
+; been tagged as using the first binding (as now stored in the flag oncep1) or
+; if this hyp is to be forced or split upon we don't also suspend it.
+
+                  (advance-fc-activation3
+                   act0 (cdr hyps) new-unify-subst-list new-ttree-list
+                   fc-round type-alist ens force-flg wrld state oncep-override
+                   (if (or oncep1 (and forcer-fn force-flg))
+                       suspensions
+                       (cons (suspend-fc-activation
+                              act0
+                              (list* :FC-FREE-VARS
+                                     forcer-fn
+                                     (append new-keys-seen
+                                             last-keys-seen))
+                              hyps
+                              unify-subst
+                              ttree)
+                             suspensions))
+                   fcd-lst))
+                 ((and forcer-fn force-flg)
+
+; In this case, we found no instances of this hyp on type-alist and it
+; is supposed to be forced (or case-split).  So we must assume something
+; to move forward.  We replace its free vars with UNBOUND-FREE-vars and
+; proceed, without saving a suspension.
+
+                  (let ((fully-bound-unify-subst
+                         (bind-free-vars-to-unbound-free-vars
+                          (all-vars hyp)
+                          unify-subst)))
+                    (mv-let (new-force-flg ttree)
+                            (force-assumption
+                             (access forward-chaining-rule
+                                     (access fc-activation act0 :rule)
+                                     :rune)
+                             (access fc-activation act0 :inst-trigger)
+                             (sublis-var fully-bound-unify-subst hyp)
+                             type-alist nil
+                             (immediate-forcep forcer-fn ens)
+                             force-flg
+                             ttree)
+; Force-assumption always returns an unchanged force-flg which we just ignore.
+                            (declare (ignore new-force-flg))
+                            (advance-fc-activation2
+                             act0 (cdr hyps) unify-subst ttree
+                             fc-round type-alist ens force-flg wrld state
+                             oncep-override
+                             suspensions
+                             fcd-lst))))
+                 (t
+
+; In this case, we are stuck on a hyp with free vars, no match is
+; available, and we're not supposed to force it.  So we create a
+; suspension.
+
+                  (mv (cons (suspend-fc-activation
+                             act0
+                             (list* :FC-FREE-VARS
+                                    forcer-fn
+                                    (append new-keys-seen
+                                            last-keys-seen))
+                             hyps
+                             unify-subst
+                             ttree)
+                            suspensions)
+                      fcd-lst)))))))
+
+   (t
+
+; In this case, we're stuck on a fully instantiated hyp,
+; hypn/unify-subst, where hypn had no free variables and is not an
+; evaluable ground term, or a FORCE or CASE-SPLIT.  Inst-hyp must be
+; true under type-alist to proceed.
+
+    (mv-let
+     (ts ttree1)
+     (type-set inst-hyp force-flg nil type-alist ens wrld nil
+                      nil nil)
+     (cond
+      ((ts= ts *ts-nil*)
+
+; This hyp has been shown false.  We just let the activation
+; evaporate by not including this suspension of act0 in our answer.
+
+       (prog2$
+        (filter-satisfying-virtual-fc-activation ; (FC Report)
+         act0 inst-hyp hyps unify-subst ttree)
+        (mv suspensions
+            fcd-lst)))
+      ((ts-intersectp ts *ts-nil*)
+
+; The value of hyp is indeterminate.  We suspend it.  It is tempting to
+; think of the suspension below as being identical to act0 -- i.e., no
+; changes -- but we're in recursion, so who knows?
+; Suspend-fc-activation will check if anything changed.
+
+       (mv (cons (suspend-fc-activation act0 inst-hyp hyps
+                                        unify-subst ttree)
+                 suspensions)
+           fcd-lst))
+      (t
+
+; Finally!  We're past inst-hyp and begin to work our way down hyps.
+
+       (advance-fc-activation2
+        act0 hyps unify-subst (cons-tag-trees ttree1 ttree) 
+        fc-round type-alist ens force-flg wrld state oncep-override
+        suspensions fcd-lst)))))))
+
+(defun advance-fc-activation2
+  (act0 hyps unify-subst ttree                               ; key args
+        fc-round type-alist ens force-flg wrld state oncep-override   ; contextual args
+        suspensions fcd-lst)                                 ; answers
+
+; See explanation above the mutual-recursion nest.
+
+  (cond
+   ((null hyps)
+
+; We succeeded in relieving all the hypotheses of this activation.  We
+; produce the resultant fc-derivations and add them to fcd-lst.
+
+    (mv suspensions
+        (add-fc-derivations (access forward-chaining-rule
+                                    (access fc-activation act0 :rule)
+                                    :rune)
+                            (sublis-var-lst
+                             unify-subst
+                             (access forward-chaining-rule
+                                     (access fc-activation act0 :rule)
+                                     :concls))
+                            unify-subst
+                            (access fc-activation act0 :inst-trigger)
+                            fc-round ens wrld state
+                            ttree
+                            fcd-lst)))
+   (t
+    (let* ((forcep1 (and (nvariablep (car hyps))
+                         (not (fquotep (car hyps)))
+                         (or (eq (ffn-symb (car hyps)) 'force)
+                             (eq (ffn-symb (car hyps)) 'case-split))))
+           (forcer-fn (and forcep1 (ffn-symb (car hyps))))
+           (hyp (if forcep1 (fargn (car hyps) 1) (car hyps))))
+      (cond
+       ((free-varsp hyp unify-subst)
+
+; To avoid code duplication we let advance-fc-activation1 handle all
+; free var situations:
+        (advance-fc-activation1
+         act0
+         (if forcer-fn
+             (if (eq forcer-fn 'FORCE)
+                 '(:FC-FREE-VARS FORCE . nil)
+                 '(:FC-FREE-VARS CASE-SPLIT . nil))
+             '(:FC-FREE-VARS nil . nil))
+         (cons hyp (cdr hyps))
+         unify-subst
+         ttree
+         fc-round type-alist ens force-flg wrld state oncep-override
+         suspensions fcd-lst))
+       (t 
+
+; Hyp contains no free vars, so we instantiate it and then use any of
+; three methods (depending on the instance) to decide if it is true:
+; type-set with the current type-alist, ground evaluation, or
+; forcing/case splitting.
+
+        (let ((inst-hyp (sublis-var unify-subst hyp)))
+          (mv-let (ts ttree1)
+                  (type-set inst-hyp force-flg nil type-alist ens wrld nil
+                            nil nil)
+
+; Note that ttree1 is the ttree associated with the type-set computation
+; and that it does not include ttree.  If we use the type-set
+; information, we must add ttree1 to ttree.
+
+                  (cond
+                   ((ts= ts *ts-nil*)
+; Inst-hyp is false under the current type-alist, so we just
+; abandon this activation.
+                    (prog2$
+                     (filter-satisfying-virtual-fc-activation ; (FC Report)
+                      act0 inst-hyp hyps unify-subst ttree)
+                     (mv suspensions
+                         fcd-lst)))
+                    ((ts-intersectp ts *ts-nil*)
+                     (cond
+                      ((not (free-varsp inst-hyp nil))
+
+; This means that inst-hyp is actually a ground term.  We try to
+; evaluate it.  Note that we do not try to eval or even partially eval
+; non-ground hyps.  For example, the translation of (OR (NATP '1) (NATP
+; A)) will eval non-erroneously to T and the translation of (AND (NATP
+; '1) (NATP A)) will eval-ground-subexpressions to (NATP A).  So there
+; may be some merit in a fancier treatment of evaluation.  However,
+; rewriting a hyp, even via evaluation, might be problematic in this
+; setting since the only way we can decide a non-trivial inst-hyp is via
+; type-set, which is often just an assoc-equal.  So for the moment we're
+; only using evaluation on ground terms where it makes the most sense.
+
+                       (mv-let
+                        (erp val latches ttree2)
+                        (ev-respecting-ens
+                         inst-hyp nil state nil nil ens wrld)
+                        (declare (ignore latches))
+
+; Note that ttree2 is the ttree for the evaluation and it does not
+; include ttree or ttree1.  We are not using the type-set stuff because
+; it only told us that inst-hyp was nil or non-nil.  But the evaluation
+; ttree should be added to the original ttree if we use the evaluation
+; result.
+
+                        (cond
+                         (erp
+
+; This hyp cannot be evaluated, e.g., perhaps it contains a constrained
+; function.  So we must either force it or wait for it to come up on the
+; type-alist.  Note that in this part be ignore type-set's ttree1 and
+; the evaluator's ttree2.
+
+                          (mv-let
+                           (force-flg ttree)
+                           (cond
+                            ((or (not forcep1) (not force-flg))
+                             (mv nil ttree))
+                            (t
+                             (force-assumption
+                              (access forward-chaining-rule
+                                      (access fc-activation act0 :rule)
+                                      :rune)
+                              (access fc-activation act0 :inst-trigger)
+                              inst-hyp
+                              type-alist nil
+                              (immediate-forcep forcer-fn ens)
+                              force-flg
+                              ttree)))
+                           (cond
+                            (force-flg
+
+; Inst-hyp is ground but cannot be evaluated and is supposed to be forced or
+; split upon.  So we did that and the result is in ttree.  Therefore, we
+; just move on.
+                             (advance-fc-activation2
+                              act0 (cdr hyps) unify-subst ttree
+                              fc-round type-alist ens force-flg wrld state oncep-override
+                              suspensions fcd-lst))
+                            (t 
+
+; Inst-hyp is ground but cannot be evaluated and is not supposed to be
+; forced.  So we just suspend it.  Note that inst-hyp satisfies our
+; invariant on fc-activations: it contains no free vars, is not an
+; evaluable ground term, and is not a FORCE or CASE-SPLIT.  We just have
+; to wait until the type-alist makes it true.
+
+                             (mv (cons (suspend-fc-activation
+                                        act0
+                                        inst-hyp
+                                        (cdr hyps)
+                                        unify-subst
+                                        ttree)
+                                       suspensions)
+                                 fcd-lst)))))
+                         (val
+
+; Inst-hyp evaluated to non-nil, so we just move on (using the evaluator's
+; ttree2) plus the original one.
+
+                          (advance-fc-activation2
+                           act0 (cdr hyps) unify-subst
+                           (cons-tag-trees ttree2 ttree)
+                           fc-round type-alist ens force-flg wrld state oncep-override
+                           suspensions fcd-lst))
+                         (t
+
+; Inst-hyp evaluated to nil, so we just abandon the activation.
+; Forcing considerations are irrelevant here.
+
+                          (prog2$
+                           (filter-satisfying-virtual-fc-activation ; (FC Report)
+                            act0 inst-hyp hyps unify-subst ttree)
+                           (mv suspensions
+                               fcd-lst))))))
+                      (t 
+                             
+; Inst-hyp contains variables and so we don't even try evaluation --
+; even though there are expressions containing variables and IFs that
+; evaluate to constants.  Instead, we just see whether we should force
+; it.  We ignore type-set's ttree1.
+                             
+                       (mv-let
+                        (force-flg ttree)
+                        (cond
+                         ((or (not forcep1) (not force-flg))
+                          (mv nil ttree))
+                         (t
+                          (force-assumption
+                           (access forward-chaining-rule
+                                   (access fc-activation act0 :rule)
+                                   :rune)
+                           (access fc-activation act0 :inst-trigger)
+                           inst-hyp
+                           type-alist nil
+                           (immediate-forcep forcer-fn ens)
+                           force-flg
+                           ttree)))
+                        (cond
+                         (force-flg
+
+; Inst-hyp has been forced.  So just move on.
+
+                          (advance-fc-activation2
+                           act0 (cdr hyps) unify-subst ttree
+                           fc-round type-alist ens force-flg wrld state oncep-override
+                           suspensions fcd-lst))
+                         (t 
+
+; Inst-hyp ``cannot'' be evaluated and is not supposed to be
+; forced.  So we just suspend it.  Note that inst-hyp satisfies our
+; invariant on fc-activations: it contains no free vars, is not an
+; evaluable ground term, and is not a FORCE or CASE-SPLIT.  We just have
+; to wait until the type-alist makes it true.
+
+                          (mv (cons (suspend-fc-activation
+                                     act0
+                                     inst-hyp
+                                     (cdr hyps)
+                                     unify-subst
+                                     ttree)
+                                    suspensions)
+                              fcd-lst)))))))
+                    (t
+
+; Inst-hyp is true under type-alist.  We add type-set's ttree1 to ttree
+; as we move on.
+
+                     (advance-fc-activation2
+                      act0 (cdr hyps) unify-subst
+                      (cons-tag-trees ttree1 ttree)
+                      fc-round type-alist ens force-flg wrld state oncep-override
+                      suspensions fcd-lst)))))))))))
+
+(defun advance-fc-activation3
+  (act0 hyps unify-subst-lst ttree-lst                       ; key args
+        fc-round type-alist ens force-flg wrld state oncep-override   ; contextual args
+        suspensions fcd-lst)                                 ; answers
+  (cond ((endp unify-subst-lst)
+         (mv suspensions fcd-lst))
+        (t
+         (mv-let (suspensions1 fcd-lst1)
+                 (advance-fc-activation2
+                  act0
+                  hyps (car unify-subst-lst) (car ttree-lst)
+                  fc-round type-alist ens force-flg wrld state oncep-override
+                  suspensions
+                  fcd-lst)
+                 (advance-fc-activation3
+                  act0
+                  hyps (cdr unify-subst-lst) (cdr ttree-lst)
+                  fc-round type-alist ens force-flg wrld state oncep-override
+                  suspensions1 fcd-lst1)))))
+
+)
+
+; The wrapper for the forward chaining kernel:  advancing an fc-activation.
+
+(defun advance-fc-activation (act fc-round type-alist ens force-flg wrld state oncep-override
+                                  suspensions fcd-lst)
+  (advance-fc-activation1
+   act
+   (access fc-activation act :inst-hyp)
+   (access fc-activation act :hyps)
+   (access fc-activation act :unify-subst)
+   (access fc-activation act :ttree)
+   fc-round type-alist ens force-flg wrld state oncep-override
+   suspensions
+   fcd-lst))
+
+; Recall the basic data structure of forward chaining, the fc-pot-lst.
+; It is a list of fc-pots, each of which is (term act1 ... actn), with a
+; pot for every term in the problem pairing all the fc-activations
+; triggered by the corresponding term.  We want to advance all the
+; activations in every pot.  We start by advancing all the activations
+; listed in a single pot.
+
+(defun advance-fc-activations (lst fc-round type-alist ens force-flg wrld state oncep-override
+                                   suspensions fcd-lst)
+
+; Lst is of the form (act1 ... actn), where each acti is an fc
+; activation.  Fcd-lst is a list of fc-derivations onto which we
+; accumulate any derived conclusions (as fc-derivations).  We return two
+; results which we build by accumulation onto the last two arguments: a
+; new list of possibly advanced suspended activations and the
+; accumulated successful derivations.
+
+  (cond ((null lst)
+         (mv suspensions fcd-lst))
+        (t (mv-let
+            (suspensions1 fcd-lst1)
+            (advance-fc-activation (car lst)
+                                   fc-round type-alist ens force-flg wrld state oncep-override
+                                   suspensions fcd-lst)
+            (advance-fc-activations (cdr lst)
+                                    fc-round type-alist ens force-flg wrld state oncep-override
+                                    suspensions1 fcd-lst1)))))
+
+(defun fc-pair-lst (fcd-lst)
+
+; We convert a list of fc-derivations to a list of pairs of the form
+; (concl . ttree), where each ttree is fcd-free.  We call such a pair an
+; "fc-pair."  These pairs can be sensibly used outside of the
+; forward-chaining module.
+
+  (cond ((null fcd-lst) nil)
+        (t (cons (cons (access fc-derivation (car fcd-lst) :concl)
+                       (push-lemma
+                        (access fc-derivation (car fcd-lst) :rune)
+                        (expunge-fc-derivations
+                         (access fc-derivation (car fcd-lst) :ttree))))
+                 (fc-pair-lst (cdr fcd-lst))))))
+
+(defun fc-pair-lst-type-alist (fc-pair-lst type-alist force-flg ens wrld)
+
+; Fc-pair-lst is a list of pairs of the form (concl . ttree).  We extend
+; type-alist by assuming the truth of every concl, tagging each type-alist
+; entry with the corresponding ttree, which we assume is fcd-free.  Assuming
+; the initial type-alist is fcd-free, the final one is too.  We return three
+; results, (mv flg type-alist ttree).  If a contradiction is found, flg is t,
+; type-alist is nil, and ttree is the fcd-free ttree explaining it.  Otherwise,
+; type-alist is the resulting type-alist and ttree is nil.
+
+; At one time we assumed that there was no contradiction, causing a hard error
+; if we found one.  However, Jared Davis sent the following script that causes
+; that hard error, so we changed this function.  A relevant comment, from
+; before that change, is given below.
+
+#|
+ (defstub appealp (* *) => *)
+ (defstub appeal-listp (* *) => *)
+ (defstub appeal-structurep (*) => *)
+ (defstub appeal-structure-listp (*) => *)
+ (defstub get-subgoals (*) => *)
+ (defstub appeal-provisionally-okp (* * *) => *)
+ (defstub proofp (* * *) => *)
+ (defstub proof-listp (* * *) => *)
+
+ (defaxiom appeal-structure-listp-forward-to-appeal-structurep-of-car
+    (implies (appeal-structure-listp x)
+             (equal (appeal-structurep (car x))
+                    (if x t nil)))
+    :rule-classes :forward-chaining)
+
+ (defaxiom appealp-listp-forward-to-appealp-of-car
+    (implies (appeal-listp x arity-table)
+             (equal (appealp (car x) arity-table)
+                    (if x t nil)))
+    :rule-classes :forward-chaining)
+
+ (defaxiom appealp-forward-to-appeal-structurep
+    (implies (appealp x arity-table)
+             (appeal-structurep x))
+    :rule-classes :forward-chaining)
+
+ (defaxiom appeal-structure-listp-forward-to-appeal-structure-listp-of-cdr
+    (implies (appeal-structure-listp x)
+             (appeal-structure-listp (cdr x)))
+    :rule-classes :forward-chaining)
+
+ (defaxiom appeal-listp-forward-to-appeal-listp-of-cdr
+    (implies (appeal-listp x arity-table)
+             (appeal-listp (cdr x) arity-table))
+    :rule-classes :forward-chaining)
+
+ (defaxiom appeal-listp-forward-to-appeal-structure-listp
+    (implies (appeal-listp x arity-table)
+             (appeal-structure-listp x))
+    :rule-classes :forward-chaining)
+
+ (defaxiom appeal-structure-listp-forward-to-true-listp
+    (implies (appeal-structure-listp x)
+             (true-listp x))
+    :rule-classes :forward-chaining)
+
+ (defaxiom appeal-listp-when-proofp
+    (implies (proof-listp x database arity-table)
+             (appeal-listp x arity-table))
+    :rule-classes :forward-chaining)
+
+ (defaxiom appealp-when-proofp
+    (implies (proofp x database arity-table)
+             (appealp x arity-table))
+    :rule-classes :forward-chaining)
+
+ (defthm hard-error-in-fc-pair-lst-type-alist
+    (implies (and (proof-listp xs database arity-table)
+                  (not (consp xs)))
+             (equal (proofp (car xs) database arity-table)
+                    nil)))
+|#
+
+; Historical Comment:
+
+; Note on the Hard Error below: How might this error arise?  The intuitive
+; argument that it doesn't goes like this: This function is called in
+; forward-chain, on something produced by forward-chain1.  But inspection of
+; forward-chain1 shows that it uses type-alist-fcd-lst to check that approved
+; fc derivations are not contradictory.  What can go wrong?  Well, one thing
+; that has gone wrong is that type-alist-fcd-lst looks at the derivations in a
+; different order than they are looked at by this function.  Hence, the old
+; familiar type-alist-clause bugaboo (order of the literals) comes into play.
+; We have seen an example where forward-chain1 checked ((< 0 x) (< x 1)
+; (integerp x)) and found no contradiction but then passed the reversed list to
+; this function which found the contradiction and caused the hard error for the
+; first time ever.  Our response to that was to put a reconsider-type-alist
+; into type-alist-fcd-lst.  But our "proof" that this hard error never arises
+; is now suspect.
+
+  (cond ((null fc-pair-lst) (mv nil type-alist nil))
+        (t (mv-let
+            (mbt mbf tta fta ttree)
+            (assume-true-false (car (car fc-pair-lst))
+                               (cdr (car fc-pair-lst))
+                               force-flg nil type-alist ens wrld
+                               nil nil :fta)
+            (declare (ignore fta))
+            (cond (mbf (mv t nil ttree))
+                  (mbt (fc-pair-lst-type-alist (cdr fc-pair-lst)
+                                               type-alist
+                                               force-flg ens wrld))
+                  (t (fc-pair-lst-type-alist (cdr fc-pair-lst)
+                                             tta
+                                             force-flg ens wrld)))))))
+
+; Now we work on the heuristic for approving fc derivations.  The
+; problem is to avoid infinite forward chaining.  So we define a
+; predicate that determines whether we wish to keep a given derivation.
 
 (defun fcd-runep (rune ttree)
 
 ; Rune is the name of a forward chaining rule.  We want to determine if
 ; rune has been used in any fc-derivation in ttree.  This function is
-; analogous to tag-tree-occur except that it looks for the tag
-; 'fc-derivation and it recursively looks into the ttrees contained
-; therein.
+; analogous to tag-tree-occur except that it knows that 'fc-derivation
+; tags contain other ttrees and it looks recursively into those ttrees
+; too.
 
   (cond ((null ttree) nil)
         ((symbolp (caar ttree))
@@ -1714,10 +3210,10 @@
         (t (or (fcd-worse-than-or-equal concl fn-cnt p-fn-cnt (car ttree))
                (fcd-worse-than-or-equal concl fn-cnt p-fn-cnt (cdr ttree))))))
 
-; Once upon a time we had heuristics for keeping concl if it there was
+; Once upon a time we had heuristics for keeping concl if there was
 ; a lit of the current clause that was worse than it or if there was a
-; concl already kept that was worse than it.  We have temporarily
-; removed those and replaced them by the faster check that the
+; concl already kept that was worse than it.  We have 
+; removed those heuristics and replaced them by the faster check that the
 ; triggering term occurs in the clause.  But we'll keep the
 ; definitions in case we want to reinstate the heuristics.
 
@@ -1755,12 +3251,13 @@
 
 (defun all-args-occur-after-strip-not (term cl)
 
-; Term is any term, though we are motivated by the case that it is the :concl of
-; an fc-derivation.  We return true when, after stripping off any leading calls
-; of NOT from term, if the result is a function call then all its arguments
-; occur in the given clause, cl.  If the result of stripping NOTs is not a
-; function call, then we rather arbitrarily return t for a variable and nil for
-; a constant.
+; One of our heuristics for approving a derivation is that all of the
+; arguments appearing in its conclusion occur in cl.  This function
+; checks that when term is the :concl of an fc-derivation.  Roughly
+; speaking, we check that every arg of term occurs in cl.  However, we
+; first strip off any NOTs that surround term.  Rather arbitrarily, if
+; the resulting atom is a variable, we return t, and if it is a constant
+; we return nil.
 
   (cond ((variablep term) t)
         ((fquotep term) nil)
@@ -1768,114 +3265,115 @@
          (all-args-occur-after-strip-not (fargn term 1) cl))
         (t (all-dumb-occur-lst (fargs term) cl))))
 
-(defun approved-fc-derivationp (fcd cl fcd-lst)
+(defun approved-fc-derivationp (fcd cl)
 
 ; We return t iff we approve fcd as a new fact we will add to fcd-lst
-; while forward chaining from clause cl.  Fc-pot-lst is the current
-; pot list and hence exhibits all the terms in the current problem.
+; while forward chaining from clause cl.
 
-; Our heuristic for approving an fc-derivation is that either (a) name
-; not have been used before in this derivation or (b) concl is not
-; worse-than-or-equal any concl in the derivation, or (c) the
-; triggering term of this fcd is in the current clause.
+; Our heuristic for approving an fc-derivation is that either (a) the
+; relevant forward-chaining rune not have been used before in this
+; derivation or (b) concl is not worse-than-or-equal any concl in its
+; derivation, (c) the triggering term of this fcd is in the current
+; clause, or (d) all of the args of concl occur in the clause.
 
-  (declare (ignore fcd-lst))
   (let ((ttree (access fc-derivation fcd :ttree)))
-    (or (not (fcd-runep (access fc-derivation fcd :rune) ttree))
-        (not (fcd-worse-than-or-equal (access fc-derivation fcd :concl)
+    (or (not (fcd-runep (access fc-derivation fcd :rune) ttree)) ; (a)
+        (not (fcd-worse-than-or-equal (access fc-derivation fcd :concl) ; (b)
                                       (access fc-derivation fcd :fn-cnt)
                                       (access fc-derivation fcd :p-fn-cnt)
                                       ttree))
-        (dumb-occur-lst (access fc-derivation fcd :inst-trigger) cl)
+;       (dumb-occur-lst (access fc-derivation fcd :inst-trigger) cl) ; (c)
 
-; If all of the arguments of the conclusion (ignoring any leading NOTs) of the
-; forward-chaining rule appear in the clause, we approve the result.  Dave
-; Greve has encountered cases where this extra flexibility is important for
-; making type-like forward-chaining derivations, as illustrated by the
-; following example.
+; There is one more condition, (d), below, but first a big comment
+; explaining it.  If all of the arguments of the conclusion (ignoring
+; any leading NOTs) of the forward-chaining rule appear in the clause,
+; we approve the result.  Dave Greve has encountered cases where this
+; extra flexibility is important for making type-like forward-chaining
+; derivations, as illustrated by the following example.
 
-#||
+        #||
 
- (defstub con (x y) nil)
- (defstub des (x) nil)
+        (defstub con (x y) nil)
+        (defstub des (x) nil)
 
- (defstub typec (x) nil)
- (defstub typeg (x) nil)
- (defstub typed (x) nil)
+        (defstub typec (x) nil)
+        (defstub typeg (x) nil)
+        (defstub typed (x) nil)
 
- (defaxiom typed-implies-typeg
-   (implies
-    (typed x)
-    (typeg x))
-   :rule-classes (:rewrite :forward-chaining))
+        (defaxiom typed-implies-typeg
+        (implies
+        (typed x)
+        (typeg x))
+        :rule-classes (:rewrite :forward-chaining))
 
- (defaxiom typeg-des
-   (implies
-    (typec x)
-    (typed (des x)))
-   :rule-classes (:rewrite 
-                  (:forward-chaining :trigger-terms ((des x)))))
+        (defaxiom typeg-des
+        (implies
+        (typec x)
+        (typed (des x)))
+        :rule-classes (:rewrite 
+        (:forward-chaining :trigger-terms ((des x)))))
 
- (defaxiom typec-con
-   (implies
-    (and
-     (natp n)
-     (typeg x))
-    (typec (con x n)))
-   :rule-classes (:rewrite 
-                  (:forward-chaining :trigger-terms ((con x n)))))
+        (defaxiom typec-con
+        (implies
+        (and
+        (natp n)
+        (typeg x))
+        (typec (con x n)))
+        :rule-classes (:rewrite 
+        (:forward-chaining :trigger-terms ((con x n)))))
 
- (defun several (g)
-   (let* ((c (con g 1))
-          (g (des c))
-          (c (con g 2))
-          (g (des c))
-          (c (con g 3))
-          (g (des c)))
-     (con g 4)))
+        (defun several (g)
+        (let* ((c (con g 1))
+        (g (des c))
+        (c (con g 2))
+        (g (des c))
+        (c (con g 3))
+        (g (des c)))
+        (con g 4)))
 
- (in-theory (disable
-             (:rewrite typec-con)
-             (:rewrite typeg-des)
-             (:rewrite typed-implies-typeg)
-             ))
+        (in-theory (disable
+        (:rewrite typec-con)
+        (:rewrite typeg-des)
+        (:rewrite typed-implies-typeg)
+        ))
 
- ; The following fails without the call below of all-args-occur-after-strip-not
- ; below unless we remove the in-theory event above.
- (defthm typec-several
-   (implies
-    (typed g)
-    (typec (several g))))
+ ; The following fails without the call below of all-args-occur-after-strip-not ; ;
+ ; below unless we remove the in-theory event above. ; ;
+        (defthm typec-several
+        (implies
+        (typed g)
+        (typec (several g))))
 
-||#
+        ||#
 
-        (all-args-occur-after-strip-not (access fc-derivation fcd :concl)
+        (all-args-occur-after-strip-not (access fc-derivation fcd :concl) ; (d)
                                         cl))))
 
-(defun approve-fc-derivations (new-fcd-lst cl approved fcd-lst)
+(defun approve-fc-derivations (new-fcd-lst cl approved-this-round all-approved)
 
 ; We have just derived the fc-derivations in new-fcd-lst, from the
-; negations of the literals in cl and the fc-derivations in fcd-lst.  We
-; wish to filter out those new fc-derivations that we do not wish to
-; pursue.  We return two values, the approved new fc-derivations and a
-; modified version of fcd-lst to which the approved new fc-derivations
-; have been added.  The reason we do the apparently extraneous job of
-; adding the approved ones to the existing ones is so that the
-; determination of whether we approve of a given new one can be made in
-; the context of all those we've already approved.
+; negations of the literals in cl.  We filter out those new
+; fc-derivations that we do not approve.  We add the approved ones to
+; both approved-this-round and all-approved.  The former is initially
+; nil within a given round and is thus the approved derivations of that
+; round.  The latter is cumulative across all rounds.  We return both.
 
-  (cond ((null new-fcd-lst) (mv approved fcd-lst))
-        ((approved-fc-derivationp (car new-fcd-lst) cl fcd-lst)
+  (cond ((null new-fcd-lst) (mv approved-this-round all-approved))
+        ((approved-fc-derivationp (car new-fcd-lst) cl)
          (approve-fc-derivations (cdr new-fcd-lst)
                                  cl
-                                 (cons (car new-fcd-lst) approved)
-                                 (cons (car new-fcd-lst) fcd-lst)))
+                                 (cons (car new-fcd-lst) approved-this-round)
+                                 (cons (car new-fcd-lst) all-approved)))
         (t (approve-fc-derivations (cdr new-fcd-lst)
                                    cl
-                                   approved
-                                   fcd-lst))))
+                                   approved-this-round
+                                   all-approved))))
 
-; So we are now almost ready to put it all together.
+; Once we have a batch of approved derivations, we sort them so the
+; ``simpler'' ones appear first.  We will then assume them in that
+; order.  The heuristic is that simpler conclusions might strengthen
+; what we learn about subsequent ones, as would happen if we assumed
+; (integerp x) before we assumed (integerp (foo x)).
 
 (mutual-recursion
 
@@ -1977,255 +3475,266 @@
         (t (cons (access fc-derivation (car fcd-lst) :concl)
                  (strip-fcd-concls (cdr fcd-lst))))))
 
-(defun every-concl-assoc-equalp (fcd-lst fc-pot-lst)
+; Upon obtaining the approved derived conclusions, we need to extend the
+; type-alist with them.  
+
+(defun type-alist-fcd-lst (fcd-lst type-alist
+                                   do-not-reconsiderp force-flg ens wrld)
+
+; We take a list of fc-derivations and assume the truth of each concl,
+; extending type-alist.  We return two results.  The first is t or nil
+; indicating whether a contradiction was found.  When a contradiction is
+; found, the second result is the ttree of that contradiction.  When a
+; contradiction is not found, the second is the final type-alist.  In
+; both cases, the second result is not fcd-free.
+
+; Note that when we finish, (endp fcd-lst), we reconsider the type-alist.  This
+; is analogous to type-alist-clause-finish.  We have seen an example of forward
+; chaining where we derived, in order, (< 0 x), (< x 1), (integerp x), and
+; failed to recognize the contradiction, just as type-alist-clause-finish1
+; fails to recognize that contradiction.
+
+  (cond
+   ((endp fcd-lst)
+    (if do-not-reconsiderp
+        (mv nil type-alist)
+        (mv-let (contradictionp xtype-alist ttree)
+                (reconsider-type-alist type-alist type-alist nil ens wrld
+                                       nil nil)
+                (cond
+                 (contradictionp (mv t ttree))
+                 (t (mv nil xtype-alist))))))
+   (t (mv-let
+       (mbt mbf tta fta ttree)
+       (assume-true-false
+        (access fc-derivation (car fcd-lst) :concl)
+        (add-to-tag-tree 'fc-derivation
+                         (car fcd-lst)
+                         nil)
+        force-flg nil type-alist ens wrld nil nil :fta)
+       (declare (ignore fta))
+       (cond (mbf (mv t ttree))
+             (mbt (type-alist-fcd-lst (cdr fcd-lst)
+                                      type-alist
+                                      do-not-reconsiderp force-flg
+                                      ens wrld))
+             (t (type-alist-fcd-lst (cdr fcd-lst)
+                                    tta
+                                    do-not-reconsiderp force-flg ens
+                                    wrld)))))))
+
+
+; Finally, we have to detect ``stability'' as we repeatedly do rounds of
+; forward chaining.  One aspect of stability is that every approved
+; conclusion is already in the list of trigger terms in the problem.
+
+(defun every-concl-member-equalp (fcd-lst trigger-terms)
 
 ; Fcd-lst is a list of fc-derivations.  We return t if the :concl of
-; every element of fcd-lst already has a pot in fc-pot-lst.
+; every element of fcd-lst is a member-equal of trigger-terms. 
 
-  (cond ((null fcd-lst) t)
-        ((assoc-equal (access fc-derivation (car fcd-lst) :concl)
-                      fc-pot-lst)
-         (every-concl-assoc-equalp (cdr fcd-lst) fc-pot-lst))
+  (cond ((endp fcd-lst) t)
+        ((member-equal (access fc-derivation (car fcd-lst) :concl)
+                       trigger-terms)
+         (every-concl-member-equalp (cdr fcd-lst) trigger-terms))
         (t nil)))
 
-(defun forward-chain1 (cl fc-pot-lst type-alist force-flg wrld
-                          do-not-reconsiderp ens oncep-override state fcd-lst)
+; Now we are ready to define the function that carries out successive
+; rounds of a forward chaining.
 
-; We first advance every fc-activation in fc-pot-lst, obtaining a new pot-lst
-; and some derived fc-derivations.  We filter the derived fc-derivations,
-; throwing out any that, on heuristic grounds, we don't like.  We then assume
-; the approved derived fc-derivations, updating the type-alist.  We keep track
-; of the derived :concls that are not added to the type-alist.  We extend
-; fc-pot-lst with any new subterms -- including those from derived :concls that
-; were already true under type-set and hence no added to the type-alist -- and
-; their associated activations, and we loop until either we get a contradiction
-; or we stabilize.  We repeatedly extend type-alist as we go, but the extended
-; type-alist is of no use outside forward chaining because it is full of
-; fc-derivations.  We return two results.  The first is a t or nil indicating
-; whether a contradiction was found.  The second is a ttree if a contradiction
-; was found and is the final fcd-lst otherwise.
+(defun forward-chain1 (cl fc-round trigger-terms activations type-alist force-flg wrld
+                          do-not-reconsiderp ens oncep-override state
+                          all-approved-fcds)
 
-  (mv-let (fc-pot-lst new-fcd-lst)
-          (advance-fc-pot-lst fc-pot-lst type-alist ens oncep-override
-                              force-flg wrld state nil)
-          (mv-let (approved fcd-lst)
-                  (approve-fc-derivations new-fcd-lst
-                                          cl
-                                          nil
-                                          fcd-lst)
-                  (mv-let (contradictionp x mbt-fc-derivations)
-                          (type-alist-fcd-lst
-                           (sort-approved approved wrld)
-                           type-alist nil do-not-reconsiderp force-flg ens wrld)
-                          (let ((xapproved (append mbt-fc-derivations approved)))
-                            (cond (contradictionp (mv t x))
-                                  ((and (equal x type-alist)
-                                        (every-concl-assoc-equalp mbt-fc-derivations
-                                                                  fc-pot-lst))
-                                   (mv nil fcd-lst))
-                                  (t (forward-chain1
+; Cl is a clause and fc-round is the current forward chaining round
+; number.  Trigger-terms is the list of every subterm in the problem
+; whose top function symbol has forward chaining rules.  Activations is
+; the list of all (suspended) activations.  We first advance every
+; activation, obtaining a new list of activations and some derived
+; conclusions represented as fcds.  We filter the derived conclusions,
+; throwing out any that, on heuristic grounds, we don't like.  We then
+; assume the approved ones, updating the type-alist.  Some approved
+; conclusions may not give us any new type information, e.g., they are
+; already encoded in the type-alist, but we keep track of those
+; conclusions anyway because they might give us new trigger terms.  We
+; then add activations for all the new trigger terms and appropriately
+; extend trigger-terms.  Then we repeat this process until either we get
+; a contradiction or we stabilize.
+
+; We return (mv flg ttree all-approved-fcds fc-round activations).  If flg is
+; t, then we found a contradiction and ttree is a (not fcd-free) ttree.
+; Otherwise, ttree is nil.  In both cases, all-approved-fcds is the accumulated
+; list of all approved fc-derivations produced during forward-chaining,
+; fc-round is the final fc-round number, and activations is the list of
+; still-suspended activations at the end of the process.  These last two are
+; only used in the trace facility for forward-chaining.
+
+; Note: The extended type-alist we build here is of no use outside
+; forward chaining because it is full of fc-derivations.  We return two
+; results.  The first is a t or nil indicating whether a contradiction
+; was found.  The second is a ttree if a contradiction was found and is
+; the final fcd-lst otherwise.
+
+  (mv-let (activations1 fcd-lst1)
+          (advance-fc-activations
+           activations fc-round type-alist ens force-flg 
+           wrld state oncep-override
+           nil ; initial new activations
+           nil ; initial new derived concls
+           )
+          (prog2$
+           (filter-all-satisfying-fc-derivations fcd-lst1) ; (FC Reporting)
+           (mv-let (approved-this-round all-approved-fcds)
+                   (approve-fc-derivations fcd-lst1
+                                           cl
+                                           nil ; initial approved this round
+                                           all-approved-fcds)
+                   (mv-let (contradictionp x)
+                           (type-alist-fcd-lst
+                            (sort-approved approved-this-round wrld)
+                            type-alist do-not-reconsiderp force-flg ens wrld)
+
+; If contradictionp is t, x is a ttree; otherwise, x is a type-alist.
+; In any case, x is not fcd-free.
+
+                           (cond
+                            (contradictionp
+; Note:  x, below, is a ttree and is not fcd-free.
+                              (mv t x all-approved-fcds fc-round activations1))
+; Note:  x, below, is a type-alist and is not fcd-free.
+                            ((and (equal x type-alist)
+                                  (every-concl-member-equalp approved-this-round
+                                                             trigger-terms))
+                             (mv nil nil all-approved-fcds fc-round activations1))
+                            (t
+                             (mv-let (trigger-terms1 activations1)
+                                     (collect-terms-and-activations-from-fcd-lst
+                                      approved-this-round wrld ens
+                                      trigger-terms activations1)
+                                     (forward-chain1
                                       cl
-                                      (add-new-fc-pots-lst-lst
-                                       (strip-fcd-concls xapproved)
-                                       (make-ttrees-from-fc-derivations xapproved)
-                                       force-flg wrld ens fc-pot-lst)
-                                      x force-flg wrld do-not-reconsiderp ens
-                                      oncep-override state fcd-lst))))))))
+                                      (+ 1 fc-round)
+                                      trigger-terms1 activations1
+                                      x ; type-alist
+                                      force-flg wrld do-not-reconsiderp ens
+                                      oncep-override state
+                                      all-approved-fcds)))))))))
 
-(defun fc-pair-lst (fcd-lst)
+(defun forward-chain-top (caller cl pts force-flg do-not-reconsiderp wrld ens
+                                 oncep-override state)
 
-; We convert a list of fc-derivations to a list of pairs of the form
-; (concl . ttree), where each ttree is expunged of fc-derivations.  We
-; call such a pair an "fc-pair."  These pairs can be sensibly used
-; outside of the forward-chaining module because the ttrees are free
-; of fc-derivations.
+; The only difference between forward-chain-top and forward-chain is that this
+; function allows the caller to identify itself; forward-chain just uses the
+; 'miscellaneous caller so that tool books that use forward chaining don't have
+; to be changed.
 
-  (cond ((null fcd-lst) nil)
-        (t (cons (cons (access fc-derivation (car fcd-lst) :concl)
-                       (push-lemma
-                        (access fc-derivation (car fcd-lst) :rune)
-                        (expunge-fc-derivations
-                         (access fc-derivation (car fcd-lst) :ttree))))
-                 (fc-pair-lst (cdr fcd-lst))))))
+; We forward chain in all possible ways from clause cl.  We return three
+; results, (mv flg type-alist ttree-or-fc-pairs), where type-alist is nil if
+; flg is t and the last result is either a ttree (flg=t) or fc-pairs (flg=nil)
+; as described below.  Thus, the answer is of one of the forms:
+; (mv t nil ttree) or (mv nil type-alist fc-pairs).
 
-(defun fc-pair-lst-type-alist (fc-pair-lst type-alist force-flg ens wrld)
+; Flg is either t or nil indicating whether a contradiction was found.  If so,
+; the second result is nil and the third is an fcd-free ttree that encodes the
+; 'lemmas and literals used (via 'pt tags).  If no contradiction is found, the
+; second result is an fcd-free type-alist obtained by assuming false all of the
+; literals of cl (this type-alist is fully tagged with 'pt tags) plus all of
+; the conclusions derived from forward chaining; the third is a list of
+; fc-pairs, each of the form (concl . ttree), where concl is a truth derived
+; from some subset of the negations of literals of cl and ttree is fcd-free and
+; tags the :FORWARD-CHAINING 'lemmas used and all parents (via 'pt tags).
 
-; Fc-pair-lst is a list of pairs of the form (concl . ttree).  We extend
-; type-alist by assuming the truth of every concl, tagging each type-alist
-; entry with the ttree, which we assume has already been expunged of
-; 'fc-derivations.  Assuming the initial type-alist had no 'fc-derivations in
-; it, the final one doesn't either.  We return the resulting type-alist unless
-; a contradiction arises, in which case we return the resulting ttree.
+; Note: The type-alist returned assumes the falsity of every literal in
+; the clause and thus is not suitable for use by rewrite.  We return it
+; strictly for the use of setup-simplify-clause-pot-lst and bdd-clause.
 
-; At one time we assumed that there was no contradiction, causing a hard error
-; if we found one.  However, Jared Davis sent the following script that causes
-; that hard error, so we changed this function.  A relevant comment, from
-; before that change, is given below.
+; In reading the code below, read (fc-exit a b c ...) as though it
+; were (mv a b c).  The stuff in ... is just used in the reporting.
 
-#|
- (defstub appealp (* *) => *)
- (defstub appeal-listp (* *) => *)
- (defstub appeal-structurep (*) => *)
- (defstub appeal-structure-listp (*) => *)
- (defstub get-subgoals (*) => *)
- (defstub appeal-provisionally-okp (* * *) => *)
- (defstub proofp (* * *) => *)
- (defstub proof-listp (* * *) => *)
+  (prog2$
+   (new-fc-call caller cl pts force-flg do-not-reconsiderp wrld ens
+                oncep-override)
+   (mv-let
+    (contradictionp type-alist ttree1)
+    (type-alist-clause cl (pts-to-ttree-lst pts) nil nil ens wrld
+                       nil nil)
 
- (defaxiom appeal-structure-listp-forward-to-appeal-structurep-of-car
-    (implies (appeal-structure-listp x)
-             (equal (appeal-structurep (car x))
-                    (if x t nil)))
-    :rule-classes :forward-chaining)
+; If a contradiction was found, type-alist is nil and ttree1 is an fcd-free
+; tree explaining the contradiction.  Otherwise, type-alist is the type-alist
+; produced by assuming all the literals false and ttree1 is nil.
 
- (defaxiom appealp-listp-forward-to-appealp-of-car
-    (implies (appeal-listp x arity-table)
-             (equal (appealp (car x) arity-table)
-                    (if x t nil)))
-    :rule-classes :forward-chaining)
+    (cond
+     (contradictionp (mv t nil ttree1))
+     (t (mv-let
+         (trigger-terms activations)
+         (collect-terms-and-activations-lst cl nil wrld ens nil nil)
 
- (defaxiom appealp-forward-to-appeal-structurep
-    (implies (appealp x arity-table)
-             (appeal-structurep x))
-    :rule-classes :forward-chaining)
+; Trigger-terms is the list of all subterms of cl whose top function
+; symbols have fc rules and activations is the list of all (suspended)
+; activations triggered by those subterms.
+            
+         (mv-let
+          (contradictionp ttree2 all-approved-fcds rounds activations1)
+          (pstk
+           (forward-chain1 cl 1
+                           trigger-terms activations
+                           type-alist force-flg wrld
+                           do-not-reconsiderp ens oncep-override
+                           state nil))
+          (cond (contradictionp
 
- (defaxiom appeal-structure-listp-forward-to-appeal-structure-listp-of-cdr
-    (implies (appeal-structure-listp x)
-             (appeal-structure-listp (cdr x)))
-    :rule-classes :forward-chaining)
+; If a contradiction was found by forward chaining, ttree2 is the ttree that
+; derives it.  But it is not fcd-free and we need to make it fcd-free
+; before letting it out of the forward-chaining module.
 
- (defaxiom appeal-listp-forward-to-appeal-listp-of-cdr
-    (implies (appeal-listp x arity-table)
-             (appeal-listp (cdr x) arity-table))
-    :rule-classes :forward-chaining)
+                 (fc-exit t nil (expunge-fc-derivations ttree2)
+; We return the three things above but use the following in the report:
+                          caller rounds all-approved-fcds activations1))
+                (t
 
- (defaxiom appeal-listp-forward-to-appeal-structure-listp
-    (implies (appeal-listp x arity-table)
-             (appeal-structure-listp x))
-    :rule-classes :forward-chaining)
+; If no contradiction was found, ttree2 is nil.  We need to convert
+; all-approved-fcds to a list of pairs of the form (concl . ttree), where each
+; ttree is fcd-free.
 
- (defaxiom appeal-structure-listp-forward-to-true-listp
-    (implies (appeal-structure-listp x)
-             (true-listp x))
-    :rule-classes :forward-chaining)
-
- (defaxiom appeal-listp-when-proofp
-    (implies (proof-listp x database arity-table)
-             (appeal-listp x arity-table))
-    :rule-classes :forward-chaining)
-
- (defaxiom appealp-when-proofp
-    (implies (proofp x database arity-table)
-             (appealp x arity-table))
-    :rule-classes :forward-chaining)
-
- (defthm hard-error-in-fc-pair-lst-type-alist
-    (implies (and (proof-listp xs database arity-table)
-                  (not (consp xs)))
-             (equal (proofp (car xs) database arity-table)
-                    nil)))
-|#
-
-; Historical Comment:
-
-; Note on the Hard Error below: How might this error arise?  The intuitive
-; argument that it doesn't goes like this: This function is called in
-; forward-chain, on something produced by forward-chain1.  But inspection of
-; forward-chain1 shows that it uses type-alist-fcd-lst to check that approved
-; fc derivations are not contradictory.  What can go wrong?  Well, one thing
-; that has gone wrong is that type-alist-fcd-lst looks at the derivations in a
-; different order than they are looked at by this function.  Hence, the old
-; familiar type-alist-clause bugaboo (order of the literals) comes into play.
-; We have seen an example where forward-chain1 checked ((< 0 x) (< x 1)
-; (integerp x)) and found no contradiction but then passed the reversed list to
-; this function which found the contradiction and caused the hard error for the
-; first time ever.  Our response to that was to put a reconsider-type-alist
-; into type-alist-fcd-lst.  But our "proof" that this hard error never arises
-; is now suspect.
-
-  (cond ((null fc-pair-lst) (mv nil type-alist))
-        (t (mv-let
-            (mbt mbf tta fta ttree)
-            (assume-true-false (car (car fc-pair-lst))
-                               (cdr (car fc-pair-lst))
-                               force-flg nil type-alist ens wrld
-                               nil nil :fta)
-            (declare (ignore fta))
-            (cond (mbf (mv t ttree))
-                  (mbt (fc-pair-lst-type-alist (cdr fc-pair-lst)
-                                               type-alist
-                                               force-flg ens wrld))
-                  (t (fc-pair-lst-type-alist (cdr fc-pair-lst)
-                                             tta
-                                             force-flg ens wrld)))))))
+                 (let ((fc-pair-lst (fc-pair-lst all-approved-fcds)))
+                   (mv-let
+                    (contradictionp type-alist3 ttree3)
+                    (fc-pair-lst-type-alist
+                     fc-pair-lst type-alist force-flg ens wrld)
+                    (cond
+                     (contradictionp
+                      (fc-exit t nil ttree3 
+;                         (mv t nil ttree3)
+; ... and the stuff we need to do reporting ...
+                               caller rounds all-approved-fcds activations1))
+                     (t
+                      (mv-let
+                       (contradictionp type-alist4 ttree4)
+                       (type-alist-equality-loop
+                        type-alist3 ens wrld
+                        *type-alist-equality-loop-max-depth*)
+                       (cond
+                        (contradictionp
+                         (fc-exit t nil ttree4
+;                            (mv t nil ttree4)
+; ... and the stuff we need to do reporting ...
+                                  caller rounds all-approved-fcds activations1))
+                        (t
+                         (fc-exit nil type-alist4 fc-pair-lst
+;                            (mv nil type-alist4 fc-pair-lst)
+; ... and the stuff we need to do reporting ...
+                                  caller rounds all-approved-fcds activations1)))))))))))))))))
 
 (defun forward-chain (cl pts force-flg do-not-reconsiderp wrld ens
                          oncep-override state)
 
-; We forward chain in all possible ways from clause cl.  We return
-; three results.  The first is either t or nil indicating whether a
-; contradiction was found.  If so, the second result is nil and the
-; third is a ttree that encodes the 'lemmas and literals used (via 'pt
-; tags).  If no contradiction is found, the second result is a
-; type-alist obtained by assuming false all of the literals of cl
-; (this type-alist is fully tagged with 'pt tags) plus all of the
-; conclusions derived from forward chaining; the third is a list of
-; fc-pairs, each of the form (concl . ttree), where concl is a truth
-; derived from some subset of the negations of literals of cl and
-; ttree tags the :FORWARD-CHAINING 'lemmas used and all parents (via
-; 'pt tags).
+; This is a version of forward-chain that is backwards compatible with the
+; Version_4.1 signature, which did not allow the caller to identify itself.  It
+; is defined so it can be used in books like the expander.
 
-; Note: The type-alist returned assumes the falsity of every literal
-; in the clause and thus is not suitable for use by rewrite.  We
-; return it strictly for the use of setup-simplify-clause-pot-lst
-; and bdd-clause.
-
-  (mv-let
-   (contradictionp type-alist ttree)
-   (type-alist-clause cl (pts-to-ttree-lst pts) nil nil ens wrld
-                      nil nil)
-   (cond (contradictionp (mv t nil ttree))
-         (t (mv-let (contradictionp x)
-                    (pstk
-                     (forward-chain1 cl
-                                     (add-new-fc-pots-lst-lst
-                                      cl nil force-flg wrld ens nil)
-                                     type-alist force-flg wrld
-                                     do-not-reconsiderp ens oncep-override
-                                     state nil))
-                    (cond (contradictionp
-
-; If a contradiction was found by forward chaining, x is the ttree that
-; derives it.  We need to expunge the fc-derivations in x before letting
-; it out of the forward-chaining module.
-
-                           (mv t nil (expunge-fc-derivations x)))
-                          (t
-
-; If no contradiction was found, x is an fcd-lst.  We need to convert it
-; to a list of pairs of the form (concl . ttree), where each ttree is
-; expunged of fc-derivations.
-
-                           (let ((fc-pair-lst (fc-pair-lst x)))
-                             (mv-let
-                              (contradictionp type-alist)
-                              (fc-pair-lst-type-alist
-                               fc-pair-lst type-alist force-flg ens wrld)
-                              (cond
-                               (contradictionp
-                                (mv t nil type-alist)) ; type-alist is a ttree
-                               (t
-                                (mv-let
-                                 (contradictionp type-alist ttree)
-                                 (type-alist-equality-loop
-                                  type-alist ens wrld
-                                  *type-alist-equality-loop-max-depth*)
-                                 (cond
-                                  (contradictionp
-                                   (mv t nil ttree))
-                                  (t
-                                   (mv nil type-alist
-                                       fc-pair-lst)))))))))))))))
+  (forward-chain-top 'miscellaneous
+                     cl pts force-flg do-not-reconsiderp wrld ens
+                     oncep-override state))
 
 ; When forward-chain has done its job and produced an fc-pair list,
 ; we will pass that list to rewrite-clause.  Rewrite-clause rewrites
@@ -4089,11 +5598,14 @@
       (and (possible-trivial-clause-p cl)
            (tautologyp (disjoin cl) wrld))))
 
-(defun built-in-clausep (cl ens match-free-override wrld state)
+(defun built-in-clausep (caller cl ens match-free-override wrld state)
 
 ; We return two results.  The first indicates whether cl is a ``built
 ; in clause,'' i.e., a known truth.  The second is the supporting
 ; ttree (or nil).  This ttree is guaranteed to be assumption-free.
+
+; Caller is just a token that indicates what function (possibly indirectly) is
+; responsible for calling built-in-clausep.
 
 ; Once upon a time, this function used force-flg = t in the
 ; type-alist-clause call below.  Thus, the callers of this function
@@ -4124,14 +5636,15 @@
     (cond
      (rune (mv t (push-lemma rune nil)))
      (t (mv-let (contradictionp type-alist ttree)
-                (forward-chain cl
-                               nil ; pts
-                               nil ; ok-to-force
-                               nil ; do-not-reconsiderp
-                               wrld
-                               ens
-                               match-free-override
-                               state)
+                (forward-chain-top caller
+                                   cl
+                                   nil ; pts
+                                   nil ; ok-to-force
+                                   nil ; do-not-reconsiderp
+                                   wrld
+                                   ens
+                                   match-free-override
+                                   state)
                 (declare (ignore type-alist))
                 (cond ((not contradictionp)
 
@@ -5393,16 +6906,17 @@
                 (current-clause-pts (enumerate-elements current-clause 0)))
             (mv-let
              (contradictionp type-alist fc-pair-lst)
-             (forward-chain current-clause
-                            current-clause-pts
-                            (ok-to-force local-rcnst)
-                            nil ; do-not-reconsiderp
-                            wrld
-                            (access rewrite-constant rcnst
-                                    :current-enabled-structure)
-                            (access rewrite-constant rcnst
-                                    :oncep-override)
-                            state)
+             (forward-chain-top 'simplify-clause
+                                current-clause
+                                current-clause-pts
+                                (ok-to-force local-rcnst)
+                                nil ; do-not-reconsiderp
+                                wrld
+                                (access rewrite-constant rcnst
+                                        :current-enabled-structure)
+                                (access rewrite-constant rcnst
+                                        :oncep-override)
+                                state)
 
 ; Either we forward chained to a contradiction, in which case we are
 ; done, or else we have a type-alist assuming the negation of every

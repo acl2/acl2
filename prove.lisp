@@ -826,7 +826,8 @@
 
        (mv nil nil))
       (t
-       (built-in-clausep cl
+       (built-in-clausep 'preprocess-clause
+                         cl
                          (access rewrite-constant
                                  rcnst
                                  :current-enabled-structure)
@@ -7711,7 +7712,8 @@
                         (terpri str)
                         (force-output str))))
     (prog2$
-     (initialize-brr-stack state)
+     (prog2$ (initialize-brr-stack state)
+             (initialize-fc-wormhole-sites))
      (er-let* ((ttree1 (prove-loop (list (list term))
                                    (change prove-spec-var pspv
                                            :user-supplied-term term

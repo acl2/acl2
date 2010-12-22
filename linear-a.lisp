@@ -733,7 +733,9 @@
 ; in the essay entitled:  "Forward Chaining Derivations - fc-derivation - fcd"
 
 (defrec fc-derivation
-  ((rune . concl) (fn-cnt . p-fn-cnt) (inst-trigger . ttree))
+  (((concl . ttree) . (fn-cnt . p-fn-cnt))
+   .
+   ((inst-trigger . rune) . (fc-round . unify-subst)))
   t)
 
 ; WARNING: If you change fc-derivation, go visit the "virtual" declaration of

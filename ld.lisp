@@ -16951,6 +16951,15 @@
 
   ~st[HEURISTIC IMPROVEMENTS]
 
+  We have slightly improved the handling of ~c[:]~il[forward-chaining]
+  rules that contain free variables.  Formerly, such rules might fire only
+  once, when the first match for a free variable is discovered, and would
+  not fire again even if subsequent forward chaining made available another
+  match.  This made it difficult to predict whether a rule with free
+  variables would fire or not, depending as it did on the order in which
+  newly derived conclusions were added.  The new handling is a little
+  slower but more predictable.
+
   We have slightly improved the so-called ``~il[type-set]'' heuristics to work
   a bit harder on terms of the form ~c[(rec term)], where ~c[rec] is a
   so-called ``compound-recognizer'' function, that is, a function with a

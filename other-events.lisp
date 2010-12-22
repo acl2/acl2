@@ -23842,11 +23842,12 @@ The following all cause errors.
 ; return (mv contradictionp type-alist fc-pair-lst), where actually fc-pair-lst
 ; is a ttree if contradictionp holds; normally we ignore fc-pair-lst otherwise.
 
-  (forward-chain (dumb-negate-lit-lst (expand-assumptions assumptions))
-                 nil
-                 (ok-to-force-ens ens)
-                 nil ; do-not-reconsiderp
-                 wrld ens (match-free-override wrld) state))
+  (forward-chain-top 'show-rewrites
+                     (dumb-negate-lit-lst (expand-assumptions assumptions))
+                     nil
+                     (ok-to-force-ens ens)
+                     nil ; do-not-reconsiderp
+                     wrld ens (match-free-override wrld) state))
 
 (defun show-rewrites-fn (rule-id enabled-only-flg ens current-term
                                  abbreviations term-id-iff all-hyps geneqv
