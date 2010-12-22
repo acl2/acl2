@@ -1359,11 +1359,6 @@
 
 ; An "fc-derivation" is a structure of the form:
 
-; ***************************************************************************
-; ??? The actual declaration of this record is not in simplify.list but
-; linear-a.lisp.  Change it there and delete this comment!
-; ***************************************************************************
-
 ; (defrec fc-derivation
 ;   (((concl . ttree) . (fn-cnt . p-fn-cnt))
 ;    .
