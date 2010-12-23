@@ -16949,6 +16949,10 @@
   Function ~c[(file-write-date$ filename state)] has been added, giving the
   write date of the given file.
 
+  ~l[forward-chaining-reports] for how to get new reports on the forward
+  chaining activity occurring in your proof attempts.  Thanks to Dave Greve for
+  inspiring the addition of this utility.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   We have slightly improved the handling of ~c[:]~il[forward-chaining]
@@ -16958,7 +16962,8 @@
   match.  This made it difficult to predict whether a rule with free
   variables would fire or not, depending as it did on the order in which
   newly derived conclusions were added.  The new handling is a little
-  slower but more predictable.
+  slower but more predictable.  Thanks to Dave Greve for sending a helpful
+  example that led us to consider making such an improvement.
 
   We have slightly improved the so-called ``~il[type-set]'' heuristics to work
   a bit harder on terms of the form ~c[(rec term)], where ~c[rec] is a

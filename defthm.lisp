@@ -1380,25 +1380,26 @@
         ((and free-vars
               (forced-hyps inst-hyps))
          (warning$ ctx "Free"
-                   "For the forced ~#0~[hypothesis~/hypotheses~], ~*1, used to ~
-                    instantiate free variables we will search for ~#0~[an ~
+                   "For the forced ~#0~[hypothesis~/hypotheses~], ~*1, used ~
+                    to instantiate free variables we will search for ~#0~[an ~
                     instance of the argument~/instances of the arguments~] ~
                     rather than ~#0~[an instance~/instances~] of the FORCE or ~
                     CASE-SPLIT ~#0~[term itself~/terms themselves~].  If a ~
                     search fails for such a hypothesis, we will cause a case ~
-                    split on the partially instantiated hypothesis.  Note that ~
-                    this case split will introduce a ``free variable'' into ~
-                    the conjecture.  While sound, this will establish a goal ~
-                    almost certain to fail since the restriction described by ~
-                    this apparently necessary hypothesis constrains a variable ~
-                    not involved in the problem.  To highlight this oddity, we ~
-                    will rename the free variables in such forced hypotheses ~
-                    by prefixing them with ``???-''.  This is not guaranteed ~
-                    to generate a new variable but at least it generates an ~
-                    unusual one.  If you see such a variable in a subsequent ~
-                    proof (and did not introduce them yourself) you should ~
-                    consider the possibility that the free variables of this ~
-                    rewrite rule were forced into the conjecture."
+                    split on the partially instantiated hypothesis.  Note ~
+                    that this case split will introduce a ``free variable'' ~
+                    into the conjecture.  While sound, this will establish a ~
+                    goal almost certain to fail since the restriction ~
+                    described by this apparently necessary hypothesis ~
+                    constrains a variable not involved in the problem.  To ~
+                    highlight this oddity, we will rename the free variables ~
+                    in such forced hypotheses by prefixing them with ~
+                    ``UNBOUND-FREE-''.  This is not guaranteed to generate a ~
+                    new variable but at least it generates an unusual one.  ~
+                    If you see such a variable in a subsequent proof (and did ~
+                    not introduce them yourself) you should consider the ~
+                    possibility that the free variables of this rewrite rule ~
+                    were forced into the conjecture."
                    (if (null (cdr (forced-hyps inst-hyps))) 0 1)
                    (tilde-*-untranslate-lst-phrase (forced-hyps inst-hyps) t
                                                    wrld)))
@@ -3515,10 +3516,10 @@
   from which a ~c[:forward-chaining] rule might be built is:
   ~bv[]
   Example:
-  (implies (and (p x) (r x))        when (p a) appears in a formula to be
-           (q (f x)))               simplified, try to establish (r a) and
-                                    if successful, add (q (f a)) to the
-                                    known assumptions
+  (implies (and (p x) (r x))       ; when (p a) appears in a formula to be
+           (q (f x)))              ; simplified, try to establish (r a) and
+                                   ; if successful, add (q (f a)) to the
+                                   ; known assumptions
   ~ev[]
   To specify the triggering terms provide a non-empty list of terms
   as the value of the ~c[:trigger-terms] field of the rule class object.~/
@@ -3526,6 +3527,39 @@
   General Form:
   Any theorem, provided an acceptable triggering term exists.
   ~ev[]
+  The structure of this documentation is as follows.  First we give a brief
+  overview of forward chaining and contrast it to backchaining (rewriting).
+  Then we lay out the syntactic restrictions on ~c[:forward-chaining] rules.
+  Then we give more details about the process and point to a tool to assist
+  you in debugging your ~c[:forward-chaining] rules.
+
+  ~em[Overview and When to Use Forward Chaining]
+
+  Forward chaining is performed as part of the simplification process: before
+  the goal is rewritten a ~em[context] is established.  The context tells the
+  theorem prover what may be assumed during the rewriting, e.g., to establish
+  hypotheses of rewrite rules.  For example, if the goal is 
+  ~c[(implies (and (p A) (q A)) (r A))], then when ~c[(r A)] is being
+  rewritten, the context tells us we may assume ~c[(p A)] and ~c[(q A)].
+  Forward chaining is used to extend the context before rewriting begins.  For
+  example, the ~c[:forward-chaining] rule ~c[(implies (p x) (p1 x))] would add
+  ~c[(p1 A)] to the context.
+
+  Forward chaining and backchaining are duals.  If a rewrite rule requires that
+  ~c[(p1 A)] be established and ~c[(p A)] is known, it could be done either by
+  making ~c[(implies (p x) (p1 x))] a ~c[:forward-chaining] rule or a
+  ~c[:rewrite] rule.  Which should you choose?
+  
+  As a rule of thumb, if a conclusion like ~c[(p1 A)] is expected to be
+  widely needed, it is better to derive it via forward chaining because then
+  it is available ``for free'' during the rewriting after paying the one-time
+  cost of forward chaining.  Alternatively, if ~c[(p1 A)] is a rather
+  special hypothesis of key importance to only a few rewrite rules, it is
+  best to derive it only when needed.  Thus forward chaining is pro-active
+  and backward chaining (rewriting) is reactive.
+
+  ~em[Syntactic Restrictions]
+
   Forward chaining rules are generated from the corollary term as follows.
   First, every ~ilc[let] expression is expanded away (hence, so is every
   ~ilc[let*] and ~ilc[lambda] expression), as is every call of a so-called
@@ -3551,7 +3585,9 @@
   ~ilc[not]-expression, and every variable symbol in the conclusion of the
   theorem either occurs in the hypotheses or occurs in the trigger.
 
-  ~c[:Forward-chaining] rules are used by the simplifier before it begins to
+  ~em[More Details about Forward Chaining]
+
+  ~c[:Forward-chaining] rules are used by the simplifier ~em[before] it begins to
   rewrite the literals of the goal.  (Forward chaining is thus carried out from
   scratch for each goal.)  If any term in the goal is an instance of a trigger
   of some forward chaining rule, we try to establish the hypotheses of that
@@ -3559,33 +3595,47 @@
   hypothesis we only use type reasoning, evaluation of ground terms, and
   presence among our known assumptions.  We do not use rewriting.  So-called
   free variables in hypotheses are treated specially; ~pl[free-variables].  If
-  all hypotheses are relieved, we add the instantiated conclusion to our known
-  assumptions.
+  all hypotheses are relieved, and certain heuristics approve of the newly
+  derived conclusion, we add the instantiated conclusion to our known
+  assumptions.  Since this might introduce new terms into the assumptions,
+  forward chaining is repeated.  Heuristic approval of each new addition is
+  necessary to avoid infinite looping as would happen with the rule
+  ~c[(implies (p x) (p (f x)))], which might otherwise forward chain from
+  ~c[(p A)] to ~c[(p (f A))] to ~c[(p (f (f A)))], etc.
 
   ~em[Caution].  Forward chaining does not actually add terms to the goals
   displayed during proof attempts.  Instead, it extends an associated
   ~em[context], called ``assumptions'' in the preceding paragraph, that ACL2
-  builds from the goal currently being proved.  The context starts out with
-  ``obvious'' consequences of the negation of the goal.  For example, if the
-  goal is
+  builds from the goal currently being proved.  (For insiders: forward chaining
+  extends the ~c[type-alist].)  The context starts out with ``obvious''
+  consequences of the negation of the goal.  For example, if the goal is
   ~bv[]
-  (implies (and (p x) (q (f x)))
-           (c x))
+  (implies (and (p A) (q (f A)))
+           (c A))
   ~ev[]
-  then the context notes that ~c[(p x)] and ~c[(q (f x))] are non-~c[nil] and
-  ~c[(c x)] is ~c[nil].  Forward chaining is then used to expand the context.
+  then the context notes that ~c[(p A)] and ~c[(q (f A))] are non-~c[nil] and
+  ~c[(c A)] is ~c[nil].  Forward chaining is then used to expand the context.
   For example, if a forward chaining rule has ~c[(f x)] as a trigger term and
   has body ~c[(implies (p x) (r (f x)))], then the context is extended by
-  binding ~c[(r (f x))] to non-~c[nil].  Note however that since ~c[(r (f x))]
-  is put into the context, not the goal, it is ~em[not] further simplified.  If
-  ~c[f] is an enabled nonrecursive function symbol then this forward chaining
-  rule may well be useless, since calls of ~c[f] may be expanded away.
+  binding ~c[(r (f A))] to non-~c[nil], provided the heuristics approve of this
+  extension.  Note however that since ~c[(r (f A))] is put into the context,
+  not the goal, you will not see it in the goal formula.  Furthermore, the
+  assumption added to the context is just the instantiation of the conclusion
+  of the rule, with no simplification or rewriting applied.  Thus, for example,
+  if it contains an enabled non-recursive function symbol it is unlikely ever
+  to match a (rewritten) term arising during subsequent simplification of the
+  goal.
 
   However, forward-chaining does support the linear arithmetic reasoning
   package.  For example, suppose that forward-chaining puts ~c[(< (f x) (g x))]
   into the context.  Then this inequality also goes into the linear arithmetic
   data base, together with suitable instances of linear lemmas whose trigger
-  term is a call of ~c[g].  ~l[linear].")
+  term is a call of ~c[g].  ~l[linear].
+
+  Debugging ~c[:forward-chaining] rules can be difficult since their effects
+  are not directly visible on the goal being simplified.  Tools are available
+  to help you discover what forward chaining has occurred
+  ~pl[forward-chaining-reports].")
 
 (defun chk-triggers (name match-free hyps terms hyps-vars concls-vars ctx ens
                           wrld state)
@@ -3624,6 +3674,7 @@
          (let* ((warn-non-rec (not (warning-disabled-p "Non-rec")))
                 (free-vars (free-vars-in-hyps hyps (all-vars (car terms)) wrld))
                 (inst-hyps (hyps-that-instantiate-free-vars free-vars hyps))
+                (forced-hyps (forced-hyps inst-hyps))
                 (non-rec-fns (and warn-non-rec
                                   (non-recursive-fnnames (car terms) ens wrld)))
                 (non-rec-fns-inst-hyps
@@ -3647,6 +3698,40 @@
                (free-variable-error? :forward-chaining name ctx wrld state)))
              (t (value nil)))
             (pprogn
+             (cond
+              ((and free-vars forced-hyps)
+               (warning$ ctx "Free"
+                         "Forward chaining rule ~x0 has forced (or ~
+                          case-split) ~#1~[hypothesis~/hypotheses~], ~*2, ~
+                          which will be used to instantiate one or more free ~
+                          variables.  We will search for suitable ~
+                          instantiations (of the term inside the FORCE or ~
+                          CASE-SPLIT) among the known assumptions in the ~
+                          context at the time we encounter ~#1~[the~/each~] ~
+                          hypothesis.  If no instances are found, we will ~
+                          force or case split on the partially instantiated ~
+                          ~#1~[hypothesis~/hypotheses~] instead of waiting ~
+                          for future rounds of forward chaining which might ~
+                          derive appropriate instances.  Note that this will ~
+                          introduce a ``free variable'' into the conjecture.  ~
+                          While sound, this will establish a goal almost ~
+                          certain to fail since the restriction described by ~
+                          this apparently necessary hypothesis constrains a ~
+                          variable not involved in the problem.  To highlight ~
+                          this oddity, we will rename the free variables in ~
+                          such forced hypotheses by prefixing them with ~
+                          ``UNBOUND-FREE-''.  This is not guaranteed to ~
+                          generate a new variable but at least it generates ~
+                          an unusual one.  If you see such a variable in a ~
+                          subsequent proof (and did not introduce them ~
+                          yourself) you should consider the possibility that ~
+                          the free variables of this forward chaining rule ~
+                          were forced into the conjecture."
+                         name
+                         (if (null (cdr forced-hyps)) 0 1)
+                         (tilde-*-untranslate-lst-phrase forced-hyps t
+                                                         wrld)))
+              (t state))
              (cond
               (non-rec-fns
                (warning$ ctx ("Non-rec")
@@ -7228,13 +7313,14 @@ this problem.  [It contains a truly trivial edit we've made, not important.]
                           necessary hypothesis constrains a variable not ~
                           involved in the problem.  To highlight this oddity, ~
                           we will rename the free variables in such forced ~
-                          hypotheses by prefixing them with ``???-''.  This ~
-                          is not guaranteed to generate a new variable but at ~
-                          least it generates an unusual one.  If you see such ~
-                          a variable in a subsequent proof (and did not ~
-                          introduce them yourself) you should consider the ~
-                          possibility that the free variables of this rewrite ~
-                          rule were forced into the conjecture."
+                          hypotheses by prefixing them with ~
+                          ``UNBOUND-FREE-''.  This is not guaranteed to ~
+                          generate a new variable but at least it generates ~
+                          an unusual one.  If you see such a variable in a ~
+                          subsequent proof (and did not introduce them ~
+                          yourself) you should consider the possibility that ~
+                          the free variables of this type-prescription rule ~
+                          were forced into the conjecture."
                          (if (null (cdr (forced-hyps inst-hyps))) 0 1)
                          (forced-hyps inst-hyps)))
               (t state))

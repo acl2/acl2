@@ -1610,32 +1610,34 @@
 ; (b) SUCCESS REJECTED <term> -- successfully fired but conclusion <term> was
 ;                                disapproved
 
-; (c) BLOCKED WAITINGx <hyp> -- unable to relieve <hyp>; WAITINGx is either
-;                               WAITING or WAITING-FREE to indicate whether hyp
-;                               has free vars.  But hyp is printed with the
+; (c) BLOCKED UNRELIEVED-HYPx <hyp> -- unable to relieve <hyp>;
+;                               UNRELIEVED-HYPx is either UNRELIEVED-HYP or
+;                               UNRELIEVED-HYP-FREE to indicate whether hyp has
+;                               free vars.  But hyp is printed with the
 ;                               unify-subst applied and with UNBOUND-FREE-vars
 ;                               in place of the free vars.  We include the
-;                               WAITING-FREE tag just to make it easier to
-;                               mechanically recognize the presence of free
+;                               UNRELIEVED-HYP-FREE tag just to make it easier
+;                               to mechanically recognize the presence of free
 ;                               vars.  (d) BLOCKED FALSE <hyp> -- hyp shown
 ;                               false <hyp>
 
 ; The ``criteria'' is a list of triples, sometimes called a ``criterion.''
 ; Each criterion consist of a rune, an inst-trigger, and a concl.  All three
-; parts of a criterion are optional and we use nil to indicate the absence of a
+; parts of a criterion are optional and we use t to indicate the absence of a
 ; part.  An activation satisfies the criteria if it satisfies one of the
 ; criterion.  An activation satisfies a criterion if it satisfies each of the
-; provided parts.  An activation satisfies the rune (inst-trigger) part if the
-; activation's rune (inst-trigger) is the criterion's rune (inst-trigger).
-; However, because of free variables we cannot always know if a still-active
-; activation will produce the conclusion of the activation we seek.  The best
-; we can do at activation time is determine whether the conclusion of the rule,
-; under the unify-subst, can be made to match the concl we seek.  Therefore, an
-; activation satisfies the concl part if the concl of its rule matches (with
-; one-way-unify1 extending unify-subst) the concl we seek.  (To be precise, fc
-; rules have :concls and we wish to know whether some member of the :concls of
-; the rule matches the concl we seek.)  This is as good as an equality check if
-; the unify-subst is complete on the variables in the concl.
+; provided (non-t) parts.  An activation satisfies the rune (or inst-trigger)
+; part if the activation's rune (or inst-trigger) is the criterion's rune (or
+; inst-trigger).  However, because of free variables we cannot always know if a
+; still-active activation will produce the conclusion of the activation we
+; seek.  If an activation has free variables in it, the best we can do is
+; determine whether conclusion of the rule, under the unify-subst, can be made
+; to match the concl we seek.  Therefore, an activation satisfies the concl
+; part if the concl of its rule matches (with one-way-unify1 extending
+; unify-subst) the concl we seek.  (To be precise, fc rules have :concls and we
+; wish to know whether some member of the :concls of the rule matches the concl
+; we seek.)  This is as good as an equality check if the unify-subst is
+; complete on the variables in the concl.
 
 ; How can we collect and display this information?
 
@@ -1746,7 +1748,303 @@
            (:FORWARD-CHAIN-CALLS . nil)))))
    nil))
 
+(deflabel forward-chaining-reports
+  :doc
+  ":Doc-Section forward-chaining-reports
+
+  to see reports about the forward chaining process~/
+
+  Debugging forward-chaining rules can be hard because their effects are not
+  directly visible on the goal.  In this documentation we tell you how to get
+  reports on the forward chaining activity occurring in your proof attempts.
+  This documentation is written in several parts.  The first part is an
+  introduction for the first-time user of forward chaining reports.  The next
+  two parts describe how to read reports.  The last part describes how to
+  monitor forward chaining activity only for selected runes, etc.  We recommend
+  the new user of these reports read everything!~/
+
+  ~em[A Quick Introduction to Forward Chaining Reports]
+
+  Caution: The reporting mechanism maintains some state and if you have already
+  used forward chaining reporting in a session the directions below may not
+  work as advertised!  To return to the default forward chaining reporting
+  state, execute this form at the top level:
+
+  ~bv[]
+  (reset-fc-reporting)
+  ~ev[]
+
+  You can get a report about all forward chaining activity in subsequent proofs
+  by doing:
+  ~bv[]
+  (set-fc-criteria t)
+  ~ev[]
+  Options will be discussed later that allow you to monitor the activity caused
+  by particular ~c[:forward-chaining] rules or terms.
+
+  Then do a proof that is expected to cause some forward chaining.  In the
+  proof output you will see lines like this:
+  ~bv[]
+  (Forward Chaining on behalf of PREPROCESS-CLAUSE:  (FC-Report 1))
+  ~ev[]
+  This is the only difference you should see in the proof output.
+
+  After the proof attempt has terminated, you can execute:
+  ~bv[]
+  (fc-report k)
+  ~ev[]
+  for any ~c[k] printed during the immediately preceding proof attempt.
+  That will print a much longer report describing the activity that
+  occurred during the ~c[k]th use of forward chaining in that proof
+  attempt.
+
+  If you want to see these reports in real time (embedded in the proof
+  output), do this before invoking the prover:
+  ~bv[]
+  (set-fc-report-on-the-fly t)
+  ~ev[]
+
+  Collecting the data used to generate these reports slows down the prover.
+  If you no longer wish to see such reports, do
+  ~bv[]
+  (set-fc-criteria nil)
+  ~ev[]
+
+  ~em[How To Read FC Reports]
+
+  The report printed by ~c[(fc-report k)] is of the form:
+  ~bv[]
+   Forward Chaining Report ~em[k]:
+   Caller: ~em[token]
+   Clause: (~em[lit1] ~em[lit2] ... ~em[litn])
+   Number of Rounds: ~em[m]
+   Contradictionp: ~em[bool]
+   Activations: (~em[act1] ~em[act2] ...)
+   ~ev[]
+
+  This report means that the ~em[k]th use of forward chaining in the most
+  recent proof attempt was done on behalf of ~em[token] (see below).  The
+  initial context (set of assumptions) consisted of the negations of the
+  literals listed in the clause shown and the initial candidate trigger terms
+  are all those appearing in that clause.  This invocation of forward chaining
+  proceeded to do ~em[m] rounds of successive extensions of the initial context
+  and ultimately either reached a contradiction (~em[bool] = ~c[T]) or returned
+  an extended context (~em[bool] = ~c[NIL]).  Note that reaching a
+  contradiction from the negations of all the literals in a clause is ``good''
+  because it means the clause is true.  The report concludes with the final
+  status of all the forward chaining rules fired during the process.  We
+  explain how to read one of these activation reports in the next section.
+
+  Forward chaining is done on behalf of many proof techniques in the system.
+  Each is associated with a ~em[token].  The main proof technique that uses
+  forward chaining is ~c[SIMPLIFY-CLAUSE].  This is the call of forward
+  chaining that sets up the context used by the rewriter to relieve hypotheses
+  during backchaining.  Another common caller of forward chaining is
+  ~c[PREPROCESS-CLAUSE], the first process in the ACL2
+  waterfall (~pl[hints-and-the-waterfall]).  Forward chaining often proves
+  ``near propositional'' goals (those depending just on boolean implications
+  between basic predicates).  Other tokens you may see include ~c[INDUCT],
+  which uses forward chaining to set up a context for applying
+  ~c[:]~ilc[induction] rules, and the definitional principle (and related
+  utilities such as ~ilc[verify-termination] and ~ilc[verify-guards]) which
+  uses forward chaining during the construction of both measure conjectures and
+  guard conjectures.  When used this way, the ~em[token] is
+  ~c[defun-or-guard-verification].
+
+  ~em[How to Read Activation Reports]
+
+  The forward chaining report concludes with a list of activation reports.
+  ~bv[]
+  Activations: (~em[act1] ~em[act2] ...)
+  ~ev[]
+  Each ~em[acti] is of the form:  
+  ~bv[]   
+  (~em[rune]
+   (:TRIGGER ~em[inst-trig])
+   ((:UNIFY-SUBST ~em[subst])
+    (:DISPOSITION ~em[outcome-part1] ~em[outcome-part2] ~em[inst-term]))
+   ...)
+  ~ev[]
+  where the ~c[...] indicates that the rest of the report consists of
+  more of those tuples listing a ~c[:UNIFY-SUBST] and ~c[:DISPOSITION].
+  We call each tuple a ~em[disposition] of the activation and each
+  disposition describes a substitution ~em[subst] identifying the
+  final instantiation of the rule and how the activation fared.
+  Suppose there are ~em[n] dispositions.  (If the rule in question
+  contains no free variables, ~em[n] will be 1.)
+
+  This activation report means that during the forward chaining process in
+  question, the ~c[:]~ilc[forward-chaining] ~il[rune] ~em[rune] was fired due
+  to the presence in the evolving context of the trigger term ~em[inst-trig].
+   (Note that ~em[inst-trig] is an instantiation of the trigger term of the
+   named rule.  That is, the variable symbols you see in ~em[inst-trig] are
+   those of the clause printed in the forward chaining report.)  The activation
+   of ~em[rune] by ~em[inst-trig] proceeded to split ~em[n] ways as different
+   choices were made for the ~il[free-variables] occuring among the hypotheses.
+   Each of those ~em[n] choices gave rise to a different substitution ~em[subst],
+   and each succeeded or failed as described by the corresponding
+   ~c[:DISPOSITION].
+
+  The ~c[:DISPOSITION] of an activation is described in three parts,
+  ~em[outcome-part1], ~em[outcome-part2], and ~em[inst-term].
+  ~em[Outcome-part1] is either ~c[SUCCESS] or ~c[BLOCKED], meaning that the
+  instance given by ~em[subst] either succeeded in the sense that all of its
+  instantiated hypotheses were found in the context, or failed because some
+  instantiated hypothesis was not found.
+
+  If ~c[outcome-part1] is ~c[SUCCESS] then ~em[inst-term] is the instantiated
+  conclusion produced by the rule.  ~em[Outcome-part2] is either ~c[APPROVED]
+  or ~c[REJECTED] indicating whether the instantiated conclusion was acceptable
+  to our heuristics designed to prevent looping.  If the conclusion was
+  approved, it was added to the evolving context; otherwise, it was discarded
+  as dangerously worse than existing terms.
+
+  If ~c[outcome-part1] is ~c[BLOCKED] then ~c[outcome-part2] is one of three
+  possible things: ~c[FALSE], in which case ~em[inst-term] is an instantiated
+  hypothesis of the rule that is assumed false in the current context,
+  ~c[UNRELIEVED-HYP], in which case ~em[inst-term] is an instantiated
+  hypothesis whose truthvalue is not determined by the context, or
+  ~c[UNRELIEVED-HYP-FREE], in which case ~em[inst-term] is an oddly
+  instantiated hypothesis whose truthvalue is not determined by the context and
+  which also contains free variables.  In the last case, the ``odd''
+  instantiation was by the substitution ~em[subst] but extended so that free
+  variables in the hypothesis are renamed to start with the prefix
+  ~c[UNBOUND-FREE-] to draw your attention to them.
+
+  Note:  All of the terms printed in the report are instantiated with the
+  relevant unifying substitution (possibly extended to bind free variables).
+
+  ~em[Specifying the Tracking Criteria]
+
+  During a proof attempt, the forward chaining module stores information about
+  the activations satisfying certain criteria.  The ~em[criteria] is a list of
+  triples.  Each triple consists of a forward chaining rune, an
+  instantiated trigger term, and an instantiated conclusion to watch for.
+  However, any or all of the components of such a triple may be ~c[t] and that
+  is given special significance.
+
+  An activation ~c[satisfies] a criteria if it satisfies at least one of the
+  triples.  An activation satisfies a triple if it satisfies all three of the
+  components.  Every activation satisfies the component ~c[t].  An activation
+  satisfies a rune if the activation describes a firing of the named rule.
+  An activation satisfies an instantiated trigger term if the activation was
+  created by that trigger being present in the context.  An activation
+  satisfies an instantiated conclusion if the activation ~em[could] produce the
+  instantiated conclusion (with the right choice of any free variables).
+
+  Thus, the criteria is interpreted as a disjunction of conjunctions, making
+  it possible to track a specific set of runes, triggers, and conclusions.
+ 
+  For example, here is a triple that might appear in the criteria:
+  ~bv[]
+  ((:FORWARD-CHAINING ALISTP-FORWARD-TO-TRUE-LISTP)
+   t
+   t).
+  ~ev[]
+  This triple would cause every activation of the given rule to be tracked.
+  However, the triple
+  ~bv[]
+  ((:FORWARD-CHAINING ALISTP-FORWARD-TO-TRUE-LISTP)
+   (ALISTP (MAKE-BINDINGS VARS (TOP-N (OP1 INST) (STACK S))))
+   t)
+  ~ev[]
+  would only track activations of that rule fired by the
+  specific term shown as the second element of the triple.
+  Futhermore
+  ~bv[]
+  (t
+   (ALISTP (MAKE-BINDINGS VARS (TOP-N (OP1 INST) (STACK S))))
+   t)
+  ~ev[]
+  would track any forward chaining rule triggered by that term, and
+  ~bv[]
+  (t
+   t
+   (TRUE-LISTP (MAKE-BINDINGS VARS (TOP-N (OP1 INST) (STACK S)))))
+  ~ev[]
+  would track any rule fired by any trigger that might lead to the
+  specific term given as the third component above.
+
+  Note: The condition on how an activation satisfies an instantiated conclusion
+  is a little subtle.  Consider the activation of the forward chaining rule
+  ~bv[] 
+  (implies (and (symbol-listp x)
+                (equal (len x) (len y)))
+           (true-listp (make-bindings x y)))
+  ~ev[]
+  triggered by ~c[(SYMBOL-LISTP VARS)] arising in the current context.  This
+  activation ~em[could] produce the specific conclusion shown in the last
+  triple above, if it just happened that ~c[(TOP-N (OP1 INST) (STACK S))]
+  were chosen as the binding of the free variable ~c[y].  Thus, the
+  activation of this rule triggered by ~c[(SYMBOL-LISTP VARS)] satisfies the last
+  triple above.
+
+  Observe that the triple
+  ~bv[]
+  (t t t)
+  ~ev[]
+  is satisfied by every activation of any rule by any trigger term
+  producing any conclusion.
+
+  The function ~c[set-fc-criteria] sets the criteria describing
+  which activations are to be tracked.
+  For example, if you execute:
+  ~bv[]
+  (set-fc-criteria ((:FORWARD-CHAINING LEMMA1) 
+                    t t)
+                   ((:FORWARD-CHAINING LEMMA2)
+                    (ALISTP (BASIC-MAPPER A B))
+                    t)
+                   (t t (TRUE-LISTP (DLT D)))),
+  ~ev[]
+  the system would track all activations of the forward-chaining
+  rule ~c[LEMMA1], plus those activations of forward-chaining rule ~c[LEMMA2]
+  triggered by the term given in the second triple, plus any activation of
+  any rule that might derive ~c[(TRUE-LISTP (DLT D))].
+
+  Because criteria generally mention variable symbols used in a specific
+  conjecture, it is probably best to reconsider your criteria every time you
+  want to track forward chaining.  
+
+  If the criteria is ~c[nil], then nothing is tracked.  Setting the criteria to
+  ~c[nil] is the way you turn off tracking and reporting of forward chaining
+  activity.  You may do this either by ~c[(set-fc-criteria)] or by
+  ~c[(set-fc-criteria nil)].  (Technically the second form is an odd
+  use of ~c[set-fc-criteria], which expects any supplied arguments to be
+  triples; if the ``triple'' ~c[nil] is the only one supplied, we take it
+  to mean that the entire criteria should be ~c[nil].)
+
+  To track every forward chaining activation you may set the criteria with
+  either ~c[(set-fc-criteria (t t t))] or use the abbreviation
+  ~c[(set-fc-criteria t)].
+
+  If, when you read a forward chaining report, you see no mention of
+  an activation you have in mind, e.g., of a certain rune or deriving a
+  certain conclusion, and you have set the criteria correctly, then the
+  activation never happened.  (This is akin to using ~c[:]~ilc[brr] and
+  ~c[:]~ilc[monitor] to monitor the application of a rewrite rule and
+  then seeing no interactive break.)
+
+  For some relevant functions to help you manage criteria and when the full
+  reports are printed see ~ilc[fc-report], ~ilc[show-fc-criteria],
+  ~ilc[set-fc-criteria], ~ilc[reset-fc-reporting], and
+  ~ilc[set-fc-report-on-the-fly].")
+
 (defun show-fc-criteria ()
+            
+  ":Doc-Section Forward-Chaining-Reports
+
+  print the forward-chaining tracking criteria~/
+
+  ~bv[]
+  Example:  (show-fc-criteria)
+  ~ev[]
+
+  This function prints the list of triples being used to determine
+  what is tracked during forward chaining.~/
+
+  ~l[forward-chaining-reports] for details."
+
   (wormhole-eval
    'fc-wormhole
    '(lambda (whs)
@@ -1755,67 +2053,203 @@
               whs))
    nil))
 
-(defun reset-fc-criteria ()
+(defun reset-fc-reporting ()
 
 ; This user-level function resets the criteria but leaves the on-the-fly flg as
 ; last set.  All data is wiped out.
 
+  ":Doc-Section Forward-Chaining-Reports
+
+  reset the forward-chaining tracking state to its initial configuration~/
+
+  ~bv[]
+  Example:  (reset-fc-reporting)
+  ~ev[]
+
+  This function erases all forward chaining tracking criteria and sets
+  the on-the-fly reporting flag to ~c[nil.]  The next time you set the
+  criteria (~pl[set-fc-criteria]) the short form of reports, in which
+  only the caller and the fc-report number is printed, will appear in
+  your proof logs.~/
+
+  ~l[forward-chaining-reports] for details."
+
   (wormhole-eval
    'fc-wormhole
    '(lambda (whs)
-      (let ((data (wormhole-data whs)))
-        (set-wormhole-data
-         whs
-         `((:CRITERIA . nil)
-           (:REPORT-ON-THE-FLYP
-            . ,(cdr (assoc-eq :REPORT-ON-THE-FLYP data)))
-           (:FORWARD-CHAIN-CALLS . nil)))))
+      (set-wormhole-data
+       whs
+       '((:CRITERIA . nil)
+         (:REPORT-ON-THE-FLYP . nil)
+         (:FORWARD-CHAIN-CALLS . nil))))
    nil))
 
-(defun add-fc-criterion (rune inst-trigger concl state)
+(defun translate-fc-criterion (x state)
   (cond
-   ((not (or (null rune)
-             (and (runep rune (w state))
-                  (eq (car rune) :forward-chaining))))
-    (er soft 'add-fc-criterion
-        "~x0 is not a :FORWARD-CHAINING rune."
-        rune))
-   (t (er-let*
-        ((inst-trigger
-          (cond ((null inst-trigger) (value nil))
-                (t (translate inst-trigger
-                              t t t 'add-fc-criterion (w state) state))))
-         (concl
-          (cond ((null concl) (value nil))
-                (t (translate concl
-                              t t t 'add-fc-criterion (w state) state)))))
-        (prog2$
-         (wormhole-eval
-          'fc-wormhole
-          '(lambda (whs)
-             (let* ((data (wormhole-data whs))
-                    (criteria (cdr (assoc-eq :CRITERIA data)))
-                    (criterion (list rune inst-trigger concl)))
-               (cond
-                ((member-equal criterion criteria)
-                 whs)
-                (t
-                 (set-wormhole-data
-                  whs
-                  (put-assoc-eq :CRITERIA
-                                (cons criterion criteria)
-                                data))))))
-          nil)
-        (value :invisible))))))
+   ((and (true-listp x)
+         (equal (length x) 3))
+    (let ((rune (car x))
+          (inst-trigger (cadr x))
+          (concl (caddr x)))
+      (cond
+       ((not (or (eq rune t)
+                 (and (runep rune (w state))
+                      (eq (car rune) :forward-chaining))))
+        (er soft 'set-fc-criteria
+            "~x0 is not a :FORWARD-CHAINING rune."
+            rune))
+       (t (er-let*
+            ((inst-trigger
+              (cond ((eq inst-trigger t) (value t))
+                    (t (translate inst-trigger
+                                  t t t 'add-fc-criterion (w state) state))))
+             (concl
+              (cond ((eq concl t) (value t))
+                    (t (translate concl
+                                  t t t 'add-fc-criterion (w state) state)))))
+            (value (list rune inst-trigger concl)))))))
+   (t (er soft 'set-fc-criteria
+          "Each element of a criteria must be a triple, (rune inst-trigger ~
+           inst-concl), where rune is a :FORWARD-CHAINING rune or t, ~
+           inst-trigger is a term or t, and inst-concl is a term or t.  ~
+           But ~x0 is not of this form."
+          x))))
 
-(defun set-fc-report-flg (flg state)
+(defun translate-fc-criteria (lst state)
 
-; This function allows the user to toggle the flag that determines whether we
-; do on-the-fly reporting or not during forward chaining.  It takes state just
-; in case we want eventually to implement some kind of state global controlling
-; fc data collection similar to what is done with gstackp for brr.
+; We either cause an error or return a properly translated forward chaining
+; criteria.  Recall that a criteria is a true-list of triples, each of the form
+; (rune inst-trigger inst-concl), where any of the three components may be nil
+; but when a component is not nil, the rune must be a rune, and the other two
+; must be terms.
+
+  (cond ((atom lst)
+         (cond ((equal lst nil) (value nil))
+               (t (er soft 'set-fc-criteria
+                      "The criteria must be a true-list."))))
+        (t (er-let*
+             ((triple (translate-fc-criterion (car lst) state))
+              (rest (translate-fc-criteria (cdr lst) state)))
+             (value (cons triple rest))))))
+
+(defun set-fc-criteria-fn (x state)
+  (er-let* ((criteria
+             (cond
+              ((equal x '(nil)) (value nil))
+              ((equal x '(t)) (value '((t t t))))
+              (t (translate-fc-criteria x state)))))
+    (prog2$
+     (wormhole-eval
+      'fc-wormhole
+      '(lambda (whs)
+         (set-wormhole-data
+          whs
+          (put-assoc-eq :CRITERIA criteria (wormhole-data whs))))
+      nil)
+     (value nil))))
+     
+(defmacro set-fc-criteria (&rest x)
+
+  ":Doc-Section Forward-Chaining-Reports
+
+  to set the tracking criteria for forward chaining reports~/
+
+  ~bv[]
+  Examples:
+  (set-fc-criteria)                 ; shut off all tracking
+  (set-fc-criteria nil)
+
+  (set-fc-criterial t)              ; to track all forward chaining
+  (set-fc-criteria (t t t))
+
+  (set-fc-criteria
+   ((:FORWARD-CHAINING LEMMA1)      ; track all uses of LEMMA1,
+     t
+     t)
+    ((:FORWARD-CHAINING LEMMA2)     ; uses of LEMMA2 triggered
+     (ALISTP (BASIC-MAPPER A B))    ; by this specific ALISTP term
+     t)
+    (t t (TRUE-LISTP (DLT D))))     ; and every rule deriving
+                                    ; this TRUE-LISTP term.
+
+  General Forms:
+  (set-fc-criteria nil)
+  (set-fc-criteria t)
+  (set-fc-criteria triple1 triple2 ...)
+  ~ev[]
+  where each triple is of the form ~c[(rune inst-trigger inst-concl)].  If rune
+  is non-~c[t] is must be a forward chaining ~il[rune].  The other two
+  components, ~c[inst-trigger] and ~c[inst-concl], if non-~c[t], must be terms.
+  The list of all the triples supplied is called the ``criteria.''  In the form
+  ~c[(set-fc-criteria nil)], the criteria used is the empty list of triples.
+  (Technically, supplying ~c[nil] as a triple ``ought'' to be an error, but it
+  is a more ``natural'' way to say the list of criteria is empty than to use
+  the correct form ~c[(set-fc-criteria)].)  In the form ~c[(set-fc-criteria t)]
+  the criteria used is the list containing the single triple ~c[(t t t)].
+
+  This function sets the tracking criteria for forward chaining reporting.
+  ~l[forward-chaining-reports] for a general discussion of tracking and
+  reporting forward chaining activity.~/
+
+  The forward chaining criteria is a list of triples.  Think of it as
+  representing a disjunction of conjunctions.  The activation of a
+  ~c[:]~ilc[forward-chaining] rune by some triggering term in the current
+  context ~em[satisfies] the criteria if it satisfies one of the triples.  To
+  satisfy the triple ~c[(rune inst-trigger inst-concl)], the activation must
+  satisfy each component of the triple.  Any ~c[t] component is always
+  satisfied.  If ~c[rune] is non-~c[t] it is satisfied if the activation is
+  for the given rune.  If ~c[inst-trigger] is non-~c[t], it is satisfied if
+  the activation is triggered by the given term.
+  (``~c[Inst-trigger''] stands for ``instantiated trigger.''  It is not the
+  trigger term of the rule but is supposed to be an instance of that term that
+  you believe will arise in some proof attempt you are debugging -- an instance
+  you want to ``watch'' as it fires the rule.)  If ~c[inst-concl] is non-~c[t],
+  it is satisfied if the activation could possibly derive the conclusion
+  given.  (Again, ``~c[inst-concl''] stands for ``instantiated conclusion'' and
+  shows the term in your problem that you expect to be derived by forward
+  chaining.)
+
+  Note that if the criteria is empty, it is never satisfied, so
+  tracking is turned off.  If the criteria is the singleton
+  list containing just the triple ~c[(t t t)], then every
+  activation satisfies it and so all ~c[:forward chaining]
+  rules are tracked.
+
+  ~l[forward-chaining-reports] for details."
+
+
+  `(set-fc-criteria-fn ',x state))
+         
+(defun set-fc-report-on-the-fly (flg)
+
+; This function allows the user to set the flag that determines whether we do
+; on-the-fly reporting (flg = t) or not (flg = nil) during forward chaining.
  
-  (declare (ignore state))
+  ":Doc-Section Forward-Chaining-Reports
+
+  to determine when forward-chaining reports are printed~/
+
+  ~bv[]
+  Examples:  (set-fc-report-on-the-fly t)
+             (set-fc-report-on-the-fly nil)
+  ~ev[]
+
+  If the flag is set to ~c[t], forward chaining tracking reports are
+  printed when forward chaining occurs.  If the flag is set to ~c[nil],
+  very short reports (giving just the caller and the report number) are
+  printed during forward chaining but you can use ~ilc[fc-report] to
+  see the full report afterwards.  
+
+  Since nothing is tracked when the criteria is ~c[nil], this function
+  also prints out the current criteria to remind you of what it is.
+  
+  The flag manipulated by this function does not shut off tracking.  It
+  only determines whether reports are printed on-the-fly or not.  To
+  shut off tracking ~ilc[set-fc-criteria].~/
+
+  ~l[forward-chaining-reports] for details."
+
+
   (wormhole-eval
    'fc-wormhole
    '(lambda (whs)
@@ -1909,13 +2343,13 @@
         (trig (cadr criterion))
         (concl (caddr criterion))
         (rule (access fc-activation act :rule)))
-    (and (or (null rune)
+    (and (or (eq rune t)
              (equal rune
                     (access forward-chaining-rule rule :rune)))
-         (or (null trig)
+         (or (eq trig t)
              (equal trig
                     (access fc-activation act :inst-trigger)))
-         (or (null concl)
+         (or (eq concl t)
              (member-one-way-unify1
               concl
               (access forward-chaining-rule rule :concls)
@@ -1960,13 +2394,13 @@
         (trig (cadr criterion))
         (concl (caddr criterion))
         (rule (access fc-activation act0 :rule)))
-    (and (or (null rune)
+    (and (or (eq rune t)
              (equal rune
                     (access forward-chaining-rule rule :rune)))
-         (or (null trig)
+         (or (eq trig t)
              (equal trig
                     (access fc-activation act0 :inst-trigger)))
-         (or (null concl)
+         (or (eq concl t)
              (member-one-way-unify1
               concl
               (access forward-chaining-rule rule :concls)
@@ -1988,13 +2422,13 @@
   (let ((rune (car criterion))
         (trig (cadr criterion))
         (concl (caddr criterion)))
-    (and (or (null rune)
+    (and (or (eq rune t)
              (equal rune
                     (access fc-derivation fcd :rune)))
-         (or (null trig)
+         (or (eq trig t)
              (equal trig
                     (access fc-derivation fcd :inst-trigger)))
-         (or (null concl)
+         (or (eq concl t)
              (equal concl
                     (access fc-derivation fcd :concl))))))
 
@@ -2206,7 +2640,7 @@
 
 ; (a) SUCCESS ACCEPTED <term> -- successfully fired and gave us <term>
 ; (b) SUCCESS REJECTED <term> -- successfully fired but conclusion <term> was disapproved
-; (c) BLOCKED WAITINGx <hyp> -- unable to relieve <hyp>
+; (c) BLOCKED UNRELIEVED-HYPx <hyp> -- unable to relieve <hyp>
 ; (d) BLOCKED FALSE <hyp> --  hyp shown false <hyp>
 
 ; Our strategy will be first to collect all (rune . inst-trigger) pairs and
@@ -2334,8 +2768,8 @@
               (:DISPOSITION BLOCKED
                             ,(if (and (consp inst-hyp)
                                       (eq (car inst-hyp) :FC-FREE-VARS))
-                                 'WAITING-FREE
-                                 'WAITING)
+                                 'UNRELIEVED-HYP-FREE
+                                 'UNRELIEVED-HYP)
                             ,(prettyify-blocked-fc-inst-hyp
                               inst-hyp
                               (access fc-activation (car acts) :hyps)
@@ -2433,6 +2867,20 @@
 
 ; This function is intended to be called from outside the fc-wormhole,
 ; by the user.
+
+  ":Doc-Section Forward-Chaining-Reports
+
+  to report on the forward chaining activity in the most recent proof~/
+
+  ~bv[]
+  Example: (fc-report 15)
+  
+  General Form: (fc-report k)
+  ~ev[]
+  where ~c[k] is the number of some forward chaining report printed
+  in the most recent event.~/
+
+  ~l[forward-chaining-reports] for details."
 
   (wormhole-eval
    'fc-wormhole
