@@ -3431,15 +3431,21 @@
 
 (defun advance-fc-activation (act fc-round type-alist ens force-flg wrld state oncep-override
                                   suspensions fcd-lst)
-  (advance-fc-activation1
-   act
-   (access fc-activation act :inst-hyp)
-   (access fc-activation act :hyps)
-   (access fc-activation act :unify-subst)
-   (access fc-activation act :ttree)
-   fc-round type-alist ens force-flg wrld state oncep-override
-   suspensions
-   fcd-lst))
+  (with-accumulated-persistence
+   (access forward-chaining-rule
+           (access fc-activation act :rule)
+           :rune)
+   (suspensions1 fcd-lst1)
+   t ; Wart:  We consider all forward-chaining work to be ``useful''
+   (advance-fc-activation1
+    act
+    (access fc-activation act :inst-hyp)
+    (access fc-activation act :hyps)
+    (access fc-activation act :unify-subst)
+    (access fc-activation act :ttree)
+    fc-round type-alist ens force-flg wrld state oncep-override
+    suspensions
+    fcd-lst)))
 
 ; Recall the basic data structure of forward chaining, the fc-pot-lst.
 ; It is a list of fc-pots, each of which is (term act1 ... actn), with a
