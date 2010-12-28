@@ -11918,11 +11918,12 @@ The following all cause errors.
                 (f-get-global 'acl2-version state))
               ch state)
              (print-object$ :BEGIN-PORTCULLIS-CMDS ch state)
-             (print-objects (car portcullis) ch state)
+             (print-objects (hons-copy (car portcullis)) ch state)
              (print-object$ :END-PORTCULLIS-CMDS ch state)
              (cond (expansion-alist
                     (pprogn (print-object$ :EXPANSION-ALIST ch state)
-                            (print-object$ expansion-alist ch state)))
+                            (print-object$ (hons-copy expansion-alist) ch
+                                           state)))
                    (t state))
              (print-object$ (cdr portcullis) ch state)
              (print-object$ post-alist3 ch state)
@@ -14071,7 +14072,7 @@ The following all cause errors.
               (fms "* Step 3: Writing file ~x0 and exiting certify-book.~|"
                    (list (cons #\0 acl2x-file))
                    (proofs-co state) state nil))
-         (print-object$ expansion-alist ch state)
+         (print-object$ (hons-copy expansion-alist) ch state)
          (value acl2x-file)))))))
 
 (defun acl2x-alistp (x index len)

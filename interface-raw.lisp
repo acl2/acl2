@@ -7064,7 +7064,13 @@ Missing functions:
 ; all functions in full-book-name were presumably already proclaimed, as
 ; appropriate, during add-trip.
 
-     (let ((*readtable* *reckless-acl2-readtable*))
+     (let ((*readtable* *reckless-acl2-readtable*)
+
+; We reduce the compiled file size produced by CCL, even in the #+hons case
+; where we may have set ccl::*save-source-locations* to t.  We have seen an
+; example where this binding reduced the .dx64fsl size from 13696271 to 24493.
+
+           #+ccl (ccl::*save-source-locations* nil))
        (compile-file os-expansion-filename :output-file ofile))
      (let ((*compiling-certified-file* t))
 
