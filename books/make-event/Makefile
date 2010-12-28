@@ -12,3 +12,5 @@ include ../Makefile-generic
 stobj-test.cert: stobj-test.acl2x
 
 double-cert-test-1.cert: double-cert-test-1.acl2x
+
+acl2x-help-test.cert: acl2x-help-test.acl2x

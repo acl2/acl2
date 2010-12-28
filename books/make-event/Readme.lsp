@@ -6,6 +6,9 @@ comments in those files).  Typically, we add "-check" to indicate a variant
 that uses :check-expansion t, and we add "-include" to suggest a book that
 includes a previous book.
 
+  acl2x-help.lisp
+    Support for avoiding needless proofs when generating .acl2x files (see :DOC
+    set-write-acl2x); demonstrated with acl2x-help-test.lisp
 + basic.lisp
     Simple examples; make-event-debug.  Suggestion: Look at the output.
 + basic-check.lisp
