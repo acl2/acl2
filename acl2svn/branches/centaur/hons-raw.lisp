@@ -103,7 +103,9 @@
                     (rehash-size      *hl-mht-default-rehash-size*)
                     (rehash-threshold *hl-mht-default-rehash-threshold*)
                     (weak             'nil)
-                    (shared           'nil))
+                    (shared           'nil)
+                    (lock-free        'nil)
+                    )
 
 ; Wrapper for make-hash-table.
 ;
@@ -118,7 +120,9 @@
                    :rehash-size      rehash-size
                    :rehash-threshold rehash-threshold
                    #+Clozure :weak   #+Clozure weak
-                   #+Clozure :shared #+Clozure shared))
+                   #+Clozure :shared #+Clozure shared
+                   #+Clozure :lock-free #+Clozure lock-free
+                   ))
 
 
 
@@ -643,6 +647,37 @@
   )
 
 
+(defun hl-initialize-fal-ht (fal-ht-size)
+
+; Create the initial FAL-HT for a hons space.  See the Essay on Fast Alists,
+; below, for more details.
+
+  (let ((fal-ht (hl-mht :test #'eq :size (max 100 fal-ht-size))))
+
+    #+Clozure
+    ;; Truly disgusting hack.  As of Clozure Common Lisp revision 14519, in the
+    ;; non lock-free version of 'remhash', there is a special case: deleting
+    ;; the last remaining element from a hash table triggers a linear walk of
+    ;; the hash table, where every element in the vector is overwritten with
+    ;; the free-hash-marker.  This is devestating when there is exactly one
+    ;; active fast alist: every "hons-acons" and "fast-alist-free" operation
+    ;; requires a linear walk over the FAL-HT.
+    ;;
+    ;; This took me two whole days to figure out.  To ensure that nobody else
+    ;; is bitten by it, and that I am not bitten by it again, here I ensure
+    ;; that the FAL-HT always has at least one fast alist within it.  This
+    ;; alist is unreachable from any ordinary ACL2 code so it should be quite
+    ;; hard to free it.
+    ;;
+    ;; Note that T is always honsed, so sentinel is a valid fast-alist.  I give
+    ;; this a sensible name since it can appear in the (fast-alist-summary).
+    (let* ((entry       (cons t t))
+           (sentinel-al (cons entry 'special-builtin-fal))
+           (sentinel-ht (hl-mht :test #'eql)))
+      (setf (gethash t sentinel-ht) entry)
+      (setf (gethash sentinel-al fal-ht) sentinel-ht))
+
+    fal-ht))
 
 (defun hl-hspace-init (&key (str-ht-size       *hl-hspace-str-ht-default-size*)
                             (nil-ht-size       *hl-ctables-nil-ht-default-size*)
@@ -674,7 +709,7 @@
                                  :element-type 'bit
                                  :initial-element 0)
    :norm-cache       (make-hl-cache)
-   :fal-ht           (hl-mht :test #'eq :size (max 100 fal-ht-size))
+   :fal-ht           (hl-initialize-fal-ht fal-ht-size)
    :persist-ht       (hl-mht :test #'eq :size (max 100 persist-ht-size))
    )
 
@@ -692,7 +727,7 @@
                       :cdr-ht-eql (hl-mht :test #'eql
                                           :size (max 100 cdr-ht-eql-size)))
    :norm-cache       (make-hl-cache)
-   :fal-ht           (hl-mht :test #'eq :size (max 100 fal-ht-size))
+   :fal-ht           (hl-initialize-fal-ht fal-ht-size)
    :persist-ht       (hl-mht :test #'eq :size (max 100 persist-ht-size))
    ))
 
