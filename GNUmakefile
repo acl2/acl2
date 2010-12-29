@@ -644,6 +644,9 @@ proofs: compile-ok
 
 .PHONY: DOC HTML
 
+# Note: the texinfo stuff depends on texi2dvi and dvips, which might not
+# be present on some systems (but is present at UT CS and seem to be
+# present on Mac installations of Latex).
 DOC:
 	rm -f workxxx
 #	chmod 775 doc/create-acl2-html 
@@ -652,7 +655,6 @@ DOC:
 	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-texinfo
 	rm -f workxxx
 
-# See comments above DOC target.
 HTML:
 	rm -f workxxx
 	PREFIX=$(PREFIX) ; export PREFIX ; doc/create-acl2-html
