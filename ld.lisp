@@ -16897,6 +16897,10 @@
   ~c[set-equalp-eq], and ~ilc[union-eq].  Thanks to Jared Davis for pointing
   out this issue for ~ilc[intersectp-eq].
 
+  (CCL only) Made a change that can reduce the size of a compiled file produced
+  by ~ilc[certify-book] when the host Lisp is CCL, by discarding source
+  information (for example, discarding ~ilc[local] events).
+
   ~st[NEW FEATURES]
 
   See the discussion above about new statistics that can be gathered by the
@@ -17005,6 +17009,13 @@
   for generalization, though we have not exploited the previous code to prove
   ~c[nil] in that case.
 
+  Fixed a bug that allowed book certification to ignore ~c[skip-proofs] around
+  ~ilc[encapsulate] ~il[events].  Thus, a book could contain an event of the
+  form ~c[(skip-proofs (encapsulate ...))], and a call of ~ilc[certify-book] on
+  that book could succeed even without supplying keyword
+  ~c[:skip-proofs-okp t].  This bug was introduced in Version  3.5 (May,
+  2009).
+
   Fixed a bug that could occur when including a book that attempts to redefine
   a function as a macro, or vice-versa.  (For details of the issue, see the
   comment in the definition of variable ~c[*hcomp-fn-macro-restore-ht*] in
@@ -17096,6 +17107,10 @@
   fill a format string from anywhere within the string.
 
   ~st[EXPERIMENTAL VERSIONS]
+
+  Among the changes to the HONS version are an enhancement that can reduce
+  sizes of ~il[certificate] files by applying ~ilc[hons-copy] to introduce
+  structure sharing (ACL2 source function ~c[make-certificate-file1]).
 
   ~/~/")
 

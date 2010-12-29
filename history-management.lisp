@@ -4515,14 +4515,15 @@ End of statistical and related information related to image size.
 
 ; Comment on irrelevance of skip-proofs:
 
-; Include-book and encapsulate take responsibility for setting
-; skip-proofs-seen, so we exempt them here.  The rest of these event types do
-; not generate any proof obligations, so for these it is irrelevant whether or
-; not proofs are skipped.  Do not include defaxiom, or any other event that can
-; have a :corollary rule class, since that can generate a proof obligation.
+; The following event types do not generate any proof obligations, so for these
+; it is irrelevant whether or not proofs are skipped.  Do not include defaxiom,
+; or any other event that can have a :corollary rule class, since that can
+; generate a proof obligation.  Also do not include encapsulate; even though it
+; takes responsibility for setting skip-proofs-seen based on its first pass,
+; nevertheless it does not account for a skip-proofs surrounding the
+; encapsulate.
 
                                           '(include-book
-                                            encapsulate
                                             defchoose
                                             defconst
                                             defdoc

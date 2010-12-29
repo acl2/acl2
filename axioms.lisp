@@ -1749,6 +1749,10 @@
 ;   (pc   :type (integer 0 255) :initially 128)
 ;   (mem  :type (array (integer 0 255) (256)) :initially 0))
 
+; Warning: If this event ever generates proof obligations, remove it from the
+; list of exceptions in install-event just below its "Comment on irrelevance of
+; skip-proofs".
+
 ; This function must contend with a problem analogous to the one addressed by
 ; acl2::defconst in acl2.lisp: the need to avoid re-declaration of the same
 ; stobj.  We use redundant-raw-lisp-discriminator in much the same way as in
@@ -37165,20 +37169,29 @@ in :type-prescription rules are specified with :type-prescription (and/or
   (set-write-acl2x nil state)
   ~ev[]
 
+  Note: Also see the distributed book ~c[make-event/acl2x-help.lisp] for a
+  useful utility that can be used to skip proofs during the writing of
+  ~c[.acl2x] files.
+
   This command is provided for those who use trust tags (~pl[defttag]) to
   perform ~ilc[make-event] expansions, yet wish to create certified books that
   do not depend on trust tags.  This is accomplished using two runs of
   ~ilc[certify-book] on a book, say ~c[foo.lisp].  In the first run, a file
   ~c[foo.acl2x] is written that contains all ~ilc[make-event] expansions, but
   ~c[foo.cert] is not written.  In the second certification, no
-  ~ilc[make-event] expansion takes place, because ~c[foo.acl2x] supplies the
-  expansions.  The command ~c[(set-write-acl2x t state)] should be evaluated
-  before the first certification, setting ~ilc[state] global ~c[write-acl2x] to
-  ~c[t], to enable writing of ~c[foo.acl2x]; and the command
+  ~ilc[make-event] expansion typically takes place, because ~c[foo.acl2x]
+  supplies the expansions.  The command ~c[(set-write-acl2x t state)] should be
+  evaluated before the first certification, setting ~ilc[state] global
+  ~c[write-acl2x] to ~c[t], to enable writing of ~c[foo.acl2x]; and the command
   ~c[(set-write-acl2x nil state)] may be evaluated before the second
   run (though this is not necessary in a fresh ACL2 session) in order to
   complete the certification (writing out ~c[foo.cert]) using ~c[foo.acl2x] to
   supply the ~ilc[make-event] expansions.
+
+  Note that for the first certification (i.e., after evaluation of the form
+  ~c[(set-write-acl2x t state)]), it is permitted to skip proofs even if
+  keyword value ~c[:skip-proofs-okp t] has not been supplied to
+  ~ilc[certify-book].  An analogous situation holds for ~c[:defaxioms-okp].
 
   If you use this two-runs approach with scripts such as makefiles, then you
   may wish to provide a single ~ilc[certify-book] command to use for both runs.
