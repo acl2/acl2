@@ -3348,6 +3348,7 @@ README
 # The following is distributed but is not in the repository:
 TEX
 create-acl2-html
+create-acl2-tex
 create-acl2-texinfo
 make-texinfo.el
 texinfo.tex
