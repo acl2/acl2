@@ -7,8 +7,6 @@
 # from the main ACL2 directory.  The make variables PREFIX and ACL2_SUFFIX are
 # used in this script.
 
-rm -f doc/workxxx
-
 # It is our convention to keep the .fig and .gif files in graphics/
 # (under the main ACL2 source directory), but only in the development
 # directory at UT (not distributed with releases).  As part of this
@@ -73,6 +71,8 @@ fi
 echo ':q' >> workxxx
 
 ../../${PREFIX}saved_acl2${ACL2_SUFFIX} < workxxx
+
+rm -f workxxx
 
 # Make all files world-readable.
 

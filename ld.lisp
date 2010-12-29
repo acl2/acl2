@@ -16735,6 +16735,12 @@
 ; load-acl2-execution-environment, rather than figure out whether it should
 ; also load this new file (and perhaps other pass-2 files as well).
 
+; Split GNUmakefile target DOC into HTML, EMACS, and TEX targets (where EMACS
+; replaces the old TEXINFO target).  Users should not generally need to build
+; the :doc themselves, but with this split we make that possible even if they
+; are missing the texi2dvi and dvips programs needed for building a .ps file
+; (as provided by the TEX target).
+
   :Doc
   ":Doc-Section release-notes
 

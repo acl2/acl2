@@ -111,7 +111,7 @@
 
 #   make big-test
 #                  ; Build the image from scratch, make the DOC files in
-#                  ; EMACS (TexInfo), HTML, and TEX,
+#                  ; EMACS, HTML, and TEX,
 #                  ; certify all the books, prove through axioms.lisp.
 #                  ; Typical invocations:
 
@@ -642,24 +642,30 @@ proofs: compile-ok
 	@$(MAKE) check_init_ok
 	rm -f workxxx
 
-.PHONY: DOC HTML
+.PHONY: DOC HTML EMACS TEX
 
-# Note: the texinfo stuff depends on texi2dvi and dvips, which might not
-# be present on some systems (but is present at UT CS and seem to be
-# present on Mac installations of Latex).
-DOC:
-	rm -f workxxx
-#	chmod 775 doc/create-acl2-html 
-#	chmod 775 doc/create-acl2-texinfo
-	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-html
-	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-texinfo
-	rm -f workxxx
+# See comment below about perhaps avoiding the TEX target.
+DOC: HTML EMACS TEX
 
 HTML:
-	rm -f workxxx
-	PREFIX=$(PREFIX) ; export PREFIX ; doc/create-acl2-html
-	rm -f workxxx doc/HTML/workxxx
-#	chmod 775 doc/create-acl2-html 
+	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-html
+
+EMACS: doc/write-acl2-texinfo.cert
+	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-texinfo
+
+# Note: the TEX target, which builds a ps file, depends on texi2dvi
+# and dvips.  These might not be present on some systems (but is
+# present at UT CS and have been seen to be present on a Mac where
+# Latex is installed).
+TEX: doc/write-acl2-texinfo.cert
+	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-tex
+
+doc/write-acl2-texinfo.cert: doc/write-acl2-texinfo.lisp
+	echo '(value :q)' > doc/workxxx.write-acl2-texinfo
+	echo '(lp)' >> doc/workxxx.write-acl2-texinfo
+	echo '(certify-book "write-acl2-texinfo")' >> doc/workxxx.write-acl2-texinfo
+	pushd doc ; (../${PREFIX}saved_acl2${ACL2_SUFFIX} < workxxx.write-acl2-texinfo) ; popd
+	rm doc/workxxx.write-acl2-texinfo
 
 .PHONY: clean
 clean:
