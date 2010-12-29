@@ -644,9 +644,6 @@ proofs: compile-ok
 
 .PHONY: DOC TEXINFO HTML
 
-# We only expect developers to make DOC.  But anyone should be able to do so.
-# However, we have had problems doing so on Mac OS X inside emacs, perhaps
-# because of a gettext dependency from emacs.
 DOC:
 	rm -f workxxx
 #	chmod 775 doc/create-acl2-html 
@@ -654,15 +651,6 @@ DOC:
 	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-html
 	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-texinfo
 	rm -f workxxx
-
-# See comments above DOC target.
-TEXINFO:
-	@if [ `uname -s` != "SunOS" ] ; then \
-	  echo "ERROR: non-HTML documentation must be built on SunOS." ; exit 1 ; fi
-	rm -f workxxx
-	PREFIX=$(PREFIX) ; export PREFIX ; doc/create-acl2-texinfo
-	rm -f workxxx
-#	chmod 775 doc/create-acl2-texinfo
 
 # See comments above DOC target.
 HTML:

@@ -14055,6 +14055,10 @@ The following all cause errors.
                   '(#\a #\c #\l #\2 #\x))
           'string))
 
+(defstub acl2x-expansion-alist (expansion-alist) t)
+
+(defattach acl2x-expansion-alist hons-copy)
+
 (defun write-acl2x-file (expansion-alist acl2x-file ctx state)
   (with-output-object-channel-sharing
    ch acl2x-file
@@ -14072,7 +14076,7 @@ The following all cause errors.
               (fms "* Step 3: Writing file ~x0 and exiting certify-book.~|"
                    (list (cons #\0 acl2x-file))
                    (proofs-co state) state nil))
-         (print-object$ (hons-copy expansion-alist) ch state)
+         (print-object$ (acl2x-expansion-alist expansion-alist) ch state)
          (value acl2x-file)))))))
 
 (defun acl2x-alistp (x index len)
