@@ -1,8 +1,9 @@
 ; This book provides utilities to answer the followign queries (as requested by
-; Warren Hunt) for a given function, fn.  BUT NOTE the following catch:
+; Warren Hunt) for a given function, fn.  BUT NOTE the following catches:
 ; encapsulated functions and built-in :program mode functions are all treated
-; as primitives, i.e., as not calling any functions.  We can probably do better
-; than that if asked, though it's a little more work.
+; as primitives, i.e., as not calling any functions; and, attachments (see :DOC
+; defattach) are not tracked.  We can probably do better than that if asked,
+; though it's a little more work.
 
 ; Note that (build-immediate-callers-table state) need only be called whenever
 ; a relevant function's definition has been added or changed.
