@@ -642,7 +642,7 @@ proofs: compile-ok
 	@$(MAKE) check_init_ok
 	rm -f workxxx
 
-.PHONY: DOC TEXINFO HTML
+.PHONY: DOC HTML
 
 DOC:
 	rm -f workxxx
