@@ -62,6 +62,12 @@ book-thms.lisp -- returns theorems and axioms at the top level of an included
 
 ===============================================================================
 
+callers-and-ancestors.lisp -- utilities for finding all callers and
+                              ancestors (supporters) of functions; see
+                              the book for disclaimers
+
+===============================================================================
+
 check-acl2-exports.lisp -- check for accidental omissions from *acl2-exports*
 
 ===============================================================================
