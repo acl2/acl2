@@ -37204,12 +37204,18 @@ in :type-prescription rules are specified with :type-prescription (and/or
   the second certification.
 
   If you wish to use built-in ACL2 Makefile support (~pl[book-makefiles]),
-  simply add a dependency like the following to the Makefile in your directory
+  simply add dependencies like the following to the Makefile in your directory
   of ~il[books]:
-
   ~bv[]
+
   foo.cert: foo.acl2x
+  # Copied from generated file Makefile-deps, replacing .cert on left sides:
+  foo.acl2x: foo.lisp
+  foo.acl2x: sub-book.cert
+
   ~ev[]
+  See for example distributed file ~c[books/make-event/Makefile].  We may
+  automated more of this in the future, especially if asked to do so.
 
   Note that ~ilc[include-book] is not affected by ~c[set-write-acl2x], other
   than through the indirect effect on ~ilc[certify-book].  More precisely: All
