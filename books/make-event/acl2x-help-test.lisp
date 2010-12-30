@@ -6,7 +6,7 @@
  (er-progn
   (thm (equal (append (append x y) z)
               (append x y z)))
-  (value '(skip-proofs?
+  (value '(maybe-skip-proofs
            (defthm app-assoc
              (equal (append (append x y) z)
                     (append x y z)))))))
