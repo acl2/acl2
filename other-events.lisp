@@ -5574,8 +5574,14 @@
                                                     state))
                                      state)
                                     (t
-                                     (pprogn (ppr val-prime 0 channel state nil)
-                                             (newline channel state)))))))
+                                     (mv-let
+                                      (col state)
+                                      (fmt1 "~y0"
+                                            (list (cons #\0 val-prime))
+                                            0 channel state
+                                            (ld-evisc-tuple state))
+                                      (declare (ignore col))
+                                      state))))))
                 (mv-let
                  (erp expansion0 state)
 

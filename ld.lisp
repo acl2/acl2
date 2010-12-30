@@ -17094,6 +17094,9 @@
   during ~ilc[include-book].  Thanks to Dave Greve for bringing this issue to
   our attention.
 
+  Fixed the printing of results from forms within an ~ilc[encapsulate], so that
+  they are abbreviated according to the ~ilc[ld-evisc-tuple].
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   There is new ~c[Makefile] support for certifying just some of the distributed
