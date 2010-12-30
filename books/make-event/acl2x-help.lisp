@@ -1,19 +1,32 @@
 ; Utilities to help in producing useful .acl2x files.  Also see :DOC
 ; set-write-acl2x.
 
+; Our first (and only, so far) utility is
+; acl2x-expansion-alist-removing-skip-proofs.  Here is how things work when
+; that utility is attached to the built-in stub acl2x-expansion-alist, as with
+; the defattach form below.
+
+; If you do two-step certification with a generated .acl2x file as
+; described in :DOC set-write-acl2x, then the certification step will not
+; encounter any skip-proofs form occurring in a make-event expansion, as
+; skip-proofs? calls will already have been removed.  It is convenient, in
+; fact, to eliminate all record-expansion forms from the top level; and that is
+; done as well.
+
+; How can this utility be useful?  There are times when one does proofs during
+; the expansion phase of a make-event, but one prefers not to redo proofs on
+; behalf of the generated event.  An example appears in acl2x-help-test.lisp.
+
+; As a minor extra we also provide a utility, skip-proofs?, that acts like
+; skip-proofs except that if encountered during book certification, it is
+; ignored, even if no .acl2x file is written out first.  So if you use
+; skip-proofs?, then you can certify books without skipping proofs even if you
+; don't do the two-step process of first writing out a .acl2x file.
+
 (in-package "ACL2")
 
 ; We try to do right by users of the HONS version of ACL2.
 (include-book "misc/hons-help" :dir :system)
-
-; There are times when one does proofs during the expansion phase of a
-; make-event, but one prefers not to redo proofs on behalf of the generated
-; event.  Here we provide a utility, make-event-skip-proofs, that skips such
-; proofs by default at the top level and when writing a .acl2x file (though
-; this can be changed), but never causes the proofs to be skipped during book
-; certification (at which time one presumably does not want to skip proofs).
-
-; An example appears in acl2x-help-test.lisp.
 
 (defmacro set-skip-proofs? (val)
 
@@ -21,27 +34,9 @@
 ; certifying a book; this is the default.  Use (set-skip-proofs? nil) if you
 ; want skip-proofs? to act like the identity macro.
 
-; Note that if you do two-step certification with a generated .acl2x file as
-; described in :DOC set-write-acl2x, and if you only use skip-proofs?
-; indirectly by way of make-event-skip-proofs, then the certification step will
-; not encounter any skip-proofs? form, as skip-proofs? calls will already have
-; been removed.
-
   `(local (table skip-proofs?-table :the-key ,val)))
 
 (table skip-proofs?-table :the-key t)
-
-(defmacro make-event-skip-proofs (form
-                                  &key
-                                  (check-expansion 'nil check-expansion-p)
-                                  (on-behalf-of 'nil on-behalf-of-p))
-  `(make-event
-    (er-let* ((ev ,form))
-      (value (list 'skip-proofs? ev)))
-    ,@(and check-expansion-p
-           `(:check-expansion ,check-expansion))
-    ,@(and on-behalf-of-p
-           `(:on-behalf-of ,on-behalf-of))))
 
 (defmacro skip-proofs? (form)
   `(make-event
@@ -65,61 +60,59 @@
 
 (mutual-recursion
 
-(defun acl2x-expansion-alist-with-skip-proofs?2 (form)
+(defun acl2x-expansion-alist-removing-skip-proofs2 (form)
   (declare (xargs :guard t))
   (case-match form
-    (('record-expansion ('make-event-skip-proofs . &)
-                        ('skip-proofs y))
-     (acl2x-expansion-alist-with-skip-proofs?2 y))
+    (('record-expansion & y)
+     (acl2x-expansion-alist-removing-skip-proofs2 y))
     (('progn . x)
      (with-guard1
       (true-listp x)
       (hons 'progn
-            (acl2x-expansion-alist-with-skip-proofs?2-lst x))))
+            (acl2x-expansion-alist-removing-skip-proofs2-lst x))))
     (('encapsulate sigs . x)
      (with-guard1
       (true-listp x)
       (hons 'encapsulate
             (hons sigs
-                  (acl2x-expansion-alist-with-skip-proofs?2-lst x)))))
+                  (acl2x-expansion-alist-removing-skip-proofs2-lst x)))))
     (('local x)
      (hons-list 'local
-                (acl2x-expansion-alist-with-skip-proofs?2 x)))
+                (acl2x-expansion-alist-removing-skip-proofs2 x)))
     (('skip-proofs x)
-     (hons-list 'skip-proofs
-                (acl2x-expansion-alist-with-skip-proofs?2 x)))
+     (acl2x-expansion-alist-removing-skip-proofs2 x))
     (('with-output . x)
      (with-guard1
       (true-listp x)
       (hons 'with-output
             (hons-append (butlast x 1)
                          (hons-list
-                          (acl2x-expansion-alist-with-skip-proofs?2
+                          (acl2x-expansion-alist-removing-skip-proofs2
                            (car (last x))))))))
     (& form)))
 
-(defun acl2x-expansion-alist-with-skip-proofs?2-lst (x)
+(defun acl2x-expansion-alist-removing-skip-proofs2-lst (x)
   (declare (xargs :guard (true-listp x)))
   (cond ((endp x) nil)
-        (t (hons (acl2x-expansion-alist-with-skip-proofs?2 (car x))
-                 (acl2x-expansion-alist-with-skip-proofs?2-lst (cdr x))))))
+        (t (hons (acl2x-expansion-alist-removing-skip-proofs2 (car x))
+                 (acl2x-expansion-alist-removing-skip-proofs2-lst (cdr x))))))
 
 )
 
-(defun acl2x-expansion-alist-with-skip-proofs?1 (alist acc)
+(defun acl2x-expansion-alist-removing-skip-proofs1 (alist acc)
   (declare (xargs :guard (and (alistp alist)
                               (alistp acc))))
   (cond ((endp alist)
          (hons-copy (reverse acc)))
-        (t (acl2x-expansion-alist-with-skip-proofs?1
+        (t (acl2x-expansion-alist-removing-skip-proofs1
             (cdr alist)
             (acons (caar alist)
-                   (acl2x-expansion-alist-with-skip-proofs?2 (cdar alist))
+                   (acl2x-expansion-alist-removing-skip-proofs2 (cdar alist))
                    acc)))))
 
-(defun acl2x-expansion-alist-with-skip-proofs? (alist)
+(defun acl2x-expansion-alist-removing-skip-proofs (alist)
   (declare (xargs :guard t))
   (with-guard1 (alistp alist)
-               (acl2x-expansion-alist-with-skip-proofs?1 alist nil)))
+               (acl2x-expansion-alist-removing-skip-proofs1 alist nil)))
 
-(defattach acl2x-expansion-alist acl2x-expansion-alist-with-skip-proofs?)
+(defattach acl2x-expansion-alist acl2x-expansion-alist-removing-skip-proofs)
