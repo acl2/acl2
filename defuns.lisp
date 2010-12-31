@@ -5345,6 +5345,7 @@ when submitted as :ideal, pointing out that they can never be
     (ASET-32-BIT-INTEGER-STACK   (NIL NIL STATE) (STATE)) 
     (OPEN-INPUT-CHANNEL          (NIL NIL STATE) (NIL STATE)) 
     (OPEN-OUTPUT-CHANNEL         (NIL NIL STATE) (NIL STATE)) 
+    (GET-OUTPUT-STREAM-STRING$-FN (NIL STATE)    (NIL NIL STATE)) 
     (CLOSE-INPUT-CHANNEL         (NIL STATE)     (STATE)) 
     (CLOSE-OUTPUT-CHANNEL        (NIL STATE)     (STATE))
     (SYS-CALL-STATUS             (STATE)         (NIL STATE))))
@@ -8142,6 +8143,7 @@ when submitted as :ideal, pointing out that they can never be
 (link-doc-to close-output-channel programming io)
 (link-doc-to write-byte$ programming io)
 (link-doc-to print-object$ programming io)
+(link-doc-to get-output-stream-string$ programming io)
 
 (link-doc-to lambda miscellaneous term)
 (link-doc-to untranslate miscellaneous user-defined-functions-table)

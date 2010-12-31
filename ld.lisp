@@ -16963,6 +16963,11 @@
   chaining activity occurring in your proof attempts.  Thanks to Dave Greve for
   inspiring the addition of this utility.
 
+  It is now possible to use ACL2's printing utilities to return strings, by
+  opening output channels to the keyword ~c[:STRING] rather than to filenames.
+  ~l[io].  Thanks to Jared Davis for a helpful conversation that led us to add
+  this feature.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   We have slightly improved the handling of ~c[:]~il[forward-chaining]
