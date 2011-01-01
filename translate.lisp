@@ -5589,7 +5589,7 @@
               (trans-er ctx
                         "Calls of with-local-stobj, such as ~x0, cannot be ~
                          evaluated directly in the top-level loop.  ~
-                         See :DOC with-local-stobj."
+                         See :DOC with-local-stobj and see :DOC top-level."
                         x))
              (t
               (translate11-mv-let mv-let-form stobjs-out bindings
