@@ -14313,10 +14313,14 @@ The following all cause errors.
              (pprogn
               (io? event nil state
                    (full-book-name)
-                   (fms "CERTIFICATION ATTEMPT FOR ~x0~%~s1~%~%~
-                         * Step 1:  Read ~x0 and compute its check sum.~%"
-                        (list (cons #\0 full-book-name)
-                              (cons #\1 (f-get-global 'acl2-version state)))
+                   (fms "CERTIFICATION ATTEMPT~@0 FOR ~x1~%~s2~%~%~
+                         * Step 1:  Read ~x1 and compute its check sum.~%"
+                        (list (cons #\0 (cond
+                                         ((f-get-global 'write-acl2x state)
+                                          " (for writing .acl2x file)")
+                                         (t "")))
+                              (cons #\1 full-book-name)
+                              (cons #\2 (f-get-global 'acl2-version state)))
                         (proofs-co state) state nil))
               (er-let*
                ((ev-lst (read-object-file full-book-name ctx state))
