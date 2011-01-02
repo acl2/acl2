@@ -40193,11 +40193,11 @@ Lisp definition."
 ; arguments.  So again we see that time$ needs to be a macro.
 
 ; Thus, we define time$ to be a macro that expands to a corresponding call of
-; time$1, which in turn expands to a call (return-last 'time$1 & &).
+; time$1, which in turn expands to a call (return-last 'time$1-raw & &).
 ; Return-last is a function in the logic but is a macro in raw Lisp.  Since
 ; return-last is a function in the logic, it does not take keyword arguments;
 ; for convenience we define a macro our-time to be the keyword version of the
-; raw Lisp macro time$1.
+; raw Lisp macro time$1-raw.
 
 ; The following examples make a nice little test suite.  Run each form and
 ; observe whether the output is consistent with the comments attached to the
