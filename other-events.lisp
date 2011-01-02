@@ -20766,7 +20766,8 @@ The following all cause errors.
   except (implicitly) via ~c[with-local-stobj] and in logic-only
   situations (like theorems and hints).  Moreover, neither
   ~c[with-local-stobj] nor its expansions are legal when typed directly at
-  the top-level loop.~/
+  the top-level loop.  ~l[top-level] for a way to use ~c[with-local-stobj]
+  in the top-level loop.~/
   ~bv[]
   General Forms:
   (with-local-stobj stobj-name mv-let-form)
