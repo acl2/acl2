@@ -14119,7 +14119,15 @@ The following all cause errors.
      ((or (not (natp acl2x-date))
           (not (natp book-date))
           (< acl2x-date book-date))
-      (value nil))
+      (pprogn
+       (cond (acl2x-date
+              (warning$ ctx "acl2x"
+                        "Although the file ~x0 exists, it is being ignored ~
+                         because it does not appear to be at least as recent ~
+                         as the book ~x1."
+                        acl2x-file full-book-name))
+             (t state))
+       (value nil)))
      (t (er-let* ((chan (open-input-object-file acl2x-file ctx state)))
           (state-global-let*
            ((current-package "ACL2"))
@@ -14135,7 +14143,7 @@ The following all cause errors.
                     ((acl2x-alistp val 0 len)
                      (pprogn
                       (observation ctx
-                                   "Reading expansion-alist containing ~n0 ~
+                                   "Using expansion-alist containing ~n0 ~
                                     ~#1~[entries~/entry~/entries~] from file ~
                                     ~x2."
                                    (length val)
@@ -14729,8 +14737,16 @@ The following all cause errors.
                                            (delete-auxiliary-book-files
                                             full-book-name)
                                            (value nil)))
-                                         (value
-                                          full-book-name)))))))))))))))))))))))))))))))))
+                                         (pprogn
+                                          (cond (acl2x-expansion-alist
+                                                 (observation
+                                                  ctx
+                                                  "Used expansion-alist ~
+                                                   obtained from file ~x0."
+                                                  acl2x-file))
+                                                (t state))
+                                          (value
+                                           full-book-name))))))))))))))))))))))))))))))))))
 
 #+acl2-loop-only
 (defmacro certify-book (user-book-name
