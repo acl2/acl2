@@ -465,12 +465,12 @@
          (let ((len1 (len l1))
                (len2 (len l2)))
            (cond ((and (>= len2 len1)
-                       (>= len2 *magic-number-for-hashing*))
+                       (>= len1 *magic-number-for-hashing*))
                   (with-fast-list
                    fl2 l2 '*hons-union*
                    (hons-union1 l1 fl2 l2)))
                  ((and (>= len1 len2)
-                       (>= len1 *magic-number-for-hashing*))
+                       (>= len2 *magic-number-for-hashing*))
                   (with-fast-list
                    fl1 l1 '*hons-union*
                    (hons-union1 l2 fl1 l1)))
