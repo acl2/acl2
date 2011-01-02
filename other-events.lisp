@@ -5380,13 +5380,26 @@
   (cond ((atom form) (mv nil form)) ; note that progn! can contain atoms
         ((eq (car form) 'local)
          (mv t *local-value-triple-elided*))
-        ((member-eq (car form) '(skip-proofs ; and, only at top level:
+        ((member-eq (car form) '(skip-proofs
+
+; Can with-prover-time-limit really occur in an event context?  At one time we
+; seemed to think it could at the top level, but this currently seems
+; doubtful.  But it's harmless to leave the next line.
+
                                  with-prover-time-limit))
          (mv-let (changed-p x)
                  (elide-locals-rec (cadr form))
                  (cond (changed-p (mv t (list (car form) x)))
                        (t (mv nil form)))))
-        ((member-eq (car form) '(with-output record-expansion time$1))
+        ((member-eq (car form) '(with-output record-expansion
+
+; Can time$ really occur in an event context?  At one time we seemed to think
+; that time$1 could, but it currently seems doubtful that either time$1 or
+; time$ could occur in an event context.  It's harmless to leave the next line,
+; but it particulary makes no sense to us to use time$1, so we use time$
+; instead.
+
+                                             time$))
          (mv-let (changed-p x)
                  (elide-locals-rec (car (last form)))
                  (cond (changed-p (mv t (append (butlast form 1) (list x))))

@@ -198,15 +198,16 @@
 ; We allow time$ and with-prover-time-limit at the top level only for purposes
 ; of tracking make-event, for now.  If there is user demand, we could consider
 ; allowing these in arbitrary positions of embedded event forms, though in that
-; case we should be careful to check that nested calls work well.
+; case we should be careful to check that nested calls work well.  Note that we
+; look for time$ and with-prover-time-limit, not for return-last, because we
+; are looking at a user-supplied form, not its macroexpansion.
 
-             (case-match form
-               (('return-last ('quote sym) & x)
-                (case sym
-                  ((time$1-raw with-prover-time-limit1-raw)
-                   x)
-                  (otherwise form)))
-               (& form))
+             (cond ((consp form)
+                    (case (car form)
+                      (time$ (cadr form))
+                      (with-prover-time-limit (caddr form))
+                      (otherwise form)))
+                   (t form))
              wrld 'top-level state
              (primitive-event-macros))
             (pprogn
@@ -16740,6 +16741,9 @@
 ; the :doc themselves, but with this split we make that possible even if they
 ; are missing the texi2dvi and dvips programs needed for building a .ps file
 ; (as provided by the TEX target).
+
+; Function elide-locals-rec had an odd case for time$1, which we have replaced
+; there by time$ along with a comment that this case seems irrelevant anyhow.
 
   :Doc
   ":Doc-Section release-notes
