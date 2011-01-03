@@ -198,15 +198,16 @@
 ; We allow time$ and with-prover-time-limit at the top level only for purposes
 ; of tracking make-event, for now.  If there is user demand, we could consider
 ; allowing these in arbitrary positions of embedded event forms, though in that
-; case we should be careful to check that nested calls work well.
+; case we should be careful to check that nested calls work well.  Note that we
+; look for time$ and with-prover-time-limit, not for return-last, because we
+; are looking at a user-supplied form, not its macroexpansion.
 
-             (case-match form
-               (('return-last ('quote sym) & x)
-                (case sym
-                  ((time$1-raw with-prover-time-limit1-raw)
-                   x)
-                  (otherwise form)))
-               (& form))
+             (cond ((consp form)
+                    (case (car form)
+                      (time$ (cadr form))
+                      (with-prover-time-limit (caddr form))
+                      (otherwise form)))
+                   (t form))
              wrld 'top-level state
              (primitive-event-macros))
             (pprogn
@@ -16735,6 +16736,15 @@
 ; load-acl2-execution-environment, rather than figure out whether it should
 ; also load this new file (and perhaps other pass-2 files as well).
 
+; Split GNUmakefile target DOC into HTML, EMACS, and TEX targets (where EMACS
+; replaces the old TEXINFO target).  Users should not generally need to build
+; the :doc themselves, but with this split we make that possible even if they
+; are missing the texi2dvi and dvips programs needed for building a .ps file
+; (as provided by the TEX target).
+
+; Function elide-locals-rec had an odd case for time$1, which we have replaced
+; there by time$ along with a comment that this case seems irrelevant anyhow.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -16890,6 +16900,17 @@
   one can create one's own version of ~ilc[verify-termination] (but with a
   different name).
 
+  Improved the ~il[guard]s for the following functions, often weakening them,
+  to reflect more precisely the requirements for calling ~ilc[eq]:
+  ~c[alist-difference-eq], ~c[intersection-eq], ~c[intersection1-eq],
+  ~ilc[intersectp-eq], ~c[not-in-domain-eq], ~c[set-difference-assoc-eq],
+  ~c[set-equalp-eq], and ~ilc[union-eq].  Thanks to Jared Davis for pointing
+  out this issue for ~ilc[intersectp-eq].
+
+  (CCL only) Made a change that can reduce the size of a compiled file produced
+  by ~ilc[certify-book] when the host Lisp is CCL, by discarding source
+  information (for example, discarding ~ilc[local] events).
+
   ~st[NEW FEATURES]
 
   See the discussion above about new statistics that can be gathered by the
@@ -16942,7 +16963,26 @@
   Function ~c[(file-write-date$ filename state)] has been added, giving the
   write date of the given file.
 
+  ~l[forward-chaining-reports] for how to get new reports on the forward
+  chaining activity occurring in your proof attempts.  Thanks to Dave Greve for
+  inspiring the addition of this utility.
+
+  It is now possible to use ACL2's printing utilities to return strings, by
+  opening output channels to the keyword ~c[:STRING] rather than to filenames.
+  ~l[io].  Thanks to Jared Davis for a helpful conversation that led us to add
+  this feature.
+
   ~st[HEURISTIC IMPROVEMENTS]
+
+  We have slightly improved the handling of ~c[:]~il[forward-chaining]
+  rules that contain free variables.  Formerly, such rules might fire only
+  once, when the first match for a free variable is discovered, and would
+  not fire again even if subsequent forward chaining made available another
+  match.  This made it difficult to predict whether a rule with free
+  variables would fire or not, depending as it did on the order in which
+  newly derived conclusions were added.  The new handling is a little
+  slower but more predictable.  Thanks to Dave Greve for sending a helpful
+  example that led us to consider making such an improvement.
 
   We have slightly improved the so-called ``~il[type-set]'' heuristics to work
   a bit harder on terms of the form ~c[(rec term)], where ~c[rec] is a
@@ -16983,6 +17023,13 @@
   includes a proof of ~c[nil] that no longer succeeds.  A similar fix was made
   for generalization, though we have not exploited the previous code to prove
   ~c[nil] in that case.
+
+  Fixed a bug that allowed book certification to ignore ~c[skip-proofs] around
+  ~ilc[encapsulate] ~il[events].  Thus, a book could contain an event of the
+  form ~c[(skip-proofs (encapsulate ...))], and a call of ~ilc[certify-book] on
+  that book could succeed even without supplying keyword
+  ~c[:skip-proofs-okp t].  This bug was introduced in Version  3.5 (May,
+  2009).
 
   Fixed a bug that could occur when including a book that attempts to redefine
   a function as a macro, or vice-versa.  (For details of the issue, see the
@@ -17056,6 +17103,9 @@
   during ~ilc[include-book].  Thanks to Dave Greve for bringing this issue to
   our attention.
 
+  Fixed the printing of results from forms within an ~ilc[encapsulate], so that
+  they are abbreviated according to the ~ilc[ld-evisc-tuple].
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   There is new ~c[Makefile] support for certifying just some of the distributed
@@ -17075,6 +17125,10 @@
   fill a format string from anywhere within the string.
 
   ~st[EXPERIMENTAL VERSIONS]
+
+  Among the changes to the HONS version are an enhancement that can reduce
+  sizes of ~il[certificate] files by applying ~ilc[hons-copy] to introduce
+  structure sharing (ACL2 source function ~c[make-certificate-file1]).
 
   ~/~/")
 

@@ -1749,6 +1749,10 @@
 ;   (pc   :type (integer 0 255) :initially 128)
 ;   (mem  :type (array (integer 0 255) (256)) :initially 0))
 
+; Warning: If this event ever generates proof obligations, remove it from the
+; list of exceptions in install-event just below its "Comment on irrelevance of
+; skip-proofs".
+
 ; This function must contend with a problem analogous to the one addressed by
 ; acl2::defconst in acl2.lisp: the need to avoid re-declaration of the same
 ; stobj.  We use redundant-raw-lisp-discriminator in much the same way as in
@@ -4019,9 +4023,9 @@
   ~c[return-last] in its output, printing calls of ~ilc[prog2$] or
   ~ilc[time$] (or other such utilities) instead.
 
-  If you encounter a call of ~c[return-last], then you may find it most useful
-  to consider ~c[return-last] simply as a function defined by the following
-  equation.
+  If you encounter a call of ~c[return-last] during a proof, then you may find
+  it most useful to consider ~c[return-last] simply as a function defined by
+  the following equation.
   ~bv[]
   (equal (return-last x y z) z)
   ~ev[]
@@ -4056,9 +4060,9 @@
 
   Most readers would be well served to avoid reading the rest of this
   documentation of ~c[return-last].  For reference, however, below we document
-  it in some detail.  We include some discussion of its behavior in raw Lisp,
-  because we expect that most who read further are working with raw Lisp
-  code (and trust tags).~/
+  it in some detail.  We include some discussion of its evaluation, in
+  particular its behavior in raw Lisp, because we expect that most who read
+  further are working with raw Lisp code (and trust tags).~/
 
   ~c[Return-last] is an ACL2 function that can arise from macroexpansion of
   certain utilities that return their last argument, which may be a multiple
@@ -4095,7 +4099,7 @@
   simple.  More commonly, macroexpansion produces a call of a macro defined in
   raw Lisp that may produce side effects.  Consider for example the ACL2
   utility ~ilc[with-guard-checking], which is intended to change the
-  guard-checking mode to the indicated value (~pl[with-guard-checking]).
+  ~il[guard]-checking mode to the indicated value (~pl[with-guard-checking]).
   ~bq[]
   ACL2 !>(with-guard-checking :none (car 3)) ; no guard violation
   NIL
@@ -4132,21 +4136,120 @@
   to ~c[:none], as ~c[chk-with-guard-checking-arg] is just the identity
   function except for causing a hard error for an illegal input.
 
-  ~st[Aside].  ACL2 has a custom evaluator for forms submitted to its top-level
-  loop.  While it is beyond the scope of this discussion to describe in detail
-  how that evaluator works, it is important to note that it respects the
-  intention of ~c[return-last].  For example, a call of ~ilc[time$]
-  macroexpands in ACL2 to a call of the form ~c[(return-last 'time$1-raw & &)],
-  which in turn times evaluation of the last argument of that form.
-  ~st[End of aside.]
+  The intended use of ~c[return-last] is that the second argument is evaluated
+  first in a normal manner, and then the third argument is evaluated in an
+  environment that may depend on the value of the second argument.  (For
+  example, the macro ~ilc[with-prover-time-limit] macroexpands to a call of
+  ~c[return-last] with a first argument of ~c['WITH-PROVER-TIME-LIMIT1-RAW], a
+  second argument that evaluates to a numeric time limit, and a third argument
+  that is evaluated in an environment where the theorem prover is restricted to
+  avoid running longer than that time limit.)  Although this intended usage
+  model is not strictly enforced, it is useful to keep in mind in the following
+  description of how calls of ~c[return-last] are handled by the ACL2
+  evaluator.
 
-  You can extend the behavior of ~c[return-last] by putting a suitable entry in
-  a ~il[table] provided by ACL2, provided there is an active trust
-  tag (~pl[defttag]); ~pl[return-last-table].  However, it is probably more
-  convenient to use a macro that is provided for that purpose;
-  ~pl[defmacro-last].  We describe the distributed book
-  ~c[books/misc/profiling.lisp] in order to illustrate how this works.  The
-  events in that book are as follows, and are described below.
+  When a form is submitted in the top-level loop, it is handled by ACL2's
+  custom evaluator.  That evaluator is specified to respect the semantics of
+  the expression supplied to it: briefly put, if an expression ~c[E] evaluates
+  to a value ~c[V], then the equality ~c[(equal E (quote V))] should be a
+  theorem.  Notice that this specification does not discuss the side-effects
+  that may occur when evaluating a call of ~c[return-last], so we discuss that
+  now.  Suppose that the ACL2 evaluator encounters the call
+  ~c[(return-last 'fn expr1 expr2)].  First it evaluates ~c[expr1].  If this
+  evaluation succeeds without error, then it constructs an expression of the
+  form ~c[(fn *x* ev-form)], where *x* is a Lisp variable bound to the result
+  of evaluating ~c[expr1] and ~c[ev-form] is a call of the evaluator for
+  ~c[expr2].  (Those who want implementation details are invited to look at
+  function ~c[ev-rec-return-last] in ACL2 source file ~c[translate.lisp].)
+  There are exceptions if ~c[fn] is ~c[progn], ~c[ec-call1-raw],
+  ~c[with-guard-checking1-raw], or ~c[mbe1-raw], but the main idea is the same:
+  do a reasonable job emulating the behavior of a raw-Lisp call of
+  ~c[return-last].
+
+  The following log shows how a ~ilc[time$] call can generate a call of the
+  evaluator for the last argument of ~c[return-last] (arguent ~c[expr2],
+  above).  We use ~c[:]~ilc[trans1] to show single-step macroexpansions, which
+  indicate how a call of ~ilc[time$] expands to a call of ~c[return-last].  The
+  implementation actually binds the Lisp variable ~c[*RETURN-LAST-ARG3*] to
+  ~c[expr2] before calling the ACL2 evaluator, ~c[ev-rec].
+  ~bv[]
+  ACL2 !>:trans1 (time$ (+ 3 4))
+   (TIME$1 (LIST 0 NIL NIL NIL NIL)
+           (+ 3 4))
+  ACL2 !>:trans1 (TIME$1 (LIST 0 NIL NIL NIL NIL)
+                         (+ 3 4))
+   (RETURN-LAST 'TIME$1-RAW
+                (LIST 0 NIL NIL NIL NIL)
+                (+ 3 4))
+  ACL2 !>(time$ (+ 3 4))
+  ; (EV-REC *RETURN-LAST-ARG3* ...) took 
+  ; 0.00 seconds realtime, 0.00 seconds runtime
+  ; (1,120 bytes allocated).
+  7
+  ACL2 !>
+  ~ev[]
+
+  We now show how things can go wrong in other than the ``intended use'' case
+  described above.  In the example below, the macro ~c[mac-raw] is operating
+  directly on the syntactic representation of its first argument, which it
+  obtains of course as the second argument of a ~c[return-last] call.  Again
+  this ``intended use'' of ~c[return-last] requires that argument to be
+  evaluated and then only its result is relevant; its syntax is not supposed to
+  matter.  We emphasize that only top-level evaluation depends on this
+  ``intended use''; once evaluation is passed to Lisp, the issue disappears.
+  We illustrate below how to use the ~ilc[top-level] utility to avoid this
+  issue; ~pl[top-level].  The example uses the utility ~c[defmacro-last] to
+  ``install'' special handling of the raw-Lisp macro ~c[mac-raw] by
+  ~c[return-last]; later below we discuss ~c[defmacro-last].
+  ~bv[]
+  ACL2 !>(defttag t)
+
+  TTAG NOTE: Adding ttag T from the top level loop.
+   T
+  ACL2 !>(progn!
+           (set-raw-mode t)
+           (defmacro mac-raw (x y)
+             `(progn (print (quote ,(cadr x)))
+                     (terpri) ; newline
+                     ,y)))
+
+  Summary
+  Form:  ( PROGN! (SET-RAW-MODE T) ...)
+  Rules: NIL
+  Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+   NIL
+  ACL2 !>(defmacro-last mac)
+  [[ ... output omitted ... ]]
+   RETURN-LAST-TABLE
+  ACL2 !>(return-last 'mac-raw '3 nil)
+
+  ***********************************************
+  ************ ABORTING from raw Lisp ***********
+  Error:  Fault during read of memory address #x120000300006
+  ***********************************************
+
+  If you didn't cause an explicit interrupt (Control-C),
+  then the root cause may be call of a :program mode
+  function that has the wrong guard specified, or even no
+  guard specified (i.e., an implicit guard of t).
+  See :DOC guards.
+
+  To enable breaks into the debugger (also see :DOC acl2-customization):
+  (SET-DEBUGGER-ENABLE T)
+  ACL2 !>(top-level (return-last 'mac-raw '3 nil))
+
+  3 
+  NIL
+  ACL2 !>
+  ~ev[]
+
+  We next describe how to extend the behavior of ~c[return-last].  This
+  requires an active trust tag (~pl[defttag]), and is accomplished by extending
+  a ~il[table] provided by ACL2, ~pl[return-last-table].  Rather than using
+  ~ilc[table] ~il[events] directly for this purpose, it is probably more
+  convenient to use a macro, ~c[defmacro-last].  We describe the distributed
+  book ~c[books/misc/profiling.lisp] in order to illustrate how this works.
+  The events in that book are as follows, and are described below.
   ~bv[]
   (defttag :profiling)
 
@@ -4249,9 +4352,9 @@
   compromising the soundness or error handling of ACL2 when you define a macro
   in raw Lisp and especially when you install it as a key of
   ~ilc[return-last-table], either directly or (more likely) using
-  ~ilc[defmacro-last].  In particular, be sure that you are defining a macro of
-  two arguments that always returns the value of its last argument, even that
-  last argument evaluates to a multiple value.  The following would, for
+  ~c[defmacro-last].  In particular, be sure that you are defining a macro of
+  two arguments that always returns the value of its last argument, even if
+  that last argument evaluates to a multiple value.  The following would, for
   example, be wrong, especially in certain Lisps (including CCL and SBCL).
   ~bv[]
   (defttag t)
@@ -11196,11 +11299,13 @@ J
 
   ~l[intersectp-equal], which is logically the same function.~/
 
-  ~c[(Intersectp-eq x y)] has a ~il[guard] that ~c[x] and ~c[y] are lists of
-  symbols.~/"
+  ~c[(Intersectp-eq x y)] has a ~il[guard] that ~c[x] and ~c[y] are true lists,
+  at least one of which is a list of symbols.~/"
 
-  (declare (xargs :guard (and (symbol-listp x)
-                              (symbol-listp y))))
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp y)
+                              (or (symbol-listp x)
+                                  (symbol-listp y)))))
   (cond ((endp x) nil)
         ((member-eq (car x) y) t)
         (t (intersectp-eq (cdr x) y))))
@@ -23309,6 +23414,7 @@ J
     aref-32-bit-integer-stack open-output-channel-p1 read-object
     big-clock-negative-p peek-char$ shrink-32-bit-integer-stack read-run-time
     read-byte$ read-idate t-stack-length1 print-object$
+    get-output-stream-string$-fn
 
     mv-list return-last
 
@@ -25486,7 +25592,12 @@ J
   ~c[recursive-p] argument is ~c[nil].)
 
   File-names are strings.  ACL2 does not support the Common Lisp type
-  ~ilc[pathname].
+  ~ilc[pathname].  However, for the ~c[file-name] argument of the
+  output-related functions listed below, ACL2 supports a special value,
+  ~c[:STRING].  For this value, the channel connects (by way of a Common Lisp
+  output string stream) to a string rather than to a file: as characters are
+  written to the channel they can be retrieved by using
+  ~c[get-output-stream-string$].
 
   Here are the names, formals and output descriptions of the ACL2 io
   functions.
@@ -25515,6 +25626,7 @@ J
     (fmt1 (string alist col channel state evisc-tuple) (mv col state))
     (fmt1! (string alist col channel state evisc-tuple) (mv col state))
     (cw (string arg0 arg1 ... argn) nil)
+    (get-output-stream-string$ (channel state) (mv erp string state))
   ~ev[]
   The ``formatting'' functions are particularly useful;
   ~pl[fmt] and ~pl[cw].  In particular, ~ilc[cw] prints to a
@@ -25529,6 +25641,28 @@ J
   ~c[*standard-input*] and ~c[*standard-output*], one can drive ACL2 io off of
   arbitrary Common Lisp streams, bound to ~c[*standard-input*] and
   ~c[*standard-output*] before entry to ACL2.
+
+  The macro ~c[get-output-stream-string$] returns the string accumulated into
+  the given channel.  By default, a call of this macro closes the supplied
+  output channel.  However, a third argument is optional (default ~c[t]), and
+  if its value is ~c[nil] then the channel remains open.  The following example
+  illustrates.
+  ~bv[]
+  (mv-let
+   (channel state)
+   (open-output-channel :string :object state)
+   (pprogn (print-object$ 17 channel state)
+           (print-object$ '(a b (c d)) channel state)
+           (er-let*
+             ((str1 (get-output-stream-string$
+                     channel state
+                     nil))) ; keep the channel open
+             (pprogn (print-object$ 23 channel state)
+                     (print-object$ '((e f)) channel state)
+                     (er-let* ; close the channel
+                       ((str2 (get-output-stream-string$ channel state)))
+                       (value (cons str1 str2)))))))
+  ~ev[]
 
   By default, symbols are printed in upper case when vertical bars are
   not required, as specified by Common Lisp.  ~l[set-print-case] for how
@@ -25685,7 +25819,10 @@ J
 ; We return the elements of alist1 whose keys don't exist in the domain of
 ; alist2.
 
-  (declare (xargs :guard (and (symbol-alistp alist1) (alistp alist2))))
+  (declare (xargs :guard (and (alistp alist1)
+                              (alistp alist2)
+                              (or (symbol-alistp alist1)
+                                  (symbol-alistp alist2)))))
   (if (endp alist1)
       nil
     (if (assoc-eq (caar alist1) alist2)
@@ -26525,13 +26662,16 @@ J
 (defun make-output-channel (file-name clock)
   (declare (xargs :guard (and (rationalp clock)
                               (standard-char-listp (explode-atom clock 10))
-                              (stringp file-name)
-                              (standard-char-listp (coerce file-name 'list)))))
-  (intern (coerce
-           (append (coerce file-name 'list)
-                   (cons '#\-
-                         (explode-atom clock 10)))
-           'string)
+                              (or (eq file-name :string)
+                                  (and (stringp file-name)
+                                       (standard-char-listp
+                                        (coerce file-name 'list)))))))
+  (intern (coerce (cond ((eq file-name :string)
+                         (explode-atom clock 10))
+                        (t (append (coerce file-name 'list)
+                                   (cons '#\-
+                                         (explode-atom clock 10)))))
+                  'string)
           "ACL2-OUTPUT-CHANNEL"))
 )
 
@@ -26914,12 +27054,14 @@ J
 ; It is possible to get an error when opening an output file.  We
 ; consider that a resource error for purposes of the story.
 
-  (declare (xargs :guard (and (stringp file-name)
+  (declare (xargs :guard (and (or (stringp file-name)
+                                  (eq file-name :string))
                               (member-eq typ *file-types*)
                               (state-p1 state-state))))
   #-acl2-loop-only
   (cond ((live-state-p state-state)
-         (cond (*wormholep*
+         (cond ((eq file-name :string))
+               (*wormholep*
                 (wormhole-er 'open-output-channel (list file-name typ)))
                ((and (not (f-get-global 'writes-okp state-state))
 
@@ -26946,19 +27088,25 @@ J
           (progn
             (setq *file-clock* (1+ *file-clock*))
             (let* ((os-file-name
-                    (pathname-unix-to-os file-name *the-live-state*))
+                    (and (not (eq file-name :string))
+                         (pathname-unix-to-os file-name *the-live-state*)))
                    (stream
                     (case typ
                       ((:character :object)
-                       (open os-file-name :direction :output
-                             :if-exists :supersede))
-                      (:byte (open os-file-name :direction :output
-                                   :if-exists :supersede
-                                   :element-type '(unsigned-byte 8)))
+                       (cond ((eq file-name :string)
+                              (make-string-output-stream))
+                             (t (open os-file-name :direction :output
+                                      :if-exists :supersede))))
+                      (:byte
+                       (cond ((eq file-name :string)
+                              (make-string-output-stream
+                               :element-type '(unsigned-byte 8)))
+                             (t (open os-file-name :direction :output
+                                      :if-exists :supersede
+                                      :element-type '(unsigned-byte 8)))))
                       (otherwise
                        (interface-er "Illegal output-type ~x0." typ))))
-                   (channel (make-output-channel
-                             file-name *file-clock*)))
+                   (channel (make-output-channel file-name *file-clock*)))
               (symbol-name channel)
               (setf (get channel *open-output-channel-type-key*)
                     typ)
@@ -27113,6 +27261,387 @@ J
               (declare (ignore erp))
               (mv chan state)))))
 )
+
+(defmacro er (severity context str &rest str-args)
+  (declare (xargs :guard (and (true-listp str-args)
+                              (member-symbol-name (symbol-name severity)
+                                                  '(hard hard? hard! soft
+                                                         very-soft))
+                              (<= (length str-args) 10))))
+
+; Note: We used to require (stringp str) but then we started writing such forms
+; as (er soft ctx msg x y z), where msg was bound to the error message str
+; (because the same string was used many times).
+
+; The special form (er hard "..." &...) expands into a call of illegal on "..."
+; and an alist built from &....  Since illegal has a guard of nil, the attempt
+; to prove the correctness of a fn producing a hard error will require proving
+; that the error can never occur.  At runtime, illegal causes a CLTL error.
+
+; The form (er soft ctx "..." &...) expands into a call of error1 on ctx, "..."
+; and an alist built from &....  At runtime error1 builds an error object and
+; returns it.  Thus, soft errors are not errors at all in the CLTL sense and
+; any function calling one which might cause an error ought to handle it.
+
+; Just to make it easier to debug our code, we have arranged for the er macro
+; to actually produce a prog2 form in which the second arg is as described
+; above but the preceding one is an fmt statement which will actually print the
+; error str and alist.  Thus, we can see when soft errors occur, whether or not
+; the calling program handles them appropriately.
+
+; We do not advertise the hard! or very-soft severities, at least not yet.  The
+; implementation uses the former to force a hard error even in contexts where
+; we would normally return nil.
+
+  ":Doc-Section ACL2::Programming
+
+  print an error message and ``cause an error''~/
+  ~bv[]
+  Example Forms:
+  (er hard  'top-level \"Illegal inputs, ~~x0 and ~~x1.\" a b)
+  (er hard? 'top-level \"Illegal inputs, ~~x0 and ~~x1.\" a b)
+  (er soft  'top-level \"Illegal inputs, ~~x0 and ~~x1.\" a b)
+  ~ev[]
+  The examples above all print an error message to standard output saying that
+  ~c[a] and ~c[b] are illegal inputs.  However, the first two abort evaluation
+  after printing an error message, while the third returns ~c[(mv t nil state)]
+  after printing an error message.  The result in the third case can be
+  interpreted as an ``error'' when programming with the ACL2 ~ilc[state],
+  something most ACL2 users will probably not want to do;
+  ~pl[ld-error-triples] and ~pl[er-progn].
+
+  The difference between the ~c[hard] and ~c[hard?] forms is one of guards.
+  Use ~c[hard] if you want the call to generate a (clearly impossible) guard
+  proof obligation of (essentially) ~c[NIL].  But use ~c[hard?] if you want to
+  be able to call this function in guard-verified code, since the call
+  generates a (trivially satisfied) guard proof obligation of ~c[T].
+
+  ~c[Er] is a macro, and the above three examples expand to calls of ACL2
+  functions, as shown below.  ~l[illegal], ~pl[hard-error], and ~pl[error1].
+  The first two have guards of (essentially) ~c[NIL] and ~c[T], respectively,
+  while ~ilc[error1] is in ~c[:]~ilc[program] mode.~/
+  ~bv[]
+  General forms:
+  (er hard  ctx fmt-string arg1 arg2 ... argk)
+    ==> {macroexpands, in essence, to:}
+  (ILLEGAL    CTX FMT-STRING
+              (LIST (CONS #\\0 ARG1) (CONS #\\1 ARG2) ... (CONS #\\k ARGk)))
+
+  (er hard? ctx fmt-string arg1 arg2 ... argk)
+    ==> {macroexpands, in essence, to:}
+  (HARD-ERROR CTX FMT-STRING
+              (LIST (CONS #\\0 ARG1) (CONS #\\1 ARG2) ... (CONS #\\k ARGk)))
+
+  (er soft  ctx fmt-string arg1 arg2 ... argk)
+    ==> {macroexpands, in essence, to:}
+  (ERROR1     CTX FMT-STRING
+              (LIST (CONS #\\0 ARG1) (CONS #\\1 ARG2) ... (CONS #\\k ARGk)))
+  ~ev[]~/"
+
+  (let ((alist (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
+                                    #\5 #\6 #\7 #\8 #\9)
+                                  str-args))
+        (severity-name (symbol-name severity)))
+    (cond ((equal severity-name "SOFT")
+           (list 'error1 context str alist 'state))
+          ((equal severity-name "VERY-SOFT")
+           (list 'error1-safe context str alist 'state))
+          ((equal severity-name "HARD?")
+           (list 'hard-error context str alist))
+          ((equal severity-name "HARD")
+           (list 'illegal context str alist))
+          ((equal severity-name "HARD!")
+           #+acl2-loop-only (list 'illegal context str alist)
+           #-acl2-loop-only `(let ((*hard-error-returns-nilp* nil))
+                              (illegal ,context ,str ,alist)))
+          (t
+
+; The final case should never happen.
+
+           (illegal 'top-level
+                    "Illegal severity, ~x0; macroexpansion of ER failed!"
+                    (list (cons #\0 severity)))))))
+
+(defmacro assert$ (test form)
+
+  ":Doc-Section ACL2::Programming
+
+  cause a hard error if the given test is false~/
+
+  ~bv[]
+  General Form:
+  (assert$ test form)
+  ~ev[]
+  where ~c[test] returns a single value and ~c[form] is arbitrary.
+  Semantically, this call of ~c[assert$] is equivalent to ~c[form].  However,
+  it causes a hard error (using ~ilc[illegal]) if the value of ~c[test] is
+  ~c[nil].~/~/"
+
+  `(prog2$ (or ,test
+               (er hard 'assert$
+                   "Assertion failed:~%~x0"
+                   '(assert$ ,test ,form)))
+           ,form))
+
+(defun fmt-to-comment-window (str alist col evisc-tuple)
+
+; WARNING: Keep this in sync with fmt-to-comment-window!.
+
+; Logically, this is the constant function returning nil.  However, it
+; has a side-effect on the "comment window" which is imagined to be a
+; separate window on the user's screen that cannot possibly be
+; confused with the normal ACL2 display of the files in STATE.  Using
+; this function it is possible for an ACL2 expression to cause
+; characters to appear in the comment window.  Nothing whatsoever can
+; be proved about these characters.  If you want to prove something
+; about ACL2 output, it must be directed to the channels and files in
+; STATE.
+
+  ":Doc-Section ACL2::Programming
+
+  print to the comment window~/
+
+  ~l[cw] for an introduction to the comment window and the usual way
+  to print it.
+
+  Function ~c[fmt-to-comment-window] is identical to ~c[fmt1] (~pl[fmt]),
+  except that the channel is in essence ~ilc[*standard-co*] and the ACL2
+  ~ilc[state] is neither an input nor an output.  An analogous function,
+  ~c[fmt-to-comment-window!], prints with ~ilc[fmt!] instead of ~ilc[fmt],
+  in order to avoid insertion of backslash (\\) characters for margins;
+  also ~pl[cw!].~/
+  ~bv[]
+  General Form:
+  (fmt-to-comment-window fmt-string alist col evisc-tuple)
+  ~ev[]
+  where these arguments are as desribed for ~ilc[fmt1]; ~pl[fmt].~/"
+
+  (declare (xargs :guard t))
+
+  #+acl2-loop-only
+  (declare (ignore str alist col evisc-tuple))
+  #+acl2-loop-only
+  nil
+  #-acl2-loop-only
+  (progn (fmt1  str alist col *standard-co* *the-live-state*
+                evisc-tuple)
+         nil))
+
+(defun fmt-to-comment-window! (str alist col evisc-tuple)
+
+; WARNING: Keep this in sync with fmt-to-comment-window.
+
+  (declare (xargs :guard t))
+  #+acl2-loop-only
+  (declare (ignore str alist col evisc-tuple))
+  #+acl2-loop-only
+  nil
+  #-acl2-loop-only
+  (progn (fmt1! str alist col *standard-co* *the-live-state*
+                evisc-tuple)
+         nil))
+
+(defun pairlis2 (x y)
+; Like pairlis$ except is controlled by y rather than x.
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp y))))
+  (cond ((endp y) nil)
+        (t (cons (cons (car x) (car y))
+                 (pairlis2 (cdr x) (cdr y))))))
+
+(defmacro cw (str &rest args)
+
+; WARNING: Keep this in sync with cw!.
+
+; A typical call of this macro is:
+; (cw "The goal is ~p0 and the alist is ~x1.~%"
+;     (untranslate term t nil)
+;     unify-subst)
+; Logically, this expression is equivalent to nil.  However, it has
+; the effect of first printing to the comment window the fmt string
+; as indicated.  It uses fmt-to-comment-window above, and passes it the
+; column 0 and evisc-tuple nil, after assembling the appropriate
+; alist binding the fmt vars #\0 through #\9.  If you want
+; (a) more than 10 vars,
+; (b) vars other than the digit chars,
+; (c) a different column, or
+; (d) a different evisc-tuple,
+; then call fmt-to-comment-window instead.
+
+; Typically, calls of cw are embedded in prog2$ forms,
+; e.g.,
+; (prog2$ (cw ...)
+;         (mv a b c))
+; which has the side-effect of printing to the comment window and
+; logically returning (mv a b c).
+
+  ":Doc-Section ACL2::Programming
+
+  print to the comment window~/
+
+  Example:
+  ~bv[]
+  (cw \"The goal is ~~p0 and the alist is ~~x1.~~%\"
+      (untranslate term t nil)
+      unify-subst)
+  ~ev[]
+  Logically, this expression is equivalent to ~c[nil].  However, it has
+  the effect of first printing to the so-called ``comment window'' the
+  ~ilc[fmt] string as indicated.  Thus, ~c[cw] is like ~c[fmt] (~pl[fmt]) except
+  in three important ways.  First, it is a macro whose calls expand to calls of
+  a ~c[:]~ilc[logic] mode function.  Second, it neither takes nor returns the
+  ACL2 ~ilc[state]; logically ~c[cw] simply returns ~c[nil], although it prints
+  to a ~em[comment window] that just happens to share the terminal screen with
+  the standard character output ~ilc[*standard-co*].  Third, its ~c[fmt] args
+  are positional references, so that for example
+  ~bv[]
+  (cw \"Answers: ~~p0 and ~~p1\" ans1 ans2)
+  ~ev[]
+  prints in the same manner as:
+  ~bv[]
+  (fmt \"Answers: ~~p0 and ~~p1\"
+       (list (cons #\\0 ans1) (cons #\\1 ans2))
+       *standard-co* state nil)
+  ~ev[]
+  Typically, calls of ~c[cw] are embedded in ~ilc[prog2$] forms, e.g.,
+  ~bv[]
+  (prog2$ (cw ...)
+          (mv a b c))
+  ~ev[]
+  which has the side-effect of printing to the comment window and
+  logically returning ~c[(mv a b c)].~/
+  ~bv[]
+  General Form:
+  (cw fmt-string arg1 arg2 ... argn)
+  ~ev[]
+  where n is between 0 and 9 (inclusive).
+  The macro uses ~ilc[fmt-to-comment-window], passing it the column ~c[0] and
+  ~il[evisc-tuple] ~c[nil], after assembling the appropriate alist binding the
+  ~ilc[fmt] vars #\\0 through #\\9; ~pl[fmt].  If you want
+  ~bf[]
+  (a) more than 10 vars,
+  (b) vars other than the digit chars,
+  (c) a different column, or
+  (d) a different evisc-tuple,
+  ~ef[]
+  then call ~ilc[fmt-to-comment-window] instead.
+
+  Also ~pl[cw!], which is useful if you want to be able to read the printed
+  forms back in.
+
+  Finally, we discuss another way to create formatted output that also avoids
+  the need to pass in the ACL2 ~ilc[state].  The idea is to use wormholes;
+  ~pl[wormhole].  Below is a function you can write, along with some calls,
+  providing an illustration of this approach.
+  ~bv[]
+  (defun my-fmt-to-comment-window (str alist)
+    (wormhole 'my-fmt-to-comment-window
+              '(lambda (whs) whs)
+              (list str alist)
+              '(pprogn
+                (fms (car (@ wormhole-input))
+                     (cadr (@ wormhole-input))
+                     *standard-co*
+                     state
+                     nil)
+                (value :q))
+              :ld-verbose nil
+              :ld-error-action :return ; harmless return on error
+              :ld-prompt nil))
+
+  ; A non-erroneous call:
+  (my-fmt-to-comment-window \"Here is ~~x0 for your inspection~~%\"
+                            (list (cons #\0 'foo)))
+
+  ; An error inside the fmt string (unbound fmt var); note that even
+  ; with the error, the wormhole is exited.
+  (my-fmt-to-comment-window \"Here is ~~x1 for your inspection~~%\"
+                            (list (cons #\0 'foo)))
+
+  ; A guard violation in the binding; note that even with the error,
+  ; the wormhole is exited.
+  (my-fmt-to-comment-window \"Here is ~~x0 for your inspection~~%\"
+                            (list (cons #\0 (car 'foo))))
+  ~ev[]~/"
+
+  `(fmt-to-comment-window ,str
+                          (pairlis2 '(#\0 #\1 #\2 #\3 #\4
+                                      #\5 #\6 #\7 #\8 #\9)
+                                    (list ,@args))
+                          0 nil))
+
+(defmacro cw! (str &rest args)
+
+; WARNING: Keep this in sync with cw.
+
+  ":Doc-Section ACL2::Programming
+
+  print to the comment window~/
+
+  This is the same as ~ilc[cw], except that ~ilc[cw] inserts backslash (\\)
+  characters when forced to print past the right margin, in order to make the
+  output a bit clearer in that case.  Use ~c[cw!] instead if you want to be
+  able to read the forms back in.~/~/"
+
+  `(fmt-to-comment-window! ,str
+                           (pairlis2 '(#\0 #\1 #\2 #\3 #\4
+                                       #\5 #\6 #\7 #\8 #\9)
+                                     (list ,@args))
+                           0 nil))
+
+(skip-proofs ; as with open-output-channel
+(defun get-output-stream-string$-fn (channel state-state)
+  (declare (xargs :guard (and (state-p1 state-state)
+                              (symbolp channel)
+                              (open-output-channel-any-p1 channel
+                                                          state-state))))
+  (let ((err-string
+         "ERROR: The channel ~x0 is not associated with an output file."))
+    #-acl2-loop-only
+    (when (live-state-p state-state)
+      (let ((stream (get-output-stream-from-channel channel)))
+        (return-from get-output-stream-string$-fn
+          (cond (*wormholep*
+                 (mv nil
+                     (wormhole-er 'get-output-stream-string$-fn
+                                  (list channel))
+                     state-state))
+                ((not (typep stream 'string-stream))
+                 (mv t
+                     (cw err-string channel)
+                     state-state))
+                (t (mv nil (get-output-stream-string stream) state-state))))))
+    #+acl2-loop-only
+    (let* ((entry (cdr (assoc-eq channel (open-output-channels state-state))))
+           (header (assert$ (consp entry)
+                            (car entry)))
+           (file-name (assert$ (and (true-listp header)
+                                    (eql (length header) 4))
+                               (nth 2 header))))
+      (cond
+       ((eq file-name :string)
+        (mv nil
+            (coerce (reverse (cdr entry)) 'string)
+            (update-open-output-channels
+             (add-pair channel
+                       (cons header nil)
+                       (open-output-channels state-state))
+             state-state)))
+       (t (mv t
+              (cw err-string channel)
+              state-state))))))
+)
+
+(defmacro get-output-stream-string$ (channel state-state
+                                             &optional (close-p 't))
+  (declare (xargs :guard (eq state-state 'state))
+           (ignorable state-state))
+  (cond (close-p
+         `(let ((chan ,channel))
+            (er-let* ((s (get-output-stream-string$-fn chan state)))
+              (pprogn (close-output-channel chan state)
+                      (value s)))))
+        (t `(get-output-stream-string$-fn ,channel state))))
 
 (defun close-output-channel (channel state-state)
 
@@ -29840,19 +30369,19 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
   union of two lists of symbols~/
 
-  ~c[(Union-eq x y)] equals a list whose members
-  (~pl[member-eq]) contains the members of ~c[x] and the members
-  of ~c[y].  More precisely, the resulting list is the same as one
-  would get by first deleting the members of ~c[y] from ~c[x], and then
-  concatenating the result to the front of ~c[y].~/
+  ~c[(Union-eq x y)] equals a list whose members (~pl[member-eq]) contains the
+  members of ~c[x] and the members of ~c[y].  More precisely, the resulting
+  list is the same as one would get by first deleting the members of ~c[y] from
+  ~c[x], and then concatenating the result to the front of ~c[y].~/
 
-  The ~il[guard] for ~c[union-eq] requires both arguments to be true lists,
-  but in fact further requires the first list to contain only symbols,
-  as the function ~ilc[member-eq] is used to test membership (with
-  ~ilc[eq]).  ~l[union-equal].~/"
+  The ~il[guard] for ~c[union-eq] requires both arguments to be true lists and
+  at least one to be a true list of symbols, as the function ~ilc[member-eq] is
+  used to test membership (with ~ilc[eq]).  ~l[union-equal].~/"
 
-  (declare (xargs :guard (and (symbol-listp lst1)
-                              (true-listp lst2))))
+  (declare (xargs :guard (and (true-listp lst1)
+                              (true-listp lst2)
+                              (or (symbol-listp lst1)
+                                  (symbol-listp lst2)))))
   (cond ((endp lst1) lst2)
         ((member-eq (car lst1) lst2)
          (union-eq (cdr lst1) lst2))
@@ -30486,8 +31015,10 @@ in :type-prescription rules are specified with :type-prescription (and/or
 
 (defun intersection-eq (l1 l2)
   (declare (xargs :guard
-                  (and (symbol-listp l1)
-                       (symbol-listp l2))))
+                  (and (true-listp l1)
+                       (true-listp l2)
+                       (or (symbol-listp l1)
+                           (symbol-listp l2)))))
   (cond ((endp l1) nil)
         ((member-eq (car l1) l2)
          (cons (car l1)
@@ -37059,20 +37590,29 @@ in :type-prescription rules are specified with :type-prescription (and/or
   (set-write-acl2x nil state)
   ~ev[]
 
+  Note: Also see the distributed book ~c[make-event/acl2x-help.lisp] for a
+  useful utility that can be used to skip proofs during the writing of
+  ~c[.acl2x] files.
+
   This command is provided for those who use trust tags (~pl[defttag]) to
   perform ~ilc[make-event] expansions, yet wish to create certified books that
   do not depend on trust tags.  This is accomplished using two runs of
   ~ilc[certify-book] on a book, say ~c[foo.lisp].  In the first run, a file
   ~c[foo.acl2x] is written that contains all ~ilc[make-event] expansions, but
   ~c[foo.cert] is not written.  In the second certification, no
-  ~ilc[make-event] expansion takes place, because ~c[foo.acl2x] supplies the
-  expansions.  The command ~c[(set-write-acl2x t state)] should be evaluated
-  before the first certification, setting ~ilc[state] global ~c[write-acl2x] to
-  ~c[t], to enable writing of ~c[foo.acl2x]; and the command
+  ~ilc[make-event] expansion typically takes place, because ~c[foo.acl2x]
+  supplies the expansions.  The command ~c[(set-write-acl2x t state)] should be
+  evaluated before the first certification, setting ~ilc[state] global
+  ~c[write-acl2x] to ~c[t], to enable writing of ~c[foo.acl2x]; and the command
   ~c[(set-write-acl2x nil state)] may be evaluated before the second
   run (though this is not necessary in a fresh ACL2 session) in order to
   complete the certification (writing out ~c[foo.cert]) using ~c[foo.acl2x] to
   supply the ~ilc[make-event] expansions.
+
+  Note that for the first certification (i.e., after evaluation of the form
+  ~c[(set-write-acl2x t state)]), it is permitted to skip proofs even if
+  keyword value ~c[:skip-proofs-okp t] has not been supplied to
+  ~ilc[certify-book].  An analogous situation holds for ~c[:defaxioms-okp].
 
   If you use this two-runs approach with scripts such as makefiles, then you
   may wish to provide a single ~ilc[certify-book] command to use for both runs.
@@ -37085,12 +37625,18 @@ in :type-prescription rules are specified with :type-prescription (and/or
   the second certification.
 
   If you wish to use built-in ACL2 Makefile support (~pl[book-makefiles]),
-  simply add a dependency like the following to the Makefile in your directory
+  simply add dependencies like the following to the Makefile in your directory
   of ~il[books]:
-
   ~bv[]
+
   foo.cert: foo.acl2x
+  # Copied from generated file Makefile-deps, replacing .cert on left sides:
+  foo.acl2x: foo.lisp
+  foo.acl2x: sub-book.cert
+
   ~ev[]
+  See for example distributed file ~c[books/make-event/Makefile].  We may
+  automated more of this in the future, especially if asked to do so.
 
   Note that ~ilc[include-book] is not affected by ~c[set-write-acl2x], other
   than through the indirect effect on ~ilc[certify-book].  More precisely: All
@@ -37150,7 +37696,8 @@ in :type-prescription rules are specified with :type-prescription (and/or
   However, you are welcome to associate indices manually with any ~il[events]
   you wish into the alist stored in the ~c[.acl2x] file.~/"
 
-  (declare (xargs :guard (booleanp flg)))
+  (declare (xargs :guard (and (booleanp flg)
+                              (state-p state))))
   (f-put-global 'write-acl2x flg state))
 
 (defun abort! ()
@@ -37232,212 +37779,6 @@ in :type-prescription rules are specified with :type-prescription (and/or
 ; convenient place to do it.
 
                     (:executable-counterpart hide)))
-
-(defun fmt-to-comment-window (str alist col evisc-tuple)
-
-; WARNING: Keep this in sync with fmt-to-comment-window!.
-
-; Logically, this is the constant function returning nil.  However, it
-; has a side-effect on the "comment window" which is imagined to be a
-; separate window on the user's screen that cannot possibly be
-; confused with the normal ACL2 display of the files in STATE.  Using
-; this function it is possible for an ACL2 expression to cause
-; characters to appear in the comment window.  Nothing whatsoever can
-; be proved about these characters.  If you want to prove something
-; about ACL2 output, it must be directed to the channels and files in
-; STATE.
-
-  ":Doc-Section ACL2::Programming
-
-  print to the comment window~/
-
-  ~l[cw] for an introduction to the comment window and the usual way
-  to print it.
-
-  Function ~c[fmt-to-comment-window] is identical to ~c[fmt1] (~pl[fmt]),
-  except that the channel is in essence ~ilc[*standard-co*] and the ACL2
-  ~ilc[state] is neither an input nor an output.  An analogous function,
-  ~c[fmt-to-comment-window!], prints with ~ilc[fmt!] instead of ~ilc[fmt],
-  in order to avoid insertion of backslash (\\) characters for margins;
-  also ~pl[cw!].~/
-  ~bv[]
-  General Form:
-  (fmt-to-comment-window fmt-string alist col evisc-tuple)
-  ~ev[]
-  where these arguments are as desribed for ~ilc[fmt1]; ~pl[fmt].~/"
-
-  (declare (xargs :guard t))
-
-  #+acl2-loop-only
-  (declare (ignore str alist col evisc-tuple))
-  #+acl2-loop-only
-  nil
-  #-acl2-loop-only
-  (progn (fmt1  str alist col *standard-co* *the-live-state*
-                evisc-tuple)
-         nil))
-
-(defun fmt-to-comment-window! (str alist col evisc-tuple)
-
-; WARNING: Keep this in sync with fmt-to-comment-window.
-
-  (declare (xargs :guard t))
-  #+acl2-loop-only
-  (declare (ignore str alist col evisc-tuple))
-  #+acl2-loop-only
-  nil
-  #-acl2-loop-only
-  (progn (fmt1! str alist col *standard-co* *the-live-state*
-                evisc-tuple)
-         nil))
-
-(defun pairlis2 (x y)
-; Like pairlis$ except is controlled by y rather than x.
-  (declare (xargs :guard (and (true-listp x)
-                              (true-listp y))))
-  (cond ((endp y) nil)
-        (t (cons (cons (car x) (car y))
-                 (pairlis2 (cdr x) (cdr y))))))
-
-(defmacro cw (str &rest args)
-
-; WARNING: Keep this in sync with cw!.
-
-; A typical call of this macro is:
-; (cw "The goal is ~p0 and the alist is ~x1.~%"
-;     (untranslate term t nil)
-;     unify-subst)
-; Logically, this expression is equivalent to nil.  However, it has
-; the effect of first printing to the comment window the fmt string
-; as indicated.  It uses fmt-to-comment-window above, and passes it the
-; column 0 and evisc-tuple nil, after assembling the appropriate
-; alist binding the fmt vars #\0 through #\9.  If you want
-; (a) more than 10 vars,
-; (b) vars other than the digit chars,
-; (c) a different column, or
-; (d) a different evisc-tuple,
-; then call fmt-to-comment-window instead.
-
-; Typically, calls of cw are embedded in prog2$ forms,
-; e.g.,
-; (prog2$ (cw ...)
-;         (mv a b c))
-; which has the side-effect of printing to the comment window and
-; logically returning (mv a b c).
-
-  ":Doc-Section ACL2::Programming
-
-  print to the comment window~/
-
-  Example:
-  ~bv[]
-  (cw \"The goal is ~~p0 and the alist is ~~x1.~~%\"
-      (untranslate term t nil)
-      unify-subst)
-  ~ev[]
-  Logically, this expression is equivalent to ~c[nil].  However, it has
-  the effect of first printing to the so-called ``comment window'' the
-  ~ilc[fmt] string as indicated.  Thus, ~c[cw] is like ~c[fmt] (~pl[fmt]) except
-  in three important ways.  First, it is a macro whose calls expand to calls of
-  a ~c[:]~ilc[logic] mode function.  Second, it neither takes nor returns the
-  ACL2 ~ilc[state]; logically ~c[cw] simply returns ~c[nil], although it prints
-  to a ~em[comment window] that just happens to share the terminal screen with
-  the standard character output ~ilc[*standard-co*].  Third, its ~c[fmt] args
-  are positional references, so that for example
-  ~bv[]
-  (cw \"Answers: ~~p0 and ~~p1\" ans1 ans2)
-  ~ev[]
-  prints in the same manner as:
-  ~bv[]
-  (fmt \"Answers: ~~p0 and ~~p1\"
-       (list (cons #\\0 ans1) (cons #\\1 ans2))
-       *standard-co* state nil)
-  ~ev[]
-  Typically, calls of ~c[cw] are embedded in ~ilc[prog2$] forms, e.g.,
-  ~bv[]
-  (prog2$ (cw ...)
-          (mv a b c))
-  ~ev[]
-  which has the side-effect of printing to the comment window and
-  logically returning ~c[(mv a b c)].~/
-  ~bv[]
-  General Form:
-  (cw fmt-string arg1 arg2 ... argn)
-  ~ev[]
-  where n is between 0 and 9 (inclusive).
-  The macro uses ~ilc[fmt-to-comment-window], passing it the column ~c[0] and
-  ~il[evisc-tuple] ~c[nil], after assembling the appropriate alist binding the
-  ~ilc[fmt] vars #\\0 through #\\9; ~pl[fmt].  If you want
-  ~bf[]
-  (a) more than 10 vars,
-  (b) vars other than the digit chars,
-  (c) a different column, or
-  (d) a different evisc-tuple,
-  ~ef[]
-  then call ~ilc[fmt-to-comment-window] instead.
-
-  Also ~pl[cw!], which is useful if you want to be able to read the printed
-  forms back in.
-
-  Finally, we discuss another way to create formatted output that also avoids
-  the need to pass in the ACL2 ~ilc[state].  The idea is to use wormholes;
-  ~pl[wormhole].  Below is a function you can write, along with some calls,
-  providing an illustration of this approach.
-  ~bv[]
-  (defun my-fmt-to-comment-window (str alist)
-    (wormhole 'my-fmt-to-comment-window
-              '(lambda (whs) whs)
-              (list str alist)
-              '(pprogn
-                (fms (car (@ wormhole-input))
-                     (cadr (@ wormhole-input))
-                     *standard-co*
-                     state
-                     nil)
-                (value :q))
-              :ld-verbose nil
-              :ld-error-action :return ; harmless return on error
-              :ld-prompt nil))
-
-  ; A non-erroneous call:
-  (my-fmt-to-comment-window \"Here is ~~x0 for your inspection~~%\"
-                            (list (cons #\0 'foo)))
-
-  ; An error inside the fmt string (unbound fmt var); note that even
-  ; with the error, the wormhole is exited.
-  (my-fmt-to-comment-window \"Here is ~~x1 for your inspection~~%\"
-                            (list (cons #\0 'foo)))
-
-  ; A guard violation in the binding; note that even with the error,
-  ; the wormhole is exited.
-  (my-fmt-to-comment-window \"Here is ~~x0 for your inspection~~%\"
-                            (list (cons #\0 (car 'foo))))
-  ~ev[]~/"
-
-  `(fmt-to-comment-window ,str
-                          (pairlis2 '(#\0 #\1 #\2 #\3 #\4
-                                      #\5 #\6 #\7 #\8 #\9)
-                                    (list ,@args))
-                          0 nil))
-
-(defmacro cw! (str &rest args)
-
-; WARNING: Keep this in sync with cw.
-
-  ":Doc-Section ACL2::Programming
-
-  print to the comment window~/
-
-  This is the same as ~ilc[cw], except that ~ilc[cw] inserts backslash (\\)
-  characters when forced to print past the right margin, in order to make the
-  output a bit clearer in that case.  Use ~c[cw!] instead if you want to be
-  able to read the forms back in.~/~/"
-
-  `(fmt-to-comment-window! ,str
-                           (pairlis2 '(#\0 #\1 #\2 #\3 #\4
-                                       #\5 #\6 #\7 #\8 #\9)
-                                     (list ,@args))
-                           0 nil))
 
 #-acl2-loop-only
 (defparameter *wormhole-status-alist* nil)
@@ -37843,106 +38184,6 @@ in :type-prescription rules are specified with :type-prescription (and/or
   (LIST 'LET
         (LIST (LIST 'CURRENT-CLAUSE CURRENT-CLAUSE))
         '(CDR (CAR (CDR (CDR (CDR (CDR CURRENT-CLAUSE))))))))
-
-(defmacro er (severity context str &rest str-args)
-  (declare (xargs :guard (and (true-listp str-args)
-                              (member-symbol-name (symbol-name severity)
-                                                  '(hard hard? hard! soft
-                                                         very-soft))
-                              (<= (length str-args) 10))))
-
-; Note: We used to require (stringp str) but then we started writing such forms
-; as (er soft ctx msg x y z), where msg was bound to the error message str
-; (because the same string was used many times).
-
-; The special form (er hard "..." &...) expands into a call of illegal on "..."
-; and an alist built from &....  Since illegal has a guard of nil, the attempt
-; to prove the correctness of a fn producing a hard error will require proving
-; that the error can never occur.  At runtime, illegal causes a CLTL error.
-
-; The form (er soft ctx "..." &...) expands into a call of error1 on ctx, "..."
-; and an alist built from &....  At runtime error1 builds an error object and
-; returns it.  Thus, soft errors are not errors at all in the CLTL sense and
-; any function calling one which might cause an error ought to handle it.
-
-; Just to make it easier to debug our code, we have arranged for the er macro
-; to actually produce a prog2 form in which the second arg is as described
-; above but the preceding one is an fmt statement which will actually print the
-; error str and alist.  Thus, we can see when soft errors occur, whether or not
-; the calling program handles them appropriately.
-
-; We do not advertise the hard! or very-soft severities, at least not yet.  The
-; implementation uses the former to force a hard error even in contexts where
-; we would normally return nil.
-
-  ":Doc-Section ACL2::Programming
-
-  print an error message and ``cause an error''~/
-  ~bv[]
-  Example Forms:
-  (er hard  'top-level \"Illegal inputs, ~~x0 and ~~x1.\" a b)
-  (er hard? 'top-level \"Illegal inputs, ~~x0 and ~~x1.\" a b)
-  (er soft  'top-level \"Illegal inputs, ~~x0 and ~~x1.\" a b)
-  ~ev[]
-  The examples above all print an error message to standard output saying that
-  ~c[a] and ~c[b] are illegal inputs.  However, the first two abort evaluation
-  after printing an error message, while the third returns ~c[(mv t nil state)]
-  after printing an error message.  The result in the third case can be
-  interpreted as an ``error'' when programming with the ACL2 ~ilc[state],
-  something most ACL2 users will probably not want to do;
-  ~pl[ld-error-triples] and ~pl[er-progn].
-
-  The difference between the ~c[hard] and ~c[hard?] forms is one of guards.
-  Use ~c[hard] if you want the call to generate a (clearly impossible) guard
-  proof obligation of (essentially) ~c[NIL].  But use ~c[hard?] if you want to
-  be able to call this function in guard-verified code, since the call
-  generates a (trivially satisfied) guard proof obligation of ~c[T].
-
-  ~c[Er] is a macro, and the above three examples expand to calls of ACL2
-  functions, as shown below.  ~l[illegal], ~pl[hard-error], and ~pl[error1].
-  The first two have guards of (essentially) ~c[NIL] and ~c[T], respectively,
-  while ~ilc[error1] is in ~c[:]~ilc[program] mode.~/
-  ~bv[]
-  General forms:
-  (er hard  ctx fmt-string arg1 arg2 ... argk)
-    ==> {macroexpands, in essence, to:}
-  (ILLEGAL    CTX FMT-STRING
-              (LIST (CONS #\\0 ARG1) (CONS #\\1 ARG2) ... (CONS #\\k ARGk)))
-
-  (er hard? ctx fmt-string arg1 arg2 ... argk)
-    ==> {macroexpands, in essence, to:}
-  (HARD-ERROR CTX FMT-STRING
-              (LIST (CONS #\\0 ARG1) (CONS #\\1 ARG2) ... (CONS #\\k ARGk)))
-
-  (er soft  ctx fmt-string arg1 arg2 ... argk)
-    ==> {macroexpands, in essence, to:}
-  (ERROR1     CTX FMT-STRING
-              (LIST (CONS #\\0 ARG1) (CONS #\\1 ARG2) ... (CONS #\\k ARGk)))
-  ~ev[]~/"
-
-  (let ((alist (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
-                                    #\5 #\6 #\7 #\8 #\9)
-                                  str-args))
-        (severity-name (symbol-name severity)))
-    (cond ((equal severity-name "SOFT")
-           (list 'error1 context str alist 'state))
-          ((equal severity-name "VERY-SOFT")
-           (list 'error1-safe context str alist 'state))
-          ((equal severity-name "HARD?")
-           (list 'hard-error context str alist))
-          ((equal severity-name "HARD")
-           (list 'illegal context str alist))
-          ((equal severity-name "HARD!")
-           #+acl2-loop-only (list 'illegal context str alist)
-           #-acl2-loop-only `(let ((*hard-error-returns-nilp* nil))
-                              (illegal ,context ,str ,alist)))
-          (t
-
-; The final case should never happen.
-
-           (illegal 'top-level
-                    "Illegal severity, ~x0; macroexpansion of ER failed!"
-                    (list (cons #\0 severity)))))))
 
 (defun record-error (name rec)
   (declare (xargs :guard t))
@@ -38889,27 +39130,6 @@ Lisp definition."
 (defconst *t* (quote (quote t)))
 
 (defconst *nil* (quote (quote nil)))
-
-(defmacro assert$ (test form)
-
-  ":Doc-Section ACL2::Programming
-
-  cause a hard error if the given test is false~/
-
-  ~bv[]
-  General Form:
-  (assert$ test form)
-  ~ev[]
-  where ~c[test] returns a single value and ~c[form] is arbitrary.
-  Semantically, this call of ~c[assert$] is equivalent to ~c[form].  However,
-  it causes a hard error (using ~ilc[illegal]) if the value of ~c[test] is
-  ~c[nil].~/~/"
-
-  `(prog2$ (or ,test
-               (er hard 'assert$
-                   "Assertion failed:~%~x0"
-                   '(assert$ ,test ,form)))
-           ,form))
 
 (defmacro fcons-term* (&rest x)
 
@@ -39973,11 +40193,11 @@ Lisp definition."
 ; arguments.  So again we see that time$ needs to be a macro.
 
 ; Thus, we define time$ to be a macro that expands to a corresponding call of
-; time$1, which in turn expands to a call (return-last 'time$1 & &).
+; time$1, which in turn expands to a call (return-last 'time$1-raw & &).
 ; Return-last is a function in the logic but is a macro in raw Lisp.  Since
 ; return-last is a function in the logic, it does not take keyword arguments;
 ; for convenience we define a macro our-time to be the keyword version of the
-; raw Lisp macro time$1.
+; raw Lisp macro time$1-raw.
 
 ; The following examples make a nice little test suite.  Run each form and
 ; observe whether the output is consistent with the comments attached to the
@@ -40242,8 +40462,9 @@ Lisp definition."
   ~c[time$] output there.
 
   (2) Unless the ~c[:msg] argument is supplied, an explicit call of ~c[time$]
-  in the the top-level loop will show that form being timed is a call of the
-  ACL2 evaluator function ~c[ev-rec].  This is normal.~/
+  in the top-level loop will show that the form being timed is a call of the
+  ACL2 evaluator function ~c[ev-rec].  This is normal; the curious are invited,
+  at their own risk, to ~pl[return-last] for an explanation.~/
 
   :cited-by ACL2::Programming"
 

@@ -653,7 +653,21 @@
    ((null cl-set) (mv nil ttree))
    (t (mv-let
        (built-in-clausep ttree1)
-       (built-in-clausep (car cl-set) ens oncep-override wrld state)
+       (built-in-clausep
+
+; We added defun-or-guard-verification as the caller arg of the call of
+; built-in-clausep below.  This addition is a little weird because there is no
+; such function as defun-or-guard-verification; the caller argument is only
+; used in trace reporting by forward-chaining.  If we wanted to be more precise
+; about who is responsible for this call, we'd have to change a bunch of
+; functions because this function is called by clean-up-clause-set which is in
+; turn called by prove-termination, guard-obligation-clauses, and
+; verify-valid-std-usage (which is used in the non-standard defun-fn1).  We
+; just didn't think it mattered so much as to to warrant changing all those
+; functions.
+
+        'defun-or-guard-verification
+        (car cl-set) ens oncep-override wrld state)
 
 ; Ttree is known to be 'assumption free.
 
@@ -5331,6 +5345,7 @@ when submitted as :ideal, pointing out that they can never be
     (ASET-32-BIT-INTEGER-STACK   (NIL NIL STATE) (STATE)) 
     (OPEN-INPUT-CHANNEL          (NIL NIL STATE) (NIL STATE)) 
     (OPEN-OUTPUT-CHANNEL         (NIL NIL STATE) (NIL STATE)) 
+    (GET-OUTPUT-STREAM-STRING$-FN (NIL STATE)    (NIL NIL STATE)) 
     (CLOSE-INPUT-CHANNEL         (NIL STATE)     (STATE)) 
     (CLOSE-OUTPUT-CHANNEL        (NIL STATE)     (STATE))
     (SYS-CALL-STATUS             (STATE)         (NIL STATE))))
@@ -5955,8 +5970,10 @@ when submitted as :ideal, pointing out that they can never be
   (fetch-dcl-fields (list field-name) lst))
 
 (defun set-equalp-eq (lst1 lst2)
-  (declare (xargs :guard (and (symbol-listp lst1)
-                              (symbol-listp lst2))))
+  (declare (xargs :guard (and (true-listp lst1)
+                              (true-listp lst2)
+                              (or (symbol-listp lst1)
+                                  (symbol-listp lst2)))))
   (and (subsetp-eq lst1 lst2)
        (subsetp-eq lst2 lst1)))
 
@@ -8126,6 +8143,7 @@ when submitted as :ideal, pointing out that they can never be
 (link-doc-to close-output-channel programming io)
 (link-doc-to write-byte$ programming io)
 (link-doc-to print-object$ programming io)
+(link-doc-to get-output-stream-string$ programming io)
 
 (link-doc-to lambda miscellaneous term)
 (link-doc-to untranslate miscellaneous user-defined-functions-table)

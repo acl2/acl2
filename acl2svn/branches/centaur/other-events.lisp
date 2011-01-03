@@ -5380,13 +5380,26 @@
   (cond ((atom form) (mv nil form)) ; note that progn! can contain atoms
         ((eq (car form) 'local)
          (mv t *local-value-triple-elided*))
-        ((member-eq (car form) '(skip-proofs ; and, only at top level:
+        ((member-eq (car form) '(skip-proofs
+
+; Can with-prover-time-limit really occur in an event context?  At one time we
+; seemed to think it could at the top level, but this currently seems
+; doubtful.  But it's harmless to leave the next line.
+
                                  with-prover-time-limit))
          (mv-let (changed-p x)
                  (elide-locals-rec (cadr form))
                  (cond (changed-p (mv t (list (car form) x)))
                        (t (mv nil form)))))
-        ((member-eq (car form) '(with-output record-expansion time$1))
+        ((member-eq (car form) '(with-output record-expansion
+
+; Can time$ really occur in an event context?  At one time we seemed to think
+; that time$1 could, but it currently seems doubtful that either time$1 or
+; time$ could occur in an event context.  It's harmless to leave the next line,
+; but it particulary makes no sense to us to use time$1, so we use time$
+; instead.
+
+                                             time$))
          (mv-let (changed-p x)
                  (elide-locals-rec (car (last form)))
                  (cond (changed-p (mv t (append (butlast form 1) (list x))))
@@ -5574,8 +5587,14 @@
                                                     state))
                                      state)
                                     (t
-                                     (pprogn (ppr val-prime 0 channel state nil)
-                                             (newline channel state)))))))
+                                     (mv-let
+                                      (col state)
+                                      (fmt1 "~y0"
+                                            (list (cons #\0 val-prime))
+                                            0 channel state
+                                            (ld-evisc-tuple state))
+                                      (declare (ignore col))
+                                      state))))))
                 (mv-let
                  (erp expansion0 state)
 
@@ -11918,11 +11937,12 @@ The following all cause errors.
                 (f-get-global 'acl2-version state))
               ch state)
              (print-object$ :BEGIN-PORTCULLIS-CMDS ch state)
-             (print-objects (car portcullis) ch state)
+             (print-objects (hons-copy (car portcullis)) ch state)
              (print-object$ :END-PORTCULLIS-CMDS ch state)
              (cond (expansion-alist
                     (pprogn (print-object$ :EXPANSION-ALIST ch state)
-                            (print-object$ expansion-alist ch state)))
+                            (print-object$ (hons-copy expansion-alist) ch
+                                           state)))
                    (t state))
              (print-object$ (cdr portcullis) ch state)
              (print-object$ post-alist3 ch state)
@@ -14054,6 +14074,10 @@ The following all cause errors.
                   '(#\a #\c #\l #\2 #\x))
           'string))
 
+(defstub acl2x-expansion-alist (expansion-alist) t)
+
+(defattach acl2x-expansion-alist hons-copy)
+
 (defun write-acl2x-file (expansion-alist acl2x-file ctx state)
   (with-output-object-channel-sharing
    ch acl2x-file
@@ -14071,7 +14095,7 @@ The following all cause errors.
               (fms "* Step 3: Writing file ~x0 and exiting certify-book.~|"
                    (list (cons #\0 acl2x-file))
                    (proofs-co state) state nil))
-         (print-object$ expansion-alist ch state)
+         (print-object$ (acl2x-expansion-alist expansion-alist) ch state)
          (value acl2x-file)))))))
 
 (defun acl2x-alistp (x index len)
@@ -14095,7 +14119,15 @@ The following all cause errors.
      ((or (not (natp acl2x-date))
           (not (natp book-date))
           (< acl2x-date book-date))
-      (value nil))
+      (pprogn
+       (cond (acl2x-date
+              (warning$ ctx "acl2x"
+                        "Although the file ~x0 exists, it is being ignored ~
+                         because it does not appear to be at least as recent ~
+                         as the book ~x1."
+                        acl2x-file full-book-name))
+             (t state))
+       (value nil)))
      (t (er-let* ((chan (open-input-object-file acl2x-file ctx state)))
           (state-global-let*
            ((current-package "ACL2"))
@@ -14111,7 +14143,7 @@ The following all cause errors.
                     ((acl2x-alistp val 0 len)
                      (pprogn
                       (observation ctx
-                                   "Reading expansion-alist containing ~n0 ~
+                                   "Using expansion-alist containing ~n0 ~
                                     ~#1~[entries~/entry~/entries~] from file ~
                                     ~x2."
                                    (length val)
@@ -14302,10 +14334,14 @@ The following all cause errors.
              (pprogn
               (io? event nil state
                    (full-book-name)
-                   (fms "CERTIFICATION ATTEMPT FOR ~x0~%~s1~%~%~
-                         * Step 1:  Read ~x0 and compute its check sum.~%"
-                        (list (cons #\0 full-book-name)
-                              (cons #\1 (f-get-global 'acl2-version state)))
+                   (fms "CERTIFICATION ATTEMPT~@0 FOR ~x1~%~s2~%~%~
+                         * Step 1:  Read ~x1 and compute its check sum.~%"
+                        (list (cons #\0 (cond
+                                         ((f-get-global 'write-acl2x state)
+                                          " (for writing .acl2x file)")
+                                         (t "")))
+                              (cons #\1 full-book-name)
+                              (cons #\2 (f-get-global 'acl2-version state)))
                         (proofs-co state) state nil))
               (er-let*
                ((ev-lst (read-object-file full-book-name ctx state))
@@ -14701,8 +14737,16 @@ The following all cause errors.
                                            (delete-auxiliary-book-files
                                             full-book-name)
                                            (value nil)))
-                                         (value
-                                          full-book-name)))))))))))))))))))))))))))))))))
+                                         (pprogn
+                                          (cond (acl2x-expansion-alist
+                                                 (observation
+                                                  ctx
+                                                  "Used expansion-alist ~
+                                                   obtained from file ~x0."
+                                                  acl2x-file))
+                                                (t state))
+                                          (value
+                                           full-book-name))))))))))))))))))))))))))))))))))
 
 #+acl2-loop-only
 (defmacro certify-book (user-book-name
@@ -20751,7 +20795,8 @@ The following all cause errors.
   except (implicitly) via ~c[with-local-stobj] and in logic-only
   situations (like theorems and hints).  Moreover, neither
   ~c[with-local-stobj] nor its expansions are legal when typed directly at
-  the top-level loop.~/
+  the top-level loop.  ~l[top-level] for a way to use ~c[with-local-stobj]
+  in the top-level loop.~/
   ~bv[]
   General Forms:
   (with-local-stobj stobj-name mv-let-form)
@@ -23842,11 +23887,12 @@ The following all cause errors.
 ; return (mv contradictionp type-alist fc-pair-lst), where actually fc-pair-lst
 ; is a ttree if contradictionp holds; normally we ignore fc-pair-lst otherwise.
 
-  (forward-chain (dumb-negate-lit-lst (expand-assumptions assumptions))
-                 nil
-                 (ok-to-force-ens ens)
-                 nil ; do-not-reconsiderp
-                 wrld ens (match-free-override wrld) state))
+  (forward-chain-top 'show-rewrites
+                     (dumb-negate-lit-lst (expand-assumptions assumptions))
+                     nil
+                     (ok-to-force-ens ens)
+                     nil ; do-not-reconsiderp
+                     wrld ens (match-free-override wrld) state))
 
 (defun show-rewrites-fn (rule-id enabled-only-flg ens current-term
                                  abbreviations term-id-iff all-hyps geneqv
@@ -27173,8 +27219,10 @@ The following all cause errors.
 ; End of Essay on Merging Attachment Records
 
 (defun intersection1-eq (x y)
-  (declare (xargs :guard (and (symbol-listp x)
-                              (symbol-listp y))))
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp y)
+                              (or (symbol-listp x)
+                                  (symbol-listp y)))))
   (cond ((endp x) nil)
         ((member-eq (car x) y) (car x))
         (t (intersection1-eq (cdr x) y))))

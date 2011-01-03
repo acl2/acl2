@@ -135,6 +135,7 @@ is often slower than just using ~ilc[hons] directly when constructing the
 object.~/"
 
   ;; Has an under-the-hood implementation
+  (declare (xargs :mode :logic)) ; for attaching early to acl2x-expansion-alist
   x)
 
 #+(or acl2-loop-only (not hons))

@@ -644,9 +644,10 @@
   (cond
    ((null cl-set) ans)
    (t (mv-let (contradictionp type-alist fc-pairs)
-              (forward-chain (car cl-set) nil t
-                             nil ; do-not-reconsiderp
-                             wrld ens oncep-override state)
+              (forward-chain-top 'induct
+                                 (car cl-set) nil t
+                                 nil ; do-not-reconsiderp
+                                 wrld ens oncep-override state)
 
 ; We need a type-alist with which to compute induction aliases.  It is of
 ; heuristic use only, so we may as well turn the force-flg on.  We assume no

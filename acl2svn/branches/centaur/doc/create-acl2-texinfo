@@ -1,6 +1,10 @@
 #! /bin/sh
-# A. Flatau  9-Jul-1993; modified by M. Kaufmann, 26-Oct-1993, also 8/94 and 10/94, etc.
-#
+
+# A. Flatau  9-Jul-1993; modified by M. Kaufmann many times thereafter.
+
+# This file (create-acl2-texinfo) originally created both Emacs Info
+# files and a .ps file.  Now, this file creates Emacs Info files and
+# create-acl2-tex creates a .ps file.  Keep the two files in sync.
 
 # This script should be run by executing
 #   make DOC
@@ -9,80 +13,40 @@
 # from the main ACL2 directory.  The make variables PREFIX and ACL2_SUFFIX are
 # used in this script.
 
-rm -f doc/workxxx
+rm -f doc/workxxx.texinfo
 
 # The following lines should be commented out if we don't want to
-# destroy what's in the saved/ subdirectories.  (As they currently stand,
-# we have already arranged not to save doc/TEX.)
+# destroy what's in the saved/ subdirectories.
 
 rm -rf doc/EMACS-old
-## rm -rf doc/LEMACS-old
-# rm -rf doc/TEX-old
-
 mv -f doc/EMACS doc/EMACS-old
-## mv -f doc/LEMACS doc/LEMACS-old
-
-# mv -f doc/TEX doc/TEX-old
-rm -rf doc/TEX
-
-# Now that directories have been moved, re-create them.
-
 mkdir doc/EMACS
-## mkdir doc/LEMACS
-mkdir doc/TEX
 chmod 775 doc/EMACS
-## chmod 775 doc/LEMACS
-chmod 775 doc/TEX
 
-# Some ACL2 images start up inside LP; some don't.  (value :q) always gets us
+# Some ACL2 images start up inside LP; some don't.  (Value :q) always gets us
 # out of the loop, and should also be harmless when executed in raw Lisp.
 # However, note that Lispworks requires that the two forms not all be on the
 # same line.
 
-echo '(value :q)' > doc/workxxx
-echo '(lp)' >> doc/workxxx
+echo '(value :q)' > doc/workxxx.texinfo
+echo '(lp)' >> doc/workxxx.texinfo
+echo '(include-book "doc/write-acl2-texinfo")' >> doc/workxxx.texinfo
+echo '(write-texinfo-file :dir-string "doc/EMACS/" :file "acl2-doc-emacs" :tex-only-flg nil :non-lucid-flg t)' >> doc/workxxx.texinfo
+echo ':q' >> doc/workxxx.texinfo
 
-echo '(certify-book "doc/write-acl2-texinfo")' >> doc/workxxx
-
-echo '(write-texinfo-file :dir-string "doc/EMACS/" :file "acl2-doc-emacs" :tex-only-flg nil :non-lucid-flg t)' >> doc/workxxx
-
-## echo '(write-texinfo-file :dir-string "doc/LEMACS/" :file "acl2-doc-lemacs" :tex-only-flg nil)' >> doc/workxxx
-
-echo '(write-tex-file :dir-string "doc/TEX/" :file "acl2-book")' >> doc/workxxx
-
-echo ':q' >> doc/workxxx
-
-./${PREFIX}saved_acl2${ACL2_SUFFIX} < doc/workxxx
+./${PREFIX}saved_acl2${ACL2_SUFFIX} < doc/workxxx.texinfo
 
 ## emacs -batch "doc/EMACS/acl2-doc-emacs.texinfo" -l "../make-texinfo.el" -f texinfo-format-buffer-and-save
 
 # Replacement for "emacs -batch ..." command above:
 # cd doc/EMACS ; makeinfo --force acl2-doc-emacs.texinfo ; cd ../..
+echo ""
+echo "Creating EMACS Info files...."
 cd doc/EMACS ; makeinfo acl2-doc-emacs.texinfo ; cd ../..
-
-## emacs -batch "doc/LEMACS/acl2-doc-lemacs.texinfo" -l "../make-texinfo.el" -f texinfo-format-buffer-and-save
-
-cd doc/TEX
-
-cp ../texinfo.tex .
-texi2dvi acl2-book.tex
-
-# We do it again because otherwise some index entries are wrong.
-
-texi2dvi acl2-book.tex
-
-dvips acl2-book.dvi -o acl2-book.ps
-
-gzip acl2-book.dvi
-gzip acl2-book.ps
-
-# Make all files world-readable after changing back to doc/.
-
-cd ..
-
-chmod a+r EMACS/*
-## chmod a+r LEMACS/*
-chmod a+r TEX/*
+echo "Done creating EMACS Info files."
+echo ""
+rm -f doc/workxxx.texinfo
+chmod a+r doc/EMACS/*
 
 # To debug bad documentation:
 # Start up ACL2 in the source directory.

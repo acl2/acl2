@@ -1970,8 +1970,9 @@
                               (list (cons #\0 var)))))))
 
 (defun not-in-domain-eq (lst alist)
-  (declare (xargs :guard (or (symbol-listp lst)
-                             (symbol-alistp alist))))
+  (declare (xargs :guard (if (symbol-listp lst)
+                             (alistp alist)
+                           (symbol-alistp alist))))
   (if (consp lst)
       (if (assoc-eq (car lst) alist)
           (not-in-domain-eq (cdr lst) alist)
