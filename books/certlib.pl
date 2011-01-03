@@ -157,11 +157,14 @@ sub get_cert_time {
 
 # Given a .cert file, gets the total user + system time recorded in the
 # corresponding .time file.  If not found, prints a warning and returns 0.
+# Given an .acl2x file, gets the time recorded in the corresponding
+# .acl2x.time file.
 
     my $path = shift;
     my $warnings = shift;
 
     $path =~ s/\.cert$/\.time/;
+    $path =~ s/\.acl2x$/\.acl2x\.time/;
     
     if (open (my $timefile, "<", $path)) {
 	while (my $the_line = <$timefile>) {
@@ -217,7 +220,7 @@ sub make_costs_table_aux {
 
     if ($certdeps) {
 	foreach my $dep (@{$certdeps}) {
-	    if ($dep =~ /\.cert$/) {
+	    if ($dep =~ /\.(cert|acl2x)$/) {
 		my $this_dep_costs = make_costs_table_aux($dep, $deps, $costs, $warnings, $short);
 		# check for dependency loop:
 		if ($this_dep_costs) {
@@ -672,7 +675,29 @@ sub scan_book {
     }
 }
     
+sub scan_two_pass {
+    my $fname = shift;
 
+    print "scan_two_pass $fname\n" if $debugging;
+
+    if ($fname) {
+	# Scan the file for ";; two-pass-certification"
+	if (open(my $file, "<", $fname)) {
+	    my $regexp = ";; two-pass certification";
+	    while (my $the_line = <$file>) {
+		my $match = $the_line =~ m/$regexp/;
+		if ($match) {
+		    print "two pass: $fname\n" if $debugging;
+		    return 1;
+		}
+	    }
+	    close($file);
+	}
+    }
+    return 0;
+}
+		
+    
 # Find dependencies o
 sub find_deps {
     my $base = shift;
@@ -784,7 +809,14 @@ sub add_deps {
     }
 
     my $deps = find_deps($base);
-    $seen->{$target} = $deps;
+
+    if (scan_two_pass($lispfile)) {
+	my $acl2xfile = $base . ".acl2x";
+	$seen->{$target} = [ $acl2xfile ];
+	$seen->{$acl2xfile} = $deps;
+    } else {
+	$seen->{$target} = $deps;
+    }
 
     if ($print_deps) {
 	print "Dependencies for $target:\n";

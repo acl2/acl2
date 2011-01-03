@@ -68,7 +68,7 @@ ACL2 ?= acl2
 	echo "(acl2::horrible-include-book-exit \"$$FILE\" acl2::state)" >> $$WORKXXXFILE ;\
 	if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
 	then \
-	  echo "[make_cert]: certify book commands for $$FILE:" ;\
+	  echo "[make_cert]: certify book commands for $$FILE.cert:" ;\
 	  echo "" ;\
 	  cat $$WORKXXXFILE ;\
 	  echo "" ;\
@@ -97,3 +97,70 @@ ACL2 ?= acl2
           exit 1 ;\
         fi
 
+%.acl2x: %.lisp
+	@echo "Making $*.cert on `date`" ;\
+	DIR=`dirname $*` ;\
+	FILE=`basename $*` ;\
+        ACL2=`which $(ACL2) 2> /dev/null` ;\
+	cd $$DIR ;\
+	if [ -f $$FILE.image ] ; then \
+	   IM=`cat $$FILE.image` ;\
+	   if [ "$${IM}" != "" ] ; then \
+	      ACL2=$${IM} ;\
+	   fi ;\
+	elif [ -f cert.image ] ; then \
+	   IM=`cat cert.image` ;\
+	   if [ "$${IM}" != "" ] ; then \
+	      ACL2=$${IM} ;\
+	   fi ;\
+	fi ;\
+	rm -f $$FILE.acl2x ;\
+	WORKXXXFILE=workxxx.$$FILE.$$RANDOM ;\
+	echo '(acl2::value :q)' > $$WORKXXXFILE ;\
+	echo '(in-package "ACL2")' >> $$WORKXXXFILE ;\
+	echo '(acl2::lp)' >> $$WORKXXXFILE ;\
+	echo '(set-write-acl2x t state)' >> $$WORKXXXFILE ;\
+	echo '$(INHIBIT)' >> $$WORKXXXFILE ;\
+	if [ -f $$FILE.acl2 ] ;\
+	then \
+	  cat $$FILE.acl2 >> $$WORKXXXFILE ;\
+	elif [ -f cert.acl2 ] ;\
+	then \
+	  cat cert.acl2 >> $$WORKXXXFILE ;\
+	  echo "" >> $$WORKXXXFILE ;\
+	  echo "(time$$ (certify-book \"$$FILE\" ? $(COMPILE_FLG)))" >> $$WORKXXXFILE ;\
+	else \
+	  echo "" >> $$WORKXXXFILE ;\
+	  echo "(time$$ (certify-book \"$$FILE\" ? $(COMPILE_FLG)))" >> $$WORKXXXFILE ;\
+	fi ;\
+	echo "" >> $$WORKXXXFILE ;\
+	if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
+	then \
+	  echo "[make_cert]: certify book commands for $$FILE.acl2x:" ;\
+	  echo "" ;\
+	  cat $$WORKXXXFILE ;\
+	  echo "" ;\
+	fi ;\
+	if [ "$$TIME_CERT" != "" ] ;\
+	then \
+	  (env time -o $$FILE.acl2x.time $$ACL2 < $$WORKXXXFILE 2>&1) > $$FILE.out ;\
+	else \
+	  ($$ACL2 < $$WORKXXXFILE 2>&1) > $$FILE.out ;\
+	fi ;\
+	rm -f $$WORKXXXFILE ;\
+	if [ ! -e $$FILE.acl2x ] ; then \
+	  echo "**ACL2X GENERATION FAILED** for $$DIR/$$FILE.lisp" ;\
+	  echo "" ;\
+          tail -300 $$FILE.out | sed 's/^/   | /' ;\
+	  echo "" ;\
+	  echo "" ;\
+	  if [ "$$ON_FAILURE_CMD" != "" ] ;\
+	  then \
+	     $$ON_FAILURE_CMD ;\
+	  fi ;\
+          echo "**ACL2X GENERATION FAILED** for $$DIR/$$FILE.lisp" ;\
+          exit 1 ;\
+        fi
+
+# echo "(acl2::ld \"make_cert.lsp\" :dir :system)" >> $$WORKXXXFILE ;\
+# echo "(acl2::horrible-include-book-exit \"$$FILE\" acl2::state)" >> $$WORKXXXFILE ;\
