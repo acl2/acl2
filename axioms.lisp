@@ -18719,9 +18719,10 @@ J
   (3) Recall that for an attachment pair ~c[<f,g>], a proof obligation is
   (speaking informally) that ~c[g] satisfies the constraint on ~c[f].  Yet more
   informally speaking, ~c[g] is ``more defined'' than ~c[f]; we can think of
-  ~c[g] as ``refining'' ~c[f].  We can consider attachment as refinement with a
-  moreformal perspective: the evaluation theory extends the theory of the ACL2
-  session, specifically by the addition of all attachment equations.  For the
+  ~c[g] as ``refining'' ~c[f].  With these informal notions as motivation, we
+  can view defattach as providing refinement though the following formal
+  observation: the evaluation theory extends the theory of the ACL2 session,
+  specifically by the addition of all attachment equations.  For the
   logic-inclined, it may be useful to think model-theoretically: The class of
   models of the evaluation theory is non-empty but is a subset of the class of
   models of the current session theory.
