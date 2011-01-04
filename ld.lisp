@@ -16745,6 +16745,10 @@
 ; Function elide-locals-rec had an odd case for time$1, which we have replaced
 ; there by time$ along with a comment that this case seems irrelevant anyhow.
 
+; Improved note-fns-in-form to do a more thorough check, for example diving
+; into skip-proofs forms (e.g., open-output-channel had been missing from
+; *primitive-logic-fns-with-raw-code*, but we hadn't caught that).
+
   :Doc
   ":Doc-Section release-notes
 
@@ -17110,7 +17114,7 @@
   ~c[:]~ilc[set-guard-checking] ~c[:none] or ~c[:]~ilc[set-guard-checking]
   ~c[nil], even in cases where this formerly caused a bogus guard violation.
   The basic idea is that when a function introduced by ~ilc[defstobj] is
-  called, if guard-checking values of ~c[:none] or ~c[nil] are temporarily
+  called, ~ilc[guard]-checking values of ~c[:none] or ~c[nil] are temporarily
   converted to ~c[t].  Thanks to Pete Manolios, Ian Johnson, and Harsh Raju
   Chamarthi for requesting this improvement.
 
@@ -23352,10 +23356,13 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
 ; We now develop code for without-evisc.
 
+(defun defun-for-state-name (name)
+  (intern-in-package-of-symbol
+   (concatenate 'string (symbol-name name) "-STATE")
+   name))
+
 (defmacro defun-for-state (name args)
-  `(defun ,(intern-in-package-of-symbol
-            (concatenate 'string (symbol-name name) "-STATE")
-            name)
+  `(defun ,(defun-for-state-name name)
      ,args
      (mv-let (erp val state)
              (,name ,@args)

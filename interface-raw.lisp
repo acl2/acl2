@@ -6209,16 +6209,74 @@ FORWARD-CHAINING-RULES                               245442
 (defun note-fns-in-form (form ht)
   (and (consp form)
        (case (car form)
-         ((defun defund defmacro defabbrev)
+         ((defun defund defn defproxy defun-nx defun-one-output defstub
+            defmacro defabbrev)
           (setf (gethash (cadr form) ht)
                 form))
+         (defun-for-state
+           (setf (gethash (defun-for-state-name (cadr form)) ht)
+                 form))
+         (define-global
+           (setf (gethash (define-global-name (cadr form)) ht)
+                 form)
+           (setf (gethash (cadr form) ht)
+                 form))
+         ((define-pc-atomic-macro define-pc-bind define-pc-help define-pc-macro
+            define-pc-meta define-pc-primitive)
+          (let ((name (make-official-pc-command
+                       (if (eq (car form) 'define-pc-meta-or-macro-fn)
+                           (nth 2 form)
+                         (nth 1 form)))))
+            (setf (gethash name ht)
+                  form)))
          ((mutual-recursion progn)
           (loop for x in (cdr form)
                 do (note-fns-in-form x ht)))
          (encapsulate
           (and (null (cadr form))
                (loop for x in (cddr form)
-                     do (note-fns-in-form x ht)))))))
+                     do (note-fns-in-form x ht))))
+         ((skip-proofs local)
+          (note-fns-in-form (cadr form) ht))
+         (defrec ; pick just one function introduced
+           (setf (gethash (record-changer-function-name (cadr form)) ht)
+                 form))
+         ((add-custom-keyword-hint
+           add-macro-alias
+           declaim
+           def-basic-type-sets
+           defattach
+           defaxiom
+           defconst
+           defconstant
+           defdoc
+           define-trusted-clause-processor ; should handle :partial-theory
+           deflabel
+           defparameter
+           defpkg
+           defstruct
+           deftheory
+           defthm
+           defthmd
+           defvar
+           eval ; presumably no ACL2 fn or macro underneath
+           eval-when ; presumably no ACL2 fn or macro underneath
+           in-package
+           in-theory
+           initialize-state-globals
+           link-doc-to
+           link-doc-to-keyword 
+           logic
+           set-invisible-fns-table
+           set-ld-skip-proofsp
+           table
+           value
+           verify-guards
+           verify-termination-boot-strap)
+          nil)
+         (t
+          (error "Unexpected type of form, ~s.  See note-fns-in-form."
+                 (car form))))))
 
 (defun note-fns-in-file (filename ht)
   (with-open-file

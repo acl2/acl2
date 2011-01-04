@@ -23402,20 +23402,20 @@ J
     alphorder ; [bad atoms]
     extend-world ; EXTEND-WORLD1
 
-; The following have arguments of state-state, and hence may not be of concern
-; since presumably users cannot define these redundantly anyhow.  But we go
-; ahead and include them, just to be safe.
+; The following have arguments of state-state, and hence some may not be of
+; concern since presumably users cannot define these redundantly anyhow.  But
+; we go ahead and include them, just to be safe.
 
     user-stobj-alist read-acl2-oracle update-user-stobj-alist
     decrement-big-clock put-global close-input-channel makunbound-global
-    open-input-channel-p1 boundp-global1 global-table-cars1 extend-t-stack
-    list-all-package-names close-output-channel write-byte$ shrink-t-stack
-    aset-32-bit-integer-stack get-global 32-bit-integer-stack-length1
-    extend-32-bit-integer-stack aset-t-stack aref-t-stack read-char$
-    aref-32-bit-integer-stack open-output-channel-p1 read-object
-    big-clock-negative-p peek-char$ shrink-32-bit-integer-stack read-run-time
-    read-byte$ read-idate t-stack-length1 print-object$
-    get-output-stream-string$-fn
+    open-input-channel open-input-channel-p1 boundp-global1 global-table-cars1
+    extend-t-stack list-all-package-names close-output-channel write-byte$
+    shrink-t-stack aset-32-bit-integer-stack get-global
+    32-bit-integer-stack-length1 extend-32-bit-integer-stack aset-t-stack
+    aref-t-stack read-char$ aref-32-bit-integer-stack open-output-channel
+    open-output-channel-p1 princ$ read-object big-clock-negative-p peek-char$
+    shrink-32-bit-integer-stack read-run-time read-byte$ read-idate
+    t-stack-length1 print-object$ get-output-stream-string$-fn
 
     mv-list return-last
 
@@ -23453,6 +23453,7 @@ J
     print-call-history
     set-debugger-enable-fn ; lisp::*break-enable* and *debugger-hook*
     break$ ; break
+    prin1$ prin1-with-slashes
   ))
 
 (defconst *primitive-macros-with-raw-code*
