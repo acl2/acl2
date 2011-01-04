@@ -18,5 +18,33 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "package.lsp")
+
+; mkdir-raw.lisp
+;
+; This book requires a TTAG.  You should not need to directly include it unless
+; you actually need to run mkdir, as in xdoc::save.  Ordinarily this is handled
+; by the macros in top.lisp.
+
 (in-package "XDOC")
+(include-book "mkdir")
+(include-book "tools/bstar" :dir :system)
+(set-state-ok t)
+
+(defttag :xdoc)
+
+(progn!
+ (set-raw-mode t)
+ (defun mkdir (dir state)
+   (b* (((unless (stringp dir))
+         (er hard? 'mkdir "Dir must be a string, but is: ~x0.~%" dir)
+         state)
+        (- (sys-call "mkdir" (list "-p" dir)))
+        ((mv status state)
+         (sys-call-status state))
+        ((unless (= status 0))
+         (er hard? 'mkdir "error making directory ~s0.~%" dir)
+         state))
+     state)))
+
+(defttag nil)
+

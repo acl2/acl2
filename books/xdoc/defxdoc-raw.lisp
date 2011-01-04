@@ -18,14 +18,32 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "XDOC")
-(include-book "defxdoc")
+; defxdoc-raw.lisp
+;
+; This book requires a TTAG.  You should typically not need to include it
+; directly unless you want to document some raw-lisp code with xdoc.
 
-(defttag xdoc-raw)
+(in-package "XDOC")
+(include-book "base")
+(set-state-ok t)
+
+(defttag :xdoc)
+
+(remove-untouchable 'read-acl2-oracle t)
+
+(defun all-xdoc-topics (state)
+  (declare (xargs :mode :program))
+  (prog2$
+   (er hard? 'all-xdoc-topics "all-xdoc-topics not yet defined.")
+   (mv-let (err val state)
+     (read-acl2-oracle state)
+     (declare (ignore err))
+     (mv val state))))
+
 
 (acl2::progn!
-
  (set-raw-mode t)
+
  (defparameter *raw-xdoc-list* nil)
 
  (defun defxdoc-raw-fn (name parents short long)
@@ -40,25 +58,30 @@
 
  (defxdoc-raw defxdoc-raw
    :parents (xdoc)
-
    :short "Add documentation in raw mode."
+   :long "<p><tt>Defxdoc-raw</tt> allows you to document raw-lisp code with
+XDOC.  It isn't possible to do this with the ordinary @(see defxdoc) command
+because <tt>defxdoc</tt> is a macro that expands to a <tt>make-event</tt>, and
+<tt>make-event</tt> is not permitted in raw Lisp.</p>
 
-   :long "<p>New XDOC documentation topics should normally be added with @(see
-defxdoc).  Unfortunately, this isn't possible from Raw Lisp, because
-<tt>defxdoc</tt> expands to a <tt>make-event</tt>, and <tt>make-event</tt>
-can't be used from raw lisp.  So, to document raw lisp code, we provide
-<tt>defxdoc-raw</tt>.</p>
-
-<p><tt>Defxdoc-raw</tt> takes the same arguments as <tt>defxdoc</tt>, but
-adds its documentation to a Lisp variable rather than to the usual table.
-Because of this, <tt>defxdoc-raw</tt> is not an event.</p>
-
-<p>Using <tt>defxdoc-raw</tt> requires a ttag.  Because of this, it is not
-included in the ordinary <tt>defxdoc</tt> book, and you will need to separately
-include it, e.g., via:</p>
-
+<p><tt>Defxdoc-raw</tt> is not available just by including <tt>xdoc/top</tt>,
+because it requires a ttag.  So, to use it you will need:</p>
 <code>
- (include-book \"xdoc/defxdoc-raw\" :dir :system :ttags :all)
-</code>"))
+ (include-book \"xdoc/defxdoc-raw\" :dir :system)
+</code>
+
+<p><tt>Defxdoc-raw</tt> takes the same arguments as @(see defxdoc), but adds
+its documentation to a Lisp variable rather than to the XDOC table.  Note that
+the <tt>:xdoc</tt> and @(see save) commands already know about this table, so
+to the end-user, documentation added by <tt>defxdoc-raw</tt> is not any
+different than documentation added by <tt>defxdoc</tt>.</p>")
+
+ (defun all-xdoc-topics (state)
+   (if (not (acl2::live-state-p state))
+       (prog2$ (er hard? 'all-xdoc-topics "all-xdoc-topics requires a live state.")
+               (mv nil state))
+     (mv (append *raw-xdoc-list*
+                 (get-xdoc-table (w state)))
+         state))))
 
 

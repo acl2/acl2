@@ -1,3 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+
+<!--
+
 ; XDOC Documentation System for ACL2
 ; Copyright (C) 2009-2010 Centaur Technology
 ;
@@ -18,5 +23,24 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "package.lsp")
-(in-package "XDOC")
+  xml-full-index.xsl
+
+  Provides the more full view of the index, which is shown when the "Full
+  index" page is loaded.
+
+-->
+
+<xsl:include href="xml-topic.xsl"/>
+
+<xsl:template match="index">
+  <h1>Full Index</h1>
+  <dl class="index_dl">
+  <xsl:for-each select="index_entry">
+    <xsl:sort select="index_head/see" />
+    <dt class="index_dt"><xsl:apply-templates select="index_head"/></dt>
+    <dd class="index_dd"><xsl:apply-templates select="index_body"/></dd>
+  </xsl:for-each>
+  </dl>
+</xsl:template>
+
+</xsl:stylesheet>

@@ -27,7 +27,7 @@
              ;; Things to add:
              '(b* quit exit value defxdoc defxdoc-raw macro-args
                   getprop formals justification def-bodies current-acl2-world def-body
-                  access theorem untranslated-theorem guard))
+                  access theorem untranslated-theorem guard xdoc xdoc! unquote))
    ;; Things to remove:
    '(
      )))

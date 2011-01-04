@@ -1,3 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+
+<!--
+
 ; XDOC Documentation System for ACL2
 ; Copyright (C) 2009-2010 Centaur Technology
 ;
@@ -18,5 +23,33 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "package.lsp")
-(in-package "XDOC")
+  xml-topic-index.xsl
+
+  Used for the hierarchical topic-navigator for both the two-frame and
+  three-frame xml versions.
+
+-->
+
+<xsl:include href="xml-topic.xsl"/>
+
+<xsl:template match="page">
+  <html>
+  <head>
+    <title><xsl:value-of select="@name"/></title>
+    <link rel="stylesheet" type="text/css" href="xdoc.css"/>
+    <script type="text/javascript" src="xdoc.js"/>
+    <base target="detail"/>
+  </head>
+  <body class="body_brief">
+<!--  <h4>Organized Listing</h4> -->
+  <dl class="index_brief">
+  <dt class="index_brief_dt"><a href="index.xml">Full Index</a></dt>
+  </dl>
+  <div class="hindex_fix">
+  <xsl:apply-templates/>
+  </div>
+  </body>
+  </html>
+</xsl:template>
+
+</xsl:stylesheet>

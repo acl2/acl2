@@ -18,5 +18,8 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "package.lsp")
-(in-package "XDOC")
+;; BOZO shouldn't need this ttag if we can fix the sys-call issue
+;; for stupid-mkdir
+
+(include-book "portcullis")
+(certify-book "mkdir-raw" ? t :ttags '(:xdoc))

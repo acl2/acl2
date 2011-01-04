@@ -18,5 +18,18 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "package.lsp")
 (in-package "XDOC")
+(set-state-ok t)
+
+; BOZO the real definition of mkdir is found in mkdir-raw.lisp.  We write this
+; stub so that books like save.lisp and display.lisp don't need ttags.  But the
+; top-level save command has to remember to load the mkdir-raw book so that the
+; under-the-hood definition can be loaded.
+
+(defun mkdir (dir state)
+  (declare (xargs :guard (stringp dir))
+           (ignorable dir))
+  (prog2$
+   (er hard? 'mkdir "raw lisp definition not yet installed.")
+   state))
+

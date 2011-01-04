@@ -18,7 +18,13 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+; base.lisp -- This file is only intended mainly to avoid a circular dependence
+; between top.lisp and topics.lisp.  Ordinary users should include top.lisp
+; instead.
+
 (in-package "XDOC")
+
+(make-event `(defconst *xdoc-dir* ,(cbd)))
 
 (table xdoc 'doc nil)
 

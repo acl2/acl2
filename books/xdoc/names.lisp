@@ -18,15 +18,15 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "XDOC")
-(program)
-
 ; names.lisp
 ;
 ; This file defines XDOC functions for displaying symbol names and generating
 ; file names for symbols.  Normally you should not need to include this file
 ; directly, but it may be useful if you are writing macros to directly generate
 ; XDOC topics.
+
+(in-package "XDOC")
+(program)
 
 
 ; ----------------- File Name Generation ------------------------
@@ -72,7 +72,6 @@
                           "::"
                           (symbol-name x))))
     (file-name-mangle-aux str 0 (length str) acc)))
-
 
 
 
