@@ -1273,7 +1273,12 @@
                  (not (equal (symbol-package-name fn) "ACL2"))))
            (guard-checking-off
             (and gc-off (not safe-mode-requires-check)))
-           (safep (and safe-mode-requires-check gc-off)))
+           (extra (and gc-off
+                       (cond (safe-mode-requires-check t)
+                             ((getprop fn 'stobj-function nil
+                                       'current-acl2-world w)
+                              :live-stobj)
+                             (t nil)))))
 
 ; Keep this in sync with *primitive-formals-and-guards*.
 
@@ -1285,7 +1290,7 @@
                     (and (bad-atom x)
                          (bad-atom y)))
                 (mv nil (bad-atom<= x y) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (BINARY-*
          (cond ((or guard-checking-off
                     (and (acl2-numberp x)
@@ -1293,47 +1298,47 @@
                 (mv nil
                     (* x y)
                     latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (BINARY-+
          (cond ((or guard-checking-off
                     (and (acl2-numberp x)
                          (acl2-numberp y)))
                 (mv nil (+ x y) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (UNARY--
          (cond ((or guard-checking-off
                     (acl2-numberp x))
                 (mv nil (- x) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (UNARY-/
          (cond ((or guard-checking-off
                     (and (acl2-numberp x)
                          (not (= x 0))))
                 (mv nil (/ x) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (<
          (cond ((or guard-checking-off
                     (and (real/rationalp x)
                          (real/rationalp y)))
                 (mv nil (< x y) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (CAR
          (cond ((or guard-checking-off
                     (or (consp x)
                         (eq x nil)))
                 (mv nil (car x) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (CDR
          (cond ((or guard-checking-off
                     (or (consp x)
                         (eq x nil)))
                 (mv nil (cdr x) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (CHAR-CODE
          (cond ((or guard-checking-off
                     (characterp x))
                 (mv nil (char-code x) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (CHARACTERP
          (mv nil (characterp x) latches))
         (CODE-CHAR
@@ -1342,13 +1347,13 @@
                          (<= 0 x)
                          (< x 256)))
                 (mv nil (code-char x) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (COMPLEX
          (cond ((or guard-checking-off
                     (and (real/rationalp x)
                          (real/rationalp y)))
                 (mv nil (complex x y) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (COMPLEX-RATIONALP
          (mv nil (complex-rationalp x) latches))
         #+:non-standard-analysis
@@ -1361,7 +1366,7 @@
                         (and (character-listp x)
                              (eq y 'string))))
                 (mv nil (coerce x y) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (CONS
          (mv nil (cons x y) latches))
         (CONSP
@@ -1370,7 +1375,7 @@
          (cond ((or guard-checking-off
                     (rationalp x))
                 (mv nil (denominator x) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (EQUAL
          (mv nil (equal x y) latches))
         #+:non-standard-analysis
@@ -1378,7 +1383,7 @@
          (cond ((or guard-checking-off
                     (realp x))
                 (mv nil (floor x 1) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (IF
          (mv nil
              (er hard 'ev-fncall-rec
@@ -1388,7 +1393,7 @@
          (cond ((or guard-checking-off
                     (acl2-numberp x))
                 (mv nil (imagpart x) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (INTEGERP
          (mv nil (integerp x) latches))
         (INTERN-IN-PACKAGE-OF-SYMBOL
@@ -1396,22 +1401,22 @@
                     (and (stringp x)
                          (symbolp y)))
                 (mv nil (intern-in-package-of-symbol x y) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (NUMERATOR
          (cond ((or guard-checking-off
                     (rationalp x))
                 (mv nil (numerator x) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (PKG-IMPORTS
          (cond ((or guard-checking-off
                     (stringp x))
                 (mv nil (pkg-imports x) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (PKG-WITNESS
          (cond ((or guard-checking-off
                     (and (stringp x) (not (equal x ""))))
                 (mv nil (pkg-witness x) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (RATIONALP
          (mv nil (rationalp x) latches))
         #+:non-standard-analysis
@@ -1421,19 +1426,19 @@
          (cond ((or guard-checking-off
                     (acl2-numberp x))
                 (mv nil (realpart x) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (STRINGP
          (mv nil (stringp x) latches))
         (SYMBOL-NAME
          (cond ((or guard-checking-off
                     (symbolp x))
                 (mv nil (symbol-name x) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (SYMBOL-PACKAGE-NAME
          (cond ((or guard-checking-off
                     (symbolp x))
                 (mv nil (symbol-package-name x) latches))
-               (t (ev-fncall-guard-er fn args w latches safep))))
+               (t (ev-fncall-guard-er fn args w latches extra))))
         (SYMBOLP
          (mv nil (symbolp x) latches))
 
@@ -1460,14 +1465,14 @@
                         ''t
                       (guard fn nil w))
                     alist
-                    w (decrement-big-n big-n) safep guard-checking-off
+                    w (decrement-big-n big-n) (eq extra t) guard-checking-off
                     latches
                     hard-error-returns-nilp
                     aok)
             (cond
              (er (mv er val latches))
              ((null val)
-              (ev-fncall-guard-er fn args w latches safep))
+              (ev-fncall-guard-er fn args w latches extra))
              (attachment
               (ev-fncall-rec-logical attachment args w
                                      (decrement-big-n big-n)
@@ -1479,7 +1484,8 @@
               (mv-let
                (er val latches)
                (ev-rec body alist
-                       w (decrement-big-n big-n) safep guard-checking-off
+                       w (decrement-big-n big-n) (eq extra t)
+                       guard-checking-off
                        latches
                        hard-error-returns-nilp
                        aok)
@@ -2090,7 +2096,7 @@
      (declare (ignore latches))
      (mv erp val)))))
 
-(defun ev-fncall-guard-er-msg (fn guard stobjs-in args w extra-msg)
+(defun ev-fncall-guard-er-msg (fn guard stobjs-in args w extra)
 
 ; Guard is printed directly, so should generally be in untranslated form.
 
@@ -2142,20 +2148,34 @@
       (evisc-tuple nil nil
                    (list (cons *evisceration-mark* *evisceration-mark*))
                    nil)
-      extra-msg
-      (error-trace-suggestion t)
-      (if (equal extra-msg "") ; no extra message for safe-mode or stobjs
-          "  See :DOC set-guard-checking for information about suppressing ~
-           this check with (set-guard-checking :none), as recommended for new ~
-           users."
-        ""))))))
+      (cond ((eq extra :live-stobj)
 
-(defun ev-fncall-guard-er (fn args w latches safep)
+; This case occurs if we attempt to execute the call of a "oneified" function
+; on a live stobj (including state) when the guard of the fn is not satisfied,
+; where the function is either a primitive listed in *super-defun-wart-table*
+; or is defined by defstobj.
+
+             (msg "~|This error is being reported even though guard-checking ~
+                   has been turned off, because the stobj argument of ~x0 is ~
+                   the ``live'' ~p1 and ACL2 does not support non-compliant ~
+                   live stobj manipulation."
+                  fn
+                  (find-first-non-nil stobjs-in)))
+            ((eq extra :no-extra) "")
+            (extra *safe-mode-guard-er-addendum*)
+            (t ""))
+      (error-trace-suggestion t)
+      (if (keywordp extra) ; skip the following for safe-mode or stobjs
+          ""
+        "  See :DOC set-guard-checking for information about suppressing this ~
+         check with (set-guard-checking :none), as recommended for new ~
+         users."))))))
+
+(defun ev-fncall-guard-er (fn args w latches extra)
   (mv t
       (ev-fncall-guard-er-msg fn
                               (untranslate* (guard fn nil w) t w)
-                              (stobjs-in fn w) args w
-                              (if safep *safe-mode-guard-er-addendum* ""))
+                              (stobjs-in fn w) args w extra)
       latches))
 
 (defun ev-fncall-msg (val wrld)
@@ -2179,37 +2199,7 @@
 ; guard-checking is on.
 
     (ev-fncall-guard-er-msg (cadr val) (cadddr val) (car (cddddr val))
-                            (caddr val) wrld
-                            (if (cadr (cddddr val))
-                                *safe-mode-guard-er-addendum*
-                              "")))
-   ((and (consp val)
-         (eq (car val) 'ev-fncall-live-stobj-guard-er))
-
-; We get here if val is of the form 
-; (ev-fncall-live-stobj-guard-er fn args guard stobjs-in).
-; This happens if we attempt to execute the call of a "oneified"
-; function on a live stobj (including state) when the guard of the fn
-; is not satisfied.  The only functions that can throw this val are
-; the primitives listed in *super-defun-wart-table* and the primitives
-; defined by defstobj.
-
-    (ev-fncall-guard-er-msg (cadr val) (cadddr val) (car (cddddr val))
-                            (caddr val) wrld
-                            (msg
-                             "~|This error is being reported even though ~
-                              guard-checking may have been turned off, because ~
-                              the stobj argument of ~x0 is the ``live'' ~p1 ~
-                              and ACL2 does not support non-compliant live ~
-                              stobj manipulation.~@2"
-                             (cadr val)
-                             (find-first-non-nil (car (cddddr val)))
-                             (if (nth 5 val) ; (@ guard-checking-on) = :none
-                                 (msg "  Note that guard-checking has been ~
-                                       set to :NONE; evaluating ~x0 may avoid ~
-                                       this error."
-                                      '(set-guard-checking nil))
-                               ""))))
+                            (caddr val) wrld (cadr (cddddr val))))
    ((and (consp val)
          (eq (car val) 'ev-fncall-creator-er))
 

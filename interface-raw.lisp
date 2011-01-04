@@ -1232,11 +1232,11 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
         (t (cons nil
                  (super-defstobj-wart-stobjs-in (cdr formals) stobj-flag)))))
 
-(defun-one-output oneify-fail-form (er-type fn formals guard super-stobjs-in wrld safep)
+(defun-one-output oneify-fail-form (er-type fn formals guard super-stobjs-in
+                                            wrld extra)
 
-; Note that safep plays a different role than usual if er-type is
-; 'ev-fncall-live-stobj-guard-er; see the binding of fail_if_live_stobj in
-; oneify-cltl-code.
+; Warning: If you change this code, see the comment about "When changing
+; oneify-fail-form" in oneify-cltl-code.
 
   `(throw-raw-ev-fncall
     (list ',er-type
@@ -1251,7 +1251,7 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
                          stobjs-in is nil and formals isn't."
                         fn)
                   nil))
-          ,@(and safep '(t)))))
+          ,extra)))
 
 (defun-one-output get-declared-stobjs (edcls)
 
@@ -1468,9 +1468,10 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
                 (cdr (assoc-eq fn *super-defun-wart-stobjs-in-alist*))))
              (ignore-vars
 
-; If super-stobjs-in is non-nil, then we will lay down the code
-; fail_if_live_stobj (defined below), which refers to all the formals; hence
-; ignore-vars should be nil if super-stobjs-in is non-nil.
+; If super-stobjs-in is non-nil, then we will lay down a call (oneify-fail-form
+; ... :live-stobj) that refers to all the formals; hence ignore-vars should be
+; nil if super-stobjs-in is non-nil.  When changing oneify-fail-form, consider
+; changing this code as well.
 
               (and (not super-stobjs-in) (ignore-vars dcls)))
              (ignorable-vars (ignorable-vars dcls))
@@ -1480,12 +1481,21 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
 ; to correspond with the state global guard-checking-on used here, so that the
 ; logic-only and raw lisp code agree.  See the comment in *ev-shortcut-okp*.
 
-              '(f-get-global 'guard-checking-on *the-live-state*))
-             (skip-early-exit-code-for-none
+              (cond (super-stobjs-in
+                     '(let ((temp (f-get-global 'guard-checking-on
+                                                *the-live-state*)))
+                        (cond ((or (eq temp :none) (eq temp nil))
+                               t)
+                              (t temp))))
+                    (t '(f-get-global 'guard-checking-on *the-live-state*))))
+             (skip-early-exit-code-when-none
               (and (eq defun-mode :logic) ; :program handled elsewhere
 
-; It seems scary to allow :none to avoid raw Lisp for built-ins, even in :logic
-; mode, because of efficiency.
+; We generally skip some special "early exit" code when 'guard-checking-on has
+; value :none.  But it seems scary to allow :none to avoid raw Lisp for
+; built-ins, even in :logic mode, because of efficiency.  So when we are in the
+; boot-strap, we do the early exit code (which can call the raw Lisp function)
+; even if 'guard-checking-on has value :none.
 
                    (not boot-strap-p)))
              (guard-checking-is-really-on-form
@@ -1493,17 +1503,38 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
 ; This variable should only be used in the scope of the binding expression for
 ; early-exit-form.
 
-              (if skip-early-exit-code-for-none
-                  guard-checking-on-form
-                `(and ,guard-checking-on-form
-                      (not (eq ,guard-checking-on-form :none)))))
+              (cond (super-stobjs-in
+
+; The value of guard-checking-on has already been coerced from :none or nil to
+; t, in guard-checking-on-form.
+
+                     t)
+                    (skip-early-exit-code-when-none
+
+; As mentioned above, guard-checking-is-really-on-form is only used for
+; defining early-exit-form.  But evaluation of early-exit-form is skipped when
+; 'guard-checking-on has value :none in the present case, where
+; skip-early-exit-code-when-none is true.
+
+                     guard-checking-on-form)
+                    (t `(and ,guard-checking-on-form
+                             (not (eq ,guard-checking-on-form :none))))))
              (fail_guard ; form for reporting guard failure
-              (oneify-fail-form 'ev-fncall-guard-er fn formals guard
-                                super-stobjs-in wrld nil))
+              (oneify-fail-form
+               'ev-fncall-guard-er fn formals guard super-stobjs-in wrld
+               (and super-stobjs-in
+                    '(cond ((member-eq (f-get-global 'guard-checking-on
+                                                     *the-live-state*)
+                                       '(nil :none))
+                            :live-stobj)
+                           (t
+
+; Suppress "See :DOC set-guard-checking" printed by ev-fncall-guard-er-msg.
+
+                            :no-extra)))))
              (fail_safe ; form for reporting guard or safe mode failure
               (oneify-fail-form 'ev-fncall-guard-er fn formals guard
-                                super-stobjs-in wrld
-                                guard-checking-is-really-on-form))
+                                super-stobjs-in wrld t))
              (safe-form
 
 ; Functions in the ev-rec nest have a safe-mode parameter that we generally
@@ -1511,13 +1542,6 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
 ; raw lisp code agree.  See the comment in *ev-shortcut-okp*.
 
               '(f-get-global 'safe-mode *the-live-state*))
-             (fail_if_live_stobj
-              (and super-stobjs-in ; optimization
-                   (oneify-fail-form 'ev-fncall-live-stobj-guard-er fn formals
-                                     guard super-stobjs-in wrld
-; For 'ev-fncall-live-stobj-guard-er, we use the safep argument to communicate
-; that the value of 'guard-checking-on is :none.
-                                     t)))
              (super-stobjs-chk
               (if stobj-flag
                   (let ((first-non-nil (find-first-non-nil super-stobjs-in)))
@@ -1569,48 +1593,30 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
                               ,@(and ignorable-vars
                                      `((declare (ignorable ,@ignorable-vars))))
                               ,@(and super-stobjs-in
+
+; If the form below is removed, we might expect to get a hard Lisp error from
+; the following:
+
+; (defstobj foo (arr :type (array t (10))))
+; (set-guard-checking nil)
+; (update-arri 20 4 foo)
+
+; The problem would seem to be that an ill-guarded call of update-nth has
+; replaced a copy of the stobj array by a list in (user-stobj-alist
+; *the-live-state*), which produces a mismatch with *the-live-foo*.
+
+; However, no such error occurs.  At some point we may spend the energy to
+; convince ourselves that it is save to remove this code, but for now, it seems
+; harmless enough to leave it here, since super-stobjs-chk is a fast test.
+
                                      `((when ,super-stobjs-chk
-                                         ,fail_if_live_stobj)))
+                                         ,(oneify-fail-form
+                                           'ev-fncall-guard-er fn formals
+                                           guard super-stobjs-in wrld
+                                           :live-stobj))))
                               ,*1*body))
              (*1*-labels-form `(labels (,*1*fn-binding)
                                        (,*1*fn ,@formals)))
-             (cl-compliant-code-guard-not-t
-
-; We lay down code for the common-lisp-compliant case that checks the guard and
-; acts accordingly: if the guard checks, then it returns the result of calling
-; fn, and if not, then it fails if appropriate and otherwise falls through.
-
-              (and
-               (not guard-is-t) ; optimization for case when code below is used
-
-; NOTE: we have to test for live stobjs before we evaluate the guard, since the
-; Common Lisp guard may assume all stobjs are live.  We actually only need
-; stobjs to be live that occur in the guard in other than stobj recognizer
-; calls; but we take the easy way out and check that all stobjs are live before
-; evaluating the raw Lisp guard.  After all, the cost of that check is only
-; some eq tests.
-
-               `(cond ,(cond ((eq live-stobjp-test t)
-                              `(,guard
-                                (return-from ,*1*fn (,fn ,@formals))))
-                             (t
-                              `((if ,live-stobjp-test ,guard ,*1*guard)
-                                ,(assert$
-
-; No user-stobj-based functions are primitives for which we need to give
-; special consideration to safe-mode.
-
-                                  (not guarded-primitive-p)
-                                  `(cond (,live-stobjp-test
-                                          (return-from ,*1*fn
-                                                       (,fn ,@formals))))))))
-                      ,@(cond (guarded-primitive-p
-                               `(((or ,guard-checking-is-really-on-form
-                                      ,safe-form)
-                                  ,fail_safe)))
-                              (t
-                               `((,guard-checking-is-really-on-form
-                                  ,fail_guard)))))))
              (logic-recursive-p
               (and (eq defun-mode :logic)
                    (ffnnamep-mod-mbe fn (body fn nil wrld))))
@@ -1650,6 +1656,45 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
                                 super-stobjs-in wrld
                                 t))
              (early-exit-code
+              (let ((cl-compliant-code-guard-not-t
+
+; We lay down code for the common-lisp-compliant case that checks the guard and
+; acts accordingly: if the guard checks, then it returns the result of calling
+; fn, and if not, then it fails if appropriate and otherwise falls through.
+
+                     (and
+                      (not guard-is-t) ; optimization for case when code below is used
+
+; NOTE: we have to test for live stobjs before we evaluate the guard, since the
+; Common Lisp guard may assume all stobjs are live.  We actually only need
+; stobjs to be live that occur in the guard in other than stobj recognizer
+; calls; but we take the easy way out and check that all stobjs are live before
+; evaluating the raw Lisp guard.  After all, the cost of that check is only
+; some eq tests.
+
+                      `(cond ,(cond ((eq live-stobjp-test t)
+                                     `(,guard
+                                       (return-from ,*1*fn (,fn ,@formals))))
+                                    (t
+                                     `((if ,live-stobjp-test ,guard ,*1*guard)
+                                       ,(assert$
+
+; No user-stobj-based functions are primitives for which we need to give
+; special consideration to safe-mode.
+
+                                         (not guarded-primitive-p)
+                                         `(cond (,live-stobjp-test
+                                                 (return-from ,*1*fn
+                                                              (,fn ,@formals))))))))
+                             ,@(cond (super-stobjs-in
+                                      `((t ,fail_guard)))
+                                     (guarded-primitive-p
+                                      `(((or ,guard-checking-is-really-on-form
+                                             ,safe-form)
+                                         ,fail_safe)))
+                                     (t
+                                      `((,guard-checking-is-really-on-form
+                                         ,fail_guard))))))))
               (if cl-compliant-p-optimization
                   (assert$ (not guard-is-t) ; already handled way above
                            (list cl-compliant-code-guard-not-t))
@@ -1668,6 +1713,9 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
                                    ,cl-compliant-code-guard-not-t)))
                            ,@(and (not guard-is-t)
                                   (cond
+                                   (super-stobjs-in
+                                    `(((not ,*1*guard)
+                                       ,fail_guard)))
                                    (guarded-primitive-p
                                     `(((and (or ,safe-form
                                                 ,guard-checking-is-really-on-form)
@@ -1724,7 +1772,7 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
                                             ,safe-form)
                                         (return-from ,*1*fn ,*1*body))))))))))))
                   (and cond-clauses
-                       (list (cons 'cond cond-clauses))))))
+                       (list (cons 'cond cond-clauses)))))))
              (main-body-before-final-call
 
 ; This is the code that is executed before we fall through: to the final labels
@@ -1742,10 +1790,11 @@ unnecessary, does not seem to be a relevant over-restriction in practice.
                      `((when (eq (symbol-class ',fn (w *the-live-state*))
                                  :common-lisp-compliant)
                          (return-from ,*1*fn (,fn ,@formals))))))
-               (cond ((and skip-early-exit-code-for-none
-                           early-exit-code ; else nil; next case provides nil
-                           `((when (not (eq ,guard-checking-on-form :none))
-                               ,@early-exit-code))))
+               (cond ((and skip-early-exit-code-when-none
+                           early-exit-code) ; else nil; next case provides nil
+                      (cond (super-stobjs-in early-exit-code) ; optimization
+                            (t `((when (not (eq ,guard-checking-on-form :none))
+                                   ,@early-exit-code)))))
                      (t early-exit-code))
                (cond (trace-rec-for-none
                       `((return-from ,*1*fn ,*1*body)))

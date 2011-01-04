@@ -17106,6 +17106,14 @@
   Fixed the printing of results from forms within an ~ilc[encapsulate], so that
   they are abbreviated according to the ~ilc[ld-evisc-tuple].
 
+  It is now possible to evaluate ~il[stobj]-related forms after evaluating
+  ~c[:]~ilc[set-guard-checking] ~c[:none] or ~c[:]~ilc[set-guard-checking]
+  ~c[nil], even in cases where this formerly caused a bogus guard violation.
+  The basic idea is that when a function introduced by ~ilc[defstobj] is
+  called, if guard-checking values of ~c[:none] or ~c[nil] are temporarily
+  converted to ~c[t].  Thanks to Pete Manolios, Ian Johnson, and Harsh Raju
+  Chamarthi for requesting this improvement.
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   There is new ~c[Makefile] support for certifying just some of the distributed
