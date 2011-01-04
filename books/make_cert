@@ -28,8 +28,9 @@ export ACL2_CUSTOMIZATION ?= NONE
 # Default ACL2 to whatever is in the path
 ACL2 ?= acl2
 
-%.cert: %.lisp
-	@echo "Making $*.cert on `date`" ;\
+define make_cert
+	@TARGETEXT=$(1) ;\
+	echo "Making $*.$$TARGETEXT on `date`" ;\
 	DIR=`dirname $*` ;\
 	FILE=`basename $*` ;\
         ACL2=`which $(ACL2) 2> /dev/null` ;\
@@ -45,11 +46,14 @@ ACL2 ?= acl2
 	      ACL2=$${IM} ;\
 	   fi ;\
 	fi ;\
-	rm -f $$FILE.cert ;\
-	WORKXXXFILE=workxxx.$$FILE.$$RANDOM ;\
+	rm -f $$FILE.$$TARGETEXT ;\
+	WORKXXXFILE=workxxx.$$FILE.$$TARGETEXT.$$RANDOM ;\
 	echo '(acl2::value :q)' > $$WORKXXXFILE ;\
 	echo '(in-package "ACL2")' >> $$WORKXXXFILE ;\
 	echo '(acl2::lp)' >> $$WORKXXXFILE ;\
+	if [ $$TARGETEXT == acl2x ] ;\
+	  then echo '(set-write-acl2x t state)' >> $$WORKXXXFILE ;\
+	fi ;\
 	echo '$(INHIBIT)' >> $$WORKXXXFILE ;\
 	if [ -f $$FILE.acl2 ] ;\
 	then \
@@ -64,103 +68,60 @@ ACL2 ?= acl2
 	  echo "(time$$ (certify-book \"$$FILE\" ? $(COMPILE_FLG)))" >> $$WORKXXXFILE ;\
 	fi ;\
 	echo "" >> $$WORKXXXFILE ;\
-        echo "(acl2::ld \"make_cert.lsp\" :dir :system)" >> $$WORKXXXFILE ;\
-	echo "(acl2::horrible-include-book-exit \"$$FILE\" acl2::state)" >> $$WORKXXXFILE ;\
+	if [ $$TARGETEXT != acl2x ] ;\
+	then \
+	    echo "(acl2::ld \"make_cert.lsp\" :dir :system)" >> $$WORKXXXFILE ;\
+	    echo "(acl2::horrible-include-book-exit \"$$FILE\" acl2::state)" \
+                 >> $$WORKXXXFILE ;\
+	fi ;\
 	if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
 	then \
-	  echo "[make_cert]: certify book commands for $$FILE.cert:" ;\
+	  echo "[make_cert]: certify book commands for $$FILE.$$TARGETEXT:" ;\
 	  echo "" ;\
 	  cat $$WORKXXXFILE ;\
 	  echo "" ;\
 	fi ;\
+	if [ $$TARGETEXT == acl2x ] ;\
+	then \
+	  TIMEFILE=$$FILE.acl2x.time ;\
+	  OUTFILE=$$FILE.acl2x.out ;\
+	else \
+	  TIMEFILE=$$FILE.time ;\
+	  OUTFILE=$$FILE.out ;\
+	fi ;\
 	if [ "$$TIME_CERT" != "" ] ;\
 	then \
-	  (env time -o $$FILE.time $$ACL2 < $$WORKXXXFILE 2>&1) > $$FILE.out ;\
+	  (env time -o $$TIMEFILE $$ACL2 < $$WORKXXXFILE 2>&1) > $$OUTFILE ;\
 	else \
-	  ($$ACL2 < $$WORKXXXFILE 2>&1) > $$FILE.out ;\
+	  ($$ACL2 < $$WORKXXXFILE 2>&1) > $$OUTFILE ;\
 	fi ;\
         STATUS=$$? ;\
 	rm -f $$WORKXXXFILE ;\
-	if [ "$$STATUS" == "43" ] ; then \
-	   ls -al $$FILE.cert || echo "NFS problem for $$FILE?" ;\
+	if [[   ( $$TARGETEXT != acl2x && "$$STATUS" == "43" ) \
+	     || ( $$TARGETEXT == acl2x && -e $$FILE.$$TARGETEXT ) ]] ; then \
+	   ls -al $$FILE.$$TARGETEXT || echo "NFS problem for $$FILE.$$TARGETEXT?" ;\
 	else \
-	  echo "**CERTIFICATION FAILED** for $$DIR/$$FILE.lisp (code $$STATUS)" ;\
+	  if [[ $$TARGETEXT == acl2x ]] ;\
+	    then TASKNAME="ACL2X GENERATION" ;\
+	    else TASKNAME="CERTIFICATION" ;\
+	  fi ;\
+	  echo "**$$TASKNAME FAILED** for $$DIR/$$FILE.lisp" ;\
 	  echo "" ;\
-          tail -300 $$FILE.out | sed 's/^/   | /' ;\
+	  echo $$OUTFILE : ;\
+          tail -300 $$OUTFILE | sed 's/^/   | /' ;\
 	  echo "" ;\
 	  echo "" ;\
 	  if [ "$$ON_FAILURE_CMD" != "" ] ;\
 	  then \
 	     $$ON_FAILURE_CMD ;\
 	  fi ;\
-          echo "**CERTIFICATION FAILED** for $$DIR/$$FILE.lisp (code $$STATUS)" ;\
+          echo "**CERTIFICATION FAILED** for $$DIR/$$FILE.lisp" ;\
           exit 1 ;\
         fi
+endef
 
-%.acl2x: %.lisp
-	@echo "Making $*.cert on `date`" ;\
-	DIR=`dirname $*` ;\
-	FILE=`basename $*` ;\
-        ACL2=`which $(ACL2) 2> /dev/null` ;\
-	cd $$DIR ;\
-	if [ -f $$FILE.image ] ; then \
-	   IM=`cat $$FILE.image` ;\
-	   if [ "$${IM}" != "" ] ; then \
-	      ACL2=$${IM} ;\
-	   fi ;\
-	elif [ -f cert.image ] ; then \
-	   IM=`cat cert.image` ;\
-	   if [ "$${IM}" != "" ] ; then \
-	      ACL2=$${IM} ;\
-	   fi ;\
-	fi ;\
-	rm -f $$FILE.acl2x ;\
-	WORKXXXFILE=workxxx.$$FILE.$$RANDOM ;\
-	echo '(acl2::value :q)' > $$WORKXXXFILE ;\
-	echo '(in-package "ACL2")' >> $$WORKXXXFILE ;\
-	echo '(acl2::lp)' >> $$WORKXXXFILE ;\
-	echo '(set-write-acl2x t state)' >> $$WORKXXXFILE ;\
-	echo '$(INHIBIT)' >> $$WORKXXXFILE ;\
-	if [ -f $$FILE.acl2 ] ;\
-	then \
-	  cat $$FILE.acl2 >> $$WORKXXXFILE ;\
-	elif [ -f cert.acl2 ] ;\
-	then \
-	  cat cert.acl2 >> $$WORKXXXFILE ;\
-	  echo "" >> $$WORKXXXFILE ;\
-	  echo "(time$$ (certify-book \"$$FILE\" ? $(COMPILE_FLG)))" >> $$WORKXXXFILE ;\
-	else \
-	  echo "" >> $$WORKXXXFILE ;\
-	  echo "(time$$ (certify-book \"$$FILE\" ? $(COMPILE_FLG)))" >> $$WORKXXXFILE ;\
-	fi ;\
-	echo "" >> $$WORKXXXFILE ;\
-	if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
-	then \
-	  echo "[make_cert]: certify book commands for $$FILE.acl2x:" ;\
-	  echo "" ;\
-	  cat $$WORKXXXFILE ;\
-	  echo "" ;\
-	fi ;\
-	if [ "$$TIME_CERT" != "" ] ;\
-	then \
-	  (env time -o $$FILE.acl2x.time $$ACL2 < $$WORKXXXFILE 2>&1) > $$FILE.out ;\
-	else \
-	  ($$ACL2 < $$WORKXXXFILE 2>&1) > $$FILE.out ;\
-	fi ;\
-	rm -f $$WORKXXXFILE ;\
-	if [ ! -e $$FILE.acl2x ] ; then \
-	  echo "**ACL2X GENERATION FAILED** for $$DIR/$$FILE.lisp" ;\
-	  echo "" ;\
-          tail -300 $$FILE.out | sed 's/^/   | /' ;\
-	  echo "" ;\
-	  echo "" ;\
-	  if [ "$$ON_FAILURE_CMD" != "" ] ;\
-	  then \
-	     $$ON_FAILURE_CMD ;\
-	  fi ;\
-          echo "**ACL2X GENERATION FAILED** for $$DIR/$$FILE.lisp" ;\
-          exit 1 ;\
-        fi
+%.cert : %.lisp
+	$(call make_cert,cert)
 
-# echo "(acl2::ld \"make_cert.lsp\" :dir :system)" >> $$WORKXXXFILE ;\
-# echo "(acl2::horrible-include-book-exit \"$$FILE\" acl2::state)" >> $$WORKXXXFILE ;\
+%.acl2x : %.lisp
+	$(call make_cert,acl2x)

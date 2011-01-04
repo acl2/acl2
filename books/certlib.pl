@@ -681,7 +681,7 @@ sub scan_two_pass {
     print "scan_two_pass $fname\n" if $debugging;
 
     if ($fname) {
-	# Scan the file for ";; two-pass-certification"
+	# Scan the file for ";; two-pass certification"
 	if (open(my $file, "<", $fname)) {
 	    my $regexp = ";; two-pass certification";
 	    while (my $the_line = <$file>) {
