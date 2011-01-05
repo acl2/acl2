@@ -37625,6 +37625,25 @@ in :type-prescription rules are specified with :type-prescription (and/or
   keyword value ~c[:skip-proofs-okp t] has not been supplied to
   ~ilc[certify-book].  An analogous situation holds for ~c[:defaxioms-okp].
 
+  Also note that ~ilc[certify-book] needs to be supplied with keyword argument
+  ~c[:acl2x t] in order to read or write ~c[.acl2x] files; the value of
+  ~c[:acl2] is ~c[nil] by default.  The interaction of ~ilc[certify-book] with
+  the corresponding ~c[.acl2x] file is as follows.
+  ~bf[]
+  o If ~c[:acl2x] is ~c[t], then:
+    - If ~c[set-write-acl2x] has been (most recently) called with value
+      ~c[t], then ACL2 writes the corresponding ~c[.acl2x] file.
+    - If ~c[set-write-acl2x] has been  (most recently) called with value
+      ~c[nil], or not called at all, then ACL2 insists on an corresponding
+      ~c[.acl2x] file that is at least as recent as the corresponding ~c[.lisp]
+      file, causing an error otherwise.
+  o If ~c[:acl2x] is ~c[nil] (the default), then:
+    - If ~c[set-write-acl2x] has been (most recently) called with value
+      ~c[t], or if argument ~c[:ttagsx] is supplied, then an error occurs.
+    - Regardless of whether or how ~c[set-write-acl2x] has been called, ACL2
+      ignores an existing ~c[.acl2x] file but issue a warning about it.
+  ~ef[]
+
   If you use this two-runs approach with scripts such as makefiles, then you
   may wish to provide a single ~ilc[certify-book] command to use for both runs.
   For that purpose, ~ilc[certify-book] supports the keyword argument
@@ -37635,24 +37654,17 @@ in :type-prescription rules are specified with :type-prescription (and/or
   specifies the trust tags, if any (else ~c[:ttags] may be omitted), used in
   the second certification.
 
-  If you wish to use built-in ACL2 Makefile support (~pl[book-makefiles]),
-  simply add dependencies like the following to the Makefile in your directory
-  of ~il[books]:
-  ~bv[]
-
-  foo.cert: foo.acl2x
-  # Copied from generated file Makefile-deps, replacing .cert on left sides:
-  foo.acl2x: foo.lisp
-  foo.acl2x: sub-book.cert
-
-  ~ev[]
-  See for example distributed file ~c[books/make-event/Makefile].  We may
-  automated more of this in the future, especially if asked to do so.
+  The built-in ACL2 Makefile support automatically generates suitable
+  dependencies if you create a ~c[.acl2] file with a ~ilc[certify-book] call
+  matching the following pattern, case-independent:
+  ~c[(certify-book<characters_other_than_;>:acl2x t].  ~l[book-makefiles],
+  and for an example ~c[.acl2x] file see distributed file
+  ~c[books/make-event/double-cert-test-1.acl2].
 
   Note that ~ilc[include-book] is not affected by ~c[set-write-acl2x], other
   than through the indirect effect on ~ilc[certify-book].  More precisely: All
   expansions will be stored in the ~il[certificate] file, so ~ilc[include-book]
-  does not depend on the ~c[foo.acl2x] file.~/
+  does not depend on the ~c[.acl2x] file.~/
 
   An example of how to put this all together may be found in distributed book
   ~c[books/make-event/double-cert-test-1.lisp].  There, we see the following
