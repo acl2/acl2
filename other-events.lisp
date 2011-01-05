@@ -14085,7 +14085,13 @@ The following all cause errors.
 
 (defstub acl2x-expansion-alist (expansion-alist) t)
 
-(defattach acl2x-expansion-alist hons-copy)
+(defattach acl2x-expansion-alist
+
+; Users are welcome to attach their own function to acl2x-expansion-alist,
+; because it is only called (by write-acl2x-file) to write out a .acl2x file,
+; not to write out a .cert file.
+
+  hons-copy)
 
 (defun write-acl2x-file (expansion-alist acl2x-file ctx state)
   (with-output-object-channel-sharing
