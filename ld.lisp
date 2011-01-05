@@ -16749,6 +16749,32 @@
 ; into skip-proofs forms (e.g., open-output-channel had been missing from
 ; *primitive-logic-fns-with-raw-code*, but we hadn't caught that).
 
+; Here is the example promised in the item below labeled: "Fixed a bug in which
+; the wrong attachment could be made....".  A more subtle example is described
+; in function install-for-add-trip-hcomp-build.
+;
+; ;;;;; file sub.lisp ;;;;;
+; (in-package "ACL2")
+; (defun sub-fn (x) x)
+; ;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; ;;;;; file foo.lisp (note command for certification world) ;;;;;
+; ; Portcullis command:
+; ; (progn (defstub f (x) t) (defattach f identity))
+
+; (in-package "ACL2")
+; (include-book "sub")
+; (defun g (x)
+;   (declare (xargs :guard t))
+;   (cons x x))
+; (defattach f g)
+; ;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; First certify both books, first submitting the above portcullis command in
+; the case of foo.lisp; then delete the compiled file for sub.lisp; then start
+; ACL2 and evaluate (include-book "foo"); and finally, evaluate the form (f 3).
+; The result was 3 where it should have been (3 . 3).
+
   :Doc
   ":Doc-Section release-notes
 
@@ -16962,7 +16988,8 @@
 
   Support is now provided for creating and certifying books that do not depend
   on trust tags, in the case that the only use of trust tags is during
-  ~ilc[make-event] expansion.  ~l[set-write-acl2x].
+  ~ilc[make-event] expansion.  ~l[set-write-acl2x].  Thanks to Sol Swords for
+  reporting a couple of bugs in a preliminary implementation.
 
   Function ~c[(file-write-date$ filename state)] has been added, giving the
   write date of the given file.
@@ -17117,6 +17144,14 @@
   called, ~ilc[guard]-checking values of ~c[:none] or ~c[nil] are temporarily
   converted to ~c[t].  Thanks to Pete Manolios, Ian Johnson, and Harsh Raju
   Chamarthi for requesting this improvement.
+
+  Fixed a bug in which the wrong attachment could be made when the same
+  function has an attachment in a book and another in the certification world
+  of that book (possibly even built into ACL2), if the load of a compiled file
+  is aborted because a sub-book's compiled file is missing.  The bug has been
+  present since the time that ~ilc[defattach] was added (Version_4.0).  An
+  example may be found in a comment in the ~ilc[deflabel] for ~c[note-4-2]
+  (ACL2 source file ~c[ld.lisp]).
 
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 

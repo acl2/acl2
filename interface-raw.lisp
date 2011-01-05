@@ -3719,13 +3719,13 @@ FORWARD-CHAINING-RULES                               245442
 ; the relevant *hcomp-xxx-ht* hash table.  Otherwise add-trip proceeds without
 ; the help of that hash table.  However, if the symbol is assigned a
 ; reclassifying value (*hcomp-fake-value* . val) in the hash table, then even
-; though add-trip does not use that value assign a relevant value, the symbol
-; is reassigned to val in the hash table; so if and when subsequently this *1*
-; symbol is assigned a :logic-mode value by add-trip it will be val, i.e., the
-; symbol will be treated as qualified.  That is appropriate because if add-trip
-; assigns a new value -- and assuming that redefinition is off, which it is
-; unless there is a trust tag -- then the subsequent :logic mode definition
-; will be ready for this saved value.
+; though add-trip does not use that value to assign a relevant value, the
+; symbol is reassigned to val in the hash table; so if and when subsequently
+; this *1* symbol is assigned a :logic-mode value by add-trip it will be val,
+; i.e., the symbol will be treated as qualified.  That is appropriate because
+; if add-trip assigns a new value -- and assuming that redefinition is off,
+; which it is unless there is a trust tag -- then the subsequent :logic mode
+; definition will be ready for this saved value.
 
 ; If raw-mode is entered, then loading the compiled file can assign relevant
 ; values to symbols other than add-trip symbols.  (By the way, we are not
@@ -4526,7 +4526,9 @@ FORWARD-CHAINING-RULES                               245442
 
   (let* ((type (car def))
          (name (cadr def))
-         (ht (hcomp-ht-from-type type 'install-for-add-trip-hcomp-build)))
+         (ht (hcomp-ht-from-type type 'install-for-add-trip-hcomp-build))
+         (oldp (and (eq type 'defparameter)
+                    (boundp name))))
     (when evalp
       (eval def))
     (assert ht)
@@ -4551,11 +4553,28 @@ FORWARD-CHAINING-RULES                               245442
 
                               (setf (gethash name ht)
                                     *hcomp-fake-value*))))
-            (t (setf (gethash name ht)
-                     (case type
-                       (defun        (symbol-function name))
-                       (defparameter (symbol-value name))
-                       (otherwise    (macro-function name)))))))))
+            (oldp
+
+; Name is already boundp, perhaps even by a defattach in the ACL2 source code.
+; Handling of this case supports our fix for a bug described in note-4-2:
+; "Fixed a bug in which the wrong attachment could be made...."  We hit that
+; bug when we tried to attach to acl2x-expansion-alist upon including the book
+; books/make-event/acl2x-help.lisp (see the defattach there for that function),
+; causing certification to fail for books/make-event/acl2x-help.lisp.  That
+; certification failed because the attachment was getting its value from
+; *hcomp-const-ht*, which had not seen that attachment because the load was
+; aborted due to a missing compiled file for a book included under
+; acl2x-help.lisp.  Perhaps we should never put a defparameter for a defattach
+; into *hcomp-const-ht*, but anyhow, the following setf handles the issue.
+
+             (setf (gethash name ht)
+                   *hcomp-fake-value*))
+            (t
+             (setf (gethash name ht)
+                   (case type
+                     (defun        (symbol-function name))
+                     (defparameter (symbol-value name))
+                     (otherwise    (macro-function name)))))))))
 
 (defun install-for-add-trip-include-book (type name def reclassifyingp)
 
@@ -4785,7 +4804,20 @@ FORWARD-CHAINING-RULES                               245442
                                   nil
                                   nil))
           (defmacro
-            (install-for-add-trip cltl-cmd nil nil))))))
+            (install-for-add-trip cltl-cmd nil nil))
+          (attachment ; (cddr trip) is produced by attachment-cltl-cmd
+           (dolist (x (cdr cltl-cmd))
+             (let ((name (if (symbolp x) x (car x))))
+               (install-for-add-trip
+                (cond ((symbolp x)
+                       (set-attachment-symbol-form x nil))
+                      (t (set-attachment-symbol-form name (cdr x))))
+                nil
+                nil))))
+
+; There is nothing to do for memoize or unmemoize.
+
+          ))))
   (value nil))
 
 (defun hcomp-alists-from-hts ()

@@ -5443,6 +5443,11 @@
 ; even those under LOCAL; see the Essay on Skip-proofs.
 
   (cond ((member-eq 'certify-book environment)
+
+; In this case, we know that certify-book has not been called only to write out
+; a .acl2x file (as documented in eval-event-lst).  If we are writing a .acl2x
+; file, then we need to keep local events to support certification.
+
          (mv-let (changed-p x)
                  (elide-locals-rec form)
                  (declare (ignore changed-p))
@@ -5472,7 +5477,8 @@
 
 ; Environment is a list containing either 'certify-book, 'encapsulate, both, or
 ; neither, to indicate whether we are under a certify-book and/or an
-; encapsulate.
+; encapsulate.  Note that 'certify-book is not present when certify-book has
+; been called only to write out a .acl2x file.
 
 ; Other-control is either :non-event-ok, used for progn!, or else t or nil for
 ; the make-event-chk in chk-embedded-event-form.
@@ -6548,8 +6554,10 @@
                                                   new-embedded-event-lst nil)
                                                  '(encapsulate)
                                                nil)))
-                                     (if (f-get-global 'certify-book-info
-                                                       state)
+                                     (if (and (f-get-global 'certify-book-info
+                                                            state)
+                                              (not (f-get-global 'write-acl2x
+                                                                 state)))
                                          (cons 'certify-book x)
                                        x))
                                    (f-get-global 'in-local-flg state)
@@ -8573,7 +8581,8 @@ The following all cause errors.
          ev-lst
          t ; quietp
          (let ((x (if in-encapsulatep '(encapsulate) nil)))
-           (if (f-get-global 'certify-book-info state)
+           (if (and (f-get-global 'certify-book-info state)
+                    (not (f-get-global 'write-acl2x state)))
                (cons 'certify-book x)
              x))
          (f-get-global 'in-local-flg state)
@@ -14096,6 +14105,7 @@ The following all cause errors.
                    (list (cons #\0 acl2x-file))
                    (proofs-co state) state nil))
          (print-object$ (acl2x-expansion-alist expansion-alist) ch state)
+         (close-output-channel ch state)
          (value acl2x-file)))))))
 
 (defun acl2x-alistp (x index len)
@@ -14228,6 +14238,82 @@ The following all cause errors.
         ((< (caar expansion-alist) index)
          (restrict-expansion-alist index (cdr expansion-alist)))
         (t expansion-alist)))
+
+(mutual-recursion
+
+(defun elide-locals-post (form)
+
+; See also elide-locals.  The present version is applied after the fact rather
+; than when a make-event is executed.  Perhaps we only need one version, but as
+; of this writing (Jan. 2011), the original handling of elide-locals was subtle
+; and working, so we decided to leave it in place and add this post-processor
+; for application to expansion-alists stored in .acl2x files, which still have
+; local events so that the second certification run can succeed; see also the
+; Essay on .acl2x Files (Double Certification).
+
+  (cond ((atom form) (mv nil form)) ; note that progn! can contain atoms
+        ((eq (car form) 'local)
+         (mv t *local-value-triple-elided*))
+        ((member-eq (car form) '(skip-proofs
+
+; Can with-prover-time-limit really occur in an event context?  At one time we
+; seemed to think it could at the top level, but this currently seems
+; doubtful.  But it's harmless to leave the next line.
+
+                                 with-prover-time-limit))
+         (mv-let (changed-p x)
+                 (elide-locals-post (cadr form))
+                 (cond (changed-p (mv t (list (car form) x)))
+                       (t (mv nil form)))))
+        ((member-eq (car form) '(with-output record-expansion
+
+; Can time$ really occur in an event context?  At one time we seemed to think
+; that time$1 could, but it currently seems doubtful that either time$1 or
+; time$ could occur in an event context.  It's harmless to leave the next line,
+; but it particulary makes no sense to us to use time$1, so we use time$
+; instead.
+
+                                             time$))
+         (mv-let (changed-p x)
+                 (elide-locals-post (car (last form)))
+                 (cond (changed-p (mv t (append (butlast form 1) (list x))))
+                       (t (mv nil form)))))
+        ((or (eq (car form) 'progn)
+             (and (eq (car form) 'progn!)
+                  (not (and (consp (cdr form))
+                            (eq (cadr form) :state-global-bindings)))))
+         (mv-let (changed-p x)
+                 (elide-locals-post-lst (cdr form))
+                 (cond (changed-p (mv t (cons (car form) x)))
+                       (t (mv nil form)))))
+        ((eq (car form) 'progn!) ; hence :state-global-bindings case
+         (mv-let (changed-p x)
+                 (elide-locals-post-lst (cddr form))
+                 (cond (changed-p (mv t (list* (car form) (cadr form) x)))
+                       (t (mv nil form)))))
+        (t (mv nil form))))
+
+(defun elide-locals-post-lst (x)
+  (cond ((endp x) (mv nil nil))
+        (t (mv-let (changedp1 first)
+                   (elide-locals-post (car x))
+                   (mv-let (changedp2 rest)
+                           (elide-locals-post-lst (cdr x))
+                           (cond ((or changedp1 changedp2)
+                                  (mv t (cons first rest)))
+                                 (t (mv nil x))))))))
+)
+
+(defun elide-locals-from-expansion-alist (alist acc)
+  (cond ((endp alist) (reverse acc))
+        (t (elide-locals-from-expansion-alist
+            (cdr alist)
+            (cons (cons (caar alist)
+                        (mv-let (changedp form)
+                                (elide-locals-post (cdar alist))
+                                (declare (ignore changedp))
+                                form))
+                  acc)))))
 
 (defun certify-book-fn (user-book-name k compile-flg defaxioms-okp
                                        skip-proofs-okp ttags ttagsx state)
@@ -14418,9 +14504,15 @@ The following all cause errors.
                                                     1)
                                  1 nil 'certify-book state))
                                (expansion-alist
-                                (value (merge-into-expansion-alist
-                                        acl2x-expansion-alist
-                                        (car expansion-alist-and-index)))))
+                                (value
+                                 (cond ((f-get-global 'write-acl2x state)
+                                        (assert$
+                                         (null acl2x-expansion-alist)
+                                         (car expansion-alist-and-index)))
+                                       (t
+                                        (merge-into-expansion-alist
+                                         acl2x-expansion-alist
+                                         (car expansion-alist-and-index)))))))
                        (cond
                         ((f-get-global 'write-acl2x state)
 
@@ -14429,9 +14521,13 @@ The following all cause errors.
                          (write-acl2x-file expansion-alist acl2x-file ctx
                                            state))
                         (t
-                         (value (list (let ((val (global-val 'skip-proofs-seen
-                                                             (w state))))
-                                        (and val
+                         (let ((expansion-alist
+                                (elide-locals-from-expansion-alist
+                                 expansion-alist
+                                 nil)))
+                           (value (list (let ((val (global-val 'skip-proofs-seen
+                                                               (w state))))
+                                          (and val
 
 ; Here we are trying to record whether there was a skip-proofs form in the
 ; present book, not merely on behalf of an included book.  The post-alist will
@@ -14439,21 +14535,21 @@ The following all cause errors.
 ; skipped-proofsp-in-post-alist.  See the comment about this comment in
 ; install-event.
 
-                                             (not (eq (car val)
-                                                      :include-book))))
-                                      portcullis-skipped-proofsp
-                                      (f-get-global 'axiomsp state)
-                                      (global-val 'ttags-seen (w state))
-                                      (global-val 'include-book-alist-all
-                                                  (w state))
-                                      expansion-alist
-                                      (let ((index
-                                             (cdr expansion-alist-and-index)))
-                                        (cond ((integerp index)
-                                               (restrict-expansion-alist
-                                                index
-                                                expansion-alist))
-                                              (t expansion-alist))))))))))))
+                                               (not (eq (car val)
+                                                        :include-book))))
+                                        portcullis-skipped-proofsp
+                                        (f-get-global 'axiomsp state)
+                                        (global-val 'ttags-seen (w state))
+                                        (global-val 'include-book-alist-all
+                                                    (w state))
+                                        expansion-alist
+                                        (let ((index
+                                               (cdr expansion-alist-and-index)))
+                                          (cond ((integerp index)
+                                                 (restrict-expansion-alist
+                                                  index
+                                                  expansion-alist))
+                                                (t expansion-alist)))))))))))))
                  (cond
                   ((f-get-global 'write-acl2x state) ; early exit
                    (value acl2x-file))
