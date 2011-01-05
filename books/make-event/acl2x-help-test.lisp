@@ -5,7 +5,7 @@
 
 ;; Yes, this include-book may be local even though we'll use macros defined in
 ;; it, in an apparently nonlocal manner.
-(local (include-book "acl2x-replace"))
+(local (include-book "acl2x-help"))
 
 ;; If the acl2x-expansion-alist-replacement attachment necessary for the
 ;; functioning of acl2x-replace has been removed, this replaces it.
