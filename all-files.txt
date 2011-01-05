@@ -1474,6 +1474,7 @@ quotient-remainder-lemmas.lisp
 books/make-event:
 Makefile
 Readme.lsp
+acl2x-help-test.acl2
 acl2x-help-test.lisp
 acl2x-help.lisp
 assert-check-include-1.acl2
@@ -1531,6 +1532,7 @@ read-from-file-data-mod.lsp
 read-from-file-data.lsp
 read-from-file.lisp
 require-book.lisp
+stobj-test.acl2
 stobj-test.lisp
 test-case-check.lisp
 test-case.lisp
