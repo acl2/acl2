@@ -23454,6 +23454,15 @@ J
     set-debugger-enable-fn ; lisp::*break-enable* and *debugger-hook*
     break$ ; break
     prin1$ prin1-with-slashes
+
+; Found for hons after fixing note-fns-in-form just before release v4-2.
+
+    FAST-ALIST-LEN HONS-COPY-PERSISTENT HONS-SUMMARY HONS-CLEAR HONS-WASH
+    HONS-SHRINK-ALIST HONS-EQUAL-LITE CLEAR-HASH-TABLES NUMBER-SUBTREES
+    FAST-ALIST-SUMMARY HONS-ACONS! CLEAR-MEMOIZE-TABLES HONS-COPY HONS-ACONS
+    CLEAR-MEMOIZE-TABLE FAST-ALIST-FREE HONS-EQUAL HONS-RESIZE-FN HONS-GET HONS
+    HONS-SHRINK-ALIST!
+
   ))
 
 (defconst *primitive-macros-with-raw-code*
