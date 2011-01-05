@@ -1,32 +1,19 @@
+
 (in-package "ACL2")
 
-(include-book "acl2x-help")
+;; two-pass certification   (note: include this comment for cert.pl)
 
-(make-event
- (er-progn
-  (thm (equal (append (append x y) z)
-              (append x y z)))
-  (value '(maybe-skip-proofs
-           (defthm app-assoc
-             (equal (append (append x y) z)
-                    (append x y z)))))))
+;; Yes, this include-book may be local even though we'll use macros defined in
+;; it, in an apparently nonlocal manner.
+(local (include-book "acl2x-replace"))
 
-; Make sure that we don't elide local events arising from make-event when
-; writing to the .acl2x file.
+;; If the acl2x-expansion-alist-replacement attachment necessary for the
+;; functioning of acl2x-replace has been removed, this replaces it.
+;; (use-acl2x-replace) 
 
-(local
- (make-event
-  '(defun f1 (x) x)))
-
-(local (in-theory (disable f1)))
-
-(make-event
- '(local
-   (defun f2 (x) x)))
-
-(local (in-theory (disable f2)))
-
-(encapsulate
- ()
- (progn (local (defun g1 (x) x))
-        (defun g2 (x) x)))
+(acl2x-replace
+ ;; this is only run during pass 1 of certification
+ (skip-proofs (defthm pass1-only (equal t nil) :rule-classes nil))
+ ;; this is run except during pass 1.
+ (defthm pass2-and-otherwise
+   (equal x x) :rule-classes nil))
