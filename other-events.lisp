@@ -14359,7 +14359,13 @@ The following all cause errors.
            "Book names may not end in \"@expansion\"."))
       ((and ttagsxp (not acl2x))
        (er soft ctx
-           "The argument :TTAGSX may only be supplied if :ACL2X is T."))
+           "The argument :TTAGSX T for certify-book may only be supplied if ~
+            :ACL2X is T.  See :DOC set-write-acl2x."))
+      ((not (booleanp acl2x))
+       (er soft ctx
+           "The argument :ACL2X for certify-book must take on the value of T ~
+            or NIL.  The value ~x0 is thus illegal.  See :DOC certify-book."
+           acl2x))
       (t
        (er-let* ((write-acl2x
                   (cond (acl2x (value (f-get-global 'write-acl2x state)))

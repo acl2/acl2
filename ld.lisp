@@ -17139,11 +17139,35 @@
 
   It is now possible to evaluate ~il[stobj]-related forms after evaluating
   ~c[:]~ilc[set-guard-checking] ~c[:none] or ~c[:]~ilc[set-guard-checking]
-  ~c[nil], even in cases where this formerly caused a bogus guard violation.
-  The basic idea is that when a function introduced by ~ilc[defstobj] is
-  called, ~ilc[guard]-checking values of ~c[:none] or ~c[nil] are temporarily
-  converted to ~c[t].  Thanks to Pete Manolios, Ian Johnson, and Harsh Raju
-  Chamarthi for requesting this improvement.
+  ~c[nil], even in cases where such evaluation formerly caused a guard
+  violation due to a bug in ACL2.  Here is an example of an error that no
+  longer occurs.
+  ~bv[]
+  ACL2 !>(defstobj st fld)
+
+  Summary
+  Form:  ( DEFSTOBJ ST ...)
+  Rules: NIL
+  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+   ST
+  ACL2 !>(set-guard-checking :none)
+
+  Turning off guard checking entirely.  To allow execution in raw Lisp
+  for functions with guards other than T, while continuing to mask guard
+  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+
+  ACL2 >(fld st)
+
+
+  ACL2 Error in TOP-LEVEL:  The guard for the function call (FLD ST),
+  which is (STP ST), is violated by the arguments in the call (FLD ST).
+  [... etc. ...]
+  ~ev[]
+  You can understand how things now work by imagining that when a function
+  introduced by ~ilc[defstobj] is called, ~ilc[guard]-checking values of
+  ~c[:none] or ~c[nil] are temporarily converted to ~c[t].  Thanks to Pete
+  Manolios, Ian Johnson, and Harsh Raju Chamarthi for requesting this
+  improvement.
 
   Fixed a bug in which the wrong attachment could be made when the same
   function has an attachment in a book and another in the certification world
@@ -17152,6 +17176,10 @@
   present since the time that ~ilc[defattach] was added (Version_4.0).  An
   example may be found in a comment in the ~ilc[deflabel] for ~c[note-4-2]
   (ACL2 source file ~c[ld.lisp]).
+
+  The ~c[:]~ilc[doc] and related utilities now cause a clean error when
+  provided other than a symbol.  Thanks to Jared Davis for pointing out the raw
+  Lisp error that had occurred in such cases.
 
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 

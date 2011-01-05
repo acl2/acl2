@@ -25659,20 +25659,27 @@ J
   if its value is ~c[nil] then the channel remains open.  The following example
   illustrates.
   ~bv[]
+  ACL2 !>
   (mv-let
-   (channel state)
-   (open-output-channel :string :object state)
-   (pprogn (print-object$ 17 channel state)
-           (print-object$ '(a b (c d)) channel state)
-           (er-let*
-             ((str1 (get-output-stream-string$
-                     channel state
-                     nil))) ; keep the channel open
-             (pprogn (print-object$ 23 channel state)
-                     (print-object$ '((e f)) channel state)
-                     (er-let* ; close the channel
-                       ((str2 (get-output-stream-string$ channel state)))
-                       (value (cons str1 str2)))))))
+     (channel state)
+     (open-output-channel :string :object state)
+     (pprogn (print-object$ 17 channel state)
+             (print-object$ '(a b (c d)) channel state)
+             (er-let*
+               ((str1 (get-output-stream-string$
+                       channel state
+                       nil))) ; keep the channel open
+               (pprogn (print-object$ 23 channel state)
+                       (print-object$ '((e f)) channel state)
+                       (er-let* ; close the channel
+                         ((str2 (get-output-stream-string$ channel state)))
+                         (value (cons str1 str2)))))))
+   (\"
+  17
+  (A B (C D))\" . \"
+  23
+  ((E F))\")
+  ACL2 !>
   ~ev[]
 
   By default, symbols are printed in upper case when vertical bars are
@@ -27639,6 +27646,10 @@ J
                        (open-output-channels state-state))
              state-state)))
        (t (mv t
+
+; We use cw because er is not yet available during the first pass of
+; the boot-strap.
+
               (cw err-string channel)
               state-state))))))
 )
@@ -37631,17 +37642,21 @@ in :type-prescription rules are specified with :type-prescription (and/or
   the corresponding ~c[.acl2x] file is as follows.
   ~bf[]
   o If ~c[:acl2x] is ~c[t], then:
-    - If ~c[set-write-acl2x] has been (most recently) called with value
-      ~c[t], then ACL2 writes the corresponding ~c[.acl2x] file.
-    - If ~c[set-write-acl2x] has been  (most recently) called with value
-      ~c[nil], or not called at all, then ACL2 insists on an corresponding
-      ~c[.acl2x] file that is at least as recent as the corresponding ~c[.lisp]
-      file, causing an error otherwise.
+    - If ~c[set-write-acl2x] has been (most recently) called with a
+      value of ~c[t] for its first argument, then ACL2 writes the
+      corresponding ~c[.acl2x] file. 
+    - If ~c[set-write-acl2x] has been (most recently) called with a
+      value of ~c[nil] for its first argument, or not called at all,
+      then ACL2 insists on a corresponding ~c[.acl2x] file that is at
+      least as recent as the corresponding ~c[.lisp] file, causing an
+      error otherwise.
   o If ~c[:acl2x] is ~c[nil] (the default), then:
-    - If ~c[set-write-acl2x] has been (most recently) called with value
-      ~c[t], or if argument ~c[:ttagsx] is supplied, then an error occurs.
-    - Regardless of whether or how ~c[set-write-acl2x] has been called, ACL2
-      ignores an existing ~c[.acl2x] file but issue a warning about it.
+    - If ~c[set-write-acl2x] has been (most recently) called with a
+      value ~c[t] for its first argument, or if argument ~c[:ttagsx]
+      is supplied, then an error occurs.
+    - Regardless of whether or how ~c[set-write-acl2x] has been
+      called, ACL2 ignores an existing ~c[.acl2x] file but issues a
+      warning about it.
   ~ef[]
 
   If you use this two-runs approach with scripts such as makefiles, then you
