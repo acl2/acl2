@@ -397,10 +397,10 @@ ACL2_EGREP_CMD_DIR      = egrep -i '^[^;]*include-book[ 	]*\".*\"[ 	]*:dir[ 	]*:
 ACL2_EGREP_CMD_DIR_LD   = egrep -i '^[^;]*\(ld[ 	]*\".*\"[ 	]*:dir[ 	]*:system'
 
 # Sed commands for transforming above egrep results into a dependency line:
-ACL2_SED_CMD            = sed "s/[^\"]*\"/$$book.cert: /" | sed 's/".*/.cert/'
-ACL2_SED_CMD_LD         = sed "s/[^\"]*\"/$$book.cert: /" | sed 's/".*//'
-ACL2_SED_CMD_DIR        = $(subst book.cert: ,book.cert: $$\(ACL2_SYSTEM_BOOKS)\/,$(ACL2_SED_CMD))
-ACL2_SED_CMD_DIR_LD     = $(subst book.cert: ,book.cert: $$\(ACL2_SYSTEM_BOOKS)\/,$(ACL2_SED_CMD_LD))
+ACL2_SED_CMD            = sed "s/[^\"]*\"/$$book.$$cert_or_acl2x: /" | sed 's/".*/.cert/'
+ACL2_SED_CMD_LD         = sed "s/[^\"]*\"/$$book.$$cert_or_acl2x: /" | sed 's/".*//'
+ACL2_SED_CMD_DIR        = $(subst book.$$cert_or_acl2x: ,book.$$cert_or_acl2x: $$\(ACL2_SYSTEM_BOOKS)\/,$(ACL2_SED_CMD))
+ACL2_SED_CMD_DIR_LD     = $(subst book.$$cert_or_acl2x: ,book.$$cert_or_acl2x: $$\(ACL2_SYSTEM_BOOKS)\/,$(ACL2_SED_CMD_LD))
 
 # To comment out a line:
 ACL2_SED_CMD_COMMENT    = sed "s/^/\# /"
@@ -410,17 +410,24 @@ ACL2_SED_CMD_COMMENT    = sed "s/^/\# /"
 dependencies: 
 	@for book in $(BOOKS) ; \
 	do \
-	echo "" ;  echo "$$book.cert: $$book.lisp" ; \
+	echo "" ; \
+	if [ -f $$book.acl2 ] && [ -n "`egrep -i '^[^;]*\(certify-book[^;]*:acl2x t' $$book.acl2`" ]; then \
+	  echo $$book.cert: $$book.acl2x ; \
+	  cert_or_acl2x=acl2x ; \
+	else \
+	  cert_or_acl2x=cert ; \
+	fi ; \
+	echo "$$book.$$cert_or_acl2x: $$book.lisp" ; \
 	$(ACL2_EGREP_CMD) | $(ACL2_SED_CMD) ;\
 	$(ACL2_EGREP_CMD_DIR) $$book.lisp | $(ACL2_SED_CMD_DIR) | $(ACL2_SED_CMD_COMMENT) ;\
 	if [ -f $$book.acl2 ]; then \
-	echo "$$book.cert: $$book.acl2" ; \
+	echo "$$book.$$cert_or_acl2x: $$book.acl2" ; \
 	$(ACL2_EGREP_CMD_ACL2) | $(ACL2_SED_CMD) ;\
 	$(ACL2_EGREP_CMD_ACL2_LD) | $(ACL2_SED_CMD_LD) ;\
 	$(ACL2_EGREP_CMD_DIR) $$book.acl2 | $(ACL2_SED_CMD_DIR) | $(ACL2_SED_CMD_COMMENT) ;\
 	$(ACL2_EGREP_CMD_DIR_LD) $$book.acl2 | $(ACL2_SED_CMD_DIR_LD) | $(ACL2_SED_CMD_COMMENT) ;\
 	elif [ -f cert.acl2 ]; then \
-	echo "$$book.cert: cert.acl2" ; \
+	echo "$$book.$$cert_or_acl2x: cert.acl2" ; \
 	$(ACL2_EGREP_CMD_CERT) | $(ACL2_SED_CMD) ;\
 	$(ACL2_EGREP_CMD_CERT_LD) | $(ACL2_SED_CMD_LD) ;\
 	$(ACL2_EGREP_CMD_DIR) cert.acl2 | $(ACL2_SED_CMD_DIR) | $(ACL2_SED_CMD_COMMENT) ;\
