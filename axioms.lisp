@@ -16229,7 +16229,7 @@ J
   (table tests 25)                      ; get contents of tests[25]
   (table tests)                         ; return table tests as an alist
   (table tests nil nil :clear)          ; clear table tests
-  (table tests nil '((foo . 7)) :clear) ; set table tests to (foo 7)
+  (table tests nil '((foo . 7)) :clear) ; set table tests to ((foo . 7))
   (table tests nil nil :guard)          ; fetch the table guard
   (table tests nil nil :guard term)     ; set the table guard~/
 
