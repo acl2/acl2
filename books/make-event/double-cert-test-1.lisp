@@ -7,3 +7,5 @@
 
 (defthm just-a-test
   (equal (foo) nil))
+
+(assert-event (equal (h1 3) 3))
