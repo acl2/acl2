@@ -1,0 +1,16 @@
+In order to include all books of the library, simply include the book
+"lib/top".  (All of the "support" books may similarly be loaded via
+the book "support/top".)  Alternatively, a subset of these books may
+be loaded, according to the user's intentions.  In particular,
+
+(1) "rtlarr" is needed only if arrays are involved in the application.
+
+(2) "basic", "float", "reps", "round", "fadd", "brat" and "package-defs"
+    are intended to be used specifically for floating-point applications.
+
+(3) "util" has no effect on the proof process and may be omitted.
+
+(4) "arith" contains a set of arithmetic rules that past users have found
+     useful; it may be omitted or replaced by another ACL2 arithmetic package.
+    (We recommend the package in the "arithmetic/" directory, since it enforces normal 
+    forms which the rules in "lib/" may depend on.

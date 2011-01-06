@@ -1,0 +1,23 @@
+(value :q)
+(lp)
+
+(defconst *abstract-proofs-exports* 
+  '(last-elt r-step direct operator elt1 elt2 r-step-p make-r-step 
+	     first-of-proof last-of-proof steps-up steps-down steps-valley 
+	     proof-before-valley proof-after-valley inverse-r-step inverse-proof 
+	     local-peak-p proof-measure proof-before-peak proof-after-peak 
+	     local-peak peak-element))
+
+(defconst *cnf-package-exports* 
+  (union-eq *acl2-exports* 
+	    (union-eq 
+	     *common-lisp-symbols-from-main-lisp-package* 
+	     *abstract-proofs-exports*)))
+
+(defpkg "CNF" *cnf-package-exports*)
+
+(defpkg "NWM" (cons 'multiset-diff *cnf-package-exports*))
+
+(defpkg "LCNF" (cons 'multiset-diff *cnf-package-exports*))
+
+(certify-book "local-confluence" 5)

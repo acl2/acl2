@@ -1,0 +1,4 @@
+; So that fix-cert.lisp can be loaded in a fresh session with LD,
+; DO NOT PUT ANYTHING IN THE PORTCULLIS!
+
+(certify-book "fix-cert" 0)

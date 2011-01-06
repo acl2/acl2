@@ -1,0 +1,73 @@
+;;;***************************************************************
+;;;Proof of Correctness of a Floating Point Multiplier
+
+;;;David M. Russinoff
+;;;Advanced Micro Devices, Inc.
+;;;February, 1999
+;;;***************************************************************
+
+This directory contains the following files:
+
+  (1) fmul.rtl:  
+
+        An RTL definition of a floating point multiplier (a toy
+        version of the AMD-K7 FP multiplier)
+
+  (2) fmul.trans:  
+
+        The translation of the multiplier into ACL2 objects
+
+  (3) rtl.lisp:  
+
+        Definitions of the ACL2 functions that are used in the
+        formalization of the RTL semantics
+
+  (4) compiler.lisp: 
+
+        The definition of the compiler, which checks that an ACL2
+        translation of an RTL model represents a valid pipeline circuit,
+        and then generates an executable ACL2 version of the model, 
+        along with an equivalent set of functions intended to facilitate
+        proofs of the model's properties
+
+  (5) spec.lisp:
+
+        The definitions required for the statement of correctness of
+        the multiplier, along with the constrained inputs that are
+        used in the proof        
+
+  (6) proof.lisp:
+
+        The proof of the correctness theorem
+
+  (7) cert.lsp:
+
+        The file to be loaded in order to compile the multiplier and
+        certify the resulting books "fmul" and "fmul-star", along with the
+        books "rtl", "compiler", "spec", and "proof", if not using make
+        (see below).
+
+  (8) Makefile:
+
+        Supports certification of these books by executing "make" in this
+        directory, when make is supported (e.g., on a Unix system).  Otherwise,
+        start up ACL2 and execute: (ld "cert.lsp").
+ 
+
+Each of the exercises in the associated case study corresponds to one
+or more lemmas that appear in the books of the floating-point library
+in the directory
+
+    ../../rtl/lib3/
+
+as follows:
+
+  Exercise 13.1:  Lemma FLOOR-M+1 of book "basic";
+
+  Exercise 13.2:  Lemma EXACTP-X2 of book "float";
+
+  Exercise 13.3:  Lemma ADD3 of book "fadd";
+
+  Exercise 13.4:  Lemmas STICKY-RND, PLUS-TRUNC, MINUS-TRUNC-4, MINUS-TRUNC-5,
+                  and STICKY-LEMMA of book "round".
+

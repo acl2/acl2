@@ -1,0 +1,118 @@
+<html xmlns:v="urn:schemas-microsoft-com:vml"
+xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:p="urn:schemas-microsoft-com:office:powerpoint"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<meta name=ProgId content=PowerPoint.Slide>
+<meta name=Generator content="Microsoft PowerPoint 9">
+<link id=Main-File rel=Main-File href="../slides2.htm">
+<link rel=Preview href=preview.wmf>
+<!--[if !mso]>
+<style>
+v\:* {behavior:url(#default#VML);}
+o\:* {behavior:url(#default#VML);}
+p\:* {behavior:url(#default#VML);}
+.shape {behavior:url(#default#VML);}
+v\:textbox {display:none;}
+</style>
+<![endif]-->
+<title>Developing a Framework for Simulation, Verification and Testing of SDL
+Specifications</title>
+<meta name=Description
+content="3-Nov-00: Specification and Description Language SDL">
+<link rel=Stylesheet href="master03_stylesheet.css">
+<![if !ppt]>
+<style media=print>
+<!--.sld
+	{left:0px !important;
+	width:6.0in !important;
+	height:4.5in !important;
+	font-size:107% !important;}
+-->
+</style>
+<script src=script.js></script><script><!--
+gId="slide0004.htm"
+if( !IsNts() ) Redirect( "PPTSld", gId );
+//-->
+</script><!--[if vml]><script>g_vml = 1;
+</script><![endif]--><script for=window event=onload><!--
+if( !IsSldOrNts() ) return;
+if( MakeNotesVis() ) return;
+LoadSld( gId );
+MakeSldVis(0);
+//-->
+</script><![endif]><o:shapelayout v:ext="edit">
+ <o:idmap v:ext="edit" data="5"/>
+</o:shapelayout>
+</head>
+
+<body lang=EN-US style='margin:0px;background-color:white'
+onclick="DocumentOnClick()" onresize="_RSW()" onkeypress="_KPH()">
+
+<div id=SlideObj class=sld style='position:absolute;top:0px;left:0px;
+width:534px;height:400px;font-size:16px;background-color:white;clip:rect(0%, 101%, 101%, 0%);
+visibility:hidden'><p:slide coordsize="720,540"
+ colors="#FFFFFF,#000000,#808080,#000000,#00CC99,#3333CC,#CCCCFF,#B2B2B2"
+ masterhref="master03.xml">
+ <p:shaperange href="master03.xml#_x0000_s1025"/><![if !ppt]><p:shaperange
+  href="master03.xml#_x0000_s1028"/><p:shaperange
+  href="master03.xml#_x0000_s1029"/><![endif]><p:shaperange
+  href="master03.xml#_x0000_m1026"/><v:shape id="_x0000_s5122" type="#_x0000_m1026"
+  style='position:absolute;left:30pt;top:20pt;width:660pt;height:112.75pt'>
+  <v:fill o:detectmouseclick="f"/>
+  <v:stroke o:forcedash="f"/>
+  <o:lock v:ext="edit" text="f"/>
+  <v:textbox style='mso-fit-shape-to-text:t'/>
+  <p:placeholder type="title"/></v:shape><p:shaperange
+  href="master03.xml#_x0000_m1027"/><v:shape id="_x0000_s5123" type="#_x0000_m1027"
+  style='position:absolute;left:36pt;top:153pt;width:645pt;height:367pt;
+  mso-wrap-style:square'>
+  <v:fill o:detectmouseclick="f"/>
+  <v:stroke o:forcedash="f"/>
+  <o:lock v:ext="edit" text="f"/>
+  <v:textbox style='mso-fit-shape-to-text:t'/>
+  <p:placeholder type="body" position="1"/></v:shape>
+ <div v:shape="_x0000_s5122" class=T><span style='position:absolute;top:4.25%;
+ left:3.37%;width:93.25%'>Specification and Description </span><span
+ style='position:absolute;top:14.0%;left:5.24%;width:89.88%'>Language SDL</span></div>
+ <div v:shape="_x0000_s5123" class=B>
+ <div style='mso-line-spacing:"90 20 0"'><span style='position:absolute;
+ top:28.5%;left:9.73%;width:95.69%'><span style='font-size:88%'><span
+ style='mso-special-format:bullet;position:absolute;left:-3.91%'>•</span></span><span
+ style='font-size:88%'>A formal description technique standardized in </span></span><span
+ style='position:absolute;top:34.0%;left:9.73%;width:99.25%'><span
+ style='font-size:88%'>1988 by International Telecommunication Union&#13;</span></span></div>
+ <div style='mso-line-spacing:"90 20 0"'><span style='position:absolute;
+ top:41.0%;left:9.73%;width:87.82%'><span style='font-size:88%'><span
+ style='mso-special-format:bullet;position:absolute;left:-4.26%'>•</span></span><span
+ style='font-size:88%'>Intended for description of communication </span></span><span
+ style='position:absolute;top:46.5%;left:9.73%;width:84.08%'><span
+ style='font-size:88%'>protocols&#13;</span></span></div>
+ <div style='mso-line-spacing:"90 20 0"'><span style='position:absolute;
+ top:53.5%;left:9.73%;width:91.38%'><span style='font-size:88%'><span
+ style='mso-special-format:bullet;position:absolute;left:-4.09%'>•</span></span><span
+ style='font-size:88%'>Used on a variety of distributed, concurrent, </span></span><span
+ style='position:absolute;top:59.0%;left:9.73%;width:84.08%'><span
+ style='font-size:88%'>communicating, asynchronous systems&#13;</span></span></div>
+ <div style='mso-line-spacing:"90 20 0"'><span style='position:absolute;
+ top:65.75%;left:9.73%;width:99.43%'><span style='font-size:88%'><span
+ style='mso-special-format:bullet;position:absolute;left:-3.76%'>•</span></span><span
+ style='font-size:88%'>Many support tools exists, but no framework for </span></span><span
+ style='position:absolute;top:71.5%;left:9.73%;width:84.08%'><span
+ style='font-size:88%'>theorem-proving based verification&#13;</span></span></div>
+ <div style='mso-line-spacing:"90 20 0"'><span style='position:absolute;
+ top:78.25%;left:9.73%;width:97.37%'><span style='font-size:88%'><span
+ style='mso-special-format:bullet;position:absolute;left:-3.84%'>•</span></span><span
+ style='font-size:88%'>Main building blocks are processes represented </span></span><span
+ style='position:absolute;top:84.0%;left:9.73%;width:97.56%'><span
+ style='font-size:88%'>by extended finite-state machines and delaying </span></span><span
+ style='position:absolute;top:89.5%;left:9.73%;width:84.08%'><span
+ style='font-size:88%'>and instantaneous communication links</span></span></div>
+ </div>
+</p:slide></div>
+
+</body>
+
+</html>

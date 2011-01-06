@@ -1,0 +1,5 @@
+(value :q)
+(lp)
+(ld "defpkg.lsp")
+:ubt! 5
+(certify-book "bv" 4)

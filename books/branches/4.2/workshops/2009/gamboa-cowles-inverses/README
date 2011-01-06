@@ -1,0 +1,58 @@
+The files shown below, distributed with ACL2(r) in directory
+books/nonstd/nsa/, constitute the supporting materials for the ACL2
+2009 Workshop paper "Inverse Functions in ACL2(r)" by Ruben Gamboa and
+John R. Cowles.
+
+Because these files are distributed with ACL2(r), and do not work with
+ACL2 (without the "(r)"), they are not duplicated here.  Below is the
+data from a Readme.lsp that could be included with this contribution.
+
+((:FILES ; non-empty list of filenames, generated from Unix command "ls -1R"
+  "Readme.lisp"
+  "complex-polar.lisp"
+  "continuity.lisp"
+  "exp-sum.lisp"
+  "intervals.lisp"
+  "inverse-monotone.lisp"
+  "inverse-square.lisp"
+  "inverse-trig.lisp"
+  "inverses.lisp"
+  "ln.lisp"
+  "nsa.lisp"
+  "raise.lisp"
+  "trig.lisp")
+(:TITLE    "Inverse Functions in ACL2(r)")
+(:AUTHOR/S "Ruben Gamboa"
+           "John R. Cowles") 
+(:KEYWORDS "inverse functions"
+	   "continuous functions"
+	   "intermediate value theorem"
+	   "defchoose")
+(:ABSTRACT 
+ "ACL2(r) supports the definition of real-valued functions.  In this paper, 
+  we introduce a theory of inverse functions into ACL2(r).  The theory is 
+  developed in stages, from an abstract description of inverse functions, 
+  to a still abstract but more tractable treatment of the inverse of 
+  continuous functions.  A macro is introduced to simplify the introduction 
+  of concrete inverse functions.  We illustrate the approach by defining some 
+  inverse functions in ACL2, including the square root, natural logarithm, 
+  inverse sine, and inverse cosine functions.") 
+(:PERMISSION ; author/s permission for distribution and copying:
+ "ACL2 book Inverse Functions in ACL2(r)
+  Copyright (C) 2008 Ruben Gamboa and John R. Cowles, University of Wyoming
+
+  This book is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License
+  as published by the Free Software Foundation; either version 2
+  of the License, or (at your option) any later version.
+
+  This book is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this book; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+  02110-1301, USA.")
+)
