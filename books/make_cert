@@ -1,4 +1,4 @@
-
+# -*- mode: Makefile; -*-
 
 ######################################################################
 ## NOTE.  This file is not part of the standard ACL2 books build
@@ -19,6 +19,7 @@
 SHELL := $(shell which bash)
 
 COMPILE_FLG ?= t :ttags :all :skip-proofs-okp t
+COMPILE_FLG_TWOPASS ?= t :ttagsx :all :ttags :all :skip-proofs-okp t :acl2x t
 INHIBIT ?= (set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote expansion)))
 ACL2_BOOKS_DEBUG ?=
 
@@ -30,6 +31,13 @@ ACL2 ?= acl2
 
 define make_cert
 	@TARGETEXT=$(1) ;\
+	PASSES=$(2) ;\
+	if [ $$PASSES == 2 ] ;\
+	then \
+	   FLAGS="$(COMPILE_FLG_TWOPASS)" ;\
+	else \
+	   FLAGS="$(COMPILE_FLG)" ;\
+	fi ;\
 	echo "Making $*.$$TARGETEXT on `date`" ;\
 	DIR=`dirname $*` ;\
 	FILE=`basename $*` ;\
@@ -62,10 +70,12 @@ define make_cert
 	then \
 	  cat cert.acl2 >> $$WORKXXXFILE ;\
 	  echo "" >> $$WORKXXXFILE ;\
-	  echo "(time$$ (certify-book \"$$FILE\" ? $(COMPILE_FLG)))" >> $$WORKXXXFILE ;\
+	  echo "(time$$ (certify-book \"$$FILE\" ? $$FLAGS))" \
+	        >> $$WORKXXXFILE ;\
 	else \
 	  echo "" >> $$WORKXXXFILE ;\
-	  echo "(time$$ (certify-book \"$$FILE\" ? $(COMPILE_FLG)))" >> $$WORKXXXFILE ;\
+	  echo "(time$$ (certify-book \"$$FILE\" ? $$FLAGS))" \
+	        >> $$WORKXXXFILE ;\
 	fi ;\
 	echo "" >> $$WORKXXXFILE ;\
 	if [ $$TARGETEXT != acl2x ] ;\
@@ -120,8 +130,16 @@ define make_cert
         fi
 endef
 
+# Precedence: The rule for making %.cert from %.acl2x comes before the
+# rule for making %.cert directly from %.lisp because we want it to be
+# used when the acl2x file is available.  The double-colon means that
+# the rule will only be considered if the %.acl2x prerequisite exists
+# or is going to be made anyway.
+%.cert :: %.acl2x
+	$(call make_cert,cert,2)
+
 %.cert : %.lisp
-	$(call make_cert,cert)
+	$(call make_cert,cert,1)
 
 %.acl2x : %.lisp
-	$(call make_cert,acl2x)
+	$(call make_cert,acl2x,2)
