@@ -16229,7 +16229,7 @@ J
   (table tests 25)                      ; get contents of tests[25]
   (table tests)                         ; return table tests as an alist
   (table tests nil nil :clear)          ; clear table tests
-  (table tests nil '((foo . 7)) :clear) ; set table tests to (foo 7)
+  (table tests nil '((foo . 7)) :clear) ; set table tests to ((foo . 7))
   (table tests nil nil :guard)          ; fetch the table guard
   (table tests nil nil :guard term)     ; set the table guard~/
 
@@ -18719,9 +18719,10 @@ J
   (3) Recall that for an attachment pair ~c[<f,g>], a proof obligation is
   (speaking informally) that ~c[g] satisfies the constraint on ~c[f].  Yet more
   informally speaking, ~c[g] is ``more defined'' than ~c[f]; we can think of
-  ~c[g] as ``refining'' ~c[f].  We can consider attachment as refinement with a
-  moreformal perspective: the evaluation theory extends the theory of the ACL2
-  session, specifically by the addition of all attachment equations.  For the
+  ~c[g] as ``refining'' ~c[f].  With these informal notions as motivation, we
+  can view defattach as providing refinement though the following formal
+  observation: the evaluation theory extends the theory of the ACL2 session,
+  specifically by the addition of all attachment equations.  For the
   logic-inclined, it may be useful to think model-theoretically: The class of
   models of the evaluation theory is non-empty but is a subset of the class of
   models of the current session theory.
@@ -23401,20 +23402,20 @@ J
     alphorder ; [bad atoms]
     extend-world ; EXTEND-WORLD1
 
-; The following have arguments of state-state, and hence may not be of concern
-; since presumably users cannot define these redundantly anyhow.  But we go
-; ahead and include them, just to be safe.
+; The following have arguments of state-state, and hence some may not be of
+; concern since presumably users cannot define these redundantly anyhow.  But
+; we go ahead and include them, just to be safe.
 
     user-stobj-alist read-acl2-oracle update-user-stobj-alist
     decrement-big-clock put-global close-input-channel makunbound-global
-    open-input-channel-p1 boundp-global1 global-table-cars1 extend-t-stack
-    list-all-package-names close-output-channel write-byte$ shrink-t-stack
-    aset-32-bit-integer-stack get-global 32-bit-integer-stack-length1
-    extend-32-bit-integer-stack aset-t-stack aref-t-stack read-char$
-    aref-32-bit-integer-stack open-output-channel-p1 read-object
-    big-clock-negative-p peek-char$ shrink-32-bit-integer-stack read-run-time
-    read-byte$ read-idate t-stack-length1 print-object$
-    get-output-stream-string$-fn
+    open-input-channel open-input-channel-p1 boundp-global1 global-table-cars1
+    extend-t-stack list-all-package-names close-output-channel write-byte$
+    shrink-t-stack aset-32-bit-integer-stack get-global
+    32-bit-integer-stack-length1 extend-32-bit-integer-stack aset-t-stack
+    aref-t-stack read-char$ aref-32-bit-integer-stack open-output-channel
+    open-output-channel-p1 princ$ read-object big-clock-negative-p peek-char$
+    shrink-32-bit-integer-stack read-run-time read-byte$ read-idate
+    t-stack-length1 print-object$ get-output-stream-string$-fn
 
     mv-list return-last
 
@@ -23452,6 +23453,16 @@ J
     print-call-history
     set-debugger-enable-fn ; lisp::*break-enable* and *debugger-hook*
     break$ ; break
+    prin1$ prin1-with-slashes
+
+; Found for hons after fixing note-fns-in-form just before release v4-2.
+
+    FAST-ALIST-LEN HONS-COPY-PERSISTENT HONS-SUMMARY HONS-CLEAR HONS-WASH
+    HONS-SHRINK-ALIST HONS-EQUAL-LITE CLEAR-HASH-TABLES NUMBER-SUBTREES
+    FAST-ALIST-SUMMARY HONS-ACONS! CLEAR-MEMOIZE-TABLES HONS-COPY HONS-ACONS
+    CLEAR-MEMOIZE-TABLE FAST-ALIST-FREE HONS-EQUAL HONS-RESIZE-FN HONS-GET HONS
+    HONS-SHRINK-ALIST!
+
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -25648,20 +25659,27 @@ J
   if its value is ~c[nil] then the channel remains open.  The following example
   illustrates.
   ~bv[]
+  ACL2 !>
   (mv-let
-   (channel state)
-   (open-output-channel :string :object state)
-   (pprogn (print-object$ 17 channel state)
-           (print-object$ '(a b (c d)) channel state)
-           (er-let*
-             ((str1 (get-output-stream-string$
-                     channel state
-                     nil))) ; keep the channel open
-             (pprogn (print-object$ 23 channel state)
-                     (print-object$ '((e f)) channel state)
-                     (er-let* ; close the channel
-                       ((str2 (get-output-stream-string$ channel state)))
-                       (value (cons str1 str2)))))))
+     (channel state)
+     (open-output-channel :string :object state)
+     (pprogn (print-object$ 17 channel state)
+             (print-object$ '(a b (c d)) channel state)
+             (er-let*
+               ((str1 (get-output-stream-string$
+                       channel state
+                       nil))) ; keep the channel open
+               (pprogn (print-object$ 23 channel state)
+                       (print-object$ '((e f)) channel state)
+                       (er-let* ; close the channel
+                         ((str2 (get-output-stream-string$ channel state)))
+                         (value (cons str1 str2)))))))
+   (\"
+  17
+  (A B (C D))\" . \"
+  23
+  ((E F))\")
+  ACL2 !>
   ~ev[]
 
   By default, symbols are printed in upper case when vertical bars are
@@ -27628,6 +27646,10 @@ J
                        (open-output-channels state-state))
              state-state)))
        (t (mv t
+
+; We use cw because er is not yet available during the first pass of
+; the boot-strap.
+
               (cw err-string channel)
               state-state))))))
 )
@@ -37614,6 +37636,29 @@ in :type-prescription rules are specified with :type-prescription (and/or
   keyword value ~c[:skip-proofs-okp t] has not been supplied to
   ~ilc[certify-book].  An analogous situation holds for ~c[:defaxioms-okp].
 
+  Also note that ~ilc[certify-book] needs to be supplied with keyword argument
+  ~c[:acl2x t] in order to read or write ~c[.acl2x] files; the value of
+  ~c[:acl2] is ~c[nil] by default.  The interaction of ~ilc[certify-book] with
+  the corresponding ~c[.acl2x] file is as follows.
+  ~bf[]
+  o If ~c[:acl2x] is ~c[t], then:
+    - If ~c[set-write-acl2x] has been (most recently) called with a
+      value of ~c[t] for its first argument, then ACL2 writes the
+      corresponding ~c[.acl2x] file. 
+    - If ~c[set-write-acl2x] has been (most recently) called with a
+      value of ~c[nil] for its first argument, or not called at all,
+      then ACL2 insists on a corresponding ~c[.acl2x] file that is at
+      least as recent as the corresponding ~c[.lisp] file, causing an
+      error otherwise.
+  o If ~c[:acl2x] is ~c[nil] (the default), then:
+    - If ~c[set-write-acl2x] has been (most recently) called with a
+      value ~c[t] for its first argument, or if argument ~c[:ttagsx]
+      is supplied, then an error occurs.
+    - Regardless of whether or how ~c[set-write-acl2x] has been
+      called, ACL2 ignores an existing ~c[.acl2x] file but issues a
+      warning about it.
+  ~ef[]
+
   If you use this two-runs approach with scripts such as makefiles, then you
   may wish to provide a single ~ilc[certify-book] command to use for both runs.
   For that purpose, ~ilc[certify-book] supports the keyword argument
@@ -37624,24 +37669,17 @@ in :type-prescription rules are specified with :type-prescription (and/or
   specifies the trust tags, if any (else ~c[:ttags] may be omitted), used in
   the second certification.
 
-  If you wish to use built-in ACL2 Makefile support (~pl[book-makefiles]),
-  simply add dependencies like the following to the Makefile in your directory
-  of ~il[books]:
-  ~bv[]
-
-  foo.cert: foo.acl2x
-  # Copied from generated file Makefile-deps, replacing .cert on left sides:
-  foo.acl2x: foo.lisp
-  foo.acl2x: sub-book.cert
-
-  ~ev[]
-  See for example distributed file ~c[books/make-event/Makefile].  We may
-  automated more of this in the future, especially if asked to do so.
+  The built-in ACL2 Makefile support automatically generates suitable
+  dependencies if you create a ~c[.acl2] file with a ~ilc[certify-book] call
+  matching the following pattern, case-independent:
+  ~c[(certify-book<characters_other_than_;>:acl2x t].  ~l[book-makefiles],
+  and for an example ~c[.acl2x] file see distributed file
+  ~c[books/make-event/double-cert-test-1.acl2].
 
   Note that ~ilc[include-book] is not affected by ~c[set-write-acl2x], other
   than through the indirect effect on ~ilc[certify-book].  More precisely: All
   expansions will be stored in the ~il[certificate] file, so ~ilc[include-book]
-  does not depend on the ~c[foo.acl2x] file.~/
+  does not depend on the ~c[.acl2x] file.~/
 
   An example of how to put this all together may be found in distributed book
   ~c[books/make-event/double-cert-test-1.lisp].  There, we see the following

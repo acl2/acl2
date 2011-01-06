@@ -69,11 +69,13 @@
 (defmacro ss-alist ()
   '(pc-value ss-alist))
 
+(defun define-global-name (var)
+  (intern-in-package-of-symbol
+   (string-append (symbol-name var) "-FN")
+   var))
+
 (defmacro define-global (var val)
-  (let ((var-fn
-         (intern-in-package-of-symbol
-          (string-append (symbol-name var) "-FN")
-          var)))
+  (let ((var-fn (define-global-name var)))
     `(progn (defun ,var-fn (state)
               (if (f-boundp-global ',var state)
                   (f-get-global ',var state)

@@ -16745,10 +16745,40 @@
 ; Function elide-locals-rec had an odd case for time$1, which we have replaced
 ; there by time$ along with a comment that this case seems irrelevant anyhow.
 
+; Improved note-fns-in-form to do a more thorough check, for example diving
+; into skip-proofs forms (e.g., open-output-channel had been missing from
+; *primitive-logic-fns-with-raw-code*, but we hadn't caught that).
+
+; Here is the example promised in the item below labeled: "Fixed a bug in which
+; the wrong attachment could be made....".  A more subtle example is described
+; in function install-for-add-trip-hcomp-build.
+;
+; ;;;;; file sub.lisp ;;;;;
+; (in-package "ACL2")
+; (defun sub-fn (x) x)
+; ;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; ;;;;; file foo.lisp (note command for certification world) ;;;;;
+; ; Portcullis command:
+; ; (progn (defstub f (x) t) (defattach f identity))
+
+; (in-package "ACL2")
+; (include-book "sub")
+; (defun g (x)
+;   (declare (xargs :guard t))
+;   (cons x x))
+; (defattach f g)
+; ;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; First certify both books, first submitting the above portcullis command in
+; the case of foo.lisp; then delete the compiled file for sub.lisp; then start
+; ACL2 and evaluate (include-book "foo"); and finally, evaluate the form (f 3).
+; The result was 3 where it should have been (3 . 3).
+
   :Doc
   ":Doc-Section release-notes
 
-  ACL2 Version  4.2 (xxx, 20xx) Notes~/
+  ACL2 Version  4.2 (January, 2011) Notes~/
 
   NOTE!  New users can ignore these release notes, because the
   ~il[documentation] has been updated to reflect all changes that are recorded
@@ -16958,7 +16988,8 @@
 
   Support is now provided for creating and certifying books that do not depend
   on trust tags, in the case that the only use of trust tags is during
-  ~ilc[make-event] expansion.  ~l[set-write-acl2x].
+  ~ilc[make-event] expansion.  ~l[set-write-acl2x].  Thanks to Sol Swords for
+  reporting a couple of bugs in a preliminary implementation.
 
   Function ~c[(file-write-date$ filename state)] has been added, giving the
   write date of the given file.
@@ -17106,6 +17137,50 @@
   Fixed the printing of results from forms within an ~ilc[encapsulate], so that
   they are abbreviated according to the ~ilc[ld-evisc-tuple].
 
+  It is now possible to evaluate ~il[stobj]-related forms after evaluating
+  ~c[:]~ilc[set-guard-checking] ~c[:none] or ~c[:]~ilc[set-guard-checking]
+  ~c[nil], even in cases where such evaluation formerly caused a guard
+  violation due to a bug in ACL2.  Here is an example of an error that no
+  longer occurs.
+  ~bv[]
+  ACL2 !>(defstobj st fld)
+
+  Summary
+  Form:  ( DEFSTOBJ ST ...)
+  Rules: NIL
+  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+   ST
+  ACL2 !>(set-guard-checking :none)
+
+  Turning off guard checking entirely.  To allow execution in raw Lisp
+  for functions with guards other than T, while continuing to mask guard
+  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+
+  ACL2 >(fld st)
+
+
+  ACL2 Error in TOP-LEVEL:  The guard for the function call (FLD ST),
+  which is (STP ST), is violated by the arguments in the call (FLD ST).
+  [... etc. ...]
+  ~ev[]
+  You can understand how things now work by imagining that when a function
+  introduced by ~ilc[defstobj] is called, ~ilc[guard]-checking values of
+  ~c[:none] or ~c[nil] are temporarily converted to ~c[t].  Thanks to Pete
+  Manolios, Ian Johnson, and Harsh Raju Chamarthi for requesting this
+  improvement.
+
+  Fixed a bug in which the wrong attachment could be made when the same
+  function has an attachment in a book and another in the certification world
+  of that book (possibly even built into ACL2), if the load of a compiled file
+  is aborted because a sub-book's compiled file is missing.  The bug has been
+  present since the time that ~ilc[defattach] was added (Version_4.0).  An
+  example may be found in a comment in the ~ilc[deflabel] for ~c[note-4-2]
+  (ACL2 source file ~c[ld.lisp]).
+
+  The ~c[:]~ilc[doc] and related utilities now cause a clean error when
+  provided other than a symbol.  Thanks to Jared Davis for pointing out the raw
+  Lisp error that had occurred in such cases.
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   There is new ~c[Makefile] support for certifying just some of the distributed
@@ -17136,7 +17211,7 @@
   :doc
   ":Doc-Section release-notes
 
-  ACL2 Version  4.2(r) (xxx, 20xx) Notes~/
+  ACL2 Version  4.2(r) (January, 2011) Notes~/
 
   ~/
 
@@ -23344,10 +23419,13 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
 ; We now develop code for without-evisc.
 
+(defun defun-for-state-name (name)
+  (intern-in-package-of-symbol
+   (concatenate 'string (symbol-name name) "-STATE")
+   name))
+
 (defmacro defun-for-state (name args)
-  `(defun ,(intern-in-package-of-symbol
-            (concatenate 'string (symbol-name name) "-STATE")
-            name)
+  `(defun ,(defun-for-state-name name)
      ,args
      (mv-let (erp val state)
              (,name ,@args)
