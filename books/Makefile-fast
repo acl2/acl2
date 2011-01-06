@@ -524,6 +524,7 @@ CERT_PL_CERTS := \
      ihs/logops-lemmas.cert \
      ihs/math-lemmas.cert \
      ihs/quotient-remainder-lemmas.cert \
+     make-event/acl2x-help.cert \
      make-event/assert-check-include-1.cert \
      make-event/assert-check-include.cert \
      make-event/assert-check.cert \
@@ -566,7 +567,6 @@ CERT_PL_CERTS := \
      make-event/proof-by-arith.cert \
      make-event/read-from-file.cert \
      make-event/require-book.cert \
-     make-event/stobj-test.cert \
      make-event/test-case-check.cert \
      make-event/test-case.cert \
      meta/meta-plus-equal.cert \
@@ -579,6 +579,7 @@ CERT_PL_CERTS := \
      misc/bash.cert \
      misc/beta-reduce.cert \
      misc/book-thms.cert \
+     misc/callers-and-ancestors.cert \
      misc/check-acl2-exports.cert \
      misc/computed-hint-rewrite.cert \
      misc/computed-hint.cert \
@@ -587,6 +588,7 @@ CERT_PL_CERTS := \
      misc/defmac.cert \
      misc/defopener.cert \
      misc/defp.cert \
+     misc/defproxy-test.cert \
      misc/defpun.cert \
      misc/dft-ex.cert \
      misc/dft.cert \
@@ -2313,12 +2315,18 @@ CERT_PL_CERTS := \
      workshops/2009/verbeek-schmaltz/verbeek/instantiations/scheduling/circuit-switching-global/intersect.cert \
      workshops/2009/verbeek-schmaltz/verbeek/instantiations/simulation/simple/simple.cert \
      workshops/2009/verbeek-schmaltz/verbeek/instantiations/synchronization/circuit-global/circuit.cert \
+     xdoc/base.cert \
      xdoc/defxdoc-raw.cert \
-     xdoc/defxdoc.cert \
+     xdoc/display.cert \
+     xdoc/mkdir-raw.cert \
+     xdoc/mkdir.cert \
      xdoc/names.cert \
+     xdoc/parse-xml.cert \
      xdoc/portcullis.cert \
+     xdoc/preprocess.cert \
      xdoc/save.cert \
-     xdoc/top.cert
+     xdoc/top.cert \
+     xdoc/topics.cert
 
 all-cert-pl-certs: $(CERT_PL_CERTS)
 
@@ -2795,12 +2803,11 @@ CERT_PL_SOURCES := \
      concurrent-programs/bakery/stutter2.lisp  \
      concurrent-programs/bakery/variables.lisp  \
      concurrent-programs/german-protocol/german.lisp  \
-     cowles/acl2-agp.acl2  \
      cowles/acl2-agp.lisp  \
-     cowles/acl2-asg.acl2  \
      cowles/acl2-asg.lisp  \
-     cowles/acl2-crg.acl2  \
      cowles/acl2-crg.lisp  \
+     cowles/cert.acl2  \
+     cowles/packages.lsp  \
      data-structures/alist-defthms.lisp  \
      data-structures/alist-defuns.lisp  \
      data-structures/alist-theory.lisp  \
@@ -2953,6 +2960,7 @@ CERT_PL_SOURCES := \
      ihs/logops-lemmas.lisp  \
      ihs/math-lemmas.lisp  \
      ihs/quotient-remainder-lemmas.lisp  \
+     make-event/acl2x-help.lisp  \
      make-event/assert-check-include-1.acl2  \
      make-event/assert-check-include-1.lisp  \
      make-event/assert-check-include.lisp  \
@@ -3003,7 +3011,6 @@ CERT_PL_SOURCES := \
      make-event/proof-by-arith.lisp  \
      make-event/read-from-file.lisp  \
      make-event/require-book.lisp  \
-     make-event/stobj-test.lisp  \
      make-event/test-case-check.lisp  \
      make-event/test-case.lisp  \
      meta/meta-plus-equal.lisp  \
@@ -3016,6 +3023,7 @@ CERT_PL_SOURCES := \
      misc/bash.lisp  \
      misc/beta-reduce.lisp  \
      misc/book-thms.lisp  \
+     misc/callers-and-ancestors.lisp  \
      misc/check-acl2-exports.lisp  \
      misc/computed-hint-rewrite.lisp  \
      misc/computed-hint.lisp  \
@@ -3025,6 +3033,8 @@ CERT_PL_SOURCES := \
      misc/defmac.lisp  \
      misc/defopener.lisp  \
      misc/defp.lisp  \
+     misc/defproxy-test.acl2  \
+     misc/defproxy-test.lisp  \
      misc/defpun.lisp  \
      misc/dft-ex.acl2  \
      misc/dft-ex.lisp  \
@@ -4967,15 +4977,23 @@ CERT_PL_SOURCES := \
      workshops/2009/verbeek-schmaltz/verbeek/instantiations/scheduling/circuit-switching-global/intersect.lisp  \
      workshops/2009/verbeek-schmaltz/verbeek/instantiations/simulation/simple/simple.lisp  \
      workshops/2009/verbeek-schmaltz/verbeek/instantiations/synchronization/circuit-global/circuit.lisp  \
+     xdoc/base.lisp  \
      xdoc/cert.acl2  \
+     xdoc/defxdoc-raw.acl2  \
      xdoc/defxdoc-raw.lisp  \
-     xdoc/defxdoc.lisp  \
+     xdoc/display.lisp  \
+     xdoc/mkdir-raw.acl2  \
+     xdoc/mkdir-raw.lisp  \
+     xdoc/mkdir.lisp  \
      xdoc/names.lisp  \
      xdoc/package.lsp  \
+     xdoc/parse-xml.lisp  \
      xdoc/portcullis.acl2  \
      xdoc/portcullis.lisp  \
+     xdoc/preprocess.lisp  \
      xdoc/save.lisp  \
-     xdoc/top.lisp 
+     xdoc/top.lisp  \
+     xdoc/topics.lisp 
 
 arithmetic-2/floor-mod/floor-mod-helper.cert : \
      arithmetic-2/floor-mod/floor-mod-helper.lisp \
@@ -10826,16 +10844,22 @@ concurrent-programs/german-protocol/german.cert : \
 
 cowles/acl2-agp.cert : \
      cowles/acl2-agp.lisp \
-     cowles/acl2-agp.acl2 \
+     cowles/cert.acl2 \
+     cowles/packages.lsp \
+     cowles/packages.lsp \
      cowles/acl2-asg.cert
 
 cowles/acl2-asg.cert : \
      cowles/acl2-asg.lisp \
-     cowles/acl2-asg.acl2
+     cowles/cert.acl2 \
+     cowles/packages.lsp \
+     cowles/packages.lsp
 
 cowles/acl2-crg.cert : \
      cowles/acl2-crg.lisp \
-     cowles/acl2-crg.acl2 \
+     cowles/cert.acl2 \
+     cowles/packages.lsp \
+     cowles/packages.lsp \
      cowles/acl2-agp.cert
 
 data-structures/alist-defthms.cert : \
@@ -11527,6 +11551,10 @@ ihs/quotient-remainder-lemmas.cert : \
      ihs/ihs-theories.cert \
      ihs/math-lemmas.cert
 
+make-event/acl2x-help.cert : \
+     make-event/acl2x-help.lisp \
+     misc/hons-help.cert
+
 make-event/assert-check-include-1.cert : \
      make-event/assert-check-include-1.lisp \
      make-event/assert-check-include-1.acl2 \
@@ -11698,9 +11726,6 @@ make-event/read-from-file.cert : \
 make-event/require-book.cert : \
      make-event/require-book.lisp
 
-make-event/stobj-test.cert : \
-     make-event/stobj-test.lisp
-
 make-event/test-case-check.cert : \
      make-event/test-case-check.lisp \
      make-event/assert-check.cert
@@ -11751,6 +11776,9 @@ misc/beta-reduce.cert : \
 misc/book-thms.cert : \
      misc/book-thms.lisp
 
+misc/callers-and-ancestors.cert : \
+     misc/callers-and-ancestors.lisp
+
 misc/check-acl2-exports.cert : \
      misc/check-acl2-exports.lisp
 
@@ -11777,6 +11805,10 @@ misc/defopener.cert : \
 misc/defp.cert : \
      misc/defp.lisp \
      misc/defpun.cert
+
+misc/defproxy-test.cert : \
+     misc/defproxy-test.lisp \
+     misc/defproxy-test.acl2
 
 misc/defpun.cert : \
      misc/defpun.lisp
@@ -22267,14 +22299,33 @@ workshops/2009/verbeek-schmaltz/verbeek/instantiations/synchronization/circuit-g
      workshops/2009/verbeek-schmaltz/verbeek/generic-modules/GeNoC-synchronization.cert \
      workshops/2009/verbeek-schmaltz/verbeek/instantiations/ntkstate/simple/simple.cert
 
+xdoc/base.cert : \
+     xdoc/base.lisp \
+     xdoc/cert.acl2 \
+     xdoc/portcullis.cert
+
 xdoc/defxdoc-raw.cert : \
      xdoc/defxdoc-raw.lisp \
+     xdoc/defxdoc-raw.acl2 \
+     xdoc/portcullis.cert \
+     xdoc/base.cert
+
+xdoc/display.cert : \
+     xdoc/display.lisp \
      xdoc/cert.acl2 \
      xdoc/portcullis.cert \
-     xdoc/defxdoc.cert
+     xdoc/save.cert \
+     xdoc/parse-xml.cert
 
-xdoc/defxdoc.cert : \
-     xdoc/defxdoc.lisp \
+xdoc/mkdir-raw.cert : \
+     xdoc/mkdir-raw.lisp \
+     xdoc/mkdir-raw.acl2 \
+     xdoc/portcullis.cert \
+     xdoc/mkdir.cert \
+     tools/bstar.cert
+
+xdoc/mkdir.cert : \
+     xdoc/mkdir.lisp \
      xdoc/cert.acl2 \
      xdoc/portcullis.cert
 
@@ -22282,6 +22333,12 @@ xdoc/names.cert : \
      xdoc/names.lisp \
      xdoc/cert.acl2 \
      xdoc/portcullis.cert
+
+xdoc/parse-xml.cert : \
+     xdoc/parse-xml.lisp \
+     xdoc/cert.acl2 \
+     xdoc/portcullis.cert \
+     xdoc/preprocess.cert
 
 xdoc/portcullis.cert : \
      xdoc/portcullis.lisp \
@@ -22293,21 +22350,39 @@ xdoc/portcullis.cert : \
      finite-set-theory/osets/sets.defpkg \
      finite-set-theory/osets/sets.defpkg
 
+xdoc/preprocess.cert : \
+     xdoc/preprocess.lisp \
+     xdoc/cert.acl2 \
+     xdoc/portcullis.cert \
+     xdoc/names.cert \
+     str/top.cert \
+     unicode/read-file-characters.cert
+
 xdoc/save.cert : \
      xdoc/save.lisp \
      xdoc/cert.acl2 \
      xdoc/portcullis.cert \
-     xdoc/defxdoc.cert \
-     xdoc/defxdoc-raw.cert \
-     xdoc/names.cert \
-     str/top.cert \
-     unicode/read-file-characters.cert \
+     xdoc/mkdir.cert \
+     xdoc/base.cert \
+     xdoc/preprocess.cert \
+     xdoc/parse-xml.cert \
+     tools/progndollar.cert \
      finite-set-theory/osets/sets.cert
 
 xdoc/top.cert : \
      xdoc/top.lisp \
      xdoc/cert.acl2 \
      xdoc/portcullis.cert \
-     xdoc/defxdoc.cert \
-     xdoc/save.cert
+     xdoc/base.cert \
+     xdoc/save.cert \
+     xdoc/display.cert \
+     xdoc/topics.cert \
+     xdoc/defxdoc-raw.cert \
+     xdoc/mkdir-raw.cert
+
+xdoc/topics.cert : \
+     xdoc/topics.lisp \
+     xdoc/cert.acl2 \
+     xdoc/portcullis.cert \
+     xdoc/base.cert
 
