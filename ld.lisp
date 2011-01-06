@@ -16778,7 +16778,7 @@
   :Doc
   ":Doc-Section release-notes
 
-  ACL2 Version  4.2 (xxx, 20xx) Notes~/
+  ACL2 Version  4.2 (January, 2011) Notes~/
 
   NOTE!  New users can ignore these release notes, because the
   ~il[documentation] has been updated to reflect all changes that are recorded
@@ -17211,7 +17211,7 @@
   :doc
   ":Doc-Section release-notes
 
-  ACL2 Version  4.2(r) (xxx, 20xx) Notes~/
+  ACL2 Version  4.2(r) (January, 2011) Notes~/
 
   ~/
 

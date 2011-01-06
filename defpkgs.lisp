@@ -689,7 +689,13 @@ T     P,A  nil
         WRITTEN-FILE-LISTP-FORWARD-TO-TRUE-LIST-LISTP-AND-ALISTP
         WRITTEN-FILES WRITTEN-FILES-P
         WRITTEN-FILES-P-FORWARD-TO-WRITTEN-FILE-LISTP
-        XARGS XOR XXXJOIN ZERO ZEROP ZIP ZP ZPF)))
+        XARGS XOR XXXJOIN ZERO ZEROP ZIP ZP ZPF
+
+; For ACL2(r):
+
+        DEFTHM-STD DEFUN-STD DEFUNS-STD
+        I-CLOSE I-LARGE I-LIMITED I-SMALL
+        REAL-LISTP STANDARD-PART STANDARDP)))
 
   "This is the list of ACL2 symbols that the ordinary user is extremely
 likely to want to include in the import list of any package created
