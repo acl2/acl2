@@ -50,3 +50,29 @@
                             *common-lisp-symbols-from-main-lisp-package*))
                         '(union delete find map)))
 
+#!SETS
+(defconst *sets-exports*
+  ;; This just contains the user-level set functions, and a couple
+  ;; of theroems that frequently need to be enabled/disabled.
+	  '(<<
+            setp
+            empty
+            sfix
+            head
+            tail
+            insert
+            in
+            subset
+            delete
+            union
+            intersect
+            ;; intersectp -- we leave this out because of the
+            ;; existing ACL2 function called intersectp.
+            difference
+            cardinality
+            mergesort
+	    ;; A couple of theorems that frequently need to be
+	    ;; enabled/disabled.
+	    double-containment
+	    pick-a-point-subset-strategy
+	    ))

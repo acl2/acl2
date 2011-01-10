@@ -1,7 +1,7 @@
 /*
 
 ; XDOC Documentation System for ACL2
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2011 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -25,16 +25,16 @@
 
 */
 
-function toggleVisible(d) 
+function toggleVisible(d)
 {
     var doc = parent.topics.document;
 
-    if (doc.getElementById(d).style.display == "none") 
+    if (doc.getElementById(d).style.display == "none")
     {
 	doc.getElementById(d).style.display = "block";
         doc.getElementById("img-" + d).src = "minus.png";
     }
-    else 
+    else
     {
 	doc.getElementById(d).style.display = "none";
         doc.getElementById("img-" + d).src = "plus.png";

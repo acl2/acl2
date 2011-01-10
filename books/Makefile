@@ -57,7 +57,7 @@ DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3
 	data-structures/memories unicode str concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity tools paco hacking hons-bdds security regex \
-        defsort hons-archive serialize xdoc system tutorial-problems
+        defsort hons-archive serialize xdoc system tutorial-problems cutil
 DIRS2_EXCEPT_WK = $(DIRS2_EXCEPT_WK_COI) coi misc/misc2
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 SHORTDIRS2 = ordinals data-structures bdd
@@ -129,6 +129,7 @@ coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
 	misc ordinals rtl
 xdoc: str unicode finite-set-theory
 system: tools arithmetic arithmetic-5
+cutil: xdoc tools str misc finite-set-theory defsort unicode make-event
 
 # Let us wait for everything else before workshops, except we currrently
 # (as of v3-6, at least) don't need to wait for coi (that may change).
