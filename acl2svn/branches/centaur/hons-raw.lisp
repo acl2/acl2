@@ -637,7 +637,8 @@
   (norm-cache   (make-hl-cache) :type hl-cache)
 
   ;; FAL-HT is described in the documentation for fast alists.
-  (fal-ht       (hl-mht :test #'eq :size *hl-hspace-fal-ht-default-size*)
+  (fal-ht       (hl-mht :test #'eq :size *hl-hspace-fal-ht-default-size*
+                        :lock-free t)
                 :type hash-table)
 
   ;; PERSIST-HT is described in the documentation for hl-hspace-persistent-norm
@@ -652,7 +653,19 @@
 ; Create the initial FAL-HT for a hons space.  See the Essay on Fast Alists,
 ; below, for more details.
 
-  (let ((fal-ht (hl-mht :test #'eq :size (max 100 fal-ht-size))))
+  (let ((fal-ht (hl-mht :test #'eq :size (max 100 fal-ht-size)
+                       ;; Note (Sol): The non-lock-free hashing algorithm
+                        ;; in CCL seems to have some bad behavior when
+                        ;; remhashes are mixed in with puthashes in certain
+                        ;; patterns.  One of these is noted below by Jared in
+                        ;; the "Truly disgusting hack" note.  Another is that
+                        ;; when a table grows to the threshold where it should
+                        ;; be resized, it is instead rehashed in place if it
+                        ;; contains any deleted elements -- so if you grow up
+                        ;; to 99% of capacity and then repeatedly insert and
+                        ;; delete elements, you're likely to spend a lot of
+                        ;; time rehashing without growing the table.
+                        :lock-free t)))
 
     #+Clozure
     ;; Truly disgusting hack.  As of Clozure Common Lisp revision 14519, in the
@@ -671,6 +684,8 @@
     ;;
     ;; Note that T is always honsed, so sentinel is a valid fast-alist.  I give
     ;; this a sensible name since it can appear in the (fast-alist-summary).
+
+    ;; This isn't necessary with lock-free, but doesn't hurt
     (let* ((entry       (cons t t))
            (sentinel-al (cons entry 'special-builtin-fal))
            (sentinel-ht (hl-mht :test #'eql)))
