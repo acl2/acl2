@@ -267,8 +267,10 @@ it.</p>")
                         (defttag cutil-optimize)
                         (progn!
                          (set-raw-mode t)
-                         ;; Never allow exec function to be memoized, to justify nreverse
-                         (setf (gethash ',exec-fn ACL2::*never-profile-ht*) t)
+                         (when (boundp 'ACL2::*never-profile-ht*)
+                           ;; ACL2(h).  Never allow exec function to be
+                           ;; memoized, to justify nreverse
+                           (setf (gethash ',exec-fn ACL2::*never-profile-ht*) t))
                          ,ndef)
                         (defttag nil)))))
 
