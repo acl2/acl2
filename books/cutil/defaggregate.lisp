@@ -472,7 +472,7 @@ keep it disabled so that reasoning about the tags of objects does not slow down
 reasoning about <tt>car</tt> in general.</p>
 
 @(def tag)
-@(thm tag-forward-to-consp)")
+@(thm consp-when-tag)")
 
 (defund tag (x)
   (declare (xargs :guard t))
@@ -486,7 +486,6 @@ reasoning about <tt>car</tt> in general.</p>
 (defthm tag-forward-to-consp
   (implies (tag x)
            (consp x))
-  ;; BOZO this should maybe be compound-recognizer instead.
   :rule-classes :forward-chaining
   :hints(("Goal" :in-theory (enable tag))))
 
