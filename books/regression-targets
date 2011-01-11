@@ -614,6 +614,8 @@
 ./ihs/logops-lemmas.cert
 ./ihs/math-lemmas.cert
 ./ihs/quotient-remainder-lemmas.cert
+# ./make-event/acl2x-help-test.cert (maybe OK, but there's .acl2x file so not sure)
+./make-event/acl2x-help.cert
 ./make-event/assert-check-include-1.cert
 ./make-event/assert-check-include.cert
 ./make-event/assert-check.cert
@@ -629,6 +631,8 @@
 ./make-event/defrule.cert
 ./make-event/defspec.cert
 ./make-event/dotimes.cert
+# ./make-event/double-cert-test-1.cert (maybe OK, but there's .acl2x file so not sure)
+# ./make-event/double-cert-test.cert (depends on double-cert-test-1.cert)
 ./make-event/embeddable-event-forms.cert
 ./make-event/eval-check-tests.cert
 ./make-event/eval-check.cert
@@ -656,7 +660,7 @@
 ./make-event/proof-by-arith.cert
 ./make-event/read-from-file.cert
 ./make-event/require-book.cert
-./make-event/stobj-test.cert
+# ./make-event/stobj-test.cert (maybe OK, but there's .acl2x file so not sure)
 ./make-event/test-case-check.cert
 ./make-event/test-case.cert
 ./meta/meta-plus-equal.cert
@@ -669,6 +673,7 @@
 ./misc/bash.cert
 ./misc/beta-reduce.cert
 ./misc/book-thms.cert
+./misc/callers-and-ancestors.cert
 ./misc/check-acl2-exports.cert
 ./misc/computed-hint-rewrite.cert
 ./misc/computed-hint.cert
@@ -677,6 +682,7 @@
 ./misc/defmac.cert
 ./misc/defopener.cert
 ./misc/defp.cert
+./misc/defproxy-test.cert
 ./misc/defpun.cert
 ./misc/dft-ex.cert
 ./misc/dft.cert
@@ -1613,6 +1619,7 @@
 ./str/strsubst.cert
 ./str/strtok.cert
 ./str/substrp.cert
+./str/suffixp.cert
 ./str/top.cert
 ./symbolic/generic/assertions.cert
 ./symbolic/generic/defsimulate.cert
@@ -2410,9 +2417,15 @@
 ./workshops/2009/verbeek-schmaltz/verbeek/instantiations/scheduling/circuit-switching-global/intersect.cert
 ./workshops/2009/verbeek-schmaltz/verbeek/instantiations/simulation/simple/simple.cert
 ./workshops/2009/verbeek-schmaltz/verbeek/instantiations/synchronization/circuit-global/circuit.cert
+./xdoc/base.cert
 ./xdoc/defxdoc-raw.cert
-./xdoc/defxdoc.cert
+./xdoc/display.cert
+./xdoc/mkdir-raw.cert
+./xdoc/mkdir.cert
 ./xdoc/names.cert
+./xdoc/parse-xml.cert
 ./xdoc/portcullis.cert
+./xdoc/preprocess.cert
 ./xdoc/save.cert
 ./xdoc/top.cert
+./xdoc/topics.cert
