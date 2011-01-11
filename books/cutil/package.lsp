@@ -23,20 +23,44 @@
 ;; Must be included here, not in other-packages.lsp, for sets:: stuff
 (ld "finite-set-theory/osets/sets.defpkg" :dir :system)
 
-; We don't include deflist, etc., because even though writing cutil::defblah is
-; ugly, it is more compatible with other books like data-structures/deflist
-; that the user might also be using, whether directly or indirectly.
-
 (defpkg "CUTIL"
   (set-difference-eq
    (union-eq (union-eq sets::*sets-exports*
               (union-eq *acl2-exports*
                         *common-lisp-symbols-from-main-lisp-package*))
 
-             '(tag
+             '(cutil ; Makes ":xdoc cutil" do the right thing.
+
+; Things I want to "export" to the ACL2 package.
+;
+; Should we export deflist, defalist, etc.?  On one hand, it would be nice NOT
+; to export them since this makes these parts of the cutil library incompatible
+; with books like data-structures/deflist.  On the other hand, it is ugly to
+; type (cutil::deflist ...) instead of just deflist.
+;
+; We might try to solve this by not exporting the symbols, and instead just
+; providing a separate book of macro aliases, such as:
+;
+;    #!ACL2 (defmacro deflist (&rest args)
+;             `(cutil::deflist . ,args))
+;
+; But this doesn't really seem like it works.  After all, if Alice uses these
+; aliases in bookA, and Bob uses the data-structures/deflist in bookB, then the
+; two books will still be incompatible.
+;
+; I think the convenience of not needing the package-designator outweighs the
+; potential incompatiblity, so I'm going ahead and exporting the symbols.
+
+               tag
                tag-reasoning
-               cutil ; Makes ":xdoc cutil" do the right thing.
                defsection
+               defaggregate
+               defalist
+               defenum
+               deflist
+               defmapappend
+               defmvtypes
+               defprojection
 
                ;; Things I want to "import" from ACL2 into the CUTIL package.
                assert!
@@ -84,14 +108,13 @@
      substitute
      union
      delete
-
      )))
 
 #!CUTIL
 (defconst *cutil-exports*
-  '(tag
+  '(cutil
+    tag
     tag-reasoning
-    cutil
     defprojection
     deflist
     defalist

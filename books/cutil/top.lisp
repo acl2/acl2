@@ -76,8 +76,12 @@
  (include-book \"cutil/top\" :dir :system)
 </code>
 
-<p>Or, if you really care about performance, you can load the <tt>top-opt</tt>,
-which includes some optimizations but requires a ttag.</p>
+<p>Or, for a slightly optimized version that requires a ttag, you can instead
+load:</p>
+
+<code>
+ (include-book \"cutil/top-opt\" :dir :system)
+</code>
 
 
 <h3>Copyright Information</h3>
@@ -106,11 +110,4 @@ details.</p>
 <p>You should have received a copy of the GNU General Public License along with
 this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Suite 500, Boston, MA 02110-1335, USA.</p>")
-
-
-
-
-
-
-
 

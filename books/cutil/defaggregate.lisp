@@ -587,9 +587,13 @@ reasoning about <tt>car</tt> in general.</p>
               (da-illegible-fields-map-aux (cdr split-fields) `(cdr ,path)))
     (list (cons split-fields path))))
 
-(defun da-illegible-fields-map (fields)
+(defun da-x (name)
+  (intern-in-package-of-symbol "X" name))
+
+(defun da-illegible-fields-map (name fields)
   ;; Convert a linear list of fields into a map from field names to paths.
-  (da-illegible-fields-map-aux (da-illegible-split-fields fields) '(cdr x)))
+  (da-illegible-fields-map-aux (da-illegible-split-fields fields)
+                               `(cdr ,(da-x name))))
 
 (defun da-illegible-structure-checks-aux (split-fields path)
   ;; Convert the balanced tree into a list of the consp checks we'll need.
@@ -599,9 +603,10 @@ reasoning about <tt>car</tt> in general.</p>
                     (da-illegible-structure-checks-aux (cdr split-fields) `(cdr ,path))))
     nil))
 
-(defun da-illegible-structure-checks (fields)
+(defun da-illegible-structure-checks (name fields)
   ;; Convert a linear list of fields into the consp checks we'll need.
-  (da-illegible-structure-checks-aux (da-illegible-split-fields fields) '(cdr x)))
+  (da-illegible-structure-checks-aux (da-illegible-split-fields fields)
+                                     `(cdr ,(da-x name))))
 
 (defun da-illegible-pack-aux (honsp split-fields)
   ;; Convert the tree of split fields into a cons tree for building the struct.
@@ -624,11 +629,11 @@ reasoning about <tt>car</tt> in general.</p>
 
 
 
-(defun da-legible-fields-map (fields)
+(defun da-legible-fields-map (name fields)
   ;; Convert a linear list of fields into a map from field names to paths.
   (if (consp fields)
-      (cons (cons (car fields) `(cdr (assoc ',(car fields) (cdr x))))
-            (da-legible-fields-map (cdr fields)))
+      (cons (cons (car fields) `(cdr (assoc ',(car fields) (cdr ,(da-x name)))))
+            (da-legible-fields-map name (cdr fields)))
     nil))
 
 (defun da-legible-pack-fields-aux (fields)
@@ -652,11 +657,11 @@ reasoning about <tt>car</tt> in general.</p>
 
 
 
-(defun da-fields-map (legiblep fields)
+(defun da-fields-map (name legiblep fields)
   ;; Create a fields map of the appropriate type
   (if legiblep
-      (da-legible-fields-map fields)
-    (da-illegible-fields-map fields)))
+      (da-legible-fields-map name fields)
+    (da-illegible-fields-map name fields)))
 
 (defun da-pack-fields (honsp legiblep tag fields)
   ;; Create a fields map of the appropriate type
@@ -664,12 +669,12 @@ reasoning about <tt>car</tt> in general.</p>
       (da-legible-pack-fields tag fields)
     (da-illegible-pack-fields honsp tag fields)))
 
-(defun da-structure-checks (legiblep fields)
+(defun da-structure-checks (name legiblep fields)
   ;; Check that the object's cdr has the appropriate cons structure
   (if legiblep
-      '((alistp (cdr x))
-        (consp (cdr x)))
-    (da-illegible-structure-checks fields)))
+      `((alistp (cdr ,(da-x name)))
+        (consp (cdr ,(da-x name))))
+    (da-illegible-structure-checks name fields)))
 
 
 
@@ -706,12 +711,12 @@ reasoning about <tt>car</tt> in general.</p>
 (defun da-make-recognizer (name tag fields require legiblep)
   ;; Previously we allowed recognizers to be inlined, but now we prefer to
   ;; only inline accessors.
-  `(defund ,(da-recognizer-name name) (x)
+  `(defund ,(da-recognizer-name name) (,(da-x name))
      (declare (xargs :guard t))
-     (and (consp x)
-          (eq (car x) ,tag)
-          ,@(da-structure-checks legiblep fields)
-          (let ,(da-fields-map-let-bindings (da-fields-map legiblep fields))
+     (and (consp ,(da-x name))
+          (eq (car ,(da-x name)) ,tag)
+          ,@(da-structure-checks name legiblep fields)
+          (let ,(da-fields-map-let-bindings (da-fields-map name legiblep fields))
             (declare (ACL2::ignorable ,@fields))
             (and ,@(strip-cadrs require))))))
 
@@ -735,10 +740,12 @@ reasoning about <tt>car</tt> in general.</p>
 ;;                   (AND (SHELLP SHELL)))))
 
 (defun da-make-accessor (name field map inlinep)
-  `(,(if inlinep 'definlined 'defund) ,(da-accessor-name name field) (x)
-     (declare (xargs :guard (,(da-recognizer-name name) x)
-                     :guard-hints (("Goal" :in-theory (enable ,(da-recognizer-name name))))))
-     ,(cdr (assoc field map))))
+  `(,(if inlinep 'definlined 'defund)
+    ,(da-accessor-name name field)
+    (,(da-x name)) ;; formals
+    (declare (xargs :guard (,(da-recognizer-name name) ,(da-x name))
+                    :guard-hints (("Goal" :in-theory (enable ,(da-recognizer-name name))))))
+    ,(cdr (assoc field map))))
 
 ;; (da-make-accessor 'taco 'meat (da-fields-map t '(shell meat cheese lettuce sauce) ))
 ;; ==>
@@ -754,7 +761,7 @@ reasoning about <tt>car</tt> in general.</p>
     nil))
 
 (defun da-make-accessors (name fields legiblep inlinep)
-  (da-make-accessors-aux name fields (da-fields-map legiblep fields) inlinep))
+  (da-make-accessors-aux name fields (da-fields-map name legiblep fields) inlinep))
 
 (defun da-make-accessor-of-constructor (name field all-fields)
   `(defthm ,(intern-in-package-of-symbol (concatenate 'string
@@ -779,7 +786,8 @@ reasoning about <tt>car</tt> in general.</p>
 
 (defun da-fields-recognizer-map (name fields)
   (if (consp fields)
-      (cons (cons (car fields) (list (da-accessor-name name (car fields)) 'x))
+      (cons (cons (car fields) (list (da-accessor-name name (car fields))
+                                     (da-x name)))
             (da-fields-recognizer-map name (cdr fields)))
     nil))
 
@@ -794,7 +802,7 @@ reasoning about <tt>car</tt> in general.</p>
                           (fourth require)
                         :rewrite)))
     `(defthm ,(first require)
-       (implies (force (,(da-recognizer-name name) x))
+       (implies (force (,(da-recognizer-name name) ,(da-x name)))
                 ,(ACL2::sublis map (second require)))
        :rule-classes ,rule-classes
        :hints(("Goal" :in-theory (enable ,(da-recognizer-name name) ,@accnames))))))
@@ -841,42 +849,48 @@ reasoning about <tt>car</tt> in general.</p>
 
 (defun da-make-changer-fn-aux (name fields)
   (if (consp fields)
-      (let ((kwd-name (intern-in-package-of-symbol (symbol-name (car fields)) :keyword)))
-        (cons `(if (assoc ,kwd-name alist)
-                   (cdr (assoc ,kwd-name alist))
-                 (list ',(da-accessor-name name (car fields)) x))
+      (let ((kwd-name (intern-in-package-of-symbol (symbol-name (car fields)) :keyword))
+            (alist (intern-in-package-of-symbol "ALIST" name))
+            (x     (da-x name)))
+        (cons `(if (assoc ,kwd-name ,alist)
+                   (cdr (assoc ,kwd-name ,alist))
+                 (list ',(da-accessor-name name (car fields)) ,x))
               (da-make-changer-fn-aux name (cdr fields))))
     nil))
 
 (defun da-make-changer-fn (name fields)
-  `(defun ,(da-changer-fn-name name) (x alist)
-     (declare (xargs :mode :program))
-     (cons ',(da-constructor-name name)
-           ,(cons 'list (da-make-changer-fn-aux name fields)))))
+  (let ((alist (intern-in-package-of-symbol "ALIST" name))
+        (x     (da-x name)))
+    `(defun ,(da-changer-fn-name name) (,x ,alist)
+       (declare (xargs :mode :program))
+       (cons ',(da-constructor-name name)
+             ,(cons 'list (da-make-changer-fn-aux name fields))))))
 
 (defun da-make-changer (name fields)
-  `(defmacro ,(da-changer-name name) (x &rest args)
-     (,(da-changer-fn-name name) x
+  `(defmacro ,(da-changer-name name) (,(da-x name) &rest args)
+     (,(da-changer-fn-name name) ,(da-x name)
       (da-changer-args-to-alist args ',(da-make-valid-fields-for-changer fields)))))
 
 
 
 
 
-(defun da-make-maker-fn-aux (fields)
+(defun da-make-maker-fn-aux (name fields)
   (if (consp fields)
-      (let ((kwd-name (intern-in-package-of-symbol (symbol-name (car fields)) :keyword)))
-        (cons `(if (assoc ,kwd-name alist)
-                   (cdr (assoc ,kwd-name alist))
+      (let ((kwd-name (intern-in-package-of-symbol (symbol-name (car fields)) :keyword))
+            (alist    (intern-in-package-of-symbol "ALIST" name)))
+        (cons `(if (assoc ,kwd-name ,alist)
+                   (cdr (assoc ,kwd-name ,alist))
                  nil)
-              (da-make-maker-fn-aux (cdr fields))))
+              (da-make-maker-fn-aux name (cdr fields))))
     nil))
 
 (defun da-make-maker-fn (name fields)
-  `(defun ,(da-maker-fn-name name) (alist)
-     (declare (xargs :mode :program))
-     (cons ',(da-constructor-name name)
-           ,(cons 'list (da-make-maker-fn-aux fields)))))
+  (let ((alist (intern-in-package-of-symbol "ALIST" name)))
+    `(defun ,(da-maker-fn-name name) (,alist)
+       (declare (xargs :mode :program))
+       (cons ',(da-constructor-name name)
+             ,(cons 'list (da-make-maker-fn-aux name fields))))))
 
 (defun da-make-maker (name fields)
   `(defmacro ,(da-maker-name name) (&rest args)
@@ -1108,7 +1122,8 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
                                                                           (symbol-name foop)
                                                                           "-OF-"
                                                                           (symbol-name make-foo))
-                                                             name)))
+                                                             name))
+              (x                (da-x name)))
          `(progn
 
             ,@(and inlinep
@@ -1145,7 +1160,7 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
                                                                     "BOOLEANP-OF-"
                                                                     (symbol-name foop))
                                                        name)
-                   (equal (booleanp (,foop x))
+                   (equal (booleanp (,foop ,x))
                           t)
                    ;; BOZO why not a  type-prescription?
                    :hints(("Goal" :in-theory (enable ,foop))))
@@ -1169,8 +1184,8 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
 
                  (defthm ,(intern-in-package-of-symbol (str::cat "TAG-WHEN-" (symbol-name foop))
                                                        name)
-                   (implies (,foop x)
-                            (equal (tag x)
+                   (implies (,foop ,x)
+                            (equal (tag ,x)
                                    ,tag))
                    :rule-classes ((:rewrite :backchain-limit-lst 0)
                                   (:forward-chaining)
@@ -1179,8 +1194,8 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
 
                  (defthm ,(intern-in-package-of-symbol (str::cat (symbol-name foop) "-WHEN-WRONG-TAG")
                                                        name)
-                   (implies (not (equal (tag x) ,tag))
-                            (equal (,foop x)
+                   (implies (not (equal (tag ,x) ,tag))
+                            (equal (,foop ,x)
                                    nil))
                    :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
@@ -1194,8 +1209,8 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
 
                  (defthm ,(intern-in-package-of-symbol (concatenate 'string "CONSP-WHEN-" (symbol-name foop))
                                                        name)
-                   (implies (,foop x)
-                            (consp x))
+                   (implies (,foop ,x)
+                            (consp ,x))
                    :rule-classes :compound-recognizer
                    :hints(("Goal" :in-theory (enable ,foop))))
 

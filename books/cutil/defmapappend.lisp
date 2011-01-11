@@ -320,7 +320,7 @@ computation of the lists emitted by <tt>transform</tt>.</p>")
                              (guard 't)
                              (verify-guards 't)
                              mode
-                             (parents '(undocumented))
+                             (parents '(acl2::undocumented))
                              (short 'nil)
                              (long 'nil))
   `(make-event (let ((mode (or ',mode (default-defun-mode (w state)))))
