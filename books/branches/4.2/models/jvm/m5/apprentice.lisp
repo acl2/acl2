@@ -2226,7 +2226,7 @@ Sun Jul 15 14:17:26 2001
   :rule-classes nil
   :hints (("Goal" :use (:instance [3] (s (run sched *a0*))))))
 
-(defthm corollary
+(defthm Monotonicity-corollary
   (let* ((s1 (run sched *a0*))
          (s2 (step th s1)))
     (implies (not (equal (counter s1) nil))
