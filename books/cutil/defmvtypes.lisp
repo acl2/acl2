@@ -34,14 +34,14 @@ values.</p>
 <p>General form:</p>
 
 <code>
- (defmvtype fn return-types
+ (defmvtypes fn return-types
     &amp;key hyp)
 </code>
 
 <p>For example,</p>
 
 <code>
- (defmvtype foo
+ (defmvtypes foo
    (true-listp nil booleanp (and (consp x) (true-listp x))))
 </code>
 
@@ -63,7 +63,7 @@ where <tt>pkg</tt> is the package of <tt>fn</tt>.</p>
 argument is provided.  For instance,</p>
 
 <code>
- (defmvtype foo
+ (defmvtypes foo
    (nil nil true-listp)
    :hyp (bar a b c))
 </code>
