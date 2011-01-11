@@ -22,6 +22,7 @@ COMPILE_FLG ?= t :ttags :all :skip-proofs-okp t
 COMPILE_FLG_TWOPASS ?= t :ttagsx :all :ttags :all :skip-proofs-okp t :acl2x t
 INHIBIT ?= (set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote expansion)))
 ACL2_BOOKS_DEBUG ?=
+OUTFILE_HEADER ?= "-*- Mode: auto-revert -*-"
 
 # Avoid loading customization file unless environment variable is already set.
 export ACL2_CUSTOMIZATION ?= NONE
@@ -99,11 +100,12 @@ define make_cert
 	  TIMEFILE=$$FILE.time ;\
 	  OUTFILE=$$FILE.out ;\
 	fi ;\
+	echo "$(OUTFILE_HEADER)" > $$OUTFILE ;\
 	if [ "$$TIME_CERT" != "" ] ;\
 	then \
-	  (env time -o $$TIMEFILE $$ACL2 < $$WORKXXXFILE 2>&1) > $$OUTFILE ;\
+	  (env time -o $$TIMEFILE $$ACL2 < $$WORKXXXFILE 2>&1) >> $$OUTFILE ;\
 	else \
-	  ($$ACL2 < $$WORKXXXFILE 2>&1) > $$OUTFILE ;\
+	  ($$ACL2 < $$WORKXXXFILE 2>&1) >> $$OUTFILE ;\
 	fi ;\
         STATUS=$$? ;\
 	rm -f $$WORKXXXFILE ;\
