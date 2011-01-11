@@ -1,5 +1,5 @@
-; ACL2 Version 4.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2010  University of Texas at Austin
+; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -2159,7 +2159,7 @@
   (set-fc-criteria)                 ; shut off all tracking
   (set-fc-criteria nil)
 
-  (set-fc-criterial t)              ; to track all forward chaining
+  (set-fc-criteria t)               ; to track all forward chaining
   (set-fc-criteria (t t t))
 
   (set-fc-criteria

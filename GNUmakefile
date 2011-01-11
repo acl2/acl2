@@ -1,7 +1,7 @@
 #  -*- Fundamental -*- 
 
-# ACL2 Version 4.1 -- A Computational Logic for Applicative Common Lisp
-# Copyright (C) 2010  University of Texas at Austin.
+# ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+# Copyright (C) 2011  University of Texas at Austin.
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 # (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
@@ -189,7 +189,7 @@
 
 LISP = gcl
 DIR = /tmp
-ACL2_VERSION = v4-1
+ACL2_VERSION = v4-2
 
 # The variable NONSTD should be defined for the non-standard version and not
 # for the standard version.  Non-standard ACL2 images will end in saved_acl2r
@@ -334,6 +334,7 @@ protections:
 	-chmod 775 *saved_acl2*
 	chmod 775 doc/create-acl2-html 
 	chmod 775 doc/create-acl2-texinfo
+	chmod 775 doc/create-acl2-tex
 
 .PHONY: chmod_image
 chmod_image:
@@ -642,30 +643,26 @@ proofs: compile-ok
 	@$(MAKE) check_init_ok
 	rm -f workxxx
 
-.PHONY: DOC HTML EMACS TEX
+.PHONY: DOC HTML EMACS_TEX EMACS_ONLY
 
-# See comment below about perhaps avoiding the TEX target.
-DOC: HTML EMACS TEX
+DOC: HTML EMACS_TEX
 
 HTML:
 	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-html
 
-EMACS: doc/write-acl2-texinfo.cert
-	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-texinfo
-
-# Note: the TEX target, which builds a ps file, depends on texi2dvi
+# Note: doc/create-acl2-tex builds a ps file, so depends on texi2dvi
 # and dvips.  These might not be present on some systems (but is
 # present at UT CS and have been seen to be present on a Mac where
-# Latex is installed).
-TEX: doc/write-acl2-texinfo.cert
-	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-tex
+# Latex is installed).  Use EMACS_ONLY instead of EMACS_TEX if you
+# want to avoid this issue.
 
-doc/write-acl2-texinfo.cert: doc/write-acl2-texinfo.lisp
-	echo '(value :q)' > doc/workxxx.write-acl2-texinfo
-	echo '(lp)' >> doc/workxxx.write-acl2-texinfo
-	echo '(certify-book "write-acl2-texinfo")' >> doc/workxxx.write-acl2-texinfo
-	pushd doc ; (../${PREFIX}saved_acl2${ACL2_SUFFIX} < workxxx.write-acl2-texinfo) ; popd
-	rm doc/workxxx.write-acl2-texinfo
+# Note that doc/create-acl2-texinfo certifies doc/write-acl2-texinfo,
+# but (for efficiency) doc/create-acl2-tex does not.
+EMACS_TEX:
+	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-texinfo ; doc/create-acl2-tex
+
+EMACS_ONLY:
+	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-texinfo
 
 .PHONY: clean
 clean:

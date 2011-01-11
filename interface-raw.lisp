@@ -1,5 +1,5 @@
-; ACL2 Version 4.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2010  University of Texas at Austin
+; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -4336,69 +4336,72 @@ FORWARD-CHAINING-RULES                               245442
 ; described in the Essay on Hash Table Support for Compilation.
 
            (null *hcomp-book-ht*))
-       (let* ((os-file (pathname-unix-to-os full-book-name state))
-              (ofile (convert-book-name-to-compiled-name os-file))
-              (os-file-exists (probe-file os-file))
-              (ofile-exists (probe-file ofile))
-              (book-date (and os-file-exists (file-write-date os-file)))
-              (ofile-date (and ofile-exists (file-write-date ofile))))
-         (cond ((not os-file-exists)
-                (er hard ctx
-                    "File ~x0 does not exist."
-                    os-file))
-               ((null load-compiled-file)
-                (assert$ raw-mode-p ; otherwise we already returned above
+       (state-free-global-let*
+        ((connected-book-directory directory-name))
+        (let* ((os-file (pathname-unix-to-os full-book-name state))
+               (ofile (convert-book-name-to-compiled-name os-file))
+               (os-file-exists (probe-file os-file))
+               (ofile-exists (probe-file ofile))
+               (book-date (and os-file-exists (file-write-date os-file)))
+               (ofile-date (and ofile-exists (file-write-date ofile))))
+          (cond ((not os-file-exists)
+                 (er hard ctx
+                     "File ~x0 does not exist."
+                     os-file))
+                ((null load-compiled-file)
+                 (assert$ raw-mode-p ; otherwise we already returned above
 
 ; If make-event is used in the book, then the following load may cause an
 ; error.  The user of raw mode who supplied a :load-compiled-file argument is
 ; responsible for the ensuing behavior.
 
-                         (load os-file)))
-               ((and book-date
-                     ofile-date
-                     (<= book-date ofile-date))
-                (load-compiled ofile t))
-               (t (let ((reason (cond (ofile-exists
-                                       "the compiled file is not at least as ~
-                                        recent as the book")
-                                      (t "the compiled file does not exist"))))
-                    (cond ((eq load-compiled-file t)
-                           (er hard ctx
-                               "The compiled file for ~x0 was not loaded ~
-                                because ~@1."
-                               reason))
-                          (t (let* ((efile (expansion-filename
-                                            full-book-name t state))
-                                    (efile-date (and (probe-file efile)
-                                                     (file-write-date efile)))
-                                    (efile-p (and book-date
-                                                  efile-date
-                                                  (<= book-date efile-date)))
-                                    (lfile (cond (efile-p efile)
-                                                 (raw-mode-p os-file)
-                                                 (t
-                                                  (er hard ctx
-                                                      "Implementation error: ~
-                                                       We seem to have called ~
-                                                       include-book-raw on ~
-                                                       book ~x0 with non-nil ~
-                                                       load-compiled-file ~
-                                                       argument under the ~
-                                                       include-book-fn call ~
-                                                       in certify-book-fn."
-                                                      book-name)))))
-                               (warning$ ctx "Compiled file"
-                                         "Attempting to load ~@0 instead of ~
-                                          the corresponding compiled file, ~
-                                          because ~@1."
-                                         (msg (cond
-                                               (efile-p "expansion file ~x0")
-                                               (t "source file ~x0"))
-                                              lfile)
-                                         reason)
-                               (cond (efile-p
-                                      (with-reckless-read (load efile)))
-                                     (raw-mode-p (load os-file)))))))))))
+                          (load os-file)))
+                ((and book-date
+                      ofile-date
+                      (<= book-date ofile-date))
+                 (load-compiled ofile t))
+                (t (let ((reason (cond (ofile-exists
+                                        "the compiled file is not at least as ~
+                                         recent as the book")
+                                       (t "the compiled file does not exist"))))
+                     (cond ((eq load-compiled-file t)
+                            (er hard ctx
+                                "The compiled file for ~x0 was not loaded ~
+                                 because ~@1."
+                                reason))
+                           (t (let* ((efile (expansion-filename
+                                             full-book-name t state))
+                                     (efile-date (and (probe-file efile)
+                                                      (file-write-date efile)))
+                                     (efile-p (and book-date
+                                                   efile-date
+                                                   (<= book-date efile-date)))
+                                     (lfile (cond (efile-p efile)
+                                                  (raw-mode-p os-file)
+                                                  (t
+                                                   (er hard ctx
+                                                       "Implementation error: ~
+                                                        We seem to have ~
+                                                        called ~
+                                                        include-book-raw on ~
+                                                        book ~x0 with non-nil ~
+                                                        load-compiled-file ~
+                                                        argument under the ~
+                                                        include-book-fn call ~
+                                                        in certify-book-fn."
+                                                       book-name)))))
+                                (warning$ ctx "Compiled file"
+                                          "Attempting to load ~@0 instead of ~
+                                           the corresponding compiled file, ~
+                                           because ~@1."
+                                          (msg (cond
+                                                (efile-p "expansion file ~x0")
+                                                (t "source file ~x0"))
+                                               lfile)
+                                          reason)
+                                (cond (efile-p
+                                       (with-reckless-read (load efile)))
+                                      (raw-mode-p (load os-file))))))))))))
       ((let* ((entry (assert$ *hcomp-book-ht* ; not raw mode, e.g.
                               (gethash full-book-name *hcomp-book-ht*)))
               (status (and entry

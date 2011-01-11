@@ -1,5 +1,5 @@
-; ACL2 Version 4.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2010  University of Texas at Austin
+; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -3133,8 +3133,8 @@
 
   ACL2 copyright, license, sponsorship~/~/
 
-  ACL2 Version 4.1 -- A Computational Logic for Applicative Common Lisp
-  Copyright (C) 2010  University of Texas at Austin
+  ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+  Copyright (C) 2011  University of Texas at Austin
 
   This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
   (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -16528,7 +16528,7 @@
   ~il[documentation] has been updated to reflect all changes that are recorded
   here.
 
-  Below we roughly organize the changes since Version 4.1 into the following
+  Below we roughly organize the changes since Version  4.1 into the following
   categories of changes: existing features, new features, heuristic
   improvements, bug fixes, distributed books, Emacs support, and experimental
   versions.  Each change is described in just one category, though of course
@@ -16774,6 +16774,9 @@
 ; the case of foo.lisp; then delete the compiled file for sub.lisp; then start
 ; ACL2 and evaluate (include-book "foo"); and finally, evaluate the form (f 3).
 ; The result was 3 where it should have been (3 . 3).
+
+; Functions print-call-history and maybe-print-call-history are now in :logic
+; mode, guard-verified.
 
   :Doc
   ":Doc-Section release-notes
@@ -17105,9 +17108,22 @@
   bringing this bug to our attention with a simple example, and correctly
   pointing us to the bug in our code.
 
-  Fixed two bugs in ~ilc[defattach]: we hadn't always been applying the full
-  functional substitution when generating guard proof obligations, and we had
-  been able to hit an assertion when reattaching to more than one function.
+  Fixed the following bugs in ~ilc[defattach].  We hadn't always been applying
+  the full functional substitution when generating guard proof obligations.  We
+  had been able to hit an assertion when reattaching to more than one function.
+  Attachment was permitted in the case of an untouchable function
+  (~pl[remove-untouchable]).  Finally, the guard proof obligation could fail in
+  the case that the two functions have different formal parameter lists, as in
+  the following example.
+  ~bv[]
+  (encapsulate
+   ((foo (x) x :guard (symbolp x)))
+   (local (defun foo (x) x)))
+  (defun bar (x2)
+    (declare (xargs :guard (symbolp x2)))
+    x2)
+  (defattach foo bar)
+  ~ev[]
 
   Fixed a raw Lisp error that could be caused by including a book using
   ~ilc[make-event] to define a function symbol in a locally-introduced package.
@@ -17181,7 +17197,17 @@
   provided other than a symbol.  Thanks to Jared Davis for pointing out the raw
   Lisp error that had occurred in such cases.
 
+  It had been the case that in raw-mode (~pl[set-raw-mode]), it was possible to
+  confuse ~ilc[include-book] when including a book in a directory different
+  from the current directory.  This has been fixed.  Thanks to Hanbing Liu for
+  bringing this problem to our attention with a small example.
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
+
+  Many changes have been made to the distributed books, thanks to an active
+  ACL2 community.  You can contribute books and obtain updates between ACL2
+  releases by visiting the ~c[acl2-books] project web page,
+  ~url[http://acl2-books.googlecode.com/].
 
   There is new ~c[Makefile] support for certifying just some of the distributed
   books.  ~l[book-makefiles], in particular discussion of the variable
@@ -17201,9 +17227,10 @@
 
   ~st[EXPERIMENTAL VERSIONS]
 
-  Among the changes to the HONS version are an enhancement that can reduce
-  sizes of ~il[certificate] files by applying ~ilc[hons-copy] to introduce
-  structure sharing (ACL2 source function ~c[make-certificate-file1]).
+  We refrain from listing changes here to experimental versions, other than an
+  enhancement to the ~il[HONS] version that can reduce sizes of
+  ~il[certificate] files, by applying ~ilc[hons-copy] to introduce structure
+  sharing (ACL2 source function ~c[make-certificate-file1]).
 
   ~/~/")
 
@@ -19129,7 +19156,7 @@ Recent changes to this page</A>
 </TD>
 <TD>
 <!-- This relative URL is made absolute in distributed tar file -->
-<A HREF=\"installation/installation.html\">Obtaining and Installing Version 4.1</A>
+<A HREF=\"installation/installation.html\">Obtaining and Installing Version 4.2</A>
 </TD>
 
 </TR>
@@ -19139,7 +19166,7 @@ Recent changes to this page</A>
 <A HREF=\"~sg\"><IMG SRC=\"note02.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"~sg\">Differences from Version 4.0</A><A HREF=\"~s7\"> <IMG SRC=\"twarning.gif\"></A>
+<A HREF=\"~sg\">Differences from Version 4.1</A><A HREF=\"~s7\"> <IMG SRC=\"twarning.gif\"></A>
 </TD>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
 <A HREF=\"other-releases.html\">
@@ -19328,7 +19355,7 @@ access it across the Web.
 <P>
 
 <B>Note</B>: The documentation is available in four forms: Postscript (which
-prints as a book over 1700 pages long), HTML, EMACS Texinfo, and ACL2's own
+prints as a book over 1800 pages long), HTML, EMACS Texinfo, and ACL2's own
 :DOC commands.  The documentation, in all but the Postscript form, is
 distributed with the source code for the system.  So if you have already
 obtained ACL2, you should look in the <CODE>doc/</CODE> subdirectory of the
@@ -19411,7 +19438,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
-    note-4-1                            ;;; g
+    note-4-2                            ;;; g
     the-method                          ;;; h
     introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
     interesting-applications            ;;; j
