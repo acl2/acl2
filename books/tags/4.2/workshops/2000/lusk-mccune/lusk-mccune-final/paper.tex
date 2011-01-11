@@ -1,0 +1,335 @@
+\documentclass{article}
+
+\newcommand{\link}[1]{\underline{\bfseries #1}}
+
+\usepackage{times} % Necessary because Acrobat can't handle fonts properly
+\usepackage{epsf}
+
+% \setlength\textwidth{6.5in}
+% \setlength\oddsidemargin{0in}
+% \setlength\evensidemargin{0in}
+% \setlength\marginparwidth{0.7in}
+
+\renewcommand{\floatpagefraction}{0.9}
+
+\begin{document}
+\title{\bf ACL2 for Parallel Systems Software:\\A Progress Report\thanks{This
+work was supported by the Mathematical, Information, and
+Computational Sciences Division subprogram of the Office of
+Advanced Scientific Computing Research, U.S.\ Department of Energy,
+under Contract W-31-109-Eng-38.}}
+\author{\emph{Ewing Lusk and William McCune}\\[0.2in]
+         Mathematics and Computer Science Division\\
+         Argonne National Laboratory\\
+         Argonne, IL 60439}
+% \date{}
+\maketitle
+\thispagestyle{empty}
+
+\section{Introduction}
+\label{sec:introduction}
+
+A significant development in high-performance computing has occurred in recent
+years with the proliferation of ``Beowulf'' clusters~\cite{beowulf-95}.
+Beowulf clusters are parallel computers assembled from commodity-priced
+personal computers and networks.  The explosive growth of the personal
+computer marketplace, together with rapid technological advances in the
+hardware sold there, has driven the price/performance ratio so low for Beowulf
+clusters that they have become competitive with traditional tightly integrated
+(and thus expensive) supercomputers.
+
+The current bottleneck is systems software.  Small clusters are already
+working well in a large variety of situations, as well as large systems
+devoted to single applications.  To truly compete with highly parallel
+supercomputer systems, however, Beowulfs need scalable parallel libraries,
+system management tools, job schedulers, process managers, and other systems
+software to support a mix of users and applications on systems consisting of
+hundreds of network-connected computers.  Traditional systems software either is
+not scalable or is tied to specific vendor systems.
+
+The Mathematics and Computer Science Division at Argonne National Laboratory
+conducts research and prototype software development in parallel
+systems software.  The MPICH
+implementation~\cite{gropp-lusk-doss-skjellum:mpich} of the MPI standard for
+message passing is already widely used in the Beowulf community.  A new
+project is MPD (for Multi-Purpose Daemon), whose purpose is to explore issues
+in scalable process management for parallel jobs on Beowulf clusters.  Process
+management includes process startup, job control, management of standard I/O
+(especially for interactive jobs), security, reliable process shutdown, and
+provision of some set of facilities for use by an application-level parallel
+library (such as MPICH) to dynamically establish network connections among
+processes.  The MPD system as a whole consists of dynamically changing network
+of processes. A diagram of one possible state of the system is shown in
+Figure~\ref{fig:mpds-all}.  Details may be found in ~\cite{mpd-short}.
+\begin{figure}[htbp]
+    \centerline{
+      \epsfxsize=5.0in
+      \epsfbox{newmpds.eps}
+    }
+    \caption{Daemons with console process, managers, and clients}
+    \label{fig:mpds-all}
+\end{figure}
+
+The prototype implementation of MPD in C has not been easy.  Informal
+reasoning about dynamically changing parallel systems is difficult.
+Compounding the problem is the fact that the software layer on which MPD is
+built is a low-level-one: it is composed of C programs that make Unix system
+calls to manage processes ({\tt fork}, {\tt exec} and its variants, {\tt
+  kill}, {\tt rsh}, etc.) to establish TCP connections ({\tt socket}, {\tt
+  bind}, {\tt listen}, {\tt accept}, {\tt connect}, etc.), and to communicate
+({\tt read} and {\tt write} on sockets)~\cite{linux-man-pages}.
+
+We decided to bring higher-level tools to bear on the problem and to employ
+ACL2~\cite{acl2-approach} in doing so.  This paper describes our experiences
+so far.
+
+\section{Goals of the Project}
+\label{sec:goals}
+
+Our abstract goal was to explore the use of high-level tools in the
+development of complex software.  What attracted us to this particular project
+was the fact that the system we wished to apply the tools to, the MPD
+process manager, was 
+\begin{enumerate}
+\item complex enough that ACL2-based technology might really hasten its
+  development and improve its robustness,
+\item important enough in the context of Beowulf system software to be worth
+  an investment in tools, and yet
+\item simple enough that we had hope of concrete success.  The various MPD
+  processes themselves have relatively simple structures, in which handlers are
+  attached to various sockets and invoked when messages arrive to process the
+  messages.  Although there are many types of messages and thus many handlers,
+  each one is relatively straightforward.
+\end{enumerate}
+
+The core of the project is a simulator.  We hoped that the exercise of
+defining the relevant states of (Unix) processes and the state of a system of
+such processes connected by communication channels with the characteristics of
+Unix sockets would lead us to a simple data structure that would abstract the
+significant aspects of the system, enabling us to effectively reason about it,
+both informally and formally.  The {\tt man} pages of the various Unix system
+calls would be abstracted into the simple semantics of functions that update
+this data structure.
+
+Our concrete goal was to improve the MPD system as its development
+continued, by testing it in a way orthogonal to the traditional
+testing procedures.  We expect to modify its code to conform closely to the
+version expressed in the language used by the simulator to express the
+individual programs that the MPD processes execute.
+
+In the long run we hope to use this phase of the project as a step toward
+proving theorems about MPD and similar systems, thus establishing a new level
+of reliability for parallel systems software. 
+
+\section{The Multiprocess Model}
+
+We are modeling a collection of Unix-style processes communicating via
+TCP using Unix system calls.  That is, our model is a slight, rather than an
+extreme, abstraction of the C implementation.
+
+\subsection{The State of a Multiprocess Computation}
+
+A \emph{multiprocess-state} (or \emph{m-state}) is a 4-tuple:
+\begin{quote}
+(\emph{process-states\ \ connection-states\ \ listening-states\ \ program-list}).
+\end{quote}
+Each \emph{process-state} is a 5-tuple:
+\begin{quote}
+(\emph{process-id\ \ program-name\ \ program-counter\ \ runtime-stack\ \ memory}).
+\end{quote}
+The programs that update process states can contain system
+calls that update other parts of the multiprocess state,
+for example, creating new connections, sending and receiving
+messages, and creating new process states.
+
+Each \emph{connection-state} is a 4-tuple:
+\begin{quote}
+(\emph{source\ \ destination\ \ transit-queue\ \ inbox-queue}).
+\end{quote}
+A connection-state represents a one-way communication channel
+between a pair of processes.  The source and destination are
+pairs (\emph{process-id file-descriptor}), because
+there can be any number of connections between a pair of
+processes (as in Unix).  The transit queue represents messages
+en route, and the inbox queue represents messages
+that have been delivered but not yet received by the destination
+process.
+
+A \emph{listening-state} is a 4-tuple:
+\begin{quote}
+(\emph{process-id\ \ file-descriptor\ \ port-number\ \ request-queue}).
+\end{quote}
+Each listening-state represents a process listening for new connections.
+As in Unix, the file descriptor is known only to
+the local process, and the port number is known globally.
+The request queue is a list of (\emph{process-id file-descriptor})
+pairs representing processes that are asking for connections.
+
+The \emph{program-list} is simply an alist that maps program
+names to program code.  This is used when starting new processes.
+
+\subsection{The System Calls}
+
+The programming language has a set of system calls for
+setting up communication channels with other processes,
+sending and receiving messages, and creating new processes.
+The system calls reflect similar Unix system calls, in
+particular, the use of ports and file descriptors.  We
+have simplified things, however, by omitting error handling.
+
+\begin{description}
+\item{\it file-descriptor \rm = \bf setup-listener(\it port\/\bf).}
+This takes the place of the Unix \textbf{socket} and \textbf{bind}
+system calls.  It modifies a multiprocess state by creating
+a new listening state.
+\item{\it file-descriptor \rm = \bf connect(\it host, port\/\bf).}
+A request to connect to another process inserts an entry into
+the request queue of a listening state.
+The process waits until the connection is accepted by the remote process.
+\item{\it file-descriptor \rm = \bf accept(\it file-descriptor\/\bf).}
+Accepting a connection takes a member of the request queue and
+creates a new connection state.
+If the request queue is empty, the process waits until a request arrives.
+\item{\it file-descriptor-list \rm = \bf select().}
+Select returns the list of file descriptors that have messages
+ready to be received, in particular, nonempty inbox queues in
+connection states and nonempty request queues in listening states.
+\item{\bf send(\it file-descriptor, message\/\bf).}
+Send inserts a message into the transit queue of a connection state.
+\item{\it message \rm = \bf receive(\it file-descriptor\/\bf).}
+Receive takes a message from the inbox queue of a connection state.
+If the inbox queue is empty, the process waits
+until a message has been delivered.
+\item{\it return-code \rm = \bf fork(\it \/\bf).}
+Fork creates a copy of the current process, returning a flag telling
+whether the process is the parent or the child.
+\item{\bf exec(\it program, arguments\/\bf).}
+Exec replaces the current process with a new process.
+\item{\bf rsh(\it host, program, arguments\/\bf).}
+Rsh creates a new process on a given host.
+\end{description}
+
+\subsection{The Multiprocess Simulator}
+
+The individual processes are simulated as ordinary state machines,
+with an ACL2 function that steps the process by executing one
+instruction of the program, updating the process state.  When a
+simulator executes a system call, the multiprocess state can be
+updated as well.
+
+The multiprocess is simulated by executing two types of step:
+(1) stepping an individual process, and
+(2) stepping a connection state.
+Stepping a connection state is simply
+transferring a message from the transit queue to the inbox queue,
+that is, delivering a message.  An oracle tells the simulator
+which kind of step to perform and which process to step or
+which connection state to step.
+
+A deficiency of our multiprocess model is that the {\tt connect}, {\tt accept},
+and {\tt rsh} commands are executed is if they had instantaneous effects
+on other processes.  The model could be improved by adding another
+type of communication channel for system operations; that would
+allow delays before the operations are carried out, analogous
+to the transit and inbox queues of connection states.
+
+\subsection{Status of the ACL2 Code}
+
+We have constructed a prototype multiprocess simulator in ACL2
+(see the file \link{README} of the associated directory
+for pointers to the books)
+and run it on two simple parallel programs.
+The first contains console and daemon programs (see Figure~\ref{fig:mpds-all})
+that cause a message to be sent from the console to a daemon, around the ring
+and back to the console.  The second is a set of manager and client programs
+by which the managers implement a barrier operation for the clients:  all
+clients must call the barrier before any of them can leave it.  The general
+case of such a barrier was difficult to get right in the real MPD system;  we
+wish we had been able to test it first on the simulator, which didn't exist at
+the time. 
+
+The programs are available in the files \link{trace} and
+\link{fence}, respectively, of the associated directory.
+
+\section{The Next Steps}
+
+Aside from verifying guards, we have not proved anything about
+the simulator.  But we are hopeful.
+
+In~\cite{moore:multi}, J Moore presents a method for proving
+properties of shared-memory multiprocess programs.  The key idea of
+the method is that a substantial part of the proofs can be done from
+the points of view of the individual processes.  As an individual
+process steps from state to state, an oracle tells the process how the
+shared memory is changed by the other processes.  The properties of
+the uniprocessor view are then related to the global multiprocessor
+view.  Perhaps we can use a similar method to prove properties of our
+(message-passing) multiprocess model by replacing the shared-memory
+oracle with an oracle that tells how the rest of the multiprocess
+state changes, in particular, how the connection and listening states
+change.
+
+Experience with designing and debugging the C version
+of MPD has shown us many areas where formal verification
+with ACL2 would be of great value.  
+In addition to the barrier example above, we have had difficulties in ensuring
+that if any client aborts, the entire job is brought down cleanly.  These are
+cases where even attempting formal proofs would help us get it right and
+increase our confidence that we had it right.
+
+\section{Conclusion}
+
+This project is still in its early stages.  Nonetheless, we have learned a few
+things.  It is possible to usefully abstract the complex collection of Unix
+interprocess communication system calls without trivializing the problems
+inherent in real parallel algorithms.  Using ACL2 has a steep but climbable
+learning curve.  Our simulator is slow, but we have hopes of speeding things
+up by using single-threaded objects.
+
+\bibliographystyle{plain}
+
+% \bibliography{paper,/home/MPI/allbib,/home/gropp/Update/new/gropp,/home/MPI/papers/jumpshot/paper}
+
+\begin{thebibliography}{1}
+
+\bibitem{mpd-short}
+Ralph Butler, Ewing Lusk, and William Gropp.
+\newblock A scalable process-management environment for parallel programs.
+\newblock In Peter Kacsuk, editor, {\em Recent Advances in {P}arallel {V}irtual
+  {M}achine and {M}essage {P}assing {I}nterface, 7th European PVM/MPI Users'
+  Group Meeting, Balatonfured, Hungary}, Lecture Notes in Computer Science.
+  Springer Verlag, 2000.
+\newblock (to appear).
+
+\bibitem{gropp-lusk-doss-skjellum:mpich}
+William Gropp, Ewing Lusk, Nathan Doss, and Anthony Skjellum.
+\newblock A high-performance, portable implementation of the {MPI}
+  {M}essage-{P}assing {I}nterface standard.
+\newblock {\em Parallel Computing}, 22(6):789--828, 1996.
+
+\bibitem{acl2-approach}
+M.~Kaufmann, P.~Manolios, and J~Moore.
+\newblock {\em Computer-Aided Reasoning: An Approach}.
+\newblock Advances in Formal Methods. Kluwer Academic, 2000.
+
+\bibitem{linux-man-pages}
+Linux {\tt man} pages.
+
+\bibitem{moore:multi}
+J~Moore.
+\newblock A {M}echanically {C}hecked {P}roof of a {M}ultiprocessor {R}esult via
+  a {U}niprocessor {V}iew.
+\newblock Tech. report, Department of Computer Sciences, University of Texas,
+  Austin, August 1998.
+
+\bibitem{beowulf-95}
+T.~Sterling, D.~Savarese, D.~J. Becker, J.~E. Dorband, U.~A. Ranawake, and
+  C.~V. Packer.
+\newblock {BEOWULF}: {A} parallel workstation for scientific computation.
+\newblock In {\em International Conference on Parallel Processing, Vol.~1:
+  Architecture}, pages 11--14, Boca Raton, FL, August 1995. CRC Press.
+
+\end{thebibliography}
+
+
+\end{document}

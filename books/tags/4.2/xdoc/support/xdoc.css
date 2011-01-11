@@ -1,0 +1,133 @@
+/*
+
+; XDOC Documentation System for ACL2
+; Copyright (C) 2009-2010 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
+
+*/
+
+.body_normal {
+  margin-left: 1em;
+  width: 45em;
+}
+
+h1,h2,h3,h4,h5 { font-family: sans-serif; }
+
+h1 { font-size: 2.2em; color: #900000; text-align: center; }
+h2 { font-size: 1.8em; color: #900000; }
+h3 { font-size: 1.5em; color: #600000; }
+h4 { font-size: 1.2em; color: #600000; }
+h5 { font-size: 1.1em; color: #600000; margin-left: 1em;}
+
+p, dl { margin-left: 1em; }
+
+li    { margin-left: 1.0em; margin-bottom: 0.5em; }
+li li { margin-left: -1.0em; margin-bottom: 0em; }
+
+dt {
+  margin-left: 1em;
+  margin-top: 1em;
+  font-family: sans-serif;
+  font-weight: bold;
+}
+
+.box {
+  margin-left: 1.5em;
+  margin-right: 1.5em;
+  border-width: 1px;
+  border-style: solid;
+  border-color: black;
+}
+
+.code {
+  margin-left: 2.5em;
+  padding: .5em;
+  border-left-width: 3px;
+  border-left-style: solid;
+  border-left-color: #f9e0a3;
+  color: #306030;
+}
+li .code {
+  margin-left: 1em;
+}
+
+a { text-decoration: none; }
+a:hover {
+  background-color: #ffffb0;
+  text-decoration: underline;
+}
+
+.srclink {
+  font-family: monospace;
+  text-decoration: none;
+  background-color: #e0e0e0;
+  padding: 2px;
+  font-size: 105%;
+}
+.srclink:hover {
+  text-decoration: none;
+}
+
+.sf { font-family: sans-serif; }
+
+i { font-family: serif; }
+
+.tt {
+  font-family: monospace;
+  color: #306030;
+  font-size: 105%;
+}
+
+
+/* Brief index, used only in the 3-frame displayed */
+
+.index_brief_dt {
+  margin-top: 0px;
+  margin-left: 0em;
+  font-family: serif;
+  font-weight: normal;
+}
+
+.index_brief_dt a {
+  text-decoration: none;
+}
+.index_brief_dt a:hover {
+  text-decoration: underline;
+}
+
+
+/* Main, hierarchical index, used in both 2- and 3-frame displays. */
+
+.hindex {
+/*  margin-left: 0.3em; */
+  list-style-type: none;
+  padding: 0px;
+  font-family: serif;
+  font-weight: normal;
+}
+
+.hindex li {
+  margin-bottom: 0em;
+}
+
+.hindex li li {
+  margin-left: 0.5em;
+}
+
+

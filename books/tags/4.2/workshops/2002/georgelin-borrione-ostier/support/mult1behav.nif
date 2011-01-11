@@ -1,0 +1,26 @@
+ (:language VHDL
+  :entity_name MULT1 
+  :inputs_signals (A B START H )
+  :inputs_type (NATURAL NATURAL BIT BIT )
+  :outputs_signals (DONE RESULT )
+  :outputs_type (BIT NATURAL )
+  :architecture_name BEHAV 
+  :local_signals () ; liste vide
+  :local_signals_type () ; liste vide
+  :list_of_components () ; liste vide
+  :list_of_configurations () ; liste vide
+  :list_of_links () ; liste vide
+  :local_variables ( CALCUL.OPERAND1 CALCUL.OPERAND2 CALCUL.ACCU CALCUL.ETAT)
+  :local_variables_type (NATURAL NATURAL NATURAL NATURAL ) 
+  :process (
+    (CALCUL ( 
+    
+    (if (<= CALCUL.ETAT 0) ( (;;hello world
+if (= START 1) ( (CALCUL.OPERAND1 := A) (CALCUL.OPERAND2 := B) (CALCUL.ACCU := 0) (DONE <= 0) (CALCUL.ETAT := 1)))) ((if (<= CALCUL.ETAT 1) ( (if (= CALCUL.OPERAND1 0) ( (RESULT <= CALCUL.ACCU) (DONE <= 1) (CALCUL.ETAT := 0)) (;;hello world
+ (CALCUL.OPERAND1 := (- CALCUL.OPERAND1 1)) (CALCUL.ACCU := (+ CALCUL.ACCU CALCUL.OPERAND2))))) ())))
+    )
+    ) ; fin de process
+  )
+  :list_of_functions () ; liste de fonctions vide
+  :concurrent_statement (  )
+ )

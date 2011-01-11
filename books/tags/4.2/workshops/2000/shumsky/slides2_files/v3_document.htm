@@ -1,0 +1,239 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<meta name=ProgId content=PowerPoint.Slide>
+<meta name=Generator content="Microsoft PowerPoint 9">
+<link id=Main-File rel=Main-File href=slides2.htm>
+<link rel=File-List href="./slides2_files/filelist.xml">
+<link rel=Preview href="./slides2_files/preview.wmf">
+<title>Developing a Framework for Simulation, Verification and Testing of SDL
+Specifications</title>
+<!--[if gte mso 9]><xml>
+ <o:DocumentProperties>
+  <o:Author>Olya</o:Author>
+  <o:LastAuthor>Olya</o:LastAuthor>
+  <o:Revision>12</o:Revision>
+  <o:TotalTime>4777</o:TotalTime>
+  <o:LastPrinted>2000-10-27T08:06:14Z</o:LastPrinted>
+  <o:Created>2000-10-24T15:31:08Z</o:Created>
+  <o:LastSaved>2000-11-03T15:08:37Z</o:LastSaved>
+  <o:Words>881</o:Words>
+  <o:PresentationFormat>On-screen Show</o:PresentationFormat>
+  <o:Company>NASEE, Inc.</o:Company>
+  <o:Bytes>249283</o:Bytes>
+  <o:Paragraphs>157</o:Paragraphs>
+  <o:Slides>19</o:Slides>
+  <o:Version>9.3821</o:Version>
+ </o:DocumentProperties>
+</xml><![endif]-->
+<meta http-equiv=expires content=0>
+<![if !ppt]><script><!--
+
+var END_SHOW_HREF         = "v3_endshow.htm",
+    OUTLINE_EXPAND_HREF   = "v3_outline_expanded.htm",
+    OUTLINE_COLLAPSE_HREF = "v3_outline_collapsed.htm";
+    NAVBAR_HREF           = "v3_navigation_bar.htm";
+    BLANK_NOTES_HREF	  = "v3_blank_notes.htm";
+    NUM_VISIBLE_SLIDES    = 19;
+    SIMPLE_FRAMESET       = 0;
+    SLIDE_FRAME	        = "PPTSld";
+    NOTES_FRAME           = "PPTNts";
+    OUTLINE_FRAME         = "PPTOtl";
+    NAVBAR_FRAME          = "PPTNav";
+
+var g_currentSlide = 1, g_prevSlide = 1;
+
+var appVer = navigator.appVersion;
+var msie = appVer.indexOf( "MSIE " );
+var msieWin31 = (appVer.indexOf( "Windows 3.1" ) > 0);
+var ver = 0;
+
+if ( msie >= 0 )
+  ver = parseFloat( appVer.substring( msie+5, appVer.indexOf ( ";", msie ) ) );
+else
+  ver = parseInt( appVer );
+
+var g_supportsPPTHTML = !msieWin31 && ( ( msie >= 0 && ver >= 3.02 ) || ( msie < 0 && ver >= 3 ) );
+
+function GetCurrentSlideNum()
+{   
+  obj = GetHrefObj( g_currentSlide );
+  if ( GetHrefObj( g_currentSlide ).m_origVisibility == 1 )
+    return obj.m_slideIdx;
+  else   
+    return g_currentSlide;
+}
+
+function GetNumSlides()
+{
+  if ( GetHrefObj( g_currentSlide ).m_origVisibility == 1 )
+    return NUM_VISIBLE_SLIDES;
+  else
+    return g_docTable.length;
+}
+
+function GetHrefObj( slideIdx )
+{ return g_docTable[slideIdx - 1];
+}
+
+function GetSlideNum( slideHref )
+{
+  for (ii=0; ii<g_docTable.length; ii++) {
+    if ( g_docTable[ii].m_slideHref == slideHref )
+      return ii+1;
+  }
+  return 1;
+}
+
+function GoToNextSld()
+{   
+  targetIdx = g_currentSlide + 1;
+  if ( GetHrefObj( targetIdx-1 ).m_origVisibility == 0 ) {
+    if ( targetIdx<=g_docTable.length ) {
+      obj = GetHrefObj( targetIdx );
+      obj.m_visibility = 1;
+      GoToSld( obj.m_slideHref );
+    }
+  }
+  else {
+    obj = GetHrefObj( targetIdx );
+    while ( obj && ( obj.m_origVisibility == 0 ) && ( targetIdx<=g_docTable.length ) )
+      obj = GetHrefObj( targetIdx++ );
+    if( obj && obj.m_origVisibility )
+      GoToSld( obj.m_slideHref );
+  }
+}
+
+function GoToPrevSld()
+{
+  targetIdx = g_currentSlide - 1;
+  if ( targetIdx > 0 ) {
+    obj = GetHrefObj( targetIdx );
+    while ( ( obj.m_visibility == 0 ) && ( targetIdx>0 ) )
+      obj = GetHrefObj( targetIdx-- );
+    GoToSld( obj.m_slideHref );
+  }
+}
+
+function GoToLast()
+{
+  targetIdx = g_docTable.length;
+  if ( targetIdx != g_currentSlide )
+    GoToSld( GetHrefObj( targetIdx ).m_slideHref );
+}
+
+function GoToFirst()
+{ GoToSld( GetHrefObj(1).m_slideHref );
+}
+
+function ChangeFrame( frame, href )
+{
+  if( g_supportsPPTHTML )
+    frames[frame].location.replace( href );
+  else
+    frames[frame].location.href = href;
+}
+
+function GoToSld( slideHref )
+{
+  if ( slideHref != GetHrefObj( g_currentSlide ).m_slideHref ) {
+    g_prevSlide = g_currentSlide;
+    g_currentSlide = GetSlideNum( slideHref );
+    obj = GetHrefObj( g_currentSlide );
+    obj.m_visibility = 1;
+    if( !SIMPLE_FRAMESET )
+      ChangeFrame( NOTES_FRAME, obj.m_notesHref );
+    ChangeFrame( NAVBAR_FRAME, NAVBAR_HREF );
+    frames[SLIDE_FRAME].location.href = slideHref;
+  }
+}
+
+function PrevSldViewed()
+{ GoToSld( GetHrefObj( g_prevSlide ).m_slideHref );
+}
+
+function EndShow()
+{ frames[SLIDE_FRAME].location.href = END_SHOW_HREF;
+}
+
+function NoHref() {}
+
+function ExpandOutline( )
+{ ChangeFrame( OUTLINE_FRAME, OUTLINE_EXPAND_HREF );
+}
+
+function CollapseOutline()
+{ ChangeFrame( OUTLINE_FRAME, OUTLINE_COLLAPSE_HREF );
+}
+
+function SlideUpdated( id )
+{
+  if ( id != GetHrefObj( g_currentSlide ).m_slideHref ) {
+    g_prevSlide = g_currentSlide;
+    g_currentSlide = GetSlideNum( id );
+    obj = GetHrefObj( g_currentSlide );
+    if( !SIMPLE_FRAMESET )
+      ChangeFrame( NOTES_FRAME, obj.m_notesHref );
+    ChangeFrame( NAVBAR_FRAME, NAVBAR_HREF );
+  }
+}
+
+function hrefList( slideHref, notesHref, visible, slideIdx )
+{
+  this.m_slideHref  = slideHref;
+  this.m_notesHref  = notesHref;
+  this.m_navbarHref = NAVBAR_HREF;
+  this.m_origVisibility = visible;
+  this.m_visibility = visible;
+  this.m_slideIdx = slideIdx;
+}
+var g_docTable = new Array(
+   new hrefList("v3_slide0001.htm", BLANK_NOTES_HREF, 1, 1 ),
+   new hrefList("v3_slide0003.htm", BLANK_NOTES_HREF, 1, 2 ),
+   new hrefList("v3_slide0004.htm", BLANK_NOTES_HREF, 1, 3 ),
+   new hrefList("v3_slide0020.htm", BLANK_NOTES_HREF, 1, 4 ),
+   new hrefList("v3_slide0005.htm", BLANK_NOTES_HREF, 1, 5 ),
+   new hrefList("v3_slide0021.htm", BLANK_NOTES_HREF, 1, 6 ),
+   new hrefList("v3_slide0032.htm", BLANK_NOTES_HREF, 1, 7 ),
+   new hrefList("v3_slide0033.htm", BLANK_NOTES_HREF, 1, 8 ),
+   new hrefList("v3_slide0026.htm", BLANK_NOTES_HREF, 1, 9 ),
+   new hrefList("v3_slide0027.htm", BLANK_NOTES_HREF, 1, 10 ),
+   new hrefList("v3_slide0028.htm", BLANK_NOTES_HREF, 1, 11 ),
+   new hrefList("v3_slide0009.htm", BLANK_NOTES_HREF, 1, 12 ),
+   new hrefList("v3_slide0010.htm", BLANK_NOTES_HREF, 1, 13 ),
+   new hrefList("v3_slide0013.htm", BLANK_NOTES_HREF, 1, 14 ),
+   new hrefList("v3_slide0029.htm", BLANK_NOTES_HREF, 1, 15 ),
+   new hrefList("v3_slide0030.htm", BLANK_NOTES_HREF, 1, 16 ),
+   new hrefList("v3_slide0015.htm", BLANK_NOTES_HREF, 1, 17 ),
+   new hrefList("v3_slide0016.htm", BLANK_NOTES_HREF, 1, 18 ),
+   new hrefList("v3_slide0017.htm", BLANK_NOTES_HREF, 1, 19 )
+);
+//-->
+</script><![endif]>
+</head>
+
+<frameset rows="*,27" framespacing=1 frameborder=1>
+ <noframes>
+  <body>
+  <p>This page uses frames, but your browser doesn't support them.</p>
+  </body>
+ </noframes>
+ <frameset cols="*,495">
+  <frame src="v3_outline_collapsed.htm" name=PPTOtl noresize>
+  <frameset rows="376,*">
+   <frame src="v3_slide0001.htm" name=PPTSld marginheight=0 marginwidth=0>
+   <frame src="v3_blank_notes.htm" name=PPTNts marginheight=0 marginwidth=0
+   noresize>
+  </frameset>
+ </frameset>
+ <frameset cols="*,495">
+  <frame src="v3_outline_navigation_bar.htm" name=PPTOtlNav marginheight=0
+  marginwidth=0 scrolling=no noresize>
+  <frame src="v3_navigation_bar.htm" name=PPTNav marginheight=0 marginwidth=0
+  scrolling=no noresize>
+ </frameset>
+</frameset>
+
+</html>

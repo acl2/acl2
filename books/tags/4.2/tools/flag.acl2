@@ -1,0 +1,2 @@
+(ld "flag-package.lsp")
+(certify-book "flag" ? t)

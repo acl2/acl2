@@ -1,0 +1,53 @@
+From time to time, we may add new directories.  In that case, steps
+described below will explain how to reduce output from the command:
+
+  "svn status -u ."
+
+There are actually two ways to do this.  In most cases, it will be
+simplest simply to execute the following in the new directory,
+replacing "../unversioned-files.txt" by a path to
+unversioned-files.txt in the top-level directory.
+
+  svn propset -R svn:ignore -F unversioned-files.txt .
+
+Otherwise, first execute the following in the top-level directory:
+
+  svn propset -R svn:ignore -F unversioned-files.txt .
+
+Then in each subdirectory with a file unversioned-files-extra.txt,
+e.g. as determined by
+
+  find . -name unversioned-files-extra.txt -print
+
+execute the following command, except replacing "../" with an
+appropriate number of repetitions of that sequence of three
+characters, to obtain a reference to file unversioned-files.txt in the
+top-level directory.
+
+  (cat ../unversioned-files.txt unversioned-files-extra.txt > tmp) ; \
+  (svn propset svn:ignore -F tmp .) ; \
+  (rm tmp)
+
+.....
+
+For the record, here is what was done for the commit creating svn
+revision 598.
+
+(a) Added file ./unversioned-files.txt, which simply records the
+output of:
+
+  svn propget svn:ignore
+
+(Presumably previous work had been done to set the svn:ignore
+property, but now we have the values recorded in
+unversioned-files.txt.)
+
+(b) Added files unversioned-files-extra.txt in a few directories, to
+specify additional files to ignore, typically ones removed by
+extensions of "make clean"in a given directory.
+
+(c) For each such file unversioned-files-extra.txt, executed the above
+command starting with "(cat ../unversioned-files.txt", but as above,
+replacing "../" with an appropriate number of repetitions of that
+sequence of three characters, to obtain a reference to file
+unversioned-files.txt in the top-level directory.

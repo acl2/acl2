@@ -1,0 +1,10 @@
+#|-*-Lisp-*-=================================================================|#
+#|                                                                           |#
+#| coi: Computational Object Inference                                       |#
+#|                                                                           |#
+#|===========================================================================|#
+; (ld "Makefile.acl2")  ;BZO Should cert.acl2 do this?
+(ld "cert.acl2")
+(ld "../osets/set-defpkg.lsp")
+
+(certify-book "defarray" ? t)

@@ -1,0 +1,49 @@
+The files in this directory contain the events that appear in the
+book.  For example, the functions defined here do not have guards.
+This directory may be useful for someone who wants to do the
+exercises, but does not want to type in the functions presented in the
+chapter.  In addition, this directory may be useful for someone who
+wants to experiment with ACL2 while reading the the book.  Eventually,
+you will want to look at the "solutions" directory which contains
+proofs and guards (and their verification).  See "../README" for more
+information.
+
+Because the definitions of some functions depend on solutions to
+exercises, some exercise solutions are included (although not noted as
+such) in the files in this directory.
+
+To certify the books in this directory:
+
+  If you want to do it within acl2, start acl2 and type:
+     
+  (ld "build.lisp")
+
+  You can also type:
+
+  make 
+
+  If you use make, then you may have to set the value of ACL2 in "makefile".  
+  This variable is correctly set if this directory resides under an ACL2 
+  distribution in books/case-studies/mu-calculus/book/ (which is the default).
+
+
+Typing "make clean" will remove files added by the certification
+process.
+   
+
+The files in this directory are:
+
+File	        - Description
+---------------------------------------------
+README          - This file
+
+makefile	- Makefile to build and clean
+build.lisp      - Used to certify all the ACL2 books
+
+sets.lisp       - Functions in Section Sets
+fast-sets.lisp  - Functions in Section Fast-sets 
+fixpoints.lisp  - Functions in Section Fixpoint Theory
+relations.lisp  - Functions in Section Relation Theory
+models.lisp     - Functions in Section Models
+syntax.lisp     - Functions in Section Mu-calculus Syntax
+semantics.lisp  - Functions in Section Mu-calculus Semantics

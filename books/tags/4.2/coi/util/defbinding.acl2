@@ -1,0 +1,2 @@
+(ld "def-defpkg.lsp")
+(certify-book "defbinding" ?)
