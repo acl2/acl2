@@ -30,7 +30,7 @@ chmod 775 doc/EMACS
 
 echo '(value :q)' > doc/workxxx.texinfo
 echo '(lp)' >> doc/workxxx.texinfo
-echo '(include-book "doc/write-acl2-texinfo")' >> doc/workxxx.texinfo
+echo '(certify-book "doc/write-acl2-texinfo")' >> doc/workxxx.texinfo
 echo '(write-texinfo-file :dir-string "doc/EMACS/" :file "acl2-doc-emacs" :tex-only-flg nil :non-lucid-flg t)' >> doc/workxxx.texinfo
 echo ':q' >> doc/workxxx.texinfo
 

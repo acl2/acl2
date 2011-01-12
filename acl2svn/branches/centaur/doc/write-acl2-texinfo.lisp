@@ -1,5 +1,5 @@
-; ACL2 Version 4.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2010  University of Texas at Austin
+; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 was produced by modifying ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
@@ -268,7 +268,7 @@
 
 @ifinfo
 This is documentation for ~sv@*
-Copyright @copyright{} 2010  University of Texas at Austin
+Copyright @copyright{} 2011  University of Texas at Austin
 
 This program is free software; you can redistribute it and/or modify@*
 it under the terms of the GNU General Public License as published by@*
@@ -308,7 +308,7 @@ END-INFO-DIR-ENTRY
 @center ~sm ~fy
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 2010  University of Texas at Austin
+Copyright @copyright{} 2011  University of Texas at Austin
 Distributed under the terms of the GNU General Public License.
 @sp 2
 This is documentation for ~sv @*
@@ -607,14 +607,15 @@ a TeXinfo file to be used to create an info file.  See also
                       (princ$ ") " channel state))
             state)
 	  (acl2::print-doc-string-part 0 str ""
-				       (texinfo-doc-markup-table state)
-				       *texinfo-doc-char-subst-table*
+                                       (texinfo-doc-markup-table state)
+                                       *texinfo-doc-char-subst-table*
                                        (acl2::doc-fmt-alist state)
                                        channel
-				       name
+                                       name
                                        nil
-                                       nil ; undocumented-file
-				       state)))
+                                       nil  ; undocumented-file
+                                       nil  ; vp
+                                       state)))
 
 (defun write-doc-menu1 (lst doc-alist tex-only-flg channel state)
   ;; lst is a list of names
@@ -684,38 +685,33 @@ a TeXinfo file to be used to create an info file.  See also
                                 channel
                                 (car doc-tuple)
                                 nil
-                                nil ; undocumented-file
+                                nil  ; undocumented-file
+                                nil  ; vp
                                 state)
    (princ$ "@end format" channel state)
    (newline channel state)
    (acl2::print-doc-string-part 1 (cadddr doc-tuple) ""
-				(texinfo-doc-markup-table state)
-				*texinfo-doc-char-subst-table*
+                                (texinfo-doc-markup-table state)
+                                *texinfo-doc-char-subst-table*
                                 (acl2::doc-fmt-alist state)
                                 channel
-				(car doc-tuple)
+                                (car doc-tuple)
                                 nil
-                                nil ; undocumented-file
-				state)
+                                nil  ; undocumented-file
+                                nil  ; vp
+                                state)
    (newline channel state)
    (write-doc-menu doc-tuple doc-alist tex-only-flg channel state)
-   (let* ((str (cadddr doc-tuple))
-          (k (acl2::scan-to-doc-string-part 2 str))
-          (maximum (length str)))
-     (acl2::print-doc-string-part1 str
-				   k
-				   maximum
-				   (acl2::get-doc-string-de-indent str)
-				   ""
-				   (texinfo-doc-markup-table state)
-				   *texinfo-doc-char-subst-table*
-                                   (acl2::doc-fmt-alist state)
-				   channel
-                                   (car doc-tuple)
-				   state
-				   t
-                                   nil ; undocumented-file
-                                   ))
+   (acl2::print-doc-string-part 2 (cadddr doc-tuple) ""
+                                (texinfo-doc-markup-table state)
+                                *texinfo-doc-char-subst-table*
+                                (acl2::doc-fmt-alist state)
+                                channel
+                                (car doc-tuple)
+                                t
+                                nil  ; undocumented-file
+                                nil  ; vp
+                                state)
    (newline channel state)))
 
 (mutual-recursion

@@ -1,5 +1,5 @@
-; ACL2 Version 4.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2010  University of Texas at Austin
+; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -9407,7 +9407,7 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
     (declare (ignore wrld))
     (if (equal term (list 'quote *a*))
         '*a*
-      term))
+      nil))
   ~ev[]
   Now we submit the following ~ilc[table] event.
   ~bv[]

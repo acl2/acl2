@@ -1,5 +1,5 @@
-; ACL2 Version 4.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2010  University of Texas at Austin
+; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -14147,7 +14147,7 @@ The following all cause errors.
               (< acl2x-date book-date))
           (er soft ctx
               "Certify-book has been instructed with option :ACL2X T to read ~
-               file ~x0.  However, this file ~#1~#[does not exist~/has not ~
+               file ~x0.  However, this file ~#1~[does not exist~/has not ~
                been confirmed to be at least as recent as the book ~x2~].  ~
                See :DOC set-write-acl2x."
               acl2x-file
@@ -14453,8 +14453,7 @@ The following all cause errors.
                     (wrld1-known-package-alist (global-val 'known-package-alist
                                                            wrld1))
                     (acl2x-file
-                     (and acl2x ; optimization
-                          (convert-book-name-to-acl2x-name full-book-name))))
+                     (convert-book-name-to-acl2x-name full-book-name)))
                (pprogn
                 (io? event nil state
                      (full-book-name write-acl2x)
@@ -26535,6 +26534,14 @@ The following all cause errors.
                                     symbol."
                                    f))
                              (t "")))))
+                ((let ((fns (global-val 'untouchable-fns wrld)))
+                   (or (member-eq f fns) (member-eq g fns)))
+                 (er soft ctx
+                     "The argument~#0~[ ~&0 has~/s ~&0 have~] been placed on ~
+                      untouchable-fns.  See :DOC remove-untouchable."
+                     (intersection-eq (list f g)
+                                      (global-val 'untouchable-fns wrld))))
+                                           
                 ((and (not skip-checks)
                       (not (logicalp f wrld)))
                  (cond ((null g)
@@ -26936,10 +26943,13 @@ The following all cause errors.
      (value ttree)))
    (t (let* ((f (caar attachment-alist-tail))
              (g (cdar attachment-alist-tail))
-             (goal (sublis-fn-simple attachment-alist
-                                     (fcons-term* 'implies
-                                                  (guard f nil wrld)
-                                                  (guard g nil wrld))))
+             (goal (sublis-fn-simple
+                    attachment-alist
+                    (fcons-term* 'implies
+                                 (sublis-var (pairlis$ (formals f wrld)
+                                                       (formals g wrld))
+                                             (guard f nil wrld))
+                                 (guard g nil wrld))))
              (helper-alist (car helpers-lst))
              (otf-flg (cdr (assoc-eq :OTF-FLG helper-alist)))
              (hints (cdr (assoc-eq :HINTS helper-alist)))
