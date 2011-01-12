@@ -19,7 +19,7 @@
 ; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
-; email:       Kaufmann@aus.edsr.eds.com   and Moore@cs.utexas.edu
+; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
 ; Department of Computer Sciences
 ; University of Texas at Austin
 ; Austin, TX 78712-1188 U.S.A.
