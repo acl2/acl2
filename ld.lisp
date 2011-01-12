@@ -22111,7 +22111,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   The ``warnings'' mentioned (none are listed for ~c[app]) remind the reader
   whether the event provoked any warnings.  The warnings themselves would have
   been printed earlier in the processing and this part of the summary just
-  names the earlier warnings printed.
+  names the earlier warnings printed.
 
   The ``time'' indicates how much processing time was used and is divided into
   three parts: the time devoted to proof, to printing, and to syntactic checks,
@@ -22148,7 +22148,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   Termination must be proved before the definition is admitted.  This is done
   in general by finding a measure of the arguments of the function and a
   well-founded relation such that the arguments ``get smaller'' every time a
-  recursive branch is taken.
+  recursive branch is taken.
 
   For ~c[app] the measure is the ``size'' of the first argument, ~c[x], as
   determined by the primitive function ~ilc[acl2-count] ~warn[].  The

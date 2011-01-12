@@ -3167,7 +3167,7 @@
 ; For example, if x is '(if (member x y) (+ (car x) 3) '(foo . b)) and
 ; print-level is 2 and print-length is 3 then the output is:
 
-; (IF (MEMBER X Y)
+; (IF (MEMBER X Y)
 ;     (+ (*evisceration-mark* . "#") 3)
 ;     (*evisceration-mark* . "..."))
 
