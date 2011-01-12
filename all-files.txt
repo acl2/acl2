@@ -1592,6 +1592,7 @@ check-acl2-exports.lisp
 computed-hint-rewrite.lisp
 computed-hint.lisp
 csort.lisp
+defattach-example.lisp
 definline.acl2
 definline.lisp
 defmac.lisp
@@ -3353,7 +3354,9 @@ defxdoc-raw.lisp
 display.lisp
 emacsclient-wrapper.sh
 gpl.txt
-make-manual.lsp
+import-acl2doc.lisp
+make-manual.acl2
+make-manual.lisp
 mkdir-raw.acl2
 mkdir-raw.lisp
 mkdir.lisp
@@ -3367,6 +3370,7 @@ save.lisp
 support
 top.lisp
 topics.lisp
+write-acl2-xdoc.lisp
 xdoc.el
 
 books/xdoc/support:

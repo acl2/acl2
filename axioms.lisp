@@ -1908,6 +1908,9 @@
 ; x2 ... xn).  We did not want to have to include
 ; gen-formals-from-pretty-flags in the toothbrush model.
 
+; See the comment in defproxy about benign redefinition in raw Lisp by an
+; encapsulate of a function introduced by defproxy.
+
   `(progn ,@(mapcar
              (function
               (lambda (sig)
@@ -18423,6 +18426,11 @@ J
   already familiar with the use of ~c[encapsulate] to introduce constrained
   functions.
 
+  See distributed book ~c[books/misc/defattach-example.lisp] for a small
+  example.  it illustrates how ~c[defattach] may be used to build something
+  like ``higher-order'' programs, in which constrained functions may be refined
+  to different executable functions.
+
   A ~c[:skip-checks] argument enables easy experimentation with ~c[defattach],
   by permitting use of ~c[:]~ilc[program] mode functions and the skipping of
   semantic checks.  We do not cover ~c[:skip-checks] here, as most users will
@@ -27614,57 +27622,57 @@ J
                               (symbolp channel)
                               (open-output-channel-any-p1 channel
                                                           state-state))))
-  (let ((err-string
-         "ERROR: The channel ~x0 is not associated with an output file."))
-    #-acl2-loop-only
-    (when (live-state-p state-state)
-      (let ((stream (get-output-stream-from-channel channel)))
-        (return-from get-output-stream-string$-fn
-          (cond (*wormholep*
-                 (mv nil
-                     (wormhole-er 'get-output-stream-string$-fn
-                                  (list channel))
-                     state-state))
-                ((not (typep stream 'string-stream))
-                 (mv t
-                     (cw err-string channel)
-                     state-state))
-                (t (mv nil (get-output-stream-string stream) state-state))))))
-    #+acl2-loop-only
-    (let* ((entry (cdr (assoc-eq channel (open-output-channels state-state))))
-           (header (assert$ (consp entry)
-                            (car entry)))
-           (file-name (assert$ (and (true-listp header)
-                                    (eql (length header) 4))
-                               (nth 2 header))))
-      (cond
-       ((eq file-name :string)
-        (mv nil
-            (coerce (reverse (cdr entry)) 'string)
-            (update-open-output-channels
-             (add-pair channel
-                       (cons header nil)
-                       (open-output-channels state-state))
-             state-state)))
-       (t (mv t
-
-; We use cw because er is not yet available during the first pass of
-; the boot-strap.
-
-              (cw err-string channel)
-              state-state))))))
+  #-acl2-loop-only
+  (when (live-state-p state-state)
+    (let ((stream (get-output-stream-from-channel channel)))
+      (return-from get-output-stream-string$-fn
+                   (cond (*wormholep*
+                          (mv nil
+                              (wormhole-er 'get-output-stream-string$-fn
+                                           (list channel))
+                              state-state))
+                         ((not (typep stream 'string-stream))
+                          (mv t nil state-state))
+                         (t (mv nil
+                                (get-output-stream-string stream)
+                                state-state))))))
+  #+acl2-loop-only
+  (let* ((entry (cdr (assoc-eq channel (open-output-channels state-state))))
+         (header (assert$ (consp entry)
+                          (car entry)))
+         (file-name (assert$ (and (true-listp header)
+                                  (eql (length header) 4))
+                             (nth 2 header))))
+    (cond
+     ((eq file-name :string)
+      (mv nil
+          (coerce (reverse (cdr entry)) 'string)
+          (update-open-output-channels
+           (add-pair channel
+                     (cons header nil)
+                     (open-output-channels state-state))
+           state-state)))
+     (t (mv t nil state-state)))))
 )
 
 (defmacro get-output-stream-string$ (channel state-state
-                                             &optional (close-p 't))
-  (declare (xargs :guard (eq state-state 'state))
+                                             &optional
+                                             (close-p 't)
+                                             (ctx ''get-output-stream-string$))
+  (declare (xargs :guard ; but *the-live-state* is OK in raw Lisp
+                  (eq state-state 'state))
            (ignorable state-state))
-  (cond (close-p
-         `(let ((chan ,channel))
-            (er-let* ((s (get-output-stream-string$-fn chan state)))
-              (pprogn (close-output-channel chan state)
-                      (value s)))))
-        (t `(get-output-stream-string$-fn ,channel state))))
+  `(let ((chan ,channel)
+         (ctx ,ctx))
+     (mv-let (erp s state)
+             (get-output-stream-string$-fn chan state)
+             (cond (erp (er soft ctx
+                            "The channel ~x0 is not associated with output."
+                            chan))
+                   (t ,(cond (close-p
+                              '(pprogn (close-output-channel chan state)
+                                       (value s)))
+                             (t '(value s))))))))
 
 (defun close-output-channel (channel state-state)
 

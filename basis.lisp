@@ -2014,6 +2014,15 @@
 
 #-acl2-loop-only
 (defmacro defproxy (name args-sig arrow body-sig)
+
+; Note that a defproxy redefined using encapsulate can generate a warning in
+; CLISP (see comment about CLISP in with-warnings-suppressed), because indeed
+; there are two definitions being made for the same name.  However, the
+; definition generated for a function by encapsulate depends only on the
+; function's signature, up to renaming of formals; see the #-acl2-loop-only
+; definition of encapsulate.  So this redefinition is as benign as the
+; redefinition that occurs in raw Lisp with a redundant defun.
+
   `(defstub ,name ,args-sig ,arrow ,body-sig))
 
 ; We now use encapsulate to implement defstub.  It is handy to do so here,
