@@ -17271,15 +17271,23 @@
 
   ~st[CHANGES TO EXISTING FEATURES]
 
+  Improved ~c[get-output-stream-string$] to allow for a context and to do
+  genuine error printing instead of using ~ilc[cw].  ~l[io].
+
   ~st[NEW FEATURES]
 
   ~st[HEURISTIC IMPROVEMENTS]
 
   ~st[BUG FIXES]
 
+  Fixed ~ilc[trace$] to work on ~il[stobj] accessors and updaters.
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   The HTML documentation no longer has extra newlines in <pre> environments.
+
+  Among the new books is an illustration of ~ilc[defattach],
+  ~c[books/misc/defattach-example.lisp].
 
   ~st[EMACS SUPPORT]
 

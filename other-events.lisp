@@ -21589,6 +21589,9 @@ The following all cause errors.
 
 (defun get-def (fn wrld)
 
+; This function attempts to return the raw Lisp definition of fn, else returns
+; nil.
+
 ; Warnings:  (1) See the comment below about "slow"; (2) nil is returned if fn
 ; is constrained.
 
@@ -21612,6 +21615,20 @@ The following all cause errors.
            (let ((w1 (scan-to-event (cdr (decode-logical-name fn wrld)))))
              (and w1
                   (get-def fn w1))))
+          ((eq (car ev) 'defstobj)
+           (let* ((st (cadr ev))
+                  (cmd (scan-to-cltl-command
+                        (cdr (decode-logical-name st wrld)))))
+             (case-match cmd
+               (('DEFSTOBJ !st & & raw-defs & &)
+
+; As per add-trip:
+; (DEFSTOBJ st the-live-name init raw-defs template axiomatic-defs)
+
+                (assoc-eq fn raw-defs))
+               (& (er hard 'get-def
+                      "Unexpected defstobj cltl-command, ~x0."
+                      cmd)))))
           (t nil))))
 
 (defun untrace$-fn1 (fn state)

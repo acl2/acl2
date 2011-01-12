@@ -25646,7 +25646,10 @@ J
     (fmt1 (string alist col channel state evisc-tuple) (mv col state))
     (fmt1! (string alist col channel state evisc-tuple) (mv col state))
     (cw (string arg0 arg1 ... argn) nil)
-    (get-output-stream-string$ (channel state) (mv erp string state))
+    (get-output-stream-string$ (channel state 
+                                &optional (close-p 't)
+                                          (ctx ''get-output-stream-string$))
+                               (mv erp string state))
   ~ev[]
   The ``formatting'' functions are particularly useful;
   ~pl[fmt] and ~pl[cw].  In particular, ~ilc[cw] prints to a
@@ -25665,8 +25668,9 @@ J
   The macro ~c[get-output-stream-string$] returns the string accumulated into
   the given channel.  By default, a call of this macro closes the supplied
   output channel.  However, a third argument is optional (default ~c[t]), and
-  if its value is ~c[nil] then the channel remains open.  The following example
-  illustrates.
+  if it evaluates to ~c[nil] then the channel remains open.  The fourth
+  argument is an optional context, which generally evaluates to a symbol, for
+  error reporting.  The following example illustrates.
   ~bv[]
   ACL2 !>
   (mv-let
