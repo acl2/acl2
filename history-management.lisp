@@ -8891,10 +8891,23 @@ End of statistical and related information related to image size.
                 (t fmt-alist))))
     fmt-alist))
 
+(defmacro mv-2-to-state (form)
+  `(mv-let (val state)
+           ,form
+           (declare (ignore val))
+           state))
+
+(defun print-par-entry (entry fmt-alist char-subst-table channel state)
+  (mv-2-to-state
+   (fmt1 (cddr entry)
+         (lookup-fmt-alist "" nil fmt-alist char-subst-table
+                           (bar-sep-p state))
+         0 channel state nil)))
+
 (defun print-doc-string-part1 (str i maximum de-indent prefix
                                    markup-table char-subst-table
                                    fmt-alist channel name state ln
-                                   undocumented-file)
+                                   undocumented-file vp)
 
 ; Ln is the number of lines printed so far, if it is a number.  When
 ; ln is a number, we do :more processing until we hit the line maximum
@@ -8908,10 +8921,18 @@ End of statistical and related information related to image size.
 ; for numeric ln) when we hit the tilde-slash.  This setting is used
 ; when we want to dump the entire part 2.
 
-; The case when ln is :par is treated just as when ln is t, except
-; that each time two consecutive newlines are read, they are replaced
-; by the entry of PAR in markup-table, unless there is no such entry
-; (in which case this paragraph does not apply).
+; When ln is :par, then a newline following a non-newline is replaced according
+; to the entry for EPAR in markup-table, if there is one; else, by the entry
+; for PAR if there is one; else, without special paragraph treatment.  A
+; newline followed by a non-newline is replaced by the entry for BPAR if there
+; is one, else does not get special treatment.
+
+; Finally, suppose i>0 (else this paragraph does not apply).  This function
+; assumes that if "EPAR" is bound in markup-table (and hence so is "BPAR"),
+; then the begin-paragraph marker (as per "BPAR") has already been printed and
+; the end-paragraph marker (as per "EPAR") will be printed.  Informatlly, then,
+; it is an invariant of this function that at every call, an end-paragraph
+; marker is pending.
 
   (cond ((< i maximum)
          (let ((c (char str i)))
@@ -8929,7 +8950,8 @@ End of statistical and related information related to image size.
                      (cond ((null ln)
                             (scan-past-whitespace str (+ 2 i) maximum))
                            (t maximum))
-                     maximum de-indent prefix state)))
+                     maximum de-indent prefix state)
+                    (mv ln state)))
                   ((eql c #\])
 
 ; This directive, ~], in a documentation string is effective only during the
@@ -8943,12 +8965,13 @@ End of statistical and related information related to image size.
                           (print-doc-string-part1
                            str (+ 2 i) maximum de-indent prefix markup-table
                            char-subst-table fmt-alist
-                           channel name state ln undocumented-file))
+                           channel name state ln undocumented-file vp))
                          (t (pprogn (newline channel state)
                                     (save-more-doc-state
                                      str
                                      (scan-past-newline str (+ 2 i) maximum)
-                                     maximum de-indent prefix state)))))
+                                     maximum de-indent prefix state)
+                                    (mv ln state)))))
                   ((eq c #\~)
                    (pprogn (princ$ c channel state)
                            (print-doc-string-part1 str (+ 2 i) maximum
@@ -8958,16 +8981,17 @@ End of statistical and related information related to image size.
                                                    char-subst-table
                                                    fmt-alist
                                                    channel name state ln
-                                                   undocumented-file)))
+                                                   undocumented-file vp)))
                   (t
                    (mv-let
                     (erp posn entry arg state)
                     (doc-scan-past-tilde
                      name (1+ i) str maximum markup-table state)
                     (cond
-                     (erp (save-more-doc-state str maximum maximum
-                                               de-indent prefix
-                                               state))
+                     (erp (pprogn (save-more-doc-state str maximum maximum
+                                                       de-indent prefix
+                                                       state)
+                                  (mv ln state)))
                      (t (let* ((fmt-alist-for-fmt1
                                 (lookup-fmt-alist arg (cadr entry) fmt-alist
                                                   char-subst-table
@@ -9029,170 +9053,236 @@ End of statistical and related information related to image size.
                                    (print-doc-string-part1
                                     str posn maximum de-indent prefix
                                     markup-table char-subst-table fmt-alist
-                                    channel name state ln
-                                    undocumented-file)))))))))))
-                 (t (pprogn (princ$ c channel state)
-                            (newline channel state)
-                            (save-more-doc-state str (+ 1 i) maximum
-                                                 de-indent prefix
-                                                 state)))))
-              ((eql c #\Newline)
-               (cond
-                ((and (eq ln :par)
-                      (< (1+ i) maximum)
-                      (eql (char str (1+ i)) #\Newline)
-                      (assoc-string-equal "PAR" markup-table))
-                 (let ((entry (assoc-string-equal "PAR" markup-table)))
-                   (mv-let (col state)
-                           (fmt1 (cddr entry)
-                                 (lookup-fmt-alist "" nil
-                                                   fmt-alist char-subst-table
-                                                   (bar-sep-p state))
-                                 0 channel state nil)
-                           (declare (ignore col))
-                           (print-doc-string-part1
-                            str
-                            (or (use-doc-string-de-indent
-                                 de-indent
-                                 str
-                                 (+ 2 i)
-                                 maximum)
-                                (+ 2 i))
-                            maximum
-                            de-indent
-                            prefix
-                            markup-table
-                            char-subst-table
-                            fmt-alist
-                            channel name state
-                            ln undocumented-file))))
-                ((and (integerp ln)
-                      (< (1+ i) maximum)
-                      (eql (char str (1+ i)) #\Newline)
-                      (<= (f-get-global 'more-doc-min-lines state) (+ 2 ln)))
-                 (pprogn
-                  (newline channel state)
-                  (newline channel state)
-                  (save-more-doc-state str
-                                       (or (use-doc-string-de-indent
-                                            de-indent
-                                            str
-                                            (+ 2 i)
-                                            maximum)
-                                           (+ 2 i))
-                                       maximum de-indent prefix
-                                       state)))
-                ((and (integerp ln)
-                      (<= (f-get-global 'more-doc-max-lines state) (1+ ln)))
-                 (pprogn
-                  (newline channel state)
-                  (save-more-doc-state str
-                                       (or (use-doc-string-de-indent
-                                            de-indent
-                                            str
-                                            (+ 1 i)
-                                            maximum)
-                                           (+ 1 i))
-                                       maximum de-indent prefix
-                                       state)))
-                (t
-                 (pprogn (newline channel state)
-                         (princ-prefix prefix channel state)
-                         (print-doc-string-part1
-                          str
-                          (or (use-doc-string-de-indent de-indent
-                                                        str (1+ i) maximum)
-                              (1+ i))
-                          maximum
-                          de-indent
-                          prefix
-                          markup-table
-                          char-subst-table
-                          fmt-alist
-                          channel name state
-                          (if (integerp ln) (1+ ln) ln)
-                          undocumented-file)))))
-              (t (pprogn (princ$ (let ((temp (assoc c char-subst-table)))
-                                   (if temp
-                                       (coerce (cdr temp) 'string)
-                                     c))
-                                 channel state)
-                         (print-doc-string-part1 str (+ 1 i) maximum
-                                                 de-indent
-                                                 prefix markup-table
-                                                 char-subst-table
-                                                 fmt-alist
-                                                 channel name state ln
-                                                 undocumented-file))))))
-           (t (pprogn
-               (newline channel state)
-               (save-more-doc-state str i maximum de-indent prefix state)))))
+                                    channel name state
+                                    (cond ((not vp) ln)
+                                          ((eq ln :par)
+                                           (if (member-string-equal (car entry)
+                                                                    (car vp))
+                                               :par-off
+                                             :par))
+                                          ((eq ln :par-off)
+                                           (if (member-string-equal (car entry)
+                                                                    (cdr vp))
+                                               :par
+                                             :par-off))
+                                          (t ln))
+                                    undocumented-file vp)))))))))))
+              (t (pprogn (princ$ c channel state)
+                         (newline channel state)
+                         (save-more-doc-state str (+ 1 i) maximum
+                                              de-indent prefix
+                                              state)
+                         (mv ln state)))))
+            ((eql c #\Newline)
+             (mv-let
+              (epar-p entry)
+              (cond
+               ((and (eq ln :par)
+                     (< (1+ i) maximum)
+                     (eql (char str (1+ i)) #\Newline))
+                (let ((temp (assoc-string-equal "EPAR" markup-table)))
+                  (cond (temp (mv t temp))
+                        (t (let ((temp (assoc-string-equal "PAR"
+                                                           markup-table)))
+                             (mv nil temp))))))
+               (t (mv nil nil)))
+              (cond
+               (entry
+                (let ((next-i (scan-past-whitespace str (+ 2 i) maximum)))
+                  (cond
+                   ((eql next-i maximum)
+                    (pprogn (save-more-doc-state str next-i maximum de-indent
+                                                 prefix state)
+                            (mv ln state)))
+                   (t
+                    (pprogn
+                     (print-par-entry entry fmt-alist char-subst-table
+                                      channel state)
+                     (cond
+                      ((not epar-p) state)
+                      (t (let ((entry2
+                                (assoc-string-equal "BPAR" markup-table)))
+                           (prog2$ (or entry2
+                                       (er hard 'print-doc-string-part1
+                                           "Found EPAR but not BPAR in ~
+                                            markup-table,~|~x0."
+                                           markup-table))
+                                   (print-par-entry entry2 fmt-alist
+                                                    char-subst-table
+                                                    channel state)))))
+                     (print-doc-string-part1
+                      str
+                      next-i
+                      maximum
+                      de-indent
+                      prefix
+                      markup-table
+                      char-subst-table
+                      fmt-alist
+                      channel name state
+                      ln undocumented-file vp))))))
+               ((and (integerp ln)
+                     (< (1+ i) maximum)
+                     (eql (char str (1+ i)) #\Newline)
+                     (<= (f-get-global 'more-doc-min-lines state) (+ 2 ln)))
+                (pprogn
+                 (newline channel state)
+                 (newline channel state)
+                 (save-more-doc-state str
+                                      (or (use-doc-string-de-indent
+                                           de-indent
+                                           str
+                                           (+ 2 i)
+                                           maximum)
+                                          (+ 2 i))
+                                      maximum de-indent prefix
+                                      state)
+                 (mv ln state)))
+               ((and (integerp ln)
+                     (<= (f-get-global 'more-doc-max-lines state) (1+ ln)))
+                (pprogn
+                 (newline channel state)
+                 (save-more-doc-state str
+                                      (or (use-doc-string-de-indent
+                                           de-indent
+                                           str
+                                           (+ 1 i)
+                                           maximum)
+                                          (+ 1 i))
+                                      maximum de-indent prefix
+                                      state)
+                 (mv ln state)))
+               (t
+                (pprogn (newline channel state)
+                        (princ-prefix prefix channel state)
+                        (print-doc-string-part1
+                         str
+                         (or (use-doc-string-de-indent de-indent
+                                                       str (1+ i) maximum)
+                             (1+ i))
+                         maximum
+                         de-indent
+                         prefix
+                         markup-table
+                         char-subst-table
+                         fmt-alist
+                         channel name state
+                         (if (integerp ln) (1+ ln) ln)
+                         undocumented-file vp))))))
+            (t (pprogn (princ$ (let ((temp (assoc c char-subst-table)))
+                                 (if temp
+                                     (coerce (cdr temp) 'string)
+                                   c))
+                               channel state)
+                       (print-doc-string-part1 str (+ 1 i) maximum
+                                               de-indent
+                                               prefix markup-table
+                                               char-subst-table
+                                               fmt-alist
+                                               channel name state ln
+                                               undocumented-file vp))))))
+        (t (pprogn
+            (newline channel state)
+            (save-more-doc-state str i maximum de-indent prefix state)
+            (mv ln state)))))
 
-(defun print-doc-string-part
+(defun print-doc-string-part-mv
   (i str prefix markup-table char-subst-table fmt-alist
-     channel name par-p undocumented-file state)
+     channel name ln undocumented-file vp state)
 
 ; Str is a doc string and i is a part number, 0, 1, or 2.
 ; We print the ith part of the string to channel.  We embed
 ; non-empty part 1's between a pair of newlines.
 
-; When par-p is non-nil, we interpret two consecutive blank lines as calling
-; for a paragraph marker, in the sense described in the comments in
-; print-doc-string-part1, for the case when ln is :par.  However, we don't
-; think about paragraphs at all when i is 0; such strings should be very short
-; anyhow.
+; When ln is :par is non-nil, we interpret two consecutive blank lines as
+; calling for a paragraph marker, in the sense described in the comments in
+; print-doc-string-part1.  When ln is t, we print the entire part; see
+; print-doc-string-part1.  Note that ln is ignored when i is 0.
 
-  (let ((k (scan-to-doc-string-part i str))
-        (maximum (length str)))
-    (cond ((= i 1)
-           (if (or (= k maximum)
-                   (and (eql (char str k) #\~)
-                        (< (1+ k) maximum)
-                        (eql (char str (1+ k)) #\/)))
+  (let ((b-entry (assoc-string-equal "BPAR" markup-table))
+        (e-entry (assoc-string-equal "EPAR" markup-table)))
+    (pprogn
+     (prog2$ (or (iff b-entry e-entry)
+                 (er hard 'print-doc-string-part
+                     "Found ~x0 but not ~x1 in markup-table,~|~x2."
+                     (if b-entry "BPAR" "EPAR")
+                     (if b-entry "EPAR" "BPAR")
+                     markup-table))
+             (cond ((and (not (eql i 0))
+                         b-entry
+                         (not (eq ln :par-off)))
+                    (print-par-entry b-entry fmt-alist char-subst-table channel
+                                     state))
+                   (t state)))
+     (mv-let
+      (new-ln state)
+      (let ((k (scan-to-doc-string-part i str))
+            (maximum (length str)))
+        (cond ((= i 1)
+               (if (or (= k maximum)
+                       (and (eql (char str k) #\~)
+                            (< (1+ k) maximum)
+                            (eql (char str (1+ k)) #\/)))
 
 ; If the part we are trying to print is empty, then don't do anything.
 ; except save the more doc state.
 
-               (save-more-doc-state str
-                                    (scan-past-whitespace str (+ 2 k) maximum)
-                                    maximum
-                                    (get-doc-string-de-indent str)
-                                    prefix
-                                    state)
+                   (pprogn (save-more-doc-state
+                            str
+                            (scan-past-whitespace str (+ 2 k) maximum) 
+                            maximum
+                            (get-doc-string-de-indent str)
+                            prefix
+                            state)
+                           (mv ln state))
 
 ; Otherwise, put out a newline first and then do it.  This elaborate
 ; code is here to prevent us from putting out an unnecessary newline.
 
-               (pprogn (princ-prefix prefix channel state)
-                       (newline channel state)
-                       (princ-prefix prefix channel state)
-                       (print-doc-string-part1 str
-                                               k
-                                               maximum
-                                               (get-doc-string-de-indent str)
-                                               prefix
-                                               markup-table
-                                               char-subst-table
-                                               fmt-alist
-                                               channel
-                                               name
-                                               state
-                                               (if par-p :par nil)
-                                               undocumented-file))))
-          (t (print-doc-string-part1 str
-                                     k
-                                     maximum
-                                     (get-doc-string-de-indent str)
-                                     prefix
-                                     markup-table
-                                     char-subst-table
-                                     fmt-alist
-                                     channel
-                                     name
-                                     state
-                                     (if (= i 0) nil
-                                       (if par-p :par 0))
-                                     undocumented-file)))))
+                 (pprogn (princ-prefix prefix channel state)
+                         (newline channel state)
+                         (princ-prefix prefix channel state)
+                         (print-doc-string-part1 str
+                                                 k
+                                                 maximum
+                                                 (get-doc-string-de-indent str)
+                                                 prefix
+                                                 markup-table
+                                                 char-subst-table
+                                                 fmt-alist
+                                                 channel
+                                                 name
+                                                 state
+                                                 ln
+                                                 undocumented-file vp))))
+              (t (print-doc-string-part1 str
+                                         k
+                                         maximum
+                                         (get-doc-string-de-indent str)
+                                         prefix
+                                         markup-table
+                                         char-subst-table
+                                         fmt-alist
+                                         channel
+                                         name
+                                         state
+                                         (if (= i 0) nil ln)
+                                         undocumented-file vp))))
+      (pprogn (cond ((and (not (eql i 0))
+                          e-entry
+                          (not (eq new-ln :par-off)))
+                     (print-par-entry e-entry fmt-alist char-subst-table
+                                      channel state))
+                    (t state))
+              (mv new-ln state))))))
+
+(defun print-doc-string-part
+  (i str prefix markup-table char-subst-table fmt-alist
+     channel name ln undocumented-file vp state)
+  (mv-2-to-state
+   (print-doc-string-part-mv i str prefix markup-table char-subst-table
+                             fmt-alist channel name ln undocumented-file vp
+                             state)))
 
 (defun get-doc-section (section alist)
   (cond ((null alist) nil)
@@ -9272,6 +9362,7 @@ End of statistical and related information related to image size.
                                        name
                                        nil
                                        nil
+                                       nil
                                        state)))))
      ((= n 1)
       (pprogn
@@ -9280,7 +9371,7 @@ End of statistical and related information related to image size.
                               markup-table
                               char-subst-table
                               fmt-alist
-                              channel name nil nil state)
+                              channel name nil nil nil state)
        (cond
         ((caddr doc-tuple)
          (pprogn
@@ -9306,7 +9397,7 @@ End of statistical and related information related to image size.
          (print-doc-string-part 2 (cadddr doc-tuple)
                                 prefix markup-table char-subst-table
                                 fmt-alist
-                                channel name nil nil state))))))
+                                channel name nil nil nil state))))))
 
 (defun print-doc-lst (lst prefix
                           markup-table char-subst-table fmt-alist
@@ -9467,19 +9558,17 @@ End of statistical and related information related to image size.
           (more-doc-state
            (pprogn
             (princ-prefix (car (cddddr more-doc-state)) channel state)
-            (print-doc-string-part1 (car more-doc-state)
-                                    (cadr more-doc-state)
-                                    (caddr more-doc-state)
-                                    (cadddr more-doc-state)
-                                    (car (cddddr more-doc-state))
-                                    (doc-markup-table state)
-                                    (doc-char-subst-table state)
-                                    (doc-fmt-alist state)
-                                    channel
-                                    "the current item"
-                                    state
-                                    ln
-                                    nil)
+            (mv-2-to-state
+             (print-doc-string-part1 (car more-doc-state)
+                                     (cadr more-doc-state)
+                                     (caddr more-doc-state)
+                                     (cadddr more-doc-state)
+                                     (car (cddddr more-doc-state))
+                                     (doc-markup-table state)
+                                     (doc-char-subst-table state)
+                                     (doc-fmt-alist state)
+                                     channel "the current item" state ln nil
+                                     nil))
             (end-doc channel state)))
           (t (end-doc channel state))))))
 

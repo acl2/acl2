@@ -607,14 +607,15 @@ a TeXinfo file to be used to create an info file.  See also
                       (princ$ ") " channel state))
             state)
 	  (acl2::print-doc-string-part 0 str ""
-				       (texinfo-doc-markup-table state)
-				       *texinfo-doc-char-subst-table*
+                                       (texinfo-doc-markup-table state)
+                                       *texinfo-doc-char-subst-table*
                                        (acl2::doc-fmt-alist state)
                                        channel
-				       name
+                                       name
                                        nil
-                                       nil ; undocumented-file
-				       state)))
+                                       nil  ; undocumented-file
+                                       nil  ; vp
+                                       state)))
 
 (defun write-doc-menu1 (lst doc-alist tex-only-flg channel state)
   ;; lst is a list of names
@@ -684,38 +685,33 @@ a TeXinfo file to be used to create an info file.  See also
                                 channel
                                 (car doc-tuple)
                                 nil
-                                nil ; undocumented-file
+                                nil  ; undocumented-file
+                                nil  ; vp
                                 state)
    (princ$ "@end format" channel state)
    (newline channel state)
    (acl2::print-doc-string-part 1 (cadddr doc-tuple) ""
-				(texinfo-doc-markup-table state)
-				*texinfo-doc-char-subst-table*
+                                (texinfo-doc-markup-table state)
+                                *texinfo-doc-char-subst-table*
                                 (acl2::doc-fmt-alist state)
                                 channel
-				(car doc-tuple)
+                                (car doc-tuple)
                                 nil
-                                nil ; undocumented-file
-				state)
+                                nil  ; undocumented-file
+                                nil  ; vp
+                                state)
    (newline channel state)
    (write-doc-menu doc-tuple doc-alist tex-only-flg channel state)
-   (let* ((str (cadddr doc-tuple))
-          (k (acl2::scan-to-doc-string-part 2 str))
-          (maximum (length str)))
-     (acl2::print-doc-string-part1 str
-				   k
-				   maximum
-				   (acl2::get-doc-string-de-indent str)
-				   ""
-				   (texinfo-doc-markup-table state)
-				   *texinfo-doc-char-subst-table*
-                                   (acl2::doc-fmt-alist state)
-				   channel
-                                   (car doc-tuple)
-				   state
-				   t
-                                   nil ; undocumented-file
-                                   ))
+   (acl2::print-doc-string-part 2 (cadddr doc-tuple) ""
+                                (texinfo-doc-markup-table state)
+                                *texinfo-doc-char-subst-table*
+                                (acl2::doc-fmt-alist state)
+                                channel
+                                (car doc-tuple)
+                                t
+                                nil  ; undocumented-file
+                                nil  ; vp
+                                state)
    (newline channel state)))
 
 (mutual-recursion

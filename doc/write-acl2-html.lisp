@@ -96,6 +96,9 @@
   "Table with entries (char . char-list) for substituting characters in ~
    filenames.")
 
+(defconst *html-vp* ; see print-doc-string-part1
+  '(("BV" "BF") . ("EV" "EF")))
+
 (defun html-string-node-name (pkg-name name)
   (cond
    ((equal pkg-name "KEYWORD")
@@ -284,16 +287,18 @@
 
 (defconst *html-doc-markup-table*
   '(("-" nil .    "--")
-    ("B" nil .  "<b>~st</B>")
+    ("B" nil .  "<b>~st</b>")
     ("BF" nil .  "~%<pre>")
     ("BID" nil .    "")      ;begin implementation dependent
-    ("BQ" nil .  "~%<blockquote>")
+    ("BPAR" nil .  "<p>")
+    ("BQ" nil .  "</p>~%<blockquote><p>")
     ("BV" nil .  "~%<pre>")
     ("C" nil .  "<code>~st</code>")
     ("EF" nil .  "</pre>~%")
     ("EID" nil .    "")      ;end implementation dependent
     ("EM" nil .  "<em>~st</em>") ;emphasis
-    ("EQ" nil .  "</blockquote>~%")
+    ("EPAR" nil .  "</p>")
+    ("EQ" nil .  "</p></blockquote>~%<p>")
     ("EV" nil .  "</pre>~%")
     ("GIF" nil . "<img src=~st>") ;gif files; e.g., ~gif[\"foo.gif\" align=top]
     ("I" nil .  "<i>~st</i>")
@@ -304,8 +309,8 @@
     ("IL" t .  "<a href=\"~sc\">~st</a>")
     ("ILC" t .  "<code><a href=\"~sc\">~st</a></code>")
     ("L" t .  "See <a href=\"~sc\">~st</a>")
-    ("NL" nil .  "<br>~%")
-    ("PAR" nil .  "<p>~%~%")
+    ("NL" nil .  "<br/>~%")
+    ("PAR" nil .  "<p/>~%~%")
     ;("PL" t .  "see <a href=\"~sc#~sp\">~st</a>")
     ("PL" t .  "see <a href=\"~sc\">~st</a>")
     ("SC" nil .  "~sT")
@@ -450,6 +455,7 @@ an html file.  See :DOC markup")
                                          name
                                          nil
                                          undocumented-file
+                                         nil
                                          state)
             (if enumerate-flg
                 (pprogn
@@ -572,8 +578,9 @@ an html file.  See :DOC markup")
                                     doc-fmt-alist
                                     channel
                                     (car doc-tuple)
-                                    t ;might as well ":par"
+                                    t
                                     undocumented-file
+                                    nil ; vp is relevant only for :par
                                     state))
      (if (equal parent-name "Pages Written Especially for the Tours")
          state
@@ -584,38 +591,35 @@ an html file.  See :DOC markup")
                             major-topics-file
                             channel state)
         (newline channel state)
-        (princ$ "</pre><p>" channel state)))
+        (princ$ "</pre><p/>" channel state)))
      (newline channel state)
-     (acl2::print-doc-string-part 1 (cadddr doc-tuple) ""
-                                  *html-doc-markup-table*
-                                  *html-doc-char-subst-table*
-                                  doc-fmt-alist
-                                  channel
-                                  (car doc-tuple)
-                                  t
-                                  undocumented-file
-                                  state)
-     (princ$ "<p>" channel state)
-     (newline channel state)
-     (write-doc-menu doc-tuple doc-alist html-file
-                     major-topics-file t nil channel state undocumented-file)
-     (let* ((str (cadddr doc-tuple))
-            (k (acl2::scan-to-doc-string-part 2 str))
-            (maximum (length str)))
-       (acl2::print-doc-string-part1 str
-                                     k
-                                     maximum
-                                     (acl2::get-doc-string-de-indent str)
-                                     ""
-                                     *html-doc-markup-table*
-                                     *html-doc-char-subst-table*
-                                     doc-fmt-alist
-                                     channel
-                                     (car doc-tuple)
-                                     state
-                                     :par
-                                     undocumented-file))
-     (write-trailer html-file index-file channel state))))
+     (mv-let
+      (ln state)
+      (acl2::print-doc-string-part-mv 1 (cadddr doc-tuple) ""
+                                      *html-doc-markup-table*
+                                      *html-doc-char-subst-table*
+                                      doc-fmt-alist
+                                      channel
+                                      (car doc-tuple)
+                                      :par
+                                      undocumented-file
+                                      *html-vp*
+                                      state)
+      (pprogn
+       (newline channel state)
+       (write-doc-menu doc-tuple doc-alist html-file
+                       major-topics-file t nil channel state undocumented-file)
+       (acl2::print-doc-string-part 2 (cadddr doc-tuple) ""
+                                    *html-doc-markup-table*
+                                    *html-doc-char-subst-table*
+                                    doc-fmt-alist
+                                    channel
+                                    (car doc-tuple)
+                                    ln ; :par or :par-off
+                                    undocumented-file
+                                    *html-vp*
+                                    state)
+       (write-trailer html-file index-file channel state))))))
 
 (mutual-recursion
 
