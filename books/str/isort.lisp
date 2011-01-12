@@ -49,10 +49,10 @@
   ":Doc-Section Str
   Case-insensitively sort a string list~/
 
-  This is an efficient, stable mergesort for string lists based on ~il[istr<]
+  This is an efficient, stable mergesort for string lists based on ~il[str::istr<]
   and implemented with the \"defsort/defsort\" book.~/
 
-  ~l[istr<]"
+  ~l[str::istr<]"
 
   `(istr-sort ,x))
 

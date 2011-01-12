@@ -104,6 +104,10 @@
   <p><xsl:apply-templates/></p>
 </xsl:template>
 
+<xsl:template match="blockquote">
+  <blockquote><xsl:apply-templates/></blockquote>
+</xsl:template>
+
 <xsl:template match="br">
   <xsl:apply-templates/><br/>
 </xsl:template>

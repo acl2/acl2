@@ -28,7 +28,7 @@
 
   ~c[(isubstrp x y)] determines if x ever occurs as a case-insensitive substring of y.~/
 
-  ~l[substrp], and ~pl[istrpos]"
+  ~l[str::substrp], and ~pl[str::istrpos]"
 
   (declare (type string x)
            (type string y))

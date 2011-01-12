@@ -118,7 +118,7 @@
   Logically, this is identical to ~c[(iprefixp (coerce x 'list) (coerce y 'list))],
   but we use a more efficient implementation which avoids coercing the strings.~/
 
-  ~l[strprefixp] and ~pl[iprefixp]"
+  ~l[str::strprefixp] and ~pl[str::iprefixp]"
 
   (declare (type string x)
            (type string y))

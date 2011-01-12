@@ -88,17 +88,17 @@
   ":Doc-Section Str
   Locate the last occurrence of a substring~/
 
-  ~c[(strrpos x y)] searches through the string y for the last occurrence of the
-  substring x.  It returns NIL if x never occurs in y, or returns the index of
-  the first character of the last occurrence.
+  ~c[(strrpos x y)] searches through the string y for the last occurrence of
+  the substring x.  It returns NIL if x never occurs in y, or returns the index
+  of the first character of the last occurrence.
 
-  The function is \"efficient\" in the sense that it does not coerce its arguments
-  into lists, but rather traverses both strings with ~c[char].  On the other hand,
-  it is a naive string search which operates by repeatedly calling ~il[strprefixp],
-  rather than some better algorithm.
+  The function is \"efficient\" in the sense that it does not coerce its
+  arguments into lists, but rather traverses both strings with ~c[char].  On
+  the other hand, it is a naive string search which operates by repeatedly
+  calling ~il[str::strprefixp], rather than some better algorithm.
 
-  The \"soundness\" and \"completness\" of strpos are established in the theorems
-  ~c[prefixp-of-strrpos] and ~c[completeness-of-strrpos].~/~/"
+  The \"soundness\" and \"completness\" of strpos are established in the
+  theorems ~c[prefixp-of-strrpos] and ~c[completeness-of-strrpos].~/~/"
 
   (declare (type string x)
            (type string y))

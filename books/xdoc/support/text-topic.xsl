@@ -72,6 +72,16 @@
   <xsl:text>&#xA;&#xA;</xsl:text>
 </xsl:template>
 
+<xsl:template match="blockquote">
+  <!-- just treat blockquotes like regular paragraphs -->
+  <xsl:call-template name="wrap-string">
+   <xsl:with-param name="str" select="normalize-space(.)"/>
+   <xsl:with-param name="wrap-col" select="65"/>
+   <xsl:with-param name="break-mark" select="'&#xA;'"/>
+  </xsl:call-template>
+  <xsl:text>&#xA;&#xA;</xsl:text>
+</xsl:template>
+
 <xsl:template match="ul">
   <xsl:apply-templates/>
   <xsl:text>&#xA;</xsl:text>

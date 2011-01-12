@@ -26,8 +26,8 @@
 ; time of top.lisp.
 
 (in-package "XDOC")
-(include-book "base")
-
+(include-book "import-acl2doc")  ;; For base acl2 documentation
+(program)
 
 (defxdoc xdoc
   :short "<em>XDOC</em> is a tool for documenting ACL2 libraries, and is
@@ -195,6 +195,10 @@ Technology</a>.</p>
 
 <p>Paragraphs should be wrapped in <tt>&lt;p&gt;</tt> and <tt>&lt;/p&gt;</tt>
 tags.</p>
+
+<blockquote>You can use <tt>&lt;blockquote&gt;</tt> to create indented
+paragraphs like this one.  (Let's put enough text here to make it word-wrap.
+Mumble mumble mumble.  Mumble.  Mumble mumble.)</blockquote>
 
 <p><tt>&lt;br/&gt;</tt> can be used<br/>
 to write haikus and so on<br/>

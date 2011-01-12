@@ -30,7 +30,7 @@
   ~c[(substrp x y)] determines if x ever occurs as a substring of y.  The test is
   case-sensitive.~/
 
-  ~l[isubstrp], and ~pl[strpos]"
+  ~l[str::isubstrp], and ~pl[str::strpos]"
 
   (declare (type string x)
            (type string y))

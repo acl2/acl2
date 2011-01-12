@@ -208,6 +208,8 @@
        ((when (equal name "dd"))
         (+ 4 (get-indent-level (cdr open-tags))))
        ((when (equal name "code"))
+        (+ 4 (get-indent-level (cdr open-tags))))
+       ((when (equal name "blockquote"))
         (+ 4 (get-indent-level (cdr open-tags)))))
     (get-indent-level (cdr open-tags))))
 
@@ -331,7 +333,7 @@
                          (acc     (str::revappend-chars bullet acc)))
                       acc))
                    ((member-equal name '("h4" "h5" "short" "p" "li" "dt" "dd" "br"
-                                         "index_head" "index_body"))
+                                         "index_head" "index_body" "blockquote"))
                     ;; This kind of tag has some level of indenting associated
                     ;; with it, so make sure we indent over to the right level.
                     (auto-indent (maybe-newline acc) open-tags))
@@ -359,7 +361,8 @@
                           list-nums))
              (acc (cond
                    ((member-equal name '("h1" "h2" "h3" "h4" "h5" "p" "dl" "ul" "ol"
-                                         "short" "code" "parent" "index" "index_body"))
+                                         "short" "code" "parent" "index" "index_body"
+                                         "blockquote"))
                     (auto-indent (maybe-doublespace acc) open-tags))
                    ((member-equal name '("li" "dd" "dt" "index_head"))
                     (auto-indent (maybe-newline acc) open-tags))

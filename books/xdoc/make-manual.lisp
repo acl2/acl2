@@ -21,8 +21,5 @@
 (in-package "ACL2")
 (include-book "top")
 
+(defttag manual)
 (xdoc::save "manual")
-
-(value :q)
-
-(good-bye)

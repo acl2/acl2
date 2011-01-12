@@ -65,19 +65,19 @@
   ":Doc-Section Str
   Case-insensitivly locate the first occurrence of a substring~/
 
-  ~c[(istrpos x y)] is like ~il[strpos], but the comparisons are done in a case
-  insensitive manner.  It returns NIL if x never occurs in y, or returns the index
-  of the first character of the first occurrence.
+  ~c[(istrpos x y)] is like ~il[str::strpos], but the comparisons are done in a
+  case insensitive manner.  It returns NIL if x never occurs in y, or returns
+  the index of the first character of the first occurrence.
 
-  The function is \"efficient\" in the sense that it does not coerce its arguments
-  into lists, but rather traverses both strings with ~c[char].  On the other hand,
-  it is a naive string search which operates by repeatedly calling ~il[istrprefixp],
-  rather than some better algorithm.
+  The function is \"efficient\" in the sense that it does not coerce its
+  arguments into lists, but rather traverses both strings with ~c[char].  On
+  the other hand, it is a naive string search which operates by repeatedly
+  calling ~il[str::istrprefixp], rather than some better algorithm.
 
-  The \"soundness\" and \"completness\" of strpos are established in the theorems
-  ~c[iprefixp-of-istrpos] and ~c[completeness-of-istrpos].~/
+  The \"soundness\" and \"completness\" of strpos are established in the
+  theorems ~c[iprefixp-of-istrpos] and ~c[completeness-of-istrpos].~/
 
-  ~l[strpos], ~pl[substrp], and ~pl[isubstrp]"
+  ~l[str::strpos], ~pl[str::substrp], and ~pl[str::isubstrp]"
 
   (declare (type string x)
            (type string y))

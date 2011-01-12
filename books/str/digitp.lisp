@@ -31,7 +31,7 @@
   Recognizer for characters #\0 through #\9.~/
 
   ACL2 provides ~il[digit-char-p] which is more flexible and can recognize
-  characters in other bases.  ~c[digitp] only recognizes base-10 digits,
+  characters in other bases.  ~c[str::digitp] only recognizes base-10 digits,
   but is roughly twice as fast as ~c[digit-char-p], at least on CCL.~/
 
   Here is an experiment you can run in raw lisp, with times reported in CCL
@@ -69,7 +69,7 @@
 (defund digit-val (x)
 
   ":Doc-Section Str
-  Coerces a ~il[digitp] character into an integer. ~/
+  Coerces a ~il[str::digitp] character into an integer. ~/
 
   For instance, the digit-val of #\3 is 3.  For any non-digitp, 0 is returned. ~/
   "
@@ -120,7 +120,7 @@
 (defund digit-listp (x)
 
   ":Doc-Section Str
-  Recognizes lists of ~il[digitp] characters.~/~/
+  Recognizes lists of ~il[str::digitp] characters.~/~/
   "
 
   (declare (xargs :guard (character-listp x)

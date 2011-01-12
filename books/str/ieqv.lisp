@@ -29,10 +29,10 @@
    Case-insensitive character equivalence test~/
 
    ACL2's built-in version of this function, ~il[char-equal], is irritating to use
-   because it has standard-char-p guards.  ~c[ichareqv] is somewhat less efficient,
+   because it has standard-char-p guards.  ~c[str::ichareqv] is somewhat less efficient,
    but it works on arbitrary characters and is an equivalence relation.~/
 
-   ~l[istreqv]"
+   ~l[str::istreqv]"
 
   (declare (type character x)
            (type character y))
@@ -61,9 +61,9 @@
    Case-insensitive character-list equivalence test~/
 
    We say that two lists are case-insensitively equivalent when they have the same
-   length and each of their elements are pairwise ~il[ichareqv].~/
+   length and each of their elements are pairwise ~il[str::ichareqv].~/
 
-   ~l[istreqv] and ~pl[ichareqv]~/"
+   ~l[str::istreqv] and ~pl[str::ichareqv]~/"
 
    (declare (xargs :guard (and (character-listp x)
                                (character-listp y))))
@@ -189,14 +189,14 @@
    Case-insensitive string equivalence test~/
 
    We say that two strings are case-insensitively equivalent when they have the
-   same length and each of their characters are pairwise ~il[ichareqv].  Logically
+   same length and each of their characters are pairwise ~il[str::ichareqv].  Logically
    this is identical to ~c[(icharlisteqv (coerce x 'list) (coerce y 'list))], but
    we use a more efficient implementation which avoids coercing the strings.
 
    NOTE: for reasoning, we leave this function enabled and prefer to work with
-   icharlisteqv of the coerces as our normal form.~/
+   ~c[icharlisteqv] of the coerces as our normal form.~/
 
-   ~l[ichareqv] and ~pl[icharlisteqv]~/"
+   ~l[str::ichareqv] and ~pl[str::icharlisteqv]~/"
 
   (declare (type string x)
            (type string y))

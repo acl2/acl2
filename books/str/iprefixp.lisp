@@ -29,9 +29,9 @@
   Case-insensitive character-list prefix test~/
 
   ~c[(iprefixp x y)] determines whether one character list is a prefix of another,
-  where each character is tested using ~il[ichareqv].~/
+  where each character is tested using ~il[str::ichareqv].~/
 
-  ~l[istrprefixp]"
+  ~l[str::istrprefixp]"
 
   (declare (xargs :guard (and (character-listp x)
                               (character-listp y))))

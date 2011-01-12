@@ -45,6 +45,7 @@
                ,(acl2::extend-pathname *xdoc-dir* "mkdir-raw" state)))
 
 
+
 (defmacro xdoc (name)
   (declare (xargs :guard (or (symbolp name)
                              (and (quotep name)
@@ -79,7 +80,8 @@
                ((mv & & state) (colon-xdoc-fn ',name t all-xdoc-topics state)))
             (value '(value-triple :invisible))))))))
 
-(defmacro save (dir &key (index-pkg 'acl2::foo))
+(defmacro save (dir &key
+                    (index-pkg 'acl2::foo))
   `(progn
      (include-book ,*xdoc-dir/defxdoc-raw* :ttags :all)
      (include-book ,*xdoc-dir/mkdir-raw* :ttags :all)
@@ -89,6 +91,7 @@
      ;; ugh, stupid stupid writes-ok stupidity
      (defttag :xdoc)
      (remove-untouchable acl2::writes-okp nil)
+     (import-acl2doc)
 
      (make-event
       (b* (((mv all-xdoc-topics state) (all-xdoc-topics state))

@@ -29,10 +29,10 @@
   ":Doc-Section Miscellaneous
 Tell ACL2 to automatically ~ilc[hide] some terms.~/
 
-Autohide is a ~ilc[computed-hint] that scans your proof goals for any uses of
-certain functions, and instructs ACL2 to wrap these calls in ~ilc[hide].  This
-can be used as a way to tell ACL2 to ignore certain irrelevant terms so that
-proofs can be completed faster.
+Autohide is a computed hint (~l[computed-hints]) that scans your proof goals
+for any uses of certain functions, and instructs ACL2 to wrap these calls in
+~ilc[hide].  This can be used as a way to tell ACL2 to ignore certain
+irrelevant terms so that proofs can be completed faster.
 
 In particular, when I want to speed up a proof, I usually start by using
 ~ilc[accumulated-persistence] to see if there are expensive rules that do not

@@ -170,7 +170,7 @@
   value and length, which are to be sorted first by value and then by length.  Under
   this approach, a string such as \"x0\" is considered to be less than \"x00\", etc.
   ~/
-  ~l[strnat<], ~pl[icharlist<]"
+  ~l[str::strnat<], ~pl[str::icharlist<]"
 
   (declare (xargs :guard (and (character-listp x)
                               (character-listp y))
@@ -726,7 +726,7 @@
   ":Doc-Section Str
   Mixed alphanumeric string less-than test~/
 
-  This is like ~il[charlistnat<], but for strings.  It avoids coercing the
+  This is like ~il[str::charlistnat<], but for strings.  It avoids coercing the
   strings to character-lists, and is altogether pretty fast.~/
   "
 

@@ -29,26 +29,17 @@
 (program)
 
 
-(defun fmt-to-chars (string alist state) ;; ==> (MV CHARS STATE)
+(defun fmt-to-chars (string alist state)
 
-; We can't use fmt to print directly to a string, which sucks.  So, we print to
-; a temporary file and read it back in.  This is truly horrible, but it's a lot
-; easier than reimplementing ppr.
+; Use ACL2's fancy new string-printing stuff to pretty-print an object into a
+; string.
 
-  (b* (((mv channel state)  (open-output-channel ".fmt-to-chars.tmp" :character state))
+  (b* (((mv channel state)  (open-output-channel :string :character state))
        ((mv & state)        (fmt string alist channel state nil))
-       (state               (close-output-channel channel state))
-       ((mv data state)     (acl2::read-file-characters ".fmt-to-chars.tmp" state)))
-      (if (stringp data)
-          (prog2$
-           (cw "; xdoc note: in fmt-to-chars, failed to read .fmt-to-chars.tmp~%")
-           ;; In this funny return value, we insert a newline to be consistent
-           ;; with fmt.
-           (mv (coerce "
-[[ error reading .fmt-to-chars.tmp ]]" 'list)
-               state))
-        (mv data state))))
-
+       ((mv err str state)  (get-output-stream-string$ channel state)))
+    (or (not err)
+        (er hard? 'fmt-to-chars "Error with get-output-stream-string$???"))
+    (mv (coerce str 'list) state)))
 
 (defun fmt-to-chars-and-encode (string alist state acc) ;; ==> (MV ACC-PRIME STATE)
 

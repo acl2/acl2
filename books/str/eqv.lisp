@@ -56,7 +56,7 @@
    That is, non-characters are first coerced to be the zero-character, then we ask whether
    the results are equal.~/
 
-   ~l[ichareqv] and ~pl[charlisteqv]"
+   ~l[str::ichareqv] and ~pl[str::charlisteqv]"
 
   (declare (type character x)
            (type character y))
@@ -122,9 +122,9 @@
 
    ~c[(charlisteqv x y)] determines if x and y are equivalent when interpreted as character
    lists.  That is, ~c[x] and ~c[y] must have the same length, and their elements must be
-   ~il[chareqv] to one another.~/
+   ~il[str::chareqv] to one another.~/
 
-   ~l[icharlisteqv]"
+   ~l[str::icharlisteqv]"
 
   (declare (xargs :guard (and (character-listp x)
                               (character-listp y))))

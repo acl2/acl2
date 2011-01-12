@@ -96,19 +96,19 @@
   ":Doc-Section Str
   Locate the first occurrence of a substring~/
 
-  ~c[(strpos x y)] searches through the string y for the first occurrence of the
-  substring x.  It returns NIL if x never occurs in y, or returns the index of
-  the first character of the first occurrence.
+  ~c[(strpos x y)] searches through the string y for the first occurrence of
+  the substring x.  It returns NIL if x never occurs in y, or returns the index
+  of the first character of the first occurrence.
 
-  The function is \"efficient\" in the sense that it does not coerce its arguments
-  into lists, but rather traverses both strings with ~c[char].  On the other hand,
-  it is a naive string search which operates by repeatedly calling ~il[strprefixp],
-  rather than some better algorithm.
+  The function is \"efficient\" in the sense that it does not coerce its
+  arguments into lists, but rather traverses both strings with ~c[char].  On
+  the other hand, it is a naive string search which operates by repeatedly
+  calling ~il[str::strprefixp], rather than some better algorithm.
 
-  The \"soundness\" and \"completness\" of strpos are established in the theorems
-  ~c[prefixp-of-strpos] and ~c[completeness-of-strpos].~/
+  The \"soundness\" and \"completness\" of strpos are established in the
+  theorems ~c[prefixp-of-strpos] and ~c[completeness-of-strpos].~/
 
-  ~l[istrpos] and ~pl[substrp]"
+  ~l[str::istrpos] and ~pl[str::substrp]"
 
   (declare (type string x)
            (type string y))

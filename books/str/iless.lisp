@@ -40,7 +40,7 @@
   in regular ASCII ordering they are \"larger\" than the upper-case letters.
   ~/
 
-  ~l[istr<] and ~pl[icharlist<]"
+  ~l[str::istr<] and ~pl[str::icharlist<]"
 
   (declare (type character x)
            (type character y))
@@ -140,11 +140,11 @@
   ":Doc-Section Str
   Case-insensitive character-list less-than test~/
 
-  We determine whether one character list alphabetically preceeds another, where
-  each character is tested with ~il[char<] and shorter strings are said to come
-  before longer strings. ~/
+  We determine whether one character list alphabetically preceeds another,
+  where each character is tested with ~il[str::ichar<] and shorter strings are
+  said to come before longer strings. ~/
 
-  ~l[ichar<] and ~pl[istr<]"
+  ~l[str::ichar<] and ~pl[str::istr<]"
 
   (declare (xargs :guard (and (character-listp x)
                               (character-listp y))
@@ -307,13 +307,13 @@
   Case-insensitive string less-than test~/
 
   We determine whether one string alphabetically preceeds another, where each
-  character is tested with ~il[char<] and shorter strings are said to come
-  before longer strings.
+  character is tested with ~il[str::ichar<] and shorter strings are said to
+  come before longer strings.
 
   Logically, ~c[(istr< x y)] is ~c[(icharlist< (coerce x 'list) (coerce y 'list)],
   but we use a more efficient implementation which avoids coercing the strings.~/
 
-  ~l[ichar<] and ~pl[icharlist<]"
+  ~l[str::ichar<] and ~pl[str::icharlist<]"
 
   (declare (type string x)
            (type string y))
