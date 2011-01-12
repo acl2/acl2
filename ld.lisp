@@ -17257,7 +17257,7 @@
   :Doc
   ":Doc-Section release-notes
 
-  ACL2 Version  4.3 (xx, 20xx) Notes~/
+  ACL2 Version  4.3 (xxx, 20xx) Notes~/
 
   NOTE!  New users can ignore these release notes, because the
   ~il[documentation] has been updated to reflect all changes that are recorded
@@ -17291,7 +17291,7 @@
   :doc
   ":Doc-Section release-notes
 
-  ACL2 Version  4.3(r) (xx, 20xx) Notes~/
+  ACL2 Version  4.3(r) (xxx, 20xx) Notes~/
 
   ~/
 
@@ -19414,8 +19414,8 @@ distributed with the source code for the system.  So if you have already
 obtained ACL2, you should look in the <CODE>doc/</CODE> subdirectory of the
 directory upon which ACL2 is installed.  You may obtain the gzipped Postscript
 form of the documentation by clicking <A HREF=
-\"http://www.cs.utexas.edu/users/moore/publications/acl2-book.ps.gz\">here
-over 2 MB)</A>.
+\"http://www.cs.utexas.edu/users/moore/publications/acl2-book.ps.gz\">here</A>
+(over 2 MB).
 
 <BR><HR><BR>
 <H2><A NAME=\"Tools\">Lemma Libraries and Utilities; and, How to Contribute</A></H2>
