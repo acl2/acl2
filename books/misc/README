@@ -92,6 +92,10 @@ http://www.cs.utexas.edu/users/moore/acl2
 
 ===============================================================================
 
+defattach-example.lisp -- illustration of using defattach for system building
+
+===============================================================================
+
 definline.lisp -- utility for defining inlined functions
 
 See the documentation provided by the author (Jared Davis) in the file.
