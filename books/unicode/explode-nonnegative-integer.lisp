@@ -21,6 +21,32 @@
 (local (include-book "revappend"))
 (include-book "base10-digit-charp")
 
+
+(local (deftheory slow-arith-rules
+         '(not-integerp-1b
+           not-integerp-2b
+           not-integerp-3b
+           not-integerp-4b
+           not-integerp-1a
+           not-integerp-2a
+           not-integerp-3a
+           not-integerp-4a
+           floor-zero
+           floor-negative
+           floor-positive
+           floor-nonpositive-1
+           floor-nonpositive-2
+           floor-nonnegative-1
+           floor-nonnegative-2
+           mod-zero
+           mod-positive
+           mod-negative
+           mod-nonnegative
+           mod-nonpositive
+           rationalp-mod)))
+
+(local (in-theory (disable slow-arith-rules)))
+
 ;; Explode-nonnegative-integer is a particularly nasty function to try to
 ;; reason about because it is tail recursive and has a very nasty base case.
 ;; Instead of reasoning about it directly, we will split it up into the
@@ -100,7 +126,12 @@
                                 (basic-eni-core m base))
                          (equal (nfix n)
                                 (nfix m))))
-         :hints(("Goal" :induct (basic-eni-induction n m base)))))
+         :hints(("Goal"
+                 :in-theory (disable basic-eni-core)
+                 :induct (basic-eni-induction n m base)
+                 :expand ((:free (base) (basic-eni-core n base))
+                          (:free (base) (basic-eni-core m base)))
+                 :do-not '(generalize fertilize)))))
 
 (local (defthm equal-of-basic-eni-core-with-list-zero
          (not (equal (basic-eni-core n base) '(#\0)))
@@ -126,7 +157,11 @@
                 (and (equal acc '(#\0))
                      (or (zp n)
                          (not (print-base-p base)))))
-         :hints(("Goal" :in-theory (enable digit-to-char)))))
+         :hints(("Goal"
+                 :induct (simpler-explode-nonnegative-integer n base acc)
+                 :expand ((:free (base) (basic-eni-core n base)))
+                 :in-theory (e/d (digit-to-char)
+                                 (basic-eni-core))))))
 
 (local (defthm not-of-simpler-explode-nonnegative-integer
          (equal (not (simpler-explode-nonnegative-integer n base acc))
@@ -184,23 +219,31 @@
 
 
 (encapsulate
- ()
- (local (defthm lemma
-          (equal (equal (revappend x acc) '(#\0))
-                 (or (and (equal acc nil)
-                          (consp x)
-                          (equal (car x) #\0)
-                          (atom (cdr x)))
-                     (and (equal acc '(#\0))
-                          (atom x))))))
+  ()
+  (local (defthm lemma
+           (equal (equal (revappend x acc) '(#\0))
+                  (or (and (equal acc nil)
+                           (consp x)
+                           (equal (car x) #\0)
+                           (atom (cdr x)))
+                      (and (equal acc '(#\0))
+                           (atom x))))))
 
- (defthm nonzeroness-of-explode-nonnegative-integer-when-nonzero
-   (implies (and (not (zp n))
-                 (force (print-base-p base)))
-            (not (equal (explode-nonnegative-integer n base nil)
-                        '(#\0))))
-   :hints(("Goal" :in-theory (enable digit-to-char)))))
+  (local (defthm lemma2
+           (implies (and (not (zp n))
+                         (print-base-p base))
+                    (consp (basic-eni-core n base)))))
 
+
+  (defthm nonzeroness-of-explode-nonnegative-integer-when-nonzero
+    (implies (and (not (zp n))
+                  (force (print-base-p base)))
+             (not (equal (explode-nonnegative-integer n base nil)
+                         '(#\0))))
+    :hints(("Goal"
+            :in-theory (e/d (digit-to-char)
+                            (basic-eni-core))
+            :expand ((:free (base) (basic-eni-core n base)))))))
 
 
 
