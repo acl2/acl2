@@ -6399,7 +6399,7 @@ this problem.  [It contains a truly trivial edit we've made, not important.]
                   x))                     variable, consider replacing v by
                                           (cons a b), for two new variables
                                           a and b.
-
+  ~ev[]
   Notice that the situation is complicated a bit by the fact that this
   replacement is only valid if the variable being replaced a cons structure.
   Thus, when ACL2 applies ~c[car-cdr-elim] to replace a variable ~c[v], it will
@@ -6429,6 +6429,7 @@ this problem.  [It contains a truly trivial edit we've made, not important.]
   the rule ~c[car-cdr-elim] discussed above.  We discuss such rules and their
   application more carefully below.~/
 
+  ~bv[]
   General Form:
   (implies hyp (equiv lhs x))
   ~ev[]
