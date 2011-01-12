@@ -581,6 +581,79 @@
 (defparameter *hl-hspace-persist-ht-default-size*  100)
 
 
+(defun hl-initialize-fal-ht (fal-ht-size)
+
+; Create the initial FAL-HT for a hons space.  See the Essay on Fast Alists,
+; below, for more details.
+;
+; We now use a lock-free hash table for the FAL-HT:
+;
+; CCL has two hashing algorithms, "regular" and "lock-free."  The regular
+; algorithm uses typical locking to support access by multiple threads.  The
+; lock-free algorithm uses a more sophisticated scheme so that locking isn't
+; necessary.  The general thinking is that the lock-free version is only
+; slightly slower than the regular version (except for things like resizing
+; where it is considerably slower.)
+;
+; Why use the lock-free algorithm?  After all, we know that hons-spaces are
+; thread-local to begin with, and indeed we use :shared nil when we create hash
+; tables with hl-mht.  Unfortunately there implementation of REMHASH for
+; regular hash tables seems to suffer from a couple of bad problems.  The
+; FAL-HT is the only place we use remhash, but we use it all the time: every
+; time a fast alist is updated, we have to remhash its previous table and then
+; install its updated table.
+;
+; Problem 1.  There is a special case for deleting the last remaining element
+; from a regular hash table.  In particular, this triggers a linear walk of the
+; hash table, where every element in the vector is overwritten with the
+; free-hash-marker.  This is devestating when there is exactly one active fast
+; alist: every "hons-acons" and "fast-alist-free" operation requires a linear
+; walk over the FAL-HT.  It took Jared two whole days to figure out that this
+; was the cause of painfully slow execution in a particular algorithm.  We have
+; informed the CCL maintainers of this problem and, as a gross temporary
+; solution, added some code to ensure that the FAL-HT always had at least one
+; element in it so that the bad case would not be encountered.
+;
+; Problem 2.  Sol later discovered another problem that occurs when remhashes
+; are mixed in with puthashes in certain patterns.  When a table grows to the
+; threshold where it should be resized, it is instead rehashed in place if it
+; contains any deleted elements -- so if you grow up to 99% of capacity and
+; then repeatedly insert and delete elements, you're likely to spend a lot of
+; time rehashing without growing the table.  The lock-free implementation does
+; not seem to have this problem, so we have switched to it until the regular
+; algorithm is improved.
+;
+; We now use a :weak :key hash table for the FAL-HT:
+;
+; Historically the garbage collector had performance problems for weak hash
+; tables.  However, new regressions seem to indicate that these problems are
+; resolved, or at least are not very severe when there is only one weak hash
+; table.
+;
+; Having a weak FAL-HT is really appealing.  It reduces the penalty for
+; forgetting to free a fast-alist.  It also allows you to memoize functions
+; that produce fast alists and, after clearing their memoization tables like in
+; a hons-wash, the hash tables can be reclaimed.
+
+  (let ((fal-ht (hl-mht :test #'eq
+                        :size (max 100 fal-ht-size)
+                        :lock-free t
+                        :weak :key)))
+
+; Previous code for inserting a sentinel-element to ensure the table never
+; becomes empty after a remhash.  This is no longer necessary with the
+; lock-free algorithm.
+
+    ;; #+Clozure
+    ;; (let* ((entry       (cons t t))
+    ;;        (sentinel-al (cons entry 'special-builtin-fal))
+    ;;        (sentinel-ht (hl-mht :test #'eql)))
+    ;;   (setf (gethash t sentinel-ht) entry)
+    ;;   (setf (gethash sentinel-al fal-ht) sentinel-ht))
+
+    fal-ht))
+
+
 
 #-static-hons
 (defstruct hl-ctables
@@ -637,8 +710,7 @@
   (norm-cache   (make-hl-cache) :type hl-cache)
 
   ;; FAL-HT is described in the documentation for fast alists.
-  (fal-ht       (hl-mht :test #'eq :size *hl-hspace-fal-ht-default-size*
-                        :lock-free t)
+  (fal-ht       (hl-initialize-fal-ht *hl-hspace-fal-ht-default-size*)
                 :type hash-table)
 
   ;; PERSIST-HT is described in the documentation for hl-hspace-persistent-norm
@@ -646,53 +718,6 @@
                 :type hash-table)
 
   )
-
-
-(defun hl-initialize-fal-ht (fal-ht-size)
-
-; Create the initial FAL-HT for a hons space.  See the Essay on Fast Alists,
-; below, for more details.
-
-  (let ((fal-ht (hl-mht :test #'eq :size (max 100 fal-ht-size)
-                       ;; Note (Sol): The non-lock-free hashing algorithm
-                        ;; in CCL seems to have some bad behavior when
-                        ;; remhashes are mixed in with puthashes in certain
-                        ;; patterns.  One of these is noted below by Jared in
-                        ;; the "Truly disgusting hack" note.  Another is that
-                        ;; when a table grows to the threshold where it should
-                        ;; be resized, it is instead rehashed in place if it
-                        ;; contains any deleted elements -- so if you grow up
-                        ;; to 99% of capacity and then repeatedly insert and
-                        ;; delete elements, you're likely to spend a lot of
-                        ;; time rehashing without growing the table.
-                        :lock-free t)))
-
-    #+Clozure
-    ;; Truly disgusting hack.  As of Clozure Common Lisp revision 14519, in the
-    ;; non lock-free version of 'remhash', there is a special case: deleting
-    ;; the last remaining element from a hash table triggers a linear walk of
-    ;; the hash table, where every element in the vector is overwritten with
-    ;; the free-hash-marker.  This is devestating when there is exactly one
-    ;; active fast alist: every "hons-acons" and "fast-alist-free" operation
-    ;; requires a linear walk over the FAL-HT.
-    ;;
-    ;; This took me two whole days to figure out.  To ensure that nobody else
-    ;; is bitten by it, and that I am not bitten by it again, here I ensure
-    ;; that the FAL-HT always has at least one fast alist within it.  This
-    ;; alist is unreachable from any ordinary ACL2 code so it should be quite
-    ;; hard to free it.
-    ;;
-    ;; Note that T is always honsed, so sentinel is a valid fast-alist.  I give
-    ;; this a sensible name since it can appear in the (fast-alist-summary).
-
-    ;; This isn't necessary with lock-free, but doesn't hurt
-    (let* ((entry       (cons t t))
-           (sentinel-al (cons entry 'special-builtin-fal))
-           (sentinel-ht (hl-mht :test #'eql)))
-      (setf (gethash t sentinel-ht) entry)
-      (setf (gethash sentinel-al fal-ht) sentinel-ht))
-
-    fal-ht))
 
 (defun hl-hspace-init (&key (str-ht-size       *hl-hspace-str-ht-default-size*)
                             (nil-ht-size       *hl-ctables-nil-ht-default-size*)

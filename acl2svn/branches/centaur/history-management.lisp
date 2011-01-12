@@ -8891,14 +8891,22 @@ End of statistical and related information related to image size.
                 (t fmt-alist))))
     fmt-alist))
 
-(defmacro mv-2-to-state (form)
-  `(mv-let (val state)
-           ,form
-           (declare (ignore val))
-           state))
+(defmacro mv-to-state (n form)
+
+; Form should evaluate to an mv of non-stobj values, except that the last value
+; should be state.  We return that state, discarding the other values.
+
+  (declare (xargs :guard (and (integerp n)
+                              (< 1 n))))
+  (let ((vars (make-var-lst 'x (1- n))))
+    `(mv-let (,@vars state)
+             ,form
+             (declare (ignore ,@vars))
+             state)))
 
 (defun print-par-entry (entry fmt-alist char-subst-table channel state)
-  (mv-2-to-state
+  (mv-to-state
+   2
    (fmt1 (cddr entry)
          (lookup-fmt-alist "" nil fmt-alist char-subst-table
                            (bar-sep-p state))
@@ -8909,30 +8917,47 @@ End of statistical and related information related to image size.
                                    fmt-alist channel name state ln
                                    undocumented-file vp)
 
-; Ln is the number of lines printed so far, if it is a number.  When
-; ln is a number, we do :more processing until we hit the line maximum
-; (at which point we save the more-doc-state to continue) or the
-; tilde-slash (at which point we set the more-doc-state to nil).  When
-; ln is nil, we do not bother to track the number of lines printed and
-; we print them all up to the tilde-slash, but we then initialize the
-; more-doc-state.  The nil setting should be used when you are
-; printing out parts 0 or 1 of the doc string.  When non-nil, we behave
-; as for nil, except that we set the more-doc-state to nil (as we would
-; for numeric ln) when we hit the tilde-slash.  This setting is used
-; when we want to dump the entire part 2.
+; Parameter ln is a bit complicated, so we describe it in some detail.
 
-; When ln is :par, then a newline following a non-newline is replaced according
-; to the entry for EPAR in markup-table, if there is one; else, by the entry
-; for PAR if there is one; else, without special paragraph treatment.  A
-; newline followed by a non-newline is replaced by the entry for BPAR if there
-; is one, else does not get special treatment.
+; First suppose that ln is a number, in which case it is the number of lines
+; printed so far.  In this case, we do :more processing until we hit the line
+; maximum (at which point we save the more-doc-state to continue) or the
+; tilde-slash (at which point we set the more-doc-state to nil).
 
-; Finally, suppose i>0 (else this paragraph does not apply).  This function
-; assumes that if "EPAR" is bound in markup-table (and hence so is "BPAR"),
-; then the begin-paragraph marker (as per "BPAR") has already been printed and
-; the end-paragraph marker (as per "EPAR") will be printed.  Informatlly, then,
-; it is an invariant of this function that at every call, an end-paragraph
-; marker is pending.
+; When ln is nil, we do not bother to track the number of lines printed and we
+; print them all up to the tilde-slash, but we then initialize the
+; more-doc-state.  The nil setting should be used when you are printing out
+; parts 0 or 1 of the doc string.
+
+; When ln is t we behave as for nil, except that we set the more-doc-state to
+; nil (as we would for numeric ln) when we hit the tilde-slash.  This setting
+; is used when we want to dump the entire part 2.
+
+; When ln is :par, then two consecutive newlines, together with all consecutive
+; whitespace characters following them, are handled by printing using the entry
+; for EPAR in markup-table, if there is one; else, by using the entry for PAR
+; if there is one; else, without such special paragraph treatment.  In the case
+; that EPAR's entry is used, then if there are any remaining characters after
+; the block of newlines, the entry for BPAR is then printed.
+
+; The final legal value of ln is :par-off, whose purpose is to avoid printing
+; paragraph markers when inside certain preformatted (verbatim) environments,
+; typically ~bv/~ev and ~bf/~ev for printing to html and the like (but not the
+; terminal or texinfo).  Thus, :par-off is treated like :par except that there
+; is no special treatment in the case of consecutive newlines.  Thus :par-off
+; is really treated lke t, except that ln becomes :par in recursive calls when
+; the end of a preformatted environment is encountered.  The argument vp
+; (verbatim pair) never changes, and is nil when ln is not :par or :par-off.
+; But vp is a pair (begin-markers . end-markers), for example, (("BV" "BF")
+; . ("EV" "EF")), where begin-markers tell us to change ln from :par to
+; :par-off and end-markers tell us to change ln from :par-off to :par.
+
+; A precondition for this function is that if ln is :par or :par-off and if
+; "EPAR" is bound in markup-table (and hence so is "BPAR"), then the
+; begin-paragraph marker (as per "BPAR") has already been printed and the
+; end-paragraph marker (as per "EPAR") will be printed.  Informatlly, then, it
+; is an invariant of this function that at every call in the case that ln is
+; :par or :par-off, an end-paragraph marker is pending.
 
   (cond ((< i maximum)
          (let ((c (char str i)))
@@ -9190,14 +9215,21 @@ End of statistical and related information related to image size.
   (i str prefix markup-table char-subst-table fmt-alist
      channel name ln undocumented-file vp state)
 
-; Str is a doc string and i is a part number, 0, 1, or 2.
-; We print the ith part of the string to channel.  We embed
-; non-empty part 1's between a pair of newlines.
+; Str is a doc string and i is a part number, 0, 1, or 2.  We print the ith
+; part of the string to channel.  We embed non-empty part 1's between a pair of
+; newlines.
 
-; When ln is :par is non-nil, we interpret two consecutive blank lines as
-; calling for a paragraph marker, in the sense described in the comments in
+; When ln is :par, we interpret two consecutive blank lines as calling for a
+; paragraph marker, in the sense described in the comments in
 ; print-doc-string-part1.  When ln is t, we print the entire part; see
 ; print-doc-string-part1.  Note that ln is ignored when i is 0.
+
+; We return (mv new-ln state), where new-ln is the final value of ln.  Normally
+; we will not need new-ln, but it is useful when printing part 1 followed by
+; part 2 in the case that a preformatted environment spans the two parts, e.g.,
+; "~bv[]...~/...~ev[]".  Typically we find this with "Example Forms" followed
+; by "General Form".  We use the new-ln value in file doc/write-acl2-html.lisp,
+; function write-a-doc-section (as of 1/12/2011).
 
   (let ((b-entry (assoc-string-equal "BPAR" markup-table))
         (e-entry (assoc-string-equal "EPAR" markup-table)))
@@ -9279,7 +9311,8 @@ End of statistical and related information related to image size.
 (defun print-doc-string-part
   (i str prefix markup-table char-subst-table fmt-alist
      channel name ln undocumented-file vp state)
-  (mv-2-to-state
+  (mv-to-state
+   2
    (print-doc-string-part-mv i str prefix markup-table char-subst-table
                              fmt-alist channel name ln undocumented-file vp
                              state)))
@@ -9558,7 +9591,8 @@ End of statistical and related information related to image size.
           (more-doc-state
            (pprogn
             (princ-prefix (car (cddddr more-doc-state)) channel state)
-            (mv-2-to-state
+            (mv-to-state
+             2
              (print-doc-string-part1 (car more-doc-state)
                                      (cadr more-doc-state)
                                      (caddr more-doc-state)
