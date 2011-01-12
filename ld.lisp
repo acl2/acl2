@@ -17280,7 +17280,10 @@
 
   ~st[BUG FIXES]
 
-  Fixed ~ilc[trace$] to work on ~il[stobj] accessors and updaters.
+  Fixed ~ilc[trace$] for arguments that are ~il[stobj] accessors or updaters.
+  It also gives an informative error in this case when the accessor or updater
+  is a macro (because the introducing ~ilc[defstobj] event specified
+  ~c[:inline t]).
 
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 

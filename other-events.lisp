@@ -21587,50 +21587,6 @@ The following all cause errors.
               (cadr evisc-tuple-tail) :evisc-tuple formals ctx wrld state)
            (value nil))))))))
 
-(defun get-def (fn wrld)
-
-; This function attempts to return the raw Lisp definition of fn, else returns
-; nil.
-
-; Warnings:  (1) See the comment below about "slow"; (2) nil is returned if fn
-; is constrained.
-
-  (let ((ev (get-event fn wrld)))
-    (cond ((atom ev) nil)
-          ((eq (car ev) 'defun)
-           (cdr ev))
-          ((eq (car ev) 'mutual-recursion)
-           (assoc-eq fn (strip-cdrs (cdr ev))))
-          ((eq (car ev) 'defuns)
-           (assoc-eq fn (cdr ev)))
-          ((member-eq (car ev)
-                      '(verify-termination-boot-strap verify-guards))
-
-; It is potentially slow to do the following scan, but presumably we can
-; tolerate that for tracing or other applications of get-def.  Verify-guards
-; doesn't currently lay down an absolute-event-number (used by get-event), but
-; we prefer the trivial expense of checking it here in case that changes some
-; day.
-
-           (let ((w1 (scan-to-event (cdr (decode-logical-name fn wrld)))))
-             (and w1
-                  (get-def fn w1))))
-          ((eq (car ev) 'defstobj)
-           (let* ((st (cadr ev))
-                  (cmd (scan-to-cltl-command
-                        (cdr (decode-logical-name st wrld)))))
-             (case-match cmd
-               (('DEFSTOBJ !st & & raw-defs & &)
-
-; As per add-trip:
-; (DEFSTOBJ st the-live-name init raw-defs template axiomatic-defs)
-
-                (assoc-eq fn raw-defs))
-               (& (er hard 'get-def
-                      "Unexpected defstobj cltl-command, ~x0."
-                      cmd)))))
-          (t nil))))
-
 (defun untrace$-fn1 (fn state)
   #-acl2-loop-only
   (let* ((old-fn (get fn 'acl2-trace-saved-fn))
@@ -21930,7 +21886,16 @@ The following all cause errors.
          (wrld (w state))
          #-acl2-loop-only (*inside-trace$* t)
          (def (or (cadr (assoc-keyword :def trace-options))
-                  (get-def fn wrld)
+                  (let* ((stobj-function (getprop fn 'stobj-function nil
+                                                  'current-acl2-world
+                                                  wrld))
+                         (defun+def
+                           (cltl-def-from-name fn stobj-function wrld)))
+                    (cond (defun+def (cdr defun+def))
+                          ((and stobj-function
+                                (cltl-def-from-name1 fn stobj-function t wrld))
+                           :macro)
+                          (t nil)))
                   (and (getprop fn 'constrainedp nil 'current-acl2-world wrld)
                        (let ((formals (getprop fn 'formals t
                                                'current-acl2-world wrld)))
@@ -21940,18 +21905,25 @@ The following all cause errors.
                                         (null-body-er+ fn formals wrld t)))))))
          (formals-tail (assoc-keyword :formals trace-options))
          (formals-default (and (not formals-tail)
-                               (not def)
+                               (atom def)
                                (not native) ; else formals doesn't much matter
                                (getprop fn 'formals t 'current-acl2-world
                                         wrld)))
          (formals (cond (formals-tail (cadr formals-tail))
-                        (def (cadr def))
+                        ((consp def) (cadr def))
                         (t formals-default)))
          (evisc-tuple (cadr (assoc-keyword :evisc-tuple trace-options)))
          (compile (cadr (assoc-keyword :compile trace-options)))
          (predefined ; (acl2-system-namep fn wrld)
           (getprop fn 'predefined nil 'current-acl2-world wrld)))
     (cond
+     ((eq def :macro)
+      (er very-soft ctx
+          "~x0 cannot be traced, because it is a macro in raw Lisp: its ~
+           introducing defstobj event (for stobj ~x1) was supplied with ~
+           :INLINE T."
+          fn
+          (getprop fn 'stobj-function nil 'current-acl2-world wrld)))
      ((eq formals-default t)
       (er very-soft ctx
           "~@0 this symbol does not have an ACL2 function definition.  ~
