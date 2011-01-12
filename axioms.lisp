@@ -4078,7 +4078,7 @@
   which the first argument is ~c[(quote progn)].  Although ~c[return-last] is a
   function in the ACL2 world, it is implemented ``under the hood'' as a macro
   in raw Lisp, as the following log (continuing the example above) illustrates.
-  ~bq[]
+  ~bv[]
   ACL2 !>:q
 
   Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
@@ -4088,7 +4088,7 @@
   (PROGN (CW \"Some CW printing...~~%\") (+ 3 4))
   T
   ? [RAW LISP] 
-  ~eq[]
+  ~ev[]
   Thus, the original ~c[prog2$] call generates a corresponding call of
   ~c[progn] in raw Lisp, which in turn causes evaluation of each argument and
   returns whatever is returned by evaluation of the last (second) argument.
@@ -4100,7 +4100,7 @@
   raw Lisp that may produce side effects.  Consider for example the ACL2
   utility ~ilc[with-guard-checking], which is intended to change the
   ~il[guard]-checking mode to the indicated value (~pl[with-guard-checking]).
-  ~bq[]
+  ~bv[]
   ACL2 !>(with-guard-checking :none (car 3)) ; no guard violation
   NIL
   ACL2 !>:trans1 (with-guard-checking :none (car 3))
@@ -4131,7 +4131,7 @@
     (DECLARE (SPECIAL ACL2_GLOBAL_ACL2::GUARD-CHECKING-ON))
     (CAR 3))
   ? [RAW LISP] 
-  ~eq[]
+  ~ev[]
   The above raw Lisp code binds the state global variable ~c[guard-checking-on]
   to ~c[:none], as ~c[chk-with-guard-checking-arg] is just the identity
   function except for causing a hard error for an illegal input.
