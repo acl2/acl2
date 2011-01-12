@@ -5,8 +5,8 @@ described below will explain how to reduce output from the command:
 
 There are actually two ways to do this.  In most cases, it will be
 simplest simply to execute the following in the new directory,
-replacing "../unversioned-files.txt" by a path to
-unversioned-files.txt in the top-level directory.
+replacing "unversioned-files.txt" by a path to unversioned-files.txt
+in the top-level directory.
 
   svn propset -R svn:ignore -F unversioned-files.txt .
 
@@ -19,12 +19,10 @@ e.g. as determined by
 
   find . -name unversioned-files-extra.txt -print
 
-execute the following command, except replacing "../" with an
-appropriate number of repetitions of that sequence of three
-characters, to obtain a reference to file unversioned-files.txt in the
-top-level directory.
+execute the following command (replacing /projects/acl2/devel/books/
+if not at UT CS):
 
-  (cat ../unversioned-files.txt unversioned-files-extra.txt > tmp) ; \
+  (cat /projects/acl2/devel/books/unversioned-files.txt unversioned-files-extra.txt > tmp) ; \
   (svn propset svn:ignore -F tmp .) ; \
   (rm tmp)
 

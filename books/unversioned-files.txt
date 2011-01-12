@@ -4,6 +4,7 @@ workxxx*
 *.date
 *.cert
 *.cert.temp
+*.acl2x
 Makefile-deps
 *.h
 *.c
