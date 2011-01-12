@@ -914,6 +914,8 @@ of the current s-expression in the enclosing list"
 ; Turn off display-time with:
 ;   (display-time-mode) in emacs
 ;   (display-time-stop) in xemacs
+; Needed for displaying day and date in addition to time:
+; (setq display-time-day-and-date t)
 
 ; Disable commands that we do not want to execute by mistake:
 (put 'shell-resync-dirs 'disabled t)
