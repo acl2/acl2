@@ -91,10 +91,10 @@ Usage:
  (include-raw \"my-raw-lisp-file.lsp\")
  (include-raw \"a-raw-lisp-file.lsp\"
               :on-compile-fail
-              (format t \"Compilation failed with message ~a~%\"
+              (format t \"Compilation failed with message ~~a~~%\"
                       condition)
               :on-load-fail
-              (cw \"Oh well, the load failed~%\"))
+              (cw \"Oh well, the load failed~~%\"))
  (include-raw \"another-raw-lisp-file.lsp\"
               :do-not-compile t)
 ~ev[]

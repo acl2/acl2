@@ -472,7 +472,7 @@ keep it disabled so that reasoning about the tags of objects does not slow down
 reasoning about <tt>car</tt> in general.</p>
 
 @(def tag)
-@(thm consp-when-tag)")
+@(thm tag-forward-to-consp)")
 
 (defund tag (x)
   (declare (xargs :guard t))

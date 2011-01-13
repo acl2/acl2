@@ -28,7 +28,7 @@
 
 (defmacro execute-patmatch (testclause bindings-and-body nextcall)
   (if testclause
-      `(if ,testclause 
+      `(if ,testclause
            ,bindings-and-body
          ,nextcall)
     bindings-and-body))
@@ -72,7 +72,7 @@
         `(,action ,testclause ,bindings-and-body ,nextcall))
     (let ((lhs (car lhses))
           (rhs (car rhses)))
-      (cond 
+      (cond
        ((symbolp lhs)
         (cond
          ((or (eq lhs t) (eq lhs nil))
@@ -82,7 +82,7 @@
           (pbl-tests-bindings (cons `(equal ,rhs ,lhs) tests) bindings))
          ((and (> (length (symbol-name lhs)) 0)
                (eql #\! (char (symbol-name lhs) 0)))
-          (pbl-tests-bindings 
+          (pbl-tests-bindings
            (cons `(equal ,rhs ,(intern-check (coerce (cdr (coerce (symbol-name lhs) 'list))
                                                'string)
                                        lhs)) tests)
@@ -99,7 +99,7 @@
        ((eq (car lhs) 'quote)
         (pbl-tests-bindings (cons (equal-x-constant rhs lhs) tests)
                             bindings))
-       (t 
+       (t
         ;;lhs is aassumed to be a constructor application.  Return a call of
         ;;the pattern match macro for that constructor.
         (let* ((func (car lhs))
@@ -110,7 +110,7 @@
                                             func)))
           (list func-pm-macro rhs args tests bindings (cdr lhses) (cdr rhses)
                 pmstate)))))))
-          
+
 
 (defun test-declare (elt)
   (if (and (consp elt)
@@ -146,13 +146,13 @@
 (defun pattern-match-clauses (term clauses action)
   (if (atom clauses)
       nil
-    (mv-let 
+    (mv-let
      (pattern test-decl final-tests body-decl body)
      (slice-clause (car clauses))
      (cond ((and (eq pattern '&) (null final-tests))
             body)
-           (t (pattern-bindings-list 
-               (list pattern) (list term) nil nil 
+           (t (pattern-bindings-list
+               (list pattern) (list term) nil nil
                (list test-decl final-tests body-decl body
                      `(pattern-match ,term ,@(cdr clauses))
                      action)))))))
@@ -161,27 +161,27 @@
 (defun pattern-match-list-clauses (term-list clauses action)
   (if (atom clauses)
       nil
-    (mv-let 
+    (mv-let
      (patterns test-decl final-tests body-decl body)
      (slice-clause (car clauses))
      (cond ((and (eq patterns '&) (null final-tests))
             body)
            ((= (len patterns) (len term-list))
-            (pattern-bindings-list 
-             patterns term-list nil nil 
+            (pattern-bindings-list
+             patterns term-list nil nil
              (list test-decl final-tests body-decl  body
                    `(pattern-match-list ,term-list ,@(cdr clauses))
                    action)))
-           (t (er hard 'top-level 
+           (t (er hard 'top-level
                   "Lengths of term list ~x0 and pattern list ~x1 are unequal"
                   term-list patterns))))))
-  
+
 
 (defmacro pattern-match-list (term-list &rest clauses)
   ":Doc-Section Miscellaneous
 
   Pattern matching to a list of terms.~/
-  
+
   EXAMPLE:
   ~bv[]
   (pattern-match-list
@@ -241,14 +241,14 @@ pattern list matches the list of inputs. ~/~/"
 
 
 (defmacro pattern-match (term &rest clauses)
-  
+
   ":Doc-Section Miscellaneous
 
   User-definable pattern-matching.~/
 
   Examples:
   ~bv[]
-  (pattern-match 
+  (pattern-match
    x
    ((cons a b) ... body1 ... )
    ((three-elt-constructor a & c) ... body2 ...)
@@ -270,8 +270,8 @@ special characters such as & and !.  Also see ~il[pattern-match-list],
   ~/
   Usage:
   ~bv[]
-  (pattern-match 
-     input 
+  (pattern-match
+     input
      (pattern1 declare-form condition11 condition12 ... declare-form body1)
      (pattern2 condition21 condition22 ... body2)
       ...)
@@ -353,7 +353,7 @@ default-value-of-correct-shape)."
 (defmacro pattern-matches (term pattern)
   ":Doc-Section Miscellaneous
    Check whether a term matches a pattern. ~/
-   
+
   EXAMPLE:
   ~bv[]
   (pattern-matches x (cons a (cons b a)))
@@ -461,7 +461,7 @@ applied to the constructed object return the arguments to the constructor.  ~/
   variable numbers of arguments; ~pl[constructor-pattern-match-macros]."
   (let* ((term (if (consp (car args)) (caar args) nil))
         (constructor (if term (cadr args) (car args)))
-        (recognizer (if term 
+        (recognizer (if term
                         (if (eq (caddr args) :unconditional)
                             nil
                           (if (consp (caddr args))
@@ -470,17 +470,17 @@ applied to the constructed object return the arguments to the constructor.  ~/
                       (if (eq (cadr args) :unconditional)
                           nil
                         `(list ',(cadr args) term))))
-        (destructors (if term 
+        (destructors (if term
                          (cons 'list (destructor-subst-list term (cadddr args)))
                        (cons 'list (destructor-list (caddr args)))))
         (err-string-nargs
-         (concatenate 'string 
+         (concatenate 'string
                       "Wrong number of arguments to "
                       (symbol-name constructor)
                       " in pattern matching: ~x0~%"))
         (err-string-truelist
          (concatenate 'string "Badly formed expression: ~x0~%")))
-    
+
     `(defmacro ,(intern-in-package-of-symbol
                  (concatenate 'string (symbol-name constructor)
                                      "-PATTERN-MATCHER")
@@ -493,8 +493,8 @@ applied to the constructed object return the arguments to the constructor.  ~/
              ((not (= (len args) ,(1- (len destructors))))
               (er hard 'top-level ,err-string-nargs (cons ',constructor args)))
              (t
-              (let ((rhses 
-                     (append ,destructors 
+              (let ((rhses
+                     (append ,destructors
                              rhses))
                     ,@(if recognizer
                           `((tests (cons ,recognizer tests)))
@@ -505,12 +505,12 @@ applied to the constructed object return the arguments to the constructor.  ~/
 
 
 (defdoc constructor-pattern-match-macros
-  ":Doc-Section Miscellaneous 
+  ":Doc-Section Miscellaneous
 How to write pattern-match macros for custom constructors~/
 
-Here we discuss how constructor pattern-match macros work in 
+Here we discuss how constructor pattern-match macros work in
 conjunction with pattern-match; ~pl[pattern-match].  In most cases the user
-does not need to be concerned with the internals discussed here; 
+does not need to be concerned with the internals discussed here;
 ~pl[def-pattern-match-constructor] for an easy way to get
 pattern-match to recognize a user-defined form.~/
 
@@ -605,7 +605,7 @@ automatically generated by ~c[def-pattern-match-constructor]:
  (defmacro
    cons-pattern-matcher
    (term args tests bindings lhses rhses pmstate)
-   (cond 
+   (cond
     ;; First check args for well-formedness: it should always be a true-list of
     ;; length 2, since any other argument list to cons is ill-formed.
     ((not (true-listp args))
@@ -615,7 +615,7 @@ automatically generated by ~c[def-pattern-match-constructor]:
      (er hard 'top-level
          ``Wrong number of arguments to CONS in pattern matching: ~~x0~~%''
          (CONS 'CONS ARGS)))
-    (t (let 
+    (t (let
         ;; Push destructor applications (car term) and (cdr term) onto rhses
         ((rhses (append (list (list 'car term) (list 'cdr term)) rhses))
          ;; Push the args onto lhses (they must occur in the order corresponding
@@ -629,7 +629,7 @@ automatically generated by ~c[def-pattern-match-constructor]:
 
  If there are no errors, this simply makes three changes to the existing
 arguments: it prepends the two subterms ~c[(car term)] and ~c[(cdr term)] onto
-~c[rhses] and the list of arguments to ~c[lhses] and adds the test 
+~c[rhses] and the list of arguments to ~c[lhses] and adds the test
 ~c[(consp term)] to tests.  It then calls pattern-bindings-list.
 
  The macro for list works the same way, but could not have been generated by
@@ -717,6 +717,7 @@ ours or we would need to do more processing of them.
              ;; We then pass the new tests and bindings to
              ;; pattern-bindings-list.
              (pattern-bindings-list lhses rhses tests bindings pmstate))))
+  ~ev[]
 
  Also try looking at the definitions for ~c[bind-pattern-matcher],
 ~c[any-pattern-matcher], and both ~c[force-pattern-matcher] and
@@ -776,7 +777,7 @@ ours or we would need to do more processing of them.
       (pattern-bindings-list lhses rhses tests bindings pmstate))))
 
 
-        
+
 
 (defmacro raw-pattern-matcher
   (term args tests bindings lhses rhses pmstate)
@@ -824,19 +825,19 @@ ours or we would need to do more processing of them.
                        tests)))
       (pattern-bindings-list lhses rhses tests bindings
                              pmstate))))
-                
+
 
 (def-pattern-match-constructor (x) acons
   (and (consp x) (consp (car x)))
   (caar cdar cdr))
 
 
-(defmacro force-pattern-matcher 
+(defmacro force-pattern-matcher
   (term args tests bindings lhses rhses pmstate)
   (if (not (true-listp args))
       (er hard 'top-level "Badly formed expression: ~x0~%"
           (cons 'list args))
-    (let ((lhses (cons (car args) 
+    (let ((lhses (cons (car args)
                        (cons '(force-match-remove-tests) lhses)))
           (rhses (cons term
                        (cons '(force-match-remove-tests) rhses)))
@@ -854,7 +855,7 @@ ours or we would need to do more processing of them.
 (defmacro force-match-remove-tests-pattern-matcher
   (term args tests bindings lhses rhses pmstate)
   (if (or args (not (equal term '(force-match-remove-tests))))
-      (er hard 'top-level 
+      (er hard 'top-level
           "Don't use force-match-remove-tests manually!~%")
     (let ((tests (remove-up-to '(nil . force-match-remove-tests) tests)))
       (pattern-bindings-list lhses rhses tests bindings pmstate))))
