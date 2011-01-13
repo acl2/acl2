@@ -21587,11 +21587,33 @@ The following all cause errors.
               (cadr evisc-tuple-tail) :evisc-tuple formals ctx wrld state)
            (value nil))))))))
 
+(defun memoize-off-trace-error (str fn ctx)
+
+; Str is "trace" or "untrace".  This function is only used by the HONS
+; version.
+
+  (er hard ctx
+      "Memoized function ~x0 is to be ~s1d, but its symbol-function differs ~
+       from the :MEMOIZED-FN field of its memoization hash-table entry.  ~
+       Perhaps the ~s1 request occurred in the context of ~x2; at any rate, ~
+       it is illegal."
+      fn str 'memoize-off))
+
 (defun untrace$-fn1 (fn state)
   #-acl2-loop-only
   (let* ((old-fn (get fn 'acl2-trace-saved-fn))
          (*1*fn (*1*-symbol? fn))
-         (old-*1*fn (get *1*fn 'acl2-trace-saved-fn)))
+         (old-*1*fn (get *1*fn 'acl2-trace-saved-fn))
+         #+hons (memo-entry (memoizedp-raw fn)))
+    #+hons
+    (when (and memo-entry
+               (not (eq (symbol-function fn)
+                        (access memoize-info-ht-entry memo-entry
+                                :memoized-fn))))
+
+; See comment about this "strange state of affairs" in trace$-def.
+
+      (memoize-off-trace-error "untrace" fn 'untrace$))
 
 ; We do a raw Lisp untrace in case we traced with :native.  We use eval here
 ; because at the time we evaluate this definition, untrace might not yet have
@@ -21603,6 +21625,11 @@ The following all cause errors.
 ; "silent no-op" below and in trace$-fn-general.
       (setf (symbol-function fn)
             old-fn)
+      #+hons
+      (when memo-entry
+        (setf (gethash fn *memoize-info-ht*)
+              (change memoize-info-ht-entry memo-entry
+                      :memoized-fn old-fn)))
       (setf (get fn 'acl2-trace-saved-fn)
             nil))
     (when old-*1*fn
@@ -21707,7 +21734,8 @@ The following all cause errors.
                 *the-live-state*))
 
 #-acl2-loop-only
-(defun trace$-def (arglist def trace-options predefined multiplicity)
+(defun trace$-def (arglist def trace-options predefined multiplicity ctx)
+  #-hons (declare (ignore ctx))
   (let* ((fn (car def))
          (cond-tail (assoc-keyword :cond  trace-options))
          (cond (cadr cond-tail))
@@ -21725,9 +21753,24 @@ The following all cause errors.
          (notinline-tail (assoc-keyword :notinline trace-options))
          (notinline-nil (and notinline-tail
                              (null (cadr notinline-tail))))
+         #+hons (memo-entry (memoizedp-raw fn))
          (notinline-fncall
           (cond (notinline-tail
-                 (eq (cadr notinline-tail) :fncall))
+                 #+hons (or (eq (cadr notinline-tail) :fncall)
+                            (and memo-entry
+                                 (er hard ctx
+                                     "It is illegal to specify a value for ~
+                                      trace$ option :NOTINLINE other than ~
+                                      :FNCALL for a memoized function.  The ~
+                                      suggested trace spec for ~x0, which ~
+                                      specifies :NOTINLINE ~x0, is thus ~
+                                      illegal."
+                                     fn
+                                     (cadr notinline-tail))))
+                 #-hons (eq (cadr notinline-tail) :fncall))
+                #+hons
+                (t t)
+                #-hons
                 ((or (not def) ; then no choice in the matter!
                      predefined
                      (member-eq fn (f-get-global 'program-fns-with-raw-code
@@ -21735,6 +21778,7 @@ The following all cause errors.
                      (member-eq fn (f-get-global 'logic-fns-with-raw-code
                                                  *the-live-state*)))
                  t)
+                #-hons
                 (t nil)))
          (gcond (and cond-tail (acl2-gentemp "COND")))
          (garglist (acl2-gentemp "ARGLIST"))
@@ -21751,6 +21795,21 @@ The following all cause errors.
                        `(funcall (get ',fn 'acl2-trace-saved-fn)
                                  ,@arglist)
                      `(block ,fn (progn ,@body)))))
+    #+hons
+    (when (and memo-entry
+               (not (eq (symbol-function fn)
+                        (access memoize-info-ht-entry memo-entry
+                                :memoized-fn))))
+
+; This is a strange state of affairs that we prefer not to try to support.  For
+; example, it is not clear how things would work out after we installed the
+; traced symbol-function as the :memoized-fn.
+
+; Note by the way that under memoize-off, tracing will be defeated.  If this
+; presents a big problem then we can reconsider the design of how tracing and
+; memoization interact.
+
+      (memoize-off-trace-error "trace" fn ctx))
     `(defun ,fn ,arglist
 
 ; At one time we included declarations and documentation here:
@@ -21858,7 +21917,13 @@ The following all cause errors.
                            (t compile-option))))
     (setf (get fn 'acl2-trace-saved-fn)
           (symbol-function fn))
-    (eval (trace$-def formals def trace-options predefined multiplicity))
+    (eval (trace$-def formals def trace-options predefined multiplicity ctx))
+    #+hons
+    (let ((memo-entry (memoizedp-raw fn)))
+      (when memo-entry
+        (setf (gethash fn *memoize-info-ht*)
+              (change memoize-info-ht-entry memo-entry
+                      :memoized-fn (symbol-function fn)))))
     (when do-compile
       (compile fn))))
 
@@ -21952,22 +22017,6 @@ The following all cause errors.
           "~@0 it is illegal (for ACL2 implementation reasons) to trace ~x1."
           (trace$-er-msg fn)
           fn))
-     ((and (hons-enabledp state)
-           (not native)
-           (memoizedp fn))
-
-; Note that we need to be very careful with respect to potential combinations
-; of tracing and memoization, since both mess with symbol-functions.  It seems
-; cleanest simply to disallow this combination.  When we memoize, we should
-; untrace.  But unlike tracing, memoization is handled by events; in
-; particular, maybe-push-undo-stack pushes undo-stack elements that re-install
-; memoization when undoing an unmemoize event.  So we can't have tracing remove
-; memoization.  Instead, we disallow tracing when memoization is present.
-
-      (er very-soft ctx
-          "~@0 it is illegal (for ACL2 implementation reasons) to trace a ~
-           memoized function."
-          (trace$-er-msg fn)))
      ((and (not native)
            (equal (symbol-package-name fn) *main-lisp-package-name*))
       (er very-soft ctx
@@ -22582,14 +22631,22 @@ The following all cause errors.
   A special value for ~c[:notinline], ~c[:fncall], will cause the traced
   function to call its original definition.  Without this special value, the
   new installed definition for the traced function will include the body of the
-  original definition.  This ~c[:fncall] behavior is the default for functions
-  whose definitions are built into ACL2 and for functions that have been added
-  (using a trust tag, an advanced feature, so most users can probably ignore
-  this case) to either of the ~ilc[state] global variables
-  ~c[program-fns-with-raw-code] or ~c[logic-fns-with-raw-code].
+  original definition.  This ~c[:fncall] behavior is the default only in the
+  following cases:
+  ~bq[]
+  o for functions whose definitions are built into ACL2;
 
-  The legal values for ~c[:notinline] are ~c[t] (the default), ~c[nil], and
-  ~c[:fncall].
+  o for functions that have been added (using a trust tag, an advanced feature,
+  so most users can probably ignore this case) to either of the ~ilc[state]
+  global variables ~c[program-fns-with-raw-code] or
+  ~c[logic-fns-with-raw-code];
+
+  o (`HONS' extension only; ~pl[hons-and-memoization]) for ~ilc[memoize]d
+  functions.~eq[]
+
+  The legal values for ~c[:notinline] are ~c[t] (the default for other than the
+  cases displayed above), ~c[nil], and ~c[:fncall].  (Except: For the 'HONS'
+  extension, only ~c[:fncall] is legal.)
 
   ~st[Remarks].
 

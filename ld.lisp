@@ -17301,6 +17301,10 @@
 
   ~st[EXPERIMENTAL VERSIONS]
 
+  (For the HONS version, ~pl[hons-and-memoization]:) ~il[Memoize]d functions
+  may now be traced (~pl[trace$]).  Thanks to Sol Swords for requesting this
+  enhancement.
+
   ~/~/")
 
 (deflabel |NOTE-4-3(R)|
