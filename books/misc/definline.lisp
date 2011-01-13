@@ -62,11 +62,14 @@
    (unless (symbolp name)
      (er hard? 'redefine-inline-fn
          "expected ~x0 to be a symbol." name))
-   (let ((def (get-def name (w state))))
+   (let* ((wrld (w state))
+          (stobj-function (getprop name 'stobj-function nil 'current-acl2-world
+                                   wrld))
+          (def (cltl-def-from-name name stobj-function wrld)))
      (unless def
        (er hard? 'redefine-inline-fn "~x0 does not appear to be defined."))
      (eval `(proclaim '(inline ,name)))
-     (eval (cons 'defun def)))
+     (eval def))
    name))
 
 (defttag nil)
