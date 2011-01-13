@@ -14129,7 +14129,7 @@
   The definition of ~c[trace*] has been moved to a book, ~c[misc/trace1.lisp].
   A new version, used in ACL2s, is in book ~c[misc/trace-star.lisp].
   ~il[Trace] utilities ~ilc[trace$] and ~ilc[trace!] are still built into
-  ACL2.
+  ACL2.  [Note: File ~c[misc/trace1.lisp] was deleted after Version  4.2.]
 
   Certain ~il[certificate] files will now be much smaller, by printing in a way
   that takes advantage of structure sharing.  Certifying the following example
@@ -17291,6 +17291,11 @@
 
   Among the new books is an illustration of ~ilc[defattach],
   ~c[books/misc/defattach-example.lisp].
+
+  Distributed book ~c[books/misc/trace1.lisp] has been deleted.  It had
+  provided slightly more friendly ~il[trace] output for new users, but 
+  distributed book ~c[books/misc/trace-star.lisp] may be better suited for that
+  purpose.
 
   ~st[EMACS SUPPORT]
 
