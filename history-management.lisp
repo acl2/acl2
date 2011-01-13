@@ -9070,28 +9070,44 @@ End of statistical and related information related to image size.
                                  (string-downcase (car entry))
                                  arg))
                             (t nil))
-                           (mv-let (col state)
-                                   (fmt1 (cddr entry)
-                                         fmt-alist-for-fmt1
-                                         0 channel state nil)
-                                   (declare (ignore col))
-                                   (print-doc-string-part1
-                                    str posn maximum de-indent prefix
-                                    markup-table char-subst-table fmt-alist
-                                    channel name state
-                                    (cond ((not vp) ln)
-                                          ((eq ln :par)
-                                           (if (member-string-equal (car entry)
-                                                                    (car vp))
-                                               :par-off
-                                             :par))
-                                          ((eq ln :par-off)
-                                           (if (member-string-equal (car entry)
-                                                                    (cdr vp))
-                                               :par
-                                             :par-off))
-                                          (t ln))
-                                    undocumented-file vp)))))))))))
+                           (pprogn
+                            (cond (missing-fmt-alist-chars
+                                   (assert$
+                                    undocumented-file ; see error above
+                                    (warning$ 'print-doc-string-part1
+                                              "Documentation"
+
+; Add a newline just below, since we may be in a context where the margins have
+; been made essentially infinite.
+
+                                              "~|Broken link in :doc ~x0: ~
+                                               ~~~s1[~s2].~%"
+                                              name
+                                              (string-downcase (car entry))
+                                              arg)))
+                                  (t state))
+                            (mv-let (col state)
+                                    (fmt1 (cddr entry)
+                                          fmt-alist-for-fmt1
+                                          0 channel state nil)
+                                    (declare (ignore col))
+                                    (print-doc-string-part1
+                                     str posn maximum de-indent prefix
+                                     markup-table char-subst-table fmt-alist
+                                     channel name state
+                                     (cond ((not vp) ln)
+                                           ((eq ln :par)
+                                            (if (member-string-equal (car entry)
+                                                                     (car vp))
+                                                :par-off
+                                              :par))
+                                           ((eq ln :par-off)
+                                            (if (member-string-equal (car entry)
+                                                                     (cdr vp))
+                                                :par
+                                              :par-off))
+                                           (t ln))
+                                     undocumented-file vp))))))))))))
               (t (pprogn (princ$ c channel state)
                          (newline channel state)
                          (save-more-doc-state str (+ 1 i) maximum

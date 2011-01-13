@@ -647,6 +647,11 @@ proofs: compile-ok
 
 DOC: HTML EMACS_TEX
 
+# Use ACL2_DOC_UNDOCUMENTED_FILE if you want to support broken links
+# (by having them point to a page acknowledging that the link is
+# broken, rather htan by having doc/create-acl2-html simply fail).
+# Note that this only works for the HTML target, not for the EMACS_TEX
+# or EMACS_ONLY targets.
 HTML:
 	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-html
 

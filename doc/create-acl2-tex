@@ -28,6 +28,9 @@ chmod 775 doc/TEX
 echo '(value :q)' > doc/workxxx.tex
 echo '(lp)' >> doc/workxxx.tex
 echo '(include-book "doc/write-acl2-texinfo")' >> doc/workxxx.tex
+# Note that we do not support ACL2_DOC_UNDOCUMENTED_FILE=t here.  We
+# looked into it a bit (January 2011) and it seemed awkward to provide
+# that support, unlike the case of HTML.
 echo '(write-tex-file :dir-string "doc/TEX/" :file "acl2-book")' >> doc/workxxx.tex
 echo ':q' >> doc/workxxx.tex
 
