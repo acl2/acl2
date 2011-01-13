@@ -125,6 +125,24 @@ an xdoc file.  See :DOC markup")
 (defconst *xdoc-vp* ; see print-doc-string-part1
   '(("BV" "BF") . ("EV" "EF")))
 
+(defconst *xdoc-undocumented-topic*
+  ;; Keep in sync with import-acl2doc.lisp
+  "acl2::broken-link")
+
+(defun jared-string-upcase-first (x)
+  ;; Upper-case the first letter of a string, if it's lower-case.
+  ;; Most one-liners in the acl2 documentation have lower-case descriptions.
+  ;; I prefer upper-case for xdoc.
+  (let ((len (length x)))
+    (if (and (< 0 len)
+             (standard-char-p (char x 0))
+             (not (equal (char-upcase (char x 0))
+                         (char x 0))))
+        (concatenate 'string
+                     (coerce (list (char-upcase (char x 0))) 'string)
+                     (subseq x 1 nil))
+      x)))
+
 (defun write-a-doc-section (doc-tuple doc-fmt-alist channel state)
 
 ; We return an xdoc database entry based on doc-tuple.
@@ -146,9 +164,16 @@ an xdoc file.  See :DOC markup")
        (pprogn
         (acl2::print-doc-string-part
          0 doc-string
-         "<code>   </code>"
+
+; Jared question: what's the purpose of the following?  It seems to insert
+; <code></code> blocks after newlines in the short string... this seems really
+; weird...?
+; It looks like this is inherited from the html writer.  I'm going to just
+; try taking it out.
+
+         "" ; was "<code>   </code>"
          *xdoc-doc-markup-table* *xdoc-doc-char-subst-table* doc-fmt-alist
-         channel name t nil nil state)
+         channel name t *xdoc-undocumented-topic* nil state)
         (get-output-stream-string$ channel state nil)))
 
 ; XDOC change: A block of code including a call (print-name-as-link ...)
@@ -160,7 +185,8 @@ an xdoc file.  See :DOC markup")
         (ln state)
         (acl2::print-doc-string-part-mv
          1 doc-string "" *xdoc-doc-markup-table* *xdoc-doc-char-subst-table*
-         doc-fmt-alist channel (car doc-tuple) :par nil *xdoc-vp* state)
+         doc-fmt-alist channel (car doc-tuple) :par
+         *xdoc-undocumented-topic* *xdoc-vp* state)
 
 ; XDOC change: We omit a call (write-doc-menu ...), assuming that the xdoc
 ; system will take care of menus.  But note that our menus include citations
@@ -171,7 +197,8 @@ an xdoc file.  See :DOC markup")
         (pprogn
          (acl2::print-doc-string-part
           2 doc-string "" *xdoc-doc-markup-table* *xdoc-doc-char-subst-table*
-          doc-fmt-alist channel (car doc-tuple) ln nil *xdoc-vp* state)
+          doc-fmt-alist channel (car doc-tuple) ln *xdoc-undocumented-topic*
+          *xdoc-vp* state)
          (get-output-stream-string$ channel state nil)))))
 
 ; XDOC change: unlike the HTML pages, we avoid laying down images that link to
@@ -186,7 +213,7 @@ an xdoc file.  See :DOC markup")
                   (if (equal (symbol-package-name name) "ACL2-PC")
                       name
                     'acl2::rewrite))
-            (cons :short short)
+            (cons :short (jared-string-upcase-first short))
             (cons :long long))))))
 
 (defun xdoc-fmt-alist (doc-alist acc)

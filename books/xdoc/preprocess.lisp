@@ -122,8 +122,15 @@
                      (symbol-name name)))))
 
 (defun get-def (fn world)
-  ;; This used to do something else.  Now we try to be permissive.
-  (let ((def (acl2::get-def fn world)))
+  ;; New definition supplied by Matt that handles stobjs accessor fields more
+  ;; gracefully.
+  (let ((def
+         (cdr (acl2::cltl-def-from-name1
+               fn
+               (acl2::getprop fn 'acl2::stobj-function nil
+                              'acl2::current-acl2-world world)
+               t
+               world))))
     (if def
         (cons 'defun def)
       (get-event fn world))))

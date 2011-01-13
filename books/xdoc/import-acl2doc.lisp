@@ -22,6 +22,35 @@
 (include-book "write-acl2-xdoc")
 (program)
 
+(defdoc broken-link
+  ;; Keep topic name in sync with write-acl2-xdoc.lisp
+  ":Doc-Section Documentation
+Placeholder for undocumented topics~/
+
+This topic is used as a placeholder in XDOC when an imported ACL2
+documentation topic (~pl[documentation]) topic, written in the classic
+~il[doc-string] format, links to an underfined topic.~/~/")
+
+#||
+
+;; To test broken-link handling, uncomment this and regenerate the manual.  We
+;; should be warned about the broken links, and they should take us to the
+;; broken-link topic.
+
+(defdoc broken-link-test
+  ":Doc-Section broken-link
+Test of broken links.  IL: ~il[test-broken-link]. ILC: ~ilc[test-broken-link].
+L: ~l[test-broken-link].  PL: ~pl[test-broken-link]~/
+
+This is a silly topic intended to test our linking to missing documentation.
+
+IL: ~il[test-broken-link]
+ILC: ~ilc[test-broken-link]
+L: ~l[test-broken-link]
+PL: ~pl[test-broken-link]~/~/")
+
+||#
+
 ; Initial import of acl2 system documentation.  We do this before including any
 ; books other than the basic portcullis, because we don't want any libraries
 ; loaded when we import the system-level documentation.
@@ -90,10 +119,12 @@
 (table xdoc 'doc (append *acl2-ground-zero-topics* (get-xdoc-table world)))
 
 (defxdoc acl2
-  :short "Documentation for the ACL2 Theorem Prover."
-  :long "<p>This is just a parent topic for all built-in <see topic=\"@(url
-documentation)\">ACL2 documentation</see> that is written in the classic @(see
-doc-string) format.</p>")
+  :short "Documentation for the <a
+  href=\"http://www.cs.utexas.edu/users/moore/acl2\">ACL2 Theorem Prover</a>."
+  :long "<p>This is a parent topic for <see topic=\"@(url documentation)\">ACL2
+documentation</see> that is written in the classic @(see doc-string)
+format.</p>")
+
 
 #!XDOC
 (defmacro import-acl2doc ()
