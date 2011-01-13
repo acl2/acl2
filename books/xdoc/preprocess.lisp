@@ -112,7 +112,8 @@
 
 (defun get-event (name world)
   ;; A general purpose event lookup as in :pe
-  (let ((evt (acl2::get-event name world)))
+  (let* ((props (acl2::getprops name 'current-acl2-world world))
+        (evt   (and props (acl2::get-event name world))))
     (or evt
         (cw "; xdoc note: get-event failed for ~x0.~%" name)
         (concatenate 'string
@@ -122,35 +123,66 @@
                      (symbol-name name)))))
 
 (defun get-def (fn world)
-  ;; New definition supplied by Matt that handles stobjs accessor fields more
-  ;; gracefully.
-  (let ((def
-         (cdr (acl2::cltl-def-from-name1
-               fn
-               (acl2::getprop fn 'acl2::stobj-function nil
-                              'acl2::current-acl2-world world)
-               t
-               world))))
-    (if def
-        (cons 'defun def)
-      (get-event fn world))))
+  (get-event fn world))
 
 (defun get-theorem (name world)
   ;; BOZO maybe do some cleaning to remove hints, etc.
   (get-event name world))
 
+;; (defmacro foo ()
+;;   `(progn (logic)
+;;           (make-event
+;;            '(encapsulate
+;;               (((h *) => *))
+;;               (local (defun h (x) (+ x 1)))
+;;               (defun f (x) (+ x 1))
+;;               (defun g (x) (+ x 2))))))
 
+;; (defstobj st fld)
+
+;; (defun-sk all-integerp (x)
+;;   (forall a (implies (member-equal a x)
+;;                      (integerp a))))
+
+;; (defconst *const* 3)
+
+;; (foo)
+
+;; (get-event 'undefined (w state)) ; good, fails
 ;; (get-event 'append (w state))
-;; (get-def 'append (w state))
 ;; (get-event 'binary-append (w state))
-;; (get-def 'binary-append (w state))
+;; (get-event 'st (w state))
+;; (get-event 'fld (w state)) ;; bad? returns the whole stobj
+;; (get-event 'all-integerp (w state))
+;; (get-event 'all-integerp-witness (w state)) ;; good i guess - returns the encapsulate
+;; (get-event 'f (w state))
+;; (get-event 'h (w state)) ;; good i guess, returns the encapsulate
+;; (get-event 'acl2::car-cons (w state))
+;; (get-event '*const* (w state))
+
 ;; (get-formals 'binary-append (w state))  ;; --> (ACL2::X ACL2::Y)
 ;; (get-formals 'append (w state)) ;; --> (ACL2::X ACL2::Y &REST ACL2::RST)
-;; (get-measure 'binary-append (w state))
-;; (get-guard 'binary-append (w state))
-;; (get-body 'binary-append (w state))
-;; (get-def 'binary-append (w state))
-;; (get-theorem 'acl2::car-cons (w state))
+;; (get-formals 'all-integerp-witness (w state)) ;; good, works
+;; (get-formals 'all-integerp (w state)) ;; good, works
+;; (get-formals 'fld (w state)) ;; good, works
+;; (get-formals 'st (w state)) ;; good, fails
+
+;; (get-measure 'binary-append (w state)) ;; good, works
+;; (get-measure 'append (w state))  ;; good, fails
+;; (get-measure 'st (w state)) ;; good, fails
+;; (get-measure 'fld (w state)) ;; good, fails
+;; (get-measure 'all-integerp-witness (w state)) ;; good, fails
+;; (get-measure 'all-integerp (w state)) ;; good, fails
+
+;; (get-guard 'binary-append (w state)) ;; good, works
+;; (get-guard 'append (w state)) ;; hrmn -- fails?
+;; (get-guard 'all-integerp-witness (w state)) ;; NIL???
+;; (get-guard 'all-integerp (w state)) ;; NIL???
+;; (get-guard 'fld (w state)) ;; works
+;; (get-guard 'st (w state)) ;; good, fails
+
+
+
 
 
 
