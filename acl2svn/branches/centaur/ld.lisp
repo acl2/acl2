@@ -17247,6 +17247,70 @@
   ~/
   ")
 
+(deflabel note-4-3
+
+; Modified some doc-printing functions in support of translation to xdoc.  the
+; process, the HTML output has become prettier; see item about HTML, below.
+
+; Added new macro mv-to-state.
+
+  :Doc
+  ":Doc-Section release-notes
+
+  ACL2 Version  4.3 (xxx, 20xx) Notes~/
+
+  NOTE!  New users can ignore these release notes, because the
+  ~il[documentation] has been updated to reflect all changes that are recorded
+  here.
+
+  Below we roughly organize the changes since Version  4.2 into the following
+  categories of changes: existing features, new features, heuristic
+  improvements, bug fixes, distributed books, Emacs support, and experimental
+  versions.  Each change is described in just one category, though of course
+  many changes could be placed in more than one category.
+
+  ~st[CHANGES TO EXISTING FEATURES]
+
+  Improved ~c[get-output-stream-string$] to allow for a context and to do
+  genuine error printing instead of using ~ilc[cw].  ~l[io].
+
+  ~st[NEW FEATURES]
+
+  ~st[HEURISTIC IMPROVEMENTS]
+
+  ~st[BUG FIXES]
+
+  Fixed ~ilc[trace$] for arguments that are ~il[stobj] accessors or updaters.
+  It also gives an informative error in this case when the accessor or updater
+  is a macro (because the introducing ~ilc[defstobj] event specified
+  ~c[:inline t]).
+
+  ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
+
+  The HTML documentation no longer has extra newlines in <pre> environments.
+
+  Among the new books is an illustration of ~ilc[defattach],
+  ~c[books/misc/defattach-example.lisp].
+
+  ~st[EMACS SUPPORT]
+
+  ~st[EXPERIMENTAL VERSIONS]
+
+  ~/~/")
+
+(deflabel |NOTE-4-3(R)|
+  :doc
+  ":Doc-Section release-notes
+
+  ACL2 Version  4.3(r) (xxx, 20xx) Notes~/
+
+  ~/
+
+  Please ~pl[note-4-3] for changes in Version  4.3 of ACL2.
+
+  ~/
+  ")
+
 (deflabel the-method
   :doc
   ":Doc-Section Miscellaneous
@@ -19361,8 +19425,8 @@ distributed with the source code for the system.  So if you have already
 obtained ACL2, you should look in the <CODE>doc/</CODE> subdirectory of the
 directory upon which ACL2 is installed.  You may obtain the gzipped Postscript
 form of the documentation by clicking <A HREF=
-\"http://www.cs.utexas.edu/users/moore/publications/acl2-book.ps.gz\">here
-over 2 MB)</A>.
+\"http://www.cs.utexas.edu/users/moore/publications/acl2-book.ps.gz\">here</A>
+(over 2 MB).
 
 <BR><HR><BR>
 <H2><A NAME=\"Tools\">Lemma Libraries and Utilities; and, How to Contribute</A></H2>
@@ -22111,7 +22175,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   The ``warnings'' mentioned (none are listed for ~c[app]) remind the reader
   whether the event provoked any warnings.  The warnings themselves would have
   been printed earlier in the processing and this part of the summary just
-  names the earlier warnings printed.
+  names the earlier warnings printed.
 
   The ``time'' indicates how much processing time was used and is divided into
   three parts: the time devoted to proof, to printing, and to syntactic checks,
@@ -22148,7 +22212,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   Termination must be proved before the definition is admitted.  This is done
   in general by finding a measure of the arguments of the function and a
   well-founded relation such that the arguments ``get smaller'' every time a
-  recursive branch is taken.
+  recursive branch is taken.
 
   For ~c[app] the measure is the ``size'' of the first argument, ~c[x], as
   determined by the primitive function ~ilc[acl2-count] ~warn[].  The

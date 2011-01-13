@@ -9054,10 +9054,13 @@ End of statistical and related information related to image size.
                                  name
                                  (string-downcase (car entry))
                                  arg))
-                            ((and missing-fmt-alist-chars
-                                  (not undocumented-file))
-                             (er hard 'print-doc-string-part1
-                                 "~|Error printing the :DOC string for topic ~
+                            (missing-fmt-alist-chars
+; Jared patch: warn about broken links even if undocumented-file is supplied.
+                             (if undocumented-file
+                                 (cw "~|; Note: Broken link in :doc ~x0: ~~~s1[~s2].~%"
+                                     name (string-downcase (car entry)) arg)
+                               (er hard 'print-doc-string-part1
+                                   "~|Error printing the :DOC string for topic ~
                                   ~x0,~|due to substring:~|  ~~~s1[~s2].~|If ~
                                   this error is not due to a typo, then it ~
                                   can probably be resolved either by:~|-- ~
@@ -9066,9 +9069,9 @@ End of statistical and related information related to image size.
                                   the appropriate~|   translator (e.g., ~
                                   function acl2::write-html-file in~|~ ~ ~ ~
                                   distributed file doc/write-html)."
-                                 name
-                                 (string-downcase (car entry))
-                                 arg))
+                                   name
+                                   (string-downcase (car entry))
+                                   arg)))
                             (t nil))
                            (mv-let (col state)
                                    (fmt1 (cddr entry)
@@ -21116,6 +21119,22 @@ End of statistical and related information related to image size.
 ; return the raw Lisp definition of fn.
 
   (cltl-def-from-name1 fn stobj-function nil wrld))
+
+(defun get-def (fn wrld)
+
+; This function returns the raw Lisp definition of fn, as in cltl-def-from-name
+; (which we call here, with the appropriate value of stobj-function).
+
+; Through Version_4.2 we had a different definition here, which was called only
+; in trace$-fn-general.  The present definition, which may well be equivalent
+; to that one except that the present one returns a definition for stobj
+; accessors and updaters, is provided for use by books that already call
+; get-def at the time of this writing (1/12/2011).
+
+  (cdr (cltl-def-from-name fn
+                           (getprop fn 'stobj-function nil 'current-acl2-world
+                                    wrld)
+                           wrld)))
 
 (defun table-cltl-cmd (name key val op ctx wrld)
 
