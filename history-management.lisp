@@ -21117,6 +21117,22 @@ End of statistical and related information related to image size.
 
   (cltl-def-from-name1 fn stobj-function nil wrld))
 
+(defun get-def (fn wrld)
+
+; This function returns the raw Lisp definition of fn, as in cltl-def-from-name
+; (which we call here, with the appropriate value of stobj-function).
+
+; Through Version_4.2 we had a different definition here, which was called only
+; in trace$-fn-general.  The present definition, which may well be equivalent
+; to that one except that the present one returns a definition for stobj
+; accessors and updaters, is provided for use by books that already call
+; get-def at the time of this writing (1/12/2011).
+
+  (cdr (cltl-def-from-name fn
+                           (getprop fn 'stobj-function nil 'current-acl2-world
+                                    wrld)
+                           wrld)))
+
 (defun table-cltl-cmd (name key val op ctx wrld)
 
 ; WARNING: For the case that name is 'memoize-table, keep this in sync with
