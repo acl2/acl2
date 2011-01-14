@@ -21587,17 +21587,13 @@ The following all cause errors.
               (cadr evisc-tuple-tail) :evisc-tuple formals ctx wrld state)
            (value nil))))))))
 
-(defun memoize-off-trace-error (str fn ctx)
-
-; Str is "trace" or "untrace".  This function is only used by the HONS
-; version.
-
+(defun memoize-off-trace-error (fn ctx)
   (er hard ctx
-      "Memoized function ~x0 is to be ~s1d, but its symbol-function differs ~
-       from the :MEMOIZED-FN field of its memoization hash-table entry.  ~
-       Perhaps the ~s1 request occurred in the context of ~x2; at any rate, ~
-       it is illegal."
-      fn str 'memoize-off))
+      "Memoized function ~x0 is to be traced or untraced, but its ~
+       symbol-function differs from the :MEMOIZED-FN field of its memoization ~
+       hash-table entry.  Perhaps the trace or untrace request occurred in ~
+       the context of ~x1; at any rate, it is illegal."
+      fn 'memoize-off))
 
 (defun untrace$-fn1 (fn state)
   #-acl2-loop-only
@@ -21613,7 +21609,7 @@ The following all cause errors.
 
 ; See comment about this "strange state of affairs" in trace$-def.
 
-      (memoize-off-trace-error "untrace" fn 'untrace$))
+      (memoize-off-trace-error fn 'untrace$))
 
 ; We do a raw Lisp untrace in case we traced with :native.  We use eval here
 ; because at the time we evaluate this definition, untrace might not yet have
@@ -21809,7 +21805,7 @@ The following all cause errors.
 ; presents a big problem then we can reconsider the design of how tracing and
 ; memoization interact.
 
-      (memoize-off-trace-error "trace" fn ctx))
+      (memoize-off-trace-error fn ctx))
     `(defun ,fn ,arglist
 
 ; At one time we included declarations and documentation here:
