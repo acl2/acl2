@@ -46,9 +46,8 @@ provides a (nearly) complete interface to the XDOC system, including:</p>
 <ul>
 <li>@(see defxdoc), the basic command for adding documentation, which is the
 XDOC replacement for ACL2's <tt>defdoc</tt> command.</li>
-<li>The <tt>:xdoc</tt> and <tt>:xdoc!</tt> commands for viewing documentation
-within the terminal, which are the XDOC replacements for ACL2's <tt>:doc</tt>
-and <tt>:doc!</tt> commands.</li>
+<li>The <tt>:xdoc</tt> command for viewing documentation within the terminal,
+which is the XDOC replacement for ACL2's <tt>:doc</tt> command.</li>
 <li>The @(see save) command, which exports all XDOC documentation as XML files
 that can be viewed in a web browser or transformed into formats like HTML.</li>
 </ul>

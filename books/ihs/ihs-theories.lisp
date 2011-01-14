@@ -37,7 +37,7 @@
 (include-book "ihs-init")
 
 (deflabel ihs-theories
-  :doc ":doc-section ihs-theories
+  :doc ":doc-section ihs
   Subtheories of the Acl2 initialization theory.~/
 
   The following theories are available: ~/

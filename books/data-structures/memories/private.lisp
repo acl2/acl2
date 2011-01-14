@@ -27,9 +27,10 @@
 ; of other libraries.
 
 (in-package "MEM")
+(include-book "../doc-section")
 
 (defdoc private
-  ":Doc-Section private
+  ":Doc-Section acl2::data-structures
   redundantly define, then serverely restrict the usage of some function~/
   ~bv[]
   Example:

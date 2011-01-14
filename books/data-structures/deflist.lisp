@@ -997,7 +997,7 @@ NTH-RULE-CLASSES defaults to :forward-chaining, otherwise :rewrite.")
                              but ~p0 is not." predicate)))))))
 
 (defmacro deflist (name formals &rest body)
-  ":doc-section deflist
+  ":doc-section data-structures
   Define a new list type, and a theory of the list type.
   ~/
  Examples:

@@ -32,11 +32,11 @@
 ;;;    (512) 322-9951
 ;;;    brock@cli.com
 ;;;
-;;;    Modified for ACL2 Version_2.6 by: 
+;;;    Modified for ACL2 Version_2.6 by:
 ;;;    Jun Sawada, IBM Austin Research Lab. sawada@us.ibm.com
 ;;;    Matt Kaufmann, kaufmann@cs.utexas.edu
 ;;;
-;;;    Modified for ACL2 Version_2.7 by: 
+;;;    Modified for ACL2 Version_2.7 by:
 ;;;    Matt Kaufmann, kaufmann@cs.utexas.edu
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -54,8 +54,8 @@
 (include-book "ihs-init")
 (include-book "ihs-theories")
 (local (include-book "math-lemmas"))
-(local (include-book "quotient-remainder-lemmas")) 
-(include-book "logops-definitions")  
+(local (include-book "quotient-remainder-lemmas"))
+(include-book "logops-definitions")
 
 (local (in-theory nil))
 
@@ -332,7 +332,7 @@
   (implies (case-split (integerp i))
            (equal (lognot (lognot i))
                   i))
-  :doc ":doc-section lognot-lognot
+  :doc ":doc-section logops-lemmas
   Rewrite: (LOGNOT (LOGNOT i)) = i,
   when (case-split (integerp i).
   ~/~/~/")
@@ -346,7 +346,7 @@
 				      (integerp j))
 				 (equal (equal (lognot i) j)
 					(equal (ifix i) (lognot j))))))
-  :doc ":doc-section cancel-equal-lognot
+  :doc ":doc-section logops-lemmas
   Rewrite: (EQUAL (LOGNOT i) (LOGNOT j)) = (i = j).
   ~/
   There is also a :REWRITE rule for the case that j is a constant.
@@ -368,8 +368,8 @@
    (equal (lognotu size1 (lognotu size i))
 	  (loghead size1 i)))
   :hints (("Goal" :in-theory (enable loghead)))
-  :doc ":doc-section lognotu
-  Rewrite: (LOGNOTU size1 (LOGNOTU size i)) = (LOGHEAD size1 i), 
+  :doc ":doc-section logops-lemmas
+  Rewrite: (LOGNOTU size1 (LOGNOTU size i)) = (LOGHEAD size1 i),
   when size1 <= size.
   ~/~/~/")
 
@@ -382,7 +382,7 @@
   :hints
   (("Goal"
     :in-theory (enable unsigned-byte-p integer-range-p lognot loghead)))
-  :doc ":doc-section lognotu
+  :doc ":doc-section logops-lemmas
   Rewrite: (LOGNOTU size i) = (LOGNOTU size j) EQUAL i = j,
   when (UNSIGNED-BYTE-P size i) and (UNSIGNED-BYTE-P size j).
   ~/~/~/")
@@ -392,7 +392,7 @@
 (defthm commutativity-of-logand
   (equal (logand i j)
 	 (logand j i))
-  :doc ":doc-section commutativity-of-logand
+  :doc ":doc-section logops-lemmas
   Rewrite: (LOGAND i j) = (LOGAND j i).
   ~/~/~/")
 
@@ -400,7 +400,7 @@
   (and (equal (logand 0 i) 0)
        (equal (logand -1 i) (ifix i)))
   :hints (("Goal" :in-theory (enable ifix)))
-  :doc ":doc-section simplify-logand
+  :doc ":doc-section logops-lemmas
   Rewrite: (LOGAND 0 i) = 0; (LOGAND -1 i) = i.
   ~/~/~/")
 
@@ -409,7 +409,7 @@
 (defthm commutativity-of-logior
   (equal (logior i j)
 	 (logior j i))
-  :doc ":doc-section commutativity-of-logior
+  :doc ":doc-section logops-lemmas
   Rewrite: (LOGIOR i j) = (LOGIOR j i).
   ~/~/~/")
 
@@ -417,7 +417,7 @@
   (and (equal (logior 0 i) (ifix i))
        (equal (logior -1 i) -1))
   :hints (("Goal" :in-theory (enable ifix)))
-  :doc ":doc-section simplify-logior
+  :doc ":doc-section logops-lemmas
   Rewrite: (LOGIOR 0 i) = i; (LOGIOR -1 i) = -1.
   ~/~/~/")
 
@@ -425,7 +425,7 @@
 
 (defthm commutativity-of-logxor
   (equal (logxor i j) (logxor j i))
-  :doc ":doc-section commutativity-of-logxor
+  :doc ":doc-section logops-lemmas
   Rewrite: (LOGXOR i j) = (LOGXOR j i).
   ~/~/~/")
 
@@ -433,7 +433,7 @@
   (and (equal (logxor 0 i) (ifix i))
        (equal (logxor -1 i) (lognot i)))
   :hints (("Goal" :in-theory (enable ifix)))
-  :doc ":doc-section simplify-logxor
+  :doc ":doc-section logops-lemmas
   Rewrite: (LOGXOR 0 i) = i; (LOGXOR -1 i) = (LOGNOT i).
   ~/~/~/")
 
@@ -472,7 +472,7 @@
        (equal (b-nand 1 x) (b-not x))
        (equal (b-nand x x) (b-not x))
        (equal (b-nand x (b-not x)) 1)
-       
+
        (equal (b-nor x y) (b-nor y x))
        (equal (b-nor 0 x) (b-not x))
        (equal (b-nor 1 x) 0)
@@ -525,7 +525,7 @@
 ;;;****************************************************************************
 ;;;
 ;;;    Lemmas, Round 2 -- UNSIGNED-BYTE-P, SIGNED-BYTE-P, LOGHEAD, LOGTAIL,
-;;;    LOGAPP, LOGRPL 
+;;;    LOGAPP, LOGRPL
 ;;;
 ;;;****************************************************************************
 
@@ -543,7 +543,7 @@
   :doc ":doc-section unsigned-byte-p-lemmas
   Rewrite: (UNSIGNED-BYTE-P size 0).
   ~/~/~/")
-                    
+
 (defthm unsigned-byte-p-0
   (equal (unsigned-byte-p 0 x)
 	 (equal x 0))
@@ -566,7 +566,7 @@
   and j >= 0.  Also commutative form.
   ~/~/~/")
 
-(defthm difference-unsigned-byte-p 
+(defthm difference-unsigned-byte-p
   (implies
    (and (unsigned-byte-p size i)
 	(<= j i)
@@ -581,7 +581,7 @@
 
 ; Make JFR a linear rule?
 
-(defthm floor-unsigned-byte-p 
+(defthm floor-unsigned-byte-p
   (implies
    (and (> x 1)
 	(force (real/rationalp x))
@@ -729,7 +729,7 @@
   Rewrite: (LOGTAIL size i) = 0, when (UNSIGNED-BYTE-P size i).
   ~/~/~/")
 
-(defthm logtail-logtail 
+(defthm logtail-logtail
   (implies
    (and (force (>= pos1 0))
 	(force (integerp pos1))
@@ -865,7 +865,7 @@
     (logapp-guard size i 0)
     (equal (logapp size i 0)
 	   (loghead size i)))
-   (implies				
+   (implies
     (logapp-guard size 0 i)
     (equal (logapp size 0 i)
 	   (* i (expt 2 size))))
@@ -885,7 +885,7 @@
   ;; lemmas below that lead up to (and include) the new crock0 below.
 #|
   ;;  !!!! AXIOM !!! Fri Feb 10 15:11:06 1995 bb -- Why won't this prove
-  ;;  anymore !!! 
+  ;;  anymore !!!
 
   (local
    (skip-proofs
@@ -1052,7 +1052,7 @@
            (LOGRPL size i 0) = (LOGHEAD size i);
            (LOGRPL size i j) = (LOGHEAD i), when (UNSIGNED-BYTE-P size j).
   ~/~/~/")
-    
+
 (defthm unsigned-byte-p-logrpl
   (implies (and (<= size1 size)
 		(>= j 0)
@@ -1105,7 +1105,7 @@
     (("Goal"
       :in-theory (disable logapp)))
     :doc ":doc-section logrpl
-  Rewrite: (LOGRPL size i (LOGRPL size1 j k)) = (LOGRPL size i k), 
+  Rewrite: (LOGRPL size i (LOGRPL size1 j k)) = (LOGRPL size i k),
            when size1 <= size.
   ~/~/~/")
 
@@ -1117,7 +1117,7 @@
      (equal (logrpl size (logrpl size1 i j) k)
 	    (logrpl size i k)))
     :doc ":doc-section logrpl
-  Rewrite: (LOGRPL size (LOGRPL size1 i j) k) = (LOGRPL size i k), 
+  Rewrite: (LOGRPL size (LOGRPL size1 i j) k) = (LOGRPL size i k),
            when size <= size1.
   ~/~/~/")
 
@@ -1223,7 +1223,7 @@
 	(integerp j))
    (and (equal (logcar (+ i (* 2 j))) (logcar i))
 	(equal (logcar (+ (* 2 j) i)) (logcar i))))
-	
+
   :doc ":doc-section logcar
   Rewrite: (LOGCAR (+ i (* 2 j)) = (LOGCAR i))
   ~/
@@ -1244,7 +1244,7 @@
 	(integerp j))
    (and (equal (logcdr (+ i (* 2 j))) (+ (logcdr i) j))
 	(equal (logcdr (+ (* 2 j) i)) (+ (logcdr i) j))))
-   
+
   :doc ":doc-section logcdr
   Rewrite: (LOGCDR (+ i (* 2 j))) = (+ (LOGCDR i) j).
   ~/
@@ -1300,7 +1300,7 @@
 	   (and (not (logbitp pos 0))
 		(logbitp pos -1)))
   :hints (("Goal" :cases ((equal pos 0))))
-  :doc ":doc-section logbitp-0-minus-1
+  :doc ":doc-section logops-lemmas
   Rewrite: (NOT (LOGBITP pos 0)); (LOGBITP pos -1).
   ~/~/~/")
 
@@ -1343,8 +1343,8 @@
 	    (if (< pos size)
 		(logbitp pos i)
 	      nil)))
-    :doc ":doc-section logbitp-loghead
-  Rewrite: (LOGBITP pos (LOGHEAD size i)) = 
+    :doc ":doc-section logbitp
+  Rewrite: (LOGBITP pos (LOGHEAD size i)) =
            if pos < size then (LOGBITP pos i) else nil.
   ~/~/~/")
 
@@ -1362,7 +1362,7 @@
   (("Goal"
     :in-theory (disable alt-logbitp)))
   :doc ":doc-section logbit
-  Rewrite: (LOGBIT pos (LOGHEAD size i)) = 
+  Rewrite: (LOGBIT pos (LOGHEAD size i)) =
            if pos < size then (LOGBIT pos i) else 0.
   ~/~/~/")
 
@@ -1373,7 +1373,7 @@
 	(force (>= pos1 0)))
    (equal (logbitp pos1 (logtail pos i))
 	  (logbitp (+ pos pos1) i)))
-  :doc ":doc-section logbitp-logtail
+  :doc ":doc-section logbitp
   Rewrite: (LOGBITP pos1 (LOGTAIL pos i)) = (LOGBITP (+ pos pos1) i).
   ~/~/~/")
 
@@ -1400,8 +1400,8 @@
 	  (if (< pos size)
 	      (logbitp pos i)
 	    (logbitp (- pos size) j))))
-  :doc ":doc-section logbitp-logapp
-  Rewrite: (LOGBITP pos (LOGAPP size i j)) = 
+  :doc ":doc-section logbitp
+  Rewrite: (LOGBITP pos (LOGAPP size i j)) =
            (LOGBITP pos i), when pos < size;
            (LOGBITP (- pos size) j), when pos >= size.
   ~/~/~/")
@@ -1419,7 +1419,7 @@
   (("Goal"
     :in-theory (disable alt-logbitp)))
   :doc ":doc-section logbit
-  Rewrite: (LOGBIT pos (LOGAPP size i j)) = 
+  Rewrite: (LOGBIT pos (LOGAPP size i j)) =
            (LOGBIT pos i), when pos < size;
            (LOGBIT (- pos size) j), when pos >= size.
   ~/~/~/")
@@ -1433,8 +1433,8 @@
 	  (if (< pos size)
 	      (logbitp pos i)
 	    (logbitp pos j))))
-  :doc ":doc-section logbitp-logrpl
-  Rewrite: (LOGBITP pos (LOGRPL size i j)) = 
+  :doc ":doc-section logbitp
+  Rewrite: (LOGBITP pos (LOGRPL size i j)) =
            (LOGBITP pos i), when pos < size;
            (LOGBITP pos j), when pos >= size.
   ~/~/~/")
@@ -1452,7 +1452,7 @@
   (("Goal"
     :in-theory (disable alt-logbitp)))
   :doc ":doc-section logbit
-  Rewrite: (LOGBIT pos (LOGRPL size i j)) = 
+  Rewrite: (LOGBIT pos (LOGRPL size i j)) =
            (LOGBIT pos i), when pos < size;
            (LOGBIT pos j), when pos >= size.
   ~/~/~/")
@@ -1503,7 +1503,7 @@
 
 NB: This theory is DISABLEd by default.  It should only be ENABLEd during
 proofs about logical operations where their recursive counterparts are to be
-used. 
+used.
    ~/
 
 The logical operations on numbers, e.g., LOGHEAD, LOGAPP, etc. are defined in
@@ -1556,7 +1556,7 @@ and appear above.~/")
    Induction scheme.
   ~/~/~/"
   (cond
-   ((or (not (integerp size))		;This is for the benefit of 
+   ((or (not (integerp size))		;This is for the benefit of
 	(< size 0)			;UNSIGNED-BYTE-P, which has no guards.
 	(not (integerp i)))
     t)
@@ -1568,9 +1568,9 @@ and appear above.~/")
    Induction scheme.
   ~/~/~/"
   (cond
-   ((or (not (integerp size))		;This is for the benefit of 
+   ((or (not (integerp size))		;This is for the benefit of
 	(< size 0)			;UNSIGNED-BYTE-P, which has no guards.
-       	(not (integerp i))		
+       	(not (integerp i))
 	(not (integerp j)))
     t)
    ((equal size 0) t)
@@ -1834,7 +1834,7 @@ and appear above.~/")
   :otf-flg t
   :hints
   (("Goal"
-    :expand (expt 2 (+ 1 (integer-length (logcdr i)))) 
+    :expand (expt 2 (+ 1 (integer-length (logcdr i))))
     :in-theory (enable logmaskp)))
   :doc ":doc-section logops-recursive-definitions-theory
   Recursive definition of LOGMASKP.
@@ -1989,7 +1989,7 @@ and appear above.~/")
 	 (and (equal i -1) (equal j -1)))
   :hints (("Goal" :induct (logcdr-induction-2 i j)
 	   :in-theory (enable ifix)))
-  :doc ":doc-section logand-=-minus-1
+  :doc ":doc-section logand
   Rewrite: (EQUAL (LOGAND i j) -1) = (i = -1) and (j = -1).
   ~/~/~/")
 
@@ -2003,7 +2003,7 @@ and appear above.~/")
   :hints (("Goal" :expand (expt 2 size)
 	   :induct (sub1-logcdr-induction-2 size i j)
 	   :in-theory (disable exponents-add)))
-  :doc ":doc-section unsigned-byte-p-logand
+  :doc ":doc-section unsigned-byte-p-lemmas
   Rewrite: (UNSIGNED-BYTE-P size (LOGAND i j)), when either
            (UNSIGNED-BYTE-P size i) or (UNSIGNED-BYTE-P size j).
   ~/~/~/")
@@ -2031,7 +2031,7 @@ and appear above.~/")
 				   (<= (logand j i) i))))
   :hints (("Goal" :in-theory (enable ifix logcons)
 	   :induct (logcdr-induction-2 i j)))
-  :doc ":doc-section logand-upper-bound
+  :doc ":doc-section logand
   Linear: (LOGAND i j) <= i, when i >= 0.
   ~/
   Note: Both commutative forms are exported.~/~/")
@@ -2056,7 +2056,7 @@ and appear above.~/")
                     (logior (logand x y) (logand x z))))
     :hints (("Goal" :induct (logcdr-induction-3 x y z)
 	     :in-theory (enable ifix)))
-    :doc ":doc-section logand-logior
+    :doc ":doc-section logand
     Rewrite: (LOGAND i (LOGIOR j k)) = (LOGIOR (LOGAND i j) (LOGAND j k)).
     ~/~/~/"))
 
@@ -2081,7 +2081,7 @@ and appear above.~/")
 	    (logxor (logand i j) (logand i k))))
     :hints (("Goal" :induct (logcdr-induction-3 i j k)
 	     :in-theory (enable ifix)))
-    :doc ":doc-section logand-logxor
+    :doc ":doc-section logand
     Rewrite: (LOGAND i (LOGXOR j k)) = (LOGXOR (LOGAND i j) (LOGAND j k)).
     ~/~/~/"))
 
@@ -2096,7 +2096,7 @@ and appear above.~/")
   :hints
   (("Goal"
     :induct (logcdr-induction-2 i j)))
-  :doc ":doc-section logior-=-0
+  :doc ":doc-section logior
   Rewrite: (EQUAL (LOGIOR i j) 0) = (i = 0) and (j = 0).
   ~/~/~/")
 
@@ -2111,7 +2111,7 @@ and appear above.~/")
   (("Goal"
     :expand (expt 2 size)
     :induct (sub1-logcdr-induction-2 size i j)))
-  :doc ":doc-section unsigned-byte-p-logior
+  :doc ":doc-section unsigned-byte-p-lemmas
   Rewrite: (UNSIGNED-BYTE-P size (LOGIOR i j)) =
            (UNSIGNED-BYTE-P size i) and (UNSIGNED-BYTE-P size j).
   ~/~/~/")
@@ -2126,7 +2126,7 @@ and appear above.~/")
 	  (equal i j)))
   :hints (("Goal" :induct (logcdr-induction-2 i j)
 	   :in-theory (enable ifix)))
-  :doc ":doc-section logxor-=-0
+  :doc ":doc-section logxor
   Rewrite: (EQUAL (LOGIOR i j) 0) = (i = j).
   ~/~/~/")
 
@@ -2140,7 +2140,7 @@ and appear above.~/")
   :hints (("Goal" :expand (expt 2 size)
 	   :induct (sub1-logcdr-induction-2 size i j)
 	   :in-theory (disable exponents-add)))
-    :doc ":doc-section unsigned-byte-p-logxor
+    :doc ":doc-section unsigned-byte-p-lemmas
   Rewrite: (UNSIGNED-BYTE-P size (LOGXOR i j)), when
            (UNSIGNED-BYTE-P size i) and (UNSIGNED-BYTE-P size j).
   ~/~/~/")
@@ -2224,7 +2224,7 @@ and appear above.~/")
   (("Goal"
     :in-theory (enable logbitp*)
     :induct (sub1-logcdr-induction-1 pos i)))
-  :doc ":doc-section logbitp-lognot
+  :doc ":doc-section logbitp
   Rewrite: (LOGBITP pos (LOGNOT i)) = (NOT (LOGBITP pos i)).
   ~/~/~/")
 
@@ -2254,7 +2254,7 @@ and appear above.~/")
   :hints
   (("Goal"
     :in-theory (enable lognotu)))
-  :doc ":doc-section logbitp-lognot
+  :doc ":doc-section logbitp
   Rewrite: (LOGBITP pos (LOGNOTU size  i)) =
            (NOT (LOGBITP pos i)), when pos < size;
            NIL, when pos >= size.
@@ -2361,7 +2361,7 @@ and appear above.~/")
   :hints
   (("Goal"
     :induct (sub1-logcdr-induction-1 size i)))
-  :doc ":doc-section integer-length-unsigned-byte
+  :doc ":doc-section integer-length
   NIL: (INTEGER-LENGTH i) <= size, when (UNSIGNED-BYTE-P size i).
   ~/~/~/")
 
@@ -2376,12 +2376,12 @@ and appear above.~/")
   :hints
   (("Goal"
     :induct (sub1-logcdr-induction-1 size i)))
-  :doc ":doc-section signed-byte-p-integer-length
+  :doc ":doc-section integer-length
   NIL: (SIGNED-BYTE-P size i), when size = (INTEGER-LENGTH i) + 1.
   ~/~/~/")
 
 (encapsulate ()
-  
+
   (local
    (defun integer-length-size-i-induction (size i)
      (declare (xargs :guard (and (integerp size)
@@ -2411,7 +2411,7 @@ and appear above.~/")
    Induction scheme.
   ~/~/~/"
      (cond
-      ((or (not (integerp size))	;This is for the benefit of 
+      ((or (not (integerp size))	;This is for the benefit of
 	   (< size 0)			;UNSIGNED-BYTE-P, which has no guards.
 	   (not (integerp i)))
        t)
@@ -2440,8 +2440,8 @@ and appear above.~/")
     :hints
     (("Goal"
       :induct (ash-goes-to-0-induction size count i)))
-    :doc ":doc-section unsigned-byte-p-ash
-  Rewrite: (UNSIGNED-BYTE-P size (ASH i count)), when 
+    :doc ":doc-section unsigned-byte-p-lemmas
+  Rewrite: (UNSIGNED-BYTE-P size (ASH i count)), when
            (UNSIGNED-BYTE-P size i), and count <= 0.
   ~/~/~/")
 
@@ -2456,15 +2456,15 @@ and appear above.~/")
     :hints
     (("Goal"
       :induct (ash-goes-to-0-induction size count i)))
-    :doc ":doc-section ash-goes-to-0
-    Rewrite: (ASH i count) = 0, when (UNSIGNED-BYTE-P size i) and 
+    :doc ":doc-section ash
+    Rewrite: (ASH i count) = 0, when (UNSIGNED-BYTE-P size i) and
     size <= -count.
     ~/~/~/"))
-  
+
 (in-theory (disable logops-recursive-definitions-theory))
 
 ; We can now use lemmas about LOGAND and LOGNOT to characterize all of the
-; LOGOPS. 
+; LOGOPS.
 
 (defthm signed-byte-p-logops
   (and
@@ -2635,7 +2635,7 @@ and appear above.~/")
            (LOGHEAD size j) = 0.
   ~/~/~/")
 
-(defthm loghead-+-cancel 
+(defthm loghead-+-cancel
   (implies
    (and (force (integerp size))
 	(>= size 0)
@@ -2668,7 +2668,7 @@ and appear above.~/")
   ~/~/~/")
 
 ; Now the analogous lemmas for LOGEXT.  These are hideous proofs! Can you do
-; better? 
+; better?
 
 (encapsulate ()
 
@@ -2757,9 +2757,9 @@ and appear above.~/")
    Induction scheme.
   ~/~/~/"
     (cond
-     ((or (not (integerp size))		;This is for the benefit of 
+     ((or (not (integerp size))		;This is for the benefit of
 	  (<= size 0)			;SIGNED-BYTE-P, which has no guards.
-	  (not (integerp i))		
+	  (not (integerp i))
 	  (not (integerp j))
 	  (not (bitp c)))
       t)
@@ -2768,7 +2768,7 @@ and appear above.~/")
 	 (1- size) (logcdr i) (logcdr j) (b-and c (logcar i))))))
 
   (local
-   (defthm logext-+-cancel-bit 
+   (defthm logext-+-cancel-bit
      (implies
       (and (integerp size)
 	   (> size 0)
@@ -2789,16 +2789,16 @@ and appear above.~/")
    Induction scheme.
   ~/~/~/"
     (cond
-     ((or (not (integerp size))		;This is for the benefit of 
+     ((or (not (integerp size))		;This is for the benefit of
 	  (<= size 0)			;SIGNED-BYTE-P, which has no guards.
-	  (not (integerp i))		
+	  (not (integerp i))
 	  (not (integerp j))
 	  (not (integerp k)))
       t)
      ((equal size 1) t)
      (t (sub1-logcdr-induction-3 (1- size) (logcdr i) (logcdr j) (logcdr k)))))
 
-  (defthm logext-+-cancel 
+  (defthm logext-+-cancel
     (implies
      (and (integerp size)
 	  (> size 0)

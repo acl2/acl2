@@ -24,6 +24,3 @@
 ; consolidate all of our portcullis commands into a single, usually-redundant
 ; include-book command.  This simply improves the efficiency of our build
 ; process.
-
-(include-book "xdoc/top" :dir :system)
-(include-book "tools/rulesets" :dir :system)

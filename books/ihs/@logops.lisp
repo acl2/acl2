@@ -38,7 +38,7 @@
 ;;;  (0 . 0)       =  ..00000000000
 ;;;  (1 . 0)       =  ..00000000001
 ;;;  (10 . 12)     =  ..0000000ZX10
-;;;  (0 . -1)      =  ..XXXXXXXXXXX  
+;;;  (0 . -1)      =  ..XXXXXXXXXXX
 ;;;  (1023 . 1023) =  ..0ZZZZZZZZZZ
 ;;;
 ;;;  All of the 4-valued counterparts of integer functions are uniformly
@@ -62,15 +62,15 @@
 (include-book "ihs-lemmas")
 (progn (minimal-ihs-theory))
 
-(deflabel @logops :doc 
-  ":doc-section @logops
+(deflabel @logops :doc
+  ":doc-section ihs
   A book of 4-valued counterparts for logical operations on integers.
   ~/~/~/")
 
 ;  These will never appear in user code, so they're macros for efficiency.
 
 (defmacro @cons (d i)
-  ":doc-section @cons
+  ":doc-section @logops
   4-Valued CONS.
   ~/~/~/"
   (mlambda (d i)
@@ -97,7 +97,7 @@
 (defmacro @@i (@) (mlambda (@) (cdr @)))
 
 (defun @integerp (@)
-  ":doc-section @integerp
+  ":doc-section @logops
   4-Valued INTEGERP.
   ~/~/~/"
   (declare (xargs :guard t))
@@ -157,7 +157,7 @@
   (("Goal"
     :in-theory (enable @bitp))))
 
-;;;  @BFIX 
+;;;  @BFIX
 
 (defun @bfix (x)
   ":doc-section @logops
@@ -176,7 +176,7 @@
 ;;;  @+
 
 (defun @+ (i j)
-  ":doc-section @+
+  ":doc-section @logops
   4-Valued +.
   ~/~/~/"
   (declare (xargs :guard (and (@integerp i)
@@ -202,7 +202,7 @@
 ;;;  @unary--
 
 (defun @unary-- (i)
-  ":doc-section @unary--
+  ":doc-section @logops
   4-Valued UNARY--.
   ~/~/~/"
   (declare (xargs :guard (@integerp i)))
@@ -247,7 +247,7 @@
 ;;;  @*
 
 (defun @* (i j)
-  ":doc-section @*
+  ":doc-section @logops
   4-Valued *.
   ~/~/~/"
   (declare (xargs :guard (and (@integerp i)
@@ -269,7 +269,7 @@
 ;;  @UNSIGNED-BYTE-P
 
 (defun @unsigned-byte-p (size i)
-  ":doc-section @unsigned-byte-p
+  ":doc-section @logops
   4-Valued UNSIGNED-BYTE-P.
   ~/~/~/"
   (declare (xargs :guard t))
@@ -304,7 +304,7 @@
 ;;;  @SIGNED-BYTE-P
 
 (defun @signed-byte-p (size i)
-  ":doc-section @signed-byte-p
+  ":doc-section @logops
   4-Valued SIGNED-BYTE-P.
   ~/~/~/"
   (declare (xargs :guard t))
@@ -364,7 +364,7 @@
   4-Valued ASH.
   ~/~/
   Note the conservative definition.  We do not define @ASH when count is
-  indeterminate. 
+  indeterminate.
   ~/"
   (declare (xargs :guard (and (@integerp i)
 			      (@integerp count))))
@@ -376,11 +376,11 @@
 |#
 
 (defun @ash (i count)
-  ":doc-section @ash
+  ":doc-section @logops
   4-Valued ASH.
   ~/~/
   Note the conservative definition.  We do not define @ASH when count is
-  indeterminate. 
+  indeterminate.
   ~/"
   (declare (xargs :guard (and (@integerp i)
 			      (@integerp count))))
@@ -444,7 +444,7 @@
 ;;;  @LOGCAR
 
 (defun @logcar (i)
-  ":doc-section @logcar
+  ":doc-section @logops
   4-Valued LOGCAR.
   ~/~/~/"
   (declare (xargs :guard (@integerp i)))
@@ -463,11 +463,11 @@
 ;;;  @LOGNOT
 
 (defun @lognot (i)
-  ":doc-section @lognot
+  ":doc-section @logops
   4-Valued LOGNOT.
   ~/~/
 
- ~i = ?  ii di  ians/dans
+ ~~i = ?  ii di  ians/dans
 
   0   1   0  0    0 1
   1   0   0  1    0 0
@@ -494,13 +494,13 @@
 ;;; @LOGAND
 
 (defun @logand (i j)
-  ":doc-section @logand
+  ":doc-section @logops
   4-Valued LOGAND.
   ~/~/
 
  i&j = ?  ii di ij dj  ians/dans
-		
- 0 0   0   0  0  0  0  	 0 0 
+
+ 0 0   0   0  0  0  0  	 0 0
  0 1   0   0  0  0  1  	 0 0
  0 x   0   0  0  1  0  	 0 0
  0 z   0   0  0  1  1  	 0 0
@@ -543,13 +543,13 @@
 ;;;  @LOGIOR
 
 (defun @logior (i j)
-  ":doc-section @logior
+  ":doc-section @logops
   4-Valued LOGIOR
   ~/~/
 
  i|j = ?  ii di ij dj  ians/dans
-		
- 0 0   0   0  0  0  0  	 0 0 
+
+ 0 0   0   0  0  0  0  	 0 0
  0 1   1   0  0  0  1  	 0 1
  0 x   x   0  0  1  0  	 1 0
  0 z   x   0  0  1  1  	 1 0
@@ -592,13 +592,13 @@
 ;;; @T-WIRE
 
 (defun @t-wire (i j)
-  ":doc-section @t-wire
+  ":doc-section @logops
   Tristate resolution function.
   ~/~/
 
  i.j = ?  ii di ij dj  ians/dans
-		
- 0 0   0   0  0  0  0  	 0 0 
+
+ 0 0   0   0  0  0  0  	 0 0
  0 1   x   0  0  0  1  	 1 0
  0 x   x   0  0  1  0  	 1 0
  0 z   0   0  0  1  1  	 0 0
@@ -622,8 +622,8 @@
 	 (ii (@i i))
 	 (dj (@d j))
 	 (ij (@i j))
-	 (ians (logior (logand ii (logorc1 di ij)) 
-		       (logior (logandc2 ij dj) 
+	 (ians (logior (logand ii (logorc1 di ij))
+		       (logior (logandc2 ij dj)
 			       (logandc1 ii (logandc1 ij (logxor di dj))))))
 	 (dans (logand di dj)))
     (@cons dans ians)))
@@ -634,7 +634,7 @@
 ;  are inclined to do the work.
 
 (defun @logandc1 (i j)
-  ":doc-section @logandc1
+  ":doc-section @logops
   4-Valued LOGANDC1.
   ~/~/~/"
   (declare (xargs :guard (and (@integerp i)
@@ -643,7 +643,7 @@
   (@logand (@lognot i) j))
 
 (defun @logandc2 (i j)
-  ":doc-section @logandc2
+  ":doc-section @logops
   4-Valued LOGANDC2.
   ~/~/~/"
   (declare (xargs :guard (and (@integerp i)
@@ -652,7 +652,7 @@
   (@logand i (@lognot j)))
 
 (defun @lognand (i j)
-  ":doc-section @lognand
+  ":doc-section @logops
   4-Valued LOGNAND.
   ~/~/~/"
   (declare (xargs :guard (and (@integerp i)
@@ -661,7 +661,7 @@
   (@lognot (@logand i j)))
 
 (defun @lognor (i j)
-  ":doc-section @lognor
+  ":doc-section @logops
   4-Valued LOGNOR.
   ~/~/~/"
   (declare (xargs :guard (and (@integerp i)
@@ -670,7 +670,7 @@
   (@lognot (@logior i j)))
 
 (defun @logorc1 (i j)
-  ":doc-section @logorc1
+  ":doc-section @logops
   4-Valued LOGORC1.
   ~/~/~/"
   (declare (xargs :guard (and (@integerp i)
@@ -679,7 +679,7 @@
   (@logior (@lognot i) j))
 
 (defun @logorc2 (i j)
-  ":doc-section @logorc2
+  ":doc-section @logops
   4-Valued LOGORC2.
   ~/~/~/"
   (declare (xargs :guard (and (@integerp i)
@@ -688,7 +688,7 @@
   (@logior i (@lognot j)))
 
 (defun @logeqv (i j)
-  ":doc-section @logeqv
+  ":doc-section @logops
   4-Valued LOGEQV.
   ~/~/~/"
   (declare (xargs :guard (and (@integerp i)
@@ -697,7 +697,7 @@
   (@logand (@logorc1 i j) (@logorc1 j i)))
 
 (defun @logxor (i j)
-  ":doc-section @logxor
+  ":doc-section @logops
   4-Valued LOGXOR.
   ~/~/~/"
   (declare (xargs :guard (and (@integerp i)
@@ -846,7 +846,7 @@
   (or (and (equal i 1) 0)
       (and (equal j 0) 0)
       (and (equal i 0) (equal j 1) 1)
-      *@x-bit*))  
+      *@x-bit*))
 
 (defun @b-andc2 (i j)
   ":doc-section @logops-bit-functions
@@ -938,7 +938,7 @@
 ;;;  @LOGHEAD
 
 (defun @loghead (size i)
-  ":doc-section @loghead
+  ":doc-section @logops
   4-Valued LOGHEAD.
   ~/~/~/"
   (declare (xargs :guard (and (integerp size)
@@ -959,7 +959,7 @@
 ;;;  @LOGTAIL
 
 (defun @logtail (size i)
-  ":doc-section @logtail
+  ":doc-section @logops
   4-Valued LOGTAIL.
   ~/~/~/"
   (declare (xargs :guard (and (integerp size)
@@ -980,7 +980,7 @@
 ;;;  @LOGEXT
 
 (defun @logext (size i)
-  ":doc-section @logext
+  ":doc-section @logops
   4-Valued LOGEXT.
   ~/~/~/"
   (declare (xargs :guard (and (integerp size)
@@ -1002,7 +1002,7 @@
 ;;;  @LOGSAT
 
 (defun @logsat (size i)
-  ":doc-section @logsat
+  ":doc-section @logops
   4-Valued LOGSAT.
   ~/~/
   Note the conservative definition.  We don't know what it means to saturate
@@ -1027,7 +1027,7 @@
 ;;;  @LOGAPP
 
 (defun @logapp (size i j)
-  ":doc-section @logapp
+  ":doc-section @logops
   4-Valued LOGAPP.
   ~/~/~/"
   (declare (xargs :guard (and (integerp size)
@@ -1053,7 +1053,7 @@
 ;;;  @LOGBIT
 
 (defun @logbit (pos i)
-  ":doc-section @logbit
+  ":doc-section @logops
   4-Valued LOGBIT.
   ~/~/~/"
   (declare (xargs :guard (and (integerp pos)
@@ -1074,7 +1074,7 @@
 ;;;  @LOGREV
 
 (defun @logrev (size i)
-  ":doc-section @logrev
+  ":doc-section @logops
   4-Valued LOGREV.
   ~/~/~/"
   (declare (xargs :guard (and (integerp size)
@@ -1098,7 +1098,7 @@
 ;;;  RDB
 
 (defun @rdb (bsp i)
-  ":doc-section @rdb
+  ":doc-section @logops
   4-valued RDB.
   ~/~/
   NB: We consider this a specification construct, not a hardware device.
@@ -1108,7 +1108,7 @@
   (cond
    ((integerp i) (rdb bsp i))
    (t (@cons (rdb bsp (@@d i)) (rdb bsp (@@i i))))))
-  
+
 (defthm type-of-@rdb (@integerp (@rdb bsp i)))
 
 (defthm @rdb-integer
@@ -1120,7 +1120,7 @@
 ;;;  WRB
 
 (defun @wrb (i bsp j)
-  ":doc-section @wrb
+  ":doc-section @logops
   4-valued WRB.
   ~/~/
   NB: We consider this a specification construct, not a hardware device.
@@ -1129,7 +1129,7 @@
 			      (bspp bsp)
 			      (@integerp j))))
   (@cons (wrb (@d i) bsp (@d j)) (wrb (@i i) bsp (@i j))))
-  
+
 (defthm type-of-@wrb (@integerp (@wrb i bsp j)))
 
 (defthm @wrb-integer
@@ -1234,7 +1234,7 @@
   (("Goal"
     :in-theory (enable @unsigned-byte-p @logior logandc1 logandc2)))
   :doc ":doc-section @logand
-  Rewrite: (@UNSIGNED-BYTE-P size (@LOGIOR i j)), when 
+  Rewrite: (@UNSIGNED-BYTE-P size (@LOGIOR i j)), when
            (@UNSIGNED-BYTE-P size i) and (@UNSIGNED-BYTE-P size j).
   ~/~/~/")
 
@@ -1263,7 +1263,7 @@
        (equal (@b-nand 0 x) 1)
        (equal (@b-nand 1 x) (@b-not x))
        (equal (@b-nand x x) (@b-not x))
-       
+
        (equal (@b-nor x y) (@b-nor y x))
        (equal (@b-nor 0 x) (@b-not x))
        (equal (@b-nor 1 x) 0)
@@ -1420,7 +1420,7 @@
     @+ @unary-- @*
     @unsigned-byte-p @signed-byte-p
     @ash @logcar @lognot @logand @t-wire
-    @logandc1 @logandc2 @logior @lognand @lognor 
+    @logandc1 @logandc2 @logior @lognand @lognor
     @logorc1 @logorc2 @logeqv @logxor
     @b-not @b-and @b-ior @b-xor @b-eqv @b-nand @b-nor
     @b-andc1 @b-andc2 @b-orc1 @b-orc2
@@ -1451,13 +1451,13 @@
 ;;;****************************************************************************
 
 (defmacro @defword (name struct &key conc-name set-conc-name keyword-updater
-			 doc) 
+			 doc)
   ":doc-section @logops
   A macro to define packed @integer data structures.
   ~/~/
   @DEFWORD is analogous to DEFWORD, except that @DEFWORD uses @RDB and @WRB
   instead of RDB and WRB.~/"
-  
+
   (cond
    ((not
      (defword-guards name struct conc-name set-conc-name keyword-updater doc)))
@@ -1503,7 +1503,7 @@
 				       (and (symbolp saturating-coercion)
 					    (eq s/u :SIGNED)))
                               (implies doc (stringp doc)))))
-  
+
   `(PROGN
 
     (DEFBYTETYPE ,name ,size ,s/u
@@ -1529,7 +1529,7 @@
 	(sat-integer-lemma (pack-intern name name "-SATURATING-INTEGER"))
 	(x-constant (pack-intern name "*@X-" integer-name "*"))
 	(theory (pack-intern name name "-THEORY")))
-  
+
        `(ENCAPSULATE ()
 	  (LOCAL (IN-THEORY (ENABLE ,integer-name ,integer-predicate
 				    ,@(when$ saturating-coercion

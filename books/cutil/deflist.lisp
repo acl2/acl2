@@ -23,6 +23,7 @@
 ; This file is adapted from Milawa, which is also released under the GPL.
 
 (in-package "CUTIL")
+(include-book "xdoc/top" :dir :system)
 (include-book "tools/bstar" :dir :system)
 (include-book "str/cat" :dir :system)
 (include-book "finite-set-theory/osets/sets" :dir :system)

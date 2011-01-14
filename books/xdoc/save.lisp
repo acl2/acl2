@@ -185,7 +185,7 @@
         (depth    (len path))
         (children (find-children name all))
         (kind     (cond ((not children) "leaf")
-                        ((< depth 2) "show")
+                        ((< depth 1) "show")
                         (t "hide")))
 
         ((when    (member-equal name (cdr path)))

@@ -27,11 +27,24 @@
 
 (in-package "XDOC")
 (include-book "base")
-; (depends-on "save.cert")
-; (depends-on "display.cert")
-; (depends-on "topics.cert")
-; (depends-on "defxdoc-raw.cert")
-; (depends-on "mkdir-raw.cert")
+
+#||
+
+; Goofy.  We trick the dependency scanner into building these other books.  We
+; don't strictly need them to be built for top.lisp, but the commands we're
+; going to introduce will try to include them, so we want them to be
+; certified.
+
+; I prefer this approach to using (depends-on ...) because it
+; seems more compatible with the scanner in ACL2's Makefile-generic.
+
+(include-book "save")
+(include-book "display")
+(include-book "topics")
+(include-book "defxdoc-raw")
+(include-book "mkdir-raw")
+
+||#
 
 (make-event `(defconst *xdoc-dir/save*
                ,(acl2::extend-pathname *xdoc-dir* "save" state)))
@@ -58,26 +71,11 @@
          (include-book ,*xdoc-dir/defxdoc-raw* :ttags :all)
          (include-book ,*xdoc-dir/topics*)
          (include-book ,*xdoc-dir/display*)
+         (import-acl2doc)
+         (maybe-import-bookdoc)
          (make-event
           (b* (((mv all-xdoc-topics state) (all-xdoc-topics state))
-               ((mv & & state) (colon-xdoc-fn ',name nil all-xdoc-topics state)))
-            (value '(value-triple :invisible))))))))
-
-(defmacro xdoc! (name)
-  (declare (xargs :guard (or (symbolp name)
-                             (and (quotep name)
-                                  (symbolp (unquote name))))))
-  (let ((name (if (symbolp name)
-                  name
-                (unquote name))))
-    `(with-output :off (summary event)
-       (progn
-         (include-book ,*xdoc-dir/defxdoc-raw* :ttags :all)
-         (include-book ,*xdoc-dir/topics*)
-         (include-book ,*xdoc-dir/display*)
-         (make-event
-          (b* (((mv all-xdoc-topics state) (all-xdoc-topics state))
-               ((mv & & state) (colon-xdoc-fn ',name t all-xdoc-topics state)))
+               ((mv & & state) (colon-xdoc-fn ',name all-xdoc-topics state)))
             (value '(value-triple :invisible))))))))
 
 (defmacro save (dir &key
@@ -92,7 +90,7 @@
      (defttag :xdoc)
      (remove-untouchable acl2::writes-okp nil)
      (import-acl2doc)
-
+     (maybe-import-bookdoc)
      (make-event
       (b* (((mv all-xdoc-topics state) (all-xdoc-topics state))
            ((mv & & state) (assign acl2::writes-okp t))

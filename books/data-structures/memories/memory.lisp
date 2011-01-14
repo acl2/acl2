@@ -28,25 +28,30 @@
 (set-enforce-redundancy t)
 
 (local (include-book "memory-impl"))
-
+(include-book "../doc-section")
 (include-book "private")
 (include-book "misc/records" :dir :system)
 
 (defdoc memory
-  ":Doc-Section memory
+  ":Doc-Section acl2::data-structures
   special records designed for array-like usage~/
 
+  Loading the library:
+  ~bv[]
+  (include-book \"data-structures/memories\" :dir :system)
+  ~ev[]
+
   Memories are specialized records that are designed for array-like usage.
-  Memories have a fixed size, and elements are accessed by the natural numbers 
+  Memories have a fixed size, and elements are accessed by the natural numbers
   0, 1, ..., size-1, where size is the maximum size of the memory.
 
   Unlike arrays, memories are based on  trees.  As a result, loading and
-  storing into memories is slower than array access in a typical programming 
-  language, and requires an O(log_2 n) search for the right element.  However, 
-  there are benefits to this system as well.  We populate the tree structure 
+  storing into memories is slower than array access in a typical programming
+  language, and requires an O(log_2 n) search for the right element.  However,
+  there are benefits to this system as well.  We populate the tree structure
   as needed when writes occur, allowing us to conceptually represent very large
   arrays so long as we use them sparesely.  Hence, memories are well suited for
-  uses such as simulating the memory systems of processors or virtual machines 
+  uses such as simulating the memory systems of processors or virtual machines
   with many gigabytes of memory, only some of which is used during simulation.
 
   Memories are as easy to reason about as records (see misc/records.lisp) and
@@ -67,7 +72,7 @@
 ; defined in private.lisp.  This macro adds theory invariants which prohibit
 ; you from enabling their definitions or type prescriptions.  The intention is
 ; that you should not be allowed to reason about these functions directly.
-; 
+;
 ; The end user of the library can feel free to skip over all of the detail
 ; here.  The only useful functions from your perspective should be memory-p,
 ; size, new, load, and store.  You can read theorems about them by skipping all
@@ -150,7 +155,7 @@
   (mbe :logic (_memtree-load addr mtree depth)
        :exec (if (= depth 0)
                  mtree
-               (_fix-addr/depth-memtree-load 
+               (_fix-addr/depth-memtree-load
                 (the-fixnum (ash addr -1))
                 (if (= (the-fixnum (logand addr 1)) 0)
                     (car mtree)
@@ -186,7 +191,7 @@
             (cons (_memtree-store quotient elem (car mtree) (1- depth))
                   (cdr mtree))
           (cons (car mtree)
-                (_memtree-store quotient elem (cdr mtree) 
+                (_memtree-store quotient elem (cdr mtree)
                                 (1- depth))))))))
 
 (private _fix-addr/depth-memtree-store (addr elem mtree depth)
@@ -201,12 +206,12 @@
                  elem
                (let ((quotient (the-fixnum (ash addr -1))))
                  (if (= (the-fixnum (logand addr 1)) 0)
-                     (cons (_fix-addr/depth-memtree-store 
+                     (cons (_fix-addr/depth-memtree-store
                             quotient elem (car mtree) (the-fixnum (1- depth)))
                            (cdr mtree))
                    (cons (car mtree)
-                         (_fix-addr/depth-memtree-store 
-                          quotient elem (cdr mtree) 
+                         (_fix-addr/depth-memtree-store
+                          quotient elem (cdr mtree)
                           (the-fixnum (1- depth)))))))))
 
 (private _fixnum-memtree-store (addr elem mtree depth)
@@ -220,12 +225,12 @@
                  (_fix-addr/depth-memtree-store addr elem mtree depth)
                (let ((quotient (ash addr -1)))
                  (if (= (the-fixnum (logand addr 1)) 0)
-                     (cons (_fixnum-memtree-store 
+                     (cons (_fixnum-memtree-store
                             quotient elem (car mtree) (the-fixnum (1- depth)))
                            (cdr mtree))
                    (cons (car mtree)
-                         (_fixnum-memtree-store 
-                          quotient elem (cdr mtree) 
+                         (_fixnum-memtree-store
+                          quotient elem (cdr mtree)
                           (the-fixnum (1- depth)))))))))
 
 (private _memtree-store-nil (addr mtree depth)
@@ -240,8 +245,8 @@
       (if (atom mtree)
           nil
         (let ((quotient (floor addr 2)))
-          (if (= (mod addr 2) 0)              
-              (let ((left (_memtree-store-nil quotient (car mtree) 
+          (if (= (mod addr 2) 0)
+              (let ((left (_memtree-store-nil quotient (car mtree)
                                               (1- depth)))
                     (right (cdr mtree)))
                 (if (and (null left) (null right))
@@ -266,8 +271,8 @@
                    nil
                  (let ((quotient (the-fixnum (ash addr -1))))
                    (if (= (the-fixnum (logand addr 1)) 0)
-                       (let ((left (_fix-addr/depth-memtree-store-nil 
-                                    quotient (car mtree) 
+                       (let ((left (_fix-addr/depth-memtree-store-nil
+                                    quotient (car mtree)
                                     (the-fixnum (1- depth))))
                              (right (cdr mtree)))
                          (if (and (null left)
@@ -275,8 +280,8 @@
                              nil
                            (cons left right)))
                      (let ((left (car mtree))
-                           (right (_fix-addr/depth-memtree-store-nil 
-                                   quotient (cdr mtree) 
+                           (right (_fix-addr/depth-memtree-store-nil
+                                   quotient (cdr mtree)
                                    (the-fixnum (1- depth)))))
                        (if (and (null left)
                                 (null right))
@@ -295,8 +300,8 @@
                    nil
                  (let ((quotient (ash addr -1)))
                    (if (= (the-fixnum (logand addr 1)) 0)
-                       (let ((left (_fixnum-memtree-store-nil 
-                                    quotient (car mtree) 
+                       (let ((left (_fixnum-memtree-store-nil
+                                    quotient (car mtree)
                                     (the-fixnum (1- depth))))
                              (right (cdr mtree)))
                          (if (and (null left)
@@ -304,8 +309,8 @@
                              nil
                            (cons left right)))
                      (let ((left (car mtree))
-                           (right (_fixnum-memtree-store-nil 
-                                   quotient (cdr mtree) 
+                           (right (_fixnum-memtree-store-nil
+                                   quotient (cdr mtree)
                                    (the-fixnum (1- depth)))))
                        (if (and (null left)
                                 (null right))
@@ -381,17 +386,17 @@
 
 (defdoc memory-p
   ":Doc-Section memory
-  recognizes valid ~il[memory] structures~/
+  recognizes valid ~il[mem::memory] structures~/
   ~bv[]
      (MEM::memory-p mem)
   ~ev[]
-  ~c[memory-p] has a guard of ~c[t] and can be called on any object.  
+  ~c[memory-p] has a guard of ~c[t] and can be called on any object.
 
-  ~c[memory-p] returns ~c[t] if ~c[mem] is a memory, ~c[nil] otherwise.  
+  ~c[memory-p] returns ~c[t] if ~c[mem] is a memory, ~c[nil] otherwise.
 
-  The implementation of memory-p is ~il[private].
+  The implementation of memory-p is ~il[mem::private].
   ~/
-  ~l[memory] and also ~pl[new]")
+  ~l[mem::memory] and also ~pl[mem::new]")
 
 (private memory-p (mem)
   (and (_memory-p mem)
@@ -399,7 +404,7 @@
        (posp (_memory-depth mem))))
 
 
-(defdoc size 
+(defdoc size
   ":Doc-Section memory
   returns the capacity of a memory structure~/
   ~bv[]
@@ -408,13 +413,13 @@
   ~c[size] is guarded with ~c[(memory-p mem)].
 
   ~c[size] returns the capacity of a memory, i.e., the number of elements that
-  the memory can hold.  Addresses for ~c[mem] are naturals in the range ~c[0] 
+  the memory can hold.  Addresses for ~c[mem] are naturals in the range ~c[0]
   through ~c[(size mem) - 1].
 
-  A memory's size is specified when it is created with ~c[new], and is fixed 
-  throughout its lifetime.  The implementation of ~c[size] is ~il[private].
+  A memory's size is specified when it is created with ~c[new], and is fixed
+  throughout its lifetime.  The implementation of ~c[size] is ~il[mem::private].
   ~/
-  ~l[memory] and also ~pl[new].")
+  ~l[mem::memory] and also ~pl[mem::new].")
 
 (private size (mem)
   (declare (xargs :guard (memory-p mem)))
@@ -433,10 +438,10 @@
   ~c[address-p] is guarded with ~c[(memory-p mem)].
 
   ~c[address-p] returns true if ~c[addr] is a valid address for ~c[mem] --
-  that is, if ~c[(and (natp addr) (< addr (size mem)))].  It is not 
-  ~il[private], and is left enabled by default.
+  that is, if ~c[(and (natp addr) (< addr (size mem)))].  It is not
+  ~il[mem::private], and is left enabled by default.
   ~/
-  ~l[memory] and ~pl[address-fix]~/")
+  ~l[mem::memory]~/")
 
 (defun address-p (addr mem)
   (declare (xargs :guard (memory-p mem)))
@@ -452,12 +457,12 @@
   ~ev[]
   ~c[new] is guarded so that ~c[size] must be a positive integer.
 
-  ~c[new] creates a new memory structure with the given capacity.  For 
+  ~c[new] creates a new memory structure with the given capacity.  For
   example, ~c[(new 30)] creates a memory that can hold 30 elements.  The
   capacity of a memory is fixed througout its lifetime.  The implementation
-  of ~c[new] is ~il[private].
+  of ~c[new] is ~il[mem::private].
   ~/
-  ~l[memory], ~pl[memory-p] and also ~pl[address-p].")
+  ~l[mem::memory], ~pl[mem::memory-p] and also ~pl[mem::address-p].")
 
 (private new (size)
   (declare (xargs :guard (posp size)))
@@ -465,9 +470,9 @@
           (equal size 1))
       (cons (cons nil t) (cons 1 (cons 1 nil)))
     (let ((depth (_log2 (1- size))))
-      (cons 
+      (cons
        (cons nil (signed-byte-p 30 depth))
-       (cons size 
+       (cons size
              (cons depth nil))))))
 
 (private _load (addr mem)
@@ -482,7 +487,7 @@
        :exec (let* ((fast (cdar mem))
                     (mtree (caar mem))
                     (depth (caddr mem)))
-               (if fast 
+               (if fast
                    (_fixnum-memtree-load addr mtree depth)
                  (_memtree-load addr mtree depth)))))
 
@@ -506,7 +511,7 @@
                     (fast   (cdar mem))
                     (memcdr (cdr mem))
                     (depth  (cadr memcdr)))
-               (cons (cons (if fast 
+               (cons (cons (if fast
                                (if elem
                                    (_fixnum-memtree-store addr elem mtree depth)
                                  (_fixnum-memtree-store-nil addr mtree depth))
@@ -525,11 +530,11 @@
   ~c[load] has a guard that requires ~c[(memory-p mem)] and also requires
   ~c[(address-p addr mem)].
 
-  ~c[load] looks up the current value stored at ~c[addr] in ~c[mem] and 
-  returns that value to the user.  This is analagous to ~c[nth], ~c[assoc], 
-  ~c[aref1], and so forth.  The implementation of load is ~il[private].
+  ~c[load] looks up the current value stored at ~c[addr] in ~c[mem] and
+  returns that value to the user.  This is analagous to ~c[nth], ~c[assoc],
+  ~c[aref1], and so forth.  The implementation of load is ~il[mem::private].
   ~/
-  ~l[memory], ~pl[memory-p], ~pl[address-p] and also ~pl[store].")
+  ~l[mem::memory], ~pl[mem::memory-p], ~pl[mem::address-p] and also ~pl[mem::store].")
 
 (private load (addr mem)
   (declare (xargs :guard (and (memory-p mem)
@@ -538,7 +543,7 @@
        :exec  (let* ((fast (cdar mem))
                      (mtree (caar mem))
                      (depth (caddr mem)))
-                (if fast 
+                (if fast
                     (_fixnum-memtree-load addr mtree depth)
                   (_memtree-load addr mtree depth)))))
 
@@ -551,12 +556,12 @@
   ~c[store] has a guard that requires ~c[(memory-p mem)] and also requires
   ~c[(address-p addr mem)].
 
-  ~c[store] returns a copy of ~c[mem], except that the element at address 
+  ~c[store] returns a copy of ~c[mem], except that the element at address
   ~c[addr] is overwritten with ~c[elem].  This is analagous to ~c[update-nth],
-  ~c[acons], ~c[aset1], and the like.  The implementation of ~c[store] is 
-  ~il[private].
+  ~c[acons], ~c[aset1], and the like.  The implementation of ~c[store] is
+  ~il[mem::private].
   ~/
-  ~l[memory], ~pl[memory-p], ~pl[address-p], and also ~pl[load].")
+  ~l[mem::memory], ~pl[mem::memory-p], ~pl[mem::address-p], and also ~pl[mem::load].")
 
 (private store (addr elem mem)
   (declare (xargs :guard (and (memory-p mem)
@@ -566,7 +571,7 @@
                     (fast   (cdar mem))
                     (memcdr (cdr mem))
                     (depth  (cadr memcdr)))
-               (cons (cons (if fast 
+               (cons (cons (if fast
                                (if elem
                                    (_fixnum-memtree-store addr elem mtree depth)
                                  (_fixnum-memtree-store-nil addr mtree depth))
@@ -622,7 +627,7 @@
 
 
 
-; We also note that upon creation, the value of every address in a memory 
+; We also note that upon creation, the value of every address in a memory
 ; happens to be nil.
 
 (defthm load-of-new

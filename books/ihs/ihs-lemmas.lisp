@@ -39,7 +39,7 @@
 (include-book "logops-lemmas")
 
 (deflabel ihs-lemmas
-  :doc ":doc-section ihs-lemmas
+  :doc ":doc-section ihs
   A simple interface to the books of lemmas in the IHS libaray.
   ~/~/
 

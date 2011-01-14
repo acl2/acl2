@@ -68,11 +68,12 @@
 ; (certify-book "expander").
 
 (in-package "ACL2")
+(include-book "doc-section")
 
 ; The following deflabel is placed here primarily to provide a section in which
 ; to hang documentation.
 (deflabel expander :doc
- ":Doc-Section Expander
+ ":Doc-Section misc
 
   routines for simplifying terms~/
 
@@ -82,7 +83,12 @@
   They were developed rather in a hurry and should be used without
   expecting the usual standards of care present in development of ACL2
   code.  Once these routines are used to generate theorems for you,
-  you should check the theorems directly with ACL2.~/")
+  you should check the theorems directly with ACL2.
+
+  To load the expander, run:
+  ~bv[]
+   (include-book \"misc/expander\" :dir :system)
+  ~ev[]~/")
 
 ; We know what we are doing when using state:
 (set-state-ok t)
@@ -980,6 +986,7 @@
   ~ev[]~/
 
   General Forms:
+  ~bv[]
   (DEFTHM? name
     (IMPLIES hyps (equiv term ?))
     :hints             hints

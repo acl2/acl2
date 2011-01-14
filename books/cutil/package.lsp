@@ -38,29 +38,21 @@
 ; with books like data-structures/deflist.  On the other hand, it is ugly to
 ; type (cutil::deflist ...) instead of just deflist.
 ;
-; We might try to solve this by not exporting the symbols, and instead just
-; providing a separate book of macro aliases, such as:
-;
-;    #!ACL2 (defmacro deflist (&rest args)
-;             `(cutil::deflist . ,args))
-;
-; But this doesn't really seem like it works.  After all, if Alice uses these
-; aliases in bookA, and Bob uses the data-structures/deflist in bookB, then the
-; two books will still be incompatible.
-;
-; I think the convenience of not needing the package-designator outweighs the
-; potential incompatiblity, so I'm going ahead and exporting the symbols.
+; I've gone back and forth on it.  I guess exporting them is bad.  I'll
+; continue to export defsection and defmvtypes since they're unusually named
+; and convenient, but for consistency all of the data-type introduction macros
+; will be kept in the cutil package.
 
                tag
                tag-reasoning
                defsection
-               defaggregate
-               defalist
-               defenum
-               deflist
-               defmapappend
                defmvtypes
-               defprojection
+;               defaggregate
+;               defenum
+;               defprojection
+;               defmapappend
+;               defalist
+;               deflist
 
                ;; Things I want to "import" from ACL2 into the CUTIL package.
                assert!

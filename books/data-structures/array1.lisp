@@ -38,9 +38,10 @@
 ;;;    do this.
 
 (in-package "ACL2")
+(include-book "doc-section")
 
 (deflabel array1
-  :doc ":doc-section array1
+  :doc ":doc-section data-structures
   
   A book of lemmas that characterize 1-dimensional arrays.
   ~/
@@ -537,7 +538,7 @@
 	(< n (car (dimensions name l))))
    (equal (aref1 name (aset1 name l n val) n)
 	  val))
-  :doc ":doc-section aref1-aset1-equal
+  :doc ":doc-section array1-lemmas
   Rewrite: (AREF1 name (ASET1 name l n val) n) = val.~/
   Note that this rule is exported DISABLEd by default in favor of
   AREF1-ASET1.
@@ -555,7 +556,7 @@
 	(not (equal n1 n2)))
    (equal (aref1 name (aset1 name l n1 val) n2)
 	  (aref1 name l n2)))
-  :doc ":doc-section aref1-aset1-not-equal
+  :doc ":doc-section array1-lemmas
   Rewrite: (AREF1 name (ASET1 name l n1 val) n2) = (AREF1 name l n2),
            when n1 /= n2.~/
   Note that this rule is exported DISABLEd by default in favor of

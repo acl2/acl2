@@ -734,7 +734,7 @@ defaults to :forward-chaining, otherwise :rewrite.")
 		   (collect fn))))
 			    
 (defmacro defalist (name formals &rest body)
-  ":doc-section defalist
+  ":doc-section data-structures
   Define a new alist type, and a theory of the alist type.
   ~/
  Examples:

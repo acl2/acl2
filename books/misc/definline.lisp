@@ -6,12 +6,14 @@
 ;; implied warranties of merchantibility and fitness for a particular purpose.
 
 (in-package "ACL2")
+(include-book "doc-section")
 
 (defdoc definline
-  ":Doc-Section definline
+  ":Doc-Section misc
   Define an inline function~/
   Examples:
   ~bv[]
+    (include-book \"misc/definline\")
     (definline car-alias (x)
       (car x))
   ~ev[]~/
@@ -24,7 +26,7 @@
   called frequently.")
 
 (defdoc definlined
-  ":Doc-Section definline
+  ":Doc-Section misc
   Define an inline function and then disable it.~/
   ~/
   This is a ~il[defund]-like version of ~il[definline].")

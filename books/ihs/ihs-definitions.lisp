@@ -37,7 +37,7 @@
 (include-book "logops-definitions")
 
 (deflabel ihs-definitions
-  :doc ":doc-section ihs-definitions
+  :doc ":doc-section ihs
   A simple interface to the books of definitions in the IHS library.
   ~/~/
 

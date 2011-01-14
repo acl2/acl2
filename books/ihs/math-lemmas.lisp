@@ -44,7 +44,7 @@
 (include-book "ihs-init")
 
 (deflabel math-lemmas
-  :doc ":doc-section math-lemmas
+  :doc ":doc-section ihs
   A book of theories about +, -, *, /, and EXPT, built on the
   arithmetic package of Matt Kaufmann.~/
 
@@ -63,7 +63,7 @@
 	      (and (acl2-numberp y)
 		   (or (equal y 0) (equal x 1)))))
   :hints (("Goal" :in-theory (enable equal-*-x-y-x)))
-  :doc ":doc-section cancel-equal-+-*
+  :doc ":doc-section math-lemmas
    Rewrite: x + y = x EQUAL y = 0;
             x * y = x EQUAL x = 0 or y = 1;
             also commutative forms.
@@ -73,7 +73,7 @@
   (and (equal (equal (- x) 0) (equal (fix x) 0))
        (equal (equal (+ x y) 0) (equal (fix x) (- y)))
        (equal (equal (* x y) 0) (or (equal (fix x) 0) (equal (fix y) 0))))
-  :doc ":doc-section normalize-equal-0
+  :doc ":doc-section math-lemmas
   Rewrite: -x = 0 EQUAL x = 0;
            x + y = 0 EQUAL x = -y;
            x * y = 0 EQUAL x = 0 or y = 0.
@@ -131,7 +131,7 @@
 (defthm rewrite-linear-equalities-to-iff
    (equal (equal (< w x) (< y z))
 	  (iff (< w x) (< y z)))
-   :doc ":doc-section rewrite-linear-equalities-to-iff
+   :doc ":doc-section math-lemmas
     Rewrite: (EQUAL (< w x) (< y z)) = (IFF (< w x) (< y z)).
     ~/~/
 
@@ -150,7 +150,7 @@
        (implies (real/rationalp x)
 		(and (equal (< 0 (/ x)) (< 0 x))
 		     (equal (< (/ x) 0) (< x 0)))))
-  :doc ":doc-section normalize-<-minus-/
+  :doc ":doc-section math-lemmas
   Rewrite: -x < 0 EQUAL 0 < x;
           -x < -y EQUAL y < x;
           0 < 1/x EQUAL 0 < x; 
@@ -191,7 +191,7 @@
 		(not (equal y 0)))
 	   (and (equal (< x (/ y)) (if (< y 0) (< 1 (* x y)) (< (* x y) 1)))
 		(equal (< (/ y) x) (if (< y 0) (< (* x y) 1) (< 1 (* x y))))))
-  :doc ":doc-section normalize-<-/-to-*
+  :doc ":doc-section math-lemmas
   Rewrite: Replace x < 1/y with x*y < 1 or x*y > 1, based on the sign of y.
   ~/~/~/")
 
@@ -215,7 +215,7 @@
 			<-unary-/-positive-left <-unary-/-positive-left
 			<-*-right-cancel)
     :use (:instance <-*-right-cancel (x (* x z)) (y y) (z (/ z)))))
-  :doc ":doc-section normalize-<-/-to-*-3
+  :doc ":doc-section math-lemmas
   Rewrite: Replace x < y/z and x > y/z with x*z < y or x*z > y, depending on
   the sign of z.
   ~/~/~/")
@@ -229,7 +229,7 @@
 		(equal (equal x (* (/ z) y))
 		       (and (acl2-numberp x)
 			    (equal (* x z) (fix y))))))
-  :doc ":doc-section normalize-equal-/-to-*
+  :doc ":doc-section math-lemmas
   Rewrite: Replace x = y/z with x*z = y.
   ~/~/~/")
 
@@ -276,7 +276,7 @@
      (integerp (+ i j))
      (integerp (- i j))
      (integerp (* i j)))))
-  :doc ":doc-section integerp-+-minus-*
+  :doc ":doc-section math-lemmas
   Rewrite: -i, i + j, i - j, and i * j are integers, when i and j are
   integers.
   ~/~/

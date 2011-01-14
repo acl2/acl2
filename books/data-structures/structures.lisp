@@ -99,7 +99,6 @@
 ;;;
 
 (in-package "STRUCTURES")
-
 (include-book "utilities")
 
 (program)
@@ -116,7 +115,7 @@
 
 (defdoc defstructure
   
-  ":doc-section defstructure
+  ":doc-section data-structures
 Define and characterize a general purpose record structure with typed slots.
 
 The on-line documentation only contains examples and a formal syntax

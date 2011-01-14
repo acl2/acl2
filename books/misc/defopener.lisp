@@ -3,7 +3,7 @@
 ; Thanks to Robert Krug for requesting this tool.
 
 (in-package "ACL2")
-
+(include-book "doc-section")
 (include-book "bash")
 
 (program)
@@ -362,11 +362,13 @@
                             name call
                             &key hyp equiv hints debug (flatten 't))
 
-  ":Doc-Section defopener
+  ":Doc-Section misc
 
   create a defthm equating a call with its simplification~/
-  ~bv[]
+
   Example:
+  ~bv[]
+  (include-book \"misc/defopener\" :dir :system)
   (defopener append-open
     (append x y)
     :hyp (and (true-listp x) (true-listp (cdr x)))

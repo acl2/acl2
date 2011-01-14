@@ -37,8 +37,20 @@
 
 (in-package "ACL2")
 
+(include-book "ihs-init")
+(include-book "ihs-theories")
+(local (include-book "math-lemmas"))
+(local (in-theory nil))
+
+(local (in-theory (enable basic-boot-strap ; From ihs-theories
+			 ;; From math-lemmas
+			  ihs-math
+			  rationalp-algebra
+			  ifix nfix)))
+
+
 (deflabel quotient-remainder-lemmas
-  :doc ":doc-section quotient-remainder-lemmas
+  :doc ":doc-section ihs
   
   A book of facts about FLOOR, MOD, TRUNCATE and REM, and integer ratios.
   Also enough of a theory of the Acl2 function NONNEGATIVE-INTEGER-QUOTIENT
@@ -139,26 +151,6 @@
   :doc ":doc-section quotient-remainder-lemmas
   Lemmas about ratios x/y that are known to be INTEGERP.
   ~/~/~/")
-
-
-;;;****************************************************************************
-;;;
-;;;    ENVIRONMENT -- Load books and initialize the theory.
-;;;
-;;;****************************************************************************
-
-;;;  Global rules.
-
-(include-book "ihs-init")
-(include-book "ihs-theories")
-(local (include-book "math-lemmas"))
-(local (in-theory nil))
-
-(local (in-theory (enable basic-boot-strap ; From ihs-theories
-			 ;; From math-lemmas
-			  ihs-math
-			  rationalp-algebra
-			  ifix nfix)))
 
 
 ;;;****************************************************************************
@@ -1696,7 +1688,7 @@
                                                  #+non-standard-analysis
                                                  realp-+
                                                  mod))))
-    :doc ":doc-section mod-+
+    :doc ":doc-section mod-lemmas
      Rewrite (D): (MOD (+ x y) z) = (MOD (+ (MOD x z) (MOD y z)) z).
    ~/
 

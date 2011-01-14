@@ -421,53 +421,23 @@
     state))
 
 
-(defun colon-xdoc-fn (name bangp all-xdoc-topics state)
+; We previously tried to see if there was an acl2 doc topic.  But now that we
+; have a fast importer from acl2 documentation, we just run (import-acl2doc)
+; before calling colon-xdoc-fn, so we should only need to look in the xdoc
+; database.
+
+(defun colon-xdoc-fn (name all-xdoc-topics state)
   (declare (xargs :guard (symbolp name)))
   (b* ((xdoc-entry      (find-topic name all-xdoc-topics))
-
-       ;; Try to see if there's an acl2 doc topic.  BOZO this might
-       ;; not be quite right -- there seem to be some sort of alises
-       ;; and stuff in doc-fn that I don't really know about.
-       (acl2-doc-entry  (acl2::access-doc-string-data-base name state))
 
        ((when (not xdoc-entry))
         ;; Seems safe to just print the acl2 documentation.  Even if there
         ;; isn't an ACL2 topic, doc-fn can tell the user about similar topic
         ;; names, which is nice.  It'd probably be nice to add nearby xdoc
         ;; names, too.
-        (cw "No XDOC topics for ~x0.~%~%" name)
-        (if bangp
-            (acl2::doc!-fn name state)
-          (acl2::doc-fn name state)))
+        (cw "No XDOC topics for ~s0::~s1.~%~%" (symbol-package-name name)
+            (symbol-name name))
+        (value :invisible))
 
-       ((when (not acl2-doc-entry))
-        ;; Seems pretty safe to just print the xdoc.
-        (let ((state (display-topic xdoc-entry all-xdoc-topics state)))
-          (value :invisible)))
-
-       ;; Otherwise, what should we do?  Display both topics?  Ask the user to
-       ;; choose?  The latter is inconvenient but seems to be in the spirit of
-       ;; :doc.  The former might cause them to read a lot, but seems to be in
-       ;; the spirit of doc!
-
-       ((when bangp)
-        (let ((state (display-topic xdoc-entry all-xdoc-topics state)))
-          (acl2::doc!-fn name state)))
-
-       (- (cw "Both XDOC and ACL2 documentation exists.~%~%~
-               Choices:~%  ~
-                 [b] for both topics (default)~%  ~
-                 [x] for XDOC topic only~%  ~
-                 [a] for ACL2 topic only.~%~%~
-               Display: "))
-
-       ((mv char state) (read-char$ *standard-ci* state))
-       (show-xdoc (not (eql char #\a)))
-       (show-acl2 (not (eql char #\x)))
-       (state (if show-xdoc
-                  (display-topic xdoc-entry all-xdoc-topics state)
-                state))
-       ((when show-acl2)
-        (acl2::doc-fn name state)))
+       (state (display-topic xdoc-entry all-xdoc-topics state)))
     (value :invisible)))
-

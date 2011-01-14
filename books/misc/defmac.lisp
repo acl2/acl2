@@ -4,6 +4,7 @@
 ; 2/27/09
 
 (in-package "ACL2")
+(include-book "doc-section")
 
 ; See :doc defmac for information.
 
@@ -66,11 +67,14 @@
 
 ; The documentation below borrows heavily from :doc defmacro.
 
-  ":Doc-Section defmac
+  ":Doc-Section misc
 
   define a macro that expands efficiently~/
   ~bv[]
   Example forms
+
+  (include-book \"misc/defmac\" :dir :system)
+
   (defmac my-xor (x y)
     (list 'if x (list 'not y) y))
 

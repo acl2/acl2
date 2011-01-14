@@ -29,15 +29,24 @@
 ;;;    Austin, Texas 78703
 ;;;    (512) 322-9951
 ;;;    brock@cli.com
-;;;    
+;;;
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (in-package "ACL2")
 
 (include-book "data-structures/utilities" :dir :system)
 
+(defdoc ihs
+  ":Doc-Section ihs
+Integer Hardware Specification (IHS) library.~/
+
+The IHS library is found in:
+~bv[]
+books/ihs/*.lisp
+~ev[]~/~/")
+
 (deflabel ihs-init
-  :doc ":doc-section ihs-init
+  :doc ":doc-section ihs
   The root of the IHS (Integer Hardware Specification) library hierarchy.~/
 
   Documented topics include:
@@ -50,10 +59,10 @@
   1.  Definitions of CLTL functions that should be part of the Acl2
   BOOT-STRAP theory.  Since Acl2 won't let us redefine any Common Lisp
   symbol, these functions are uniformly named by <CLTL name>$.
-  
+
   2.  Functions that are not defined by CLTL, but that are otherwise
   candidates for the Acl2 boot-strap theory.
-  
+
   3.  Unassigned functions that are general purpose, and will probably
   find a place in another book someday.
 
@@ -146,7 +155,7 @@
 ;;;****************************************************************************
 
 (defun constant-syntaxp (x)
-  ":doc-section constant-syntaxp
+  ":doc-section ihs-init
   A recognizer for Acl2 constants for use with SYNTAXP.
   ~/
   We define CONSTANT-SYNTAXP as a :LOGIC function, rather than a macro, for the
@@ -187,11 +196,11 @@
 		 (mlambda-fn args (cdr form))))))
 
 (defmacro mlambda (args form)
-  ":doc-section mlambda
+  ":doc-section ihs-init
   Macro LAMBDA form.
   ~/
   Example:
-  
+
   (DEFMACRO X/Y-GUARD (X Y)
     (MLAMBDA (X Y) (AND (RATIONALP X) (RATIONALP Y) (NOT (EQUAL Y 0)))))
 
@@ -207,9 +216,9 @@
     `(AND (RATIONALP ,X) (RATIONALP ,Y) (NOT (EQUAL ,Y 0))))
   ~/
   MLAMBDA is a macro LAMBDA.  MLAMBDA converts form to a lisp macro body,
-  substituting all symbols except those that appear in the args with the 
+  substituting all symbols except those that appear in the args with the
   quoted symbol.~/"
- 
+
   (declare (xargs :guard (symbol-listp args)))
   (mlambda-fn args form))
 
@@ -249,25 +258,31 @@
   simultaneously, without having to write arcane theory expressions.
 
   Examples:
+  ~bv[]
   (e/d (lemma1 lemma2))                 ;Equivalent to (ENABLE lemma1 lemma2).
   (e/d () (lemma))                      ;Equivalent to (DISABLE lemma).
   (e/d (lemma1) (lemma2 lemma3))        ;ENABLE lemma1 then DISABLE lemma2 and
                                         ;lemma3.
   (e/d () (theory1) (theory2))          ;DISABLE theory1 then ENABLE
                                         ;theory2.~/
+  ~ev[]
 
   General Form:
+  ~bv[]
   (E/D enables-0 disables-0 ... enables-n disables-n)
+  ~ev[]
 
   The E/D macro takes any number of lists suitable for the ENABLE and DISABLE
   macros (see :doc ENABLE and :doc DISABLE), and creates a theory that is
   equal to (CURRENT-THEORY :HERE) after executing the following commands:
 
+  ~bv[]
   (IN-THEORY (ENABLE . enables-0))
   (IN-THEORY (DISABLE . disables-0))
   ...
   (IN-THEORY (ENABLE . enables-n))
-  (IN-THEORY (DISABLE . disables-n)).~/"
+  (IN-THEORY (DISABLE . disables-n))
+  ~ev[]~/"
 
   (declare (xargs :guard (true-listp theories)))
 
@@ -346,7 +361,7 @@
   (declare (xargs :guard (true-listp theory)))
   (set-difference-equal theory (definition-theory theory)))
 
-;;;  DEFUN-THEORY 
+;;;  DEFUN-THEORY
 
 (defun defun-theory-fn (names theory quiet missing)
   ;;  The guard is provided only to admit the function.
@@ -362,7 +377,7 @@
                           correct (it defaults to (UNIVERSAL-THEORY :HERE)) ~
                           and that these are not the names of macros. ~
                           To avoid this message specify :QUIET T in the ~
-                          call to DEFUN-THEORY. ~ 
+                          call to DEFUN-THEORY. ~
                           Missing names: ~p0" missing))))
 	(t
 	 (let*
@@ -421,7 +436,7 @@
                       correct (it defaults to (UNIVERSAL-THEORY :HERE)) ~
                       and that these are not the names of macros. ~
                       To avoid this message specify :QUIET T in the ~
-                      call to DEFUN-TYPE/EXEC-THEORY. ~ 
+                      call to DEFUN-TYPE/EXEC-THEORY. ~
                       Missing names: ~p0" missing))))
 	(t
 	 (let* ((name (car names))

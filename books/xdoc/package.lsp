@@ -20,6 +20,21 @@
 
 (in-package "ACL2")
 
+;; Truly gross hack.  For the bookdoc stuff to work, we need to have all of
+;; the packages available.
+
+(ld "cowles/packages.lsp" :dir :system)
+(ld "clause-processors/SULFA/books/sat/sat-package.acl2" :dir :system)
+(ld "data-structures/define-u-package.lsp" :dir :system)
+(ld "data-structures/define-structures-package.lsp" :dir :system)
+(ld "data-structures/memories/package.lsp" :dir :system)
+(ld "hacking/hacker-pkg.lsp" :dir :system)
+(ld "finite-set-theory/osets/sets.defpkg" :dir :system)
+(ld "cutil/package.lsp" :dir :system)
+(ld "serialize/package.lsp" :dir :system)
+(ld "str/package.lsp" :dir :system)
+(ld "tools/flag-package.lsp" :dir :system)
+
 (defpkg "XDOC"
   (set-difference-eq
    (union-eq (union-eq *acl2-exports*

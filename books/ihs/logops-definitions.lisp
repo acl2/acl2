@@ -35,19 +35,39 @@
 ;;;    (512) 322-9951
 ;;;    brock@cli.com
 ;;;
-;;;    Modified for ACL2 Version_2.6 by: 
+;;;    Modified for ACL2 Version_2.6 by:
 ;;;    Jun Sawada, IBM Austin Research Lab. sawada@us.ibm.com
 ;;;    Matt Kaufmann, kaufmann@cs.utexas.edu
 ;;;
-;;;    Modified for ACL2 Version_2.7 by: 
+;;;    Modified for ACL2 Version_2.7 by:
 ;;;    Matt Kaufmann, kaufmann@cs.utexas.edu
 ;;;
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (in-package "ACL2")
 
+;;;  Global rules.
+
+(include-book "ihs-init")
+(include-book "ihs-theories")
+
+(local (include-book "math-lemmas"))
+(local (include-book "quotient-remainder-lemmas"))
+
+(local (in-theory nil))
+
+; From ihs-theories
+(local (in-theory (enable basic-boot-strap)))
+
+; From math-lemmas
+(local (in-theory (enable ihs-math)))
+
+; From integer-quotient-lemmas
+(local (in-theory (enable quotient-remainder-rules)))
+
+
 (deflabel logops
-  :doc ":doc-section logops
+  :doc ":doc-section ihs
 
    Definitions and lemmas about logical operations on integers.~/~/
 
@@ -90,31 +110,7 @@
   hardware registers and busses.  This view of hardware is used, for example,
   in Yuan Yu's Nqthm specification of the Motorola MC68020.~/")
 
-
-;;;****************************************************************************
-;;;
-;;;    Environment.
-;;;
-;;;****************************************************************************
 
-;;;  Global rules.
-
-(include-book "ihs-init")
-(include-book "ihs-theories")
-
-(local (include-book "math-lemmas"))
-(local (include-book "quotient-remainder-lemmas"))
-
-(local (in-theory nil))
-
-; From ihs-theories
-(local (in-theory (enable basic-boot-strap)))
-
-; From math-lemmas
-(local (in-theory (enable ihs-math)))
-
-; From integer-quotient-lemmas
-(local (in-theory (enable quotient-remainder-rules)))
 
 
 ;;;****************************************************************************
@@ -197,7 +193,7 @@
   :hints
   (("Goal"
     :in-theory (enable logand)))
-  :doc ":doc-section logand-type
+  :doc ":doc-section logops
   Type-Prescription: (INTEGERP (LOGAND I J)).
   ~/~/~/")
 
@@ -207,7 +203,7 @@
   :hints
   (("Goal"
     :in-theory (enable logandc1)))
-  :doc ":doc-section logandc1-type
+  :doc ":doc-section logops
   Type-Prescription: (INTEGERP (LOGANDC1 I J)).
   ~/~/~/")
 
@@ -217,7 +213,7 @@
   :hints
   (("Goal"
     :in-theory (enable logandc2)))
-  :doc ":doc-section logandc2-type
+  :doc ":doc-section logops
   Type-Prescription: (INTEGERP (LOGANDC2 I J)).
   ~/~/~/")
 
@@ -384,7 +380,7 @@
     :use ((:instance expt-is-weakly-increasing-for-base>1
 		     (r 2) (i size) (j size1)))))
   :doc ":doc-section logops-definitions
-  NIL: (UNSIGNED-BYTE-P size i) implies (UNSIGNED-BYTE-P size1 i), 
+  NIL: (UNSIGNED-BYTE-P size i) implies (UNSIGNED-BYTE-P size1 i),
   when size1 >= size.
   ~/~/~/")
 
@@ -439,7 +435,7 @@
 ;;;  always define our own :TYPE-PRESCRIPTIONS in insure that we always have
 ;;;  the strongest ones possible when this book is loaded.  Note that we
 ;;;  consider IFLOOR, IMOD, and EXPT2 to be abbreviations.
-;;;  
+;;;
 ;;;****************************************************************************
 
 (defun ifloor (i j)
@@ -529,7 +525,7 @@
   (LOGHEAD size i) returns the size low-order bits of i.
   ~/~/
   By convention we define (LOGHEAD 0 i) as 0, but this definition is a bit
-  arbitrary.~/"   
+  arbitrary.~/"
   (declare (xargs :guard (and (integerp size)
                               (>= size 0)
                               (integerp i))))
@@ -545,11 +541,11 @@
                               (integerp i))))
   (ifloor i (expt2 pos)))
 
-(defun logapp (size i j) 
+(defun logapp (size i j)
   ":doc-section logops-definitions
   (LOGAPP size i j) is a binary append of i to j.
   ~/~/
-  LOGAPP is a specification for merging integers.  Note that i is truncated 
+  LOGAPP is a specification for merging integers.  Note that i is truncated
   to size bits before merging with j.~/"
   (declare (xargs :guard (and (integerp size)
                               (>= size 0)
@@ -558,7 +554,7 @@
   (let ((j (ifix j)))
     (+ (loghead size i) (* j (expt2 size)))))
 
-(defun logrpl (size i j) 
+(defun logrpl (size i j)
   ":doc-section logops-definitions
   (LOGRPL size i j) replaces the size low-order bits of j with the size
   low-order bits of i.
@@ -575,7 +571,7 @@
 (defun logext (size i)
   ":doc-section logops-definitions
   (LOGEXT size i) \"sign-extends\" i to an integer with size - 1 significant
-  bits. 
+  bits.
   ~/
   LOGEXT coerces any integer i into a signed integer by `sign extending'
   the bit at size - 1 to infinity.  We specify LOGEXT in terms of the `size'
@@ -590,7 +586,7 @@
   (logapp (1- size) i (if (logbitp (1- size) i) -1 0)))
 
 (defun logrev1 (size i j)
-  ":doc-section logrev1
+  ":doc-section logops-definitions
   Helper function for LOGREV.
   ~/~/~/"
   (declare (xargs :guard (and (integerp size)
@@ -609,7 +605,7 @@
   Normally we don't think of bit-reversing as a logical operation,
   even though its hardware implementation is trivial: simply reverse the
   wires leading from the source to the destination.  LOGREV is included as a
-  logical operation to support the specification of DSPs, which may 
+  logical operation to support the specification of DSPs, which may
   provide bit-reversing in their address generators to improve the
   performance of the FFT.
 
@@ -663,7 +659,7 @@
 (defun lognotu (size i)
   ":doc-section logops-definitions
   (LOGNOTU size i) is an unsigned logical NOT, truncating (LOGNOT i) to size
-  bits. 
+  bits.
   ~/~/~/"
   (declare (xargs :guard (and (integerp size)
                               (>= size 0)
@@ -1066,7 +1062,7 @@
 	(integerp (fix j)))))
 
 (defthm how-could-this-have-been-left-out??
-  (equal (* 0 x) 0)) 
+  (equal (* 0 x) 0))
 
 (defthm this-needs-to-be-added-to-quotient-remainder-lemmas
   (implies
@@ -1249,7 +1245,7 @@
         (integerp size1))
    (unsigned-byte-p size1 (logextu final-size ext-size i)))
   :doc ":doc-section logextu
-  Rewrite: (UNSIGNED-BYTE-P size1 (LOGEXTU final-size ext-size i)), 
+  Rewrite: (UNSIGNED-BYTE-P size1 (LOGEXTU final-size ext-size i)),
            when size1 >= final-size.
   ~/~/~/")
 
@@ -1342,14 +1338,14 @@
 ;;;  RDB-TEST bsp i
 ;;;  RDB-FIELD bsp i
 ;;;  WRB-FIELD i bsp j
-;;;  
+;;;
 ;;;****************************************************************************
 
 (deflabel logops-byte-functions
   :doc ":doc-section logops-definitions
 
   A portable implementation and extension of Common Lisp byte functions.
-  ~/~/ 
+  ~/~/
 
   The proposed Common Lisp standard [X3J13 Draft 14.10] defines a number of
   functions that operate on subfields of integers.  These subfields are
@@ -1390,7 +1386,7 @@
   (DEPOSIT-FIELD newbyte bytespec integer)  (WRB-FIELD newbyte bsp integer)
 
   For more information, see the :DOC entries for the functions listed above.
-  If you are concerned about the efficiency of this implementation, see 
+  If you are concerned about the efficiency of this implementation, see
   :DOC LOGOPS-EFFICIENCY-HACK.~/")
 
 (defmacro bsp (size pos)
@@ -1406,7 +1402,7 @@
 
   BSP is implemented as a macro for simplicity and convenience.  One should
   always use BSP in preference to CONS, however, to ensure compatibility with
-  future releases.~/" 
+  future releases.~/"
   `(CONS ,size ,pos))
 
 (defun bspp (bsp)
@@ -1428,7 +1424,7 @@
  (declare (xargs :guard (bspp bsp)))
  (car bsp))
 
-(defun bsp-position (bsp) 
+(defun bsp-position (bsp)
   ":doc-section logops-byte-functions
   (BSP-POSITION (BSP size pos)) = pos.
   ~/~/
@@ -1466,7 +1462,7 @@
   (RDB-TEST bsp i) is true iff the field of i specified by bsp is nonzero.
   ~/~/
   (RDB-TEST bsp i) is analogous to Common Lisp's (LDB-TEST bytespec integer).~/"
-  
+
   (declare (xargs :guard (and (bspp bsp)
                               (integerp i))))
   (not (equal (rdb bsp i) 0)))
@@ -1491,7 +1487,7 @@
 
 ;;;Matt:  These should be redundant now.
 
-;  Guard macros. 
+;  Guard macros.
 
 (defmacro rdb-guard (bsp i)
   ":doc-section logops-byte-functions
@@ -1632,7 +1628,7 @@
 #|
 
 Need Type-Prescriptions to prove this.  I don't think we ever use this
-function. 
+function.
 
 (defthm rdb-field-type
   (and (integerp (rdb-field bsp i))
@@ -1839,7 +1835,7 @@ function.
      (universal-theory 'begin-logops-definitions))
     *logops-functions*)                 ;Minus all of the definitions.
     (defun-type/exec-theory *logops-functions*))        ;Plus basic type info
-                                                        ;and executables. 
+                                                        ;and executables.
   :doc ":doc-section logops-definitions
   The `minimal' theory for the book \"logops-definitions\".
   ~/~/
@@ -1937,7 +1933,7 @@ function.
      (forward-lemma (pack-intern predicate predicate "-FORWARD"))
      (sat-lemma (pack-intern name predicate "-" saturating-coercion))
      (theory (pack-intern name name "-THEORY")))
-  
+
     `(ENCAPSULATE ()
        (LOCAL (IN-THEORY (THEORY 'BASIC-BOOT-STRAP)))
        (LOCAL (IN-THEORY (ENABLE LOGOPS-DEFINITIONS-THEORY)))
@@ -2037,7 +2033,7 @@ function.
            This object is not a true list: ~p0" struct))))
 
 (defun defword-guards (name struct conc-name set-conc-name keyword-updater
-			    doc) 
+			    doc)
   (and
    (or (symbolp name)
        (er hard 'defword
@@ -2093,7 +2089,7 @@ function.
 	    `(DEFMACRO ,updater (VAL WORD)
 	       (LIST ',wrb VAL (LIST 'BSP ,size ,pos) WORD))
 	    (defword-updater-definitions wrb name set-conc-name
-	      (cdr tuples))))) 
+	      (cdr tuples)))))
 	(t ())))
 
 (defloop defword-keyword-field-alist (name set-conc-name field-names)
@@ -2125,7 +2121,7 @@ function.
            a valid keyword argument list because it contains the ~
            ~#1~[keyword~/keywords~] ~&1, which ~#1~[is~/are~] ~
             not the keyword ~#1~[form~/forms~] of any of the ~
-            field names ~&2." 
+            field names ~&2."
 	  FORM (set-difference-equal (evens args) keyword-field-names)
 	  keyword-field-names))
      (t (defword-keyword-updater-body val args keyword-field-alist)))))
@@ -2139,7 +2135,7 @@ function.
 
 
 (defmacro defword (name struct &key conc-name set-conc-name keyword-updater
-			 doc) 
+			 doc)
   ":doc-section logops-definitions
   A macro to define packed integer data structures.
   ~/
@@ -2174,12 +2170,12 @@ function.
   important facts about the macro expansions should be available to the
   theorem prover.
 
-  Arguments 
+  Arguments
 
   name:  The name of the data structure, a symbol.
 
   struct : The field structure of the word. The form of this argument is
-  given by the following grammar: 
+  given by the following grammar:
 
   <tuple>  := (<field> <size> <pos> [ <doc> ])
   <struct> := () | (<tuple> . <struct>)
@@ -2191,7 +2187,7 @@ function.
   (AND (INTEGERP <pos>) (>= <pos> 0))
   (STRINGP <doc>)
 
-  In other words, a list of tuples, the first element being a symbol, the 
+  In other words, a list of tuples, the first element being a symbol, the
   second a positive integer, the third a nonnegative integer, and the
   optional fourth a string.
 
@@ -2199,7 +2195,7 @@ function.
   syntactic ones above.  For example, the FM9001 DEFWORD shows that a word
   may have more than one possible structure - the first 9 bits of the FM9001
   instruction word are either an immediate value, or they include the RN-A
-  and MODE-A fields.  
+  and MODE-A fields.
 
   conc-name, set-conc-name: These are symbols whose print names will be
   concatenated with the field names to produce the name of the accessors and
@@ -2220,19 +2216,19 @@ function.
 
   Each tuple (<field> <size> <pos> [ <doc> ]) represents a <size>-bit field
   of a word at the bit position indicated.  Each field tuple produces an
-  accessor macro 
+  accessor macro
 
-  (<accessor> word) 
+  (<accessor> word)
 
   where <accessor> is computed from the :conc-name (see above).  This
-  accessor will expand into: 
+  accessor will expand into:
 
   (RDB (BSP <size> <pos>) word).
 
   If the optional <doc> string is provided it will be attached to the
-  accessor. 
+  accessor.
 
-  DEFWORD also generates an updating macro 
+  DEFWORD also generates an updating macro
 
   (<updater> val word),
 
@@ -2340,7 +2336,7 @@ Example:
   The above macro call will build an unsigned integer from the bits A
   B, and C.  The list of bits is always intrepreted from low to high
   order. Note that the expression generated by this macro will coerce the
-  values to bits before building the word.~/~/" 
+  values to bits before building the word.~/~/"
 
   (cond
    ((endp bits) 0)
@@ -2371,7 +2367,7 @@ Example:
   of these functions, however.  Therefore, we have provided the following hack,
   which may decrease the runtime for large applications written in terms of the
   functions defined in this library.
-  
+
   The hack consists of redefining the logical operations and byte
   functions \"behind the back\" of ACL2.  There is no guarantee that using
   this hack will improve efficiency.  There is also no formal guarantee that
@@ -2383,15 +2379,15 @@ Example:
   book \"logops-definitions.lisp\".  To use this hack, do the following:
 
   1.  Locate the source code for \"logops-definitions.lisp\".
-  
+
   2.  Look at the very end of the file.
 
   3.  Copy the hack definitions into another file.
 
   4.  Leave the ACL2 command loop and enter the Common Lisp ACL2 package.
-  
+
   5.  Compile the hack definitions file and load the object code just created
-      into an ACL2 session. 
+      into an ACL2 session.
   ")
 
 #|
@@ -2430,9 +2426,9 @@ Example:
 
 #+monitor-logops
 (defun |size-monitor| (monitor size i)
-  (incf (aref monitor 0))		
+  (incf (aref monitor 0))
   (if (eq (type-of i) 'BIGNUM) (incf (aref monitor 1)))
-  (if (< i 0) (incf (aref monitor 2))) 
+  (if (< i 0) (incf (aref monitor 2)))
   (if (< size 32) (incf (aref monitor 3))))
 
 #+monitor-logops
@@ -2446,14 +2442,14 @@ Example:
 (defun |bsp-monitor| (monitor bsp i)
   (let ((size (car bsp))
 	  (pos (cdr bsp)))
-    (incf (aref monitor 0))		
+    (incf (aref monitor 0))
     (if (eq (type-of i) 'BIGNUM) (incf (aref monitor 1)))
-    (if (< i 0) (incf (aref monitor 2))) 
+    (if (< i 0) (incf (aref monitor 2)))
     (if (< size 32) (incf (aref monitor 3)))
     (if (< pos 32) (incf (aref monitor 4)))
     (if (< (+ size pos) 32) (incf (aref monitor 5)))
     (if (= size 1) (incf (aref monitor 6)))))
-  
+
 #+monitor-logops
 (defun |print-bsp-monitor| (fn monitor)
   (format t "~s was called: ~d times, on ~d BIGNUMS, on ~d negative ~
@@ -2567,7 +2563,7 @@ Example:
 (defmacro |logapp| (size i j)
   `(LOGIOR (LOGHEAD ,size ,i) (ASH ,j ,size)))
 
-(defun logapp (size i j) 
+(defun logapp (size i j)
   (declare (type (integer 0 *) size) (type integer i j))
   (|logapp| size i j))
 
@@ -2612,7 +2608,7 @@ Example:
 		(if (logbitp pos i)
 		    (logior i mask)
 		  (logandc2 i mask))))))))
-	      
+
 ;; In GCL, (BYTE size pos) = (CONS size pos) = (BSP size pos).
 ;;
 ;; Reading/writing single bits are an important use of RDB/WRB so we handle
@@ -2693,7 +2689,7 @@ Example:
 		       (|bit-mask| pos)
 		     (ash 1 pos))
 		 (ash i pos)))))
- 
+
 ;;  End Efficiency Hack Definitions
 |#
 

@@ -43,12 +43,13 @@
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (in-package "U")
+(include-book "doc-section")
 
 (deflabel utilities
-  :doc ":doc-section utilities
+  :doc ":doc-section acl2::data-structures
   A book of utility functions residing in the package \"U\".
   ~/
-  The available utilities include the following:
+  The ~c[data-structures/utilities] book includes the following:
   ~/~/")
 
 ;;;****************************************************************************

@@ -20,7 +20,8 @@
 
 (defpkg "SERIALIZE"
   (set-difference-eq
-   (union-eq '(quit exit)
+   (union-eq '(;; So the doc topic gets into the ACL2 package
+               serialize)
              (union-eq *acl2-exports*
                        *common-lisp-symbols-from-main-lisp-package*))
    '(read write)))

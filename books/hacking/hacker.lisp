@@ -1,5 +1,5 @@
 (in-package "ACL2-HACKER")
-
+(include-book "doc-section")
 ;; hacker.lisp
 ;;
 ;; Functions for extending ACL2 in ways that are potentially unsound

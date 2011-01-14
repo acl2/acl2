@@ -37,9 +37,10 @@
 ;;;****************************************************************************
 
 (in-package "ACL2")
+(include-book "doc-section")
 
 (deflabel sin-cos
-  :doc ":doc-section sin-cos
+  :doc ":doc-section misc
   SIN/COS approximations.
   ~/~/~/")
 

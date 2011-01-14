@@ -1,4 +1,5 @@
 (in-package "ACL2")
+(include-book "doc-section")
 
 ;Needed to use, but not needed for certification:
 ;(include-book "defcode" :load-compiled-file :comp :ttags ((defcode)))

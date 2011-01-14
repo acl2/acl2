@@ -182,11 +182,11 @@ an xdoc file.  See :DOC markup")
 
       (long
        (mv-let
-        (ln state)
-        (acl2::print-doc-string-part-mv
-         1 doc-string "" *xdoc-doc-markup-table* *xdoc-doc-char-subst-table*
-         doc-fmt-alist channel (car doc-tuple) :par
-         *xdoc-undocumented-topic* *xdoc-vp* state)
+         (ln state)
+         (acl2::print-doc-string-part-mv
+          1 doc-string "" *xdoc-doc-markup-table* *xdoc-doc-char-subst-table*
+          doc-fmt-alist channel (car doc-tuple) :par
+          *xdoc-undocumented-topic* *xdoc-vp* state)
 
 ; XDOC change: We omit a call (write-doc-menu ...), assuming that the xdoc
 ; system will take care of menus.  But note that our menus include citations
@@ -194,12 +194,12 @@ an xdoc file.  See :DOC markup")
 ; take extra measures.  The list of children together with topics collected
 ; from :cite and :cited-by fields is found in (nth 2 doc-tuple).
 
-        (pprogn
-         (acl2::print-doc-string-part
-          2 doc-string "" *xdoc-doc-markup-table* *xdoc-doc-char-subst-table*
-          doc-fmt-alist channel (car doc-tuple) ln *xdoc-undocumented-topic*
-          *xdoc-vp* state)
-         (get-output-stream-string$ channel state nil)))))
+         (pprogn
+          (acl2::print-doc-string-part
+           2 doc-string "" *xdoc-doc-markup-table* *xdoc-doc-char-subst-table*
+           doc-fmt-alist channel (car doc-tuple) ln *xdoc-undocumented-topic*
+           *xdoc-vp* state)
+          (get-output-stream-string$ channel state nil)))))
 
 ; XDOC change: unlike the HTML pages, we avoid laying down images that link to
 ; the documentation's main page and index.
@@ -244,7 +244,19 @@ an xdoc file.  See :DOC markup")
             (xdoc-alist1 (cdr doc-alist) fmt-alist channel state
                          (cons entry acc))))))
 
-(defun write-xdoc-alist-fn (write-p return-p state)
+(defun filter-doc-alist (skip-topics doc-alist)
+  (if (atom doc-alist)
+      nil
+    (let* ((doc-tuple (car doc-alist))
+           (name (if (stringp (nth 0 doc-tuple))
+                     (intern (nth 0 doc-tuple) "ACL2")
+                   (nth 0 doc-tuple))))
+      (if (member name skip-topics)
+          (filter-doc-alist skip-topics (cdr doc-alist))
+        (cons doc-tuple
+              (filter-doc-alist skip-topics (cdr doc-alist)))))))
+
+(defun write-xdoc-alist-fn (write-p return-p skip-topics state)
   (acl2::state-global-let*
    ((acl2::fmt-hard-right-margin 500)
     (acl2::fmt-soft-right-margin 480))
@@ -254,7 +266,7 @@ an xdoc file.  See :DOC markup")
       (channel state)
       (open-output-channel :string :object state)
       (acl2::er-let*
-       ((result (xdoc-alist1 doc-alist
+       ((result (xdoc-alist1 (filter-doc-alist skip-topics doc-alist)
                              (xdoc-fmt-alist doc-alist nil)
                              channel state nil)))
        (pprogn (close-output-channel channel state)
@@ -265,8 +277,9 @@ an xdoc file.  See :DOC markup")
                (acl2::value (and return-p result))))))))
 
 (defmacro acl2::write-xdoc-alist (&key (write-p 't)
-                                       (return-p 'nil))
-  `(write-xdoc-alist-fn ,write-p ,return-p state))
+                                       (return-p 'nil)
+                                       (skip-topics 'nil))
+  `(write-xdoc-alist-fn ,write-p ,return-p ,skip-topics state))
 
 ; Utility for accessing element of xdoc-alist:
 

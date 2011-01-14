@@ -21,6 +21,8 @@
 (in-package "ACL2")
 (include-book "top")
 
+; (depends-on "bookdoc.dat")
+
 (defttag manual)
 (xdoc::save "manual")
 

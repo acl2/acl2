@@ -25,6 +25,7 @@
 ; (certify-book "dump-events").
 
 (in-package "ACL2")
+(include-book "doc-section")
 
 ; We know what we are doing when using state:
 (set-state-ok t)
@@ -32,11 +33,13 @@
 (program)
 
 (defmacro dump-events (filename &optional (earlier-cd '0) (later-cd ':x))
- ":Doc-Section Dump-events
+ ":Doc-Section misc
 
   dump events to a file~/
+
   ~bv[]
   Examples:
+  (include-book \"misc/dump-events\" :dir :system)
   (dump-events \"xxx\")        ; dump all user events to file xxx
   (dump-events \"xxx\" :x-2)   ; dump the last two events to file xxx
   (dump-events \"xxx\" 2 :x-1) ; dump all events from after command 2
@@ -44,6 +47,7 @@
   ~ev[]~/
 
   General Form:
+  ~bv[]
   (dump-events dumpfile
                &optional earlier-command-desc later-command-desc)
   ~ev[]

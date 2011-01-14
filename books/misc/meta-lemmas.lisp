@@ -35,6 +35,7 @@
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (in-package "ACL2")
+(include-book "doc-section")
 
 ;;;****************************************************************************
 ;;;
@@ -43,7 +44,7 @@
 ;;;****************************************************************************
 
 (deflabel meta-lemmas
-  :doc ":doc-section meta-lemmas
+  :doc ":doc-section misc
   A book of general purpose meta-lemmas.
   ~/
   Note that it may be a good idea to load this book last, so that the lemmas
