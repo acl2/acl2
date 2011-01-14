@@ -1,6 +1,45 @@
 <html>
-<frameset cols="20%,*" border="3" bordercolor="black">
- <frame src="html/topic-index.html" name="topics" />
- <frame src="html/full-index.html" name="detail" />
-</frameset>
+
+<!-- You may wish to develop a customized replacement for this page. -->
+
+<head>
+<title>XDOC Manual</title>
+</head>
+
+<script language="JavaScript">
+<!--
+
+function getPageParameters ()
+{
+   var ret = {};
+   if (!window.location.toString().match(/\?(.+)$/)) {
+       return ret;
+   }
+   param_strs = RegExp.$1.split("&");
+   var param_arr = {};
+   for(var i = 0; i < param_strs.length; ++i)
+   {
+      var tmp = param_strs[i].split("=");
+      var key = decodeURI(tmp[0]);
+      var val = decodeURI(tmp[1]);
+      param_arr[key] = val;
+   }
+   return param_arr;
+}
+
+// We generate the frameset so that you can deeply link to a particular page
+// by adding, e.g., ?topic=COMMON-LISP____APPEND
+
+var params = getPageParameters();
+var topic = params["topic"];
+var url = topic ? ("html/" + topic + ".html") : "html/full-index.html";
+
+document.write("<frameset cols='20%,*' border='3' bordercolor='black'>\n");
+document.write("  <frame src='html/topic-index.html' name='topics' />\n");
+document.write("  <frame src='" + url + "' name='detail' />\n");
+document.write("</frameset>\n");
+
+// -->
+</script>
+
 </html>
