@@ -1,9 +1,9 @@
-; Utility for finding theorems defined non-redundantly in a file
+; Utility for finding theorems defined non-redundantly in a book or encapsulate
 ; Matt Kaufmann
-; October, 2007
+; October, 2007 (augmented January, 2011)
 
-; This file introduces two utilities, which require that the indicated book
-; already be included when running them.
+; This file first introduces two utilities, which require that the indicated
+; book already be included when running them.
 
 ;   (theorems-introduced-in "book-name" state)
 ;   returns a list of names of all the theorems (i.e. defthm event names) and
@@ -15,6 +15,11 @@
 ;   is similar to the above, but returns an alist associating names with their
 ;   formulas (in translated form if translated-p is t, but untranslated if
 ;   translated-p is nil).
+
+; Then, this file introduces utilities for collecting and displaying formulas
+; introduced by a sequence of events.  The main macro at the user level is
+; encapsulate-then-new-info, but users may want something different, and the
+; underlying utility new-formula-info suggests how to build other such macros.
 
 ; Thanks to Jared Davis for requesting and trying out this book.
 
@@ -52,17 +57,21 @@
          (newly-defined-top-level-thms-rec (cdr trips) collect-p full-book-name
                                           acc translated-p))))
 
-(defun reversed-world-since-boot-strap (wrld acc)
+(defun reversed-world-since-event (wrld ev acc)
   (cond ((or (endp wrld)
              (let ((trip (car wrld)))
                (and
-                (eq (car trip) 'command-landmark)
+                (eq (car trip) 'event-landmark)
                 (eq (cadr trip) 'global-value)
-                (equal (access-command-tuple-form (cddr trip))
-                       '(exit-boot-strap-mode)))))
+                (equal (access-event-tuple-form (cddr trip))
+                       ev))))
          acc)
-        (t (reversed-world-since-boot-strap (cdr wrld)
-                                            (cons (car wrld) acc)))))
+        (t (reversed-world-since-event (cdr wrld)
+                                       ev
+                                       (cons (car wrld) acc)))))
+
+(defun reversed-world-since-boot-strap (wrld)
+  (reversed-world-since-event wrld '(exit-boot-strap-mode) nil))
 
 (defun book-thms-fn (book-name translated-p state)
 
@@ -75,7 +84,7 @@
     (parse-book-name (cbd) book-name ".lisp" state) ; (os (w state)) in v3.2.1
     (declare (ignore directory-name familiar-name))
     (newly-defined-top-level-thms-rec
-     (reversed-world-since-boot-strap (w state) nil)
+     (reversed-world-since-boot-strap (w state))
       nil
       full-book-name
       nil
@@ -95,3 +104,166 @@
 
   (declare (xargs :stobjs state))
   (strip-cars (book-thms-fn book-name t state)))
+
+;;; Section: New axioms and theorems after executing events, e.g., an
+;;; encapsulate
+
+; Below we collect up the new formulas introduced by a sequence of events.  We
+; do not include information on events that don't introduce formulas, such as
+; table events or deflabel events.  That wouldn't be difficult to do, but the
+; current view is formula-based rather than event-based, so presentation might
+; be an issue.
+
+(defun new-formula-info (trips wrld acc)
+
+; We collect into acc entries of the following forms, using untranslated
+; (user-level) syntax for formulas.
+
+; - (name :theorem thm)
+;     for (defthm name thm ...)
+; - (name :def (equal (name . formals) body))
+;     for (defun name formals ... body)
+; - ((name1 ... namek) :constraint formula)
+;     for names (name1 ... namek) introduced with the indicated constraint
+;     formula
+; - (name :defchoose formula)
+;     for name introduced by defchoose with the indicated constraint
+
+; Remarks:
+
+; (1) Definitions in a mutual-recursion are listed separately.
+
+; (2) We don't check for which may leave properties *acl2-property-unbound*, so
+; we are not handling redefinition,
+
+; (3) Defun-sk is implemented with encapsulate and a local defchoose, so one
+; will see a :constrain tuple rather than :defchoose tuple in this case.
+
+; (4) Unlike the function newly-defined-top-level-fns-rec, we give no special
+; treatment for include-book.  Events from a subsidiary book that are
+; represented in trips will be considered.  However, typically trips may come
+; from (pass 2 of) an encapsulate event, in which case there are no
+; include-book events represented (since any such are local to the
+; encapsulate).
+
+  (cond ((endp trips)
+         acc)
+        (t
+         (new-formula-info
+          (cdr trips)
+          wrld
+          (let ((name (caar trips))
+                (prop (cddar trips)))
+            (case (cadar trips)
+              (theorem
+               (cons (list name :theorem prop)
+                     acc))
+              (unnormalized-body
+               (cond ((eq (getprop name 'constraint-lst t
+                                   'current-acl2-world wrld)
+                          t)
+                      (cons (list name
+                                  :def
+                                  `(equal (,name ,@(formals name wrld))
+                                          ,(untranslate prop nil wrld)))
+                            acc))
+                     (t ; function is really constrained
+                      acc)))
+              (constraint-lst
+               (cond ((and prop (symbolp prop))
+                      acc)
+                     (t
+                      (cons (list (getprop name 'siblings nil
+                                           'current-acl2-world wrld)
+                                  :constraint
+                                  (untranslate (cons 'and prop) t wrld))
+                            acc))))
+              (defchoose-axiom
+                (cons (list name :defchoose (untranslate prop t wrld))
+                      acc))
+              (t acc)))))))
+
+(defmacro with-intro-table (&rest events)
+
+; Events is a list of events.  We wrap events in a progn that concludes with an
+; additional event, a table mapping :info to the information collected by
+; new-formula-info (see the comments there) for the indicated events.
+
+  (let ((marker ; lay down a non-redundant marker
+         '(table intro-table :mark world)))
+    `(progn
+       ,marker
+       ,@events
+       (make-event
+        (let* ((wrld (w state))
+               (trips (reversed-world-since-event wrld ',marker nil))
+               (info (reverse (new-formula-info trips wrld nil))))
+          `(table intro-table :info ',info))))))
+
+(defmacro encapsulate-then-new-info (name &rest events)
+
+; Events is a list of events.  We wrap events into an (encapsulate () ...) and
+; follow that with a zero-ary definition of name, which returns information of
+; the sort discussed above (see comments in new-formula-info).
+
+  (declare (xargs :guard (and name (symbolp name))))
+  `(progn (with-intro-table
+           (encapsulate
+            ()
+            ,@events))
+          (make-event
+           (let ((wrld (w state)))
+             (list 'defun ',name nil
+                   (list 'quote
+                         (cdr (assoc-eq :info (table-alist 'intro-table
+                                                           wrld)))))))))
+
+; Example:
+
+(logic)
+
+(local (encapsulate-then-new-info
+        my-name
+        (defthm foo
+          (equal (car (cons x y)) x))
+        (defun f1 (x y) (<= x y))
+        (local (include-book "arithmetic/top" :dir :system))
+        (defthm bar
+          (< (acl2-count x) (acl2-count (cons x y))))
+        (defun-sk exists-x-f1 (y)
+          (exists x (f1 x y)))
+        (encapsulate ((f (x) t)
+                      (h (x) t))
+                     (local (defun f (x) x))
+                     (defun g (x) (f x))
+                     (local (defun h (x) x))
+                     (defthm my-thm
+                       (equal (f x) (h (g x)))))
+        (defchoose my-ch (x) (y)
+          (f1 x (cons 0 y)))
+        ))
+
+(local
+ (assert-event
+  (equal (my-name)
+         '((FOO :THEOREM (EQUAL (CAR (CONS X Y)) X))
+           (F1 :DEF (EQUAL (F1 X Y) (<= X Y)))
+           (BAR :THEOREM (< (ACL2-COUNT X)
+                            (ACL2-COUNT (CONS X Y))))
+           (EXISTS-X-F1-SUFF :THEOREM (IMPLIES (F1 X Y) (EXISTS-X-F1 Y)))
+           ((EXISTS-X-F1 EXISTS-X-F1-WITNESS)
+            :CONSTRAINT
+            (AND (EQUAL (EXISTS-X-F1 Y)
+                        (PROG2$ (THROW-NONEXEC-ERROR 'EXISTS-X-F1
+                                                     (LIST Y))
+                                (LET ((X (EXISTS-X-F1-WITNESS Y)))
+                                     (F1 X Y))))
+                 (IMPLIES (F1 X Y) (EXISTS-X-F1 Y))))
+           (MY-THM :THEOREM (EQUAL (F X) (H (G X))))
+           ((G F H)
+            :CONSTRAINT
+            (AND (EQUAL (G X) (F X))
+                 (EQUAL (F X) (H (G X)))))
+           (MY-CH :DEFCHOOSE (IMPLIES (F1 X (CONS 0 Y))
+                                      (LET ((X (MY-CH Y)))
+                                           (F1 X (CONS 0 Y)))))))))
