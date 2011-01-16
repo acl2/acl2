@@ -811,54 +811,52 @@
 ; have a non-trivial CURRENT-ACL2-WORLD setting giving FORMALS and a
 ; BODY to the symbol FOO.
 
-  #|
+;   (ev '(ev '(foo a)
+;            '((a . 1))
+;            '(NIL NIL
+;                  ((ACCUMULATED-TTREE)
+;                   (AXIOMSP)
+;                   (BDDNOTES)
+;                   (CERTIFY-BOOK-FILE)
+;                   (CONNECTED-BOOK-DIRECTORY)
+;                   (CURRENT-ACL2-WORLD
+;                    . ((foo formals . (x)) (foo body . (cons 'dummy-foo x))))
+;                   (CURRENT-PACKAGE . "ACL2")
+;                   (EVISCERATE-HIDE-TERMS)
+;                   (FMT-HARD-RIGHT-MARGIN . 77)
+;                   (FMT-SOFT-RIGHT-MARGIN . 65)
+;                   (GSTACKP)
+;                   (GUARD-CHECKING-ON . T)
+;                   (INFIXP)
+;                   (INHIBIT-OUTPUT-LST SUMMARY)
+;                   (IN-LOCAL-FLG . NIL)
+;                   (LD-LEVEL . 0)
+;                   (LD-REDEFINITION-ACTION)
+;                   (LD-SKIP-PROOFSP)
+;                   (MORE-DOC-MAX-LINES . 45)
+;                   (MORE-DOC-MIN-LINES . 35)
+;                   (MORE-DOC-STATE)
+;                   (PRINT-DOC-START-COLUMN . 15)
+;                   (PROMPT-FUNCTION . DEFAULT-PRINT-PROMPT)
+;                   (PROOF-TREE-CTX)
+;                   (PROOFS-CO
+;                    . ACL2-OUTPUT-CHANNEL::STANDARD-CHARACTER-OUTPUT-0)
+;                   (SKIPPED-PROOFSP)
+;                   (STANDARD-CO
+;                    . ACL2-OUTPUT-CHANNEL::STANDARD-CHARACTER-OUTPUT-0)
+;                   (STANDARD-OI
+;                    . ACL2-OUTPUT-CHANNEL::STANDARD-OBJECT-INPUT-0)
+;                   (TIMER-ALIST)
+;                   (TRIPLE-PRINT-PREFIX . " ")
+;                   (UNDONE-WORLDS-KILL-RING NIL NIL NIL)
+;                   (UNTOUCHABLE-FNS)
+;                   (UNTOUCHABLE-VARS)
+;                   (WINDOW-INTERFACEP)
+;                   (WORMHOLE-NAME))
+;                  NIL NIL 4000000
+;                  NIL NIL 1 NIL NIL NIL NIL NIL NIL)
+;            'nil 'nil 't) nil state nil nil t)
 
-  (ev '(ev '(foo a)
-           '((a . 1))
-           '(NIL NIL
-                 ((ACCUMULATED-TTREE)
-                  (AXIOMSP)
-                  (BDDNOTES)
-                  (CERTIFY-BOOK-FILE)
-                  (CONNECTED-BOOK-DIRECTORY)
-                  (CURRENT-ACL2-WORLD
-                   . ((foo formals . (x)) (foo body . (cons 'dummy-foo x))))
-                  (CURRENT-PACKAGE . "ACL2")
-                  (EVISCERATE-HIDE-TERMS)
-                  (FMT-HARD-RIGHT-MARGIN . 77)
-                  (FMT-SOFT-RIGHT-MARGIN . 65)
-                  (GSTACKP)
-                  (GUARD-CHECKING-ON . T)
-                  (INFIXP)
-                  (INHIBIT-OUTPUT-LST SUMMARY)
-                  (IN-LOCAL-FLG . NIL)
-                  (LD-LEVEL . 0)
-                  (LD-REDEFINITION-ACTION)
-                  (LD-SKIP-PROOFSP)
-                  (MORE-DOC-MAX-LINES . 45)
-                  (MORE-DOC-MIN-LINES . 35)
-                  (MORE-DOC-STATE)
-                  (PRINT-DOC-START-COLUMN . 15)
-                  (PROMPT-FUNCTION . DEFAULT-PRINT-PROMPT)
-                  (PROOF-TREE-CTX)
-                  (PROOFS-CO
-                   . ACL2-OUTPUT-CHANNEL::STANDARD-CHARACTER-OUTPUT-0)
-                  (SKIPPED-PROOFSP)
-                  (STANDARD-CO
-                   . ACL2-OUTPUT-CHANNEL::STANDARD-CHARACTER-OUTPUT-0)
-                  (STANDARD-OI
-                   . ACL2-OUTPUT-CHANNEL::STANDARD-OBJECT-INPUT-0)
-                  (TIMER-ALIST)
-                  (TRIPLE-PRINT-PREFIX . " ")
-                  (UNDONE-WORLDS-KILL-RING NIL NIL NIL)
-                  (UNTOUCHABLE-FNS)
-                  (UNTOUCHABLE-VARS)
-                  (WINDOW-INTERFACEP)
-                  (WORMHOLE-NAME))
-                 NIL NIL 4000000
-                 NIL NIL 1 NIL NIL NIL NIL NIL NIL)
-           'nil 'nil 't) nil state nil nil t)
-  |#
 ; The output of the ev above is (NIL (NIL (DUMMY-FOO . 1) NIL) NIL).
 
 ; The above example can be made slightly more interesting by replacing
@@ -1014,24 +1012,22 @@
 ; big-n untouchable, since without that we have been able to prove nil, as
 ; follows:
 
-#|
- (in-package "ACL2")
- (defun foo () (big-n))
- (defthm bad1 (equal (foo) '(nil)) :rule-classes nil)
- (defthm bad2
-   (equal (big-n) '(nil))
-   :hints (("Goal" :use bad1 :in-theory (disable (foo))))
-   :rule-classes nil)
- (defun bar () 0)
- (defthm bad3
-   (equal (bar) '(nil))
-   :hints (("Goal" :by (:functional-instance bad2 (big-n bar))))
-   :rule-classes nil)
- (defthm bad
-   nil
-   :hints (("Goal" :use bad3))
-   :rule-classes nil)
-|#
+;  (in-package "ACL2")
+;  (defun foo () (big-n))
+;  (defthm bad1 (equal (foo) '(nil)) :rule-classes nil)
+;  (defthm bad2
+;    (equal (big-n) '(nil))
+;    :hints (("Goal" :use bad1 :in-theory (disable (foo))))
+;    :rule-classes nil)
+;  (defun bar () 0)
+;  (defthm bad3
+;    (equal (bar) '(nil))
+;    :hints (("Goal" :by (:functional-instance bad2 (big-n bar))))
+;    :rule-classes nil)
+;  (defthm bad
+;    nil
+;    :hints (("Goal" :use bad3))
+;    :rule-classes nil)
 
 ; We also make decrement-big-n and zp-big-n untouchable, just because we are a
 ; bit paranoid here.
@@ -6404,25 +6400,24 @@
 ; it was of the form (implies (pred n) (prop n)) where pred has about 1800
 ; conjuncts.  The culprit was the call(s) of all-fnnames in bdd-rules-alist1, I
 ; think.
-#||
-(mutual-recursion
 
-(defun all-fnnames (term)
-  (cond ((variablep term) nil)
-        ((fquotep term) nil)
-        ((flambda-applicationp term)
-         (union-eq (all-fnnames (lambda-body (ffn-symb term)))
-                   (all-fnnames-lst (fargs term)))) 
-        (t
-         (add-to-set-eq (ffn-symb term)
-                        (all-fnnames-lst (fargs term))))))
-
-(defun all-fnnames-lst (lst)
-  (cond ((null lst) nil)
-        (t (union-eq (all-fnnames (car lst))
-                     (all-fnnames-lst (cdr lst))))))
-)
-||#
+; (mutual-recursion
+; 
+; (defun all-fnnames (term)
+;   (cond ((variablep term) nil)
+;         ((fquotep term) nil)
+;         ((flambda-applicationp term)
+;          (union-eq (all-fnnames (lambda-body (ffn-symb term)))
+;                    (all-fnnames-lst (fargs term)))) 
+;         (t
+;          (add-to-set-eq (ffn-symb term)
+;                         (all-fnnames-lst (fargs term))))))
+; 
+; (defun all-fnnames-lst (lst)
+;   (cond ((null lst) nil)
+;         (t (union-eq (all-fnnames (car lst))
+;                      (all-fnnames-lst (cdr lst))))))
+; )
 
 (defun all-fnnames1 (flg x acc)
 
@@ -6546,33 +6541,29 @@
                (t val)))
         (t (replace-stobjs1 stobjs-out val))))
 
-#|
-
-; This is from an old attempt to make the read-eval-print
-; loop handle free variables as references to globals.  We
-; abandoned this attempt because the LAMBDA abstraction handling
-; introduced by mv-let was forcing globals to be evaluated before they
-; had been set, making it confusing which value of a global was to be
-; used.  We have left in trans-eval the code that used this, within
-; comments.  Note that such an attempt now would need to change
+; The following is from an old attempt to make the read-eval-print loop handle
+; free variables as references to globals.  We abandoned this attempt because
+; the LAMBDA abstraction handling introduced by mv-let was forcing globals to
+; be evaluated before they had been set, making it confusing which value of a
+; global was to be used.  We have left in trans-eval the code that used this,
+; within comments.  Note that such an attempt now would need to change
 ; 'untouchables to 'untouchable-vars.
 
-(defun build-alist (vars state)
-  (declare (xargs :guard (true-listp vars)))
-  (cond ((null vars) (value nil))
-        ((eq (car vars) 'state)
-         (build-alist (cdr vars) state))
-        ((member (car vars) (global-val 'untouchables (w state)))
-         (er soft 'trans-eval
-             "The global variable ~x0 is on untouchables."
-             (car vars)))
-        (t (er-let* ((alist (build-alist (cdr vars) state)))
-                    (value (cons (cons (car vars)
-                                       (list 'get-global
-                                             (list 'quote (car vars)) 'state))
-                                 alist))))))
-
-|#
+; (defun build-alist (vars state)
+;   (declare (xargs :guard (true-listp vars)))
+;   (cond ((null vars) (value nil))
+;         ((eq (car vars) 'state)
+;          (build-alist (cdr vars) state))
+;         ((member (car vars) (global-val 'untouchables (w state)))
+;          (er soft 'trans-eval
+;              "The global variable ~x0 is on untouchables."
+;              (car vars)))
+;         (t (er-let* ((alist (build-alist (cdr vars) state)))
+;                     (value (cons (cons (car vars)
+;                                        (list 'get-global
+;                                              (list 'quote (car vars)) 'state))
+;                                  alist))))))
+; 
 
 (defun non-stobjps (vars known-stobjs w)
   (cond ((endp vars) nil)

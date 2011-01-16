@@ -982,12 +982,12 @@ ACL2 from scratch.")
 (our-with-compilation-unit
 
 ; At one time we avoided recompiling and had the following code inside a COND:
-#|
-   ((and (probe-file object-file)
-         (<= (file-write-date "acl2-fns.lisp")
-             (file-write-date object-file)))
-    (load object-file))
-|#
+
+;    ((and (probe-file object-file)
+;          (<= (file-write-date "acl2-fns.lisp")
+;              (file-write-date object-file)))
+;     (load object-file))
+
 ; But for example, if we compile with Allegro under SunOS and then later build
 ; the system with Allegro under Linux, the same ".fasl" extension could fool us
 ; into thinking that recompilation is not necessary.
@@ -1141,122 +1141,120 @@ which is saved just in case it's needed later.")
   #-clisp
   (load filename))
 
-#|
-                      Remarks on *acl2-readtable*
+;                       Remarks on *acl2-readtable*
+; 
+; 
+; Because read-object$ calls the Common Lisp function read, read-object$
+; is a function of the values of the Common Lisp symbols (a)
+; *readtable*, (b) *package*, and (c) *features*.  In ACL2, the user can
+; specify the package to use, via in-package, which sets the global
+; current-package.  The user of ACL2 has no (legitimate) control over the
+; readtable, which is set above and discussed below.
+; 
+; As for *features*, we currently permit full use of the *features*
+; facility of the Common Lisp reader, with this caveat: it is an
+; official part of the ACL2 story that *features* should have the same
+; setting throughout all phases of ACL2 usage.  That is, the user must
+; set up *features* at the beginning, before starting to use ACL2 and
+; the user must then leave *features* alone (even though the
+; implementors of ACL2 put :acl2-loop-only onto *features* during
+; boot-strapping).  One bad consequence of our *features* policy is that
+; verified files will not in general be verifiable or useable in other
+; Lisp implementations or installations unless the settings of
+; *features* relevant to one's usages of the #+ and #- are the same in
+; the two Lisp implementations.  One simple way to obtain peace of mind
+; on this topic is for the user not to use #+ or #- at all!  It might be
+; cleaner for us simply to prohibit the use of the #+ and #- readmacros
+; all together in ACL2.  This could be done at the cost of replacing the
+; many uses of #+ and #- in axioms.lisp, and a few other places, with
+; some sort of regular macro.
+; 
+; Below is a detailed examination of the default Common Lisp readtable
+; from the perspective of ACL2.  We want to make sure that when we read,
+; we do not have side effects (e.g. via #.) of ACL2 but will merely
+; either (a) cause an error or (b) generate a Lisp object, which we then
+; will check with bad-lisp-object before handing it to ACL2 functions.
+; 
+; All of the standard Common Lisp characters are either white space or
+; constituent, with the following exceptions, which are read macros:
+; 
+;   "  quote
+;   #  number sign
+;   '  quote
+;   () parentheses
+;   ,  comma
+;   ;  comment
+;   \  single escape
+;   `  backquote
+;   |  multiple escape
+; 
+; With the exception of number sign, backquote and comma, we certainly
+; want all of these readmacros to have their usual Common Lisp
+; semantics.
+; 
+; We have defined our own backquote and discussed it above.
+; 
+; We now review the # situation:
+; 
+;   ## and #= are for reading possibly circular stuff
+;          bad-lisp-object may run forever
+;   #'  reads as function
+;          won't hurt anything
+;   #(  vector
+;          will be rejected by bad-lisp-object
+;   #)  signals an error
+;          enough said
+;   #*  bit vector
+;          will be rejected by bad-lisp-object
+;   #,  load-time evaluation
+;          we shut it off
+;   #0-#9 used for infix arguments
+;          ok
+;   #:  uninterned symbol
+;          will be rejected by bad-lisp-object
+;   #<  signals an error
+;          enough said
+;   #\  character object
+;          will be checked by bad-lisp-object; see also below
+;   #|  start comment, ended by |#
+;          ok
+;   #<backspace | tab | newline | linefeed | page | return | space>
+;       signals an error -- ok
+;   #+  and #-
+;       see the discussion of *features* above
+;   #.  read time evaluation
+;          we restrict it
+;   #A, #a  arrays
+;          will be checked by bad-lisp-object
+;   #B, #b  binary rational
+;          ok
+;   #C, #c complex
+;          ok (rejected by bad-lisp-object except for rational components)
+;   #O, #o octal
+;          ok
+;   #P, #p pathname
+;          will be checked by bad-lisp-object
+;   #R, #r radix-n
+;          fine
+;   #S, #s structure
+;          will be rejected by bad-lisp-object
+;   #X, #x hex
+;          ok
+; 
+; Eventually, it will be best to define a read function for ACL2 solely in terms
+; of ACL2 character reading primitives.  Common Lisp read is ambiguous.  There is
+; the ambiguity of backquote described above.  There is the abiguity of which
+; tokens get read as numbers.  To make matters a little more scary, there is
+; nothing that prevents a Common Lisp implementation from adding, for example, a
+; new # readmacro option that would provide something as potentially catastrophic
+; as full-blown sharp-dot.  One obstacle to doing a read within ACL2 this is
+; efficiency.  For example, ACL2 does not now support unread-char.  And given the
+; requirement that whatever is specified in a guard must be checkable, it is
+; unclear now how best to add unread-char since Common Lisp does permit one to
+; detect whether a stream is in a ``just unread'' state.  ACL2 could enable one
+; to answer such a question, but at the cost of having to store the information
+; every time that a character was unread.
 
-
-Because read-object$ calls the Common Lisp function read, read-object$
-is a function of the values of the Common Lisp symbols (a)
-*readtable*, (b) *package*, and (c) *features*.  In ACL2, the user can
-specify the package to use, via in-package, which sets the global
-current-package.  The user of ACL2 has no (legitimate) control over the
-readtable, which is set above and discussed below.
-
-As for *features*, we currently permit full use of the *features*
-facility of the Common Lisp reader, with this caveat: it is an
-official part of the ACL2 story that *features* should have the same
-setting throughout all phases of ACL2 usage.  That is, the user must
-set up *features* at the beginning, before starting to use ACL2 and
-the user must then leave *features* alone (even though the
-implementors of ACL2 put :acl2-loop-only onto *features* during
-boot-strapping).  One bad consequence of our *features* policy is that
-verified files will not in general be verifiable or useable in other
-Lisp implementations or installations unless the settings of
-*features* relevant to one's usages of the #+ and #- are the same in
-the two Lisp implementations.  One simple way to obtain peace of mind
-on this topic is for the user not to use #+ or #- at all!  It might be
-cleaner for us simply to prohibit the use of the #+ and #- readmacros
-all together in ACL2.  This could be done at the cost of replacing the
-many uses of #+ and #- in axioms.lisp, and a few other places, with
-some sort of regular macro.
-
-Below is a detailed examination of the default Common Lisp readtable
-from the perspective of ACL2.  We want to make sure that when we read,
-we do not have side effects (e.g. via #.) of ACL2 but will merely
-either (a) cause an error or (b) generate a Lisp object, which we then
-will check with bad-lisp-object before handing it to ACL2 functions.
-
-All of the standard Common Lisp characters are either white space or
-constituent, with the following exceptions, which are read macros:
-
-  "  quote
-  #  number sign
-  '  quote
-  () parentheses
-  ,  comma
-  ;  comment
-  \  single escape
-  `  backquote
-  |  multiple escape
-
-With the exception of number sign, backquote and comma, we certainly
-want all of these readmacros to have their usual Common Lisp
-semantics.
-
-We have defined our own backquote and discussed it above.
-
-We now review the # situation:
-
-  ## and #= are for reading possibly circular stuff
-         bad-lisp-object may run forever
-  #'  reads as function
-         won't hurt anything
-  #(  vector
-         will be rejected by bad-lisp-object
-  #)  signals an error
-         enough said
-  #*  bit vector
-         will be rejected by bad-lisp-object
-  #,  load-time evaluation
-         we shut it off
-  #0-#9 used for infix arguments
-         ok
-  #:  uninterned symbol
-         will be rejected by bad-lisp-object
-  #<  signals an error
-         enough said
-  #\  character object
-         will be checked by bad-lisp-object; see also below
-  #|  start comment, ended by |#
-         ok
-  #<backspace | tab | newline | linefeed | page | return | space>
-      signals an error -- ok
-  #+  and #-
-      see the discussion of *features* above
-  #.  read time evaluation
-         we restrict it
-  #A, #a  arrays
-         will be checked by bad-lisp-object
-  #B, #b  binary rational
-         ok
-  #C, #c complex
-         ok (rejected by bad-lisp-object except for rational components)
-  #O, #o octal
-         ok
-  #P, #p pathname
-         will be checked by bad-lisp-object
-  #R, #r radix-n
-         fine
-  #S, #s structure
-         will be rejected by bad-lisp-object
-  #X, #x hex
-         ok
-
-Eventually, it will be best to define a read function for ACL2 solely in terms
-of ACL2 character reading primitives.  Common Lisp read is ambiguous.  There is
-the ambiguity of backquote described above.  There is the abiguity of which
-tokens get read as numbers.  To make matters a little more scary, there is
-nothing that prevents a Common Lisp implementation from adding, for example, a
-new # readmacro option that would provide something as potentially catastrophic
-as full-blown sharp-dot.  One obstacle to doing a read within ACL2 this is
-efficiency.  For example, ACL2 does not now support unread-char.  And given the
-requirement that whatever is specified in a guard must be checkable, it is
-unclear now how best to add unread-char since Common Lisp does permit one to
-detect whether a stream is in a ``just unread'' state.  ACL2 could enable one
-to answer such a question, but at the cost of having to store the information
-every time that a character was unread.
-
-|#
 
 ;          ACL2's Implementation of the character reader
 
@@ -1331,51 +1329,49 @@ every time that a character was unread.
 ; In what follows we'll quote from dpANS (an emacs Info version).  We
 ; quote here from three sections, separated by ++++++++++++++++++.
 
-#|
+; 
+; Sharpsign Backslash
+; ...................
+; 
+; Syntax: #\<<x>>
+; 
+; [[[ text omitted ]]]
+; 
+; When the token x is more than one character long, the x must have the
+; syntax of a symbol with no embedded package markers.  In this case, the
+; sharpsign backslash notation parses as the character whose name is
+; (string-upcase x); see *See Character Names::.
+; 
+; ++++++++++++++++++
+; 
+; char-name                                                        [Function]
+; ---------------------------------------------------------------------------
+; 
+; `char-name'  character =>  name
+; 
+; Arguments and Values::
+; ......................
+; 
+; character--a character.
+; 
+; name--a string or nil.
+; 
+; Description::
+; .............
+; 
+; Returns a string that is the name of the character, or nil if the
+; character has no name.
+; 
+; ++++++++++++++++++
+; 
+; Character Names
+; ---------------
+; 
+; The following character names must be present in all conforming
+; implementations:
+; 
+; Newline
 
-Sharpsign Backslash
-...................
-
-Syntax: #\<<x>>
-
-[[[ text omitted ]]]
-
-When the token x is more than one character long, the x must have the
-syntax of a symbol with no embedded package markers.  In this case, the
-sharpsign backslash notation parses as the character whose name is
-(string-upcase x); see *See Character Names::.
-
-++++++++++++++++++
-
-char-name                                                        [Function]
----------------------------------------------------------------------------
-
-`char-name'  character =>  name
-
-Arguments and Values::
-......................
-
-character--a character.
-
-name--a string or nil.
-
-Description::
-.............
-
-Returns a string that is the name of the character, or nil if the
-character has no name.
-
-++++++++++++++++++
-
-Character Names
----------------
-
-The following character names must be present in all conforming
-implementations:
-
-Newline
-
-|# ; |
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                       COMPILING and LOADING, PART 2
@@ -1962,18 +1958,16 @@ Newline
 
 ; Bob Boyer uses the following at times.
 
-#||
-#+ccl
-(in-package "CCL")
-#+ccl
-(flet ((go-slow
-        ()
-        (set-current-compiler-policy (new-compiler-policy :inline-self-calls #'false))
-        (set-current-file-compiler-policy (new-compiler-policy :inline-self-calls #'false))
-        (proclaim '(optimize (debug 3) (compilation-speed 0)
-                             (safety 3) (speed 0) (space 0)))))
-  (go-slow))
-||#
+; #+ccl
+; (in-package "CCL")
+; #+ccl
+; (flet ((go-slow
+;         ()
+;         (set-current-compiler-policy (new-compiler-policy :inline-self-calls #'false))
+;         (set-current-file-compiler-policy (new-compiler-policy :inline-self-calls #'false))
+;         (proclaim '(optimize (debug 3) (compilation-speed 0)
+;                              (safety 3) (speed 0) (space 0)))))
+;   (go-slow))
 
 ; The following two assignments seemed to speed up regression runs by about
 ; 7.7% as opposed to only the second, which seemed to have little effect.

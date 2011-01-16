@@ -542,16 +542,15 @@
         ((null cl2) cl1)
         (t (disjoin-clauses1 cl1 cl2))))
 
-#|| ; See comment in disjoin-clause-segment-to-clause-set.
-(defun disjoin-clause-segment-to-clause-set-rec (segment cl-set acc)
-  (cond ((null cl-set) acc)
-        (t (disjoin-clause-segment-to-clause-set-rec
-            segment
-            (cdr cl-set)
-            (conjoin-clause-to-clause-set
-             (disjoin-clauses segment (car cl-set))
-             acc)))))
-||#
+; See comment in disjoin-clause-segment-to-clause-set.
+; (defun disjoin-clause-segment-to-clause-set-rec (segment cl-set acc)
+;   (cond ((null cl-set) acc)
+;         (t (disjoin-clause-segment-to-clause-set-rec
+;             segment
+;             (cdr cl-set)
+;             (conjoin-clause-to-clause-set
+;              (disjoin-clauses segment (car cl-set))
+;              acc)))))
 
 (defun disjoin-clause-segment-to-clause-set (segment cl-set)
 
@@ -1546,31 +1545,29 @@
 ; script simply because it took a while to find the path down which the
 ; 'fc-derivation migrated out of forward-chaining.
 
-#|
- (er-progn
-  (defstub hyp1 (x) t)
-  (defstub hyp2 (x) t)
-  (defstub trig (x) t)
-  (defstub assumptionp (x) t)
-  (defstub concl (x) t)
-
-  (defaxiom fc-to-hyp1
-    (hyp1 (trig x))
-    :rule-classes ((:forward-chaining :trigger-terms ((trig X)))))
-
-  (defaxiom then-fc-to-hyp2
-    (implies (and (hyp1 x) (force (assumptionp x)))
-             (hyp2 x))
-    :rule-classes :forward-chaining)
-
-  (defaxiom in-rewrite-use-hyp2-thus-raising-the-assumption
-    (implies (hyp2 x) (concl x)))
-
-  (defaxiom and-relieve-the-assumption-by-appeal-to-hyp1-sucking-in-the-fc-deriv
-    (implies (hyp1 x) (assumptionp x)))
-
-  (thm (concl (trig a))))
-|#
+;  (er-progn
+;   (defstub hyp1 (x) t)
+;   (defstub hyp2 (x) t)
+;   (defstub trig (x) t)
+;   (defstub assumptionp (x) t)
+;   (defstub concl (x) t)
+; 
+;   (defaxiom fc-to-hyp1
+;     (hyp1 (trig x))
+;     :rule-classes ((:forward-chaining :trigger-terms ((trig X)))))
+; 
+;   (defaxiom then-fc-to-hyp2
+;     (implies (and (hyp1 x) (force (assumptionp x)))
+;              (hyp2 x))
+;     :rule-classes :forward-chaining)
+; 
+;   (defaxiom in-rewrite-use-hyp2-thus-raising-the-assumption
+;     (implies (hyp2 x) (concl x)))
+; 
+;   (defaxiom and-relieve-the-assumption-by-appeal-to-hyp1-sucking-in-the-fc-deriv
+;     (implies (hyp1 x) (assumptionp x)))
+; 
+;   (thm (concl (trig a))))
 
   (cond ((null ttree) nil)
         ((symbolp (caar ttree))
@@ -3505,69 +3502,67 @@
 ; that hard error, so we changed this function.  A relevant comment, from
 ; before that change, is given below.
 
-#|
- (defstub appealp (* *) => *)
- (defstub appeal-listp (* *) => *)
- (defstub appeal-structurep (*) => *)
- (defstub appeal-structure-listp (*) => *)
- (defstub get-subgoals (*) => *)
- (defstub appeal-provisionally-okp (* * *) => *)
- (defstub proofp (* * *) => *)
- (defstub proof-listp (* * *) => *)
-
- (defaxiom appeal-structure-listp-forward-to-appeal-structurep-of-car
-    (implies (appeal-structure-listp x)
-             (equal (appeal-structurep (car x))
-                    (if x t nil)))
-    :rule-classes :forward-chaining)
-
- (defaxiom appealp-listp-forward-to-appealp-of-car
-    (implies (appeal-listp x arity-table)
-             (equal (appealp (car x) arity-table)
-                    (if x t nil)))
-    :rule-classes :forward-chaining)
-
- (defaxiom appealp-forward-to-appeal-structurep
-    (implies (appealp x arity-table)
-             (appeal-structurep x))
-    :rule-classes :forward-chaining)
-
- (defaxiom appeal-structure-listp-forward-to-appeal-structure-listp-of-cdr
-    (implies (appeal-structure-listp x)
-             (appeal-structure-listp (cdr x)))
-    :rule-classes :forward-chaining)
-
- (defaxiom appeal-listp-forward-to-appeal-listp-of-cdr
-    (implies (appeal-listp x arity-table)
-             (appeal-listp (cdr x) arity-table))
-    :rule-classes :forward-chaining)
-
- (defaxiom appeal-listp-forward-to-appeal-structure-listp
-    (implies (appeal-listp x arity-table)
-             (appeal-structure-listp x))
-    :rule-classes :forward-chaining)
-
- (defaxiom appeal-structure-listp-forward-to-true-listp
-    (implies (appeal-structure-listp x)
-             (true-listp x))
-    :rule-classes :forward-chaining)
-
- (defaxiom appeal-listp-when-proofp
-    (implies (proof-listp x database arity-table)
-             (appeal-listp x arity-table))
-    :rule-classes :forward-chaining)
-
- (defaxiom appealp-when-proofp
-    (implies (proofp x database arity-table)
-             (appealp x arity-table))
-    :rule-classes :forward-chaining)
-
- (defthm hard-error-in-fc-pair-lst-type-alist
-    (implies (and (proof-listp xs database arity-table)
-                  (not (consp xs)))
-             (equal (proofp (car xs) database arity-table)
-                    nil)))
-|#
+;  (defstub appealp (* *) => *)
+;  (defstub appeal-listp (* *) => *)
+;  (defstub appeal-structurep (*) => *)
+;  (defstub appeal-structure-listp (*) => *)
+;  (defstub get-subgoals (*) => *)
+;  (defstub appeal-provisionally-okp (* * *) => *)
+;  (defstub proofp (* * *) => *)
+;  (defstub proof-listp (* * *) => *)
+; 
+;  (defaxiom appeal-structure-listp-forward-to-appeal-structurep-of-car
+;     (implies (appeal-structure-listp x)
+;              (equal (appeal-structurep (car x))
+;                     (if x t nil)))
+;     :rule-classes :forward-chaining)
+; 
+;  (defaxiom appealp-listp-forward-to-appealp-of-car
+;     (implies (appeal-listp x arity-table)
+;              (equal (appealp (car x) arity-table)
+;                     (if x t nil)))
+;     :rule-classes :forward-chaining)
+; 
+;  (defaxiom appealp-forward-to-appeal-structurep
+;     (implies (appealp x arity-table)
+;              (appeal-structurep x))
+;     :rule-classes :forward-chaining)
+; 
+;  (defaxiom appeal-structure-listp-forward-to-appeal-structure-listp-of-cdr
+;     (implies (appeal-structure-listp x)
+;              (appeal-structure-listp (cdr x)))
+;     :rule-classes :forward-chaining)
+; 
+;  (defaxiom appeal-listp-forward-to-appeal-listp-of-cdr
+;     (implies (appeal-listp x arity-table)
+;              (appeal-listp (cdr x) arity-table))
+;     :rule-classes :forward-chaining)
+; 
+;  (defaxiom appeal-listp-forward-to-appeal-structure-listp
+;     (implies (appeal-listp x arity-table)
+;              (appeal-structure-listp x))
+;     :rule-classes :forward-chaining)
+; 
+;  (defaxiom appeal-structure-listp-forward-to-true-listp
+;     (implies (appeal-structure-listp x)
+;              (true-listp x))
+;     :rule-classes :forward-chaining)
+; 
+;  (defaxiom appeal-listp-when-proofp
+;     (implies (proof-listp x database arity-table)
+;              (appeal-listp x arity-table))
+;     :rule-classes :forward-chaining)
+; 
+;  (defaxiom appealp-when-proofp
+;     (implies (proofp x database arity-table)
+;              (appealp x arity-table))
+;     :rule-classes :forward-chaining)
+; 
+;  (defthm hard-error-in-fc-pair-lst-type-alist
+;     (implies (and (proof-listp xs database arity-table)
+;                   (not (consp xs)))
+;              (equal (proofp (car xs) database arity-table)
+;                     nil)))
 
 ; Historical Comment:
 
@@ -3666,16 +3661,14 @@
 ; triggering term occurs in the clause.  But we'll keep the
 ; definitions in case we want to reinstate the heuristics.
 
-#|
-(defun exists-lit-worse-than-or-equal (cl concl fn-cnt)
-  (cond
-   ((null cl) nil)
-   (t (or (and (>= (fn-count (car cl)) fn-cnt)
-               (worse-than-or-equal (car cl) concl))
-          (exists-lit-worse-than-or-equal (cdr cl)
-                                          concl
-                                          fn-cnt)))))
-|#
+; (defun exists-lit-worse-than-or-equal (cl concl fn-cnt)
+;   (cond
+;    ((null cl) nil)
+;    (t (or (and (>= (fn-count (car cl)) fn-cnt)
+;                (worse-than-or-equal (car cl) concl))
+;           (exists-lit-worse-than-or-equal (cdr cl)
+;                                           concl
+;                                           fn-cnt)))))
 
 (defun exists-fcd-worse-than-or-equal (fcd-lst concl fn-cnt p-fn-cnt)
   (cond
@@ -3740,60 +3733,57 @@
 ; extra flexibility is important for making type-like forward-chaining
 ; derivations, as illustrated by the following example.
 
-        #||
-
-        (defstub con (x y) nil)
-        (defstub des (x) nil)
-
-        (defstub typec (x) nil)
-        (defstub typeg (x) nil)
-        (defstub typed (x) nil)
-
-        (defaxiom typed-implies-typeg
-        (implies
-        (typed x)
-        (typeg x))
-        :rule-classes (:rewrite :forward-chaining))
-
-        (defaxiom typeg-des
-        (implies
-        (typec x)
-        (typed (des x)))
-        :rule-classes (:rewrite 
-        (:forward-chaining :trigger-terms ((des x)))))
-
-        (defaxiom typec-con
-        (implies
-        (and
-        (natp n)
-        (typeg x))
-        (typec (con x n)))
-        :rule-classes (:rewrite 
-        (:forward-chaining :trigger-terms ((con x n)))))
-
-        (defun several (g)
-        (let* ((c (con g 1))
-        (g (des c))
-        (c (con g 2))
-        (g (des c))
-        (c (con g 3))
-        (g (des c)))
-        (con g 4)))
-
-        (in-theory (disable
-        (:rewrite typec-con)
-        (:rewrite typeg-des)
-        (:rewrite typed-implies-typeg)
-        ))
-
- ; The following fails without the call below of all-args-occur-after-strip-not ; ;
- ; below unless we remove the in-theory event above. ; ;
-        (defthm typec-several
-        (implies
-        (typed g)
-        (typec (several g))))
-
-        ||#
+;   (defstub con (x y) nil)
+;   (defstub des (x) nil)
+; 
+;   (defstub typec (x) nil)
+;   (defstub typeg (x) nil)
+;   (defstub typed (x) nil)
+; 
+;   (defaxiom typed-implies-typeg
+;     (implies
+;      (typed x)
+;      (typeg x))
+;     :rule-classes (:rewrite :forward-chaining))
+; 
+;   (defaxiom typeg-des
+;     (implies
+;      (typec x)
+;      (typed (des x)))
+;     :rule-classes (:rewrite 
+;                    (:forward-chaining :trigger-terms ((des x)))))
+; 
+;   (defaxiom typec-con
+;     (implies
+;      (and
+;       (natp n)
+;       (typeg x))
+;      (typec (con x n)))
+;     :rule-classes (:rewrite 
+;                    (:forward-chaining :trigger-terms ((con x n)))))
+; 
+;   (defun several (g)
+;     (let* ((c (con g 1))
+;            (g (des c))
+;            (c (con g 2))
+;            (g (des c))
+;            (c (con g 3))
+;            (g (des c)))
+;       (con g 4)))
+; 
+;   (in-theory (disable
+;               (:rewrite typec-con)
+;               (:rewrite typeg-des)
+;               (:rewrite typed-implies-typeg)
+;               ))
+; 
+;   ; The following fails without the call below of
+;   ; all-args-occur-after-strip-not below unless we remove the
+;   ; in-theory event above.
+;   (defthm typec-several
+;     (implies
+;      (typed g)
+;      (typec (several g))))
 
         (all-args-occur-after-strip-not (access fc-derivation fcd :concl) ; (d)
                                         cl))))
@@ -4257,24 +4247,24 @@
 ; led us to do this was the toy example shown below (extracted from a harder
 ; failed proof attempt).  The thm below fails if you process the literals in
 ; the order (append new-clause (cdr tail) lits).
-#|
- (defstub p (x) t)
- (defstub r (x) t)
- (defaxiom p->r
-  (implies (p x)
-           (r x))
-  :rule-classes :forward-chaining)
- (defstub my-assoc (name l) t)
- (defaxiom blob
-  (implies (r l)
-           (or (consp (my-assoc name l))
-               (equal (my-assoc name l) nil)))
-  :rule-classes :type-prescription)
- (thm
-  (implies (p l)
-           (or (consp (my-assoc name l))
-               (equal (my-assoc name l) nil))))
-|#
+
+;  (defstub p (x) t)
+;  (defstub r (x) t)
+;  (defaxiom p->r
+;   (implies (p x)
+;            (r x))
+;   :rule-classes :forward-chaining)
+;  (defstub my-assoc (name l) t)
+;  (defaxiom blob
+;   (implies (r l)
+;            (or (consp (my-assoc name l))
+;                (equal (my-assoc name l) nil)))
+;   :rule-classes :type-prescription)
+;  (thm
+;   (implies (p l)
+;            (or (consp (my-assoc name l))
+;                (equal (my-assoc name l) nil))))
+
 ; As a clause the theorem is
 ; (implies (and (p l)
 ;               (not (consp (my-assoc name l))))
@@ -4857,75 +4847,74 @@
 ; but this allowed type-set to remove ``facts'' from a theorem which
 ; may be needed later.  The following transcript illustrates the previous
 ; behavior:
-#|
- ACL2 !>(defthm fold-consts-in-+
-          (implies (and (syntaxp (consp c))
-                        (syntaxp (eq (car c) 'QUOTE))
-                        (syntaxp (consp d))
-                        (syntaxp (eq (car d) 'QUOTE)))
-                   (equal (+ c d x)
-                          (+ (+ c d) x))))
- ACL2 !>(defthm helper
-          (implies (integerp x)
-                   (integerp (+ 1 x))))
- ACL2 !>(thm
-          (implies (integerp (+ -1/2 x))
-                   (integerp (+ 1/2 x)))
-          :hints (("Goal" :use ((:instance helper
-                                           (x (+ -1/2 x)))))))
 
- [Note:  A hint was supplied for our processing of the goal above. 
- Thanks!]
-
- ACL2 Warning [Use] in ( THM ...):  It is unusual to :USE an enabled
- :REWRITE or :DEFINITION rule, so you may want to consider disabling
- (:REWRITE HELPER).
-
-
- We now augment the goal above by adding the hypothesis indicated by
- the :USE hint.  The hypothesis can be derived from HELPER via instantiation.
- The augmented goal is shown below.
-
- Goal'
- (IMPLIES (IMPLIES (INTEGERP (+ -1/2 X))
-                   (INTEGERP (+ 1 -1/2 X)))
-          (IMPLIES (INTEGERP (+ -1/2 X))
-                   (INTEGERP (+ 1/2 X)))).
-
- By case analysis we reduce the conjecture to
-
- Goal''
- (IMPLIES (AND (OR (NOT (INTEGERP (+ -1/2 X)))
-                   (INTEGERP (+ 1 -1/2 X)))
-               (INTEGERP (+ -1/2 X)))
-          (INTEGERP (+ 1/2 X))).
-
- This simplifies, using primitive type reasoning, to
-
- Goal'''
- (IMPLIES (INTEGERP (+ -1/2 X))
-          (INTEGERP (+ 1/2 X))).
-
- Normally we would attempt to prove this formula by induction.  However,
- we prefer in this instance to focus on the original input conjecture
- rather than this simplified special case.  We therefore abandon our
- previous work on this conjecture and reassign the name *1 to the original
- conjecture.  (See :DOC otf-flg.)
-
- No induction schemes are suggested by *1.  Consequently, the proof
- attempt has failed.
-
- Summary
- Form:  ( THM ...)
- Rules: ((:DEFINITION IMPLIES)
-         (:DEFINITION NOT)
-         (:FAKE-RUNE-FOR-TYPE-SET NIL))
- Warnings:  Use
- Time:  0.03 seconds (prove: 0.02, print: 0.01, other: 0.00)
-
- ******** FAILED ********  See :DOC failure  ******** FAILED ********
- ACL2 !>
-|#
+;  ACL2 !>(defthm fold-consts-in-+
+;           (implies (and (syntaxp (consp c))
+;                         (syntaxp (eq (car c) 'QUOTE))
+;                         (syntaxp (consp d))
+;                         (syntaxp (eq (car d) 'QUOTE)))
+;                    (equal (+ c d x)
+;                           (+ (+ c d) x))))
+;  ACL2 !>(defthm helper
+;           (implies (integerp x)
+;                    (integerp (+ 1 x))))
+;  ACL2 !>(thm
+;           (implies (integerp (+ -1/2 x))
+;                    (integerp (+ 1/2 x)))
+;           :hints (("Goal" :use ((:instance helper
+;                                            (x (+ -1/2 x)))))))
+; 
+;  [Note:  A hint was supplied for our processing of the goal above. 
+;  Thanks!]
+; 
+;  ACL2 Warning [Use] in ( THM ...):  It is unusual to :USE an enabled
+;  :REWRITE or :DEFINITION rule, so you may want to consider disabling
+;  (:REWRITE HELPER).
+; 
+; 
+;  We now augment the goal above by adding the hypothesis indicated by
+;  the :USE hint.  The hypothesis can be derived from HELPER via instantiation.
+;  The augmented goal is shown below.
+; 
+;  Goal'
+;  (IMPLIES (IMPLIES (INTEGERP (+ -1/2 X))
+;                    (INTEGERP (+ 1 -1/2 X)))
+;           (IMPLIES (INTEGERP (+ -1/2 X))
+;                    (INTEGERP (+ 1/2 X)))).
+; 
+;  By case analysis we reduce the conjecture to
+; 
+;  Goal''
+;  (IMPLIES (AND (OR (NOT (INTEGERP (+ -1/2 X)))
+;                    (INTEGERP (+ 1 -1/2 X)))
+;                (INTEGERP (+ -1/2 X)))
+;           (INTEGERP (+ 1/2 X))).
+; 
+;  This simplifies, using primitive type reasoning, to
+; 
+;  Goal'''
+;  (IMPLIES (INTEGERP (+ -1/2 X))
+;           (INTEGERP (+ 1/2 X))).
+; 
+;  Normally we would attempt to prove this formula by induction.  However,
+;  we prefer in this instance to focus on the original input conjecture
+;  rather than this simplified special case.  We therefore abandon our
+;  previous work on this conjecture and reassign the name *1 to the original
+;  conjecture.  (See :DOC otf-flg.)
+; 
+;  No induction schemes are suggested by *1.  Consequently, the proof
+;  attempt has failed.
+; 
+;  Summary
+;  Form:  ( THM ...)
+;  Rules: ((:DEFINITION IMPLIES)
+;          (:DEFINITION NOT)
+;          (:FAKE-RUNE-FOR-TYPE-SET NIL))
+;  Warnings:  Use
+;  Time:  0.03 seconds (prove: 0.02, print: 0.01, other: 0.00)
+; 
+;  ******** FAILED ********  See :DOC failure  ******** FAILED ********
+;  ACL2 !>
 
 ; Note that in the transition from Goal'' to Goal''', the needed
 ; fact --- (INTEGERP (+ 1 -1/2 X)) --- was removed by type reasoning.
@@ -4984,43 +4973,41 @@
 ; But we need to do even more work to prevent type-set from removing
 ; ``facts'' from the goal.  Here is another (edited) transcript:
 
-#|
- ACL2 !>(defun foo (x y)
-   (if (acl2-numberp x)
-       (+ x y)
-     0))
-
- ACL2 !>(defthm foo-thm
-   (implies (acl2-numberp x)
-            (equal (foo x y)
-                   (+ x y))))
- ACL2 !>(in-theory (disable foo))
- ACL2 !>(thm
-  (implies (and (acl2-numberp x)
-                (acl2-numberp y)
-                (equal (foo x y) x))
-           (equal y 0)))
-
- This simplifies, using the :type-prescription rule FOO, to
-
- Goal'
- (IMPLIES (AND (ACL2-NUMBERP Y)
-               (EQUAL (FOO X Y) X))
-          (EQUAL Y 0)).
-
- Name the formula above *1.
-
- No induction schemes are suggested by *1.  Consequently, the proof
- attempt has failed.
-
- Summary
- Form:  ( THM ...)
- Rules: ((:TYPE-PRESCRIPTION FOO))
- Warnings:  None
- Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
-
- ******** FAILED ********  See :DOC failure  ******** FAILED ********
-|# ; |
+;  ACL2 !>(defun foo (x y)
+;    (if (acl2-numberp x)
+;        (+ x y)
+;      0))
+; 
+;  ACL2 !>(defthm foo-thm
+;    (implies (acl2-numberp x)
+;             (equal (foo x y)
+;                    (+ x y))))
+;  ACL2 !>(in-theory (disable foo))
+;  ACL2 !>(thm
+;   (implies (and (acl2-numberp x)
+;                 (acl2-numberp y)
+;                 (equal (foo x y) x))
+;            (equal y 0)))
+; 
+;  This simplifies, using the :type-prescription rule FOO, to
+; 
+;  Goal'
+;  (IMPLIES (AND (ACL2-NUMBERP Y)
+;                (EQUAL (FOO X Y) X))
+;           (EQUAL Y 0)).
+; 
+;  Name the formula above *1.
+; 
+;  No induction schemes are suggested by *1.  Consequently, the proof
+;  attempt has failed.
+; 
+;  Summary
+;  Form:  ( THM ...)
+;  Rules: ((:TYPE-PRESCRIPTION FOO))
+;  Warnings:  None
+;  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+; 
+;  ******** FAILED ********  See :DOC failure  ******** FAILED ******** ; |
 
 ; Note that in the transition from Goal to Goal' we removed the critical fact
 ; that x was an acl2-numberp.  This fact can be derived from the third
@@ -5035,13 +5022,11 @@
 
 ; Finally, note that even before this additional care, the lemma
 
-#|
- (thm
-  (implies (and (acl2-numberp y)
-                (equal (foo x y) x)
-                (acl2-numberp x))
-           (equal y 0)))
-|# ;|
+;  (thm
+;   (implies (and (acl2-numberp y)
+;                 (equal (foo x y) x)
+;                 (acl2-numberp x))
+;            (equal y 0)))
 
 ; does succeed, since the (acl2-numberp x) hypothesis now appears after the
 ; (equal (foo x y) x) hypothesis, hence does not get removed until after it has
@@ -6995,32 +6980,32 @@
 ; arithmetic.
 
 ; Here is one example of why we might want to do this:
-#|
- (defun bytep (n)
-   (and (integerp n)
-        (<= -128 n)
-        (< n 128)))
 
- (defthm bytep-thm
-   (implies (and (integerp n)
-                 (<= -128 n)
-                 (< n 128))
-            (bytep n)))
+;  (defun bytep (n)
+;    (and (integerp n)
+;         (<= -128 n)
+;         (< n 128)))
+; 
+;  (defthm bytep-thm
+;    (implies (and (integerp n)
+;                  (<= -128 n)
+;                  (< n 128))
+;             (bytep n)))
+; 
+;  (defthm bytep-fc-thm
+;    (implies (bytep n)
+;             (and (integerp n)
+;                  (<= -128 n)
+;                  (< n 128)))
+;    :rule-classes :forward-chaining)
+; 
+;  (in-theory (disable bytep))
+; 
+;  (defthm tricky
+;   (implies (and (bytep n)
+;                 (bytep (+ 7 n)))
+;            (bytep (+ 3 n))))
 
- (defthm bytep-fc-thm
-   (implies (bytep n)
-            (and (integerp n)
-                 (<= -128 n)
-                 (< n 128)))
-   :rule-classes :forward-chaining)
-
- (in-theory (disable bytep))
-
- (defthm tricky
-  (implies (and (bytep n)
-                (bytep (+ 7 n)))
-           (bytep (+ 3 n))))
-|#
 ; Before linear arithmetic used the conclusions of forward-chaining
 ; rules, one would have to re-enable the definition of bytep in order
 ; to prove tricky.  But if this appeared in a larger context, in which
@@ -7030,27 +7015,26 @@
 ; prove.
 ;
 ; And here is another example:
-#|
- (defun bvecp (x n)
-   (and (integerp x) 
-        (<= 0 x) 
-        (< x (expt 2 n))))
 
- (defthm bvecp-2-<-4
-          (implies (bvecp x 2)
-                   (and (integerp x)
-                        (<= 0 x)
-                        (< x 4)))
-   :rule-classes :forward-chaining)
-
- (in-theory (disable bvecp))
-
- (thm (implies (and (bvecp x 2)
-                    (not (equal x 0))
-                    (not (equal x 1))
-                    (not (equal x 2)))
-               (equal x 3)))
-|#
+;  (defun bvecp (x n)
+;    (and (integerp x) 
+;         (<= 0 x) 
+;         (< x (expt 2 n))))
+; 
+;  (defthm bvecp-2-<-4
+;           (implies (bvecp x 2)
+;                    (and (integerp x)
+;                         (<= 0 x)
+;                         (< x 4)))
+;    :rule-classes :forward-chaining)
+; 
+;  (in-theory (disable bvecp))
+; 
+;  (thm (implies (and (bvecp x 2)
+;                     (not (equal x 0))
+;                     (not (equal x 1))
+;                     (not (equal x 2)))
+;                (equal x 3)))
 
   (cond ((null fc-pair-lst)
          (setup-simplify-clause-pot-lst1 cl ttrees type-alist rcnst wrld state))
@@ -7120,14 +7104,12 @@
 ; have the var-term-substs argument) but succeeded in Version_2.5
 ; (which introduced the argument to fix such problems).
  
-  #|
-  (defstub bar (x) t)
-
-  (thm (implies (and (rationalp a)(rationalp b)(rationalp c)
-                     (<= a b) (<= b a)
-                     (<= b c) (<= c b))
-                (equal (bar a) (bar c))))
-  |#
+;   (defstub bar (x) t)
+; 
+;   (thm (implies (and (rationalp a)(rationalp b)(rationalp c)
+;                      (<= a b) (<= b a)
+;                      (<= b c) (<= c b))
+;                 (equal (bar a) (bar c))))
 
 ; End of Historical Comment
 
@@ -7866,54 +7848,52 @@
 ; new occurrence in the conclusion of the induction-concl-term
 ; (SUBST-FREE F X TM):
 
-#|
- Subgoal *1/2'
- (IMPLIES (AND (NOT (WFNOT F))
-               (CONSP F)
-               (CONSP (CDR F))
-               (CONSP (CDDR F))
-               (NOT (CDDDR F))
-               (OR (EQUAL (CAR F) 'AND)
-                   (EQUAL (CAR F) 'OR)
-                   (EQUAL (CAR F) 'IMP)
-                   (EQUAL (CAR F) 'IFF))
-               (EQUAL (SUBST-FREE (FLIP-EQ (CADR F) (CDR POS))
-                                  X TM)
-                      (FLIP-EQ (SUBST-FREE (CADR F) X TM)
-                               (CDR POS)))
-               (EQUAL (SUBST-FREE (FLIP-EQ (CADDR F) (CDR POS))
-                                  X TM)
-                      (FLIP-EQ (SUBST-FREE (CADDR F) X TM)
-                               (CDR POS))))
-          (EQUAL (SUBST-FREE (FLIP-EQ F POS) X TM)
-                 (FLIP-EQ (SUBST-FREE F X TM) POS))).
-
- This simplifies, using the :definitions FLIP-EQ, LEN, LIST2P, LIST3P,
- SUBST-FREE, TRUE-LISTP, WFBINARY, WFEQ and WFNOT, the :executable-
- counterparts of BINARY-+, EQUAL, LEN and TRUE-LISTP, primitive type
- reasoning and the :rewrite rules CAR-CONS and CDR-CONS, to the following
- 16 conjectures.
-
- Subgoal *1/2.16
- (IMPLIES (AND (CONSP F)
-               (CONSP (CDR F))
-               (CONSP (CDDR F))
-               (NOT (CDDDR F))
-               (EQUAL (CAR F) 'AND)
-               (EQUAL (SUBST-FREE (FLIP-EQ (CADR F) (CDR POS))
-                                  X TM)
-                      (FLIP-EQ (SUBST-FREE (CADR F) X TM)
-                               (CDR POS)))
-               (EQUAL (SUBST-FREE (FLIP-EQ (CADDR F) (CDR POS))
-                                  X TM)
-                      (FLIP-EQ (SUBST-FREE (CADDR F) X TM)
-                               (CDR POS)))
-               (NOT (CONSP POS)))
-          (EQUAL (SUBST-FREE F X TM)
-                 (LIST 'AND
-                       (SUBST-FREE (CADR F) X TM)
-                       (SUBST-FREE (CADDR F) X TM))))
-|#
+;  Subgoal *1/2'
+;  (IMPLIES (AND (NOT (WFNOT F))
+;                (CONSP F)
+;                (CONSP (CDR F))
+;                (CONSP (CDDR F))
+;                (NOT (CDDDR F))
+;                (OR (EQUAL (CAR F) 'AND)
+;                    (EQUAL (CAR F) 'OR)
+;                    (EQUAL (CAR F) 'IMP)
+;                    (EQUAL (CAR F) 'IFF))
+;                (EQUAL (SUBST-FREE (FLIP-EQ (CADR F) (CDR POS))
+;                                   X TM)
+;                       (FLIP-EQ (SUBST-FREE (CADR F) X TM)
+;                                (CDR POS)))
+;                (EQUAL (SUBST-FREE (FLIP-EQ (CADDR F) (CDR POS))
+;                                   X TM)
+;                       (FLIP-EQ (SUBST-FREE (CADDR F) X TM)
+;                                (CDR POS))))
+;           (EQUAL (SUBST-FREE (FLIP-EQ F POS) X TM)
+;                  (FLIP-EQ (SUBST-FREE F X TM) POS))).
+; 
+;  This simplifies, using the :definitions FLIP-EQ, LEN, LIST2P, LIST3P,
+;  SUBST-FREE, TRUE-LISTP, WFBINARY, WFEQ and WFNOT, the :executable-
+;  counterparts of BINARY-+, EQUAL, LEN and TRUE-LISTP, primitive type
+;  reasoning and the :rewrite rules CAR-CONS and CDR-CONS, to the following
+;  16 conjectures.
+; 
+;  Subgoal *1/2.16
+;  (IMPLIES (AND (CONSP F)
+;                (CONSP (CDR F))
+;                (CONSP (CDDR F))
+;                (NOT (CDDDR F))
+;                (EQUAL (CAR F) 'AND)
+;                (EQUAL (SUBST-FREE (FLIP-EQ (CADR F) (CDR POS))
+;                                   X TM)
+;                       (FLIP-EQ (SUBST-FREE (CADR F) X TM)
+;                                (CDR POS)))
+;                (EQUAL (SUBST-FREE (FLIP-EQ (CADDR F) (CDR POS))
+;                                   X TM)
+;                       (FLIP-EQ (SUBST-FREE (CADDR F) X TM)
+;                                (CDR POS)))
+;                (NOT (CONSP POS)))
+;           (EQUAL (SUBST-FREE F X TM)
+;                  (LIST 'AND
+;                        (SUBST-FREE (CADR F) X TM)
+;                        (SUBST-FREE (CADDR F) X TM))))
 
 ; If we stop meddling after Subgoal *1/2', then hypothesis rewriting
 ; in Subgoal *1/2.16 is so severe that we are subject to

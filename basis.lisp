@@ -574,36 +574,34 @@
           (cons new-code new-data))
       (cons new-code new-data)))
 
-#||
-(defthm wormhole-status-guarantees
-  (if (or (eq code :enter)
-          (eq code :skip))
-      (and (implies (wormhole-statusp whs)
-                    (wormhole-statusp (set-wormhole-entry-code whs code)))
-           (implies (wormhole-statusp whs)
-                    (wormhole-statusp (set-wormhole-data whs data)))
-           (equal (wormhole-entry-code (set-wormhole-entry-code whs code))
-                  code)
-           (equal (wormhole-data (set-wormhole-data whs data))
-                  data)
-           (implies (wormhole-statusp whs)
-                    (equal (wormhole-data (set-wormhole-entry-code whs code))
-                           (wormhole-data whs)))
-           (implies (wormhole-statusp whs)
-                    (equal (wormhole-entry-code
-                            (set-wormhole-data whs data))
-                           (wormhole-entry-code whs)))
-           (implies (wormhole-statusp whs)
-                    (wormhole-statusp (make-wormhole-status whs code data)))
-           (equal (wormhole-entry-code (make-wormhole-status whs code data))
-                  code)
-           (equal (wormhole-data (make-wormhole-status whs code data))
-                  data))
-      t)
-  :rule-classes nil)
-
-(verify-guards wormhole-status-guarantees)
-||#
+; (defthm wormhole-status-guarantees
+;   (if (or (eq code :enter)
+;           (eq code :skip))
+;       (and (implies (wormhole-statusp whs)
+;                     (wormhole-statusp (set-wormhole-entry-code whs code)))
+;            (implies (wormhole-statusp whs)
+;                     (wormhole-statusp (set-wormhole-data whs data)))
+;            (equal (wormhole-entry-code (set-wormhole-entry-code whs code))
+;                   code)
+;            (equal (wormhole-data (set-wormhole-data whs data))
+;                   data)
+;            (implies (wormhole-statusp whs)
+;                     (equal (wormhole-data (set-wormhole-entry-code whs code))
+;                            (wormhole-data whs)))
+;            (implies (wormhole-statusp whs)
+;                     (equal (wormhole-entry-code
+;                             (set-wormhole-data whs data))
+;                            (wormhole-entry-code whs)))
+;            (implies (wormhole-statusp whs)
+;                     (wormhole-statusp (make-wormhole-status whs code data)))
+;            (equal (wormhole-entry-code (make-wormhole-status whs code data))
+;                   code)
+;            (equal (wormhole-data (make-wormhole-status whs code data))
+;                   data))
+;       t)
+;   :rule-classes nil)
+; 
+; (verify-guards wormhole-status-guarantees)
 
 ; In particular, given a legal code, set-wormhole-entry-code preserves
 ; wormhole-statusp and always returns an object with the given entry code
@@ -2651,20 +2649,18 @@
 
 (defmacro fcons-term (fn args)
 
-#|
-; Start experimental code mod, to check that calls of fcons-term are legitimate
-; shortcuts in place of the corresponding known-correct calls of cons-term.
-  #-acl2-loop-only
-  `(let* ((fn-used-only-in-fcons-term ,fn)
-          (args-used-only-in-fcons-term ,args)
-          (result (cons fn-used-only-in-fcons-term
-                        args-used-only-in-fcons-term)))
-     (assert$ (equal result (cons-term fn-used-only-in-fcons-term
-                                       args-used-only-in-fcons-term))
-              result))
-  #+acl2-loop-only
-; End experimental code mod.
-|#
+; ; Start experimental code mod, to check that calls of fcons-term are legitimate
+; ; shortcuts in place of the corresponding known-correct calls of cons-term.
+;   #-acl2-loop-only
+;   `(let* ((fn-used-only-in-fcons-term ,fn)
+;           (args-used-only-in-fcons-term ,args)
+;           (result (cons fn-used-only-in-fcons-term
+;                         args-used-only-in-fcons-term)))
+;      (assert$ (equal result (cons-term fn-used-only-in-fcons-term
+;                                        args-used-only-in-fcons-term))
+;               result))
+;   #+acl2-loop-only
+; ; End experimental code mod.
 
   (list 'cons fn args))
 
@@ -3767,36 +3763,34 @@
 
 ; The following test macro is handy.  A typical call of the macro is
 
-#|(test 15 (foo (bar x) (mum :key1 val1 :key2 :val2)))|#
+; (test 15 (foo (bar x) (mum :key1 val1 :key2 :val2)))
 
 ; Note that x is not evaluated.  If you want to evaluate x and ppr the value,
 ; use
 
-#|(testfn 10
-          (eviscerate-simple `(foo (bar x)
-                            (mum :key1 :val1 :key2 :val2)
-                            ',(w state))
-                      nil nil ; print-level and print-length
-                      (world-evisceration-alist state nil)
-                      nil
-                      nil)
-          state)|#
+;   (testfn 10
+;           (eviscerate-simple `(foo (bar x)
+;                             (mum :key1 :val1 :key2 :val2)
+;                             ',(w state))
+;                       nil nil ; print-level and print-length
+;                       (world-evisceration-alist state nil)
+;                       nil
+;                       nil)
+;           state)
 
 ; Note that x may be eviscerated, i.e., eviscerated objects in x are printed in
 ; their short form, not literally.
 
-#|(defun testfn (d x state)
-    (declare (xargs :mode :program :stobjs (state)))
-    (let ((tuple (ppr1 x (print-base) d 0 state t)))
-      (pprogn
-       (fms "~%Tuple: ~x0~%Output:~%" (list (cons #\0 tuple))
-            *standard-co* state nil)
-       (ppr2 tuple 0 *standard-co* state t)
-       (fms "~%" nil *standard-co* state nil))))
-
-
-  (defmacro test (d x)
-    `(testfn ,d ',x state))|#
+;   (defun testfn (d x state)
+;     (declare (xargs :mode :program :stobjs (state)))
+;     (let ((tuple (ppr1 x (print-base) d 0 state t)))
+;       (pprogn
+;        (fms "~%Tuple: ~x0~%Output:~%" (list (cons #\0 tuple))
+;             *standard-co* state nil)
+;        (ppr2 tuple 0 *standard-co* state t)
+;        (fms "~%" nil *standard-co* state nil))))
+; 
+;   (defmacro test (d x)
 
 ; Ppr tuples record enough information about the widths of various forms so
 ; that it can be computed without having to recompute any part of it and so
@@ -3888,30 +3882,28 @@
 ; Below we print test-term in two different widths, and display the ppr tuple
 ; that drives each of the two printings.
 
-#|
-(assign test-term
-        '(FFF (GGG (HHH (QUOTE (A . B))))
-              (III YYY ZZZ)))
-      
-
-(ppr2 (ppr1 (@ test-term) (print-base) 30 0 state nil) 0 *standard-co*
-      state nil)
-; =>
-(FFF (GGG (HHH '(A . B)))          (WIDE 25 (FLAT 3 FFF)                    
-     (III YYY ZZZ))                         (FLAT 20 (GGG (HHH '(A . B))))
-                                            (FLAT 14 (III YYY ZZZ)))      
-<-          25         ->|
-
-(ppr2 (ppr1 (@ test-term) (print-base) 20 0 state nil) 0 *standard-co*
-      state nil)
-; =>
-(FFF                               (1 20 (FLAT 3 FFF)          
- (GGG                                    (4 19 (FLAT 3 GGG)            
-     (HHH '(A . B)))                           (FLAT 15 (HHH '(A . B))))
- (III YYY ZZZ))                          (FLAT 14 (III YYY ZZZ)))    
-
-<-       20       ->|                    
-|#
+; (assign test-term
+;         '(FFF (GGG (HHH (QUOTE (A . B))))
+;               (III YYY ZZZ)))
+;       
+; 
+; (ppr2 (ppr1 (@ test-term) (print-base) 30 0 state nil) 0 *standard-co*
+;       state nil)
+; ; =>
+; (FFF (GGG (HHH '(A . B)))          (WIDE 25 (FLAT 3 FFF)                    
+;      (III YYY ZZZ))                         (FLAT 20 (GGG (HHH '(A . B))))
+;                                             (FLAT 14 (III YYY ZZZ)))      
+; <-          25         ->|
+; 
+; (ppr2 (ppr1 (@ test-term) (print-base) 20 0 state nil) 0 *standard-co*
+;       state nil)
+; ; =>
+; (FFF                               (1 20 (FLAT 3 FFF)          
+;  (GGG                                    (4 19 (FLAT 3 GGG)            
+;      (HHH '(A . B)))                           (FLAT 15 (HHH '(A . B))))
+;  (III YYY ZZZ))                          (FLAT 14 (III YYY ZZZ)))    
+; 
+; <-       20       ->|                    
 
 ; The function cons-ppr1, below, is the first interesting function in the nest.
 ; We want to build a tuple to print a given list form, like a function call.
@@ -3995,16 +3987,15 @@
 ; We want keywords to appear on new lines.  That means if the first element of
 ; lst is a keyword, don't merge (unless x is one too).
 
-#||BUG
-ACL2 p!>(let ((x '(foo bigggggggggggggggg . :littlllllllllllllle)))
-         (ppr2 (ppr1 x (print-base) 40 0 state nil)
-               0 *standard-co* state nil))
-(x   = (DOT 1)
-lst = ((FLAT 21 :LITTLLLLLLLLLLLLLLE))
-val = ((FLAT 23 . :LITTLLLLLLLLLLLLLLE)))
-
-HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
-||#
+; BUG
+; ACL2 p!>(let ((x '(foo bigggggggggggggggg . :littlllllllllllllle)))
+;          (ppr2 (ppr1 x (print-base) 40 0 state nil)
+;                0 *standard-co* state nil))
+; (x   = (DOT 1)
+; lst = ((FLAT 21 :LITTLLLLLLLLLLLLLLE))
+; val = ((FLAT 23 . :LITTLLLLLLLLLLLLLLE)))
+; 
+; HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
 
 (defmacro ppr-flat-right-margin ()
   '(f-get-global 'ppr-flat-right-margin state))
@@ -5668,19 +5659,17 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
 ; user to grab a rule name from the output, though now one might want to do
 ; some hyphenation by hand when preparing proof output for publication.
 
-#||
-                  ((and (or (symbolp x)
-                            (acl2-numberp x))
-                        (member-eq fmc '(#\x #\y #\X #\Y)))
-                   (mv-letc (col state)
-                            (fmt-tilde-s x col channel state)
-                            (fmt0 s alist
-                                  (+f i (if (or (eql fmc #\X)
-                                                (eql fmc #\Y))
-                                            4
-                                          3))
-                                  maximum col channel state evisc-tuple)))
-||#
+;                   ((and (or (symbolp x)
+;                             (acl2-numberp x))
+;                         (member-eq fmc '(#\x #\y #\X #\Y)))
+;                    (mv-letc (col state)
+;                             (fmt-tilde-s x col channel state)
+;                             (fmt0 s alist
+;                                   (+f i (if (or (eql fmc #\X)
+;                                                 (eql fmc #\Y))
+;                                             4
+;                                           3))
+;                                   maximum col channel state evisc-tuple)))
 
                   (let ((fmt-hard-right-margin
                          (fmt-hard-right-margin state)))
@@ -7089,11 +7078,9 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
         (ts-builder-macro1 x case-lst nil)))
 
 (defmacro ts-builder (&rest args)
-  #|
-  (declare (xargs :guard (and (consp args)
-                       (symbolp (car args))
-                       (ts-builder-case-listp (cdr args)))))
-  |#
+; (declare (xargs :guard (and (consp args)
+;                        (symbolp (car args))
+;                        (ts-builder-case-listp (cdr args)))))
   (ts-builder-macro (car args) (cdr args)))
 
 (defun standard-guard (sym)
@@ -7235,129 +7222,127 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
 ;  (RUNE-OR-NON-RUNE . 4))
 ; Avg Depth:  2.833
 
-#||
-(progn
-  (program)
-  (defun bump-binary-tree (tree)
-    (cond ((atom tree) (1+ tree))
-          (t (cons (bump-binary-tree (car tree))
-                   (bump-binary-tree (cdr tree))))))
-
-  (defun cons-binary-trees (t1 t2)
-    (cons (bump-binary-tree t1) (bump-binary-tree t2)))
-
-  (defun combine-binary-trees1 (t1 lst2 ans)
-    (cond ((null lst2) ans)
-          (t (combine-binary-trees1 t1 (cdr lst2)
-                                    (cons (cons-binary-trees t1 (car lst2))
-                                          ans)))))
-
-  (defun combine-binary-trees (lst1 lst2 ans)
-    (cond
-     ((null lst1) ans)
-     (t (combine-binary-trees (cdr lst1)
-                              lst2
-                              (combine-binary-trees1 (car lst1) lst2 ans)))))
-
-  (mutual-recursion
-
-   (defun all-binary-trees1 (i n)
-     (cond ((= i 0) nil)
-           (t (revappend (combine-binary-trees (all-binary-trees i)
-                                               (all-binary-trees (- n i))
-                                               nil)
-                         (all-binary-trees1 (1- i) n)))))
-
-   (defun all-binary-trees (n)
-     (cond ((= n 1) (list 0))
-           (t (all-binary-trees1 (floor n 2) n))))
-   )
-
-  (defun total-access-time-binary-tree (x)
-    (cond ((atom x) x)
-          (t (+ (total-access-time-binary-tree (car x))
-                (total-access-time-binary-tree (cdr x))))))
-
-  (defun total-access-time-binary-tree-lst (lst)
-
-; Pairs each tree in lst with its total-access-time.
-
-    (cond ((null lst) nil)
-          (t (cons (cons (total-access-time-binary-tree (car lst))
-                         (car lst))
-                   (total-access-time-binary-tree-lst (cdr lst))))))
-
-  (defun show-binary-trees1 (n lst state)
-    (cond ((null lst) state)
-          (t (let* ((tat (floor (* (caar lst) 1000) n))
-                    (d0 (floor tat 1000)) 
-                    (d1 (- (floor tat 100) (* d0 10)))
-                    (d2 (- (floor tat 10) (+ (* d0 100) (* d1 10))))
-                    (d3 (- tat (+ (* d0 1000) (* d1 100) (* d2 10)))))
-
-               (pprogn
-                (mv-let (col state)
-                        (fmt1 "~x0.~x1~x2~x3  ~x4~%"
-                              (list (cons #\0 d0)
-                                    (cons #\1 d1)
-                                    (cons #\2 d2)
-                                    (cons #\3 d3)
-                                    (cons #\4 (cdar lst)))
-                              0
-                              *standard-co* state nil)
-                        (declare (ignore col))
-                        state)
-                (show-binary-trees1 n (cdr lst) state))))))
-
-  (defun show-binary-trees (n state)
-    (let ((lst (reverse
-                (merge-sort-car->
-                 (total-access-time-binary-tree-lst
-                  (all-binary-trees n))))))
-      (pprogn
-       (fms "The Binary Trees with ~N0 Tips~%"
-            (list (cons #\0 n))
-            *standard-co* state nil)
-       (show-binary-trees1 n lst state))))
-
-  (defun analyze-tree1 (x i)
-    (cond ((atom x) i)
-          (t (cons (analyze-tree1 (car x) (1+ i))
-                   (analyze-tree1 (cdr x) (1+ i))))))
-
-  (defun analyze-tree2 (x i)
-    (cond ((atom x) (list (cons x i)))
-          (t (append (analyze-tree2 (car x) (1+  i))
-                     (analyze-tree2 (cdr x) (1+  i))))))
-
-  (defun analyze-tree3 (x)
-    (cond ((atom x) 1)
-          (t (+ (analyze-tree3 (car x)) (analyze-tree3 (cdr x))))))
-
-  (defun analyze-tree (x state)
-    (let* ((binary-tree (analyze-tree1 x 0))
-           (alist (analyze-tree2 x 0))
-           (n (analyze-tree3 x))
-           (k (total-access-time-binary-tree binary-tree)))
-      (let* ((tat (floor (* k 1000) n))
-             (d0 (floor tat 1000)) 
-             (d1 (- (floor tat 100) (* d0 10)))
-             (d2 (- (floor tat 10) (+ (* d0 100) (* d1 10))))
-             (d3 (- tat (+ (* d0 1000) (* d1 100) (* d2 10)))))
-        (pprogn
-         (fms "Shape:  ~x0~%Field Depths:  ~x1~%Avg Depth:  ~x2.~x3~x4~x5~%"
-              (list (cons #\0 binary-tree)
-                    (cons #\1 alist)
-                    (cons #\2 d0)
-                    (cons #\3 d1)
-                    (cons #\4 d2)
-                    (cons #\5 d3))
-              *standard-co* state nil)
-         (value :invisible)))))
-
-  (defmacro sbt (n) `(pprogn (show-binary-trees ,n state) (value :invisible))))
-
-||#
+; (progn
+;   (program)
+;   (defun bump-binary-tree (tree)
+;     (cond ((atom tree) (1+ tree))
+;           (t (cons (bump-binary-tree (car tree))
+;                    (bump-binary-tree (cdr tree))))))
+; 
+;   (defun cons-binary-trees (t1 t2)
+;     (cons (bump-binary-tree t1) (bump-binary-tree t2)))
+; 
+;   (defun combine-binary-trees1 (t1 lst2 ans)
+;     (cond ((null lst2) ans)
+;           (t (combine-binary-trees1 t1 (cdr lst2)
+;                                     (cons (cons-binary-trees t1 (car lst2))
+;                                           ans)))))
+; 
+;   (defun combine-binary-trees (lst1 lst2 ans)
+;     (cond
+;      ((null lst1) ans)
+;      (t (combine-binary-trees (cdr lst1)
+;                               lst2
+;                               (combine-binary-trees1 (car lst1) lst2 ans)))))
+; 
+;   (mutual-recursion
+; 
+;    (defun all-binary-trees1 (i n)
+;      (cond ((= i 0) nil)
+;            (t (revappend (combine-binary-trees (all-binary-trees i)
+;                                                (all-binary-trees (- n i))
+;                                                nil)
+;                          (all-binary-trees1 (1- i) n)))))
+; 
+;    (defun all-binary-trees (n)
+;      (cond ((= n 1) (list 0))
+;            (t (all-binary-trees1 (floor n 2) n))))
+;    )
+; 
+;   (defun total-access-time-binary-tree (x)
+;     (cond ((atom x) x)
+;           (t (+ (total-access-time-binary-tree (car x))
+;                 (total-access-time-binary-tree (cdr x))))))
+; 
+;   (defun total-access-time-binary-tree-lst (lst)
+; 
+; ; Pairs each tree in lst with its total-access-time.
+; 
+;     (cond ((null lst) nil)
+;           (t (cons (cons (total-access-time-binary-tree (car lst))
+;                          (car lst))
+;                    (total-access-time-binary-tree-lst (cdr lst))))))
+; 
+;   (defun show-binary-trees1 (n lst state)
+;     (cond ((null lst) state)
+;           (t (let* ((tat (floor (* (caar lst) 1000) n))
+;                     (d0 (floor tat 1000)) 
+;                     (d1 (- (floor tat 100) (* d0 10)))
+;                     (d2 (- (floor tat 10) (+ (* d0 100) (* d1 10))))
+;                     (d3 (- tat (+ (* d0 1000) (* d1 100) (* d2 10)))))
+; 
+;                (pprogn
+;                 (mv-let (col state)
+;                         (fmt1 "~x0.~x1~x2~x3  ~x4~%"
+;                               (list (cons #\0 d0)
+;                                     (cons #\1 d1)
+;                                     (cons #\2 d2)
+;                                     (cons #\3 d3)
+;                                     (cons #\4 (cdar lst)))
+;                               0
+;                               *standard-co* state nil)
+;                         (declare (ignore col))
+;                         state)
+;                 (show-binary-trees1 n (cdr lst) state))))))
+; 
+;   (defun show-binary-trees (n state)
+;     (let ((lst (reverse
+;                 (merge-sort-car->
+;                  (total-access-time-binary-tree-lst
+;                   (all-binary-trees n))))))
+;       (pprogn
+;        (fms "The Binary Trees with ~N0 Tips~%"
+;             (list (cons #\0 n))
+;             *standard-co* state nil)
+;        (show-binary-trees1 n lst state))))
+; 
+;   (defun analyze-tree1 (x i)
+;     (cond ((atom x) i)
+;           (t (cons (analyze-tree1 (car x) (1+ i))
+;                    (analyze-tree1 (cdr x) (1+ i))))))
+; 
+;   (defun analyze-tree2 (x i)
+;     (cond ((atom x) (list (cons x i)))
+;           (t (append (analyze-tree2 (car x) (1+  i))
+;                      (analyze-tree2 (cdr x) (1+  i))))))
+; 
+;   (defun analyze-tree3 (x)
+;     (cond ((atom x) 1)
+;           (t (+ (analyze-tree3 (car x)) (analyze-tree3 (cdr x))))))
+; 
+;   (defun analyze-tree (x state)
+;     (let* ((binary-tree (analyze-tree1 x 0))
+;            (alist (analyze-tree2 x 0))
+;            (n (analyze-tree3 x))
+;            (k (total-access-time-binary-tree binary-tree)))
+;       (let* ((tat (floor (* k 1000) n))
+;              (d0 (floor tat 1000)) 
+;              (d1 (- (floor tat 100) (* d0 10)))
+;              (d2 (- (floor tat 10) (+ (* d0 100) (* d1 10))))
+;              (d3 (- tat (+ (* d0 1000) (* d1 100) (* d2 10)))))
+;         (pprogn
+;          (fms "Shape:  ~x0~%Field Depths:  ~x1~%Avg Depth:  ~x2.~x3~x4~x5~%"
+;               (list (cons #\0 binary-tree)
+;                     (cons #\1 alist)
+;                     (cons #\2 d0)
+;                     (cons #\3 d1)
+;                     (cons #\4 d2)
+;                     (cons #\5 d3))
+;               *standard-co* state nil)
+;          (value :invisible)))))
+; 
+;   (defmacro sbt (n) `(pprogn (show-binary-trees ,n state) (value :invisible))))
+; 
 
 (defun record-maker-function-name (name)
   (intern-in-package-of-symbol
@@ -8751,14 +8736,12 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
 ; too slow to do this in GCL since some intermediate results are not fixnums.)
 ; It took us about 3.5 minutes (late 2008).
 
-#||
- (defun test ()
-   (loop for i from 0 to #x7ffffffe
-         when (not (eql (times-expt-2-16-mod-m31 i)
-                        (mod (* #x10000 i) #x7fffffff)))
-         do (return i)))
- (test) 
-||#
+;  (defun test ()
+;    (loop for i from 0 to #x7ffffffe
+;          when (not (eql (times-expt-2-16-mod-m31 i)
+;                         (mod (* #x10000 i) #x7fffffff)))
+;          do (return i)))
+;  (test) 
 
   (declare (type (signed-byte 32) x))
   (the (signed-byte 32)
@@ -9153,138 +9136,134 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
   (declare (xargs :guard t))
   (fchecksum-obj obj))
 
-#||
-; To use old check-sum-obj code, but then add check-sum-obj to
-; *PRIMITIVE-PROGRAM-FNS-WITH-RAW-CODE* if doing this for a build:
-(defun check-sum-obj (obj)
-  #-acl2-loop-only
-  (return-from check-sum-obj
-               (mv-let (val state)
-                       (old-check-sum-obj obj *the-live-state*)
-                       (declare (ignore state))
-                       val))
-  #+acl2-loop-only
-  (declare (ignore obj))
-  (er hard 'check-sum-obj "ran *1* code for check-sum-obj"))
-||#
+; ; To use old check-sum-obj code, but then add check-sum-obj to
+; ; *PRIMITIVE-PROGRAM-FNS-WITH-RAW-CODE* if doing this for a build:
+; (defun check-sum-obj (obj)
+;   #-acl2-loop-only
+;   (return-from check-sum-obj
+;                (mv-let (val state)
+;                        (old-check-sum-obj obj *the-live-state*)
+;                        (declare (ignore state))
+;                        val))
+;   #+acl2-loop-only
+;   (declare (ignore obj))
+;   (er hard 'check-sum-obj "ran *1* code for check-sum-obj"))
 
-#|| Here are some examples.
-
- (fchecksum-obj 0)
- (fchecksum-obj 19)
- (fchecksum-obj 1892)
- (fchecksum-obj "foo")
- (fchecksum-obj "bfdkja")
- (fchecksum-obj #\a)
- (fchecksum-obj "a")
- (fchecksum-obj #\b)
- (fchecksum-obj #\c)
- (fchecksum-obj 189)
- (fchecksum-obj -189)
- (fchecksum-obj -19189)
- (fchecksum-obj -19283/188901)
- (fchecksum-obj 19283/188901)
- (fchecksum-obj 19283/2)
- (fchecksum-obj 2/19283)
- (fchecksum-obj 19283)
- (fchecksum-obj #c(19283 198))
- (fchecksum-obj #c(198 19283))
- (fchecksum-obj #c(-19283/1238 198))
-
- (fchecksum-obj 3)
- (fchecksum-obj '(3 . nil))
- (fchecksum-obj '(nil . 3))
-
- (fchecksum-obj nil)
- (fchecksum-obj '(nil))
- (fchecksum-obj '(nil nil))
- (fchecksum-obj '(nil nil nil))
- (fchecksum-obj '(nil nil nil nil))
-
-; And here are some additional comments.  If you want to generate more
-; primitive roots, or verify that the ones we have picked are primitive roots,
-; try this:
-
- (include-book "arithmetic-3/floor-mod/mod-expt-fast" :dir :system)
- (include-book "make-event/assert" :dir :system)
-
-; Here we establish that the factors of M31-1 are 2, 3, 7, 11, 31, 151, and
-; 331.
-
- (assert! (equal (- #x7FFFFFFF 1) 
-                 (* 2 3 3 7 11 31 151 331)))
-
-;; And so the following is sufficient to establish that n is a primitive
-;; root.
-
-(defund primitive-root-p (n)
-  (let* ((m31   #x7FFFFFFF)
-         (m31-1 (- m31 1)))
-    (and (not (equal (mod-expt-fast n (/ m31-1 2) m31) 1))
-         (not (equal (mod-expt-fast n (/ m31-1 3) m31) 1))
-         (not (equal (mod-expt-fast n (/ m31-1 7) m31) 1))
-         (not (equal (mod-expt-fast n (/ m31-1 11) m31) 1))
-         (not (equal (mod-expt-fast n (/ m31-1 31) m31) 1))
-         (not (equal (mod-expt-fast n (/ m31-1 151) m31) 1))
-         (not (equal (mod-expt-fast n (/ m31-1 331) m31) 1)))))
-
-; And here are some primitive roots that we found.  There are lots of 
-; them.  If you want a new one, just pick a number and start incrementing
-; or decrementing until it says T.
-
- (primitive-root-p 506249751)
- (primitive-root-p 392894102)
- (primitive-root-p 938187814)
- (primitive-root-p 718273893)
- (primitive-root-p 619823821)
- (primitive-root-p 283748912)
- (primitive-root-p 111298397)
- (primitive-root-p 391892127)
- (primitive-root-p 18783723)
- (primitive-root-p 981827319)
-
- (primitive-root-p 627718124)
- (primitive-root-p 278917287)
-
-; At one point I [Jared] used this function to analyze different
-; implementations of fchecksum-natural.  You might find it useful if you want
-; to write an alternate implementation.  You want to produce a fast routine
-; that doesn't have many collisions.
-
-(defun analyze-fchecksum-natural (n)
-  (let (table ones twos more)
-    ;; Table is a mapping from sums to the number of times they are hit.
-    (setq table (make-hash-table))
-    (loop for i from 1 to n do
-          (let ((sum (fchecksum-natural i)))
-            (setf (gethash sum table)
-                  (+ 1 (nfix (gethash sum table))))))
-    ;; Now we will walk the table and see how many sums are hit once, 
-    ;; twice, or more often than that.
-    (setq ones 0)
-    (setq twos 0)
-    (setq more 0)
-    (maphash (lambda (key val)
-               (declare (ignore key))
-               (cond ((= val 1) (incf ones val))
-                     ((= val 2) (incf twos val))
-                     (t         (incf more val))))
-             table)
-    (format t "~a~%" (list ones twos more))
-    (format t "Unique mappings: ~5,2F%~%" 
-            (* 100 (/ (coerce ones 'float) n)))
-    (format t "2-ary collisions: ~5,2F%~%" 
-            (* 100 (/ (coerce twos 'float) n)))
-    (format t "3+-ary collisions: ~5,2F%~%" 
-            (* 100 (/ (coerce more 'float) n)))))
-
- (analyze-fchecksum-natural 1000)
- (analyze-fchecksum-natural 10000)
- (analyze-fchecksum-natural 100000)
- (analyze-fchecksum-natural 1000000)
- (analyze-fchecksum-natural 10000000)
-
-||#
+; Here are some examples.
+; 
+;  (fchecksum-obj 0)
+;  (fchecksum-obj 19)
+;  (fchecksum-obj 1892)
+;  (fchecksum-obj "foo")
+;  (fchecksum-obj "bfdkja")
+;  (fchecksum-obj #\a)
+;  (fchecksum-obj "a")
+;  (fchecksum-obj #\b)
+;  (fchecksum-obj #\c)
+;  (fchecksum-obj 189)
+;  (fchecksum-obj -189)
+;  (fchecksum-obj -19189)
+;  (fchecksum-obj -19283/188901)
+;  (fchecksum-obj 19283/188901)
+;  (fchecksum-obj 19283/2)
+;  (fchecksum-obj 2/19283)
+;  (fchecksum-obj 19283)
+;  (fchecksum-obj #c(19283 198))
+;  (fchecksum-obj #c(198 19283))
+;  (fchecksum-obj #c(-19283/1238 198))
+; 
+;  (fchecksum-obj 3)
+;  (fchecksum-obj '(3 . nil))
+;  (fchecksum-obj '(nil . 3))
+; 
+;  (fchecksum-obj nil)
+;  (fchecksum-obj '(nil))
+;  (fchecksum-obj '(nil nil))
+;  (fchecksum-obj '(nil nil nil))
+;  (fchecksum-obj '(nil nil nil nil))
+; 
+; ; And here are some additional comments.  If you want to generate more
+; ; primitive roots, or verify that the ones we have picked are primitive roots,
+; ; try this:
+; 
+;  (include-book "arithmetic-3/floor-mod/mod-expt-fast" :dir :system)
+;  (include-book "make-event/assert" :dir :system)
+; 
+; ; Here we establish that the factors of M31-1 are 2, 3, 7, 11, 31, 151, and
+; ; 331.
+; 
+;  (assert! (equal (- #x7FFFFFFF 1) 
+;                  (* 2 3 3 7 11 31 151 331)))
+; 
+; ;; And so the following is sufficient to establish that n is a primitive
+; ;; root.
+; 
+; (defund primitive-root-p (n)
+;   (let* ((m31   #x7FFFFFFF)
+;          (m31-1 (- m31 1)))
+;     (and (not (equal (mod-expt-fast n (/ m31-1 2) m31) 1))
+;          (not (equal (mod-expt-fast n (/ m31-1 3) m31) 1))
+;          (not (equal (mod-expt-fast n (/ m31-1 7) m31) 1))
+;          (not (equal (mod-expt-fast n (/ m31-1 11) m31) 1))
+;          (not (equal (mod-expt-fast n (/ m31-1 31) m31) 1))
+;          (not (equal (mod-expt-fast n (/ m31-1 151) m31) 1))
+;          (not (equal (mod-expt-fast n (/ m31-1 331) m31) 1)))))
+; 
+; ; And here are some primitive roots that we found.  There are lots of 
+; ; them.  If you want a new one, just pick a number and start incrementing
+; ; or decrementing until it says T.
+; 
+;  (primitive-root-p 506249751)
+;  (primitive-root-p 392894102)
+;  (primitive-root-p 938187814)
+;  (primitive-root-p 718273893)
+;  (primitive-root-p 619823821)
+;  (primitive-root-p 283748912)
+;  (primitive-root-p 111298397)
+;  (primitive-root-p 391892127)
+;  (primitive-root-p 18783723)
+;  (primitive-root-p 981827319)
+; 
+;  (primitive-root-p 627718124)
+;  (primitive-root-p 278917287)
+; 
+; ; At one point I [Jared] used this function to analyze different
+; ; implementations of fchecksum-natural.  You might find it useful if you want
+; ; to write an alternate implementation.  You want to produce a fast routine
+; ; that doesn't have many collisions.
+; 
+; (defun analyze-fchecksum-natural (n)
+;   (let (table ones twos more)
+;     ;; Table is a mapping from sums to the number of times they are hit.
+;     (setq table (make-hash-table))
+;     (loop for i from 1 to n do
+;           (let ((sum (fchecksum-natural i)))
+;             (setf (gethash sum table)
+;                   (+ 1 (nfix (gethash sum table))))))
+;     ;; Now we will walk the table and see how many sums are hit once, 
+;     ;; twice, or more often than that.
+;     (setq ones 0)
+;     (setq twos 0)
+;     (setq more 0)
+;     (maphash (lambda (key val)
+;                (declare (ignore key))
+;                (cond ((= val 1) (incf ones val))
+;                      ((= val 2) (incf twos val))
+;                      (t         (incf more val))))
+;              table)
+;     (format t "~a~%" (list ones twos more))
+;     (format t "Unique mappings: ~5,2F%~%" 
+;             (* 100 (/ (coerce ones 'float) n)))
+;     (format t "2-ary collisions: ~5,2F%~%" 
+;             (* 100 (/ (coerce twos 'float) n)))
+;     (format t "3+-ary collisions: ~5,2F%~%" 
+;             (* 100 (/ (coerce more 'float) n)))))
+; 
+;  (analyze-fchecksum-natural 1000)
+;  (analyze-fchecksum-natural 10000)
+;  (analyze-fchecksum-natural 100000)
+;  (analyze-fchecksum-natural 1000000)
+;  (analyze-fchecksum-natural 10000000)
 
 ; End of checksum code.
 
@@ -14033,64 +14012,62 @@ HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
                   nil)
              (value :invisible)))))))
 
-#|
 ; Here are functions that can be defined to print out the last part of the
 ; documentation string for nqthm-to-acl2, using (print-nqthm-to-acl2-doc
 ; state).
 
-(defun print-nqthm-to-acl2-doc1 (alist state)
-  (cond
-   ((null alist) state)
-   (t (let* ((x (fix-true-list (cdar alist)))
-             (s (if (atom (cdar alist))
-                    (cdar alist)
-                  (cdr (last (cdar alist))))))
-        (mv-let
-         (col state)
-         (fmt1 "  ~x0~t1--> "
-               (list (cons #\0 (caar alist))
-                     (cons #\1 16))
-               0 *standard-co* state nil)
-         (declare (ignore col))
-         (mv-let
-          (col state)
-          (fmt1 " ~&0"
-                (list (cons #\0 x))
-                0 *standard-co* state nil)
-          (declare (ignore col))
-          (pprogn
-           (if (or (null x) (null s))
-               state
-             (fms "~t0" (list (cons #\0 21)) *standard-co* state nil))
-           (if s
-               (mv-let
-                (col state)
-                (fmt1 "~@0~%" ; Here % was vertical bar, but emacs 19 has trouble...
-                      (list (cons #\0 s)) 0 *standard-co* state nil)
-                (declare (ignore col))
-                state)
-             (newline *standard-co* state))
-           (print-nqthm-to-acl2-doc1 (cdr alist) state))))))))
-
-(defun print-nqthm-to-acl2-doc (state)
-  (pprogn
-   (princ$ "  ~bv[]" *standard-co* state)
-   (fms "  Nqthm functions  -->     ACL2"
-        nil *standard-co* state nil)
-   (fms "  ----------------------------------------~%"
-        nil *standard-co* state nil)
-   (print-nqthm-to-acl2-doc1 *nqthm-to-acl2-primitives* state)
-   (fms "  ========================================~%"
-        nil *standard-co* state nil)
-   (fms "  Nqthm commands   -->     ACL2"
-        nil *standard-co* state nil)
-   (fms "  ----------------------------------------~%"
-        nil *standard-co* state nil)
-   (print-nqthm-to-acl2-doc1 *nqthm-to-acl2-commands* state)
-   (princ$ "  ~ev[]" *standard-co* state)
-   (newline *standard-co* state)
-   (value :invisible)))
-|#
+; (defun print-nqthm-to-acl2-doc1 (alist state)
+;   (cond
+;    ((null alist) state)
+;    (t (let* ((x (fix-true-list (cdar alist)))
+;              (s (if (atom (cdar alist))
+;                     (cdar alist)
+;                   (cdr (last (cdar alist))))))
+;         (mv-let
+;          (col state)
+;          (fmt1 "  ~x0~t1--> "
+;                (list (cons #\0 (caar alist))
+;                      (cons #\1 16))
+;                0 *standard-co* state nil)
+;          (declare (ignore col))
+;          (mv-let
+;           (col state)
+;           (fmt1 " ~&0"
+;                 (list (cons #\0 x))
+;                 0 *standard-co* state nil)
+;           (declare (ignore col))
+;           (pprogn
+;            (if (or (null x) (null s))
+;                state
+;              (fms "~t0" (list (cons #\0 21)) *standard-co* state nil))
+;            (if s
+;                (mv-let
+;                 (col state)
+;                 (fmt1 "~@0~%" ; Here % was vertical bar, but emacs 19 has trouble...
+;                       (list (cons #\0 s)) 0 *standard-co* state nil)
+;                 (declare (ignore col))
+;                 state)
+;              (newline *standard-co* state))
+;            (print-nqthm-to-acl2-doc1 (cdr alist) state))))))))
+; 
+; (defun print-nqthm-to-acl2-doc (state)
+;   (pprogn
+;    (princ$ "  ~bv[]" *standard-co* state)
+;    (fms "  Nqthm functions  -->     ACL2"
+;         nil *standard-co* state nil)
+;    (fms "  ----------------------------------------~%"
+;         nil *standard-co* state nil)
+;    (print-nqthm-to-acl2-doc1 *nqthm-to-acl2-primitives* state)
+;    (fms "  ========================================~%"
+;         nil *standard-co* state nil)
+;    (fms "  Nqthm commands   -->     ACL2"
+;         nil *standard-co* state nil)
+;    (fms "  ----------------------------------------~%"
+;         nil *standard-co* state nil)
+;    (print-nqthm-to-acl2-doc1 *nqthm-to-acl2-commands* state)
+;    (princ$ "  ~ev[]" *standard-co* state)
+;    (newline *standard-co* state)
+;    (value :invisible)))
 
 (defmacro nqthm-to-acl2 (x)
 

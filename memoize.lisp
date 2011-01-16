@@ -940,19 +940,17 @@
 ; the first argument deleted.  Informal remark: the alist
 ; returned is a hons when the initial ANS is not an atom.
 
-#|| Comment about the last clause above.  Or really? 
-Counterexamples?
-
-mbu> stp
-? (honsp (hons-shrink-alist '((a . b) (a . b2)) (hons-acons 1 2 3)))
-NIL
-
-mbu> stp
-? (honsp (hons-shrink-alist '((a . b) (a . b2)) nil))
-NIL
-? 
-
-||#
+; Comment about the last clause above.  Or really? 
+; Counterexamples?
+; 
+; mbu> stp
+; ? (honsp (hons-shrink-alist '((a . b) (a . b2)) (hons-acons 1 2 3)))
+; NIL
+; 
+; mbu> stp
+; ? (honsp (hons-shrink-alist '((a . b) (a . b2)) nil))
+; NIL
+; ? 
 
 (defconst *untroublesome-characters*
 

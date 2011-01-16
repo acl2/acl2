@@ -2168,20 +2168,18 @@
 ; Here is a trivial example of the problem this code is intended to
 ; solve.
 
-#|
- (defstub bar (x) t)
-
- (defaxiom bar-thm
-   (implies (and (integerp x)
-                 (< 3 x))
-            (bar x))
-   :rule-classes :type-prescription)
-
- (thm
-  (implies (and (integerp x)
-                (< 4 x))
-           (bar x)))
-|#
+;  (defstub bar (x) t)
+; 
+;  (defaxiom bar-thm
+;    (implies (and (integerp x)
+;                  (< 3 x))
+;             (bar x))
+;    :rule-classes :type-prescription)
+; 
+;  (thm
+;   (implies (and (integerp x)
+;                 (< 4 x))
+;            (bar x)))
 
 ; Robert Krug came up with the original version of this patch when
 ; playing with arithmetic functions that changed sign at some point
@@ -3417,20 +3415,18 @@
 ; following examples, which motivated the controls in the code for binary-+ and
 ; binary-* below.
 
-#|
- (defstub foo (x) t)
- (defaxiom foo-axiom
-   (equal (foo (* 2 x))
-          (foo x)))
- (thm
-  (foo 4))
- :u
- (defaxiom foo-axiom
-   (equal (foo (+ 1 x))
-          (foo x)))
- (thm
-   (foo 4))
-|#
+;  (defstub foo (x) t)
+;  (defaxiom foo-axiom
+;    (equal (foo (* 2 x))
+;           (foo x)))
+;  (thm
+;   (foo 4))
+;  :u
+;  (defaxiom foo-axiom
+;    (equal (foo (+ 1 x))
+;           (foo x)))
+;  (thm
+;    (foo 4))
 
 ; Another interesting example is (thm (foo 4)) after replacing the second
 ; foo-axiom with (equal (foo (+ -1 x)) (foo x)).
@@ -4341,249 +4337,244 @@
 ; 0.000, 0.020, 0.080, 0.300, 1.110, 4.230, 16.390.  This was measured
 ; on a 330 MHz Pentium II.
 
-#||
-(progn
-  (time
-   (new-worse-than
-    '(f a a)
-    '(f b b)))
-
-  (time
-   (new-worse-than
-    '(f a (f a a))
-    '(f b (f b b))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a a)))
-    '(f b (f b (f b b)))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a a))))
-    '(f b (f b (f b (f b b))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a a)))))
-    '(f b (f b (f b (f b (f b b)))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a a))))))
-    '(f b (f b (f b (f b (f b (f b b))))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a a)))))))
-    '(f b (f b (f b (f b (f b (f b (f b b)))))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a a))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b b))))))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a))))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
-
-  (time
-   (new-worse-than
-    '(f a
-        (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a))))))))))))
-    '(f b
-        (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))
-
-  (time
-   (new-worse-than
-    '(f a
-        (f a
-           (f a
-              (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))))
-    '(f b
-        (f b
-           (f b
-              (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
-    ))
-  )
-||#
+; (progn
+;   (time
+;    (new-worse-than
+;     '(f a a)
+;     '(f b b)))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a a))
+;     '(f b (f b b))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a a)))
+;     '(f b (f b (f b b)))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a a))))
+;     '(f b (f b (f b (f b b))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a a)))))
+;     '(f b (f b (f b (f b (f b b)))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a a))))))
+;     '(f b (f b (f b (f b (f b (f b b))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a a)))))))
+;     '(f b (f b (f b (f b (f b (f b (f b b)))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a a))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b b))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a))))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a
+;         (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a))))))))))))
+;     '(f b
+;         (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a
+;         (f a
+;            (f a
+;               (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))))
+;     '(f b
+;         (f b
+;            (f b
+;               (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
+;     ))
+;   )
 
 ; If pseudo-variantp is defined so that instead of (not (quotep
 ; term2)) it insists of (variablep term2) when (variablep term1), then
 ; the following sequence goes exponential even though the preceding
 ; one does not.
 
-#||
-(progn
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))
+; (progn
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))))))
+;     ))
+;   )
 
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))))))
-    ))
-  )
-||#
 ; with times of 0.000, 0.120, 0.250, 0.430, etc.  But with the current
 ; definition of pseudo-variantp, the sequence above is flat.
 
 ; However, the sequence with the terms commuted grows exponentially,
 ; still.
 
-#||
-(progn
-  (time
-   (new-worse-than
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
-
-  (time
-   (new-worse-than
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
-
-  (time
-   (new-worse-than
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
-
-  (time
-   (new-worse-than
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f b
-        (f b
-           (f b
-              (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f b
-        (f b
-           (f b
-              (f b
-                 (f b
-                    (f b
-                       (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f b
-        (f b
-           (f b
-              (f b
-                 (f b
-                    (f b
-                       (f b
-                          (f b
-                             (f b
-                                (f b (f b (f b (f b (f b (f b b)))))))))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f b
-        (f b
-           (f b
-              (f b
-                 (f b
-                    (f b
-                       (f b
-                          (f b
-                             (f b
-                                (f b
-                                   (f b
-                                      (f b
-                                         (f b (f b (f b (f b b))))))))))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f b
-        (f b
-           (f b
-              (f b
-                 (f b
-                    (f b
-                       (f b
-                          (f b
-                             (f b
-                                (f b
-                                   (f b
-                                      (f b
-                                         (f b
-                                            (f b
-                                               (f b
-                                                  (f b
-                                                     (f b b)))))))))))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    ))
-  )
-||#
+; (progn
+;   (time
+;    (new-worse-than
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f b
+;         (f b
+;            (f b
+;               (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f b
+;         (f b
+;            (f b
+;               (f b
+;                  (f b
+;                     (f b
+;                        (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f b
+;         (f b
+;            (f b
+;               (f b
+;                  (f b
+;                     (f b
+;                        (f b
+;                           (f b
+;                              (f b
+;                                 (f b (f b (f b (f b (f b (f b b)))))))))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f b
+;         (f b
+;            (f b
+;               (f b
+;                  (f b
+;                     (f b
+;                        (f b
+;                           (f b
+;                              (f b
+;                                 (f b
+;                                    (f b
+;                                       (f b
+;                                          (f b (f b (f b (f b b))))))))))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f b
+;         (f b
+;            (f b
+;               (f b
+;                  (f b
+;                     (f b
+;                        (f b
+;                           (f b
+;                              (f b
+;                                 (f b
+;                                    (f b
+;                                       (f b
+;                                          (f b
+;                                             (f b
+;                                                (f b
+;                                                   (f b
+;                                                      (f b b)))))))))))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     ))
+;   )
 
 ; Real times: 0.000, 0.000, 0.010, 0.000, 0.010, 0.020, 0.040, 0.100,
 ; 0.210, ...
@@ -5732,36 +5723,34 @@
 ; statistics are gathered.  Here are results using code developed after
 ; Version_4.1, using Allegro CL.
 
-#||
-In directory /projects/acl2/devel/books/workshops/2004/legato/support/
-(see below for discussion of which forms were submitted for each experiment).
-
-(set-inhibit-output-lst '(prove proof-tree))
-;; (ld "/projects/acl2/devel-misc/patches/accumulated-persistence-hyps-rhs/patch.lisp")
-;; (value :q)
-;;; (load "/projects/acl2/devel-misc/patches/accumulated-persistence-hyps-rhs/patch.fasl")
-;; (load "/projects/acl2/devel-misc/patches/accumulated-persistence-hyps-rhs/old.fasl")
-;; (lp)
-; (accumulated-persistence t)
-(time$ (ld "proof-by-generalization-mult.lisp"))
-
-No accp (skip commented forms)
-; 97.01 seconds realtime, 95.54 seconds runtime.
-
-Old accp (include only one commented form, (accumulated-persistence t))
-; 114.82 seconds realtime, 113.46 seconds runtime.
-
-New accp (include all commented forms except ;;;)
-; 164.95 seconds realtime, 163.69 seconds runtime.
-
-New accp (include all commented forms)
-; 165.09 seconds realtime, 163.90 seconds runtime.
-
-The results above were based on code that always gave results for a :conc
-xrune.  We now skip that xrune if there are no hypotheses, but that didn't make
-much difference:
-; 164.84 seconds realtime, 163.50 seconds runtime.
-||#
+; In directory /projects/acl2/devel/books/workshops/2004/legato/support/
+; (see below for discussion of which forms were submitted for each experiment).
+; 
+; (set-inhibit-output-lst '(prove proof-tree))
+; ;; (ld "/projects/acl2/devel-misc/patches/accumulated-persistence-hyps-rhs/patch.lisp")
+; ;; (value :q)
+; ;;; (load "/projects/acl2/devel-misc/patches/accumulated-persistence-hyps-rhs/patch.fasl")
+; ;; (load "/projects/acl2/devel-misc/patches/accumulated-persistence-hyps-rhs/old.fasl")
+; ;; (lp)
+; ; (accumulated-persistence t)
+; (time$ (ld "proof-by-generalization-mult.lisp"))
+; 
+; No accp (skip commented forms)
+; ; 97.01 seconds realtime, 95.54 seconds runtime.
+; 
+; Old accp (include only one commented form, (accumulated-persistence t))
+; ; 114.82 seconds realtime, 113.46 seconds runtime.
+; 
+; New accp (include all commented forms except ;;;)
+; ; 164.95 seconds realtime, 163.69 seconds runtime.
+; 
+; New accp (include all commented forms)
+; ; 165.09 seconds realtime, 163.90 seconds runtime.
+; 
+; The results above were based on code that always gave results for a :conc
+; xrune.  We now skip that xrune if there are no hypotheses, but that didn't make
+; much difference:
+; ; 164.84 seconds realtime, 163.50 seconds runtime.
 
 (defun merge-accumulated-persistence-aux (xrune entry alist)
   (cond ((endp alist)
@@ -5832,81 +5821,78 @@ much difference:
          new-alist)
         (t (merge-accumulated-persistence-rec new-alist old-alist))))
 
-#||
-
-This multi-line comment was written before the introduction of xrunes, and we
-have left it unchanged from that time.
-
-The following alternate code doesn't do as well, even though it uses nconc.
-The nconc version doesn't even seem much better on space (in fact worse in an
-Allegro CL test as reported by "space allocation": 669,110,675 cons cells in
-the nconc version vs. 593,299,188).  Compare the times below with those
-reported in merge-accumulated-persistence.
-
-Our basic idea was to avoid walking consing up a new alist in
-merge-accumulated-persistence-aux when the given rune wasn't already a key in
-the given alist.
-
-real time       :    157.780 secs
-run-gbc time    :    146.960 secs
-child run time  :      0.000 secs
-gbc time        :      8.990 secs
-
-Replacing nconc with revappend:
-
-real time       :    168.870 secs
-run-gbc time    :    149.930 secs
-child run time  :      0.000 secs
-gbc time        :      8.930 secs
-
-(defun merge-accumulated-persistence-1 (rune entry alist)
-  (cond ((endp alist)
-         (er hard 'merge-accumulated-persistence-1
-             "Implementation error: Unexpected end of list!  Please contacct ~
-              the ACL2 implementors."))
-        ((rune= rune (access accp-entry (car alist) :rune))
-         (cons (make accp-entry
-                     :rune rune
-                     :n-s  (+ (access accp-entry entry :n-s)
-                              (access accp-entry (car alist) :n-s))
-                     :ap-s (+ (access accp-entry entry :ap-s)
-                              (access accp-entry (car alist) :ap-s))
-                     :n-f  (+ (access accp-entry entry :n-f)
-                              (access accp-entry (car alist) :n-f))
-                     :ap-f (+ (access accp-entry entry :ap-f)
-                              (access accp-entry (car alist) :ap-f)))
-               (cdr alist)))
-        (t (cons (car alist)
-                 (merge-accumulated-persistence-1 rune entry (cdr alist))))))
-
-(defun assoc-rune= (rune alist)
-  (cond ((endp alist) nil)
-        ((rune= rune (access accp-entry (car alist) :rune))
-         (car alist))
-        (t (assoc-rune= rune (cdr alist)))))
-
-(defun merge-accumulated-persistence-rec (new-alist old-alist new-alist-new)
-
-; We merge into old-alist as we go along, except that entries in new-alist that
-; are not in old-alist are put into new-alist-new.
-
-  (cond ((endp new-alist) (nconc new-alist-new old-alist))
-        (t (let* ((rune (access accp-entry (car new-alist) :rune))
-                  (pair (assoc-rune= rune old-alist)))
-             (merge-accumulated-persistence-rec
-              (cdr new-alist)
-              (cond (pair (merge-accumulated-persistence-1
-                           rune
-                           (car new-alist)
-                           old-alist))
-                    (t old-alist))
-              (cond (pair new-alist-new)
-                    (t (cons (car new-alist) new-alist-new))))))))
-
-; Also would need to add final argument of nil to call of
-; merge-accumulated-persistence-rec in merge-accumulated-persistence.
-
-||#
+; The following comment was written before the introduction of xrunes, and we
+; have left it unchanged from that time.
+; 
+; The following alternate code doesn't do as well, even though it uses nconc.
+; The nconc version doesn't even seem much better on space (in fact worse in an
+; Allegro CL test as reported by "space allocation": 669,110,675 cons cells in
+; the nconc version vs. 593,299,188).  Compare the times below with those
+; reported in merge-accumulated-persistence.
+; 
+; Our basic idea was to avoid walking consing up a new alist in
+; merge-accumulated-persistence-aux when the given rune wasn't already a key in
+; the given alist.
+; 
+; real time       :    157.780 secs
+; run-gbc time    :    146.960 secs
+; child run time  :      0.000 secs
+; gbc time        :      8.990 secs
+; 
+; Replacing nconc with revappend:
+; 
+; real time       :    168.870 secs
+; run-gbc time    :    149.930 secs
+; child run time  :      0.000 secs
+; gbc time        :      8.930 secs
+; 
+; (defun merge-accumulated-persistence-1 (rune entry alist)
+;   (cond ((endp alist)
+;          (er hard 'merge-accumulated-persistence-1
+;              "Implementation error: Unexpected end of list!  Please contacct ~
+;               the ACL2 implementors."))
+;         ((rune= rune (access accp-entry (car alist) :rune))
+;          (cons (make accp-entry
+;                      :rune rune
+;                      :n-s  (+ (access accp-entry entry :n-s)
+;                               (access accp-entry (car alist) :n-s))
+;                      :ap-s (+ (access accp-entry entry :ap-s)
+;                               (access accp-entry (car alist) :ap-s))
+;                      :n-f  (+ (access accp-entry entry :n-f)
+;                               (access accp-entry (car alist) :n-f))
+;                      :ap-f (+ (access accp-entry entry :ap-f)
+;                               (access accp-entry (car alist) :ap-f)))
+;                (cdr alist)))
+;         (t (cons (car alist)
+;                  (merge-accumulated-persistence-1 rune entry (cdr alist))))))
+; 
+; (defun assoc-rune= (rune alist)
+;   (cond ((endp alist) nil)
+;         ((rune= rune (access accp-entry (car alist) :rune))
+;          (car alist))
+;         (t (assoc-rune= rune (cdr alist)))))
+; 
+; (defun merge-accumulated-persistence-rec (new-alist old-alist new-alist-new)
+; 
+; ; We merge into old-alist as we go along, except that entries in new-alist that
+; ; are not in old-alist are put into new-alist-new.
+; 
+;   (cond ((endp new-alist) (nconc new-alist-new old-alist))
+;         (t (let* ((rune (access accp-entry (car new-alist) :rune))
+;                   (pair (assoc-rune= rune old-alist)))
+;              (merge-accumulated-persistence-rec
+;               (cdr new-alist)
+;               (cond (pair (merge-accumulated-persistence-1
+;                            rune
+;                            (car new-alist)
+;                            old-alist))
+;                     (t old-alist))
+;               (cond (pair new-alist-new)
+;                     (t (cons (car new-alist) new-alist-new))))))))
+; 
+; ; Also would need to add final argument of nil to call of
+; ; merge-accumulated-persistence-rec in merge-accumulated-persistence.
+; 
 
 (defun add-accumulated-persistence-s (xrune delta-s delta-f alist
                                             original-alist acc)
@@ -10697,12 +10683,10 @@ gbc time        :      8.930 secs
 ; could be very sensitive to the order of the literals in the clause.  Consider
 ; the following theorem, which was not proved before we made this change:
 
-#|
-(implies (and (< 1 (+ 1 n))
-              (< 0 n)
-              (integerp n))
-         (equal (< 1 (+ 1 n)) (< 0 n)))
-|#
+; (implies (and (< 1 (+ 1 n))
+;               (< 0 n)
+;               (integerp n))
+;          (equal (< 1 (+ 1 n)) (< 0 n)))
 
 ; The problem with this theorem was that the first two hypotheses
 ; weren't known to be Boolean unless we knew (for example) the third
@@ -11150,13 +11134,13 @@ gbc time        :      8.930 secs
 
 ; The simplest example is one which fails unless we do some kind of iterated
 ; typing.  Here is Bishop's example:
-#|
-(thm (IMPLIES (AND (< 0 (+ (- I) N))
-                   (NOT (INTEGERP (+ (- I) N)))
-                   (INTEGERP N)
-                   (INTEGERP I)
-                   )
-              nil))|#
+
+; (thm (IMPLIES (AND (< 0 (+ (- I) N))
+;                    (NOT (INTEGERP (+ (- I) N)))
+;                    (INTEGERP N)
+;                    (INTEGERP I)
+;                    )
+;               nil))
 
 ; The naive method fails to prove this.  Force-based iteration catches it if (-
 ; I) forces something, but that is not the case in Version 1.8 and so that kind
@@ -11166,13 +11150,13 @@ gbc time        :      8.930 secs
 
 ; A good performance test is
 
-#|(defthm ordered-symbol-alistp-remove-first-pair-test
-  (implies (and (ordered-symbol-alistp l)
-                (symbolp key)
-                (assoc-eq key l))
-           (ordered-symbol-alistp (remove-first-pair key l)))
-  :hints (("Goal" :in-theory
-           (disable ordered-symbol-alistp-remove-first-pair))))|#
+; (defthm ordered-symbol-alistp-remove-first-pair-test
+;   (implies (and (ordered-symbol-alistp l)
+;                 (symbolp key)
+;                 (assoc-eq key l))
+;            (ordered-symbol-alistp (remove-first-pair key l)))
+;   :hints (("Goal" :in-theory
+;            (disable ordered-symbol-alistp-remove-first-pair))))
 
 ; The naive approach does this in about 3.4 seconds (prove time, on Rana, a
 ; Sparc 2).  The repetitious approach takes 5.6 seconds.  The reconsidering

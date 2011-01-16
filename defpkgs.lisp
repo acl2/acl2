@@ -45,99 +45,97 @@
 ; topics has some correspondence with what one may want to export from ACL2,
 ; but for now we provide this utility only as a comment.
 
-#||
-(verify-termination symbol-class)
-
-(defun member-eq-t (a lst)
-  (or (eq lst t)
-      (member-eq a lst)))
-
-(defun filter-topics
-  (in-sections out-sections mode doc-alist wrld acc)
-  (declare (xargs :guard (and (member-eq mode '(:logic :program
-                                                       ;; nil for non-functions
-                                                       nil))
-                              (or (eq in-sections t)
-                                  (symbol-listp in-sections))
-                              (symbol-listp out-sections))
-                  :verify-guards nil))
-
-; Need to compile this.
-
-  (cond
-   ((endp doc-alist) acc)
-   ((and (symbolp (caar doc-alist))
-         (not (equal (symbol-package-name (caar doc-alist)) "ACL2-PC"))
-         (member-eq-t (cadr (car doc-alist)) in-sections)
-         (not (member-eq (cadr (car doc-alist)) out-sections))
-         (let ((fn-symb-p (function-symbolp (caar doc-alist) wrld)))
-           (cond ((eq mode :logic)
-                  (if fn-symb-p
-                      (eq (fdefun-mode (caar doc-alist) wrld) :logic)
-                    (or (getprop (caar doc-alist) 'macro-body nil 'current-acl2-world wrld)
-                        (getprop (caar doc-alist) 'const nil 'current-acl2-world wrld))))
-                 ((eq mode :program)
-                  ;; really means "all but logic"
-                  (and fn-symb-p
-                       (eq (fdefun-mode (caar doc-alist) wrld) :program)))
-                 (t
-                  ;; topics other than functions, macros, and constants
-                  (not (or (getprop (caar doc-alist) 'macro-body nil 'current-acl2-world wrld)
-                           (getprop (caar doc-alist) 'const nil 'current-acl2-world wrld)
-                           fn-symb-p))))))
-    (filter-topics in-sections out-sections mode (cdr doc-alist) wrld
-                   (cons (caar doc-alist) acc)))
-   (t
-    (filter-topics in-sections out-sections mode (cdr doc-alist) wrld acc))))
-
-(comp 'filter-topics)
-
-; Now consider the following table (`P' is "Programming", `A' is "Arrays").
-; "In" lists doc sections that we may want included, while "Out" lists those
-; to be excluded.  Mode :logic is what we may want to export if we choose to
-; stay in defun-mode :logic; :program is what is left.
-
+; (verify-termination symbol-class)
+; 
+; (defun member-eq-t (a lst)
+;   (or (eq lst t)
+;       (member-eq a lst)))
+; 
+; (defun filter-topics
+;   (in-sections out-sections mode doc-alist wrld acc)
+;   (declare (xargs :guard (and (member-eq mode '(:logic :program
+;                                                        ;; nil for non-functions
+;                                                        nil))
+;                               (or (eq in-sections t)
+;                                   (symbol-listp in-sections))
+;                               (symbol-listp out-sections))
+;                   :verify-guards nil))
+; 
+; ; Need to compile this.
+; 
+;   (cond
+;    ((endp doc-alist) acc)
+;    ((and (symbolp (caar doc-alist))
+;          (not (equal (symbol-package-name (caar doc-alist)) "ACL2-PC"))
+;          (member-eq-t (cadr (car doc-alist)) in-sections)
+;          (not (member-eq (cadr (car doc-alist)) out-sections))
+;          (let ((fn-symb-p (function-symbolp (caar doc-alist) wrld)))
+;            (cond ((eq mode :logic)
+;                   (if fn-symb-p
+;                       (eq (fdefun-mode (caar doc-alist) wrld) :logic)
+;                     (or (getprop (caar doc-alist) 'macro-body nil 'current-acl2-world wrld)
+;                         (getprop (caar doc-alist) 'const nil 'current-acl2-world wrld))))
+;                  ((eq mode :program)
+;                   ;; really means "all but logic"
+;                   (and fn-symb-p
+;                        (eq (fdefun-mode (caar doc-alist) wrld) :program)))
+;                  (t
+;                   ;; topics other than functions, macros, and constants
+;                   (not (or (getprop (caar doc-alist) 'macro-body nil 'current-acl2-world wrld)
+;                            (getprop (caar doc-alist) 'const nil 'current-acl2-world wrld)
+;                            fn-symb-p))))))
+;     (filter-topics in-sections out-sections mode (cdr doc-alist) wrld
+;                    (cons (caar doc-alist) acc)))
+;    (t
+;     (filter-topics in-sections out-sections mode (cdr doc-alist) wrld acc))))
+; 
+; (comp 'filter-topics)
+; 
+; ; Now consider the following table (`P' is "Programming", `A' is "Arrays").
+; ; "In" lists doc sections that we may want included, while "Out" lists those
+; ; to be excluded.  Mode :logic is what we may want to export if we choose to
+; ; stay in defun-mode :logic; :program is what is left.
+; 
+; ; In    Out  Mode
+; ; P,A   ()   :logic
+; ; P,A   ()   :program
+; ; P,A   ()   nil
+; ; T     P,A  :logic
+; ; T     P,A  :program
+; ; T     P,A  nil
+; 
+; Thus we have:
+; 
 ; In    Out  Mode
 ; P,A   ()   :logic
+; (filter-topics '(programming arrays) nil :logic
+;                (global-val 'documentation-alist (w state)) (w state) nil)
+; 
+; In    Out  Mode
 ; P,A   ()   :program
-; P,A   ()   nil
+; (filter-topics '(programming arrays) nil :program
+;                (global-val 'documentation-alist (w state)) (w state) nil)
+; 
+; In    Out  Mode
+; P,A   ()   :logic
+; (filter-topics '(programming arrays) nil nil
+;                (global-val 'documentation-alist (w state)) (w state) nil)
+; 
+; In    Out  Mode
 ; T     P,A  :logic
+; 
+; (filter-topics t '(programming arrays) :logic
+;                (global-val 'documentation-alist (w state)) (w state) nil)
+; 
+; In    Out  Mode
 ; T     P,A  :program
+; (filter-topics t '(programming arrays) :program
+;                (global-val 'documentation-alist (w state)) (w state) nil)
+; 
+; In    Out  Mode
 ; T     P,A  nil
-
-Thus we have:
-
-In    Out  Mode
-P,A   ()   :logic
-(filter-topics '(programming arrays) nil :logic
-               (global-val 'documentation-alist (w state)) (w state) nil)
-
-In    Out  Mode
-P,A   ()   :program
-(filter-topics '(programming arrays) nil :program
-               (global-val 'documentation-alist (w state)) (w state) nil)
-
-In    Out  Mode
-P,A   ()   :logic
-(filter-topics '(programming arrays) nil nil
-               (global-val 'documentation-alist (w state)) (w state) nil)
-
-In    Out  Mode
-T     P,A  :logic
-
-(filter-topics t '(programming arrays) :logic
-               (global-val 'documentation-alist (w state)) (w state) nil)
-
-In    Out  Mode
-T     P,A  :program
-(filter-topics t '(programming arrays) :program
-               (global-val 'documentation-alist (w state)) (w state) nil)
-
-In    Out  Mode
-T     P,A  nil
-(filter-topics t '(programming arrays) nil
-               (global-val 'documentation-alist (w state)) (w state) nil)
-||#
+; (filter-topics t '(programming arrays) nil
+;                (global-val 'documentation-alist (w state)) (w state) nil)
 
 ; The following ``policy'' was used to determine this setting of *acl2-exports*.
 ; First, if the user wishes to program in ACL2, he or she will import

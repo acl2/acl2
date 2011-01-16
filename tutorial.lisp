@@ -1383,47 +1383,45 @@
 
 (deflabel Tutorial3-Phonebook-Example
 
- #|
- Here is another solution to the exercise at the end of this topic.
+; Here is another solution to the exercise at the end of this topic.
 
- (defun good-phonebookp (bk)
-   (setp (range bk)))
-
- (defthm member-equal-strip-cdrs-bind
-   (implies (and (not (member-equal x (strip-cdrs bk)))
-                 (not (equal x num)))
-            (not (member-equal x (strip-cdrs (bind nm num bk))))))
-
- (defthm setp-range-bind
-   (implies (and (setp (range bk))
-                 (not (member num (range bk))))
-            (setp (range (bind nm num bk))))
-   :hints (("Goal" :in-theory (enable bind range))))
-
- (defthm ADD-PHONE-PRESERVES-NEW-INVARIANT
-   (implies (and (good-phonebookp bk)
-                 (not (member num (range bk))))
-            (good-phonebookp (add-phone nm num bk))))
-
- (defthm CHANGE-PHONE-PRESERVES-NEW-INVARIANT
-   (implies (and (good-phonebookp bk)
-                 (not (member num (range bk))))
-            (good-phonebookp (change-phone nm num bk))))
-
- (defthm member-equal-strip-cdrs-rembind
-   (implies (not (member-equal x (strip-cdrs bk)))
-            (not (member-equal x (strip-cdrs (rembind nm bk))))))
-
- (defthm setp-strip-cdrs-rembind
-   (implies (setp (strip-cdrs bk))
-            (setp (strip-cdrs (rembind nm bk))))
-   :hints (("Goal" :in-theory (enable rembind))))
-
- (defthm DEL-PHONE-PRESERVES-NEW-INVARIANT
-   (implies (good-phonebookp bk)
-            (good-phonebookp (del-phone nm bk)))
-   :hints (("Goal" :in-theory (enable range))))
- |#
+;  (defun good-phonebookp (bk)
+;    (setp (range bk)))
+; 
+;  (defthm member-equal-strip-cdrs-bind
+;    (implies (and (not (member-equal x (strip-cdrs bk)))
+;                  (not (equal x num)))
+;             (not (member-equal x (strip-cdrs (bind nm num bk))))))
+; 
+;  (defthm setp-range-bind
+;    (implies (and (setp (range bk))
+;                  (not (member num (range bk))))
+;             (setp (range (bind nm num bk))))
+;    :hints (("Goal" :in-theory (enable bind range))))
+; 
+;  (defthm ADD-PHONE-PRESERVES-NEW-INVARIANT
+;    (implies (and (good-phonebookp bk)
+;                  (not (member num (range bk))))
+;             (good-phonebookp (add-phone nm num bk))))
+; 
+;  (defthm CHANGE-PHONE-PRESERVES-NEW-INVARIANT
+;    (implies (and (good-phonebookp bk)
+;                  (not (member num (range bk))))
+;             (good-phonebookp (change-phone nm num bk))))
+; 
+;  (defthm member-equal-strip-cdrs-rembind
+;    (implies (not (member-equal x (strip-cdrs bk)))
+;             (not (member-equal x (strip-cdrs (rembind nm bk))))))
+; 
+;  (defthm setp-strip-cdrs-rembind
+;    (implies (setp (strip-cdrs bk))
+;             (setp (strip-cdrs (rembind nm bk))))
+;    :hints (("Goal" :in-theory (enable rembind))))
+; 
+;  (defthm DEL-PHONE-PRESERVES-NEW-INVARIANT
+;    (implies (good-phonebookp bk)
+;             (good-phonebookp (del-phone nm bk)))
+;    :hints (("Goal" :in-theory (enable range))))
 
   :doc
   ":Doc-Section Annotated-Acl2-Scripts

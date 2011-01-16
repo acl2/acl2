@@ -1127,133 +1127,130 @@
 
 ; Preliminary code for parallelizing the rewriter
 
-#||
-; We now develop code for parallelizing calls to the arguments of a call of
-; rewrite.
-
-; WARNING!  We believe that this approach has the following bug.  If
-; with-prover-time-limit is used, then the main thread (which is the one
-; calling waterfall-step) has a catch (implemented by the call there of
-; catch-time-limit4) that will only catch throws to that tag from the SAME
-; thread.  We will get in trouble if a spawned thread's call of rewrite does
-; such a throw.
-
-; Warning: Moreover, if we use this code, consider modifying the
-; rewrite-constant to store the value of :limit in
-; rewrite-args-granularity-table.  Otherwise, we have to go to the world with a
-; potentially slow getprop every time we call rewrite-args-par-big-enough.
-; Maybe that's just noise, but maybe it's expensive.
-
-; We initially set the value of (the unique key) :limit to nil in
-; rewrite-args-granularity-table, so that in fact we do not do such
-; parallelization.  But we leave this infrastructure in place (see comment "or
-; try :limit" below) in case we want to experiment with such parallelization in
-; the future.
-
-#+acl2-par
-(table rewrite-args-granularity-table nil nil
-       :guard (and (eq key :limit)
-                   (or (null val) (natp val))))
-
-#+acl2-par
-(table rewrite-args-granularity-table :limit nil) ; or try :limit = 10
-
-#+acl2-par
-(defun rewrite-args-par-big-enough-rec (flg x bound acc)
-
-; Flg is true when x is a list of terms; else x is a term.  Returns a number by
-; accumulating into acc, or t if that number would exceed bound.  We assume
-; that acc is <= bound.
-
-  (cond (flg ; x is a list
-         (cond ((null x)
-                acc)
-               (t
-                (let ((new-acc (rewrite-args-par-big-enough-rec
-                                nil (car x) bound acc)))
-                  (if (eq new-acc t)
-                      t
-                    (rewrite-args-par-big-enough-rec
-                     flg (cdr x) bound new-acc))))))
-        ((variablep x)
-         acc)
-        ((fquotep x)
-         acc)
-        ((eql bound acc)
-         t)
-        ((flambdap (ffn-symb x))
-         (let ((new-acc (rewrite-args-par-big-enough-rec
-                         nil (lambda-body (ffn-symb x)) bound (1+ acc))))
-           (if (eq new-acc t)
-               t
-             (rewrite-args-par-big-enough-rec t (fargs x) bound new-acc))))
-        (t (rewrite-args-par-big-enough-rec t (fargs x) bound (1+ acc)))))
-
-#+acl2-par
-(defun rewrite-args-par-big-enough (x wrld)
-
-; If the limit is set to nil, the function returns nil.  This allows the
-; enabling and disabling of rewriting args in parallel.
-
-  (let ((limit (cdr (assoc-eq :limit
-                              (table-alist
-                               'rewrite-args-granularity-table
-                               wrld)))))
-    (and limit (equal t (rewrite-args-par-big-enough-rec nil x limit 0)))))
-
-; With the additions above, we can contemplate adding something like the
-; following to the rewrite nest below.  If we do that, then replace the call of
-; rewrite-args in rewrite by the following:
-
-;                    #-acl2-par
-;                    rewrite-args
-;                    #+acl2-par
-;                    rewrite-args-par
-
-#+acl2-par
-(defun rewrite-args-par (args alist bkptr ; &extra formals
-                              rdepth
-                              type-alist obj geneqv wrld state fnstack
-                              ancestors backchain-limit
-                              simplify-clause-pot-lst rcnst gstack ttree)
-  (let ((pair (rewrite-entry (rewrite-args-par-rec args alist bkptr))))
-    (mv (car pair) (cdr pair))))
-
-#+acl2-par
-(defun rewrite-args-par-rec (args alist bkptr ; &extra formals
-                                  rdepth
-                                  type-alist obj geneqv wrld state fnstack
-                                  ancestors backchain-limit
-                                  simplify-clause-pot-lst rcnst gstack ttree)
-
-; Note: In this function, the extra formal geneqv is actually a list of geneqvs
-; or nil denoting a list of nil geneqvs.
-
-; Unlike rewrite-args, we return (cons rewritten-args ttree) instead of
-; (mv rewritten-args ttree).
-
-  (declare (type (unsigned-byte 29) rdepth))
-  (cond ((f-big-clock-negative-p state)
-         (cons (sublis-var-lst alist args)
-               ttree))
-        ((null args)
-         (cons nil ttree))
-        (t (plet
-            (declare (granularity t)) ; should call rewrite-args-par-big-enough
-            ((pair1
-              (mv-let (term ttree1)
-                      (rewrite-entry (rewrite (car args) alist bkptr)
-                                     :geneqv (car geneqv)
-                                     :ttree nil)
-                      (cons term ttree1)))
-             (pair2 (rewrite-entry
-                     (rewrite-args-par-rec (cdr args) alist (1+ bkptr))
-                     :geneqv (cdr geneqv))))
-            (let* ((term (car pair1))
-                   (ttree1 (cdr pair1))
-                   (rewritten-args (car pair2))
-                   (ttree2 (cdr pair2)))
-              (cons (cons term rewritten-args)
-                    (cons-tag-trees ttree1 ttree2)))))))
-
-||#
+; ; We now develop code for parallelizing calls to the arguments of a call of
+; ; rewrite.
+; 
+; ; WARNING!  We believe that this approach has the following bug.  If
+; ; with-prover-time-limit is used, then the main thread (which is the one
+; ; calling waterfall-step) has a catch (implemented by the call there of
+; ; catch-time-limit4) that will only catch throws to that tag from the SAME
+; ; thread.  We will get in trouble if a spawned thread's call of rewrite does
+; ; such a throw.
+; 
+; ; Warning: Moreover, if we use this code, consider modifying the
+; ; rewrite-constant to store the value of :limit in
+; ; rewrite-args-granularity-table.  Otherwise, we have to go to the world with a
+; ; potentially slow getprop every time we call rewrite-args-par-big-enough.
+; ; Maybe that's just noise, but maybe it's expensive.
+; 
+; ; We initially set the value of (the unique key) :limit to nil in
+; ; rewrite-args-granularity-table, so that in fact we do not do such
+; ; parallelization.  But we leave this infrastructure in place (see comment "or
+; ; try :limit" below) in case we want to experiment with such parallelization in
+; ; the future.
+; 
+; #+acl2-par
+; (table rewrite-args-granularity-table nil nil
+;        :guard (and (eq key :limit)
+;                    (or (null val) (natp val))))
+; 
+; #+acl2-par
+; (table rewrite-args-granularity-table :limit nil) ; or try :limit = 10
+; 
+; #+acl2-par
+; (defun rewrite-args-par-big-enough-rec (flg x bound acc)
+; 
+; ; Flg is true when x is a list of terms; else x is a term.  Returns a number by
+; ; accumulating into acc, or t if that number would exceed bound.  We assume
+; ; that acc is <= bound.
+; 
+;   (cond (flg ; x is a list
+;          (cond ((null x)
+;                 acc)
+;                (t
+;                 (let ((new-acc (rewrite-args-par-big-enough-rec
+;                                 nil (car x) bound acc)))
+;                   (if (eq new-acc t)
+;                       t
+;                     (rewrite-args-par-big-enough-rec
+;                      flg (cdr x) bound new-acc))))))
+;         ((variablep x)
+;          acc)
+;         ((fquotep x)
+;          acc)
+;         ((eql bound acc)
+;          t)
+;         ((flambdap (ffn-symb x))
+;          (let ((new-acc (rewrite-args-par-big-enough-rec
+;                          nil (lambda-body (ffn-symb x)) bound (1+ acc))))
+;            (if (eq new-acc t)
+;                t
+;              (rewrite-args-par-big-enough-rec t (fargs x) bound new-acc))))
+;         (t (rewrite-args-par-big-enough-rec t (fargs x) bound (1+ acc)))))
+; 
+; #+acl2-par
+; (defun rewrite-args-par-big-enough (x wrld)
+; 
+; ; If the limit is set to nil, the function returns nil.  This allows the
+; ; enabling and disabling of rewriting args in parallel.
+; 
+;   (let ((limit (cdr (assoc-eq :limit
+;                               (table-alist
+;                                'rewrite-args-granularity-table
+;                                wrld)))))
+;     (and limit (equal t (rewrite-args-par-big-enough-rec nil x limit 0)))))
+; 
+; ; With the additions above, we can contemplate adding something like the
+; ; following to the rewrite nest below.  If we do that, then replace the call of
+; ; rewrite-args in rewrite by the following:
+; 
+; ;                    #-acl2-par
+; ;                    rewrite-args
+; ;                    #+acl2-par
+; ;                    rewrite-args-par
+; 
+; #+acl2-par
+; (defun rewrite-args-par (args alist bkptr ; &extra formals
+;                               rdepth
+;                               type-alist obj geneqv wrld state fnstack
+;                               ancestors backchain-limit
+;                               simplify-clause-pot-lst rcnst gstack ttree)
+;   (let ((pair (rewrite-entry (rewrite-args-par-rec args alist bkptr))))
+;     (mv (car pair) (cdr pair))))
+; 
+; #+acl2-par
+; (defun rewrite-args-par-rec (args alist bkptr ; &extra formals
+;                                   rdepth
+;                                   type-alist obj geneqv wrld state fnstack
+;                                   ancestors backchain-limit
+;                                   simplify-clause-pot-lst rcnst gstack ttree)
+; 
+; ; Note: In this function, the extra formal geneqv is actually a list of geneqvs
+; ; or nil denoting a list of nil geneqvs.
+; 
+; ; Unlike rewrite-args, we return (cons rewritten-args ttree) instead of
+; ; (mv rewritten-args ttree).
+; 
+;   (declare (type (unsigned-byte 29) rdepth))
+;   (cond ((f-big-clock-negative-p state)
+;          (cons (sublis-var-lst alist args)
+;                ttree))
+;         ((null args)
+;          (cons nil ttree))
+;         (t (plet
+;             (declare (granularity t)) ; should call rewrite-args-par-big-enough
+;             ((pair1
+;               (mv-let (term ttree1)
+;                       (rewrite-entry (rewrite (car args) alist bkptr)
+;                                      :geneqv (car geneqv)
+;                                      :ttree nil)
+;                       (cons term ttree1)))
+;              (pair2 (rewrite-entry
+;                      (rewrite-args-par-rec (cdr args) alist (1+ bkptr))
+;                      :geneqv (cdr geneqv))))
+;             (let* ((term (car pair1))
+;                    (ttree1 (cdr pair1))
+;                    (rewritten-args (car pair2))
+;                    (ttree2 (cdr pair2)))
+;               (cons (cons term rewritten-args)
+;                     (cons-tag-trees ttree1 ttree2)))))))

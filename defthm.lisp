@@ -4209,157 +4209,153 @@
 
 (deflabel evaluator-restrictions
 
-#||
-
-Here is Erik Reeber's modification of his proof of nil below, but for the
-development Version of ACL2 as of early March 2007, before the fix to ACL2 for
-this problem.  [It contains a truly trivial edit we've made, not important.]
-
- (in-package "ACL2")
-
- (defun my-cancel (term)
-    (case-match term
-      (('f ('g))
-       *t*)
-      (('f2 ('g2))
-       *t*)
-      (& term)))
-
- (defun f2 (x)
-    (not x))
-
- (defun g2 ()
-    nil)
-
- (encapsulate
-   ((f (x) t))
-
-   (local (defun f (x) (declare (ignore x)) t))
-
-   (defevaluator evl evl-list
-     ((f x)
-      (f2 x)
-      (g2)))
-
-   (defthm correctness-of-my-cancel
-     (equal (evl x a)
-            (evl (my-cancel x) a))
-     :rule-classes ((:meta :trigger-fns (f)))))
-
- (encapsulate
-   ()
-
-   (local (defstub c () t))
-
-   (local (encapsulate
-           ()
-           (local (defun g () (c)))
-           (local (in-theory (disable g (g))))
-           (local (defthm f-g
-                    (equal (f (g)) t)
-                    :rule-classes nil))
-           (defthm f-c
-             (equal (f (c)) t)
-             :hints (("Goal" :use f-g
-                      :in-theory (e/d (g) (correctness-of-my-cancel))))
-             :rule-classes nil)))
-
-   (defthm f-t
-     (equal (f x) t)
-     :hints (("Goal" :by (:functional-instance
-                          f-c
-                          (c (lambda () x)))))
-     :rule-classes nil))
-
- (defun g ()
-    nil)
-
- ; Below is the expansion of the following defevaluator, changed slightly as
- ; indicated by comments.
- ; (defevaluator evl2 evl2-list ((f x) (f2 x) (g) (g2)))
-
- (ENCAPSULATE
-   (((EVL2 * *) => *)
-    ((EVL2-LIST * *) => *))
-   (SET-INHIBIT-WARNINGS "theory")
-   (LOCAL (IN-THEORY *DEFEVALUATOR-FORM-BASE-THEORY*))
-   (LOCAL
-    (MUTUAL-RECURSION (DEFUN EVL2 (X A)
-                        (DECLARE (XARGS :VERIFY-GUARDS NIL
-                                        :MEASURE (ACL2-COUNT X)
-                                        :WELL-FOUNDED-RELATION O<
-                                        :MODE :LOGIC))
-                        (COND ((SYMBOLP X) (CDR (ASSOC-EQ X A)))
-                              ((ATOM X) NIL)
-                              ((EQ (CAR X) 'QUOTE) (CAR (CDR X)))
-                              ((CONSP (CAR X))
-                               (EVL2 (CAR (CDR (CDR (CAR X))))
-                                     (PAIRLIS$ (CAR (CDR (CAR X)))
-                                               (EVL2-LIST (CDR X) A))))
-                              ((EQUAL (CAR X) 'F) ; changed f to f2 just below
-                               (F2 (EVL2 (CAR (CDR X)) A)))
-                              ((EQUAL (CAR X) 'F2)
-                               (F2 (EVL2 (CAR (CDR X)) A)))
-                              ((EQUAL (CAR X) 'G) (G))
-                              ((EQUAL (CAR X) 'G2) (G2))
-                              (T NIL)))
-                      (DEFUN EVL2-LIST (X-LST A)
-                        (DECLARE (XARGS :MEASURE (ACL2-COUNT X-LST)
-                                        :WELL-FOUNDED-RELATION O<))
-                        (COND ((ENDP X-LST) NIL)
-                              (T (CONS (EVL2 (CAR X-LST) A)
-                                       (EVL2-LIST (CDR X-LST) A)))))))
-
-   (DEFTHM EVL2-CONSTRAINT-1
-     (IMPLIES (SYMBOLP X)
-              (EQUAL (EVL2 X A)
-                     (CDR (ASSOC-EQ X A)))))
-   (DEFTHM EVL2-CONSTRAINT-2
-     (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'QUOTE))
-              (EQUAL (EVL2 X A) (CADR X))))
-   (DEFTHM EVL2-CONSTRAINT-3
-     (IMPLIES (AND (CONSP X) (CONSP (CAR X)))
-              (EQUAL (EVL2 X A)
-                     (EVL2 (CADDAR X)
-                           (PAIRLIS$ (CADAR X)
-                                     (EVL2-LIST (CDR X) A))))))
-   (DEFTHM EVL2-CONSTRAINT-4
-     (IMPLIES (NOT (CONSP X-LST))
-              (EQUAL (EVL2-LIST X-LST A) NIL)))
-   (DEFTHM EVL2-CONSTRAINT-5
-     (IMPLIES (CONSP X-LST)
-              (EQUAL (EVL2-LIST X-LST A)
-                     (CONS (EVL2 (CAR X-LST) A)
-                           (EVL2-LIST (CDR X-LST) A)))))
-   (DEFTHM EVL2-CONSTRAINT-6
-     (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'F))
-              (EQUAL (EVL2 X A) ; changed f to f2 just below
-                     (F2 (EVL2 (CADR X) A)))))
-   (DEFTHM EVL2-CONSTRAINT-7
-     (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'F2))
-              (EQUAL (EVL2 X A)
-                     (F2 (EVL2 (CADR X) A)))))
-   (DEFTHM EVL2-CONSTRAINT-8
-     (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'G))
-              (EQUAL (EVL2 X A) (G))))
-   (DEFTHM EVL2-CONSTRAINT-9
-     (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'G2))
-              (EQUAL (EVL2 X A) (G2)))))
-
- (defthm f2-t
-    (equal (f2 x) t)
-    :hints (("Goal" :by (:functional-instance
-                         f-t
-                         (f f2)
-                         (evl evl2)
-                         (evl-list evl2-list)))))
-
- (defthm bug-implies-nil
-    nil
-    :hints (("Goal" :use ((:instance f2-t (x t)))))
-    :rule-classes nil)
-
-||#
+; Here is Erik Reeber's modification of his proof of nil below, but for the
+; development Version of ACL2 as of early March 2007, before the fix to ACL2 for
+; this problem.  [It contains a truly trivial edit we've made, not important.]
+; 
+;  (in-package "ACL2")
+; 
+;  (defun my-cancel (term)
+;     (case-match term
+;       (('f ('g))
+;        *t*)
+;       (('f2 ('g2))
+;        *t*)
+;       (& term)))
+; 
+;  (defun f2 (x)
+;     (not x))
+; 
+;  (defun g2 ()
+;     nil)
+; 
+;  (encapsulate
+;    ((f (x) t))
+; 
+;    (local (defun f (x) (declare (ignore x)) t))
+; 
+;    (defevaluator evl evl-list
+;      ((f x)
+;       (f2 x)
+;       (g2)))
+; 
+;    (defthm correctness-of-my-cancel
+;      (equal (evl x a)
+;             (evl (my-cancel x) a))
+;      :rule-classes ((:meta :trigger-fns (f)))))
+; 
+;  (encapsulate
+;    ()
+; 
+;    (local (defstub c () t))
+; 
+;    (local (encapsulate
+;            ()
+;            (local (defun g () (c)))
+;            (local (in-theory (disable g (g))))
+;            (local (defthm f-g
+;                     (equal (f (g)) t)
+;                     :rule-classes nil))
+;            (defthm f-c
+;              (equal (f (c)) t)
+;              :hints (("Goal" :use f-g
+;                       :in-theory (e/d (g) (correctness-of-my-cancel))))
+;              :rule-classes nil)))
+; 
+;    (defthm f-t
+;      (equal (f x) t)
+;      :hints (("Goal" :by (:functional-instance
+;                           f-c
+;                           (c (lambda () x)))))
+;      :rule-classes nil))
+; 
+;  (defun g ()
+;     nil)
+; 
+;  ; Below is the expansion of the following defevaluator, changed slightly as
+;  ; indicated by comments.
+;  ; (defevaluator evl2 evl2-list ((f x) (f2 x) (g) (g2)))
+; 
+;  (ENCAPSULATE
+;    (((EVL2 * *) => *)
+;     ((EVL2-LIST * *) => *))
+;    (SET-INHIBIT-WARNINGS "theory")
+;    (LOCAL (IN-THEORY *DEFEVALUATOR-FORM-BASE-THEORY*))
+;    (LOCAL
+;     (MUTUAL-RECURSION (DEFUN EVL2 (X A)
+;                         (DECLARE (XARGS :VERIFY-GUARDS NIL
+;                                         :MEASURE (ACL2-COUNT X)
+;                                         :WELL-FOUNDED-RELATION O<
+;                                         :MODE :LOGIC))
+;                         (COND ((SYMBOLP X) (CDR (ASSOC-EQ X A)))
+;                               ((ATOM X) NIL)
+;                               ((EQ (CAR X) 'QUOTE) (CAR (CDR X)))
+;                               ((CONSP (CAR X))
+;                                (EVL2 (CAR (CDR (CDR (CAR X))))
+;                                      (PAIRLIS$ (CAR (CDR (CAR X)))
+;                                                (EVL2-LIST (CDR X) A))))
+;                               ((EQUAL (CAR X) 'F) ; changed f to f2 just below
+;                                (F2 (EVL2 (CAR (CDR X)) A)))
+;                               ((EQUAL (CAR X) 'F2)
+;                                (F2 (EVL2 (CAR (CDR X)) A)))
+;                               ((EQUAL (CAR X) 'G) (G))
+;                               ((EQUAL (CAR X) 'G2) (G2))
+;                               (T NIL)))
+;                       (DEFUN EVL2-LIST (X-LST A)
+;                         (DECLARE (XARGS :MEASURE (ACL2-COUNT X-LST)
+;                                         :WELL-FOUNDED-RELATION O<))
+;                         (COND ((ENDP X-LST) NIL)
+;                               (T (CONS (EVL2 (CAR X-LST) A)
+;                                        (EVL2-LIST (CDR X-LST) A)))))))
+; 
+;    (DEFTHM EVL2-CONSTRAINT-1
+;      (IMPLIES (SYMBOLP X)
+;               (EQUAL (EVL2 X A)
+;                      (CDR (ASSOC-EQ X A)))))
+;    (DEFTHM EVL2-CONSTRAINT-2
+;      (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'QUOTE))
+;               (EQUAL (EVL2 X A) (CADR X))))
+;    (DEFTHM EVL2-CONSTRAINT-3
+;      (IMPLIES (AND (CONSP X) (CONSP (CAR X)))
+;               (EQUAL (EVL2 X A)
+;                      (EVL2 (CADDAR X)
+;                            (PAIRLIS$ (CADAR X)
+;                                      (EVL2-LIST (CDR X) A))))))
+;    (DEFTHM EVL2-CONSTRAINT-4
+;      (IMPLIES (NOT (CONSP X-LST))
+;               (EQUAL (EVL2-LIST X-LST A) NIL)))
+;    (DEFTHM EVL2-CONSTRAINT-5
+;      (IMPLIES (CONSP X-LST)
+;               (EQUAL (EVL2-LIST X-LST A)
+;                      (CONS (EVL2 (CAR X-LST) A)
+;                            (EVL2-LIST (CDR X-LST) A)))))
+;    (DEFTHM EVL2-CONSTRAINT-6
+;      (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'F))
+;               (EQUAL (EVL2 X A) ; changed f to f2 just below
+;                      (F2 (EVL2 (CADR X) A)))))
+;    (DEFTHM EVL2-CONSTRAINT-7
+;      (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'F2))
+;               (EQUAL (EVL2 X A)
+;                      (F2 (EVL2 (CADR X) A)))))
+;    (DEFTHM EVL2-CONSTRAINT-8
+;      (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'G))
+;               (EQUAL (EVL2 X A) (G))))
+;    (DEFTHM EVL2-CONSTRAINT-9
+;      (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'G2))
+;               (EQUAL (EVL2 X A) (G2)))))
+; 
+;  (defthm f2-t
+;     (equal (f2 x) t)
+;     :hints (("Goal" :by (:functional-instance
+;                          f-t
+;                          (f f2)
+;                          (evl evl2)
+;                          (evl-list evl2-list)))))
+; 
+;  (defthm bug-implies-nil
+;     nil
+;     :hints (("Goal" :use ((:instance f2-t (x t)))))
+;     :rule-classes nil)
 
   :doc
   ":Doc-Section meta
@@ -7144,27 +7140,25 @@ this problem.  [It contains a truly trivial edit we've made, not important.]
 ; will need to re-work
 ; books/workshops/2000/manolios/pipeline/pipeline/deterministic-systems/128/top/ma128-isa128.lisp.)
 
-#|
- (defun my-equal (x y)
-   (equal x y))
-
- (in-theory (disable
-             (:type-prescription my-equal)
-             (:COMPOUND-RECOGNIZER BOOLEANP-COMPOUND-RECOGNIZER)))
-
- (defequiv my-equal
-   :hints (("Goal" :in-theory (enable booleanp))))
-
-; In v2-7 and presumably earlier, the above leads us to a type-prescription
-; rule with a NIL :basic-ts field:
-
-  ACL2 !>(car (getprop 'my-equal 'type-prescriptions t 'current-acl2-world (w state)))
-  (NIL (1685 MY-EQUAL X Y)
-       NIL
-       (NIL :EQUIVALENCE MY-EQUAL-IS-AN-EQUIVALENCE)
-       BOOLEANP (MY-EQUAL X Y))
-  ACL2 !>
-|#
+;  (defun my-equal (x y)
+;    (equal x y))
+; 
+;  (in-theory (disable
+;              (:type-prescription my-equal)
+;              (:COMPOUND-RECOGNIZER BOOLEANP-COMPOUND-RECOGNIZER)))
+; 
+;  (defequiv my-equal
+;    :hints (("Goal" :in-theory (enable booleanp))))
+; 
+; ; In v2-7 and presumably earlier, the above leads us to a type-prescription
+; ; rule with a NIL :basic-ts field:
+; 
+;   ACL2 !>(car (getprop 'my-equal 'type-prescriptions t 'current-acl2-world (w state)))
+;   (NIL (1685 MY-EQUAL X Y)
+;        NIL
+;        (NIL :EQUIVALENCE MY-EQUAL-IS-AN-EQUIVALENCE)
+;        BOOLEANP (MY-EQUAL X Y))
+;   ACL2 !>
 
              (prog2$ (cw "~%NOTE:  ACL2 is unable to create a proposed ~
                           type-prescription rule from the term ~x0 for ~
@@ -7862,12 +7856,11 @@ this problem.  [It contains a truly trivial edit we've made, not important.]
 ;  (implies (fn y1 y2) (equal (fn x y1) (fn x y2))).
 ; We prove this below.
 
-#|
 ; Suppose fn is an arbitrary equivalence relation.
 
- (encapsulate (((fn * *) => *))
-  (local (defun fn (x y) (equal x y)))
-  (defequiv fn))
+;  (encapsulate (((fn * *) => *))
+;   (local (defun fn (x y) (equal x y)))
+;   (defequiv fn))
 
 ; We pick out from its properties just three that we care about, its
 ; Boolean nature, symmetry, and transitivity.  We don't care that it
@@ -7878,51 +7871,50 @@ this problem.  [It contains a truly trivial edit we've made, not important.]
 ; relation.  But the theorems proved about fn are true of any relation
 ; with the three properties below.
 
- (defthm fn-boolean (booleanp (fn x y))
-  :rule-classes :type-prescription
-  :hints (("Goal" :use fn-is-an-equivalence)))
-
- (defthm fn-symm (implies (fn x y) (equal (fn y x) t))
-  :hints (("Goal" :use fn-is-an-equivalence)))
-
- (defthm fn-trans (implies (and (fn x y) (fn y z)) (equal (fn x z) t))
-  :hints (("Goal" :use fn-is-an-equivalence)))
+;  (defthm fn-boolean (booleanp (fn x y))
+;   :rule-classes :type-prescription
+;   :hints (("Goal" :use fn-is-an-equivalence)))
+; 
+;  (defthm fn-symm (implies (fn x y) (equal (fn y x) t))
+;   :hints (("Goal" :use fn-is-an-equivalence)))
+; 
+;  (defthm fn-trans (implies (and (fn x y) (fn y z)) (equal (fn x z) t))
+;   :hints (("Goal" :use fn-is-an-equivalence)))
 
 ; So now we observe the first of our two congruence properties: to
 ; maintain identity in fn expressions it is sufficient to maintain
 ; "fn-ity" in the first argument position.
 
- (defthm fn-congruence1
-  (implies (fn x1 x2)
-           (equal (fn x1 y) (fn x2 y)))
-  :rule-classes :congruence
-  :hints (("Goal" :use (:instance
-                        (:theorem
-                         (implies (and (booleanp p)
-                                       (booleanp q))
-                                  (equal (equal p q) (iff p q))))
-                        (p (fn x1 y))
-                        (q (fn x2 y))))
-          ("Subgoal 2.1" :use ((:instance fn-symm (x x1) (y x2)))
-                         :in-theory (disable fn-symm))))
+;  (defthm fn-congruence1
+;   (implies (fn x1 x2)
+;            (equal (fn x1 y) (fn x2 y)))
+;   :rule-classes :congruence
+;   :hints (("Goal" :use (:instance
+;                         (:theorem
+;                          (implies (and (booleanp p)
+;                                        (booleanp q))
+;                                   (equal (equal p q) (iff p q))))
+;                         (p (fn x1 y))
+;                         (q (fn x2 y))))
+;           ("Subgoal 2.1" :use ((:instance fn-symm (x x1) (y x2)))
+;                          :in-theory (disable fn-symm))))
 
 ; And, to maintain identity in fn expressions it suffices to maintain
 ; "fn-ity" in the second argument position.
 
- (defthm fn-congruence2
-  (implies (fn y1 y2)
-           (equal (fn x y1) (fn x y2)))
-  :rule-classes :congruence
-  :hints (("Goal" :use (:instance
-                        (:theorem
-                         (implies (and (booleanp p)
-                                       (booleanp q))
-                                  (equal (equal p q) (iff p q))))
-                        (p (fn x y1))
-                        (q (fn x y2))))
-          ("Subgoal 2.1" :use ((:instance fn-symm (x y1) (y y2)))
-                         :in-theory (disable fn-symm))))
-|#
+;  (defthm fn-congruence2
+;   (implies (fn y1 y2)
+;            (equal (fn x y1) (fn x y2)))
+;   :rule-classes :congruence
+;   :hints (("Goal" :use (:instance
+;                         (:theorem
+;                          (implies (and (booleanp p)
+;                                        (booleanp q))
+;                                   (equal (equal p q) (iff p q))))
+;                         (p (fn x y1))
+;                         (q (fn x y2))))
+;           ("Subgoal 2.1" :use ((:instance fn-symm (x y1) (y y2)))
+;                          :in-theory (disable fn-symm))))
 
 ; We do not store with the equivalence relation the name of the event
 ; that established that it is an equivalence relation.  That means we
@@ -10093,8 +10085,6 @@ this problem.  [It contains a truly trivial edit we've made, not important.]
 
 ; We start by translating the user-supplied list of rule-class tokens.
 
-#||
-
 ; Once upon a time we considered the idea of permitting rule classes, e.g.,
 ; :FORWARD-CHAINING, to be abbreviated by arbitrary subsequences of their
 ; characters.  We implemented the idea via "disambiguation alists."  We have
@@ -10108,95 +10098,94 @@ this problem.  [It contains a truly trivial edit we've made, not important.]
 ; disambiguation, we have scrapped the idea for now.  We leave the following
 ; dead code in place.
 
-(defun char-subsequencep (x y)
-
-; Determine whether x is a subsequence of y, e.g., '(#\B #\D) is a
-; char-subsequencep of '(#\A #\B #\C #\D) but not of '(#\A #\D #\B).
-; X and y must be true lists of characters.
-
-  (cond ((null x) t)
-        ((null y) nil)
-        ((eql (car x) (car y))
-         (char-subsequencep (cdr x) (cdr y)))
-        (t (char-subsequencep x (cdr y)))))
-
-(defun disambiguate1 (x alist)
-
-; Alist should pair character lists with arbitrary values.  We select those
-; pairs whose key have x as a subsequence.
-
-  (cond ((null alist) nil)
-        ((char-subsequencep x (caar alist))
-         (cons (car alist) (disambiguate1 x (cdr alist))))
-        (t (disambiguate1 x (cdr alist)))))
-
-(defun make-disambiguation-alist (lst)
-
-; This function is used to preprocess a true list of symbols into an
-; alist suitable for disambiguate.  For example, '(FOO BAR) is
-; transformed into '(((#\F #\O #\O) . FOO) ((#\B #\A #\R) . BAR)).
-
-  (cond ((null lst) nil)
-        (t (cons (cons (coerce (symbol-name (car lst)) 'list) (car lst))
-                 (make-disambiguation-alist (cdr lst))))))
-
-(defun assoc-cdr (x alist)
-
-; Like assoc-equal but uses the cdr of each pair in alist as the key.
-
-  (cond ((null alist) nil)
-        ((equal x (cdar alist)) (car alist))
-        (t (assoc-cdr x (cdr alist)))))
-
-(defun disambiguate (token alist ctx phrase state)
-
-; This function disambiguates token wrt alist or else causes an error.
-; Token must be a symbol and alist must be a ``disambiguation alist,''
-; an alist pairing lists of characters to symbols.  For example, if
-; token is :EM and alist includes the pair ((#\E #\L #\I #\M) . :ELIM)
-; and no other pair whose key has EM as a subsequence, then no error
-; is caused and :ELIM is returned as the value.  If the token is a
-; subsequence of no key or of more than one key, an error is caused.
-; Phrase is a tilde-@ phrase that fills in the sentence: "The
-; acceptable ~@1 are ..." so, for example, phrase might be "rule
-; classes".
-
-; We adopt the convention, for sanity, that if token is eq to the
-; value component of some pair in alist, then its meaning is itself.
-; This guarantees that if you spell a token out completely you get that
-; token and no other; in particular, you don't get an ambiguity error
-; just one key in the alist is a subsequence of another.
-
-  (cond
-   ((assoc-cdr token alist) (value token))
-   (t
-    (let ((winners (disambiguate1 (coerce (symbol-name token) 'list) alist)))
-      (cond ((null winners)
-             (er soft ctx "The token ~x0 denotes none of the acceptable ~@1: ~&2."
-                 token
-                 phrase
-                 (strip-cdrs alist)))
-            ((null (cdr winners))
-             (value (cdar winners)))
-            (t (er soft ctx "The token ~x0 is ambiguously denotes the ~@1:  ~&2."
-                   token
-                   phrase
-                   (strip-cdrs winners))))))))
-
-(defun tilde-@-abbreviates-but-phrase (x y)
-
-; We produce a tilde-@ phrase that prints as "x abbreviates y, but y"
-; if x is different from y and that is just "y" otherwise.  Both x and
-; y are symbols.  This is used to print such messages as ":RWT
-; abbreviates :REWRITE, but :REWRITE cannot be used as a structured
-; rule class."
-
-  (cond ((eq x y) (msg "~x0" y))
-        (t (msg "~x0 abbreviates ~x1, but ~x1" x y))))
-
-; Thus ends the dead code devoted to disambiguation.
-
-||#
+; (defun char-subsequencep (x y)
+; 
+; ; Determine whether x is a subsequence of y, e.g., '(#\B #\D) is a
+; ; char-subsequencep of '(#\A #\B #\C #\D) but not of '(#\A #\D #\B).
+; ; X and y must be true lists of characters.
+; 
+;   (cond ((null x) t)
+;         ((null y) nil)
+;         ((eql (car x) (car y))
+;          (char-subsequencep (cdr x) (cdr y)))
+;         (t (char-subsequencep x (cdr y)))))
+; 
+; (defun disambiguate1 (x alist)
+; 
+; ; Alist should pair character lists with arbitrary values.  We select those
+; ; pairs whose key have x as a subsequence.
+; 
+;   (cond ((null alist) nil)
+;         ((char-subsequencep x (caar alist))
+;          (cons (car alist) (disambiguate1 x (cdr alist))))
+;         (t (disambiguate1 x (cdr alist)))))
+; 
+; (defun make-disambiguation-alist (lst)
+; 
+; ; This function is used to preprocess a true list of symbols into an
+; ; alist suitable for disambiguate.  For example, '(FOO BAR) is
+; ; transformed into '(((#\F #\O #\O) . FOO) ((#\B #\A #\R) . BAR)).
+; 
+;   (cond ((null lst) nil)
+;         (t (cons (cons (coerce (symbol-name (car lst)) 'list) (car lst))
+;                  (make-disambiguation-alist (cdr lst))))))
+; 
+; (defun assoc-cdr (x alist)
+; 
+; ; Like assoc-equal but uses the cdr of each pair in alist as the key.
+; 
+;   (cond ((null alist) nil)
+;         ((equal x (cdar alist)) (car alist))
+;         (t (assoc-cdr x (cdr alist)))))
+; 
+; (defun disambiguate (token alist ctx phrase state)
+; 
+; ; This function disambiguates token wrt alist or else causes an error.
+; ; Token must be a symbol and alist must be a ``disambiguation alist,''
+; ; an alist pairing lists of characters to symbols.  For example, if
+; ; token is :EM and alist includes the pair ((#\E #\L #\I #\M) . :ELIM)
+; ; and no other pair whose key has EM as a subsequence, then no error
+; ; is caused and :ELIM is returned as the value.  If the token is a
+; ; subsequence of no key or of more than one key, an error is caused.
+; ; Phrase is a tilde-@ phrase that fills in the sentence: "The
+; ; acceptable ~@1 are ..." so, for example, phrase might be "rule
+; ; classes".
+; 
+; ; We adopt the convention, for sanity, that if token is eq to the
+; ; value component of some pair in alist, then its meaning is itself.
+; ; This guarantees that if you spell a token out completely you get that
+; ; token and no other; in particular, you don't get an ambiguity error
+; ; just one key in the alist is a subsequence of another.
+; 
+;   (cond
+;    ((assoc-cdr token alist) (value token))
+;    (t
+;     (let ((winners (disambiguate1 (coerce (symbol-name token) 'list) alist)))
+;       (cond ((null winners)
+;              (er soft ctx "The token ~x0 denotes none of the acceptable ~@1: ~&2."
+;                  token
+;                  phrase
+;                  (strip-cdrs alist)))
+;             ((null (cdr winners))
+;              (value (cdar winners)))
+;             (t (er soft ctx "The token ~x0 is ambiguously denotes the ~@1:  ~&2."
+;                    token
+;                    phrase
+;                    (strip-cdrs winners))))))))
+; 
+; (defun tilde-@-abbreviates-but-phrase (x y)
+; 
+; ; We produce a tilde-@ phrase that prints as "x abbreviates y, but y"
+; ; if x is different from y and that is just "y" otherwise.  Both x and
+; ; y are symbols.  This is used to print such messages as ":RWT
+; ; abbreviates :REWRITE, but :REWRITE cannot be used as a structured
+; ; rule class."
+; 
+;   (cond ((eq x y) (msg "~x0" y))
+;         (t (msg "~x0 abbreviates ~x1, but ~x1" x y))))
+; 
+; ; Thus ends the dead code devoted to disambiguation.
+; 
 
 ; Now we stub out the proof checker's sense of "instructions."
 
@@ -11335,51 +11324,49 @@ this problem.  [It contains a truly trivial edit we've made, not important.]
 ; Reasoning makes it clear that we need the evaluator axioms to justify the
 ; application of a :meta or :clause-processor rule.
 
-#|
- (defun meta-foo (term)
-   (if (and (consp term)
-            (equal (car term) 'foo))
-       *nil*
-     term))
-
- (encapsulate
-  (((evx * *) => *)
-   ((evx-list * *) => *)
-   ((foo *) => *))
-
-  (local
-   (defun foo (x) 
-     (declare (ignore x))
-     nil))
-
-  (local
-   (defevaluator evx evx-list
-     ((foo x))))
-
-  (defthm meta-foo-rule
-    (equal (evx term a)
-           (evx (meta-foo term) a))
-    :rule-classes ((:meta :trigger-fns (foo)))))
-
- (defun goo (x) 
-   (declare (ignore x))
-   t)
-
- (defthm qed
-   (not (goo x))
-   :hints (("goal" :use (:functional-instance (:theorem (not (foo x)))
-                                              (foo goo))
-            :in-theory (disable
-                        goo
-                        (:type-prescription goo)
-                        (goo))))
-   :rule-classes nil)
-
- (defthm contradiction
-   nil
-   :hints (("goal" :use qed :in-theory (enable goo)))
-   :rule-classes nil)
-|#
+;  (defun meta-foo (term)
+;    (if (and (consp term)
+;             (equal (car term) 'foo))
+;        *nil*
+;      term))
+; 
+;  (encapsulate
+;   (((evx * *) => *)
+;    ((evx-list * *) => *)
+;    ((foo *) => *))
+; 
+;   (local
+;    (defun foo (x) 
+;      (declare (ignore x))
+;      nil))
+; 
+;   (local
+;    (defevaluator evx evx-list
+;      ((foo x))))
+; 
+;   (defthm meta-foo-rule
+;     (equal (evx term a)
+;            (evx (meta-foo term) a))
+;     :rule-classes ((:meta :trigger-fns (foo)))))
+; 
+;  (defun goo (x) 
+;    (declare (ignore x))
+;    t)
+; 
+;  (defthm qed
+;    (not (goo x))
+;    :hints (("goal" :use (:functional-instance (:theorem (not (foo x)))
+;                                               (foo goo))
+;             :in-theory (disable
+;                         goo
+;                         (:type-prescription goo)
+;                         (goo))))
+;    :rule-classes nil)
+; 
+;  (defthm contradiction
+;    nil
+;    :hints (("goal" :use qed :in-theory (enable goo)))
+;    :rule-classes nil)
 
                 (collect-keys-eq '(:meta :clause-processor) classes))
                (t classes))))

@@ -1100,7 +1100,8 @@ implementations.")
 ; go with format arg (rc-filename save-dir), because we know of no way in
 ; Allegro 6.2 to avoid getting Allegro copyright information printed upon :q if
 ; we start up in the ACL2 read-eval-print loop.
-          #|               "~s -I ~s -L ~s~%" |#
+
+;         "~s -I ~s -L ~s~%"
 
           "~s -I ~s $*~%"
           (system::command-line-argument 0)

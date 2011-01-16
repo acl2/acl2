@@ -2909,34 +2909,30 @@
 (defun geneqv-at-subterm-top (term addr ens wrld)
   (geneqv-at-subterm term addr *geneqv-iff* ens wrld))
 
-#|
-
 ;; In the following we want to know if every occurrence of old in term
 ;; is at a position at which substitution by something EQUIV to old
 ;; will guarantee a result that is GENEQV to term.
 
-(mutual-recursion
-
-(defun subst-expr1-okp (old term equiv geneqv ens wrld)
-  (cond ((equal term old)
-         (geneqv-refinementp equiv geneqv wrld))
-        ((variablep term) t)
-        ((fquotep term) t)
-        (t (subst-expr1-ok-listp old (fargs term)
-                                 (geneqv-lst (ffn-symb term) geneqv ens wrld)
-                                 equiv ens wrld))))
-
-(defun subst-expr1-ok-listp (old args equiv geneqv-lst ens wrld)
-  (cond ((null args) nil)
-        (t (and (subst-expr1-okp
-                 old (car args) equiv (car geneqv-lst) ens wrld)
-                (subst-expr1-ok-listp
-                 old (cdr args) equiv (cdr geneqv-lst) ens wrld)))))
-
-
-)
-|#
-
+; (mutual-recursion
+; 
+; (defun subst-expr1-okp (old term equiv geneqv ens wrld)
+;   (cond ((equal term old)
+;          (geneqv-refinementp equiv geneqv wrld))
+;         ((variablep term) t)
+;         ((fquotep term) t)
+;         (t (subst-expr1-ok-listp old (fargs term)
+;                                  (geneqv-lst (ffn-symb term) geneqv ens wrld)
+;                                  equiv ens wrld))))
+; 
+; (defun subst-expr1-ok-listp (old args equiv geneqv-lst ens wrld)
+;   (cond ((null args) nil)
+;         (t (and (subst-expr1-okp
+;                  old (car args) equiv (car geneqv-lst) ens wrld)
+;                 (subst-expr1-ok-listp
+;                  old (cdr args) equiv (cdr geneqv-lst) ens wrld)))))
+; 
+; 
+; )
 
 ;; **** Need to think about what happens if we, e.g., substitute T for X
 ;; inside (equal X T).  Probably that's OK -- but also, consider allowing

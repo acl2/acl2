@@ -2092,22 +2092,20 @@
 ; could derive (equal (f a) (f a)), which would be t and unsound.  The
 ; preconditions for this screwy situation are exhibited by:
 
-#|
-         (defun squash (x)
-         (cond ((null x) nil)
-         ((integerp x) 1)
-         (t t)))
-
-         (defun equiv (x y)
-         (equal (squash x) (squash y)))
-
-         (defequiv equiv)
-
-         (defun f (x) x)
-
-         (defcong equiv iff (f x) 1)
-
-         |#
+;  (defun squash (x)
+;    (cond ((null x) nil)
+;          ((integerp x) 1)
+;          (t t)))
+; 
+;  (defun equiv (x y)
+;    (equal (squash x) (squash y)))
+; 
+;  (defequiv equiv)
+; 
+;  (defun f (x) x)
+; 
+;  (defcong equiv iff (f x) 1)
+; 
 
 ; In particular, (implies (equiv a b) (equal (f a) (f b))) is not a
 ; theorem (a=1 and b=2 are counterexamples), but this function, if

@@ -7448,47 +7448,45 @@
 
 ; Here is a way to exhibit the proof-checker expand bug described in the first
 ; paragraph of the documentation below:
-#|
- (in-package "ACL2")
 
- (encapsulate
-  (((foo *) => *)
-   ((bar *) => *))
-
-  (local (defun foo (x) x))
-  (local (defun bar (x) (not x)))
-
-  (defthm foo-open
-    (equal (foo x) x)
-    :rule-classes :definition)
-
-  (defthm bar-not-foo
-    (equal (bar x) (not (foo x)))
-    :rule-classes :definition))
-
- (defthm bad (equal (foo x) (bar x))
-   :rule-classes nil
-   :instructions
-   ((:dv 1) :expand :nx :expand :top :s))
-
- (defthm contradiction
-   nil
-   :rule-classes nil
-   :hints (("Goal" :use bad)))
-|#
+;  (in-package "ACL2")
+; 
+;  (encapsulate
+;   (((foo *) => *)
+;    ((bar *) => *))
+; 
+;   (local (defun foo (x) x))
+;   (local (defun bar (x) (not x)))
+; 
+;   (defthm foo-open
+;     (equal (foo x) x)
+;     :rule-classes :definition)
+; 
+;   (defthm bar-not-foo
+;     (equal (bar x) (not (foo x)))
+;     :rule-classes :definition))
+; 
+;  (defthm bad (equal (foo x) (bar x))
+;    :rule-classes nil
+;    :instructions
+;    ((:dv 1) :expand :nx :expand :top :s))
+; 
+;  (defthm contradiction
+;    nil
+;    :rule-classes nil
+;    :hints (("Goal" :use bad)))
 
 ; The second proof-checker bug mentioned below can be exhibited as follows:
-#|
- (encapsulate
-  ()
-  (local
-   (defthm bug-lemma (if x (if x t nil) nil)
-     :rule-classes nil
-     :instructions ((dive 2 3) :s)))
-  (defthm bug nil
-    :rule-classes nil
-    :hints (("Goal" :use ((:instance bug-lemma (x nil)))))))
-|#
+
+;  (encapsulate
+;   ()
+;   (local
+;    (defthm bug-lemma (if x (if x t nil) nil)
+;      :rule-classes nil
+;      :instructions ((dive 2 3) :s)))
+;   (defthm bug nil
+;     :rule-classes nil
+;     :hints (("Goal" :use ((:instance bug-lemma (x nil)))))))
 
 ; The function ev-acl2-unwind-protect was fixed to incorporate a change made
 ; long ago, by J, to acl2-unwind-protect.  This function was subsequently
@@ -7511,45 +7509,43 @@
 ; hard error when destructure-type-prescription fails; previously we had
 ; ignored the erp return value from destructure-type-prescription.
 
-#|
-  (in-package "ACL2")
-
-  (defun my-natp (x)
-    (declare (xargs :guard t))
-    (and (integerp x)
-         (<= 0 x)))
-
-  (defun foo (x)
-    (nfix x))
-
-  (in-theory (disable foo (:type-prescription foo)))
-
-  (encapsulate
-   ()
-   (local (defthm my-natp-cr
-            (equal (my-natp x)
-                   (and (integerp x)
-                        (<= 0 x)))
-            :rule-classes :compound-recognizer))
-   (defthm foo-type-prescription
-     (my-natp (foo x))
-     :hints (("Goal" :in-theory (enable foo)))
-     :rule-classes ((:type-prescription :typed-term (foo x)))))
-
-  (defthm rationalp-foo
-    (rationalp (foo x))
-    :hints (("Goal" :in-theory (enable foo)))
-    :rule-classes :type-prescription)
-
-  (defthm bad-lemma
-    (equal (foo x) 1)
-    :rule-classes nil)
-
-  (defthm bad
-    nil
-    :rule-classes nil
-    :hints (("Goal" :use ((:instance bad-lemma (x 1))))))
-|#
+;   (in-package "ACL2")
+; 
+;   (defun my-natp (x)
+;     (declare (xargs :guard t))
+;     (and (integerp x)
+;          (<= 0 x)))
+; 
+;   (defun foo (x)
+;     (nfix x))
+; 
+;   (in-theory (disable foo (:type-prescription foo)))
+; 
+;   (encapsulate
+;    ()
+;    (local (defthm my-natp-cr
+;             (equal (my-natp x)
+;                    (and (integerp x)
+;                         (<= 0 x)))
+;             :rule-classes :compound-recognizer))
+;    (defthm foo-type-prescription
+;      (my-natp (foo x))
+;      :hints (("Goal" :in-theory (enable foo)))
+;      :rule-classes ((:type-prescription :typed-term (foo x)))))
+; 
+;   (defthm rationalp-foo
+;     (rationalp (foo x))
+;     :hints (("Goal" :in-theory (enable foo)))
+;     :rule-classes :type-prescription)
+; 
+;   (defthm bad-lemma
+;     (equal (foo x) 1)
+;     :rule-classes nil)
+; 
+;   (defthm bad
+;     nil
+;     :rule-classes nil
+;     :hints (("Goal" :use ((:instance bad-lemma (x 1))))))
 
   ":Doc-Section note-2-8
 
@@ -10999,67 +10995,65 @@
 ; The "soundness bug in linear arithmetic" mentioned below was confined to
 ; linearize1.  Robert provided the fix and we checked it.  Below is an example
 ; from Robert that proves nil in ACL2 Version_3.0.1 but fails after the patch.
-#|
- (defun id (x) x)
 
- (defthm id-rationalp
-   (implies (force (rationalp x))
-            (rationalp (id x)))
-   :rule-classes :type-prescription)
-
- (in-theory (disable id))
-
- (defun id2 (x y)
-   (if (zp x)
-       y
-     (id2 (+ -1 x) y)))
-
- (in-theory (disable (:type-prescription id2)))
-
- (defthm bad
-   (implies (and (not (equal (id x) (id2 y z)))
-                 (acl2-numberp y)
-                 (integerp z)
-                 (<= 0 z))
-            (or (< (id x) (id2 y z))
-                (< (id2 y z) (id x))))
-   :hints (("[1]Goal" :in-theory (enable (:type-prescription id2))))
-   :rule-classes nil)
-
- (set-guard-checking :none)
-
- (let ((x "foo")
-       (y 0)
-       (z 0))
-   (implies (and (not (equal (id x) (id2 y z)))
-                 (acl2-numberp y)
-                 (integerp z)
-                 (<= 0 z))
-            (or (< (id x) (id2 y z))
-                (< (id2 y z) (id x)))))
-
- (thm
-  nil
-  :hints (("Goal" :use (:instance bad (x "foo") (y 0) (z 0)))))
-|# ; |
+;  (defun id (x) x)
+; 
+;  (defthm id-rationalp
+;    (implies (force (rationalp x))
+;             (rationalp (id x)))
+;    :rule-classes :type-prescription)
+; 
+;  (in-theory (disable id))
+; 
+;  (defun id2 (x y)
+;    (if (zp x)
+;        y
+;      (id2 (+ -1 x) y)))
+; 
+;  (in-theory (disable (:type-prescription id2)))
+; 
+;  (defthm bad
+;    (implies (and (not (equal (id x) (id2 y z)))
+;                  (acl2-numberp y)
+;                  (integerp z)
+;                  (<= 0 z))
+;             (or (< (id x) (id2 y z))
+;                 (< (id2 y z) (id x))))
+;    :hints (("[1]Goal" :in-theory (enable (:type-prescription id2))))
+;    :rule-classes nil)
+; 
+;  (set-guard-checking :none)
+; 
+;  (let ((x "foo")
+;        (y 0)
+;        (z 0))
+;    (implies (and (not (equal (id x) (id2 y z)))
+;                  (acl2-numberp y)
+;                  (integerp z)
+;                  (<= 0 z))
+;             (or (< (id x) (id2 y z))
+;                 (< (id2 y z) (id x)))))
+; 
+;  (thm
+;   nil
+;   :hints (("Goal" :use (:instance bad (x "foo") (y 0) (z 0))))) ; |
 
 ; Added type declaration in ts-subsetp (but seemed not to make a measurable
 ; difference in time, at least for fast GCL build).
 
 ; Here is evidence for the bug in symbol-package-name-pkg-witness-name:
-#|
- (defthm contradiction
-   nil
-   :hints (("Goal"
-            :use ((:instance symbol-package-name-pkg-witness-name
-                             (pkg-name ""))
-                  (:instance intern-in-package-of-symbol-symbol-name
-                             (x (pkg-witness ""))
-                             (y 3)))
-            :in-theory (disable (pkg-witness)
-                                intern-in-package-of-symbol-symbol-name)))
-   :rule-classes nil)
-|# ; |
+
+;  (defthm contradiction
+;    nil
+;    :hints (("Goal"
+;             :use ((:instance symbol-package-name-pkg-witness-name
+;                              (pkg-name ""))
+;                   (:instance intern-in-package-of-symbol-symbol-name
+;                              (x (pkg-witness ""))
+;                              (y 3)))
+;             :in-theory (disable (pkg-witness)
+;                                 intern-in-package-of-symbol-symbol-name)))
+;    :rule-classes nil) ; |
 
 ; Implementation note: for reset-prehistory, the key idea is to manipulate
 ; world global 'command-number-baseline-info.
@@ -11717,29 +11711,27 @@
 ; test near the end of rewrite, in v3-2:
 ; (not (member-eq (nu-rewriter-mode wrld) '(nil :literals)))
 
-#||
- (defun repeat (n v)
-   (declare (xargs :guard (natp n)))
-   (if (zp n)
-       nil
-     (cons v (repeat (1- n) v))))
-
- (defthmd len-of-cons
-   (equal (len (cons a x))
-          (+ 1 (len x))))
-
- (in-theory (disable len))
-
- (set-rewrite-stack-limit nil)
-
- (set-nu-rewriter-mode t) ; slows things down by a factor of almost 20
-
- (thm (equal (len (repeat 7000 a)) 7000)
-      :hints (("goal'" :in-theory (enable len-of-cons))
-              ("Goal"
-               :do-not '(preprocess)
-               :expand (:free (a x) (repeat a x)))))
-||#
+;  (defun repeat (n v)
+;    (declare (xargs :guard (natp n)))
+;    (if (zp n)
+;        nil
+;      (cons v (repeat (1- n) v))))
+; 
+;  (defthmd len-of-cons
+;    (equal (len (cons a x))
+;           (+ 1 (len x))))
+; 
+;  (in-theory (disable len))
+; 
+;  (set-rewrite-stack-limit nil)
+; 
+;  (set-nu-rewriter-mode t) ; slows things down by a factor of almost 20
+; 
+;  (thm (equal (len (repeat 7000 a)) 7000)
+;       :hints (("goal'" :in-theory (enable len-of-cons))
+;               ("Goal"
+;                :do-not '(preprocess)
+;                :expand (:free (a x) (repeat a x)))))
 
 ; Regarding the slow array warning related to wormholes mentioned below: here
 ; is a way to cause that problem before Version_3.2.
@@ -12239,31 +12231,28 @@
 ; Here is the proof of nil from Sol Swords referenced in the mbe bug discussion
 ; below.
 
- #||
- (defun foo (a b)
-   (mbe :logic (mv a b)
-        :exec (mv a b)))
-
- ;; (foo 'a 'b) returns (A NIL);
- ;; should return (A B)
-
- (defthm foo-1-nil
-   (equal (mv-nth 1 (foo 'a 'b)) nil)
-   :rule-classes nil)
-
- (verify-guards foo)
- ;; now the correct behavior returns:
- ;; (foo 'a 'b) returns (A B).
-
- (defthm foo-1-b
-   (equal (mv-nth 1 (foo 'a 'b)) 'b)
-   :rule-classes nil)
-
- (thm
-  nil
-  :hints (("Goal" :use (foo-1-nil foo-1-b))))
-
-||#
+;  (defun foo (a b)
+;    (mbe :logic (mv a b)
+;         :exec (mv a b)))
+; 
+;  ;; (foo 'a 'b) returns (A NIL);
+;  ;; should return (A B)
+; 
+;  (defthm foo-1-nil
+;    (equal (mv-nth 1 (foo 'a 'b)) nil)
+;    :rule-classes nil)
+; 
+;  (verify-guards foo)
+;  ;; now the correct behavior returns:
+;  ;; (foo 'a 'b) returns (A B).
+; 
+;  (defthm foo-1-b
+;    (equal (mv-nth 1 (foo 'a 'b)) 'b)
+;    :rule-classes nil)
+; 
+;  (thm
+;   nil
+;   :hints (("Goal" :use (foo-1-nil foo-1-b))))
 
 ; Modified warning$ a bit to avoid what appears to be a GCL compilation bug.
 
@@ -13047,39 +13036,37 @@
 ; proof of nil based on the use of mbe inside an encapsulate event.  The proof
 ; goes through for this example in Version_3.3 but not in Version_3.4.
 
-#||
- (encapsulate
-  ((f (x) t))
-
-  (local (defun f (x)
-           (declare (xargs :guard t))
-           x))
-
-  (defun g (x)
-    (declare (xargs :guard t))
-    (mbe :logic (f x)
-         :exec  x)))
-
- (defthm g-3-is-3
-   (equal (g 3) 3)
-   :rule-classes nil)
-
- (defthm f-3-is-3
-   (equal (f 3) 3)
-   :hints (("Goal"
-            :in-theory (disable (g))
-            :use g-3-is-3)))
-
- (defun foo (x)
-   (declare (ignore x))
-   4)
-
- (defthm contradiction
-   nil
-   :hints (("Goal" :use ((:functional-instance f-3-is-3
-                                               (f foo)))))
-   :rule-classes nil)
-||#
+;  (encapsulate
+;   ((f (x) t))
+; 
+;   (local (defun f (x)
+;            (declare (xargs :guard t))
+;            x))
+; 
+;   (defun g (x)
+;     (declare (xargs :guard t))
+;     (mbe :logic (f x)
+;          :exec  x)))
+; 
+;  (defthm g-3-is-3
+;    (equal (g 3) 3)
+;    :rule-classes nil)
+; 
+;  (defthm f-3-is-3
+;    (equal (f 3) 3)
+;    :hints (("Goal"
+;             :in-theory (disable (g))
+;             :use g-3-is-3)))
+; 
+;  (defun foo (x)
+;    (declare (ignore x))
+;    4)
+; 
+;  (defthm contradiction
+;    nil
+;    :hints (("Goal" :use ((:functional-instance f-3-is-3
+;                                                (f foo)))))
+;    :rule-classes nil)
 
 ; Fixed a hard error during an error message caused by the use of the wrong ~@
 ; argument in unknown-binding-msg.  Thanks to Eric Smith for pointing this out.
@@ -13122,46 +13109,42 @@
 ; consider do-not-induct-otf-flg-override in the definition of aborting-p in
 ; the definition of increment-proof-tree.
 
-#||
- (start-proof-tree)
-
- (defun limit-induction-hint-fn (i)
-   `(or (and (length-exceedsp (car id) ,i)
-             (endp (cdadr id))
-             (eq (cddr id) 0)
-             '(:computed-hint-replacement
-               t
-               :do-not-induct :otf-flg-override))
-        (and (> (cddr id) 20)
-             '(:computed-hint-replacement
-               t
-               :do-not (eliminate-destructors eliminate-irrelevance
-                                              generalize fertilize)
-               :in-theory nil))))
-
- (add-default-hints
-  `(,(limit-induction-hint-fn 1)))
-
- (defun sum-from (i lst)
-   (if (and (natp i)
-            (< i (len lst)))
-     (+ (nth i lst) (sum-from (1+ i) lst))
-     0))
-||#
+;  (start-proof-tree)
+; 
+;  (defun limit-induction-hint-fn (i)
+;    `(or (and (length-exceedsp (car id) ,i)
+;              (endp (cdadr id))
+;              (eq (cddr id) 0)
+;              '(:computed-hint-replacement
+;                t
+;                :do-not-induct :otf-flg-override))
+;         (and (> (cddr id) 20)
+;              '(:computed-hint-replacement
+;                t
+;                :do-not (eliminate-destructors eliminate-irrelevance
+;                                               generalize fertilize)
+;                :in-theory nil))))
+; 
+;  (add-default-hints
+;   `(,(limit-induction-hint-fn 1)))
+; 
+;  (defun sum-from (i lst)
+;    (if (and (natp i)
+;             (< i (len lst)))
+;      (+ (nth i lst) (sum-from (1+ i) lst))
+;      0))
 
 ; Fixed warning messages (error messages too actually) for computed hints, so
 ; that mere warnings don't say that a value is illegal.  Thanks to Robert Krug
 ; for pointing out this problem and sending the following example:
 
-#||
- (in-theory (disable mv-nth eq))
-
- (thm
-  (equal (* x y) (+ x y))
-  :hints ((if stable-under-simplificationp 
-              '(:in-theory (enable eq))
-            nil)))
-||#
+;  (in-theory (disable mv-nth eq))
+; 
+;  (thm
+;   (equal (* x y) (+ x y))
+;   :hints ((if stable-under-simplificationp 
+;               '(:in-theory (enable eq))
+;             nil)))
 
 ; Changed constant *primitive-event-macros* into zero-ary function
 ; primitive-event-macros, in support of Peter Dillinger's desire to be able to
@@ -13897,71 +13880,70 @@
 ; inside type-set (see the comment "The pot-lst is not valid....").
 ; Here is how to see that bug in action.  The following theorem proves "using
 ; trivial observations", but the instance of it below evaluates to nil.
-#||
- (thm
-  (IMPLIES (AND (< (CAR Y) (CADR X))
-                (TRUE-LISTP X)
-                (TRUE-LISTP Y)
-                (< (CAR X) (CAR Y)))
-           (LET ((X Y) (Y X))
-                (AND (TRUE-LISTP X)
-                     (TRUE-LISTP Y)
-                     (< (CAR X) (CAR Y))))))
 
- (let ((x '(1 7 3)) (y '(4 5 6)))
-   (IMPLIES (AND (< (CAR Y) (CADR X))
-                 (TRUE-LISTP X)
-                 (TRUE-LISTP Y)
-                 (< (CAR X) (CAR Y)))
-            (LET ((X Y) (Y X))
-                 (AND (TRUE-LISTP X)
-                      (TRUE-LISTP Y)
-                      (< (CAR X) (CAR Y))))))
-||#
+;  (thm
+;   (IMPLIES (AND (< (CAR Y) (CADR X))
+;                 (TRUE-LISTP X)
+;                 (TRUE-LISTP Y)
+;                 (< (CAR X) (CAR Y)))
+;            (LET ((X Y) (Y X))
+;                 (AND (TRUE-LISTP X)
+;                      (TRUE-LISTP Y)
+;                      (< (CAR X) (CAR Y))))))
+; 
+;  (let ((x '(1 7 3)) (y '(4 5 6)))
+;    (IMPLIES (AND (< (CAR Y) (CADR X))
+;                  (TRUE-LISTP X)
+;                  (TRUE-LISTP Y)
+;                  (< (CAR X) (CAR Y)))
+;             (LET ((X Y) (Y X))
+;                  (AND (TRUE-LISTP X)
+;                       (TRUE-LISTP Y)
+;                       (< (CAR X) (CAR Y))))))
+
 ; A trace of type-set before the fix shows some odd behavior, a simpler version
 ; of which is below.  The pot-lst represents (< (car x) (car y)), which should
 ; be irrelevant inside the body of the lambda, but (erroneously) is used to
 ; return a type-set of *ts-t*.
-#||
- (TYPE-SET '((LAMBDA (X Y)
-                     (< (CAR X) (CAR Y)))
-             Y X)
-           NIL NIL
-           '((Y 576) (X 512))
-           NIL (ENS STATE) (W STATE) NIL
-           '(((0)
-              (CAR Y)
-              ((((((CAR Y) . 1) ((CAR X) . -1))
-                 (3)
-                 (PT . 3))
-                0 < NIL))))
-           NIL)
-; From (trace$ type-set), notice the use of the pot-lst inside the body of the
-; lambda:
-  2> (TYPE-SET ((LAMBDA (X Y) (< (CAR X) (CAR Y))) Y X)
-               NIL NIL ((Y 576) (X 512))
-               NIL |some-enabled-structure|
-               |current-acl2-world| NIL
-               (((0)
-                 (CAR Y)
-                 ((((((CAR Y) . 1) ((CAR X) . -1))
-                    (3)
-                    (PT . 3))
-                   0 < NIL))))
-               NIL)
- ...
-    3> (TYPE-SET (< (CAR X) (CAR Y))
-                 NIL NIL ((X 576) (Y 512))
-                 T |some-enabled-structure|
-                 |current-acl2-world| NIL
-                 (((0)
-                   (CAR Y)
-                   ((((((CAR Y) . 1) ((CAR X) . -1))
-                      (3)
-                      (PT . 3))
-                     0 < NIL))))
-                 NIL)
-||#
+
+;  (TYPE-SET '((LAMBDA (X Y)
+;                      (< (CAR X) (CAR Y)))
+;              Y X)
+;            NIL NIL
+;            '((Y 576) (X 512))
+;            NIL (ENS STATE) (W STATE) NIL
+;            '(((0)
+;               (CAR Y)
+;               ((((((CAR Y) . 1) ((CAR X) . -1))
+;                  (3)
+;                  (PT . 3))
+;                 0 < NIL))))
+;            NIL)
+; ; From (trace$ type-set), notice the use of the pot-lst inside the body of the
+; ; lambda:
+;   2> (TYPE-SET ((LAMBDA (X Y) (< (CAR X) (CAR Y))) Y X)
+;                NIL NIL ((Y 576) (X 512))
+;                NIL |some-enabled-structure|
+;                |current-acl2-world| NIL
+;                (((0)
+;                  (CAR Y)
+;                  ((((((CAR Y) . 1) ((CAR X) . -1))
+;                     (3)
+;                     (PT . 3))
+;                    0 < NIL))))
+;                NIL)
+;  ...
+;     3> (TYPE-SET (< (CAR X) (CAR Y))
+;                  NIL NIL ((X 576) (Y 512))
+;                  T |some-enabled-structure|
+;                  |current-acl2-world| NIL
+;                  (((0)
+;                    (CAR Y)
+;                    ((((((CAR Y) . 1) ((CAR X) . -1))
+;                       (3)
+;                       (PT . 3))
+;                      0 < NIL))))
+;                  NIL)
 
 ; Changed fixnum declarations in some array functions to (signed-byte 32) and
 ; (unsigned-byte 31) declarations.
@@ -20733,23 +20715,19 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   are two different ways to write the same natural number).  The symbol has
   three characters in its name, the middle one of which is a lower case b.")
 
-#|
-  
-
-  ACL2 !>~b[(app '(a b c) 27)]  ; ~pclick-here[|ACL2 is an Untyped Language|] for an explanation.
-  (A B C . 27)
-
-  ACL2 !>~b[(app 7 27)]   ; ~pclick-here[|Hey Wait!  Is ACL2 Typed or Untyped(Q)|] for an explanation.
-
-  ACL2 Error in TOP-LEVEL:  The guard for the function symbol ENDP, which
-  is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
-  call (ENDP 7).
-
-  ACL2 !>~b[:set-guard-checking nil]  ; ~pclick-here[|Undocumented Topic|] for an explanation.
-
-  ACL2 >~b[(app 7 27)]  ; ~pclick-here[|Undocumented Topic|] for an explanation.
-  27
-|#
+;   ACL2 !>~b[(app '(a b c) 27)]  ; ~pclick-here[|ACL2 is an Untyped Language|] for an explanation.
+;   (A B C . 27)
+; 
+;   ACL2 !>~b[(app 7 27)]   ; ~pclick-here[|Hey Wait!  Is ACL2 Typed or Untyped(Q)|] for an explanation.
+; 
+;   ACL2 Error in TOP-LEVEL:  The guard for the function symbol ENDP, which
+;   is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
+;   call (ENDP 7).
+; 
+;   ACL2 !>~b[:set-guard-checking nil]  ; ~pclick-here[|Undocumented Topic|] for an explanation.
+; 
+;   ACL2 >~b[(app 7 27)]  ; ~pclick-here[|Undocumented Topic|] for an explanation.
+;   27
 
 (deflabel |The Associativity of App|
   :doc
@@ -23020,21 +22998,19 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 ; listing of all the free variables of that body.  After the definitions below,
 ; a macro call (av body) will print out such a list.
 
-#||
-(defun all-vars-untrans (form state)
-  (declare (xargs :mode :program :stobjs state))
-  (mv-let (erp val bindings state)
-    (translate1 form
-                :stobjs-out
-                '((:stobjs-out . :stobjs-out))
-                t 'top-level
-                (w state) state)
-    (declare (ignore erp bindings))
-    (value (remove1-eq 'state (all-vars val)))))
-
-(defmacro av (form)
-  `(all-vars-untrans ',form state))
-||#
+; (defun all-vars-untrans (form state)
+;   (declare (xargs :mode :program :stobjs state))
+;   (mv-let (erp val bindings state)
+;     (translate1 form
+;                 :stobjs-out
+;                 '((:stobjs-out . :stobjs-out))
+;                 t 'top-level
+;                 (w state) state)
+;     (declare (ignore erp bindings))
+;     (value (remove1-eq 'state (all-vars val)))))
+; 
+; (defmacro av (form)
+;   `(all-vars-untrans ',form state))
 
 (defun trans-eval-lst (lst ctx state aok)
   (cond ((endp lst)

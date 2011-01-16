@@ -1658,35 +1658,34 @@
    not import ~c[a::sym] into ~c[\"pkg\"].  But in fact in AKCL it is a theorem
    because ~c[pkg::sym] is read as ~c[a::sym] because of the old imports."
 
-#| Once upon a time the documentation included the following additional
-   text.  We deleted it on the grounds that we shouldn't tell the user
-   how to go behind our backs.  But we might want to recall this hack
-   in the future for our own use.
+; Once upon a time the documentation included the following additional text.
+; We deleted it on the grounds that we shouldn't tell the user how to go behind
+; our backs.  But we might want to recall this hack in the future for our own
+; use.
 
-   If you really must change the imports list of a previously defined
-   but now undone package, we recommend that you either invent a new
-   package name for subsequent use in this session or that you save
-   your state and reconstruct it in a new ACL2 session.  If you wish to
-   try behind the scenes surgery to allow the new ~ilc[defpkg] to succeed ~-[]
-   at the expense of ACL2's soundness in the rest of the session ~-[]
-   exit ~ilc[lp] and type the following to raw Lisp:
-   ~bv[]
-   (let ((name \"pkg\")           ; fill in pkg name
-         (new-imports '(...))     ; fill in new imports
-         (p (find-package name)))
-     (do-symbols (sym p) (unintern sym p))
-     (import new-imports p)
-     (setq *ever-known-package-alist*
-           (cons (make-package-entry :name name :imports new-imports)
-                 (remove-package-entry name *ever-known-package-alist*)))
-     name)
-   ~ev[]
-   This will render ill-formed any saved ~il[world]s involving symbols in
-   ~c[\"pkg\"] and it may be impossible to recover from certain errors.  In
-   addition, because ACL2 is probably unsound after this hack we
-   recommend that you treat the rest of the session as merely
-   exploratory.
-|#
+;    If you really must change the imports list of a previously defined
+;    but now undone package, we recommend that you either invent a new
+;    package name for subsequent use in this session or that you save
+;    your state and reconstruct it in a new ACL2 session.  If you wish to
+;    try behind the scenes surgery to allow the new ~ilc[defpkg] to succeed ~-[]
+;    at the expense of ACL2's soundness in the rest of the session ~-[]
+;    exit ~ilc[lp] and type the following to raw Lisp:
+;    ~bv[]
+;    (let ((name \"pkg\")           ; fill in pkg name
+;          (new-imports '(...))     ; fill in new imports
+;          (p (find-package name)))
+;      (do-symbols (sym p) (unintern sym p))
+;      (import new-imports p)
+;      (setq *ever-known-package-alist*
+;            (cons (make-package-entry :name name :imports new-imports)
+;                  (remove-package-entry name *ever-known-package-alist*)))
+;      name)
+;    ~ev[]
+;    This will render ill-formed any saved ~il[world]s involving symbols in
+;    ~c[\"pkg\"] and it may be impossible to recover from certain errors.  In
+;    addition, because ACL2 is probably unsound after this hack we
+;    recommend that you treat the rest of the session as merely
+;    exploratory.
 )
 
 (defun chk-package-reincarnation-import-restrictions (name proposed-imports)
@@ -2868,14 +2867,14 @@
 ; theory expression.  For the record, the universal theory at the time
 ; of these tests contained 1307 runes.
 
-#|(let ((world (w *the-live-state*)))
-  (time
-   (length
-    (union-theories
-     (intersection-theories (current-theory :here)
-                            (executable-counterpart-theory :here))
-     (set-difference-theories (universal-theory :here)
-                              (function-theory :here))))))|#
+; (let ((world (w *the-live-state*)))
+;   (time
+;    (length
+;     (union-theories
+;      (intersection-theories (current-theory :here)
+;                             (executable-counterpart-theory :here))
+;      (set-difference-theories (universal-theory :here)
+;                               (function-theory :here))))))
 
 ; Repeated runs were done.  Typical results were:
 ;   real time : 0.350 secs
@@ -2889,14 +2888,14 @@
 ; the event printed by :pc -1, i.e., the last event before ending the
 ; boot.
 
-#|(let ((world (w *the-live-state*)))
-  (time
-   (length
-    (union-theories
-     (intersection-theories (current-theory "ACL2-USER")
-                            (executable-counterpart-theory "ACL2-USER"))
-     (set-difference-theories (universal-theory "ACL2-USER")
-                              (function-theory "ACL2-USER"))))))|#
+; (let ((world (w *the-live-state*)))
+;   (time
+;    (length
+;     (union-theories
+;      (intersection-theories (current-theory "ACL2-USER")
+;                             (executable-counterpart-theory "ACL2-USER"))
+;      (set-difference-theories (universal-theory "ACL2-USER")
+;                               (function-theory "ACL2-USER"))))))
 
 ; Repeated tests produced the following typical results.
 ;   real time : 0.483 secs
@@ -2911,18 +2910,18 @@
 ; strip-cadrs all the input runic theories to force the reconstruction
 ; of runic theories from the wrld.
 
-#|(let ((world (w *the-live-state*)))
-  (time
-   (length
-    (union-theories
-     (reverse
-      (intersection-theories
-        (reverse (strip-base-symbols (current-theory :here)))
-        (reverse (strip-base-symbols (executable-counterpart-theory :here)))))
-     (reverse
-      (set-difference-theories
-        (reverse (strip-base-symbols (universal-theory :here)))
-        (reverse (strip-base-symbols (function-theory :here)))))))))|#
+; (let ((world (w *the-live-state*)))
+;   (time
+;    (length
+;     (union-theories
+;      (reverse
+;       (intersection-theories
+;         (reverse (strip-base-symbols (current-theory :here)))
+;         (reverse (strip-base-symbols (executable-counterpart-theory :here)))))
+;      (reverse
+;       (set-difference-theories
+;         (reverse (strip-base-symbols (universal-theory :here)))
+;         (reverse (strip-base-symbols (function-theory :here)))))))))
 
 ; Typical times were
 ;   real time : 1.383 secs
@@ -7113,588 +7112,579 @@
                                          subversive-fns
                                          infectious-fns))))))))))))))
 
-#||
-
 ; Here I have collected a sequence of encapsulates to test the implementation.
 ; After each is an undo.  They are not meant to co-exist.  Just eval each
 ; of the forms in this comment.  You should never get an error.
 
-(set-state-ok t)
-
-(defun test (val)
-  (declare (xargs :mode :program))
-  (if val
-      'ok
-    (er hard 'test "This example failed!")))
-                                            
-; I start with a collection of simple encapsulates, primarily to test the
-; handling of signatures in their three forms.  I need a stobj.  
-
-(defstobj $s x y)
-
-; Here is a simple, typical encapsulate.
-(encapsulate ((p (x) t))
-  (local (defun p (x) (declare (ignore x)) t))
-  (defthm booleanp-p (booleanp (p x))))
-
-(test
- (equal
-  (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-  '((booleanp (P X)))))
-
-(u)
-
-; The next set just look for errors that should never happen.
-
-#|
-The following all cause errors.
-
-(encapsulate (((p x) => x))
-             (local (defun p (x) x)))
-
-(encapsulate ((p x) => x)
-             (local (defun p (x) x)))
-
-(encapsulate (((p x $s) => (mv x $s)))
-             (local (defun p (x $s) (declare (xargs :stobjs ($s))) (mv x $s))))
-
-(encapsulate (((p * state $s) => state))
-             (local (defun p (x state $s)
-                      (declare (xargs :stobjs nil) (ignore x $s))
-                      state)))
-
-(encapsulate (((p * state *) => $s))
-             (local (defun p (x state $s)
-                      (declare (xargs :stobjs $s) (ignore x state))
-                      $s)))
-
-; Here are some of the "same" errors provoked in the old notation.
-
-(encapsulate ((p (x $s) (mv * $s) :stobjs *))
-             (local (defun p (x $s) (declare (xargs :stobjs ($s))) (mv x $s))))
-
-(encapsulate ((p (* state $s) state))
-             (local (defun p (x state $s)
-                      (declare (xargs :stobjs nil) (ignore x $s))
-                      state)))
-
-(encapsulate ((p (y state $s) $s))
-             (local (defun p (x state $s)
-                      (declare (xargs :stobjs $s) (ignore x state))
-                      $s)))
-
-(encapsulate ((p (x state y) $s))
-             (local (defun p (x state $s)
-                      (declare (xargs :stobjs $s) (ignore x state))
-                      $s)))
-
-|#
-
-; The rest of my tests are concerned with the constraints produced.
-
-; Here is one that contains a function that can be moved forward out
-; of encapsulate, even though it is used in the constraint.  Note that
-; not every theorem proved becomes a constraint.  The theorem evp-+ is
-; moved forward too.
-
-(encapsulate ((p (x) t))
-  (local (defun p (x) (declare (ignore x)) 2))
-  (defun evp (n) (if (zp n) t (if (zp (- n 1)) nil (evp (- n 2)))))
-  (defthm evp-+ (implies (and (integerp i)
-                              (<= 0 i)
-                              (evp i)
-                              (integerp j)
-                              (<= 0 j)
-                              (evp j))
-                         (evp (+ i j))))
-  (defthm evp-p (evp (p x))))
-
-(test
- (equal
-  (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-  '((EVP (P X)))))
-
-(u)
-
-; This illustrates a function which uses the signature function p but
-; which can be moved back out of the encapsulate.  The only constraint
-; on p is (EVP (P X)).
-
-; But if the function involves the constrained function, it cannot
-; be moved forward.  It may be moved back, or it may become part of the
-; constraint, depending on several things.
-
-; Case 1.  The function uses p in a benign way and nothing is proved
-; about the function.
-
-(encapsulate ((p (x) t))
-  (local (defun p (x) (ifix x)))
-  (defun mapp (x)
-    (if (consp x)
-        (cons (p (car x)) (mapp (cdr x)))
-      nil))
-  (defthm integerp-p (integerp (p x))))
-
-(test
- (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-             '((integerp (p x))))
-      (equal (getprop 'mapp 'constraint-lst nil 'current-acl2-world (w state))
-             nil)))
-
-(u)
-
-; The constraint, above, on p is (INTEGERP (P X)).
-
-; Case 2.  The function is subversive, i.e., uses p in a way critical to
-; its termination.
-
-(encapsulate ((p (x) t))
-  (local (defun p (x) (cdr x)))
-  (defthm len-p (implies (consp x) (< (len (p x)) (len x))))
-  (defun bad (x)
-    (if (consp x)
-        (not (bad (p x)))
-      t)))
-
-(test
- (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-; Modified for v3-5:
-             (reverse '((EQUAL (BAD X)
-                               (IF (CONSP X)
-                                   (NOT (BAD (P X)))
-                                   'T))
-;                        (IF (EQUAL (BAD X) 'T)
-;                            'T
-;                            (EQUAL (BAD X) 'NIL))
-                        (IMPLIES (CONSP X)
-                                 (< (LEN (P X)) (LEN X))))))
-      (equal (getprop 'bad 'constraint-lst nil 'current-acl2-world (w state))
-             'p)))
-
-(u)
-
-; The constraint above is associated both with p and bad.  That is, if you
-; functionally instantiate p, the new function must satisfy the axiom for bad
-; too, which means you must instantiate bad.  Similarly, if you instantiate
-; bad, you must instantiate p.
-
-; It would be better if you did this:
-
-(encapsulate ((p (x) t))
-  (local (defun p (x) (cdr x)))
-  (defthm len-p (implies (consp x) (< (len (p x)) (len x)))))
-
-(test
- (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-        '((IMPLIES (CONSP X)
-                   (< (LEN (P X)) (LEN X))))))
-
-; The only constraint on p is 
-; (IMPLIES (CONSP X) (< (LEN (P X)) (LEN X))).
-; Now you can define bad outside:
-
-(defun bad (x)
-  (declare (xargs :measure (len x)))
-  (if (consp x)
-      (not (bad (p x)))
-    t))
-
-(u)
-(u)
-
-; Case 3.  The function uses p in a benign way but something is proved
-; about the function, thus constraining p.
-
-(encapsulate ((p (x) t))
-  (local (defun p (x) (ifix x)))
-  (defun mapp (x)
-    (if (consp x)
-        (cons (p (car x)) (mapp (cdr x)))
-      nil))
-  (defthm mapp-is-a-list-of-ints
-    (integer-listp (mapp x))))
-
-(test
- (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-             '((EQUAL (MAPP X)
-                      (IF (CONSP X)
-                          (CONS (P (CAR X)) (MAPP (CDR X)))
-                          'NIL))
-; No longer starting with v3-5:
-;              (TRUE-LISTP (MAPP X))
-               (INTEGER-LISTP (MAPP X))))
-      (equal (getprop 'mapp 'constraint-lst nil 'current-acl2-world (w state))
-             'p)))
-
-(u)
-
-; The constraint above, on both p and mapp, is
-; (AND (EQUAL (MAPP X)
-;             (AND (CONSP X)
-;                  (CONS (P (CAR X)) (MAPP (CDR X)))))
-;      (TRUE-LISTP (MAPP X))
-;      (INTEGER-LISTP (MAPP X)))
-
-; Here is another case of a subversive definition, illustrating that
-; we do not just check whether the function uses p but whether it uses
-; p ancestrally.
-
-(encapsulate ((p (x) t))
-  (local (defun p (x) (cdr x)))
-  (defun bad1 (x) (p x))
-  (defun bad2 (x)
-    (if (consp x)
-        (not (bad2 (bad1 x)))
-      t)))
-
-(test
- (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-             '((EQUAL (BAD1 X) (P X))
-               (EQUAL (BAD2 X)
-                      (IF (CONSP X)
-                          (NOT (BAD2 (BAD1 X)))
-                          'T))
-; No longer starting with v3-5:
-;              (IF (EQUAL (BAD2 X) 'T)
-;                  'T
-;                  (EQUAL (BAD2 X) 'NIL))
-               ))
-      (equal (getprop 'bad1 'constraint-lst nil 'current-acl2-world (w state))
-             'p)
-      (equal (getprop 'bad2 'constraint-lst nil 'current-acl2-world (w state))
-             'p)
-      (equal (getprop 'bad2 'induction-machine nil
-                      'current-acl2-world (w state))
-             nil)))
-
-
-(u)
-
-(encapsulate ((p (x) t))
-  (local (defun p (x) (cdr x)))
-  (defun bad1 (x)
-    (if (consp x) (bad1 (cdr x)) (p x)))
-  (defun bad2 (x)
-    (if (consp x)
-        (not (bad2 (bad1 x)))
-      t)))
-
-(test
- (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-             '((EQUAL (BAD1 X)
-                      (IF (CONSP X)
-                          (BAD1 (CDR X))
-                          (P X)))
-               (EQUAL (BAD2 X)
-                      (IF (CONSP X)
-                          (NOT (BAD2 (BAD1 X)))
-                          'T))
-; No longer starting with v3-5:
-;              (IF (EQUAL (BAD2 X) 'T)
-;                  'T
-;                  (EQUAL (BAD2 X) 'NIL))
-               ))
-      (equal (getprop 'bad1 'constraint-lst nil 'current-acl2-world (w state))
-             'p)
-      (equal (getprop 'bad2 'constraint-lst nil 'current-acl2-world (w state))
-             'p)
-      (not (equal (getprop 'bad1 'induction-machine nil
-                           'current-acl2-world (w state))
-                  nil))
-      (equal (getprop 'bad2 'induction-machine nil
-                      'current-acl2-world (w state))
-             nil)))
-
-(u)
-
-; Once up a time we had a bug in encapsulate, because subversiveness was
-; based on the induction machine rather than the termination machine
-; and no induction machine is constructed for mutually recursive definitions.
-; Here is an example that once led to unsoundness:
-
-(encapsulate
- ((fn1 (x) t))
- (local (defun fn1 (x)
-          (cdr x)))
- (mutual-recursion
-  (defun fn2 (x)
-    (if (consp x)
-        (not (fn3 (fn1 x)))
-      t))
-  (defun fn3 (x)
-    (if (consp x)
-        (not (fn3 (fn1 x)))
-      t))))
-
-(test
- (and (equal (getprop 'fn1 'constraint-lst nil 'current-acl2-world (w state))
-; Reversed as shown starting with v3-5:
-             '((EQUAL (FN2 X)
-                      (IF (CONSP X)
-                          (NOT (FN3 (FN1 X)))
-                          'T))
-; No longer starting with v3-5:
-;              (IF (EQUAL (FN2 X) 'T)
-;                  'T
-;                  (EQUAL (FN2 X) 'NIL))
-               (EQUAL (FN3 X)
-                      (IF (CONSP X)
-                          (NOT (FN3 (FN1 X)))
-                          'T))
-; No longer starting with v3-5:
-;              (IF (EQUAL (FN3 X) 'T)
-;                  'T
-;                  (EQUAL (FN3 X) 'NIL))
-               ))
-      (equal (getprop 'fn2 'constraint-lst nil 'current-acl2-world (w state))
-             'fn1)
-      (equal (getprop 'fn3 'constraint-lst nil 'current-acl2-world (w state))
-             'fn1)
-      (equal (getprop 'fn2 'induction-machine nil
-                      'current-acl2-world (w state))
-             nil)
-      (equal (getprop 'fn3 'induction-machine nil
-                      'current-acl2-world (w state))
-             nil)))
-
-; Now, fn1, fn2, and fn3 share both definitional constraints.
-
-; It is possible to prove the following lemma
-
-(defthm lemma
-  (not (equal (fn1 '(a)) '(a)))
-  :rule-classes nil
-  :hints (("Goal" :use (:instance fn3 (x '(a))))))
-
-; But in the unsound version it was then possible to functionally
-; instantiate it, choosing the identity function for fn1, to derive
-; a contradiction.  Here is the old killer:
-
-; (defthm bad
-;   nil
+; (set-state-ok t)
+; 
+; (defun test (val)
+;   (declare (xargs :mode :program))
+;   (if val
+;       'ok
+;     (er hard 'test "This example failed!")))
+;                                             
+; ; I start with a collection of simple encapsulates, primarily to test the
+; ; handling of signatures in their three forms.  I need a stobj.  
+; 
+; (defstobj $s x y)
+; 
+; ; Here is a simple, typical encapsulate.
+; (encapsulate ((p (x) t))
+;   (local (defun p (x) (declare (ignore x)) t))
+;   (defthm booleanp-p (booleanp (p x))))
+; 
+; (test
+;  (equal
+;   (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;   '((booleanp (P X)))))
+; 
+; (u)
+; 
+; ; The next set just look for errors that should never happen.
+; 
+;   The following all cause errors.
+; 
+;   (encapsulate (((p x) => x))
+;                (local (defun p (x) x)))
+; 
+;   (encapsulate ((p x) => x)
+;                (local (defun p (x) x)))
+; 
+;   (encapsulate (((p x $s) => (mv x $s)))
+;                (local (defun p (x $s) (declare (xargs :stobjs ($s))) (mv x $s))))
+; 
+;   (encapsulate (((p * state $s) => state))
+;                (local (defun p (x state $s)
+;                         (declare (xargs :stobjs nil) (ignore x $s))
+;                         state)))
+; 
+;   (encapsulate (((p * state *) => $s))
+;                (local (defun p (x state $s)
+;                         (declare (xargs :stobjs $s) (ignore x state))
+;                         $s)))
+; 
+;   ; Here are some of the "same" errors provoked in the old notation.
+; 
+;   (encapsulate ((p (x $s) (mv * $s) :stobjs *))
+;                (local (defun p (x $s) (declare (xargs :stobjs ($s))) (mv x $s))))
+; 
+;   (encapsulate ((p (* state $s) state))
+;                (local (defun p (x state $s)
+;                         (declare (xargs :stobjs nil) (ignore x $s))
+;                         state)))
+; 
+;   (encapsulate ((p (y state $s) $s))
+;                (local (defun p (x state $s)
+;                         (declare (xargs :stobjs $s) (ignore x state))
+;                         $s)))
+; 
+;   (encapsulate ((p (x state y) $s))
+;                (local (defun p (x state $s)
+;                         (declare (xargs :stobjs $s) (ignore x state))
+;                         $s)))
+; 
+; ; The rest of my tests are concerned with the constraints produced.
+; 
+; ; Here is one that contains a function that can be moved forward out
+; ; of encapsulate, even though it is used in the constraint.  Note that
+; ; not every theorem proved becomes a constraint.  The theorem evp-+ is
+; ; moved forward too.
+; 
+; (encapsulate ((p (x) t))
+;   (local (defun p (x) (declare (ignore x)) 2))
+;   (defun evp (n) (if (zp n) t (if (zp (- n 1)) nil (evp (- n 2)))))
+;   (defthm evp-+ (implies (and (integerp i)
+;                               (<= 0 i)
+;                               (evp i)
+;                               (integerp j)
+;                               (<= 0 j)
+;                               (evp j))
+;                          (evp (+ i j))))
+;   (defthm evp-p (evp (p x))))
+; 
+; (test
+;  (equal
+;   (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;   '((EVP (P X)))))
+; 
+; (u)
+; 
+; ; This illustrates a function which uses the signature function p but
+; ; which can be moved back out of the encapsulate.  The only constraint
+; ; on p is (EVP (P X)).
+; 
+; ; But if the function involves the constrained function, it cannot
+; ; be moved forward.  It may be moved back, or it may become part of the
+; ; constraint, depending on several things.
+; 
+; ; Case 1.  The function uses p in a benign way and nothing is proved
+; ; about the function.
+; 
+; (encapsulate ((p (x) t))
+;   (local (defun p (x) (ifix x)))
+;   (defun mapp (x)
+;     (if (consp x)
+;         (cons (p (car x)) (mapp (cdr x)))
+;       nil))
+;   (defthm integerp-p (integerp (p x))))
+; 
+; (test
+;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;              '((integerp (p x))))
+;       (equal (getprop 'mapp 'constraint-lst nil 'current-acl2-world (w state))
+;              nil)))
+; 
+; (u)
+; 
+; ; The constraint, above, on p is (INTEGERP (P X)).
+; 
+; ; Case 2.  The function is subversive, i.e., uses p in a way critical to
+; ; its termination.
+; 
+; (encapsulate ((p (x) t))
+;   (local (defun p (x) (cdr x)))
+;   (defthm len-p (implies (consp x) (< (len (p x)) (len x))))
+;   (defun bad (x)
+;     (if (consp x)
+;         (not (bad (p x)))
+;       t)))
+; 
+; (test
+;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+; ; Modified for v3-5:
+;              (reverse '((EQUAL (BAD X)
+;                                (IF (CONSP X)
+;                                    (NOT (BAD (P X)))
+;                                    'T))
+; ;                        (IF (EQUAL (BAD X) 'T)
+; ;                            'T
+; ;                            (EQUAL (BAD X) 'NIL))
+;                         (IMPLIES (CONSP X)
+;                                  (< (LEN (P X)) (LEN X))))))
+;       (equal (getprop 'bad 'constraint-lst nil 'current-acl2-world (w state))
+;              'p)))
+; 
+; (u)
+; 
+; ; The constraint above is associated both with p and bad.  That is, if you
+; ; functionally instantiate p, the new function must satisfy the axiom for bad
+; ; too, which means you must instantiate bad.  Similarly, if you instantiate
+; ; bad, you must instantiate p.
+; 
+; ; It would be better if you did this:
+; 
+; (encapsulate ((p (x) t))
+;   (local (defun p (x) (cdr x)))
+;   (defthm len-p (implies (consp x) (< (len (p x)) (len x)))))
+; 
+; (test
+;  (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;         '((IMPLIES (CONSP X)
+;                    (< (LEN (P X)) (LEN X))))))
+; 
+; ; The only constraint on p is 
+; ; (IMPLIES (CONSP X) (< (LEN (P X)) (LEN X))).
+; ; Now you can define bad outside:
+; 
+; (defun bad (x)
+;   (declare (xargs :measure (len x)))
+;   (if (consp x)
+;       (not (bad (p x)))
+;     t))
+; 
+; (u)
+; (u)
+; 
+; ; Case 3.  The function uses p in a benign way but something is proved
+; ; about the function, thus constraining p.
+; 
+; (encapsulate ((p (x) t))
+;   (local (defun p (x) (ifix x)))
+;   (defun mapp (x)
+;     (if (consp x)
+;         (cons (p (car x)) (mapp (cdr x)))
+;       nil))
+;   (defthm mapp-is-a-list-of-ints
+;     (integer-listp (mapp x))))
+; 
+; (test
+;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;              '((EQUAL (MAPP X)
+;                       (IF (CONSP X)
+;                           (CONS (P (CAR X)) (MAPP (CDR X)))
+;                           'NIL))
+; ; No longer starting with v3-5:
+; ;              (TRUE-LISTP (MAPP X))
+;                (INTEGER-LISTP (MAPP X))))
+;       (equal (getprop 'mapp 'constraint-lst nil 'current-acl2-world (w state))
+;              'p)))
+; 
+; (u)
+; 
+; ; The constraint above, on both p and mapp, is
+; ; (AND (EQUAL (MAPP X)
+; ;             (AND (CONSP X)
+; ;                  (CONS (P (CAR X)) (MAPP (CDR X)))))
+; ;      (TRUE-LISTP (MAPP X))
+; ;      (INTEGER-LISTP (MAPP X)))
+; 
+; ; Here is another case of a subversive definition, illustrating that
+; ; we do not just check whether the function uses p but whether it uses
+; ; p ancestrally.
+; 
+; (encapsulate ((p (x) t))
+;   (local (defun p (x) (cdr x)))
+;   (defun bad1 (x) (p x))
+;   (defun bad2 (x)
+;     (if (consp x)
+;         (not (bad2 (bad1 x)))
+;       t)))
+; 
+; (test
+;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;              '((EQUAL (BAD1 X) (P X))
+;                (EQUAL (BAD2 X)
+;                       (IF (CONSP X)
+;                           (NOT (BAD2 (BAD1 X)))
+;                           'T))
+; ; No longer starting with v3-5:
+; ;              (IF (EQUAL (BAD2 X) 'T)
+; ;                  'T
+; ;                  (EQUAL (BAD2 X) 'NIL))
+;                ))
+;       (equal (getprop 'bad1 'constraint-lst nil 'current-acl2-world (w state))
+;              'p)
+;       (equal (getprop 'bad2 'constraint-lst nil 'current-acl2-world (w state))
+;              'p)
+;       (equal (getprop 'bad2 'induction-machine nil
+;                       'current-acl2-world (w state))
+;              nil)))
+; 
+; 
+; (u)
+; 
+; (encapsulate ((p (x) t))
+;   (local (defun p (x) (cdr x)))
+;   (defun bad1 (x)
+;     (if (consp x) (bad1 (cdr x)) (p x)))
+;   (defun bad2 (x)
+;     (if (consp x)
+;         (not (bad2 (bad1 x)))
+;       t)))
+; 
+; (test
+;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;              '((EQUAL (BAD1 X)
+;                       (IF (CONSP X)
+;                           (BAD1 (CDR X))
+;                           (P X)))
+;                (EQUAL (BAD2 X)
+;                       (IF (CONSP X)
+;                           (NOT (BAD2 (BAD1 X)))
+;                           'T))
+; ; No longer starting with v3-5:
+; ;              (IF (EQUAL (BAD2 X) 'T)
+; ;                  'T
+; ;                  (EQUAL (BAD2 X) 'NIL))
+;                ))
+;       (equal (getprop 'bad1 'constraint-lst nil 'current-acl2-world (w state))
+;              'p)
+;       (equal (getprop 'bad2 'constraint-lst nil 'current-acl2-world (w state))
+;              'p)
+;       (not (equal (getprop 'bad1 'induction-machine nil
+;                            'current-acl2-world (w state))
+;                   nil))
+;       (equal (getprop 'bad2 'induction-machine nil
+;                       'current-acl2-world (w state))
+;              nil)))
+; 
+; (u)
+; 
+; ; Once up a time we had a bug in encapsulate, because subversiveness was
+; ; based on the induction machine rather than the termination machine
+; ; and no induction machine is constructed for mutually recursive definitions.
+; ; Here is an example that once led to unsoundness:
+; 
+; (encapsulate
+;  ((fn1 (x) t))
+;  (local (defun fn1 (x)
+;           (cdr x)))
+;  (mutual-recursion
+;   (defun fn2 (x)
+;     (if (consp x)
+;         (not (fn3 (fn1 x)))
+;       t))
+;   (defun fn3 (x)
+;     (if (consp x)
+;         (not (fn3 (fn1 x)))
+;       t))))
+; 
+; (test
+;  (and (equal (getprop 'fn1 'constraint-lst nil 'current-acl2-world (w state))
+; ; Reversed as shown starting with v3-5:
+;              '((EQUAL (FN2 X)
+;                       (IF (CONSP X)
+;                           (NOT (FN3 (FN1 X)))
+;                           'T))
+; ; No longer starting with v3-5:
+; ;              (IF (EQUAL (FN2 X) 'T)
+; ;                  'T
+; ;                  (EQUAL (FN2 X) 'NIL))
+;                (EQUAL (FN3 X)
+;                       (IF (CONSP X)
+;                           (NOT (FN3 (FN1 X)))
+;                           'T))
+; ; No longer starting with v3-5:
+; ;              (IF (EQUAL (FN3 X) 'T)
+; ;                  'T
+; ;                  (EQUAL (FN3 X) 'NIL))
+;                ))
+;       (equal (getprop 'fn2 'constraint-lst nil 'current-acl2-world (w state))
+;              'fn1)
+;       (equal (getprop 'fn3 'constraint-lst nil 'current-acl2-world (w state))
+;              'fn1)
+;       (equal (getprop 'fn2 'induction-machine nil
+;                       'current-acl2-world (w state))
+;              nil)
+;       (equal (getprop 'fn3 'induction-machine nil
+;                       'current-acl2-world (w state))
+;              nil)))
+; 
+; ; Now, fn1, fn2, and fn3 share both definitional constraints.
+; 
+; ; It is possible to prove the following lemma
+; 
+; (defthm lemma
+;   (not (equal (fn1 '(a)) '(a)))
 ;   :rule-classes nil
-;   :hints (("Goal" :use (:functional-instance lemma (fn1 identity)))))
-
-(u)
-(u)
-
-; Now when you do that you have to prove an impossible theorem about
-; fn3, namely
-
-; (equal (fn3 x) (if (consp x) (not (fn3 x)) t))
-
-; The only way to prove this is to show that nothing is a cons.
-
-; This examples shows that a function can call a subversive one and
-; not be subversive.
-
-(encapsulate ((p (x) t))
-  (local (defun p (x) (cdr x)))
-  (defun bad1 (x) (p x))            ; tight: non-recursive
-
-  (defun bad2 (x)                   ; not tight: recursive call involves
-    (if (consp x)                   ; a fn (bad1) defined inside the encap
-        (not (bad2 (bad1 x)))
-      t))
-  (defun bad3 (x)
-    (if (consp x)
-        (bad2 (bad3 (cdr x)))
-      nil)))                        ; tight: even though it calls bad2
-
-; Bad2 is swept into the constraint because it is not tight (subversive).  Bad1
-; is swept into it because it introduces a function (bad1) used in the enlarged
-; constraint.  Bad3 is not swept in.  Indeed, bad3 is moved [Back].
-
-(test
- (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-             '((EQUAL (BAD1 X) (P X))
-               (EQUAL (BAD2 X)
-                      (IF (CONSP X)
-                          (NOT (BAD2 (BAD1 X)))
-                          'T))
-; No longer starting with v3-5:
-;              (IF (EQUAL (BAD2 X) 'T)
-;                  'T
-;                  (EQUAL (BAD2 X) 'NIL))
-               ))
-      (equal (getprop 'bad1 'constraint-lst nil 'current-acl2-world (w state))
-             'p)
-      (equal (getprop 'bad2 'constraint-lst nil 'current-acl2-world (w state))
-             'p)
-      (equal (getprop 'bad3 'constraint-lst nil 'current-acl2-world (w state))
-             nil)
-      (equal (getprop 'bad2 'induction-machine nil
-                      'current-acl2-world (w state))
-             nil)
-      (not (equal (getprop 'bad3 'induction-machine nil
-                           'current-acl2-world (w state))
-                  nil))))
-
-(u)
-
-; Now what about nested encapsulates?
-
-; Let us first consider the two simplest cases:
-
-(encapsulate ((p (x) t))
-  (local (defun p (x) (declare (ignore x)) 23))
-  (encapsulate nil
-     (defthm lemma1 (equal x x) :rule-classes nil)
-     (defthm main (equal x x) :rule-classes nil))
-  (defthm integerp-p (integerp (p x))))
-
-; We are permitted to rearrange this, because the inner encap has a nil
-; signature.  So we get what we expect:
-
-(test
- (equal
-  (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-  '((integerp (P X)))))
-
-(u)
-
-; The other simple case is
-
-(encapsulate nil
-   (defthm lemma1 (equal x x) :rule-classes nil)
-   (defthm main (equal x x) :rule-classes nil)
-   (encapsulate ((p (x) t))
-                (local (defun p (x) (declare (ignore x)) 23))
-                (defun benign (x)
-                  (if (consp x) (benign (cdr x)) x))
-                (defthm integerp-p (integerp (p x)))))
-
-; Note that benign doesn't constrain p, because the containing encap
-; contains no sig fns.
-
-(test
- (equal
-  (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-  '((integerp (P X)))))
-
-(u)
-
-; If we have a pair of encaps, each of which introduces a sig fn,
-; we lost the ability to rearrange things in v3-6-1 but not v4-0:
-
-(encapsulate ((p1 (x) t))
-             (local (defun p1 (x) x))             
-             (defun benign1 (x)
-               (if (consp x) (benign1 (cdr x)) t))
-             (defthm p1-constraint (benign1 (p1 x)))
-             (encapsulate  ((p2 (x) t))
-                           (local (defun p2 (x) x))             
-                           (defun benign2 (x)
-                             (if (consp x) (benign2 (cdr x)) t))
-                           (defthm p2-constraint (benign2 (p2 x)))))
-
-(test
- (and (equal (getprop 'p1 'constraint-lst nil 'current-acl2-world (w state))
-             '((BENIGN1 (P1 X))))
-      (equal (getprop 'p2 'constraint-lst nil 'current-acl2-world (w state))
-             '((BENIGN2 (P2 X))))
-      (equal (getprop 'benign2 'constraint-lst nil 'current-acl2-world (w state))
-             nil)
-      (equal (getprop 'benign1 'constraint-lst nil 'current-acl2-world (w state))
-             nil)))
-
-(u)
-
-(encapsulate ((f1 (x) t))
-             (local (defun f1 (x) (declare (ignore x)) 0))
-             (defun bad (x)
-               (if (consp x)
-                   (if (and (integerp (bad (cdr x)))
-                            (<= 0 (bad (cdr x)))
-                            (< (bad (cdr x)) (acl2-count x)))
-                       (bad (bad (cdr x)))
-                     (f1 x))
-                 0)))
-
-(test
- (and (equal (getprop 'f1 'constraint-lst nil 'current-acl2-world (w state))
-; No longer generates this constraint starting with v3-5:
-#||
-             '((EQUAL (BAD X)
-                      (IF (CONSP X)
-                          (IF (IF (INTEGERP (BAD (CDR X)))
-                                  (IF (NOT (< (BAD (CDR X)) '0))
-                                      (< (BAD (CDR X)) (ACL2-COUNT X))
-                                      'NIL)
-                                  'NIL)
-                              (BAD (BAD (CDR X)))
-                              (F1 X))
-                          '0)))
-||#
-             nil)
-      (equal
-       (getprop 'bad 'constraint-lst nil 'current-acl2-world (w state))
-; No longer starting with v3-5:
-;      'f1
-       nil
-       )
-; No longer subversive, starting with v3-5:
-;      (equal
-       (getprop 'bad 'induction-machine nil 'current-acl2-world (w state))
-;       nil)
-       ))
-
-(u)
-
-
-; Here is a sample involving defchoose.  In this example, the signature
-; function is ancestral in the defchoose axiom.
-
-(encapsulate ((p (y x) t))
-             (local (defun p (y x) (member-equal y x)))
-             (defchoose witless x (y) (p y x))
-             (defthm consp-witless
-               (consp (witless y))
-               :rule-classes :type-prescription
-               :hints (("Goal" :use (:instance witless (x (cons y nil)))))))
-
-(test
- (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-             '((IMPLIES (P Y X)
-                        ((LAMBDA (X Y) (P Y X)) (WITLESS Y) Y))
-               (CONSP (WITLESS Y))))
-      (equal
-       (getprop 'witless 'constraint-lst nil 'current-acl2-world (w state))
-       'p)
-      (equal
-       (getprop 'witless 'defchoose-axiom nil 'current-acl2-world (w state))
-       '(IMPLIES (P Y X)
-                 ((LAMBDA (X Y) (P Y X)) (WITLESS Y) Y)))))
-
-(u)
-
-; and in this one it is not, indeed, the defchoose function can be
-; moved to the [Front] even though it is used in the constraint of p.
-
-(encapsulate ((p (y x) t))
-             (local (defun p (y x) (member-equal y x)))
-             (defchoose witless x (y) (member-equal y x))
-             (defthm p-constraint (p y (witless y))
-               :hints (("Goal" :use (:instance witless (x (cons y nil)))))))
-
-(test
- (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-             '((p y (witless y))))
-      (equal
-       (getprop 'witless 'constraint-lst nil 'current-acl2-world (w state))
-       nil)
-      (equal
-       (getprop 'witless 'defchoose-axiom nil 'current-acl2-world (w state))
-       '(IMPLIES (member-equal Y X)
-                 ((LAMBDA (X Y) (member-equal Y X)) (WITLESS Y) Y)))))
-
-(u)
-
-(quote (the end of my encapsulate tests -- there follow two undo commands))
-(u)
-(u)
-
-||#
+;   :hints (("Goal" :use (:instance fn3 (x '(a))))))
+; 
+; ; But in the unsound version it was then possible to functionally
+; ; instantiate it, choosing the identity function for fn1, to derive
+; ; a contradiction.  Here is the old killer:
+; 
+; ; (defthm bad
+; ;   nil
+; ;   :rule-classes nil
+; ;   :hints (("Goal" :use (:functional-instance lemma (fn1 identity)))))
+; 
+; (u)
+; (u)
+; 
+; ; Now when you do that you have to prove an impossible theorem about
+; ; fn3, namely
+; 
+; ; (equal (fn3 x) (if (consp x) (not (fn3 x)) t))
+; 
+; ; The only way to prove this is to show that nothing is a cons.
+; 
+; ; This examples shows that a function can call a subversive one and
+; ; not be subversive.
+; 
+; (encapsulate ((p (x) t))
+;   (local (defun p (x) (cdr x)))
+;   (defun bad1 (x) (p x))            ; tight: non-recursive
+; 
+;   (defun bad2 (x)                   ; not tight: recursive call involves
+;     (if (consp x)                   ; a fn (bad1) defined inside the encap
+;         (not (bad2 (bad1 x)))
+;       t))
+;   (defun bad3 (x)
+;     (if (consp x)
+;         (bad2 (bad3 (cdr x)))
+;       nil)))                        ; tight: even though it calls bad2
+; 
+; ; Bad2 is swept into the constraint because it is not tight (subversive).  Bad1
+; ; is swept into it because it introduces a function (bad1) used in the enlarged
+; ; constraint.  Bad3 is not swept in.  Indeed, bad3 is moved [Back].
+; 
+; (test
+;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;              '((EQUAL (BAD1 X) (P X))
+;                (EQUAL (BAD2 X)
+;                       (IF (CONSP X)
+;                           (NOT (BAD2 (BAD1 X)))
+;                           'T))
+; ; No longer starting with v3-5:
+; ;              (IF (EQUAL (BAD2 X) 'T)
+; ;                  'T
+; ;                  (EQUAL (BAD2 X) 'NIL))
+;                ))
+;       (equal (getprop 'bad1 'constraint-lst nil 'current-acl2-world (w state))
+;              'p)
+;       (equal (getprop 'bad2 'constraint-lst nil 'current-acl2-world (w state))
+;              'p)
+;       (equal (getprop 'bad3 'constraint-lst nil 'current-acl2-world (w state))
+;              nil)
+;       (equal (getprop 'bad2 'induction-machine nil
+;                       'current-acl2-world (w state))
+;              nil)
+;       (not (equal (getprop 'bad3 'induction-machine nil
+;                            'current-acl2-world (w state))
+;                   nil))))
+; 
+; (u)
+; 
+; ; Now what about nested encapsulates?
+; 
+; ; Let us first consider the two simplest cases:
+; 
+; (encapsulate ((p (x) t))
+;   (local (defun p (x) (declare (ignore x)) 23))
+;   (encapsulate nil
+;      (defthm lemma1 (equal x x) :rule-classes nil)
+;      (defthm main (equal x x) :rule-classes nil))
+;   (defthm integerp-p (integerp (p x))))
+; 
+; ; We are permitted to rearrange this, because the inner encap has a nil
+; ; signature.  So we get what we expect:
+; 
+; (test
+;  (equal
+;   (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;   '((integerp (P X)))))
+; 
+; (u)
+; 
+; ; The other simple case is
+; 
+; (encapsulate nil
+;    (defthm lemma1 (equal x x) :rule-classes nil)
+;    (defthm main (equal x x) :rule-classes nil)
+;    (encapsulate ((p (x) t))
+;                 (local (defun p (x) (declare (ignore x)) 23))
+;                 (defun benign (x)
+;                   (if (consp x) (benign (cdr x)) x))
+;                 (defthm integerp-p (integerp (p x)))))
+; 
+; ; Note that benign doesn't constrain p, because the containing encap
+; ; contains no sig fns.
+; 
+; (test
+;  (equal
+;   (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;   '((integerp (P X)))))
+; 
+; (u)
+; 
+; ; If we have a pair of encaps, each of which introduces a sig fn,
+; ; we lost the ability to rearrange things in v3-6-1 but not v4-0:
+; 
+; (encapsulate ((p1 (x) t))
+;              (local (defun p1 (x) x))             
+;              (defun benign1 (x)
+;                (if (consp x) (benign1 (cdr x)) t))
+;              (defthm p1-constraint (benign1 (p1 x)))
+;              (encapsulate  ((p2 (x) t))
+;                            (local (defun p2 (x) x))             
+;                            (defun benign2 (x)
+;                              (if (consp x) (benign2 (cdr x)) t))
+;                            (defthm p2-constraint (benign2 (p2 x)))))
+; 
+; (test
+;  (and (equal (getprop 'p1 'constraint-lst nil 'current-acl2-world (w state))
+;              '((BENIGN1 (P1 X))))
+;       (equal (getprop 'p2 'constraint-lst nil 'current-acl2-world (w state))
+;              '((BENIGN2 (P2 X))))
+;       (equal (getprop 'benign2 'constraint-lst nil 'current-acl2-world (w state))
+;              nil)
+;       (equal (getprop 'benign1 'constraint-lst nil 'current-acl2-world (w state))
+;              nil)))
+; 
+; (u)
+; 
+; (encapsulate ((f1 (x) t))
+;              (local (defun f1 (x) (declare (ignore x)) 0))
+;              (defun bad (x)
+;                (if (consp x)
+;                    (if (and (integerp (bad (cdr x)))
+;                             (<= 0 (bad (cdr x)))
+;                             (< (bad (cdr x)) (acl2-count x)))
+;                        (bad (bad (cdr x)))
+;                      (f1 x))
+;                  0)))
+; 
+; (test
+;  (and (equal (getprop 'f1 'constraint-lst nil 'current-acl2-world (w state))
+; ; No longer generates this constraint starting with v3-5:
+; ;              '((EQUAL (BAD X)
+; ;                       (IF (CONSP X)
+; ;                           (IF (IF (INTEGERP (BAD (CDR X)))
+; ;                                   (IF (NOT (< (BAD (CDR X)) '0))
+; ;                                       (< (BAD (CDR X)) (ACL2-COUNT X))
+; ;                                       'NIL)
+; ;                                   'NIL)
+; ;                               (BAD (BAD (CDR X)))
+; ;                               (F1 X))
+; ;                           '0)))
+;              nil)
+;       (equal
+;        (getprop 'bad 'constraint-lst nil 'current-acl2-world (w state))
+; ; No longer starting with v3-5:
+; ;      'f1
+;        nil
+;        )
+; ; No longer subversive, starting with v3-5:
+; ;      (equal
+;        (getprop 'bad 'induction-machine nil 'current-acl2-world (w state))
+; ;       nil)
+;        ))
+; 
+; (u)
+; 
+; 
+; ; Here is a sample involving defchoose.  In this example, the signature
+; ; function is ancestral in the defchoose axiom.
+; 
+; (encapsulate ((p (y x) t))
+;              (local (defun p (y x) (member-equal y x)))
+;              (defchoose witless x (y) (p y x))
+;              (defthm consp-witless
+;                (consp (witless y))
+;                :rule-classes :type-prescription
+;                :hints (("Goal" :use (:instance witless (x (cons y nil)))))))
+; 
+; (test
+;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;              '((IMPLIES (P Y X)
+;                         ((LAMBDA (X Y) (P Y X)) (WITLESS Y) Y))
+;                (CONSP (WITLESS Y))))
+;       (equal
+;        (getprop 'witless 'constraint-lst nil 'current-acl2-world (w state))
+;        'p)
+;       (equal
+;        (getprop 'witless 'defchoose-axiom nil 'current-acl2-world (w state))
+;        '(IMPLIES (P Y X)
+;                  ((LAMBDA (X Y) (P Y X)) (WITLESS Y) Y)))))
+; 
+; (u)
+; 
+; ; and in this one it is not, indeed, the defchoose function can be
+; ; moved to the [Front] even though it is used in the constraint of p.
+; 
+; (encapsulate ((p (y x) t))
+;              (local (defun p (y x) (member-equal y x)))
+;              (defchoose witless x (y) (member-equal y x))
+;              (defthm p-constraint (p y (witless y))
+;                :hints (("Goal" :use (:instance witless (x (cons y nil)))))))
+; 
+; (test
+;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
+;              '((p y (witless y))))
+;       (equal
+;        (getprop 'witless 'constraint-lst nil 'current-acl2-world (w state))
+;        nil)
+;       (equal
+;        (getprop 'witless 'defchoose-axiom nil 'current-acl2-world (w state))
+;        '(IMPLIES (member-equal Y X)
+;                  ((LAMBDA (X Y) (member-equal Y X)) (WITLESS Y) Y)))))
+; 
+; (u)
+; 
+; (quote (the end of my encapsulate tests -- there follow two undo commands))
+; (u)
+; (u)
 
 (defun tilde-@-abbreviate-object-phrase (x)
 
@@ -15639,41 +15629,39 @@ The following all cause errors.
 ; change include-book forms in the portcuillis to use absolute pathnames, we do
 ; not need this.
 
-#|
-  Recall that we disallow ~ilc[include-book] ~il[events] from the portcullis
-  unless the included book's name is an absolute filename
-  (~l[pathname]).  Thus, for example, under the Unix operating
-  system it is impossible to certify a book if the certification
-  ~il[world] was created with
-  ~bv[]
-  ACL2 !>(~il[include-book] \"arith\")
-  ~ev[]
-  The problem here is that the file actually read on behalf of such
-  an ~ilc[include-book] depends upon the then current setting of the
-  connected book directory (~pl[cbd]).  That setting could be
-  changed before the certification occurs.  If we were to copy
-  ~c[(include-book \"arith\")] into the portcullis of the book being
-  certified, there is no assurance that the ~c[\"arith\"] book included
-  would come from the correct directory.  However, by requiring that
-  the ~ilc[include-book]s in the certification ~il[world] give book names
-  that begin with slash we effectively require you to specify the full
-  file name of each book involved in creating your certification
-  ~il[world].  Observe that the execution of
-  ~bv[]
-  (~il[include-book] \"/usr/local/src/acl2/library/arith\")
-  ~ev[]
-  does not depend on the current book directory.  On the other hand,
-  this requirement ~-[] effectively that absolute file names be used in
-  the certification ~il[world] ~-[] means that a book that requires
-  another book in its certification ~il[world] will be rendered
-  uncertified if the required book is removed to another directory.
-  If possible, any ~ilc[include-book] ~il[command] required for a book ought
-  to be placed in the book itself and not in the certification
-  ~il[world].  The only time this cannot be done is if the required
-  book is necessary to some ~ilc[defpkg] required by your book.  Of
-  course, this is just the same advice we have been giving: keep the
-  certification ~il[world] as elementary as possible.
-|#
+;   Recall that we disallow ~ilc[include-book] ~il[events] from the portcullis
+;   unless the included book's name is an absolute filename
+;   (~l[pathname]).  Thus, for example, under the Unix operating
+;   system it is impossible to certify a book if the certification
+;   ~il[world] was created with
+;   ~bv[]
+;   ACL2 !>(~il[include-book] \"arith\")
+;   ~ev[]
+;   The problem here is that the file actually read on behalf of such
+;   an ~ilc[include-book] depends upon the then current setting of the
+;   connected book directory (~pl[cbd]).  That setting could be
+;   changed before the certification occurs.  If we were to copy
+;   ~c[(include-book \"arith\")] into the portcullis of the book being
+;   certified, there is no assurance that the ~c[\"arith\"] book included
+;   would come from the correct directory.  However, by requiring that
+;   the ~ilc[include-book]s in the certification ~il[world] give book names
+;   that begin with slash we effectively require you to specify the full
+;   file name of each book involved in creating your certification
+;   ~il[world].  Observe that the execution of
+;   ~bv[]
+;   (~il[include-book] \"/usr/local/src/acl2/library/arith\")
+;   ~ev[]
+;   does not depend on the current book directory.  On the other hand,
+;   this requirement ~-[] effectively that absolute file names be used in
+;   the certification ~il[world] ~-[] means that a book that requires
+;   another book in its certification ~il[world] will be rendered
+;   uncertified if the required book is removed to another directory.
+;   If possible, any ~ilc[include-book] ~il[command] required for a book ought
+;   to be placed in the book itself and not in the certification
+;   ~il[world].  The only time this cannot be done is if the required
+;   book is necessary to some ~ilc[defpkg] required by your book.  Of
+;   course, this is just the same advice we have been giving: keep the
+;   certification ~il[world] as elementary as possible.
 
   :doc
   ":Doc-Section Books
@@ -17039,17 +17027,15 @@ The following all cause errors.
   ; then you will see the following two key events.  (They are completely
   ; analogous of course for FORALL-EXPR2.)
 
-  #|
-  (DEFUN FORALL-EXPR1 (X)
-    (LET ((Y (FORALL-EXPR1-WITNESS X)))
-         (IMPLIES (P X) (EXPR Y))))
-
-  (DEFTHM FORALL-EXPR1-NECC
-    (IMPLIES (NOT (IMPLIES (P X) (EXPR Y)))
-             (NOT (FORALL-EXPR1 X)))
-    :HINTS
-    ((\"Goal\" :USE FORALL-EXPR1-WITNESS)))
-  |#
+  ;   (DEFUN FORALL-EXPR1 (X)
+  ;     (LET ((Y (FORALL-EXPR1-WITNESS X)))
+  ;          (IMPLIES (P X) (EXPR Y))))
+  ; 
+  ;   (DEFTHM FORALL-EXPR1-NECC
+  ;     (IMPLIES (NOT (IMPLIES (P X) (EXPR Y)))
+  ;              (NOT (FORALL-EXPR1 X)))
+  ;     :HINTS
+  ;     ((\"Goal\" :USE FORALL-EXPR1-WITNESS)))
 
   ; We see that the latter has value when FORALL-EXPR1 occurs negated in a
   ; conclusion, or (therefore) positively in a hypothesis.  A good rule to
@@ -17060,17 +17046,15 @@ The following all cause errors.
   ; definition should be of use.  We therefore leave its definition enabled,
   ; and disable the definition of FORALL-EXPR1.
 
-  #|
-  (thm
-    (implies (and (p x) (forall-expr1 x))
-             (forall-expr2 x))
-    :hints ((\"Goal\" :in-theory (disable forall-expr1))))
-
-  ; which yields this unproved subgoal:
-
-  (IMPLIES (AND (P X) (FORALL-EXPR1 X))
-           (EXPR (FORALL-EXPR2-WITNESS X)))
-  |#
+  ;   (thm
+  ;     (implies (and (p x) (forall-expr1 x))
+  ;              (forall-expr2 x))
+  ;     :hints ((\"Goal\" :in-theory (disable forall-expr1))))
+  ; 
+  ;   ; which yields this unproved subgoal:
+  ; 
+  ;   (IMPLIES (AND (P X) (FORALL-EXPR1 X))
+  ;            (EXPR (FORALL-EXPR2-WITNESS X)))
 
   ; Now we can see how to use FORALL-EXPR1-NECC to complete the proof, by
   ; binding y to (FORALL-EXPR2-WITNESS X).
@@ -17844,16 +17828,14 @@ The following all cause errors.
   ; The defun-sk above introduces the following axioms.  The idea is that
   ; (FORALL-P-WITNESS X) picks a counterexample to (forall-p x) if there is one.
 
-  #|
-  (DEFUN FORALL-P (X)
-    (LET ((A (FORALL-P-WITNESS X)))
-         (IMPLIES (MEMBER A X) (P A))))
-
-  (DEFTHM FORALL-P-NECC
-    (IMPLIES (NOT (IMPLIES (MEMBER A X) (P A)))
-             (NOT (FORALL-P X)))
-    :HINTS ((\"Goal\" :USE FORALL-P-WITNESS)))
-  |#
+  ;   (DEFUN FORALL-P (X)
+  ;     (LET ((A (FORALL-P-WITNESS X)))
+  ;          (IMPLIES (MEMBER A X) (P A))))
+  ; 
+  ;   (DEFTHM FORALL-P-NECC
+  ;     (IMPLIES (NOT (IMPLIES (MEMBER A X) (P A)))
+  ;              (NOT (FORALL-P X)))
+  ;     :HINTS ((\"Goal\" :USE FORALL-P-WITNESS)))
 
   ; The following lemma seems critical.
 
@@ -18487,13 +18469,11 @@ The following all cause errors.
 
 ; Consider the following defstobj:
 
-  #|
-  (defstobj $st
-    (flag :type t :initially run)
-    (pc   :type (integer 0 255) :initially 128)
-    (mem  :type (array (integer 0 255) (256)) :initially 0)
-    :renaming ((pc pcn)))
-  |#
+;   (defstobj $st
+;     (flag :type t :initially run)
+;     (pc   :type (integer 0 255) :initially 128)
+;     (mem  :type (array (integer 0 255) (256)) :initially 0)
+;     :renaming ((pc pcn)))
 
 ; If you call (defstobj-template '$st '((flag ...) ...)) you will get
 ; back a ``template'' which is sort of a normalized version of the
@@ -18518,11 +18498,9 @@ The following all cause errors.
 ; the guards for the defstobj above, it helped to insert the following
 ; lemma after the defun of memp but before the definition of memi.
 
-  #|
-  (defthm memp-implies-true-listp
-    (implies (memp x)
-             (true-listp x)))
-  |#
+;   (defthm memp-implies-true-listp
+;     (implies (memp x)
+;              (true-listp x)))
 
 ; Even without this lemma, the proof succeeded, though it took much
 ; longer and involved quite a few generalizations and inductions.
@@ -20668,234 +20646,228 @@ The following all cause errors.
 (defmacro with-local-stobj (&rest args)
 
 ; Below are some tests of local stobjs.
-#|
- (defstobj foo bar xxx)
 
- (thm (equal (create-foo) '(nil nil))) ; succeeds
-
- (defun up1 (x foo)
-   (declare (xargs :stobjs foo))
-   (update-bar x foo))
-
- (bar foo) ; nil
-
- (up1 3 foo) ; <foo>
-
- (bar foo) ; 3
-
- (defun test (x) ; should fail; must use with-local-stobj explicitly
-   (mv-let (a b foo)
-           (let ((foo (create-foo)))
-             (let ((foo (up1 (1+ x) foo)))
-               (mv (bar foo) (xxx foo) foo)))
-           (declare (ignore foo))
-           (mv a b x)))
-
- (defun test (x)
-   (declare (xargs :guard (acl2-numberp x) :verify-guards nil))
-   (with-local-stobj
-    foo
-    (mv-let (a b foo)
-            (let ((foo (up1 (1+ x) foo)))
-              (mv (bar foo) (xxx foo) foo))
-            (mv a b x))))
-
- (test 17) ; (18 NIL 17)
-
- (bar foo) ; 3
-
- (thm (equal (test x) (list (1+ x) nil x))) ; succeeds
-
- (thm (equal (test x) (list (1+ x) nil x)) ; succeeds
-      :hints (("Goal"
-               :in-theory
-               (enable
-                (:executable-counterpart create-foo)))))
-
- (thm (equal (test x) (list (1+ x) nil x)) ; fails, creating (NOT (NTH 1 (HIDE (CREATE-FOO))))
-      :hints (("Goal"
-               :in-theory
-               (set-difference-theories
-                (enable
-                 (:executable-counterpart create-foo))
-                '(create-foo)))))
-
- (verify-guards test)
-
- (test 17) ; (18 nil 17)
-
- (bar foo) ; 3
-
- (defun test2 (x)
-   (with-local-stobj
-    foo
-    (mv-let (a foo)
-            (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
-            (mv a x))))
-
- (test2 12) ; (13 12)
-
- (bar foo) ; 3
-
- (thm (equal (test x) (mv-let (x y) (test2 x) (mv x nil y)))) ; succeeds
-
- (create-foo) ; should get graceful error
-
- (defun test3 (x) ; Should be OK.
-   (with-local-stobj
-    foo
-    (mv-let (a foo)
-            (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
-            a)))
-
- (test3 11) ; 12
-
- (bar foo) ; 3
-
- (defun test4 (x foo) ; Should be OK.
-   (declare (xargs :stobjs foo
-                   :verify-guards nil))
-   (let* ((x+1
-          (with-local-stobj
-           foo
-           (mv-let (a foo)
-                   (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
-                   a)))
-          (foo (up1 92 foo)))
-     (mv x+1 foo)))
-
- (test4 19 foo) ; (20 <foo>)
-
- (bar foo) ; 92
-
- (defun test5 (x foo) ; Should be OK.
-   (declare (xargs :stobjs foo
-                   :verify-guards nil))
-   (let* ((foo (up1 23 foo))
-          (x+1
-           (with-local-stobj
-            foo
-            (mv-let (a foo)
-                    (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
-                    a))))
-     (mv x+1 foo)))
-
- (test5 35 foo) ; (36 <foo>)
-
- (bar foo) ; 23
-
- (with-local-stobj ; should get macroexpansion error or the equivalent
-  foo
-  (mv foo 3))
-
- (defun trans-eval-test (x foo state) ; this part is ok
-   (declare (xargs :stobjs (foo state)
-                   :mode :program))
-   (mv-let (erp val state)
-           (trans-eval '(update-bar (cons 3 (bar foo)) foo) 'top state t)
-           (declare (ignore erp val))
-           (mv x foo state)))
-
- (with-local-stobj ; should fail; cannot use with-local-stobj in top level loop
-  foo
-  (mv-let (x foo state)
-          (trans-eval-test 3 foo state t)
-          (mv x state)))
-
- (pprogn
-  (with-local-stobj ; should fail with create-foo error
-   foo
-   (mv-let (x foo state)
-           (trans-eval-test 3 foo state t)
-           (declare (ignore x))
-           state))
-  (mv 3 state))
-
- (defun test6 (a state)
-   (declare (xargs :mode :program :stobjs state))
-   (with-local-stobj
-    foo
-    (mv-let (x foo state)
-            (trans-eval-test a foo state t)
-            (mv x state))))
-
- (test6 100 state) ; should get trans-eval error:  user-stobj-alist mismatch
-
- (bar foo) ; 23, still -- trans-eval did not affect global state
-
-|#
+;  (defstobj foo bar xxx)
+; 
+;  (thm (equal (create-foo) '(nil nil))) ; succeeds
+; 
+;  (defun up1 (x foo)
+;    (declare (xargs :stobjs foo))
+;    (update-bar x foo))
+; 
+;  (bar foo) ; nil
+; 
+;  (up1 3 foo) ; <foo>
+; 
+;  (bar foo) ; 3
+; 
+;  (defun test (x) ; should fail; must use with-local-stobj explicitly
+;    (mv-let (a b foo)
+;            (let ((foo (create-foo)))
+;              (let ((foo (up1 (1+ x) foo)))
+;                (mv (bar foo) (xxx foo) foo)))
+;            (declare (ignore foo))
+;            (mv a b x)))
+; 
+;  (defun test (x)
+;    (declare (xargs :guard (acl2-numberp x) :verify-guards nil))
+;    (with-local-stobj
+;     foo
+;     (mv-let (a b foo)
+;             (let ((foo (up1 (1+ x) foo)))
+;               (mv (bar foo) (xxx foo) foo))
+;             (mv a b x))))
+; 
+;  (test 17) ; (18 NIL 17)
+; 
+;  (bar foo) ; 3
+; 
+;  (thm (equal (test x) (list (1+ x) nil x))) ; succeeds
+; 
+;  (thm (equal (test x) (list (1+ x) nil x)) ; succeeds
+;       :hints (("Goal"
+;                :in-theory
+;                (enable
+;                 (:executable-counterpart create-foo)))))
+; 
+;  (thm (equal (test x) (list (1+ x) nil x)) ; fails, creating (NOT (NTH 1 (HIDE (CREATE-FOO))))
+;       :hints (("Goal"
+;                :in-theory
+;                (set-difference-theories
+;                 (enable
+;                  (:executable-counterpart create-foo))
+;                 '(create-foo)))))
+; 
+;  (verify-guards test)
+; 
+;  (test 17) ; (18 nil 17)
+; 
+;  (bar foo) ; 3
+; 
+;  (defun test2 (x)
+;    (with-local-stobj
+;     foo
+;     (mv-let (a foo)
+;             (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
+;             (mv a x))))
+; 
+;  (test2 12) ; (13 12)
+; 
+;  (bar foo) ; 3
+; 
+;  (thm (equal (test x) (mv-let (x y) (test2 x) (mv x nil y)))) ; succeeds
+; 
+;  (create-foo) ; should get graceful error
+; 
+;  (defun test3 (x) ; Should be OK.
+;    (with-local-stobj
+;     foo
+;     (mv-let (a foo)
+;             (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
+;             a)))
+; 
+;  (test3 11) ; 12
+; 
+;  (bar foo) ; 3
+; 
+;  (defun test4 (x foo) ; Should be OK.
+;    (declare (xargs :stobjs foo
+;                    :verify-guards nil))
+;    (let* ((x+1
+;           (with-local-stobj
+;            foo
+;            (mv-let (a foo)
+;                    (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
+;                    a)))
+;           (foo (up1 92 foo)))
+;      (mv x+1 foo)))
+; 
+;  (test4 19 foo) ; (20 <foo>)
+; 
+;  (bar foo) ; 92
+; 
+;  (defun test5 (x foo) ; Should be OK.
+;    (declare (xargs :stobjs foo
+;                    :verify-guards nil))
+;    (let* ((foo (up1 23 foo))
+;           (x+1
+;            (with-local-stobj
+;             foo
+;             (mv-let (a foo)
+;                     (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
+;                     a))))
+;      (mv x+1 foo)))
+; 
+;  (test5 35 foo) ; (36 <foo>)
+; 
+;  (bar foo) ; 23
+; 
+;  (with-local-stobj ; should get macroexpansion error or the equivalent
+;   foo
+;   (mv foo 3))
+; 
+;  (defun trans-eval-test (x foo state) ; this part is ok
+;    (declare (xargs :stobjs (foo state)
+;                    :mode :program))
+;    (mv-let (erp val state)
+;            (trans-eval '(update-bar (cons 3 (bar foo)) foo) 'top state t)
+;            (declare (ignore erp val))
+;            (mv x foo state)))
+; 
+;  (with-local-stobj ; should fail; cannot use with-local-stobj in top level loop
+;   foo
+;   (mv-let (x foo state)
+;           (trans-eval-test 3 foo state t)
+;           (mv x state)))
+; 
+;  (pprogn
+;   (with-local-stobj ; should fail with create-foo error
+;    foo
+;    (mv-let (x foo state)
+;            (trans-eval-test 3 foo state t)
+;            (declare (ignore x))
+;            state))
+;   (mv 3 state))
+; 
+;  (defun test6 (a state)
+;    (declare (xargs :mode :program :stobjs state))
+;    (with-local-stobj
+;     foo
+;     (mv-let (x foo state)
+;             (trans-eval-test a foo state t)
+;             (mv x state))))
+; 
+;  (test6 100 state) ; should get trans-eval error:  user-stobj-alist mismatch
+; 
+;  (bar foo) ; 23, still -- trans-eval did not affect global state
 
 ; Below are some more tests, contributed by Rob Sumners.
 
-#|
-
- (defstobj foo foo-fld)
- (defstobj bar bar-fld)
-
- (defun test-wls1 (x)
-   (with-local-stobj
-    foo
-    (mv-let (result foo)
-            (let ((foo (update-foo-fld 2 foo)))
-              (mv (with-local-stobj
-                   bar
-                   (mv-let (result bar)
-                           (let ((bar (update-bar-fld 3 bar)))
-                             (mv x bar))
-                           result))
-                  foo))
-            result)))
-
- (test-wls1 129) ; 129
-
- :comp t
-
- (test-wls1 '(adjka 202)) ; '(ADJKA 202)
-
- (thm (equal (test-wls1 x) x))
-
- (defun test-wls2 (x)
-   (with-local-stobj
-    foo
-    (mv-let (result foo)
-            (let ((foo (update-foo-fld 2 foo)))
-              (mv (with-local-stobj
-                   foo
-                   (mv-let (result foo)
-                           (let ((foo (update-foo-fld 3 foo)))
-                             (mv x foo))
-                           result))
-                  foo))
-            result)))
-
- (test-wls2 129) ; 129
-
- :comp t
-
- (test-wls2 '(adjka 202)) ; (ADJKA 202)
-
- (thm (equal (test-wls2 x) x))
-
- (defun test-wls3 (x)
-   (if (atom x) x
-     (with-local-stobj
-      foo
-      (mv-let (result foo)
-              (mv (cons (car x)
-                        (test-wls3 (cdr x)))
-                  foo)
-              (let ((x result))
-                (if (atom x) x (cons (car x) (cdr x))))))))
-
- (test-wls3 129) ; 129
-
- :comp t
-
- (test-wls3 '(adjka 202)) ; (ADJKA 202)
-
- (thm (equal (test-wls3 x) x))
-
-|#
+;  (defstobj foo foo-fld)
+;  (defstobj bar bar-fld)
+; 
+;  (defun test-wls1 (x)
+;    (with-local-stobj
+;     foo
+;     (mv-let (result foo)
+;             (let ((foo (update-foo-fld 2 foo)))
+;               (mv (with-local-stobj
+;                    bar
+;                    (mv-let (result bar)
+;                            (let ((bar (update-bar-fld 3 bar)))
+;                              (mv x bar))
+;                            result))
+;                   foo))
+;             result)))
+; 
+;  (test-wls1 129) ; 129
+; 
+;  :comp t
+; 
+;  (test-wls1 '(adjka 202)) ; '(ADJKA 202)
+; 
+;  (thm (equal (test-wls1 x) x))
+; 
+;  (defun test-wls2 (x)
+;    (with-local-stobj
+;     foo
+;     (mv-let (result foo)
+;             (let ((foo (update-foo-fld 2 foo)))
+;               (mv (with-local-stobj
+;                    foo
+;                    (mv-let (result foo)
+;                            (let ((foo (update-foo-fld 3 foo)))
+;                              (mv x foo))
+;                            result))
+;                   foo))
+;             result)))
+; 
+;  (test-wls2 129) ; 129
+; 
+;  :comp t
+; 
+;  (test-wls2 '(adjka 202)) ; (ADJKA 202)
+; 
+;  (thm (equal (test-wls2 x) x))
+; 
+;  (defun test-wls3 (x)
+;    (if (atom x) x
+;      (with-local-stobj
+;       foo
+;       (mv-let (result foo)
+;               (mv (cons (car x)
+;                         (test-wls3 (cdr x)))
+;                   foo)
+;               (let ((x result))
+;                 (if (atom x) x (cons (car x) (cdr x))))))))
+; 
+;  (test-wls3 129) ; 129
+; 
+;  :comp t
+; 
+;  (test-wls3 '(adjka 202)) ; (ADJKA 202)
+; 
+;  (thm (equal (test-wls3 x) x))
 
   (mv-let (erp st mv-let-form creator)
           (parse-with-local-stobj args)

@@ -42,15 +42,14 @@
 ; cleanse-type-alist to be the identity and trace
 ; rewrite-linear-term-lst and linearize in the (failed) proof
 ; of the following lemma:
-#|
-(defthm uniqueness-of-+-inverses-lemma
-    (implies (and (acl2-numberp x)
-                  (acl2-numberp y)
-                  (equal (+ x y)
-                         0))
-             (equal (- x) y))
-  :rule-classes nil)
-|#
+
+; (defthm uniqueness-of-+-inverses-lemma
+;     (implies (and (acl2-numberp x)
+;                   (acl2-numberp y)
+;                   (equal (+ x y)
+;                          0))
+;              (equal (- x) y))
+;   :rule-classes nil)
 
   (cond ((null type-alist)
          nil)

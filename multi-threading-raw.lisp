@@ -364,36 +364,34 @@
           (sb-ext:timeout ()))
        ,body))
 
-#||
 ; We would like to find a clean way to provide the user with an implicit progn,
 ; while still maintaining timeout as a keyword argument.
 
-#+sb-thread
-(defmacro with-potential-sbcl-timeout (&rest body &key timeout)
-
-; The below use of labels is only neccessary because we provide an implicit
-; progn for the body of with-potential-sbcl-timeout.
-
-  (let ((correct-body
-         (labels ((remove-keyword-from-list
-                   (lst keyword)
-                   (if (or (atom lst) (atom (cdr lst)))
-                       lst
-                     (if (equal (car lst) :timeout)
-                         (cddr lst)
-                       (cons (car lst) (remove-keyword-from-args (cdr lst)))))))
-                 (remove-keyword-from-args body :timeout))))
-
-
-    `(if ,timeout
-         (handler-case
-          (sb-sys:with-deadline
-           (:seconds ,timeout)
-           ,@correct-body)
-
-          (sb-ext:timeout ()))
-       ,@correct-body)))
-||#
+; #+sb-thread
+; (defmacro with-potential-sbcl-timeout (&rest body &key timeout)
+; 
+; ; The below use of labels is only neccessary because we provide an implicit
+; ; progn for the body of with-potential-sbcl-timeout.
+; 
+;   (let ((correct-body
+;          (labels ((remove-keyword-from-list
+;                    (lst keyword)
+;                    (if (or (atom lst) (atom (cdr lst)))
+;                        lst
+;                      (if (equal (car lst) :timeout)
+;                          (cddr lst)
+;                        (cons (car lst) (remove-keyword-from-args (cdr lst)))))))
+;                  (remove-keyword-from-args body :timeout))))
+; 
+; 
+;     `(if ,timeout
+;          (handler-case
+;           (sb-sys:with-deadline
+;            (:seconds ,timeout)
+;            ,@correct-body)
+; 
+;           (sb-ext:timeout ()))
+;        ,@correct-body)))
 
 (defun make-semaphore (&optional name)
 

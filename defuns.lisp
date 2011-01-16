@@ -2598,8 +2598,6 @@
                                #+:non-standard-analysis std-p
                                ens wrld installed-wrld ttree)
 
-#|
-
 ; Rockwell Addition:  A major change is the handling of PROG2$ and THE
 ; below.
 
@@ -2825,8 +2823,6 @@
 
 ;   is not accepted under the principle of defn.  Consider its
 ;   normalized body.
-
-|#
 
   (cond ((null names) (mv wrld ttree))
         (t (let* ((fn (car names))
@@ -3861,36 +3857,34 @@
 ; Below is a series of two examples.  The first is the simpler of the two, and
 ; shows the basic problem.  It succeeds in Version_3.4.
 
-#||
-  (encapsulate
-   ()
-
-   (defun h (x) (declare (ignore x)) t)
-
-   (in-theory (disable (:type-prescription h)))
-
-   (local (in-theory (enable (:type-prescription h))))
-
-   (encapsulate (((f *) => *))
-                (local (defun f (x) (cdr x)))
-                (defun g (x)
-                  (if (consp x) (g (f x)) (h x))))
-
-   (defthm atom-g
-     (atom (g x))
-     :rule-classes nil)
-   )
-
- (defthm contradiction nil
-   :hints (("Goal" :use ((:instance
-                          (:functional-instance
-                           atom-g
-                           (f identity)
-                           (g (lambda (x)
-                                (if (consp x) x t))))
-                          (x '(a b))))))
-   :rule-classes nil)
-||#
+;   (encapsulate
+;    ()
+; 
+;    (defun h (x) (declare (ignore x)) t)
+; 
+;    (in-theory (disable (:type-prescription h)))
+; 
+;    (local (in-theory (enable (:type-prescription h))))
+; 
+;    (encapsulate (((f *) => *))
+;                 (local (defun f (x) (cdr x)))
+;                 (defun g (x)
+;                   (if (consp x) (g (f x)) (h x))))
+; 
+;    (defthm atom-g
+;      (atom (g x))
+;      :rule-classes nil)
+;    )
+; 
+;  (defthm contradiction nil
+;    :hints (("Goal" :use ((:instance
+;                           (:functional-instance
+;                            atom-g
+;                            (f identity)
+;                            (g (lambda (x)
+;                                 (if (consp x) x t))))
+;                           (x '(a b))))))
+;    :rule-classes nil)
 
 ; Our first solution was to erase type-prescription rules for subversive
 ; functions after the second pass through the encapsulate.  While that dealt
@@ -3900,46 +3894,44 @@
 ; type-prescription rule has been erased.  The second example shows how that
 ; works:
 
-#||
- (encapsulate
-  ()
-
-  (defun h (x) (declare (ignore x)) t)
-
-  (in-theory (disable (:type-prescription h)))
-
-  (local (in-theory (enable (:type-prescription h))))
-
-  (encapsulate (((f *) => *))
-               (local (defun f (x) (cdr x)))
-               (defun g (x)
-                 (if (consp x) (g (f x)) (h x)))
-               (defun k (x)
-                 (g x)))
-
- ; The following in-theory event is optional; it emphasizes that the problem is
- ; with the use of the bogus type-prescription for g in normalizing the body of
- ; k, not with the direct use of a type-prescription rule in subsequent
- ; proofs.
-  (in-theory (disable (:type-prescription k) (:type-prescription g)))
-
-  (defthm atom-k
-    (atom (k x))
-    :rule-classes nil)
-  )
-
- (defthm contradiction nil
-   :hints (("Goal" :use ((:instance
-                          (:functional-instance
-                           atom-k
-                           (f identity)
-                           (g (lambda (x)
-                                (if (consp x) x t)))
-                           (k (lambda (x)
-                                (if (consp x) x t))))
-                          (x '(a b))))))
-   :rule-classes nil)
-||#
+;  (encapsulate
+;   ()
+; 
+;   (defun h (x) (declare (ignore x)) t)
+; 
+;   (in-theory (disable (:type-prescription h)))
+; 
+;   (local (in-theory (enable (:type-prescription h))))
+; 
+;   (encapsulate (((f *) => *))
+;                (local (defun f (x) (cdr x)))
+;                (defun g (x)
+;                  (if (consp x) (g (f x)) (h x)))
+;                (defun k (x)
+;                  (g x)))
+; 
+;  ; The following in-theory event is optional; it emphasizes that the problem is
+;  ; with the use of the bogus type-prescription for g in normalizing the body of
+;  ; k, not with the direct use of a type-prescription rule in subsequent
+;  ; proofs.
+;   (in-theory (disable (:type-prescription k) (:type-prescription g)))
+; 
+;   (defthm atom-k
+;     (atom (k x))
+;     :rule-classes nil)
+;   )
+; 
+;  (defthm contradiction nil
+;    :hints (("Goal" :use ((:instance
+;                           (:functional-instance
+;                            atom-k
+;                            (f identity)
+;                            (g (lambda (x)
+;                                 (if (consp x) x t)))
+;                            (k (lambda (x)
+;                                 (if (consp x) x t))))
+;                           (x '(a b))))))
+;    :rule-classes nil)
 
     (mv wrld ttree state))
    (t
@@ -5007,193 +4999,190 @@
 ; this whole issue will fall by the wayside.  It is our utter conviction of
 ; this that leads us to write this note.  Just in case...
 
-#|
-++++++++++++++++++++++++++++++
-
-Date: Sun, 2 Oct 94 17:31:10 CDT
-From: kaufmann (Matt Kaufmann)
-To: moore
-Subject: proposal for handling generalized booleans
-
-Here's a pretty simple idea, I think, for handling generalized Booleans.  For
-the rest of this message I'll assume that we are going to implement the
-about-to-be-proposed handling of guards.  This proposal doesn't address
-functions like member, which could be thought of as returning generalized
-booleans but in fact are completely specified (when their guards are met).
-Rather, the problem we need to solve is that certain functions, including EQUAL
-and RATIONALP, only specify the propositional equivalence class of the value
-returned, and no more.  I'll call these "problematic functions" for the rest of
-this note.
-
-The fundamental ideas of this proposal are  as follows.
-
-====================
-
- (A) Problematic functions are completely a non-issue except for guard
-verification.  The ACL2 logic specifies Boolean values for functions that are
-specified in dpANS to return generalized Booleans.
-
- (B) Guard verification will generate not only the current proof obligations,
-but also appropriate proof obligations to show that for all values returned by
-relevant problematic functions, only their propositional equivalence class
-matters.  More on this later.
-
- (C) If a function is problematic, it had better only be used in propositional
-contexts when used in functions or theorems that are intended to be
-:common-lisp-compliant.  For example, consider the following.
-
- (defun foo (x y z)
-  (if x
-      (equal y z)
-    (cons y z)))
-
-This is problematic, and we will never be able to use it in a
-:common-lisp-compliant function or formula for other than its propositional
-value (unfortunately).
-
-====================
-
-Elaborating on (B) above:
-
-So for example, if we're verifying guards on
-
- (... (foo (rationalp x) ...) ...)
-
-then there will be a proof obligation to show that under the appropriate
-hypotheses (from governing IF tests),
-
- (implies (and a b)
-         (equal (foo a ...) (foo b ...)))
-
-Notice that I've assumed that a and b are non-NIL.  The other case, where a and
-b are both NIL, is trivial since in that case a and b are equal.
-
-Finally, most of the time no such proof obligation will be generated, because
-the context will make it clear that only the propositional equivalence class
-matters.  In fact, for each function we'll store information that gives
-``propositional arguments'' of the function:  arguments for which we can be
-sure that only their propositional value matters.  More on this below.
-
-====================
-
-Here are details.
-
-====================
-
-1. Every function will have a ``propositional signature,'' which is a list of
-T's and NIL's.  The CAR of this list is T when the function is problematic.
-The CDR of the list is in 1-1 correspondence with the function's formals (in
-the same order, of course), and indicates whether the formal's value only
-matters propositionally for the value of the function.
-
-For example, the function
-
- (defun bar (x y z)
-  (if x
-      (equal y z)
-    (equal y nil)))
-
-has a propositional signature of (T T NIL NIL).  The first T represents the
-fact that this function is problematic.  The second T represents the fact that
-only the propositional equivalence class of X is used to compute the value of
-this function.  The two NILs say that Y and Z may have their values used other
-than propositionally.
-
-An argument that corresponds to a value of T will be called a ``propositional
-argument'' henceforth.  An OBSERVATION will be made any time a function is
-given a propositional signature that isn't composed entirely of NILs.
-
- (2) Propositional signatures will be assigned as follows, presumably hung on
-the 'propositional-signature property of the function.  We intend to ensure
-that if a function is problematic, then the CAR of its propositional signature
-is T.  The converse could fail, but it won't in practice.
-
-a. The primitives will have their values set using a fixed alist kept in sync
-with *primitive-formals-and-guards*, e.g.:
-
- (defconst *primitive-propositional-signatures*
-  '((equal (t nil nil))
-    (cons (nil nil nil))
-    (rationalp (t nil))
-    ...))
-
-In particular, IF has propositional signature (NIL T NIL NIL):  although IF is
-not problematic, it is interesting to note that its first argument is a
-propositional argument.
-
-b. Defined functions will have their propositional signatures computed as
-follows.
-
-b1. The CAR is T if and only if some leaf of the IF-tree of the body is the
-call of a problematic function.  For recursive functions, the function itself
-is considered not to be problematic for the purposes of this algorithm.
-
-b2. An argument, arg, corresponds to T (i.e., is a propositional argument in
-the sense defined above) if and only if for every subterm for which arg is an
-argument of a function call, arg is a propositional argument of that function.
-
-Actually, for recursive functions this algorithm is iterative, like the type
-prescription algorithm, in the sense that we start by assuming that every
-argument is propositional and iterate, continuing to cut down the set of
-propositional arguments until it stabilizes.
-
-Consider for example:
-
- (defun atom-listp (lst)
-  (cond ((atom lst) (eq lst nil))
-        (t (and (atom (car lst))
-                (atom-listp (cdr lst))))))
-
-Since EQ returns a generalized Boolean, ATOM-LISTP is problematic.  Since
-the first argument of EQ is not propositional, ATOM-LISTP has propositional
-signature (T NIL).
-
-Note however that we may want to replace many such calls of EQ as follows,
-since dpANS says that NULL really does return a Boolean [I guess because it's
-sort of synonymous with NOT]:
-
- (defun atom-listp (lst)
-  (cond ((atom lst) (null lst))
-        (t (and (atom (car lst))
-                (atom-listp (cdr lst))))))
-
-Now this function is not problematic, even though one might be nervous because
-ATOM is, in fact, problematic.  However, ATOM is in the test of an IF (because
-of how AND is defined).  Nevertheless, the use of ATOM here is of issue, and
-this leads us to the next item.
-
- (3) Certain functions are worse than merely problematic, in that their value
-may not even be determined up to propositional equivalence class.  Consider for
-example our old favorite:
-
- (defun bad (x)
-  (equal (equal x x) (equal x x)))
-
-In this case, we can't really say anything at all about the value of BAD, ever.
-
-So, every function is checked that calls of problematic functions in its body
-only occur either at the top-level of its IF structure or in propositional
-argument positions.  This check is done after the computation described in (2)b
-above.
-
-So, the second version of the definition of ATOM-LISTP above,
-
- (defun atom-listp (lst)
-  (cond ((atom lst) (null lst))
-        (t (and (atom (car lst))
-                (atom-listp (cdr lst))))))
-
-is OK in this sense, because both calls of ATOM occur in the first argument of
-an IF call, and the first argument of IF is propositional.
-
-Functions that fail this check are perfectly OK as :ideal functions; they just
-can't be :common-lisp-compliant.  So perhaps they should generate a warning
-when submitted as :ideal, pointing out that they can never be
-:common-lisp-compliant.
-
--- Matt
-
-|#
+; ++++++++++++++++++++++++++++++
+; 
+; Date: Sun, 2 Oct 94 17:31:10 CDT
+; From: kaufmann (Matt Kaufmann)
+; To: moore
+; Subject: proposal for handling generalized booleans
+; 
+; Here's a pretty simple idea, I think, for handling generalized Booleans.  For
+; the rest of this message I'll assume that we are going to implement the
+; about-to-be-proposed handling of guards.  This proposal doesn't address
+; functions like member, which could be thought of as returning generalized
+; booleans but in fact are completely specified (when their guards are met).
+; Rather, the problem we need to solve is that certain functions, including EQUAL
+; and RATIONALP, only specify the propositional equivalence class of the value
+; returned, and no more.  I'll call these "problematic functions" for the rest of
+; this note.
+; 
+; The fundamental ideas of this proposal are  as follows.
+; 
+; ====================
+; 
+;  (A) Problematic functions are completely a non-issue except for guard
+; verification.  The ACL2 logic specifies Boolean values for functions that are
+; specified in dpANS to return generalized Booleans.
+; 
+;  (B) Guard verification will generate not only the current proof obligations,
+; but also appropriate proof obligations to show that for all values returned by
+; relevant problematic functions, only their propositional equivalence class
+; matters.  More on this later.
+; 
+;  (C) If a function is problematic, it had better only be used in propositional
+; contexts when used in functions or theorems that are intended to be
+; :common-lisp-compliant.  For example, consider the following.
+; 
+;  (defun foo (x y z)
+;   (if x
+;       (equal y z)
+;     (cons y z)))
+; 
+; This is problematic, and we will never be able to use it in a
+; :common-lisp-compliant function or formula for other than its propositional
+; value (unfortunately).
+; 
+; ====================
+; 
+; Elaborating on (B) above:
+; 
+; So for example, if we're verifying guards on
+; 
+;  (... (foo (rationalp x) ...) ...)
+; 
+; then there will be a proof obligation to show that under the appropriate
+; hypotheses (from governing IF tests),
+; 
+;  (implies (and a b)
+;          (equal (foo a ...) (foo b ...)))
+; 
+; Notice that I've assumed that a and b are non-NIL.  The other case, where a and
+; b are both NIL, is trivial since in that case a and b are equal.
+; 
+; Finally, most of the time no such proof obligation will be generated, because
+; the context will make it clear that only the propositional equivalence class
+; matters.  In fact, for each function we'll store information that gives
+; ``propositional arguments'' of the function:  arguments for which we can be
+; sure that only their propositional value matters.  More on this below.
+; 
+; ====================
+; 
+; Here are details.
+; 
+; ====================
+; 
+; 1. Every function will have a ``propositional signature,'' which is a list of
+; T's and NIL's.  The CAR of this list is T when the function is problematic.
+; The CDR of the list is in 1-1 correspondence with the function's formals (in
+; the same order, of course), and indicates whether the formal's value only
+; matters propositionally for the value of the function.
+; 
+; For example, the function
+; 
+;  (defun bar (x y z)
+;   (if x
+;       (equal y z)
+;     (equal y nil)))
+; 
+; has a propositional signature of (T T NIL NIL).  The first T represents the
+; fact that this function is problematic.  The second T represents the fact that
+; only the propositional equivalence class of X is used to compute the value of
+; this function.  The two NILs say that Y and Z may have their values used other
+; than propositionally.
+; 
+; An argument that corresponds to a value of T will be called a ``propositional
+; argument'' henceforth.  An OBSERVATION will be made any time a function is
+; given a propositional signature that isn't composed entirely of NILs.
+; 
+;  (2) Propositional signatures will be assigned as follows, presumably hung on
+; the 'propositional-signature property of the function.  We intend to ensure
+; that if a function is problematic, then the CAR of its propositional signature
+; is T.  The converse could fail, but it won't in practice.
+; 
+; a. The primitives will have their values set using a fixed alist kept in sync
+; with *primitive-formals-and-guards*, e.g.:
+; 
+;  (defconst *primitive-propositional-signatures*
+;   '((equal (t nil nil))
+;     (cons (nil nil nil))
+;     (rationalp (t nil))
+;     ...))
+; 
+; In particular, IF has propositional signature (NIL T NIL NIL):  although IF is
+; not problematic, it is interesting to note that its first argument is a
+; propositional argument.
+; 
+; b. Defined functions will have their propositional signatures computed as
+; follows.
+; 
+; b1. The CAR is T if and only if some leaf of the IF-tree of the body is the
+; call of a problematic function.  For recursive functions, the function itself
+; is considered not to be problematic for the purposes of this algorithm.
+; 
+; b2. An argument, arg, corresponds to T (i.e., is a propositional argument in
+; the sense defined above) if and only if for every subterm for which arg is an
+; argument of a function call, arg is a propositional argument of that function.
+; 
+; Actually, for recursive functions this algorithm is iterative, like the type
+; prescription algorithm, in the sense that we start by assuming that every
+; argument is propositional and iterate, continuing to cut down the set of
+; propositional arguments until it stabilizes.
+; 
+; Consider for example:
+; 
+;  (defun atom-listp (lst)
+;   (cond ((atom lst) (eq lst nil))
+;         (t (and (atom (car lst))
+;                 (atom-listp (cdr lst))))))
+; 
+; Since EQ returns a generalized Boolean, ATOM-LISTP is problematic.  Since
+; the first argument of EQ is not propositional, ATOM-LISTP has propositional
+; signature (T NIL).
+; 
+; Note however that we may want to replace many such calls of EQ as follows,
+; since dpANS says that NULL really does return a Boolean [I guess because it's
+; sort of synonymous with NOT]:
+; 
+;  (defun atom-listp (lst)
+;   (cond ((atom lst) (null lst))
+;         (t (and (atom (car lst))
+;                 (atom-listp (cdr lst))))))
+; 
+; Now this function is not problematic, even though one might be nervous because
+; ATOM is, in fact, problematic.  However, ATOM is in the test of an IF (because
+; of how AND is defined).  Nevertheless, the use of ATOM here is of issue, and
+; this leads us to the next item.
+; 
+;  (3) Certain functions are worse than merely problematic, in that their value
+; may not even be determined up to propositional equivalence class.  Consider for
+; example our old favorite:
+; 
+;  (defun bad (x)
+;   (equal (equal x x) (equal x x)))
+; 
+; In this case, we can't really say anything at all about the value of BAD, ever.
+; 
+; So, every function is checked that calls of problematic functions in its body
+; only occur either at the top-level of its IF structure or in propositional
+; argument positions.  This check is done after the computation described in (2)b
+; above.
+; 
+; So, the second version of the definition of ATOM-LISTP above,
+; 
+;  (defun atom-listp (lst)
+;   (cond ((atom lst) (null lst))
+;         (t (and (atom (car lst))
+;                 (atom-listp (cdr lst))))))
+; 
+; is OK in this sense, because both calls of ATOM occur in the first argument of
+; an IF call, and the first argument of IF is propositional.
+; 
+; Functions that fail this check are perfectly OK as :ideal functions; they just
+; can't be :common-lisp-compliant.  So perhaps they should generate a warning
+; when submitted as :ideal, pointing out that they can never be
+; :common-lisp-compliant.
+; 
+; -- Matt
 
   (let ((wrld (w state))
         (ens (ens state)))
@@ -6245,76 +6234,72 @@ when submitted as :ideal, pointing out that they can never be
 
 ; The following example involves redundancy only for :program mode functions.
 
-#|
- (encapsulate
-  ()
-
-  (local (defun foo (x y)
-           (declare (xargs :measure (acl2-count y) :mode :program))
-           (if (and (consp x) (consp y))
-               (foo (cons x x) (cdr y))
-             y)))
-
-  (defun foo (x y)
-    (declare (xargs :mode :program))
-    (if (and (consp x) (consp y))
-        (foo (cons x x) (cdr y))
-      y))
-
-  (verify-termination foo))
-
- (defthm bad
-   (atom x)
-   :rule-classes nil
-   :hints (("Goal" :induct (foo x '(3)))))
-
- (defthm contradiction
-   nil
-   :rule-classes nil
-   :hints (("Goal" :use ((:instance bad (x '(7)))))))
-|#
+;  (encapsulate
+;   ()
+; 
+;   (local (defun foo (x y)
+;            (declare (xargs :measure (acl2-count y) :mode :program))
+;            (if (and (consp x) (consp y))
+;                (foo (cons x x) (cdr y))
+;              y)))
+; 
+;   (defun foo (x y)
+;     (declare (xargs :mode :program))
+;     (if (and (consp x) (consp y))
+;         (foo (cons x x) (cdr y))
+;       y))
+; 
+;   (verify-termination foo))
+; 
+;  (defthm bad
+;    (atom x)
+;    :rule-classes nil
+;    :hints (("Goal" :induct (foo x '(3)))))
+; 
+;  (defthm contradiction
+;    nil
+;    :rule-classes nil
+;    :hints (("Goal" :use ((:instance bad (x '(7)))))))
 
 ; Note that even though we do not store induction schemes for mutual-recursion,
 ; the following variant of the first example shows that we still need to check
 ; measures in that case:
 
-#|
- (set-bogus-mutual-recursion-ok t) ; ease construction of example
-
- (encapsulate
-  ()
-  (local (encapsulate
-          ()
-
-          (local (mutual-recursion
-                  (defun bar (x) x)
-                  (defun foo (x y)
-                    (declare (xargs :measure (acl2-count y)))
-                    (if (and (consp x) (consp y))
-                        (foo (cons x x) (cdr y))
-                      y))))
-
-          (mutual-recursion
-           (defun bar (x) x)
-           (defun foo (x y)
-             (if (and (consp x) (consp y))
-                 (foo (cons x x) (cdr y))
-               y)))))
-  (defun foo (x y)
-    (if (and (consp x) (consp y))
-        (foo (cons x x) (cdr y))
-      y)))
-
- (defthm bad
-   (atom x)
-   :rule-classes nil
-   :hints (("Goal" :induct (foo x '(3)))))
-
- (defthm contradiction
-   nil
-   :rule-classes nil
-   :hints (("Goal" :use ((:instance bad (x '(7)))))))
-|# ; |
+;  (set-bogus-mutual-recursion-ok t) ; ease construction of example
+; 
+;  (encapsulate
+;   ()
+;   (local (encapsulate
+;           ()
+; 
+;           (local (mutual-recursion
+;                   (defun bar (x) x)
+;                   (defun foo (x y)
+;                     (declare (xargs :measure (acl2-count y)))
+;                     (if (and (consp x) (consp y))
+;                         (foo (cons x x) (cdr y))
+;                       y))))
+; 
+;           (mutual-recursion
+;            (defun bar (x) x)
+;            (defun foo (x y)
+;              (if (and (consp x) (consp y))
+;                  (foo (cons x x) (cdr y))
+;                y)))))
+;   (defun foo (x y)
+;     (if (and (consp x) (consp y))
+;         (foo (cons x x) (cdr y))
+;       y)))
+; 
+;  (defthm bad
+;    (atom x)
+;    :rule-classes nil
+;    :hints (("Goal" :induct (foo x '(3)))))
+; 
+;  (defthm contradiction
+;    nil
+;    :rule-classes nil
+;    :hints (("Goal" :use ((:instance bad (x '(7))))))) ; |
 
 ; After Version_3.4 we no longer concern ourselves with the measure in the case
 ; of :program mode functions, as we now explain.

@@ -3283,55 +3283,50 @@
   (rewrite-solidify-rec *rewrite-equiv-solidify-iteration-bound* term
                         type-alist obj geneqv ens wrld ttree pot-lst pt))
 
-#|
 ; Comment on Historical Waffling over Calling Type-Set in Rewrite-Solidify
-
-Back in v1-7 we called
-(type-set term nil force-flg type-alist nil ens wrld nil)
-here, where force-flg was passed into rewrite-solidify.
-
-We abandoned that in v1-8 and most of v1-9 and replaced it with a simple
-lookup of term in the type-alist,
-
-(assoc-type-alist term type-alist wrld)
-
-and marked the occasion by writing the following comment:
-
-#| 
-
-At one time we called type-set here.  As a result, the prover could simplify
-
-(thm (implies (and (not (< y 0))
-                   (rationalp y)
-                   (not (equal 0 y)))
-              (equal aaa (< 0 y))))
-
-to
-
-(implies (and (not (< y 0))
-              (rationalp y)
-              (not (equal 0 y)))
-         (equal aaa t))
-
-However, in the interest of performance we have decided to avoid a full-blown
-call of type-set here.  You get what you pay for, perhaps.
-|#
-
-However, then Rich Cohen observed that if we are trying to relieve a hypothesis
-in a lemma and the hyp rewrites to an explicit cons expression we fail to
-recognize that it is non-nil!  Here is a thm that fails for that reason:
-
- (defstub foo (x a) t)
- (defaxiom lemma
-  (implies (member x a) (equal (foo x a) x)))
- (thm (equal (foo x (cons x y)) x))
- 
-We have decided to revert to the use of type-set in rewrite-solidify, but
-only when we have an objective of t or nil.  Under this condition we use
-force-flg nil and dwp t.  We tried the div proofs with force-flg t here
-and found premature forcing killed us.
-
-|#
+; 
+; Back in v1-7 we called
+; (type-set term nil force-flg type-alist nil ens wrld nil)
+; here, where force-flg was passed into rewrite-solidify.
+; 
+; We abandoned that in v1-8 and most of v1-9 and replaced it with a simple
+; lookup of term in the type-alist,
+; 
+; (assoc-type-alist term type-alist wrld)
+; 
+; and marked the occasion by writing the following comment:
+; 
+; ; At one time we called type-set here.  As a result, the prover could simplify
+; ; 
+; ; (thm (implies (and (not (< y 0))
+; ;                    (rationalp y)
+; ;                    (not (equal 0 y)))
+; ;               (equal aaa (< 0 y))))
+; ; 
+; ; to
+; ; 
+; ; (implies (and (not (< y 0))
+; ;               (rationalp y)
+; ;               (not (equal 0 y)))
+; ;          (equal aaa t))
+; ; 
+; ; However, in the interest of performance we have decided to avoid a full-blown
+; ; call of type-set here.  You get what you pay for, perhaps.
+; 
+; However, then Rich Cohen observed that if we are trying to relieve a hypothesis
+; in a lemma and the hyp rewrites to an explicit cons expression we fail to
+; recognize that it is non-nil!  Here is a thm that fails for that reason:
+; 
+;  (defstub foo (x a) t)
+;  (defaxiom lemma
+;   (implies (member x a) (equal (foo x a) x)))
+;  (thm (equal (foo x (cons x y)) x))
+;  
+; We have decided to revert to the use of type-set in rewrite-solidify, but
+; only when we have an objective of t or nil.  Under this condition we use
+; force-flg nil and dwp t.  We tried the div proofs with force-flg t here
+; and found premature forcing killed us.
+; 
 
 (defun rewrite-if11 (term type-alist geneqv wrld ttree)
   (mv-let (ts ts-ttree)
@@ -4378,7 +4373,6 @@ and found premature forcing killed us.
 
 )
 
-#||
 ; We originally defined nat-listp here and used it in the guards of
 ; too-many-ifs0 and too-many-ifs-pre-rewrite, but several books had conflicts
 ; with this definition of nat-listp, as follows:
@@ -4394,13 +4388,12 @@ and found premature forcing killed us.
 ; change integer-listp to nat-listp in the two guards mentioned above and also
 ; in books/system/too-many-ifs.lisp, as indicated there.
 
-(defun nat-listp (x)
-  (declare (xargs :guard t))
-  (cond ((atom x)
-         (equal x nil))
-        (t (and (natp (car x))
-                (nat-listp (cdr x))))))
-||#
+; (defun nat-listp (x)
+;   (declare (xargs :guard t))
+;   (cond ((atom x)
+;          (equal x nil))
+;         (t (and (natp (car x))
+;                 (nat-listp (cdr x))))))
 
 (defun too-many-ifs0 (args counts diff ctx)
 
@@ -4453,32 +4446,30 @@ and found premature forcing killed us.
 (defattach (too-many-ifs-pre-rewrite too-many-ifs-pre-rewrite-builtin)
   :skip-checks t)
 
-#||
 ; This dead code could be deleted, but we leave it as documentation for
 ; occur-cnt-bounded.
 
-(mutual-recursion
-
-(defun occur-cnt-rec (term1 term2 acc)
-
-; Return a lower bound on the number of times term1 occurs in term2.
-; We do not go inside of quotes.
-
-  (cond ((equal term1 term2) (1+ acc))
-        ((variablep term2) acc)
-        ((fquotep term2) acc)
-        (t (occur-cnt-lst term1 (fargs term2) acc))))
-
-(defun occur-cnt-lst (term1 lst acc)
-  (cond ((null lst) acc)
-        (t (occur-cnt-rec term1
-                          (car lst)
-                          (occur-cnt-lst term1 (cdr lst) acc)))))
-)
-
-(defun occur-cnt (term1 term2)
-  (occur-cnt-rec term1 term2 0))
-||#
+; (mutual-recursion
+; 
+; (defun occur-cnt-rec (term1 term2 acc)
+; 
+; ; Return a lower bound on the number of times term1 occurs in term2.
+; ; We do not go inside of quotes.
+; 
+;   (cond ((equal term1 term2) (1+ acc))
+;         ((variablep term2) acc)
+;         ((fquotep term2) acc)
+;         (t (occur-cnt-lst term1 (fargs term2) acc))))
+; 
+; (defun occur-cnt-lst (term1 lst acc)
+;   (cond ((null lst) acc)
+;         (t (occur-cnt-rec term1
+;                           (car lst)
+;                           (occur-cnt-lst term1 (cdr lst) acc)))))
+; )
+; 
+; (defun occur-cnt (term1 term2)
+;   (occur-cnt-rec term1 term2 0))
 
 (mutual-recursion
 
@@ -9931,54 +9922,52 @@ and found premature forcing killed us.
 ; facets are equal.  But in Rockwell trials it never did anything
 ; different than the faster version used below.
 
-#||
-(mutual-recursion
-
- (defun equal-derefs (term1 stack1 term2 stack2 ens wrld)
-  (mv-let
-   (term1 stack1)
-   (deref term1 stack1 ens wrld)
-   (mv-let
-    (term2 stack2)
-    (deref term2 stack2 ens wrld)
-    (cond
-     ((and (equal term1 term2)
-           (equal stack1 stack2))
-      t)
-     ((variablep term1)
-
-; When deref returns a var, it is unbound.  If both are vars, they are
-; denote equal terms precisely if they are the same (unbound) var.  If
-; one is a var and the other isn't, we don't know if they denote equal
-; terms.
-
-      (if (equal term1 term2)
-          t
-        '?))
-     ((variablep term2) '?)
-     ((fquotep term1)
-      (if (fquotep term2)
-          (equal term1 term2)
-        '?))
-     ((fquotep term2) '?)
-     ((eq (ffn-symb term1) (ffn-symb term2))
-      (equal-derefs-lst (fargs term1) stack1
-                        (fargs term2) stack2
-                        ens wrld))
-     (t '?)))))
-
- (defun equal-derefs-lst (term-lst1 stack1 term-lst2 stack2 ens wrld)
-  (cond ((endp term-lst1) t)
-        (t (let ((flg (equal-derefs (car term-lst1) stack1
-                                    (car term-lst2) stack2
-                                    ens wrld)))
-             (cond
-              ((eq flg t)
-               (equal-derefs-lst (cdr term-lst1) stack1
-                                 (cdr term-lst2) stack2
-                                 ens wrld))
-              (t '?)))))))
-||#
+; (mutual-recursion
+; 
+;  (defun equal-derefs (term1 stack1 term2 stack2 ens wrld)
+;   (mv-let
+;    (term1 stack1)
+;    (deref term1 stack1 ens wrld)
+;    (mv-let
+;     (term2 stack2)
+;     (deref term2 stack2 ens wrld)
+;     (cond
+;      ((and (equal term1 term2)
+;            (equal stack1 stack2))
+;       t)
+;      ((variablep term1)
+; 
+; ; When deref returns a var, it is unbound.  If both are vars, they are
+; ; denote equal terms precisely if they are the same (unbound) var.  If
+; ; one is a var and the other isn't, we don't know if they denote equal
+; ; terms.
+; 
+;       (if (equal term1 term2)
+;           t
+;         '?))
+;      ((variablep term2) '?)
+;      ((fquotep term1)
+;       (if (fquotep term2)
+;           (equal term1 term2)
+;         '?))
+;      ((fquotep term2) '?)
+;      ((eq (ffn-symb term1) (ffn-symb term2))
+;       (equal-derefs-lst (fargs term1) stack1
+;                         (fargs term2) stack2
+;                         ens wrld))
+;      (t '?)))))
+; 
+;  (defun equal-derefs-lst (term-lst1 stack1 term-lst2 stack2 ens wrld)
+;   (cond ((endp term-lst1) t)
+;         (t (let ((flg (equal-derefs (car term-lst1) stack1
+;                                     (car term-lst2) stack2
+;                                     ens wrld)))
+;              (cond
+;               ((eq flg t)
+;                (equal-derefs-lst (cdr term-lst1) stack1
+;                                  (cdr term-lst2) stack2
+;                                  ens wrld))
+;               (t '?)))))))
 
 (defun equal-derefs (term1 stack1 term2 stack2)
   (cond

@@ -249,15 +249,13 @@
 ; wind up with the call (SYMBOL-BTREEP NIL) when trying to admit the following
 ; definition.
 
-#|
- (defun symbol-btreep (x)
-   (if x
-       (and (true-listp x)
-            (symbolp (car x))
-            (symbol-btreep (caddr x))
-            (symbol-btreep (cdddr x)))
-     t))
-|#
+;  (defun symbol-btreep (x)
+;    (if x
+;        (and (true-listp x)
+;             (symbolp (car x))
+;             (symbol-btreep (caddr x))
+;             (symbol-btreep (cdddr x)))
+;      t))
 
                 (mv (cons-term fn expanded-args) ttree))
                (t
@@ -879,29 +877,27 @@
 ;;;                                 clauses
 ;;;                                 wrld)))
                          
-#| Previous to Version_2.6 we had written:
+; Previous to Version_2.6 we had written:
 
-; Note: Once upon a time (in Version 1.5) we called "clausify-clause-set" here.
-; That function called clausify on each element of clauses and unioned the
-; results together, in the process naturally deleting tautologies as does
-; expand-some-non-rec-fns-in-clauses above.  But Version 1.5 caused Bishop a
-; lot of pain because many theorems would explode into case analyses, each of
-; which was then dispatched by simplification.  The reason we used a full-blown
-; clausify in Version 1.5 was that in was also into that version that we
-; introduced forcing rounds and the liberal use of force-flg = t.  But if we
-; are to force that way, we must really get all of our hypotheses out into the
-; open so that they can contribute to the type-alist stored in each assumption.
-; For example, in Version 1.4 the concl of (IMPLIES hyps concl) was rewritten
-; first without the hyps being manifest in the type-alist since IMPLIES is a
-; function.  Not until the IMPLIES was opened did the hyps become "governers"
-; in this sense.  In Version 1.5 we decided to throw caution to the wind and
-; just clausify the clausified input.  Well, it bit us as mentioned above and
-; we are now backing off to simply expanding the non-rec fns that might
-; contribute hyps.  But we leave the expansions in place rather than normalize
-; them out so that simplification has one shot on a small set (usually
-; singleton set) of clauses.
-
-|#
+; ; Note: Once upon a time (in Version 1.5) we called "clausify-clause-set" here.
+; ; That function called clausify on each element of clauses and unioned the
+; ; results together, in the process naturally deleting tautologies as does
+; ; expand-some-non-rec-fns-in-clauses above.  But Version 1.5 caused Bishop a
+; ; lot of pain because many theorems would explode into case analyses, each of
+; ; which was then dispatched by simplification.  The reason we used a full-blown
+; ; clausify in Version 1.5 was that in was also into that version that we
+; ; introduced forcing rounds and the liberal use of force-flg = t.  But if we
+; ; are to force that way, we must really get all of our hypotheses out into the
+; ; open so that they can contribute to the type-alist stored in each assumption.
+; ; For example, in Version 1.4 the concl of (IMPLIES hyps concl) was rewritten
+; ; first without the hyps being manifest in the type-alist since IMPLIES is a
+; ; function.  Not until the IMPLIES was opened did the hyps become "governers"
+; ; in this sense.  In Version 1.5 we decided to throw caution to the wind and
+; ; just clausify the clausified input.  Well, it bit us as mentioned above and
+; ; we are now backing off to simply expanding the non-rec fns that might
+; ; contribute hyps.  But we leave the expansions in place rather than normalize
+; ; them out so that simplification has one shot on a small set (usually
+; ; singleton set) of clauses.
 
 ; But the comment above is now irrelevant to the current situation.
 ; Before commenting on the current situation, however, we point out that
@@ -1353,83 +1349,81 @@
 
 ; Below is the soundness bug example reported by Francisco J. Martin-Mateos.
 
-#||
-;;;============================================================================
-
-;;;
-;;; A bug in ACL2 (2.5 and 2.6). Proving "0=1".
-;;; Francisco J. Martin-Mateos
-;;; email: Francisco-Jesus.Martin@cs.us.es
-;;; Dpt. of Computer Science and Artificial Intelligence
-;;; University of SEVILLE
-;;;
-;;;============================================================================
-
-;;;   I've found a bug in ACL2 (2.5 and 2.6). The following events prove that
-;;; "0=1".
-
-(in-package "ACL2")
-
-(encapsulate
- (((g1) => *))
-
- (local
-  (defun g1 ()
-    0))
-
- (defthm 0=g1
-   (equal 0 (g1))
-   :rule-classes nil))
-
-(defun g1-lst (lst)
-  (cond ((endp lst) (g1))
- (t (g1-lst (cdr lst)))))
-
-(defthm g1-lst=g1
-  (equal (g1-lst lst) (g1)))
-
-(encapsulate
- (((f1) => *))
-
- (local
-  (defun f1 ()
-    1)))
-
-(defun f1-lst (lst)
-  (cond ((endp lst) (f1))
- (t (f1-lst (cdr lst)))))
-
-(defthm f1-lst=f1
-  (equal (f1-lst lst) (f1))
-  :hints (("Goal"
-    :use (:functional-instance g1-lst=g1
-          (g1 f1)
-          (g1-lst f1-lst)))))
-
-(defthm 0=f1
-  (equal 0 (f1))
-  :rule-classes nil
-  :hints (("Goal"
-    :use (:functional-instance 0=g1
-          (g1 f1)))))
-
-(defthm 0=1
-  (equal 0 1)
-  :rule-classes nil
-  :hints (("Goal"
-    :use (:functional-instance 0=f1
-          (f1 (lambda () 1))))))
-
-;;;   The theorem F1-LST=F1 is not proved via functional instantiation but it
-;;; can be proved via induction. So, the constraints generated by the
-;;; functional instantiation hint has not been proved. But when the theorem
-;;; 0=F1 is considered, the constraints generated in the functional
-;;; instantiation hint are bypassed because they ".. have been proved when
-;;; processing the event F1-LST=F1", and the theorem is proved !!!. Finally,
-;;; an instance of 0=F1 can be used to prove 0=1.
-
-;;;============================================================================
-||#
+; ;;;============================================================================
+; 
+; ;;;
+; ;;; A bug in ACL2 (2.5 and 2.6). Proving "0=1".
+; ;;; Francisco J. Martin-Mateos
+; ;;; email: Francisco-Jesus.Martin@cs.us.es
+; ;;; Dpt. of Computer Science and Artificial Intelligence
+; ;;; University of SEVILLE
+; ;;;
+; ;;;============================================================================
+; 
+; ;;;   I've found a bug in ACL2 (2.5 and 2.6). The following events prove that
+; ;;; "0=1".
+; 
+; (in-package "ACL2")
+; 
+; (encapsulate
+;  (((g1) => *))
+; 
+;  (local
+;   (defun g1 ()
+;     0))
+; 
+;  (defthm 0=g1
+;    (equal 0 (g1))
+;    :rule-classes nil))
+; 
+; (defun g1-lst (lst)
+;   (cond ((endp lst) (g1))
+;  (t (g1-lst (cdr lst)))))
+; 
+; (defthm g1-lst=g1
+;   (equal (g1-lst lst) (g1)))
+; 
+; (encapsulate
+;  (((f1) => *))
+; 
+;  (local
+;   (defun f1 ()
+;     1)))
+; 
+; (defun f1-lst (lst)
+;   (cond ((endp lst) (f1))
+;  (t (f1-lst (cdr lst)))))
+; 
+; (defthm f1-lst=f1
+;   (equal (f1-lst lst) (f1))
+;   :hints (("Goal"
+;     :use (:functional-instance g1-lst=g1
+;           (g1 f1)
+;           (g1-lst f1-lst)))))
+; 
+; (defthm 0=f1
+;   (equal 0 (f1))
+;   :rule-classes nil
+;   :hints (("Goal"
+;     :use (:functional-instance 0=g1
+;           (g1 f1)))))
+; 
+; (defthm 0=1
+;   (equal 0 1)
+;   :rule-classes nil
+;   :hints (("Goal"
+;     :use (:functional-instance 0=f1
+;           (f1 (lambda () 1))))))
+; 
+; ;;;   The theorem F1-LST=F1 is not proved via functional instantiation but it
+; ;;; can be proved via induction. So, the constraints generated by the
+; ;;; functional instantiation hint has not been proved. But when the theorem
+; ;;; 0=F1 is considered, the constraints generated in the functional
+; ;;; instantiation hint are bypassed because they ".. have been proved when
+; ;;; processing the event F1-LST=F1", and the theorem is proved !!!. Finally,
+; ;;; an instance of 0=F1 can be used to prove 0=1.
+; 
+; ;;;============================================================================
 
 ; We now develop the functions for reporting what push-clause did.  Except,
 ; pool-lst has already been defined, in support of proof-trees.
@@ -2658,75 +2652,73 @@
                *initial-gag-state*)
      ,pspv))
 
-#|| For debug only:
-
-(progn
-
-(defun show-gag-info-pushed (pushed state)
-  (if (endp pushed)
-      state
-    (pprogn (let ((cl-id (caar pushed)))
-              (fms "~@0 (~@1) pushed for induction.~|"
-                   (list (cons #\0 (tilde-@-pool-name-phrase
-                                    (access clause-id cl-id :forcing-round)
-                                    (cdar pushed)))
-                         (cons #\1 (tilde-@-clause-id-phrase cl-id)))
-                   *standard-co* state nil))
-            (show-gag-info-pushed (cdr pushed) state))))
-
-(defun show-gag-info (info state)
-  (pprogn (fms "~@0:~%~Q12~|~%"
-               (list (cons #\0 (tilde-@-clause-id-phrase
-                                (access gag-info info :clause-id)))
-                     (cons #\1 (access gag-info info :clause))
-                     (cons #\2 nil))
-               *standard-co* state nil)
-          (show-gag-info-pushed (access gag-info info :pushed)
-                                state)))
-
-(defun show-gag-stack (stack state)
-  (if (endp stack)
-      state
-    (pprogn (show-gag-info (car stack) state)
-            (show-gag-stack (cdr stack) state))))
-
-(defun show-gag-state (cl-id gag-state state)
-  (let* ((top-stack (access gag-state gag-state :top-stack))
-         (sub-stack (access gag-state gag-state :sub-stack))
-         (clause-id (access gag-state gag-state :active-cl-id))
-         (printed-p (access gag-state gag-state
-                            :active-printed-p)))
-    (pprogn (fms "********** Gag state from handling ~@0 (active ~
-                  clause id: ~#1~[<none>~/~@2~])~%"
-                 (list (cons #\0 (tilde-@-clause-id-phrase cl-id))
-                       (cons #\1 (if clause-id 1 0))
-                       (cons #\2 (and clause-id (tilde-@-clause-id-phrase
-                                                 clause-id))))
-                 *standard-co* state nil)
-            (fms "****** Top-stack:~%" nil *standard-co* state nil)
-            (show-gag-stack top-stack state)
-            (fms "****** Sub-stack:~%" nil *standard-co* state nil)
-            (show-gag-stack sub-stack state)
-            (fms "****** Active-printed-p: ~x0"
-                 (list (cons #\0 (access gag-state gag-state
-                                         :active-printed-p)))
-                 *standard-co* state nil)
-            (fms "****** Forcep: ~x0"
-                 (list (cons #\0 (access gag-state gag-state
-                                         :forcep)))
-                 *standard-co* state nil)
-            (fms "******************************~|" nil *standard-co* state
-                 nil))))
-
-(defun maybe-show-gag-state (cl-id pspv state)
-  (if (and (f-boundp-global 'gag-debug state)
-           (f-get-global 'gag-debug state))
-      (show-gag-state cl-id
-                      (access prove-spec-var pspv :gag-state)
-                      state)
-    state))
-)
-||#
+; For debug only:
+; (progn
+; 
+; (defun show-gag-info-pushed (pushed state)
+;   (if (endp pushed)
+;       state
+;     (pprogn (let ((cl-id (caar pushed)))
+;               (fms "~@0 (~@1) pushed for induction.~|"
+;                    (list (cons #\0 (tilde-@-pool-name-phrase
+;                                     (access clause-id cl-id :forcing-round)
+;                                     (cdar pushed)))
+;                          (cons #\1 (tilde-@-clause-id-phrase cl-id)))
+;                    *standard-co* state nil))
+;             (show-gag-info-pushed (cdr pushed) state))))
+; 
+; (defun show-gag-info (info state)
+;   (pprogn (fms "~@0:~%~Q12~|~%"
+;                (list (cons #\0 (tilde-@-clause-id-phrase
+;                                 (access gag-info info :clause-id)))
+;                      (cons #\1 (access gag-info info :clause))
+;                      (cons #\2 nil))
+;                *standard-co* state nil)
+;           (show-gag-info-pushed (access gag-info info :pushed)
+;                                 state)))
+; 
+; (defun show-gag-stack (stack state)
+;   (if (endp stack)
+;       state
+;     (pprogn (show-gag-info (car stack) state)
+;             (show-gag-stack (cdr stack) state))))
+; 
+; (defun show-gag-state (cl-id gag-state state)
+;   (let* ((top-stack (access gag-state gag-state :top-stack))
+;          (sub-stack (access gag-state gag-state :sub-stack))
+;          (clause-id (access gag-state gag-state :active-cl-id))
+;          (printed-p (access gag-state gag-state
+;                             :active-printed-p)))
+;     (pprogn (fms "********** Gag state from handling ~@0 (active ~
+;                   clause id: ~#1~[<none>~/~@2~])~%"
+;                  (list (cons #\0 (tilde-@-clause-id-phrase cl-id))
+;                        (cons #\1 (if clause-id 1 0))
+;                        (cons #\2 (and clause-id (tilde-@-clause-id-phrase
+;                                                  clause-id))))
+;                  *standard-co* state nil)
+;             (fms "****** Top-stack:~%" nil *standard-co* state nil)
+;             (show-gag-stack top-stack state)
+;             (fms "****** Sub-stack:~%" nil *standard-co* state nil)
+;             (show-gag-stack sub-stack state)
+;             (fms "****** Active-printed-p: ~x0"
+;                  (list (cons #\0 (access gag-state gag-state
+;                                          :active-printed-p)))
+;                  *standard-co* state nil)
+;             (fms "****** Forcep: ~x0"
+;                  (list (cons #\0 (access gag-state gag-state
+;                                          :forcep)))
+;                  *standard-co* state nil)
+;             (fms "******************************~|" nil *standard-co* state
+;                  nil))))
+; 
+; (defun maybe-show-gag-state (cl-id pspv state)
+;   (if (and (f-boundp-global 'gag-debug state)
+;            (f-get-global 'gag-debug state))
+;       (show-gag-state cl-id
+;                       (access prove-spec-var pspv :gag-state)
+;                       state)
+;     state))
+; )
 
 (defun waterfall-update-gag-state (cl-id clause proc signal ttree pspv
                                                 state)
@@ -3065,15 +3057,16 @@
 ; (maybe-show-gag-state cl-id pspv state) ; debug
 
    (cond
+
 ; Suppress printing for :OR splits; see also other comments with this header.
-#||
-    ((and (eq signal 'OR-HIT)
-          (gag-mode))
-     (fms "~@0~|~%~@1~|"
-          (list (cons #\0 (or msg ""))
-                (cons #\1 (or-hit-msg t cl-id ttree)))
-          (proofs-co state) state nil))
-||#
+
+;   ((and (eq signal 'OR-HIT)
+;         (gag-mode))
+;    (fms "~@0~|~%~@1~|"
+;         (list (cons #\0 (or msg ""))
+;               (cons #\1 (or-hit-msg t cl-id ttree)))
+;         (proofs-co state) state nil))
+
     ((and msg (gag-mode))
      (fms "~@0~|" (list (cons #\0 msg)) (proofs-co state) state nil))
     (t state))
@@ -3937,52 +3930,50 @@
 ; irrelevant to what was forced, and hence was lost in the forcing round!  Here
 ; is a much simpler example of that phenomenon.
 
-#||
- (defstub p1 (x) t)
- (defstub p2 (x) t)
- (defstub p3 (x) t)
- (defstub p4 (x) t)
-
- (defaxiom p1->p2
-   (implies (p1 x)
-            (p2 x)))
-
- (defun foo (x y)
-   (implies x y))
-
- (defaxiom p3->p4{forced}
-   (implies (force (p3 x))
-            (p4 x)))
-
- ; When we unencumber the type-alist upon forcing, the following THM fails with
- ; the following forcing round.  The problem is that the hypothesis about x is
- ; dropped because it is deemed (by unencumber-type-alist) to be irrelevant to
- ; the sole variable y of the forced hypothesis.
-
- ; We now undertake Forcing Round 1.
- ; 
- ; [1]Goal
- ; (P3 Y).
-
- (thm (if (not (foo (p1 x) (p2 x)))
-          (p4 y)
-        t)
-      :hints (("Goal" :do-not '(preprocess)
-               :in-theory (disable foo))))
-
- ; But with unencumber-assumption defined to return its first argument, the THM
- ; produces a forced goal that includes the contradictory hypotheses:
-
- ; [1]Goal
- ; (IMPLIES (NOT (FOO (P1 X) (P2 X)))
- ;          (P3 Y)).
-
- (thm (if (not (foo (p1 x) (p2 x)))
-          (p4 y)
-        t)
-      :hints (("Goal" :do-not '(preprocess)
-               :in-theory (disable foo))))
-||#
+;  (defstub p1 (x) t)
+;  (defstub p2 (x) t)
+;  (defstub p3 (x) t)
+;  (defstub p4 (x) t)
+; 
+;  (defaxiom p1->p2
+;    (implies (p1 x)
+;             (p2 x)))
+; 
+;  (defun foo (x y)
+;    (implies x y))
+; 
+;  (defaxiom p3->p4{forced}
+;    (implies (force (p3 x))
+;             (p4 x)))
+; 
+;  ; When we unencumber the type-alist upon forcing, the following THM fails with
+;  ; the following forcing round.  The problem is that the hypothesis about x is
+;  ; dropped because it is deemed (by unencumber-type-alist) to be irrelevant to
+;  ; the sole variable y of the forced hypothesis.
+; 
+;  ; We now undertake Forcing Round 1.
+;  ; 
+;  ; [1]Goal
+;  ; (P3 Y).
+; 
+;  (thm (if (not (foo (p1 x) (p2 x)))
+;           (p4 y)
+;         t)
+;       :hints (("Goal" :do-not '(preprocess)
+;                :in-theory (disable foo))))
+; 
+;  ; But with unencumber-assumption defined to return its first argument, the THM
+;  ; produces a forced goal that includes the contradictory hypotheses:
+; 
+;  ; [1]Goal
+;  ; (IMPLIES (NOT (FOO (P1 X) (P2 X)))
+;  ;          (P3 Y)).
+; 
+;  (thm (if (not (foo (p1 x) (p2 x)))
+;           (p4 y)
+;         t)
+;       :hints (("Goal" :do-not '(preprocess)
+;                :in-theory (disable foo))))
 
 ; Old comment and code:
 
@@ -3990,14 +3981,13 @@
 ; :type-alist.  We return an assumption that may be proved in place of
 ; assn and is supposedly simpler to prove.
 
-#||
-  (change assumption assn
-          :type-alist
-          (unencumber-type-alist (access assumption assn :type-alist)
-                                 (access assumption assn :term)
-                                 (access assumption assn :rewrittenp)
-                                 wrld))
-||#
+;   (change assumption assn
+;           :type-alist
+;           (unencumber-type-alist (access assumption assn :type-alist)
+;                                  (access assumption assn :term)
+;                                  (access assumption assn :rewrittenp)
+;                                  wrld))
+
   (declare (ignore wrld))
   assn)
 
@@ -5224,19 +5214,20 @@
 
   (cond
    ((gag-mode)
+
 ; Suppress printing for :OR splits; see also other comments with this header.
-#||
+
 ; In the case where we are only printing for gag-mode, we want to keep the
 ; message short.  Our message relies on the disjunctive goal name starting with
 ; the word "Subgoal" so that the English is sensible.
 
-    (fms "---~|Considering disjunctive ~@0 of ~@1.~|"
-         (list (cons #\0 (tilde-@-clause-id-phrase d-cl-id))
-               (cons #\1 (tilde-@-clause-id-phrase cl-id)))
-         (proofs-co state)
-         state
-         nil)
-||#
+;   (fms "---~|Considering disjunctive ~@0 of ~@1.~|"
+;        (list (cons #\0 (tilde-@-clause-id-phrase d-cl-id))
+;              (cons #\1 (tilde-@-clause-id-phrase cl-id)))
+;        (proofs-co state)
+;        state
+;        nil)
+
     state)
    (t
     (fms "---~%~@0~%( same formula as ~@1 ).~%~%The ~n2 disjunctive branch ~
@@ -6863,31 +6854,29 @@
 ; true, we have eliminated the following paragraph after the paragraph
 ; mentioning the ``clean them up'' process.
 
-#||
-  For example, suppose the main goal is about some term
-  ~c[(pred (xtrans i) i)] and that some rule rewriting ~c[pred] contains a
-  ~il[force]d hypothesis that the first argument is a ~c[good-inputp].
-  Suppose that during the proof of Subgoal 14 of the main goal,
-  ~c[(good-inputp (xtrans i))] is ~il[force]d in a context in which ~c[i] is
-  an ~ilc[integerp] and ~c[x] is a ~ilc[consp].  (Note that ~c[x] is
-  irrelevant.)  Suppose finally that during the proof of Subgoal 28,
-  ~c[(good-inputp (xtrans i))] is ~il[force]d ``again,'' but this time in a
-  context in which ~c[i] is a ~ilc[rationalp] and ~c[x] is a ~ilc[symbolp].
-  Since the ~il[force]d hypothesis does not mention ~c[x], we deem the
-  contextual information about ~c[x] to be irrelevant and discard it
-  from both contexts.  We are then left with two ~il[force]d assumptions:
-  ~c[(implies (integerp i) (good-inputp (xtrans i)))] from Subgoal 14,
-  and ~c[(implies (rationalp i) (good-inputp (xtrans i)))] from Subgoal
-  28.  Note that if we can prove the assumption required by Subgoal 28
-  we can easily get that for Subgoal 14, since the context of Subgoal
-  28 is the more general.  Thus, in the next forcing round we will
-  attempt to prove just
-  ~bv[]
-  (implies (rationalp i) (good-inputp (xtrans i)))
-  ~ev[]
-  and ``blame'' both Subgoal 14 and Subgoal 28 of the previous round
-  for causing us to prove this.
-||#
+;   For example, suppose the main goal is about some term
+;   ~c[(pred (xtrans i) i)] and that some rule rewriting ~c[pred] contains a
+;   ~il[force]d hypothesis that the first argument is a ~c[good-inputp].
+;   Suppose that during the proof of Subgoal 14 of the main goal,
+;   ~c[(good-inputp (xtrans i))] is ~il[force]d in a context in which ~c[i] is
+;   an ~ilc[integerp] and ~c[x] is a ~ilc[consp].  (Note that ~c[x] is
+;   irrelevant.)  Suppose finally that during the proof of Subgoal 28,
+;   ~c[(good-inputp (xtrans i))] is ~il[force]d ``again,'' but this time in a
+;   context in which ~c[i] is a ~ilc[rationalp] and ~c[x] is a ~ilc[symbolp].
+;   Since the ~il[force]d hypothesis does not mention ~c[x], we deem the
+;   contextual information about ~c[x] to be irrelevant and discard it
+;   from both contexts.  We are then left with two ~il[force]d assumptions:
+;   ~c[(implies (integerp i) (good-inputp (xtrans i)))] from Subgoal 14,
+;   and ~c[(implies (rationalp i) (good-inputp (xtrans i)))] from Subgoal
+;   28.  Note that if we can prove the assumption required by Subgoal 28
+;   we can easily get that for Subgoal 14, since the context of Subgoal
+;   28 is the more general.  Thus, in the next forcing round we will
+;   attempt to prove just
+;   ~bv[]
+;   (implies (rationalp i) (good-inputp (xtrans i)))
+;   ~ev[]
+;   and ``blame'' both Subgoal 14 and Subgoal 28 of the previous round
+;   for causing us to prove this.
 
   :doc
   ":Doc-Section Miscellaneous

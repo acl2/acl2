@@ -219,16 +219,14 @@
 ; of functions that return multiple values.  Presumably this is the correct
 ; list for the main Lisp package in other Common Lisp implementations as well.
 
-#||
- (let (ans)
-    (do-symbols (sym (find-package "LISP"))
-                (let ((tp (get sym 'compiler::return-type)))
-                  (when (and (consp tp)
-                             (member (car tp)
-                                     '(values system::returns-exactly)))
-                    (setq ans (cons sym ans)))))
-    ans)
-||#
+;  (let (ans)
+;     (do-symbols (sym (find-package "LISP"))
+;                 (let ((tp (get sym 'compiler::return-type)))
+;                   (when (and (consp tp)
+;                              (member (car tp)
+;                                      '(values system::returns-exactly)))
+;                     (setq ans (cons sym ans)))))
+;     ans)
 
   '(INTERN DECODE-FLOAT
            GET-MACRO-CHARACTER ; ansi only
@@ -671,28 +669,26 @@
 ; Version_2.8, and we proclaim there since Warren Hunt thought that might be
 ; useful.
 
-#|
-Here is a summary of three comparable user times from certifying all the ACL2
-books in June 2000, just before Release 2.5 is complete.  The first column,
-labeled "Comp", is the one to be looked at for comparison purposes.  These are
-all done on the same Sun workstation, using Allegro 5.0.1.  The meanings of
-these numbers are explained below.
-
-                               Comp     Actual   Comments
-Recent ACL2 without proclaim:  5:41     5:36:42  no meta
-Recent ACL2 *with*  proclaim:  5:54     5:53:58
-April ACL2 (before non-std.):  5:48     5:35:58  missing some pipeline and ~40
-                                                 sec. user time on powerlists
-
-The "Comp" column estimates how long the run would have taken if all books had
-certified, except that no run gets past book batcher-sort in the powerlists/
-directory.  (The April run bogs down even slightly earlier.)  The first row is
-adjusted by about 4 minutes because the run started with book meta-plus-lessp.
-The April run broke on book basic-def from case-studies/pipeline and hence
-missed the rest of that directory's books.  The above points account for the
-addition of time from "Actual" to the appropriate comparison time in the first
-column.
-|#
+; Here is a summary of three comparable user times from certifying all the ACL2
+; books in June 2000, just before Release 2.5 is complete.  The first column,
+; labeled "Comp", is the one to be looked at for comparison purposes.  These are
+; all done on the same Sun workstation, using Allegro 5.0.1.  The meanings of
+; these numbers are explained below.
+; 
+;                                Comp     Actual   Comments
+; Recent ACL2 without proclaim:  5:41     5:36:42  no meta
+; Recent ACL2 *with*  proclaim:  5:54     5:53:58
+; April ACL2 (before non-std.):  5:48     5:35:58  missing some pipeline and ~40
+;                                                  sec. user time on powerlists
+; 
+; The "Comp" column estimates how long the run would have taken if all books had
+; certified, except that no run gets past book batcher-sort in the powerlists/
+; directory.  (The April run bogs down even slightly earlier.)  The first row is
+; adjusted by about 4 minutes because the run started with book meta-plus-lessp.
+; The April run broke on book basic-def from case-studies/pipeline and hence
+; missed the rest of that directory's books.  The above points account for the
+; addition of time from "Actual" to the appropriate comparison time in the first
+; column.
 
   (when *do-proclaims*
     (with-open-file

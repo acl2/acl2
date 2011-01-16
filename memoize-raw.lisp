@@ -6594,17 +6594,15 @@ next GC.~%"
 
        (hons-init-hook-set 'ccl::*quit-on-eof* t)
 
-  #||  This might be a good idea, but we do not understand about
-  ccl::advise being called twice, e.g., via *hons-init-hook*.
-
-   "Before an image is saved or we otherwise quit, we kill any WATCH
-    process and delete any /tmp file created by the csh/sh facility."
-  
-    (ccl::advise ccl::quit
-                (progn (watch-kill) (csh-stop) (sh-stop))
-                :when :before)
-
-  ||#
+;   This might be a good idea, but we do not understand about
+;   ccl::advise being called twice, e.g., via *hons-init-hook*.
+; 
+;    "Before an image is saved or we otherwise quit, we kill any WATCH
+;     process and delete any /tmp file created by the csh/sh facility."
+;   
+;     (ccl::advise ccl::quit
+;                 (progn (watch-kill) (csh-stop) (sh-stop))
+;                 :when :before)
 
        "It is usually best for the user to know what the garbage
         collector is doing when using HONS and MEMOIZE."
@@ -6654,67 +6652,63 @@ next GC.~%"
     (ofv "*hons-init-hook*:  Setting ~a to ~a." var val)
     (setf (symbol-value var) val)))     
 
-#||
-
-         Sol Sword's scheme to control GC in CCL
-
-The goal is to get CCL to perform a GC whenever we're using almost
-all the physical memory, but not otherwise.
-
-The usual way of controlling GC on CCL is via LISP-HEAP-GC-THRESHOLD.
-This value is approximately amount of memory that will be allocated
-immediately after GC.  This means that the next GC will occur after
-LISP-HEAP-GC-THRESHOLD more bytes are used (by consing or array
-allocation or whatever.)  But this means the total memory used by the
-time the next GC comes around is the threshold plus the amount that
-remained in use at the end of the previous GC.  This is a problem
-because of the following scenario:
-
- - We set the LISP-HEAP-GC-THRESHOLD to 3GB since we'd like to be able
-   to use most of the 4GB physical memory available.
-
- - A GC runs or we say USE-LISP-HEAP-GC-THRESHOLD to ensure that 3GB
-   is available to us.
-
- - We run a computation until we've exhausted this 3GB, at which point
-   a GC occurs.  
-
- - The GC reclaims 1.2 GB out of the 3GB used, so there is 1.8 GB
-   still in use.
-
- - After GC, 3GB more is automatically allocated -- but this means we
-   won't GC again until we have 4.8 GB in use, meaning we've gone to
-   swap.
-
-What we really want is, instead of allocating a constant additional
-amount after each GC, to allocate up to a fixed total amount including
-what's already in use.  To emulate that behavior, we use the hack
-below.  This operates as follows (assuming the same 4GB total physical
-memory as in the above example:)
-
-1. We set the LISP-HEAP-GC-THRESHOLD to (3.5G - used bytes) and call
-USE-LISP-HEAP-GC-THRESHOLD so that our next GC will occur when we've
-used a total of 3.5G.
-
-2. We set the threshold back to 1GB without calling
-USE-LISP-HEAP-GC-THRESHOLD.
-
-3. Run a computation until we use up the 3.5G and the GC is called.
-Say the GC reclaims 1.2GB so there's 2.3GB in use.  1GB more (the
-current LISP-HEAP-GC-THRESHOLD) is allocated so the ceiling is 3.3GB.)
-
-4. A post-GC hook runs which again sets the threshold to (3.5G -
-used bytes), calls USE-LISP-HEAP-GC-THRESHOLD to raise the ceiling to
-3.5G, then sets the threshold back to 1GB, and the process repeats.
-
-A subtlety about this scheme is that post-GC hooks runs in a separate
-thread from the main execution.  A possible bug is that in step 4,
-between checking the amount of memory in use and calling
-USE-LISP-HEAP-GC-THRESHOLD, more memory might be used up by the main
-execution, which would set the ceiling higher than we intended.  To
-prevent this, we interrupt the main thread to run step 4.
-
-||#
+;          Sol Sword's scheme to control GC in CCL
+; 
+; The goal is to get CCL to perform a GC whenever we're using almost
+; all the physical memory, but not otherwise.
+; 
+; The usual way of controlling GC on CCL is via LISP-HEAP-GC-THRESHOLD.
+; This value is approximately amount of memory that will be allocated
+; immediately after GC.  This means that the next GC will occur after
+; LISP-HEAP-GC-THRESHOLD more bytes are used (by consing or array
+; allocation or whatever.)  But this means the total memory used by the
+; time the next GC comes around is the threshold plus the amount that
+; remained in use at the end of the previous GC.  This is a problem
+; because of the following scenario:
+; 
+;  - We set the LISP-HEAP-GC-THRESHOLD to 3GB since we'd like to be able
+;    to use most of the 4GB physical memory available.
+; 
+;  - A GC runs or we say USE-LISP-HEAP-GC-THRESHOLD to ensure that 3GB
+;    is available to us.
+; 
+;  - We run a computation until we've exhausted this 3GB, at which point
+;    a GC occurs.  
+; 
+;  - The GC reclaims 1.2 GB out of the 3GB used, so there is 1.8 GB
+;    still in use.
+; 
+;  - After GC, 3GB more is automatically allocated -- but this means we
+;    won't GC again until we have 4.8 GB in use, meaning we've gone to
+;    swap.
+; 
+; What we really want is, instead of allocating a constant additional
+; amount after each GC, to allocate up to a fixed total amount including
+; what's already in use.  To emulate that behavior, we use the hack
+; below.  This operates as follows (assuming the same 4GB total physical
+; memory as in the above example:)
+; 
+; 1. We set the LISP-HEAP-GC-THRESHOLD to (3.5G - used bytes) and call
+; USE-LISP-HEAP-GC-THRESHOLD so that our next GC will occur when we've
+; used a total of 3.5G.
+; 
+; 2. We set the threshold back to 1GB without calling
+; USE-LISP-HEAP-GC-THRESHOLD.
+; 
+; 3. Run a computation until we use up the 3.5G and the GC is called.
+; Say the GC reclaims 1.2GB so there's 2.3GB in use.  1GB more (the
+; current LISP-HEAP-GC-THRESHOLD) is allocated so the ceiling is 3.3GB.)
+; 
+; 4. A post-GC hook runs which again sets the threshold to (3.5G -
+; used bytes), calls USE-LISP-HEAP-GC-THRESHOLD to raise the ceiling to
+; 3.5G, then sets the threshold back to 1GB, and the process repeats.
+; 
+; A subtlety about this scheme is that post-GC hooks runs in a separate
+; thread from the main execution.  A possible bug is that in step 4,
+; between checking the amount of memory in use and calling
+; USE-LISP-HEAP-GC-THRESHOLD, more memory might be used up by the main
+; execution, which would set the ceiling higher than we intended.  To
+; prevent this, we interrupt the main thread to run step 4.
 
 (defg *emod-trace-and-compile-function-symbols*
   '(emod               emod-traced
@@ -7947,24 +7941,20 @@ prevent this, we interrupt the main thread to run step 4.
     (if-report stream))
   "if-report.text")
 
-#||
+; The compiler macro for IF in the Clozure Common Lisp sources circa 2008:
 
-The compiler macro for IF in the Clozure Common Lisp sources circa
-2008:
-
-(define-compiler-macro if (&whole call test true &optional false
-                                  &environment env)
-  (multiple-value-bind (test test-win) (nx-transform test env)
-    (multiple-value-bind (true true-win) (nx-transform true env)
-      (multiple-value-bind (false false-win) (nx-transform false env)
-        (if (or (quoted-form-p test) (self-evaluating-p test))
-          (if (eval test)
-            true
-            false)
-          (if (or test-win true-win false-win)
-            `(if ,test ,true ,false)
-            call))))))
-||#
+; (define-compiler-macro if (&whole call test true &optional false
+;                                   &environment env)
+;   (multiple-value-bind (test test-win) (nx-transform test env)
+;     (multiple-value-bind (true true-win) (nx-transform true env)
+;       (multiple-value-bind (false false-win) (nx-transform false env)
+;         (if (or (quoted-form-p test) (self-evaluating-p test))
+;           (if (eval test)
+;             true
+;             false)
+;           (if (or test-win true-win false-win)
+;             `(if ,test ,true ,false)
+;             call))))))
 
 #+Clozure
 (defun setup-smashed-if ()
@@ -8237,26 +8227,23 @@ The compiler macro for IF in the Clozure Common Lisp sources circa
 
 ;;   CSH
 
-#||
-
-Here is a quite simple version of OPEN-GZIPPED-FILE that is fine to
-use in CCL for a few files, but perhaps not for thousands of files
-because FORK can take a serious amount of time for a big CCL job such
-as ACL2 since a copy is made by FORK of the entire job.
-
-(defun open-gzipped-file (name)
-   (ccl::external-process-output-stream
-     (ccl::run-program "gunzip" (list "-c"  name)
-                       :output :stream :wait nil)))
-
-To eliminate FORK as a source of such inefficiency, we provide the
-function CSH, which establishes a lasting subsidiary cshell process
-executing a 'read-and-execute one CSH line' loop.  It may be a good
-idea to call CSH very early, even before you need it, simply to get
-that process running when you can, i.e., when your image is small
-enough.
-
-||#
+; 
+; Here is a quite simple version of OPEN-GZIPPED-FILE that is fine to
+; use in CCL for a few files, but perhaps not for thousands of files
+; because FORK can take a serious amount of time for a big CCL job such
+; as ACL2 since a copy is made by FORK of the entire job.
+; 
+; (defun open-gzipped-file (name)
+;    (ccl::external-process-output-stream
+;      (ccl::run-program "gunzip" (list "-c"  name)
+;                        :output :stream :wait nil)))
+; 
+; To eliminate FORK as a source of such inefficiency, we provide the
+; function CSH, which establishes a lasting subsidiary cshell process
+; executing a 'read-and-execute one CSH line' loop.  It may be a good
+; idea to call CSH very early, even before you need it, simply to get
+; that process running when you can, i.e., when your image is small
+; enough.
 
 (defv *csh-process* nil
 

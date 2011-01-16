@@ -24,20 +24,19 @@
 ; University of Texas at Austin
 ; Austin, TX 78712-1188 U.S.A.
 
-#| Table of contents.
-
-0.    PRELIMINARY MACROS
-I.    INTRODUCTION AND DATA TYPES
-II.   OP-ALIST
-III.  HASH OPERATIONS
-IV.   HASH OPERATIONS: QUOTEPS
-V.    BDD RULES AND ONE-WAY UNIFIER
-VI.   SOME INTERFACE UTILITIES
-VII.  MAIN ALGORITHM
-VIII. TOP-LEVEL (INTERFACE) ROUTINES
-IX.   COMPILING THIS FILE AND OTHER HELPFUL TIPS
-
-|#
+; Table of contents.
+; 
+; 0.    PRELIMINARY MACROS
+; I.    INTRODUCTION AND DATA TYPES
+; II.   OP-ALIST
+; III.  HASH OPERATIONS
+; IV.   HASH OPERATIONS: QUOTEPS
+; V.    BDD RULES AND ONE-WAY UNIFIER
+; VI.   SOME INTERFACE UTILITIES
+; VII.  MAIN ALGORITHM
+; VIII. TOP-LEVEL (INTERFACE) ROUTINES
+; IX.   COMPILING THIS FILE AND OTHER HELPFUL TIPS
+; 
 
 ; Mx-id-bound is currently 438619, perhaps too low.  We could perhaps fix this
 ; by changing how we deal with close to 16 args in op-hash-index1, and by
@@ -107,16 +106,14 @@ IX.   COMPILING THIS FILE AND OTHER HELPFUL TIPS
 
 ; A typical use of this macro is of the form
 
-#|
- (let ((new-mx-id (1+mx-id mx-id)))
-   (declare (type (signed-byte 30) new-mx-id))
-   (let ((new-cst (make-leaf-cst
-                   new-mx-id
-                   term
-                   nil)))
-     (mvf new-mx-id
-          ...)))
-|#
+;  (let ((new-mx-id (1+mx-id mx-id)))
+;    (declare (type (signed-byte 30) new-mx-id))
+;    (let ((new-cst (make-leaf-cst
+;                    new-mx-id
+;                    term
+;                    nil)))
+;      (mvf new-mx-id
+;           ...)))
 
 ; Note that make-leaf-cst will box new-mx-id -- after all, it is consing
 ; new-mx-id into a list.  The present approach delays this boxing until that
@@ -265,24 +262,22 @@ IX.   COMPILING THIS FILE AND OTHER HELPFUL TIPS
 ; code in place as a comment, in case we choose to support this idea in the
 ; future.
 
-  #|
-  (cond ((consp x) 'cons)
-        ((symbolp x) 'intern-in-package-of-symbol)
-        ((integerp x)
-         (cond ((< x 0) 'unary--)
-               ((< 0 x) 'binary-+)
-               (t nil)))
-        ((rationalp x)
-         (if (equal (numerator x) 1)
-             'unary-/
-           'binary-*))
-        ((complex-rationalp x)
-         'complex)
-        ((stringp x) 'coerce)
-        ((characterp x) 'char-code)
-        (t (er hard 'fn-symb "Unexpected object, ~x0."
-               x)))
-|#
+;   (cond ((consp x) 'cons)
+;         ((symbolp x) 'intern-in-package-of-symbol)
+;         ((integerp x)
+;          (cond ((< x 0) 'unary--)
+;                ((< 0 x) 'binary-+)
+;                (t nil)))
+;         ((rationalp x)
+;          (if (equal (numerator x) 1)
+;              'unary-/
+;            'binary-*))
+;         ((complex-rationalp x)
+;          'complex)
+;         ((stringp x) 'coerce)
+;         ((characterp x) 'char-code)
+;         (t (er hard 'fn-symb "Unexpected object, ~x0."
+;                x)))
 
   (cond ((consp x) 'cons)
         (t nil)))
@@ -3969,58 +3964,53 @@ IX.   COMPILING THIS FILE AND OTHER HELPFUL TIPS
 ;;;;; IX.   COMPILING THIS FILE AND OTHER HELPFUL TIPS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#|
-
-In order to check for slow code, you can execute the following from ACL2 built
-on GCL, inside raw Lisp.
-
-(compile-file "bdd.lisp" :c-file t)
-
-Then, search the file bdd.c for make_fixnum and number_ for slow stuff.  Note
-that you'll find a lot of these, but you only need to worry about them in the
-workhorse functions, and you don't need to worry about CMPmake_fixnum when it
-is used for an error or for a new mx-id.
-
-When you find one of these, search upward for `local entry' to see which
-function or macro you are in.  Don't worry, for example, about commutative-p,
-which is a data-base kind of function rather than a workhorse function.
-
-You'll see things like the following (from local entry to BDD).  The idea here
-is is that we are boxing a fixnum and pushing it on a stack, but why?  LnkLI253
-appears to be a function call, which is found near the end of the file to
-correspond to leaf-cst-list-array.  If we're still not clear on what's going
-on, we can look up 273 as well.  When we do this, we find that we are probably
-in the part of the BDD code shown at the end, which is not a problem.
-
-        V1570 = CMPmake_fixnum(V1549);
-        V1571= (*(LnkLI253))(/* INLINE-ARGS */V1569,V1570);
-        V1572= (*(LnkLI273))((V1525),/* INLINE-ARGS */V1571);
-
-....
-
-static object  LnkTLI273(va_alist)va_dcl{va_list ap;va_start(ap);
- return(object )call_proc(VV[273],&LnkLI273,2,ap);} /* DECODE-CST-ALIST */
-
-static object  LnkTLI253(va_alist)va_dcl{va_list ap;va_start(ap);
- return(object )call_proc(VV[253],&LnkLI253,2,ap);} /* LEAF-CST-LIST-ARRAY */
-
-; Source code from (defun bdd ...) [an earlier version]:
-
-        (bdd-error
-         mx-id
-         "Unable to resolve test of IF* for term~|~%~p0~|~%under the ~
-          bindings~|~%~x1~|~%-- use SHOW-BDD to see a backtrace."
-         (list (cons #\0 (untranslate term nil))
-               (cons #\1
-                     (decode-cst-alist alist
-                                       (leaf-cst-list-array
-                                        (strip-cdrs alist)
-                                        mx-id))))
-
-; We need a cst next, though we don't care about it.
-
-         *cst-t*
-         ttree)
-
-|#
-
+; In order to check for slow code, you can execute the following from ACL2 built
+; on GCL, inside raw Lisp.
+; 
+; (compile-file "bdd.lisp" :c-file t)
+; 
+; Then, search the file bdd.c for make_fixnum and number_ for slow stuff.  Note
+; that you'll find a lot of these, but you only need to worry about them in the
+; workhorse functions, and you don't need to worry about CMPmake_fixnum when it
+; is used for an error or for a new mx-id.
+; 
+; When you find one of these, search upward for `local entry' to see which
+; function or macro you are in.  Don't worry, for example, about commutative-p,
+; which is a data-base kind of function rather than a workhorse function.
+; 
+; You'll see things like the following (from local entry to BDD).  The idea here
+; is is that we are boxing a fixnum and pushing it on a stack, but why?  LnkLI253
+; appears to be a function call, which is found near the end of the file to
+; correspond to leaf-cst-list-array.  If we're still not clear on what's going
+; on, we can look up 273 as well.  When we do this, we find that we are probably
+; in the part of the BDD code shown at the end, which is not a problem.
+; 
+;         V1570 = CMPmake_fixnum(V1549);
+;         V1571= (*(LnkLI253))(/* INLINE-ARGS */V1569,V1570);
+;         V1572= (*(LnkLI273))((V1525),/* INLINE-ARGS */V1571);
+; 
+; ....
+; 
+; static object  LnkTLI273(va_alist)va_dcl{va_list ap;va_start(ap);
+;  return(object )call_proc(VV[273],&LnkLI273,2,ap);} /* DECODE-CST-ALIST */
+; 
+; static object  LnkTLI253(va_alist)va_dcl{va_list ap;va_start(ap);
+;  return(object )call_proc(VV[253],&LnkLI253,2,ap);} /* LEAF-CST-LIST-ARRAY */
+; 
+; ; Source code from (defun bdd ...) [an earlier version]:
+; 
+;         (bdd-error
+;          mx-id
+;          "Unable to resolve test of IF* for term~|~%~p0~|~%under the ~
+;           bindings~|~%~x1~|~%-- use SHOW-BDD to see a backtrace."
+;          (list (cons #\0 (untranslate term nil))
+;                (cons #\1
+;                      (decode-cst-alist alist
+;                                        (leaf-cst-list-array
+;                                         (strip-cdrs alist)
+;                                         mx-id))))
+; 
+; ; We need a cst next, though we don't care about it.
+; 
+;          *cst-t*
+;          ttree)
