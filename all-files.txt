@@ -3,7 +3,7 @@ GPL2
 LICENSE
 Makefile
 # README-images.html -- developer file
-# The following is distributed but is not in the repository:
+# The following is distributed but is not in the svn repository:
 TAGS
 acl2-check.lisp
 acl2-fns.lisp
@@ -73,7 +73,7 @@ prove.lisp
 # release.cmds.incl -- developer file
 rewrite.lisp
 save-gprof.lsp
-# The following is distributed but is not in the repository:
+# The following is distributed but is not in the svn repository:
 saved
 simplify.lisp
 sum-list-example.lisp
@@ -3349,6 +3349,8 @@ books/xdoc:
 LICENSE
 Makefile
 acl2-customization.lsp
+# The following generated file is distributed but is not in the svn repository:
+acl2-code-size.txt
 base.lisp
 bookdoc.lsp
 cert.acl2
@@ -3397,12 +3399,12 @@ xml-topic-index.xsl
 xml-topic.xsl
 
 doc:
-# The following is distributed but is not in the repository:
+# The following is distributed but is not in the svn repository:
 EMACS
-# The following is distributed but is not in the repository:
+# The following is distributed but is not in the svn repository:
 HTML
 README
-# The following is distributed but is not in the repository:
+# The following is distributed but is not in the svn repository:
 TEX
 create-acl2-code-size
 create-acl2-html
@@ -3414,13 +3416,13 @@ write-acl2-code-size.lisp
 write-acl2-html.lisp
 write-acl2-texinfo.lisp
 
-# The following is distributed but is not in the repository:
+# The following is distributed but is not in the svn repository:
 doc/EMACS:
 acl2-doc-emacs.info
 acl2-doc-emacs.info-*
 # acl2-doc-emacs.texinfo -- optional temporary file
 
-# The following is distributed but is not in the repository:
+# The following is distributed but is not in the svn repository:
 doc/HTML:
 LICENSE
 installation
@@ -3437,10 +3439,10 @@ using.html
 windows-gcl-jared.html
 windows7.html
 
-# The following is distributed but is not in the repository:
+# The following is distributed but is not in the svn repository:
 doc/TEX:
-# No longer distribute: acl2-book.dvi.gz
-# No longer distribute: acl2-book.ps.gz (but available from publications page)
+# No longer distributed: acl2-book.dvi.gz
+# No longer distributed: acl2-book.ps.gz (but available from publications page)
 
 emacs:
 README
