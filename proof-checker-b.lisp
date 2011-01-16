@@ -6085,9 +6085,9 @@
   ~bv[]
   Example:
   (cl-proc :function
-	   note-fact-clause-processor
-	  :hint
-	  '(equal a a))
+           note-fact-clause-processor
+          :hint
+          '(equal a a))
   -- Invoke the indicated clause processor function with the indicated hint
   argument (see the beginning of file
   ~c[books/clause-processors/basic-examples.lisp].~/

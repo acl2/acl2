@@ -5679,7 +5679,7 @@ the calls took.")
                              (t (check-hread-nonsense x stream)
                                 (hons-copy x)))))
                     (t       ; DO BIND *HONS-READ-HT/AR-MAX*,
-			     ; OTHERWISE SAME.
+                             ; OTHERWISE SAME.
                      (let* ((*hons-read-ht* nil)
                             (*hons-read-ar-max* -1)
                             (*readtable* *hons-readtable*)

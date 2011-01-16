@@ -110,15 +110,15 @@
 ; tracing on entry.
 
   (cond ((null l) ; no :entry directive was found
-	 `(ccl:advise ,name
+         `(ccl:advise ,name
                       (progn (setq *trace-arglist* ccl::arglist)
                              (custom-trace-ppr :in
                                                (cons ',name
                                                      (trace-hide-world-and-state
                                                       *trace-arglist*))))
                       :when :before))
-	((eq (car l) :entry)
-	 `(ccl:advise ,name
+        ((eq (car l) :entry)
+         `(ccl:advise ,name
                       (progn (setq *trace-arglist* ccl::arglist)
                              (custom-trace-ppr :in
                                                (cons ',name
@@ -126,8 +126,8 @@
                                                       ,(sublis *trace-sublis* 
                                                                (cadr l))))))
                       :when :before))
-	(t
-	 (trace-entry name (cdr l)))))
+        (t
+         (trace-entry name (cdr l)))))
 
 (defun trace-values (name)
   (declare (ignore name))
@@ -144,7 +144,7 @@
 ; the tracing on exit.
 
   (cond ((null l)
-	 `(ccl:advise ,name
+         `(ccl:advise ,name
                       (progn (setq *trace-values*
                                    ,(trace-values original-name))
                              (custom-trace-ppr :out
@@ -152,8 +152,8 @@
                                                      (trace-hide-world-and-state
                                                       *trace-values*))))
                       :when :after))
-	((eq (car l) :exit)
-	 `(ccl:advise ,name
+        ((eq (car l) :exit)
+         `(ccl:advise ,name
                       (progn (setq *trace-values*
                                    ,(trace-values original-name))
                              (setq *trace-arglist*
@@ -164,8 +164,8 @@
                                                       ,(sublis *trace-sublis*
                                                                (cadr l))))))
                       :when :after))
-	(t
-	 (trace-exit name original-name (cdr l)))))
+        (t
+         (trace-exit name original-name (cdr l)))))
 
 (defun traced-fns-lst (lst)
   (list 'QUOTE (mapcar #'car lst)))
@@ -178,16 +178,16 @@
   (let ((new-lst (list (traced-fns-lst lst)))) ; for the returned value
     (dolist (x lst new-lst)
       (cond ((member :cond (cddr x))
-	     (interface-er "The use of :cond is not supported in CCL."))
-	    ((member :break (cddr x))
-	     (interface-er "The use of :break is not supported in CCL.  ~
+             (interface-er "The use of :cond is not supported in CCL."))
+            ((member :break (cddr x))
+             (interface-er "The use of :break is not supported in CCL.  ~
                             However, you can use either (~s0 :entry (break)) ~
                             or (~s0 :exit (break)). See any Lisp ~
                             documentation for more on break and its options."
                            (car x)))
-	    (t
-	     (push (trace-exit (car x) (cadr x) (cddr x)) new-lst)
-	     (push (trace-entry (car x) (cddr x)) new-lst)
+            (t
+             (push (trace-exit (car x) (cadr x) (cddr x)) new-lst)
+             (push (trace-entry (car x) (cddr x)) new-lst)
              (push `(ccl:unadvise ,(car x)) new-lst))))))
 
 (defun acl2-traced-fns ()

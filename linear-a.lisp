@@ -2724,12 +2724,12 @@ tighten the heuristic up.
 ; pot-lst to hold them.  Ans is initially nil.
 
   (cond ((null polys)
-	 ans)
-	((var-in-pot-lst-p (first-var (car polys))
-			   pot-lst)
-	 (polys-with-pots (cdr polys) pot-lst (cons (car polys) ans)))
-	(t
-	 (polys-with-pots (cdr polys) pot-lst ans))))
+         ans)
+        ((var-in-pot-lst-p (first-var (car polys))
+                           pot-lst)
+         (polys-with-pots (cdr polys) pot-lst (cons (car polys) ans)))
+        (t
+         (polys-with-pots (cdr polys) pot-lst ans))))
 
 (defun new-vars-in-pot-lst (new-pot-lst old-pot-lst include-variableps)
 

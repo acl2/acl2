@@ -4305,13 +4305,13 @@
    (let ((current-clause (append lits new-clause (cdr tail))))
      (mv-let (contradictionp type-alist ttree)
        (type-alist-clause
-	current-clause
-	ttree-lst ; we could extend this with |new-clause|+|(cdr tail)| nils
-	nil				; force-flg
-	nil				; initial type-alist
-	(access rewrite-constant rcnst :current-enabled-structure)
-	wrld
-	pot-lst pt)
+        current-clause
+        ttree-lst ; we could extend this with |new-clause|+|(cdr tail)| nils
+        nil                             ; force-flg
+        nil                             ; initial type-alist
+        (access rewrite-constant rcnst :current-enabled-structure)
+        wrld
+        pot-lst pt)
      (mv contradictionp type-alist ttree current-clause)))))
 
 ; Historical Plaque on Forward Chaining
@@ -4706,7 +4706,7 @@
              (eq (cadr (car ttree)) :TYPE-PRESCRIPTION))
          (all-type-reasoning-tags-p (cdr ttree))))
    (t (and (all-type-reasoning-tags-p (car ttree))
-	   (all-type-reasoning-tags-p (cdr ttree))))))
+           (all-type-reasoning-tags-p (cdr ttree))))))
 
 (defun equal-mod-commuting (x y wrld)
 
@@ -4719,14 +4719,14 @@
 ; Equivalence Runes in subst-type-alist1.
 
   (cond ((variablep x)
-	 (eq x y))
+         (eq x y))
         ((variablep y)
          nil)
-	((or (fquotep x) (fquotep y))
-	 nil) ; quotes are handled elsewhere
-	((equal x y)
-	 t)
-	(t (and (eq (ffn-symb x) (ffn-symb y))
+        ((or (fquotep x) (fquotep y))
+         nil) ; quotes are handled elsewhere
+        ((equal x y)
+         t)
+        (t (and (eq (ffn-symb x) (ffn-symb y))
                 (equivalence-relationp (ffn-symb x) wrld)
                 (equal (fargn x 1) (fargn y 2))
                 (equal (fargn x 2) (fargn y 1))))))
@@ -4737,14 +4737,14 @@
 ; rewrite, else nil.
 
   (cond ((endp clause)
-	 nil)
-	((and (eq (fn-symb (car clause)) 'not)
-	      (equal-mod-commuting atm (fargn (car clause) 1) wrld))
-	 t)
-	((equal-mod-commuting atm (car clause) wrld)
-	 t)
-	(t
-	 (try-clause atm (cdr clause) wrld))))
+         nil)
+        ((and (eq (fn-symb (car clause)) 'not)
+              (equal-mod-commuting atm (fargn (car clause) 1) wrld))
+         t)
+        ((equal-mod-commuting atm (car clause) wrld)
+         t)
+        (t
+         (try-clause atm (cdr clause) wrld))))
 
 (defconst *trivial-non-nil-ttree*
   (puffert nil))
@@ -5049,7 +5049,7 @@
 ; which a proof succeeds or fails depending on the order of hypotheses really
 ; gets Robert's goat.
 
-		 (cond ((not (or (equal ans1 *nil*)
+                 (cond ((not (or (equal ans1 *nil*)
                                  (equal ans1 *t*)))
 
 ; We have, presumably, not removed any facts, so we allow this rewrite.
@@ -5075,7 +5075,7 @@
 
 ; Type-reasoning alone has been used, so we are careful in what we allow.
 
-			(cond ((lambda-subtermp atm2)
+                        (cond ((lambda-subtermp atm2)
 
 ; We received an example from Jared Davis in which a hypothesis of the form
 ; (not (let ...)) rewrites to true with a tag tree of nil, and hence was kept
@@ -5119,19 +5119,19 @@
                                 (access rewrite-constant rcnst
                                         :current-enabled-structure)
                                 knownp))
-			      (t
+                              (t
 
 ; We make one last effort to allow removal of certain ``trivial'' facts from
 ; the goal.
 
-			       (try-type-set-and-clause
+                               (try-type-set-and-clause
                                 atm2
                                 ans1 ans2 current-clause wrld
                                 (access rewrite-constant rcnst
                                         :current-enabled-structure)
                                 knownp))))
-		       (t
-			(mv ans1 ans2 nil))))))))))
+                       (t
+                        (mv ans1 ans2 nil))))))))))
 
 ; Now we develop the functions for finding trivial equivalence hypotheses and
 ; stuffing them into the clause, transforming {(not (equal n '27)) (p n x)},
@@ -6682,7 +6682,7 @@
              (pstk
               (rewrite-atm atm not-flg bkptr gstack type-alist wrld
                            simplify-clause-pot-lst local-rcnst
-			   current-clause state)))
+                           current-clause state)))
            (let* ((val (if not-flg
                            (dumb-negate-lit val)
                          val))

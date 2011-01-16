@@ -1759,7 +1759,7 @@
                                      ruler-extenders
                                      nil); merge-p
           (declare (ignore flg))
-	  (simplify-tests-and-calls-lst ans)))
+          (simplify-tests-and-calls-lst ans)))
 
 (defun induction-machines (names bodies ruler-extenders-lst)
 

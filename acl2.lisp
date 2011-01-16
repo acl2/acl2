@@ -186,33 +186,33 @@
 ; decided to keep the safety at 0 by default and why safety 3 is not too bad.
 ;
 ; Safety 0:
-; 12955.537u 542.877s 3:46:24.68 99.3%	0+0k 0+0io 0pf+0w
+; 12955.537u 542.877s 3:46:24.68 99.3%  0+0k 0+0io 0pf+0w
 ;
 ; Safety 1:
-; 15343.578u 562.207s 4:27:03.67 99.2%	0+0k 0+0io 0pf+0w
+; 15343.578u 562.207s 4:27:03.67 99.2%  0+0k 0+0io 0pf+0w
 
 ; Try safety 2 or 3 to find violations with Allegro CL like the car of a
 ; non-nil atom.  (Note: safety 3 has failed in GCL due to a stack overflow.)
 ; Here are some numbers with Allegro CL, 8 processors with make -j 8:
 
 ; Safety 0:
-; 11262.699u 291.730s 38:23.72 501.5%	0+0k 0+0io 16pf+0w
+; 11262.699u 291.730s 38:23.72 501.5%   0+0k 0+0io 16pf+0w
 
 ; Safety 2:
-; 15588.206u 285.249s 54:19.72 486.9%	0+0k 0+0io 0pf+0w
+; 15588.206u 285.249s 54:19.72 486.9%   0+0k 0+0io 0pf+0w
 
 ; Safety 3:
-; 16450.508u 284.473s 57:46.03 482.8%	0+0k 0+0io 0pf+0w
+; 16450.508u 284.473s 57:46.03 482.8%   0+0k 0+0io 0pf+0w
 
 ; Here are GCL numbers, again with make -j 8 (and using "fast builds").
 
 ; Safety 0:
-; 10013.573u 566.983s 33:33.80 525.4%	0+0k 0+0io 0pf+0w
+; 10013.573u 566.983s 33:33.80 525.4%   0+0k 0+0io 0pf+0w
 
 ; Safety 2:
 ; [Note: books/clause-processors/SULFA/books/sat-tests/test-incremental.lisp
 ; ran out of space, saving perhaps a minute]
-; 15637.669u 511.811s 52:02.78 517.1%	0+0k 0+0io 0pf+0w
+; 15637.669u 511.811s 52:02.78 517.1%   0+0k 0+0io 0pf+0w
 
                       ,(let ((our-safety
                               #-CLTL2
