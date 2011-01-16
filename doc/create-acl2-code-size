@@ -1,0 +1,37 @@
+#!/bin/sh
+
+if [ -z "${ACL2_SOURCES}" ] ; then \
+    echo "ERROR: Environment variable ACL2_SOURCES must have a non-empty string"
+    echo "       as its value.  Perhaps you intended to call"
+    echo "       $0"
+    echo "       from GNUmakefile using \"make STATS\"."
+    exit 1 ;\
+fi
+
+echo 'Computing code size statistics.'
+
+echo '; Lines / Characters'                               > doc/acl2-wc.txt
+echo '; Code lines (whitespace followed by non-whitespace other than ; ):' >> doc/acl2-wc.txt
+(cat ${ACL2_SOURCES} | grep '^[\w]*[^\w;]' | wc -lc)     >> doc/acl2-wc.txt
+echo '; Comment lines ( ; preceded only by whitespace):' >> doc/acl2-wc.txt
+(cat ${ACL2_SOURCES} | grep '^[\w]*;'      | wc -lc)     >> doc/acl2-wc.txt
+echo '; Blank lines (only whitespace):'                  >> doc/acl2-wc.txt
+(cat ${ACL2_SOURCES} | grep '^[\w]*$'      | wc -lc)     >> doc/acl2-wc.txt
+echo '; TOTAL:'                                          >> doc/acl2-wc.txt
+(cat ${ACL2_SOURCES}                       | wc -lc)     >> doc/acl2-wc.txt
+
+cd doc
+
+echo '(value :q)' > workxxx.create-acl2-code-size
+echo '(lp)' >> workxxx.create-acl2-code-size
+echo '(certify-book "write-acl2-code-size")' >> workxxx.create-acl2-code-size
+echo '(acl2::write-acl2-code-size "acl2-wc.txt" "acl2-code-size.txt")' >> workxxx.create-acl2-code-size
+echo ':q' >> workxxx.create-acl2-code-size
+
+../${PREFIX}saved_acl2${ACL2_SUFFIX} < workxxx.create-acl2-code-size
+
+# We could remove acl2-wc.txt at this point, but it seems harmless to leave it.
+rm -f workxxx.create-acl2-code-size
+
+echo ''
+echo 'Finished computing code size statistics.'

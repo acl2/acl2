@@ -643,9 +643,9 @@ proofs: compile-ok
 	@$(MAKE) check_init_ok
 	rm -f workxxx
 
-.PHONY: DOC HTML EMACS_TEX EMACS_ONLY
+.PHONY: DOC HTML EMACS_TEX EMACS_ONLY STATS
 
-DOC: HTML EMACS_TEX
+DOC: HTML EMACS_TEX STATS
 
 # Use ACL2_DOC_UNDOCUMENTED_FILE if you want to support broken links
 # (by having them point to a page acknowledging that the link is
@@ -668,6 +668,10 @@ EMACS_TEX:
 
 EMACS_ONLY:
 	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-texinfo
+
+# See the Essay on Computing Code Size in the ACL2 source code.
+STATS:
+	@PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX export ACL2_SOURCES="$(sources)" ; doc/create-acl2-code-size
 
 .PHONY: clean
 clean:
