@@ -1215,6 +1215,7 @@ define-structures-package.lsp
 define-u-package.lsp
 deflist.acl2
 deflist.lisp
+doc-section.lisp
 list-defthms.lisp
 list-defuns.lisp
 list-theory.lisp
@@ -1447,6 +1448,7 @@ defcode.acl2
 defcode.lisp
 defstruct-parsing.acl2
 defstruct-parsing.lisp
+doc-section.lisp
 dynamic-make-event-test.acl2
 dynamic-make-event-test.lisp
 dynamic-make-event.acl2
@@ -1604,6 +1606,7 @@ defpun.lisp
 dft-ex.acl2
 dft-ex.lisp
 dft.lisp
+doc-section.lisp
 dump-events.lisp
 evalable-printing.lisp
 expander.lisp
@@ -3347,6 +3350,7 @@ LICENSE
 Makefile
 acl2-customization.lsp
 base.lisp
+bookdoc.lsp
 cert.acl2
 defxdoc-raw.acl2
 defxdoc-raw.lisp
@@ -3400,11 +3404,13 @@ HTML
 README
 # The following is distributed but is not in the repository:
 TEX
+create-acl2-code-size
 create-acl2-html
 create-acl2-tex
 create-acl2-texinfo
 make-texinfo.el
 texinfo.tex
+write-acl2-code-size.lisp
 write-acl2-html.lisp
 write-acl2-texinfo.lisp
 
