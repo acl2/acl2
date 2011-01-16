@@ -1,4 +1,6 @@
 *.cert
+acl2-code-size.txt
+acl2-wc.txt
 HTML-old
 HTML
 EMACS
