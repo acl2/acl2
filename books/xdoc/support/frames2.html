@@ -34,7 +34,7 @@ var params = getPageParameters();
 var topic = params["topic"];
 var url = topic ? ("html/" + topic + ".html") : "html/full-index.html";
 
-document.write("<frameset cols='20%,*' border='3' bordercolor='black'>\n");
+document.write("<frameset cols='20%,*' border='2' bordercolor='#000000'>\n");
 document.write("  <frame src='html/topic-index.html' name='topics' />\n");
 document.write("  <frame src='" + url + "' name='detail' />\n");
 document.write("</frameset>\n");

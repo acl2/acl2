@@ -22,12 +22,18 @@
 
 */
 
+body {
+  font-family: "Georgia", "Bookman Old Style", serif;
+}
+
 .body_normal {
   margin-left: 1em;
   width: 45em;
 }
 
-h1,h2,h3,h4,h5 { font-family: sans-serif; }
+h1,h2,h3,h4,h5 {
+  font-family: "Geneva", "Verdana", sans-serif;
+}
 
 h1 { font-size: 2.2em; color: #900000; text-align: center; }
 h2 { font-size: 1.8em; color: #900000; }
@@ -43,7 +49,7 @@ li li { margin-left: -1.0em; margin-bottom: 0em; }
 dt {
   margin-left: 1em;
   margin-top: 1em;
-  font-family: sans-serif;
+  font-family: "Tahoma", "Geneva", "Verdana", sans-serif;
   font-weight: bold;
 }
 
@@ -62,6 +68,7 @@ dt {
   border-left-style: solid;
   border-left-color: #f9e0a3;
   color: #306030;
+  font-family: "Consolas", "Bitstream Vera Sans Mono", "DejaVu Sans Mono", "Lucida Console", monospace;
 }
 li .code {
   margin-left: 1em;
@@ -74,24 +81,24 @@ a:hover {
 }
 
 .srclink {
-  font-family: monospace;
+  font-family: "Consolas", "Bitstream Vera Sans Mono", "DejaVu Sans Mono", "Lucida Console", monospace;
   text-decoration: none;
   background-color: #e0e0e0;
   padding: 2px;
-  font-size: 105%;
+/*  font-size: 100%; */
 }
 .srclink:hover {
   text-decoration: none;
 }
 
-.sf { font-family: sans-serif; }
-
-i { font-family: serif; }
+.sf {
+  font-family: "Geneva", "Verdana", sans-serif;
+}
 
 .tt {
-  font-family: monospace;
+  font-family: "Consolas", "Bitstream Vera Sans Mono", "DejaVu Sans Mono", "Lucida Console", monospace;
   color: #306030;
-  font-size: 105%;
+/*   font-size: 100%; */
 }
 
 
@@ -100,7 +107,7 @@ i { font-family: serif; }
 .index_brief_dt {
   margin-top: 0px;
   margin-left: 0em;
-  font-family: serif;
+  font-family: "Tahoma", "Geneva", "Verdana", sans-serif;
   font-weight: normal;
 }
 
@@ -115,10 +122,9 @@ i { font-family: serif; }
 /* Main, hierarchical index, used in both 2- and 3-frame displays. */
 
 .hindex {
-/*  margin-left: 0.3em; */
   list-style-type: none;
   padding: 0px;
-  font-family: serif;
+  font-family: "Tahoma", "Geneva", "Verdana", sans-serif;
   font-weight: normal;
 }
 
