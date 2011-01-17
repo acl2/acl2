@@ -6,9 +6,13 @@
 ; run that create the infile argument for write-acl2-code-size, which in this
 ; case is acl2-wc.txt.  That file records output from the wc (Linux) command.
 ; Why not just use our Lisp approach for everything, instead of only for
-; counting lines and characters in :doc strings as we do below?  The reason is
-; that it would be very awkward to handle readtime conditionals with Lisp in a
-; way that gives meaningful code size statistics.
+; counting lines and characters in :doc strings as we do below?  We could, by
+; first reading each source file into a string (say, by reading a character and
+; then writing it with princ$ into a channel to a string, finally calling
+; get-output-stream-string$).  But we started with the wc command, so we simply
+; proceeded by taking advantage of that.  If it becomes critical somehow to do
+; this task entirely within ACL2, say because of problems with grep, then we
+; may reconsider.
 
 (program)
 (set-state-ok t)
