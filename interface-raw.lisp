@@ -6924,48 +6924,40 @@ Missing functions:
          ((probe-file (pathname-unix-to-os cfb1a *the-live-state*))
           cfb1a)
          (t
-          (let* ((cb2
-
-; There is not a true notion of home directory for Windows systems, as far as
-; we know.  We may provide one at a future point, but for now, we simply act as
-; though ~/acl2-customization.lisp does not exist on such systems.
-
-                  #+mswindows
-                  nil
-                  #-mswindows
-                  (our-merge-pathnames
+          (let* ((home (our-user-homedir-pathname))
+                 (cb2 (and home
+                           (our-merge-pathnames
 
 ; The call of pathname-os-to-unix below may seem awkward, since later we apply
 ; pathname-unix-to-os before calling probe-file.  However, our-merge-pathnames
 ; requires Unix-style pathname arguments, and we prefer not to write an
 ; analogous function that takes pathnames for the host operating system.
 
-                   (pathname-os-to-unix
+                            (pathname-os-to-unix
 
 ; MCL does not seem to handle calls of truename correctly on logical pathnames.
 ; We should think some more about this, but for now, let's solve this problem
 ; by brute force.
 
-                    #+(and mcl (not ccl))
-                    (our-truename
-                     (common-lisp::translate-logical-pathname
-                      (user-homedir-pathname))
-                     t)
-                    #-(and mcl (not ccl))
-                    (our-truename (user-homedir-pathname) t)
-                    (os (w *the-live-state*))
-                    *the-live-state*)
-                   "acl2-customization"))
+                             #+(and mcl (not ccl))
+                             (our-truename
+                              (common-lisp::translate-logical-pathname
+                               home)
+                              t)
+                             #-(and mcl (not ccl))
+                             (our-truename home t)
+                             (os (w *the-live-state*))
+                             *the-live-state*)
+                            "acl2-customization")))
                  (cfb2 (and cb2 (string-append cb2 ".lsp")))
                  (cfb2a (and cb2 (string-append cb2 ".lisp"))))
-            (cond (cb2
-                   (cond ((probe-file (pathname-unix-to-os
-                                       cfb2 *the-live-state*))
-                          cfb2)
-                         ((probe-file (pathname-unix-to-os
-                                       cfb2a *the-live-state*))
-                          cfb2a)
-                         (t nil))))))))))))
+            (cond (cb2 (cond ((probe-file (pathname-unix-to-os
+                                           cfb2 *the-live-state*))
+                              cfb2)
+                             ((probe-file (pathname-unix-to-os
+                                           cfb2a *the-live-state*))
+                              cfb2a)
+                             (t nil))))))))))))
 
 (defun lp (&rest args)
 
@@ -7018,7 +7010,7 @@ Missing functions:
                                       (not (equal s ""))
                                       (not (equal (string-upcase s)
                                                   "NIL")))))
-               (user-home-dir-path (user-homedir-pathname))
+               (user-home-dir-path (our-user-homedir-pathname))
                (user-home-dir0 (and user-home-dir-path
                                     (our-truename user-home-dir-path t)))
                (user-home-dir (if (eql (char user-home-dir0

@@ -17267,6 +17267,10 @@
   is a macro (because the introducing ~ilc[defstobj] event specified
   ~c[:inline t]).
 
+  Avoided a potential error that could occur when there no user home directory
+  is located, which we believe had already been solved for Windows.  Thanks to
+  Hanbing Liu for reporting this issue in the case of Allegro CL 8.0 on Linux.
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   The HTML documentation no longer has extra newlines in <pre> environments.
@@ -17278,6 +17282,9 @@
   provided slightly more friendly ~il[trace] output for new users, but 
   distributed book ~c[books/misc/trace-star.lisp] may be better suited for that
   purpose.
+
+  Statistics on ACL2 code size may be found in distributed file
+  ~c[doc/acl2-code-size.txt].
 
   ~st[EMACS SUPPORT]
 

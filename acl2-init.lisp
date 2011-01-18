@@ -479,18 +479,10 @@ implementations.")
     ~% distinguish it from the ACL2 prompt.~%"))
 
 (defun maybe-load-acl2-init ()
-
-; There is not a true notion of home directory for Windows systems, as far as
-; we know.  We may provide one at a future point, but for now, we simply act as
-; though ~/acl2-init.lsp does not exist on such systems.
-
-
-  #+mswindows
-  nil
-  #-mswindows
-  (let ((fl (probe-file (merge-pathnames (user-homedir-pathname)
-                                         "acl2-init.lsp"))))
-    (if fl (load fl))))
+  (let* ((home (our-user-homedir-pathname))
+         (fl (and home
+                  (probe-file (merge-pathnames home "acl2-init.lsp")))))
+    (when fl (load fl))))
 
 (defun chmod-executable (sysout-name)
   (system-call "chmod" (list "+x" sysout-name)))

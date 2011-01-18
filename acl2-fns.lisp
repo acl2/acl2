@@ -1297,19 +1297,39 @@ notation causes an error and (b) the use of ,. is not permitted."
            (t
             (concatenate 'string (our-pwd) name))))))
 
+(defun our-user-homedir-pathname ()
+
+; Quoting the Common Lisp Hyperspec:
+
+;   If it is impossible to determine the user's home directory on host, then
+;   nil is returned. user-homedir-pathname never returns nil if host is not
+;   supplied.
+
+; However, Hanbing Liu has reported an error on Allegro CL Enterprise Edition
+; 8.0 when trying to build ACL2 Version_4.2, apparently printed before printing
+; the optimization settings:
+
+;     An unhandled error occurred during initialization:
+;     There is no file named /home/rcash/
+
+; So we play it safe and define our own, error-free (for CLtL2) version.
+; We have observed in the past that we needed our own version for GCL 2.7.0
+; anyhow.
+
+  #+gcl
+  (cond
+   ((gcl-version->= 2 7 0)
+
 ; It seems that GCL 2.7.0 has had problems with user-homedir-pathname in static
 ; versions because of how some system functions are relocated.  So we define
 ; our own version for use by all GCLs 2.7.0 and beyond.
 
-#+gcl
-(defun our-user-homedir-pathname (&optional host)
-  (declare (ignore host))
-  (pathname (concatenate 'string (si::getenv "HOME") "/")))
-
-#+gcl
-(when (gcl-version->= 2 7 0)
-  (setf (symbol-function 'user-homedir-pathname)
-        (symbol-function 'our-user-homedir-pathname)))
+    (let ((home (si::getenv "HOME")))
+      (and home
+           (pathname (concatenate 'string home "/")))))
+   (t (pathname (user-homedir-pathname))))
+  #-gcl ; presumably CLtL2
+  (ignore-errors (user-homedir-pathname)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            MISCELLANY

@@ -7597,7 +7597,10 @@
   (defconstant *arithmetic-goals-filename*
 ; Be sure to delete ~/write-arithmetic-goals.lisp before starting a regression.
 ; (This is done by GNUmakefile.)
-    (merge-pathnames (user-homedir-pathname) "write-arithmetic-goals.lisp")))
+    (let ((home (our-user-homedir-pathname)))
+      (cond (home
+             (merge-pathnames home "write-arithmetic-goals.lisp"))
+            (t (error "Unable to determine (user-homedir-pathname)."))))))
 
 (defun prove (term pspv hints ens wrld ctx state)
 
