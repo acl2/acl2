@@ -1299,22 +1299,25 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defun our-user-homedir-pathname ()
 
-; Quoting the Common Lisp Hyperspec:
+; For ACL2 Version_4.2, Hanbing Liu reported the following error using Allegro
+; CL Enterprise Edition 8.0 for Linux, apparently printed before printing the
+; optimization settings.
+
+;     An unhandled error occurred during initialization:
+;     There is no file named /home/rcash/
+
+; The error was likely caused by our calling user-homedir-pathname without a
+; host, for a user without a home directory.  Quoting the Common Lisp Hyperspec
+; on (user-homedir-pathname &optional host):
 
 ;   If it is impossible to determine the user's home directory on host, then
 ;   nil is returned. user-homedir-pathname never returns nil if host is not
 ;   supplied.
 
-; However, Hanbing Liu has reported an error on Allegro CL Enterprise Edition
-; 8.0 when trying to build ACL2 Version_4.2, apparently printed before printing
-; the optimization settings:
-
-;     An unhandled error occurred during initialization:
-;     There is no file named /home/rcash/
-
-; So we play it safe and define our own, error-free (for CLtL2) version.
-; We have observed in the past that we needed our own version for GCL 2.7.0
-; anyhow.
+; It's not clear that there is a meaningful notion of host on Linux.  So we
+; play it safe and define our own, error-free (for CLtL2) version of
+; user-homedir-pathname.  We have observed in the past that we needed our own
+; version of user-homedir-pathname for GCL 2.7.0 anyhow (see below).
 
   #+gcl
   (cond

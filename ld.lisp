@@ -17267,9 +17267,14 @@
   is a macro (because the introducing ~ilc[defstobj] event specified
   ~c[:inline t]).
 
-  Avoided a potential error that could occur when there no user home directory
-  is located, which we believe had already been solved for Windows.  Thanks to
-  Hanbing Liu for reporting this issue in the case of Allegro CL 8.0 on Linux.
+  Avoided a potential error that could occur when no user home directory is
+  located.  Our previous solution for Windows simply avoided looking for ACL2
+  customization files (~pl[ACL2-CUSTOMIZATION]) and ~c[acl2-init.lsp] files in
+  a user's home directory.  With this change, we handle such files the same for
+  Windows as for non-Windows systems: we always look for ACL2 customization
+  files (~pl[ACL2-CUSTOMIZATION]) and ~c[acl2-init.lsp] files in a user's home
+  directory, but only if such a directory exists.  Thanks to Hanbing Liu for
+  reporting this issue.
 
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
