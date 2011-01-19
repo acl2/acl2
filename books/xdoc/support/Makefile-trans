@@ -58,6 +58,9 @@ $(info     Xerces version 2.7.0.)
 $(info     Usage: Xalan [options] source stylesheet)
 $(info     ...)
 $(info )
+$(info Note: if you just want to view the documentation and don't care about)
+$(info turning into HTML, try opening preview.html in your web browser.)
+$info )
 $(error Xalan-C++ not found)
 
 endif

@@ -206,7 +206,7 @@
        ((when (equal name "dt"))
         (+ 4 (get-indent-level (cdr open-tags))))
        ((when (equal name "dd"))
-        (+ 4 (get-indent-level (cdr open-tags))))
+        (+ 6 (get-indent-level (cdr open-tags))))
        ((when (equal name "code"))
         (+ 4 (get-indent-level (cdr open-tags))))
        ((when (equal name "blockquote"))
