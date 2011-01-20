@@ -20,7 +20,6 @@
 
 (in-package "ACL2") ;; So the acl2 topic comes from the acl2 package.
 (include-book "write-acl2-xdoc")
-(include-book "tools/bstar" :dir :system)
 (program)
 
 (defdoc broken-link
@@ -114,6 +113,7 @@ PL: ~pl[test-broken-link]~/~/")
                  (defconst *acl2-ground-zero-topics* ',topics)))))))
 
 (include-book "base")
+(include-book "tools/bstar" :dir :system)
 
 #!XDOC
 ;; Actually install the ground-zero topics

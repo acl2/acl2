@@ -38,11 +38,13 @@
 ; I prefer this approach to using (depends-on ...) because it
 ; seems more compatible with the scanner in ACL2's Makefile-generic.
 
-(include-book "save")
-(include-book "display")
-(include-book "topics")
-(include-book "defxdoc-raw")
-(include-book "mkdir-raw")
+
+;; (Sol) - commenting these out for now to save cert time on certain critical paths
+;; (include-book "save")
+;; (include-book "display")
+;; (include-book "topics")
+;; (include-book "defxdoc-raw")
+;; (include-book "mkdir-raw")
 
 ||#
 
@@ -79,21 +81,41 @@
             (value '(value-triple :invisible))))))))
 
 (defmacro save (dir &key
-                    (index-pkg 'acl2::foo))
+                    (index-pkg 'acl2::foo)
+                    (import 't))
   `(progn
      (include-book ,*xdoc-dir/defxdoc-raw* :ttags :all)
      (include-book ,*xdoc-dir/mkdir-raw* :ttags :all)
-     (include-book ,*xdoc-dir/topics*)
      (include-book ,*xdoc-dir/save*)
 
      ;; ugh, stupid stupid writes-ok stupidity
      (defttag :xdoc)
      (remove-untouchable acl2::writes-okp nil)
-     (import-acl2doc)
-     (maybe-import-bookdoc)
+     ,@(and import
+            `((include-book ,*xdoc-dir/topics*)
+              (import-acl2doc)
+              (maybe-import-bookdoc)))
      (make-event
       (b* (((mv all-xdoc-topics state) (all-xdoc-topics state))
+           (- (cw "(len all-xdoc-topics): ~x0~%" (len all-xdoc-topics)))
            ((mv & & state) (assign acl2::writes-okp t))
            (state (save-topics all-xdoc-topics ,dir ',index-pkg state)))
         (value '(value-triple :invisible))))))
+
+(defmacro xdoc-just-from-events (events)
+  `(encapsulate
+     ()
+     (local (include-book ,*xdoc-dir/topics*))
+     (local ,events)
+     (make-event
+      (mv-let (er val state)
+        (let ((state (acl2::f-put-global 'acl2::xdoc-alist nil state)))
+          (time$ (acl2::write-xdoc-alist :skip-topics xdoc::*acl2-ground-zero-names*)
+                 :msg "; Importing :doc topics took ~st sec, ~sa bytes~%"
+                 :mintime 1))
+        (declare (ignore er val))
+        (b* ((topics (acl2::f-get-global 'acl2::xdoc-alist state))
+             (- (cw "(len topics): ~x0~%" (len topics))))
+          (value `(table xdoc 'doc ',topics)))))))
+
 
