@@ -9,7 +9,7 @@
 ;; - Can bind variables using user-defined pattern-matching idioms
 ;; - Eliminates ignore and ignorable declarations
 
-(defdoc b* ":DOC-SECTION Programming
+(defdoc b* ":DOC-SECTION B*
 Flexible let*-like macro for variable bindings~/
 Usage:
 ~bv[]
@@ -83,6 +83,7 @@ B* expands to multiple nestings of another macro PATBIND, analogously to how
 LET* expands to multiple nestings of LET.
 
 -- Basic let*-like usage --
+
 B* can be used exactly like LET*, except that it does not yet support DECLARE
 forms.  However, IGNORE or IGNORABLE declarations are inserted by B* according
 to the syntax of the variables bound\; see below.  B* also supports multiple
@@ -90,30 +91,32 @@ result expressions after the binding list\; these are run in sequence and the
 result of the last such form is returned.
 
 -- Binder Forms --
+
 The following binder forms are supported by this book alone, but support may
 be added by the user for other binding forms.  In most cases, these binding
-forms may be nested.
+forms may be nested.  See ~il[b*-binders] for a comprehensive list of available
+binder forms.
 
- (mv a b ...) produces an MV-LET binding
+ ~c[(mv a b ...)] produces an MV-LET binding
 
- (cons a b) produces a binding of the CAR and CDR of the corresponding expression
+ ~c[(cons a b)] produces a binding of the CAR and CDR of the corresponding expression
 
- (er a) produces an ER-LET* binding
+ ~c[(er a)] produces an ER-LET* binding
 
- (list a b ...) produces a binding of (car val), (cadr val), etc, where val
+ ~c[(list a b ...)] produces a binding of (car val), (cadr val), etc, where val
 is the result of the corresponding expression
 
- (nths a b ...) produces a binding of (nth 0 val), (nth 1 val), etc, where val
+ ~c[(nths a b ...)] produces a binding of (nth 0 val), (nth 1 val), etc, where val
 is the result of the corresponding expression
 
- (list* a b), `(,a . ,b) are alternatives to the CONS binder.
+ ~c[(list* a b)], ~c[`(,a . ,b)] are alternatives to the CONS binder.
 
- (the type-spec var) produces a binding of var to the result of the
+ ~c[(the type-spec var)] produces a binding of var to the result of the
 corresponding expression, and a declaration that var is of the given
 type-spec.  A THE pattern may be nested inside other patterns, but VAR must
 itself be a symbol and not a nested pattern, and type-spec must be a type-spec.
 
- (if test), (when test), and (unless test) don't actually produce bindings at
+ ~c[(if test)], ~c[(when test)], and ~c[(unless test)] don't actually produce bindings at
 all.  Instead, they insert an IF where one branch is the rest of the B* form and
 the other is the \"bound\" expression.  For example,
 ~bv[]
@@ -137,17 +140,25 @@ this:
 ~ev[]
 
 -- Nesting Binders --
+
 The CONS, LIST, LIST*, and backtick binders may be nested arbitrarily inside
 other binders.  Often user-defined binders may also be arbitrarily nested.  For
 example,
- ((mv (list `(,a . ,b)) (cons c d)) <form>)
+
+~c[((mv (list `(,a . ,b)) (cons c d)) <form>)]
+
 will result in the following (logical) bindings:
-a bound to (car (nth 0 (mv-nth 0 <form>)))
-b bound to (cdr (nth 0 (mv-nth 0 <form>)))
-c bound to (car (mv-nth 1 <form>))
-d bound to (cdr (mv-nth 1 <form>)).
+
+~c[a] bound to ~c[(car (nth 0 (mv-nth 0 <form>)))]
+
+~c[b] bound to ~c[(cdr (nth 0 (mv-nth 0 <form>)))]
+
+~c[c] bound to ~c[(car (mv-nth 1 <form>))]
+
+~c[d] bound to ~c[(cdr (mv-nth 1 <form>))].
 
 -- Ignore, Ignorable, and Side-effect Only Bindings --
+
 The following constructs may be used in place of variables:
 
 Dash (-), used as a top-level binding form, will run the corresponding
@@ -167,12 +178,15 @@ obtained by removing the ?, and will make an IGNORABLE declaration for this
 variable.
 
 -- User-Defined Binders --
+
 A new binder form may be created by defining a macro named PATBIND-<name>.  We
 discuss the detailed interface of user-defined binders below.  First,
 DEF-PATBIND-MACRO provides a simple way to define certain user binders.  For
 example, this form is used to define the binder for CONS:
+\bv[]
  (def-patbind-macro cons (car cdr))
-This defines a binder macro PATBIND-CONS which enables (cons a b) to be used as
+\ev[]
+This defines a binder macro ~c[PATBIND-CONS] which enables ~c[(cons a b)] to be used as
 a binder form.  This binder form must take two arguments since two destructor
 functions (car cdr) are given to def-patbind-macro.  The destructor functions
 are each applied to the form to produce the bindings for the corresponding
@@ -666,7 +680,7 @@ may be nested inside other bindings.~/~/"
   "B* binder for alist values~/
 Usage:
 ~bv[]
- (b* (((assoc (a akey) b (c 'foo)) alst)) form)
+ (b* (((assocs (a akey) b (c 'foo)) alst)) form)
 ~ev[]
 is equivalent to
 ~bv[]
