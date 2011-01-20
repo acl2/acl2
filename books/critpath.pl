@@ -77,8 +77,8 @@ my $HELP_MESSAGE = "
      cert.pl top.lisp -c    # clean
      cert.pl top.lisp -j 8  # recertify using 8 parallel processors
 
- 2. Run critpath.pl [OPTIONS] <top-book> ..., where each <top-book> is a
-    .lisp or .cert file of the book of interest.
+ 2. Run critpath.pl [OPTIONS] <target> ..., where each <target> is a
+    book with or without a .lisp or .cert extension.
 
     The options are as follows:
 
@@ -91,8 +91,11 @@ my $HELP_MESSAGE = "
        --help       Print this help message and exit.
 
        -t, --targets <filename>
-                    Take the list of top-books from <filename>, in addition
+                    Add all targets listed in <filename>, in addition
                     to any given on the command line.
+
+       -p, --deps-of <filename>
+                    Add as targets all dependencies of the book <filename>.
  ";
 
 my %OPTIONS = (
@@ -106,6 +109,7 @@ my %OPTIONS = (
 
 my @user_targets = ();
 my @targets = ();
+my @deps_of = ();
 
 my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     'help'   => \$OPTIONS{'help'},
@@ -116,7 +120,9 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     "targets|t=s"          
 			              => sub { shift;
 					       read_targets(shift, \@user_targets);
-					   }
+					   },
+			     "deps-of|p=s"
+			              => \@deps_of
 			     );
 
 push (@user_targets, @ARGV);
@@ -147,9 +153,22 @@ foreach my $target (@user_targets) {
     push (@targets, to_basename($target) . ".cert");
 }
 
+foreach my $top (@deps_of) {
+    my $deps = find_deps(to_basename($top));
+    push (@targets, @{$deps});
+}
+
+unless (@targets) {
+    print "\nError: No targets provided.\n";
+    print $HELP_MESSAGE;
+    exit 1;
+}
+
 foreach my $target (@targets) {
-    add_deps($target, \%deps, \@sources);
-    ($costs, $warnings) = make_costs_table($target, \%deps, $costs, $warnings, $OPTIONS{"short"});
+    if ($target =~ /\.cert/) {
+	add_deps($target, \%deps, \@sources);
+	($costs, $warnings) = make_costs_table($target, \%deps, $costs, $warnings, $OPTIONS{"short"});
+    }
 }
 
 
