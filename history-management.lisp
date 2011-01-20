@@ -8891,8 +8891,9 @@
 
 (defmacro mv-to-state (n form)
 
-; Form should evaluate to an mv of non-stobj values, except that the last value
-; should be state.  We return that state, discarding the other values.
+; Form should evaluate to an mv of two or more values, all non-stobjs except
+; the, which should be state.  We return that state, discarding the other
+; values.
 
   (declare (xargs :guard (and (integerp n)
                               (< 1 n))))
