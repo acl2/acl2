@@ -28,26 +28,6 @@
 (in-package "XDOC")
 (include-book "base")
 
-#||
-
-; Goofy.  We trick the dependency scanner into building these other books.  We
-; don't strictly need them to be built for top.lisp, but the commands we're
-; going to introduce will try to include them, so we want them to be
-; certified.
-
-; I prefer this approach to using (depends-on ...) because it
-; seems more compatible with the scanner in ACL2's Makefile-generic.
-
-
-;; (Sol) - commenting these out for now to save cert time on certain critical paths
-;; (include-book "save")
-;; (include-book "display")
-;; (include-book "topics")
-;; (include-book "defxdoc-raw")
-;; (include-book "mkdir-raw")
-
-||#
-
 (make-event `(defconst *xdoc-dir/save*
                ,(acl2::extend-pathname *xdoc-dir* "save" state)))
 (make-event `(defconst *xdoc-dir/display*
