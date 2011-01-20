@@ -344,13 +344,6 @@ push(@user_targets, @ARGV);
 my %seen = ( );
 my @sources = ( );
 
-sub to_basename {
-    my $name = shift;
-    $name = canonical_path($name);
-    $name =~ s/\.(lisp|cert)$//;
-    return $name;
-}
-
 foreach my $target (@user_targets) {
     push (@targets, to_basename($target) . ".cert");
 }

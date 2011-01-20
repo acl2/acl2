@@ -445,6 +445,13 @@ sub individual_files_report {
 }   
 
 
+sub to_basename {
+    my $name = shift;
+    $name = canonical_path($name);
+    $name =~ s/\.(lisp|cert)$//;
+    return $name;
+}
+
 
 
 

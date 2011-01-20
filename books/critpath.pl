@@ -104,6 +104,7 @@ my %OPTIONS = (
   'short'   => 1
 );
 
+my @user_targets = ();
 my @targets = ();
 
 my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
@@ -114,11 +115,11 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     'short=i' =>  \$OPTIONS{'short'},
 			     "targets|t=s"          
 			              => sub { shift;
-					       read_targets(shift, \@targets);
+					       read_targets(shift, \@user_targets);
 					   }
 			     );
 
-push (@targets, @ARGV);
+push (@user_targets, @ARGV);
 
 if (!$options_okp || $OPTIONS{"help"})
 {
@@ -142,11 +143,13 @@ certlib_set_opts(\%certlib_opts);
 certlib_add_dir("SYSTEM", $RealBin);
 
 
+foreach my $target (@user_targets) {
+    push (@targets, to_basename($target) . ".cert");
+}
+
 foreach my $target (@targets) {
-    my $topfile = canonical_path($target);
-    $topfile =~ s/\.lisp$/.cert/;
-    add_deps($topfile, \%deps, \@sources);
-    ($costs, $warnings) = make_costs_table($topfile, \%deps, $costs, $warnings, $OPTIONS{"short"});
+    add_deps($target, \%deps, \@sources);
+    ($costs, $warnings) = make_costs_table($target, \%deps, $costs, $warnings, $OPTIONS{"short"});
 }
 
 
