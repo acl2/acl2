@@ -17236,6 +17236,9 @@
 
 ; Added new macro mv-to-state.
 
+; Changed the name mv-let? to bdd-mv-let to avoid potential confusion with
+; mv?-let.
+
   :Doc
   ":Doc-Section release-notes
 

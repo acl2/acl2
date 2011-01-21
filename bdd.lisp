@@ -146,19 +146,19 @@
 ; However, we would like to have a very fast test for whether the tuple
 ; returned designates an error.  The present approach allows us to test with
 ; stringp on the second value returned.  We take advantage of that in the
-; definition of mv-let?.
+; definition of bdd-mv-let.
 
 ; Note that the order of the first two values should not be changed:  we
 ; declare mx-id to be a fixnum at some point, and we we want the second
 ; position to be tested by stringp to see if we have an "error" situation.
 
-; Keep this in sync with mv-let?.
+; Keep this in sync with bdd-mv-let.
 
   `(mvf ,mx-id ,fmt-string (cons ,fmt-alist ,bad-cst)
 
 ; The following nil is really an initial value of the bdd-call-stack that is
-; ultimately to be placed in a bddnote.  At the time of this writing, mv-let?
-; is the only place where we update this stack.
+; ultimately to be placed in a bddnote.  At the time of this writing,
+; bdd-mv-let is the only place where we update this stack.
 
         nil
         ,ttree))
@@ -1949,7 +1949,7 @@
               if-ht
               (if rune (push-lemma rune ttree) ttree))))))))
 
-(defmacro mv-let? (vars form body)
+(defmacro bdd-mv-let (vars form body)
 
 ; The idea here is that we want to allow functions in the bdd nest to return
 ; multiple values of the sort returned by the macro bdd-error.
@@ -1958,7 +1958,7 @@
 ; This macro should only be used when the first var has a fixnum value.  We go
 ; even further by requiring that the first var be mx-id.  Whenever we write
 
-; (mv-let? vars form body)
+; (bdd-mv-let vars form body)
 
 ; we assume that body returns the same number of values as does form.
 
@@ -2108,11 +2108,11 @@
                   (mv-let
                    (args1 args2)
                    (combine-if-csts1 (unique-id min-var) args)
-                   (mv-let?
+                   (bdd-mv-let
                     (mx-id cst1 op-ht if-ht)
                     (combine-if-csts+ (car args1) (cadr args1) (caddr args1)
                                       op-ht if-ht mx-id bdd-constructors)
-                    (mv-let?
+                    (bdd-mv-let
                      (mx-id cst2 op-ht if-ht)
                      (combine-if-csts+ (car args2) (cadr args2) (caddr args2)
                                        op-ht if-ht mx-id bdd-constructors)
@@ -2221,15 +2221,16 @@
       mx-id hash-index op args test-cst true-cst false-cst
       op-ht if-ht bdd-constructors))
     (t
-     (mv-let? (mx-id cst op-ht if-ht)
-              (combine-if-csts+
-               test-cst true-cst false-cst op-ht if-ht mx-id bdd-constructors)
-              (mvf mx-id
-                   cst
-                   (aset1 'op-ht op-ht hash-index
-                          (cons (list* cst op args)
-                                (aref1 'op-ht op-ht hash-index)))
-                   if-ht))))))
+     (bdd-mv-let
+      (mx-id cst op-ht if-ht)
+      (combine-if-csts+
+       test-cst true-cst false-cst op-ht if-ht mx-id bdd-constructors)
+      (mvf mx-id
+           cst
+           (aset1 'op-ht op-ht hash-index
+                  (cons (list* cst op args)
+                        (aref1 'op-ht op-ht hash-index)))
+           if-ht))))))
 
 (mutual-recursion
 
@@ -2366,7 +2367,7 @@
     (declare (type (signed-byte 30) mx-id))
     (cond
      (ans
-      (mv-let?
+      (bdd-mv-let
        (mx-id cst op-ht if-ht ttree)
        (bdd rhs alist op-ht if-ht mx-id ttree bddspv state)
 
@@ -2395,7 +2396,7 @@
                (declare (type (signed-byte 30) mx-id))
                (cond
                 (ans
-                 (mv-let?
+                 (bdd-mv-let
                   (mx-id cst op-ht if-ht ttree)
                   (bdd rhs alist op-ht if-ht mx-id ttree bddspv state)
 
@@ -2447,12 +2448,12 @@
 ; (mv ((4 X0 T) (5 X1 T) (7 X3 T))
 ;     ((4 X0 T) (6 X2 T) (8 X4 T)))
 
-                        (mv-let?
+                        (bdd-mv-let
                          (mx-id cst1 op-ht if-ht ttree)
                          (combine-op-csts+ mx-id comm-p enabled-exec-p
                                            op-code op mask args1 op-ht
                                            if-ht op-bdd-rules ttree bddspv)
-                         (mv-let?
+                         (bdd-mv-let
                           (mx-id cst2 op-ht if-ht ttree)
                           (combine-op-csts+ mx-id comm-p enabled-exec-p
                                             op-code op mask args2 op-ht
@@ -2493,7 +2494,7 @@
       (t (bdd-quotep+ term op-ht if-ht mx-id ttree))))
     ((or (eq (ffn-symb term) 'if)
          (eq (ffn-symb term) 'if*))
-     (mv-let?
+     (bdd-mv-let
       (mx-id test-cst op-ht if-ht ttree)
       (bdd (fargn term 1) alist op-ht if-ht
            mx-id
@@ -2529,10 +2530,10 @@
          *cst-t*
          ttree))
        (t
-        (mv-let?
+        (bdd-mv-let
          (mx-id true-cst op-ht if-ht ttree)
          (bdd (fargn term 2) alist op-ht if-ht mx-id ttree bddspv state)
-         (mv-let?
+         (bdd-mv-let
           (mx-id false-cst op-ht if-ht ttree)
           (bdd (fargn term 3) alist op-ht if-ht mx-id ttree bddspv state)
           (mv-let
@@ -2546,13 +2547,14 @@
             (t
              (mvf mx-id cst op-ht if-ht ttree))))))))))
     ((flambdap (ffn-symb term))
-     (mv-let? (mx-id alist op-ht if-ht ttree)
-              (bdd-alist (lambda-formals (ffn-symb term))
-                         (fargs term)
-                         alist op-ht if-ht
-                         mx-id ttree bddspv state)
-              (bdd (lambda-body (ffn-symb term))
-                   alist op-ht if-ht mx-id ttree bddspv state)))
+     (bdd-mv-let
+      (mx-id alist op-ht if-ht ttree)
+      (bdd-alist (lambda-formals (ffn-symb term))
+                 (fargs term)
+                 alist op-ht if-ht
+                 mx-id ttree bddspv state)
+      (bdd (lambda-body (ffn-symb term))
+           alist op-ht if-ht mx-id ttree bddspv state)))
     (t (mv-let
         (opcode comm-p enabled-exec-p mask)
         (op-alist-info (ffn-symb term)
@@ -2560,10 +2562,10 @@
         (declare (type (signed-byte 30) opcode))
         (cond
          (comm-p
-          (mv-let?
+          (bdd-mv-let
            (mx-id arg1 op-ht if-ht ttree)
            (bdd (fargn term 1) alist op-ht if-ht mx-id ttree bddspv state)
-           (mv-let?
+           (bdd-mv-let
             (mx-id arg2 op-ht if-ht ttree)
             (bdd (fargn term 2) alist op-ht if-ht mx-id ttree bddspv state)
             (combine-op-csts-comm mx-id comm-p enabled-exec-p opcode
@@ -2574,7 +2576,7 @@
                                                          :bdd-rules-alist)))
                                   ttree bddspv state))))
          (t
-          (mv-let? (mx-id lst op-ht if-ht ttree)
+          (bdd-mv-let (mx-id lst op-ht if-ht ttree)
                    (bdd-list (fargs term) alist op-ht if-ht mx-id ttree bddspv
                              state)
                    (combine-op-csts mx-id enabled-exec-p opcode
@@ -2597,15 +2599,16 @@
    (cond
     ((endp formals)
      (mvf mx-id nil op-ht if-ht ttree))
-    (t (mv-let? (mx-id bdd op-ht if-ht ttree)
-                (bdd (car actuals) alist op-ht if-ht mx-id ttree bddspv state)
-                (mv-let? (mx-id rest-alist op-ht if-ht ttree)
-                         (bdd-alist (cdr formals) (cdr actuals)
-                                    alist op-ht if-ht mx-id ttree bddspv state)
-                         (mvf mx-id
-                              (cons (cons (car formals) bdd)
-                                    rest-alist)
-                              op-ht if-ht ttree)))))))
+    (t (bdd-mv-let
+        (mx-id bdd op-ht if-ht ttree)
+        (bdd (car actuals) alist op-ht if-ht mx-id ttree bddspv state)
+        (bdd-mv-let (mx-id rest-alist op-ht if-ht ttree)
+                    (bdd-alist (cdr formals) (cdr actuals)
+                               alist op-ht if-ht mx-id ttree bddspv state)
+                    (mvf mx-id
+                         (cons (cons (car formals) bdd)
+                               rest-alist)
+                         op-ht if-ht ttree)))))))
 
 (defun bdd-list (lst alist op-ht if-ht mx-id ttree bddspv state)
   (declare (type (signed-byte 30) mx-id))
@@ -2615,12 +2618,13 @@
    (cond
     ((endp lst)
      (mvf mx-id nil op-ht if-ht ttree))
-    (t (mv-let? (mx-id bdd op-ht if-ht ttree)
-                (bdd (car lst) alist op-ht if-ht mx-id ttree bddspv state)
-                (mv-let? (mx-id rest op-ht if-ht ttree)
-                         (bdd-list (cdr lst) alist op-ht if-ht mx-id ttree
-                                   bddspv state)
-                         (mvf mx-id (cons bdd rest) op-ht if-ht ttree)))))))
+    (t (bdd-mv-let
+        (mx-id bdd op-ht if-ht ttree)
+        (bdd (car lst) alist op-ht if-ht mx-id ttree bddspv state)
+        (bdd-mv-let (mx-id rest op-ht if-ht ttree)
+                    (bdd-list (cdr lst) alist op-ht if-ht mx-id ttree
+                              bddspv state)
+                    (mvf mx-id (cons bdd rest) op-ht if-ht ttree)))))))
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
