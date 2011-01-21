@@ -104,12 +104,14 @@ my %OPTIONS = (
   'nowarn'  => '',
   'nopath'  => '',
   'nolist'  => '',
-  'short'   => 1
+  'short'   => 1,
 );
 
 my @user_targets = ();
 my @targets = ();
 my @deps_of = ();
+
+my $debug = 0;
 
 my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     'help'   => \$OPTIONS{'help'},
@@ -117,6 +119,7 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     'nopath' => \$OPTIONS{'nopath'},
 			     'nolist' => \$OPTIONS{'nolist'},
 			     'short=i' =>  \$OPTIONS{'short'},
+			     'debug|d' => \$debug,
 			     "targets|t=s"          
 			              => sub { shift;
 					       read_targets(shift, \@user_targets);
@@ -167,10 +170,60 @@ unless (@targets) {
 foreach my $target (@targets) {
     if ($target =~ /\.cert/) {
 	add_deps($target, \%deps, \@sources);
-	($costs, $warnings) = make_costs_table($target, \%deps, $costs, $warnings, $OPTIONS{"short"});
     }
 }
 
+my $basecosts = {};
+read_costs(\%deps, $basecosts, $warnings);
+print "done read_costs\n" if $debug;
+
+compute_cost_paths(\%deps, $basecosts, $costs, $warnings);
+print "done compute_cost_paths\n" if $debug;
+
+print "costs: " .  $costs . "\n" if $debug;
+my @keys = keys %{$costs};
+(my $topbook, my $topbook_cost) = find_most_expensive(\@targets, $costs);
+
+print "done topbook\n" if $debug;
+
+my @critpath = ();
+my $nxtbook = $topbook;
+while ($nxtbook) {
+    push(@critpath, $nxtbook);
+    $nxtbook = $costs->{$nxtbook}->{"maxpath"};
+}
+
+my %savings = ();
+foreach my $critfile (@critpath) {
+    print "critfile: $critfile\n" if $debug;
+    my $filebasecost = $basecosts->{$critfile};
+
+    # Get the max savings from speeding up the book: set the file base cost to 0 and recompute crit path.
+    my %tmpcosts = ();
+    my @tmpwarns = ();
+    $basecosts->{$critfile} = 0.0;
+    compute_cost_paths(\%deps, $basecosts, \%tmpcosts, \@tmpwarns);
+    (my $tmptop, my $tmptopcost) = find_most_expensive(\@targets, \%tmpcosts);
+    my $speedup_savings = $topbook_cost - $tmptopcost;
+    $speedup_savings = $speedup_savings || 0.000001;
+
+    # Get the max savings from removing the book: set the file total cost to 0 and recompute crit path.
+    %tmpcosts = ();
+    $tmpcosts{$critfile} = 0;
+    compute_cost_paths(\%deps, $basecosts, \%tmpcosts, \@tmpwarns);
+    ($tmptop, $tmptopcost) = find_most_expensive(\@targets, \%tmpcosts);
+    my $remove_savings = $topbook_cost - $tmptopcost;
+    $remove_savings = $remove_savings || 0.000001;
+
+    my %entry = ( "speedup" => $speedup_savings,
+		  "remove" => $remove_savings );
+    $savings{$critfile} = \%entry;
+    $basecosts->{$critfile} = $filebasecost;
+}
+
+
+
+	# ($costs, $warnings) = make_costs_table($target, \%deps, $costs, $warnings, $OPTIONS{"short"});
 
 
 
@@ -179,9 +232,9 @@ unless ($OPTIONS{'nowarn'}) {
 }
 
 unless ($OPTIONS{'nopath'}) {
-    print critical_path_report($costs, $OPTIONS{"html"});
+    print critical_path_report($costs, $basecosts, \%savings, $topbook, $OPTIONS{"html"}, $OPTIONS{"short"});
 }
 
 unless ($OPTIONS{'nolist'}) {
-    print individual_files_report($costs, $OPTIONS{"html"});
+    print individual_files_report($costs, $basecosts, $OPTIONS{"html"}, $OPTIONS{"short"});
 }

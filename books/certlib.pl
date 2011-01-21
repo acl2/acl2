@@ -185,6 +185,100 @@ sub get_cert_time {
 }
 
 
+sub read_costs {
+    my $deps = shift;
+    my $basecosts = shift;
+    my $warnings = shift;
+
+    foreach my $certfile (keys %{$deps}) {
+	if ($certfile =~ /\.(cert|acl2x)$/) {
+	    my $cost = get_cert_time($certfile, $warnings);
+	    $basecosts->{$certfile} = $cost;
+	}
+    }
+}
+
+sub find_most_expensive {
+    my $files = shift;
+    my $costs = shift;
+
+    my $most_expensive_file_total = 0;
+    my $most_expensive_file = 0;
+
+    foreach my $file (@{$files}) {
+	if ($file =~ /\.(cert|acl2x)$/) {
+
+	    my $file_costs = $costs->{$file};
+	    if ($file_costs) {
+		my $this_file_total = $file_costs->{"totaltime"};
+		if ($this_file_total > $most_expensive_file_total) {
+		    $most_expensive_file = $file;
+		    $most_expensive_file_total = $this_file_total;
+		}
+	    }
+	}
+    }
+
+    return ($most_expensive_file, $most_expensive_file_total);
+}
+
+sub compute_cost_paths_aux {
+    my $certfile = shift;
+    my $deps = shift;
+    my $basecosts = shift;
+    my $costs = shift;
+    my $warnings = shift;
+
+    if (exists $costs->{$certfile} || ! ($certfile =~ /\.(cert|acl2x)$/)) {
+	return $costs->{$certfile};
+    }
+
+    # put something in $costs->{$certfile} so that we don't loop
+    $costs->{$certfile} = 0;
+
+    my $certtime = $basecosts->{$certfile};
+    my $certdeps = $deps->{$certfile};
+
+    my $most_expensive_dep = 0;
+    my $most_expensive_dep_total = 0;
+
+    if ($certdeps) {
+	foreach my $dep (@{$certdeps}) {
+	    if ($dep =~ /\.(cert|acl2x)$/) {
+		my $this_dep_costs = compute_cost_paths_aux($dep, $deps, $basecosts, $costs, $warnings);
+		if (! $this_dep_costs) {
+		    if ($dep eq $certfile) {
+			push(@{$warnings}, "Self-dependency in $dep");
+		    } else {
+			push(@{$warnings}, "Dependency loop involving $dep and $certfile");
+		    }
+		}
+	    }
+	}
+
+	($most_expensive_dep, $most_expensive_dep_total) = find_most_expensive($certdeps, $costs);
+    }
+    my %entry = ( "totaltime" => $most_expensive_dep_total +
+		                 ($certtime ? $certtime : 0.000001), 
+		  "maxpath" => $most_expensive_dep );
+
+    $costs->{$certfile} = \%entry;
+    return $costs->{$certfile};
+}
+
+sub compute_cost_paths {
+    my $deps = shift;
+    my $basecosts = shift;
+    my $costs = shift;
+    my $warnings = shift;
+    
+    foreach my $certfile (keys %{$deps}) {
+	compute_cost_paths_aux($certfile, $deps, $basecosts, $costs, $warnings);
+    }
+}
+
+	
+
 sub make_costs_table_aux {
 
 # make_costs_table_aux(file, deps, costs, warnings) -> cost
@@ -314,17 +408,12 @@ sub critical_path_report {
 # format per the value of htmlp.
 
     my $costs = shift;
+    my $basecosts = shift;
+    my $savings = shift;
+    my $topfile = shift;
     my $htmlp = shift;
+    my $short = shift;
 
-    my $file;
-    my $maxcost = -1;
-    while ((my $key, my $value) = each %{$costs}) {
-	my $cumtime = $value->{"totaltime"};
-	if ($cumtime > $maxcost) {
-	    $maxcost = $cumtime;
-	    $file = $key;
-	}
-    }
 
     my $ret;
 
@@ -338,19 +427,25 @@ sub critical_path_report {
     }
     else {
 	$ret = "Critical Path\n\n"
-	     . sprintf("%-50s %10s %10s\n", "File", "Cumulative", "Time");
+	     . sprintf("%-50s %10s %10s %10s %10s\n", "File", "Cumulative", "Time", "Speedup", "Remove");
     }
 
+    my $file = $topfile;
     while ($file) 
     {
 	my $filecosts = $costs->{$file};
-	my $shortcert = $filecosts->{"shortcert"};
-	my $selftime = $filecosts->{"selftime"};
+	my $shortcert = short_cert_name($file, $short);
+	my $selftime = $basecosts->{$file};
 	my $cumtime = $filecosts->{"totaltime"};
+	my $filesavings = $savings->{$file};
+	my $sp_savings = $filesavings->{"speedup"};
+	my $rem_savings = $filesavings->{"remove"};
 
 	my $selftime_pr = $selftime ? human_time($selftime, 1) : "[Error]";
 	my $cumtime_pr = $cumtime ? human_time($cumtime, 1) : "[Error]";
-   
+	my $spsav_pr = human_time($sp_savings, 1);
+	my $remsav_pr = human_time($rem_savings, 1);
+
 	if ($htmlp) {
 	    $ret .= "<tr class=\"critpath_row\">"
 	 	 . "<td class=\"critpath_name\">$shortcert</td>"
@@ -359,7 +454,7 @@ sub critical_path_report {
 		 . "</tr>\n";
 	}
 	else {
-	    $ret .= sprintf("%-50s %10s %10s\n", $shortcert, $cumtime_pr, $selftime_pr);
+	    $ret .= sprintf("%-50s %10s %10s %10s %10s\n", $shortcert, $cumtime_pr, $selftime_pr, $spsav_pr, $remsav_pr);
 	}
 
 	$file = $filecosts->{"maxpath"};
@@ -395,7 +490,9 @@ sub individual_files_report {
 # format, per the value of htmlp.
 
     my $costs = shift;
+    my $basecosts = shift;
     my $htmlp = shift;
+    my $short = shift;
 
     my @sorted = reverse sort { ($costs->{$a}->{"totaltime"} + 0.0) <=> ($costs->{$b}->{"totaltime"} + 0.0) } keys(%{$costs});
     my $ret;
@@ -412,17 +509,17 @@ sub individual_files_report {
     foreach my $name (@sorted)
     {
 	my $entry = $costs->{$name};
-	my $short = $entry->{"shortcert"};
+	my $shortname = short_cert_name($name, $short);
 	my $cumul = $entry->{"totaltime"} ? human_time($entry->{"totaltime"}, 1) : "[Error]";
-	my $time = $entry->{"selftime"} ? human_time($entry->{"selftime"}, 1) : "[Error]";
-	my $depname = $entry->{"maxpath"} ? $costs->{$entry->{"maxpath"}}->{"shortcert"} : "[None]";
-	my $timeclass = classify_book_time($entry->{"selftime"});
+	my $time = $basecosts->{$name} ? human_time($basecosts->{$name}, 1) : "[Error]";
+	my $depname = $entry->{"maxpath"} ? short_cert_name($entry->{"maxpath"}, $short) : "[None]";
+	my $timeclass = classify_book_time($basecosts->{$name});
 
 	if ($htmlp)
 	{
 	    $ret .= "<tr class=\"indiv_row\">";
 	    $ret .= "<td class=\"indiv_file\">";
-	    $ret .= "  <span class=\"indiv_file_name\">$short</span><br/>";
+	    $ret .= "  <span class=\"indiv_file_name\">$shortname</span><br/>";
 	    $ret .= "  <span class=\"indiv_crit_dep\">--> $depname</span>";
 	    $ret .= "</td>";
 	    $ret .= "<td class=\"indiv_cumul\">$cumul</td>";
@@ -430,7 +527,7 @@ sub individual_files_report {
 	    $ret .= "</tr>\n";
 	} else {
 	    $ret .= sprintf("%-50s %10s %10s  --->  %-50s\n",
-			    $short, $cumul, $time, $depname);
+			    $shortname, $cumul, $time, $depname);
 	}
     }
     
