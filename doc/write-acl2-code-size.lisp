@@ -226,26 +226,26 @@
                (doc-sizes (global-val 'documentation-alist (w state))
                           0 0 0 0 0 0 0 0)
                (pprogn
-                (fms "CODE:~| ~c0 lines, ~c1 characters"
+                (fms "CODE LINES:~| ~c0 lines, ~c1 characters"
                      (list (cons #\0 (cons (- lines-code lines-doc-code)
                                            7))
                            (cons #\1 (cons (- chars-code chars-doc-code)
                                            9)))
                      ch state nil)
-                (fms "COMMENTS:~| ~c0 lines, ~c1 characters"
+                (fms "COMMENT LINES:~| ~c0 lines, ~c1 characters"
                      (list (cons #\0 (cons (- lines-comm lines-doc-comm)
                                            7))
                            (cons #\1 (cons (- chars-comm chars-doc-comm)
                                            9)))
                      ch state nil)
-                (fms "BLANK (excluding documentation):~| ~c0 lines, ~c1 ~
+                (fms "BLANK LINES (excluding documentation):~| ~c0 lines, ~c1 ~
                       characters"
                      (list (cons #\0 (cons (- lines-blank lines-doc-blank)
                                            7))
                            (cons #\1 (cons (- chars-blank chars-doc-blank)
                                            9)))
                      ch state nil)
-                (fms "DOCUMENTATION:~| ~c0 lines, ~c1 characters"
+                (fms "DOCUMENTATION LINES:~| ~c0 lines, ~c1 characters"
                      (list (cons #\0 (cons lines-doc-total 7))
                            (cons #\1 (cons chars-doc-total 9)))
                      ch state nil)

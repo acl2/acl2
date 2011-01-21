@@ -1589,6 +1589,7 @@ README
 bash.lisp
 beta-reduce.lisp
 book-thms.lisp
+book-thms-example.lisp
 callers-and-ancestors.lisp
 check-acl2-exports.lisp
 computed-hint-rewrite.lisp
@@ -3351,6 +3352,8 @@ Makefile
 acl2-customization.lsp
 # The following generated file is distributed but is not in the svn repository:
 acl2-code-size.txt
+all.acl2
+all.lisp
 base.lisp
 bookdoc.lsp
 cert.acl2

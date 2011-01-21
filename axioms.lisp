@@ -9585,6 +9585,9 @@
   To view the documentation in a web browser, open a browser to file
   ~c[doc/HTML/acl2-doc.html] under your ACL2 source directory, or just go to
   the ACL2 home page at ~url[http://www.cs.utexas.edu/users/moore/acl2/].
+  Alternatively, follow a link on the ACL2 home page to the new ``xdoc''
+  version of the manual, which can be found locally after running a regression
+  by pointing your web browser at file ~c[books/xdoc/manual/preview.html].
 
   To use Emacs Info (inside Emacs), first load distributed file
   ~c[emacs/emacs-acl2.el] (perhaps inside your ~c[.emacs] file) and then
@@ -22516,6 +22519,77 @@
               ,@(mv-set-mvs (cdr bindings) 1)
               ,(caar bindings))))))
 
+(defmacro mv? (&rest l)
+
+; Why not simply extend mv and mv-let to handle single values?  The reason is
+; that there seem to be problems with defining (mv x) to be (list x) and other
+; problems with defining (mv x) to be x.
+
+; To see potential problems with defining (mv x) = (list x), consider this
+; form:
+
+; (mv-let (x)
+;         (f y)
+;         (g x y))
+
+; We presumably want it to expand as follows.
+
+; (let ((x (f y)))
+;   (g x y))
+
+; But suppose (f y) is defined to be (mv (h y)).  Then the above mv-let would
+; instead have to expand to something like this:
+
+; (let ((x (mv-nth 0 (f y)))) ; or, car instead of (mv-nth 0 ...)
+;   (g x y))
+
+; So in order to extend mv and mv-let to handle single values, we'd need to
+; look carefully at the rather subtle mv and mv-nth code.  It seems quite
+; possible that some show-stopping reason would emerge why this approach can't
+; work out, or if it does then it might be easy to make mistakes in the
+; implementation.  Note that we'd need to consider both the cases of
+; #+acl2-mv-as-values and #acl2-mv-as-values.
+
+; In a way it seems more natural anyhow that (mv x) is just x, since we don't
+; wrap single-valued returns into a list.  But that would ruin our simple story
+; that mv is logically just list, instead giving us:
+
+; (mv x) = x
+; (mv x1 x2 ...) = (list x1 x2 ...)
+
+; Thus it seems safest, and potentially less confusing to users, to introduce
+; mv? and mv?-let to be used in cases that single-valued returns are to be
+; allowed (presumably in generated code).
+
+  ":Doc-Section ACL2::Programming
+
+  returning a single value~/
+
+  ~c[Mv?] is designed to work with ~c[mv?-let], generalizing how ~ilc[mv] works
+  with ~ilc[mv-let] by allowing the binding of a single variable.  For example,
+  the following form is legal.
+  ~bv[]
+  (mv?-let (y)
+           (mv? (f x))
+           (declare (type integer y))
+           (g x y z))
+  ~ev[]
+  The expression above is equivalent to the following expression, because
+  ~c[(mv? form)] expands to ~c[form] for any expression, ~c[form].
+  ~bv[]
+  (let ((y (f x)))
+    (declare (type integer y))
+    (g x y z))
+  ~ev[]
+
+  Logically, ~c[(mv? x)] is the same as ~c[x], while ~c[(mv? v1 v2 ...)] is the
+  same as ~c[(list v1 v2 ...)].  Also ~pl[mv] and ~pl[mv?-let].~/~/"
+
+  (declare (xargs :guard l))
+  (cond ((null (cdr l))
+         (car l))
+        (t `(mv ,@l))))
+
 (defmacro mv-let (&rest rst)
 
 ; Warning: If the final logical form of a translated mv-let is
@@ -22668,6 +22742,61 @@
                               ans))
                     (nreverse ans)))
             ,@ (cddr rst)))))
+
+(defmacro mv?-let (vars form &rest rst)
+
+; See the comment in mv? for reasons why we do not simply extend mv-let to
+; handle single values.
+
+  ":Doc-Section ACL2::Programming
+
+  calling possibly multi-valued ACL2 functions~/
+
+  ~c[Mv?-let] is a macro that extends the macro ~ilc[mv-let] by allowing a
+  single variable to be bound.  Thus, the syntax is the same as that of
+  ~ilc[mv-let] except that ~c[mv?-let] is permitted to bind a single variable
+  to a form that produces a single value.  The macros ~c[mv?-let} and ~ilc[mv?]
+  are provided to facilitate the writing of macros that traffic in expressions
+  that could return one or more (multiple) values.
+
+  For example, the form
+  ~bv[]
+  (mv?-let (y)
+           (f x)
+           (declare (type integer y))
+           (g x y z))
+  ~ev[]
+  is equivalent to the following form.
+  ~bv[]
+  (let ((y (f x)))
+    (declare (type integer y))
+    (g x y z))
+  ~ev[]~/
+
+  Calls of ~c[mv?-let] and of ~ilc[mv-let] are equivalent when the first
+  argument contains at least two variables; ~pl[mv-let] for documentation.  In
+  the case of binding a single variable, the general form is
+  ~bv[]
+  (mv?-let (var)
+           term
+           (declare ...) ... (declare ...)
+           body)           
+  ~ev[]
+  and this is equivalent to the following form (~pl[let]).
+  ~bv[]
+  (let ((var term))
+    (declare ...) ... (declare ...)
+    body)
+  ~ev[]
+
+  Also ~pl[mv?].~/"
+
+  (declare (xargs :guard (and (true-listp vars)
+                              vars)))
+  (cond ((null (cdr vars))
+         `(let ((,(car vars) ,form))
+            ,@rst))
+        (t `(mv-let ,vars ,form ,@rst))))
 
 #+acl2-loop-only
 (defun mv-list (input-arity x)

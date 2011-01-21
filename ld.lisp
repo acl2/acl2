@@ -17258,6 +17258,9 @@
 
   ~st[NEW FEATURES]
 
+  New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of
+  ~ilc[mv-let] and ~ilc[mv] (respectively) to the case of a single value.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   ~st[BUG FIXES]
@@ -17289,7 +17292,8 @@
   purpose.
 
   Statistics on ACL2 code size may be found in distributed file
-  ~c[doc/acl2-code-size.txt].
+  ~c[doc/acl2-code-size.txt].  This file and other information can be found in
+  a new ~il[documentation] topic, ~il[about-acl2].
 
   ~st[EMACS SUPPORT]
 
@@ -23504,6 +23508,29 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   (declare (ignore exec-filename extra-startup-string))
   nil ; Won't get to here in GCL and perhaps other lisps
   )
+
+(deflabel about-acl2
+  :doc
+  ":Doc-Section about-acl2
+
+  about ACL2~/
+
+  This is ACL2 Version 4.2, copyright (C) 2011 University of Texas at Austin,
+  authored by Matt Kaufmann and J Strother Moore.
+
+  For past versions, see
+  ~url[http://www.cs.utexas.edu/users/moore/acl2/current/other-releases.html].
+
+  For statistics on ACL2 code size, see file ~c[doc/acl2-code-size.txt].
+
+  ~l[documentation] for how to access the user's manual.
+
+  See the home page at ~url[http://www.cs.utexas.edu/users/moore/acl2/] for
+  additional information including tutorials, applications, mailing lists,
+  related publications, libraries, ACL2 workshops and seminars, installation
+  instructions, and acknowledgements.
+
+  ~/~/")
 
 ; We now develop code for without-evisc.
 
