@@ -68,6 +68,32 @@
 
 (encapsulate
  ()
+ (local (in-theory (disable floor-positive
+                            floor-negative
+                            default-less-than-1
+                            default-less-than-2
+                            default-times-1
+                            default-times-2
+                            floor-x-y-=--1
+                            floor-x-y-=-1
+                            rationalp-x
+                            default-floor-ratio
+                            reduce-rationalp-*
+                            acl2-numberp-x
+                            linear-floor-bounds-3
+                            mod-zero
+                            mod-positive
+                            mod-negative
+                            mod-nonpositive
+                            mod-nonnegative
+                            floor-nonnegative
+                            floor-nonpositive
+                            rfix
+                            normalize-factors-scatter-exponents
+                            normalize-terms-such-as-a/a+b-+-b/a+b
+                            mod-x-y-=-x
+                            mod-x-y-=-x-y)))
+
  (local
   (defthm floor-sum-cases-helper-a
     (implies (and (rationalp (/ x z))
@@ -131,18 +157,45 @@
 
  )
 
-(defthm |(mod (+ x y) z)|
-  (implies (and (rationalp (/ x z))
-                (rationalp (/ y z)))
-           (equal (mod (+ x y) z)
-		  (if (<= 0 z)
-		      (if (< (+ (mod x z) (mod y z)) z)
-			  (+ (mod x z) (mod y z))
-			(+ (mod x z) (mod y z) (- z)))
-		    (if (< z (+ (mod x z) (mod y z)))
-			(+ (mod x z) (mod y z))
-		      (+ (mod x z) (mod y z) (- z))))))
-  :hints (("Goal" :in-theory (enable mod))))
+(encapsulate
+ ()
+ (local (in-theory (disable floor-positive
+                            floor-negative
+                            default-less-than-1
+                            default-less-than-2
+                            default-times-1
+                            default-times-2
+                            floor-x-y-=--1
+                            floor-x-y-=-1
+                            rationalp-x
+                            default-floor-ratio
+                            reduce-rationalp-*
+                            acl2-numberp-x
+                            linear-floor-bounds-3
+                            mod-zero
+                            mod-positive
+                            mod-negative
+                            mod-nonpositive
+                            mod-nonnegative
+                            floor-nonnegative
+                            floor-nonpositive
+                            rfix
+                            normalize-factors-scatter-exponents
+                            normalize-terms-such-as-a/a+b-+-b/a+b
+                            mod-x-y-=-x
+                            mod-x-y-=-x-y)))
+ (defthm |(mod (+ x y) z)|
+   (implies (and (rationalp (/ x z))
+                 (rationalp (/ y z)))
+            (equal (mod (+ x y) z)
+                   (if (<= 0 z)
+                       (if (< (+ (mod x z) (mod y z)) z)
+                           (+ (mod x z) (mod y z))
+                         (+ (mod x z) (mod y z) (- z)))
+                     (if (< z (+ (mod x z) (mod y z)))
+                         (+ (mod x z) (mod y z))
+                       (+ (mod x z) (mod y z) (- z))))))
+   :hints (("Goal" :in-theory (enable mod)))))
 
 
 
@@ -168,39 +221,166 @@
                          floor-positive))))
 
 
+
+(local
+ (defthm crock-xxx33-helper
+   ;; Jared reordered hyps to speed up the proofs
+   (implies (and (equal 0 (+ md0 (* j z)))
+                 (not (equal z 0))
+                 (acl2-numberp md0)
+                 (acl2-numberp j)
+                 (acl2-numberp z))
+            (equal (* md0 (/ z)) 
+                   (- j)))
+   :rule-classes nil))
+
+(local
+ (defthm crock-xxx33a
+   ;; Jared reordered hyps to speed up the proofs
+   (implies (and (equal 0 (+ md0 (* j z)))
+                 (not (equal z 0))
+                 (acl2-numberp md0)
+                 (integerp j)
+                 (acl2-numberp z))
+            (integerp (* md0 (/ z))))
+   :hints (("Goal" :use crock-xxx33-helper))))
+
 (encapsulate
- ()
- (local
-  (defthm crock-xxx33-helper
-    ;; Jared reordered hyps to speed up the proofs
-    (implies (and (equal 0 (+ md0 (* j z)))
-                  (not (equal z 0))
-                  (acl2-numberp md0)
-		  (acl2-numberp j)
-		  (acl2-numberp z))
-	     (equal (* md0 (/ z)) 
-                    (- j)))
-    :rule-classes nil))
+  ()
 
- (local
-  (defthm crock-xxx33a
-    ;; Jared reordered hyps to speed up the proofs
-    (implies (and (equal 0 (+ md0 (* j z)))
-                  (not (equal z 0))
-                  (acl2-numberp md0)
-		  (integerp j)
-		  (acl2-numberp z))
-	     (integerp (* md0 (/ z))))
-    :hints (("Goal" :use crock-xxx33-helper))))
+  (local (in-theory (e/d ()
+                         (normalize-factors-scatter-exponents
+                          normalize-factors-gather-exponents
+                          default-mod-ratio
+                          normalize-terms-such-as-1/ax+bx
+                          |(* c (* d x))|
+                          default-less-than-2
+                          default-less-than-1
+                          reduce-rational-multiplicative-constant-<
+                          reduce-multiplicative-constant-<
+                          remove-strict-inequalities
+                          reduce-additive-constant-<
+                          integerp-<-constant
+                          constant-<-integerp
+                          prefer-positive-exponents-scatter-exponents-<
+                          mod-zero rationalp-/
+                          (:REWRITE |(< c (/ x)) positive c --- present in goal|)
+                          (:REWRITE |(< c (/ x)) positive c --- obj t or nil|)
+                          (:REWRITE |(< c (/ x)) negative c --- present in goal|)
+                          (:REWRITE |(< c (/ x)) negative c --- obj t or nil|)
+                          (:REWRITE |(< c (- x))|)
+                          (:REWRITE |(< (/ x) c) positive c --- present in goal|)
+                          (:REWRITE |(< (/ x) c) positive c --- obj t or nil|)
+                          (:REWRITE |(< (/ x) c) negative c --- present in goal|)
+                          (:REWRITE |(< (/ x) c) negative c --- obj t or nil|)
+                          (:REWRITE |(< (/ x) (/ y))|)
+                          (:REWRITE |(< (- x) c)|)
+                          (:REWRITE |(< (- x) (- y))|)
+                          (:rewrite floor-=-x/y . 2)
+                          default-divide
+                          simplify-terms-such-as-ax+bx-<-0-rational-remainder
+                          meta-rationalp-correct
+                          simplify-terms-such-as-ax+bx-<-0-rational-common
+                          simplify-terms-such-as-0-<-ax+bx-rational-remainder
+                          simplify-terms-such-as-0-<-ax+bx-rational-common
+                          mod-positive
+                          mod-nonpositive
+                          mod-nonnegative
+                          mod-negative
+                          linear-floor-bounds-2
+                          |(equal (if a b c) x)|
+                          |(< (/ x) 0)|
+                          |(< (* x y) 0)|
+                          (:REWRITE |(< 0 (* x y))|)
+                          (:REWRITE |(< 0 (/ x))|)
+                          (:REWRITE |(equal (- x) (- y))|)
+                          (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL)
+                          (:REWRITE EQUAL-OF-PREDICATES-REWRITE)
+                          (:REWRITE |(equal c (/ x))|)
+                          (:REWRITE |(equal c (- x))|)
+                          (:REWRITE |(equal (/ x) c)|)
+                          (:REWRITE |(equal (/ x) (/ y))|)
+                          (:REWRITE |(equal (- x) c)|)
+                          (:REWRITE |(< (+ c/d x) y)|)
+                          (:REWRITE |(< (+ (- c) x) y)|)
+                          (:REWRITE ACL2-NUMBERP-X)
+                          )
+                         ((:rewrite mod-zero . 3)))))
 
- (defthm rewrite-floor-mod
-   (implies (and (rationalp (/ x y))
-		 (rationalp (/ x z))
-		 (rationalp (/ (mod x y) z))
-		 (equal i (/ y z))
-		 (integerp i))
-	    (equal (floor (mod x y) z)
-		   (- (floor x z) (* i (floor x y))))))
+
+
+  (defthm rewrite-floor-mod
+    (implies (and (rationalp (/ x y))
+                  (rationalp (/ x z))
+                  (rationalp (/ (mod x y) z))
+                  (equal i (/ y z))
+                  (integerp i))
+             (equal (floor (mod x y) z)
+                    (- (floor x z) (* i (floor x y)))))))
+
+
+
+(encapsulate
+  ()
+
+  (local (in-theory (e/d ()
+                         (normalize-factors-scatter-exponents
+                          normalize-factors-gather-exponents
+                          default-mod-ratio
+                          normalize-terms-such-as-1/ax+bx
+                          |(* c (* d x))|
+                          default-less-than-2
+                          default-less-than-1
+                          reduce-rational-multiplicative-constant-<
+                          reduce-multiplicative-constant-<
+                          remove-strict-inequalities
+                          reduce-additive-constant-<
+                          integerp-<-constant
+                          constant-<-integerp
+                          prefer-positive-exponents-scatter-exponents-<
+                          floor-zero rationalp-/
+                          (:REWRITE |(< c (/ x)) positive c --- present in goal|)
+                          (:REWRITE |(< c (/ x)) positive c --- obj t or nil|)
+                          (:REWRITE |(< c (/ x)) negative c --- present in goal|)
+                          (:REWRITE |(< c (/ x)) negative c --- obj t or nil|)
+                          (:REWRITE |(< c (- x))|)
+                          (:REWRITE |(< (/ x) c) positive c --- present in goal|)
+                          (:REWRITE |(< (/ x) c) positive c --- obj t or nil|)
+                          (:REWRITE |(< (/ x) c) negative c --- present in goal|)
+                          (:REWRITE |(< (/ x) c) negative c --- obj t or nil|)
+                          (:REWRITE |(< (/ x) (/ y))|)
+                          (:REWRITE |(< (- x) c)|)
+                          (:REWRITE |(< (- x) (- y))|)
+                          (:rewrite floor-=-x/y . 2)
+                          default-divide
+                          simplify-terms-such-as-ax+bx-<-0-rational-remainder
+                          meta-rationalp-correct
+                          simplify-terms-such-as-ax+bx-<-0-rational-common
+                          simplify-terms-such-as-0-<-ax+bx-rational-remainder
+                          simplify-terms-such-as-0-<-ax+bx-rational-common
+                          floor-positive
+                          floor-nonpositive
+                          floor-nonnegative
+                          floor-negative
+                          linear-floor-bounds-2
+                          |(equal (if a b c) x)|
+                          |(< (/ x) 0)|
+                          |(< (* x y) 0)|
+                          (:REWRITE |(< 0 (* x y))|)
+                          (:REWRITE |(< 0 (/ x))|)
+                          (:REWRITE |(equal (- x) (- y))|)
+                          (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL)
+                          (:REWRITE EQUAL-OF-PREDICATES-REWRITE)
+                          (:REWRITE |(equal c (/ x))|)
+                          (:REWRITE |(equal c (- x))|)
+                          (:REWRITE |(equal (/ x) c)|)
+                          (:REWRITE |(equal (/ x) (/ y))|)
+                          (:REWRITE |(equal (- x) c)|)
+                          (:REWRITE |(< (+ c/d x) y)|)
+                          (:REWRITE |(< (+ (- c) x) y)|)
+                          (:REWRITE ACL2-NUMBERP-X)
+                          )
+                         ((:rewrite mod-zero . 3)))))
 
  (defthm rewrite-mod-mod
    (implies (and (acl2-numberp z)

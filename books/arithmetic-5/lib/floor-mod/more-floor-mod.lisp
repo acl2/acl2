@@ -376,7 +376,136 @@
                              EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
                              EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE
                              EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B
-                             EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A)))
+                             EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
+                             (:TYPE-PRESCRIPTION MOD-ZERO . 4)
+                             (:REWRITE MOD-X-Y-=-X . 3)
+                             (:REWRITE MOD-X-Y-=-X . 4)
+                             (:META META-INTEGERP-CORRECT)
+                             (:REWRITE
+                                    SIMPLIFY-PRODUCTS-SCATTER-EXPONENTS-<)
+                             (:REWRITE MOD-ZERO . 4)
+                             (:TYPE-PRESCRIPTION INTEGERP-MOD-2)
+                             (:REWRITE DEFAULT-TIMES-2)
+                             (:REWRITE DEFAULT-TIMES-1)
+                             (:TYPE-PRESCRIPTION MOD-ZERO . 3)
+                             (:TYPE-PRESCRIPTION MOD-ZERO . 2)
+                             (:TYPE-PRESCRIPTION MOD-ZERO . 1)
+                             (:TYPE-PRESCRIPTION MOD-POSITIVE . 2)
+                             (:TYPE-PRESCRIPTION MOD-POSITIVE . 1)
+                             (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2)
+                             (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1)
+                             (:REWRITE MOD-X-Y-=-X+Y . 3)
+                             (:REWRITE MOD-X-Y-=-X-Y . 3)
+                             (:REWRITE |(integerp (expt x n))|)
+                             (:REWRITE MOD-X-Y-=-X-Y . 2)
+                             (:REWRITE DEFAULT-MOD-RATIO)
+                             (:REWRITE
+                                   SIMPLIFY-PRODUCTS-SCATTER-EXPONENTS-EQUAL)
+                             (:REWRITE MOD-X-Y-=-X+Y . 2)
+                             (:REWRITE NORMALIZE-FACTORS-SCATTER-EXPONENTS)
+                             (:REWRITE DEFAULT-PLUS-2)
+                             (:REWRITE
+                                PREFER-POSITIVE-EXPONENTS-SCATTER-EXPONENTS-EQUAL)
+                             (:REWRITE
+                                PREFER-POSITIVE-EXPONENTS-SCATTER-EXPONENTS-<)
+                             (:REWRITE DEFAULT-LESS-THAN-2)
+                             (:REWRITE DEFAULT-LESS-THAN-1)
+                             (:REWRITE DEFAULT-PLUS-1)
+                             (:REWRITE INTEGERP-/)
+                             (:REWRITE |(< c (- x))|)
+                             (:REWRITE BUBBLE-DOWN-*-MATCH-1)
+                             (:REWRITE |(< (- x) c)|)
+                             (:REWRITE |(* (expt x m) (expt x n))|)
+                             (:REWRITE INTEGERP-MINUS-X)
+                             (:REWRITE |(< (- x) (- y))|)
+                             (:REWRITE |(< 0 (/ x))|)
+                             (:REWRITE
+                                   REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<)
+                             (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<)
+                             (:REWRITE REDUCE-ADDITIVE-CONSTANT-<)
+                             (:REWRITE
+                                |(< c (/ x)) positive c --- present in goal|)
+                             (:REWRITE
+                                   |(< c (/ x)) positive c --- obj t or nil|)
+                             (:REWRITE
+                                |(< c (/ x)) negative c --- present in goal|)
+                             (:REWRITE
+                                   |(< c (/ x)) negative c --- obj t or nil|)
+                             (:REWRITE
+                                |(< (/ x) c) positive c --- present in goal|)
+                             (:REWRITE
+                                   |(< (/ x) c) positive c --- obj t or nil|)
+                             (:REWRITE
+                                |(< (/ x) c) negative c --- present in goal|)
+                             (:REWRITE
+                                   |(< (/ x) c) negative c --- obj t or nil|)
+                             (:REWRITE |(< (/ x) (/ y))|)
+                             (:REWRITE REMOVE-STRICT-INEQUALITIES)
+                             (:REWRITE INTEGERP-<-CONSTANT)
+                             (:REWRITE CONSTANT-<-INTEGERP)
+                             (:REWRITE MOD-X-Y-=-X . 2)
+                             (:REWRITE |(mod (+ x (mod a b)) y)|)
+                             (:REWRITE |(mod (+ x (- (mod a b))) y)|)
+                             (:REWRITE DEFAULT-DIVIDE)
+                             (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX)
+                             (:REWRITE DEFAULT-MINUS)
+                             (:REWRITE |(equal (- x) c)|)
+                             (:LINEAR
+                                    EXPT-IS-WEAKLY-INCREASING-FOR-BASE->-1)
+                             (:LINEAR
+                                  EXPT-IS-WEAKLY-DECREASING-FOR-POS-BASE-<-1)
+                             (:LINEAR EXPT-IS-INCREASING-FOR-BASE->-1)
+                             (:LINEAR EXPT-IS-DECREASING-FOR-POS-BASE-<-1)
+                             (:LINEAR EXPT->=-1-ONE)
+                             (:REWRITE DEFAULT-MOD-1)
+                             (:TYPE-PRESCRIPTION
+                                    RATIONALP-EXPT-TYPE-PRESCRIPTION)
+                             (:REWRITE |(equal (- x) (- y))|)
+                             (:REWRITE |(* c (* d x))|)
+                             (:REWRITE MOD-CANCEL-*-REWRITING-GOAL-LITERAL)
+                             (:REWRITE MOD-CANCEL-*-CONST)
+                             (:REWRITE |(equal (/ x) c)|)
+                             (:REWRITE
+                                |(mod x (* y (/ z))) rewriting-goal-literal|)
+                             (:REWRITE
+                                |(mod (* x (/ y)) z) rewriting-goal-literal|)
+                             (:REWRITE |(< 0 (* x y))|)
+                             (:REWRITE BUBBLE-DOWN-*-BUBBLE-DOWN)
+                             (:LINEAR EXPT-X->=-X)
+                             (:LINEAR EXPT-X->-X)
+                             (:LINEAR EXPT->=-1-TWO)
+                             (:LINEAR EXPT->-1-TWO)
+                             (:LINEAR EXPT->-1-ONE)
+                             (:LINEAR EXPT-<=-1-TWO)
+                             (:LINEAR EXPT-<=-1-ONE)
+                             (:LINEAR EXPT-<-1-TWO)
+                             (:LINEAR EXPT-<-1-ONE)
+                             (:REWRITE
+                                    REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL)
+                             (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL)
+                             (:REWRITE |(equal c (/ x))|)
+                             (:REWRITE |(equal (/ x) (/ y))|)
+                             (:REWRITE |(equal c (- x))|)
+                             (:REWRITE
+                                SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER)
+                             (:REWRITE
+                                SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-COMMON)
+                             (:REWRITE |(< (/ x) 0)|)
+                             (:REWRITE |(< (* x y) 0)|)
+                             (:REWRITE
+                                SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER)
+                             (:REWRITE
+                                SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON)
+                             (:REWRITE EQUAL-OF-PREDICATES-REWRITE)
+                             (:TYPE-PRESCRIPTION BUBBLE-DOWN)
+                             (:REWRITE |(* x (if a b c))|)
+                             (:LINEAR EXPT-LINEAR-UPPER-<=)
+                             (:LINEAR EXPT-LINEAR-UPPER-<)
+                             (:LINEAR EXPT-LINEAR-LOWER-<=)
+                             (:LINEAR EXPT-LINEAR-LOWER-<)
+                             (:REWRITE |arith (* c (* d x))|)
+                             (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0)
+                             (:REWRITE |(equal (mod (+ x y) z) x)|))))
 
   (defthm mod-theorem-two-helper-helper
     ;; 37.4 seconds

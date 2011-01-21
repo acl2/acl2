@@ -607,7 +607,9 @@
 	     (nonnegative-integer-quotient (abs i) (abs j)))))
   :hints
   (("Goal"
-    :in-theory (disable truncate-bounds niq-bounds <-*-/-right <-*-/-left)
+    :in-theory (disable truncate-bounds niq-bounds <-*-/-right <-*-/-left
+                        truncate-type default-<-1 default-<-2
+                        integerp-+-minus-*)
     :use ((:instance truncate-bounds (x i) (y j))
 	  (:instance niq-bounds (i (abs i)) (j (abs j))))))
   :doc ":doc-section truncate-lemmas
@@ -1294,7 +1296,9 @@
      (and (integerp (/ x y))
 	  (qr-guard x y))
      (equal (mod x y) 0))))
-  :hints (("Goal" :in-theory (enable linearize-mod)))
+  :hints (("Goal" :in-theory
+           (e/d (linearize-mod)
+                (commutativity-of-*))))
   :doc ":doc-section mod-lemmas
   Rewrite: (MOD x y) = 0, when x/y is an integer; 
   ~/
@@ -1367,17 +1371,19 @@
 
 ;; Added the :rule-classes :rewrite as this seems necessary at times.
 ;; A. Flatau  1-Dec-1994
+;; Changed variable names from i, j to m, n to match RTL and arithmetic-5 --
+;; Sol Swords 1/2011
 (defthm integerp-mod
   (implies
-   (and (integerp i)
-	(integerp j))
-   (integerp (mod i j)))
-  :rule-classes (:type-prescription :rewrite)
+   (and (integerp m)
+	(integerp n))
+   (integerp (mod m n)))
+  :rule-classes (:rewrite :type-prescription)
   :hints
   (("Goal"
     :in-theory (enable mod)))
   :doc ":doc-section mod-lemmas
-  Type-Prescription: (MOD i j) is an integer, when i and j are integers.
+  Type-Prescription: (MOD m n) is an integer, when m and n are integers.
   ~/~/~/")
 
 (defthm mod-bounds
@@ -1457,7 +1463,10 @@
      (>= (mod x y) 0))))
   :hints
   (("Goal"
-    :in-theory (enable linearize-mod)
+    :in-theory (e/d (linearize-mod)
+                    (floor-type-3
+                     floor-type-1
+                     (:type-prescription floor)))
     :use floor-bounds))
   :doc ":doc-section mod-lemmas
   Various: Decide (MOD x y) < 0 and (MOD x y) > 0 based on the sign of
@@ -1626,7 +1635,9 @@
 	   (syntaxp (and (eq x 'x) (eq y 'y) (eq z 'z))))
       (equal (floor (+ x y) z)
 	     (floor (+ (+ (mod x z) (mod y z))
-		       (* (+ (floor x z) (floor y z)) z)) z)))))
+		       (* (+ (floor x z) (floor y z)) z)) z)))
+     :hints(("Goal" :in-theory (disable mod-x-y-=-x+y
+                                        mod-x-y-=-x)))))
 
   (defthm floor-+
     (implies
@@ -1669,7 +1680,9 @@
 	   (syntaxp (and (eq x 'x) (eq y 'y) (eq z 'z))))
       (equal (mod (+ x y) z)
 	     (mod (+ (+ (mod x z) (mod y z))
-		     (* (+ (floor x z) (floor y z)) z)) z)))))
+		     (* (+ (floor x z) (floor y z)) z)) z)))
+     :hints(("Goal" :in-theory (disable mod-x-y-=-x+y
+                                        mod-x-y-=-x)))))
 
   (defthm mod-+
     (implies
@@ -1878,6 +1891,11 @@
 		       (mod (- w x) z))
 		(equal (mod (- (mod x y) w) z)
 		       (mod (- x w) z))))
+  :hints(("Goal" :in-theory (disable mod-x-y-=-x+y
+                                     mod-x-y-=-x
+                                     integerp-mod
+                                     integerp-+-minus-*
+                                     mod-=-0)))
   :doc ":doc-section mod-lemmas
   Rewrite: (MOD (+ w (MOD x y)) z) = (MOD (+ w x) z);
            (MOD (+ (MOD x y) w) z) = (MOD (+ w x) z));
@@ -1932,7 +1950,8 @@
   (implies (and (rationalp x)
 		(rationalp y))
 	   (rationalp (mod x y)))
-  :hints (("Goal" :in-theory (enable mod rationalp-+))))
+  :hints (("Goal" :in-theory (enable mod rationalp-+)))
+  :rule-classes (:rewrite :type-prescription))
 
 #+non-standard-analysis
 (defthm realp-mod

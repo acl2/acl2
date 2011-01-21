@@ -1422,80 +1422,205 @@ and variants
 
 ;;; this next bunch should be generalized to any power of 2
 
-(defthm |(logxor (floor x 2) (floor y 2))|
-  ;; 9.66 seconds
-  (implies (and (integerp x)
-		(integerp y))
-	   (equal (logxor (floor x 2) (floor y 2))
-		  (floor (logxor x y) 2)))
-  :rule-classes ((:rewrite
-		  :corollary
-		  (implies (and (integerp x)
-				(integerp y))
-			   (equal (logxor (floor x 2) (floor y 2))
-				  (floor (logxor x y) 2))))
-		 (:rewrite
-		  :corollary
-		  (implies (and (integerp x)
-				(integerp y)
-				(integerp (* 1/2 y)))
-			   (equal (logxor (floor x 2) (* 1/2 y))
-				  (floor (logxor x y) 2))))
-		 (:rewrite
-		  :corollary
-		  (implies (and (integerp x)
-				(integerp y)
-				(not (integerp (* 1/2 y))))
-			   (equal (logxor (floor x 2) (+ -1/2 (* 1/2 y)))
-				  (floor (logxor x y) 2))))
-		 (:rewrite
-		  :corollary
-		  (implies (and (integerp x)
-				(integerp y)
-				(integerp (* 1/2 x)))
-			   (equal (logxor (* 1/2 x) (floor y 2))
-				  (floor (logxor x y) 2))))
-		 (:rewrite
-		  :corollary
-		  (implies (and (integerp x)
-				(integerp y)
-				(integerp (* 1/2 x))
-				(integerp (* 1/2 y)))
-			   (equal (logxor (* 1/2 x) (* 1/2 y))
-				  (floor (logxor x y) 2))))
-		 (:rewrite
-		  :corollary
-		  (implies (and (integerp x)
-				(integerp y)
-				(integerp (* 1/2 x))
-				(not (integerp (* 1/2 y))))
-			   (equal (logxor (* 1/2 x) (+ -1/2 (* 1/2 y)))
-				  (floor (logxor x y) 2))))
-		 (:rewrite
-		  :corollary
-		  (implies (and (integerp x)
-				(integerp y)
-				(not (integerp (* 1/2 x))))
-			   (equal (logxor (+ -1/2 (* 1/2 x)) (floor y 2))
-				  (floor (logxor x y) 2))))
-		 (:rewrite
-		  :corollary
-		  (implies (and (integerp x)
-				(integerp y)
-				(not (integerp (* 1/2 x)))
-				(integerp (* 1/2 y)))
-			   (equal (logxor (+ -1/2 (* 1/2 x)) (* 1/2 y))
-				  (floor (logxor x y) 2))))
-		 (:rewrite
-		  :corollary
-		  (implies (and (integerp x)
-				(integerp y)
-				(not (integerp (* 1/2 x)))
-				(not (integerp (* 1/2 y))))
-			   (equal (logxor (+ -1/2 (* 1/2 x)) (+ -1/2 (* 1/2 y)))
-				  (floor (logxor x y) 2)))))
-  :hints (("Goal" :in-theory (enable logand
-				     logior))))
+(encapsulate nil
+  (local (in-theory
+          (e/d ()
+               (reduce-additive-constant-<
+                (:REWRITE |(< (- x) c)|)
+                (:TYPE-PRESCRIPTION |(< (logand x y) 0)| . 3)
+                (:TYPE-PRESCRIPTION |(< (logand x y) 0)| . 2)
+                (:TYPE-PRESCRIPTION |(< (logand x y) 0)| . 1)
+                (:LINEAR LOGAND-BOUNDS-POS . 1)
+                (:LINEAR LOGAND-BOUNDS-POS . 2)
+                (:LINEAR LOGAND-BOUNDS-NEG . 2)
+                (:LINEAR LOGAND-BOUNDS-NEG . 1)
+                (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL)
+                (:REWRITE NORMALIZE-ADDENDS)
+                (:REWRITE |(< (+ (- c) x) y)|)
+                (:REWRITE |(< x (/ y)) with (< 0 y)|)
+                (:REWRITE |(<= 1 (* (/ x) y)) with (< x 0)|)
+                (:REWRITE |(<= (* (/ x) y) -1) with (< 0 x)|)
+                (:REWRITE |(<= 1 (* (/ x) y)) with (< 0 x)|)
+                (:REWRITE |(<= (* (/ x) y) -1) with (< x 0)|)
+                (:REWRITE |(< (/ x) y) with (< 0 x)|)
+                (:REWRITE |(<= (/ x) y) with (< 0 x)|)
+                (:REWRITE |(< (* (/ x) y) 1) with (< x 0)|)
+                (:REWRITE |(floor (* x (/ y)) z) not rewriting-goal-literal|)
+                (:REWRITE |(< -1 (* (/ x) y)) with (< 0 x)|)
+                (:REWRITE |(< x (/ y)) with (< y 0)|)
+                (:REWRITE |(<= (/ x) y) with (< x 0)|)
+                (:REWRITE |(< -1 (* (/ x) y)) with (< x 0)|)
+                (:REWRITE |(< (* (/ x) y) 1) with (< 0 x)|)
+                (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<)
+                (:REWRITE |(< (+ c/d x) y)|)
+                (:REWRITE
+                                    NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B)
+                (:REWRITE DEFAULT-LESS-THAN-2)
+                (:REWRITE
+                                    |(floor (+ x y) z) where (< 0 z)| . 3)
+                (:REWRITE PREFER-POSITIVE-ADDENDS-<)
+                (:REWRITE
+                                    |(floor (+ x y) z) where (< 0 z)| . 2)
+                (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS)
+                (:REWRITE THE-FLOOR-ABOVE)
+                (:REWRITE FLOOR-X-Y-=--1 . 2)
+                (:REWRITE
+                                   REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<)
+                (:REWRITE |(* (- x) y)|)
+                (:REWRITE |(< (- x) (- y))|)
+                (:REWRITE |(< (* x y) 0)|)
+                (:REWRITE CONSTANT-<-INTEGERP)
+                (:REWRITE
+                                    SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<)
+                (:REWRITE |(floor x 2)| . 2)
+                (:REWRITE |(< (logior x y) 0)|)
+                (:REWRITE FLOOR-=-X/Y . 1)
+                (:REWRITE
+                                |(< c (/ x)) positive c --- present in goal|)
+                (:REWRITE
+                                   |(< c (/ x)) positive c --- obj t or nil|)
+                (:REWRITE
+                                |(< c (/ x)) negative c --- present in goal|)
+                (:REWRITE
+                                   |(< c (/ x)) negative c --- obj t or nil|)
+                (:REWRITE |(< c (- x))|)
+                (:REWRITE
+                                |(< (/ x) c) positive c --- present in goal|)
+                (:REWRITE
+                                   |(< (/ x) c) positive c --- obj t or nil|)
+                (:REWRITE
+                                |(< (/ x) c) negative c --- present in goal|)
+                (:REWRITE
+                                   |(< (/ x) c) negative c --- obj t or nil|)
+                (:REWRITE |(< (/ x) (/ y))|)
+                (:REWRITE MOD-CANCEL-*-CONST)
+                (:REWRITE REMOVE-STRICT-INEQUALITIES)
+                (:REWRITE INTEGERP-<-CONSTANT)
+                (:REWRITE FLOOR-CANCEL-*-CONST)
+                (:REWRITE MOD-X-Y-=-X+Y . 2)
+                (:REWRITE SIMPLIFY-SUMS-<)
+                (:REWRITE REDUCE-INTEGERP-+)
+                (:META META-INTEGERP-CORRECT)
+                (:LINEAR LOGIOR-BOUNDS-POS . 2)
+                (:LINEAR LOGIOR-BOUNDS-POS . 1)
+                (:LINEAR LOGIOR-BOUNDS-NEG . 2)
+                (:LINEAR LOGIOR-BOUNDS-NEG . 1)
+                (:REWRITE |(* (* x y) z)|)
+                (:REWRITE
+                                    SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL)
+                (:LINEAR MOD-BOUNDS-3)
+                (:REWRITE MOD-X-Y-=-X+Y . 3)
+                (:REWRITE DEFAULT-LOGAND-2)
+                (:REWRITE REMOVE-WEAK-INEQUALITIES)
+                (:REWRITE |(< (logand x y) 0)|)
+                (:REWRITE |(< (/ x) y) with (< x 0)|)
+                (:REWRITE |(< (/ x) 0)|)
+                (:TYPE-PRESCRIPTION |(< 0 (logior x y))| . 2)
+                (:TYPE-PRESCRIPTION |(< 0 (logior x y))| . 1)
+                (:TYPE-PRESCRIPTION |(< (logior x y) 0)| . 2)
+                (:TYPE-PRESCRIPTION |(< (logior x y) 0)| . 1)
+                (:REWRITE SIMPLIFY-SUMS-EQUAL)
+                (:REWRITE CANCEL-MOD-+)
+                (:REWRITE
+                                SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER)
+                (:REWRITE
+                                SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON)
+                (:REWRITE |(equal (/ x) (/ y))|)
+                (:REWRITE |(equal c (/ x))|)
+                (:REWRITE |(equal (/ x) c)|)
+                (:TYPE-PRESCRIPTION MOD-NONNEGATIVE)
+                (:TYPE-PRESCRIPTION INTEGERP-MOD-2)
+                (:TYPE-PRESCRIPTION INTEGERP-MOD-1)
+                (:REWRITE |(< (* x y) 0) rationalp (* x y)|)
+                (:REWRITE DEFAULT-MOD-RATIO)
+                (:TYPE-PRESCRIPTION RATIONALP-MOD)
+                (:REWRITE |(floor x (- y))| . 2)
+                (:REWRITE |(floor (- x) y)| . 2)
+                (:REWRITE EQUAL-OF-PREDICATES-REWRITE)
+                (:REWRITE DEFAULT-LOGAND-1)
+                (:REWRITE |(equal (+ (- c) x) y)|)
+                (:REWRITE |(<= x (/ y)) with (< y 0)|)
+                (:REWRITE LOGAND-CONSTANT-MASK)
+                (:REWRITE |(not (equal (* (/ x) y) -1))|)
+                (:REWRITE |(equal (* (/ x) y) -1)|)
+                (:REWRITE |(mod x 2)| . 2)
+                (:REWRITE |(< x (+ c/d y))|)
+                (:REWRITE |(< y (+ (- c) x))|)
+                (:REWRITE DEFAULT-LOGIOR-2)
+                ))))
+  (defthm |(logxor (floor x 2) (floor y 2))|
+    ;; 9.66 seconds
+    (implies (and (integerp x)
+                  (integerp y))
+             (equal (logxor (floor x 2) (floor y 2))
+                    (floor (logxor x y) 2)))
+    :rule-classes ((:rewrite
+                    :corollary
+                    (implies (and (integerp x)
+                                  (integerp y))
+                             (equal (logxor (floor x 2) (floor y 2))
+                                    (floor (logxor x y) 2))))
+                   (:rewrite
+                    :corollary
+                    (implies (and (integerp x)
+                                  (integerp y)
+                                  (integerp (* 1/2 y)))
+                             (equal (logxor (floor x 2) (* 1/2 y))
+                                    (floor (logxor x y) 2))))
+                   (:rewrite
+                    :corollary
+                    (implies (and (integerp x)
+                                  (integerp y)
+                                  (not (integerp (* 1/2 y))))
+                             (equal (logxor (floor x 2) (+ -1/2 (* 1/2 y)))
+                                    (floor (logxor x y) 2))))
+                   (:rewrite
+                    :corollary
+                    (implies (and (integerp x)
+                                  (integerp y)
+                                  (integerp (* 1/2 x)))
+                             (equal (logxor (* 1/2 x) (floor y 2))
+                                    (floor (logxor x y) 2))))
+                   (:rewrite
+                    :corollary
+                    (implies (and (integerp x)
+                                  (integerp y)
+                                  (integerp (* 1/2 x))
+                                  (integerp (* 1/2 y)))
+                             (equal (logxor (* 1/2 x) (* 1/2 y))
+                                    (floor (logxor x y) 2))))
+                   (:rewrite
+                    :corollary
+                    (implies (and (integerp x)
+                                  (integerp y)
+                                  (integerp (* 1/2 x))
+                                  (not (integerp (* 1/2 y))))
+                             (equal (logxor (* 1/2 x) (+ -1/2 (* 1/2 y)))
+                                    (floor (logxor x y) 2))))
+                   (:rewrite
+                    :corollary
+                    (implies (and (integerp x)
+                                  (integerp y)
+                                  (not (integerp (* 1/2 x))))
+                             (equal (logxor (+ -1/2 (* 1/2 x)) (floor y 2))
+                                    (floor (logxor x y) 2))))
+                   (:rewrite
+                    :corollary
+                    (implies (and (integerp x)
+                                  (integerp y)
+                                  (not (integerp (* 1/2 x)))
+                                  (integerp (* 1/2 y)))
+                             (equal (logxor (+ -1/2 (* 1/2 x)) (* 1/2 y))
+                                    (floor (logxor x y) 2))))
+                   (:rewrite
+                    :corollary
+                    (implies (and (integerp x)
+                                  (integerp y)
+                                  (not (integerp (* 1/2 x)))
+                                  (not (integerp (* 1/2 y))))
+                             (equal (logxor (+ -1/2 (* 1/2 x)) (+ -1/2 (* 1/2 y)))
+                                    (floor (logxor x y) 2)))))
+    :hints (("Goal" :in-theory (enable logior logand)))))
 
 (defthm |(mod (logxor x y) 2)|
   (implies (and (integerp x)

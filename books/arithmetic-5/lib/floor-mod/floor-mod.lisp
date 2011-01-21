@@ -872,19 +872,90 @@ an easy reduction unless the above applies anyway.
  ()
  (local (in-theory (enable floor-zero
                            floor-=-x/y
-                           mod-x-y-=-x+y
-                           not-integerp-1a
-                           not-integerp-1b
-                           not-integerp-2a
-                           not-integerp-2b)))
-
+                           mod-x-y-=-x+y)))
  (local (in-theory (disable mod-zero 
                             default-plus-1
                             default-plus-2
                             default-times-1
                             default-times-2
                             linear-floor-bounds-1
-                            linear-floor-bounds-2)))
+                            linear-floor-bounds-2
+                            (:rewrite mod-x-y-=-x+y . 1)
+                            (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE . 1)
+                            (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 1)
+                            (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 2)
+                            (:TYPE-PRESCRIPTION MOD-NONNEGATIVE)
+                            
+                            (:TYPE-PRESCRIPTION RATIONALP-MOD)
+                            (:TYPE-PRESCRIPTION FLOOR-ZERO . 4)
+                            (:TYPE-PRESCRIPTION FLOOR-ZERO . 3)
+                            (:TYPE-PRESCRIPTION FLOOR-ZERO . 1)
+                            (:REWRITE DEFAULT-MOD-RATIO)
+                            (:TYPE-PRESCRIPTION NOT-INTEGERP-2A)
+                            (:REWRITE FLOOR-=-X/Y . 2)
+                            (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS)
+                            (:REWRITE DEFAULT-LESS-THAN-1)
+                            (:REWRITE DEFAULT-LESS-THAN-2)
+                            (:META META-INTEGERP-CORRECT)
+                            (:REWRITE |(< (/ x) 0)|)
+                            (:REWRITE MOD-X-Y-=-X . 2)
+                            (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX)
+                            (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<)
+                            (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<)
+                            (:REWRITE REDUCE-ADDITIVE-CONSTANT-<)
+                            (:REWRITE |(< c (/ x)) positive c --- present in goal|)
+                            (:REWRITE |(< c (/ x)) positive c --- obj t or nil|)
+                            (:REWRITE |(< c (/ x)) negative c --- present in goal|)
+                            (:REWRITE |(< c (/ x)) negative c --- obj t or nil|)
+                            (:REWRITE |(< (/ x) c) positive c --- present in goal|)
+                            (:REWRITE |(< (/ x) c) positive c --- obj t or nil|)
+                            (:REWRITE |(< (/ x) c) negative c --- present in goal|)
+                            (:REWRITE |(< (/ x) c) negative c --- obj t or nil|)
+                            (:REWRITE |(< (/ x) (/ y))|)
+                            (:REWRITE |(< (- x) (- y))|)
+                            (:REWRITE INTEGERP-<-CONSTANT)
+                            (:REWRITE CONSTANT-<-INTEGERP)
+                            (:REWRITE |(< c (- x))|)
+                            (:REWRITE |(< (- x) c)|)
+                            (:REWRITE FLOOR-X-Y-=-1 . 3)
+                            (:REWRITE FLOOR-X-Y-=-1 . 2)
+                            (:REWRITE DEFAULT-FLOOR-RATIO)
+                            (:TYPE-PRESCRIPTION NOT-INTEGERP-1A)
+                            (:LINEAR LINEAR-FLOOR-BOUNDS-3)
+                            (:REWRITE |(mod x (* y (/ z))) rewriting-goal-literal|)
+                            (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B)
+                            (:REWRITE ARITH-NORMALIZE-FACTORS-SCATTER-EXPONENTS)
+                            (:REWRITE |(< (* x y) 0)|)
+                            (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER)
+                            (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON)
+                            (:REWRITE |(< 0 (/ x))|)
+                            (:REWRITE |(< 0 (* x y))|)
+                            (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER)
+                            (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-COMMON)
+                            (:REWRITE FLOOR-ZERO . 2)
+                            (:REWRITE |arith (* c (* d x))|)
+                            (:REWRITE INTEGERP-MINUS-X)
+                            (:REWRITE |(equal (- x) (- y))|)
+                            (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL)
+                            (:REWRITE |(equal c (/ x))|)
+                            (:REWRITE |(equal (/ x) (/ y))|)
+                            (:REWRITE EQUAL-OF-PREDICATES-REWRITE)
+                            (:REWRITE |(equal c (- x))|)
+                            (:REWRITE |(equal (- x) c)|)
+                            (:REWRITE |(* c (* d x))|)
+                            (:REWRITE DEFAULT-MOD-1)
+                            (:REWRITE |(< (* x y) 0) rationalp (* x y)|)
+                            (:REWRITE |(< 0 (* x y)) rationalp (* x y)|)
+                            (:REWRITE |(floor x (* y (/ z))) rewriting-goal-literal|)
+                            (:REWRITE |(floor (* x (/ y)) z) rewriting-goal-literal|)
+                            (:REWRITE |(mod x (- y))| . 3)
+                            (:REWRITE |(mod x (- y))| . 2)
+                            (:REWRITE |(mod x (- y))| . 1)
+                            (:REWRITE |(mod x (* y (/ z))) not rewriting-goal-literal|)
+                            (:REWRITE |(mod (- x) y)| . 2)
+                            (:REWRITE |(mod (- x) y)| . 1)
+                            (:REWRITE |(mod (* x (/ y)) z) not rewriting-goal-literal|)
+                            (:TYPE-PRESCRIPTION FLOOR-ZERO . 2))))
 
  (defthm |(mod (floor x y) z)|
    (implies (and (syntaxp (rewriting-goal-literal x mfc state))
@@ -955,6 +1026,88 @@ an easy reduction unless the above applies anyway.
  (local (in-theory (enable floor-zero floor-=-x/y
                            ;; why?
                            mod-x-y-=-x+y)))
+
+ (local (in-theory (disable 
+                    (:REWRITE FLOOR-=-X/Y . 2)
+                    (:REWRITE FLOOR-ZERO . 5)
+                    (:REWRITE FLOOR-ZERO . 4)
+                    (:TYPE-PRESCRIPTION FLOOR-ZERO . 4)
+                    (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS)
+                    (:REWRITE DEFAULT-MOD-RATIO)
+                    (:TYPE-PRESCRIPTION FLOOR-ZERO . 3)
+                    (:REWRITE FLOOR-X-Y-=-1 . 2)
+                    (:TYPE-PRESCRIPTION FLOOR-ZERO . 1)
+                    (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE . 1)
+                    (:REWRITE FLOOR-X-Y-=-1 . 3)
+                    (:REWRITE DEFAULT-FLOOR-RATIO)
+                    (:REWRITE DEFAULT-LESS-THAN-1)
+                    (:META META-INTEGERP-CORRECT)
+                    (:REWRITE DEFAULT-LESS-THAN-2)
+                    (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 1)
+                    (:REWRITE |(< (/ x) 0)|)
+                    (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX)
+                    (:REWRITE
+                                   REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<)
+                    (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<)
+                    (:REWRITE
+                                |(< c (/ x)) positive c --- present in goal|)
+                    (:REWRITE
+                                   |(< c (/ x)) positive c --- obj t or nil|)
+                    (:REWRITE
+                                |(< c (/ x)) negative c --- present in goal|)
+                    (:REWRITE
+                                   |(< c (/ x)) negative c --- obj t or nil|)
+                    (:REWRITE
+                                |(< (/ x) c) positive c --- present in goal|)
+                    (:REWRITE
+                                   |(< (/ x) c) positive c --- obj t or nil|)
+                    (:REWRITE
+                                |(< (/ x) c) negative c --- present in goal|)
+                    (:REWRITE
+                                   |(< (/ x) c) negative c --- obj t or nil|)
+                    (:REWRITE |(< (/ x) (/ y))|)
+                    (:REWRITE |(< (- x) (- y))|)
+                    (:REWRITE INTEGERP-<-CONSTANT)
+                    (:REWRITE CONSTANT-<-INTEGERP)
+                    (:REWRITE |(< c (- x))|)
+                    (:REWRITE |(< (- x) c)|)
+                    (:LINEAR LINEAR-FLOOR-BOUNDS-2)
+                    (:REWRITE
+                                    NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B)
+                    (:REWRITE FLOOR-ZERO . 2)
+                    (:REWRITE
+                                    SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL)
+                    (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL)
+                    (:REWRITE INTEGERP-MINUS-X)
+                    (:REWRITE |arith (* c (* d x))|)
+                    (:REWRITE |(< (* x y) 0)|)
+                    (:REWRITE
+                                SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER)
+                    (:REWRITE
+                                SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON)
+                    (:REWRITE |(* c (* d x))|)
+                    (:REWRITE MOD-X-Y-=-X . 2)
+                    (:REWRITE |(< 0 (/ x))|)
+                    (:REWRITE |(< 0 (* x y))|)
+                    (:REWRITE |arith (* c (* d x))|)
+                    (:REWRITE
+                                SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER)
+                    (:REWRITE
+                                SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-COMMON)
+                    (:REWRITE |(equal (/ x) c)|)
+                    (:REWRITE DEFAULT-FLOOR-1)
+                    (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL)
+                    (:REWRITE |(equal c (/ x))|)
+                    (:REWRITE |(equal (/ x) (/ y))|)
+                    (:REWRITE |(equal (- x) (- y))|)
+                    (:REWRITE |(equal c (- x))|)
+                    (:REWRITE |(< (* x y) 0) rationalp (* x y)|)
+                    (:REWRITE |(floor x (* y (/ z))) rewriting-goal-literal|)
+                    (:REWRITE |arith (* (- x) y)|)
+                    (:REWRITE |(< 0 (* x y)) rationalp (* x y)|)
+                    (:REWRITE |(floor x (* y (/ z))) not rewriting-goal-literal|)
+                    (:REWRITE |(floor (* x (/ y)) z) not rewriting-goal-literal|)
+                    (:REWRITE |arith (- (* c x))|))))
 
  (defthm |(floor (floor x y) z)|
    ;; Jared 8.55 seconds
@@ -1554,7 +1707,91 @@ an easy reduction unless the above applies anyway.
         (t
          nil)))
 
-(defthm |(mod (+ x (mod a b)) y)|
+(encapsulate nil
+  (local
+   (in-theory
+    (disable 
+     (:TYPE-PRESCRIPTION MOD-NONNEGATIVE)
+     (:TYPE-PRESCRIPTION RATIONALP-MOD)
+     (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX)
+     (:REWRITE MOD-X-Y-=-X . 4)
+     
+     (:REWRITE PREFER-POSITIVE-ADDENDS-<)
+     (:REWRITE REDUCE-RATIONALP-*)
+     (:REWRITE
+                                    NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B)
+     (:REWRITE RATIONALP-MINUS-X)
+     (:REWRITE |(< c (- x))|)
+     (:REWRITE |(< (- x) c)|)
+     (:REWRITE |(< (- x) (- y))|)
+     (:REWRITE |(rationalp (- x))|)
+     (:REWRITE MOD-X-Y-=-X . 2)
+     (:REWRITE
+                                   REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<)
+     (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<)
+     (:REWRITE INTEGERP-<-CONSTANT)
+     (:REWRITE CONSTANT-<-INTEGERP)
+     (:REWRITE
+                                |(< c (/ x)) positive c --- present in goal|)
+     (:REWRITE
+                                   |(< c (/ x)) positive c --- obj t or nil|)
+     (:REWRITE
+                                |(< c (/ x)) negative c --- present in goal|)
+     (:REWRITE
+                                   |(< c (/ x)) negative c --- obj t or nil|)
+     (:REWRITE
+                                |(< (/ x) c) positive c --- present in goal|)
+     (:REWRITE
+                                   |(< (/ x) c) positive c --- obj t or nil|)
+     (:REWRITE
+                                |(< (/ x) c) negative c --- present in goal|)
+     (:REWRITE
+                                   |(< (/ x) c) negative c --- obj t or nil|)
+     (:REWRITE |(< (/ x) (/ y))|)
+     (:LINEAR MOD-BOUNDS-3)
+     (:REWRITE RATIONALP-/)
+     (:REWRITE MOD-CANCEL-*-REWRITING-GOAL-LITERAL)
+     (:REWRITE MOD-CANCEL-*-CONST)
+     (:REWRITE
+                                |(mod x (* y (/ z))) rewriting-goal-literal|)
+     (:REWRITE
+                                |(mod (* x (/ y)) z) rewriting-goal-literal|)
+     (:META META-INTEGERP-CORRECT)
+     (:REWRITE
+                                    SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL)
+     (:REWRITE |(- (* c x))|)
+     (:REWRITE INTEGERP-MINUS-X)
+     (:REWRITE |(< (* x y) 0)|)
+     (:REWRITE |(< (/ x) 0)|)
+     (:REWRITE
+                                SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER)
+     (:REWRITE
+                                SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON)
+     (:REWRITE |(equal (- x) (- y))|)
+     (:REWRITE
+                                    REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL)
+     (:REWRITE EQUAL-OF-PREDICATES-REWRITE)
+     (:REWRITE |(equal c (/ x))|)
+     (:REWRITE |(equal c (- x))|)
+     (:REWRITE |(equal (/ x) c)|)
+     (:REWRITE |(equal (/ x) (/ y))|)
+     (:REWRITE |(equal (- x) c)|)
+     (:REWRITE |(<= 1 (* x (/ y))) with (< y 0)|)
+     (:REWRITE |(<= 1 (* x (/ y))) with (< 0 y)|)
+     (:REWRITE |(< (* x (/ y)) 1) with (< y 0)|)
+     (:REWRITE |(< (* x (/ y)) 1) with (< 0 y)|)
+     (:REWRITE |(equal (mod (+ x y) z) x)|)
+     (:REWRITE |(< 0 (/ x))|)
+     (:REWRITE |(< 0 (* x y))|)
+     (:REWRITE
+                                SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER)
+     (:REWRITE
+                                SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-COMMON)
+     (:REWRITE |(< (+ c/d x) y)|)
+     (:REWRITE |(< (+ (- c) x) y)|)
+     (:REWRITE |(mod (- x) y)| . 1))))
+
+     (defthm |(mod (+ x (mod a b)) y)|
 ;; Jared 13.42 seconds (some gc)
     (implies (and (acl2-numberp x)
 		  (acl2-numberp y)
@@ -1569,7 +1806,7 @@ an easy reduction unless the above applies anyway.
 		  (equal term (- (mod w z)))
                   (integerp (/ z y)))
              (equal (mod x y)
-                    (mod (+ term w x) y))))
+                    (mod (+ term w x) y)))))
 
 (defun simplify-mod-+-minus-mod-fn (x y mfc state)
   (declare (xargs :guard (pseudo-termp x)))
