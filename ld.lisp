@@ -17282,6 +17282,9 @@
   directory, but only if such a directory exists.  Thanks to Hanbing Liu for
   reporting this issue.
 
+  (GCL only) Fixed a bug that prevented the use of
+  ~ilc[get-output-stream-string$] when the host Lisp is GCL.
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   The HTML documentation no longer has extra newlines in <pre> environments.

@@ -27721,7 +27721,12 @@
                               (wormhole-er 'get-output-stream-string$-fn
                                            (list channel))
                               state-state))
+                         #-(and gcl (not cltl2))
                          ((not (typep stream 'string-stream))
+                          (mv t nil state-state))
+                         #+(and gcl (not cltl2))
+                         ((or (not (typep stream 'stream))
+                              (si::stream-name stream)) ; stream to a file
                           (mv t nil state-state))
                          (t (mv nil
                                 (get-output-stream-string stream)
@@ -27757,7 +27762,8 @@
      (mv-let (erp s state)
              (get-output-stream-string$-fn chan state)
              (cond (erp (er soft ctx
-                            "The channel ~x0 is not associated with output."
+                            "Symbol ~x0 is not associated with a string ~
+                             output channel."
                             chan))
                    (t ,(cond (close-p
                               '(pprogn (close-output-channel chan state)
