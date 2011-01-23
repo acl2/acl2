@@ -27210,7 +27210,7 @@
 ; S(f1) <+ S(f2), we will use canonical siblings in our algorithms.  Indeed, it
 ; is convenient to think of all of these relations (<, <|, and <+) as being
 ; defined only on canonical function symbols.  Below, we denote as "f-canonical
-; and "g-canonical" the function symbols S(f0) and S(g0), respecitively, where
+; and "g-canonical" the function symbols S(f0) and S(g0), respectively, where
 ; <f0,g0> ranges over attachment pairs.
 
 ; We turn now to describe our transitive closure algorithm for computing <+.
@@ -27255,7 +27255,7 @@
 ; transitive and hence we could just replace g3 by x to get a shorter path.  So
 ; if the second path is not simply FNS4 < g3 < f3, then we have this picture,
 ; and hence we can create the desired path with an f-merge (where x plays the
-; "g" role and g3 plays the "f" fole); so we don't need the proposed g-merge.
+; "g" role and g3 plays the "f" role); so we don't need the proposed g-merge.
 
 ; P0:                    FNS2 <| g2 < f2 <+ g1
 ; P1:   FNS4 <+ ... <+ x < g3
@@ -27298,8 +27298,8 @@
 ;   g-canonical g.
 
 ; Clearly the f-merge and g-merge operations shown above preserve this notion
-; of suitable path.  It is also clear that every minimal path terminating in
-; a g-canonical g is suitable.
+; of suitable path.  It is also clear that every minimal path of length at
+; least 2 whose penultimate element is g-canonical is a suitable path.
 
 ; Thus, we need consider only suitable paths when forming the transitive
 ; closure.  We claim that after at least n full iterations of our algorithm
@@ -27326,10 +27326,10 @@
 
 ; Let's explore further how this works at the implementation level.
 
-; Attachments records have the following fields, where we write x++y to
-; denote the result of appending y to x unless x or y is a symbol, in which
-; case it is treated as a list containing just that symbol.  For example,
-; if x is (f1 f2) and y is either (f3) or f3, then x++y is (f1 f2 f3).
+; Attachment records have the following fields, where we write x++y to denote
+; the result of appending y to x unless x or y is a symbol, in which case it is
+; treated as a list containing just that symbol.  For example, if x is (f1 f2)
+; and y is either (f3) or f3, then x++y is (f1 f2 f3).
 
 ; - g
 ;   where g is g-canonical
@@ -27343,10 +27343,11 @@
 ;       to the next
 ;     - ext-anc, ord-anc
 ;       the set of predecessors under < (respectively, <|) of the first element
-;       of path++g; thus if path is empty then g else the first element of path
+;       of path++g; thus if path is empty then g else the first element of
+;       path.  Note that we collect here only canonical function symbols.
 ; - pairs
 ;   list of all attachment pairs <f0,g0> such that S(g0) = g; thus, the
-;   :ext-succ field is the set of canonical elements of (strip-cars pairs)
+;   :ext-succ field is the set of S(f0) for all <f0,g0> in the :pairs field
 
 ; Note that the pairs field is used only by the code that erases attachment
 ; pairs, not by the code that merges paths.

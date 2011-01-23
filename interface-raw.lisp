@@ -2591,7 +2591,7 @@
              (temp
               (push `(defpkg ,name ',(package-entry-imports temp))
                     (get (packn (cons name '("-PACKAGE"))) '*undo-stack*))))))
-        (attachment ; name is an alist in this case
+        (attachment
          (let ((at-sym (attachment-symbol name)))
            (push (set-attachment-symbol-form
                   name
