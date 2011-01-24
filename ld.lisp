@@ -17303,6 +17303,9 @@
   Fixed ~ilc[with-live-state] to work properly for executable
   counterparts (so-called ``*1*'' functions).
 
+  Fixed a bug in the error message caused by violating the ~il[guard] of a
+  macro call.
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   The HTML documentation no longer has extra newlines in <pre> environments.
