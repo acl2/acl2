@@ -3,7 +3,6 @@ include ../Makefile-generic
 
 .PHONY: moreclean
 moreclean:
-	rm -rf manual
 	rm -rf *.time
 
 clean: moreclean

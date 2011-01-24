@@ -473,8 +473,8 @@ used to get the tag from these kinds of objects.  We introduce this alias and
 keep it disabled so that reasoning about the tags of objects does not slow down
 reasoning about <tt>car</tt> in general.</p>
 
-@(def tag)
-@(thm tag-forward-to-consp)")
+@(def acl2::tag)
+@(thm cutil::tag-forward-to-consp)")
 
 (defund tag (x)
   (declare (xargs :guard t))
