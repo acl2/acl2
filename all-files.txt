@@ -1191,8 +1191,6 @@ defprojection-tests.lisp
 defprojection.lisp
 defsection.lisp
 gpl.txt
-make-manual.acl2
-make-manual.lisp
 other-packages.lsp
 package.lsp
 portcullis.acl2
