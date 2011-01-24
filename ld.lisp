@@ -17239,6 +17239,9 @@
 ; Changed the name mv-let? to bdd-mv-let to avoid potential confusion with
 ; mv?-let.
 
+; Functions enable-iprint-ar and disable-iprint-ar now return two values
+; instead of three.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -17259,10 +17262,22 @@
   Improved ~c[get-output-stream-string$] to allow for a context and to do
   genuine error printing instead of using ~ilc[cw].  ~l[io].
 
+  Added the symbols ~ilc[flet] and ~ilc[with-local-stobj] to
+  ~c[*acl2-exports*].
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of
   ~ilc[mv-let] and ~ilc[mv] (respectively) to the case of a single value.
+
+  Macro ~il[with-local-state] is available for system programmers who wish bind
+  ~ilc[state] locally, essentially using ~il[with-local-stobj].  But this
+  should only be done with extreme care, and it requires an active trust tag;
+  ~pl[with-local-state].
+
+  Formatted printing functions now have analogues that print to strings and do
+  not take an output channel or ~ilc[state] as arguments.
+  ~l[printing-to-strings].
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -17284,6 +17299,9 @@
 
   (GCL only) Fixed a bug that prevented the use of
   ~ilc[get-output-stream-string$] when the host Lisp is GCL.
+
+  Fixed ~ilc[with-live-state] to work properly for executable
+  counterparts (so-called ``*1*'' functions).
 
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 

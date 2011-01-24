@@ -24493,6 +24493,8 @@
   (declare (xargs :guard t))
   x)
 
+(verify-termination-boot-strap create-state)
+
 
 ;                              GLOBALS
 
@@ -25783,6 +25785,9 @@
   ((E F))\")
   ACL2 !>
   ~ev[]
+  Also ~pl[printing-to-strings] for a discussion of formatted printing
+  functions such as ~c[fmt-to-string] that do not take a channel or ~ilc[state]
+  argument and return a string.
 
   By default, symbols are printed in upper case when vertical bars are
   not required, as specified by Common Lisp.  ~l[set-print-case] for how
@@ -30301,6 +30306,7 @@
 
   '(coerce-state-to-object
     coerce-object-to-state
+    create-state
     user-stobj-alist
     user-stobj-alist-safe
 
@@ -30344,6 +30350,7 @@
     set-site-evisc-tuple
     set-evisc-tuple-lst
     set-evisc-tuple-fn1
+    set-iprint-ar
 
     checkpoint-world
 

@@ -4242,6 +4242,7 @@
 ;   local
 ;   defdoc
 
+    with-live-state
     ))
 
 ; Historical Note: The following material -- chk-no-duplicate-defuns,
@@ -5563,24 +5564,48 @@
                         "Ill-formed with-local-stobj form, ~x0.  ~
                          See :DOC with-local-stobj."
                         x))
-             ((not (and st
-                        (eq st (stobj-creatorp creator wrld))))
-              (trans-er ctx
-                        "Illegal with-local-stobj form, ~x0.  The first ~
-                         argument must be the name of a stobj other than ~
-                         STATE and the third, if supplied, must be its ~
-                         creator function.  See :DOC with-local-stobj."
-                        x))
              ((eq stobjs-out :stobjs-out)
               (trans-er ctx
                         "Calls of with-local-stobj, such as ~x0, cannot be ~
                          evaluated directly in the top-level loop.  ~
                          See :DOC with-local-stobj and see :DOC top-level."
                         x))
-             (t
+             ((and (eq st 'state)
+                   (eq creator 'create-state)
+                   (member-eq 'create-state
+                              (global-val 'untouchable-fns wrld))
+                   (not (eq (access state-vars state-vars :temp-touchable-fns)
+                            t))
+                   (not (member-eq 'create-state
+                                   (access state-vars state-vars
+                                           :temp-touchable-fns))))
+
+; We provide a courtesy error here, rather than waiting to encounter
+; create-state.
+
+              (trans-er ctx
+                        "Illegal with-local-stobj form, ~x0 (perhaps expanded ~
+                         from a corresponding with-local-state form).  By ~
+                         default, it is illegal to bind state using ~
+                         with-local-stobj because it is generally dangerous ~
+                         and unsound; see :DOC with-local-state, which ~
+                         describes how to get around this restriction and ~
+                         when it may be appropriate to do so."
+                        x))
+             ((and st
+                   (if (eq st 'state)
+                       (eq creator 'create-state)
+                     (eq st (stobj-creatorp creator wrld))))
               (translate11-mv-let mv-let-form stobjs-out bindings
                                   known-stobjs st creator flet-alist ctx wrld
-                                  state-vars)))))
+                                  state-vars))
+             (t
+              (trans-er ctx
+                        "Illegal with-local-stobj form, ~x0.  The first ~
+                         argument must be the name of a stobj and the third, ~
+                         if supplied, must be its creator function.  See :DOC ~
+                         with-local-stobj."
+                        x)))))
    ((and (assoc-eq (car x) *ttag-fns-and-macros*)
          (not (ttag wrld)))
     (trans-er+ x ctx

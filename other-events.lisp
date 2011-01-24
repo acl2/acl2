@@ -20625,16 +20625,43 @@
 ; discrepancy between the two versions.  So we take the attitude that
 ; with-local-stobj is a special form, like let, that is not defined.
 
+; In the case that st is STATE, this form does not take responsibility for
+; restoring state, for example by restoring values of state global variables
+; and by closing channels that may have been created during evaluation of the
+; producer form.  A with-local-state form thus needs to take responsibility for
+; restoring state; see for example the definition of channel-to-string.
+
   (let ((producer (caddr mv-let-form))
         (rest (cdddr mv-let-form)))
     `(mv-let ,(cadr mv-let-form)
-             (let ((,st (,creator)))
+             (let* (,@(and (not (eq st 'state))
+                           `((,st (,creator))))
 
 ; We bind the live var so that user-stobj-alist-safe can catch misguided
 ; attempts to use functions like trans-eval in inappropriate contexts.
 
-               (let ((,(the-live-var st) ,st))
-                 ,(if w (oneify producer flet-fns w) producer)))
+                    ,@(cond ((eq st 'state)
+                             '((*file-clock* *file-clock*)
+                               (*t-stack* *t-stack*)
+                               (*t-stack-length* *t-stack-length*)
+                               (*32-bit-integer-stack* *32-bit-integer-stack*)
+                               (*32-bit-integer-stack-length*
+                                *32-bit-integer-stack-length*)))
+                            (t `((,(the-live-var st) ,st)))))
+               ,(let ((p (if w (oneify producer flet-fns w) producer)))
+                  (if (eq st 'state)
+
+; We should lock this computation when #+acl2-par, even though special
+; variables (including those bound above) are thread-local, 
+
+                      `(if (f-get-global 'parallel-evaluation-enabled
+                                         *the-live-state*)
+                           (er hard! 'with-local-state
+                               "The use of with-local-state ~
+                                (or,with-local-stobj where STATE is the ~
+                                stobj) is disallowed with parallelism enabled.")
+                         ,p)
+                    p)))
              (declare (ignore ,st))
              ,@(if w
                    (if (cdr rest) ; rest is ((declare (ignore ...)) body)
@@ -20879,7 +20906,8 @@
                    See :DOC with-local-stobj.")
             (mv-let-for-with-local-stobj mv-let-form st creator nil nil))))
 
-(defdoc with-local-stobj
+(deflabel with-local-stobj
+  :doc
   ":Doc-Section Stobj
 
   locally bind a single-threaded object~/
@@ -20914,11 +20942,13 @@
   (with-local-stobj stobj-name mv-let-form)
   (with-local-stobj stobj-name mv-let-form creator-name)
   ~ev[]
-  where ~c[stobj-name] is the name of a ~il[stobj] other than ~ilc[state],
-  ~c[mv-let-form] is a call of ~ilc[mv-let], and if ~c[creator-name] is supplied
-  then it should be the  name of the creator function for ~c[stobj-name];
-  ~pl[defstobj].  For the example form above, its expansion would
-  use ~c[creator-name], if supplied, in place of ~c[create-st].
+  where ~c[stobj-name] is the name of a ~il[stobj], ~c[mv-let-form] is a call
+  of ~ilc[mv-let], and if ~c[creator-name] is supplied then it should be the
+  name of the creator function for ~c[stobj-name]; ~pl[defstobj].  For the
+  example form above, its expansion would use ~c[creator-name], if supplied, in
+  place of ~c[create-st].  Note that ~c[stobj-name] must not be ~ilc[state]
+  (the ACL2 state), except in special situations probably of interest only to
+  system developers; ~pl[with-local-state].
 
   ~c[With-local-stobj] can be useful when a stobj is used to memoize
   intermediate results during a computation, yet it is desired not to
@@ -20955,6 +20985,54 @@
 
   (thm (equal (foo) (mv 10 20))) ; succeeds
   ~ev[]~/")
+
+(defun create-state ()
+  (declare (xargs :guard t))
+  (coerce-object-to-state *default-state*))
+
+(defmacro with-local-state (mv-let-form)
+
+  ":Doc-Section Stobj
+
+  locally bind state~/
+
+  This is an advanced topic, probably of interest only to system developers.
+
+  Consider the following example form:
+  ~bv[]
+  (with-local-state
+   (mv-let (result state)
+           (compute-with-state x state)
+           result))
+  ~ev[]
+  This is equivalent to the following form.
+  ~bv[]
+  (with-local-stobj
+   state
+   (mv-let (result state)
+           (compute-with-state x state)
+           result))
+  ~ev[]
+  By default, this form is illegal, because ACL2 does not have a way to unwind
+  all changes to the ACL2 ~il[state]; we say more on this issue below.  There
+  may however be situations where you are willing to manage or overlook this
+  issue.  In that case you may execute the following form to enable the use of
+  ~c[with-local-state], by enabling the use of ~ilc[with-local-stobj] on
+  ~c[state]; but note that it requires an active trust tag (~pl[defttag]).
+  ~bv[]
+  (remove-untouchable create-state t)
+  ~ev[]
+
+  Please be aware that no local ~il[state] is actually created, however!  In
+  particular, users of ~c[with-local-state] need either to ensure that channels
+  are closed and state global variables are returned to their original values,
+  or else be willing to live with changes made to state that are not justified
+  by the code that has been evaluated.  You are welcome to look in the the ACL2
+  source code at the definition of macro ~c[channel-to-string], which employs
+  ~c[with-local-state] to create a local ~il[state] for the purpose of creating
+  a string.~/~/"
+
+  `(with-local-stobj state ,mv-let-form))
 
 (defun push-untouchable-fn (name fn-p state doc event-form)
 
@@ -25218,8 +25296,8 @@
                                                        (cdr iprint-ar)
                                                      iprint-ar)))
                                  state)
-                   (value t))))
-        (t (value nil))))
+                   (mv t state))))
+        (t (mv nil state))))
 
 (defun enable-iprint-ar (state)
   (cond ((not (iprint-enabledp state))
@@ -25236,51 +25314,52 @@
                                                        (cdr iprint-ar)
                                                      iprint-ar)))
                                  state)
-                   (value t))))
-        (t (value nil))))
+                   (mv t state))))
+        (t (mv nil state))))
 
 (defconst *iprint-actions*
   '(t nil :reset :reset-enable :same))
 
+(defun set-iprint-fn1 (x state)
+  (cond
+   ((eq x :same)
+    (mv nil state))
+   ((null x)
+    (mv-let (result state)
+            (disable-iprint-ar state)
+            (cond (result (mv "Iprinting has been disabled." state))
+                  (t (mv "Iprinting remains disabled." state)))))
+   ((eq x t)
+    (mv-let (result state)
+            (enable-iprint-ar state)
+            (cond (result (mv "Iprinting has been enabled." state))
+                  (t (mv "Iprinting remains enabled." state)))))
+   ((member-eq x '(:reset :reset-enable))
+    (pprogn
+     (f-put-global 'iprint-ar
+                   (compress1
+                    'iprint-ar
+                    (init-iprint-ar (f-get-global 'iprint-hard-bound state)
+                                    (eq x :reset-enable)))
+                   state)
+     (mv (cond ((eq x :reset-enable)
+                "Iprinting has been reset and enabled.")
+               (t
+                "Iprinting has been reset and disabled."))
+         state)))
+   (t (mv t state))))
+
 (defun set-iprint-fn (x state)
   (let ((ctx 'set-iprint))
-    (cond
-     ((eq x :same)
-      (value :invisible))
-     ((null x)
-      (er-let* ((result (disable-iprint-ar state)))
-               (pprogn (cond (result
-                              (observation ctx
-                                           "Iprinting has been disabled."))
-                             (t
-                              (observation ctx
-                                           "Iprinting remains disabled.")))
-                       (value :invisible))))
-     ((eq x t)
-      (er-let* ((result (enable-iprint-ar state)))
-               (pprogn (cond (result
-                              (observation ctx
-                                           "Iprinting has been enabled."))
-                             (t
-                              (observation ctx
-                                           "Iprinting remains enabled.")))
-                       (value :invisible))))
-     ((member-eq x '(:reset :reset-enable))
-      (pprogn
-       (f-put-global 'iprint-ar
-                     (compress1
-                      'iprint-ar
-                      (init-iprint-ar (f-get-global 'iprint-hard-bound state)
-                                      (eq x :reset-enable)))
-                     state)
-       (observation ctx
-                    "Iprinting has been reset ~@0.~|"
-                    (cond ((eq x :reset-enable) "and enabled")
-                          (t "and disabled")))
-       (value :invisible)))
-     (t (er soft ctx
-            "Unknown option, ~x0.  The legal iprint actions are ~&1."
-            x *iprint-actions*)))))
+    (mv-let (msg state)
+            (set-iprint-fn1 x state)
+            (cond ((eq msg t)
+                   (er soft ctx
+                       "Unknown option, ~x0.  The legal iprint actions are ~&1."
+                       x *iprint-actions*))
+                  (msg (pprogn (observation ctx "~@0" msg)
+                               (value :invisible)))
+                  (t (value :invisible))))))
 
 (defun set-iprint-hard-bound (n ctx state)
   (cond ((posp n)
@@ -25416,9 +25495,9 @@
 
   ~c[NIL] ~-[] Disable iprinting.
 
-  ~c[:RESET] ~-[] Reset iprinting so that when enabled, the first index ~c[i]
-  for which `~c[#@i#] is printed will be 1.  Note that all stored information
-  for existing iprint indices will be erased.
+  ~c[:RESET] ~-[] Reset iprinting to its initial disabled state, so that when
+  enabled, the first index ~c[i] for which `~c[#@i#] is printed will be 1.
+  Note that all stored information for existing iprint indices will be erased.
 
   ~c[:RESET-ENABLE] ~-[] Reset iprinting as with ~c[:reset], and then enable
   iprinting.
@@ -28267,3 +28346,291 @@
     `(progn (defmacro ,fn (x y)
               (list 'return-last (list 'quote ',raw) x y))
             (table return-last-table ',raw ',fn))))
+
+; Formatted printing to strings requires local stobjs (actually
+; with-local-state), so we place the relevant code below.  It could certainly
+; go in later source files if that is desired.
+
+(defdoc printing-to-strings
+
+  ":Doc-Section ACL2::Programming
+
+  printing to strings instead of files or standard output~/
+
+  Each of ACL2's formatted printing functions, ~c[FM*], has an analoguous macro
+  ~c[FM*-TO-STRING] indicated below.  These functions do not include a channel
+  or ~ilc[state] as an argument, and ~c[FM*-TO-STRING] returns the string that
+  ~c[FM*] would print to the state, in place of ~c[state]; ~pl[fmt].  The legal
+  keyword arguments are described below.
+
+  ~bv[]
+  General Forms:                                 result
+  (fms-to-string string alist &key ...)          ; string
+  (fmt-to-string string alist &key ...)          ; (mv col string)
+  (fmt1-to-string string alist column &key ...)  ; (mv col string)
+  (fms!-to-string string alist &key ...)         ; string
+  (fmt!-to-string string alist &key ...)         ; (mv col string)
+  (fmt1!-to-string string alist column &key ...) ; (mv col string)
+  ~ev[]
+
+  The legal keyword arguments are as follows.  They are all optional with a
+  default of ~c[nil].
+  ~bq[]
+  ~c[Evisc-tuple] is evaluated, and corresponds exactly to the ~c[evisc-tuple]
+  argument of the corresponding ~c[FM*] function; ~pl[fmt].
+
+  ~c[Fmt-control-alist] should typically evaluate to an alist that maps
+  print-control variables to values; ~pl[print-control].  Any alist mapping
+  variables to values is legal, however.  By default the print controls are set
+  according to the value of constant ~c[*fmt-control-defaults*];
+  ~c[fmt-control-alist] overrides these defaults.
+
+  ~c[Iprint] is typically ~c[nil], but ~c[t] is also a legal value.
+  ~l[set-iprint] for the effect of value ~c[t], which however is local to this
+  call of a ~c[FM*-TO-STRING] function; the behavior if iprinting afterwards is
+  not affected by this call.  In particular, you will not be able to look at
+  the values of iprint tokens printed by this call, so the value ~c[t] is
+  probably of limited utility at best.~eq[]
+
+  Also ~pl[io] for a discussion of the utility ~c[get-output-stream-string$],
+  which allows for accumulating the results of more than one printing call into
+  a single string but requires the use of ~ilc[state].~/~/")
+
+(defconst *fmt-control-defaults*
+
+; This constant should set up a state-global-let* binding for every state
+; global variable that can have an effect on evaluation of a call of fms, fmt,
+; or fmt1 (or their "!" versions), which are the functions on which we apply
+; the macro channel-to-string.
+
+  (append *print-control-defaults*
+          `((write-for-read t)
+            (fmt-hard-right-margin 10000) ; arbitrary but large
+            (fmt-soft-right-margin 10000) ; arbitrary but large
+            (iprint-soft-bound ,*iprint-soft-bound-default*)
+            (iprint-hard-bound ,*iprint-hard-bound-default*)
+            (ppr-flat-right-margin
+             ,(cdr (assoc-eq 'ppr-flat-right-margin *initial-global-table*)))
+
+; Values not to be modified; keep in sync with *fixed-fmt-controls*.
+
+            (iprint-ar (f-get-global 'iprint-ar state) set-iprint-ar)
+            (evisc-hitp-without-iprint nil))))
+
+(defconst *fixed-fmt-controls*
+
+; These are the state global variables that have bindings in
+; *fmt-control-defaults* but must not have those bindings overridden by the
+; user (because they are managed by ACL2).
+
+  '(iprint-ar
+    evisc-hitp-without-iprint))
+
+(defun fmt-control-bindings1 (alist fmt-control-defaults-tail)
+
+; Alist is a variable whose value is an alist used to modify
+; fmt-control-defaults-tail, which is a tail of *fmt-control-defaults*.
+
+  (cond ((endp fmt-control-defaults-tail) nil)
+        (t
+         (cons (let* ((trip (car fmt-control-defaults-tail))
+                      (var (car trip)))
+                 (list* var
+                        `(let ((pair (assoc-eq ',var ,alist)))
+                           (cond (pair
+                                  ,(cond
+                                    ((member-eq var *fixed-fmt-controls*)
+                                     `(er hard 'fmt-control-bindings
+                                          "The binding of ~x0 is illegal in this context."
+                                          ',var))
+                                    (t '(cdr pair))))
+                                 (t ,(cadr trip))))
+                        (cddr trip)))
+               (fmt-control-bindings1 alist
+                                      (cdr fmt-control-defaults-tail))))))
+
+(defun fmt-control-bindings (alist)
+  (cond (alist (fmt-control-bindings1 alist *fmt-control-defaults*))
+        (t ; optimization
+         *fmt-control-defaults*)))
+
+(defun set-iprint-ar (iprint-ar state)
+
+; This function, which is untouchable, assumes that iprint-ar is well-formed.
+; It is used when restoring a valid iprint-ar.
+
+  (prog2$ (compress1 'iprint-ar iprint-ar)
+          (f-put-global 'iprint-ar iprint-ar state)))
+
+(defmacro channel-to-string (form channel-var
+                                  &optional
+                                  extra-var fmt-controls iprint-action)
+
+; Form is a call of fms, fmt, or fmt1 (or their "!" versions) on variables.  To
+; see why we make this restriction, consider the following form:
+
+;   (channel-to-string
+;    (f-put-global 'xxx (f-get-global 'term-evisc-tuple state) state)
+;    chan)
+
+; If you evaluate this form in raw-mode and then evaluate (@ xxx), you'll
+; initially get :default.  But if then evaluate the form
+
+;   (set-term-evisc-tuple (evisc-tuple 4 5 nil nil) state)
+
+; and then evaluate the above channel-to-string call again, this time (@ xxx)
+; evaluates to (NIL 4 5 NIL).  Thus, state changed even though
+; channel-to-string generates a with-local-state call, which should not change
+; state!
+
+; Note that fmt-controls and iprint-action are evaluated, but channel-var and
+; extra-var are not evaluated.
+
+; Any non-nil value of iprint-action is coerced to t before being passed to
+; (a function underneath) set-iprint.
+
+; This macro is not recommended for users, as it has been designed specifically
+; for the fmt family of functions.  If one wishes to use this or a similar
+; macro outside the boot-strap then one will need to avoid issues with
+; untouchables; here is an example.
+
+;   (defttag t)
+;   (remove-untouchable temp-touchable-fns nil)
+;   (set-temp-touchable-fns t state)
+;   (remove-untouchable temp-touchable-vars nil)
+;   (set-temp-touchable-vars t state)
+;   (defun fms-to-string-fn-again
+;     (str alist evisc-tuple fmt-control-alist iprint-action)
+;     (declare (xargs :mode :program))
+;     (channel-to-string
+;      (fms str alist chan-do-not-use-elsewhere state evisc-tuple)
+;      chan-do-not-use-elsewhere nil fmt-control-alist iprint-action))
+;   (defmacro fmt-to-string-again
+;     (str alist &key evisc-tuple fmt-control-alist iprint)
+;     (declare (xargs :guard (member-eq iprint '(t nil))))
+;     `(fmt-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist ,iprint))
+
+; If you now evaluate
+;   (fmt-to-string-again "Hello, ~s0." (list (cons #\0 "World")))
+; you will get the cons of 13 with "\nHello, World." (here we write \n to
+; indicate a newline).
+
+  (declare (xargs :guard (and (symbol-listp form) ; see "on variables" above
+                              (symbolp channel-var)
+                              (symbolp extra-var)
+                              (symbolp fmt-controls)
+                              (symbolp iprint-action)
+                              (not (eq 'result extra-var))
+                              (not (eq 'state extra-var)))))
+  (let* ((body0 ; error triple (mv nil val state), where val may cons extra-var
+          `(mv?-let
+            (,@(and extra-var (list extra-var)) state)
+            ,form
+            (mv-let (erp result state)
+                    (get-output-stream-string$ ,channel-var state)
+                    (mv nil
+                        (and (not erp)
+                             ,(if extra-var
+                                  `(cons ,extra-var result)
+                                'result))
+                        state))))
+         (body1 ; bind fmt controls and clean up around body0
+          `(acl2-unwind-protect
+
+; We use acl2-unwind-protect to guarantee that the new channel is finally
+; closed.  See the comment about channels in mv-let-for-with-local-stobj.
+
+            "channel-to-string"
+            (state-global-let*
+             ,(fmt-control-bindings fmt-controls)
+             (mv-let (msg state)
+                     (set-iprint-fn1
+                      (if ,iprint-action :reset-enable :reset)
+                      state)
+                     (declare (ignore msg))
+                     ,body0))
+            (cond ((open-output-channel-p ,channel-var :character state)
+                   (close-output-channel ,channel-var state))
+                  (t state))
+            state))
+         (body ; open a string output channel and then evaluate body1
+          `(mv-let
+            (,channel-var state)
+            (open-output-channel :string :character state)
+            (cond (,channel-var ,body1)
+                  (t (er soft 'channel-to-string
+                         "Implementation error: Unable to open a channel to a ~
+                          string."))))))
+    `(with-local-state
+      (mv-let
+       (erp result state)
+       (with-live-state ,body)
+       (declare (ignore erp))
+       ,(cond (extra-var `(mv (car result) (cdr result)))
+              (t 'result))))))
+
+(defun fms-to-string-fn (str alist evisc-tuple fmt-control-alist iprint-action)
+  (channel-to-string
+   (fms str alist chan-do-not-use-elsewhere state evisc-tuple)
+   chan-do-not-use-elsewhere nil fmt-control-alist iprint-action))
+
+(defmacro fms-to-string (str alist &key evisc-tuple fmt-control-alist iprint)
+  (declare (xargs :guard (member-eq iprint '(t nil))))
+  `(fms-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist ,iprint))
+
+(defun fms!-to-string-fn (str alist evisc-tuple fmt-control-alist iprint-action)
+  (channel-to-string
+   (fms! str alist chan-do-not-use-elsewhere state evisc-tuple)
+   chan-do-not-use-elsewhere nil fmt-control-alist iprint-action))
+
+(defmacro fms!-to-string (str alist &key evisc-tuple fmt-control-alist iprint)
+  (declare (xargs :guard (member-eq iprint '(t nil))))
+  `(fms!-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist ,iprint))
+
+(defun fmt-to-string-fn (str alist evisc-tuple fmt-control-alist iprint-action)
+  (channel-to-string
+   (fmt str alist chan-do-not-use-elsewhere state evisc-tuple)
+   chan-do-not-use-elsewhere col fmt-control-alist iprint-action))
+
+(defmacro fmt-to-string (str alist &key evisc-tuple fmt-control-alist iprint)
+  (declare (xargs :guard (member-eq iprint '(t nil))))
+  `(fmt-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist ,iprint))
+
+(defun fmt!-to-string-fn (str alist evisc-tuple fmt-control-alist
+                              iprint-action)
+  (channel-to-string
+   (fmt! str alist chan-do-not-use-elsewhere state evisc-tuple)
+   chan-do-not-use-elsewhere col fmt-control-alist iprint-action))
+
+(defmacro fmt!-to-string (str alist &key evisc-tuple fmt-control-alist iprint)
+  (declare (xargs :guard (member-eq iprint '(t nil))))
+  `(fmt!-to-string-fn ,str ,alist ,evisc-tuple ,fmt-control-alist ,iprint))
+
+(defun fmt1-to-string-fn (str alist col evisc-tuple fmt-control-alist
+                              iprint-action)
+  (channel-to-string
+   (fmt1 str alist col chan-do-not-use-elsewhere state evisc-tuple)
+   chan-do-not-use-elsewhere col fmt-control-alist iprint-action))
+
+(defmacro fmt1-to-string (str alist col &key evisc-tuple fmt-control-alist
+                              iprint)
+  (declare (xargs :guard (member-eq iprint '(t nil))))
+  `(fmt1-to-string-fn ,str ,alist ,col ,evisc-tuple ,fmt-control-alist ,iprint))
+
+(defun fmt1!-to-string-fn (str alist col evisc-tuple fmt-control-alist
+                            iprint-action)
+  (channel-to-string
+   (fmt1! str alist col chan-do-not-use-elsewhere state evisc-tuple)
+   chan-do-not-use-elsewhere col fmt-control-alist iprint-action))
+
+(defmacro fmt1!-to-string (str alist col &key evisc-tuple fmt-control-alist
+                               iprint)
+  (declare (xargs :guard (member-eq iprint '(t nil))))
+  `(fmt1!-to-string-fn ,str ,alist ,col ,evisc-tuple ,fmt-control-alist ,iprint))
+
+(link-doc-to fms-to-string programming printing-to-strings)
+(link-doc-to fms!-to-string programming printing-to-strings)
+(link-doc-to fmt-to-string programming printing-to-strings)
+(link-doc-to fmt!-to-string programming printing-to-strings)
+(link-doc-to fmt1-to-string programming printing-to-strings)
+(link-doc-to fmt1!-to-string programming printing-to-strings)

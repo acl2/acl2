@@ -6127,10 +6127,12 @@
 
   formatted printing~/
 
-  ACL2 provides the functions ~c[fmt], ~ilc[fmt1], and ~ilc[fms] as substitutes for Common
-  Lisp's ~c[format] function.  Also ~pl[fmt!], ~pl[fmt1!], and ~pl[fms!] for
-  versions of these functions that write forms to files in a manner that allows
-  them to be read, by avoiding using backslash (~c[\\]) to break long lines.
+  ACL2 provides the functions ~c[fmt], ~ilc[fmt1], and ~ilc[fms] as substitutes
+  for Common Lisp's ~c[format] function.  Also ~pl[fmt!], ~pl[fmt1!], and
+  ~pl[fms!] for versions of these functions that write forms to files in a
+  manner that allows them to be read, by avoiding using backslash (~c[\\]) to
+  break long lines.  There are also analogues of these functions that return a
+  string without taking ~ilc[state] as an argument; ~pl[printing-to-strings].
 
   All three print a given string under an alist pairing character
   objects with values, interpreting certain ``tilde-directives'' in
