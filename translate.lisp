@@ -3186,10 +3186,11 @@
              (cond
               (erp (er-cmp ctx
                            "In the attempt to macroexpand the form ~x0 ~
-                            evaluation of the guard, ~x1, for ~x2 caused the ~
+                            evaluation of the guard for ~x2 caused the ~
                             following error:~|~%~@1"
                            x
-                           guard-val))
+                           guard-val
+                           (car x)))
               ((null guard-val)
                (er-cmp ctx
                        "In the attempt to macroexpand the form ~x0 the guard, ~
