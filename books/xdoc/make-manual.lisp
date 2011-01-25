@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "top")
+(include-book "all")
 
 ; (depends-on "bookdoc.dat")
 
