@@ -17231,6 +17231,74 @@
 
 (deflabel note-4-3
 
+; The following example illustrates the soundness bug related to mbe that is
+; mentioned in :doc note-4-3.  To prove nil:
+
+; (certify-book "sub")
+; :u
+; (certify-book "mid")
+; :u
+; (certify-book "top")
+
+; The problem is that the macro mac expands differently in the ACL2 loop from
+; how it expands in raw Lisp.  The bug fix is to check equality of the values
+; of the :logic and :exec forms when in safe-mode.
+
+;;;;;;;;;;;;;;;
+; Book sub.lisp
+;;;;;;;;;;;;;;;
+;   (in-package "ACL2")
+;   
+;   (defmacro mac ()
+;     (mbe :logic ''logic
+;          :exec ''exec))
+;   
+;   (defconst *a*
+;     (mac))
+
+;;;;;;;;;;;;;;;
+; Book mid.lisp
+;;;;;;;;;;;;;;;
+;   (in-package "ACL2")
+;   
+;   (local (include-book "sub"))
+;   
+;   (defmacro mac ()
+;     (mbe :logic ''logic
+;          :exec ''exec))
+;   
+;   (defconst *a*
+;     (mac))
+;   
+;   (defthm got-exec
+;     (equal *a* 'exec)
+;     :rule-classes nil)
+
+;;;;;;;;;;;;;;;
+; Book top.lisp
+;;;;;;;;;;;;;;;
+;   (in-package "ACL2")
+;   
+;   (defmacro mac ()
+;     (mbe :logic ''logic
+;          :exec ''exec))
+;   
+;   (defconst *a*
+;     (mac))
+;   
+;   (defthm got-logic
+;     (equal *a* 'logic)
+;     :rule-classes nil)
+;   
+;   (include-book "mid")
+;   
+;   (defthm contradiction
+;     nil
+;     :hints (("Goal" :use (got-exec got-logic)))
+;     :rule-classes nil)
+
+;;;;;;;;;;;;;;; end of example
+
 ; Modified some doc-printing functions in support of translation to xdoc.  the
 ; process, the HTML output has become prettier; see item about HTML, below.
 
@@ -17282,6 +17350,15 @@
   ~st[HEURISTIC IMPROVEMENTS]
 
   ~st[BUG FIXES]
+
+  Calls of ~ilc[mbe] in ``safe-mode'' situations ~-[] i.e., during evaluation
+  of ~ilc[defconst], ~ilc[value-triple], and ~ilc[defpkg] forms, and during
+  macroexpansion ~-[] are now guard-checked.  Thus, in these situations both
+  the ~c[:logic] and ~c[:exec] forms will be evaluated, with an error if the
+  results are not equal.  Formerly, only the ~c[:logic] form was evaluated,
+  which was a soundness bug that could be exploited to prove ~c[nil].  For a
+  such a proof and a bit of further explanation, see the example at the top of
+  the comments for ~c[(deflabel note-4-3 ..)] in ACL2 source file ~c[ld.lisp].
 
   Fixed ~ilc[trace$] for arguments that are ~il[stobj] accessors or updaters.
   It also gives an informative error in this case when the accessor or updater

@@ -475,14 +475,6 @@
 
 #-acl2-loop-only
 (defun raw-ev-fncall (fn args latches hard-error-returns-nilp aok)
-
-  (when (eq fn 'return-last)
-
-; Things work out fine for (return-last ... (mv ...)), because the mv returns a
-; list and we just pass that along.
-
-    (return-from raw-ev-fncall
-      (mv nil (car (last args)) latches)))
   (let ((*aokp* aok))
     (the #+acl2-mv-as-values (values t t t)
          #-acl2-mv-as-values t
@@ -502,7 +494,14 @@
                                    ~x0, which should be ~x1, is not."
                                   fn *1*fn))))
                 #+acl2-mv-as-values ; stobjs-out might not be needed otherwise
-                (stobjs-out (stobjs-out fn w))
+                (stobjs-out (if (eq fn 'return-last)
+
+; Things can work out fine if we imagine that return-last returns a single
+; value: in the case of (return-last ... (mv ...)), the mv returns a list and
+; we just pass that along.
+
+                                '(nil)
+                              (stobjs-out fn w)))
                 (val (catch 'raw-ev-fncall
                        (cond ((not (fboundp fn))
                               (er hard 'raw-ev-fncall
@@ -538,7 +537,10 @@
             (throw-raw-ev-fncall-flg
              (mv t (ev-fncall-msg val w) latches))
             (t #-acl2-mv-as-values ; adjust val for the multiple value case
-               (let* ((stobjs-out (stobjs-out fn w))
+               (let* ((stobjs-out ; see comment in earlier stobjs-out binding
+                       (if (eq fn 'return-last)
+                           '(nil)
+                         (stobjs-out fn w)))
                       (val
                        (cond ((null (cdr stobjs-out)) val)
                              (t (cons val (mv-refs (1- (length stobjs-out))))))))
@@ -1227,6 +1229,17 @@
            (& (make-let bindings body))))
         (t (make-let bindings body))))
 
+(defmacro untranslate*-lst (lst iff-flg wrld)
+
+; See untranslate*.
+
+  (declare (xargs :guard (symbolp wrld)))
+  `(untranslate1-lst ,lst
+                     ,iff-flg
+                     (binop-table ,wrld)
+                     (untranslate-preprocess-fn ,wrld)
+                     ,wrld))
+
 (mutual-recursion
 
 ; Here we combine what may naturally be thought of as two separate
@@ -1719,7 +1732,17 @@
          (ev-rec (fargn form 2) alist
                  w (decrement-big-n big-n) safe-mode gc-off
                  latches hard-error-returns-nilp aok))
-        ((eq (ffn-symb form) 'return-last)
+        ((and (eq (ffn-symb form) 'return-last)
+              (not (and (equal (fargn form 1) ''mbe1-raw)
+
+; We generally avoid running the :exec code for an mbe call.  But in safe-mode,
+; it is critical to run the exec code and check its equality to the logic code
+; (respecting the guard of return-last in the case that the first argument is
+; 'mbe1-raw).  See the comments in note-4-3 for an example showing why it is
+; unsound to avoid this check in safe-mode, and see (defun-*1* return-last ...)
+; for a discussion of why we do not consider the case (not gc-off) here.
+
+                        safe-mode)))
          (let ((fn (and (quotep (fargn form 1))
                         (unquote (fargn form 1)))))
            (cond
@@ -1738,9 +1761,8 @@
              (cond
               ((eq fn 'mbe1-raw)
 
-; We avoid running the exec code, just as we do in the handling of the mbe1-raw
-; case by oneify.
-
+; We avoid running the exec code (see comment above).
+               
                (ev-rec (fargn form 3) ; optimization: avoid exec argument
                        alist w (decrement-big-n big-n) safe-mode gc-off latches
                        hard-error-returns-nilp aok))
@@ -2106,7 +2128,7 @@
 ; fn onto the quoted arg list in the evisceration tuple commented on below.
 
      (cons nil (evisceration-stobj-marks stobjs-in t))
-     (untranslate* (cons fn (kwote-lst args)) nil w)
+     (cons fn (untranslate*-lst (kwote-lst args) nil w))
      3 4 nil (table-alist 'evisc-table w) nil
 
 ; Note that the iprint-alist is nil.  We never do iprinting for guard errors,
@@ -2119,7 +2141,7 @@
      (symbolp empty-iprint-alist)
      (msg
       "The guard for the~#0~[ :program~/~] function call ~x1, which is ~P23, ~
-       is violated by the arguments in the call ~P45.~@6~@7~@8"
+       is violated by the arguments in the call ~P45.~@6~@7~@8~@9"
       (if (programp fn w) 0 1)
       (cons fn (formals fn w))
       guard
@@ -2144,6 +2166,15 @@
       (evisc-tuple nil nil
                    (list (cons *evisceration-mark* *evisceration-mark*))
                    nil)
+      (cond ((and (eq fn 'return-last)
+                  (eq (car args) 'mbe1-raw))
+             (msg "  This offending call is equivalent to the more common ~
+                   form, ~x0."
+                  `(mbe :logic
+                        ,(untranslate* (kwote (caddr args)) nil w)
+                        :exec
+                        ,(untranslate* (kwote (cadr args)) nil w))))
+            (t ""))
       (cond ((eq extra :live-stobj)
 
 ; This case occurs if we attempt to execute the call of a "oneified" function

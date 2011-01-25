@@ -690,13 +690,54 @@
   (declare (ignore input-arity))
   x)
 
-(defun-*1* return-last (qfn x y)
-  (declare (ignore qfn x))
+(defun-*1* return-last (fn x y)
+  (cond ((and (equal fn 'mbe1-raw)
+              (f-get-global 'safe-mode *the-live-state*))
 
-; We could lay down (progn x y), but since x is already evaluated, that's just
-; equivalent to y.
+; Since return-last is a special form, we can decide how we want to view it
+; with respect to guards.  We have decided to check its guard only when in safe
+; mode, which is the minimal case needed in order to fix a soundness bug
+; related to mbe; see note-4-3.  The following log shows what happened in a
+; preliminary implementation of that bug fix, in which oneify laid down a
+; *1*return-last call unconditionally; note the unfortunate call of the :exec
+; function, f2.  Of course, that call is not the fault of the old version of
+; *1*return-last, which is a function called after its arguments are already
+; evaluated; there are other places (ev-rec and oneify) where we avoid even
+; calling *1*return-last.  But if we do get to this call, for example by way of
+; expand-abbreviations calling ev-fncall, at least we can limit the equality
+; check here to the case of safe-mode (which is presumably nil, for example,
+; under expand-abbreviations).
 
-  y)
+;   ACL2 !>(defn f1 (x) x)
+;    [[... output omitted ...]]
+;    F1
+;   ACL2 !>(defn f2 (x) x)
+;    [[... output omitted ...]];   
+;    F2
+;   ACL2 !>(defun f (x) (mbe :logic (f1 x) :exec (f2 x)))
+;    [[... output omitted ...]]
+;    F
+;   ACL2 !>(trace$ f f1 f2)
+;    ((F) (F1) (F2))
+;   ACL2 !>(f 3)
+;   1> (ACL2_*1*_ACL2::F 3)
+;     2> (ACL2_*1*_ACL2::F2 3)
+;       3> (F2 3)
+;       <3 (F2 3)
+;     <2 (ACL2_*1*_ACL2::F2 3)
+;     2> (ACL2_*1*_ACL2::F1 3)
+;       3> (F1 3)
+;       <3 (F1 3)
+;     <2 (ACL2_*1*_ACL2::F1 3)
+;   <1 (ACL2_*1*_ACL2::F 3)
+;   3
+;   ACL2 !>
+
+         (if (equal x y)
+             y
+           (gv return-last (fn x y)
+               y)))
+        (t y)))
 
 ; We must hand-code the *1* function for wormhole-eval because if it were
 ; automatically generated it would look like this:
@@ -1068,16 +1109,24 @@
                         (consp (cdr qfn))
                         (cadr qfn))
                    'progn)))
-      (cond ((or (eq fn 'ec-call1-raw)
-                 (eq fn 'mbe1-raw))
+      (cond ((eq fn 'ec-call1-raw)
 
 ; In the case of ec-call1-raw, we are already oneifying the last argument -- we
 ; don't want to call return-last on top of that, or we'll be attempting to take
-; the *1*-symbol of the *1*-symbol!  In the case of mbe1-raw, we want to be
-; sure to return only the logic code, not the exec code, as one would expect
-; for in-the-logic evaluation of an mbe call.
+; the *1*-symbol of the *1*-symbol!
 
              (oneify (car (last x)) fns w))
+            ((eq fn 'mbe1-raw)
+
+; See the discussion in (defun-*1* return-last ...).
+
+             (let ((oneified-last (oneify (car (last x)) fns w)))
+               `(if (f-get-global 'safe-mode *the-live-state*)
+                    (,(*1*-symbol 'return-last)
+                     ,qfn
+                     ,(oneify (caddr x) fns w)
+                     ,oneified-last)
+                  ,oneified-last)))
             (t
 
 ; Since fn is not 'ec-call1-raw, the guard of return-last is automatically met
