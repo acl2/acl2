@@ -517,20 +517,28 @@
 
 (verify-guards fixed-string-parse :otf-flg t)
 
+(defun append-concats (left right)
+  (declare (xargs :guard (and (regex-p left)
+                              (regex-p right))))
+  (if (r-concat-p left)
+      (r-concat (r-concat-left left)
+                (append-concats (r-concat-right left) right))
+    (r-concat left right)))
 
 (defun post-parse-optimize (regex)
   ;; Recursively descend, consolidating repeats when possible.
   ;; This gets rid of the worst problems associated with multiple repeats;
   ;; a further solution is to remove duplicats when running repeats.
+  ;; Also right-associate concats.
   (declare (xargs :guard (regex-p regex)
                   :verify-guards nil
                   :measure (acl2-count regex)))
   (pattern-match
    regex
    ((r-concat left right)
-     (r-concat
-      (post-parse-optimize left)
-      (post-parse-optimize right)))
+    (let ((left (post-parse-optimize left))
+          (right (post-parse-optimize right)))
+      (append-concats left right)))
    ((r-disjunct left right)
      (r-disjunct
       (post-parse-optimize left)

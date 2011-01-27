@@ -3,8 +3,10 @@
 
 (in-package "ACL2")
 
-(include-book "equal-based-set")
-(local (include-book "defset-encapsulates"))
+;; (include-book "equal-based-set")
+;; (local (include-book "defset-encapsulates"))
+
+(include-book "cutil/deflist" :dir :system)
 
 
 (defun string-index-measure (idx str)
@@ -217,19 +219,22 @@
 
 
 
-(def-typed-set input-list-eltp input-list 
-  :additional-param t
-  :param-guard stringp)
+(cutil::deflist input-listp (x str)
+                (input-list-eltp x str)
+                :guard (stringp str))
 
 
 (defcong length-equiv equal (input-listp l str) 2
-  :hints (("Goal" :in-theory (disable length length-equiv))))
+  :hints (("Goal" :in-theory (e/d (input-listp)
+                                  (length length-equiv)))))
 
-(def-typed-set pseudo-input-list-eltp pseudo-input-list)
+(cutil::deflist pseudo-input-listp (x)
+                (pseudo-input-list-eltp x))
 
 (defthm input-listp-pseudo
   (implies (input-listp x str)
-           (pseudo-input-listp x)))
+           (pseudo-input-listp x))
+  :hints(("Goal" :in-theory (enable input-listp pseudo-input-listp))))
 
 
 
@@ -258,8 +263,7 @@
          (min-idx-il (cdr il) str))))
 
 (defthm min-idx-il-type
-  (implies (force (and (stringp str)
-                       (pseudo-input-listp il)))
+  (implies (pseudo-input-listp il)
            (and (integerp (min-idx-il il str))
                 (<= 0 (min-idx-il il str))))
   :rule-classes (:rewrite :type-prescription))
@@ -277,40 +281,38 @@
   :rule-classes (:rewrite :linear))
 
 (defthm member-min-idx
-  (implies (set-member-equal x l)
+  (implies (member-equal x l)
            (<= (min-idx-il l str) (car x)))
   :rule-classes (:rewrite :linear))
 
-(defthm insert-min-idx-il
-  (<= (min-idx-il (set-insert-equal e l) str)
-      (min-idx-il l str))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable set-insert-equal))))
+;; (defthm insert-min-idx-il
+;;   (<= (min-idx-il (set-insert-equal e l) str)
+;;       (min-idx-il l str))
+;;   :rule-classes (:rewrite :linear)
+;;   :hints (("Goal" :in-theory (enable set-insert-equal))))
 
-(defthm insert-min-idx
-  (<= (min-idx-il (set-insert-equal e l) str)
-      (car e))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable set-insert-equal))))
+;; (defthm insert-min-idx
+;;   (<= (min-idx-il (set-insert-equal e l) str)
+;;       (car e))
+;;   :rule-classes (:rewrite :linear)
+;;   :hints (("Goal" :in-theory (enable set-insert-equal))))
 
-(defthm insert-min-idx2
-  (equal (min-idx-il (set-insert-equal e l) str)
-         (min (car e) (min-idx-il l str)))
-  :hints (("Goal" :in-theory (enable set-insert-equal))))
+;; (defthm insert-min-idx2
+;;   (equal (min-idx-il (set-insert-equal e l) str)
+;;          (min (car e) (min-idx-il l str)))
+;;   :hints (("Goal" :in-theory (enable set-insert-equal))))
 
 
 (defthm integerp-numberp
   (implies (integerp x)
            (acl2-numberp x)))
 
-(defthm min-idx-union
+(defthm min-idx-append
   (implies (and (pseudo-input-listp a)
                 (pseudo-input-listp b)
                 (stringp str))
-           (equal (min-idx-il (set-union-equal a b) str)
-                  (min (min-idx-il a str) (min-idx-il b str))))
-  :hints (("Goal" :in-theory (enable set-insert-equal))))
-
+           (equal (min-idx-il (append a b) str)
+                  (min (min-idx-il a str) (min-idx-il b str)))))
 
 
 
@@ -376,14 +378,14 @@
                               (integerp minidx))))
   (if (atom s)
       nil
-    (set-union-equal (remove-all-longer-equal-fn (car s) minidx)
-                     (remove-all-longer-equal-il (cdr s) minidx))))
+    (append (remove-all-longer-equal-fn (car s) minidx)
+            (remove-all-longer-equal-il (cdr s) minidx))))
 
-(prove-set-congruence-of-f remove-all-longer-equal-fn
-                           :f-on-set remove-all-longer-equal-il
-                           :equiv equal
-                           :hard-guard nil
-                           :additional-param t)
+;; (prove-set-congruence-of-f remove-all-longer-equal-fn
+;;                            :f-on-set remove-all-longer-equal-il
+;;                            :equiv equal
+;;                            :hard-guard nil
+;;                            :additional-param t)
 
 
 (defthm remove-all-longer-equal-shorter
@@ -393,7 +395,6 @@
            (> (min-idx-il 
                (remove-all-longer-equal-il il minidx) str)
               minidx))
-  :hints (("Goal" :in-theory (enable set-insert-equal)))
   :rule-classes (:rewrite :linear))
 
 (in-theory (disable length length-equiv))

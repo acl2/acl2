@@ -25,6 +25,7 @@
 
 (include-book "input-list")
 
+(include-book "tools/flag" :dir :system)
 
 ;;(include-book "arithmetic-3/bind-free/top" :dir :system)
 
@@ -61,9 +62,9 @@
 
 ;; Backref support
 
-;; The input is il, a set of strings with associated backref lists
-;; representing the remainders after matching something, and orig,
-;; the string before having matched that thing.  We extract the
+;; The input is il, a set of indices with associated backref lists
+;; representing the remainders after matching something, and orig-pos,
+;; the position before having matched that thing.  We extract the
 ;; matched portion of orig for each remainder string and cons it onto
 ;; that string's backref list.
 (defun store-backrefs (il str orig-pos posn)
@@ -77,7 +78,7 @@
       il
     (let* ((newidx (caar il))
            (oldbr (cdar il)))
-      (set-insert-equal
+      (cons
        (cons newidx
              (update-nth posn (cons orig-pos newidx)
                          oldbr))
@@ -108,8 +109,7 @@
 
 (defthm store-backrefs-min-idx
   (equal (min-idx-il (store-backrefs il str orig posn) str)
-         (min-idx-il il str))
-  :hints (("Goal" :in-theory (enable set-insert-equal))))
+         (min-idx-il il str)))
 
 ;;(in-theory (disable store-backrefs))
 ;; (defthm store-backrefs-max-len-il
@@ -269,33 +269,33 @@
   (and (integerp min)
        (integerp max)))
 
-(defun run-regex-m-r-guard (regex str index backrefs ilist min max fun)
-  (declare (xargs :guard t))  
-  (and (symbolp fun)
-       (case fun
-         (run-regex (reg-str-br-guard regex str index backrefs))
-         (run-regex-list (or (atom ilist)
-                             (reg-ilist-guard regex str ilist)))
-         (run-repeat (and (reg-str-br-guard regex str index backrefs)
-                          (repeat-guard min max)))
-         (run-repeat-list (or (atom ilist)
-                              (and (reg-ilist-guard regex str ilist)
-                                   (repeat-guard min max)))))))
+;; (defun run-regex-m-r-guard (regex str index backrefs ilist min max fun)
+;;   (declare (xargs :guard t))  
+;;   (and (symbolp fun)
+;;        (case fun
+;;          (run-regex (reg-str-br-guard regex str index backrefs))
+;;          (run-regex-list (or (atom ilist)
+;;                              (reg-ilist-guard regex str ilist)))
+;;          (run-repeat (and (reg-str-br-guard regex str index backrefs)
+;;                           (repeat-guard min max)))
+;;          (run-repeat-list (or (atom ilist)
+;;                               (and (reg-ilist-guard regex str ilist)
+;;                                    (repeat-guard min max)))))))
 
 
-(defun run-regex-m-r-measure (regex str index backrefs ilist min max fun)
-  (if (run-regex-m-r-guard regex str index backrefs ilist min max fun)
-      (case fun
-        (run-regex (run-regex-measure regex str index))
-        (run-regex-list (if (atom ilist)
-                            0
-                          (run-regex-list-measure regex str ilist)))
-        (run-repeat (run-repeat-measure regex str index min))
-        (run-repeat-list (if (atom ilist)
-                             0
-                           (run-repeat-list-measure regex str ilist min)))
-        (otherwise 0))
-    0))
+;; (defun run-regex-m-r-measure (regex str index backrefs ilist min max fun)
+;;   (if (run-regex-m-r-guard regex str index backrefs ilist min max fun)
+;;       (case fun
+;;         (run-regex (run-regex-measure regex str index))
+;;         (run-regex-list (if (atom ilist)
+;;                             0
+;;                           (run-regex-list-measure regex str ilist)))
+;;         (run-repeat (run-repeat-measure regex str index min))
+;;         (run-repeat-list (if (atom ilist)
+;;                              0
+;;                            (run-repeat-list-measure regex str ilist min)))
+;;         (otherwise 0))
+;;     0))
 ;;          (run-n-times (and (reg-str-br-guard regex str backrefs)
 ;;                            (natp n)))
 ;;          (run-n-list (and (reg-ilist-guard regex ilist)
@@ -314,213 +314,230 @@
          (implies (integerp a)
                   (integerp (- a)))))
 
-(defthm o-p-regex-measure
-  (o-p (run-regex-m-r-measure regex str index backrefs ilist min max fun)))
+;; (defthm o-p-regex-measure
+;;   (o-p (run-regex-m-r-measure regex str index backrefs ilist min max fun)))
 
 
 
 ;; Macros so we don't have to list irrelevant parameters in each call
-(defmacro run-regex (regex str index backrefs)
-  `(run-regex-m-r ,regex ,str ,index ,backrefs nil nil nil 'run-regex))
+;; (defmacro run-regex (regex str index backrefs)
+;;   `(run-regex-m-r ,regex ,str ,index ,backrefs nil nil nil 'run-regex))
 
-(defmacro run-regex-list (regex str ilist)
-  `(run-regex-m-r ,regex ,str nil nil ,ilist nil nil 'run-regex-list))
+;; (defmacro run-regex-list (regex str ilist)
+;;   `(run-regex-m-r ,regex ,str nil nil ,ilist nil nil 'run-regex-list))
 
-(defmacro run-repeat (regex str index backrefs min max)
-  `(run-regex-m-r ,regex ,str ,index ,backrefs ,nil ,min ,max 'run-repeat))
+;; (defmacro run-repeat (regex str index backrefs min max)
+;;   `(run-regex-m-r ,regex ,str ,index ,backrefs ,nil ,min ,max 'run-repeat))
 
-(defmacro run-repeat-list (regex str ilist min max)
-  `(run-regex-m-r ,regex ,str nil nil ,ilist ,min ,max 'run-repeat-list))
+;; (defmacro run-repeat-list (regex str ilist min max)
+;;   `(run-regex-m-r ,regex ,str nil nil ,ilist ,min ,max 'run-repeat-list))
 
 ;; This defines the "mutual recursion" of the four functions defined as macros
 ;; above.  Unfortunately most theorems must be proved about this function
 ;; directly since func must be a variable in the induction.
-(defun run-regex-m-r (regex str index backrefs ilist min max func)
-  (declare (xargs :measure 
-                  (run-regex-m-r-measure regex str index backrefs 
-                                         ilist min max func)
-                  :guard 
-                  (run-regex-m-r-guard regex str index backrefs 
-                                       ilist min max func)
-                  :verify-guards nil
-                  ))
-
-  (if (mbt (run-regex-m-r-guard regex str index backrefs ilist min max func))
-
-      (case func
 
 
-        (run-regex
-         ;; run-regex
-         ;; Given a regex structure and a string (as a list of characters)
-         ;; checks whether the regex can be satisfied by the string
-         ;; (starting strictly at the beginning),
-         ;; and returns a list consisting of, for each place where the regex can
-         ;; successfully terminate, the suffix of the string starting at that point.
 
-         ;; In order to support backrefs we'll return a list of pairs of
-         ;; first the unmatched remainder of the string
-         ;; and an alist of backrefs.
-         (pattern-match 
-          regex
+(defthm o-p-run-regex-measure
+  (o-p (run-regex-measure regex str idx)))
 
-          ((r-concat left right)
-           ;; Concatenation:
-           ;; A regexp can successfully terminate in multiple places in the input string
-           ;; so at each possible termination of the first regexp the second must be checked.
-           (run-regex-list right str (run-regex left str index backrefs)))
+(defthm o-p-run-regex-list-measure
+  (o-p (run-regex-list-measure regex str ilist))
+  :hints(("Goal" :in-theory (disable (force)))))
 
-          ((r-disjunct left right)
-           ;; Simply return the possible suffixes for the first in the disjunction
-           ;; concatenated with the possible suffixes for the second.
-           (set-union-equal (run-regex left str index backrefs) 
-                            (run-regex right str index backrefs)))
+(defthm o-p-run-repeat-measure
+  (o-p (run-repeat-measure regex str index min)))
 
-          ((r-exact c)
-           ;; If the next character in the string matches, return the cdr
-           ;; otherwise nil
-           ;; Check for beginning
-           (if (and (< index (length str))
-                    (equal c (char str index)))
-               (list (cons (1+ index) backrefs))
-             nil))
-
-          ((r-any)
-           ;; fail if the string is empty, otherwise match the first
-           ;; real character in the string.
-           (if (< index (length str))
-               (list (cons (1+ index) backrefs))
-             nil))
-
-          ((r-empty)
-           ;; Match the empty string.  For example, ".?" parses to
-           ;; (disjunct (empty) (any)).
-           (list (cons index backrefs)))
-
-          ((r-nomatch)
-           ;; Does not match anything.
-           nil)
-
-          ((r-end)
-           ;; Match the end of the string.
-           (if (= index (length str))
-               (list (cons index backrefs)) 
-             nil))
-
-          ((r-begin)
-           ;; Match the beginning of the string
-           ;; Grep allows multiple ^'s in a row all matching the beginning
-           ;; of the string; one can do things like "^a*(^b|c)" which matches
-           ;; b, c, or aaac, but not ab. 
-           (if (= index 0)
-               (list (cons index backrefs))
-             nil))
-
-          ((r-repeat reg min max)
-           ;; * ? + or {}.  Match a regex repeatedly until the match fails
-           ;; or the max number of repetitions is reached.  If the min number
-           ;; of repetitions isn't reached then fail.
-        
-           ;; run-repeat does not return matches of length 0, but if min is 0 or
-           ;; less the empty match should be included.
-           (let* ((repeat (run-repeat reg str index backrefs min max)))
-             (if (zp (nfix min))
-                 (set-insert-equal
-                  (cons index backrefs) repeat)
-               repeat)))
-                  
-          ((r-charset s)
-           ;; Match to a set of characters
-           ;; In the future things like [:alpha:] [:alnum:] etc will go here
-           (if (< index (length str))
-               (if (in-charset (char str index) s)
-                   (list (cons (1+ index) backrefs))
-                 nil)
-             nil))
-
-          ((r-group reg gid)
-           ;; Store the matches to the inner regex as backrefs
-           (store-backrefs (run-regex reg str index backrefs)
-                           str index gid))
-
-          ((r-backref brid)
-           ;; Match to the contents of a previously matched grouping
-           (let ((br (nth brid backrefs)))
-             (if br 
-                 (let ((newind (check-backref str index br)))
-                   (if newind
-                       (list (cons newind backrefs))
-                     nil))
-               nil)))
-          (& '(bad-input))))
-
-    
+(defthm o-p-run-repeat-list-measure
+  (o-p (run-repeat-list-measure regex str ilist min))
+  :hints(("Goal" :in-theory (disable (force)))))
 
 
-        (run-regex-list
-         ;; run-regex-list
-         ;; Matches the regex against the list of strings, returning the list of
-         ;; suffixes of matches against all of them.
-         (if (atom ilist) nil
-           ;;       (remove-duplicates-equal
-           (set-union-equal (run-regex regex str (caar ilist) (cdar ilist)) 
-                            (run-regex-list regex str (cdr ilist)))))
-    
-    
-    
-        (run-repeat
-         ;; Match the regex between min and max times.  If max is ever negative,
-         ;; don't limit the number of times matched (hence check only whether
-         ;; max equals zero, not (zp).
+(mutual-recursion 
+ (defun run-regex (regex str index backrefs)
+   (declare (xargs :guard (reg-str-br-guard regex str index backrefs)
+                   :verify-guards nil
+                   :measure (run-regex-measure regex str index)))
+   ;; run-regex
+   ;; Given a regex structure and a string (as a list of characters)
+   ;; checks whether the regex can be satisfied by the string
+   ;; (starting strictly at the beginning),
+   ;; and returns a list consisting of, for each place where the regex can
+   ;; successfully terminate, the suffix of the string starting at that point.
+
+   ;; In order to support backrefs we'll return a list of pairs of
+   ;; first the unmatched remainder of the string
+   ;; and an alist of backrefs.
+   (pattern-match 
+     regex
+
+     ((r-concat left right)
+      ;; Concatenation:
+      ;; A regexp can successfully terminate in multiple places in the input string
+      ;; so at each possible termination of the first regexp the second must be checked.
+      (run-regex-list right str (run-regex left str index backrefs)))
+
+     ((r-disjunct left right)
+      ;; Simply return the possible suffixes for the first in the disjunction
+      ;; concatenated with the possible suffixes for the second.
+      (append (run-regex left str index backrefs) 
+              (run-regex right str index backrefs)))
+
+     ((r-exact c)
+      ;; If the next character in the string matches, return the cdr
+      ;; otherwise nil
+      ;; Check for beginning
+      (if (and (< index (length str))
+               (equal c (char str index)))
+          (list (cons (1+ index) backrefs))
+        nil))
+
+     ((r-any)
+      ;; fail if the string is empty, otherwise match the first
+      ;; real character in the string.
+      (if (< index (length str))
+          (list (cons (1+ index) backrefs))
+        nil))
+
+     ((r-empty)
+      ;; Match the empty string.  For example, ".?" parses to
+      ;; (disjunct (empty) (any)).
+      (list (cons index backrefs)))
+
+     ((r-nomatch)
+      ;; Does not match anything.
+      nil)
+
+     ((r-end)
+      ;; Match the end of the string.
+      (if (= index (length str))
+          (list (cons index backrefs)) 
+        nil))
+
+     ((r-begin)
+      ;; Match the beginning of the string
+      ;; Grep allows multiple ^'s in a row all matching the beginning
+      ;; of the string; one can do things like "^a*(^b|c)" which matches
+      ;; b, c, or aaac, but not ab. 
+      (if (= index 0)
+          (list (cons index backrefs))
+        nil))
+
+     ((r-repeat reg min max)
+      ;; * ? + or {}.  Match a regex repeatedly until the match fails
+      ;; or the max number of repetitions is reached.  If the min number
+      ;; of repetitions isn't reached then fail.
+      
+      ;; run-repeat does not return matches of length 0, but if min is 0 or
+      ;; less the empty match should be included.
+      (let* ((repeat (run-repeat reg str index backrefs min max)))
+        (if (zp (nfix min))
+            (cons
+             (cons index backrefs) repeat)
+          repeat)))
      
-         ;; If we're at the max number of times, quit
-         (cond
-          ((and (= max 0) ;;(or (= max 0) (atom str))
-                (zp (nfix min))) `((,index . ,backrefs)))
-          ;; ((or (= max 0) (atom str))         nil)
-          (t (let* ((suffixes (run-regex regex str index backrefs)))
-               ;; dealing with the minimum required number of repetitions is
-               ;; a bit complicated.  min <= 1 means we accept suffixes as
-               ;; valid matches themselves.  min <= 0 means we don't keep
-               ;; matching on matches to the empty string.
-               (if (zp (nfix min))
-                   (let ((short-suff ;; (remove-duplicates-equal 
-                          ;; If we're past the min number of repetitions,
-                          ;; we don't need to keep matching on empty matches
-                          (remove-all-longer-equal-il suffixes index)))
-                     ;; We've matched the required number of times
-                     ;; so return the suffixes along with the results of running more
-                     ;;               (remove-duplicates-equal
-                     (if (>= index (length str))
-                         suffixes
-                       (set-union-equal suffixes
-                                        (run-repeat-list regex str short-suff 
-                                                         min (1- max)))))
-                 (if (mbt (>= (min-idx-il suffixes str) index))
-                     (let ((val 
-                            (run-repeat-list regex str suffixes (1- min) (1- max))))
-                       (if (<= min 1)
-                           ;; everything in suffixes has the required number
-                           ;; of matches so they are valid return values
-                           ;;(remove-duplicates-equal
-                           (set-union-equal suffixes val)
-                         ;; We haven't yet matched the required number of times
-                         ;; so just match against the suffixes again,
-                         ;; don't return them directly
-                         val)) 
-                   nil))))))
-    
-    
-        (run-repeat-list
-         (if (atom ilist)
-             nil
-           ;;(remove-duplicates-equal
-           (set-union-equal (run-repeat regex str (caar ilist) (cdar ilist) min max)
-                            (run-repeat-list regex str (cdr ilist) min max))))
-    
-        (otherwise '(bad-input)))
-    '(bad-input)))
+     ((r-charset s)
+      ;; Match to a set of characters
+      ;; In the future things like [:alpha:] [:alnum:] etc will go here
+      (if (< index (length str))
+          (if (in-charset (char str index) s)
+              (list (cons (1+ index) backrefs))
+            nil)
+        nil))
 
+     ((r-group reg gid)
+      ;; Store the matches to the inner regex as backrefs
+      (store-backrefs (run-regex reg str index backrefs)
+                      str index gid))
+
+     ((r-backref brid)
+      ;; Match to the contents of a previously matched grouping
+      (let ((br (nth brid backrefs)))
+        (if br 
+            (let ((newind (check-backref str index br)))
+              (if newind
+                  (list (cons newind backrefs))
+                nil))
+          nil)))
+     (& '(bad-input))))
+
+ (defun run-regex-list (regex str ilist)
+   (declare (xargs :guard (reg-ilist-guard regex str ilist)
+                   :measure (if (atom ilist)
+                                0
+                              (run-regex-list-measure regex str ilist))))
+   ;; run-regex-list
+   ;; Matches the regex against the list of strings, returning the list of
+   ;; suffixes of matches against all of them.
+   (and (mbt (reg-ilist-guard regex str ilist))
+        (if (atom ilist) nil
+          ;;       (remove-duplicates-equal
+          (append (run-regex regex str (caar ilist) (cdar ilist)) 
+                  (run-regex-list regex str (cdr ilist))))))
+ 
+ (defun run-repeat (regex str index backrefs min max)
+   (declare (xargs :guard (and (reg-str-br-guard regex str index backrefs)
+                               (repeat-guard min max))
+                   :measure (run-repeat-measure regex str index min)))
+   
+   ;; Match the regex between min and max times.  If max is ever negative,
+   ;; don't limit the number of times matched (hence check only whether
+   ;; max equals zero, not (zp).
+   (and (mbt (and (reg-str-br-guard regex str index backrefs)
+                  (repeat-guard min max)))
+        ;; If we're at the max number of times, quit
+        (cond
+         ((and (= max 0) ;;(or (= max 0) (atom str))
+               (zp (nfix min))) `((,index . ,backrefs)))
+         ;; ((or (= max 0) (atom str))         nil)
+         (t (let* ((suffixes (run-regex regex str index backrefs)))
+              ;; dealing with the minimum required number of repetitions is
+              ;; a bit complicated.  min <= 1 means we accept suffixes as
+              ;; valid matches themselves.  min <= 0 means we don't keep
+              ;; matching on matches to the empty string.
+              (if (zp (nfix min))
+                  (let ((short-suff ;; (remove-duplicates-equal 
+                         ;; If we're past the min number of repetitions,
+                         ;; we don't need to keep matching on empty matches
+                         (remove-all-longer-equal-il suffixes index)))
+                    ;; We've matched the required number of times
+                    ;; so return the suffixes along with the results of running more
+                    ;;               (remove-duplicates-equal
+                    (if (>= index (length str))
+                        suffixes
+                      (append suffixes
+                              (run-repeat-list regex str short-suff 
+                                               min (1- max)))))
+                (if (mbt (>= (min-idx-il suffixes str) index))
+                    (let ((val 
+                           (run-repeat-list regex str suffixes (1- min) (1- max))))
+                      (if (<= min 1)
+                          ;; everything in suffixes has the required number
+                          ;; of matches so they are valid return values
+                          ;;(remove-duplicates-equal
+                          (append suffixes val)
+                        ;; We haven't yet matched the required number of times
+                        ;; so just match against the suffixes again,
+                        ;; don't return them directly
+                        val)) 
+                  nil)))))))
+
+ (defun run-repeat-list (regex str ilist min max)
+   (declare (xargs :guard (and (reg-ilist-guard regex str ilist)
+                               (repeat-guard min max))
+                   :measure (if (atom ilist)
+                                0
+                              (run-repeat-list-measure regex str ilist min))))
+   (and (mbt (and (reg-ilist-guard regex str ilist)
+                  (repeat-guard min max)))
+        (if (atom ilist)
+            nil
+          ;;(remove-duplicates-equal
+          (append (run-repeat regex str (caar ilist) (cdar ilist) min max)
+                  (run-repeat-list regex str (cdr ilist) min max))))))
+
+
+(flag::make-flag run-regex-flag run-regex)
 
 
 
@@ -573,49 +590,135 @@
 ;;                 (pseudo-input-listp 
 ;;                  (run-regex-m-r regex str index backrefs ilist min max fun))))
 ;;   :hints (("Goal" :in-theory (enable input-list-eltp))))
-
-
+(mutual-recursion
+ (defun find-call (fn x)
+   (declare (xargs :guard (symbolp fn)))
+   (if (atom x)
+       nil
+     (if (eq (car x) fn)
+         x
+       (find-call-list fn (cdr x)))))
+ (defun find-call-list (fn x)
+   (declare (Xargs :guard (symbolp fn)))
+   (if (atom x)
+       nil
+     (or (find-call fn (car x))
+         (find-call-list fn (cdr x))))))
 
 
 (local
- (defthm run-regex-suffixes-induct
-   (implies (and (natp lowidx)
-                 (<= lowidx (length str))
-                 (run-regex-m-r-guard regex str idx backrefs 
-                                      ilist min max fun))
-            (and (implies (and (or (equal fun 'run-regex)
-                                   (equal fun 'run-repeat))
-                               (natp idx)
-                               (<= lowidx idx))
-                          (and
-                           (<= lowidx
-                              (min-idx-il 
-                               (run-regex-m-r regex str idx backrefs ilist
-                                              min max fun) str))
-                           (<= idx
-                              (min-idx-il 
-                               (run-regex-m-r regex str idx backrefs ilist
-                                              min max fun) str))
-                           (input-listp 
-                            (run-regex-m-r regex str idx backrefs ilist
-                                           min max fun)str)))
-                 (implies (and (or (equal fun 'run-regex-list)
-                                   (equal fun 'run-repeat-list))
-                               (<= lowidx (min-idx-il ilist str)))
-                          (and 
-                           (<= lowidx
-                               (min-idx-il
-                                (run-regex-m-r regex str idx backrefs ilist 
-                                               min max fun) str))
-                           (<= (min-idx-il ilist str)
-                               (min-idx-il
-                                (run-regex-m-r regex str idx backrefs ilist 
-                                               min max fun) str))
-                           (input-listp
-                            (run-regex-m-r regex str idx backrefs ilist 
-                                               min max fun) str)))))
-   :hints (("Goal" 
-            :induct (run-regex-m-r regex str idx backrefs ilist min max fun)))))
+ (defthm-run-regex-flag
+   (defthm run-regex-suffixes1
+     (implies (and (natp lowidx)
+                   (<= lowidx (length str))
+                   (reg-str-br-guard regex str index backrefs)
+                   (natp index)
+                   (<= lowidx index))
+              (and (<= lowidx
+                       (min-idx-il 
+                        (run-regex regex str index backrefs) str))
+                   (<= index
+                       (min-idx-il 
+                        (run-regex regex str index backrefs) str))
+                   (input-listp
+                    (run-regex regex str index backrefs) str)))
+     :hints ((and stable-under-simplificationp
+                  (let ((call (find-call 'run-regex (car (last clause)))))
+                    (and call `(:expand (,call))))))
+     :flag run-regex)
+   (defthm run-repeat-suffixes1
+     (implies (and (natp lowidx)
+                   (<= lowidx (length str))
+                   (reg-str-br-guard regex str index backrefs)
+                   (repeat-guard min max)
+                   (natp index)
+                   (<= lowidx index))
+              (and (<= lowidx
+                       (min-idx-il 
+                        (run-repeat regex str index  backrefs min max) str))
+                   (<= index
+                       (min-idx-il 
+                        (run-repeat regex str index  backrefs min max) str))
+                   (input-listp
+                    (run-repeat regex str index backrefs min max) str)))
+     :hints ('(:expand ((:free (index min max)
+                         (run-repeat regex str index backrefs min max)))))
+     :flag run-repeat)
+   (defthm run-regex-list-suffixes1
+     (implies (and (natp lowidx)
+                   (<= lowidx (length str))
+                   (reg-ilist-guard regex str ilist)
+                   (<= lowidx (min-idx-il ilist str)))
+              (and (<= lowidx
+                       (min-idx-il 
+                        (run-regex-list regex str ilist) str))
+                   (<= (min-idx-il ilist str)
+                       (min-idx-il
+                        (run-regex-list regex str ilist) str))
+                   (input-listp
+                    (run-regex-list regex str ilist) str)))
+     :hints ('(:expand ((run-regex-list regex str ilist))))
+     :flag run-regex-list)
+   (defthm run-repeat-list-suffixes1
+     (implies (and (natp lowidx)
+                   (<= lowidx (length str))
+                   (reg-ilist-guard regex str ilist)
+                   (<= lowidx (min-idx-il ilist str)))
+              (and (<= lowidx
+                       (min-idx-il 
+                        (run-repeat-list regex str ilist min max) str))
+                   (<= (min-idx-il ilist str)
+                       (min-idx-il
+                        (run-repeat-list regex str ilist min max) str))
+                   (input-listp
+                    (run-repeat-list regex str ilist min max) str)))
+     :hints ('(:expand ((run-repeat-list regex str ilist min max))))
+     :flag run-repeat-list)
+   :hints(("Goal" :in-theory (disable run-regex
+                                      run-repeat
+                                      run-regex-list
+                                      run-repeat-list
+                                      min-idx-il-type
+                                      member-equal
+                                      input-list-eltp-thm
+                                      default-<-1 default-<-2
+                                      default-car default-cdr
+                                      input-listp-when-subsetp-equal
+                                      (:type-prescription pseudo-input-listp))))))
+
+
+(local
+ (defthm-run-regex-flag
+   (defthm true-listp-run-regex
+     (true-listp (run-regex regex str index backrefs))
+     :hints ((and stable-under-simplificationp
+                  (let ((call (find-call 'run-regex (car (last clause)))))
+                    (and call `(:expand (,call))))))
+     :flag run-regex)
+   (defthm true-listp-run-repeat
+     (true-listp (run-repeat regex str index backrefs min max))
+     :hints ('(:expand ((:free (index min max)
+                         (run-repeat regex str index backrefs min max)))))
+     :flag run-repeat)
+   (defthm true-listp-run-regex-list
+     (true-listp (run-regex-list regex str ilist))
+     :hints ('(:expand ((run-regex-list regex str ilist))))
+     :flag run-regex-list)
+   (defthm true-listp-run-repeat-list
+     (true-listp (run-repeat-list regex str ilist min max))
+     :hints ('(:expand ((run-repeat-list regex str ilist min max))))
+     :flag run-repeat-list)
+   :hints(("Goal" :in-theory (disable run-regex
+                                      run-repeat
+                                      run-regex-list
+                                      run-repeat-list
+                                      min-idx-il-type
+                                      member-equal
+                                      input-list-eltp-thm
+                                      default-<-1 default-<-2
+                                      default-car default-cdr
+                                      input-listp-when-subsetp-equal
+                                      (:type-prescription pseudo-input-listp))))))
 
 
 (defthm run-regex-suffixes
@@ -639,6 +742,65 @@
   :hints (("Goal" :do-not-induct t))
   :rule-classes (:rewrite :linear))
 
+(defthm run-regex-input-listp
+  (and
+   (implies 
+    (reg-str-br-guard regex str index backrefs)
+    (input-listp (run-regex regex str index backrefs) str))
+   (implies 
+    (and (reg-str-br-guard regex str index backrefs)
+         (repeat-guard min max))
+    (input-listp (run-repeat regex str index  backrefs min max) str))
+   (implies
+    (reg-ilist-guard regex str ilist)
+    (input-listp (run-regex-list regex str ilist) str))
+   (implies
+    (and (reg-ilist-guard regex str ilist)
+         (repeat-guard min max))
+    (input-listp (run-repeat-list regex str ilist min max) str)))
+  :hints (("Goal" :do-not-induct t
+           :use ((:instance run-regex-suffixes1 (lowidx index))
+                 (:instance run-repeat-suffixes1 (lowidx index))
+                 (:instance run-regex-list-suffixes1
+                  (lowidx (min-idx-il ilist str)))
+                 (:instance run-repeat-list-suffixes1
+                  (lowidx (min-idx-il ilist str))))
+           :in-theory (disable run-regex run-repeat
+                               run-regex-list
+                               run-repeat-list
+                               min-idx-il
+                               input-listp
+                               backref-listp
+                               input-list-eltp-thm
+                               default-<-1 default-<-2
+                               run-regex-suffixes1
+                               run-repeat-suffixes1
+                               run-regex-list-suffixes1
+                               run-repeat-list-suffixes1
+                               (:type-prescription min-idx-il-type)
+                               input-listp-when-subsetp-equal
+                               subsetp-equal))))
+
+(defthm run-regex-psuedo-input-listp
+  (and
+   (implies 
+    (reg-str-br-guard regex str index backrefs)
+    (pseudo-input-listp (run-regex regex str index backrefs)))
+   (implies 
+    (and (reg-str-br-guard regex str index backrefs)
+         (repeat-guard min max))
+    (pseudo-input-listp (run-repeat regex str index  backrefs min max)))
+   (implies
+    (reg-ilist-guard regex str ilist)
+    (pseudo-input-listp (run-regex-list regex str ilist)))
+   (implies
+    (and (reg-ilist-guard regex str ilist)
+         (repeat-guard min max))
+    (pseudo-input-listp (run-repeat-list regex str ilist min max))))
+  :hints (("Goal" :do-not-induct t
+           :use run-regex-input-listp
+           :in-theory '(input-listp-pseudo))))
+
 
 
 
@@ -657,23 +819,6 @@
 
 
 
-(defthm run-regex-input-list
-  (implies
-   (run-regex-m-r-guard regex str index backrefs ilist min max fun)
-   (input-listp 
-    (run-regex-m-r regex str index backrefs ilist min max fun) str)))
-
-
-(defthm run-regex-pseudo-input-list
-  (implies
-   (run-regex-m-r-guard regex str index backrefs ilist min max fun)
-   (pseudo-input-listp 
-    (run-regex-m-r regex str index backrefs ilist min max fun)))
-  :hints (("Goal" :in-theory (enable input-list-eltp)
-           :use (:instance input-listp-pseudo
-                           (x (run-regex-m-r regex str index backrefs ilist min
-                                             max fun))))))
-
 ;; (defthm run-regex-true-list
 ;;   (true-listp (run-regex-m-r regex str idx backrefs strlist min max fun))
 ;;   :rule-classes
@@ -687,7 +832,7 @@
                 
 
 ;; Finally
-(verify-guards run-regex-m-r)
+(verify-guards run-regex)
 
 
 (defun resolve-backrefs (brlist str)
