@@ -27328,16 +27328,15 @@
 ;       FNS4 <+ g4 <+ ... <+ x <+ g3      <+ g2 < f2 <+ g1
 
 ; Let us call these an "f-merge" and a "g-merge", respectively, of P1 into P0.
-; As an optimization, for the case FNS2 <| g2 we only allow a g-merge if P1
-; consists entirely of FNS4 <+ g3 < f3.  To see why, first note that by
-; restricting to minimal paths we can rule out the case x <| g3, since <| is
-; transitive and hence we could just replace g3 by x to get a shorter path.  So
-; if the second path is not simply FNS4 < g3 < f3, then we have this picture,
-; and hence we can create the desired path with an f-merge (where x plays the
-; "g" role and g3 plays the "f" role); so we don't need the proposed g-merge.
 
-; P0:                    FNS2 <| g2 < f2 <+ g1
-; P1:   FNS4 <+ ... <+ x < g3
+; As an optimization, for the case FNS2 <| g2 we only allow a g-merge if P1
+; consists entirely of FNS4 <+ g3 < f3.  To justify this optimization, suppose
+; that P1 is as above where g4 is not g3.  We may restrict ourselves to
+; constructing minimal paths.  We can thus rule out the case x <| g3, since
+; otherwise we have y <+ x <| g3 <| g2, which by minimality and transitivity of
+; <| implies that we have y < x <| g2.  So x is in FNS2, and we can form a path
+; from FNS4 to g1 by doing an f-merge after stripping g3 from P1 (with y<x
+; playing the role of g3<f3).
 
 ; In general, each such g1 is associated with a record structure that we refer
 ; to as an "attachment record", which includes a list of paths that is
@@ -27349,7 +27348,7 @@
 ; Stored with each path is an "owner": the function symbol immediately
 ; following the initial set of functions, which we use to avoid attempting any
 ; merge that would be redundant in the sense that there is already a path with
-; the same owner.  Consider for example this picture, already seen above.
+; the same owner.  Consider again the merge candidate pictured above.
 
 ; P0:                                FNS2 <+ g2 < f2 <+ g1
 ; P1:   FNS4 <+ g4 <+ ... <+ x <+ g3 < f3
@@ -27371,8 +27370,7 @@
 
 ; - We can write the path so that each arc joining consecutive elements is of
 ;   the form g < f or h <| g, where no two consecutive arcs both use <|.
-; - Each element of the path, except possibly the first, is f-canonical or
-;   g-canonical.
+; - Each element of the path is f-canonical or g-canonical.
 ; - The final arc in the path is of the form h < g or h <| g for some
 ;   g-canonical g.
 
@@ -27383,10 +27381,17 @@
 ; Thus, we need consider only suitable paths when forming the transitive
 ; closure.  We claim that after at least n full iterations of our algorithm
 ; (that is: attempting all possible pairwise merges at each iteration, and
-; perhaps more), then every suitable path FNS <+ ... <+ g of length at most 2^N
-; is present.  This fact has a straightforward proof by induction on the length
-; of a path, where the inductive step proceeds by dividing a path in half (no
-; more than N elements in each half) and then doing an f-merge or g-merge.
+; perhaps more), then every suitable path FNS <+ ... <+ g of length at most
+; 2^N+1 is present.  This fact has a straightforward proof by induction on the
+; length of a path, where the inductive step proceeds by dividing a path of
+; length 2^N+1 into two pieces where the head of one is the tail of the other,
+; one of length at most 2^(N-1) and the other of length at most 2^(N-1)+1.
+
+; The argument above shows that in fact, the attachment record for every
+; g-canonical g includes every <+-ancestor of g (again, considering only
+; canonical function symbols), either as a member of the set FNS defined by FNS
+; <| g' for some g-canonical g' <+ g, or else as such a g' (the owner of the a
+; component's path for ordinary ancestor set FNS).
 
 ; As we compute the transitive closure, we look for loops.  Where do we look?
 ; First observe that if there is a loop, then the loop involves at least one
