@@ -592,7 +592,7 @@ and size components, but for now we have not implemented this capability."
 (defn hons-acons! (key val alist)
   ":Doc-Section Hons-and-Memoization
 
-~c[(hons-acons! key val alist) is an alternative to ~ilc[hons-acons] that
+~c[(hons-acons! key val alist)] is an alternative to ~ilc[hons-acons] that
 produces ~il[normed], fast alists.~/
 
 Logically, ~c[hons-acons!] is like ~ilc[acons] except that its guard does not
