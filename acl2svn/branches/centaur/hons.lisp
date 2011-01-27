@@ -562,12 +562,6 @@ hint.  For example, ~c[(hons-acons 'foo 'bar 1000)] instructs us to use 1000 as
 the initial size for this hash table and binds 'foo to 'bar.  We ignore size
 hints that request fewer than 60 elements.
 
-Because of hash collisions, hash tables typically need to have a larger size
-than the actual number of elements they contain.  The hash tables for fast
-alists are told to grow when they reach 70% full.  So, an easy rule of thumb
-might be: multiply the expected number of elements you need by 1.5 to keep your
-hash tables about 2/3 full.
-
 2.  As an alist name
 
 We also frequently use a symbol for alist, and think of this symbol as the name
