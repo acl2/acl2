@@ -82,7 +82,7 @@
             (len y)))
   :hints(("Goal" :induct (len x))))
 
-(local (include-book "arithmetic-3/bind-free/top" :dir :system))
+(local (include-book "arithmetic/top" :dir :system))
 
 (defthm nth-of-app
   (implies (and (integerp n)
@@ -144,5 +144,4 @@
   (equal (nthcdr (len x) (app x y))
          (list-fix y))
   :hints(("Goal"
-          :induct (len x)
-          :in-theory (disable prefer-positive-addends-<))))
+          :induct (len x))))

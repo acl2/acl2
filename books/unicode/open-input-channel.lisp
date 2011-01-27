@@ -57,7 +57,7 @@
  ;; or ACL2-INPUT-CHANNEL::standard-object-input-0.  These facts are needed
  ;; to verify the guards on close-input-channel after opening a channel.
 
- (local (include-book "arithmetic-3/bind-free/top" :dir :system))
+ (local (include-book "arithmetic/top" :dir :system))
  (local (include-book "explode-nonnegative-integer"))
  (local (include-book "intern-in-package-of-symbol"))
  (local (include-book "coerce"))

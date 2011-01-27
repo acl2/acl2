@@ -17,40 +17,43 @@
 
 (in-package "ACL2")
 
-(local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
+(local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 (local (include-book "revappend"))
 (include-book "base10-digit-charp")
 
 
-(local (deftheory slow-arith-rules
-         '(not-integerp-1b
-           not-integerp-2b
-           not-integerp-3b
-           not-integerp-4b
-           not-integerp-1a
-           not-integerp-2a
-           not-integerp-3a
-           not-integerp-4a
-           floor-zero
-           floor-negative
-           floor-positive
-           floor-nonpositive-1
-           floor-nonpositive-2
-           floor-nonnegative-1
-           floor-nonnegative-2
-           mod-zero
-           mod-positive
-           mod-negative
-           mod-nonnegative
-           mod-nonpositive
-           rationalp-mod)))
+;; These were disabled here when this book was using arithmetic-3 rather than ihs.
+;; (local (deftheory slow-arith-rules
+;;          '(not-integerp-1b
+;;            not-integerp-2b
+;;            not-integerp-3b
+;;            not-integerp-4b
+;;            not-integerp-1a
+;;            not-integerp-2a
+;;            not-integerp-3a
+;;            not-integerp-4a
+;;            floor-zero
+;;            floor-negative
+;;            floor-positive
+;;            floor-nonpositive-1
+;;            floor-nonpositive-2
+;;            floor-nonnegative-1
+;;            floor-nonnegative-2
+;;            mod-zero
+;;            mod-positive
+;;            mod-negative
+;;            mod-nonnegative
+;;            mod-nonpositive
+;;            rationalp-mod)))
 
-(local (in-theory (disable slow-arith-rules)))
+;; (local (in-theory (disable slow-arith-rules)))
 
 ;; Explode-nonnegative-integer is a particularly nasty function to try to
 ;; reason about because it is tail recursive and has a very nasty base case.
 ;; Instead of reasoning about it directly, we will split it up into the
 ;; following, simpler definition.
+
+(local (in-theory (disable floor mod)))
 
 (local (defun simpler-explode-nonnegative-integer (n base ans)
          (declare (xargs :guard (and (integerp n)

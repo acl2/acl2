@@ -18,7 +18,7 @@
 (in-package "ACL2")
 (set-verify-guards-eagerness 2)
 
-(local (include-book "arithmetic-3/bind-free/top" :dir :system))
+(local (include-book "arithmetic/top" :dir :system))
 
 (local (defthm len-when-consp
          (implies (consp x)

@@ -17,7 +17,7 @@
 
 (in-package "ACL2")
 
-(local (include-book "arithmetic-3/bind-free/top" :dir :system))
+(local (include-book "arithmetic/top" :dir :system))
 
 (defund simpler-take (n xs)
   (declare (xargs :guard (and (natp n)
