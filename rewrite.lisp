@@ -10824,9 +10824,6 @@
                     (bs (if (quotep b) nil rs))
                     (c (fargn r 3))
                     (cs (if (quotep c) nil rs)))
-
-; #|
-; I have temporarily removed this block to look for my loop
                (with-reconciliation
                 (i b) (is bs) inner-bs
                 (mv-let
@@ -10906,10 +10903,7 @@
                         (nth-update-rewriter1-continue
                          recursivelyp term stack
                          t `(NTH ,i ,r) common-stack irttree
-                         t ens wrld state memo-alist))))))))
-; Temporarily deleted these three parens.
-               ))
-
+                         t ens wrld state memo-alist))))))))))
             ((eq (ffn-symb r) 'UPDATE-NTH)
 
 ; We are looking at (NTH i (UPDATE-NTH j v s)).

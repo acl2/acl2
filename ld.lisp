@@ -23634,6 +23634,10 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   related publications, libraries, ACL2 workshops and seminars, installation
   instructions, and acknowledgements.
 
+  See
+  ~url[http://www.cs.utexas.edu/users/moore/acl2/current/installation/misc.html#License-and-Copyright]
+  for license and copyright information.
+
   ~/~/")
 
 ; We now develop code for without-evisc.
