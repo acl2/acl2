@@ -27732,6 +27732,11 @@
                          #+(and gcl (not cltl2))
                          ((or (not (typep stream 'stream))
                               (si::stream-name stream)) ; stream to a file
+
+; As of this writing, we do not have confirmation from the gcl-devel list that
+; si::stream-name really does return nil if and only if the stream is to a
+; string rather than to a file.  But we believe that to be the case.
+
                           (mv t nil state-state))
                          (t (mv nil
                                 (get-output-stream-string stream)
