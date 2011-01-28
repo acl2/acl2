@@ -1,0 +1,4 @@
+
+(ld "cutil/package.lsp" :dir :system)
+(ld "tools/flag-package.lsp" :dir :system)
+(certify-book "portcullis" ?)
