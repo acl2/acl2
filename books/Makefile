@@ -121,7 +121,7 @@ parallel: make-event tools
 security: make-event arithmetic-3
 sorting: arithmetic-3/extra
 tools: arithmetic-5 misc
-regex: tools
+regex: tools cutil
 defsort: misc make-event unicode tools
 hons-archive: defsort unicode tools arithmetic-3
 str: arithmetic unicode defsort tools make-event

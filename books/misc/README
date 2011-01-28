@@ -57,8 +57,10 @@ evaluator.
 
 ===============================================================================
 
-book-thms.lisp -- returns theorems and axioms at the top level of an included
-                  book
+book-thms.lisp --         returns theorems and axioms at the top level of an
+                          included book
+
+book-thms-example.lisp -- an example illustrating the use of book-thms.lisp
 
 ===============================================================================
 
