@@ -3934,13 +3934,13 @@ the calls took.")
                             ,@mf-record-mht
                             (setq ,tablename
                                   ;; (mht :size ,memo-table-init-size)
-                                  (make-initial-memoize-hash-table ,fn ,memo-table-init-size)
+                                  (make-initial-memoize-hash-table ',fn ,memo-table-init-size)
                                   )
                             ,@(if (> nra 1)
                                   `((setq ,ponstablename
                                           ;;(mht :size (* (1- ,nra) ,memo-table-init-size))
                                           (make-initial-memoize-pons-table
-                                           ,fn ,memo-table-init-size)
+                                           ',fn ,memo-table-init-size)
                                           ))))
                            ;; To avoid a remotely possible
                            ;; parallelism gethash error.
