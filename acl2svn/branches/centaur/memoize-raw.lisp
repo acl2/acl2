@@ -5276,7 +5276,8 @@ the calls took.")
           *MEMOIZE-SUMMARY-ORDER-LIST*)."
 
   (compute-calls-and-times)
-  (memoize-summary-after-compute-calls-and-times))
+  (memoize-summary-after-compute-calls-and-times)
+  nil)
 
 (defg *short-symbol-name-width* 30)
 
@@ -5662,6 +5663,11 @@ the calls took.")
     (declare (type (simple-array mfixnum (*)) m))
     (loop for i fixnum below (length m)
           do (setf (aref m i) 0))))
+
+(defn clear-memoize-statistics ()
+  (clear-memoize-call-array)
+  nil)
+  
 
 
 
@@ -6940,8 +6946,9 @@ prevent this, we interrupt the main thread to run step 4.
 
 ;;; SHORTER, OLDER NAMES
 
-(defun memsum (&rest r)
-  (apply #'memoize-summary r))
+;; (Sol) -- removed here and added macro in memoize.lisp
+;; (defun memsum (&rest r)
+;;   (apply #'memoize-summary r))
 
 (defun memstat (&rest r)
   (apply #'memoized-values r))
