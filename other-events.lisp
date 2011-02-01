@@ -26634,7 +26634,6 @@
                       untouchable-fns.  See :DOC remove-untouchable."
                      (intersection-eq (list f g)
                                       (global-val 'untouchable-fns wrld))))
-                                           
                 ((and (not skip-checks)
                       (not (logicalp f wrld)))
                  (cond ((null g)
@@ -26742,28 +26741,15 @@
 ; We cause an error: the function is not permitted an executable attachment.
 ; The only challenge is to provide a useful error message.
 
-                         (cond
-                          ((or (getprop f 'unnormalized-body nil
-                                        'current-acl2-world wrld)
-                               (getprop f 'defchoose-axiom nil
-                                        'current-acl2-world wrld))
-                           (er soft ctx
-                               "It is illegal to attach to function symbol ~
-                                ~x0, because it was introduced with ~x1.~@2"
-                               f
-                               (if (getprop f 'defchoose-axiom nil
-                                            'current-acl2-world wrld)
-                                   'defchoose
-                                 'defun)
-                               see-doc))
-                          (t ; impossible case?
-                           (er soft ctx
-                               "Attachment can only be made to constrained ~
-                                function symbols.  Apparently ~x0 is not ~
-                                constrained, defined with defun, or ~
-                                introduced with defchoose; this is an odd ~
-                                case, so please email the ACL2 implementors."
-                               f))))
+                         (er soft ctx
+                             "It is illegal to attach to function symbol ~x0, ~
+                              because it was introduced with ~x1.~@2"
+                             f
+                             (if (getprop f 'defchoose-axiom nil
+                                          'current-acl2-world wrld)
+                                 'defchoose
+                               'defun)
+                             see-doc))
                         ((not (and (symbolp g)
                                    (function-symbolp g wrld)))
                          (er soft ctx
@@ -26897,6 +26883,10 @@
               only two arguments, both of them symbols.  Consider instead ~
               executing "))
     (cond
+     ((null args)
+      (er soft ctx
+          "Defattach must specify at least one attachment.  See :DOC ~
+           defattach."))
      ((symbolp (car args)) ; (defattach f ...)
       (cond
        ((and (not (keywordp (car args)))
@@ -26936,10 +26926,6 @@
        (args constraint-kwd-alist)
        (split-at-first-keyword args)
        (cond
-        ((null args)
-         (er soft ctx
-             "Defattach must specify at least one attachment.  See :DOC ~
-              defattach."))
         ((not (symbol-alistp args))
          (er soft ctx
              "Illegal arguments for defattach, ~x0.  See :DOC defattach."
@@ -27956,7 +27942,7 @@
 (defun update-attachment-records1 (pair f-canon g-canon records)
 
 ; We extend each attachment record in the list, records, for the new given
-; attachment pair, pair.  If pair is (f . g), the f-canon and g-canon are the
+; attachment pair, pair.  If pair is (f . g), then f-canon and g-canon are the
 ; canonical siblings of f and g, respectively.  We actually return (mv flg
 ; recs), where either flg is 'loop and recs is a loop, or else recs is an
 ; updated version of records.  If flg is nil then recs is equal (even eq) to
@@ -27976,9 +27962,10 @@
                                (cond ((eq flg2 'loop)
                                       (mv 'loop rec))
                                      ((or flg flg2)
-                                      (mv (if (eq flg 'found)
+                                      (mv (if (or (eq flg 'found)
+                                                  (eq flg2 'found))
                                               'found
-                                            flg2)
+                                            t)
                                           (cons rec recs)))
                                      (t
                                       (mv nil records))))))))))

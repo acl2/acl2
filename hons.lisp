@@ -559,8 +559,9 @@ accommodate them, and this resizing has some runtime cost.
 
 When a natural number is used as a fast alist's name, we interpret it as a size
 hint.  For example, ~c[(hons-acons 'foo 'bar 1000)] instructs us to use 1000 as
-the initial size for this hash table and binds 'foo to 'bar.  We ignore size
-hints that request fewer than 60 elements.
+the initial size for this hash table and binds 'foo to 'bar.  The resulting
+table should not need to be resized until more than 1000 elements are added.
+We ignore size hints that request fewer than 60 elements.
 
 Because of hash collisions, hash tables typically need to have a larger size
 than the actual number of elements they contain.  The hash tables for fast

@@ -405,6 +405,35 @@
 
   nil)
 
+#+(or acl2-loop-only (not hons))
+(defn memoize-summary ()
+  ":Doc-Section Hons-and-Memoization
+
+  Display all collected profiling and memoization table info.~/
+
+  Logically, just returns nil.  The profiling statistics may be cleared with
+  ~c[(clear-memoize-statistics)].~/~/"
+
+  nil)
+
+#+(or acl2-loop-only (not hons))
+(defn clear-memoize-statistics ()
+  ":Doc-Section Hons-and-Memoization
+
+  Clears all collected profiling statistics displayed by ~c[(memoize-summary)].~/
+
+  Logically, just returns nil..~/~/"
+
+  nil)
+
+(defmacro memsum ()
+  ":Doc-Section Hons-and-Memoization
+
+  Display all collected profiling and memoization info.~/
+
+  An abbreviation of memoize-summary.  Logically, just returns nil.~/~/"
+  '(memoize-summary))
+
 ; The macros MEMOIZE-LET, MEMOIZE-ON, and MEMOIZE-OFF typically cause
 ; "under the hood" effects that, though not changing the semantics of
 ; what ACL2 returns, may affect the speed and/or space utilization of
@@ -439,7 +468,9 @@
     flush-hons-get-hash-table-link
     ;; from memoize.lisp
     clear-memoize-table
-    clear-memoize-tables))
+    clear-memoize-tables
+    memoize-summary
+    clear-memoize-statistics))
 
 (defconst *hons-primitives*
   ;; hons-related macros and primitive fns
@@ -449,7 +480,8 @@
             memoize
             unmemoize
             memoize-on
-            memoize-off)
+            memoize-off
+            memsum)
           *hons-primitive-fns*))
 
 (defconst *mht-default-size* 60)

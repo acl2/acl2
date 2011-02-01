@@ -17310,6 +17310,42 @@
 ; Functions enable-iprint-ar and disable-iprint-ar now return two values
 ; instead of three.
 
+; Here is the example promised in :doc note-4-3 to illustrate a bug in the
+; loop-checking done on behalf of defattach.  The bug was fixed in function
+; update-attachment-records1.
+
+;;;;;;;;;;;;;;; start example
+;   (progn
+;     (encapsulate
+;      ((f1 (x) t)
+;       (f2 (x) t))
+;      (local (defun f1 (x) x))
+;      (local (defun f2 (x) x)))
+; 
+;     (encapsulate
+;      ((g1 (x) t)
+;       (g2 (x) t))
+;      (local (defun g1 (x) x))
+;      (local (defun g2 (x) x))
+;      (defthm g1-f1
+;        (equal (g1 (f1 x))
+;               (f1 x))))
+; 
+;     (encapsulate
+;      ((h1 (x) t)
+;       (h2 (x) t))
+;      (local (defun h1 (x) x))
+;      (local (defun h2 (x) x))))
+; 
+;   (defattach f2 h1)
+; 
+;   ; The following should cause the following loop to be reported, but didn't:
+;       G1 is an extended ancestor of H1.
+;       H1 is an extended ancestor of F1.
+;       F1 is an extended ancestor of G1.
+;   (defattach h2 g2)
+;;;;;;;;;;;;;;; end of example
+
   :Doc
   ":Doc-Section release-notes
 
@@ -17383,6 +17419,16 @@
   Fixed a bug in the error message caused by violating the ~il[guard] of a
   macro call.
 
+  Fixed a bug in an error message that one could get when calling
+  ~ilc[defattach] with argument ~c[:skip-checks t] to attach to a
+  ~c[:]~ilc[program] mode function symbol that was introduced with
+  ~ilc[defun].  (This is indeed an error, but the message was confusing.)
+  Thanks to Robert Krug for bringing this bug to our attention.
+
+  Fixed a bug in the loop-checking done on behalf of ~ilc[defattach], which
+  could miss a loop.  For an example, see the comment about loop-checking in
+  the comments for ~c[(deflabel note-4-3 ..)] in ACL2 source file ~c[ld.lisp].
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   The HTML documentation no longer has extra newlines in <pre> environments.
@@ -17403,9 +17449,16 @@
 
   ~st[EXPERIMENTAL VERSIONS]
 
-  (For the HONS version, ~pl[hons-and-memoization]:) ~il[Memoize]d functions
-  may now be traced (~pl[trace$]).  Thanks to Sol Swords for requesting this
-  enhancement.
+  For the HONS version (~pl[hons-and-memoization])
+  ~bq[]
+  ~il[Memoize]d functions may now be traced (~pl[trace$]).  Thanks to Sol
+  Swords for requesting this enhancement.
+
+  ~ilc[Memoize-summary] and ~ilc[clear-memoize-statistics] are now
+  ~c[:]~ilc[logic] mode functions that return ~c[nil].  Thanks to Sol Swords
+  for this enhancement.
+
+  ~eq[]
 
   ~/~/")
 

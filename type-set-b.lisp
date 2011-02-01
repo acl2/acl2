@@ -4780,6 +4780,11 @@
                  (atokens         (car (cddddr (car ancestors)))))
              (cond
               ((and (intersectp-equal tokens atokens)
+
+; If (car ancestors) is of the form (:binding-hyp hyp unify-subst), then
+; atokens will be nil, so we avoid the bogus "numeric" comparisons (with nil)
+; just below.
+
                     (or (< fn-cnt fn-cnt-alit-atm)
                         (and (eql fn-cnt fn-cnt-alit-atm)
                              (< p-fn-cnt p-fn-cnt-alit-atm))))

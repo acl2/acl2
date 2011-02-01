@@ -2927,6 +2927,159 @@ the calls took.")
    )
   t)
 
+(defparameter *memo-max-sizes*
+  ;; Binds function names to memo-max-sizes-entry structures.
+  ;;
+  ;; Jared originally added this table because he wanted to know how big
+  ;; memoization tables were getting (so that he could set up appropriate
+  ;; initial sizes), but when tables are cleared they are thrown away, so for
+  ;; tables that are frequently cleared it wasn't possible to see how large the
+  ;; table had become.
+  ;;
+  ;; After seeing the information, we thought it might be a good idea to use it
+  ;; to infer what a good table size might be when we recreate the memo table.
+  ;; See the function predict-good-memoize-table-size for details.
+  (make-hash-table))
+
+; BOZO should we use this information to try to guess better sizes and
+; rehash thresholds for memoize tables?
+
+(defrec memo-max-sizes-entry
+  ;; A single entry in the *memo-table-max-sizes* table.
+  (num-clears   ; how many times has this table been cleared (nat)
+   max-pt-size  ; maximum size of the pons table before any clear (nat)
+   max-mt-size  ; maximum size of the memo table before any clear (nat)
+   avg-pt-size  ; average size of pons table before any clear (float)
+   avg-mt-size  ; average size of memo table before any clear (float)
+   )
+  t)
+
+(defun make-initial-memoize-hash-table (fn init-size)
+
+; FN is the name of a function.  INIT-SIZE is the initial size that the user
+; says we should use.  We want to come create and return a new hash table for
+; this function's memoization table.  One possible implementation of this
+; function would just be:
+;
+;    (mht :size init-size)
+;
+; But we hope to do better.  Our idea is to look at how large the table has
+; been in the past, and use that size to make a good prediction of how large
+; the table will be this time.
+;
+; The idea here is to build a table that's just slightly bigger than the
+; average size we've seen so far.  We arbitrarily say that "slightly bigger"
+; means 1.2x the previous average.
+;
+; By itself this would be scary.  Big hash tables can use a lot of memory: a
+; rule of thumb in CCL is that 1 MB of space buys you 44,000 entries.  I want
+; to avoid creating a hundred-megabyte memo tables for a function just because
+; it was used heavily for a short while and then cleared once before.  On the
+; other hand, if a memo table truly does get large on a regular basis, then we
+; do want to guess a big size for it.
+;
+; So in this code, I enforce an artificial maximum on our guess, but I allow
+; this maximum to grow with the number of times we've cleared the table.
+; Basically I allow the maximum guess to grow at a rate of 1 MB per clear.  If
+; a table has been cleared 100 times, I think we have a pretty good sense of
+; its average usage and we can be comfortable allocating up to 100 MB for it.
+; If it's been cleared more than 1000 times, the cap is a gigabyte.  But of
+; course, to actually reach such a large guess, you'd have to be repeatedly
+; filling up the table to contain millions of entries and then clearing it.
+
+  (let* ((max-sizes
+          ;; The previously recorded sizes of this table, if any exist.
+          (gethash fn *memo-max-sizes*))
+         (size-to-use
+          (if (not max-sizes)
+              ;; We never cleared this memoize table before, so we don't have
+              ;; anything to go on besides what the user says.  Do what they
+              ;; say.
+              init-size
+            (let* ((nclears       (access memo-max-sizes-entry max-sizes :num-clears))
+                   (avg-mt-size   (access memo-max-sizes-entry max-sizes :avg-mt-size))
+                   (our-guess     (ceiling (* 1.20 avg-mt-size)))
+                   (capped-guess  (min our-guess (* nclears 44000)))
+                   (final-guess   (max 60 init-size capped-guess)))
+              final-guess))))
+    ;; BOZO also try to guess a better rehash-size?
+    (mht :size size-to-use)))
+
+(defun make-initial-memoize-pons-table (fn init-size)
+
+; This is just like make-initial-memoize-hash-table, but for the pons table.
+
+  (let* ((max-sizes (gethash fn *memo-max-sizes*))
+         (size-to-use
+          (if (not max-sizes)
+              init-size
+            (let* ((nclears       (access memo-max-sizes-entry max-sizes :num-clears))
+                   (avg-pt-size   (access memo-max-sizes-entry max-sizes :avg-pt-size))
+                   (our-guess     (ceiling (* 1.20 avg-pt-size)))
+                   (capped-guess  (min our-guess (* nclears 44000)))
+                   (final-guess   (max 60 init-size capped-guess)))
+              final-guess))))
+    ;; BOZO also try to guess a better rehash-size?
+    (mht :size size-to-use)))
+
+(defun update-memo-max-sizes (fn pt-size mt-size)
+  ;; Called during clear-one-memo-and-pons-hash when the tables existed.
+  ;; When called, pt-size and mt-size are nonzero.
+  (let ((old (gethash fn *memo-max-sizes*)))
+    (if (not old)
+        (setf (gethash fn *memo-max-sizes*)
+              (make memo-max-sizes-entry
+                    :num-clears 1
+                    :max-pt-size pt-size
+                    :max-mt-size mt-size
+                    :avg-pt-size (coerce pt-size 'float)
+                    :avg-mt-size (coerce mt-size 'float)))
+      (let* ((old.num-clears  (access memo-max-sizes-entry old :num-clears))
+             (old.max-pt-size (access memo-max-sizes-entry old :max-pt-size))
+             (old.max-mt-size (access memo-max-sizes-entry old :max-mt-size))
+             (old.avg-pt-size (access memo-max-sizes-entry old :avg-pt-size))
+             (old.avg-mt-size (access memo-max-sizes-entry old :avg-mt-size))
+             (new.num-clears  (+ 1 old.num-clears)))
+        (setf (gethash fn *memo-max-sizes*)
+              (make memo-max-sizes-entry
+                    :num-clears  new.num-clears
+                    :max-pt-size (max pt-size old.max-pt-size)
+                    :max-mt-size (max mt-size old.max-mt-size)
+                    :avg-pt-size (/ (+ pt-size (* old.avg-pt-size old.num-clears))
+                                    new.num-clears)
+                    :avg-mt-size (/ (+ mt-size (* old.avg-mt-size old.num-clears))
+                                    new.num-clears))))))
+  nil)
+
+(defun print-memo-max-sizes ()
+  (when (equal (hash-table-count *memo-max-sizes*) 0)
+    (return-from print-memo-max-sizes nil))
+  (format t "Memo table statistics gathered at each from when they were cleared:~%~%")
+  (let ((indent 8) ;; length of "Function"
+        (indent-str nil))
+    (maphash (lambda (fn entry)
+               (declare (ignore entry))
+               (setq indent (max indent (length (symbol-name fn)))))
+             *memo-max-sizes*)
+    (setq indent-str (format nil "~a" (+ 2 indent)))
+    (format t (concatenate 'string "~" indent-str ":@a") "Function")
+    (format t " ~10:@a | ~15:@a ~15:@a | ~15:@a ~15:@a~%"
+            "Clears" "PT Max" "PT Avg" "MT Max" "MT Avg")
+    (maphash
+     (lambda (fn entry)
+       (let* ((num-clears  (access memo-max-sizes-entry entry :num-clears))
+              (max-pt-size (access memo-max-sizes-entry entry :max-pt-size))
+              (max-mt-size (access memo-max-sizes-entry entry :max-mt-size))
+              (avg-pt-size (access memo-max-sizes-entry entry :avg-pt-size))
+              (avg-mt-size (access memo-max-sizes-entry entry :avg-mt-size)))
+         (format t (concatenate 'string "~" indent-str ":@a ~10:D | ~15:D ~15:D | ~15:D ~15:D~%")
+                 fn num-clears
+                 max-pt-size (floor avg-pt-size)
+                 max-mt-size (floor avg-mt-size))))
+     *memo-max-sizes*)
+    (format t "~%"))
+  nil)
+
 ; MEMOIZE FUNCTIONS
 
 #+Clozure
@@ -3773,18 +3926,18 @@ the calls took.")
                             (null ,tablename)
                             ,@mf-record-mht
                             (setq ,tablename
-                                  (mht :size ,memo-table-init-size))
+                                  (make-initial-memoize-hash-table
+                                   ',fn ,memo-table-init-size))
                             ,@(if (> nra 1)
                                   `((setq ,ponstablename
-                                          (mht :size
-                                               (* (1- ,nra)
-                                                  ,memo-table-init-size
-                                                  ))))))
+                                          (make-initial-memoize-pons-table
+                                           ',fn ,memo-table-init-size)))))
                            ;; To avoid a remotely possible
                            ;; parallelism gethash error.
                            ,@(if (> nra 1)
                                  `((setq ,localponstablename
                                          (profiler-or ,ponstablename
+; BOZO should this be a make-initial-memoize-pons-table?
                                                       (mht)))))
                            #+parallel
                            ,@(if (> nra 1)
@@ -3798,6 +3951,7 @@ the calls took.")
                                  `((ccl::unlock-hash-table
                                     ,localponstablename)))
                            (setq ,localtablename
+; BOZO should this be a make-initial-memoize-hash-table?
                                  (profiler-or ,tablename (mht)))
                            (multiple-value-setq
                                (,*mf-ans* ,*mf-ans-p*)
@@ -4487,6 +4641,7 @@ the calls took.")
               (,ponstablevalue
                (symbol-value
                 (access memoize-info-ht-entry ,h :ponstablename)))
+; BOZO should probably use make-initial-memoize-hash-table
               (,ht1 (mht)))
          (unwind-protect
              (progn (setf (symbol-value
@@ -5111,7 +5266,8 @@ the calls took.")
           *MEMOIZE-SUMMARY-ORDER-LIST*)."
 
   (compute-calls-and-times)
-  (memoize-summary-after-compute-calls-and-times))
+  (memoize-summary-after-compute-calls-and-times)
+  nil)
 
 (defg *short-symbol-name-width* 30)
 
@@ -5439,31 +5595,28 @@ the calls took.")
        (eql 0 (hash-table-count (the hash-table x)))))
 
 (defn clear-one-memo-and-pons-hash (l)
-  
-  ;  It is debatable whether one should use the CLRHASH approach or
-  ;  the set-to-NIL approach in CLEAR-ONE-MEMO-AND-PONS-HASH.  The
-  ;  CLRHASH approach, in addition to reducing the number of
-  ;  MAKE-HASH-TABLE calls necessary, has the effect of immediately
-  ;  clearing a hash-table even if some other function is holding on
-  ;  to it, so more garbage may get garbage collected sooner than
-  ;  otherwise.  The set-to-NIL approach has the advantage of costing
-  ;  very few instructions and very little paging.
 
-  (let ((h (symbol-value
-            (the symbol (access memoize-info-ht-entry
-                                l :tablename)))))
-    (when h
-      (setf (symbol-value
-             (the symbol (access memoize-info-ht-entry l :tablename)))
-            nil)))
-  (let ((h (symbol-value
-         (the symbol (access memoize-info-ht-entry
-                             l :ponstablename)))))
-    (when h
-      (setf (symbol-value
-             (the symbol (access memoize-info-ht-entry
-                                 l :ponstablename)))
-        nil))))
+;  It is debatable whether one should use the CLRHASH approach or
+;  the set-to-NIL approach in CLEAR-ONE-MEMO-AND-PONS-HASH.  The
+;  CLRHASH approach, in addition to reducing the number of
+;  MAKE-HASH-TABLE calls necessary, has the effect of immediately
+;  clearing a hash-table even if some other function is holding on
+;  to it, so more garbage may get garbage collected sooner than
+;  otherwise.  The set-to-NIL approach has the advantage of costing
+;  very few instructions and very little paging.
+
+  (let* ((fn (access memoize-info-ht-entry l :fn))
+         (mt (symbol-value (access memoize-info-ht-entry l :tablename)))
+         (pt (symbol-value (access memoize-info-ht-entry l :ponstablename)))
+         (mt-count (and mt (hash-table-count mt)))
+         (pt-count (and pt (hash-table-count pt))))
+    (when mt
+      (setf (symbol-value (access memoize-info-ht-entry l :tablename)) nil))
+    (when pt
+      (setf (symbol-value (access memoize-info-ht-entry l :ponstablename)) nil))
+    (when (or mt-count pt-count)
+      (update-memo-max-sizes fn (or pt-count 1) (or mt-count 1)))
+    nil))
 
 (defn1 clear-memoize-table (k)
 
@@ -5499,8 +5652,10 @@ the calls took.")
     (loop for i fixnum below (length m)
           do (setf (aref m i) 0))))
 
-
-
+(defn clear-memoize-statistics ()
+  (clear-memoize-call-array)
+  nil)
+  
 ; HONS READ
 
 ; Hash consing when reading is implemented via a change to the
@@ -6770,8 +6925,7 @@ next GC.~%"
 
 ;;; SHORTER, OLDER NAMES
 
-(defun memsum (&rest r)
-  (apply #'memoize-summary r))
+; Note: memsum is defined in memoize.lisp.
 
 (defun memstat (&rest r)
   (apply #'memoized-values r))
