@@ -1598,9 +1598,11 @@
 ; See the comment in var-fn-count for an explanation of how this function
 ; counts the size of evgs.
 
-  (declare (type (signed-byte 30) acc calls))
+  (declare (xargs :measure (acl2-count evg)
+                  :ruler-extenders :all)
+           (type (unsigned-byte 29) acc calls))
   (the
-   (signed-byte 30)
+   (unsigned-byte 29)
    (cond
     ((or (>= calls (fn-count-evg-max-calls))
          (>= acc (fn-count-evg-max-val)))
@@ -1632,7 +1634,7 @@
            ((complex-rationalp evg)
             (fn-count-evg-rec (realpart evg)
                               (fn-count-evg-rec (imagpart evg)
-                                                (1+ acc)
+                                                (1+f acc)
                                                 (1+f calls))
                               (+f 2 calls)))
            #+:non-standard-analysis
@@ -1660,7 +1662,7 @@
             (1+f acc))))
     (t (fn-count-evg-rec (cdr evg)
                          (fn-count-evg-rec (car evg)
-                                           (1+ acc)
+                                           (1+f acc)
                                            (1+f calls))
                          (+f 2 calls))))))
 

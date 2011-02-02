@@ -17346,6 +17346,9 @@
 ;   (defattach h2 g2)
 ;;;;;;;;;;;;;;; end of example
 
+; Replaced a couple of calls of 1+ by 1+f in fn-count-evg-rec, after Robert
+; Krug brought these to our attention.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -17382,6 +17385,11 @@
   Formatted printing functions now have analogues that print to strings and do
   not take an output channel or ~ilc[state] as arguments.
   ~l[printing-to-strings].
+
+  The system function ~c[ancestors-check] is now available for verified
+  modification by users, i.e., attachment using
+  ~c[(defattach ancestors-check <your_function>)].  Thanks to Robert Krug for
+  providing the necessary proof support, which we modified only in small ways.
 
   ~st[HEURISTIC IMPROVEMENTS]
 

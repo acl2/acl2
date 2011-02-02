@@ -3022,9 +3022,10 @@
                                   (pseudo-term-listp x)
                                 (pseudo-termp x))
                               (integerp fn-count-acc)
-                              (integerp p-fn-count-acc))))
+                              (integerp p-fn-count-acc))
+                  :verify-guards NIL))
   (cond (flg
-         (cond ((null x)
+         (cond ((atom x)
                 (mv fn-count-acc p-fn-count-acc))
                (t
                 (mv-let (fn-cnt p-fn-cnt)
@@ -4173,20 +4174,39 @@
     (mv (if ts ts *ts-unknown*) ttree)))
 
 (defun member-char-stringp (chr str i)
-  (cond ((< i 0) nil)
+  (declare (xargs :guard (and (stringp str)
+                              (integerp i)
+                              (< i (length str)))
+                  :measure (nfix (+ 1 i))))
+  (cond ((not (mbt (integerp i)))
+         nil)
+        ((< i 0) nil)
         (t (or (eql chr (char str i))
                (member-char-stringp chr str (1- i))))))
 
 (defun terminal-substringp1 (str1 str2 max1 max2)
-  (declare (xargs :guard (and (integerp max1)
+  (declare (xargs :guard (and (stringp str1)
+                              (stringp str2)
+                              (integerp max1)
                               (integerp max2)
-                              (<= max1 max2))))
-  (cond ((< max1 0) t)
+                              (< max1 (length str1))
+                              (< max2 (length str2))
+                              (<= max1 max2))
+                  :measure (nfix (+ 1 max1))))
+  (cond ((not (mbt (integerp max1)))
+         nil)
+        ((< max1 0) t)
         ((eql (char str1 max1) (char str2 max2))
          (terminal-substringp1 str1 str2 (1- max1) (1- max2)))
         (t nil)))
 
 (defun terminal-substringp (str1 str2 max1 max2)
+  (declare (xargs :guard (and (stringp str1)
+                              (stringp str2)
+                              (integerp max1)
+                              (integerp max2)
+                              (< max1 (length str1))
+                              (< max2 (length str2)))))
   (cond ((< max2 max1) nil)
         (t (terminal-substringp1 str1 str2 max1 max2))))
 
@@ -4202,6 +4222,7 @@
 ; we have to look into symbol-package-names too.  This function is only used
 ; heuristically, so we choose not to modify it at this time.
 
+  (declare (xargs :guard t))
   (cond ((atom y)
          (cond ((characterp y) (and (characterp x) (eql x y)))
                ((stringp y)
@@ -4239,7 +4260,7 @@
                            (evg-occur x (denominator y))))
                       ((rationalp x) (= x y))
                       (t nil)))
-               (t
+               ((complex-rationalp y)
 
 ; We know y is a complex rational.  X occurs in it either because
 ; x is the same complex rational or x is a rational that occurs in
@@ -4249,13 +4270,18 @@
                        (or (evg-occur x (realpart y))
                            (evg-occur x (imagpart y))))
                       ((complex-rationalp x) (= x y))
-                      (t nil)))))
+                      (t nil)))
+               (t (er hard? 'evg-occur
+                      "Surprising case:  ~x0"
+                      `(evg-occur ,x ,y)))))
         (t (or (evg-occur x (car y))
                (evg-occur x (cdr y))))))
 
 (mutual-recursion
 
 (defun occur (term1 term2)
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-termp term2))))
   (cond ((variablep term2)
          (eq term1 term2))
         ((fquotep term2)
@@ -4266,7 +4292,9 @@
         (t (occur-lst term1 (fargs term2)))))
 
 (defun occur-lst (term1 args2)
-  (cond ((null args2) nil)
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-term-listp args2))))
+  (cond ((endp args2) nil)
         (t (or (occur term1 (car args2))
                (occur-lst term1 (cdr args2))))))
 )
@@ -4304,6 +4332,8 @@
 ; isomorphic down to the variable symbols.  It is here to avoid a very
 ; bad case in the worse-than check.
 
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-termp term2))))
   (cond ((variablep term1)
          
 ; Suppose that term1 is a variable.  The only thing that it can be
@@ -4322,6 +4352,8 @@
                 (pseudo-variantp-list (fargs term1) (fargs term2))))))
 
 (defun pseudo-variantp-list (args1 args2)
+  (declare (xargs :guard (and (pseudo-term-listp args1)
+                              (pseudo-term-listp args2))))
   (cond ((endp args1) t)
         (t (and (pseudo-variantp (car args1) (car args2))
                 (pseudo-variantp-list (cdr args1) (cdr args2)))))))
@@ -4594,6 +4626,10 @@
 ; objects; but memoization depends on the raw Lisp function being executed,
 ; while :ideal mode functions are run without ever slipping into raw Lisp.
 
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-termp term2))
+                  :measure (make-ord 1 (+ 1 (acl2-count term1) (acl2-count term2)) 1)
+                  :well-founded-relation o<))
   (cond ((basic-worse-than term1 term2) t)
         ((pseudo-variantp term1 term2) nil)
         ((variablep term1) 
@@ -4636,6 +4672,14 @@
 ; And if pseudo-variantp is nil, then the equal returns nil.  So we
 ; can simplify the if above to:
 
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-termp term2))
+                  :measure (make-ord 1
+                                     (+ 1
+                                        (acl2-count term1)
+                                        (acl2-count term2))
+                                     2)
+                  :well-founded-relation o<))
   (if (pseudo-variantp term1 term2)
       (equal term1 term2)
     (worse-than term1 term2)))
@@ -4646,7 +4690,11 @@
 ; of args1.  Technically, a2 is uglier than a1 if a1 is atomic (a
 ; variable or constant) and a2 is not or a2 is worse-than a1.
 
-  (cond ((null args1) nil)
+  (declare (xargs :guard (and (pseudo-term-listp args1)
+                              (pseudo-term-listp args2))
+                  :measure (make-ord 1 (+ 1 (acl2-count args1) (acl2-count args2)) 0)
+                  :well-founded-relation o<))
+  (cond ((endp args1) nil)
         ((or (and (or (variablep (car args1))
                       (fquotep (car args1)))
                   (not (or (variablep (car args2))
@@ -4659,7 +4707,15 @@
 
 ; Is some element of arg1 worse-than the corresponding element of args2?
 
-  (cond ((null args1) nil)
+  (declare (xargs :guard (and (pseudo-term-listp args1)
+                              (pseudo-term-listp args2))
+                  :measure (make-ord 1
+                                     (+ 1
+                                        (acl2-count args1)
+                                        (acl2-count args2))
+                                     0)
+                  :well-founded-relation o<))
+  (cond ((endp args1) nil)
         ((worse-than (car args1) (car args2)) t)
         (t (basic-worse-than-lst2 (cdr args1) (cdr args2)))))
 
@@ -4688,6 +4744,14 @@
 ; from 17 to B) another argument (the first) got better (it went from
 ; A to 17).
 
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-termp term2))
+                  :measure (make-ord 1
+                                     (+ 1
+                                        (acl2-count term1)
+                                        (acl2-count term2))
+                                     0)
+                  :well-founded-relation o<))
   (cond ((variablep term2)
          (cond ((eq term1 term2) nil)
                (t (occur term2 term1))))
@@ -4711,6 +4775,14 @@
 
 ; Returns t if some subterm of term1 is worse-than or equal to term2.
 
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-termp term2))
+                  :measure (make-ord 1
+                                     (+ 1
+                                        (acl2-count term1)
+                                        (acl2-count term2))
+                                     1)
+                  :well-founded-relation o<))
   (cond ((variablep term1) (eq term1 term2))
         ((if (pseudo-variantp term1 term2)  ; see worse-than-or-equal
              (equal term1 term2)
@@ -4720,7 +4792,13 @@
         (t (some-subterm-worse-than-or-equal-lst (fargs term1) term2))))
 
 (defun some-subterm-worse-than-or-equal-lst (args term2)
-  (cond ((null args) nil)
+  (declare (xargs :guard (and (pseudo-term-listp args)
+                              (pseudo-termp term2))
+                  :measure (make-ord 1
+                                     (+ 1 (acl2-count args) (acl2-count term2))
+                                     0)
+                  :well-founded-relation o<))
+  (cond ((endp args) nil)
         (t (or (some-subterm-worse-than-or-equal (car args) term2)
                (some-subterm-worse-than-or-equal-lst (cdr args) term2)))))
 
@@ -4731,7 +4809,13 @@
 ; element of args itself.  That is, we use ``subterm'' in the ``not
 ; necessarily proper subterm'' sense.
 
-  (cond ((null args) nil)
+  (declare (xargs :guard (and (pseudo-term-listp args)
+                              (pseudo-termp term2))
+                  :measure (make-ord 1
+                                     (+ 1 (acl2-count args) (acl2-count term2))
+                                     0)
+                  :well-founded-relation o<))
+  (cond ((endp args) nil)
         (t (or (some-subterm-worse-than-or-equal (car args) term2)
                (worse-than-lst (cdr args) term2)))))
 
@@ -4767,30 +4851,48 @@
                         tokens)          ; the runes involved in this backchain
                   ancestors))))
 
+(defun ancestor-listp (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (null x))
+        ((not (true-listp (car x)))
+         nil)
+        ((eq (caar x) :binding-hyp)
+         (and (null (cdddr (car x)))
+              (ancestor-listp (cdr x))))
+        (t (let* ((anc (car x))
+                  (alit (car anc))
+                  (alit-atm (cadr anc))
+                  (fn-cnt-alit-atm (caddr anc))
+                  (p-fn-cnt-alit-atm (cadddr anc))
+                  (atokens (car (cddddr anc))))
+             (and (pseudo-termp alit)
+                  (pseudo-termp alit-atm)
+                  (integerp fn-cnt-alit-atm)
+                  (integerp p-fn-cnt-alit-atm)
+                  (true-listp atokens)
+                  (ancestor-listp (cdr x)))))))
+
 (defun earlier-ancestor-biggerp (fn-cnt p-fn-cnt tokens ancestors)
 
 ; We return t if some ancestor on ancestors has a bigger fn-count than
 ; fn-cnt and intersects with tokens.
 
-  (cond ((null ancestors) nil)
-        (t (let (; (alit            (car (car ancestors)))
-                 ; (alit-atm        (cadr (car ancestors)))
-                 (fn-cnt-alit-atm (caddr (car ancestors)))
-                 (p-fn-cnt-alit-atm (cadddr (car ancestors)))
-                 (atokens         (car (cddddr (car ancestors)))))
-             (cond
-              ((and (intersectp-equal tokens atokens)
-
-; If (car ancestors) is of the form (:binding-hyp hyp unify-subst), then
-; atokens will be nil, so we avoid the bogus "numeric" comparisons (with nil)
-; just below.
-
-                    (or (< fn-cnt fn-cnt-alit-atm)
-                        (and (eql fn-cnt fn-cnt-alit-atm)
-                             (< p-fn-cnt p-fn-cnt-alit-atm))))
-               t)
-              (t (earlier-ancestor-biggerp fn-cnt p-fn-cnt tokens
-                                           (cdr ancestors))))))))
+  (declare (xargs :guard (and (integerp fn-cnt)
+                              (integerp p-fn-cnt)
+                              (true-listp tokens)
+                              (ancestor-listp ancestors))))
+  (cond ((atom ancestors) nil)
+        (t (let* ((anc (car ancestors))
+                  (fn-cnt-alit-atm (caddr anc))
+                  (p-fn-cnt-alit-atm (cadddr anc))
+                  (atokens (car (cddddr anc))))
+             (cond ((and (intersectp-equal tokens atokens)
+                         (or (< fn-cnt fn-cnt-alit-atm)
+                             (and (eql fn-cnt fn-cnt-alit-atm)
+                                  (< p-fn-cnt p-fn-cnt-alit-atm))))
+                    t)
+                   (t (earlier-ancestor-biggerp fn-cnt p-fn-cnt tokens
+                                                (cdr ancestors))))))))
 
 (defun ancestors-check1 (lit-atm lit fn-cnt p-fn-cnt ancestors tokens)
                                  
@@ -4818,8 +4920,14 @@
 ; p               =   comp  x    x
 ; (not p)         comp =    x    x
 
+  (declare (xargs :guard (and (pseudo-termp lit-atm)
+                              (pseudo-termp lit)
+                              (integerp fn-cnt)
+                              (integerp p-fn-cnt)
+                              (ancestor-listp ancestors)
+                              (true-listp tokens))))
   (cond
-   ((null ancestors)
+   ((endp ancestors)
     (mv nil nil))
    ((eq (caar ancestors) :binding-hyp)
     (ancestors-check1 lit-atm lit fn-cnt p-fn-cnt (cdr ancestors) tokens))
@@ -4916,7 +5024,7 @@
 ; hack.  That is because they are used by the rewrite clique where
 ; there is no such hack, and we didn't want to slow that clique down.
 
-(defun ancestors-check (lit ancestors tokens)
+(defun ancestors-check-builtin (lit ancestors tokens)
 
 ; We return two values.  The first is whether we should abort trying
 ; to establish lit on behalf of the given tokens.  The second is
@@ -4940,7 +5048,10 @@
 
 ; Historical Note:  In nqthm, this function was named relieve-hyps-not-ok.
 
-  (cond ((null ancestors)
+  (declare (xargs :guard (and (pseudo-termp lit)
+                              (ancestor-listp ancestors)
+                              (true-listp tokens))))
+  (cond ((endp ancestors)
          (mv nil nil))
         (t (mv-let (not-flg lit-atm)
                    (strip-not lit)
@@ -4949,6 +5060,11 @@
                            (fn-count lit-atm)
                            (ancestors-check1 lit-atm lit fn-cnt p-fn-cnt
                                              ancestors tokens))))))
+
+(defproxy ancestors-check (* * *) => (mv * *))
+
+(defattach (ancestors-check ancestors-check-builtin)
+  :skip-checks t)
 
 ; Essay on Type-set Deductions for Integerp
 
