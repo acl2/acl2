@@ -24,10 +24,9 @@
 ;  Email: pete@cs.utexas.edu, moore@cs.utexas.edu
  
 ;  Postal Mail:
-;  Department of Computer Sciences
-;  Taylor Hall 2.124 [C0500]
+;  Department of Computer Science
 ;  The University of Texas at Austin
-;  Austin, TX 78712-1188 USA
+;  Austin, TX 78701 USA
 
 ; NOTE: For a generalization of this utility, see file defp.lisp in this
 ; directory.

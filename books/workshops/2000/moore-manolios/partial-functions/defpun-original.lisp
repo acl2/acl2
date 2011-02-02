@@ -20,10 +20,9 @@
 ;  Email: pete@cs.utexas.edu, moore@cs.utexas.edu
  
 ;  Postal Mail:
-;  Department of Computer Sciences
-;  Taylor Hall 2.124 [C0500]
+;  Department of Computer Science
 ;  The University of Texas at Austin
-;  Austin, TX 78712-1188 USA
+;  Austin, TX 78701 USA
 
 ; To introduce an arbitrary tail-recursive function we proceed in
 ; three steps.  First is the proof that we can admit the generic one

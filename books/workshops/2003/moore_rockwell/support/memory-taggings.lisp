@@ -2,10 +2,9 @@
 
 ; J Strother Moore
 
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Taylor Hall 2.124
-; Austin, Texas 78712
+; Austin, Texas 78701
 ; moore@cs.utexas.edu
 
 ; This book is described in the above paper.  I have kept comments pretty

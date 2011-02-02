@@ -19,9 +19,9 @@
 
 ; Written by: J Strother Moore
 ; email:      Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78701 U.S.A.
 
 ; Modified by: John Cowles
 ; email:       cowles@uwyo.edu
