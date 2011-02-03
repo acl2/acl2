@@ -268,8 +268,7 @@ sub compute_cost_paths_aux {
 
 	($most_expensive_dep, $most_expensive_dep_total) = find_most_expensive($certdeps, $costs);
     }
-    my %entry = ( "totaltime" => $most_expensive_dep_total +
-		                 ($certtime ? $certtime : 0.000001), 
+    my %entry = ( "totaltime" => $most_expensive_dep_total + $certtime, 
 		  "maxpath" => $most_expensive_dep );
 
     $costs->{$certfile} = \%entry;
@@ -467,6 +466,73 @@ sub individual_files_report {
 
     return $ret;
 }   
+
+
+my $start = "start";
+my $end = "end";
+
+sub mk_sorted_event_lst {
+    my ($costs, $basecosts) = @_;
+
+    # costs: table mapping filename to totaltime, maxpath
+    # basecosts: table mapping filename to immediate cost
+
+    # collect up a list of key/val pairs (time, start_or_finish)
+    my @starts_ends = ();
+    foreach my $key (keys %$basecosts) {
+	my $selfcost = $basecosts->{$key};
+	my $totalcost = $costs->{$key}->{"totaltime"};
+	push (@starts_ends, [$totalcost-$selfcost, $start]);
+	push (@starts_ends, [$totalcost, $end]);
+    }
+
+    @starts_ends = sort { ( $a->[0] <=> $b->[0] ) || 
+			      (($a->[1] eq $start) ?
+			       (($b->[1] eq $start) ? 0 : 1) :
+			       (($b->[1] eq $start) ? -1 : 0)) } @starts_ends;
+
+    return \@starts_ends;
+}
+
+sub parallelism_stats {
+    my $starts_ends = shift;
+
+    my $max_parallel = 0;
+    my $max_start_time = 0.0;
+    my $max_end_time = 0.0;
+    my $sum_parallel = 0.0;
+    my $curr_parallel = 0;
+    my $lasttime = 0.0;
+    foreach my $entry (@$starts_ends) {
+	(my $time, my $event) = @$entry;
+	# Running integral of parallelism over time.  Of course
+	# another (more accurate?) way to compute this would just be
+	# to add up the self-times for all files.
+	$sum_parallel = $sum_parallel + ($curr_parallel * ($time - $lasttime));
+
+	if ($event eq $start) {
+	    $curr_parallel = $curr_parallel + 1;
+	} else {
+	    if ($curr_parallel > $max_parallel) {
+		$max_parallel = $curr_parallel;
+		$max_start_time = $lasttime;
+		$max_end_time = $time;
+	    }
+	    $curr_parallel = $curr_parallel - 1;
+	}
+	$lasttime = $time;
+    }
+    if ($curr_parallel != 0) {
+	print "Error: Ended with jobs still running??\n"
+    }
+    my $avg_parallel = $sum_parallel / $lasttime;
+
+    return ($max_parallel, $max_start_time, $max_end_time, $avg_parallel);
+}
+
+
+
+
 
 
 sub to_basename {

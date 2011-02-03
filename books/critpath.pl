@@ -251,3 +251,13 @@ unless ($OPTIONS{'nopath'}) {
 unless ($OPTIONS{'nolist'}) {
     print individual_files_report($costs, $basecosts, $OPTIONS{"html"}, $OPTIONS{"short"});
 }
+
+
+
+my ($max_parallel, $max_start_time, $max_end_time, $avg_parallel)
+    = parallelism_stats(mk_sorted_event_lst($costs, $basecosts));
+
+if (! $OPTIONS{"html"}) {
+    print "Maximum parallelism: $max_parallel processes, from time $max_start_time to $max_end_time\n";
+    print "Average level of parallelism: $avg_parallel.\n";
+}
