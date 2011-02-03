@@ -28,6 +28,7 @@ use strict;
 use Getopt::Long qw(:config bundling); 
 use File::Spec;
 use FindBin qw($RealBin);
+use Storable;
 
 # Note: Trying out FindBin::$RealBin.  If breaks, we can go back to
 # the system below.
@@ -113,6 +114,8 @@ my @deps_of = ();
 
 my $debug = 0;
 
+my $cache_file = 0;
+
 my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     'help'   => \$OPTIONS{'help'},
 			     'nowarn' => \$OPTIONS{'nowarn'},
@@ -125,8 +128,16 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 					       read_targets(shift, \@user_targets);
 					   },
 			     "deps-of|p=s"
-			              => \@deps_of
+			              => \@deps_of,
+			     "cache|h=s"
+			              => \$cache_file
 			     );
+
+my $cache = {};
+if ($cache_file && -e $cache_file) {
+    $cache = retrieve($cache_file);
+}
+my %tscache = ();
 
 push (@user_targets, @ARGV);
 
@@ -157,7 +168,7 @@ foreach my $target (@user_targets) {
 }
 
 foreach my $top (@deps_of) {
-    my $deps = find_deps(to_basename($top));
+    my $deps = find_deps(to_basename($top), $cache, 1, \%tscache);
     push (@targets, @{$deps});
 }
 
@@ -169,9 +180,11 @@ unless (@targets) {
 
 foreach my $target (@targets) {
     if ($target =~ /\.cert/) {
-	add_deps($target, \%deps, \@sources);
+	add_deps($target, $cache, \%deps, \@sources, \%tscache);
     }
 }
+
+$cache_file && store($cache, $cache_file);
 
 my $basecosts = {};
 read_costs(\%deps, $basecosts, $warnings);

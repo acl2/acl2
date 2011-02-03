@@ -48,10 +48,14 @@
 
 use strict;
 use warnings;
+use Storable;
 use FindBin qw($RealBin);
 use Getopt::Long qw(:config bundling_override);
 
 (do "$RealBin/certlib.pl") or die ("Error loading $RealBin/certlib.pl:\n!: $!\n\@: $@\n");
+
+# use lib "/usr/lib64/perl5/5.8.8/x86_64-linux-thread-multi/Devel";
+# use Devel::DProf;
 
 my @orig_cmd_line_args = ();
 push (@orig_cmd_line_args, @ARGV);
@@ -79,7 +83,10 @@ my $var_prefix = "CERT_PL";
 my %certlib_opts = ( "debugging" => 0,
 		     "clean_certs" => 0,
 		     "print_deps" => 0,
-		     "all_deps" => 0 );
+		     "all_deps" => 0,
+                     "believe_cache" => 0);
+
+my $cache_file = 0;
 
 $base_path = abs_canonical_path(".");
 
@@ -293,11 +300,18 @@ GetOptions ("help|h"               => sub { print $summary_str;
 					    read_targets(shift, \@user_targets);
 					},
 	    "deps-of|p=s"          => \@deps_of,
-	    "debug"                => \$certlib_opts{"debugging"}
+	    "debug"                => \$certlib_opts{"debugging"},
+	    # Note: this doesn't do anything yet.
+	    "cache|h=s"            => \$cache_file,
+	    "accept-cache"         => \$certlib_opts{"believe_cache"}
 	    );
 
 certlib_set_opts(\%certlib_opts);
 
+my $cache = {};
+if ($cache_file && -e $cache_file) {
+    $cache = retrieve($cache_file);
+}
 # If $acl2_books is still not set, then:
 # - set it based on the location of acl2 in the path, if available
 # - otherwise set it to the directory containing this script.
@@ -348,8 +362,10 @@ foreach my $target (@user_targets) {
     push (@targets, to_basename($target) . ".cert");
 }
 
+my %tscache = ();
+
 foreach my $top (@deps_of) {
-    my $deps = find_deps(to_basename($top));
+    (my $deps, my $two_pass) = find_deps(to_basename($top), $cache, 1, \%tscache);
     push (@targets, @{$deps});
 }
 
@@ -362,8 +378,10 @@ unless (@targets) {
 
 
 foreach my $target (@targets) {
-    add_deps($target, \%seen, \@sources);
+    add_deps($target, $cache, \%seen, \@sources, \%tscache);
 }
+
+$cache_file && store($cache, $cache_file);
 
 @sources = sort(@sources);
 
@@ -466,6 +484,6 @@ unless ($no_makefile) {
     }
 }
 
-
+# print_times_seen();
 
 

@@ -29,7 +29,6 @@
 (ld "data-structures/define-structures-package.lsp" :dir :system)
 (ld "data-structures/memories/package.lsp" :dir :system)
 (ld "hacking/hacker-pkg.lsp" :dir :system)
-(ld "finite-set-theory/osets/sets.defpkg" :dir :system)
 (ld "cutil/package.lsp" :dir :system)
 (ld "serialize/package.lsp" :dir :system)
 (ld "str/package.lsp" :dir :system)

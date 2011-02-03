@@ -26,7 +26,7 @@ use strict;
 use warnings;
 use File::Basename;
 use File::Spec;
-use Cwd;
+# use Cwd;
 use Cwd 'abs_path';
 
 
@@ -83,7 +83,7 @@ sub abs_canonical_path {
     my $path = shift;
     my $abspath = File::Spec->rel2abs(rec_readlink($path));
     my ($vol, $dir, $file) = File::Spec->splitpath($abspath);
-    my $absdir = abs_path($dir);
+    my $absdir = Cwd::fast_abs_path($dir);
     if ($absdir) {
 	return File::Spec->catpath($vol, $absdir, $file);
     } else {
@@ -94,14 +94,24 @@ sub abs_canonical_path {
 
 my $BASE_PATH = abs_canonical_path(".");
 
+my %canonical_path_memo = ();
 
 sub canonical_path {
-    my $abs_path = abs_canonical_path(shift);
-    if ($BASE_PATH) {
-	my $relpath =  File::Spec->abs2rel($abs_path, $BASE_PATH);
-	return $relpath ? $relpath : ".";
+    my $fname = shift;
+    my $entry = $canonical_path_memo{$fname};
+    if ($entry) {
+	return $entry;
     } else {
-	return $abs_path;
+	my $res;
+	my $abs_path = abs_canonical_path($fname);
+	if ($BASE_PATH) {
+	    my $relpath =  File::Spec->abs2rel($abs_path, $BASE_PATH);
+	    $res = $relpath ? $relpath : ".";
+	} else {
+	    $res = $abs_path;
+	}
+	$canonical_path_memo{$fname} = $res;
+	return $res;
     }
 }
 
@@ -474,6 +484,19 @@ my $debugging = 0;
 my $clean_certs = 0;
 my $print_deps = 0;
 my $all_deps = 0;
+my $believe_cache = 0;
+
+#  However, now it makes sense to do it in two
+# passes:
+# - update the dependency-info cache, including the cert and source
+# tables mentioned above
+# - create the make-style dependency graph using that cache,
+# afterward.
+
+# A complication is that add-include-book-dir directives can affect
+# what dependencies are stored, but this should only affect ones that
+# come after.  To deal with this, for each file we'll create a log of
+# what relevant lines are in it, in order.
 
 my %dirs = ( );
 
@@ -489,30 +512,40 @@ sub certlib_set_opts {
     $clean_certs = $opts->{"clean_certs"};
     $print_deps = $opts->{"print_deps"};
     $all_deps = $opts->{"all_deps"};
+    $believe_cache = $opts->{"believe_cache"};
 }
 
 sub certlib_set_base_path {
     my $dir = shift;
     $dir = $dir || ".";
     $BASE_PATH = abs_canonical_path($dir);
+    %canonical_path_memo = ();
 }
+
+
+# Event types:
+my $add_dir_event = 'add-include-book-dir';
+my $include_book_event = 'include-book';
+my $depends_on_event = 'depends-on';
+my $two_pass_event = 'two-pass certification';
+my $ld_event = 'ld';
+
 
 sub get_add_dir {
     my $base = shift;
     my $the_line = shift;
-    my $local_dirs = shift;
+    my $events = shift;
 
     # Check for ADD-INCLUDE-BOOK-DIR commands
     my $regexp = "^[^;]*\\(add-include-book-dir[\\s]+:([^\\s]*)[\\s]*\"([^\"]*)\\/\"";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
 	my $name = uc($res[0]);
-	my $basedir = dirname($base);
-	$local_dirs->{$name} = canonical_path(rel_path($basedir, $res[1]));
-	print "Added local_dirs entry " . $local_dirs->{$name} . " for $name\n" if $debugging;
-	print_dirs($local_dirs) if $debugging;
+	print "$base: add_dir $name $res[1]\n" if $debugging;
+	push (@$events, [$add_dir_event, $name, $res[1]]);
 	return 1;
     }
+    return 0;
 }
 
 
@@ -528,26 +561,30 @@ sub lookup_colon_dir {
     return $dirpath;
 }
 
+sub debug_print_event {
+    my $fname = shift;
+    my $cmd = shift;
+    my $args = shift;
+    if ($debugging) {
+	print "$fname: $cmd ";
+	foreach my $arg (@$args) {
+	    $arg && print " $arg";
+	}
+	print "\n";
+    }
+}
+
 sub get_include_book {
     my $base = shift;
     my $the_line = shift;
-    my $local_dirs = shift;
+    my $events = shift;
 
     my $regexp = "^[^;]*\\(include-book[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
-	if ($res[1]) {
-	    my $dirpath = lookup_colon_dir($res[1], $local_dirs);
-	    unless (defined($dirpath)) {
-		print "Warning: Unknown :dir entry $res[1] for $base\n";
-		print_dirs($local_dirs) if $debugging;
-		return 0;
-	    }
-	    return canonical_path(rel_path($dirpath, "$res[0].cert"));
-	} else {
-	    my $dir = dirname($base);
-	    return canonical_path(rel_path($dir, "$res[0].cert"));
-	}
+	debug_print_event($base, "include_book", \@res);
+	push(@$events, [$include_book_event, $res[0], $res[1]]);
+	return 1;
     }
     return 0;
 }
@@ -555,26 +592,35 @@ sub get_include_book {
 sub get_depends_on {
     my $base = shift;
     my $the_line = shift;
-    my $local_dirs = shift;
+    my $events = shift;
 
     my $regexp = "\\(depends-on[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
-	if ($res[1]) {
-	    my $dirpath = lookup_colon_dir($res[1], $local_dirs);
-	    unless (defined($dirpath)) {
-		print "Warning: Unknown :dir entry $res[1] for $base\n";
-		print_dirs($local_dirs) if $debugging;
-		return 0;
-	    }
-	    return canonical_path(rel_path($dirpath, "$res[0]"));
-	} else {
-	    my $dir = dirname($base);
-	    return canonical_path(rel_path($dir, "$res[0]"));
-	}
+	debug_print_event($base, "depends_on", \@res);
+	push(@$events, [$depends_on_event, $res[0], $res[1]]);
+	return 1;
     }
     return 0;
 }
+
+sub get_two_pass {
+    my $base = shift;
+    my $the_line = shift;
+    my $events = shift;
+
+    my $regexp = ";; two-pass certification";
+    my $match = $the_line =~ m/$regexp/;
+    if ($match) {
+	debug_print_event($base, "two_pass", []);
+	push(@$events, [$two_pass_event]);
+	return 1;
+    }
+    return 0;
+}
+
+
+
 
 
 # Possible more general way of recognizing a Lisp symbol:
@@ -588,33 +634,28 @@ sub get_depends_on {
 sub get_ld {
     my $base = shift;
     my $the_line = shift;
-    my $local_dirs = shift;
+    my $events = shift;
 
     # Check for LD commands
     my $regexp = "^[^;]*\\(ld[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
-	if ($res[1]) {
-	    my $dirpath = lookup_colon_dir($res[1], $local_dirs);
-	    unless (defined($dirpath)) {
-		print "Warning: Unknown :dir entry $res[1] for $base\n";
-		print_dirs($local_dirs) if $debugging;
-		return 0;
-	    }
-	    return canonical_path(rel_path($dirpath, $res[0]));
-	} else {
-	    my $dir = dirname($base);
-	    return canonical_path(rel_path($dir, $res[0]));
-	}
+	debug_print_event($base, "ld", \@res);
+	push(@$events, [$ld_event, $res[0], $res[1]]);
+	return 1;
     }
     return 0;
 }
 
+sub ftimestamp {
+    my $file = shift;
+    return (stat($file))[9];
+}
 
 sub newer_than {
     my $file1 = shift;
     my $file2 = shift;
-    return ((stat($file1))[9]) > ((stat($file2))[9]);
+    return ftimestamp($file1) > ftimestamp($file2);
 }
 
 sub excludep {
@@ -640,93 +681,235 @@ sub print_dirs {
     }
 }
 
-sub scan_ld {
+# Scans a source file line by line to get the list of
+# dependency-affecting events.
+sub scan_src {
     my $fname = shift;
-    my $deps = shift;
-    my $local_dirs = shift;
+    my @events = ();
 
-    print "scan_ld $fname\n" if $debugging;
-
-    push (@{$deps}, $fname);
-    if (open(my $ld, "<", $fname)) {
-	while (my $the_line = <$ld>) {
-	    my $incl = get_include_book($fname, $the_line, $local_dirs);
-	    my $depend =  $incl || get_depends_on($fname, $the_line, $local_dirs);
-	    my $ld = $depend || get_ld($fname, $the_line, $local_dirs);
-	    my $add = $ld || get_add_dir($fname, $the_line, $local_dirs);
-	    if ($incl) {
-		push(@{$deps}, $incl);
-	    } elsif ($depend) {
-		push(@{$deps}, $depend);
-	    } elsif ($ld) {
-		push(@{$deps}, $ld);
-		scan_ld($ld, $deps, $local_dirs);
-	    }
+    if (open(my $file, "<", $fname)) {
+	while (my $the_line = <$file>) {
+	    my $done = 0;
+	    $done = get_include_book($fname, $the_line, \@events);
+	    $done = $done || get_ld($fname, $the_line, \@events);
+	    $done = $done || get_depends_on($fname, $the_line, \@events);
+	    $done = $done || get_add_dir($fname, $the_line, \@events);
+	    $done = $done || get_two_pass($fname, $the_line, \@events);
 	}
-	close($ld);
+    }
+    my $timestamp = ftimestamp($fname);
+
+    return (\@events, $timestamp);
+}
+
+# Gets the list of dependency-affecting events that are present in a
+# source file.  These may be either already in the cache, or else they
+# are read in using scan_src.
+sub src_events {
+    my $fname = shift;
+    my $evcache = shift;
+    my $checked = shift;
+    my $entry = $evcache->{$fname};
+    my $entry_ok = 0;
+    if ($entry) {
+	if ($believe_cache || $checked->{$entry}) {
+	    print "cached events for $fname\n" if $debugging;
+	    $entry_ok = 1;
+	} elsif (ftimestamp($fname) <= $entry->[1]) {
+	    $checked->{$entry} = 1;
+	    $entry_ok = 1;
+	}
+    }
+    if ($entry_ok) {
+	print "cached events for $fname\n" if $debugging;
+	return $entry->[0];
+    } elsif (-e $fname) {
+	print "reading events for $fname\n" if $debugging;
+	    (my $events, my $timestamp) = scan_src($fname);
+	my $cache_entry = [$events, $timestamp];
+	print "caching events for $fname\n" if $debugging;
+	$evcache->{$fname} = $cache_entry;
+	$checked->{$fname} = 1;
+	return $events;
+    }
+    print "Warning: missing file $fname in src_events\n";
+    return [];
+}
+
+sub expand_dirname_cmd {
+    my $relname = shift;
+    my $basename = shift;
+    my $dirname = shift;
+    my $local_dirs = shift;
+    my $cmd = shift;
+    my $ext = shift;
+    my $fullname;
+    if ($dirname) {
+	my $dirpath = lookup_colon_dir($dirname, $local_dirs);
+	unless (defined($dirpath)) {
+	    print "Warning: Unknown :dir entry in ($cmd \"$relname\" :dir $dirname) for $basename\n";
+	    print_dirs($local_dirs) if $debugging;
+	    return 0;
+	}
+	$fullname = canonical_path(rel_path($dirpath, $relname . $ext));
     } else {
-	print "Warning: scan_ld: Could not open $fname: $!\n";
+	my $dir = dirname($basename);
+	$fullname = canonical_path(rel_path($dir, $relname . $ext));
+    }
+    return $fullname;
+}
+
+sub print_event {
+    my $event = shift;
+    print $event->[0];
+    my $i = 1;
+    while ($i < @$event) {
+	$event->[$i] && print " $event->[$i]";
+	$i = $i+1;
     }
 }
 
-sub scan_book {
+sub print_events {
+    my $events = shift;
+    foreach my $event (@$events) {
+	print "\n"; print_event($event);
+    }
+    print "\n";
+}
+    
+my %times_seen = ();
+
+sub print_times_seen {
+    foreach my $key (sort(keys(%times_seen))) {
+	print "$key -> $times_seen{$key}\n";
+    }
+}
+
+my $src_deps_depth = -1;
+# Gets the (recursive) dependencies of fname, and returns whether it
+# requires two-pass certification.  Calls src_events to get the
+# dependency-affecting events that are present in the file
+# (include-books, lds, etc.)
+sub src_deps {
     my $fname = shift;
-    my $deps = shift;
+    my $cache = shift;
     my $local_dirs = shift;
+    my $deps = shift;
+    my $book_only = shift;
+    my $tscache = shift;
+    my $ld_ok = shift;
+    my $seen = shift;
 
-    print "scan_book $fname\n" if $debugging;
 
-    if ($fname) {
-	# Scan the lisp file for include-books.
-	if (open(my $lisp, "<", $fname)) {
-	    while (my $the_line = <$lisp>) {
-		my $incl = get_include_book($fname, $the_line, $local_dirs);
-		my $dep = $incl || get_depends_on($fname, $the_line, $local_dirs);
-		my $add = $dep || get_add_dir($fname, $the_line, $local_dirs);
-		if ($incl) {
-		    push(@{$deps},$incl);
-		} elsif ($dep) {
-		    push(@{$deps}, $dep);
-		}
+    if ($seen->{$fname}) {
+	print "Circular dependency found in src_deps of $fname\n";
+	return 0;
+    }
+    
+    $seen->{$fname} = 1;
+
+    $times_seen{$fname} = ($times_seen{$fname} || 0) + 1;
+
+    $src_deps_depth = $src_deps_depth + 1;
+    print "$src_deps_depth src_deps $fname, $book_only\n"  if $debugging;
+    my $events = src_events($fname, $cache, $tscache);
+    if ($debugging) {
+	print "events: $fname";
+	print_events($events);
+    }
+    my $two_pass = 0;
+
+    foreach my $event (@$events) {
+	my $type = $event->[0];
+	if ($type eq $add_dir_event) {
+	    my $name = $event->[1];
+	    my $dir = $event->[2];
+	    my $basedir = dirname($fname);
+	    $local_dirs->{$name} = canonical_path(rel_path($basedir,
+							   $dir));
+	    print "src_deps: add_dir $name $local_dirs->{$name}\n" if
+		$debugging;
+	} elsif ($type eq $include_book_event) {
+	    my $bookname = $event->[1];
+	    my $dir = $event->[2];
+	    my $fullname = expand_dirname_cmd($bookname, $fname, $dir,
+					      $local_dirs,
+					      "include-book",
+					      ".cert");
+	    print "include-book fullname: $fullname\n" if $debugging;
+	    $fullname && push(@$deps, $fullname);
+	} elsif ($type eq $depends_on_event && !$book_only) {
+	    my $depname = $event->[1];
+	    my $dir = $event->[2];
+	    my $fullname = expand_dirname_cmd($depname, $fname, $dir,
+					      $local_dirs,
+					      "depends-on", "");
+	    $fullname && push(@$deps, $fullname);
+	} elsif ($type eq $two_pass_event) {
+	    $two_pass = 1;
+	} elsif ($type eq $ld_event && $ld_ok) {
+	    my $srcname = $event->[1];
+	    my $dir = $event->[2];
+	    my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
+					      $local_dirs, "ld", "");
+	    if ($fullname) {
+		push(@$deps, $fullname) unless $book_only;
+		my $local_two_pass = src_deps($fullname, $cache,
+					      $local_dirs, $deps,
+					      $book_only,
+					      $tscache,
+					      $ld_ok,
+					      $seen);
+		$two_pass = $two_pass || $local_two_pass;
 	    }
-	    close($lisp);
 	} else {
-	    print "Warning: scan_book: Could not open $fname: $!\n";
+	    print "unknown event type: $$type\n";
 	}
     }
+
+    $seen->{$fname} = 0;
+
+    print "$src_deps_depth done src_deps $fname\n" if $debugging;
+    $src_deps_depth = $src_deps_depth - 1;
+    return $two_pass;
 }
-    
-sub scan_two_pass {
-    my $fname = shift;
 
-    print "scan_two_pass $fname\n" if $debugging;
-
-    if ($fname) {
-	# Scan the file for ";; two-pass certification"
-	if (open(my $file, "<", $fname)) {
-	    my $regexp = ";; two-pass certification";
-	    while (my $the_line = <$file>) {
-		my $match = $the_line =~ m/$regexp/;
-		if ($match) {
-		    print "two pass: $fname\n" if $debugging;
-		    return 1;
-		}
-	    }
-	    close($file);
-	}
+sub print_lst {
+    my $lst = shift;
+    foreach my $val (@$lst) {
+	$val && print " $val";
     }
-    return 0;
+    print "\n";
 }
-		
-    
-# Find dependencies o
+
+sub remove_dups {
+    my $lst = shift;
+    my @newlst = ();
+    my @sortlst = sort(@$lst);
+    my $lastentry = $sortlst[0];
+    push (@newlst, $lastentry);
+    foreach my $val (@sortlst) {
+	push(@newlst, $val) unless ($val eq $lastentry);
+	$lastentry = $val;
+    }
+    return \@newlst;
+}
+
+
+# Find dependencies of a cert file, here passed in without extension.
+# Calls src_deps to get the dependencies of the .acl2 and book files.
 sub find_deps {
     my $base = shift;
+    my $cache = shift;
+    my $book_only = shift;
+    my $tscache = shift;
+
     my $lispfile = $base . ".lisp";
 
-    my $deps = [ $lispfile ];
+    my $deps = $book_only ? [] : [ $lispfile ];
     my $local_dirs = {};
-
+    my $book_two_pass = 0;
+    my $acl2_two_pass = 0;
     # If a corresponding .acl2 file exists or otherwise if a
     # cert.acl2 file exists in the directory, we need to scan that for dependencies as well.
     my $acl2file = $base . ".acl2";
@@ -739,55 +922,70 @@ sub find_deps {
 
     # Scan the .acl2 file first so that we get the add-include-book-dir
     # commands before the include-book commands.
-    $acl2file && scan_ld($acl2file, $deps, $local_dirs);
+    if ($acl2file) {
+	push(@$deps, $acl2file) unless $book_only;
+	$acl2_two_pass = src_deps($acl2file, $cache,
+				  $local_dirs, $deps, $book_only, $tscache, 1, {});
+    }
     
     # Scan the lisp file for include-books.
-    scan_book($lispfile, $deps, $local_dirs);
+    $book_two_pass = src_deps($lispfile, $cache, $local_dirs, $deps,
+			      $book_only, $tscache, 0, {});
+
+    if ($debugging) {
+	print "find_deps $lispfile: \n";
+	print_lst($deps);
+    }
     
-    # If there is an .image file corresponding to this file or a
-    # cert.image in this file's directory, add a dependency on the
-    # ACL2 image specified in that file and the .image file itself.
-    my $imagefile = $base . ".image";
-    if (! -e $imagefile) {
-	$imagefile = rel_path(dirname($base), "cert.image");
+    if (!$book_only) {
+	# If there is an .image file corresponding to this file or a
+	# cert.image in this file's directory, add a dependency on the
+	# ACL2 image specified in that file and the .image file itself.
+	my $imagefile = $base . ".image";
 	if (! -e $imagefile) {
-	    $imagefile = 0;
-	}
-    }
-
-    if ($imagefile) {
-	push(@{$deps}, canonical_path($imagefile));
-	if (open(my $im, "<", $imagefile)) {
-	    my $line = <$im>;
-	    chomp $line;
-	    if ($line && ($line ne "acl2")) {
-		my $image = canonical_path(rel_path(dirname($base), $line));
-		if (! -e $image) {
-		    $image = which($line);
-		}
-		if (-e $image) {
-		    push(@{$deps}, canonical_path($image));
-		}
+	    $imagefile = rel_path(dirname($base), "cert.image");
+	    if (! -e $imagefile) {
+		$imagefile = 0;
 	    }
-	    close $im;
-	} else {
-	    print "Warning: find_deps: Could not open image file $imagefile: $!\n";
+	}
+
+	if ($imagefile) {
+	    push(@{$deps}, canonical_path($imagefile));
+	    if (open(my $im, "<", $imagefile)) {
+		my $line = <$im>;
+		chomp $line;
+		if ($line && ($line ne "acl2")) {
+		    my $image = canonical_path(rel_path(dirname($base), $line));
+		    if (! -e $image) {
+			$image = which($line);
+		    }
+		    if (-e $image) {
+			push(@{$deps}, canonical_path($image));
+		    }
+		}
+		close $im;
+	    } else {
+		print "Warning: find_deps: Could not open image file $imagefile: $!\n";
+	    }
 	}
     }
 
-    return $deps;
+    return ($deps, $acl2_two_pass || $book_two_pass);
 
-}    
-    
+}
+
+
 
 # During a dependency search, this is run with $target set to each
 # cert and source file in the dependencies of the top-level targets.
 # If the target has been seen before, then it returns immediately.
+# Otherwise, this calls on find_deps to get those dependencies.
 sub add_deps {
     my $target = shift;
+    my $cache = shift;
     my $seen = shift;
     my $sources = shift;
-
+    my $tscache = shift;
 
     if (exists $seen->{$target}) {
 	# We've already calculated this file's dependencies.
@@ -801,8 +999,8 @@ sub add_deps {
     }
 
     if (excludep($target)) {
-	$seen->{$target} = 0;
-	return;
+    	$seen->{$target} = 0;
+    	return;
     }
 
     print "add_deps $target\n" if $debugging;
@@ -829,9 +1027,9 @@ sub add_deps {
 	return;
     }
 
-    my $deps = find_deps($base);
+    my ($deps, $two_pass) = find_deps($base, $cache, 0, $tscache);
 
-    if (scan_two_pass($lispfile)) {
+    if ($two_pass) {
 	my $acl2xfile = $base . ".acl2x";
 	$seen->{$target} = [ $acl2xfile ];
 	$seen->{$acl2xfile} = $deps;
@@ -849,7 +1047,7 @@ sub add_deps {
 
     # Run the recursive add_deps on each dependency.
     foreach my $dep  (@{$deps}) {
-	add_deps($dep, $seen, $sources);
+	add_deps($dep, $cache, $seen, $sources, $tscache);
     }
     
 
@@ -889,6 +1087,9 @@ sub read_targets {
 	print "Warning: Could not open $fname: $!\n";
     }
 }
+
+
+
 
 # The following "1" is here so that loading this file with "do" or "require" will succeed:
 1;
