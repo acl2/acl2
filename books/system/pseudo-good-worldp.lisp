@@ -425,9 +425,7 @@
 ; defattach-merge-into-component.
 
   (cond ((atom path) (null path))
-        (t (and (consp (car path))
-                (pseudo-function-symbolp (caar path) nil)
-                (pseudo-function-symbolp (cdar path) nil)
+        (t (and (pseudo-function-symbolp (car path) nil)
                 (attachment-components-pathp (cdr path))))))
 
 (defun attachment-component-p (c)
