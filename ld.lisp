@@ -17372,6 +17372,10 @@
   Added the symbols ~ilc[flet] and ~ilc[with-local-stobj] to
   ~c[*acl2-exports*].
 
+  A small change was made to the processing of more than one ~c[:]~ilc[guard]
+  declaration for the same function.  In particular, a guard of ~c[t] is
+  essentially ignored.
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of
@@ -19536,46 +19540,9 @@ The tiny warning signs, <A HREF=\"~s7\"><IMG SRC=\"twarning.gif\"></A>,
 Here is how we recommend you use this documentation.
 <P>
 If you are a newcomer to ACL2, we do <EM>not</EM> recommend that you wander off
-into the full documentation.  Instead start with
-<A HREF=\"~sa\">the tours</A> and perhaps <A
-HREF=\"http://www.cs.utexas.edu/users/moore/publications/demos.html\">the
-demos</A>.<P>
-
-If you are still interested in ACL2, we recommend that you get a copy of
-<A HREF=\"http://www.cs.utexas.edu/users/moore/publications/acl2-books/car/index.html\">Computer-Aided Reasoning: An Approach</A> and read it carefully.  Work
-the exercises with ACL2.  Learn ``The Method.''<P>
-
-Less effective than reading the book and doing the exercises, but
-still useful, is to read selected papers from <A
-HREF=\"http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html\">
-Books and Papers about ACL2 and Its Applications</A>,
-read the documentation topic <A HREF=\"~sh\">the-method</A><A HREF=\"~s7\"><IMG SRC=\"twarning.gif\"></A>, 
-and the <A HREF=\"http://www.cs.utexas.edu/users/moore/publications/hyper-card.html\">Hyper-Card</A>
-and then work
-your way through <A HREF=\"~sb\">the tutorials</A>.<P>
-
-Then, we recommend you
-read selected topics from ``Major Topics'': <UL>
-
-<LI><A HREF=\"~sc\">EVENTS</A>
-<A HREF=\"~s7\"><IMG SRC=\"twarning.gif\"></A>
--- the top-level commands like <CODE>DEFUN</CODE> and <CODE>DEFTHM</CODE>
-
-<LI><A HREF=\"~sd\">PROGRAMMING</A>
-<A HREF=\"~s7\"><IMG SRC=\"twarning.gif\"></A>
--- all the Common Lisp functions ACL2 supports
-
-<LI><A HREF=\"~se\">RULE-CLASSES</A>
-<A HREF=\"~s7\"><IMG SRC=\"twarning.gif\"></A>
--- how you can influence ACL2's behavior with rules,
-
-<LI><A HREF=\"~sf\">BOOKS</A>
-<A HREF=\"~s7\"><IMG SRC=\"twarning.gif\"></A>
--- how to create re-usable databases of rules.
-
-</UL>
-<P>
-Finally, experienced users tend mostly to use the ``Index'' to look up concepts
+into the full documentation.  Instead start with the
+<A HREF=\"~sb\">ACL2-TUTORIAL</A> documentation topic.
+Experienced users tend mostly to use the ``Index'' to look up concepts
 mentioned in error messages or vaguely remembered from their past experiences
 with ACL2.
 <P>

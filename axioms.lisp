@@ -3980,10 +3980,16 @@
 #+acl2-loop-only
 (defun return-last (fn eager-arg last-arg)
 
-; Return-last is the one "function" in ACL2 that has no fixed output
-; signature.  Rather, (return-last expr1 expr2) inherits its stobjs-out from
-; expr2.  Because of this, we make it illegal to call stobjs-out on the symbol
-; return-last.
+; Return-last is the one "function" in ACL2 that has no fixed output signature.
+; Rather, (return-last expr1 expr2) inherits its stobjs-out from expr2.
+; Because of this, we make it illegal to call stobjs-out on the symbol
+; return-last.  We think of expr1 as being evaluated eagerly because even in
+; the raw Lisp implementation of return-last, that argument is always evaluated
+; first just as with a function call.  By contrast, if fn is a macro then it
+; can manipulate last-arg arbitrarily before corresponding evaluation occurs.
+; In many applications of return-last, eager-arg will be nil; for others, such
+; as with-prover-time-limit, eager-arg will be used to control the evaluation
+; of (some version of) last-arg.
 
 ; The following little example provides a small check on our handling of
 ; return-last, both via ev-rec (for evaluating top-level forms) and via more
@@ -4341,15 +4347,59 @@
   in raw Lisp and especially when you install it as a key of
   ~ilc[return-last-table], either directly or (more likely) using
   ~c[defmacro-last].  In particular, be sure that you are defining a macro of
-  two arguments that always returns the value of its last argument, even if
-  that last argument evaluates to a multiple value.  The following would, for
-  example, be wrong, especially in certain Lisps (including CCL and SBCL).
+  two arguments that always returns the value of its last argument, returning
+  the complete multiple value if that last argument evaluates to a multiple
+  value.
+
+  The following is correct, and illustrates care taken to return multiple
+  values.
+  ~bv[]
+  :q
+  (defmacro my-time1-raw (val form)
+    (declare (ignore val))
+    `(let  ((start-time (get-internal-run-time))
+            (result (multiple-value-list ,form))
+            (end-time (get-internal-run-time)))
+       (format t \"Total time: ~~s~~%\"
+               (float (/ (- end-time start-time)
+                         internal-time-units-per-second)))
+       (values-list result)))
+  (lp)
+  (defttag t)
+  (defmacro-last my-time1)
+  (defmacro my-time (form)
+    `(my-time1 nil ,form))
+  ~ev[]
+  Then for example:  
+  ~bv[]
+  ACL2 !>(my-time (equal (make-list 1000000) (make-list 1000000)))
+  Total time: 0.12
+  T
+  ACL2 !>
+  ~ev[]
+  But if instead we provide the following more naive implementation, of the
+  above raw Lisp macro, the above evaluation can produce an error, for example
+  if the host Lisp is CCL.
+  ~bv[]
+  (defmacro my-time1-raw (val form)
+      (declare (ignore val))
+      `(let  ((start-time (get-internal-run-time))
+              (result ,form)
+              (end-time (get-internal-run-time)))
+         (format t \"Total time: ~~s~~%\"
+                 (float (/ (- end-time start-time)
+                           internal-time-units-per-second)))
+         result)) ; WRONG -- need multiple values returned!
+  ~ev[]
+  
+  Here is a second, similar example.  This time we'll start with the error; can
+  you spot it?
   ~bv[]
   (defttag t)
   (progn!
    (set-raw-mode t)
    (defmacro foo-raw (x y)
-     `(prog1 ;; wrong!
+     `(prog1
           ,y
         (cw \"Message showing argument 1: ~~x0~~%\" ,x))))
   (defmacro-last foo)
@@ -4374,7 +4424,9 @@
   (SET-DEBUGGER-ENABLE T)
   ACL2 !>
   ~ev[]
-  Better would be:
+  Here is a corrected version of the above macro.  The point here is that
+  ~c[prog1] returns a single value, while ~c[our-multiple-value-prog1] returns
+  all the values that are returned by its first argument.
   ~bv[]
   (progn!
    (set-raw-mode t)
@@ -18376,8 +18428,8 @@
 
 ; See the Essay on Defattach.
 
-; Developer note: A substantial test suite is stored at UT CS, file
-; /projects/acl2/devel-misc/patches/defattach/test.lisp.
+; Developer note.  A substantial test suite is stored at UT CS, file:
+; /projects/acl2/devel-misc/books-devel/examples/defattach/test.lisp
 
   ":Doc-Section Events
 
@@ -39306,6 +39358,34 @@ Lisp definition."
   (cond ((endp l) *t*)
         ((endp (cdr l)) (car l))
         (t (conjoin2 (car l) (conjoin (cdr l))))))
+
+(defun conjoin2-untranslated-terms (t1 t2)
+
+; See conjoin2.  This function has the analogous spec, but where t1 and t2 need
+; not be translated.
+
+  (declare (xargs :guard t))
+  (cond ((or (equal t1 *nil*) (eq t1 nil))
+         *nil*)
+        ((or (equal t2 *nil*) (eq t2 nil))
+         *nil*)
+        ((or (equal t1 *t*) (eq t1 t))
+         t2)
+        ((or (equal t2 *t*) (eq t2 t))
+         t1)
+        (t (fcons-term* 'if t1 t2 *nil*))))
+
+(defun conjoin-untranslated-terms (l)
+
+; This function is analogous to conjoin, but where t1 and t2 need not be
+; translated.
+
+  (declare (xargs :guard (true-listp l)))
+  (cond ((endp l) *t*)
+        ((endp (cdr l)) (car l))
+        (t (conjoin2-untranslated-terms
+            (car l)
+            (conjoin-untranslated-terms (cdr l))))))
 
 (defun disjoin2 (t1 t2)
 

@@ -1384,6 +1384,8 @@ instance.lisp
 map.lisp
 membership.lisp
 outer.lisp
+portcullis.acl2
+portcullis.lisp
 primitives.lisp
 quantify.lisp
 set-order.lisp
@@ -3111,6 +3113,8 @@ isubstrp.lisp
 natstr.lisp
 package.lsp
 pad.lisp
+portcullis.acl2
+portcullis.lisp
 strline.lisp
 strnatless.lisp
 strpos.lisp

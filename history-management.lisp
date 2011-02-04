@@ -11917,7 +11917,8 @@
 ; terms.
 
   (cond ((null lst) nil)
-        (t (cons (conjoin (get-guards1 (fourth (car lst)) wrld))
+        (t (cons (conjoin-untranslated-terms (get-guards1 (fourth (car lst))
+                                                          wrld))
                  (get-guards (cdr lst) wrld)))))
 
 (defun get-guardsp (lst wrld)

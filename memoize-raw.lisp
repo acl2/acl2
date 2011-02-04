@@ -6692,13 +6692,13 @@ next GC.~%"
        (with-lower-overhead
         (memoize-fn 'bad-lisp-objectp :forget t)))
 
-     (when (not (memoizedp-raw 'worse-than))
+     (when (not (memoizedp-raw 'worse-than-builtin))
   
 ; Warning: If this is changed or removed, visit the comment in 
-; worse-than.
+; worse-than-builtin.
   
        (with-lower-overhead
-        (memoize-fn 'worse-than
+        (memoize-fn 'worse-than-builtin
                     :condition ; Sol Swords suggestion
                     '(and (nvariablep term1)
                           (not (fquotep term1))
@@ -6798,7 +6798,6 @@ next GC.~%"
   *HONS-INIT-HOOK* is supposed to set some options that a user might
   want to set in a ccl-init.lisp or an acl2-init.lsp file but might
   not know to set.")
-
 
 (defn hons-init-hook-set (var val)
   (unless (symbolp var)

@@ -827,7 +827,7 @@
                   (edcls (if (stringp (car edcls)) (cdr edcls) edcls)))
               (er-let*
                ((tguard (translate
-                         (conjoin (get-guards1 edcls wrld1))
+                         (conjoin-untranslated-terms (get-guards1 edcls wrld1))
                          '(nil) nil t ctx wrld1 state))
 
 ; known-stobjs = t, above and below.  But it doesn't matter because we

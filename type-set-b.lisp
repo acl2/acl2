@@ -4613,18 +4613,19 @@
 
 (mutual-recursion
 
-(defun worse-than (term1 term2)
+(defun worse-than-builtin (term1 term2)
 
-; Term1 is worse-than term2 if it is basic-worse-than term2 or some proper
-; subterm of it is worse-than or equal to term2.  However, we know that if two
-; terms are pseudo-variants of each other, then the worse-than relation does
-; not hold.
+; Term1 is worse-than-builtin term2 if it is basic-worse-than term2 or some
+; proper subterm of it is worse-than-builtin or equal to term2.  However, we
+; know that if two terms are pseudo-variants of each other, then the
+; worse-than-builtin relation does not hold.
 
 ; Warning: With #+hons, there could be performance problems if this is put into
-; :logic mode without verifying guards.  That is because worse-than is memoized
-; by running *hons-init-hook*, to make it efficient on structure-shared
-; objects; but memoization depends on the raw Lisp function being executed,
-; while :ideal mode functions are run without ever slipping into raw Lisp.
+; :logic mode without verifying guards.  That is because worse-than-builtin is
+; memoized by running *hons-init-hook*, to make it efficient on
+; structure-shared objects; but memoization depends on the raw Lisp function
+; being executed, while :ideal mode functions are run without ever slipping
+; into raw Lisp.
 
   (declare (xargs :guard (and (pseudo-termp term1)
                               (pseudo-termp term2))
@@ -4634,43 +4635,42 @@
         ((pseudo-variantp term1 term2) nil)
         ((variablep term1) 
 
-; If term1 is a variable and not basic-worse-than term2, what do we know
-; about term2?  Term2 might be a variable.  Term2 cannot be quote.
-; Term2 might be a function application.  So is X worse-than X or Y or
-; (F X Y)?  No.
+; If term1 is a variable and not basic-worse-than term2, what do we know about
+; term2?  Term2 might be a variable.  Term2 cannot be quote.  Term2 might be a
+; function application.  So is X worse-than-builtin X or Y or (F X Y)?  No.
 
          nil)
         ((fquotep term1)
 
-; If term1 is a quote and not basic-worse-than term2, what do we know
-; about term2?  Term2 might be a variable.  Also, term2 might be a
-; quote, but if it is, term2 is bigger than term1.  Term2 might be a
-; function application.  So is term1 worse-than a bigger quote?  No.
-; Is term1 worse-than a variable or function application?  No.
+; If term1 is a quote and not basic-worse-than term2, what do we know about
+; term2?  Term2 might be a variable.  Also, term2 might be a quote, but if it
+; is, term2 is bigger than term1.  Term2 might be a function application.  So
+; is term1 worse-than-builtin a bigger quote?  No.  Is term1 worse-than-builtin
+; a variable or function application?  No.
 
          nil)
 
         (t (worse-than-lst (fargs term1) term2))))
 
-(defun worse-than-or-equal (term1 term2)
+(defun worse-than-or-equal-builtin (term1 term2)
 
-; This function is not really mutually recursive and could be removed
-; from this nest.  It determines whether term1 is term2 or worse than
-; term2.  This nest defines worse-than and does not use this function
-; despite the use of similarly named functions.
+; This function is not really mutually recursive and could be removed from this
+; nest.  It determines whether term1 is term2 or worse than term2.  This nest
+; defines worse-than-builtin and does not use this function despite the use of
+; similarly named functions.
 
 ; Note:  This function is supposed to be equivalent to
-; (or (equal term1 term2) (worse-than term1 term2)).
+; (or (equal term1 term2) (worse-than-builtin term1 term2)).
 
 ; Clearly, that is equivalent to
 
 ; (if (pseudo-variantp term1 term2)
-;     (or (equal term1 term2) (worse-than term1 term2))
-;     (or (equal term1 term2) (worse-than term1 term2)))
+;     (or (equal term1 term2) (worse-than-builtin term1 term2))
+;     (or (equal term1 term2) (worse-than-builtin term1 term2)))
 
-; But if pseudo-variantp is true, then worse-than must return nil.
-; And if pseudo-variantp is nil, then the equal returns nil.  So we
-; can simplify the if above to:
+; But if pseudo-variantp is true, then worse-than-builtin must return nil.  And
+; if pseudo-variantp is nil, then the equal returns nil.  So we can simplify
+; the if above to:
 
   (declare (xargs :guard (and (pseudo-termp term1)
                               (pseudo-termp term2))
@@ -4682,13 +4682,13 @@
                   :well-founded-relation o<))
   (if (pseudo-variantp term1 term2)
       (equal term1 term2)
-    (worse-than term1 term2)))
+    (worse-than-builtin term1 term2)))
 
 (defun basic-worse-than-lst1 (args1 args2)
 
-; Is some element of args2 ``uglier'' than the corresponding element
-; of args1.  Technically, a2 is uglier than a1 if a1 is atomic (a
-; variable or constant) and a2 is not or a2 is worse-than a1.
+; Is some element of args2 ``uglier'' than the corresponding element of args1.
+; Technically, a2 is uglier than a1 if a1 is atomic (a variable or constant)
+; and a2 is not or a2 is worse-than-builtin a1.
 
   (declare (xargs :guard (and (pseudo-term-listp args1)
                               (pseudo-term-listp args2))
@@ -4699,13 +4699,13 @@
                       (fquotep (car args1)))
                   (not (or (variablep (car args2))
                            (fquotep (car args2)))))
-             (worse-than (car args2) (car args1)))
+             (worse-than-builtin (car args2) (car args1)))
          t)
         (t (basic-worse-than-lst1 (cdr args1) (cdr args2)))))
 
 (defun basic-worse-than-lst2 (args1 args2)
 
-; Is some element of arg1 worse-than the corresponding element of args2?
+; Is some element of arg1 worse-than-builtin the corresponding element of args2?
 
   (declare (xargs :guard (and (pseudo-term-listp args1)
                               (pseudo-term-listp args2))
@@ -4716,7 +4716,7 @@
                                      0)
                   :well-founded-relation o<))
   (cond ((endp args1) nil)
-        ((worse-than (car args1) (car args2)) t)
+        ((worse-than-builtin (car args1) (car args2)) t)
         (t (basic-worse-than-lst2 (cdr args1) (cdr args2)))))
 
 (defun basic-worse-than (term1 term2)
@@ -4730,19 +4730,17 @@
 ;   quote, e.g., both X and '124 are basic-worse-than '17 and '(A B C D
 ;   E) is worse than 'X; or
 
-; * term1 and term2 are applications of the same function and
-;   no argument of term2 is uglier than the corresponding arg of term1, and
-;   some argument of term1 is worse-than the corresponding arg of term2.
+; * term1 and term2 are applications of the same function and no argument of
+;   term2 is uglier than the corresponding arg of term1, and some argument of
+;   term1 is worse-than-builtin the corresponding arg of term2.
 
-; The last case is illustrated by the fact that (F A B) is
-; basic-worse-than (F A '17), because B is worse than '17, but (F '17
-; B) is not basic-worse-than (F A '17) because A is worse than '17.
-; Think of term2 as the old goal and term1 as the new goal.  Do we
-; want to cut off backchaining?  Yes, if term1 is basic-worse-than
-; term2.  So would we backchain from (F A '17) to (F '17 B)?  Yes,
-; because even though one argument (the second) got worse (it went
-; from 17 to B) another argument (the first) got better (it went from
-; A to 17).
+; The last case is illustrated by the fact that (F A B) is basic-worse-than (F
+; A '17), because B is worse than '17, but (F '17 B) is not basic-worse-than (F
+; A '17) because A is worse than '17.  Think of term2 as the old goal and term1
+; as the new goal.  Do we want to cut off backchaining?  Yes, if term1 is
+; basic-worse-than term2.  So would we backchain from (F A '17) to (F '17 B)?
+; Yes, because even though one argument (the second) got worse (it went from 17
+; to B) another argument (the first) got better (it went from A to 17).
 
   (declare (xargs :guard (and (pseudo-termp term1)
                               (pseudo-termp term2))
@@ -4773,7 +4771,7 @@
 
 (defun some-subterm-worse-than-or-equal (term1 term2)
 
-; Returns t if some subterm of term1 is worse-than or equal to term2.
+; Returns t if some subterm of term1 is worse-than-builtin or equal to term2.
 
   (declare (xargs :guard (and (pseudo-termp term1)
                               (pseudo-termp term2))
@@ -4784,7 +4782,7 @@
                                      1)
                   :well-founded-relation o<))
   (cond ((variablep term1) (eq term1 term2))
-        ((if (pseudo-variantp term1 term2)  ; see worse-than-or-equal
+        ((if (pseudo-variantp term1 term2)  ; see worse-than-or-equal-builtin
              (equal term1 term2)
            (basic-worse-than term1 term2))
          t)
@@ -4805,9 +4803,9 @@
 (defun worse-than-lst (args term2)
 
 ; We determine whether some element of args contains a subterm that is
-; worse-than or equal to term2.  The subterm in question may be the
-; element of args itself.  That is, we use ``subterm'' in the ``not
-; necessarily proper subterm'' sense.
+; worse-than-builtin or equal to term2.  The subterm in question may be the
+; element of args itself.  That is, we use ``subterm'' in the ``not necessarily
+; proper subterm'' sense.
 
   (declare (xargs :guard (and (pseudo-term-listp args)
                               (pseudo-termp term2))
@@ -4820,6 +4818,31 @@
                (worse-than-lst (cdr args) term2)))))
 
 )
+
+(encapsulate
+ ((worse-than
+   (term1 term2) t
+   :guard
+   (and (pseudo-termp term1)
+        (pseudo-termp term2))))
+ (local (defun worse-than (term1 term2)
+          (declare (ignore term1 term2)
+                   nil))))
+(encapsulate
+ ((worse-than-or-equal
+   (term1 term2) t
+   :guard
+   (and (pseudo-termp term1)
+        (pseudo-termp term2))))
+ (local (defun worse-than-or-equal (term1 term2)
+          (declare (ignore term1 term2)
+                   nil))))
+
+(defattach (worse-than worse-than-builtin)
+  :skip-checks t)
+
+(defattach (worse-than-or-equal worse-than-or-equal-builtin)
+  :skip-checks t)
 
 ; Here is how we add a frame to the ancestors stack.  
 
@@ -4881,12 +4904,18 @@
                               (integerp p-fn-cnt)
                               (true-listp tokens)
                               (ancestor-listp ancestors))))
-  (cond ((atom ancestors) nil)
+  (cond ((endp ancestors) nil)
         (t (let* ((anc (car ancestors))
                   (fn-cnt-alit-atm (caddr anc))
                   (p-fn-cnt-alit-atm (cadddr anc))
                   (atokens (car (cddddr anc))))
              (cond ((and (intersectp-equal tokens atokens)
+
+; (Car ancestors) might be of the form (:binding-hyp hyp unify-subst).  In this
+; case some of the values compared below using < are nil.  However, those
+; comparisons do not take place because in this case atokens is also nil, so
+; the intersectp-equal test above returns nil.
+
                          (or (< fn-cnt fn-cnt-alit-atm)
                              (and (eql fn-cnt fn-cnt-alit-atm)
                                   (< p-fn-cnt p-fn-cnt-alit-atm))))

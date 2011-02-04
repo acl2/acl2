@@ -29,6 +29,23 @@
 ; This file, boot-strap-pass-2, is compiled and loaded; but it is only
 ; processed during the second pass of the boot-strap process, not the first.
 
+; After defining some theories, we introduce propert defattach events (i.e.,
+; without :skip-checks t).  Here are some guiding principles for making system
+; functions available for attachment by users.
+
+; - The initial attachment is named by adding the suffix -builtin.  For
+;   example, worse-than is a constrained function initially attached to
+;   worse-than-builtin.
+
+; - Use the weakest logical specs we can (even if T), without getting
+;   distracted by names.  For example, we do not specify a relationship between
+;   worse-than-or-equal and worse-than.
+
+; - Only make functions attachable if they are used in our sources somewhere
+;   outside their definitions.  So for example, we do not introduce
+;   worse-than-list as a constrained function, since its only use is in the
+;   mutual-recursion event that defines worse-than.
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Theories
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -524,7 +541,7 @@
 (defattach (too-many-ifs-pre-rewrite too-many-ifs-pre-rewrite-builtin))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Attachment: ancestors-check
+;;; Attachment: ancestors-check, worse-than, worse-than-or-equal
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (verify-termination-boot-strap pseudo-variantp)
@@ -539,7 +556,8 @@
 
 (verify-termination-boot-strap min-fixnum)
 
-(verify-termination-boot-strap fn-count-evg-rec) ; but not guards
+(verify-termination-boot-strap fn-count-evg-rec ; but not guards
+                               (declare (xargs :verify-guards nil)))
 
 (defthm fn-count-evg-rec-type-prescription
   (implies (natp acc)
@@ -555,9 +573,7 @@
 
 (verify-termination-boot-strap occur)
 
-(verify-termination-boot-strap worse-than)
-
-(verify-termination-boot-strap worse-than-or-equal)
+(verify-termination-boot-strap worse-than-builtin) ; and worse-than-or-equal-builtin
 
 (verify-termination-boot-strap ancestor-listp)
 
@@ -570,9 +586,18 @@
                 (integerp p-fn-count-acc))
            (and (integerp (car (fn-count-1 flag term 
                                            fn-count-acc p-fn-count-acc)))
+                (integerp (mv-nth 0 (fn-count-1 flag term 
+                                                fn-count-acc
+                                                p-fn-count-acc)))
                 (integerp (mv-nth 1 (fn-count-1 flag term 
                                                 fn-count-acc
-                                                p-fn-count-acc)))))
+                                                p-fn-count-acc)))
+                (integerp (nth 0 (fn-count-1 flag term 
+                                             fn-count-acc
+                                             p-fn-count-acc)))
+                (integerp (nth 1 (fn-count-1 flag term 
+                                             fn-count-acc
+                                             p-fn-count-acc)))))
   :rule-classes ((:forward-chaining
                   :trigger-terms
                   ((fn-count-1 flag term fn-count-acc p-fn-count-acc)))))
@@ -582,6 +607,11 @@
 (verify-termination-boot-strap ancestors-check1)
 
 (verify-termination-boot-strap ancestors-check-builtin)
+
+; In the following, terms (nth 0 ...) and (nth 1 ...) in the hints were
+; originally (car ...) and (mv-nth 1 ...), respectively, but those didn't
+; work.  It would be good at some point to explore why not, given that the
+; original versions worked outside the build.
 
 (encapsulate
  ()
@@ -609,14 +639,14 @@
                         (p-fn-cnt 0))
              (:instance ancestors-check1-property
                         (lit-atm lit)
-                        (fn-cnt (car (fn-count-1 nil lit 0 0)))
-                        (p-fn-cnt (mv-nth 1 (fn-count-1 nil lit 0 0))))
+                        (fn-cnt (nth 0 (fn-count-1 nil lit 0 0)))
+                        (p-fn-cnt (nth 1 (fn-count-1 nil lit 0 0))))
              (:instance ancestors-check1-property
                         (lit-atm (cadr lit))
-                        (fn-cnt (car (fn-count-1 nil (cadr lit) 0 0)))
-                        (p-fn-cnt (mv-nth 1
-                                          (fn-count-1 nil (cadr lit) 0
-                                                      0)))))))))
+                        (fn-cnt (nth 0 (fn-count-1 nil (cadr lit) 0 0)))
+                        (p-fn-cnt (nth 1
+                                       (fn-count-1 nil (cadr lit) 0
+                                                   0)))))))))
 
 (encapsulate
  ((ancestors-check (lit ancestors tokens) (mv t t)
@@ -637,6 +667,10 @@
 
 (defattach (ancestors-check ancestors-check-builtin)
   :hints (("Goal" :by ancestors-check-builtin-property)))
+
+(defattach worse-than worse-than-builtin)
+
+(defattach worse-than-or-equal worse-than-or-equal-builtin)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End
