@@ -2896,7 +2896,9 @@ the calls took.")
 ; *memoize-info-ht* also maps num back to the corresponding symbol.
 
 (defrec memoize-info-ht-entry
-  (start-time  ; vaguely ordered by most frequently referenced first
+; vaguely ordered by most frequently referenced first
+  (ext-anc-attachments
+   start-time
    num
    tablename
    ponstablename
@@ -2923,8 +2925,7 @@ the calls took.")
    record-time
    watch-ifs
    forget
-   memo-table-init-size
-   )
+   memo-table-init-size)
   t)
 
 (defparameter *memo-max-sizes*
@@ -3629,11 +3630,26 @@ the calls took.")
     (with-live-state
      (warning$ 'top-level "Attachment"
                "Although the function ~x0 is memoized, a result is not being ~
-                stored because an attachment to function ~x1 was used during ~
-                evaluation of one of its calls.  This warning will remain off ~
-                for the remainder of the session unless the variable ~x2 is ~
-                set to a non-nil value in raw Lisp."
-               fn at-fn '*memoize-use-attachment-warning-p*))
+                stored because ~@1.  Warnings such as this one, about not ~
+                storing results, will remain off for all functions for the ~
+                remainder of the session unless the variable ~x2 is set to a ~
+                non-nil value in raw Lisp."
+               fn
+               (mv-let (lookup-p at-fn)
+                       (if (consp at-fn)
+                           (assert$ (eq (car at-fn) :lookup)
+                                    (mv t (cdr at-fn)))
+                         (mv nil at-fn))
+                       (cond (lookup-p
+                              (msg "a stored result was used from a call of ~
+                                    memoized function ~x0, which may have been ~
+                                    computed using attachments"
+                                   at-fn))
+                             (t
+                              (msg "an attachment to function ~x0 was used ~
+                                    during evaluation of one of its calls"
+                                   at-fn))))
+               '*memoize-use-attachment-warning-p*))
     (setq *memoize-use-attachment-warning-p* nil)))
 
 (defun memoize-fn (fn &key (condition t) (inline t) (trace nil)
@@ -3645,7 +3661,9 @@ the calls took.")
                       (specials nil)
                       (watch-ifs nil)
                       (forget nil)
-                      (memo-table-init-size *mht-default-size*))
+                      (memo-table-init-size *mht-default-size*)
+                      (aokp nil)
+                      &aux (wrld (w *the-live-state*)))
 
   "The documentation for MEMOIZE-FN is very incomplete.  One may
   invoke (MEMOIZE-FN fn) on the name of a Common Lisp function FN from
@@ -3768,6 +3786,11 @@ the calls took.")
     (when (eq fn 'return-last)
       (ofe "Memoize-fn: RETURN-LAST may not be memoized."
            fn))
+    (when (getprop fn 'constrainedp nil 'current-acl2-world wrld)
+      (ofe "Memoize-fn: ~s is constrained; you may instead wish ~%~
+            to memoize a caller or to memoize its attachment (see ~%~
+            :DOC defattach)."
+           fn))
     #+Clozure
     (when (multiple-value-bind (req opt restp keys)
               (ccl::function-args (symbol-function fn))
@@ -3777,14 +3800,13 @@ the calls took.")
                 (not (eql opt 0))))
       (ofe "Memoize-fn: ~a has non-simple arguments." fn))
     (let*
-      ((w (w *the-live-state*))
-       (cl-defun (if (eq cl-defun :default)
+      ((cl-defun (if (eq cl-defun :default)
                      (if inline
                          (cond
                           ((not (fboundp fn))
                            (ofe "MEMOIZE-FN: ** ~a is undefined."
                                 fn))
-                          ((cltl-def-from-name fn nil w))
+                          ((cltl-def-from-name fn nil wrld))
                           ((function-lambda-expression
                             (symbol-function fn)))
                           (t
@@ -3803,8 +3825,7 @@ the calls took.")
                    cl-defun))
        (formals
         (if (eq formals :default)
-            (let ((fo (getprop fn 'formals t
-                               'current-acl2-world w)))
+            (let ((fo (getprop fn 'formals t 'current-acl2-world wrld)))
               (if (eq fo t)
                   (if (consp cl-defun)
                       (cadr cl-defun)
@@ -3816,14 +3837,13 @@ the calls took.")
                 fo))
           formals))
        (stobjs-in (if (eq stobjs-in :default)
-                      (let ((s (getprop fn 'stobjs-in t
-                                        'current-acl2-world w)))
+                      (let ((s (getprop fn 'stobjs-in t 'current-acl2-world
+                                        wrld)))
                         (if (eq s t) (make-list (len formals)) s))
                     stobjs-in))
        (stobjs-out
         (if (eq stobjs-out :default)
-            (let ((s (getprop fn 'stobjs-out t
-                              'current-acl2-world w)))
+            (let ((s (getprop fn 'stobjs-out t 'current-acl2-world wrld)))
               (if (eq s t)
                   (let ((n (number-of-return-values fn)))
                     (cond (n (make-list n))
@@ -3870,7 +3890,7 @@ the calls took.")
          (condition-body
           (cond ((booleanp condition) condition)
                 ((symbolp condition)
-                 (car (last (cltl-def-from-name condition nil w))))
+                 (car (last (cltl-def-from-name condition nil wrld))))
                 (t condition)))
          (dcls (dcls (cdddr (butlast cl-defun))))
          (start-time (let ((v (hons-gentemp
@@ -3904,6 +3924,7 @@ the calls took.")
                  `((safe-incf (aref ,*mf-ma*
                                     ,(+ 2mfnn *ma-hits-index*))
                               1 ,fn))))
+           (lookup-marker (cons :lookup fn))
            (body3
             `(let (,*mf-ans* ,*mf-args* ,*mf-ans-p*)
                (declare (ignorable ,*mf-ans* ,*mf-args* ,*mf-ans-p*))
@@ -3921,130 +3942,113 @@ the calls took.")
                       `(progn (setq ,*mf-ans* ,body-call)
                               ,@mf-trace-exit
                               ,*mf-ans*))))
-                ,@(if condition-body
-                      `((t (profiler-when
-                            (null ,tablename)
-                            ,@mf-record-mht
-                            (setq ,tablename
-                                  (make-initial-memoize-hash-table
-                                   ',fn ,memo-table-init-size))
-                            ,@(if (> nra 1)
-                                  `((setq ,ponstablename
-                                          (make-initial-memoize-pons-table
-                                           ',fn ,memo-table-init-size)))))
-                           ;; To avoid a remotely possible
-                           ;; parallelism gethash error.
-                           ,@(if (> nra 1)
-                                 `((setq ,localponstablename
-                                         (profiler-or ,ponstablename
+                ,@(and
+                   condition-body
+                   `((t
+                      (profiler-when
+                       (null ,tablename)
+                       ,@mf-record-mht
+                       (setq ,tablename
+                             (make-initial-memoize-hash-table
+                              ',fn ,memo-table-init-size))
+                       ,@(if (> nra 1)
+                             `((setq ,ponstablename
+                                     (make-initial-memoize-pons-table
+                                      ',fn ,memo-table-init-size)))))
+                        ;; To avoid a remotely possible
+                        ;; parallelism gethash error.
+                        ,@(if (> nra 1)
+                              `((setq ,localponstablename
+                                      (profiler-or ,ponstablename
 ; BOZO should this be a make-initial-memoize-pons-table?
-                                                      (mht)))))
-                           #+parallel
-                           ,@(if (> nra 1)
-                                 `((ccl::lock-hash-table
-                                    ,localponstablename)))
-                           (setq ,*mf-args* (pist* ,localponstablename
-                                                   ,@formals
-                                                   ,@specials))
-                           #+parallel
-                           ,@(if (> nra 1)
-                                 `((ccl::unlock-hash-table
-                                    ,localponstablename)))
-                           (setq ,localtablename
+                                                   (mht)))))
+                        #+parallel
+                        ,@(if (> nra 1)
+                              `((ccl::lock-hash-table ,localponstablename)))
+                        (setq ,*mf-args* (pist* ,localponstablename
+                                                ,@formals
+                                                ,@specials))
+                        #+parallel
+                        ,@(if (> nra 1)
+                              `((ccl::unlock-hash-table ,localponstablename)))
+                        (setq ,localtablename
 ; BOZO should this be a make-initial-memoize-hash-table?
-                                 (profiler-or ,tablename (mht)))
-                           (multiple-value-setq
-                               (,*mf-ans* ,*mf-ans-p*)
-                             (gethash ,*mf-args* (the hash-table
-                                                   ,localtablename)))
-                           (profiler-cond
-                            (,*mf-ans-p*
-                             ,@(if trace `((oftr "~% ~s remembered."
-                                                 ',fn)))
-                             ,@mf-record-hit
-                             ,@(cond
-                                ((null (cdr stobjs-out))
-                                 `(,@mf-trace-exit ,*mf-ans*))
-                                (t
-                                 `(,@ (and trace
-                                           `((let*
-                                                 ((,*mf-ans*
-                                                   (append
-                                                    (take
-                                                     ,(1- (length
-                                                           stobjs-out))
-                                                     ,*mf-ans*)
-                                                    (list
-                                                     (nthcdr
-                                                      ,(1-
-                                                        (length
-                                                         stobjs-out))
-                                                      ,*mf-ans*)))))
-                                               ,@mf-trace-exit)))
-                                      ,(cons
-                                        'mv
-                                        (nconc
-                                         (loop for i fixnum below
-                                               (1- (length
-                                                    stobjs-out))
-                                               collect
-                                               `(pop ,*mf-ans*))
-                                         (list *mf-ans*)))))))
-                            (t ,(cond
-                                 ((cdr stobjs-out)
-                                  (let ((vars
-                                         (loop for i fixnum below
+                              (profiler-or ,tablename (mht)))
+                        (multiple-value-setq
+                            (,*mf-ans* ,*mf-ans-p*)
+                          ,(let ((gethash-form
+                                  `(gethash ,*mf-args*
+                                            (the hash-table ,localtablename))))
+                             (cond (aokp `(profiler-cond
+                                           (*aokp* ,gethash-form)
+                                           (t (mv nil nil))))
+                                   (t gethash-form))))
+                        (profiler-cond
+                         (,*mf-ans-p*
+                          ,@(when aokp
+                              `((update-attached-fn-called ',lookup-marker)))
+                          ,@(if trace `((oftr "~% ~s remembered."
+                                              ',fn)))
+                          ,@mf-record-hit
+                          ,@(cond
+                             ((null (cdr stobjs-out))
+                              `(,@mf-trace-exit ,*mf-ans*))
+                             (t
+                              (let ((len-1 (1- (length stobjs-out))))
+                                `(,@(and
+                                     trace
+                                     `(progn
+                                        (let* ((,*mf-ans*
+                                                (append
+                                                 (take ,len-1 ,*mf-ans*)
+                                                 (list
+                                                  (nthcdr ,len-1 ,*mf-ans*)))))
+                                          ,@mf-trace-exit)))
+                                  ,(cons
+                                    'mv
+                                    (nconc (loop for i fixnum below len-1
+                                                 collect `(pop ,*mf-ans*))
+                                           (list *mf-ans*))))))))
+                         (t ,(let* ((vars
+                                     (loop for i fixnum below
+                                           (if (cdr stobjs-out)
                                                (length stobjs-out)
-                                               collect (ofni "O~a" i))))
-                                    `(let (,*attached-fn-temp*)
-                                       (mv-let
-                                        ,vars
-                                        (let (*attached-fn-called*)
-                                          (multiple-value-prog1
-                                           ,body-call
-                                           (setq ,*attached-fn-temp*
-                                                 *attached-fn-called*)))
-                                        (progn
-                                          (cond
-                                           (,*attached-fn-temp*
-                                            (memoize-use-attachment-warning
-                                             ',fn ,*attached-fn-temp*))
-                                           (t
-                                            (setf
-                                             (gethash ,*mf-args*
-                                                      (the hash-table
-                                                           ,localtablename))
-                                             (setq ,*mf-ans*
-                                                   (list* ,@vars)))))
-                                          (when (and
-                                                 (boundp '*attached-fn-called*)
-                                                 (null *attached-fn-called*))
-                                            (setq *attached-fn-called*
-                                                  ,*attached-fn-temp*))
-                                          ,@mf-trace-exit
-                                          (mv ,@vars))))))
-                                 (t `(let (,*attached-fn-temp*)
-                                       (let (*attached-fn-called*)
-                                         (setq ,*mf-ans* ,body-call)
-                                         (setq ,*attached-fn-temp*
-                                               *attached-fn-called*))
-                                       (cond
-                                        (,*attached-fn-temp*
-                                         (memoize-use-attachment-warning
-                                          ',fn ,*attached-fn-temp*))
-                                        (t
-                                         (setf
-                                          (gethash ,*mf-args*
-                                                   (the hash-table
-                                                     ,localtablename))
-                                          ,*mf-ans*)))
-                                       (when (and
-                                              (boundp '*attached-fn-called*)
-                                              (null *attached-fn-called*))
-                                         (setq *attached-fn-called*
-                                               ,*attached-fn-temp*))
-                                       ,@mf-trace-exit
-                                       ,*mf-ans*)))))))))))
+                                             1)
+                                           collect (ofni "O~a" i)))
+                                    (prog1-fn (if (cdr stobjs-out)
+                                                  'multiple-value-prog1
+                                                'prog1))
+                                    (mf-trace-exit+
+                                     (and mf-trace-exit
+                                          `((let ((,*mf-ans*
+                                                   ,(if stobjs-out
+                                                        `(list* ,@vars)
+                                                      (car vars))))
+                                              ,@mf-trace-exit)))))
+                               `(let (,*attached-fn-temp*)
+                                  (mv?-let
+                                   ,vars
+                                   (let (*attached-fn-called*)
+                                     (,prog1-fn
+                                      ,body-call
+                                      (setq ,*attached-fn-temp*
+                                            *attached-fn-called*)))
+                                   (progn
+                                     (cond
+                                      ,@(and (not aokp)
+                                             `((,*attached-fn-temp*
+                                                (memoize-use-attachment-warning
+                                                 ',fn ,*attached-fn-temp*))))
+                                      (t
+                                       (setf
+                                        (gethash ,*mf-args*
+                                                 (the hash-table
+                                                   ,localtablename))
+                                        (list* ,@vars))))
+                                     (update-attached-fn-called
+                                      ,*attached-fn-temp*)
+                                     ,@mf-trace-exit+
+                                     (mv? ,@vars)))))))))))))
            (body2
             `(let ((,*mf-old-caller* *caller*)
                    #+Clozure
@@ -4151,8 +4155,8 @@ the calls took.")
                                      ,fn)))
                  (flet ((,body-name () ,body))
                    (profiler-if (eql -1 ,start-time)
-                            ,body2
-                            ,body3))))))
+                                ,body2
+                                ,body3))))))
         (setf (gethash fn *number-of-arguments-and-values-ht*)
               (cons (length stobjs-in) (length stobjs-out)))
         (unwind-protect
@@ -4167,6 +4171,8 @@ the calls took.")
             (setf (gethash fn *memoize-info-ht*)
                   (make memoize-info-ht-entry
                         :fn fn
+                        :ext-anc-attachments
+                        (and aokp (extended-ancestors fn wrld))
                         :tablename tablename
                         :ponstablename ponstablename
                         :old-fn old-fn
@@ -8825,3 +8831,54 @@ next GC.~%"
 
 (defun our-gctime ()
   (ccl::timeval->microseconds ccl::*total-gc-microseconds*))
+
+(defun update-memo-entry-for-attachments (fns entry wrld)
+
+; We return (mv changed-p new-entry), where if changed-p is not t or nil then
+; it is a function symbol whose attachment has changed, which requires clearing
+; of the corresponding memo table.
+
+  (let* ((ext-anc-attachments
+          (access memoize-info-ht-entry entry :ext-anc-attachments))
+         (valid-p
+          (if (eq fns :clear)
+              :clear
+            (or (null ext-anc-attachments)
+                (ext-anc-attachments-valid-p fns ext-anc-attachments wrld nil)))))
+    (cond ((eq valid-p t) (mv nil entry))
+          (t
+           (mv (if (eq valid-p nil) t valid-p)
+               (change memoize-info-ht-entry entry
+                       :ext-anc-attachments
+                       (extended-ancestors (access memoize-info-ht-entry entry
+                                                   :fn)
+                                           wrld)))))))
+
+(defun update-memo-entries-for-attachments (fns wrld state)
+  (let ((ctx 'top-level)
+        (fns (if (eq fns :clear)
+                 fns
+               (strict-merge-sort-symbol-<
+                (loop for fn in fns
+                      collect (canonical-sibling fn wrld))))))
+    (when (eq fns :clear)
+      (observation ctx
+                   "Memoization tables for functions memoized with :AOKP T ~
+                    are being cleared."))
+    (maphash (lambda (k entry)
+               (when (symbolp k)
+                 (mv-let (changedp new-entry)
+                         (update-memo-entry-for-attachments fns entry wrld)
+                         (when changedp
+                           (when (not (or (eq changedp t)
+                                          (eq fns :clear)))
+                             (observation ctx
+                                          "Memoization table for function ~x0 ~
+                                           is being cleared because ~
+                                           attachment to function ~x1 has ~
+                                           changed."
+                                          k changedp)
+                             (clear-one-memo-and-pons-hash entry))
+                           (setf (gethash k *memoize-info-ht*)
+                                 new-entry)))))
+             *memoize-info-ht*)))

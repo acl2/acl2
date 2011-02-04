@@ -17376,6 +17376,14 @@
   declaration for the same function.  In particular, a guard of ~c[t] is
   essentially ignored.
 
+  Attachments are now allowed during evaluation of the first argument of
+  ~ilc[prog2$] even in contexts (such as proofs) during which the use of
+  attachments is normally prohibited.  More generally, the second of the three
+  arguments of ~ilc[return-last] has this property, except in the case of
+  ~ilc[mbe] (or related macros like ~ilc[mbe1]), where the ~c[exec] argument
+  may provide the value.  Thanks to Sol Swords for useful discussions leading
+  us to implement this enhancement.
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of
@@ -17461,15 +17469,22 @@
 
   ~st[EXPERIMENTAL VERSIONS]
 
-  For the HONS version (~pl[hons-and-memoization])
+  Among the enchancements for the HONS version (~pl[hons-and-memoization]) are
+  the following.
   ~bq[]
-  ~il[Memoize]d functions may now be traced (~pl[trace$]).  Thanks to Sol
+  ~ilc[Memoize]d functions may now be traced (~pl[trace$]).  Thanks to Sol
   Swords for requesting this enhancement.
 
   ~ilc[Memoize-summary] and ~ilc[clear-memoize-statistics] are now
   ~c[:]~ilc[logic] mode functions that return ~c[nil].  Thanks to Sol Swords
   for this enhancement.
 
+  ~ilc[Memoize] is now explicitly illegal for constrained functions.  (Already
+  such memoization was ineffective.)
+
+  A new keyword argument, ~c[:AOKP], controls whether or not to allow
+  memoization to take advantage of attachments; ~pl[memoize] and for relevant
+  background, ~pl[defattach].
   ~eq[]
 
   ~/~/")

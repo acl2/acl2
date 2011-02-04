@@ -3912,6 +3912,9 @@
                                             new-ens
                                             state)))))))))
 
+#+(and (not acl2-loop-only) hons)
+(defvar *defattach-fns*)
+
 (defun set-w (flg wrld state)
 
 ; Ctx is ignored unless we are extending the current ACL2 world, in which case
@@ -3975,12 +3978,13 @@
                      (not (eq wrld (w *the-live-state*))))
                 (push-wormhole-undo-formi 'cloaked-set-w! (w *the-live-state*)
                                           nil)))
-         (cond ((eq flg 'extension)
-                (extend-world1 'current-acl2-world wrld)
-                state)
-               (t
-                (retract-world1 'current-acl2-world wrld)
-                state)))
+         (let (#+hons (*defattach-fns* nil))
+           (cond ((eq flg 'extension)
+                  (extend-world1 'current-acl2-world wrld)
+                  state)
+                 (t
+                  (retract-world1 'current-acl2-world wrld)
+                  state))))
         (t (f-put-global 'current-acl2-world wrld state)
            (install-global-enabled-structure wrld state)
            (cond ((find-non-hidden-package-entry (current-package state)
@@ -21213,7 +21217,8 @@
                                  condition nil wrld)) ; condition-defun
                           ,(and (cdr (assoc-eq :commutative val)) t)
                           ,(cdr (assoc-eq :forget val))
-                          ,(cdr (assoc-eq :memo-table-init-size val)))))
+                          ,(cdr (assoc-eq :memo-table-init-size val))
+                          ,(cdr (assoc-eq :aokp val)))))
              (t `(unmemoize ,key))))
       (t nil))))
 

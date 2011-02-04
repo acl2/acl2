@@ -25028,6 +25028,11 @@
       (er hard ctx
           "~@0~x1 is not a defined ACL2 function."
           str key))
+     ((getprop key 'constrainedp nil 'current-acl2-world wrld)
+      (er hard ctx
+          "~@0~x1 is constrained.  You may instead wish to memoize a caller ~
+           or to memoize its attachment (see :DOC defattach)."
+          str key))
      ((if (eq key-class :program)
           (member-eq key *primitive-program-fns-with-raw-code*)
         (member-eq key *primitive-logic-fns-with-raw-code*))
@@ -28626,3 +28631,234 @@
 (link-doc-to fmt!-to-string programming printing-to-strings)
 (link-doc-to fmt1-to-string programming printing-to-strings)
 (link-doc-to fmt1!-to-string programming printing-to-strings)
+
+; Essay on Memoization with Attachments (relevant for #+hons version only)
+
+; We maintain the invariant that every stored value in a memo table is valid.
+
+; The main idea is to ensure that if a function m is memoized with :aok t, then
+; for every possible call of m, every function called has the same attachment
+; now as it did when the value was stored.  To do this, we maintain a stronger
+; invariant, described in the next paragraph, that is based on the acyclic
+; "extended ancestor" relation introduced in the the Essay on Defattach.
+; Roughly speaking, this relation is the transitive closure of the immediate
+; ancestor relation, where g is an immediate ancestor of f if it either g is an
+; ordinary ancestor of f or else <f,g> is an attachment pair (think: f is
+; redefined to be g).  We say "roughly speaking" primarily because we traffic
+; entirely in "canonical" function symbols, as explained in the Essay on
+; Defattach.  Morover, for our defattach implementation, we include guards in
+; the calculation of canonical ancestors.  Guards are relevant in the sense
+; that changing or (especially) removing an attachment used in a guard could
+; invalidate a stored value, not logically, but in the sense that its
+; computation should now cause a guard violation error and thus we don't want
+; to return such a value.
+
+; Let m a memoized function symbol.  If m was memoized with :aok nil (the
+; default), then the invariant maintained is simply that the
+; :ext-anc-attachments field of the memoize-info-ht-entry record for m is nil.
+; This implies the property we desire, that all stored entries for m are valid,
+; because defattach events do not destroy the validity of stored results.  But
+; in the case that f was memoized with :aok t, the :ext-anc-attachments field
+; of the memoize-info-ht-entry record for m is a non-null fast alist whose keys
+; are exactly the (canonical) extended ancestors of m, including the canonical
+; sibling of m.  We maintain the invariant that the value of key f in this fast
+; alist is itself an alist associating each sibling f' of f with its
+; attachment, for each sibling f' that has an attachment.
+
+; To summarize: in the :aok t case, we maintain the :ext-anc-attachments field
+; to have the value described above, and every value stored in the memo table
+; is correct with respect to the current attachments, which are those indicated
+; in the :ext-anc-attachments field.  Thus, if a defattach event changes the
+; attachment of (some sibling of) an extended ancestor, then the
+; :ext-anc-attachments field is recalculated and stored anew.  If the only
+; changes are to add new attachments, without changing or removing any existing
+; attachments, then the memo table is not cleared; otherwise, it is.  The
+; analogous actions are taken when we undo.
+
+; For efficiency, we implement extend-world1, retract-world1, and recover-world
+; so that they do not update such fields or clear memo-tables until all trips
+; have been processed.  At that point we see whether any defattach event has
+; been installed or undone, and then we see whether any memo-table's
+; :ext-anc-attachments field needs to be recalculated, and whether furthermore
+; the table needs to be invalidated, as discussed above.  For efficiency, we
+; set a variable to a list L of canonical siblings of all functions whose
+; attachment may have been installed, eliminated, or changed.  We then restrict
+; our check on :ext-anc-attachments fields to check attachments for siblings of
+; functions in L.  In particular, if L is empty then nothing needs to be done.
+
+;;; Going backward, when we see that an extended ancestor attachment has
+;;; changed or been added for the memo table of fn, then add fn to a list of
+;;; functions that will eventually have their memo tables strongly cleared when
+;;; we finish retract-world1.  (How about recover-world?  Perhaps just strongly
+;;; clear all memo tables unless I find a better idea.)
+
+; Start code supporting extended-ancestors.
+
+(defun attachment-pair (fn wrld)
+  (let ((attachment-alist (attachment-alist fn wrld)))
+    (and attachment-alist
+         (not (eq (car attachment-alist) :attachment-disallowed))
+         (assoc-eq fn attachment-alist))))
+
+(defun attachment-pairs (fns wrld acc)
+
+; Accumulate into acc all attachment pairs (f . g) for f in fns.
+
+  (cond ((endp fns) acc)
+        (t (attachment-pairs
+            (cdr fns)
+            wrld
+            (let ((pair (attachment-pair (car fns) wrld)))
+              (cond (pair (cons pair acc))
+                    (t acc)))))))
+
+(defun sibling-attachments (f wrld)
+
+; We return all attachment pairs (f0 . g0) for which f0 is a sibling of f.
+
+  (attachment-pairs (siblings f wrld) wrld nil))
+
+(defun extended-ancestors4 (fns wrld fal)
+  (cond ((endp fns) fal)
+        (t (extended-ancestors4
+            (cdr fns)
+            wrld
+            (cond ((hons-get (car fns) fal)
+                   fal)
+                  (t (hons-acons (car fns)
+                                 (sibling-attachments (car fns) wrld)
+                                 fal)))))))
+
+(defun extended-ancestors3 (components wrld fal)
+  (cond ((endp components) fal)
+        (t (extended-ancestors3
+            (cdr components)
+            wrld
+            (let ((anc (access attachment-component (car components) :ord-anc))
+                  (path (access attachment-component (car components) :path)))
+              (extended-ancestors4
+               (if path
+                   (cons (car path) ; attachment-component-owner
+                         anc)
+                 anc)
+               wrld
+               fal))))))
+
+(defun extended-ancestors2 (canon-gs arfal wrld canon-gs-fal fal)
+  (cond ((endp canon-gs) fal)
+        (t (let ((g (car canon-gs)))
+             (cond ((hons-get g canon-gs-fal)
+                    (extended-ancestors2
+                     (cdr canon-gs) arfal wrld canon-gs-fal fal))
+                   (t (let ((rec (cdr (hons-get g arfal))))
+                        (extended-ancestors2
+                         (cdr canon-gs) arfal wrld
+                         (hons-acons g fal canon-gs-fal)
+                         (assert$
+                          rec
+                          (extended-ancestors3
+                           (access attachment rec :components)
+                           wrld
+                           (hons-acons g
+                                       (sibling-attachments (car canon-gs)
+                                                            wrld)
+                                       fal)))))))))))
+
+(defun canonical-cdrs (alist wrld acc)
+  (cond ((endp alist) acc)
+        (t (canonical-cdrs (cdr alist)
+                           wrld
+                           (cons (canonical-sibling (cdar alist) wrld)
+                                 acc)))))
+
+(defun extended-ancestors1 (fns canon-gs arfal wrld fal)
+
+; Arfal is a fast alist mapping every g-canonical function symbols to its
+; attachment record.  We accumulate ordinary ancestors of members of fns,
+; including those functions, into fal, as we accumulate immediate extended
+; ancestors of members of fns into canon-gs.  Once fns is empty, however, we
+; accumulate all extended ancestors of members of canon-gs (including those
+; functions) into fal.
+
+  (cond ((endp fns)
+         (extended-ancestors2 canon-gs arfal wrld 'extended-ancestors2 fal))
+        ((hons-get (car fns) fal)
+         (extended-ancestors1 (cdr fns) canon-gs arfal wrld fal))
+        (t (let* ((alist (sibling-attachments (car fns) wrld))
+                  (canon-gs (cond ((null alist) ; optimization
+                                   canon-gs)
+                                  (t (append (canonical-cdrs alist wrld nil)
+                                             canon-gs)))))
+             (extended-ancestors1 (append (canonical-ancestors (car fns)
+                                                               wrld)
+                                          (cdr fns))
+                                  canon-gs arfal wrld
+                                  (hons-acons (car fns) alist fal))))))
+
+(defun attachment-records-fal (attachment-records fal)
+  (cond ((endp attachment-records) fal)
+        (t (attachment-records-fal
+            (cdr attachment-records)
+            (hons-acons (access attachment (car attachment-records) :g)
+                        (car attachment-records)
+                        fal)))))
+
+(defun extended-ancestors (f wrld)
+
+; The implementation of this function uses hons-acons, so might only be
+; efficient when #+hons (which was its intended use when written).
+
+  (extended-ancestors1 (cons (canonical-sibling f wrld)
+                             (canonical-ancestors f wrld))
+                       nil
+                       (attachment-records-fal
+                        (global-val 'attachment-records wrld)
+                        :attachment-records-fal)
+                       wrld
+                       f))
+
+(defun ext-anc-attachment-missing (alist wrld)
+
+; See ext-anc-attachments-valid-p.
+
+  (cond ((endp alist) nil)
+        ((eq (cdar alist)
+             (cdr (attachment-pair (caar alist) wrld)))
+         (ext-anc-attachment-missing (cdr alist) wrld))
+        (t (caar alist))))
+
+(defun ext-anc-attachments-valid-p-1 (fns alist wrld)
+
+; See ext-anc-attachments-valid-p.  We assume that for every pair (f . g) in
+; alist, g is the attachment of f in wrld.
+
+  (cond ((endp fns) t)
+        ((or (assoc-eq (car fns) alist)
+             (not (attachment-pair (car fns) wrld)))
+         (ext-anc-attachments-valid-p-1 (cdr fns) alist wrld))
+        (t nil)))
+
+(defun ext-anc-attachments-valid-p (fns ext-anc-attachments wrld acc)
+
+; Each member of the fast alist ext-ancestor-attachments associates a function
+; symbol f with an alist.  That alist is intended to have as its keys the
+; siblings of f that have an attachment, associating each such key with its
+; attachment.  This function returns t if that spec currently holds.
+; Otherwise, if some such key is no longer attached to its value, return that
+; key.  The other possibility is that some key is missing, in which case we
+; return nil to indicate that we need to grow.
+
+; Acc is initially t, but is nil when we find that an alist needs to grow.
+
+  (cond ((endp fns) acc)
+        (t (let* ((f (car fns))
+                  (siblings (siblings f wrld))
+                  (alist (cdr (hons-get f ext-anc-attachments)))
+                  (missing (ext-anc-attachment-missing alist wrld)))
+             (or missing
+                 (ext-anc-attachments-valid-p
+                  (cdr fns)
+                  ext-anc-attachments
+                  wrld
+                  (and acc
+                       (ext-anc-attachments-valid-p-1 siblings alist wrld))))))))

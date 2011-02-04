@@ -4079,13 +4079,25 @@
   ? [RAW LISP] (macroexpand-1 '(RETURN-LAST 'PROGN
                                              (CW \"Some CW printing...~~%\")
                                              (+ 3 4)))
-  (PROGN (CW \"Some CW printing...~~%\") (+ 3 4))
+  (PROGN (LET ((*AOKP* T)) (CW \"SOME CW PRINTING...~~%\")) (+ 3 4))
   T
   ? [RAW LISP] 
   ~ev[]
   Thus, the original ~c[prog2$] call generates a corresponding call of
   ~c[progn] in raw Lisp, which in turn causes evaluation of each argument and
   returns whatever is returned by evaluation of the last (second) argument.
+
+  (Remark for those who use ~ilc[defattach].  The binding of ~c[*aokp*] to
+  ~c[t] is always included for the second argument as shown except when the
+  first argument is of the form ~c[(QUOTE M)] where ~c[M] is a macro, or (less
+  important) when the first argument is a symbol or a cons whose car is
+  ~c[QUOTE].  This binding allows ACL2 to use attachments in the second
+  argument of ~c[return-last] (hence, in the first argument of ~ilc[prog2$]),
+  even in contexts such as proofs in which attachments are normally not
+  allowed.  Those who use the experimental HONS version of ACL2
+  (~pl[hons-and-memoization]) will see an additional binding in the above
+  single-step macroexpansion, which allows the storing of memoized results even
+  when that would otherwise be prevented because of the use of attachments.)
 
   In general, a form ~c[(return-last (quote F) X Y)] macroexpands to
   ~c[(F X Y)], where ~c[F] is defined in raw Lisp to return its last argument.
@@ -4455,12 +4467,35 @@
 
 #-acl2-loop-only
 (defmacro return-last (qfn arg2 arg3)
-  (let ((fn (and (consp qfn)
-                 (eq (car qfn) 'quote)
-                 (consp (cdr qfn))
-                 (symbolp (cadr qfn))
-                 (null (cddr qfn))
-                 (cadr qfn))))
+  (let* ((fn (and (consp qfn)
+                  (eq (car qfn) 'quote)
+                  (consp (cdr qfn))
+                  (symbolp (cadr qfn))
+                  (null (cddr qfn))
+                  (cadr qfn)))
+         (arg2
+
+; There is no logical problem with using attachments when evaluating the second
+; argument of return-last, because logically the third argument provides the
+; value(s) of a return-last call -- the exception being the evaluation of the
+; :exec argument of an mbe call (or, equivalent evaluation by way of mbe1,
+; etc.).  We not only bind *aokp* to t, but we also bind *attached-fn-called*
+; so that no changes to this variable will prevent the storing of memoization
+; results.
+
+; See also the related treatment of aokp in ev-rec-return-last.
+
+          (cond
+           ((or (eq fn 'mbe1-raw) ; good test, though subsumed by the next line
+                (and fn (macro-function fn))
+                (symbolp arg2)      ; no point in doing extra bindings below
+                (and (consp arg2)
+                     (eq (car arg2) ; no point in doing extra bindings below
+                         'quote)))
+            arg2)
+           (t `(let ((*aokp* t)
+                     #+hons (*attached-fn-called* t))
+                 ,arg2)))))
     (cond ((and fn (fboundp fn))
 
 ; Translation for evaluation requires that if the first argument is a quoted
@@ -8325,6 +8360,12 @@
 
 (defvar *attached-fn-called*)
 
+#+hons
+(defmacro update-attached-fn-called (fn)
+  `(when (and (boundp '*attached-fn-called*)
+              (null *attached-fn-called*))
+     (setq *attached-fn-called* ,fn)))
+
 (defmacro throw-or-attach (fn formals alt-formals &optional *1*-p)
 
 ; If alt-formals is non-nil, then it is to be used in place of formals when
@@ -8337,9 +8378,7 @@
                    ,at-fn
                    (aokp))
               #+hons
-              (when (and (boundp '*attached-fn-called*)
-                         (null *attached-fn-called*))
-                (setq *attached-fn-called* ',fn))
+              (update-attached-fn-called ',fn)
               (funcall ,(if *1*-p
                             `(*1*-symbol ,at-fn)
                           at-fn)
@@ -18618,7 +18657,14 @@
   not use attachments during evaluation, are for macroexpansion, evaluation of
   ~ilc[defconst] and ~ilc[defpkg] terms, evaluation during ~ilc[table] events,
   and especially evaluation of ground terms (terms without free variables)
-  during proofs.  Regarding the last of these, consider the following example.
+  during proofs.  However, even for these cases we allow the use of attachments
+  in the first argument of ~ilc[prog2$] and, more generally, the next-to-last
+  (i.e., second) argument of ~ilc[return-last] when its first argument is not
+  of the form ~c['m] for some macro, ~c[m].
+
+  To see why attachments are disallowed during evaluation of ground terms
+  during proofs (except for the ~ilc[prog2$] and ~ilc[return-last] cases
+  mentioned above), consider the following example.
   ~bv[]
   (defstub f (x) t)
   (defun g (x) (+ 3 x))

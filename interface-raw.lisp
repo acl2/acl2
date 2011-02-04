@@ -2532,12 +2532,12 @@
             macro-functions.  Please let the ACL2 implementors know about ~%~
             this problem.")))
 
-(defun-one-output maybe-push-undo-stack (fn name &optional ignorep)
+(defun-one-output maybe-push-undo-stack (fn name &optional extra)
 
 ; See add-trip below for context.  Fn is one of the raw Lisp function names
 ; secretly spawned by CLTL-COMMAND forms, e.g., DEFUN, DEFMACRO, DEFCONST,
-; DEFPKG, or DEFATTACH.  Name is generally the symbol or string that is being
-; defined.
+; DEFPKG, DEFATTACH, or (for the HONS version) MEMOIZE or UNMEMOIZE.  Name is
+; generally the symbol or string that is being defined.
 
 ; Whenever we smash a CLTL cell we first save its current contents to permit
 ; redefinition and undoing.  Toward this end we maintain a stack for each
@@ -2560,9 +2560,10 @@
 ; question.  When a new value is stored (and the cell is already in use) we
 ; will manufacture a suitable form for recreating the old value and push it.
 
-; Third, ignorep is either nil, 'reclassifying or '(defstobj . stobj).  When it
-; is 'reclassifying, we only save the *1* def for name.  Otherwise, we save
-; both defs.
+; Third, extra (formerly called ignorep because of its connection to the
+; ignorep variable in add-trip) is either nil, 'reclassifying or '(defstobj
+; . stobj).  When it is 'reclassifying, we only save the *1* def for name.
+; Otherwise, we save both defs.
 
   (cond ((and (symbolp name)
               (fboundp name)
@@ -2599,7 +2600,7 @@
              (push `(progn
                       (maybe-untrace! ',name) ; untrace new function
                       #+hons (maybe-unmemoize ',name)
-                      ,@(if (eq ignorep 'reclassifying)
+                      ,@(if (eq extra 'reclassifying)
                             `((setf (symbol-function ',oneified-name)
                                     ',(symbol-function oneified-name)))
                           `((setf (symbol-function ',name)
@@ -2642,9 +2643,10 @@
                     (get (packn (cons name '("-PACKAGE"))) '*undo-stack*))))))
         (attachment
          (let ((at-sym (attachment-symbol name)))
-           (push (set-attachment-symbol-form
-                  name
-                  (if (boundp at-sym) (symbol-value at-sym) nil))
+           (push `(progn #+hons (push ',name *defattach-fns*)
+                         ,(set-attachment-symbol-form
+                           name
+                           (if (boundp at-sym) (symbol-value at-sym) nil)))
                  (get name '*undo-stack*))))
         #+hons
         (memoize
@@ -2662,6 +2664,9 @@
                  (access memoize-info-ht-entry entry :forget))
                 (memo-table-init-size
                  (access memoize-info-ht-entry entry :memo-table-init-size))
+                (aokp
+                 (and (access memoize-info-ht-entry entry :ext-anc-attachments)
+                      t))
                 (cl-defun (access memoize-info-ht-entry entry :cl-defun)))
            (assert$ condition
                     (push `(memoize-fn ',name
@@ -2675,6 +2680,8 @@
                                        ,@(and memo-table-init-size
                                               `(:memo-table-init-size
                                                 ',memo-table-init-size))
+                                       ,@(and aokp
+                                              `(:aokp ',aokp))
                                        ,@(and cl-defun
                                               `(:cl-defun ',cl-defun)))
                           (get name '*undo-stack*)))))
@@ -5378,6 +5385,7 @@
         (attachment ; (cddr trip) is produced by attachment-cltl-cmd
          (dolist (x (cdr (cddr trip)))
            (let ((name (if (symbolp x) x (car x))))
+             #+hons (push name *defattach-fns*)
              (maybe-push-undo-stack 'attachment name)
              (install-for-add-trip
               (cond ((symbolp x)
@@ -5402,7 +5410,8 @@
                         :stobjs-out (nth 8 tuple)
                         :commutative (nth 10 tuple)
                         :forget     (nth 11 tuple)
-                        :memo-table-init-size (nth 12 tuple)))))
+                        :memo-table-init-size (nth 12 tuple)
+                        :aokp       (nth 13 tuple)))))
         #+hons
         (unmemoize
          (maybe-push-undo-stack 'unmemoize (cadr (cddr trip)))
@@ -5512,6 +5521,17 @@
 
 (defparameter *known-worlds* nil)
 
+(defun update-wrld-structures (wrld state)
+  (install-global-enabled-structure wrld state)
+  (recompress-global-enabled-structure
+   'global-arithmetic-enabled-structure
+   wrld)
+  (recompress-stobj-accessor-arrays
+   (strip-cars *user-stobj-alist*)
+   wrld)
+  #+hons
+  (update-memo-entries-for-attachments *defattach-fns* wrld state))
+
 (defun-one-output extend-world1 (name wrld)
 
 ; Wrld must be a world that is an extension of the world currently
@@ -5599,13 +5619,7 @@
           (setf (car pair) wrld)
           (cond ((eq name 'current-acl2-world)
                  (f-put-global 'current-acl2-world wrld *the-live-state*)
-                 (install-global-enabled-structure wrld state)
-                 (recompress-global-enabled-structure
-                  'global-arithmetic-enabled-structure
-                  wrld)
-                 (recompress-stobj-accessor-arrays
-                  (strip-cars *user-stobj-alist*)
-                  wrld)))))
+                 (update-wrld-structures wrld state)))))
        (recover-world 'extension name old-wrld wrld nil)
 
 ; Observe that wrld has recover-world properties (a) and (b).  (a) at
@@ -5711,13 +5725,7 @@
 ; above!
 
                         (f-put-global 'current-package "ACL2" *the-live-state*)))
-                 (install-global-enabled-structure wrld state)
-                 (recompress-global-enabled-structure
-                  'global-arithmetic-enabled-structure
-                  wrld)
-                 (recompress-stobj-accessor-arrays
-                  (strip-cars *user-stobj-alist*)
-                  wrld)))))
+                 (update-wrld-structures wrld state)))))
        (recover-world 'retraction name old-wrld old-wrld pkg)
 
 ; Note that old-wrld has recover-world properties (a) and (b).  (a) At the time
@@ -5789,6 +5797,7 @@
 
   (let* ((pair (get name 'acl2-world-pair))
          (world-key (cdr pair))
+         #+hons *defattach-fns* ; needs to be bound, but not truly used
          (*in-recover-world-flg* t))
 
 ; The *in-recover-world-flg* is used by the raw lisp implementation of defpkg.
@@ -5858,13 +5867,8 @@
              (cond ((eq op 'retraction)
                     (f-put-global 'current-package pkg
                                   *the-live-state*)))
-             (install-global-enabled-structure old-wrld *the-live-state*)
-             (recompress-global-enabled-structure
-              'global-arithmetic-enabled-structure
-              old-wrld)
-             (recompress-stobj-accessor-arrays
-              (strip-cars *user-stobj-alist*)
-              old-wrld))))))
+             #+hons (setq *defattach-fns* :clear)
+             (update-wrld-structures old-wrld *the-live-state*))))))
 
 ;                              VIRGINITY
 

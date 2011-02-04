@@ -1558,8 +1558,26 @@
    (not (eq fn 'mbe1-raw))
    (mv-let
     (er arg2-val latches)
-    (ev-rec arg2 alist w (decrement-big-n big-n) safe-mode gc-off latches
-            hard-error-returns-nilp aok)
+    (let (#-acl2-loop-only (*aokp*
+
+; See the #-acl2-loop-only definition of return-last and the comment just
+; below.  Note that fn is not mbe1-raw, so this binding is legal.
+
+; Unlike the raw Lisp definition of return-last, we see no need to bind
+; *attached-fn-called* here (for the #+hons version), because that would amount
+; to trying to manage the use of memoization with calls of top-level calls of
+; ev-rec on behalf of the trans-eval call under ld-read-eval-print.
+
+                            t))
+      (ev-rec arg2 alist w (decrement-big-n big-n) safe-mode gc-off latches
+              hard-error-returns-nilp
+
+; There is no logical problem with using attachments when evaluating the second
+; argument of return-last, because logically the third argument provides the
+; value(s) of a return-last call.  See related treatment of aokp in the
+; #-acl2-loop-only definition of return-last.
+
+              t))
     (cond (er (mv er arg2-val latches))
           (t (case fn
 
