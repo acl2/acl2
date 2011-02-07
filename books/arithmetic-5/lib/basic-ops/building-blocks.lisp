@@ -879,8 +879,7 @@
 
 (defun addends (sum)
   (declare (xargs :guard t))
-  (if (and (true-listp sum)
-	   (eq (ffn-symb sum) 'BINARY-+))
+  (if (eq (fn-symb sum) 'BINARY-+)
       (cons (arg1 sum)
             (addends (arg2 sum)))
     (list sum)))
