@@ -17384,6 +17384,12 @@
   may provide the value.  Thanks to Sol Swords for useful discussions leading
   us to implement this enhancement.
 
+  The restriction has been removed that prohibited the use of ~ilc[mbe] inside
+  ~ilc[encapsulate] ~il[events] with a non-empty ~il[signature].  This
+  restriction was introduced in Version  3.4, but has not been necessary since
+  Version  4.0, when we first started disallowing ~il[guard] verification for
+  functions introduced non-~il[local]ly inside such ~ilc[encapsulate] events.
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of
