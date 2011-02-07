@@ -913,23 +913,29 @@ sub src_deps {
 	    $fullname && push(@$deps, $fullname);
 	} elsif ($type eq $two_pass_event) {
 	    $two_pass = 1;
-	} elsif ($type eq $ld_event && $ld_ok) {
-	    my $srcname = $event->[1];
-	    my $dir = $event->[2];
-	    my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
-					      $local_dirs, "ld", "");
-	    if ($fullname) {
-		push(@$deps, $fullname) unless $book_only;
-		my $local_two_pass = src_deps($fullname, $cache,
-					      $local_dirs, $deps,
-					      $book_only,
-					      $tscache,
-					      $ld_ok,
-					      $seen);
-		$two_pass = $two_pass || $local_two_pass;
+	} elsif ($type eq $ld_event) {
+	    if ($ld_ok) {
+		my $srcname = $event->[1];
+		my $dir = $event->[2];
+		my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
+						  $local_dirs, "ld", "");
+		if ($fullname) {
+		    push(@$deps, $fullname) unless $book_only;
+		    my $local_two_pass = src_deps($fullname, $cache,
+						  $local_dirs, $deps,
+						  $book_only,
+						  $tscache,
+						  $ld_ok,
+						  $seen);
+		    $two_pass = $two_pass || $local_two_pass;
+		}
+	    } else {
+		print "Warning: LD event in book context in $fname:\n";
+		print_event($event);
+		print "\n";
 	    }
 	} else {
-	    print "unknown event type: $$type\n";
+	    print "unknown event type: $type\n";
 	}
     }
 
@@ -1095,8 +1101,9 @@ sub add_deps {
 
     my ($deps, $two_pass) = find_deps($base, $cache, 0, $tscache);
 
+
+    my $acl2xfile = $base . ".acl2x";
     if ($two_pass) {
-	my $acl2xfile = $base . ".acl2x";
 	$seen->{$target} = [ $acl2xfile ];
 	$seen->{$acl2xfile} = $deps;
     } else {
@@ -1120,16 +1127,23 @@ sub add_deps {
     # If this target needs an update or we're in all_deps mode, we're
     # done, otherwise we'll delete its entry in the dependency table.
     unless ($all_deps) {
-	my $needs_update = (! -e $target);
+	# To fix this for two-pass files, 
+	my $update_target = $two_pass ? $acl2xfile : $target;
+	my $needs_update = (! -e $update_target);
 	if (! $needs_update) {
 	    foreach my $dep (@{$deps}) {
-		if ((-e $dep && newer_than($dep, $target)) || $seen->{$dep}) {
+		if ($seen->{$dep} || newer_than($dep, $update_target)) {
 		    $needs_update = 1;
 		    last;
 		}
 	    }
 	}
 	if (! $needs_update) {
+	    $seen->{$update_target} = 0;
+	}
+	if ($two_pass &&
+	    (! $seen->{$acl2xfile}) &&
+	    (! newer_than($acl2xfile, $target))) {
 	    $seen->{$target} = 0;
 	}
     }
