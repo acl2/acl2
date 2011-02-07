@@ -8,7 +8,7 @@
 ;; (defun convert-matches (matches str)
 ;;   (if (endp matches)
 ;;       nil
-;;     (cons (cons (coerce (firstn (- (len str) 
+;;     (cons (cons (coerce (firstn (- (len str)
 ;;                                    (len (strip-begin (caar matches))))
 ;;                                 str)
 ;;                         'string)
@@ -45,12 +45,12 @@
             (t (list (car matches)))))))
 
 ;; Return all matches to prefixes of str.
-;; Like raw run-regex but parses the regex and 
+;; Like raw run-regex but parses the regex and
 ;; takes and returns strings instead of lists.
 (defmacro all-matches (reg str &optional opts)
   (let ((opts (if opts opts ''(t t nil nil))))
          `(all-matches-fn ,reg ,str ,opts)))
-         
+
 (defmacro all-longest-matches (reg str &optional opts)
   `(longest-matches (all-matches ,reg ,str ,opts)))
 
@@ -66,7 +66,7 @@
                               (parse-opts-p opts))))
   (case-sens-bindings
    (let ((regex (regex-do-parse reg opts)))
-     (if (stringp regex) 
+     (if (stringp regex)
          (mv 2 regex nil)
        (mv-let (succ match brs) (match-regex regex str untrans-str)
                (if succ
@@ -118,8 +118,8 @@
           (declare (ignore brs))
           (if (equal code ans)
               0
-            (prog2$ (cw "~c0) ~p1 ~p2 ~s3~t4~s5~t6~s7~%" 
-                        `(,num . 4) ans code str 20 reg 40 match) 
+            (prog2$ (cw "~c0) ~p1 ~p2 ~s3~t4~s5~t6~s7~%"
+                        `(,num . 4) ans code str 20 reg 40 match)
                     1))))
 
 
@@ -177,7 +177,7 @@
                            (if ebrs (equal brs ebrs) t))
                       0
                     (prog2$ (cw "~c0) ~p1 ~s2~t3~s4~t5~s6~t7~x8~%"
-                                `(,num . 4) ans (nth 3 test) 20 reg 40 match 60 
+                                `(,num . 4) ans (nth 3 test) 20 reg 40 match 60
                                 brs)
                             1))))))))
 
@@ -195,7 +195,7 @@
       0
     (+ (do-other-test (car testlist))
        (do-other-test-list (cdr testlist)))))
-              
+
 
 
 ;; is x a valid regex test,
@@ -1242,8 +1242,8 @@
     (206 0 "[[:blank:]]+" "a  	b" ,ere-opts "  	")
     (207 0 "[[:digit:]]+" "a019b" ,ere-opts "019")
     (208 0 "[[:lower:]]+" "AabC" ,ere-opts "ab")
-    (209 0 "[[:space:]]+" "a 
-	b" ,ere-opts " 
+    (209 0 "[[:space:]]+" "a
+	b" ,ere-opts "
 	")
     (210 0 "[[:upper:]]+" "aBCd" ,ere-opts "BC")
     (211 0 "[[:xdigit:]]+" "p0f3Cq" ,ere-opts "0f3C")
@@ -1400,7 +1400,7 @@
 
 (defun do-tests-khadafy (opts)
   (declare (xargs :guard (parse-opts-p opts)))
-  (prog2$ 
+  (prog2$
    (cw "Khadafy tests failed: ~%")
    (do-test-list opts *khadafy-tests*)))
 
@@ -1436,7 +1436,7 @@
   (declare (xargs :guard t))
   (prog2$ (cw "Misc tests missed:~%")
           (do-other-test-list *misc-tests*)))
-             
+
 
 
 
@@ -1445,7 +1445,7 @@
   (declare (xargs :guard t
                   :guard-hints
                   (("Goal"
-                    :in-theory (disable 
+                    :in-theory (disable
                                 (:EXECUTABLE-COUNTERPART DO-TEST-LIST)
                                 (:EXECUTABLE-COUNTERPART DO-TESTS-BRE)
                                 (:EXECUTABLE-COUNTERPART DO-TESTS-ERE)
@@ -1470,14 +1470,14 @@
 ;; Run all the test cases n times
 (defun do-tests-n-times (n)
   (declare (xargs :guard (natp n)))
-  (if (zp n) 
+  (if (zp n)
       0
     (+ (do-all-tests)
        (do-tests-n-times (1- n)))))
 
 
 (defthm no-regress
-  (<= (do-all-tests) 
+  (<= (do-all-tests)
       ;; Number of failures out of 646 tests from the GNU grep test suite
       67))
 

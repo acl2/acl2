@@ -17,10 +17,10 @@
 
 (defun charset-memberp (x)
   (declare (xargs :guard t))
-  (cond 
+  (cond
    ((characterp  x) t)
-   (t (and (consp x) 
-           (consp (cdr x)) 
+   (t (and (consp x)
+           (consp (cdr x))
            (consp (cddr x))
            (equal (car x) 'range)
            (characterp (range-start x))
@@ -60,18 +60,19 @@
 ;;(in-theory (enable regex-executable-counterparts))
 
 ;; (defmacro regex-match (input &rest clauses)
-;;   (make-pattern-match input clauses 
-;;                       (append *regex-types-pattern-match-alist* 
+;;   (make-pattern-match input clauses
+;;                       (append *regex-types-pattern-match-alist*
 ;;                               *basic-constructor-alist*)))
 
 (defun parse-type-p (x)
   (declare (xargs :guard t))
-  (and (symbolp x)
-       (or (eq x 'bre)
-           (eq x 'ere)
-           (eq x 'fixed))))
+  (and (symbolp x)        ;; GNU regular expressions -- see GNU documentation
+       (or (eq x 'bre)    ;; Basic regular expressions
+           (eq x 'ere)    ;; Extended regular expressions
+           (eq x 'fixed)  ;; Fixed (no character is special) string
+           )))
 
-(set-bogus-defun-hints-ok t)
+(set-bogus-defun-hints-ok t)  ;; For non-recursive function ignore the (ACL2) hints.
 
 (defsum parse-opts
 ;  :guard :fast
@@ -81,6 +82,22 @@
    (booleanp strict-brace)
    (booleanp strict-repeat)
    (booleanp case-insensitive)))
+
+; Makes parsing options (parse-opts) structure.
+
+(defmacro make-parse-opts
+  (&key (type 'ere)
+        strict-paren
+        strict-brace
+        strict-repeat
+        case-insensitive
+        )
+  `(parse-options ',type
+                  ',strict-paren
+                  ',strict-brace
+                  ',strict-repeat
+                  ',case-insensitive))
+
 
 (defthm parse-opts-type-possibilities
   (implies (and (parse-opts-p x)
@@ -93,7 +110,7 @@
 (defthm parse-options-parse-opts
   (implies (parse-opts-p x)
            (parse-options-p x)))
-                     
+
 
 
 ;;(in-theory (enable parse-options-executable-counterparts))
