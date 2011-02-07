@@ -3,7 +3,7 @@ GPL2
 LICENSE
 Makefile
 # README-images.html -- developer file
-# The following is distributed but is not in the repository:
+# The following is distributed but is not in the svn repository:
 TAGS
 acl2-check.lisp
 acl2-fns.lisp
@@ -73,7 +73,7 @@ prove.lisp
 # release.cmds.incl -- developer file
 rewrite.lisp
 save-gprof.lsp
-# The following is distributed but is not in the repository:
+# The following is distributed but is not in the svn repository:
 saved
 simplify.lisp
 sum-list-example.lisp
@@ -1191,8 +1191,6 @@ defprojection-tests.lisp
 defprojection.lisp
 defsection.lisp
 gpl.txt
-make-manual.acl2
-make-manual.lisp
 other-packages.lsp
 package.lsp
 portcullis.acl2
@@ -1215,6 +1213,7 @@ define-structures-package.lsp
 define-u-package.lsp
 deflist.acl2
 deflist.lisp
+doc-section.lisp
 list-defthms.lisp
 list-defuns.lisp
 list-theory.lisp
@@ -1385,6 +1384,8 @@ instance.lisp
 map.lisp
 membership.lisp
 outer.lisp
+portcullis.acl2
+portcullis.lisp
 primitives.lisp
 quantify.lisp
 set-order.lisp
@@ -1447,6 +1448,7 @@ defcode.acl2
 defcode.lisp
 defstruct-parsing.acl2
 defstruct-parsing.lisp
+doc-section.lisp
 dynamic-make-event-test.acl2
 dynamic-make-event-test.lisp
 dynamic-make-event.acl2
@@ -1587,6 +1589,7 @@ README
 bash.lisp
 beta-reduce.lisp
 book-thms.lisp
+book-thms-example.lisp
 callers-and-ancestors.lisp
 check-acl2-exports.lisp
 computed-hint-rewrite.lisp
@@ -1604,6 +1607,7 @@ defpun.lisp
 dft-ex.acl2
 dft-ex.lisp
 dft.lisp
+doc-section.lisp
 dump-events.lisp
 evalable-printing.lisp
 expander.lisp
@@ -1659,7 +1663,6 @@ sticky-disable.lisp
 symbol-btree.lisp
 total-order.lisp
 trace-star.lisp
-trace1.lisp
 transfinite.lisp
 untranslate-patterns.lisp
 wet.lisp
@@ -1875,12 +1878,15 @@ mersenne.lisp
 books/regex:
 Makefile
 Readme.lsp
+cert.lisp
 defset-encapsulates.lisp
 defset-macros.lisp
 equal-based-set.lisp
 grep-command-line.lisp
 input-list.lisp
 make-acl2-grep.lsp
+portcullis.acl2
+portcullis.lisp
 regex-chartrans.lisp
 regex-defs.lisp
 regex-exec.lisp
@@ -3107,6 +3113,8 @@ isubstrp.lisp
 natstr.lisp
 package.lsp
 pad.lisp
+portcullis.acl2
+portcullis.lisp
 strline.lisp
 strnatless.lisp
 strpos.lisp
@@ -3347,7 +3355,12 @@ books/xdoc:
 LICENSE
 Makefile
 acl2-customization.lsp
+# The following generated file is distributed but is not in the svn repository:
+acl2-code-size.txt
+all.acl2
+all.lisp
 base.lisp
+bookdoc.lsp
 cert.acl2
 defxdoc-raw.acl2
 defxdoc-raw.lisp
@@ -3394,28 +3407,30 @@ xml-topic-index.xsl
 xml-topic.xsl
 
 doc:
-# The following is distributed but is not in the repository:
+# The following is distributed but is not in the svn repository:
 EMACS
-# The following is distributed but is not in the repository:
+# The following is distributed but is not in the svn repository:
 HTML
 README
-# The following is distributed but is not in the repository:
+# The following is distributed but is not in the svn repository:
 TEX
+create-acl2-code-size
 create-acl2-html
 create-acl2-tex
 create-acl2-texinfo
 make-texinfo.el
 texinfo.tex
+write-acl2-code-size.lisp
 write-acl2-html.lisp
 write-acl2-texinfo.lisp
 
-# The following is distributed but is not in the repository:
+# The following is distributed but is not in the svn repository:
 doc/EMACS:
 acl2-doc-emacs.info
 acl2-doc-emacs.info-*
 # acl2-doc-emacs.texinfo -- optional temporary file
 
-# The following is distributed but is not in the repository:
+# The following is distributed but is not in the svn repository:
 doc/HTML:
 LICENSE
 installation
@@ -3432,10 +3447,10 @@ using.html
 windows-gcl-jared.html
 windows7.html
 
-# The following is distributed but is not in the repository:
+# The following is distributed but is not in the svn repository:
 doc/TEX:
-# No longer distribute: acl2-book.dvi.gz
-# No longer distribute: acl2-book.ps.gz (but available from publications page)
+# No longer distributed: acl2-book.dvi.gz
+# No longer distributed: acl2-book.ps.gz (but available from publications page)
 
 emacs:
 README

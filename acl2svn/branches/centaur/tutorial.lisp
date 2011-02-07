@@ -20,9 +20,9 @@
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78701 U.S.A.
 
 ; This document currently has the following form:
 ;
@@ -54,54 +54,60 @@
 
   tutorial introduction to ACL2~/
 
-  To learn about ACL2, read at least the first two links below.  If you want to learn
-  ~i[how to use] ACL2, we recommend you read the first four links below, in the order
-  listed.
-
+  To learn about ACL2, read at least the following two links.
+  ~bq[]
   * ~il[interesting-applications Industrial Applications of ACL2] (10 minutes)
-  to help you understand what sophisticated users can do
+  to help you understand what sophisticated users can do;
 
   * ~il[|A Flying Tour of ACL2| A Flying Tour] (10 minutes) to get an overview
-    of the system and what skills the user must have
+  of the system and what skills the user must have.~eq[]
 
-  * ~il[|A Walking Tour of ACL2| A Walking Tour] (1 hour) to get an overview of the theorem
-  prover
+  If you want to learn ~em[how to use] ACL2, we recommend that you read
+  a selection of the materials referenced below, depending on your learning
+  style, and do suggested exercises.
+  ~bq[]
+  * ``~il[|A Walking Tour of ACL2| A Walking Tour]'' (1 hour) provides an
+  overview of the theorem prover.
 
-  * ~il[introduction-to-the-theorem-prover Introduction to the Theorem Prover] (10-40 hours) 
-  for instruction on how to interact with the system; this is the first of
-  these documents in which you are expected to ~i[think]!  It cites the
-  necessary background pages on programming in ACL2 and on the logic and then
-  instructs you in The Method, which is how expert users use ACL2.  It
+  * ``~il[introduction-to-the-theorem-prover Introduction to the Theorem Prover]''
+  (10-40 hours) provides instruction on how to interact with the system.
+  Unlike the three documents above, this document expects you to ~em[think]!  It
+  cites the necessary background pages on programming in ACL2 and on the logic
+  and then instructs you in The Method, which is how expert users use ACL2.  It
   concludes with some challenge problems for the ACL2 beginner (including
   solutions) and an FAQ.  Most users will spend several hours a day for several
   days working through this material.
 
-  At this point you are probably ready to use ACL2 on your own ~i[small] projects.  A common
-  mistake for beginners is to browse the documentation and then try to do something that is
-  too big!  Think of a very small project and then simplify it!
+  * The book ''Computer-Aided Reasoning: An Approach'' (see
+  ~url[http://www.cs.utexas.edu/users/moore/publications/acl2-books/car/index.html]
+  is worth a careful read, as you work exercises and learn ``The Method.''
 
-  While learning and using ACL2 you might keep in mind the following resources:
-
-  * ACL2 has a very supportive user network.  See the link to ``Mailing Lists''
-  on the ACL2 home page (~url[http://www.cs.utexas.edu/users/moore/acl2]).
-
-  * ~il[annotated-acl2-scripts Some Annotated ACL2 Scripts and Demos] contain
+  * ``~il[annotated-acl2-scripts Annotated ACL2 Scripts and Demos]'' contains
   relatively elementary proof scripts that have been annotated to help train
   the newcomer.
 
-  * Many books in the ~c[books/] directory are distributed with ACL2; many are
-  extensively annotated.  See the link to ``Lemma Libraries and Utilities'' on
-  the ACL2 home page (~url[http://www.cs.utexas.edu/users/moore/acl2]).
+  * Many files (``books'') in the ~c[books/] directory distributed with ACL2
+  are extensively annotated.  See the link to ``Lemma Libraries and Utilities''
+  on the ACL2 home page (~url[http://www.cs.utexas.edu/users/moore/acl2]).
 
-  * ~il[alternative-introduction An Alternative Introduction] is largely
-  subsumed by the
-  ~il[introduction-to-the-theorem-prover Introduction to the Theorem Prover] above, but
-  it might help just because it covers much of the tutorial material in a different
-  way.
+  * An ``~il[alternative-introduction Alternative Introduction]'' document,
+  while largely subsumed by the topic
+  ``~il[introduction-to-the-theorem-prover Introduction to the Theorem Prover]''
+  mentioned above, still might be useful because it covers much of the tutorial
+  material in a different way.~eq[]
+
+  At this point you are probably ready to use ACL2 on your own ~em[small]
+  projects.  A common mistake for beginners is to browse the documentation and
+  then try to do something that is too big!  Think of a very small project and
+  then simplify it!
+
+  Note that ACL2 has a very supportive user network.  See the link to ``Mailing
+  Lists'' on the ACL2 home page
+  (~url[http://www.cs.utexas.edu/users/moore/acl2]).
 
   The topics listed below are a hodge podge, developed over time.  Although
-  some of these are not mentioned above, you might find some of those to be
-  useful as well.
+  some of these are not mentioned above, you might find some to be useful as
+  well.
 
   ~/~/")
 
@@ -1383,47 +1389,45 @@
 
 (deflabel Tutorial3-Phonebook-Example
 
- #|
- Here is another solution to the exercise at the end of this topic.
+; Here is another solution to the exercise at the end of this topic.
 
- (defun good-phonebookp (bk)
-   (setp (range bk)))
-
- (defthm member-equal-strip-cdrs-bind
-   (implies (and (not (member-equal x (strip-cdrs bk)))
-                 (not (equal x num)))
-            (not (member-equal x (strip-cdrs (bind nm num bk))))))
-
- (defthm setp-range-bind
-   (implies (and (setp (range bk))
-                 (not (member num (range bk))))
-            (setp (range (bind nm num bk))))
-   :hints (("Goal" :in-theory (enable bind range))))
-
- (defthm ADD-PHONE-PRESERVES-NEW-INVARIANT
-   (implies (and (good-phonebookp bk)
-                 (not (member num (range bk))))
-            (good-phonebookp (add-phone nm num bk))))
-
- (defthm CHANGE-PHONE-PRESERVES-NEW-INVARIANT
-   (implies (and (good-phonebookp bk)
-                 (not (member num (range bk))))
-            (good-phonebookp (change-phone nm num bk))))
-
- (defthm member-equal-strip-cdrs-rembind
-   (implies (not (member-equal x (strip-cdrs bk)))
-            (not (member-equal x (strip-cdrs (rembind nm bk))))))
-
- (defthm setp-strip-cdrs-rembind
-   (implies (setp (strip-cdrs bk))
-            (setp (strip-cdrs (rembind nm bk))))
-   :hints (("Goal" :in-theory (enable rembind))))
-
- (defthm DEL-PHONE-PRESERVES-NEW-INVARIANT
-   (implies (good-phonebookp bk)
-            (good-phonebookp (del-phone nm bk)))
-   :hints (("Goal" :in-theory (enable range))))
- |#
+;  (defun good-phonebookp (bk)
+;    (setp (range bk)))
+; 
+;  (defthm member-equal-strip-cdrs-bind
+;    (implies (and (not (member-equal x (strip-cdrs bk)))
+;                  (not (equal x num)))
+;             (not (member-equal x (strip-cdrs (bind nm num bk))))))
+; 
+;  (defthm setp-range-bind
+;    (implies (and (setp (range bk))
+;                  (not (member num (range bk))))
+;             (setp (range (bind nm num bk))))
+;    :hints (("Goal" :in-theory (enable bind range))))
+; 
+;  (defthm ADD-PHONE-PRESERVES-NEW-INVARIANT
+;    (implies (and (good-phonebookp bk)
+;                  (not (member num (range bk))))
+;             (good-phonebookp (add-phone nm num bk))))
+; 
+;  (defthm CHANGE-PHONE-PRESERVES-NEW-INVARIANT
+;    (implies (and (good-phonebookp bk)
+;                  (not (member num (range bk))))
+;             (good-phonebookp (change-phone nm num bk))))
+; 
+;  (defthm member-equal-strip-cdrs-rembind
+;    (implies (not (member-equal x (strip-cdrs bk)))
+;             (not (member-equal x (strip-cdrs (rembind nm bk))))))
+; 
+;  (defthm setp-strip-cdrs-rembind
+;    (implies (setp (strip-cdrs bk))
+;             (setp (strip-cdrs (rembind nm bk))))
+;    :hints (("Goal" :in-theory (enable rembind))))
+; 
+;  (defthm DEL-PHONE-PRESERVES-NEW-INVARIANT
+;    (implies (good-phonebookp bk)
+;             (good-phonebookp (del-phone nm bk)))
+;    :hints (("Goal" :in-theory (enable range))))
 
   :doc
   ":Doc-Section Annotated-Acl2-Scripts

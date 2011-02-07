@@ -21,9 +21,9 @@
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78701 U.S.A.
 
 ; hons.lisp -- Logical definitions for hash cons and fast alists.  Note that
 ; the memoization and watch functionality previously provided by this file have
@@ -587,7 +587,7 @@ and size components, but for now we have not implemented this capability."
 (defn hons-acons! (key val alist)
   ":Doc-Section Hons-and-Memoization
 
-~c[(hons-acons! key val alist) is an alternative to ~ilc[hons-acons] that
+~c[(hons-acons! key val alist)] is an alternative to ~ilc[hons-acons] that
 produces ~il[normed], fast alists.~/
 
 Logically, ~c[hons-acons!] is like ~ilc[acons] except that its guard does not

@@ -20,9 +20,9 @@
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78701 U.S.A.
 
 (in-package "ACL2")
 
@@ -42,15 +42,14 @@
 ; cleanse-type-alist to be the identity and trace
 ; rewrite-linear-term-lst and linearize in the (failed) proof
 ; of the following lemma:
-#|
-(defthm uniqueness-of-+-inverses-lemma
-    (implies (and (acl2-numberp x)
-                  (acl2-numberp y)
-                  (equal (+ x y)
-                         0))
-             (equal (- x) y))
-  :rule-classes nil)
-|#
+
+; (defthm uniqueness-of-+-inverses-lemma
+;     (implies (and (acl2-numberp x)
+;                   (acl2-numberp y)
+;                   (equal (+ x y)
+;                          0))
+;              (equal (- x) y))
+;   :rule-classes nil)
 
   (cond ((null type-alist)
          nil)

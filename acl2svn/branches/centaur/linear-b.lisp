@@ -20,9 +20,9 @@
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78701 U.S.A.
 
 (in-package "ACL2")
 
@@ -740,29 +740,29 @@
 ; doesn't eval to nil.    
 
 ; Here is another curious example:
-#|
- ACL2 !>
- (thm
-  (implies (and (not (consp x))
-                (true-listp x))
-           (equal (reverse (reverse x)) x)))
 
- But simplification reduces this to T, using the :executable-counterparts
- of EQUAL and REVERSE and linear arithmetic.
+;    ACL2 !>
+;    (thm
+;     (implies (and (not (consp x))
+;                   (true-listp x))
+;              (equal (reverse (reverse x)) x)))
+;   
+;    But simplification reduces this to T, using the :executable-counterparts
+;    of EQUAL and REVERSE and linear arithmetic.
+;   
+;    Q.E.D.
+;   
+;    Summary
+;    Form:  ( THM ...)
+;    Rules: ((:DEFINITION NOT)
+;            (:EXECUTABLE-COUNTERPART EQUAL)
+;            (:EXECUTABLE-COUNTERPART REVERSE)
+;            (:FAKE-RUNE-FOR-LINEAR NIL))
+;    Warnings:  None
+;    Time:  0.01 seconds (prove: 0.01, print: 0.00, other: 0.00)
+;   
+;    Proof succeeded.
 
- Q.E.D.
-
- Summary
- Form:  ( THM ...)
- Rules: ((:DEFINITION NOT)
-         (:EXECUTABLE-COUNTERPART EQUAL)
-         (:EXECUTABLE-COUNTERPART REVERSE)
-         (:FAKE-RUNE-FOR-LINEAR NIL))
- Warnings:  None
- Time:  0.01 seconds (prove: 0.01, print: 0.00, other: 0.00)
-
- Proof succeeded.
-|#
 ; Note the presence of (:FAKE-RUNE-FOR-LINEAR NIL).
 ; This oddity is due to the fact that we now rewrite all terms (not
 ; just the conclusion of linear lemmas) before adding them to the
@@ -811,20 +811,18 @@
 ; We store ttree in the ttree of the poly.
 
 ; Trace Note:
-#|
-  (trace (linearize
-          :entry
-          (list* (car si::arglist) (cadr si::arglist) (caddr si::arglist)
-                 '|ens| (car (cddddr si::arglist)) '(|wrld| |ttree| |state|))
-          :exit
-          (cond ((null (car values)) (list nil))
-                ((null (cdr (car values)))
-                 (list (cons 'and (show-poly-lst (car (car values))))))
-                (t (list
-                    (list 'or
-                          (cons 'and (show-poly-lst (car (car values))))
-                          (cons 'and (show-poly-lst (cadr (car values))))))))))
-|#
+;   (trace (linearize
+;           :entry
+;           (list* (car si::arglist) (cadr si::arglist) (caddr si::arglist)
+;                  '|ens| (car (cddddr si::arglist)) '(|wrld| |ttree| |state|))
+;           :exit
+;           (cond ((null (car values)) (list nil))
+;                 ((null (cdr (car values)))
+;                  (list (cons 'and (show-poly-lst (car (car values))))))
+;                 (t (list
+;                     (list 'or
+;                           (cons 'and (show-poly-lst (car (car values))))
+;                           (cons 'and (show-poly-lst (cadr (car values))))))))))
 
   (let ((temp (linearize1 term positivep type-alist ens
                           force-flg wrld ttree state)))

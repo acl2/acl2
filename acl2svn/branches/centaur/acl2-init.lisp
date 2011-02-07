@@ -20,9 +20,9 @@
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78701 U.S.A.
 
 ; This file, acl2-init.lisp, is the inititialization file for ACL2.
 
@@ -419,7 +419,7 @@ implementations.")
 
                  (append lst (list "hons-raw.lisp"
                                    "memoize-raw.lisp"
-				   "multi-threading-raw.lisp"
+                                   "multi-threading-raw.lisp"
                                    "parallel-raw.lisp")))))
 
 (defvar *saved-build-date-lst*)
@@ -479,18 +479,10 @@ implementations.")
     ~% distinguish it from the ACL2 prompt.~%"))
 
 (defun maybe-load-acl2-init ()
-
-; There is not a true notion of home directory for Windows systems, as far as
-; we know.  We may provide one at a future point, but for now, we simply act as
-; though ~/acl2-init.lsp does not exist on such systems.
-
-
-  #+mswindows
-  nil
-  #-mswindows
-  (let ((fl (probe-file (merge-pathnames (user-homedir-pathname)
-                                         "acl2-init.lsp"))))
-    (if fl (load fl))))
+  (let* ((home (our-user-homedir-pathname))
+         (fl (and home
+                  (probe-file (merge-pathnames home "acl2-init.lsp")))))
+    (when fl (load fl))))
 
 (defun chmod-executable (sysout-name)
   (system-call "chmod" (list "+x" sysout-name)))
@@ -1100,7 +1092,8 @@ implementations.")
 ; go with format arg (rc-filename save-dir), because we know of no way in
 ; Allegro 6.2 to avoid getting Allegro copyright information printed upon :q if
 ; we start up in the ACL2 read-eval-print loop.
-          #|               "~s -I ~s -L ~s~%" |#
+
+;         "~s -I ~s -L ~s~%"
 
           "~s -I ~s $*~%"
           (system::command-line-argument 0)

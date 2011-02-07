@@ -20,9 +20,9 @@
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78701 U.S.A.
 
 (in-package "ACL2")
 
@@ -2168,20 +2168,18 @@
 ; Here is a trivial example of the problem this code is intended to
 ; solve.
 
-#|
- (defstub bar (x) t)
-
- (defaxiom bar-thm
-   (implies (and (integerp x)
-                 (< 3 x))
-            (bar x))
-   :rule-classes :type-prescription)
-
- (thm
-  (implies (and (integerp x)
-                (< 4 x))
-           (bar x)))
-|#
+;  (defstub bar (x) t)
+; 
+;  (defaxiom bar-thm
+;    (implies (and (integerp x)
+;                  (< 3 x))
+;             (bar x))
+;    :rule-classes :type-prescription)
+; 
+;  (thm
+;   (implies (and (integerp x)
+;                 (< 4 x))
+;            (bar x)))
 
 ; Robert Krug came up with the original version of this patch when
 ; playing with arithmetic functions that changed sign at some point
@@ -3024,9 +3022,10 @@
                                   (pseudo-term-listp x)
                                 (pseudo-termp x))
                               (integerp fn-count-acc)
-                              (integerp p-fn-count-acc))))
+                              (integerp p-fn-count-acc))
+                  :verify-guards NIL))
   (cond (flg
-         (cond ((null x)
+         (cond ((atom x)
                 (mv fn-count-acc p-fn-count-acc))
                (t
                 (mv-let (fn-cnt p-fn-cnt)
@@ -3417,20 +3416,18 @@
 ; following examples, which motivated the controls in the code for binary-+ and
 ; binary-* below.
 
-#|
- (defstub foo (x) t)
- (defaxiom foo-axiom
-   (equal (foo (* 2 x))
-          (foo x)))
- (thm
-  (foo 4))
- :u
- (defaxiom foo-axiom
-   (equal (foo (+ 1 x))
-          (foo x)))
- (thm
-   (foo 4))
-|#
+;  (defstub foo (x) t)
+;  (defaxiom foo-axiom
+;    (equal (foo (* 2 x))
+;           (foo x)))
+;  (thm
+;   (foo 4))
+;  :u
+;  (defaxiom foo-axiom
+;    (equal (foo (+ 1 x))
+;           (foo x)))
+;  (thm
+;    (foo 4))
 
 ; Another interesting example is (thm (foo 4)) after replacing the second
 ; foo-axiom with (equal (foo (+ -1 x)) (foo x)).
@@ -4177,20 +4174,39 @@
     (mv (if ts ts *ts-unknown*) ttree)))
 
 (defun member-char-stringp (chr str i)
-  (cond ((< i 0) nil)
+  (declare (xargs :guard (and (stringp str)
+                              (integerp i)
+                              (< i (length str)))
+                  :measure (nfix (+ 1 i))))
+  (cond ((not (mbt (integerp i)))
+         nil)
+        ((< i 0) nil)
         (t (or (eql chr (char str i))
                (member-char-stringp chr str (1- i))))))
 
 (defun terminal-substringp1 (str1 str2 max1 max2)
-  (declare (xargs :guard (and (integerp max1)
+  (declare (xargs :guard (and (stringp str1)
+                              (stringp str2)
+                              (integerp max1)
                               (integerp max2)
-                              (<= max1 max2))))
-  (cond ((< max1 0) t)
+                              (< max1 (length str1))
+                              (< max2 (length str2))
+                              (<= max1 max2))
+                  :measure (nfix (+ 1 max1))))
+  (cond ((not (mbt (integerp max1)))
+         nil)
+        ((< max1 0) t)
         ((eql (char str1 max1) (char str2 max2))
          (terminal-substringp1 str1 str2 (1- max1) (1- max2)))
         (t nil)))
 
 (defun terminal-substringp (str1 str2 max1 max2)
+  (declare (xargs :guard (and (stringp str1)
+                              (stringp str2)
+                              (integerp max1)
+                              (integerp max2)
+                              (< max1 (length str1))
+                              (< max2 (length str2)))))
   (cond ((< max2 max1) nil)
         (t (terminal-substringp1 str1 str2 max1 max2))))
 
@@ -4206,6 +4222,7 @@
 ; we have to look into symbol-package-names too.  This function is only used
 ; heuristically, so we choose not to modify it at this time.
 
+  (declare (xargs :guard t))
   (cond ((atom y)
          (cond ((characterp y) (and (characterp x) (eql x y)))
                ((stringp y)
@@ -4243,7 +4260,7 @@
                            (evg-occur x (denominator y))))
                       ((rationalp x) (= x y))
                       (t nil)))
-               (t
+               ((complex-rationalp y)
 
 ; We know y is a complex rational.  X occurs in it either because
 ; x is the same complex rational or x is a rational that occurs in
@@ -4253,13 +4270,18 @@
                        (or (evg-occur x (realpart y))
                            (evg-occur x (imagpart y))))
                       ((complex-rationalp x) (= x y))
-                      (t nil)))))
+                      (t nil)))
+               (t (er hard? 'evg-occur
+                      "Surprising case:  ~x0"
+                      `(evg-occur ,x ,y)))))
         (t (or (evg-occur x (car y))
                (evg-occur x (cdr y))))))
 
 (mutual-recursion
 
 (defun occur (term1 term2)
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-termp term2))))
   (cond ((variablep term2)
          (eq term1 term2))
         ((fquotep term2)
@@ -4270,7 +4292,9 @@
         (t (occur-lst term1 (fargs term2)))))
 
 (defun occur-lst (term1 args2)
-  (cond ((null args2) nil)
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-term-listp args2))))
+  (cond ((endp args2) nil)
         (t (or (occur term1 (car args2))
                (occur-lst term1 (cdr args2))))))
 )
@@ -4308,6 +4332,8 @@
 ; isomorphic down to the variable symbols.  It is here to avoid a very
 ; bad case in the worse-than check.
 
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-termp term2))))
   (cond ((variablep term1)
          
 ; Suppose that term1 is a variable.  The only thing that it can be
@@ -4326,6 +4352,8 @@
                 (pseudo-variantp-list (fargs term1) (fargs term2))))))
 
 (defun pseudo-variantp-list (args1 args2)
+  (declare (xargs :guard (and (pseudo-term-listp args1)
+                              (pseudo-term-listp args2))))
   (cond ((endp args1) t)
         (t (and (pseudo-variantp (car args1) (car args2))
                 (pseudo-variantp-list (cdr args1) (cdr args2)))))))
@@ -4341,335 +4369,354 @@
 ; 0.000, 0.020, 0.080, 0.300, 1.110, 4.230, 16.390.  This was measured
 ; on a 330 MHz Pentium II.
 
-#||
-(progn
-  (time
-   (new-worse-than
-    '(f a a)
-    '(f b b)))
-
-  (time
-   (new-worse-than
-    '(f a (f a a))
-    '(f b (f b b))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a a)))
-    '(f b (f b (f b b)))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a a))))
-    '(f b (f b (f b (f b b))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a a)))))
-    '(f b (f b (f b (f b (f b b)))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a a))))))
-    '(f b (f b (f b (f b (f b (f b b))))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a a)))))))
-    '(f b (f b (f b (f b (f b (f b (f b b)))))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a a))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b b))))))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a))))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
-
-  (time
-   (new-worse-than
-    '(f a
-        (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a))))))))))))
-    '(f b
-        (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))
-
-  (time
-   (new-worse-than
-    '(f a
-        (f a
-           (f a
-              (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))))
-    '(f b
-        (f b
-           (f b
-              (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
-    ))
-  )
-||#
+; (progn
+;   (time
+;    (new-worse-than
+;     '(f a a)
+;     '(f b b)))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a a))
+;     '(f b (f b b))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a a)))
+;     '(f b (f b (f b b)))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a a))))
+;     '(f b (f b (f b (f b b))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a a)))))
+;     '(f b (f b (f b (f b (f b b)))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a a))))))
+;     '(f b (f b (f b (f b (f b (f b b))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a a)))))))
+;     '(f b (f b (f b (f b (f b (f b (f b b)))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a a))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b b))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a))))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a
+;         (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a))))))))))))
+;     '(f b
+;         (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a
+;         (f a
+;            (f a
+;               (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))))
+;     '(f b
+;         (f b
+;            (f b
+;               (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
+;     ))
+;   )
 
 ; If pseudo-variantp is defined so that instead of (not (quotep
 ; term2)) it insists of (variablep term2) when (variablep term1), then
 ; the following sequence goes exponential even though the preceding
 ; one does not.
 
-#||
-(progn
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))
+; (progn
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))))))
+;     ))
+;   )
 
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))))))
-    ))
-  )
-||#
 ; with times of 0.000, 0.120, 0.250, 0.430, etc.  But with the current
 ; definition of pseudo-variantp, the sequence above is flat.
 
 ; However, the sequence with the terms commuted grows exponentially,
 ; still.
 
-#||
-(progn
-  (time
-   (new-worse-than
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
-
-  (time
-   (new-worse-than
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
-
-  (time
-   (new-worse-than
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
-
-  (time
-   (new-worse-than
-    '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f b
-        (f b
-           (f b
-              (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f b
-        (f b
-           (f b
-              (f b
-                 (f b
-                    (f b
-                       (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f b
-        (f b
-           (f b
-              (f b
-                 (f b
-                    (f b
-                       (f b
-                          (f b
-                             (f b
-                                (f b (f b (f b (f b (f b (f b b)))))))))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f b
-        (f b
-           (f b
-              (f b
-                 (f b
-                    (f b
-                       (f b
-                          (f b
-                             (f b
-                                (f b
-                                   (f b
-                                      (f b
-                                         (f b (f b (f b (f b b))))))))))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    ))
-
-  (time
-   (new-worse-than
-    '(f b
-        (f b
-           (f b
-              (f b
-                 (f b
-                    (f b
-                       (f b
-                          (f b
-                             (f b
-                                (f b
-                                   (f b
-                                      (f b
-                                         (f b
-                                            (f b
-                                               (f b
-                                                  (f b
-                                                     (f b b)))))))))))))))))
-    '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
-    ))
-  )
-||#
+; (progn
+;   (time
+;    (new-worse-than
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
+; 
+;   (time
+;    (new-worse-than
+;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f b
+;         (f b
+;            (f b
+;               (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f b
+;         (f b
+;            (f b
+;               (f b
+;                  (f b
+;                     (f b
+;                        (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f b
+;         (f b
+;            (f b
+;               (f b
+;                  (f b
+;                     (f b
+;                        (f b
+;                           (f b
+;                              (f b
+;                                 (f b (f b (f b (f b (f b (f b b)))))))))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f b
+;         (f b
+;            (f b
+;               (f b
+;                  (f b
+;                     (f b
+;                        (f b
+;                           (f b
+;                              (f b
+;                                 (f b
+;                                    (f b
+;                                       (f b
+;                                          (f b (f b (f b (f b b))))))))))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     ))
+; 
+;   (time
+;    (new-worse-than
+;     '(f b
+;         (f b
+;            (f b
+;               (f b
+;                  (f b
+;                     (f b
+;                        (f b
+;                           (f b
+;                              (f b
+;                                 (f b
+;                                    (f b
+;                                       (f b
+;                                          (f b
+;                                             (f b
+;                                                (f b
+;                                                   (f b
+;                                                      (f b b)))))))))))))))))
+;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
+;     ))
+;   )
 
 ; Real times: 0.000, 0.000, 0.010, 0.000, 0.010, 0.020, 0.040, 0.100,
 ; 0.210, ...
 
 (mutual-recursion
 
-(defun worse-than (term1 term2)
+(defun worse-than-builtin (term1 term2)
 
-; Term1 is worse-than term2 if it is basic-worse-than term2 or some proper
-; subterm of it is worse-than or equal to term2.  However, we know that if two
-; terms are pseudo-variants of each other, then the worse-than relation does
-; not hold.
+; Term1 is worse-than-builtin term2 if it is basic-worse-than term2 or some
+; proper subterm of it is worse-than-builtin or equal to term2.  However, we
+; know that if two terms are pseudo-variants of each other, then the
+; worse-than-builtin relation does not hold.
 
 ; Warning: With #+hons, there could be performance problems if this is put into
-; :logic mode without verifying guards.  That is because worse-than is memoized
-; by running *hons-init-hook*, to make it efficient on structure-shared
-; objects; but memoization depends on the raw Lisp function being executed,
-; while :ideal mode functions are run without ever slipping into raw Lisp.
+; :logic mode without verifying guards.  That is because worse-than-builtin is
+; memoized by running *hons-init-hook*, to make it efficient on
+; structure-shared objects; but memoization depends on the raw Lisp function
+; being executed, while :ideal mode functions are run without ever slipping
+; into raw Lisp.
 
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-termp term2))
+                  :measure (make-ord 1 (+ 1 (acl2-count term1) (acl2-count term2)) 1)
+                  :well-founded-relation o<))
   (cond ((basic-worse-than term1 term2) t)
         ((pseudo-variantp term1 term2) nil)
         ((variablep term1) 
 
-; If term1 is a variable and not basic-worse-than term2, what do we know
-; about term2?  Term2 might be a variable.  Term2 cannot be quote.
-; Term2 might be a function application.  So is X worse-than X or Y or
-; (F X Y)?  No.
+; If term1 is a variable and not basic-worse-than term2, what do we know about
+; term2?  Term2 might be a variable.  Term2 cannot be quote.  Term2 might be a
+; function application.  So is X worse-than-builtin X or Y or (F X Y)?  No.
 
          nil)
         ((fquotep term1)
 
-; If term1 is a quote and not basic-worse-than term2, what do we know
-; about term2?  Term2 might be a variable.  Also, term2 might be a
-; quote, but if it is, term2 is bigger than term1.  Term2 might be a
-; function application.  So is term1 worse-than a bigger quote?  No.
-; Is term1 worse-than a variable or function application?  No.
+; If term1 is a quote and not basic-worse-than term2, what do we know about
+; term2?  Term2 might be a variable.  Also, term2 might be a quote, but if it
+; is, term2 is bigger than term1.  Term2 might be a function application.  So
+; is term1 worse-than-builtin a bigger quote?  No.  Is term1 worse-than-builtin
+; a variable or function application?  No.
 
          nil)
 
         (t (worse-than-lst (fargs term1) term2))))
 
-(defun worse-than-or-equal (term1 term2)
+(defun worse-than-or-equal-builtin (term1 term2)
 
-; This function is not really mutually recursive and could be removed
-; from this nest.  It determines whether term1 is term2 or worse than
-; term2.  This nest defines worse-than and does not use this function
-; despite the use of similarly named functions.
+; This function is not really mutually recursive and could be removed from this
+; nest.  It determines whether term1 is term2 or worse than term2.  This nest
+; defines worse-than-builtin and does not use this function despite the use of
+; similarly named functions.
 
 ; Note:  This function is supposed to be equivalent to
-; (or (equal term1 term2) (worse-than term1 term2)).
+; (or (equal term1 term2) (worse-than-builtin term1 term2)).
 
 ; Clearly, that is equivalent to
 
 ; (if (pseudo-variantp term1 term2)
-;     (or (equal term1 term2) (worse-than term1 term2))
-;     (or (equal term1 term2) (worse-than term1 term2)))
+;     (or (equal term1 term2) (worse-than-builtin term1 term2))
+;     (or (equal term1 term2) (worse-than-builtin term1 term2)))
 
-; But if pseudo-variantp is true, then worse-than must return nil.
-; And if pseudo-variantp is nil, then the equal returns nil.  So we
-; can simplify the if above to:
+; But if pseudo-variantp is true, then worse-than-builtin must return nil.  And
+; if pseudo-variantp is nil, then the equal returns nil.  So we can simplify
+; the if above to:
 
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-termp term2))
+                  :measure (make-ord 1
+                                     (+ 1
+                                        (acl2-count term1)
+                                        (acl2-count term2))
+                                     2)
+                  :well-founded-relation o<))
   (if (pseudo-variantp term1 term2)
       (equal term1 term2)
-    (worse-than term1 term2)))
+    (worse-than-builtin term1 term2)))
 
 (defun basic-worse-than-lst1 (args1 args2)
 
-; Is some element of args2 ``uglier'' than the corresponding element
-; of args1.  Technically, a2 is uglier than a1 if a1 is atomic (a
-; variable or constant) and a2 is not or a2 is worse-than a1.
+; Is some element of args2 ``uglier'' than the corresponding element of args1.
+; Technically, a2 is uglier than a1 if a1 is atomic (a variable or constant)
+; and a2 is not or a2 is worse-than-builtin a1.
 
-  (cond ((null args1) nil)
+  (declare (xargs :guard (and (pseudo-term-listp args1)
+                              (pseudo-term-listp args2))
+                  :measure (make-ord 1 (+ 1 (acl2-count args1) (acl2-count args2)) 0)
+                  :well-founded-relation o<))
+  (cond ((endp args1) nil)
         ((or (and (or (variablep (car args1))
                       (fquotep (car args1)))
                   (not (or (variablep (car args2))
                            (fquotep (car args2)))))
-             (worse-than (car args2) (car args1)))
+             (worse-than-builtin (car args2) (car args1)))
          t)
         (t (basic-worse-than-lst1 (cdr args1) (cdr args2)))))
 
 (defun basic-worse-than-lst2 (args1 args2)
 
-; Is some element of arg1 worse-than the corresponding element of args2?
+; Is some element of arg1 worse-than-builtin the corresponding element of args2?
 
-  (cond ((null args1) nil)
-        ((worse-than (car args1) (car args2)) t)
+  (declare (xargs :guard (and (pseudo-term-listp args1)
+                              (pseudo-term-listp args2))
+                  :measure (make-ord 1
+                                     (+ 1
+                                        (acl2-count args1)
+                                        (acl2-count args2))
+                                     0)
+                  :well-founded-relation o<))
+  (cond ((endp args1) nil)
+        ((worse-than-builtin (car args1) (car args2)) t)
         (t (basic-worse-than-lst2 (cdr args1) (cdr args2)))))
 
 (defun basic-worse-than (term1 term2)
@@ -4683,20 +4730,26 @@
 ;   quote, e.g., both X and '124 are basic-worse-than '17 and '(A B C D
 ;   E) is worse than 'X; or
 
-; * term1 and term2 are applications of the same function and
-;   no argument of term2 is uglier than the corresponding arg of term1, and
-;   some argument of term1 is worse-than the corresponding arg of term2.
+; * term1 and term2 are applications of the same function and no argument of
+;   term2 is uglier than the corresponding arg of term1, and some argument of
+;   term1 is worse-than-builtin the corresponding arg of term2.
 
-; The last case is illustrated by the fact that (F A B) is
-; basic-worse-than (F A '17), because B is worse than '17, but (F '17
-; B) is not basic-worse-than (F A '17) because A is worse than '17.
-; Think of term2 as the old goal and term1 as the new goal.  Do we
-; want to cut off backchaining?  Yes, if term1 is basic-worse-than
-; term2.  So would we backchain from (F A '17) to (F '17 B)?  Yes,
-; because even though one argument (the second) got worse (it went
-; from 17 to B) another argument (the first) got better (it went from
-; A to 17).
+; The last case is illustrated by the fact that (F A B) is basic-worse-than (F
+; A '17), because B is worse than '17, but (F '17 B) is not basic-worse-than (F
+; A '17) because A is worse than '17.  Think of term2 as the old goal and term1
+; as the new goal.  Do we want to cut off backchaining?  Yes, if term1 is
+; basic-worse-than term2.  So would we backchain from (F A '17) to (F '17 B)?
+; Yes, because even though one argument (the second) got worse (it went from 17
+; to B) another argument (the first) got better (it went from A to 17).
 
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-termp term2))
+                  :measure (make-ord 1
+                                     (+ 1
+                                        (acl2-count term1)
+                                        (acl2-count term2))
+                                     0)
+                  :well-founded-relation o<))
   (cond ((variablep term2)
          (cond ((eq term1 term2) nil)
                (t (occur term2 term1))))
@@ -4718,10 +4771,18 @@
 
 (defun some-subterm-worse-than-or-equal (term1 term2)
 
-; Returns t if some subterm of term1 is worse-than or equal to term2.
+; Returns t if some subterm of term1 is worse-than-builtin or equal to term2.
 
+  (declare (xargs :guard (and (pseudo-termp term1)
+                              (pseudo-termp term2))
+                  :measure (make-ord 1
+                                     (+ 1
+                                        (acl2-count term1)
+                                        (acl2-count term2))
+                                     1)
+                  :well-founded-relation o<))
   (cond ((variablep term1) (eq term1 term2))
-        ((if (pseudo-variantp term1 term2)  ; see worse-than-or-equal
+        ((if (pseudo-variantp term1 term2)  ; see worse-than-or-equal-builtin
              (equal term1 term2)
            (basic-worse-than term1 term2))
          t)
@@ -4729,22 +4790,59 @@
         (t (some-subterm-worse-than-or-equal-lst (fargs term1) term2))))
 
 (defun some-subterm-worse-than-or-equal-lst (args term2)
-  (cond ((null args) nil)
+  (declare (xargs :guard (and (pseudo-term-listp args)
+                              (pseudo-termp term2))
+                  :measure (make-ord 1
+                                     (+ 1 (acl2-count args) (acl2-count term2))
+                                     0)
+                  :well-founded-relation o<))
+  (cond ((endp args) nil)
         (t (or (some-subterm-worse-than-or-equal (car args) term2)
                (some-subterm-worse-than-or-equal-lst (cdr args) term2)))))
 
 (defun worse-than-lst (args term2)
 
 ; We determine whether some element of args contains a subterm that is
-; worse-than or equal to term2.  The subterm in question may be the
-; element of args itself.  That is, we use ``subterm'' in the ``not
-; necessarily proper subterm'' sense.
+; worse-than-builtin or equal to term2.  The subterm in question may be the
+; element of args itself.  That is, we use ``subterm'' in the ``not necessarily
+; proper subterm'' sense.
 
-  (cond ((null args) nil)
+  (declare (xargs :guard (and (pseudo-term-listp args)
+                              (pseudo-termp term2))
+                  :measure (make-ord 1
+                                     (+ 1 (acl2-count args) (acl2-count term2))
+                                     0)
+                  :well-founded-relation o<))
+  (cond ((endp args) nil)
         (t (or (some-subterm-worse-than-or-equal (car args) term2)
                (worse-than-lst (cdr args) term2)))))
 
 )
+
+(encapsulate
+ ((worse-than
+   (term1 term2) t
+   :guard
+   (and (pseudo-termp term1)
+        (pseudo-termp term2))))
+ (local (defun worse-than (term1 term2)
+          (declare (ignore term1 term2)
+                   nil))))
+(encapsulate
+ ((worse-than-or-equal
+   (term1 term2) t
+   :guard
+   (and (pseudo-termp term1)
+        (pseudo-termp term2))))
+ (local (defun worse-than-or-equal (term1 term2)
+          (declare (ignore term1 term2)
+                   nil))))
+
+(defattach (worse-than worse-than-builtin)
+  :skip-checks t)
+
+(defattach (worse-than-or-equal worse-than-or-equal-builtin)
+  :skip-checks t)
 
 ; Here is how we add a frame to the ancestors stack.  
 
@@ -4776,25 +4874,54 @@
                         tokens)          ; the runes involved in this backchain
                   ancestors))))
 
+(defun ancestor-listp (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (null x))
+        ((not (true-listp (car x)))
+         nil)
+        ((eq (caar x) :binding-hyp)
+         (and (null (cdddr (car x)))
+              (ancestor-listp (cdr x))))
+        (t (let* ((anc (car x))
+                  (alit (car anc))
+                  (alit-atm (cadr anc))
+                  (fn-cnt-alit-atm (caddr anc))
+                  (p-fn-cnt-alit-atm (cadddr anc))
+                  (atokens (car (cddddr anc))))
+             (and (pseudo-termp alit)
+                  (pseudo-termp alit-atm)
+                  (integerp fn-cnt-alit-atm)
+                  (integerp p-fn-cnt-alit-atm)
+                  (true-listp atokens)
+                  (ancestor-listp (cdr x)))))))
+
 (defun earlier-ancestor-biggerp (fn-cnt p-fn-cnt tokens ancestors)
 
 ; We return t if some ancestor on ancestors has a bigger fn-count than
 ; fn-cnt and intersects with tokens.
 
-  (cond ((null ancestors) nil)
-        (t (let (; (alit            (car (car ancestors)))
-                 ; (alit-atm        (cadr (car ancestors)))
-                 (fn-cnt-alit-atm (caddr (car ancestors)))
-                 (p-fn-cnt-alit-atm (cadddr (car ancestors)))
-                 (atokens         (car (cddddr (car ancestors)))))
-             (cond
-              ((and (intersectp-equal tokens atokens)
-                    (or (< fn-cnt fn-cnt-alit-atm)
-                        (and (eql fn-cnt fn-cnt-alit-atm)
-                             (< p-fn-cnt p-fn-cnt-alit-atm))))
-               t)
-              (t (earlier-ancestor-biggerp fn-cnt p-fn-cnt tokens
-                                           (cdr ancestors))))))))
+  (declare (xargs :guard (and (integerp fn-cnt)
+                              (integerp p-fn-cnt)
+                              (true-listp tokens)
+                              (ancestor-listp ancestors))))
+  (cond ((endp ancestors) nil)
+        (t (let* ((anc (car ancestors))
+                  (fn-cnt-alit-atm (caddr anc))
+                  (p-fn-cnt-alit-atm (cadddr anc))
+                  (atokens (car (cddddr anc))))
+             (cond ((and (intersectp-equal tokens atokens)
+
+; (Car ancestors) might be of the form (:binding-hyp hyp unify-subst).  In this
+; case some of the values compared below using < are nil.  However, those
+; comparisons do not take place because in this case atokens is also nil, so
+; the intersectp-equal test above returns nil.
+
+                         (or (< fn-cnt fn-cnt-alit-atm)
+                             (and (eql fn-cnt fn-cnt-alit-atm)
+                                  (< p-fn-cnt p-fn-cnt-alit-atm))))
+                    t)
+                   (t (earlier-ancestor-biggerp fn-cnt p-fn-cnt tokens
+                                                (cdr ancestors))))))))
 
 (defun ancestors-check1 (lit-atm lit fn-cnt p-fn-cnt ancestors tokens)
                                  
@@ -4822,8 +4949,14 @@
 ; p               =   comp  x    x
 ; (not p)         comp =    x    x
 
+  (declare (xargs :guard (and (pseudo-termp lit-atm)
+                              (pseudo-termp lit)
+                              (integerp fn-cnt)
+                              (integerp p-fn-cnt)
+                              (ancestor-listp ancestors)
+                              (true-listp tokens))))
   (cond
-   ((null ancestors)
+   ((endp ancestors)
     (mv nil nil))
    ((eq (caar ancestors) :binding-hyp)
     (ancestors-check1 lit-atm lit fn-cnt p-fn-cnt (cdr ancestors) tokens))
@@ -4920,7 +5053,7 @@
 ; hack.  That is because they are used by the rewrite clique where
 ; there is no such hack, and we didn't want to slow that clique down.
 
-(defun ancestors-check (lit ancestors tokens)
+(defun ancestors-check-builtin (lit ancestors tokens)
 
 ; We return two values.  The first is whether we should abort trying
 ; to establish lit on behalf of the given tokens.  The second is
@@ -4944,7 +5077,10 @@
 
 ; Historical Note:  In nqthm, this function was named relieve-hyps-not-ok.
 
-  (cond ((null ancestors)
+  (declare (xargs :guard (and (pseudo-termp lit)
+                              (ancestor-listp ancestors)
+                              (true-listp tokens))))
+  (cond ((endp ancestors)
          (mv nil nil))
         (t (mv-let (not-flg lit-atm)
                    (strip-not lit)
@@ -4953,6 +5089,11 @@
                            (fn-count lit-atm)
                            (ancestors-check1 lit-atm lit fn-cnt p-fn-cnt
                                              ancestors tokens))))))
+
+(defproxy ancestors-check (* * *) => (mv * *))
+
+(defattach (ancestors-check ancestors-check-builtin)
+  :skip-checks t)
 
 ; Essay on Type-set Deductions for Integerp
 
@@ -5732,36 +5873,34 @@
 ; statistics are gathered.  Here are results using code developed after
 ; Version_4.1, using Allegro CL.
 
-#||
-In directory /projects/acl2/devel/books/workshops/2004/legato/support/
-(see below for discussion of which forms were submitted for each experiment).
-
-(set-inhibit-output-lst '(prove proof-tree))
-;; (ld "/projects/acl2/devel-misc/patches/accumulated-persistence-hyps-rhs/patch.lisp")
-;; (value :q)
-;;; (load "/projects/acl2/devel-misc/patches/accumulated-persistence-hyps-rhs/patch.fasl")
-;; (load "/projects/acl2/devel-misc/patches/accumulated-persistence-hyps-rhs/old.fasl")
-;; (lp)
-; (accumulated-persistence t)
-(time$ (ld "proof-by-generalization-mult.lisp"))
-
-No accp (skip commented forms)
-; 97.01 seconds realtime, 95.54 seconds runtime.
-
-Old accp (include only one commented form, (accumulated-persistence t))
-; 114.82 seconds realtime, 113.46 seconds runtime.
-
-New accp (include all commented forms except ;;;)
-; 164.95 seconds realtime, 163.69 seconds runtime.
-
-New accp (include all commented forms)
-; 165.09 seconds realtime, 163.90 seconds runtime.
-
-The results above were based on code that always gave results for a :conc
-xrune.  We now skip that xrune if there are no hypotheses, but that didn't make
-much difference:
-; 164.84 seconds realtime, 163.50 seconds runtime.
-||#
+; In directory /projects/acl2/devel/books/workshops/2004/legato/support/
+; (see below for discussion of which forms were submitted for each experiment).
+; 
+; (set-inhibit-output-lst '(prove proof-tree))
+; ;; (ld "/projects/acl2/devel-misc/patches/accumulated-persistence-hyps-rhs/patch.lisp")
+; ;; (value :q)
+; ;;; (load "/projects/acl2/devel-misc/patches/accumulated-persistence-hyps-rhs/patch.fasl")
+; ;; (load "/projects/acl2/devel-misc/patches/accumulated-persistence-hyps-rhs/old.fasl")
+; ;; (lp)
+; ; (accumulated-persistence t)
+; (time$ (ld "proof-by-generalization-mult.lisp"))
+; 
+; No accp (skip commented forms)
+; ; 97.01 seconds realtime, 95.54 seconds runtime.
+; 
+; Old accp (include only one commented form, (accumulated-persistence t))
+; ; 114.82 seconds realtime, 113.46 seconds runtime.
+; 
+; New accp (include all commented forms except ;;;)
+; ; 164.95 seconds realtime, 163.69 seconds runtime.
+; 
+; New accp (include all commented forms)
+; ; 165.09 seconds realtime, 163.90 seconds runtime.
+; 
+; The results above were based on code that always gave results for a :conc
+; xrune.  We now skip that xrune if there are no hypotheses, but that didn't make
+; much difference:
+; ; 164.84 seconds realtime, 163.50 seconds runtime.
 
 (defun merge-accumulated-persistence-aux (xrune entry alist)
   (cond ((endp alist)
@@ -5832,81 +5971,78 @@ much difference:
          new-alist)
         (t (merge-accumulated-persistence-rec new-alist old-alist))))
 
-#||
-
-This multi-line comment was written before the introduction of xrunes, and we
-have left it unchanged from that time.
-
-The following alternate code doesn't do as well, even though it uses nconc.
-The nconc version doesn't even seem much better on space (in fact worse in an
-Allegro CL test as reported by "space allocation": 669,110,675 cons cells in
-the nconc version vs. 593,299,188).  Compare the times below with those
-reported in merge-accumulated-persistence.
-
-Our basic idea was to avoid walking consing up a new alist in
-merge-accumulated-persistence-aux when the given rune wasn't already a key in
-the given alist.
-
-real time       :    157.780 secs
-run-gbc time    :    146.960 secs
-child run time  :      0.000 secs
-gbc time        :      8.990 secs
-
-Replacing nconc with revappend:
-
-real time       :    168.870 secs
-run-gbc time    :    149.930 secs
-child run time  :      0.000 secs
-gbc time        :      8.930 secs
-
-(defun merge-accumulated-persistence-1 (rune entry alist)
-  (cond ((endp alist)
-         (er hard 'merge-accumulated-persistence-1
-             "Implementation error: Unexpected end of list!  Please contacct ~
-              the ACL2 implementors."))
-        ((rune= rune (access accp-entry (car alist) :rune))
-         (cons (make accp-entry
-                     :rune rune
-                     :n-s  (+ (access accp-entry entry :n-s)
-                              (access accp-entry (car alist) :n-s))
-                     :ap-s (+ (access accp-entry entry :ap-s)
-                              (access accp-entry (car alist) :ap-s))
-                     :n-f  (+ (access accp-entry entry :n-f)
-                              (access accp-entry (car alist) :n-f))
-                     :ap-f (+ (access accp-entry entry :ap-f)
-                              (access accp-entry (car alist) :ap-f)))
-               (cdr alist)))
-        (t (cons (car alist)
-                 (merge-accumulated-persistence-1 rune entry (cdr alist))))))
-
-(defun assoc-rune= (rune alist)
-  (cond ((endp alist) nil)
-        ((rune= rune (access accp-entry (car alist) :rune))
-         (car alist))
-        (t (assoc-rune= rune (cdr alist)))))
-
-(defun merge-accumulated-persistence-rec (new-alist old-alist new-alist-new)
-
-; We merge into old-alist as we go along, except that entries in new-alist that
-; are not in old-alist are put into new-alist-new.
-
-  (cond ((endp new-alist) (nconc new-alist-new old-alist))
-        (t (let* ((rune (access accp-entry (car new-alist) :rune))
-                  (pair (assoc-rune= rune old-alist)))
-             (merge-accumulated-persistence-rec
-              (cdr new-alist)
-              (cond (pair (merge-accumulated-persistence-1
-                           rune
-                           (car new-alist)
-                           old-alist))
-                    (t old-alist))
-              (cond (pair new-alist-new)
-                    (t (cons (car new-alist) new-alist-new))))))))
-
-; Also would need to add final argument of nil to call of
-; merge-accumulated-persistence-rec in merge-accumulated-persistence.
-
-||#
+; The following comment was written before the introduction of xrunes, and we
+; have left it unchanged from that time.
+; 
+; The following alternate code doesn't do as well, even though it uses nconc.
+; The nconc version doesn't even seem much better on space (in fact worse in an
+; Allegro CL test as reported by "space allocation": 669,110,675 cons cells in
+; the nconc version vs. 593,299,188).  Compare the times below with those
+; reported in merge-accumulated-persistence.
+; 
+; Our basic idea was to avoid walking consing up a new alist in
+; merge-accumulated-persistence-aux when the given rune wasn't already a key in
+; the given alist.
+; 
+; real time       :    157.780 secs
+; run-gbc time    :    146.960 secs
+; child run time  :      0.000 secs
+; gbc time        :      8.990 secs
+; 
+; Replacing nconc with revappend:
+; 
+; real time       :    168.870 secs
+; run-gbc time    :    149.930 secs
+; child run time  :      0.000 secs
+; gbc time        :      8.930 secs
+; 
+; (defun merge-accumulated-persistence-1 (rune entry alist)
+;   (cond ((endp alist)
+;          (er hard 'merge-accumulated-persistence-1
+;              "Implementation error: Unexpected end of list!  Please contacct ~
+;               the ACL2 implementors."))
+;         ((rune= rune (access accp-entry (car alist) :rune))
+;          (cons (make accp-entry
+;                      :rune rune
+;                      :n-s  (+ (access accp-entry entry :n-s)
+;                               (access accp-entry (car alist) :n-s))
+;                      :ap-s (+ (access accp-entry entry :ap-s)
+;                               (access accp-entry (car alist) :ap-s))
+;                      :n-f  (+ (access accp-entry entry :n-f)
+;                               (access accp-entry (car alist) :n-f))
+;                      :ap-f (+ (access accp-entry entry :ap-f)
+;                               (access accp-entry (car alist) :ap-f)))
+;                (cdr alist)))
+;         (t (cons (car alist)
+;                  (merge-accumulated-persistence-1 rune entry (cdr alist))))))
+; 
+; (defun assoc-rune= (rune alist)
+;   (cond ((endp alist) nil)
+;         ((rune= rune (access accp-entry (car alist) :rune))
+;          (car alist))
+;         (t (assoc-rune= rune (cdr alist)))))
+; 
+; (defun merge-accumulated-persistence-rec (new-alist old-alist new-alist-new)
+; 
+; ; We merge into old-alist as we go along, except that entries in new-alist that
+; ; are not in old-alist are put into new-alist-new.
+; 
+;   (cond ((endp new-alist) (nconc new-alist-new old-alist))
+;         (t (let* ((rune (access accp-entry (car new-alist) :rune))
+;                   (pair (assoc-rune= rune old-alist)))
+;              (merge-accumulated-persistence-rec
+;               (cdr new-alist)
+;               (cond (pair (merge-accumulated-persistence-1
+;                            rune
+;                            (car new-alist)
+;                            old-alist))
+;                     (t old-alist))
+;               (cond (pair new-alist-new)
+;                     (t (cons (car new-alist) new-alist-new))))))))
+; 
+; ; Also would need to add final argument of nil to call of
+; ; merge-accumulated-persistence-rec in merge-accumulated-persistence.
+; 
 
 (defun add-accumulated-persistence-s (xrune delta-s delta-f alist
                                             original-alist acc)
@@ -10697,12 +10833,10 @@ gbc time        :      8.930 secs
 ; could be very sensitive to the order of the literals in the clause.  Consider
 ; the following theorem, which was not proved before we made this change:
 
-#|
-(implies (and (< 1 (+ 1 n))
-              (< 0 n)
-              (integerp n))
-         (equal (< 1 (+ 1 n)) (< 0 n)))
-|#
+; (implies (and (< 1 (+ 1 n))
+;               (< 0 n)
+;               (integerp n))
+;          (equal (< 1 (+ 1 n)) (< 0 n)))
 
 ; The problem with this theorem was that the first two hypotheses
 ; weren't known to be Boolean unless we knew (for example) the third
@@ -11150,13 +11284,13 @@ gbc time        :      8.930 secs
 
 ; The simplest example is one which fails unless we do some kind of iterated
 ; typing.  Here is Bishop's example:
-#|
-(thm (IMPLIES (AND (< 0 (+ (- I) N))
-                   (NOT (INTEGERP (+ (- I) N)))
-                   (INTEGERP N)
-                   (INTEGERP I)
-                   )
-              nil))|#
+
+; (thm (IMPLIES (AND (< 0 (+ (- I) N))
+;                    (NOT (INTEGERP (+ (- I) N)))
+;                    (INTEGERP N)
+;                    (INTEGERP I)
+;                    )
+;               nil))
 
 ; The naive method fails to prove this.  Force-based iteration catches it if (-
 ; I) forces something, but that is not the case in Version 1.8 and so that kind
@@ -11166,13 +11300,13 @@ gbc time        :      8.930 secs
 
 ; A good performance test is
 
-#|(defthm ordered-symbol-alistp-remove-first-pair-test
-  (implies (and (ordered-symbol-alistp l)
-                (symbolp key)
-                (assoc-eq key l))
-           (ordered-symbol-alistp (remove-first-pair key l)))
-  :hints (("Goal" :in-theory
-           (disable ordered-symbol-alistp-remove-first-pair))))|#
+; (defthm ordered-symbol-alistp-remove-first-pair-test
+;   (implies (and (ordered-symbol-alistp l)
+;                 (symbolp key)
+;                 (assoc-eq key l))
+;            (ordered-symbol-alistp (remove-first-pair key l)))
+;   :hints (("Goal" :in-theory
+;            (disable ordered-symbol-alistp-remove-first-pair))))
 
 ; The naive approach does this in about 3.4 seconds (prove time, on Rana, a
 ; Sparc 2).  The repetitious approach takes 5.6 seconds.  The reconsidering

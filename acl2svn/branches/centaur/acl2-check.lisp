@@ -20,9 +20,9 @@
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78701 U.S.A.
 
 ; Because of the last form in this file, this file should not be loaded as part
 ; of an executable ACL2 image.
@@ -113,26 +113,23 @@ most-negative-fixnum = ~s."
            most-positive-fixnum
            most-negative-fixnum))
 
-#||
-
 ; Now trying to fix this problem, so commenting it out for now.
 
-#+hons
-(or (< (ash 1 33) most-positive-fixnum)
-
-; We found a failure during regression on the HONS version with 32-bit Allegro,
-; because internal-real-time was not returning a fixnum.  Bob Boyer pointed out
-; that this could be fixed, but it would take work because there are
-; assumptions in the heart of memoize-fn that such quantities are indeed
-; fixnums.  A simple test for 64-bit platforms, not perfect perhaps, is that
-; post-positive-fixnum exceeds 2^33.
-
-    (error "The experimental HONS extension of ACL2 requires 64-bit Lisp
-platforms, but the present platform appears not to be because the value
-of most-positive-fixnum, ~s, does not exceed (expt 2 33)."
-           most-positive-fixnum))
-
-||#
+; #+hons
+; (or (< (ash 1 33) most-positive-fixnum)
+; 
+; ; We found a failure during regression on the HONS version with 32-bit Allegro,
+; ; because internal-real-time was not returning a fixnum.  Bob Boyer pointed out
+; ; that this could be fixed, but it would take work because there are
+; ; assumptions in the heart of memoize-fn that such quantities are indeed
+; ; fixnums.  A simple test for 64-bit platforms, not perfect perhaps, is that
+; ; post-positive-fixnum exceeds 2^33.
+; 
+;     (error "The experimental HONS extension of ACL2 requires 64-bit Lisp
+; platforms, but the present platform appears not to be because the value
+; of most-positive-fixnum, ~s, does not exceed (expt 2 33)."
+;            most-positive-fixnum))
+; 
 ; Now we deal with the existence of case-sensitive images in Allegro.
   
 #+(and allegro allegro-version>= (version>= 6 0))

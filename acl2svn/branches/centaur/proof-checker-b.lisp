@@ -20,9 +20,9 @@
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78701 U.S.A.
 
 (in-package "ACL2")
 
@@ -2909,34 +2909,30 @@
 (defun geneqv-at-subterm-top (term addr ens wrld)
   (geneqv-at-subterm term addr *geneqv-iff* ens wrld))
 
-#|
-
 ;; In the following we want to know if every occurrence of old in term
 ;; is at a position at which substitution by something EQUIV to old
 ;; will guarantee a result that is GENEQV to term.
 
-(mutual-recursion
-
-(defun subst-expr1-okp (old term equiv geneqv ens wrld)
-  (cond ((equal term old)
-         (geneqv-refinementp equiv geneqv wrld))
-        ((variablep term) t)
-        ((fquotep term) t)
-        (t (subst-expr1-ok-listp old (fargs term)
-                                 (geneqv-lst (ffn-symb term) geneqv ens wrld)
-                                 equiv ens wrld))))
-
-(defun subst-expr1-ok-listp (old args equiv geneqv-lst ens wrld)
-  (cond ((null args) nil)
-        (t (and (subst-expr1-okp
-                 old (car args) equiv (car geneqv-lst) ens wrld)
-                (subst-expr1-ok-listp
-                 old (cdr args) equiv (cdr geneqv-lst) ens wrld)))))
-
-
-)
-|#
-
+; (mutual-recursion
+; 
+; (defun subst-expr1-okp (old term equiv geneqv ens wrld)
+;   (cond ((equal term old)
+;          (geneqv-refinementp equiv geneqv wrld))
+;         ((variablep term) t)
+;         ((fquotep term) t)
+;         (t (subst-expr1-ok-listp old (fargs term)
+;                                  (geneqv-lst (ffn-symb term) geneqv ens wrld)
+;                                  equiv ens wrld))))
+; 
+; (defun subst-expr1-ok-listp (old args equiv geneqv-lst ens wrld)
+;   (cond ((null args) nil)
+;         (t (and (subst-expr1-okp
+;                  old (car args) equiv (car geneqv-lst) ens wrld)
+;                 (subst-expr1-ok-listp
+;                  old (cdr args) equiv (cdr geneqv-lst) ens wrld)))))
+; 
+; 
+; )
 
 ;; **** Need to think about what happens if we, e.g., substitute T for X
 ;; inside (equal X T).  Probably that's OK -- but also, consider allowing
@@ -6085,9 +6081,9 @@
   ~bv[]
   Example:
   (cl-proc :function
-	   note-fact-clause-processor
-	  :hint
-	  '(equal a a))
+           note-fact-clause-processor
+          :hint
+          '(equal a a))
   -- Invoke the indicated clause processor function with the indicated hint
   argument (see the beginning of file
   ~c[books/clause-processors/basic-examples.lisp].~/

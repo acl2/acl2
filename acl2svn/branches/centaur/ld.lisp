@@ -20,9 +20,9 @@
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78701 U.S.A.
 
 (in-package "ACL2")
 
@@ -3156,9 +3156,9 @@
 
   Written by:  Matt Kaufmann               and J Strother Moore
   email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-  Department of Computer Sciences
+  Department of Computer Science
   University of Texas at Austin
-  Austin, TX 78712-1188 U.S.A.
+  Austin, TX 78701 U.S.A.
 
   Please also ~pl[acknowledgments].~/")
 
@@ -7448,47 +7448,45 @@
 
 ; Here is a way to exhibit the proof-checker expand bug described in the first
 ; paragraph of the documentation below:
-#|
- (in-package "ACL2")
 
- (encapsulate
-  (((foo *) => *)
-   ((bar *) => *))
-
-  (local (defun foo (x) x))
-  (local (defun bar (x) (not x)))
-
-  (defthm foo-open
-    (equal (foo x) x)
-    :rule-classes :definition)
-
-  (defthm bar-not-foo
-    (equal (bar x) (not (foo x)))
-    :rule-classes :definition))
-
- (defthm bad (equal (foo x) (bar x))
-   :rule-classes nil
-   :instructions
-   ((:dv 1) :expand :nx :expand :top :s))
-
- (defthm contradiction
-   nil
-   :rule-classes nil
-   :hints (("Goal" :use bad)))
-|#
+;  (in-package "ACL2")
+; 
+;  (encapsulate
+;   (((foo *) => *)
+;    ((bar *) => *))
+; 
+;   (local (defun foo (x) x))
+;   (local (defun bar (x) (not x)))
+; 
+;   (defthm foo-open
+;     (equal (foo x) x)
+;     :rule-classes :definition)
+; 
+;   (defthm bar-not-foo
+;     (equal (bar x) (not (foo x)))
+;     :rule-classes :definition))
+; 
+;  (defthm bad (equal (foo x) (bar x))
+;    :rule-classes nil
+;    :instructions
+;    ((:dv 1) :expand :nx :expand :top :s))
+; 
+;  (defthm contradiction
+;    nil
+;    :rule-classes nil
+;    :hints (("Goal" :use bad)))
 
 ; The second proof-checker bug mentioned below can be exhibited as follows:
-#|
- (encapsulate
-  ()
-  (local
-   (defthm bug-lemma (if x (if x t nil) nil)
-     :rule-classes nil
-     :instructions ((dive 2 3) :s)))
-  (defthm bug nil
-    :rule-classes nil
-    :hints (("Goal" :use ((:instance bug-lemma (x nil)))))))
-|#
+
+;  (encapsulate
+;   ()
+;   (local
+;    (defthm bug-lemma (if x (if x t nil) nil)
+;      :rule-classes nil
+;      :instructions ((dive 2 3) :s)))
+;   (defthm bug nil
+;     :rule-classes nil
+;     :hints (("Goal" :use ((:instance bug-lemma (x nil)))))))
 
 ; The function ev-acl2-unwind-protect was fixed to incorporate a change made
 ; long ago, by J, to acl2-unwind-protect.  This function was subsequently
@@ -7511,45 +7509,43 @@
 ; hard error when destructure-type-prescription fails; previously we had
 ; ignored the erp return value from destructure-type-prescription.
 
-#|
-  (in-package "ACL2")
-
-  (defun my-natp (x)
-    (declare (xargs :guard t))
-    (and (integerp x)
-         (<= 0 x)))
-
-  (defun foo (x)
-    (nfix x))
-
-  (in-theory (disable foo (:type-prescription foo)))
-
-  (encapsulate
-   ()
-   (local (defthm my-natp-cr
-            (equal (my-natp x)
-                   (and (integerp x)
-                        (<= 0 x)))
-            :rule-classes :compound-recognizer))
-   (defthm foo-type-prescription
-     (my-natp (foo x))
-     :hints (("Goal" :in-theory (enable foo)))
-     :rule-classes ((:type-prescription :typed-term (foo x)))))
-
-  (defthm rationalp-foo
-    (rationalp (foo x))
-    :hints (("Goal" :in-theory (enable foo)))
-    :rule-classes :type-prescription)
-
-  (defthm bad-lemma
-    (equal (foo x) 1)
-    :rule-classes nil)
-
-  (defthm bad
-    nil
-    :rule-classes nil
-    :hints (("Goal" :use ((:instance bad-lemma (x 1))))))
-|#
+;   (in-package "ACL2")
+; 
+;   (defun my-natp (x)
+;     (declare (xargs :guard t))
+;     (and (integerp x)
+;          (<= 0 x)))
+; 
+;   (defun foo (x)
+;     (nfix x))
+; 
+;   (in-theory (disable foo (:type-prescription foo)))
+; 
+;   (encapsulate
+;    ()
+;    (local (defthm my-natp-cr
+;             (equal (my-natp x)
+;                    (and (integerp x)
+;                         (<= 0 x)))
+;             :rule-classes :compound-recognizer))
+;    (defthm foo-type-prescription
+;      (my-natp (foo x))
+;      :hints (("Goal" :in-theory (enable foo)))
+;      :rule-classes ((:type-prescription :typed-term (foo x)))))
+; 
+;   (defthm rationalp-foo
+;     (rationalp (foo x))
+;     :hints (("Goal" :in-theory (enable foo)))
+;     :rule-classes :type-prescription)
+; 
+;   (defthm bad-lemma
+;     (equal (foo x) 1)
+;     :rule-classes nil)
+; 
+;   (defthm bad
+;     nil
+;     :rule-classes nil
+;     :hints (("Goal" :use ((:instance bad-lemma (x 1))))))
 
   ":Doc-Section note-2-8
 
@@ -10999,67 +10995,65 @@
 ; The "soundness bug in linear arithmetic" mentioned below was confined to
 ; linearize1.  Robert provided the fix and we checked it.  Below is an example
 ; from Robert that proves nil in ACL2 Version_3.0.1 but fails after the patch.
-#|
- (defun id (x) x)
 
- (defthm id-rationalp
-   (implies (force (rationalp x))
-            (rationalp (id x)))
-   :rule-classes :type-prescription)
-
- (in-theory (disable id))
-
- (defun id2 (x y)
-   (if (zp x)
-       y
-     (id2 (+ -1 x) y)))
-
- (in-theory (disable (:type-prescription id2)))
-
- (defthm bad
-   (implies (and (not (equal (id x) (id2 y z)))
-                 (acl2-numberp y)
-                 (integerp z)
-                 (<= 0 z))
-            (or (< (id x) (id2 y z))
-                (< (id2 y z) (id x))))
-   :hints (("[1]Goal" :in-theory (enable (:type-prescription id2))))
-   :rule-classes nil)
-
- (set-guard-checking :none)
-
- (let ((x "foo")
-       (y 0)
-       (z 0))
-   (implies (and (not (equal (id x) (id2 y z)))
-                 (acl2-numberp y)
-                 (integerp z)
-                 (<= 0 z))
-            (or (< (id x) (id2 y z))
-                (< (id2 y z) (id x)))))
-
- (thm
-  nil
-  :hints (("Goal" :use (:instance bad (x "foo") (y 0) (z 0)))))
-|# ; |
+;  (defun id (x) x)
+; 
+;  (defthm id-rationalp
+;    (implies (force (rationalp x))
+;             (rationalp (id x)))
+;    :rule-classes :type-prescription)
+; 
+;  (in-theory (disable id))
+; 
+;  (defun id2 (x y)
+;    (if (zp x)
+;        y
+;      (id2 (+ -1 x) y)))
+; 
+;  (in-theory (disable (:type-prescription id2)))
+; 
+;  (defthm bad
+;    (implies (and (not (equal (id x) (id2 y z)))
+;                  (acl2-numberp y)
+;                  (integerp z)
+;                  (<= 0 z))
+;             (or (< (id x) (id2 y z))
+;                 (< (id2 y z) (id x))))
+;    :hints (("[1]Goal" :in-theory (enable (:type-prescription id2))))
+;    :rule-classes nil)
+; 
+;  (set-guard-checking :none)
+; 
+;  (let ((x "foo")
+;        (y 0)
+;        (z 0))
+;    (implies (and (not (equal (id x) (id2 y z)))
+;                  (acl2-numberp y)
+;                  (integerp z)
+;                  (<= 0 z))
+;             (or (< (id x) (id2 y z))
+;                 (< (id2 y z) (id x)))))
+; 
+;  (thm
+;   nil
+;   :hints (("Goal" :use (:instance bad (x "foo") (y 0) (z 0))))) ; |
 
 ; Added type declaration in ts-subsetp (but seemed not to make a measurable
 ; difference in time, at least for fast GCL build).
 
 ; Here is evidence for the bug in symbol-package-name-pkg-witness-name:
-#|
- (defthm contradiction
-   nil
-   :hints (("Goal"
-            :use ((:instance symbol-package-name-pkg-witness-name
-                             (pkg-name ""))
-                  (:instance intern-in-package-of-symbol-symbol-name
-                             (x (pkg-witness ""))
-                             (y 3)))
-            :in-theory (disable (pkg-witness)
-                                intern-in-package-of-symbol-symbol-name)))
-   :rule-classes nil)
-|# ; |
+
+;  (defthm contradiction
+;    nil
+;    :hints (("Goal"
+;             :use ((:instance symbol-package-name-pkg-witness-name
+;                              (pkg-name ""))
+;                   (:instance intern-in-package-of-symbol-symbol-name
+;                              (x (pkg-witness ""))
+;                              (y 3)))
+;             :in-theory (disable (pkg-witness)
+;                                 intern-in-package-of-symbol-symbol-name)))
+;    :rule-classes nil) ; |
 
 ; Implementation note: for reset-prehistory, the key idea is to manipulate
 ; world global 'command-number-baseline-info.
@@ -11717,29 +11711,27 @@
 ; test near the end of rewrite, in v3-2:
 ; (not (member-eq (nu-rewriter-mode wrld) '(nil :literals)))
 
-#||
- (defun repeat (n v)
-   (declare (xargs :guard (natp n)))
-   (if (zp n)
-       nil
-     (cons v (repeat (1- n) v))))
-
- (defthmd len-of-cons
-   (equal (len (cons a x))
-          (+ 1 (len x))))
-
- (in-theory (disable len))
-
- (set-rewrite-stack-limit nil)
-
- (set-nu-rewriter-mode t) ; slows things down by a factor of almost 20
-
- (thm (equal (len (repeat 7000 a)) 7000)
-      :hints (("goal'" :in-theory (enable len-of-cons))
-              ("Goal"
-               :do-not '(preprocess)
-               :expand (:free (a x) (repeat a x)))))
-||#
+;  (defun repeat (n v)
+;    (declare (xargs :guard (natp n)))
+;    (if (zp n)
+;        nil
+;      (cons v (repeat (1- n) v))))
+; 
+;  (defthmd len-of-cons
+;    (equal (len (cons a x))
+;           (+ 1 (len x))))
+; 
+;  (in-theory (disable len))
+; 
+;  (set-rewrite-stack-limit nil)
+; 
+;  (set-nu-rewriter-mode t) ; slows things down by a factor of almost 20
+; 
+;  (thm (equal (len (repeat 7000 a)) 7000)
+;       :hints (("goal'" :in-theory (enable len-of-cons))
+;               ("Goal"
+;                :do-not '(preprocess)
+;                :expand (:free (a x) (repeat a x)))))
 
 ; Regarding the slow array warning related to wormholes mentioned below: here
 ; is a way to cause that problem before Version_3.2.
@@ -12239,31 +12231,28 @@
 ; Here is the proof of nil from Sol Swords referenced in the mbe bug discussion
 ; below.
 
- #||
- (defun foo (a b)
-   (mbe :logic (mv a b)
-        :exec (mv a b)))
-
- ;; (foo 'a 'b) returns (A NIL);
- ;; should return (A B)
-
- (defthm foo-1-nil
-   (equal (mv-nth 1 (foo 'a 'b)) nil)
-   :rule-classes nil)
-
- (verify-guards foo)
- ;; now the correct behavior returns:
- ;; (foo 'a 'b) returns (A B).
-
- (defthm foo-1-b
-   (equal (mv-nth 1 (foo 'a 'b)) 'b)
-   :rule-classes nil)
-
- (thm
-  nil
-  :hints (("Goal" :use (foo-1-nil foo-1-b))))
-
-||#
+;  (defun foo (a b)
+;    (mbe :logic (mv a b)
+;         :exec (mv a b)))
+; 
+;  ;; (foo 'a 'b) returns (A NIL);
+;  ;; should return (A B)
+; 
+;  (defthm foo-1-nil
+;    (equal (mv-nth 1 (foo 'a 'b)) nil)
+;    :rule-classes nil)
+; 
+;  (verify-guards foo)
+;  ;; now the correct behavior returns:
+;  ;; (foo 'a 'b) returns (A B).
+; 
+;  (defthm foo-1-b
+;    (equal (mv-nth 1 (foo 'a 'b)) 'b)
+;    :rule-classes nil)
+; 
+;  (thm
+;   nil
+;   :hints (("Goal" :use (foo-1-nil foo-1-b))))
 
 ; Modified warning$ a bit to avoid what appears to be a GCL compilation bug.
 
@@ -13047,39 +13036,37 @@
 ; proof of nil based on the use of mbe inside an encapsulate event.  The proof
 ; goes through for this example in Version_3.3 but not in Version_3.4.
 
-#||
- (encapsulate
-  ((f (x) t))
-
-  (local (defun f (x)
-           (declare (xargs :guard t))
-           x))
-
-  (defun g (x)
-    (declare (xargs :guard t))
-    (mbe :logic (f x)
-         :exec  x)))
-
- (defthm g-3-is-3
-   (equal (g 3) 3)
-   :rule-classes nil)
-
- (defthm f-3-is-3
-   (equal (f 3) 3)
-   :hints (("Goal"
-            :in-theory (disable (g))
-            :use g-3-is-3)))
-
- (defun foo (x)
-   (declare (ignore x))
-   4)
-
- (defthm contradiction
-   nil
-   :hints (("Goal" :use ((:functional-instance f-3-is-3
-                                               (f foo)))))
-   :rule-classes nil)
-||#
+;  (encapsulate
+;   ((f (x) t))
+; 
+;   (local (defun f (x)
+;            (declare (xargs :guard t))
+;            x))
+; 
+;   (defun g (x)
+;     (declare (xargs :guard t))
+;     (mbe :logic (f x)
+;          :exec  x)))
+; 
+;  (defthm g-3-is-3
+;    (equal (g 3) 3)
+;    :rule-classes nil)
+; 
+;  (defthm f-3-is-3
+;    (equal (f 3) 3)
+;    :hints (("Goal"
+;             :in-theory (disable (g))
+;             :use g-3-is-3)))
+; 
+;  (defun foo (x)
+;    (declare (ignore x))
+;    4)
+; 
+;  (defthm contradiction
+;    nil
+;    :hints (("Goal" :use ((:functional-instance f-3-is-3
+;                                                (f foo)))))
+;    :rule-classes nil)
 
 ; Fixed a hard error during an error message caused by the use of the wrong ~@
 ; argument in unknown-binding-msg.  Thanks to Eric Smith for pointing this out.
@@ -13122,46 +13109,42 @@
 ; consider do-not-induct-otf-flg-override in the definition of aborting-p in
 ; the definition of increment-proof-tree.
 
-#||
- (start-proof-tree)
-
- (defun limit-induction-hint-fn (i)
-   `(or (and (length-exceedsp (car id) ,i)
-             (endp (cdadr id))
-             (eq (cddr id) 0)
-             '(:computed-hint-replacement
-               t
-               :do-not-induct :otf-flg-override))
-        (and (> (cddr id) 20)
-             '(:computed-hint-replacement
-               t
-               :do-not (eliminate-destructors eliminate-irrelevance
-                                              generalize fertilize)
-               :in-theory nil))))
-
- (add-default-hints
-  `(,(limit-induction-hint-fn 1)))
-
- (defun sum-from (i lst)
-   (if (and (natp i)
-            (< i (len lst)))
-     (+ (nth i lst) (sum-from (1+ i) lst))
-     0))
-||#
+;  (start-proof-tree)
+; 
+;  (defun limit-induction-hint-fn (i)
+;    `(or (and (length-exceedsp (car id) ,i)
+;              (endp (cdadr id))
+;              (eq (cddr id) 0)
+;              '(:computed-hint-replacement
+;                t
+;                :do-not-induct :otf-flg-override))
+;         (and (> (cddr id) 20)
+;              '(:computed-hint-replacement
+;                t
+;                :do-not (eliminate-destructors eliminate-irrelevance
+;                                               generalize fertilize)
+;                :in-theory nil))))
+; 
+;  (add-default-hints
+;   `(,(limit-induction-hint-fn 1)))
+; 
+;  (defun sum-from (i lst)
+;    (if (and (natp i)
+;             (< i (len lst)))
+;      (+ (nth i lst) (sum-from (1+ i) lst))
+;      0))
 
 ; Fixed warning messages (error messages too actually) for computed hints, so
 ; that mere warnings don't say that a value is illegal.  Thanks to Robert Krug
 ; for pointing out this problem and sending the following example:
 
-#||
- (in-theory (disable mv-nth eq))
-
- (thm
-  (equal (* x y) (+ x y))
-  :hints ((if stable-under-simplificationp 
-              '(:in-theory (enable eq))
-            nil)))
-||#
+;  (in-theory (disable mv-nth eq))
+; 
+;  (thm
+;   (equal (* x y) (+ x y))
+;   :hints ((if stable-under-simplificationp 
+;               '(:in-theory (enable eq))
+;             nil)))
 
 ; Changed constant *primitive-event-macros* into zero-ary function
 ; primitive-event-macros, in support of Peter Dillinger's desire to be able to
@@ -13897,71 +13880,70 @@
 ; inside type-set (see the comment "The pot-lst is not valid....").
 ; Here is how to see that bug in action.  The following theorem proves "using
 ; trivial observations", but the instance of it below evaluates to nil.
-#||
- (thm
-  (IMPLIES (AND (< (CAR Y) (CADR X))
-                (TRUE-LISTP X)
-                (TRUE-LISTP Y)
-                (< (CAR X) (CAR Y)))
-           (LET ((X Y) (Y X))
-                (AND (TRUE-LISTP X)
-                     (TRUE-LISTP Y)
-                     (< (CAR X) (CAR Y))))))
 
- (let ((x '(1 7 3)) (y '(4 5 6)))
-   (IMPLIES (AND (< (CAR Y) (CADR X))
-                 (TRUE-LISTP X)
-                 (TRUE-LISTP Y)
-                 (< (CAR X) (CAR Y)))
-            (LET ((X Y) (Y X))
-                 (AND (TRUE-LISTP X)
-                      (TRUE-LISTP Y)
-                      (< (CAR X) (CAR Y))))))
-||#
+;  (thm
+;   (IMPLIES (AND (< (CAR Y) (CADR X))
+;                 (TRUE-LISTP X)
+;                 (TRUE-LISTP Y)
+;                 (< (CAR X) (CAR Y)))
+;            (LET ((X Y) (Y X))
+;                 (AND (TRUE-LISTP X)
+;                      (TRUE-LISTP Y)
+;                      (< (CAR X) (CAR Y))))))
+; 
+;  (let ((x '(1 7 3)) (y '(4 5 6)))
+;    (IMPLIES (AND (< (CAR Y) (CADR X))
+;                  (TRUE-LISTP X)
+;                  (TRUE-LISTP Y)
+;                  (< (CAR X) (CAR Y)))
+;             (LET ((X Y) (Y X))
+;                  (AND (TRUE-LISTP X)
+;                       (TRUE-LISTP Y)
+;                       (< (CAR X) (CAR Y))))))
+
 ; A trace of type-set before the fix shows some odd behavior, a simpler version
 ; of which is below.  The pot-lst represents (< (car x) (car y)), which should
 ; be irrelevant inside the body of the lambda, but (erroneously) is used to
 ; return a type-set of *ts-t*.
-#||
- (TYPE-SET '((LAMBDA (X Y)
-                     (< (CAR X) (CAR Y)))
-             Y X)
-           NIL NIL
-           '((Y 576) (X 512))
-           NIL (ENS STATE) (W STATE) NIL
-           '(((0)
-              (CAR Y)
-              ((((((CAR Y) . 1) ((CAR X) . -1))
-                 (3)
-                 (PT . 3))
-                0 < NIL))))
-           NIL)
-; From (trace$ type-set), notice the use of the pot-lst inside the body of the
-; lambda:
-  2> (TYPE-SET ((LAMBDA (X Y) (< (CAR X) (CAR Y))) Y X)
-               NIL NIL ((Y 576) (X 512))
-               NIL |some-enabled-structure|
-               |current-acl2-world| NIL
-               (((0)
-                 (CAR Y)
-                 ((((((CAR Y) . 1) ((CAR X) . -1))
-                    (3)
-                    (PT . 3))
-                   0 < NIL))))
-               NIL)
- ...
-    3> (TYPE-SET (< (CAR X) (CAR Y))
-                 NIL NIL ((X 576) (Y 512))
-                 T |some-enabled-structure|
-                 |current-acl2-world| NIL
-                 (((0)
-                   (CAR Y)
-                   ((((((CAR Y) . 1) ((CAR X) . -1))
-                      (3)
-                      (PT . 3))
-                     0 < NIL))))
-                 NIL)
-||#
+
+;  (TYPE-SET '((LAMBDA (X Y)
+;                      (< (CAR X) (CAR Y)))
+;              Y X)
+;            NIL NIL
+;            '((Y 576) (X 512))
+;            NIL (ENS STATE) (W STATE) NIL
+;            '(((0)
+;               (CAR Y)
+;               ((((((CAR Y) . 1) ((CAR X) . -1))
+;                  (3)
+;                  (PT . 3))
+;                 0 < NIL))))
+;            NIL)
+; ; From (trace$ type-set), notice the use of the pot-lst inside the body of the
+; ; lambda:
+;   2> (TYPE-SET ((LAMBDA (X Y) (< (CAR X) (CAR Y))) Y X)
+;                NIL NIL ((Y 576) (X 512))
+;                NIL |some-enabled-structure|
+;                |current-acl2-world| NIL
+;                (((0)
+;                  (CAR Y)
+;                  ((((((CAR Y) . 1) ((CAR X) . -1))
+;                     (3)
+;                     (PT . 3))
+;                    0 < NIL))))
+;                NIL)
+;  ...
+;     3> (TYPE-SET (< (CAR X) (CAR Y))
+;                  NIL NIL ((X 576) (Y 512))
+;                  T |some-enabled-structure|
+;                  |current-acl2-world| NIL
+;                  (((0)
+;                    (CAR Y)
+;                    ((((((CAR Y) . 1) ((CAR X) . -1))
+;                       (3)
+;                       (PT . 3))
+;                      0 < NIL))))
+;                  NIL)
 
 ; Changed fixnum declarations in some array functions to (signed-byte 32) and
 ; (unsigned-byte 31) declarations.
@@ -14129,7 +14111,7 @@
   The definition of ~c[trace*] has been moved to a book, ~c[misc/trace1.lisp].
   A new version, used in ACL2s, is in book ~c[misc/trace-star.lisp].
   ~il[Trace] utilities ~ilc[trace$] and ~ilc[trace!] are still built into
-  ACL2.
+  ACL2.  [Note: File ~c[misc/trace1.lisp] was deleted after Version  4.2.]
 
   Certain ~il[certificate] files will now be much smaller, by printing in a way
   that takes advantage of structure sharing.  Certifying the following example
@@ -16492,7 +16474,7 @@
   ~bv[]
   (wormhole 'name
             '(lambda (whs) (set-wormhole-entry-code whs :ENTER))
-	    input
+            input
             '(...1 (wormhole-data (@ wormhole-status)) ...2
               ...3 (assign wormhole-status
                           (set-wormhole-data (@ wormhole-status)
@@ -17249,10 +17231,123 @@
 
 (deflabel note-4-3
 
+; The following example illustrates the soundness bug related to mbe that is
+; mentioned in :doc note-4-3.  To prove nil:
+
+; (certify-book "sub")
+; :u
+; (certify-book "mid")
+; :u
+; (certify-book "top")
+
+; The problem is that the macro mac expands differently in the ACL2 loop from
+; how it expands in raw Lisp.  The bug fix is to check equality of the values
+; of the :logic and :exec forms when in safe-mode.
+
+;;;;;;;;;;;;;;;
+; Book sub.lisp
+;;;;;;;;;;;;;;;
+;   (in-package "ACL2")
+;   
+;   (defmacro mac ()
+;     (mbe :logic ''logic
+;          :exec ''exec))
+;   
+;   (defconst *a*
+;     (mac))
+
+;;;;;;;;;;;;;;;
+; Book mid.lisp
+;;;;;;;;;;;;;;;
+;   (in-package "ACL2")
+;   
+;   (local (include-book "sub"))
+;   
+;   (defmacro mac ()
+;     (mbe :logic ''logic
+;          :exec ''exec))
+;   
+;   (defconst *a*
+;     (mac))
+;   
+;   (defthm got-exec
+;     (equal *a* 'exec)
+;     :rule-classes nil)
+
+;;;;;;;;;;;;;;;
+; Book top.lisp
+;;;;;;;;;;;;;;;
+;   (in-package "ACL2")
+;   
+;   (defmacro mac ()
+;     (mbe :logic ''logic
+;          :exec ''exec))
+;   
+;   (defconst *a*
+;     (mac))
+;   
+;   (defthm got-logic
+;     (equal *a* 'logic)
+;     :rule-classes nil)
+;   
+;   (include-book "mid")
+;   
+;   (defthm contradiction
+;     nil
+;     :hints (("Goal" :use (got-exec got-logic)))
+;     :rule-classes nil)
+
+;;;;;;;;;;;;;;; end of example
+
 ; Modified some doc-printing functions in support of translation to xdoc.  the
 ; process, the HTML output has become prettier; see item about HTML, below.
 
 ; Added new macro mv-to-state.
+
+; Changed the name mv-let? to bdd-mv-let to avoid potential confusion with
+; mv?-let.
+
+; Functions enable-iprint-ar and disable-iprint-ar now return two values
+; instead of three.
+
+; Here is the example promised in :doc note-4-3 to illustrate a bug in the
+; loop-checking done on behalf of defattach.  The bug was fixed in function
+; update-attachment-records1.
+
+;;;;;;;;;;;;;;; start example
+;   (progn
+;     (encapsulate
+;      ((f1 (x) t)
+;       (f2 (x) t))
+;      (local (defun f1 (x) x))
+;      (local (defun f2 (x) x)))
+; 
+;     (encapsulate
+;      ((g1 (x) t)
+;       (g2 (x) t))
+;      (local (defun g1 (x) x))
+;      (local (defun g2 (x) x))
+;      (defthm g1-f1
+;        (equal (g1 (f1 x))
+;               (f1 x))))
+; 
+;     (encapsulate
+;      ((h1 (x) t)
+;       (h2 (x) t))
+;      (local (defun h1 (x) x))
+;      (local (defun h2 (x) x))))
+; 
+;   (defattach f2 h1)
+; 
+;   ; The following should cause the following loop to be reported, but didn't:
+;       G1 is an extended ancestor of H1.
+;       H1 is an extended ancestor of F1.
+;       F1 is an extended ancestor of G1.
+;   (defattach h2 g2)
+;;;;;;;;;;;;;;; end of example
+
+; Replaced a couple of calls of 1+ by 1+f in fn-count-evg-rec, after Robert
+; Krug brought these to our attention.
 
   :Doc
   ":Doc-Section release-notes
@@ -17274,16 +17369,85 @@
   Improved ~c[get-output-stream-string$] to allow for a context and to do
   genuine error printing instead of using ~ilc[cw].  ~l[io].
 
+  Added the symbols ~ilc[flet] and ~ilc[with-local-stobj] to
+  ~c[*acl2-exports*].
+
+  A small change was made to the processing of more than one ~c[:]~ilc[guard]
+  declaration for the same function.  In particular, a guard of ~c[t] is
+  essentially ignored.
+
+  Attachments are now allowed during evaluation of the first argument of
+  ~ilc[prog2$] even in contexts (such as proofs) during which the use of
+  attachments is normally prohibited.  More generally, the second of the three
+  arguments of ~ilc[return-last] has this property, except in the case of
+  ~ilc[mbe] (or related macros like ~ilc[mbe1]), where the ~c[exec] argument
+  may provide the value.  Thanks to Sol Swords for useful discussions leading
+  us to implement this enhancement.
+
   ~st[NEW FEATURES]
+
+  New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of
+  ~ilc[mv-let] and ~ilc[mv] (respectively) to the case of a single value.
+
+  Macro ~il[with-local-state] is available for system programmers who wish bind
+  ~ilc[state] locally, essentially using ~il[with-local-stobj].  But this
+  should only be done with extreme care, and it requires an active trust tag;
+  ~pl[with-local-state].
+
+  Formatted printing functions now have analogues that print to strings and do
+  not take an output channel or ~ilc[state] as arguments.
+  ~l[printing-to-strings].
+
+  The system function ~c[ancestors-check] is now available for verified
+  modification by users, i.e., attachment using
+  ~c[(defattach ancestors-check <your_function>)].  Thanks to Robert Krug for
+  providing the necessary proof support, which we modified only in small ways.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
   ~st[BUG FIXES]
 
+  Calls of ~ilc[mbe] in ``safe-mode'' situations ~-[] i.e., during evaluation
+  of ~ilc[defconst], ~ilc[value-triple], and ~ilc[defpkg] forms, and during
+  macroexpansion ~-[] are now guard-checked.  Thus, in these situations both
+  the ~c[:logic] and ~c[:exec] forms will be evaluated, with an error if the
+  results are not equal.  Formerly, only the ~c[:logic] form was evaluated,
+  which was a soundness bug that could be exploited to prove ~c[nil].  For a
+  such a proof and a bit of further explanation, see the example at the top of
+  the comments for ~c[(deflabel note-4-3 ..)] in ACL2 source file ~c[ld.lisp].
+
   Fixed ~ilc[trace$] for arguments that are ~il[stobj] accessors or updaters.
   It also gives an informative error in this case when the accessor or updater
   is a macro (because the introducing ~ilc[defstobj] event specified
   ~c[:inline t]).
+
+  Avoided a potential error that could occur when no user home directory is
+  located.  Our previous solution for Windows simply avoided looking for ACL2
+  customization files (~pl[ACL2-CUSTOMIZATION]) and ~c[acl2-init.lsp] files in
+  a user's home directory.  With this change, we handle such files the same for
+  Windows as for non-Windows systems: we always look for ACL2 customization
+  files (~pl[ACL2-CUSTOMIZATION]) and ~c[acl2-init.lsp] files in a user's home
+  directory, but only if such a directory exists.  Thanks to Hanbing Liu for
+  reporting this issue.
+
+  (GCL only) Fixed a bug that prevented the use of
+  ~ilc[get-output-stream-string$] when the host Lisp is GCL.
+
+  Fixed ~ilc[with-live-state] to work properly for executable
+  counterparts (so-called ``*1*'' functions).
+
+  Fixed a bug in the error message caused by violating the ~il[guard] of a
+  macro call.
+
+  Fixed a bug in an error message that one could get when calling
+  ~ilc[defattach] with argument ~c[:skip-checks t] to attach to a
+  ~c[:]~ilc[program] mode function symbol that was introduced with
+  ~ilc[defun].  (This is indeed an error, but the message was confusing.)
+  Thanks to Robert Krug for bringing this bug to our attention.
+
+  Fixed a bug in the loop-checking done on behalf of ~ilc[defattach], which
+  could miss a loop.  For an example, see the comment about loop-checking in
+  the comments for ~c[(deflabel note-4-3 ..)] in ACL2 source file ~c[ld.lisp].
 
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
@@ -17292,9 +17456,36 @@
   Among the new books is an illustration of ~ilc[defattach],
   ~c[books/misc/defattach-example.lisp].
 
+  Distributed book ~c[books/misc/trace1.lisp] has been deleted.  It had
+  provided slightly more friendly ~il[trace] output for new users, but 
+  distributed book ~c[books/misc/trace-star.lisp] may be better suited for that
+  purpose.
+
+  Statistics on ACL2 code size may be found in distributed file
+  ~c[doc/acl2-code-size.txt].  This file and other information can be found in
+  a new ~il[documentation] topic, ~il[about-acl2].
+
   ~st[EMACS SUPPORT]
 
   ~st[EXPERIMENTAL VERSIONS]
+
+  Among the enchancements for the HONS version (~pl[hons-and-memoization]) are
+  the following.
+  ~bq[]
+  ~ilc[Memoize]d functions may now be traced (~pl[trace$]).  Thanks to Sol
+  Swords for requesting this enhancement.
+
+  ~ilc[Memoize-summary] and ~ilc[clear-memoize-statistics] are now
+  ~c[:]~ilc[logic] mode functions that return ~c[nil].  Thanks to Sol Swords
+  for this enhancement.
+
+  ~ilc[Memoize] is now explicitly illegal for constrained functions.  (Already
+  such memoization was ineffective.)
+
+  A new keyword argument, ~c[:AOKP], controls whether or not to allow
+  memoization to take advantage of attachments; ~pl[memoize] and for relevant
+  background, ~pl[defattach].
+  ~eq[]
 
   ~/~/")
 
@@ -19364,69 +19555,45 @@ The tiny warning signs, <A HREF=\"~s7\"><IMG SRC=\"twarning.gif\"></A>,
 Here is how we recommend you use this documentation.
 <P>
 If you are a newcomer to ACL2, we do <EM>not</EM> recommend that you wander off
-into the full documentation.  Instead start with
-<A HREF=\"~sa\">the tours</A> and perhaps <A
-HREF=\"http://www.cs.utexas.edu/users/moore/publications/demos.html\">the
-demos</A>.<P>
-
-If you are still interested in ACL2, we recommend that you get a copy of
-<A HREF=\"http://www.cs.utexas.edu/users/moore/publications/acl2-books/car/index.html\">Computer-Aided Reasoning: An Approach</A> and read it carefully.  Work
-the exercises with ACL2.  Learn ``The Method.''<P>
-
-Less effective than reading the book and doing the exercises, but
-still useful, is to read selected papers from <A
-HREF=\"http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html\">
-Books and Papers about ACL2 and Its Applications</A>,
-read the documentation topic <A HREF=\"~sh\">the-method</A><A HREF=\"~s7\"><IMG SRC=\"twarning.gif\"></A>, 
-and the <A HREF=\"http://www.cs.utexas.edu/users/moore/publications/hyper-card.html\">Hyper-Card</A>
-and then work
-your way through <A HREF=\"~sb\">the tutorials</A>.<P>
-
-Then, we recommend you
-read selected topics from ``Major Topics'': <UL>
-
-<LI><A HREF=\"~sc\">EVENTS</A>
-<A HREF=\"~s7\"><IMG SRC=\"twarning.gif\"></A>
--- the top-level commands like <CODE>DEFUN</CODE> and <CODE>DEFTHM</CODE>
-
-<LI><A HREF=\"~sd\">PROGRAMMING</A>
-<A HREF=\"~s7\"><IMG SRC=\"twarning.gif\"></A>
--- all the Common Lisp functions ACL2 supports
-
-<LI><A HREF=\"~se\">RULE-CLASSES</A>
-<A HREF=\"~s7\"><IMG SRC=\"twarning.gif\"></A>
--- how you can influence ACL2's behavior with rules,
-
-<LI><A HREF=\"~sf\">BOOKS</A>
-<A HREF=\"~s7\"><IMG SRC=\"twarning.gif\"></A>
--- how to create re-usable databases of rules.
-
-</UL>
-<P>
-Finally, experienced users tend mostly to use the ``Index'' to lookup concepts
+into the full documentation.  Instead start with the
+<A HREF=\"~sb\">ACL2-TUTORIAL</A> documentation topic.
+Experienced users tend mostly to use the ``Index'' to look up concepts
 mentioned in error messages or vaguely remembered from their past experiences
 with ACL2.
 <P>
-<B>Note</B>:  If ACL2 has been installed on your local system, the HTML documentation
-should also be available locally.  You can minimize network traffic by
-browsing your local copy.  Suppose ACL2 was installed on
-<CODE>/usr/jones/acl2/vi-j</CODE>.  Then the local URL for this page is
-<BR><CODE>file:/usr/jones/acl2/vi-j/acl2-sources/doc/HTML/acl2-doc.html</CODE>.<BR>
-Many ACL2 users set a browser bookmark to this file and use their browser to
-access the documentation during everyday use of ACL2.  If you obtain ACL2,
-please encourage users to use the local copy of the documentation rather than
-access it across the Web.
-<P>
 
-<B>Note</B>: The documentation is available in four forms: Postscript (which
-prints as a book over 1800 pages long), HTML, EMACS Texinfo, and ACL2's own
-:DOC commands.  The documentation, in all but the Postscript form, is
-distributed with the source code for the system.  So if you have already
-obtained ACL2, you should look in the <CODE>doc/</CODE> subdirectory of the
-directory upon which ACL2 is installed.  You may obtain the gzipped Postscript
-form of the documentation by clicking <A HREF=
+<B>Note</B>: The documentation is available for reading in a Web
+browser (recommended), in Emacs Info, using the ACL2 <CODE>:DOC</CODE> command,
+or as a printed book (over 1800 pages).  These are available as follows.
+
+<ul>
+
+<li>For web browsing using an HTML version of our documentation, click on <A
+HREF=\"~s1\">Major Topics</A> (here, or above).  Better yet, view a local copy,
+which you can find under your local <CODE>acl2-sources/</CODE> diretory at
+<CODE>doc/HTML/acl2-doc.html</CODE>.</li>
+
+<li>For web browsing using a version of our documentation generated by Jared
+Davis's xdoc utility, visit <CODE><A
+HREF=\"http://www.cs.utexas.edu/users/moore/acl2/~s3/distrib/xdoc/manual/preview.html\">xdoc/manual/preview.html</A></CODE>.
+Better yet, view a local copy of this file found under your
+<CODE>acl2-sources/books/</CODE> directory, if you have certified your distributed
+books.</li>
+
+<li>Those familiar with Emacs Info can read the documentation in that format by
+loading the file <CODE>emacs/emacs-acl2.el</CODE> distributed with ACL2 (under
+the <CODE>acl2-sources</CODE> direcotry), and then evaluating
+<CODE>meta-x acl2-info</CODE>.  Alternatively, within Emacs Info press
+<CODE>g</CODE> and then enter the following path (of course, replacing
+<CODE>PATH_TO_ACL2-SOURCES</CODE> by the path of your <CODE>acl2-sources</CODE>
+directory):<br>
+<CODE>(PATH_TO_ACL2-SOURCES/doc/EMACS/acl2-doc-emacs.info)top</CODE>.</li>
+
+<li>To read a printed copy, obtain a Postscript version <A HREF=
 \"http://www.cs.utexas.edu/users/moore/publications/acl2-book.ps.gz\">here</A>
-(over 2 MB).
+(over 2 MB).</li>
+
+</ul>
 
 <BR><HR><BR>
 <H2><A NAME=\"Tools\">Lemma Libraries and Utilities; and, How to Contribute</A></H2>
@@ -20724,23 +20891,19 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   are two different ways to write the same natural number).  The symbol has
   three characters in its name, the middle one of which is a lower case b.")
 
-#|
-  
-
-  ACL2 !>~b[(app '(a b c) 27)]  ; ~pclick-here[|ACL2 is an Untyped Language|] for an explanation.
-  (A B C . 27)
-
-  ACL2 !>~b[(app 7 27)]   ; ~pclick-here[|Hey Wait!  Is ACL2 Typed or Untyped(Q)|] for an explanation.
-
-  ACL2 Error in TOP-LEVEL:  The guard for the function symbol ENDP, which
-  is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
-  call (ENDP 7).
-
-  ACL2 !>~b[:set-guard-checking nil]  ; ~pclick-here[|Undocumented Topic|] for an explanation.
-
-  ACL2 >~b[(app 7 27)]  ; ~pclick-here[|Undocumented Topic|] for an explanation.
-  27
-|#
+;   ACL2 !>~b[(app '(a b c) 27)]  ; ~pclick-here[|ACL2 is an Untyped Language|] for an explanation.
+;   (A B C . 27)
+; 
+;   ACL2 !>~b[(app 7 27)]   ; ~pclick-here[|Hey Wait!  Is ACL2 Typed or Untyped(Q)|] for an explanation.
+; 
+;   ACL2 Error in TOP-LEVEL:  The guard for the function symbol ENDP, which
+;   is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
+;   call (ENDP 7).
+; 
+;   ACL2 !>~b[:set-guard-checking nil]  ; ~pclick-here[|Undocumented Topic|] for an explanation.
+; 
+;   ACL2 >~b[(app 7 27)]  ; ~pclick-here[|Undocumented Topic|] for an explanation.
+;   27
 
 (deflabel |The Associativity of App|
   :doc
@@ -23011,21 +23174,19 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 ; listing of all the free variables of that body.  After the definitions below,
 ; a macro call (av body) will print out such a list.
 
-#||
-(defun all-vars-untrans (form state)
-  (declare (xargs :mode :program :stobjs state))
-  (mv-let (erp val bindings state)
-    (translate1 form
-                :stobjs-out
-                '((:stobjs-out . :stobjs-out))
-                t 'top-level
-                (w state) state)
-    (declare (ignore erp bindings))
-    (value (remove1-eq 'state (all-vars val)))))
-
-(defmacro av (form)
-  `(all-vars-untrans ',form state))
-||#
+; (defun all-vars-untrans (form state)
+;   (declare (xargs :mode :program :stobjs state))
+;   (mv-let (erp val bindings state)
+;     (translate1 form
+;                 :stobjs-out
+;                 '((:stobjs-out . :stobjs-out))
+;                 t 'top-level
+;                 (w state) state)
+;     (declare (ignore erp bindings))
+;     (value (remove1-eq 'state (all-vars val)))))
+; 
+; (defmacro av (form)
+;   `(all-vars-untrans ',form state))
 
 (defun trans-eval-lst (lst ctx state aok)
   (cond ((endp lst)
@@ -23507,6 +23668,33 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   (declare (ignore exec-filename extra-startup-string))
   nil ; Won't get to here in GCL and perhaps other lisps
   )
+
+(deflabel about-acl2
+  :doc
+  ":Doc-Section about-acl2
+
+  about ACL2~/
+
+  This is ACL2 Version 4.2, copyright (C) 2011 University of Texas at Austin,
+  authored by Matt Kaufmann and J Strother Moore.
+
+  For past versions, see
+  ~url[http://www.cs.utexas.edu/users/moore/acl2/current/other-releases.html].
+
+  For statistics on ACL2 code size, see file ~c[doc/acl2-code-size.txt].
+
+  ~l[documentation] for how to access the user's manual.
+
+  See the home page at ~url[http://www.cs.utexas.edu/users/moore/acl2/] for
+  additional information including tutorials, applications, mailing lists,
+  related publications, libraries, ACL2 workshops and seminars, installation
+  instructions, and acknowledgements.
+
+  See
+  ~url[http://www.cs.utexas.edu/users/moore/acl2/current/installation/misc.html#License-and-Copyright]
+  for license and copyright information.
+
+  ~/~/")
 
 ; We now develop code for without-evisc.
 

@@ -20,9 +20,9 @@
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78701 U.S.A.
 
 (in-package "ACL2")
 
@@ -475,14 +475,6 @@
 
 #-acl2-loop-only
 (defun raw-ev-fncall (fn args latches hard-error-returns-nilp aok)
-
-  (when (eq fn 'return-last)
-
-; Things work out fine for (return-last ... (mv ...)), because the mv returns a
-; list and we just pass that along.
-
-    (return-from raw-ev-fncall
-      (mv nil (car (last args)) latches)))
   (let ((*aokp* aok))
     (the #+acl2-mv-as-values (values t t t)
          #-acl2-mv-as-values t
@@ -502,7 +494,14 @@
                                    ~x0, which should be ~x1, is not."
                                   fn *1*fn))))
                 #+acl2-mv-as-values ; stobjs-out might not be needed otherwise
-                (stobjs-out (stobjs-out fn w))
+                (stobjs-out (if (eq fn 'return-last)
+
+; Things can work out fine if we imagine that return-last returns a single
+; value: in the case of (return-last ... (mv ...)), the mv returns a list and
+; we just pass that along.
+
+                                '(nil)
+                              (stobjs-out fn w)))
                 (val (catch 'raw-ev-fncall
                        (cond ((not (fboundp fn))
                               (er hard 'raw-ev-fncall
@@ -538,7 +537,10 @@
             (throw-raw-ev-fncall-flg
              (mv t (ev-fncall-msg val w) latches))
             (t #-acl2-mv-as-values ; adjust val for the multiple value case
-               (let* ((stobjs-out (stobjs-out fn w))
+               (let* ((stobjs-out ; see comment in earlier stobjs-out binding
+                       (if (eq fn 'return-last)
+                           '(nil)
+                         (stobjs-out fn w)))
                       (val
                        (cond ((null (cdr stobjs-out)) val)
                              (t (cons val (mv-refs (1- (length stobjs-out))))))))
@@ -811,54 +813,52 @@
 ; have a non-trivial CURRENT-ACL2-WORLD setting giving FORMALS and a
 ; BODY to the symbol FOO.
 
-  #|
+;   (ev '(ev '(foo a)
+;            '((a . 1))
+;            '(NIL NIL
+;                  ((ACCUMULATED-TTREE)
+;                   (AXIOMSP)
+;                   (BDDNOTES)
+;                   (CERTIFY-BOOK-FILE)
+;                   (CONNECTED-BOOK-DIRECTORY)
+;                   (CURRENT-ACL2-WORLD
+;                    . ((foo formals . (x)) (foo body . (cons 'dummy-foo x))))
+;                   (CURRENT-PACKAGE . "ACL2")
+;                   (EVISCERATE-HIDE-TERMS)
+;                   (FMT-HARD-RIGHT-MARGIN . 77)
+;                   (FMT-SOFT-RIGHT-MARGIN . 65)
+;                   (GSTACKP)
+;                   (GUARD-CHECKING-ON . T)
+;                   (INFIXP)
+;                   (INHIBIT-OUTPUT-LST SUMMARY)
+;                   (IN-LOCAL-FLG . NIL)
+;                   (LD-LEVEL . 0)
+;                   (LD-REDEFINITION-ACTION)
+;                   (LD-SKIP-PROOFSP)
+;                   (MORE-DOC-MAX-LINES . 45)
+;                   (MORE-DOC-MIN-LINES . 35)
+;                   (MORE-DOC-STATE)
+;                   (PRINT-DOC-START-COLUMN . 15)
+;                   (PROMPT-FUNCTION . DEFAULT-PRINT-PROMPT)
+;                   (PROOF-TREE-CTX)
+;                   (PROOFS-CO
+;                    . ACL2-OUTPUT-CHANNEL::STANDARD-CHARACTER-OUTPUT-0)
+;                   (SKIPPED-PROOFSP)
+;                   (STANDARD-CO
+;                    . ACL2-OUTPUT-CHANNEL::STANDARD-CHARACTER-OUTPUT-0)
+;                   (STANDARD-OI
+;                    . ACL2-OUTPUT-CHANNEL::STANDARD-OBJECT-INPUT-0)
+;                   (TIMER-ALIST)
+;                   (TRIPLE-PRINT-PREFIX . " ")
+;                   (UNDONE-WORLDS-KILL-RING NIL NIL NIL)
+;                   (UNTOUCHABLE-FNS)
+;                   (UNTOUCHABLE-VARS)
+;                   (WINDOW-INTERFACEP)
+;                   (WORMHOLE-NAME))
+;                  NIL NIL 4000000
+;                  NIL NIL 1 NIL NIL NIL NIL NIL NIL)
+;            'nil 'nil 't) nil state nil nil t)
 
-  (ev '(ev '(foo a)
-           '((a . 1))
-           '(NIL NIL
-                 ((ACCUMULATED-TTREE)
-                  (AXIOMSP)
-                  (BDDNOTES)
-                  (CERTIFY-BOOK-FILE)
-                  (CONNECTED-BOOK-DIRECTORY)
-                  (CURRENT-ACL2-WORLD
-                   . ((foo formals . (x)) (foo body . (cons 'dummy-foo x))))
-                  (CURRENT-PACKAGE . "ACL2")
-                  (EVISCERATE-HIDE-TERMS)
-                  (FMT-HARD-RIGHT-MARGIN . 77)
-                  (FMT-SOFT-RIGHT-MARGIN . 65)
-                  (GSTACKP)
-                  (GUARD-CHECKING-ON . T)
-                  (INFIXP)
-                  (INHIBIT-OUTPUT-LST SUMMARY)
-                  (IN-LOCAL-FLG . NIL)
-                  (LD-LEVEL . 0)
-                  (LD-REDEFINITION-ACTION)
-                  (LD-SKIP-PROOFSP)
-                  (MORE-DOC-MAX-LINES . 45)
-                  (MORE-DOC-MIN-LINES . 35)
-                  (MORE-DOC-STATE)
-                  (PRINT-DOC-START-COLUMN . 15)
-                  (PROMPT-FUNCTION . DEFAULT-PRINT-PROMPT)
-                  (PROOF-TREE-CTX)
-                  (PROOFS-CO
-                   . ACL2-OUTPUT-CHANNEL::STANDARD-CHARACTER-OUTPUT-0)
-                  (SKIPPED-PROOFSP)
-                  (STANDARD-CO
-                   . ACL2-OUTPUT-CHANNEL::STANDARD-CHARACTER-OUTPUT-0)
-                  (STANDARD-OI
-                   . ACL2-OUTPUT-CHANNEL::STANDARD-OBJECT-INPUT-0)
-                  (TIMER-ALIST)
-                  (TRIPLE-PRINT-PREFIX . " ")
-                  (UNDONE-WORLDS-KILL-RING NIL NIL NIL)
-                  (UNTOUCHABLE-FNS)
-                  (UNTOUCHABLE-VARS)
-                  (WINDOW-INTERFACEP)
-                  (WORMHOLE-NAME))
-                 NIL NIL 4000000
-                 NIL NIL 1 NIL NIL NIL NIL NIL NIL)
-           'nil 'nil 't) nil state nil nil t)
-  |#
 ; The output of the ev above is (NIL (NIL (DUMMY-FOO . 1) NIL) NIL).
 
 ; The above example can be made slightly more interesting by replacing
@@ -1014,24 +1014,22 @@
 ; big-n untouchable, since without that we have been able to prove nil, as
 ; follows:
 
-#|
- (in-package "ACL2")
- (defun foo () (big-n))
- (defthm bad1 (equal (foo) '(nil)) :rule-classes nil)
- (defthm bad2
-   (equal (big-n) '(nil))
-   :hints (("Goal" :use bad1 :in-theory (disable (foo))))
-   :rule-classes nil)
- (defun bar () 0)
- (defthm bad3
-   (equal (bar) '(nil))
-   :hints (("Goal" :by (:functional-instance bad2 (big-n bar))))
-   :rule-classes nil)
- (defthm bad
-   nil
-   :hints (("Goal" :use bad3))
-   :rule-classes nil)
-|#
+;  (in-package "ACL2")
+;  (defun foo () (big-n))
+;  (defthm bad1 (equal (foo) '(nil)) :rule-classes nil)
+;  (defthm bad2
+;    (equal (big-n) '(nil))
+;    :hints (("Goal" :use bad1 :in-theory (disable (foo))))
+;    :rule-classes nil)
+;  (defun bar () 0)
+;  (defthm bad3
+;    (equal (bar) '(nil))
+;    :hints (("Goal" :by (:functional-instance bad2 (big-n bar))))
+;    :rule-classes nil)
+;  (defthm bad
+;    nil
+;    :hints (("Goal" :use bad3))
+;    :rule-classes nil)
 
 ; We also make decrement-big-n and zp-big-n untouchable, just because we are a
 ; bit paranoid here.
@@ -1230,6 +1228,17 @@
                ,x))
            (& (make-let bindings body))))
         (t (make-let bindings body))))
+
+(defmacro untranslate*-lst (lst iff-flg wrld)
+
+; See untranslate*.
+
+  (declare (xargs :guard (symbolp wrld)))
+  `(untranslate1-lst ,lst
+                     ,iff-flg
+                     (binop-table ,wrld)
+                     (untranslate-preprocess-fn ,wrld)
+                     ,wrld))
 
 (mutual-recursion
 
@@ -1549,8 +1558,26 @@
    (not (eq fn 'mbe1-raw))
    (mv-let
     (er arg2-val latches)
-    (ev-rec arg2 alist w (decrement-big-n big-n) safe-mode gc-off latches
-            hard-error-returns-nilp aok)
+    (let (#-acl2-loop-only (*aokp*
+
+; See the #-acl2-loop-only definition of return-last and the comment just
+; below.  Note that fn is not mbe1-raw, so this binding is legal.
+
+; Unlike the raw Lisp definition of return-last, we see no need to bind
+; *attached-fn-called* here (for the #+hons version), because that would amount
+; to trying to manage the use of memoization with calls of top-level calls of
+; ev-rec on behalf of the trans-eval call under ld-read-eval-print.
+
+                            t))
+      (ev-rec arg2 alist w (decrement-big-n big-n) safe-mode gc-off latches
+              hard-error-returns-nilp
+
+; There is no logical problem with using attachments when evaluating the second
+; argument of return-last, because logically the third argument provides the
+; value(s) of a return-last call.  See related treatment of aokp in the
+; #-acl2-loop-only definition of return-last.
+
+              t))
     (cond (er (mv er arg2-val latches))
           (t (case fn
 
@@ -1723,7 +1750,17 @@
          (ev-rec (fargn form 2) alist
                  w (decrement-big-n big-n) safe-mode gc-off
                  latches hard-error-returns-nilp aok))
-        ((eq (ffn-symb form) 'return-last)
+        ((and (eq (ffn-symb form) 'return-last)
+              (not (and (equal (fargn form 1) ''mbe1-raw)
+
+; We generally avoid running the :exec code for an mbe call.  But in safe-mode,
+; it is critical to run the exec code and check its equality to the logic code
+; (respecting the guard of return-last in the case that the first argument is
+; 'mbe1-raw).  See the comments in note-4-3 for an example showing why it is
+; unsound to avoid this check in safe-mode, and see (defun-*1* return-last ...)
+; for a discussion of why we do not consider the case (not gc-off) here.
+
+                        safe-mode)))
          (let ((fn (and (quotep (fargn form 1))
                         (unquote (fargn form 1)))))
            (cond
@@ -1742,9 +1779,8 @@
              (cond
               ((eq fn 'mbe1-raw)
 
-; We avoid running the exec code, just as we do in the handling of the mbe1-raw
-; case by oneify.
-
+; We avoid running the exec code (see comment above).
+               
                (ev-rec (fargn form 3) ; optimization: avoid exec argument
                        alist w (decrement-big-n big-n) safe-mode gc-off latches
                        hard-error-returns-nilp aok))
@@ -2110,7 +2146,7 @@
 ; fn onto the quoted arg list in the evisceration tuple commented on below.
 
      (cons nil (evisceration-stobj-marks stobjs-in t))
-     (untranslate* (cons fn (kwote-lst args)) nil w)
+     (cons fn (untranslate*-lst (kwote-lst args) nil w))
      3 4 nil (table-alist 'evisc-table w) nil
 
 ; Note that the iprint-alist is nil.  We never do iprinting for guard errors,
@@ -2123,7 +2159,7 @@
      (symbolp empty-iprint-alist)
      (msg
       "The guard for the~#0~[ :program~/~] function call ~x1, which is ~P23, ~
-       is violated by the arguments in the call ~P45.~@6~@7~@8"
+       is violated by the arguments in the call ~P45.~@6~@7~@8~@9"
       (if (programp fn w) 0 1)
       (cons fn (formals fn w))
       guard
@@ -2148,6 +2184,15 @@
       (evisc-tuple nil nil
                    (list (cons *evisceration-mark* *evisceration-mark*))
                    nil)
+      (cond ((and (eq fn 'return-last)
+                  (eq (car args) 'mbe1-raw))
+             (msg "  This offending call is equivalent to the more common ~
+                   form, ~x0."
+                  `(mbe :logic
+                        ,(untranslate* (kwote (caddr args)) nil w)
+                        :exec
+                        ,(untranslate* (kwote (cadr args)) nil w))))
+            (t ""))
       (cond ((eq extra :live-stobj)
 
 ; This case occurs if we attempt to execute the call of a "oneified" function
@@ -3190,10 +3235,11 @@
              (cond
               (erp (er-cmp ctx
                            "In the attempt to macroexpand the form ~x0 ~
-                            evaluation of the guard, ~x1, for ~x2 caused the ~
+                            evaluation of the guard for ~x2 caused the ~
                             following error:~|~%~@1"
                            x
-                           guard-val))
+                           guard-val
+                           (car x)))
               ((null guard-val)
                (er-cmp ctx
                        "In the attempt to macroexpand the form ~x0 the guard, ~
@@ -4246,6 +4292,7 @@
 ;   local
 ;   defdoc
 
+    with-live-state
     ))
 
 ; Historical Note: The following material -- chk-no-duplicate-defuns,
@@ -5567,24 +5614,48 @@
                         "Ill-formed with-local-stobj form, ~x0.  ~
                          See :DOC with-local-stobj."
                         x))
-             ((not (and st
-                        (eq st (stobj-creatorp creator wrld))))
-              (trans-er ctx
-                        "Illegal with-local-stobj form, ~x0.  The first ~
-                         argument must be the name of a stobj other than ~
-                         STATE and the third, if supplied, must be its ~
-                         creator function.  See :DOC with-local-stobj."
-                        x))
              ((eq stobjs-out :stobjs-out)
               (trans-er ctx
                         "Calls of with-local-stobj, such as ~x0, cannot be ~
                          evaluated directly in the top-level loop.  ~
                          See :DOC with-local-stobj and see :DOC top-level."
                         x))
-             (t
+             ((and (eq st 'state)
+                   (eq creator 'create-state)
+                   (member-eq 'create-state
+                              (global-val 'untouchable-fns wrld))
+                   (not (eq (access state-vars state-vars :temp-touchable-fns)
+                            t))
+                   (not (member-eq 'create-state
+                                   (access state-vars state-vars
+                                           :temp-touchable-fns))))
+
+; We provide a courtesy error here, rather than waiting to encounter
+; create-state.
+
+              (trans-er ctx
+                        "Illegal with-local-stobj form, ~x0 (perhaps expanded ~
+                         from a corresponding with-local-state form).  By ~
+                         default, it is illegal to bind state using ~
+                         with-local-stobj because it is generally dangerous ~
+                         and unsound; see :DOC with-local-state, which ~
+                         describes how to get around this restriction and ~
+                         when it may be appropriate to do so."
+                        x))
+             ((and st
+                   (if (eq st 'state)
+                       (eq creator 'create-state)
+                     (eq st (stobj-creatorp creator wrld))))
               (translate11-mv-let mv-let-form stobjs-out bindings
                                   known-stobjs st creator flet-alist ctx wrld
-                                  state-vars)))))
+                                  state-vars))
+             (t
+              (trans-er ctx
+                        "Illegal with-local-stobj form, ~x0.  The first ~
+                         argument must be the name of a stobj and the third, ~
+                         if supplied, must be its creator function.  See :DOC ~
+                         with-local-stobj."
+                        x)))))
    ((and (assoc-eq (car x) *ttag-fns-and-macros*)
          (not (ttag wrld)))
     (trans-er+ x ctx
@@ -6404,25 +6475,24 @@
 ; it was of the form (implies (pred n) (prop n)) where pred has about 1800
 ; conjuncts.  The culprit was the call(s) of all-fnnames in bdd-rules-alist1, I
 ; think.
-#||
-(mutual-recursion
 
-(defun all-fnnames (term)
-  (cond ((variablep term) nil)
-        ((fquotep term) nil)
-        ((flambda-applicationp term)
-         (union-eq (all-fnnames (lambda-body (ffn-symb term)))
-                   (all-fnnames-lst (fargs term)))) 
-        (t
-         (add-to-set-eq (ffn-symb term)
-                        (all-fnnames-lst (fargs term))))))
-
-(defun all-fnnames-lst (lst)
-  (cond ((null lst) nil)
-        (t (union-eq (all-fnnames (car lst))
-                     (all-fnnames-lst (cdr lst))))))
-)
-||#
+; (mutual-recursion
+; 
+; (defun all-fnnames (term)
+;   (cond ((variablep term) nil)
+;         ((fquotep term) nil)
+;         ((flambda-applicationp term)
+;          (union-eq (all-fnnames (lambda-body (ffn-symb term)))
+;                    (all-fnnames-lst (fargs term)))) 
+;         (t
+;          (add-to-set-eq (ffn-symb term)
+;                         (all-fnnames-lst (fargs term))))))
+; 
+; (defun all-fnnames-lst (lst)
+;   (cond ((null lst) nil)
+;         (t (union-eq (all-fnnames (car lst))
+;                      (all-fnnames-lst (cdr lst))))))
+; )
 
 (defun all-fnnames1 (flg x acc)
 
@@ -6546,33 +6616,29 @@
                (t val)))
         (t (replace-stobjs1 stobjs-out val))))
 
-#|
-
-; This is from an old attempt to make the read-eval-print
-; loop handle free variables as references to globals.  We
-; abandoned this attempt because the LAMBDA abstraction handling
-; introduced by mv-let was forcing globals to be evaluated before they
-; had been set, making it confusing which value of a global was to be
-; used.  We have left in trans-eval the code that used this, within
-; comments.  Note that such an attempt now would need to change
+; The following is from an old attempt to make the read-eval-print loop handle
+; free variables as references to globals.  We abandoned this attempt because
+; the LAMBDA abstraction handling introduced by mv-let was forcing globals to
+; be evaluated before they had been set, making it confusing which value of a
+; global was to be used.  We have left in trans-eval the code that used this,
+; within comments.  Note that such an attempt now would need to change
 ; 'untouchables to 'untouchable-vars.
 
-(defun build-alist (vars state)
-  (declare (xargs :guard (true-listp vars)))
-  (cond ((null vars) (value nil))
-        ((eq (car vars) 'state)
-         (build-alist (cdr vars) state))
-        ((member (car vars) (global-val 'untouchables (w state)))
-         (er soft 'trans-eval
-             "The global variable ~x0 is on untouchables."
-             (car vars)))
-        (t (er-let* ((alist (build-alist (cdr vars) state)))
-                    (value (cons (cons (car vars)
-                                       (list 'get-global
-                                             (list 'quote (car vars)) 'state))
-                                 alist))))))
-
-|#
+; (defun build-alist (vars state)
+;   (declare (xargs :guard (true-listp vars)))
+;   (cond ((null vars) (value nil))
+;         ((eq (car vars) 'state)
+;          (build-alist (cdr vars) state))
+;         ((member (car vars) (global-val 'untouchables (w state)))
+;          (er soft 'trans-eval
+;              "The global variable ~x0 is on untouchables."
+;              (car vars)))
+;         (t (er-let* ((alist (build-alist (cdr vars) state)))
+;                     (value (cons (cons (car vars)
+;                                        (list 'get-global
+;                                              (list 'quote (car vars)) 'state))
+;                                  alist))))))
+; 
 
 (defun non-stobjps (vars known-stobjs w)
   (cond ((endp vars) nil)

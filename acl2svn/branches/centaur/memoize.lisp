@@ -21,9 +21,9 @@
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78701 U.S.A.
 
 ; memoize.lisp -- Logical definitions for memoization functions, only
 ; to be included in the experimental HONS version of ACL2.
@@ -480,13 +480,14 @@
             memoize
             unmemoize
             memoize-on
-            memoize-off)
+            memoize-off
+            memsum)
           *hons-primitive-fns*))
 
 (defconst *mht-default-size* 60)
 
 (defun memoize-form (fn condition condition-p condition-fn hints otf-flg inline
-                        trace commutative forget memo-table-init-size)
+                        trace commutative forget memo-table-init-size aokp)
   (declare (xargs :guard t))
   (cond
    ((and condition-fn (null condition-p))
@@ -499,7 +500,8 @@
                          (cons :forget ,forget)
                          (cons :memo-table-init-size
                                ,(or memo-table-init-size
-                                    *mht-default-size*))))
+                                    *mht-default-size*))
+                         (cons :aokp ,aokp)))
             (value-triple (deref-macro-name
                            ,fn
                            (macro-aliases (w state))))))
@@ -527,7 +529,8 @@
              (trace ,trace)
              (commutative ,commutative)
              (forget ,forget)
-             (memo-table-init-size ,memo-table-init-size))
+             (memo-table-init-size ,memo-table-init-size)
+             (aokp ,aokp))
         (cond ((not (and
                      (symbolp fn)
                      (not (eq t formals))
@@ -589,7 +592,8 @@
                                (cons :forget ',forget)
                                (cons :memo-table-init-size
                                      (or ,memo-table-init-size
-                                         *mht-default-size*))))
+                                         *mht-default-size*))
+                               (cons :aokp ',aokp)))
                   (value-triple ',fn)))))))
    (t `(progn (table memoize-table
                      (deref-macro-name ,fn (macro-aliases world))
@@ -600,7 +604,8 @@
                            (cons :forget ,forget)
                            (cons :memo-table-init-size
                               (or ,memo-table-init-size
-                                    *mht-default-size*))))
+                                    *mht-default-size*))
+                           (cons :aokp ',aokp)))
               (value-triple (deref-macro-name
                              ,fn
                              (macro-aliases (w state))))))))
@@ -614,6 +619,7 @@
                       commutative
                       forget
                       memo-table-init-size
+                      aokp
                       (verbose 't))
 
 ; WARNING: If you add a new argument here, consider making corresponding
@@ -645,7 +651,8 @@
                                       ;   a call of the given function
   (memoize 'foo :inline nil)          ; do not inline the definition
                                       ;   of foo
-  (memoize 'foo :recursive nil)       ; as above, i.e. :inline nil~/
+  (memoize 'foo :recursive nil)       ; as above, i.e. :inline nil
+  (memoize 'foo :aokp t)              ; attachments OK for stored results~/
 
   General Form:
   (memoize fn                         ; memoizes fn and returns fn
@@ -660,6 +667,7 @@
            :commutative  t/lemma-name ; optional (default nil)
            :forget       t/nil        ; optional (default nil)
            :memo-table-init-size size ; optional (default *mht-default-size*)
+           :aokp         t/nil        ; optional (default nil)
            :verbose      t/nil        ; optional (default t)
            )
   ~ev[]
@@ -780,6 +788,23 @@
   If ~c[:memo-table-init-size] is supplied, then it should be a positive
   integer specifying the initial size of an associated hash table.
 
+  Argument ~c[:aokp] is relevant only when attachments are used; ~pl[defattach]
+  for background on attachments.  When ~c[:aokp] is ~c[nil], the default,
+  computed values are not stored when an attachment was used, or even when an
+  attachment may have been used because a function was called that had been
+  memoized using ~c[:aokp t].  Otherwise, computed values are always stored,
+  but saved values are not used except when attachments are allowed.  To
+  summarize:
+  ~bf[]
+    aokp=nil (default): ``Pure'', i.e., values do not depend on attachments
+    - Fetch: always legal
+    - Store: only store resulting value when attachments were not used
+
+    aokp=t: ``Impure'', i.e., values may depend on attachments
+    - Fetch: only legal when attachments are allowed (e.g., not during proofs)
+    - Store: always legal
+  ~ef[]
+
   If ~c[:verbose] is supplied, it should either be ~c[nil], which will inhibit
   proof, event, and summary output (~pl[with-output]), or else ~c[t] (the
   default), which does not inhibit output.  If the output baffles you, try
@@ -797,7 +822,8 @@
   (declare (xargs :guard t)
            (ignorable condition-p condition condition-fn hints otf-flg inline
                       inline-supplied-p recursive recursive-supplied-p
-                      trace commutative forget memo-table-init-size verbose))
+                      trace commutative forget memo-table-init-size aokp
+                      verbose))
   #-acl2-loop-only
   `(progn (when (eql *ld-level* 0)
 
@@ -854,10 +880,11 @@
                                ',trace
                                (kwote commutative)
                                ',forget
-                               ',memo-table-init-size)))))
+                               ',memo-table-init-size
+                               ',aokp)))))
            (t (memoize-form fn condition condition-p condition-fn
                             hints otf-flg inline trace
-                            commutative forget memo-table-init-size)))))
+                            commutative forget memo-table-init-size aokp)))))
     (cond (verbose form)
           (t `(with-output
                :off (summary prove event)
@@ -971,19 +998,17 @@
 ; the first argument deleted.  Informal remark: the alist
 ; returned is a hons when the initial ANS is not an atom.
 
-#|| Comment about the last clause above.  Or really? 
-Counterexamples?
-
-mbu> stp
-? (honsp (hons-shrink-alist '((a . b) (a . b2)) (hons-acons 1 2 3)))
-NIL
-
-mbu> stp
-? (honsp (hons-shrink-alist '((a . b) (a . b2)) nil))
-NIL
-? 
-
-||#
+; Comment about the last clause above.  Or really? 
+; Counterexamples?
+; 
+; mbu> stp
+; ? (honsp (hons-shrink-alist '((a . b) (a . b2)) (hons-acons 1 2 3)))
+; NIL
+; 
+; mbu> stp
+; ? (honsp (hons-shrink-alist '((a . b) (a . b2)) nil))
+; NIL
+; ? 
 
 (defconst *untroublesome-characters*
 

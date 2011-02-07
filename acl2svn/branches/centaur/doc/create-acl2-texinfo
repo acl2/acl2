@@ -31,6 +31,9 @@ chmod 775 doc/EMACS
 echo '(value :q)' > doc/workxxx.texinfo
 echo '(lp)' >> doc/workxxx.texinfo
 echo '(certify-book "doc/write-acl2-texinfo")' >> doc/workxxx.texinfo
+# Note that we do not support ACL2_DOC_UNDOCUMENTED_FILE=t here.  We
+# looked into it a bit (January 2011) and it seemed awkward to provide
+# that support, unlike the case of HTML.
 echo '(write-texinfo-file :dir-string "doc/EMACS/" :file "acl2-doc-emacs" :tex-only-flg nil :non-lucid-flg t)' >> doc/workxxx.texinfo
 echo ':q' >> doc/workxxx.texinfo
 

@@ -20,9 +20,9 @@
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78701 U.S.A.
 
 ; This file, axioms.lisp, serves two purposes.  First, it describes
 ; the theory of ACL2 by enumerating the axioms and definitions.
@@ -709,118 +709,115 @@
 ; those cases.  We use local include-books below in order to avoid some of
 ; those catches by avoiding the use of FOO:: in wit1.lisp and wit2.lisp.
 
-#|
-;;; file top.lisp
-
-  (in-package "ACL2")
-
-  (include-book "wit1")
-  (include-book "wit2")
-
-  ; The idea:
-  ; (wit1) = (wit2) by symbol-equality
-  ; But by evaluation (see wit1-prop and wit2-prop in the included books):
-  ;   (symbol-package-name (intern-in-package-of-symbol "B" (wit1))) = "FOO"
-  ;   (symbol-package-name (intern-in-package-of-symbol "B" (wit2))) = "ACL2"
-
-  (defthm bug
-    nil
-    :hints (("Goal" :use (wit1-prop
-                          wit2-prop
-                          (:instance symbol-equality
-                                     (s1 (wit1))
-                                     (s2 (wit2))))))
-    :rule-classes nil)
-
-;;; file wit1.lisp
-
-  (in-package "ACL2")
-
-  (local (include-book "sub1"))
-
-  (encapsulate
-   ((wit1 () t))
-   (local (defun wit1 () (sub1)))
-   (local (in-theory (disable (wit1))))
-   (defthm wit1-prop
-     (and (symbolp (wit1))
-          (equal (symbol-name (wit1)) "A")
-          (equal (symbol-package-name (wit1)) "FOO")
-          (equal (symbol-package-name
-                  (intern-in-package-of-symbol "B" (wit1)))
-                 "FOO"))
-     :rule-classes nil))
-
-;;; file sub1.lisp
-
-  (in-package "ACL2")
-
-  ; Portcullis:
-  ; (defpkg "FOO" nil)
-
-  (encapsulate
-   ((sub1 () t))
-   (local (defun sub1 () 'foo::a))
-   (defthm sub1-prop
-     (and (symbolp (sub1))
-          (equal (symbol-name (sub1)) "A")
-          (equal (symbol-package-name (sub1)) "FOO")
-          (equal (symbol-package-name
-                  (intern-in-package-of-symbol "B" (sub1)))
-                 "FOO"))))
-
-;;; file wit2.lisp
-
-  (in-package "ACL2")
-
-  (local (include-book "sub2"))
-
-  (encapsulate
-   ((wit2 () t))
-   (local (defun wit2 () (sub2)))
-   (local (in-theory (disable (wit2))))
-   (defthm wit2-prop
-     (and (symbolp (wit2))
-          (equal (symbol-name (wit2)) "A")
-          (equal (symbol-package-name (wit2)) "FOO")
-          (equal (symbol-package-name
-                  (intern-in-package-of-symbol "B" (wit2)))
-                 "ACL2"))
-     :rule-classes nil))
-
-;;; file sub2.lisp
-
-  (in-package "ACL2")
-
-  ; Portcullis:
-  ; (defpkg "FOO" '(b))
-
-  (encapsulate
-   ((sub2 () t))
-   (local (defun sub2 () 'foo::a))
-   (defthm sub2-prop
-     (and (symbolp (sub2))
-          (equal (symbol-name (sub2)) "A")
-          (equal (symbol-package-name (sub2)) "FOO")
-          (equal (symbol-package-name
-                  (intern-in-package-of-symbol "B" (sub2)))
-                 "ACL2"))))
-
-;;; file sub1.acl2 (portcullis for sub1.lisp)
-
-  (value :q)
-  (lp)
-  (defpkg "FOO" nil)
-  (certify-book "sub1" 1)
-
-;;; file sub2.acl2 (portcullis for sub2.lisp)
-
-  (value :q)
-  (lp)
-  (defpkg "FOO" '(b))
-  (certify-book "sub2" 1)
-
-|#
+; ;;; file top.lisp
+; 
+;   (in-package "ACL2")
+; 
+;   (include-book "wit1")
+;   (include-book "wit2")
+; 
+;   ; The idea:
+;   ; (wit1) = (wit2) by symbol-equality
+;   ; But by evaluation (see wit1-prop and wit2-prop in the included books):
+;   ;   (symbol-package-name (intern-in-package-of-symbol "B" (wit1))) = "FOO"
+;   ;   (symbol-package-name (intern-in-package-of-symbol "B" (wit2))) = "ACL2"
+; 
+;   (defthm bug
+;     nil
+;     :hints (("Goal" :use (wit1-prop
+;                           wit2-prop
+;                           (:instance symbol-equality
+;                                      (s1 (wit1))
+;                                      (s2 (wit2))))))
+;     :rule-classes nil)
+; 
+; ;;; file wit1.lisp
+; 
+;   (in-package "ACL2")
+; 
+;   (local (include-book "sub1"))
+; 
+;   (encapsulate
+;    ((wit1 () t))
+;    (local (defun wit1 () (sub1)))
+;    (local (in-theory (disable (wit1))))
+;    (defthm wit1-prop
+;      (and (symbolp (wit1))
+;           (equal (symbol-name (wit1)) "A")
+;           (equal (symbol-package-name (wit1)) "FOO")
+;           (equal (symbol-package-name
+;                   (intern-in-package-of-symbol "B" (wit1)))
+;                  "FOO"))
+;      :rule-classes nil))
+; 
+; ;;; file sub1.lisp
+; 
+;   (in-package "ACL2")
+; 
+;   ; Portcullis:
+;   ; (defpkg "FOO" nil)
+; 
+;   (encapsulate
+;    ((sub1 () t))
+;    (local (defun sub1 () 'foo::a))
+;    (defthm sub1-prop
+;      (and (symbolp (sub1))
+;           (equal (symbol-name (sub1)) "A")
+;           (equal (symbol-package-name (sub1)) "FOO")
+;           (equal (symbol-package-name
+;                   (intern-in-package-of-symbol "B" (sub1)))
+;                  "FOO"))))
+; 
+; ;;; file wit2.lisp
+; 
+;   (in-package "ACL2")
+; 
+;   (local (include-book "sub2"))
+; 
+;   (encapsulate
+;    ((wit2 () t))
+;    (local (defun wit2 () (sub2)))
+;    (local (in-theory (disable (wit2))))
+;    (defthm wit2-prop
+;      (and (symbolp (wit2))
+;           (equal (symbol-name (wit2)) "A")
+;           (equal (symbol-package-name (wit2)) "FOO")
+;           (equal (symbol-package-name
+;                   (intern-in-package-of-symbol "B" (wit2)))
+;                  "ACL2"))
+;      :rule-classes nil))
+; 
+; ;;; file sub2.lisp
+; 
+;   (in-package "ACL2")
+; 
+;   ; Portcullis:
+;   ; (defpkg "FOO" '(b))
+; 
+;   (encapsulate
+;    ((sub2 () t))
+;    (local (defun sub2 () 'foo::a))
+;    (defthm sub2-prop
+;      (and (symbolp (sub2))
+;           (equal (symbol-name (sub2)) "A")
+;           (equal (symbol-package-name (sub2)) "FOO")
+;           (equal (symbol-package-name
+;                   (intern-in-package-of-symbol "B" (sub2)))
+;                  "ACL2"))))
+; 
+; ;;; file sub1.acl2 (portcullis for sub1.lisp)
+; 
+;   (value :q)
+;   (lp)
+;   (defpkg "FOO" nil)
+;   (certify-book "sub1" 1)
+; 
+; ;;; file sub2.acl2 (portcullis for sub2.lisp)
+; 
+;   (value :q)
+;   (lp)
+;   (defpkg "FOO" '(b))
+;   (certify-book "sub2" 1)
 
 ; The key to disallowing this unfortunate exploitation of defpkg axioms is to
 ; maintain an invariant, which we call "the package invariant on logical
@@ -2771,14 +2768,12 @@
 ; at this point it seems premature to claim any kind of understanding
 ; of how to integrate such rules with appropriate linear rules.
 
-#||
-(defthm acl2-count-consp
-  (implies (consp x)
-           (equal (acl2-count x)
-                  (+ 1
-                     (acl2-count (car x))
-                     (acl2-count (cdr x))))))
-||#
+; (defthm acl2-count-consp
+;   (implies (consp x)
+;            (equal (acl2-count x)
+;                   (+ 1
+;                      (acl2-count (car x))
+;                      (acl2-count (cdr x))))))
 
 (defun cond-clausesp (clauses)
   (declare (xargs :guard t))
@@ -3280,43 +3275,37 @@
 ; Because our test forms below are a little more elaborate, we will do
 ; our tests on a list of length 74000:
 
-#|
-(defvar test-lst
-  (loop for i from 1 to 74000 collect (cons i i)))
-|#
+; (defvar test-lst
+;   (loop for i from 1 to 74000 collect (cons i i)))
 
 ; Just for the record, how long does it take to do strip-cars 30 times on
 ; this test-lst?  Answer: 6.190 seconds.
 
-#|
-(proclaim-form
- (defun test1 (n)
-   (loop for i from 1 to n do (strip-cars test-lst))))
-
-(compile 'test1)
-
-(time (test1 30))
-|#
+; (proclaim-form
+;  (defun test1 (n)
+;    (loop for i from 1 to n do (strip-cars test-lst))))
+; 
+; (compile 'test1)
+; 
+; (time (test1 30))
 
 ; Now the obvious tail recursive version of strip-cars is:
 
-#|
-(proclaim-form
- (defun strip-cars2 (x a)
-   (if (endp x)
-       (reverse a)
-     (strip-cars2 (cdr x) (cons (car (car x)) a)))))
-
-(compile 'strip-cars2)
-
-(proclaim-form
- (defun test2 (n)
-   (loop for i from 1 to n do (strip-cars2 test-lst))))
-
-(compile 'test2)
-
-(time (test2 30))
-|#
+; (proclaim-form
+;  (defun strip-cars2 (x a)
+;    (if (endp x)
+;        (reverse a)
+;      (strip-cars2 (cdr x) (cons (car (car x)) a)))))
+; 
+; (compile 'strip-cars2)
+; 
+; (proclaim-form
+;  (defun test2 (n)
+;    (loop for i from 1 to n do (strip-cars2 test-lst))))
+; 
+; (compile 'test2)
+; 
+; (time (test2 30))
 
 ; This function is actually faster than strip-cars: 5.530 seconds!
 ; That is surprising because this function does TWICE as many conses,
@@ -3330,23 +3319,21 @@
 ; we have just consed it up.  So here is a revised function that only
 ; does as many conses as strip-cars:
 
-#|
-(proclaim-form
- (defun strip-cars3 (x a)
-   (if (endp x)
-       (nreverse a)   ;;; Note destructive reverse!
-     (strip-cars3 (cdr x) (cons (car (car x)) a)))))
-
-(compile 'strip-cars3)
-
-(proclaim-form
- (defun test3 (n)
-   (loop for i from 1 to n do (strip-cars3 test-lst))))
-
-(compile 'test3)
-
-(time (test3 30))
-|#
+; (proclaim-form
+;  (defun strip-cars3 (x a)
+;    (if (endp x)
+;        (nreverse a)   ;;; Note destructive reverse!
+;      (strip-cars3 (cdr x) (cons (car (car x)) a)))))
+; 
+; (compile 'strip-cars3)
+; 
+; (proclaim-form
+;  (defun test3 (n)
+;    (loop for i from 1 to n do (strip-cars3 test-lst))))
+; 
+; (compile 'test3)
+; 
+; (time (test3 30))
 
 ; This function takes 2.490 seconds.
 
@@ -3993,27 +3980,31 @@
 #+acl2-loop-only
 (defun return-last (fn eager-arg last-arg)
 
-; Return-last is the one "function" in ACL2 that has no fixed output
-; signature.  Rather, (return-last expr1 expr2) inherits its stobjs-out from
-; expr2.  Because of this, we make it illegal to call stobjs-out on the symbol
-; return-last.
+; Return-last is the one "function" in ACL2 that has no fixed output signature.
+; Rather, (return-last expr1 expr2) inherits its stobjs-out from expr2.
+; Because of this, we make it illegal to call stobjs-out on the symbol
+; return-last.  We think of expr1 as being evaluated eagerly because even in
+; the raw Lisp implementation of return-last, that argument is always evaluated
+; first just as with a function call.  By contrast, if fn is a macro then it
+; can manipulate last-arg arbitrarily before corresponding evaluation occurs.
+; In many applications of return-last, eager-arg will be nil; for others, such
+; as with-prover-time-limit, eager-arg will be used to control the evaluation
+; of (some version of) last-arg.
 
 ; The following little example provides a small check on our handling of
 ; return-last, both via ev-rec (for evaluating top-level forms) and via more
 ; direct function evaluation (either *1* functions or their raw Lisp
 ; counterparts).
 
-#||
- (defun foo (x)
-   (time$ (mbe :logic (prog2$ (cw "**LOGIC~%") x)
-               :exec (prog2$ (cw "**EXEC~%") x))))
- (defun bar (x) (foo x))
- (foo 3) ; logic
- (bar 3) ; logic
- (verify-guards foo)
- (foo 3) ; exec
- (bar 3) ; exec
-||#
+;  (defun foo (x)
+;    (time$ (mbe :logic (prog2$ (cw "**LOGIC~%") x)
+;                :exec (prog2$ (cw "**EXEC~%") x))))
+;  (defun bar (x) (foo x))
+;  (foo 3) ; logic
+;  (bar 3) ; logic
+;  (verify-guards foo)
+;  (foo 3) ; exec
+;  (bar 3) ; exec
 
   ":Doc-Section Programming
 
@@ -4088,13 +4079,25 @@
   ? [RAW LISP] (macroexpand-1 '(RETURN-LAST 'PROGN
                                              (CW \"Some CW printing...~~%\")
                                              (+ 3 4)))
-  (PROGN (CW \"Some CW printing...~~%\") (+ 3 4))
+  (PROGN (LET ((*AOKP* T)) (CW \"SOME CW PRINTING...~~%\")) (+ 3 4))
   T
   ? [RAW LISP] 
   ~ev[]
   Thus, the original ~c[prog2$] call generates a corresponding call of
   ~c[progn] in raw Lisp, which in turn causes evaluation of each argument and
   returns whatever is returned by evaluation of the last (second) argument.
+
+  (Remark for those who use ~ilc[defattach].  The binding of ~c[*aokp*] to
+  ~c[t] is always included for the second argument as shown except when the
+  first argument is of the form ~c[(QUOTE M)] where ~c[M] is a macro, or (less
+  important) when the first argument is a symbol or a cons whose car is
+  ~c[QUOTE].  This binding allows ACL2 to use attachments in the second
+  argument of ~c[return-last] (hence, in the first argument of ~ilc[prog2$]),
+  even in contexts such as proofs in which attachments are normally not
+  allowed.  Those who use the experimental HONS version of ACL2
+  (~pl[hons-and-memoization]) will see an additional binding in the above
+  single-step macroexpansion, which allows the storing of memoized results even
+  when that would otherwise be prevented because of the use of attachments.)
 
   In general, a form ~c[(return-last (quote F) X Y)] macroexpands to
   ~c[(F X Y)], where ~c[F] is defined in raw Lisp to return its last argument.
@@ -4356,15 +4359,59 @@
   in raw Lisp and especially when you install it as a key of
   ~ilc[return-last-table], either directly or (more likely) using
   ~c[defmacro-last].  In particular, be sure that you are defining a macro of
-  two arguments that always returns the value of its last argument, even if
-  that last argument evaluates to a multiple value.  The following would, for
-  example, be wrong, especially in certain Lisps (including CCL and SBCL).
+  two arguments that always returns the value of its last argument, returning
+  the complete multiple value if that last argument evaluates to a multiple
+  value.
+
+  The following is correct, and illustrates care taken to return multiple
+  values.
+  ~bv[]
+  :q
+  (defmacro my-time1-raw (val form)
+    (declare (ignore val))
+    `(let  ((start-time (get-internal-run-time))
+            (result (multiple-value-list ,form))
+            (end-time (get-internal-run-time)))
+       (format t \"Total time: ~~s~~%\"
+               (float (/ (- end-time start-time)
+                         internal-time-units-per-second)))
+       (values-list result)))
+  (lp)
+  (defttag t)
+  (defmacro-last my-time1)
+  (defmacro my-time (form)
+    `(my-time1 nil ,form))
+  ~ev[]
+  Then for example:  
+  ~bv[]
+  ACL2 !>(my-time (equal (make-list 1000000) (make-list 1000000)))
+  Total time: 0.12
+  T
+  ACL2 !>
+  ~ev[]
+  But if instead we provide the following more naive implementation, of the
+  above raw Lisp macro, the above evaluation can produce an error, for example
+  if the host Lisp is CCL.
+  ~bv[]
+  (defmacro my-time1-raw (val form)
+      (declare (ignore val))
+      `(let  ((start-time (get-internal-run-time))
+              (result ,form)
+              (end-time (get-internal-run-time)))
+         (format t \"Total time: ~~s~~%\"
+                 (float (/ (- end-time start-time)
+                           internal-time-units-per-second)))
+         result)) ; WRONG -- need multiple values returned!
+  ~ev[]
+  
+  Here is a second, similar example.  This time we'll start with the error; can
+  you spot it?
   ~bv[]
   (defttag t)
   (progn!
    (set-raw-mode t)
    (defmacro foo-raw (x y)
-     `(prog1 ;; wrong!
+     `(prog1
           ,y
         (cw \"Message showing argument 1: ~~x0~~%\" ,x))))
   (defmacro-last foo)
@@ -4389,7 +4436,9 @@
   (SET-DEBUGGER-ENABLE T)
   ACL2 !>
   ~ev[]
-  Better would be:
+  Here is a corrected version of the above macro.  The point here is that
+  ~c[prog1] returns a single value, while ~c[our-multiple-value-prog1] returns
+  all the values that are returned by its first argument.
   ~bv[]
   (progn!
    (set-raw-mode t)
@@ -4418,12 +4467,35 @@
 
 #-acl2-loop-only
 (defmacro return-last (qfn arg2 arg3)
-  (let ((fn (and (consp qfn)
-                 (eq (car qfn) 'quote)
-                 (consp (cdr qfn))
-                 (symbolp (cadr qfn))
-                 (null (cddr qfn))
-                 (cadr qfn))))
+  (let* ((fn (and (consp qfn)
+                  (eq (car qfn) 'quote)
+                  (consp (cdr qfn))
+                  (symbolp (cadr qfn))
+                  (null (cddr qfn))
+                  (cadr qfn)))
+         (arg2
+
+; There is no logical problem with using attachments when evaluating the second
+; argument of return-last, because logically the third argument provides the
+; value(s) of a return-last call -- the exception being the evaluation of the
+; :exec argument of an mbe call (or, equivalent evaluation by way of mbe1,
+; etc.).  We not only bind *aokp* to t, but we also bind *attached-fn-called*
+; so that no changes to this variable will prevent the storing of memoization
+; results.
+
+; See also the related treatment of aokp in ev-rec-return-last.
+
+          (cond
+           ((or (eq fn 'mbe1-raw) ; good test, though subsumed by the next line
+                (and fn (macro-function fn))
+                (symbolp arg2)      ; no point in doing extra bindings below
+                (and (consp arg2)
+                     (eq (car arg2) ; no point in doing extra bindings below
+                         'quote)))
+            arg2)
+           (t `(let ((*aokp* t)
+                     #+hons (*attached-fn-called* t))
+                 ,arg2)))))
     (cond ((and fn (fboundp fn))
 
 ; Translation for evaluation requires that if the first argument is a quoted
@@ -6387,21 +6459,19 @@
   :rule-classes ((:type-prescription
                   :typed-term (* x x))))
 
-#|
-(add-schema Induction Schema
-            (and (implies (not (integerp x)) (p x))
-                 (p 0)
-                 (implies (and (integerp x)
-                               (< 0 x)
-                               (p (- x 1)))
-                          (p x))
-                 (implies (and (integerp x)
-                               (< x 0)
-                               (p (+ x 1)))
-                          (p x)))
-            (p x))
-
-|#
+; (add-schema Induction Schema
+;             (and (implies (not (integerp x)) (p x))
+;                  (p 0)
+;                  (implies (and (integerp x)
+;                                (< 0 x)
+;                                (p (- x 1)))
+;                           (p x))
+;                  (implies (and (integerp x)
+;                                (< x 0)
+;                                (p (+ x 1)))
+;                           (p x)))
+;             (p x))
+; 
 
 (defaxiom Integer-0
   (integerp 0)
@@ -6428,32 +6498,30 @@
            (equal n 1))
   :rule-classes nil)
 
-#|
-
-the following predicates are disjoint:
-  (((acl2-numberp x)
-    (complex-rationalp x)
-    ((rationalp x)
-     ((integerp x) (< 0 x) (equal x 0) (< x 0))
-     ((not (integerp x)) (< 0 x) (< x 0))))
-   ((consp x) (proper-consp x) (improper-consp x))
-   ((symbolp x) (equal x nil) (equal x T) (not (or (equal x T)
-                                                   (equal x NIL))))
-   (stringp x)
-   (characterp x)
-   (other-kinds-of-objects))
-
-
-; For each of the primitives we have the axiom that when their guards
-; are unhappy, the result is given by apply.  This is what permits us
-; to replace unguarded terms by apply's.  E.g.,
-
-(defaxiom +-guard
-  (implies (or (not (rationalp x))
-               (not (rationalp y)))
-           (equal (+ x y)
-                  (apply '+ (list x y)))))
-|#
+; 
+; the following predicates are disjoint:
+;   (((acl2-numberp x)
+;     (complex-rationalp x)
+;     ((rationalp x)
+;      ((integerp x) (< 0 x) (equal x 0) (< x 0))
+;      ((not (integerp x)) (< 0 x) (< x 0))))
+;    ((consp x) (proper-consp x) (improper-consp x))
+;    ((symbolp x) (equal x nil) (equal x T) (not (or (equal x T)
+;                                                    (equal x NIL))))
+;    (stringp x)
+;    (characterp x)
+;    (other-kinds-of-objects))
+; 
+; 
+; ; For each of the primitives we have the axiom that when their guards
+; ; are unhappy, the result is given by apply.  This is what permits us
+; ; to replace unguarded terms by apply's.  E.g.,
+; 
+; (defaxiom +-guard
+;   (implies (or (not (rationalp x))
+;                (not (rationalp y)))
+;            (equal (+ x y)
+;                   (apply '+ (list x y)))))
 
 (defaxiom car-cdr-elim
   (implies (consp x)
@@ -6469,15 +6537,13 @@ the following predicates are disjoint:
          (and (equal x1 x2)
               (equal y1 y2))))
 
-#|
-Induction Schema:   (and (implies (not (consp x)) (p x))
-                         (implies (and (consp x) (p (car x)) (p (cdr x)))
-                                  (p x)))
-                    ----------------------------------------------
-                    (p x)
-
-
-|#
+; Induction Schema:   (and (implies (not (consp x)) (p x))
+;                          (implies (and (consp x) (p (car x)) (p (cdr x)))
+;                                   (p x)))
+;                     ----------------------------------------------
+;                     (p x)
+; 
+; 
 
 (defaxiom booleanp-characterp
   (booleanp (characterp x))
@@ -6770,30 +6836,30 @@ Induction Schema:   (and (implies (not (consp x)) (p x))
   (implies (character-listp x)
            (equal (coerce (coerce x 'string) 'list) x)))
 
-#| A "historical document" regarding standard characters:
-To: Kaufmann
-Subject: over strong axiom
-FCC: ~moore/old-mail
---text follows this line--
-Axioms.lisp currently contains
-
-(defaxiom coerce-inverse-2
-  (implies (stringp x)
-           (equal (coerce (coerce x 'list) 'string) x)))
-
-But the guard for coerce (when the second argument is 'string) requires the first
-argument to be a standard-char-listp.  Thus, unless we know that (coerce x 'list)
-returns a standard-char-listp when (stringp x), the guard on the outer coerce is
-violated.
-
-If we are really serious that ACL2 strings may contain nonstandard chars, then
-this axiom is too strong.  I will leave this note in axioms.lisp and just go
-on.  But when the guard question is settled I would like to return to this and
-make explicit our occasional implicit assumption that strings are composed of
-standard chars.
-
-J
-|#
+; A "historical document" regarding standard characters:
+; 
+; To: Kaufmann
+; Subject: over strong axiom
+; FCC: ~moore/old-mail
+; --text follows this line--
+; Axioms.lisp currently contains
+; 
+; (defaxiom coerce-inverse-2
+;   (implies (stringp x)
+;            (equal (coerce (coerce x 'list) 'string) x)))
+; 
+; But the guard for coerce (when the second argument is 'string) requires the first
+; argument to be a standard-char-listp.  Thus, unless we know that (coerce x 'list)
+; returns a standard-char-listp when (stringp x), the guard on the outer coerce is
+; violated.
+; 
+; If we are really serious that ACL2 strings may contain nonstandard chars, then
+; this axiom is too strong.  I will leave this note in axioms.lisp and just go
+; on.  But when the guard question is settled I would like to return to this and
+; make explicit our occasional implicit assumption that strings are composed of
+; standard chars.
+; 
+; J
 
 (defaxiom coerce-inverse-2
   (implies (stringp x)
@@ -6801,11 +6867,9 @@ J
 
 ; Once upon a time, Moore (working alone) added the following axiom.
 
-#|
-(defaxiom standard-char-listp-coerce
-  (implies (stringp str)
-           (standard-char-listp (coerce str 'list))))
-|#
+; (defaxiom standard-char-listp-coerce
+;   (implies (stringp str)
+;            (standard-char-listp (coerce str 'list))))
 
 (defaxiom character-listp-coerce
   (character-listp (coerce str 'list))
@@ -6825,20 +6889,18 @@ J
 
 (in-theory (disable standard-char-listp standard-char-p))
 
-#|
-(defthm standard-char-listp-coerce-forward-chaining
-
-; If (stringp str) is in the context, we want to make a "note" that
-; (coerce str 'list) is a standard-char-listp in case this fact is
-; needed during later backchaining.  We see no need to forward chain
-; from (standard-char-listp (coerce str 'list)), however; the rewrite
-; rule generated here should suffice for relieving any such hypothesis.
-
-  (implies (stringp str)
-           (standard-char-listp (coerce str 'list)))
-  :rule-classes ((:forward-chaining :trigger-terms
-                                    ((coerce str 'list)))))
-|#
+; (defthm standard-char-listp-coerce-forward-chaining
+; 
+; ; If (stringp str) is in the context, we want to make a "note" that
+; ; (coerce str 'list) is a standard-char-listp in case this fact is
+; ; needed during later backchaining.  We see no need to forward chain
+; ; from (standard-char-listp (coerce str 'list)), however; the rewrite
+; ; rule generated here should suffice for relieving any such hypothesis.
+; 
+;   (implies (stringp str)
+;            (standard-char-listp (coerce str 'list)))
+;   :rule-classes ((:forward-chaining :trigger-terms
+;                                     ((coerce str 'list)))))
 
 #+acl2-loop-only
 (defun string (x)
@@ -8298,6 +8360,12 @@ J
 
 (defvar *attached-fn-called*)
 
+#+hons
+(defmacro update-attached-fn-called (fn)
+  `(when (and (boundp '*attached-fn-called*)
+              (null *attached-fn-called*))
+     (setq *attached-fn-called* ,fn)))
+
 (defmacro throw-or-attach (fn formals alt-formals &optional *1*-p)
 
 ; If alt-formals is non-nil, then it is to be used in place of formals when
@@ -8310,9 +8378,7 @@ J
                    ,at-fn
                    (aokp))
               #+hons
-              (when (and (boundp '*attached-fn-called*)
-                         (null *attached-fn-called*))
-                (setq *attached-fn-called* ',fn))
+              (update-attached-fn-called ',fn)
               (funcall ,(if *1*-p
                             `(*1*-symbol ,at-fn)
                           at-fn)
@@ -8591,30 +8657,28 @@ J
 ; LETs in support of stobjs, discovered that we caused hard errors on
 ; some guard verifications.  Here is a simple example distilled from theirs:
 
-#|
- (defun foo (i)
-   (declare (xargs :guard (integerp i)))
-   (+ 1
-      (car
-       (let ((j i))
-         (declare (type integer j))
-         (cons j nil)))))
-|#
+;  (defun foo (i)
+;    (declare (xargs :guard (integerp i)))
+;    (+ 1
+;       (car
+;        (let ((j i))
+;          (declare (type integer j))
+;          (cons j nil)))))
 
 ; This function caused a hard error during guard verification.  The
 ; troublesome guard conjecture is:
-#|
- (IMPLIES
-  (INTEGERP I)
-  (ACL2-NUMBERP
-   (CAR (LET ((J I))
-          (PROG2$ (IF (INTEGERP J)
-                      T
-                      (ILLEGAL 'VERIFY-GUARDS
-                               "Some TYPE declaration is violated."
-                               NIL))
-                  (LIST J))))))
-|#
+
+;  (IMPLIES
+;   (INTEGERP I)
+;   (ACL2-NUMBERP
+;    (CAR (LET ((J I))
+;           (PROG2$ (IF (INTEGERP J)
+;                       T
+;                       (ILLEGAL 'VERIFY-GUARDS
+;                                "Some TYPE declaration is violated."
+;                                NIL))
+;                   (LIST J))))))
+
 ; The problem was that we eval'd the ILLEGAL during the course of trying
 ; to prove this.  A similar challenge is the above mentioned
 ; (thm (equal (car (cons (hard-error 'ctx "Test" nil) y)) nil))
@@ -9612,6 +9676,9 @@ J
   To view the documentation in a web browser, open a browser to file
   ~c[doc/HTML/acl2-doc.html] under your ACL2 source directory, or just go to
   the ACL2 home page at ~url[http://www.cs.utexas.edu/users/moore/acl2/].
+  Alternatively, follow a link on the ACL2 home page to the new ``xdoc''
+  version of the manual, which can be found locally after running a regression
+  by pointing your web browser at file ~c[books/xdoc/manual/preview.html].
 
   To use Emacs Info (inside Emacs), first load distributed file
   ~c[emacs/emacs-acl2.el] (perhaps inside your ~c[.emacs] file) and then
@@ -17571,23 +17638,19 @@ J
 ; That tracking proved inadequate, however.  Consider the following books "top"
 ; and "sub".
 
-#|
- ; book "top"
- (in-package "ACL2")
- (encapsulate
-  ()
-  (local (include-book "sub"))
-  (defthm bad nil
-    :rule-classes nil))
-|#
+;  ; book "top"
+;  (in-package "ACL2")
+;  (encapsulate
+;   ()
+;   (local (include-book "sub"))
+;   (defthm bad nil
+;     :rule-classes nil))
 
-#|
- ; book "sub"
- (in-package "ACL2")
- (skip-proofs
-  (defthm bad nil
-    :rule-classes nil))
-|#
+;  ; book "sub"
+;  (in-package "ACL2")
+;  (skip-proofs
+;   (defthm bad nil
+;     :rule-classes nil))
 
 ; In Version_2.5, if you certify these books in the initial logical world and
 ; then (include-book "top"), then you will not see a "Skip-proofs" warning when
@@ -17652,19 +17715,15 @@ J
 ; Version_2.6.  Suppose that foo.lisp and bar.lisp both have this unique
 ; form after (in-package "ACL2"):
 
-#||
-(defthm bad nil
-  :rule-classes nil)
-||#
+; (defthm bad nil
+;   :rule-classes nil)
 
 ; Now suppose we do this in a fresh session:
 
-#||
-(encapsulate ()
-             (local (include-book "foo"))
-             (defthm bad nil
-               :rule-classes nil))
-||#
+; (encapsulate ()
+;              (local (include-book "foo"))
+;              (defthm bad nil
+;                :rule-classes nil))
 
 ; Then (certify-book "bar" 1) succeeded in Version_2.5, and in subsequent
 ; sessions, if we evaluated (include-book "bar"), that succeeded without
@@ -18408,8 +18467,8 @@ J
 
 ; See the Essay on Defattach.
 
-; Developer note: A substantial test suite is stored at UT CS, file
-; /projects/acl2/devel-misc/patches/defattach/test.lisp.
+; Developer note.  A substantial test suite is stored at UT CS, file:
+; /projects/acl2/devel-misc/books-devel/examples/defattach/test.lisp
 
   ":Doc-Section Events
 
@@ -18598,7 +18657,14 @@ J
   not use attachments during evaluation, are for macroexpansion, evaluation of
   ~ilc[defconst] and ~ilc[defpkg] terms, evaluation during ~ilc[table] events,
   and especially evaluation of ground terms (terms without free variables)
-  during proofs.  Regarding the last of these, consider the following example.
+  during proofs.  However, even for these cases we allow the use of attachments
+  in the first argument of ~ilc[prog2$] and, more generally, the next-to-last
+  (i.e., second) argument of ~ilc[return-last] when its first argument is not
+  of the form ~c['m] for some macro, ~c[m].
+
+  To see why attachments are disallowed during evaluation of ground terms
+  during proofs (except for the ~ilc[prog2$] and ~ilc[return-last] cases
+  mentioned above), consider the following example.
   ~bv[]
   (defstub f (x) t)
   (defun g (x) (+ 3 x))
@@ -19059,79 +19125,76 @@ J
 ; fgetprop-stats comment in fgetprop for a description of how to use
 ; this code.
 
-#|
-(defvar fgetprop-stats nil)
-
-(defvar analyzed-fgetprop-stats nil)
-
-(compile
- (defun update-fgetprop-stats (sym key)
-   (let* ((sym-entry (assoc sym fgetprop-stats :test #'eq))
-          (key-entry (assoc key (cdr sym-entry) :test #'eq)))
-     (cond (key-entry (setf (cdr key-entry) (1+ (cdr key-entry))))
-           (sym-entry (setf (cdr sym-entry) (cons (cons key 1) (cdr sym-entry))))
-           (t (setq fgetprop-stats
-                    (cons (cons sym (list (cons key 1))) fgetprop-stats)))))))
-
-(compile
- (defun analyze-fgetprop-stats nil
-   (format t "Properties accessed and access counts:~%")
-   (loop
-    for x in (sort (let ((prop-alist nil))
-                     (loop
-                      for pair in fgetprop-stats
-                      do
-                      (loop
-                       for x in (cdr pair)
-                       do
-                       (let ((temp (assoc (car x) prop-alist :test #'eq)))
-                         (cond (temp (setf (cdr temp) (+ (cdr temp) (cdr x))))
-                               (t (setq prop-alist
-                                        (cons (cons (car x) (cdr x))
-                                              prop-alist)))))))
-                     prop-alist)
-                   #'(lambda (x y) (> (cdr x) (cdr y))))
-    do
-    (format t "~A~50T~9D~%" (car x) (cdr x)))
-   (terpri t)
-   (setq analyzed-fgetprop-stats
-         (sort
-          (loop
-           for pair in fgetprop-stats
-           collect
-           (let* ((other-cutoff 1)
-                  (others
-                   (loop
-                    for x in (cdr pair) when (<= (cdr x) other-cutoff)
-                    sum (cdr x))))
-             (list* (car pair)
-                    (loop for x in (cdr pair) sum (cdr x))
-                    (let ((temp
-                           (sort (loop
-                                  for x in (cdr pair)
-                                  when
-                                  (or (= others 0)
-                                      (= others other-cutoff) ;i.e., just 1 other
-                                      (> (cdr x) other-cutoff))
-                                  collect x)
-                                 #'(lambda (x y)(> (cdr x) (cdr y))))))
-                      (if (> others other-cutoff)
-                          (append temp
-                                  (list (cons "all other" others)))
-                        temp)))))
-          #'(lambda (x y) (> (cadr x) (cadr y)))))
-   (format t "Analyzed fgetprop-stats~%")
-   (loop
-    for trip in analyzed-fgetprop-stats
-    do
-    (format t "~S~45T~9D~%" (car trip) (cadr trip))
-    (loop
-     for pair in (cddr trip)
-     do
-     (format t " ~A~50T~9D~%" (car pair) (cdr pair))))
-   t))
-
-|# ; |
+; (defvar fgetprop-stats nil)
+; 
+; (defvar analyzed-fgetprop-stats nil)
+; 
+; (compile
+;  (defun update-fgetprop-stats (sym key)
+;    (let* ((sym-entry (assoc sym fgetprop-stats :test #'eq))
+;           (key-entry (assoc key (cdr sym-entry) :test #'eq)))
+;      (cond (key-entry (setf (cdr key-entry) (1+ (cdr key-entry))))
+;            (sym-entry (setf (cdr sym-entry) (cons (cons key 1) (cdr sym-entry))))
+;            (t (setq fgetprop-stats
+;                     (cons (cons sym (list (cons key 1))) fgetprop-stats)))))))
+; 
+; (compile
+;  (defun analyze-fgetprop-stats nil
+;    (format t "Properties accessed and access counts:~%")
+;    (loop
+;     for x in (sort (let ((prop-alist nil))
+;                      (loop
+;                       for pair in fgetprop-stats
+;                       do
+;                       (loop
+;                        for x in (cdr pair)
+;                        do
+;                        (let ((temp (assoc (car x) prop-alist :test #'eq)))
+;                          (cond (temp (setf (cdr temp) (+ (cdr temp) (cdr x))))
+;                                (t (setq prop-alist
+;                                         (cons (cons (car x) (cdr x))
+;                                               prop-alist)))))))
+;                      prop-alist)
+;                    #'(lambda (x y) (> (cdr x) (cdr y))))
+;     do
+;     (format t "~A~50T~9D~%" (car x) (cdr x)))
+;    (terpri t)
+;    (setq analyzed-fgetprop-stats
+;          (sort
+;           (loop
+;            for pair in fgetprop-stats
+;            collect
+;            (let* ((other-cutoff 1)
+;                   (others
+;                    (loop
+;                     for x in (cdr pair) when (<= (cdr x) other-cutoff)
+;                     sum (cdr x))))
+;              (list* (car pair)
+;                     (loop for x in (cdr pair) sum (cdr x))
+;                     (let ((temp
+;                            (sort (loop
+;                                   for x in (cdr pair)
+;                                   when
+;                                   (or (= others 0)
+;                                       (= others other-cutoff) ;i.e., just 1 other
+;                                       (> (cdr x) other-cutoff))
+;                                   collect x)
+;                                  #'(lambda (x y)(> (cdr x) (cdr y))))))
+;                       (if (> others other-cutoff)
+;                           (append temp
+;                                   (list (cons "all other" others)))
+;                         temp)))))
+;           #'(lambda (x y) (> (cadr x) (cadr y)))))
+;    (format t "Analyzed fgetprop-stats~%")
+;    (loop
+;     for trip in analyzed-fgetprop-stats
+;     do
+;     (format t "~S~45T~9D~%" (car trip) (cadr trip))
+;     (loop
+;      for pair in (cddr trip)
+;      do
+;      (format t " ~A~50T~9D~%" (car pair) (cdr pair))))
+;    t))
 
 ; Note:  In versions before V2.2 the following defvar was in
 ; interface-raw.lisp.  But it is used earlier than that in the
@@ -21175,9 +21238,7 @@ J
                     *maximum-positive-32-bit-integer*)))
   :rule-classes ((:linear :match-free :all)))
 
-#|
-(in-theory (disable array1p array2p))
-|#
+; (in-theory (disable array1p array2p))
 
 (defun header (name l)
   (declare (xargs :guard (or (array1p name l) (array2p name l))))
@@ -22556,6 +22617,77 @@ J
               ,@(mv-set-mvs (cdr bindings) 1)
               ,(caar bindings))))))
 
+(defmacro mv? (&rest l)
+
+; Why not simply extend mv and mv-let to handle single values?  The reason is
+; that there seem to be problems with defining (mv x) to be (list x) and other
+; problems with defining (mv x) to be x.
+
+; To see potential problems with defining (mv x) = (list x), consider this
+; form:
+
+; (mv-let (x)
+;         (f y)
+;         (g x y))
+
+; We presumably want it to expand as follows.
+
+; (let ((x (f y)))
+;   (g x y))
+
+; But suppose (f y) is defined to be (mv (h y)).  Then the above mv-let would
+; instead have to expand to something like this:
+
+; (let ((x (mv-nth 0 (f y)))) ; or, car instead of (mv-nth 0 ...)
+;   (g x y))
+
+; So in order to extend mv and mv-let to handle single values, we'd need to
+; look carefully at the rather subtle mv and mv-nth code.  It seems quite
+; possible that some show-stopping reason would emerge why this approach can't
+; work out, or if it does then it might be easy to make mistakes in the
+; implementation.  Note that we'd need to consider both the cases of
+; #+acl2-mv-as-values and #acl2-mv-as-values.
+
+; In a way it seems more natural anyhow that (mv x) is just x, since we don't
+; wrap single-valued returns into a list.  But that would ruin our simple story
+; that mv is logically just list, instead giving us:
+
+; (mv x) = x
+; (mv x1 x2 ...) = (list x1 x2 ...)
+
+; Thus it seems safest, and potentially less confusing to users, to introduce
+; mv? and mv?-let to be used in cases that single-valued returns are to be
+; allowed (presumably in generated code).
+
+  ":Doc-Section ACL2::Programming
+
+  returning a single value~/
+
+  ~c[Mv?] is designed to work with ~c[mv?-let], generalizing how ~ilc[mv] works
+  with ~ilc[mv-let] by allowing the binding of a single variable.  For example,
+  the following form is legal.
+  ~bv[]
+  (mv?-let (y)
+           (mv? (f x))
+           (declare (type integer y))
+           (g x y z))
+  ~ev[]
+  The expression above is equivalent to the following expression, because
+  ~c[(mv? form)] expands to ~c[form] for any expression, ~c[form].
+  ~bv[]
+  (let ((y (f x)))
+    (declare (type integer y))
+    (g x y z))
+  ~ev[]
+
+  Logically, ~c[(mv? x)] is the same as ~c[x], while ~c[(mv? v1 v2 ...)] is the
+  same as ~c[(list v1 v2 ...)].  Also ~pl[mv] and ~pl[mv?-let].~/~/"
+
+  (declare (xargs :guard l))
+  (cond ((null (cdr l))
+         (car l))
+        (t `(mv ,@l))))
+
 (defmacro mv-let (&rest rst)
 
 ; Warning: If the final logical form of a translated mv-let is
@@ -22708,6 +22840,61 @@ J
                               ans))
                     (nreverse ans)))
             ,@ (cddr rst)))))
+
+(defmacro mv?-let (vars form &rest rst)
+
+; See the comment in mv? for reasons why we do not simply extend mv-let to
+; handle single values.
+
+  ":Doc-Section ACL2::Programming
+
+  calling possibly multi-valued ACL2 functions~/
+
+  ~c[Mv?-let] is a macro that extends the macro ~ilc[mv-let] by allowing a
+  single variable to be bound.  Thus, the syntax is the same as that of
+  ~ilc[mv-let] except that ~c[mv?-let] is permitted to bind a single variable
+  to a form that produces a single value.  The macros ~c[mv?-let} and ~ilc[mv?]
+  are provided to facilitate the writing of macros that traffic in expressions
+  that could return one or more (multiple) values.
+
+  For example, the form
+  ~bv[]
+  (mv?-let (y)
+           (f x)
+           (declare (type integer y))
+           (g x y z))
+  ~ev[]
+  is equivalent to the following form.
+  ~bv[]
+  (let ((y (f x)))
+    (declare (type integer y))
+    (g x y z))
+  ~ev[]~/
+
+  Calls of ~c[mv?-let] and of ~ilc[mv-let] are equivalent when the first
+  argument contains at least two variables; ~pl[mv-let] for documentation.  In
+  the case of binding a single variable, the general form is
+  ~bv[]
+  (mv?-let (var)
+           term
+           (declare ...) ... (declare ...)
+           body)           
+  ~ev[]
+  and this is equivalent to the following form (~pl[let]).
+  ~bv[]
+  (let ((var term))
+    (declare ...) ... (declare ...)
+    body)
+  ~ev[]
+
+  Also ~pl[mv?].~/"
+
+  (declare (xargs :guard (and (true-listp vars)
+                              vars)))
+  (cond ((null (cdr vars))
+         `(let ((,(car vars) ,form))
+            ,@rst))
+        (t `(mv-let ,vars ,form ,@rst))))
 
 #+acl2-loop-only
 (defun mv-list (input-arity x)
@@ -23470,7 +23657,7 @@ J
     HONS-SHRINK-ALIST HONS-EQUAL-LITE CLEAR-HASH-TABLES NUMBER-SUBTREES
     FAST-ALIST-SUMMARY HONS-ACONS! CLEAR-MEMOIZE-TABLES HONS-COPY HONS-ACONS
     CLEAR-MEMOIZE-TABLE FAST-ALIST-FREE HONS-EQUAL HONS-RESIZE-FN HONS-GET HONS
-    HONS-SHRINK-ALIST! memoize-summary clear-memoize-statistics
+    HONS-SHRINK-ALIST! MEMOIZE-SUMMARY CLEAR-MEMOIZE-STATISTICS
 
   ))
 
@@ -24403,6 +24590,8 @@ J
 (defun coerce-object-to-state (x)
   (declare (xargs :guard t))
   x)
+
+(verify-termination-boot-strap create-state)
 
 
 ;                              GLOBALS
@@ -25694,6 +25883,9 @@ J
   ((E F))\")
   ACL2 !>
   ~ev[]
+  Also ~pl[printing-to-strings] for a discussion of formatted printing
+  functions such as ~c[fmt-to-string] that do not take a channel or ~ilc[state]
+  argument and return a string.
 
   By default, symbols are printed in upper case when vertical bars are
   not required, as specified by Common Lisp.  ~l[set-print-case] for how
@@ -26133,13 +26325,12 @@ J
 (defmacro print-case ()
   '(f-get-global 'print-case state))
 
-#||
-(defmacro acl2-print-case (&optional (st 'state))
-  (declare (ignore st))
-  `(er soft 'acl2-print-case
-       "Macro ~x0 has been replaced by macro ~x1."
-       'acl2-print-case 'print-case))
-||#
+; (defmacro acl2-print-case (&optional (st 'state))
+;   (declare (ignore st))
+;   `(er soft 'acl2-print-case
+;        "Macro ~x0 has been replaced by macro ~x1."
+;        'acl2-print-case 'print-case))
+
 (defmacro acl2-print-case (&optional (st 'state))
   `(print-case ,st))
 
@@ -26192,26 +26383,24 @@ J
 (defmacro print-base (&optional (st 'state))
   `(f-get-global 'print-base ,st))
 
-#||
-(defmacro acl2-print-base (&optional (st 'state))
-  (declare (ignore st))
-  `(er soft 'acl2-print-base
-       "Macro ~x0 has been replaced by macro ~x1."
-       'acl2-print-base 'print-base))
-||#
+; (defmacro acl2-print-base (&optional (st 'state))
+;   (declare (ignore st))
+;   `(er soft 'acl2-print-base
+;        "Macro ~x0 has been replaced by macro ~x1."
+;        'acl2-print-base 'print-base))
+
 (defmacro acl2-print-base (&optional (st 'state))
   `(print-base ,st))
 
 (defmacro print-radix (&optional (st 'state))
   `(not (int= (f-get-global 'print-base ,st) 10)))
 
-#||
-(defmacro acl2-print-radix (&optional (st 'state))
-  (declare (ignore st))
-  `(er soft 'acl2-print-radix
-       "Macro ~x0 has been replaced by macro ~x1."
-       'acl2-print-radix 'print-radix))
-||#
+; (defmacro acl2-print-radix (&optional (st 'state))
+;   (declare (ignore st))
+;   `(er soft 'acl2-print-radix
+;        "Macro ~x0 has been replaced by macro ~x1."
+;        'acl2-print-radix 'print-radix))
+
 (defmacro acl2-print-radix (&optional (st 'state))
   `(print-radix ,st))
 
@@ -27635,7 +27824,17 @@ J
                               (wormhole-er 'get-output-stream-string$-fn
                                            (list channel))
                               state-state))
+                         #-(and gcl (not cltl2))
                          ((not (typep stream 'string-stream))
+                          (mv t nil state-state))
+                         #+(and gcl (not cltl2))
+                         ((or (not (typep stream 'stream))
+                              (si::stream-name stream)) ; stream to a file
+
+; As of this writing, we do not have confirmation from the gcl-devel list that
+; si::stream-name really does return nil if and only if the stream is to a
+; string rather than to a file.  But we believe that to be the case.
+
                           (mv t nil state-state))
                          (t (mv nil
                                 (get-output-stream-string stream)
@@ -27671,7 +27870,8 @@ J
      (mv-let (erp s state)
              (get-output-stream-string$-fn chan state)
              (cond (erp (er soft ctx
-                            "The channel ~x0 is not associated with output."
+                            "Symbol ~x0 is not associated with a string ~
+                             output channel."
                             chan))
                    (t ,(cond (close-p
                               '(pprogn (close-output-channel chan state)
@@ -28298,89 +28498,86 @@ J
 
 ; Below are examples.
 
-#||
- (defconst *a*
-   '(
- ; Treat symbol package and name separately.  Numeric strings need escaping.
-     :|3| :|3G| :|33| |ACL2-PC|::|3| ; pkg is numeric except single letters
- ;   :|3| :|3G| :|33|  ACL2-PC::|3|
-
- ; None of the following strings gives a potential number in base 10: "no letter
- ; that is adjacent to another letter may ever be treated as a number marker".
- ; All these strings represent numbers in base 16.
-     |ABC| |3BC| |+3BC| |-3BC|
- ;16 |ABC| |3BC| |+3BC| |-3BC|
- ;10  ABC   3BC   +3BC   -3BC
-
- ; Allegro gets this wrong, but ACL2 gets it right: potential number!
-     |_345|
- ;   |_345| ; SBCL 1.0.19, Lispworks 4.4.6, CMU CL 19e, CLISP 2.41, GCL 2.6.7
- ;    _345  ; [wrong] Allegro 8.0, CCL 1.2
-
- ; Also not potential numbers, even in base 16: the first because of the decimal
- ; point (for base 16), the second because of the underscore, and the third
- ; because of consecutive letters that are not digits even in base 16.
-     |A/B+.C| |3A3GG3|
- ;    A/B+.C   3A3GG3
-
- ; Potential number because letters are not consecutive.    
-     |3A3G3|
- ;   |3A3G3|
-
- ; Not potential numbers: must begin with a digit, sign, decimal point, or
- ; extension character, and cannot end with a sign.
-     |/12| |12+| |12C-|
- ;    /12   12+   12C-
-
- ; Must contain at least one digit.
-     |+A|
- ;16 |+A|
- ;10  +A
-     ))
-
- (defconst *b*
-
- ; This example is from CLtL2 with the following explanation given there:
-
- ; As examples, the following tokens are potential numbers, but they are not
- ; actually numbers as defined below, and so are reserved tokens. (They do
- ; indicate some interesting possibilities for future extensions.)  So all
- ; should have verticle bars.
-
-   '(|1B5000| ; oddly, GCL skips the vertical bars for this first one
-     |777777Q| |1.7J| |-3/4+6.7J| |12/25/83| |27^19| |3^4/5| |6//7| |3.1.2.6|
-     |^-43^| |3.141_592_653_589_793_238_4| |-3.7+2.6I-6.17J+19.6K|))
-
- (defconst *c*
-
- ; This example is from CLtL2 with the following explanation given there:
-
- ; The following tokens are not potential numbers but are always treated as
- ; symbols:
-
-   '(|/| |/5| |+| |1+| |1-| |FOO+| |AB.CD| |_| |^| |^/-|))
-
- (defconst *d*
-
- ; From CLtL2, we see that we need |..| for each of the following in base 16 but
- ; for none of them in base 10.
-
- ; This example is from CLtL2 with the following explanation given there:
-
- ; The following tokens are potential numbers if the value of *read-base* is 16
- ; (an abnormal situation), but they are always treated as symbols if the value
- ; of *read-base* is 10 (the usual value):
-
-   '(|BAD-FACE| |25-DEC-83| |A/B| |FAD_CAFE| |F^|))
-
-; Now try check the answers:
-
- (set-print-base 16)
- (list *a* *b* *c* *d*)
- (set-print-base 10)
- (list *a* *b* *c* *d*)
-
-||#
+;  (defconst *a*
+;    '(
+;  ; Treat symbol package and name separately.  Numeric strings need escaping.
+;      :|3| :|3G| :|33| |ACL2-PC|::|3| ; pkg is numeric except single letters
+;  ;   :|3| :|3G| :|33|  ACL2-PC::|3|
+; 
+;  ; None of the following strings gives a potential number in base 10: "no letter
+;  ; that is adjacent to another letter may ever be treated as a number marker".
+;  ; All these strings represent numbers in base 16.
+;      |ABC| |3BC| |+3BC| |-3BC|
+;  ;16 |ABC| |3BC| |+3BC| |-3BC|
+;  ;10  ABC   3BC   +3BC   -3BC
+; 
+;  ; Allegro gets this wrong, but ACL2 gets it right: potential number!
+;      |_345|
+;  ;   |_345| ; SBCL 1.0.19, Lispworks 4.4.6, CMU CL 19e, CLISP 2.41, GCL 2.6.7
+;  ;    _345  ; [wrong] Allegro 8.0, CCL 1.2
+; 
+;  ; Also not potential numbers, even in base 16: the first because of the decimal
+;  ; point (for base 16), the second because of the underscore, and the third
+;  ; because of consecutive letters that are not digits even in base 16.
+;      |A/B+.C| |3A3GG3|
+;  ;    A/B+.C   3A3GG3
+; 
+;  ; Potential number because letters are not consecutive.    
+;      |3A3G3|
+;  ;   |3A3G3|
+; 
+;  ; Not potential numbers: must begin with a digit, sign, decimal point, or
+;  ; extension character, and cannot end with a sign.
+;      |/12| |12+| |12C-|
+;  ;    /12   12+   12C-
+; 
+;  ; Must contain at least one digit.
+;      |+A|
+;  ;16 |+A|
+;  ;10  +A
+;      ))
+; 
+;  (defconst *b*
+; 
+;  ; This example is from CLtL2 with the following explanation given there:
+; 
+;  ; As examples, the following tokens are potential numbers, but they are not
+;  ; actually numbers as defined below, and so are reserved tokens. (They do
+;  ; indicate some interesting possibilities for future extensions.)  So all
+;  ; should have verticle bars.
+; 
+;    '(|1B5000| ; oddly, GCL skips the vertical bars for this first one
+;      |777777Q| |1.7J| |-3/4+6.7J| |12/25/83| |27^19| |3^4/5| |6//7| |3.1.2.6|
+;      |^-43^| |3.141_592_653_589_793_238_4| |-3.7+2.6I-6.17J+19.6K|))
+; 
+;  (defconst *c*
+; 
+;  ; This example is from CLtL2 with the following explanation given there:
+; 
+;  ; The following tokens are not potential numbers but are always treated as
+;  ; symbols:
+; 
+;    '(|/| |/5| |+| |1+| |1-| |FOO+| |AB.CD| |_| |^| |^/-|))
+; 
+;  (defconst *d*
+; 
+;  ; From CLtL2, we see that we need |..| for each of the following in base 16 but
+;  ; for none of them in base 10.
+; 
+;  ; This example is from CLtL2 with the following explanation given there:
+; 
+;  ; The following tokens are potential numbers if the value of *read-base* is 16
+;  ; (an abnormal situation), but they are always treated as symbols if the value
+;  ; of *read-base* is 10 (the usual value):
+; 
+;    '(|BAD-FACE| |25-DEC-83| |A/B| |FAD_CAFE| |F^|))
+; 
+; ; Now try check the answers:
+; 
+;  (set-print-base 16)
+;  (list *a* *b* *c* *d*)
+;  (set-print-base 10)
+;  (list *a* *b* *c* *d*)
 
   (declare (type string x))
 
@@ -29615,99 +29812,96 @@ J
                 (rationalp y))
            (rationalp (+ x y))))
 
-#|
-;??? The rewrite rule above is troubling.  I have spent some time thinking
-about how to eliminate it.  Here is an essay on the subject.
-
-Rationalp-+, above, is needed in the guard proof for pop-timer, below.  Why?
-
-Why do we need to make this a :rewrite rule?  Why can't type-set establish
-(rationalp (+ x y)) whenever this rule would have applied?  The reason,
-obviously, is that the hypotheses can't be established by type-set and must be
-established by rewrite.  Since type-set doesn't call rewrite, we have to
-program enough of type-set in the rewriter to get the rewriter to act like
-type-set.  That is what this lemma does (and that is why it is offensive to
-us).
-
-Why can't type-set establish the (rationalp x) and (rationalp y) hypotheses
-above?  Here is the :rewrite rule we need:
-
-(defthm rational-listp-implies-rationalp-car
- (implies (and (rational-listp x)
-               x)
-          (rationalp (car x))))
-
-Note that this lemma is "type-like" in the conclusion but not (very) type-like
-in the hypotheses.  I mean, (rational-listp x) is not a "type recognizer"
-(except in a good type system, and we haven't got one of those!).  The presence
-of this lemma in axioms.lisp should have alerted us to the possible need
-later for a lemma duplicating type-like reasoning in the rewriter.
-
-Here is a simple example of a theorem we can prove using rationalp-+ that we
-cannot prove (directly) without it.  I introduce an undefined function so that
-I can state the theorem in a way that does not allow a car-cdr-elim.
-
- (defstub foo (x) t)
-
- (thm (implies (and (rational-listp (foo x)) (foo x))
-               (rationalp (+ 1 (car (foo x)))))
-;    :hints (("Goal" :in-theory (disable rationalp-+)))
-     )
-
-If rationalp-+ is enabled, this proof succeeds, because rewrite does our type
-reasoning for us (via rationalp-+) and uses rational-listp-implies-
-rationalp-car to get the hypothesis that (car (foo x)) is rational.  If
-rationalp-+ is disabled, the proof fails because type-set doesn't know that
-(car (foo x)) is rational.
-
-In the actual application (in pop-timer below) no rational-listp hypothesis
-is present.  Here is the actual goal
-
-(IMPLIES
-     (AND (CONSP (CDDR (ASSOC-EQ NAME
-                                 (CDR (ASSOC 'TIMER-ALIST (NTH 2 STATE))))))
-          (CONSP (CDR (ASSOC-EQ NAME
-                                (CDR (ASSOC 'TIMER-ALIST (NTH 2 STATE))))))
-          (STATE-P1 STATE)
-          (SYMBOLP NAME)
-          FLG)
-     (RATIONALP (+ (CADR (ASSOC-EQ NAME
-                                   (CDR (ASSOC 'TIMER-ALIST (NTH 2 STATE)))))
-                   (CADDR (ASSOC-EQ NAME
-                                    (CDR (ASSOC 'TIMER-ALIST
-                                                (NTH 2 STATE))))))))
-
-If we insist on deleting rationalp-+ as a :rewrite rule we are obliged to
-add certain other rules as either :type-prescriptions or :forward-chaining
-rules.  Going the :type-prescription route we could add
-
-(defthm rational-listp-implies-rationalp-car
-  (implies (and (rational-listp x) x)
-           (rationalp (car x)))
-  :rule-classes :type-prescription)
-
-to get the first inkling of how to establish that the two arguments above
-are rational.  But we must be able to establish the hypotheses of that rule
-within type-set, so we need
-
-(defthm timer-alistp-implies-rational-listp-assoc-eq
-   (implies (and (symbolp name)
-                 (timer-alistp alist))
-            (rational-listp (cdr (assoc-eq name alist))))
-  :rule-classes :type-prescription)
-
-(defthm rational-listp-cdr
-   (implies (rational-listp x)
-            (rational-listp (cdr x)))
-   :rule-classes :type-prescription)
-
-All three of these rules are currently :rewrite rules, so this would just shift
-rules from the rewriter to type-set.  I don't know whether this is a good idea.
-But the methodology is fairly clear, namely: make sure that all concepts used
-in :type-prescription rules are specified with :type-prescription (and/or
-:forward-chaining) rules, not :rewrite rules.
-
-|#
+; ;??? The rewrite rule above is troubling.  I have spent some time thinking
+; about how to eliminate it.  Here is an essay on the subject.
+; 
+; Rationalp-+, above, is needed in the guard proof for pop-timer, below.  Why?
+; 
+; Why do we need to make this a :rewrite rule?  Why can't type-set establish
+; (rationalp (+ x y)) whenever this rule would have applied?  The reason,
+; obviously, is that the hypotheses can't be established by type-set and must be
+; established by rewrite.  Since type-set doesn't call rewrite, we have to
+; program enough of type-set in the rewriter to get the rewriter to act like
+; type-set.  That is what this lemma does (and that is why it is offensive to
+; us).
+; 
+; Why can't type-set establish the (rationalp x) and (rationalp y) hypotheses
+; above?  Here is the :rewrite rule we need:
+; 
+; (defthm rational-listp-implies-rationalp-car
+;  (implies (and (rational-listp x)
+;                x)
+;           (rationalp (car x))))
+; 
+; Note that this lemma is "type-like" in the conclusion but not (very) type-like
+; in the hypotheses.  I mean, (rational-listp x) is not a "type recognizer"
+; (except in a good type system, and we haven't got one of those!).  The presence
+; of this lemma in axioms.lisp should have alerted us to the possible need
+; later for a lemma duplicating type-like reasoning in the rewriter.
+; 
+; Here is a simple example of a theorem we can prove using rationalp-+ that we
+; cannot prove (directly) without it.  I introduce an undefined function so that
+; I can state the theorem in a way that does not allow a car-cdr-elim.
+; 
+;  (defstub foo (x) t)
+; 
+;  (thm (implies (and (rational-listp (foo x)) (foo x))
+;                (rationalp (+ 1 (car (foo x)))))
+; ;    :hints (("Goal" :in-theory (disable rationalp-+)))
+;      )
+; 
+; If rationalp-+ is enabled, this proof succeeds, because rewrite does our type
+; reasoning for us (via rationalp-+) and uses rational-listp-implies-
+; rationalp-car to get the hypothesis that (car (foo x)) is rational.  If
+; rationalp-+ is disabled, the proof fails because type-set doesn't know that
+; (car (foo x)) is rational.
+; 
+; In the actual application (in pop-timer below) no rational-listp hypothesis
+; is present.  Here is the actual goal
+; 
+; (IMPLIES
+;      (AND (CONSP (CDDR (ASSOC-EQ NAME
+;                                  (CDR (ASSOC 'TIMER-ALIST (NTH 2 STATE))))))
+;           (CONSP (CDR (ASSOC-EQ NAME
+;                                 (CDR (ASSOC 'TIMER-ALIST (NTH 2 STATE))))))
+;           (STATE-P1 STATE)
+;           (SYMBOLP NAME)
+;           FLG)
+;      (RATIONALP (+ (CADR (ASSOC-EQ NAME
+;                                    (CDR (ASSOC 'TIMER-ALIST (NTH 2 STATE)))))
+;                    (CADDR (ASSOC-EQ NAME
+;                                     (CDR (ASSOC 'TIMER-ALIST
+;                                                 (NTH 2 STATE))))))))
+; 
+; If we insist on deleting rationalp-+ as a :rewrite rule we are obliged to
+; add certain other rules as either :type-prescriptions or :forward-chaining
+; rules.  Going the :type-prescription route we could add
+; 
+; (defthm rational-listp-implies-rationalp-car
+;   (implies (and (rational-listp x) x)
+;            (rationalp (car x)))
+;   :rule-classes :type-prescription)
+; 
+; to get the first inkling of how to establish that the two arguments above
+; are rational.  But we must be able to establish the hypotheses of that rule
+; within type-set, so we need
+; 
+; (defthm timer-alistp-implies-rational-listp-assoc-eq
+;    (implies (and (symbolp name)
+;                  (timer-alistp alist))
+;             (rational-listp (cdr (assoc-eq name alist))))
+;   :rule-classes :type-prescription)
+; 
+; (defthm rational-listp-cdr
+;    (implies (rational-listp x)
+;             (rational-listp (cdr x)))
+;    :rule-classes :type-prescription)
+; 
+; All three of these rules are currently :rewrite rules, so this would just shift
+; rules from the rewriter to type-set.  I don't know whether this is a good idea.
+; But the methodology is fairly clear, namely: make sure that all concepts used
+; in :type-prescription rules are specified with :type-prescription (and/or
+; :forward-chaining) rules, not :rewrite rules.
 
 (defthm rationalp-*
   (implies (and (rationalp x)
@@ -30205,18 +30399,17 @@ in :type-prescription rules are specified with :type-prescription (and/or
 ; occasion to replace the current untouchables with nil.  This can be done by
 ; executing the following form:
 
-#|
- (progn
-  (setf (cadr (assoc 'global-value (get 'untouchable-fns
-                                        *current-acl2-world-key*)))
-        nil)
-  (setf (cadr (assoc 'global-value (get 'untouchable-vars
-                                        *current-acl2-world-key*)))
-        nil))
-|#
+;  (progn
+;   (setf (cadr (assoc 'global-value (get 'untouchable-fns
+;                                         *current-acl2-world-key*)))
+;         nil)
+;   (setf (cadr (assoc 'global-value (get 'untouchable-vars
+;                                         *current-acl2-world-key*)))
+;         nil))
 
   '(coerce-state-to-object
     coerce-object-to-state
+    create-state
     user-stobj-alist
     user-stobj-alist-safe
 
@@ -30260,6 +30453,7 @@ in :type-prescription rules are specified with :type-prescription (and/or
     set-site-evisc-tuple
     set-evisc-tuple-lst
     set-evisc-tuple-fn1
+    set-iprint-ar
 
     checkpoint-world
 
@@ -33618,49 +33812,45 @@ in :type-prescription rules are specified with :type-prescription (and/or
 ; rewrite-depth-stats.lisp (see comment above).  We comment out this code since
 ; it will not be used very often.
 
-#|
-
-(include-book "books/misc/file-io")
-
-(defun collect-rstats-1 (filename alist acc)
-
-; Elements of alist are of the form (event-name . n).  We extend acc by an
-; alist with corresponding elements (but no specified order) of the form
-; ((filename . event-name) . n).
-
-  (if (endp alist)
-      acc
-    (collect-rstats-1 filename
-                      (cdr alist)
-                      (cons (cons (cons filename (caar alist))
-                                  (cdar alist))
-                            acc))))
-
-(defun collect-rstats-2 (alist acc)
-
-; Elements of alist are of the form (filename . alist2), where alist2 is an
-; alist with elements of the form (event-name . n).
-
-  (if (endp alist)
-      acc
-    (collect-rstats-2 (cdr alist)
-                      (collect-rstats-1 (caar alist) (cdar alist) acc))))
-
-(defun collect-rstats (infile outfile state)
-
-; Each object in infile as the form (filename . alist), where alist has
-; elements of the form (event-name . n), where n is the rewrite stack depth
-; required for event-name.  We write out outfile, which contains a single form
-; whose elements are of the form ((filename . event-name) . n).  the cdr of
-; each object in infile, as well as the object in the resulting outfile, are
-; alists sorted by cdr (heaviest entry first).
-
-  (declare (xargs :stobjs state :mode :program))
-  (er-let* ((forms (read-list infile 'collect-rstats state)))
-    (write-list (merge-sort-cdr-> (collect-rstats-2 forms nil))
-                outfile 'collect-rstats state)))
-
-|#
+; (include-book "books/misc/file-io")
+; 
+; (defun collect-rstats-1 (filename alist acc)
+; 
+; ; Elements of alist are of the form (event-name . n).  We extend acc by an
+; ; alist with corresponding elements (but no specified order) of the form
+; ; ((filename . event-name) . n).
+; 
+;   (if (endp alist)
+;       acc
+;     (collect-rstats-1 filename
+;                       (cdr alist)
+;                       (cons (cons (cons filename (caar alist))
+;                                   (cdar alist))
+;                             acc))))
+; 
+; (defun collect-rstats-2 (alist acc)
+; 
+; ; Elements of alist are of the form (filename . alist2), where alist2 is an
+; ; alist with elements of the form (event-name . n).
+; 
+;   (if (endp alist)
+;       acc
+;     (collect-rstats-2 (cdr alist)
+;                       (collect-rstats-1 (caar alist) (cdar alist) acc))))
+; 
+; (defun collect-rstats (infile outfile state)
+; 
+; ; Each object in infile as the form (filename . alist), where alist has
+; ; elements of the form (event-name . n), where n is the rewrite stack depth
+; ; required for event-name.  We write out outfile, which contains a single form
+; ; whose elements are of the form ((filename . event-name) . n).  the cdr of
+; ; each object in infile, as well as the object in the resulting outfile, are
+; ; alists sorted by cdr (heaviest entry first).
+; 
+;   (declare (xargs :stobjs state :mode :program))
+;   (er-let* ((forms (read-list infile 'collect-rstats state)))
+;     (write-list (merge-sort-cdr-> (collect-rstats-2 forms nil))
+;                 outfile 'collect-rstats state)))
 
 (defconst *default-rewrite-stack-limit*
 
@@ -36037,15 +36227,15 @@ in :type-prescription rules are specified with :type-prescription (and/or
            (code-char 0)))
   :rule-classes nil)
 
-#| Omitted for now; maybe slows down the rewriter too much.
-(defthm default-code-char
-  (implies (not (and (integerp x)
-                     (>= x 0)
-                     (< x 256)))
-           (equal (code-char x)
-                  (code-char 0)))
-  :hints (("Goal" :use completion-of-code-char)))
-|#
+; Omitted for now; maybe slows down the rewriter too much.
+; 
+; (defthm default-code-char
+;   (implies (not (and (integerp x)
+;                      (>= x 0)
+;                      (< x 256)))
+;            (equal (code-char x)
+;                   (code-char 0)))
+;   :hints (("Goal" :use completion-of-code-char)))
 
 ;; RAG - This axiom was strengthened to include the reals.
 
@@ -36242,14 +36432,12 @@ in :type-prescription rules are specified with :type-prescription (and/or
            nil))
   :rule-classes nil)
 
-#| Omitted for now; maybe slows down the rewriter too much.
-(defthm default-intern-in-package-of-symbol
-  (implies (not (and (stringp x)
-                     (symbolp y)))
-           (equal (intern-in-package-of-symbol x y)
-                  nil))
-  :hints (("Goal" :use completion-of-intern-in-package-of-symbol)))
-|#
+; (defthm default-intern-in-package-of-symbol
+;   (implies (not (and (stringp x)
+;                      (symbolp y)))
+;            (equal (intern-in-package-of-symbol x y)
+;                   nil))
+;   :hints (("Goal" :use completion-of-intern-in-package-of-symbol)))
 
 (defaxiom completion-of-numerator
   (equal (numerator x)
@@ -36854,18 +37042,16 @@ in :type-prescription rules are specified with :type-prescription (and/or
 ; this up for CCL).  Jared adds (6/30/09) that CCL now handles coerce
 ; efficiently, both to strings and to lists.
  
-#||
- (defun my-coerce (chars)
-   (let* ((length (the integer (length (the list chars))))
-          (str    (the vector (make-string (the integer length))))
-          (i      (the integer 0)))
-     (loop for char in chars
-           do
-           (setf (aref (the vector str) (the integer i))
-                 (the character char))
-           (incf (the integer i)))
-     str))
-||#
+;  (defun my-coerce (chars)
+;    (let* ((length (the integer (length (the list chars))))
+;           (str    (the vector (make-string (the integer length))))
+;           (i      (the integer 0)))
+;      (loop for char in chars
+;            do
+;            (setf (aref (the vector str) (the integer i))
+;                  (the character char))
+;            (incf (the integer i)))
+;      str))
 
   ":Doc-Section ACL2::Programming
 
@@ -39184,20 +39370,18 @@ Lisp definition."
 
 (defmacro fcons-term* (&rest x)
 
-#|
-; Start experimental code mod, to check that calls of fcons-term are legitimate
-; shortcuts in place of the corresponding known-correct calls of cons-term.
-  #-acl2-loop-only
-  `(let* ((fn-used-only-in-fcons-term* ,(car x))
-          (args-used-only-in-fcons-term* (list ,@(cdr x)))
-          (result (cons fn-used-only-in-fcons-term*
-                        args-used-only-in-fcons-term*)))
-     (assert$ (equal result (cons-term fn-used-only-in-fcons-term*
-                                       args-used-only-in-fcons-term*))
-              result))
-  #+acl2-loop-only
-; End experimental code mod.
-|#
+; ; Start experimental code mod, to check that calls of fcons-term are legitimate
+; ; shortcuts in place of the corresponding known-correct calls of cons-term.
+;   #-acl2-loop-only
+;   `(let* ((fn-used-only-in-fcons-term* ,(car x))
+;           (args-used-only-in-fcons-term* (list ,@(cdr x)))
+;           (result (cons fn-used-only-in-fcons-term*
+;                         args-used-only-in-fcons-term*)))
+;      (assert$ (equal result (cons-term fn-used-only-in-fcons-term*
+;                                        args-used-only-in-fcons-term*))
+;               result))
+;   #+acl2-loop-only
+; ; End experimental code mod.
 
   (cons 'list x))
 
@@ -39220,6 +39404,34 @@ Lisp definition."
   (cond ((endp l) *t*)
         ((endp (cdr l)) (car l))
         (t (conjoin2 (car l) (conjoin (cdr l))))))
+
+(defun conjoin2-untranslated-terms (t1 t2)
+
+; See conjoin2.  This function has the analogous spec, but where t1 and t2 need
+; not be translated.
+
+  (declare (xargs :guard t))
+  (cond ((or (equal t1 *nil*) (eq t1 nil))
+         *nil*)
+        ((or (equal t2 *nil*) (eq t2 nil))
+         *nil*)
+        ((or (equal t1 *t*) (eq t1 t))
+         t2)
+        ((or (equal t2 *t*) (eq t2 t))
+         t1)
+        (t (fcons-term* 'if t1 t2 *nil*))))
+
+(defun conjoin-untranslated-terms (l)
+
+; This function is analogous to conjoin, but where t1 and t2 need not be
+; translated.
+
+  (declare (xargs :guard (true-listp l)))
+  (cond ((endp l) *t*)
+        ((endp (cdr l)) (car l))
+        (t (conjoin2-untranslated-terms
+            (car l)
+            (conjoin-untranslated-terms (cdr l))))))
 
 (defun disjoin2 (t1 t2)
 
@@ -40254,78 +40466,76 @@ Lisp definition."
 ; observe whether the output is consistent with the comments attached to the
 ; form.
 
-#||
-(defun f (n)
-  (declare (xargs :guard (natp n) :verify-guards nil))
-  (make-list n))
-(time$ (length (f 100))) ; times an ev-rec call
-(time$ (length (f 100)) :mintime 0) ; same as above
-(time$ (length (f 100)) :mintime nil) ; native time output
-(defun g (x native-p)
-  (declare (xargs :guard (natp x) :verify-guards nil))
-  (if native-p
-      (len (time$ (f x) :mintime nil))
-    (len (time$ (f x)))))
-(g 100 nil) ; time a *1*f call
-(g 100 t) ; time a *1*f call
-(verify-guards f)
-(g 100 nil) ; still times a *1*f call, since g's guards aren't verified
-(g 100 t) ; still times a *1*f call, since g's guards aren't verified
-(verify-guards g)
-(g 100 nil) ; times a call of f
-(g 100 t) ; times a call of f
-; Check unnormalized and normalized bodies:
-(assert-event (equal (body 'g nil (w state))
-                     '(IF NATIVE-P
-                          (LEN (RETURN-LAST
-                                'TIME$1-RAW
-                                (CONS 'NIL
-                                      (CONS 'NIL
-                                            (CONS 'NIL
-                                                  (CONS 'NIL
-                                                        (CONS 'NIL 'NIL)))))
-                                (F X)))
-                          (LEN (RETURN-LAST
-                                'TIME$1-RAW
-                                (CONS '0
-                                      (CONS 'NIL
-                                            (CONS 'NIL
-                                                  (CONS 'NIL
-                                                        (CONS 'NIL 'NIL)))))
-                                (F X))))))
-(assert-event (equal (body 'g t (w state))
-                     '(LEN (F X))))
-(time$ 3 :mintime nil) ; prints verbose, native timing message
-(time$ 3 :minalloc 0) ; prints usual timing message
-(time$ 3 :mintime 0 :real-mintime 0) ; error
-(time$ 3 :mintime 0 :run-mintime 0) ; prints usual timing message
-(time$ 3 :real-mintime 1) ; no timing output
-(time$ 3 :run-mintime 1) ; no timing output
-(time$ 3 :minalloc 10000) ; no timing output if :minalloc is supported
-(time$ (length (f 100)) ; prints "Howdy"
-       :msg "Howdy~%")
-(let ((bar (+ 3 4)))
-  (time$ (length (f 100000)) ; prints indicated timing message
-         :msg "The execution of ~xf took ~st seconds (in real time; ~sc sec. ~
-               run time), and allocated ~sa bytes.  In an unrelated note, bar ~
-               currently has the value ~x0.~%"
-         :args (list bar)))
-(defun h (x real-min run-min alloc msg args)
-  (declare (xargs :guard (natp x)))
-  (len (time$ (f x)
-              :mintime real-min
-              :run-mintime run-min
-              :minalloc alloc
-              :msg msg
-              :args args)))
-(h 1000000 nil nil nil nil nil) ; native time msg
-(h 1000000 0 nil nil nil nil) ; usual time msg
-(h 1000000 nil nil nil ; custom time msg, as indicated
-   "The execution of ~xf took ~st seconds (in real time; ~sc sec. run time), ~
-    and allocated ~sa bytes.  In an unrelated note, bar currently has the ~
-    value ~x0.~%"
-   (list (+ 4 5)))
-||#
+; (defun f (n)
+;   (declare (xargs :guard (natp n) :verify-guards nil))
+;   (make-list n))
+; (time$ (length (f 100))) ; times an ev-rec call
+; (time$ (length (f 100)) :mintime 0) ; same as above
+; (time$ (length (f 100)) :mintime nil) ; native time output
+; (defun g (x native-p)
+;   (declare (xargs :guard (natp x) :verify-guards nil))
+;   (if native-p
+;       (len (time$ (f x) :mintime nil))
+;     (len (time$ (f x)))))
+; (g 100 nil) ; time a *1*f call
+; (g 100 t) ; time a *1*f call
+; (verify-guards f)
+; (g 100 nil) ; still times a *1*f call, since g's guards aren't verified
+; (g 100 t) ; still times a *1*f call, since g's guards aren't verified
+; (verify-guards g)
+; (g 100 nil) ; times a call of f
+; (g 100 t) ; times a call of f
+; ; Check unnormalized and normalized bodies:
+; (assert-event (equal (body 'g nil (w state))
+;                      '(IF NATIVE-P
+;                           (LEN (RETURN-LAST
+;                                 'TIME$1-RAW
+;                                 (CONS 'NIL
+;                                       (CONS 'NIL
+;                                             (CONS 'NIL
+;                                                   (CONS 'NIL
+;                                                         (CONS 'NIL 'NIL)))))
+;                                 (F X)))
+;                           (LEN (RETURN-LAST
+;                                 'TIME$1-RAW
+;                                 (CONS '0
+;                                       (CONS 'NIL
+;                                             (CONS 'NIL
+;                                                   (CONS 'NIL
+;                                                         (CONS 'NIL 'NIL)))))
+;                                 (F X))))))
+; (assert-event (equal (body 'g t (w state))
+;                      '(LEN (F X))))
+; (time$ 3 :mintime nil) ; prints verbose, native timing message
+; (time$ 3 :minalloc 0) ; prints usual timing message
+; (time$ 3 :mintime 0 :real-mintime 0) ; error
+; (time$ 3 :mintime 0 :run-mintime 0) ; prints usual timing message
+; (time$ 3 :real-mintime 1) ; no timing output
+; (time$ 3 :run-mintime 1) ; no timing output
+; (time$ 3 :minalloc 10000) ; no timing output if :minalloc is supported
+; (time$ (length (f 100)) ; prints "Howdy"
+;        :msg "Howdy~%")
+; (let ((bar (+ 3 4)))
+;   (time$ (length (f 100000)) ; prints indicated timing message
+;          :msg "The execution of ~xf took ~st seconds (in real time; ~sc sec. ~
+;                run time), and allocated ~sa bytes.  In an unrelated note, bar ~
+;                currently has the value ~x0.~%"
+;          :args (list bar)))
+; (defun h (x real-min run-min alloc msg args)
+;   (declare (xargs :guard (natp x)))
+;   (len (time$ (f x)
+;               :mintime real-min
+;               :run-mintime run-min
+;               :minalloc alloc
+;               :msg msg
+;               :args args)))
+; (h 1000000 nil nil nil nil nil) ; native time msg
+; (h 1000000 0 nil nil nil nil) ; usual time msg
+; (h 1000000 nil nil nil ; custom time msg, as indicated
+;    "The execution of ~xf took ~st seconds (in real time; ~sc sec. run time), ~
+;     and allocated ~sa bytes.  In an unrelated note, bar currently has the ~
+;     value ~x0.~%"
+;    (list (+ 4 5)))
 
 ; End of Essay on the Implementation of Time$
 

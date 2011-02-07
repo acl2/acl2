@@ -21,9 +21,9 @@
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-; Department of Computer Sciences
+; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78712-1188 U.S.A.
+; Austin, TX 78701 U.S.A.
 
 ; memoize-raw.lisp -- Raw lisp definitions for memoization functions, only to
 ; be included in the experimental HONS version of ACL2.
@@ -2896,7 +2896,9 @@ the calls took.")
 ; *memoize-info-ht* also maps num back to the corresponding symbol.
 
 (defrec memoize-info-ht-entry
-  (start-time  ; vaguely ordered by most frequently referenced first
+; vaguely ordered by most frequently referenced first
+  (ext-anc-attachments
+   start-time
    num
    tablename
    ponstablename
@@ -2923,10 +2925,8 @@ the calls took.")
    record-time
    watch-ifs
    forget
-   memo-table-init-size
-   )
+   memo-table-init-size)
   t)
-
 
 (defparameter *memo-max-sizes*
   ;; Binds function names to memo-max-sizes-entry structures.
@@ -2954,7 +2954,6 @@ the calls took.")
    avg-mt-size  ; average size of memo table before any clear (float)
    )
   t)
-
 
 (defun make-initial-memoize-hash-table (fn init-size)
 
@@ -3081,11 +3080,6 @@ the calls took.")
      *memo-max-sizes*)
     (format t "~%"))
   nil)
-
-
-
-
-
 
 ; MEMOIZE FUNCTIONS
 
@@ -3636,11 +3630,26 @@ the calls took.")
     (with-live-state
      (warning$ 'top-level "Attachment"
                "Although the function ~x0 is memoized, a result is not being ~
-                stored because an attachment to function ~x1 was used during ~
-                evaluation of one of its calls.  This warning will remain off ~
-                for the remainder of the session unless the variable ~x2 is ~
-                set to a non-nil value in raw Lisp."
-               fn at-fn '*memoize-use-attachment-warning-p*))
+                stored because ~@1.  Warnings such as this one, about not ~
+                storing results, will remain off for all functions for the ~
+                remainder of the session unless the variable ~x2 is set to a ~
+                non-nil value in raw Lisp."
+               fn
+               (mv-let (lookup-p at-fn)
+                       (if (consp at-fn)
+                           (assert$ (eq (car at-fn) :lookup)
+                                    (mv t (cdr at-fn)))
+                         (mv nil at-fn))
+                       (cond (lookup-p
+                              (msg "a stored result was used from a call of ~
+                                    memoized function ~x0, which may have been ~
+                                    computed using attachments"
+                                   at-fn))
+                             (t
+                              (msg "an attachment to function ~x0 was used ~
+                                    during evaluation of one of its calls"
+                                   at-fn))))
+               '*memoize-use-attachment-warning-p*))
     (setq *memoize-use-attachment-warning-p* nil)))
 
 (defun memoize-fn (fn &key (condition t) (inline t) (trace nil)
@@ -3652,7 +3661,9 @@ the calls took.")
                       (specials nil)
                       (watch-ifs nil)
                       (forget nil)
-                      (memo-table-init-size *mht-default-size*))
+                      (memo-table-init-size *mht-default-size*)
+                      (aokp nil)
+                      &aux (wrld (w *the-live-state*)))
 
   "The documentation for MEMOIZE-FN is very incomplete.  One may
   invoke (MEMOIZE-FN fn) on the name of a Common Lisp function FN from
@@ -3775,6 +3786,11 @@ the calls took.")
     (when (eq fn 'return-last)
       (ofe "Memoize-fn: RETURN-LAST may not be memoized."
            fn))
+    (when (getprop fn 'constrainedp nil 'current-acl2-world wrld)
+      (ofe "Memoize-fn: ~s is constrained; you may instead wish ~%~
+            to memoize a caller or to memoize its attachment (see ~%~
+            :DOC defattach)."
+           fn))
     #+Clozure
     (when (multiple-value-bind (req opt restp keys)
               (ccl::function-args (symbol-function fn))
@@ -3784,14 +3800,13 @@ the calls took.")
                 (not (eql opt 0))))
       (ofe "Memoize-fn: ~a has non-simple arguments." fn))
     (let*
-      ((w (w *the-live-state*))
-       (cl-defun (if (eq cl-defun :default)
+      ((cl-defun (if (eq cl-defun :default)
                      (if inline
                          (cond
                           ((not (fboundp fn))
                            (ofe "MEMOIZE-FN: ** ~a is undefined."
                                 fn))
-                          ((cltl-def-from-name fn nil w))
+                          ((cltl-def-from-name fn nil wrld))
                           ((function-lambda-expression
                             (symbol-function fn)))
                           (t
@@ -3810,8 +3825,7 @@ the calls took.")
                    cl-defun))
        (formals
         (if (eq formals :default)
-            (let ((fo (getprop fn 'formals t
-                               'current-acl2-world w)))
+            (let ((fo (getprop fn 'formals t 'current-acl2-world wrld)))
               (if (eq fo t)
                   (if (consp cl-defun)
                       (cadr cl-defun)
@@ -3823,14 +3837,13 @@ the calls took.")
                 fo))
           formals))
        (stobjs-in (if (eq stobjs-in :default)
-                      (let ((s (getprop fn 'stobjs-in t
-                                        'current-acl2-world w)))
+                      (let ((s (getprop fn 'stobjs-in t 'current-acl2-world
+                                        wrld)))
                         (if (eq s t) (make-list (len formals)) s))
                     stobjs-in))
        (stobjs-out
         (if (eq stobjs-out :default)
-            (let ((s (getprop fn 'stobjs-out t
-                              'current-acl2-world w)))
+            (let ((s (getprop fn 'stobjs-out t 'current-acl2-world wrld)))
               (if (eq s t)
                   (let ((n (number-of-return-values fn)))
                     (cond (n (make-list n))
@@ -3877,7 +3890,7 @@ the calls took.")
          (condition-body
           (cond ((booleanp condition) condition)
                 ((symbolp condition)
-                 (car (last (cltl-def-from-name condition nil w))))
+                 (car (last (cltl-def-from-name condition nil wrld))))
                 (t condition)))
          (dcls (dcls (cdddr (butlast cl-defun))))
          (start-time (let ((v (hons-gentemp
@@ -3911,6 +3924,7 @@ the calls took.")
                  `((safe-incf (aref ,*mf-ma*
                                     ,(+ 2mfnn *ma-hits-index*))
                               1 ,fn))))
+           (lookup-marker (cons :lookup fn))
            (body3
             `(let (,*mf-ans* ,*mf-args* ,*mf-ans-p*)
                (declare (ignorable ,*mf-ans* ,*mf-args* ,*mf-ans-p*))
@@ -3928,133 +3942,113 @@ the calls took.")
                       `(progn (setq ,*mf-ans* ,body-call)
                               ,@mf-trace-exit
                               ,*mf-ans*))))
-                ,@(if condition-body
-                      `((t (profiler-when
-                            (null ,tablename)
-                            ,@mf-record-mht
-                            (setq ,tablename
-                                  ;; (mht :size ,memo-table-init-size)
-                                  (make-initial-memoize-hash-table ',fn ,memo-table-init-size)
-                                  )
-                            ,@(if (> nra 1)
-                                  `((setq ,ponstablename
-                                          ;;(mht :size (* (1- ,nra) ,memo-table-init-size))
-                                          (make-initial-memoize-pons-table
-                                           ',fn ,memo-table-init-size)
-                                          ))))
-                           ;; To avoid a remotely possible
-                           ;; parallelism gethash error.
-                           ,@(if (> nra 1)
-                                 `((setq ,localponstablename
-                                         (profiler-or ,ponstablename
+                ,@(and
+                   condition-body
+                   `((t
+                      (profiler-when
+                       (null ,tablename)
+                       ,@mf-record-mht
+                       (setq ,tablename
+                             (make-initial-memoize-hash-table
+                              ',fn ,memo-table-init-size))
+                       ,@(if (> nra 1)
+                             `((setq ,ponstablename
+                                     (make-initial-memoize-pons-table
+                                      ',fn ,memo-table-init-size)))))
+                        ;; To avoid a remotely possible
+                        ;; parallelism gethash error.
+                        ,@(if (> nra 1)
+                              `((setq ,localponstablename
+                                      (profiler-or ,ponstablename
 ; BOZO should this be a make-initial-memoize-pons-table?
-                                                      (mht)))))
-                           #+parallel
-                           ,@(if (> nra 1)
-                                 `((ccl::lock-hash-table
-                                    ,localponstablename)))
-                           (setq ,*mf-args* (pist* ,localponstablename
-                                                   ,@formals
-                                                   ,@specials))
-                           #+parallel
-                           ,@(if (> nra 1)
-                                 `((ccl::unlock-hash-table
-                                    ,localponstablename)))
-                           (setq ,localtablename
+                                                   (mht)))))
+                        #+parallel
+                        ,@(if (> nra 1)
+                              `((ccl::lock-hash-table ,localponstablename)))
+                        (setq ,*mf-args* (pist* ,localponstablename
+                                                ,@formals
+                                                ,@specials))
+                        #+parallel
+                        ,@(if (> nra 1)
+                              `((ccl::unlock-hash-table ,localponstablename)))
+                        (setq ,localtablename
 ; BOZO should this be a make-initial-memoize-hash-table?
-                                 (profiler-or ,tablename (mht)))
-                           (multiple-value-setq
-                               (,*mf-ans* ,*mf-ans-p*)
-                             (gethash ,*mf-args* (the hash-table
-                                                   ,localtablename)))
-                           (profiler-cond
-                            (,*mf-ans-p*
-                             ,@(if trace `((oftr "~% ~s remembered."
-                                                 ',fn)))
-                             ,@mf-record-hit
-                             ,@(cond
-                                ((null (cdr stobjs-out))
-                                 `(,@mf-trace-exit ,*mf-ans*))
-                                (t
-                                 `(,@ (and trace
-                                           `((let*
-                                                 ((,*mf-ans*
-                                                   (append
-                                                    (take
-                                                     ,(1- (length
-                                                           stobjs-out))
-                                                     ,*mf-ans*)
-                                                    (list
-                                                     (nthcdr
-                                                      ,(1-
-                                                        (length
-                                                         stobjs-out))
-                                                      ,*mf-ans*)))))
-                                               ,@mf-trace-exit)))
-                                      ,(cons
-                                        'mv
-                                        (nconc
-                                         (loop for i fixnum below
-                                               (1- (length
-                                                    stobjs-out))
-                                               collect
-                                               `(pop ,*mf-ans*))
-                                         (list *mf-ans*)))))))
-                            (t ,(cond
-                                 ((cdr stobjs-out)
-                                  (let ((vars
-                                         (loop for i fixnum below
+                              (profiler-or ,tablename (mht)))
+                        (multiple-value-setq
+                            (,*mf-ans* ,*mf-ans-p*)
+                          ,(let ((gethash-form
+                                  `(gethash ,*mf-args*
+                                            (the hash-table ,localtablename))))
+                             (cond (aokp `(profiler-cond
+                                           (*aokp* ,gethash-form)
+                                           (t (mv nil nil))))
+                                   (t gethash-form))))
+                        (profiler-cond
+                         (,*mf-ans-p*
+                          ,@(when aokp
+                              `((update-attached-fn-called ',lookup-marker)))
+                          ,@(if trace `((oftr "~% ~s remembered."
+                                              ',fn)))
+                          ,@mf-record-hit
+                          ,@(cond
+                             ((null (cdr stobjs-out))
+                              `(,@mf-trace-exit ,*mf-ans*))
+                             (t
+                              (let ((len-1 (1- (length stobjs-out))))
+                                `(,@(and
+                                     trace
+                                     `(progn
+                                        (let* ((,*mf-ans*
+                                                (append
+                                                 (take ,len-1 ,*mf-ans*)
+                                                 (list
+                                                  (nthcdr ,len-1 ,*mf-ans*)))))
+                                          ,@mf-trace-exit)))
+                                  ,(cons
+                                    'mv
+                                    (nconc (loop for i fixnum below len-1
+                                                 collect `(pop ,*mf-ans*))
+                                           (list *mf-ans*))))))))
+                         (t ,(let* ((vars
+                                     (loop for i fixnum below
+                                           (if (cdr stobjs-out)
                                                (length stobjs-out)
-                                               collect (ofni "O~a" i))))
-                                    `(let (,*attached-fn-temp*)
-                                       (mv-let
-                                        ,vars
-                                        (let (*attached-fn-called*)
-                                          (multiple-value-prog1
-                                           ,body-call
-                                           (setq ,*attached-fn-temp*
-                                                 *attached-fn-called*)))
-                                        (progn
-                                          (cond
-                                           (,*attached-fn-temp*
-                                            (memoize-use-attachment-warning
-                                             ',fn ,*attached-fn-temp*))
-                                           (t
-                                            (setf
-                                             (gethash ,*mf-args*
-                                                      (the hash-table
-                                                           ,localtablename))
-                                             (setq ,*mf-ans*
-                                                   (list* ,@vars)))))
-                                          (when (and
-                                                 (boundp '*attached-fn-called*)
-                                                 (null *attached-fn-called*))
-                                            (setq *attached-fn-called*
-                                                  ,*attached-fn-temp*))
-                                          ,@mf-trace-exit
-                                          (mv ,@vars))))))
-                                 (t `(let (,*attached-fn-temp*)
-                                       (let (*attached-fn-called*)
-                                         (setq ,*mf-ans* ,body-call)
-                                         (setq ,*attached-fn-temp*
-                                               *attached-fn-called*))
-                                       (cond
-                                        (,*attached-fn-temp*
-                                         (memoize-use-attachment-warning
-                                          ',fn ,*attached-fn-temp*))
-                                        (t
-                                         (setf
-                                          (gethash ,*mf-args*
-                                                   (the hash-table
-                                                     ,localtablename))
-                                          ,*mf-ans*)))
-                                       (when (and
-                                              (boundp '*attached-fn-called*)
-                                              (null *attached-fn-called*))
-                                         (setq *attached-fn-called*
-                                               ,*attached-fn-temp*))
-                                       ,@mf-trace-exit
-                                       ,*mf-ans*)))))))))))
+                                             1)
+                                           collect (ofni "O~a" i)))
+                                    (prog1-fn (if (cdr stobjs-out)
+                                                  'multiple-value-prog1
+                                                'prog1))
+                                    (mf-trace-exit+
+                                     (and mf-trace-exit
+                                          `((let ((,*mf-ans*
+                                                   ,(if stobjs-out
+                                                        `(list* ,@vars)
+                                                      (car vars))))
+                                              ,@mf-trace-exit)))))
+                               `(let (,*attached-fn-temp*)
+                                  (mv?-let
+                                   ,vars
+                                   (let (*attached-fn-called*)
+                                     (,prog1-fn
+                                      ,body-call
+                                      (setq ,*attached-fn-temp*
+                                            *attached-fn-called*)))
+                                   (progn
+                                     (cond
+                                      ,@(and (not aokp)
+                                             `((,*attached-fn-temp*
+                                                (memoize-use-attachment-warning
+                                                 ',fn ,*attached-fn-temp*))))
+                                      (t
+                                       (setf
+                                        (gethash ,*mf-args*
+                                                 (the hash-table
+                                                   ,localtablename))
+                                        (list* ,@vars))))
+                                     (update-attached-fn-called
+                                      ,*attached-fn-temp*)
+                                     ,@mf-trace-exit+
+                                     (mv? ,@vars)))))))))))))
            (body2
             `(let ((,*mf-old-caller* *caller*)
                    #+Clozure
@@ -4161,8 +4155,8 @@ the calls took.")
                                      ,fn)))
                  (flet ((,body-name () ,body))
                    (profiler-if (eql -1 ,start-time)
-                            ,body2
-                            ,body3))))))
+                                ,body2
+                                ,body3))))))
         (setf (gethash fn *number-of-arguments-and-values-ht*)
               (cons (length stobjs-in) (length stobjs-out)))
         (unwind-protect
@@ -4177,6 +4171,8 @@ the calls took.")
             (setf (gethash fn *memoize-info-ht*)
                   (make memoize-info-ht-entry
                         :fn fn
+                        :ext-anc-attachments
+                        (and aokp (extended-ancestors fn wrld))
                         :tablename tablename
                         :ponstablename ponstablename
                         :old-fn old-fn
@@ -5604,8 +5600,6 @@ the calls took.")
   (and (hash-table-p x)
        (eql 0 (hash-table-count (the hash-table x)))))
 
-
-
 (defn clear-one-memo-and-pons-hash (l)
 
 ;  It is debatable whether one should use the CLRHASH approach or
@@ -5668,9 +5662,6 @@ the calls took.")
   (clear-memoize-call-array)
   nil)
   
-
-
-
 ; HONS READ
 
 ; Hash consing when reading is implemented via a change to the
@@ -5849,7 +5840,7 @@ the calls took.")
                              (t (check-hread-nonsense x stream)
                                 (hons-copy x)))))
                     (t       ; DO BIND *HONS-READ-HT/AR-MAX*,
-			     ; OTHERWISE SAME.
+                             ; OTHERWISE SAME.
                      (let* ((*hons-read-ht* nil)
                             (*hons-read-ar-max* -1)
                             (*readtable* *hons-readtable*)
@@ -6707,13 +6698,13 @@ next GC.~%"
        (with-lower-overhead
         (memoize-fn 'bad-lisp-objectp :forget t)))
 
-     (when (not (memoizedp-raw 'worse-than))
+     (when (not (memoizedp-raw 'worse-than-builtin))
   
 ; Warning: If this is changed or removed, visit the comment in 
-; worse-than.
+; worse-than-builtin.
   
        (with-lower-overhead
-        (memoize-fn 'worse-than
+        (memoize-fn 'worse-than-builtin
                     :condition ; Sol Swords suggestion
                     '(and (nvariablep term1)
                           (not (fquotep term1))
@@ -6764,17 +6755,15 @@ next GC.~%"
 
        (hons-init-hook-set 'ccl::*quit-on-eof* t)
 
-  #||  This might be a good idea, but we do not understand about
-  ccl::advise being called twice, e.g., via *hons-init-hook*.
-
-   "Before an image is saved or we otherwise quit, we kill any WATCH
-    process and delete any /tmp file created by the csh/sh facility."
-  
-    (ccl::advise ccl::quit
-                (progn (watch-kill) (csh-stop) (sh-stop))
-                :when :before)
-
-  ||#
+;   This might be a good idea, but we do not understand about
+;   ccl::advise being called twice, e.g., via *hons-init-hook*.
+; 
+;    "Before an image is saved or we otherwise quit, we kill any WATCH
+;     process and delete any /tmp file created by the csh/sh facility."
+;   
+;     (ccl::advise ccl::quit
+;                 (progn (watch-kill) (csh-stop) (sh-stop))
+;                 :when :before)
 
        "It is usually best for the user to know what the garbage
         collector is doing when using HONS and MEMOIZE."
@@ -6816,7 +6805,6 @@ next GC.~%"
   want to set in a ccl-init.lisp or an acl2-init.lsp file but might
   not know to set.")
 
-
 (defn hons-init-hook-set (var val)
   (unless (symbolp var)
     (ofe "HONS-INIT-HOOK-SET works for symbols, not ~a." var))
@@ -6824,67 +6812,63 @@ next GC.~%"
     (ofv "*hons-init-hook*:  Setting ~a to ~a." var val)
     (setf (symbol-value var) val)))     
 
-#||
-
-         Sol Sword's scheme to control GC in CCL
-
-The goal is to get CCL to perform a GC whenever we're using almost
-all the physical memory, but not otherwise.
-
-The usual way of controlling GC on CCL is via LISP-HEAP-GC-THRESHOLD.
-This value is approximately amount of memory that will be allocated
-immediately after GC.  This means that the next GC will occur after
-LISP-HEAP-GC-THRESHOLD more bytes are used (by consing or array
-allocation or whatever.)  But this means the total memory used by the
-time the next GC comes around is the threshold plus the amount that
-remained in use at the end of the previous GC.  This is a problem
-because of the following scenario:
-
- - We set the LISP-HEAP-GC-THRESHOLD to 3GB since we'd like to be able
-   to use most of the 4GB physical memory available.
-
- - A GC runs or we say USE-LISP-HEAP-GC-THRESHOLD to ensure that 3GB
-   is available to us.
-
- - We run a computation until we've exhausted this 3GB, at which point
-   a GC occurs.  
-
- - The GC reclaims 1.2 GB out of the 3GB used, so there is 1.8 GB
-   still in use.
-
- - After GC, 3GB more is automatically allocated -- but this means we
-   won't GC again until we have 4.8 GB in use, meaning we've gone to
-   swap.
-
-What we really want is, instead of allocating a constant additional
-amount after each GC, to allocate up to a fixed total amount including
-what's already in use.  To emulate that behavior, we use the hack
-below.  This operates as follows (assuming the same 4GB total physical
-memory as in the above example:)
-
-1. We set the LISP-HEAP-GC-THRESHOLD to (3.5G - used bytes) and call
-USE-LISP-HEAP-GC-THRESHOLD so that our next GC will occur when we've
-used a total of 3.5G.
-
-2. We set the threshold back to 1GB without calling
-USE-LISP-HEAP-GC-THRESHOLD.
-
-3. Run a computation until we use up the 3.5G and the GC is called.
-Say the GC reclaims 1.2GB so there's 2.3GB in use.  1GB more (the
-current LISP-HEAP-GC-THRESHOLD) is allocated so the ceiling is 3.3GB.)
-
-4. A post-GC hook runs which again sets the threshold to (3.5G -
-used bytes), calls USE-LISP-HEAP-GC-THRESHOLD to raise the ceiling to
-3.5G, then sets the threshold back to 1GB, and the process repeats.
-
-A subtlety about this scheme is that post-GC hooks runs in a separate
-thread from the main execution.  A possible bug is that in step 4,
-between checking the amount of memory in use and calling
-USE-LISP-HEAP-GC-THRESHOLD, more memory might be used up by the main
-execution, which would set the ceiling higher than we intended.  To
-prevent this, we interrupt the main thread to run step 4.
-
-||#
+;          Sol Swords's scheme to control GC in CCL
+; 
+; The goal is to get CCL to perform a GC whenever we're using almost
+; all the physical memory, but not otherwise.
+; 
+; The usual way of controlling GC on CCL is via LISP-HEAP-GC-THRESHOLD.
+; This value is approximately amount of memory that will be allocated
+; immediately after GC.  This means that the next GC will occur after
+; LISP-HEAP-GC-THRESHOLD more bytes are used (by consing or array
+; allocation or whatever.)  But this means the total memory used by the
+; time the next GC comes around is the threshold plus the amount that
+; remained in use at the end of the previous GC.  This is a problem
+; because of the following scenario:
+; 
+;  - We set the LISP-HEAP-GC-THRESHOLD to 3GB since we'd like to be able
+;    to use most of the 4GB physical memory available.
+; 
+;  - A GC runs or we say USE-LISP-HEAP-GC-THRESHOLD to ensure that 3GB
+;    is available to us.
+; 
+;  - We run a computation until we've exhausted this 3GB, at which point
+;    a GC occurs.  
+; 
+;  - The GC reclaims 1.2 GB out of the 3GB used, so there is 1.8 GB
+;    still in use.
+; 
+;  - After GC, 3GB more is automatically allocated -- but this means we
+;    won't GC again until we have 4.8 GB in use, meaning we've gone to
+;    swap.
+; 
+; What we really want is, instead of allocating a constant additional
+; amount after each GC, to allocate up to a fixed total amount including
+; what's already in use.  To emulate that behavior, we use the hack
+; below.  This operates as follows (assuming the same 4GB total physical
+; memory as in the above example:)
+; 
+; 1. We set the LISP-HEAP-GC-THRESHOLD to (3.5G - used bytes) and call
+; USE-LISP-HEAP-GC-THRESHOLD so that our next GC will occur when we've
+; used a total of 3.5G.
+; 
+; 2. We set the threshold back to 1GB without calling
+; USE-LISP-HEAP-GC-THRESHOLD.
+; 
+; 3. Run a computation until we use up the 3.5G and the GC is called.
+; Say the GC reclaims 1.2GB so there's 2.3GB in use.  1GB more (the
+; current LISP-HEAP-GC-THRESHOLD) is allocated so the ceiling is 3.3GB.)
+; 
+; 4. A post-GC hook runs which again sets the threshold to (3.5G -
+; used bytes), calls USE-LISP-HEAP-GC-THRESHOLD to raise the ceiling to
+; 3.5G, then sets the threshold back to 1GB, and the process repeats.
+; 
+; A subtlety about this scheme is that post-GC hooks runs in a separate
+; thread from the main execution.  A possible bug is that in step 4,
+; between checking the amount of memory in use and calling
+; USE-LISP-HEAP-GC-THRESHOLD, more memory might be used up by the main
+; execution, which would set the ceiling higher than we intended.  To
+; prevent this, we interrupt the main thread to run step 4.
 
 (defg *emod-trace-and-compile-function-symbols*
   '(emod               emod-traced
@@ -6946,9 +6930,7 @@ prevent this, we interrupt the main thread to run step 4.
 
 ;;; SHORTER, OLDER NAMES
 
-;; (Sol) -- removed here and added macro in memoize.lisp
-;; (defun memsum (&rest r)
-;;   (apply #'memoize-summary r))
+; Note: memsum is defined in memoize.lisp.
 
 (defun memstat (&rest r)
   (apply #'memoized-values r))
@@ -8118,24 +8100,20 @@ prevent this, we interrupt the main thread to run step 4.
     (if-report stream))
   "if-report.text")
 
-#||
+; The compiler macro for IF in the Clozure Common Lisp sources circa 2008:
 
-The compiler macro for IF in the Clozure Common Lisp sources circa
-2008:
-
-(define-compiler-macro if (&whole call test true &optional false
-                                  &environment env)
-  (multiple-value-bind (test test-win) (nx-transform test env)
-    (multiple-value-bind (true true-win) (nx-transform true env)
-      (multiple-value-bind (false false-win) (nx-transform false env)
-        (if (or (quoted-form-p test) (self-evaluating-p test))
-          (if (eval test)
-            true
-            false)
-          (if (or test-win true-win false-win)
-            `(if ,test ,true ,false)
-            call))))))
-||#
+; (define-compiler-macro if (&whole call test true &optional false
+;                                   &environment env)
+;   (multiple-value-bind (test test-win) (nx-transform test env)
+;     (multiple-value-bind (true true-win) (nx-transform true env)
+;       (multiple-value-bind (false false-win) (nx-transform false env)
+;         (if (or (quoted-form-p test) (self-evaluating-p test))
+;           (if (eval test)
+;             true
+;             false)
+;           (if (or test-win true-win false-win)
+;             `(if ,test ,true ,false)
+;             call))))))
 
 #+Clozure
 (defun setup-smashed-if ()
@@ -8408,26 +8386,23 @@ The compiler macro for IF in the Clozure Common Lisp sources circa
 
 ;;   CSH
 
-#||
-
-Here is a quite simple version of OPEN-GZIPPED-FILE that is fine to
-use in CCL for a few files, but perhaps not for thousands of files
-because FORK can take a serious amount of time for a big CCL job such
-as ACL2 since a copy is made by FORK of the entire job.
-
-(defun open-gzipped-file (name)
-   (ccl::external-process-output-stream
-     (ccl::run-program "gunzip" (list "-c"  name)
-                       :output :stream :wait nil)))
-
-To eliminate FORK as a source of such inefficiency, we provide the
-function CSH, which establishes a lasting subsidiary cshell process
-executing a 'read-and-execute one CSH line' loop.  It may be a good
-idea to call CSH very early, even before you need it, simply to get
-that process running when you can, i.e., when your image is small
-enough.
-
-||#
+; 
+; Here is a quite simple version of OPEN-GZIPPED-FILE that is fine to
+; use in CCL for a few files, but perhaps not for thousands of files
+; because FORK can take a serious amount of time for a big CCL job such
+; as ACL2 since a copy is made by FORK of the entire job.
+; 
+; (defun open-gzipped-file (name)
+;    (ccl::external-process-output-stream
+;      (ccl::run-program "gunzip" (list "-c"  name)
+;                        :output :stream :wait nil)))
+; 
+; To eliminate FORK as a source of such inefficiency, we provide the
+; function CSH, which establishes a lasting subsidiary cshell process
+; executing a 'read-and-execute one CSH line' loop.  It may be a good
+; idea to call CSH very early, even before you need it, simply to get
+; that process running when you can, i.e., when your image is small
+; enough.
 
 (defv *csh-process* nil
 
@@ -8856,3 +8831,54 @@ enough.
 
 (defun our-gctime ()
   (ccl::timeval->microseconds ccl::*total-gc-microseconds*))
+
+(defun update-memo-entry-for-attachments (fns entry wrld)
+
+; We return (mv changed-p new-entry), where if changed-p is not t or nil then
+; it is a function symbol whose attachment has changed, which requires clearing
+; of the corresponding memo table.
+
+  (let* ((ext-anc-attachments
+          (access memoize-info-ht-entry entry :ext-anc-attachments))
+         (valid-p
+          (if (eq fns :clear)
+              :clear
+            (or (null ext-anc-attachments)
+                (ext-anc-attachments-valid-p fns ext-anc-attachments wrld nil)))))
+    (cond ((eq valid-p t) (mv nil entry))
+          (t
+           (mv (if (eq valid-p nil) t valid-p)
+               (change memoize-info-ht-entry entry
+                       :ext-anc-attachments
+                       (extended-ancestors (access memoize-info-ht-entry entry
+                                                   :fn)
+                                           wrld)))))))
+
+(defun update-memo-entries-for-attachments (fns wrld state)
+  (let ((ctx 'top-level)
+        (fns (if (eq fns :clear)
+                 fns
+               (strict-merge-sort-symbol-<
+                (loop for fn in fns
+                      collect (canonical-sibling fn wrld))))))
+    (when (eq fns :clear)
+      (observation ctx
+                   "Memoization tables for functions memoized with :AOKP T ~
+                    are being cleared."))
+    (maphash (lambda (k entry)
+               (when (symbolp k)
+                 (mv-let (changedp new-entry)
+                         (update-memo-entry-for-attachments fns entry wrld)
+                         (when changedp
+                           (when (not (or (eq changedp t)
+                                          (eq fns :clear)))
+                             (observation ctx
+                                          "Memoization table for function ~x0 ~
+                                           is being cleared because ~
+                                           attachment to function ~x1 has ~
+                                           changed."
+                                          k changedp)
+                             (clear-one-memo-and-pons-hash entry))
+                           (setf (gethash k *memoize-info-ht*)
+                                 new-entry)))))
+             *memoize-info-ht*)))
