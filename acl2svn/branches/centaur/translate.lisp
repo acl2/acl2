@@ -6084,38 +6084,31 @@
                            quotep must translate to itself, but ~x0 did not!"
                           (nth 1 x)))
                ((eq key 'mbe1-raw)
-                (cond
-                 ((and (not (eq (access state-vars state-vars :ld-skip-proofsp)
-                                'include-book))
-                       (non-trivial-encapsulate-ee-entries
-                        (global-val 'embedded-event-lst wrld)))
-
-; See the example in the comment near the top of (deflabel note-3-4 ...).  We
-; don't complain when in include-book or the second pass of an encapsulate
-; since we have already checked legality on an earlier pass.  We also don't
-; complain if stobjs-out is t, for example because we are processing a defun
-; with xargs declaration :non-executable t.
-
-                  (trans-er+ x ctx
-                             "It is illegal to call ~x0 (~x1) under an ~
-                              encapsulate event with a non-empty signature."
-                             'mbe1 'mbe))
-                 (t
 
 ; We need to know that the two arguments of mbe1 have the same signature.  If
 ; for example we have (mv-let (x y) (mbe1 <exec-form> <logic-form>)), but
 ; <exec-form> has signature *, then Common Lisp will get confused during
-; evaluation.
+; evaluation.  This signature requirement is enforced by the trans-er-let*
+; bindings below.
 
-                  (trans-er-let*
-                   ((targ2 (translate11 (nth 2 x)
-                                        stobjs-out bindings known-stobjs
-                                        flet-alist x ctx wrld state-vars)) 
-                    (targ3 (translate11 (nth 3 x)
-                                        stobjs-out bindings known-stobjs
-                                        flet-alist x ctx wrld state-vars)))
-                   (trans-value
-                    (fcons-term* 'return-last targ1 targ2 targ3))))))
+; At one time we disallowed the use of mbe inside a non-trivial encapsulate
+; when translating for execution (stobjs-out not equal to t).  To see why, see
+; the example in the comment near the top of (deflabel note-3-4 ...).  However,
+; we subsequently disallowed guard verification for functions defined
+; non-locally inside an encapsulate (see :DOC note-4-0), which is the proper
+; fix for this issue.  What then is this issue?  The issue is that we need to
+; be able to trust guard verification; evaluating the :exec branch of an mbe is
+; just a special case.
+
+                (trans-er-let*
+                 ((targ2 (translate11 (nth 2 x)
+                                      stobjs-out bindings known-stobjs
+                                      flet-alist x ctx wrld state-vars)) 
+                  (targ3 (translate11 (nth 3 x)
+                                      stobjs-out bindings known-stobjs
+                                      flet-alist x ctx wrld state-vars)))
+                 (trans-value
+                  (fcons-term* 'return-last targ1 targ2 targ3))))
                ((and (eq key 'ec-call1-raw)
                      (not (let* ((call (car (last x)))
                                  (fn (and (consp call)

@@ -8844,7 +8844,7 @@ next GC.~%"
           (if (eq fns :clear)
               :clear
             (or (null ext-anc-attachments)
-                (ext-anc-attachments-valid-p fns ext-anc-attachments wrld nil)))))
+                (ext-anc-attachments-valid-p fns ext-anc-attachments wrld t)))))
     (cond ((eq valid-p t) (mv nil entry))
           (t
            (mv (if (eq valid-p nil) t valid-p)
@@ -8865,20 +8865,21 @@ next GC.~%"
       (observation ctx
                    "Memoization tables for functions memoized with :AOKP T ~
                     are being cleared."))
-    (maphash (lambda (k entry)
-               (when (symbolp k)
-                 (mv-let (changedp new-entry)
-                         (update-memo-entry-for-attachments fns entry wrld)
-                         (when changedp
-                           (when (not (or (eq changedp t)
-                                          (eq fns :clear)))
-                             (observation ctx
-                                          "Memoization table for function ~x0 ~
+    (when fns ; optimization
+      (maphash (lambda (k entry)
+                 (when (symbolp k)
+                   (mv-let (changedp new-entry)
+                           (update-memo-entry-for-attachments fns entry wrld)
+                           (when changedp
+                             (when (not (or (eq changedp t)
+                                            (eq fns :clear)))
+                               (observation ctx
+                                            "Memoization table for function ~x0 ~
                                            is being cleared because ~
                                            attachment to function ~x1 has ~
                                            changed."
-                                          k changedp)
-                             (clear-one-memo-and-pons-hash entry))
-                           (setf (gethash k *memoize-info-ht*)
-                                 new-entry)))))
-             *memoize-info-ht*)))
+                                            k changedp)
+                               (clear-one-memo-and-pons-hash entry))
+                             (setf (gethash k *memoize-info-ht*)
+                                   new-entry)))))
+               *memoize-info-ht*))))
