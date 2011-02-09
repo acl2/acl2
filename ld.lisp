@@ -17390,6 +17390,12 @@
   Version  4.0, when we first started disallowing ~il[guard] verification for
   functions introduced non-~il[local]ly inside such ~ilc[encapsulate] events.
 
+  We weakened the checks involving common ancestors for evaluator and
+  ~il[meta] (and ~il[clause-processor]) functions (~pl[evaluator-restrictions])
+  so that except in the ~ilc[mbe] case, the next-to-last argument of
+  ~ilc[return-last] is not considered.  Thanks to Sol Swords for bringing this
+  issue to our attention.
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of
