@@ -5679,8 +5679,9 @@
                  ACL2 top-level loop, as opposed to being made inside a ~
                  function definition.  The call ~x1 is thus illegal.  To ~
                  allow such calls to be evaluated (but without parallelism), ~
-                 evaluate ~x2.  See :DOC parallelism-at-the-top-level and ~
-                 :DOC set-parallel-evaluation."
+                 either evaluate ~x2 or use the macro top-level.  See :DOC ~
+                 parallelism-at-the-top-level and :DOC ~
+                 set-parallel-evaluation."
                 '(pand por pargs plet)
                 x
                 '(set-parallel-evaluation :bogus-parallelism-ok)))
