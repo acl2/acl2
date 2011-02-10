@@ -1878,7 +1878,7 @@ mersenne.lisp
 books/regex:
 Makefile
 Readme.lsp
-cert.lisp
+cert.acl2
 defset-encapsulates.lisp
 defset-macros.lisp
 equal-based-set.lisp

@@ -9165,7 +9165,7 @@
 
   ~il[concatenate] two or more lists~/
 
-  ~c[Append], which takes two or more arguments, expects all the arguments
+  ~c[Append], which takes zero or more arguments, expects all the arguments
   except perhaps the last to be true (null-terminated) lists.  It returns the
   result of concatenating all the elements of all the given lists into a single
   list.  Actually, in ACL2 ~c[append] is a macro that expands into calls of the
