@@ -17396,6 +17396,9 @@
   ~ilc[return-last] is not considered.  Thanks to Sol Swords for bringing this
   issue to our attention.
 
+  The macro ~ilc[append] no longer requires at least two arguments.  Thanks to
+  Dave Greve for requesting this enhancement.
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of
@@ -17460,6 +17463,10 @@
   Fixed a bug in the loop-checking done on behalf of ~ilc[defattach], which
   could miss a loop.  For an example, see the comment about loop-checking in
   the comments for ~c[(deflabel note-4-3 ..)] in ACL2 source file ~c[ld.lisp].
+
+  Terms of the form ~c[(hide <term>)] without free variables could be
+  simplified, contrary to the purpose of ~ilc[hide].  This is no longer the
+  case,  Thanks to Dave Greve for reporting this issue.
 
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
