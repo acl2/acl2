@@ -13,6 +13,7 @@ defined-const.lisp
 defsum.lisp
 deftuple.lisp
 do-not.lisp
+fake-event.lisp
 flag.acl2
 flag.lisp
 flag-package.lsp
@@ -76,6 +77,9 @@ do-not.lisp provides DO-NOT-HINT, a computed hint that can give
 :do-not and :do-not-induct hints throughout several proofs to reduce your
 typing burden.
 
+fake-event.lisp provides a function that runs an event but does not store
+it in the world.
+
 include-raw.lisp provides a tool to load raw Lisp files inside books,
 compiling them on book certification, handling errors, etc.  A TTAG is
 required.
@@ -121,9 +125,10 @@ substitutions result from deeply nested variable bindings.
 {define-keyed-function}.lisp copyright (C) 2010 by David L. Rager
 <ragerdl@cs.utexas.edu>.
 
-{def-functional-instance,defconsts,flag,oracle-eval,safe-case,include-raw}.lisp
+{def-functional-instance,defconsts,flag,oracle-eval,safe-case,include-raw,
+ fake-event}.lisp
 copyright
-2008-2010 by Centaur Technology
+2008-2011 by Centaur Technology
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License as

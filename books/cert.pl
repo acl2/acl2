@@ -98,7 +98,61 @@ Usage:
 perl cert.pl <options, targets>
 
 where targets are filenames of ACL2 files or certificates to be built
-and options are as follows:
+and options are as listed below.  Cert.pl scans the filenames for
+dependencies and recursively scans their dependencies as well.
+It then (optionally) builds a makefile and (optionally) runs it so as
+to certify the named targets.
+
+Cert.pl begins computing the dependencies for a book by ensuring that
+its .lisp file exists.  It then looks for either a corresponding .acl2
+file or a cert.acl2 file in its directory and scans that if it finds
+one, treating dependencies found in that scan as dependencies of the
+book.  It recognizes LD forms in these .acl2 files and scans the
+loaded files as well.  When that is finished, it scans the book
+itself.
+
+Cert.pl recognize several kinds of forms as producing or affecting
+dependencies.  All such forms must be contained on a single line or
+cert.pl will not recognize them.  As such, if you want to hide, say,
+an include-book from cert.pl, you may insert a line break somewhere
+inside it.  Certain forms will also be ignored if they occur after a
+semicolon on the same line (a Lisp comment); the exceptions are noted.
+The following forms are recognized:
+
+ - (include-book "<bookname>" [:dir :<dirname>])
+     Adds the included book\'s :cert file as a dependency of the
+current book.
+
+ - (add-include-book-dir :<dirname> "<dirpath>")
+     Registers an association between the given dirname and dirpath so
+that we may correctly decode include-book and other forms with :dir
+:<dirname>.
+
+ - (depends-on "<filename>" [:dir :<dirname>])
+     Adds the named file as a dependency of the current book.  May
+occur in a comment, since depends-on is not defined in ACL2.
+
+ - (loads "<filename>" [:dir :<dirname>])
+     Adds the named file as a dependency of the current book, and also
+recursively scans that file for dependencies as if it were part of the
+current file.  May occur in a comment, since it is not defined in
+ACL2.
+
+ - (ld "<filename>" [:dir :<dirname>])
+     Ignored when it occurs while scanning the main book, as opposed
+to an .acl2 file or a file recursively LD\'d by an .acl2 file, this
+causes cert.pl to recursively scan the LD\'d file for dependencies as
+if it were part of the current file.
+
+ - ;; two-pass certification
+     If this line occurs in the file, it means that the current book
+is intended to be certified in two passes.  The dependencies computed
+for the current book are thus not dependencies of the .cert file, but
+of the .acl2x file, and the .acl2x file is the only dependency of the
+cert file.
+
+
+OPTIONS:
 
    --help
    -h

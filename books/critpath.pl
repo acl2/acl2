@@ -254,10 +254,11 @@ unless ($OPTIONS{'nolist'}) {
 
 
 
-my ($max_parallel, $max_start_time, $max_end_time, $avg_parallel)
-    = parallelism_stats(mk_sorted_event_lst($costs, $basecosts));
+my ($max_parallel, $max_start_time, $max_end_time, $avg_parallel, $sum_parallel)
+    = parallelism_stats($costs, $basecosts);
 
 if (! $OPTIONS{"html"}) {
     print "Maximum parallelism: $max_parallel processes, from time $max_start_time to $max_end_time\n";
     print "Average level of parallelism: $avg_parallel.\n";
+    print "Total time for all files: " . human_time($sum_parallel,0) . ".\n";
 }

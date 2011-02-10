@@ -471,7 +471,7 @@ sub individual_files_report {
 my $start = "start";
 my $end = "end";
 
-sub mk_sorted_event_lst {
+sub parallelism_stats {
     my ($costs, $basecosts) = @_;
 
     # costs: table mapping filename to totaltime, maxpath
@@ -479,8 +479,10 @@ sub mk_sorted_event_lst {
 
     # collect up a list of key/val pairs (time, start_or_finish)
     my @starts_ends = ();
+    my $running_total = 0;
     foreach my $key (keys %$basecosts) {
 	my $selfcost = $basecosts->{$key};
+	$running_total = $running_total + $selfcost;
 	my $totalcost = $costs->{$key}->{"totaltime"};
 	push (@starts_ends, [$totalcost-$selfcost, $start]);
 	push (@starts_ends, [$totalcost, $end]);
@@ -491,24 +493,15 @@ sub mk_sorted_event_lst {
 			       (($b->[1] eq $start) ? 0 : 1) :
 			       (($b->[1] eq $start) ? -1 : 0)) } @starts_ends;
 
-    return \@starts_ends;
-}
 
-sub parallelism_stats {
-    my $starts_ends = shift;
 
     my $max_parallel = 0;
     my $max_start_time = 0.0;
     my $max_end_time = 0.0;
-    my $sum_parallel = 0.0;
     my $curr_parallel = 0;
     my $lasttime = 0.0;
-    foreach my $entry (@$starts_ends) {
+    foreach my $entry (@starts_ends) {
 	(my $time, my $event) = @$entry;
-	# Running integral of parallelism over time.  Of course
-	# another (more accurate?) way to compute this would just be
-	# to add up the self-times for all files.
-	$sum_parallel = $sum_parallel + ($curr_parallel * ($time - $lasttime));
 
 	if ($event eq $start) {
 	    $curr_parallel = $curr_parallel + 1;
@@ -525,9 +518,9 @@ sub parallelism_stats {
     if ($curr_parallel != 0) {
 	print "Error: Ended with jobs still running??\n"
     }
-    my $avg_parallel = $sum_parallel / $lasttime;
+    my $avg_parallel = $running_total / $lasttime;
 
-    return ($max_parallel, $max_start_time, $max_end_time, $avg_parallel);
+    return ($max_parallel, $max_start_time, $max_end_time, $avg_parallel, $running_total);
 }
 
 
@@ -593,6 +586,7 @@ sub certlib_set_base_path {
 my $add_dir_event = 'add-include-book-dir';
 my $include_book_event = 'include-book';
 my $depends_on_event = 'depends-on';
+my $loads_event = 'loads';
 my $two_pass_event = 'two-pass certification';
 my $ld_event = 'ld';
 
@@ -669,6 +663,22 @@ sub get_depends_on {
     }
     return 0;
 }
+
+sub get_loads {
+    my $base = shift;
+    my $the_line = shift;
+    my $events = shift;
+
+    my $regexp = "\\(loads[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
+    my @res = $the_line =~ m/$regexp/i;
+    if (@res) {
+	debug_print_event($base, "loads", \@res);
+	push(@$events, [$loads_event, $res[0], $res[1]]);
+	return 1;
+    }
+    return 0;
+}
+
 
 sub get_two_pass {
     my $base = shift;
@@ -759,6 +769,7 @@ sub scan_src {
 	    $done = get_include_book($fname, $the_line, \@events);
 	    $done = $done || get_ld($fname, $the_line, \@events);
 	    $done = $done || get_depends_on($fname, $the_line, \@events);
+	    $done = $done || get_loads($fname, $the_line, \@events);
 	    $done = $done || get_add_dir($fname, $the_line, \@events);
 	    $done = $done || get_two_pass($fname, $the_line, \@events);
 	}
@@ -857,15 +868,15 @@ my $src_deps_depth = -1;
 # dependency-affecting events that are present in the file
 # (include-books, lds, etc.)
 sub src_deps {
-    my $fname = shift;
-    my $cache = shift;
-    my $local_dirs = shift;
-    my $deps = shift;
-    my $book_only = shift;
-    my $tscache = shift;
-    my $ld_ok = shift;
-    my $seen = shift;
-
+    my ($fname,             # file to scan for dependencies
+	$cache,             # file event cache
+	$local_dirs,        # :dir name table
+	$deps,              # file dependency list (accumulator)
+	$book_only,         # Only record include-book dependencies
+	$tscache,           # timestamp cache
+	$ld_ok,             # Allow following LD commands
+	$seen)              # seen table for detecting circular dependencies
+	= @_;
 
     if ($seen->{$fname}) {
 	print "Circular dependency found in src_deps of $fname\n";
@@ -911,6 +922,21 @@ sub src_deps {
 					      $local_dirs,
 					      "depends-on", "");
 	    $fullname && push(@$deps, $fullname);
+	} elsif ($type eq $loads_event) {
+	    my $srcname = $event->[1];
+	    my $dir = $event->[2];
+	    my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
+					      $local_dirs, "loads", "");
+	    if ($fullname) {
+		push(@$deps, $fullname) unless $book_only;
+		my $local_two_pass = src_deps($fullname, $cache,
+					      $local_dirs, $deps,
+					      $book_only,
+					      $tscache,
+					      $ld_ok,
+					      $seen);
+		$two_pass = $two_pass || $local_two_pass;
+	    }
 	} elsif ($type eq $two_pass_event) {
 	    $two_pass = 1;
 	} elsif ($type eq $ld_event) {

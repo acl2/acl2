@@ -100,7 +100,7 @@
 
   (mbe :logic (member-equal x y)
        :exec (cond ((atom y) nil)
-                   ((hons-equal x (car y)) y)
+                   ((equal x (car y)) y)
                    (t (gentle-member-equal x (cdr y))))))
 
 (defn gentle-member (x y)
