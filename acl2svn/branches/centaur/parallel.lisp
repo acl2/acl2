@@ -124,39 +124,41 @@
   make large DOC ACL2_PAR=p
   ~ev[]~/~/")
 
-(defun set-parallel-evaluation-fn (value state)
+(defun set-parallel-evaluation-fn (value ctx state)
   (declare (xargs :guard (member-eq value '(t nil :bogus-parallelism-ok))))
   (cond
    ((eq (f-get-global 'parallel-evaluation-enabled state)
         value)
-    (pprogn (fms "No change in enabling of parallel evaluation.~%"
-                 nil *standard-co* state nil)
+    (pprogn (observation ctx
+                         "No change in enabling of parallel evaluation.")
             (value nil)))
    (t
     (case value
       ((nil)
        (pprogn (f-put-global 'parallel-evaluation-enabled value state)
-               (fms "Disabling parallel evaluation.  The user can still use ~
-                     parallelism primitives, but during evaluation they will ~
-                     degrade to their serial equivalent.~%"
-                    nil *standard-co* state nil)
+               (observation ctx
+                            "Disabling parallel evaluation.  Parallelism ~
+                             primitives may still be used, but during ~
+                             evaluation they will degrade to their serial ~
+                             equivalents.")
                (value nil)))
       ((t)
        (pprogn (f-put-global 'parallel-evaluation-enabled value state)
-               (fms "Parallel evaluation is enabled, but parallelism ~
-                     primitives may only be called inside within function ~
-                     definitions, not at the top level of the ACL2 ~
-                     read-eval-print loop.  See :DOC ~
-                     parallelism-at-the-top-level."
-                    nil *standard-co* state nil)
+               (observation ctx
+                            "Parallel evaluation is enabled, but parallelism ~
+                             primitives may only be called within function ~
+                             definitions or macro top-level, not at the top ~
+                             level of the ACL2 read-eval-print loop. ~
+                             See :DOC parallelism-at-the-top-level.")
                (value t)))
       (otherwise ; :bogus-parallelism-ok
        (pprogn (f-put-global 'parallel-evaluation-enabled value state)
-               (fms "Parallel evaluation is enabled.  Parallelism primitives ~
-                     may be called directly in the top-level loop, but they ~
-                     will execute serially.  See :DOC ~
-                     parallelism-at-the-top-level.~%"
-                    nil *standard-co* state nil)
+               (observation ctx
+                            "Parallel evaluation is enabled.  Parallelism ~
+                             primitives may be called directly in the ~
+                             top-level loop, but without use of the macro ~
+                             top-level, they will execute serially.  See :DOC ~
+                             parallelism-at-the-top-level.")
                (value :bogus-parallelism-ok)))))))
 
 (defmacro set-parallel-evaluation (value)
@@ -202,25 +204,27 @@
                                        '(t 't nil 'nil
                                            :bogus-parallelism-ok
                                            ':bogus-parallelism-ok))))
-  `(let ((val ,value))
+  `(let ((val ,value)
+         (ctx 'set-parallel-evaluation))
      (prog2$
       #+acl2-par
       t
       #-acl2-par
       (and val
-           (er hard 'set-parallel-evaluation-fn
+           (er hard ctx
                "Parallelism can only be enabled in CCL or threaded SBCL. ~
                 Additionally, the feature :ACL2-PAR must be set when ~
-                compiling ACL2 (for example, by using `~c[make]' with ~
-                argument ~c[ACL2_PAR=t]). Either the current Lisp is neither ~
-                CCL nor threaded SBCL, or this feature is missing.  ~
-                Consequently, parallelism will remain disabled.  Note that ~
-                you can submit parallelism primitives at the top level when ~
-                parallel evaluation is disabled, although they will not ~
-                result in any parallel evaluation.~%"))
+                compiling ACL2 (for example, by using `make' with argument ~
+                `ACL2_PAR=t'). Either the current Lisp is neither CCL nor ~
+                threaded SBCL, or this feature is missing.  Consequently, ~
+                parallelism will remain disabled.  Note that you can submit ~
+                parallelism primitives at the top level when parallel ~
+                evaluation is disabled, although they will not result in any ~
+                parallel evaluation.~%"))
       (set-parallel-evaluation-fn
        (cond ((consp val) (cadr val))
              (t val))
+       ctx
        state))))
 
 (defdoc parallelism-at-the-top-level
@@ -234,7 +238,7 @@
   ~pl[set-parallel-evaluation].~/
 
   Consider for example the following call of ~ilc[pargs] in the ACL2
-  top-level loop.  Instead of executing ~c[parge], ACL2 macroexpands away this
+  top-level loop.  Instead of executing ~c[pargs], ACL2 macroexpands away this
   call, leaving us with serial evaluation of the arguments to the ~ilc[cons]
   call, or else causes an error (~pl[set-parallel-evaluation]).  If there is no
   error, then
@@ -246,18 +250,25 @@
   (cons (expensive-fn-1 4) (expensive-fn-2 5))
   ~ev[]
 
-  A trivial way to enable parallel evaluation of a form is to put it inside a
-  function body.  For example, consider the following definition.
+  One trivial way to enable parallel evaluation of a form is to surround it
+  with a call to macro ~l[top-level].  For example, consider the following use.
   ~bv[]
-  (defun foo (x y)
-    (declare (xargs :guard t))
-    (pargs (cons (expensive-fn-1 x) (expensive-fn-2 y))))
+  (top-level (pargs (cons (expensive-fn-1 4) (expensive-fn-2 5))))
   ~ev[]
   Then in an executable image that supports parallel evaluation ~-[]
   ~pl[parallelism-build] for instructions on how to build such an executable
-  ~-[] submission of the form ~c[(foo 4 5)], even in the ACL2 top-level loop,
-  can cause parallel evaluation of ~c[(expensive-fn-1 4)] and
-  ~c[(expensive-fn-2 5)].
+  ~-[] ~c[(expensive-fn-1 4)] and ~c[(expensive-fn-2 5)] can evaluate in 
+  parallel.
+
+  A second way to enable parallel evaluation of a form is to place it 
+  inside a function body.  For example, consider the following definition.
+  ~bv[]
+  (defun foo (x y)
+    (pargs (cons (expensive-fn-1 x) (expensive-fn-2 y))))
+  ~ev[]
+  Then in an executable image that supports parallel evaluation, submission of
+  the form ~c[(foo 4 5)] can cause parallel evaluation of 
+  ~c[(expensive-fn-1 4)] and ~c[(expensive-fn-2 5)].
 
   Note that ~il[guard]s need not be verified in order to obtain ~il[parallel]
   evaluation.  The only restrictions on parallel evaluation are to use an

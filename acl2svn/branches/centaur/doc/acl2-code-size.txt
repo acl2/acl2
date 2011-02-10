@@ -1,11 +1,11 @@
 
 CODE LINES:
-  102452 lines,   4461245 characters
+  102468 lines,   4461753 characters
 COMMENT LINES:
-   52829 lines,   3104131 characters
+   52842 lines,   3104928 characters
 BLANK LINES (excluding documentation):
-   23632 lines,     25228 characters
+   23636 lines,     25232 characters
 DOCUMENTATION LINES:
-   77953 lines,   3477161 characters
+   77974 lines,   3478288 characters
 TOTAL:
-  256866 lines,  11067765 characters
+  256920 lines,  11070201 characters

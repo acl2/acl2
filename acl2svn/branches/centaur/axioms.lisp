@@ -9159,23 +9159,26 @@
         (t (cons (car x) (binary-append (cdr x) y)))))
 
 #+acl2-loop-only
-(defmacro append (x y &rest rst)
+(defmacro append (&rest rst)
 
   ":Doc-Section ACL2::Programming
 
   ~il[concatenate] two or more lists~/
 
-  ~c[Append], which takes two or more arguments, expects all the
-  arguments except perhaps the last to be true (null-terminated)
-  lists.  It returns the result of concatenating all the elements of
-  all the given lists into a single list.  Actually, in ACL2 ~c[append]
-  is a macro that expands into calls of the binary function
-  ~ilc[binary-append].~/
+  ~c[Append], which takes two or more arguments, expects all the arguments
+  except perhaps the last to be true (null-terminated) lists.  It returns the
+  result of concatenating all the elements of all the given lists into a single
+  list.  Actually, in ACL2 ~c[append] is a macro that expands into calls of the
+  binary function ~ilc[binary-append] if there are at least two arguments; if
+  there is just one argument then the expansion is that argument; and finally,
+  ~c[(append)] expands to ~c[nil].~/
 
-  ~c[Append] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  ~c[Append] is a Common Lisp function.  See any Common Lisp documentation for
+  more information.~/"
 
-  (xxxjoin 'binary-append (cons x (cons y rst))))
+  (cond ((null rst) nil)
+        ((null (cdr rst)) (car rst))
+        (t (xxxjoin 'binary-append rst))))
 
 (defthm true-listp-append
 

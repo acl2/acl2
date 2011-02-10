@@ -27994,7 +27994,7 @@
                  (value recs))
                 (t ; need to add a new record for g-canon
                  (let* ((ext-succ (siblings f-canon wrld))
-                        (ord-anc (canonical-ancestors g-canon wrld))
+                        (ord-anc (canonical-ancestors g-canon wrld nil))
                         (ext-anc (collect-ext-anc g-canon records))
                         (h (or (intersection1-eq ord-anc ext-succ)
                                (intersection1-eq ext-anc ext-succ))))
@@ -28789,11 +28789,11 @@
                                    canon-gs)
                                   (t (append (canonical-cdrs alist wrld nil)
                                              canon-gs)))))
-             (extended-ancestors1 (append (canonical-ancestors (car fns)
-                                                               wrld)
-                                          (cdr fns))
-                                  canon-gs arfal wrld
-                                  (hons-acons (car fns) alist fal))))))
+             (extended-ancestors1
+              (append (canonical-ancestors (car fns) wrld nil)
+                      (cdr fns))
+              canon-gs arfal wrld
+              (hons-acons (car fns) alist fal))))))
 
 (defun attachment-records-fal (attachment-records fal)
   (cond ((endp attachment-records) fal)
@@ -28809,7 +28809,7 @@
 ; efficient when #+hons (which was its intended use when written).
 
   (extended-ancestors1 (cons (canonical-sibling f wrld)
-                             (canonical-ancestors f wrld))
+                             (canonical-ancestors f wrld nil))
                        nil
                        (attachment-records-fal
                         (global-val 'attachment-records wrld)

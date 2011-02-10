@@ -236,8 +236,10 @@
 
 (defun eval-ground-subexpressions (term ens wrld state ttree)
   (cond
-   ((variablep term) (mv nil term ttree))
-   ((fquotep term) (mv nil term ttree))
+   ((or (variablep term)
+        (fquotep term)
+        (eq (ffn-symb term) 'hide))
+    (mv nil term ttree))
    ((flambda-applicationp term)
     (mv-let
      (flg args ttree)

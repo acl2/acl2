@@ -9196,8 +9196,8 @@
 ; conservativity argument to conclude that (EVL (disjoin 'cl0) A) holds in the
 ; current session history, and therefore so does cl0.
 
-; Finally, we remark briefly on the relation between guards and ancestors in
-; our criterion for using attachments in meta-level reasoning.  Above, we argue
+; We remark briefly on the relation between guards and ancestors in our
+; criterion for using attachments in meta-level reasoning.  Above, we argue
 ; that we can restrict to attachments to functions ancestral in metafunctions
 ; or clause-processors.  But how do we know that evaluation produces theorems
 ; in the resulting evaluation history?  If raw-Lisp functions installed by ACL2
@@ -9207,6 +9207,15 @@
 ; admitted, but after applying the entire functional substitution of that
 ; event.  Thus, we include guards in our notion of ancestor so that this guard
 ; obligation clearly holds.
+
+; So, we enrich the notion of ancestor to include guards.  However, we can
+; weaker our notion of ancestor to avoid the next-to-last argument of
+; return-last, except when it is used to implement mbe.  This weakening was
+; inspired by an example sent to us by Sol Swords, who derived it from his
+; actual experience, and is justified by imagining that all such calls of
+; return-last are expanded away before storing events.  The parameter rlp
+; passed to our functions is true when this special handling of return-last is
+; to be performed.
 
 ; End of Essay on Correctness of Meta Reasoning
 

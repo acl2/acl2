@@ -5839,10 +5839,18 @@
 
 (mutual-recursion
 
-(defun canonical-ffn-symbs (term wrld ans ignore-fns)
+(defun canonical-ffn-symbs (term wrld ans ignore-fns rlp)
+
+; For a discussion of rlp, see the end of the Essay on Correctness of Meta
+; Reasoning.
+
   (cond
    ((variablep term) ans)
    ((fquotep term) ans)
+   ((and rlp
+         (eq (ffn-symb term) 'return-last)
+         (not (equal (fargn term 1) ''mbe1-raw)))
+    (canonical-ffn-symbs (fargn term 3) wrld ans ignore-fns rlp))
    (t (canonical-ffn-symbs-lst
        (fargs term)
        wrld
@@ -5850,19 +5858,22 @@
               (canonical-ffn-symbs (lambda-body (ffn-symb term))
                                    wrld
                                    ans
-                                   ignore-fns))
+                                   ignore-fns
+                                   rlp))
              (t (let ((fn (canonical-sibling (ffn-symb term) wrld)))
                   (cond ((member-eq fn ignore-fns) ans)
                         (t (add-to-set-eq fn ans))))))
-       ignore-fns))))
+       ignore-fns
+       rlp))))
 
-(defun canonical-ffn-symbs-lst (lst wrld ans ignore-fns)
+(defun canonical-ffn-symbs-lst (lst wrld ans ignore-fns rlp)
   (cond ((null lst) ans)
         (t (canonical-ffn-symbs-lst
             (cdr lst)
             wrld
-            (canonical-ffn-symbs (car lst) wrld ans ignore-fns)
-            ignore-fns))))
+            (canonical-ffn-symbs (car lst) wrld ans ignore-fns rlp)
+            ignore-fns
+            rlp))))
 
 )
 
@@ -5878,15 +5889,16 @@
                     (t (cons fn ans))))
             ignore-fns))))
 
-(defun immediate-canonical-ancestors (fn wrld ignore-fns)
+(defun immediate-canonical-ancestors (fn wrld ignore-fns rlp)
 
 ; This function is analogous to immediate-instantiable-ancestors, but it
 ; traffics entirely in canonical functions and is not concerned with the notion
 ; of instantiablep.  To see why guards are involved, see the reference to the
-; Essay on Correctness of Meta Reasoning in the Essay on Defattach.
+; Essay on Correctness of Meta Reasoning in the Essay on Defattach, which also
+; explains special handling of return-last, performed here when rlp is true.
 
   (let ((guard-anc
-         (canonical-ffn-symbs (guard fn nil wrld) wrld nil ignore-fns)))
+         (canonical-ffn-symbs (guard fn nil wrld) wrld nil ignore-fns rlp)))
     (mv-let (name x)
             (constraint-info fn wrld)
             (cond
@@ -5901,10 +5913,10 @@
                      (supporters (unknown-constraint-supporters cl-proc wrld)))
                 (collect-canonical-siblings supporters wrld guard-anc
                                             ignore-fns)))
-             (name (canonical-ffn-symbs-lst x wrld guard-anc ignore-fns))
-             (t (canonical-ffn-symbs x wrld guard-anc ignore-fns))))))
+             (name (canonical-ffn-symbs-lst x wrld guard-anc ignore-fns rlp))
+             (t (canonical-ffn-symbs x wrld guard-anc ignore-fns rlp))))))
 
-(defun canonical-ancestors-rec (fns wrld ans)
+(defun canonical-ancestors-rec (fns wrld ans rlp)
 
 ; See canonical-ancestors.  Unlike that function, it includes fns in the
 ; result, and it assumes that all functions in fns are canonical.
@@ -5912,22 +5924,25 @@
   (cond
    ((null fns) ans)
    ((member-eq (car fns) ans)
-    (canonical-ancestors-rec (cdr fns) wrld ans))
+    (canonical-ancestors-rec (cdr fns) wrld ans rlp))
    (t
     (let* ((ans1 (cons (car fns) ans))
-           (imm (immediate-canonical-ancestors (car fns) wrld ans1))
-           (ans2 (canonical-ancestors-rec imm wrld ans1)))
-      (canonical-ancestors-rec (cdr fns) wrld ans2)))))
+           (imm (immediate-canonical-ancestors (car fns) wrld ans1 rlp))
+           (ans2 (canonical-ancestors-rec imm wrld ans1 rlp)))
+      (canonical-ancestors-rec (cdr fns) wrld ans2 rlp)))))
 
-(defun canonical-ancestors (fn wrld)
+(defun canonical-ancestors (fn wrld rlp)
 
 ; This function is completely analogous to instantiable-ancestors, except that
 ; it takes a single function that is not included in the result, it traffics
 ; entirely in canonical functions, and it is not concerned with the notion of
 ; instantiablep.  It assumes that fn is canonical.
 
-  (let* ((imm (immediate-canonical-ancestors fn wrld (list fn))))
-    (canonical-ancestors-rec imm wrld nil)))
+; For a discussion of rlp, see the end of the Essay on Correctness of Meta
+; Reasoning.
+
+  (let* ((imm (immediate-canonical-ancestors fn wrld (list fn) rlp)))
+    (canonical-ancestors-rec imm wrld nil rlp)))
 
 (defun chk-evaluator-use-in-rule (name meta-fn-lst rule-type ev ctx wrld state)
   (er-progn
@@ -5988,11 +6003,13 @@
              (meta-anc (canonical-ancestors-rec
                         (collect-canonical-siblings meta-fn-lst wrld nil nil)
                         wrld
-                        nil))
+                        nil
+                        t))
              (ev-anc (canonical-ancestors-rec
                       (collect-canonical-siblings (list ev) wrld nil nil)
                       wrld
-                      nil)))
+                      nil
+                      t)))
         (cond
          ((or ev-prop ev-lst-prop)
           (er soft ctx ; see comment in defaxiom-supporters
@@ -6266,13 +6283,11 @@
    (intersection-eq (canonical-ancestors-rec
                      (collect-canonical-siblings
                       meta-fns wrld nil nil)
-                     wrld
-                     nil)
+                     wrld nil t)
                     (canonical-ancestors-rec
                      (collect-canonical-siblings
                       (list ev) wrld nil nil)
-                     wrld
-                     nil))
+                     wrld nil t))
    msg
    wrld))
 
