@@ -82,7 +82,7 @@ is set, fake-event returns ~c[(mv :fake-event-ld-error nil state)]."
 (defmacro fake-event-er (event &key hard-error-ok)
   `(er-let*
     ((event ,event))
-    (fake-event event)))
+    (fake-event event :hard-error-ok ,hard-error-ok)))
 
 (local
  (progn
