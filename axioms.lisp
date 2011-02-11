@@ -9163,7 +9163,7 @@
 
   ":Doc-Section ACL2::Programming
 
-  ~il[concatenate] two or more lists~/
+  ~il[concatenate] zero or more lists~/
 
   ~c[Append], which takes zero or more arguments, expects all the arguments
   except perhaps the last to be true (null-terminated) lists.  It returns the
