@@ -48,7 +48,10 @@
 				    COMPUTED-HINTS::rewriting-conc-lit)
                           (union-eq *acl2-exports*
                             *common-lisp-symbols-from-main-lisp-package*))
-                        '(union delete find map)))
+                        '(union delete find map
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (intersectp was added to *acl2-exports*).]
+                                intersectp)))
 
 #!SETS
 (defconst *sets-exports*

@@ -863,7 +863,9 @@
 		 (consp (cdr entry))
 		 (consp (cadr entry))
 		 (or (equal (car (cadr entry)) 'list::memberp)
-		     (equal (car (cadr entry)) 'acl2::member))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+		     (equal (car (cadr entry)) 'acl2::member-equal))
 		 (consp (cdr (cadr entry)))
 		 (consp (cddr (cadr entry)))
 		 (equal (cadr (cadr entry)) x))
@@ -914,7 +916,9 @@
 		 (consp (cdr entry))
 		 (consp (cddr entry)))
 	    (if (and (or (equal (car entry) 'list::memberp)
-			 (equal (car entry) 'acl2::member))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+			 (equal (car entry) 'acl2::member-equal))
 		     (equal (cadr entry) x)
 		     (equal (caddr entry) y))
 		t
@@ -1009,7 +1013,9 @@
 			(consp (cdr fn))
 			(consp (cddr fn))
 			(or (equal (car fn) 'list::memberp)
-			    (equal (car fn) 'acl2::member))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+			    (equal (car fn) 'acl2::member-equal))
 			(equal (cadr fn) x)
 			(equal (caddr fn) y))))
 	    t

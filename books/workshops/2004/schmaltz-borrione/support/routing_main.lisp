@@ -78,6 +78,8 @@
                  (equal (car (myroute from to n)) from)
                  ;; the last node is the final node
                  (equal (car (last (myroute from to n))) to)))
-   :hints (("GOAL"
-            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;    :hints (("GOAL"
+;             :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)))
+   )
 )

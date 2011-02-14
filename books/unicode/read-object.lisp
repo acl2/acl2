@@ -20,9 +20,10 @@
 (local (include-book "update-state"))
 (local (include-book "open-input-channels"))
 
-(local (defthm assoc-eq-is-assoc-equal
-         (equal (assoc-eq a x)
-                (assoc-equal a x))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (local (defthm assoc-eq-is-assoc-equal
+;          (equal (assoc-eq a x)
+;                 (assoc-equal a x))))
 
 (defthm read-object-state
   (implies (and (force (state-p1 state))

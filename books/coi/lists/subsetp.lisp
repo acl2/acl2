@@ -134,7 +134,9 @@
 
  (ADVISER::defadvice subset-by-multiplicity
    (implies (set-hyps)
-            (subsetp (subset) (superset)))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced subsetp by subsetp-equal).]
+            (subsetp-equal (subset) (superset)))
    :rule-classes (:pick-a-point :driver subset-by-multiplicity-driver))
 
  )

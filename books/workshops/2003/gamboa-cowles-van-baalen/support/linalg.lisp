@@ -756,14 +756,20 @@ At UW:
 ;; 		   (m-+ p (m-unary-- q)))))
 |#
 
+; Matt K., after v4-2:
+; Commenting out the following rule, which rewrites a term to itself!
+; -- Well, instead, given the comment below, I'll just make it not be a rewrite
+;    rule.
 (defthm minus-as-plus-inverse
   (equal (m-- P Q)
-	 (m-+ P (m-unary-- Q))))
+	 (m-+ P (m-unary-- Q)))
+  :rule-classes nil)
 
 ;; m-- is a macro that expands into the second term of the
 ;;  above equality. So the equality above expands into a special
 ;;  case of the reflexivity of equal.
-(in-theory (disable minus-as-plus-inverse))
+; Matt K. mod: See comment above for why I'm commenting this out.
+; (in-theory (disable minus-as-plus-inverse))
 
 #|;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  (defthm k-*---p

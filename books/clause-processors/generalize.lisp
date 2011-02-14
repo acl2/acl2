@@ -150,10 +150,9 @@
   (iff (intersectp-equal lst (list x))
        (member-equal x lst)))
 
-
-(defthm assoc-eq-is-assoc-equal
-  (equal (assoc-eq x al) (assoc-equal x al)))
-
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (defthm assoc-eq-is-assoc-equal
+;   (equal (assoc-eq x al) (assoc-equal x al)))
 
 (defthm assoc-equal-of-append
   (implies (alistp a)

@@ -4965,7 +4965,9 @@
    (list::fix x)
    (bag::subbagp x y) 
    (bag::memberp a x) 
-   (acl2::member a x) 
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+   (acl2::member-equal a x) 
    (bag::disjoint x y)
 ;   (synp vars form term) 
    (equal x y)

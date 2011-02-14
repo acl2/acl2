@@ -126,7 +126,9 @@
   (implies (and (all_no_intersectp_routep l)
                 (all_no_duplicatesp l))
            (no-duplicatesp (grab_nodes l)))
-  :hints (("GOAL" 
-           :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;   :hints (("GOAL" 
+;            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)))
+  )
 |#
 

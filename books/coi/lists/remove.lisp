@@ -9,9 +9,10 @@
 
 ;; We just use ACL2's remove
 
-(defthm remove-equal-reduction
-  (equal (remove-equal a x)
-         (remove a x)))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (defthm remove-equal-reduction
+;   (equal (remove-equal a x)
+;          (remove a x)))
 
 (defthm remove-remove
   (equal (remove a (remove b x))

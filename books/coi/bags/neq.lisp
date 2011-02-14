@@ -49,7 +49,9 @@ Eric,
 (defun member-symbol (x)
   (declare (type t x))
   (or (equal x 'list::memberp)
-      (equal x 'acl2::member)))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+      (equal x 'acl2::member-equal)))
 
 (defignored find-memberp-literal-that-shows-a-and-b-differ a (v b clause)
   (declare (type t v b clause)
@@ -113,7 +115,9 @@ Eric,
 
 (syn::defevaluator ev3 ev3-list
   ((list::memberp x l)
-   (acl2::member x l)
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+   (acl2::member-equal x l)
    (binary-append x y)
    (cons x y)
    (not x)
@@ -458,15 +462,18 @@ Eric,
 
 
 
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal in the comment below).]
+
 In general:
 
   I would suggest: if neither a nor b appear as
-an argument to member in the hypothesis, 
+an argument to member-equal in the hypothesis, 
 wrap them in a list and pass them to the
 disjoint computation.
 
-  If one does appear as an argument to a member
+  If one does appear as an argument to a member-equal
 in the hypothesis (memberp a x), try to establish the
 disjointness of the other from the list argument of
-member.
+member-equal.
 |#

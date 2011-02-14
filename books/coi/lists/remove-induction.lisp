@@ -65,11 +65,13 @@
 	  (and (memberp a y)
 	       (subsetp (remove a x) (remove a y))))))
 
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced subsetp by subsetp-equal).]
 (defthm subsetp-remove-definition
-  (equal (subsetp x y)
+  (equal (subsetp-equal x y)
 	 (if (consp x)
 	     (and (memberp (car x) y)
-		  (subsetp (remove (car x) x) (remove (car x) y)))
+		  (subsetp-equal (remove (car x) x) (remove (car x) y)))
 	   t))
   :hints (("Goal" :in-theory (disable SUBSET-BY-MULTIPLICITY)))
   :rule-classes (:definition))
@@ -82,8 +84,9 @@
   :hints (("Goal" :in-theory `(remove-list-remove-reduction-1-ALT
 			       REMOVE-LIST-REMOVE-REDUCTION-2
 			       MEMBERP-REMOVE 
-			       (:TYPE-PRESCRIPTION MEMBERP) 
-			       (:TYPE-PRESCRIPTION REMOVE)
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;			       (:TYPE-PRESCRIPTION MEMBERP) 
+;			       (:TYPE-PRESCRIPTION REMOVE)
 			       ))))
 
 (in-theory (enable remove-list-remove-definition))

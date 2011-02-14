@@ -70,8 +70,10 @@
                  (equal (len route) 3))
             (equal (do_travel1 msg route N)
                    msg))
-   :hints (("GOAL" 
-            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;    :hints (("GOAL" 
+;             :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)))
+   )
 )
 
 (defthm no-duplicatesp_firstn_member
@@ -120,10 +122,13 @@
    :hints (("GOAL" 
             :induct (do_travel1 msg route N)
             :do-not-induct t
-            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL
-                                MEMBER->MEMBER-EQUAL
-                                availableMovep
-                                firstn))))
+            :in-theory (disable
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (commented out two rules just below).]
+                        ;; NO-DUPLICATESP->NO-DUPLICATESP-EQUAL
+                        ;; MEMBER->MEMBER-EQUAL
+                        availableMovep
+                        firstn))))
 )
 
 
@@ -207,8 +212,10 @@
                  (all_inf_np route (* 4 N))
                  (equal (len route) 3))
             (not (do_travel1 msg route N)))
-   :hints (("GOAL" 
-            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;    :hints (("GOAL" 
+;             :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)))
+   )
 )
 
 (local
@@ -233,10 +240,13 @@
    :hints (("GOAL" 
             :induct (do_travel1 msg route N)
             :do-not-induct t
-            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL
-                                MEMBER->MEMBER-EQUAL
-                                availableMovep
-                                firstn))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (commented out two rules just below).]
+            :in-theory (disable
+                        ;; NO-DUPLICATESP->NO-DUPLICATESP-EQUAL
+                        ;; MEMBER->MEMBER-EQUAL
+                        availableMovep
+                        firstn))
            ("Subgoal *1/3"
             :cases ((availableMovep (cdr route) n)
                     (not (availableMovep (cdr route) n))))))
@@ -302,7 +312,9 @@
                     (all_inf_routep tl (* 4 N))
                     (all_true-listp tl)
                     (all_availableMovep_routep tl N))
-           :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)
+           )))
 
 
 (defun all_not_available_routep (tl N)
@@ -341,4 +353,6 @@
                     (all_inf_routep tl (* 4 N))
                     (all_true-listp tl)
                     (all_not_available_routep tl N))
-           :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)
+           )))

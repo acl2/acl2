@@ -59,6 +59,9 @@
 ;; kind of behavior ought to be allowed by this formalization, so we
 ;; weaken it somewhat.
 
+; Matt K., after v4-2:
+; Commenting out the following rule, which rewrites a term to itself!
+#||
 (defthm exfiltration 
   (implies
    (and
@@ -67,6 +70,7 @@
    (equal (select y (next st2))
 	  (select y (next st2))))
   :hints (("goal" :use (:instance separation (seg y)))))
+||#
 
 (defthm mediation 
   (implies

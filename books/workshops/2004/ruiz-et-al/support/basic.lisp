@@ -634,6 +634,9 @@
     (if (eql x (caar sigma)) (cdar sigma) (val x (cdr sigma)))))
 
 
+#||
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+
 ;;; REMARK: For execution, I will use assoc when the variable is in the
 ;;; domain. Sometimes, I have to use assoc-equal (see renamings.lisp).
 ;;; The following rule rewrites assoc-equal to assoc. In this way, we
@@ -643,6 +646,7 @@
 
 (defthm assoc-equal-assoc-equal
   (equal (assoc-equal x a) (assoc x a)))
+||#
 
 
 ;;; This relation between val and assoc is expressed

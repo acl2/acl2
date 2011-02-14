@@ -132,7 +132,9 @@
   (implies (member var cenv)
 	   (equal (cdr (assoc var (bind cenv vals rest)))
 		  (nth (my-position var cenv) vals)))
-  :hints (("Subgoal *1/3.1" 
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (just a goal name change).]
+  :hints (("Subgoal *1/4"
 	   :use ((:instance position-right-shift)))))
 
 ;;---------------------------------------------------------------------------

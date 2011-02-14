@@ -220,9 +220,10 @@
 (defthm alist::use-equivp-id
   (alist::use-equivp domain x x))
 
-(defthm assoc-eq-is-assoc
-  (equal (assoc-eq key list)
-	 (assoc key list)))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (defthm assoc-eq-is-assoc
+;   (equal (assoc-eq key list)
+;          (assoc key list)))
 
 (defthm assoc-equiv-rewrite-order
   (implies

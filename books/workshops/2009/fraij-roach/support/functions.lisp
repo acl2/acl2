@@ -372,9 +372,11 @@ the data found in the corresponding constant pool entry.
 ;; The following theorems are imported from JS Moore proofs on 
 ;; graph theorem.
 ;; ***************
-(defthm member-is-member-equal
-  (equal (member i seen)
-	 (member-equal i seen)))
+
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (defthm member-is-member-equal
+;   (equal (member i seen)
+;          (member-equal i seen)))
 
 (defun del (x y)
   (if (consp y)

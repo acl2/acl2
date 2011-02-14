@@ -13,6 +13,9 @@
 
 (in-package "ACL2")
 
+#||
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+
 ;;; Logical relation between member/assoc-equal and member/equal:
 
 (defthm equal-member-equal-member
@@ -20,6 +23,7 @@
 
 (defthm equal-assoc-equal-assoc
   (equal (assoc-equal e l) (assoc e l)))
+||#
 
 ;;;----------------------------------------------------------------------------
 ;;;

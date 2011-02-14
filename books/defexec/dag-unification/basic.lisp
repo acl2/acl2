@@ -631,8 +631,9 @@
 ;;; rewriting strategy than the one given in the book alist-defthms.lisp
 ;;; in the ACL2 distribution.
 
-(defthm assoc-equal-assoc-equal
-  (equal (assoc-equal x a) (assoc x a)))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (defthm assoc-equal-assoc-equal
+;   (equal (assoc-equal x a) (assoc x a)))
 
 
 ;;; This relation between val and assoc is expressed

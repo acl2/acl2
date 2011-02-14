@@ -37,8 +37,10 @@
                 (equal (len route_pair) 2))
            (equal (first_travel_step msg route_pair N)
                   msg))
-  :hints (("GOAL" 
-           :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;   :hints (("GOAL" 
+;            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)))
+  )
 
 (local 
  (include-book "../../../../arithmetic-3/bind-free/top"))
@@ -253,7 +255,9 @@
   :hints (("GOAL" 
            :do-not-induct t
            :expand (not (availableMovep route_pair (* 4 N)))
-           :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)
+           )
           ("Subgoal 2"
            :expand (all_intp route_pair))))
 
@@ -756,7 +760,8 @@
   :otf-flg t
   :hints (("GOAL" 
            :do-not-induct t
-           :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)
            :do-not '(eliminate-destructors generalize fertilize))
 ; Subgoal hints modified by Matt K. after ACL2 Version 3.6.1 for changes in
 ; too-many-ifs heuristic.  The first of these is just for backward
@@ -782,7 +787,10 @@
   :otf-flg t
   :hints (("GOAL"
            :do-not-induct t
-           :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL
-                               prefer-positive-addends-equal
-                               prefer-positive-addends-<))))
+           :in-theory (disable
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (commented out rule just below).]
+                       ;; NO-DUPLICATESP->NO-DUPLICATESP-EQUAL
+                       prefer-positive-addends-equal
+                       prefer-positive-addends-<))))
 (set-non-linearp nil)

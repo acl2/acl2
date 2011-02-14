@@ -124,9 +124,10 @@
 ; list will be successful.  Secondly, we know that the type of the channel
 ; returned will be the same as type in our call to open-input-channel-p1.
 
-(local (defthm assoc-eq-is-assoc-equal
-         (equal (assoc-eq a x)
-                (assoc-equal a x))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (local (defthm assoc-eq-is-assoc-equal
+;          (equal (assoc-eq a x)
+;                 (assoc-equal a x))))
 
 (defthm assoc-open-input-channels-exists
   (implies (open-input-channel-p1 channel type state)

@@ -3038,7 +3038,9 @@
              (:EXECUTABLE-COUNTERPART CHARACTERP)
              (:EXECUTABLE-COUNTERPART CONSP)
              (:EXECUTABLE-COUNTERPART EQUAL)
-             (:EXECUTABLE-COUNTERPART MEMBER)
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+             (:EXECUTABLE-COUNTERPART ACL2::MEMBER-EQUAL)
              (:EXECUTABLE-COUNTERPART SYMBOL-NAME)
              (:REWRITE ACL2::CAR-CONS)
              (:REWRITE ACL2::CDR-CONS)

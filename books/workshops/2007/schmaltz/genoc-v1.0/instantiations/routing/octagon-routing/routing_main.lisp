@@ -167,7 +167,8 @@
     :hints (("GOAL"
              :do-not '(eliminate-destructors generalize fertilize)
              :induct (true-listp M)
-             :in-theory (disable no-duplicatesp->no-duplicatesp-equal)
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;              :in-theory (disable no-duplicatesp->no-duplicatesp-equal)
              :do-not-induct t)
             ("Subgoal *1/1"
              :use ((:instance member-of-naturals-hyp

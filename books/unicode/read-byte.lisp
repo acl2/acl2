@@ -23,9 +23,10 @@
 (local (include-book "unsigned-byte-listp"))
 (local (include-book "signed-byte-listp"))
 
-(local (defthm assoc-eq-is-assoc-equal
-         (equal (assoc-eq a x)
-                (assoc-equal a x))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (local (defthm assoc-eq-is-assoc-equal
+;          (equal (assoc-eq a x)
+;                 (assoc-equal a x))))
 
 (local (defthm car-of-assoc-equal-when-assoc-equal
          (implies (assoc-equal a x)

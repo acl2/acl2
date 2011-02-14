@@ -127,6 +127,14 @@
 
 ; We close with two utilities that may be worth running on occasion.
 
+; With the change after v4-2 for equality variants, and specifically with the
+; use of remove-guard-holders rather than translate to deal with the LET
+; introduced by LET-MBE, we need to disable raw-acl2-exports in order for (I
+; think) forward-chaining to do its work in the guard proof for
+; undocumented-acl2-exports.  It seems reasonable simply to disable
+; raw-acl2-exports.
+(in-theory (disable raw-acl2-exports))
+
 (defun undocumented-acl2-exports (wrld)
 
 ; Returns symbols in *acl2-exports* without an ACL2 :doc topic.  Some may be

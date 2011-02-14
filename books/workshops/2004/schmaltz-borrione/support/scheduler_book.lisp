@@ -73,8 +73,11 @@
                            (tl (cdr tl))
                            (prev (append (cdar tl) prev)))
            :in-theory (disable scheduler_and_prev_and_intersectp
-                               NO-DUPLICATESP->NO-DUPLICATESP-EQUAL
-                               MEMBER->MEMBER-EQUAL))))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (commented out two rules just below).]
+                               ;; NO-DUPLICATESP->NO-DUPLICATESP-EQUAL
+                               ;; MEMBER->MEMBER-EQUAL
+                               ))))
 
 (defthm no_dupli_tl_=>_no_dupli_scheduler
   (implies (all_no_duplicatesp tl)
@@ -88,8 +91,11 @@
   (implies (all_no_duplicatesp tl)
            (no-duplicatesp (grab_nodes (scheduler tl nil prev))))
   :hints (("GOAL" 
-           :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL
-                               scheduler_TAIL_=_NON_TAIL))))
+           :in-theory (disable
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (commented out rule just below).]
+                       ;; NO-DUPLICATESP->NO-DUPLICATESP-EQUAL
+                       scheduler_TAIL_=_NON_TAIL))))
 
 
 (defthm all_no_duplicatesp_preserved_scheduler

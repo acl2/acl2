@@ -29,8 +29,10 @@
                                   '(equal a a))))))
 
 ; Or pick some other functions for this evaluator:
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
 (defevaluator evl evl-list
-  ((if x y z) (length x) (member x y) (equal x y) (not x)))
+  ((if x y z) (length x) (member-equal x y) (equal x y) (not x)))
 
 (defun strengthen-cl (cl term state)
   (declare (xargs :stobjs state))
@@ -369,7 +371,11 @@
  (er-let*
   ((encap
     (trans1 '(defevaluator ev2 ev2-list
-               ((if x y z) (length x) (member x y) (equal x y) (not x))))))
+               ((if x y z) (length x) (member-equal x y) (equal x y)
+                (not x))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (skip checks so that we get an encapsulate form).]
+               :skip-checks t))))
   (value
    `(define-trusted-clause-processor
       strengthen-cl-program3

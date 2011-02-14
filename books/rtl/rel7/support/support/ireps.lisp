@@ -927,6 +927,9 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (e/d (nrepp exactp bvecp) ()))))
 
+; Matt K., after v4-2:
+; Commenting out the following rule, which rewrites a term to itself!
+#||
 (defthm nencode-nencode
   (implies (and (nrepp x p q)
                 (integerp p)
@@ -936,6 +939,7 @@
            (equal (nencode x p q) (nencode x p q)))
   :hints (("Goal" :use (nrepp-bvecp-sig)
 		  :in-theory (enable nencode nencode bits-tail nrepp bvecp))))
+||#
 
 (defthm drepp-bvecp-sig
     (implies (and (integerp p)

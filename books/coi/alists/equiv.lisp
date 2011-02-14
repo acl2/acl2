@@ -27,9 +27,10 @@
   (equal (assox key alist)
 	 (assoc key alist)))
 
-(defthm assoc-equal-reduction
-  (equal (assoc-equal x y)
-	 (assoc x y)))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (defthm assoc-equal-reduction
+;   (equal (assoc-equal x y)
+;          (assoc x y)))
 
 ;; Interpreting Objects as Conses (consfix)
 ;; 

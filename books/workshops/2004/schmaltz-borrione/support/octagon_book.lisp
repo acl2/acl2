@@ -201,7 +201,9 @@
            :induct (ComputeResponses_non_tail_cr_lst 
                     req_lst Glob_Mem ms)
            :do-not-induct t
-           :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)
+           ))
 )
 
 
@@ -226,7 +228,9 @@
            :induct (ComputeResponses_non_tail_cr_lst 
                     req_lst Glob_Mem ms)
            :do-not-induct t
-           :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)
+           ))
 )
 
 
@@ -269,7 +273,9 @@
            :induct (ComputeResponses_non_tail_cr_lst 
                     req_lst Glob_Mem ms)
            :do-not-induct t
-           :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)
+           ))
 )
 
 (defthm all_ok_dat_write_ComputeResponses
@@ -293,7 +299,9 @@
            :induct (ComputeResponses_non_tail_cr_lst 
                     req_lst Glob_Mem ms)
            :do-not-induct t
-           :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)
+           )))
 
 
 (defthm mem_ok_read_ComputeResponses
@@ -371,9 +379,11 @@
   (implies (all_no_duplicatesp tl)
            (all_no_duplicatesp 
             (car (computeResponses tl Glob_Mem ms nil))))
-  :hints (("GOAL"
-           :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL
-                               MEMBER->MEMBER-EQUAL))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;   :hints (("GOAL"
+;            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL
+;                                MEMBER->MEMBER-EQUAL)))
+  )
 
 (defthm all_pos_intp_rev
   (implies (all_pos_intp x)

@@ -327,8 +327,10 @@
   (declare (ignore clause world))
   (if (equal id '((0) NIL . 0))
       '(:computed-hint-replacement t ;; to have the hint inherited
-        :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL
-                            MEMBER->MEMBER-EQUAL))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;         :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL
+;                             MEMBER->MEMBER-EQUAL)
+        )
     nil))
 
 ;;------------------------
@@ -508,10 +510,13 @@
                      (< (- to from) (* 2 n)))
                 (equal (+ to (- from)) (* 2 n))
                 (equal (+ to (- from)) (* -2 n)))
-        :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL
-                            MEMBER->MEMBER-EQUAL
-                            prefer-positive-addends-equal
-                            prefer-positive-addends-<))
+        :in-theory (disable
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (commented out two rules just below).]
+                    ;; NO-DUPLICATESP->NO-DUPLICATESP-EQUAL
+                    ;; MEMBER->MEMBER-EQUAL
+                    prefer-positive-addends-equal
+                    prefer-positive-addends-<))
     nil))
 
 ;;--------------------------------------------------

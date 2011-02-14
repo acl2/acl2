@@ -59,7 +59,9 @@ Without the :meta rule, this fails:
 ;The evaluator for the :meta rule syntactic-membership-meta-rule.
 (syn::defevaluator evaluator-for-memberp-cons-and-append evaluator-for-memberp-cons-and-append-list
   ((list::memberp x l)
-   (acl2::member x l)
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+   (acl2::member-equal x l)
    (binary-append x y)
    (cons x y)
 ;   (quote x)
@@ -119,7 +121,9 @@ Without the :meta rule, this fails:
            (xargs :guard (pseudo-termp term)))
   (if (not (and (equal 3 (len term))
                 (or (equal (car term) 'list::memberp)
-                    (equal (car term) 'acl2::member))))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+                    (equal (car term) 'acl2::member-equal))))
       term
     (if (syntax-memberp-fn nil (cadr term) (caddr term))
         ''t
@@ -733,7 +737,9 @@ old version:
    (list::fix x)
    (subbagp x y) ;added by eric
    (list::memberp a x) ;added by eric
-   (acl2::member a x)
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+   (acl2::member-equal a x)
    (disjoint x y) ;added by eric
 ;   (synp vars form term) ;added by eric
    (equal x y)
@@ -1805,7 +1811,9 @@ PUTBACK
 
 (syn::defevaluator ev2 ev2-list
   ((list::memberp x l)
-   (acl2::member x l)
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+   (acl2::member-equal x l)
    (binary-append x y)
    (cons x y)
    (not x)
@@ -1825,7 +1833,9 @@ PUTBACK
     (let ((literal (car clause)))
       (if (and (consp literal)
                (or (equal (car literal) 'list::memberp)
-                   (equal (car literal) 'acl2::member))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+                   (equal (car literal) 'acl2::member-equal))
                (consp (cdr literal))
                (equal x (cadr literal))
                (consp (cddr literal))
@@ -1870,7 +1880,9 @@ PUTBACK
   (declare (ignore state) (type t term mfc state))
   (if (not (and (equal 3 (len term))
                 (or (equal (car term) 'list::memberp)
-                    (equal (car term) 'acl2::member))))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+                    (equal (car term) 'acl2::member-equal))))
       term
     (let ((irrel-list (get-irrel-list-from-clause (cadr term) (caddr term) (mfc-clause mfc))))
       (if (not (consp irrel-list))
@@ -1913,7 +1925,9 @@ PUTBACK
 (defun hyp-fun-simplify-cons-and-append-nest (term mfc state)
   (declare (ignore state)  (type t term mfc state))
   (if (not (and (equal 3 (len term))
-                (or (equal (car term) 'acl2::member)
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+                (or (equal (car term) 'acl2::member-equal)
                     (equal (car term) 'list::memberp))))
       'nil
     (let ((irrel-list (get-irrel-list-from-clause (cadr term) (caddr term) (mfc-clause mfc))))

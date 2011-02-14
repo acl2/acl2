@@ -124,8 +124,9 @@
    (blacklist y st)
    (blacklist x (scrublist (set-difference-equal x y) st))))
 
-(defthm member-equal-is-member
-  (equal (member-equal a l) (member a l)))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (defthm member-equal-is-member
+;   (equal (member-equal a l) (member a l)))
 
 (defthm intersection-equal-dia-b-segs-f-helper
   (implies

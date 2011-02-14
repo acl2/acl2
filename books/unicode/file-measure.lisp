@@ -29,9 +29,10 @@
                               (state-p1 state-state))))
   (len (cddr (assoc-equal channel (open-input-channels state-state)))))
 
-(local (defthm assoc-eq-is-assoc-equal
-         (equal (assoc-eq a x)
-                (assoc-equal a x))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (local (defthm assoc-eq-is-assoc-equal
+;          (equal (assoc-eq a x)
+;                 (assoc-equal a x))))
 
 (defthm read-byte$-measure-weak
   (implies (state-p1 state)

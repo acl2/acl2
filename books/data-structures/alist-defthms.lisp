@@ -36,13 +36,15 @@
 ; the EQUAL version. This way, we can build one set of rules about
 ; the EQUAL functions.
 
-(defthm assoc->assoc-equal
-  (equal (assoc x a)
-	 (assoc-equal x a)))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (defthm assoc->assoc-equal
+;   (equal (assoc x a)
+;          (assoc-equal x a)))
 
-(defthm assoc-eq->assoc-equal
-  (equal (assoc-eq x a)
-	 (assoc-equal x a)))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (defthm assoc-eq->assoc-equal
+;   (equal (assoc-eq x a)
+;          (assoc-equal x a)))
 
 (defthm bind->bind-equal
   (equal (bind x y a)
@@ -108,17 +110,19 @@
   (equal (rembind-all-eq x a)
 	 (rembind-all-equal x a)))
 
-(local (defthm member->member-equal
-	 (equal (member x l)
-		(member-equal x l))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (local (defthm member->member-equal
+;          (equal (member x l)
+;                 (member-equal x l))))
 
 (defthm domain-restrict->domain-restrict-equal
   (equal (domain-restrict l a)
 	 (domain-restrict-equal l a)))
 
-(local (defthm member-eq->member-equal
-	 (equal (member-eq x l)
-		(member-equal x l))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (local (defthm member-eq->member-equal
+;          (equal (member-eq x l)
+;                 (member-equal x l))))
 
 (defthm domain-restrict-eq->domain-restrict-equal
   (equal (domain-restrict-eq l a)

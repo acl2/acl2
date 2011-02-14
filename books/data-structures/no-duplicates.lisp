@@ -75,12 +75,14 @@
 
 
 
-(defthm member-is-member-equal
-  (equal (member x y) (member-equal x y)))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (defthm member-is-member-equal
+;   (equal (member x y) (member-equal x y)))
 
-(defthm no-duplicatesp-is-no-duplicatesp-equal
-  (equal (no-duplicatesp x)
-         (no-duplicatesp-equal x)))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (defthm no-duplicatesp-is-no-duplicatesp-equal
+;   (equal (no-duplicatesp x)
+;          (no-duplicatesp-equal x)))
 
 (defthm no-duplicatesp-equal-non-cons
   (implies (not (consp x))

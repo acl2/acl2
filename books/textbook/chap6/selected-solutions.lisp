@@ -338,7 +338,8 @@
 (encapsulate ((f1 (x) t))
              (local (defun f1 (x) x))
              (defthm f1-constraint
-               (equal (f1 x) (f1 x))))
+               (equal (f1 x) (f1 x))
+               :rule-classes nil))
 
 
 ; 2. (defun f (x) (not (f x)))

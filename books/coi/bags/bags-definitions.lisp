@@ -3887,7 +3887,9 @@
                  (consp (cdr entry))
                  (consp (cadr entry))
                  (or (equal (car (cadr entry)) 'list::memberp)
-                     (equal (car (cadr entry)) 'acl2::member))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+                     (equal (car (cadr entry)) 'acl2::member-equal))
                  (consp (cdr (cadr entry)))
                  (consp (cddr (cadr entry)))
                  (equal (cadr (cadr entry)) x))
@@ -3938,7 +3940,9 @@
                  (consp (cdr entry))
                  (consp (cddr entry)))
             (if (and (or (equal (car entry) 'list::memberp)
-                         (equal (car entry) 'acl2::member))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+                         (equal (car entry) 'acl2::member-equal))
                      (equal (cadr entry) x)
                      (equal (caddr entry) y))
                 t
@@ -4003,7 +4007,9 @@
                         (consp (cdr fn))
                         (consp (cddr fn))
                         (or (equal (car fn) 'list::memberp)
-                            (equal (car fn) 'acl2::member))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+                            (equal (car fn) 'acl2::member-equal))
                         (equal (cadr fn) x)
                         (equal (caddr fn) y))))
             t
@@ -5240,7 +5246,9 @@
            (xargs :guard (pseudo-termp term)))
   (if (and (consp term)
            (or (equal (car term) 'list::memberp)
-               (equal (car term) 'acl2::member))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+               (equal (car term) 'acl2::member-equal))
            )
       (let* ((type-alist (acl2::mfc-type-alist mfc))
              (len (usb16-fix (len type-alist))))
@@ -5255,7 +5263,9 @@
            (type t term mfc state))
   (if (and (consp term)
            (or (equal (car term) 'list::memberp)
-               (equal (car term) 'acl2::member))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+               (equal (car term) 'acl2::member-equal))
            )
       (let* ((type-alist (acl2::mfc-type-alist mfc))
              (len (usb16-fix (len type-alist))))
@@ -5338,7 +5348,9 @@
            (xargs :guard (pseudo-termp term)))
   (if (and (consp term)
            (or (equal (car term) 'list::memberp)
-               (equal (car term) 'acl2::member))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+               (equal (car term) 'acl2::member-equal))
            )
       (let* ((type-alist (acl2::mfc-type-alist mfc))
             (len  (usb16-fix (len type-alist))))
@@ -5353,7 +5365,9 @@
            (type t term mfc state))
   (if (and (consp term)
            (or (equal (car term) 'list::memberp)
-               (equal (car term) 'acl2::member))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+               (equal (car term) 'acl2::member-equal))
            )
       (let* ((type-alist (acl2::mfc-type-alist mfc))
             (len  (usb16-fix (len type-alist))))
@@ -5425,7 +5439,9 @@
                                (equal entry (car type-alist))
                                (equal fact (car entry))
                                (or (equal (car fact) 'list::memberp)
-                                   (equal (car fact) 'acl2::member))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+                                   (equal (car fact) 'acl2::member-equal))
                                (pseudo-termp v)
                                (pseudo-termp x)
                                (pseudo-termp bag)
@@ -5466,7 +5482,9 @@
                                (equal entry (car type-alist))
                                (equal fact (car entry))
                                (or (equal (car fact) 'list::memberp)
-                                   (equal (car fact) 'acl2::member))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+                                   (equal (car fact) 'acl2::member-equal))
                                (pseudo-termp v)
                                (pseudo-termp x)
                                (pseudo-termp bag)
@@ -5582,7 +5600,9 @@
                               (consp fact)
                               (equal fact (car entry))
                               (or (equal (car fact) 'list::memberp)
-                                  (equal (car fact) 'acl2::member))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+                                  (equal (car fact) 'acl2::member-equal))
                               (acl2::type-alistp whole-type-alist)
                               (pseudo-termp v)
                               (pseudo-termp b)
@@ -5607,7 +5627,9 @@
                               (consp fact)
                               (equal fact (car entry))
                               (or (equal (car fact) 'list::memberp)
-                                  (equal (car fact) 'acl2::member))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+                                  (equal (car fact) 'acl2::member-equal))
                               (acl2::type-alistp whole-type-alist)
                               (pseudo-termp v)
                               (pseudo-termp b)
@@ -5785,7 +5807,9 @@
                               (acl2::unsigned-byte-p 16 n)
                               (equal n (usb16-fix (len whole-type-alist)))
                               (or (equal (car fact) 'list::memberp)
-                                  (equal (car fact) 'acl2::member)))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+                                  (equal (car fact) 'acl2::member-equal)))
                   :guard-hints (("Goal"
                                  
                                  :do-not '(generalize eliminate-destructors)))))
@@ -5829,7 +5853,9 @@
                               (acl2::unsigned-byte-p 16 n)
                               (equal n (usb16-fix (len whole-type-alist)))
                               (or (equal (car fact) 'list::memberp)
-                                  (equal (car fact) 'acl2::member)))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+                                  (equal (car fact) 'acl2::member-equal)))
                   :guard-hints (("Goal"
                                  
                                  :do-not '(generalize eliminate-destructors)))))
@@ -6185,7 +6211,9 @@
            (xargs :guard (pseudo-termp term)))
   (if (not (and (equal 3 (len term))
                 (or (equal (car term) 'list::memberp)
-                    (equal (car term) 'acl2::member))))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+                    (equal (car term) 'acl2::member-equal))))
       term
     (if (syntax-memberp-fn nil (cadr term) (caddr term))
         ''t
@@ -7195,7 +7223,9 @@ PUTBACK
     (let ((literal (car clause)))
       (if (and (consp literal)
                (or (equal (car literal) 'list::memberp)
-                   (equal (car literal) 'acl2::member))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+                   (equal (car literal) 'acl2::member-equal))
                (consp (cdr literal))
                (equal x (cadr literal))
                (consp (cddr literal))
@@ -7240,7 +7270,9 @@ PUTBACK
   (declare (ignore state) (type t term mfc state))
   (if (not (and (equal 3 (len term))
                 (or (equal (car term) 'list::memberp)
-                    (equal (car term) 'acl2::member))))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+                    (equal (car term) 'acl2::member-equal))))
       term
     (let ((irrel-list (get-irrel-list-from-clause (cadr term) (caddr term) (mfc-clause mfc))))
       (if (not (consp irrel-list))
@@ -7283,7 +7315,9 @@ PUTBACK
 (defun hyp-fun-simplify-cons-and-append-nest (term mfc state)
   (declare (ignore state)  (type t term mfc state))
   (if (not (and (equal 3 (len term))
-                (or (equal (car term) 'acl2::member)
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+                (or (equal (car term) 'acl2::member-equal)
                     (equal (car term) 'list::memberp))))
       'nil
     (let ((irrel-list (get-irrel-list-from-clause (cadr term) (caddr term) (mfc-clause mfc))))
@@ -7606,7 +7640,9 @@ to handle
 (defun member-symbol (x)
   (declare (type t x))
   (or (equal x 'list::memberp)
-      (equal x 'acl2::member)))
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (replaced member by member-equal).]
+      (equal x 'acl2::member-equal)))
 
 ;TERM has the form (equal a b)
 (defun metafunction-to-rewrite-equal-to-nil (term mfc state)

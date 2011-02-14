@@ -1809,6 +1809,9 @@ X          <--- (putOpStack  X stack)
 ;  (defun destiny-bind-irrelevant-vars (fn-name irrelevant-poss mv-nth-pos args to-bind-list mfc state)
 
 
+; Matt K., after v4-2:
+; Commenting out the following rule, which rewrites a term to itself!
+#||
 (defthm
  clearLoop-irrrelevance-thm-i-8
  (implies
@@ -1837,9 +1840,13 @@ X          <--- (putOpStack  X stack)
  :hints
  (("GOAL" :induct
           (clearLoop-induction-fnh-1stack-1x-8i-8 x i op0 inputHeap nh-1 nh-2 stack stat-1 stat-2))))
+||#
 
 ; I suspect that this characterizes the invariance of inputHeap vis-a-vis nH and inputStat.
 
+; Matt K., after v4-2:
+; Commenting out the following rule, which rewrites a term to itself!
+#||
 (defthm
  clearLoop-irrrelevance-thm-h-1
  (implies
@@ -1868,6 +1875,7 @@ X          <--- (putOpStack  X stack)
  :hints
  (("GOAL" :induct
           (clearLoop-induction-fnh-1stack-1x-8i-8 x i op0 inputHeap nh-1 nh-2 stack stat-1 stat-2))))
+||#
 
 
 ; This concludes the discussion of the translation of the loop module into acl2.  We now

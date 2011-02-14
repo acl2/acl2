@@ -91,10 +91,10 @@
 ; put-nth                     No    list
 ; put-seg                     No    list
 ; remove (eql)                Yes   list
-;   remove-eq                 No    list
-;   remove-equal              No    list
+;   remove-eq                 Yes   list
+;   remove-equal              Yes   list
 ; remove-duplicates (eql)     Yes   list
-;   remove-duplicates-eq      No    list
+;   remove-duplicates-eq      Yes   list
 ;   remove-duplicates-equal   Yes   list
 ; reverse (revappend)         Yes   list
 ; subseq (subseq-list)        Yes   list
@@ -178,11 +178,12 @@
   (declare (xargs :guard (true-listp l)))
   (consp (member-equal x l)))
 
-(defun no-duplicatesp-eq (l)
-  (declare (xargs :guard (symbol-listp l)))
-  (cond ((endp l) t)
-	((member-eq (car l) (cdr l)) nil)
-	(t (no-duplicatesp-eq (cdr l)))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (defun no-duplicatesp-eq (l)
+;   (declare (xargs :guard (symbol-listp l)))
+;   (cond ((endp l) t)
+;         ((member-eq (car l) (cdr l)) nil)
+;         (t (no-duplicatesp-eq (cdr l)))))
 
 (defun nth-seg (i j l)
   "The sublist of L beginning at offset I for length J."
@@ -256,6 +257,8 @@
 	       (t (cons (car seg) (put-seg i (cdr seg) (cdr l))))))
 	(t (cons (car l) (put-seg (1- i) seg (cdr l))))))
 
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+#||
 (local ; ACL2 primitive
  (defun remove-eq (x l)
    "The list constructed from L by removing all occurrences of X."
@@ -273,12 +276,14 @@
    (cond ((endp l) nil)
          ((equal x (car l)) (remove-equal x (cdr l)))
          (t (cons (car l) (remove-equal x (cdr l)))))))
+||#
 
-(defun remove-duplicates-eq (l)
-  (declare (xargs :guard (symbol-listp l)))
-  (cond ((endp l) nil)
-	((member-eq (car l) (cdr l)) (remove-duplicates-eq (cdr l)))
-	(t (cons (car l) (remove-duplicates-eq (cdr l))))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (defun remove-duplicates-eq (l)
+;   (declare (xargs :guard (symbol-listp l)))
+;   (cond ((endp l) nil)
+;         ((member-eq (car l) (cdr l)) (remove-duplicates-eq (cdr l)))
+;         (t (cons (car l) (remove-duplicates-eq (cdr l))))))
 
 (deftheory list-defuns
   (set-difference-theories (current-theory :here)

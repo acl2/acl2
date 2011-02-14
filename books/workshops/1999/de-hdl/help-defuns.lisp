@@ -61,11 +61,12 @@
 (defmacro assoc-eq-value (x alist)
   `(cdr (assoc-eq ,x ,alist)))
 
-(defun no-duplicatesp-eq (l)
-  (declare (xargs :guard (symbol-listp l)))
-  (cond ((endp l) t)
-	((member-eq (car l) (cdr l)) nil)
-	(t (no-duplicatesp-eq (cdr l)))))
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+; (defun no-duplicatesp-eq (l)
+;   (declare (xargs :guard (symbol-listp l)))
+;   (cond ((endp l) t)
+;         ((member-eq (car l) (cdr l)) nil)
+;         (t (no-duplicatesp-eq (cdr l)))))
 
 (defun disjoint-eq (a b)
   (declare (xargs :guard (two-symbol-listp a b)))

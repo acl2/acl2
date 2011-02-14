@@ -333,6 +333,9 @@ a certain index in the graph, before and after applying sucha rule, is the same.
                 (subsetp a y)))
   :rule-classes :forward-chaining)
 
+#||
+; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+
 ;; Lemma: member-is-member-equal
 ;; This I developed since I wanted to 
 ;; consentarate on the use of member-equal 
@@ -342,6 +345,7 @@ a certain index in the graph, before and after applying sucha rule, is the same.
 (defthm member-is-member-equal
   (equal (member i seen)
 	 (member-equal i seen)))
+||#
 
 ;; Lemma(s): The following set of lemmas are general 
 ;; facts about set theory operations.
