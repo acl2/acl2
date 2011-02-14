@@ -6291,7 +6291,8 @@
          (defrec ; pick just one function introduced
            (setf (gethash (record-changer-function-name (cadr form)) ht)
                  form))
-         ((add-custom-keyword-hint
+         ((add-binop
+           add-custom-keyword-hint
            add-macro-alias
            declaim
            def-basic-type-sets

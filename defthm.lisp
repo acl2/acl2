@@ -1498,6 +1498,16 @@
    (eqv lhs rhs ttree)
    (interpret-term-as-rewrite-rule concl ens wrld)
    (cond
+    ((equal lhs rhs)
+     (er soft ctx
+         "A :REWRITE rule generated from ~x0 is illegal because it rewrites ~
+          the term ~x1 to itself!  This can happen even when you submit a ~
+          rule whose left and right sides appear to be different, in the case ~
+          that those two sides represent the same term (in particular, after ~
+          macroexpansion).  See :DOC rewrite.  You may wish to consider ~
+          submitting a DEFTHM event ending with :RULE-CLASSES NIL."
+         name
+         lhs))
     ((or (variablep lhs)
          (fquotep lhs)
          (flambda-applicationp lhs)
@@ -3881,7 +3891,9 @@
                                     ; computed hypotheses.
   ~ev[]
   A non-~c[nil] list of function symbols must be supplied as the value
-  of the ~c[:trigger-fns] field in a ~c[:meta] rule class object.~/
+  of the ~c[:trigger-fns] field in a ~c[:meta] rule class object
+  (except that a macro alias can stand in for a function symbol;
+  ~pl[add-macro-alias]).~/
   ~bv[]
   General Forms:
   (implies (and (pseudo-termp x)        ; this hyp is optional
@@ -5093,7 +5105,7 @@
                     ((not (symbolp x))
                      (equal (evfn x a)
                             (if x
-                                (cdr (assoc-eq x a))
+                                (cdr (assoc-equal x a))
                               'nil)))
                     ((not (consp x))
                      (not (equal (car x) 'quote))
@@ -5496,7 +5508,90 @@
                      (fix-true-list args))))
            . defthms)))))
 
-(defmacro defevaluator (&whole x evfn evfn-lst fn-args-lst)
+(defun pairs-to-macro-alias-msgs (alist)
+  (declare (xargs :guard (symbol-alistp alist)))
+  (cond ((endp alist) nil)
+        (t (cons (msg "~x0 is a macro alias for function ~x1"
+                      (caar alist) (cdar alist))
+                 (pairs-to-macro-alias-msgs (cdr alist))))))
+
+(defun defevaluator-check-msg (alist macro-aliases wrld bad macro-alist)
+  (declare (xargs :guard (and (symbol-alistp alist)
+                              (symbol-alistp macro-aliases)
+                              (plist-worldp wrld)
+                              (symbol-listp bad)
+                              (symbol-alistp macro-alist))))
+  (cond ((endp alist)
+         (cond ((or bad macro-alist)
+                (msg "~@0~@1"
+                     (cond ((null bad) "")
+                           ((null (cdr bad))
+                            (msg "The symbol ~x0 is not a function symbol in ~
+                                  the current ACL2 world."
+                                 (car bad)))
+                           (t
+                            (msg "The symbols ~&0 are not function symbols in ~
+                                  the current ACL2 world."
+                                 bad)))
+                     (cond ((null macro-alist) "")
+                           (t (msg "  Note that ~*0."
+                                   (list
+                                    ""          ; nothing to print
+                                    "~@*"       ; last element
+                                    "~@*, and " ; 2nd to last element
+                                    "~@*"       ; all other elements
+                                    (pairs-to-macro-alias-msgs macro-alist)))))))
+               (t nil)))
+        ((function-symbolp (caar alist) wrld)
+         (defevaluator-check-msg (cdr alist) macro-aliases wrld bad
+           macro-alist))
+        (t (defevaluator-check-msg (cdr alist) macro-aliases wrld
+             (cons (caar alist) bad)
+             (let ((entry (assoc-eq (caar alist) macro-aliases)))
+               (cond (entry (cons entry macro-alist))
+                     (t macro-alist)))))))
+
+(defun defevaluator-check (x evfn evfn-lst fn-args-lst ctx state)
+  (declare (xargs :guard
+                  (and (state-p state)
+                       (symbol-alistp fn-args-lst)
+                       (symbol-alistp
+                        (fgetprop 'macro-aliases-table
+                                  'table-alist
+                                  nil
+                                  (w state))))))
+  (cond ((not (and (symbolp evfn)
+                   (symbolp evfn-lst)
+                   (symbol-list-listp fn-args-lst)))
+         (er soft ctx
+             "The form of a defevaluator event is (defevaluator evfn evfn-lst ~
+              fn-args-lst), where evfn and evfn-lst are symbols and ~
+              fn-args-lst is a true list of lists of symbols.  However, ~x0 ~
+              does not have this form."
+             x))
+        (t (let* ((wrld (w state))
+                  (msg (defevaluator-check-msg
+                         fn-args-lst
+                         (macro-aliases wrld)
+                         wrld nil nil)))
+             (cond (msg (er soft ctx "~@0" msg))
+                   (t (value nil)))))))
+
+(defun defevaluator-check-form (x evfn evfn-lst fn-args-lst)
+  (declare (xargs :guard t))
+  `(with-output
+    :off error
+    :stack :push
+    (make-event
+     (er-progn
+      (with-output
+       :stack :pop
+       (defevaluator-check ',x ',evfn ',evfn-lst ',fn-args-lst
+         '(defevaluator . ,evfn)
+         state))
+      (value '(value-triple nil))))))
+
+(defmacro defevaluator (&whole x evfn evfn-lst fn-args-lst &key skip-checks)
 
 ; Note: It might be nice to allow defevaluator to take a :DOC string, but that
 ; would require allowing encapsulate to take such a string!
@@ -5507,7 +5602,7 @@
   ~bv[]
   Example:
   (defevaluator evl evl-list
-    ((length x) (member x y)))
+    ((length x) (member-equal x y)))
   ~ev[]
   ~l[meta].~/
   ~bv[]
@@ -5537,7 +5632,7 @@
   appropriate ~ilc[defun] and ~ilc[defthm] events.  Perhaps the easiest way to
   understand what ~c[defevaluator] does is to execute the keyword command
   ~bv[]
-  :trans1 (defevaluator evl evl-list ((length x) (member x y)))
+  :trans1 (defevaluator evl evl-list ((length x) (member-equal x y)))
   ~ev[]
   and inspect the output.  This trick is also useful in the rare case
   that the event fails because a hint is needed.  In that case, the
@@ -5562,7 +5657,7 @@
 
   (1) How to ev a variable symbol:
       (implies (symbolp x)
-               (equal (ev x a) (and x (cdr (assoc-eq x a)))))
+               (equal (ev x a) (and x (cdr (assoc-equal x a)))))
 
   (2) How to ev a constant:
       (implies (and (consp x)
@@ -5613,18 +5708,10 @@
 ; evfn (with mutually recursive counterpart evfn-lst for lists of
 ; terms) that recognizes the functions in fns.
 
-  (cond
-   ((not (and (symbolp evfn)
-              (symbolp evfn-lst)
-              (symbol-list-listp fn-args-lst)))
-    `(er soft '(defevaluator . ,evfn)
-         "The form of a defevaluator event is (defevaluator evfn ~
-          evfn-lst fn-args-lst), where evfn and evfn-lst are symbols ~
-          and fn-args-lst is a true list of lists of symbols.  ~
-          However, ~x0 does not have this form."
-         ',x))
-   (t
-    (defevaluator-form evfn evfn-lst fn-args-lst))))
+  (let ((form (defevaluator-form evfn evfn-lst fn-args-lst)))
+    (cond (skip-checks form)
+          (t `(progn ,(defevaluator-check-form x evfn evfn-lst fn-args-lst)
+                     ,form)))))
 
 (deflabel term-table
   :doc
@@ -5785,35 +5872,6 @@
    ev
    (normalized-evaluator-cl-set ev wrld)))
 
-(defun context-for-encapsulate-pass-2 (wrld state)
-
-; Return 'illegal if we are in pass 2 of a non-trivial encapsulate, or
-; non-local in pass 1 of a non-trivial encapsulate.  We include the latter
-; because presumably it is courteous to the user to signal an issue during pass
-; 1, rather than waiting till the inevitable problem in pass 2.
-
-; If we are in pass 1 of a non-trivial encapsulate but in a local context, then
-; we might or might not be in an illegal context for the corresponding pass 2,
-; depending on whether the local wrapper is close enough to make the context
-; disappear in pass 2.  So we return 'maybe in this case.  Otherwise, we return
-; nil.
-
-  (let ((ee-entries (non-trivial-encapsulate-ee-entries
-                     (global-val 'embedded-event-lst wrld))))
-    (and ee-entries ; we are in at least one non-trivial encapsulate
-         (cond ((or
-
-; The term (cddr (car ee-entries)) is true exactly when we are in pass 2 of the
-; immediately superior non-trivial encapsulate, hence holds if we are in pass 2
-; of some superior encapsulate (since then we would be skipping pass 1 of its
-; inferior encapsulates).  So (cddr (car ee-entries)) is non-nil if and only if
-; we are in pass 2 of some encapsulate.
-
-                 (cddr (car ee-entries))
-                 (null (f-get-global 'in-local-flg state)))
-                'illegal)
-               (t 'maybe)))))
-
 (defun attached-fns (fns wrld)
   (cond ((endp fns) nil)
         (t (let ((prop (attachment-alist (car fns) wrld)))
@@ -5947,7 +6005,8 @@
 (defun chk-evaluator-use-in-rule (name meta-fn-lst rule-type ev ctx wrld state)
   (er-progn
    (let ((temp (context-for-encapsulate-pass-2 (decode-logical-name ev wrld)
-                                               state)))
+                                               (f-get-global 'in-local-flg
+                                                             state))))
      (case temp
        (illegal
         (er soft ctx ; see comment in defaxiom-supporters
@@ -7000,63 +7059,60 @@
 ; type-set lemmas in wrld.  The ttree returned contains no 'assumption
 ; tags.
 
-  (mv-let
-   (hyps concl)
-   (case-match term
-               (('implies hyp concl)
-                (mv (flatten-ands-in-lit hyp) concl))
-               (& (mv nil term)))
-   (cond
-    ((or (variablep typed-term)
-         (fquotep typed-term)
-         (flambda-applicationp typed-term))
-     (mv (msg "The :TYPED-TERM, ~x0, provided in the ~
-               :TYPE-PRESCRIPTION rule class for ~x1 is illegal ~
-               because it is a variable, constant, or lambda ~
-               application.  See :DOC type-prescription."
-              typed-term name)
-         nil nil nil nil nil))
-    ((dumb-occur-lst typed-term hyps)
-     (mv (msg "The :TYPED-TERM, ~x0, of the proposed ~
-               :TYPE-PRESCRIPTION rule ~x1 occurs in the hypotheses ~
-               of the rule.  This would cause ``infinite ~
-               backchaining'' if we permitted ~x1 as a ~
-               :TYPE-PRESCRIPTION.  (Don't feel reassured by this ~
-               check:  infinite backchaining may occur anyway since ~
-               it can be caused by the combination of several rules.)"
-              typed-term
-              name)
-         nil nil nil nil nil))
-    (t
-     (let ((all-vars-typed-term (all-vars typed-term))
-           (all-vars-concl (all-vars concl)))
-       (cond
-        ((not (subsetp-eq all-vars-concl all-vars-typed-term))
-         (mv (msg "~x0 cannot be used as a :TYPE-PRESCRIPTION rule as ~
-                   described by the given rule class because the ~
-                   :TYPED-TERM, ~x1, does not contain the ~
-                   ~#2~[variable ~&2 which is~/variables ~&2 which ~
-                   are~] mentioned in the conclusion.  See :DOC ~
-                   type-prescription."
-                  name
-                  typed-term
-                  (set-difference-eq all-vars-concl all-vars-typed-term))
-             nil nil nil nil nil))
-        (t (let* ((new-var (genvar (find-pkg-witness typed-term)
-                                   "TYPED-TERM" nil all-vars-typed-term))
-                  (concl1 (subst-expr new-var typed-term concl)))
-             (cond
-              ((not (type-prescription-conclp new-var concl1))
-               (mv (msg "~x0 is an illegal :TYPE-PRESCRIPTION lemma ~
-                         of the class indicated because its ~
-                         conclusion is not a disjunction of type ~
-                         restrictions about the :TYPED-TERM ~x1.  See ~
-                         :DOC type-prescription."
-                        name typed-term)
-                   nil nil nil nil nil))
-              (t (let ((vars (remove1-eq new-var (all-vars concl1)))
-                       (basic-term
-                        (subst-nil-into-type-prescription-concl new-var concl1)))
+  (let ((term (remove-guard-holders term)))
+    (mv-let
+     (hyps concl)
+     (case-match term
+       (('implies hyp concl)
+        (mv (flatten-ands-in-lit hyp) concl))
+       (& (mv nil term)))
+     (cond
+      ((or (variablep typed-term)
+           (fquotep typed-term)
+           (flambda-applicationp typed-term))
+       (mv (msg "The :TYPED-TERM, ~x0, provided in the :TYPE-PRESCRIPTION ~
+                 rule class for ~x1 is illegal because it is a variable, ~
+                 constant, or lambda application.  See :DOC type-prescription."
+                typed-term name)
+           nil nil nil nil nil))
+      ((dumb-occur-lst typed-term hyps)
+       (mv (msg "The :TYPED-TERM, ~x0, of the proposed :TYPE-PRESCRIPTION ~
+                 rule ~x1 occurs in the hypotheses of the rule.  This would ~
+                 cause ``infinite backchaining'' if we permitted ~x1 as a ~
+                 :TYPE-PRESCRIPTION.  (Don't feel reassured by this check:  ~
+                 infinite backchaining may occur anyway since it can be ~
+                 caused by the combination of several rules.)"
+                typed-term
+                name)
+           nil nil nil nil nil))
+      (t
+       (let ((all-vars-typed-term (all-vars typed-term))
+             (all-vars-concl (all-vars concl)))
+         (cond
+          ((not (subsetp-eq all-vars-concl all-vars-typed-term))
+           (mv (msg "~x0 cannot be used as a :TYPE-PRESCRIPTION rule as ~
+                     described by the given rule class because the ~
+                     :TYPED-TERM, ~x1, does not contain the ~#2~[variable ~&2 ~
+                     which is~/variables ~&2 which are~] mentioned in the ~
+                     conclusion.  See :DOC type-prescription."
+                    name
+                    typed-term
+                    (set-difference-eq all-vars-concl all-vars-typed-term))
+               nil nil nil nil nil))
+          (t (let* ((new-var (genvar (find-pkg-witness typed-term)
+                                     "TYPED-TERM" nil all-vars-typed-term))
+                    (concl1 (subst-expr new-var typed-term concl)))
+               (cond
+                ((not (type-prescription-conclp new-var concl1))
+                 (mv (msg "~x0 is an illegal :TYPE-PRESCRIPTION lemma of the ~
+                           class indicated because its conclusion is not a ~
+                           disjunction of type restrictions about the ~
+                           :TYPED-TERM ~x1.  See :DOC type-prescription."
+                          name typed-term)
+                     nil nil nil nil nil))
+                (t (let ((vars (remove1-eq new-var (all-vars concl1)))
+                         (basic-term
+                          (subst-nil-into-type-prescription-concl new-var concl1)))
 
 ; Once upon a time, briefly, we got the type-set implied by (and hyps
 ; basic-term), thinking that we might need hyps to extract type
@@ -7075,24 +7131,22 @@
 ; infinitely backchains.  In the face of these difficulties, we have
 ; reverted back to the simplest treatment of type-prescription lemmas.
 
-                   (mv-let
-                    (ts ttree)
-                    (type-set-implied-by-term new-var nil basic-term ens wrld
-                                              nil)
-                    (cond ((ts= ts *ts-unknown*)
-                           (mv (msg "~x0 is a useless ~
-                                     :TYPE-PRESCRIPTION lemma because ~
-                                     we can deduce no type ~
-                                     restriction about its ~
-                                     :TYPED-TERM (below represented ~
-                                     by ~x1) from the generalized ~
-                                     conclusion, ~p2.  See :DOC ~
-                                     type-prescription."
-                                    name
-                                    new-var
-                                    (untranslate concl1 t wrld))
-                               nil nil nil nil nil))
-                          ((not (assumption-free-ttreep ttree))
+                     (mv-let
+                      (ts ttree)
+                      (type-set-implied-by-term new-var nil basic-term ens wrld
+                                                nil)
+                      (cond ((ts= ts *ts-unknown*)
+                             (mv (msg "~x0 is a useless :TYPE-PRESCRIPTION ~
+                                       lemma because we can deduce no type ~
+                                       restriction about its :TYPED-TERM ~
+                                       (below represented by ~x1) from the ~
+                                       generalized conclusion, ~p2.  See :DOC ~
+                                       type-prescription."
+                                      name
+                                      new-var
+                                      (untranslate concl1 t wrld))
+                                 nil nil nil nil nil))
+                            ((not (assumption-free-ttreep ttree))
 
 ; If type-set-implied-by-term requires that we force some assumptions,
 ; it is not clear what to do.  For example, it is possible that the
@@ -7108,33 +7162,29 @@
 ; to a compound recognizer.  It would be interesting to see a living
 ; example of this situation.
 
-                           (mv
-                            (if (tagged-object 'fc-derivation ttree)
-                                (er hard
-                                    "Somehow an 'fc-derivation, ~x0, ~
-                                     has found its way into the ttree ~
-                                     returned by ~
-                                     type-set-implied-by-term."
-                                    (tagged-object 'fc-derivation ttree))
-                                (msg "~x0 is an illegal ~
-                                      :TYPE-PRESCRIPTION lemma ~
-                                      because in determining the ~
-                                      type-set implied for its ~
-                                      :TYPED-TERM, ~x1, by its ~
-                                      conclusion the ~#2~[assumption ~
-                                      ~&2 was~/assumptions ~&2 were~] ~
-                                      and our :TYPE-PRESCRIPTION ~
+                             (mv
+                              (if (tagged-object 'fc-derivation ttree)
+                                  (er hard
+                                      "Somehow an 'fc-derivation, ~x0, has ~
+                                       found its way into the ttree returned ~
+                                       by type-set-implied-by-term."
+                                      (tagged-object 'fc-derivation ttree))
+                                (msg "~x0 is an illegal :TYPE-PRESCRIPTION ~
+                                      lemma because in determining the ~
+                                      type-set implied for its :TYPED-TERM, ~
+                                      ~x1, by its conclusion the ~
+                                      ~#2~[assumption ~&2 was~/assumptions ~
+                                      ~&2 were~] and our :TYPE-PRESCRIPTION ~
                                       preprocessor, ~
                                       CHK-ACCEPTABLE-TYPE-PRESCRIPTION-RULE, ~
-                                      does not know how to handle ~
-                                      this supposedly unusual ~
-                                      situation.  It would be very ~
-                                      helpful to report this error to ~
+                                      does not know how to handle this ~
+                                      supposedly unusual situation.  It would ~
+                                      be very helpful to report this error to ~
                                       the authors."
                                      name typed-term
                                      (tagged-objects 'assumption ttree nil)))
-                            nil nil nil nil nil))
-                          (t (mv nil hyps concl ts vars ttree)))))))))))))))
+                              nil nil nil nil nil))
+                            (t (mv nil hyps concl ts vars ttree))))))))))))))))
 
 (defun add-type-prescription-rule (rune nume typed-term term
                                         backchain-limit-lst ens wrld quietp)
@@ -8361,7 +8411,7 @@
 ; because the two are so intermingled that it seemed dubious to
 ; separate them into two functions.
 
-  (let ((pairs (unprettyify term))
+  (let ((pairs (unprettyify (remove-guard-holders term)))
         (hyp-msg   "~x0 is an unacceptable :CONGRUENCE rule.  The ~
                     single hypothesis of a :CONGRUENCE rule must be a ~
                     term of the form (equiv x y), where equiv has ~
@@ -10359,6 +10409,32 @@
         (t
          nil)))
 
+(defun eliminate-macro-aliases (lst macro-aliases wrld)
+
+; Returns (mv flg lst), where flg is nil if lst is unchanged, :error if there
+; is an error (some element is neither a function symbol nor a macro aliases)
+; -- in which case lst is a string giving a reason for the error after "but
+; <original_list> " -- else :changed if there is no error but at least one
+; macro alias was found.
+
+  (cond ((atom lst)
+         (cond ((null lst) (mv nil nil))
+               (t (mv :error "does not end in nil"))))
+        (t (mv-let (flg rst)
+                   (eliminate-macro-aliases (cdr lst) macro-aliases wrld)
+                   (cond ((eq flg :error)
+                          (mv :error rst))
+                         (t (let* ((next (car lst))
+                                   (fn (deref-macro-name next macro-aliases)))
+                              (cond ((not (function-symbolp fn wrld))
+                                     (mv :error
+                                         (msg "contains ~x0"
+                                              next)))
+                                    ((or (eq flg :changed)
+                                         (not (eq next fn)))
+                                     (mv :changed (cons fn rst)))
+                                    (t (mv nil lst))))))))))
+
 (defun translate-rule-class-alist (token alist seen corollary name x ctx ens
                                          wrld state)
 
@@ -10432,13 +10508,14 @@
             (t (value (alist-to-keyword-alist seen nil)))))
      ((eq token :TYPE-PRESCRIPTION)
       (cond ((not (assoc-eq :TYPED-TERM seen))
-             (let ((pat (cond ((and (not (variablep corollary))
-                                    (not (fquotep corollary))
-                                    (eq (ffn-symb corollary) 'implies))
-                               (find-type-prescription-pat (fargn corollary 2)
-                                                           ens wrld))
-                              (t (find-type-prescription-pat corollary ens
-                                                             wrld)))))
+             (let* ((term (remove-guard-holders corollary))
+                    (pat (cond ((and (not (variablep term))
+                                     (not (fquotep term))
+                                     (eq (ffn-symb term) 'implies))
+                                (find-type-prescription-pat (fargn term 2)
+                                                            ens wrld))
+                               (t (find-type-prescription-pat term ens
+                                                              wrld)))))
                (cond ((null pat)
                       (er soft ctx
                           "When no :TYPED-TERM component is specified ~
@@ -10638,14 +10715,24 @@
                        Thus, ~x0 is illegal.  See :DOC ~@1."
                       x
                       (symbol-name token)))
-                 ((and (consp (cadr alist))
-                       (all-function-symbolps (cadr alist) wrld))
-                  (value (cadr alist)))
-                 (t (er soft ctx
-                        "The :TRIGGER-FNS component of a :META rule class ~
-                         must be a non-empty true-list of function symbols.  ~
-                         ~x0 is not.  See :DOC meta."
-                        (cadr alist)))))
+                 ((atom (cadr alist))
+                  (er soft ctx
+                      "The :TRIGGER-FNS component of a :META rule class must ~
+                       be a non-empty true-list of function symbols.  but ~x0 ~
+                       is empty.  See :DOC meta."
+                      (cadr alist)))
+                 (t (mv-let (flg lst)
+                            (eliminate-macro-aliases (cadr alist)
+                                                     (macro-aliases wrld)
+                                                     wrld)
+                            (cond ((eq flg :error)
+                                   (er soft ctx
+                                       "The :TRIGGER-FNS component of a :META ~
+                                        rule class must be a non-empty ~
+                                        true-list of function symbols, but ~
+                                        ~x0 ~@1.  See :DOC meta."
+                                       lst))
+                                  (t (value lst)))))))
                (:TRIGGER-TERMS
                 (cond
                  ((eq token :META)
@@ -10672,35 +10759,36 @@
 ; provide a corollary with only one branch.
 
                   (er-let*
-                   ((terms (translate-term-lst (cadr alist)
-                                               t t t ctx wrld state)))
-                   (cond
-                    ((null terms)
-                     (er soft ctx
-                         "For the :LINEAR rule ~x0 you specified an empty ~
-                          list of :TRIGGER-TERMS.  This is illegal.  If you ~
-                          wish to cause ACL2 to compute the trigger terms, ~
-                          omit the :TRIGGER-TERMS field entirely.  See :DOC ~
-                          linear."
-                         name))
-                    (t
-                     (er-progn
-                      (chk-legal-linear-trigger-terms
-                       terms
-                       (unprettyify (remove-guard-holders corollary))
-                       name ctx state)
-                      (value terms))))))
+                      ((terms (translate-term-lst (cadr alist)
+                                                  t t t ctx wrld state)))
+                    (cond
+                     ((null terms)
+                      (er soft ctx
+                          "For the :LINEAR rule ~x0 you specified an empty ~
+                           list of :TRIGGER-TERMS.  This is illegal.  If you ~
+                           wish to cause ACL2 to compute the trigger terms, ~
+                           omit the :TRIGGER-TERMS field entirely.  See :DOC ~
+                           linear."
+                          name))
+                     (t
+                      (let ((terms (remove-guard-holders-lst terms)))
+                        (er-progn
+                         (chk-legal-linear-trigger-terms
+                          terms
+                          (unprettyify (remove-guard-holders corollary))
+                          name ctx state)
+                         (value terms)))))))
                  ((eq token :FORWARD-CHAINING)
                   (er-let*
-                   ((terms (translate-term-lst (cadr alist)
-                                               t t t ctx wrld state)))
-                   (cond ((null terms)
-                          (er soft ctx
-                              ":FORWARD-CHAINING rules must have at least one ~
+                      ((terms (translate-term-lst (cadr alist)
+                                                  t t t ctx wrld state)))
+                    (cond ((null terms)
+                           (er soft ctx
+                               ":FORWARD-CHAINING rules must have at least one ~
                                trigger.  Your rule class, ~x0, specifies ~
                                none.  See :DOC forward-chaining."
-                              x))
-                         (t (value terms)))))
+                               x))
+                          (t (value (remove-guard-holders-lst terms))))))
                  (t
                   (er soft ctx
                       ":TRIGGER-TERMS can only be specified for ~
@@ -10737,10 +10825,11 @@
                              (list (cons (list hyp) concl)))
                             (t (list (cons nil corollary)))))
                          (:type-prescription
-                          (case-match corollary
-                            (('implies hyp concl)
-                             (list (cons (flatten-ands-in-lit hyp) concl)))
-                            (t (list (cons nil corollary)))))
+                          (let ((corollary (remove-guard-holders corollary)))
+                            (case-match corollary
+                              (('implies hyp concl)
+                               (list (cons (flatten-ands-in-lit hyp) concl)))
+                              (t (list (cons nil corollary))))))
                          (otherwise
                           (unprettyify (remove-guard-holders corollary))))))
                   (cond

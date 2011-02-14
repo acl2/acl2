@@ -2880,6 +2880,29 @@
     (equal l nil)))
 
 #+acl2-loop-only
+(defun eql (x y)
+  (declare (xargs :mode :logic
+                  :guard (or (eqlablep x)
+                             (eqlablep y))))
+  ":Doc-Section ACL2::Programming
+
+  test equality (of two numbers, symbols, or ~il[characters])~/
+
+  ~c[(eql x y)] is logically equivalent to ~c[(equal x y)].~/
+
+  Unlike ~ilc[equal], ~c[eql] has a ~il[guard] requiring at least one of its
+  arguments to be a number, a symbol, or a character.  Generally,
+  ~c[eql] is executed more efficiently than ~ilc[equal].
+
+  For a discussion of the various ways to test against 0,
+  ~l[zero-test-idioms].
+
+  ~c[Eql] is a Common Lisp function.  See any Common Lisp documentation
+  for more information.~/"
+
+  (equal x y))
+
+#+acl2-loop-only
 (defun atom (x)
 
   ":Doc-Section ACL2::Programming
@@ -2996,77 +3019,274 @@
                   :guard (or (consp x) (equal x nil))))
   (atom x))
 
-(defun member-equal (x lst)
+#+acl2-loop-only
+(defmacro caar (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[car] of the ~ilc[car]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'car (list 'car x)))
+
+#+acl2-loop-only
+(defmacro cadr (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[car] of the ~ilc[cdr]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'car (list 'cdr x)))
+
+#+acl2-loop-only
+(defmacro cdar (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[cdr] of the ~ilc[car]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'cdr (list 'car x)))
+
+#+acl2-loop-only
+(defmacro cddr (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[cdr] of the ~ilc[cdr]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'cdr (list 'cdr x)))
+
+#+acl2-loop-only
+(defmacro caaar (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[car] of the ~ilc[caar]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'car (list 'caar x)))
+
+#+acl2-loop-only
+(defmacro caadr (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[car] of the ~ilc[cadr]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'car (list 'cadr x)))
+
+#+acl2-loop-only
+(defmacro cadar (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[car] of the ~ilc[cdar]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'car (list 'cdar x)))
+
+#+acl2-loop-only
+(defmacro caddr (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[car] of the ~ilc[cddr]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'car (list 'cddr x)))
+
+#+acl2-loop-only
+(defmacro cdaar (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[cdr] of the ~ilc[caar]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'cdr (list 'caar x)))
+
+#+acl2-loop-only
+(defmacro cdadr (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[cdr] of the ~ilc[cadr]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'cdr (list 'cadr x)))
+
+#+acl2-loop-only
+(defmacro cddar (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[cdr] of the ~ilc[cdar]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'cdr (list 'cdar x)))
+
+#+acl2-loop-only
+(defmacro cdddr (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[cdr] of the ~ilc[cddr]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'cdr (list 'cddr x)))
+
+#+acl2-loop-only
+(defmacro caaaar (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[car] of the ~ilc[caaar]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'car (list 'caaar x)))
+
+#+acl2-loop-only
+(defmacro caaadr (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[car] of the ~ilc[caadr]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'car (list 'caadr x)))
+
+#+acl2-loop-only
+(defmacro caadar (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[car] of the ~ilc[cadar]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'car (list 'cadar x)))
+
+#+acl2-loop-only
+(defmacro caaddr (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[car] of the ~ilc[caddr]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'car (list 'caddr x)))
+
+#+acl2-loop-only
+(defmacro cadaar (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[car] of the ~ilc[cdaar]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'car (list 'cdaar x)))
+
+#+acl2-loop-only
+(defmacro cadadr (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[car] of the ~ilc[cdadr]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'car (list 'cdadr x)))
+
+#+acl2-loop-only
+(defmacro caddar (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[car] of the ~ilc[cddar]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'car (list 'cddar x)))
+
+#+acl2-loop-only
+(defmacro cadddr (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[car] of the ~ilc[cdddr]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'car (list 'cdddr x)))
+
+#+acl2-loop-only
+(defmacro cdaaar (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[cdr] of the ~ilc[caaar]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'cdr (list 'caaar x)))
+
+#+acl2-loop-only
+(defmacro cdaadr (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[cdr] of the ~ilc[caadr]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'cdr (list 'caadr x)))
+
+#+acl2-loop-only
+(defmacro cdadar (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[cdr] of the ~ilc[cadar]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'cdr (list 'cadar x)))
+
+#+acl2-loop-only
+(defmacro cdaddr (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[cdr] of the ~ilc[caddr]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'cdr (list 'caddr x)))
+
+#+acl2-loop-only
+(defmacro cddaar (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[cdr] of the ~ilc[cdaar]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'cdr (list 'cdaar x)))
+
+#+acl2-loop-only
+(defmacro cddadr (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[cdr] of the ~ilc[cdadr]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'cdr (list 'cdadr x)))
+
+#+acl2-loop-only
+(defmacro cdddar (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[cdr] of the ~ilc[cddar]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'cdr (list 'cddar x)))
+
+#+acl2-loop-only
+(defmacro cddddr (x)
+  ":Doc-Section ACL2::Programming
+
+  ~ilc[cdr] of the ~ilc[cdddr]~/
+
+  See any Common Lisp documentation for details.~/~/"
+  (list 'cdr (list 'cdddr x)))
+
+#+acl2-loop-only
+(defun null (x)
 
   ":Doc-Section ACL2::Programming
 
-  membership predicate~/
+  recognizer for the empty list~/
 
-  ~c[(Member-equal x lst)] equals the longest tail of ~c[lst] that
-  begins with ~c[x], or else ~c[nil] if no such tail exists.~/
+  ~c[Null] is the function that checks whether its argument is ~c[nil].
+  For recursive definitions it is often preferable to test for the end
+  of a list using ~ilc[endp] instead of ~c[null]; ~pl[endp].~/
 
-  ~c[(Member-equal x lst)] has a ~il[guard] of ~c[(true-listp lst)].
-  ~c[Member-equal] has the same functionality as the Common Lisp
-  function ~ilc[member], except that it uses the ~ilc[equal] function to
-  test whether ~c[x] is the same as each successive element of ~c[lst].
-  ~l[member] and ~pl[member-eq].~/"
+  ~c[Null] is a Common Lisp function.  See any Common Lisp
+  documentation for more information.~/"
 
-  (declare (xargs :guard (true-listp lst)))
-  #-acl2-loop-only ; for assoc-equal, Jared Davis found native assoc efficient
-  (member x lst :test #'equal)
-  #+acl2-loop-only
-  (cond ((endp lst) nil)
-        ((equal x (car lst)) lst)
-        (t (member-equal x (cdr lst)))))
-
-(defun union-equal (x y)
-
-  ":Doc-Section ACL2::Programming
-
-  union of two lists~/
-
-  ~c[(Union-equal x y)] equals a list whose members
-  (~pl[member-equal]) contains the members of ~c[x] and the members
-  of ~c[y].  More precisely, the resulting list is the same as one
-  would get by first deleting the members of ~c[y] from ~c[x], and then
-  concatenating the result to the front of ~c[y].~/
-
-  The ~il[guard] for ~c[union-equal] requires both arguments to be true
-  lists.  Essentially, ~c[union-equal] has the same functionality as
-  the Common Lisp function ~c[union], except that it uses the ~ilc[equal]
-  function to test membership rather than ~ilc[eql].  However, we do not
-  include the function ~c[union] in ACL2, because the Common Lisp
-  language does not specify the order of the elements in the list that
-  it returns.~/"
-
-  (declare (xargs :guard (and (true-listp x) (true-listp y))))
-  (cond ((endp x) y)
-        ((member-equal (car x) y) (union-equal (cdr x) y))
-        (t (cons (car x) (union-equal (cdr x) y)))))
-
-(defun subsetp-equal (x y)
-
-  ":Doc-Section ACL2::Programming
-
-  check if all members of one list are members of the other~/
-
-  ~c[(Subsetp-equal x y)] returns ~c[t] if every member of ~c[x] is a
-  member of ~c[y], where membership is tested using ~ilc[member-equal].~/
-
-  The ~il[guard] for ~c[subsetp-equal] requires both arguments to be true
-  lists.  ~c[Subsetp-equal] has the same functionality as the Common Lisp
-  function ~ilc[subsetp], except that it uses the ~ilc[equal] function to
-  test membership rather than ~ilc[eql].~/"
-
-  (declare (xargs :guard (and (true-listp y)
-                              (true-listp x))))
-  #-acl2-loop-only ; for assoc-eq, Jared Davis found native assoc efficient
-  (subsetp x y :test #'equal)
-  #+acl2-loop-only
-  (cond ((endp x) t)
-        ((member-equal (car x) y)
-         (subsetp-equal (cdr x) y))
-        (t nil)))
+  (declare (xargs :mode :logic :guard t))
+  (eq x nil))
 
 (defun symbol-listp (lst)
 
@@ -3087,176 +3307,18 @@
            (true-listp x))
   :rule-classes :forward-chaining)
 
-#+acl2-loop-only
-(defun null (x)
+(defun symbol-doublet-listp (lst)
 
-  ":Doc-Section ACL2::Programming
-
-  recognizer for the empty list~/
-
-  ~c[Null] is the function that checks whether its argument is ~c[nil].
-  For recursive definitions it is often preferable to test for the end
-  of a list using ~ilc[endp] instead of ~c[null]; ~pl[endp].~/
-
-  ~c[Null] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
-
-  (declare (xargs :mode :logic :guard t))
-  (eq x nil))
-
-(defun member-eq (x lst)
-
-  ":Doc-Section ACL2::Programming
-
-  membership predicate, using ~ilc[eq] as test~/
-
-  ~c[(Member-eq x lst)] equals the longest tail of ~c[lst] that
-  begins with ~c[x], or else ~c[nil] if no such tail exists.~/
-
-  ~c[(Member-eq x lst)] is provably the same in the ACL2 logic as
-  ~c[(member x lst)] and ~c[(member-equal x lst)], but it has a stronger
-  ~il[guard] because it uses ~ilc[eq] for a more efficient test for whether
-  ~c[x] is equal to a given member of ~c[lst].  Its ~il[guard] requires that
-  ~c[lst] is a true list, and moreover, either ~c[x] is a symbol or
-  ~c[lst] is a list of symbols.  ~l[member-equal] and
-  ~pl[member].~/"
-
-  (declare (xargs :guard (if (symbolp x)
-                             (true-listp lst)
-                           (symbol-listp lst))))
-  #-acl2-loop-only ; for assoc-eq, Jared Davis found native assoc efficient
-  (member x lst :test #'eq)
-  #+acl2-loop-only
-  (cond ((endp lst) nil)
-        ((eq x (car lst)) lst)
-        (t (member-eq x (cdr lst)))))
-
-(defun subsetp-eq (x y)
-  (declare (xargs :guard (and (true-listp x)
-                              (true-listp y)
-                              (or (symbol-listp x)
-                                  (symbol-listp y)))))
-  #-acl2-loop-only ; for assoc-eq, Jared Davis found native assoc efficient
-  (subsetp x y :test #'eq)
-  #+acl2-loop-only
-  (cond ((endp x) t)
-        ((member-eq (car x) y)
-         (subsetp-eq (cdr x) y))
-        (t nil)))
-
-(defun symbol-alistp (x)
-
-  ":Doc-Section ACL2::Programming
-
-  recognizer for association lists with symbols as keys~/
-
-  ~c[(Symbol-alistp x)] is true if and only if ~c[x] is a list of pairs
-  of the form ~c[(cons key val)] where ~c[key] is a ~ilc[symbolp].~/~/"
+; This function returns t iff lst is a true-list and each element is
+; a doublet of the form (symbolp anything).
 
   (declare (xargs :guard t))
-  (cond ((atom x) (eq x nil))
-        (t (and (consp (car x))
-                (symbolp (car (car x)))
-                (symbol-alistp (cdr x))))))
-
-(defthm symbol-alistp-forward-to-eqlable-alistp
-  (implies (symbol-alistp x)
-           (eqlable-alistp x))
-  :rule-classes :forward-chaining)
-
-(defun assoc-eq (x alist)
-
-  ":Doc-Section ACL2::Programming
-
-  look up key in association list, using ~ilc[eq] as test~/
-
-  ~c[(Assoc-eq x alist)] is the first member of ~c[alist] whose ~ilc[car]
-  is ~c[x], or ~c[nil] if no such member exists.~/
-
-  ~c[(Assoc-eq x alist)] is provably the same in the ACL2 logic as
-  ~c[(assoc x alist)] and ~c[(assoc-equal x alist)], but it has a
-  stronger ~il[guard] because it uses ~ilc[eq] for a more efficient test for
-  whether ~c[x] is equal to a given key of ~c[alist].  Its ~il[guard]
-  requires that ~c[alist] is an association list (~pl[alistp]), and
-  moreover, either ~c[x] is a symbol or all keys of ~c[alist] are
-  symbols, i.e., ~c[alist] is a ~ilc[symbol-alistp].~/"
-
-  (declare (xargs :guard (if (symbolp x)
-                             (alistp alist)
-                           (symbol-alistp alist))))
-  #-acl2-loop-only ; Jared Davis found efficiencies in using native assoc
-  (assoc x alist :test #'eq)
-  #+acl2-loop-only
-  (cond ((endp alist) nil)
-        ((eq x (car (car alist))) (car alist))
-        (t (assoc-eq x (cdr alist)))))
-
-(defun assoc-equal (x alist)
-
-  ":Doc-Section ACL2::Programming
-
-  look up key in association list~/
-
-  ~c[(Assoc-equal x alist)] is the first member of ~c[alist] whose ~ilc[car]
-  is ~c[x], or ~c[nil] if no such member exists.~/
-
-  ~c[(Assoc-equal x alist)] has a ~il[guard] of ~c[(alistp alist)], and
-  returns the first member of alist whose ~ilc[car] is ~c[x], or ~c[nil] if
-  no such member exists.  Thus, ~c[assoc-equal] has the same
-  functionality as the Common Lisp function ~ilc[assoc], except that it
-  uses the ~ilc[equal] function to test whether ~c[x] is the same as each
-  successive `key' of ~c[alist].  ~l[assoc] and ~pl[assoc-eq].~/"
-
-  (declare (xargs :guard (alistp alist)))
-  #-acl2-loop-only ; Jared Davis found efficiencies in using native assoc
-  (assoc x alist :test #'equal)
-  #+acl2-loop-only
-  (cond ((endp alist) nil)
-        ((equal x (car (car alist))) (car alist))
-        (t (assoc-equal x (cdr alist)))))
-
-(defun assoc-eq-equal-alistp (x)
-  (declare (xargs :guard t))
-  (cond ((atom x) (eq x nil))
-        (t (and (consp (car x))
-                (symbolp (car (car x)))
-                (consp (cdr (car x)))
-                (assoc-eq-equal-alistp (cdr x))))))
-
-(defun assoc-eq-equal (x y alist)
-
-; We look for a pair on alist of the form (x y . val) where we compare the
-; first key using eq and the second using equal.  We return the pair or nil.
-; The guard could be weakened so that if x is a symbol, then alist need only be
-; a true-listp whose elements are of the form (x y . val).  But there seems to
-; be little advantage in having such a guard, considering the case splits that
-; it could induce.
-
-  (declare (xargs :guard (assoc-eq-equal-alistp alist)))
-  (cond ((endp alist) nil)
-        ((and (eq (car (car alist)) x)
-              (equal (car (cdr (car alist))) y))
-         (car alist))
-        (t (assoc-eq-equal x y (cdr alist)))))
-
-(defun no-duplicatesp-equal (l)
-
-  ":Doc-Section ACL2::Programming
-
-  check for duplicates in a list (using ~c[equal] for equality)~/
-
-  ~c[(no-duplicatesp-equal l)] is true if and only if no member of ~c[l]
-  occurs twice in ~c[l].~/
-
-  ~c[(no-duplicatesp-equal l)] has a ~il[guard] of ~c[(true-listp l)].
-  Membership is tested using ~ilc[member-equal], hence using ~ilc[equal] as
-  the test.~/"
-
-  (declare (xargs :guard (true-listp l)))
-  (cond ((endp l) t)
-        ((member-equal (car l) (cdr l)) nil)
-        (t (no-duplicatesp-equal (cdr l)))))
-
+  (cond ((atom lst) (eq lst nil))
+        (t (and (consp (car lst))
+                (symbolp (caar lst))
+                (consp (cdar lst))
+                (null (cddar lst))
+                (symbol-doublet-listp (cdr lst))))))
 
 ; Essay on Strip-cars -- To Tail Recur or not to Tail Recur?
 
@@ -3398,28 +3460,1494 @@
         (t (cons (car (car x))
                  (strip-cars (cdr x))))))
 
+(defmacro let-mbe (bindings &key logic exec)
+  `(let ,bindings
+     (mbe :logic ,logic
+          :exec ,exec)))
+
 #+acl2-loop-only
-(defun eql (x y)
-  (declare (xargs :mode :logic
-                  :guard (or (eqlablep x)
-                             (eqlablep y))))
+(defun return-last (fn eager-arg last-arg)
+
+; Return-last is the one "function" in ACL2 that has no fixed output signature.
+; Rather, (return-last expr1 expr2) inherits its stobjs-out from expr2.
+; Because of this, we make it illegal to call stobjs-out on the symbol
+; return-last.  We think of expr1 as being evaluated eagerly because even in
+; the raw Lisp implementation of return-last, that argument is always evaluated
+; first just as with a function call.  By contrast, if fn is a macro then it
+; can manipulate last-arg arbitrarily before corresponding evaluation occurs.
+; In many applications of return-last, eager-arg will be nil; for others, such
+; as with-prover-time-limit, eager-arg will be used to control the evaluation
+; of (some version of) last-arg.
+
+; The following little example provides a small check on our handling of
+; return-last, both via ev-rec (for evaluating top-level forms) and via more
+; direct function evaluation (either *1* functions or their raw Lisp
+; counterparts).
+
+;  (defun foo (x)
+;    (time$ (mbe :logic (prog2$ (cw "**LOGIC~%") x)
+;                :exec (prog2$ (cw "**EXEC~%") x))))
+;  (defun bar (x) (foo x))
+;  (foo 3) ; logic
+;  (bar 3) ; logic
+;  (verify-guards foo)
+;  (foo 3) ; exec
+;  (bar 3) ; exec
+
+  ":Doc-Section Programming
+
+  return the last argument, perhaps with side effects~/
+
+  ~c[Return-last] is an ACL2 function that returns its last argument.  It is
+  used to implement common utilities such as ~ilc[prog2$] and ~ilc[time$].  For
+  most users, this may already be more than one needs to know about
+  ~c[return-last]; for example, ACL2 tends to avoid printing calls of
+  ~c[return-last] in its output, printing calls of ~ilc[prog2$] or
+  ~ilc[time$] (or other such utilities) instead.
+
+  If you encounter a call of ~c[return-last] during a proof, then you may find
+  it most useful to consider ~c[return-last] simply as a function defined by
+  the following equation.
+  ~bv[]
+  (equal (return-last x y z) z)
+  ~ev[]
+  It may also be useful to know that unlike other ACL2 functions,
+  ~c[return-last] can take a multiple value as its last argument, in which case
+  this multiple value is returned.  The following contrived definition
+  illustrates this point.
+  ~bv[]
+  ACL2 !>(defun foo (fn x y z)
+           (return-last fn x (mv y z)))
+
+  Since FOO is non-recursive, its admission is trivial.  We observe that
+  the type of FOO is described by the theorem 
+  (AND (CONSP (FOO FN X Y Z)) (TRUE-LISTP (FOO FN X Y Z))).  We used
+  primitive type reasoning.
+
+  (FOO * * * *) => (MV * *).
+
+  Summary
+  Form:  ( DEFUN FOO ...)
+  Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+  Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+   FOO
+  ACL2 !>(foo 'bar 3 4 5)
+  (4 5)
+  ACL2 !>(mv-let (a b)
+                 (foo 'bar 3 4 5)
+                 (cons b a))
+  (5 . 4)
+  ACL2 !>
+  ~ev[]
+
+  Most readers would be well served to avoid reading the rest of this
+  documentation of ~c[return-last].  For reference, however, below we document
+  it in some detail.  We include some discussion of its evaluation, in
+  particular its behavior in raw Lisp, because we expect that most who read
+  further are working with raw Lisp code (and trust tags).~/
+
+  ~c[Return-last] is an ACL2 function that can arise from macroexpansion of
+  certain utilities that return their last argument, which may be a multiple
+  value.  Consider for example the simplest of these, ~ilc[prog2$]:
+  ~bv[]
+  ACL2 !>:trans1 (prog2$ (cw \"Some CW printing...~~%\") (+ 3 4))
+   (RETURN-LAST 'PROGN
+                (CW \"Some CW printing...~~%\")
+                (+ 3 4))
+  ACL2 !>
+  ~ev[]
+  Notice that a call of ~c[prog2$] macroexpands to a call of ~c[return-last] in
+  which the first argument is ~c[(quote progn)].  Although ~c[return-last] is a
+  function in the ACL2 world, it is implemented ``under the hood'' as a macro
+  in raw Lisp, as the following log (continuing the example above) illustrates.
+  ~bv[]
+  ACL2 !>:q
+
+  Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
+  ? [RAW LISP] (macroexpand-1 '(RETURN-LAST 'PROGN
+                                             (CW \"Some CW printing...~~%\")
+                                             (+ 3 4)))
+  (PROGN (LET ((*AOKP* T)) (CW \"SOME CW PRINTING...~~%\")) (+ 3 4))
+  T
+  ? [RAW LISP] 
+  ~ev[]
+  Thus, the original ~c[prog2$] call generates a corresponding call of
+  ~c[progn] in raw Lisp, which in turn causes evaluation of each argument and
+  returns whatever is returned by evaluation of the last (second) argument.
+
+  (Remark for those who use ~ilc[defattach].  The binding of ~c[*aokp*] to
+  ~c[t] is always included for the second argument as shown except when the
+  first argument is of the form ~c[(QUOTE M)] where ~c[M] is a macro, or (less
+  important) when the first argument is a symbol or a cons whose car is
+  ~c[QUOTE].  This binding allows ACL2 to use attachments in the second
+  argument of ~c[return-last] (hence, in the first argument of ~ilc[prog2$]),
+  even in contexts such as proofs in which attachments are normally not
+  allowed.  Those who use the experimental HONS version of ACL2
+  (~pl[hons-and-memoization]) will see an additional binding in the above
+  single-step macroexpansion, which allows the storing of memoized results even
+  when that would otherwise be prevented because of the use of attachments.)
+
+  In general, a form ~c[(return-last (quote F) X Y)] macroexpands to
+  ~c[(F X Y)], where ~c[F] is defined in raw Lisp to return its last argument.
+  The case that ~c[F] is ~c[progn] is a bit misleading, because it is so
+  simple.  More commonly, macroexpansion produces a call of a macro defined in
+  raw Lisp that may produce side effects.  Consider for example the ACL2
+  utility ~ilc[with-guard-checking], which is intended to change the
+  ~il[guard]-checking mode to the indicated value (~pl[with-guard-checking]).
+  ~bv[]
+  ACL2 !>(with-guard-checking :none (car 3)) ; no guard violation
+  NIL
+  ACL2 !>:trans1 (with-guard-checking :none (car 3))
+   (WITH-GUARD-CHECKING1 (CHK-WITH-GUARD-CHECKING-ARG :NONE)
+                         (CAR 3))
+  ACL2 !>:trans1 (WITH-GUARD-CHECKING1 (CHK-WITH-GUARD-CHECKING-ARG :NONE)
+                                       (CAR 3))
+   (RETURN-LAST 'WITH-GUARD-CHECKING1-RAW
+                (CHK-WITH-GUARD-CHECKING-ARG :NONE)
+                (CAR 3))
+  ACL2 !>:q
+
+  Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
+  ? [RAW LISP] (macroexpand-1
+                '(RETURN-LAST 'WITH-GUARD-CHECKING1-RAW
+                               (CHK-WITH-GUARD-CHECKING-ARG :NONE)
+                               (CAR 3)))
+  (WITH-GUARD-CHECKING1-RAW (CHK-WITH-GUARD-CHECKING-ARG :NONE) (CAR 3))
+  T
+  ? [RAW LISP] (pprint
+                (macroexpand-1
+                 '(WITH-GUARD-CHECKING1-RAW
+                   (CHK-WITH-GUARD-CHECKING-ARG :NONE)
+                   (CAR 3))))
+
+  (LET ((ACL2_GLOBAL_ACL2::GUARD-CHECKING-ON
+         (CHK-WITH-GUARD-CHECKING-ARG :NONE)))
+    (DECLARE (SPECIAL ACL2_GLOBAL_ACL2::GUARD-CHECKING-ON))
+    (CAR 3))
+  ? [RAW LISP] 
+  ~ev[]
+  The above raw Lisp code binds the state global variable ~c[guard-checking-on]
+  to ~c[:none], as ~c[chk-with-guard-checking-arg] is just the identity
+  function except for causing a hard error for an illegal input.
+
+  The intended use of ~c[return-last] is that the second argument is evaluated
+  first in a normal manner, and then the third argument is evaluated in an
+  environment that may depend on the value of the second argument.  (For
+  example, the macro ~ilc[with-prover-time-limit] macroexpands to a call of
+  ~c[return-last] with a first argument of ~c['WITH-PROVER-TIME-LIMIT1-RAW], a
+  second argument that evaluates to a numeric time limit, and a third argument
+  that is evaluated in an environment where the theorem prover is restricted to
+  avoid running longer than that time limit.)  Although this intended usage
+  model is not strictly enforced, it is useful to keep in mind in the following
+  description of how calls of ~c[return-last] are handled by the ACL2
+  evaluator.
+
+  When a form is submitted in the top-level loop, it is handled by ACL2's
+  custom evaluator.  That evaluator is specified to respect the semantics of
+  the expression supplied to it: briefly put, if an expression ~c[E] evaluates
+  to a value ~c[V], then the equality ~c[(equal E (quote V))] should be a
+  theorem.  Notice that this specification does not discuss the side-effects
+  that may occur when evaluating a call of ~c[return-last], so we discuss that
+  now.  Suppose that the ACL2 evaluator encounters the call
+  ~c[(return-last 'fn expr1 expr2)].  First it evaluates ~c[expr1].  If this
+  evaluation succeeds without error, then it constructs an expression of the
+  form ~c[(fn *x* ev-form)], where *x* is a Lisp variable bound to the result
+  of evaluating ~c[expr1] and ~c[ev-form] is a call of the evaluator for
+  ~c[expr2].  (Those who want implementation details are invited to look at
+  function ~c[ev-rec-return-last] in ACL2 source file ~c[translate.lisp].)
+  There are exceptions if ~c[fn] is ~c[progn], ~c[ec-call1-raw],
+  ~c[with-guard-checking1-raw], or ~c[mbe1-raw], but the main idea is the same:
+  do a reasonable job emulating the behavior of a raw-Lisp call of
+  ~c[return-last].
+
+  The following log shows how a ~ilc[time$] call can generate a call of the
+  evaluator for the last argument of ~c[return-last] (arguent ~c[expr2],
+  above).  We use ~c[:]~ilc[trans1] to show single-step macroexpansions, which
+  indicate how a call of ~ilc[time$] expands to a call of ~c[return-last].  The
+  implementation actually binds the Lisp variable ~c[*RETURN-LAST-ARG3*] to
+  ~c[expr2] before calling the ACL2 evaluator, ~c[ev-rec].
+  ~bv[]
+  ACL2 !>:trans1 (time$ (+ 3 4))
+   (TIME$1 (LIST 0 NIL NIL NIL NIL)
+           (+ 3 4))
+  ACL2 !>:trans1 (TIME$1 (LIST 0 NIL NIL NIL NIL)
+                         (+ 3 4))
+   (RETURN-LAST 'TIME$1-RAW
+                (LIST 0 NIL NIL NIL NIL)
+                (+ 3 4))
+  ACL2 !>(time$ (+ 3 4))
+  ; (EV-REC *RETURN-LAST-ARG3* ...) took 
+  ; 0.00 seconds realtime, 0.00 seconds runtime
+  ; (1,120 bytes allocated).
+  7
+  ACL2 !>
+  ~ev[]
+
+  We now show how things can go wrong in other than the ``intended use'' case
+  described above.  In the example below, the macro ~c[mac-raw] is operating
+  directly on the syntactic representation of its first argument, which it
+  obtains of course as the second argument of a ~c[return-last] call.  Again
+  this ``intended use'' of ~c[return-last] requires that argument to be
+  evaluated and then only its result is relevant; its syntax is not supposed to
+  matter.  We emphasize that only top-level evaluation depends on this
+  ``intended use''; once evaluation is passed to Lisp, the issue disappears.
+  We illustrate below how to use the ~ilc[top-level] utility to avoid this
+  issue; ~pl[top-level].  The example uses the utility ~c[defmacro-last] to
+  ``install'' special handling of the raw-Lisp macro ~c[mac-raw] by
+  ~c[return-last]; later below we discuss ~c[defmacro-last].
+  ~bv[]
+  ACL2 !>(defttag t)
+
+  TTAG NOTE: Adding ttag T from the top level loop.
+   T
+  ACL2 !>(progn!
+           (set-raw-mode t)
+           (defmacro mac-raw (x y)
+             `(progn (print (quote ,(cadr x)))
+                     (terpri) ; newline
+                     ,y)))
+
+  Summary
+  Form:  ( PROGN! (SET-RAW-MODE T) ...)
+  Rules: NIL
+  Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+   NIL
+  ACL2 !>(defmacro-last mac)
+  [[ ... output omitted ... ]]
+   RETURN-LAST-TABLE
+  ACL2 !>(return-last 'mac-raw '3 nil)
+
+  ***********************************************
+  ************ ABORTING from raw Lisp ***********
+  Error:  Fault during read of memory address #x120000300006
+  ***********************************************
+
+  If you didn't cause an explicit interrupt (Control-C),
+  then the root cause may be call of a :program mode
+  function that has the wrong guard specified, or even no
+  guard specified (i.e., an implicit guard of t).
+  See :DOC guards.
+
+  To enable breaks into the debugger (also see :DOC acl2-customization):
+  (SET-DEBUGGER-ENABLE T)
+  ACL2 !>(top-level (return-last 'mac-raw '3 nil))
+
+  3 
+  NIL
+  ACL2 !>
+  ~ev[]
+
+  We next describe how to extend the behavior of ~c[return-last].  This
+  requires an active trust tag (~pl[defttag]), and is accomplished by extending
+  a ~il[table] provided by ACL2, ~pl[return-last-table].  Rather than using
+  ~ilc[table] ~il[events] directly for this purpose, it is probably more
+  convenient to use a macro, ~c[defmacro-last].  We describe the distributed
+  book ~c[books/misc/profiling.lisp] in order to illustrate how this works.
+  The events in that book are as follows, and are described below.
+  ~bv[]
+  (defttag :profiling)
+
+  (progn!
+   (set-raw-mode t)
+   (load (concatenate 'string (cbd) \"profiling-raw.lsp\")))
+
+  (defmacro-last with-profiling)
+  ~ev[]
+  The first event introduces a trust tag.  The second loads a file into raw
+  Lisp that defines a macro, ~c[with-profiling-raw], which can do profiling for
+  the form to be evaluated.  The third introduces an ACL2 macro
+  ~c[with-profiling], whose calls expand into calls of the form
+  ~c[(return-last (quote with-profiling-raw) & &)].  The third event also
+  extends ~ilc[return-last-table] so that these calls will expand in raw Lisp
+  to calls of ~c[with-profiling-raw].
+
+  The example above illustrates the following methodology for introducing a
+  macro that returns its last argument but produces useful side-effects with
+  raw Lisp code.
+  ~bq[]
+  (1) Introduce a trust tag (~pl[defttag]).
+
+  (2) Using ~ilc[progn!], load into raw Lisp a file defining a macro,
+  ~c[RAW-NAME], that takes two arguments, returning its last (second) argument
+  but using the first argument to produce desired side effects during
+  evaluation of that last argument.
+
+  (3) Evaluate the form ~c[(defmacro-last NAME :raw RAW-NAME)].  This will
+  introduce ~c[NAME] as an ACL2 macro that expands to a corresponding call of
+  ~c[RAW-NAME] (see (2) above) in raw Lisp.  The specification of keyword value
+  of ~c[:raw] as ~c[RAW-NAME] may be omitted if ~c[RAW-NAME] is the result of
+  modifying the symbol ~c[NAME] by suffixing the string ~c[\"-RAW\"] to the
+  ~ilc[symbol-name] of ~c[NAME].~eq[]
+
+  It is useful to explore what is done by ~c[defmacro-last].
+  ~bv[]
+  ACL2 !>:trans1 (defmacro-last with-profiling)
+   (PROGN (DEFMACRO WITH-PROFILING (X Y)
+                    (LIST 'RETURN-LAST
+                          (LIST 'QUOTE 'WITH-PROFILING-RAW)
+                          X Y))
+          (TABLE RETURN-LAST-TABLE 'WITH-PROFILING-RAW
+                 'WITH-PROFILING))
+  ACL2 !>:trans1 (with-profiling '(assoc-eq fgetprop rewrite) (mini-proveall))
+   (RETURN-LAST 'WITH-PROFILING-RAW
+                '(ASSOC-EQ FGETPROP REWRITE)
+                (MINI-PROVEALL))
+  ACL2 !>:q
+
+  Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
+  ? [RAW LISP] (macroexpand-1
+                '(RETURN-LAST 'WITH-PROFILING-RAW
+                               '(ASSOC-EQ FGETPROP REWRITE)
+                               (MINI-PROVEALL)))
+  (WITH-PROFILING-RAW '(ASSOC-EQ FGETPROP REWRITE) (MINI-PROVEALL))
+  T
+  ? [RAW LISP] 
+  ~ev[]
+  To understand the macro ~c[with-profiling-raw] you could look at the
+  distributed file loaded above: ~c[books/misc/profiling-raw.lsp].  If you wish
+  to automate certification of such a book with makefiles (~pl[book-makefiles],
+  perhaps contributing such a book to the ACL2 books repository (see
+  ~url[http://acl2-books.googlecode.com/]), you may also wish to look at
+  distributed file ~c[books/misc/Makefile], where you'll notice the following
+  extra `~c[make]' dependency:
+  ~bv[]
+  profiling.cert: profiling-raw.lsp
+  ~ev[]
+
+  We mentioned above that ACL2 tends to print calls of ~ilc[prog2$] or
+  ~ilc[time$] (or other such utilities) instead of calls of ~c[return-last].
+  Here we elaborate that point.  ACL2's `~c[untranslate]' utility treats
+  ~c[(return-last (quote F) X Y)] as ~c[(F X Y)] if ~c[F] is a key in
+  ~c[return-last-table].  However, it is generally rare to encounter such a
+  term during a proof, since calls of ~c[return-last] are generally expanded
+  away early during a proof.
+
+  Calls of ~c[return-last] that occur in code ~-[] forms submitted in the
+  top-level ACL2 loop, and definition bodies other than those marked as
+  ~ilc[non-executable] (~pl[defun-nx]) ~-[] have the following restriction: if
+  the first argument is of the form ~c[(quote F)], then ~c[F] must be an entry
+  in ~c[return-last-table].  There are however four exceptions: the following
+  symbols are considered to be keys of ~c[return-last-table] even if they are
+  no longer associated with non-~c[nil] values, say because of a ~ilc[table]
+  event with keyword ~c[:clear].
+  ~bq[]
+  * ~c[progn], associated with ~ilc[prog2$]~nl[]
+  * ~c[mbe1-raw], associated with ~c[mbe1], a version of ~c[mbe]~nl[]
+  * ~c[ec-call1-raw], associated with ~c[ec-call1] (a variant of
+  ~ilc[ec-call])~nl[]
+  * ~c[with-guard-checking1-raw], associated with ~c[with-guard-checking1] (a
+  variant of ~ilc[with-guard-checking])
+  ~eq[]
+
+  Note that because of its special status, it is illegal to trace
+  ~c[return-last].
+
+  We conclude by warning that as a user, you take responsibility for not
+  compromising the soundness or error handling of ACL2 when you define a macro
+  in raw Lisp and especially when you install it as a key of
+  ~ilc[return-last-table], either directly or (more likely) using
+  ~c[defmacro-last].  In particular, be sure that you are defining a macro of
+  two arguments that always returns the value of its last argument, returning
+  the complete multiple value if that last argument evaluates to a multiple
+  value.
+
+  The following is correct, and illustrates care taken to return multiple
+  values.
+  ~bv[]
+  :q
+  (defmacro my-time1-raw (val form)
+    (declare (ignore val))
+    `(let  ((start-time (get-internal-run-time))
+            (result (multiple-value-list ,form))
+            (end-time (get-internal-run-time)))
+       (format t \"Total time: ~~s~~%\"
+               (float (/ (- end-time start-time)
+                         internal-time-units-per-second)))
+       (values-list result)))
+  (lp)
+  (defttag t)
+  (defmacro-last my-time1)
+  (defmacro my-time (form)
+    `(my-time1 nil ,form))
+  ~ev[]
+  Then for example:  
+  ~bv[]
+  ACL2 !>(my-time (equal (make-list 1000000) (make-list 1000000)))
+  Total time: 0.12
+  T
+  ACL2 !>
+  ~ev[]
+  But if instead we provide the following more naive implementation, of the
+  above raw Lisp macro, the above evaluation can produce an error, for example
+  if the host Lisp is CCL.
+  ~bv[]
+  (defmacro my-time1-raw (val form)
+      (declare (ignore val))
+      `(let  ((start-time (get-internal-run-time))
+              (result ,form)
+              (end-time (get-internal-run-time)))
+         (format t \"Total time: ~~s~~%\"
+                 (float (/ (- end-time start-time)
+                           internal-time-units-per-second)))
+         result)) ; WRONG -- need multiple values returned!
+  ~ev[]
+  
+  Here is a second, similar example.  This time we'll start with the error; can
+  you spot it?
+  ~bv[]
+  (defttag t)
+  (progn!
+   (set-raw-mode t)
+   (defmacro foo-raw (x y)
+     `(prog1
+          ,y
+        (cw \"Message showing argument 1: ~~x0~~%\" ,x))))
+  (defmacro-last foo)
+  ~ev[]
+  We then can wind up with a hard Lisp error:
+  ~bv[]
+  ACL2 !>(foo 3 (mv 4 5))
+  Message showing argument 1: 3
+
+  ***********************************************
+  ************ ABORTING from raw Lisp ***********
+  Error:  value NIL is not of the expected type REAL.
+  ***********************************************
+
+  If you didn't cause an explicit interrupt (Control-C),
+  then the root cause may be call of a :program mode
+  function that has the wrong guard specified, or even no
+  guard specified (i.e., an implicit guard of t).
+  See :DOC guards.
+
+  To enable breaks into the debugger (also see :DOC acl2-customization):
+  (SET-DEBUGGER-ENABLE T)
+  ACL2 !>
+  ~ev[]
+  Here is a corrected version of the above macro.  The point here is that
+  ~c[prog1] returns a single value, while ~c[our-multiple-value-prog1] returns
+  all the values that are returned by its first argument.
+  ~bv[]
+  (progn!
+   (set-raw-mode t)
+   (defmacro foo-raw (x y)
+     `(our-multiple-value-prog1 ;; better
+       ,y
+       (cw \"Message showing argument 1: ~~x0~~%\" ,x))))
+  ~ev[]~/"
+
+  (declare (ignore fn eager-arg)
+           (xargs :guard
+
+; Warning: If you change this guard, also consider changing the handling of
+; return-last in oneify, which assumes that the guard is t except for the
+; 'mbe1-raw case.
+
+; We produce a guard to handle the mbe1 case (from expansion of mbe forms).  In
+; practice, fn is likely to be a constant, in which case we expect this guard
+; to resolve to its true branch or its false branch.
+
+                  (if (equal fn 'mbe1-raw)
+                      (equal last-arg eager-arg)
+                    t)
+                  :mode :logic))
+  last-arg)
+
+#-acl2-loop-only
+(defmacro return-last (qfn arg2 arg3)
+  (let* ((fn (and (consp qfn)
+                  (eq (car qfn) 'quote)
+                  (consp (cdr qfn))
+                  (symbolp (cadr qfn))
+                  (null (cddr qfn))
+                  (cadr qfn)))
+         (arg2
+
+; There is no logical problem with using attachments when evaluating the second
+; argument of return-last, because logically the third argument provides the
+; value(s) of a return-last call -- the exception being the evaluation of the
+; :exec argument of an mbe call (or, equivalent evaluation by way of mbe1,
+; etc.).  We not only bind *aokp* to t, but we also bind *attached-fn-called*
+; so that no changes to this variable will prevent the storing of memoization
+; results.
+
+; See also the related treatment of aokp in ev-rec-return-last.
+
+          (cond
+           ((or (eq fn 'mbe1-raw) ; good test, though subsumed by the next line
+                (and fn (macro-function fn))
+                (symbolp arg2)      ; no point in doing extra bindings below
+                (and (consp arg2)
+                     (eq (car arg2) ; no point in doing extra bindings below
+                         'quote)))
+            arg2)
+           (t `(let ((*aokp* t)
+                     #+hons (*attached-fn-called* t))
+                 ,arg2)))))
+    (cond ((and fn (fboundp fn))
+
+; Translation for evaluation requires that if the first argument is a quoted
+; non-nil symbol, then that symbol (here, fn) must be a key in
+; return-last-table.  The function chk-return-last-entry checks that when fn
+; was added to the table, it was fboundp in raw Lisp.  Note that fboundp holds
+; for functions, macros, and special operators.
+
+; An alternative may seem to be to lay down code that checks to see if fn is in
+; return-last-table, and if not then replace it by progn.  But during early
+; load of compiled files we skip table events (which are always skipped in raw
+; Lisp), yet the user may expect a call of return-last on a quoted symbol to
+; have the desired side-effects in that case.
+
+           (list fn arg2 arg3))
+          (t (list 'progn arg2 arg3)))))
+
+#-acl2-loop-only
+(defmacro mbe1-raw (exec logic)
+
+; We rely on this macroexpansion in raw Common Lisp.  See in particular the
+; code and comment regarding mbe1-raw in guard-clauses.
+
+  (declare (ignore logic))
+  exec)
+
+(defmacro mbe1 (exec logic)
+
+; See also must-be-equal.
+
+; Suppose that during a proof we encounter a term such as (return-last
+; 'mbe1-raw exec logic), but we don't know that logic and exec are equal.
+; Fortunately, ev-rec will only evaluate the logic code for this return-last
+; form, as one might expect.
+
   ":Doc-Section ACL2::Programming
 
-  test equality (of two numbers, symbols, or ~il[characters])~/
+  attach code for execution~/
 
-  ~c[(eql x y)] is logically equivalent to ~c[(equal x y)].~/
+  The form ~c[(mbe1 exec logic)] is equivalent to the forms
+  ~c[(mbe :logic logic :exec exec)] and ~c[(must-be-equal logic exec)].
+  ~l[mbe].~/~/"
 
-  Unlike ~ilc[equal], ~c[eql] has a ~il[guard] requiring at least one of its
-  arguments to be a number, a symbol, or a character.  Generally,
-  ~c[eql] is executed more efficiently than ~ilc[equal].
+  `(return-last 'mbe1-raw ,exec ,logic))
 
-  For a discussion of the various ways to test against 0,
-  ~l[zero-test-idioms].
+(defmacro must-be-equal (logic exec)
 
-  ~c[Eql] is a Common Lisp function.  See any Common Lisp documentation
-  for more information.~/"
+; We handle must-be-equal using return-last, so that must-be-equal isn't a
+; second function that needs special stobjs-out handling.  But then we need a
+; version of must-be-equal with the logic input as the last argument, since
+; that is what is returned in the logic.  We call that mbe1, but we leave
+; must-be-equal as we move the the return-last implementation (after v4-1,
+; released Sept., 2010), since must-be-equal has been around since v2-8 (March,
+; 2004).
 
-  (equal x y))
+  ":Doc-Section ACL2::Programming
+
+  attach code for execution~/~/
+
+  The form ~c[(must-be-equal logic exec)] evaluates to ~c[logic] in the ACL2
+  logic but evaluates to ~c[exec] in raw Lisp.  The point is to be able to
+  write one definition to reason about logically but another for evaluation.
+  Please ~pl[mbe] and ~pl[mbt] for appropriate macros to use, rather than
+  calling ~c[must-be-equal] directly, since it is easy to commute the arguments
+  of ~c[must-be-equal] by accident.
+
+  In essence, the guard for ~c[(must-be-equal x y)] is ~c[(equal x y)].
+  However, note that ~c[must-be-equal] is a macro:
+  ~c[(must-be-equal logic exec)] expands to ~c[(mbe1 exec logic)], which
+  expands to a call of ~ilc[return-last]."
+
+  `(mbe1 ,exec ,logic))
+
+(defmacro mbe (&key (exec 'nil exec-p) (logic 'nil logic-p))
+
+  ":Doc-Section ACL2::Programming
+
+  attach code for execution~/
+
+  The macro ~c[mbe] (``must be equal'') can be used in function definitions in
+  order to cause evaluation to use alternate code to that provided for the
+  logic.  An example is given below.  However, the use of ~c[mbe] can lead to
+  non-terminating computations.  ~l[defexec], perhaps after reading the present
+  documentation, for a way to guarantee termination (at least theoretically).
+
+  In the ACL2 logic, ~c[(mbe :exec exec-code :logic logic-code)] equals
+  ~c[logic-code]; the value of ~c[exec-code] is ignored.  However, in raw Lisp
+  it is the other way around:  this form macroexpands simply to ~c[exec-code].
+  ACL2's ~il[guard] verification mechanism ensures that the raw Lisp code is
+  only evaluated when appropriate, since the guard proof obligations generated
+  for this call of ~c[mbe] are ~c[(equal exec-code logic-code)] together with
+  the guard proof obligations from ~c[exec-code].  ~l[verify-guards] and, for
+  general discussion of guards, ~pl[guard].
+
+  Warning for nested ~ilc[mbe] calls: The equality of ~c[:exec] and ~c[:logic]
+  code is not checked in the scope of superior ~c[:logic] code, as for the
+  equality of ~c[x] and ~c[y] in the following.
+  ~bv[]
+  (mbe :logic 
+       (mbe :logic x :exec y)
+       :exec
+       z)
+  ~ev[]
+
+  The form ~c[(mbe :exec exec-code :logic logic-code)] macroexpands in ACL2 to
+  a form that generates the guard proof obligation
+  ~c[(equal logic-code exec-code).  The ~c[:exec] and the ~c[:logic] code in an
+  ~c[mbe] call must have the same return type; for example, one cannot return
+  ~c[(]~ilc[mv]~c[ * *)] while the other returns just a single value.
+
+  Also ~pl[mbt], which stands for ``must be true.''  You may find it more
+  natural to use ~ilc[mbt] for certain applications, as described in its
+  ~il[documentation].~/
+
+  Here is an example of the use of ~c[mbe].  Suppose that you want to define
+  factorial in the usual recursive manner, as follows.
+  ~bv[]
+  (defun fact (n)
+    (if (zp n)
+        1
+      (* n (fact (1- n)))))
+  ~ev[]
+  But perhaps you want to be able to execute calls of ~c[fact] on large
+  arguments that cause stack overflows, perhaps during proofs.  (This isn't a
+  particularly realistic example, but it should serve.)  So, instead you can
+  define this tail-recursive version of factorial:
+  ~bv[]
+  (defun fact1 (n acc)
+    (declare (xargs :guard (and (integerp n) (>= n 0) (integerp acc))))
+    (if (zp n)
+        acc
+      (fact1 (1- n) (* n acc))))
+  ~ev[]
+  We are now ready to define ~c[fact] using ~c[mbe].  Our intention is that
+  logically, ~c[fact] is as shown in the first definition above, but that
+  ~c[fact] should be executed by calling ~c[fact1].  Notice that we defer
+  ~il[guard] verification, since we are not ready to prove the correspondence
+  between ~c[fact1] and ~c[fact].
+  ~bv[]
+  (defun fact (n)
+    (declare (xargs :guard (and (integerp n) (>= n 0))
+                    :verify-guards nil))
+    (mbe :exec  (fact1 n 1)
+         :logic (if (zp n)
+                    1
+                  (* n (fact (1- n))))))
+  ~ev[]
+  Next, we prove the necessary correspondence lemmas.  Notice the inclusion of
+  a standard book to help with the arithmetic reasoning.
+  ~bv[]
+  (include-book \"books/arithmetic/top-with-meta\")
+
+  (defthm fact1-fact
+    (implies (integerp acc)
+             (equal (fact1 n acc)
+                    (* acc (fact n)))))
+  ~ev[]
+  We may now do guard verification for ~c[fact], which will allow the execution
+  of the raw Lisp ~c[fact] function, where the above ~c[mbe] call expands
+  simply to ~c[(fact1 n 1)].
+  ~bv[]
+  (verify-guards fact)
+  ~ev[]
+  Now that guards have been verified, a trace of function calls illustrates
+  that the evaluation of calls of ~c[fact] is passed to evaluation of calls of
+  ~c[fact1].  The outermost call below is of the logical function stored for
+  the definition of ~c[fact]; all the others are of actual raw Common Lisp
+  functions.
+  ~bv[]
+  ACL2 !>(trace$ fact fact1)
+  NIL
+  ACL2 !>(fact 3)
+  1> (ACL2_*1*_ACL2::FACT 3)
+    2> (FACT 3)
+      3> (FACT1 3 1)
+        4> (FACT1 2 3)
+          5> (FACT1 1 6)
+            6> (FACT1 0 6)
+            <6 (FACT1 6)
+          <5 (FACT1 6)
+        <4 (FACT1 6)
+      <3 (FACT1 6)
+    <2 (FACT 6)
+  <1 (ACL2_*1*_ACL2::FACT 6)
+  6
+  ACL2 !>
+  ~ev[]
+
+  You may occasionally get warnings when you compile functions defined using
+  ~c[mbe].  (For commands that invoke the compiler, ~pl[compilation].)  These
+  can be inhibited by using an ~c[ignorable] ~ilc[declare] form.  Here is a
+  simple but illustrative example.  Note that the declarations can optionally
+  be separated into two ~ilc[declare] forms.
+  ~bv[]
+  (defun foo (x y)
+    (declare (ignorable x)
+             (xargs :guard (equal x y)))
+    (mbe :logic x :exec y))
+  ~ev[]
+
+  Finally, we observe that when the body of a function contains a term of the
+  form ~c[(mbe :exec exec-code :logic logic-code)], the user is very unlikely
+  to see any logical difference than if this were replaced by ~c[logic-code].
+  ACL2 takes various steps to ensure this.  For example, the proof obligations
+  generated for admitting a function treat the above ~c[mbe] term simply as
+  ~c[logic-code].  Function expansion, ~c[:use] ~il[hints],
+  ~c[:]~ilc[definition] rules, generation of ~il[constraint]s for functional
+  instantiation, and creation of rules of class ~c[:]~ilc[rewrite] and
+  ~c[:]~ilc[forward-chaining] also treat ~c[mbe] calls as their ~c[:logic]
+  code."
+
+  (declare (xargs :guard (and exec-p logic-p))
+
+; OpenMCL Versions 14.2 and 14.3 (CCL), CMUCL Version 19b, and SBCL Version
+; 0.9.8 (other versions of these too, most likely) produce a warning with the
+; following ignore declaration, but we don't know why.  We tried using
+; "ignorable" instead of "ignore" for CMUCL, but that didn't help.  So we
+; eliminate the ignore declaration in these cases with the #- directive below.
+
+           #-(and (or ccl cmu sbcl) (not acl2-loop-only))
+           (ignore exec-p logic-p))
+  `(mbe1 ,exec ,logic))
+
+(defmacro mbt (x)
+
+  ":Doc-Section ACL2::Programming
+
+  introduce a test not to be evaluated~/
+
+  The macro ~c[mbt] (``must be true'') can be used in order to add code in
+  order to admit function definitions in ~c[:]~ilc[logic] mode, without paying
+  a cost in execution efficiency.  Examples below illustrate its intended use.
+
+  Semantically, ~c[(mbt x)] equals ~c[x].  However, in raw Lisp ~c[(mbt x)]
+  ignores ~c[x] entirely, and macroexpands to ~c[t].  ACL2's ~il[guard]
+  verification mechanism ensures that the raw Lisp code is only evaluated when
+  appropriate, since a guard proof obligation ~c[(equal x t)] is generated.
+  ~l[verify-guards] and, for general discussion of guards, ~pl[guard].
+
+  Also ~pl[mbe], which stands for ``must be equal.''  Although ~c[mbt] is more
+  natural in many cases, ~c[mbe] has more general applicability.  In fact,
+  ~c[(mbt x)] is essentially defined to be ~c[(mbe :logic x :exec t)].~/
+
+  We can illustrate the use of ~c[mbt] on the following generic example, where
+  ~c[<g>], ~c[<test>], ~c[<rec-x>], and ~c[<base>] are intended to be terms
+  involving only the variable ~c[x].
+  ~bv[]
+  (defun foo (x)
+    (declare (xargs :guard <g>))
+    (if <test>
+        (foo <rec-x>)
+      <base>))
+  ~ev[]
+  In order to admit this function, ACL2 needs to discharge the proof obligation
+  that ~c[<rec-x>] is smaller than ~c[x], namely:
+  ~bv[]
+  (implies <test>
+           (o< (acl2-count ~c[<rec-x>])
+                (acl2-count x)))
+  ~ev[]
+  But suppose we need to know that ~c[<g>] is true in order to prove this.
+  Since ~c[<g>] is only the ~il[guard], it is not part of the logical
+  definition of ~c[foo].  A solution is to add the guard to the definition of
+  ~c[foo], as follows.
+  ~bv[]
+  (defun foo (x)
+    (declare (xargs :guard <g>))
+    (if (mbt <g>)
+        (if <test>
+            (foo <rec-x>)
+          <base>)
+      nil))
+  ~ev[]
+  If we do this using ~c[<g>] rather than ~c[(mbt <g>)], then evaluation of
+  every recursive call of ~c[foo] will cause the evaluation of (the appropriate
+  instance of) ~c[<g>].  But since ~c[(mbt <g>)] expands to ~c[t] in raw Lisp,
+  then once we verify the guards of ~c[foo], the evaluations of ~c[<g>] will be
+  avoided (except at the top level, when we check the guard before allowing
+  evaluation to take place in Common Lisp).
+
+  Other times, the guard isn't the issue, but rather, the problem is that a
+  recursive call has an argument that itself is a recursive call.  For example,
+  suppose that ~c[<rec-x>] is of the form ~c[(foo <expr>)].  There is no way we
+  can hope to discharge the termination proof obligation shown above.  A
+  standard solution is to add some version of this test:
+  ~bv[]
+  (mbt (o< (acl2-count ~c[<rec-x>]) (acl2-count x)))
+  ~ev[]
+  Here is a specific example based on one sent by Vernon Austel.
+  ~bv[]
+  (defun recurX2 (n)
+    (declare (xargs :guard (and (integerp n) (<= 0 n))
+                    :verify-guards nil))
+    (cond ((zp n) 0)
+          (t (let ((call (recurX2 (1- n))))
+               (if (mbt (< (acl2-count call) n))
+                   (recurX2 call)
+                 1 ;; this branch is never actually taken
+                 )))))
+
+  (defthm recurX2-0
+   (equal (recurX2 n) 0))
+
+  (verify-guards recurX2)
+  ~ev[]
+  If you ~c[(]~ilc[trace$]~c[ acl2-count)], you will see that evaluation of
+  ~c[(recurX2 2)] causes several calls of ~ilc[acl2-count] before the
+  ~ilc[verify-guards].  But this evaluation does not call ~c[acl2-count] after
+  the ~c[verify-guards], because the ACL2 evaluation mechanism uses raw Lisp to
+  do the evaluation, and the form ~c[(mbt (< (acl2-count call) n))]
+  macroexpands to ~c[t] in Common Lisp.
+
+  You may occasionally get warnings when you compile functions defined using
+  ~c[mbt].  (For commands that invoke the compiler, ~pl[compilation].)  These
+  can be inhibited by using an ~c[ignorable] ~ilc[declare] form.  Here is a
+  simple but illustrative example.  Note that the declarations can optionally
+  be separated into two ~ilc[declare] forms.
+  ~bv[]
+  (defun foo (x y)
+    (declare (ignorable x)
+             (xargs :guard (equal x t)))
+    (and (mbt x) y))
+  ~ev[]"
+
+  `(mbe1 t ,x))
+
+(defdoc equality-variants
+
+; Consider position, remove-duplicates, and remove.  In Common Lisp, all three
+; of these primitives can take strings.  Through Version_4.2, position and
+; remove-duplicates supported string arguments, while remove did not.  Note
+; however that remove-duplicates-eql and remove-duplicates-equal did not
+; support string arguments.  For backward compatibility with Version_4.2 and
+; earlier, we leave remove-duplicates-equal unchanged.  When there is
+; sufficient demand we can extend remove.
+
+  ":Doc-Section ACL2::Programming
+
+  versions of a function using different equality tests~/
+
+  The ACL2 environment includes not only a logic but also a programming
+  language, which is based on Common Lisp.  Execution efficiency may be
+  increased by using fast equality tests: ~ilc[eq] for symbols and ~ilc[eql]
+  for numbers, symbols, and characters (~pl[eqlablep]).  Several
+  list-processing functions built into ACL2 thus have three variants, depending
+  on whether the equality function used is ~ilc[eq], ~ilc[eql], or ~ilc[equal];
+  a list is provided below.  ACL2 has taken measures to ensure that one can
+  reason about a single logical function even when one uses these different
+  variants.
+
+  Consider for example the case of list membership.  Common Lisp provides a
+  utility for this purposes, ~ilc[member], which can take a ~c[:TEST] keyword
+  argument, default ~ilc[eql].  So for example, one might write
+  ~bv[]
+  (member a x :TEST 'eq)
+  ~ev[]
+  if either ~c[a] is a symbol or ~c[x] is a list of symbols, so that the
+  fastest equality test (~ilc[eq]) may be used when comparing ~c[a] to
+  successive elements of the list, ~c[x].  One might elsewhere write
+  ~c[(member b (foo y))], which is equivalent to
+  ~c[(member b (foo y) :TEST 'eql)], for example if ~c[b] is a number.  If one
+  wants to reason about both ~c[(member a x :TEST 'eq)] and ~c[(member b y)],
+  it might be helpful for both calls of ~c[member] to be the same logically,
+  even though Common Lisp will execute them differently (using ~ilc[eq] or
+  ~ilc[eql], respectively).  ACL2 arranges that in fact, both references to
+  ~ilc[member] generate calls of ~ilc[member-equal] in the theorem prover.
+
+  In fact, since ~ilc[member] can take the optional ~c[:TEST] keyword argument,
+  then in ACl2 it must be defined as a macro, not a function (~pl[defun]).
+  ACL2 arranges that a call of ~c[member] generates a corresponding call of the
+  function ~ilc[member-equal], regardless of the value of ~c[TEST], in a manner
+  that produces ~ilc[member-equal] in prover output.  More generally, you can
+  expect ACL2 to treat your use of ~ilc[member] as though you had written
+  ~ilc[member-equal], for example in the way it stores ~ilc[rewrite] rules and
+  other kinds of rules as well (~pl[rule-classes]).  We say little here about
+  how this is all arranged by ACL2, other than to mention that ~ilc[mbe] is
+  utilized (so, you might see mention in proof logs) of the function
+  ~ilc[return-last] that implements ~ilc[mbe].  Such details, which probably
+  can be ignored by most users, may be found elsewhere;
+  ~pl[equality-variants-details].
+
+  As a convenience to the user, the macro ~c[member-eq] is provided that
+  expands to a corresponding call of ~c[member] with ~c[:TEST 'eq], as
+  follows.
+  ~bv[]
+  ACL2 !>:trans1 (member-eq (foo x) (bar y))
+   (MEMBER (FOO X) (BAR Y) :TEST 'EQ)
+  ACL2 !>
+  ~ev[]
+
+  For efficiency we recommend using the ~c[-equal] equality variant, for
+  example ~ilc[member-equal] or ~ilc[member ... :TEST 'equal], in certain
+  contexts: ~ilc[defmacro], ~ilc[defpkg], ~ilc[defconst], and
+  ~ilc[value-triple] forms.  However, the implementation of equality variants
+  has been designed so that when defining a function, one may choose freely in
+  a definition an equality variant of primitive ~c[F], to get efficient
+  execution but where subsequent reasoning is about ~c[F-equal].  For details
+  about the above recommendation and for a discussion of the implementation,
+  ~pl[equality-variants-details].
+
+  The following alphabetical list includes all primitives that have equality
+  variants.  Each macro ~c[F] listed below takes an optional ~c[:TEST] keyword
+  argument of ~c['eq], ~c['eql], or ~c['equal], where ~c['eql] is the default.
+  For each such ~c[F], a function ~c[F-equal] is defined such that for logical
+  purposes (in particular theorem proving), each call of ~c[F] expands to a
+  corresponding call of ~c[F-equal].  For convenience, a macro ~c[F-eq] is also
+  defined, so that a call of ~c[F-eq] expands to a corresponding call of ~c[F]
+  with ~c[:TEST 'eq].
+
+  ~bf[]
+  ~ilc[add-to-set]
+  ~ilc[assoc]
+  ~ilc[delete-assoc]
+  ~ilc[intersection$] ~em[; (see Note below)]
+  ~ilc[intersectp]
+  ~ilc[member]
+  ~ilc[no-duplicatesp]
+  ~c[position-ac]
+  ~ilc[position]
+  ~ilc[put-assoc]
+  ~ilc[rassoc]
+  ~ilc[remove-duplicates]
+  ~ilc[remove1]
+  ~ilc[remove]
+  ~ilc[set-difference$] ~em[; (see Note below)]
+  ~ilc[subsetp]
+  ~ilc[union$] ~em[; (see Note below)]
+  ~ef[]
+
+  Note: Three of the macros above have names ending with the character,
+  `~c[$]': ~ilc[intersection$], ~ilc[set-difference$], and ~ilc[union$].  In
+  each case there is a corresponding Common Lisp primitive without the trailing
+  `~c[$]': ~c[intersection], ~c[set-difference], and ~c[union].  However,
+  Common Lisp does not specify the order of elements in the list returned by
+  those primitives, so ACL2 has its own.  Nevertheless, the only use of the
+  trailing `~c[$]' is to distinguish the primitives; associated functions and
+  macros, for example ~c[union-eq] and ~c[intersection-equal], do not include
+  the `~c[$]' character in their names.~/~/")
+
+(defdoc equality-variants-details
+  ":Doc-Section equality-variants
+
+  details about ~il[equality-variants]~/
+
+  Here we present details about equality variants, none of which is likely
+  to be important to the majority of ACL2 users.  Please ~pl[equality-variants]
+  for relevant background.
+
+  We begin by presenting ~il[events] that implement the equality variants for
+  ~ilc[member], as these illustrate the events introduced for all macros having
+  equality variants.  The definition of ~ilc[member], just below, calls the
+  macro ~c[let-mbe], which in turn is just an abbreviation for a combination of
+  ~ilc[let] and ~ilc[mbe].
+  ~bv[]
+  (defmacro let-mbe (bindings &key logic exec)
+    `(let ,bindings
+       (mbe :logic ,logic
+            :exec ,exec)))
+  ~ev[]
+  This use of ~ilc[let] arranges that each argument of a call of ~c[member] is
+  evaluated only once.
+  ~bv[]
+  (defmacro member (x l &key (test ''eql))
+    (declare (xargs :guard (or (equal test ''eq)
+                               (equal test ''eql)
+                               (equal test ''equal))))
+    (cond
+     ((equal test ''eq)
+      `(let-mbe ((x ,x) (l ,l))
+                :logic (member-equal x l)
+                :exec  (member-eq-exec x l)))
+     ((equal test ''eql)
+      `(let-mbe ((x ,x) (l ,l))
+                :logic (member-equal x l)
+                :exec  (member-eql-exec x l)))
+     (t ; (equal test 'equal)
+      `(member-equal ,x ,l))))
+  ~ev[]
+  Inspection of the definition above shows that every call of ~ilc[member]
+  expands to one that is logically equivalent to the corresponding call of
+  ~ilc[member-equal], which is defined as follows.
+  ~bv[]
+  (defun member-equal (x lst)
+    (declare (xargs :guard (true-listp lst)))
+    (cond ((endp lst) nil)
+          ((equal x (car lst)) lst)
+          (t (member-equal x (cdr lst)))))
+  ~ev[]
+  The following two definitions model equality variants of ~ilc[member] for
+  tests ~ilc[eq] and ~ilc[eql], respectively.
+  ~bv[]
+  (defun member-eq-exec (x lst)
+    (declare (xargs :guard (if (symbolp x)
+                               (true-listp lst)
+                             (symbol-listp lst))))
+    (cond ((endp lst) nil)
+          ((eq x (car lst)) lst)
+          (t (member-eq-exec x (cdr lst)))))
+
+  (defun member-eql-exec (x lst)
+    (declare (xargs :guard (if (eqlablep x)
+                               (true-listp lst)
+                             (eqlable-listp lst))))
+    (cond ((endp lst) nil)
+          ((eql x (car lst)) lst)
+          (t (member-eql-exec x (cdr lst)))))
+  ~ev[]
+  At this point the user can write ~c[(member x y)] or ~c[(member-equal x y)]
+  to call equality variants of ~c[member] with test ~c[eql] or ~c[equal],
+  respectively.  We thus provide the following macro for the ~c[eq] variant.
+  ~bv[]
+  (defmacro member-eq (x lst)
+    `(member ,x ,lst :test 'eq))
+  ~ev[]
+  ~il[Guard] proof obligations generated by calls of ~c[member] will include
+  those based on its use of ~c[mbe], and are supported by the following two
+  lemmas.
+  ~bv[]
+  (defthm member-eq-exec-is-member-equal
+    (equal (member-eq-exec x l)
+           (member-equal x l)))
+
+  (defthm member-eql-exec-is-member-equal
+    (equal (member-eql-exec x l)
+           (member-equal x l)))
+  ~ev[]
+  Finally, the following two events arrange that in certain contexts such as
+  ~il[theories] (including the use of ~ilc[in-theory] in ~il[events] and
+  ~il[hints]), ~ilc[member-eq] and ~ilc[member] are treated as references to
+  ~ilc[member-equal].
+  ~bv[]
+  (add-macro-alias member-eq member-equal)
+  (add-macro-alias member member-equal)
+  ~ev[]
+
+  We conclude this topic by exploring the following recommendation made in the
+  ~il[documentation] for ~il[equality-variants].
+
+  ~bq[]
+  For efficiency we recommend using the ~c[-equal] equality variant, for
+  example ~ilc[member-equal] or ~ilc[member ... :TEST 'equal], in certain
+  contexts: ~ilc[defmacro], ~ilc[defpkg], ~ilc[defconst], and
+  ~ilc[value-triple] forms.~eq[]
+
+  ACL2 reliies on the underlying Common Lisp for evaluation.  It also processes
+  events in the ACL2 logic.  In order to guarantee consistency of its logical
+  and Common Lisp evaluations, ACL2 uses a ``safe mode'' to avoid ill-guarded
+  calls.  In particular, consider the use of ~ilc[mbe] in execution of a call
+  of an equality variant of a primitive, ~c[F], other than its ~c[F-equal]
+  variant.  The ~ilc[mbe] call discussed above requires a connection to be
+  established between the ~c[:logic] and ~c[:exec] forms.  For example, if
+  ~c[F] is called with ~c[:TEST 'eql] (either explicitly or as the default),
+  then ACL2 will call both ~c[F-eql-exec] and ~c[F-equal], and check that the
+  two results are equal.
+
+  The following partial log illustrates the point above.  We define a macro
+  that calls ~ilc[member], and when a call of this macro is expanded during
+  processing of a subsequent definition, we see that two membership functions
+  are called on the same arguments.
+
+  ~bv[]
+  ACL2 !>(defmacro mac (lst)
+           (list 'quote (and (true-listp lst)
+                             (member 'c lst :test 'eq))))
+
+  Summary
+  Form:  ( DEFMACRO MAC ...)
+  Rules: NIL
+  Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+   MAC
+  ACL2 !>(trace$ member-equal member-eq-exec)
+   ((MEMBER-EQUAL) (MEMBER-EQ-EXEC))
+  ACL2 !>(defun f () (mac (a b c d)))
+  1> (ACL2_*1*_ACL2::MEMBER-EQ-EXEC C (A B C D))
+    2> (MEMBER-EQ-EXEC C (A B C D))
+    <2 (MEMBER-EQ-EXEC (C D))
+  <1 (ACL2_*1*_ACL2::MEMBER-EQ-EXEC (C D))
+  1> (ACL2_*1*_ACL2::MEMBER-EQUAL C (A B C D))
+    2> (MEMBER-EQUAL C (A B C D))
+    <2 (MEMBER-EQUAL (C D))
+  <1 (ACL2_*1*_ACL2::MEMBER-EQUAL (C D))
+
+  Since F is non-recursive, its admission is trivial.
+  ~ev[]
+
+  If performance is an issue then we can avoid such a problem, for example as
+  follows.  In a fresh session, let us define a suitable wrapper for calling
+  ~ilc[member] with ~c[:TEST 'eq].  This time, the trace in our partial log
+  shows that we have avoided calling two membership functions.
+
+  ~bv[]
+  ACL2 !>(defun mem-eq (x lst)
+           (declare (xargs :guard (if (symbolp x)
+                                      (true-listp lst)
+                                    (symbol-listp lst))))
+           (member x lst :test 'eq))
+  [[ ... output omitted here ... ]]
+   MEM-EQ
+  ACL2 !>(defmacro mac (lst)
+           (list 'quote (and (true-listp lst)
+                             (mem-eq 'c lst))))
+
+  Summary
+  Form:  ( DEFMACRO MAC ...)
+  Rules: NIL
+  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+   MAC
+  ACL2 !>(trace$ member-equal member-eq-exec mem-eq)
+   ((MEMBER-EQUAL)
+    (MEMBER-EQ-EXEC)
+    (MEM-EQ))
+  ACL2 !>(defun f () (mac (a b c d)))
+  1> (ACL2_*1*_ACL2::MEM-EQ C (A B C D))
+    2> (MEM-EQ C (A B C D))
+    <2 (MEM-EQ (C D))
+  <1 (ACL2_*1*_ACL2::MEM-EQ (C D))
+
+  Since F is non-recursive, its admission is trivial.
+  ~ev[]~/~/")
+
+; Member
+
+(defun member-eq-exec (x lst)
+  (declare (xargs :guard (if (symbolp x)
+                             (true-listp lst)
+                           (symbol-listp lst))))
+  (cond ((endp lst) nil)
+        ((eq x (car lst)) lst)
+        (t (member-eq-exec x (cdr lst)))))
+
+(defun member-eql-exec (x lst)
+  (declare (xargs :guard (if (eqlablep x)
+                             (true-listp lst)
+                           (eqlable-listp lst))))
+  (cond ((endp lst) nil)
+        ((eql x (car lst)) lst)
+        (t (member-eql-exec x (cdr lst)))))
+
+(defun member-equal (x lst)
+  (declare (xargs :guard (true-listp lst)))
+  #-acl2-loop-only ; for assoc-equal, Jared Davis found native assoc efficient
+  (member x lst :test #'equal)
+  #+acl2-loop-only
+  (cond ((endp lst) nil)
+        ((equal x (car lst)) lst)
+        (t (member-equal x (cdr lst)))))
+
+(defmacro member-eq (x lst)
+  `(member ,x ,lst :test 'eq))
+
+(defthm member-eq-exec-is-member-equal
+  (equal (member-eq-exec x l)
+         (member-equal x l)))
+
+(defthm member-eql-exec-is-member-equal
+  (equal (member-eql-exec x l)
+         (member-equal x l)))
+
+#+acl2-loop-only
+(defmacro member (x l &key (test ''eql))
+
+  ":Doc-Section ACL2::Programming
+
+  membership predicate~/
+  ~bv[]
+  General Forms:
+  (member x lst)
+  (member x lst :test 'eql)   ; same as above (eql as equality test)
+  (member x lst :test 'eq)    ; same, but eq is equality test
+  (member x lst :test 'equal) ; same, but equal is equality test
+  ~ev[]
+
+  ~c[(Member x lst)] equals the longest tail of the list ~c[lst] that begins
+  with ~c[x], or else ~c[nil] if no such tail exists.  The optional keyword,
+  ~c[:TEST], has no effect logically, but provides the test (default ~ilc[eql])
+  used for comparing ~c[x] with successive elements of ~c[lst].~/
+
+  The ~il[guard] for a call of ~c[member] depends on the test.  In all cases,
+  the second argument must satisfy ~ilc[true-listp].  If the test is ~ilc[eql],
+  then either the first argument must be suitable for ~ilc[eql] (~pl[eqlablep])
+  or the second argument must satisfy ~ilc[eqlable-listp].  If the test is
+  ~ilc[eq], then either the first argument must be a symbol or the second
+  argument must satisfy ~ilc[symbol-listp].
+
+  ~l[equality-variants] for a discussion of the relation between ~c[member] and
+  its variants:
+  ~bq[]
+  ~c[(member-eq x lst)] is equivalent to ~c[(member x lst :test 'eq)];
+
+  ~c[(member-equal x lst)] is equivalent to ~c[(member x lst :test 'equal)].
+  ~eq[]
+  In particular, reasoning about any of these primitives reduces to reasoning
+  about the function ~c[member-equal].
+
+  ~c[Member] is defined by Common Lisp.  See any Common Lisp documentation for
+  more information.~/"
+
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((x ,x) (l ,l))
+              :logic (member-equal x l)
+              :exec  (member-eq-exec x l)))
+   ((equal test ''eql)
+    `(let-mbe ((x ,x) (l ,l))
+              :logic (member-equal x l)
+              :exec  (member-eql-exec x l)))
+   (t ; (equal test 'equal)
+    `(member-equal ,x ,l))))
+
+; Subsetp
+
+(defun subsetp-eq-exec (x y)
+  (declare (xargs :guard (if (symbol-listp y)
+                             (true-listp x)
+                           (if (symbol-listp x)
+                               (true-listp y)
+                             nil))))
+  (cond ((endp x) t)
+        ((member-eq (car x) y)
+         (subsetp-eq-exec (cdr x) y))
+        (t nil)))
+
+(defun subsetp-eql-exec (x y)
+  (declare (xargs :guard
+                  (if (eqlable-listp y)
+                      (true-listp x)
+                    (if (eqlable-listp x)
+                        (true-listp y)
+                      nil))))
+  (cond ((endp x) t)
+        ((member (car x) y)
+         (subsetp-eql-exec (cdr x) y))
+        (t nil)))
+
+(defun subsetp-equal (x y)
+  (declare (xargs :guard (and (true-listp y)
+                              (true-listp x))))
+  #-acl2-loop-only ; for assoc-eq, Jared Davis found native assoc efficient
+  (subsetp x y :test #'equal)
+  #+acl2-loop-only
+  (cond ((endp x) t)
+        ((member-equal (car x) y)
+         (subsetp-equal (cdr x) y))
+        (t nil)))
+
+(defmacro subsetp-eq (x y)
+  `(subsetp ,x ,y :test 'eq))
+
+(defthm subsetp-eq-exec-is-subsetp-equal
+  (equal (subsetp-eq-exec x y)
+         (subsetp-equal x y)))
+
+(defthm subsetp-eql-exec-is-subsetp-equal
+  (equal (subsetp-eql-exec x y)
+         (subsetp-equal x y)))
+
+#+acl2-loop-only
+(defmacro subsetp (x y &key (test ''eql))
+
+  ":Doc-Section ACL2::Programming
+
+  test if every ~ilc[member] of one list is a ~ilc[member] of the other~/
+  ~bv[]
+  General Forms:
+  (subsetp x y)
+  (subsetp x y :test 'eql)   ; same as above (eql as equality test)
+  (subsetp x y :test 'eq)    ; same, but eq is equality test
+  (subsetp x y :test 'equal) ; same, but equal is equality test
+  ~ev[]
+
+  ~c[(Subsetp x y)] is true if and only if every ~ilc[member] of the list ~c[x]
+  is a ~c[member] of the list ~c[y].  The optional keyword, ~c[:TEST],
+  has no effect logically, but provides the test (default ~ilc[eql]) used for
+  comparing members of the two lists.~/
+
+  The ~il[guard] for a call of ~c[subsetp] depends on the test.  In all cases,
+  both arguments must satisfy ~ilc[true-listp].  If the test is ~ilc[eql], then
+  one of the arguments must satisfy ~ilc[eqlable-listp].  If the test is
+  ~ilc[eq], then one of the arguments must satisfy ~ilc[symbol-listp].
+
+  ~l[equality-variants] for a discussion of the relation between ~c[subsetp] and
+  its variants:
+  ~bq[]
+  ~c[(subsetp-eq x lst)] is equivalent to ~c[(subsetp x lst :test 'eq)];
+
+  ~c[(subsetp-equal x lst)] is equivalent to ~c[(subsetp x lst :test 'equal)].
+  ~eq[]
+  In particular, reasoning about any of these primitives reduces to reasoning
+  about the function ~c[subsetp-equal].
+
+  ~c[Subsetp] is defined by Common Lisp.  See any Common Lisp documentation for
+  more information.~/"
+
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((x ,x) (y ,y))
+              :logic (subsetp-equal x y)
+              :exec  (subsetp-eq-exec x y)))
+   ((equal test ''eql)
+    `(let-mbe ((x ,x) (y ,y))
+              :logic (subsetp-equal x y)
+              :exec  (subsetp-eql-exec x y)))
+   (t ; (equal test 'equal)
+    `(subsetp-equal ,x ,y))))
+
+(defun symbol-alistp (x)
+
+  ":Doc-Section ACL2::Programming
+
+  recognizer for association lists with symbols as keys~/
+
+  ~c[(Symbol-alistp x)] is true if and only if ~c[x] is a list of pairs of the
+  form ~c[(cons key val)] where ~c[key] is a ~ilc[symbolp].~/~/"
+
+  (declare (xargs :guard t))
+  (cond ((atom x) (eq x nil))
+        (t (and (consp (car x))
+                (symbolp (car (car x)))
+                (symbol-alistp (cdr x))))))
+
+(defthm symbol-alistp-forward-to-eqlable-alistp
+  (implies (symbol-alistp x)
+           (eqlable-alistp x))
+  :rule-classes :forward-chaining)
+
+; Assoc
+
+(defun assoc-eq-exec (x alist)
+  (declare (xargs :guard (if (symbolp x)
+                             (alistp alist)
+                           (symbol-alistp alist))))
+  (cond ((endp alist) nil)
+        ((eq x (car (car alist))) (car alist))
+        (t (assoc-eq-exec x (cdr alist)))))
+
+(defun assoc-eql-exec (x alist)
+  (declare (xargs :guard (if (eqlablep x)
+                             (alistp alist)
+                           (eqlable-alistp alist))))
+  (cond ((endp alist) nil)
+        ((eql x (car (car alist))) (car alist))
+        (t (assoc-eql-exec x (cdr alist)))))
+
+(defun assoc-equal (x alist)
+  (declare (xargs :guard (alistp alist)))
+  #-acl2-loop-only ; Jared Davis found efficiencies in using native assoc
+  (assoc x alist :test #'equal)
+  #+acl2-loop-only
+  (cond ((endp alist) nil)
+        ((equal x (car (car alist))) (car alist))
+        (t (assoc-equal x (cdr alist)))))
+
+(defmacro assoc-eq (x lst)
+  `(assoc ,x ,lst :test 'eq))
+
+(defthm assoc-eq-exec-is-assoc-equal
+  (equal (assoc-eq-exec x l)
+         (assoc-equal x l)))
+
+(defthm assoc-eql-exec-is-assoc-equal
+  (equal (assoc-eql-exec x l)
+         (assoc-equal x l)))
+
+#+acl2-loop-only
+(defmacro assoc (x alist &key (test ''eql))
+
+  ":Doc-Section ACL2::Programming
+
+  look up key in association list~/
+  ~bv[]
+  General Forms:
+  (assoc x alist)
+  (assoc x alist :test 'eql)   ; same as above (eql as equality test)
+  (assoc x alist :test 'eq)    ; same, but eq is equality test
+  (assoc x alist :test 'equal) ; same, but equal is equality test
+  ~ev[]
+
+  ~c[(Assoc x alist)] is the first member of ~c[alist] whose ~ilc[car] is
+  ~c[x], or ~c[nil] if no such member exists.  The optional keyword, ~c[:TEST],
+  has no effect logically, but provides the test (default ~ilc[eql]) used for
+  comparing ~c[x] with the ~ilc[car]s of successive elements of ~c[alist].~/
+
+  The ~il[guard] for a call of ~c[assoc] depends on the test.  In all cases,
+  the second argument must satisfy ~ilc[alistp].  If the test is ~ilc[eql],
+  then either the first argument must be suitable for ~ilc[eql] (~pl[eqlablep])
+  or the second argument must satisfy ~ilc[eqlable-alistp].  If the test is
+  ~ilc[eq], then either the first argument must be a symbol or the second
+  argument must satisfy ~ilc[symbol-alistp].
+
+  ~l[equality-variants] for a discussion of the relation between ~c[assoc] and
+  its variants:
+  ~bq[]
+  ~c[(assoc-eq x alist)] is equivalent to ~c[(assoc x alist :test 'eq)];
+
+  ~c[(assoc-equal x alist)] is equivalent to ~c[(assoc x alist :test 'equal)].
+  ~eq[]
+  In particular, reasoning about any of these primitives reduces to reasoning
+  about the function ~c[assoc-equal].
+
+  ~c[Assoc] is defined by Common Lisp.  See any Common Lisp documentation for
+  more information.~/"
+
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((x ,x) (alist ,alist))
+              :logic (assoc-equal x alist)
+              :exec  (assoc-eq-exec x alist)))
+   ((equal test ''eql)
+    `(let-mbe ((x ,x) (alist ,alist))
+              :logic (assoc-equal x alist)
+              :exec  (assoc-eql-exec x alist)))
+   (t ; (equal test 'equal)
+    `(assoc-equal ,x ,alist))))
+
+(defun assoc-eq-equal-alistp (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (eq x nil))
+        (t (and (consp (car x))
+                (symbolp (car (car x)))
+                (consp (cdr (car x)))
+                (assoc-eq-equal-alistp (cdr x))))))
+
+(defun assoc-eq-equal (x y alist)
+
+; We look for a pair on alist of the form (x y . val) where we compare the
+; first key using eq and the second using equal.  We return the pair or nil.
+; The guard could be weakened so that if x is a symbol, then alist need only be
+; a true-listp whose elements are of the form (x y . val).  But there seems to
+; be little advantage in having such a guard, considering the case splits that
+; it could induce.
+
+  (declare (xargs :guard (assoc-eq-equal-alistp alist)))
+  (cond ((endp alist) nil)
+        ((and (eq (car (car alist)) x)
+              (equal (car (cdr (car alist))) y))
+         (car alist))
+        (t (assoc-eq-equal x y (cdr alist)))))
+
+(defun no-duplicatesp-equal (l)
+
+  ":Doc-Section ACL2::Programming
+
+  check for duplicates in a list (using ~c[equal] for equality)~/
+
+  ~c[(no-duplicatesp-equal l)] is true if and only if no member of ~c[l]
+  occurs twice in ~c[l].~/
+
+  ~c[(no-duplicatesp-equal l)] has a ~il[guard] of ~c[(true-listp l)].
+  Membership is tested using ~ilc[member-equal], hence using ~ilc[equal] as
+  the test.~/"
+
+  (declare (xargs :guard (true-listp l)))
+  (cond ((endp l) t)
+        ((member-equal (car l) (cdr l)) nil)
+        (t (no-duplicatesp-equal (cdr l)))))
 
 
 ;                             DATA TYPES
@@ -3977,542 +5505,6 @@
                (- (imagpart x)))
       x))
 
-#+acl2-loop-only
-(defun return-last (fn eager-arg last-arg)
-
-; Return-last is the one "function" in ACL2 that has no fixed output signature.
-; Rather, (return-last expr1 expr2) inherits its stobjs-out from expr2.
-; Because of this, we make it illegal to call stobjs-out on the symbol
-; return-last.  We think of expr1 as being evaluated eagerly because even in
-; the raw Lisp implementation of return-last, that argument is always evaluated
-; first just as with a function call.  By contrast, if fn is a macro then it
-; can manipulate last-arg arbitrarily before corresponding evaluation occurs.
-; In many applications of return-last, eager-arg will be nil; for others, such
-; as with-prover-time-limit, eager-arg will be used to control the evaluation
-; of (some version of) last-arg.
-
-; The following little example provides a small check on our handling of
-; return-last, both via ev-rec (for evaluating top-level forms) and via more
-; direct function evaluation (either *1* functions or their raw Lisp
-; counterparts).
-
-;  (defun foo (x)
-;    (time$ (mbe :logic (prog2$ (cw "**LOGIC~%") x)
-;                :exec (prog2$ (cw "**EXEC~%") x))))
-;  (defun bar (x) (foo x))
-;  (foo 3) ; logic
-;  (bar 3) ; logic
-;  (verify-guards foo)
-;  (foo 3) ; exec
-;  (bar 3) ; exec
-
-  ":Doc-Section Programming
-
-  return the last argument, perhaps with side effects~/
-
-  ~c[Return-last] is an ACL2 function that returns its last argument.  It is
-  used to implement common utilities such as ~ilc[prog2$] and ~ilc[time$].  For
-  most users, this may already be more than one needs to know about
-  ~c[return-last]; for example, ACL2 tends to avoid printing calls of
-  ~c[return-last] in its output, printing calls of ~ilc[prog2$] or
-  ~ilc[time$] (or other such utilities) instead.
-
-  If you encounter a call of ~c[return-last] during a proof, then you may find
-  it most useful to consider ~c[return-last] simply as a function defined by
-  the following equation.
-  ~bv[]
-  (equal (return-last x y z) z)
-  ~ev[]
-  It may also be useful to know that unlike other ACL2 functions,
-  ~c[return-last] can take a multiple value as its last argument, in which case
-  this multiple value is returned.  The following contrived definition
-  illustrates this point.
-  ~bv[]
-  ACL2 !>(defun foo (fn x y z)
-           (return-last fn x (mv y z)))
-
-  Since FOO is non-recursive, its admission is trivial.  We observe that
-  the type of FOO is described by the theorem 
-  (AND (CONSP (FOO FN X Y Z)) (TRUE-LISTP (FOO FN X Y Z))).  We used
-  primitive type reasoning.
-
-  (FOO * * * *) => (MV * *).
-
-  Summary
-  Form:  ( DEFUN FOO ...)
-  Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
-  Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
-   FOO
-  ACL2 !>(foo 'bar 3 4 5)
-  (4 5)
-  ACL2 !>(mv-let (a b)
-                 (foo 'bar 3 4 5)
-                 (cons b a))
-  (5 . 4)
-  ACL2 !>
-  ~ev[]
-
-  Most readers would be well served to avoid reading the rest of this
-  documentation of ~c[return-last].  For reference, however, below we document
-  it in some detail.  We include some discussion of its evaluation, in
-  particular its behavior in raw Lisp, because we expect that most who read
-  further are working with raw Lisp code (and trust tags).~/
-
-  ~c[Return-last] is an ACL2 function that can arise from macroexpansion of
-  certain utilities that return their last argument, which may be a multiple
-  value.  Consider for example the simplest of these, ~ilc[prog2$]:
-  ~bv[]
-  ACL2 !>:trans1 (prog2$ (cw \"Some CW printing...~~%\") (+ 3 4))
-   (RETURN-LAST 'PROGN
-                (CW \"Some CW printing...~~%\")
-                (+ 3 4))
-  ACL2 !>
-  ~ev[]
-  Notice that a call of ~c[prog2$] macroexpands to a call of ~c[return-last] in
-  which the first argument is ~c[(quote progn)].  Although ~c[return-last] is a
-  function in the ACL2 world, it is implemented ``under the hood'' as a macro
-  in raw Lisp, as the following log (continuing the example above) illustrates.
-  ~bv[]
-  ACL2 !>:q
-
-  Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
-  ? [RAW LISP] (macroexpand-1 '(RETURN-LAST 'PROGN
-                                             (CW \"Some CW printing...~~%\")
-                                             (+ 3 4)))
-  (PROGN (LET ((*AOKP* T)) (CW \"SOME CW PRINTING...~~%\")) (+ 3 4))
-  T
-  ? [RAW LISP] 
-  ~ev[]
-  Thus, the original ~c[prog2$] call generates a corresponding call of
-  ~c[progn] in raw Lisp, which in turn causes evaluation of each argument and
-  returns whatever is returned by evaluation of the last (second) argument.
-
-  (Remark for those who use ~ilc[defattach].  The binding of ~c[*aokp*] to
-  ~c[t] is always included for the second argument as shown except when the
-  first argument is of the form ~c[(QUOTE M)] where ~c[M] is a macro, or (less
-  important) when the first argument is a symbol or a cons whose car is
-  ~c[QUOTE].  This binding allows ACL2 to use attachments in the second
-  argument of ~c[return-last] (hence, in the first argument of ~ilc[prog2$]),
-  even in contexts such as proofs in which attachments are normally not
-  allowed.  Those who use the experimental HONS version of ACL2
-  (~pl[hons-and-memoization]) will see an additional binding in the above
-  single-step macroexpansion, which allows the storing of memoized results even
-  when that would otherwise be prevented because of the use of attachments.)
-
-  In general, a form ~c[(return-last (quote F) X Y)] macroexpands to
-  ~c[(F X Y)], where ~c[F] is defined in raw Lisp to return its last argument.
-  The case that ~c[F] is ~c[progn] is a bit misleading, because it is so
-  simple.  More commonly, macroexpansion produces a call of a macro defined in
-  raw Lisp that may produce side effects.  Consider for example the ACL2
-  utility ~ilc[with-guard-checking], which is intended to change the
-  ~il[guard]-checking mode to the indicated value (~pl[with-guard-checking]).
-  ~bv[]
-  ACL2 !>(with-guard-checking :none (car 3)) ; no guard violation
-  NIL
-  ACL2 !>:trans1 (with-guard-checking :none (car 3))
-   (WITH-GUARD-CHECKING1 (CHK-WITH-GUARD-CHECKING-ARG :NONE)
-                         (CAR 3))
-  ACL2 !>:trans1 (WITH-GUARD-CHECKING1 (CHK-WITH-GUARD-CHECKING-ARG :NONE)
-                                       (CAR 3))
-   (RETURN-LAST 'WITH-GUARD-CHECKING1-RAW
-                (CHK-WITH-GUARD-CHECKING-ARG :NONE)
-                (CAR 3))
-  ACL2 !>:q
-
-  Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
-  ? [RAW LISP] (macroexpand-1
-                '(RETURN-LAST 'WITH-GUARD-CHECKING1-RAW
-                               (CHK-WITH-GUARD-CHECKING-ARG :NONE)
-                               (CAR 3)))
-  (WITH-GUARD-CHECKING1-RAW (CHK-WITH-GUARD-CHECKING-ARG :NONE) (CAR 3))
-  T
-  ? [RAW LISP] (pprint
-                (macroexpand-1
-                 '(WITH-GUARD-CHECKING1-RAW
-                   (CHK-WITH-GUARD-CHECKING-ARG :NONE)
-                   (CAR 3))))
-
-  (LET ((ACL2_GLOBAL_ACL2::GUARD-CHECKING-ON
-         (CHK-WITH-GUARD-CHECKING-ARG :NONE)))
-    (DECLARE (SPECIAL ACL2_GLOBAL_ACL2::GUARD-CHECKING-ON))
-    (CAR 3))
-  ? [RAW LISP] 
-  ~ev[]
-  The above raw Lisp code binds the state global variable ~c[guard-checking-on]
-  to ~c[:none], as ~c[chk-with-guard-checking-arg] is just the identity
-  function except for causing a hard error for an illegal input.
-
-  The intended use of ~c[return-last] is that the second argument is evaluated
-  first in a normal manner, and then the third argument is evaluated in an
-  environment that may depend on the value of the second argument.  (For
-  example, the macro ~ilc[with-prover-time-limit] macroexpands to a call of
-  ~c[return-last] with a first argument of ~c['WITH-PROVER-TIME-LIMIT1-RAW], a
-  second argument that evaluates to a numeric time limit, and a third argument
-  that is evaluated in an environment where the theorem prover is restricted to
-  avoid running longer than that time limit.)  Although this intended usage
-  model is not strictly enforced, it is useful to keep in mind in the following
-  description of how calls of ~c[return-last] are handled by the ACL2
-  evaluator.
-
-  When a form is submitted in the top-level loop, it is handled by ACL2's
-  custom evaluator.  That evaluator is specified to respect the semantics of
-  the expression supplied to it: briefly put, if an expression ~c[E] evaluates
-  to a value ~c[V], then the equality ~c[(equal E (quote V))] should be a
-  theorem.  Notice that this specification does not discuss the side-effects
-  that may occur when evaluating a call of ~c[return-last], so we discuss that
-  now.  Suppose that the ACL2 evaluator encounters the call
-  ~c[(return-last 'fn expr1 expr2)].  First it evaluates ~c[expr1].  If this
-  evaluation succeeds without error, then it constructs an expression of the
-  form ~c[(fn *x* ev-form)], where *x* is a Lisp variable bound to the result
-  of evaluating ~c[expr1] and ~c[ev-form] is a call of the evaluator for
-  ~c[expr2].  (Those who want implementation details are invited to look at
-  function ~c[ev-rec-return-last] in ACL2 source file ~c[translate.lisp].)
-  There are exceptions if ~c[fn] is ~c[progn], ~c[ec-call1-raw],
-  ~c[with-guard-checking1-raw], or ~c[mbe1-raw], but the main idea is the same:
-  do a reasonable job emulating the behavior of a raw-Lisp call of
-  ~c[return-last].
-
-  The following log shows how a ~ilc[time$] call can generate a call of the
-  evaluator for the last argument of ~c[return-last] (arguent ~c[expr2],
-  above).  We use ~c[:]~ilc[trans1] to show single-step macroexpansions, which
-  indicate how a call of ~ilc[time$] expands to a call of ~c[return-last].  The
-  implementation actually binds the Lisp variable ~c[*RETURN-LAST-ARG3*] to
-  ~c[expr2] before calling the ACL2 evaluator, ~c[ev-rec].
-  ~bv[]
-  ACL2 !>:trans1 (time$ (+ 3 4))
-   (TIME$1 (LIST 0 NIL NIL NIL NIL)
-           (+ 3 4))
-  ACL2 !>:trans1 (TIME$1 (LIST 0 NIL NIL NIL NIL)
-                         (+ 3 4))
-   (RETURN-LAST 'TIME$1-RAW
-                (LIST 0 NIL NIL NIL NIL)
-                (+ 3 4))
-  ACL2 !>(time$ (+ 3 4))
-  ; (EV-REC *RETURN-LAST-ARG3* ...) took 
-  ; 0.00 seconds realtime, 0.00 seconds runtime
-  ; (1,120 bytes allocated).
-  7
-  ACL2 !>
-  ~ev[]
-
-  We now show how things can go wrong in other than the ``intended use'' case
-  described above.  In the example below, the macro ~c[mac-raw] is operating
-  directly on the syntactic representation of its first argument, which it
-  obtains of course as the second argument of a ~c[return-last] call.  Again
-  this ``intended use'' of ~c[return-last] requires that argument to be
-  evaluated and then only its result is relevant; its syntax is not supposed to
-  matter.  We emphasize that only top-level evaluation depends on this
-  ``intended use''; once evaluation is passed to Lisp, the issue disappears.
-  We illustrate below how to use the ~ilc[top-level] utility to avoid this
-  issue; ~pl[top-level].  The example uses the utility ~c[defmacro-last] to
-  ``install'' special handling of the raw-Lisp macro ~c[mac-raw] by
-  ~c[return-last]; later below we discuss ~c[defmacro-last].
-  ~bv[]
-  ACL2 !>(defttag t)
-
-  TTAG NOTE: Adding ttag T from the top level loop.
-   T
-  ACL2 !>(progn!
-           (set-raw-mode t)
-           (defmacro mac-raw (x y)
-             `(progn (print (quote ,(cadr x)))
-                     (terpri) ; newline
-                     ,y)))
-
-  Summary
-  Form:  ( PROGN! (SET-RAW-MODE T) ...)
-  Rules: NIL
-  Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
-   NIL
-  ACL2 !>(defmacro-last mac)
-  [[ ... output omitted ... ]]
-   RETURN-LAST-TABLE
-  ACL2 !>(return-last 'mac-raw '3 nil)
-
-  ***********************************************
-  ************ ABORTING from raw Lisp ***********
-  Error:  Fault during read of memory address #x120000300006
-  ***********************************************
-
-  If you didn't cause an explicit interrupt (Control-C),
-  then the root cause may be call of a :program mode
-  function that has the wrong guard specified, or even no
-  guard specified (i.e., an implicit guard of t).
-  See :DOC guards.
-
-  To enable breaks into the debugger (also see :DOC acl2-customization):
-  (SET-DEBUGGER-ENABLE T)
-  ACL2 !>(top-level (return-last 'mac-raw '3 nil))
-
-  3 
-  NIL
-  ACL2 !>
-  ~ev[]
-
-  We next describe how to extend the behavior of ~c[return-last].  This
-  requires an active trust tag (~pl[defttag]), and is accomplished by extending
-  a ~il[table] provided by ACL2, ~pl[return-last-table].  Rather than using
-  ~ilc[table] ~il[events] directly for this purpose, it is probably more
-  convenient to use a macro, ~c[defmacro-last].  We describe the distributed
-  book ~c[books/misc/profiling.lisp] in order to illustrate how this works.
-  The events in that book are as follows, and are described below.
-  ~bv[]
-  (defttag :profiling)
-
-  (progn!
-   (set-raw-mode t)
-   (load (concatenate 'string (cbd) \"profiling-raw.lsp\")))
-
-  (defmacro-last with-profiling)
-  ~ev[]
-  The first event introduces a trust tag.  The second loads a file into raw
-  Lisp that defines a macro, ~c[with-profiling-raw], which can do profiling for
-  the form to be evaluated.  The third introduces an ACL2 macro
-  ~c[with-profiling], whose calls expand into calls of the form
-  ~c[(return-last (quote with-profiling-raw) & &)].  The third event also
-  extends ~ilc[return-last-table] so that these calls will expand in raw Lisp
-  to calls of ~c[with-profiling-raw].
-
-  The example above illustrates the following methodology for introducing a
-  macro that returns its last argument but produces useful side-effects with
-  raw Lisp code.
-  ~bq[]
-  (1) Introduce a trust tag (~pl[defttag]).
-
-  (2) Using ~ilc[progn!], load into raw Lisp a file defining a macro,
-  ~c[RAW-NAME], that takes two arguments, returning its last (second) argument
-  but using the first argument to produce desired side effects during
-  evaluation of that last argument.
-
-  (3) Evaluate the form ~c[(defmacro-last NAME :raw RAW-NAME)].  This will
-  introduce ~c[NAME] as an ACL2 macro that expands to a corresponding call of
-  ~c[RAW-NAME] (see (2) above) in raw Lisp.  The specification of keyword value
-  of ~c[:raw] as ~c[RAW-NAME] may be omitted if ~c[RAW-NAME] is the result of
-  modifying the symbol ~c[NAME] by suffixing the string ~c[\"-RAW\"] to the
-  ~ilc[symbol-name] of ~c[NAME].~eq[]
-
-  It is useful to explore what is done by ~c[defmacro-last].
-  ~bv[]
-  ACL2 !>:trans1 (defmacro-last with-profiling)
-   (PROGN (DEFMACRO WITH-PROFILING (X Y)
-                    (LIST 'RETURN-LAST
-                          (LIST 'QUOTE 'WITH-PROFILING-RAW)
-                          X Y))
-          (TABLE RETURN-LAST-TABLE 'WITH-PROFILING-RAW
-                 'WITH-PROFILING))
-  ACL2 !>:trans1 (with-profiling '(assoc-eq fgetprop rewrite) (mini-proveall))
-   (RETURN-LAST 'WITH-PROFILING-RAW
-                '(ASSOC-EQ FGETPROP REWRITE)
-                (MINI-PROVEALL))
-  ACL2 !>:q
-
-  Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
-  ? [RAW LISP] (macroexpand-1
-                '(RETURN-LAST 'WITH-PROFILING-RAW
-                               '(ASSOC-EQ FGETPROP REWRITE)
-                               (MINI-PROVEALL)))
-  (WITH-PROFILING-RAW '(ASSOC-EQ FGETPROP REWRITE) (MINI-PROVEALL))
-  T
-  ? [RAW LISP] 
-  ~ev[]
-  To understand the macro ~c[with-profiling-raw] you could look at the
-  distributed file loaded above: ~c[books/misc/profiling-raw.lsp].  If you wish
-  to automate certification of such a book with makefiles (~pl[book-makefiles],
-  perhaps contributing such a book to the ACL2 books repository (see
-  ~url[http://acl2-books.googlecode.com/]), you may also wish to look at
-  distributed file ~c[books/misc/Makefile], where you'll notice the following
-  extra `~c[make]' dependency:
-  ~bv[]
-  profiling.cert: profiling-raw.lsp
-  ~ev[]
-
-  We mentioned above that ACL2 tends to print calls of ~ilc[prog2$] or
-  ~ilc[time$] (or other such utilities) instead of calls of ~c[return-last].
-  Here we elaborate that point.  ACL2's `~c[untranslate]' utility treats
-  ~c[(return-last (quote F) X Y)] as ~c[(F X Y)] if ~c[F] is a key in
-  ~c[return-last-table].  However, it is generally rare to encounter such a
-  term during a proof, since calls of ~c[return-last] are generally expanded
-  away early during a proof.
-
-  Calls of ~c[return-last] that occur in code ~-[] forms submitted in the
-  top-level ACL2 loop, and definition bodies other than those marked as
-  ~ilc[non-executable] (~pl[defun-nx]) ~-[] have the following restriction: if
-  the first argument is of the form ~c[(quote F)], then ~c[F] must be an entry
-  in ~c[return-last-table].  There are however four exceptions: the following
-  symbols are considered to be keys of ~c[return-last-table] even if they are
-  no longer associated with non-~c[nil] values, say because of a ~ilc[table]
-  event with keyword ~c[:clear].
-  ~bq[]
-  * ~c[progn], associated with ~ilc[prog2$]~nl[]
-  * ~c[mbe1-raw], associated with ~c[mbe1], a version of ~c[mbe]~nl[]
-  * ~c[ec-call1-raw], associated with ~c[ec-call1] (a variant of
-  ~ilc[ec-call])~nl[]
-  * ~c[with-guard-checking1-raw], associated with ~c[with-guard-checking1] (a
-  variant of ~ilc[with-guard-checking])
-  ~eq[]
-
-  Note that because of its special status, it is illegal to trace
-  ~c[return-last].
-
-  We conclude by warning that as a user, you take responsibility for not
-  compromising the soundness or error handling of ACL2 when you define a macro
-  in raw Lisp and especially when you install it as a key of
-  ~ilc[return-last-table], either directly or (more likely) using
-  ~c[defmacro-last].  In particular, be sure that you are defining a macro of
-  two arguments that always returns the value of its last argument, returning
-  the complete multiple value if that last argument evaluates to a multiple
-  value.
-
-  The following is correct, and illustrates care taken to return multiple
-  values.
-  ~bv[]
-  :q
-  (defmacro my-time1-raw (val form)
-    (declare (ignore val))
-    `(let  ((start-time (get-internal-run-time))
-            (result (multiple-value-list ,form))
-            (end-time (get-internal-run-time)))
-       (format t \"Total time: ~~s~~%\"
-               (float (/ (- end-time start-time)
-                         internal-time-units-per-second)))
-       (values-list result)))
-  (lp)
-  (defttag t)
-  (defmacro-last my-time1)
-  (defmacro my-time (form)
-    `(my-time1 nil ,form))
-  ~ev[]
-  Then for example:  
-  ~bv[]
-  ACL2 !>(my-time (equal (make-list 1000000) (make-list 1000000)))
-  Total time: 0.12
-  T
-  ACL2 !>
-  ~ev[]
-  But if instead we provide the following more naive implementation, of the
-  above raw Lisp macro, the above evaluation can produce an error, for example
-  if the host Lisp is CCL.
-  ~bv[]
-  (defmacro my-time1-raw (val form)
-      (declare (ignore val))
-      `(let  ((start-time (get-internal-run-time))
-              (result ,form)
-              (end-time (get-internal-run-time)))
-         (format t \"Total time: ~~s~~%\"
-                 (float (/ (- end-time start-time)
-                           internal-time-units-per-second)))
-         result)) ; WRONG -- need multiple values returned!
-  ~ev[]
-  
-  Here is a second, similar example.  This time we'll start with the error; can
-  you spot it?
-  ~bv[]
-  (defttag t)
-  (progn!
-   (set-raw-mode t)
-   (defmacro foo-raw (x y)
-     `(prog1
-          ,y
-        (cw \"Message showing argument 1: ~~x0~~%\" ,x))))
-  (defmacro-last foo)
-  ~ev[]
-  We then can wind up with a hard Lisp error:
-  ~bv[]
-  ACL2 !>(foo 3 (mv 4 5))
-  Message showing argument 1: 3
-
-  ***********************************************
-  ************ ABORTING from raw Lisp ***********
-  Error:  value NIL is not of the expected type REAL.
-  ***********************************************
-
-  If you didn't cause an explicit interrupt (Control-C),
-  then the root cause may be call of a :program mode
-  function that has the wrong guard specified, or even no
-  guard specified (i.e., an implicit guard of t).
-  See :DOC guards.
-
-  To enable breaks into the debugger (also see :DOC acl2-customization):
-  (SET-DEBUGGER-ENABLE T)
-  ACL2 !>
-  ~ev[]
-  Here is a corrected version of the above macro.  The point here is that
-  ~c[prog1] returns a single value, while ~c[our-multiple-value-prog1] returns
-  all the values that are returned by its first argument.
-  ~bv[]
-  (progn!
-   (set-raw-mode t)
-   (defmacro foo-raw (x y)
-     `(our-multiple-value-prog1 ;; better
-       ,y
-       (cw \"Message showing argument 1: ~~x0~~%\" ,x))))
-  ~ev[]~/"
-
-  (declare (ignore fn eager-arg)
-           (xargs :guard
-
-; Warning: If you change this guard, also consider changing the handling of
-; return-last in oneify, which assumes that the guard is t except for the
-; 'mbe1-raw case.
-
-; We produce a guard to handle the mbe1 case (from expansion of mbe forms).  In
-; practice, fn is likely to be a constant, in which case we expect this guard
-; to resolve to its true branch or its false branch.
-
-                  (if (equal fn 'mbe1-raw)
-                      (equal last-arg eager-arg)
-                    t)
-                  :mode :logic))
-  last-arg)
-
-#-acl2-loop-only
-(defmacro return-last (qfn arg2 arg3)
-  (let* ((fn (and (consp qfn)
-                  (eq (car qfn) 'quote)
-                  (consp (cdr qfn))
-                  (symbolp (cadr qfn))
-                  (null (cddr qfn))
-                  (cadr qfn)))
-         (arg2
-
-; There is no logical problem with using attachments when evaluating the second
-; argument of return-last, because logically the third argument provides the
-; value(s) of a return-last call -- the exception being the evaluation of the
-; :exec argument of an mbe call (or, equivalent evaluation by way of mbe1,
-; etc.).  We not only bind *aokp* to t, but we also bind *attached-fn-called*
-; so that no changes to this variable will prevent the storing of memoization
-; results.
-
-; See also the related treatment of aokp in ev-rec-return-last.
-
-          (cond
-           ((or (eq fn 'mbe1-raw) ; good test, though subsumed by the next line
-                (and fn (macro-function fn))
-                (symbolp arg2)      ; no point in doing extra bindings below
-                (and (consp arg2)
-                     (eq (car arg2) ; no point in doing extra bindings below
-                         'quote)))
-            arg2)
-           (t `(let ((*aokp* t)
-                     #+hons (*attached-fn-called* t))
-                 ,arg2)))))
-    (cond ((and fn (fboundp fn))
-
-; Translation for evaluation requires that if the first argument is a quoted
-; non-nil symbol, then that symbol (here, fn) must be a key in
-; return-last-table.  The function chk-return-last-entry checks that when fn
-; was added to the table, it was fboundp in raw Lisp.  Note that fboundp holds
-; for functions, macros, and special operators.
-
-; An alternative may seem to be to lay down code that checks to see if fn is in
-; return-last-table, and if not then replace it by progn.  But during early
-; load of compiled files we skip table events (which are always skipped in raw
-; Lisp), yet the user may expect a call of return-last on a quoted symbol to
-; have the desired side-effects in that case.
-
-           (list fn arg2 arg3))
-          (t (list 'progn arg2 arg3)))))
-
 (defmacro prog2$ (x y)
 
 ; This odd little duck is not as useless as it may seem.  Its original purpose
@@ -4588,315 +5580,6 @@
   ~ev[]~/"
 
   `(return-last 'progn ,x ,y))
-
-#-acl2-loop-only
-(defmacro mbe1-raw (exec logic)
-
-; We rely on this macroexpansion in raw Common Lisp.  See in particular the
-; code and comment regarding mbe1-raw in guard-clauses.
-
-  (declare (ignore logic))
-  exec)
-
-(defmacro mbe1 (exec logic)
-
-; See also must-be-equal.
-
-; Suppose that during a proof we encounter a term such as (return-last
-; 'mbe1-raw exec logic), but we don't know that logic and exec are equal.
-; Fortunately, ev-rec will only evaluate the logic code for this return-last
-; form, as one might expect.
-
-  ":Doc-Section ACL2::Programming
-
-  attach code for execution~/
-
-  The form ~c[(mbe1 exec logic)] is equivalent to the forms
-  ~c[(mbe :logic logic :exec exec)] and ~c[(must-be-equal logic exec)].
-  ~l[mbe].~/~/"
-
-  `(return-last 'mbe1-raw ,exec ,logic))
-
-(defmacro must-be-equal (logic exec)
-
-; We handle must-be-equal using return-last, so that must-be-equal isn't a
-; second function that needs special stobjs-out handling.  But then we need a
-; version of must-be-equal with the logic input as the last argument, since
-; that is what is returned in the logic.  We call that mbe1, but we leave
-; must-be-equal as we move the the return-last implementation (after v4-1,
-; released Sept., 2010), since must-be-equal has been around since v2-8 (March,
-; 2004).
-
-  ":Doc-Section ACL2::Programming
-
-  attach code for execution~/~/
-
-  The form ~c[(must-be-equal logic exec)] evaluates to ~c[logic] in the ACL2
-  logic but evaluates to ~c[exec] in raw Lisp.  The point is to be able to
-  write one definition to reason about logically but another for evaluation.
-  Please ~pl[mbe] and ~pl[mbt] for appropriate macros to use, rather than
-  calling ~c[must-be-equal] directly, since it is easy to commute the arguments
-  of ~c[must-be-equal] by accident.
-
-  In essence, the guard for ~c[(must-be-equal x y)] is ~c[(equal x y)].
-  However, note that ~c[must-be-equal] is a macro:
-  ~c[(must-be-equal logic exec)] expands to ~c[(mbe1 exec logic)], which
-  expands to a call of ~ilc[return-last]."
-
-  `(mbe1 ,exec ,logic))
-
-(defmacro mbe (&key (exec 'nil exec-p) (logic 'nil logic-p))
-
-  ":Doc-Section ACL2::Programming
-
-  attach code for execution~/
-
-  The macro ~c[mbe] (``must be equal'') can be used in function definitions in
-  order to cause evaluation to use alternate code to that provided for the
-  logic.  An example is given below.  However, the use of ~c[mbe] can lead to
-  non-terminating computations.  ~l[defexec], perhaps after reading the present
-  documentation, for a way to guarantee termination (at least theoretically).
-
-  In the ACL2 logic, ~c[(mbe :exec exec-code :logic logic-code)] equals
-  ~c[logic-code]; the value of ~c[exec-code] is ignored.  However, in raw Lisp
-  it is the other way around:  this form macroexpands simply to ~c[exec-code].
-  ACL2's ~il[guard] verification mechanism ensures that the raw Lisp code is
-  only evaluated when appropriate, since the guard proof obligations generated
-  for this call of ~c[mbe] are ~c[(equal exec-code logic-code)] together with
-  the guard proof obligations from ~c[exec-code].  ~l[verify-guards] and, for
-  general discussion of guards, ~pl[guard].
-
-  Warning for nested ~ilc[mbe] calls: The equality of ~c[:exec] and ~c[:logic]
-  code is not checked in the scope of superior ~c[:logic] code, as for the
-  equality of ~c[x] and ~c[y] in the following.
-  ~bv[]
-  (mbe :logic 
-       (mbe :logic x :exec y)
-       :exec
-       z)
-  ~ev[]
-
-  The form ~c[(mbe :exec exec-code :logic logic-code)] macroexpands in ACL2 to
-  a form that generates the guard proof obligation
-  ~c[(equal logic-code exec-code).  The ~c[:exec] and the ~c[:logic] code in an
-  ~c[mbe] call must have the same return type; for example, one cannot return
-  ~c[(]~ilc[mv]~c[ * *)] while the other returns just a single value.
-
-  Also ~pl[mbt], which stands for ``must be true.''  You may find it more
-  natural to use ~ilc[mbt] for certain applications, as described in its
-  ~il[documentation].~/
-
-  Here is an example of the use of ~c[mbe].  Suppose that you want to define
-  factorial in the usual recursive manner, as follows.
-  ~bv[]
-  (defun fact (n)
-    (if (zp n)
-        1
-      (* n (fact (1- n)))))
-  ~ev[]
-  But perhaps you want to be able to execute calls of ~c[fact] on large
-  arguments that cause stack overflows, perhaps during proofs.  (This isn't a
-  particularly realistic example, but it should serve.)  So, instead you can
-  define this tail-recursive version of factorial:
-  ~bv[]
-  (defun fact1 (n acc)
-    (declare (xargs :guard (and (integerp n) (>= n 0) (integerp acc))))
-    (if (zp n)
-        acc
-      (fact1 (1- n) (* n acc))))
-  ~ev[]
-  We are now ready to define ~c[fact] using ~c[mbe].  Our intention is that
-  logically, ~c[fact] is as shown in the first definition above, but that
-  ~c[fact] should be executed by calling ~c[fact1].  Notice that we defer
-  ~il[guard] verification, since we are not ready to prove the correspondence
-  between ~c[fact1] and ~c[fact].
-  ~bv[]
-  (defun fact (n)
-    (declare (xargs :guard (and (integerp n) (>= n 0))
-                    :verify-guards nil))
-    (mbe :exec  (fact1 n 1)
-         :logic (if (zp n)
-                    1
-                  (* n (fact (1- n))))))
-  ~ev[]
-  Next, we prove the necessary correspondence lemmas.  Notice the inclusion of
-  a standard book to help with the arithmetic reasoning.
-  ~bv[]
-  (include-book \"books/arithmetic/top-with-meta\")
-
-  (defthm fact1-fact
-    (implies (integerp acc)
-             (equal (fact1 n acc)
-                    (* acc (fact n)))))
-  ~ev[]
-  We may now do guard verification for ~c[fact], which will allow the execution
-  of the raw Lisp ~c[fact] function, where the above ~c[mbe] call expands
-  simply to ~c[(fact1 n 1)].
-  ~bv[]
-  (verify-guards fact)
-  ~ev[]
-  Now that guards have been verified, a trace of function calls illustrates
-  that the evaluation of calls of ~c[fact] is passed to evaluation of calls of
-  ~c[fact1].  The outermost call below is of the logical function stored for
-  the definition of ~c[fact]; all the others are of actual raw Common Lisp
-  functions.
-  ~bv[]
-  ACL2 !>(trace$ fact fact1)
-  NIL
-  ACL2 !>(fact 3)
-  1> (ACL2_*1*_ACL2::FACT 3)
-    2> (FACT 3)
-      3> (FACT1 3 1)
-        4> (FACT1 2 3)
-          5> (FACT1 1 6)
-            6> (FACT1 0 6)
-            <6 (FACT1 6)
-          <5 (FACT1 6)
-        <4 (FACT1 6)
-      <3 (FACT1 6)
-    <2 (FACT 6)
-  <1 (ACL2_*1*_ACL2::FACT 6)
-  6
-  ACL2 !>
-  ~ev[]
-
-  You may occasionally get warnings when you compile functions defined using
-  ~c[mbe].  (For commands that invoke the compiler, ~pl[compilation].)  These
-  can be inhibited by using an ~c[ignorable] ~ilc[declare] form.  Here is a
-  simple but illustrative example.  Note that the declarations can optionally
-  be separated into two ~ilc[declare] forms.
-  ~bv[]
-  (defun foo (x y)
-    (declare (ignorable x)
-             (xargs :guard (equal x y)))
-    (mbe :logic x :exec y))
-  ~ev[]
-
-  Finally, we observe that when the body of a function contains a term of the
-  form ~c[(mbe :exec exec-code :logic logic-code)], the user is very unlikely
-  to see any logical difference than if this were replaced by ~c[logic-code].
-  ACL2 takes various steps to ensure this.  For example, the proof obligations
-  generated for admitting a function treat the above ~c[mbe] term simply as
-  ~c[logic-code].  Function expansion, ~c[:use] ~il[hints],
-  ~c[:]~ilc[definition] rules, generation of ~il[constraint]s for functional
-  instantiation, and creation of rules of class ~c[:]~ilc[rewrite] and
-  ~c[:]~ilc[forward-chaining] also treat ~c[mbe] calls as their ~c[:logic]
-  code."
-
-  (declare (xargs :guard (and exec-p logic-p))
-
-; OpenMCL Versions 14.2 and 14.3 (CCL), CMUCL Version 19b, and SBCL Version
-; 0.9.8 (other versions of these too, most likely) produce a warning with the
-; following ignore declaration, but we don't know why.  We tried using
-; "ignorable" instead of "ignore" for CMUCL, but that didn't help.  So we
-; eliminate the ignore declaration in these cases with the #- directive below.
-
-           #-(and (or ccl cmu sbcl) (not acl2-loop-only))
-           (ignore exec-p logic-p))
-  `(mbe1 ,exec ,logic))
-
-(defmacro mbt (x)
-
-  ":Doc-Section ACL2::Programming
-
-  introduce a test not to be evaluated~/
-
-  The macro ~c[mbt] (``must be true'') can be used in order to add code in
-  order to admit function definitions in ~c[:]~ilc[logic] mode, without paying
-  a cost in execution efficiency.  Examples below illustrate its intended use.
-
-  Semantically, ~c[(mbt x)] equals ~c[x].  However, in raw Lisp ~c[(mbt x)]
-  ignores ~c[x] entirely, and macroexpands to ~c[t].  ACL2's ~il[guard]
-  verification mechanism ensures that the raw Lisp code is only evaluated when
-  appropriate, since a guard proof obligation ~c[(equal x t)] is generated.
-  ~l[verify-guards] and, for general discussion of guards, ~pl[guard].
-
-  Also ~pl[mbe], which stands for ``must be equal.''  Although ~c[mbt] is more
-  natural in many cases, ~c[mbe] has more general applicability.  In fact,
-  ~c[(mbt x)] is essentially defined to be ~c[(mbe :logic x :exec t)].~/
-
-  We can illustrate the use of ~c[mbt] on the following generic example, where
-  ~c[<g>], ~c[<test>], ~c[<rec-x>], and ~c[<base>] are intended to be terms
-  involving only the variable ~c[x].
-  ~bv[]
-  (defun foo (x)
-    (declare (xargs :guard <g>))
-    (if <test>
-        (foo <rec-x>)
-      <base>))
-  ~ev[]
-  In order to admit this function, ACL2 needs to discharge the proof obligation
-  that ~c[<rec-x>] is smaller than ~c[x], namely:
-  ~bv[]
-  (implies <test>
-           (o< (acl2-count ~c[<rec-x>])
-                (acl2-count x)))
-  ~ev[]
-  But suppose we need to know that ~c[<g>] is true in order to prove this.
-  Since ~c[<g>] is only the ~il[guard], it is not part of the logical
-  definition of ~c[foo].  A solution is to add the guard to the definition of
-  ~c[foo], as follows.
-  ~bv[]
-  (defun foo (x)
-    (declare (xargs :guard <g>))
-    (if (mbt <g>)
-        (if <test>
-            (foo <rec-x>)
-          <base>)
-      nil))
-  ~ev[]
-  If we do this using ~c[<g>] rather than ~c[(mbt <g>)], then evaluation of
-  every recursive call of ~c[foo] will cause the evaluation of (the appropriate
-  instance of) ~c[<g>].  But since ~c[(mbt <g>)] expands to ~c[t] in raw Lisp,
-  then once we verify the guards of ~c[foo], the evaluations of ~c[<g>] will be
-  avoided (except at the top level, when we check the guard before allowing
-  evaluation to take place in Common Lisp).
-
-  Other times, the guard isn't the issue, but rather, the problem is that a
-  recursive call has an argument that itself is a recursive call.  For example,
-  suppose that ~c[<rec-x>] is of the form ~c[(foo <expr>)].  There is no way we
-  can hope to discharge the termination proof obligation shown above.  A
-  standard solution is to add some version of this test:
-  ~bv[]
-  (mbt (o< (acl2-count ~c[<rec-x>]) (acl2-count x)))
-  ~ev[]
-  Here is a specific example based on one sent by Vernon Austel.
-  ~bv[]
-  (defun recurX2 (n)
-    (declare (xargs :guard (and (integerp n) (<= 0 n))
-                    :verify-guards nil))
-    (cond ((zp n) 0)
-          (t (let ((call (recurX2 (1- n))))
-               (if (mbt (< (acl2-count call) n))
-                   (recurX2 call)
-                 1 ;; this branch is never actually taken
-                 )))))
-
-  (defthm recurX2-0
-   (equal (recurX2 n) 0))
-
-  (verify-guards recurX2)
-  ~ev[]
-  If you ~c[(]~ilc[trace$]~c[ acl2-count)], you will see that evaluation of
-  ~c[(recurX2 2)] causes several calls of ~ilc[acl2-count] before the
-  ~ilc[verify-guards].  But this evaluation does not call ~c[acl2-count] after
-  the ~c[verify-guards], because the ACL2 evaluation mechanism uses raw Lisp to
-  do the evaluation, and the form ~c[(mbt (< (acl2-count call) n))]
-  macroexpands to ~c[t] in Common Lisp.
-
-  You may occasionally get warnings when you compile functions defined using
-  ~c[mbt].  (For commands that invoke the compiler, ~pl[compilation].)  These
-  can be inhibited by using an ~c[ignorable] ~ilc[declare] form.  Here is a
-  simple but illustrative example.  Note that the declarations can optionally
-  be separated into two ~ilc[declare] forms.
-  ~bv[]
-  (defun foo (x y)
-    (declare (ignorable x)
-             (xargs :guard (equal x t)))
-    (and (mbt x) y))
-  ~ev[]"
-
-  `(mbe1 t ,x))
 
 (deflabel Other
   :doc
@@ -6561,112 +7244,100 @@
   (characterp #\Rubout)
   :rule-classes nil)
 
-#+acl2-loop-only
-(defun member (x l)
+; No-duplicatesp
 
-  ":Doc-Section ACL2::Programming
-
-  membership predicate, using ~ilc[eql] as test~/
-
-  ~c[(Member x l)] equals the longest tail of ~c[l] that begins with
-  ~c[x], or else ~c[nil] if no such tail exists.~/
-
-  ~c[(Member x l)] is provably the same in the ACL2 logic as
-  ~c[(member-equal x l)].  It has a stronger ~il[guard] than ~ilc[member-equal]
-  because uses ~ilc[eql] to test for whether ~c[x] is equal to a given
-  member of ~c[l].  Its ~il[guard] requires that ~c[l] is a true list, and
-  moreover, either ~c[(eqlablep x)] or all members of ~c[l] are
-  ~ilc[eqlablep].  ~l[member-equal] and ~pl[member-eq].
-
-  ~c[Member] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.  Since ACL2 functions cannot
-  take keyword arguments (though macros can), the ACL2 functions
-  ~ilc[member-equal] and ~ilc[member-eq] are defined to correspond to calls
-  of the Common Lisp function ~c[member] whose keyword argument
-  ~c[:test] is ~ilc[equal] or ~ilc[eq], respectively.~/"
-
-  (declare (xargs :guard (if (eqlablep x)
-                             (true-listp l)
-                           (eqlable-listp l))))
-  (cond ((endp l)
-
-; We return nil rather than l in this case, because we want to be able to use
-; member as a predicate.
-
-         nil)
-        ((eql x (car l)) l)
-        (t (member x (cdr l)))))
-
-(defun no-duplicatesp (l)
-
-  ":Doc-Section ACL2::Programming
-
-  check for duplicates in a list (using ~c[eql] for equality)~/
-
-  ~c[(no-duplicatesp l)] is true if and only if no member of ~c[l]
-  occurs twice in ~c[l].~/
-
-  ~c[(no-duplicatesp l)] has a ~il[guard] of ~c[(eqlable-listp l)].
-  Membership is tested using ~ilc[member], hence using ~ilc[eql] as
-  the test.~/"
-
-  (declare (xargs :guard (eqlable-listp l)))
-  (cond ((endp l) t)
-        ((member (car l) (cdr l)) nil)
-        (t (no-duplicatesp (cdr l)))))
-
-(defun no-duplicatesp-eq (l)
-
-  ":Doc-Section ACL2::Programming
-
-  check for duplicates in a list (using ~c[eq] for equality)~/
-
-  ~c[(no-duplicatesp-eq l)] is true if and only if no member of ~c[l] occurs
-  twice in ~c[l].~/
-
-  ~c[(no-duplicatesp l)] has a ~il[guard] of ~c[(symbol-listp l)].  Membership
-  is tested using ~ilc[member-eq], hence using ~ilc[eq] as the test.~/"
-
+(defun no-duplicatesp-eq-exec (l)
   (declare (xargs :guard (symbol-listp l)))
   (cond ((endp l) t)
         ((member-eq (car l) (cdr l)) nil)
-        (t (no-duplicatesp-eq (cdr l)))))
+        (t (no-duplicatesp-eq-exec (cdr l)))))
 
-#+acl2-loop-only
-(defun assoc (x alist)
+(defun no-duplicatesp-eql-exec (l)
+  (declare (xargs :guard (eqlable-listp l)))
+  (cond ((endp l) t)
+        ((member (car l) (cdr l)) nil)
+        (t (no-duplicatesp-eql-exec (cdr l)))))
+
+(defun no-duplicatesp-equal (l)
+  (declare (xargs :guard (true-listp l)))
+  (cond ((endp l) t)
+        ((member-equal (car l) (cdr l)) nil)
+        (t (no-duplicatesp-equal (cdr l)))))
+
+(defmacro no-duplicatesp-eq (x)
+  `(no-duplicatesp ,x :test 'eq))
+
+(defthm no-duplicatesp-eq-exec-is-no-duplicatesp-equal
+  (equal (no-duplicatesp-eq-exec x)
+         (no-duplicatesp-equal x)))
+
+(defthm no-duplicatesp-eql-exec-is-no-duplicatesp-equal
+  (equal (no-duplicatesp-eql-exec x)
+         (no-duplicatesp-equal x)))
+
+(defmacro no-duplicatesp (x &key (test ''eql))
 
   ":Doc-Section ACL2::Programming
 
-  look up key in association list, using ~ilc[eql] as test~/
+  check for duplicates in a list~/
+  ~bv[]
+  General Forms:
+  (no-duplicatesp x)
+  (no-duplicatesp x :test 'eql)   ; same as above (eql as equality test)
+  (no-duplicatesp x :test 'eq)    ; same, but eq is equality test
+  (no-duplicatesp x :test 'equal) ; same, but equal is equality test
+  ~ev[]
 
-  ~c[(Assoc x alist)] is the first member of ~c[alist] whose ~ilc[car]
-  is ~c[x], or ~c[nil] if no such member exists.~/
+  ~c[(no-duplicatesp lst)] is true if and only if no member of ~c[lst] occurs
+  twice in ~c[lst].  The optional keyword, ~c[:TEST], has no effect logically,
+  but provides the test (default ~ilc[eql]) used for comparing elements of
+  ~c[lst].~/
 
-  ~c[(Assoc x alist)] is provably the same in the ACL2 logic as
-  ~c[(assoc-equal x alist)].  It has a stronger ~il[guard] than
-  ~ilc[assoc-equal] because it uses ~ilc[eql] to test whether ~c[x] is equal
-  to the ~ilc[car] of a given member of ~c[alist].  Its ~il[guard]
-  requires that ~c[alist] is an ~ilc[alistp], and moreover, either
-  ~c[(eqlablep x)] or all ~ilc[car]s of members of ~c[alist] are
-  ~ilc[eqlablep].  ~l[assoc-equal] and ~pl[assoc-eq].
+  The ~il[guard] for a call of ~c[no-duplicatesp] depends on the test.  In all
+  cases, the argument must satisfy ~ilc[true-listp].  If the test is ~ilc[eql],
+  then the argument must satisfy ~ilc[eqlable-listp].  If the test is ~ilc[eq],
+  then the argument must satisfy ~ilc[symbol-listp].
 
-  ~c[Assoc] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.  Since ACL2 functions cannot
-  take keyword arguments (though macros can), the ACL2 functions
-  ~ilc[assoc-equal] and ~ilc[assoc-eq] are defined to correspond to calls
-  of the Common Lisp function ~c[assoc] whose keyword argument
-  ~c[:test] is ~ilc[equal] or ~ilc[eq], respectively.~/"
+  ~l[equality-variants] for a discussion of the relation between
+  ~c[no-duplicatesp] and its variants:
+  ~bq[]
+  ~c[(no-duplicatesp-eq x lst)] is equivalent to
+  ~c[(no-duplicatesp x lst :test 'eq)];
 
-  (declare (xargs :guard (if (eqlablep x)
-                             (alistp alist)
-                           (eqlable-alistp alist))))
-  (cond ((endp alist) nil)
-        ((eql x (car (car alist))) (car alist))
-        (t (assoc x (cdr alist)))))
+  ~c[(no-duplicatesp-equal x lst)] is equivalent to
+  ~c[(no-duplicatesp x lst :test 'equal)].
+  ~eq[]
+  In particular, reasoning about any of these primitives reduces to reasoning
+  about the function ~c[no-duplicatesp-equal].~/"
+
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((x ,x))
+              :logic (no-duplicatesp-equal x)
+              :exec  (no-duplicatesp-eq-exec x)))
+   ((equal test ''eql)
+    `(let-mbe ((x ,x))
+              :logic (no-duplicatesp-equal x)
+              :exec  (no-duplicatesp-eql-exec x)))
+   (t ; (equal test 'equal)
+    `(no-duplicatesp-equal ,x))))
+
+; Rassoc
 
 (defun r-eqlable-alistp (x)
 
-; For guard to rassoc.
+; For guard to rassoc-eql-exec.
+
+  ":Doc-Section ACL2::Programming
+
+  recognizer for a true list of pairs whose ~ilc[cdr]s are suitable for ~ilc[eql]~/
+
+  The predicate ~c[r-eqlable-alistp] tests whether its argument is a
+  ~ilc[true-listp] of ~ilc[consp] objects whose ~ilc[cdr]s all satisfy
+  ~ilc[eqlablep].~/~/"
 
   (declare (xargs :guard t))
   (cond ((atom x) (equal x nil))
@@ -6674,54 +7345,16 @@
                 (eqlablep (cdr (car x)))
                 (r-eqlable-alistp (cdr x))))))
 
-#+acl2-loop-only
-(defun rassoc (x alist)
-
-  ":Doc-Section ACL2::Programming
-
-  look up value in association list, using ~ilc[eql] as test~/
-
-  ~c[(Rassoc x alist)] is similar to ~c[(assoc x alist)], the difference
-  being that it looks for the first pair in the given alist whose
-  ~ilc[cdr], rather than ~ilc[car], is ~ilc[eql] to ~c[x].  ~l[assoc].~/
-
-  The ~il[guard] of ~c[rassoc] requires its second argument to be an alist,
-  and in addition, that either its first argument is ~ilc[eqlablep] or
-  else all second components of pairs belonging to the second argument
-  are ~ilc[eqlablep].  ~l[eqlablep].
-
-  ~c[Rassoc] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
-
-  (declare (xargs :guard (if (eqlablep x)
-                             (alistp alist)
-                           (r-eqlable-alistp alist))))
-  (cond ((endp alist) nil)
-        ((eql x (cdr (car alist))) (car alist))
-        (t (rassoc x (cdr alist)))))
-
-(defun rassoc-equal (x alist)
-
-  ":Doc-Section ACL2::Programming
-
-  look up value in association list, using ~ilc[equal] as test~/
-
-  ~c[(Rassoc-equal x alist)] is similar to ~c[(assoc-equal x alist)], the
-  difference being that it looks for the first pair in the given alist whose
-  ~ilc[cdr], rather than ~ilc[car], is ~ilc[equal] to ~c[x].
-  ~l[assoc-equal].~/
-
-  The ~il[guard] of ~c[rassoc-equal] requires its second argument to be an
-  alist.  ~l[rassoc] and ~pl[rassoc-eq].~/"
-
-  (declare (xargs :guard (alistp alist)))
-  (cond ((endp alist) nil)
-        ((equal x (cdr (car alist))) (car alist))
-        (t (rassoc-equal x (cdr alist)))))
-
 (defun r-symbol-alistp (x)
 
-; For guard to rassoc-eq.
+; For guard to rassoc-eq-exec.
+
+  ":Doc-Section ACL2::Programming
+
+  recognizer for association lists with symbols as values~/
+
+  ~c[(R-symbol-alistp x)] is true if and only if ~c[x] is a list of pairs of
+  the form ~c[(cons key val)] where ~c[val] is a ~ilc[symbolp].~/~/"
 
   (declare (xargs :guard t))
   (cond ((atom x) (equal x nil))
@@ -6729,30 +7362,98 @@
                 (symbolp (cdr (car x)))
                 (r-symbol-alistp (cdr x))))))
 
-(defun rassoc-eq (x alist)
-
-  ":Doc-Section ACL2::Programming
-
-  look up value in association list, using ~ilc[eq] as test~/
-
-  ~c[(Rassoc-eq x alist)] is similar to ~c[(assoc-eq x alist)], the difference
-  being that it looks for the first pair in the given alist whose ~ilc[cdr],
-  rather than ~ilc[car], is ~ilc[eq] to ~c[x].  ~l[assoc].~/
-
-  The ~il[guard] of ~c[rassoc-eq] requires its second argument to be an alist,
-  and in addition, that either its first argument is a ~ilc[symbolp] or
-  else all second components of pairs belonging to the second argument
-  are ~ilc[symbolp]s.
-
-  ~c[Rassoc] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
-
+(defun rassoc-eq-exec (x alist)
   (declare (xargs :guard (if (symbolp x)
                              (alistp alist)
                            (r-symbol-alistp alist))))
   (cond ((endp alist) nil)
         ((eq x (cdr (car alist))) (car alist))
-        (t (rassoc-eq x (cdr alist)))))
+        (t (rassoc-eq-exec x (cdr alist)))))
+
+(defun rassoc-eql-exec (x alist)
+  (declare (xargs :guard (if (eqlablep x)
+                             (alistp alist)
+                           (r-eqlable-alistp alist))))
+  (cond ((endp alist) nil)
+        ((eql x (cdr (car alist))) (car alist))
+        (t (rassoc-eql-exec x (cdr alist)))))
+
+(defun rassoc-equal (x alist)
+  (declare (xargs :guard (alistp alist)))
+  #-acl2-loop-only ; Jared Davis found efficiencies in using native assoc
+  (rassoc x alist :test #'equal)
+  #+acl2-loop-only
+  (cond ((endp alist) nil)
+        ((equal x (cdr (car alist))) (car alist))
+        (t (rassoc-equal x (cdr alist)))))
+
+(defmacro rassoc-eq (x alist)
+  `(rassoc ,x ,alist :test 'eq))
+
+(defthm rassoc-eq-exec-is-rassoc-equal
+  (equal (rassoc-eq-exec x alist)
+         (rassoc-equal x alist)))
+
+(defthm rassoc-eql-exec-is-rassoc-equal
+  (equal (rassoc-eql-exec x alist)
+         (rassoc-equal x alist)))
+
+#+acl2-loop-only
+(defmacro rassoc (x alist &key (test ''eql))
+
+  ":Doc-Section ACL2::Programming
+
+  look up value in association list~/
+  ~bv[]
+  General Forms:
+  (rassoc x alist)
+  (rassoc x alist :test 'eql)   ; same as above (eql as equality test)
+  (rassoc x alist :test 'eq)    ; same, but eq is equality test
+  (rassoc x alist :test 'equal) ; same, but equal is equality test
+  ~ev[]
+
+  ~c[(Rassoc x alist)] is the first member of ~c[alist] whose ~ilc[cdr] is
+  ~c[x], or ~c[nil] if no such member exists.  ~c[(rassoc x alist)] is thus
+  similar to ~c[(assoc x alist)], the difference being that it looks for the
+  first pair in the given alist whose ~ilc[cdr], rather than ~ilc[car], is
+  ~ilc[eql] to ~c[x].  ~l[assoc].  The optional keyword, ~c[:TEST], has no
+  effect logically, but provides the test (default ~ilc[eql]) used for
+  comparing ~c[x] with the ~ilc[cdr]s of successive elements of ~c[lst].~/
+
+  The ~il[guard] for a call of ~c[rassoc] depends on the test.  In all cases,
+  the second argument must satisfy ~ilc[alistp].  If the test is ~ilc[eql],
+  then either the first argument must be suitable for ~ilc[eql] (~pl[eqlablep])
+  or the second argument must satisfy ~ilc[r-eqlable-alistp].  If the test is
+  ~ilc[eq], then either the first argument must be a symbol or the second
+  argument must satisfy ~ilc[r-symbol-alistp].
+
+  ~l[equality-variants] for a discussion of the relation between ~c[rassoc] and
+  its variants:
+  ~bq[]
+  ~c[(rassoc-eq x lst)] is equivalent to ~c[(rassoc x lst :test 'eq)];
+
+  ~c[(rassoc-equal x lst)] is equivalent to ~c[(rassoc x lst :test 'equal)].
+  ~eq[]
+  In particular, reasoning about any of these primitives reduces to reasoning
+  about the function ~c[rassoc-equal].
+
+  ~c[Rassoc] is defined by Common Lisp.  See any Common Lisp documentation for
+  more information.~/"
+
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((x ,x) (alist ,alist))
+              :logic (rassoc-equal x alist)
+              :exec  (rassoc-eq-exec x alist)))
+   ((equal test ''eql)
+    `(let-mbe ((x ,x) (alist ,alist))
+              :logic (rassoc-equal x alist)
+              :exec  (rassoc-eql-exec x alist)))
+   (t ; (equal test 'equal)
+    `(rassoc-equal ,x ,alist))))
 
 (defconst *standard-chars*
   '(#\Newline #\Space
@@ -7561,258 +8262,6 @@
    ((string-equal str (car (car alist)))
     (car alist))
    (t (assoc-string-equal str (cdr alist)))))
-
-#+acl2-loop-only
-(defmacro caar (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[car] of the ~ilc[car]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'car (list 'car x)))
-
-#+acl2-loop-only
-(defmacro cadr (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[car] of the ~ilc[cdr]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'car (list 'cdr x)))
-
-#+acl2-loop-only
-(defmacro cdar (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[cdr] of the ~ilc[car]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'cdr (list 'car x)))
-
-#+acl2-loop-only
-(defmacro cddr (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[cdr] of the ~ilc[cdr]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'cdr (list 'cdr x)))
-
-#+acl2-loop-only
-(defmacro caaar (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[car] of the ~ilc[caar]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'car (list 'caar x)))
-
-#+acl2-loop-only
-(defmacro caadr (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[car] of the ~ilc[cadr]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'car (list 'cadr x)))
-
-#+acl2-loop-only
-(defmacro cadar (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[car] of the ~ilc[cdar]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'car (list 'cdar x)))
-
-#+acl2-loop-only
-(defmacro caddr (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[car] of the ~ilc[cddr]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'car (list 'cddr x)))
-
-#+acl2-loop-only
-(defmacro cdaar (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[cdr] of the ~ilc[caar]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'cdr (list 'caar x)))
-
-#+acl2-loop-only
-(defmacro cdadr (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[cdr] of the ~ilc[cadr]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'cdr (list 'cadr x)))
-
-#+acl2-loop-only
-(defmacro cddar (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[cdr] of the ~ilc[cdar]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'cdr (list 'cdar x)))
-
-#+acl2-loop-only
-(defmacro cdddr (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[cdr] of the ~ilc[cddr]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'cdr (list 'cddr x)))
-
-#+acl2-loop-only
-(defmacro caaaar (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[car] of the ~ilc[caaar]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'car (list 'caaar x)))
-
-#+acl2-loop-only
-(defmacro caaadr (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[car] of the ~ilc[caadr]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'car (list 'caadr x)))
-
-#+acl2-loop-only
-(defmacro caadar (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[car] of the ~ilc[cadar]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'car (list 'cadar x)))
-
-#+acl2-loop-only
-(defmacro caaddr (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[car] of the ~ilc[caddr]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'car (list 'caddr x)))
-
-#+acl2-loop-only
-(defmacro cadaar (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[car] of the ~ilc[cdaar]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'car (list 'cdaar x)))
-
-#+acl2-loop-only
-(defmacro cadadr (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[car] of the ~ilc[cdadr]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'car (list 'cdadr x)))
-
-#+acl2-loop-only
-(defmacro caddar (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[car] of the ~ilc[cddar]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'car (list 'cddar x)))
-
-#+acl2-loop-only
-(defmacro cadddr (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[car] of the ~ilc[cdddr]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'car (list 'cdddr x)))
-
-#+acl2-loop-only
-(defmacro cdaaar (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[cdr] of the ~ilc[caaar]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'cdr (list 'caaar x)))
-
-#+acl2-loop-only
-(defmacro cdaadr (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[cdr] of the ~ilc[caadr]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'cdr (list 'caadr x)))
-
-#+acl2-loop-only
-(defmacro cdadar (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[cdr] of the ~ilc[cadar]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'cdr (list 'cadar x)))
-
-#+acl2-loop-only
-(defmacro cdaddr (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[cdr] of the ~ilc[caddr]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'cdr (list 'caddr x)))
-
-#+acl2-loop-only
-(defmacro cddaar (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[cdr] of the ~ilc[cdaar]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'cdr (list 'cdaar x)))
-
-#+acl2-loop-only
-(defmacro cddadr (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[cdr] of the ~ilc[cdadr]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'cdr (list 'cdadr x)))
-
-#+acl2-loop-only
-(defmacro cdddar (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[cdr] of the ~ilc[cddar]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'cdr (list 'cddar x)))
-
-#+acl2-loop-only
-(defmacro cddddr (x)
-  ":Doc-Section ACL2::Programming
-
-  ~ilc[cdr] of the ~ilc[cdddr]~/
-
-  See any Common Lisp documentation for details.~/~/"
-  (list 'cdr (list 'cdddr x)))
 
 ; Ordinal stuff.  It seems more or less impossible to get o<g and o< admitted
 ; during boot-strapping unless we cheat by declaring them explicitly :mode
@@ -9375,76 +9824,27 @@
 
   (list '- x 1))
 
-#+acl2-loop-only
-(defun remove (x l)
+; Remove
 
-  ":Doc-Section ACL2::Programming
+(defun remove-eq-exec (x l)
+  (declare (xargs :guard (if (symbolp x)
+                             (true-listp l)
+                           (symbol-listp l))))
+  (cond ((endp l) nil)
+        ((eq x (car l))
+         (remove-eq-exec x (cdr l)))
+        (t (cons (car l) (remove-eq-exec x (cdr l))))))
 
-  remove all occurrences, testing using ~ilc[eql]~/
-
-  ~c[(remove x l)] is ~c[l] if ~c[x] is not a member of ~c[l], else is the
-  result of removing all occurrences of ~c[x] from ~c[l].~/
-
-  The ~il[guard] for ~c[(remove x l)] requires ~c[l] to be a true list and
-  moreover, either ~c[x] is ~ilc[eqlablep] or all elements of ~c[l] are
-  ~ilc[eqlablep].
-
-  ~c[Remove] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.  Note that we do not allow
-  keyword arguments (such as ~c[test]) in ACL2 functions, in
-  particular, in ~c[remove].
-
-  Also ~pl[remove1], ~pl[remove-equal], and ~pl[remove-eq].~/"
-
+(defun remove-eql-exec (x l)
   (declare (xargs :guard (if (eqlablep x)
                              (true-listp l)
                            (eqlable-listp l))))
   (cond ((endp l) nil)
         ((eql x (car l))
-         (remove x (cdr l)))
-        (t (cons (car l) (remove x (cdr l))))))
-
-(defun remove-eq (x l)
-
-  ":Doc-Section ACL2::Programming
-
-  remove all occurrences, testing using ~ilc[eq]~/
-
-  ~c[(remove-eq x l)] is ~c[l] if ~c[x] is not a member of ~c[l] as tested with
-  ~ilc[member-eq], else is the result of removing all occurrences of ~c[x] from
-  ~c[l].~/
-
-  The ~il[guard] for ~c[(remove-eq x l)] requires ~c[l] to be a true list and
-  moreover, either ~c[x] is a ~ilc[symbolp] or all elements of ~c[l] are
-  symbols (i.e., ~c[l] is a ~ilc[symbol-listp]).
-
-  Also ~pl[remove1-eq], ~pl[remove], and ~pl[remove-equal].~/"
-
-  (declare (xargs :guard (if (symbolp x)
-                             (true-listp l)
-                           (symbol-listp l))))
-  #-acl2-loop-only ; for assoc-eq, Jared Davis found native assoc efficient
-  (remove x l :test #'eq)
-  #+acl2-loop-only
-  (cond ((endp l) nil)
-        ((eq x (car l))
-         (remove-eq x (cdr l)))
-        (t (cons (car l) (remove-eq x (cdr l))))))
+         (remove-eql-exec x (cdr l)))
+        (t (cons (car l) (remove-eql-exec x (cdr l))))))
 
 (defun remove-equal (x l)
-
-  ":Doc-Section ACL2::Programming
-
-  remove all occurrences, testing using ~ilc[equal]~/
-
-  ~c[(remove-equal x l)] is ~c[l] if ~c[x] is not a member of ~c[l] as tested with
-  ~ilc[member-equal], else is the result of removing all occurrences of ~c[x] from
-  ~c[l].~/
-
-  The ~il[guard] for ~c[(remove-equal x l)] requires ~c[l] to be a true list.
-
-  Also ~pl[remove1-equal], ~pl[remove], and ~pl[remove-eq].~/"
-
   (declare (xargs :guard (true-listp l)))
   #-acl2-loop-only ; for assoc-eq, Jared Davis found native assoc efficient
   (remove x l :test #'equal)
@@ -9454,72 +9854,164 @@
          (remove-equal x (cdr l)))
         (t (cons (car l) (remove-equal x (cdr l))))))
 
-(defun remove1 (x l)
+(defmacro remove-eq (x lst)
+  `(remove ,x ,lst :test 'eq))
+
+(defthm remove-eq-exec-is-remove-equal
+  (equal (remove-eq-exec x l)
+         (remove-equal x l)))
+
+(defthm remove-eql-exec-is-remove-equal
+  (equal (remove-eql-exec x l)
+         (remove-equal x l)))
+
+#+acl2-loop-only
+(defmacro remove (x l &key (test ''eql))
 
   ":Doc-Section ACL2::Programming
 
-  remove first occurrences, testing using ~ilc[eql]~/
+  remove all occurrences~/
+  ~bv[]
+  General Forms:
+  (remove x lst)
+  (remove x lst :test 'eql)   ; same as above (eql as equality test)
+  (remove x lst :test 'eq)    ; same, but eq is equality test
+  (remove x lst :test 'equal) ; same, but equal is equality test
+  ~ev[]
 
-  ~c[(remove1 x l)] is ~c[l] if ~c[x] is not a member of ~c[l], else is the
-  result of removing the first occurrence of ~c[x] from ~c[l].~/
+  ~c[(Remove x lst)] is equal to ~c[lst] if ~c[x] is not a member of ~c[lst],
+  else is the result of removing all occurrences of ~c[x] from ~c[lst].  The
+  optional keyword, ~c[:TEST], has no effect logically, but provides the
+  test (default ~ilc[eql]) used for comparing ~c[x] with successive elements of
+  ~c[lst].
 
-  The ~il[guard] for ~c[(remove1 x l)] requires ~c[l] to be a true list and
-  moreover, either ~c[x] is ~ilc[eqlablep] or all elements of ~c[l] are
-  ~ilc[eqlablep].
+  Also ~pl[remove1].~/
 
-  Also ~pl[remove], ~pl[remove1-equal], and ~pl[remove1-eq].~/"
+  The ~il[guard] for a call of ~c[remove] depends on the test.  In all cases,
+  the second argument must satisfy ~ilc[true-listp].  If the test is ~ilc[eql],
+  then either the first argument must be suitable for ~ilc[eql] (~pl[eqlablep])
+  or the second argument must satisfy ~ilc[eqlable-listp].  If the test is
+  ~ilc[eq], then either the first argument must be a symbol or the second
+  argument must satisfy ~ilc[symbol-listp].
 
-  (declare (xargs :guard (if (eqlablep x)
-                             (true-listp l)
-                           (eqlable-listp l))))
-  (cond ((endp l) nil)
-        ((eql x (car l))
-         (cdr l))
-        (t (cons (car l) (remove1 x (cdr l))))))
+  ~l[equality-variants] for a discussion of the relation between ~c[remove] and
+  its variants:
+  ~bq[]
+  ~c[(remove-eq x lst)] is equivalent to ~c[(remove x lst :test 'eq)];
 
-(defun remove1-eq (x l)
+  ~c[(remove-equal x lst)] is equivalent to ~c[(remove x lst :test 'equal)].
+  ~eq[]
+  In particular, reasoning about any of these primitives reduces to reasoning
+  about the function ~c[remove-equal].
 
-  ":Doc-Section ACL2::Programming
+  ~c[Remove] is defined by Common Lisp.  See any Common Lisp documentation for
+  more information.~/"
 
-  remove first occurrences, testing using ~ilc[eq]~/
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((x ,x) (l ,l))
+              :logic (remove-equal x l)
+              :exec  (remove-eq-exec x l)))
+   ((equal test ''eql)
+    `(let-mbe ((x ,x) (l ,l))
+              :logic (remove-equal x l)
+              :exec  (remove-eql-exec x l)))
+   (t ; (equal test 'equal)
+    `(remove-equal ,x ,l))))
 
-  ~c[(remove1-eq x l)] is ~c[l] if ~c[x] is not a member of ~c[l] as tested with
-  ~ilc[member-eq], else is the result of removing the first occurrences of
-  ~c[x] from ~c[l].~/
+; Remove1
 
-  The ~il[guard] for ~c[(remove1-eq x l)] requires ~c[l] to be a true list and
-  moreover, either ~c[x] is a ~ilc[symbolp] or all elements of ~c[l] are
-  symbols (i.e., ~c[l] is a ~ilc[symbol-listp]).
-
-  Also ~pl[remove-eq], ~pl[remove1], and ~pl[remove1-equal].~/"
-
+(defun remove1-eq-exec (x l)
   (declare (xargs :guard (if (symbolp x)
                              (true-listp l)
                            (symbol-listp l))))
   (cond ((endp l) nil)
         ((eq x (car l))
          (cdr l))
-        (t (cons (car l) (remove1-eq x (cdr l))))))
+        (t (cons (car l) (remove1-eq-exec x (cdr l))))))
+
+(defun remove1-eql-exec (x l)
+  (declare (xargs :guard (if (eqlablep x)
+                             (true-listp l)
+                           (eqlable-listp l))))
+  (cond ((endp l) nil)
+        ((eql x (car l))
+         (cdr l))
+        (t (cons (car l) (remove1-eql-exec x (cdr l))))))
 
 (defun remove1-equal (x l)
-
-  ":Doc-Section ACL2::Programming
-
-  remove first occurrences, testing using ~ilc[equal]~/
-
-  ~c[(remove1-equal x l)] is ~c[l] if ~c[x] is not a member of ~c[l] as tested with
-  ~ilc[member-equal], else is the result of removing the first occurrence of
-  ~c[x] from ~c[l].~/
-
-  The ~il[guard] for ~c[(remove1-equal x l)] requires ~c[l] to be a true list.
-
-  Also ~pl[remove-equal], ~pl[remove1], and ~pl[remove1-eq].~/"
-
   (declare (xargs :guard (true-listp l)))
   (cond ((endp l) nil)
         ((equal x (car l))
          (cdr l))
         (t (cons (car l) (remove1-equal x (cdr l))))))
+
+(defmacro remove1-eq (x lst)
+  `(remove1 ,x ,lst :test 'eq))
+
+(defthm remove1-eq-exec-is-remove1-equal
+  (equal (remove1-eq-exec x l)
+         (remove1-equal x l)))
+
+(defthm remove1-eql-exec-is-remove1-equal
+  (equal (remove1-eql-exec x l)
+         (remove1-equal x l)))
+
+(defmacro remove1 (x l &key (test ''eql))
+
+  ":Doc-Section ACL2::Programming
+
+  remove first occurrences, testing using ~ilc[eql]~/
+  ~bv[]
+  General Forms:
+  (remove1 x lst)
+  (remove1 x lst :test 'eql)   ; same as above (eql as equality test)
+  (remove1 x lst :test 'eq)    ; same, but eq is equality test
+  (remove1 x lst :test 'equal) ; same, but equal is equality test
+  ~ev[]
+
+  ~c[(Remove1 x lst)] is equal to ~c[lst] if ~c[x] is not a member of ~c[lst],
+  else is the result of removing the first occurrences of ~c[x] from ~c[lst].
+  The optional keyword, ~c[:TEST], has no effect logically, but provides the
+  test (default ~ilc[eql]) used for comparing ~c[x] with successive elements of
+  ~c[lst].
+
+  Also ~pl[remove].~/
+
+  The ~il[guard] for a call of ~c[remove1] depends on the test.  In all cases,
+  the second argument must satisfy ~ilc[true-listp].  If the test is ~ilc[eql],
+  then either the first argument must be suitable for ~ilc[eql] (~pl[eqlablep])
+  or the second argument must satisfy ~ilc[eqlable-listp].  If the test is
+  ~ilc[eq], then either the first argument must be a symbol or the second
+  argument must satisfy ~ilc[symbol-listp].
+
+  ~l[equality-variants] for a discussion of the relation between ~c[remove1] and
+  its variants:
+  ~bq[]
+  ~c[(remove1-eq x lst)] is equivalent to ~c[(remove1 x lst :test 'eq)];
+
+  ~c[(remove1-equal x lst)] is equivalent to ~c[(remove1 x lst :test 'equal)].
+  ~eq[]
+  In particular, reasoning about any of these primitives reduces to reasoning
+  about the function ~c[remove1-equal].~/"
+
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((x ,x) (l ,l))
+              :logic (remove1-equal x l)
+              :exec  (remove1-eq-exec x l)))
+   ((equal test ''eql)
+    `(let-mbe ((x ,x) (l ,l))
+              :logic (remove1-equal x l)
+              :exec  (remove1-eql-exec x l)))
+   (t ; (equal test 'equal)
+    `(remove1-equal ,x ,l))))
 
 (deflabel pairlis
   :doc
@@ -9555,70 +10047,123 @@
         (t (cons (cons (car x) (car y))
                  (pairlis$ (cdr x) (cdr y))))))
 
-(defun remove-duplicates-eql (l)
+; Remove-duplicates
+
+(defun remove-duplicates-eq-exec (l)
+  (declare (xargs :guard (symbol-listp l)))
+  (cond
+   ((endp l) nil)
+   ((member-eq (car l) (cdr l)) (remove-duplicates-eq-exec (cdr l)))
+   (t (cons (car l) (remove-duplicates-eq-exec (cdr l))))))
+
+(defun remove-duplicates-eql-exec (l)
   (declare (xargs :guard (eqlable-listp l)))
   (cond
    ((endp l) nil)
-   ((member (car l) (cdr l)) (remove-duplicates-eql (cdr l)))
-   (t (cons (car l) (remove-duplicates-eql (cdr l))))))
-
-(defthm character-listp-remove-duplicates-eql
-  (implies (character-listp x)
-           (character-listp (remove-duplicates-eql x))))
-
-#+acl2-loop-only
-(defun remove-duplicates (l)
-
-  ":Doc-Section ACL2::Programming
-
-  remove duplicates from a string or (using ~ilc[eql]) a list~/
-
-  ~c[Remove-duplicates] returns the result of deleting duplicate
-  elements from the beginning of the given string or true list, i.e.,
-  leaving the last element in place.  For example,
-  ~bv[]
-  (remove-duplicates '(1 2 3 2 4))
-  ~ev[]
-  is equal to ~c['(1 3 2 4)].~/
-
-  The ~il[guard] for ~c[Remove-duplicates] requires that its argument is a
-  string or a true-list of ~ilc[eqlablep] objects.  It uses the function
-  ~ilc[eql] to test for equality between elements of its argument.
-
-  ~c[Remove-duplicates] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.  Note that we do not allow
-  keyword arguments (such as ~c[test]) in ACL2 functions, in
-  particular, in ~c[remove-duplicates].  But
-  ~pl[remove-duplicates-equal], which is similar but uses the
-  function ~ilc[equal] to test for duplicate elements.~/"
-
-  (declare (xargs :guard (or (stringp l)
-                             (eqlable-listp l))))
-  (cond
-   ((stringp l)
-    (coerce (remove-duplicates-eql (coerce l 'list)) 'string))
-   (t (remove-duplicates-eql l))))
+   ((member (car l) (cdr l)) (remove-duplicates-eql-exec (cdr l)))
+   (t (cons (car l) (remove-duplicates-eql-exec (cdr l))))))
 
 (defun remove-duplicates-equal (l)
-
-  ":Doc-Section ACL2::Programming
-
-  remove duplicates from a list~/
-
-  ~c[Remove-duplicates-equal] is the same as ~ilc[remove-duplicates],
-  except that its argument must be a true list (not a string), and
-  ~ilc[equal] is used to check membership rather than ~ilc[eql].
-  ~l[remove-duplicates].~/
-
-  The ~il[guard] for ~c[Remove-duplicates-equal] requires that its argument
-  is a true list.  Note that unlike ~ilc[remove-duplicates], it does not
-  allow string arguments.~/"
-
   (declare (xargs :guard (true-listp l)))
   (cond
    ((endp l) nil)
    ((member-equal (car l) (cdr l)) (remove-duplicates-equal (cdr l)))
    (t (cons (car l) (remove-duplicates-equal (cdr l))))))
+
+(defmacro remove-duplicates-eq (x)
+  `(remove-duplicates ,x :test 'eq))
+
+(defthm remove-duplicates-eq-exec-is-remove-duplicates-equal
+  (equal (remove-duplicates-eq-exec x)
+         (remove-duplicates-equal x)))
+
+(defthm remove-duplicates-eql-exec-is-remove-duplicates-equal
+  (equal (remove-duplicates-eql-exec x)
+         (remove-duplicates-equal x)))
+
+(defmacro remove-duplicates-logic (x)
+  `(let ((x ,x))
+     (if (stringp x)
+         (coerce (remove-duplicates-equal (coerce x 'list))
+                 'string)
+       (remove-duplicates-equal x))))
+
+#+acl2-loop-only
+(defmacro remove-duplicates (x &key (test ''eql))
+
+  ":Doc-Section ACL2::Programming
+
+  remove duplicates from a string or a list~/
+  ~bv[]
+  General Forms:
+  (remove-duplicates x)
+  (remove-duplicates x :test 'eql)   ; same as above (eql as equality test)
+  (remove-duplicates x :test 'eq)    ; same, but eq is equality test
+  (remove-duplicates x :test 'equal) ; same, but equal is equality test
+  ~ev[]
+
+  ~c[(Remove-duplicates x)] returns the result of deleting duplicate elements
+  from the beginning of the list or string ~c[x].  For example,
+  ~c[(remove-duplicates '(1 2 3 2 4))] is equal to ~c['(1 3 2 4)].  The
+  optional keyword, ~c[:TEST], has no effect logically, but provides the
+  test (default ~ilc[eql]) used for comparing ~c[x] with successive elements of
+  ~c[lst].~/
+
+  The ~il[guard] for a call of ~c[remove-duplicates] depends on the test.  In
+  all cases, the argument must satisfy ~ilc[stringp] or ~ilc[true-listp].  If
+  the test is ~ilc[eql], then the argument must satisfy either ~ilc[stringp] or
+  ~ilc[eqlable-listp].  If the test is ~ilc[eq], then the argument must satisfy
+  ~ilc[symbol-listp].
+
+  The relation between ~c[remove-duplicates] and its variants is related to the
+  usual pattern for equality variants; ~pl[equality-variants].  However, the
+  possibility of a string argument changes the usual pattern a bit.  As one
+  might expect:
+  ~bq[]
+  ~c[(remove-duplicates-eq lst)] is equivalent to
+  ~c[(remove-duplicates lst :test 'eq)].
+  ~eq[]
+  However, ~c[remove-duplicates-equal] is defined without consideration of
+  strings, for backward compatibility with versions of ACL2 through
+  Version_4.2.  The macro ~c[remove-duplicates-logic] has been introduced to
+  model the behavior of ~c[remove-duplicates] even on strings; use
+  ~c[:]~ilc[pe] if you wish to see its definition.  So we can say the
+  following.
+  ~bq[]
+  ~c[(remove-duplicates-logic lst)] is equivalent to
+  ~c[(remove-duplicates lst :test 'equal)]; and
+
+  ~c[(remove-duplicates-logic lst)] is equal to
+  ~c[(remove-duplicates-equal lst)] when ~c[lst] is not a string.
+  ~eq[]
+  In particular, when the argument is not a string, reasoning about any of
+  these primitives reduces to reasoning about the function
+  ~c[remove-duplicates-equal].
+
+  ~c[Remove-duplicates] is defined by Common Lisp.  See any Common Lisp
+  documentation for more information.~/"
+
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((x ,x))
+              :logic (remove-duplicates-logic x)
+              :exec  (remove-duplicates-eq-exec x)))
+   ((equal test ''eql)
+    `(let-mbe ((x ,x))
+              :logic (remove-duplicates-logic x)
+              :exec  (if (stringp x)
+                         (coerce (remove-duplicates-eql-exec (coerce x 'list))
+                                 'string)
+                       (remove-duplicates-eql-exec x))))
+   (t ; (equal test 'equal)
+    `(remove-duplicates-logic ,x))))
+
+(defthm character-listp-remove-duplicates
+  (implies (character-listp x)
+           (character-listp (remove-duplicates x))))
 
 ; We now define the first five documentation sections: Events,
 ; Documentation, History, Other, and Miscellaneous.  These
@@ -10071,25 +10616,103 @@
   '(error warning warning! observation prove proof-checker event expansion
           summary proof-tree))
 
-(defun set-difference-eq (l1 l2)
+; Set-difference$
 
-  ":Doc-Section ACL2::Programming
-
-  elements of one list that are not elements of another~/
-
-  ~c[(Set-difference-eq x y)] is logically equivalent to
-  ~ilc[set-difference-equal], except that the ~il[guard] requires not only that
-  the two arguments are ~ilc[true-listp]s but also that at least one is a
-  ~ilc[symbol-listp].  Also ~pl[set-difference-equal].~/~/"
-
+(defun set-difference-eq-exec (l1 l2)
   (declare (xargs :guard (and (true-listp l1)
                               (true-listp l2)
                               (or (symbol-listp l1)
                                   (symbol-listp l2)))))
   (cond ((endp l1) nil)
         ((member-eq (car l1) l2)
-         (set-difference-eq (cdr l1) l2))
-        (t (cons (car l1) (set-difference-eq (cdr l1) l2)))))
+         (set-difference-eq-exec (cdr l1) l2))
+        (t (cons (car l1) (set-difference-eq-exec (cdr l1) l2)))))
+
+(defun set-difference-eql-exec (l1 l2)
+  (declare (xargs :guard (and (true-listp l1)
+                              (true-listp l2)
+                              (or (eqlable-listp l1)
+                                  (eqlable-listp l2)))))
+  (cond ((endp l1) nil)
+        ((member (car l1) l2)
+         (set-difference-eql-exec (cdr l1) l2))
+        (t (cons (car l1) (set-difference-eql-exec (cdr l1) l2)))))
+
+(defun set-difference-equal (l1 l2)
+  (declare (xargs :guard (and (true-listp l1)
+                              (true-listp l2))))
+  (cond ((endp l1) nil)
+        ((member-equal (car l1) l2)
+         (set-difference-equal (cdr l1) l2))
+        (t (cons (car l1) (set-difference-equal (cdr l1) l2)))))
+
+(defmacro set-difference-eq (l1 l2)
+  `(set-difference$ ,l1 ,l2 :test 'eq))
+
+(defthm set-difference-eq-exec-is-set-difference-equal
+  (equal (set-difference-eq-exec l1 l2)
+         (set-difference-equal l1 l2)))
+
+(defthm set-difference-eql-exec-is-set-difference-equal
+  (equal (set-difference-eql-exec l1 l2)
+         (set-difference-equal l1 l2)))
+
+(defmacro set-difference$ (l1 l2 &key (test ''eql))
+
+  ":Doc-Section ACL2::Programming
+
+  elements of one list that are not elements of another~/
+  ~bv[]
+  General Forms:
+  (set-difference$ l1 l2)
+  (set-difference$ l1 l2 :test 'eql)   ; same as above (eql as equality test)
+  (set-difference$ l1 l2 :test 'eq)    ; same, but eq is equality test
+  (set-difference$ l1 l2 :test 'equal) ; same, but equal is equality test
+  ~ev[]
+
+  ~c[(Set-difference$ l1 l2)] equals a list that contains the ~ilc[member]s of
+  ~c[x] that are not ~ilc[member]s of ~c[y].  More precisely, the resulting
+  list is the same as one gets by deleting the members of ~c[y] from ~c[x],
+  leaving the remaining elements in the same order as in ~c[x].  The optional
+  keyword, ~c[:TEST], has no effect logically, but provides the test (default
+  ~ilc[eql]) used for comparing members of the two lists.~/
+
+  The ~il[guard] for a call of ~c[set-difference$] depends on the test.  In all
+  cases, both arguments must satisfy ~ilc[true-listp].  If the test is
+  ~ilc[eql], then one of the arguments must satisfy ~ilc[eqlable-listp].  If
+  the test is ~ilc[eq], then one of the arguments must satisfy
+  ~ilc[symbol-listp].
+
+  ~l[equality-variants] for a discussion of the relation between
+  ~c[set-difference$] and its variants:
+  ~bq[]
+  ~c[(set-difference-eq x lst)] is equivalent to
+  ~c[(set-difference$ x lst :test 'eq)];
+
+  ~c[(set-difference-equal x lst)] is equivalent to
+  ~c[(set-difference$ x lst :test 'equal)].
+  ~eq[]
+  In particular, reasoning about any of these primitives reduces to reasoning
+  about the function ~c[set-difference-equal].
+
+  ~c[Set-difference$] is similar to the Common Lisp primitive
+  ~c[set-difference].  However, Common Lisp does not specify the order of
+  elements in the result of a call of ~c[set-difference].~/"
+
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((l1 ,l1) (l2 ,l2))
+              :logic (set-difference-equal l1 l2)
+              :exec  (set-difference-eq-exec l1 l2)))
+   ((equal test ''eql)
+    `(let-mbe ((l1 ,l1) (l2 ,l2))
+              :logic (set-difference-equal l1 l2)
+              :exec  (set-difference-eql-exec l1 l2)))
+   (t ; (equal test 'equal)
+    `(set-difference-equal ,l1 ,l2))))
 
 #+acl2-loop-only
 (defun listp (x)
@@ -11140,43 +11763,106 @@
 
 (verify-guards pseudo-term-list-listp)
 
-(defun add-to-set-eq (x lst)
+; Add-to-set
 
-  ":Doc-Section ACL2::Programming
-
-  add a symbol to a list~/
-
-  For a symbol ~c[x] and a true list ~c[lst], ~c[(add-to-set-eq x lst)]
-  is the result of ~ilc[cons]ing ~c[x] on to the front of ~c[lst], unless
-  ~c[x] is already a member of ~c[lst], in which case it equals ~c[lst].~/
-
-  ~c[(add-to-set-eq x lst)] has a ~il[guard] that ~c[lst] is a true list and
-  moreover, either ~c[x] is a symbol or ~c[lst] is a list of symbols.~/"
-
+(defun add-to-set-eq-exec (x lst)
   (declare (xargs :guard (if (symbolp x)
                              (true-listp lst)
                            (symbol-listp lst))))
   (cond ((member-eq x lst) lst)
         (t (cons x lst))))
 
-(defun add-to-set-eql (x lst)
-
-  ":Doc-Section ACL2::Programming
-
-  add an object to a list~/
-
-  For an object ~c[x] and a true list ~c[lst], ~c[(add-to-set-eql x lst)]
-  is the result of ~ilc[cons]ing ~c[x] on to the front of ~c[lst], unless
-  ~c[x] is already a member of ~c[lst], in which case it equals ~c[lst].~/
-
-  ~c[(add-to-set-eql x lst)] has a ~il[guard] that ~c[lst] is a true list and
-  moreover, either ~c[x] is ~ilc[eqlablep] or ~c[lst] is an ~ilc[eqlable-listp].~/"
-
+(defun add-to-set-eql-exec (x lst)
   (declare (xargs :guard (if (eqlablep x)
                              (true-listp lst)
                            (eqlable-listp lst))))
   (cond ((member x lst) lst)
         (t (cons x lst))))
+
+(defun add-to-set-equal (x l)
+  (declare (xargs :guard (true-listp l)))
+
+; Warning: This function is used by include-book-fn to add a
+; certification tuple to the include-book-alist.  We exploit the fact
+; that if the tuple, x, isn't already in the list, l, then this
+; function adds it at the front!  So don't change this function
+; without recoding include-book-fn.
+
+  (cond ((member-equal x l)
+         l)
+        (t (cons x l))))
+
+(defmacro add-to-set-eq (x lst)
+  `(add-to-set ,x ,lst :test 'eq))
+
+; Added for backward compatibility (add-to-set-eql was present before
+; Version_4.3):
+(defmacro add-to-set-eql (x lst)
+  `(add-to-set ,x ,lst :test 'eql))
+
+(defthm add-to-set-eq-exec-is-add-to-set-equal
+  (equal (add-to-set-eq-exec x lst)
+         (add-to-set-equal x lst)))
+
+(defthm add-to-set-eql-exec-is-add-to-set-equal
+  (equal (add-to-set-eql-exec x lst)
+         (add-to-set-equal x lst)))
+
+; Disable non-recursive functions to assist in discharging mbe guard proof
+; obligations.
+(in-theory (disable add-to-set-eq-exec add-to-set-eql-exec))
+
+(defmacro add-to-set (x lst &key (test ''eql))
+
+  ":Doc-Section ACL2::Programming
+
+  add a symbol to a list~/
+  ~bv[]
+  General Forms:
+  (add-to-set x lst)
+  (add-to-set x lst :test 'eql)   ; same as above (eql as equality test)
+  (add-to-set x lst :test 'eq)    ; same, but eq is equality test
+  (add-to-set x lst :test 'equal) ; same, but equal is equality test
+  ~ev[]
+
+  For a symbol ~c[x] and an object ~c[lst], ~c[(add-to-set-eq x lst)] is the
+  result of ~ilc[cons]ing ~c[x] on to the front of ~c[lst], unless ~c[x] is
+  already a ~ilc[member] of ~c[lst], in which case the result is ~c[lst]. The
+  optional keyword, ~c[:TEST], has no effect logically, but provides the
+  test (default ~ilc[eql]) used for comparing ~c[x] with successive elements of
+  ~c[lst].~/
+
+  The ~il[guard] for a call of ~c[add-to-set] depends on the test.  In all
+  cases, the second argument must satisfy ~ilc[true-listp].  If the test is
+  ~ilc[eql], then either the first argument must be suitable for ~ilc[eql]
+  (~pl[eqlablep]) or the second argument must satisfy ~ilc[eqlable-listp].  If
+  the test is ~ilc[eq], then either the first argument must be a symbol or the
+  second argument must satisfy ~ilc[symbol-listp].
+
+  ~l[equality-variants] for a discussion of the relation between ~c[add-to-set] and
+  its variants:
+  ~bq[]
+  ~c[(add-to-set-eq x lst)] is equivalent to ~c[(add-to-set x lst :test 'eq)];
+
+  ~c[(add-to-set-equal x lst)] is equivalent to ~c[(add-to-set x lst :test 'equal)].
+  ~eq[]
+  In particular, reasoning about any of these primitives reduces to reasoning
+  about the function ~c[add-to-set-equal].~/"
+
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((x ,x) (lst ,lst))
+              :logic (add-to-set-equal x lst)
+              :exec  (add-to-set-eq-exec x lst)))
+   ((equal test ''eql)
+    `(let-mbe ((x ,x) (lst ,lst))
+              :logic (add-to-set-equal x lst)
+              :exec  (add-to-set-eql-exec x lst)))
+   (t ; (equal test 'equal)
+    `(add-to-set-equal ,x ,lst))))
 
 (defmacro variablep (x) (list 'atom x))
 
@@ -11364,61 +12050,93 @@
   (declare (ignore test-fn))
   form)
 
-(defun intersectp-eq (x y)
+; Intersectp
 
-  ":Doc-Section ACL2::Programming
-
-  test whether two lists of symbols intersect~/
-
-  ~l[intersectp-equal], which is logically the same function.~/
-
-  ~c[(Intersectp-eq x y)] has a ~il[guard] that ~c[x] and ~c[y] are true lists,
-  at least one of which is a list of symbols.~/"
-
+(defun intersectp-eq-exec (x y)
   (declare (xargs :guard (and (true-listp x)
                               (true-listp y)
                               (or (symbol-listp x)
                                   (symbol-listp y)))))
   (cond ((endp x) nil)
         ((member-eq (car x) y) t)
-        (t (intersectp-eq (cdr x) y))))
+        (t (intersectp-eq-exec (cdr x) y))))
 
-(defun intersectp (x y)
-
-  ":Doc-Section ACL2::Programming
-
-  test whether two lists of ~ilc[eqlablep] objects intersect~/
-
-  ~l[intersectp-equal], which is logically the same function.~/
-
-  ~c[(Intersectp x y)] has a ~il[guard] that ~c[x] and ~c[y] are lists 
-  containing only numbers, symbols, and characters.~/"
-
-  (declare (xargs :guard (and (eqlable-listp x)
-                              (eqlable-listp y))))
+(defun intersectp-eql-exec (x y)
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp y)
+                              (or (eqlable-listp x)
+                                  (eqlable-listp y)))))
   (cond ((endp x) nil)
         ((member (car x) y) t)
-        (t (intersectp (cdr x) y))))
+        (t (intersectp-eql-exec (cdr x) y))))
 
 (defun intersectp-equal (x y)
-
-  ":Doc-Section ACL2::Programming
-
-  test whether two lists intersect~/
-
-  ~c[(Intersectp-equal x y)] returns ~c[t] if ~c[x] and ~c[y] have a
-  member in common, else it returns ~c[nil.]  Also
-  ~pl[intersectp-eq], which is logically the same but can be more
-  efficient since it uses ~ilc[eq] instead of ~ilc[equal] to look for
-  members common to the two given lists.~/
-
-  ~c[(Intersectp-equal x y)] has a ~il[guard] that ~c[x] and ~c[y] are true lists.~/"
-
   (declare (xargs :guard (and (true-listp x)
                               (true-listp y))))
   (cond ((endp x) nil)
         ((member-equal (car x) y) t)
         (t (intersectp-equal (cdr x) y))))
+
+(defmacro intersectp-eq (x y)
+  `(intersectp ,x ,y :test 'eq))
+
+(defthm intersectp-eq-exec-is-intersectp-equal
+  (equal (intersectp-eq-exec x y)
+         (intersectp-equal x y)))
+
+(defthm intersectp-eql-exec-is-intersectp-equal
+  (equal (intersectp-eql-exec x y)
+         (intersectp-equal x y)))
+
+(defmacro intersectp (x y &key (test ''eql))
+
+  ":Doc-Section ACL2::Programming
+
+  test whether two lists intersect~/
+  ~bv[]
+  General Forms:
+  (set-difference$ l1 l2)
+  (set-difference$ l1 l2 :test 'eql)   ; same as above (eql as equality test)
+  (set-difference$ l1 l2 :test 'eq)    ; same, but eq is equality test
+  (set-difference$ l1 l2 :test 'equal) ; same, but equal is equality test
+  ~ev[]
+
+  ~c[(Intersectp l1 l2)] returns ~c[t] if ~c[l1] and ~c[l2] have a ~ilc[member]
+  in common, else it returns ~c[nil].  The optional keyword, ~c[:TEST], has no
+  effect logically, but provides the test (default ~ilc[eql]) used for
+  comparing members of the two lists.~/
+
+  The ~il[guard] for a call of ~c[intersectp] depends on the test.  In all
+  cases, both arguments must satisfy ~ilc[true-listp].  If the test is
+  ~ilc[eql], then one of the arguments must satisfy ~ilc[eqlable-listp].  If
+  the test is ~ilc[eq], then one of the arguments must satisfy
+  ~ilc[symbol-listp].
+
+  ~l[equality-variants] for a discussion of the relation between
+  ~c[intersectp] and its variants:
+  ~bq[]
+  ~c[(intersectp-eq x lst)] is equivalent to ~c[(intersectp x lst :test 'eq)];
+
+  ~c[(intersectp-equal x lst)] is equivalent to
+  ~c[(intersectp x lst :test 'equal)].
+  ~eq[]
+  In particular, reasoning about any of these primitives reduces to reasoning
+  about the function ~c[intersectp-equal].~/"
+
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((x ,x) (y ,y))
+              :logic (intersectp-equal x y)
+              :exec  (intersectp-eq-exec x y)))
+   ((equal test ''eql)
+    `(let-mbe ((x ,x) (y ,y))
+              :logic (intersectp-equal x y)
+              :exec  (intersectp-eql-exec x y)))
+   (t ; (equal test 'equal)
+    `(intersectp-equal ,x ,y))))
 
 (defun make-fmt-bindings (chars forms)
   (declare (xargs :guard (and (true-listp chars)
@@ -11628,51 +12346,9 @@
         (t `(let ((case-do-not-use-elsewhere ,(car l)))
               (cond ,@(case-list-check (cdr l)))))))
 
-(defun position-equal-ac (item lst acc)
-  (declare (xargs :guard (and (true-listp lst)
-                              (acl2-numberp acc))))
-  (cond
-   ((endp lst) nil)
-   ((equal item (car lst))
-    acc)
-   (t (position-equal-ac item (cdr lst) (1+ acc)))))
+; Position-ac
 
-(defun position-ac (item lst acc)
-  (declare (xargs :guard (and (true-listp lst)
-                              (or (eqlablep item)
-                                  (eqlable-listp lst))
-                              (acl2-numberp acc))))
-  (cond
-   ((endp lst) nil)
-   ((eql item (car lst))
-    acc)
-   (t (position-ac item (cdr lst) (1+ acc)))))
-
-(defun position-equal (item lst)
-
-  ":Doc-Section ACL2::Programming
-
-  position of an item in a string or a list~/
-
-  ~c[(Position item seq)] is the least index (zero-based) of the
-  element ~c[item] in the string or list ~c[seq], if in fact ~c[item] is
-  an element of ~c[seq].  Otherwise ~c[(position item seq)] is ~c[nil].~/
-
-  ~c[(Position-equal item lst)] has a ~il[guard] of ~c[(true-listp lst)].
-  ~c[Position-equal] has the same functionality as the Common Lisp
-  function ~ilc[position], except that it uses the ~ilc[equal] function to
-  test whether ~c[item] is the same as each successive element of
-  ~c[lst].  ~l[position] and ~pl[position-eq].~/"
-
-  (declare (xargs :guard (or (stringp lst) (true-listp lst))))
-  #-acl2-loop-only ; for assoc-eq, Jared Davis found native assoc efficient
-  (position item lst :test #'equal)
-  #+acl2-loop-only
-  (if (stringp lst)
-      (position-ac item (coerce lst 'list) 0)
-    (position-equal-ac item lst 0)))
-
-(defun position-eq-ac (item lst acc)
+(defun position-ac-eq-exec (item lst acc)
   (declare (xargs :guard (and (true-listp lst)
                               (or (symbolp item)
                                   (symbol-listp lst))
@@ -11681,70 +12357,81 @@
    ((endp lst) nil)
    ((eq item (car lst))
     acc)
-   (t (position-eq-ac item (cdr lst) (1+ acc)))))
+   (t (position-ac-eq-exec item (cdr lst) (1+ acc)))))
 
-(defun position-eq (item lst)
+(defun position-ac-eql-exec (item lst acc)
+  (declare (xargs :guard (and (true-listp lst)
+                              (or (eqlablep item)
+                                  (eqlable-listp lst))
+                              (acl2-numberp acc))))
+  (cond
+   ((endp lst) nil)
+   ((eql item (car lst))
+    acc)
+   (t (position-ac-eql-exec item (cdr lst) (1+ acc)))))
 
-  ":Doc-Section ACL2::Programming
+(defun position-equal-ac (item lst acc)
 
-  position of an item in a string or a list, using ~ilc[eq] as test~/
+; This function should perhaps be called position-ac-equal, but we name it
+; position-equal-ac since that has been its name historically before the new
+; handling of member etc. in Version_4.3.
 
-  ~c[(Position-eq item seq)] is the least index (zero-based) of the
-  element ~c[item] in the list ~c[seq], if in fact ~c[item] is
-  an element of ~c[seq].  Otherwise ~c[(position-eq item seq)] is ~c[nil].~/
+  (declare (xargs :guard (and (true-listp lst)
+                              (acl2-numberp acc))))
+  (cond
+   ((endp lst) nil)
+   ((equal item (car lst))
+    acc)
+   (t (position-equal-ac item (cdr lst) (1+ acc)))))
 
-  ~c[(Position-eq item lst)] is provably the same in the ACL2 logic as
-  ~c[(position item lst)] and ~c[(position-equal item lst)] when ~c[lst] is a
-  true list, but it has a stronger ~il[guard] because it uses ~ilc[eq] for a
-  more efficient test for whether ~c[item] is equal to a given member of
-  ~c[lst].  Its ~il[guard] requires that ~c[lst] is a true list, and moreover,
-  either ~c[item] is a symbol or ~c[lst] is a list of symbols.
-  ~l[position-equal] and ~pl[position], which unlike ~c[position-eq] have
-  guards that allow the second argument to be a string.~/"
+(defmacro position-ac-equal (item lst acc)
+; See comment about naming in position-equal-ac.
+  `(position-equal-ac ,item ,lst ,acc))
 
+(defmacro position-eq-ac (item lst acc)
+
+; This macro may be oddly named; see the comment about naming in
+; position-equal-ac.  We also define position-ac-eq, which may be a more
+; appropriate name.
+
+  `(position-ac ,item ,lst ,acc :test 'eq))
+
+(defmacro position-ac-eq (item lst acc)
+  `(position-ac ,item ,lst ,acc :test 'eq))
+
+(defthm position-ac-eq-exec-is-position-equal-ac
+  (equal (position-ac-eq-exec item lst acc)
+         (position-equal-ac item lst acc)))
+
+(defthm position-ac-eql-exec-is-position-equal-ac
+  (equal (position-ac-eql-exec item lst acc)
+         (position-equal-ac item lst acc)))
+
+(defmacro position-ac (item lst acc &key (test ''eql))
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((item ,item) (lst ,lst) (acc ,acc))
+              :logic (position-equal-ac item lst)
+              :exec  (position-ac-eq-exec item lst)))
+   ((equal test ''eql)
+    `(let-mbe ((item ,item) (lst ,lst) (acc ,acc))
+              :logic (position-equal-ac item lst acc)
+              :exec  (position-ac-eql-exec item lst acc)))
+   (t ; (equal test 'equal)
+    `(position-equal-ac ,item ,lst))))
+
+; Position
+
+(defun position-eq-exec (item lst)
   (declare (xargs :guard (and (true-listp lst)
                               (or (symbolp item)
                                   (symbol-listp lst)))))
+  (position-ac-eq-exec item lst 0))
 
-; Should we write the same sort of body that we do for position?  Why would
-; anyone deliberately make a call (position-eq item string)?  Such a call has
-; to produce a guard violation unless item is a symbol, in which case
-; position-eq would return nil in the logic.  On the other hand, we could prove
-; equivalence of position and position-eq without a true-listp hypothesis if we
-; made the definition below that tests for stringp in analogy to the bodies of
-; position and position-equal.
-
-  #-acl2-loop-only ; for assoc-eq, Jared Davis found native assoc efficient
-  (position item lst :test #'eq)
-  #+acl2-loop-only
-  (position-eq-ac item lst 0))
-
-#+acl2-loop-only
-(defun position (item lst)
-
-  ":Doc-Section ACL2::Programming
-
-  position of an item in a string or a list, using ~ilc[eql] as test~/
-
-  ~c[(Position item seq)] is the least index (zero-based) of the
-  element ~c[item] in the string or list ~c[seq], if in fact ~c[item] is
-  an element of ~c[seq].  Otherwise ~c[(position item seq)] is ~c[nil].~/
-
-  ~c[(Position item lst)] is provably the same in the ACL2 logic as
-  ~c[(position-equal item lst)].  It has a stronger ~il[guard] than
-  ~ilc[position-equal] because uses ~ilc[eql] to test equality of ~c[item]
-  with members of ~c[lst].  Its ~il[guard] requires that either ~c[lst] is a
-  string, or else ~c[lst] is a true list such that either ~c[(eqlablep item)]
-  or all members of ~c[lst] are ~ilc[eqlablep].  ~l[position-equal]
-  and ~pl[position-eq].
-
-  ~c[Position] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.  Since ACL2 functions cannot
-  take keyword arguments (though macros can), the ACL2 functions
-  ~ilc[position-equal] and ~ilc[position-eq] are defined to correspond to
-  calls of the Common Lisp function ~c[position] whose keyword argument
-  ~c[:test] is ~ilc[equal] or ~ilc[eq], respectively.~/"
-
+(defun position-eql-exec (item lst)
   (declare (xargs :guard (or (stringp lst)
                              (and (true-listp lst)
                                   (or (eqlablep item)
@@ -11752,6 +12439,82 @@
   (if (stringp lst)
       (position-ac item (coerce lst 'list) 0)
     (position-ac item lst 0)))
+
+(defun position-equal (item lst)
+  (declare (xargs :guard (or (stringp lst) (true-listp lst))))
+  #-acl2-loop-only ; for assoc-eq, Jared Davis found native assoc efficient
+  (position item lst :test #'equal)
+  #+acl2-loop-only
+  (if (stringp lst)
+      (position-ac item (coerce lst 'list) 0)
+    (position-equal-ac item lst 0)))
+
+(defmacro position-eq (item lst)
+  `(position ,item ,lst :test 'eq))
+
+(defthm position-eq-exec-is-position-equal
+  (implies (not (stringp lst))
+           (equal (position-eq-exec item lst)
+                  (position-equal item lst))))
+
+(defthm position-eql-exec-is-position-equal
+  (equal (position-eql-exec item lst)
+         (position-equal item lst)))
+
+#+acl2-loop-only
+(defmacro position (x seq &key (test ''eql))
+
+  ":Doc-Section ACL2::Programming
+
+  position of an item in a string or a list~/
+  ~bv[]
+  General Forms:
+  (position x seq)
+  (position x seq :test 'eql)   ; same as above (eql as equality test)
+  (position x seq :test 'eq)    ; same, but eq is equality test
+  (position x seq :test 'equal) ; same, but equal is equality test
+  ~ev[]
+
+  ~c[(Position x seq)] is the least index (zero-based) of the element ~c[x] in
+  the string or list ~c[seq], if ~c[x] is an element of ~c[seq].  Otherwise
+  ~c[(position x seq)] is ~c[nil].  The optional keyword, ~c[:TEST], has no
+  effect logically, but provides the test (default ~ilc[eql]) used for
+  comparing ~c[x] with items of ~c[seq].~/
+
+  The ~il[guard] for a call of ~c[position] depends on the test.  In all cases,
+  the second argument must satisfy ~ilc[stringp] or ~ilc[true-listp].  If the
+  test is ~ilc[eql], then either the first argument must be suitable for
+  ~ilc[eql] (~pl[eqlablep]) or the second argument must satisfy
+  ~ilc[eqlable-listp].  If the test is ~ilc[eq], then either the first argument
+  must be a symbol or the second argument must satisfy ~ilc[symbol-listp].
+
+  ~l[equality-variants] for a discussion of the relation between ~c[position] and
+  its variants:
+  ~bq[]
+  ~c[(position-eq x seq)] is equivalent to ~c[(position x seq :test 'eq)];
+
+  ~c[(position-equal x seq)] is equivalent to ~c[(position x seq :test 'equal)].
+  ~eq[]
+  In particular, reasoning about any of these primitives reduces to reasoning
+  about the function ~c[position-equal].
+
+  ~c[Position] is defined by Common Lisp.  See any Common Lisp documentation for
+  more information.~/"
+
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((x ,x) (seq ,seq))
+              :logic (position-equal x seq)
+              :exec  (position-eq-exec x seq)))
+   ((equal test ''eql)
+    `(let-mbe ((x ,x) (seq ,seq))
+              :logic (position-equal x seq)
+              :exec  (position-eql-exec x seq)))
+   (t ; (equal test 'equal)
+    `(position-equal ,x ,seq))))
 
 (defun nonnegative-integer-quotient (i j)
 
@@ -13377,35 +14140,6 @@
       (coerce (substitute-ac new old (coerce seq 'list) nil)
               'string)
     (substitute-ac new old seq nil)))
-
-#+acl2-loop-only
-(defun subsetp (x y)
-
-  ":Doc-Section ACL2::Programming
-
-  test if every ~ilc[member] of one list is a ~ilc[member] of the other~/
-
-  ~c[(Subsetp x y)] is true if and only if every member of the list
-  ~c[x] is a member of the list ~c[y].~/
-
-  Membership is tested using the function ~ilc[member].  Thus, the ~il[guard]
-  for ~c[subsetp] requires that its arguments are true lists, and
-  moreover, at least one satisfies ~ilc[eqlable-listp].  This ~il[guard]
-  ensures that the ~il[guard] for ~ilc[member] will be met for each call
-  generated by ~c[subsetp].
-
-  ~c[Subsetp] is defined in Common Lisp.  See any Common Lisp
-  documentation for more information.~/"
-
-  (declare (xargs :guard
-                  (if (eqlable-listp y)
-                      (true-listp x)
-                    (if (eqlable-listp x)
-                        (true-listp y)
-                      nil))))
-  (cond ((endp x) t)
-        (t (and (member (car x) y)
-                (subsetp (cdr x) y)))))
 
 #+acl2-loop-only
 (defun sublis (alist tree)
@@ -20133,36 +20867,6 @@
 ; conveniently disable.  See the extended discussion of theories
 ; in "other-events.lisp" where deftheory is defined.
 
-(defun set-difference-equal (l1 l2)
-
-  ":Doc-Section ACL2::Programming
-
-  elements of one list that are not elements of another~/
-
-  ~c[(Set-difference-equal x y)] equals a list whose members
-  (~pl[member-equal]) contains the members of ~c[x] that are not
-  members of ~c[y].  More precisely, the resulting list is the same as
-  one gets by deleting the members of ~c[y] from ~c[x], leaving the
-  remaining elements in the same order as they had in ~c[x].~/
-
-  The ~il[guard] for ~c[set-difference-equal] requires both arguments to be
-  true lists.  Essentially, ~c[set-difference-equal] has the same
-  functionality as the Common Lisp function ~c[set-difference], except
-  that it uses the ~ilc[equal] function to test membership rather than
-  ~ilc[eql].  However, we do not include the function ~c[set-difference]
-  in ACL2, because the Common Lisp language does not specify the order
-  of the elements in the list that it returns.
-
-  Also ~pl[set-difference-eq] for a semantically equivalent function that
-  executes more efficiently on lists of symbols.~/"
-
-  (declare (xargs :guard (and (true-listp l1)
-                              (true-listp l2))))
-  (cond ((endp l1) nil)
-        ((member-equal (car l1) l2)
-         (set-difference-equal (cdr l1) l2))
-        (t (cons (car l1) (set-difference-equal (cdr l1) l2)))))
-
 ; ARRAYS - efficient applicative arrays.
 
 ; We provide functions for accessing and updating both one and two
@@ -23622,14 +24326,14 @@
 ; #+acl2-loop-only whose definitions are missing (or defined with
 ; defun-one-output) in #-acl-loop-only.
 
-    ZPF IDENTITY ENDP NTHCDR LAST REVAPPEND NULL BUTLAST STRING MEMBER NOT
+    ZPF IDENTITY ENDP NTHCDR LAST REVAPPEND NULL BUTLAST STRING NOT
     MOD PLUSP ATOM LISTP ZP FLOOR CEILING TRUNCATE ROUND REM REMOVE
     REMOVE-DUPLICATES LOGBITP ASH LOGCOUNT SIGNUM INTEGER-LENGTH EXPT
-    SUBSETP SUBSTITUTE ZEROP MINUSP ODDP EVENP = /= MAX MIN CONJUGATE
+    SUBSTITUTE ZEROP MINUSP ODDP EVENP = /= MAX MIN CONJUGATE
     LOGANDC1 LOGANDC2 LOGNAND LOGNOR LOGNOT LOGORC1 LOGORC2 LOGTEST
-    POSITION ABS STRING-EQUAL STRING< STRING> STRING<= STRING>=
+    ABS STRING-EQUAL STRING< STRING> STRING<= STRING>=
     STRING-UPCASE STRING-DOWNCASE KEYWORDP EQ EQL CHAR SUBST SUBLIS
-    ACONS ASSOC RASSOC NTH SUBSEQ LENGTH REVERSE ZIP STANDARD-CHAR-P
+    ACONS NTH SUBSEQ LENGTH REVERSE ZIP STANDARD-CHAR-P
     ALPHA-CHAR-P UPPER-CASE-P LOWER-CASE-P CHAR< CHAR> CHAR<= CHAR>=
     CHAR-EQUAL CHAR-UPCASE CHAR-DOWNCASE
     AND-LIST OR-LIST ; relevant for #+acl2-par
@@ -23641,11 +24345,7 @@
     gc$-fn
     set-compiler-enabled
     good-bye-fn ; exit-lisp
-    assoc-eq assoc-equal
-    member-eq member-equal
-    subsetp-eq subsetp-equal
     remove-eq remove-equal
-    position-eq position-equal
     take
     canonical-pathname
     file-write-date$
@@ -23653,6 +24353,8 @@
     set-debugger-enable-fn ; lisp::*break-enable* and *debugger-hook*
     break$ ; break
     prin1$ prin1-with-slashes
+    member-equal assoc-equal subsetp-equal no-duplicatesp-equal
+    rassoc-equal remove-equal position-equal
 
 ; Found for hons after fixing note-fns-in-form just before release v4-2.
 
@@ -23732,6 +24434,8 @@
     bind-acl2-time-limit
     defattach defproxy
     count
+    member assoc subsetp no-duplicatesp rassoc remove remove-duplicates
+    position
     ))
 
 (defmacro with-live-state (form)
@@ -24779,19 +25483,6 @@
 ; We now define state-global-let*, which lets us "bind" state
 ; globals.
 
-(defun symbol-doublet-listp (lst)
-
-; This function returns t iff lst is a true-list and each element is
-; a doublet of the form (symbolp anything).
-
-  (declare (xargs :guard t))
-  (cond ((atom lst) (eq lst nil))
-        (t (and (consp (car lst))
-                (symbolp (caar lst))
-                (consp (cdar lst))
-                (null (cddar lst))
-                (symbol-doublet-listp (cdr lst))))))
-
 (defconst *initial-ld-special-bindings*
 
 ; This alist is used by initialize-acl2 to set the initial values of the LD
@@ -25197,13 +25888,6 @@
 
 (encapsulate
  ()
-
- (local
-  (defthm member-equal-is-member
-    (implies (eqlable-listp x)
-             (equal (member-equal a x)
-                    (member a x))))
-  )
 
  (defthm string<-l-asymmetric
    (implies (and (eqlable-listp x1)
@@ -28862,7 +29546,7 @@
            ((:instance all-boundp-preserves-assoc
                        (tbl1 *initial-global-table*)
                        (tbl2 (nth 2 state))))
-           :in-theory (disable assoc all-boundp eqlable-alistp)))))
+           :in-theory (disable all-boundp eqlable-alistp)))))
 
 (local (in-theory (enable boundp-global1)))
 
@@ -29692,23 +30376,9 @@
       (let ((state (f-put-global 'main-timer current-time state)))
         (mv (- current-time old-value) state)))))
 
-(defun put-assoc-eq (name val alist)
+; Put-assoc
 
-  ":Doc-Section ACL2::Programming
-
-  modify an association list by associating a value with a key~/
-
-  ~c[(Put-assoc-eq name val alist)] returns an alist that is the same
-  as the list ~c[alist], except that the first pair in ~c[alist] with a
-  ~ilc[car] of ~c[name] is replaced by ~c[(cons name val)], if there is
-  one.  If there is no such pair, then ~c[(cons name val)] is added at
-  the end.  Note that the order of the keys occurring in ~c[alist] is
-  unchanged (though a new key may be added).~/
-
-  The ~il[guard] of ~c[(put-assoc-eq name val alist)] requires that ~c[alist]
-  is an ~ilc[alistp], and moreover, either ~c[name] is a symbol or
-  ~c[alist] is a ~ilc[symbol-alistp].~/"
-
+(defun put-assoc-eq-exec (name val alist)
   (declare (xargs :guard (if (symbolp name)
                              (alistp alist)
                            (symbol-alistp alist))))
@@ -29718,25 +30388,9 @@
 
   (cond ((endp alist) (list (cons name val)))
         ((eq name (caar alist)) (cons (cons name val) (cdr alist)))
-        (t (cons (car alist) (put-assoc-eq name val (cdr alist))))))
+        (t (cons (car alist) (put-assoc-eq-exec name val (cdr alist))))))
 
-(defun put-assoc-eql (name val alist)
-
-  ":Doc-Section ACL2::Programming
-
-  modify an association list by associating a value with a key~/
-
-  ~c[(Put-assoc-eql name val alist)] returns an alist that is the same
-  as the list ~c[alist], except that the first pair in ~c[alist] with a
-  ~ilc[car] of ~c[name] is replaced by ~c[(cons name val)], if there is
-  one.  If there is no such pair, then ~c[(cons name val)] is added at
-  the end.  Note that the order of the keys occurring in ~c[alist] is
-  unchanged (though a new key may be added).~/
-
-  The ~il[guard] of ~c[(put-assoc-eql name val alist)] requires that ~c[alist]
-  is an ~ilc[alistp], and moreover, either ~c[name] is ~ilc[eqlablep] or
-  ~c[alist] is an ~ilc[eqlable-alistp].~/"
-
+(defun put-assoc-eql-exec (name val alist)
   (declare (xargs :guard (if (eqlablep name)
                              (alistp alist)
                            (eqlable-alistp alist))))
@@ -29746,27 +30400,83 @@
 
   (cond ((endp alist) (list (cons name val)))
         ((eql name (caar alist)) (cons (cons name val) (cdr alist)))
-        (t (cons (car alist) (put-assoc-eql name val (cdr alist))))))
+        (t (cons (car alist) (put-assoc-eql-exec name val (cdr alist))))))
 
 (defun put-assoc-equal (name val alist)
-
-  ":Doc-Section ACL2::Programming
-
-  modify an association list by associating a value with a key~/
-
-  ~c[(Put-assoc-equal name val alist)] returns an alist that is the same
-  as the list ~c[alist], except that the first pair in ~c[alist] with a
-  ~ilc[car] of ~c[name] is replaced by ~c[(cons name val)], if there is
-  one.  If there is no such pair, then ~c[(cons name val)] is added at
-  the end.~/
-
-  The ~il[guard] of ~c[(put-assoc-equal name val alist)] requires that ~c[alist]
-  is an ~ilc[alistp].~/"
-
   (declare (xargs :guard (alistp alist)))
   (cond ((endp alist) (list (cons name val)))
         ((equal name (caar alist)) (cons (cons name val) (cdr alist)))
         (t (cons (car alist) (put-assoc-equal name val (cdr alist))))))
+
+(defmacro put-assoc-eq (name val alist)
+  `(put-assoc ,name ,val ,alist :test 'eq))
+
+; Added for backward compatibility (add-to-set-eql was present before
+; Version_4.3):
+(defmacro put-assoc-eql (name val alist)
+  `(put-assoc ,name ,val ,alist :test 'eql))
+
+(defthm put-assoc-eq-exec-is-put-assoc-equal
+  (equal (put-assoc-eq-exec name val alist)
+         (put-assoc-equal name val alist)))
+
+(defthm put-assoc-eql-exec-is-put-assoc-equal
+  (equal (put-assoc-eql-exec name val alist)
+         (put-assoc-equal name val alist)))
+
+(defmacro put-assoc (name val alist &key (test ''eql))
+
+  ":Doc-Section ACL2::Programming
+
+  modify an association list by associating a value with a key~/
+  ~bv[]
+  General Forms:
+  (put-assoc name val alist)
+  (put-assoc name val alist :test 'eql)   ; same as above (eql as equality test)
+  (put-assoc name val alist :test 'eq)    ; same, but eq is equality test
+  (put-assoc name val alist :test 'equal) ; same, but equal is equality test
+  ~ev[]
+
+  ~c[(Put-assoc name val alist)] returns an alist that is the same as the list
+  ~c[alist], except that the first pair in ~c[alist] with a ~ilc[car] of
+  ~c[name] is replaced by ~c[(cons name val)], if there is one.  If there is no
+  such pair, then ~c[(cons name val)] is added at the end.  Note that the order
+  of the keys occurring in ~c[alist] is unchanged (though a new key may be
+  added).~/
+
+  The ~il[guard] for a call of ~c[put-assoc] depends on the test.  In all
+  cases, the last argument must satisfy ~ilc[alistp].  If the test is
+  ~ilc[eql], then either the first argument must be suitable for ~ilc[eql]
+  (~pl[eqlablep]) or the last argument must satisfy ~ilc[eqlable-alistp].  If
+  the test is ~ilc[eq], then either the first argument must be a symbol or the
+  last argument must satisfy ~ilc[symbol-alistp].
+
+  ~l[equality-variants] for a discussion of the relation between ~c[put-assoc]
+  and its variants:
+  ~bq[]
+  ~c[(put-assoc-eq name val alist)] is equivalent to
+  ~c[(put-assoc name val alist :test 'eq)];
+
+  ~c[(put-assoc-equal name val alist)] is equivalent to
+  ~c[(put-assoc name val alist :test 'equal)].
+  ~eq[]
+  In particular, reasoning about any of these primitives reduces to reasoning
+  about the function ~c[put-assoc-equal].~/"
+
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((name ,name) (val ,val) (alist ,alist))
+              :logic (put-assoc-equal name val alist)
+              :exec  (put-assoc-eq-exec name val alist)))
+   ((equal test ''eql)
+    `(let-mbe ((name ,name) (val ,val) (alist ,alist))
+              :logic (put-assoc-equal name val alist)
+              :exec  (put-assoc-eql-exec name val alist)))
+   (t ; (equal test 'equal)
+    `(put-assoc-equal ,name ,val ,alist))))
 
 (local
  (defthm timer-alist-bound-in-state-p1
@@ -30460,6 +31170,8 @@
 
     checkpoint-world
 
+    let-beta-reduce
+
 ; We briefly included maybe-install-acl2-defaults-table, but that defeated the
 ; ability to call :puff.  It now seems unnecessary to include
 ; maybe-install-acl2-defaults-table, since its body is something one can call
@@ -30594,30 +31306,6 @@
     deferred-ttag-notes-saved
     pc-assign
     ))
-
-(defun union-eq (lst1 lst2)
-
-  ":Doc-Section ACL2::Programming
-
-  union of two lists of symbols~/
-
-  ~c[(Union-eq x y)] equals a list whose members (~pl[member-eq]) contains the
-  members of ~c[x] and the members of ~c[y].  More precisely, the resulting
-  list is the same as one would get by first deleting the members of ~c[y] from
-  ~c[x], and then concatenating the result to the front of ~c[y].~/
-
-  The ~il[guard] for ~c[union-eq] requires both arguments to be true lists and
-  at least one to be a true list of symbols, as the function ~ilc[member-eq] is
-  used to test membership (with ~ilc[eq]).  ~l[union-equal].~/"
-
-  (declare (xargs :guard (and (true-listp lst1)
-                              (true-listp lst2)
-                              (or (symbol-listp lst1)
-                                  (symbol-listp lst2)))))
-  (cond ((endp lst1) lst2)
-        ((member-eq (car lst1) lst2)
-         (union-eq (cdr lst1) lst2))
-        (t (cons (car lst1) (union-eq (cdr lst1) lst2)))))
 
 ; There are a variety of state global variables, 'ld-skip-proofsp among them,
 ; that are "bound" by LD in the sense that their values are protected by
@@ -31058,6 +31746,166 @@
                               (<= 0 n))))
   (make-var-lst1 (coerce (symbol-name sym) 'list) sym n nil))
 
+; Union$
+
+(defun union-eq-exec (l1 l2)
+  (declare (xargs :guard (and (true-listp l1)
+                              (true-listp l2)
+                              (or (symbol-listp l1)
+                                  (symbol-listp l2)))))
+  (cond ((endp l1) l2)
+        ((member-eq (car l1) l2)
+         (union-eq-exec (cdr l1) l2))
+        (t (cons (car l1) (union-eq-exec (cdr l1) l2)))))
+
+(defun union-eql-exec (l1 l2)
+  (declare (xargs :guard (and (true-listp l1)
+                              (true-listp l2)
+                              (or (eqlable-listp l1)
+                                  (eqlable-listp l2)))))
+  (cond ((endp l1) l2)
+        ((member (car l1) l2)
+         (union-eql-exec (cdr l1) l2))
+        (t (cons (car l1) (union-eql-exec (cdr l1) l2)))))
+
+(defun union-equal (l1 l2)
+  (declare (xargs :guard (and (true-listp l1) (true-listp l2))))
+  (cond ((endp l1) l2)
+        ((member-equal (car l1) l2) (union-equal (cdr l1) l2))
+        (t (cons (car l1) (union-equal (cdr l1) l2)))))
+
+(defmacro union-eq (&rest lst)
+  `(union$ ,@lst :test 'eq))
+
+(defthm union-eq-exec-is-union-equal
+  (equal (union-eq-exec l1 l2)
+         (union-equal l1 l2)))
+
+(defthm union-eql-exec-is-union-equal
+  (equal (union-eql-exec l1 l2)
+         (union-equal l1 l2)))
+
+(defun parse-args-and-test (x tests default ctx form name)
+
+; We use this function in union$ and intersection$ to remove optional keyword
+; argument :TEST test from the given argument list, x.  The result is (mv args
+; test), where either x ends in :TEST test and args is the list of values
+; preceding :TEST, or else args is x and test is default.
+
+; Tests is the list of legal tests, typically '('eq 'eql 'equal).  Default is
+; the test to use by default, typically ''eql.  Ctx, form, and name are used
+; for error reporting.
+
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp tests)
+                              (symbolp name))))
+  (let* ((len (length x))
+         (len-2 (- len 2))
+         (kwd/val
+          (cond ((<= 2 len)
+                 (let ((kwd (nth len-2 x)))
+                   (cond ((keywordp kwd)
+                          (cond ((eq kwd :TEST)
+                                 (nthcdr len-2 x))
+                                (t (hard-error
+                                    ctx
+                                    "If a keyword is supplied in the ~
+                                     next-to-last argument of ~x0, that ~
+                                     keyword must be :TEST.  The keyword ~x1 ~
+                                     is thus illegal in the call ~x2."
+                                    (list (cons #\0 name)
+                                          (cons #\1 kwd)
+                                          (cons #\2 form))))))
+                         (t nil))))
+                (t nil))))
+    (mv (cond (kwd/val
+               (let ((test (car (last x))))
+                 (cond ((not (member-equal test tests))
+                        (hard-error
+                         ctx
+                         "The :TEST argument for ~x0 must be one of ~&1.  The ~
+                          form ~x2 is thus illegal.  See :DOC ~s3."
+                         (list (cons #\0 name)
+                               (cons #\1 tests)
+                               (cons #\2 form)
+                               (cons #\3 (symbol-name name)))))
+                       (t test))))
+              (t default))
+        (cond (kwd/val (butlast x 2))
+              (t x)))))
+
+(defmacro union$ (&whole form &rest x)
+
+  ":Doc-Section ACL2::Programming
+
+  elements of one list that are not elements of another~/
+  ~bv[]
+  General Forms:
+  (union$ l1 l2 ... lk)
+  (union$ l1 l2 ... lk :test 'eql) ; same as above
+  (union$ l1 l2 ... lk :test 'eq)    ; same, but eq is equality test
+  (union$ l1 l2 ... lk :test 'equal) ; same, but equal is equality test
+  ~ev[]
+
+  ~c[(Union$ x y)] equals a list that contains both the members of ~c[x] and
+  the members of ~c[y].  More precisely, the resulting list is the same as one
+  would get by first deleting the members of ~c[y] from ~c[x], and then
+  concatenating the result to the front of ~c[y].  The optional keyword,
+  ~c[:TEST], has no effect logically, but provides the test (default ~ilc[eql])
+  used for comparing members of the two lists.
+
+  ~c[Union$] need not take exactly two arguments: ~c[(union$)] is ~c[nil],
+  ~c[(union$ x)] is ~c[x], ~c[(union$ x y z ... :test test)] is
+  ~c[(union$ x (union$ y z ... :test test) :test test)], and if ~c[:TEST] is
+  not supplied, then ~c[(union$ x y z ...)] is ~c[(union$ x (union$ y z ...))].
+  For the discussion below we restrict ourselves, then, to the cases
+  ~c[(union$ x y)] and ~c[(union$ x y :test test)].~/
+
+  The ~il[guard] for a call of ~c[union$] (in the two cases just above) depends
+  on the test.  In all cases, both arguments must satisfy ~ilc[true-listp].  If
+  the test is ~ilc[eql], then one of the arguments must satisfy
+  ~ilc[eqlable-listp].  If the test is ~ilc[eq], then one of the arguments must
+  satisfy ~ilc[symbol-listp].
+
+  ~l[equality-variants] for a discussion of the relation between
+  ~c[union$] and its variants:
+  ~bq[]
+  ~c[(union-eq x lst)] is equivalent to ~c[(union$ x lst :test 'eq)];
+
+  ~c[(union-equal x lst)] is equivalent to ~c[(union$ x lst :test 'equal)].
+  ~eq[]
+  In particular, reasoning about any of these primitives reduces to reasoning
+  about the function ~c[union-equal].
+
+  Note that ~c[union-eq] can take any number of arguments, in analogy to
+  ~c[union$]; indeed, ~c[(union-eq ...)] expands to ~c[(union$ ... :test 'eq)].
+  However, ~c[union-equal] is a function, not a macro, and takes exactly two
+  arguments.
+
+  ~c[Union$] is similar to the Common Lisp primitive ~c[union].  However,
+  Common Lisp does not specify the order of elements in the result of a call of
+  ~c[union].~/"
+
+  (mv-let
+   (test args)
+   (parse-args-and-test x '('eq 'eql 'equal) ''eql 'union$ form 'union$)
+   (cond
+    ((null args) nil)
+    ((null (cdr args))
+     (car args))
+    (t (let* ((vars (make-var-lst 'x (length args)))
+              (bindings (pairlis$ vars (pairlis$ args nil))))
+         (cond ((equal test ''eq)
+                `(let-mbe ,bindings
+                          :logic ,(xxxjoin 'union-equal vars)
+                          :exec  ,(xxxjoin 'union-eq-exec vars)))
+               ((equal test ''eql)
+                `(let-mbe ,bindings
+                          :logic ,(xxxjoin 'union-equal vars)
+                          :exec  ,(xxxjoin 'union-eql-exec vars)))
+               (t ; (equal test 'equal)
+                (xxxjoin 'union-equal args))))))))
+
 (defun subst-for-nth-arg (new n args)
   (declare (xargs :mode :program))
 
@@ -31245,7 +32093,9 @@
         (t (cons (car x)
                  (illegal-ruler-extenders-values (cdr x) wrld)))))
 
-(defun intersection-eq (l1 l2)
+; Intersection$
+
+(defun intersection-eq-exec (l1 l2)
   (declare (xargs :guard
                   (and (true-listp l1)
                        (true-listp l2)
@@ -31254,8 +32104,19 @@
   (cond ((endp l1) nil)
         ((member-eq (car l1) l2)
          (cons (car l1)
-               (intersection-eq (cdr l1) l2)))
-        (t (intersection-eq (cdr l1) l2))))
+               (intersection-eq-exec (cdr l1) l2)))
+        (t (intersection-eq-exec (cdr l1) l2))))
+
+(defun intersection-eql-exec (l1 l2)
+  (declare (xargs :guard (and (true-listp l1)
+                              (true-listp l2)
+                              (or (eqlable-listp l1)
+                                  (eqlable-listp l2)))))
+  (cond ((endp l1) nil)
+        ((member (car l1) l2)
+         (cons (car l1)
+               (intersection-eql-exec (cdr l1) l2)))
+        (t (intersection-eql-exec (cdr l1) l2))))
 
 (defun intersection-equal (l1 l2)
   (declare (xargs :guard
@@ -31266,6 +32127,98 @@
          (cons (car l1)
                (intersection-equal (cdr l1) l2)))
         (t (intersection-equal (cdr l1) l2))))
+
+(defmacro intersection-eq (&rest lst)
+  `(intersection$ ,@lst :test 'eq))
+
+(defthm intersection-eq-exec-is-intersection-equal
+  (equal (intersection-eq-exec l1 l2)
+         (intersection-equal l1 l2)))
+
+(defthm intersection-eql-exec-is-intersection-equal
+  (equal (intersection-eql-exec l1 l2)
+         (intersection-equal l1 l2)))
+
+(defmacro intersection$ (&whole form &rest x)
+
+  ":Doc-Section ACL2::Programming
+
+  elements of one list that are not elements of another~/
+  ~bv[]
+  General Forms:
+  (intersection$ l1 l2 ... lk)
+  (intersection$ l1 l2 ... lk :test 'eql) ; same as above
+  (intersection$ l1 l2 ... lk :test 'eq)    ; same, but eq is equality test
+  (intersection$ l1 l2 ... lk :test 'equal) ; same, but equal is equality test
+  ~ev[]
+
+  ~c[(Intersection$ x y)] equals a list that contains the ~c[member]s of ~c[x]
+  that are also ~c[member]s of ~c[y].  More precisely, the resulting list is
+  the result of deleting from ~c[x] those members that that are not members of
+  ~c[y].  The optional keyword, ~c[:TEST], has no effect logically, but
+  provides the test (default ~ilc[eql]) used for comparing members of the two
+  lists.
+
+  ~c[Intersection$] need not take exactly two arguments, though it must take at
+  least one argument: ~c[(intersection$ x)] is ~c[x],
+ ~c[(intersection$ x y z ... :test test)] is
+  ~c[(intersection$ x (intersection$ y z ... :test test) :test test)], and if
+  ~c[:TEST] is not supplied, then ~c[(intersection$ x y z ...)]  is
+  ~c[(intersection$ x (intersection$ y z ...))].  For the discussion below we
+  restrict ourselves, then, to the cases ~c[(intersection$ x y)] and
+  ~c[(intersection$ x y :test test)].~/
+
+  The ~il[guard] for a call of ~c[intersection$] (in the two cases just above)
+  depends on the test.  In all cases, both arguments must satisfy
+  ~ilc[true-listp].  If the test is ~ilc[eql], then one of the arguments must
+  satisfy ~ilc[eqlable-listp].  If the test is ~ilc[eq], then one of the
+  arguments must satisfy ~ilc[symbol-listp].
+
+  ~l[equality-variants] for a discussion of the relation between
+  ~c[intersection$] and its variants:
+  ~bq[]
+  ~c[(intersection-eq x lst)] is equivalent to
+  ~c[(intersection$ x lst :test 'eq)];
+
+  ~c[(intersection-equal x lst)] is equivalent to
+  ~c[(intersection$ x lst :test 'equal)].
+  ~eq[]
+  In particular, reasoning about any of these primitives reduces to reasoning
+  about the function ~c[intersection-equal].
+
+  Note that ~c[intersection-eq] can take any positive number of arguments, in
+  analogy to ~c[intersection$]; indeed, ~c[(intersection-eq ...)] expands to
+  ~c[(intersection$ ... :test 'eq)].  However, ~c[intersection-equal] is a
+  function, not a macro, and takes exactly two arguments.
+
+  ~c[Intersection$] is similar to the Common Lisp primitive ~c[intersection].
+  However, Common Lisp does not specify the order of elements in the result of
+  a call of ~c[intersection].~/"
+
+  (mv-let
+   (test args)
+   (parse-args-and-test x '('eq 'eql 'equal) ''eql 'intersection$ form
+                        'intersection$)
+   (cond
+    ((null args)
+     (er hard 'intersection$
+         "Intersection$ requires at least one list argument.  The call ~x0 is ~
+          thus illegal."
+         form))
+    ((null (cdr args))
+     (car args))
+    (t (let* ((vars (make-var-lst 'x (length args)))
+              (bindings (pairlis$ vars (pairlis$ args nil))))
+         (cond ((equal test ''eq)
+                `(let-mbe ,bindings
+                          :logic ,(xxxjoin 'intersection-equal vars)
+                          :exec  ,(xxxjoin 'intersection-eq-exec vars)))
+               ((equal test ''eql)
+                `(let-mbe ,bindings
+                          :logic ,(xxxjoin 'intersection-equal vars)
+                          :exec  ,(xxxjoin 'intersection-eql-exec vars)))
+               (t ; (equal test 'equal)
+                `(xxxjoin 'intersection-equal ,args))))))))
 
 (defun table-alist (name wrld)
 
@@ -32477,23 +33430,93 @@
                       tbl)))
           :clear))
 
-(defun delete-assoc-eq (key alist)
+; Delete-assoc
+
+(defun delete-assoc-eq-exec (key alist)
   (declare (xargs :guard (if (symbolp key)
                              (alistp alist)
                            (symbol-alistp alist))))
   (cond ((endp alist) nil)
         ((eq key (caar alist)) (cdr alist))
-        (t (cons (car alist) (delete-assoc-eq key (cdr alist))))))
+        (t (cons (car alist) (delete-assoc-eq-exec key (cdr alist))))))
+
+(defun delete-assoc-eql-exec (key alist)
+  (declare (xargs :guard (if (eqlablep key)
+                             (alistp alist)
+                           (eqlable-alistp alist))))
+  (cond ((endp alist) nil)
+        ((eql key (caar alist)) (cdr alist))
+        (t (cons (car alist) (delete-assoc-eql-exec key (cdr alist))))))
 
 (defun delete-assoc-equal (key alist)
-
-; This need not go in axioms.lisp, but since we already have delete-assoc-eq in
-; axioms.lisp we might as well put this definition there too.
-
   (declare (xargs :guard (alistp alist)))
   (cond ((endp alist) nil)
         ((equal key (caar alist)) (cdr alist))
         (t (cons (car alist) (delete-assoc-equal key (cdr alist))))))
+
+(defmacro delete-assoc-eq (key lst)
+  `(delete-assoc ,key ,lst :test 'eq))
+
+(defthm delete-assoc-eq-exec-is-delete-assoc-equal
+  (equal (delete-assoc-eq-exec key lst)
+         (delete-assoc-equal key lst)))
+
+(defthm delete-assoc-eql-exec-is-delete-assoc-equal
+  (equal (delete-assoc-eql-exec key lst)
+         (delete-assoc-equal key lst)))
+
+(defmacro delete-assoc (key alist &key (test ''eql))
+
+  ":Doc-Section ACL2::Programming
+
+  modify an association list by associating a value with a key~/
+  ~bv[]
+  General Forms:
+  (delete-assoc key alist)
+  (delete-assoc key alist :test 'eql)   ; same as above (eql as equality test)
+  (delete-assoc key alist :test 'eq)    ; same, but eq is equality test
+  (delete-assoc key alist :test 'equal) ; same, but equal is equality test
+  ~ev[]
+
+  ~c[(Delete-assoc key alist)] returns an alist that is the same as the list
+  ~c[alist], except that the first pair in ~c[alist] with a ~ilc[car] of
+  ~c[key] is deleted, if there is one; otherwise ~c[alist] is returned.  Note
+  that the order of the elements of ~c[alist] is unchanged (though one may be
+  deleted).~/
+
+  The ~il[guard] for a call of ~c[delete-assoc] depends on the test.  In all
+  cases, the second argument must satisfy ~ilc[alistp].  If the test is
+  ~ilc[eql], then either the first argument must be suitable for ~ilc[eql]
+  (~pl[eqlablep]) or the second argument must satisfy ~ilc[eqlable-alistp].  If
+  the test is ~ilc[eq], then either the first argument must be a symbol or the
+  second argument must satisfy ~ilc[symbol-alistp].
+
+  ~l[equality-variants] for a discussion of the relation between
+  ~c[delete-assoc] and its variants:
+  ~bq[]
+  ~c[(delete-assoc-eq key alist)] is equivalent to
+  ~c[(delete-assoc key alist :test 'eq)];
+
+  ~c[(delete-assoc-equal key alist)] is equivalent to
+  ~c[(delete-assoc key alist :test 'equal)].
+  ~eq[]
+  In particular, reasoning about any of these primitives reduces to reasoning
+  about the function ~c[delete-assoc-equal].~/"
+
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((key ,key) (alist ,alist))
+              :logic (delete-assoc-equal key alist)
+              :exec  (delete-assoc-eq-exec key alist)))
+   ((equal test ''eql)
+    `(let-mbe ((key ,key) (alist ,alist))
+              :logic (delete-assoc-equal key alist)
+              :exec  (delete-assoc-eql-exec key alist)))
+   (t ; (equal test 'equal)
+    `(delete-assoc-equal ,key ,alist))))
 
 (defmacro remove-invisible-fns (top-fn &rest unary-fns)
 
@@ -35490,6 +36513,44 @@
                  #+:non-standard-analysis realp
                  #-:non-standard-analysis rationalp)
 
+(add-macro-alias member-eq member-equal)
+(add-macro-alias member member-equal)
+(add-macro-alias assoc-eq assoc-equal)
+(add-macro-alias assoc assoc-equal)
+(add-macro-alias subsetp-eq subsetp-equal)
+(add-macro-alias subsetp subsetp-equal)
+(add-macro-alias no-duplicatesp-eq no-duplicatesp-equal)
+(add-macro-alias no-duplicatesp no-duplicatesp-equal)
+(add-macro-alias rassoc-eq rassoc-equal)
+(add-macro-alias rassoc rassoc-equal)
+(add-macro-alias remove-eq remove-equal)
+(add-macro-alias remove remove-equal)
+(add-macro-alias remove1-eq remove1-equal)
+(add-macro-alias remove1 remove1-equal)
+(add-macro-alias remove-duplicates-eq remove-duplicates-equal)
+(add-macro-alias remove-duplicates remove-duplicates-equal)
+(add-macro-alias position-ac-eq position-equal-ac)
+(add-macro-alias position-eq-ac position-equal-ac)
+(add-macro-alias position-ac position-equal-ac)
+(add-macro-alias position-eq position-equal)
+(add-macro-alias position position-equal)
+(add-macro-alias set-difference-eq set-difference-equal)
+(add-macro-alias set-difference$ set-difference-equal)
+(add-macro-alias add-to-set-eq add-to-set-equal)
+(add-macro-alias add-to-set-eql add-to-set-equal) ; for pre-v4-3 compatibility
+(add-macro-alias add-to-set add-to-set-equal)
+(add-macro-alias intersectp-eq intersectp-equal)
+(add-macro-alias intersectp intersectp-equal)
+(add-macro-alias put-assoc-eq put-assoc-equal)
+(add-macro-alias put-assoc-eql put-assoc-equal) ; for pre-v4-3 compatibility
+(add-macro-alias put-assoc put-assoc-equal)
+(add-macro-alias delete-assoc-eq delete-assoc-equal)
+(add-macro-alias delete-assoc delete-assoc-equal)
+(add-macro-alias union-eq union-equal)
+(add-macro-alias union$ union-equal)
+(add-macro-alias intersection-eq intersection-equal)
+(add-macro-alias intersection$ intersection-equal)
+
 (defmacro remove-macro-alias (macro-name)
 
   ":Doc-Section switches-parameters-and-modes
@@ -38145,30 +39206,6 @@
          (add-to-set-eq (car lst) (duplicates (cdr lst))))
         (t (duplicates (cdr lst)))))
 
-(defun add-to-set-equal (x l)
-
-  ":Doc-Section ACL2::Programming
-
-  add an object to a list~/
-
-  For an object ~c[x] and a true list ~c[lst], ~c[(add-to-set-equal x lst)]
-  is the result of ~ilc[cons]ing ~c[x] on to the front of ~c[lst], unless
-  ~c[x] is already a member of ~c[lst], in which case it equals ~c[lst].~/
-
-  ~c[(add-to-set-equal x lst)] has a ~il[guard] that ~c[lst] is a true list.~/"
-
-  (declare (xargs :guard (true-listp l)))
-
-; Warning: This function is used by include-book-fn to add a
-; certification tuple to the include-book-alist.  We exploit the fact
-; that if the tuple, x, isn't already in the list, l, then this
-; function adds it at the front!  So don't change this function
-; without recoding include-book-fn.
-
-  (cond ((member-equal x l)
-         l)
-        (t (cons x l))))
-
 (defun evens (l)
   (declare (xargs :guard (true-listp l)))
   (cond ((endp l) nil)
@@ -39305,14 +40342,14 @@ Lisp definition."
 
  (verify-termination-boot-strap alistp)
  (verify-termination-boot-strap symbol-alistp)
- (verify-termination-boot-strap assoc-eq)
  (verify-termination-boot-strap true-listp)
  (verify-termination-boot-strap len)
  (verify-termination-boot-strap length)
  (verify-termination-boot-strap nth)
  (verify-termination-boot-strap char)
  (verify-termination-boot-strap eqlable-alistp)
- (verify-termination-boot-strap assoc)
+ (verify-termination-boot-strap assoc-eql-exec)
+ (verify-termination-boot-strap assoc-equal)
  (verify-termination-boot-strap sublis)
  (verify-termination-boot-strap nfix)
  (verify-termination-boot-strap ifix)
@@ -39321,7 +40358,6 @@ Lisp definition."
  (verify-termination-boot-strap nonnegative-integer-quotient)
  (verify-termination-boot-strap floor)
  (verify-termination-boot-strap symbol-listp)
- (verify-termination-boot-strap member-eq)
 
  )
 

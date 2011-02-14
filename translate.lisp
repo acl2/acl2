@@ -4524,6 +4524,36 @@
         (t (or (assoc-eq (car keys) alist)
                (first-assoc-eq (cdr keys) alist)))))
 
+(defun context-for-encapsulate-pass-2 (wrld in-local-flg)
+
+; Return 'illegal if we are in pass 2 of a non-trivial encapsulate, or if known
+; to be non-local (as per in-local-flg) in pass 1 of a non-trivial encapsulate.
+; We include the latter because presumably it is courteous to the user to
+; signal an issue during pass 1, rather than waiting till the inevitable
+; problem in pass 2.
+
+; If we are in pass 1 of a non-trivial encapsulate but in a local context, then
+; we might or might not be in an illegal context for the corresponding pass 2,
+; depending on whether the local wrapper is close enough to make the context
+; disappear in pass 2.  So we return 'maybe in this case.  Otherwise, we return
+; nil.
+
+  (let ((ee-entries (non-trivial-encapsulate-ee-entries
+                     (global-val 'embedded-event-lst wrld))))
+    (and ee-entries ; we are in at least one non-trivial encapsulate
+         (cond ((or
+
+; The term (cddr (car ee-entries)) is true exactly when we are in pass 2 of the
+; immediately superior non-trivial encapsulate, hence holds if we are in pass 2
+; of some superior encapsulate (since then we would be skipping pass 1 of its
+; inferior encapsulates).  So (cddr (car ee-entries)) is non-nil if and only if
+; we are in pass 2 of some encapsulate.
+
+                 (cddr (car ee-entries))
+                 (null in-local-flg))
+                'illegal)
+               (t 'maybe)))))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -5703,12 +5733,13 @@
                   untouchable-fns."
                  (car x)))
      (t
-      (mv-let (erp expansion)
-              (macroexpand1-cmp x ctx wrld state-vars)
-              (cond (erp (mv erp expansion bindings))
-                    (t (translate11 expansion stobjs-out bindings
-                                    known-stobjs flet-alist x ctx wrld
-                                    state-vars)))))))
+      (mv-let
+       (erp expansion)
+       (macroexpand1-cmp x ctx wrld state-vars)
+       (cond
+        (erp (mv erp expansion bindings))
+        (t (translate11 expansion stobjs-out bindings known-stobjs flet-alist x
+                        ctx wrld state-vars)))))))
    ((eq (car x) 'let)
 
 ; Warning:  If the final form of a translated let is changed,

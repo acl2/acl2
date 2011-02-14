@@ -3259,6 +3259,7 @@ defined-const.lisp
 defsum.lisp
 deftuple.lisp
 do-not.lisp
+fake-event.lisp
 flag-package.lsp
 flag.acl2
 flag.lisp
@@ -3355,8 +3356,6 @@ books/xdoc:
 LICENSE
 Makefile
 acl2-customization.lsp
-# The following generated file is distributed but is not in the svn repository:
-acl2-code-size.txt
 all.acl2
 all.lisp
 base.lisp
@@ -3414,6 +3413,7 @@ HTML
 README
 # The following is distributed but is not in the svn repository:
 TEX
+acl2-code-size.txt
 create-acl2-code-size
 create-acl2-html
 create-acl2-tex

@@ -17366,6 +17366,46 @@
 
   ~st[CHANGES TO EXISTING FEATURES]
 
+  Significant changes have been made for list-processing primitives such as
+  ~ilc[member] and ~ilc[assoc]; ~pl[equality-variants].  In summary: instead of
+  separate functions based on ~ilc[eq], ~ilc[eql], and ~ilc[equal], there is
+  essentially just one function, which is based on ~ilc[equal]; the ~ilc[eq]
+  and ~ilc[eql] variants are logically just the ~ilc[equal] variant.  For
+  example, ~ilc[member-eq] and ~ilc[member] are macros that generate
+  corresponding calls of ~ilc[member-equal] in the logic, although in raw Lisp
+  they will execute using tests ~ilc[eq] and ~ilc[eql], respectively.
+  References to any of these in logical contexts such as ~il[theories] are now
+  references to the function based on ~ilc[equal]; for example, the hint
+  ~c[:in-theory (disable member)] is completely equivalent to the hint
+  ~c[:in-theory (disable member-equal)].  Distributed books have been
+  modified as necessary to accommodate this change.  While the need for such
+  changes was relatively infrequent, changes were for example needed in
+  contexts where terms are manipulated directly; for example,
+  ~ilc[defevaluator] needs to mention ~ilc[member-equal] rather than
+  ~ilc[member], just as it was already the case to mention, say,
+  ~ilc[binary-append] rather than ~ilc[append].  Again, ~pl[equality-variants]
+  for more information about equality variants.
+
+  A few improvements were made in support of the modified treatment of equality
+  variants discussed above.  The changes include the following.~bq[]
+
+  o We now allow the use of macro aliases (~pl[macro-aliases-table]
+  in ~c[:trigger-fns] of rules (~pl[rule-classes]).
+
+  o We now remove so-called ``guard holders'' (including calls of
+ ~ilc[return-last], hence of ~ilc[mbe]) in ~c[:trigger-terms] of rules.
+
+  o We also remove guard holders in formulas of ~c[:]~ilc[congruence] and
+  ~ilc[type-prescription] rules.
+
+  o Macros ~c[union-eq] and ~c[intersection-eq] can now take any positive
+  number of arguments, and ~ilc[union-eq] can take zero arguments.  (Thanks to
+  Jared Davis for requesting this enhancement.)  The same can be said for new
+  macros ~ilc[union$] and ~ilc[intersection$], respectively.
+
+  o Some ~il[guard]s were slightly improved (logically weaker or the
+  same).~eq[]
+
   Improved ~c[get-output-stream-string$] to allow for a context and to do
   genuine error printing instead of using ~ilc[cw].  ~l[io].
 

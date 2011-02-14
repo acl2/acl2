@@ -1629,19 +1629,6 @@
                  state))
        (print-proof-tree state)))))
 
-(defun first-n-eql (lst1 lst2 n)
-
-; Note that for this to be true, true lists lst1 and lst2 must have at least n
-; elements.
-
-  (declare (type (unsigned-byte 29) n)
-           (xargs :guard (and (eqlable-listp lst1) (eqlable-listp lst2))))
-  (cond ((zpf n) t)
-        (t (and lst1
-                lst2
-                (eql (car lst1) (car lst2))
-                (first-n-eql (cdr lst1) (cdr lst2) (1-f n))))))
-
 (defun goal-tree-with-cl-id (cl-id goal-tree-lst)
   (cond ((atom goal-tree-lst)
          nil)
@@ -13566,15 +13553,16 @@
 ; the list below, but this seems unimportant.  If we take ATOM off, we need to
 ; change the definition of MAKE-CHARACTER-LIST.
 
-  '(NOT MEMBER IMPLIES O<
+  '(NOT IMPLIES O<
+        MEMBER-EQUAL        ;;; perhaps not needed; we are conservative here
         FIX                 ;;; used in DEFAULT-+-2
         BOOLEANP            ;;; used in BOOLEANP-CHARACTERP
         CHARACTER-LISTP     ;;; used in CHARACTER-LISTP-COERCE
         FORCE               ;;; just nice to protect
         CASE-SPLIT          ;;; just nice to protect
         MAKE-CHARACTER-LIST ;;; used in COMPLETION-OF-COERCE
-        EQL ENDP            ;;; used in MEMBER
-        ATOM                ;;; used in ENDP
+        EQL ENDP            ;;; probably used in others
+        ATOM                ;;; used in ENDP; probably used in others
         BAD-ATOM            ;;; used in several defaxioms
         RETURN-LAST         ;;; affects constraints (see remove-guard-holders1)
         MV-LIST             ;;; affects constraints (see remove-guard-holders1)
@@ -13586,7 +13574,7 @@
         INTERN-IN-PACKAGE-OF-SYMBOL
         PKG-IMPORTS
         SYMBOL-LISTP
-        NO-DUPLICATESP-EQ
+        NO-DUPLICATESP-EQUAL NO-DUPLICATESP-EQ-EXEC ; latter maybe not critical
                                                
 ; We do not want vestiges of the non-standard version in the standard version.
 
@@ -13653,102 +13641,6 @@
                               (all-ffn-symbs (car lst) ans)))))
 
 )
-
-; See the Essay on the Removal of Guard Holders.  We put the definition of
-; remove-guard-holders here because it is used in the definition of
-; constraint-info.
-
-(mutual-recursion
-
-(defun remove-guard-holders1 (term)
-
-; WARNING.  Remove-guard-holders is used in constraint-info,
-; induction-machine-for-fn1, and termination-machine, so (remove-guard-holders1
-; term) needs to be provably equal to term, for every term, in the ground-zero
-; theory.  In fact, because of the use in constraint-info, it needs to be the
-; case that for any axiomatic event e, (remove-guard-holders e) can be
-; substituted for e without changing the logical power of the set of axioms.
-; Actually, we want to view the logical axiom added by e as though
-; remove-guard-holders had been applied to it, and hence RETURN-LAST and
-; MV-LIST appear in *non-instantiable-primitives*.
-
-  (cond
-   ((variablep term) term)
-   ((fquotep term) term)
-   ((or (eq (ffn-symb term) 'RETURN-LAST)
-        (eq (ffn-symb term) 'MV-LIST))
-
-; Recall that PROG2$ (hence, RETURN-LAST) is used to attach the dcl-guardian of
-; a LET to the body of the LET for guard generation purposes.  A typical call
-; of PROG2$ is (PROG2$ dcl-guardian body), where dcl-guardian has a lot of IFs
-; in it.  Rather than distribute them over PROG2$ and then when we finally get
-; to the bottom with things like (prog2$ (illegal ...) body) and (prog2$ T
-; body), we just open up the prog2$ early, throwing away the dcl-guardian.
-
-    (remove-guard-holders1 (car (last (fargs term)))))
-   ((flambdap (ffn-symb term))
-    (case-match
-     term
-     ((('LAMBDA ('VAR) ('IF & 'VAR ('THE-ERROR & 'VAR)))
-       val)
-      (remove-guard-holders1 val))
-     (&
-      (mcons-term (make-lambda (lambda-formals (ffn-symb term))
-                               (remove-guard-holders1
-                                (lambda-body (ffn-symb term))))
-                  (remove-guard-holders1-lst (fargs term))))))
-   (t (mcons-term (ffn-symb term)
-                  (remove-guard-holders1-lst (fargs term))))))
-
-(defun remove-guard-holders1-lst (lst)
-  (cond ((null lst) nil)
-        (t (cons (remove-guard-holders1 (car lst))
-                 (remove-guard-holders1-lst (cdr lst)))))))
-
-; We wish to avoid copying the body to remove stuff that we won't find.
-; So we have a predicate that mirrors the function above.
-
-(mutual-recursion
-
-(defun contains-guard-holdersp (term)
-  (cond
-   ((variablep term) nil)
-   ((fquotep term) nil)
-   ((or (eq (ffn-symb term) 'RETURN-LAST)
-        (eq (ffn-symb term) 'MV-LIST))
-    t)
-   ((flambdap (ffn-symb term))
-    (case-match term
-                ((('LAMBDA ('VAR) ('IF & 'VAR ('THE-ERROR & 'VAR)))
-                  &)
-                 t)
-                (&
-                 (or (contains-guard-holdersp
-                      (lambda-body (ffn-symb term)))
-                     (contains-guard-holdersp-lst (fargs term))))))
-   (t (contains-guard-holdersp-lst (fargs term)))))
-
-(defun contains-guard-holdersp-lst (lst)
-  (cond ((null lst) nil)
-        (t (or (contains-guard-holdersp (car lst))
-               (contains-guard-holdersp-lst (cdr lst)))))))
-                 
-(defun remove-guard-holders (term)
-
-; Return a term equal to term, but slightly simplified.  See also the warning
-; in remove-guard-holders1.
-
-  (cond ((contains-guard-holdersp term)
-         (remove-guard-holders1 term))
-        (t term)))
-
-(defun remove-guard-holders-lst (lst)
-
-; Return a list of terms element-wise equal to lst, but slightly simplified.
-
-  (cond ((contains-guard-holdersp-lst lst)
-         (remove-guard-holders1-lst lst))
-        (t lst)))
 
 (defconst *unknown-constraints*
 
@@ -14835,11 +14727,6 @@
    ((hitp (car lst) alist)
     (filter-hitps (cdr lst) alist (cons (car lst) ans)))
    (t (filter-hitps (cdr lst) alist ans))))
-
-(defun add-to-set (x lst)
-  (if (symbolp x)
-      (add-to-set-eq x lst)
-    (add-to-set-equal x lst)))
 
 (defun relevant-constraints1 (names alist proved-fnl-insts-alist constraints
                                     event-names new-entries seen wrld)
