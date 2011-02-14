@@ -28088,7 +28088,9 @@
 ; will not be included in the erasures or attachment-alist that we return.
 
   (cond
-   ((eq (context-for-encapsulate-pass-2 wrld state) 'illegal)
+   ((eq (context-for-encapsulate-pass-2 wrld
+                                        (f-get-global 'in-local-flg state))
+        'illegal)
     (er soft ctx
         "Defattach events are illegal inside encapsulate events with ~
          non-empty signatures unless they are local.  In this case such a ~

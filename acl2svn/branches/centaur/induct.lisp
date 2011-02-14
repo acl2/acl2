@@ -2921,6 +2921,174 @@
                                  nil)
                                 wrld))
 
+; Rockwell Addition:  A major change is the removal of THEs from
+; many terms.
+
+; Essay on the Removal of Guard Holders
+
+; We now develop the code to remove THEs from a term.  Suppose the
+; user types (THE type expr), type is translated (using
+; translate-declaration-to-guard) into a predicate in one variable.
+; The variable is always VAR.  Denote this predicate as (guard VAR).
+; Then the entire (THE type expr) is translated into ((LAMBDA (VAR)
+; (IF (guard VAR) VAR (THE-ERROR 'type VAR))) expr).  The-error is
+; defined to have a guard of nil and so when we generate guards for
+; the translation above we generate the obligation to prove (guard
+; expr).  Futhermore, the definition of the-error is such that
+; executing it in the *1* function tests (guard expr) at runtime and
+; signals an error.
+
+; But logically speaking, the definition of (THE-ERROR x y) is (CDR
+; (CONS x y)).  The silly expression is just to keep x from being
+; irrelevant.  Thus, (THE-ERROR x y) is identically y.  Hence,
+;   (THE type expr)
+; = ((LAMBDA (VAR) (IF (guard VAR) VAR (THE-ERROR 'type VAR))) expr)
+; = ((LAMBDA (VAR) (IF (guard VAR) VAR VAR)) expr)
+; = ((LAMBDA (VAR) VAR) expr)
+; = expr.
+; Observe that this is essentially just the expansion of certain
+; non-rec functions (namely, THE-ERROR, if one thinks of it as defined
+; to be y rather than (cdr (cons x y)), and the lambda application)
+; and IF-normalization.
+
+; We belabor this obvious point because until Version_2.5, we kept the
+; THEs in bodies, which injected them into the theorem proving
+; process.  We now remove them from the stored BODY property.  It is
+; not obvious that this is a benign change; it might have had
+; unintended side-affects on other processing, e.g., guard generation.
+; But the BODY property has long been normalized with certain non-rec
+; fns expanded, and so we argue that the removal of THE could have
+; been accomplished by the processing we were already doing.
+
+; But there is another place we wish to remove such ``guard holders.''
+; We want the guard clauses we generate not to have these tests in
+; them.  The terms we explore to generate the guards WILL have these
+; tests in them.  But the output we produce will not, courtesy of the
+; following code which is used to strip the guard holders out of a
+; term.
+
+; Starting with Version_2.8 the ``guard holders'' code appears elsewhere,
+; because remove-guard-holders needs to be defined before it is called by
+; constraint-info.
+
+(mutual-recursion
+
+(defun remove-guard-holders1 (term)
+
+; WARNING.  Remove-guard-holders is used in constraint-info,
+; induction-machine-for-fn1, and termination-machine, so (remove-guard-holders1
+; term) needs to be provably equal to term, for every term, in the ground-zero
+; theory.  In fact, because of the use in constraint-info, it needs to be the
+; case that for any axiomatic event e, (remove-guard-holders e) can be
+; substituted for e without changing the logical power of the set of axioms.
+; Actually, we want to view the logical axiom added by e as though
+; remove-guard-holders had been applied to it, and hence RETURN-LAST and
+; MV-LIST appear in *non-instantiable-primitives*.
+
+  (cond
+   ((variablep term) term)
+   ((fquotep term) term)
+   ((or (eq (ffn-symb term) 'RETURN-LAST)
+        (eq (ffn-symb term) 'MV-LIST))
+
+; Recall that PROG2$ (hence, RETURN-LAST) is used to attach the dcl-guardian of
+; a LET to the body of the LET for guard generation purposes.  A typical call
+; of PROG2$ is (PROG2$ dcl-guardian body), where dcl-guardian has a lot of IFs
+; in it.  Rather than distribute them over PROG2$ and then when we finally get
+; to the bottom with things like (prog2$ (illegal ...) body) and (prog2$ T
+; body), we just open up the prog2$ early, throwing away the dcl-guardian.
+
+    (remove-guard-holders1 (car (last (fargs term)))))
+   ((flambdap (ffn-symb term))
+    (case-match
+     term
+     ((('LAMBDA ('VAR) ('IF & 'VAR ('THE-ERROR & 'VAR)))
+       val)
+      (remove-guard-holders1 val))
+     ((('LAMBDA formals ('RETURN-LAST ''MBE1-RAW & logic))
+       . args) ; pattern for equality variants
+      (subcor-var formals
+                  (remove-guard-holders1-lst args)
+                  (remove-guard-holders1 logic)))
+     (&
+      (mcons-term (make-lambda (lambda-formals (ffn-symb term))
+                               (remove-guard-holders1
+                                (lambda-body (ffn-symb term))))
+                  (remove-guard-holders1-lst (fargs term))))))
+   (t (mcons-term (ffn-symb term)
+                  (remove-guard-holders1-lst (fargs term))))))
+
+(defun remove-guard-holders1-lst (lst)
+  (cond ((null lst) nil)
+        (t (cons (remove-guard-holders1 (car lst))
+                 (remove-guard-holders1-lst (cdr lst)))))))
+
+; We wish to avoid copying the body to remove stuff that we won't find.
+; So we have a predicate that mirrors the function above.
+
+(mutual-recursion
+
+(defun contains-guard-holdersp (term)
+  (cond
+   ((variablep term) nil)
+   ((fquotep term) nil)
+   ((or (eq (ffn-symb term) 'RETURN-LAST)
+        (eq (ffn-symb term) 'MV-LIST))
+    t)
+   ((flambdap (ffn-symb term))
+    (case-match term
+                ((('LAMBDA ('VAR) ('IF & 'VAR ('THE-ERROR & 'VAR)))
+                  &)
+                 t)
+                ((('LAMBDA & ('RETURN-LAST ''MBE1-RAW & &))
+                  . &) ; pattern for equality variants
+                 t)
+                (&
+                 (or (contains-guard-holdersp
+                      (lambda-body (ffn-symb term)))
+                     (contains-guard-holdersp-lst (fargs term))))))
+   (t (contains-guard-holdersp-lst (fargs term)))))
+
+(defun contains-guard-holdersp-lst (lst)
+  (cond ((null lst) nil)
+        (t (or (contains-guard-holdersp (car lst))
+               (contains-guard-holdersp-lst (cdr lst)))))))
+                 
+(defun remove-guard-holders (term)
+
+; Return a term equal to term, but slightly simplified.  See also the warning
+; in remove-guard-holders1.
+
+  (cond ((contains-guard-holdersp term)
+         (remove-guard-holders1 term))
+        (t term)))
+
+(defun remove-guard-holders-lst (lst)
+
+; Return a list of terms element-wise equal to lst, but slightly simplified.
+
+  (cond ((contains-guard-holdersp-lst lst)
+         (remove-guard-holders1-lst lst))
+        (t lst)))
+
+(defun contains-guard-holdersp-lst-lst (lst)
+  (cond ((null lst) nil)
+        (t (or (contains-guard-holdersp-lst (car lst))
+               (contains-guard-holdersp-lst-lst (cdr lst))))))
+
+(defun remove-guard-holders1-lst-lst (lst)
+  (cond ((null lst) nil)
+        (t (cons (remove-guard-holders1-lst (car lst))
+                 (remove-guard-holders1-lst-lst (cdr lst))))))
+
+(defun remove-guard-holders-lst-lst (x)
+
+; Return a list of clauses element-wise equal to lst, but slightly simplified.
+
+  (cond ((contains-guard-holdersp-lst-lst x)
+         (remove-guard-holders1-lst-lst x))
+        (t x)))
+
 (defun induct (forcing-round pool-lst cl-set hint-settings pspv wrld ctx state)
 
 ; We take a set of clauses, cl-set, and return four values.  The first
@@ -2937,18 +3105,22 @@
 ; the hint-settings is non-nil and non-*t*, then we explore the clause
 ; set {{v}} for candidates.
 
-  (let ((pool-name
+  (let ((cl-set (remove-guard-holders-lst-lst cl-set))
+        (pool-name
          (tilde-@-pool-name-phrase forcing-round pool-lst))
         (induct-hint-val
-         (cdr (assoc-eq :induct hint-settings))))
+         (let ((induct-hint-val0
+                (cdr (assoc-eq :induct hint-settings))))
+           (and induct-hint-val0
+                (remove-guard-holders induct-hint-val0)))))
     (mv-let
      (erp new-pspv state)
      (load-hint-settings-into-pspv
-                 nil
-                 (if induct-hint-val
-                     (delete-assoc-eq :induct hint-settings)
-                   hint-settings)
-                 pspv nil wrld ctx state)
+      nil
+      (if induct-hint-val
+          (delete-assoc-eq :induct hint-settings)
+        hint-settings)
+      pspv nil wrld ctx state)
      (cond
       (erp (mv 'lose nil pspv state))
       (t
@@ -2986,7 +3158,8 @@
                (compute-vetoes merged-candidates wrld))
 
               (complicated-candidates
-               (maximal-elements unvetoed-candidates 'induction-complexity wrld))
+               (maximal-elements unvetoed-candidates 'induction-complexity
+                                 wrld))
 
               (high-scoring-candidates
                (maximal-elements complicated-candidates 'score wrld))
@@ -3027,7 +3200,8 @@
                      (cond ((> estimated-size *maximum-induct-size*)
                             (list (list (termify-clause-set cl-set))))
                            (t cl-set))
-                     (access candidate winning-candidate :tests-and-alists-lst)))
+                     (access candidate winning-candidate
+                             :tests-and-alists-lst)))
                    (clauses1
                     #+:non-standard-analysis
                     (trap-non-standard-vector cl-set
@@ -3047,7 +3221,8 @@
                    (newer-pspv
                     (inform-simplify
                      (access candidate winning-candidate :tests-and-alists-lst)
-                     (cons (access candidate winning-candidate :xinduction-term)
+                     (cons (access candidate winning-candidate
+                                   :xinduction-term)
                            (access candidate winning-candidate :xother-terms))
                      (change prove-spec-var new-pspv
                              :tag-tree
