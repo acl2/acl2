@@ -9047,10 +9047,17 @@
   (cond
    ((not *hard-error-returns-nilp*)
 
-; We are going to ``cause an error.''
+; We are going to ``cause an error.''  We print an error message with error-fms
+; even though we do not have state.  To do that, we must bind *wormholep* to
+; nil so we don't try to push undo information (or, in the case of error-fms,
+; cause an error for illegal state changes).  If error-fms could evaluate arbitrary
+; forms, e.g., to make legal state changes while in wormholes, then this would be
+; a BAD IDEA.  But error-fms only prints stuff that was created earlier (and passed
+; in via alist).
 
     (cond ((fboundp 'acl2::error-fms)                        ;;; Print a msg
            (let ((*standard-output* *error-output*)          ;;; one way ...
+                 (*wormholep* nil)
                  (fn 'acl2::error-fms))
              (funcall fn t ctx str alist *the-live-state*)))
           (t (print (list ctx str alist) *error-output*)))   ;;; or another.
@@ -28329,6 +28336,12 @@
   (declare (ignore str alist col evisc-tuple))
   #+acl2-loop-only
   nil
+
+; Note:  One might wish to bind *wormholep* to nil around this fmt1 expression,
+; to avoid provoking an error if this fn is called while *wormholep* is t.
+; However, the fact that we're printing to *standard-co* accomplishes the
+; same thing.  See the comment on synonym streams in princ$.
+
   #-acl2-loop-only
   (progn (fmt1  str alist col *standard-co* *the-live-state*
                 evisc-tuple)

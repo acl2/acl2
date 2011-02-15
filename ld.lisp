@@ -17508,6 +17508,16 @@
   simplified, contrary to the purpose of ~ilc[hide].  This is no longer the
   case,  Thanks to Dave Greve for reporting this issue.
 
+  An infinite loop could occur when an error was encountered in a call of
+  ~ilc[wormhole-eval], for example with the following form, and this has been
+  fixed.
+  ~bv[]
+  (wormhole-eval 'demo
+                 '(lambda ()
+                    (er hard 'my-top \"Got an error!\"))
+                 nil)
+  ~ev[]
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   The HTML documentation no longer has extra newlines in <pre> environments.
