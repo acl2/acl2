@@ -17403,6 +17403,16 @@
   Jared Davis for requesting this enhancement.)  The same can be said for new
   macros ~ilc[union$] and ~ilc[intersection$], respectively.
 
+  o A few changes were made to built-in theorems from source file
+  ~c[axioms.lisp], in particular disabling ~c[:]~ilc[type-prescription] rule
+  ~c[consp-assoc-equal] (formerly two enabled rules, ~c[consp-assoc-eq] and
+  ~c[consp-assoc]) but adding this theorem as a ~c[:forward-chaining] rule, and
+  similarly for ~c[true-list-listp-forward-to-true-listp-assoc-equal] (and
+  eliminating rule ~c[true-list-listp-forward-to-true-listp-assoc-eq]; and
+  disabling rule ~c[true-listp-cadr-assoc-eq-for-open-channels-p].  Also,
+  theorem ~c[all-boundp-preserves-assoc] has been renamed to
+  ~c[all-boundp-preserves-assoc-equal] and also strengthened.
+
   o Some ~il[guard]s were slightly improved (logically weaker or the
   same).~eq[]
 
