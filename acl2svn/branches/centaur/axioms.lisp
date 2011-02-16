@@ -9047,10 +9047,17 @@
   (cond
    ((not *hard-error-returns-nilp*)
 
-; We are going to ``cause an error.''
+; We are going to ``cause an error.''  We print an error message with error-fms
+; even though we do not have state.  To do that, we must bind *wormholep* to
+; nil so we don't try to push undo information (or, in the case of error-fms,
+; cause an error for illegal state changes).  If error-fms could evaluate arbitrary
+; forms, e.g., to make legal state changes while in wormholes, then this would be
+; a BAD IDEA.  But error-fms only prints stuff that was created earlier (and passed
+; in via alist).
 
     (cond ((fboundp 'acl2::error-fms)                        ;;; Print a msg
            (let ((*standard-output* *error-output*)          ;;; one way ...
+                 (*wormholep* nil)
                  (fn 'acl2::error-fms))
              (funcall fn t ctx str alist *the-live-state*)))
           (t (print (list ctx str alist) *error-output*)))   ;;; or another.
@@ -11795,8 +11802,8 @@
 (defmacro add-to-set-eq (x lst)
   `(add-to-set ,x ,lst :test 'eq))
 
-; Added for backward compatibility (add-to-set-eql was present before
-; Version_4.3):
+; Added for backward compatibility (add-to-set-eql was present through
+; Version_4.2):
 (defmacro add-to-set-eql (x lst)
   `(add-to-set ,x ,lst :test 'eql))
 
@@ -12374,7 +12381,7 @@
 
 ; This function should perhaps be called position-ac-equal, but we name it
 ; position-equal-ac since that has been its name historically before the new
-; handling of member etc. in Version_4.3.
+; handling of member etc. after Version_4.2.
 
   (declare (xargs :guard (and (true-listp lst)
                               (acl2-numberp acc))))
@@ -21107,11 +21114,24 @@
   :rule-classes ((:forward-chaining
                   :trigger-terms ((assoc-keyword key l)))))
 
-(defthm consp-assoc-eq
+(defthm consp-assoc-equal
+
+; This type-prescription rule (formerly two rules, consp-assoc-eq and
+; consp-assoc) may have been partly responsible for a 2.5% real-time regression
+; slowdown (3.2% user time) after implementing equality variants, after
+; Version_4.2.  In particular, it contributed to a significant slowdown in
+; example4 of examples.lisp in
+; books/workshops/2000/moore-manolios/partial-functions/tjvm.lisp.  So, we are
+; disabling it by default, later below.
+
+; We include a corresponding :forward-chaining rule, which seems much less
+; expensive, but still allows the event aref1 to be admitted.
+
   (implies (alistp l)
-           (or (consp (assoc-eq name l))
-               (equal (assoc-eq name l) nil)))
-  :rule-classes :type-prescription)
+           (or (consp (assoc-equal name l))
+               (equal (assoc-equal name l) nil)))
+  :rule-classes (:type-prescription
+                 (:forward-chaining :trigger-terms ((assoc-equal name l)))))
 
 (defmacro f-get-global (x st)
   #-acl2-loop-only
@@ -22054,12 +22074,6 @@
   (declare (xargs :guard (or (array1p name l) (array2p name l))))
   (cadr (assoc-keyword :default
                        (cdr (header name l)))))
-
-(defthm consp-assoc
-  (implies (alistp l)
-           (or (consp (assoc name l))
-               (equal (assoc name l) nil)))
-  :rule-classes :type-prescription)
 
 (defun aref1 (name l n)
 
@@ -26929,15 +26943,34 @@
 
 (verify-guards explode-atom)
 
-(defthm true-list-listp-forward-to-true-listp-assoc-eq
+(defthm true-list-listp-forward-to-true-listp-assoc-equal
+
+; This theorem (formerly two theorems
+; true-list-listp-forward-to-true-listp-assoc-eq and
+; true-list-listp-forward-to-true-listp-assoc-equal) may have been partly
+; responsible for a 2.5% real-time regression slowdown (3.2% user time) after
+; implementing equality variants, after Version_4.2.  In particular, as a
+; :type-prescription rule contributed to a significant slowdown in example4 of
+; examples.lisp in
+; books/workshops/2000/moore-manolios/partial-functions/tjvm.lisp.  So we are
+; disabling the type-prescription rule by default, later below, but adding the
+; :forward-chaining rule (which is necessary for admitting event file-measure
+; in distributed book books/unicode/file-measure.lisp).
+
   (implies (true-list-listp l)
-           (true-listp (assoc-eq key l)))
-  :rule-classes :type-prescription)
+           (true-listp (assoc-equal key l)))
+  :rule-classes (:type-prescription
+                 (:forward-chaining :trigger-terms ((assoc-equal key l)))))
 
 (defthm true-listp-cadr-assoc-eq-for-open-channels-p
+
+; As with rule consp-assoc-equal this rule is now potentially expensive because
+; of equality variants.  We disable it later, below.
+
   (implies (open-channels-p alist)
            (true-listp (cadr (assoc-eq key alist))))
-  :rule-classes ((:forward-chaining :trigger-terms ((cadr (assoc-eq key alist))))))
+  :rule-classes ((:forward-chaining
+                  :trigger-terms ((cadr (assoc-eq key alist))))))
 
 ; It is important to disable nth in order for the rule state-p1-forward to
 ; work.
@@ -28329,6 +28362,12 @@
   (declare (ignore str alist col evisc-tuple))
   #+acl2-loop-only
   nil
+
+; Note:  One might wish to bind *wormholep* to nil around this fmt1 expression,
+; to avoid provoking an error if this fn is called while *wormholep* is t.
+; However, the fact that we're printing to *standard-co* accomplishes the
+; same thing.  See the comment on synonym streams in princ$.
+
   #-acl2-loop-only
   (progn (fmt1  str alist col *standard-co* *the-live-state*
                 evisc-tuple)
@@ -29528,13 +29567,10 @@
   (declare (xargs :guard (plist-worldp wrld)))
   (global-val 'operating-system wrld))
 
-(defthm all-boundp-preserves-assoc
-  (implies (and (eqlable-alistp tbl1)
-                (eqlable-alistp tbl2)
-                (all-boundp tbl1 tbl2)
-                (symbolp x)
-                (assoc-eq x tbl1))
-           (assoc x tbl2))
+(defthm all-boundp-preserves-assoc-equal
+  (implies (and (all-boundp tbl1 tbl2)
+                (assoc-equal x tbl1))
+           (assoc-equal x tbl2))
   :rule-classes nil)
 
 (local
@@ -29543,10 +29579,10 @@
                 (assoc-eq x *initial-global-table*))
            (assoc x (nth 2 state)))
   :hints (("Goal" :use
-           ((:instance all-boundp-preserves-assoc
+           ((:instance all-boundp-preserves-assoc-equal
                        (tbl1 *initial-global-table*)
                        (tbl2 (nth 2 state))))
-           :in-theory (disable all-boundp eqlable-alistp)))))
+           :in-theory (disable all-boundp)))))
 
 (local (in-theory (enable boundp-global1)))
 
@@ -30411,8 +30447,8 @@
 (defmacro put-assoc-eq (name val alist)
   `(put-assoc ,name ,val ,alist :test 'eq))
 
-; Added for backward compatibility (add-to-set-eql was present before
-; Version_4.3):
+; Added for backward compatibility (add-to-set-eql was present through
+; Version_4.2):
 (defmacro put-assoc-eql (name val alist)
   `(put-assoc ,name ,val ,alist :test 'eql))
 
@@ -31098,11 +31134,6 @@
               written-files-p
               read-files-p
               writeable-files-p)))))
-
-(defthm true-list-listp-forward-to-true-listp-assoc-equal
-  (implies (true-list-listp l)
-           (true-listp (assoc-equal key l)))
-  :rule-classes :type-prescription)
 
 (defconst *initial-untouchable-fns*
 
@@ -42331,3 +42362,13 @@ Lisp definition."
   (progn (setq lisp::*break-enable* (debugger-enabledp state))
          state)
   (f-put-global 'debugger-enable val state))
+
+; See comment in true-listp-cadr-assoc-eq-for-open-channels-p.
+(in-theory (disable true-listp-cadr-assoc-eq-for-open-channels-p))
+
+; See comment in consp-assoc-equal.
+(in-theory (disable (:type-prescription consp-assoc-equal)))
+
+; See comment in true-list-listp-forward-to-true-listp-assoc-equal.
+(in-theory (disable (:type-prescription
+                     true-list-listp-forward-to-true-listp-assoc-equal)))

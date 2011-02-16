@@ -6164,6 +6164,8 @@
                                            ; showing the useful/useless
                                            ; breakdown.
 
+  (show-accumulated-persistence :runes)    ; Just show runes alphabetically.
+
   ~ev[]~/
 
   See the end of this item for a discussion of ``enhanced statistics
@@ -6496,6 +6498,9 @@
   rule has no hypotheses, then no such data is collected.  This decision was
   made because in the case of no hypotheses, we expect it to be very rare that
   information for the ~c[:CONC] xrune will add any useful insight.
+
+  On a final note: ~c[(show-accumulated-persistence :runes)] may be used simply
+  to see a list of all ~il[rune]s (or xrunes) displayed alphabetically.
 
   Users are encouraged to think about other meters we could install in ACL2 to
   help diagnose performance problems."
@@ -6966,6 +6971,9 @@
       (msg "There is no accumulated persistence to show.  Evaluate ~x0 to ~
             activate gathering of accumulated-persistence statistics.~|"
            '(accumulated-persistence t)))
+     ((eq key :runes)
+      (msg "~x0"
+           (merge-sort-lexorder (strip-cars (car (last totals))))))
      (t (let* ((mergep (eq display :merge))
                (alist (merge-sort-lexorder
                        (show-accumulated-persistence-phrase2
@@ -7021,7 +7029,8 @@
                                   '(:ratio
                                     :frames :frames-s :frames-f :frames-a
                                     :tries :tries-s :tries-f :tries-a
-                                    :useless))
+                                    :useless
+                                    :runes))
                        (member-eq display
                                   '(t nil :raw :merge)))))
 
