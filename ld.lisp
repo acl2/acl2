@@ -17449,6 +17449,11 @@
   The macro ~ilc[append] no longer requires at least two arguments.  Thanks to
   Dave Greve for requesting this enhancement.
 
+  (Mostly for system hackers) Now, ~ilc[break-on-error] breaks at a more
+  appropriate (earlier) time for certain system functions that do not return
+  state, such as ~c[translate11].  Thanks to David Rager for requesting this
+  improvement.
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of

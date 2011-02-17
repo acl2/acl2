@@ -658,11 +658,14 @@
           (ancestors-check-builtin lit ancestors tokens)))
 
  (defthmd ancestors-check-constraint
-   (mv-let (on-ancestors assumed-true)
-           (ancestors-check lit ancestors tokens)
-           (implies (and on-ancestors
-                         assumed-true)
-                    (member-equal lit (strip-cars ancestors))))
+   (implies (and (pseudo-termp lit)
+                 (ancestor-listp ancestors)
+                 (true-listp tokens))
+            (mv-let (on-ancestors assumed-true)
+                    (ancestors-check lit ancestors tokens)
+                    (implies (and on-ancestors
+                                  assumed-true)
+                             (member-equal lit (strip-cars ancestors)))))
    :hints (("Goal" :use ancestors-check-builtin-property))))
 
 (defattach (ancestors-check ancestors-check-builtin)

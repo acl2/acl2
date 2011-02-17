@@ -9782,13 +9782,7 @@
                    (msg "the indicated supporter~#0~[ ~&0 is not a function ~
                          symbol~/s ~&0 are not function symbols~] in the ~
                          current ACL2 world"
-                        (collect-non-function-symbols
-
-; This is an odd construct, but its saves us from defining a new function since
-; we use collect-non-function-symbols elsewhere anyhow.
-                       
-                         (pairlis$ (car val) nil)
-                         wrld))))))
+                        (non-function-symbols (car val) wrld))))))
      ((and (cdr val)
            (not (eql (length (non-trivial-encapsulate-ee-entries
                               (global-val 'embedded-event-lst wrld)))

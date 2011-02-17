@@ -15796,12 +15796,12 @@
                 (function-symbolp (car fns) wrld)
                 (all-function-symbolps (cdr fns) wrld)))))
 
-(defun collect-non-function-symbols (alist wrld)
-  (cond ((null alist) nil)
-        ((function-symbolp (caar alist) wrld)
-         (collect-non-function-symbols (cdr alist) wrld))
-        (t (cons (caar alist)
-                 (collect-non-function-symbols (cdr alist) wrld)))))
+(defun non-function-symbols (lst wrld)
+  (cond ((null lst) nil)
+        ((function-symbolp (car lst) wrld)
+         (non-function-symbols (cdr lst) wrld))
+        (t (cons (car lst)
+                 (non-function-symbols (cdr lst) wrld)))))
 
 (defun collect-non-logic-mode (alist wrld)
   (cond ((null alist) nil)

@@ -5055,25 +5055,36 @@
 
 (defun ancestors-check-builtin (lit ancestors tokens)
 
-; We return two values.  The first is whether we should abort trying
-; to establish lit on behalf of the given tokens.  The second is
-; whether lit is (assumed) true in ancestors.
+; We return two values.  The first is whether we should abort trying to
+; establish lit on behalf of the given tokens.  The second is whether lit is
+; (assumed) true in ancestors.
 
-; We abort iff either lit is assumed true or else it is worse than or
-; equal to some other literal we're trying to establish on behalf of
-; some token in tokens.  (Actually, we compare the atoms of the two
-; literals in the worse-than check.)
+; We abort iff either lit is assumed true or else it is worse than or equal to
+; some other literal we're trying to establish on behalf of some token in
+; tokens.  (Actually, we compare the atoms of the two literals in the
+; worse-than check.)
 
-; A reminder about ancestors: Ancestors is a list of pairs.  Each pair
-; is (term . tokens').  Term is something we can assume true (because
-; we are currently trying to prove it false).  Tokens' is a list of
-; tokens.  A token is a rune or a function symbol (or anything else,
-; for all we care).  Generally speaking, tokens' is a singleton list
-; containing a single rune, the one naming the lemma through which we
-; are backchaining.  For example, if R is the lemma (IMPLIES p (EQUAL
-; lhs rhs)) and we are trying to rewrite some target matching lhs, we
-; backchain to establish p and we will add (NOT p) and the singleton
-; list containing R to ancestors.
+; A reminder about ancestors: Ancestors is a list of ``frames.''  Each frame is
+; of one of two forms.  Most frames are constructed by push-ancestor and have
+; the form:
+
+; (lit alit cnt1 cnt2 tokens)
+
+; where lit is a term that may be assumed true in the current context, alit is
+; the atom of lit (i.e., with a NOT stripped if necessary), cnt1 and cnt2 are
+; the fn- and pseudo-fn counts of alit as computed by fn-count-1, and tokens is
+; a true-list of arbitrary objects but most often the runes (or base symbols of
+; runes) responsible for back chaining to this frame).
+
+; However, sometimes we push a frame of the form:
+
+; (:BINDING-HYP hyp unify-subst)
+
+; where hyp is of the form (equiv var term) and unify-subst is a substitution
+; in which var is free and there are no relatively free vars in term.
+
+; For purposes of guard checking all we assume about ancestors is
+; ancestor-listp.
 
 ; Historical Note:  In nqthm, this function was named relieve-hyps-not-ok.
 
