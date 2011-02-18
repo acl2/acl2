@@ -2945,13 +2945,12 @@
                                      (t (silent-error state))))
                           (t (value msg-or-val))))))
 
-(defun maybe-break (x)
+(defun er-cmp-fn (ctx msg)
   (declare (xargs :guard t))
-  x)
+  (mv ctx msg))
 
 (defmacro er-cmp (ctx str &rest args)
-  `(mv (maybe-break ,ctx)
-       (msg ,str ,@args)))
+  `(er-cmp-fn ,ctx (msg ,str ,@args)))
 
 (defmacro value-cmp (x)
   `(mv nil ,x))

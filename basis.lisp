@@ -7967,6 +7967,7 @@
                               (declare
                                (ignore ,@(remove1-eq 'state (cdr shape))))
                               (value :q))))
+                 :ld-error-action :return!
                  :ld-verbose nil
                  :ld-pre-eval-print nil
                  :ld-prompt nil))
@@ -8258,33 +8259,47 @@
     `(or (output-ignored-p ',tp state)
          (warning-off-p ,summary state))))
 
+(defmacro observation1-body (commentp)
+  `(io? observation ,commentp state
+        (str alist ctx abbrev-p)
+        (cond
+         ,@(and commentp ; else we avoid the overhead of observation1-body
+                `(((or (eq (ld-skip-proofsp state) 'include-book)
+                       (eq (ld-skip-proofsp state) 'include-book-with-locals)
+                       (eq (ld-skip-proofsp state) 'initialize-acl2))
+                   state)))
+         (t
+          (let ((channel (f-get-global 'proofs-co state)))
+            (mv-let
+             (col state)
+             (fmt "ACL2 Observation" nil channel state nil)
+             (mv-let (col state)
+                     (fmt-in-ctx ctx col channel state)
+                     (cond (abbrev-p
+                            (fmt-abbrev str alist col channel state "~|"))
+                           ((null abbrev-p)
+                            (mv-let (col state)
+                                    (fmt1 str alist col channel state nil)
+                                    (declare (ignore col))
+                                    (newline channel state)))
+                           (t
+                            (prog2$ (er hard 'observation1
+                                        "The abbrev-p (fourth) argument of ~
+                                         observation1 must be t or nil, so ~
+                                         the value ~x0 is illegal."
+                                        abbrev-p)
+                                    state))))))))))
+
 (defun observation1 (ctx str alist abbrev-p state)
+
 
 ; This function prints the "ACL2 Observation" banner and ctx, then the
 ; user's str and alist, and then a carriage return.
 
-  (io? observation nil state
-       (str alist ctx abbrev-p)
-       (let ((channel (f-get-global 'proofs-co state)))
-         (mv-let
-          (col state)
-          (fmt "ACL2 Observation" nil channel state nil)
-          (mv-let (col state)
-                  (fmt-in-ctx ctx col channel state)
-                  (cond (abbrev-p
-                         (fmt-abbrev str alist col channel state "~|"))
-                        ((null abbrev-p)
-                         (mv-let (col state)
-                                 (fmt1 str alist col channel state nil)
-                                 (declare (ignore col))
-                                 (newline channel state)))
-                        (t
-                         (prog2$ (er hard 'observation1
-                                     "The abbrev-p (fourth) argument of ~
-                                      observation1 must be t or nil, so the ~
-                                      value ~x0 is illegal."
-                                     abbrev-p)
-                                 state))))))))
+  (observation1-body nil))
+
+(defun observation1-cw (ctx str alist abbrev-p)
+  (observation1-body t))
 
 (defmacro observation (&rest args)
 
@@ -8305,6 +8320,18 @@
                           (cddr args))
       t
       state))))
+
+(defmacro observation-cw (&rest args)
+
+; See observation.  This macro uses wormholes to avoid accessing state.
+
+  `(observation1-cw
+    ,(car args)
+    ,(cadr args)
+    ,(make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
+                          #\5 #\6 #\7 #\8 #\9)
+                        (cddr args))
+    t))
 
 (defun skip-when-logic (str state)
   (pprogn

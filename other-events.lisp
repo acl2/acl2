@@ -21780,10 +21780,11 @@
 #-acl2-loop-only
 (defun trace$-def (arglist def trace-options predefined multiplicity ctx)
   #-hons (declare (ignore ctx))
-  (let* ((fn (car def))
-         (cond-tail (assoc-keyword :cond  trace-options))
+  (let* ((state-bound-p (member-eq 'state arglist))
+         (fn (car def))
+         (cond-tail (assoc-keyword :cond trace-options))
          (cond (cadr cond-tail))
-         (hide-tail (assoc-keyword :hide  trace-options))
+         (hide-tail (assoc-keyword :hide trace-options))
          (hide (or (null hide-tail) ; default is t
                    (cadr hide-tail)))
          (entry (or (cadr (assoc-keyword :entry trace-options))
@@ -21854,7 +21855,13 @@
 ; memoization interact.
 
       (memoize-off-trace-error fn ctx))
-    `(defun ,fn ,arglist
+    `(defun ,fn
+       ,(if state-bound-p
+            arglist
+          (append arglist '(&aux (state *the-live-state*))))
+       ,@(if state-bound-p
+             nil
+           '((declare (ignorable state))))
 
 ; At one time we included declarations and documentation here:
 ;      ,@(and (not notinline-fncall) ; else just lay down fncall; skip decls
@@ -23102,23 +23109,14 @@
   (break-on-error :all) ; same as above, but even when inside the prover
   (break-on-error nil)  ; uninstall any above trace
   ~ev[]
-  ~c[(Break-on-error)] generates approximately the following, but modified to
-  print appropriate extra information:
-  ~bv[]
-  (trace! (error1 :entry nil :exit (break))
-          (maybe-break :entry (break))
-          (throw-raw-ev-fncall :entry (break)))
-  ~ev[]
-  This ~il[trace] should cause entry to the Lisp debugger whenever ACL2 calls
-  its error routines, except for certain errors when inside the theorem prover
-  (and even then if option :all is supplied).
+  ~c[(Break-on-error)] generates a suitable trace of error functions.  Evaluate
+  ~c[(trace$)] after ~c[(break-on-error)] if you want to see the specific trace
+  forms (which you can modify and then submit directly to ~c[trace$], if you
+  wish).  This ~il[trace] should cause entry to the Lisp debugger whenever ACL2
+  calls its error routines, except for certain errors when inside the theorem
+  prover, and also at those times if option :all is supplied.
 
-  NOTE: For technical reasons, if you see the break message
-  ~bv[]
-  ACL2 Error [Breaking on error (entry to ev-fncall-msg)]:
-  ~ev[]
-  which is followed by an explanation of the error, then if you continue from
-  the break, you will see that explanation again.
+  NOTE: For technical reasons, you may see some error messages more than once.
 
   Finally, note that you are welcome to define your own version of
   ~c[break-on-error] by modifying a copy of the source definition (search for
@@ -23144,10 +23142,16 @@
           '(error1 :entry (:fmt (msg "[Breaking on error:]"))
                    :exit (prog2$ (maybe-print-call-history state) (break$))
                    :compile nil))
-         (maybe-break-trace-form
-          '(maybe-break :entry (:fmt (msg "[Breaking on error:]"))
-                        :exit (prog2$ (maybe-print-call-history state) (break$))
-                        :compile nil))
+         (er-cmp-fn-trace-form
+          '(er-cmp-fn :entry ; body of error1, to avoid second break on error1
+                      (pprogn (io? error nil state (ctx msg)
+                                   (error-fms nil ctx
+                                              "~|[Breaking on cmp error:]~|~@0"
+                                              (list (cons #\0 msg))
+                                              state))
+                              (mv :enter-break nil state))
+                      :exit (prog2$ (maybe-print-call-history state) (break$))
+                      :compile nil))
          (throw-raw-ev-fncall-string
           "[Breaking on error (entry to ev-fncall-msg)]")
          (throw-raw-ev-fncall-trace-form
@@ -23171,16 +23175,16 @@
         (er-progn
          (case on
            (:all  (trace! ,error1-trace-form
-                          ,maybe-break-trace-form
+                          ,er-cmp-fn-trace-form
                           ,throw-raw-ev-fncall-trace-form))
            ((t)   (trace! ,error1-trace-form
-                          ,maybe-break-trace-form
+                          ,er-cmp-fn-trace-form
                           (,@throw-raw-ev-fncall-trace-form
                            :cond
                            (not (f-get-global 'in-prove-flg
                                               *the-live-state*)))))
            ((nil) (with-output :off warning (untrace$ error1
-                                                      maybe-break-trace-form
+                                                      er-cmp-fn
                                                       throw-raw-ev-fncall)))
            (otherwise (er soft 'break-on-error
                           "Illegal argument value for break-on-error: ~x0."

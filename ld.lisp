@@ -17349,6 +17349,17 @@
 ; Replaced a couple of calls of 1+ by 1+f in fn-count-evg-rec, after Robert
 ; Krug brought these to our attention.
 
+; Improved the error message when discovering during load of compiled or
+; expansion file that a defconst is not redundant.
+
+; Added (undocumented) macro, observation-cw, and associated function,
+; observation1-cw, in analogy to (undocumented) macro, observation, and its
+; association function, observation1.  Thanks to Harsh Raju Chamarthi for
+; requesting this enhancement.
+
+; Fixed macro io? so that we are not left in a wormhole when there is an error
+; (as happened previously when the commentp argument of io? was t).
+
   :Doc
   ":Doc-Section release-notes
 
@@ -17453,6 +17464,13 @@
   appropriate (earlier) time for certain system functions that do not return
   state, such as ~c[translate11].  Thanks to David Rager for requesting this
   improvement.
+
+  ~ilc[Show-accumulated-persistence] may take a new argument, ~c[:runes], which
+  simply causes an alphebetical list of ~il[rune]s to be printed out.
+
+  Improved ~ilc[trace$] so that ~c[:entry], ~c[:exit], and ~c[:cond] forms may
+  reference ~c[state] even if the function being traced does not include
+  ~c[state] as a formal.
 
   ~st[NEW FEATURES]
 
