@@ -153,6 +153,11 @@ all-aux: $(DIRS1) $(DIRS2_EXCEPT_WK)
 # Of course, the underlying lisp of the ACL2 that is run should agree with
 # the desired compiled file extension.
 
+# IMPORTANT: In order to use the targets below, you will first need to
+# have certified saving expansion files, e.g. with the following 'make'
+# argument.
+#   ACL2_SAVE_EXPANSION=t
+
 .PHONY: fasl
 fasl:
 	@date ; $(TIME) $(MAKE) fasl-aux ; date
