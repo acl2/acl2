@@ -1580,8 +1580,10 @@
          (:use)))))
 
 (defmacro maybe-introduce-empty-pkg-2 (name)
-  `(when (and (not (member-equal ,name *defpkg-virgins*))
-              (not (member-equal ,name *ever-known-package-alist*))
+  `(when (and (not (member ,name *defpkg-virgins*
+                           :test 'equal))
+              (not (assoc ,name *ever-known-package-alist*
+                          :test 'equal))
               (package-has-no-imports ,name))
      (push ,name *defpkg-virgins*)))
 

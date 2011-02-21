@@ -17360,6 +17360,12 @@
 ; Fixed macro io? so that we are not left in a wormhole when there is an error
 ; (as happened previously when the commentp argument of io? was t).
 
+; Regarding "Fixed a bug in detection of package redefinition.": The use of
+; member-equal instead of assoc-equal in maybe-introduce-empty-pkg-2 allows (at
+; least on quick analysis) every package with empty imports to be considered a
+; "virgin" package, which may have allowed (again, on quick analysis) illegal
+; package redefinition to occur.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -17550,6 +17556,9 @@
                     (er hard 'my-top \"Got an error!\"))
                  nil)
   ~ev[]
+
+  Fixed a bug in detection of package redefinition.  While we have no example
+  demonstrating this as a soundness bug, we cannot rule it out.
 
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
