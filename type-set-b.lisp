@@ -4923,26 +4923,52 @@
                    (t (earlier-ancestor-biggerp fn-cnt p-fn-cnt tokens
                                                 (cdr ancestors))))))))
 
+(defun equal-mod-commuting (x y wrld)
+
+; If this function returns t, then either x and y are the same term, or they
+; are provably equal by virtue of the commutativity of their common binary
+; function symbol.
+
+; Recall that we do not track the use of equivalence relations; so we do not
+; report their use here.  When we do that, read the Note on Tracking
+; Equivalence Runes in subst-type-alist1.
+
+  (declare (xargs :guard (and (pseudo-termp x)
+                              (pseudo-termp y)
+                              (plist-worldp wrld))))
+  (cond ((variablep x)
+         (eq x y))
+        ((variablep y)
+         nil)
+        ((or (fquotep x) (fquotep y))
+         nil) ; quotes are handled elsewhere
+        ((equal x y)
+         t)
+        ((flambdap (ffn-symb x))
+         nil)
+        (t (and (eq (ffn-symb x) (ffn-symb y))
+                (equivalence-relationp (ffn-symb x) wrld)
+                (equal (fargn x 1) (fargn y 2))
+                (equal (fargn x 2) (fargn y 1))))))
+
 (defun ancestors-check1 (lit-atm lit fn-cnt p-fn-cnt ancestors tokens)
                                  
-; Roughly speaking, ancestors is a list of all the things we can
-; assume by virtue of our trying to prove their negations.  That is,
-; when we backchain from B to A by applying (implies A B), we try to
-; prove A and so we put (NOT A) on ancestors and can legitimately
-; assume it (i.e., (NOT A)) true.  Roughly speaking, if lit is a
-; member-equal of ancestors, we return (mv t t) and if the complement
-; of lit is a member-equal we return (mv t nil).  If neither case
-; obtains, we return (mv nil nil).
+; Roughly speaking, ancestors is a list of all the things we can assume by
+; virtue of our trying to prove their negations.  That is, when we backchain
+; from B to A by applying (implies A B), we try to prove A and so we put (NOT
+; A) on ancestors and can legitimately assume it (i.e., (NOT A)) true.  Roughly
+; speaking, if lit is a member-equal of ancestors, we return (mv t t) and if
+; the complement of lit is a member-equal we return (mv t nil).  If neither
+; case obtains, we return (mv nil nil).
 
-; We implement the complement check as follows.  lit-atm is the atom
-; of the literal lit.  Consider a literal of ancestors, alit, and its
-; atom, alit-atm.  If lit-atm is alit-atm and lit is not equal to alit,
-; then lit and alit are complementary.  The following table supports
-; this observation.  It shows all the combinations by considering that
-; lit is either a positive or negative p, and alit is a p of either
-; sign or some other literal of either sign.  The entries labeled =
-; mark those when lit is alit.  The entries labeled comp mark those
-; when lit and alit are complementary.
+; We implement the complement check as follows.  lit-atm is the atom of the
+; literal lit.  Consider a literal of ancestors, alit, and its atom, alit-atm.
+; If lit-atm is alit-atm and lit is not equal to alit, then lit and alit are
+; complementary.  The following table supports this observation.  It shows all
+; the combinations by considering that lit is either a positive or negative p,
+; and alit is a p of either sign or some other literal of either sign.  The
+; entries labeled = mark those when lit is alit.  The entries labeled comp mark
+; those when lit and alit are complementary.
 
 ; lit \  alit:    p (not p) q (not q)
 
@@ -4967,32 +4993,40 @@
           (p-fn-cnt-alit-atm (cadddr (car ancestors)))
           (atokens           (car (cddddr (car ancestors)))))
       (cond
-       ((equal alit lit)
-        (mv t t))
-       ((equal lit-atm alit-atm) (mv t nil))
+       ((equal-mod-commuting alit lit nil)
 
-; In Version_2.5, this function did not have the tokens argument.
-; Instead we simply asked whether there was a frame on the ancestors
-; stack such that fn-cnt was greater than or equal to the fn-count of
-; the atom in the frame and lit-atm was worse-than-or-equal to the
-; atom in the frame.  If so, we aborted with (mv t nil).  (The fn-cnt
-; test is just an optimization because that inequality is implied by
-; the worse-than-or-equal test.)  But Carlos Pacheco's TLA work
-; exposed a situation in which the lit-atm was worse-than-or-equal to
-; a completely unrelated atom on the ancestors stack.  So we added
-; tokens and insisted that the ancestor so dominated by lit-atm was
-; related to lit-atm by having a non-empty intersection with tokens.
-; This was added in the final polishing of Version_2.6.  But we learned
-; that it slowed us down about 10% because it allowed so much more
-; backchaining.  We finally adopted a very conservative change
-; targeted almost exactly to allow Carlos' example while preserving
-; the rest of the old behavior. 
+; Here, and in the next branch, we provide the empty world to
+; equal-mod-commuting.  If we want a stronger check then we could provide the
+; current ACL2 world instead, but then we would have to add a world argument to
+; ancestors-check1 and ancestors-check.  As Robert Krug pointed out to us,
+; there may be other places in our sources more deserving of generalization
+; from 'equal to arbitrary equivalence relations.
+
+        (mv t t))
+       ((equal-mod-commuting lit-atm alit-atm nil) (mv t nil))
+
+; See the comment above, for the preceding call of equal-mod-commuting.
+
+; In Version_2.5, this function did not have the tokens argument.  Instead we
+; simply asked whether there was a frame on the ancestors stack such that
+; fn-cnt was greater than or equal to the fn-count of the atom in the frame and
+; lit-atm was worse-than-or-equal to the atom in the frame.  If so, we aborted
+; with (mv t nil).  (The fn-cnt test is just an optimization because that
+; inequality is implied by the worse-than-or-equal test.)  But Carlos Pacheco's
+; TLA work exposed a situation in which the lit-atm was worse-than-or-equal to
+; a completely unrelated atom on the ancestors stack.  So we added tokens and
+; insisted that the ancestor so dominated by lit-atm was related to lit-atm by
+; having a non-empty intersection with tokens.  This was added in the final
+; polishing of Version_2.6.  But we learned that it slowed us down about 10%
+; because it allowed so much more backchaining.  We finally adopted a very
+; conservative change targeted almost exactly to allow Carlos' example while
+; preserving the rest of the old behavior.
 
        ((intersectp-equal tokens atokens)
 
-; We get here if the current lit-atm is related to that in the current
-; frame.  We next ask whether the function symbols are the same and
-; lit-atm is bigger.  If so, we abort.  Otherwise, we look for others.
+; We get here if the current lit-atm is related to that in the current frame.
+; We next ask whether the function symbols are the same and lit-atm is bigger.
+; If so, we abort.  Otherwise, we look for others.
 
         (cond ((and (nvariablep alit-atm)
                     (not (fquotep alit-atm))
@@ -5010,11 +5044,10 @@
                       (>= p-fn-cnt p-fn-cnt-alit-atm)))
              (worse-than-or-equal lit-atm alit-atm))
 
-; The clause above is the old Version_2.5 test, but now it is tried
-; only if the atms are unrelated by their tokens.  Most of the time we
-; want to abort backchaining if we pass the check above.  But we want
-; to allow continued backchaining in Carlos' example.  In that
-; example:
+; The clause above is the old Version_2.5 test, but now it is tried only if the
+; atms are unrelated by their tokens.  Most of the time we want to abort
+; backchaining if we pass the check above.  But we want to allow continued
+; backchaining in Carlos' example.  In that example:
 
 ; lit-atm          = (S::MEM (S::APPLY S::DISKSWRITTEN S::P)
 ;                            (S::POWERSET (S::DISK)))
@@ -5022,20 +5055,19 @@
 ; alit-atm         = (S::MEM S::D (S::DISK))
 ; fn-cnt-alit-atm  = 2
 
-; with no token intersection.  Once upon a time we simply allowed all
-; these, i.e., just coded a recursive call here.  But that really
-; slowed us down by enabling a lot of backchaining.  So now we
-; basically want to ask: "Is there a really good reason to allow this
-; backchain?"  We've decided to allow the backchain if there is an
-; earlier ancestor, related by tokens, to the ancestor that is trying
-; to veto this one, that is bigger than this one.  In Carlos' example
-; there is such a larger ancestor; but we suspect most of the time
-; there isn't.  For example, at the very least it means that the
-; vetoing ancestor must be the SECOND (or subsequent) time we've
-; applied some rule on this backchaining path!  The first time we
-; coded this heuristic we named the test ``random-coin-flip'' instead
-; of earlier-ancestor-biggerp; the point: this is a pretty arbitrary
-; decision heuristic mainly to make Carlos' example work.
+; with no token intersection.  Once upon a time we simply allowed all these,
+; i.e., just coded a recursive call here.  But that really slowed us down by
+; enabling a lot of backchaining.  So now we basically want to ask: "Is there a
+; really good reason to allow this backchain?"  We've decided to allow the
+; backchain if there is an earlier ancestor, related by tokens, to the ancestor
+; that is trying to veto this one, that is bigger than this one.  In Carlos'
+; example there is such a larger ancestor; but we suspect most of the time
+; there isn't.  For example, at the very least it means that the vetoing
+; ancestor must be the SECOND (or subsequent) time we've applied some rule on
+; this backchaining path!  The first time we coded this heuristic we named the
+; test ``random-coin-flip'' instead of earlier-ancestor-biggerp; the point:
+; this is a pretty arbitrary decision heuristic mainly to make Carlos' example
+; work.
 
         (cond ((earlier-ancestor-biggerp fn-cnt
                                          p-fn-cnt

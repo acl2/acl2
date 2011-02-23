@@ -604,6 +604,8 @@
 
 (verify-guards fn-count-1)
 
+(verify-termination-boot-strap equal-mod-commuting) ; and guards
+
 (verify-termination-boot-strap ancestors-check1)
 
 (verify-termination-boot-strap ancestors-check-builtin)

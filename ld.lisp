@@ -17502,6 +17502,11 @@
 
   ~st[HEURISTIC IMPROVEMENTS]
 
+  The so-called ``ancestors check,'' which is used to limit backchaining, has
+  been strengthened so that two calls of ~ilc[equal] are considered the same
+  even if their arguments appear in the opposite order.  Thanks to Robert Krug
+  for providing an implementation and a useful discussion.
+
   ~st[BUG FIXES]
 
   Calls of ~ilc[mbe] in ``safe-mode'' situations ~-[] i.e., during evaluation
