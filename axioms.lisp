@@ -12172,19 +12172,28 @@
 
   `(cons ,str ,(make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) args)))
 
+(defun check-vars-not-free-test (vars term)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (pseudo-termp term))
+                  :verify-guards nil))
+  (or (not (intersectp-eq vars (all-vars term)))
+      (msg "It is forbidden to use ~v0 in ~x1."
+           vars term)))
+
 (defmacro check-vars-not-free (vars form)
 
-; A typical use of this macro is (check-vars-not-free (my-erp my-val)
-; ...)  which just expands to the translation of ... provided my-erp
-; and my-val do not occur freely in it.
+; A typical use of this macro is (check-vars-not-free (my-erp my-val) ...)
+; which just expands to the translation of ... provided my-erp and my-val do
+; not occur freely in it.
+
+; We wrap the body of the lambda into a simple function call, because
+; translate11 calls ev-w on it and we want to avoid having lots of ev-rec
+; calls, especially since intersectp-eq expands to an mbe call.
 
   (declare (xargs :guard (symbol-listp vars)))
   `(translate-and-test
     (lambda (term)
-      (let ((vars ',vars))
-        (or (not (intersectp-eq vars (all-vars term)))
-            (msg "It is forbidden to use ~v0 in ~x1."
-                 vars term))))
+      (check-vars-not-free-test ',vars term))
     ,form))
 
 (defun er-progn-fn (lst)
@@ -25898,6 +25907,12 @@
 (verify-guards all-vars1)
 
 (verify-guards all-vars)
+
+(local (defthm symbol-listp-implies-true-listp
+         (implies (symbol-listp x)
+                  (true-listp x))))
+
+(verify-guards check-vars-not-free-test)
 
 ; Next, we verify the guards of getprops, which we delayed for the same
 ; reasons.

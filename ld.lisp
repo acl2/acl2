@@ -17366,6 +17366,9 @@
 ; "virgin" package, which may have allowed (again, on quick analysis) illegal
 ; package redefinition to occur.
 
+; Made efficiency improvement in check-vars-not-free, which is minor but
+; perhaps worth a couple percent since we have added equality-variants.
+
   :Doc
   ":Doc-Section release-notes
 
