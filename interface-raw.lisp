@@ -6883,6 +6883,7 @@ Missing functions:
 ; Keep this in sync with :doc set-debugger-enable.
 
   (declare (ignore y))
+  #+acl2-par (setq *reset-parallelism-variables* t)
   (print-proof-tree-finish state)
   (when btp (print-call-history))
   (cond ((or (debugger-enabledp state)

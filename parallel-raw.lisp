@@ -516,6 +516,8 @@
     (kill-all-threads-in-list target-threads))
   (thread-wait 'all-threads-except-initial-threads-are-dead))
 
+(defparameter *reset-parallelism-variables* nil)
+
 (defun reset-parallelism-variables ()
 
 ; We use this function (a) to kill all worker threads, (b) to reset "most" of
@@ -526,9 +528,10 @@
 
 ; If a user kills threads directly from raw Lisp, for example using functions
 ; above, then they should call reset-parallelism-variables.  Note that
-; reset-parallelism-variables is called automatically on any call of LD,
-; including the case that an ACL2 user interrupts with control-c and then
-; aborts to get back to the ACL2 top-level loop.
+; reset-parallelism-variables is called automatically on any top-level call of
+; LD (i.e., a call with *ld-level* = 0), as well as any time we return to the
+; prompt after entering a raw Lisp break (using
+; *reset-parallelism-variables*).
 
 ; (a) Kill all worker threads.
 
@@ -557,6 +560,8 @@
   (setf *total-parallelism-piece-historical-count* 0)
 
   (setf *initial-threads* (all-threads))
+
+  (setf *reset-parallelism-variables* nil)
 )
 
 ; We reset parallelism variables as a standard part of compilation to make

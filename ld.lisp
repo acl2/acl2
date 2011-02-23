@@ -1383,7 +1383,32 @@
 ; ld-loop, mentioned above, and it was decremented at every abort).
 
   #+(and acl2-par (not acl2-loop-only))
-  (reset-parallelism-variables)
+  (when (and (not *wormholep*)
+
+; We do not reset parallelism variables while in a wormhole (say from :brr),
+; because that could interfere with a surrounding (outside the wormhole) prover
+; call.
+
+; Fortunately, it isn't necessary to do that reset, because there is nothing to
+; clean up: we (plan as of Feb. 2011 to) disable entry to the prover from a
+; wormhole when parallelism is enabled for the prover.
+
+             (or (eql *ld-level* 1)
+                 *reset-parallelism-variables*))
+
+; We claim that the parallelism variables are reset when either (1) we are
+; entering the top-level ACL2 loop from raw Lisp, or else (2) a raw Lisp break
+; has occurred.  Let's see how the conditions above guarantee that claim.  If
+; (1) holds then the initial call of ld-fn-body in ld-fn0 will get us here with
+; *ld-level* 1.  When (2) holds then our-abort threw to 'local-top-level after
+; setting *reset-parallelism-variables* to t, and the ld-fn-body call in ld-fn0
+; is re-entered after that throw is caught, and here we are!
+
+; In rare cases we might get here without (1) or (2) holding -- say, after :a!.
+; But it's OK to call reset-parallelism-variables in such cases; we simply
+; prefer to minimize the frequency of calls, for efficiency.
+
+    (reset-parallelism-variables))
 
   (pprogn
     (f-put-ld-specials new-ld-specials-alist state)
