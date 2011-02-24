@@ -25,6 +25,9 @@ oracle-eval.lisp
 oracle-eval-real.acl2
 oracle-eval-real.lisp
 pack.lisp
+plev.lisp
+plev-ccl.lisp
+plev-ccl-raw.lsp
 progndollar.lisp
 rulesets.lisp
 safe-case.lisp
@@ -87,6 +90,9 @@ required.
 progndollar.lisp defines PROGN$, which evaluates several forms in
 sequence for side effects.
 
+plev.lisp (and plev-ccl.lisp/plev-ccl-raw.lsp) provide PLEV, PLEV-MIN,
+and PLEV-MAX for controlling printing.
+
 safe-case.lisp is a drop-in replacement for case, but causes an error
 if none of the cases are matched.
 
@@ -124,6 +130,9 @@ substitutions result from deeply nested variable bindings.
 
 {define-keyed-function}.lisp copyright (C) 2010 by David L. Rager
 <ragerdl@cs.utexas.edu>.
+
+{plev,plev-ccl}.* were originally in misc/hons-help and are presumably
+copyright (C) Bob Boyer and Warren Hunt.
 
 {def-functional-instance,defconsts,flag,oracle-eval,safe-case,include-raw,
  fake-event}.lisp

@@ -580,8 +580,7 @@
 ; [Jared]: BOZO why is this stuff in hons-help.lisp?  What does any of this
 ; have to do with hons?  Can we move this elsewhere?
 
-
-
+; [Jared]: moved plev stuff to tools/plev.lisp
 
 
 (defstub fail (x y) t :doc
@@ -608,76 +607,6 @@
    occur.~/")
 
 
-
-(defn plev-fn (length level lines circle pretty readably state)
-  (declare (xargs :mode :program))
-  (let* ((old-tuple (abbrev-evisc-tuple state))
-         (new-tuple (list (car old-tuple) level length
-                          (cadddr old-tuple))))
-    (mv-let (flg val state)
-            (set-evisc-tuple new-tuple
-                             :iprint :same
-                             :sites '(:TERM :LD
-                                            ;; :TRACE
-                                            :ABBREV))
-            (declare (ignore val))
-            (mv flg
-                (list :length length
-                      :level level
-                      :lines lines
-                      :circle circle
-                      :readably readably
-                      :pretty pretty)
-                state))))
-
-(defmacro plev (&key (length '16)
-                     (level '3)
-                     (lines 'nil)
-                     (circle 't)
-                     (pretty 't)
-                     (readably 'nil))
-
-  ":Doc-Section Hons-and-Memoization
-
-  Sets some print control variables.~/
-
-    PLEV sets variables that control printing via the keywords
-    :LENGTH :LEVEL :LINES :CIRCLE :PRETTY and :READABLY.
-    with defaults:
-    16       3     NIL     T       T           NIL.~/~/"
-
-
-  `(plev-fn ,length ,level ,lines ,circle ,pretty ,readably state))
-
-
-(defmacro plev-max (&key (length 'nil)
-                         (level 'nil)
-                         (lines 'nil)
-                         (circle 'nil)
-                         (pretty 't)
-                         (readably 'nil))
-
-  ":Doc-Section Hons-and-Memoization
-
-  (PLEV-MAX) sets some print control variables to maximal values.~/
-  ~/~/"
-
-  `(plev-fn ,length ,level ,lines ,circle ,pretty ,readably state))
-
-
-(defmacro plev-min (&key (length '3)
-                         (level '3)
-                         (lines '60)
-                         (circle 't)
-                         (pretty 'nil)
-                         (readably 'nil))
-
-  ":Doc-Section Hons-and-Memoization
-
-  (PLEV-MIN) sets some print control variables to minimal values.~/
-  ~/~/"
-
-  `(plev-fn ,length ,level ,lines ,circle ,pretty ,readably state))
 
 
 
