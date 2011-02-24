@@ -6727,6 +6727,17 @@ next GC.~%"
        (with-lower-overhead
         (memoize-fn 'expansion-alist-pkg-names-memoize :forget t)))
 
+     ;; [Jared]: merged in from e4/memoize-raw.lsp
+     (when (not (memoizedp-raw 'physical-memory))
+       (with-lower-overhead
+        (memoize-fn 'physical-memory :inline nil)))
+
+     ;; [Jared]: merged in from e4/memoize-raw.lsp
+     (when (not (memoizedp-raw 'swap-total))
+       (with-lower-overhead
+        (memoize-fn 'swap-total :inline nil)))
+
+
      #+Clozure
      (progn
 
@@ -6785,19 +6796,30 @@ next GC.~%"
 
        #+Clozure (start-sol-gc)
 
-       "Run (user-INIT) if it exists."
+
+;; [Jared]: removing the (user-INIT) thing because it's just asking
+;; for inconsistencies.  Instead, replacing it with the what Sol and
+;; Warren and I have been using:
+
+       ;; "Run (user-INIT) if it exists."
+
+       ;; #+Clozure
+       ;; (let ((init-fn
+       ;;        (intern
+       ;;         (string-upcase
+       ;;          (format nil "~a-init" (ccl::getenv "USER")))
+       ;;         :acl2)))
+       ;;   (cond ((fboundp init-fn)
+       ;;          (ofvv "Running (~a)." init-fn)
+       ;;          (funcall init-fn))
+       ;;         (t (ofvv "~% ~a not fboundp, hence not funcalled."
+       ;;                  init-fn))))
 
        #+Clozure
-       (let ((init-fn
-              (intern
-               (string-upcase
-                (format nil "~a-init" (ccl::getenv "USER")))
-               :acl2)))
-         (cond ((fboundp init-fn)
-                (ofvv "Running (~a)." init-fn)
-                (funcall init-fn))
-               (t (ofvv "~% ~a not fboundp, hence not funcalled."
-                        init-fn))))))
+       (progn (ccl::egc nil)
+              (set-and-reset-gc-thresholds))
+
+       ))
   
   "*HONS-INIT-HOOK* is EVALed by HONS-INIT.  *HONS-INIT-HOOK* may be
   EVALed several times because HONS-INIT may be called several times.
