@@ -6086,8 +6086,8 @@
                              (<= 2 (unquote arg1))))
                    (trans-er ctx
                              "A call of ~x0 can only be made when the first ~
-                              argument is explicitly a natural number.  The ~
-                              call ~x1 is thus illegal."
+                              argument is explicitly an integer that is at ~
+                              least 2.  The call ~x1 is thus illegal."
                              'mv-list x))
                   (t
                    (trans-er-let*
