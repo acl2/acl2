@@ -6719,77 +6719,61 @@
 ; Essay on the Identification of Irrelevant Formals
 
 ; A formal is irrelevant if its value does not affect the value of the
-; function.  Of course, ignored formals have this property, but we here
-; address ourselves to the much more subtle problem of formals that are
-; used only in irrelevant ways.  For example, y in
+; function.  Of course, ignored formals have this property, but we here address
+; ourselves to the much more subtle problem of formals that are used only in
+; irrelevant ways.  For example, y in
 
 ; (defun foo (x y) (if (zerop x) 0 (foo (1- x) (cons x y))))
 
 ; is irrelevant.  Clearly, any formal mentioned outside of a recursive call is
 ; relevant -- provided that no previously introduced function has irrelevant
-; arguments and no definition tests constants as in (if t x y).  But a
-; formal that is never used outside a recursive call may still be
-; relevant, as illustrated by y in
+; arguments and no definition tests constants as in (if t x y).  But a formal
+; that is never used outside a recursive call may still be relevant, as
+; illustrated by y in:
 
 ; (defun foo (x y) (if (< x 2) x (foo y 0)))
 
-; Observe that (foo 3 1) = 1 and (foo 3 0) = 0, thus, y is relevant.  (This
+; Observe that (foo 3 1) = 1 and (foo 3 0) = 0; thus, y is relevant.  (This
 ; function can be admitted with the measure (cond ((< x 2) 0) ((< y 2) 1) (t
 ; 2)).)
 
-; Thus, we have to do a transitive closure computation based on which
-; formals appear in which actuals of recursive calls.  In the first pass we
-; see that x, above, is relevant because it is used outside the recursion.
-; In the next pass we see that y is relevant because it is passed into the
-; x argument position of a recursive call.
+; Thus, we have to do a transitive closure computation based on which formals
+; appear in which actuals of recursive calls.  In the first pass we see that x,
+; above, is relevant because it is used outside the recursion.  In the next
+; pass we see that y is relevant because it is passed into the x argument
+; position of a recursive call.
 
 ; The whole thing is made somewhat more hairy by mutual recursion, though no
 ; new intellectual problems are raised.  However, to cope with mutual recursion
-; we stop talking about "formals" and start talking about "slots."  A slot here
-; is a triple, (fn n . var), where fn is one of the functions in the mutually
-; recursive clique, n is a nonnegative integer less than the arity of fn, and
-; var is the nth formal of fn.  This is redundant (simply (fn . n) would
-; suffice) but allows us to recover the formal conveniently.  We say a "slot
-; is used" in a term if its formal is used in the term and the term occurs
-; in the body of the fn of the slot.
+; we stop talking about "formals" and start talking about "posns."  A posn here
+; is a natural number n that represents the nth formal for a function in the
+; mutually recursive clique.  We say a "posn is used" if the corresponding
+; formal is used.
 
 ; A "recursive call" here means a call of any function in the clique.  We
 ; generally use the variable clique-alist to mean an alist whose elements are
-; each of the form (fn formals guard measure body).  Thus, if temp is (assoc-eq
-; fn clique-alist) and is non-nil then
-; formals = (nth 1 temp)
-; guard   = (nth 2 temp)
-; measure = (nth 3 temp)
-; body    = (nth 4 temp).
-; We make the convention that any variable occurring in either the guard
-; or measure is relevant.  We do not discuss guards and measures further.
+; each of the form (fn . posns).
 
 ; A second problem is raised by the presence of lambda expressions.  We discuss
 ; them more below.
 
-; Our algorithm iteratively computes the relevant slots of a clique by
+; Our algorithm iteratively computes the relevant posns of a clique by
 ; successively enlarging an initial guess.  The initial guess consists of all
-; the slots used outside of a recursive call.  (In this computation we also
-; sweep in any slot whose formal is used in an actual expression in a recursive
-; call, provided the actual is in a slot already known to be used outside.)
-; Clearly, every slot so collected is relevant.  We then iterate, sweeping into
-; the set every slot used either outside recursion or in an actual used in a
-; relevant slot.  When this computation ceases to add any new slots we consider
-; the uncollected slots to be irrelevant.
+; the posns used outside of a recursive call, including the guard or measure or
+; the lists of ignored or ignorable formals.  Clearly, every posn so collected
+; is relevant.  We then iterate, sweeping into the set every posn used either
+; outside recursion or in an actual used in a relevant posn.  When this
+; computation ceases to add any new posns we consider the uncollected posns to
+; be irrelevant.
 
 ; For example, in (defun foo (x y) (if (zerop x) 0 (foo (1- x) (cons x y)))) we
 ; intially guess that x is relevant and y is not.  The next iteration adds
-; nothing, because y is not used in the x slot, so we are done.
+; nothing, because y is not used in the x posn, so we are done.
 
 ; On the other hand, in (defun foo (x y) (if (< x 2) x (foo y 0))) we might
-; once again guess that y is irrelevant.  (Actually, we don't, because we see
-; in the initial scan that it is used in the x slot of a recursion AFTER we
-; have spotted x occurring outside of a recursive call.  But this could be
-; remedied by a defn like (defun bar (z x y) (if (not (< z 2)) (bar (1- z) y 0)
-; x)) where we don't know x is relevant at the time we process the call and
-; would thus guess that y was irrelevant.)  However, the second pass would note
-; the occurrence of y in a relevant slot and would sweep it into the set.  We
-; conclude that there are no irrelevant slots in this definition.
+; once again guess that y is irrelevant.  However, the second pass would note
+; the occurrence of y in a relevant posn and would sweep it into the set.  We
+; conclude that there are no irrelevant posns in this definition.
 
 ; So far we have not discussed lambda expressions; they are unusual in this
 ; setting because they may hide recursive calls that we should analyze.  We do
@@ -6805,188 +6789,125 @@
         ((eq var (car formals)) i)
         (t (formal-position var (cdr formals) (1+ i)))))
 
-(defun make-slot (fn formals var)
-  (list* fn (formal-position var formals 0) var))
-
-(defun make-slots (fn formals vars)
+(defun make-posns (formals vars)
   (cond ((null vars) nil)
-        (t (cons (make-slot fn formals (car vars))
-                 (make-slots fn formals (cdr vars))))))
-
-(defun slot-member (fn n lst)
-
-; We ask whether (list* fn n var), for some var, is a member-equal of
-; the list of slots, lst.
-
-  (cond ((null lst) nil)
-        ((and (equal fn (caar lst))
-              (= n (cadar lst)))
-         lst)
-        (t (slot-member fn n (cdr lst)))))
-
-; We now develop the code to expand the clique-alist for lambda expressions.
+        (t (cons (formal-position (car vars) formals 0)
+                 (make-posns formals (cdr vars))))))
 
 (mutual-recursion
 
-(defun expand-clique-alist-term (term clique-alist)
-  (cond ((variablep term) clique-alist)
-        ((fquotep term) clique-alist)
-        (t (let ((clique-alist
-                  (expand-clique-alist-term-lst (fargs term)
-                                                clique-alist))
-                 (fn (ffn-symb term)))
-             (cond
-              ((flambdap fn)
-               (cond ((assoc-equal fn clique-alist) clique-alist)
-                     (t (expand-clique-alist-term
-                         (lambda-body fn)
-                         (cons
-                          (list fn
-                                (lambda-formals fn)
-                                *t*
-                                *no-measure*
-                                (lambda-body fn))
-                          clique-alist)))))
-              (t clique-alist))))))
-
-(defun expand-clique-alist-term-lst (lst clique-alist)
-  (cond ((null lst) clique-alist)
-        (t (expand-clique-alist-term-lst
-            (cdr lst)
-            (expand-clique-alist-term (car lst) clique-alist)))))
-)
-
-(defun expand-clique-alist1 (alist clique-alist)
-  (cond ((null alist) clique-alist)
-        (t (expand-clique-alist1 (cdr alist)
-                                 (expand-clique-alist-term
-                                  (nth 4 (car alist))
-                                  clique-alist)))))
-
-(defun expand-clique-alist (clique-alist)
-  (expand-clique-alist1 clique-alist clique-alist))
-
-(defun make-clique-alist1 (fns formals guards measures bodies)
-  (cond ((null fns) nil)
-        (t (cons (list (car fns)
-                       (car formals)
-                       (car guards)
-                       (car measures)
-                       (car bodies))
-                 (make-clique-alist1 (cdr fns)
-                                     (cdr formals)
-                                     (cdr guards)
-                                     (cdr measures)
-                                     (cdr bodies))))))
-
-(defun make-clique-alist (fns formals guards measures bodies)
-
-; This function converts from the data structures used in defuns-fn0 to our
-; expanded clique-alist.  Each element of clique-alist is of the form (fn
-; formals guard measure body), where fn is either a function symbol or lambda
-; expression.
-
-  (expand-clique-alist
-   (make-clique-alist1 fns formals guards measures bodies)))
-
-(mutual-recursion
-
-(defun relevant-slots-term (fn formals term clique-alist ans)
+(defun relevant-posns-term (fn formals term fns clique-alist posns)
 
 ; Term is a term occurring in the body of fn which has formals formals.  We
-; collect a slot into ans if it is used outside a recursive call (or in an
-; already known relevant actual to a recursive call).
+; collect a posn into posns if it is used outside a recursive call (or in an
+; already known relevant actual to a recursive call).  See the Essay on the
+; Identification of Irrelevant Formals.
 
   (cond
    ((variablep term)
-    (add-to-set-equal (make-slot fn formals term) ans))
-   ((fquotep term) ans)
-   ((assoc-equal (ffn-symb term) clique-alist)
-    (relevant-slots-call fn formals (ffn-symb term) (fargs term) 0
-                         clique-alist ans))
-   (t 
-    (relevant-slots-term-lst fn formals (fargs term) clique-alist ans))))
+    (add-to-set (formal-position term formals 0) posns))
+   ((fquotep term) posns)
+   ((equal (ffn-symb term) fn)
+    (relevant-posns-call fn formals (fargs term) 0 fns clique-alist :same
+                         posns))
+   ((member-equal (ffn-symb term) fns)
+    (relevant-posns-call fn formals (fargs term) 0 fns clique-alist
+                         (cdr (assoc-equal (ffn-symb term) clique-alist))
+                         posns))
+   (t
+    (relevant-posns-term-lst fn formals (fargs term) fns clique-alist posns))))
 
-(defun relevant-slots-term-lst (fn formals lst clique-alist ans)
-  (cond ((null lst) ans)
-        (t (relevant-slots-term-lst
-            fn formals (cdr lst) clique-alist
-            (relevant-slots-term fn formals (car lst)
-                                 clique-alist ans)))))
+(defun relevant-posns-term-lst (fn formals lst fns clique-alist posns)
+  (cond ((null lst) posns)
+        (t
+         (relevant-posns-term-lst
+          fn formals (cdr lst) fns clique-alist
+          (relevant-posns-term fn formals (car lst) fns clique-alist posns)))))
 
-(defun relevant-slots-call
-  (fn formals called-fn actuals i clique-alist ans)
+(defun relevant-posns-call (fn formals actuals i fns clique-alist
+                               called-fn-posns posns)
 
-; Called-fn is the name of some function in the clique.  Actuals is (a tail of)
-; the list of actuals in a call of called-fn occurring in the body of fn (which
-; has formals formals).  Initially, i is 0 and in general is the position in
-; the argument list of the first element of actuals.  Ans is a list of slots
-; which are known to be relevant.  We extend ans by adding new, relevant slots
-; to it, by seeing which slots are used in the actuals in the relevant slots of
-; called-fn.
+; See the Essay on the Identification of Irrelevant Formals.
+
+; This function extends the set, posns, of posns for fn that are known to be
+; relevant.  It does so by analyzing the given (tail of the) actuals for a call
+; of some function in the clique, which we denote as called-fn, where that call
+; occurs in the body of fn (which has the given formals).  Called-fn-posns is
+; the set of posns for called-fn that are known to be relevant, except for the
+; case that called-fn is fn, in which case called-fn-posns is :same.  The
+; formal i, which is is initially 0, is the position in called-fn's argument
+; list of the first element of actuals.  We extend posns, the posns of fn known
+; to be relevant, by seeing which posns are used in the actuals in the relevant
+; posns of called-fn (i.e., called-fn-posns).
 
   (cond
-   ((null actuals) ans)
-   (t
-    (relevant-slots-call
-     fn formals called-fn (cdr actuals) (1+ i) clique-alist
-     (if (slot-member called-fn i ans)
-         (relevant-slots-term fn formals (car actuals)
-                              clique-alist ans)
-         ans)))))
+   ((null actuals) posns)
+   (t (relevant-posns-call
+       fn formals (cdr actuals) (1+ i) fns clique-alist
+       called-fn-posns
+       (if (member i
+                   (if (eq called-fn-posns :same)
+                       posns ; might be extended through recursive calls
+                     called-fn-posns))
+           (relevant-posns-term fn formals (car actuals) fns clique-alist
+                                posns)
+         posns)))))
 )
 
-(defun relevant-slots-def
-  (fn formals guard measure body clique-alist ans)
-
-; Returns all obviously relevant slots in a definition.  A slot is obviously
-; relevant if it is mentioned in the guard or measure of the definition or is
-; mentioned outside of all calls of functions in the clique or it is mentioned
-; in some known relevant argument position of a function in the clique.
-
-  (let ((vars (all-vars1 guard (all-vars measure))))
-    (cond
-     ((subsetp-eq formals vars)
-      (union-equal (make-slots fn formals formals) ans))
-     (t (relevant-slots-term
-         fn formals body clique-alist
-         (union-equal (make-slots fn formals vars) ans))))))
-
-(defun relevant-slots-clique1 (alist clique-alist ans)
+(defun relevant-posns-clique1 (fns arglists bodies all-fns ans)
   (cond
-   ((null alist) ans)
-   (t (relevant-slots-clique1
-       (cdr alist) clique-alist
-       (relevant-slots-def (nth 0 (car alist))
-                           (nth 1 (car alist))
-                           (nth 2 (car alist))
-                           (nth 3 (car alist))
-                           (nth 4 (car alist))
-                           clique-alist
-                           ans)))))
+   ((null fns) ans)
+   (t (relevant-posns-clique1
+       (cdr fns)
+       (cdr arglists) ; nil, once we cdr down to the lambdas
+       (cdr bodies)   ; nil, once we cdr down to the lambdas
+       all-fns
+       (let* ((posns (cdr (assoc-equal (car fns) ans)))
+              (new-posns
+               (cond ((flambdap (car fns))
+                      (relevant-posns-term (car fns)
+                                           (lambda-formals (car fns))
+                                           (lambda-body (car fns))
+                                           all-fns
+                                           ans
+                                           posns))
+                     (t
+                      (relevant-posns-term (car fns)
+                                           (car arglists)
+                                           (car bodies)
+                                           all-fns
+                                           ans
+                                           posns)))))
+         (cond ((equal posns new-posns) ; optimization
+                ans)
+               (t (put-assoc-equal (car fns) new-posns ans))))))))
 
-(defun relevant-slots-clique (clique-alist ans)
+(defun relevant-posns-clique-recur (fns arglists bodies clique-alist)
+  (let ((clique-alist1 (relevant-posns-clique1 fns arglists bodies fns
+                                               clique-alist)))
+    (cond ((equal clique-alist1 clique-alist) clique-alist)
+          (t (relevant-posns-clique-recur fns arglists bodies
+                                          clique-alist1)))))
 
-; We compute the relevant slots in an expanded clique alist (one in which the
-; lambda expressions have been elevated to clique membership).  The list of
-; relevant slots includes the relevant lambda slots.  We do it by iteratively
-; enlarging ans until it is closed.
+(defun relevant-posns-clique-init (fns arglists guards measures ignores
+                                       ignorables ans)
 
-  (let ((ans1 (relevant-slots-clique1 clique-alist clique-alist ans)))
-    (cond ((equal ans1 ans) ans)
-          (t (relevant-slots-clique clique-alist ans1)))))
+; We associate each function in fns, reversing the order in fns, with
+; obviously-relevant formal positions.
 
-(defun all-non-lambda-slots-clique (clique-alist)
-
-; We return all the slots in a clique except those for lambda expressions.
-
-  (cond ((null clique-alist) nil)
-        ((symbolp (caar clique-alist))
-         (append (make-slots (caar clique-alist) (cadar clique-alist) (cadar clique-alist))
-                 (all-non-lambda-slots-clique (cdr clique-alist))))
-        (t (all-non-lambda-slots-clique (cdr clique-alist)))))
-
-(defun ignored/ignorable-slots (fns arglists ignores ignorables)
+  (cond
+   ((null fns) ans)
+   (t (relevant-posns-clique-init
+       (cdr fns)
+       (cdr arglists)
+       (cdr guards)
+       (cdr measures)
+       (cdr ignores)
+       (cdr ignorables)
+       (acons (car fns)
+              (make-posns (car arglists)
+                          (all-vars1 (car guards)
+                                     (all-vars1 (car measures)
 
 ; Ignored formals are considered not to be irrelevant.  Should we do similarly
 ; for ignorable formals?
@@ -7004,31 +6925,102 @@
 ; variable as irrelevant, then the chance that irrelevance is due to a typo are
 ; dwarfed by the chance that irrelevance is due to being an ignorable var.
 
-  (cond ((null fns) nil)
-        (t (append (make-slots (car fns) (car arglists) (car ignores))
-                   (make-slots (car fns) (car arglists) (car ignorables))
-                   (ignored/ignorable-slots (cdr fns)
-                                            (cdr arglists)
-                                            (cdr ignores)
-                                            (cdr ignorables))))))
+                                                (union-eq (car ignorables)
+                                                          (car ignores)))))
+              ans)))))
+
+; We now develop the code to generate the clique-alist for lambda expressions.
+
+(mutual-recursion
+
+(defun relevant-posns-lambdas (term ans)
+  (cond ((or (variablep term)
+             (fquotep term))
+         ans)
+        ((flambdap (ffn-symb term))
+         (relevant-posns-lambdas
+          (lambda-body (ffn-symb term))
+          (acons (ffn-symb term)
+                 (make-posns (lambda-formals (ffn-symb term))
+                             (all-vars (lambda-body (ffn-symb term))))
+                 (relevant-posns-lambdas-lst (fargs term) ans))))
+        (t (relevant-posns-lambdas-lst (fargs term) ans))))
+
+(defun relevant-posns-lambdas-lst (termlist ans)
+  (cond ((endp termlist) ans)
+        (t (relevant-posns-lambdas-lst
+            (cdr termlist)
+            (relevant-posns-lambdas (car termlist) ans)))))
+)
+
+(defun relevant-posns-merge (alist acc)
+  (cond ((endp alist) acc)
+        ((endp (cdr alist)) (cons (car alist) acc))
+        ((equal (car (car alist))
+                (car (cadr alist)))
+         (relevant-posns-merge (acons (caar alist)
+                                      (union$ (cdr (car alist))
+                                              (cdr (cadr alist)))
+                                      (cddr alist))
+                               acc))
+        (t (relevant-posns-merge (cdr alist) (cons (car alist) acc)))))
+
+(defun relevant-posns-lambdas-top (bodies)
+  (let ((alist (merge-sort-lexorder (relevant-posns-lambdas-lst bodies nil))))
+    (relevant-posns-merge alist nil)))
+
+(defun relevant-posns-clique (fns arglists guards measures ignores ignorables
+                                  bodies)
+
+; We compute the relevant posns in an expanded clique alist (one in which the
+; lambda expressions have been elevated to clique membership).  The list of
+; relevant posns includes the relevant lambda posns.  We do it by iteratively
+; enlarging an iniital clique-alist until it is closed.
+
+  (let* ((clique-alist1 (relevant-posns-clique-init fns arglists guards
+                                                    measures ignores ignorables
+                                                    nil))
+         (clique-alist2 (relevant-posns-lambdas-top bodies)))
+    (relevant-posns-clique-recur (append fns (strip-cars clique-alist2))
+                                 arglists
+                                 bodies
+                                 (revappend clique-alist1 clique-alist2))))
+
+(defun irrelevant-non-lambda-slots-clique2 (fn formals i posns acc)
+  (cond ((endp formals) acc)
+        (t (irrelevant-non-lambda-slots-clique2
+            fn (cdr formals) (1+ i) posns
+            (cond ((member i posns) acc)
+                  (t (cons (list* fn i (car formals))
+                           acc)))))))
+
+(defun irrelevant-non-lambda-slots-clique1 (fns arglists clique-alist acc)
+  (cond ((endp fns)
+         (assert$ (or (null clique-alist)
+                      (flambdap (caar clique-alist)))
+                  acc))
+        (t (assert$ (eq (car fns) (caar clique-alist))
+                    (irrelevant-non-lambda-slots-clique1
+                     (cdr fns) (cdr arglists) (cdr clique-alist)
+                     (irrelevant-non-lambda-slots-clique2
+                      (car fns) (car arglists) 0 (cdar clique-alist)
+                      acc))))))
 
 (defun irrelevant-non-lambda-slots-clique (fns arglists guards measures ignores
                                                ignorables bodies)
 
-; Let clique-alist be an expanded clique alist (one in which lambda expressions have
-; been elevated to clique membership).  Return all the irrelevant slots for the non-lambda
-; members of the clique.
+; Let clique-alist be an expanded clique alist (one in which lambda expressions
+; have been elevated to clique membership).  Return all the irrelevant slots
+; for the non-lambda members of the clique.
 
 ; A "slot" is a triple of the form (fn n . var), where fn is a function symbol,
 ; n is some nonnegative integer less than the arity of fn, and var is the nth
 ; formal of fn.  If (fn n . var) is in the list returned by this function, then
 ; the nth formal of fn, namely var, is irrelevant to the value computed by fn.
 
-  (let ((clique-alist (make-clique-alist fns arglists guards measures bodies)))
-    (set-difference-equal (all-non-lambda-slots-clique clique-alist)
-                          (append (relevant-slots-clique clique-alist nil)
-                                  (ignored/ignorable-slots
-                                   fns arglists ignores ignorables)))))
+  (let ((clique-alist (relevant-posns-clique fns arglists guards measures
+                                             ignores ignorables bodies)))
+    (irrelevant-non-lambda-slots-clique1 fns arglists clique-alist nil)))
 
 (defun tilde-*-irrelevant-formals-msg1 (slots)
   (cond ((null slots) nil)

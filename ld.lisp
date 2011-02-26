@@ -17532,6 +17532,12 @@
   even if their arguments appear in the opposite order.  Thanks to Robert Krug
   for providing an implementation and a useful discussion.
 
+  The check for ~il[irrelevant-formals] in processing of ~ilc[defun]s has been
+  made more efficient.  Thanks to Eric Smith for reporting this issue in 2001
+  (!) and thanks to Warren Hunt for recently sending an example.  For that
+  example, we have seen the time for the ~il[irrelevant-formals] check reduced
+  from about 10 seconds to about 0.04 seconds.
+
   ~st[BUG FIXES]
 
   Calls of ~ilc[mbe] in ``safe-mode'' situations ~-[] i.e., during evaluation
