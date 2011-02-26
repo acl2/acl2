@@ -1,6 +1,6 @@
 #|
 
-   Dotimes, Version 0.1
+   Dotimes, Version 0.2
    Copyright (C) 2006 by David Rager <ragerdl@cs.utexas.edu>
 
    This program is free software; you can redistribute it and/or
@@ -22,11 +22,16 @@
 
  dotimes.lisp
 
-   This file provides a dotimes$ macro for use at the top-level. 
-   It also provides a brief example.
+   This file provides a dotimes$ macro for use at the top-level.  I also needed
+   a version of dotimes that returned error triples so that I could run events
+   multiple times for performance benchmarking.  Dotimes$-with-error-triple
+   meets these requirements.  The use of dotimes$-with-error-triple requires an
+   active ttag.
+
+   Anyone should feel to cleanup or enhance these macros.
 
 Jared Davis, Matt Kaufmann, and Sandip Ray contributed to this book.
-|# ; |
+|#
 
 (in-package "ACL2")
 
@@ -52,6 +57,37 @@ Jared Davis, Matt Kaufmann, and Sandip Ray contributed to this book.
          (value-triple (,name ,limit))
          (value-triple '(value-triple :invisible)))))))
 
+(defmacro dotimes$-with-error-triple
+  (var-limit-form form &key (name 'dotimes-default-name-foo))
+  (declare (xargs :guard (and (true-listp var-limit-form)
+                              (equal (length var-limit-form) 2))))
+  
+  (let ((var (car var-limit-form))
+        (limit (cadr var-limit-form)))
+    
+    `(make-event
+      (with-output 
+       :off summary
+       (progn!
+         (with-output
+          :off :all
+          (progn
+            (set-state-ok t)
+            (defun ,name (,var state)
+              (declare (xargs :measure (acl2-count ,var)
+                              :mode :program))
+              (if (zp ,var)
+                  (mv nil (cw "Done with dotimes~%") state)
+                (mv-let (erp val state)
+                  ,form
+; I don't have a need to recognize errors right now.  Someone else can feel
+; free to implement such a feature if they like.
+                  (declare (ignore erp val))
+                  (,name (1- ,var) state))))
+            (set-state-ok nil)))
+         (,name ,limit state)
+         (value-triple '(value-triple :invisible)))))))
+
 ; A test:
 (local
  (encapsulate
@@ -71,4 +107,17 @@ Jared Davis, Matt Kaufmann, and Sandip Ray contributed to this book.
            
              (+ a b)))))
   
-  (dotimes$ (i 4) (time$ (fib 25)))))
+  (dotimes$ (i 4) (time$ (fib 25)) :name dotimes-foo)))
+
+#|
+; The following example works, but I have disabled it so that people can
+; include this book without needing an active ttag.  Note that the use of
+; dotimes$-with-error-triple does require an active ttag.
+
+(local
+ (encapsulate
+  ()
+  (dotimes$-with-error-triple
+   (i 4)
+   (time$ (thm (equal 3 3))))))
+|#
