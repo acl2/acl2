@@ -4740,15 +4740,14 @@
   commonly, is being rewritten on behalf of some lemma to which the rewriter
   has backchained while trying to rewrite a term in the clause.
 
-  ~c[(mfc-ancestors mfc)]: returns the current list of the negations of the
+  ~c[(mfc-ancestors mfc)]: returns an alist whose keys are the negations of the
   backchaining hypotheses being pursued.  In particular,
-  ~c[(null (mfc-ancestors mfc))] will be true if and only if the term being
-  rewritten is part of the current goal; otherwise, that term is part of a
-  hypothesis from a rule currently being considered for use.  Exception: An
-  ancestor of the form ~c[(:binding-hyp hyp unify-subst)] indicates that
-  ~c[hyp] has been encountered as a hypothesis of the form ~c[(equal var term)]
-  or ~c[(equiv var (double-rewrite-term))] that binds variable ~c[var] to the
-  result of rewriting ~c[term] under ~c[unify-subst].
+  ~c[(null (mfc-ancestors mfc))] will be true exactly when rewriting is on part
+  of the current goal.  Exception: An element of this alist whose key is of the
+  form ~c[(:binding-hyp hyp unify-subst)] indicates that ~c[hyp] has been
+  encountered as a hypothesis of the form ~c[(equal var term)] or
+  ~c[(equiv var (double-rewrite-term))], in each case binding variable ~c[var]
+  to the result of rewriting ~c[term] under ~c[unify-subst].
 
   ~c[(mfc-rdepth mfc)]: returns the remaining stack depth for calls of the
   rewriter (by default, ~c[*default-rewrite-stack-limit*] at the top level;

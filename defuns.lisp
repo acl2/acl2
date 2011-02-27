@@ -7654,8 +7654,7 @@
            (translate-bodies non-executablep ; t or :program
                              names
                              (get-bodies fives)
-; Slight abuse here, see guards translation above:
-                             stobjs-in-lst
+                             stobjs-in-lst ; see "slight abuse" comment below
                              ctx wrld2 state)))
          (let* ((bodies (car bodies-and-bindings))
                 (bindings

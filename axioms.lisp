@@ -17071,10 +17071,10 @@
   invocation of ~c[table] is not always an ``event''.  We explain below,
   after giving some background information.
 
-  ~b[Important Note:]  The ~c[table] forms above are calls of a macro
-  that expand to involve the special variable ~ilc[state].  This will
-  prevent you from accessing a table from within a hint or theory where
-  where you do not have the ~ilc[state] variable.  However, the form
+  ~b[Important Note:] The ~c[table] forms above are calls of a macro that
+  expand to involve the special variable ~ilc[state].  This will prevent you
+  from accessing a table from within a hint or theory where you do not have the
+  ~ilc[state] variable.  However, the form
   ~bv[]
   (table-alist 'tests world)
   ~ev[]

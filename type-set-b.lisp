@@ -5002,6 +5002,9 @@
 ; there may be other places in our sources more deserving of generalization
 ; from 'equal to arbitrary equivalence relations.
 
+; Better yet, we can mark equivalence relations in the ancestors stack, which
+; costs a cons each time but may save many getprop calls.
+
         (mv t t))
        ((equal-mod-commuting lit-atm alit-atm nil) (mv t nil))
 

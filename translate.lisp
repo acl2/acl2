@@ -5266,11 +5266,12 @@
 ; can check (eq stobjs-out t) without dereferencing to know whether we
 ; care about the stobjs-out conditions.
 
-; Known-stobjs is a subset of the list of all stobjs known in world wrld,
-; or else known-stobjs is T and denotes all the stobjs in wrld.  A name
-; is considered a stobj iff it is in known-stobjs.  This allows us to
-; implement the :STOBJS declaration in defuns, by which the user can
-; declare the stobjs in a function.
+; Known-stobjs is a subset of the list of all stobjs known in world wrld (but
+; may contain some NIL elements, to be ignored; see "slight abuse" comment in
+; chk-acceptable-defuns1) or else known-stobjs is T and denotes all the stobjs
+; in wrld.  A name is considered a stobj iff it is in known-stobjs.  This
+; allows us to implement the :STOBJS declaration in defuns, by which the user
+; can declare the stobjs in a function.
 
 ; The cform argument is a form that provides context -- it is the one to be
 ; printed by trans-er+ when there isn't another obvious contextual form to
@@ -6466,8 +6467,10 @@
 ; introduced, and each is initially bound to itself.  If a function symbol is
 ; not bound in bindings, its STOBJS-OUT is obtained from w.
 
-; Known-stobjs is either a list of stobj names or T (meaning, all stobj names
-; in world w).  A name is considered a stobj only if it is in this list.
+; Known-stobjs is either a list of stobj names (but may contain some NIL
+; elements, to be ignored; see "slight abuse" comment in
+; chk-acceptable-defuns1) or T (meaning, all stobj names in world w).  A name
+; is considered a stobj only if it is in this list.
 
 ; State-vars is a state-vars record, typically (default-state-vars t) unless
 ; one does not have state available, and then (default-state-vars nil).
@@ -6595,9 +6598,10 @@
 ; This check is NOT made on-the-fly (in translate1) but as an
 ; after-the-fact convenience here.
 
-; Known-stobjs is either a list of stobj names or T (meaning, all
-; stobj names in world w).  A name is considered a stobj only if it
-; is in this list.
+; Known-stobjs is either a list of stobj names (but may contain some NIL
+; elements, to be ignored; see "slight abuse" comment in
+; chk-acceptable-defuns1) or T (meaning, all stobj names in world w).  A name
+; is considered a stobj only if it is in this list.
 
   (cmp-to-error-triple
    (translate-cmp x stobjs-out logic-modep known-stobjs ctx w
