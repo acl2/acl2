@@ -8262,33 +8262,26 @@
 (defmacro observation1-body (commentp)
   `(io? observation ,commentp state
         (str alist ctx abbrev-p)
-        (cond
-         ,@(and commentp ; else we avoid the overhead of observation1-body
-                `(((or (eq (ld-skip-proofsp state) 'include-book)
-                       (eq (ld-skip-proofsp state) 'include-book-with-locals)
-                       (eq (ld-skip-proofsp state) 'initialize-acl2))
-                   state)))
-         (t
-          (let ((channel (f-get-global 'proofs-co state)))
-            (mv-let
-             (col state)
-             (fmt "ACL2 Observation" nil channel state nil)
-             (mv-let (col state)
-                     (fmt-in-ctx ctx col channel state)
-                     (cond (abbrev-p
-                            (fmt-abbrev str alist col channel state "~|"))
-                           ((null abbrev-p)
-                            (mv-let (col state)
-                                    (fmt1 str alist col channel state nil)
-                                    (declare (ignore col))
-                                    (newline channel state)))
-                           (t
-                            (prog2$ (er hard 'observation1
-                                        "The abbrev-p (fourth) argument of ~
-                                         observation1 must be t or nil, so ~
-                                         the value ~x0 is illegal."
-                                        abbrev-p)
-                                    state))))))))))
+        (let ((channel (f-get-global 'proofs-co state)))
+          (mv-let
+           (col state)
+           (fmt "ACL2 Observation" nil channel state nil)
+           (mv-let (col state)
+                   (fmt-in-ctx ctx col channel state)
+                   (cond (abbrev-p
+                          (fmt-abbrev str alist col channel state "~|"))
+                         ((null abbrev-p)
+                          (mv-let (col state)
+                                  (fmt1 str alist col channel state nil)
+                                  (declare (ignore col))
+                                  (newline channel state)))
+                         (t
+                          (prog2$ (er hard 'observation1
+                                      "The abbrev-p (fourth) argument of ~
+                                       observation1 must be t or nil, so the ~
+                                       value ~x0 is illegal."
+                                      abbrev-p)
+                                  state))))))))
 
 (defun observation1 (ctx str alist abbrev-p state)
 
@@ -8323,7 +8316,8 @@
 
 (defmacro observation-cw (&rest args)
 
-; See observation.  This macro uses wormholes to avoid accessing state.
+; See observation.  This macro uses wormholes to avoid accessing state, and
+; prints even when including books.
 
   `(observation1-cw
     ,(car args)

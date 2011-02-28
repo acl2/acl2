@@ -6677,13 +6677,6 @@ next GC.~%"
      (f-put-global 'print-circle t *the-live-state*)
      (f-put-global 'print-circle-files t *the-live-state*)
 
-     "Set up Emod tracing."
-
-     (loop for sym in *emod-trace-and-compile-function-symbols* do
-           (let ((s (ofni "*~a-FN*" sym)))
-             (when (and (not (boundp s)) (fboundp sym))
-               (setf (symbol-value s) (symbol-function sym)))))
-     
      "Tell the user how to shut off asides."
 
      (hons-init-hook-set '*ofv-note-printed* nil)
@@ -6891,23 +6884,6 @@ next GC.~%"
 ; USE-LISP-HEAP-GC-THRESHOLD, more memory might be used up by the main
 ; execution, which would set the ceiling higher than we intended.  To
 ; prevent this, we interrupt the main thread to run step 4.
-
-(defg *emod-trace-and-compile-function-symbols*
-  '(emod               emod-traced
-    eoccs              eoccs-traced
-    emod-run           emod-run-traced
-
-    emod-top           emod-top-fast
-    estep-top          estep-top-fast
-    estep-trace-top    estep-trace-top-fast)
-
-  "*EMOD-TRACE-AND-COMPILE-FUNCTION-SYMBOLS* is a global, raw Lisp
-  variable containing symbols whose FUNCTION-SYMBOL we save at startup
-  for purposes of doing and undoing (FAST-ADVICE) and
-  (EMOD-TRACE).")
-
-(loop for sym in *emod-trace-and-compile-function-symbols* do
-      (proclaim `(special ,(ofni "*~a-FN*" sym))))
 
 (defn1 hons-init ()
 
