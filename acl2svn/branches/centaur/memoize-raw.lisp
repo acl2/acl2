@@ -6923,7 +6923,7 @@ next GC.~%"
 ; are unsure how many times ACL2-DEFAULT-RESTART might be called, and
 ; so we code HONS-INIT so that it may be called multiple times.
 
-  (in-package "\ACL2")
+  (in-package "ACL2")
   (unless *hons-readtable-init-done* (hons-readtable-init))
   (unless *memoize-init-done* (memoize-init))
   (float-ticks/second-init)
