@@ -3273,6 +3273,7 @@ oracle-eval.lisp
 pack.lisp
 pattern-match.lisp
 plev-ccl-raw.lsp
+plev-ccl.acl2
 plev-ccl.lisp
 plev.lisp
 progndollar.lisp
