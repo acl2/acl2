@@ -4698,29 +4698,6 @@
    (t (and (all-type-reasoning-tags-p (car ttree))
            (all-type-reasoning-tags-p (cdr ttree))))))
 
-(defun equal-mod-commuting (x y wrld)
-
-; If this function returns t, then either x and y are the same term, or they
-; are provably equal by virtue of the commutativity of their common binary
-; function symbol.
-
-; Recall that we do not track the use of equivalence relations; so we do not
-; report their use here.  When we do that, read the Note on Tracking
-; Equivalence Runes in subst-type-alist1.
-
-  (cond ((variablep x)
-         (eq x y))
-        ((variablep y)
-         nil)
-        ((or (fquotep x) (fquotep y))
-         nil) ; quotes are handled elsewhere
-        ((equal x y)
-         t)
-        (t (and (eq (ffn-symb x) (ffn-symb y))
-                (equivalence-relationp (ffn-symb x) wrld)
-                (equal (fargn x 1) (fargn y 2))
-                (equal (fargn x 2) (fargn y 1))))))
-
 (defun try-clause (atm clause wrld)
 
 ; We assume that atm rewrites to t or nil.  We return t if we are to keep that

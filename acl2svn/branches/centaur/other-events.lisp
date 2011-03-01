@@ -14912,12 +14912,46 @@
                 :ttagsx ttags               ; [default nil]
                 )
   ~ev[]
-  where ~c[book-name] is a book name (~pl[book-name]), ~c[k] is either ~c[t] or
-  an integer used to indicate your approval of the ``certification
-  ~il[world],'' and ~c[compile-flg] can control whether the book is to be
-  compiled.
+  where ~c[book-name] is a book name (~pl[book-name]), ~c[k] is used to
+  indicate your approval of the ``certification ~il[world],'' and
+  ~c[compile-flg] can control whether the book is to be compiled.  All of these
+  arguments are described in detail below.
 
-  The second argument, ~c[k], is optional; it defaults to ~c[0].
+  Certification occurs in some logical ~il[world], called the ``certification
+  ~il[world].''  That ~il[world] must contain the ~ilc[defpkg]s needed to read
+  and execute the forms in the book.  The ~il[command]s necessary to recreate
+  that ~il[world] from the ACL2 initial ~il[world] will be copied into the
+  ~il[certificate] created for the book.  Those ~il[command]s will be
+  re-executed whenever the book is included, to ensure that the appropriate
+  packages (and all other names used in the certification ~il[world]) are
+  correctly defined.  The certified book will be more often usable if the
+  certification ~il[world] is kept to a minimal extension of the ACL2 initial
+  ~il[world] (for example, to prevent name clashes with functions defined in
+  other books).  Thus, before you call ~c[certify-book] for the first time on a
+  book, you may wish to get into the initial ACL2 ~il[world] (e.g., with
+  ~c[:ubt 1] or just starting a new version of ACL2), ~ilc[defpkg] the desired
+  packages, and then invoke ~c[certify-book].
+
+  The ~c[k] argument to ~c[certify-book] must be either a nonnegative integer
+  or else one of the symbols ~c[t] or ~c[?] in the ~c[ACL2] package.  If ~c[k]
+  is an integer, then it must be the number of ~il[command]s that have been
+  executed after the initial ACL2 ~il[world] to create the ~il[world] in which
+  ~c[certify-book] was called.  One way to obtain this number is by doing
+  ~c[:pbt :start] to see all the ~il[command]s back to the first one.
+
+  If ~c[k] is ~c[t] it means that ~c[certify-book] should use the same
+  ~il[world] used in the last certification of this book.  ~c[K] may be ~c[t]
+  only if you call ~c[certify-book] in the initial ACL2 ~il[world] and there is
+  a ~il[certificate] on file for the book being certified.  (Of course, the
+  ~il[certificate] is probably invalid.)  In this case, ~c[certify-book] reads
+  the old ~il[certificate] to obtain the ~il[portcullis] ~il[command]s and
+  executes them to recreate the certification ~il[world].
+
+  Finally, ~c[k] may be ~c[?], in which case there is no check made on the
+  certification world.  That is, if ~c[k] is ~c[?] then no action related to
+  the preceding two paragraphs is performed, which can be a nice convenience
+  but at the cost of eliminating a potentially valuable check that the
+  certification ~il[world] may be as expected.
 
   We next describe the meaning of ~c[compile-flg] and how it defaults.  If
   explicit compilation has been suppressed by ~c[(set-compiler-enabled nil)],
@@ -14944,27 +14978,26 @@
   you want guards checked, consider using ~c[ld] instead, or in addition;
   ~pl[ld].
 
-  For a general discussion of books, ~pl[books].  ~c[Certify-book]
-  is akin to what we have historically called a ``proveall'': all the
-  forms in the book are ``proved'' to guarantee their admissibility.
-  More precisely, ~c[certify-book] (1) reads the forms in the book,
-  confirming that the appropriate packages are defined in the
-  certification ~il[world]; (2) does the full admissibility checks on
-  each form (proving termination of recursive functions, proving
-  theorems, etc.), checking as it goes that each form is an embedded
-  event form (~pl[embedded-event-form]); (3) rolls the ~il[world]
-  back to the initial certification ~il[world] and does an
-  ~ilc[include-book] of the book to check for ~ilc[local] incompatibilities
-  (~pl[local-incompatibility]); (4) writes a ~il[certificate] recording not
-  only that the book was certified but also recording the ~il[command]s
-  necessary to recreate the certification ~il[world] (so the appropriate
-  packages can be defined when the book is included in other ~il[world]s) and
-  the check sums of all the ~il[books] involved (~pl[certificate]); (5)
-  compiles the book if so directed (and then loads the object file in that
-  case).  The result of executing a ~c[certify-book] ~il[command] is the
-  creation of a single new event, which is actually an ~ilc[include-book]
-  event.  If you don't want its included ~il[events] in your present
-  ~il[world], simply execute ~c[:]~ilc[ubt] ~c[:here] afterwards.
+  For a general discussion of books, ~pl[books].  ~c[Certify-book] is akin to
+  what we have historically called a ``proveall'': all the forms in the book
+  are ``proved'' to guarantee their admissibility.  More precisely,
+  ~c[certify-book] (1) reads the forms in the book, confirming that the
+  appropriate packages are defined in the certification ~il[world]; (2) does
+  the full admissibility checks on each form (proving termination of recursive
+  functions, proving theorems, etc.), checking as it goes that each form is an
+  embedded event form (~pl[embedded-event-form]); (3) rolls the ~il[world] back
+  to the initial certification ~il[world] and does an ~ilc[include-book] of the
+  book to check for ~ilc[local] incompatibilities (~pl[local-incompatibility]);
+  (4) writes a ~il[certificate] recording not only that the book was certified
+  but also recording the ~il[command]s necessary to recreate the certification
+  ~il[world] (so the appropriate packages can be defined when the book is
+  included in other ~il[world]s) and the check sums of all the ~il[books]
+  involved (~pl[certificate]); (5) compiles the book if so directed (and then
+  loads the object file in that case).  The result of executing a
+  ~c[certify-book] ~il[command] is the creation of a single new event, which is
+  actually an ~ilc[include-book] event.  If you don't want its included
+  ~il[events] in your present ~il[world], simply execute ~c[:]~ilc[ubt]
+  ~c[:here] afterwards.
 
   A utility is provided to assist in debugging failures of ~c[certify-book];
   ~pl[redo-flat].)
@@ -14977,41 +15010,6 @@
   other than the one on which it was called.  For example, if the book being
   certified includes another book, that subbook must already have been
   certified.
-
-  Certification occurs in some logical ~il[world], called the ``certification
-  ~il[world].''  That ~il[world] must contain the ~ilc[defpkg]s needed to read
-  and execute the forms in the book.  The ~il[command]s necessary to recreate
-  that ~il[world] from the ACL2 initial ~il[world] will be copied into the
-  ~il[certificate] created for the book.  Those ~il[command]s will be
-  re-executed whenever the book is included, to ensure that the appropriate
-  packages (and all other names used in the certification ~il[world]) are
-  correctly defined.  The certified book will be more often usable if the
-  certification ~il[world] is kept to a minimal extension of the ACL2 initial
-  ~il[world].  Thus, before you call ~c[certify-book] for the first time on a
-  book, you should get into the initial ACL2 ~il[world] (e.g., with ~c[:ubt 1]
-  or just starting a new version of ACL2), ~ilc[defpkg] the desired packages,
-  and then invoke ~c[certify-book].
-
-  The ~c[k] argument to ~c[certify-book] must be either a nonnegative integer
-  or else one of the symbols ~c[t] or ~c[?] in the ~c[ACL2] package.  If ~c[k]
-  is an integer, then it must be the number of ~il[command]s that have been
-  executed after the initial ACL2 ~il[world] to create the ~il[world] in which
-  ~c[certify-book] was called.  One way to obtain this number is by doing
-  ~c[:pbt :start] to see all the ~il[command]s back to the first one.
-
-  If ~c[k] is ~c[t] it means that ~c[certify-book] should use the same
-  ~il[world] used in the last certification of this book.  ~c[K] may be ~c[t]
-  only if you call ~c[certify-book] in the initial ACL2 ~il[world] and there is
-  a ~il[certificate] on file for the book being certified.  (Of course, the
-  ~il[certificate] is probably invalid.)  In this case, ~c[certify-book] reads
-  the old ~il[certificate] to obtain the ~il[portcullis] ~il[command]s and
-  executes them to recreate the certification ~il[world].
-
-  Finally, ~c[k] may be ~c[?], in which case there is no check made on the
-  certification world.  That is, if ~c[k] is ~c[?] then no action related to
-  the preceding two paragraphs is performed, which can be a nice convenience
-  but at the cost of eliminating a potentially valuable check that the
-  certification ~il[world] may be as expected.
 
   If you have a certified book that has remained unchanged for some time you
   are unlikely even to remember the appropriate ~ilc[defpkg]s for it.  If you
@@ -21782,10 +21780,11 @@
 #-acl2-loop-only
 (defun trace$-def (arglist def trace-options predefined multiplicity ctx)
   #-hons (declare (ignore ctx))
-  (let* ((fn (car def))
-         (cond-tail (assoc-keyword :cond  trace-options))
+  (let* ((state-bound-p (member-eq 'state arglist))
+         (fn (car def))
+         (cond-tail (assoc-keyword :cond trace-options))
          (cond (cadr cond-tail))
-         (hide-tail (assoc-keyword :hide  trace-options))
+         (hide-tail (assoc-keyword :hide trace-options))
          (hide (or (null hide-tail) ; default is t
                    (cadr hide-tail)))
          (entry (or (cadr (assoc-keyword :entry trace-options))
@@ -21856,7 +21855,13 @@
 ; memoization interact.
 
       (memoize-off-trace-error fn ctx))
-    `(defun ,fn ,arglist
+    `(defun ,fn
+       ,(if state-bound-p
+            arglist
+          (append arglist '(&aux (state *the-live-state*))))
+       ,@(if state-bound-p
+             nil
+           '((declare (ignorable state))))
 
 ; At one time we included declarations and documentation here:
 ;      ,@(and (not notinline-fncall) ; else just lay down fncall; skip decls
@@ -22697,9 +22702,9 @@
   ~st[Remarks].
 
   (1) If some of the given trace specs have errors, then ~c[trace$] will
-  generally will print error messages for those but will still process those
-  that do not have errors.  The value returned will indicate the trace specs
-  that were processed successfully.
+  generally print error messages for those but will still process those that do
+  not have errors.  The value returned will indicate the trace specs that were
+  processed successfully.
 
   (2) If you certify or include a book that redundantly defines a function that
   is currently traced, then tracing behavior may disappear if a compiled
@@ -23104,22 +23109,14 @@
   (break-on-error :all) ; same as above, but even when inside the prover
   (break-on-error nil)  ; uninstall any above trace
   ~ev[]
-  ~c[(Break-on-error)] generates approximately the following, but modified to
-  print appropriate extra information:
-  ~bv[]
-  (trace! (error1 :entry nil :exit (break))
-          (throw-raw-ev-fncall :entry (break)))
-  ~ev[]
-  This ~il[trace] should cause entry to the Lisp debugger whenever ACL2 calls
-  its error routines, except for certain errors when inside the theorem prover
-  (and even then if option :all is supplied).
+  ~c[(Break-on-error)] generates a suitable trace of error functions.  Evaluate
+  ~c[(trace$)] after ~c[(break-on-error)] if you want to see the specific trace
+  forms (which you can modify and then submit directly to ~c[trace$], if you
+  wish).  This ~il[trace] should cause entry to the Lisp debugger whenever ACL2
+  calls its error routines, except for certain errors when inside the theorem
+  prover, and also at those times if option :all is supplied.
 
-  NOTE: For technical reasons, if you see the break message
-  ~bv[]
-  ACL2 Error [Breaking on error (entry to ev-fncall-msg)]:
-  ~ev[]
-  which is followed by an explanation of the error, then if you continue from
-  the break, you will see that explanation again.
+  NOTE: For technical reasons, you may see some error messages more than once.
 
   Finally, note that you are welcome to define your own version of
   ~c[break-on-error] by modifying a copy of the source definition (search for
@@ -23145,6 +23142,16 @@
           '(error1 :entry (:fmt (msg "[Breaking on error:]"))
                    :exit (prog2$ (maybe-print-call-history state) (break$))
                    :compile nil))
+         (er-cmp-fn-trace-form
+          '(er-cmp-fn :entry ; body of error1, to avoid second break on error1
+                      (pprogn (io? error nil state (ctx msg)
+                                   (error-fms nil ctx
+                                              "~|[Breaking on cmp error:]~|~@0"
+                                              (list (cons #\0 msg))
+                                              state))
+                              (mv :enter-break nil state))
+                      :exit (prog2$ (maybe-print-call-history state) (break$))
+                      :compile nil))
          (throw-raw-ev-fncall-string
           "[Breaking on error (entry to ev-fncall-msg)]")
          (throw-raw-ev-fncall-trace-form
@@ -23168,14 +23175,17 @@
         (er-progn
          (case on
            (:all  (trace! ,error1-trace-form
+                          ,er-cmp-fn-trace-form
                           ,throw-raw-ev-fncall-trace-form))
            ((t)   (trace! ,error1-trace-form
+                          ,er-cmp-fn-trace-form
                           (,@throw-raw-ev-fncall-trace-form
                            :cond
                            (not (f-get-global 'in-prove-flg
                                               *the-live-state*)))))
-           ((nil) (with-output :off warning
-                               (untrace$ error1 throw-raw-ev-fncall)))
+           ((nil) (with-output :off warning (untrace$ error1
+                                                      er-cmp-fn
+                                                      throw-raw-ev-fncall)))
            (otherwise (er soft 'break-on-error
                           "Illegal argument value for break-on-error: ~x0."
                           on)))
@@ -25067,6 +25077,33 @@
           "~@0Cannot unmemoize function ~x1 because it is not currently ~
            memoized."
           str key))
+     ((and (eq key-class :ideal)
+           (let* ((pair (assoc-eq :ideal-okp val))
+                  (okp (if pair
+                           (cdr pair)
+                         (cdr (assoc-eq :memoize-ideal-okp
+                                        (table-alist 'acl2-defaults-table
+                                                     wrld))))))
+             (cond ((eq okp t)
+                    nil)
+                   ((not okp)
+                    (er hard ctx
+                        "~@0The function symbol ~x1 is in :logic mode but has ~
+                         not had its guards verified.  Either run ~x2, or ~
+                         specify :IDEAL-OKP ~x3 in your ~x4 call, or else ~
+                         evaluate ~x5 or ~x6."
+                        str key 'verify-guards t 'memoize
+                        '(table acl2-defaults-table :memoize-ideal-okp t)
+                        '(table acl2-defaults-table :memoize-ideal-okp :warn)))
+                   (t ; okp is :warn
+                    (prog2$ (warning$-cw
+                             'memoize-table-chk
+                             "The function ~x0 to be memoized is in :logic ~
+                              mode but has not had its guards verified. ~
+                              Memoization might therefore not take place; see ~
+                              :DOC memoize."
+                             key)
+                            nil))))))
 
 ; Finally, check conditions on the memoization condition function.
 

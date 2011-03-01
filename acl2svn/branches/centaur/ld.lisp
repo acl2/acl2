@@ -1383,7 +1383,32 @@
 ; ld-loop, mentioned above, and it was decremented at every abort).
 
   #+(and acl2-par (not acl2-loop-only))
-  (reset-parallelism-variables)
+  (when (and (not *wormholep*)
+
+; We do not reset parallelism variables while in a wormhole (say from :brr),
+; because that could interfere with a surrounding (outside the wormhole) prover
+; call.
+
+; Fortunately, it isn't necessary to do that reset, because there is nothing to
+; clean up: we (plan as of Feb. 2011 to) disable entry to the prover from a
+; wormhole when parallelism is enabled for the prover.
+
+             (or (eql *ld-level* 1)
+                 *reset-parallelism-variables*))
+
+; We claim that the parallelism variables are reset when either (1) we are
+; entering the top-level ACL2 loop from raw Lisp, or else (2) a raw Lisp break
+; has occurred.  Let's see how the conditions above guarantee that claim.  If
+; (1) holds then the initial call of ld-fn-body in ld-fn0 will get us here with
+; *ld-level* 1.  When (2) holds then our-abort threw to 'local-top-level after
+; setting *reset-parallelism-variables* to t, and the ld-fn-body call in ld-fn0
+; is re-entered after that throw is caught, and here we are!
+
+; In rare cases we might get here without (1) or (2) holding -- say, after :a!.
+; But it's OK to call reset-parallelism-variables in such cases; we simply
+; prefer to minimize the frequency of calls, for efficiency.
+
+    (reset-parallelism-variables))
 
   (pprogn
     (f-put-ld-specials new-ld-specials-alist state)
@@ -17349,6 +17374,26 @@
 ; Replaced a couple of calls of 1+ by 1+f in fn-count-evg-rec, after Robert
 ; Krug brought these to our attention.
 
+; Improved the error message when discovering during load of compiled or
+; expansion file that a defconst is not redundant.
+
+; Added (undocumented) macro, observation-cw, and associated function,
+; observation1-cw, in analogy to (undocumented) macro, observation, and its
+; association function, observation1.  Thanks to Harsh Raju Chamarthi for
+; requesting this enhancement.
+
+; Fixed macro io? so that we are not left in a wormhole when there is an error
+; (as happened previously when the commentp argument of io? was t).
+
+; Regarding "Fixed a bug in detection of package redefinition.": The use of
+; member-equal instead of assoc-equal in maybe-introduce-empty-pkg-2 allows (at
+; least on quick analysis) every package with empty imports to be considered a
+; "virgin" package, which may have allowed (again, on quick analysis) illegal
+; package redefinition to occur.
+
+; Made efficiency improvement in check-vars-not-free, which is minor but
+; perhaps worth a couple percent since we have added equality-variants.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -17449,6 +17494,18 @@
   The macro ~ilc[append] no longer requires at least two arguments.  Thanks to
   Dave Greve for requesting this enhancement.
 
+  (Mostly for system hackers) Now, ~ilc[break-on-error] breaks at a more
+  appropriate (earlier) time for certain system functions that do not return
+  state, such as ~c[translate11].  Thanks to David Rager for requesting this
+  improvement.
+
+  ~ilc[Show-accumulated-persistence] may take a new argument, ~c[:runes], which
+  simply causes an alphebetical list of ~il[rune]s to be printed out.
+
+  Improved ~ilc[trace$] so that ~c[:entry], ~c[:exit], and ~c[:cond] forms may
+  reference ~c[state] even if the function being traced does not include
+  ~c[state] as a formal.
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of
@@ -17469,6 +17526,17 @@
   providing the necessary proof support, which we modified only in small ways.
 
   ~st[HEURISTIC IMPROVEMENTS]
+
+  The so-called ``ancestors check,'' which is used to limit backchaining, has
+  been strengthened so that two calls of ~ilc[equal] are considered the same
+  even if their arguments appear in the opposite order.  Thanks to Robert Krug
+  for providing an implementation and a useful discussion.
+
+  The check for ~il[irrelevant-formals] in processing of ~ilc[defun]s has been
+  made more efficient.  Thanks to Eric Smith for reporting this issue in 2001
+  (!) and thanks to Warren Hunt for recently sending an example.  For that
+  example, we have seen the time for the ~il[irrelevant-formals] check reduced
+  from about 10 seconds to about 0.04 seconds.
 
   ~st[BUG FIXES]
 
@@ -17528,6 +17596,9 @@
                  nil)
   ~ev[]
 
+  Fixed a bug in detection of package redefinition.  While we have no example
+  demonstrating this as a soundness bug, we cannot rule it out.
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   The HTML documentation no longer has extra newlines in <pre> environments.
@@ -17564,6 +17635,11 @@
   A new keyword argument, ~c[:AOKP], controls whether or not to allow
   memoization to take advantage of attachments; ~pl[memoize] and for relevant
   background, ~pl[defattach].
+
+  ~ilc[Memoize] is now illegal by default for ~c[:]~ilc[logic] mode functions
+  that have not had their guards verified.  ~l[memoize] (keyword
+  ~c[:ideal-okp]) and ~pl[acl2-defaults-table] (key ~c[:memoize-ideal-okp]) for
+  and explanation of this restriction and how to avoid it.
   ~eq[]
 
   ~/~/")

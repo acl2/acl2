@@ -15799,12 +15799,12 @@
                 (function-symbolp (car fns) wrld)
                 (all-function-symbolps (cdr fns) wrld)))))
 
-(defun collect-non-function-symbols (alist wrld)
-  (cond ((null alist) nil)
-        ((function-symbolp (caar alist) wrld)
-         (collect-non-function-symbols (cdr alist) wrld))
-        (t (cons (caar alist)
-                 (collect-non-function-symbols (cdr alist) wrld)))))
+(defun non-function-symbols (lst wrld)
+  (cond ((null lst) nil)
+        ((function-symbolp (car lst) wrld)
+         (non-function-symbols (cdr lst) wrld))
+        (t (cons (car lst)
+                 (non-function-symbols (cdr lst) wrld)))))
 
 (defun collect-non-logic-mode (alist wrld)
   (cond ((null alist) nil)
@@ -20999,16 +20999,17 @@
 ; suitable for oneify, which in the stobj case is the axiomatic definition
 ; rather than the raw Lisp definition.
 
-  (let* ((event-number (getprop (or stobj-function fn) 'absolute-event-number
-                                nil 'current-acl2-world wrld))
-         (wrld (and event-number
-                    (lookup-world-index 'event event-number wrld)))
-         (def (and wrld
-                   (cltl-def-from-name2 fn stobj-function axiomatic-p wrld))))
-    (and def
-         (or (null stobj-function)
-             (not (member-equal *stobj-inline-declare* def)))
-         (cons 'defun def))))
+  (and (function-symbolp fn wrld)
+       (let* ((event-number (getprop (or stobj-function fn) 'absolute-event-number
+                                     nil 'current-acl2-world wrld))
+              (wrld (and event-number
+                         (lookup-world-index 'event event-number wrld)))
+              (def (and wrld
+                        (cltl-def-from-name2 fn stobj-function axiomatic-p wrld))))
+         (and def
+              (or (null stobj-function)
+                  (not (member-equal *stobj-inline-declare* def)))
+              (cons 'defun def)))))
 
 (defun cltl-def-from-name (fn stobj-function wrld)
 

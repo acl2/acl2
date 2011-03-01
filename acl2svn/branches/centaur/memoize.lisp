@@ -487,21 +487,24 @@
 (defconst *mht-default-size* 60)
 
 (defun memoize-form (fn condition condition-p condition-fn hints otf-flg inline
-                        trace commutative forget memo-table-init-size aokp)
+                        trace commutative forget memo-table-init-size aokp
+                        ideal-okp)
   (declare (xargs :guard t))
   (cond
    ((and condition-fn (null condition-p))
     `(progn (table memoize-table
                    (deref-macro-name ,fn (macro-aliases world))
-                   (list (cons :condition-fn ,condition-fn)
-                         (cons :inline ,inline)
-                         (cons :trace ,trace)
-                         (cons :commutative ,commutative)
-                         (cons :forget ,forget)
-                         (cons :memo-table-init-size
-                               ,(or memo-table-init-size
-                                    *mht-default-size*))
-                         (cons :aokp ,aokp)))
+                   (list* (cons :condition-fn ,condition-fn)
+                          (cons :inline ,inline)
+                          (cons :trace ,trace)
+                          (cons :commutative ,commutative)
+                          (cons :forget ,forget)
+                          (cons :memo-table-init-size
+                                ,(or memo-table-init-size
+                                     *mht-default-size*))
+                          (cons :aokp ,aokp)
+                          (and (not (eq ,ideal-okp :default))
+                               (list (cons :ideal-okp ,ideal-okp)))))
             (value-triple (deref-macro-name
                            ,fn
                            (macro-aliases (w state))))))
@@ -530,7 +533,8 @@
              (commutative ,commutative)
              (forget ,forget)
              (memo-table-init-size ,memo-table-init-size)
-             (aokp ,aokp))
+             (aokp ,aokp)
+             (ideal-okp ,ideal-okp))
         (cond ((not (and
                      (symbolp fn)
                      (not (eq t formals))
@@ -585,27 +589,30 @@
                                         `(:otf-flg ,otf-flg)))
                   (table memoize-table
                          ',fn
-                         (list (cons :condition-fn ',condition-fn)
-                               (cons :inline ',inline)
-                               (cons :trace ',trace)
-                               (cons :commutative ',commutative)
-                               (cons :forget ',forget)
-                               (cons :memo-table-init-size
-                                     (or ,memo-table-init-size
-                                         *mht-default-size*))
-                               (cons :aokp ',aokp)))
+                         (list* (cons :condition-fn ',condition-fn)
+                                (cons :inline ',inline)
+                                (cons :trace ',trace)
+                                (cons :commutative ',commutative)
+                                (cons :forget ',forget)
+                                (cons :memo-table-init-size
+                                      (or ,memo-table-init-size
+                                          *mht-default-size*))
+                                (cons :aokp ',aokp)
+                                (and (not (eq ',ideal-okp :default))
+                                     (list (cons :ideal-okp ',ideal-okp)))))
                   (value-triple ',fn)))))))
    (t `(progn (table memoize-table
                      (deref-macro-name ,fn (macro-aliases world))
-                     (list (cons :condition-fn t)
-                           (cons :inline ,inline)
-                           (cons :trace ,trace)
-                           (cons :commutative ,commutative)
-                           (cons :forget ,forget)
-                           (cons :memo-table-init-size
-                              (or ,memo-table-init-size
-                                    *mht-default-size*))
-                           (cons :aokp ',aokp)))
+                     (list* (cons :condition-fn t)
+                            (cons :inline ,inline)
+                            (cons :trace ,trace)
+                            (cons :commutative ,commutative)
+                            (cons :forget ,forget)
+                            (cons :memo-table-init-size
+                                  (or ,memo-table-init-size
+                                      *mht-default-size*))
+                            (and (not (eq ',ideal-okp :default))
+                                 (list (cons :ideal-okp ',ideal-okp)))))
               (value-triple (deref-macro-name
                              ,fn
                              (macro-aliases (w state))))))))
@@ -620,6 +627,7 @@
                       forget
                       memo-table-init-size
                       aokp
+                      (ideal-okp ':default)
                       (verbose 't))
 
 ; WARNING: If you add a new argument here, consider making corresponding
@@ -652,7 +660,9 @@
   (memoize 'foo :inline nil)          ; do not inline the definition
                                       ;   of foo
   (memoize 'foo :recursive nil)       ; as above, i.e. :inline nil
-  (memoize 'foo :aokp t)              ; attachments OK for stored results~/
+  (memoize 'foo :aokp t)              ; attachments OK for stored results
+  (memoize 'foo :ideal-okp t)         ; memoize even if foo is in :logic mode
+                                      ;   but has not been guard-verified~/
 
   General Form:
   (memoize fn                         ; memoizes fn and returns fn
@@ -668,6 +678,7 @@
            :forget       t/nil        ; optional (default nil)
            :memo-table-init-size size ; optional (default *mht-default-size*)
            :aokp         t/nil        ; optional (default nil)
+           :ideal-okp    t/:warn/nil  ; optional (default nil)
            :verbose      t/nil        ; optional (default t)
            )
   ~ev[]
@@ -805,6 +816,21 @@
     - Store: always legal
   ~ef[]
 
+  If ~c[:ideal-okp] is supplied and not ~c[nil], then it is permitted to
+  memoize an ``ideal-mode'' function: one in ~c[:]~ilc[logic] mode whose
+  ~il[guard]s have not been verified.  In general, it is ill-advised to memoize
+  an ideal-mode function, because its calls are typically evaluated ``in the
+  logic'' without calling a memoized ``raw Lisp'' version of the function.
+  However, if the function is called by a ~c[:]~ilc[program] mode function,
+  evaluation can transfer to raw Lisp before reaching the call of the memoized
+  function, in which case memoization will take place.  For such situations you
+  can provide value ~c[:warn] or ~c[t] for keyword parameter ~c[:ideal-okp].
+  Both of these values allow memoization of ideal-mode functions, but if
+  ~c[:warn] is supplied then a warning will take place.  Note that you may set
+  the key ~c[:memoize-ideal-okp] of the ~ilc[acl2-defaults-table] to value
+  ~c[t] or ~c[:warn] to change the default, but if parameter ~c[:ideal-okp] is
+  supplied, the ~ilc[acl2-defaults-table] value is ignored.
+
   If ~c[:verbose] is supplied, it should either be ~c[nil], which will inhibit
   proof, event, and summary output (~pl[with-output]), or else ~c[t] (the
   default), which does not inhibit output.  If the output baffles you, try
@@ -823,7 +849,7 @@
            (ignorable condition-p condition condition-fn hints otf-flg inline
                       inline-supplied-p recursive recursive-supplied-p
                       trace commutative forget memo-table-init-size aokp
-                      verbose))
+                      ideal-okp verbose))
   #-acl2-loop-only
   `(progn (when (eql *ld-level* 0)
 
@@ -881,10 +907,11 @@
                                (kwote commutative)
                                ',forget
                                ',memo-table-init-size
-                               ',aokp)))))
+                               ',aokp
+                               ',ideal-okp)))))
            (t (memoize-form fn condition condition-p condition-fn
-                            hints otf-flg inline trace
-                            commutative forget memo-table-init-size aokp)))))
+                            hints otf-flg inline trace commutative forget
+                            memo-table-init-size aokp ideal-okp)))))
     (cond (verbose form)
           (t `(with-output
                :off (summary prove event)

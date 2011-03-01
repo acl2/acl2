@@ -128,6 +128,13 @@
   :cited-by theory-functions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Miscellaneous verify-termination and guard verification
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination-boot-strap observation1-cw)
+(verify-guards observation1-cw)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -604,9 +611,19 @@
 
 (verify-guards fn-count-1)
 
+(verify-termination-boot-strap equal-mod-commuting) ; and guards
+
 (verify-termination-boot-strap ancestors-check1)
 
 (verify-termination-boot-strap ancestors-check-builtin)
+
+(defun member-equal-mod-commuting (x lst wrld)
+  (declare (xargs :guard (and (pseudo-termp x)
+                              (pseudo-term-listp lst)
+                              (plist-worldp wrld))))
+  (cond ((endp lst) nil)
+        ((equal-mod-commuting x (car lst) wrld) lst)
+        (t (member-equal-mod-commuting x (cdr lst) wrld))))
 
 ; In the following, terms (nth 0 ...) and (nth 1 ...) in the hints were
 ; originally (car ...) and (mv-nth 1 ...), respectively, but those didn't
@@ -622,7 +639,9 @@
             (ancestors-check1 lit-atm lit fn-cnt p-fn-cnt ancestors tokens)
             (implies (and on-ancestors
                           assumed-true)
-                     (member-equal lit (strip-cars ancestors))))
+                     (member-equal-mod-commuting lit
+                                                 (strip-cars ancestors)
+                                                 nil)))
     :rule-classes nil))
 
  (defthmd ancestors-check-builtin-property
@@ -630,7 +649,9 @@
            (ancestors-check-builtin lit ancestors tokens)
            (implies (and on-ancestors
                          assumed-true)
-                    (member-equal lit (strip-cars ancestors))))
+                    (member-equal-mod-commuting lit
+                                                (strip-cars ancestors)
+                                                nil)))
    :hints (("Goal"
             :use
             ((:instance ancestors-check1-property
@@ -658,11 +679,17 @@
           (ancestors-check-builtin lit ancestors tokens)))
 
  (defthmd ancestors-check-constraint
-   (mv-let (on-ancestors assumed-true)
-           (ancestors-check lit ancestors tokens)
-           (implies (and on-ancestors
-                         assumed-true)
-                    (member-equal lit (strip-cars ancestors))))
+   (implies (and (pseudo-termp lit)
+                 (ancestor-listp ancestors)
+                 (true-listp tokens))
+            (mv-let (on-ancestors assumed-true)
+                    (ancestors-check lit ancestors tokens)
+                    (implies (and on-ancestors
+                                  assumed-true)
+                             (member-equal-mod-commuting
+                              lit
+                              (strip-cars ancestors)
+                              nil))))
    :hints (("Goal" :use ancestors-check-builtin-property))))
 
 (defattach (ancestors-check ancestors-check-builtin)

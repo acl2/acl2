@@ -1580,8 +1580,10 @@
          (:use)))))
 
 (defmacro maybe-introduce-empty-pkg-2 (name)
-  `(when (and (not (member-equal ,name *defpkg-virgins*))
-              (not (member-equal ,name *ever-known-package-alist*))
+  `(when (and (not (member ,name *defpkg-virgins*
+                           :test 'equal))
+              (not (assoc ,name *ever-known-package-alist*
+                          :test 'equal))
               (package-has-no-imports ,name))
      (push ,name *defpkg-virgins*)))
 
@@ -12170,19 +12172,28 @@
 
   `(cons ,str ,(make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) args)))
 
+(defun check-vars-not-free-test (vars term)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (pseudo-termp term))
+                  :verify-guards nil))
+  (or (not (intersectp-eq vars (all-vars term)))
+      (msg "It is forbidden to use ~v0 in ~x1."
+           vars term)))
+
 (defmacro check-vars-not-free (vars form)
 
-; A typical use of this macro is (check-vars-not-free (my-erp my-val)
-; ...)  which just expands to the translation of ... provided my-erp
-; and my-val do not occur freely in it.
+; A typical use of this macro is (check-vars-not-free (my-erp my-val) ...)
+; which just expands to the translation of ... provided my-erp and my-val do
+; not occur freely in it.
+
+; We wrap the body of the lambda into a simple function call, because
+; translate11 calls ev-w on it and we want to avoid having lots of ev-rec
+; calls, especially since intersectp-eq expands to an mbe call.
 
   (declare (xargs :guard (symbol-listp vars)))
   `(translate-and-test
     (lambda (term)
-      (let ((vars ',vars))
-        (or (not (intersectp-eq vars (all-vars term)))
-            (msg "It is forbidden to use ~v0 in ~x1."
-                 vars term))))
+      (check-vars-not-free-test ',vars term))
     ,form))
 
 (defun er-progn-fn (lst)
@@ -17060,10 +17071,10 @@
   invocation of ~c[table] is not always an ``event''.  We explain below,
   after giving some background information.
 
-  ~b[Important Note:]  The ~c[table] forms above are calls of a macro
-  that expand to involve the special variable ~ilc[state].  This will
-  prevent you from accessing a table from within a hint or theory where
-  where you do not have the ~ilc[state] variable.  However, the form
+  ~b[Important Note:] The ~c[table] forms above are calls of a macro that
+  expand to involve the special variable ~ilc[state].  This will prevent you
+  from accessing a table from within a hint or theory where you do not have the
+  ~ilc[state] variable.  However, the form
   ~bv[]
   (table-alist 'tests world)
   ~ev[]
@@ -25897,6 +25908,12 @@
 
 (verify-guards all-vars)
 
+(local (defthm symbol-listp-implies-true-listp
+         (implies (symbol-listp x)
+                  (true-listp x))))
+
+(verify-guards check-vars-not-free-test)
+
 ; Next, we verify the guards of getprops, which we delayed for the same
 ; reasons.
 
@@ -32428,6 +32445,10 @@
         ((eq key :ruler-extenders)
          (or (eq val :all)
              (chk-ruler-extenders val hard 'acl2-defaults-table world)))
+        #+hons
+        ((eq key :memoize-ideal-okp)
+         (or (eq val :warn)
+             (booleanp val)))
         (t nil)))
 
 (deflabel acl2-defaults-table
@@ -32640,6 +32661,26 @@
   ~c[:all]), then it may contain the keyword ~c[:lambdas], which has the
   special role of specifying all ~c[lambda] applications.  No other keyword is
   permitted in the list.  ~l[ruler-extenders].
+  ~bv[]
+  :memoize-ideal-okp
+  ~ev[]
+  This key is only legal in an experimental ~ilc[hons] version
+  (~pl[hons-and-memoization]).  Its value must be either ~c[t], ~c[nil], or
+  ~c[:warn].  If the value is ~c[nil] or not present, then it is illegal by
+  default to ~il[memoize] a ~c[:]~ilc[logic] mode function that has not been
+  ~il[guard]-verified (~pl[verify-guards]), sometimes called an ``ideal-mode''
+  function.  This illegality is the default because such calls of such
+  functions in the ACL2 loop are generally evaluated in the logic (using
+  so-called ``executable counterpart'' definitions), rather than directly by
+  executing calls of the corresponding (memoized) raw Lisp function.  However,
+  such a raw Lisp call can be made when the function is called by a
+  ~c[:]~ilc[program] mode function, so we allow you to override the default
+  behavior by associating the value ~c[t] or ~c[:warn] with the key
+  ~c[:memoize-ideal-okp], where with ~c[:warn] you get a suitable warning.
+  Note that you can also allow memoization of ideal-mode functions by supplying
+  argument ~c[:ideal-okp] to your memoization event (~pl[memoize]), in which
+  case the value of ~c[:memoize-ideal-okp] in the ~c[acl2-defaults-table] is
+  irrelevant.
 
   Note: Unlike all other ~il[table]s, ~c[acl2-defaults-table] can affect the
   soundness of the system.  The ~il[table] mechanism therefore enforces on
