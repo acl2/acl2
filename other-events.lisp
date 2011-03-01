@@ -25077,6 +25077,33 @@
           "~@0Cannot unmemoize function ~x1 because it is not currently ~
            memoized."
           str key))
+     ((and (eq key-class :ideal)
+           (let* ((pair (assoc-eq :ideal-okp val))
+                  (okp (if pair
+                           (cdr pair)
+                         (cdr (assoc-eq :memoize-ideal-okp
+                                        (table-alist 'acl2-defaults-table
+                                                     wrld))))))
+             (cond ((eq okp t)
+                    nil)
+                   ((not okp)
+                    (er hard ctx
+                        "~@0The function symbol ~x1 is in :logic mode but has ~
+                         not had its guards verified.  Either run ~x2, or ~
+                         specify :IDEAL-OKP ~x3 in your ~x4 call, or else ~
+                         evaluate ~x5 or ~x6."
+                        str key 'verify-guards t 'memoize
+                        '(table acl2-defaults-table :memoize-ideal-okp t)
+                        '(table acl2-defaults-table :memoize-ideal-okp :warn)))
+                   (t ; okp is :warn
+                    (prog2$ (warning$-cw
+                             'memoize-table-chk
+                             "The function ~x0 to be memoized is in :logic ~
+                              mode but has not had its guards verified. ~
+                              Memoization might therefore not take place; see ~
+                              :DOC memoize."
+                             key)
+                            nil))))))
 
 ; Finally, check conditions on the memoization condition function.
 

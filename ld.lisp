@@ -17635,6 +17635,11 @@
   A new keyword argument, ~c[:AOKP], controls whether or not to allow
   memoization to take advantage of attachments; ~pl[memoize] and for relevant
   background, ~pl[defattach].
+
+  ~ilc[Memoize] is now illegal by default for ~c[:]~ilc[logic] mode functions
+  that have not had their guards verified.  ~l[memoize] (keyword
+  ~c[:ideal-okp]) and ~pl[acl2-defaults-table] (key ~c[:memoize-ideal-okp]) for
+  and explanation of this restriction and how to avoid it.
   ~eq[]
 
   ~/~/")

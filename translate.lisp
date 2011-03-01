@@ -3039,6 +3039,22 @@
         'wrld
         'state-vars))
 
+(defconst *default-state-vars*
+  (default-state-vars nil))
+
+(defmacro warning$-cw (ctx &rest args)
+
+; This differs from warning$-cmp only in that state-vars and wrld are bound
+; here for the user, so that warnings are not suppressed merely by virtue of
+; the value of state global 'ld-skip-proofsp.  Thus, unlike warning$ and
+; warning$-cw, there is no warning string, and a typical use of this macro
+; might be:
+; (warning$-cw ctx "The :REWRITE rule ~x0 loops forever." name).
+
+  `(let ((state-vars *default-state-vars*)
+         (wrld nil))
+     (warning$-cmp ,ctx nil ,@args)))
+
 (defun chk-length-and-keys (actuals form wrld)
   (cond ((null actuals)
          (value-cmp nil))

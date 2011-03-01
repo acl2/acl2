@@ -32445,6 +32445,10 @@
         ((eq key :ruler-extenders)
          (or (eq val :all)
              (chk-ruler-extenders val hard 'acl2-defaults-table world)))
+        #+hons
+        ((eq key :memoize-ideal-okp)
+         (or (eq val :warn)
+             (booleanp val)))
         (t nil)))
 
 (deflabel acl2-defaults-table
@@ -32657,6 +32661,26 @@
   ~c[:all]), then it may contain the keyword ~c[:lambdas], which has the
   special role of specifying all ~c[lambda] applications.  No other keyword is
   permitted in the list.  ~l[ruler-extenders].
+  ~bv[]
+  :memoize-ideal-okp
+  ~ev[]
+  This key is only legal in an experimental ~ilc[hons] version
+  (~pl[hons-and-memoization]).  Its value must be either ~c[t], ~c[nil], or
+  ~c[:warn].  If the value is ~c[nil] or not present, then it is illegal by
+  default to ~il[memoize] a ~c[:]~ilc[logic] mode function that has not been
+  ~il[guard]-verified (~pl[verify-guards]), sometimes called an ``ideal-mode''
+  function.  This illegality is the default because such calls of such
+  functions in the ACL2 loop are generally evaluated in the logic (using
+  so-called ``executable counterpart'' definitions), rather than directly by
+  executing calls of the corresponding (memoized) raw Lisp function.  However,
+  such a raw Lisp call can be made when the function is called by a
+  ~c[:]~ilc[program] mode function, so we allow you to override the default
+  behavior by associating the value ~c[t] or ~c[:warn] with the key
+  ~c[:memoize-ideal-okp], where with ~c[:warn] you get a suitable warning.
+  Note that you can also allow memoization of ideal-mode functions by supplying
+  argument ~c[:ideal-okp] to your memoization event (~pl[memoize]), in which
+  case the value of ~c[:memoize-ideal-okp] in the ~c[acl2-defaults-table] is
+  irrelevant.
 
   Note: Unlike all other ~il[table]s, ~c[acl2-defaults-table] can affect the
   soundness of the system.  The ~il[table] mechanism therefore enforces on
