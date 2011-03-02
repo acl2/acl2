@@ -8203,6 +8203,8 @@
 (link-doc-to intersection-eq programming intersection$)
 (link-doc-to intersection-equal programming intersection$)
 
+(link-doc-to observation-cw programming observation)
+
 #+:non-standard-analysis
 (defun build-valid-std-usage-clause (arglist body)
   (cond ((null arglist)

@@ -7193,7 +7193,7 @@
                (not (and proxy-upgrade-p
                          (global-val 'boot-strap-flg wrld))))
           (er soft ctx
-              "Redefinition of system functions is not permitted unless there ~
+              "Redefinition of system names is not permitted unless there ~
                is an active trust tag (ttag).  See :DOC defttag."))
          (proxy-upgrade-p
 

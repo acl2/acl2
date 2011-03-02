@@ -4295,8 +4295,7 @@
   (let ((infixp (f-get-global 'infixp state)))
     (or (eq infixp t) (eq infixp :out))))
 
-#-acl2-loop-only
-(defun-one-output flatsize-infix (x print-base termp j max eviscp)
+(defun flatsize-infix (x print-base termp j max state eviscp)
 
 ; Suppose that printing x flat in infix notation causes k characters to come
 ; out.  Then we return j+k.  All answers greater than max are equivalent.
@@ -4310,17 +4309,12 @@
 ; space.  But note that we use infix output only if infixp is t or :out.
 
   (declare (ignore termp))
-  (+ 2 (flsz1 x print-base j max *the-live-state* eviscp)))
+  (+ 2 (flsz1 x print-base j max state eviscp)))
 
 (defun flsz (x termp j maximum state eviscp)
-  #+acl2-loop-only
-  (declare (ignore termp))
-  #-acl2-loop-only
-  (cond ((and (live-state-p state)
-              (output-in-infixp state))
-         (return-from flsz (flatsize-infix x (print-base) termp j maximum
-                                           eviscp))))
-  (flsz1 x (print-base) j maximum state eviscp))
+  (cond ((output-in-infixp state)
+         (flatsize-infix x (print-base) termp j maximum state eviscp))
+        (t (flsz1 x (print-base) j maximum state eviscp))))
 
 (defun max-width (lst maximum)
   (cond ((null lst) maximum)
@@ -6087,33 +6081,15 @@
   (declare (type (signed-byte 30) col))
   (the2s
    (signed-byte 30)
-   #-acl2-loop-only
    (mv-let (col state)
            (fmt0 (the-string! str 'fmt1) alist 0
                  (the-fixnum! (length str) 'fmt1)
                  (the-fixnum! col 'fmt1)
                  channel state evisc-tuple)
            (declare (type (signed-byte 30) col))
-
-; Allegro 6.0 needs explicit calls of finish-output in order to flush to
-; standard output when *print-pretty* is nil.  SBCL 1.0 and 1.0.2 have
-; exhibited this requirement during a redef query, for example:
-
-; (defun foooooooooooooooooooooooooooo (x) x)
-; :redef
-; (defun foooooooooooooooooooooooooooo (x) (+ 1 x))
-
-           (progn #+(or sbcl
-                        (and allegro allegro-version>= (version>= 6 0)))
-                  (if (eq channel *standard-co*)
-                      (finish-output
-                       (get-output-stream-from-channel *standard-co*)))
-                  (mv col state)))
-   #+acl2-loop-only
-   (fmt0 (the-string! str 'fmt1) alist 0
-         (the-fixnum! (length str) 'fmt1)
-         (the-fixnum! col 'fmt1)
-         channel state evisc-tuple)))
+           (prog2$ (and (eq channel *standard-co*)
+                        (maybe-finish-output$ *standard-co* state))
+                   (mv col state)))))
 
 (defun fmt (str alist channel state evisc-tuple)
 
@@ -8298,6 +8274,74 @@
 
 ; A typical use of this macro might be:
 ; (observation ctx "5 :REWRITE rules are being stored under name ~x0." name).
+
+  ":Doc-Section ACL2::Programming
+
+  print an observation~/
+
+  Here is a typical application of ~c[observation].
+  ~bv[]
+  ACL2 !>(let ((ctx 'top-level)
+               (name 'foo))
+           (observation ctx
+                        \"Skipping processing of name ~~x0.\"
+                        name))
+
+  ACL2 Observation in TOP-LEVEL:  Skipping processing of name FOO.
+  <state>
+  ACL2 !>
+  ~ev[]
+  ~c[Observation] prints an initial ``~c[ACL2 Observation...:  ]'', and then
+  prints the indicated message using formatted printing (~pl[fmt]).  Notice in
+  the example above that evaluation of a call of ~c[observation] returns
+  ~ilc[state].  Indeed, ~c[observation] is actually a macro whose expansion
+  takes and returns the ACL2 ~ilc[state].  A similar utility,
+  ~c[observation-cw], is available that does not take or return ~c[state];
+  rather, it returns ~c[nil] as the suffix ``~c[cw]'' suggests that a ``comment
+  window'' is the target of this printing, rather than the state.  For example:
+  ~bv[]
+  ACL2 !>(let ((ctx 'top-level)
+               (name 'foo))
+           (observation-cw ctx
+                           \"Skipping processing of name ~~x0.\"
+                           name))
+
+  ACL2 Observation in TOP-LEVEL:  Skipping processing of name FOO.
+  NIL
+  ACL2 !>
+  ~ev[]
+  ~c[Observation-cw] takes exactly the same arguments as ~c[observation], but
+  ~c[observation-cw] does its printing in a so-called ``wormhole'';
+  ~pl[wormhole].~/
+
+  ~bv[]
+  General Forms:
+  (observation    ctx fmt-string fmt-arg1 fmt-arg2 ... fmt-argk)
+  (observation-cw ctx fmt-string fmt-arg1 fmt-arg2 ... fmt-argk)
+  ~ev[]
+  where ~c[ctx] generally evaluates to a symbol (but see below), and
+  ~c[fmt-string] together with the ~c[fmt-argi] are suitable for passing to
+  ~ilc[fmt].  Output begins and ends with a newline.
+
+  Recall from the example above that the output from a call of ~c[observation]
+  (or ~c[observation-cw]) begins with ``~c[ACL2 Observation]'' and additional
+  characters ending in ``~c[:  ]'', for example ``~c[ in TOP-LEVEL:  ]'',
+  followed by formatted output produced from ~c[fmt-string] with the given
+  ~c[fmt-argi].  The characters printed immediately following the string
+  ``~c[ACL2 Observation]'' depend on the value of ~c[ctx].  If ~c[ctx] is
+  ~c[nil], nothing is printed.  If ~c[ctx] is a non-~c[nil] symbol, it is
+  printed using ~ilc[fmt] directive ~c[~~x].  If ~c[ctx] is a ~ilc[cons] pair
+  whose ~ilc[car] is a symbol, formatted printing is applied to the string
+  \"(~~x0 ~~x1 ...)\", where ~c[#\\0] and ~c[#\\1] are bound respectively to
+  that car and cdr.  Otherwise, ~c[ctx] is printed using ~ilc[fmt] directive
+  ~c[~~@].
+
+  We next discuss situations in which printing is inhibited for ~c[observation]
+  and ~c[observation-cw].  No printing is done when ~c[observation] is among
+  the inhibited output types; ~pl[set-inhibit-output-lst].  Moreover, no
+  printing is done by ~c[observation] during ~ilc[include-book].  If you want
+  to avoid printing from ~c[observation-cw] during ~ilc[include-book], then you
+  need to manage that yourself."
 
   `(cond
     ((or (eq (ld-skip-proofsp state) 'include-book)

@@ -17377,11 +17377,6 @@
 ; Improved the error message when discovering during load of compiled or
 ; expansion file that a defconst is not redundant.
 
-; Added (undocumented) macro, observation-cw, and associated function,
-; observation1-cw, in analogy to (undocumented) macro, observation, and its
-; association function, observation1.  Thanks to Harsh Raju Chamarthi for
-; requesting this enhancement.
-
 ; Fixed macro io? so that we are not left in a wormhole when there is an error
 ; (as happened previously when the commentp argument of io? was t).
 
@@ -17524,6 +17519,10 @@
   modification by users, i.e., attachment using
   ~c[(defattach ancestors-check <your_function>)].  Thanks to Robert Krug for
   providing the necessary proof support, which we modified only in small ways.
+
+  A new macro, ~c[observation-cw], provides formatted printing of observations
+  without ~ilc[state]: ~pl[observation].  Thanks to Harsh Raju Chamarthi for
+  requesting this utility, which is now used in some of the distributed books.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
