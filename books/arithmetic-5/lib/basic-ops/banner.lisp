@@ -33,16 +33,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(value-triple
- (cw "~%To turn on non-linear arithmetic, execute :~|~%~Y02~|~%~
-      or :~|~%~Y12~|~%~
-      See the README for more about non-linear arithmetic and ~
-      general information about using this library.~|~%~%"
-     '(set-default-hints '((nonlinearp-default-hint
-                            stable-under-simplificationp
-			    hist pspv)))
-     '(set-default-hints '((nonlinearp-default-hint++ 
-			   id stable-under-simplificationp
-			   hist nil)))
-     nil)
- :on-skip-proofs t)
+(make-event
+ (prog2$
+  (observation-cw
+   'non-linear-arithmetic
+   "To turn on non-linear arithmetic, execute :~|~%~Y02~|~%~
+    or :~|~%~Y12~|~%~
+    See the README for more about non-linear arithmetic and ~
+    general information about using this library."
+   '(set-default-hints '((nonlinearp-default-hint
+                          stable-under-simplificationp
+                          hist pspv)))
+   '(set-default-hints '((nonlinearp-default-hint++ 
+                          id stable-under-simplificationp
+                          hist nil)))
+   nil)
+  '(value-triple nil))
+ :check-expansion t)
+

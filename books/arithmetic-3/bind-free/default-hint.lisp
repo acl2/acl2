@@ -35,7 +35,9 @@
                           (access prove-spec-var pspv :rewrite-constant)
                           :nonlinearp))
              (prog2$
-              (cw "~%~%[Note: We now enable non-linear arithmetic.]~%~%")
+              (observation-cw
+               'nonlinearp-default-hint
+               "We now enable non-linear arithmetic.")
               '(:computed-hint-replacement t
                                            :nonlinearp t))
            nil))
@@ -44,7 +46,9 @@
                  :nonlinearp)
          (if (not (equal (caar hist) 'SETTLED-DOWN-CLAUSE))
              (prog2$
-              (cw "~%~%[Note: We now disable non-linear arithmetic.]~%~%")
+              (observation-cw
+               'nonlinearp-default-hint
+               "We now disable non-linear arithmetic.")
               '(:computed-hint-replacement t
                                            :nonlinearp nil))
            nil))

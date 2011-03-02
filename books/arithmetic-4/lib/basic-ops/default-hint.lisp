@@ -52,7 +52,9 @@
 			       (access prove-spec-var pspv :rewrite-constant)
 			       :nonlinearp))
 	   (prog2$
-	    (cw "~%~%[Note: We now enable non-linear arithmetic.]~%~%")
+	    (observation-cw
+             'nonlinearp-default-hint
+             "We now enable non-linear arithmetic.")
 	    '(:computed-hint-replacement t
 					 :nonlinearp t))
            nil))
@@ -69,9 +71,11 @@
 		  ;; am doing.
 		  (not (equal (caar hist) 'SETTLED-DOWN-CLAUSE)))
 	     (prog2$
-	       (cw "~%~%[Note: We now disable non-linear arithmetic.]~%~%")
-	       '(:computed-hint-replacement t
-					    :nonlinearp nil))
+              (observation-cw
+               'nonlinearp-default-hint
+               "We now disable non-linear arithmetic.")
+              '(:computed-hint-replacement t
+                                           :nonlinearp nil))
            nil))
         (t
          nil)))
@@ -97,9 +101,9 @@
   (cond (stable-under-simplificationp
 	 (cond ((equal last-hint-used nil)
 		(prog2$
-		 (cw "~%~%~
-                      [Note: We now enable prefer-positive-exponents.]~
-                      ~%~%")
+		 (observation-cw
+                  'arithmetic-default-hint
+                  "We now enable prefer-positive-exponents.")
 		 (let ((e/d '(((:REWRITE prefer-positive-exponents-scatter-exponents-equal)
 			       (:REWRITE prefer-positive-exponents-scatter-exponents-<)
 			       (:rewrite PREFER-POSITIVE-EXPONENTS-SCATTER-EXPONENTS-<-2)
@@ -125,9 +129,9 @@
 						:nonlinearp nil))))
 	       ((equal last-hint-used 'prefer-positive-addends)
 		(prog2$
-		 (cw "~%~%~
-                      [Note: We now enable non-linear arithmetic.]~
-                      ~%~%")
+                 (observation-cw
+                  'arithmetic-default-hint
+                  "We now enable non-linear arithmetic.")
 		 `(:computed-hint-replacement ((arithmetic-default-hint 
 						stable-under-simplificationp 
 						hist 'non-linear-arithmetic))
@@ -139,10 +143,10 @@
 	      (consp (car hist))
 	      (not (equal (caar hist) 'SETTLED-DOWN-CLAUSE)))
 	 (prog2$
-	  (cw "~%~%~
-                          [Note: We now disable non-linear arithmetic ~
-                           and return to the earlier enabled theory.]~
-                          ~%~%")
+          (observation-cw
+           'arithmetic-default-hint
+           "We now disable non-linear arithmetic and return to the earlier ~
+            enabled theory.")
 	  (let ((e/d '(((:REWRITE normalize-factors-gather-exponents)
 			(:REWRITE simplify-products-gather-exponents-equal)
 			(:REWRITE simplify-products-gather-exponents-<))
@@ -218,9 +222,9 @@
    (stable-under-simplificationp
     (cond ((equal last-hint-used nil)
 	   (prog2$
-	    (cw "~%~%~
-                      [Note: branch.]~
-                      ~%~%")
+	    (observation-cw
+             'nonlinearp-default-hint++
+             "Branch.")
 	    (let ((e/d '(((:REWRITE prefer-positive-exponents-scatter-exponents-equal)
 			  (:REWRITE prefer-positive-exponents-scatter-exponents-<)
 			  (:rewrite PREFER-POSITIVE-EXPONENTS-SCATTER-EXPONENTS-<-2)
@@ -246,18 +250,18 @@
 					      (:nonlinearp t))))))
 	  ((equal last-hint-used 'prefer-positive-exponents)
 	   (prog2$
-	    (cw "~%~%~
-                      [Note: prefer-positive-exponents.]~
-                      ~%~%")
+            (observation-cw
+             'nonlinearp-default-hint++
+             "Prefer-positive-exponents.")
 	    `(:computed-hint-replacement ((nonlinearp-default-hint++ id 
 								     stable-under-simplificationp
 								     hist 'non-linear-arithmetic))
 					 :nonlinearp t)))
 	  ((equal last-hint-used 'recycle)
 	   (prog2$
-	    (cw "~%~%~
-                      [Note: recycle.]~
-                      ~%~%")
+            (observation-cw
+             'nonlinearp-default-hint++
+             "Recycle.")
 	    `(:computed-hint-replacement ((nonlinearp-default-hint++ id 
 								     stable-under-simplificationp
 								     hist 'non-linear-arithmetic))
@@ -268,30 +272,34 @@
     (let ((branch-taken (branch-taken id)))
       (cond ((equal branch-taken 2)
 	     (prog2$
-	      (cw "~%~%~
-                          [Note: check-branch-taken prefer-positive-exponents.~%~%")
+              (observation-cw
+               'nonlinearp-default-hint++
+               "Check-branch-taken prefer-positive-exponents.")
 	      `(:computed-hint-replacement ((nonlinearp-default-hint++ id 
 								       stable-under-simplificationp
 								       hist 'prefer-positive-exponents))
 					   :no-op t)))
 	    ((equal branch-taken 1)
 	     (prog2$
-	      (cw "~%~%~
-                          [Note: check-branch-taken non-linear-arithmetic.~%~%")
+              (observation-cw
+               'nonlinearp-default-hint++
+               "Check-branch-taken non-linear-arithmetic.")
 	      `(:computed-hint-replacement ((nonlinearp-default-hint++ id 
 								       stable-under-simplificationp
 								       hist 'recycle))
 					   :nonlinearp nil)))
 	    (t
-	     (cw "~%~%~
-                          [Note: This is bad.~%~%")))))
+             (observation-cw
+              'nonlinearp-default-hint++
+              "This is bad.")))))
    ((and (equal last-hint-used 'non-linear-arithmetic)
 	 (consp hist)
 	 (consp (car hist))
 	 (not (equal (caar hist) 'SETTLED-DOWN-CLAUSE)))
     (prog2$
-     (cw "~%~%~
-                          [Note: non-linear-arithmetic.~%~%")
+     (observation-cw
+      'nonlinearp-default-hint++
+      "Non-linear-arithmetic.")
      `(:computed-hint-replacement ((nonlinearp-default-hint++ id 
 							      stable-under-simplificationp
 							      hist 'recycle))

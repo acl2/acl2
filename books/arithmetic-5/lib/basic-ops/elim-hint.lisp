@@ -445,10 +445,11 @@
 	      (consp (cadr elim-vars-list))
 	      (not (equal (car elim-vars-list)
 			  (cadr elim-vars-list))))
-	 (cw "This is bad.  Differing elim-vars found. ~
-              ~%~x0 and ~x1~%~%"
-	     (car elim-vars-list)
-	     (cadr elim-vars-list))
+	 (observation-cw
+          'crush-elim-vars
+          "This is bad.  Differing elim-vars found. ~%~x0 and ~x1~%~%"
+          (car elim-vars-list)
+          (cadr elim-vars-list))
        nil)
      (union-equal (car elim-vars-list)
 		  (crush-elim-vars (cdr elim-vars-list))))))
@@ -484,9 +485,9 @@
    (stable-under-simplificationp
     (cond ((equal last-hint-used nil)
 	   (prog2$
-	    (cw "~%~%~
-                      [Note: branch.]~
-                      ~%~%")
+	    (observation-cw
+             'arithmetic-default-hint-11
+             "Branch.")
 	    (let ((e/d '(((:REWRITE normalize-factors-gather-exponents)
 			(:REWRITE simplify-products-gather-exponents-equal)
 			(:REWRITE simplify-products-gather-exponents-<))
@@ -512,9 +513,9 @@
 					      (:nonlinearp t))))))
 	  ((equal last-hint-used 'prefer-positive-exponents)
 	   (prog2$
-	    (cw "~%~%~
-                      [Note: prefer-positive-exponents.]~
-                      ~%~%")
+	    (observation-cw
+             'arithmetic-default-hint-11
+             "Prefer-positive-exponents.")
 	    `(:computed-hint-replacement ((arithmetic-default-hint-11 id clause
 								     stable-under-simplificationp
 								     hist pspv
@@ -524,9 +525,9 @@
 					 :nonlinearp t)))
 	  ((equal last-hint-used 'recycle)
 	   (prog2$
-	    (cw "~%~%~
-                      [Note: recycle.]~
-                      ~%~%")
+	    (observation-cw
+             'arithmetic-default-hint-11
+             "Recycle.")
 	    `(:computed-hint-replacement ((arithmetic-default-hint-11 id clause 
 								     stable-under-simplificationp
 								     hist pspv
@@ -536,8 +537,9 @@
 					 :nonlinearp t)))
 	  ((equal last-hint-used 'non-linear-arithmetic)
 	   (prog2$
-	    (cw "~%~%~
-                          [Note: settled-down-clause")
+	    (observation-cw
+             'arithmetic-default-hint-11
+             "Settled-down-clause.")
 	    (mv-let (clauses-list elim-vars-list)
 		    (eliminate-destructors-hint clause elim-vars '(floor mod) pspv world)
 		    (if clauses-list
@@ -565,8 +567,9 @@
     (let ((branch-taken (branch-taken id)))
       (cond ((equal branch-taken 2)
 	     (prog2$
-	      (cw "~%~%~
-                          [Note: check-branch-taken prefer-positive-exponents.~%~%")
+	      (observation-cw
+               'arithmetic-default-hint-11
+               "Check-branch-taken prefer-positive-exponents.")
 	      `(:computed-hint-replacement ((arithmetic-default-hint-11 id clause 
 								       stable-under-simplificationp
 								       hist pspv
@@ -576,8 +579,9 @@
 					   :no-op t)))
 	    ((equal branch-taken 1)
 	     (prog2$
-	      (cw "~%~%~
-                          [Note: check-branch-taken non-linear-arithmetic.~%~%")
+	      (observation-cw
+               'arithmetic-default-hint-11
+               "Check-branch-taken non-linear-arithmetic.")
 	      `(:computed-hint-replacement ((arithmetic-default-hint-11 id clause 
 								       stable-under-simplificationp
 								       hist pspv
@@ -586,15 +590,17 @@
 								       ',elim-vars))
 					   :nonlinearp nil)))
 	    (t
-	     (cw "~%~%~
-                          [Note: This is bad.  Computed hint gone awry.]~%~%")))))
+	     (observation-cw
+               'arithmetic-default-hint-11
+               "This is bad.  Computed hint gone awry.")))))
    ((and (equal last-hint-used 'non-linear-arithmetic)
 	 (consp hist)
 	 (consp (car hist))
 	 (not (equal (caar hist) 'SETTLED-DOWN-CLAUSE)))
     (prog2$
-     (cw "~%~%~
-                          [Note: non-linear-arithmetic.~%~%")
+     (observation-cw
+      'arithmetic-default-hint-11
+      "Non-linear-arithmetic.")
      `(:computed-hint-replacement ((arithmetic-default-hint-11 id clause 
 							      stable-under-simplificationp
 							      hist pspv
