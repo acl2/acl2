@@ -4811,9 +4811,10 @@
     (mv-let
      (erp fives)
      (chk-defuns-tuples-cmp (cadr x) t ctx wrld state-vars)
-     (let ((names (strip-cars fives)))
+     (let ((names (and (not erp)
+                       (strip-cars fives))))
        (mv-let
-        (erp ignored-val)
+        (erp msg)
         (if erp ; erp is a ctx and fives is a msg
             (mv erp fives)
 
@@ -4821,11 +4822,16 @@
 ; acceptable-dcls-alist guarantees that xargs is illegal.
 
           (chk-no-duplicate-defuns-cmp names ctx))
-        (declare (ignore ignored-val))
         (cond
-         (erp (trans-er ctx
-                        "The above error indicates a problem with the form ~p0."
-                        x))
+         (erp
+
+; Erp is a context that we are ignoring in the message below.  Probably it is
+; ctx anyhow, but if not, there isn't an obvious problem with ignoring it.
+
+          (trans-er ctx
+                    "~@0~|~%The above error indicates a problem with the form ~
+                     ~p1."
+                    msg x))
          ((first-assoc-eq names (table-alist 'return-last-table wrld))
 
 ; What horrors may lie ahead, for example, with

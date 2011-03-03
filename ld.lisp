@@ -17598,6 +17598,9 @@
   Fixed a bug in detection of package redefinition.  While we have no example
   demonstrating this as a soundness bug, we cannot rule it out.
 
+  Fixed a bug in the message produced by an erroneous call of ~ilc[flet].
+  Thanks to Jared Davis for reporting this bug and sending a helpful example.
+
   ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
 
   The HTML documentation no longer has extra newlines in <pre> environments.
