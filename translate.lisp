@@ -4327,9 +4327,9 @@
          (value-cmp nil))
         (t (er-cmp ctx
                    "We do not permit duplications among the list of symbols ~
-                    being defined.  Thus, you cannot define ~&0 ~
-                    simultaneously."
-                   lst))))
+                    being defined.  However, the symbol~#0~[ ~&0 is~/s ~&0 ~
+                    are each~] defined more than once."
+                   (duplicates lst)))))
 
 (defun chk-no-duplicate-defuns (lst ctx state)
   (cmp-to-error-triple (chk-no-duplicate-defuns-cmp lst ctx))) 
