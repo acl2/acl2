@@ -445,8 +445,7 @@
 	      (consp (cadr elim-vars-list))
 	      (not (equal (car elim-vars-list)
 			  (cadr elim-vars-list))))
-	 (observation-cw
-          'crush-elim-vars
+	 (cw
           "This is bad.  Differing elim-vars found. ~%~x0 and ~x1~%~%"
           (car elim-vars-list)
           (cadr elim-vars-list))
@@ -590,9 +589,11 @@
 								       ',elim-vars))
 					   :nonlinearp nil)))
 	    (t
-	     (observation-cw
-               'arithmetic-default-hint-11
-               "This is bad.  Computed hint gone awry.")))))
+	     (cw "~%~%~ [Note: Computed hint error --- seemingly impossible ~
+                  case reached in arithmetic-default-hint-11.  Perhaps there ~
+                  are two or more :OR hints interacting in unexpected ways.  ~
+                  We do not know what to do here, and so are defaulting to ~
+                  doing nothing.~%~%")))))
    ((and (equal last-hint-used 'non-linear-arithmetic)
 	 (consp hist)
 	 (consp (car hist))

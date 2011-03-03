@@ -289,9 +289,11 @@
 								       hist 'recycle))
 					   :nonlinearp nil)))
 	    (t
-             (observation-cw
-              'nonlinearp-default-hint++
-              "This is bad.")))))
+             (cw "~%~%~ [Note: Computed hint error --- seemingly impossible ~
+                  case reached in nonlinearp-default-hint++.  Perhaps there ~
+                  are two or more :OR hints interacting in unexpected ways.  ~
+                  We do not know what to do here, and so are defaulting to ~
+                  doing nothing.~%~%")))))
    ((and (equal last-hint-used 'non-linear-arithmetic)
 	 (consp hist)
 	 (consp (car hist))
