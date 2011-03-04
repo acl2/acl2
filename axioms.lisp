@@ -10978,8 +10978,12 @@
   (when (<= n most-positive-fixnum)
     (return-from take
                  (loop for i fixnum from 1 to n
-                       as x in l
-                       collect x)))
+
+; Warning: Do not use "as x in l collect x" on the next line.  Sol Swords
+; disovered that at least in CCL, the looping stops in that case when l is
+; empty.
+
+                       collect (pop l))))
   (first-n-ac n l nil))
 
 #+acl2-loop-only

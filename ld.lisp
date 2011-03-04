@@ -17539,6 +17539,16 @@
 
   ~st[BUG FIXES]
 
+  A soundness bug was fixed in some raw-Lisp code implementing the function,
+  ~ilc[take].  Thanks to Sol Swords for pointing out this bug with
+  (essentially) the following proof of ~c[nil].
+  ~bv[]
+  (defthmd take-1-nil-logic
+    (equal (take 1 nil) '(nil))
+    :hints((\"Goal\" :in-theory (disable (take)))))
+  (thm nil :hints ((\"Goal\" :use take-1-nil-logic)))
+  ~ev[]
+
   Calls of ~ilc[mbe] in ``safe-mode'' situations ~-[] i.e., during evaluation
   of ~ilc[defconst], ~ilc[value-triple], and ~ilc[defpkg] forms, and during
   macroexpansion ~-[] are now guard-checked.  Thus, in these situations both
