@@ -239,7 +239,7 @@
        ((when (equal str "apos")) (mv nil n '(:ENTITY :APOS)))
        ((when (equal str "nbsp")) (mv nil n '(:ENTITY :NBSP))))
     (mv (str::cat "Unsupported entity: &" str ";" *nls*
-                  "Nearby text: {" (error-context x xl saved-n) "}" *nls*)
+                  "Nearby text: {" (error-context x saved-n xl) "}" *nls*)
         n nil)))
 
 (defun parse-xml-aux (x n xl acc)
