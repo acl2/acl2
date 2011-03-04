@@ -17389,6 +17389,12 @@
 ; Made efficiency improvement in check-vars-not-free, which is minor but
 ; perhaps worth a couple percent since we have added equality-variants.
 
+; We no longer make some duplicate cons-tag-trees calls in defaxiom-fn and
+; defthm-fn1.
+
+; Removed needless (and confusing) #+ansi-cl in handler-bind call for sbcl in
+; with-warnings-suppressed.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -17398,11 +17404,12 @@
   ~il[documentation] has been updated to reflect all changes that are recorded
   here.
 
-  Below we roughly organize the changes since Version  4.2 into the following
+  Below we roughly organize the changes since Version 4.2 into the following
   categories of changes: existing features, new features, heuristic
-  improvements, bug fixes, distributed books, Emacs support, and experimental
-  versions.  Each change is described in just one category, though of course
-  many changes could be placed in more than one category.
+  improvements, bug fixes, changes at the system level and to distributed
+  books, Emacs support, and experimental versions.  Each change is described in
+  just one category, though of course many changes could be placed in more than
+  one category.
 
   ~st[CHANGES TO EXISTING FEATURES]
 
@@ -17611,7 +17618,12 @@
   Fixed a bug in the message produced by an erroneous call of ~ilc[flet].
   Thanks to Jared Davis for reporting this bug and sending a helpful example.
 
-  ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
+  For a failed ~ilc[defaxiom] or ~ilc[defthm] event, we now avoid printing
+  ~il[rune]s that are used only in processing proposed rules to be stored, but
+  not in the proof itself.  Thanks to Dave Greve for sending us an example that
+  led us to make this fix.
+
+  ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   The HTML documentation no longer has extra newlines in <pre> environments.
 
@@ -17626,6 +17638,8 @@
   Statistics on ACL2 code size may be found in distributed file
   ~c[doc/acl2-code-size.txt].  This file and other information can be found in
   a new ~il[documentation] topic, ~il[about-acl2].
+
+  (SBCL only) More warnings are suppressed when the host Lisp is SBCL.
 
   ~st[EMACS SUPPORT]
 

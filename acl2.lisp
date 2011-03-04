@@ -820,7 +820,6 @@ ACL2 from scratch.")
 ; example, :oops can cause many screens of such warnings.
 
   #+sbcl
-  `(handler-bind
 
 ; Warning: We turn off all warnings in SBCL because they are so noisy.  Here is
 ; the story:
@@ -832,18 +831,36 @@ ACL2 from scratch.")
 ; compile in some Lisp other than SBCL in order to see warnings about unused
 ; formals and perhaps other warnings as well.
 
-; Considerable noise can be eliminated even if sb-kernel:redefinition-warning
-; replaces style-warning below (at least, we tried this in SBCL 1.0.19;
+; Considerable noise can be eliminated even if we only turn off
+; sb-kernel:redefinition-warning (at least, we tried this in SBCL 1.0.19;
 ; sb-kernel:redefinition-warning doesn't work in SBCL 1.0.3).  But there is
-; still a lot of noise left when substituting sb-kernel:redefinition-warning
-; for style-warning, e.g. on constant names, ignorable variable CONDITION-P in
-; memoize, and undefined function warnings for *1* functions defined in
-; mutual-recursions.  So we leave style-warning in place.
+; still a lot of noise left when suppressing only
+; sb-kernel:redefinition-warning and not all style-warnings, e.g. on constant
+; names, ignorable variable CONDITION-P in memoize, and undefined function
+; warnings for *1* functions defined in mutual-recursions.
 
-    (#+ansi-cl
-     (style-warning (lambda (c)
-                      (declare (ignore c))
-                      (invoke-restart 'muffle-warning))))
+; So, we suppress style-warnings.  We formerly did so as follows.
+
+; `(handler-bind
+;;   ((style-warning (lambda (c)
+;                     (declare (ignore c))
+;                     (invoke-restart 'muffle-warning))))
+;   ,@forms)
+
+; However, sbcl still gives a warning in the following example:
+
+; (handler-bind
+;  ((style-warning (lambda (c)
+;                    (declare (ignore c))
+;                    (invoke-restart 'muffle-warning))))
+;  (eval '(defun foo () (= 'a 3))))
+
+; So we turn off all warnings, not just style warnings, as follows.
+
+  `(handler-bind
+    ((warning (lambda (c)
+                (declare (ignore c))
+                (invoke-restart 'muffle-warning))))
     ,@forms)
   #+cmucl
   `(progn (setq ext:*gc-verbose* nil) ,@forms)
