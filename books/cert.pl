@@ -151,6 +151,9 @@ for the current book are thus not dependencies of the .cert file, but
 of the .acl2x file, and the .acl2x file is the only dependency of the
 cert file.
 
+See files make-targets and regression-targets for example uses of
+cert.pl.
+
 
 OPTIONS:
 
