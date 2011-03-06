@@ -524,10 +524,11 @@
 
 (logic)
 
+(local (include-book "make-event/eval" :dir :system))
+
 (local
  (encapsulate
   ()
-  (include-book "make-event/eval" :dir :system)
 
   (add-merge-hint)
 

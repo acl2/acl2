@@ -8,6 +8,8 @@
 ;;(xxinclude-book "../bags/top")
 (include-book "nary")
 
+(local (include-book "ihs/ihs-definitions" :dir :system))
+
 (defmacro ac (&optional (v 't))
   `(accumulated-persistence ,v))
 
@@ -221,7 +223,7 @@
 
 (local-hide
 
- (INCLUDE-BOOK "arithmetic-3/floor-mod/floor-mod" :dir :system)
+ (local (INCLUDE-BOOK "arithmetic-3/floor-mod/floor-mod" :dir :system))
 
  (defun integerp-guard-fn (args)
    (if (endp (cdr args))
@@ -398,8 +400,6 @@ Accumulated Persistence
  
  )
 
-(include-book "ihs/ihs-definitions" :dir :system)
-
 (in-theory (disable mod))
 
 (local-hide
@@ -442,7 +442,7 @@ Accumulated Persistence
    (equal (+ a (+ (* c a) b))
 	  (+ (* (+ c 1) a) b))))
 
-(include-book "ihs/ihs-lemmas" :dir :system)
+(local (include-book "ihs/ihs-lemmas" :dir :system))
 
 (in-theory (disable loghead))
 
@@ -473,8 +473,6 @@ Accumulated Persistence
 		  (loghead 32 (* x x f)))))
 
 )
-
-(include-book "ihs/ihs-definitions" :dir :system)
 
 (in-theory (disable mod))
 
@@ -536,11 +534,11 @@ Accumulated Persistence
 (encapsulate
     ()
 
+  (local (include-book "nth-rules"))
+
   (local
    (encapsulate
        ()
-
-     (include-book "nth-rules")
 
      (defcontext (use list x) 2)
      

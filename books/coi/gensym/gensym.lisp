@@ -43,17 +43,16 @@
 (in-theory (disable gensym::genvar2))
 
 (local
- (encapsulate
-     ()
+ (progn
 
 (encapsulate
  ()
 
+ (local (include-book "coi/util/ordinal-order" :dir :system))
+
  (local 
   (encapsulate
    ()
-
-   (include-book "coi/util/ordinal-order" :dir :system)
   
    (defthmd equal-symbol-reduction
      (implies

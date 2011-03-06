@@ -77,19 +77,13 @@
 (encapsulate
     ()
 
-  (local
-   (encapsulate
-       ()
+    (local (include-book "arithmetic-3/bind-free/top" :dir :system))
      
-     (include-book "arithmetic-3/bind-free/top" :dir :system)
+    (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
      
-     (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system)
-     
-     (SET-DEFAULT-HINTS '((NONLINEARP-DEFAULT-HINT STABLE-UNDER-SIMPLIFICATIONP
-						   HIST PSPV)))
-     
-
-     ))
+; Matt K.: There was formerly a set-default-hints at the end of an embedded
+; encapsulate, which had no effect since set-default-hints was local to that
+; encapsulate.
 
   (defthm local-special-32-bit-overflow-reduction
     (implies

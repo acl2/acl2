@@ -71,8 +71,7 @@
     ()
 
   (local
-   (encapsulate
-       ()
+   (progn ; to allow non-local include-book
      
      (include-book "arithmetic-3/bind-free/top" :dir :system)
      
