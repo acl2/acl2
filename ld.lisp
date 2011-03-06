@@ -11078,7 +11078,7 @@
 ;                              (y 3)))
 ;             :in-theory (disable (pkg-witness)
 ;                                 intern-in-package-of-symbol-symbol-name)))
-;    :rule-classes nil) ; |
+;    :rule-classes nil)
 
 ; Implementation note: for reset-prehistory, the key idea is to manipulate
 ; world global 'command-number-baseline-info.
@@ -17622,6 +17622,22 @@
   ~il[rune]s that are used only in processing proposed rules to be stored, but
   not in the proof itself.  Thanks to Dave Greve for sending us an example that
   led us to make this fix.
+
+  ACL2 did not reliably enforce the restriction against non-~ilc[local]
+  ~ilc[include-book] ~il[events] inside ~ilc[encapsulate] events, as
+  illustrated by the following examples.
+  ~bv[]
+  ; not permitted (as expected)
+  (encapsulate () (include-book \"foo\"))
+
+  ; permitted (as expected)
+  (encapsulate () (local (include-book \"foo\")))
+
+  ; formerly permitted (surprisingly); now, not permitted
+  (local (encapsulate () (include-book \"foo\")))
+  ~ev[]
+  Moreover, the corresponding error message has been fixed.  Thanks to Jared
+  Davis and Sandip Ray for relevant discussions.
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
