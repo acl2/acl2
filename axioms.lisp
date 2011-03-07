@@ -4933,24 +4933,6 @@
          (car alist))
         (t (assoc-eq-equal x y (cdr alist)))))
 
-(defun no-duplicatesp-equal (l)
-
-  ":Doc-Section ACL2::Programming
-
-  check for duplicates in a list (using ~c[equal] for equality)~/
-
-  ~c[(no-duplicatesp-equal l)] is true if and only if no member of ~c[l]
-  occurs twice in ~c[l].~/
-
-  ~c[(no-duplicatesp-equal l)] has a ~il[guard] of ~c[(true-listp l)].
-  Membership is tested using ~ilc[member-equal], hence using ~ilc[equal] as
-  the test.~/"
-
-  (declare (xargs :guard (true-listp l)))
-  (cond ((endp l) t)
-        ((member-equal (car l) (cdr l)) nil)
-        (t (no-duplicatesp-equal (cdr l)))))
-
 
 ;                             DATA TYPES
 

@@ -3712,11 +3712,16 @@
 ; We return t iff we approve fcd as a new fact we will add to fcd-lst
 ; while forward chaining from clause cl.
 
-; Our heuristic for approving an fc-derivation is that either (a) the
-; relevant forward-chaining rune not have been used before in this
-; derivation or (b) concl is not worse-than-or-equal any concl in its
-; derivation, (c) the triggering term of this fcd is in the current
-; clause, or (d) all of the args of concl occur in the clause.
+; Once upon a time, our heuristic for approving an fc-derivation is
+; that one of the following 4 conditions is satisfied. (a) The
+; relevant forward-chaining rune has not been used before in this
+; derivation. (b) Concl is not worse-than-or-equal any concl in its
+; derivation. (c) The triggering term of this fcd is in the current
+; clause. (d) All of the args of concl occur in the clause.  However,
+; after an improvement to the forward-chaining code to extract new
+; trigger terms from all approved conclusions, we found that condition
+; (c) was unnecessary and, in fact, could cause forward-chaining to
+; loop indefinitely.  So (c) has been commented out below.
 
   (let ((ttree (access fc-derivation fcd :ttree)))
     (or (not (fcd-runep (access fc-derivation fcd :rune) ttree)) ; (a)
