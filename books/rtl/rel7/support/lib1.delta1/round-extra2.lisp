@@ -4363,10 +4363,11 @@
 
 ;----------------------------------------------------------------------
 
+(local (include-book "../../arithmetic/expt"))
+
 (local 
  (encapsulate ()
 
-       (include-book "../../arithmetic/expt")
        (local 
           (defthm fl-1/2-sig-x-is-zero-lemma
             (implies (and (rationalp x)

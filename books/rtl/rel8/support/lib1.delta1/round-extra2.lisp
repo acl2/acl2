@@ -4363,7 +4363,7 @@
 
 ;----------------------------------------------------------------------
 
-(include-book "../../arithmetic/expt")
+(local (include-book "../../arithmetic/expt"))
 
 (local 
  (encapsulate ()
