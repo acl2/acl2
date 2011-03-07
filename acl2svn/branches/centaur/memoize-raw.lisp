@@ -5987,7 +5987,8 @@ the calls took.")
          (error "Attempt to call compact-print-stream on other ~
                  than the current stream.")))
   (our-lock-unlock-hons1
-   (let ((*compact-print-file-ht* (mht)))
+   (let ((*compact-print-file-ht* (mht))
+         (*print-array* t))
      (setq *space-owed* nil)
      (let ((p *package*))
        (loop for two in
