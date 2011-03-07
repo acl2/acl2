@@ -671,6 +671,8 @@
   (cdr-ht-eql (hl-mht :test #'eql :size *hl-ctables-cdr-ht-eql-default-size*)
               :type hash-table))
 
+
+
 (defstruct (hl-hspace (:constructor hl-hspace-init-raw))
 
 ; HONS SPACE STRUCTURE.  See the above essays on hons spaces, classic honsing,
@@ -2470,7 +2472,6 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   nil
   #+acl2-par
   (unless *default-hs*
-    (setq *print-array* nil)
     (setq *default-hs* (hl-hspace-init))))
 
 

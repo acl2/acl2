@@ -6760,6 +6760,10 @@ next GC.~%"
 
        (hons-init-hook-set 'ccl::*quit-on-eof* t)
 
+       ;; With *print-array* turned on, we end up sometimes seeing the SBITS
+       ;; array in backtraces, etc, which can effectively kill your session.
+       (setq *print-array* nil)
+
 ;   This might be a good idea, but we do not understand about
 ;   ccl::advise being called twice, e.g., via *hons-init-hook*.
 ; 
