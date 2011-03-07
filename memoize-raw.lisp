@@ -5987,7 +5987,8 @@ the calls took.")
          (error "Attempt to call compact-print-stream on other ~
                  than the current stream.")))
   (our-lock-unlock-hons1
-   (let ((*compact-print-file-ht* (mht)))
+   (let ((*compact-print-file-ht* (mht))
+         (*print-array* t))
      (setq *space-owed* nil)
      (let ((p *package*))
        (loop for two in
@@ -6758,6 +6759,10 @@ next GC.~%"
        "Allow control-d to exit from CCL."
 
        (hons-init-hook-set 'ccl::*quit-on-eof* t)
+
+       ;; With *print-array* turned on, we end up sometimes seeing the SBITS
+       ;; array in backtraces, etc, which can effectively kill your session.
+       (setq *print-array* nil)
 
 ;   This might be a good idea, but we do not understand about
 ;   ccl::advise being called twice, e.g., via *hons-init-hook*.
