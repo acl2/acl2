@@ -46,8 +46,6 @@
 
 (in-package "ACL2")
 
-(table acl2-defaults-table :state-ok t)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; We grab the theory active at the time the hint is encountered.
@@ -84,7 +82,7 @@
       ;; active at the start of the proof.
       (current-theory-fn :here world))))
 
-(defun dynamic-e/d (e/d keyword-alist pspv world state)
+(defun dynamic-e/d (e/d keyword-alist pspv world)
   (declare (xargs :mode :program))
   (let ((enable (car e/d))
 	(disable (cadr e/d)))
@@ -96,15 +94,17 @@
 						     old-theory)
 					     disable)))
       (if (member-equal :in-theory keyword-alist)
-	  ;; Improve the error message, or decide what we should do in
-	  ;; this case.
-	  (er soft 'dynamic-e/d "It is not yet clear to me how dynamic-e/d ~
-                                 should interact with user supplied :in-theory ~
-                                 hints.  We therefore give up.")
+          ;; For now, we overlook the idea of merging the users hint with ours,
+          ;; and we instead opt to just use the user's hint.
+          (observation-cw 'dynamic-e/d 
+                          "It is not yet clear how dynamic-e/d should ~
+                           interact with user supplied :in-theory hints.  So, ~
+                           dynamic-e/d does not interfere with the user's ~
+                           hint.")
 	(let ((new-keyword-alist (splice-keyword-alist :dynamic-e/d
 						       `(:in-theory ',new-theory)
 						       keyword-alist)))
-	  (mv nil new-keyword-alist state))))))
+	  new-keyword-alist)))))
 
 (add-custom-keyword-hint :dynamic-e/d
-			 (dynamic-e/d val keyword-alist pspv world state))
+                         (dynamic-e/d val keyword-alist pspv world))
