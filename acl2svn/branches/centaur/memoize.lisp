@@ -611,6 +611,7 @@
                             (cons :memo-table-init-size
                                   (or ,memo-table-init-size
                                       *mht-default-size*))
+                            (cons :aokp ',aokp)
                             (and (not (eq ',ideal-okp :default))
                                  (list (cons :ideal-okp ',ideal-okp)))))
               (value-triple (deref-macro-name
