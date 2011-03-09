@@ -17531,6 +17531,11 @@
   without ~ilc[state]: ~pl[observation].  Thanks to Harsh Raju Chamarthi for
   requesting this utility, which is now used in some of the distributed books.
 
+  The ~il[proof-checker] command ~c[type-alist] (~pl[proof-checker-commands])
+  now takes an optional third argument that causes the production of
+  forward-chaining reports (~pl[forward-chaining-reports]).  Thanks to Dave
+  Greve for requesting such an enhancement.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   The so-called ``ancestors check,'' which is used to limit backchaining, has
