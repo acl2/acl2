@@ -277,6 +277,74 @@ disabling still happens correctly.</p>")
   (defsection-fn name args))
 
 
+
+(defxdoc defsection-progn
+  :parents (cutil)
+  :short "Fancy <tt>(progn ...)</tt> with a name and @(see xdoc) support."
+  :long "<p>The <tt>defsection-progn</tt> macro is like @(see defsection)
+except that it generates a <tt>(progn ...)</tt> instead of an <tt>(encapsulate
+nil ...)</tt>.</p>
+
+<p>This has a number of consequences, mostly having to do with the scope of
+<tt>local</tt> events within the section.  A <tt>defsection-progn</tt>
+basically does not introduce a new scope, whereas a <tt>defsection</tt>
+does.</p>")
+
+(defun defsection-progn-fn (name args)
+  (declare (xargs :mode :program))
+  (let* ((parents     (cdr (extract-keyword-from-args :parents args)))
+         (short       (cdr (extract-keyword-from-args :short args)))
+         (long        (cdr (extract-keyword-from-args :long args)))
+         (defxdoc-p   (or parents short long))
+
+         (autodoc-arg (extract-keyword-from-args :autodoc args))
+         (autodoc-p   (and defxdoc-p
+                           (or (not autodoc-arg)
+                               (cdr autodoc-arg))))
+
+         (new-args (throw-away-keyword-parts args)))
+
+    (if (not autodoc-p)
+        `(with-output :stack :push :off :all
+           (progn
+             ,@(and defxdoc-p
+                    `((defxdoc ,name
+                        :parents ,parents
+                        :short ,short
+                        :long ,long)))
+             (with-output :stack :pop
+               (progn . ,new-args))))
+
+      ;; Fancy autodoc stuff.
+      (let ((marker `(table acl2::intro-table :mark ',name)))
+        `(with-output :stack :push :off :all
+           (progn
+             ,marker
+             (with-output :stack :pop
+               (progn . ,new-args))
+             (make-event
+              (let* ((wrld    (w state))
+                     (trips   (acl2::reversed-world-since-event wrld ',marker nil))
+                     (info    (reverse (acl2::new-formula-info trips wrld nil)))
+                     (autodoc (formula-info-to-defs info))
+                     (name    ',name)
+                     (parents ',parents)
+                     (short   ',short)
+                     (long    (concatenate 'string
+                                           ',(or long "")
+                                           (coerce (list #\Newline #\Newline) 'string)
+                                           autodoc)))
+                `(defxdoc ,name
+                   :parents ,parents
+                   :short ,short
+                   :long ,long)))
+             (value-triple ',name)))))))
+
+(defmacro defsection-progn (name &rest args)
+  (declare (xargs :guard (symbolp name)))
+  (defsection-progn-fn name args))
+
+
 #||
 
 (defxdoc test :short "Test of defsection")
@@ -320,3 +388,4 @@ disabling still happens correctly.</p>")
 ;; section... ugh.
 
 ||#
+
