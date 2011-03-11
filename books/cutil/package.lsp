@@ -46,6 +46,7 @@
                tag
                tag-reasoning
                defsection
+               defsection-progn
                defmvtypes
 ;               defaggregate
 ;               defenum
