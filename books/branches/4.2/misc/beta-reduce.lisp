@@ -289,3 +289,168 @@
 
    ))
 
+(encapsulate
+    ()
+
+(local
+(defun pseudo-term-alistp (alist)
+  (declare (type t alist))
+  (if (consp alist)
+      (let ((entry (car alist)))
+	(and (consp entry)
+	     (pseudo-termp (cdr entry))
+	     (pseudo-term-alistp (cdr alist))))
+    (null alist))))
+
+(local
+(defthm pseudo-termp-cdr-assoc-pseudo-term-alistp
+  (implies
+   (pseudo-term-alistp alist)
+   (pseudo-termp (cdr (assoc key alist))))))
+
+(local
+(defthm pseudo-term-alistp-pairlis$ 
+  (implies
+   (pseudo-term-listp vals)
+   (pseudo-term-alistp (pairlis$ keys vals)))
+  :rule-classes (:rewrite
+		 (:forward-chaining :trigger-terms ((pairlis$ keys vals))))))
+
+(local
+(defthm length-to-len
+  (implies
+   (true-listp x)
+   (equal (length x) (len x)))))
+
+(local (in-theory (disable length)))
+
+(local
+(defthm open-pseudo-termp-on-cons
+  (equal (pseudo-termp (cons a list))
+	 (let ((x (cons a list)))
+	   (cond ((equal (car x) 'quote)
+		  (and (consp (cdr x))
+		       (equal (cddr x) nil)))
+		 ((true-listp x)
+		  (and (pseudo-term-listp (cdr x))
+		       (cond ((symbolp (car x)) t)
+			     ((true-listp (car x))
+			      (and (equal (len (car x)) 3)
+				   (equal (caar x) 'lambda)
+				   (symbol-listp (cadar x))
+				   (pseudo-termp (caddar x))
+				   (equal (len (cadar x))
+					  (len (cdr x)))))
+			     (t nil))))
+		 (t nil))))))
+
+(defthm len-beta-reduce-term
+  (implies 
+   arg
+   (equal (len (acl2::beta-reduce-term arg term keys vals))
+	  (len term))))
+
+(defthm pseudo-termp-key-beta-reduce-term
+  (implies
+   (and
+    (pseudo-term-listp vals)
+    (acl2::pseudo-termp-key arg term))
+   (acl2::pseudo-termp-key arg (acl2::beta-reduce-term arg term keys vals)))
+  :rule-classes (:rewrite
+		 (:forward-chaining :trigger-terms ((acl2::beta-reduce-term arg term keys vals)))))
+
+(local
+(defthm pseudo-termp-key-implies-pseudo-termp
+  (implies
+   (acl2::pseudo-termp-key nil term)
+   (pseudo-termp term))
+  :rule-classes (:rewrite :forward-chaining)))
+
+(local
+(defthm pseudo-termp-key-implies-pseudo-term-listp
+  (implies
+   (acl2::pseudo-termp-key t list)
+   (pseudo-term-listp list))
+  :rule-classes (:rewrite :forward-chaining)))
+
+(defthm pseudo-termp-beta-reduce-lambda-expr
+  (implies
+   (pseudo-termp term)
+   (pseudo-termp (acl2::beta-reduce-lambda-expr term)))
+  :hints (("Goal" :in-theory (enable acl2::beta-reduce-lambda-expr))))
+
+(defun beta-reduce-pseudo-termp-switch (arg term)
+  (declare (xargs :guard (acl2::pseudo-termp-key arg term)
+		  :verify-guards nil))
+  (cond
+   (arg 
+    (cond 
+     ((endp term) nil)
+     (t (cons (beta-reduce-pseudo-termp-switch nil (car term))
+	      (beta-reduce-pseudo-termp-switch arg (cdr term))))))
+   (t
+    (cond
+     ((symbolp term) term)
+     ((atom term) term)
+     ((eq (car term) 'quote) term)
+     ((consp (car term))
+      (acl2::beta-reduce-lambda-expr `((lambda ,(cadr (car term)) ,(beta-reduce-pseudo-termp-switch nil (caddr (car term))))
+				       ,@(beta-reduce-pseudo-termp-switch t (CDR term)))))
+     (t
+      (cons (car term) (beta-reduce-pseudo-termp-switch t (cdr term))))))))
+
+(defthm len-beta-reduce-pseudo-termp-switch
+  (implies
+   arg
+   (equal (len (beta-reduce-pseudo-termp-switch arg term))
+	  (len term))))
+
+(defthm pseudo-termp-key-beta-reduce-pseudo-termp-switch
+  (implies
+   (acl2::pseudo-termp-key arg term)
+   (acl2::pseudo-termp-key arg (beta-reduce-pseudo-termp-switch arg term))))
+
+(defthm true-listp-beta-reduce-pseudo-termp-switch
+  (implies
+   arg
+   (true-listp (beta-reduce-pseudo-termp-switch arg term))))
+
+(local
+(defthm pseudo-term-listp-append
+  (implies
+   (true-listp x)
+   (equal (pseudo-term-listp (append x y))
+	  (and (pseudo-term-listp x)
+	       (pseudo-term-listp y))))))
+
+
+(verify-guards beta-reduce-pseudo-termp-switch
+	       :hints (("Goal" :in-theory (enable LAMBDA-EXPR-P))))
+	       
+
+(defun beta-reduce-pseudo-termp (term)
+  (beta-reduce-pseudo-termp-switch nil term))
+
+(defthm pseudo-termp-beta-reduce-pseudo-termp
+  (implies
+   (pseudo-termp term)
+   (pseudo-termp (beta-reduce-pseudo-termp term)))
+  :rule-classes (:rewrite 
+		 (:forward-chaining :trigger-terms ((beta-reduce-pseudo-termp term)))))
+
+(in-theory (disable beta-reduce-pseudo-termp))
+
+(defun beta-reduce-pseudo-term-listp (list)
+  (if (endp list) nil
+    (cons (beta-reduce-pseudo-termp (car list))
+	  (beta-reduce-pseudo-term-listp (cdr list)))))
+
+(defthm pseudo-term-listp-beta-reduce-pseudo-term-listp
+  (implies
+   (pseudo-term-listp list)
+   (pseudo-term-listp (beta-reduce-pseudo-term-listp list)))
+  :rule-classes (:rewrite
+		 (:forward-chaining :trigger-terms ((beta-reduce-pseudo-term-listp list)))))
+
+)
+
