@@ -4539,89 +4539,85 @@
   (form orig-form wrld ctx state names portcullisp in-local-flg
         in-encapsulatep make-event-chk)
 
-; Note: For a test of this function, see the reference to foo.lisp
-; below.
+; Note: For a test of this function, see the reference to foo.lisp below.
 
-; Orig-form is used for error reporting.  It is either nil, indicating
-; that errors should refer to form, or else it is a form from a
-; superior call of this function.  So it is typical, though not
-; required, to call this with orig-form = nil at the top level.  If we
-; encounter a macro call and orig-form is nil, then we set orig-form
-; to the macro call so that the user can see that macro call if the
-; check fails.
+; Orig-form is used for error reporting.  It is either nil, indicating that
+; errors should refer to form, or else it is a form from a superior call of
+; this function.  So it is typical, though not required, to call this with
+; orig-form = nil at the top level.  If we encounter a macro call and orig-form
+; is nil, then we set orig-form to the macro call so that the user can see that
+; macro call if the check fails.
 
-; This function checks that form is a tree whose tips are calls of the
-; symbols listed in names, and whose interior nodes are each of one of
-; the following forms.
+; This function checks that form is a tree whose tips are calls of the symbols
+; listed in names, and whose interior nodes are each of one of the following
+; forms.
 
 ; (local &)
 ; (skip-proofs &)
 ; (with-output ... &)
 ; (make-event #)
 
-; where each & is checked.  The # forms above are unrestricted,
-; although the result of expanding the argument of make-event (by
-; evaluation) is checked.  Note that both 'encapsulate and 'progn are
-; typically in names, and their sub-events aren't checked by this
-; function until evaluation time.
+; where each & is checked.  The # forms above are unrestricted, although the
+; result of expanding the argument of make-event (by evaluation) is checked.
+; Note that both 'encapsulate and 'progn are typically in names, and their
+; sub-events aren't checked by this function until evaluation time.
 
 ; In addition, if portcullisp is t we are checking that the forms are
-; acceptable as the portcullis of some book and we enforce the
-; additional restriction noted below.
+; acceptable as the portcullis of some book and we enforce the additional
+; restriction noted below.
 
 ;   (local &) is illegal because such a command would be skipped
 ;   when executing the portcullis during the subsequent include-book.
 
-; Formerly we also checked here that include-book is only applied to
-; absolute pathnames.  That was important for insuring that the book
-; that has been read into the certification world is not dependent
-; upon :cbd.  Remember that (include-book "file") will find its way
-; into the portcullis of the book we are certifying and there is no
-; way of knowing in the portcullis which directory that book comes
-; from if it doesn't explicitly say.  However, we now use
-; fix-portcullis-cmds to modify include-book forms that use relative
-; pathnames so that they use absolute pathnames instead, or cause an
-; error trying.
+; Formerly we also checked here that include-book is only applied to absolute
+; pathnames.  That was important for insuring that the book that has been read
+; into the certification world is not dependent upon :cbd.  Remember that
+; (include-book "file") will find its way into the portcullis of the book we
+; are certifying and there is no way of knowing in the portcullis which
+; directory that book comes from if it doesn't explicitly say.  However, we now
+; use fix-portcullis-cmds to modify include-book forms that use relative
+; pathnames so that they use absolute pathnames instead, or cause an error
+; trying.
 
-; We allow defaxioms skip-proofs, and defttags in the portcullis, but
-; we mark the book's certificate appropriately.
+; We allow defaxioms skip-proofs, and defttags in the portcullis, but we mark
+; the book's certificate appropriately.
 
-; If in-local-flg is t, we enforce the restriction that (table
-; acl2-defaults-table ...) is illegal, even if table is among names,
-; because we do not permit acl2-defaults-table to be changed locally.
-; Similarly, defun-mode events and set-compile-fns events are illegal.
-; (We used to make these restrictions when portcullisp is t, because
-; we restored the initial acl2-defaults-table before certification,
-; and hence it was misguided for the user to be setting the defun-mode
-; or the compile flag in the certification world since they were
-; irrelevant to the world in which the certification is done.)  Note
-; that a value of 'dynamic for in-local-flg means that we are locally
-; including a book but are not in the lexical scope of a local within
-; that book, in which case it is fine to set the acl2-defaults-table.
+; In-local-flg is used to enforce restrictions in the context of LOCAL on the
+; use of (table acl2-defaults-table ...), either directly or by way of events
+; such as defun-mode events and set-compile-fns that set this table.  (We used
+; to make these restrictions when portcullisp is t, because we restored the
+; initial acl2-defaults-table before certification, and hence it was misguided
+; for the user to be setting the defun-mode or the compile flag in the
+; certification world since they were irrelevant to the world in which the
+; certification is done.)  A non-nil value of in-local-flg means that we are in
+; the scope of LOCAL.  In that case, if we are lexically within an encapsulate
+; but not LOCAL when restricted to the nearest such encapsulate, then
+; in-local-flg is 'local-encapsulate.  Otherwise, if we are in the scope of
+; LOCAL, but we are in an included book and not in the scope of LOCAL with
+; respect to that book, then in-local-flg is 'local-include-book.
 
-; Moreover, we do not allow local defaxiom events.  Imagine locally
-; including a book that has nil as a defaxiom.  You can prove anything
-; you want in your book, and then when you later include the book,
-; there will be no trace of the defaxiom in your logical world!
+; Moreover, we do not allow local defaxiom events.  Imagine locally including a
+; book that has nil as a defaxiom.  You can prove anything you want in your
+; book, and then when you later include the book, there will be no trace of the
+; defaxiom in your logical world!
 
-; We do not check that the tips are well-formed calls of the named
-; functions (though we do ensure that they are all true lists).
+; We do not check that the tips are well-formed calls of the named functions
+; (though we do ensure that they are all true lists).
 
-; If names is primitive-event-macros and form can be translated and
-; evaluated without error, then it is in fact an embedded event form
-; as described in :DOC embedded-event-form.
+; If names is primitive-event-macros and form can be translated and evaluated
+; without error, then it is in fact an embedded event form as described in :DOC
+; embedded-event-form.
 
-; We sometimes call this function with names extended by the addition
-; of 'DEFPKG.
+; We sometimes call this function with names extended by the addition of
+; 'DEFPKG.
 
-; If form is rejected, the error message is that printed by str, with
-; #\0 bound to the subform (of form) that was rejected.
+; If form is rejected, the error message is that printed by str, with #\0 bound
+; to the subform (of form) that was rejected.
 
-; We return a value triple (mv erp val state).  If erp is nil then val
-; is the form to be evaluated.  Generally that is the result of
-; macroexpanding the input form.  However, if (perhaps after some
-; macroexpansion) form is a call of local that should be skipped, then
-; val is nil.
+; We return a value triple (mv erp val state).  If erp is nil then val is the
+; form to be evaluated.  Generally that is the result of macroexpanding the
+; input form.  However, if (perhaps after some macroexpansion) form is a call
+; of local that should be skipped, then val is nil.
 
   (let* ((er-str
 
@@ -4744,25 +4740,32 @@
                 encapsulate"
                (chk-embedded-event-form-orig-form-msg orig-form state)
                ""))
-          ((and in-encapsulatep
+          ((and (eq (car form) 'include-book)
+                in-encapsulatep
+                (or (eq in-local-flg nil)
+                    (eq in-local-flg 'local-encapsulate)))
 
-; Note that in-local-flg could be 'dynamic from (encapsulate (local
-; (include-book ...)) where we are inside the ... but not in an encapsulate in
-; the present book -- so we do not insist that in-local-flg be equal to t.
-; That lets us get away with (encapsulate (include-book ...)) inside a locally
-; included book foo.lisp, but we would catch that mistake here when certifying
-; foo.lisp.
+; Through Version_4.2, the error message below added: "We fear that such forms
+; will generate unduly large constraints that will impede the successful use of
+; :functional-instance lemma instances."  However, this message was printed
+; even for encapsulates with empty signatures.
 
-                (not in-local-flg)
-                (eq (car form) 'include-book))
+; It is probably sound in principle to lift this restriction, but in that case
+; case we will need to visit all parts of the code which could be based on the
+; assumption that include-book forms are always local to encapsulate events.
+; See for example the comment about encapsulate in make-include-books-absolute;
+; the paragraph labeled (2) in the Essay on Hidden Packages (file axioms.lisp);
+; and the comment about "all include-books are local" near the end of
+; encapsulate-fn.  By no means do we claim that these examples are exhaustive!
+; Even if we decide to loosen this restriction, we might want to leave it in
+; place for encapsulates with non-empty signatures, for the reason explained in
+; the "We fear" quote above.
+
            (er soft ctx encap-str
                form
                " because we do not permit non-local include-book forms in the ~
-                scope of an encapsulate.  We fear that such forms will ~
-                generate unduly large constraints that will impede the ~
-                successful use of :functional-instance lemma instances.  ~
-                Consider moving your include-book form outside the ~
-                encapsulates, or else making it local"
+                scope of an encapsulate.  Consider moving your include-book ~
+                form outside the encapsulates, or else making it local"
                (chk-embedded-event-form-orig-form-msg orig-form state)
                ""))
           ((member-eq (car form) names)
@@ -6953,7 +6956,7 @@
 ; acl2-defaults-table.
 
                   (and (f-get-global 'in-local-flg state)
-                       'dynamic)))
+                       'local-encapsulate)))
                 (process-embedded-events 'encapsulate-pass-2
                                          saved-acl2-defaults-table
                                          'include-book
@@ -8397,7 +8400,7 @@
 ; acl2-defaults-table.
 
                       (and (f-get-global 'in-local-flg state)
-                           'dynamic)))
+                           'local-encapsulate)))
                     (process-embedded-events
                      'encapsulate-pass-1
                      saved-acl2-defaults-table
@@ -9970,27 +9973,10 @@
    ((member-eq (car form) names)
 
 ; Note that we do not have a special case for encapsulate.  Every include-book
-; inside an encapsulate is local, hence is irrelevant when evaluating
-; portcullis commands.  Be careful about adding such a case, because it can
-; cause problems with redundancy checking.  As of this writing, if we
-; recursively call make-include-books-absolute on the events under a top-level
-; encapsulate, then we now describe a book that causes problems.  Consider the
-; following form, where it isn't important what is in book "foo".
-
-; (encapsulate
-;  ((foo (x) t))
-;  (local (include-book "foo"))
-;  (local (make-event '(defun foo (x) (cons x x))))
-;  (defthm foo-prop
-;    (consp (foo x))))
-
-; Now imagine evaluating this command and then making it the single event of a
-; book, bk, following (in-package "ACL2").  We can certify bk, but when we try
-; to include it, we have a problem because the make-event form is replaced by
-; its expansion in the portcullis commands of the certificate, and the event in
-; bk.lisp is not redundant with that encapsulate.  Perhaps with a little work
-; we could improve this state of affairs, say by replacing the expansion with a
-; suitable record-expansion call, but we need not consider that now.
+; inside an encapsulate is local (see chk-embedded-event-form), hence would not
+; be changed by this function anyhow.  If we allow non-local include-books in
+; an encapsulate, then we will need to add a case for encapsulate that is
+; similar to the case for progn.
 
     (value form))
    ((eq (car form) 'make-event)
@@ -10884,7 +10870,7 @@
 ; acl2-defaults-table.
 
      (and (f-get-global 'in-local-flg state)
-          'dynamic)))
+          'local-include-book)))
    (er-progn
     (maybe-install-acl2-defaults-table
 
@@ -12896,13 +12882,8 @@
                            (match-free-error nil)
                            (guard-checking-on nil)
                            (in-local-flg
-
-; As we start processing the events in the book, we are no longer in the
-; lexical scope of LOCAL for purposes of disallowing setting of the
-; acl2-defaults-table.
-
                             (and (f-get-global 'in-local-flg state)
-                                 'dynamic)))
+                                 'local-include-book)))
                           (er-progn
                            (with-hcomp-ht-bindings
                             (process-embedded-events

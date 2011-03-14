@@ -6585,25 +6585,60 @@
 
   (value '(do-strict save exit)))
 
-(define-pc-help type-alist (&optional concl-flg govs-flg)
+(defun save-fc-report-settings ()
+  (declare (xargs :guard t))
+  (wormhole-eval
+   'fc-wormhole
+   '(lambda (whs)
+      (let* ((data (wormhole-data whs))
+             (criteria (cdr (assoc-eq :CRITERIA data)))
+             (flyp (cdr (assoc-eq :REPORT-ON-THE-FLYP data))))
+        (set-wormhole-data
+         whs
+         (put-assoc-eq :CRITERIA-SAVED criteria
+                       (put-assoc-eq :REPORT-ON-THE-FLYP-SAVED flyp
+                                     data)))))
+   nil))
+
+(defun restore-fc-report-settings ()
+  (declare (xargs :guard t))
+  (wormhole-eval
+   'fc-wormhole
+   '(lambda (whs)
+      (let* ((data (wormhole-data whs))
+             (criteria-saved (cdr (assoc-eq :CRITERIA-SAVED data)))
+             (flyp-saved (cdr (assoc-eq :REPORT-ON-THE-FLYP-SAVED data))))
+        (set-wormhole-data
+         whs
+         (put-assoc-eq :CRITERIA criteria-saved
+                       (put-assoc-eq :REPORT-ON-THE-FLYP flyp-saved
+                                     data)))))
+   nil))
+
+(define-pc-help type-alist (&optional concl-flg govs-flg fc-report-flg)
 
   "display the type-alist from the current context~/
   ~bv[]
   Examples:
-  (type-alist t t) ; display type-alist based on both conclusion and governors
-  type-alist       ; same as (type-alist nil t) -- governors only
-  (type-alist nil) ; same as (type-alist nil t) -- governors only
-  (type-alist t)   ; same as (type-alist t nil) -- conclusion only
+  (type-alist t t)     ; display type-alist based on conclusion and governors
+  (type-alist t t t)   ; as above, but also display forward-chaining report
+  type-alist           ; same as (type-alist nil t) -- governors only
+  (type-alist nil)     ; same as (type-alist nil t) -- governors only
+  (type-alist t)       ; same as (type-alist t nil) -- conclusion only
   (type-alist nil nil) ; display type-alist without considering
                        ; conclusion or governors~/
 
   General Form:
-  (type-alist &optional concl-flg govs-flg)
+  (type-alist &optional concl-flg govs-flg fc-report-flg)
   ~ev[]
-  where if ~c[govs-flg] is omitted, it defaults to ~c[(not concl-flg)].
+  where if ~c[govs-flg] is omitted then it defaults to ~c[(not concl-flg)],
+  and ~c[concl-flg] and ~c[fc-report-flg] default to ~c[nil].
 
-  Display the current assumptions as a type-alist.  Note that this
-  display includes the result of forward chaining.
+  Display the current assumptions as a type-alist.  Note that this display
+  includes the result of forward chaining.  When ~c[fc-report-flg] is supplied
+  a non-~c[nil] value, the display also includes a forward-chaining report;
+  otherwise,the presence or absence of such a report is controlled by the usual
+  global settings (~pl[forward-chaining-reports]).
 
   There are two basic reasons contemplated for using this command.
 
@@ -6639,7 +6674,21 @@
          (current-addr (current-addr t))
          (w (w state))
          (govs-flg (if (cdr args) govs-flg (not concl-flg))))
-     (mv-let (flg hyps-type-alist ttree)
+     (prog2$
+      (and fc-report-flg
+           (prog2$ (save-fc-report-settings)
+                   (prog2$ (wormhole-eval ; (set-fc-criteria t) without state
+                            'fc-wormhole
+                            '(lambda (whs)
+                               (set-wormhole-data
+                                whs
+                                (put-assoc-eq :CRITERIA
+                                              '((t t t))
+                                              (wormhole-data whs))))
+                            nil)
+                           (set-fc-report-on-the-fly t))))
+      (mv-let
+       (flg hyps-type-alist ttree)
        (hyps-type-alist
         (cond (concl-flg
                (union-equal (hyps t)
@@ -6655,17 +6704,19 @@
         w
         state)
        (declare (ignore ttree))
-       (if flg
-           (io? proof-checker nil state
-                nil
-                (fms0 "*** Contradiction in the hypotheses! ***~%The S command ~
-                  should complete this goal.~|"))
-         (io? proof-checker nil state
-              (hyps-type-alist w)
-              (pprogn
-               (fms0 "~|Current type-alist, including forward chaining:~%")
-               (prog2$ (print-type-alist hyps-type-alist w)
-                       state))))))))
+       (prog2$
+        (and fc-report-flg (restore-fc-report-settings))
+        (if flg
+            (io? proof-checker nil state
+                 nil
+                 (fms0 "*** Contradiction in the hypotheses! ***~%The S ~
+                        command should complete this goal.~|"))
+          (io? proof-checker nil state
+               (hyps-type-alist w)
+               (pprogn
+                (fms0 "~|Current type-alist, including forward chaining:~%")
+                (prog2$ (print-type-alist hyps-type-alist w)
+                        state))))))))))
 
 (define-pc-help print-main ()
 

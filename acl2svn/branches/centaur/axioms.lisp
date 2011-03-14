@@ -4933,24 +4933,6 @@
          (car alist))
         (t (assoc-eq-equal x y (cdr alist)))))
 
-(defun no-duplicatesp-equal (l)
-
-  ":Doc-Section ACL2::Programming
-
-  check for duplicates in a list (using ~c[equal] for equality)~/
-
-  ~c[(no-duplicatesp-equal l)] is true if and only if no member of ~c[l]
-  occurs twice in ~c[l].~/
-
-  ~c[(no-duplicatesp-equal l)] has a ~il[guard] of ~c[(true-listp l)].
-  Membership is tested using ~ilc[member-equal], hence using ~ilc[equal] as
-  the test.~/"
-
-  (declare (xargs :guard (true-listp l)))
-  (cond ((endp l) t)
-        ((member-equal (car l) (cdr l)) nil)
-        (t (no-duplicatesp-equal (cdr l)))))
-
 
 ;                             DATA TYPES
 
@@ -10978,8 +10960,12 @@
   (when (<= n most-positive-fixnum)
     (return-from take
                  (loop for i fixnum from 1 to n
-                       as x in l
-                       collect x)))
+
+; Warning: Do not use "as x in l collect x" on the next line.  Sol Swords
+; disovered that at least in CCL, the looping stops in that case when l is
+; empty.
+
+                       collect (pop l))))
   (first-n-ac n l nil))
 
 #+acl2-loop-only
@@ -24225,8 +24211,6 @@
     translate11-flet-alist1 ; special-form-or-op-p
     include-book-fn1
     include-book-fn
-    fmt1 ; finish-output
-    flsz ; flatsize-infix
     set-w ; retract-world1, extend-world1, ...
     prove-loop ; *deep-gstack*
     chk-virgin ; chk-virgin2
@@ -24380,6 +24364,7 @@
     prin1$ prin1-with-slashes
     member-equal assoc-equal subsetp-equal no-duplicatesp-equal
     rassoc-equal remove-equal position-equal
+    maybe-finish-output$
 
 ; Found for hons after fixing note-fns-in-form just before release v4-2.
 
@@ -24803,14 +24788,14 @@
 ; By allowing the :in and :out settings we allow users to type one and see the
 ; other.  We think this might help some users learn the other syntax.
 
-; The following raw Lisp variable and functions should be redefined to
-; implement an alternative infix syntax.
+; The following variable and functions, mostly defined in raw Lisp should be
+; redefined to implement an alternative infix syntax.
 ; 
 ; (defparameter *parse* ...)
 ; (defun parse-infix-from-terminal (eof) ...)
 ; (defun print-infix (x termp width rpc col file eviscp) ...)
 ; (defun print-flat-infix (x termp file eviscp) ...)
-; (defun flatsize-infix (x termp j max eviscp) ...)
+; (defun flatsize-infix (x termp j max state eviscp) ...)
 
 ; We document each of these when we define them for the silly $ syntax.
 
@@ -28689,6 +28674,25 @@
                 (delete-pair channel (open-output-channels state-state))
                 state-state)))
           state-state)))))
+
+(defun maybe-finish-output$ (channel state)
+
+; Allegro 6.0 needs explicit calls of finish-output in order to flush to
+; standard output when *print-pretty* is nil.  SBCL 1.0 and 1.0.2 have
+; exhibited this requirement during a redef query, for example:
+
+; (defun foooooooooooooooooooooooooooo (x) x)
+; :redef
+; (defun foooooooooooooooooooooooooooo (x) (+ 1 x))
+
+  (declare (xargs :guard (and (symbolp channel)
+                              (state-p state)
+                              (open-output-channel-any-p channel state)))
+           (ignorable channel state))
+  #+(and (not acl2-loop-only)
+         (or sbcl allegro))
+  (finish-output (get-output-stream-from-channel channel))
+  nil)
 
 #-acl2-loop-only
 (defmacro legal-acl2-character-p (x)

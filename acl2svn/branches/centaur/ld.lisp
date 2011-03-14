@@ -11078,7 +11078,7 @@
 ;                              (y 3)))
 ;             :in-theory (disable (pkg-witness)
 ;                                 intern-in-package-of-symbol-symbol-name)))
-;    :rule-classes nil) ; |
+;    :rule-classes nil)
 
 ; Implementation note: for reset-prehistory, the key idea is to manipulate
 ; world global 'command-number-baseline-info.
@@ -17377,11 +17377,6 @@
 ; Improved the error message when discovering during load of compiled or
 ; expansion file that a defconst is not redundant.
 
-; Added (undocumented) macro, observation-cw, and associated function,
-; observation1-cw, in analogy to (undocumented) macro, observation, and its
-; association function, observation1.  Thanks to Harsh Raju Chamarthi for
-; requesting this enhancement.
-
 ; Fixed macro io? so that we are not left in a wormhole when there is an error
 ; (as happened previously when the commentp argument of io? was t).
 
@@ -17394,6 +17389,12 @@
 ; Made efficiency improvement in check-vars-not-free, which is minor but
 ; perhaps worth a couple percent since we have added equality-variants.
 
+; We no longer make some duplicate cons-tag-trees calls in defaxiom-fn and
+; defthm-fn1.
+
+; Removed needless (and confusing) #+ansi-cl in handler-bind call for sbcl in
+; with-warnings-suppressed.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -17403,11 +17404,12 @@
   ~il[documentation] has been updated to reflect all changes that are recorded
   here.
 
-  Below we roughly organize the changes since Version  4.2 into the following
+  Below we roughly organize the changes since Version 4.2 into the following
   categories of changes: existing features, new features, heuristic
-  improvements, bug fixes, distributed books, Emacs support, and experimental
-  versions.  Each change is described in just one category, though of course
-  many changes could be placed in more than one category.
+  improvements, bug fixes, changes at the system level and to distributed
+  books, Emacs support, and experimental versions.  Each change is described in
+  just one category, though of course many changes could be placed in more than
+  one category.
 
   ~st[CHANGES TO EXISTING FEATURES]
 
@@ -17525,6 +17527,15 @@
   ~c[(defattach ancestors-check <your_function>)].  Thanks to Robert Krug for
   providing the necessary proof support, which we modified only in small ways.
 
+  A new macro, ~c[observation-cw], provides formatted printing of observations
+  without ~ilc[state]: ~pl[observation].  Thanks to Harsh Raju Chamarthi for
+  requesting this utility, which is now used in some of the distributed books.
+
+  The ~il[proof-checker] command ~c[type-alist] (~pl[proof-checker-commands])
+  now takes an optional third argument that causes the production of
+  forward-chaining reports (~pl[forward-chaining-reports]).  Thanks to Dave
+  Greve for requesting such an enhancement.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   The so-called ``ancestors check,'' which is used to limit backchaining, has
@@ -17539,6 +17550,16 @@
   from about 10 seconds to about 0.04 seconds.
 
   ~st[BUG FIXES]
+
+  A soundness bug was fixed in some raw-Lisp code implementing the function,
+  ~ilc[take].  Thanks to Sol Swords for pointing out this bug with
+  (essentially) the following proof of ~c[nil].
+  ~bv[]
+  (defthmd take-1-nil-logic
+    (equal (take 1 nil) '(nil))
+    :hints((\"Goal\" :in-theory (disable (take)))))
+  (thm nil :hints ((\"Goal\" :use take-1-nil-logic)))
+  ~ev[]
 
   Calls of ~ilc[mbe] in ``safe-mode'' situations ~-[] i.e., during evaluation
   of ~ilc[defconst], ~ilc[value-triple], and ~ilc[defpkg] forms, and during
@@ -17599,7 +17620,31 @@
   Fixed a bug in detection of package redefinition.  While we have no example
   demonstrating this as a soundness bug, we cannot rule it out.
 
-  ~st[NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE]
+  Fixed a bug in the message produced by an erroneous call of ~ilc[flet].
+  Thanks to Jared Davis for reporting this bug and sending a helpful example.
+
+  For a failed ~ilc[defaxiom] or ~ilc[defthm] event, we now avoid printing
+  ~il[rune]s that are used only in processing proposed rules to be stored, but
+  not in the proof itself.  Thanks to Dave Greve for sending us an example that
+  led us to make this fix.
+
+  ACL2 did not reliably enforce the restriction against non-~ilc[local]
+  ~ilc[include-book] ~il[events] inside ~ilc[encapsulate] events, as
+  illustrated by the following examples.
+  ~bv[]
+  ; not permitted (as expected)
+  (encapsulate () (include-book \"foo\"))
+
+  ; permitted (as expected)
+  (encapsulate () (local (include-book \"foo\")))
+
+  ; formerly permitted (surprisingly); now, not permitted
+  (local (encapsulate () (include-book \"foo\")))
+  ~ev[]
+  Moreover, the corresponding error message has been fixed.  Thanks to Jared
+  Davis and Sandip Ray for relevant discussions.
+
+  ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   The HTML documentation no longer has extra newlines in <pre> environments.
 
@@ -17614,6 +17659,8 @@
   Statistics on ACL2 code size may be found in distributed file
   ~c[doc/acl2-code-size.txt].  This file and other information can be found in
   a new ~il[documentation] topic, ~il[about-acl2].
+
+  (SBCL only) More warnings are suppressed when the host Lisp is SBCL.
 
   ~st[EMACS SUPPORT]
 

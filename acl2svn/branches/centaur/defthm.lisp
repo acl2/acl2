@@ -11472,11 +11472,17 @@
       (value nil))
      (t
       (er-let* ((ttree1 (chk-acceptable-x-rules name classes ctx ens wrld
-                                                state))
-                (ttree2 (accumulate-ttree-into-state ttree1 state)))
+                                                state)))
+
+; At one time we accumulated ttree1 into state.  But that caused rules to be
+; reported during a failed proof that are not actually used in the proof.  It
+; is better to let install-event take care of accumulating this ttree (as part
+; of the final ttree) into state, so that users can see the relevant
+; explanatory message, "The storage of ... depends upon ...".
+
                (er-progn
-                (chk-assumption-free-ttree ttree2 ctx state)
-                (value ttree2)))))))
+                (chk-assumption-free-ttree ttree1 ctx state)
+                (value ttree1)))))))
 
 ; We now turn to actually adding the rules generated.  The development is
 ; exactly analogous to the checking above.
@@ -13671,18 +13677,18 @@
                                  (global-val 'nonconstructive-axiom-names wrld))
                            wrld2))
                    (wrld4 (maybe-putprop-lst supporters 'defaxiom-supporter
-                                             name wrld3)))
+                                             name wrld3))
+                   (ttree4 (cons-tag-trees ttree1 ttree3)))
               (pprogn
                (f-put-global 'axiomsp t state)
                (er-progn
-                (chk-assumption-free-ttree
-                 (cons-tag-trees ttree1 ttree3) ctx state)
+                (chk-assumption-free-ttree ttree4 ctx state)
                 (print-rule-storage-dependencies name ttree1 state)
                 (install-event name
                                event-form
                                'defaxiom
                                name
-                               (cons-tag-trees ttree1 ttree3)
+                               ttree4
                                nil :protect ctx wrld4
                                state))))))))))))))
 
@@ -13924,21 +13930,17 @@
              (let ((wrld2
                     (update-doc-data-base
                      name doc doc-pair
-                     (add-rules name classes tterm0 term ens wrld1 state))))
+                     (add-rules name classes tterm0 term ens wrld1 state)))
+                   (ttree4 (cons-tag-trees ttree1
+                                           (cons-tag-trees ttree2 ttree3))))
                (er-progn
-                (chk-assumption-free-ttree
-                 (cons-tag-trees ttree1
-                                 (cons-tag-trees ttree2
-                                                 ttree3))
-                 ctx state)
+                (chk-assumption-free-ttree ttree4 ctx state)
                 (print-rule-storage-dependencies name ttree1 state)
                 (install-event name
                                event-form
                                'defthm
                                name
-                               (cons-tag-trees ttree1
-                                               (cons-tag-trees ttree2
-                                                               ttree3))
+                               ttree4
                                nil :protect ctx wrld2
                                state))))))))))))))
 

@@ -7193,7 +7193,7 @@
                (not (and proxy-upgrade-p
                          (global-val 'boot-strap-flg wrld))))
           (er soft ctx
-              "Redefinition of system functions is not permitted unless there ~
+              "Redefinition of system names is not permitted unless there ~
                is an active trust tag (ttag).  See :DOC defttag."))
          (proxy-upgrade-p
 
@@ -18861,7 +18861,7 @@
   ~c[Value] is typically a ``fmt message'' to be printed by the
   ~ilc[fmt] tilde-directive ~~@ but may be any object.  The effect
   of this hint is to cause an error when the hint is translated.
-  There is no reason to include an ~c[:ERROR] hint in any user-typin,
+  There is no reason to include an ~c[:ERROR] hint in any user-typein,
   since it will only cause an error when the form is evaluated.
   ~c[:ERROR] hints are useful in the definition of functions that
   generate custom keyword hints (~il[custom-keyword-hints]) and
