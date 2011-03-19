@@ -14054,15 +14054,26 @@
                   '(#\a #\c #\l #\2 #\x))
           'string))
 
-(defstub acl2x-expansion-alist (expansion-alist) t)
-
-(defattach acl2x-expansion-alist
+(defstub acl2x-expansion-alist (expansion-alist state)
 
 ; Users are welcome to attach their own function to acl2x-expansion-alist,
 ; because it is only called (by write-acl2x-file) to write out a .acl2x file,
-; not to write out a .cert file.
+; not to write out a .cert file.  We pass in state because some users might
+; want to read from the state, for example, obtaining values of state globals.
+; Indeed, for this reason, Jared Davis and Sol Swords requested the addition of
+; state as a parameter.
 
-  hons-copy)
+  t)
+
+(defun hons-copy-with-state (x state)
+  (declare (xargs :guard (state-p state)))
+  (declare (ignore state))
+  (hons-copy x))
+
+(defattach (acl2x-expansion-alist
+; User-modifiable; see comment in the defstub just above.
+            hons-copy-with-state)
+  :skip-checks t)
 
 (defun write-acl2x-file (expansion-alist acl2x-file ctx state)
   (with-output-object-channel-sharing
@@ -14081,7 +14092,7 @@
               (fms "* Step 3: Writing file ~x0 and exiting certify-book.~|"
                    (list (cons #\0 acl2x-file))
                    (proofs-co state) state nil))
-         (print-object$ (acl2x-expansion-alist expansion-alist) ch state)
+         (print-object$ (acl2x-expansion-alist expansion-alist state) ch state)
          (close-output-channel ch state)
          (value acl2x-file)))))))
 

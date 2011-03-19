@@ -17508,6 +17508,12 @@
   reference ~c[state] even if the function being traced does not include
   ~c[state] as a formal.
 
+  The system function ~c[acl2x-expansion-alist] now takes a second argument,
+  namely ~ilc[state].  This change allows for more flexibility in the sorts of
+  attachments that can be made to this function (~pl[defattach]).  Thanks to
+  Jared Davis and Sol Swords for requesting this enhancement and providing a
+  preliminary implementation.
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of
