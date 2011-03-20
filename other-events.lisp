@@ -9631,7 +9631,7 @@
                     'set-cbd-state))
            state)))
 
-(defun parse-book-name (dir x extension state)
+(defun parse-book-name (dir x extension ctx state)
 
 ; This function takes a directory name, dir, and a user supplied book name, x,
 ; which is a string, and returns (mv full dir familiar), where full is the full
@@ -9681,7 +9681,10 @@
               (concatenate 'string dir1 familiar))
             dir1
             familiar))))
-   (t (mv nil nil x))))
+   (t (mv (er hard ctx
+              "A book name must be a string, but ~x0 is not a string."
+              x)
+          nil x))))
 
 (defun cbd-fn (state)
   (or (f-get-global 'connected-book-directory state)
@@ -9912,7 +9915,7 @@
            with an absolute pathname instead."
           form (cadr make-event-parent)))
      (t (mv-let (full-book-name directory-name familiar-name)
-                (parse-book-name cbd (cadr form) nil state)
+                (parse-book-name cbd (cadr form) nil ctx state)
                 (declare (ignore directory-name familiar-name))
                 (value (list* 'include-book
                               full-book-name
@@ -13251,7 +13254,7 @@
              (t (value (cbd))))))
      (mv-let
       (full-book-name directory-name familiar-name)
-      (parse-book-name dir-value user-book-name ".lisp" state)
+      (parse-book-name dir-value user-book-name ".lisp" ctx state)
       (let* ((behalf-of-certify-flg (not (eq expansion-alist :none)))
              (load-compiled-file0 load-compiled-file)
              (load-compiled-file (and (f-get-global 'compiler-enabled state)
@@ -14379,7 +14382,7 @@
                          ctx state)))
          (mv-let
           (full-book-name directory-name familiar-name)
-          (parse-book-name (cbd) user-book-name ".lisp" state)
+          (parse-book-name (cbd) user-book-name ".lisp" ctx state)
           (state-global-let*
            ((certify-book-info full-book-name)
             (match-free-error nil)
