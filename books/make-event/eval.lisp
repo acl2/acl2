@@ -5,24 +5,30 @@
 (in-package "ACL2")
 
 (defmacro must-eval-to (&whole must-eval-to-form
-                               form val)
+                               form expr)
 
-; Form should evaluate to an error triple (mv erp val2 state).  If erp is nil
-; and val2 is val then (must-eval-to form val) expands to (value-triple val);
-; otherwise expansion causes an appropriate soft error.
+; Form should evaluate to an error triple (mv erp form-val state).  If erp is
+; nil and expr-val is the value of expr then (must-eval-to form expr) expands
+; to (value-triple 'expr-val); otherwise expansion causes an appropriate soft
+; error.  Note that both form and expr are evaluated.
 
   `(make-event
-    (er-let* ((val ,form))
-             (cond ((eq val t)
-                    (value '(value-triple ,val)))
-                   (t (er soft
-                          (msg "( MUST-EVAL-TO ~@0 ~@1)"
-                               (tilde-@-abbreviate-object-phrase ',form)
-                               (tilde-@-abbreviate-object-phrase ',val))
-                          "Evaluation returned ~X01, not ~x2."
-                          val
-                          (evisc-tuple 4 3 nil nil)
-                          t))))
+    (er-let* ((form-val-use-nowhere-else ,form))
+      (let ((expr-val (check-vars-not-free
+                       (form-val-use-nowhere-else)
+                       ,expr)))
+        (cond ((eq form-val-use-nowhere-else expr-val)
+               (value (list 'value-triple (list 'quote expr-val))))
+              (t (er soft
+                     (msg "( MUST-EVAL-TO ~@0 ~@1)"
+                          (tilde-@-abbreviate-object-phrase ',form)
+                          (tilde-@-abbreviate-object-phrase ',expr))
+                     "Evaluation returned ~X01, not the value ~x2 of the ~
+                      expression ~x3."
+                     form-val-use-nowhere-else
+                     (evisc-tuple 4 3 nil nil)
+                     expr-val
+                     ',expr)))))
     :on-behalf-of ,must-eval-to-form))
 
 (defmacro must-eval-to-t (form)

@@ -14,6 +14,7 @@
 ; Based on a similar utility by Matt Kaufmann.
 
 (in-package "ACL2")
+(set-state-ok t)
 
 ;; Utility to allow different events in the first and second passes of two-pass
 ;; certifications.  Example usage is in acl2x-replace-test.lisp.
@@ -73,11 +74,15 @@
 (defmacro use-acl2x-replace! ()
   '(defattach acl2x-expansion-alist acl2x-expansion-alist-replacement))
 
+
+(verify-termination hons-copy-with-state)
+(verify-guards hons-copy-with-state)
+
 (defmacro no-acl2x-replace ()
-  '(defattach acl2x-expansion-alist hons-copy))
+  '(defattach acl2x-expansion-alist hons-copy-with-state))
 
 (defmacro no-acl2x-replace! ()
-  '(defattach acl2x-expansion-alist hons-copy))
+  '(defattach acl2x-expansion-alist hons-copy-with-state))
 
 ;; Use of acl2x-replace that skips the proofs of form in the first pass, but
 ;; not the second.  
@@ -106,36 +111,48 @@
 
 (mutual-recursion
 
-(defun acl2x-expansion-alist-replacement2 (form)
-  (declare (xargs :guard t))
+(defun acl2x-expansion-alist-replacement2 (form state)
+  (declare (xargs :guard t
+                  :stobjs state))
   (case-match form
     (('record-expansion & y)
      ;; Gets rid of record-expansion forms, replacing them by just their
      ;; expansions.  What difference does this make?
-     (acl2x-expansion-alist-replacement2 y))
+     (acl2x-expansion-alist-replacement2 y state))
     (('progn . x)
      (case-match x
        ((('value-triple ('quote (':acl2x-pass2 form)))
          &)
         ;; Special syntax produced by acl2x-replace.  Ignore the form that was
         ;; run in pass 1 (the "&" above) and recur on the pass2 form.
-        (acl2x-expansion-alist-replacement2 form))
+        (acl2x-expansion-alist-replacement2 form state))
+       ((('value-triple ('quote (':acl2x-load-state-global symbol)))
+         &)
+        ;; Special syntax produced by acl2x-replace.  Ignore the form that was
+        ;; run in pass 1 (the "&" above) and replace it with the form currently
+        ;; stored in the given state global.  We don't recur on this because
+        ;; then we might not terminate.
+        (if (and (symbolp symbol)
+                 (boundp-global symbol state))
+            (f-get-global symbol state)
+          (er hard? 'acl2x-expansion-alist-replacement2
+              "Found an acl2x-load-state-global form with an unbound variable~%")))
        (& (with-guard1
            (true-listp x)
            (hons 'progn
-                 (acl2x-expansion-alist-replacement2-lst x))))))
+                 (acl2x-expansion-alist-replacement2-lst x state))))))
     (('encapsulate sigs . x)
      (with-guard1
       (true-listp x)
       (hons 'encapsulate
             (hons sigs
-                  (acl2x-expansion-alist-replacement2-lst x)))))
+                  (acl2x-expansion-alist-replacement2-lst x state)))))
     (('local x)
      (hons-list 'local
-                (acl2x-expansion-alist-replacement2 x)))
+                (acl2x-expansion-alist-replacement2 x state)))
     (('skip-proofs x)
      (hons-list 'skip-proofs
-                (acl2x-expansion-alist-replacement2 x)))
+                (acl2x-expansion-alist-replacement2 x state)))
     (('with-output . x)
      (with-guard1
       (true-listp x)
@@ -143,32 +160,35 @@
             (hons-append (butlast x 1)
                          (hons-list
                           (acl2x-expansion-alist-replacement2
-                           (car (last x))))))))
+                           (car (last x)) state))))))
     (& form)))
 
-(defun acl2x-expansion-alist-replacement2-lst (x)
+(defun acl2x-expansion-alist-replacement2-lst (x state)
   (declare (xargs :guard (true-listp x)))
   (cond ((endp x) nil)
-        (t (hons (acl2x-expansion-alist-replacement2 (car x))
-                 (acl2x-expansion-alist-replacement2-lst (cdr x))))))
+        (t (hons (acl2x-expansion-alist-replacement2 (car x) state)
+                 (acl2x-expansion-alist-replacement2-lst (cdr x) state)))))
 
 )
 
-(defun acl2x-expansion-alist-replacement1 (alist acc)
+(defun acl2x-expansion-alist-replacement1 (alist acc state)
   (declare (xargs :guard (and (alistp alist)
-                              (alistp acc))))
+                              (alistp acc))
+                  :stobjs state))
   (cond ((endp alist)
          (hons-copy (reverse acc)))
         (t (acl2x-expansion-alist-replacement1
             (cdr alist)
             (acons (caar alist)
-                   (acl2x-expansion-alist-replacement2 (cdar alist))
-                   acc)))))
+                   (acl2x-expansion-alist-replacement2 (cdar alist) state)
+                   acc) state))))
 
-(defun acl2x-expansion-alist-replacement (alist)
-  (declare (xargs :guard t))
+(defun acl2x-expansion-alist-replacement (alist state)
+  (declare (xargs :guard t :stobjs state)
+           (ignorable state))
   (with-guard1 (alistp alist)
-               (acl2x-expansion-alist-replacement1 alist nil)))
+               (acl2x-expansion-alist-replacement1 alist nil state)))
 
 
 (use-acl2x-replace!)
+

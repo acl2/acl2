@@ -81,7 +81,7 @@
                                 (LOCAL (DEFUN BAR3 (X) (FOO X)))
                                 (DEFTHM BAR3-PRESERVES-CONSP
                                   (IMPLIES (CONSP X) (CONSP (BAR3 X))))))
-        (VALUE-TRIPLE T))
+        (VALUE-TRIPLE 'T))
     (11 RECORD-EXPANSION
         (MAKE-EVENT '(DEFUN FOO-3 (X) X))
         (DEFUN FOO-3 (X) X))

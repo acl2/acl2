@@ -134,7 +134,7 @@
        dir-value
        (prog2$ (cw "~%Fixing .cert file for ~x0~%" user-book-name)
                user-book-name)
-       ".lisp" state)
+       ".lisp" ctx state)
      (declare (ignorable new-directory-name-with-slash new-familiar-name))
      (er-let*
       ((new-pkg-lst (create-pkgs-for-cert-file new-full-book-name ctx state))

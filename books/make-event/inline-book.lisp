@@ -78,7 +78,7 @@ this file for inlining into the current book.
               (t (value (cbd))))))
       (mv-let
        (full-book-name directory-name familiar-name)
-       (parse-book-name dir-value user-book-name ".lisp" state)
+       (parse-book-name dir-value user-book-name ".lisp" ctx state)
        (declare (ignore directory-name familiar-name))
        (er-progn
         (chk-book-name user-book-name full-book-name ctx state)

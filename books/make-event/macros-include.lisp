@@ -65,7 +65,7 @@
                                 (LOCAL (DEFUN LOCAL-FN (X) X))
                                 (MAKE-EVENT '(DEFUN FOO2 (X) X)
                                             :CHECK-EXPANSION T)))
-        (VALUE-TRIPLE T))
+        (VALUE-TRIPLE 'T))
     (11
      RECORD-EXPANSION
      (MUST-FAIL
@@ -73,7 +73,7 @@
                    (LOCAL (DEFUN LOCAL-FN (X) X))
                    (MY-MAC (MAKE-EVENT '(DEFUN FOO2 (X) X)
                                        :CHECK-EXPANSION (DEFUN FOO2 (X) X)))))
-     (VALUE-TRIPLE T))))
+     (VALUE-TRIPLE 'T))))
 
 ; Include the book whose certificate we want to check.
 (include-book "macros")

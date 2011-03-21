@@ -58,7 +58,7 @@ to give more specific messages for each recommended book.
             (t (value (cbd))))))
     (mv-let
      (full-book-name directory-name familiar-name)
-     (parse-book-name dir-value user-book-name ".lisp" state)
+     (parse-book-name dir-value user-book-name ".lisp" ctx state)
      (declare (ignore directory-name familiar-name))
      (value full-book-name))))
 

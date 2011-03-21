@@ -84,7 +84,7 @@
   (declare (xargs :stobjs state))
   (mv-let
     (full-book-name directory-name familiar-name)
-    (parse-book-name (cbd) book-name ".lisp" state) ; (os (w state)) in v3.2.1
+    (parse-book-name (cbd) book-name ".lisp" 'book-thms state)
     (declare (ignore directory-name familiar-name))
     (newly-defined-top-level-thms-rec
      (reversed-world-since-boot-strap (w state))
