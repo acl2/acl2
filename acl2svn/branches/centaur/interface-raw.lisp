@@ -4310,9 +4310,7 @@
                                   dir
                                   book-name)))
                      (t (f-get-global 'connected-book-directory state)))
-               book-name
-               ".lisp"
-               state)))
+               book-name ".lisp" ctx state)))
      (declare (ignore ignore-familiar-name))
      (cond
       ((let ((true-full-book-name (our-truename full-book-name :safe)))

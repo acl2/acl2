@@ -700,6 +700,17 @@
 (defattach worse-than-or-equal worse-than-or-equal-builtin)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Attachment: acl2x-expansion-alist
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination-boot-strap hons-copy-with-state) ; and guards
+
+(defattach (acl2x-expansion-alist
+; User-modifiable; see comment in the defstub introducing
+; acl2x-expansion-alist.
+            hons-copy-with-state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1689,7 +1689,11 @@
 ; (4) :LEFTOVER-ACTIVATIONS - all activations still suspended at the
 ;      termination of of forward chaining
 
-; For brevity we sometimes call the last four lists ``sites'' and number them
+; (5) :REDUNDANT-APPROVED-FC-DERIVATIONS - every time we assume an approved
+;     derived conclusion true, we check to see whether it changes the
+;     type-alist.  If not, we put the fc-derivation on this list.
+
+; For brevity we sometimes call the last five lists ``sites'' and number them
 ; as seen.  For example, we'll ask whether an fc-derivation ``is a member of
 ; site (3).''
 
@@ -1731,7 +1735,7 @@
 ; very basic primitives.
 
 (defun initialize-fc-wormhole-sites ()
-; This function initializez the fc-wormhole and is called in prove.
+; This function initializes the fc-wormhole and is called in prove.
   (wormhole-eval
    'fc-wormhole
    '(lambda (whs)
@@ -1890,11 +1894,15 @@
   instantiated hypothesis was not found.
 
   If ~c[outcome-part1] is ~c[SUCCESS] then ~em[inst-term] is the instantiated
-  conclusion produced by the rule.  ~em[Outcome-part2] is either ~c[APPROVED]
-  or ~c[REJECTED] indicating whether the instantiated conclusion was acceptable
-  to our heuristics designed to prevent looping.  If the conclusion was
-  approved, it was added to the evolving context; otherwise, it was discarded
-  as dangerously worse than existing terms.
+  conclusion produced by the rule.  ~em[Outcome-part2] is ~c[APPROVED] if
+  the instantiated conclusion was acceptable to our heuristics designed to
+  prevent looping and not already known in the evolving context.
+  ~em[Outcome-part2] is ~c[REJECTED] if the instantiated conclusion was
+  not approved by our heuristics.  ~em[Outcome-part2] is ~c[REDUNDANT] if
+  the instantiated conclusion was approved by the heuristics but already
+  known true in the current evolving context.  If ~c[APPROVED], the
+  truth of the instantiated conclusion is added to the evolving context.
+  Otherwise, it is not.
 
   If ~c[outcome-part1] is ~c[BLOCKED] then ~c[outcome-part2] is one of three
   possible things: ~c[FALSE], in which case ~em[inst-term] is an instantiated
@@ -2445,7 +2453,7 @@
                                             (cons (car fcd-lst) ans)))
         (t (collect-satisfying-fc-derivations criteria (cdr fcd-lst) ans))))
 
-; We now define the functions that move information into the four fc-wormhole
+; We now define the functions that move information into the five fc-wormhole
 ; sites.  We call this ``filtering'' because we only move the objects that
 ; satisfy the criteria.
 
@@ -2581,8 +2589,40 @@
                 data)))))))
    nil))
 
-; So now we have got the machinery to populate sites (1)-(4) of the
-; current call of forward-chain-top.  
+(defun filter-redundant-approved-fc-derivation (fcd)
+
+; We move fcd into site (5), :REDUNDANT-APPROVED-FC-DERIVATIONS, provided fcd
+; meets the criteria.  By calling this function on fcd we are indicating that
+; the conclusion of the fcd was already known true under the type-alist.
+
+  (wormhole-eval
+   'fc-wormhole
+   '(lambda (whs)
+      (let ((criteria (cdr (assoc-eq :CRITERIA (wormhole-data whs)))))
+        (cond ((null criteria) whs)
+              ((satisfying-fc-derivationp criteria fcd)
+               (let* ((data (wormhole-data whs))
+                      (calls-alist (cdr (assoc-eq :FORWARD-CHAIN-CALLS data)))
+                      (k (car (car calls-alist)))
+                      (call-alist (cdr (car calls-alist))))
+                 (set-wormhole-data
+                  whs
+                  (put-assoc-eq
+                   :FORWARD-CHAIN-CALLS
+                   (cons (cons k
+                               (put-assoc-eq
+                                :REDUNDANT-APPROVED-FC-DERIVATIONS
+                                (cons fcd
+                                      (cdr (assoc-eq :REDUNDANT-APPROVED-FC-DERIVATIONS
+                                                     call-alist)))
+                                call-alist))
+                         (cdr calls-alist))
+                   data))))
+              (t whs))))
+   nil))
+
+; So now we have got the machinery to populate sites (1)-(5) of the
+; current call of forward-chain-top.
 
 ; When forward-chain-top is about to exit, we finish the task of recording the
 ; results of the current call.  fc-exit This consists of three main parts: we
@@ -2635,13 +2675,14 @@
 ; Recall that the status of an activation consists of its unify-subst (which
 ; completes the identification of the branch) and the disposition:
 
-; (a) SUCCESS ACCEPTED <term> -- successfully fired and gave us <term>
+; (a) SUCCESS APPROVED <term> -- successfully fired and gave us <term>
 ; (b) SUCCESS REJECTED <term> -- successfully fired but conclusion <term> was disapproved
-; (c) BLOCKED UNRELIEVED-HYPx <hyp> -- unable to relieve <hyp>
-; (d) BLOCKED FALSE <hyp> --  hyp shown false <hyp>
+; (c) SUCCESS REDUNDANT <term> -- successfully fired and approved but already known
+; (d) BLOCKED UNRELIEVED-HYPx <hyp> -- unable to relieve <hyp>
+; (e) BLOCKED FALSE <hyp> --  hyp shown false <hyp>
 
 ; Our strategy will be first to collect all (rune . inst-trigger) pairs and
-; then, for each such pair, map over each of the sites (1)-(4) to collect the
+; then, for each such pair, map over each of the sites (1)-(5) to collect the
 ; status of that pair.
 
 ; To collect all (rune . inst-trigger) pairs we have to map over sites (1),
@@ -2702,13 +2743,16 @@
           (collect-fc-status-site-1 rune inst-trigger (cdr acts))))
    (t (collect-fc-status-site-1 rune inst-trigger (cdr acts)))))
 
-(defun collect-fc-status-sites-2-3 (rune inst-trigger all-fcds approved-fcds) 
+(defun collect-fc-status-sites-2-3-5 (rune inst-trigger all-fcds
+                                           approved-fcds
+                                           redundant-approved-fc-derivations) 
                           
 ; All-fcds is site (2) all-satisfying-fc-derivations - every fc-derivation that
-; satisfies the criteria, and approved-fcds is site (3)
+; satisfies the criteria, approved-fcds is site (3)
 ; approved-satisfying-fc-derivations - the fc-derivations that both satisfy the
-; criteria and were approved.  We map down all-fcds and use the other to
-; determine if whether each was approved or rejected.
+; criteria and were approved, and redundant-approved-fc-derivations is site
+; (5).  We map down all-fcds and use the other two to determine if whether each
+; was approved, redundant, or rejected.
 
   (cond
    ((endp all-fcds) nil)
@@ -2721,11 +2765,17 @@
             (:DISPOSITION
              SUCCESS
              ,(if (member-equal (car all-fcds) approved-fcds)
-                  'APPROVED
+                  (if (member-equal (car all-fcds) redundant-approved-fc-derivations)
+                      'REDUNDANT
+                      'APPROVED)
                   'REJECTED)
              ,(access fc-derivation (car all-fcds) :concl)))
-          (collect-fc-status-sites-2-3 rune inst-trigger (cdr all-fcds) approved-fcds)))
-   (t (collect-fc-status-sites-2-3 rune inst-trigger (cdr all-fcds) approved-fcds))))
+          (collect-fc-status-sites-2-3-5 rune inst-trigger (cdr all-fcds)
+                                         approved-fcds
+                                         redundant-approved-fc-derivations)))
+   (t (collect-fc-status-sites-2-3-5 rune inst-trigger (cdr all-fcds)
+                                     approved-fcds
+                                     redundant-approved-fc-derivations))))
 
 (defun prettyify-blocked-fc-inst-hyp (inst-hyp hyps unify-subst)
 
@@ -2774,19 +2824,19 @@
             (collect-fc-status-site-4 rune inst-trigger (cdr acts)))))
    (t (collect-fc-status-site-4 rune inst-trigger (cdr acts)))))
 
-(defun collect-fc-status (rune inst-trigger site1 site2 site3 site4)
+(defun collect-fc-status (rune inst-trigger site1 site2 site3 site4 site5)
 
-; Given a a rune and instantiated trigger term we collect the final status of
+; Given a rune and instantiated trigger term we collect the final status of
 ; every activation of that pair recorded in the sites.  Every activation
 ; (derivation) in the sites is known to satisfy the criteria.
 
   `(,rune
     (:TRIGGER ,inst-trigger)
     ,@(collect-fc-status-site-1 rune inst-trigger site1)
-    ,@(collect-fc-status-sites-2-3 rune inst-trigger site2 site3)
+    ,@(collect-fc-status-sites-2-3-5 rune inst-trigger site2 site3 site5)
     ,@(collect-fc-status-site-4 rune inst-trigger site4)))
   
-(defun make-fc-activity-report1 (rune-trigger-pairs site1 site2 site3 site4)
+(defun make-fc-activity-report1 (rune-trigger-pairs site1 site2 site3 site4 site5)
 
 ; Given a list of (rune . inst-trigger) pairs and the four sites, we
 ; collect the final status of each pair.
@@ -2794,9 +2844,9 @@
   (cond ((endp rune-trigger-pairs) nil)
         (t (cons (collect-fc-status (car (car rune-trigger-pairs))
                                     (cdr (car rune-trigger-pairs))
-                                    site1 site2 site3 site4)
+                                    site1 site2 site3 site4 site5)
                  (make-fc-activity-report1 (cdr rune-trigger-pairs)
-                                         site1 site2 site3 site4)))))
+                                         site1 site2 site3 site4 site5)))))
 
 (defun make-fc-activity-report (call-alist)
 
@@ -2811,6 +2861,8 @@
           (cdr (assoc-eq :approved-satisfying-fc-derivations call-alist)))
          (site4
           (cdr (assoc-eq :leftover-activations call-alist)))
+         (site5
+          (cdr (assoc-eq :redundant-approved-fc-derivations call-alist)))
          (rune-trigger-pairs
           (collect-rune-trigger-pairs-from-fc-activations
            site1
@@ -2819,7 +2871,8 @@
             (collect-rune-trigger-pairs-from-fc-activations
              site4 nil)))))
     (merge-sort-lexorder
-     (make-fc-activity-report1 rune-trigger-pairs site1 site2 site3 site4))))
+     (make-fc-activity-report1 rune-trigger-pairs
+                               site1 site2 site3 site4 site5))))
 
 (defun fc-report1 (whs k)
 
@@ -3479,6 +3532,13 @@
 ; "fc-pair."  These pairs can be sensibly used outside of the
 ; forward-chaining module.
 
+; Note: It is important that this function return a list in 1:1 correspondence
+; with fcd-lst.  The reason is that after forming this list (in
+; forward-chain-top) we map over it with fc-pair-lst-type-alist (immediately
+; below) while mapping in parallel over the original fcd-lst, assuming that the
+; concl being dealt with from the first came from the corresponding element of
+; the second.
+
   (cond ((null fcd-lst) nil)
         (t (cons (cons (access fc-derivation (car fcd-lst) :concl)
                        (push-lemma
@@ -3487,15 +3547,19 @@
                          (access fc-derivation (car fcd-lst) :ttree))))
                  (fc-pair-lst (cdr fcd-lst))))))
 
-(defun fc-pair-lst-type-alist (fc-pair-lst type-alist force-flg ens wrld)
+(defun fc-pair-lst-type-alist (fc-pair-lst fcd-lst type-alist force-flg ens wrld)
 
-; Fc-pair-lst is a list of pairs of the form (concl . ttree).  We extend
-; type-alist by assuming the truth of every concl, tagging each type-alist
-; entry with the corresponding ttree, which we assume is fcd-free.  Assuming
-; the initial type-alist is fcd-free, the final one is too.  We return three
-; results, (mv flg type-alist ttree).  If a contradiction is found, flg is t,
-; type-alist is nil, and ttree is the fcd-free ttree explaining it.  Otherwise,
-; type-alist is the resulting type-alist and ttree is nil.
+; Fc-pair-lst is a list of pairs of the form (concl . ttree).  Fcd-lst is the
+; list from which fc-pair-lst was derived and hence is in 1:1 correspondence
+; with it.  That is, the (concl . ttree) entry from the first argument came
+; from the fcd in the corresponding position of the second argument.
+
+; We extend type-alist by assuming the truth of every concl, tagging each
+; type-alist entry with the corresponding ttree, which we assume is fcd-free.
+; Assuming the initial type-alist is fcd-free, the final one is too.  We return
+; three results, (mv flg type-alist ttree).  If a contradiction is found, flg
+; is t, type-alist is nil, and ttree is the fcd-free ttree explaining it.
+; Otherwise, type-alist is the resulting type-alist and ttree is nil.
 
 ; At one time we assumed that there was no contradiction, causing a hard error
 ; if we found one.  However, Jared Davis sent the following script that causes
@@ -3590,10 +3654,14 @@
                                nil nil :fta)
             (declare (ignore fta))
             (cond (mbf (mv t nil ttree))
-                  (mbt (fc-pair-lst-type-alist (cdr fc-pair-lst)
-                                               type-alist
-                                               force-flg ens wrld))
+                  (mbt (prog2$
+                        (filter-redundant-approved-fc-derivation (car fcd-lst))
+                        (fc-pair-lst-type-alist (cdr fc-pair-lst)
+                                                (cdr fcd-lst)
+                                                type-alist
+                                                force-flg ens wrld)))
                   (t (fc-pair-lst-type-alist (cdr fc-pair-lst)
+                                             (cdr fcd-lst)
                                              tta
                                              force-flg ens wrld)))))))
 
@@ -4144,7 +4212,7 @@
                    (mv-let
                     (contradictionp type-alist3 ttree3)
                     (fc-pair-lst-type-alist
-                     fc-pair-lst type-alist force-flg ens wrld)
+                     fc-pair-lst all-approved-fcds type-alist force-flg ens wrld)
                     (cond
                      (contradictionp
                       (fc-exit t nil ttree3 
@@ -9262,3 +9330,4 @@
 
   (declare (ignore signal clauses ttree pspv))
   state)
+
