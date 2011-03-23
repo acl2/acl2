@@ -32491,7 +32491,7 @@
   :ignore-doc-string-error
   ~ev[]
   if ~c[t], cause ACL2 to ignore ill-formed ~il[documentation] strings rather
-  than causing an erorr; if ~c[:warn], cause a warning instead of an error
+  than causing an error; if ~c[:warn], cause a warning instead of an error
   in such cases; else, ~c[nil] (the default).
   ~l[set-ignore-doc-string-error].
   ~bv[]

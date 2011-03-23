@@ -17502,7 +17502,7 @@
   improvement.
 
   ~ilc[Show-accumulated-persistence] may take a new argument, ~c[:runes], which
-  simply causes an alphebetical list of ~il[rune]s to be printed out.
+  simply causes an alphabetical list of ~il[rune]s to be printed out.
 
   Improved ~ilc[trace$] so that ~c[:entry], ~c[:exit], and ~c[:cond] forms may
   reference ~c[state] even if the function being traced does not include
