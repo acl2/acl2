@@ -23,6 +23,8 @@
 (local (include-book "arithmetic"))
 (local (include-book "tools/mv-nth" :dir :system))
 
+;; BOZO why do we have this, we have strtok instead?
+
 ;; BOZO reimplement strsplit so that it is efficient.
 
 (defund split-list-1 (x del)

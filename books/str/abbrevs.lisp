@@ -100,6 +100,9 @@
 (add-macro-alias isubstrp STR::isubstrp) 
 
 
+(defmacro prefix-lines (x prefix) `(STR::prefix-lines ,x ,prefix))
+(add-macro-alias prefix-lines STR::prefix-lines)
+
 (defmacro rpadchars (x len) `(STR::rpadchars ,x ,len))
 (add-macro-alias rpadchars STR::rpadchars)
 

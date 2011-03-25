@@ -35,6 +35,7 @@
 (include-book "natstr")
 (include-book "strline")
 (include-book "pad")
+(include-book "prefix-lines")
 (include-book "strpos")
 (include-book "strrpos")
 (include-book "strprefixp")

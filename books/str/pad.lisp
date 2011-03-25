@@ -50,6 +50,18 @@
 
 
 (defund rpadstr (x len)
+  ":Doc-Section Str
+Pad a string to some width by adding whitespace on the right.~/
+
+Example:
+~bv[]
+  (rpadstr \"foo\" 5) --> \"foo  \"
+~ev[]
+
+This is completely dumb: there's no accounting for newlines or anything, it
+just adds however many spaces are needed to reach the desired width.  If the
+string is already longer than the desired width, it's not changed.~/~/"
+
   (declare (xargs :guard (and (stringp x)
                               (natp len)))
            (type string x)
@@ -112,6 +124,19 @@
 
 
 (defund lpadstr (x len)
+
+  ":Doc-Section Str
+Pad a string to some width by adding whitespace on the left.~/
+
+Example:
+~bv[]
+  (lpadstr \"foo\" 5) --> \"  foo\"
+~ev[]
+
+This is completely dumb: there's no accounting for newlines or anything, it
+just adds however many spaces are needed to reach the desired width.  If the
+string is already longer than the desired width, it's not changed.~/~/"
+
   (declare (xargs :guard (and (stringp x)
                               (natp len)))
            (type string x)
