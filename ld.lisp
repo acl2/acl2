@@ -17659,6 +17659,9 @@
   more graceful error now occurs, where previously an ugly raw Lisp error had
   occurred.  Thanks to Eric Smith for bringing this bug to our attention.
 
+  Fixed a bug in an error message that was printed when an unexpected
+  expression has occurred where a ~ilc[declare] form is expected.
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   The HTML documentation no longer has extra newlines in <pre> environments.

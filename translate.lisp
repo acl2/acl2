@@ -4931,7 +4931,8 @@
        (collect-declarations-cmp (butlast (cdddr x) 1)
                                  (cadr x) 'mv-let ctx wrld state-vars)
        (cond
-        (erp (trans-er erp edcls))
+        (erp ; erp is a ctx and edcls is a msg
+         (trans-er erp "~@0" edcls))
         (t
          (trans-er-let*
           ((tcall (translate11 (caddr x)
