@@ -17514,6 +17514,12 @@
   Jared Davis and Sol Swords for requesting this enhancement and providing a
   preliminary implementation.
 
+  An obscure ~il[proof-checker] change, unlikely to affect users, replaces the
+  state global variables ~c[erp], ~c[val], ~c[print-macroexpansion-flg], and
+  ~c[print-prompt-and-instr-flg] by ~c[pc-erp], ~c[pc-val],
+  ~c[pc-print-macroexpansion-flg], and ~c[pc-print-prompt-and-instr-flg],
+  respectively.
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of

@@ -3412,8 +3412,8 @@
 (defun modified-error-triple-for-sequence (erp val success-expr state)
   (mv-let (new-erp stobjs-out-and-vals state)
           (state-global-let*
-           ((erp erp)
-            (val val))
+           ((pc-erp erp)
+            (pc-val val))
            (trans-eval success-expr :sequence state t))
 
 ; Note: Success-expr is typically an expression involving STATE, which
@@ -3505,9 +3505,9 @@
   instruction executed (or, the triple ~c[(nil t state)] if
   ~c[instruction-list] is ~c[nil]), except for the following provision.  If
   ~c[success-expr] is supplied and not ~c[nil], then it is evaluated with the
-  state global variables ~c[erp] and ~c[val] (in ACL2 package) bound to the
-  corresponding components of the error triple returned (as described
-  above).  At least two values should be returned, and the first two
+  state global variables ~c[pc-erp] and ~c[pc-val] (in the \"ACL2\" package)
+  bound to the corresponding components of the error triple returned (as
+  described above).  At least two values should be returned, and the first two
   of these will be substituted for ~c[erp] and ~c[val] in the triple finally
   returned by ~c[sequence].  For example, if ~c[success-expr] is ~c[(mv erp val)],
   then no change will be made to the error triple, and if instead it
@@ -3528,12 +3528,12 @@
 
   Finally, as each instruction in ~c[instruction-list] is executed, the
   prompt and that instruction will be printed, unless the global state
-  variable ~c[print-prompt-and-instr-flg] is unbound or ~c[nil] and the
+  variable ~c[pc-print-prompt-and-instr-flg] is unbound or ~c[nil] and the
   parameter ~c[no-prompt-flg] is supplied and not ~c[nil]."
 
   ;; This is the only place where the pc-prompt gets lengthened.
   ;; Also note that we always lengthen the prompt, but we only do the printing
-  ;; if no-prompt-flg is nil AND print-prompt-and-instr-flg is non-nil.
+  ;; if no-prompt-flg is nil AND pc-print-prompt-and-instr-flg is non-nil.
   (if (not (true-listp instr-list))
       (pprogn (print-no-change
                "The first argument to the SEQUENCE command must be ~
@@ -3550,7 +3550,7 @@
                              (if strict-flg '(signal value) '(signal))
                              t
                              (and (null no-prompt-flg)
-                                  (print-prompt-and-instr-flg))
+                                  (pc-print-prompt-and-instr-flg))
                              state)
                (mv-let (erp val state)
                        (if success-expr
@@ -3589,8 +3589,8 @@
 
   (value (list :sequence instr-list nil nil
                '(mv nil
-                    (if (or (f-get-global 'erp state)
-                            (null (f-get-global 'val state)))
+                    (if (or (f-get-global 'pc-erp state)
+                            (null (f-get-global 'pc-val state)))
                         t
                       nil)))))
 
@@ -3632,7 +3632,7 @@
   explanation of ``success'' and ``failure.'')  As each instruction is
   executed, the system will print the usual prompt followed by that
   instruction, unless the global state variable
-  ~c[print-prompt-and-instr-flg] is ~c[nil].
+  ~c[pc-print-prompt-and-instr-flg] is ~c[nil].
 
   ~st[Remark:]  If ~c[do-all] ``fails'', then the failure is hard if and only
   if the last instruction it runs has a hard ``failure''.
@@ -3673,7 +3673,7 @@
   ~ev[]
   ~c[Do-all-no-prompt] is the same as ~c[do-all], except that the prompt and
   instruction are not printed each time, regardless of the value of
-  ~c[print-prompt-and-instr-flg].  Also, restoring is disabled.  See the
+  ~c[pc-print-prompt-and-instr-flg].  Also, restoring is disabled.  See the
   documentation for ~c[do-all]."
 
   (mv nil (list :sequence instr-list nil nil nil t t)
@@ -4014,7 +4014,9 @@
              ,@(and declare-form (list declare-form))
              (state-global-let*
               (,args)
-              (pc-main-loop instr-list nil t (print-prompt-and-instr-flg) state)))))
+              (pc-main-loop instr-list nil t
+                            (pc-print-prompt-and-instr-flg)
+                            state)))))
 
 ;; ****** Fix the documentation and code below once I can turn off
 ;; prover IO.
@@ -7263,7 +7265,7 @@
                               nil ; rule-classes
                               instr-list
                               '(signal value) ; quit-conditions
-                              t ; print-prompt-and-instr-flg, suitable for :pso
+                              t ; pc-print-prompt-and-instr-flg, suitable for :pso
                               state)
                      (pprogn
                       (cond (outputp (io? prove nil state

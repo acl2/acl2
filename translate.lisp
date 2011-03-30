@@ -4574,6 +4574,12 @@
                 'illegal)
                (t 'maybe)))))
 
+(defconst *brr-globals*
+  '(brr-monitored-runes
+    brr-stack
+    brr-gstack
+    brr-alist))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -6265,7 +6271,11 @@
                                       (access state-vars state-vars
                                               :temp-touchable-vars))))
                  (and (eq (car x) 'makunbound-global)
-                      (always-boundp-global (cadr (cadr x))))))
+                      (or (always-boundp-global (cadr (cadr x)))
+                          (member-eq (cadr (cadr x)) *brr-globals*)))
+                 (and (global-val 'boot-strap-flg wrld)
+                      (not (or (always-boundp-global (cadr (cadr x)))
+                               (member-eq (cadr (cadr x)) *brr-globals*))))))
            (cond ( ; Keep this case the same as its twin above
                   (not (and (consp (cadr x))
                             (eq (car (cadr x)) 'quote)
@@ -6299,12 +6309,17 @@
                                            functionality you desire."
                                           set-fn))
                                     (t "")))))
-                 (t
+                 ((always-boundp-global (cadr (cadr x)))
                   (trans-er ctx
                             "Built-in state global variables may not be made ~
-                             unbound, as in ~x1."
-                            (cadr (cadr x))
-                            x))))
+                             unbound, as in ~x0."
+                            x))
+                 (t ; (global-val 'boot-strap-flg wrld)
+                  (trans-er ctx
+                            "State global ~x0 needs to be declared for the ~
+                             build by adding it to *initial-global-table*, ~
+                             *initial-ld-special-bindings*, or *brr-globals*."
+                            (cadr (cadr x))))))
           (t
            (let ((stobjs-out (translate-deref stobjs-out bindings))
                  (stobjs-out2 (let ((temp (translate-deref (car x) bindings)))

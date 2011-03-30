@@ -74,20 +74,18 @@
    (string-append (symbol-name var) "-FN")
    var))
 
-(defmacro define-global (var val)
+(defmacro define-global (var)
   (let ((var-fn (define-global-name var)))
     `(progn (defun ,var-fn (state)
-              (if (f-boundp-global ',var state)
-                  (f-get-global ',var state)
-                ,val))
+              (f-get-global ',var state))
             (defmacro ,var ()
               '(,var-fn state)))))
 
-(define-global pc-prompt "->: ")
-(define-global pc-prompt-depth-prefix "#")
-(define-global print-macroexpansion-flg nil)
+(define-global pc-prompt)
+(define-global pc-prompt-depth-prefix)
+(define-global pc-print-macroexpansion-flg)
 ; Turn the following on for debugging macro commands.
-(define-global print-prompt-and-instr-flg t)
+(define-global pc-print-prompt-and-instr-flg)
 
 ; We will maintain an invariant that there are no unproved goals hanging around
 ; in the pc-state.  Moreover, for simplicity, we leave it up to each command to
@@ -972,20 +970,20 @@
              (mv nil nil state))))))))))
 
 (defun maybe-print-macroexpansion (instr raw-instr state)
-  (let ((print-macroexpansion-flg (print-macroexpansion-flg)))
-    (if (and print-macroexpansion-flg
+  (let ((pc-print-macroexpansion-flg (pc-print-macroexpansion-flg)))
+    (if (and pc-print-macroexpansion-flg
              (not (eq (car instr) (make-official-pc-command 'lisp t)))
              (not (equal instr (make-official-pc-instr raw-instr state))))
         (io? proof-checker nil state
-             (print-macroexpansion-flg instr)
+             (pc-print-macroexpansion-flg instr)
              (fms0 ">> ~x0~|" (list (cons #\0 instr)) 0
-                   (if (and (consp print-macroexpansion-flg)
-                            (integerp (car print-macroexpansion-flg))
-                            (integerp (cdr print-macroexpansion-flg))
-                            (> (car print-macroexpansion-flg) 0)
-                            (> (cdr print-macroexpansion-flg) 0))
-                       (evisc-tuple (car print-macroexpansion-flg)
-                                    (cdr print-macroexpansion-flg)
+                   (if (and (consp pc-print-macroexpansion-flg)
+                            (integerp (car pc-print-macroexpansion-flg))
+                            (integerp (cdr pc-print-macroexpansion-flg))
+                            (> (car pc-print-macroexpansion-flg) 0)
+                            (> (cdr pc-print-macroexpansion-flg) 0))
+                       (evisc-tuple (car pc-print-macroexpansion-flg)
+                                    (cdr pc-print-macroexpansion-flg)
                                     nil nil)
                      nil)))
       state)))
@@ -1109,7 +1107,7 @@
 (defconst *pc-complete-signal* 'acl2-pc-complete)
 
 (defun pc-main-loop (instr-list quit-conditions last-value
-                                print-prompt-and-instr-flg state)
+                                pc-print-prompt-and-instr-flg state)
   ;; Returns an error triple whose state has
   ;; the new state-stack "installed".  Here instr-list is a (true) list of
   ;; instructions or else is a non-NIL atom, probably *standard-oi*,
@@ -1129,12 +1127,12 @@
   (if (null instr-list)
       (mv nil last-value state)
     (mv-let (col state)
-            (if print-prompt-and-instr-flg
+            (if pc-print-prompt-and-instr-flg
                 (print-pc-prompt state)
               (mv 0 state))
             (mv-let (erp instr state)
                     (if (consp instr-list)
-                        (pprogn (if print-prompt-and-instr-flg
+                        (pprogn (if pc-print-prompt-and-instr-flg
                                     (io? proof-checker nil state
                                          (col instr-list)
                                          (fms0 "~y0~|"
@@ -1166,7 +1164,7 @@
                                  ;; If that decision is changed, then change documentation in CATCH
                                  ;; meta command.
                                  (and last-value (null signal) val)
-                                 print-prompt-and-instr-flg
+                                 pc-print-prompt-and-instr-flg
                                  state))))))))
 
 (defun make-initial-goal (term)
@@ -1201,9 +1199,9 @@
     (pc-assign old-ss nil)))
 
 (defun pc-main (term raw-term event-name rule-classes instr-list
-                     quit-conditions print-prompt-and-instr-flg state)
+                     quit-conditions pc-print-prompt-and-instr-flg state)
   (pprogn (install-initial-state-stack term raw-term event-name rule-classes)
-          (pc-main-loop instr-list quit-conditions t print-prompt-and-instr-flg
+          (pc-main-loop instr-list quit-conditions t pc-print-prompt-and-instr-flg
                         state)))
 
 (defun pc-top (raw-term event-name rule-classes instr-list quit-conditions state)

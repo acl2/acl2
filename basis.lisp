@@ -4525,8 +4525,7 @@
         state))))
 
 (defun write-for-read (state)
-  (and (f-boundp-global 'write-for-read state)
-       (f-get-global 'write-for-read state)))
+  (f-get-global 'write-for-read state))
 
 (defun spaces1 (n col hard-right-margin channel state)
   (declare (type (signed-byte 30) n col hard-right-margin))

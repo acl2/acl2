@@ -8303,12 +8303,10 @@
 
 ; See comment in terminal-markup-table.
 
-  (and (f-boundp-global 'doc-char-subst-table state)
-       (f-get-global 'doc-char-subst-table state)))
+  (f-get-global 'doc-char-subst-table state))
 
 (defun doc-fmt-alist (state)
-  (and (f-boundp-global 'doc-fmt-alist state)
-       (f-get-global 'doc-fmt-alist state)))
+  (f-get-global 'doc-fmt-alist state))
 
 (defconst *terminal-markup-table*
 
@@ -11328,24 +11326,21 @@
   :
   ~ev[]~/"
 
-  (let ((state (cond ((boundp-global 'walkabout-alist state) state)
-                     (t (f-put-global 'walkabout-alist nil state)))))
-    (pprogn
-     (fms "Commands:~|0, 1, 2, ..., nx, bk, pp, (pp n), (pp lev len), =, (= ~
-           symb), and q.~%~%"
-          nil *standard-co* state nil)
-    (mv-let (signal val state)
-            (walkabout1 0 (list x)
-                        state
-                        (not (equal (current-package state) "ACL2"))
-                        (evisc-tuple 2 3 nil nil)
-                        :none)
-            (declare (ignore signal))
-            (value val)))))
+  (pprogn
+   (fms "Commands:~|0, 1, 2, ..., nx, bk, pp, (pp n), (pp lev len), =, (= ~
+         symb), and q.~%~%"
+        nil *standard-co* state nil)
+   (mv-let (signal val state)
+           (walkabout1 0 (list x)
+                       state
+                       (not (equal (current-package state) "ACL2"))
+                       (evisc-tuple 2 3 nil nil)
+                       :none)
+           (declare (ignore signal))
+           (value val))))
 
 (defun walkabout=-fn (var state)
-  (cond ((and (boundp-global 'walkabout-alist state)
-              (symbolp var))
+  (cond ((symbolp var)
          (cdr (assoc-eq var (f-get-global 'walkabout-alist state))))
         (t nil)))
 

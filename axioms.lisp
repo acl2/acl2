@@ -24595,6 +24595,7 @@
 ; is a one-element list containing that full-book-name.
 
                        nil)
+    (check-sum-weirdness . nil)
     (checkpoint-forced-goals . nil) ; default in :doc
     (checkpoint-processors . ; avoid unbound var error with collect-checkpoints
                            ,*initial-checkpoint-processors*)
@@ -24609,6 +24610,8 @@
     (deferred-ttag-notes-saved . nil)
     (distributed-books-dir . nil) ; set in enter-boot-strap-mode and perhaps lp
     (dmrp . nil)
+    (doc-char-subst-table . nil)
+    (doc-fmt-alist . nil)
     (evisc-hitp-without-iprint . nil)
     (eviscerate-hide-terms . nil)
     (fmt-hard-right-margin . 77)
@@ -24668,8 +24671,14 @@
                                  t
                                  #-acl2-par
                                  nil)
+    (pc-erp . nil)
     (pc-output . nil)
+    (pc-print-macroexpansion-flg . nil)
+    (pc-print-prompt-and-instr-flg . t)
+    (pc-prompt . "->: ")
+    (pc-prompt-depth-prefix . "#")
     (pc-ss-alist . nil)
+    (pc-val . nil)
     (ppr-flat-right-margin . 40)
     (print-base . 10)
     (print-case . :upcase)
@@ -24732,6 +24741,7 @@
 
     (user-home-dir . nil) ; set first time entering lp
     (verbose-theory-warning . t)
+    (walkabout-alist . nil)
     (window-interface-postlude
      . "#>\\>#<\\<e(acl2-window-postlude ?~sw ~xt ~xp)#>\\>")
     (window-interface-prelude
@@ -24740,6 +24750,7 @@
     (wormhole-name . nil)
     (wormhole-status . nil)
     (write-acl2x . nil)
+    (write-for-read . nil)
     (writes-okp . t)))
 
 #+acl2-loop-only ; not during compilation
