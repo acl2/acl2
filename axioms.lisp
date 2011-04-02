@@ -24632,6 +24632,8 @@
                   #+allegro :allegro
                   #+clisp :clisp
                   #+cmu :cmu
+;                 #+lispworks :lispworks
+;                 #-(or gcl ccl sbcl allegro clisp cmu lispworks)
                   #-(or gcl ccl sbcl allegro clisp cmu)
                   (illegal '*initial-global-table*
                            "The underlying host Lisp appears not to support ~
