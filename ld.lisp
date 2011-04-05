@@ -23863,7 +23863,6 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
              (cond ((null extra-startup-string)
                     "This ACL2 executable was created by saving a session.")
                    (t extra-startup-string)))))
-;   #-(or gcl cmu sbcl allegro clisp ccl lispworks)
     #-(or gcl cmu sbcl allegro clisp ccl)
     (er hard 'save-exec
         "Sorry, but save-exec is not implemented for this Common Lisp.~a0"

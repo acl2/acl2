@@ -409,6 +409,12 @@
   (or (find-package inv)
       (make-package inv :use nil)))
 
+; Lispworks has a package named "DEF", and that name conflicts with an ACL2
+; package of that name introduced in books/coi/.  So we rename it here.
+#+lispworks
+(when (find-package "DEF")
+  (rename-package "DEF" "DEF-FROM-LW-RENAMED"))
+
 ; The value of the constant *the-live-state* is actually just a
 ; symbol, but that symbol is the unique representative of the one
 ; single active, global, real-time state of ACL2, which is represented
@@ -980,6 +986,9 @@ ACL2 from scratch.")
 ; But even with the next form, we have seen the following:
 ; **++++ Error in XTRANS-EVAL: 
 ;   Function size 67910 is too large.
+; This problem has disappeared with Lispworks 6.0, where elsewhere we call
+; cl-user::extend-current-stack.  But it seems reasonable to leave the
+; following in place.
 #+lispworks
 (cl-user::toggle-source-debugging nil)
 

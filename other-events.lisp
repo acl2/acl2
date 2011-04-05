@@ -9333,7 +9333,7 @@
                (name (pathname-name truename))
                (type (pathname-type truename)))
            (and (implies dir-p
-                         (not (or name type)))
+                         (not (or (stringp name) (stringp type))))
                 (assert$ (and (true-listp dir)
                               (eq (car dir)
                                   #+gcl :ROOT

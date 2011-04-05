@@ -1565,19 +1565,22 @@
                   (return-from package-has-no-imports nil))))
   t)
 
+#-acl2-loop-only
+(defmacro maybe-make-package (name)
+  `(when (not (find-package ,name))
+     (make-package ,name :use nil)))
+
 (defmacro maybe-introduce-empty-pkg-1 (name)
-  (let ((defp #+cltl2 'defpackage #-cltl2 'user::defpackage))
-    `(progn
-       (,defp ,name
-         (:use))
-       (,defp ,(concatenate 'string
-                            acl2::*global-package-prefix*
-                            name)
-         (:use))
-       (,defp ,(concatenate 'string
-                            acl2::*1*-package-prefix*
-                            name)
-         (:use)))))
+  `(eval-when
+    (load eval compile)
+    (progn
+      (maybe-make-package ,name)
+      (maybe-make-package ,(concatenate 'string
+                                        acl2::*global-package-prefix*
+                                        name))
+      (maybe-make-package ,(concatenate 'string
+                                        acl2::*1*-package-prefix*
+                                        name)))))
 
 (defmacro maybe-introduce-empty-pkg-2 (name)
   `(when (and (not (member ,name *defpkg-virgins*
@@ -2649,7 +2652,8 @@
    (the fixnum ; to assist in ACL2's proclaiming
         (cond ((atom x) acc)
               ((eql (the fixnum acc) most-positive-fixnum)
-               #+(or gcl ccl allegro sbcl cmu)
+               #+(or gcl ccl allegro sbcl cmu
+                     (and lispworks lispworks-64bit))
 
 ; The error below is entirely optional, and can be safely removed from the
 ; code.  Here is the story.
@@ -2657,13 +2661,11 @@
 ; We cause an error for the Lisps listed above in order to highlight the
 ; violation of the following expectation for those Lisps: the length of a list
 ; is always bounded by most-positive-fixnum.  To be safe, we omit CLISP and
-; Lispworks (where most-positive-fixnum is only 16777215 and 8388607,
-; respectively; see the Essay on Fixnum Declarations).  But for 32-bit versions
-; of the Lisps in the above readtime conditional, we believe the above
-; expectation because a cons takes at least 8 bytes and each of the lisps below
-; has most-positive-fixnum of at least approximately 2^29.  This may need to be
-; re-thought for 64-bit Lisps; however we are hopeful that most-positive-fixnum
-; will still be sufficiently large to accommodate long lists.
+; 32-bit Lispworks (where most-positive-fixnum is only 16777215 and 8388607,
+; respectively; see the Essay on Fixnum Declarations).  But for the Lisps in
+; the above readtime conditional, we believe the above expectation because a
+; cons takes at least 8 bytes and each of the lisps below has
+; most-positive-fixnum of at least approximately 2^29.
 
                (error "We have encountered a list whose length exceeds ~
                        most-positive-fixnum!")
@@ -24632,9 +24634,8 @@
                   #+allegro :allegro
                   #+clisp :clisp
                   #+cmu :cmu
-;                 #+lispworks :lispworks
-;                 #-(or gcl ccl sbcl allegro clisp cmu lispworks)
-                  #-(or gcl ccl sbcl allegro clisp cmu)
+                  #+lispworks :lispworks
+                  #-(or gcl ccl sbcl allegro clisp cmu lispworks)
                   (illegal '*initial-global-table*
                            "The underlying host Lisp appears not to support ~
                             ACL2.  Feel free to contact the ACL2 implementors ~

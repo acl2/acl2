@@ -6943,8 +6943,9 @@ Missing functions:
                   (ignore-errors ; might not be in scope of catch
                     (throw 'local-top-level :our-abort))))))))
 
-#-(and gcl (not ansi-cl))
-(setq *debugger-hook* 'our-abort)
+; We formerly set *debugger-hook* here, but now we set it in lp; see the
+; comment there.
+
 #+ccl ; for CCL revisions starting with 12090
 (when (boundp 'ccl::*break-hook*)
   (setq ccl::*break-hook* 'our-abort))
@@ -7051,6 +7052,14 @@ Missing functions:
               nil)))
      (t (set-initial-cbd)
         (eval `(in-package ,*startup-package-name*)) ;only changes raw Lisp pkg
+
+; We formerly set *debugger-hook* at the top level using setq, just below the
+; definition of our-abort.  But that didn't work in Lispworks, where that value
+; persisted right up to the saving of an image yet *debugger-hook* was nil
+; after starting up that image.
+
+        #-(and gcl (not ansi-cl))
+        (setq *debugger-hook* 'our-abort)
 
 ; Acl2-default-restart isn't enough in Allegro, at least, to get the new prompt
 ; when we start up:
