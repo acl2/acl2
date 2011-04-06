@@ -1570,9 +1570,27 @@
   `(when (not (find-package ,name))
      (make-package ,name :use nil)))
 
+
 (defmacro maybe-introduce-empty-pkg-1 (name)
+
+; It appears that GCL, at least non-ANSI GCL, requires a user::defpackage form
+; near the top of a file in order to read the corresponding compiled file.  For
+; example, an error occurred upon attempting to load the file
+; books/data-structures/defalist.o after certifying the corresponding book
+; using GCL, because the form (MAYBE-INTRODUCE-EMPTY-PKG-1 "U") near the top of
+; the file was insufficient to allow reading a symbol in the "U" package
+; occurring later in the corresponding source file.
+
+; On the other hand, the CL HyperSpec does not pin down the effect of
+; defpackage when a package already exists.  Indeed, the defpackage approach
+; that we use for GCL does not work for Lispworks 6.0.
+
+; So, we have quite different definitions of this macro for GCL and Lispworks,
+; or more accurately, depending on feature :cltl2.
+
+  #+cltl2
   `(eval-when
-    (load eval compile)
+    (:load-toplevel :execute :compile-toplevel) ; (load eval compile) is OK too
     (progn
       (maybe-make-package ,name)
       (maybe-make-package ,(concatenate 'string
@@ -1580,7 +1598,20 @@
                                         name))
       (maybe-make-package ,(concatenate 'string
                                         acl2::*1*-package-prefix*
-                                        name)))))
+                                        name))))
+  #-cltl2
+  (let ((defp #+cltl2 'defpackage #-cltl2 'user::defpackage))
+    `(progn
+       (,defp ,name
+         (:use))
+       (,defp ,(concatenate 'string
+                            acl2::*global-package-prefix*
+                            name)
+         (:use))
+       (,defp ,(concatenate 'string
+                            acl2::*1*-package-prefix*
+                            name)
+         (:use)))))
 
 (defmacro maybe-introduce-empty-pkg-2 (name)
   `(when (and (not (member ,name *defpkg-virgins*
@@ -23274,34 +23305,71 @@
 ;   (SETQ *MOST-RECENT-MULTIPLICITY* 3)
 ;   #:G1)
 
-; Note that if the evaluation of z uses a multiple value then it
-; overwrites the earlier SET-MV.  Now this expansion is safe if there
-; are only two values because the only SET-MV is done after the second
-; value is computed.  If there are three or more value forms, then
-; this expansion is also safe if all but the first two are atomic.
-; For example, (mv & & (killer)) is unsafe because (killer) may
-; overwrite the SET-MV, but (mv & & STATE) is safe because the
-; evaluation of an atomic form is guaranteed not to overwrite SET-MV
-; settings.  In general, all forms after the second must be atomic for
-; the above expansion to be used.
+; Note that if the evaluation of z uses a multiple value then it overwrites the
+; earlier SET-MV.  Now this expansion is safe if there are only two values
+; because the only SET-MV is done after the second value is computed.  If there
+; are three or more value forms, then this expansion is also safe if all but
+; the first two are atomic.  For example, (mv & & (killer)) is unsafe because
+; (killer) may overwrite the SET-MV, but (mv & & STATE) is safe because the
+; evaluation of an atomic form is guaranteed not to overwrite SET-MV settings.
+; In general, all forms after the second must be atomic for the above expansion
+; to be used.
+
+; Suppose we are using GCL.  In some cases we can avoid boxing fixnums that are
+; the first value returned, by making the following two optimizations.  First,
+; we insert a declaration when we see (mv (the type expr) ...) where type is
+; contained in the set of fixnums.  Our second optimization is for the case
+; of (mv v ...) where v is an atom, when we avoid let-binding v.  To see why
+; this second optimization is helpful, consider the following definition.
+
+; (defun foo (x y)
+;   (declare (type (signed-byte 30) x))
+;   (the-mv 2
+;           (signed-byte 30)
+;           (mv x (cons y y))))
+
+; If we submit this definition to ACL2, the proclaim-form mechanism arranges
+; for the following declaim form to be evaluated.
+
+; (DECLAIM (FTYPE (FUNCTION ((SIGNED-BYTE 30) T)
+;                           (VALUES (SIGNED-BYTE 30)))
+;                 FOO))
+
+; Now let us exit the ACL2 loop and then, in raw Lisp, call disassemble on the
+; above defun.  Without our second optimization there is boxing: a call of
+; CMPmake_fixnum in the output of disassemble.  That happens because (mv x
+; (cons y y)) macroexpands to something like this:
+
+; (LET ((#:G5579 X)) (SET-MV 1 (CONS Y Y)) #:G5579)
+
+; With the second optimization, however, we get this macroexpansion instead:
+
+; (LET () (SET-MV 1 (CONS Y Y)) X)
+
+; GCL can see that the fixnum declaration for x applies at the occurrence
+; above, but fails (as of this writing, using GCL 2.6.8) to recognize that the
+; above gensym is a fixnum.
 
   (cond ((atom-listp (cddr l))
 
 ; We use the old expansion because it is safe and more efficient.
 
-         (let ((v (gensym)))
-           `(let ((,v ,(car l)))
+         (let* ((v (if (atom (car l))
+                       (car l)
+                     (gensym)))
+                (bindings (if (atom (car l))
+                              nil
+                            `((,v ,(car l))))))
+           `(let ,bindings
 
-; In GCL (at the least), it is possible to avoid boxing fixnums that are the
-; first value returned, if we are a bit careful.  In particular, it is useful
-; to insert a declaration here when we see (mv (the type expr) ...) where
-; type is contained in the set of fixnums.
+; See comment above regarding boxing fixnums.
 
-              ,@(let ((output (macroexpand-till (car l) 'the)))
-                  (cond ((and (consp output)
-                              (eq 'the (car output)))
-                         `((declare (type ,(cadr output) ,v))))
-                        (t nil)))
+              ,@(and (consp (car l))
+                     (let ((output (macroexpand-till (car l) 'the)))
+                       (cond ((and (consp output)
+                                   (eq 'the (car output)))
+                              `((declare (type ,(cadr output) ,v))))
+                             (t nil))))
               ,@(let (ans)
                   (do ((tl (cdr l) (cdr tl))
                        (i 1 (1+ i)))
@@ -23323,19 +23391,27 @@
 ;  (SET-MV k-1 #:Gk)
 ;  #:G1)
 
-         (let ((bindings (mv-bindings l)))
+         (let* ((cdr-bindings (mv-bindings (cdr l)))
+                (v (if (atom (car l))
+                       (car l)
+                     (gensym)))
+                (bindings (if (atom (car l))
+                              cdr-bindings
+                            (cons (list v (car l))
+                                  cdr-bindings))))
            `(let ,bindings
 
 ; See comment above regarding boxing fixnums.
 
-              ,@(let ((output (macroexpand-till (car l) 'the)))
-                  (cond ((and (consp output)
-                              (eq 'the (car output)))
-                         `((declare (type ,(cadr output) ,(caar bindings)))))
-                        (t nil)))
+              ,@(and (consp (car l))
+                     (let ((output (macroexpand-till (car l) 'the)))
+                       (cond ((and (consp output)
+                                   (eq 'the (car output)))
+                              `((declare (type ,(cadr output) ,v))))
+                             (t nil))))
               (set-mv ,(1- (length l)) ,(car (last l)))
-              ,@(mv-set-mvs (cdr bindings) 1)
-              ,(caar bindings))))))
+              ,@(mv-set-mvs cdr-bindings 1)
+              ,v)))))
 
 (defmacro mv? (&rest l)
 
