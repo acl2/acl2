@@ -17395,6 +17395,9 @@
 ; Removed needless (and confusing) #+ansi-cl in handler-bind call for sbcl in
 ; with-warnings-suppressed.
 
+; Modified the handling of package definitions in expansion files (macro
+; maybe-introduce-empty-pkg-1).
+
   :Doc
   ":Doc-Section release-notes
 
