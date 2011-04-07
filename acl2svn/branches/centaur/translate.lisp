@@ -2649,7 +2649,7 @@
                          (*raw-guard-warningp* (raw-guard-warningp-binding)))
        #+acl2-loop-only ()
 
-; At one time we called time-limit4-reached-p here so that we can quit if we
+; At one time we called time-limit5-reached-p here so that we can quit if we
 ; are out of time.  But we were then able to get into an infinite loop as
 ; follows:
 
@@ -2663,7 +2663,7 @@
 ; cleaning up), but a simple solution is to avoid this time-limit check.
 
 ;       (cond
-;        ((time-limit4-reached-p
+;        ((time-limit5-reached-p
 ;          "Out of time in the evaluator (ev).") ; nil, or throws
 ;         (mv t ; value shouldn't matter
 ;             (cons "Implementation error" nil)
@@ -4574,6 +4574,12 @@
                 'illegal)
                (t 'maybe)))))
 
+(defconst *brr-globals*
+  '(brr-monitored-runes
+    brr-stack
+    brr-gstack
+    brr-alist))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -4931,7 +4937,8 @@
        (collect-declarations-cmp (butlast (cdddr x) 1)
                                  (cadr x) 'mv-let ctx wrld state-vars)
        (cond
-        (erp (trans-er erp edcls))
+        (erp ; erp is a ctx and edcls is a msg
+         (trans-er erp "~@0" edcls))
         (t
          (trans-er-let*
           ((tcall (translate11 (caddr x)
@@ -6264,7 +6271,11 @@
                                       (access state-vars state-vars
                                               :temp-touchable-vars))))
                  (and (eq (car x) 'makunbound-global)
-                      (always-boundp-global (cadr (cadr x))))))
+                      (or (always-boundp-global (cadr (cadr x)))
+                          (member-eq (cadr (cadr x)) *brr-globals*)))
+                 (and (global-val 'boot-strap-flg wrld)
+                      (not (or (always-boundp-global (cadr (cadr x)))
+                               (member-eq (cadr (cadr x)) *brr-globals*))))))
            (cond ( ; Keep this case the same as its twin above
                   (not (and (consp (cadr x))
                             (eq (car (cadr x)) 'quote)
@@ -6298,12 +6309,17 @@
                                            functionality you desire."
                                           set-fn))
                                     (t "")))))
-                 (t
+                 ((always-boundp-global (cadr (cadr x)))
                   (trans-er ctx
                             "Built-in state global variables may not be made ~
-                             unbound, as in ~x1."
-                            (cadr (cadr x))
-                            x))))
+                             unbound, as in ~x0."
+                            x))
+                 (t ; (global-val 'boot-strap-flg wrld)
+                  (trans-er ctx
+                            "State global ~x0 needs to be declared for the ~
+                             build by adding it to *initial-global-table*, ~
+                             *initial-ld-special-bindings*, or *brr-globals*."
+                            (cadr (cadr x))))))
           (t
            (let ((stobjs-out (translate-deref stobjs-out bindings))
                  (stobjs-out2 (let ((temp (translate-deref (car x) bindings)))

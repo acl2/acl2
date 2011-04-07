@@ -76,6 +76,8 @@ implementations.")
 
 ; #+lispworks ; 3.2.0
 ;(lw::extend-current-stack 1000)
+#+lispworks
+(cl-user::extend-current-stack 200)
 
 ; Create the packages we use.
 
@@ -473,12 +475,11 @@ implementations.")
    #+acl2-par
    "~%~% Experimental modification for parallel evaluation.  Please expect at~
     ~% most limited maintenance for this version~%"
+   "~% See the documentation topic ~a for recent changes."
    #+lispworks
-   "~% Type (LP) to enter the ACL2 command loop;~
-    ~% then see the documentation topic ~a for recent changes.~%"
+   "~%~% NOTE: Type (LP) to enter the ACL2 command loop.~%"
    #-lispworks
-   "~% See the documentation topic ~a for recent changes.~
-    ~% Note: We have modified the prompt in some underlying Lisps to further~
+   "~% Note: We have modified the prompt in some underlying Lisps to further~
     ~% distinguish it from the ACL2 prompt.~%"))
 
 (defun maybe-load-acl2-init ()
@@ -853,9 +854,7 @@ implementations.")
 ; See the comment in save-acl2-in-lispworks for why we need the following call.
 
   #+lispworks (mp:initialize-multiprocessing)
-
-  ;;Lispworks 4.2.0 no longer recognizes the following:
-  ;;#+lispworks (lw::extend-current-stack 1000)
+  #+lispworks (cl-user::extend-current-stack 200)
 
   (setq *acl2-default-restart-complete* t)
   nil)

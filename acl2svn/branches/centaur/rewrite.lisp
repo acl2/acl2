@@ -2392,7 +2392,7 @@
 
   (cond
    ((null lst) nil)
-   ((time-limit4-reached-p ; nil, or throws
+   ((time-limit5-reached-p ; nil, or throws
      "Out of time in subsumption ~
       (quick-and-dirty-subsumption-replacement-step).")
     nil)
@@ -2953,7 +2953,7 @@
          (cond
           (again-flg
            (cond
-            ((time-limit4-reached-p ; nil, or throws
+            ((time-limit5-reached-p ; nil, or throws
               "Out of time in subsumption (subsumption-replacement-loop).")
              nil)
             (t
@@ -5145,7 +5145,7 @@
 
 ;    ; &extra formals
 ;    rdepth type-alist obj geneqv wrld state fnstack ancestors
-;    backchain-limit simplify-clause-pot-lst rcnst gstack ttree
+;    backchain-limit step-limit simplify-clause-pot-lst rcnst gstack ttree
 
 ; Important Note:  The string "&extra formals" is included where ever
 ; this list has been copied.
@@ -5204,25 +5204,111 @@
                                    (cdr keyword-extra-formals)
                                    alist)))))
 
+(defun step-limit-error1 (ctx str start where state)
+  (declare (ignorable state)) ; only used in raw Lisp
+  #-acl2-loop-only
+  (when *step-limit-error-p*
+    (er soft ctx str start where)
+    (setq *step-limit-error-p* 'error)
+    (throw 'step-limit-tag ; irrelevant value
+           t))
+  (the (signed-byte 30)
+    (prog2$ (er hard? ctx str start where)
+            -1)))
+
+(defmacro step-limit-error (superior-context-p)
+
+; If superior-context-p is t then we return an error triple; if it is nil, we
+; return -1, possibly causing a hard error or a throw.
+
+  (let ((str "The prover step-limit, which is ~x0 in the ~@1, has been ~
+              exceeded.  See :DOC set-prover-step-limit.")
+        (ctx ''step-limit)
+        (where (if superior-context-p
+                   "context immediately above the one just completed"
+                 "current context"))
+        (start '(or (f-get-global 'step-limit-start state)
+                    (step-limit-from-table (w state)))))
+    (cond
+     (superior-context-p
+      `(the-mv
+        3
+        (signed-byte 30)
+        (cond ((eql ,start *default-step-limit*)
+               (value -1))
+              (t (er soft ,ctx ,str ,start ,where)))
+        2))
+     (t
+      `(the-fixnum
+        (step-limit-error1 ,ctx ,str ,start ,where state))))))
+
+(defmacro decrement-step-limit (step-limit wrld)
+
+; We make this event a macro for improved performance.
+
+  (declare (xargs :guard
+
+; By insisting that the formals are symbols, we guarantee that their repeated
+; reference below does not result in repeated evaluation of other than the
+; current binding of a symbol.
+
+                  (and (symbolp step-limit)
+                       (symbolp wrld))))
+  `(the (signed-byte 30)
+     (cond
+      ((< 0 (the-fixnum ,step-limit))
+       (1-f ,step-limit))
+      ((eql -1 (the-fixnum ,step-limit))
+       -1)
+      (t (assert$ (eql 0 (the-fixnum ,step-limit)) 
+                  (cond
+                   ((eql (initial-step-limit ,wrld state)
+                         *default-step-limit*)
+                    -1)
+                   (t (step-limit-error nil))))))))
+
 (defmacro rewrite-entry (&rest args)
   (declare (xargs :guard (and (true-listp args)
                               (consp (car args))
                               (keyword-value-listp (cdr args)))))
-  (let ((call
-         (append (car args)
-                 (add-rewrite-args '( ; &extra formals
-                                     rdepth
-                                     type-alist obj geneqv wrld state
-                                     fnstack ancestors backchain-limit
-                                     simplify-clause-pot-lst
-                                     rcnst gstack ttree)
-                                   '( ; &extra formals -- keyword versions
-                                     :rdepth
-                                     :type-alist :obj :geneqv :wrld :state
-                                     :fnstack :ancestors :backchain-limit
-                                     :simplify-clause-pot-lst
-                                     :rcnst :gstack :ttree)
-                                   (plist-to-alist (cdr args))))))
+  (let* ((call0
+          (append (car args)
+                  (add-rewrite-args '( ; &extra formals
+                                      rdepth step-limit
+                                      type-alist obj geneqv wrld state
+                                      fnstack ancestors
+                                      backchain-limit
+                                      simplify-clause-pot-lst
+                                      rcnst gstack ttree)
+                                    '( ; &extra formals -- keyword versions
+                                      :rdepth :step-limit
+                                      :type-alist :obj :geneqv :wrld :state
+                                      :fnstack :ancestors
+                                      :backchain-limit
+                                      :simplify-clause-pot-lst
+                                      :rcnst :gstack :ttree)
+                                    (plist-to-alist
+                                     (if (eq (caar args) 'rewrite)
+                                         (remove-keyword
+                                          :step-limit ; dealt with below
+                                          (cdr args))
+                                       (cdr args))))))
+         (call
+          (cond
+           ((not (eq (caar args) 'rewrite))
+            call0)
+           (t (let* ((tail (assoc-keyword :wrld (cdr args)))
+                     (w (if tail (cadr tail) 'wrld))
+                     (call1
+                      `(let ((step-limit
+                              (decrement-step-limit step-limit ,w)))
+                         (declare (type (signed-byte 30) step-limit))
+                         ,call0))
+                     (step-limit-tail (assoc-keyword :step-limit (cdr args))))
+                (cond (step-limit-tail
+                       `(let ((step-limit ,(cadr step-limit-tail)))
+                          ,call1))
+                      (t call1)))))))
     #+acl2-loop-only
     call
     #-acl2-loop-only
@@ -5238,12 +5324,27 @@
 ; WARNING: Gstack must be bound where rewrite-entry is called for the above
 ; values of (caar args).
 
-        `(if (or (f-get-global 'gstackp state)
-                 (f-get-global 'dmrp state))
-             (our-multiple-value-prog1
-              ,call
-              (setq *deep-gstack* gstack))
-           ,call)
+        `(cond ((or (f-get-global 'gstackp state)
+                    (f-get-global 'dmrp state))
+
+; We could call our-multiple-value-prog1 instead of multiple-value-prog1 in the
+; #+cltl2 case below, which would avoid the need for a separate #-cltl2 case.
+; However, for non-ANSI GCL we want to take advantage of the fact that all
+; functions in the rewrite nest return a first argument (the new step-limit)
+; that is a fixnum, but the compiler doesn't use that information when a prog1
+; call is used.  So we manage the GCL case ourselves.
+
+                #+cltl2
+                (multiple-value-prog1
+                 ,call
+                 (setq *deep-gstack* gstack))
+                #-cltl2
+                ,(let ((var (gensym)))
+                   `(let ((,var ,call))
+                      (declare (type (signed-byte 30) ,var))
+                      (setq *deep-gstack* gstack)
+                      ,var)))
+               (t ,call))
       call)))
 
 ; We have to deflabel Rule-Classes now, so we can refer to it in
@@ -5488,7 +5589,7 @@
   supplied, the warning otherwise provided for the presence of free variables
   in hypotheses will be suppressed.
 
-  ~c[Backchain-limit-lst] ~-[] this field may be supplied only if the
+  ~c[:Backchain-limit-lst] ~-[] this field may be supplied only if the
   ~c[:class] is either ~c[:]~ilc[rewrite], ~c[:]~ilc[meta], ~c[:]~ilc[linear],
   or ~c[:]~ilc[type-prescription].  It is further required either only one rule
   is generated from the formula or, at least, every such rule has the same list
@@ -5504,10 +5605,11 @@
   ~c[NIL], no new limits are imposed; if it is an integer, the hypothesis will
   be limited to backchaining at most that many times.  Note that backchaining
   may be further limited by a global ~c[backchain-limit]; ~pl[backchain-limit]
-  for details.  For a different way to reign in the rewriter,
-  ~pl[rewrite-stack-limit].  Jared Davis has pointed out that you can set this
-  field to 0 to avoid any attempt to relieve ~ilc[force]d hypotheses, which can
-  lead to a significant speed-up in some cases.
+  for details.  For different ways to reign in the rewriter,
+  ~pl[rewrite-stack-limit] and ~pl[set-prover-step-limit].  Jared Davis has
+  pointed out that you can set the ~c[:backchain-limit-lst] to 0 to avoid any
+  attempt to relieve ~ilc[force]d hypotheses, which can lead to a significant
+  speed-up in some cases.
 
   ~eq[]Once ~c[thm] has been proved (in the case of ~ilc[defthm]) and each rule
   class object has been checked for well-formedness (which might require
@@ -11695,15 +11797,23 @@
       (or bad-synp-hyp-msg
           (bad-synp-hyp-msg (cdr hyps) bound-vars all-vars-bound-p wrld)))))
 
+(defmacro sl-let (vars form &rest rest)
+  (let ((new-vars (cons 'step-limit vars)))
+    `(mv-let ,new-vars
+             ,form
+             (declare (type (signed-byte 30) step-limit))
+             ,@rest)))
+
 (defmacro rewrite-entry-extending-failure (unify-subst failure-reason form
                                                        &rest args)
-  `(mv-let (relieve-hyps-ansxx failure-reason-lstxx unify-substxx ttreexx allpxx)
+  `(mv-let (step-limitxx relieve-hyps-ansxx failure-reason-lstxx unify-substxx
+                         ttreexx allpxx)
      (rewrite-entry ,form ,@args)
-     (mv relieve-hyps-ansxx
+     (mv step-limitxx relieve-hyps-ansxx
          (and (null relieve-hyps-ansxx)
               (cons (check-vars-not-free
-                     (relieve-hyps-ansxx failure-reason-lstxx unify-substxx
-                                         ttreexx allpxx)
+                     (step-limitxx relieve-hyps-ansxx failure-reason-lstxx
+                                   unify-substxx ttreexx allpxx)
                      (cons ,unify-subst ,failure-reason))
                     failure-reason-lstxx))
          unify-substxx ttreexx allpxx)))
@@ -11837,6 +11947,14 @@
       (push-lemma rune ttree)
     ttree))
 
+(defmacro prepend-step-limit (n form)
+  (let ((vars (if (consp n)
+                  n
+                (make-var-lst 'x n))))
+    `(mv-let ,vars
+             ,form
+             (mv step-limit ,@vars))))
+
 (mutual-recursion
 
 ; State is an argument of rewrite only to permit us to call ev.  In general,
@@ -11846,7 +11964,7 @@
 ; Keep this nest in sync with mfc-rw+ and pc-rewrite*.
 
 (defun rewrite (term alist bkptr ; &extra formals
-                     rdepth
+                     rdepth step-limit
                      type-alist obj geneqv wrld state fnstack ancestors
                      backchain-limit
                      simplify-clause-pot-lst rcnst gstack ttree)
@@ -11864,35 +11982,35 @@
 ; h type-alist: a list of assumptions governing this rewrite
 ;   obj:        (objective of rewrite) t, nil, or ? - of heuristic use only.
 ; c geneqv:     a generated equivalence relation to maintain
-;   wrld:       the current theory
+;   wrld:       the current world
 ;   fnstack:    fns and terms currently being expanded - of heuristic use only
 ; h ancestors:  a list of terms assumed true, modified as we backchain.
+; h backchain-limit: of heuristic use only
 ; h simplify-clause-pot-lst: a pot-lst of polys
 ; h rcnst:      the rewrite constant arguments
 ; h ttree:      the evolving ttree describing the rewrites.
 ;   rdepth:     maximum allowed stack depth - of heuristic use only
+;   step-limit: number of recursive calls permitted for rewrite
 
 ; The Output:
-; a term term' and a tag-tree ttree'
+; a new step-limit, a term term', and a tag-tree ttree'
 
-; The Specification of Rewrite: The axioms in wrld permit us to infer
-; that the Rewrite Assumption implies that term' is geneqv to
-; term/alist.  One can write this "wrld |- h -> c."  The args are
-; tagged with h and c according to how they are involved in this spec
+; The Specification of Rewrite: The axioms in wrld permit us to infer that the
+; Rewrite Assumption implies that term' is geneqv to term/alist.  One can write
+; this "wrld |- h -> c."  The args are tagged with h and c according to how
+; they are involved in this spec.
 
-; The Rewrite Assumption: the conjunction of (a) the assumptions in
-; type-alist, (b) the assumptions in ancestors, (c) the assumption of
-; every "active" poly in simplify-clause-pot-lst (where a poly is inactive
-; iff its tag tree contains a 'pt containing some literal number that
-; occurs in the :pt field of rcnst), and (d) the 'assumptions in the final
-; tag-tree ttree'.
+; The Rewrite Assumption: the conjunction of (a) the assumptions in type-alist,
+; (b) the assumptions in ancestors, (c) the assumption of every "active" poly
+; in simplify-clause-pot-lst (where a poly is inactive iff its tag tree
+; contains a 'pt containing some literal number that occurs in the :pt field of
+; rcnst), and (d) the 'assumptions in the final tag-tree ttree'.
 
-; Observe that if there are 'assumptions in the incoming ttree
-; they are unioned into those made by this rewrite.  Thus, unless you
-; want the assumptions to accumulate across many rewrites, you must
-; use the empty initial tag tree.  It would be incorrect to attempt to
-; split on the "new" assumptions in the new tag tree because of the
-; unioning.
+; Observe that if there are 'assumptions in the incoming ttree they are unioned
+; into those made by this rewrite.  Thus, unless you want the assumptions to
+; accumulate across many rewrites, you must use the empty initial tag tree.  It
+; would be incorrect to attempt to split on the "new" assumptions in the new
+; tag tree because of the unioning.
 
   ":Doc-Section Rule-Classes
 
@@ -12013,38 +12131,41 @@
 ; The first value is the rewritten term.  The second is the final
 ; value of ttree.
 
-  (declare (type (unsigned-byte 29) rdepth))
-  (let ((gstack (push-gframe 'rewrite bkptr term alist obj))
-        (rdepth (adjust-rdepth rdepth)))
-    (cond ((zero-depthp rdepth)
-           (rdepth-error
-            (mv (sublis-var alist term) ttree)))
-          ((f-big-clock-negative-p state)
-           (mv (sublis-var alist term) ttree))
-          ((time-limit4-reached-p
-            "Out of time in the rewriter (rewrite).") ; nil, or throws
-           (mv nil nil))
-          ((variablep term)
-           (rewrite-entry
-            (rewrite-solidify-plus (let ((temp (assoc-eq term alist)))
-                                     (cond (temp (cdr temp))
-                                           (t term))))))
-          ((fquotep term) (mv term ttree))
-          ((eq (ffn-symb term) 'if)
+  (declare (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
+  (the-mv
+   3
+   (signed-byte 30)
+   (let ((gstack (push-gframe 'rewrite bkptr term alist obj))
+         (rdepth (adjust-rdepth rdepth)))
+     (declare (type (unsigned-byte 29) rdepth))
+     (cond ((zero-depthp rdepth)
+            (rdepth-error
+             (mv step-limit (sublis-var alist term) ttree)))
+           ((time-limit5-reached-p
+             "Out of time in the rewriter (rewrite).") ; nil, or throws
+            (mv step-limit nil nil))
+           ((variablep term)
+            (rewrite-entry
+             (rewrite-solidify-plus (let ((temp (assoc-eq term alist)))
+                                      (cond (temp (cdr temp))
+                                            (t term))))))
+           ((fquotep term) (mv step-limit term ttree))
+           ((eq (ffn-symb term) 'if)
 
 ; Normally we rewrite (IF a b c) by rewriting a and then one or both
 ; of b and c, depending on the rewritten a.  But in the special case
 ; (IF a b b) we just rewrite and return b.  We have seen examples
 ; where this comes up, e.g., nth-update-rewriter can produce such IFs.
 
-           (cond
-            ((equal (fargn term 2) (fargn term 3))
-             (rewrite-entry
-              (rewrite (fargn term 2) alist 2)))
-            (t
-             (mv-let (rewritten-test ttree)
-                     (rewrite-entry
-                      (rewrite (fargn term 1) alist 1)
+            (cond
+             ((equal (fargn term 2) (fargn term 3))
+              (rewrite-entry
+               (rewrite (fargn term 2) alist 2)))
+             (t
+              (sl-let (rewritten-test ttree)
+                      (rewrite-entry
+                       (rewrite (fargn term 1) alist 1)
 
 ; When we rewrite the test of the if we use geneqv iff.  What about
 ; obj.  Mostly we'll use '?.  But there are a few special cases.
@@ -12138,34 +12259,34 @@
 ; Therefore, we treat (if u u v) the same as (if u t v) for purposes
 ; of establishing the :obj.
 
-                      :obj
-                      (cond
-                       ((eq obj '?) '?)
-                       (t (let ((arg2 (if (equal (fargn term 1)
-                                                 (fargn term 2))
-                                          *t*
-                                        (fargn term 2))))
-                            (cond ((quotep arg2)
+                       :obj
+                       (cond
+                        ((eq obj '?) '?)
+                        (t (let ((arg2 (if (equal (fargn term 1)
+                                                  (fargn term 2))
+                                           *t*
+                                         (fargn term 2))))
+                             (cond ((quotep arg2)
 
 ; Since (if u  t  v) is essentially (or u v), :obj is same for u and v
 ; Since (if u nil v) is essentially (and (not u) v), :obj flips for u and v
 
-                                   (if (unquote arg2) obj (not obj)))
-                                  (t (let ((arg3 (fargn term 3)))
-                                       (cond ((quotep arg3)
+                                    (if (unquote arg2) obj (not obj)))
+                                   (t (let ((arg3 (fargn term 3)))
+                                        (cond ((quotep arg3)
 
 ; Since (if u v  t ) is essentially (or (not u) v), :obj flips for u and v
 ; Since (if u v nil) is essentially (and u v), :obj is same for u and v
 
-                                              (if (unquote arg3) (not obj) obj))
-                                             (t '?))))))))
-                      :geneqv *geneqv-iff*)
-                     (rewrite-entry (rewrite-if rewritten-test
-                                                (fargn term 1)
-                                                (fargn term 2)
-                                                (fargn term 3)
-                                                alist))))))
-          ((and (eq (ffn-symb term) 'return-last)
+                                               (if (unquote arg3) (not obj) obj))
+                                              (t '?))))))))
+                       :geneqv *geneqv-iff*)
+                      (rewrite-entry (rewrite-if rewritten-test
+                                                 (fargn term 1)
+                                                 (fargn term 2)
+                                                 (fargn term 3)
+                                                 alist))))))
+           ((and (eq (ffn-symb term) 'return-last)
 
 ; We avoid special treatment for a return-last term when the first argument is
 ; 'progn, since the user may have intended the first argument to be rewritten
@@ -12173,13 +12294,13 @@
 ; in the other cases, in particular for calls of return-last generated by calls
 ; of mbe, to avoid spending time rewriting the next-to-last argument.
 
-                (not (equal (fargn term 1) ''progn)))
-           (rewrite-entry
-            (rewrite (fargn term 3) alist 2)
-            :ttree (push-lemma
-                    (fn-rune-nume 'return-last nil nil wrld)
-                    ttree)))
-          ((eq (ffn-symb term) 'hide)
+                 (not (equal (fargn term 1) ''progn)))
+            (rewrite-entry
+             (rewrite (fargn term 3) alist 2)
+             :ttree (push-lemma
+                     (fn-rune-nume 'return-last nil nil wrld)
+                     ttree)))
+           ((eq (ffn-symb term) 'hide)
            
 ; We are rewriting (HIDE x).  Recall the substitution alist.  We must
 ; stuff it into x.  That is, if the term is (HIDE (fn u v)) and alist
@@ -12202,28 +12323,28 @@
 ; :EXPAND or HIDE-rewrite hints without waiting to see what comes out.
            
 
-           (let* ((stack (make-stack-from-alist (fargn term 1) alist))
-                  (inst-term (if alist
-                                 (fcons-term* 'hide
-                                              (make-lambda-application
-                                               (caar stack)
-                                               (fargn term 1)
-                                               (cdar stack)))
-                               term)))
-             (cond
-              ((expand-permission-p inst-term
-                                    (access rewrite-constant rcnst :expand-lst)
-                                    geneqv wrld)
+            (let* ((stack (make-stack-from-alist (fargn term 1) alist))
+                   (inst-term (if alist
+                                  (fcons-term* 'hide
+                                               (make-lambda-application
+                                                (caar stack)
+                                                (fargn term 1)
+                                                (cdar stack)))
+                                term)))
+              (cond
+               ((expand-permission-p inst-term
+                                     (access rewrite-constant rcnst :expand-lst)
+                                     geneqv wrld)
 
 ; We abandon inst-term and rewrite the hidden part under the alist.
 
-               (rewrite-entry (rewrite (fargn term 1) alist 1)
-                              :ttree (push-lemma
-                                      (fn-rune-nume 'hide nil nil wrld)
-                                      ttree)))
-              (t (rewrite-entry
-                  (rewrite-with-lemmas inst-term))))))
-          ((lambda-nest-hidep term)
+                (rewrite-entry (rewrite (fargn term 1) alist 1)
+                               :ttree (push-lemma
+                                       (fn-rune-nume 'hide nil nil wrld)
+                                       ttree)))
+               (t (rewrite-entry
+                   (rewrite-with-lemmas inst-term))))))
+           ((lambda-nest-hidep term)
 
 ; This clause of rewrite implements ``lambda-hide commuting''.  The
 ; idea is that ((LAMBDA (x) (HIDE body)) actual) can be rewritten to
@@ -12234,31 +12355,31 @@
 ; what variables are bound in alist?  There is no a priori
 ; relationship between term and alist.)
 
-           (let* ((new-body (lambda-nest-unhide term))
-                  (stack (make-stack-from-alist new-body alist))
-                  (inst-term
-                   (fcons-term* 'HIDE
-                                (if alist
-                                    (make-lambda-application
-                                     (caar stack)
-                                     new-body
-                                     (cdar stack))
-                                  new-body))))
-             (cond
-              ((expand-permission-p inst-term
-                                    (access rewrite-constant rcnst
-                                            :expand-lst)
-                                    geneqv wrld)
+            (let* ((new-body (lambda-nest-unhide term))
+                   (stack (make-stack-from-alist new-body alist))
+                   (inst-term
+                    (fcons-term* 'HIDE
+                                 (if alist
+                                     (make-lambda-application
+                                      (caar stack)
+                                      new-body
+                                      (cdar stack))
+                                   new-body))))
+              (cond
+               ((expand-permission-p inst-term
+                                     (access rewrite-constant rcnst
+                                             :expand-lst)
+                                     geneqv wrld)
 
 ; We rewrite the ``instantiated'' term under the empty substitution.
 
-               (rewrite-entry (rewrite (fargn inst-term 1) nil 1)
-                              :ttree (push-lemma
-                                      (fn-rune-nume 'hide nil nil wrld)
-                                      ttree)))
-              (t (rewrite-entry
-                  (rewrite-with-lemmas inst-term))))))
-          ((eq (ffn-symb term) 'IMPLIES)
+                (rewrite-entry (rewrite (fargn inst-term 1) nil 1)
+                               :ttree (push-lemma
+                                       (fn-rune-nume 'hide nil nil wrld)
+                                       ttree)))
+               (t (rewrite-entry
+                   (rewrite-with-lemmas inst-term))))))
+           ((eq (ffn-symb term) 'IMPLIES)
 
 ; We handle IMPLIES specially.  We rewrite both the hyps and the
 ; concl under the original type-alist, and then immediately return the
@@ -12277,48 +12398,52 @@
 ; original theorem -- and those original hyps are in the type-alist
 ; defining this context.
 
-           (mv-let (rewritten-test ttree)
-                   (rewrite-entry (rewrite (fargn term 1) alist 1)
-                                  :obj '?
-                                  :geneqv *geneqv-iff*)
-                   (mv-let (rewritten-concl ttree)
-                           (rewrite-entry (rewrite (fargn term 2) alist 1)
-                                          :obj '?
-                                          :geneqv *geneqv-iff*)
-                           (mv (subcor-var
+            (sl-let (rewritten-test ttree)
+                    (rewrite-entry (rewrite (fargn term 1) alist 1)
+                                   :obj '?
+                                   :geneqv *geneqv-iff*)
+                    (sl-let (rewritten-concl ttree)
+                            (rewrite-entry (rewrite (fargn term 2) alist 1)
+                                           :obj '?
+                                           :geneqv *geneqv-iff*)
+                            (mv step-limit
+                                (subcor-var
 
 ; It seems reasonable to keep this in sync with the corresponding use of
 ; subcor-var in rewrite-atm.
 
-                                (formals 'IMPLIES wrld)
-                                (list rewritten-test
-                                      rewritten-concl)
-                                (body 'IMPLIES t wrld))
-                               ttree))))
-          ((eq (ffn-symb term) 'double-rewrite)
-           (mv-let (term ttree)
+                                 (formals 'IMPLIES wrld)
+                                 (list rewritten-test
+                                       rewritten-concl)
+                                 (body 'IMPLIES t wrld))
+                                ttree))))
+           ((eq (ffn-symb term) 'double-rewrite)
+            (sl-let
+             (term ttree)
              (rewrite-entry (rewrite (fargn term 1) alist 1))
              (rewrite-entry (rewrite term nil bkptr)
                             :ttree (push-lemma (fn-rune-nume 'double-rewrite
                                                              nil nil wrld)
                                                ttree))))
-          ((not-to-be-rewrittenp
-            term
-            alist
-            (access rewrite-constant rcnst
-                    :terms-to-be-ignored-by-rewrite))
-           (rewrite-solidify (sublis-var alist term)
-                             type-alist obj geneqv
-                             (access rewrite-constant rcnst
-                                     :current-enabled-structure)
-                             wrld ttree
-                             simplify-clause-pot-lst
-                             (access rewrite-constant rcnst :pt)))
-          (t
-           (let ((fn (ffn-symb term)))
-             (cond
-              ((and (eq fn 'mv-nth)
-                    (simplifiable-mv-nthp term alist))
+           ((not-to-be-rewrittenp
+             term
+             alist
+             (access rewrite-constant rcnst
+                     :terms-to-be-ignored-by-rewrite))
+            (prepend-step-limit
+             2
+             (rewrite-solidify (sublis-var alist term)
+                               type-alist obj geneqv
+                               (access rewrite-constant rcnst
+                                       :current-enabled-structure)
+                               wrld ttree
+                               simplify-clause-pot-lst
+                               (access rewrite-constant rcnst :pt))))
+           (t
+            (let ((fn (ffn-symb term)))
+              (cond
+               ((and (eq fn 'mv-nth)
+                     (simplifiable-mv-nthp term alist))
 
 ; This is a special case.  We are looking at a term/alist of the form
 ; (mv-nth 'i (cons x0 (cons x1 ... (cons xi ...)...))) and we immediately
@@ -12329,30 +12454,30 @@
 ; below is 2, i.e., we say we are rewriting the 2nd arg of the mv-nth, when
 ; in fact we are rewriting a piece of it (namely xi).
 
-               (mv-let (term1 alist1)
-                       (simplifiable-mv-nth term alist)
-                       (rewrite-entry
-                        (rewrite term1 alist1 2)
-                        :ttree (push-lemma
-                                (fn-rune-nume 'mv-nth nil nil wrld)
-                                ttree))))
-              (t
-               (mv-let
-                (flg term1 ttree1)
+                (mv-let (term1 alist1)
+                        (simplifiable-mv-nth term alist)
+                        (rewrite-entry
+                         (rewrite term1 alist1 2)
+                         :ttree (push-lemma
+                                 (fn-rune-nume 'mv-nth nil nil wrld)
+                                 ttree))))
+               (t
+                (mv-let
+                 (flg term1 ttree1)
 ; Rockwell Addition
-                (cond
-                 ((eq (nu-rewriter-mode wrld) :literals)
-                  (mv nil nil nil))
-                 (t
-                  (nth-update-rewriter
-                   (cond (ancestors t) ; see below
-                         ((recursive-fn-on-fnstackp fnstack) t)
-                         (t nil))
-                   term alist
-                   (access rewrite-constant rcnst
-                           :current-enabled-structure)
-                   wrld
-                   state)))
+                 (cond
+                  ((eq (nu-rewriter-mode wrld) :literals)
+                   (mv nil nil nil))
+                  (t
+                   (nth-update-rewriter
+                    (cond (ancestors t) ; see below
+                          ((recursive-fn-on-fnstackp fnstack) t)
+                          (t nil))
+                    term alist
+                    (access rewrite-constant rcnst
+                            :current-enabled-structure)
+                    wrld
+                    state)))
 
 ; Note about the handling of the recursivelyp flag above: If ancestors
 ; is non-nil or if there is a recursive function on the fnstack, then
@@ -12366,45 +12491,45 @@
 ; main goal and there is no need for nth-update-rewriter to do that.
 ; So we need not look at it recursively.
 
-                (cond
-                 (flg (rewrite-entry
-                       (rewrite term1 nil 'nth-update)
-                       :ttree (cons-tag-trees ttree1 ttree)))
-                 (t
-                  (mv-let
-                   (rewritten-args ttree)
-                   (rewrite-entry
-                    (rewrite-args
-                     (fargs term)
-                     alist
-                     1)
-                    :obj '?
-                    :geneqv
-                    (geneqv-lst fn
-                                geneqv
-                                (access rewrite-constant rcnst
-                                        :current-enabled-structure)
-                                wrld))
-                   (cond
-                    ((and
-                      (or (flambdap fn)
-                          (logicalp fn wrld))
-                      (all-quoteps rewritten-args)
-                      (or
-                       (flambda-applicationp term)
-                       (and (enabled-xfnp
-                             fn
-                             (access rewrite-constant rcnst
-                                     :current-enabled-structure)
-                             wrld)
+                 (cond
+                  (flg (rewrite-entry
+                        (rewrite term1 nil 'nth-update)
+                        :ttree (cons-tag-trees ttree1 ttree)))
+                  (t
+                   (sl-let
+                    (rewritten-args ttree)
+                    (rewrite-entry
+                     (rewrite-args
+                      (fargs term)
+                      alist
+                      1)
+                     :obj '?
+                     :geneqv
+                     (geneqv-lst fn
+                                 geneqv
+                                 (access rewrite-constant rcnst
+                                         :current-enabled-structure)
+                                 wrld))
+                    (cond
+                     ((and
+                       (or (flambdap fn)
+                           (logicalp fn wrld))
+                       (all-quoteps rewritten-args)
+                       (or
+                        (flambda-applicationp term)
+                        (and (enabled-xfnp
+                              fn
+                              (access rewrite-constant rcnst
+                                      :current-enabled-structure)
+                              wrld)
 
 ; We don't mind disallowing constrained functions that have attachments,
 ; because the call of ev-fncall below disallows the use of attachments (last
 ; parameter, aok, is nil).
 
-                            (not (getprop fn 'constrainedp nil
-                                          'current-acl2-world
-                                          wrld)))))
+                             (not (getprop fn 'constrainedp nil
+                                           'current-acl2-world
+                                           wrld)))))
 
 ; Note: The test above, if true, leads here where we execute the
 ; executable counterpart of the fn (or just go into the lambda
@@ -12417,25 +12542,23 @@
 ; provided such functions are currently toggled.  Undefined functions
 ; (e.g., car) pass the test.
 
-                     (cond ((flambda-applicationp term)
-                            (rewrite-entry
-                             (rewrite (lambda-body fn)
-                                      (pairlis$ (lambda-formals fn)
-                                                rewritten-args)
-                                      'lambda-body)))
-                           (t
-                            (mv-let
-                             (erp val latches)
-                             (pstk
-                              (ev-fncall fn
-                                         (strip-cadrs
-                                          rewritten-args)
-                                         (f-decrement-big-clock
-                                          state)
-                                         nil t nil))
-                             (declare (ignore latches))
-                             (cond
-                              (erp
+                      (cond ((flambda-applicationp term)
+                             (rewrite-entry
+                              (rewrite (lambda-body fn)
+                                       (pairlis$ (lambda-formals fn)
+                                                 rewritten-args)
+                                       'lambda-body)))
+                            (t
+                             (mv-let
+                              (erp val latches)
+                              (pstk
+                               (ev-fncall fn
+                                          (strip-cadrs rewritten-args)
+                                          state
+                                          nil t nil))
+                              (declare (ignore latches))
+                              (cond
+                               (erp
 
 ; We following a suggestion from Matt Wilding and attempt to rewrite the term
 ; before applying HIDE.  This is really a heuristic choice; we could choose
@@ -12445,76 +12568,78 @@
 ; apply in the rare case that the current function symbol (whose evaluation has
 ; errored out) is a compound recognizer.
 
-                               (let ((new-term1
-                                      (cons-term fn
-                                                 rewritten-args)))
-                                 (mv-let
-                                  (new-term2 ttree)
-                                  (rewrite-entry
-                                   (rewrite-with-lemmas new-term1))
-                                  (cond
-                                   ((equal new-term1 new-term2)
-                                    (mv (fcons-term* 'hide new-term1)
-                                        (push-lemma (fn-rune-nume 'hide nil nil
-                                                                  wrld)
-                                                    ttree)))
-                                   (t (mv new-term2 ttree))))))
-                              (t (mv (kwote val)
-                                     (push-lemma
-                                      (fn-rune-nume fn nil t wrld)
-                                      ttree))))))))
-                    ((and (or (equal fn 'NTH)
-                              (flambdap fn)
-                              (not (recursivep fn wrld)))
-                          (not (member-eq (nu-rewriter-mode wrld)
-                                          '(nil :literals)))
-                          (not (equal-mod-alist-lst
-                                (fargs term) alist rewritten-args)))
+                                (let ((new-term1
+                                       (cons-term fn
+                                                  rewritten-args)))
+                                  (sl-let
+                                   (new-term2 ttree)
+                                   (rewrite-entry
+                                    (rewrite-with-lemmas new-term1))
+                                   (cond
+                                    ((equal new-term1 new-term2)
+                                     (mv step-limit
+                                         (fcons-term* 'hide new-term1)
+                                         (push-lemma (fn-rune-nume 'hide nil nil
+                                                                   wrld)
+                                                     ttree)))
+                                    (t (mv step-limit new-term2 ttree))))))
+                               (t (mv step-limit
+                                      (kwote val)
+                                      (push-lemma
+                                       (fn-rune-nume fn nil t wrld)
+                                       ttree))))))))
+                     ((and (or (equal fn 'NTH)
+                               (flambdap fn)
+                               (not (recursivep fn wrld)))
+                           (not (member-eq (nu-rewriter-mode wrld)
+                                           '(nil :literals)))
+                           (not (equal-mod-alist-lst
+                                 (fargs term) alist rewritten-args)))
 
 ; If this is an application of NTH, a lambda expression, or a
 ; non-recursive function, and the arguments changed in the rewrite
 ; above, then we will try nth-update-rewriter again.  We do so
 ; recursively.
 
-                     (mv-let (hitp term1 ttree1)
+                      (mv-let (hitp term1 ttree1)
 ; Rockwell Addition
-                             (nth-update-rewriter
-                              t
-                              (cons-term fn rewritten-args)
-                              nil
-                              (access rewrite-constant rcnst
-                                      :current-enabled-structure)
-                              wrld
-                              state)
-                             (cond
-                              (hitp
-                               (rewrite-entry
-                                (rewrite term1 nil 'nth-update)
-                                :ttree (cons-tag-trees ttree1 ttree)))
-                              (t
+                              (nth-update-rewriter
+                               t
+                               (cons-term fn rewritten-args)
+                               nil
+                               (access rewrite-constant rcnst
+                                       :current-enabled-structure)
+                               wrld
+                               state)
+                              (cond
+                               (hitp
+                                (rewrite-entry
+                                 (rewrite term1 nil 'nth-update)
+                                 :ttree (cons-tag-trees ttree1 ttree)))
+                               (t
 
 ; Note:  This code is the same as that below.  Keep them in sync!
 
-                               (mv-let
-                                (rewritten-term ttree)
-                                (rewrite-entry
-                                 (rewrite-primitive fn rewritten-args))
-                                (rewrite-entry
-                                 (rewrite-with-lemmas rewritten-term)))))))
-                    (t
-                     (mv-let
-                      (rewritten-term ttree)
-                      (rewrite-entry
-                       (rewrite-primitive fn rewritten-args))
-                      (rewrite-entry
-                       (rewrite-with-lemmas
-                        rewritten-term))))))))))))))))
+                                (sl-let
+                                 (rewritten-term ttree)
+                                 (rewrite-entry
+                                  (rewrite-primitive fn rewritten-args))
+                                 (rewrite-entry
+                                  (rewrite-with-lemmas rewritten-term)))))))
+                     (t
+                      (sl-let
+                       (rewritten-term ttree)
+                       (rewrite-entry
+                        (rewrite-primitive fn rewritten-args))
+                       (rewrite-entry
+                        (rewrite-with-lemmas
+                         rewritten-term)))))))))))))))))
 
 (defun rewrite-solidify-plus (term ; &extra formals
-                                   rdepth
-                                   type-alist obj geneqv wrld state fnstack ancestors
-                                   backchain-limit
-                                   simplify-clause-pot-lst rcnst gstack ttree)
+                              rdepth step-limit
+                              type-alist obj geneqv wrld state fnstack ancestors
+                              backchain-limit
+                              simplify-clause-pot-lst rcnst gstack ttree)
 
 ; This function allows us one more try at relieving a hypothesis by rewriting
 ; with lemmas when rewrite-solidify isn't sufficient.  The call of
@@ -12527,30 +12652,34 @@
 ; "The rewriter has been modified to work slightly harder in relieving
 ; hypotheses."
 
-  (declare (type (unsigned-byte 29) rdepth))
-  (mv-let (new-term new-ttree)
-    (rewrite-solidify term type-alist obj geneqv
-                      (access rewrite-constant rcnst
-                              :current-enabled-structure)
-                      wrld ttree 
-                      simplify-clause-pot-lst
-                      (access rewrite-constant rcnst :pt))
-    (cond ((or (eq obj '?)
+  (declare (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
+  (the-mv
+   3
+   (signed-byte 30)
+   (mv-let (new-term new-ttree)
+           (rewrite-solidify term type-alist obj geneqv
+                             (access rewrite-constant rcnst
+                                     :current-enabled-structure)
+                             wrld ttree 
+                             simplify-clause-pot-lst
+                             (access rewrite-constant rcnst :pt))
+           (cond ((or (eq obj '?)
 
 ; Keep the next four conditions in sync with those in rewrite-with-lemmas.
 
-               (variablep new-term)
-               (fquotep new-term)
-               (member-equal (ffn-symb new-term)
-                             (access rewrite-constant rcnst
-                                     :fns-to-be-ignored-by-rewrite))
-               (flambda-applicationp term)
-               (not (equal geneqv *geneqv-iff*))
-               (not (equal term new-term)))
-           (mv new-term new-ttree))
-          (t
-           (mv-let (rewrittenp term1 ttree1)
-             (rewrite-entry
+                      (variablep new-term)
+                      (fquotep new-term)
+                      (member-equal (ffn-symb new-term)
+                                    (access rewrite-constant rcnst
+                                            :fns-to-be-ignored-by-rewrite))
+                      (flambda-applicationp term)
+                      (not (equal geneqv *geneqv-iff*))
+                      (not (equal term new-term)))
+                  (mv step-limit new-term new-ttree))
+                 (t
+                  (sl-let (rewrittenp term1 ttree1)
+                          (rewrite-entry
 
 ; We are tempted to call rewrite here.  But the point of this call is to handle
 ; the case that term was the result of looking up a variable in an alist, where
@@ -12558,14 +12687,14 @@
 ; we really want to do here is to make another pass through the lemmas in case
 ; one of them applies this time.
 
-              (rewrite-with-lemmas1 term
-                                    (getprop (ffn-symb new-term) 'lemmas nil
-                                             'current-acl2-world wrld)))
-             (cond (rewrittenp (mv term1 ttree1))
-                   (t (mv term ttree))))))))
+                           (rewrite-with-lemmas1 term
+                                                 (getprop (ffn-symb new-term) 'lemmas nil
+                                                          'current-acl2-world wrld)))
+                          (cond (rewrittenp (mv step-limit term1 ttree1))
+                                (t (mv step-limit term ttree)))))))))
 
 (defun rewrite-if (test unrewritten-test left right alist ; &extra formals
-                        rdepth
+                        rdepth step-limit
                         type-alist obj geneqv wrld state fnstack ancestors
                         backchain-limit
                         simplify-clause-pot-lst rcnst gstack ttree)
@@ -12577,35 +12706,33 @@
 ; Warning: If you modify this function, consider modifying the code below a
 ; comment mentioning rewrite-if in rewrite-with-lemmas.
 
-  (declare (type (unsigned-byte 29) rdepth))
-  (cond
-   ((f-big-clock-negative-p state)
-    (mv (mcons-term* 'if
-                     test
-                     (sublis-var alist left)
-                     (sublis-var alist right))
-        ttree))
-   ((and (nvariablep test)
-         (not (fquotep test))
-         (eq (ffn-symb test) 'if)
-         (equal (fargn test 2) *nil*)
-         (equal (fargn test 3) *t*))
+  (declare (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
+  (the-mv
+   3
+   (signed-byte 30)
+   (cond
+    ((and (nvariablep test)
+          (not (fquotep test))
+          (eq (ffn-symb test) 'if)
+          (equal (fargn test 2) *nil*)
+          (equal (fargn test 3) *t*))
 
 ; Note: In Nqthm the equality test against *t* was a known-whether-nil check.
 ; But unrewritten-test has been rewritten under equiv = 'iff.  Hence, its two
 ; branches were rewritten under 'iff.  Thus, if one of them is known non-nil
 ; under the type-alist then it was rewritten to *t*.
 
-    (rewrite-entry (rewrite-if (fargn test 1) nil right left alist)))
-   ((quotep test)
+     (rewrite-entry (rewrite-if (fargn test 1) nil right left alist)))
+    ((quotep test)
 
 ; It often happens that the test rewrites to *t* or *nil* and we can
 ; avoid the assume-true-false below.
 
-    (if (cadr test)
-        (if (and unrewritten-test ; optimization (see e.g. rewrite-if above)
-                 (geneqv-refinementp 'iff geneqv wrld)
-                 (equal unrewritten-test left))
+     (if (cadr test)
+         (if (and unrewritten-test ; optimization (see e.g. rewrite-if above)
+                  (geneqv-refinementp 'iff geneqv wrld)
+                  (equal unrewritten-test left))
 
 ; We are in the process of rewriting a term of the form (if x x y), which
 ; presumably came from an untranslated term of the form (or x y).  We do not
@@ -12613,16 +12740,16 @@
 ; the fact that the following is a theorem:  (iff (if x x y) (if x t y)).
 ; We will use this observation later in the body of this function as well.
 
-            (mv *t* ttree)
-          (rewrite-entry (rewrite left alist 2)))
-      (rewrite-entry (rewrite right alist 3))))
-   (t (let ((ens (access rewrite-constant rcnst :current-enabled-structure)))
-        (mv-let
-         (must-be-true
-          must-be-false
-          true-type-alist
-          false-type-alist
-          ts-ttree)
+             (mv step-limit *t* ttree)
+           (rewrite-entry (rewrite left alist 2)))
+       (rewrite-entry (rewrite right alist 3))))
+    (t (let ((ens (access rewrite-constant rcnst :current-enabled-structure)))
+         (mv-let
+          (must-be-true
+           must-be-false
+           true-type-alist
+           false-type-alist
+           ts-ttree)
 
 ; Once upon a time, the call of assume-true-false below was replaced by a call
 ; of repetitious-assume-true-false.  See the Essay on Repetitive Typing.  This
@@ -12667,48 +12794,50 @@
 ; power when rewriting the current clause, because it is potentially expensive
 ; and the user can see (and therefore change) what is going on.
 
-         (if ancestors
-             (assume-true-false test nil
-                                (ok-to-force rcnst)
-                                nil type-alist ens wrld
-                                simplify-clause-pot-lst
-                                (access rewrite-constant rcnst :pt)
-                                nil)
-           (assume-true-false test nil
-                              (ok-to-force rcnst)
-                              nil type-alist ens wrld nil nil nil))
-         (cond
-          (must-be-true
-           (if (and unrewritten-test
-                    (geneqv-refinementp 'iff geneqv wrld)
-                    (equal unrewritten-test left))
-               (mv *t* (cons-tag-trees ts-ttree ttree))
-             (rewrite-entry (rewrite left alist 2)
-                            :type-alist true-type-alist
-                            :ttree (cons-tag-trees ts-ttree ttree))))
-          (must-be-false
-           (rewrite-entry (rewrite right alist 3)
-                          :type-alist false-type-alist
-                          :ttree (cons-tag-trees ts-ttree ttree)))
-          (t (mv-let
-              (rewritten-left ttree)
-              (if (and unrewritten-test
-                       (geneqv-refinementp 'iff geneqv wrld)
-                       (equal unrewritten-test left))
-                  (mv *t* ttree)
-                (rewrite-entry (rewrite left alist 2)
-                               :type-alist true-type-alist))
-              (mv-let (rewritten-right ttree)
-                      (rewrite-entry (rewrite right alist 3)
-                                     :type-alist false-type-alist)
-                      (rewrite-if1 test
-                                   rewritten-left rewritten-right
-                                   type-alist geneqv ens
-                                   (ok-to-force rcnst)
-                                   wrld ttree))))))))))
+          (if ancestors
+              (assume-true-false test nil
+                                 (ok-to-force rcnst)
+                                 nil type-alist ens wrld
+                                 simplify-clause-pot-lst
+                                 (access rewrite-constant rcnst :pt)
+                                 nil)
+            (assume-true-false test nil
+                               (ok-to-force rcnst)
+                               nil type-alist ens wrld nil nil nil))
+          (cond
+           (must-be-true
+            (if (and unrewritten-test
+                     (geneqv-refinementp 'iff geneqv wrld)
+                     (equal unrewritten-test left))
+                (mv step-limit *t* (cons-tag-trees ts-ttree ttree))
+              (rewrite-entry (rewrite left alist 2)
+                             :type-alist true-type-alist
+                             :ttree (cons-tag-trees ts-ttree ttree))))
+           (must-be-false
+            (rewrite-entry (rewrite right alist 3)
+                           :type-alist false-type-alist
+                           :ttree (cons-tag-trees ts-ttree ttree)))
+           (t (sl-let
+               (rewritten-left ttree)
+               (if (and unrewritten-test
+                        (geneqv-refinementp 'iff geneqv wrld)
+                        (equal unrewritten-test left))
+                   (mv step-limit *t* ttree)
+                 (rewrite-entry (rewrite left alist 2)
+                                :type-alist true-type-alist))
+               (sl-let (rewritten-right ttree)
+                       (rewrite-entry (rewrite right alist 3)
+                                      :type-alist false-type-alist)
+                       (prepend-step-limit
+                        2
+                        (rewrite-if1 test
+                                     rewritten-left rewritten-right
+                                     type-alist geneqv ens
+                                     (ok-to-force rcnst)
+                                     wrld ttree))))))))))))
 
 (defun rewrite-args (args alist bkptr; &extra formals
-                          rdepth
+                          rdepth step-limit
                           type-alist obj geneqv wrld state fnstack ancestors
                           backchain-limit
                           simplify-clause-pot-lst rcnst gstack ttree)
@@ -12716,60 +12845,65 @@
 ; Note: In this function, the extra formal geneqv is actually a list of geneqvs
 ; or nil denoting a list of nil geneqvs.
 
-  (declare (type (unsigned-byte 29) rdepth))
-  (cond ((f-big-clock-negative-p state)
-         (mv (sublis-var-lst alist args)
-             ttree))
-        ((null args)
-         (mv nil ttree))
-        (t (mv-let
-               (rewritten-arg ttree)
+  (declare (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
+  (the-mv
+   3
+   (signed-byte 30)
+   (cond ((null args)
+          (mv step-limit nil ttree))
+         (t (sl-let
+             (rewritten-arg ttree)
              (rewrite-entry (rewrite (car args) alist bkptr)
                             :geneqv (car geneqv))
-             (mv-let
-                 (rewritten-args ttree)
-               (rewrite-entry (rewrite-args (cdr args) alist (1+ bkptr))
-                              :geneqv (cdr geneqv))
-               (mv (cons rewritten-arg rewritten-args)
-                   ttree))))))
+             (sl-let
+              (rewritten-args ttree)
+              (rewrite-entry (rewrite-args (cdr args) alist (1+ bkptr))
+                             :geneqv (cdr geneqv))
+              (mv step-limit
+                  (cons rewritten-arg rewritten-args)
+                  ttree)))))))
 
 (defun rewrite-primitive (fn args ; &extra formals
-                             rdepth
+                             rdepth step-limit
                              type-alist obj geneqv wrld state fnstack ancestors
                              backchain-limit
                              simplify-clause-pot-lst rcnst gstack
                              ttree)
 
   (declare (ignore geneqv obj)
-           (type (unsigned-byte 29) rdepth))
-  (cond
-   ((f-big-clock-negative-p state)
-    (mv (cons-term fn args)
-        ttree))
-   ((flambdap fn) (mv (fcons-term fn args) ttree))
-   ((eq fn 'equal)
-    (rewrite-entry (rewrite-equal (car args) (cadr args) nil nil)
-                   :obj '? ; don't-care
-                   :geneqv nil))
-   (t (let* ((ens (access rewrite-constant rcnst
-                          :current-enabled-structure))
-             (recog-tuple (most-recent-enabled-recog-tuple
-                           fn
-                           (global-val 'recognizer-alist wrld)
-                           ens)))
-        (cond
-         (recog-tuple
-          (rewrite-recognizer recog-tuple (car args) type-alist
-                              ens
-                              (ok-to-force rcnst)
-                              wrld
-                              ttree
-                              simplify-clause-pot-lst
-                              (access rewrite-constant rcnst :pt)))
-         (t (mv (cons-term fn args) ttree)))))))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
+  (the-mv
+   3
+   (signed-byte 30)
+   (cond
+    ((flambdap fn) (mv step-limit (fcons-term fn args) ttree))
+    ((eq fn 'equal)
+     (rewrite-entry (rewrite-equal (car args) (cadr args) nil nil)
+                    :obj '? ; don't-care
+                    :geneqv nil))
+    (t (let* ((ens (access rewrite-constant rcnst
+                           :current-enabled-structure))
+              (recog-tuple (most-recent-enabled-recog-tuple
+                            fn
+                            (global-val 'recognizer-alist wrld)
+                            ens)))
+         (cond
+          (recog-tuple
+           (prepend-step-limit
+            2
+            (rewrite-recognizer recog-tuple (car args) type-alist
+                                ens
+                                (ok-to-force rcnst)
+                                wrld
+                                ttree
+                                simplify-clause-pot-lst
+                                (access rewrite-constant rcnst :pt))))
+          (t (mv step-limit (cons-term fn args) ttree))))))))
 
 (defun rewrite-equal (lhs rhs lhs-ancestors rhs-ancestors ; &extra formals
-                          rdepth
+                          rdepth step-limit
                           type-alist obj geneqv wrld state fnstack ancestors
                           backchain-limit
                           simplify-clause-pot-lst rcnst gstack ttree)
@@ -12779,7 +12913,8 @@
 ; superior calls, in order to break loops as explained below.
 
   (declare (ignore obj geneqv)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -12787,48 +12922,48 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond
-   ((f-big-clock-negative-p state)
-    (mv (cons-term 'equal (list lhs rhs))
-        ttree))
-   ((equal lhs rhs)
-    (mv *t* (puffert ttree)))
-   ((and (quotep lhs)
-         (quotep rhs))
-    (mv *nil* (puffert ttree)))
-   (t
-    (mv-let
-     (ts-lookup ttree-lookup)
-     (assoc-type-alist (fcons-term* 'equal lhs rhs) type-alist wrld)
-     (cond
-      ((and ts-lookup (ts= ts-lookup *ts-t*))
-       (mv *t* (cons-tag-trees ttree-lookup ttree)))
-      ((and ts-lookup (ts= ts-lookup *ts-nil*))
-       (mv *nil* (cons-tag-trees ttree-lookup ttree)))
-      (t
-       (let ((ens (access rewrite-constant rcnst
-                          :current-enabled-structure))
-             (ok-to-force (ok-to-force rcnst)))
-         (mv-let
-          (ts-lhs ttree-lhs)
-          (type-set lhs ok-to-force nil
-                    type-alist ens wrld ttree
-                    simplify-clause-pot-lst
-                    (access rewrite-constant rcnst :pt))
+  (the-mv
+   3
+   (signed-byte 30)
+   (cond
+    ((equal lhs rhs)
+     (mv step-limit *t* (puffert ttree)))
+    ((and (quotep lhs)
+          (quotep rhs))
+     (mv step-limit *nil* (puffert ttree)))
+    (t
+     (mv-let
+      (ts-lookup ttree-lookup)
+      (assoc-type-alist (fcons-term* 'equal lhs rhs) type-alist wrld)
+      (cond
+       ((and ts-lookup (ts= ts-lookup *ts-t*))
+        (mv step-limit *t* (cons-tag-trees ttree-lookup ttree)))
+       ((and ts-lookup (ts= ts-lookup *ts-nil*))
+        (mv step-limit *nil* (cons-tag-trees ttree-lookup ttree)))
+       (t
+        (let ((ens (access rewrite-constant rcnst
+                           :current-enabled-structure))
+              (ok-to-force (ok-to-force rcnst)))
           (mv-let
-           (ts-rhs ttree+)
-           (type-set rhs ok-to-force nil
-                     type-alist ens wrld ttree-lhs
+           (ts-lhs ttree-lhs)
+           (type-set lhs ok-to-force nil
+                     type-alist ens wrld ttree
                      simplify-clause-pot-lst
                      (access rewrite-constant rcnst :pt))
            (mv-let
-            (ts-equality ttree-equality)
-            (type-set-equal ts-lhs ts-rhs ttree+ ttree)
-            (cond
-             ((ts= ts-equality *ts-t*)
-              (mv *t* ttree-equality))
-             ((ts= ts-equality *ts-nil*)
-              (mv *nil* ttree-equality))
+            (ts-rhs ttree+)
+            (type-set rhs ok-to-force nil
+                      type-alist ens wrld ttree-lhs
+                      simplify-clause-pot-lst
+                      (access rewrite-constant rcnst :pt))
+            (mv-let
+             (ts-equality ttree-equality)
+             (type-set-equal ts-lhs ts-rhs ttree+ ttree)
+             (cond
+              ((ts= ts-equality *ts-t*)
+               (mv step-limit *t* ttree-equality))
+              ((ts= ts-equality *ts-nil*)
+               (mv step-limit *nil* ttree-equality))
 
 ; The commented-out case just below, here explicitly before we added the above
 ; call of type-set-equalo, is handled by that call.
@@ -12836,38 +12971,39 @@
 ;           ((ts-disjointp ts-lhs ts-rhs)
 ;            (mv *nil* (puffert ttree+)))
 
-             ((equal-x-cons-x-yp lhs rhs)
+              ((equal-x-cons-x-yp lhs rhs)
 
 ; Recall that the correctness of a positive answer by equal-x-cons-x-yp doesn't
 ; rely on type-set knowledge.
 
-              (mv *nil* (puffert ttree)))
-             ((and (ts-subsetp ts-lhs *ts-boolean*)
-                   (equal rhs *t*))
-              (mv lhs (puffert ttree-lhs)))
-             ((and (ts-subsetp ts-rhs *ts-boolean*)
-                   (equal lhs *t*))
-              (mv rhs (puffert ttree+)))
-             ((equal lhs *nil*)
-              (mv (mcons-term* 'if rhs *nil* *t*) (puffert ttree)))
-             ((equal rhs *nil*)
-              (mv (mcons-term* 'if lhs *nil* *t*) (puffert ttree)))
-             ((equalityp lhs)
-              (mv (mcons-term* 'if
-                               lhs
-                               (mcons-term* 'equal rhs *t*)
-                               (mcons-term* 'if rhs *nil* *t*))
-                  (puffert ttree)))
-             ((equalityp rhs)
-              (mv (mcons-term* 'if
-                               rhs
-                               (mcons-term* 'equal lhs *t*)
-                               (mcons-term* 'if lhs *nil* *t*))
-                  (puffert ttree)))
-             ((and (ts-subsetp ts-lhs *ts-cons*)
-                   (ts-subsetp ts-rhs *ts-cons*)
-                   (not (member-equal lhs lhs-ancestors))
-                   (not (member-equal rhs rhs-ancestors)))
+               (mv step-limit *nil* (puffert ttree)))
+              ((and (ts-subsetp ts-lhs *ts-boolean*)
+                    (equal rhs *t*))
+               (mv step-limit lhs (puffert ttree-lhs)))
+              ((and (ts-subsetp ts-rhs *ts-boolean*)
+                    (equal lhs *t*))
+               (mv step-limit rhs (puffert ttree+)))
+              ((equal lhs *nil*)
+               (mv step-limit (mcons-term* 'if rhs *nil* *t*) (puffert ttree)))
+              ((equal rhs *nil*)
+               (mv step-limit (mcons-term* 'if lhs *nil* *t*) (puffert ttree)))
+              ((equalityp lhs)
+               (mv step-limit (mcons-term* 'if
+                                           lhs
+                                           (mcons-term* 'equal rhs *t*)
+                                           (mcons-term* 'if rhs *nil* *t*))
+                   (puffert ttree)))
+              ((equalityp rhs)
+               (mv step-limit
+                   (mcons-term* 'if
+                                rhs
+                                (mcons-term* 'equal lhs *t*)
+                                (mcons-term* 'if lhs *nil* *t*))
+                   (puffert ttree)))
+              ((and (ts-subsetp ts-lhs *ts-cons*)
+                    (ts-subsetp ts-rhs *ts-cons*)
+                    (not (member-equal lhs lhs-ancestors))
+                    (not (member-equal rhs rhs-ancestors)))
 
 ; If lhs and rhs are both of type cons, we (essentially) recursively rewrite
 ; the equality of their cars and then of their cdrs.  If either of these two
@@ -12937,21 +13073,21 @@
 ; clearly avoids this problem.  (An elim is still needed to finish the proof,
 ; but that's fine.)
 
-              (let ((alist (list (cons 'lhs lhs)
-                                 (cons 'rhs rhs))))
-                (mv-let
-                 (equal-cars new-ttree)
-                 (mv-let
-                  (cars ttree0)
-                  (rewrite-entry (rewrite-args '((car lhs) (car rhs))
-                                               alist
-                                               1)
-                                 :obj '?
-                                 :geneqv nil
-                                 :ttree ttree+)
-                  (rewrite-entry (rewrite-equal
-                                  (car cars)
-                                  (cadr cars)
+               (let ((alist (list (cons 'lhs lhs)
+                                  (cons 'rhs rhs))))
+                 (sl-let
+                  (equal-cars new-ttree)
+                  (sl-let
+                   (cars ttree0)
+                   (rewrite-entry (rewrite-args '((car lhs) (car rhs))
+                                                alist
+                                                1)
+                                  :obj '?
+                                  :geneqv nil
+                                  :ttree ttree+)
+                   (rewrite-entry (rewrite-equal
+                                   (car cars)
+                                   (cadr cars)
 
 ; We considered an alternative to adding the lhs-ancestors and rhs-ancestors
 ; arguments, namely adding a flag saying whether we could move into this branch
@@ -12970,11 +13106,11 @@
 ;                                (cdr (fn x)))
 ;                          (fn x)))))
 
-                                  (cons lhs lhs-ancestors)
-                                  (cons rhs rhs-ancestors))
-                                 :obj '?
-                                 :geneqv nil
-                                 :ttree ttree0))
+                                   (cons lhs lhs-ancestors)
+                                   (cons rhs rhs-ancestors))
+                                  :obj '?
+                                  :geneqv nil
+                                  :ttree ttree0))
 
 ; Note that we pass ttree+ (which includes ttree) into the rewrite of
 ; the car equality and getting back new-ttree.  We will pass new-ttree
@@ -12982,35 +13118,36 @@
 ; succeed, we'll return new-ttree, which includes ttree, ttree+, and
 ; the rewriting; otherwise, we'll stick with the original ttree.
 
-                 (cond
-                  ((equal equal-cars *t*)
-                   (mv-let
-                    (equal-cdrs new-ttree)
-                    (mv-let
-                     (cdrs ttree0)
-                     (rewrite-entry (rewrite-args '((cdr lhs) (cdr rhs))
-                                                  alist
-                                                  1)
-                                    :obj '?
-                                    :geneqv nil
-                                    :ttree new-ttree)
-                     (rewrite-entry (rewrite-equal
-                                     (car cdrs)
-                                     (cadr cdrs)
-                                     (cons lhs lhs-ancestors)
-                                     (cons rhs rhs-ancestors))
-                                    :obj '?
-                                    :geneqv nil
-                                    :ttree ttree0))
-                    (cond ((equal equal-cdrs *t*)
-                           (mv *t* (puffert new-ttree)))
-                          ((equal equal-cdrs *nil*)
-                           (mv *nil* (puffert new-ttree)))
-                          (t (mv (mcons-term* 'equal lhs rhs)
-                                 ttree)))))
-                  ((equal equal-cars *nil*)
-                   (mv *nil* (puffert new-ttree)))
-                  (t
+                  (cond
+                   ((equal equal-cars *t*)
+                    (sl-let
+                     (equal-cdrs new-ttree)
+                     (sl-let
+                      (cdrs ttree0)
+                      (rewrite-entry (rewrite-args '((cdr lhs) (cdr rhs))
+                                                   alist
+                                                   1)
+                                     :obj '?
+                                     :geneqv nil
+                                     :ttree new-ttree)
+                      (rewrite-entry (rewrite-equal
+                                      (car cdrs)
+                                      (cadr cdrs)
+                                      (cons lhs lhs-ancestors)
+                                      (cons rhs rhs-ancestors))
+                                     :obj '?
+                                     :geneqv nil
+                                     :ttree ttree0))
+                     (cond ((equal equal-cdrs *t*)
+                            (mv step-limit *t* (puffert new-ttree)))
+                           ((equal equal-cdrs *nil*)
+                            (mv step-limit *nil* (puffert new-ttree)))
+                           (t (mv step-limit
+                                  (mcons-term* 'equal lhs rhs)
+                                  ttree)))))
+                   ((equal equal-cars *nil*)
+                    (mv step-limit *nil* (puffert new-ttree)))
+                   (t
 
 ; If we fail to get a definitive answer then we still might be able to
 ; answer negatively by rewriting the cdrs.  We have been asymmetric
@@ -13037,33 +13174,36 @@
 ; then we return appropriately and otherwise we fall through to
 ; whatever other rewrites we consider.  But we didn't.
 
-                   (mv-let (equal-cdrs new-ttree)
-                           (mv-let
-                            (cdrs ttree0)
-                            (rewrite-entry (rewrite-args '((cdr lhs) (cdr rhs))
-                                                         alist
-                                                         1)
-                                           :obj '?
-                                           :geneqv nil
-                                           :ttree ttree)
-                            (rewrite-entry
-                             (rewrite-equal
-                              (car cdrs)
-                              (cadr cdrs)
-                              (cons lhs lhs-ancestors)
-                              (cons rhs rhs-ancestors))
-                             :obj '?
-                             :geneqv nil
-                             :ttree ttree0))
-                           (cond ((equal equal-cdrs *nil*)
-                                  (mv *nil* (puffert new-ttree)))
-                                 (t (mv (mcons-term* 'equal lhs rhs)
-                                        ttree)))))))))
-             (t (mv (mcons-term* 'equal lhs rhs) ttree)))))))))))))
+                    (sl-let (equal-cdrs new-ttree)
+                            (sl-let
+                             (cdrs ttree0)
+                             (rewrite-entry (rewrite-args '((cdr lhs) (cdr rhs))
+                                                          alist
+                                                          1)
+                                            :obj '?
+                                            :geneqv nil
+                                            :ttree ttree)
+                             (rewrite-entry
+                              (rewrite-equal
+                               (car cdrs)
+                               (cadr cdrs)
+                               (cons lhs lhs-ancestors)
+                               (cons rhs rhs-ancestors))
+                              :obj '?
+                              :geneqv nil
+                              :ttree ttree0))
+                            (cond ((equal equal-cdrs *nil*)
+                                   (mv step-limit *nil* (puffert new-ttree)))
+                                  (t (mv step-limit
+                                         (mcons-term* 'equal lhs rhs)
+                                         ttree)))))))))
+              (t (mv step-limit
+                     (mcons-term* 'equal lhs rhs)
+                     ttree))))))))))))))
 
 (defun relieve-hyp
   (rune target hyp0 unify-subst bkptr memo ; &extra formals
-        rdepth
+        rdepth step-limit
         type-alist obj geneqv wrld state fnstack ancestors
         backchain-limit
         simplify-clause-pot-lst rcnst gstack ttree)
@@ -13130,7 +13270,8 @@
 ; do care that bkptr is a number representing the hypothesis.
 
   (declare (ignore obj geneqv)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -13138,269 +13279,284 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond ((f-big-clock-negative-p state)
-         (mv nil 'time-out unify-subst ttree memo))
-        ((and (nvariablep hyp0)
-              (not (fquotep hyp0))
-              (eq (ffn-symb hyp0) 'synp))
-         (mv-let (wonp failure-reason unify-subst ttree)
-                 (relieve-hyp-synp rune hyp0 unify-subst rdepth type-alist wrld
-                                   state fnstack ancestors backchain-limit
-                                   simplify-clause-pot-lst rcnst gstack ttree
-                                   bkptr)
-                 (mv wonp failure-reason unify-subst ttree memo)))
-        (t (mv-let
-            (forcep1 bind-flg)
-            (binding-hyp-p hyp0 unify-subst wrld)
-            (let ((hyp (if forcep1 (fargn hyp0 1) hyp0)))
-              (cond
-               (bind-flg
-                (mv-let
-                 (rewritten-rhs ttree)
-                 (rewrite-entry
-                  (rewrite (fargn hyp 2)
-                           unify-subst
-                           (if (or (f-get-global 'gstackp state)
-                                   (f-get-global 'dmrp state))
-                               (cons 'rhs bkptr)
-                             nil))
-                  :obj '?
-                  :ancestors
-                  (cons (list :binding-hyp hyp unify-subst)
-                        ancestors)
-                  :geneqv (and (not (eq (ffn-symb hyp) 'equal))
-                               (cadr (geneqv-lst
-                                      (ffn-symb hyp)
-                                      *geneqv-iff*
-                                      (access rewrite-constant rcnst
-                                              :current-enabled-structure)
-                                      wrld))))
-                 (mv t
-                     nil
-                     (cons (cons (fargn hyp 1) rewritten-rhs)
-                           unify-subst)
-                     ttree
-                     memo)))
-               ((free-varsp hyp unify-subst)
+  (the-mv
+   6
+   (signed-byte 30)
+   (cond ((and (nvariablep hyp0)
+               (not (fquotep hyp0))
+               (eq (ffn-symb hyp0) 'synp))
+          (mv-let (wonp failure-reason unify-subst ttree)
+                  (relieve-hyp-synp rune hyp0 unify-subst rdepth type-alist wrld
+                                    state fnstack ancestors backchain-limit
+                                    simplify-clause-pot-lst rcnst gstack ttree
+                                    bkptr)
+                  (mv step-limit wonp failure-reason unify-subst ttree memo)))
+         (t (mv-let
+             (forcep1 bind-flg)
+             (binding-hyp-p hyp0 unify-subst wrld)
+             (let ((hyp (if forcep1 (fargn hyp0 1) hyp0)))
+               (cond
+                (bind-flg
+                 (sl-let
+                  (rewritten-rhs ttree)
+                  (rewrite-entry
+                   (rewrite (fargn hyp 2)
+                            unify-subst
+                            (if (or (f-get-global 'gstackp state)
+                                    (f-get-global 'dmrp state))
+                                (cons 'rhs bkptr)
+                              nil))
+                   :obj '?
+                   :ancestors
+                   (cons (list :binding-hyp hyp unify-subst)
+                         ancestors)
+                   :geneqv (and (not (eq (ffn-symb hyp) 'equal))
+                                (cadr (geneqv-lst
+                                       (ffn-symb hyp)
+                                       *geneqv-iff*
+                                       (access rewrite-constant rcnst
+                                               :current-enabled-structure)
+                                       wrld))))
+                  (mv step-limit
+                      t
+                      nil
+                      (cons (cons (fargn hyp 1) rewritten-rhs)
+                            unify-subst)
+                      ttree
+                      memo)))
+                ((free-varsp hyp unify-subst)
 
 ; See comment above about "SPECIAL CASE".
 
-                (mv-let (term typ)
-                        (term-and-typ-to-lookup hyp wrld)
-                        (mv term typ unify-subst ttree memo)))
-               (t
-                (let* ((memo-active (memo-activep memo))
-                       (memo-entry (and (consp memo)
-                                        (cdr (assoc bkptr memo))))
-                       (hyp-vars (if memo-entry
-                                     (car memo-entry)
-                                   (and memo-active ; optimization
-                                        (all-vars hyp0))))
-                       (restricted-unify-subst
-                        (and memo-active ; optimization
-                             (restrict-alist hyp-vars unify-subst)))
-                       (old-entry (and memo-entry
-                                       (assoc-equal restricted-unify-subst
-                                                    (cdr memo-entry)))))
-                  (cond
-                   (old-entry
-                    (mv t nil unify-subst
-                        (cons-tag-trees (cdr old-entry) ttree)
-                        memo))
-                   (t
-                    (mv-let
-                     (relieve-hyp-ans failure-reason unify-subst ttree0)
-                     (let ((ttree (and (not memo-active) ttree)))
-                       (mv-let
-                        (lookup-hyp-ans unify-subst ttree)
-                        (lookup-hyp hyp type-alist wrld unify-subst ttree)
+                 (mv-let (term typ)
+                         (term-and-typ-to-lookup hyp wrld)
+                         (mv step-limit term typ unify-subst ttree memo)))
+                (t
+                 (let* ((memo-active (memo-activep memo))
+                        (memo-entry (and (consp memo)
+                                         (cdr (assoc bkptr memo))))
+                        (hyp-vars (if memo-entry
+                                      (car memo-entry)
+                                    (and memo-active ; optimization
+                                         (all-vars hyp0))))
+                        (restricted-unify-subst
+                         (and memo-active ; optimization
+                              (restrict-alist hyp-vars unify-subst)))
+                        (old-entry (and memo-entry
+                                        (assoc-equal restricted-unify-subst
+                                                     (cdr memo-entry)))))
+                   (cond
+                    (old-entry
+                     (mv step-limit t nil unify-subst
+                         (cons-tag-trees (cdr old-entry) ttree)
+                         memo))
+                    (t
+                     (sl-let
+                      (relieve-hyp-ans failure-reason unify-subst ttree0)
+                      (let ((ttree (and (not memo-active) ttree)))
+                        (mv-let
+                         (lookup-hyp-ans unify-subst ttree)
+                         (lookup-hyp hyp type-alist wrld unify-subst ttree)
 
 ; We know that unify-subst is not extended, since (free-varsp hyp unify-subst)
 ; is false, but it still seems appropriate to use the existing code in
 ; one-way-unify1 under search-type-alist (under lookup-hyp).
 
-                        (cond
-                         (lookup-hyp-ans (mv t nil unify-subst ttree))
-                         (t
-                          (let ((inst-hyp (sublis-var unify-subst hyp)))
-                            (mv-let
-                             (on-ancestorsp assumed-true)
-                             (ancestors-check inst-hyp ancestors (list rune))
-                             (cond
-                              (on-ancestorsp (mv assumed-true
-                                                 (if (null assumed-true)
-                                                     'ancestors
-                                                   nil)
-                                                 unify-subst ttree))
-                              (t
-                               (let* ((forcer-fn (and forcep1 (ffn-symb hyp0)))
-                                      (force-flg (ok-to-force rcnst))
-                                      (forcep (and forcep1 force-flg)))
-                                 (mv-let
-                                  (knownp nilp nilp-ttree)
-                                  (known-whether-nil
-                                   inst-hyp type-alist
-                                   (access rewrite-constant rcnst
-                                           :current-enabled-structure)
-                                   force-flg
-                                   wrld
-                                   ttree)
-                                  (cond
-                                   (knownp
-                                    (cond
-                                     (nilp
-                                      (mv nil
-                                          'known-nil
-                                          unify-subst
-                                          ttree))
-                                     (t
-                                      (mv t
-                                          nil
-                                          unify-subst
-                                          nilp-ttree))))
-                                   ((backchain-limit-reachedp
-                                     backchain-limit
-                                     ancestors)
-                                    (mv-let
-                                     (force-flg ttree)
+                         (cond
+                          (lookup-hyp-ans
+                           (mv step-limit t nil unify-subst ttree))
+                          (t
+                           (let ((inst-hyp (sublis-var unify-subst hyp)))
+                             (mv-let
+                              (on-ancestorsp assumed-true)
+                              (ancestors-check inst-hyp ancestors (list rune))
+                              (cond
+                               (on-ancestorsp (mv step-limit
+                                                  assumed-true
+                                                  (if (null assumed-true)
+                                                      'ancestors
+                                                    nil)
+                                                  unify-subst ttree))
+                               (t
+                                (let* ((forcer-fn (and forcep1 (ffn-symb hyp0)))
+                                       (force-flg (ok-to-force rcnst))
+                                       (forcep (and forcep1 force-flg)))
+                                  (mv-let
+                                   (knownp nilp nilp-ttree)
+                                   (known-whether-nil
+                                    inst-hyp type-alist
+                                    (access rewrite-constant rcnst
+                                            :current-enabled-structure)
+                                    force-flg
+                                    wrld
+                                    ttree)
+                                   (cond
+                                    (knownp
                                      (cond
-                                      ((not forcep)
-                                       (mv nil ttree))
+                                      (nilp
+                                       (mv step-limit
+                                           nil
+                                           'known-nil
+                                           unify-subst
+                                           ttree))
                                       (t
-                                       (force-assumption
-                                        rune target inst-hyp
-                                        type-alist nil
-                                        (immediate-forcep
-                                         forcer-fn
-                                         (access rewrite-constant rcnst
-                                                 :current-enabled-structure))
-                                        force-flg
-                                        ttree)))
-                                     (cond
-                                      (force-flg (mv t nil unify-subst ttree))
-                                      (t
-                                       (mv nil
-                                           (cons 'backchain-limit
-                                                 backchain-limit)
-                                           unify-subst ttree)))))
-                                   (t
-                                    (mv-let
-                                     (not-flg atm)
-                                     (strip-not hyp)
+                                       (mv step-limit
+                                           t
+                                           nil
+                                           unify-subst
+                                           nilp-ttree))))
+                                    ((backchain-limit-reachedp
+                                      backchain-limit
+                                      ancestors)
                                      (mv-let
-                                      (rewritten-atm new-ttree)
-                                      (rewrite-entry (rewrite atm
-                                                              unify-subst
-                                                              bkptr)
-                                                     :obj (if not-flg nil t)
-                                                     :geneqv *geneqv-iff*
-                                                     :ancestors
-                                                     (push-ancestor
-                                                      (dumb-negate-lit
-                                                       inst-hyp)
-                                                      (list rune)
-                                                      ancestors))
+                                      (force-flg ttree)
                                       (cond
-                                       (not-flg
-                                        (if (equal rewritten-atm *nil*)
-                                            (mv t nil unify-subst new-ttree)
-                                          (mv-let
-                                           (force-flg new-ttree)
-                                           (if (and forcep
+                                       ((not forcep)
+                                        (mv nil ttree))
+                                       (t
+                                        (force-assumption
+                                         rune target inst-hyp
+                                         type-alist nil
+                                         (immediate-forcep
+                                          forcer-fn
+                                          (access rewrite-constant rcnst
+                                                  :current-enabled-structure))
+                                         force-flg
+                                         ttree)))
+                                      (cond
+                                       (force-flg
+                                        (mv step-limit t nil unify-subst ttree))
+                                       (t
+                                        (mv step-limit
+                                            nil
+                                            (cons 'backchain-limit
+                                                  backchain-limit)
+                                            unify-subst ttree)))))
+                                    (t
+                                     (mv-let
+                                      (not-flg atm)
+                                      (strip-not hyp)
+                                      (sl-let
+                                       (rewritten-atm new-ttree)
+                                       (rewrite-entry (rewrite atm
+                                                               unify-subst
+                                                               bkptr)
+                                                      :obj (if not-flg nil t)
+                                                      :geneqv *geneqv-iff*
+                                                      :ancestors
+                                                      (push-ancestor
+                                                       (dumb-negate-lit
+                                                        inst-hyp)
+                                                       (list rune)
+                                                       ancestors))
+                                       (cond
+                                        (not-flg
+                                         (if (equal rewritten-atm *nil*)
+                                             (mv step-limit t nil unify-subst
+                                                 new-ttree)
+                                           (mv-let
+                                            (force-flg new-ttree)
+                                            (if (and forcep
 
 ; Since we rewrote under *geneqv-iff*, the only way that rewritten-atm
 ; is known not to be nil is if it's t.
 
-                                                    (not (equal rewritten-atm
-                                                                *t*)))
-                                               (force-assumption
-                                                rune
-                                                target
-                                                (mcons-term* 'not rewritten-atm)
-                                                type-alist
+                                                     (not (equal rewritten-atm
+                                                                 *t*)))
+                                                (force-assumption
+                                                 rune
+                                                 target
+                                                 (mcons-term* 'not rewritten-atm)
+                                                 type-alist
 ; Note:  :rewrittenp = instantiated unrewritten term.
-                                                (mcons-term*
-                                                 'not
-                                                 (sublis-var unify-subst atm))
-                                                (immediate-forcep
-                                                 forcer-fn
-                                                 (access
-                                                  rewrite-constant
-                                                  rcnst
-                                                  :current-enabled-structure))
-                                                force-flg
-                                                new-ttree)
-                                             (mv nil new-ttree))
-                                           (cond
-                                            (force-flg
-                                             (mv t nil unify-subst new-ttree))
-                                            (t
-                                             (mv nil
-                                                 (cons 'rewrote-to
-                                                       (dumb-negate-lit
-                                                        rewritten-atm))
-                                                 unify-subst ttree))))))
-                                       ((if-tautologyp rewritten-atm)
-                                        (mv t nil unify-subst new-ttree))
-                                       (t (mv-let
-                                           (force-flg new-ttree)
-                                           (cond
-                                            ((and forcep
-                                                  (not (equal rewritten-atm
-                                                              *nil*)))
-                                             (force-assumption
-                                              rune
-                                              target
-                                              rewritten-atm
-                                              type-alist
+                                                 (mcons-term*
+                                                  'not
+                                                  (sublis-var unify-subst atm))
+                                                 (immediate-forcep
+                                                  forcer-fn
+                                                  (access
+                                                   rewrite-constant
+                                                   rcnst
+                                                   :current-enabled-structure))
+                                                 force-flg
+                                                 new-ttree)
+                                              (mv nil new-ttree))
+                                            (cond
+                                             (force-flg
+                                              (mv step-limit t nil unify-subst
+                                                  new-ttree))
+                                             (t
+                                              (mv step-limit
+                                                  nil
+                                                  (cons 'rewrote-to
+                                                        (dumb-negate-lit
+                                                         rewritten-atm))
+                                                  unify-subst ttree))))))
+                                        ((if-tautologyp rewritten-atm)
+                                         (mv step-limit t nil unify-subst
+                                             new-ttree))
+                                        (t (mv-let
+                                            (force-flg new-ttree)
+                                            (cond
+                                             ((and forcep
+                                                   (not (equal rewritten-atm
+                                                               *nil*)))
+                                              (force-assumption
+                                               rune
+                                               target
+                                               rewritten-atm
+                                               type-alist
 ; Note:  :rewrittenp = instantiated unrewritten term.
-                                              (sublis-var unify-subst atm)
-                                              (immediate-forcep
-                                               forcer-fn
-                                               (access
-                                                rewrite-constant
-                                                rcnst
-                                                :current-enabled-structure))
-                                              force-flg
-                                              new-ttree))
-                                            (t (mv nil new-ttree)))
-                                           (cond
-                                            (force-flg
-                                             (mv t nil unify-subst new-ttree))
-                                            (t (mv nil
-                                                   (cons 'rewrote-to
-                                                         rewritten-atm)
-                                                   unify-subst
-                                                   ttree))))))))))))))))))))
-                     (cond
-                      (relieve-hyp-ans
-                       (mv relieve-hyp-ans failure-reason unify-subst
-                           (if memo-active
-                               (cons-tag-trees ttree0 ttree)
-                             ttree0)
-                           (cond
-                            (memo-entry
-                             (put-assoc-eql
-                              bkptr
-                              (list* hyp-vars
-                                     (cons (cons restricted-unify-subst ttree0)
-                                           (cdr memo-entry)))
-                              memo))
-                            (memo-active
-                             (put-assoc-eql
-                              bkptr
-                              (list* hyp-vars
-                                     (cons (cons restricted-unify-subst ttree0)
-                                           nil))
-                              (if (eq memo :start) nil memo)))
-                            (t memo)))) ; fixed in v2-8; formerly nil
-                      (t (mv relieve-hyp-ans failure-reason unify-subst ttree
-                             memo))))))))))))))
+                                               (sublis-var unify-subst atm)
+                                               (immediate-forcep
+                                                forcer-fn
+                                                (access
+                                                 rewrite-constant
+                                                 rcnst
+                                                 :current-enabled-structure))
+                                               force-flg
+                                               new-ttree))
+                                             (t (mv nil new-ttree)))
+                                            (cond
+                                             (force-flg
+                                              (mv step-limit t nil unify-subst
+                                                  new-ttree))
+                                             (t (mv step-limit
+                                                    nil
+                                                    (cons 'rewrote-to
+                                                          rewritten-atm)
+                                                    unify-subst
+                                                    ttree))))))))))))))))))))
+                      (cond
+                       (relieve-hyp-ans
+                        (mv step-limit relieve-hyp-ans failure-reason
+                            unify-subst
+                            (if memo-active
+                                (cons-tag-trees ttree0 ttree)
+                              ttree0)
+                            (cond
+                             (memo-entry
+                              (put-assoc-eql
+                               bkptr
+                               (list* hyp-vars
+                                      (cons (cons restricted-unify-subst ttree0)
+                                            (cdr memo-entry)))
+                               memo))
+                             (memo-active
+                              (put-assoc-eql
+                               bkptr
+                               (list* hyp-vars
+                                      (cons (cons restricted-unify-subst ttree0)
+                                            nil))
+                               (if (eq memo :start) nil memo)))
+                             (t memo)))) ; fixed in v2-8; formerly nil
+                       (t (mv step-limit relieve-hyp-ans failure-reason
+                              unify-subst ttree memo)))))))))))))))
 
 (defun relieve-hyps1 (rune target hyps backchain-limit-lst
                            unify-subst bkptr unify-subst0
                            ttree0 allp ; &extra formals
-                           rdepth
+                           rdepth step-limit
                            type-alist obj geneqv wrld state fnstack ancestors
                            backchain-limit
                            simplify-clause-pot-lst rcnst gstack
@@ -13419,7 +13575,8 @@
 ; serve its memoization purpose.
 
   (declare (ignore obj geneqv)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -13427,44 +13584,45 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond ((f-big-clock-negative-p state)
-         (mv nil 'time-out unify-subst ttree allp))
-        ((null hyps) (mv t nil unify-subst ttree allp))
-        (t
-         (mv-let
-          (relieve-hyp-ans failure-reason new-unify-subst new-ttree
-                           allp)
-          (with-accumulated-persistence
-           rune
+  (the-mv
+   6
+   (signed-byte 30)
+   (cond ((null hyps) (mv step-limit t nil unify-subst ttree allp))
+         (t
+          (sl-let
            (relieve-hyp-ans failure-reason new-unify-subst new-ttree
                             allp)
+           (with-accumulated-persistence
+            rune
+            ((the (signed-byte 30) step-limit)
+             relieve-hyp-ans failure-reason new-unify-subst new-ttree allp)
 
 ; Even in the "special case" for relieve-hyp, we can mark this as a success
 ; because it will ultimately be counted as a failure if the surrounding call of
 ; relieve-hyps fails.
 
-           relieve-hyp-ans
-           (rewrite-entry (relieve-hyp rune target (car hyps)
-                                       unify-subst bkptr allp)
-                          :backchain-limit 
-                          (new-backchain-limit (car backchain-limit-lst)
-                                               backchain-limit
-                                               ancestors)
-                          :obj nil
-                          :geneqv nil)
-           bkptr)
-          (cond
-           ((eq relieve-hyp-ans t)
-            (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
-                                          (cdr backchain-limit-lst)
-                                          new-unify-subst
-                                          (1+ bkptr)
-                                          unify-subst0 ttree0
-                                          allp)
+            relieve-hyp-ans
+            (rewrite-entry (relieve-hyp rune target (car hyps)
+                                        unify-subst bkptr allp)
+                           :backchain-limit 
+                           (new-backchain-limit (car backchain-limit-lst)
+                                                backchain-limit
+                                                ancestors)
                            :obj nil
-                           :geneqv nil
-                           :ttree new-ttree))
-           (relieve-hyp-ans
+                           :geneqv nil)
+            bkptr)
+           (cond
+            ((eq relieve-hyp-ans t)
+             (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
+                                           (cdr backchain-limit-lst)
+                                           new-unify-subst
+                                           (1+ bkptr)
+                                           unify-subst0 ttree0
+                                           allp)
+                            :obj nil
+                            :geneqv nil
+                            :ttree new-ttree))
+            (relieve-hyp-ans
 
 ; As explained in the "SPECIAL CASE" comment in relieve-hyp, relieve-hyp
 ; returned (mv term typ unify-subst ttree allp).  We enter a loop in which we
@@ -13472,15 +13630,15 @@
 ; instantiating the variables in term that are free with respect to
 ; unify-subst.
 
-            (let* ((hyp (car hyps))
-                   (forcep1 (and (nvariablep hyp)
-                                 (not (fquotep hyp))
-                                 (or (eq (ffn-symb hyp) 'force)
-                                     (eq (ffn-symb hyp) 'case-split))))
-                   (forcer-fn (and forcep1 (ffn-symb hyp)))
-                   (hyp (if forcep1 (fargn hyp 1) (car hyps)))
-                   (force-flg (ok-to-force rcnst))
-                   (forcep (and forcep1 force-flg)))
+             (let* ((hyp (car hyps))
+                    (forcep1 (and (nvariablep hyp)
+                                  (not (fquotep hyp))
+                                  (or (eq (ffn-symb hyp) 'force)
+                                      (eq (ffn-symb hyp) 'case-split))))
+                    (forcer-fn (and forcep1 (ffn-symb hyp)))
+                    (hyp (if forcep1 (fargn hyp 1) (car hyps)))
+                    (force-flg (ok-to-force rcnst))
+                    (forcep (and forcep1 force-flg)))
 
 ; The following call of relieve-hyps1-free-1 will return an "activated" allp
 ; structure even if the current allp is t.  But if the current allp is t, then
@@ -13489,46 +13647,46 @@
 ; relieve-hyps1 under the call of relieve-hyps that we are inside.  So, the
 ; returned value for allp is irrelevant if the current allp is t.
 
-              (mv-let (relieve-hyps-ans failure-reason-lst unify-subst
-                                        ttree allp)
-                      (rewrite-entry
-                       (relieve-hyps1-free-1 relieve-hyp-ans ; term
-                                             failure-reason ; typ
-                                             hyp
-                                             type-alist
-                                             forcer-fn
-                                             forcep
-                                             force-flg
-                                             rune target hyps
-                                             backchain-limit-lst
-                                             unify-subst bkptr
-                                             unify-subst0
-                                             ttree0
-                                             (activate-memo allp))
-                       :obj nil
-                       :geneqv nil)
-                      (mv relieve-hyps-ans
-                          (and (null relieve-hyps-ans)
-                               (f-get-global 'gstackp state) ; optimization
-                               (cond (failure-reason-lst
-                                      (list* bkptr
-                                             'free-vars
-                                             (reverse failure-reason-lst)))
-                                     (t ; variable binding failed
-                                      (list* bkptr 'free-vars 'hyp-vars
-                                             (reverse
-                                              (set-difference-assoc-eq
-                                               (all-vars hyp)
-                                               unify-subst))))))
-                          unify-subst ttree allp))))
-           (t (mv nil (cons bkptr failure-reason) unify-subst0 ttree0
-                  allp)))))))
+               (sl-let (relieve-hyps-ans failure-reason-lst unify-subst
+                                         ttree allp)
+                       (rewrite-entry
+                        (relieve-hyps1-free-1 relieve-hyp-ans ; term
+                                              failure-reason  ; typ
+                                              hyp
+                                              type-alist
+                                              forcer-fn
+                                              forcep
+                                              force-flg
+                                              rune target hyps
+                                              backchain-limit-lst
+                                              unify-subst bkptr
+                                              unify-subst0
+                                              ttree0
+                                              (activate-memo allp))
+                        :obj nil
+                        :geneqv nil)
+                       (mv step-limit relieve-hyps-ans
+                           (and (null relieve-hyps-ans)
+                                (f-get-global 'gstackp state) ; optimization
+                                (cond (failure-reason-lst
+                                       (list* bkptr
+                                              'free-vars
+                                              (reverse failure-reason-lst)))
+                                      (t ; variable binding failed
+                                       (list* bkptr 'free-vars 'hyp-vars
+                                              (reverse
+                                               (set-difference-assoc-eq
+                                                (all-vars hyp)
+                                                unify-subst))))))
+                           unify-subst ttree allp))))
+            (t (mv step-limit nil (cons bkptr failure-reason) unify-subst0
+                   ttree0 allp))))))))
 
 (defun relieve-hyps1-free-1 (term typ hyp rest-type-alist forcer-fn forcep force-flg
                                   rune target hyps backchain-limit-lst
                                   unify-subst bkptr unify-subst0
                                   ttree0 allp ; &extra formals
-                                  rdepth
+                                  rdepth step-limit
                                   type-alist obj geneqv wrld state fnstack ancestors
                                   backchain-limit
                                   simplify-clause-pot-lst rcnst gstack
@@ -13549,12 +13707,16 @@
 ; then a 'hyp-vars token is used in its place (see relieve-hyps1).
 
   (declare (ignore obj geneqv)
-           (type (unsigned-byte 29) rdepth))
-  (mv-let (ans new-unify-subst new-ttree new-rest-type-alist)
-          (search-type-alist+ term typ rest-type-alist unify-subst ttree wrld)
-          (cond
-           (ans
-            (mv-let
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
+  (the-mv
+   6
+   (signed-byte 30)
+   (mv-let (ans new-unify-subst new-ttree new-rest-type-alist)
+           (search-type-alist+ term typ rest-type-alist unify-subst ttree wrld)
+           (cond
+            (ans
+             (sl-let
               (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp)
               (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
                                             (cdr backchain-limit-lst)
@@ -13566,9 +13728,9 @@
                              :ttree new-ttree)
               (cond
                (relieve-hyps-ans
-                (mv relieve-hyps-ans nil unify-subst1 ttree1 allp))
+                (mv step-limit relieve-hyps-ans nil unify-subst1 ttree1 allp))
                ((not allp) ; hence original allp is nil
-                (mv nil
+                (mv step-limit nil
                     (list (cons new-unify-subst failure-reason)) ; failure-reason-lst
                     unify-subst0 ttree0 nil))
                (t ; look for the next binding in the type-alist
@@ -13584,27 +13746,27 @@
                                        unify-subst0 ttree0 allp)
                  :obj nil
                  :geneqv nil)))))
-           (t ; failed to relieve hyp using rest-type-alist
-            (rewrite-entry
-             (relieve-hyps1-free-2 hyp
-                                   (relevant-ground-lemmas hyp wrld)
-                                   forcer-fn forcep
-                                   (access rewrite-constant rcnst
-                                           :current-enabled-structure)
-                                   force-flg
-                                   rune target hyps
-                                   backchain-limit-lst
-                                   unify-subst
-                                   bkptr
-                                   unify-subst0 ttree0 allp)
-             :obj nil
-             :geneqv nil)))))
+            (t ; failed to relieve hyp using rest-type-alist
+             (rewrite-entry
+              (relieve-hyps1-free-2 hyp
+                                    (relevant-ground-lemmas hyp wrld)
+                                    forcer-fn forcep
+                                    (access rewrite-constant rcnst
+                                            :current-enabled-structure)
+                                    force-flg
+                                    rune target hyps
+                                    backchain-limit-lst
+                                    unify-subst
+                                    bkptr
+                                    unify-subst0 ttree0 allp)
+              :obj nil
+              :geneqv nil))))))
 
 (defun relieve-hyps1-free-2 (hyp lemmas forcer-fn forcep ens force-flg
                                  rune target hyps backchain-limit-lst
                                  unify-subst bkptr unify-subst0
                                  ttree0 allp ; &extra formals
-                                 rdepth
+                                 rdepth step-limit
                                  type-alist obj geneqv wrld state fnstack ancestors
                                  backchain-limit
                                  simplify-clause-pot-lst rcnst gstack
@@ -13617,104 +13779,108 @@
 ; a resulting allp.
 
   (declare (ignore obj geneqv)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
-  (cond
-   ((endp lemmas)
+  (the-mv
+   6
+   (signed-byte 30)
+   (cond
+    ((endp lemmas)
 
 ; If we have to force this hyp, we make sure all its free vars are bound by
 ; fully-bound-unify-subst, an extension of unify-subst.
 
-    (let ((fully-bound-unify-subst
-           (if force-flg
-               (bind-free-vars-to-unbound-free-vars
-                (all-vars hyp)
-                unify-subst)
-               unify-subst)))
-      (mv-let
-       (force-flg ttree)
-       (cond
-        ((not forcep)
-         (mv nil ttree))
-        (t (force-assumption
-            rune
-            target
-            (sublis-var fully-bound-unify-subst hyp)
-            type-alist
-            nil
-            (immediate-forcep
-             forcer-fn
-             (access rewrite-constant rcnst
-                     :current-enabled-structure))
-            force-flg
-            ttree)))
-       (cond
-        (force-flg
-         (mv-let
-          (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp)
-          (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
-                                        (cdr backchain-limit-lst)
-                                        fully-bound-unify-subst
-                                        (1+ bkptr)
-                                        unify-subst0 ttree0 allp)
-                         :obj nil
-                         :geneqv nil)
-          (declare (ignore failure-reason))
-          (cond (relieve-hyps-ans
-                 (mv relieve-hyps-ans
+     (let ((fully-bound-unify-subst
+            (if force-flg
+                (bind-free-vars-to-unbound-free-vars
+                 (all-vars hyp)
+                 unify-subst)
+              unify-subst)))
+       (mv-let
+        (force-flg ttree)
+        (cond
+         ((not forcep)
+          (mv nil ttree))
+         (t (force-assumption
+             rune
+             target
+             (sublis-var fully-bound-unify-subst hyp)
+             type-alist
+             nil
+             (immediate-forcep
+              forcer-fn
+              (access rewrite-constant rcnst
+                      :current-enabled-structure))
+             force-flg
+             ttree)))
+        (cond
+         (force-flg
+          (sl-let
+           (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp)
+           (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
+                                         (cdr backchain-limit-lst)
+                                         fully-bound-unify-subst
+                                         (1+ bkptr)
+                                         unify-subst0 ttree0 allp)
+                          :obj nil
+                          :geneqv nil)
+           (declare (ignore failure-reason))
+           (cond (relieve-hyps-ans
+                  (mv step-limit relieve-hyps-ans
+                      nil ; failure-reason-lst
+                      unify-subst1 ttree1 allp))
+                 (t ; treat failure to force as failure to find any bindings
+                  (mv step-limit nil
+                      nil ; failure-reason-lst
+                      unify-subst0 ttree0 allp)))))
+         (t (mv step-limit nil
+                nil ; failure-reason-lst
+                unify-subst0 ttree0 allp))))))
+    (t
+     (mv-let (winp new-unify-subst new-ttree rest-lemmas)
+             (search-ground-units1
+              hyp unify-subst lemmas type-alist
+              ens force-flg wrld ttree)
+             (cond
+              (winp
+               (sl-let
+                (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp)
+                (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
+                                              (cdr backchain-limit-lst)
+                                              new-unify-subst
+                                              (1+ bkptr)
+                                              unify-subst0 ttree0 allp)
+                               :obj nil
+                               :geneqv nil
+                               :ttree new-ttree)
+                (cond
+                 (relieve-hyps-ans
+                  (mv step-limit relieve-hyps-ans nil unify-subst1 ttree1 allp))
+                 ((not allp) ; hence original allp is nil
+                  (mv step-limit nil
+                      (list (cons new-unify-subst failure-reason))
+                      unify-subst0 ttree0 nil))
+                 (t
+                  (rewrite-entry-extending-failure
+                   new-unify-subst
+                   failure-reason
+                   (relieve-hyps1-free-2 hyp rest-lemmas forcer-fn forcep
+                                         ens force-flg
+                                         rune target hyps
+                                         backchain-limit-lst
+                                         unify-subst
+                                         bkptr
+                                         unify-subst0 ttree0 allp)
+                   :obj nil
+                   :geneqv nil)))))
+              (t (mv step-limit nil
                      nil ; failure-reason-lst
-                     unify-subst1 ttree1 allp))
-                (t ; treat failure to force as failure to find any bindings
-                 (mv nil
-                     nil ; failure-reason-lst
-                     unify-subst0 ttree0 allp)))))
-        (t (mv nil
-               nil ; failure-reason-lst
-               unify-subst0 ttree0 allp))))))
-   (t
-    (mv-let (winp new-unify-subst new-ttree rest-lemmas)
-            (search-ground-units1
-             hyp unify-subst lemmas type-alist
-             ens force-flg wrld ttree)
-            (cond
-             (winp
-              (mv-let
-               (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp)
-               (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
-                                             (cdr backchain-limit-lst)
-                                             new-unify-subst
-                                             (1+ bkptr)
-                                             unify-subst0 ttree0 allp)
-                              :obj nil
-                              :geneqv nil
-                              :ttree new-ttree)
-               (cond
-                (relieve-hyps-ans
-                 (mv relieve-hyps-ans nil unify-subst1 ttree1 allp))
-                ((not allp) ; hence original allp is nil
-                 (mv nil
-                     (list (cons new-unify-subst failure-reason))
-                     unify-subst0 ttree0 nil))
-                (t
-                 (rewrite-entry-extending-failure
-                  new-unify-subst
-                  failure-reason
-                  (relieve-hyps1-free-2 hyp rest-lemmas forcer-fn forcep
-                                        ens force-flg
-                                        rune target hyps
-                                        backchain-limit-lst
-                                        unify-subst
-                                        bkptr
-                                        unify-subst0 ttree0 allp)
-                  :obj nil
-                  :geneqv nil)))))
-             (t (mv nil
-                    nil ; failure-reason-lst
-                    unify-subst0 ttree0 allp)))))))
+                     unify-subst0 ttree0 allp))))))))
 
 (defun relieve-hyps (rune target hyps backchain-limit-lst
                           unify-subst allp ; &extra formals
-                          rdepth
+                          rdepth step-limit
                           type-alist obj geneqv wrld state fnstack ancestors
                           backchain-limit
                           simplify-clause-pot-lst rcnst gstack ttree)
@@ -13727,7 +13893,8 @@
 ; This function is a No-Change Loser.
 
   (declare (ignore obj geneqv)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -13735,33 +13902,34 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond ((f-big-clock-negative-p state)
-         (mv nil 'time-out unify-subst ttree))
-        (t (mv-let (relieve-hyps-ans failure-reason unify-subst ttree allp)
-                   (rewrite-entry (relieve-hyps1 rune target hyps
-                                                 backchain-limit-lst
-                                                 unify-subst 1
-                                                 unify-subst ttree allp)
-                                  :obj nil
-                                  :geneqv nil
+  (the-mv
+   5
+   (signed-byte 30)
+   (sl-let (relieve-hyps-ans failure-reason unify-subst ttree allp)
+           (rewrite-entry (relieve-hyps1 rune target hyps
+                                         backchain-limit-lst
+                                         unify-subst 1
+                                         unify-subst ttree allp)
+                          :obj nil
+                          :geneqv nil
 
 ; If we are doing non-linear arithmetic, we will be rewriting linear
 ; terms under a different theory than the standard one.  However, when
 ; relieving hypotheses, we want to use the standard one, so we make
 ; sure that that is what we are using.
 
-                                  :rcnst
-                                  (if (eq (access rewrite-constant rcnst 
-                                                  :active-theory)
-                                          :standard)
-                                      rcnst
-                                    (change rewrite-constant rcnst
-                                            :active-theory :standard)))
-                   (declare (ignore allp))
-                   (mv relieve-hyps-ans failure-reason unify-subst ttree)))))
+                          :rcnst
+                          (if (eq (access rewrite-constant rcnst 
+                                          :active-theory)
+                                  :standard)
+                              rcnst
+                            (change rewrite-constant rcnst
+                                    :active-theory :standard)))
+           (declare (ignore allp))
+           (mv step-limit relieve-hyps-ans failure-reason unify-subst ttree))))
 
 (defun rewrite-with-lemma (term lemma ; &extra formals
-                                rdepth
+                                rdepth step-limit
                                 type-alist obj geneqv wrld state
                                 fnstack ancestors
                                 backchain-limit
@@ -13772,22 +13940,25 @@
 ; lemma was used to rewrite term, the rewritten version of term, and the final
 ; version of ttree.  This is a No-Change Loser.
 
-  (declare (type (unsigned-byte 29) rdepth))
-  (let ((gstack (push-gframe 'rewrite-with-lemma nil term lemma))
-        (rdepth (adjust-rdepth rdepth)))
-    (cond ((zero-depthp rdepth)
-           (rdepth-error
-            (mv nil term ttree)))
-          ((f-big-clock-negative-p state)
-           (mv nil term ttree))
-          ((eq (access rewrite-rule lemma :subclass) 'meta)
+  (declare (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
+  (the-mv
+   4
+   (signed-byte 30)
+   (let ((gstack (push-gframe 'rewrite-with-lemma nil term lemma))
+         (rdepth (adjust-rdepth rdepth)))
+     (declare (type (unsigned-byte 29) rdepth))
+     (cond ((zero-depthp rdepth)
+            (rdepth-error
+             (mv step-limit nil term ttree)))
+           ((eq (access rewrite-rule lemma :subclass) 'meta)
 
 ; See the Essay on Correctness of Meta Reasoning, above, and :doc meta.
 
-           (cond
-            ((geneqv-refinementp (access rewrite-rule lemma :equiv)
-                                 geneqv
-                                 wrld)
+            (cond
+             ((geneqv-refinementp (access rewrite-rule lemma :equiv)
+                                  geneqv
+                                  wrld)
 
 ; We assume that the meta function has defun-mode :logic.  How could it
 ; be :program if we proved it correct?
@@ -13800,101 +13971,100 @@
 ; if we are in the extended case; otherwise, :rhs is nil.  We must
 ; manufacture a context in the former case.
 
-             (let ((args
-                    (cond
-                     ((eq (access rewrite-rule lemma :rhs)
-                          'extended)
-                      (list term
-                            (make metafunction-context 
-                                  :rdepth rdepth
-                                  :type-alist type-alist
-                                  :obj obj
-                                  :geneqv geneqv
-                                  :wrld wrld
-                                  :fnstack fnstack
-                                  :ancestors ancestors
-                                  :backchain-limit backchain-limit
-                                  :simplify-clause-pot-lst
-                                  simplify-clause-pot-lst
-                                  :rcnst rcnst
-                                  :gstack gstack
-                                  :ttree ttree)
-                            (coerce-state-to-object state)))
-                     (t (list term))))
-                   (rune (access rewrite-rule lemma :rune)))
-               (with-accumulated-persistence
-                rune
-                (flg term ttree)
-                flg
-                (mv-let
-                 (erp val latches)
-                 (pstk
-                  (ev-fncall-meta (access rewrite-rule lemma :lhs)
-                                  args
-                                  (f-decrement-big-clock state)))
-                 (declare (ignore latches))
-                 (cond
-                  (erp
-                   (mv nil term ttree))
-                  ((equal term val)
-                   (mv nil term ttree))
-                  ((termp val wrld)
-                   (let ((hyp-fn (access rewrite-rule lemma :hyps)))
-                     (mv-let
-                      (erp evaled-hyp latches)
-                      (if (eq hyp-fn nil)
-                          (mv nil *t* nil)
-                        (pstk
-                         (ev-fncall-meta hyp-fn
-                                         args
-                                         (f-decrement-big-clock state))))
-                      (declare (ignore latches))
-                      (cond
-                       (erp
-                        (mv nil term ttree))
-                       ((termp evaled-hyp wrld)
-                        (let* ((vars (all-vars term))
-                               (hyps (flatten-ands-in-lit
+              (let ((args
+                     (cond
+                      ((eq (access rewrite-rule lemma :rhs)
+                           'extended)
+                       (list term
+                             (make metafunction-context 
+                                   :rdepth rdepth
+                                   :type-alist type-alist
+                                   :obj obj
+                                   :geneqv geneqv
+                                   :wrld wrld
+                                   :fnstack fnstack
+                                   :ancestors ancestors
+                                   :backchain-limit backchain-limit
+                                   :simplify-clause-pot-lst
+                                   simplify-clause-pot-lst
+                                   :rcnst rcnst
+                                   :gstack gstack
+                                   :ttree ttree)
+                             (coerce-state-to-object state)))
+                      (t (list term))))
+                    (rune (access rewrite-rule lemma :rune)))
+                (with-accumulated-persistence
+                 rune
+                 ((the (signed-byte 30) step-limit) flg term ttree)
+                 flg
+                 (mv-let
+                  (erp val latches)
+                  (pstk
+                   (ev-fncall-meta (access rewrite-rule lemma :lhs)
+                                   args
+                                   state))
+                  (declare (ignore latches))
+                  (cond
+                   (erp
+                    (mv step-limit nil term ttree))
+                   ((equal term val)
+                    (mv step-limit nil term ttree))
+                   ((termp val wrld)
+                    (let ((hyp-fn (access rewrite-rule lemma :hyps)))
+                      (mv-let
+                       (erp evaled-hyp latches)
+                       (if (eq hyp-fn nil)
+                           (mv nil *t* nil)
+                         (pstk
+                          (ev-fncall-meta hyp-fn args state)))
+                       (declare (ignore latches))
+                       (cond
+                        (erp
+                         (mv step-limit nil term ttree))
+                        ((termp evaled-hyp wrld)
+                         (let* ((vars (all-vars term))
+                                (hyps (flatten-ands-in-lit
 
 ; Note: The sublis-var below normalizes the explicit constant
 ; constructors in evaled-hyp, e.g., (cons '1 '2) becomes '(1 . 2).
 
-                                      (sublis-var nil evaled-hyp)))
-                               (rule-backchain-limit
-                                (access rewrite-rule lemma 
-                                        :backchain-limit-lst))
-                               (bad-synp-hyp-msg
-                                (bad-synp-hyp-msg hyps vars nil wrld)))
-                          (cond
-                           (bad-synp-hyp-msg
-                            (mv (er hard 'rewrite-with-lemma
-                                    "The hypothesis metafunction ~x0, when ~
+                                       (sublis-var nil evaled-hyp)))
+                                (rule-backchain-limit
+                                 (access rewrite-rule lemma 
+                                         :backchain-limit-lst))
+                                (bad-synp-hyp-msg
+                                 (bad-synp-hyp-msg hyps vars nil wrld)))
+                           (cond
+                            (bad-synp-hyp-msg
+                             (mv step-limit
+                                 (er hard 'rewrite-with-lemma
+                                     "The hypothesis metafunction ~x0, when ~
                                     applied to the input term ~x1, produced a ~
                                     term whose use of synp is illegal because ~
                                     ~@2"
-                                    hyp-fn
-                                    term
-                                    bad-synp-hyp-msg)
-                                term ttree))
-                           (t
-                            (mv-let
-                             (relieve-hyps-ans failure-reason unify-subst ttree1)
-                             (rewrite-entry (relieve-hyps
+                                     hyp-fn
+                                     term
+                                     bad-synp-hyp-msg)
+                                 term ttree))
+                            (t
+                             (sl-let
+                              (relieve-hyps-ans failure-reason unify-subst ttree1)
+                              (rewrite-entry (relieve-hyps
 
 ; The next argument of relieve-hyps is a rune on which to "blame" a
 ; possible force.  We could blame such a force on a lot of things, but
 ; we'll blame it on the metarule and the term that it's applied to.
 
-                                             rune
-                                             term
-                                             hyps
-                                             (and rule-backchain-limit
-                                                  (assert$
-                                                   (natp rule-backchain-limit)
-                                                   (make-list
-                                                    (length hyps)
-                                                    :initial-element
-                                                    rule-backchain-limit)))
+                                              rune
+                                              term
+                                              hyps
+                                              (and rule-backchain-limit
+                                                   (assert$
+                                                    (natp rule-backchain-limit)
+                                                    (make-list
+                                                     (length hyps)
+                                                     :initial-element
+                                                     rule-backchain-limit)))
 
 ; The meta function has rewritten term to val and has generated a
 ; hypothesis called evaled-hyp.  Now ignore the metafunction and just
@@ -13903,11 +14073,11 @@
 ; themselves.  There may be additional vars in both evaled-hyp and in
 ; val.  But they are free at the time we do this relieve-hyps.
 
-                                             (pairlis$ vars vars)
-                                             nil ; allp=nil for meta rules
-                                             )
-                                            :obj nil
-                                            :geneqv nil)
+                                              (pairlis$ vars vars)
+                                              nil ; allp=nil for meta rules
+                                              )
+                                             :obj nil
+                                             :geneqv nil)
 
 ; If relieve hyps succeeds we get back a unifying substitution that extends
 ; the identity substitution above.  This substitution might bind free vars
@@ -13917,181 +14087,188 @@
 ; brkpt functions?  No, because we don't break on meta rules.  But perhaps we
 ; should consider allowing breaks on meta rules.
 
-                             (declare (ignore failure-reason))
-                             (cond
-                              (relieve-hyps-ans
-                               (mv-let
-                                (rewritten-rhs ttree)
-                                (with-accumulated-persistence
-                                 rune
+                              (declare (ignore failure-reason))
+                              (cond
+                               (relieve-hyps-ans
+                                (sl-let
                                  (rewritten-rhs ttree)
+                                 (with-accumulated-persistence
+                                  rune
+                                  ((the (signed-byte 30) step-limit)
+                                   rewritten-rhs ttree)
 
 ; This rewrite of the body is considered a success unless the parent with-acc-p
 ; fails.
 
-                                 t
-                                 (rewrite-entry (rewrite
+                                  t
+                                  (rewrite-entry (rewrite
 
 ; Note: The sublis-var below normalizes the explicit constant
 ; constructors in val, e.g., (cons '1 '2) becomes '(1 . 2).
 
-                                                 (sublis-var nil val)
+                                                  (sublis-var nil val)
 
 ; At one point we ignored the unify-subst constructed above and used a
 ; nil here.  That was unsound if val involved free vars bound by the
 ; relief of the evaled-hyp.  We must rewrite val under the extended
 ; substitution.  Often that is just the identity substitution.
 
-                                                 unify-subst
-                                                 'meta)
-                                                :ttree
+                                                  unify-subst
+                                                  'meta)
+                                                 :ttree
 
 ; Should we be pushing executable counterparts into ttrees when we applying
 ; metafunctions on behalf of meta rules?  NO:  We should only do that if the
 ; meta-rule's use is sensitive to whether or not they're enabled, and it's not
 ; -- all that matters is if the rule itself is enabled.
 
-                                                (push-lemma
-                                                 (geneqv-refinementp
-                                                  (access rewrite-rule lemma :equiv)
-                                                  geneqv
-                                                  wrld)
-                                                 (push-lemma rune ttree1)))
-                                 :conc
-                                 hyps)
-                                (mv t rewritten-rhs ttree)))
-                              (t (mv nil term ttree))))))))
-                       (t (mv (er hard 'rewrite-with-lemma
-                                  "The hypothesis function ~x0 produced the ~
+                                                 (push-lemma
+                                                  (geneqv-refinementp
+                                                   (access rewrite-rule lemma :equiv)
+                                                   geneqv
+                                                   wrld)
+                                                  (push-lemma rune ttree1)))
+                                  :conc
+                                  hyps)
+                                 (mv step-limit t rewritten-rhs ttree)))
+                               (t (mv step-limit nil term ttree))))))))
+                        (t (mv step-limit
+                               (er hard 'rewrite-with-lemma
+                                   "The hypothesis function ~x0 produced the ~
                                   non-termp ~x1 on the input term ~x2.  Our ~
                                   implementation requires that ~x0 produce a ~
                                   term."
-                                  hyp-fn
-                                  evaled-hyp
-                                  term
-                                  (access rewrite-rule lemma :lhs))
-                              term ttree))))))
-                  (t (mv (er hard 'rewrite-with-lemma
-                             "The metafunction ~x0 produced the non-termp ~x1 ~
+                                   hyp-fn
+                                   evaled-hyp
+                                   term
+                                   (access rewrite-rule lemma :lhs))
+                               term ttree))))))
+                   (t (mv step-limit
+                          (er hard 'rewrite-with-lemma
+                              "The metafunction ~x0 produced the non-termp ~x1 ~
                              on the input term ~x2. The proof of the ~
                              correctness of ~x0 establishes that the ~
                              quotations of these two s-expressions have the ~
                              same value, but our implementation additionally ~
                              requires that ~x0 produce a term."
-                             (access rewrite-rule lemma :lhs)
-                             val
-                             term)
-                         term ttree)))))))
-            (t (mv nil term ttree))))
-          ((not (geneqv-refinementp (access rewrite-rule lemma :equiv)
-                                    geneqv
-                                    wrld))
-           (mv nil term ttree))
-          ((eq (access rewrite-rule lemma :subclass) 'definition)
-           (mv-let (rewritten-term ttree)
-                   (rewrite-entry (rewrite-fncall lemma term))
-                   (mv (not (equal term rewritten-term)) rewritten-term ttree)))
-          ((and (or (null (access rewrite-rule lemma :hyps))
-                    (not (eq obj t))
-                    (not (equal (access rewrite-rule lemma :rhs) *nil*)))
-                (or (flambdap (ffn-symb term)) ; hence not on fnstack
-                    (not (being-openedp (ffn-symb term) fnstack
-                                        (recursivep (ffn-symb term) wrld)))
-                    (not (ffnnamep (ffn-symb term)
-                                   (access rewrite-rule lemma :rhs)))))
-           (let ((lhs (access rewrite-rule lemma :lhs))
-                 (rune (access rewrite-rule lemma :rune)))
-             (mv-let (unify-ans unify-subst)
-                     (one-way-unify-restrictions
-                      lhs
-                      term
-                      (cdr (assoc-equal
-                            rune
-                            (access rewrite-constant rcnst
-                                    :restrictions-alist))))
-                     (cond
-                      ((and unify-ans
-                            (null (brkpt1 lemma term unify-subst
-                                          type-alist ancestors
-                                          ttree
-                                          gstack state)))
-                       (cond
-                        ((null (loop-stopperp
-                                (access rewrite-rule lemma :heuristic-info)
-                                unify-subst
-                                wrld))
-                         (prog2$
-                          (brkpt2 nil 'loop-stopper
-                                  unify-subst gstack nil nil
-                                  rcnst state)
-                          (mv nil term ttree)))
-                        (t
-                         (with-accumulated-persistence
-                          rune
-                          (flg term ttree)
-                          flg
-                          (mv-let
-                           (relieve-hyps-ans failure-reason unify-subst ttree)
-                           (rewrite-entry (relieve-hyps
-                                           rune
-                                           term
-                                           (access rewrite-rule lemma :hyps)
-                                           (access rewrite-rule lemma 
-                                                   :backchain-limit-lst)
-                                           unify-subst
-                                           (not (oncep (access rewrite-constant
-                                                               rcnst
-                                                               :oncep-override)
-                                                       (access rewrite-rule
-                                                               lemma
-                                                               :match-free)
-                                                       rune
-                                                       (access rewrite-rule
-                                                               lemma
-                                                               :nume))))
-                                          :obj nil
-                                          :geneqv nil)
-                           (cond
-                            (relieve-hyps-ans
-                             (mv-let
-                              (rewritten-rhs ttree)
-                              (with-accumulated-persistence
-                               rune
+                              (access rewrite-rule lemma :lhs)
+                              val
+                              term)
+                          term ttree)))))))
+             (t (mv step-limit nil term ttree))))
+           ((not (geneqv-refinementp (access rewrite-rule lemma :equiv)
+                                     geneqv
+                                     wrld))
+            (mv step-limit nil term ttree))
+           ((eq (access rewrite-rule lemma :subclass) 'definition)
+            (sl-let (rewritten-term ttree)
+                    (rewrite-entry (rewrite-fncall lemma term))
+                    (mv step-limit
+                        (not (equal term rewritten-term))
+                        rewritten-term
+                        ttree)))
+           ((and (or (null (access rewrite-rule lemma :hyps))
+                     (not (eq obj t))
+                     (not (equal (access rewrite-rule lemma :rhs) *nil*)))
+                 (or (flambdap (ffn-symb term)) ; hence not on fnstack
+                     (not (being-openedp (ffn-symb term) fnstack
+                                         (recursivep (ffn-symb term) wrld)))
+                     (not (ffnnamep (ffn-symb term)
+                                    (access rewrite-rule lemma :rhs)))))
+            (let ((lhs (access rewrite-rule lemma :lhs))
+                  (rune (access rewrite-rule lemma :rune)))
+              (mv-let (unify-ans unify-subst)
+                      (one-way-unify-restrictions
+                       lhs
+                       term
+                       (cdr (assoc-equal
+                             rune
+                             (access rewrite-constant rcnst
+                                     :restrictions-alist))))
+                      (cond
+                       ((and unify-ans
+                             (null (brkpt1 lemma term unify-subst
+                                           type-alist ancestors
+                                           ttree
+                                           gstack state)))
+                        (cond
+                         ((null (loop-stopperp
+                                 (access rewrite-rule lemma :heuristic-info)
+                                 unify-subst
+                                 wrld))
+                          (prog2$
+                           (brkpt2 nil 'loop-stopper
+                                   unify-subst gstack nil nil
+                                   rcnst state)
+                           (mv step-limit nil term ttree)))
+                         (t
+                          (with-accumulated-persistence
+                           rune
+                           ((the (signed-byte 30) step-limit) flg term ttree)
+                           flg
+                           (sl-let
+                            (relieve-hyps-ans failure-reason unify-subst ttree)
+                            (rewrite-entry (relieve-hyps
+                                            rune
+                                            term
+                                            (access rewrite-rule lemma :hyps)
+                                            (access rewrite-rule lemma 
+                                                    :backchain-limit-lst)
+                                            unify-subst
+                                            (not (oncep (access rewrite-constant
+                                                                rcnst
+                                                                :oncep-override)
+                                                        (access rewrite-rule
+                                                                lemma
+                                                                :match-free)
+                                                        rune
+                                                        (access rewrite-rule
+                                                                lemma
+                                                                :nume))))
+                                           :obj nil
+                                           :geneqv nil)
+                            (cond
+                             (relieve-hyps-ans
+                              (sl-let
                                (rewritten-rhs ttree)
+                               (with-accumulated-persistence
+                                rune
+                                ((the (signed-byte 30) step-limit)
+                                 rewritten-rhs ttree)
 
 ; This rewrite of the body is considered a success unless the parent with-acc-p
 ; fails.
 
-                               t
-                               (rewrite-entry
-                                (rewrite
-                                 (access rewrite-rule lemma :rhs)
-                                 unify-subst
-                                 'rhs))
-                               :conc
-                               (access rewrite-rule lemma :hyps))
-                              (prog2$
-                               (brkpt2 t nil unify-subst gstack rewritten-rhs
-                                       ttree rcnst state)
-                               (mv t rewritten-rhs
-                                   (push-lemma (geneqv-refinementp
-                                                (access rewrite-rule lemma :equiv)
-                                                geneqv
-                                                wrld)
-                                               (push-lemma
-                                                rune
-                                                ttree))))))
-                            (t (prog2$
-                                (brkpt2 nil failure-reason
-                                        unify-subst gstack nil nil
-                                        rcnst state)
-                                (mv nil term ttree)))))))))
-                      (t (mv nil term ttree))))))
-          (t (mv nil term ttree)))))
+                                t
+                                (rewrite-entry
+                                 (rewrite
+                                  (access rewrite-rule lemma :rhs)
+                                  unify-subst
+                                  'rhs))
+                                :conc
+                                (access rewrite-rule lemma :hyps))
+                               (prog2$
+                                (brkpt2 t nil unify-subst gstack rewritten-rhs
+                                        ttree rcnst state)
+                                (mv step-limit t rewritten-rhs
+                                    (push-lemma (geneqv-refinementp
+                                                 (access rewrite-rule lemma :equiv)
+                                                 geneqv
+                                                 wrld)
+                                                (push-lemma
+                                                 rune
+                                                 ttree))))))
+                             (t (prog2$
+                                 (brkpt2 nil failure-reason
+                                         unify-subst gstack nil nil
+                                         rcnst state)
+                                 (mv step-limit nil term ttree)))))))))
+                       (t (mv step-limit nil term ttree))))))
+           (t (mv step-limit nil term ttree))))))
 
 (defun rewrite-with-lemmas1 (term lemmas
                                   ;;; &extra formals
-                                  rdepth
+                                  rdepth step-limit
                                   type-alist obj geneqv wrld state
                                   fnstack ancestors
                                   backchain-limit
@@ -14101,35 +14278,37 @@
 ; success, the rewritten term, and the final ttree.  This function is a
 ; No-Change Loser.
 
-  (declare (type (unsigned-byte 29) rdepth))
-  (cond ((f-big-clock-negative-p state)
-         (mv nil term ttree))
-        ((null lemmas) (mv nil term ttree))
+  (declare (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
+  (the-mv
+   4
+   (signed-byte 30)
+   (cond ((null lemmas) (mv step-limit nil term ttree))
 
 ; When we are doing non-linear we will be rewriting linear terms
 ; under a different theory than the standard one.  The :active-theory
 ; field of the rcnst keeps track of which theory we are using.
 
-        ((if (eq (access rewrite-constant rcnst :active-theory)
-                 :standard)
-             (not (enabled-numep 
-                   (access rewrite-rule (car lemmas) :nume)
-                   (access rewrite-constant rcnst
-                           :current-enabled-structure)))
-           (not (enabled-arith-numep 
-                 (access rewrite-rule (car lemmas) :nume)
-                 (global-val 'global-arithmetic-enabled-structure wrld))))
-         (rewrite-entry (rewrite-with-lemmas1 term (cdr lemmas))))
-        (t (mv-let
-            (rewrittenp rewritten-term ttree)
-            (rewrite-entry (rewrite-with-lemma term (car lemmas)))
-            (cond (rewrittenp
-                   (mv t rewritten-term ttree))
-                  (t (rewrite-entry
-                      (rewrite-with-lemmas1 term (cdr lemmas)))))))))
+         ((if (eq (access rewrite-constant rcnst :active-theory)
+                  :standard)
+              (not (enabled-numep 
+                    (access rewrite-rule (car lemmas) :nume)
+                    (access rewrite-constant rcnst
+                            :current-enabled-structure)))
+            (not (enabled-arith-numep 
+                  (access rewrite-rule (car lemmas) :nume)
+                  (global-val 'global-arithmetic-enabled-structure wrld))))
+          (rewrite-entry (rewrite-with-lemmas1 term (cdr lemmas))))
+         (t (sl-let
+             (rewrittenp rewritten-term ttree)
+             (rewrite-entry (rewrite-with-lemma term (car lemmas)))
+             (cond (rewrittenp
+                    (mv step-limit t rewritten-term ttree))
+                   (t (rewrite-entry
+                       (rewrite-with-lemmas1 term (cdr lemmas))))))))))
 
 (defun rewrite-fncall (rule term ; &extra formals
-                       rdepth
+                       rdepth step-limit
                        type-alist obj geneqv wrld state fnstack ancestors
                        backchain-limit
                        simplify-clause-pot-lst rcnst gstack ttree)
@@ -14155,51 +14334,57 @@
 ; it only for recursive fns simply because the non-recursive case seems
 ; unlikely.
 
-  (declare (type (unsigned-byte 29) rdepth))
-  (let* ((fn (ffn-symb term))
-         (args (fargs term))
-         (body (if (null rule)
-                   (or (lambda-body fn)
-                       (er hard 'rewrite-fncall
-                           "We had thought that a lambda function symbol ~
+  (declare (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
+  (the-mv
+   3
+   (signed-byte 30)
+   (let* ((fn (ffn-symb term))
+          (args (fargs term))
+          (body (if (null rule)
+                    (or (lambda-body fn)
+                        (er hard 'rewrite-fncall
+                            "We had thought that a lambda function symbol ~
                             always has a non-nil lambda-body, but the ~
                             following lambda does not: ~x0"
-                           fn))
-                 (or (access rewrite-rule rule :rhs)
-                     "We had thought that a rewrite-rule always has a non-nil ~
+                            fn))
+                  (or (access rewrite-rule rule :rhs)
+                      "We had thought that a rewrite-rule always has a non-nil ~
                       :rhs, but the following rewrite rule does not: ~x0")))
-         (recursivep (and rule ; it's a don't-care if (flambdap fn)
-                          (car (access rewrite-rule rule :heuristic-info)))))
-    (cond ((f-big-clock-negative-p state)
-           (mv term ttree))
-          ((and (not (flambdap fn))
-                (or (being-openedp fn fnstack recursivep)
-                    (fnstack-term-member term fnstack)))
-           (rewrite-solidify term type-alist obj geneqv
-                             (access rewrite-constant rcnst
-                                     :current-enabled-structure)
-                             wrld ttree
-                             simplify-clause-pot-lst
-                             (access rewrite-constant rcnst :pt)))
-          ((null rule) ; i.e., (flambdap fn)
-           (cond
-            ((and (not (recursive-fn-on-fnstackp fnstack))
-                  (too-many-ifs-pre-rewrite args
-                                            (var-counts (lambda-formals fn)
-                                                        body)))
+          (recursivep (and rule ; it's a don't-care if (flambdap fn)
+                           (car (access rewrite-rule rule :heuristic-info)))))
+     (cond ((and (not (flambdap fn))
+                 (or (being-openedp fn fnstack recursivep)
+                     (fnstack-term-member term fnstack)))
+            (prepend-step-limit
+             2
              (rewrite-solidify term type-alist obj geneqv
                                (access rewrite-constant rcnst
                                        :current-enabled-structure)
                                wrld ttree
                                simplify-clause-pot-lst
-                               (access rewrite-constant rcnst :pt)))
-            (t
-             (mv-let
-              (rewritten-body ttree1)
-              (rewrite-entry (rewrite body
-                                      (pairlis$ (lambda-formals fn) args)
-                                      'lambda-body)
-                             :fnstack fnstack)
+                               (access rewrite-constant rcnst :pt))))
+           ((null rule) ; i.e., (flambdap fn)
+            (cond
+             ((and (not (recursive-fn-on-fnstackp fnstack))
+                   (too-many-ifs-pre-rewrite args
+                                             (var-counts (lambda-formals fn)
+                                                         body)))
+              (prepend-step-limit
+               2
+               (rewrite-solidify term type-alist obj geneqv
+                                 (access rewrite-constant rcnst
+                                         :current-enabled-structure)
+                                 wrld ttree
+                                 simplify-clause-pot-lst
+                                 (access rewrite-constant rcnst :pt))))
+             (t
+              (sl-let
+               (rewritten-body ttree1)
+               (rewrite-entry (rewrite body
+                                       (pairlis$ (lambda-formals fn) args)
+                                       'lambda-body)
+                              :fnstack fnstack)
 
 ; Observe that we do not put the lambda-expression onto the fnstack.
 ; We act just as though we were rewriting a term under a substitution.
@@ -14213,46 +14398,48 @@
 ; bodies unless the user has explicitly prevented us from opening
 ; them) and contains-rewriteable-callp.
 
-              (cond
-               ((and (not (recursive-fn-on-fnstackp fnstack))
-                     (too-many-ifs-post-rewrite args rewritten-body))
-                (rewrite-solidify term type-alist obj geneqv
-                                  (access rewrite-constant rcnst
-                                          :current-enabled-structure)
-                                  wrld ttree
-                                  simplify-clause-pot-lst
-                                  (access rewrite-constant rcnst :pt)))
-               (t (mv rewritten-body ttree1)))))))
-          (t
-           (let* ((new-fnstack (cons (or recursivep fn) fnstack))
-                  (rune (access rewrite-rule rule :rune)))
-             (mv-let
-              (unify-ans unify-subst)
-              (one-way-unify-restrictions
-               (access rewrite-rule rule :lhs)
-               term
-               (cdr (assoc-equal
-                     rune
-                     (access rewrite-constant rcnst
-                             :restrictions-alist))))
-              (cond
-               ((and unify-ans
-                     (null (brkpt1 rule term unify-subst type-alist ancestors
-                                   ttree gstack state)))
-                (with-accumulated-persistence
-                 (access rewrite-rule rule :rune)
-                 (term-out ttree)
+               (cond
+                ((and (not (recursive-fn-on-fnstackp fnstack))
+                      (too-many-ifs-post-rewrite args rewritten-body))
+                 (prepend-step-limit
+                  2
+                  (rewrite-solidify term type-alist obj geneqv
+                                    (access rewrite-constant rcnst
+                                            :current-enabled-structure)
+                                    wrld ttree
+                                    simplify-clause-pot-lst
+                                    (access rewrite-constant rcnst :pt))))
+                (t (mv step-limit rewritten-body ttree1)))))))
+           (t
+            (let* ((new-fnstack (cons (or recursivep fn) fnstack))
+                   (rune (access rewrite-rule rule :rune)))
+              (mv-let
+               (unify-ans unify-subst)
+               (one-way-unify-restrictions
+                (access rewrite-rule rule :lhs)
+                term
+                (cdr (assoc-equal
+                      rune
+                      (access rewrite-constant rcnst
+                              :restrictions-alist))))
+               (cond
+                ((and unify-ans
+                      (null (brkpt1 rule term unify-subst type-alist ancestors
+                                    ttree gstack state)))
+                 (with-accumulated-persistence
+                  (access rewrite-rule rule :rune)
+                  ((the (signed-byte 30) step-limit) term-out ttree)
 
 ; The following mis-guarded use of eq instead of equal implies that we could be
 ; over-counting successes at the expense of failures.
 
-                 (not (eq term term-out))
-                 (cond
-                  ((and (null recursivep)
-                        (not (recursive-fn-on-fnstackp fnstack))
-                        (too-many-ifs-pre-rewrite args
-                                                  (access rewrite-rule rule
-                                                          :var-info)))
+                  (not (eq term term-out))
+                  (cond
+                   ((and (null recursivep)
+                         (not (recursive-fn-on-fnstackp fnstack))
+                         (too-many-ifs-pre-rewrite args
+                                                   (access rewrite-rule rule
+                                                           :var-info)))
 
 ; We are dealing with a nonrecursive fn.  If we are at the top-level of the
 ; clause but the expanded body has too many IFs in it compared to the number
@@ -14260,59 +14447,61 @@
 ; the args will be clausified out soon and then this will be permitted to
 ; open.
 
-                   (prog2$
-                    (brkpt2 nil 'too-many-ifs-pre-rewrite unify-subst gstack
-                            :rewriten-rhs-avoided ttree rcnst state)
-                    (rewrite-solidify term type-alist obj geneqv
-                                      (access rewrite-constant rcnst
-                                              :current-enabled-structure)
-                                      wrld ttree
-                                      simplify-clause-pot-lst
-                                      (access rewrite-constant rcnst
-                                              :pt))))
-                  (t
-                   (mv-let
-                    (relieve-hyps-ans failure-reason unify-subst ttree1)
-                    (cond
-                     ((and (eq fn (base-symbol rune))
+                    (prog2$
+                     (brkpt2 nil 'too-many-ifs-pre-rewrite unify-subst gstack
+                             :rewriten-rhs-avoided ttree rcnst state)
+                     (prepend-step-limit
+                      2
+                      (rewrite-solidify term type-alist obj geneqv
+                                        (access rewrite-constant rcnst
+                                                :current-enabled-structure)
+                                        wrld ttree
+                                        simplify-clause-pot-lst
+                                        (access rewrite-constant rcnst
+                                                :pt)))))
+                   (t
+                    (sl-let
+                     (relieve-hyps-ans failure-reason unify-subst ttree1)
+                     (cond
+                      ((and (eq fn (base-symbol rune))
 
 ; There may be alternative definitions of fn.  "The" definition is the one
 ; whose rune is of the form (:DEFINITION fn); its hyps is nil, at least in the
 ; standard case; but:
 
-                           #+:non-standard-analysis
+                            #+:non-standard-analysis
 
 ; In the non-standard case, we may be attempting to open up a call of a
 ; function defined by defun-std.  Hence, there may be one or more hypotheses.
 
-                           (not (access rewrite-rule rule :hyps)))
-                      (mv t nil unify-subst ttree))
-                     (t (rewrite-entry
-                         (relieve-hyps rune term
-                                       (access rewrite-rule rule :hyps)
-                                       nil ; backchain-limit-lst
-                                       unify-subst
-                                       nil ; allp=nil for definitions
-                                       )
-                         :obj nil
-                         :geneqv nil)))
-                    (cond
-                     (relieve-hyps-ans
-                      (with-accumulated-persistence
-                       rune
-                       (term-out ttree)
-                       t ; considered a success unless the parent with-acc-p fails
-                       (mv-let
-                        (rewritten-body ttree1)
-                        (rewrite-entry (rewrite body unify-subst 'body)
-                                       :fnstack new-fnstack
-                                       :ttree ttree1)
+                            (not (access rewrite-rule rule :hyps)))
+                       (mv step-limit t nil unify-subst ttree))
+                      (t (rewrite-entry
+                          (relieve-hyps rune term
+                                        (access rewrite-rule rule :hyps)
+                                        nil ; backchain-limit-lst
+                                        unify-subst
+                                        nil ; allp=nil for definitions
+                                        )
+                          :obj nil
+                          :geneqv nil)))
+                     (cond
+                      (relieve-hyps-ans
+                       (with-accumulated-persistence
+                        rune
+                        ((the (signed-byte 30) step-limit) term-out ttree)
+                        t ; considered a success unless the parent with-acc-p fails
+                        (sl-let
+                         (rewritten-body ttree1)
+                         (rewrite-entry (rewrite body unify-subst 'body)
+                                        :fnstack new-fnstack
+                                        :ttree ttree1)
 
 ; Again, we use ttree1 to accumulate the successful rewrites and we'll
 ; return it in our answer if we like our answer.
 
-                        (cond
-                         ((null recursivep)
+                         (cond
+                          ((null recursivep)
 
 ; We are dealing with a nonrecursive fn.  If we are at the top-level of the
 ; clause but the expanded body has too many IFs in it compared to the number
@@ -14320,34 +14509,37 @@
 ; the args will be clausified out soon and then this will be permitted to
 ; open.
 
-                          (cond
-                           ((and (not (recursive-fn-on-fnstackp fnstack))
-                                 (too-many-ifs-post-rewrite args
-                                                            rewritten-body))
-                            (prog2$
-                             (brkpt2 nil 'too-many-ifs-post-rewrite unify-subst
-                                     gstack rewritten-body ttree1 rcnst state)
-                             (rewrite-solidify
-                              term type-alist obj geneqv
-                              (access rewrite-constant rcnst
-                                      :current-enabled-structure)
-                              wrld ttree
-                              simplify-clause-pot-lst
-                              (access rewrite-constant rcnst :pt))))
-                           (t (prog2$
-                               (brkpt2 t nil unify-subst gstack
-                                       rewritten-body ttree1 rcnst state)
-                               (mv rewritten-body
-                                   (push-lemma rune ttree1))))))
-                         ((rewrite-fncallp
-                           term rewritten-body
-                           (if (cdr recursivep) recursivep nil)
-                           (access rewrite-constant rcnst
-                                   :top-clause)
-                           (access rewrite-constant rcnst
-                                   :current-clause)
-                           (cdr (access rewrite-rule rule :heuristic-info)))
-                          (cond 
+                           (cond
+                            ((and (not (recursive-fn-on-fnstackp fnstack))
+                                  (too-many-ifs-post-rewrite args
+                                                             rewritten-body))
+                             (prog2$
+                              (brkpt2 nil 'too-many-ifs-post-rewrite unify-subst
+                                      gstack rewritten-body ttree1 rcnst state)
+                              (prepend-step-limit
+                               2
+                               (rewrite-solidify
+                                term type-alist obj geneqv
+                                (access rewrite-constant rcnst
+                                        :current-enabled-structure)
+                                wrld ttree
+                                simplify-clause-pot-lst
+                                (access rewrite-constant rcnst :pt)))))
+                            (t (prog2$
+                                (brkpt2 t nil unify-subst gstack
+                                        rewritten-body ttree1 rcnst state)
+                                (mv step-limit
+                                    rewritten-body
+                                    (push-lemma rune ttree1))))))
+                          ((rewrite-fncallp
+                            term rewritten-body
+                            (if (cdr recursivep) recursivep nil)
+                            (access rewrite-constant rcnst
+                                    :top-clause)
+                            (access rewrite-constant rcnst
+                                    :current-clause)
+                            (cdr (access rewrite-rule rule :heuristic-info)))
+                           (cond 
 
 ; Once upon a time, before we were heavily involved with ACL2 proofs, we had
 ; the following code here.  Roughly speaking this code forced recursive
@@ -14404,13 +14596,13 @@
 
 ; takes forever unless you give the two disable hints shown above.
 
-                           ((contains-rewriteable-callp
-                             fn rewritten-body
-                             (if (cdr recursivep)
-                                 recursivep
-                               nil)
-                             (access rewrite-constant
-                                     rcnst :terms-to-be-ignored-by-rewrite))
+                            ((contains-rewriteable-callp
+                              fn rewritten-body
+                              (if (cdr recursivep)
+                                  recursivep
+                                nil)
+                              (access rewrite-constant
+                                      rcnst :terms-to-be-ignored-by-rewrite))
 
 ; Ok, we are prepared to rewrite the once rewritten body.  But beware!  There
 ; is an infinite loop lurking here.  It can be broken by using :fnstack
@@ -14421,108 +14613,117 @@
 ; fnstack-term-member for a discussion of loop avoidance (which involved code
 ; that was here before Version_2.9).
 
-                            (mv-let (rewritten-body ttree2)
-                                    (rewrite-entry (rewrite rewritten-body nil
-                                                            'rewritten-body)
-                                                   :fnstack
+                             (sl-let (rewritten-body ttree2)
+                                     (rewrite-entry (rewrite rewritten-body nil
+                                                             'rewritten-body)
+                                                    :fnstack
 
 ; See the reference to fnstack in the comment above.
 
-                                                   (cons (cons :TERM term)
-                                                         fnstack)
-                                                   :ttree (push-lemma rune
-                                                                      ttree1))
-                                    (prog2$
-                                     (brkpt2 t nil unify-subst gstack
-                                             rewritten-body ttree2 rcnst state)
-                                     (mv rewritten-body ttree2))))
-                           (t 
-                            (prog2$
-                             (brkpt2 t nil unify-subst gstack rewritten-body
-                                     ttree1 rcnst state)
-                             (mv rewritten-body
-                                 (push-lemma rune ttree1))))))
-                         (t (prog2$
-                             (brkpt2 nil 'rewrite-fncallp unify-subst gstack
-                                     rewritten-body ttree1 rcnst state)
-                             (rewrite-solidify term type-alist obj geneqv
-                                               (access rewrite-constant rcnst
-                                                       :current-enabled-structure)
-                                               wrld ttree
-                                               simplify-clause-pot-lst
-                                               (access rewrite-constant rcnst
-                                                       :pt))))))
-                       :conc
-                       (access rewrite-rule rule :hyps)))
-                   (t (prog2$
-                       (brkpt2 nil failure-reason unify-subst gstack nil
-                               nil rcnst state)
-                       (rewrite-solidify term type-alist obj geneqv
-                                         (access rewrite-constant rcnst
-                                                 :current-enabled-structure)
-                                         wrld ttree
-                                         simplify-clause-pot-lst
-                                         (access rewrite-constant rcnst
-                                                 :pt))))))))))
-               (t (rewrite-solidify term type-alist obj geneqv
-                                    (access rewrite-constant rcnst
-                                            :current-enabled-structure)
-                                    wrld ttree
-                                    simplify-clause-pot-lst
-                                    (access rewrite-constant rcnst
-                                            :pt))))))))))
+                                                    (cons (cons :TERM term)
+                                                          fnstack)
+                                                    :ttree (push-lemma rune
+                                                                       ttree1))
+                                     (prog2$
+                                      (brkpt2 t nil unify-subst gstack
+                                              rewritten-body ttree2 rcnst state)
+                                      (mv step-limit rewritten-body ttree2))))
+                            (t 
+                             (prog2$
+                              (brkpt2 t nil unify-subst gstack rewritten-body
+                                      ttree1 rcnst state)
+                              (mv step-limit
+                                  rewritten-body
+                                  (push-lemma rune ttree1))))))
+                          (t (prog2$
+                              (brkpt2 nil 'rewrite-fncallp unify-subst gstack
+                                      rewritten-body ttree1 rcnst state)
+                              (prepend-step-limit
+                               2
+                               (rewrite-solidify
+                                term type-alist obj geneqv
+                                (access rewrite-constant rcnst
+                                        :current-enabled-structure)
+                                wrld ttree simplify-clause-pot-lst
+                                (access rewrite-constant rcnst
+                                        :pt)))))))
+                        :conc
+                        (access rewrite-rule rule :hyps)))
+                      (t (prog2$
+                          (brkpt2 nil failure-reason unify-subst gstack nil
+                                  nil rcnst state)
+                          (prepend-step-limit
+                           2
+                           (rewrite-solidify term type-alist obj geneqv
+                                             (access rewrite-constant rcnst
+                                                     :current-enabled-structure)
+                                             wrld ttree
+                                             simplify-clause-pot-lst
+                                             (access rewrite-constant rcnst
+                                                     :pt)))))))))))
+                (t (prepend-step-limit
+                    2
+                    (rewrite-solidify term type-alist obj geneqv
+                                      (access rewrite-constant rcnst
+                                              :current-enabled-structure)
+                                      wrld ttree
+                                      simplify-clause-pot-lst
+                                      (access rewrite-constant rcnst
+                                              :pt))))))))))))
 
 (defun rewrite-with-lemmas (term ; &extra formals
-                            rdepth
+                            rdepth step-limit
                             type-alist obj geneqv wrld state fnstack ancestors
                             backchain-limit
                             simplify-clause-pot-lst rcnst gstack ttree)
-  (declare (type (unsigned-byte 29) rdepth))
-  (cond
-   ((f-big-clock-negative-p state)
-    (mv term ttree))
-   ((variablep term)
-    (rewrite-entry (rewrite-solidify-plus term)))
-   ((fquotep term)
-    (mv term ttree))
-   ((member-equal (ffn-symb term)
-                  (access rewrite-constant rcnst
-                          :fns-to-be-ignored-by-rewrite))
-    (mv term ttree))
-   ((flambda-applicationp term)
-    (mv-let (new-term hyp unify-subst rune)
-            (expand-permission-result term (access rewrite-constant rcnst
-                                                   :expand-lst)
-                                      geneqv wrld)
-            (cond (new-term
-                   (assert$ (and (null rune) (null hyp))
-                            (rewrite-entry (rewrite new-term unify-subst
-                                                    'expansion))))
-                  (t (rewrite-entry (rewrite-fncall nil term))))))
-   (t (mv-let
-       (rewrittenp rewritten-term ttree)
-       (rewrite-entry (rewrite-with-linear term)
-                      :geneqv nil)
-       (cond
-        (rewrittenp
-         (mv rewritten-term ttree))
-        (t
-         (mv-let
-          (rewrittenp rewritten-term ttree)
-          (rewrite-entry
-           (rewrite-with-lemmas1 term
-                                 (getprop (ffn-symb term) 'lemmas nil
-                                          'current-acl2-world wrld)))
-          (cond
-           (rewrittenp (mv rewritten-term ttree))
-           (t (mv-let
-               (new-term hyp alist rune)
-               (expand-permission-result term
-                                         (access rewrite-constant rcnst
-                                                 :expand-lst)
-                                         geneqv wrld)
-               (cond
-                ((and hyp new-term)
+  (declare (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
+  (the-mv
+   3
+   (signed-byte 30)
+   (cond
+    ((variablep term)
+     (rewrite-entry (rewrite-solidify-plus term)))
+    ((fquotep term)
+     (mv step-limit term ttree))
+    ((member-equal (ffn-symb term)
+                   (access rewrite-constant rcnst
+                           :fns-to-be-ignored-by-rewrite))
+     (mv step-limit term ttree))
+    ((flambda-applicationp term)
+     (mv-let (new-term hyp unify-subst rune)
+             (expand-permission-result term (access rewrite-constant rcnst
+                                                    :expand-lst)
+                                       geneqv wrld)
+             (cond (new-term
+                    (assert$ (and (null rune) (null hyp))
+                             (rewrite-entry (rewrite new-term unify-subst
+                                                     'expansion))))
+                   (t (rewrite-entry (rewrite-fncall nil term))))))
+    (t (sl-let
+        (rewrittenp rewritten-term ttree)
+        (rewrite-entry (rewrite-with-linear term)
+                       :geneqv nil)
+        (cond
+         (rewrittenp
+          (mv step-limit rewritten-term ttree))
+         (t
+          (sl-let
+           (rewrittenp rewritten-term ttree)
+           (rewrite-entry
+            (rewrite-with-lemmas1 term
+                                  (getprop (ffn-symb term) 'lemmas nil
+                                           'current-acl2-world wrld)))
+           (cond
+            (rewrittenp (mv step-limit rewritten-term ttree))
+            (t (mv-let
+                (new-term hyp alist rune)
+                (expand-permission-result term
+                                          (access rewrite-constant rcnst
+                                                  :expand-lst)
+                                          geneqv wrld)
+                (cond
+                 ((and hyp new-term)
 
 ; We want to rewrite something like (if hyp new-term term).  But hyp and
 ; new-term are to be understood (and rewritten) in the context of the unifying
@@ -14530,56 +14731,61 @@
 ; substitution.  So we lay down code customized to this situation, adapted from
 ; the definition of rewrite-if.
 
-                 (mv-let
-                  (rewritten-test ttree)
-                  (rewrite-entry (rewrite hyp alist 'expansion)
-                                 :ttree (push-lemma? rune ttree))
-                  (let ((ens (access rewrite-constant rcnst
-                                     :current-enabled-structure)))
-                    (mv-let
-                     (must-be-true
-                      must-be-false
-                      true-type-alist false-type-alist ts-ttree)
-                     (assume-true-false rewritten-test nil
-                                        (ok-to-force rcnst)
-                                        nil type-alist ens wrld
-                                        nil nil :fta)
-                     (declare (ignore false-type-alist))
-                     (cond
+                  (sl-let
+                   (rewritten-test ttree)
+                   (rewrite-entry (rewrite hyp alist 'expansion)
+                                  :ttree (push-lemma? rune ttree))
+                   (let ((ens (access rewrite-constant rcnst
+                                      :current-enabled-structure)))
+                     (mv-let
                       (must-be-true
-                       (rewrite-entry
-                        (rewrite new-term alist 'expansion)
-                        :type-alist true-type-alist
-                        :ttree (cons-tag-trees ts-ttree ttree)))
-                      (must-be-false
-                       (mv (fcons-term* 'hide term)
-                           (push-lemma (fn-rune-nume 'hide nil nil wrld)
-                                       (cons-tag-trees ts-ttree ttree))))
-                      (t (mv-let
-                          (rewritten-left ttree)
-                          (rewrite-entry (rewrite new-term alist 2)
-                                         :type-alist true-type-alist)
-                          (rewrite-if11 (fcons-term* 'if
-                                                     rewritten-test
-                                                     rewritten-left
-                                                     (fcons-term* 'hide term))
-                                        type-alist geneqv wrld
-                                        (push-lemma (fn-rune-nume 'hide nil nil
-                                                                  wrld)
-                                                    ttree)))))))))
-                (new-term
-                 (rewrite-entry (rewrite new-term alist 'expansion)
-                                :ttree (push-lemma? rune ttree)))
-                (t (rewrite-solidify term type-alist obj geneqv
-                                     (access rewrite-constant rcnst
-                                             :current-enabled-structure)
-                                     wrld ttree
-                                     simplify-clause-pot-lst
-                                     (access rewrite-constant rcnst
-                                             :pt))))))))))))))
+                       must-be-false
+                       true-type-alist false-type-alist ts-ttree)
+                      (assume-true-false rewritten-test nil
+                                         (ok-to-force rcnst)
+                                         nil type-alist ens wrld
+                                         nil nil :fta)
+                      (declare (ignore false-type-alist))
+                      (cond
+                       (must-be-true
+                        (rewrite-entry
+                         (rewrite new-term alist 'expansion)
+                         :type-alist true-type-alist
+                         :ttree (cons-tag-trees ts-ttree ttree)))
+                       (must-be-false
+                        (mv step-limit
+                            (fcons-term* 'hide term)
+                            (push-lemma (fn-rune-nume 'hide nil nil wrld)
+                                        (cons-tag-trees ts-ttree ttree))))
+                       (t (sl-let
+                           (rewritten-left ttree)
+                           (rewrite-entry (rewrite new-term alist 2)
+                                          :type-alist true-type-alist)
+                           (prepend-step-limit
+                            2
+                            (rewrite-if11 (fcons-term* 'if
+                                                       rewritten-test
+                                                       rewritten-left
+                                                       (fcons-term* 'hide term))
+                                          type-alist geneqv wrld
+                                          (push-lemma (fn-rune-nume 'hide nil
+                                                                    nil wrld)
+                                                      ttree))))))))))
+                 (new-term
+                  (rewrite-entry (rewrite new-term alist 'expansion)
+                                 :ttree (push-lemma? rune ttree)))
+                 (t (prepend-step-limit
+                     2
+                     (rewrite-solidify term type-alist obj geneqv
+                                       (access rewrite-constant rcnst
+                                               :current-enabled-structure)
+                                       wrld ttree
+                                       simplify-clause-pot-lst
+                                       (access rewrite-constant rcnst
+                                               :pt))))))))))))))))
 
 (defun rewrite-linear-term (term alist ; &extra formals
-                                 rdepth
+                                 rdepth step-limit
                                  type-alist obj geneqv wrld state
                                  fnstack ancestors
                                  backchain-limit
@@ -14614,7 +14820,8 @@
 ; We return two things, the rewritten term and the new ttree.
 
   (declare (ignore obj geneqv)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -14622,12 +14829,13 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (mv-let (not-flg atm)
+  (the-mv
+   3
+   (signed-byte 30)
+   (mv-let
+    (not-flg atm)
     (strip-not term)
-    (cond ((f-big-clock-negative-p state)
-           (mv (sublis-var alist term)
-               ttree))
-          ((and (nvariablep atm)
+    (cond ((and (nvariablep atm)
                 (not (fquotep atm))
                 (or (eq (ffn-symb atm) '<)
                     (eq (ffn-symb atm) 'equal)))
@@ -14635,7 +14843,7 @@
                              (change rewrite-constant rcnst
                                      :active-theory :arithmetic)
                            rcnst)))
-             (mv-let (lhs ttree)
+             (sl-let (lhs ttree)
                      (rewrite-entry (rewrite (fargn atm 1) alist 1)
                                     :obj '?
                                     :geneqv nil ; geneqv equal
@@ -14645,7 +14853,7 @@
 ; non-linear-arithmetic than when rewriting.
 
                                     :rcnst rcnst1)
-                     (mv-let (rhs ttree)
+                     (sl-let (rhs ttree)
                              (rewrite-entry (rewrite (fargn atm 2) alist 2)
                                             :obj '?
                                             :geneqv nil ; geneqv equal
@@ -14655,16 +14863,18 @@
                                             :rcnst rcnst1)
                              (cond
                               (not-flg
-                               (mv (mcons-term*
+                               (mv step-limit
+                                   (mcons-term*
                                     'not
                                     (mcons-term* (ffn-symb atm) lhs rhs))
                                    ttree))
-                              (t (mv (mcons-term* (ffn-symb atm) lhs rhs)
+                              (t (mv step-limit
+                                     (mcons-term* (ffn-symb atm) lhs rhs)
                                      ttree)))))))
-          (t (mv (sublis-var alist term) ttree)))))
+          (t (mv step-limit (sublis-var alist term) ttree))))))
 
 (defun rewrite-linear-term-lst (term-lst ttrees ; &extra formals
-                                         rdepth
+                                         rdepth step-limit
                                          type-alist obj geneqv wrld state
                                          fnstack ancestors
                                          backchain-limit
@@ -14683,7 +14893,8 @@
 ; terms and their ttrees.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -14691,9 +14902,13 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (if (null term-lst)
-      (mv nil nil)
-    (mv-let (term1 ttree1)
+  (the-mv
+   3
+   (signed-byte 30)
+   (if (null term-lst)
+       (mv step-limit nil nil)
+     (sl-let
+      (term1 ttree1)
       (rewrite-entry (rewrite-linear-term (car term-lst) nil)
                      :obj nil
                      :geneqv nil
@@ -14701,17 +14916,18 @@
                                                      (collect-parents
                                                       (car ttrees)))
                      :ttree (car ttrees))
-      (mv-let (term-lst ttree-lst)
-        (rewrite-entry (rewrite-linear-term-lst (cdr term-lst)
-                                                (cdr ttrees))
-                       :obj nil
-                       :geneqv nil
-                       :ttree nil)
-        (mv (cons term1 term-lst)
-            (cons ttree1 ttree-lst))))))
+      (sl-let (term-lst ttree-lst)
+              (rewrite-entry (rewrite-linear-term-lst (cdr term-lst)
+                                                      (cdr ttrees))
+                             :obj nil
+                             :geneqv nil
+                             :ttree nil)
+              (mv step-limit
+                  (cons term1 term-lst)
+                  (cons ttree1 ttree-lst)))))))
 
 (defun add-linear-lemma (term lemma ; &extra formals
-                              rdepth
+                              rdepth step-limit
                               type-alist obj geneqv wrld state fnstack ancestors
                               backchain-limit
                               simplify-clause-pot-lst rcnst gstack ttree)
@@ -14736,7 +14952,8 @@
 ; loop-stopper-value which exceeds *max-linear-pot-loop-stopper-value*.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -14744,59 +14961,61 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (mv-let (unify-ans unify-subst)
-          (one-way-unify (access linear-lemma lemma :max-term)
-                         term)
-          (cond
-           ((f-big-clock-negative-p state)
-            (mv nil simplify-clause-pot-lst))
-           (unify-ans
-            (let ((rune (access linear-lemma lemma :rune)))
-              (with-accumulated-persistence
-               rune
-               (contradictionp pot-lst)
-               (or contradictionp
+  (the-mv
+   3
+   (signed-byte 30)
+   (mv-let
+    (unify-ans unify-subst)
+    (one-way-unify (access linear-lemma lemma :max-term)
+                   term)
+    (cond
+     (unify-ans
+      (let ((rune (access linear-lemma lemma :rune)))
+        (with-accumulated-persistence
+         rune
+         ((the (signed-byte 30) step-limit) contradictionp pot-lst)
+         (or contradictionp
 
 ; The following mis-guarded use of eq instead of equal implies that we could be
 ; over-counting successes at the expense of failures.
 
-                   (not (eq pot-lst simplify-clause-pot-lst)))
-               (mv-let
-                (relieve-hyps-ans failure-reason unify-subst ttree1)
-                (rewrite-entry (relieve-hyps rune
-                                             term
-                                             (access linear-lemma lemma :hyps)
-                                             (access linear-lemma lemma
-                                                     :backchain-limit-lst)
-                                             unify-subst
-                                             (not (oncep (access rewrite-constant
-                                                                 rcnst
-                                                                 :oncep-override)
-                                                         (access linear-lemma lemma
-                                                                 :match-free)
-                                                         rune
-                                                         (access linear-lemma lemma
-                                                                 :nume))))
-                               :obj nil
-                               :geneqv nil
-                               :ttree nil)
-                (declare (ignore failure-reason))
-                (cond
-                 (relieve-hyps-ans
-                  (mv-let
-                   (rewritten-concl ttree2)
-                   (with-accumulated-persistence
-                    rune
-                    (rewritten-concl ttree2)
-                    t ; considered a success unless the parent with-acc-p fails
-                    (rewrite-entry (rewrite-linear-term
-                                    (access linear-lemma lemma :concl)
-                                    unify-subst)
-                                   :obj nil
-                                   :geneqv nil
-                                   :ttree ttree1)
-                    :conc
-                    (access linear-lemma lemma :hyps))
+             (not (eq pot-lst simplify-clause-pot-lst)))
+         (sl-let
+          (relieve-hyps-ans failure-reason unify-subst ttree1)
+          (rewrite-entry (relieve-hyps rune
+                                       term
+                                       (access linear-lemma lemma :hyps)
+                                       (access linear-lemma lemma
+                                               :backchain-limit-lst)
+                                       unify-subst
+                                       (not (oncep (access rewrite-constant
+                                                           rcnst
+                                                           :oncep-override)
+                                                   (access linear-lemma lemma
+                                                           :match-free)
+                                                   rune
+                                                   (access linear-lemma lemma
+                                                           :nume))))
+                         :obj nil
+                         :geneqv nil
+                         :ttree nil)
+          (declare (ignore failure-reason))
+          (cond
+           (relieve-hyps-ans
+            (sl-let
+             (rewritten-concl ttree2)
+             (with-accumulated-persistence
+              rune
+              ((the (signed-byte 30) step-limit) rewritten-concl ttree2)
+              t ; considered a success unless the parent with-acc-p fails
+              (rewrite-entry (rewrite-linear-term
+                              (access linear-lemma lemma :concl)
+                              unify-subst)
+                             :obj nil
+                             :geneqv nil
+                             :ttree ttree1)
+              :conc
+              (access linear-lemma lemma :hyps))
 
 ; Previous to Version_2.7, we just went ahead and used the result of
 ; (linearize rewritten-concl ...).  This had long been known to be
@@ -14882,69 +15101,70 @@
 
 ; We thank Robert Krug for providing this improvement.
 
-                   (let* ((force-flg (ok-to-force rcnst))
-                          (temp-lst (linearize rewritten-concl
-                                               t
-                                               type-alist
-                                               (access rewrite-constant rcnst
-                                                       :current-enabled-structure)
-                                               force-flg
-                                               wrld
-                                               (push-lemma
-                                                rune
-                                                ttree2)
-                                               state))
-                          (lst (or temp-lst
-                                   (linearize (sublis-var
-                                               unify-subst 
-                                               (access linear-lemma lemma :concl))
-                                              t
-                                              type-alist
-                                              (access rewrite-constant rcnst
-                                                      :current-enabled-structure)
-                                              force-flg
-                                              wrld
-                                              (push-lemma
-                                               rune
-                                               ttree1)
-                                              state))))
-                     (cond
-                      ((and (null (cdr lst))
-                            (not (new-and-ugly-linear-varsp
-                                  (car lst)
-                                  (<= *max-linear-pot-loop-stopper-value*
-                                      (loop-stopper-value-of-var 
-                                       term
-                                       simplify-clause-pot-lst))
-                                  term)))
-                       (mv-let
-                        (contradictionp new-pot-lst)
-                        (add-polys (car lst)
-                                   simplify-clause-pot-lst
-                                   (access rewrite-constant rcnst :pt)
-                                   (access rewrite-constant rcnst :nonlinearp)
-                                   type-alist
-                                   (access rewrite-constant rcnst
-                                           :current-enabled-structure)
-                                   force-flg
-                                   wrld)
-                        (cond
-                         (contradictionp (mv contradictionp nil))
-                         (t (mv nil
-                                (set-loop-stopper-values 
-                                 (new-vars-in-pot-lst new-pot-lst
-                                                      simplify-clause-pot-lst
-                                                      nil)
-                                 new-pot-lst
+             (let* ((force-flg (ok-to-force rcnst))
+                    (temp-lst (linearize rewritten-concl
+                                         t
+                                         type-alist
+                                         (access rewrite-constant rcnst
+                                                 :current-enabled-structure)
+                                         force-flg
+                                         wrld
+                                         (push-lemma
+                                          rune
+                                          ttree2)
+                                         state))
+                    (lst (or temp-lst
+                             (linearize (sublis-var
+                                         unify-subst 
+                                         (access linear-lemma lemma :concl))
+                                        t
+                                        type-alist
+                                        (access rewrite-constant rcnst
+                                                :current-enabled-structure)
+                                        force-flg
+                                        wrld
+                                        (push-lemma
+                                         rune
+                                         ttree1)
+                                        state))))
+               (cond
+                ((and (null (cdr lst))
+                      (not (new-and-ugly-linear-varsp
+                            (car lst)
+                            (<= *max-linear-pot-loop-stopper-value*
+                                (loop-stopper-value-of-var 
                                  term
-                                 (loop-stopper-value-of-var
-                                  term simplify-clause-pot-lst)))))))
-                      (t (mv nil simplify-clause-pot-lst))))))
-                 (t (mv nil simplify-clause-pot-lst)))))))
-           (t (mv nil simplify-clause-pot-lst)))))
+                                 simplify-clause-pot-lst))
+                            term)))
+                 (mv-let
+                  (contradictionp new-pot-lst)
+                  (add-polys (car lst)
+                             simplify-clause-pot-lst
+                             (access rewrite-constant rcnst :pt)
+                             (access rewrite-constant rcnst :nonlinearp)
+                             type-alist
+                             (access rewrite-constant rcnst
+                                     :current-enabled-structure)
+                             force-flg
+                             wrld)
+                  (cond
+                   (contradictionp (mv step-limit contradictionp nil))
+                   (t (mv step-limit
+                          nil
+                          (set-loop-stopper-values 
+                           (new-vars-in-pot-lst new-pot-lst
+                                                simplify-clause-pot-lst
+                                                nil)
+                           new-pot-lst
+                           term
+                           (loop-stopper-value-of-var
+                            term simplify-clause-pot-lst)))))))
+                (t (mv step-limit nil simplify-clause-pot-lst))))))
+           (t (mv step-limit nil simplify-clause-pot-lst)))))))
+     (t (mv step-limit nil simplify-clause-pot-lst))))))
 
 (defun add-linear-lemmas (term linear-lemmas ; &extra formals
-                               rdepth
+                               rdepth step-limit
                                type-alist obj geneqv wrld state
                                fnstack ancestors
                                backchain-limit
@@ -14959,7 +15179,8 @@
 ; The second is the possibly new pot-lst.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -14967,34 +15188,38 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond ((or (f-big-clock-negative-p state)
-             (null linear-lemmas))
-         (mv nil simplify-clause-pot-lst))
-        ((not (enabled-numep (access linear-lemma (car linear-lemmas) :nume)
-                             (access rewrite-constant rcnst
-                                     :current-enabled-structure)))
-         (rewrite-entry (add-linear-lemmas term (cdr linear-lemmas))
-                        :obj nil
-                        :geneqv nil
-                        :ttree nil))
-        (t (mv-let (contradictionp new-pot-lst)
-             (rewrite-entry (add-linear-lemma term
-                                              (car linear-lemmas))
-                            :obj nil
-                            :geneqv nil
-                            :ttree nil)
-             (cond (contradictionp (mv contradictionp nil))
-                   (t (rewrite-entry
-                       (add-linear-lemmas term (cdr linear-lemmas))
+  (the-mv
+   3
+   (signed-byte 30)
+   (cond
+    ((null linear-lemmas)
+     (mv step-limit nil simplify-clause-pot-lst))
+    ((not (enabled-numep (access linear-lemma (car linear-lemmas) :nume)
+                         (access rewrite-constant rcnst
+                                 :current-enabled-structure)))
+     (rewrite-entry (add-linear-lemmas term (cdr linear-lemmas))
+                    :obj nil
+                    :geneqv nil
+                    :ttree nil))
+    (t (sl-let
+        (contradictionp new-pot-lst)
+        (rewrite-entry (add-linear-lemma term
+                                         (car linear-lemmas))
                        :obj nil
                        :geneqv nil
-                       :ttree nil
-                       :simplify-clause-pot-lst new-pot-lst)))))))
+                       :ttree nil)
+        (cond (contradictionp (mv step-limit contradictionp nil))
+              (t (rewrite-entry
+                  (add-linear-lemmas term (cdr linear-lemmas))
+                  :obj nil
+                  :geneqv nil
+                  :ttree nil
+                  :simplify-clause-pot-lst new-pot-lst))))))))
 
 (defun multiply-alists2 (alist-entry1 alist-entry2 poly ; &extra formals
-                                      rdepth
+                                      rdepth step-limit
                                       type-alist obj geneqv wrld state fnstack
-                                      ancestors backchain-limit 
+                                      ancestors backchain-limit
                                       simplify-clause-pot-lst
                                       rcnst gstack ttree)
 
@@ -15007,7 +15232,8 @@
 ; (term . coeff).
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -15015,16 +15241,20 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (let* ((leaves1 (binary-*-leaves (car alist-entry1)))
-         (leaves2 (binary-*-leaves (car alist-entry2)))
-         (leaves (merge-arith-term-order leaves1 leaves2))
-         (tree (binary-*-tree leaves))
-         (coeff (* (cdr alist-entry1)
-                   (cdr alist-entry2)))
-         (temp-entry (mcons-term* 'BINARY-*
-                                  (kwote coeff)
-                                  tree)))
-    (mv-let (new-entry new-ttree)
+  (the-mv
+   2
+   (signed-byte 30)
+   (let* ((leaves1 (binary-*-leaves (car alist-entry1)))
+          (leaves2 (binary-*-leaves (car alist-entry2)))
+          (leaves (merge-arith-term-order leaves1 leaves2))
+          (tree (binary-*-tree leaves))
+          (coeff (* (cdr alist-entry1)
+                    (cdr alist-entry2)))
+          (temp-entry (mcons-term* 'BINARY-*
+                                   (kwote coeff)
+                                   tree)))
+     (sl-let
+      (new-entry new-ttree)
       (rewrite-entry (rewrite temp-entry nil 'multiply-alists2)
                      :obj nil
                      :geneqv nil
@@ -15036,18 +15266,19 @@
                                     :active-theory :arithmetic)
                      :ttree nil)
       (let ((new-poly (add-linear-term new-entry 'rhs poly)))
-        (change poly new-poly
-                :ttree (cons-tag-trees new-ttree
-                                       (access poly new-poly
-                                               :ttree))
-                :parents (marry-parents
-                          (collect-parents new-ttree)
-                          (access poly new-poly :parents)))))))
+        (mv step-limit
+            (change poly new-poly
+                    :ttree (cons-tag-trees new-ttree
+                                           (access poly new-poly
+                                                   :ttree))
+                    :parents (marry-parents
+                              (collect-parents new-ttree)
+                              (access poly new-poly :parents)))))))))
 
 (defun multiply-alists1 (alist-entry alist2 poly ; &extra formals
-                                     rdepth
+                                     rdepth step-limit
                                      type-alist obj geneqv wrld state fnstack
-                                     ancestors backchain-limit 
+                                     ancestors backchain-limit
                                      simplify-clause-pot-lst
                                      rcnst gstack ttree)
 
@@ -15059,7 +15290,8 @@
 ; alist2 and adding the result to poly.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -15067,27 +15299,33 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond ((null alist2)
-         poly)
-        (t
-         (let ((temp-poly (rewrite-entry
-                           (multiply-alists2 alist-entry
-                                             (car alist2)
-                                             poly)
-                           :obj nil
-                           :geneqv nil
-                           :ttree nil)))
-           (rewrite-entry (multiply-alists1 alist-entry
-                                           (cdr alist2)
-                                           temp-poly)
-                          :obj nil
-                          :geneqv nil
-                          :ttree nil)))))
+  (the-mv
+   2
+   (signed-byte 30)
+   (cond
+    ((null alist2)
+     (mv step-limit poly))
+    (t
+     (sl-let
+      (temp-poly)
+      (rewrite-entry
+       (multiply-alists2 alist-entry
+                         (car alist2)
+                         poly)
+       :obj nil
+       :geneqv nil
+       :ttree nil)
+      (rewrite-entry (multiply-alists1 alist-entry
+                                       (cdr alist2)
+                                       temp-poly)
+                     :obj nil
+                     :geneqv nil
+                     :ttree nil))))))
 
 (defun multiply-alists (alist1 alist2 poly ; &extra formals
-                               rdepth
+                               rdepth step-limit
                                type-alist obj geneqv wrld state fnstack
-                               ancestors backchain-limit 
+                               ancestors backchain-limit
                                simplify-clause-pot-lst
                                rcnst gstack ttree)
 
@@ -15108,7 +15346,8 @@
 ; alist1 multiplying each entry by alist2 and adding the result to poly.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -15116,28 +15355,34 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond ((null alist1)
-         poly)
-        (t
-         (let ((temp-poly (rewrite-entry
-                               (multiply-alists1 (car alist1)
-                                                 alist2
-                                                 poly)
-                               :obj nil
-                               :geneqv nil
-                               :ttree nil)))
-           (rewrite-entry (multiply-alists (cdr alist1)
-                                           alist2
-                                           temp-poly)
-                          :obj nil
-                          :geneqv nil
-                          :ttree nil)))))
+  (the-mv
+   2
+   (signed-byte 30)
+   (cond
+    ((null alist1)
+     (mv step-limit poly))
+    (t
+     (sl-let
+      (temp-poly)
+      (rewrite-entry
+       (multiply-alists1 (car alist1)
+                         alist2
+                         poly)
+       :obj nil
+       :geneqv nil
+       :ttree nil)
+      (rewrite-entry (multiply-alists (cdr alist1)
+                                      alist2
+                                      temp-poly)
+                     :obj nil
+                     :geneqv nil
+                     :ttree nil))))))
 
 (defun multiply-polys1 (alist1 const1 rel1 alist2 const2 rel2 
                                poly ; &extra formals
-                               rdepth
+                               rdepth step-limit
                                type-alist obj geneqv wrld state fnstack
-                               ancestors backchain-limit 
+                               ancestors backchain-limit
                                simplify-clause-pot-lst
                                rcnst gstack ttree)
 
@@ -15158,7 +15403,8 @@
 ; into the growing alist.  We finish with multiply-alists.
 
   (declare (ignore obj geneqv ttree rel1 rel2)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -15288,25 +15534,26 @@
 ; to obtain 0 < a - a*n.  Adding this to the previous result yields a
 ; contradiction.
 
-  (let* ((temp-poly1 (if (eql const2 0)
-                         poly
-                       (multiply-alist-and-const alist1 const2
-                                                 poly)))
-         (temp-poly2 (if (eql const1 0)
-                         temp-poly1
-                       (multiply-alist-and-const alist2 const1
-                                                 temp-poly1))))
-    (rewrite-entry
-     (multiply-alists alist1 alist2
-                      temp-poly2)
-     :obj nil
-     :geneqv nil
-     :ttree nil)))
+  (the-mv
+   2
+   (signed-byte 30)
+   (let* ((temp-poly1
+           (if (eql const2 0)
+               poly
+             (multiply-alist-and-const alist1 const2 poly)))
+          (temp-poly2
+           (if (eql const1 0)
+               temp-poly1
+             (multiply-alist-and-const alist2 const1 temp-poly1))))
+     (rewrite-entry (multiply-alists alist1 alist2 temp-poly2)
+                    :obj nil
+                    :geneqv nil
+                    :ttree nil))))
 
 (defun multiply-polys (poly1 poly2 ; &extra formals
-                             rdepth
+                             rdepth step-limit
                              type-alist obj geneqv wrld state fnstack
-                             ancestors backchain-limit 
+                             ancestors backchain-limit
                              simplify-clause-pot-lst
                              rcnst gstack ttree)
 
@@ -15321,7 +15568,8 @@
 ; We assume that either poly1 or poly2 is rational-poly-p.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -15329,19 +15577,22 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (let ((alist1 (access poly poly1 :alist))
-        (ttree1 (access poly poly1 :ttree))
-        (const1 (access poly poly1 :constant))
-        (rel1 (access poly poly1 :relation))
-        (parents1 (access poly poly1 :parents))
-        (ratp1 (access poly poly1 :rational-poly-p))
-        (alist2 (access poly poly2 :alist))
-        (ttree2 (access poly poly2 :ttree))
-        (const2 (access poly poly2 :constant))
-        (rel2 (access poly poly2 :relation))
-        (parents2 (access poly poly2 :parents))
-        (ratp2 (access poly poly2 :rational-poly-p)))
-    (let* ((pre-poly (make poly
+  (the-mv
+   2
+   (signed-byte 30)
+   (let ((alist1 (access poly poly1 :alist))
+         (ttree1 (access poly poly1 :ttree))
+         (const1 (access poly poly1 :constant))
+         (rel1 (access poly poly1 :relation))
+         (parents1 (access poly poly1 :parents))
+         (ratp1 (access poly poly1 :rational-poly-p))
+         (alist2 (access poly poly2 :alist))
+         (ttree2 (access poly poly2 :ttree))
+         (const2 (access poly poly2 :constant))
+         (rel2 (access poly poly2 :relation))
+         (parents2 (access poly poly2 :parents))
+         (ratp2 (access poly poly2 :rational-poly-p)))
+     (let ((pre-poly (make poly
                            :alist nil
                            :ttree (cons-tag-trees ttree1 ttree2)
                            :parents (marry-parents parents1 parents2)
@@ -15350,19 +15601,21 @@
                                               (eq rel2 '<))
                                          '<
                                        '<=)
-                           :rational-poly-p (and ratp1 ratp2)))
-           (poly (rewrite-entry (multiply-polys1 alist1 const1 rel1
-                                                 alist2 const2 rel2
-                                                 pre-poly)
-                                :obj nil
-                                :geneqv nil
-                                :ttree nil)))
-      (normalize-poly poly))))
+                           :rational-poly-p (and ratp1 ratp2))))
+       (sl-let
+        (poly)
+        (rewrite-entry (multiply-polys1 alist1 const1 rel1
+                                        alist2 const2 rel2
+                                        pre-poly)
+                       :obj nil
+                       :geneqv nil
+                       :ttree nil)
+        (mv step-limit (normalize-poly poly)))))))
 
 (defun multiply-pots2 (poly big-poly-list new-poly-list ; &extra formals
-                            rdepth
+                            rdepth step-limit
                             type-alist obj geneqv wrld state fnstack
-                            ancestors backchain-limit 
+                            ancestors backchain-limit
                             simplify-clause-pot-lst
                             rcnst gstack ttree)
 
@@ -15374,7 +15627,8 @@
 ; We return a list of polys.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -15382,43 +15636,47 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond ((null big-poly-list)
-         new-poly-list)
-        ((or (access poly poly :rational-poly-p)
-             (access poly (car big-poly-list) :rational-poly-p))
+  (the-mv
+   2
+   (signed-byte 30)
+   (cond
+    ((null big-poly-list)
+     (mv step-limit new-poly-list))
+    ((or (access poly poly :rational-poly-p)
+         (access poly (car big-poly-list) :rational-poly-p))
 
 ; If at least one of poly and (car big-poly-list) are rational, multiplication
 ; preserves sign.  See the comments in multiply-polys.
 
-         (let ((new-poly (rewrite-entry
-                          (multiply-polys poly
-                                          (car big-poly-list))
-                          :obj nil
-                          :geneqv nil
-                          :ttree nil)))
-           (rewrite-entry
-            (multiply-pots2 poly
-                            (cdr big-poly-list)
-                            (cons new-poly new-poly-list))
-            :obj nil
-            :geneqv nil
-            :ttree nil)))
-        (t
+     (sl-let (new-poly)
+             (rewrite-entry
+              (multiply-polys poly (car big-poly-list))
+              :obj nil
+              :geneqv nil
+              :ttree nil)
+             (rewrite-entry
+              (multiply-pots2 poly
+                              (cdr big-poly-list)
+                              (cons new-poly new-poly-list))
+              :obj nil
+              :geneqv nil
+              :ttree nil)))
+    (t
 
 ; Since neither poly is known to be rational, we skip this multiplication.
 
-         (rewrite-entry
-            (multiply-pots2 poly
-                            (cdr big-poly-list)
-                            new-poly-list)
-            :obj nil
-            :geneqv nil
-            :ttree nil))))
+     (rewrite-entry
+      (multiply-pots2 poly
+                      (cdr big-poly-list)
+                      new-poly-list)
+      :obj nil
+      :geneqv nil
+      :ttree nil)))))
 
 (defun multiply-pots1 (poly-list big-poly-list new-poly-list ; &extra formals
-                                 rdepth
+                                 rdepth step-limit
                                  type-alist obj geneqv wrld state fnstack
-                                 ancestors backchain-limit 
+                                 ancestors backchain-limit
                                  simplify-clause-pot-lst
                                  rcnst gstack ttree)
 
@@ -15431,7 +15689,8 @@
 ; We return a list of polys.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -15439,29 +15698,36 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond ((null poly-list)
-         new-poly-list)
-        (t
-         (let ((new-new-poly-list (rewrite-entry
-                                   (multiply-pots2 (car poly-list)
-                                                   big-poly-list
-                                                   new-poly-list)
-                                   :obj nil
-                                   :geneqv nil
-                                   :ttree nil)))
-           (rewrite-entry
-            (multiply-pots1 (cdr poly-list)
-                            big-poly-list
-                            new-new-poly-list)
-            :obj nil
-            :geneqv nil
-            :ttree nil)))))
+  (the-mv
+   2
+   (signed-byte 30)
+   (cond
+    ((null poly-list)
+     (mv step-limit new-poly-list))
+    (t
+     (sl-let
+      (new-new-poly-list)
+      (rewrite-entry
+       (multiply-pots2 (car poly-list)
+                       big-poly-list
+                       new-poly-list)
+       :obj nil
+       :geneqv nil
+       :ttree nil)
+      (rewrite-entry
+       (multiply-pots1 (cdr poly-list)
+                       big-poly-list
+                       new-new-poly-list)
+       :obj nil
+       :geneqv nil
+       :ttree nil))))))
 
 (defun multiply-pots-super-filter (var-list pot-lst-to-look-in ; &extra formals
-                                            rdepth
+                                            rdepth step-limit
                                             type-alist obj geneqv wrld state
                                             fnstack
-                                            ancestors backchain-limit 
+                                            ancestors
+                                            backchain-limit
                                             simplify-clause-pot-lst
                                             rcnst gstack ttree)
 
@@ -15471,7 +15737,8 @@
 ; We return a list of polys.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -15479,35 +15746,42 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond ((null var-list)
-         nil)
-        ((null (cdr var-list))
+  (the-mv
+   2
+   (signed-byte 30)
+   (cond
+    ((null var-list)
+     (mv step-limit nil))
+    ((null (cdr var-list))
+     (mv step-limit
          (shortest-polys-with-var (car var-list)
                                   pot-lst-to-look-in
-                                  (access rewrite-constant rcnst :pt)))
-        (t
-         (let ((big-poly-list (rewrite-entry
-                               (multiply-pots-super-filter (cdr var-list)
-                                                           pot-lst-to-look-in)
-                               :obj nil
-                               :geneqv nil
-                               :ttree nil)))
-         (rewrite-entry
-          (multiply-pots1 (shortest-polys-with-var (car var-list)
-                                                   pot-lst-to-look-in
-                                                   (access rewrite-constant
-                                                           rcnst
-                                                           :pt))
-                          big-poly-list
-                          nil)
-          :obj nil
-          :geneqv nil
-          :ttree nil)))))
+                                  (access rewrite-constant rcnst :pt))))
+    (t
+     (sl-let
+      (big-poly-list)
+      (rewrite-entry
+       (multiply-pots-super-filter (cdr var-list)
+                                   pot-lst-to-look-in)
+       :obj nil
+       :geneqv nil
+       :ttree nil)
+      (rewrite-entry
+       (multiply-pots1 (shortest-polys-with-var (car var-list)
+                                                pot-lst-to-look-in
+                                                (access rewrite-constant
+                                                        rcnst
+                                                        :pt))
+                       big-poly-list
+                       nil)
+       :obj nil
+       :geneqv nil
+       :ttree nil))))))
 
 (defun multiply-pots-filter (var-list pot-lst-to-look-in ; &extra formals
-                                      rdepth
+                                      rdepth step-limit
                                       type-alist obj geneqv wrld state fnstack
-                                      ancestors backchain-limit 
+                                      ancestors backchain-limit
                                       simplify-clause-pot-lst
                                       rcnst gstack ttree)
 
@@ -15519,7 +15793,8 @@
 ; We return a list of polys.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -15527,19 +15802,23 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (let ((poly-list1
-         (rewrite-entry
-          (multiply-pots1 (bounds-polys-with-var (car var-list)
-                                                 pot-lst-to-look-in
-                                                 (access rewrite-constant
-                                                         rcnst
-                                                         :pt))
-                          (polys-with-var (cadr var-list)
-                                          pot-lst-to-look-in)
-                          nil)
-          :obj nil
-          :geneqv nil
-          :ttree nil)))
+  (the-mv
+   2
+   (signed-byte 30)
+   (sl-let
+    (poly-list1)
+    (rewrite-entry
+     (multiply-pots1 (bounds-polys-with-var (car var-list)
+                                            pot-lst-to-look-in
+                                            (access rewrite-constant
+                                                    rcnst
+                                                    :pt))
+                     (polys-with-var (cadr var-list)
+                                     pot-lst-to-look-in)
+                     nil)
+     :obj nil
+     :geneqv nil
+     :ttree nil)
     (rewrite-entry
      (multiply-pots1 (bounds-polys-with-var (cadr var-list)
                                             pot-lst-to-look-in
@@ -15549,14 +15828,14 @@
                      (polys-with-var (car var-list)
                                      pot-lst-to-look-in)
                      poly-list1)
-          :obj nil
-          :geneqv nil
-          :ttree nil)))
+     :obj nil
+     :geneqv nil
+     :ttree nil))))
 
 (defun multiply-pots (var-list pot-lst-to-look-in ; &extra formals
-                               rdepth
+                               rdepth step-limit
                                type-alist obj geneqv wrld state fnstack
-                               ancestors backchain-limit 
+                               ancestors backchain-limit
                                simplify-clause-pot-lst
                                rcnst gstack ttree)
 
@@ -15570,7 +15849,8 @@
 ; We return a list of polys.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -15578,31 +15858,38 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond ((null var-list) ; How can we multiply 0 things?
-         nil)
-        ((null (cdr var-list))
-         (polys-with-var (car var-list) pot-lst-to-look-in))
-        (t
-         (let ((big-poly-list (rewrite-entry
-                               (multiply-pots (cdr var-list)
-                                         pot-lst-to-look-in)
-                               :obj nil
-                               :geneqv nil
-                               :ttree nil)))
-         (rewrite-entry
-          (multiply-pots1 (polys-with-var (car var-list)
-                                          pot-lst-to-look-in)
-                          big-poly-list
-                          nil)
-          :obj nil
-          :geneqv nil
-          :ttree nil)))))
+  (the-mv
+   2
+   (signed-byte 30)
+   (cond
+    ((null var-list) ; How can we multiply 0 things?
+     (mv step-limit nil))
+    ((null (cdr var-list))
+     (mv step-limit
+         (polys-with-var (car var-list) pot-lst-to-look-in)))
+    (t
+     (sl-let
+      (big-poly-list)
+      (rewrite-entry
+       (multiply-pots (cdr var-list)
+                      pot-lst-to-look-in)
+       :obj nil
+       :geneqv nil
+       :ttree nil)
+      (rewrite-entry
+       (multiply-pots1 (polys-with-var (car var-list)
+                                       pot-lst-to-look-in)
+                       big-poly-list
+                       nil)
+       :obj nil
+       :geneqv nil
+       :ttree nil))))))
 
 (defun add-multiplied-polys-filter (var-list products-already-tried
-                                             pot-lst-to-look-in; &extra formals
-                                             rdepth                                             
+                                             pot-lst-to-look-in ; &extra formals
+                                             rdepth step-limit
                                              type-alist obj geneqv wrld state fnstack
-                                             ancestors backchain-limit 
+                                             ancestors backchain-limit
                                              simplify-clause-pot-lst
                                              rcnst gstack ttree)
 
@@ -15611,7 +15898,8 @@
 ; corresponding to the pots labeled by the vars in var-list.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -15619,16 +15907,21 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond
-   ((product-already-triedp var-list products-already-tried)
-    (mv nil simplify-clause-pot-lst products-already-tried))
-   (t
-    (let* ((poly-list1 (rewrite-entry
-                        (multiply-pots-filter var-list
-                                              pot-lst-to-look-in)
-                        :obj nil
-                        :geneqv nil
-                        :ttree nil))
+  (the-mv
+   4
+   (signed-byte 30)
+   (cond
+    ((product-already-triedp var-list products-already-tried)
+     (mv step-limit nil simplify-clause-pot-lst products-already-tried))
+    (t
+     (sl-let
+      (poly-list1)
+      (rewrite-entry
+       (multiply-pots-filter var-list
+                             pot-lst-to-look-in)
+       :obj nil
+       :geneqv nil
+       :ttree nil)
 
 ; By filtering the polys so that we avoid creating new pots, we can
 ; dramatically speed up proofs, for example the failure of the following.  (The
@@ -15655,27 +15948,28 @@
 ;                   (<= 2 (f y)))
 ;              (< (+ (f r) (* (f i) (f y))) (f i))))
 
-           (poly-list2 (polys-with-pots poly-list1 
-                                        simplify-clause-pot-lst
-                                        nil)))
-      (mv-let (contradictionp new-pot-lst)
-        (add-polys poly-list2
-                   simplify-clause-pot-lst
-                   (access rewrite-constant rcnst :pt)
-                   (access rewrite-constant rcnst :nonlinearp)
-                   type-alist
-                   (access rewrite-constant rcnst
-                           :current-enabled-structure)
-                   (ok-to-force rcnst)
-                   wrld)
-        (mv contradictionp new-pot-lst (cons (sort-arith-term-order var-list)
-                                             products-already-tried)))))))
+      (let ((poly-list2 (polys-with-pots poly-list1 
+                                         simplify-clause-pot-lst
+                                         nil)))
+        (mv-let (contradictionp new-pot-lst)
+                (add-polys poly-list2
+                           simplify-clause-pot-lst
+                           (access rewrite-constant rcnst :pt)
+                           (access rewrite-constant rcnst :nonlinearp)
+                           type-alist
+                           (access rewrite-constant rcnst
+                                   :current-enabled-structure)
+                           (ok-to-force rcnst)
+                           wrld)
+                (mv step-limit contradictionp new-pot-lst
+                    (cons (sort-arith-term-order var-list)
+                          products-already-tried)))))))))
 
 (defun add-multiplied-polys (var-list products-already-tried
                                       pot-lst-to-look-in ; &extra formals
-                                      rdepth
+                                      rdepth step-limit
                                       type-alist obj geneqv wrld state fnstack
-                                      ancestors backchain-limit 
+                                      ancestors backchain-limit
                                       simplify-clause-pot-lst
                                       rcnst gstack ttree)
 
@@ -15686,7 +15980,8 @@
 ; from which we get our polys.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -15694,64 +15989,73 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond
-   ((null (cdr var-list))
-    (mv nil simplify-clause-pot-lst products-already-tried))
-   ((product-already-triedp var-list products-already-tried)
-    (mv nil simplify-clause-pot-lst products-already-tried))
-   ((or (too-many-polysp var-list pot-lst-to-look-in 1)
-        (< 4 (length var-list)))
+  (the-mv
+   4
+   (signed-byte 30)
+   (cond
+    ((null (cdr var-list))
+     (mv step-limit nil simplify-clause-pot-lst products-already-tried))
+    ((product-already-triedp var-list products-already-tried)
+     (mv step-limit nil simplify-clause-pot-lst products-already-tried))
+    ((or (too-many-polysp var-list pot-lst-to-look-in 1)
+         (< 4 (length var-list)))
 
 
 ; If we went ahead and naively multiplied all the polys corresponding
 ; to the pot labels in var-list, we would get too many of them and
 ; be overwhelmed.  So, we will only multiply some of the polys.
 
-    (let ((poly-list (rewrite-entry 
-                      (multiply-pots-super-filter var-list
-                                                  pot-lst-to-look-in)
-                      :obj nil
-                      :geneqv nil
-                      :ttree nil)))
+     (sl-let
+      (poly-list)
+      (rewrite-entry 
+       (multiply-pots-super-filter var-list
+                                   pot-lst-to-look-in)
+       :obj nil
+       :geneqv nil
+       :ttree nil)
       (mv-let (contradictionp new-pot-lst)
-        (add-polys poly-list
-                   simplify-clause-pot-lst
-                   (access rewrite-constant rcnst :pt)
-                   (access rewrite-constant rcnst :nonlinearp)
-                   type-alist
-                   (access rewrite-constant rcnst
-                           :current-enabled-structure)
-                   (ok-to-force rcnst)
-                   wrld)
-        (mv contradictionp new-pot-lst (cons (sort-arith-term-order var-list)
-                                             products-already-tried)))))
-   (t
-    (let ((poly-list (rewrite-entry 
-                      (multiply-pots var-list
-                                     pot-lst-to-look-in)
-                      :obj nil
-                      :geneqv nil
-                      :ttree nil)))
+              (add-polys poly-list
+                         simplify-clause-pot-lst
+                         (access rewrite-constant rcnst :pt)
+                         (access rewrite-constant rcnst :nonlinearp)
+                         type-alist
+                         (access rewrite-constant rcnst
+                                 :current-enabled-structure)
+                         (ok-to-force rcnst)
+                         wrld)
+              (mv step-limit contradictionp new-pot-lst
+                  (cons (sort-arith-term-order var-list)
+                        products-already-tried)))))
+    (t
+     (sl-let
+      (poly-list)
+      (rewrite-entry 
+       (multiply-pots var-list
+                      pot-lst-to-look-in)
+       :obj nil
+       :geneqv nil
+       :ttree nil)
       (mv-let (contradictionp new-pot-lst)
-        (add-polys poly-list
-                   simplify-clause-pot-lst
-                   (access rewrite-constant rcnst :pt)
-                   (access rewrite-constant rcnst :nonlinearp)
-                   type-alist
-                   (access rewrite-constant rcnst
-                           :current-enabled-structure)
-                   (ok-to-force rcnst)
-                   wrld)
-        (mv contradictionp new-pot-lst (cons (sort-arith-term-order var-list)
-                                             products-already-tried)))))))
+              (add-polys poly-list
+                         simplify-clause-pot-lst
+                         (access rewrite-constant rcnst :pt)
+                         (access rewrite-constant rcnst :nonlinearp)
+                         type-alist
+                         (access rewrite-constant rcnst
+                                 :current-enabled-structure)
+                         (ok-to-force rcnst)
+                         wrld)
+              (mv step-limit contradictionp new-pot-lst
+                  (cons (sort-arith-term-order var-list)
+                        products-already-tried))))))))
 
 (defun deal-with-product1 (part-of-new-var var-list
                                            pot-lst-to-look-in
                                            pot-lst-to-step-down
                                            products-already-tried ; &extra formals
-                                           rdepth
+                                           rdepth step-limit
                                            type-alist obj geneqv wrld state fnstack
-                                           ancestors backchain-limit 
+                                           ancestors backchain-limit
                                            simplify-clause-pot-lst
                                            rcnst gstack ttree)
 
@@ -15774,7 +16078,8 @@
 ; is true), and the accumulated list of products we have already tried.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -15782,37 +16087,42 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond ((equal part-of-new-var *1*)
-         (if (null (cdr var-list))
-             (mv nil simplify-clause-pot-lst products-already-tried)
-           (rewrite-entry
-            (add-multiplied-polys var-list
-                                  products-already-tried
-                                  pot-lst-to-look-in)
-            :obj nil
-            :geneqv nil
-            :ttree nil)))
-        ((null pot-lst-to-step-down)
-         (mv nil simplify-clause-pot-lst products-already-tried))
-        (t
+  (the-mv
+   4
+   (signed-byte 30)
+   (cond
+    ((equal part-of-new-var *1*)
+     (if (null (cdr var-list))
+         (mv step-limit nil simplify-clause-pot-lst products-already-tried)
+       (rewrite-entry
+        (add-multiplied-polys var-list
+                              products-already-tried
+                              pot-lst-to-look-in)
+        :obj nil
+        :geneqv nil
+        :ttree nil)))
+    ((null pot-lst-to-step-down)
+     (mv step-limit nil simplify-clause-pot-lst products-already-tried))
+    (t
 
 ; Is the label of the pot we are standing on a factor of part-of-new-var?
 ; If so, we proceed in two ways --- try using the factor, and try without
 ; using the factor.
 
-         (let ((new-part-of-new-var (part-of (access linear-pot
-                                                     (car pot-lst-to-step-down)
-                                                     :var)
-                                             part-of-new-var)))
-           (cond (new-part-of-new-var
-                  (mv-let (contradictionp new-pot-list products-already-tried)
-                    (rewrite-entry
-                     (deal-with-product1 new-part-of-new-var
-                                         (cons (access linear-pot
-                                                       (car pot-lst-to-step-down)
-                                                       :var)
-                                               var-list)
-                                         pot-lst-to-look-in
+     (let ((new-part-of-new-var (part-of (access linear-pot
+                                                 (car pot-lst-to-step-down)
+                                                 :var)
+                                         part-of-new-var)))
+       (cond (new-part-of-new-var
+              (sl-let
+               (contradictionp new-pot-list products-already-tried)
+               (rewrite-entry
+                (deal-with-product1 new-part-of-new-var
+                                    (cons (access linear-pot
+                                                  (car pot-lst-to-step-down)
+                                                  :var)
+                                          var-list)
+                                    pot-lst-to-look-in
 
 ; Once upon a time, we used (cdr pot-lst-to-step-down) below.  But
 ; that introduces an asymmetry in handling (* a a) v (* a a a a) when
@@ -15826,42 +16136,43 @@
 ; polys about (* a a), but it would do so in a shorter pot list in
 ; which the pot containing (* a a) was now cdr'd past.
 
-                                         pot-lst-to-look-in
-                                         products-already-tried)
-                     :obj nil
-                     :geneqv nil
-                     :ttree nil)
-                    (cond (contradictionp (mv contradictionp
-                                              nil
-                                              products-already-tried))
-                          (t
-                           (rewrite-entry
-                            (deal-with-product1 part-of-new-var
-                                                var-list
-                                                pot-lst-to-look-in
-                                                (cdr pot-lst-to-step-down)
-                                                products-already-tried)
-                            :obj nil
-                            :geneqv nil
-                            :ttree nil
-                            :simplify-clause-pot-lst new-pot-list)))))
-                 (t
-                  (rewrite-entry
-                   (deal-with-product1 part-of-new-var
-                                       var-list
-                                       pot-lst-to-look-in
-                                       (cdr pot-lst-to-step-down)
-                                       products-already-tried)
-                   :obj nil
-                   :geneqv nil
-                   :ttree nil)))))))
+                                    pot-lst-to-look-in
+                                    products-already-tried)
+                :obj nil
+                :geneqv nil
+                :ttree nil)
+               (cond (contradictionp (mv step-limit
+                                         contradictionp
+                                         nil
+                                         products-already-tried))
+                     (t
+                      (rewrite-entry
+                       (deal-with-product1 part-of-new-var
+                                           var-list
+                                           pot-lst-to-look-in
+                                           (cdr pot-lst-to-step-down)
+                                           products-already-tried)
+                       :obj nil
+                       :geneqv nil
+                       :ttree nil
+                       :simplify-clause-pot-lst new-pot-list)))))
+             (t
+              (rewrite-entry
+               (deal-with-product1 part-of-new-var
+                                   var-list
+                                   pot-lst-to-look-in
+                                   (cdr pot-lst-to-step-down)
+                                   products-already-tried)
+               :obj nil
+               :geneqv nil
+               :ttree nil))))))))
 
 (defun deal-with-product (new-var pot-lst-to-look-in
                                   pot-lst-to-step-down
                                   products-already-tried ; &extra formals
-                                  rdepth
+                                  rdepth step-limit
                                   type-alist obj geneqv wrld state fnstack
-                                  ancestors backchain-limit 
+                                  ancestors backchain-limit
                                   simplify-clause-pot-lst
                                   rcnst gstack ttree)
 
@@ -15875,7 +16186,8 @@
 ; is true), and the accumulated list of products we have already tried.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -15883,25 +16195,29 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond ((eq (fn-symb new-var) 'BINARY-*)
-         (rewrite-entry
-          (deal-with-product1 new-var
-                              nil
-                              pot-lst-to-look-in
-                              pot-lst-to-step-down
-                              products-already-tried)
-          :obj nil
-          :geneqv nil
-          :ttree nil))
-        (t
-         (mv nil simplify-clause-pot-lst products-already-tried))))
+  (the-mv
+   4
+   (signed-byte 30)
+   (cond
+    ((eq (fn-symb new-var) 'BINARY-*)
+     (rewrite-entry
+      (deal-with-product1 new-var
+                          nil
+                          pot-lst-to-look-in
+                          pot-lst-to-step-down
+                          products-already-tried)
+      :obj nil
+      :geneqv nil
+      :ttree nil))
+    (t
+     (mv step-limit nil simplify-clause-pot-lst products-already-tried)))))
 
 (defun deal-with-factor (new-var pot-lst-to-look-in
                                  pot-lst-to-step-down
                                  products-already-tried ; &extra formals
-                                 rdepth
+                                 rdepth step-limit
                                  type-alist obj geneqv wrld state fnstack
-                                 ancestors backchain-limit 
+                                 ancestors backchain-limit
                                  simplify-clause-pot-lst 
                                  rcnst gstack ttree)
 
@@ -15923,7 +16239,8 @@
 ; is true), and the accumulated list of products we have already tried.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -15931,58 +16248,64 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond ((null pot-lst-to-step-down)
-         (mv nil simplify-clause-pot-lst products-already-tried))
-        (t
-         (let ((part-of-pot-var (part-of new-var 
-                                         (access linear-pot
-                                                 (car pot-lst-to-step-down)
-                                                 :var))))
-           (cond ((and part-of-pot-var
-                       (not (equal new-var
-                                   (access linear-pot
-                                           (car pot-lst-to-step-down)
-                                           :var))))
-                  (mv-let (contradictionp new-pot-list products-already-tried)
-                    (rewrite-entry
-                     (deal-with-product1 part-of-pot-var
-                                         (list new-var)
+  (the-mv
+   4
+   (signed-byte 30)
+   (cond
+    ((null pot-lst-to-step-down)
+     (mv step-limit nil simplify-clause-pot-lst products-already-tried))
+    (t
+     (let ((part-of-pot-var (part-of new-var 
+                                     (access linear-pot
+                                             (car pot-lst-to-step-down)
+                                             :var))))
+       (cond ((and part-of-pot-var
+                   (not (equal new-var
+                               (access linear-pot
+                                       (car pot-lst-to-step-down)
+                                       :var))))
+              (sl-let
+               (contradictionp new-pot-list products-already-tried)
+               (rewrite-entry
+                (deal-with-product1 part-of-pot-var
+                                    (list new-var)
+                                    pot-lst-to-look-in
+                                    pot-lst-to-look-in
+                                    products-already-tried)
+                :obj nil
+                :geneqv nil
+                :ttree nil)
+               (cond (contradictionp (mv step-limit
+                                         contradictionp
+                                         nil
+                                         products-already-tried))
+                     (t
+                      (rewrite-entry
+                       (deal-with-factor new-var
                                          pot-lst-to-look-in
-                                         pot-lst-to-look-in
+                                         (cdr pot-lst-to-step-down)
                                          products-already-tried)
-                     :obj nil
-                     :geneqv nil
-                     :ttree nil)
-                    (cond (contradictionp (mv contradictionp
-                                              nil
-                                              products-already-tried))
-                          (t
-                           (rewrite-entry
-                            (deal-with-factor new-var
-                                              pot-lst-to-look-in
-                                              (cdr pot-lst-to-step-down)
-                                              products-already-tried)
-                            :obj nil
-                            :geneqv nil
-                            :ttree nil
-                            :simplify-clause-pot-lst new-pot-list)))))
-                 (t
-                  (rewrite-entry
-                   (deal-with-factor new-var
-                                     pot-lst-to-look-in
-                                     (cdr pot-lst-to-step-down)
-                                     products-already-tried)
-                   :obj nil
-                   :geneqv nil
-                   :ttree nil)))))))
+                       :obj nil
+                       :geneqv nil
+                       :ttree nil
+                       :simplify-clause-pot-lst new-pot-list)))))
+             (t
+              (rewrite-entry
+               (deal-with-factor new-var
+                                 pot-lst-to-look-in
+                                 (cdr pot-lst-to-step-down)
+                                 products-already-tried)
+               :obj nil
+               :geneqv nil
+               :ttree nil))))))))
 
 (defun deal-with-division (new-var inverse-var 
                                    pot-lst-to-look-in
                                    pot-lst-to-step-down
-                                   products-already-tried  ; &extra formals
-                                   rdepth
+                                   products-already-tried ; &extra formals
+                                   rdepth step-limit
                                    type-alist obj geneqv wrld state fnstack
-                                   ancestors backchain-limit 
+                                   ancestors backchain-limit
                                    simplify-clause-pot-lst 
                                    rcnst gstack ttree)
 
@@ -16033,7 +16356,8 @@
 ; is true), and the accumulated list of products we have already tried.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -16041,20 +16365,24 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond ((null pot-lst-to-step-down)
-         (mv nil simplify-clause-pot-lst products-already-tried))
-        (t
+  (the-mv
+   4
+   (signed-byte 30)
+   (cond ((null pot-lst-to-step-down)
+          (mv step-limit nil simplify-clause-pot-lst products-already-tried))
+         (t
 
 ; The part-of expression asks the question, ``Is inverse-var a factor
 ; of the first pot label in pot-lst-to-step-down?''  It returns either
 ; nil, meaning no, or the naive result of dividing the pot label by
 ; inverse-var.
 
-         (let ((part-of (part-of inverse-var (access linear-pot
-                                                     (car pot-lst-to-step-down)
-                                                     :var))))
-           (cond (part-of
-                  (mv-let (contradictionp new-pot-lst products-already-tried)
+          (let ((part-of (part-of inverse-var (access linear-pot
+                                                      (car pot-lst-to-step-down)
+                                                      :var))))
+            (cond (part-of
+                   (sl-let
+                    (contradictionp new-pot-lst products-already-tried)
                     (rewrite-entry
                      (add-multiplied-polys-filter
                       (list new-var 
@@ -16066,7 +16394,7 @@
                      :obj nil
                      :geneqv nil
                      :ttree nil)
-                    (cond (contradictionp (mv contradictionp nil nil))
+                    (cond (contradictionp (mv step-limit contradictionp nil nil))
                           (t
                            (rewrite-entry
                             (deal-with-division new-var inverse-var
@@ -16077,29 +16405,30 @@
                             :geneqv nil
                             :ttree nil
                             :simplify-clause-pot-lst new-pot-lst)))))
-                 (t
-                  (rewrite-entry
-                   (deal-with-division new-var inverse-var
-                                       pot-lst-to-look-in
-                                       (cdr pot-lst-to-step-down)
-                                       products-already-tried)
-                   :obj nil
-                   :geneqv nil
-                   :ttree nil)))))))
+                  (t
+                   (rewrite-entry
+                    (deal-with-division new-var inverse-var
+                                        pot-lst-to-look-in
+                                        (cdr pot-lst-to-step-down)
+                                        products-already-tried)
+                    :obj nil
+                    :geneqv nil
+                    :ttree nil))))))))
 
 (defun non-linear-arithmetic1 (new-vars pot-lst ;;; to look-in/step-down
-                                       products-already-tried ; &extra formals
-                                       rdepth
-                                       type-alist obj geneqv wrld state fnstack
-                                       ancestors backchain-limit 
-                                       simplify-clause-pot-lst 
-                                       rcnst gstack ttree)
+                                        products-already-tried ; &extra formals
+                                        rdepth step-limit type-alist obj geneqv
+                                        wrld state
+                                        fnstack ancestors backchain-limit
+                                        simplify-clause-pot-lst
+                                        rcnst gstack ttree)
 
 ; This is the recursive version of function non-linear-arithmetic.  See the
 ; comments and documentation there.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -16107,12 +16436,16 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond
-   ((null new-vars)
-    (mv nil simplify-clause-pot-lst))
-   (t
-    (let ((inverted-var (invert-var (car new-vars))))
-      (mv-let (contradictionp new-pot-lst1 products-already-tried)
+  (the-mv
+   3
+   (signed-byte 30)
+   (cond
+    ((null new-vars)
+     (mv step-limit nil simplify-clause-pot-lst))
+    (t
+     (let ((inverted-var (invert-var (car new-vars))))
+       (sl-let
+        (contradictionp new-pot-lst1 products-already-tried)
 
 ; Inverse-var is the multiplicative inverse of var.  Within deal-with-division
 ; we are going multiply var and inverse-var in order to cancel them with
@@ -16128,56 +16461,58 @@
             (rewrite-entry
              (deal-with-division (car new-vars)
                                  inverted-var
-                                 pot-lst  ; to-look-in
+                                 pot-lst ; to-look-in
                                  pot-lst ; to-step-down
                                  products-already-tried)
              :obj nil
              :geneqv nil
              :ttree nil)
-          (mv nil simplify-clause-pot-lst products-already-tried))
-      (cond (contradictionp (mv contradictionp nil))
-            (t
-             (mv-let (contradictionp new-pot-lst2 products-already-tried)
-               (rewrite-entry
-                (deal-with-product (car new-vars)
-                                   pot-lst  ; to-look-in
-                                   pot-lst  ; to-step-down
-                                   products-already-tried)
-                :obj nil
-                :geneqv nil
-                :ttree nil
-                :simplify-clause-pot-lst new-pot-lst1)
-               (cond
-                (contradictionp (mv contradictionp nil))
-                (t
-                 (mv-let (contradictionp new-pot-lst3 products-already-tried)
-                         (rewrite-entry
-                          (deal-with-factor (car new-vars)
-                                            pot-lst ; to-look-in
-                                            pot-lst ; to-step-down
-                                            products-already-tried)
-                          :obj nil
-                          :geneqv nil
-                          :ttree nil
-                          :simplify-clause-pot-lst new-pot-lst2)
-                         (cond
-                          (contradictionp (mv contradictionp nil))
-                          (t
-                           (rewrite-entry
-                            (non-linear-arithmetic1
-                             (cdr new-vars)
-                             pot-lst ; to look-in/step-down
-                             products-already-tried)
-                            :obj nil
-                            :geneqv nil
-                            :ttree nil
-                            :simplify-clause-pot-lst new-pot-lst3))))))))))))))
+          (mv step-limit nil simplify-clause-pot-lst products-already-tried))
+        (cond (contradictionp (mv step-limit contradictionp nil))
+              (t
+               (sl-let (contradictionp new-pot-lst2 products-already-tried)
+                       (rewrite-entry
+                        (deal-with-product (car new-vars)
+                                           pot-lst ; to-look-in
+                                           pot-lst ; to-step-down
+                                           products-already-tried)
+                        :obj nil
+                        :geneqv nil
+                        :ttree nil
+                        :simplify-clause-pot-lst new-pot-lst1)
+                       (cond
+                        (contradictionp (mv step-limit contradictionp nil))
+                        (t
+                         (sl-let
+                          (contradictionp new-pot-lst3 products-already-tried)
+                          (rewrite-entry
+                           (deal-with-factor (car new-vars)
+                                             pot-lst ; to-look-in
+                                             pot-lst ; to-step-down
+                                             products-already-tried)
+                           :obj nil
+                           :geneqv nil
+                           :ttree nil
+                           :simplify-clause-pot-lst new-pot-lst2)
+                          (cond
+                           (contradictionp (mv step-limit contradictionp nil))
+                           (t
+                            (rewrite-entry
+                             (non-linear-arithmetic1
+                              (cdr new-vars)
+                              pot-lst ; to look-in/step-down
+                              products-already-tried)
+                             :obj nil
+                             :geneqv nil
+                             :ttree nil
+                             :simplify-clause-pot-lst
+                             new-pot-lst3)))))))))))))))
 
 (defun non-linear-arithmetic (new-vars pot-lst ;;; to look-in/step-down
                                        products-already-tried ; &extra formals
-                                       rdepth
+                                       rdepth step-limit
                                        type-alist obj geneqv wrld state fnstack
-                                       ancestors backchain-limit 
+                                       ancestors backchain-limit
                                        simplify-clause-pot-lst 
                                        rcnst gstack ttree)
 
@@ -16442,7 +16777,8 @@
   rules to already stabilized terms.~/"
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -16450,24 +16786,28 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond
-   ((null new-vars)
-    (mv nil simplify-clause-pot-lst))
-   (t
-    (let ((gstack (push-gframe 'non-linear-arithmetic nil new-vars))
-          (rdepth (adjust-rdepth rdepth)))
-      (rewrite-entry
-       (non-linear-arithmetic1 new-vars pot-lst products-already-tried)
-       :obj    nil ; ignored
-       :geneqv nil ; ignored
-       :ttree  nil ; ignored
-       )))))
+  (the-mv
+   3
+   (signed-byte 30)
+   (cond
+    ((null new-vars)
+     (mv step-limit nil simplify-clause-pot-lst))
+    (t
+     (let ((gstack (push-gframe 'non-linear-arithmetic nil new-vars))
+           (rdepth (adjust-rdepth rdepth)))
+       (declare (type (unsigned-byte 29) rdepth))
+       (rewrite-entry
+        (non-linear-arithmetic1 new-vars pot-lst products-already-tried)
+        :obj    nil ; ignored
+        :geneqv nil ; ignored
+        :ttree  nil ; ignored
+        ))))))
 
 (defun add-polys-and-lemmas2-nl (new-vars old-pot-lst ; &extra formals
-                                          rdepth
+                                          rdepth step-limit
                                           type-alist obj geneqv wrld state
                                           fnstack
-                                          ancestors backchain-limit 
+                                          ancestors backchain-limit
                                           simplify-clause-pot-lst 
                                           rcnst gstack ttree)
 
@@ -16484,7 +16824,8 @@
 ; division).
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -16492,22 +16833,24 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond
-   ((f-big-clock-negative-p state)
-    (mv nil simplify-clause-pot-lst))
-   ((null new-vars)
-    (let ((new-vars (expanded-new-vars-in-pot-lst simplify-clause-pot-lst
-                                                  old-pot-lst)))
-      (cond ((null new-vars)
-             (mv nil simplify-clause-pot-lst))
-            (t (rewrite-entry
-                (add-polys-and-lemmas2-nl new-vars
-                                          simplify-clause-pot-lst)
-                :obj nil
-                :geneqv nil
-                :ttree nil)))))
-   (t 
-    (mv-let (contradictionp new-pot-lst)
+  (the-mv
+   3
+   (signed-byte 30)
+   (cond
+    ((null new-vars)
+     (let ((new-vars (expanded-new-vars-in-pot-lst simplify-clause-pot-lst
+                                                   old-pot-lst)))
+       (cond ((null new-vars)
+              (mv step-limit nil simplify-clause-pot-lst))
+             (t (rewrite-entry
+                 (add-polys-and-lemmas2-nl new-vars
+                                           simplify-clause-pot-lst)
+                 :obj nil
+                 :geneqv nil
+                 :ttree nil)))))
+    (t 
+     (mv-let
+      (contradictionp new-pot-lst)
       (add-polys-from-type-set (car new-vars)
                                simplify-clause-pot-lst
                                type-alist
@@ -16517,44 +16860,46 @@
                                        :current-enabled-structure)
                                wrld)
       (cond
-       (contradictionp (mv contradictionp nil))
+       (contradictionp (mv step-limit contradictionp nil))
        (t
-        (mv-let (contradictionp new-pot-lst)
-          (if (and (nvariablep (car new-vars))
-                   (not (flambda-applicationp (car new-vars))))
-              (rewrite-entry
-               (add-linear-lemmas (car new-vars)
-                                  (getprop (ffn-symb (car new-vars))
-                                           'linear-lemmas nil
-                                           'current-acl2-world wrld))
-               :obj nil
-               :geneqv nil
-               :ttree nil
-               :simplify-clause-pot-lst new-pot-lst)
-            (mv nil new-pot-lst))
-          (cond
-           (contradictionp (mv contradictionp nil))
-           (t
-            (mv-let (contradictionp new-pot-lst)
-              (add-inverse-polys (car new-vars)
-                                 type-alist wrld new-pot-lst
-                                 (ok-to-force rcnst)
-                                 (access rewrite-constant rcnst
-                                         :current-enabled-structure)
-                                 (access rewrite-constant rcnst :pt))
-              (cond (contradictionp (mv contradictionp nil))
-                    (t (rewrite-entry
-                        (add-polys-and-lemmas2-nl (cdr new-vars)
-                                                  old-pot-lst)
-                        :obj nil
-                        :geneqv nil
-                        :ttree nil
-                        :simplify-clause-pot-lst new-pot-lst)))))))))))))
+        (sl-let
+         (contradictionp new-pot-lst)
+         (if (and (nvariablep (car new-vars))
+                  (not (flambda-applicationp (car new-vars))))
+             (rewrite-entry
+              (add-linear-lemmas (car new-vars)
+                                 (getprop (ffn-symb (car new-vars))
+                                          'linear-lemmas nil
+                                          'current-acl2-world wrld))
+              :obj nil
+              :geneqv nil
+              :ttree nil
+              :simplify-clause-pot-lst new-pot-lst)
+           (mv step-limit nil new-pot-lst))
+         (cond
+          (contradictionp (mv step-limit contradictionp nil))
+          (t
+           (mv-let (contradictionp new-pot-lst)
+                   (add-inverse-polys (car new-vars)
+                                      type-alist wrld new-pot-lst
+                                      (ok-to-force rcnst)
+                                      (access rewrite-constant rcnst
+                                              :current-enabled-structure)
+                                      (access rewrite-constant rcnst :pt))
+                   (cond (contradictionp (mv step-limit contradictionp nil))
+                         (t (rewrite-entry
+                             (add-polys-and-lemmas2-nl (cdr new-vars)
+                                                       old-pot-lst)
+                             :obj nil
+                             :geneqv nil
+                             :ttree nil
+                             :simplify-clause-pot-lst new-pot-lst))))))))))))))
 
 (defun add-polys-and-lemmas1-nl (old-pot-lst cnt ; &extra formals
-                                             rdepth
+                                             rdepth step-limit
                                              type-alist obj geneqv wrld state
-                                             fnstack ancestors backchain-limit 
+                                             fnstack ancestors
+                                             backchain-limit
                                              simplify-clause-pot-lst
                                              rcnst gstack ttree)
 
@@ -16583,7 +16928,8 @@
 ; non-linear arithmetic.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -16591,11 +16937,13 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond
-   ((or (f-big-clock-negative-p state)
-        (<= *non-linear-rounds-value* cnt))
-    (mv nil simplify-clause-pot-lst))
-   (t
+  (the-mv
+   3
+   (signed-byte 30)
+   (cond
+    ((<= *non-linear-rounds-value* cnt)
+     (mv step-limit nil simplify-clause-pot-lst))
+    (t
 
 ; Since we are doing non-linear arithmetic, we want to gather information not
 ; only on the new-vars, but also on the factors of any new-vars which are
@@ -16604,12 +16952,13 @@
 ; symbols, unlike the list returned by new-vars-in-pot-lst with
 ; include-variableps = nil.
 
-    (let ((new-vars (expanded-new-vars-in-pot-lst simplify-clause-pot-lst
-                                                  old-pot-lst)))
-      (mv-let (contradictionp new-pot-lst1)
+     (let ((new-vars (expanded-new-vars-in-pot-lst simplify-clause-pot-lst
+                                                   old-pot-lst)))
+       (sl-let
+        (contradictionp new-pot-lst1)
         (cond
          ((null new-vars)
-          (mv nil simplify-clause-pot-lst))
+          (mv step-limit nil simplify-clause-pot-lst))
 
 ; We used to test for (null new-vars) in the outer cond, and simply return if
 ; it was true.  See also the comment following the call to new-vars-in-pot-lst
@@ -16627,7 +16976,7 @@
            :geneqv nil
            :ttree nil)))
         (cond 
-         (contradictionp (mv contradictionp nil))
+         (contradictionp (mv step-limit contradictionp nil))
          (t
           (let ((new-vars (new-vars-in-pot-lst new-pot-lst1 old-pot-lst t)))
 
@@ -16651,27 +17000,27 @@
 
             (cond
              ((null new-vars)
-              (mv nil new-pot-lst1))
+              (mv step-limit nil new-pot-lst1))
              (t 
-              (mv-let (contradictionp new-pot-lst2)
-                (rewrite-entry
-                 (non-linear-arithmetic new-vars new-pot-lst1 nil)
-                 :obj nil
-                 :geneqv nil
-                 :ttree nil
-                 :simplify-clause-pot-lst new-pot-lst1)
-                (cond 
-                 (contradictionp (mv contradictionp nil))
-                 (t
-                  (rewrite-entry
-                   (add-polys-and-lemmas1-nl new-pot-lst1 (1+ cnt))
-                   :obj nil
-                   :geneqv nil
-                   :ttree nil
-                   :simplify-clause-pot-lst new-pot-lst2))))))))))))))
+              (sl-let (contradictionp new-pot-lst2)
+                      (rewrite-entry
+                       (non-linear-arithmetic new-vars new-pot-lst1 nil)
+                       :obj nil
+                       :geneqv nil
+                       :ttree nil
+                       :simplify-clause-pot-lst new-pot-lst1)
+                      (cond 
+                       (contradictionp (mv step-limit contradictionp nil))
+                       (t
+                        (rewrite-entry
+                         (add-polys-and-lemmas1-nl new-pot-lst1 (1+ cnt))
+                         :obj nil
+                         :geneqv nil
+                         :ttree nil
+                         :simplify-clause-pot-lst new-pot-lst2)))))))))))))))
 
 (defun add-polys-and-lemmas1 (new-vars old-pot-lst ; &extra formals
-                                       rdepth
+                                       rdepth step-limit
                                        type-alist obj geneqv wrld state fnstack
                                        ancestors
                                        backchain-limit
@@ -16684,7 +17033,8 @@
 ; We return the standard contradictionp and a new pot-lst.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -16692,47 +17042,50 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond ((f-big-clock-negative-p state)
-         (mv nil simplify-clause-pot-lst))
-        ((null new-vars)
-         (let ((new-vars (new-vars-in-pot-lst simplify-clause-pot-lst
-                                              old-pot-lst
-                                              nil)))
-           (cond ((null new-vars)
-                  (mv nil simplify-clause-pot-lst))
-                 (t (rewrite-entry
-                     (add-polys-and-lemmas1 new-vars
-                                            simplify-clause-pot-lst)
-                     :obj nil
-                     :geneqv nil
-                     :ttree nil)))))
-        (t (mv-let (contradictionp new-pot-lst)
-            (cond
-             ((flambda-applicationp
-               (car new-vars))
-              (mv nil simplify-clause-pot-lst))
-             (t
-              (rewrite-entry
-               (add-linear-lemmas (car new-vars)
-                                  (getprop
-                                   (ffn-symb (car new-vars))
-                                   'linear-lemmas nil
-                                   'current-acl2-world
-                                   wrld))
-               :obj nil
-               :geneqv nil
-               :ttree nil)))
-             (cond (contradictionp (mv contradictionp nil))
-                   (t (rewrite-entry
-                        (add-polys-and-lemmas1 (cdr new-vars)
-                                               old-pot-lst)
-                        :obj nil
-                        :geneqv nil
-                        :ttree nil
-                        :simplify-clause-pot-lst new-pot-lst)))))))
+  (the-mv
+   3
+   (signed-byte 30)
+   (cond
+    ((null new-vars)
+     (let ((new-vars (new-vars-in-pot-lst simplify-clause-pot-lst
+                                          old-pot-lst
+                                          nil)))
+       (cond ((null new-vars)
+              (mv step-limit nil simplify-clause-pot-lst))
+             (t (rewrite-entry
+                 (add-polys-and-lemmas1 new-vars
+                                        simplify-clause-pot-lst)
+                 :obj nil
+                 :geneqv nil
+                 :ttree nil)))))
+    (t (sl-let
+        (contradictionp new-pot-lst)
+        (cond
+         ((flambda-applicationp
+           (car new-vars))
+          (mv step-limit nil simplify-clause-pot-lst))
+         (t
+          (rewrite-entry
+           (add-linear-lemmas (car new-vars)
+                              (getprop
+                               (ffn-symb (car new-vars))
+                               'linear-lemmas nil
+                               'current-acl2-world
+                               wrld))
+           :obj nil
+           :geneqv nil
+           :ttree nil)))
+        (cond (contradictionp (mv step-limit contradictionp nil))
+              (t (rewrite-entry
+                  (add-polys-and-lemmas1 (cdr new-vars)
+                                         old-pot-lst)
+                  :obj nil
+                  :geneqv nil
+                  :ttree nil
+                  :simplify-clause-pot-lst new-pot-lst))))))))
 
 (defun add-polys-and-lemmas (lst disjunctsp ; &extra formals
-                                 rdepth
+                                 rdepth step-limit
                                  type-alist obj geneqv wrld state
                                  fnstack ancestors
                                  backchain-limit
@@ -16749,7 +17102,8 @@
 ; is that you get to think of better names for everything!
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -16757,7 +17111,11 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (mv-let (contradictionp new-pot-lst)
+  (the-mv
+   3
+   (signed-byte 30)
+   (mv-let
+    (contradictionp new-pot-lst)
     (add-polys lst simplify-clause-pot-lst
                (access rewrite-constant rcnst :pt)
                (access rewrite-constant rcnst :nonlinearp)
@@ -16767,9 +17125,7 @@
                (ok-to-force rcnst)
                wrld)
     (cond
-     ((f-big-clock-negative-p state)
-      (mv nil simplify-clause-pot-lst))
-     (contradictionp (mv contradictionp nil))
+     (contradictionp (mv step-limit contradictionp nil))
 
 ; The defthm below used to fail.  This failure was caused by our use of the
 ; test (and (access rewrite-constant rcnst :nonlinearp) (not disjunctsp)) to
@@ -16823,10 +17179,10 @@
        :obj nil
        :geneqv nil
        :ttree nil
-       :simplify-clause-pot-lst new-pot-lst)))))
+       :simplify-clause-pot-lst new-pot-lst))))))
 
 (defun add-disjunct-polys-and-lemmas (lst1 lst2 ; &extra formals
-                                           rdepth
+                                           rdepth step-limit
                                            type-alist obj geneqv wrld state
                                            fnstack ancestors
                                            backchain-limit
@@ -16872,7 +17228,8 @@
 ; being able to use cons to generate a unique object.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -16880,15 +17237,17 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (mv-let (contradictionp new-pot-lst1)
+  (the-mv
+   3
+   (signed-byte 30)
+   (sl-let
+    (contradictionp new-pot-lst1)
     (rewrite-entry (add-polys-and-lemmas lst1 t)
                    :obj nil
                    :geneqv nil
                    :ttree nil)
 
     (cond
-     ((f-big-clock-negative-p state)
-      (mv nil simplify-clause-pot-lst))
      (contradictionp
 
 ; So the first disjunct, lst1, has led to a contradiction.  We will
@@ -16911,14 +17270,15 @@
 ; The first disjunct did not lead to a contradiction.  Perhaps the
 ; second one will...
 
-      (mv-let (contradictionp new-pot-lst2)
-        (rewrite-entry
-         (add-polys-and-lemmas lst2 t)
-         :obj nil
-         :geneqv nil
-         :ttree nil)
-        (declare (ignore new-pot-lst2))
-        (cond (contradictionp
+      (sl-let
+       (contradictionp new-pot-lst2)
+       (rewrite-entry
+        (add-polys-and-lemmas lst2 t)
+        :obj nil
+        :geneqv nil
+        :ttree nil)
+       (declare (ignore new-pot-lst2))
+       (cond (contradictionp
 
 ; So the second disjunct, lst2, has led to a contradiction and we may
 ; use new-pot-lst1, the result of assuming lst1, as the result of
@@ -16927,16 +17287,17 @@
 ; That set is just all the polys in new-pot-lst1 that are not in
 ; simplify-clause-pot-lst.
 
-               (mv nil
-                   (infect-new-polys
-                    new-pot-lst1
-                    simplify-clause-pot-lst
-                    (access poly contradictionp :ttree))))
-              (t (mv nil simplify-clause-pot-lst))))))))
+              (mv step-limit
+                  nil
+                  (infect-new-polys
+                   new-pot-lst1
+                   simplify-clause-pot-lst
+                   (access poly contradictionp :ttree))))
+             (t (mv step-limit nil simplify-clause-pot-lst)))))))))
 
 (defun add-disjuncts-polys-and-lemmas (split-lst to-do-later
                                                  pot-lst0 ; &extra formals
-                                                 rdepth
+                                                 rdepth step-limit
                                                  type-alist obj
                                                  geneqv wrld state
                                                  fnstack ancestors
@@ -17074,7 +17435,8 @@
 ; our attention.
 
   (declare (ignore obj geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -17082,41 +17444,43 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond ((f-big-clock-negative-p state)
-         (mv nil simplify-clause-pot-lst))
-        ((null split-lst)
-         (cond ((or (equal pot-lst0 simplify-clause-pot-lst)
-                    (null to-do-later))
-                (mv nil simplify-clause-pot-lst))
-               (t (rewrite-entry
-                   (add-disjuncts-polys-and-lemmas to-do-later nil
-                                                   simplify-clause-pot-lst)
-                                 :obj nil
-                                 :geneqv nil
-                                 :ttree nil))))
-        (t (mv-let (contradictionp new-pot-lst)
-                   (rewrite-entry
-                    (add-disjunct-polys-and-lemmas (car (car split-lst))
-                                                   (cadr (car split-lst)))
-                    :obj nil
-                    :geneqv nil
-                    :ttree nil)
-                   (cond (contradictionp (mv contradictionp nil))
-                         (t (rewrite-entry
-                             (add-disjuncts-polys-and-lemmas
-                              (cdr split-lst)
-                              (if (equal new-pot-lst simplify-clause-pot-lst)
-                                  (cons (car split-lst) to-do-later)
-                                  to-do-later)
-                              pot-lst0)
-                             :obj nil
-                             :geneqv nil
-                             :ttree nil
-                             :simplify-clause-pot-lst new-pot-lst)))))))
+  (the-mv
+   3
+   (signed-byte 30)
+   (cond
+    ((null split-lst)
+     (cond ((or (equal pot-lst0 simplify-clause-pot-lst)
+                (null to-do-later))
+            (mv step-limit nil simplify-clause-pot-lst))
+           (t (rewrite-entry
+               (add-disjuncts-polys-and-lemmas to-do-later nil
+                                               simplify-clause-pot-lst)
+               :obj nil
+               :geneqv nil
+               :ttree nil))))
+    (t (sl-let (contradictionp new-pot-lst)
+               (rewrite-entry
+                (add-disjunct-polys-and-lemmas (car (car split-lst))
+                                               (cadr (car split-lst)))
+                :obj nil
+                :geneqv nil
+                :ttree nil)
+               (cond (contradictionp (mv step-limit contradictionp nil))
+                     (t (rewrite-entry
+                         (add-disjuncts-polys-and-lemmas
+                          (cdr split-lst)
+                          (if (equal new-pot-lst simplify-clause-pot-lst)
+                              (cons (car split-lst) to-do-later)
+                            to-do-later)
+                          pot-lst0)
+                         :obj nil
+                         :geneqv nil
+                         :ttree nil
+                         :simplify-clause-pot-lst new-pot-lst))))))))
 
 (defun add-terms-and-lemmas (term-lst ttrees positivep
                                       ; &extra formals
-                                      rdepth
+                                      rdepth step-limit
                                       type-alist obj geneqv wrld state
                                       fnstack ancestors
                                       backchain-limit
@@ -17147,7 +17511,8 @@
 ; term-lst (as per positivep) and the polys in the original pot list.
 
   (declare (ignore geneqv ttree)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -17155,13 +17520,15 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (let ((gstack (push-gframe 'add-terms-and-lemmas nil term-lst obj))
-        (rdepth (adjust-rdepth rdepth)))
-    (cond ((f-big-clock-negative-p state)
-           (mv nil simplify-clause-pot-lst))
-          (t
-           (mv-let (term-lst ttree-lst)
-                   (if (access rewrite-constant rcnst :nonlinearp)
+  (the-mv
+   3
+   (signed-byte 30)
+   (let ((gstack (push-gframe 'add-terms-and-lemmas nil term-lst obj))
+         (rdepth (adjust-rdepth rdepth)))
+     (declare (type (unsigned-byte 29) rdepth))
+     (sl-let
+      (term-lst ttree-lst)
+      (if (access rewrite-constant rcnst :nonlinearp)
 
 ; This call to rewrite-linear-term-lst is new to Version_2.7.
 ; We wish to be able to have a different normal form when doing
@@ -17171,43 +17538,43 @@
 ; See the comments in cleanse-type-alist for a couple of oddities
 ; associated with this.
 
-                       (rewrite-entry (rewrite-linear-term-lst term-lst ttrees)
-                                      :obj nil
-                                      :geneqv nil
-                                      :ttree nil)
-                     (mv term-lst ttrees))
+          (rewrite-entry (rewrite-linear-term-lst term-lst ttrees)
+                         :obj nil
+                         :geneqv nil
+                         :ttree nil)
+        (mv step-limit term-lst ttrees))
 
 ; Back to the original show.
 
-                   (mv-let (poly-lst split-lst)
-                           (linearize-lst term-lst ttree-lst positivep
-                                          type-alist
-                                          (access rewrite-constant rcnst
-                                                  :current-enabled-structure)
-                                          (ok-to-force rcnst)
-                                          wrld
-                                          state)
-                           (mv-let (contradictionp basic-pot-lst)
-                                   (rewrite-entry
-                                    (add-polys-and-lemmas poly-lst nil)
-                                    :obj nil
-                                    :geneqv nil
-                                    :ttree nil)
-                                   (cond
-                                    (contradictionp (mv contradictionp nil))
-                                    (t (rewrite-entry
-                                        (add-disjuncts-polys-and-lemmas
-                                         split-lst
-                                         nil
-                                         basic-pot-lst)
-                                        :obj nil
-                                        :geneqv nil
-                                        :ttree nil
-                                        :simplify-clause-pot-lst
-                                        basic-pot-lst))))))))))
+      (mv-let (poly-lst split-lst)
+              (linearize-lst term-lst ttree-lst positivep
+                             type-alist
+                             (access rewrite-constant rcnst
+                                     :current-enabled-structure)
+                             (ok-to-force rcnst)
+                             wrld
+                             state)
+              (sl-let (contradictionp basic-pot-lst)
+                      (rewrite-entry
+                       (add-polys-and-lemmas poly-lst nil)
+                       :obj nil
+                       :geneqv nil
+                       :ttree nil)
+                      (cond
+                       (contradictionp (mv step-limit contradictionp nil))
+                       (t (rewrite-entry
+                           (add-disjuncts-polys-and-lemmas
+                            split-lst
+                            nil
+                            basic-pot-lst)
+                           :obj nil
+                           :geneqv nil
+                           :ttree nil
+                           :simplify-clause-pot-lst
+                           basic-pot-lst)))))))))
 
 (defun rewrite-with-linear (term ; &extra formals
-                            rdepth
+                            rdepth step-limit
                             type-alist obj geneqv wrld state fnstack ancestors
                             backchain-limit
                             simplify-clause-pot-lst rcnst gstack ttree)
@@ -17250,7 +17617,8 @@
 ;           (GO WIN)))
 
   (declare (ignore geneqv)
-           (type (unsigned-byte 29) rdepth))
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -17258,37 +17626,38 @@
 ; declared ignored above, you are making a mistake because all callers of this
 ; function pass nils into them.
 
-  (cond
-   ((f-big-clock-negative-p state)
-    (mv nil term ttree))
-   (t (let ((positivep (eq obj nil)))
-        (cond 
-         ((and (not (eq obj '?))
-               (mv-let (not-flg atm)
-                 (strip-not term)
-                 (declare (ignore not-flg))
-                 (or (equalityp atm)
-                     (inequalityp atm))))
-          (mv-let (contradictionp irrelevant-pot-lst)
-            (rewrite-entry (add-terms-and-lemmas (list term)
-                                                 nil ; pts
-                                                 positivep)
-                           :obj nil
-                           :geneqv nil
-                           :ttree nil)
-            (declare (ignore irrelevant-pot-lst))
-            (cond (contradictionp
-                   (mv t
-                       (if positivep
-                           *nil*
-                         *t*)
-                       (push-lemma
-                        *fake-rune-for-linear*
-                        (cons-tag-trees
-                         (access poly contradictionp :ttree)
-                         ttree))))
-                  (t (mv nil term ttree)))))
-         (t
-          (mv nil term ttree)))))))
+  (the-mv
+   4
+   (signed-byte 30)
+   (let ((positivep (eq obj nil)))
+     (cond 
+      ((and (not (eq obj '?))
+            (mv-let (not-flg atm)
+                    (strip-not term)
+                    (declare (ignore not-flg))
+                    (or (equalityp atm)
+                        (inequalityp atm))))
+       (sl-let (contradictionp irrelevant-pot-lst)
+               (rewrite-entry (add-terms-and-lemmas (list term)
+                                                    nil ; pts
+                                                    positivep)
+                              :obj nil
+                              :geneqv nil
+                              :ttree nil)
+               (declare (ignore irrelevant-pot-lst))
+               (cond (contradictionp
+                      (mv step-limit
+                          t
+                          (if positivep
+                              *nil*
+                            *t*)
+                          (push-lemma
+                           *fake-rune-for-linear*
+                           (cons-tag-trees
+                            (access poly contradictionp :ttree)
+                            ttree))))
+                     (t (mv step-limit nil term ttree)))))
+      (t
+       (mv step-limit nil term ttree))))))
 
 )

@@ -3168,8 +3168,9 @@
           (winning-candidate
            (mv-let
             (erp candidate-ttree state)
-            (accumulate-ttree-into-state
+            (accumulate-ttree-and-step-limit-into-state
              (access candidate winning-candidate :ttree)
+             :skip
              state)
             (declare (ignore erp))
             (let* (

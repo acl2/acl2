@@ -17395,6 +17395,12 @@
 ; Removed needless (and confusing) #+ansi-cl in handler-bind call for sbcl in
 ; with-warnings-suppressed.
 
+; Modified the handling of package definitions in expansion files (macro
+; maybe-introduce-empty-pkg-1).
+
+; We took preliminary steps towards removing uses of the big-clock field of
+; state.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -17502,7 +17508,7 @@
   improvement.
 
   ~ilc[Show-accumulated-persistence] may take a new argument, ~c[:runes], which
-  simply causes an alphebetical list of ~il[rune]s to be printed out.
+  simply causes an alphabetical list of ~il[rune]s to be printed out.
 
   Improved ~ilc[trace$] so that ~c[:entry], ~c[:exit], and ~c[:cond] forms may
   reference ~c[state] even if the function being traced does not include
@@ -17513,6 +17519,12 @@
   attachments that can be made to this function (~pl[defattach]).  Thanks to
   Jared Davis and Sol Swords for requesting this enhancement and providing a
   preliminary implementation.
+
+  An obscure ~il[proof-checker] change, unlikely to affect users, replaces the
+  state global variables ~c[erp], ~c[val], ~c[print-macroexpansion-flg], and
+  ~c[print-prompt-and-instr-flg] by ~c[pc-erp], ~c[pc-val],
+  ~c[pc-print-macroexpansion-flg], and ~c[pc-print-prompt-and-instr-flg],
+  respectively.
 
   ~st[NEW FEATURES]
 
@@ -17547,6 +17559,26 @@
   is ~c[REDUNDANT] with respect to the type information already known.  Thanks
   to Dave Greve for suggesting this enhancement.
 
+  The utility ~ilc[with-prover-time-limit] is now legal for ~il[events]
+  (~pl[embedded-event-form]).  For example, the following is now legal.
+  ~bv[]
+  (encapsulate
+   ()
+   (with-prover-time-limit 
+    2
+    (defthm append-assoc
+      (equal (append (append x y) z)
+             (append x (append y z))))))
+  ~ev[]
+
+  The new utility ~ilc[with-prover-step-limit] is analogous to the utility
+  ~ilc[with-prover-time-limit], but counts ``prover steps'' rather than
+  checking for time elapsed.  ~l[with-prover-step-limit].  Also
+  ~pl[set-prover-step-limit] to set the prover step-limit globally.  Note that
+  just as ~ilc[with-prover-time-limit] may now be used to create ~il[events],
+  as discussed just above, ~ilc[with-prover-step-limit] may also be used to
+  create ~il[events].
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   The so-called ``ancestors check,'' which is used to limit backchaining, has
@@ -17559,6 +17591,9 @@
   (!) and thanks to Warren Hunt for recently sending an example.  For that
   example, we have seen the time for the ~il[irrelevant-formals] check reduced
   from about 10 seconds to about 0.04 seconds.
+
+  (GCL only) The macro ~ilc[mv] has been modified so that certain fixnum boxing
+  can be avoided.
 
   ~st[BUG FIXES]
 
@@ -17658,6 +17693,9 @@
   When ~ilc[include-book] is given a first argument that is not a string, a
   more graceful error now occurs, where previously an ugly raw Lisp error had
   occurred.  Thanks to Eric Smith for bringing this bug to our attention.
+
+  Fixed a bug in an error message that was printed when an unexpected
+  expression has occurred where a ~ilc[declare] form is expected.
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
@@ -23100,12 +23138,13 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                 (cw *meta-level-function-problem-1a* fn msg)
                 (throw-raw-ev-fncall ev-fncall-val))))
            ((member-eq obj '(t nil ?))
-            (mv-let
+            (sl-let
              (rw ttree)
              (let ((gstack (access metafunction-context mfc :gstack)))
                (rewrite-entry
                 (rewrite term alist 'meta)
                 :rdepth (access metafunction-context mfc :rdepth)
+                :step-limit (initial-step-limit wrld state)
                 :type-alist (access metafunction-context mfc :type-alist)
                 :geneqv (cond ((eq equiv-info t)
                                *geneqv-iff*)
@@ -23141,7 +23180,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                 :rcnst rcnst
                 :gstack gstack
                 :ttree nil))
-             (declare (ignore ttree))
+             (declare (ignore step-limit ttree))
              rw))
            (t (cw "~%~%Meta-level function Problem:  Some meta-level function ~
                    called ~x0 with the OBJ argument set to ~x1.  That ~
@@ -23216,11 +23255,12 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                          bkptr
                          rune)
                      (throw-raw-ev-fncall ev-fncall-val)))
-              (mv-let
+              (sl-let
                (wonp failure-reason new-unify-subst ttree memo)
                (rewrite-entry
                 (relieve-hyp rune target hyp alist bkptr nil)
                 :rdepth (access metafunction-context mfc :rdepth)
+                :step-limit (initial-step-limit wrld state)
                 :type-alist (access metafunction-context mfc :type-alist)
                 :obj nil ; ignored by relieve-hyp
                 :geneqv nil ; ignored by relieve-hyp
@@ -23248,7 +23288,8 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                 :rcnst rcnst
                 :gstack (access metafunction-context mfc :gstack)
                 :ttree nil)
-               (declare (ignore failure-reason new-unify-subst ttree memo))
+               (declare (ignore step-limit failure-reason new-unify-subst ttree
+                                memo))
                (if (eq wonp t)
                    t
                  nil)))))))
@@ -23432,28 +23473,27 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                              nil
                              channel state nil)
                         (value :invisible))))
-     (t (state-global-let*
-         ((saved-output-reversed nil) ; preserve this (value doesn't matter)
-          (inhibit-output-lst inhibit-output-lst)
-          (gag-mode gag-mode)
-          (gag-state (f-get-global 'gag-state state))
-          (gag-state-saved (f-get-global 'gag-state-saved state)))
-         (let ((old-gag-state (f-get-global 'gag-state state)))
-           (pprogn (initialize-summary-accumulators
-                    state) ; print-warnings-summary ; will clear
-                   (if old-gag-state
-                       state
+     (t (let ((old-gag-state (f-get-global 'gag-state state)))
+          (state-global-let*
+           ((saved-output-reversed nil) ; preserve this (value doesn't matter)
+            (inhibit-output-lst inhibit-output-lst)
+            (gag-mode gag-mode)
+            (gag-state-saved (f-get-global 'gag-state-saved state)))
+           (pprogn (initialize-summary-accumulators state)
+                   (save-event-state-globals
+                    (pprogn
+                     (if old-gag-state
+                         state
 
 ; Otherwise we set gag-state to nil after saving the gag-state in
 ; gag-state-saved.
 
-                     (f-put-global 'gag-state
-                                   (f-get-global 'gag-state-saved state)
-                                   state))
-                   (state-global-let*
-                    ((proof-tree-ctx nil)
-                     (saved-output-p nil))
-                    (trans-eval-lst saved-output ctx state t)))))))))
+                       (f-put-global 'gag-state
+                                     (f-get-global 'gag-state-saved state)
+                                     state))
+                     (state-global-let*
+                      ((saved-output-p nil))
+                      (trans-eval-lst saved-output ctx state t)))))))))))
 
 (defmacro pso ()
 

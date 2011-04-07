@@ -7179,25 +7179,44 @@
 ; rule, or a positive integer n to indicate that we are tracking the nth
 ; hypothesis of a rule.  Otherwise x-info should be nil.
 
-  (let ((form
-         `(prog2$
-           (push-accp ,rune ,x-info)
-           ,(cond ((and (true-listp vars)
-                        (= (length vars) 1))
-                   `(let ((,(car vars)
-                           ,body))
-                      (prog2$
-                       (pop-accp ,success-p ,x-info)
-                       ,(car vars))))
-                  (t `(mv-let ,vars
-                              ,body
-                              (prog2$
-                               (pop-accp ,success-p ,x-info)
-                               (mv ,@vars))))))))
-    (cond (condition-p
-           `(cond (,condition ,form)
-                  (t ,body)))
-          (t form))))
+; Vars is a list of variable names, except that the first member of vars may be
+; of the form (the type var), which is treated the same as var except that a
+; suitable type declaration is added (which can assist GCL in avoiding boxing
+; of fixnums).
+
+  (flet ((fix-var (var)
+                  (if (consp var) ; (the type var)
+                      (caddr var)
+                    var))
+         (fix-var-declares (var)
+                           (and (consp var) ; (the type var)
+                                `((declare (type ,(cadr var) ,(caddr var)))))))
+    (flet ((fix-vars (vars)
+                     (if (consp vars)
+                         (cons (fix-var (car vars))
+                               (cdr vars))
+                       vars)))
+      (let ((form
+             `(prog2$
+               (push-accp ,rune ,x-info)
+               ,(cond ((and (true-listp vars)
+                            (= (length vars) 1))
+                       `(let ((,(fix-var (car vars))
+                               ,body))
+                          ,@(fix-var-declares (car vars))
+                          (prog2$
+                           (pop-accp ,success-p ,x-info)
+                           ,(fix-var (car vars)))))
+                      (t `(mv-let ,(fix-vars vars)
+                                  ,body
+                                  ,@(fix-var-declares (car vars))
+                                  (prog2$
+                                   (pop-accp ,success-p ,x-info)
+                                   (mv ,@(fix-vars vars)))))))))
+        (cond (condition-p
+               `(cond (,condition ,form)
+                      (t ,body)))
+              (t form))))))
 
 ;; RAG - Changed the assumptions based on rational to realp.
 

@@ -3115,6 +3115,8 @@ package.lsp
 pad.lisp
 portcullis.acl2
 portcullis.lisp
+prefix-lines.lisp
+stringify.lisp
 strline.lisp
 strnatless.lisp
 strpos.lisp

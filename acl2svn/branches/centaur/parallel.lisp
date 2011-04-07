@@ -1144,7 +1144,7 @@
 ; ; WARNING!  We believe that this approach has the following bug.  If
 ; ; with-prover-time-limit is used, then the main thread (which is the one
 ; ; calling waterfall-step) has a catch (implemented by the call there of
-; ; catch-time-limit4) that will only catch throws to that tag from the SAME
+; ; catch-time-limit5) that will only catch throws to that tag from the SAME
 ; ; thread.  We will get in trouble if a spawned thread's call of rewrite does
 ; ; such a throw.
 ; 

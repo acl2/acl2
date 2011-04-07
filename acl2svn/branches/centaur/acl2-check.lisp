@@ -78,7 +78,7 @@ is using two characters to indicate a new line?"))
 ; (the (unsigned-byte 29) 536870911) ; succeeds
 ; (the (unsigned-byte 29) 536870912) ; fails
 
-; Values of most-positive-fixnum.
+; Values of most-positive-fixnum in 32-bit Lisps:
 ; AKCL, GCL: 2147483647
 ; Allegro:    536870911
 ; Lucid:      536870911
@@ -87,7 +87,7 @@ is using two characters to indicate a new line?"))
 ; CCL:        536870911
 ; MCL:        268435455 ; not supported after ACL2 Version_3.1
 ; CLISP:       16777215
-; Lispworks:    8388607 [version 4.2.0 and probably all later versions
+; Lispworks:    8388607 [version 4.2.0 and perhaps all later 32-bit versions
 ;                        (also checked for 4.4.6);
 ;                        value was 536870911 for an earlier version]
 
@@ -96,12 +96,12 @@ is using two characters to indicate a new line?"))
 ; declarations.  If the following check fails, then we should consider lowering
 ; 30.  However, clisp has 24-bit fixnums.  Clisp maintainer Sam Steingold has
 ; assured us that "CLISP has a very efficient bignum implementation."  Lispworks
-; Version 4.2.0 on Linux has most-positive-fixnum = 8388607 and
-; most-negative-fixnum = -8388608, and we have been informed (email 10/22/02)
+; Version 4.2.0 on Linux, 32-bit, has most-positive-fixnum = 8388607 and
+; most-negative-fixnum = -8388608; and we have been informed (email 10/22/02)
 ; that "this is an architectural limit on this platform and the LispWorks fixnum
 ; size cannot be reconfigured."
 
-#-(or clisp lispworks)
+#-(or clisp (and lispworks (not lispworks-64bit)))
 (or (and (<= (1- (ash 1 29)) most-positive-fixnum)
          (<= most-negative-fixnum (- (ash 1 29))))
     (error "We assume for performance reasons that numbers from

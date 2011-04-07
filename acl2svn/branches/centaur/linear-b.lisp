@@ -315,8 +315,7 @@
           (pstk
            (ev-fncall (ffn-symb term)
                       (strip-cadrs args)
-                      (f-decrement-big-clock state)
-                      nil t nil))
+                      state nil t nil))
           (declare (ignore latches))
           (cond
            (erp
