@@ -532,7 +532,7 @@
 ; ; added to state.  To accumulate a ttree into state we actually explore it and
 ; ; only store those subtress that have not already been accumulated.
 
-(defun accumulate-ttree-into-state (ttree state)
+(defun accumulate-ttree-and-step-limit-into-state (ttree step-limit state)
 
 ; We add ttree to the 'accumulated-ttree in state and return an error triple
 ; whose value is ttree.  Before Version_3.2 we handled tag trees a bit
@@ -540,14 +540,19 @@
 ; had already been accumulated into state.  Now we keep tag trees
 ; duplicate-free and avoid adding such markers to the returned value.
 
-  (cond
-   ((eq ttree nil) (value nil))
-   (t (pprogn
-       (f-put-global 'accumulated-ttree
-                     (scons-tag-trees ttree
-                                      (f-get-global 'accumulated-ttree state))
-                     state)
-       (value ttree)))))
+; We similarly save the given step-limit in state, unless its value is :skip.
+
+  (pprogn
+   (cond ((eq step-limit :skip) state)
+         (t (f-put-global 'last-step-limit step-limit state)))
+   (cond
+    ((eq ttree nil) (value nil))
+    (t (pprogn
+        (f-put-global 'accumulated-ttree
+                      (scons-tag-trees ttree
+                                       (f-get-global 'accumulated-ttree state))
+                      state)
+        (value ttree))))))
 
 (defun pts-to-ttree-lst (pts)
   (cond ((null pts) nil)
@@ -3411,7 +3416,7 @@
 ;                              (show-poly-lst (mv-ref 2))))
 
   (cond
-   ((time-limit4-reached-p
+   ((time-limit5-reached-p
      "Out of time in linear arithmetic (add-poly).") ; nil, or throws
     (mv nil nil nil))
    ((or (null pot-lst)

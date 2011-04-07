@@ -4920,48 +4920,63 @@
 
   (state-only (more-fn t state)))
 
+(defun pc-rewrite*-1
+  (term type-alist geneqv iff-flg wrld rcnst old-ttree pot-lst normalize-flg
+        rewrite-flg ens state repeat backchain-limit step-limit)
+
+; This function may be called with a pot-lst of nil in the proof-checker, but
+; need not be can figure out a good way to do linear there.  Also, note that
+; rcnst can be anything (and is ignored) if rewrite-flg is not set.
+
+  (mv-let (nterm old-ttree)
+          (if normalize-flg
+              (normalize term iff-flg type-alist ens wrld old-ttree)
+            (mv term old-ttree))
+          (sl-let (newterm ttree)
+                  (if rewrite-flg
+                      (let ((gstack nil))
+                        (rewrite-entry
+                         (rewrite nterm nil 'proof-checker)
+                         :rdepth (rewrite-stack-limit wrld)
+                         :step-limit step-limit
+                         :obj '?
+                         :fnstack nil
+                         :ancestors nil
+                         :simplify-clause-pot-lst pot-lst
+                         :rcnst (change rewrite-constant rcnst
+                                        :current-literal
+                                        (make current-literal
+                                              :not-flg nil
+                                              :atm nterm))
+                         :gstack gstack
+                         :ttree old-ttree))
+                    (mv 0 ; irrelevant step-limit
+                        nterm old-ttree))
+                  (declare (ignorable step-limit))
+                  (cond
+                   ((equal newterm nterm)
+                    (mv step-limit newterm old-ttree state))
+                   ((<= repeat 0)
+                    (mv step-limit newterm ttree state))
+                   (t
+                    (pc-rewrite*-1 newterm type-alist geneqv iff-flg wrld rcnst
+                                   ttree
+                                   pot-lst normalize-flg rewrite-flg ens state
+                                   (1- repeat) backchain-limit step-limit))))))
+
 (defun pc-rewrite*
   (term type-alist geneqv iff-flg wrld rcnst old-ttree pot-lst normalize-flg
-        rewrite-flg ens state repeat backchain-limit)
-  ;; *** I'm only calling this with pot-lst set to nil for now, but if I
-  ;; can figure out a good way to do linear stuff in the proof-checker,
-  ;; I may change that.  Also, note that rcnst can be anything (and is ignored) if rewrite-flg
-  ;; is not set.
-  (cond ((f-big-clock-negative-p state)
-         (mv t nil state))
-        (t
-         (mv-let (nterm old-ttree)
-                 (if normalize-flg
-                     (normalize term iff-flg type-alist ens wrld old-ttree)
-                   (mv term old-ttree))
-                 (mv-let (newterm ttree)
-                         (if rewrite-flg
-                             (let ((gstack nil))
-                               (rewrite-entry
-                                (rewrite nterm nil 'proof-checker)
-                                :rdepth (rewrite-stack-limit wrld)
-                                :obj '?
-                                :fnstack nil
-                                :ancestors nil
-                                :simplify-clause-pot-lst pot-lst
-                                :rcnst (change rewrite-constant rcnst
-                                               :current-literal
-                                               (make current-literal
-                                                     :not-flg nil
-                                                     :atm nterm))
-                                :gstack gstack
-                                :ttree old-ttree))
-                           (mv nterm old-ttree))
-                         (cond
-                          ((equal newterm nterm)
-                           (mv newterm old-ttree state))
-                          ((<= repeat 0) ;****perhaps should cause error in this case
-                           (mv newterm ttree state))
-                          (t
-                           (pc-rewrite* newterm type-alist geneqv iff-flg wrld rcnst
-                                        ttree
-                                        pot-lst normalize-flg rewrite-flg ens state
-                                        (1- repeat) backchain-limit))))))))
+        rewrite-flg ens state repeat backchain-limit step-limit)
+  (sl-let
+   (newterm ttree state)
+   (catch-step-limit
+    (pc-rewrite*-1 term type-alist geneqv iff-flg wrld rcnst old-ttree pot-lst
+                   normalize-flg rewrite-flg ens state repeat backchain-limit
+                   step-limit))
+   (cond ((eql step-limit -1)
+          (mv term old-ttree state))
+         (t
+          (mv newterm ttree state)))))
 
 (defun make-goals-from-assumptions (assumptions conc hyps current-addr goal-name start-index)
   (if assumptions
@@ -5182,7 +5197,8 @@
                                                           pc-ens w)
                                    (term-id-iff conc current-addr t)
                                    w local-rcnst nil nil normalize rewrite
-                                   pc-ens state repeat local-backchain-limit)
+                                   pc-ens state repeat local-backchain-limit
+                                   (initial-step-limit w state))
                                   (if (equal new-term current-term)
                                       (print-no-change2
                                        "No simplification took place.")

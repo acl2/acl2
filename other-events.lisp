@@ -4250,6 +4250,7 @@
      set-case-split-limitations
      set-default-hints!
      set-rewrite-stack-limit
+     set-prover-step-limit
      defttag
      value-triple))
 
@@ -4302,7 +4303,8 @@
 ; executed and the subsequent form is read into the "ACL2" package.  The
 ; equality evaluates to NIL and GOTCHA is not a theorem.
 
-(deflabel embedded-event-form  :doc
+(deflabel embedded-event-form
+  :doc
   ":Doc-Section Miscellaneous
 
   forms that may be embedded in other ~il[events]~/
@@ -4329,8 +4331,10 @@
     ~c[x] is of the form ~c[(]~ilc[MAKE-EVENT]~c[ &)], where ~c[&] is any term
     whose expansion is an embedded event (~pl[make-event]);
 
-    ~c[x] is of the form ~c[(]~ilc[WITH-OUTPUT]~c[ ... x1)] where ~c[x1] is an
-    embedded event form;
+    ~c[x] is of the form ~c[(]~ilc[WITH-OUTPUT]~c[ ... x1)],
+    ~c[(]~ilc[WITH-PROVER-STEP-LIMIT]~c[ ... x1)], or
+    ~c[(]~ilc[WITH-PROVER-TIME-LIMIT]~c[ ... x1)], where ~c[x1] is an embedded
+    event form;
 
     ~c[x] is a call of ~ilc[ENCAPSULATE], ~ilc[PROGN], ~ilc[PROGN!], or
     ~ilc[INCLUDE-BOOK];
@@ -4535,9 +4539,12 @@
               (term-evisc-tuple t state)))
         (t "")))
 
-(defun chk-embedded-event-form
-  (form orig-form wrld ctx state names portcullisp in-local-flg
-        in-encapsulatep make-event-chk)
+(defun chk-embedded-event-form (form orig-form wrld ctx state names portcullisp
+                                     in-local-flg in-encapsulatep
+                                     make-event-chk)
+
+; WARNING: Keep this in sync with destructure-expansion, elide-locals-rec,
+; elide-locals-post, and make-include-books-absolute.
 
 ; Note: For a test of this function, see the reference to foo.lisp below.
 
@@ -4555,6 +4562,8 @@
 ; (local &)
 ; (skip-proofs &)
 ; (with-output ... &)
+; (with-prover-step-limit ... &)
+; (with-prover-time-limit ... &)
 ; (make-event #)
 
 ; where each & is checked.  The # forms above are unrestricted, although the
@@ -4714,6 +4723,7 @@
                              set-rewrite-stack-limit
                              set-ruler-extenders
                              set-state-ok
+                             set-prover-step-limit
                              set-verify-guards-eagerness
                              set-well-founded-relation
                              defttag)))
@@ -4795,10 +4805,12 @@
                                  portcullisp in-local-flg in-encapsulatep
                                  make-event-chk)))
                      (value (and new-form (list (car form) new-form))))))
-          ((and (eq (car form) 'with-output)
-                (consp (cdr form)))
+          ((and (member-eq (car form) '(with-output
+                                        with-prover-step-limit
+                                        with-prover-time-limit))
+                (true-listp form))
 
-; We let the with-output macro check the details of the form structure.
+; The macro being called will check the details of the form structure.
 
            (er-let* ((new-form (chk-embedded-event-form
                                 (car (last form)) orig-form wrld ctx state
@@ -4882,8 +4894,14 @@
 ; books/make-event/embedded-defaxioms.lisp.
 
 (defun destructure-expansion (form)
+
+; WARNING: Keep this in sync with chk-embedded-event-form, elide-locals-rec,
+; and elide-locals-post.
+
   (declare (xargs :guard (true-listp form)))
-  (cond ((member-eq (car form) '(local skip-proofs with-output))
+  (cond ((member-eq (car form) '(local skip-proofs with-output
+                                       with-prover-step-limit
+                                       with-prover-time-limit))
          (mv-let (wrappers base-form)
                  (destructure-expansion (car (last form)))
                  (mv (cons (butlast form 1) wrappers)
@@ -5373,6 +5391,9 @@
 
 (defun elide-locals-rec (form)
 
+; WARNING: Keep this in sync with chk-embedded-event-form,
+; destructure-expansion, make-include-books-absolute, and elide-locals-post.
+
 ; We assume that form is a legal event form and return (mv changed-p new-form),
 ; where new-form results from eliding top-level local events from form, and
 ; changed-p is true exactly when such eliding has taken place.  Note that we do
@@ -5383,17 +5404,10 @@
         ((eq (car form) 'local)
          (mv t *local-value-triple-elided*))
         ((member-eq (car form) '(skip-proofs
-
-; Can with-prover-time-limit really occur in an event context?  At one time we
-; seemed to think it could at the top level, but this currently seems
-; doubtful.  But it's harmless to leave the next line.
-
-                                 with-prover-time-limit))
-         (mv-let (changed-p x)
-                 (elide-locals-rec (cadr form))
-                 (cond (changed-p (mv t (list (car form) x)))
-                       (t (mv nil form)))))
-        ((member-eq (car form) '(with-output record-expansion
+                                 with-output
+                                 with-prover-time-limit
+                                 with-prover-step-limit
+                                 record-expansion
 
 ; Can time$ really occur in an event context?  At one time we seemed to think
 ; that time$1 could, but it currently seems doubtful that either time$1 or
@@ -5401,7 +5415,7 @@
 ; but it particulary makes no sense to us to use time$1, so we use time$
 ; instead.
 
-                                             time$))
+                                 time$))
          (mv-let (changed-p x)
                  (elide-locals-rec (car (last form)))
                  (cond (changed-p (mv t (append (butlast form 1) (list x))))
@@ -9812,6 +9826,9 @@
 (defun make-include-books-absolute (form cbd dir names make-event-parent os ctx
                                          state)
 
+; WARNING: Keep this in sync with chk-embedded-event-form,
+; destructure-expansion, elide-locals-rec, and elide-locals-post.
+
 ; See the comment in fix-portcullis-cmds for a discussion.  Starting after
 ; Version_3.6.1, we allow an include-book pathname for a portcullis command to
 ; remain a relative pathname if it is relative to the cbd of the book.  That
@@ -9994,7 +10011,9 @@
             (t (er-progn (make-include-books-absolute
                           expansion cbd dir names form os ctx state)
                          (value form))))))
-   ((and (eq (car form) 'with-output)
+   ((and (member-eq (car form) '(with-output
+                                 with-prover-step-limit
+                                 with-prover-time-limit))
          (consp (cdr form)))
     (er-let* ((form1 (make-include-books-absolute
                       (car (last form)) cbd dir names make-event-parent os ctx
@@ -14243,6 +14262,9 @@
 
 (defun elide-locals-post (form)
 
+; WARNING: Keep this in sync with chk-embedded-event-form,
+; destructure-expansion, elide-locals-rec, and make-include-books-absolute.
+
 ; See also elide-locals.  The present version is applied after the fact rather
 ; than when a make-event is executed.  Perhaps we only need one version, but as
 ; of this writing (Jan. 2011), the original handling of elide-locals was subtle
@@ -14255,17 +14277,9 @@
         ((eq (car form) 'local)
          (mv t *local-value-triple-elided*))
         ((member-eq (car form) '(skip-proofs
-
-; Can with-prover-time-limit really occur in an event context?  At one time we
-; seemed to think it could at the top level, but this currently seems
-; doubtful.  But it's harmless to leave the next line.
-
-                                 with-prover-time-limit))
-         (mv-let (changed-p x)
-                 (elide-locals-post (cadr form))
-                 (cond (changed-p (mv t (list (car form) x)))
-                       (t (mv nil form)))))
-        ((member-eq (car form) '(with-output record-expansion
+                                 with-output record-expansion
+                                 with-prover-step-limit
+                                 with-prover-time-limit
 
 ; Can time$ really occur in an event context?  At one time we seemed to think
 ; that time$1 could, but it currently seems doubtful that either time$1 or
@@ -14273,7 +14287,7 @@
 ; but it particulary makes no sense to us to use time$1, so we use time$
 ; instead.
 
-                                             time$))
+                                 time$))
          (mv-let (changed-p x)
                  (elide-locals-post (car (last form)))
                  (cond (changed-p (mv t (append (butlast form 1) (list x))))
@@ -23766,9 +23780,7 @@
 ; We return t or nil indicating whether we won, an extended unify-subst
 ; and a new ttree.  This function is a No-Change Loser.
 
-  (cond ((f-big-clock-negative-p state)
-         (mv nil unify-subst ttree))
-        ((and (nvariablep hyp)
+  (cond ((and (nvariablep hyp)
               (not (fquotep hyp))
               (eq (ffn-symb hyp) 'synp))
          (mv-let
@@ -23856,9 +23868,7 @@
 ; recursive calls, we have to pass down the original unify-subst and ttree so
 ; that when it fails it can return them instead of the accumulated versions.
 
-  (cond ((f-big-clock-negative-p state)
-         (mv nil unify-subst ttree))
-        ((null hyps)
+  (cond ((null hyps)
          (mv (not (eq keep-unify-subst :FAILED)) unify-subst ttree))
         (t (mv-let (relieve-hyp-ans new-unify-subst ttree)
 

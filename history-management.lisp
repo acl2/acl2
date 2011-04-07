@@ -2906,6 +2906,9 @@
 ; (e.g., an encapsulate) and initializing an accumulator for this event.  The
 ; accumulated times AND warnings are printed by print-time-summary.
 
+; Note that some state globals also need to be initialized when starting an
+; event, but that is accomplished using the macro save-event-state-globals.
+
   #+(and (not acl2-loop-only) acl2-rewrite-meter) ; for stats on rewriter depth
   (setq *rewrite-depth-max* 0)
 
@@ -2914,10 +2917,6 @@
           (push-timer 'print-time 0 state)
           (push-timer 'proof-tree-time 0 state)
           (push-warning-frame state)
-          (f-put-global 'accumulated-ttree nil state)
-          (f-put-global 'gag-state nil state)
-          (f-put-global 'proof-tree-ctx nil state)
-          (f-put-global 'saved-output-reversed nil state)
           (mv-let (x state)
                   (main-timer state)
                   (declare (ignore x))
@@ -3004,6 +3003,29 @@
           (pop-timer 'print-time t state)
           (pop-timer 'proof-tree-time t state)
           (pop-timer 'other-time t state)))))
+
+(defun print-steps-summary (state)
+  (io? summary nil state
+       ()
+       (cond
+        ((member-eq 'steps
+                    (f-get-global 'inhibited-summary-types
+                                  state))
+         state)
+        (t (let* ((channel (proofs-co state))
+                  (limit (f-get-global 'step-limit-start state))
+                  (last-limit (and limit
+                                   (f-get-global 'last-step-limit state))))
+             (cond ((and last-limit
+                         (not (int= limit last-limit)))
+                    (pprogn (princ$ "Prover steps counted:  " channel state)
+                            (cond ((eql last-limit -1)
+                                   (pprogn
+                                    (princ$ "More than " channel state)
+                                    (princ$ limit channel state)))
+                                  (t (princ$ (- limit last-limit) channel state)))
+                            (newline channel state)))
+                   (t state)))))))
 
 (defun print-rules-summary (state)
   (let ((acc-ttree (f-get-global 'accumulated-ttree state)))
@@ -3391,7 +3413,8 @@
                         (newline channel state))))))))
        (print-rules-summary state) ; Call of io? is inside
        (pprogn (print-warnings-summary state)
-               (print-time-summary state))
+               (print-time-summary state)
+               (print-steps-summary state))
        (cond (erp
               (pprogn
                (print-failure ctx state)
@@ -3406,6 +3429,168 @@
                 (t state))))
              (t state))
        (f-put-global 'proof-tree nil state))))))
+
+(defun with-prover-step-limit-fn (limit form)
+  `(with-live-state
+    (mv-let
+     (with-prover-step-limit-initial-step-limit
+      with-prover-step-limit-limit)
+     (let ((limit ,limit)
+           (initial-step-limit (initial-step-limit (w state) state)))
+       (mv initial-step-limit
+           (cond ((null limit)
+                  *default-step-limit*)
+                 ((and (natp limit)
+                       (<= limit *default-step-limit*))
+                  limit)
+                 ((eq limit :start)
+                  initial-step-limit)
+                 (t (er hard 'with-prover-step-limit
+                        "Illegal value for ~x0, ~x1.  See :DOC ~
+                         with-prover-step-limit."
+                        'with-prover-step-limit
+                        limit)))))
+     (pprogn
+      (f-put-global 'last-step-limit with-prover-step-limit-limit state)
+      (er-let* ((val (state-global-let*
+                      ((step-limit-start with-prover-step-limit-limit))
+                      (check-vars-not-free (with-prover-step-limit-initial-step-limit
+                                            with-prover-step-limit-limit)
+                                           ,form))))
+        (let ((new-step-limit
+               (cond
+                ((eql (f-get-global 'last-step-limit state) -1)
+
+; We reached the limit, but didn't cause an error.  We must have used up the
+; maximum possible number of steps.
+
+                 (assert$ (eql with-prover-step-limit-limit
+                               *default-step-limit*)
+                          -1))
+                (t
+                 (let ((steps-taken
+                        (- with-prover-step-limit-limit
+                           (f-get-global 'last-step-limit state))))
+                   (cond
+                    ((< with-prover-step-limit-initial-step-limit
+                        steps-taken)
+                     -1)
+                    (t (- with-prover-step-limit-initial-step-limit
+                          steps-taken))))))))
+          (pprogn
+           (f-put-global 'last-step-limit new-step-limit state)
+           (cond
+
+; Here we handle the case that the step-limit is exceeded after a sub-event of
+; a compound event, for example, between the two defthm events below.
+
+; (set-prover-step-limit 100)
+; (encapsulate
+;  ()
+;  (with-prover-step-limit 500
+;                          (defthm foo
+;                            (equal (append (append x y) z)
+;                                   (append x y z))))
+;  (defthm bar (equal (car (cons x y)) x)))
+
+            ((and (eql new-step-limit -1)
+
+; If state global 'step-limit-start has value nil, then we are at the
+; top-level; no context has been entered.
+
+                  (f-get-global 'step-limit-start state)
+                  (not (eql (f-get-global 'step-limit-start state)
+                            *default-step-limit*)))
+             (step-limit-error t))
+            (t (value val))))))))))
+
+(defmacro with-prover-step-limit (limit form)
+
+; A value of :start for limit says that we use the current limit, i.e., the
+; value of state global 'last-step-limit if the value of state global
+; 'step-limit-start is not nil, else the value from the acl2-defaults-table;
+; see initial-step-limit.
+
+  ":Doc-Section Other
+
+  limit the number of steps for proofs~/
+
+  ~bv[]
+  Examples:
+
+  ; Limit (mini-proveall) to 100,000 prover steps (which is enough to complete)
+  (with-prover-step-limit 100000 (mini-proveall))
+
+  ; Same as above for the inner call of with-prover-step-limit; so the
+  ; mini-proveall call completes, but then we get an error because the second
+  ; argument of the outer with-prover-step-limit call took more than 200
+  ; steps.
+  (with-prover-step-limit 200 (with-prover-step-limit 100000 (mini-proveall)))
+
+  ; The inner call limit (mini-proveall) to 200 prover steps, which fails
+  ; almost immediately. 
+  (with-prover-step-limit 100000 (with-prover-step-limit 200 (mini-proveall)))
+
+  ; Limit the indicated theorem to 100 steps, and if the proof does not
+  ; complete or it fails, then put down a label instead.
+  (mv-let (erp val state)
+          (with-prover-step-limit
+           100
+           (thm (equal (append (append x x) x)
+                       (append x x x))))
+          (if erp
+              (deflabel foo :doc \"Attempt failed.\")
+            (value (list :succeeded-with val))))~/
+
+  General Form:
+  (with-prover-step-limit expr form)
+  ~ev[]
+  where ~c[form] is arbitrary, and ~c[expr] evaluates either to ~c[nil] or else
+  to a natural number not exceeding the value of ~c[*default-step-limit*].
+  (A special value, ~c[:start], is also legal but is only used internally by
+  ACL2, so we do not document it here.)  If the value of ~c[expr] is ~c[nil] or
+  is the value of ~c[*default-step-limit*], then no limit is placed on the
+  number of prover steps during processing of ~c[form].  Otherwise, that value
+  is the maximum number of prover steps permitted during evaluation of ~c[form]
+  before an error occurs.
+
+  ~l[set-prover-step-limit] for a related utility that sets the limit on prover
+  steps globally instead of setting it for just one form, and for a discussion
+  of the notion of ``prover steps'', which could change in future ACL2
+  releases.  For a related utility based on time instead of prover steps,
+  ~pl[with-prover-time-limit].
+
+  Logically, ~c[(with-prover-step-limit expr form)] is equivalent to ~c[form],
+  except that if the number of prover steps during evaluation of ~c[form]
+  exceeds the value specified by the value of ~c[expr], then that proof will
+  abort.
+
+  Although ~c[with-prover-step-limit] behaves like an ACL2 function in the
+  sense that it evaluates both its arguments, it is however actually a macro
+  that behaves as follows.  (1) The value of its first (step limit) argument
+  affects the evaluation of its second argument (by causing an error during
+  that evaluation if too many prover steps are needed).  (2) The second
+  argument can return multiple values (~pl[mv]), which are then returned by the
+  call of ~c[with-prover-step-limit].  (3) Thus, there is not a fixed output
+  ~il[signature] for ~c[with-prover-step-limit] (not surprisingly, since it is
+  a macro).~/"
+
+  (with-prover-step-limit-fn limit form))
+
+(defmacro save-event-state-globals (form)
+
+; We assign to saved-output-reversed, rather than binding it, so that saved
+; output for gag-mode reply (using pso or psog) is available outside the scope
+; of with-ctx-summarized.
+
+  `(state-global-let*
+    ((accumulated-ttree nil)
+     (gag-state nil)
+     (print-base 10 set-print-base)
+     (proof-tree-ctx nil)
+     (saved-output-p t))
+    (pprogn (f-put-global 'saved-output-reversed nil state)
+            (with-prover-step-limit :start ,form))))
 
 (defmacro with-ctx-summarized (ctx body)
 
@@ -3444,10 +3629,7 @@
      (pprogn (initialize-summary-accumulators state)
              (mv-let
               (erp val state)
-              (state-global-let*
-               ((proof-tree-ctx nil)
-                (saved-output-p t)
-                (print-base 10 set-print-base))
+              (save-event-state-globals
                (mv-let (erp val state)
                        (pprogn
                         (push-io-record
@@ -16144,6 +16326,7 @@
             verbose-theory-warning     ;;; for warning on disabled mv-nth etc.
             more-doc-state             ;;; for proof-checker :more command
             pc-ss-alist                ;;; for saves under :instructions hints
+            last-step-limit            ;;; propagate step-limit past expansion
 
 ; Note that tainted-okp is deliberately omitted from this list of exceptions,
 ; since its global value is the one that should be used during event

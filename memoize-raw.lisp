@@ -1742,7 +1742,7 @@ the calls took.")
             access-event-tuple-depth
             access-event-tuple-form
             access-event-tuple-number
-            accumulate-ttree-into-state
+            accumulate-ttree-and-step-limit-into-state
             acl2-macro-p
             acl2-numberp
             add-car-to-all
@@ -2562,7 +2562,7 @@ the calls took.")
             simplify-clause1
             slot-member
             some-congruence-rule-disabledp
-       some-controller-pocket-constant-and-non-controller-simplerp
+            some-controller-pocket-constant-and-non-controller-simplerp
             some-geneqv-disabledp
             some-subterm-worse-than-or-equal
             some-subterm-worse-than-or-equal-lst
@@ -2580,6 +2580,7 @@ the calls took.")
             state-p1
             std-apart
             std-apart-top
+            step-limit
             stobjp
             stobjs-in
             stobjs-out
@@ -2635,7 +2636,7 @@ the calls took.")
             tilde-*-simp-phrase1
             tilde-@-abbreviate-object-phrase
             time-for-non-hits/call
-            time-limit4-reached-p
+            time-limit5-reached-p
             time/call
             to
             to-be-ignoredp

@@ -3606,9 +3606,6 @@
            (declare (type (signed-byte 30) col))
            ,body))
 
-(defmacro fixnum-bound () ; most-positive-fixnum in Allegro CL and many others
-  (1- (expt 2 29)))
-
 (defmacro er-hard-val (val &rest args)
 
 ; Use (er-hard-val val ctx str ...) instead of (er hard? ctx str ...)
@@ -14475,8 +14472,8 @@
 ; We return (mv bindings new-args fake-args).  Here new-args is a symbol-listp
 ; and of the same length as args, where each element of args is either a symbol
 ; or is the value of the corresponding element of new-args in bindings.
-; Fake-args is the same as new-args except that (f-decrement-big-clock state)
-; has been replaced by <state>.
+; Fake-args is the same as new-args except that state has been replaced by
+; <state>.
 
   (cond
    ((endp args)
@@ -14489,7 +14486,7 @@
     (mv-let (bindings rest-args fake-args)
       (pstk-bindings-and-args (cdr args) (cdr vars))
       (cond
-       ((member-equal (car args) '(state (f-decrement-big-clock state)))
+       ((eq (car args) 'state)
         (mv bindings
             (cons (car args) rest-args)
             (cons ''<state> rest-args)))

@@ -1570,7 +1570,6 @@
   `(when (not (find-package ,name))
      (make-package ,name :use nil)))
 
-
 (defmacro maybe-introduce-empty-pkg-1 (name)
 
 ; It appears that GCL, at least non-ANSI GCL, requires a user::defpackage form
@@ -10758,7 +10757,7 @@
       (equal x nil)))
 
 (defconst *summary-types*
-  '(header form rules warnings time value))
+  '(header form rules warnings time steps value))
 
 (defun with-output-fn (ctx args off on gag-mode off-on-p gag-p stack
                            summary summary-p)
@@ -11068,7 +11067,7 @@
   ; Same effect as just above:
   (with-output
      :on summary
-     :summary :all ; equivalently, (header form rules warnings time)
+     :summary :all ; equivalently, the value (a list) of *summary-types*
      :gag-mode :goals
      (defthm app-assoc (equal (app (app x y) z) (app x (app y z)))))
 
@@ -11105,15 +11104,14 @@
   inhibited; ~pl[set-inhibit-output-lst].  If ~c[:keyi] is ~c[:gag-mode], then
   ~c[vali] is one of the legal values for ~c[:]~ilc[set-gag-mode].
   If ~c[:keyi] is ~c[:summary], then ~c[vali] is either ~c[:all] or a true-list
-  of symbols each of which belongs to the list ~c[*summary-types*], i.e., is
-  one of ~c[header], ~c[form], ~c[rules], ~c[warnings], ~c[time], or ~c[value].
-  Otherwise ~c[:keyi] is ~c[:stack], in which case ~c[:vali] is ~c[:push] or
-  ~c[:pop]; for now assume that ~c[:stack] is not specified (we'll return to it
-  below).  The result of evaluating the General Form above is to evaluate
-  ~c[form], but in an environment where output occurs as follows.  If
-  ~c[:on :all] is specified, then every output type is turned on except as
-  inhibited by ~c[:off]; else if ~c[:off :all] is specified, then every output
-  type is inhibited except as specified by ~c[:on]; and otherwise, the
+  of symbols each of which belongs to the list ~c[*summary-types*].  Otherwise
+  ~c[:keyi] is ~c[:stack], in which case ~c[:vali] is ~c[:push] or ~c[:pop];
+  for now assume that ~c[:stack] is not specified (we'll return to it below).
+  The result of evaluating the General Form above is to evaluate ~c[form], but
+  in an environment where output occurs as follows.  If ~c[:on :all] is
+  specified, then every output type is turned on except as inhibited by
+  ~c[:off]; else if ~c[:off :all] is specified, then every output type is
+  inhibited except as specified by ~c[:on]; and otherwise, the
   currently-inhibited output types are reduced as specified by ~c[:on] and then
   extended as specified by ~c[:off].  But if ~c[:gag-mode] is specified, then
   before modifying how output is inhibited, ~ilc[gag-mode] is set for the
@@ -24336,6 +24334,7 @@
     ev-rec-return-last
     chk-return-last-entry
     fchecksum-atom
+    step-limit-error1
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
@@ -24364,7 +24363,7 @@
     setenv$ ; SI::SETENV ...
     getprops ; EQ, GET, ...
     compress1 ; [seems like we can live with logic code]
-    time-limit4-reached-p ; THROW
+    time-limit5-reached-p ; THROW
     fmt-to-comment-window ; *THE-LIVE-STATE*
     len ; len1
     mfc-clause ; *metafunction-context*
@@ -24473,7 +24472,7 @@
     clear-pstk add-custom-keyword-hint
     initial-gstack
     acl2-unwind-protect set-well-founded-relation
-    catch-time-limit4 defuns add-default-hints!
+    catch-time-limit5 defuns add-default-hints!
     local encapsulate remove-default-hints!
     include-book pprogn set-enforce-redundancy
     set-ignore-doc-string-error
@@ -24482,7 +24481,7 @@
     dmr-stop defpkg set-measure-function
     set-inhibit-warnings defthm mv
     f-big-clock-negative-p reset-prehistory
-    mutual-recursion set-rewrite-stack-limit
+    mutual-recursion set-rewrite-stack-limit set-prover-step-limit
     add-match-free-override
     set-match-free-default
     the-mv table in-arithmetic-theory
@@ -24524,6 +24523,8 @@
     count
     member assoc subsetp no-duplicatesp rassoc remove remove-duplicates
     position
+    catch-step-limit
+    step-limit-error
     ))
 
 (defmacro with-live-state (form)
@@ -24732,6 +24733,7 @@
     (iprint-soft-bound . ,*iprint-soft-bound-default*)
     (keep-tmp-files . nil)
     (last-make-event-expansion . nil)
+    (last-step-limit . nil)
     (ld-level . 0)
     (ld-redefinition-action . nil)
     (ld-skip-proofsp . nil)
@@ -24801,6 +24803,7 @@
     (slow-array-action . :break) ; set to :warning in exit-boot-strap-mode
     (standard-co . acl2-output-channel::standard-character-output-0)
     (standard-oi . acl2-output-channel::standard-object-input-0)
+    (step-limit-start . nil)
     (tainted-okp . nil)
     (temp-touchable-fns . nil)
     (temp-touchable-vars . nil)
@@ -31382,9 +31385,17 @@
 
     ppr-flat-right-margin
 
-    gag-mode ; needs to stay in sync with saved output variables
-    gag-state
-    gag-state-saved
+; The following should perhaps be untouchable, as they need to remain in sync.
+; But they don't affect soundness, so if a user wants to mess with them, we
+; don't really need to stop that.  Note that we bind gag-state in
+; with-ctx-summarized, via save-event-state-globals, so if we want to make that
+; variable untouchable then we need to eliminate the call of
+; with-ctx-summarized from the definition of the macro theory-invariant.
+
+;   gag-mode
+;   gag-state
+;   gag-state-saved
+
     checkpoint-summary-limit
 
 ; ld specials and such:
@@ -32086,6 +32097,9 @@
 ; value returned is of the indicated type.  Finally, if n is an integer and the
 ; STATE is present in the return vector, you must specify where (0-based).
 
+; The optional state-pos argument is the zero-based position of 'state in the
+; argument list, if args is a number.  Otherwise state-pos is irrelevant.
+
   (declare (xargs :guard (and (or (and (integerp args)
                                        (< 1 args))
                                   (and (symbol-listp args)
@@ -32417,6 +32431,12 @@
              (t ,(cond ((eq soft 'soft) '(value t))
                        (t t)))))))
 
+(defmacro fixnum-bound () ; most-positive-fixnum in Allegro CL and many others
+  (1- (expt 2 29)))
+
+(defconst *default-step-limit*
+  (fixnum-bound))
+
 (table acl2-defaults-table nil nil
 
 ; Warning: If you add a new key to this table, there will probably be a
@@ -32501,6 +32521,9 @@
                   (natp (car val)))
               (or (null (cadr val))
                   (natp (cadr val)))))
+        ((eq key :step-limit)
+         (and (natp val)
+              (<= val *default-step-limit*)))
         ((eq key :default-backchain-limit)
          (and (true-listp val)
               (equal (length val) 2)
@@ -32690,6 +32713,15 @@
   optionally be ~c[nil], which is treated like positive infinity.  The
   numbers are used respectively to set the backchain limit of a rule if one has
   not been specified. ~l[backchain-limit].
+  ~bv[]
+  :step-limit
+  ~ev[]
+  This key's value is either ~c[nil] or a natural number not exceeding the
+  value of ~c[*default-step-limit*].  If the value is ~c[nil] or the value of
+  ~c[*default-step-limit*], there is no limit on the number of ``steps'' that
+  ACL2 counts during a proof: currently, the number of top-level rewriting
+  calls.  Otherwise, the value is the maximum number of such calls allowed
+  during evaluation of any event.  ~l[set-prover-step-limit].
   ~bv[]
   :rewrite-stack-limit
   ~ev[]
@@ -34476,10 +34508,10 @@
   ~ev[]
   where form evaluates to a true-list of symbols, each of which is among the
   values of the constant ~c[*summary-types*], i.e.: ~c[header], ~c[form],
-  ~c[rules], ~c[warnings], ~c[time], and ~c[value].  Each specified type
-  inhibits printing of the corresponding portion of the summaries printed at
-  the conclusions of ~il[events], where ~c[header] refers to an initial newline
-  followed by the line containing just the word ~c[Summary].
+  ~c[rules], ~c[warnings], ~c[time], ~c[steps], and ~c[value].  Each specified
+  type inhibits printing of the corresponding portion of the summaries printed
+  at the conclusions of ~il[events], where ~c[header] refers to an initial
+  newline followed by the line containing just the word ~c[Summary].
 
   Also ~pl[set-inhibit-output-lst].  Note that ~c[set-inhibited-summary-types]
   has no effect when ~c[summary] is one of the types inhibited by
@@ -34979,6 +35011,185 @@
     (if (eq flg :ts)
         (car entry)
       (cadr entry))))
+
+(defun step-limit-from-table (wrld)
+
+; We return the top-level prover step-limit, with of course can be overridden
+; by calls of with-prover-step-limit.
+
+  (declare (xargs :guard
+                  (and (plist-worldp wrld)
+                       (alistp (table-alist 'acl2-defaults-table wrld))
+                       (let ((val (cdr (assoc-eq :step-limit
+                                                 (table-alist 'acl2-defaults-table
+                                                              wrld)))))
+                         (or (null val)
+                             (and (natp val)
+                                  (<= val *default-step-limit*)))))))
+  (or (cdr (assoc-eq :step-limit
+                     (table-alist 'acl2-defaults-table wrld)))
+      *default-step-limit*))
+
+(defun initial-step-limit (wrld state)
+
+; This function returns the current step limit.  If 'step-limit-start has a
+; non-nil value, then we are already tracking step-limits in the state, so we
+; return the value of 'last-step-limit.  Otherwise the acl2-defaults-table is
+; consulted for the step-limit.
+
+  (declare (xargs :guard
+                  (and (plist-worldp wrld)
+                       (alistp (table-alist 'acl2-defaults-table wrld))
+                       (let ((val (cdr (assoc-eq :step-limit
+                                                 (table-alist 'acl2-defaults-table
+                                                              wrld)))))
+                         (or (null val)
+                             (and (natp val)
+                                  (<= val *default-step-limit*))))
+                       (state-p state)
+                       (boundp-global 'step-limit-start state)
+                       (boundp-global 'last-step-limit state))))
+  (cond ((f-get-global 'step-limit-start state)
+         (f-get-global 'last-step-limit state))
+        (t (step-limit-from-table wrld))))
+
+#-acl2-loop-only
+(defparameter *step-limit-error-p*
+
+; The value of this special variable is nil when not in the scope of
+; catch-step-limit.  When in such a scope, the value is t unless a throw has
+; occurred to tag 'step-limit-tag, in which case the value is 'error.
+
+  nil)
+
+#+acl2-loop-only
+(defmacro set-prover-step-limit (limit)
+
+  ":Doc-Section switches-parameters-and-modes
+
+  sets the step-limit used by the ACL2 prover~/
+
+  Note: This is an event!  It does not print the usual event summary
+  but nevertheless changes the ACL2 logical ~il[world] and is so
+  recorded.  Moreover, its effect is to set the ~ilc[acl2-defaults-table], and
+  hence its effect is ~ilc[local] to the book or ~ilc[encapsulate] form
+  containing it; ~pl[acl2-defaults-table].
+
+  ~bv[]
+  Example Forms:
+  (set-prover-step-limit nil)   ; avoid limit the number of prover steps
+  (set-prover-step-limit *default-step-limit*) ; same as above
+  (set-prover-step-limit 10000) ; allow at most 10,000 prover steps per event~/
+
+  General Form:
+  (set-prover-step-limit expr)
+  ~ev[]
+  where ~c[expr] evaluates either to ~c[nil] or else to a natural number not
+  exceeding the value of ~c[*default-step-limit*].  If that value is ~c[nil] or
+  the value of ~c[*default-step-limit*], then no limit is placed on the number
+  of prover ``steps'' (see below) during processing of an event.  Otherwise,
+  that value is the maximum number of prover steps permitted before an error
+  occurs.
+
+  This event specifies the limit on the number of ``steps'' counted by the ACL2
+  prover during processing of an event.  Currently, a step is counted for each
+  top-level rewriting call (calls of system functions ~c[rewrite] and
+  ~c[expand-abbreviations]).  However, the steps counted may change in future
+  releases of ACL2, so users would probably be well served by avoiding the
+  assumption that only the above two calls are counted as prover steps.
+
+  ~l[with-prover-step-limit] for a way to specify the limit on prover steps for
+  a single event, rather than globally.  For a related utility based on time
+  instead of prover steps, ~pl[with-prover-time-limit].
+
+  Note that the limit applies to each event, not just ``atomic'' events.
+  Consider the following example.
+  ~bv[]
+  (set-prover-step-limit 500)
+
+  (encapsulate
+    ()
+    (defthm lemma-1 ; takes 380 steps
+      (equal (append (append x y) z) (append x y z))
+      :rule-classes nil)
+    (defthm lemma-2 ; would take 319 steps
+      (equal (len (append x y)) (+ (len x) (len y)))
+      :rule-classes nil))
+  ~ev[]
+  The first ~ilc[defthm] event, ~c[lemma-1] takes 380 steps (as of this
+  writing), as shown in the summary:
+  ~bv[]
+  Prover steps counted:  380
+  LEMMA-1
+  ~ev[]
+  The second ~ilc[defthm] event, ~c[lemma-2], takes 319 steps (as of this
+  writing) when evaluated at the top level.  However, in the context above, 380
+  steps of the available 500 steps (from the ~c[set-prover-step-limit] event
+  above) have already been taken under the above ~ilc[encapsulate] event.
+  Thus, when the number of steps would exceed 120, the proof of ~c[lemma-2] is
+  aborted:
+  ~bv[]
+  ACL2 Error in STEP-LIMIT:  The prover step-limit, which is 120 in the
+  current context, has been exceeded.  See :DOC set-prover-step-limit.
+  ~ev[]
+  The summary for ~c[lemma-2] reflects that situation:
+  ~bv[]
+  Prover steps counted:  More than 120
+  ~ev[]
+  The  summary for the ~ilc[encapsulate] events then indicates that the
+  available steps for that event have also been exceeded:
+  ~bv[]
+  Prover steps counted:  More than 500
+  ~ev[]
+  The discussion above applies to any event that contains other events, hence
+  applies similarly to ~ilc[progn] events.
+
+  For those who use ~ilc[make-event], we note that prover steps in the
+  expansion phase similarly contribute to the total number of steps counted.
+  For example, suppose that the limit is 500 prover steps as above, and you
+  submit ~c[(make-event EXPR)], where 300 prover steps take place during
+  evaluation of ~c[EXPR], producing event ~c[EV].  Then evaluation of ~c[EV]
+  will cause an error if it takes more than 200 prover steps.  This observation
+  actually can be used to count prover steps for sequences of forms that are
+  not all legal ~ilc[events] (~pl[embedded-event-form]), such as calls of
+  ~ilc[thm].  For example, a small built-in ACL2 test suite that includes
+  ~ilc[thm] forms can be run by evaluating the form ~c[(mini-proveall)], and
+  the steps can be counted as shown below.  (Here we assume a fresh ACL2
+  session; an error would occur if first, we evaluate the event
+  ~c[(set-prover-step-limit 500)] displayed above.)
+  ~bv[]
+  ACL2 !>(make-event (er-progn (mini-proveall) (value '(value-triple nil))))
+  [[... output omitted here ...]]
+  Summary
+  Form:  ( MAKE-EVENT (ER-PROGN ...))
+  Rules: NIL
+  Warnings:  Double-rewrite, Equiv, Subsume and Non-rec
+  Time:  0.87 seconds (prove: 0.34, print: 0.39, other: 0.14)
+  Prover steps counted:  40892
+   NIL
+  ACL2 !>
+  ~ev[]
+
+  Technical Remark.  For a call of ~c[mfc-rw] or any ~c[mfc-]
+  function (~pl[extended-metafunctions]), the steps taken during that call are
+  forgotten when returning from that call.
+
+  Note: This is an event!  It does not print the usual event summary
+  but nevertheless changes the ACL2 logical ~il[world] and is so
+  recorded.  Moreover, its effect is to set the ~ilc[acl2-defaults-table], and
+  hence its effect is ~ilc[local] to the book or ~ilc[encapsulate] form
+  containing it; ~pl[acl2-defaults-table].~/"
+
+  `(state-global-let*
+    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    (progn (table acl2-defaults-table :step-limit (or ,limit
+                                                      *default-step-limit*))
+           (table acl2-defaults-table :step-limit))))
+
+#-acl2-loop-only
+(defmacro set-prover-step-limit (limit)
+  (declare (ignore limit))
+  nil)
 
 #+(and (not acl2-loop-only) acl2-rewrite-meter) ; for stats on rewriter depth
 (progn
@@ -38874,6 +39085,13 @@
   allowed to push that time further into the future unless the inner time is
   specified as a list containing a rational, rather than as a rational.
 
+  For a related utility based on prover steps instead of time,
+  ~pl[with-prover-step-limit]; also ~pl[set-prover-step-limit].  Those
+  utilities have the advantage of having platform-independent behavior, unlike
+  time limits, which of course are generally less restrictive for faster
+  processors.  But note that the prover steps counted need not correspond
+  closely to prover time.
+
   Although ~c[with-prover-time-limit] behaves like an ACL2 function in the
   sense that it evaluates both its arguments, it is however actually a macro
   that behaves as follows.  (1) The value of its first (time limit) argument
@@ -38914,25 +39132,27 @@
 #-acl2-loop-only
 (defparameter *time-limit-tags* nil)
 
-(defmacro catch-time-limit4 (form)
-  `(mv-let (car cadr caddr cadddr ; values that cannot be stobjs
-                state)
+(defmacro catch-time-limit5 (form)
+  `(mv-let (step-limit x1 x2 x3 x4 ; values that cannot be stobjs
+                       state)
            #+acl2-loop-only
            ,form ; so, form does not return a stobj
            #-acl2-loop-only
            (progn
              (setq *next-acl2-oracle-value* nil)
-             (catch 'time-limit4-tag
-               (let ((*time-limit-tags* (add-to-set-eq 'time-limit4-tag
+             (catch 'time-limit5-tag
+               (let ((*time-limit-tags* (add-to-set-eq 'time-limit5-tag
                                                        *time-limit-tags*)))
                  ,form)))
-           (mv-let (nullp temp state)
-                   (read-acl2-oracle state) ; clears *next-acl2-oracle-value*
-                   (declare (ignore nullp))
-                   (cond (temp (mv temp nil nil nil nil state))
-                         (t (mv nil car cadr caddr cadddr state))))))
+           (pprogn
+            (f-put-global 'last-step-limit step-limit state)
+            (mv-let (nullp temp state)
+                    (read-acl2-oracle state) ; clears *next-acl2-oracle-value*
+                    (declare (ignore nullp))
+                    (cond (temp (mv step-limit temp nil nil nil nil state))
+                          (t (mv step-limit nil x1 x2 x3 x4 state)))))))
 
-(defun time-limit4-reached-p (msg)
+(defun time-limit5-reached-p (msg)
 
 ; Where should we call this function?  We want to strike a balance between
 ; calling it often enough that we get reasonably tight results for
@@ -38963,16 +39183,41 @@
 
 ; The following test isn't currently necessary, strictly speaking.  But it's a
 ; cheap test so we include it for robustness, in case for example someone calls
-; rewrite not in the scope of catch-time-limit4.
+; rewrite not in the scope of catch-time-limit5.
 
-             (member-eq 'time-limit4-tag *time-limit-tags*)
+             (member-eq 'time-limit5-tag *time-limit-tags*)
              (< *acl2-time-limit* (get-internal-run-time)))
     (setq *next-acl2-oracle-value*
           (if (eql *acl2-time-limit* 0)
               "Aborting due to an interrupt."
             msg))
-    (throw 'time-limit4-tag (mv nil nil nil nil *the-live-state*)))
+    (throw 'time-limit5-tag
+           (mv (f-get-global 'last-step-limit *the-live-state*)
+               nil nil nil nil *the-live-state*)))
   nil)
+
+(defmacro catch-step-limit (form)
+  #+acl2-loop-only
+  `(mv-let (step-limit erp val state)
+           ,form
+           (mv-let (erp2 val2 state)
+                   (read-acl2-oracle state)
+                   (cond ((and (null erp2) (natp val2))
+                          (mv val2 t nil state))
+                         (t (mv step-limit erp val state)))))
+  #-acl2-loop-only
+  `(let ((*step-limit-error-p* t))
+     (assert$
+      (eq state *the-live-state*)
+      (let ((sl/erp/val (catch 'step-limit-tag
+                          (mv-let (step-limit erp val ignored-state)
+                                  ,form
+                                  (declare (ignore ignored-state))
+                                  (list* step-limit erp val)))))
+        (cond
+         ((eq *step-limit-error-p* 'error)
+          (mv -1 t nil state))
+         (t (mv (car sl/erp/val) (cadr sl/erp/val) (cddr sl/erp/val) state)))))))
 
 (defconst *guard-checking-values*
   '(t nil :nowarn :all :none))

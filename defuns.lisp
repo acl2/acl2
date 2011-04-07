@@ -964,7 +964,8 @@
            measure fn)))
     (t
      (er-let*
-      ((cl-set-ttree (accumulate-ttree-into-state cl-set-ttree state)))
+      ((cl-set-ttree (accumulate-ttree-and-step-limit-into-state
+                      cl-set-ttree :skip state)))
       (pprogn
        (increment-timer 'other-time state)
        (let ((displayed-goal (prettyify-clause-set cl-set
@@ -5601,7 +5602,7 @@
               (pprogn
                (increment-timer 'other-time state)
                (mv-let (erp ttree state)
-                 (accumulate-ttree-into-state ttree state)
+                 (accumulate-ttree-and-step-limit-into-state ttree :skip state)
                  (declare (ignore erp))
                  (mv-let (col state)
                    (print-defun-msg/type-prescriptions names ttree

@@ -2649,7 +2649,7 @@
                          (*raw-guard-warningp* (raw-guard-warningp-binding)))
        #+acl2-loop-only ()
 
-; At one time we called time-limit4-reached-p here so that we can quit if we
+; At one time we called time-limit5-reached-p here so that we can quit if we
 ; are out of time.  But we were then able to get into an infinite loop as
 ; follows:
 
@@ -2663,7 +2663,7 @@
 ; cleaning up), but a simple solution is to avoid this time-limit check.
 
 ;       (cond
-;        ((time-limit4-reached-p
+;        ((time-limit5-reached-p
 ;          "Out of time in the evaluator (ev).") ; nil, or throws
 ;         (mv t ; value shouldn't matter
 ;             (cons "Implementation error" nil)
