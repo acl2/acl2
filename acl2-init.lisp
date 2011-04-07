@@ -852,11 +852,11 @@ implementations.")
   #+ccl (eval '(lp)) ; using eval to avoid compiler warning
 
 ; See the comment in save-acl2-in-lispworks for why we need the following call.
+; Note that it doesn't return until we exit ACL2.
 
   #+lispworks (mp:initialize-multiprocessing)
-  #+lispworks (cl-user::extend-current-stack 200)
 
-  (setq *acl2-default-restart-complete* t)
+  (setq *acl2-default-restart-complete* t) ; not done in Lispworks (see above)
   nil)
 
 #+cmu

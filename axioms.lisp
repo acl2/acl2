@@ -11554,7 +11554,8 @@
 
   General Form:
   (mutual-recursion def1 ... defn)
-  where each defi is a ~ilc[defun] form or a ~ilc[defund] form.
+  where each ~c[defi] is a call of ~ilc[defun], ~ilc[defund], ~ilc[defun-nx],
+  or ~c[defund-nx].
   ~ev[]
   When mutually recursive functions are introduced it is necessary
   to do the termination analysis on the entire clique of definitions.
@@ -11602,14 +11603,13 @@
   of the definitions will be treated as though it specifies a
   ~c[:non-executable] ~c[xarg] of ~c[t].
 
-  Technical Note: Each ~c[defi] above must be of the form ~c[(defun ...)].  In
-  particular, it is not permitted for a ~c[defi] to be a form that will
-  macroexpand into a ~ilc[defun] form.  This is because ~c[mutual-recursion] is
-  itself a macro, and since macroexpansion occurs from the outside in,
-  at the time ~c[(mutual-recursion def1 ... defk)] is expanded the ~c[defi]
-  have not yet been.  But ~c[mutual-recursion] must decompose the ~c[defi].
-  We therefore insist that they be explicitly presented as ~ilc[defun]s or
-  ~ilc[defund]s (or a mixture of these).
+  Technical Note: Each ~c[defi] above must be a call of ~ilc[defun],
+  ~ilc[defund], ~ilc[defun-nx], or ~c[defund-nx].  In particular, it is not
+  permitted for a ~c[defi] to be an arbitrary form that macroexpands into a
+  ~ilc[defun] form.  This is because ~c[mutual-recursion] is itself a macro,
+  and since macroexpansion occurs from the outside in, at the time
+  ~c[(mutual-recursion def1 ... defk)] is expanded the ~c[defi] have not yet
+  been macroexpanded.
 
   Suppose you have defined your own ~ilc[defun]-like macro and wish to use
   it in a ~c[mutual-recursion] expression.  Well, you can't.  (!)  But you

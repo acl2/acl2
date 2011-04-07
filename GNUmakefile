@@ -436,9 +436,6 @@ check-sum:
 .PHONY: full
 full:   TAGS!
 	rm -f workxxx
-	rm -f acl2-fns.o acl2-fns.lbin acl2-fns.sbin acl2-fns.fasl acl2-fns.wfasl \
-	  acl2-fns.fas acl2-fns.lib acl2-fns.sparcf acl2-fns.ufsl acl2-fns.x86f \
-          acl2-fns.dfsl
 	echo '(load "init.lisp")' > workxxx
 	echo '(acl2::compile-acl2 $(USE_ACL2_PROCLAIMS))' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
@@ -679,7 +676,7 @@ clean:
 # (since there could be many executables that one prefers not to delete),
 # except for *osaved_acl2* files.
 	rm -f *.o *#* *.c *.h *.data gazonk.* workxxx workyyy *.lib \
-	  *.fasl *.fas *.sparcf *.ufsl *.dfsl \
+	  *.fasl *.fas *.sparcf *.ufsl *.64ufasl *.dfsl \
 	  *.d64fsl *.dx64fsl *.lx64fsl \
 	  *.lx32fsl *.x86f *.o \
 	  TAGS acl2-status.txt acl2r.lisp acl2-proclaims.lisp .acl2rc \
@@ -688,7 +685,7 @@ clean:
 	rm -rf saved
 	rm -f doc/*.o doc/*#* doc/*.c doc/*.h doc/*.data doc/gazonk.* \
 	   doc/workxxx doc/workyyy doc/*.lib \
-	   doc/*.fasl doc/*.fas doc/*.sparcf doc/*.ufsl doc/*.dfsl \
+	   doc/*.fasl doc/*.fas doc/*.sparcf doc/*.ufsl doc/*.64ufasl doc/*.dfsl \
 	   doc/*.d64fsl doc/*.dx64fsl doc/*.lx64fsl \
 	   doc/*.lx32fsl doc/*.x86f doc/*.o \
 	   doc/*.cert doc/*.out \
@@ -868,7 +865,7 @@ infix-fin:
 .PHONY: clean-doc
 clean-doc:
 	cd doc ; rm -f *.o *~* *#* TAGS *.c *.h *.data gazonk.* workxxx \
-	  *.lbin *.sbin *.fasl *.wfasl *.fas *.lib *.sparcf *.ufsl *.x86f *.dfsl *.fn *.cert
+	  *.lbin *.sbin *.fasl *.wfasl *.fas *.lib *.sparcf *.ufsl *.64ufasl *.x86f *.dfsl *.fn *.cert
 	rm -rf doc/EMACS
 	rm -rf doc/EMACS-old/
 	rm -rf doc/HTML

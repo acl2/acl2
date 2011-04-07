@@ -17401,6 +17401,9 @@
 ; We took preliminary steps towards removing uses of the big-clock field of
 ; state.
 
+; Modified deletion of compiled file of acl2-fns.lisp to occur at the Lisp
+; level instead of using GNUmakefile.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -17577,7 +17580,8 @@
   ~pl[set-prover-step-limit] to set the prover step-limit globally.  Note that
   just as ~ilc[with-prover-time-limit] may now be used to create ~il[events],
   as discussed just above, ~ilc[with-prover-step-limit] may also be used to
-  create ~il[events].
+  create ~il[events].  Thanks to Carl Eastlund for requesting support for
+  step-limits.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -17699,6 +17703,9 @@
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
+  ACL2 can once again be built on Lispworks (i.e., as the host Lisp).  Thanks
+  to David Rager for useful conversations.
+
   The HTML documentation no longer has extra newlines in <pre> environments.
 
   Among the new books is an illustration of ~ilc[defattach],
@@ -17714,6 +17721,11 @@
   a new ~il[documentation] topic, ~il[about-acl2].
 
   (SBCL only) More warnings are suppressed when the host Lisp is SBCL.
+
+  Fixed the build process to pay attention to environment variable
+  ~c[ACL2_SYSTEM_BOOKS] (which may be supplied as a command-line argument to
+  `~c[make]').  An ACL2 executable can thus now be built even when there is no
+  ~c[books/] subdirectory if a suitable replacement directory is supplied.
 
   ~st[EMACS SUPPORT]
 

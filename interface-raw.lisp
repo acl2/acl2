@@ -6613,6 +6613,11 @@ Missing functions:
 ; the defthms in axioms.lisp because the necessary theory functions were not
 ; yet defined and so trans-eval balked on them.
 
+  (when (null distributed-books-dir)
+    (let ((dir (getenv$-raw "ACL2_SYSTEM_BOOKS")))
+      (when (and dir (not (equal dir "")))
+        (setq distributed-books-dir dir))))
+
   (with-warnings-suppressed
 
 ; Interactive Proofs: Many times, (initialize-acl2 nil) -- which causes the
@@ -7056,7 +7061,9 @@ Missing functions:
 ; We formerly set *debugger-hook* at the top level using setq, just below the
 ; definition of our-abort.  But that didn't work in Lispworks, where that value
 ; persisted right up to the saving of an image yet *debugger-hook* was nil
-; after starting up that image.
+; after starting up that image.  Apparently Lispworks 6.0 sets *debugger-hook*
+; globally to nil when executing commands from a file rather than
+; standard-input, which is how ACL2 is built.
 
         #-(and gcl (not ansi-cl))
         (setq *debugger-hook* 'our-abort)

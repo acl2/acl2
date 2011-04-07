@@ -14908,7 +14908,8 @@
   (certify-book \"my-arith\" 0 t :ttags :all)
                                        ; ... allowing all trust tags (ttags)
   (certify-book \"my-arith\" t)        ; ... from world of old certificate
-  (certify-book \"my-arith\" :acl2x t) ; ... writing or reading a .acl2x file~/
+  (certify-book \"my-arith\" 0 nil :acl2x t)
+                                       ; ... writing or reading a .acl2x file~/
 
   General Form:
   (certify-book book-name

@@ -1039,14 +1039,18 @@ ACL2 from scratch.")
 
  (progn
    (load "acl2-fns.lisp") ;we like to load before compiling
-   (when (not *suppress-compile-build-time*)
-     (compile-file "acl2-fns.lisp")
+   (let ((acl2-fns-compiled
+          (make-pathname :name "acl2-fns"
+                         :type *compiled-file-extension*)))
+     (when (probe-file acl2-fns-compiled)
+       (delete-file acl2-fns-compiled))
+     (when (not *suppress-compile-build-time*)
+       (compile-file "acl2-fns.lisp")
 
 ; Note that load-compiled is not used below, but on the other hand we are still
 ; using the original readtable here so that's not a problem.
 
-     (load (make-pathname :name "acl2-fns"
-                          :type *compiled-file-extension*)))))
+       (load acl2-fns-compiled)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                           ACL2-READTABLE
