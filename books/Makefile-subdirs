@@ -110,6 +110,20 @@ ufsl-more:
 	fi \
 	done
 
+.PHONY: 64ufasl
+64ufasl: 64ufasl-more
+
+.PHONY: 64ufasl-more
+64ufasl-more:
+	@for dir in $(DIRS) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) 64ufasl ; \
+	cd ..) ; \
+	fi \
+	done
+
 .PHONY: x86f
 x86f: x86f-more
 

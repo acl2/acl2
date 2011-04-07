@@ -254,6 +254,30 @@ ufsl-aux:
 	fi \
 	done
 
+.PHONY: 64ufasl
+64ufasl:
+	@date ; $(TIME) $(MAKE) 64ufasl-aux ; date
+
+.PHONY: 64ufasl-aux
+64ufasl-aux:
+	@for dir in $(DIRS1) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) 64ufasl ; \
+	cd ..) ; \
+	fi \
+	done
+	@$(MAKE) top-with-meta-64ufasl
+	@for dir in $(DIRS2_EXCEPT_WK) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) 64ufasl ; \
+	cd ..) ; \
+	fi \
+	done
+
 .PHONY: x86f
 x86f:
 	@date ; $(TIME) $(MAKE) x86f-aux ; date
@@ -529,6 +553,30 @@ all-ufsl-aux:
 	fi \
 	done
 
+.PHONY: all-64ufasl
+all-64ufasl:
+	@date ; $(TIME) $(MAKE) all-64ufasl-aux ; date
+
+.PHONY: all-64ufasl-aux
+all-64ufasl-aux:
+	@for dir in $(DIRS1) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) 64ufasl ; \
+	cd ..) ; \
+	fi \
+	done
+	@$(MAKE) top-with-meta-64ufasl
+	@for dir in $(DIRS2) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) 64ufasl ; \
+	cd ..) ; \
+	fi \
+	done
+
 .PHONY: all-x86f
 all-x86f:
 	@date ; $(TIME) $(MAKE) all-x86f-aux ; date
@@ -721,6 +769,10 @@ top-with-meta-sparcf:
 .PHONY: top-with-meta-ufsl
 top-with-meta-ufsl:
 	cd arithmetic ; $(MAKE) top-with-meta.ufsl
+
+.PHONY: top-with-meta-64ufasl
+top-with-meta-64ufasl:
+	cd arithmetic ; $(MAKE) top-with-meta.64ufasl
 
 .PHONY: top-with-meta-x86f
 top-with-meta-x86f:

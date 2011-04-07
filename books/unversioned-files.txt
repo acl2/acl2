@@ -14,6 +14,7 @@ Makefile-deps
 *.lbin
 *.fasl
 *.ufsl
+*.64ufasl
 *.pfsl
 *.dfsl
 *.dx32fsl
