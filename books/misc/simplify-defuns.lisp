@@ -108,7 +108,7 @@
                          "Contradiction found in hypotheses using type-set ~
                           reasoning!"))
                     (t
-                     (mv-let ;from simplify-clause1
+                     (sl-let ;from simplify-clause1
                       (contradictionp simplify-clause-pot-lst)
                       (setup-simplify-clause-pot-lst current-clause
                                                      (pts-to-ttree-lst 
@@ -116,7 +116,9 @@
                                                      nil ;; RBK: fc-pair-lst
                                                      type-alist
                                                      rcnst
-                                                     wrld state)
+                                                     wrld state
+                                                     (initial-step-limit
+                                                      wrld state))
                       (cond
                        (contradictionp
                         (er soft ctx
@@ -140,7 +142,7 @@
                               (gstack (initial-gstack 'simplify-clause
                                                       nil
                                                       current-clause)))
-                          (mv-let
+                          (sl-let
                            (rewritten-term ttree)
                            (rewrite-entry
                             (rewrite term nil 1)
@@ -148,6 +150,7 @@
                             :obj '?
                             :fnstack nil
                             :ancestors nil
+                            :step-limit step-limit
                             :pre-dwp nil
                             :backchain-limit 500
                             :geneqv
@@ -157,7 +160,7 @@
                                               nil
                                               'current-acl2-world
                                               wrld)))))
-                           (mv-let
+                           (sl-let
                             (bad-ass ttree)
                             (resume-suspended-assumption-rewriting
                              ttree
@@ -166,13 +169,14 @@
                              simplify-clause-pot-lst
                              local-rcnst
                              wrld
-                             state)
+                             state
+                             step-limit)
                             (cond
                              (bad-ass
                               (er soft ctx
                                   "Generated false assumption, ~p0!  So, ~
-                                     rewriting is aborted, just as it would ~
-                                     be in the course of a regular ACL2 proof."
+                                   rewriting is aborted, just as it would be ~
+                                   in the course of a regular ACL2 proof."
                                   bad-ass))
                              (prove-assumptions
                               (mv-let
@@ -185,12 +189,13 @@
                                          ttree *initial-clause-id*))
                                 wrld state)
                                (er-let*
-                                ((ttree
-                                  (accumulate-ttree-into-state
-                                   (access prove-spec-var pspv :tag-tree)
-                                   state))
-                                 (thints (value thints)))
-                                (er-let*
+                                   ((ttree
+                                     (accumulate-ttree-and-step-limit-into-state
+                                      (access prove-spec-var pspv :tag-tree)
+                                      step-limit
+                                      state))
+                                    (thints (value thints)))
+                                 (er-let*
                                  ((new-ttree
                                    (prove-loop1 1 nil pairs pspv
                                                 thints ens wrld ctx state)))

@@ -42,7 +42,7 @@
 				   wrld))))
       (if (and (termp term wrld)
 	       (member-eq obj '(t nil ?)))
-	  (mv-let
+	  (sl-let
 	   (rw ttree)
 	   (rewrite-entry
 	    (rewrite term nil 'meta)
@@ -54,12 +54,14 @@
 	    :ancestors (access metafunction-context mfc :ancestors)
 	    :backchain-limit (access metafunction-context mfc
 				     :backchain-limit)
+            :step-limit (initial-step-limit wrld state)
 	    :simplify-clause-pot-lst (access metafunction-context mfc
 					     :simplify-clause-pot-lst)
 	    :rcnst rcnst
 	    :gstack (access metafunction-context mfc :gstack)
 	    :ttree nil)
-	   (declare (ignore ttree))
+	   (declare (ignore ttree)
+                    (ignorable step-limit))
 	   rw)
 	(prog2$ (cw "***~%!!! mfc-rw-equiv failed wf-test !!!~%***~%")
 		term)))))

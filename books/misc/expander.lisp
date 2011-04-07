@@ -138,18 +138,19 @@
 ; . clause), suitable for the third argument of prove-loop1 starting
 ; with forcing round 1.
 
-  (mv-let (erp pspv jppl-flg state)
-          (waterfall 0 pool-lst clauses pspv hints ens wrld ctx state)
+  (sl-let (erp pspv jppl-flg state)
+          (waterfall 0 pool-lst clauses pspv hints ens wrld ctx state
+                     (initial-step-limit wrld state))
           (declare (ignore jppl-flg))
           (cond
-           (erp (mv t nil nil nil nil state))
+           (erp (mv step-limit t nil nil nil nil state))
            (t
             (mv-let
              (signal new-clauses)
              (pop-clauses (access prove-spec-var pspv :pool))
              (cond
               ((eq signal 'lose)
-               (mv t nil nil nil nil state))
+               (mv step-limit t nil nil nil nil state))
               (t
                (mv-let
                 (pairs new-pspv state)
@@ -159,12 +160,13 @@
                 (process-assumptions 0 pspv wrld state)
                 (mv-let
                  (erp ttree state)
-                 (accumulate-ttree-into-state
+                 (accumulate-ttree-and-step-limit-into-state
                   (access prove-spec-var new-pspv :tag-tree)
+                  step-limit
                   state)
                  (assert$
                   (null erp)
-                  (mv nil ttree new-clauses pairs new-pspv
+                  (mv step-limit nil ttree new-clauses pairs new-pspv
                       state)))))))))))
 
 (defun prove-loop-clauses (clauses pspv hints ens wrld ctx state)
@@ -175,7 +177,7 @@
 
   (pprogn
    (increment-timer 'other-time state)
-   (mv-let (erp ttree new-clauses pairs new-pspv state)
+   (sl-let (erp ttree new-clauses pairs new-pspv state)
            (prove-loop1-clauses nil
                                 clauses
                                 pspv
@@ -183,8 +185,9 @@
            (pprogn
             (increment-timer 'prove-time state)
             (cond
-             (erp (mv erp nil nil nil nil state))
-             (t (mv nil ttree new-clauses pairs new-pspv state)))))))
+             (erp (mv step-limit erp nil nil nil nil state))
+             (t (mv step-limit nil ttree new-clauses pairs new-pspv
+                    state)))))))
 
 (defun prove-clauses (term pspv hints ens wrld ctx state)
 
@@ -192,21 +195,21 @@
 
   (prog2$
    (initialize-brr-stack state)
-   (mv-let (erp ttree1 clauses pairs new-pspv state)
+   (sl-let (erp ttree1 clauses pairs new-pspv state)
            (prove-loop-clauses (list (list term))
                                (change prove-spec-var pspv
                                        :user-supplied-term term
                                        :orig-hints hints)
                                hints ens wrld ctx state)
            (cond
-            (erp (mv t nil nil nil nil state))
+            (erp (mv step-limit t nil nil nil nil state))
             (t
              (mv-let
               (erp val state)
               (chk-assumption-free-ttree ttree1 ctx state)
               (declare (ignore val))
               (cond
-               (erp (mv t nil nil nil nil state))
+               (erp (mv step-limit t nil nil nil nil state))
                (t (pprogn
                    (cond
                     ((tagged-object :bye ttree1)
@@ -241,7 +244,7 @@
                                   nil))
                         state)))
                     (t state))
-                   (mv erp ttree1 clauses pairs
+                   (mv step-limit erp ttree1 clauses pairs
                        (change prove-spec-var new-pspv
                                :pool nil)
                        state))))))))))
@@ -393,7 +396,7 @@
                                     (cons 'list vars)))
                         t t t  ctx wrld state))
             (tterm (value (implicate (conjoin thyps) tconc)))) 
-           (mv-let
+           (sl-let
             (erp ttree clauses pairs new-pspv state)
             (prove-clauses tterm
                            (make-pspv ens wrld
@@ -510,7 +513,8 @@
                       type-alist
                       ;; obj
                       geneqv wrld state
-                      ;; fnstack ancestors
+                      ;; fnstack ancestors backchain-limit
+                      step-limit
                       simplify-clause-pot-lst
                       rcnst gstack ttree
                       ;;DARON: added must-rewrite-flg, which is T if we want to
@@ -521,7 +525,7 @@
 ; Rewrite term repeatedly, (- repeat-limit completed-iterations) times.  Note
 ; that hyps is T after the first time through.
 
-  (mv-let (val new-ttree)
+  (sl-let (val new-ttree)
           (rewrite-entry (rewrite term nil 1)
                          :obj '?
                          :fnstack 
@@ -530,6 +534,7 @@
                          :pre-dwp nil  ;; RBK:
                          :ancestors nil
                          :backchain-limit 500
+                         :step-limit step-limit ; explicit to avoid decrement
                          :rdepth (rewrite-stack-limit wrld))
           (cond
            ((equal val term)
@@ -537,13 +542,15 @@
              ;; DARON: if must-rewrite-flg is NIL, we just return the term.
              ((or (not must-rewrite-flg)
                   (eq hyps t))
-              (mv term ttree state))
+              (mv step-limit term ttree state))
              ;; otherwise, we throw the error.
-             (t (er soft ctx
-                    "The term~%  ~p0~%failed to rewrite to a new term under ~
-                     hypotheses~%  ~p1."
-                    (untranslate val nil wrld)
-                    (untranslate-lst hyps t wrld)))))
+             (t (prepend-step-limit
+                 (erp val state)
+                 (er soft ctx
+                     "The term~%  ~p0~%failed to rewrite to a new term under ~
+                      hypotheses~%  ~p1."
+                     (untranslate val nil wrld)
+                     (untranslate-lst hyps t wrld))))))
            ((= repeat-limit completed-iterations)
             (pprogn
              ;; DARON: wrapped this fms in an io? so we can inhibit it if we
@@ -553,7 +560,7 @@
                   (fms "OUT OF PATIENCE!  Completed ~n0 iterations."
                        (list (cons #\0 (list completed-iterations)))
                        *standard-co* state nil))
-             (mv val new-ttree state)))
+             (mv step-limit val new-ttree state)))
            (t (pprogn (if (eql completed-iterations 0)
                           state
                         ;; DARON: wrapped this fms in an io? so we can inhibit
@@ -566,7 +573,7 @@
                       (rewrite* val t ctx
                                 repeat-limit
                                 (1+ completed-iterations)
-                                type-alist geneqv wrld state
+                                type-alist geneqv wrld state step-limit
                                 simplify-clause-pot-lst rcnst gstack
                                 new-ttree
                                 ;; DARON: we must pass must-rewrite-flg to
@@ -659,7 +666,7 @@
                                       ~p0~%using type-set reasoning!"
                                 hyps))
                            (t
-                            (mv-let     ;from simplify-clause1
+                            (sl-let     ;from simplify-clause1
                              (contradictionp simplify-clause-pot-lst)
                              (setup-simplify-clause-pot-lst current-clause
                                                             (pts-to-ttree-lst 
@@ -667,21 +674,23 @@
                                                             nil ; fc-pair-lst  ;; RBK:
                                                             type-alist
                                                             rcnst
-                                                            wrld state)
+                                                            wrld state
+                                                            (initial-step-limit
+                                                             wrld state))
                              (cond
                               (contradictionp
                                (er soft ctx
                                    "Contradiction found in hypotheses~%  ~
-                                         ~p0~%using linear reasoning!"
+                                    ~p0~%using linear reasoning!"
                                    hyps))
                               (t
 
-                                        ; We skip the call of process-equational-polys in simplify-clause1; I think
-                                        ; that we can assume that by the time tool2 is called, that call wouldn't have
-                                        ; any effect anyhow.  By the way, we skipped remove-trivial-equivalence
-                                        ; earlier.
+; We skip the call of process-equational-polys in simplify-clause1; I think
+; that we can assume that by the time tool2 is called, that call wouldn't have
+; any effect anyhow.  By the way, we skipped remove-trivial-equivalence
+; earlier.
 
-                                        ; Now we continue as in rewrite-clause.
+; Now we continue as in rewrite-clause.
 
                                (mv-let
                                 (not-flg atm)
@@ -694,7 +703,7 @@
                                                      :atm atm)))
                                       (gstack (initial-gstack 'simplify-clause
                                                               nil current-clause)))
-                                  (mv-let
+                                  (sl-let
                                    (val ttree state)
                                    (rewrite* atm hyps ctx
                                              (expander-repeat-limit state)
@@ -706,7 +715,7 @@
                                                                nil
                                                                'current-acl2-world
                                                                wrld))))
-                                             wrld state
+                                             wrld state step-limit
                                              simplify-clause-pot-lst rcnst gstack
                                              nil
                                              must-rewrite-flg)
@@ -714,7 +723,7 @@
                                     ((equal val t)
                                      (mv t nil state))
                                     (t
-                                     (mv-let
+                                     (sl-let
                                       (bad-ass ttree)
                                       (resume-suspended-assumption-rewriting
                                        ttree
@@ -723,15 +732,15 @@
                                        simplify-clause-pot-lst
                                        local-rcnst
                                        wrld
-                                       state)
+                                       state
+                                       step-limit)
                                       (cond
                                        (bad-ass
                                         (er soft ctx
-                                            "Generated false assumption, ~
-                                                  ~p0!  So, rewriting is ~
-                                                  aborted, just as it would ~
-                                                  be in the course of a ~
-                                                  regular Acl2 proof."
+                                            "Generated false assumption, ~p0! ~
+                                              So, rewriting is aborted, just ~
+                                             as it would be in the course of ~
+                                             a regular Acl2 proof."
                                             bad-ass))
                                        (t
                                         (let ((rewritten-term
@@ -751,8 +760,9 @@
                                               wrld state)
                                              (er-let*
                                               ((ttree
-                                                (accumulate-ttree-into-state
+                                                (accumulate-ttree-and-step-limit-into-state
                                                  (access prove-spec-var pspv :tag-tree)
+                                                 step-limit
                                                  state))
                                                (thints
                                                 (if (eq prove-assumptions t)
@@ -760,23 +770,22 @@
                                                   (translate-hints 'tool2
                                                                    *bash-skip-forcing-round-hints*
                                                                    ctx wrld state))))
-                                              (er-progn
-                                               (state-global-let*
-                                                ((inhibit-output-lst
-                                                  (if (or (eq prove-assumptions t)
-                                                          (eq inhibit-output t))
-                                                      (@ inhibit-output-lst)
-                                                    (if (eq inhibit-output
-                                                            :prove)
-                                                        (remove1-eq
-                                                         'prove
-                                                         (@ inhibit-output-lst))
-                                                      (@ inhibit-output-lst)))))
-                                                (er-let*
-                                                 ((new-ttree
-                                                   (prove-loop1 1 nil pairs pspv
-                                                                thints ens wrld
-                                                                ctx state)))
+                                              (state-global-let*
+                                               ((inhibit-output-lst
+                                                 (if (or (eq prove-assumptions t)
+                                                         (eq inhibit-output t))
+                                                     (@ inhibit-output-lst)
+                                                   (if (eq inhibit-output
+                                                           :prove)
+                                                       (remove1-eq
+                                                        'prove
+                                                        (@ inhibit-output-lst))
+                                                     (@ inhibit-output-lst)))))
+                                               (er-let* ((new-ttree
+                                                          (prove-loop1
+                                                           1 nil pairs pspv
+                                                           thints ens wrld
+                                                           ctx state)))
                                                  (let* ((runes
                                                          (all-runes-in-ttree
                                                           new-ttree
@@ -796,7 +805,7 @@
                                                             'tool2-result
                                                             val
                                                             state)
-                                                           (value val)))))))))
+                                                           (value val))))))))
                                            (t (let* ((runes (all-runes-in-ttree
                                                              ttree nil))
                                                      (val (list* runes

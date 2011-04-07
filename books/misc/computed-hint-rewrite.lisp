@@ -90,7 +90,7 @@
      (cond (flg (er soft ctx
                     "~x0 found a contradiction in the hypotheses."
                     'computed-hint-rewrite))
-           (t (mv-let (new-term new-ttree)
+           (t (sl-let (new-term new-ttree)
                       (rewrite-entry
                        (rewrite term nil 'computed-hint-rewrite)
                        :rdepth (rewrite-stack-limit wrld)
@@ -100,10 +100,12 @@
                        :fnstack nil
                        :ancestors nil
                        :backchain-limit (backchain-limit wrld :rewrite)
+                       :step-limit (initial-step-limit wrld state)
                        :simplify-clause-pot-lst nil
                        :rcnst rcnst
                        :gstack gstack
                        :ttree ttree)
+                      (declare (ignorable step-limit))
                       (value (cons new-term new-ttree))))))))
 
 ; Silly example:
