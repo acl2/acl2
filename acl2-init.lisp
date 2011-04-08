@@ -48,7 +48,7 @@ instructions for how to obtain CCL.")
 
 ; Allow taking advantage of threads in SBCL, CCL, and Lispworks (where we may
 ; want to build a parallel version tha needs this to take place).
-#+(or (and sbcl sb-thread) ccl)
+#+(or (and sbcl sb-thread) ccl lispworks)
 (push :acl2-mv-as-values *features*)
 
 ; Only allow the feature :acl2-par in environments that support
@@ -75,10 +75,15 @@ implementations.")
 #+clisp
 (setq CUSTOM:*DEFAULT-FILE-ENCODING* :unix)
 
-; #+lispworks ; 3.2.0
-;(lw::extend-current-stack 1000)
 #+lispworks
-(cl-user::extend-current-stack 200)
+(setq system::*stack-overflow-behaviour* nil) ; could be :warn
+
+; Even with the setting of *stack-overflow-behaviour* above, we cannot
+; eliminate the following form.  (We tried with Lispworks 6.0, but we got a
+; segmentation fault when certifying
+; books/concurrent-programs/bakery/stutter2.)
+#+lispworks
+(cl-user::extend-current-stack 400)
 
 ; Create the packages we use.
 
@@ -477,9 +482,6 @@ implementations.")
    "~%~% Experimental modification for parallel evaluation.  Please expect at~
     ~% most limited maintenance for this version~%"
    "~% See the documentation topic ~a for recent changes."
-   #+lispworks
-   "~%~% NOTE: Type (LP) to enter the ACL2 command loop.~%"
-   #-lispworks
    "~% Note: We have modified the prompt in some underlying Lisps to further~
     ~% distinguish it from the ACL2 prompt.~%"))
 
@@ -848,16 +850,11 @@ implementations.")
   #+allegro (rplacd (assoc 'tpl::*saved-package*
                            tpl:*default-lisp-listener-bindings*)
                     'common-lisp:*package*)
-
   #+allegro (lp)
+  #+lispworks (lp)
   #+ccl (eval '(lp)) ; using eval to avoid compiler warning
 
-; See the comment in save-acl2-in-lispworks for why we need the following call.
-; Note that it doesn't return until we exit ACL2.
-
-  #+lispworks (mp:initialize-multiprocessing)
-
-  (setq *acl2-default-restart-complete* t) ; not done in Lispworks (see above)
+  (setq *acl2-default-restart-complete* t)
   nil)
 
 #+cmu
@@ -879,27 +876,31 @@ implementations.")
                   :full-gc t))
 
 #+lispworks
-(defun save-acl2-in-lispworks (sysout-name &optional mode)
-  (setq *saved-mode* mode)
+(defun lispworks-save-exec-raw (sysout-name)
 
-; Increase the stack size.  Without doing this, Version_2.7 (as it existed
-; shortly before release) had a stack overflow involving collect-assumptions in
-; the proof of bitn-lam0 from books/rtl/rel2/support/lop3.lisp.  As Lispworks
-; support (Dave Fox) has pointed out, we need to be sure to call
-; (mp:initialize-multiprocessing) when starting up.  See LP for that call.
+; Lispworks support (Dave Fox) pointed out, in the days of Lispworks 4, that we
+; need to be sure to call (mp:initialize-multiprocessing) when starting up.  Up
+; through ACL2 Version_4.2 we did that by making that call in
+; acl2-default-restart.  But when testing with Lispworks 6.0, we noticed that
+; some processes hang, and we wondered if that has to do with the fact that
+; (mp:initialize-multiprocessing) does not return.  That also got in the way of
+; our running (LP) in acl2-default-restart.  We experimented with removing
+; (mp:initialize-multiprocessing) from acl2-default-restart, instead passing
+; :multiprocessing t to system::save-image.  But with that change, we noticed
+; that upon exiting the ACL2 loop with :q, we got the following rather scary
+; message.
 
-; But even the following wasn't adequate for (verify-guards read-utf8-fast ...)
-; in books/unicode/read-utf8.lisp:
-; (setq sys:*sg-default-size* 128000)
-; So we try the following.
+; ;; No live processes except internal servers - stopping multiprocessing
 
-  (setq sys:*sg-default-size* 1024000)
+; So we have decided not to call :multiprocessing t, and also not to call
+; (mp:initialize-multiprocessing).  Lispworks 6.0 seems to work fine for ACL2,
+; so it seems that we need not think further about
+; mp:initialize-multiprocessing until perhaps Lispworks is supported with
+; #+acl2-par.
 
-  (system::save-image sysout-name :restart-function 'acl2-default-restart
-                      :gc t))
-
-; The definition of save-exec-raw for lispworks did not work (Lispworks 4.4.5,
-; and probably Lispworks 4.2).  An attempt resulted in the following error:
+; If we are to restore the use of multiprocessing, we should consider that the
+; definition of save-exec-raw for lispworks did not work (Lispworks 4.4.5, and
+; probably Lispworks 4.2).  An attempt resulted in the following error:
 
 ;   ACL2 5 > (save-exec "my-lw" "Changes made")
 
@@ -910,19 +911,37 @@ implementations.")
 ; session, we can figure this out at that time (and perhaps get some help from
 ; the user, who may be knowledgeable about lispworks).
 
-; #+lispworks
-; (defun save-exec-raw (sysout-name)
-;   (setq *acl2-default-restart-complete* nil)
-;   (system::save-image sysout-name :restart-function 'acl2-default-restart
-;                       :gc t))
+  (cond ((and system::*init-file-loaded*
+              system::*complain-about-init-file-loaded*)
+
+; We hope it's fine to save an image when an init-file has been loaded.  Maybe
+; somebody can explain to us why Lispworks causes a break in such a situation
+; by default (which explains the binding of
+; system::*complain-about-init-file-loaded* below).
+
+         (format t
+                 "Warning: Overriding Lispworks hesitation to save an image~%~
+                  after init-file has been loaded.")
+         (let ((system::*complain-about-init-file-loaded* nil))
+           (system::save-image sysout-name
+                               :restart-function 'acl2-default-restart
+                               :gc t)))
+        (t (system::save-image sysout-name
+                               :restart-function 'acl2-default-restart
+                               :gc t))))
+
+#+lispworks
+(defun save-acl2-in-lispworks (sysout-name &optional mode)
+  (setq *saved-mode* mode)
+  (lispworks-save-exec-raw sysout-name))
 
 #+lispworks
 (defun save-exec-raw (sysout-name)
-  (declare (ignore sysout-name))
-  (error "Save-exec-raw is not implemented in lispworks.  Feel free to contact~%~
-          the implementors, and feel free to read the comment above the~%~
-          definition  of save-exec-raw for #+lispworks in ACL2 source file~%~
-          acl2-init.lisp."))
+
+; See the comment above about :multiprocessing t.
+
+  (setq *acl2-default-restart-complete* nil)
+  (lispworks-save-exec-raw sysout-name))
 
 #+cmu
 (defun save-acl2-in-cmulisp-aux (sysout-name core-name)

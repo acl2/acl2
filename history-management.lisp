@@ -3431,55 +3431,54 @@
        (f-put-global 'proof-tree nil state))))))
 
 (defun with-prover-step-limit-fn (limit form)
-  `(with-live-state
-    (mv-let
-     (with-prover-step-limit-initial-step-limit
-      with-prover-step-limit-limit)
-     (let ((limit ,limit)
-           (initial-step-limit (initial-step-limit (w state) state)))
-       (mv initial-step-limit
-           (cond ((null limit)
-                  *default-step-limit*)
-                 ((and (natp limit)
-                       (<= limit *default-step-limit*))
-                  limit)
-                 ((eq limit :start)
-                  initial-step-limit)
-                 (t (er hard 'with-prover-step-limit
-                        "Illegal value for ~x0, ~x1.  See :DOC ~
+  `(mv-let
+    (with-prover-step-limit-initial-step-limit
+     with-prover-step-limit-limit)
+    (let ((limit ,limit)
+          (initial-step-limit (initial-step-limit (w state) state)))
+      (mv initial-step-limit
+          (cond ((null limit)
+                 *default-step-limit*)
+                ((and (natp limit)
+                      (<= limit *default-step-limit*))
+                 limit)
+                ((eq limit :start)
+                 initial-step-limit)
+                (t (er hard 'with-prover-step-limit
+                       "Illegal value for ~x0, ~x1.  See :DOC ~
                          with-prover-step-limit."
-                        'with-prover-step-limit
-                        limit)))))
-     (pprogn
-      (f-put-global 'last-step-limit with-prover-step-limit-limit state)
-      (er-let* ((val (state-global-let*
-                      ((step-limit-start with-prover-step-limit-limit))
-                      (check-vars-not-free (with-prover-step-limit-initial-step-limit
-                                            with-prover-step-limit-limit)
-                                           ,form))))
-        (let ((new-step-limit
-               (cond
-                ((eql (f-get-global 'last-step-limit state) -1)
+                       'with-prover-step-limit
+                       limit)))))
+    (pprogn
+     (f-put-global 'last-step-limit with-prover-step-limit-limit state)
+     (er-let* ((val (state-global-let*
+                     ((step-limit-start with-prover-step-limit-limit))
+                     (check-vars-not-free (with-prover-step-limit-initial-step-limit
+                                           with-prover-step-limit-limit)
+                                          ,form))))
+       (let ((new-step-limit
+              (cond
+               ((eql (f-get-global 'last-step-limit state) -1)
 
 ; We reached the limit, but didn't cause an error.  We must have used up the
 ; maximum possible number of steps.
 
-                 (assert$ (eql with-prover-step-limit-limit
-                               *default-step-limit*)
-                          -1))
-                (t
-                 (let ((steps-taken
-                        (- with-prover-step-limit-limit
-                           (f-get-global 'last-step-limit state))))
-                   (cond
-                    ((< with-prover-step-limit-initial-step-limit
-                        steps-taken)
-                     -1)
-                    (t (- with-prover-step-limit-initial-step-limit
-                          steps-taken))))))))
-          (pprogn
-           (f-put-global 'last-step-limit new-step-limit state)
-           (cond
+                (assert$ (eql with-prover-step-limit-limit
+                              *default-step-limit*)
+                         -1))
+               (t
+                (let ((steps-taken
+                       (- with-prover-step-limit-limit
+                          (f-get-global 'last-step-limit state))))
+                  (cond
+                   ((< with-prover-step-limit-initial-step-limit
+                       steps-taken)
+                    -1)
+                   (t (- with-prover-step-limit-initial-step-limit
+                         steps-taken))))))))
+         (pprogn
+          (f-put-global 'last-step-limit new-step-limit state)
+          (cond
 
 ; Here we handle the case that the step-limit is exceeded after a sub-event of
 ; a compound event, for example, between the two defthm events below.
@@ -3493,23 +3492,23 @@
 ;                                   (append x y z))))
 ;  (defthm bar (equal (car (cons x y)) x)))
 
-            ((and (eql new-step-limit -1)
+           ((and (eql new-step-limit -1)
 
 ; If state global 'step-limit-start has value nil, then we are at the
 ; top-level; no context has been entered.
 
-                  (f-get-global 'step-limit-start state)
-                  (not (eql (f-get-global 'step-limit-start state)
-                            *default-step-limit*)))
-             (step-limit-error t))
-            (t (value val))))))))))
+                 (f-get-global 'step-limit-start state)
+                 (not (eql (f-get-global 'step-limit-start state)
+                           *default-step-limit*)))
+            (step-limit-error t))
+           (t (value val)))))))))
 
 (defmacro with-prover-step-limit (limit form)
 
-; A value of :start for limit says that we use the current limit, i.e., the
-; value of state global 'last-step-limit if the value of state global
-; 'step-limit-start is not nil, else the value from the acl2-defaults-table;
-; see initial-step-limit.
+; Form should evaluate to an error triple.  A value of :start for limit says
+; that we use the current limit, i.e., the value of state global
+; 'last-step-limit if the value of state global 'step-limit-start is not nil,
+; else the value from the acl2-defaults-table; see initial-step-limit.
 
   ":Doc-Section Other
 
@@ -3578,6 +3577,8 @@
   (with-prover-step-limit-fn limit form))
 
 (defmacro save-event-state-globals (form)
+
+; Form should evaluate to an error triple.
 
 ; We assign to saved-output-reversed, rather than binding it, so that saved
 ; output for gag-mode reply (using pso or psog) is available outside the scope

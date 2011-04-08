@@ -986,9 +986,8 @@ ACL2 from scratch.")
 ; But even with the next form, we have seen the following:
 ; **++++ Error in XTRANS-EVAL: 
 ;   Function size 67910 is too large.
-; This problem has disappeared with Lispworks 6.0, where elsewhere we call
-; cl-user::extend-current-stack.  But it seems reasonable to leave the
-; following in place.
+; This problem has disappeared with Lispworks 6.0.  But it seems reasonable to
+; leave the following in place.
 #+lispworks
 (cl-user::toggle-source-debugging nil)
 

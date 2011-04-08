@@ -7062,8 +7062,8 @@ Missing functions:
 ; definition of our-abort.  But that didn't work in Lispworks, where that value
 ; persisted right up to the saving of an image yet *debugger-hook* was nil
 ; after starting up that image.  Apparently Lispworks 6.0 sets *debugger-hook*
-; globally to nil when executing commands from a file rather than
-; standard-input, which is how ACL2 is built.
+; globally to nil when input comes from a file, which is how ACL2 is built,
+; rather than standard-input,
 
         #-(and gcl (not ansi-cl))
         (setq *debugger-hook* 'our-abort)

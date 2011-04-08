@@ -17703,8 +17703,15 @@
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
-  ACL2 can once again be built on Lispworks (i.e., as the host Lisp).  Thanks
-  to David Rager for useful conversations.
+  ACL2 can once again be built on Lispworks (i.e., as the host Lisp), at least
+  with Lispworks 6.0.  Thanks to David Rager for useful conversations.
+  Several changes have been made from previous Lispworks-based ACL2
+  executables:~nl[]
+  o ACL2 now starts up in its read-eval-print loop.~nl[]
+  o You can save an image with ~ilc[save-exec].~nl[]
+  o Multiprocessing is not enabled.~nl[]
+  o The stack size is managed using a Lispworks variable that causes the stack
+  to grow as needed.
 
   The HTML documentation no longer has extra newlines in <pre> environments.
 
@@ -23906,13 +23913,9 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
              (cond ((null extra-startup-string)
                     "This ACL2 executable was created by saving a session.")
                    (t extra-startup-string)))))
-    #-(or gcl cmu sbcl allegro clisp ccl)
+    #-(or gcl cmu sbcl allegro clisp ccl lispworks)
     (er hard 'save-exec
-        "Sorry, but save-exec is not implemented for this Common Lisp.~a0"
-        #+lispworks "  If you care to investigate, see the comment in ~
-                     acl2-init.lisp starting with: ``The definition of ~
-                     save-exec-raw for lispworks (below) did not work.''"
-        #-lispworks "")
+        "Sorry, but save-exec is not implemented for this Common Lisp.")
 
 ; The forms just below, before the call of save-exec-raw, are there so that the
 ; initial (lp) will set the :cbd correctly.
