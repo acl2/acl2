@@ -46,7 +46,8 @@ formerly OpenMCL).  CCL runs on many platforms, including
 both 32-bit and 64-bit Linux.  See the ACL2 installation
 instructions for how to obtain CCL.")
 
-; Allow taking advantage of threads in SBCL and CCL.
+; Allow taking advantage of threads in SBCL, CCL, and Lispworks (where we may
+; want to build a parallel version tha needs this to take place).
 #+(or (and sbcl sb-thread) ccl)
 (push :acl2-mv-as-values *features*)
 
