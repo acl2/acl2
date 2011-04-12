@@ -420,9 +420,10 @@
 (defn clear-memoize-statistics ()
   ":Doc-Section Hons-and-Memoization
 
-  Clears all collected profiling statistics displayed by ~c[(memoize-summary)].~/
+  Clears all collected profiling statistics displayed by
+  ~c[(memoize-summary)].~/
 
-  Logically, just returns nil..~/~/"
+  Logically, just returns ~c[nil].~/~/"
 
   nil)
 
@@ -431,7 +432,8 @@
 
   Display all collected profiling and memoization info.~/
 
-  An abbreviation of memoize-summary.  Logically, just returns nil.~/~/"
+  An abbreviation of memoize-summary.  Logically, just returns ~c[nil].~/~/"
+
   '(memoize-summary))
 
 ; The macros MEMOIZE-LET, MEMOIZE-ON, and MEMOIZE-OFF typically cause
@@ -962,6 +964,58 @@
                   nil)
            (value-triple
             (deref-macro-name ,fn (macro-aliases (w state)))))))
+
+(defmacro profile (fn &rest r)
+
+  ":Doc-Section Events
+
+  turn on profiling for one function~/
+
+  NOTE: An alternative to this utility, which has a lot less functionality but
+  doesn't depend on the experimental extension of ACL2 mentioned just below,
+  may be found in distributed book ~c[books/misc/profiling.lisp].
+
+  This documentation topic relates to an experimental extension of ACL2 under
+  development by Bob Boyer and Warren Hunt.  ~l[hons-and-memoization] for a
+  general discussion of memoization, on which this ~c[profile] utility is
+  built, and the related features of hash consing and applicative hash tables.
+
+  ~c[Profile] can be useful in Common Lisp debugging and performance analysis,
+  including examining the behavior of ACL2 functions.
+
+  ~bv[]
+  Example:
+  (profile 'fn)       ; keep count of the calls of fn
+  (profile 'fn        ; as above, with with some memoize options
+           :trace t
+           :forget t)
+  (memsum) ; report statistics on calls of memoized functions (e.g., fn)
+  (clear-memoize-statistics) ; clear memoization (and profiling) statistics
+  ~ev[]
+
+  Evaluation of ~c[(profile 'fn)] redefines ~c[fn] so that a count will be kept
+  of the calls of FN.  The information recorded may be displayed, for example,
+  by invoking ~c[(]~ilc[memoize-summary]~c[)] or (equivalently) ~c[(memsum)].
+  If you wish to gather fresh statistics for the evaluation of a top-level
+  form, ~pl[clear-memoize-statistics].
+
+  ~c[Profile] is just a macro that calls ~ilc[memoize] to do its work.
+  ~c[Profile] gives the two keyword parameters ~c[:CONDITION] and ~c[:INLINE]
+  of ~ilc[memoize] the value ~c[nil].  Other keyword parameters for
+  ~c[memoize], which must not include ~c[:CONDITION], ~c[:CONDITION-fn], or
+  ~c[:INLINE], are passed through.  To eliminate profiling, use
+  ~ilc[unmemoize]; for example, to eliminate profiling for function ~c[fn],
+  evaluate ~c[(unmemoize 'fn)].
+
+  You may find raw Lisp functions ~c[profile-all] and ~c[profile-acl2] to be
+  useful.  Please contact the ACL2 developers if you want versions of these
+  functions to be executable from inside the ACL2 read-eval-print loop.~/~/"
+
+  (declare (xargs :guard (and (keyword-value-listp r)
+                              (not (assoc-keyword :condition r))
+                              (not (assoc-keyword :condition-fn r))
+                              (not (assoc-keyword :inline r)))))
+  `(memoize ,fn :condition nil :inline nil ,@r))
 
 #-hons
 (defmacro memoize-on-raw (fn form)

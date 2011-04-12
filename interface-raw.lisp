@@ -2668,23 +2668,22 @@
                  (and (access memoize-info-ht-entry entry :ext-anc-attachments)
                       t))
                 (cl-defun (access memoize-info-ht-entry entry :cl-defun)))
-           (assert$ condition
-                    (push `(memoize-fn ',name
-                                       :condition ',condition
-                                       :inline ',inline
-                                       :trace ',trace
-                                       ,@(and commutative
-                                              `(:commutative t))
-                                       ,@(and forget
-                                              `(:forget t))
-                                       ,@(and memo-table-init-size
-                                              `(:memo-table-init-size
-                                                ',memo-table-init-size))
-                                       ,@(and aokp
-                                              `(:aokp ',aokp))
-                                       ,@(and cl-defun
-                                              `(:cl-defun ',cl-defun)))
-                          (get name '*undo-stack*)))))
+           (push `(memoize-fn ',name
+                              :condition ',condition
+                              :inline ',inline
+                              :trace ',trace
+                              ,@(and commutative
+                                     `(:commutative t))
+                              ,@(and forget
+                                     `(:forget t))
+                              ,@(and memo-table-init-size
+                                     `(:memo-table-init-size
+                                       ',memo-table-init-size))
+                              ,@(and aokp
+                                     `(:aokp ',aokp))
+                              ,@(and cl-defun
+                                     `(:cl-defun ',cl-defun)))
+                 (get name '*undo-stack*))))
         (otherwise
          (er hard 'maybe-push-undo-stack
              "Unrecognized CLTL-COMMAND spawn ~x0"

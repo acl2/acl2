@@ -21261,7 +21261,7 @@
                      (condition (or (eq condition-fn t) ; hence t
                                     (and condition-def
                                          (or (car (last condition-def))
-                                             (list 'quote nil))))))
+                                             nil)))))
                 `(memoize ,key ; fn
                           ,condition
                           ,(cdr (assoc-eq :inline val))

@@ -1350,7 +1350,7 @@
             princ-to-string 
             print 
             print-object 
-            profile 
+            profile-fn
             profile-acl2 
             profile-all 
             random 
@@ -2814,6 +2814,9 @@ the calls took.")
         ((macro-function fn) "a macro.")
         ((compiler-macro-function fn) "a compiler-macro-function.")
         ((special-form-or-op-p fn) "a special operator.")
+        ((getprop fn 'constrainedp nil 'current-acl2-world
+                  (w *the-live-state*))
+         "constrained.")
         ((memoizedp-raw fn)
          (ofn "~%;~10tmemoized or profiled, ~
                and it will so continue."))
@@ -3742,6 +3745,9 @@ the calls took.")
 
   (when watch-ifs (setq inline t))
 
+  (when (equal condition *nil*)
+    (setq condition nil))
+
   (unwind-mch-lock
    (cond ((fboundp 'maybe-untrace!)
           (maybe-untrace! fn))
@@ -4402,28 +4408,8 @@ the calls took.")
                                       2)))))))))
     (when (posp m) (memoize-call-array-grow (* 2 m)))))
 
-(defun profile (fn &rest r &key (condition nil) (inline nil)
-                   &allow-other-keys)
-
-  "PROFILE is a raw Lisp function.  PROFILE is much too wicked to ever
-  be a proper part of ACL2, but can be useful in Common Lisp debugging
-  and performance analysis, including examining the behavior of ACL2
-  functions.  PROFILE returns FN.
-
-  (PROFILE fn) redefines FN so that a count will be kept of the calls
-  of FN.  The information recorded may be displayed, for example, by
-  invoking (MEMOIZE-SUMMARY).
-
-  PROFILE calls MEMOIZE-FN to do its work.  By default, PROFILE gives
-  the two keyword parameters CONDITION and INLINE of MEMOIZE-FN the
-  value NIL.  Other keyword parameters for MEMOIZE-FN are passed
-  through.
-
-  Please only call PROFILE from the very top-level of raw Common Lisp,
-  not from inside the ACL2 loop or inside code that is
-  memoized/profiled.  (To exit the ACL2 loop, type :q and later
-  reenter the ACL2 loop with (lp).)"
-
+(defun profile-fn (fn &rest r &key (condition nil) (inline nil)
+                      &allow-other-keys)
   (apply #'memoize-fn fn
          :condition condition
          :inline inline
@@ -4510,17 +4496,17 @@ the calls took.")
       (maphash
        (lambda (k v)
          (declare (ignore v))
-         (profile k
-                  :trace trace
-                  :watch-ifs watch-ifs
-                  :forget forget))
+         (profile-fn k
+                     :trace trace
+                     :watch-ifs watch-ifs
+                     :forget forget))
        fns-ht)
       (clear-memoize-call-array)
       (oft "~%(clear-memoize-call-array) invoked.")
       (ofn "~a function~:p newly profiled."
            (hash-table-count fns-ht)))))
 
-(defun profile-all (&key trace (lots-of-info t) forget watch-ifs)
+(defun profile-all (&key trace (lots-of-info t) forget watch-ifs pkg)
 
   "PROFILE-ALL is a raw Lisp function.  (PROFILE-ALL) profiles each
   symbol that has a function-symbol and occurs in a package known
@@ -4542,10 +4528,13 @@ the calls took.")
         (*record-time* lots-of-info))
     (let ((fns-ht (make-hash-table :test 'eq)))
       (declare (hash-table fns-ht))
-      (loop for p in (set-difference-equal
-                      (strip-cars (known-package-alist *the-live-state*))
-                      '("ACL2-INPUT-CHANNEL" "ACL2-OUTPUT-CHANNEL"
-                        "COMMON-LISP" "KEYWORD"))
+      (loop for p in
+            (if pkg
+                (if (stringp pkg) (list pkg) pkg)
+              (set-difference-equal
+               (strip-cars (known-package-alist *the-live-state*))
+               '("ACL2-INPUT-CHANNEL" "ACL2-OUTPUT-CHANNEL"
+                 "COMMON-LISP" "KEYWORD")))
             do
             (do-symbols (fn p)
               (cond ((gethash fn fns-ht) nil)
@@ -4566,10 +4555,10 @@ the calls took.")
       (memoize-here-come (hash-table-count fns-ht))
       (maphash
        (lambda (k v) (declare (ignore v))
-         (profile k
-                  :trace trace
-                  :watch-ifs watch-ifs
-                  :forget forget))
+         (profile-fn k
+                     :trace trace
+                     :watch-ifs watch-ifs
+                     :forget forget))
        fns-ht)
       (clear-memoize-call-array)
       (oft "~%(clear-memoize-call-array) invoked.")
@@ -4614,7 +4603,7 @@ the calls took.")
 (defun profile-file (file &rest r)
    
   "PROFILE-FILE is a raw Lisp function.  (PROFILE-FILE file) calls
-  PROFILE on 'all the functions defined in' FILE, a relatively vague
+  PROFILE-FN on 'all the functions defined in' FILE, a relatively vague
   concept.  However, if packages are changed in FILE as it is read, in
   a sneaky way, or if macros are defined and then used at the top of
   FILE, who knows which functions will be profiled?  Functions that do
@@ -4623,7 +4612,7 @@ the calls took.")
 
   (loop for fn in (functions-defined-in-file file)
         unless (dubious-to-profile fn)
-        collect (apply #'profile fn r)))
+        collect (apply #'profile-fn fn r)))
 
 ;  MEMOIZE-LET
 
@@ -4707,15 +4696,6 @@ the calls took.")
     (if x
         (access memoize-info-ht-entry x :condition)
       nil)))
-
-(defn global-suppress-condition-nil-memoization ()
-  (maphash
-   (lambda (k l)
-     (when (symbolp k)
-       (when (null (memoize-condition l))
-         (setf (symbol-function k)
-               (access memoize-info-ht-entry l :old-fn)))))
-   *memoize-info-ht*))
 
 (defn global-restore-memoize ()
   (maphash (lambda (k l)
@@ -7514,7 +7494,7 @@ next GC.~%"
   
     1. Profile some functions that have been defined.
 
-       For example, call (PROFILE 'foo1), ...
+       For example, call (PROFILE-FN 'foo1), ...
 
        Or, for example, call PROFILE-FILE on the name of a file that
        contains the definitions of some functions that have been
