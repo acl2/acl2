@@ -3749,10 +3749,7 @@ the calls took.")
     (setq condition nil))
 
   (unwind-mch-lock
-   (cond ((fboundp 'maybe-untrace!)
-          (maybe-untrace! fn))
-         ((fboundp 'old-untrace)
-          (eval `(old-untrace ,fn))))
+   (maybe-untrace! fn) ; See the comment about Memoization in trace$-def.
    (with-warnings-suppressed
     (unless *memoize-init-done*
       (ofe "Memoize-fn:  *MEMOIZE-INIT-DONE* is still nil."))
@@ -4231,7 +4228,7 @@ the calls took.")
 
 (defn1 unmemoize-fn (fn)
   (unwind-mch-lock
-   (maybe-untrace! fn)
+   (maybe-untrace! fn) ; See the comment about Memoization in trace$-def.
    (let* ((ma *memoize-call-array*)
           (l (memoizedp-raw fn)))
      (declare (type (simple-array mfixnum (*)) ma))

@@ -21824,8 +21824,16 @@
                                      (cadr notinline-tail))))
                  #-hons (eq (cadr notinline-tail) :fncall))
                 #+hons
-                (t t)
-                #-hons
+                (memo-entry
+
+; Memoization installs its own symbol-function for fn, so we do not want to
+; insert the body of fn into the traced definition; instead, we want to call
+; the traced version of fn to call the "old" (memoized) fn.  Note that we
+; always remove any trace when memoizing or unmemoizing, so we don't have the
+; symmetric problem of figuring out how to make a memoized function call a
+; traced function.
+
+                 t)
                 ((or (not def) ; then no choice in the matter!
                      predefined
                      (member-eq fn (f-get-global 'program-fns-with-raw-code
@@ -21833,7 +21841,6 @@
                      (member-eq fn (f-get-global 'logic-fns-with-raw-code
                                                  *the-live-state*)))
                  t)
-                #-hons
                 (t nil)))
          (gcond (and cond-tail (acl2-gentemp "COND")))
          (garglist (acl2-gentemp "ARGLIST"))
