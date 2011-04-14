@@ -217,7 +217,7 @@ all:
 # the comment there.
 %.acl2x: %.lisp
 	@echo "Making `pwd`/$@ on `date`"
-	@rm -f $*.cert
+	@rm -f $*.acl2x
 	@echo '(acl2::value :q)' > workxxx.$(*F)
 	@echo '(in-package "ACL2")' >> workxxx.$(*F)
 	@echo '(acl2::lp)' >> workxxx.$(*F)
