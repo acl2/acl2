@@ -11,14 +11,15 @@
 <p>
 
 <UL>
-  <LI><A HREF="#Obtaining-Lisp">Obtaining Common Lisp</A>
+  <LI><A HREF="#Obtaining-Lisp">Obtaining Common Lisp</A> (alphabetical listing)
   <UL>
-    <LI><A HREF="#Obtaining-CCL">Obtaining CCL (OpenMCL)</A>
-    <LI><A HREF="#Obtaining-SBCL">Obtaining SBCL</A>
-    <LI><A HREF="#Obtaining-GCL">Obtaining GCL</A>
     <LI><A HREF="#Obtaining-Allegro">Obtaining Allegro Common Lisp</A>
+    <LI><A HREF="#Obtaining-CCL">Obtaining CCL (OpenMCL)</A>
     <LI><A HREF="#Obtaining-CLISP">Obtaining CLisp</A>
     <LI><A HREF="#Obtaining-CMUCL">Obtaining CMU Common Lisp</A>
+    <LI><A HREF="#Obtaining-GCL">Obtaining GCL</A>
+    <LI><A HREF="#Obtaining-Lispworks">Obtaining Lispworks</A>
+    <LI><A HREF="#Obtaining-SBCL">Obtaining SBCL</A>
   </UL>
   <LI><A HREF="#Performance">Performance comparisons</A>
 </UL>
@@ -33,16 +34,16 @@ HREF="#License-and-Copyright">below</A> for details.
 
 ACL2 works on Unix/Linux, Macintosh, and some Windows operating systems (at
 least including Windows 98, Windows 2000, and Windows XP).  It can be built on
-top of any of the following Common Lisps, listed in <i>perhaps</i> decreasing
-frequency of usage (starting with perhaps the most frequently used):
+top of any of the following Common Lisps, listed here alphabetically.
 
 <ul>
-<LI><A HREF="#Obtaining-CCL">CCL (OpenMCL)</A></B><P>
-<LI><A HREF="#Obtaining-SBCL">SBCL</A></B><P>
-<LI><A HREF="#Obtaining-GCL">GCL</A></B><P>
 <LI><A HREF="#Obtaining-Allegro">Allegro Common Lisp</A></B><P>
+<LI><A HREF="#Obtaining-CCL">CCL (OpenMCL)</A></B><P>
 <LI><A HREF="#Obtaining-CLISP">CLisp</A></B><P>
 <LI><A HREF="#Obtaining-CMUCL">CMU Common Lisp</A></B><P>
+<LI><A HREF="#Obtaining-GCL">GCL</A></B><P>
+<LI><A HREF="#Obtaining-Lispworks">Lispworks</A></B><P>
+<LI><A HREF="#Obtaining-SBCL">SBCL</A></B><P>
 </ul>
 
 <br>
@@ -55,6 +56,12 @@ the ACL2 sources about ``function size'' being ``too large''.
 
 Often we put timing comparisons
 between different lisps in the <a href="http://www.cs.utexas.edu/users/moore/acl2/current/new.html">ACL2 News</a>.
+
+<P><B><A NAME="Obtaining-Allegro">Obtaining Allegro Common Lisp</A></B><P>
+
+The website for Allegro Common Lisp, a commercial implementation, is
+<code><a href="http://www.franz.com/">http://www.franz.com/</a></code>.
+You may be able to obtain a trial version there.
 
 <P><B><A NAME="Obtaining-CCL">Obtaining CCL (OpenMCL)</A></B><P>
 
@@ -140,29 +147,16 @@ edit file <code>ccl/scripts/ccl</code> or file
 <code>ccl/scripts/ccl64</code>, depending on whether you want to
 use a 32-bit or 64-bit version (respectively).
 
-<P><B><A NAME="Obtaining-SBCL">Obtaining SBCL</A></B><P>
+<P><B><A NAME="Obtaining-CLISP">Obtaining CLISP</A></B><P>
 
-SBCL (Steel Bank Common Lisp) is a non-commercial Common Lisp
+CLISP is a non-commercial Common Lisp implementation, available from <code><a
+href="http://clisp.cons.org/">http://clisp.cons.org/</a></code>.
+
+<P><B><A NAME="Obtaining-CMUCL">Obtaining CMU Common Lisp</A></B><P>
+
+CMU Common Lisp (sometimes called CMUCL) is a non-commercial Common Lisp
 implementation, available from <code><a
-href="http://sbcl.sourceforge.net/">http://sbcl.sourceforge.net/</a></code>.
-
-<p>
-
-Note for 32-bit linux users: When building ACL2 with SBCL 1.0.18 and
-1.0.39 on 32-bit Linux, we ran out of memory with the SBCL message
-"Heap exhausted, game over."  We solved the problem by modifying our
-sbcl script to use <code>--dynamic-space-size 2000</code>, for example:
-
-<hr>
-<pre>
-#!/bin/sh
-export SBCL_HOME=/projects/acl2/lisps/sbcl/sbcl-1.0.39-x86-linux/output
-/projects/acl2/lisps/sbcl/sbcl-1.0.39-x86-linux/src/runtime/sbcl --dynamic-space-size 2000 $*
-</pre>
-<hr>
-
-Your results may vary; one user has reported solving the problem with
-<code>--dynamic-space-size 2000000000</code>.
+href="http://www.cons.org/cmucl/">http://www.cons.org/cmucl/</a></code>.
 
 <P><B><A NAME="Obtaining-GCL">Obtaining GCL</A></B><P>
 
@@ -259,22 +253,35 @@ building GCL on OS X without fink.
       sudo make install
 </pre>
 
-<P><B><A NAME="Obtaining-Allegro">Obtaining Allegro Common Lisp</A></B><P>
+<P><B><A NAME="Obtaining-Lispworks">Obtaining Lispworks</A></B><P>
 
-Allegro Common Lisp is probably the most commonly-used commercial platform for
-ACL2.  You may be able to obtain a trial version from its web site,
-<code><a href="http://www.franz.com/">http://www.franz.com/</a></code>.
+The website for Lispworks, a commercial implementation, is
+<code><a href="http://www.lispworks.com/">http://www.lispworks.com/</a></code>.
+You may be able to obtain a trial version there.
 
-<P><B><A NAME="Obtaining-CLISP">Obtaining CLISP</A></B><P>
+<P><B><A NAME="Obtaining-SBCL">Obtaining SBCL</A></B><P>
 
-CLISP is a non-commercial Common Lisp implementation, available from <code><a
-href="http://clisp.cons.org/">http://clisp.cons.org/</a></code>.
-
-<P><B><A NAME="Obtaining-CMUCL">Obtaining CMU Common Lisp</A></B><P>
-
-CMU Common Lisp (sometimes called CMUCL) is a non-commercial Common Lisp
+SBCL (Steel Bank Common Lisp) is a non-commercial Common Lisp
 implementation, available from <code><a
-href="http://www.cons.org/cmucl/">http://www.cons.org/cmucl/</a></code>.
+href="http://sbcl.sourceforge.net/">http://sbcl.sourceforge.net/</a></code>.
+
+<p>
+
+Note for 32-bit linux users: When building ACL2 with SBCL 1.0.18 and
+1.0.39 on 32-bit Linux, we ran out of memory with the SBCL message
+"Heap exhausted, game over."  We solved the problem by modifying our
+sbcl script to use <code>--dynamic-space-size 2000</code>, for example:
+
+<hr>
+<pre>
+#!/bin/sh
+export SBCL_HOME=/projects/acl2/lisps/sbcl/sbcl-1.0.39-x86-linux/output
+/projects/acl2/lisps/sbcl/sbcl-1.0.39-x86-linux/src/runtime/sbcl --dynamic-space-size 2000 $*
+</pre>
+<hr>
+
+Your results may vary; one user has reported solving the problem with
+<code>--dynamic-space-size 2000000000</code>.
 
 <H3><A NAME="Performance">Performance comparisons</A></H3>
 

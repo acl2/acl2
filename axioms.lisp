@@ -42408,21 +42408,23 @@ Lisp definition."
 #-acl2-loop-only
 (defun-one-output gc$-fn (args)
 
+; Warning: Keep this in sync with :doc gc$.
+
 ; We will add some checks on the arguments as a courtesy, but really, it is up
 ; to the user to pass in the right arguments.
 
   #+allegro (apply `excl:gc args)
+  #+ccl (apply 'ccl::gc args) ; no args as per Gary Byers 12/08
+  #+clisp (apply 'ext:gc args)
+  #+cmu (apply 'system::gc args)
   #+gcl
   (if (eql (length args) 1)
       (apply 'si::gbc args)
     (er hard 'gc$
         "In GCL, gc$ requires exactly one argument, typically T."))
-  #+clisp (apply 'ext:gc args)
-  #+cmu (apply 'system::gc args)
-  #+sbcl (apply 'sb-ext:gc args)
-  #+(or mcl ccl) (apply 'ccl::gc args) ; no args as per Gary Byers 12/08
   #+lispworks (apply 'cl-user::mark-and-sweep (or args (list 3)))
-  #-(or allegro gcl clisp cmu sbcl mcl ccl lispworks)
+  #+sbcl (apply 'sb-ext:gc args)
+  #-(or allegro gcl clisp cmu sbcl ccl lispworks)
   (illegal 'gc$ "GC$ is not supported in this Common Lisp." nil)
   nil)
 
@@ -42438,15 +42440,16 @@ Lisp definition."
   invoke the garbage collector~/
 
   This function is provided so that the user can call the garbage collector of
-  the underlying Lisp from inside the ACL2 loop.  Specifically, a call of
-  ~c[gc$] is translated into a call of a function below on the same arguments.
+  the host Lisp from inside the ACL2 loop.  Specifically, a call of ~c[gc$] is
+  translated into a call of a function below on the same arguments.
   ~bv[]
   Allegro CL:            excl:gc
-  GCL                    si::gbc
+  CCL                    ccl::gc
   CLISP                  ext:gc
   CMU Common Lisp        system::gc
+  GCL                    si::gbc
+  Lispworks              cl-user::mark-and-sweep [default argument list: (3)]
   SBCL                   sb-ext:gc
-  Macintosh Common Lisp  ccl::gc
   ~ev[]
   The arguments, if any, are as documented in the underlying Common Lisp.  It
   is up to the user to pass in the right arguments, although we may do some
@@ -42584,6 +42587,9 @@ Lisp definition."
   #+(and clisp (not acl2-loop-only))
   (when (fboundp 'system::debug-backtrace)
     (eval '(catch 'system::debug (system::debug-backtrace))))
+  #+(and lispworks (not acl2-loop-only))
+  (when (fboundp 'dbg::output-backtrace)
+    (eval '(dbg::output-backtrace :verbose)))
   nil)
 
 (defun debugger-enabledp (state)

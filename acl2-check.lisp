@@ -87,19 +87,19 @@ is using two characters to indicate a new line?"))
 ; CCL:        536870911
 ; MCL:        268435455 ; not supported after ACL2 Version_3.1
 ; CLISP:       16777215
-; Lispworks:    8388607 [version 4.2.0 and perhaps all later 32-bit versions
-;                        (also checked for 4.4.6);
-;                        value was 536870911 for an earlier version]
+; Lispworks:  536870911 [version 6.0.1; but observed 8388607 in versions 4.2.0
+;                        and 4.4.6]
 
 ; We have made many type declarations in the sources of (signed-byte 30).
 ; Performance could be seriously degraded if these were not fixnum
 ; declarations.  If the following check fails, then we should consider lowering
 ; 30.  However, clisp has 24-bit fixnums.  Clisp maintainer Sam Steingold has
 ; assured us that "CLISP has a very efficient bignum implementation."  Lispworks
-; Version 4.2.0 on Linux, 32-bit, has most-positive-fixnum = 8388607 and
+; Version 4.2.0 on Linux, 32-bit, had most-positive-fixnum = 8388607 and
 ; most-negative-fixnum = -8388608; and we have been informed (email 10/22/02)
 ; that "this is an architectural limit on this platform and the LispWorks fixnum
-; size cannot be reconfigured."
+; size cannot be reconfigured."  But Lispworks 6 is back to supporting larger
+; fixnums.
 
 #-(or clisp (and lispworks (not lispworks-64bit)))
 (or (and (<= (1- (ash 1 29)) most-positive-fixnum)

@@ -20860,12 +20860,13 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
   It can be built in any of the following Common Lisps:
   ~bf[]
-    * ~b[Allegro],
-    * ~b[GCL] (Gnu Common Lisp),
+    * ~b[Allegro Common Lisp],
+    * ~b[CCL] (formerly OpenMCL)
     * ~b[CLISP],
     * ~b[CMU Common Lisp],
-    * ~b[SBCL], and
-    * ~b[CCL] (OpenMCL)
+    * ~b[GCL] (Gnu Common Lisp),
+    * ~b[Lispworks], and
+    * ~b[SBCL] (Steel Bank Common Lisp)
   ~ef[]
 
   ~fly[|The End of the Flying Tour|]") 
