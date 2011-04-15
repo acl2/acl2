@@ -1,0 +1,44 @@
+
+\mode<presentation> 
+\usetheme{Warsaw}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{comment}
+
+\useinnertheme{rectangles}
+\useoutertheme{infolines}
+% centaur logo color: 174,191,219
+%\usecolortheme[RGB={134,151,179}]{structure}
+% \usecolortheme[RGB={114,125,149}]{structure}
+% \usecolortheme[RGB={100, 0, 0}]{structure}
+\usecolortheme[RGB={66,101,144}]{structure}
+\definecolor{Highlight}{rgb}{0,0,1}
+\definecolor{darkgreen}{rgb}{0,.5,0}
+\definecolor{darkred}{rgb}{0.5,0,0}
+\definecolor{CodeColor}{rgb}{.0, .0, .4}
+\newcommand{\Highlight}[1]{{\color{Highlight}#1}}
+\newcommand{\Red}[1]{{\color{darkred}#1}}
+\newcommand{\Green}[1]{{\color{darkgreen}#1}}
+\newcommand{\Code}[1]{{\color{CodeColor} \tt \small #1}}
+
+\beamertemplatenavigationsymbolsempty
+
+\usebeamerfont{title}
+\usebeamerfont{author}
+\usebeamerfont{institute}
+\usebeamerfont{date}
+\setlength{\parindent}{0pt}
+
+\newcommand{\SmallSkip}{\vspace{0.5cm}\noindent}
+\newcommand{\Skip}{\vspace{1cm}\noindent}
+\newcommand{\MedSkip}{\vspace{1.5cm}\noindent}
+\newcommand{\BigSkip}{\vspace{2cm}\noindent}
+
+\AtBeginSection[] {
+%% Uncomment the lines inside of here to get an extra Outline page
+%% in front of each section.
+% \begin{frame}
+%  \frametitle{Outline}
+%  \tableofcontents[currentsection]
+% \end{frame}
+}
