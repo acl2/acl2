@@ -17529,6 +17529,18 @@
   ~c[pc-print-macroexpansion-flg], and ~c[pc-print-prompt-and-instr-flg],
   respectively.
 
+  ~il[State] globals ~c[fmt-hard-right-margin] and ~c[fmt-soft-right-margin]
+  are now untouchable (~pl[set-fmt-hard-right-margin] and
+  ~pl[push-untouchable]).  If you bind these ~c[state] globals with
+  ~c[state-global-let*], then you will need to do so with appropriate setteres
+  to restore their values, for example as follows.
+  ~bv[]
+    (state-global-let*
+     ((fmt-hard-right-margin 500 set-fmt-hard-right-margin)
+      (fmt-soft-right-margin 480 set-fmt-soft-right-margin))
+     ...)
+  ~ev[]
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of

@@ -21623,9 +21623,10 @@
 (deflabel arrays-example
   :doc
 
-; The transcript below was generated after executing the following two forms:
-; (assign fmt-soft-right-margin 55)
-; (assign fmt-hard-right-margin 68)
+; The transcript below was generated essentially after executing the following
+; two forms:
+; (set-fmt-soft-right-margin 55 state)
+; (set-fmt-hard-right-margin 68 state)
 
   ":Doc-Section Arrays
 
@@ -31355,8 +31356,8 @@
     proof-tree
 ;   proof-tree-ctx  - used in books/cli-misc/expander.lisp
 
-;   fmt-soft-right-margin - used by write-acl2-html
-;   fmt-hard-right-margin - used by write-acl2-html
+    fmt-soft-right-margin
+    fmt-hard-right-margin
 
 ; We would like to make the following three untouchable, to avoid
 ; getting a raw Lisp error in this sort of situation:

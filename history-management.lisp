@@ -1183,8 +1183,8 @@
     (mv-let
      (erp val state)
      (state-global-let*
-      ((fmt-hard-right-margin 1000)
-       (fmt-soft-right-margin 1000))
+      ((fmt-hard-right-margin 1000 set-fmt-hard-right-margin)
+       (fmt-soft-right-margin 1000 set-fmt-soft-right-margin))
 
 ; We need the event name to fit on a single line, hence the state-global-let*
 ; above.
@@ -20789,8 +20789,8 @@
                     (length filename))))
      (mv-let (erp val state)
              (state-global-let*
-              ((fmt-hard-right-margin bound)
-               (fmt-soft-right-margin bound))
+              ((fmt-hard-right-margin bound set-fmt-hard-right-margin)
+               (fmt-soft-right-margin bound set-fmt-soft-right-margin))
               (pprogn (fms-to-standard-co str
                                           (list (cons #\0 included)
                                                 (cons #\1 val)

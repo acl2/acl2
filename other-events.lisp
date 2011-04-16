@@ -28463,12 +28463,13 @@
 ; This constant should set up a state-global-let* binding for every state
 ; global variable that can have an effect on evaluation of a call of fms, fmt,
 ; or fmt1 (or their "!" versions), which are the functions on which we apply
-; the macro channel-to-string.
+; the macro channel-to-string.  The values for the margins are simply
+; convenient large values.
 
   (append *print-control-defaults*
           `((write-for-read t)
-            (fmt-hard-right-margin 10000) ; arbitrary but large
-            (fmt-soft-right-margin 10000) ; arbitrary but large
+            (fmt-hard-right-margin 10000 set-fmt-hard-right-margin)
+            (fmt-soft-right-margin 10000 set-fmt-soft-right-margin)
             (iprint-soft-bound ,*iprint-soft-bound-default*)
             (iprint-hard-bound ,*iprint-hard-bound-default*)
             (ppr-flat-right-margin

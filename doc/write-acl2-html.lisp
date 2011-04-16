@@ -1304,8 +1304,8 @@ an html file.  See :DOC markup")
                                                     "-undocumented.html")
                              undocumented-file)))
     (acl2::state-global-let*
-     ((acl2::fmt-hard-right-margin 500)
-      (acl2::fmt-soft-right-margin 480)
+     ((acl2::fmt-hard-right-margin 500 acl2::set-fmt-hard-right-margin)
+      (acl2::fmt-soft-right-margin 480 acl2::set-fmt-soft-right-margin)
       (doc-tree-channel nil))
      (let* ((html-file (acl2::string-append file-root ".html"))
             (major-topics-file
