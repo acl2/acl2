@@ -258,8 +258,8 @@ an xdoc file.  See :DOC markup")
 
 (defun write-xdoc-alist-fn (write-p return-p skip-topics state)
   (acl2::state-global-let*
-   ((acl2::fmt-hard-right-margin 500)
-    (acl2::fmt-soft-right-margin 480))
+   ((acl2::fmt-hard-right-margin 500 acl2::set-fmt-hard-right-margin)
+    (acl2::fmt-soft-right-margin 480 acl2::set-fmt-soft-right-margin))
    (let ((doc-alist (global-val 'acl2::documentation-alist
                                 (acl2::w state))))
      (mv-let
