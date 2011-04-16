@@ -3039,9 +3039,6 @@
         'wrld
         'state-vars))
 
-(defconst *default-state-vars*
-  (default-state-vars nil))
-
 (defmacro warning$-cw (ctx &rest args)
 
 ; This differs from warning$-cmp only in that state-vars and wrld are bound
@@ -3051,7 +3048,7 @@
 ; might be:
 ; (warning$-cw ctx "The :REWRITE rule ~x0 loops forever." name).
 
-  `(let ((state-vars *default-state-vars*)
+  `(let ((state-vars (default-state-vars #-hons nil #+hons :hons))
          (wrld nil))
      (warning$-cmp ,ctx nil ,@args)))
 

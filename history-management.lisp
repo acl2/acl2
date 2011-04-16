@@ -5435,24 +5435,29 @@
 ; whether it is to be marked, whether it is fully, partially, or not
 ; disabled, and how far to indent it.
 
-(defun make-ldd-flags (class markp cdpair fullp)
+(defrec ldd-status
+  (defun-mode-pair disabled memoized)
+  nil) ; could change to t after awhile; this new record was created April 2011
+
+(defun make-ldd-flags (class markp status fullp)
 
 ; Class is 'COMMAND or 'EVENT, markp is t or nil indicating whether we are to
-; print the ">" beside the line, cdpair is a triple (!) of characters
-; indicating defun-mode and disabled status, and fullp is t or nil indicating
-; whether we are to print the form in full or just sketch it.  Once upon a time
-; this fn didn't do any consing because there were only a small number of
-; combinations and they were all built in.  But with the introduction of colors
-; (which became defun-modes) that strategy lost its allure.
+; print the ">" beside the line, status is a record containing characters that
+; indicate the defun-mode and disabled status (also memoized status for the
+; HONS version), and fullp is t or nil indicating whether we are to print the
+; form in full or just sketch it.  Once upon a time this fn didn't do any
+; consing because there were only a small number of combinations and they were
+; all built in.  But with the introduction of colors (which became defun-modes)
+; that strategy lost its allure.
 
- (cons (cons class markp) (cons cdpair fullp)))
+ (cons (cons class markp) (cons status fullp)))
 
-(defun make-ldd (class markp cdpair n fullp form)
+(defun make-ldd (class markp status n fullp form)
 
 ; Class is 'command or 'event.
 ; Markp is t or nil, indicating whether we are to print a ">".
-; Cdpair a triple of characters ((c1 . c2) . d) indicating defun-mode
-;   and disabled status.
+; Status is a an ldd-status record indicating defun-mode, disabled, and
+;   (for the HONS version) memoized status.
 ; n is a natural number whose interpretation depends on class:
 ;   if class is 'command, n is the command number; otherwise,
 ;   n is how far we are to indent, where 1 means indent one
@@ -5461,12 +5466,12 @@
 ;   in full or only sketch it.
 ; form is the form to print.
 
-  (cons (make-ldd-flags class markp cdpair fullp)
+  (cons (make-ldd-flags class markp status fullp)
         (cons n form)))
 
 (defun access-ldd-class  (ldd) (caaar ldd))
 (defun access-ldd-markp  (ldd) (cdaar ldd))
-(defun access-ldd-cdpair (ldd) (cadar ldd))
+(defun access-ldd-status (ldd) (cadar ldd))
 (defun access-ldd-fullp  (ldd) (cddar ldd))
 (defun access-ldd-n      (ldd) (cadr ldd))
 (defun access-ldd-form   (ldd) (cddr ldd))
@@ -5474,11 +5479,11 @@
 (defun big-d-little-d-name1 (lst ens ans)
 
 ; Lst is a list of runic-mapping-pairs.  The car of each pair is a nume.  We
-; are considering the enabled status of the runes (numes) in lst.  If
-; all members of the list are enabled, we return #\E.  If all are
-; disabled, we return #\D.  If some are enabled and some are disabled, we
-; return #\d.  Ans is #\E or #\D signifying that we have seen some runes so far
-; and they are all enabled or disabled as indicated.
+; are considering the enabled status of the runes (numes) in lst.  If all
+; members of the list are enabled, we return #\E.  If all are disabled, we
+; return #\D.  If some are enabled and some are disabled, we return #\d.  Ans
+; is #\E or #\D signifying that we have seen some runes so far and they are all
+; enabled or disabled as indicated.
 
   (cond ((null lst) ans)
         ((equal ans (if (enabled-numep (caar lst) ens) #\E #\D))
@@ -5487,10 +5492,10 @@
 
 (defun big-d-little-d-name (name ens wrld)
 
-; Name is a symbol.  If it is the basic symbol of some nonempty set of
-; runes, then we return either #\D, #\d, or #\E, depending on
-; whether all, some, or none of the runes based on name are disabled.
-; If name is not the basic symbol of any rune, we return #\Space.
+; Name is a symbol.  If it is the basic symbol of some nonempty set of runes,
+; then we return either #\D, #\d, or #\E, depending on whether all, some, or
+; none of the runes based on name are disabled.  If name is not the basic
+; symbol of any rune, we return #\Space.
 
   (let ((temp (getprop name 'runic-mapping-pairs nil 'current-acl2-world wrld)))
     (cond ((null temp) #\Space)
@@ -5591,6 +5596,84 @@
             (t ; s must be #\Space
              (big-d-little-d-command-block (cdr wrld1) ens wrld s1)))))
         (t (big-d-little-d-command-block (cdr wrld1) ens wrld s))))
+
+(defun big-m-little-m-name (name wrld)
+
+; This function, which supports the printing of the memoization status, is
+; analogous to function big-d-little-d-name, which supports the printing of the
+; disabled status.
+
+  (cond ((and (function-symbolp name wrld)
+              (not (getprop name 'constrainedp nil 'current-acl2-world wrld)))
+         (if (memoizedp-world name wrld)
+             #\M
+           #\E))
+        (t #\Space)))
+
+(defun big-m-little-m-clique1 (names wrld ans)
+
+; This function, which supports the printing of the memoization status, is
+; analogous to function big-d-little-d-clique1, which supports the printing of
+; the disabled status.
+
+  (cond ((null names) ans)
+        (t (let ((ans1 (big-m-little-m-name (car names) wrld)))
+             (cond ((eql ans1 #\m) #\m)
+                   ((eql ans1 ans)
+                    (big-m-little-m-clique1 (cdr names) wrld ans))
+                   (t #\m))))))
+
+(defun big-m-little-m-clique (names wrld)
+
+; This function, which supports the printing of the memoization status, is
+; analogous to function big-d-little-d-clique, which supports the printing of
+; the disabled status.
+
+  (let ((ans (big-m-little-m-name (car names) wrld)))
+    (cond ((eql ans #\m) #\m)
+          (t (big-m-little-m-clique1 (cdr names) wrld ans)))))
+
+(defun big-m-little-m-event (ev-tuple wrld)
+
+; This function, which supports the printing of the memoization status, is
+; analogous to function big-d-little-d-event, which supports the printing of
+; the disabled status.
+
+  (let ((namex (access-event-tuple-namex ev-tuple)))
+    (case (access-event-tuple-type ev-tuple)
+          ((defun)
+           (big-m-little-m-name namex wrld))
+          (defuns (big-m-little-m-clique namex wrld))
+          (defstobj (big-m-little-m-clique (cddr namex) wrld))
+          (otherwise #\Space))))
+
+(defun big-m-little-m-command-block (wrld1 wrld s)
+
+; This function, which supports the printing of the memoization status, is
+; analogous to function big-d-little-d-command-block, which supports the
+; printing of the disabled status.
+
+  (cond ((or (null wrld1)
+             (and (eq (caar wrld1) 'command-landmark)
+                  (eq (cadar wrld1) 'global-value)))
+         s)
+        ((and (eq (caar wrld1) 'event-landmark)
+              (eq (cadar wrld1) 'global-value))
+         (let ((s1 (big-m-little-m-event (cddar wrld1) wrld)))
+; S1 = #\M, #\E, #\m, or #\Space
+           (cond
+            ((or (eql s s1)
+                 (eql s1 #\Space))
+             (big-m-little-m-command-block (cdr wrld1) wrld s))
+            ((or (eql s1 #\m)
+                 (and (eql s #\E)
+                      (eql s1 #\M))
+                 (and (eql s #\M)
+                      (eql s1 #\E)))
+             #\m)
+            (t ; s must be #\Space
+             (big-m-little-m-command-block (cdr wrld1) wrld s1)))))
+        (t (big-m-little-m-command-block (cdr wrld1) wrld s))))
 
 (defun symbol-class-char (symbol-class)
 
@@ -5931,6 +6014,11 @@
      (declare (ignore erp val))
      state))
 
+(defun print-ldd-formula-column (state)
+  (cond ((hons-enabledp state) ; extra column for the memoization status
+         14)
+        (t 13)))
+
 (defun print-ldd (ldd channel state)
 
 ; This is the general purpose function for printing out an ldd.
@@ -5938,41 +6026,46 @@
   (with-base-10
    (let ((formula-col
           (if (eq (access-ldd-class ldd) 'command)
-
-; Warning:  If you change the basic formula-col setting of 12, change
-; the number of spaces put out in the fmt1 expression in pcs-fn!
-
-              13
-            (+ 13 (access-ldd-n ldd)))))
+              (print-ldd-formula-column state)
+            (+ (print-ldd-formula-column state)
+               (access-ldd-n ldd))))
+         (status (access-ldd-status ldd)))
      (declare (type (signed-byte 30) formula-col))
      (pprogn
       (princ$ (if (access-ldd-markp ldd)
                   (access-ldd-markp ldd)
                 #\Space)
               channel state)
-      (princ$ (caar (access-ldd-cdpair ldd)) channel state)
-      (princ$ (cdar (access-ldd-cdpair ldd)) channel state)
-      (princ$ (if (eql (cdr (access-ldd-cdpair ldd)) #\E)
-                  #\Space
-                (cdr (access-ldd-cdpair ldd)))
-              channel state)
-      (if (eq (access-ldd-class ldd) 'command)
-          (mv-let
-            (col state)
-            (fmt1 "~c0~s1"
-                  (list
-                   (cons #\0 (cons (access-ldd-n ldd) 7))
-                   (cons #\1 (cond
-                              ((= (access-ldd-n ldd)
-                                  (absolute-to-relative-command-number
-                                   (max-absolute-command-number (w state))
-                                   (w state)))
-                               ":x")
-                              (t "  "))))
-                  4 channel state nil)
-            (declare (ignore col))
-            state)
-        (spaces (- formula-col 4) 4 channel state))
+      (let ((defun-mode-pair (access ldd-status status :defun-mode-pair)))
+        (pprogn
+         (princ$ (car defun-mode-pair) channel state)
+         (princ$ (cdr defun-mode-pair) channel state)))
+      (let ((disabled (access ldd-status status :disabled)))
+        (princ$ (if (eql disabled #\E) #\Space disabled)
+                channel state))
+      (if (hons-enabledp state)
+          (let ((memoized (access ldd-status status :memoized)))
+            (princ$ (if (eql memoized #\E) #\Space memoized)
+                    channel state))
+        state)
+      (let ((cur-col (if (hons-enabledp state) 5 4)))
+        (if (eq (access-ldd-class ldd) 'command)
+            (mv-let
+             (col state)
+             (fmt1 "~c0~s1"
+                   (list
+                    (cons #\0 (cons (access-ldd-n ldd) 7))
+                    (cons #\1 (cond
+                               ((= (access-ldd-n ldd)
+                                   (absolute-to-relative-command-number
+                                    (max-absolute-command-number (w state))
+                                    (w state)))
+                                ":x")
+                               (t "  "))))
+                   cur-col channel state nil)
+             (declare (ignore col))
+             state)
+          (spaces (- formula-col cur-col) cur-col channel state)))
       (fmt-ppr
        (print-ldd-full-or-sketch (access-ldd-fullp ldd)
                                  (access-ldd-form ldd))
@@ -6014,13 +6107,19 @@
 ;     more difficult, we also elide away irrelevant events in the
 ;     block.
 
-
 (defun make-command-ldd (markp fullp cmd-wrld ens wrld)
   (make-ldd 'command
             markp
-            (cons (big-c-little-c-command-block (cdr cmd-wrld) wrld nil)
+            (make ldd-status
+                  :defun-mode-pair
+                  (big-c-little-c-command-block (cdr cmd-wrld) wrld nil)
+                  :disabled
                   (big-d-little-d-command-block (cdr cmd-wrld) ens wrld
-                                                #\Space))
+                                                #\Space)
+                  :memoized
+                  (and (global-val 'hons-enabled wrld) ; else don't care
+                       (big-m-little-m-command-block (cdr cmd-wrld) wrld
+                                                     #\Space)))
             (absolute-to-relative-command-number
              (access-command-tuple-number (cddar cmd-wrld))
              wrld)
@@ -6030,8 +6129,14 @@
 (defun make-event-ldd (markp indent fullp ev-tuple ens wrld)
   (make-ldd 'event
             markp
-            (cons (big-c-little-c-event ev-tuple wrld)
-                  (big-d-little-d-event ev-tuple ens wrld))
+            (make ldd-status
+                  :defun-mode-pair
+                  (big-c-little-c-event ev-tuple wrld)
+                  :disabled
+                  (big-d-little-d-event ev-tuple ens wrld)
+                  :memoized
+                  (and (global-val 'hons-enabled wrld) ; else don't care
+                       (big-m-little-m-event ev-tuple wrld)))
             indent
             fullp
             (access-event-tuple-form ev-tuple)))
@@ -6223,9 +6328,10 @@
    LVd     52 (DEFUN FOO (X) X)
   ~ev[]
   ~c[Pc] always prints a space first, followed by three (possibly blank)
-  ~il[characters] (``LVd'' above) explained below.  Then ~c[pc] prints the
-  ~il[command] number, a number uniquely identifying the ~il[command]'s position
-  in the sequence of ~il[command]s since the beginning of the user's
+  ~il[characters] (``LVd'' above) explained below (four, in the experimental
+  HONS version; ~pl[hons-and-memoization]).  Then ~c[pc] prints the
+  ~il[command] number, a number uniquely identifying the ~il[command]'s
+  position in the sequence of ~il[command]s since the beginning of the user's
   session.  Finally, the ~il[command] itself is printed.
 
   While ~c[pc] always prints a space first, some ~il[history] ~il[command]s, for
@@ -6264,10 +6370,10 @@
   intended to suggest a tree branch indicating that the event is
   inferior to (and part of) the ~il[command].
 
-  The mysterious three ~il[characters] sometimes preceding a ~il[command] have
-  the following interpretations.  The first two have to do with the
-  function symbols introduced by the ~il[command] and are blank if no
-  symbols were introduced.
+  The mysterious ~il[characters] sometimes preceding a ~il[command] have the
+  following interpretations.  The first two have to do with the function
+  symbols introduced by the ~il[command] and are blank if no symbols were
+  introduced.
 
   At any time we can classify our function symbols into disjoint sets, which we
   will here name with ~il[characters].  The ``~c[P]'' functions are those in
@@ -6319,7 +6425,15 @@
   ~c[(:type-prescription fn)].  The display above does not say which of
   the ~il[rune]s based on ~c[foo] is ~il[disable]d, but it does tell us one of
   them is; ~pl[disabledp] for how to obtain the disabled runes for
-  a given function symbol.~/"
+  a given function symbol.
+
+  Finally, for the experimental HONS version only (~pl[hons-and-memoization]),
+  a fourth character is printed, indicating whether functions are memoized.
+  A symbol may be memoized if it is a function symbol that is not constrained
+  (i.e., introduced by ~ilc[defchoose] or in the ~il[signature] of an
+  ~ilc[encapsulate] event).  If the command introduces no symbol that may be
+  memoized, then a space is printed.  Otherwise, if every memoizable symbol is
+  memoized, an ``~c[M]'' is printed.  Otherwise, an ``~c[m]'' is printed.~/"
 
   (list 'pc-fn cd 'state))
 
@@ -6364,11 +6478,15 @@
                (print-ldd (make-command-ldd nil nil wrld ens wrld)
                           (standard-co state)
                           state))
-              (t (pprogn (mv-let (col state)
-                                 (fmt1 "          : ...~%"
-                                       nil 0 (standard-co state) state nil)
-                                 (declare (ignore col))
-                                 state)
+              (t (pprogn (mv-let
+                          (col state)
+                          (fmt1 "~t0: ...~%"
+                                (list (cons #\0
+                                            (- (print-ldd-formula-column state)
+                                               2)))
+                                0 (standard-co state) state nil)
+                          (declare (ignore col))
+                          state)
                          (print-ldd (make-command-ldd nil nil wrld ens wrld)
                                     (standard-co state)
                                     state))))
@@ -6500,7 +6618,7 @@
      (make-command-ldd nil t cmd-wrld (ens state) wrld)
      channel state))
    (t
-    (let ((indent 13)
+    (let ((indent (print-ldd-formula-column state))
           (ens (ens state)))
       (pprogn
        (print-ldd
@@ -9706,7 +9824,7 @@
             (newline channel state)
             (value :invisible)))
    (t (pprogn (princ$
-               (if (f-get-global 'hons-enabled state)
+               (if (hons-enabledp state)
                    "  " ; Boyer preference
                  "*-")
                channel state)

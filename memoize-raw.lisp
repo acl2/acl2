@@ -6648,8 +6648,6 @@ next GC.~%"
 
      (set-gag-mode t)
 
-     (f-put-global 'hons-enabled t *the-live-state*)
-
      "If the ACL2 global PRINT-CIRCLE is not t,
       then .cert files may be huge."
 

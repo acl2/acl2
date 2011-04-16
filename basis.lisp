@@ -8081,7 +8081,6 @@
 
 (defmacro default-state-vars
   (state-p &key
-           (hons-enabled 'nil hons-enabled-p)
            (safe-mode 'nil safe-mode-p)
            (temp-touchable-vars 'nil temp-touchable-vars-p)
            (guard-checking-on 't guard-checking-on-p)
@@ -8089,19 +8088,17 @@
            (temp-touchable-fns 'nil temp-touchable-fns-p)
            (parallel-evaluation-enabled 'nil parallel-evaluation-enabled-p))
 
-; Warning: Keep this in sync with state-vars.
+; Warning: Keep this in sync with defrec state-vars.
 
-; State-p is true when by default, we want to use the values of the relevant
-; state globals.  Otherwise we use the specified defaults, which are supplied
-; above for convenience but can be changed there (i.e., in this code) if better
-; default values are found.
+; State-p is t to indicate that we use the current values of the relevant state
+; globals.  Otherwise we use the specified defaults, which are supplied above
+; for convenience but can be changed there (i.e., in this code) if better
+; default values are found.  The value :hons for state-p is treated like nil,
+; except that state-var hons-enabled is t rather than nil.
 
-  (cond (state-p
+  (cond ((eq state-p t)
          `(make state-vars
-                :hons-enabled
-                ,(if hons-enabled-p
-                     hons-enabled
-                   '(f-get-global 'hons-enabled state))
+                :hons-enabled (hons-enabledp state)
                 :safe-mode
                 ,(if safe-mode-p
                      safe-mode
@@ -8126,9 +8123,9 @@
                 ,(if parallel-evaluation-enabled-p
                      parallel-evaluation-enabled
                    '(f-get-global 'parallel-evaluation-enabled state))))
-        (t
+        (t ; state-p is not t
          `(make state-vars
-                :hons-enabled ,hons-enabled
+                :hons-enabled ,(eq state-p :hons)
                 :safe-mode ,safe-mode
                 :temp-touchable-vars ,temp-touchable-vars
                 :guard-checking-on ,guard-checking-on

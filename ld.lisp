@@ -17759,6 +17759,9 @@
   that have not had their guards verified.  ~l[memoize] (keyword
   ~c[:ideal-okp]) and ~pl[acl2-defaults-table] (key ~c[:memoize-ideal-okp]) for
   and explanation of this restriction and how to avoid it.
+
+  ~il[History] commands such as ~c[:]~ilc[pe] and ~c[:]~ilc[pbt] now display
+  ``~c[M]'' or ``~c[m]'' to indicate memoized functions.  ~l[pc].
   ~eq[]
 
   ~/~/")

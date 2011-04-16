@@ -1419,6 +1419,19 @@
                     (embedded-event-lst nil)
                     (cltl-command nil)
                     (top-level-cltl-command-stack nil)
+                    (hons-enabled
+
+; Why are we comfortable making hons-enabled a world global?  Note that even if
+; if hons-enabled were a state global, the world would be sensitive to whether
+; or not we are in the hons version: for example, we get different evaluation
+; results for the following.
+
+;   (getprop 'memoize-table 'table-guard *t* 'current-acl2-world (w state))
+
+; By making hons-enabled a world global, we can access its value without state
+; in history query functions such as :pe.
+
+                     #+hons t #-hons nil)
                     (include-book-alist nil)
                     (include-book-alist-all nil)
                     (include-book-path nil)

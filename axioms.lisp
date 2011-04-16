@@ -24701,7 +24701,6 @@
     (global-enabled-structure . nil) ; initialized in enter-boot-strap-mode
     (gstackp . nil)
     (guard-checking-on . t)
-    (hons-enabled . nil) ; set in *hons-init-hook*
     (hons-read-p . t) ; only of interest in the #+hons version
     (host-lisp . ; GCL 2.6.7 can fail if instead we do the obvious thing here
                ,(let ()
@@ -31441,9 +31440,6 @@
 ;   print-radix  ; generalized boolean
 ;   print-readably ; generalized boolean
     print-right-margin ; nil or non-negative integer
-
-    hons-enabled
-
     iprint-ar
     iprint-hard-bound
     iprint-soft-bound

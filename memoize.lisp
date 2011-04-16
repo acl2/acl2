@@ -376,9 +376,8 @@
   ~/")
 
 (defun hons-enabledp (state)
-  (declare (xargs :guard (and (state-p state)
-                              (boundp-global 'hons-enabled state))))
-  (f-get-global 'hons-enabled state))
+  (declare (xargs :guard (state-p state)))
+  (global-val 'hons-enabled (w state)))
 
 #+(or acl2-loop-only (not hons))
 (defn clear-memoize-table (fn)
@@ -1062,15 +1061,19 @@
 
   `(return-last 'memoize-let-raw ,fn ,form))
 
+(defmacro memoizedp-world (fn wrld)
+  `(let ((fn ,fn) (wrld ,wrld))
+     (cond
+      ((not (global-val 'hons-enabled wrld))
+       (er hard 'memoizedp
+           "Memoizedp cannot be called in this ACL2 image, as it requires a ~
+            hons-aware ACL2.  See :DOC hons-and-memoization."))
+      (t
+       (cdr (assoc-eq fn (table-alist 'memoize-table wrld)))))))
+
 (defmacro memoizedp (fn)
   (declare (xargs :guard t))
-  `(cond
-    ((not (hons-enabledp state))
-     (er hard 'memoizedp
-         "Memoizedp cannot be called in this ACL2 image, as it requires a ~
-          hons-aware ACL2.  See :DOC hons-and-memoization."))
-    (t
-     (cdr (assoc-eq ,fn (table-alist 'memoize-table (w state)))))))
+  `(memoizedp-world ,fn (w state)))
 
 ;;; hons-shrink-alist
 
