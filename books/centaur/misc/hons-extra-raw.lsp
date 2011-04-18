@@ -1,0 +1,147 @@
+; Centaur Miscellaneous Books
+; Copyright (C) 2008-2011 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original authors: Jared Davis <jared@centtech.com>
+;                   Sol Swords <sswords@centtech.com>
+
+(in-package "ACL2")
+
+
+(defun hl-hspace-normedp (x hs)
+
+; (HL-HSPACE-NORMEDP X HS) --> BOOL
+;
+; X may be any ACL2 Object and HS is a Hons Space.  We determine if X is normed
+; with respect to HS.
+
+  (declare (type hl-hspace hs))
+  (cond ((consp x)
+         (hl-hspace-honsp x hs))
+        ((stringp x)
+         (let* ((str-ht (hl-hspace-str-ht hs))
+                (entry  (gethash x str-ht)))
+           (and entry
+                #+static-hons
+                (eq x (car entry))
+                #-static-hons
+                (eq x entry))))
+        (t
+         t)))
+
+;; Return the longest tail of alist in which all keys are normed.
+(defun hl-make-fast-alist-check (alist hs)
+  (declare (type hl-hspace hs))
+  (let ((ok-tail alist))
+    ;; ok-tail is a tail of alist on which we haven't yet found any unnormed keys.
+    (loop for tail on alist while (consp tail) do
+          (let ((pair (car tail)))
+            (when (and (consp pair)
+                       (not (hl-hspace-normedp (car pair) hs)))
+              (setq ok-tail (cdr tail)))))
+    ok-tail))
+
+;; Makes a copy of alist in which all keys are normed, assuming all keys are
+;; normed in tail.
+(defun hl-make-fast-norm-keys (alist tail hs)
+  (declare (type hl-hspace hs))
+  (if (eq tail alist)
+      alist
+    (let* ((first-cons (list nil))
+           (last-cons first-cons))
+      (loop for rest on alist
+            while (and (consp rest) (not (eq rest tail)))
+            do
+            (let* ((pair (car rest))
+                   (cons (list (if (consp pair)
+                                   (cons (hl-hspace-norm (car pair) hs) (cdr pair))
+                                 pair))))
+              (setf (cdr last-cons) cons)
+              (setq last-cons cons)))
+      (setf (cdr last-cons) tail)
+      (cdr first-cons))))
+
+;; Puts the pairs in alist into table, ensuring that the first ones bound mask
+;; later ones.
+(defun hl-make-fast-alist-put-pairs (alist ht)
+  (declare (type hash-table ht))
+  (loop for rest on alist while (consp rest) do
+        (let ((pair (car rest)))
+          (when (and (consp pair)
+                     (not (gethash (car pair) ht)))
+            (setf (gethash (car pair) ht) pair)))))
+
+; This function ensures that there is a backing hash table for alist.  It
+; returns either alist itself or an EQUAL copy.
+(defun hl-hspace-make-fast-alist (alist hs)
+  (declare (type hl-hspace hs))
+  ;; If alist is an atom, we're done.
+  (if (atom alist)
+      alist
+    ;; If the alist already has an associated hash table, we're also done.
+    (let* ((fal-ht      (hl-hspace-fal-ht hs))
+           (alist-table (gethash alist (the hash-table fal-ht))))
+      (if alist-table
+          alist
+        (let* ((tail
+                ;; Finds the largest tail of alist in which all keys are normed.
+                (hl-make-fast-alist-check alist hs))
+               ;; Makes a copy of alist in which all keys are normed.
+               (alist (hl-make-fast-norm-keys alist tail hs)))
+          ;; We need to make a new hash table to back ALIST.  As in
+          ;; hl-hspace-shrink-alist, we choose a size of
+          ;; (max 60 (* 1/8 length)).
+          (setq alist-table
+                (hl-mht :size (max 60 (ash (len alist) -3))))
+          (hl-make-fast-alist-put-pairs alist alist-table)
+          (setf (gethash alist (the hash-table fal-ht))
+                alist-table)
+          alist)))))
+
+
+(defun make-fast-alist (alist)
+  ;; no need to inline
+  (hl-maybe-initialize-default-hs)
+  (hl-hspace-make-fast-alist alist *default-hs*))
+
+
+
+(defmacro with-fast-alist-raw (alist form)
+  (let ((alist-was-fast-p (gensym))
+        (alist-var (if (legal-variablep alist)
+                       alist
+                     (gensym))))
+    `(b* ((- (hl-maybe-initialize-default-hs))
+          ;; If alist isn't a variable, then depend on it being a computation
+          ;; that returns the same (eq) object each time, and that object can
+          ;; be turned into an (eq) fast alist, i.e. its keys are normed.  If
+          ;; not, then the user may not find their alist to be fast during the
+          ;; execution of form, but we'll still correctly free it.
+          (,alist-var ,alist)
+          (,alist-was-fast-p
+           (if (gethash ,alist-var (hl-hspace-fal-ht *default-hs*))
+               t
+             nil))
+          (,alist-var (if ,alist-was-fast-p
+                          ,alist-var
+                        (make-fast-alist ,alist-var))))
+       (our-multiple-value-prog1
+        ,form
+        (if ,alist-was-fast-p
+            nil
+          (fast-alist-free ,alist-var))))))
+
