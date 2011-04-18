@@ -4474,17 +4474,24 @@
 
   ":Doc-Section IO
 
-  set the hard right margin for formatted output~/
+  set the right margin for formatted output~/
 
-  ~ilc[Fmt] and related functions insert linebreaks when lines get too long.
-  A linebreaks is inserted at an aesthetically appropriate points once the
-  column exceeds the value of ~il[state] global ~c[fmt-soft-right-margin],
-  i.e., the result of evaluating ~c[(@ fmt-soft-right-margin)].  If however the
-  column exceeds the value of ~il[state] global ~c[fmt-hard-right-margin],
-  i.e., the result of evaluating ~c[(@ fmt-hard-right-margin)], then a
-  linebreak is soon inserted.  Such a ``hard'' linebreak follows the insertion
-  of a backslash (~c[\\]) character unless ~ilc[fmt!], ~ilc[fms!], or
-  ~ilc[fmt1!] is used, or state global ~c[write-for-read] is true.~/~/"
+  In this documentation topic we discuss setting of both a ``soft'' and a
+  ``hard'' right margin.
+
+  ~bv[]
+  Example Forms:
+  (set-fmt-soft-right-margin 55 state) ; set soft right margin to 55
+  (set-fmt-hard-right-margin 68 state) ; set hard right margin to 68
+  ~ev[]
+
+  ~ilc[Fmt] and related functions insert linebreaks when lines get too long.  A
+  linebreak is inserted at an aesthetically appropriate point once the column
+  exceeds the value of ~c[(@ fmt-soft-right-margin)].  If however the column
+  exceeds the value of ~c[(@ fmt-hard-right-margin)], then a linebreak is soon
+  inserted.  Such a ``hard'' linebreak follows the insertion of a
+  backslash (~c[\\]) character unless ~ilc[fmt!], ~ilc[fms!], or ~ilc[fmt1!] is
+  used, or state global ~c[write-for-read] is true.~/~/"
 
   (cond
    ((and (integerp n)
@@ -6187,17 +6194,15 @@
   notation in certain environments.  Infix printing is not currently supported
   but may be if there is sufficient need for it.~/
 
-  ACL2's formatting functions print to the indicated channel, keeping
-  track of which column they are in.  ~ilc[Fmt1] can be used if the caller
-  knows which column the channel is in (i.e., how many ~il[characters] have
-  been printed since the last newline).  Otherwise, ~c[fmt] or ~ilc[fms] must be
-  used, both of which output a newline so as to establish the column
-  position at ~c[0].  Unlike Common Lisp's ~c[format] routine, ~c[fmt] and its
-  relatives break the output into lines so as to try to avoid printing
-  past column ~c[77].  That number is built-into the definitions of ACL2's
-  formatting functions.  Line breaks are automatically inserted as
-  necessary in place of spaces and after hyphens in the text being
-  printed.
+  ACL2's formatting functions print to the indicated channel, keeping track of
+  which column they are in.  ~ilc[Fmt1] can be used if the caller knows which
+  column the channel is in (i.e., how many ~il[characters] have been printed
+  since the last newline).  Otherwise, ~c[fmt] or ~ilc[fms] must be used, both
+  of which output a newline so as to establish the column position at ~c[0].
+  Unlike Common Lisp's ~c[format] routine, ~c[fmt] and its relatives break the
+  output into lines so that, by default, an attempt is made to avoid printing
+  past column ~c[77].  ~l[set-fmt-hard-right-margin] for a discussion of how
+  linebreaks are inserted and how to change the relevant default settings.
 
   The formatting functions scan the string from left to right,
   printing each successive character unless it is a tilde ~c[(~~)].  Upon
@@ -8081,7 +8086,6 @@
 
 (defmacro default-state-vars
   (state-p &key
-           (hons-enabled 'nil hons-enabled-p)
            (safe-mode 'nil safe-mode-p)
            (temp-touchable-vars 'nil temp-touchable-vars-p)
            (guard-checking-on 't guard-checking-on-p)
@@ -8089,19 +8093,17 @@
            (temp-touchable-fns 'nil temp-touchable-fns-p)
            (parallel-evaluation-enabled 'nil parallel-evaluation-enabled-p))
 
-; Warning: Keep this in sync with state-vars.
+; Warning: Keep this in sync with defrec state-vars.
 
-; State-p is true when by default, we want to use the values of the relevant
-; state globals.  Otherwise we use the specified defaults, which are supplied
-; above for convenience but can be changed there (i.e., in this code) if better
-; default values are found.
+; State-p is t to indicate that we use the current values of the relevant state
+; globals.  Otherwise we use the specified defaults, which are supplied above
+; for convenience but can be changed there (i.e., in this code) if better
+; default values are found.  The value :hons for state-p is treated like nil,
+; except that state-var hons-enabled is t rather than nil.
 
-  (cond (state-p
+  (cond ((eq state-p t)
          `(make state-vars
-                :hons-enabled
-                ,(if hons-enabled-p
-                     hons-enabled
-                   '(f-get-global 'hons-enabled state))
+                :hons-enabled (hons-enabledp state)
                 :safe-mode
                 ,(if safe-mode-p
                      safe-mode
@@ -8126,9 +8128,9 @@
                 ,(if parallel-evaluation-enabled-p
                      parallel-evaluation-enabled
                    '(f-get-global 'parallel-evaluation-enabled state))))
-        (t
+        (t ; state-p is not t
          `(make state-vars
-                :hons-enabled ,hons-enabled
+                :hons-enabled ,(eq state-p :hons)
                 :safe-mode ,safe-mode
                 :temp-touchable-vars ,temp-touchable-vars
                 :guard-checking-on ,guard-checking-on

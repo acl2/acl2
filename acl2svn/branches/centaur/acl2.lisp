@@ -986,9 +986,8 @@ ACL2 from scratch.")
 ; But even with the next form, we have seen the following:
 ; **++++ Error in XTRANS-EVAL: 
 ;   Function size 67910 is too large.
-; This problem has disappeared with Lispworks 6.0, where elsewhere we call
-; cl-user::extend-current-stack.  But it seems reasonable to leave the
-; following in place.
+; This problem has disappeared with Lispworks 6.0.  But it seems reasonable to
+; leave the following in place.
 #+lispworks
 (cl-user::toggle-source-debugging nil)
 
@@ -1039,14 +1038,18 @@ ACL2 from scratch.")
 
  (progn
    (load "acl2-fns.lisp") ;we like to load before compiling
-   (when (not *suppress-compile-build-time*)
-     (compile-file "acl2-fns.lisp")
+   (let ((acl2-fns-compiled
+          (make-pathname :name "acl2-fns"
+                         :type *compiled-file-extension*)))
+     (when (probe-file acl2-fns-compiled)
+       (delete-file acl2-fns-compiled))
+     (when (not *suppress-compile-build-time*)
+       (compile-file "acl2-fns.lisp")
 
 ; Note that load-compiled is not used below, but on the other hand we are still
 ; using the original readtable here so that's not a problem.
 
-     (load (make-pathname :name "acl2-fns"
-                          :type *compiled-file-extension*)))))
+       (load acl2-fns-compiled)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                           ACL2-READTABLE

@@ -11554,7 +11554,8 @@
 
   General Form:
   (mutual-recursion def1 ... defn)
-  where each defi is a ~ilc[defun] form or a ~ilc[defund] form.
+  where each ~c[defi] is a call of ~ilc[defun], ~ilc[defund], ~ilc[defun-nx],
+  or ~c[defund-nx].
   ~ev[]
   When mutually recursive functions are introduced it is necessary
   to do the termination analysis on the entire clique of definitions.
@@ -11602,14 +11603,13 @@
   of the definitions will be treated as though it specifies a
   ~c[:non-executable] ~c[xarg] of ~c[t].
 
-  Technical Note: Each ~c[defi] above must be of the form ~c[(defun ...)].  In
-  particular, it is not permitted for a ~c[defi] to be a form that will
-  macroexpand into a ~ilc[defun] form.  This is because ~c[mutual-recursion] is
-  itself a macro, and since macroexpansion occurs from the outside in,
-  at the time ~c[(mutual-recursion def1 ... defk)] is expanded the ~c[defi]
-  have not yet been.  But ~c[mutual-recursion] must decompose the ~c[defi].
-  We therefore insist that they be explicitly presented as ~ilc[defun]s or
-  ~ilc[defund]s (or a mixture of these).
+  Technical Note: Each ~c[defi] above must be a call of ~ilc[defun],
+  ~ilc[defund], ~ilc[defun-nx], or ~c[defund-nx].  In particular, it is not
+  permitted for a ~c[defi] to be an arbitrary form that macroexpands into a
+  ~ilc[defun] form.  This is because ~c[mutual-recursion] is itself a macro,
+  and since macroexpansion occurs from the outside in, at the time
+  ~c[(mutual-recursion def1 ... defk)] is expanded the ~c[defi] have not yet
+  been macroexpanded.
 
   Suppose you have defined your own ~ilc[defun]-like macro and wish to use
   it in a ~c[mutual-recursion] expression.  Well, you can't.  (!)  But you
@@ -21623,9 +21623,10 @@
 (deflabel arrays-example
   :doc
 
-; The transcript below was generated after executing the following two forms:
-; (assign fmt-soft-right-margin 55)
-; (assign fmt-hard-right-margin 68)
+; The transcript below was generated essentially after executing the following
+; two forms:
+; (set-fmt-soft-right-margin 55 state)
+; (set-fmt-hard-right-margin 68 state)
 
   ":Doc-Section Arrays
 
@@ -24701,7 +24702,6 @@
     (global-enabled-structure . nil) ; initialized in enter-boot-strap-mode
     (gstackp . nil)
     (guard-checking-on . t)
-    (hons-enabled . nil) ; set in *hons-init-hook*
     (hons-read-p . t) ; only of interest in the #+hons version
     (host-lisp . ; GCL 2.6.7 can fail if instead we do the obvious thing here
                ,(let ()
@@ -31356,8 +31356,8 @@
     proof-tree
 ;   proof-tree-ctx  - used in books/cli-misc/expander.lisp
 
-;   fmt-soft-right-margin - used by write-acl2-html
-;   fmt-hard-right-margin - used by write-acl2-html
+    fmt-soft-right-margin
+    fmt-hard-right-margin
 
 ; We would like to make the following three untouchable, to avoid
 ; getting a raw Lisp error in this sort of situation:
@@ -31441,9 +31441,6 @@
 ;   print-radix  ; generalized boolean
 ;   print-readably ; generalized boolean
     print-right-margin ; nil or non-negative integer
-
-    hons-enabled
-
     iprint-ar
     iprint-hard-bound
     iprint-soft-bound
@@ -42408,21 +42405,23 @@ Lisp definition."
 #-acl2-loop-only
 (defun-one-output gc$-fn (args)
 
+; Warning: Keep this in sync with :doc gc$.
+
 ; We will add some checks on the arguments as a courtesy, but really, it is up
 ; to the user to pass in the right arguments.
 
   #+allegro (apply `excl:gc args)
+  #+ccl (apply 'ccl::gc args) ; no args as per Gary Byers 12/08
+  #+clisp (apply 'ext:gc args)
+  #+cmu (apply 'system::gc args)
   #+gcl
   (if (eql (length args) 1)
       (apply 'si::gbc args)
     (er hard 'gc$
         "In GCL, gc$ requires exactly one argument, typically T."))
-  #+clisp (apply 'ext:gc args)
-  #+cmu (apply 'system::gc args)
-  #+sbcl (apply 'sb-ext:gc args)
-  #+(or mcl ccl) (apply 'ccl::gc args) ; no args as per Gary Byers 12/08
   #+lispworks (apply 'cl-user::mark-and-sweep (or args (list 3)))
-  #-(or allegro gcl clisp cmu sbcl mcl ccl lispworks)
+  #+sbcl (apply 'sb-ext:gc args)
+  #-(or allegro gcl clisp cmu sbcl ccl lispworks)
   (illegal 'gc$ "GC$ is not supported in this Common Lisp." nil)
   nil)
 
@@ -42438,15 +42437,16 @@ Lisp definition."
   invoke the garbage collector~/
 
   This function is provided so that the user can call the garbage collector of
-  the underlying Lisp from inside the ACL2 loop.  Specifically, a call of
-  ~c[gc$] is translated into a call of a function below on the same arguments.
+  the host Lisp from inside the ACL2 loop.  Specifically, a call of ~c[gc$] is
+  translated into a call of a function below on the same arguments.
   ~bv[]
   Allegro CL:            excl:gc
-  GCL                    si::gbc
+  CCL                    ccl::gc
   CLISP                  ext:gc
   CMU Common Lisp        system::gc
+  GCL                    si::gbc
+  Lispworks              cl-user::mark-and-sweep [default argument list: (3)]
   SBCL                   sb-ext:gc
-  Macintosh Common Lisp  ccl::gc
   ~ev[]
   The arguments, if any, are as documented in the underlying Common Lisp.  It
   is up to the user to pass in the right arguments, although we may do some
@@ -42584,6 +42584,9 @@ Lisp definition."
   #+(and clisp (not acl2-loop-only))
   (when (fboundp 'system::debug-backtrace)
     (eval '(catch 'system::debug (system::debug-backtrace))))
+  #+(and lispworks (not acl2-loop-only))
+  (when (fboundp 'dbg::output-backtrace)
+    (eval '(dbg::output-backtrace :verbose)))
   nil)
 
 (defun debugger-enabledp (state)

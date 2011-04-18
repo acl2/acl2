@@ -990,8 +990,8 @@ a TeXinfo file to be used to create an info file.  See also
    (my-state-global-let*
     ((acl2::bar-sep-p t) ; print :: as || in node names
      (acl2::write-for-read t)
-     (acl2::fmt-soft-right-margin 100000)
-     (acl2::fmt-hard-right-margin 200000)
+     (acl2::fmt-soft-right-margin 100000 acl2::set-fmt-soft-right-margin)
+     (acl2::fmt-hard-right-margin 200000 acl2::set-fmt-hard-right-margin)
      (acl2::doc-fmt-alist
       (texinfo-fmt-alist
        (acl2::global-val 'acl2::documentation-alist (acl2::w state))

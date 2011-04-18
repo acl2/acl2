@@ -33,6 +33,7 @@ temp-emacs-file.lsp
 *.ppcf
 *.sbin
 *.sparcf
+*.ufasl
 *.ufsl
 *.x86f
 

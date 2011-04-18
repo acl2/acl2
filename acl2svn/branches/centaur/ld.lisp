@@ -17401,6 +17401,9 @@
 ; We took preliminary steps towards removing uses of the big-clock field of
 ; state.
 
+; Modified deletion of compiled file of acl2-fns.lisp to occur at the Lisp
+; level instead of using GNUmakefile.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -17526,6 +17529,18 @@
   ~c[pc-print-macroexpansion-flg], and ~c[pc-print-prompt-and-instr-flg],
   respectively.
 
+  ~il[State] globals ~c[fmt-hard-right-margin] and ~c[fmt-soft-right-margin]
+  are now untouchable (~pl[set-fmt-hard-right-margin] and
+  ~pl[push-untouchable]).  If you bind these ~c[state] globals with
+  ~c[state-global-let*], then you will need to do so with appropriate setteres
+  to restore their values, for example as follows.
+  ~bv[]
+    (state-global-let*
+     ((fmt-hard-right-margin 500 set-fmt-hard-right-margin)
+      (fmt-soft-right-margin 480 set-fmt-soft-right-margin))
+     ...)
+  ~ev[]
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of
@@ -17577,7 +17592,8 @@
   ~pl[set-prover-step-limit] to set the prover step-limit globally.  Note that
   just as ~ilc[with-prover-time-limit] may now be used to create ~il[events],
   as discussed just above, ~ilc[with-prover-step-limit] may also be used to
-  create ~il[events].
+  create ~il[events].  Thanks to Carl Eastlund for requesting support for
+  step-limits.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -17699,6 +17715,16 @@
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
+  ACL2 can once again be built on Lispworks (i.e., as the host Lisp), at least
+  with Lispworks 6.0.  Thanks to David Rager for useful conversations.
+  Several changes have been made from previous Lispworks-based ACL2
+  executables:~nl[]
+  o ACL2 now starts up in its read-eval-print loop.~nl[]
+  o You can save an image with ~ilc[save-exec].~nl[]
+  o Multiprocessing is not enabled.~nl[]
+  o The stack size is managed using a Lispworks variable that causes the stack
+  to grow as needed.
+
   The HTML documentation no longer has extra newlines in <pre> environments.
 
   Among the new books is an illustration of ~ilc[defattach],
@@ -17714,6 +17740,11 @@
   a new ~il[documentation] topic, ~il[about-acl2].
 
   (SBCL only) More warnings are suppressed when the host Lisp is SBCL.
+
+  Fixed the build process to pay attention to environment variable
+  ~c[ACL2_SYSTEM_BOOKS] (which may be supplied as a command-line argument to
+  `~c[make]').  An ACL2 executable can thus now be built even when there is no
+  ~c[books/] subdirectory if a suitable replacement directory is supplied.
 
   ~st[EMACS SUPPORT]
 
@@ -17740,6 +17771,9 @@
   that have not had their guards verified.  ~l[memoize] (keyword
   ~c[:ideal-okp]) and ~pl[acl2-defaults-table] (key ~c[:memoize-ideal-okp]) for
   and explanation of this restriction and how to avoid it.
+
+  ~il[History] commands such as ~c[:]~ilc[pe] and ~c[:]~ilc[pbt] now display
+  ``~c[M]'' or ``~c[m]'' to indicate memoized functions.  ~l[pc].
   ~eq[]
 
   ~/~/")
@@ -20841,12 +20875,13 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
   It can be built in any of the following Common Lisps:
   ~bf[]
-    * ~b[Allegro],
-    * ~b[GCL] (Gnu Common Lisp),
+    * ~b[Allegro Common Lisp],
+    * ~b[CCL] (formerly OpenMCL)
     * ~b[CLISP],
     * ~b[CMU Common Lisp],
-    * ~b[SBCL], and
-    * ~b[CCL] (OpenMCL)
+    * ~b[GCL] (Gnu Common Lisp),
+    * ~b[Lispworks], and
+    * ~b[SBCL] (Steel Bank Common Lisp)
   ~ef[]
 
   ~fly[|The End of the Flying Tour|]") 
@@ -23894,13 +23929,9 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
              (cond ((null extra-startup-string)
                     "This ACL2 executable was created by saving a session.")
                    (t extra-startup-string)))))
-    #-(or gcl cmu sbcl allegro clisp ccl)
+    #-(or gcl cmu sbcl allegro clisp ccl lispworks)
     (er hard 'save-exec
-        "Sorry, but save-exec is not implemented for this Common Lisp.~a0"
-        #+lispworks "  If you care to investigate, see the comment in ~
-                     acl2-init.lisp starting with: ``The definition of ~
-                     save-exec-raw for lispworks (below) did not work.''"
-        #-lispworks "")
+        "Sorry, but save-exec is not implemented for this Common Lisp.")
 
 ; The forms just below, before the call of save-exec-raw, are there so that the
 ; initial (lp) will set the :cbd correctly.

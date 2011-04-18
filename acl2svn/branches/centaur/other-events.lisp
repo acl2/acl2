@@ -1419,6 +1419,19 @@
                     (embedded-event-lst nil)
                     (cltl-command nil)
                     (top-level-cltl-command-stack nil)
+                    (hons-enabled
+
+; Why are we comfortable making hons-enabled a world global?  Note that even if
+; if hons-enabled were a state global, the world would be sensitive to whether
+; or not we are in the hons version: for example, we get different evaluation
+; results for the following.
+
+;   (getprop 'memoize-table 'table-guard *t* 'current-acl2-world (w state))
+
+; By making hons-enabled a world global, we can access its value without state
+; in history query functions such as :pe.
+
+                     #+hons t #-hons nil)
                     (include-book-alist nil)
                     (include-book-alist-all nil)
                     (include-book-path nil)
@@ -14908,7 +14921,8 @@
   (certify-book \"my-arith\" 0 t :ttags :all)
                                        ; ... allowing all trust tags (ttags)
   (certify-book \"my-arith\" t)        ; ... from world of old certificate
-  (certify-book \"my-arith\" :acl2x t) ; ... writing or reading a .acl2x file~/
+  (certify-book \"my-arith\" 0 nil :acl2x t)
+                                       ; ... writing or reading a .acl2x file~/
 
   General Form:
   (certify-book book-name
@@ -21823,8 +21837,16 @@
                                      (cadr notinline-tail))))
                  #-hons (eq (cadr notinline-tail) :fncall))
                 #+hons
-                (t t)
-                #-hons
+                (memo-entry
+
+; Memoization installs its own symbol-function for fn, so we do not want to
+; insert the body of fn into the traced definition; instead, we want to call
+; the traced version of fn to call the "old" (memoized) fn.  Note that we
+; always remove any trace when memoizing or unmemoizing, so we don't have the
+; symmetric problem of figuring out how to make a memoized function call a
+; traced function.
+
+                 t)
                 ((or (not def) ; then no choice in the matter!
                      predefined
                      (member-eq fn (f-get-global 'program-fns-with-raw-code
@@ -21832,7 +21854,6 @@
                      (member-eq fn (f-get-global 'logic-fns-with-raw-code
                                                  *the-live-state*)))
                  t)
-                #-hons
                 (t nil)))
          (gcond (and cond-tail (acl2-gentemp "COND")))
          (garglist (acl2-gentemp "ARGLIST"))
@@ -28442,12 +28463,13 @@
 ; This constant should set up a state-global-let* binding for every state
 ; global variable that can have an effect on evaluation of a call of fms, fmt,
 ; or fmt1 (or their "!" versions), which are the functions on which we apply
-; the macro channel-to-string.
+; the macro channel-to-string.  The values for the margins are simply
+; convenient large values.
 
   (append *print-control-defaults*
           `((write-for-read t)
-            (fmt-hard-right-margin 10000) ; arbitrary but large
-            (fmt-soft-right-margin 10000) ; arbitrary but large
+            (fmt-hard-right-margin 10000 set-fmt-hard-right-margin)
+            (fmt-soft-right-margin 10000 set-fmt-soft-right-margin)
             (iprint-soft-bound ,*iprint-soft-bound-default*)
             (iprint-hard-bound ,*iprint-hard-bound-default*)
             (ppr-flat-right-margin

@@ -2668,23 +2668,22 @@
                  (and (access memoize-info-ht-entry entry :ext-anc-attachments)
                       t))
                 (cl-defun (access memoize-info-ht-entry entry :cl-defun)))
-           (assert$ condition
-                    (push `(memoize-fn ',name
-                                       :condition ',condition
-                                       :inline ',inline
-                                       :trace ',trace
-                                       ,@(and commutative
-                                              `(:commutative t))
-                                       ,@(and forget
-                                              `(:forget t))
-                                       ,@(and memo-table-init-size
-                                              `(:memo-table-init-size
-                                                ',memo-table-init-size))
-                                       ,@(and aokp
-                                              `(:aokp ',aokp))
-                                       ,@(and cl-defun
-                                              `(:cl-defun ',cl-defun)))
-                          (get name '*undo-stack*)))))
+           (push `(memoize-fn ',name
+                              :condition ',condition
+                              :inline ',inline
+                              :trace ',trace
+                              ,@(and commutative
+                                     `(:commutative t))
+                              ,@(and forget
+                                     `(:forget t))
+                              ,@(and memo-table-init-size
+                                     `(:memo-table-init-size
+                                       ',memo-table-init-size))
+                              ,@(and aokp
+                                     `(:aokp ',aokp))
+                              ,@(and cl-defun
+                                     `(:cl-defun ',cl-defun)))
+                 (get name '*undo-stack*))))
         (otherwise
          (er hard 'maybe-push-undo-stack
              "Unrecognized CLTL-COMMAND spawn ~x0"
@@ -4220,18 +4219,24 @@
                            (msg file-is-older-str ofile cfile))
                           (t
                            (msg "the compiled file is missing")))))
-        (catch 'missing-compiled-book
-          (state-global-let*
-           ((raw-include-book-dir-alist nil)
-            (connected-book-directory directory-name))
-           (let ((*load-compiled-stack* (acons file
-                                               load-compiled-file
-                                               *load-compiled-stack*)))
-             (cond (ofile-p (load-compiled ofile t))
-                   (t (with-reckless-read (load efile))))
-             (value (setq status (if to-be-compiled-p
-                                     'to-be-compiled
-                                   'complete))))))
+        (er-let* ((val
+
+; Silly binding works around bogus compiler warning in Lispworks 6.0.1, which
+; probably will be fixed in subsequent Lispworks releases.
+
+                   (catch 'missing-compiled-book
+                     (state-global-let*
+                      ((raw-include-book-dir-alist nil)
+                       (connected-book-directory directory-name))
+                      (let ((*load-compiled-stack* (acons file
+                                                          load-compiled-file
+                                                          *load-compiled-stack*)))
+                        (cond (ofile-p (load-compiled ofile t))
+                              (t (with-reckless-read (load efile))))
+                        (value (setq status (if to-be-compiled-p
+                                                'to-be-compiled
+                                              'complete))))))))
+          (value val))
         (hcomp-transfer-to-hash-tables)
         (assert$ (member-eq status '(to-be-compiled complete incomplete))
                  status))))))
@@ -6613,6 +6618,11 @@ Missing functions:
 ; the defthms in axioms.lisp because the necessary theory functions were not
 ; yet defined and so trans-eval balked on them.
 
+  (when (null distributed-books-dir)
+    (let ((dir (getenv$-raw "ACL2_SYSTEM_BOOKS")))
+      (when (and dir (not (equal dir "")))
+        (setq distributed-books-dir dir))))
+
   (with-warnings-suppressed
 
 ; Interactive Proofs: Many times, (initialize-acl2 nil) -- which causes the
@@ -7056,7 +7066,9 @@ Missing functions:
 ; We formerly set *debugger-hook* at the top level using setq, just below the
 ; definition of our-abort.  But that didn't work in Lispworks, where that value
 ; persisted right up to the saving of an image yet *debugger-hook* was nil
-; after starting up that image.
+; after starting up that image.  Apparently Lispworks 6.0 sets *debugger-hook*
+; globally to nil when input comes from a file, which is how ACL2 is built,
+; rather than standard-input,
 
         #-(and gcl (not ansi-cl))
         (setq *debugger-hook* 'our-abort)
