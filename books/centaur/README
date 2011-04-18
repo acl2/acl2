@@ -1,5 +1,5 @@
 Centaur Books
-Copyright (C) 2008-2011 Centaur Technology
+Copyright (C) 2008-2011 Centaur Technology and others (see **)
 
 Contact Information
    Centaur Technology Formal Verification Group
@@ -18,7 +18,69 @@ Copyright Notice
    Software Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA
    02110-1335, USA.
 
-Introduction
-   BOZO eventually describe what is here and how to build it.
+(**) All of the books here are licensed under the GPL "2 or later."  Most are
+     copyrights of Centaur Technology, but some are copyrights of others, e.g.,
+     the books in ubdds/ are copyright of Bob Boyer and Warren Hunt.  See the
+     individual headers on each file for more information.
 
+
+-------------------------------------------------------------------------------
+
+                     General Instructions and Disclaimers
+
+  * We generally use 64-bit CCL on Linux or Darwin as the host lisp, and build
+    ACL2 with the Hons extension enabled.  It wouldn't be too surprising if
+    some books either don't certify or don't function well in other setups.  A
+    good way to build ACL2 might be:
+
+       make LISP=ccl ACL2_HONS=h ACL2_SIZE=3000000
+
+  * We generally expect there to be ample memory available.  Of course, many
+    books are quite ordinary ACL2 stuff like arithmetic lemmas, and these don't
+    need any special resources.  But you certainly won't be able to do any kind
+    of serious BDD computations without, say, at least 8 GB of memory.
+
+  * We use "cert.pl bookname" instead of Makefiles.  You'll need a working Perl
+    installation, and cert.pl will need to be in your PATH.  The cert.pl script
+    is in the acl2/books directory, i.e., :dir :system.  If you're unfamiliar
+    with it, see "cert.pl --help."
+
+  * We expect these books to be much less stable than ordinary ACL2 books,
+    since we are actively using them and often need to extend them.
+
+  * BOZO probably add some way to build the documentation, and some kind of
+    getting started/overview documentation...
+
+  * If you have questions or comments about these books, please email Jared
+    Davis and Sol Swords, {jared,sswords}@centtech.com.  We can't really offer
+    any serious technical support, but may be able to answer some questions in
+    a "low bandwidth" way.
+
+
+-------------------------------------------------------------------------------
+
+                       Overview of the Available Books
+
+  ubdds/
+    * unordered bdd library
+    * needs Hons and lots of memory
+    * mainly used by GL
+
+  bitops/
+    * arithmetic lemmas about logand, logxor, etc.
+    * bitset libraries for compactly representing sets of natural numbers
+
+  misc/
+    * lemmas about set reasoning and fast alists
+    * tools for quantification (universal equivalences, witnessing stuff)
+    * memory management books (critical for bdd operations)
+    * miscellaneous tools and lemmas
+
+BOZO working on releasing...
+
+   vl/
+     * verilog toolkit
+
+   g-logic/
+     * GL symbolic simulator
 
