@@ -40,6 +40,15 @@ Lisp creates object files with .o extensions.  You can also do
 
 ===============================================================================
 
+defattach-ec.lisp -- avoid normal guard verification requirement for a
+                     function to be attached to a constrained function
+
+===============================================================================
+
+defattach-example.lisp -- example use of defattach
+
+===============================================================================
+
 bash.lisp -- simplification of top-level goal
 
 If you submit (bash term), you will get back a list of terms produced by the
