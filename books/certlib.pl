@@ -786,31 +786,39 @@ sub src_events {
     my $fname = shift;
     my $evcache = shift;
     my $checked = shift;
+    my $parent = shift;
     my $entry = $evcache->{$fname};
     my $entry_ok = 0;
-    if ($entry) {
-	if ($believe_cache || $checked->{$entry}) {
-	    print "cached events for $fname\n" if $debugging;
+
+    if (-e $fname) {
+	if ($entry) {
+	    if ($believe_cache || $checked->{$entry}) {
+		print "cached events for $fname\n" if $debugging;
 	    $entry_ok = 1;
-	} elsif (ftimestamp($fname) <= $entry->[1]) {
-	    $checked->{$entry} = 1;
-	    $entry_ok = 1;
+	    } elsif (ftimestamp($fname) && (ftimestamp($fname) <= $entry->[1])) {
+		$checked->{$entry} = 1;
+		$entry_ok = 1;
+	    }
 	}
-    }
-    if ($entry_ok) {
-	print "cached events for $fname\n" if $debugging;
-	return $entry->[0];
-    } elsif (-e $fname) {
-	print "reading events for $fname\n" if $debugging;
+	if ($entry_ok) {
+	    print "cached events for $fname\n" if $debugging;
+	    return $entry->[0];
+	} else {
+	    print "reading events for $fname\n" if $debugging;
 	    (my $events, my $timestamp) = scan_src($fname);
-	my $cache_entry = [$events, $timestamp];
-	print "caching events for $fname\n" if $debugging;
-	$evcache->{$fname} = $cache_entry;
-	$checked->{$fname} = 1;
-	return $events;
+	    my $cache_entry = [$events, $timestamp];
+	    print "caching events for $fname\n" if $debugging;
+	    $evcache->{$fname} = $cache_entry;
+	    $checked->{$fname} = 1;
+	    return $events;
+	}
+    } else {
+	print "Warning: missing file $fname in src_events\n";
+	if ($parent) {
+	    print "(Required by $parent)\n";
+	}
+	return [];
     }
-    print "Warning: missing file $fname in src_events\n";
-    return [];
 }
 
 sub expand_dirname_cmd {
@@ -875,7 +883,8 @@ sub src_deps {
 	$book_only,         # Only record include-book dependencies
 	$tscache,           # timestamp cache
 	$ld_ok,             # Allow following LD commands
-	$seen)              # seen table for detecting circular dependencies
+	$seen,              # seen table for detecting circular dependencies
+	$parent)            # file that required this one
 	= @_;
 
     if ($seen->{$fname}) {
@@ -889,7 +898,7 @@ sub src_deps {
 
     $src_deps_depth = $src_deps_depth + 1;
     print "$src_deps_depth src_deps $fname, $book_only\n"  if $debugging;
-    my $events = src_events($fname, $cache, $tscache);
+    my $events = src_events($fname, $cache, $tscache, $parent);
     if ($debugging) {
 	print "events: $fname";
 	print_events($events);
@@ -934,7 +943,8 @@ sub src_deps {
 					      $book_only,
 					      $tscache,
 					      $ld_ok,
-					      $seen);
+					      $seen,
+		                              $fname);
 		$two_pass = $two_pass || $local_two_pass;
 	    }
 	} elsif ($type eq $two_pass_event) {
@@ -952,7 +962,8 @@ sub src_deps {
 						  $book_only,
 						  $tscache,
 						  $ld_ok,
-						  $seen);
+						  $seen,
+			                          $fname);
 		    $two_pass = $two_pass || $local_two_pass;
 		}
 	    } else {
@@ -1001,6 +1012,7 @@ sub find_deps {
     my $cache = shift;
     my $book_only = shift;
     my $tscache = shift;
+    my $parent = shift;
 
     my $lispfile = $base . ".lisp";
 
@@ -1023,12 +1035,17 @@ sub find_deps {
     if ($acl2file) {
 	push(@$deps, $acl2file) unless $book_only;
 	$acl2_two_pass = src_deps($acl2file, $cache,
-				  $local_dirs, $deps, $book_only, $tscache, 1, {});
+				  $local_dirs, 
+				  $deps, 
+				  $book_only, 
+				  $tscache,
+				  1,
+				  {}, $lispfile);
     }
     
     # Scan the lisp file for include-books.
     $book_two_pass = src_deps($lispfile, $cache, $local_dirs, $deps,
-			      $book_only, $tscache, 0, {});
+			      $book_only, $tscache, 0, {}, $parent);
 
     if ($debugging) {
 	print "find_deps $lispfile: \n";
@@ -1114,10 +1131,12 @@ sub add_deps {
 	my $outfile = $base . ".out";
 	my $timefile = $base . ".time";
 	my $compfile = $base . ".lx64fsl";
+	my $acl2xfile = $base . ".acl2x";
 	unlink($target) if (-e $target);
 	unlink($outfile) if (-e $outfile);
 	unlink($timefile) if (-e $timefile);
 	unlink($compfile) if (-e $compfile);
+	unlink($acl2xfile) if (-e $acl2xfile);
     }
 
     # First check that the corresponding .lisp file exists.
@@ -1128,7 +1147,7 @@ sub add_deps {
 	return;
     }
 
-    my ($deps, $two_pass) = find_deps($base, $cache, 0, $tscache);
+    my ($deps, $two_pass) = find_deps($base, $cache, 0, $tscache, $parent);
 
 
     my $acl2xfile = $base . ".acl2x";

@@ -49,6 +49,13 @@ Copyright Notice
    vl/
      * verilog toolkit (parser, transformations, static checks, ...)
 
+   gl/
+     * "bit blasting" decision procedure for ACL2 theorems involving
+        finitely-constrained variables
+
+   aig/
+     * basic AIG library for use in GL, etc.
+
    ... and others forthcoming ...
 
 

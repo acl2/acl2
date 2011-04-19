@@ -41,5 +41,7 @@
 (include-book "misc/universal-equiv")
 (include-book "misc/vecs-ints")
 (include-book "misc/witness-cp")
+(include-book "gl/gl")
+(include-book "gl/bfr-aig-bddify")
 
 (xdoc::save "./manual")

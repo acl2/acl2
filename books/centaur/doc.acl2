@@ -20,4 +20,5 @@
 
 (ld "vl/other-packages.lsp")
 (ld "vl/package.lsp")
+(include-book "gl/portcullis")
 (certify-book "doc" ? t :ttags :all)

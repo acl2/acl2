@@ -422,7 +422,7 @@ foreach my $target (@user_targets) {
 my %tscache = ();
 
 foreach my $top (@deps_of) {
-    (my $deps, my $two_pass) = find_deps(to_basename($top), $cache, 1, \%tscache);
+    (my $deps, my $two_pass) = find_deps(to_basename($top), $cache, 1, \%tscache, 0);
     push (@targets, @{$deps});
 }
 
