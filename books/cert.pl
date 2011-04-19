@@ -435,7 +435,7 @@ unless (@targets) {
 
 
 foreach my $target (@targets) {
-    add_deps($target, $cache, \%seen, \@sources, \%tscache);
+    add_deps($target, $cache, \%seen, \@sources, \%tscache, 0);
 }
 
 $cache_file && store($cache, $cache_file);

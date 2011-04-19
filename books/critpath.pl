@@ -180,7 +180,7 @@ unless (@targets) {
 
 foreach my $target (@targets) {
     if ($target =~ /\.cert/) {
-	add_deps($target, $cache, \%deps, \@sources, \%tscache);
+	add_deps($target, $cache, \%deps, \@sources, \%tscache, 0);
     }
 }
 

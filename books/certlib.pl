@@ -1084,6 +1084,7 @@ sub add_deps {
     my $seen = shift;
     my $sources = shift;
     my $tscache = shift;
+    my $parent = shift;
 
     if (exists $seen->{$target}) {
 	# We've already calculated this file's dependencies.
@@ -1121,7 +1122,9 @@ sub add_deps {
 
     # First check that the corresponding .lisp file exists.
     if (! -e $lispfile) {
-	print "Error: Need $lispfile to build $target.\n";
+	print "Error: Need $lispfile to build $target"
+               . ($parent ? " (parent: $parent)" : "")
+	       . ".\n";
 	return;
     }
 
@@ -1146,7 +1149,7 @@ sub add_deps {
 
     # Run the recursive add_deps on each dependency.
     foreach my $dep  (@{$deps}) {
-	add_deps($dep, $cache, $seen, $sources, $tscache);
+	add_deps($dep, $cache, $seen, $sources, $tscache, $target);
     }
     
 
