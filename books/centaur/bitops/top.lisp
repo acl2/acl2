@@ -56,7 +56,7 @@ might try:</p>
  (local (include-book \"bitops/equal-by-logbitp\" :dir :cbooks))
 </code>
 
-<p>For the bitops library:</p>
+<p>For the bitsets library:</p>
 
 <code>
  (include-book \"bitops/bitsets\" :dir :cbooks)

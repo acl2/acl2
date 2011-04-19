@@ -18,48 +18,18 @@ Copyright Notice
    Software Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA
    02110-1335, USA.
 
-(**) All of the books here are licensed under the GPL "2 or later."  Most are
-     copyrights of Centaur Technology, but some are copyrights of others, e.g.,
-     the books in ubdds/ are copyright of Bob Boyer and Warren Hunt.  See the
-     individual headers on each file for more information.
+** All of the books here are licensed under the GPL "2 or later."  Most are
+   copyrights of Centaur Technology, but some are copyrights of others, e.g.,
+   the books in ubdds/ are copyright of Bob Boyer and Warren Hunt; see the
+   individual headers on each file for more information.  Also, note that many
+   books here depend on other ACL2 libraries, each with their own copyrights
+   and licenses.  We believe all libraries we include are also licensed under
+   the GPL "2 or later".
 
 
 -------------------------------------------------------------------------------
 
-                     General Instructions and Disclaimers
-
-  * We generally use 64-bit CCL on Linux or Darwin as the host lisp, and build
-    ACL2 with the Hons extension enabled.  It wouldn't be too surprising if
-    some books either don't certify or don't function well in other setups.  A
-    good way to build ACL2 might be:
-
-       make LISP=ccl ACL2_HONS=h ACL2_SIZE=3000000
-
-  * We generally expect there to be ample memory available.  Of course, many
-    books are quite ordinary ACL2 stuff like arithmetic lemmas, and these don't
-    need any special resources.  But you certainly won't be able to do any kind
-    of serious BDD computations without, say, at least 8 GB of memory.
-
-  * We use "cert.pl bookname" instead of Makefiles.  You'll need a working Perl
-    installation, and cert.pl will need to be in your PATH.  The cert.pl script
-    is in the acl2/books directory, i.e., :dir :system.  If you're unfamiliar
-    with it, see "cert.pl --help."
-
-  * We expect these books to be much less stable than ordinary ACL2 books,
-    since we are actively using them and often need to extend them.
-
-  * BOZO probably add some way to build the documentation, and some kind of
-    getting started/overview documentation...
-
-  * If you have questions or comments about these books, please email Jared
-    Davis and Sol Swords, {jared,sswords}@centtech.com.  We can't really offer
-    any serious technical support, but may be able to answer some questions in
-    a "low bandwidth" way.
-
-
--------------------------------------------------------------------------------
-
-                       Overview of the Available Books
+                   Quick Overview of the Available Books
 
   ubdds/
     * unordered bdd library
@@ -76,11 +46,70 @@ Copyright Notice
     * memory management books (critical for bdd operations)
     * miscellaneous tools and lemmas
 
-BOZO working on releasing...
-
    vl/
-     * verilog toolkit
+     * verilog toolkit (parser, transformations, static checks, ...)
 
-   g-logic/
-     * GL symbolic simulator
+   ... and others forthcoming ...
+
+
+-------------------------------------------------------------------------------
+
+                             Getting Started
+
+  WARNING: We expect these books to be much less stable than ordinary ACL2
+  books because we are actively using them and often need to extend them.
+
+
+  Prerequisites.
+
+  We generally expect there to be ample memory available.  While many books are
+  quite ordinary ACL2 stuff like arithmetic lemmas and don't need any special
+  resources, you certainly won't be able to do any kind of serious BDD
+  computations without, say, at least 8 GB of memory.  Even things like our
+  Verilog parser are written in a memory-hungry way because that's just the
+  kind of environment we work in.
+
+  We generally use 64-bit CCL on Linux or Darwin as the host lisp, and build
+  ACL2 with the Hons extension enabled.  It wouldn't be surprising if some
+  books don't certify or don't function well in other setups.  A good way to
+  build ACL2 might be:
+
+     make LISP=ccl ACL2_HONS=h ACL2_SIZE=3000000
+
+  We use cert.pl instead of Makefiles.  Because of this,
+
+     - you'll need a working Perl installation
+
+     - you'll need to be able to invoke your ACL2 image with "acl2", i.e.,
+       add a symlink named "acl2" somewhere in your PATH
+
+     - cert.pl is located in the acl2/books directory, i.e., :dir :system
+       so add a symlink to it in your PATH
+
+
+  Building Books and Documentation.
+
+  To build all of the books and all of the available documentation, you should
+  be able to run:
+
+      cert.pl doc.lisp -j 4       # -j 4 for a quad-core processor
+
+  In the books/centaur directory.  To see the resulting manual, just point your
+  web browser to:
+
+      books/centaur/manual/preview.html
+
+  This manual actually also has all of the regular ACL2 documentation, as well
+  as the documentation for several other ordinary ACL2 libraries that we rely
+  on (e.g., str, serialize, and ihs).
+
+
+  Getting Help.
+
+  We can't offer any serious technical support.
+
+  If you have questions or comments about these books, please email Jared Davis
+  and Sol Swords, {jared,sswords}@centtech.com; we may be able to answer some
+  questions on an informal, "low bandwidth" basis.
+
 
