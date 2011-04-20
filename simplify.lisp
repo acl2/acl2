@@ -5624,7 +5624,7 @@
 
   (cond ((null ttree) (mv nil nil))
         ((and (eq tag (caar ttree))
-              (caar ttree))
+              (cdar ttree))
          (mv (cdar ttree) (cdr ttree)))
         ((symbolp (caar ttree))
          (mv-let (val cdr-ttree)
