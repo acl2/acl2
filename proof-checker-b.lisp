@@ -4974,9 +4974,9 @@
                    normalize-flg rewrite-flg ens state repeat backchain-limit
                    step-limit))
    (cond ((eql step-limit -1)
-          (mv term old-ttree state))
+          (mv step-limit term old-ttree state))
          (t
-          (mv newterm ttree state)))))
+          (mv step-limit newterm ttree state)))))
 
 (defun make-goals-from-assumptions (assumptions conc hyps current-addr goal-name start-index)
   (if assumptions
@@ -5189,31 +5189,34 @@
                               (maybe-warn-about-theory-from-rcnsts
                                base-rcnst local-rcnst :s pc-ens w state)
                             state)
-                          (mv-let (new-term new-ttree state)
-                                  (pc-rewrite*
-                                   current-term
-                                   hyps-type-alist
-                                   (geneqv-at-subterm-top conc current-addr
-                                                          pc-ens w)
-                                   (term-id-iff conc current-addr t)
-                                   w local-rcnst nil nil normalize rewrite
-                                   pc-ens state repeat local-backchain-limit
-                                   (initial-step-limit w state))
-                                  (if (equal new-term current-term)
-                                      (print-no-change2
-                                       "No simplification took place.")
-                                    (pprogn
-                                     (mv-let
-                                      (new-goal state)
-                                      (deposit-term-in-goal
-                                       (car goals)
-                                       conc current-addr new-term state)
-                                      (mv (change-pc-state
-                                           pc-state
-                                           :goals
-                                           (cons new-goal (cdr goals))
-                                           :local-tag-tree new-ttree)
-                                          state))))))))))))))))))))))
+                          (sl-let
+                           (new-term new-ttree state)
+                           (pc-rewrite*
+                            current-term
+                            hyps-type-alist
+                            (geneqv-at-subterm-top conc current-addr
+                                                   pc-ens w)
+                            (term-id-iff conc current-addr t)
+                            w local-rcnst nil nil normalize rewrite
+                            pc-ens state repeat local-backchain-limit
+                            (initial-step-limit w state))
+                           (pprogn
+                            (f-put-global 'last-step-limit step-limit state)
+                            (if (equal new-term current-term)
+                                (print-no-change2
+                                 "No simplification took place.")
+                              (pprogn
+                               (mv-let
+                                (new-goal state)
+                                (deposit-term-in-goal
+                                 (car goals)
+                                 conc current-addr new-term state)
+                                (mv (change-pc-state
+                                     pc-state
+                                     :goals
+                                     (cons new-goal (cdr goals))
+                                     :local-tag-tree new-ttree)
+                                    state)))))))))))))))))))))))
 
 ;; The proof-checker's enabled state will be either the global enabled
 ;; state or else a local one.  The proof-checker command :IN-THEORY

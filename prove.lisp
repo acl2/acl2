@@ -201,7 +201,7 @@
      "Out of time in preprocess (expand-abbreviations).")
     (mv step-limit nil nil))
    (t
-    (let ((step-limit (decrement-step-limit step-limit wrld)))
+    (let ((step-limit (decrement-step-limit step-limit)))
       (cond
        ((variablep term)
         (let ((temp (assoc-eq term alist)))

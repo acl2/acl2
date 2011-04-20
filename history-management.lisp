@@ -3013,17 +3013,19 @@
                                   state))
          state)
         (t (let* ((channel (proofs-co state))
-                  (limit (f-get-global 'step-limit-start state))
-                  (last-limit (and limit
-                                   (f-get-global 'last-step-limit state))))
+                  (rec (f-get-global 'step-limit-record state))
+                  (start (assert$ rec
+                                  (access step-limit-record rec :start)))
+                  (last-limit (assert$ start
+                                       (f-get-global 'last-step-limit state))))
              (cond ((and last-limit
-                         (not (int= limit last-limit)))
+                         (not (int= start last-limit)))
                     (pprogn (princ$ "Prover steps counted:  " channel state)
                             (cond ((eql last-limit -1)
                                    (pprogn
                                     (princ$ "More than " channel state)
-                                    (princ$ limit channel state)))
-                                  (t (princ$ (- limit last-limit) channel state)))
+                                    (princ$ start channel state)))
+                                  (t (princ$ (- start last-limit) channel state)))
                             (newline channel state)))
                    (t state)))))))
 
@@ -3432,8 +3434,9 @@
 
 (defun with-prover-step-limit-fn (limit form)
   `(mv-let
-    (with-prover-step-limit-initial-step-limit
-     with-prover-step-limit-limit)
+    (wpsl-initial-step-limit ; limit from parent environment
+     wpsl-limit              ; new step-limit for child environment
+     wpsl-startp)
     (let ((limit ,limit)
           (initial-step-limit (initial-step-limit (w state) state)))
       (mv initial-step-limit
@@ -3442,46 +3445,51 @@
                 ((and (natp limit)
                       (<= limit *default-step-limit*))
                  limit)
-                ((eq limit :start)
+                ((eq limit :start) ; inherit limit from parent environment
                  initial-step-limit)
                 (t (er hard 'with-prover-step-limit
                        "Illegal value for ~x0, ~x1.  See :DOC ~
-                         with-prover-step-limit."
+                        with-prover-step-limit."
                        'with-prover-step-limit
-                       limit)))))
+                       limit)))
+          (eq limit :start)))
     (pprogn
-     (f-put-global 'last-step-limit with-prover-step-limit-limit state)
-     (er-let* ((val (state-global-let*
-                     ((step-limit-start with-prover-step-limit-limit))
-                     (check-vars-not-free (with-prover-step-limit-initial-step-limit
-                                           with-prover-step-limit-limit)
-                                          ,form))))
-       (let ((new-step-limit
-              (cond
-               ((eql (f-get-global 'last-step-limit state) -1)
+     (f-put-global 'last-step-limit wpsl-limit state) ; new step-limit
+     (mv-let
+      (erp val state)
+      (state-global-let*
+       ((step-limit-record
+         (make step-limit-record
+               :start wpsl-limit
+               :strictp (cond (wpsl-startp (step-limit-strictp state))
+                              (t (not (eql wpsl-limit
+                                           *default-step-limit*)))))))
+       (check-vars-not-free (wpsl-initial-step-limit
+                             wpsl-limit
+                             wpsl-startp)
+                            ,form))
+       (let* ((steps-taken
 
-; We reached the limit, but didn't cause an error.  We must have used up the
-; maximum possible number of steps.
+; Even if the value of 'last-step-limit is -1, the following difference
+; correctly records the number of prover steps taken, where we consider it a
+; step to cause an error at the transition in step-limit from 0 to -1.  After
+; all, the sub-event will say "more than", which assumes that this final step
+; is counted.
 
-                (assert$ (eql with-prover-step-limit-limit
-                              *default-step-limit*)
-                         -1))
-               (t
-                (let ((steps-taken
-                       (- with-prover-step-limit-limit
-                          (f-get-global 'last-step-limit state))))
-                  (cond
-                   ((< with-prover-step-limit-initial-step-limit
-                       steps-taken)
-                    -1)
-                   (t (- with-prover-step-limit-initial-step-limit
-                         steps-taken))))))))
+               (- wpsl-limit (f-get-global 'last-step-limit state)))
+              (new-step-limit (cond
+                               ((< wpsl-initial-step-limit
+                                   steps-taken)
+                                -1)
+                               (t (- wpsl-initial-step-limit steps-taken)))))
          (pprogn
           (f-put-global 'last-step-limit new-step-limit state)
           (cond
+           (erp (mv erp val state))
 
-; Here we handle the case that the step-limit is exceeded after a sub-event of
-; a compound event, for example, between the two defthm events below.
+; Next we consider the case that the step-limit is exceeded after completion of
+; a sub-event of a compound event, for example, between the two defthm events
+; below.
 
 ; (set-prover-step-limit 100)
 ; (encapsulate
@@ -3493,13 +3501,7 @@
 ;  (defthm bar (equal (car (cons x y)) x)))
 
            ((and (eql new-step-limit -1)
-
-; If state global 'step-limit-start has value nil, then we are at the
-; top-level; no context has been entered.
-
-                 (f-get-global 'step-limit-start state)
-                 (not (eql (f-get-global 'step-limit-start state)
-                           *default-step-limit*)))
+                 (step-limit-strictp state))
             (step-limit-error t))
            (t (value val)))))))))
 
@@ -3507,7 +3509,7 @@
 
 ; Form should evaluate to an error triple.  A value of :start for limit says
 ; that we use the current limit, i.e., the value of state global
-; 'last-step-limit if the value of state global 'step-limit-start is not nil,
+; 'last-step-limit if the value of state global 'step-limit-record is not nil,
 ; else the value from the acl2-defaults-table; see initial-step-limit.
 
   ":Doc-Section Other

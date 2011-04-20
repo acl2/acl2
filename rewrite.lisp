@@ -5204,6 +5204,42 @@
                                    (cdr keyword-extra-formals)
                                    alist)))))
 
+(defrec step-limit-record
+
+; The state global 'step-limit-record is bound to one of these records at the
+; start of an event by with-ctx-summarized (specifically, by the call of
+; with-prover-step-limit in save-event-state-globals).  Then, :start is the
+; initial value of state global 'last-step-limit for that event, and :strictp
+; indicates whether an error should occur if the step-limit is exceeded.
+
+; This record is not often built, but we could change the cheap flag from t to
+; nil to save a cons if that turns out to be important.
+
+  (start . strictp)
+  t)
+
+(defun step-limit-start (state)
+
+; Return the starting value of step-limit in the present context.  See defrec
+; step-limit-record.
+
+  (let ((rec (f-get-global 'step-limit-record state)))
+    (cond (rec (access step-limit-record rec :start))
+          (t (step-limit-from-table (w state))))))
+
+(defun step-limit-strictp (state)
+
+; Return true if in the present context, we are to cause an error if the
+; step-limit is exceeded.  See defrec step-limit-record.
+
+  (let ((rec (f-get-global 'step-limit-record state)))
+    (cond (rec (access step-limit-record rec :strictp))
+          (t (let ((limit (cdr (assoc-eq :step-limit
+                                         (table-alist 'acl2-defaults-table
+                                                      (w state))))))
+               (and limit
+                    (not (eql limit *default-step-limit*))))))))
+
 (defun step-limit-error1 (ctx str start where state)
   (declare (ignorable state)) ; only used in raw Lisp
   #-acl2-loop-only
@@ -5223,49 +5259,42 @@
 
   (let ((str "The prover step-limit, which is ~x0 in the ~@1, has been ~
               exceeded.  See :DOC set-prover-step-limit.")
-        (ctx ''step-limit)
-        (where (if superior-context-p
-                   "context immediately above the one just completed"
-                 "current context"))
-        (start '(or (f-get-global 'step-limit-start state)
-                    (step-limit-from-table (w state)))))
+        (ctx ''step-limit))
     (cond
      (superior-context-p
-      `(the-mv
-        3
-        (signed-byte 30)
-        (cond ((eql ,start *default-step-limit*)
-               (value -1))
-              (t (er soft ,ctx ,str ,start ,where)))
-        2))
+      `(er soft ,ctx
+           ,str
+           (step-limit-start state)
+           "context immediately above the one just completed"))
      (t
       `(the-fixnum
-        (step-limit-error1 ,ctx ,str ,start ,where state))))))
+        (step-limit-error1 ,ctx
+                           ,str
+                           (step-limit-start state)
+                           "current context"
+                           state))))))
 
-(defmacro decrement-step-limit (step-limit wrld)
+(defmacro decrement-step-limit (step-limit)
 
 ; We make this event a macro for improved performance.
 
   (declare (xargs :guard
 
-; By insisting that the formals are symbols, we guarantee that their repeated
+; By insisting that the formal is a symbol, we guarantee that its repeated
 ; reference below does not result in repeated evaluation of other than the
 ; current binding of a symbol.
 
-                  (and (symbolp step-limit)
-                       (symbolp wrld))))
+                  (symbolp step-limit)))
   `(the (signed-byte 30)
-     (cond
-      ((< 0 (the-fixnum ,step-limit))
-       (1-f ,step-limit))
-      ((eql -1 (the-fixnum ,step-limit))
-       -1)
-      (t (assert$ (eql 0 (the-fixnum ,step-limit)) 
-                  (cond
-                   ((eql (initial-step-limit ,wrld state)
-                         *default-step-limit*)
-                    -1)
-                   (t (step-limit-error nil))))))))
+        (cond
+         ((< 0 (the-fixnum ,step-limit))
+          (1-f ,step-limit))
+         ((eql -1 (the-fixnum ,step-limit))
+          -1)
+         (t (assert$ (eql 0 (the-fixnum ,step-limit)) 
+                     (cond ((step-limit-strictp state)
+                            (step-limit-error nil))
+                           (t -1)))))))
 
 (defmacro rewrite-entry (&rest args)
   (declare (xargs :guard (and (true-listp args)
@@ -5297,14 +5326,12 @@
           (cond
            ((not (eq (caar args) 'rewrite))
             call0)
-           (t (let* ((tail (assoc-keyword :wrld (cdr args)))
-                     (w (if tail (cadr tail) 'wrld))
-                     (call1
-                      `(let ((step-limit
-                              (decrement-step-limit step-limit ,w)))
-                         (declare (type (signed-byte 30) step-limit))
-                         ,call0))
-                     (step-limit-tail (assoc-keyword :step-limit (cdr args))))
+           (t (let ((call1
+                     `(let ((step-limit
+                             (decrement-step-limit step-limit)))
+                        (declare (type (signed-byte 30) step-limit))
+                        ,call0))
+                    (step-limit-tail (assoc-keyword :step-limit (cdr args))))
                 (cond (step-limit-tail
                        `(let ((step-limit ,(cadr step-limit-tail)))
                           ,call1))
@@ -13212,10 +13239,10 @@
 ; at (one-based) position bkptr, and target is an instantiated term to which
 ; rune is being applied.
 
-; We return five results.  Most often they are interpreted as indicated by the
+; We return six results.  Most often they are interpreted as indicated by the
 ; names:
 
-; (mv wonp failure-reason unify-subst' ttree' memo'),
+; (mv step-limit wonp failure-reason unify-subst' ttree' memo'),
 
 ; but there is a special case where they are interpreted differently.  In
 ; general, wonp is t, nil or a term.  If it is t or nil, the interpretation of
@@ -13224,9 +13251,9 @@
 ; are extended versions of the corresponding inputs.
 
 ; But if wonp is a term then it means that hyp0 contains free-vars, it was not
-; relieved, and the five results are to be interpreted as:
+; relieved, and the six results are to be interpreted as:
 
-; (mv term typ unify-subst ttree memo)
+; (mv step-limit term typ unify-subst ttree memo)
 
 ; where the last three are unchanged.  This signals that the caller of
 ; relieve-hyp is responsible for relieving the hypothesis and may do so in

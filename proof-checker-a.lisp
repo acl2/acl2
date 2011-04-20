@@ -854,8 +854,8 @@
 
                             (car (access assumption bad-ass :assumnotes))))
                        (print-no-change
-                        "A false assumption was encountered from applying the rune ~
-                   ~x0 to the target ~x1."
+                        "A false assumption was encountered from applying the ~
+                         rune ~x0 to the target ~x1."
                         (list (cons #\0 (access assumnote assumnote :rune))
                               (cons #\1 (access assumnote assumnote :target)))))
                      (mv nil nil state)))

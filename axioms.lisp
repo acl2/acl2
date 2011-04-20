@@ -24803,7 +24803,7 @@
     (slow-array-action . :break) ; set to :warning in exit-boot-strap-mode
     (standard-co . acl2-output-channel::standard-character-output-0)
     (standard-oi . acl2-output-channel::standard-object-input-0)
-    (step-limit-start . nil)
+    (step-limit-record . nil)
     (tainted-okp . nil)
     (temp-touchable-fns . nil)
     (temp-touchable-vars . nil)
@@ -35029,10 +35029,10 @@
 
 (defun initial-step-limit (wrld state)
 
-; This function returns the current step limit.  If 'step-limit-start has a
-; non-nil value, then we are already tracking step-limits in the state, so we
-; return the value of 'last-step-limit.  Otherwise the acl2-defaults-table is
-; consulted for the step-limit.
+; This function returns the current step limit.  If 'step-limit-record has a
+; non-nil value (see defrec step-limit-record), then we are already tracking
+; step-limits in the state, so we return the value of 'last-step-limit.
+; Otherwise the acl2-defaults-table is consulted for the step-limit.
 
   (declare (xargs :guard
                   (and (plist-worldp wrld)
@@ -35044,11 +35044,11 @@
                              (and (natp val)
                                   (<= val *default-step-limit*))))
                        (state-p state)
-                       (boundp-global 'step-limit-start state)
+                       (boundp-global 'step-limit-record state)
                        (boundp-global 'last-step-limit state))))
-  (cond ((f-get-global 'step-limit-start state)
-         (f-get-global 'last-step-limit state))
-        (t (step-limit-from-table wrld))))
+  (let ((rec (f-get-global 'step-limit-record state)))
+    (cond (rec (f-get-global 'last-step-limit state))
+          (t (step-limit-from-table wrld)))))
 
 #-acl2-loop-only
 (defparameter *step-limit-error-p*
