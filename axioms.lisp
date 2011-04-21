@@ -32433,6 +32433,12 @@
   (1- (expt 2 29)))
 
 (defconst *default-step-limit*
+
+; The defevaluator event near the top of books/meta/meta-plus-equal.lisp,
+; submitted at the top level without any preceding events, takes over 40,000
+; steps.  Set the following to 40000 in order to make that event quickly exceed
+; the default limit.
+
   (fixnum-bound))
 
 (table acl2-defaults-table nil nil
@@ -35095,6 +35101,12 @@
   ~c[expand-abbreviations]).  However, the steps counted may change in future
   releases of ACL2, so users would probably be well served by avoiding the
   assumption that only the above two calls are counted as prover steps.
+
+  Depending on the machine you are using, you may have only (very roughly) a
+  half-hour of time before the number of prover steps exceeds the maximum
+  step-limit, which is one less than the value of ~c[*default-step-limit*].
+  Note however the exception stated above: if the ``limit'' is ~c[nil] or is
+  the value of ~c[*default-step-limit*], then no limit is imposed.
 
   ~l[with-prover-step-limit] for a way to specify the limit on prover steps for
   a single event, rather than globally.  For a related utility based on time

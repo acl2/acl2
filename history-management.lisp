@@ -3532,6 +3532,10 @@
   ; almost immediately. 
   (with-prover-step-limit 100000 (with-prover-step-limit 200 (mini-proveall)))
 
+  ; Do not limit the number of prover steps, regardless of such a limit imposed
+  ; globally or by the surrounding context.
+  (with-prover-step-limit nil (mini-proveall))
+
   ; Limit the indicated theorem to 100 steps, and if the proof does not
   ; complete or it fails, then put down a label instead.
   (mv-let (erp val state)
@@ -3561,10 +3565,17 @@
   releases.  For a related utility based on time instead of prover steps,
   ~pl[with-prover-time-limit].
 
+  Depending on the machine you are using, you may have only (very roughly) a
+  half-hour of time before the number of prover steps exceeds the maximum
+  step-limit, which is one less than the value of ~c[*default-step-limit*].
+  Note however the exception stated above: if the value of ~c[expr] is ~c[nil]
+  or is the value of ~c[*default-step-limit*], then no limit is placed on the
+  number of prover steps during processing of ~c[form].
+
   Logically, ~c[(with-prover-step-limit expr form)] is equivalent to ~c[form],
   except that if the number of prover steps during evaluation of ~c[form]
-  exceeds the value specified by the value of ~c[expr], then that proof will
-  abort.
+  exceeds the value specified by the value of ~c[expr] (other than the
+  exceptional case noted just above), then that proof will abort.
 
   Although ~c[with-prover-step-limit] behaves like an ACL2 function in the
   sense that it evaluates both its arguments, it is however actually a macro
