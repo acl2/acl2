@@ -26818,15 +26818,22 @@
                                  'defchoose
                                'defun)
                              see-doc))
-                        ((not (and (symbolp g)
-                                   (function-symbolp g wrld)))
+                        ((not (symbolp g))
+                         (er soft ctx
+                             "Only a function symbol may be attached to a ~
+                              function symbol.  The proposed attachment of ~
+                              ~x0 to ~x1 is thus illegal, since ~x0 is not a ~
+                              symbol.~@2"
+                             g f see-doc))
+                        ((not (function-symbolp g wrld))
                          (er soft ctx
                              "Only a function symbol may be attached to a ~
                               function symbol.  The proposed attachment of ~
                               ~x0 to ~x1 is thus illegal, since ~x0 is not a ~
                               known function symbol.~@2~@3"
                              g f see-doc
-                             (let ((g1 (deref-macro-name g (macro-aliases wrld))))
+                             (let ((g1 (deref-macro-name g (macro-aliases
+                                                            wrld))))
 
 ; See the comment above explaining why we cannot soundly allow attachment to
 ; macro-aliases.
@@ -26857,7 +26864,7 @@
                               symbols~@0, but ~x1 has not had its guard ~
                               verified.  You may wish to use the macro ~x2 in ~
                               distributed book books/misc/defattach-bang.~@3"
-                             unless-ttag g see-doc))
+                             unless-ttag g 'defattach! see-doc))
                         ((not (and (equal (stobjs-in f wrld)
                                           (stobjs-in g wrld))
                                    (equal (stobjs-out f wrld)

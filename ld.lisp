@@ -17728,7 +17728,9 @@
   The HTML documentation no longer has extra newlines in <pre> environments.
 
   Among the new books is an illustration of ~ilc[defattach],
-  ~c[books/misc/defattach-example.lisp].
+  ~c[books/misc/defattach-example.lisp], as well as a variant of defattach that
+  avoids the need for ~il[guard] verification,
+  ~c[books/misc/defattach-bang.lisp].
 
   Distributed book ~c[books/misc/trace1.lisp] has been deleted.  It had
   provided slightly more friendly ~il[trace] output for new users, but 
