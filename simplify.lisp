@@ -4857,9 +4857,9 @@
 ; it first gives type-set a chance to decide things.
 
 ; But a more complex exception is that instead of the usual result from
-; rewrite, (mv rewritten-atm ttree), we return a third value as well: when
-; non-nil, it is a ttree justifying the rewriting of atm to *t* or *nil*
-; according to not-flg having value t or nil, respectively.  We use this
+; rewrite, (mv step-limit rewritten-atm ttree), we return a fourth value as
+; well: when non-nil, it is a ttree justifying the rewriting of atm to *t* or
+; *nil* according to not-flg having value t or nil, respectively.  We use this
 ; additional information to rewrite a clause to *false-clause* when every
 ; literal simplifies to nil even when our heuristics (documented rather
 ; extensively below) would normally refuse to simplify at least one of those

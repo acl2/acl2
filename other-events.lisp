@@ -26855,7 +26855,8 @@
                          (er soft ctx
                              "Attachments must be guard-verified function ~
                               symbols~@0, but ~x1 has not had its guard ~
-                              verified.~@2"
+                              verified.  You may wish to use the macro ~x2 in ~
+                              distributed book books/misc/defattach-bang.~@3"
                              unless-ttag g see-doc))
                         ((not (and (equal (stobjs-in f wrld)
                                           (stobjs-in g wrld))

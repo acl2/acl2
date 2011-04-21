@@ -19468,11 +19468,12 @@
   ~ilc[encapsulate] events).  Each non-~c[nil] ~c[gi] is a
   ~c[:]~ilc[logic]-mode function symbol that has had its guards verified, with
   the same ~il[signature] as ~c[fi] (though formal parameters for ~c[fi] and
-  ~c[gi] may have different names).  This event generates proof obligations and
-  an ordering check, both described below.  The effect of this event is first
-  to remove any existing attachments for all the function symbols ~c[fi], as
-  described above for the first General Form, and then to attach each ~c[gi] to
-  ~c[fi].
+  ~c[gi] may have different names).  (Note: The macro ~c[defattach!], defined
+  in distributed book ~c[books/misc/defattach-bang], avoids this restriction.)
+  This event generates proof obligations and an ordering check, both described
+  below.  The effect of this event is first to remove any existing attachments
+  for all the function symbols ~c[fi], as described above for the first General
+  Form, and then to attach each ~c[gi] to ~c[fi].
 
   Proof obligations must be checked before making attachments.  For this
   discussion we assume that each ~c[gi] is non-~c[nil] (otherwise first remove

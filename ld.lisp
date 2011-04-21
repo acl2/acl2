@@ -838,7 +838,7 @@
   pathname is considered relative to the connected book directory (~pl[cbd]).
   (2) If this variable is not already defined, then its value is set to
   ~c[NONE] when the ACL2 makefile system is invoked (specifically,
-  ~c[books/Makefile-generic]).
+  ~c[books/Makefile-generic]), e.g., for a regression.
 
   o Otherwise (empty environment variable value), file
   ~c[\"acl2-customization.lsp\"] or ~c[\"acl2-customization.lisp\"] on the
