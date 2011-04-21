@@ -40,8 +40,8 @@ Lisp creates object files with .o extensions.  You can also do
 
 ===============================================================================
 
-defattach-ec.lisp -- avoid normal guard verification requirement for a
-                     function to be attached to a constrained function
+defattach-bang.lisp -- avoid normal guard verification requirement for a
+                       function to be attached to a constrained function
 
 ===============================================================================
 
