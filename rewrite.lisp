@@ -13652,8 +13652,8 @@
             (relieve-hyp-ans
 
 ; As explained in the "SPECIAL CASE" comment in relieve-hyp, relieve-hyp
-; returned (mv term typ unify-subst ttree allp).  We enter a loop in which we
-; try to relieve the current hypothesis and subsequent hypotheses by
+; returned (mv step-limit term typ unify-subst ttree allp).  We enter a loop in
+; which we try to relieve the current hypothesis and subsequent hypotheses by
 ; instantiating the variables in term that are free with respect to
 ; unify-subst.
 
@@ -13963,9 +13963,9 @@
                                 simplify-clause-pot-lst rcnst gstack
                                 ttree)
 
-; The three values returned by this function are: t or nil indicating whether
-; lemma was used to rewrite term, the rewritten version of term, and the final
-; version of ttree.  This is a No-Change Loser.
+; The four values returned by this function are: a new step-limit, t or nil
+; indicating whether lemma was used to rewrite term, the rewritten version of
+; term, and the final version of ttree.  This is a No-Change Loser.
 
   (declare (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
@@ -14340,10 +14340,10 @@
                        backchain-limit
                        simplify-clause-pot-lst rcnst gstack ttree)
 
-; Rule is a :REWRITE rule of subclass DEFINITION or else it is nil.
-; Rule is nil iff term is a lambda application.  The two values
-; returned by this function are the usual rewrite pair: the (possibly)
-; rewritten term and the new ttree.  We assume rule is enabled.
+; Rule is a :REWRITE rule of subclass DEFINITION or else it is nil.  Rule is
+; nil iff term is a lambda application.  The three values returned by this
+; function are the new step-limit, the (possibly) rewritten term, and the new
+; ttree.  We assume rule is enabled.
 
 ; Term is of the form (fn . args).
 
