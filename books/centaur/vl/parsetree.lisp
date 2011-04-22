@@ -314,6 +314,7 @@ expressions whose signs have not yet been computed.</p>"
 (defaggregate vl-constint
   (origwidth origtype value wasunsized)
   :tag :vl-constint
+  :hons t
   :legiblep nil
   :require
   ((posp-of-vl-constint->origwidth
@@ -377,8 +378,12 @@ versus, say, 64-bit implementations.  Because of this, we added the
 <tt>wasunsized</tt> attribute so that we might later statically check for
 problematic uses of unsized constants.  This attribute will be set for unsized
 constants like <tt>5</tt> and <tt>'b0101</tt>, but not for sized constants like
-<tt>4'b0101</tt>.</p>")
+<tt>4'b0101</tt>.</p>
 
+<p>All constints are automatically created with @(see hons).  This is probably
+pretty trivial, but it seems nice.  For instance, the constant integers from
+0-32 are probably used thousands of times throughout a design for bit-selects
+and wire ranges, so sharing their memory may be useful.</p>")
 
 
 (defenum vl-bit-p (:vl-0val :vl-1val :vl-xval :vl-zval)
@@ -462,6 +467,7 @@ corresponding to a @(see vl-bitlist-p).  See also @(see vl-bitlist->string).</p>
 (defaggregate vl-weirdint
   (origwidth origtype bits wasunsized)
   :tag :vl-weirdint
+  :hons t
   :legiblep nil
   :require
   ((posp-of-vl-weirdint->origwidth
@@ -495,7 +501,11 @@ details.</p>
 
 <p>Unlike a constint, a weirdint does not have a <tt>value</tt> but instead has
 a list of <tt>bits</tt>, stored in MSB-first order as a @(see vl-bitlist-p) of
-the appropriate width.</p>")
+the appropriate width.</p>
+
+<p>Like constinsts, all weirdints are automatically constructed with @(see
+hons).  This may not be worthwhile since there are probably usually not too
+many weirdints, but by the same reasoning it shouldn't be too harmful.</p>")
 
 
 
@@ -536,6 +546,7 @@ soon as we want to do anything with real numbers.</p>")
 (defaggregate vl-id
   (name)
   :tag :vl-id
+  :hons t
   :legiblep nil
   :require ((stringp-of-vl-id->name
              (stringp name)
@@ -556,7 +567,11 @@ vl-hidpiece-p) for more information.</p>
 <p>Note that names created at parse time may include <b>any character</b>
 except for whitespace, and will not be empty.  One might eventually add these
 restrictions to vl-id tokens, and in other places such as port names, but we
-have not done so since this is all relatively obscure.</p>")
+have not done so since this is all relatively obscure.</p>
+
+<p>Like @(see vl-constint-p)s, we automatically create these structures with
+@(see hons).  This seems quite nice, since the same names may be used many
+times throughout all the expressions in a design.</p>")
 
 
 
@@ -846,6 +861,13 @@ vl-atomguts-p) is already known."
   :parents (vl-expr-p)
   :short "Representation of atomic expressions."
   :long "<p>See the discussion in @(see vl-expr-p).</p>")
+
+(deflist vl-atomlist-p (x)
+  (vl-atom-p x)
+  :guard t
+  :elementp-of-nil nil
+  :parents (vl-expr-p))
+
 
 
 (defaggregate vl-nonatom

@@ -27,6 +27,7 @@
 (include-book "gen-shr")
 (include-book "gen-simple")
 (include-book "gen-xdet")
+(include-book "../../mlib/expr-slice")
 (include-book "../../mlib/namefactory")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
@@ -35,7 +36,8 @@
 
 (defconst *vl-occform-memoize*
   '(vl-make-n-bit-binary-op
-    vl-make-n-bit-unary-op
+    vl-make-n-bit-assign
+    vl-make-n-bit-not
     vl-make-n-bit-reduction-op
     vl-make-n-bit-mux
     vl-make-n-bit-zmux
@@ -91,11 +93,9 @@
 ;; BOZO try to standardize the parameter-names in generated modules into some
 ;; common scheme, e.g., "out" versus "o", etc.
 
-;; BOZO plain-occform is ugly/gross, need notion of bustable exprs.
-
 ;; BOZO any generators that can be improved by using bustable exprs?  Shifting was improved a lot by using part-selects
 ;; instead of lots of stupid buffers.  I think the partial-product generation for multiplication can also be patched
-;; up like this.
+;; up like this.  Searching for "buf" might be a good start toward looking at these.
 
 ;; BOZO many generators could also probably switch to instance muxes instead of laying down their own gates to do
 ;; muxing, which could make their function more clear
@@ -319,7 +319,7 @@ occurrences."
                          warnings)))
 
        ((mv instname nf) (vl-namefactory-indexed-name "vl_unot" nf))
-       (mods (vl-make-n-bit-unary-op :vl-not width))
+       (mods (vl-make-n-bit-not width))
        (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "out"))
                    (make-vl-plainarg :expr arg1     :dir :vl-input  :portname (hons-copy "in"))))
        (modinst (make-vl-modinst :modname   (vl-module->name (car mods))
@@ -336,14 +336,11 @@ occurrences."
   :short "Transform a plain assignment into occurrences."
 
   :long "<p><tt>x</tt> should have the form <tt>assign lhs = rhs</tt>, where
-<tt>rhs</tt> is an atom, e.g., a plain wire or value.</p>"
+<tt>rhs</tt> is a <see topic='@(see vl-expr-sliceable-p)'>sliceable</see>
+expression, such as a plain identifier, bit-select, part-select, or
+concatenation of wires.</p>"
 
-  ;; BOZO this should be more like, bustable-expression-p or
-  ;; partitionable-expr-p, something like that.  For now we just use this dumb
-  ;; hack.
-  :guard (or (vl-atom-p (vl-assign->expr x))
-             (member (vl-nonatom->op (vl-assign->expr x))
-                     '(:vl-partselect-colon :vl-concat :vl-multiconcat)))
+  :guard (vl-expr-sliceable-p (vl-assign->expr x))
   :body
   (b* (((vl-assign x) x)
        (width (vl-expr->finalwidth x.expr))
@@ -357,14 +354,16 @@ occurrences."
          :assigns  (list x)
          :warnings (cons (make-vl-warning
                           :type :vl-programming-error
-                          :msg "~a0: bad widths/types in assignment of plain atom."
+                          :msg "~a0: bad widths/types in assignment of plain expression."
                           :args (list x)
                           :fatalp t
                           :fn 'vl-plain-occform)
                          warnings)))
 
+       ;; BOZO delays -- if we ever care about delays, we'll need to probably
+       ;; figure out how to do something a little smarter here.
        ((mv instname nf) (vl-namefactory-indexed-name "vl_ass" nf))
-       (mods (vl-make-n-bit-unary-op :vl-buf width))
+       (mods (vl-make-n-bit-assign width))
        (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "out"))
                    (make-vl-plainarg :expr x.expr   :dir :vl-input  :portname (hons-copy "in"))))
        (modinst (make-vl-modinst :modname   (vl-module->name (car mods))
@@ -760,7 +759,14 @@ is <tt>X</tt> or <tt>Z</tt>.</p>"
 
 
 (def-vl-occform vl-bitselect-occform
-  :short "Transform <tt>assign lhs = foo[i]</tt> into occurrences."
+  :short "Transform <tt>assign lhs = foo[i]</tt> into occurrences (dynamic
+bitselects only!)."
+
+  :long "<p>This is only for dynamic bitselects, not static selects like
+<tt>foo[3]</tt>.  See @(vl-assign-occform): any sliceable expressions get
+handled by @(see vl-plain-occform), and any static bitselects are
+sliceable.</p>"
+
   :ops (:vl-bitselect)
   :body
   (b* (((vl-assign x) x)
@@ -788,23 +794,19 @@ is <tt>X</tt> or <tt>Z</tt>.</p>"
                           :fn 'vl-bitselect-occform)
                          warnings)))
 
+       (warnings (if (vl-expr-resolved-p idx)
+                     (cons (make-vl-warning
+                            :type :vl-programming-error
+                            :msg "~a0: how did this get called?  we're using a ~
+                                  dynamic bitselect when a static one would do."
+                            :args (list x)
+                            :fatalp t
+                            :fn 'vl-bitselect-occform)
+                           warnings)
+                   warnings))
+
        ((mv iname nf) (vl-namefactory-indexed-name "vl_bsel" nf))
 
-       ((when (vl-expr-resolved-p idx))
-        ;; A static select of a particular bit.  Just becomes a buf.
-        (b* ((mods (vl-make-n-bit-unary-op :vl-buf 1))
-             (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "out"))
-                         (make-vl-plainarg :expr x.expr   :dir :vl-input  :portname (hons-copy "in"))))
-             (modinst (make-vl-modinst :modname   (vl-module->name (car mods))
-                                       :instname  iname
-                                       :paramargs (vl-arguments nil nil)
-                                       :portargs  (vl-arguments nil args)
-                                       :atts      x.atts
-                                       :loc       x.loc)))
-          (occform-return :mods mods
-                          :modinsts (list modinst))))
-
-       ;; Else, a dynamic bitselect.  Generate an appropriately-sized module
        (mods (vl-make-n-bit-dynamic-bitselect-m from-width idx-width))
        (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "out"))
                    (make-vl-plainarg :expr from     :dir :vl-input  :portname (hons-copy "in"))
@@ -831,8 +833,20 @@ below.</p>"
   :body
   (b* ((expr (vl-assign->expr x))
 
-       ((when (vl-fast-atom-p expr))
+       ((when (vl-expr-sliceable-p expr))
         (vl-plain-occform x nf warnings))
+
+       ((when (vl-fast-atom-p expr))
+        ;; Any reasonable atom should be sliceable.
+        (occform-return
+         :assigns (list x)
+         :warnings (cons (make-vl-warning
+                          :type :vl-not-implemented
+                          :msg "~a0: don't know how to occform ~x1 atom."
+                          :args (list x (tag (vl-atom->guts expr)))
+                          :fn 'vl-assign-occform
+                          :fatalp t)
+                         warnings)))
 
        (op (vl-nonatom->op expr)))
 
@@ -853,10 +867,8 @@ below.</p>"
        (vl-gte-occform x nf warnings))
 
       ((:vl-bitselect)
+       ;; Must be a dynamic bitselect...
        (vl-bitselect-occform x nf warnings))
-
-      ((:vl-partselect-colon :vl-concat :vl-multiconcat)
-       (vl-plain-occform x nf warnings))
 
       ((:vl-qmark)
        (vl-mux-occform x nf warnings))
@@ -866,6 +878,18 @@ below.</p>"
 
       ((:vl-binary-times)
        (vl-mult-occform x nf warnings))
+
+      ;; Now these should all be handled above, since they should be sliceable.
+      ((:vl-partselect-colon :vl-concat :vl-multiconcat)
+       (occform-return
+        :assigns (list x)
+        :warnings (cons (make-vl-warning
+                         :type :vl-programming-error
+                         :msg "~a0: expected ~x1 operator to be sliceable!"
+                         :args (list x op)
+                         :fn 'vl-assign-occform
+                         :fatalp t)
+                        warnings)))
 
       (otherwise
        (occform-return

@@ -26,8 +26,9 @@
 ; gen-simple.lisp -- functions that generate
 ;
 ;  - N-bit pointwise AND, OR, XOR, XNOR modules
-;  - N-bit BUF and NOT modules
-;  - N-bit reduction AND, OR, and XOR operators
+;  - N-bit assignment modules
+;  - N-bit negation modules
+;  - N-bit reduction AND, OR, and XOR operator modules
 ;  - N-bit muxes (regular or approximations)
 ;  - N-bit "Z muxes" (tri-state buffers)
 
@@ -92,63 +93,181 @@ endmodule
                           :maxloc    *vl-fakeloc*))))
 
 
-(def-vl-modgen vl-make-n-bit-unary-op (type n)
-  :short "Generate a wide buffer or negation module."
 
-  :long "<p>The <tt>type</tt> must be either <tt>:VL-BUF</tt> or
-<tt>:VL-NOT</tt>.  Depending on the type, we generate a module that is written
-using gates and which is a conservative approximation of:</p>
+(defsection *vl-1-bit-assign*
+  :parents (occform)
+  :short "Primitive one-bit assignment module."
+
+  :long "<p>The <tt>VL_1_BIT_ASSIGN</tt> module is a VL primitive.</p>
+
+<p>The Verilog meaning of this module is:</p>
 
 <code>
-module VL_N_BIT_{BUF,NOT} (out, in) ;
-  output [N-1:0] out;
-  input [N-1:0] in;
-
-// Then, one of:
-
-  assign out = in;   // For BUF
-  assign out = ~in;  // For NOT
-
+module VL_1_BIT_ASSIGN (out, in) ;
+  output out;
+  input in;
+  assign out = in;
 endmodule
 </code>
 
-<p>For instance, for a four-bit buffer, we would generate:</p>
+<p>VL takes this as a primitive.  In our translation to E, instances of this
+module become <tt>*identity*</tt> instances.  This module is also the basis for
+wider assignment modules; see @(see vl-make-n-bit-assign).</p>
+
+<p>Something subtle is that there is probably no way to implement
+<tt>VL_1_BIT_ASSIGN</tt> in hardware.  One obvious approach would be to use a
+buffer, but then <tt>out</tt> would be X when <tt>in</tt> is Z.  Another
+approach would be to just wire together out and in, but then other assignments
+to <tt>out</tt> would also affect <tt>in</tt>, and in Verilog this isn't the
+case.</p>
+
+<p>Originally our occform transformation tried to use buffers for assignments
+since this seems to be more conservative.  But these extra buffers seemed to
+often be inappropriate, especially when dealing with lower level modules that
+involve transistors.  So we now treat these as identity assignments, which is
+very similar to how Verilog models them.</p>"
+
+  (defconst *vl-1-bit-assign*
+
+    (b* ((name (hons-copy "VL_1_BIT_ASSIGN"))
+         (atts (acons "VL_HANDS_OFF" nil nil))
+
+         ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
+         ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input 1))
+
+         ;; assign out = in
+         (assign (make-vl-assign :lvalue out-expr :expr in-expr :loc *vl-fakeloc*)))
+
+      (make-vl-module :name      name
+                      :origname  name
+                      :ports     (list out-port in-port)
+                      :portdecls (list out-portdecl in-portdecl)
+                      :netdecls  (list out-netdecl in-netdecl)
+                      :assigns   (list assign)
+                      :minloc    *vl-fakeloc*
+                      :maxloc    *vl-fakeloc*
+                      :atts      atts))))
+
+
+(defsection vl-make-n-bit-assign-insts
+  :parents (vl-make-n-bit-assign)
+  :short "Generate a series of @(see *vl-1-bit-assign*) instances."
+
+  (defund vl-make-n-bit-assign-insts (name-index out-bits in-bits)
+    (declare (xargs :guard (and (natp name-index)
+                                (vl-exprlist-p out-bits)
+                                (vl-exprlist-p in-bits)
+                                (same-lengthp out-bits in-bits))))
+    (b* (((when (atom out-bits))
+          nil)
+         (args  (list (make-vl-plainarg :expr (car out-bits) :dir :vl-output :portname (hons-copy "out"))
+                      (make-vl-plainarg :expr (car in-bits)  :dir :vl-input  :portname (hons-copy "in"))))
+         (inst1 (make-vl-modinst :instname  (hons-copy (str::cat "bit_" (str::natstr name-index)))
+                                 :modname   (vl-module->name *vl-1-bit-assign*)
+                                 :portargs  (vl-arguments nil args)
+                                 :paramargs (vl-arguments nil nil)
+                                 :loc       *vl-fakeloc*))
+         (rest  (vl-make-n-bit-assign-insts (+ 1 name-index) (cdr out-bits) (cdr in-bits))))
+      (cons inst1 rest)))
+
+  (defthm vl-modinstlist-p-of-vl-make-n-bit-assign-insts
+    (implies (and (force (natp name-index))
+                  (force (vl-exprlist-p out-bits))
+                  (force (vl-exprlist-p in-bits))
+                  (force (same-lengthp out-bits in-bits)))
+             (vl-modinstlist-p (vl-make-n-bit-assign-insts name-index out-bits in-bits)))
+    :hints(("Goal" :in-theory (enable vl-make-n-bit-assign-insts)))))
+
+
+(def-vl-modgen vl-make-n-bit-assign (n)
+  :short "Generate a wide assignment module."
+
+  :long "<p>We generate a module that is semantically equal to:</p>
 
 <code>
- buf(out[3], in[3]);
- buf(out[2], in[2]);
- buf(out[1], in[1]);
- buf(out[0], in[0]);
+module VL_N_BIT_ASSIGN (out, in) ;
+  output [n-1:0] out;
+  input [n-1:0] in;
+  assign out = in;
+endmodule
 </code>
 
-<p>The behavior in the NOT case is exact, but the behavior in the BUF case
-possibly inexact.  For instance, if you wrote something like this:</p>
+<p>We actually implement these modules using a list of @(see *vl-1-bit-assign*)
+instances, one for each bit.  For instance, we implement our four-bit
+assignment module as:</p>
 
 <code>
-assign w = 1'bZ;
-assign w = 1'b1;
-</code>
+module VL_4_BIT_ASSIGN (out, in);
+  output [3:0] out ;
+  input [3:0] in ;
+  VL_1_BIT_ASSIGN bit_0 (out[0], in[0]) ;
+  VL_1_BIT_ASSIGN bit_1 (out[1], in[1]) ;
+  VL_1_BIT_ASSIGN bit_2 (out[2], in[2]) ;
+  VL_1_BIT_ASSIGN bit_3 (out[3], in[3]) ;
+endmodule
+</code>"
 
-<p>Then the value of <tt>w</tt> will always be 1, but using bufs instead of
-assignments would drive <tt>w</tt> to X instead.  BOZO we might consider making
-using some kind of RES modules to resolve multiple assignments to the same
-net.</p>"
-
-  :guard (and (member type '(:vl-not :vl-buf))
-              (posp n))
+  :guard (posp n)
 
   :body
-  (b* ((name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_"
-                                  (case type
-                                    (:vl-buf "BUF")
-                                    (:vl-not "NOT")))))
+  (b* (((when (= n 1))
+        (list *vl-1-bit-assign*))
+
+       (name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_ASSIGN")))
+
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
+       ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))
+
+       (out-wires (vl-make-list-of-bitselects out-expr 0 (- n 1)))
+       (in-wires  (vl-make-list-of-bitselects in-expr  0 (- n 1)))
+       (modinsts  (vl-make-n-bit-assign-insts 0 out-wires in-wires)))
+
+    (list (make-vl-module :name      name
+                          :origname  name
+                          :ports     (list out-port in-port)
+                          :portdecls (list out-portdecl in-portdecl)
+                          :netdecls  (list out-netdecl in-netdecl)
+                          :modinsts  modinsts
+                          :minloc    *vl-fakeloc*
+                          :maxloc    *vl-fakeloc*)
+          *vl-1-bit-assign*)))
+
+
+
+(def-vl-modgen vl-make-n-bit-not (n)
+  :short "Generate a wide negation module."
+
+  :long "<p>We generate a module that is written using gates and which is
+semantically equivalent to:</p>
+
+<code>
+module VL_N_BIT_NOT (out, in) ;
+  output [N-1:0] out;
+  input [N-1:0] in;
+  assign out = ~in;
+endmodule
+</code>
+
+<p>For instance, for a four-bit negation module, instead of the assignment
+above we would have:</p>
+
+<code>
+ not(out[3], in[3]);
+ not(out[2], in[2]);
+ not(out[1], in[1]);
+ not(out[0], in[0]);
+</code>"
+
+  :guard (posp n)
+  :body
+  (b* ((name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_NOT")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))
 
        (out-wires (vl-make-list-of-bitselects out-expr 0 (- n 1)))
        (in-wires  (vl-make-list-of-bitselects in-expr 0 (- n 1)))
-       (gates     (vl-make-unary-gateinstlist type out-wires in-wires nil)))
+       (gates     (vl-make-unary-gateinstlist :vl-not out-wires in-wires nil)))
 
     (list (make-vl-module :name      name
                           :origname  name
@@ -394,7 +513,7 @@ conservative.</p>"
          ;; assign out = sel ? a : 1'bz;
          (assign (make-vl-assign :lvalue out-expr
                                  :expr (make-vl-nonatom :op :vl-qmark
-                                                        :args (list sel-expr a-expr |*occform-1'bz*|)
+                                                        :args (list sel-expr a-expr |*sized-1'bz*|)
                                                         :finalwidth 1
                                                         :finaltype :vl-unsigned)
                                  :loc *vl-fakeloc*)))

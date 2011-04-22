@@ -144,7 +144,7 @@ endmodule
          (b-expr (vl-idexpr b-name n :vl-unsigned))
          (b-bits (vl-make-list-of-bitselects b-expr 0 (- n 1)))
          (b-high (take (len p-high) b-bits))
-         (b-low  (repeat |*occform-1'b0*| (len p-low)))
+         (b-low  (repeat |*sized-1'b0*| (len p-low)))
 
          (ands (vl-make-binary-gateinstlist :vl-and p-high a-high b-high nil))
          (bufs (vl-make-unary-gateinstlist :vl-buf p-low b-low nil)))
@@ -294,7 +294,7 @@ circuitry.</p>"
                                    c-exprs
                                    (cons (car p-exprs) (butlast s-exprs 1))
                                    (cdr p-exprs)
-                                   (repeat |*occform-1'b0*| (- n 1))))
+                                   (repeat |*sized-1'b0*| (- n 1))))
 
        ;; this is the answer except for x-detection
        (ans (car (last s-exprs)))

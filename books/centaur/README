@@ -83,15 +83,17 @@ Copyright Notice
 
      make LISP=ccl ACL2_HONS=h ACL2_SIZE=3000000
 
-  We use cert.pl instead of Makefiles.  Because of this,
+  We use cert.pl instead of Makefiles, so you'll need a working Perl
+  installation.  We recommend that you:
 
-     - you'll need a working Perl installation
+     - Be able to invoke cert.pl by typing "cert.pl" (i.e., add a symlink
+       to it to your PATH; it is located in the acl2/books directory.)
 
-     - you'll need to be able to invoke your ACL2 image with "acl2", i.e.,
-       add a symlink named "acl2" somewhere in your PATH
+     - Be able to invoke your ACL2 image by typing "acl2" (i.e., add a
+       symlink to your PATH)
 
-     - cert.pl is located in the acl2/books directory, i.e., :dir :system
-       so add a symlink to it in your PATH
+  Alternately, you can invoke cert.pl directly and use the --acl2 option to
+  tell it which ACL2 image to use, but this can be cumbersome.
 
 
   Building Books and Documentation.

@@ -28,6 +28,45 @@
   :short "Basic functions for working with expressions.")
 
 
+
+(defsection vl-one-bit-constants
+  :parents (expr-tools)
+  :short "Already-sized, one-bit constants."
+  :long "<p>Care should be taken when using these constants because they are
+already annotated with their final widths and types, and @(see
+expression-sizing) is a very complex topic.</p>"
+
+  (defconst |*sized-1'b0*|
+    (hons-copy (make-vl-atom :guts (make-vl-constint :value 0
+                                                     :origwidth 1
+                                                     :origtype :vl-unsigned)
+                             :finalwidth 1
+                             :finaltype :vl-unsigned)))
+
+
+  (defconst |*sized-1'b1*|
+    (hons-copy (make-vl-atom :guts (make-vl-constint :value 1
+                                                     :origwidth 1
+                                                     :origtype :vl-unsigned)
+                             :finalwidth 1
+                             :finaltype :vl-unsigned)))
+
+  (defconst |*sized-1'bx*|
+    (hons-copy (make-vl-atom :guts (make-vl-weirdint :bits (list :vl-xval)
+                                                     :origwidth 1
+                                                     :origtype :vl-unsigned)
+                             :finalwidth 1
+                             :finaltype :vl-unsigned)))
+
+  (defconst |*sized-1'bz*|
+    (hons-copy (make-vl-atom :guts (make-vl-weirdint :bits (list :vl-zval)
+                                                     :origwidth 1
+                                                     :origtype :vl-unsigned)
+                             :finalwidth 1
+                             :finaltype :vl-unsigned))))
+
+
+
 (defsection vl-expr-resolved-p
   :parents (expr-tools)
   :short "Recognizes plain constant integer expressions."
@@ -120,6 +159,7 @@ like <tt>foo</tt>.</p>"
     (string-listp (vl-idexprlist->names x))))
 
 
+
 (defsection vl-idexpr
   :parents (expr-tools)
   :short "Construct an @(see vl-idexpr-p)."
@@ -130,9 +170,11 @@ given name, width, and type.</p>"
     (declare (xargs :guard (and (stringp name)
                                 (vl-maybe-natp finalwidth)
                                 (vl-maybe-exprtype-p finaltype))))
-    (make-vl-atom :guts (make-vl-id :name name)
-                  :finalwidth finalwidth
-                  :finaltype finaltype))
+    ;; I didn't used to hons these, but now it seems like a good idea
+    ;; since the same identifier may be needed in several contexts.
+    (make-honsed-vl-atom :guts (make-honsed-vl-id :name name)
+                         :finalwidth finalwidth
+                         :finaltype finaltype))
 
   (local (in-theory (enable vl-idexpr-p vl-idexpr vl-idexpr->name)))
 
@@ -630,16 +672,20 @@ operator.</p>
            (width (+ 1 (integer-length value))))
       (if (<= width 31)
           ;; Prefer to make indices that look like plain decimal numbers,
-          (make-vl-atom :guts (make-vl-constint :origwidth 32
-                                                :origtype :vl-signed
-                                                :value value)
-                        :finalwidth 32
-                        :finaltype :vl-signed)
-        (make-vl-atom :guts (make-vl-constint :origwidth width
-                                              :origtype :vl-signed
-                                              :value value)
-                      :finalwidth width
-                      :finaltype :vl-signed))))
+          ;; I didn't used to hons these, but now it seems like a good idea
+          ;; since the same indicies may be needed frequently.
+          (make-honsed-vl-atom
+           :guts (make-honsed-vl-constint :origwidth 32
+                                          :origtype :vl-signed
+                                          :value value)
+           :finalwidth 32
+           :finaltype :vl-signed)
+        (make-honsed-vl-atom
+         :guts (make-honsed-vl-constint :origwidth width
+                                        :origtype :vl-signed
+                                        :value value)
+         :finalwidth width
+         :finaltype :vl-signed))))
 
   (verify-guards vl-make-index)
 

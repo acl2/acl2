@@ -507,6 +507,11 @@ reasoning about <tt>car</tt> in general.</p>
 (defun da-constructor-name (name)
   name)
 
+(defun da-honsed-constructor-name (name)
+  (intern-in-package-of-symbol
+   (concatenate 'string "HONSED-" (symbol-name name))
+   name))
+
 (defun da-accessor-name (name field)
   (intern-in-package-of-symbol
    (concatenate 'string (symbol-name name) "->" (symbol-name field))
@@ -536,6 +541,17 @@ reasoning about <tt>car</tt> in general.</p>
   (intern-in-package-of-symbol
    (concatenate 'string "MAKE-" (symbol-name name))
    name))
+
+(defun da-honsed-maker-fn-name (name)
+  (intern-in-package-of-symbol
+   (concatenate 'string "MAKE-HONSED-" (symbol-name name) "-FN")
+   name))
+
+(defun da-honsed-maker-name (name)
+  (intern-in-package-of-symbol
+   (concatenate 'string "MAKE-HONSED-" (symbol-name name))
+   name))
+
 
 
 ;; Format for the :require field.
@@ -637,24 +653,27 @@ reasoning about <tt>car</tt> in general.</p>
             (da-legible-fields-map name (cdr fields)))
     nil))
 
-(defun da-legible-pack-fields-aux (fields)
+(defun da-legible-pack-fields-aux (honsp fields)
   ;; Convert a linear list of fields into the pairs for a list operation
   (if (consp fields)
-      (cons `(cons ',(car fields) ,(car fields))
-            (da-legible-pack-fields-aux (cdr fields)))
+      `(,(if honsp 'hons 'cons)
+        (,(if honsp 'hons 'cons) ',(car fields) ,(car fields))
+        ,(da-legible-pack-fields-aux honsp (cdr fields)))
     nil))
 
-(defun da-legible-pack-fields (tag fields)
+(defun da-legible-pack-fields (honsp tag fields)
   ;; Convert a linear list of fields into consing code for a legible map
-  `(cons ,tag (list . ,(da-legible-pack-fields-aux fields))))
+  `(,(if honsp 'hons 'cons)
+    ,tag
+    ,(da-legible-pack-fields-aux honsp fields)))
 
-;; (da-legible-pack-fields :taco '(shell meat cheese lettuce sauce))
+;; (da-legible-pack-fields nil :taco '(shell meat cheese lettuce sauce))
 ;;   ==>
-;; (CONS :TACO (LIST (CONS 'SHELL SHELL)
-;;                   (CONS 'MEAT MEAT)
-;;                   (CONS 'CHEESE CHEESE)
-;;                   (CONS 'LETTUCE LETTUCE)
-;;                   (CONS 'SAUCE SAUCE)))
+;; (CONS :TACO (CONS (CONS 'SHELL SHELL)
+;;                   (CONS (CONS 'MEAT MEAT)
+;;                         (CONS (CONS 'CHEESE CHEESE)
+;;                               (CONS (CONS 'LETTUCE LETTUCE)
+;;                                     (CONS (CONS 'SAUCE SAUCE) NIL))))))
 
 
 
@@ -667,7 +686,7 @@ reasoning about <tt>car</tt> in general.</p>
 (defun da-pack-fields (honsp legiblep tag fields)
   ;; Create a fields map of the appropriate type
   (if legiblep
-      (da-legible-pack-fields tag fields)
+      (da-legible-pack-fields honsp tag fields)
     (da-illegible-pack-fields honsp tag fields)))
 
 (defun da-structure-checks (name legiblep fields)
@@ -696,18 +715,33 @@ reasoning about <tt>car</tt> in general.</p>
     (declare (xargs :guard (and ,@(strip-cadrs require))))
     ,(da-pack-fields honsp legiblep tag fields)))
 
+(defun da-make-honsed-constructor (name tag fields require legiblep)
+  `(defun ,(da-honsed-constructor-name name) ,fields
+    (declare (xargs :guard (and ,@(strip-cadrs require))
+                    :guard-hints(("Goal" :in-theory (enable ,(da-constructor-name name))))))
+    (mbe :logic (,(da-constructor-name name) . ,fields)
+         :exec ,(da-pack-fields t legiblep tag fields))))
 
 ;; (da-make-constructor 'taco :taco '(shell meat cheese lettuce sauce)
-;;                   '((shell-p-of-taco->shell (shellp shell)))
-;;                  nil nil nil)
+;;                    '((shell-p-of-taco->shell (shellp shell)))
+;;                   nil nil)
 ;;  ==>
 ;; (DEFUND TACO (SHELL MEAT CHEESE LETTUCE SAUCE)
 ;;         (DECLARE (XARGS :GUARD (AND (SHELLP SHELL))))
-;;         (CONS :TACO (LIST (CONS 'SHELL SHELL)
-;;                           (CONS 'MEAT MEAT)
-;;                           (CONS 'CHEESE CHEESE)
-;;                           (CONS 'LETTUCE LETTUCE)
-;;                           (CONS 'SAUCE SAUCE))))
+;;         (CONS :TACO (CONS (CONS SHELL MEAT)
+;;                           (CONS CHEESE (CONS LETTUCE SAUCE)))))
+
+;; (da-make-honsed-constructor 'taco :taco '(shell meat cheese lettuce sauce)
+;;                             '((shell-p-of-taco->shell (shellp shell)))
+;;                             nil)
+;;  ==>
+;; (DEFUN HONSED-TACO
+;;        (SHELL MEAT CHEESE LETTUCE SAUCE)
+;;        (DECLARE (XARGS :GUARD (AND (SHELLP SHELL))
+;;                        :GUARD-HINTS (("Goal" :IN-THEORY (ENABLE TACO)))))
+;;        (MBE :LOGIC (TACO SHELL MEAT CHEESE LETTUCE SAUCE)
+;;             :EXEC (HONS :TACO (HONS (HONS SHELL MEAT)
+;;                                     (HONS CHEESE (HONS LETTUCE SAUCE))))))
 
 (defun da-make-recognizer (name tag fields require legiblep)
   ;; Previously we allowed recognizers to be inlined, but now we prefer to
@@ -896,6 +930,19 @@ reasoning about <tt>car</tt> in general.</p>
 (defun da-make-maker (name fields)
   `(defmacro ,(da-maker-name name) (&rest args)
      (,(da-maker-fn-name name)
+      (da-changer-args-to-alist args ',(da-make-valid-fields-for-changer fields)))))
+
+
+(defun da-make-honsed-maker-fn (name fields)
+  (let ((alist (intern-in-package-of-symbol "ALIST" name)))
+    `(defun ,(da-honsed-maker-fn-name name) (,alist)
+       (declare (xargs :mode :program))
+       (cons ',(da-honsed-constructor-name name)
+             ,(cons 'list (da-make-maker-fn-aux name fields))))))
+
+(defun da-make-honsed-maker (name fields)
+  `(defmacro ,(da-honsed-maker-name name) (&rest args)
+     (,(da-honsed-maker-fn-name name)
       (da-changer-args-to-alist args ',(da-make-valid-fields-for-changer fields)))))
 
 
@@ -1138,6 +1185,7 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
 
             ,(da-make-recognizer name tag fields require legiblep)
             ,(da-make-constructor name tag fields require honsp legiblep)
+            ,(da-make-honsed-constructor name tag fields require legiblep)
             ,@(da-make-accessors name fields legiblep inlinep)
 
             ,@(and patbindp
@@ -1224,6 +1272,10 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
 
             ,(da-make-maker-fn name fields)
             ,(da-make-maker name fields)
+
+            ,(da-make-honsed-maker-fn name fields)
+            ,(da-make-honsed-maker name fields)
+
             ))))
 
 (defmacro defaggregate (name fields &key

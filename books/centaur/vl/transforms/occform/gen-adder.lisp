@@ -261,11 +261,11 @@ implemented.</p>"
        ((mv cin bin sub-netdecls sub-modinsts sub-support)
         (if (eq type :vl-binary-plus)
             ;; addition: carry in = 0, b-input = b
-            (mv |*occform-1'b0*| b-expr nil nil nil)
+            (mv |*sized-1'b0*| b-expr nil nil nil)
           ;; subtraction: carry in = 1, b-input = ~b
           (b* (;; wire [n-1:0] bnot = ~b;
                ((mv bnot-expr bnot-netdecl)  (vl-occform-mkwire "bnot" n))
-               ((cons bnot-mod bnot-support) (vl-make-n-bit-unary-op :vl-not n))
+               ((cons bnot-mod bnot-support) (vl-make-n-bit-not n))
                (bnot-args (list (make-vl-plainarg :expr bnot-expr :dir :vl-output :portname (hons-copy "out"))
                                 (make-vl-plainarg :expr b-expr    :dir :vl-input  :portname (hons-copy "in"))))
                (bnot-inst (make-vl-modinst :modname   (vl-module->name bnot-mod)
@@ -273,7 +273,7 @@ implemented.</p>"
                                            :paramargs (vl-arguments nil nil)
                                            :portargs  (vl-arguments nil bnot-args)
                                            :loc       *vl-fakeloc*)))
-            (mv |*occform-1'b1*|
+            (mv |*sized-1'b1*|
                 bnot-expr
                 (list bnot-netdecl)
                 (list bnot-inst)

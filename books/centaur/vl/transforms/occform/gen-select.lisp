@@ -70,7 +70,7 @@ endmodule
 
          (~idx-gate (vl-make-unary-gateinst  :vl-not ~idx-expr idx-expr                   nil nil))
          (a-gate    (vl-make-binary-gateinst :vl-and a-expr    ~idx-expr in-expr          nil nil))
-         (b-gate    (vl-make-binary-gateinst :vl-and b-expr    idx-expr  |*occform-1'bx*| nil nil))
+         (b-gate    (vl-make-binary-gateinst :vl-and b-expr    idx-expr  |*sized-1'bx*|   nil nil))
          (out-gate  (vl-make-binary-gateinst :vl-or  out-expr  a-expr    b-expr           nil nil)))
 
       (make-vl-module :name      name
@@ -497,10 +497,10 @@ checking.</p>"
               ((mv noextra-expr noextra-netdecl) (vl-occform-mkwire "no_extra" 1))
               ((mv a-expr a-netdecl) (vl-occform-mkwire "a" 1))
               ((mv b-expr b-netdecl) (vl-occform-mkwire "b" 1))
-              (noextra-gate (vl-make-unary-gateinst  :vl-not noextra-expr extra-expr                    nil nil))
-              (a-gate       (vl-make-binary-gateinst :vl-and a-expr       noextra-expr main-expr        nil nil))
-              (b-gate       (vl-make-binary-gateinst :vl-and b-expr       extra-expr   |*occform-1'bx*| nil nil))
-              (out-gate     (vl-make-binary-gateinst :vl-or  out-expr     a-expr        b-expr          nil nil))
+              (noextra-gate (vl-make-unary-gateinst  :vl-not noextra-expr extra-expr                   nil nil))
+              (a-gate       (vl-make-binary-gateinst :vl-and a-expr       noextra-expr main-expr       nil nil))
+              (b-gate       (vl-make-binary-gateinst :vl-and b-expr       extra-expr   |*sized-1'bx*|  nil nil))
+              (out-gate     (vl-make-binary-gateinst :vl-or  out-expr     a-expr       b-expr          nil nil))
 
               (mod (make-vl-module :name      name
                                    :origname  name

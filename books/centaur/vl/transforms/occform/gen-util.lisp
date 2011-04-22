@@ -27,41 +27,6 @@
 (local (include-book "../../util/osets"))
 
 
-(defconst |*occform-1'b0*|
-  ;; An already-sized one-bit zero, for use only in occform.
-  (hons-copy (make-vl-atom :guts (make-vl-constint :value 0
-                                                   :origwidth 1
-                                                   :origtype :vl-unsigned)
-                           :finalwidth 1
-                           :finaltype :vl-unsigned)))
-
-
-(defconst |*occform-1'b1*|
-  ;; An already-sized one-bit one, for use only in occform.
-  (hons-copy (make-vl-atom :guts (make-vl-constint :value 1
-                                                   :origwidth 1
-                                                   :origtype :vl-unsigned)
-                           :finalwidth 1
-                           :finaltype :vl-unsigned)))
-
-
-(defconst |*occform-1'bx*|
-  ;; An already-sized one-bit X, for use only in occform.
-  (hons-copy (make-vl-atom :guts (make-vl-weirdint :bits (list :vl-xval)
-                                                   :origwidth 1
-                                                   :origtype :vl-unsigned)
-                           :finalwidth 1
-                           :finaltype :vl-unsigned)))
-
-(defconst |*occform-1'bz*|
-  ;; An already-sized one-bit Z, for use only in occform.
-  (hons-copy (make-vl-atom :guts (make-vl-weirdint :bits (list :vl-zval)
-                                                   :origwidth 1
-                                                   :origtype :vl-unsigned)
-                           :finalwidth 1
-                           :finaltype :vl-unsigned)))
-
-
 
 (defsection vl-occform-mkwire
   :parents (occform)

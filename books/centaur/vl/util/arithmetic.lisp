@@ -21,8 +21,9 @@
 (in-package "VL")
 
 ; BOZO Lib.  This book should only be locally included, and because of that you
-; should never define a function here. Eventually this stuff should get moved
-; into libraries.
+; should never define a function here.  Instead, widely useful functions should
+; generally be defined in defs.lisp.  Eventually, these lemmas should be moved
+; into more other libraries.
 
 (deflabel pre-arithmetic)
 
@@ -514,6 +515,7 @@
 
 
 
+
 (encapsulate ()
 
   (local (in-theory (enable simpler-take)))
@@ -641,6 +643,12 @@
     :hints(("Goal"
             :use ((:instance l0)
                   (:instance l2))))))
+
+(defthm rev-of-repeat
+  (equal (rev (repeat a n))
+         (repeat a n))
+  :hints(("Goal" :in-theory (enable repeat))))
+
 
 
 
@@ -1369,7 +1377,7 @@
                   nil)))
 
 (defthm eqlablep-when-characterp
-  ; BOZO why do we needt his rule when there is eqlablep-recog?
+  ; BOZO why do we need this rule when there is eqlablep-recog?
   (implies (characterp x)
            (eqlablep x)))
 
@@ -1402,29 +1410,6 @@
            (plist-worldp (w state)))
   :hints(("Goal" :in-theory (enable state-p1 w))))
 
-
-; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
-; (Note: It can be proved by changeing the :in-theory hint, as shown.  But
-; given the existing comment, it's clear that this lemma was not intended (at
-; least not as is) for assoc-equal, which it would be if we left it in this
-; book.
-; (defthm acl2-count-of-assoc
-;   ;; This is a weird theorem.  Its is useful for defaggregates that
-;   ;; aren't set to illegible.  Still, bad to target assoc.  We should
-;   ;; be rewriting assoc to assoc-equal, I think.
-;   (and (implies (consp x)
-;                 (< (acl2-count (assoc a x))
-;                    (acl2-count x)))
-;        (<= (acl2-count (assoc a x))
-;            (acl2-count x)))
-;   :rule-classes ((:rewrite) (:linear))
-;   :hints(("Goal"
-; ; revised :in-theory hint for changes to member, assoc, etc.:
-;           :in-theory (e/d (acl2-count assoc-equal) (assoc-equal-elim))
-; ; original :in-theory hint:
-; ;            :in-theory (enable acl2-count)
-;           :induct (len x))))
-
 (defthm stringp-of-subseq
   (equal (stringp (subseq x start end))
          (stringp x))
@@ -1434,36 +1419,6 @@
   (equal (alistp (make-fal x y))
          (alistp y))
   :hints(("Goal" :in-theory (enable make-fal))))
-
-;; (encapsulate ()
-
-  ;; BOZO ugh, why do we ever reason about this?
-
-; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
-; (We can prove the next two with the hint
-;  :in-theory (e/d (assoc-equal) (assoc-equal-elim))
-;  but maybe they're not needed.)
-; 
-;   (defthm assoc-eq-when-not-consp
-;     (implies (not (consp x))
-;              (equal (assoc-eq a x)
-;                     nil)))
-; 
-;   (defthm assoc-eq-of-cons
-;     (equal (assoc-eq a (cons b x))
-;            (if (equal a (car b))
-;                b
-;              (assoc-eq a x))))
-
-; JCD trying to remove this horrible awful rule
-
-  ;; (defthm assoc-eq->member-equal-under-iff-when-alistp
-  ;;   (implies (alistp x)
-  ;;            (iff (assoc-eq a x)
-  ;;                 (member-equal a (strip-cars x))))
-  ;;   :hints(("Goal"
-  ;;           :in-theory (enable alistp assoc-eq member-equal strip-cars)
-  ;;           :induct (len x)))))
 
 
 (encapsulate

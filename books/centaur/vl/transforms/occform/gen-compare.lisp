@@ -71,7 +71,7 @@ operation.)</p>"
        ((mv cout-expr cout-netdecl)  (vl-occform-mkwire "cout" 1))
 
        ;; assign bnot = ~b;
-       ((cons bnot-mod bnot-support) (vl-make-n-bit-unary-op :vl-not n))
+       ((cons bnot-mod bnot-support) (vl-make-n-bit-not n))
        (bnot-args (list (make-vl-plainarg :expr bnot-expr :dir :vl-output :portname (hons-copy "out"))
                         (make-vl-plainarg :expr b-expr    :dir :vl-input  :portname (hons-copy "in"))))
        (bnot-inst (make-vl-modinst :modname   (vl-module->name bnot-mod)
@@ -86,7 +86,7 @@ operation.)</p>"
                         (make-vl-plainarg :expr cout-expr        :dir :vl-output :portname (hons-copy "cout"))
                         (make-vl-plainarg :expr a-expr           :dir :vl-input  :portname (hons-copy "a"))
                         (make-vl-plainarg :expr bnot-expr        :dir :vl-input  :portname (hons-copy "b"))
-                        (make-vl-plainarg :expr |*occform-1'b1*| :dir :vl-input  :portname (hons-copy "cin"))))
+                        (make-vl-plainarg :expr |*sized-1'b1*|   :dir :vl-input  :portname (hons-copy "cin"))))
        (core-inst (make-vl-modinst :modname   (vl-module->name core-mod)
                                    :instname  (hons-copy "core")
                                    :paramargs (vl-arguments nil nil)

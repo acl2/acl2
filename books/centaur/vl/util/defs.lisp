@@ -47,91 +47,6 @@
   :short "Placeholder for undocumented topics.")
 
 
-(defxdoc vl
-  :short "VL Verilog Toolkit."
-
-  :long "<h3>Overview</h3>
-
-<p><b>VL</b> is an <a
-href=\"http://www.cs.utexas.edu/users/moore/acl2/\">ACL2</a> library for
-working with Verilog source code.</p>
-
-<p>The main goal of VL is to translate Verilog modules into E-language modules
-which can be analyzed using ACL2.  E is a comparatively simple, hierarchical,
-register-transfer level hardware description language, and is described in the
-following paper.</p>
-
-<p>Warren A. Hunt, Jr. and Sol Swords.  \"Centaur technology media unit
-verification.  Case study: Floating point addition.\"  in Computer
-Aided Verification (CAV '09), June 2009.</p>
-
-<p>Our overall approach to E translation is to apply several Verilog-to-Verilog
-source-code @(see transforms).  Together, these transforms work to simplify the
-input Verilog into a form that is very close to E, where modules consist only
-of gates and submodules.  Then, the final conversion into E is quite
-straightforward.</p>
-
-<p>A feature of this approach is that the majority of VL has nothing to do with
-E.  Instead, it can be regarded purely as a tool for Verilog processing.
-Viewed in this way, VL consists of:</p>
-
-<ul>
- <li>A representation for Verilog @(see modules),</li>
- <li>A parser for loading Verilog source code into this representation, </li>
- <li>Utilities for inspecting and analyzing these modules,</li>
- <li>Various transforms that change these modules, and</li>
- <li>Pretty-printing and other report-generation functions.</li>
-</ul>
-
-<p>This is a flexible architecture which can be used for many purposes.  For
-instance, in addition to E translation,</p>
-
-<ul>
-
-<li>it serves as the basis for @(see use-set), a simple static analyzer that
-identifies wires that are unused or unset, and wires that might be <see
-topic=\"@(url typo-detection)\">typos</see>.</li>
-
-<li>it is used to implement a web-based \"module browser\" that lets the FV
-group see the original and translated source code for our modules, with
-hyperlinks between modules and integrated warning/error reporting.</li>
-
-</ul>
-
-<p>VL is based on our reading of IEEE Std 1364-2005, the Verilog-2005 Standard.
-Page and section numbers given throughout the VL documentation are in reference
-to this document.</p>
-
-<h3>Copyright Information</h3>
-
-<p>VL Verilog Toolkit</p>
-
-<p>Copyright (C) 2008-2011 <a href=\"http://www.centtech.com\">Centaur
-Technology</a>.</p>
-
-<p>Contact:</p>
-<code>
-Centaur Technology Formal Verification Group
-7600-C N. Capital of Texas Highway, Suite 300
-Austin, TX 78731, USA.
-</code>
-
-<p>VL is free software; you can redistribute it and/or modify it under the
-terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or (at your option) any later
-version.</p>
-
-<p>This program is distributed in the hope that it will be useful but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-details.</p>
-
-<p>You should have received a copy of the GNU General Public License along with
-this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
-Street, Suite 500, Boston, MA 02110-1335, USA.</p>")
-
-
-
 (defxdoc utilities
   :parents (vl)
   :short "Generic utilities that are unrelated to Verilog processing, but which
@@ -503,7 +418,25 @@ consing.</p>"
 
   (defthm all-equalp-of-cdr-when-all-equalp
     (implies (all-equalp a x)
-             (all-equalp a (cdr x)))))
+             (all-equalp a (cdr x))))
+
+  (defthm all-equalp-of-append
+    (equal (all-equalp a (append x y))
+           (and (all-equalp a x)
+                (all-equalp a y)))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm all-equalp-of-rev
+    (equal (all-equalp a (rev x))
+           (all-equalp a x))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm all-equalp-of-repeat
+    (equal (all-equalp a (repeat b n))
+           (or (equal a b)
+               (zp n)))
+    :hints(("Goal" :in-theory (enable repeat)))))
+
 
 
 

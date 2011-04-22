@@ -20,21 +20,18 @@
 
 (in-package "VL")
 (include-book "../mlib/namefactory")
-(include-book "../wf-ranges-resolved-p")
-(include-book "../wf-widthsfixed-p")
+(include-book "../mlib/range-tools")
 (local (include-book "../util/arithmetic"))
 
-
-(deflist vl-atomlist-p (x)
-  (vl-atom-p x)
-  :guard t
-  :elementp-of-nil nil)
-
+; BOZO we may wish to rewrite this to not split up expression so aggressively.
+; We should probably stop when we reach a sliceable expression, instead of just
+; going all the way to atoms.
 
 
 (defxdoc split
   :parents (transforms)
   :short "Split up expressions by generating new wires."
+
   :long "<p>In this transformation, our goal is to split up expressions so
 that every assignment has at most one operation, and so that the arguments
 to every gate and module instance are operation-free.</p>
@@ -55,15 +52,10 @@ such as</p>
 </code>
 
 <p>This involves creating new wire declarations and assignments to those wires,
-and requires us to be very careful to avoid name collisions.</p>
-
-<p>Efficiency note.  Split needs to be relatively efficient.  In one module,
-splitting results in about 80,000 wires being introduced.  So we need to be
-able to create these declarations and assignments relatively quickly.  We use a
-@(see vl-namefactory-p) to generate fresh names like <tt>temp_12</tt> and
-<tt>temp_46</tt>.</p>")
-
-
+and requires us to be very careful to avoid name collisions.  This process also
+needs to be quite efficient. (In one module, splitting results in about 80,000
+wires being introduced.)  We handle this by using a @(see vl-namefactory-p) to
+generate fresh names like <tt>temp_12</tt> and <tt>temp_46</tt>.</p>")
 
 (defsection vl-expr-split
   :parents (split)

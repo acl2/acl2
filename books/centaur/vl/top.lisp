@@ -95,6 +95,147 @@
 
 
 
+
+(defxdoc vl
+  :short "VL Verilog Toolkit."
+  :long "<p>Note: thqis documentation is mainly a reference manual.  If you are
+new to VL, you may wish to start with @(see getting-started).</p>")
+
+(defxdoc getting-started
+  :parents (vl)
+  :short "Getting started with VL."
+
+  :long "<h3>Introduction</h3>
+
+<p><b>VL</b> is an <a
+href=\"http://www.cs.utexas.edu/users/moore/acl2/\">ACL2</a> library for
+working with Verilog source code.  It includes:</p>
+
+<ul>
+ <li>A representation for Verilog @(see modules),</li>
+ <li>A @(see loader) for parsing Verilog source code into this representation,</li>
+ <li>Utilities for inspecting and analyzing these modules,</li>
+ <li>Various transforms that can simplify these modules, and</li>
+ <li>Pretty-printing and other report-generation functions.</li>
+</ul>
+
+<p>The original (and still primary) purpose of VL is to translate Verilog
+modules into E-language modules for formal verification.  E is a comparatively
+simple, hierarchical, register-transfer level hardware description language.
+Because E is still under active development we have not yet released it, but an
+early version is described in the following paper:</p>
+
+<p>Warren A. Hunt, Jr. and Sol Swords.  \"Centaur technology media unit
+verification.  Case study: Floating point addition.\" in Computer Aided
+Verification (CAV '09), June 2009.</p>
+
+<p>Our overall approach to E translation is to apply several Verilog-to-Verilog
+source-code @(see transforms).  Together, these transforms work to simplify the
+input Verilog into a form that is very close to E, where modules consist only
+of gates and submodules.  Then, the final conversion into E is quite
+straightforward.</p>
+
+<p>A feature of this approach is that the majority of VL has nothing to do with
+E, and VL can be used to implement other Verilog tools.  For instance:</p>
+
+<ul>
+
+<li>We have used it to developed linting tools like @(see use-set) and a more
+powerful linter which is available in <tt>vl/lint</tt> but is not yet
+documented.</li>
+
+<li>We have also used it to implement a web-based \"module browser\" (which
+will probably not be released since it is very Centaur specific) that lets
+users see the original and translated source code for our modules, and has
+several nice features (e.g., hyperlinks for navigating between wires and
+following wires, and integrated linting and warning/error reporting).</li>
+
+</ul>
+
+<p>We imagine that other users of VL may wish to use it:</p>
+
+<ul>
+
+<li>As a convenient way to load Verilog files to implement their own static
+checks (i.e., as Lisp functions that inspect the parse tree), or</li>
+
+<li>As a frontend to some other kind of tool, e.g., use VL to deal with tricky
+Verilog things like expressions so that your tool only has to deal with gates
+and hierarchical modules.  (This is really how we use it.)</li>
+
+</ul>
+
+
+<h3>Supported Constructs</h3>
+
+<p>Verilog is a huge language, and VL supports only part of it.</p>
+
+<p>VL is based on our reading of the Verilog-2005 standard, IEEE Std 1364-2005.
+Page and section numbers given throughout the VL documentation are in reference
+to this document.  VL does not have any support for SystemVerilog.</p>
+
+<p>Regarding file loading, VL's @(see preprocessor) is very incomplete and
+basically just supports <tt>`define</tt> and <tt>`ifdef</tt>-related stuff; it
+notably doesn't support <tt>`include</tt>; we typically just use search paths.
+The @(see lexer) is complete.  The @(see parser) doesn't currently support
+user-defined primitives, generate statements, specify blocks, specparams,
+genvars, functions, and tasks.</p>
+
+<p>Each of VL's @(see transforms) have certain capabilities and limitations,
+which vary from transform to transform.  As a general rule, VL mainly supports
+RTL-level constructs and some of its transforms will not be able to cope
+with:</p>
+
+<ul>
+
+<li>transistor-level things like <tt>tran</tt> gates and <tt>inout</tt>
+ports, or</li>
+
+<li>simulation-level things like hierarchical identifiers and <tt>always</tt>
+statements beyond the simplest latches and flops.</li>
+
+</ul>
+
+<p>VL has some ability to tolerate constructs that aren't really supported, and
+the general philsophy is that an error in some particular module shouldn't
+affect other modules.  If the parser runs into an syntax error or an
+unsupported construct, it often only causes that particular module to be
+skipped.  When transforms encounter unsupported things or run into problems, we
+usually avoid hard errors and instead just add \"fatal @(see warnings)\" to the
+module with the problem.</p>
+
+
+
+<h3>Starting Points</h3>
+
+<p>The first step in using VL for anything is probably to try to get it to
+parse your design; see the documentation for the @(see loader).</p>
+
+<p>Once you have parsed your design (or at least some portion of it) you will
+have a list of modules.  You might want to at least glance through the
+documentation for @(see modules), which explains how modules are represented.
+This may be particularly useful if you are going to write your own checkers or
+transforms.</p>
+
+<p>You may find it useful to pretty-print modules, see for instance @(see
+vl-ppcs-module) and perhaps more generally the VL @(see printer).</p>
+
+<p>After getting a feel for how modules are represented, it would be good to
+look at the available @(see transforms).  A good way to do this might be to
+look at the code for @(see vl-simplify) (see <tt>centaur/vl/top.lisp</tt>) to
+see the order that we normally apply the transforms in.  You could also look at
+<tt>centaur/vl/lint/lint.lisp</tt> which uses a different transformation
+sequence that is more geared toward linting.  You should probably also read
+through how VL deals with @(see warnings).</p>
+
+<p>If you are going to write any transforms or checkers of your own, you should
+probably look at @(see mlib).  This provides many functions for working with
+expressions and ranges, finding modules and module items, working with the
+module hierarchy, generating fresh names, and working with modules at the bit
+level.</p>")
+
+
+
 (defsection vl-warn-problem-module
   :parents (vl-simplify)
   :short "@(call vl-warn-problem-module) determines if the module <tt>x</tt> is

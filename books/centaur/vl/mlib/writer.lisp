@@ -2059,6 +2059,21 @@ original source code.)</p>"
 
 
 (defpp vl-pp-module (x mods modalist)
+  :parents (verilog-printing)
+  :short "Pretty-print a module to @(see ps)."
+
+  :long "<p>@(call vl-pp-module) extends @(see ps) with a pretty-printed
+representation of the module <tt>x</tt>.</p>
+
+<p>You may prefer @(see vl-ppc-module), which preserves the order of module
+elements and its comments.  For interactive use, you may prefer @(see
+vl-pps-module) or @(see vl-ppcs-module), which write to a string instead of
+@(see ps).</p>
+
+<p>The <tt>mods</tt> here should be the list of all modules and
+<tt>modalist</tt> is its @(see vl-modalist); these arguments are only needed
+for hyperlinking to submodules in HTML mode.</p>"
+
   :guard (and (vl-module-p x)
               (vl-modulelist-p mods)
               (equal modalist (vl-modalist mods)))
@@ -2104,16 +2119,27 @@ original source code.)</p>"
            (vl-ps-span "vl_key" (vl-println "endmodule"))
            (vl-println ""))))
 
-(defund vl-pps-module (x)
-  (declare (xargs :guard (vl-module-p x)))
-  ;; We exploit the fact that the modalist is only needed in HTML mode
-  ;; to avoid generating it or requiring it as an argument.
-  (with-local-ps (vl-pp-module x nil nil)))
 
-(defthm stringp-of-vl-pps-module
-  (stringp (vl-pps-module x))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-pps-module))))
+(defsection vl-pps-module
+  :parents (verilog-printing)
+  :short "Pretty-print a module to a plain-text string."
+
+  :long "<p>@(call vl-pps-module) pretty-prints the @(see vl-module-p)
+<tt>x</tt> into a plain-text string.  You may prefer @(see vl-ppcs-module)
+which preserves the order of module elements and its comments.</p>"
+
+  (defund vl-pps-module (x)
+    (declare (xargs :guard (vl-module-p x)))
+    ;; We exploit the fact that the modalist is only needed in HTML mode
+    ;; to avoid generating it or requiring it as an argument.
+    (with-local-ps (vl-pp-module x nil nil)))
+
+  (defthm stringp-of-vl-pps-module
+    (stringp (vl-pps-module x))
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (enable vl-pps-module)))))
+
+
 
 (defpp vl-pp-modulelist (x)
   :guard (vl-modulelist-p x)
@@ -2122,14 +2148,22 @@ original source code.)</p>"
                        (vl-pp-modulelist (cdr x)))
           ps))
 
-(defund vl-pps-modulelist (x)
-  (declare (xargs :guard (vl-modulelist-p x)))
-  (with-local-ps (vl-pp-modulelist x)))
 
-(defthm stringp-of-vl-pps-modulelist
-  (stringp (vl-pps-modulelist x))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-pps-modulelist))))
+(defsection vl-pps-modulelist
+  :parents (verilog-printing)
+  :short "Pretty-print a list of modules to a plain-text string."
+
+  :long "<p>See also @(see vl-ppcs-modulelist), which preserves the order of
+module elements and its comments.</p>"
+
+  (defund vl-pps-modulelist (x)
+    (declare (xargs :guard (vl-modulelist-p x)))
+    (with-local-ps (vl-pp-modulelist x)))
+
+  (defthm stringp-of-vl-pps-modulelist
+    (stringp (vl-pps-modulelist x))
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (enable vl-pps-modulelist)))))
 
 
 

@@ -33,14 +33,6 @@
 ; Many of these functions generate sized expressions so you have to be really
 ; careful that you're using them in the proper way.
 
-(defconst *vl-default-one-bit-expr*
-  ;; Sized, one-bit, unsigned zero.
-  (make-vl-atom :guts (make-vl-constint :origwidth 1
-                                        :origtype :vl-unsigned
-                                        :value 0)
-                :finalwidth 1
-                :finaltype :vl-unsigned))
-
 (local (defthm vl-bit-p-of-nth
          (implies (and (force (< (nfix n) (len x)))
                        (force (vl-bitlist-p x)))
@@ -54,67 +46,68 @@
                     :guard-debug t
                     ))
 
-; Safely create the bit-select, expr[n].  Expr may either be an identifier, a
-; constant integer, or a weird integer.  (You cannot select from anything but
-; identifiers in Verilog, but we can be smart enough to slice into numbers and
-; weirdints.)
+; Safely create the bit-select, expr[n].  Expr should be an identifier.
 
     (b* (((unless (vl-fast-atom-p expr))
           (er hard? 'vl-make-bitselect "Trying to select from non-atom: ~x0." expr)
-          *vl-default-one-bit-expr*)
+          |*sized-1'b0*|)
 
          ((unless (posp (vl-expr->finalwidth expr)))
           (er hard? 'vl-make-bitselect "Trying to select from unwidthed expr: ~x0" expr)
-          *vl-default-one-bit-expr*)
+          |*sized-1'b0*|)
 
          ((unless (natp n))
           (er hard? 'vl-make-bitselect "Trying to select a non-natural bit: ~x0." n)
-          *vl-default-one-bit-expr*)
+          |*sized-1'b0*|)
 
          ((unless (< n (vl-expr->finalwidth expr)))
           (er hard? 'vl-make-bitselect "Trying to select ~x0, past bounds of ~x1" n expr)
-          *vl-default-one-bit-expr*)
+          |*sized-1'b0*|)
 
          (guts (vl-atom->guts expr))
          ((when (vl-id-p guts))
-          (if (equal (vl-expr->finalwidth expr) 1)
-              ;; From above, we know n is less than (vl-expr->width expr), i.e.,
-              ;; n is a natural less than 1.  N must be zero.  And the width of
-              ;; the wire we are selecting from is zero.  So there is no reason
-              ;; to introduce a select, just use the whole wire.
+          (if (and (= (vl-expr->finalwidth expr) 1)
+                   (eq (vl-expr->finaltype expr) :vl-unsigned))
+              ;; From above, we know n is less than (vl-expr->width expr),
+              ;; i.e., n is a natural less than 1.  N must be zero.  And the
+              ;; width of the wire we are selecting from is zero.  So there is
+              ;; no reason to introduce a select, just use the whole wire.  We
+              ;; require unsigned since this ensures we always get unsigned
+              ;; bitselects out.
               expr
             ;; Otherwise, make a bitselect.
-            (make-vl-nonatom :op :vl-bitselect
-                             :args (list expr (vl-make-index n))
-                             :finalwidth 1
-                             :finaltype :vl-unsigned)))
+            (make-honsed-vl-nonatom :op :vl-bitselect
+                                    :args (acl2::hons-list expr (vl-make-index n))
+                                    :finalwidth 1
+                                    :finaltype :vl-unsigned)))
 
-         ((when (vl-constint-p guts))
-          ;; BOZO odd to support this.
-          (er hard? 'vl-make-bitselect "Is this necessary??? constint case.")
-          (b* ((this-bit (logbitp n (vl-constint->value guts))))
-            (make-vl-atom :guts (make-vl-constint :origwidth 1
-                                                  :origtype :vl-unsigned
-                                                  :value (if this-bit 1 0))
-                          :finalwidth 1
-                          :finaltype :vl-unsigned)))
+         ;; ((when (vl-constint-p guts))
+         ;;  ;; BOZO odd to support this.
+         ;;  (er hard? 'vl-make-bitselect "Is this necessary??? constint case.")
+         ;;  (b* ((this-bit (logbitp n (vl-constint->value guts))))
+         ;;    (make-vl-atom :guts (make-vl-constint :origwidth 1
+         ;;                                          :origtype :vl-unsigned
+         ;;                                          :value (if this-bit 1 0))
+         ;;                  :finalwidth 1
+         ;;                  :finaltype :vl-unsigned)))
 
-         ((when (vl-weirdint-p guts))
-          ;; BOZO odd to support this.
-          (er hard? 'vl-make-bitselect "Is this necessary??? weirdint case.")
-          (b* ((bits     (vl-weirdint->bits guts)) ;; MSB comes first!
-               ((unless (< n (len bits)))
-                (er hard? 'vl-make-bitselect "bad weirdint select")
-                *vl-default-one-bit-expr*)
-               (this-bit (nth n (rev bits))))
-            ;; BOZO can do better, make a constint if possible
-            (make-vl-atom :guts (make-vl-weirdint :origwidth 1
-                                                  :origtype :vl-unsigned
-                                                  :bits (list this-bit))
-                          :finalwidth 1
-                          :finaltype :vl-unsigned))))
+         ;; ((when (vl-weirdint-p guts))
+         ;;  ;; BOZO odd to support this.
+         ;;  (er hard? 'vl-make-bitselect "Is this necessary??? weirdint case.")
+         ;;  (b* ((bits     (vl-weirdint->bits guts)) ;; MSB comes first!
+         ;;       ((unless (< n (len bits)))
+         ;;        (er hard? 'vl-make-bitselect "bad weirdint select")
+         ;;        *vl-default-one-bit-expr*)
+         ;;       (this-bit (nth n (rev bits))))
+         ;;    ;; BOZO can do better, make a constint if possible
+         ;;    (make-vl-atom :guts (make-vl-weirdint :origwidth 1
+         ;;                                          :origtype :vl-unsigned
+         ;;                                          :bits (list this-bit))
+         ;;                  :finalwidth 1
+         ;;                  :finaltype :vl-unsigned)))
+         )
       (er hard? 'vl-make-bitselect "Not implemented: bitselect from ~x0." (tag guts))
-      *vl-default-one-bit-expr*))
+      |*sized-1'b0*|))
 
   (local (in-theory (enable vl-make-bitselect)))
 
@@ -124,7 +117,11 @@
 
   (defthm vl-expr->finalwidth-of-vl-make-bitselect
     (equal (vl-expr->finalwidth (vl-make-bitselect expr n))
-           1)))
+           1))
+
+  (defthm vl-expr->finaltype-of-vl-make-bitselect
+    (equal (vl-expr->finaltype (vl-make-bitselect expr n))
+           :vl-unsigned)))
 
 
 
@@ -151,7 +148,19 @@
 
   (defthm len-of-vl-make-list-of-bitselects
     (equal (len (vl-make-list-of-bitselects expr low high))
-           (+ 1 (nfix (- (nfix high) (nfix low)))))))
+           (+ 1 (nfix (- (nfix high) (nfix low))))))
+
+  (defthm vl-exprlist->finalwidths-of-vl-make-list-of-bitselects
+    (equal (vl-exprlist->finalwidths (vl-make-list-of-bitselects expr low high))
+           (repeat 1 (+ 1 (nfix (- (nfix high) (nfix low))))))
+    :hints(("Goal" :in-theory (enable repeat))))
+
+  (defthm vl-exprlist->finaltypes-of-vl-make-list-of-bitselects
+    (equal (vl-exprlist->finaltypes (vl-make-list-of-bitselects expr low high))
+           (repeat :vl-unsigned (+ 1 (nfix (- (nfix high) (nfix low))))))
+    :hints(("Goal" :in-theory (enable repeat)))))
+
+
 
 
 

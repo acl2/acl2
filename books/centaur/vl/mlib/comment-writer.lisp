@@ -384,8 +384,18 @@
                                (vl-pp-encoded-commentmap (cdr x))))))))
 
 (defpp vl-ppc-module (x mods modalist)
+  :parents (verilog-printing vl-module-p)
+  :short "Pretty print a module with comments to @(see ps)."
 
-; Pretty-print a module, with comments.
+  :long "<p>@(call vl-ppc-module) extends @(see ps) with a pretty-printed
+representation of the module <tt>x</tt>.</p>
+
+<p>For interactive use you may prefer @(see vl-ppcs-module) which writes
+to a string instead of @(see ps).</p>
+
+<p>The <tt>mods</tt> here should be the list of all modules and
+<tt>modalist</tt> is its @(see vl-modalist); these arguments are only needed
+for hyperlinking to submodules in HTML mode.</p>"
 
   :guard (and (vl-module-p x)
               (vl-modulelist-p mods)
@@ -466,21 +476,39 @@
                         (vl-println "")
                         (vl-when-html (vl-println-markup "</div>")))))
 
-(defpp vl-ppc-modulelist (x mods modalist)
-  :guard (and (vl-modulelist-p x)
-              (vl-modulelist-p mods)
-              (equal modalist (vl-modalist mods)))
-  :body (if (consp x)
-            (vl-ps-seq (vl-ppc-module (car x) mods modalist)
-                       (vl-ppc-modulelist (cdr x) mods modalist))
-          ps))
+(defsection vl-ppc-modulelist
+  :parents (verilog-printing)
+  :short "Pretty print a list of modules with comments to @(see ps)."
+  :long "<p>This just calls @(see vl-ppc-module) on each module.</p>"
 
-(defund vl-ppcs-module (x)
-  (declare (xargs :guard (vl-module-p x)))
-  (with-local-ps (vl-ppc-module x nil nil)))
+  (defpp vl-ppc-modulelist (x mods modalist)
+    :guard (and (vl-modulelist-p x)
+                (vl-modulelist-p mods)
+                (equal modalist (vl-modalist mods)))
+    :body (if (consp x)
+              (vl-ps-seq (vl-ppc-module (car x) mods modalist)
+                         (vl-ppc-modulelist (cdr x) mods modalist))
+            ps)))
 
-(defund vl-ppcs-modulelist (x)
-  (declare (xargs :guard (vl-modulelist-p x)))
-  (with-local-ps (vl-ppc-modulelist x nil nil)))
+(defsection vl-ppcs-module
+  :parents (verilog-printing vl-module-p)
+  :short "Pretty-print a module with comments to a plain-text string."
+
+  :long "<p>@(call vl-ppcs-module) pretty-prints the @(see vl-module-p)
+<tt>x</tt> into a plain-text string.  See also @(see vl-ppc-module).</p>"
+
+  (defund vl-ppcs-module (x)
+    (declare (xargs :guard (vl-module-p x)))
+    (with-local-ps (vl-ppc-module x nil nil))))
+
+
+(defsection vl-ppcs-modulelist
+  :parents (verilog-printing)
+  :short "Pretty-print a list of modules with comments to a plain-text string."
+  :long "<p>See also @(see vl-ppc-modulelist).</p>"
+
+  (defund vl-ppcs-modulelist (x)
+    (declare (xargs :guard (vl-modulelist-p x)))
+    (with-local-ps (vl-ppc-modulelist x nil nil))))
 
 

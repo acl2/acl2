@@ -375,8 +375,8 @@ module list, the resulting module will be a conservative approximation of
               ;; ahead and just convert into a buf of the appropriate form.  This
               ;; won't have the right strength, but it's as good as we can do.
               (val-expr (if (eq x.type :vl-pullup)
-                            |*occform-1'b1*|
-                          |*occform-1'b0*|))
+                            |*sized-1'b1*|
+                          |*sized-1'b0*|))
               (val-arg  (make-vl-plainarg :expr val-expr :dir :vl-input))
               (new-inst (change-vl-gateinst x
                                             :type :vl-buf

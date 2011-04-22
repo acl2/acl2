@@ -77,7 +77,7 @@ of Z muxes.</p>")
        (atts (acons "VL_HANDS_OFF" nil nil))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       (out-assign (make-vl-assign :lvalue out-expr :expr |*occform-1'bx*| :loc *vl-fakeloc*)))
+       (out-assign (make-vl-assign :lvalue out-expr :expr |*sized-1'bx*| :loc *vl-fakeloc*)))
 
     (make-vl-module :name      name
                     :origname  name
@@ -95,7 +95,7 @@ of Z muxes.</p>")
        (atts (acons "VL_HANDS_OFF" nil nil))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       (out-assign (make-vl-assign :lvalue out-expr :expr |*occform-1'bz*| :loc *vl-fakeloc*)))
+       (out-assign (make-vl-assign :lvalue out-expr :expr |*sized-1'bz*| :loc *vl-fakeloc*)))
 
     (make-vl-module :name      name
                     :origname  name
@@ -129,8 +129,8 @@ of Z muxes.</p>")
     (if (atom bits)
         nil
       (cons (case (car bits)
-              (:vl-0val |*occform-1'b0*|)
-              (:vl-1val |*occform-1'b1*|)
+              (:vl-0val |*sized-1'b0*|)
+              (:vl-1val |*sized-1'b1*|)
               (:vl-xval *vl-x-wire-expr*)
               (:vl-zval *vl-z-wire-expr*))
             (vl-weirdint-bits-to-exprs (cdr bits)))))
