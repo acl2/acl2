@@ -1180,7 +1180,7 @@ sub add_deps {
 	my $needs_update = (! -e $update_target);
 	if (! $needs_update) {
 	    foreach my $dep (@{$deps}) {
-		if ($seen->{$dep} || newer_than($dep, $update_target)) {
+		if ($seen->{$dep} || (! -e $dep) || newer_than($dep, $update_target)) {
 		    $needs_update = 1;
 		    last;
 		}
@@ -1191,6 +1191,7 @@ sub add_deps {
 	}
 	if ($two_pass &&
 	    (! $seen->{$acl2xfile}) &&
+	    (-e $target) &&
 	    (! newer_than($acl2xfile, $target))) {
 	    $seen->{$target} = 0;
 	}

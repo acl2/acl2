@@ -7,8 +7,8 @@
 ; Otherwise, it exits with code 0.
 
   (mv-let (full-name dir-name familiar-name)
-          (parse-book-name (cbd) name ".lisp" 'horrible-include-book-exit state)
-          (declare (ignore dir-name familiar-name))
-          (if (assoc-equal full-name (global-val 'include-book-alist (w state)))
-              (exit 43)
-            (exit 0))))
+    (parse-book-name (cbd) name ".lisp" 'horrible-include-book-exit state)
+    (declare (ignore dir-name familiar-name))
+    (if (assoc-equal full-name (global-val 'include-book-alist (w state)))
+        (exit 43)
+      (exit 0))))
