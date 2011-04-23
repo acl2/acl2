@@ -229,12 +229,12 @@
 
 ; This defthm has two forcing rounds and is very realistic.
 
-      (defthm ordered-symbol-alistp-remove-first-pair-test
+      (defthm ordered-symbol-alistp-delete-assoc-eq-test
         (implies (and (ordered-symbol-alistp l)
                       (symbolp key)
                       (assoc-eq key l))
-                 (ordered-symbol-alistp (remove-first-pair key l)))
-        :hints (("Goal" :in-theory (disable ordered-symbol-alistp-remove-first-pair))))
+                 (ordered-symbol-alistp (delete-assoc-eq key l)))
+        :hints (("Goal" :in-theory (disable ordered-symbol-alistp-delete-assoc-eq))))
 
 ;;;      )
 ;;;    :ld-skip-proofsp nil
