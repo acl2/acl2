@@ -60,18 +60,18 @@
            (equal (ordered-symbol-alistp (add-pair key val list))
                   (symbolp key))))
 
-(defthm delete-pair-ordered-symbol-alistp
+(defthm delete-assoc-eq-ordered-symbol-alistp
   (implies (ordered-symbol-alistp list)
-           (ordered-symbol-alistp (delete-pair key list))))
+           (ordered-symbol-alistp (delete-assoc-eq key list))))
 
 (defthm add-pair-open-channel-listp
   (implies (open-channel-listp list)
            (equal (open-channel-listp (add-pair key val list))
                   (open-channel1 val))))
 
-(defthm delete-pair-open-channel-listp
+(defthm delete-assoc-eq-open-channel-listp
   (implies (open-channel-listp list)
-           (open-channel-listp (delete-pair key list))))
+           (open-channel-listp (delete-assoc-eq key list))))
 
 (defthm add-pair-open-channels-p
   (implies (open-channels-p list)
@@ -79,9 +79,9 @@
                   (and (symbolp key)
                        (open-channel1 val)))))
 
-(defthm delete-pair-open-channels-p
+(defthm delete-assoc-eq-open-channels-p
   (implies (open-channels-p list)
-           (open-channels-p (delete-pair key list))))
+           (open-channels-p (delete-assoc-eq key list))))
 
 
 
