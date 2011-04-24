@@ -2330,7 +2330,7 @@
 ; induction-machine and its quick-block-info, otherwise we do not.
 
 ; If no error occurs, we return a triple consisting of the column the printer
-; is in, the final value of wrld and a tag tree documenting the proofs we did.
+; is in, the final value of wrld and a tag-tree documenting the proofs we did.
 
 ; Note: The function could be declared to return 5 values, but we would rather
 ; use the standard state and error primitives and so it returns 3 and lists
@@ -4652,7 +4652,7 @@
 ; X is either a list of names corresponding to a defun, mutual-recursion nest,
 ; or defthm, or else of the form (:term . y) where y is a translated term.
 ; Returns a set of clauses justifying the guards for y in the latter case, else
-; x, together with an assumption-free tag tree justifying that set of clauses
+; x, together with an assumption-free tag-tree justifying that set of clauses
 ; and the new state.  (Do not view this as an error triple!)
 
   (mv-let (cl-set cl-set-ttree state)
@@ -4772,8 +4772,8 @@
   ~c[mutual-recursion], any other functions defined in the same
   ~ilc[mutual-recursion] nest; ~c[cl-set] is a list of lists of terms, viewed
   as a conjunction of clauses (each viewed (as a disjunction); and ~c[ttree] is
-  an assumption-free tag tree that justifies cl-set.  (The notion of ``tag
-  tree'' may probably be ignored except for system developers.)
+  an assumption-free tag-tree that justifies cl-set.  (The notion of
+  ``tag-tree'' may probably be ignored except for system developers.)
 
   ~c[Guard-obligation] is typically used for function names or non-variable
   terms, but as for ~ilc[verify-guards], it may also be applied to theorem
@@ -4886,7 +4886,7 @@
 ; function that returns a pair of the form (col . ttree) when non-erroneous.
 ; Col is the column in which the printer is left.  We always output something
 ; and we always leave the printer ready to start a new sentence.  Ttree is a
-; tag tree describing the proof.
+; tag-tree describing the proof.
 
 ; This function increments timers.  Upon entry, any accumulated time
 ; is charged to 'other-time.  The printing done herein is charged
@@ -5400,7 +5400,7 @@
 ; We do take care of the documentation data base.
 
 ; Like defuns-fn0, this function returns a pair consisting of the new world and
-; a tag tree recording the proofs that were done.
+; a tag-tree recording the proofs that were done.
 
   (let* ((boot-strap-flg (global-val 'boot-strap-flg wrld))
          (wrld0 (cond (non-executablep (putprop-x-lst1 names 'non-executablep

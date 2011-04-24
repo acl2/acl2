@@ -2877,7 +2877,7 @@
                (add-to-tag-tree
                 'bddnote
                 bddnote
-                (cons-into-ttree ttree ttree1))))
+                (cons-tag-trees ttree ttree1))))
           (prove-hint
            (mv 'error
                (list "The :BDD hint for the current goal has ~
@@ -2897,7 +2897,7 @@
                      (ttree (add-to-tag-tree
                              'bddnote
                              bddnote
-                             (cons-into-ttree ttree ttree1))))
+                             (cons-tag-trees ttree ttree1))))
                 (cond
                  ((eq position :conc)
                   (mv 'hit

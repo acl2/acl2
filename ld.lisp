@@ -11765,7 +11765,7 @@
 ;   :a!
 ;   (thm (equal (car (cons x y)) x))
 
-; The modification for tag trees caused about a 1% slowdown.  However, a
+; The modification for tag-trees caused about a 1% slowdown.  However, a
 ; trivial modification to ancestors-check, which avoids recursion if ancestors
 ; is nil, caused about a 1.5% speedup.
 
@@ -12129,7 +12129,7 @@
   addition.
 
   The algorithms were modified for collecting up rule names and other
-  information used in proofs, into so-called ``tag trees''.  Tag trees are now
+  information used in proofs, into so-called ``tag-trees''.  Tag-trees are now
   free of duplicate objects, and this change can dramatically speed up some
   proofs that involve many different rules.  Thanks to Eric Smith for doing
   some profiling that brought this issue to our attention, and for reporting
@@ -17404,6 +17404,11 @@
 ; Modified deletion of compiled file of acl2-fns.lisp to occur at the Lisp
 ; level instead of using GNUmakefile.
 
+; Deleted delete-pair and remove-first-pair, which each duplicated the
+; functionality of delete-assoc-eq.
+
+; Eliminated cons-into-ttree in favor of cons-tag-trees.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -19230,12 +19235,12 @@
 
 ; This defthm has two forcing rounds and is very realistic.
 
-      (defthm ordered-symbol-alistp-remove-first-pair-test
+      (defthm ordered-symbol-alistp-delete-assoc-eq-test
         (implies (and (ordered-symbol-alistp l)
                       (symbolp key)
                       (assoc-eq key l))
-                 (ordered-symbol-alistp (remove-first-pair key l)))
-        :hints (("Goal" :in-theory (disable ordered-symbol-alistp-remove-first-pair))))
+                 (ordered-symbol-alistp (delete-assoc-eq key l)))
+        :hints (("Goal" :in-theory (disable ordered-symbol-alistp-delete-assoc-eq))))
 
       )
     :ld-skip-proofsp nil

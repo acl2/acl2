@@ -20114,14 +20114,93 @@
         (t (cons (car l)
                  (add-pair key value (cdr l))))))
 
-(defun remove-first-pair (key l)
-  (declare (xargs :guard (and (symbolp key)
-                              (symbol-alistp l)
-                              (assoc-eq key l))))
-  (cond ((endp l) nil)
-        ((eq key (caar l)) (cdr l))
-        (t (cons (car l)
-                 (remove-first-pair key (cdr l))))))
+; Delete-assoc
+
+(defun delete-assoc-eq-exec (key alist)
+  (declare (xargs :guard (if (symbolp key)
+                             (alistp alist)
+                           (symbol-alistp alist))))
+  (cond ((endp alist) nil)
+        ((eq key (caar alist)) (cdr alist))
+        (t (cons (car alist) (delete-assoc-eq-exec key (cdr alist))))))
+
+(defun delete-assoc-eql-exec (key alist)
+  (declare (xargs :guard (if (eqlablep key)
+                             (alistp alist)
+                           (eqlable-alistp alist))))
+  (cond ((endp alist) nil)
+        ((eql key (caar alist)) (cdr alist))
+        (t (cons (car alist) (delete-assoc-eql-exec key (cdr alist))))))
+
+(defun delete-assoc-equal (key alist)
+  (declare (xargs :guard (alistp alist)))
+  (cond ((endp alist) nil)
+        ((equal key (caar alist)) (cdr alist))
+        (t (cons (car alist) (delete-assoc-equal key (cdr alist))))))
+
+(defmacro delete-assoc-eq (key lst)
+  `(delete-assoc ,key ,lst :test 'eq))
+
+(defthm delete-assoc-eq-exec-is-delete-assoc-equal
+  (equal (delete-assoc-eq-exec key lst)
+         (delete-assoc-equal key lst)))
+
+(defthm delete-assoc-eql-exec-is-delete-assoc-equal
+  (equal (delete-assoc-eql-exec key lst)
+         (delete-assoc-equal key lst)))
+
+(defmacro delete-assoc (key alist &key (test ''eql))
+
+  ":Doc-Section ACL2::Programming
+
+  modify an association list by associating a value with a key~/
+  ~bv[]
+  General Forms:
+  (delete-assoc key alist)
+  (delete-assoc key alist :test 'eql)   ; same as above (eql as equality test)
+  (delete-assoc key alist :test 'eq)    ; same, but eq is equality test
+  (delete-assoc key alist :test 'equal) ; same, but equal is equality test
+  ~ev[]
+
+  ~c[(Delete-assoc key alist)] returns an alist that is the same as the list
+  ~c[alist], except that the first pair in ~c[alist] with a ~ilc[car] of
+  ~c[key] is deleted, if there is one; otherwise ~c[alist] is returned.  Note
+  that the order of the elements of ~c[alist] is unchanged (though one may be
+  deleted).~/
+
+  The ~il[guard] for a call of ~c[delete-assoc] depends on the test.  In all
+  cases, the second argument must satisfy ~ilc[alistp].  If the test is
+  ~ilc[eql], then either the first argument must be suitable for ~ilc[eql]
+  (~pl[eqlablep]) or the second argument must satisfy ~ilc[eqlable-alistp].  If
+  the test is ~ilc[eq], then either the first argument must be a symbol or the
+  second argument must satisfy ~ilc[symbol-alistp].
+
+  ~l[equality-variants] for a discussion of the relation between
+  ~c[delete-assoc] and its variants:
+  ~bq[]
+  ~c[(delete-assoc-eq key alist)] is equivalent to
+  ~c[(delete-assoc key alist :test 'eq)];
+
+  ~c[(delete-assoc-equal key alist)] is equivalent to
+  ~c[(delete-assoc key alist :test 'equal)].
+  ~eq[]
+  In particular, reasoning about any of these primitives reduces to reasoning
+  about the function ~c[delete-assoc-equal].~/"
+
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((key ,key) (alist ,alist))
+              :logic (delete-assoc-equal key alist)
+              :exec  (delete-assoc-eq-exec key alist)))
+   ((equal test ''eql)
+    `(let-mbe ((key ,key) (alist ,alist))
+              :logic (delete-assoc-equal key alist)
+              :exec  (delete-assoc-eql-exec key alist)))
+   (t ; (equal test 'equal)
+    `(delete-assoc-equal ,key ,alist))))
 
 (defun getprops1 (alist)
 
@@ -20165,7 +20244,7 @@
          (let ((alist (getprops symb world-name (cdr world-alist))))
            (if (eq (cddar world-alist) *acl2-property-unbound*)
                (if (assoc-eq (cadar world-alist) alist)
-                   (remove-first-pair (cadar world-alist) alist)
+                   (delete-assoc-eq (cadar world-alist) alist)
                  alist)
              (add-pair (cadar world-alist)
                        (cddar world-alist)
@@ -25481,14 +25560,6 @@
   #+acl2-loop-only
   (list 'boundp-global x st))
 
-(defun delete-pair (x l)
-  (declare (xargs :guard (and (symbolp x)
-                              (eqlable-alistp l))))
-  (cond ((endp l) nil)
-        ((eq x (caar l))
-         (cdr l))
-        (t (cons (car l) (delete-pair x (cdr l))))))
-
 (defun makunbound-global (x state-state)
 
 ; Wart: We use state-state instead of state because of a bootstrap problem.
@@ -25512,7 +25583,7 @@
                                             (get-global x state-state))))))
          (makunbound (global-symbol x))
          (return-from makunbound-global *the-live-state*)))
-  (update-global-table (delete-pair
+  (update-global-table (delete-assoc-eq
                         x
                         (global-table state-state))
                        state-state))
@@ -26097,11 +26168,11 @@
                  (not (equal x y))))
    :hints (("Goal" :in-theory (enable symbol-< string<))))
 
- (defthm ordered-symbol-alistp-remove-first-pair
+ (defthm ordered-symbol-alistp-delete-assoc-eq
    (implies (and (ordered-symbol-alistp l)
                  (symbolp key)
                  (assoc-eq key l))
-            (ordered-symbol-alistp (remove-first-pair key l))))
+            (ordered-symbol-alistp (delete-assoc-eq key l))))
 
  (defthm symbol-<-irreflexive
    (implies (symbolp x)
@@ -28078,7 +28149,7 @@
               state-state)))
         (let ((state-state
                (update-open-input-channels
-                (delete-pair channel (open-input-channels state-state))
+                (delete-assoc-eq channel (open-input-channels state-state))
                 state-state)))
           state-state)))))
 
@@ -28765,7 +28836,7 @@
               state-state)))
         (let ((state-state
                (update-open-output-channels
-                (delete-pair channel (open-output-channels state-state))
+                (delete-assoc-eq channel (open-output-channels state-state))
                 state-state)))
           state-state)))))
 
@@ -33632,94 +33703,6 @@
                       tbl)))
           :clear))
 
-; Delete-assoc
-
-(defun delete-assoc-eq-exec (key alist)
-  (declare (xargs :guard (if (symbolp key)
-                             (alistp alist)
-                           (symbol-alistp alist))))
-  (cond ((endp alist) nil)
-        ((eq key (caar alist)) (cdr alist))
-        (t (cons (car alist) (delete-assoc-eq-exec key (cdr alist))))))
-
-(defun delete-assoc-eql-exec (key alist)
-  (declare (xargs :guard (if (eqlablep key)
-                             (alistp alist)
-                           (eqlable-alistp alist))))
-  (cond ((endp alist) nil)
-        ((eql key (caar alist)) (cdr alist))
-        (t (cons (car alist) (delete-assoc-eql-exec key (cdr alist))))))
-
-(defun delete-assoc-equal (key alist)
-  (declare (xargs :guard (alistp alist)))
-  (cond ((endp alist) nil)
-        ((equal key (caar alist)) (cdr alist))
-        (t (cons (car alist) (delete-assoc-equal key (cdr alist))))))
-
-(defmacro delete-assoc-eq (key lst)
-  `(delete-assoc ,key ,lst :test 'eq))
-
-(defthm delete-assoc-eq-exec-is-delete-assoc-equal
-  (equal (delete-assoc-eq-exec key lst)
-         (delete-assoc-equal key lst)))
-
-(defthm delete-assoc-eql-exec-is-delete-assoc-equal
-  (equal (delete-assoc-eql-exec key lst)
-         (delete-assoc-equal key lst)))
-
-(defmacro delete-assoc (key alist &key (test ''eql))
-
-  ":Doc-Section ACL2::Programming
-
-  modify an association list by associating a value with a key~/
-  ~bv[]
-  General Forms:
-  (delete-assoc key alist)
-  (delete-assoc key alist :test 'eql)   ; same as above (eql as equality test)
-  (delete-assoc key alist :test 'eq)    ; same, but eq is equality test
-  (delete-assoc key alist :test 'equal) ; same, but equal is equality test
-  ~ev[]
-
-  ~c[(Delete-assoc key alist)] returns an alist that is the same as the list
-  ~c[alist], except that the first pair in ~c[alist] with a ~ilc[car] of
-  ~c[key] is deleted, if there is one; otherwise ~c[alist] is returned.  Note
-  that the order of the elements of ~c[alist] is unchanged (though one may be
-  deleted).~/
-
-  The ~il[guard] for a call of ~c[delete-assoc] depends on the test.  In all
-  cases, the second argument must satisfy ~ilc[alistp].  If the test is
-  ~ilc[eql], then either the first argument must be suitable for ~ilc[eql]
-  (~pl[eqlablep]) or the second argument must satisfy ~ilc[eqlable-alistp].  If
-  the test is ~ilc[eq], then either the first argument must be a symbol or the
-  second argument must satisfy ~ilc[symbol-alistp].
-
-  ~l[equality-variants] for a discussion of the relation between
-  ~c[delete-assoc] and its variants:
-  ~bq[]
-  ~c[(delete-assoc-eq key alist)] is equivalent to
-  ~c[(delete-assoc key alist :test 'eq)];
-
-  ~c[(delete-assoc-equal key alist)] is equivalent to
-  ~c[(delete-assoc key alist :test 'equal)].
-  ~eq[]
-  In particular, reasoning about any of these primitives reduces to reasoning
-  about the function ~c[delete-assoc-equal].~/"
-
-  (declare (xargs :guard (or (equal test ''eq)
-                             (equal test ''eql)
-                             (equal test ''equal))))
-  (cond
-   ((equal test ''eq)
-    `(let-mbe ((key ,key) (alist ,alist))
-              :logic (delete-assoc-equal key alist)
-              :exec  (delete-assoc-eq-exec key alist)))
-   ((equal test ''eql)
-    `(let-mbe ((key ,key) (alist ,alist))
-              :logic (delete-assoc-equal key alist)
-              :exec  (delete-assoc-eql-exec key alist)))
-   (t ; (equal test 'equal)
-    `(delete-assoc-equal ,key ,alist))))
-
 (defmacro remove-invisible-fns (top-fn &rest unary-fns)
 
   ":Doc-Section switches-parameters-and-modes
@@ -35743,7 +35726,7 @@
   `(table binop-table nil
           (let ((tbl (table-alist 'binop-table world)))
             (if (assoc-eq ',binop tbl)
-                (remove-first-pair ',binop tbl)
+                (delete-assoc-eq-exec ',binop tbl)
               (prog2$ (cw "~%NOTE:  the name ~x0 did not appear as a key in ~
                            binop-table.  Consider using :u or :ubt to ~
                            undo this event, which is harmless but does not ~
@@ -36958,7 +36941,7 @@
   `(table macro-aliases-table nil
           (let ((tbl (table-alist 'macro-aliases-table world)))
             (if (assoc-eq ',macro-name tbl)
-                (remove-first-pair ',macro-name tbl)
+                (delete-assoc-eq-exec ',macro-name tbl)
               (prog2$ (cw "~%NOTE:  the name ~x0 did not appear as a key in ~
                            macro-aliases-table.  Consider using :u or :ubt to ~
                            undo this event, which is harmless but does not ~
@@ -37056,7 +37039,7 @@
   `(table nth-aliases-table nil
           (let ((tbl (table-alist 'nth-aliases-table world)))
             (if (assoc-eq ',alias-name tbl)
-                (remove-first-pair ',alias-name tbl)
+                (delete-assoc-eq-exec ',alias-name tbl)
               (prog2$ (cw "~%NOTE:  the name ~x0 did not appear as a key in ~
                            nth-aliases-table.  Consider using :u or :ubt to ~
                            undo this event, which is harmless but does not ~
@@ -41414,7 +41397,7 @@ Lisp definition."
   `(table custom-keywords-table nil
           (let ((tbl (table-alist 'custom-keywords-table world)))
             (if (assoc-eq ',keyword tbl)
-                (remove-first-pair ',keyword tbl)
+                (delete-assoc-eq-exec ',keyword tbl)
               (prog2$ (cw "~%NOTE:  the name ~x0 did not appear as a key in ~
                            custom-keywords-table.  Consider using :u or :ubt to ~
                            undo this event, which is harmless but does not ~

@@ -3288,7 +3288,7 @@
 ; the tag is a "parent tree" indicating the set of literals of the
 ; current-clause upon which the type deduction depends.  See the Essay
 ; on Parent Trees.  The type-alist in general contains entries of the
-; form (term ts . ttree), where ttree is the tag tree encoding all of
+; form (term ts . ttree), where ttree is the tag-tree encoding all of
 ; the 'PTs upon which depend the assertion that term has type-set ts.
 
 ; Note on Performance:
@@ -3740,7 +3740,7 @@
 ; and otherwise is the unique x such that ((equiv term x) *ts-t* . tt) belongs
 ; to type-alist for some tt.
 
-; Ttree is a tag tree justifying the equality of term to term-canon.
+; Ttree is a tag-tree justifying the equality of term to term-canon.
 
 ; We will use the following easy-to-prove theorem:
 
@@ -5532,7 +5532,7 @@
                 ((ts-subsetp ts1 ts0)
 
 ; This is an optimization.  We are about to intersect the type-sets and union
-; the tag trees.  But if ts1 is a subset of ts0, the intersection is just ts1.
+; the tag-trees.  But if ts1 is a subset of ts0, the intersection is just ts1.
 ; We need not return ttree0 in this case; note that we must always return ttree1.
 
                  (mv ts1 ttree1))
@@ -7439,7 +7439,7 @@
 ; that x and new-term are the same term modulo their respective
 ; parities.
 
-; The tag tree shared-ttree justifies truth or falsity of new-term
+; The tag-tree shared-ttree justifies truth or falsity of new-term
 ; while xttree justifies truth or falsity of x.
 
 ; We assume that new-term is not a call of NOT.
@@ -7591,7 +7591,7 @@
 ; (and some ttrees) and thus encoding the current assumptions.  In a break with
 ; nqthm, the ACL2 type-set function tracks dependencies among the entries on
 ; the type-alist.  In particular, the type-alist here contains pairs of the
-; form (term ts . ttree), where ttree is a tag tree generally containing 'PT
+; form (term ts . ttree), where ttree is a tag-tree generally containing 'PT
 ; tags.  (There may be other tags, e.g., 'LEMMA and maybe even 'FC-DERIVATION
 ; during forward- chaining.)  In nqthm, the type-alist contained pairs of the
 ; form (term . ts).  The ttree argument to type-set is an accumulator onto
@@ -8445,7 +8445,7 @@
                                                      ancestors
                                                      ens w
 
-; We lie here by passing in the nil tag tree, so that we can avoid
+; We lie here by passing in the nil tag-tree, so that we can avoid
 ; contaminating the resulting type-alist with a copy of ttree.  We'll make sure
 ; that ttree gets into the answer returned by type-alist-with-rules, which is
 ; the only function that calls type-set-with-rule.
@@ -9876,7 +9876,7 @@
                                     (shared-ttree
 
 ; We could just use (cons-tag-trees ttree xttree) here, but let's save a cons
-; if we don't need that tag tree.
+; if we don't need that tag-tree.
 
                                      (cond
                                       ((or (not (ts= ts1 int))
@@ -10204,7 +10204,7 @@
 ; explicitly on the type-alist.
 
 ;;;  1> (ASSUME-TRUE-FALSE (< X '0) ; condition assumed true or false
-;;;                        NIL      ; a tag tree
+;;;                        NIL      ; a tag-tree
 ;;;                        NIL      ; force-flg
 ;;;                        NIL      ; never mind this one...
 ;;;                        ((X 31)) ; type-alist: X is rational
@@ -10217,7 +10217,7 @@
 ;;;                                        ; X is negative rational
 ;;;                        ((X 7) (X 31))  ; false-type-alist:
 ;;;                                        ; X is non-negative rational
-;;;                        NIL)>           ; tag tree
+;;;                        NIL)>           ; tag-tree
 
 ; But wait, there's more!  Robert subsequently sent an example showing
 ; that it is not enough to put the current inequality with 0, e.g.,
@@ -11374,13 +11374,13 @@
 
 ; A good performance test is
 
-; (defthm ordered-symbol-alistp-remove-first-pair-test
+; (defthm ordered-symbol-alistp-delete-assoc-eq-test
 ;   (implies (and (ordered-symbol-alistp l)
 ;                 (symbolp key)
 ;                 (assoc-eq key l))
-;            (ordered-symbol-alistp (remove-first-pair key l)))
+;            (ordered-symbol-alistp (delete-assoc-eq key l)))
 ;   :hints (("Goal" :in-theory
-;            (disable ordered-symbol-alistp-remove-first-pair))))
+;            (disable ordered-symbol-alistp-delete-assoc-eq))))
 
 ; The naive approach does this in about 3.4 seconds (prove time, on Rana, a
 ; Sparc 2).  The repetitious approach takes 5.6 seconds.  The reconsidering

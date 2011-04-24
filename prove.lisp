@@ -457,8 +457,7 @@
 
 (defun expand-abbreviations-lst (lst alist geneqv-lst
                                      fns-to-be-ignored-by-rewrite rdepth
-                                     step-limit ens wrld 
-       state ttree)
+                                     step-limit ens wrld state ttree)
   (cond
    ((null lst) (mv step-limit nil ttree))
    (t (sl-let (term1 new-ttree)
@@ -1307,11 +1306,11 @@
           (add-to-tag-tree 'abort-cause 'revert nil)
           (change prove-spec-var pspv
 
-; Before Version_2.6 we did not modify the tag tree here.  The result was that
+; Before Version_2.6 we did not modify the tag-tree here.  The result was that
 ; assumptions created by forcing before reverting to the original goal still
 ; generated forcing rounds after the subsequent proof by induction.  When this
 ; bug was discovered we added code below to use delete-assumptions to remove
-; assumptions from the the tag tree.  Note that we are not modifying the
+; assumptions from the the tag-tree.  Note that we are not modifying the
 ; 'accumulated-ttree in state, so these assumptions still reside there; but
 ; since that ttree is only used for reporting rules used and is intended to
 ; reflect the entire proof attempt, this decision seems reasonable.
@@ -1320,10 +1319,10 @@
 ; received email from Francisco J. Martin-Mateos reporting a soundness bug,
 ; with an example that is included after the definition of push-clause.  The
 ; problem turned out to be that we did not remove :use and :by tagged values
-; from the tag tree here.  The result was that if the early part of a
+; from the tag-tree here.  The result was that if the early part of a
 ; successful proof attempt had involved a :use or :by hint but then the early
 ; part was thrown away and we reverted to the original goal, the :use or :by
-; tagged value remained in the tag tree.  When the proof ultimately succeeded,
+; tagged value remained in the tag-tree.  When the proof ultimately succeeded,
 ; this tagged value was used to update (global-val
 ; 'proved-functional-instances-alist (w state)), which records proved
 ; constraints so that subsequent proofs can avoid proving them again.  But
@@ -1332,7 +1331,7 @@
 ; might not be valid!
 
 ; So, we have decided that rather than remove assumptions and :by/:use tags
-; from the :tag-tree of pspv, we would just replace that tag tree by the empty
+; from the :tag-tree of pspv, we would just replace that tag-tree by the empty
 ; tag tree.  We do not want to get burned by a third such problem!
 
                   :tag-tree nil
@@ -1915,9 +1914,9 @@
 
 ; So this is of the first form, (:by . name).  We want the proof to fail, but
 ; not now.  So we act as though we proved cl (we hit, produce no new clauses
-; and don't change the pspv) but we return a tag tree containing the tag
+; and don't change the pspv) but we return a tag-tree containing the tag
 ; :bye with the value (name . cl).  At the end of the proof we must search
-; the tag tree and see if there are any :byes in it.  If so, the proof failed
+; the tag-tree and see if there are any :byes in it.  If so, the proof failed
 ; and we should display the named clauses.
 
        (mv step-limit
@@ -1929,7 +1928,7 @@
        (let ((lmi-lst (cadr temp)) ; a singleton list
              (thm (remove-guard-holders
 
-; We often remove guard-holders without tracking their use in the tag tree.
+; We often remove guard-holders without tracking their use in the tag-tree.
 ; Other times we record their use (but not here).  This is analogous to our
 ; reporting of the use of (:DEFINITION NOT) in some cases but not in others
 ; (e.g., when we use strip-not).
@@ -3242,7 +3241,7 @@
 
 (defun set-cl-ids-of-assumptions (ttree cl-id)
 
-; We scan the tag tree ttree, looking for 'assumptions.  Recall that each has a
+; We scan the tag-tree ttree, looking for 'assumptions.  Recall that each has a
 ; :assumnotes field containing exactly one assumnote record, which contains a
 ; :cl-id field.  We assume that :cl-id field is empty.  We put cl-id into it.
 ; We return a copy of ttree.
@@ -3259,11 +3258,11 @@
 ; (and thus, is known not to occur in that subtree), then the changed
 ; assumption does not occur in the changed cdr subtree.  That is true.  But we
 ; don't really know that the original assumption was ever checked by
-; add-to-tag-tree.  It doesn't really matter, tag trees being sets anyway.  But
-; this optimization does mean that this function knows how to construct tag
-; trees without using the official constructors.  But of course it knows that:
-; it destructures them to explore them.  This same picky note could be placed
-; in front of the final cons below, as well as in
+; add-to-tag-tree.  It doesn't really matter, tag-trees being sets anyway.  But
+; this optimization does mean that this function knows how to construct
+; tag-trees without using the official constructors.  But of course it knows
+; that: it destructures them to explore them.  This same picky note could be
+; placed in front of the final cons below, as well as in
 ; strip-non-rewrittenp-assumptions.
 
       (cons (cons 'assumption
@@ -3286,7 +3285,7 @@
 ; We now develop the code for proving the assumptions that are forced during
 ; the first part of the proof.  These assumptions are all carried in the ttree
 ; on 'assumption tags.  (Delete-assumptions was originally defined just below
-; collect-assumptions, but has been move up since it is used in push-clause.)
+; collect-assumptions, but has been moved up since it is used in push-clause.)
 
 (defun collect-assumptions (ttree only-immediatep ans)
 
@@ -5802,7 +5801,7 @@
 ; where name' is the result of extending the supplied name with the
 ; clause id.  This fancy call of waterfall-step is just a cheap way to
 ; get the standard :BY name' processing to happen.  All it will do is
-; add a :BYE (name' . clause) to the tag tree of the new-pspv.  We
+; add a :BYE (name' . clause) to the tag-tree of the new-pspv.  We
 ; know that the signal returned will be a "hit".  Because we had to smash
 ; the hint-settings to get this to happen, we'll have to restore them
 ; in the new-pspv.
@@ -6738,7 +6737,7 @@
 
 ; We return 7 results.  The first is a signal: 'win, 'lose, or
 ; 'continue and indicates that we have finished successfully (modulo,
-; perhaps, some assumptions and :byes in the tag tree), arrived at a
+; perhaps, some assumptions and :byes in the tag-tree), arrived at a
 ; definite failure, or should continue.  If the first result is
 ; 'continue, the second, third and fourth are the pool name phrase,
 ; the set of clauses to induct upon, and the hint-settings, if any.
@@ -7372,23 +7371,22 @@
 (defun prove-loop2 (forcing-round pool-lst clauses pspv hints ens wrld ctx
                                   state step-limit)
 
-; We are given some clauses to prove.  Forcing-round and pool-lst are
-; the first two fields of the clause-ids for the clauses.  The pool of
-; the prove spec var, pspv, in general contains some more clauses to
-; work on, as well as some clauses tagged 'being-proved-by-induction.
-; In addition, the pspv contains the proper settings for the
-; induction-hyp-terms and induction-concl-terms.
+; We are given some clauses to prove.  Forcing-round and pool-lst are the first
+; two fields of the clause-ids for the clauses.  The pool of the prove spec
+; var, pspv, in general contains some more clauses to work on, as well as some
+; clauses tagged 'being-proved-by-induction.  In addition, the pspv contains
+; the proper settings for the induction-hyp-terms and induction-concl-terms.
 
-; Actually, when we are beginning a forcing round other than the first,
-; clauses is really a list of pairs (assumnotes . clause).
+; Actually, when we are beginning a forcing round other than the first, clauses
+; is really a list of pairs (assumnotes . clause).
 
-; We pour all the clauses over the waterfall.  They tumble into the
-; pool in pspv.  If the pool is then empty, we are done.  Otherwise,
-; we pick one to induct on, do the induction and repeat.
+; We pour all the clauses over the waterfall.  They tumble into the pool in
+; pspv.  If the pool is then empty, we are done.  Otherwise, we pick one to
+; induct on, do the induction and repeat.
 
-; We either cause an error or return (as the "value" result in the
-; usual error/value/state triple) the final tag tree.  That tag
-; tree might contain some byes, indicating that the proof has failed.
+; We either cause an error or return (as the "value" result in the usual
+; error/value/state triple) the final tag-tree.  That tag-tree might contain
+; some byes, indicating that the proof has failed.
 
 ; WARNING:  A non-erroneous return is not equivalent to success!
 

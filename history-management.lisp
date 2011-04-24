@@ -3704,10 +3704,10 @@
 ; In a nutshell, these records have the following life cycle:
 ; (1) They are created by hint translation, appealing to the existing value of
 ;     world global 'proved-functional-instances-alist to prune the list.
-; (2) They go into tag trees when hints are applied; see calls of
+; (2) They go into tag-trees when hints are applied; see calls of
 ;     add-to-tag-tree with tags :use and :by in apply-use-hint-clauses and
 ;     apply-top-hints-clause1, respectively.
-; (3) They are extracted from those tag trees when events are installed.
+; (3) They are extracted from those tag-trees when events are installed.
 
 ; We focus now on (1).  Hint translation creates these records with functions
 ; translate-use-hint and translate-by-hint.  Translate-use-hint returns an
@@ -15158,8 +15158,8 @@
 ;           translate-x-hint-value
 
 ; So, hints are translated.  Who looks at the results?  Well,
-; apply-top-hints-clause adds :use and :by to the tag tree.
-; Who looks at the tag tree?  It's
+; apply-top-hints-clause adds :use and :by to the tag-tree.
+; Who looks at the tag-tree?  It's
 ; apply-top-hints-clause-msg1, which in turn calls
 ; tilde-@-lmi-phrase -- and THAT is who sees and handles an "event" of 0.
 ; We might want to construct an example that illustrates this "0 handling" by
@@ -15470,7 +15470,7 @@
 ; obligations in the generation of the constraints; and
 
 ; new-entries is the list of new entries for the world global
-; 'proved-functional-instances-alist, which we will place in a tag tree and
+; 'proved-functional-instances-alist, which we will place in a tag-tree and
 ; eventually using the name of the event currently being proved (if any).
 
 ; A lemma instance is either 

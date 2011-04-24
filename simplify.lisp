@@ -5116,7 +5116,7 @@
                         (cond ((lambda-subtermp atm2)
 
 ; We received an example from Jared Davis in which a hypothesis of the form
-; (not (let ...)) rewrites to true with a tag tree of nil, and hence was kept
+; (not (let ...)) rewrites to true with a tag-tree of nil, and hence was kept
 ; without this lambda-subtermp case.  The problem with keeping that hypothesis
 ; is that it has calls of IF in a lambda body, which do not get eliminated by
 ; clausification -- and this presence of IF terms causes the :force-info field
@@ -6288,8 +6288,8 @@
 ; Copy ttree and strip out all 'assumption records that have :rewrittenp nil.
 ; Accumulate those unrewritten records onto ans.  Return (mv ttree' ans').
 
-; Picky Note: Some of the conses below are used in place of the official tag
-; tree constructors, e.g., (add-to-tag-tree 'assumption & &) and
+; Picky Note: Some of the conses below are used in place of the official
+; tag-tree constructors, e.g., (add-to-tag-tree 'assumption & &) and
 ; (cons-tag-trees & &).  See the picky note in set-cl-ids-in-assumptions.
 
   (cond
@@ -6501,18 +6501,6 @@
            ancestors gstack simplify-clause-pot-lst rcnst wrld state step-limit
            ttree)))
 
-(defun cons-into-ttree (ttree1 ttree2)
-  (cond
-   ((null ttree1) ttree2)
-   ((symbolp (caar ttree1))
-    (if (tag-tree-occur (caar ttree1) (cdar ttree1) ttree2)
-        (cons-into-ttree (cdr ttree1)
-                         ttree2)
-      (cons-into-ttree (cdr ttree1)
-                       (cons (car ttree1) ttree2))))
-   (t (cons-into-ttree (cdr ttree1)
-                       (cons-into-ttree (car ttree1) ttree2)))))
-
 ; Essay on Case Limit
 
 ; The case-limit component in the case-split-limitations is a number
@@ -6620,7 +6608,7 @@
 ; literals contained in the :pt of rcnst (to which we add the current literal's
 ; pt).  Ecnt is the estimated number of output clauses.  We refine it as we go
 ; and it is ultimately returned and is the length of of ans.  Fttree (``false
-; tag tree'') is either nil or else is a non-nil tag tree justifying the
+; tag-tree'') is either nil or else is a non-nil tag-tree justifying the
 ; falsity of every literal in new-clause; see the comment in rewrite-atm about
 ; the third argument returned by that function.  Note that it is always legal
 ; to return the false clause in place of any other clause, so our use of fttree
@@ -6921,7 +6909,7 @@
                                     ans
                                     (if (eq action 'no-change)
                                         ttree
-                                      (cons-into-ttree ttree1 ttree))
+                                      (cons-tag-trees ttree1 ttree))
                                     (and fttree1
                                          fttree
                                          (cons-tag-trees fttree1 fttree))
@@ -6932,7 +6920,7 @@
                                 fc-pair-lst wrld simplify-clause-pot-lst rcnst
                                 flg ecnt ans ttree fttree state step-limit)
 
-; Fttree is either nil or else is a tag tree justifying the falsity of every
+; Fttree is either nil or else is a tag-tree justifying the falsity of every
 ; literal in segs and every literal in new-clause; see the comment in
 ; rewrite-atm about the third argument returned by that function.
 
@@ -6997,7 +6985,7 @@
                                         nil cl)))
             (rewrite-entry
              (add-terms-and-lemmas cl ;term-lst to assume
-                                   ttrees ;corresponding tag trees
+                                   ttrees ;corresponding tag-trees
                                    nil ;positivep (terms assumed false)
                                    )
              :rdepth (rewrite-stack-limit wrld)
@@ -7456,7 +7444,7 @@
                  (contradictionp
 
 ; A non-nil contradictionp is a poly meaning linear proved current-clause
-; (modulo the assumptions in the tag tree of the poly).
+; (modulo the assumptions in the tag-tree of the poly).
 
                   (mv step-limit
                       'hit
@@ -8224,9 +8212,9 @@
 
 (defconst *fake-rune-alist*
 
-; We use this constant for dealing with fake runes in tag trees.  We ignore
+; We use this constant for dealing with fake runes in tag-trees.  We ignore
 ; *fake-rune-for-anonymous-enabled-rule*, because push-lemma is careful not to
-; put it into any tag trees.
+; put it into any tag-trees.
 
   (list (cons (car *fake-rune-for-linear*)
               "linear arithmetic")
@@ -8608,7 +8596,7 @@
 ; ":rune" of the assumption be the :rune field of the car of its
 ; assumnotes.
 
-; We scan the tag tree ttree for all occurrences of the 'assumption
+; We scan the tag-tree ttree for all occurrences of the 'assumption
 ; tag and collect into ans the :rune of each assumption, when the
 ; :rune is a rune.  We ignore the symbolp :runes because we will be
 ; searching the resulting list for genuine runes and thus need not

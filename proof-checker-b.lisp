@@ -1490,7 +1490,7 @@
 (defun pc-prove (term displayed-goal hints otf-flg ens wrld ctx state)
 
 ; This is exactly the same as the ACL2 PROVE function, except that we allow
-; :bye objects in the tag tree, there is no checking of the load mode, and the
+; :bye objects in the tag-tree, there is no checking of the load mode, and the
 ; warning above.
 
   (prog2$
@@ -1637,7 +1637,7 @@
   (cond ((null ttree) nil)
         ((eq ttree t)
          (er hard 'remove-byes-from-tag-tree
-             "Found tag tree of T in REMOVE-BYES-FROM-TAG-TREE."))
+             "Found tag-tree of T in REMOVE-BYES-FROM-TAG-TREE."))
         ((eq :bye (caar ttree))
          ;; then ttree is ((:bye ...)) and we could perhaps return ()
          ;; but we play it safe

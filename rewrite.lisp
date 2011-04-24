@@ -534,7 +534,7 @@
 ; permitted to use a :REWRITE rule whose top-level equivalence is
 ; equiv.  If the function reports success and the rewrite in fact
 ; succeeds, the caller will typically use the value of the function as
-; the rune of the :CONGRUENCE rule used, adding it into the tag tree of
+; the rune of the :CONGRUENCE rule used, adding it into the tag-tree of
 ; the term being rewritten.
 
 ; Note: If the database contained only a 'refinements property for e2
@@ -12029,15 +12029,15 @@
 
 ; The Rewrite Assumption: the conjunction of (a) the assumptions in type-alist,
 ; (b) the assumptions in ancestors, (c) the assumption of every "active" poly
-; in simplify-clause-pot-lst (where a poly is inactive iff its tag tree
+; in simplify-clause-pot-lst (where a poly is inactive iff its tag-tree
 ; contains a 'pt containing some literal number that occurs in the :pt field of
 ; rcnst), and (d) the 'assumptions in the final tag-tree ttree'.
 
 ; Observe that if there are 'assumptions in the incoming ttree they are unioned
 ; into those made by this rewrite.  Thus, unless you want the assumptions to
-; accumulate across many rewrites, you must use the empty initial tag tree.  It
+; accumulate across many rewrites, you must use the empty initial tag-tree.  It
 ; would be incorrect to attempt to split on the "new" assumptions in the new
-; tag tree because of the unioning.
+; tag-tree because of the unioning.
 
   ":Doc-Section Rule-Classes
 
@@ -14914,7 +14914,7 @@
 ; under the theory prevailing in rewrite-linear-term.
 
 ; Term-lst is a list of terms as received by add-terms-and-lemmas, and
-; ttrees is its corresponding list of tag trees.  We simply call
+; ttrees is its corresponding list of tag-trees.  We simply call
 ; rewrite-linear-term (nee rewrite-linear-concl in ACL2 Version_2.6)
 ; on each member of term-lst and return two lists --- the rewritten
 ; terms and their ttrees.
@@ -17241,14 +17241,14 @@
 ; contradiction, we scanned the pot-lst produced by lst1 looking for
 ; all polys containing that (eq) cons.  During the initial attempts to
 ; code linear applicatively we tried to mimic this by using a 'mark
-; tag in the tag tree and inventing a "new" mark, such as an integer
+; tag in the tag-tree and inventing a "new" mark, such as an integer
 ; that was associated with the simplify-clause-pot-lst and was
 ; increased here when we obtained the mark.  We could not find a
 ; convincing way to generate a new mark.  The problem is due to the
 ; recursive rewriting done to add :LINEAR lemmas.  How do we know a
 ; mark generated now will still be new when it needs to be?  How do we
 ; know that a term rewritten in an extension of this pot-lst under us,
-; doesn't have some marks in its tag tree that will come back to haunt
+; doesn't have some marks in its tag-tree that will come back to haunt
 ; us?  These questions may have cut and dried answers that make marks
 ; viable.  But we decided not to pursue them and just identify the new
 ; polys as done here.  This exercise does point to the convenience of
@@ -17514,28 +17514,27 @@
                                       simplify-clause-pot-lst
                                       rcnst gstack ttree)
 
-; Term-lst is a list of terms to be assumed true (if positivep) or false
-; (if not positivep).  We linearize each term in term-lst and add the
-; resulting polys and all lemmas we can to simplify-clause-pot-lst.  When
-; we linearize a term we use the weakly corresponding element of ttrees
-; as its tag tree (if that element is non-nil).
+; Term-lst is a list of terms to be assumed true (if positivep) or false (if
+; not positivep).  We linearize each term in term-lst and add the resulting
+; polys and all lemmas we can to simplify-clause-pot-lst.  When we linearize a
+; term we use the weakly corresponding element of ttrees as its tag-tree (if
+; that element is non-nil).
 
 ; Only variables introduced by the addition of the new polys are considered
 ; new.
 
 ; This function returns 2 values.  The first indicates that a linear
-; contradiction arises from the assumption of term-lst as above.  When
-; non-nil the first result is the impossible-poly generated.  Its tag
-; tree contains all the necessary information.  In particular, if a
-; contradiction is indicated then there is a proof of NIL from
-; type-alist, the assumption of the terms in term-lst (as per
-; positivep), the assumptions in the final tag tree and some subset of
-; the polys in the simplify-clause-pot-lst.
+; contradiction arises from the assumption of term-lst as above.  When non-nil
+; the first result is the impossible-poly generated.  Its tag-tree contains all
+; the necessary information.  In particular, if a contradiction is indicated
+; then there is a proof of NIL from type-alist, the assumption of the terms in
+; term-lst (as per positivep), the assumptions in the final tag-tree and some
+; subset of the polys in the simplify-clause-pot-lst.
 
 ; If no contradiction is indicated then the second value is the new
-; simplify-clause-pot-lst.  For each poly p in the new pot list there
-; is a proof of p from type-alist, the assumption of the terms in
-; term-lst (as per positivep) and the polys in the original pot list.
+; simplify-clause-pot-lst.  For each poly p in the new pot list there is a
+; proof of p from type-alist, the assumption of the terms in term-lst (as per
+; positivep) and the polys in the original pot list.
 
   (declare (ignore geneqv ttree)
            (type (unsigned-byte 29) rdepth)

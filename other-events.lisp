@@ -23949,7 +23949,7 @@
                              state ens ttree)
 
 ; Returns unrelieved hyps (with the appropriate substitution applied), an
-; extended substitution, and a new tag tree.  Note: the substitution really has
+; extended substitution, and a new tag-tree.  Note: the substitution really has
 ; been applied already to the returned hyps, even though we also return the
 ; extended substitution.
 
@@ -24151,7 +24151,7 @@
 (defun hyps-type-alist (assumptions ens wrld state)
 
 ; Note that the force-flg arg to type-alist-clause is nil here, so we shouldn't
-; wind up with any assumptions in the returned tag tree. Also note that we
+; wind up with any assumptions in the returned tag-tree. Also note that we
 ; return (mv contradictionp type-alist fc-pair-lst), where actually fc-pair-lst
 ; is a ttree if contradictionp holds; normally we ignore fc-pair-lst otherwise.
 
@@ -28148,7 +28148,7 @@
 ;   attachment pairs that are to be installed for execution;
 ; - new-entries is a list to be used for extending (global-val
 ;   'proved-functional-instances-alist wrld);
-; - ttree is a tag tree obtained from the proofs done on behalf of the
+; - ttree is a tag-tree obtained from the proofs done on behalf of the
 ;   defattach event; and
 ; - records is the new list of attachment records to install in the world.
 
