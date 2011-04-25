@@ -29,6 +29,7 @@
 (include-book "transforms/occform/occform-top")
 (include-book "transforms/xf-addinstnames")
 (include-book "transforms/xf-argresolve")
+(include-book "transforms/xf-assigndelays")
 (include-book "transforms/xf-assign-trunc")
 (include-book "transforms/xf-blankargs")
 (include-book "transforms/xf-clean-params")
@@ -759,6 +760,10 @@ from @(see vl-simplify-part1).</p>"
 
       (mods (xf-cwtime (vl-modulelist-trunc mods)
                        :name xf-trunc))
+
+
+      (mods (xf-cwtime (vl-modulelist-assigndelays mods)
+                       :name xf-assigndelays))
 
 
       ;; This might not be the best time to do this, but it seems like here
