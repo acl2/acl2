@@ -211,10 +211,9 @@
               (cond
                (erp (mv step-limit t nil nil nil nil state))
                (t (pprogn
-                   (cond
-                    ((tagged-object :bye ttree1)
-                     (let ((byes (reverse (tagged-objects :bye ttree1
-                                                          nil))))
+                   (let ((byes (tagged-objects :bye ttree1)))
+                     (cond
+                      (byes
                        (pprogn
 
 ; The use of ~*1 below instead of just ~&1 forces each of the defthm
@@ -242,8 +241,8 @@
                                   (proofs-co state)
                                   state
                                   nil))
-                        state)))
-                    (t state))
+                        state))
+                      (t state)))
                    (mv step-limit erp ttree1 clauses pairs
                        (change prove-spec-var new-pspv
                                :pool nil)
@@ -357,9 +356,9 @@
 (defun get-assns (ttree remove-hidden)
   (cond (remove-hidden
          (remove-hidden-expander-term-from-cl-list
-          (reverse (strip-cdrs (tagged-objects :bye ttree nil)))))
+          (strip-cdrs (tagged-objects :bye ttree))))
         (t
-         (reverse (strip-cdrs (tagged-objects :bye ttree nil))))))
+         (strip-cdrs (tagged-objects :bye ttree)))))
 
 (defun tool1-fn1 (hyps ctx ens wrld state hints prove-assumptions inhibit-output
                        translate-flg print-flg)
