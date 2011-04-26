@@ -7162,12 +7162,13 @@
 ; example of this situation.
 
                              (mv
-                              (if (tagged-object 'fc-derivation ttree)
+                              (if (tagged-objectsp 'fc-derivation ttree)
                                   (er hard
                                       "Somehow an 'fc-derivation, ~x0, has ~
                                        found its way into the ttree returned ~
                                        by type-set-implied-by-term."
-                                      (tagged-object 'fc-derivation ttree))
+                                      (car (tagged-objects 'fc-derivation
+                                                           ttree)))
                                 (msg "~x0 is an illegal :TYPE-PRESCRIPTION ~
                                       lemma because in determining the ~
                                       type-set implied for its :TYPED-TERM, ~
@@ -7181,7 +7182,7 @@
                                       be very helpful to report this error to ~
                                       the authors."
                                      name typed-term
-                                     (tagged-objects 'assumption ttree nil)))
+                                     (tagged-objects 'assumption ttree)))
                               nil nil nil nil nil))
                             (t (mv nil hyps concl ts vars ttree))))))))))))))))
 

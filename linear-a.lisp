@@ -223,8 +223,17 @@
 
 ; Tags in Tag-Trees
 
-; The tags in use as of this writing (which can be verified by searching
-; for add-to-tag-tree) and their meanings are:
+; After Version_4.2 we switched to a representation of a tag-tree as an alist,
+; associating a key with a non-empty list of values, rather than building up
+; tag-trees with operations (acons tag value ttree) and (cons ttree1 ttree2).
+; Our motivation was to allow the addition of a new key, associated with many
+; values, without degrading performance significantly.
+
+; Each definition of a primitive for manipulating tag-trees has the comment: "
+; Note: Tag-tree primitive".
+
+; See all-runes-in-ttree for the set of all legal tags and their associated
+; values.  Some of the tags and associated values are as follows.
 
 ; 'lemma
 
@@ -264,27 +273,26 @@
 ; equation in future calls of simplify.  We do this by infecting the
 ; tag-tree with this tag and the two polys used.
 
-; Historical Note:
+; Historical Note from the days when tag-trees were constructed using (acons
+; tag value ttree) and (cons-tag-trees ttree1 ttree2):
 
-; The invention of tag-trees came about during the designing of the
-; linear package.  Polynomials have three "arithmetic" fields, the
-; constant, alist, and relation.  But they then have many other
-; fields, like lemmas, assumptions, and literals.  At the time
-; of this writing they have 5 other fields.  All of these fields are
-; contaminants in the sense that all of the contaminants of a poly
-; contaminate any result formed from that poly.  The same is true with
-; the second answer of rewrite.
+; ; The invention of tag-trees came about during the designing of the linear
+; ; package.  Polynomials have three "arithmetic" fields, the constant, alist,
+; ; and relation.  But they then have many other fields, like lemmas,
+; ; assumptions, and literals.  At the time of this writing they have 5 other
+; ; fields.  All of these fields are contaminants in the sense that all of the
+; ; contaminants of a poly contaminate any result formed from that poly.  The
+; ; same is true with the second answer of rewrite.
 
-; If we represented the 5-tuple of the ttree of a poly as full-fledged
-; fields in the poly the best we could do is to use a balanced binary
-; tree with 8 tips.  In that case the average time to change some
-; field (including the time to cons a new element onto any of the 5
-; contaminants) is 3.62 conses.  But if we clump all the contaminants
-; into a single field represented as a tag-tree, the cost of adding a
-; single element to any one of them is 2 conses and the average cost
-; of changing any of the 4 fields in a poly is 2.5 conses.
-; Furthermore, we can effectively union all 5 contaminants of two
-; different polys in one cons!
+; ; If we represented the 5-tuple of the ttree of a poly as full-fledged fields
+; ; in the poly the best we could do is to use a balanced binary tree with 8
+; ; tips.  In that case the average time to change some field (including the
+; ; time to cons a new element onto any of the 5 contaminants) is 3.62 conses.
+; ; But if we clump all the contaminants into a single field represented as a
+; ; tag-tree, the cost of adding a single element to any one of them is 2
+; ; conses and the average cost of changing any of the 4 fields in a poly is
+; ; 2.5 conses.  Furthermore, we can effectively union all 5 contaminants of
+; ; two different polys in one cons!
 
 (deflabel ttree
   :doc
@@ -293,65 +301,53 @@
   tag-trees~/
 
   Many low-level ACL2 functions take and return ``tag trees'' or
-  ``ttrees'' (pronounced ``tee-trees'') which contain various useful
-  bits of information such as the lemmas used, the linearize
-  assumptions made, etc.~/
+  ``ttrees'' (pronounced ``tee-trees'') which contain various useful bits of
+  information such as the lemmas used, the linearize assumptions made, etc.~/
 
-  Let a ``tagged pair'' be a list whose car is a symbol, called the
-  ``tag,'' and whose cdr is an arbitrary object, called the ``tagged
-  object.''  A ``tag tree'' is either nil, a tagged pair consed onto a
-  tag-tree, or a non-nil tag-tree consed onto a tag-tree.
+  Abstractly a tag-tree represents a list of sets, each member set having a
+  name given by one of the ``tags'' (which are symbols) of the ttree.  The
+  elements of the set named ~c[tag] are all of the objects tagged ~c[tag] in
+  the tree.  You are invited to browse the source code.  Definitions of
+  primitives are labeled with the comment ``; Note: Tag-tree primitive''.
 
-  Abstractly a tag-tree represents a list of sets, each member set
-  having a name given by one of the tags occurring in the ttree.  The
-  elements of the set named ~c[tag] are all of the objects tagged
-  ~c[tag] in the tree.  To cons a tagged pair ~c[(tag . obj)] onto a
-  tree is to ~c[add-to-set-equal] ~c[obj] to the set corresponding to
-  ~c[tag].  To ~c[cons] two tag-trees together is to union-equal the
-  corresponding sets.  The concrete representation of the union so
-  produced has duplicates in it, but we feel free to ignore or delete
-  duplicates.
-
-  The beauty of this definition is that to combine two non-~c[nil] tag-trees
-  you need do only one ~c[cons].
-
-  The following function accumulates onto ans the set associated with
-  a given tag in a ttree:
-  ~bv[]
-  (defun tagged-objects (tag ttree ans)
-   (cond
-    ((null ttree) ans)
-    ((symbolp (caar ttree))             ; ttree = ((tag . obj) . ttree)
-     (tagged-objects tag (cdr ttree)
-                     (cond ((eq (caar ttree) tag)
-                            (add-to-set-equal (cdar ttree) ans))
-                           (t ans))))
-    (t                                  ; ttree = (ttree . ttree)
-       (tagged-objects tag (cdr ttree)
-                           (tagged-objects tag (car ttree) ans)))))
-  ~ev[]
-  This function is defined as a :~ilc[PROGRAM] mode function in ACL2.
-
-  The rewriter, for example, takes a term and a ttree (among other
-  things), and returns a new term, term', and new ttree, ttree'.
-  Term' is equivalent to term (under the current assumptions) and the
-  ttree' is an extension of ttree.  If we focus just on the set
-  associated with the tag ~c[LEMMA] in the ttrees, then the set for
-  ttree' is the extension of that for ttree obtained by unioning into
-  it all the runes used by the rewrite.  The set associated with
-  ~c[LEMMA] can be obtained by ~c[(tagged-objects 'LEMMA ttree nil)].")
+  The rewriter, for example, takes a term and a ttree (among other things), and
+  returns a new term, term', and new ttree, ttree'.  Term' is equivalent to
+  term (under the current assumptions) and the ttree' is an extension of ttree.
+  If we focus just on the set associated with the tag ~c[LEMMA] in the ttrees,
+  then the set for ttree' is the extension of that for ttree obtained by
+  unioning into it all the ~il[rune]s used by the rewrite.  The set associated
+  with ~c[LEMMA] can be obtained by ~c[(tagged-objects 'LEMMA ttree)].")
 
 ; The following function determines whether val with tag tag occurs in
 ; tree:
 
-(defun tag-tree-occur (tag val tree)
-  (cond ((null tree) nil)
-        ((symbolp (caar tree))
-         (or (and (eq tag (caar tree))
-                  (equal val (cdar tree)))
-             (tag-tree-occur tag val (cdr tree))))
-        (t (or (tag-tree-occur tag val (car tree))
-               (tag-tree-occur tag val (cdr tree))))))
+(defun tag-tree-occur (tag val ttree)
+
+; Note: Tag-tree primitive
+
+  (let ((pair (assoc-eq tag ttree)))
+    (and pair ; optimization
+         (member-equal val (cdr pair)))))
+
+(defun remove-tag-from-tag-tree (tag ttree)
+
+; Note: Tag-tree primitive
+
+; In this function we do not assume that tag is a key of ttree.  See also
+; remove-tag-from-tag-tree, which does make that assumption.
+
+  (cond ((assoc-eq tag ttree)
+         (delete-assoc-eq tag ttree))
+        (t ttree)))
+
+(defun remove-tag-from-tag-tree! (tag ttree)
+
+; Note: Tag-tree primitive
+
+; In this function we assume that tag is a key of ttree.  See also
+; remove-tag-from-tag-tree, which does not make that assumption.
+
+  (delete-assoc-eq tag ttree))
 
 ; To add a tagged object to a tree we use the following function.  Observe
 ; that it does nothing if the object is already present.
@@ -359,9 +355,41 @@
 ; Note:
 ; If you add a new tag, be sure to include it in all-runes-in-ttree!
 
-(defun add-to-tag-tree (tag val tree)
-  (cond ((tag-tree-occur tag val tree) tree)
-        (t (cons (cons tag val) tree))))
+(defmacro extend-tag-tree (tag vals ttree)
+
+; Note: Tag-tree primitive
+
+; Warning: We assume that tag is not a key of ttree and vals is not nil.
+
+  `(acons ,tag ,vals ,ttree))
+
+(defun add-to-tag-tree (tag val ttree)
+
+; Note: Tag-tree primitive
+
+; See also add-to-tag-tree!, for the case that tag is known not to be a key of
+; ttree.
+
+  (cond
+   ((eq ttree nil) ; optimization
+    (list (list tag val)))
+   (t
+    (let ((pair (assoc-eq tag ttree)))
+      (cond (pair (cond ((member-equal val (cdr pair))
+                         ttree)
+                        (t (acons tag
+                                  (cons val (cdr pair))
+                                  (remove-tag-from-tag-tree! tag ttree)))))
+            (t (acons tag (list val) ttree)))))))
+
+(defun add-to-tag-tree! (tag val ttree)
+
+; Note: Tag-tree primitive
+
+; It is legal (and more efficient) to use this instead of add-to-tag-tree if we
+; know that tag is not a key of ttree.
+
+  (extend-tag-tree tag (list val) ttree))
 
 ; A Little Foreshadowing:
 
@@ -380,132 +408,124 @@
 (defconst *fake-rune-for-anonymous-enabled-rule*
   '(:FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE nil))
 
-(defun push-lemma (rune tree)
+(defabbrev push-lemma (rune ttree)
 
-; This is just (add-to-tag-tree 'lemma rune ttree) and is named in
-; honor of the corresponding act in Nqthm.  We do not record uses of
-; the fake rune.  Rather than pay the price of recognizing the
-; *fake-rune-for-anonymous-enabled-rule* perfectly we exploit the fact
-; that no true rune has :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE as its
-; token.
+; This is just (add-to-tag-tree 'lemma rune ttree) and is named in honor of the
+; corresponding act in Nqthm.  We do not record uses of the fake rune.  Rather
+; than pay the price of recognizing the *fake-rune-for-anonymous-enabled-rule*
+; perfectly we exploit the fact that no true rune has
+; :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE as its token.
 
-  (cond ((eq (car rune) :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE) tree)
-        ((tag-tree-occur 'lemma rune tree) tree)
-        (t (cons (cons 'lemma rune) tree))))
+  (cond ((eq (car rune) :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE) ttree)
+        (t (add-to-tag-tree 'lemma rune ttree))))
 
-(defun push-lemmas (runes tree)
-  (cond ((null runes) tree)
-        (t (push-lemmas (cdr runes) (push-lemma (car runes) tree)))))
+; Historical Note from the days when tag-trees were constructed using (acons
+; tag value ttree) and (cons-tag-trees ttree1 ttree2):
 
-; To join two trees we use cons-tag-trees.  Observe that if the first
-; tree is nil we return the second (we can't cons a nil tag-tree on
-; and their union is the second anyway).  Otherwise we cons, possibly
-; duplicating elements.
+; ; To join two trees we use cons-tag-trees.  Observe that if the first tree is
+; ; nil we return the second (we can't cons a nil tag-tree on and their union
+; ; is the second anyway).  Otherwise we cons, possibly duplicating elements.
 
-; But starting in Version_3.2, we keep tagged objects unique in tag-trees, by
-; calling scons-tag-trees when necessary, unioning the tag-trees rather than
-; merely consing them.  The immediate prompt for this change was a report from
-; Eric Smith on getting stack overflows from tag-tree-occur, but this problem
-; has also occurred in the past (as best Matt can recall).
+; ; But starting in Version_3.2, we keep tagged objects unique in tag-trees, by
+; ; calling scons-tag-trees when necessary, unioning the tag-trees rather than
+; ; merely consing them.  The immediate prompt for this change was a report
+; ; from Eric Smith on getting stack overflows from tag-tree-occur, but this
+; ; problem has also occurred in the past (as best Matt can recall).
 
-(defun scons-tag-trees1 (ttree1 ttree2 original-ttree2)
+(defun delete-assoc-eq-assoc-eq-1 (alist1 alist2)
+  (declare (xargs :guard (and (symbol-alistp alist1)
+                              (symbol-alistp alist2))))
+  (cond ((endp alist2)
+         (mv nil nil))
+        (t (mv-let (changedp x)
+                   (delete-assoc-eq-assoc-eq-1 alist1 (cdr alist2))
+                   (cond ((assoc-eq (caar alist2) alist1)
+                          (mv t x))
+                         (changedp
+                          (mv t (cons (car alist2) x)))
+                         (t (mv nil alist2)))))))
 
-; Invariant: original-ttree2 is a subtree of ttree2 (not necessarily a proper
-; subtree), ttree1 and ttree2 each are free of duplicate tagged objects, and
-; every tagged object of ttree1 that is in ttree2 is in original-ttree2.  We
-; return t if ttree1 and ttree2 are disjoint, and otherwise a ttree
-; representing the union of the tagged objects in ttree1 and ttree2.
+(defun delete-assoc-eq-assoc-eq (alist1 alist2)
+  (mv-let (changedp x)
+          (delete-assoc-eq-assoc-eq-1 alist1 alist2)
+          (declare (ignore changedp))
+          x))
 
-; See also scons-tag-trees.  In particular, the algorithm of scons-tag-trees1
-; traverses ttree1 in reverse depth-first order; see the comment about this
-; point in scons-tag-trees.
+(defun cons-tag-trees1 (ttree1 ttree2 ttree3)
+
+; Note: Tag-tree primitive supporter
+
+; Accumulate into ttree3, whose keys are disjoint from those of ttree1, the
+; values of keys in ttree1 each augmented by their values in ttree2.
+
+; It might be more efficient to accumulate into ttree3, so that this function
+; is tail-recursive.  But we prefer that the tags at the front of ttree1 are
+; also at the front of the returned ttree, since presumably the values of those
+; tags are more likely to be updated frequently, and an update generates fewer
+; conses the closer the tag is to the front of the ttree.
+
+  (cond ((endp ttree1) ttree3)
+        (t (let ((pair (assoc-eq (caar ttree1) ttree2)))
+             (cond (pair (acons (caar ttree1)
+                                (union-equal (cdar ttree1) (cdr pair))
+                                (cons-tag-trees1 (cdr ttree1) ttree2 ttree3)))
+                   (t (cons (car ttree1)
+                            (cons-tag-trees1 (cdr ttree1) ttree2 ttree3))))))))
+
+(defun cons-tag-trees (ttree1 ttree2)
+
+; Note: Tag-tree primitive
+
+; We return a tag-tree whose set of keys is the union of the keys of ttree1 and
+; ttree2, and whose value for each key is the union of the values of the key in
+; ttree1 and ttree2 (in that order).  In addition, we attempt to avoid needless
+; consing.
 
   (cond ((null ttree1) ttree2)
-        ((symbolp (caar ttree1))
-         (cond ((tag-tree-occur (caar ttree1)
-                                (cdar ttree1)
-                                original-ttree2)
-                (let ((x (scons-tag-trees1 (cdr ttree1)
-                                           ttree2
-                                           original-ttree2)))
-                  (cond ((eq x t)
-                         (cons (cdr ttree1) ttree2))
-                        (t x))))
-               (t (let ((x (scons-tag-trees1 (cdr ttree1)
-                                             ttree2
-                                             original-ttree2)))
-                    (cond ((eq x t) t)
-                          (t (cons (car ttree1) x)))))))
-        (t (let ((x (scons-tag-trees1 (cdr ttree1) ttree2 original-ttree2)))
-             (cond ((eq x t)
-                    (let ((y (scons-tag-trees1 (car ttree1)
-                                               ttree2
-                                               original-ttree2)))
-                      (cond ((eq y t) t)
-                            (t (cons (cdr ttree1) y)))))
-                   (t (scons-tag-trees1 (car ttree1)
-                                        x
-                                        original-ttree2)))))))
+        ((null ttree2) ttree1)
+        ((null (cdr ttree2))
+         (let* ((pair2 (car ttree2))
+                (tag (car pair2))
+                (pair1 (assoc-eq tag ttree1)))
+           (cond (pair1 (acons tag
+                               (union-equal (cdr pair1) (cdr pair2))
+                               (delete-assoc-eq tag ttree1)))
+                 (t (cons pair2 ttree1)))))
+        (t (let ((ttree3 (delete-assoc-eq-assoc-eq ttree1 ttree2)))
+             (cons-tag-trees1 ttree1 ttree2 ttree3)))))
 
-(defun scons-tag-trees (ttree1 ttree2)
+(defmacro tagged-objects (tag ttree)
 
-; "Slow" or "Smart" cons-tag-trees.  This function is the analogue of Lisp
-; UNION (which, like this function, is not commutative), but for tag-trees.  It
-; conses those tagged values in ttree1 that are not already in ttree2.
+; Note: Tag-tree primitive
 
-; Because of the reverse-depth-first nature of scons-tag-trees1, we can expect
-; that if ttree1 was built by a sequence of add-to-tag-tree and cons-tag-tree
-; operations starting with nil, then (scons-tag-trees ttree1 ttree2) will equal
-; the result of that same sequence of operations starting with ttree2.
+; See also tagged-objectsp for a corresponding predicate.
 
-  (cond ((null ttree2) ttree1) ; avoid rebuilding ttree1
-        (t (let ((x (scons-tag-trees1 ttree1 ttree2 ttree2)))
-             (cond ((eq x t)
-                    (cons ttree1 ttree2))
-                   (t x))))))
+  `(cdr (assoc-eq ,tag ,ttree)))
 
-(defmacro cons-tag-trees (tree1 tree2)
-  `(scons-tag-trees ,tree1 ,tree2))
+(defmacro tagged-objectsp (tag ttree)
 
-(defun tagged-objects (tag ttree ans)
+; Note: Tag-tree primitive
 
-; We accumulate in reverse order onto ans all the objects with the given tag
-; in ttree.  We accumulate with add-to-set-equal.
+; This is used instead of tagged-objects (but is Boolean equivalent to it) when
+; we want to emphasize that our only concern is whether or not there is at
+; least one tagged object associated with tag in ttree.
 
-  (cond
-   ((null ttree) ans)
-   ((symbolp (caar ttree))
-    (tagged-objects tag (cdr ttree)
-                    (cond ((eq (caar ttree) tag)
-                           (add-to-set-equal (cdar ttree) ans))
-                          (t ans))))
-   (t (tagged-objects tag (cdr ttree)
-                      (tagged-objects tag (car ttree) ans)))))
+  `(assoc-eq ,tag ,ttree))
 
-(defun tagged-object (tag ttree)
+(defun tagged-value (tag ttree)
 
-; This function returns the first (tag . obj) it finds in ttree or nil
-; if there is no object with that tag.  We don't usually think of
-; there being an ordering on the subtrees.  Indeed, if the tree was
-; constructed entirely via cons-tag-trees and add-to-tag-tree then
-; there is not a lot of sense to this notion of "first" because those
-; operations don't necessarily change the tree (treating it as a set
-; of (tag . obj) pairs).  In particular, it is not a theorem that
-; (tagged-object tag (add-to-tag-tree tag obj ttree)) = (cons tag
-; obj), because there may be a deep occurrence of (tag . obj) in ttree
-; already but it is covered by some (tag . obj').  Therefore, on such
-; ttrees we use this function only when we know there is at most one
-; occurrence of the tag or when we wish merely to determine if there
-; is at least one occurrence but don't care which we find.
+; Note: Tag-tree primitive
 
-  (cond
-   ((null ttree) nil)
-   ((symbolp (caar ttree))
-    (cond ((eq (caar ttree) tag)
-           (car ttree))
-          (t (tagged-object tag (cdr ttree)))))
-   (t (or (tagged-object tag (car ttree))
-          (tagged-object tag (cdr ttree))))))
+; This function returns obj for the unique (tag . obj) it finds in ttree or nil
+; if there is no object with that tag.  If there may be more than one object
+; associated with tag in ttree, use (car (tagged-objects tag ttree)) instead to
+; obtain one such object, or use (tagged-objectsp tag ttree) if you only want
+; to answer the question "Is there any object associated with tag in ttree?".
+
+  (let ((objects (tagged-objects tag ttree)))
+    (and objects
+         (assert$ (null (cdr objects))
+                  (car objects)))))
 
 ; We accumulate our ttree into the state global 'accumulated-ttree so that if a
 ; proof attempt is aborted, we can still recover the lemmas used within it.  If
@@ -516,21 +536,6 @@
 ; fails after the system has reported using some rune then that rune is tagged
 ; as a 'lemma in the 'accumulated-ttree of the final state.)  This encourages
 ; us to cons a new ttree into the accumulator every time we do output.
-
-; Historical remark, from before we started storing duplicate-free tag-trees in
-; Version_3.2:
-
-; ; But there is a problem.  It is not unusual to construct a ttree by
-; ; incrementally adding to another one.  But if the initial ttree has already
-; ; been accumulated into state, then if we accumulate the final one too, we have
-; ; actually produced two occurrences of the initial one in state.  We do not
-; ; want to search the state's ttree to see if a ttree is already in it.  To
-; ; avoid this, we engage in the following clever hack.  When we accumulate a
-; ; ttree into state, we will mark the ttree as having been accumulated, by
-; ; putting an 'accumulated-into-state tag with (irrelevant, non-nil) value t at
-; ; the top of the tree, meaning that the rest of the ttree has already been
-; ; added to state.  To accumulate a ttree into state we actually explore it and
-; ; only store those subtress that have not already been accumulated.
 
 (defun accumulate-ttree-and-step-limit-into-state (ttree step-limit state)
 
@@ -549,14 +554,14 @@
     ((eq ttree nil) (value nil))
     (t (pprogn
         (f-put-global 'accumulated-ttree
-                      (scons-tag-trees ttree
-                                       (f-get-global 'accumulated-ttree state))
+                      (cons-tag-trees ttree
+                                      (f-get-global 'accumulated-ttree state))
                       state)
         (value ttree))))))
 
 (defun pts-to-ttree-lst (pts)
   (cond ((null pts) nil)
-        (t (cons (add-to-tag-tree 'pt (car pts) nil)
+        (t (cons (add-to-tag-tree! 'pt (car pts) nil)
                  (pts-to-ttree-lst (cdr pts))))))
 
 ; Previously, we stored the parents of a poly in the poly's :ttree field
@@ -587,28 +592,21 @@
         (t
          (add-to-set-eql pt ans))))
 
-(defun collect-parents0 (ttree ans)
+(defun collect-parents0 (pts ans)
   (cond
-   ((null ttree) ans)
-   ((symbolp (caar ttree))
-    (collect-parents0 (cdr ttree)
-                      (cond ((eq (caar ttree) 'pt)
-                             (collect-parents1 (cdar ttree) ans))
-                            (t ans))))
-   (t (collect-parents0 (cdr ttree)
-                        (collect-parents0 (car ttree) ans)))))
+   ((null pts) ans)
+   (t
+    (collect-parents0 (cdr pts)
+                      (collect-parents1 (car pts) ans)))))
 
 (defun collect-parents (ttree)
 
-; We accumulate in reverse order onto ans all the objects (parents) in
-; the pts in the ttree.  When we create a new poly via linearize, we
-; extract a list of all its parents from the poly's 'ttree and store
-; this list in the poly's 'parents field.  This function does the
-; extracting.
+; We accumulate in reverse order all the objects (parents) in the pts in the
+; ttree.  When we create a new poly via linearize, we extract a list of all its
+; parents from the poly's 'ttree and store this list in the poly's 'parents
+; field.  This function does the extracting.
 
-; This was copied from tagged-objects and modified.
-
-  (collect-parents0 ttree nil))
+  (collect-parents0 (tagged-objects 'pt ttree) nil))
 
 (defun ignore-polyp (parents pt)
 
@@ -625,30 +623,27 @@
     (or (pt-occur (car parents) pt)
         (ignore-polyp (cdr parents) pt))))
 
+(defun to-be-ignoredp1 (pts pt)
+  (cond ((endp pts) nil)
+        (t (or (pt-intersectp (car pts) pt)
+               (to-be-ignoredp1 (cdr pts) pt)))))
+
 (defun to-be-ignoredp (ttree pt)
 
 ; Consider the set, P, of all parents mentioned in the 'pt tags of ttree.
 ; Consider the set, B, of all parents mentioned in the parent tree pt.  We
 ; return t iff P and B have a non-empty intersection.  From a more applied
-; perspective, assuming ttree is the tree associated with some poly, P is
-; the set of literals upon which the poly depends.  B is generally the set
-; of literals we are to avoid dependence upon.  The poly should be ignored
-; if it depends on some literal we are to avoid.
+; perspective, assuming ttree is the tree associated with some poly, P is the
+; set of literals upon which the poly depends.  B is generally the set of
+; literals we are to avoid dependence upon.  The poly should be ignored if it
+; depends on some literal we are to avoid.
 
-; This function was originally written to do the job described above.
-; But then Robert Krug suggested the efficiency of maintaining the
-; parents list and introduced ignore-polyp.  Now this function is only
-; used elsewhere, but the above comments still apply mutatis mutandis.
+; This function was originally written to do the job described above.  But then
+; Robert Krug suggested the efficiency of maintaining the parents list and
+; introduced ignore-polyp.  Now this function is only used elsewhere, but the
+; above comments still apply mutatis mutandis.
 
-  (cond ((null ttree)
-         nil)
-        ((symbolp (caar ttree))
-         (cond ((eq (caar ttree) 'pt)
-                (or (pt-intersectp (cdar ttree) pt)
-                    (to-be-ignoredp (cdr ttree) pt)))
-               (t (to-be-ignoredp (cdr ttree) pt))))
-        (t (or (to-be-ignoredp (car ttree) pt)
-               (to-be-ignoredp (cdr ttree) pt)))))
+  (to-be-ignoredp1 (tagged-objects 'pt ttree) pt))
 
 
 ;=================================================================
@@ -747,22 +742,23 @@
 ; the record in simplify.lisp and update the comments.  See the essay "Forward
 ; Chaining Derivations - fc-derivation - fcd".
 
+(mutual-recursion
+
 (defun contains-assumptionp (ttree)
 
 ; We return t iff ttree contains an assumption "at some level" where we
 ; know that 'fc-derivations contain ttrees that may contain assumptions.
 ; See the discussion in force-assumption.
 
-  (cond ((null ttree) nil)
-        ((symbolp (caar ttree))
-         (cond 
-          ((eq (caar ttree) 'assumption) t)
-          ((eq (caar ttree) 'fc-derivation)
-           (or (contains-assumptionp (access fc-derivation (cdar ttree) :ttree))
-               (contains-assumptionp (cdr ttree))))
-          (t (contains-assumptionp (cdr ttree)))))
-        (t (or (contains-assumptionp (car ttree))
-               (contains-assumptionp (cdr ttree))))))
+  (or (tagged-objectsp 'assumption ttree)
+      (contains-assumptionp-fc-derivations
+       (tagged-objects 'fc-derivation ttree))))
+
+(defun contains-assumptionp-fc-derivations (lst)
+  (cond ((endp lst) nil)
+        (t (or (contains-assumptionp (access fc-derivation (car lst) :ttree))
+               (contains-assumptionp-fc-derivations (cdr lst))))))
+)
 
 (defun remove-assumption-entries-from-type-alist (type-alist)
 
@@ -926,31 +922,34 @@
             (force-assumption1
              rune target term type-alist rewrittenp immediatep ttree))))))
 
+(defun tag-tree-occur-assumption-nil-1 (lst)
+  (cond ((endp lst) nil)
+        ((equal (access assumption (car lst) :term)
+                *nil*)
+         t)
+        (t (tag-tree-occur-assumption-nil-1 (cdr lst)))))
+
 (defun tag-tree-occur-assumption-nil (ttree)
 
 ; This is just (tag-tree-occur 'assumption <*nil*> ttree) where by <*nil*> we 
 ; mean any assumption record with :term *nil*.
 
-  (cond ((null ttree) nil)
-        ((symbolp (caar ttree))
-         (or (and (eq (caar ttree) 'assumption)
-                  (equal (access assumption (cdar ttree) :term) *nil*))
-             (tag-tree-occur-assumption-nil (cdr ttree))))
-        (t (or (tag-tree-occur-assumption-nil (car ttree))
-               (tag-tree-occur-assumption-nil (cdr ttree))))))
-
-;; Could we just check (not (tagged-object 'assumption ttree)) instead
-;; of assumption-free-ttreep in various places?
+  (tag-tree-occur-assumption-nil-1 (tagged-objects 'assumption ttree)))
 
 (defun assumption-free-ttreep (ttree)
 
-; This is a predicate that returns t if ttree contains no 'assumption
-; tag.  It also checks for 'fc-derivation tags, since they could hide
-; 'assumptions.  An error-causing version of this function is
-; chk-assumption-free-ttree.  Keep these two in sync.
+; This is a predicate that returns t if ttree contains no 'assumption tag.  It
+; also checks for 'fc-derivation tags, since they could hide 'assumptions.  An
+; error-causing version of this function is chk-assumption-free-ttree.  Keep
+; these two in sync.
 
-  (cond ((tagged-object 'assumption ttree) nil)
-        ((tagged-object 'fc-derivation ttree) nil)
+; This check is stronger than necessary, of course, since an fc-derivation
+; object need not contain an assumption.  See also contains-assumptionp (and
+; chk-assumption-free-ttree-1) for a slightly more expensive, but more precise,
+; check.
+
+  (cond ((tagged-objectsp 'assumption ttree) nil)
+        ((tagged-objectsp 'fc-derivation ttree) nil)
         (t t)))
 
 ; The following assumption is impossible to satisfy and is used as a marker
@@ -2934,20 +2933,10 @@
          (fcomplementary-multiplep1 (cdr (access poly poly1 :alist))
                                     (cdr (access poly poly2 :alist)))))
 
-(defun already-used-by-find-equational-polyp1 (poly1 ttree)
-
-; See already-used-by-find-equational-polyp.
-
-  (cond
-   ((null ttree) nil)
-   ((symbolp (caar ttree))
-    (cond
-     ((eq (caar ttree) 'find-equational-poly)
-      (or (poly-equal (car (cdar ttree)) poly1)
-          (already-used-by-find-equational-polyp1 poly1 (cdr ttree))))
-     (t (already-used-by-find-equational-polyp1 poly1 (cdr ttree)))))
-   (t (or (already-used-by-find-equational-polyp1 poly1 (car ttree))
-          (already-used-by-find-equational-polyp1 poly1 (cdr ttree))))))
+(defun already-used-by-find-equational-polyp-lst (poly1 lst)
+  (cond ((endp lst) nil)
+        (t (or (poly-equal (car (car lst)) poly1)
+               (already-used-by-find-equational-polyp-lst poly1 (cdr lst))))))
 
 (defun already-used-by-find-equational-polyp (poly1 hist)
 
@@ -2971,10 +2960,10 @@
   (cond ((null hist) nil)
         ((and (eq (access history-entry (car hist) :processor)
                   'simplify-clause)
-              (already-used-by-find-equational-polyp1 poly1
-                                                      (access history-entry
-                                                              (car hist)
-                                                              :ttree)))
+              (already-used-by-find-equational-polyp-lst
+               poly1
+               (tagged-objects 'find-equational-poly
+                               (access history-entry (car hist) :ttree))))
          t)
         (t (already-used-by-find-equational-polyp poly1 (cdr hist)))))
 

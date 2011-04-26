@@ -3356,26 +3356,26 @@
 
 ; Essay on Strip-cars -- To Tail Recur or not to Tail Recur?
 
-; We have seen instances where strip-cdrs causes a segmentation fault
-; because it overflows the stack.  We therefore decided to recode
-; strip-cdrs in a tail-recursive way.  We therefore decided to do the
-; same thing to strip-cars.  This essay is about strip-cars but the
-; issues are the same for strip-cdrs, we believe.
+; We have seen instances where strip-cdrs causes a segmentation fault because
+; it overflows the stack.  We therefore decided to recode strip-cdrs in a
+; tail-recursive way.  We therefore decided to do the same thing to strip-cars.
+; This essay is about strip-cars but the issues are the same for strip-cdrs, we
+; believe.
 
-; First, what is the longest list you can strip-cars without a
-; segmentation fault.  The answer for
+; First, what is the longest list you can strip-cars without a segmentation
+; fault.  The answer for
 
 ; GCL (GNU Common Lisp)  Version(2.2.1) Wed Mar 12 00:47:19 CST 1997
 
-; is 74790, when the test form is (length (strip-cars test-lst)).
-; Because our test forms below are a little more elaborate, we will do
-; our tests on a list of length 74000:
+; is 74790, when the test form is (length (strip-cars test-lst)).  Because our
+; test forms below are a little more elaborate, we will do our tests on a list
+; of length 74000:
 
 ; (defvar test-lst
 ;   (loop for i from 1 to 74000 collect (cons i i)))
 
-; Just for the record, how long does it take to do strip-cars 30 times on
-; this test-lst?  Answer: 6.190 seconds.
+; Just for the record, how long does it take to do strip-cars 30 times on this
+; test-lst?  Answer: 6.190 seconds.
 
 ; (proclaim-form
 ;  (defun test1 (n)
@@ -3403,17 +3403,16 @@
 ; 
 ; (time (test2 30))
 
-; This function is actually faster than strip-cars: 5.530 seconds!
-; That is surprising because this function does TWICE as many conses,
-; since it conses up the final answer from the accumulated partial
-; one.  The reason this function beats strip-cars can only be that
-; that the tail-recursive jump is quite a lot faster than a function
-; call.
+; This function is actually faster than strip-cars: 5.530 seconds!  That is
+; surprising because this function does TWICE as many conses, since it conses
+; up the final answer from the accumulated partial one.  The reason this
+; function beats strip-cars can only be that that the tail-recursive jump is
+; quite a lot faster than a function call.
 
-; But Common Lisp allows to avoid consing to do a reverse if we are
-; willing to smash the existing spine.  And in this case we are, since
-; we have just consed it up.  So here is a revised function that only
-; does as many conses as strip-cars:
+; But Common Lisp allows to avoid consing to do a reverse if we are willing to
+; smash the existing spine.  And in this case we are, since we have just consed
+; it up.  So here is a revised function that only does as many conses as
+; strip-cars:
 
 ; (proclaim-form
 ;  (defun strip-cars3 (x a)
@@ -3433,19 +3432,17 @@
 
 ; This function takes 2.490 seconds.
 
-; Therefore, we decided to code strip-cars (and strip-cdrs) in the
-; style of strip-cars3 above.  Henceforth, we call that function
-; strip-cars1.  (Sorry for the confusion.)
+; Therefore, we decided to code strip-cars (and strip-cdrs) in the style of
+; strip-cars3 above.
 
-; However, we did not want to do
-; (defun strip-cars (x) (strip-cars1 x nil))
-; because proofs about strip-cars -- both in our system build and in
-; user theorems about strip-cars -- would have to use the
-; accumulator-style generalization.  So we decided to keep strip-cars
-; defined, logically, just as it was and to make its #-acl2-loop-only
-; executable code be that for strip-cars1.
+; However, we did not want to do define strip-cars tail-recursively because
+; proofs about strip-cars -- both in our system build and in user theorems
+; about strip-cars -- would have to use the accumulator-style generalization.
+; So we decided to keep strip-cars defined, logically, just as it was and to
+; make its #-acl2-loop-only executable code be tail recursive, as above.
 
-; The next paragraph is bogus!  But it used to read:
+; The next paragraph is bogus!  But it used to read as follows (where
+; strip-cars1 was essentially what we now call reverse-strip-cars).
 
 ;  Furthermore, we decided that strip-cars1 is a perfectly nice
 ;  function the user might want, so we added it to the logic first --
@@ -3455,19 +3452,27 @@
 ;  very fast.  But if he wants a simple recursive version he can have
 ;  it too.
 
-; That is unsound because we don't know that the accumulator is all
-; new conses and so we can't smash it!  So strip-cars1 is hidden
-; from the user.
+; That is unsound because we don't know that the accumulator is all new conses
+; and so we can't smash it!  So the use of nreverse is hidden from the user.
 
-#-acl2-loop-only
-(defun-one-output strip-cars1 (x a)
+; We could, of course, use mbe (which was not available when strip-cars and
+; strip-cdrs were originally defined in ACL2).  However, we wish to cheat using
+; nreverse, so it doesn't seem that nreverse buys us anything.  We do note that
+; ACL2 can prove the following theorems.
 
-; WARNING: THIS PROGRAM IS DESTRUCTIVE.  DO NOT USE THIS PROGRAM
-; UNLESS YOU KNOW WHAT YOU'RE DOING!  IT SMASHES THE CONSES IN THE
-; SECOND ARGUMENT!
+; (defthm reverse-strip-cars-property
+;   (equal (reverse-strip-cars x acc)
+;          (revappend (strip-cars x) acc)))
+;
+; (defthm reverse-strip-cdrs-property
+;   (equal (reverse-strip-cdrs x acc)
+;          (revappend (strip-cdrs x) acc)))
 
-  (cond ((endp x) (nreverse a))
-        (t (strip-cars1 (cdr x) (cons (car (car x)) a)))))
+(defun reverse-strip-cars (x a)
+  (declare (xargs :guard (alistp x)))
+  (cond ((endp x) a)
+        (t (reverse-strip-cars (cdr x)
+                               (cons (car (car x)) a)))))
 
 (defun strip-cars (x)
 
@@ -3475,24 +3480,50 @@
 
   collect up all first components of pairs in a list~/
 
-  ~c[(strip-cars x)] is the list obtained by walking through the list
-  ~c[x] and collecting up all first components (~ilc[car]s).
-  This function is implemented in a tail-recursive way, despite its
-  logical definition.~/
+  ~c[(strip-cars x)] is the list obtained by walking through the list ~c[x] and
+  collecting up all first components (~ilc[car]s).  This function is
+  implemented in a tail-recursive way, despite its logical definition.~/
 
   ~c[(strip-cars x)] has a ~il[guard] of ~c[(alistp x)].~/"
 
   (declare (xargs :guard (alistp x)))
 
-; See the Essay on Strip-cars -- To Tail Recur or not to Tail Recur?
-; above.
+; See the Essay on Strip-cars -- To Tail Recur or not to Tail Recur?  above.
 
   #-acl2-loop-only
-  (strip-cars1 x nil)
+  (nreverse (reverse-strip-cars x nil))
   #+acl2-loop-only
   (cond ((endp x) nil)
         (t (cons (car (car x))
                  (strip-cars (cdr x))))))
+
+(defun reverse-strip-cdrs (x a)
+  (declare (xargs :guard (alistp x)))
+  (cond ((endp x) a)
+        (t (reverse-strip-cdrs (cdr x)
+                               (cons (cdr (car x)) a)))))
+
+(defun strip-cdrs (x)
+
+  ":Doc-Section ACL2::Programming
+
+  collect up all second components of pairs in a list~/
+
+  ~c[(strip-cdrs x)] has a ~il[guard] of ~c[(alistp x)], and returns the list
+  obtained by walking through the list ~c[x] and collecting up all second
+  components (~ilc[cdr]s).  This function is implemented in a tail-recursive
+  way, despite its logical definition.~/~/"
+
+  (declare (xargs :guard (alistp x)))
+
+; See the Essay on Strip-cars -- To Tail Recur or not to Tail Recur?  above.
+
+  #-acl2-loop-only
+  (nreverse (reverse-strip-cdrs x nil))
+  #+acl2-loop-only
+  (cond ((endp x) nil)
+        (t (cons (cdr (car x))
+                 (strip-cdrs (cdr x))))))
 
 (defmacro let-mbe (bindings &key logic exec)
   `(let ,bindings
@@ -11219,39 +11250,6 @@
 
 ; We are about to need mutual recursion for the first time in axioms.lisp.
 ; We now define the mutual-recursion macro for the logic.
-
-#-acl2-loop-only
-(defun-one-output strip-cdrs1 (x a)
-
-; WARNING: THIS PROGRAM IS DESTRUCTIVE.  DO NOT USE THIS PROGRAM
-; UNLESS YOU KNOW WHAT YOU'RE DOING!  IT SMASHES THE CONSES IN THE
-; SECOND ARGUMENT!
-
-  (cond ((endp x) (nreverse a))
-        (t (strip-cdrs1 (cdr x) (cons (cdr (car x)) a)))))
-
-(defun strip-cdrs (x)
-
-  ":Doc-Section ACL2::Programming
-
-  collect up all second components of pairs in a list~/
-
-  ~c[(strip-cdrs x)] has a ~il[guard] of ~c[(alistp x)], and returns the list
-  obtained by walking through the list ~c[x] and collecting up all
-  second components (~ilc[cdr]s).  This function is implemented in a
-  tail-recursive way, despite its logical definition.~/~/"
-
-  (declare (xargs :guard (alistp x)))
-
-; See the Essay on Strip-cars -- To Tail Recur or not to Tail Recur?
-; above.
-
-  #-acl2-loop-only
-  (strip-cdrs1 x nil)
-  #+acl2-loop-only
-  (cond ((endp x) nil)
-        (t (cons (cdr (car x))
-                 (strip-cdrs (cdr x))))))
 
 (defun mutual-recursion-guardp (rst)
   (declare (xargs :guard t))
@@ -28481,7 +28479,10 @@
   ~ev[]
   where ~c[test] returns a single value and ~c[form] is arbitrary.
   Semantically, this call of ~c[assert$] is equivalent to ~c[form].  However,
-  it causes a hard error (using ~ilc[illegal]) if the value of ~c[test] is
+  it causes a hard error if the value of ~c[test] is ~c[nil].  That hard error
+  invokes the function ~ilc[illegal], which has a ~il[guard] that is equal to
+  ~c[nil]; so if you use ~c[assert$] in code for which you verify guards, then
+  a proof obligation will be that the occurrence of ~c[test] is never
   ~c[nil].~/~/"
 
   `(prog2$ (or ,test

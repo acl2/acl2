@@ -1732,7 +1732,8 @@ the calls took.")
             outside-p
             shorten
             date-string
-            strip-cars1
+            reverse-strip-cars
+            reverse-strip-cdrs
             short-symbol-name
             hons-calls
             memoize-condition
@@ -2442,7 +2443,6 @@ the calls took.")
             put-ttree-into-pspv
             putprop
             putprop-defun-runic-mapping-pairs
-            quickly-count-assumptions
             quote-listp
             quotep
             qzget-sign-abs
@@ -2547,8 +2547,6 @@ the calls took.")
             scan-past-whitespace
             scan-to-cltl-command
             scan-to-landmark-number
-            scons-tag-trees
-            scons-tag-trees1
             search-type-alist
             search-type-alist-rec
             set-cl-ids-of-assumptions
@@ -2625,7 +2623,6 @@ the calls took.")
             table-fn1
             tag-tree-occur
             tagged-object
-            tagged-objects
             tame-symbolp
             term-and-typ-to-lookup
             term-order
@@ -5339,7 +5336,8 @@ the calls took.")
            (t/c (time/call num))
            (tnh (time-for-non-hits/call num))
            (in-progress-str
-            (if (eql start-time -1) " " ", running, ")))
+            (if (eql start-time -1) " " ", running, "))
+           (selftime tt))
       (declare (type integer start-time)
                (type fixnum num)
                (type mfixnum nhits nmht ncalls
@@ -5429,6 +5427,7 @@ the calls took.")
                     (let* ((time-loc (the fixnum (1+ call-loc)))
                            (time (aref ma time-loc))
                            (ltt (/ time *float-ticks/second*)))
+                      (decf selftime ltt)
                       (cond ((or (outside-p callern)
                                  (< (* 100 ltt) tt))
                              (incf outside-fn-time ltt)
@@ -5439,7 +5438,7 @@ the calls took.")
                                    ,(ofn
                                      "~8,2e calls took~8,2e;~5,1f%"
                                      calls ltt
-                                     (if (< .001 ltt tt)
+                                     (if (> (* 10000 ltt) tt)
                                          (* 100 (/ ltt tt))
                                        '?)))
                                   . ,(if *sort-to-from-by-calls*
@@ -5452,14 +5451,28 @@ the calls took.")
                        ,(ofn "~8,2e calls took~8,2e;~5,1f%"
                              outside-fn-count
                              outside-fn-time
-                             (if (< .001 outside-fn-time tt)
+                             (if (> (* 10000 outside-fn-time) tt)
                                  (* 100 (/ outside-fn-time tt))
                                '?)))
                       . ,(if *sort-to-from-by-calls*
                              outside-fn-count
                            outside-fn-time))
                     l))
+                 
+                 (when (and (> selftime 0)
+                            (not (= selftime tt)))
+                   (push `((,(ofn " To self/unprofiled functions")
+                            ,(ofn "~8,2e;~5,1f%"
+                                  selftime
+                                  (if (> (* 10000 selftime) tt)
+                                      (* 100 (/ selftime tt))
+                                    '?)))
+                           . ,(if *sort-to-from-by-calls*
+                                  0 ;; ?
+                                (* selftime *float-ticks/second*)))
+                         l))
                  (setq l (sort l #'> :key #'cdr))
+                 ; (cw "l: ~x0~%" l)
                  (strip-cars l)))
          ,@(if *report-calls-from*
                (let ((l nil)

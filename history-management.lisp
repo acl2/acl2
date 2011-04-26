@@ -1553,17 +1553,17 @@
       state
     (let* ((forcing-round (access clause-id cl-id :forcing-round))
            (aborting-p (and (eq signal 'abort)
-                            (not (eq (cdr (tagged-object 'abort-cause ttree))
+                            (not (eq (tagged-value 'abort-cause ttree)
                                      'revert))))
            (clause-count
             (cond ((eq signal 'or-hit)
                    (assert$
                     (eq processor 'apply-top-hints-clause)
-                    (length (nth 2 (cdr (tagged-object :or ttree))))))
+                    (length (nth 2 (tagged-value :or ttree)))))
                   (t clause-count)))
            (processor
             (cond
-             ((tagged-object 'assumption ttree)
+             ((tagged-objectsp 'assumption ttree)
               (assert$ (and (not (eq processor 'push-clause))
                             (not (eq signal 'or-hit)))
                        (list processor :forced)))
@@ -4674,8 +4674,9 @@
 
                      namex)
                     (t (car namex)))
-              (append (strip-cars (tagged-objects :use ttree nil))
-                      (tagged-objects :by ttree nil))))
+              (revappend (strip-cars (tagged-objects :use ttree))
+                         (reverse ; for backwards compatibility with v4-2
+                          (tagged-objects :by ttree)))))
             (wrld1 (if new-proved-fnl-insts
                        (global-set
                         'proved-functional-instances-alist

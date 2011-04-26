@@ -1538,9 +1538,9 @@
         ((eq mine-flg
              (eq (access history-entry (car history) :processor)
                  process))
-         (union-eq (cdr (tagged-object 'variables
-                                       (access history-entry (car history)
-                                               :ttree)))
+         (union-eq (tagged-value 'variables
+                                 (access history-entry (car history)
+                                         :ttree))
                    (owned-vars process mine-flg (cdr history))))
         (t (owned-vars process mine-flg (cdr history)))))
 
@@ -1568,10 +1568,10 @@
                                   wrld
                                   t)
    (cond (elim-seq (mv 'hit clauses
-                       (add-to-tag-tree 'variables elim-vars
-                                        (add-to-tag-tree 'elim-sequence
-                                                         elim-seq
-                                                         nil))
+                       (add-to-tag-tree! 'variables elim-vars
+                                         (add-to-tag-tree! 'elim-sequence
+                                                           elim-seq
+                                                           nil))
                        pspv))
          (t (mv 'miss nil nil nil)))))
 
@@ -1740,7 +1740,7 @@
 ; function in the waterfall.  See the discussion of the waterfall.
 
   (declare (ignore signal pspv))
-  (let ((lst (cdr (tagged-object 'elim-sequence ttree)))
+  (let ((lst (tagged-value 'elim-sequence ttree))
         (n (length clauses))
         (wrld (w state)))
     (cond
@@ -1974,35 +1974,17 @@
        (cross-fertilizep/c equiv cl direction lhs1 rhs1)
        (cross-fertilizep/d equiv cl direction lhs1 rhs1)))
 
-(defun delete-from-ttree-1 (tag val ttree changedp-seen)
-
-; This function returns (mv changedp new-ttree), where if changedp is nil then
-; new-ttree equals ttree.  Tag is a symbol.  If changedp is nil then new-ttree
-; is equal (in fact eq) to ttree.
-
-  (cond ((null ttree) (mv changedp-seen nil))
-        ((and (eq tag (caar ttree))
-              (equal (cdar ttree) val))
-         (delete-from-ttree-1 tag val (cdr ttree) t))
-        ((symbolp (caar ttree))
-         (mv-let (changedp cdr-ttree)
-                 (delete-from-ttree-1 tag val (cdr ttree) changedp-seen)
-                 (if changedp
-                     (mv t (cons (car ttree) cdr-ttree))
-                   (mv nil ttree))))
-        (t (mv-let (changedp1 ttree1)
-                   (delete-from-ttree-1 tag val (car ttree) changedp-seen)
-                   (mv-let (changedp2 ttree2)
-                           (delete-from-ttree-1 tag val (cdr ttree) changedp1)
-                           (if changedp2
-                               (mv t (cons-tag-trees ttree1 ttree2))
-                             (mv nil ttree)))))))
-
 (defun delete-from-ttree (tag val ttree)
-  (mv-let (changedp new-ttree)
-          (delete-from-ttree-1 tag val ttree nil)
-          (declare (ignore changedp))
-          new-ttree))
+  (let ((objects (tagged-objects tag ttree)))
+    (cond (objects (cond
+                    ((member-equal val objects)
+                     (let ((new-objects (remove1-equal val objects))
+                           (new-ttree (remove-tag-from-tag-tree! tag ttree)))
+                       (cond (new-objects
+                              (extend-tag-tree tag new-objects new-ttree))
+                             (t new-ttree))))
+                    (t ttree)))
+          (t ttree))))
 
 (defun fertilize-clause1 (cl lit1 equiv lhs1 rhs1
                              direction
@@ -2269,25 +2251,25 @@
                                            nil)
                         (mv 'hit
                             (list new-cl)
-                            (add-to-tag-tree
+                            (add-to-tag-tree!
                              'literal lit
-                             (add-to-tag-tree
+                             (add-to-tag-tree!
                               'hyp-phrase (tilde-@-hyp-phrase len-tail cl)
-                              (add-to-tag-tree
+                              (add-to-tag-tree!
                                'cross-fert-flg cross-fert-flg
-                               (add-to-tag-tree
+                               (add-to-tag-tree!
                                 'equiv equiv
-                                (add-to-tag-tree
+                                (add-to-tag-tree!
                                  'bullet (if (eq direction 'left-for-right)
                                              lhs
                                            rhs)
-                                 (add-to-tag-tree
+                                 (add-to-tag-tree!
                                   'target (if (eq direction 'left-for-right)
                                               rhs
                                             lhs)
-                                  (add-to-tag-tree
+                                  (add-to-tag-tree!
                                    'clause-id cl-id
-                                   (add-to-tag-tree
+                                   (add-to-tag-tree!
                                     'delete-lit-flg delete-lit-flg
                                     (if delete-lit-flg
                                         ttree
@@ -2302,7 +2284,7 @@
 ; function in the waterfall.  See the discussion of the waterfall.
 
   (declare (ignore signal pspv clauses))
-  (let* ((hyp-phrase (cdr (tagged-object 'hyp-phrase ttree)))
+  (let* ((hyp-phrase (tagged-value 'hyp-phrase ttree))
          (wrld (w state))
          (ttree
 
@@ -2319,21 +2301,21 @@
           this substitution relies upon ~*7.~]  This produces~|"
           (list
            (cons #\0 hyp-phrase)
-           (cons #\1 (if (cdr (tagged-object 'cross-fert-flg ttree))
+           (cons #\1 (if (tagged-value 'cross-fert-flg ttree)
                          1
                          0))
-           (cons #\2 (untranslate (cdr (tagged-object 'bullet ttree)) nil wrld))
-           (cons #\3 (untranslate (cdr (tagged-object 'target ttree)) nil wrld))
-           (cons #\4 (if (cdr (tagged-object 'delete-lit-flg ttree))
+           (cons #\2 (untranslate (tagged-value 'bullet ttree) nil wrld))
+           (cons #\3 (untranslate (tagged-value 'target ttree) nil wrld))
+           (cons #\4 (if (tagged-value 'delete-lit-flg ttree)
                          1
                          0))
            (cons #\5 (if (and (consp hyp-phrase)
                               (null (cdr hyp-phrase)))
                          "conclusion"
                          "hypothesis"))
-           (cons #\6 (if (null (cdr (tagged-object 'lemma ttree)))
-                         0
-                       1))
+           (cons #\6 (if (tagged-objectsp 'lemma ttree)
+                         1
+                       0))
            (cons #\7 (tilde-*-simp-phrase ttree)))
           (proofs-co state)
           state
@@ -2637,15 +2619,15 @@
                        (generalize1 cl type-alist terms gen-vars ens wrld)
                        (mv 'hit
                            (list generalized-cl)
-                           (add-to-tag-tree
+                           (add-to-tag-tree!
                             'variables gen-vars
-                            (add-to-tag-tree
+                            (add-to-tag-tree!
                              'terms terms
-                             (add-to-tag-tree
+                             (add-to-tag-tree!
                               'restricted-vars restricted-vars
-                              (add-to-tag-tree
+                              (add-to-tag-tree!
                                'var-to-runes-alist var-to-runes-alist
-                               (add-to-tag-tree
+                               (add-to-tag-tree!
                                 'ts-ttree ttree
                                 nil)))))
                            pspv))))))))))))
@@ -2672,7 +2654,7 @@
                      (tilde-*-gen-phrase/alist alist wrld)))
           (cond
            (restricted-vars
-            (let* ((runes (tagged-objects 'lemma ttree nil))
+            (let* ((runes (tagged-objects 'lemma ttree))
                    (primitive-type-reasoningp
                     (member-equal *fake-rune-for-type-set* runes))
                    (symbols
@@ -2729,11 +2711,11 @@
        (list
         (cons #\0
               (tilde-*-gen-phrase
-               (pairlis$ (cdr (tagged-object 'terms ttree))
-                         (cdr (tagged-object 'variables ttree)))
-               (cdr (tagged-object 'restricted-vars ttree))
-               (cdr (tagged-object 'var-to-runes-alist ttree))
-               (cdr (tagged-object 'ts-ttree ttree))
+               (pairlis$ (tagged-value 'terms ttree)
+                         (tagged-value 'variables ttree))
+               (tagged-value 'restricted-vars ttree)
+               (tagged-value 'var-to-runes-alist ttree)
+               (tagged-value 'ts-ttree ttree)
                (w state))))
        (proofs-co state)
        state

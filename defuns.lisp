@@ -1014,7 +1014,8 @@
                                        measure-alist wrld))
                             (cons #\3 (if (nth 4 simp-phrase) 1 0))
                             (cons #\4 simp-phrase)
-                            (cons #\5 (if (tagged-object 'sr-limit cl-set-ttree)
+                            (cons #\5 (if (tagged-objectsp 'sr-limit
+                                                           cl-set-ttree)
                                           " as follows (where the ~
                                            subsumption/replacement limit ~
                                            affected this analysis; see :DOC ~

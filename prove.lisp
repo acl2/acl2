@@ -1127,10 +1127,10 @@
                                   preprocess-clause))
          (more-than-simplifiedp (cdr hist)))
         ((eq (caar hist) 'apply-top-hints-clause)
-         (if (or (tagged-object 'hidden-clause
-                                (access history-entry (car hist) :ttree))
-                 (tagged-object ':or
-                                (access history-entry (car hist) :ttree)))
+         (if (or (tagged-objectsp 'hidden-clause
+                                  (access history-entry (car hist) :ttree))
+                 (tagged-objectsp ':or
+                                  (access history-entry (car hist) :ttree)))
              (more-than-simplifiedp (cdr hist))
            t))
         (t t)))
@@ -1143,49 +1143,48 @@
                            (delete-assoc-eq (car lst) alist))
     alist))
 
-(defun delete-assumptions-1 (ttree only-immediatep)
+(defun delete-assumptions-1 (recs only-immediatep)
 
 ; See comment for delete-assumptions.  This function returns (mv changedp
-; new-ttree), where if changedp is nil then new-ttree equals ttree.  The only
-; reason for the change from Version_2.6 is efficiency.
+; new-recs), where if changedp is nil then new-recs equals recs.
 
-  (cond ((null ttree) (mv nil nil))
-        ((symbolp (caar ttree))
-         (mv-let (changedp new-cdr-ttree)
-                 (delete-assumptions-1 (cdr ttree) only-immediatep)
-                 (cond ((and (eq (caar ttree) 'assumption)
-                             (cond
-                              ((eq only-immediatep 'non-nil)
-                               (access assumption (cdar ttree) :immediatep))
-                              ((eq only-immediatep 'case-split)
-                               (eq (access assumption (cdar ttree) :immediatep)
-                                   'case-split))
-                              ((eq only-immediatep t)
-                               (eq (access assumption (cdar ttree) :immediatep)
-                                   t))
-                              (t t)))
-                        (mv t new-cdr-ttree))
-                       (changedp
-                        (mv t
-                            (cons (car ttree) new-cdr-ttree)))
-                       (t (mv nil ttree)))))
-        (t (mv-let (changedp1 ttree1)
-                   (delete-assumptions-1 (car ttree) only-immediatep)
-                   (mv-let (changedp2 ttree2)
-                           (delete-assumptions-1 (cdr ttree) only-immediatep)
-                           (if (or changedp1 changedp2)
-                               (mv t (cons-tag-trees ttree1 ttree2))
-                             (mv nil ttree)))))))
+  (cond ((endp recs) (mv nil nil))
+        (t (mv-let (changedp new-cdr-recs)
+                   (delete-assumptions-1 (cdr recs) only-immediatep)
+                   (cond ((cond
+                           ((eq only-immediatep 'non-nil)
+                            (access assumption (car recs) :immediatep))
+                           ((eq only-immediatep 'case-split)
+                            (eq (access assumption (car recs) :immediatep)
+                                'case-split))
+                           ((eq only-immediatep t)
+                            (eq (access assumption (car recs) :immediatep)
+                                t))
+                           (t t))
+                          (mv t new-cdr-recs))
+                         (changedp
+                          (mv t
+                              (cons (car recs) new-cdr-recs)))
+                         (t (mv nil recs)))))))
 
 (defun delete-assumptions (ttree only-immediatep)
   
 ; We delete the assumptions in ttree.  We give the same interpretation to
 ; only-immediatep as in collect-assumptions.
 
-  (mv-let (changedp new-ttree)
-          (delete-assumptions-1 ttree only-immediatep)
-          (declare (ignore changedp))
-          new-ttree))
+  (let ((objects (tagged-objects 'assumption ttree)))
+    (cond (objects
+           (mv-let
+            (changedp new-objects)
+            (delete-assumptions-1 objects only-immediatep)
+            (cond ((null changedp) ttree)
+                  (new-objects
+                   (extend-tag-tree
+                    'assumption
+                    new-objects
+                    (remove-tag-from-tag-tree! 'assumption ttree)))
+                  (t (remove-tag-from-tag-tree! 'assumption ttree)))))
+          (t ttree))))
 
 (defun push-clause (cl hist pspv wrld state)
 
@@ -1238,7 +1237,7 @@
 
       (mv 'abort
           nil
-          (add-to-tag-tree 'abort-cause 'empty-clause nil)
+          (add-to-tag-tree! 'abort-cause 'empty-clause nil)
           (change prove-spec-var pspv
                   :pool (cons (make pool-element
                                     :tag 'TO-BE-PROVED-BY-INDUCTION
@@ -1260,11 +1259,11 @@
 
       (mv 'abort
           nil
-          (add-to-tag-tree 'abort-cause
-                           (if (eq do-not-induct-hint-val :otf-flg-override)
-                               'do-not-induct-otf-flg-override
-                             'do-not-induct)
-                           nil)
+          (add-to-tag-tree! 'abort-cause
+                            (if (eq do-not-induct-hint-val :otf-flg-override)
+                                'do-not-induct-otf-flg-override
+                              'do-not-induct)
+                            nil)
           (change prove-spec-var pspv
                   :pool (cons (make pool-element
                                     :tag 'TO-BE-PROVED-BY-INDUCTION
@@ -1303,7 +1302,7 @@
 
       (mv 'abort
           nil
-          (add-to-tag-tree 'abort-cause 'revert nil)
+          (add-to-tag-tree! 'abort-cause 'revert nil)
           (change prove-spec-var pspv
 
 ; Before Version_2.6 we did not modify the tag-tree here.  The result was that
@@ -1332,7 +1331,7 @@
 
 ; So, we have decided that rather than remove assumptions and :by/:use tags
 ; from the :tag-tree of pspv, we would just replace that tag-tree by the empty
-; tag tree.  We do not want to get burned by a third such problem!
+; tag-tree.  We do not want to get burned by a third such problem!
 
                   :tag-tree nil
                   :pool (list (make pool-element
@@ -1473,7 +1472,7 @@
 ; pool-lst has already been defined, in support of proof-trees.
 
 (defun push-clause-msg1-abort (cl-id ttree pspv state)
-  (let ((temp (cdr (tagged-object 'abort-cause ttree)))
+  (let ((temp (tagged-value 'abort-cause ttree))
         (cl-id-phrase (tilde-@-clause-id-phrase cl-id))
         (gag-mode (gag-mode)))
     (case temp
@@ -1683,10 +1682,10 @@
               A
               (conjoin-clause-to-clause-set constraint-cl
                                             nil))
-             (add-to-tag-tree :use
-                              (cons (cdr temp)
-                                    non-tautp-applications)
-                              nil)
+             (add-to-tag-tree! :use
+                               (cons (cdr temp)
+                                     non-tautp-applications)
+                               nil)
              new-pspv))
         ((or (tag-tree-occur 'hidden-clause
                              t
@@ -1701,20 +1700,20 @@
          (mv step-limit
              'hit
              (conjoin-clause-sets A C)
-             (add-to-tag-tree :use
-                              (cons (cdr temp)
-                                    non-tautp-applications)
-                              nil)
+             (add-to-tag-tree! :use
+                               (cons (cdr temp)
+                                     non-tautp-applications)
+                               nil)
              new-pspv))
         (t (mv step-limit
                'hit
                (conjoin-clause-sets A C)
-               (add-to-tag-tree :use
-                                (cons (cdr temp)
-                                      non-tautp-applications)
-                                (add-to-tag-tree 'preprocess-ttree
-                                                 ttree
-                                                 nil))
+               (add-to-tag-tree! :use
+                                 (cons (cdr temp)
+                                       non-tautp-applications)
+                                 (add-to-tag-tree! 'preprocess-ttree
+                                                   ttree
+                                                   nil))
                new-pspv))))))))
 
 (defun apply-cases-hint-clause (temp cl pspv wrld)
@@ -1745,7 +1744,7 @@
           wrld)))
     (mv 'hit
         new-clauses
-        (add-to-tag-tree :cases (cons (cdr temp) new-clauses) nil)
+        (add-to-tag-tree! :cases (cons (cdr temp) new-clauses) nil)
         (change prove-spec-var pspv
                 :hint-settings
                 (remove1-equal temp
@@ -1922,7 +1921,7 @@
        (mv step-limit
            'hit
            nil
-           (add-to-tag-tree :bye (cons (cdr temp) cl) nil)
+           (add-to-tag-tree! :bye (cons (cdr temp) cl) nil)
            pspv))
       (t
        (let ((lmi-lst (cadr temp)) ; a singleton list
@@ -2047,7 +2046,7 @@
                                 'hit
                                 (conjoin-clause-to-clause-set
                                  constraint-cl nil)
-                                (add-to-tag-tree :by val nil)
+                                (add-to-tag-tree! :by val nil)
                                 new-pspv))
                            ((or (tag-tree-occur 'hidden-clause
                                                 t
@@ -2071,17 +2070,17 @@
                             (mv step-limit
                                 'hit
                                 clauses
-                                (add-to-tag-tree :by val nil)
+                                (add-to-tag-tree! :by val nil)
                                 new-pspv))
                            (t
                             (mv step-limit
                                 'hit
                                 clauses
-                                (add-to-tag-tree
+                                (add-to-tag-tree!
                                  :by val
-                                 (add-to-tag-tree 'preprocess-ttree
-                                                  ttree
-                                                  nil))
+                                 (add-to-tag-tree! 'preprocess-ttree
+                                                   ttree
+                                                   nil))
                                 new-pspv)))))
             (t (mv step-limit
                    'error
@@ -2182,9 +2181,9 @@
       (mv step-limit
           'or-hit
           (list cl)
-          (add-to-tag-tree :or
-                           (list cl-id nil (cdr temp))
-                           nil)
+          (add-to-tag-tree! :or
+                            (list cl-id nil (cdr temp))
+                            nil)
           (change prove-spec-var pspv
                   :hint-settings
                   (delete-assoc-eq :or
@@ -2209,8 +2208,8 @@
                     (cond ((and new-clauses
                                 (null (cdr new-clauses))
                                 (equal (car new-clauses) cl))
-                           (add-to-tag-tree 'hidden-clause t nil))
-                          (t (add-to-tag-tree
+                           (add-to-tag-tree! 'hidden-clause t nil))
+                          (t (add-to-tag-tree!
                               :clause-processor
                               (cons (cdr temp) new-clauses)
                               nil)))
@@ -2366,7 +2365,7 @@
 ; length of the third element.  The parent-cl-id in the value is the same as
 ; the cl-id passed in.
 
-  (let* ((val (cdr (tagged-object :or ttree)))
+  (let* ((val (tagged-value :or ttree))
          (branch-cnt (length (nth 2 val))))
     (msg "The :OR hint for ~@0 gives rise to ~n1 disjunctive ~
           ~#2~[~/branch~/branches~].  Proving any one of these branches would ~
@@ -2391,19 +2390,19 @@
 ; they are passed to simplify-clause-msg1 below, so we cannot declare them
 ; ignored here.
 
-  (cond ((tagged-object :bye ttree)
+  (cond ((tagged-objectsp :bye ttree)
 
 ; The object associated with the :bye tag is (name . cl).  We are interested
 ; only in name here.
 
          (fms "But we have been asked to pretend that this goal is ~
                subsumed by the yet-to-be-proved ~x0.~|"
-              (list (cons #\0 (car (cdr (tagged-object :bye ttree)))))
+              (list (cons #\0 (car (tagged-value :bye ttree))))
               (proofs-co state)
               state
               nil))
-        ((tagged-object :by ttree)
-         (let* ((obj (cdr (tagged-object :by ttree)))
+        ((tagged-objectsp :by ttree)
+         (let* ((obj (tagged-value :by ttree))
 
 ; Obj is of the form (lmi-lst thm-cl-set constraint-cl k event-names
 ; new-entries).
@@ -2412,7 +2411,7 @@
                 (thm-cl-set (cadr obj))
                 (k (car (cdddr obj)))
                 (event-names (cadr (cdddr obj)))
-                (ttree (cdr (tagged-object 'preprocess-ttree ttree))))
+                (ttree (tagged-value 'preprocess-ttree ttree)))
            (fms "~#0~[But, as~/As~/As~] indicated by the hint, this goal is ~
                  subsumed by ~x1, which ~@2.~#3~[~/  By ~*4 we reduce the ~
                  ~#5~[constraint~/~n6 constraints~] to ~#0~[T~/the following ~
@@ -2431,8 +2430,8 @@
                 (proofs-co state)
                 state
                 (term-evisc-tuple nil state))))
-        ((tagged-object :use ttree)
-         (let* ((use-obj (cdr (tagged-object :use ttree)))
+        ((tagged-objectsp :use ttree)
+         (let* ((use-obj (tagged-value :use ttree))
 
 ; The presence of :use indicates that a :use hint was applied to one
 ; or more clauses to give the output clauses.  If there is also a
@@ -2468,13 +2467,13 @@
                 (event-names (cadr (cdddr (car use-obj))))
 ;               (non-tautp-applications (cdr use-obj))      ;;; |A|
                 (preprocess-ttree
-                 (cdr (tagged-object 'preprocess-ttree ttree)))
+                 (tagged-value 'preprocess-ttree ttree))
 ;               (len-A non-tautp-applications)              ;;; |A|
                 (len-G (len clauses))                       ;;; |G|
                 (len-C k)                                   ;;; |C|
 ;               (len-C-prime (- len-G len-A))               ;;; |C'|
 
-                (cases-obj (cdr (tagged-object :cases ttree)))
+                (cases-obj (tagged-value :cases ttree))
 
 ; If there is a cases-obj it means we had a :cases and a :use; the
 ; form of cases-obj is (splitting-terms . case-clauses), where
@@ -2509,8 +2508,8 @@
             (proofs-co state)
             state
             (term-evisc-tuple nil state))))
-        ((tagged-object :cases ttree)
-         (let* ((cases-obj (cdr (tagged-object :cases ttree)))
+        ((tagged-objectsp :cases ttree)
+         (let* ((cases-obj (tagged-value :cases ttree))
 
 ; The cases-obj here is of the form (term-list . new-clauses), where
 ; new-clauses is the result of splitting on the literals in term-list.
@@ -2537,10 +2536,10 @@
          (fms "~@0"
               (list (cons #\0 (or-hit-msg nil cl-id ttree)))
               (proofs-co state) state nil))
-        ((tagged-object 'hidden-clause ttree)
+        ((tagged-objectsp 'hidden-clause ttree)
          state)
-        ((tagged-object :clause-processor ttree)
-         (let* ((clause-processor-obj (cdr (tagged-object :clause-processor ttree)))
+        ((tagged-objectsp :clause-processor ttree)
+         (let* ((clause-processor-obj (tagged-value :clause-processor ttree))
 
 ; The clause-processor-obj here is produced by apply-top-hints-clause, and is
 ; of the form (clause-processor-hint . new-clauses), where new-clauses is the
@@ -2813,7 +2812,7 @@
          (push-or-bye-p (or (eq proc 'push-clause)
                             (and (eq proc 'apply-top-hints-clause)
                                  (eq signal 'hit)
-                                 (tagged-object :bye ttree))))
+                                 (tagged-objectsp :bye ttree))))
          (new-active-p ; true if we are to push a new gag-info frame
           (and (null active-cl-id)
                (null (cdr pool-lst)) ; not in a sub-induction
@@ -2838,7 +2837,7 @@
                       (t gagst0)))
          (new-forcep (and (not abort-p)
                           (not (access gag-state gagst :forcep))
-                          (tagged-object 'assumption ttree)))
+                          (tagged-objectsp 'assumption ttree)))
          (gagst (cond (new-forcep (change gag-state gagst :forcep t))
                       (t gagst)))
          (forcep-msg (and new-forcep
@@ -2891,7 +2890,7 @@
                     (t nil))))
         (cond
          (abort-p
-          (mv (cond ((eq (cdr (tagged-object 'abort-cause ttree))
+          (mv (cond ((eq (tagged-value 'abort-cause ttree)
                          'revert)
                      (change gag-state gagst :abort-stack new-stack))
                     (t gagst))
@@ -2993,10 +2992,9 @@
                   (gagst2 (cond
                            ((eq signal 'abort)
                             (cond
-                             ((eq (cdr (tagged-object
-                                        'abort-cause
-                                        (access prove-spec-var pspv
-                                                :tag-tree)))
+                             ((eq (tagged-value 'abort-cause
+                                                (access prove-spec-var pspv
+                                                        :tag-tree))
                                   'revert)
                               (change gag-state gagst1 ; save abort info
                                       :active-cl-id nil
@@ -3239,6 +3237,16 @@
           :tag-tree (cons-tag-trees ttree
                                    (access prove-spec-var pspv :tag-tree))))
 
+(defun set-cl-ids-of-assumptions1 (recs cl-id)
+  (cond ((endp recs) nil)
+        (t (cons (change assumption (car recs)
+                         :assumnotes
+                         (list (change assumnote
+                                       (car (access assumption (car recs)
+                                                    :assumnotes))
+                                       :cl-id cl-id)))
+                 (set-cl-ids-of-assumptions1 (cdr recs) cl-id)))))
+
 (defun set-cl-ids-of-assumptions (ttree cl-id)
 
 ; We scan the tag-tree ttree, looking for 'assumptions.  Recall that each has a
@@ -3246,48 +3254,37 @@
 ; :cl-id field.  We assume that :cl-id field is empty.  We put cl-id into it.
 ; We return a copy of ttree.
 
-  (cond
-   ((null ttree) nil)
-   ((symbolp (caar ttree))
-    (cond
-     ((eq (caar ttree) 'assumption)
-
-; Picky Note: The double-cons nest below is used as though it were equivalent
-; to (add-to-tag-tree 'assumption & &) and is justified with the reasoning: if
-; the original assumption was added to the cdr subtree with add-to-tag-tree
-; (and thus, is known not to occur in that subtree), then the changed
-; assumption does not occur in the changed cdr subtree.  That is true.  But we
-; don't really know that the original assumption was ever checked by
-; add-to-tag-tree.  It doesn't really matter, tag-trees being sets anyway.  But
-; this optimization does mean that this function knows how to construct
-; tag-trees without using the official constructors.  But of course it knows
-; that: it destructures them to explore them.  This same picky note could be
-; placed in front of the final cons below, as well as in
-; strip-non-rewrittenp-assumptions.
-
-      (cons (cons 'assumption
-                  (change assumption (cdar ttree)
-                          :assumnotes
-                          (list (change assumnote
-                                        (car (access assumption (cdar ttree)
-                                                     :assumnotes))
-                                        :cl-id cl-id))))
-            (set-cl-ids-of-assumptions (cdr ttree) cl-id)))
-     ((tagged-object 'assumption (cdr ttree))
-      (cons (car ttree)
-            (set-cl-ids-of-assumptions (cdr ttree) cl-id)))
-     (t ttree )))
-   ((tagged-object 'assumption ttree)
-    (cons (set-cl-ids-of-assumptions (car ttree) cl-id)
-          (set-cl-ids-of-assumptions (cdr ttree) cl-id)))
-   (t ttree)))
+  (let ((recs (tagged-objects 'assumption ttree)))
+    (cond (recs (extend-tag-tree
+                 'assumption
+                 (set-cl-ids-of-assumptions1 recs cl-id)
+                 (remove-tag-from-tag-tree! 'assumption ttree)))
+          (t ttree))))
 
 ; We now develop the code for proving the assumptions that are forced during
 ; the first part of the proof.  These assumptions are all carried in the ttree
 ; on 'assumption tags.  (Delete-assumptions was originally defined just below
 ; collect-assumptions, but has been moved up since it is used in push-clause.)
 
-(defun collect-assumptions (ttree only-immediatep ans)
+(defun collect-assumptions1 (recs only-immediatep ans)
+  (cond ((endp recs) ans)
+        (t (collect-assumptions1
+            (cdr recs)
+            only-immediatep
+            (cond ((cond
+                    ((eq only-immediatep 'non-nil)
+                     (access assumption (car recs) :immediatep))
+                    ((eq only-immediatep 'case-split)
+                     (eq (access assumption (car recs) :immediatep)
+                         'case-split))
+                    ((eq only-immediatep t)
+                     (eq (access assumption (car recs) :immediatep)
+                         t))
+                    (t t))
+                   (add-to-set-equal (car recs) ans))
+                  (t ans))))))
+
+(defun collect-assumptions (ttree only-immediatep)
 
 ; We collect the assumptions in ttree and accumulate them onto ans.
 ; Only-immediatep determines exactly which assumptions we collect:
@@ -3296,27 +3293,8 @@
 ; * t           -- only collect those with :immediatep = t
 ; * nil         -- collect ALL assumptions
 
-  (cond ((null ttree) ans)
-        ((symbolp (caar ttree))
-         (cond ((and (eq (caar ttree) 'assumption)
-                     (cond
-                      ((eq only-immediatep 'non-nil)
-                       (access assumption (cdar ttree) :immediatep))
-                      ((eq only-immediatep 'case-split)
-                       (eq (access assumption (cdar ttree) :immediatep)
-                           'case-split))
-                      ((eq only-immediatep t)
-                       (eq (access assumption (cdar ttree) :immediatep)
-                           t))
-                      (t t)))
-                (collect-assumptions (cdr ttree)
-                                     only-immediatep
-                                     (add-to-set-equal (cdar ttree) ans)))
-               (t (collect-assumptions (cdr ttree) only-immediatep ans))))
-        (t (collect-assumptions
-            (car ttree)
-            only-immediatep
-            (collect-assumptions (cdr ttree) only-immediatep ans)))))  
+  (collect-assumptions1 (tagged-objects 'assumption ttree) only-immediatep
+                        nil))  
 
 ; We are now concerned with trying to shorten the type-alists used to
 ; govern assumptions.  We have two mechanisms.  One is
@@ -4372,7 +4350,7 @@
 
   (cond
    ((eq only-immediatep nil)
-    (let* ((raw-assumptions (collect-assumptions ttree only-immediatep nil))
+    (let* ((raw-assumptions (collect-assumptions ttree only-immediatep))
            (cleaned-assumptions (dumb-assumption-subsumption
                                  (unencumber-assumptions raw-assumptions
                                                          wrld nil))))
@@ -4393,7 +4371,7 @@
            pairs
            (cons-tag-trees
             (cond
-             ((tagged-object 'assumption ttree1)
+             ((tagged-objectsp 'assumption ttree1)
               (er hard 'extract-and-clausify-assumptions
                   "Convert-type-set-to-term apparently returned a ttree that ~
                    contained an 'assumption tag.  This violates the ~
@@ -4403,10 +4381,10 @@
    ((eq only-immediatep 'non-nil)
     (let* ((assumed-terms
             (strip-assumption-terms
-             (collect-assumptions ttree 'case-split nil)))
+             (collect-assumptions ttree 'case-split)))
            (case-split-clauses (split-on-assumptions assumed-terms cl nil))
            (case-split-pairs (pairlis2 nil case-split-clauses))
-           (raw-assumptions (collect-assumptions ttree t nil))
+           (raw-assumptions (collect-assumptions ttree t))
            (cleaned-assumptions (dumb-assumption-subsumption
                                  (unencumber-assumptions raw-assumptions
                                                          wrld nil))))
@@ -4427,7 +4405,7 @@
            (append case-split-pairs pairs)
            (cons-tag-trees
             (cond
-             ((tagged-object 'assumption ttree1)
+             ((tagged-objectsp 'assumption ttree1)
               (er hard 'extract-and-clausify-assumptions
                   "Convert-type-set-to-term apparently returned a ttree that ~
                    contained an 'assumption tag.  This violates the assumption ~
@@ -5574,19 +5552,19 @@
 ; proof attempt the entries with :signal OR-HIT will have a ttree with
 ; a tag :OR on an object (parent-cl-id i uhs-lst).
 
-  (let* ((val (cdr (tagged-object :or
-                                  (access history-entry (car hist) :ttree))))
+  (let* ((val (tagged-value :or
+                            (access history-entry (car hist) :ttree)))
          (parent-cl-id (nth 0 val))
          (uhs-lst (nth 2 val)))
     (cons (make history-entry
                 :signal 'OR-HIT
                 :processor 'apply-top-hints-clause
                 :clause (access history-entry (car hist) :clause)
-                :ttree (add-to-tag-tree :or
-                                        (list parent-cl-id
-                                              i
-                                              uhs-lst)
-                                        nil))
+                :ttree (add-to-tag-tree! :or
+                                         (list parent-cl-id
+                                               i
+                                               uhs-lst)
+                                         nil))
           (cdr hist))))
 
 (defun pair-cl-id-with-hint-setting (cl-id hint-settings)
@@ -5885,10 +5863,10 @@
 
 ; We recover this crucial data first.
 
-     (let* ((val (cdr (tagged-object :or
-                                     (access history-entry
-                                             (car new-hist)
-                                             :ttree))))
+     (let* ((val (tagged-value :or
+                               (access history-entry
+                                       (car new-hist)
+                                       :ttree)))
 ;           (parent-cl-id (nth 0 val))        ;;; same as our cl-id!
             (uhs-lst (nth 2 val))
             (branch-cnt (length uhs-lst)))
@@ -6184,9 +6162,9 @@
            ledge cl-id clause hist pspv hints ens wrld ctx state
            (cdr uhs-lst) (+ 1 i) branch-cnt
            (or revert-info
-               (and (eq (cdr (tagged-object 'abort-cause
-                                            (access prove-spec-var d-new-pspv
-                                                    :tag-tree)))
+               (and (eq (tagged-value 'abort-cause
+                                      (access prove-spec-var d-new-pspv
+                                              :tag-tree))
                         'revert)
                     (cons d-cl-id d-new-pspv)))
            results step-limit))
@@ -7218,32 +7196,29 @@
        :hints ((\"Goal\" :use rationalp-implies-main)))
   ~ev[]")
 
-(defun quickly-count-assumptions (ttree n mx)
+(defun count-assumptions (ttree)
 
-; If there are no 'assumption tags in ttree, return 0.  If there are fewer than
-; mx, return the number there are.  Else return mx.  Mx must be greater than 0.
 ; The soundness of the system depends on this function returning 0 only if
 ; there are no assumptions.
 
-  (cond ((null ttree) n)
-        ((symbolp (caar ttree))
-         (cond ((eq (caar ttree) 'assumption)
-                (let ((n+1 (1+ n)))
-                  (cond ((= n+1 mx) mx)
-                        (t (quickly-count-assumptions (cdr ttree) n+1 mx)))))
-               (t (quickly-count-assumptions (cdr ttree) n mx))))
-        (t (let ((n+car (quickly-count-assumptions (car ttree) n mx)))
-             (cond ((= n+car mx) mx)
-                   (t (quickly-count-assumptions (cdr ttree) n+car mx)))))))
+  (length (tagged-objects 'assumption ttree)))
+
+(defun add-type-alist-runes-to-ttree1 (type-alist runes)
+  (cond ((endp type-alist)
+         runes)
+        (t (add-type-alist-runes-to-ttree1
+            (cdr type-alist)
+            (all-runes-in-ttree (cddr (car type-alist))
+                                runes)))))
 
 (defun add-type-alist-runes-to-ttree (type-alist ttree)
-  (cond ((endp type-alist)
-         ttree)
-        (t (add-type-alist-runes-to-ttree
-            (cdr type-alist)
-            (push-lemmas (all-runes-in-ttree (cddr (car type-alist))
-                                             nil)
-                         ttree)))))
+  (let* ((runes0 (tagged-objects 'lemma ttree))
+         (runes1 (add-type-alist-runes-to-ttree1 type-alist runes0)))
+    (cond ((null runes1) ttree)
+          ((null runes0) (extend-tag-tree 'lemma runes1 ttree))
+          (t (extend-tag-tree 'lemma
+                              runes1
+                              (remove-tag-from-tag-tree! 'lemma ttree))))))
 
 (defun process-assumptions-ttree (assns ttree)
 
@@ -7273,9 +7248,7 @@
 ; prove new-clauses under new-pspv and should do so in another "round"
 ; of forcing.
 
-  (let ((n (quickly-count-assumptions (access prove-spec-var pspv :tag-tree)
-                                      0
-                                      101)))
+  (let ((n (count-assumptions (access prove-spec-var pspv :tag-tree))))
     (pprogn
      (cond
       ((= n 0)
@@ -7294,17 +7267,11 @@
           state)
         (io? prove nil state nil
              (fms "Q.E.D.~%" nil (proofs-co state) state nil))))
-      ((< n 101)
+      (t
        (io? prove nil state (n)
             (fms "q.e.d. (given ~n0 forced ~#1~[hypothesis~/hypotheses~])~%"
                  (list (cons #\0 n)
                        (cons #\1 (if (= n 1) 0 1)))
-                 (proofs-co state) state nil)))
-      (t
-       (io? prove nil state nil
-            (fms "q.e.d. (given over 100 forced hypotheses which we now ~
-                 collect)~%"
-                 nil
                  (proofs-co state) state nil))))
      (mv-let
       (n0 assns pairs ttree1)
@@ -7621,30 +7588,34 @@
 
 (defun chk-assumption-free-ttree (ttree ctx state)
 
-; Let ttree be the ttree about to be returned by prove.  We do not
-; want this tree to contain any 'assumption tags because that would be
-; a sign that an assumption got ignored.  For similar reasons, we do
-; not want it to contain any 'fc-derivation tags -- assumptions might
-; be buried therein.  This function checks these claimed invariants of
-; the final ttree and causes an error if they are violated.
+; Let ttree be the ttree about to be returned by prove.  We do not want this
+; tree to contain any 'assumption tags because that would be a sign that an
+; assumption got ignored.  For similar reasons, we do not want it to contain
+; any 'fc-derivation tags -- assumptions might be buried therein.  This
+; function checks these claimed invariants of the final ttree and causes an
+; error if they are violated.
 
-; A predicate version of this function is assumption-free-ttreep and
-; it should be kept in sync with this function.
+; This check is stronger than necessary, of course, since an fc-derivation
+; object need not contain an assumption.  See also contains-assumptionp for a
+; slightly more expensive, but more precise, check.
 
-; While this function causes a hard error, its functionality is that
-; of a soft error because it is so like our normal checkers.
+; A predicate version of this function is assumption-free-ttreep and it should
+; be kept in sync with this function, as should chk-assumption-free-ttree-1.
 
-  (cond ((tagged-object 'assumption ttree)
+; While this function causes a hard error, its functionality is that of a soft
+; error because it is so like our normal checkers.
+
+  (cond ((tagged-objectsp 'assumption ttree)
          (mv t
              (er hard ctx
                  "The 'assumption ~x0 was found in the final ttree!"
-                 (tagged-object 'assumption ttree))
+                 (car (tagged-objects 'assumption ttree)))
              state))
-        ((tagged-object 'fc-derivation ttree)
+        ((tagged-objectsp 'fc-derivation ttree)
          (mv t
              (er hard ctx
                  "The 'fc-derivation ~x0 was found in the final ttree!"
-                 (tagged-object 'fc-derivation ttree))
+                 (car (tagged-objects 'fc-derivation ttree)))
              state))
         (t (value nil))))
 
@@ -7776,34 +7747,34 @@
                                            :user-supplied-term term
                                            :orig-hints hints)
                                    hints ens wrld ctx state)))
-              (er-progn
-               (chk-assumption-free-ttree ttree1 ctx state)
-               (cond
-                ((tagged-object :bye ttree1)
-                 (let ((byes (reverse (tagged-objects :bye ttree1 nil))))
-                   (pprogn
+       (er-progn
+        (chk-assumption-free-ttree ttree1 ctx state)
+        (let ((byes (tagged-objects :bye ttree1)))
+          (cond
+           (byes
+            (pprogn
 
 ; The use of ~*1 below instead of just ~&1 forces each of the defthm forms
 ; to come out on a new line indented 5 spaces.  As is already known with ~&1,
 ; it can tend to scatter the items randomly -- some on the left margin and others
 ; indented -- depending on where each item fits flat on the line first offered.
 
-                    (io? prove nil state
-                         (wrld byes)
-                         (fms "To complete this proof you could try to admit the
-                               following event~#0~[~/s~]:~|~%~*1~%See the ~
-                               discussion of :by hints in :DOC hints ~
-                               regarding the name~#0~[~/s~] displayed above."
-                              (list (cons #\0 byes)
-                                    (cons #\1
-                                          (list ""
-                                                "~|~     ~q*."
-                                                "~|~     ~q*,~|and~|"
-                                                "~|~     ~q*,~|~%" 
-                                                (make-defthm-forms-for-byes
-                                                 byes wrld))))
-                              (proofs-co state)
-                              state
-                              (term-evisc-tuple nil state)))
-                    (silent-error state))))
-                (t (value ttree1)))))))))
+             (io? prove nil state
+                  (wrld byes)
+                  (fms "To complete this proof you could try to admit the ~
+                        following event~#0~[~/s~]:~|~%~*1~%See the discussion ~
+                        of :by hints in :DOC hints regarding the ~
+                        name~#0~[~/s~] displayed above."
+                       (list (cons #\0 byes)
+                             (cons #\1
+                                   (list ""
+                                         "~|~     ~q*."
+                                         "~|~     ~q*,~|and~|"
+                                         "~|~     ~q*,~|~%" 
+                                         (make-defthm-forms-for-byes
+                                          byes wrld))))
+                       (proofs-co state)
+                       state
+                       (term-evisc-tuple nil state)))
+             (silent-error state)))
+           (t (value ttree1))))))))))

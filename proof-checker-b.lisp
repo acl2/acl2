@@ -345,14 +345,14 @@
 
   ;; Same as chk-assumption-free-ttree, but returns a value.
 
-  (cond ((tagged-object 'assumption ttree)
+  (cond ((tagged-objectsp 'assumption ttree)
          (er hard ctx
              "The 'assumption ~x0 was found in the final ttree!"
-             (tagged-object 'assumption ttree)))
-        ((tagged-object 'fc-derivation ttree)
+             (car (tagged-objects 'assumption ttree))))
+        ((tagged-objectsp 'fc-derivation ttree)
          (er hard ctx
              "The 'fc-derivation ~x0 was found in the final ttree!"
-             (tagged-object 'fc-derivation ttree)))
+             (car (tagged-objects 'fc-derivation ttree))))
         (t t)))
 
 (defun put-cdr-assoc-query-id (id val alist)
@@ -1540,7 +1540,7 @@
                    (find-?-fn (cdr x))))))
 
 (defun unproved-pc-prove-terms (ttree)
-  (strip-cdrs (tagged-objects :bye ttree nil)))
+  (reverse-strip-cdrs (tagged-objects :bye ttree) nil))
 
 (defun prover-call (comm term-to-prove rest-args pc-state state)
   ;; We assume that the :otf-flg and :hints "hints" are locally inside
@@ -1634,20 +1634,7 @@
               (access goal goal2 :conc))))
 
 (defun remove-byes-from-tag-tree (ttree)
-  (cond ((null ttree) nil)
-        ((eq ttree t)
-         (er hard 'remove-byes-from-tag-tree
-             "Found tag-tree of T in REMOVE-BYES-FROM-TAG-TREE."))
-        ((eq :bye (caar ttree))
-         ;; then ttree is ((:bye ...)) and we could perhaps return ()
-         ;; but we play it safe
-         (remove-byes-from-tag-tree (cdr ttree)))
-        ((symbolp (caar ttree))
-         (cons (car ttree)
-               (remove-byes-from-tag-tree (cdr ttree))))
-        (t (cons-tag-trees
-            (remove-byes-from-tag-tree (car ttree))
-            (remove-byes-from-tag-tree (cdr ttree))))))
+  (remove-tag-from-tag-tree :bye ttree))
 
 (define-pc-primitive prove (&rest rest-args)
 

@@ -693,17 +693,17 @@
 ; Like process-assumptions, but returns (mv clauses known-assumptions ttree
 ; state).
 
-  (let ((n (quickly-count-assumptions ttree 0 101)))
+  (let ((n (count-assumptions ttree)))
     (pprogn
      (cond
       ((< n 101)
        state)
       (t
        (io? prove nil state
-            nil
-            (fms "~%Note: processing over 100 forced hypotheses which we now ~
+            (n)
+            (fms "~%Note: processing ~x0 forced hypotheses which we now ~
                   collect)~%"
-                 nil
+                 (list (cons #\0 n))
                  (proofs-co state) state nil))))
      (mv-let
       (n0 assns pairs ttree1)
@@ -899,7 +899,7 @@
 ; proof-checker running slowly because of tag-trees.  So we play it safe here
 ; by avoiding duplication.
 
-                                    (scons-tag-trees local-ttree old-tag-tree)
+                                    (cons-tag-trees local-ttree old-tag-tree)
                                     :local-tag-tree
                                     local-ttree)
                                    state))))
@@ -940,7 +940,7 @@
                                   (change-pc-state (car vals)
                                                    :goals new-goals
                                                    :tag-tree
-                                                   (scons-tag-trees
+                                                   (cons-tag-trees
                                                     ttree old-tag-tree)
                                                    :local-tag-tree ttree)))
                             (er-let* ((new-pc-state
@@ -1075,7 +1075,7 @@
       acc
     (union-lastn-pc-tag-trees (1- n)
                               (cdr ss)
-                              (scons-tag-trees
+                              (cons-tag-trees
                                (access pc-state (car ss) :local-tag-tree)
                                acc))))
 

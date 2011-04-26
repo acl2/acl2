@@ -3385,9 +3385,9 @@
                (mv 'miss nil nil nil))
               (t (mv 'hit
                      (list (set-difference-equal cl irrelevant-lits))
-                     (add-to-tag-tree
+                     (add-to-tag-tree!
                       'irrelevant-lits irrelevant-lits
-                      (add-to-tag-tree
+                      (add-to-tag-tree!
                        'clause cl nil))
                      pspv)))))))
 
@@ -3397,8 +3397,8 @@
 ; function in the waterfall.  See the discussion of the waterfall.
 
   (declare (ignore signal pspv clauses))
-  (let* ((lits (cdr (tagged-object 'irrelevant-lits ttree)))
-         (clause (cdr (tagged-object 'clause ttree)))
+  (let* ((lits (tagged-value 'irrelevant-lits ttree))
+         (clause (tagged-value 'clause ttree))
          (concl (car (last clause))))
     (cond
      ((equal (length lits)

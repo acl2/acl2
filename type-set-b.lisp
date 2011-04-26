@@ -11496,7 +11496,7 @@
 (defun ts-booleanp (term ens wrld)
   (mv-let (ts ttree)
           (type-set term nil nil nil ens wrld nil nil nil)
-          (cond ((tagged-object 'assumption ttree)
+          (cond ((tagged-objectsp 'assumption ttree)
                  (er hard 'ts-booleanp
                      "It was thought impossible for a call of type-set with ~
                       force-flg = nil to produce an 'assumption, but ~
