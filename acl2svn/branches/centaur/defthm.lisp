@@ -11381,7 +11381,7 @@
 ; Classes has already been translated and hence is known to be a true
 ; list of fully elaborated rule classes.  Each class has a :COROLLARY
 ; term and we check that the term can be used as a rule of the
-; indicated class.  We return a tag tree supporting the claim.
+; indicated class.  We return a tag-tree supporting the claim.
 
   (cond ((null classes) (value nil))
         (t (er-let*

@@ -30,7 +30,7 @@
 
 ; This file defines the basics of the linear arithmetic decision
 ; procedure.  We also include clause histories, parent trees,
-; tag trees, and assumptions; all of which are needed by add-poly
+; tag-trees, and assumptions; all of which are needed by add-poly
 ; and friends.
 
 ;=================================================================
@@ -185,7 +185,7 @@
 ; of terms.  By "weak" we mean pts may be shorter than the list of terms
 ; and "excess terms" have the nil pt.  That is, it is ok to cdr pts as you
 ; cdr down the list of terms and every time you need a pt for a term you
-; take the car of pts.  There is no need to store the nil pt in tag trees,
+; take the car of pts.  There is no need to store the nil pt in tag-trees,
 ; so we don't.  Thus, a commonly used convention is to supply a pts of nil
 ; to a function that stores 'pts, causing it to store no pts.
 
@@ -217,11 +217,11 @@
 
 ;=================================================================
 
-; Essay on Tag Trees
+; Essay on Tag-Trees
 
 ; If you add a new tag, be sure to include it in all-runes-in-ttree!
 
-; Tags in Tag Trees
+; Tags in Tag-Trees
 
 ; The tags in use as of this writing (which can be verified by searching
 ; for add-to-tag-tree) and their meanings are:
@@ -266,7 +266,7 @@
 
 ; Historical Note:
 
-; The invention of tag trees came about during the designing of the
+; The invention of tag-trees came about during the designing of the
 ; linear package.  Polynomials have three "arithmetic" fields, the
 ; constant, alist, and relation.  But they then have many other
 ; fields, like lemmas, assumptions, and literals.  At the time
@@ -280,7 +280,7 @@
 ; tree with 8 tips.  In that case the average time to change some
 ; field (including the time to cons a new element onto any of the 5
 ; contaminants) is 3.62 conses.  But if we clump all the contaminants
-; into a single field represented as a tag tree, the cost of adding a
+; into a single field represented as a tag-tree, the cost of adding a
 ; single element to any one of them is 2 conses and the average cost
 ; of changing any of the 4 fields in a poly is 2.5 conses.
 ; Furthermore, we can effectively union all 5 contaminants of two
@@ -290,7 +290,7 @@
   :doc
   ":Doc-Section Miscellaneous
 
-  tag trees~/
+  tag-trees~/
 
   Many low-level ACL2 functions take and return ``tag trees'' or
   ``ttrees'' (pronounced ``tee-trees'') which contain various useful
@@ -300,20 +300,20 @@
   Let a ``tagged pair'' be a list whose car is a symbol, called the
   ``tag,'' and whose cdr is an arbitrary object, called the ``tagged
   object.''  A ``tag tree'' is either nil, a tagged pair consed onto a
-  tag tree, or a non-nil tag tree consed onto a tag tree.
+  tag-tree, or a non-nil tag-tree consed onto a tag-tree.
 
-  Abstractly a tag tree represents a list of sets, each member set
+  Abstractly a tag-tree represents a list of sets, each member set
   having a name given by one of the tags occurring in the ttree.  The
   elements of the set named ~c[tag] are all of the objects tagged
   ~c[tag] in the tree.  To cons a tagged pair ~c[(tag . obj)] onto a
   tree is to ~c[add-to-set-equal] ~c[obj] to the set corresponding to
-  ~c[tag].  To ~c[cons] two tag trees together is to union-equal the
+  ~c[tag].  To ~c[cons] two tag-trees together is to union-equal the
   corresponding sets.  The concrete representation of the union so
   produced has duplicates in it, but we feel free to ignore or delete
   duplicates.
 
-  The beauty of this definition is that to combine two non-~c[nil] tag
-  trees you need do only one ~c[cons].
+  The beauty of this definition is that to combine two non-~c[nil] tag-trees
+  you need do only one ~c[cons].
 
   The following function accumulates onto ans the set associated with
   a given tag in a ttree:
@@ -375,7 +375,7 @@
 ; See the Essay on Fake-Runes below.  One such rune is shown below,
 ; and is the name of otherwise anonymous rules that are always considered
 ; enabled.  When this rune is used, its use is not recorded in the
-; tag tree.
+; tag-tree.
 
 (defconst *fake-rune-for-anonymous-enabled-rule*
   '(:FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE nil))
@@ -398,12 +398,12 @@
         (t (push-lemmas (cdr runes) (push-lemma (car runes) tree)))))
 
 ; To join two trees we use cons-tag-trees.  Observe that if the first
-; tree is nil we return the second (we can't cons a nil tag tree on
+; tree is nil we return the second (we can't cons a nil tag-tree on
 ; and their union is the second anyway).  Otherwise we cons, possibly
 ; duplicating elements.
 
-; But starting in Version_3.2, we keep tagged objects unique in tag trees, by
-; calling scons-tag-trees when necessary, unioning the tag trees rather than
+; But starting in Version_3.2, we keep tagged objects unique in tag-trees, by
+; calling scons-tag-trees when necessary, unioning the tag-trees rather than
 ; merely consing them.  The immediate prompt for this change was a report from
 ; Eric Smith on getting stack overflows from tag-tree-occur, but this problem
 ; has also occurred in the past (as best Matt can recall).
@@ -517,7 +517,7 @@
 ; as a 'lemma in the 'accumulated-ttree of the final state.)  This encourages
 ; us to cons a new ttree into the accumulator every time we do output.
 
-; Historical remark, from before we started storing duplicate-free tag trees in
+; Historical remark, from before we started storing duplicate-free tag-trees in
 ; Version_3.2:
 
 ; ; But there is a problem.  It is not unusual to construct a ttree by
@@ -535,9 +535,9 @@
 (defun accumulate-ttree-and-step-limit-into-state (ttree step-limit state)
 
 ; We add ttree to the 'accumulated-ttree in state and return an error triple
-; whose value is ttree.  Before Version_3.2 we handled tag trees a bit
+; whose value is ttree.  Before Version_3.2 we handled tag-trees a bit
 ; differently, allowing duplicates and using special markers for portions that
-; had already been accumulated into state.  Now we keep tag trees
+; had already been accumulated into state.  Now we keep tag-trees
 ; duplicate-free and avoid adding such markers to the returned value.
 
 ; We similarly save the given step-limit in state, unless its value is :skip.
@@ -657,7 +657,7 @@
 ; Assumptions
 
 ; We are prepared to force assumptions of certain terms by adding
-; them to the tag tree under the 'assumption tag.  This is always done
+; them to the tag-tree under the 'assumption tag.  This is always done
 ; via force-assumption.  All assumptions are embedded in an
 ; assumption record:
 
@@ -1869,7 +1869,7 @@
 ; term and ki is a rationalp.  The alist is kept ordered by arith-term-order on
 ; the ti.  The largest ti is at the front.  Relation is either '< or '<=.
 
-; The ttree in a poly is a tag tree.
+; The ttree in a poly is a tag-tree.
 ; There are three tags we use here: lemma, assumption, and pt.  The lemma tag
 ; indicates a lemma name used to produce the poly.  The assumption tag
 ; indicates a term assumed true to produce the poly.  For example, an
@@ -2174,7 +2174,7 @@
 (defun poly-member (p lst)
 
 ; P is a poly and lst is a list of polys.  This function used to return t if p
-; was in lst (ignoring tag trees).  Now, it returns t if p is weaker than
+; was in lst (ignoring tag-trees).  Now, it returns t if p is weaker than
 ; some poly in lst.
 
 ; This change was motivated by an observation that after several linear rules
@@ -3124,7 +3124,7 @@
 ; negatives, which was not the result of linearizing a (not (equal lhs
 ; rhs)), and which has never been found (and recorded in hist) before.
 ; The message we look for is our business (we generate and recognize
-; them) but they must be in the tag tree stored in the 'simplify-clause
+; them) but they must be in the tag-tree stored in the 'simplify-clause
 ; entries of hist.
 
 ; We return three values.  If we find no acceptable poly, we return

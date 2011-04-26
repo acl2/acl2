@@ -3530,6 +3530,10 @@
   ; almost immediately. 
   (with-prover-step-limit 100000 (with-prover-step-limit 200 (mini-proveall)))
 
+  ; Do not limit the number of prover steps, regardless of such a limit imposed
+  ; globally or by the surrounding context.
+  (with-prover-step-limit nil (mini-proveall))
+
   ; Limit the indicated theorem to 100 steps, and if the proof does not
   ; complete or it fails, then put down a label instead.
   (mv-let (erp val state)
@@ -3559,10 +3563,17 @@
   releases.  For a related utility based on time instead of prover steps,
   ~pl[with-prover-time-limit].
 
+  Depending on the machine you are using, you may have only (very roughly) a
+  half-hour of time before the number of prover steps exceeds the maximum
+  step-limit, which is one less than the value of ~c[*default-step-limit*].
+  Note however the exception stated above: if the value of ~c[expr] is ~c[nil]
+  or is the value of ~c[*default-step-limit*], then no limit is placed on the
+  number of prover steps during processing of ~c[form].
+
   Logically, ~c[(with-prover-step-limit expr form)] is equivalent to ~c[form],
   except that if the number of prover steps during evaluation of ~c[form]
-  exceeds the value specified by the value of ~c[expr], then that proof will
-  abort.
+  exceeds the value specified by the value of ~c[expr] (other than the
+  exceptional case noted just above), then that proof will abort.
 
   Although ~c[with-prover-step-limit] behaves like an ACL2 function in the
   sense that it evaluates both its arguments, it is however actually a macro
@@ -3691,10 +3702,10 @@
 ; In a nutshell, these records have the following life cycle:
 ; (1) They are created by hint translation, appealing to the existing value of
 ;     world global 'proved-functional-instances-alist to prune the list.
-; (2) They go into tag trees when hints are applied; see calls of
+; (2) They go into tag-trees when hints are applied; see calls of
 ;     add-to-tag-tree with tags :use and :by in apply-use-hint-clauses and
 ;     apply-top-hints-clause1, respectively.
-; (3) They are extracted from those tag trees when events are installed.
+; (3) They are extracted from those tag-trees when events are installed.
 
 ; We focus now on (1).  Hint translation creates these records with functions
 ; translate-use-hint and translate-by-hint.  Translate-use-hint returns an
@@ -15148,8 +15159,8 @@
 ;           translate-x-hint-value
 
 ; So, hints are translated.  Who looks at the results?  Well,
-; apply-top-hints-clause adds :use and :by to the tag tree.
-; Who looks at the tag tree?  It's
+; apply-top-hints-clause adds :use and :by to the tag-tree.
+; Who looks at the tag-tree?  It's
 ; apply-top-hints-clause-msg1, which in turn calls
 ; tilde-@-lmi-phrase -- and THAT is who sees and handles an "event" of 0.
 ; We might want to construct an example that illustrates this "0 handling" by
@@ -15460,7 +15471,7 @@
 ; obligations in the generation of the constraints; and
 
 ; new-entries is the list of new entries for the world global
-; 'proved-functional-instances-alist, which we will place in a tag tree and
+; 'proved-functional-instances-alist, which we will place in a tag-tree and
 ; eventually using the name of the event currently being proved (if any).
 
 ; A lemma instance is either 

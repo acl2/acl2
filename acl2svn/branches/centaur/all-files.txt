@@ -1595,6 +1595,7 @@ check-acl2-exports.lisp
 computed-hint-rewrite.lisp
 computed-hint.lisp
 csort.lisp
+defattach-bang.lisp
 defattach-example.lisp
 definline.acl2
 definline.lisp

@@ -2793,7 +2793,7 @@
 ; This considers the fields changed by load-hint-settings-into-pspv above
 ; and restores them in new-pspv to the values they have in old-pspv.  The
 ; idea is that we start with a pspv1, load hints into it to get pspv2,
-; pass that around the prover and obtain pspv3 (which has a new tag tree
+; pass that around the prover and obtain pspv3 (which has a new tag-tree
 ; and pool etc), and then restore the hint settings as they were in pspv1.
 ; In this example, new-pspv would be pspv3 and old-pspv would be pspv1.
 

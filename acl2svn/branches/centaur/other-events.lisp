@@ -23949,7 +23949,7 @@
                              state ens ttree)
 
 ; Returns unrelieved hyps (with the appropriate substitution applied), an
-; extended substitution, and a new tag tree.  Note: the substitution really has
+; extended substitution, and a new tag-tree.  Note: the substitution really has
 ; been applied already to the returned hyps, even though we also return the
 ; extended substitution.
 
@@ -24151,7 +24151,7 @@
 (defun hyps-type-alist (assumptions ens wrld state)
 
 ; Note that the force-flg arg to type-alist-clause is nil here, so we shouldn't
-; wind up with any assumptions in the returned tag tree. Also note that we
+; wind up with any assumptions in the returned tag-tree. Also note that we
 ; return (mv contradictionp type-alist fc-pair-lst), where actually fc-pair-lst
 ; is a ttree if contradictionp holds; normally we ignore fc-pair-lst otherwise.
 
@@ -26818,15 +26818,22 @@
                                  'defchoose
                                'defun)
                              see-doc))
-                        ((not (and (symbolp g)
-                                   (function-symbolp g wrld)))
+                        ((not (symbolp g))
+                         (er soft ctx
+                             "Only a function symbol may be attached to a ~
+                              function symbol.  The proposed attachment of ~
+                              ~x0 to ~x1 is thus illegal, since ~x0 is not a ~
+                              symbol.~@2"
+                             g f see-doc))
+                        ((not (function-symbolp g wrld))
                          (er soft ctx
                              "Only a function symbol may be attached to a ~
                               function symbol.  The proposed attachment of ~
                               ~x0 to ~x1 is thus illegal, since ~x0 is not a ~
                               known function symbol.~@2~@3"
                              g f see-doc
-                             (let ((g1 (deref-macro-name g (macro-aliases wrld))))
+                             (let ((g1 (deref-macro-name g (macro-aliases
+                                                            wrld))))
 
 ; See the comment above explaining why we cannot soundly allow attachment to
 ; macro-aliases.
@@ -26855,8 +26862,9 @@
                          (er soft ctx
                              "Attachments must be guard-verified function ~
                               symbols~@0, but ~x1 has not had its guard ~
-                              verified.~@2"
-                             unless-ttag g see-doc))
+                              verified.  You may wish to use the macro ~x2 in ~
+                              distributed book books/misc/defattach-bang.~@3"
+                             unless-ttag g 'defattach! see-doc))
                         ((not (and (equal (stobjs-in f wrld)
                                           (stobjs-in g wrld))
                                    (equal (stobjs-out f wrld)
@@ -28140,7 +28148,7 @@
 ;   attachment pairs that are to be installed for execution;
 ; - new-entries is a list to be used for extending (global-val
 ;   'proved-functional-instances-alist wrld);
-; - ttree is a tag tree obtained from the proofs done on behalf of the
+; - ttree is a tag-tree obtained from the proofs done on behalf of the
 ;   defattach event; and
 ; - records is the new list of attachment records to install in the world.
 
