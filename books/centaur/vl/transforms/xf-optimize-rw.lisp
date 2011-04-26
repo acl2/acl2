@@ -52,13 +52,18 @@
 
   (case op
 
-    ((:vl-unary-bitor :vl-unary-bitand)
-     ;; A one-bit OR and AND are the identity.  Note that surprisingly a
-     ;; one-bit XOR is NOT the identity (at least according to Cadence), and
-     ;; produces an X instead of a Z when the input is Z.
-     (if (equal (vl-expr->finalwidth (first args)) 1)
-         (first args)
-       nil))
+; Hrmn, no, this optimization does not seem valid.  I think the testing code I
+; used to convince myself it was okay had a bug in it.  This bug showed up when
+; we started using plain assignments instead of inserting bufs everywhere; our
+; buf insertion was probably masking the problem.
+;
+;    ((:vl-unary-bitor :vl-unary-bitand)
+;     ;; A one-bit OR and AND are the identity.  Note that surprisingly a
+;     ;; one-bit XOR is NOT the identity (at least according to Cadence), and
+;     ;; produces an X instead of a Z when the input is Z.
+;     (if (equal (vl-expr->finalwidth (first args)) 1)
+;         (first args)
+;       nil))
 
     (:vl-bitselect
      ;; Depending on the declaration of foo, foo[i] may be reducible to foo.

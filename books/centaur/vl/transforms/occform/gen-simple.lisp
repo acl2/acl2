@@ -209,7 +209,10 @@ above we would have:</p>
 
   :guard (posp n)
   :body
-  (b* ((name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_NOT")))
+  (b* (((when (= n 1))
+        (list *vl-1-bit-not*))
+
+       (name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_NOT")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))
