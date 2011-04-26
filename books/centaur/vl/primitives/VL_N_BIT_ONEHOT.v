@@ -1,6 +1,11 @@
 // VL Verilog Toolkit
 // Copyright (C) 2008-2011 Centaur Technology
 //
+// Contact:
+//   Centaur Technology Formal Verification Group
+//   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+//   http://www.centtech.com/
+//
 // This program is free software; you can redistribute it and/or modify it under
 // the terms of the GNU General Public License as published by the Free Software
 // Foundation; either version 2 of the License, or (at your option) any later
@@ -9,12 +14,15 @@
 // FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 // more details.  You should have received a copy of the GNU General Public
 // License along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+// Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+//
+// Original author: Jared Davis <jared@centtech.com>
 
 module VL_N_BIT_ONEHOT (out, in) ;
 
-// VL_N_BIT_ONEHOT is a VL primitive module for one-hot detection.  We drive
-// out to:
+// VL_N_BIT_ONEHOT is a Verilog module for one-hot detection.
+//
+// It drives OUT to:
 //
 //   1 when IN is definitely one-hot,
 //   0 when IN is definitely not one-hot, and
@@ -22,10 +30,12 @@ module VL_N_BIT_ONEHOT (out, in) ;
 //
 // Why introduce this as a primitive module at all?  It is hard to write a
 // parameterized one-hot detector out of synthesizable components, so we end up
-// using a for-loop instead.  VL takes special measures to recognize this
-// module by its name, and will replace any instances of, e.g., VL_N_BIT_ONEHOT
-// #(6), with specialized versions, e.g., VL_6_BIT_ONEHOT, that is constructed
-// out of synthesizable components.
+// using a for-loop instead.
+//
+// VL takes special measures to recognize this module by its name, and will
+// replace any instances of, e.g., VL_N_BIT_ONEHOT #(6), with specialized
+// versions, e.g., VL_6_BIT_ONEHOT, that is constructed out of synthesizable
+// components.
 
    parameter width = 1;
 
@@ -36,6 +46,7 @@ module VL_N_BIT_ONEHOT (out, in) ;
 
    integer i;
    integer number;
+
    always @(in)
    begin
       number = 0;
@@ -43,4 +54,5 @@ module VL_N_BIT_ONEHOT (out, in) ;
           number = number + in[i];
       out = number;
    end
+
 endmodule

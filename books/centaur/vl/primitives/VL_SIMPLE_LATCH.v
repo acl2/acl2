@@ -1,3 +1,4 @@
+// BOZO this should not be here.
 
 module VL_SIMPLE_LATCH(out, in, en) ;
 

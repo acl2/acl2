@@ -20,6 +20,7 @@
 
 (in-package "VL")
 (include-book "gen-util")
+(include-book "../../primitives")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
 
@@ -94,59 +95,7 @@ endmodule
 
 
 
-(defsection *vl-1-bit-assign*
-  :parents (occform)
-  :short "Primitive one-bit assignment module."
 
-  :long "<p>The <tt>VL_1_BIT_ASSIGN</tt> module is a VL primitive.</p>
-
-<p>The Verilog meaning of this module is:</p>
-
-<code>
-module VL_1_BIT_ASSIGN (out, in) ;
-  output out;
-  input in;
-  assign out = in;
-endmodule
-</code>
-
-<p>VL takes this as a primitive.  In our translation to E, instances of this
-module become <tt>*identity*</tt> instances.  This module is also the basis for
-wider assignment modules; see @(see vl-make-n-bit-assign).</p>
-
-<p>Something subtle is that there is probably no way to implement
-<tt>VL_1_BIT_ASSIGN</tt> in hardware.  One obvious approach would be to use a
-buffer, but then <tt>out</tt> would be X when <tt>in</tt> is Z.  Another
-approach would be to just wire together out and in, but then other assignments
-to <tt>out</tt> would also affect <tt>in</tt>, and in Verilog this isn't the
-case.</p>
-
-<p>Originally our occform transformation tried to use buffers for assignments
-since this seems to be more conservative.  But these extra buffers seemed to
-often be inappropriate, especially when dealing with lower level modules that
-involve transistors.  So we now treat these as identity assignments, which is
-very similar to how Verilog models them.</p>"
-
-  (defconst *vl-1-bit-assign*
-
-    (b* ((name (hons-copy "VL_1_BIT_ASSIGN"))
-         (atts (acons "VL_HANDS_OFF" nil nil))
-
-         ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-         ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input 1))
-
-         ;; assign out = in
-         (assign (make-vl-assign :lvalue out-expr :expr in-expr :loc *vl-fakeloc*)))
-
-      (make-vl-module :name      name
-                      :origname  name
-                      :ports     (list out-port in-port)
-                      :portdecls (list out-portdecl in-portdecl)
-                      :netdecls  (list out-netdecl in-netdecl)
-                      :assigns   (list assign)
-                      :minloc    *vl-fakeloc*
-                      :maxloc    *vl-fakeloc*
-                      :atts      atts))))
 
 
 (defsection vl-make-n-bit-assign-insts
@@ -478,55 +427,6 @@ T.</p>"
                             :minloc    *vl-fakeloc*
                             :maxloc    *vl-fakeloc*))))
 
-
-(defsection vl-1-bit-zmux
-  :parents (occform)
-  :short "Primitive one-bit tri-state buffer module."
-  :long "<p>The <tt>VL_1_BIT_ZMUX</tt> is a VL primitive.</p>
-
-<p>The Verilog meaning of this module is:</p>
-
-<code>
-module VL_1_BIT_ZMUX (out, sel, a);
-  output out;
-  input sel;
-  input a;
-  assign out = sel ? a : 1'bZ;
-endmodule
-</code>
-
-<p>VL takes this as a primitive.  In our translation to E, instances of this
-module become <b>*ft-buf*</b> instances.  This module also forms the basis for
-wider tri-state buffers; see @(see vl-make-n-bit-zmux).</p>
-
-<p><b>BOZO</b> is it really equivalent?  It seems like it might be
-conservative.</p>"
-
-  (defconst *vl-1-bit-zmux*
-    (b* ((name (hons-copy "VL_1_BIT_ZMUX"))
-         (atts (acons "VL_HANDS_OFF" nil nil))
-
-         ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-         ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-occform-mkport "sel" :vl-input 1))
-         ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input 1))
-
-         ;; assign out = sel ? a : 1'bz;
-         (assign (make-vl-assign :lvalue out-expr
-                                 :expr (make-vl-nonatom :op :vl-qmark
-                                                        :args (list sel-expr a-expr |*sized-1'bz*|)
-                                                        :finalwidth 1
-                                                        :finaltype :vl-unsigned)
-                                 :loc *vl-fakeloc*)))
-
-      (make-vl-module :name      name
-                      :ports     (list out-port sel-port a-port)
-                      :portdecls (list out-portdecl sel-portdecl a-portdecl)
-                      :netdecls  (list out-netdecl sel-netdecl a-netdecl)
-                      :assigns   (list assign)
-                      :minloc    *vl-fakeloc*
-                      :maxloc    *vl-fakeloc*
-                      :atts      atts
-                      :origname  name))))
 
 
 (defsection vl-make-n-bit-zmux-aux

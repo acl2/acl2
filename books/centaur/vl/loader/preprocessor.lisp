@@ -432,17 +432,7 @@ of the strings \"ifdef\", \"ifndef\", or \"elsif\".  We assume that we have
 just read <tt>`&lt;directive&gt;</tt> and that <tt>echars</tt> are the
 characters which come right afterwards.  We read a name from the
 <tt>echars</tt>, look it up in the defines table, and make the appropriate
-changes to the <tt>istack</tt> and <tt>activep</tt>.</p>
-
-<h3>Definition and Theorems</h3>
-
-@(def vl-process-ifdef)
-@(thm vl-istack-p-of-vl-process-ifdef)
-@(thm booleanp-of-vl-process-ifdef)
-@(thm vl-echarlist-p-of-vl-process-ifdef)
-@(thm true-listp-of-vl-process-ifdef)
-@(thm acl2-count-of-vl-process-ifdef-weak)
-@(thm acl2-count-of-vl-process-ifdef-strong)"
+changes to the <tt>istack</tt> and <tt>activep</tt>.</p>"
 
   (defund vl-process-ifdef (loc directive echars defines istack activep)
     "Returns (MV SUCCESSP NEW-ISTACK NEW-ACTIVEP REMAINDER)"
@@ -566,13 +556,7 @@ changes to the <tt>istack</tt> and <tt>activep</tt>.</p>
   :long "<p><b>Signature:</b> @(call vl-process-else) returns <tt>(mv successp
 new-istack new-activep)</tt>.</p>
 
-<p>See the discussion in @(see vl-iframe-p) for details.</p>
-
-<h3>Definition and Theorems</h3>
-
-@(def vl-process-else)
-@(thm vl-istack-p-of-vl-process-else)
-@(thm booleanp-of-vl-process-else)"
+<p>See the discussion in @(see vl-iframe-p) for details.</p>"
 
   (defund vl-process-else (loc istack activep)
     "Returns (MV SUCCESSP NEW-ISTACK NEW-ACTIVEP)"
@@ -623,13 +607,7 @@ new-istack new-activep)</tt>.</p>
   :long "<p><b>Signature:</b> @(call vl-process-endif) returns <tt>(mv successp
 new-istack new-activep)</tt>.</p>
 
-<p>See the discussion in @(see vl-iframe-p) for details.</p>
-
-<h3>Definition and Theorems</h3>
-
-@(def vl-process-endif)
-@(thm vl-istack-p-of-vl-process-endif)
-@(thm booleanp-of-vl-process-endif)"
+<p>See the discussion in @(see vl-iframe-p) for details.</p>"
 
   (defund vl-process-endif (loc istack activep)
     "Returns (MV SUCCESSP NEW-ISTACK NEW-ACTIVEP)"
@@ -669,17 +647,7 @@ new-istack new-activep)</tt>.</p>
 <tt>(mv successp prefix remainder)</tt>.</p>
 
 <p>This is really tricky!  See the discussion in @(see preprocessor) for an
-overview of some of the problems we face.</p>
-
-<h3>Definition and Theorems</h3>
-@(def vl-read-until-end-of-define)
-@(thm booleanp-of-vl-read-until-end-of-define-successp)
-@(thm vl-echarlist-p-of-vl-read-until-end-of-define-prefix)
-@(thm true-listp-of-vl-read-until-end-of-define-prefix)
-@(thm vl-echarlist-p-of-vl-read-until-end-of-define-remainder)
-@(thm true-listp-of-vl-read-until-end-of-define-remainder)
-@(thm acl2-count-of-vl-read-until-end-of-define-weak)
-@(thm acl2-count-of-vl-read-until-end-of-define-strong)"
+overview of some of the problems we face.</p>"
 
   (defund vl-read-until-end-of-define (echars)
     "Returns (MV SUCCESSP TEXT REMAINDER)"
@@ -745,12 +713,58 @@ overview of some of the problems we face.</p>
                         (vl-location-string (vl-echar->loc (car echars))))
                     nil echars))
                ((vl-matches-string-p *nls* (cdr echars))
-                ;; Line continuation.  The expansion is just a newline.
+
+; Line continuations.
+;
+; Ugh.  I found a stupid bug here on 2011-04-26 because I was recurring on (cdr
+; echars) instead of (cddr echars).
+;
+; Then I did some more tests.  This is really horrible.  I apparently used to
+; think that the sequence \<newline> should just expand into a newline
+; character.  But that doesn't seem right: both Verilog-XL and NCVerilog say
+; that `goo is 3 in the following:
+;
+;   |`define foo 1 \<newline>
+;   |  + 2
+;   |`define `goo `foo
+;
+; So it seems that \<newline> must expand into something other than a newline,
+; since otherwise the expansion of `foo would yield:
+;
+;   |`define `goo 1
+;   |  + 2
+;
+; And `goo would then be defined as 1.  So what should \<newline> expand to?  I
+; think plausible answers would be nothing, or a single space.  As another
+; experiment, I tried:
+;
+;  |`define `test module\<newline>
+;  |test
+;  |
+;  |`test () ;
+;  |endmodule
+;
+; NCVerilog was happy with this, which suggests that \<newline> expands to at
+; least a space.  Verilog-XL said this was a syntax error, even when I added a
+; space before the module's name, e.g.,
+;
+;  |`define `test module\<newline>
+;  | test
+;
+; But it was happy when I put a space before the \<newline>.  So, it doesn't
+; seem like Verilog-XL tolerates \ continuations without a space before them,
+; meaning that whether it expands to a space or nothing is irrelevant.
+;
+; Well, I think expanding into a space seems pretty reasonable, so that's what
+; I'm going to do for now.
+
                 (mv-let (successp text remainder)
-                        (vl-read-until-end-of-define (cdr echars))
+                        (vl-read-until-end-of-define (cddr echars))
                         (if (not successp)
                             (mv nil nil echars)
-                          (mv t (cons (second echars) text) remainder))))
+                          (mv t
+                              (cons (change-vl-echar (second echars) :char #\Space) text)
+                              remainder))))
                (t
                 ;; Skip over escaped identifiers so we aren't confused by graves,
                 ;; etc.
@@ -882,16 +896,7 @@ successp new-defines remainder)</tt>.</p>
 <p>We assume that <tt>`define</tt> has just been read and <tt>echars</tt>
 is the text which comes right after the <tt>`define</tt> directive.  We
 read the name and text for this new macro definition, and update the
-defines table appropriately if <tt>activep</tt> is set.</p>
-
-<h3>Definition and Theorems</h3>
-
-@(def vl-process-define)
-@(thm vl-defines-p-of-vl-process-define)
-@(thm vl-echarlist-p-of-vl-process-define-remainder)
-@(thm true-listp-of-vl-process-define-remainder)
-@(thm acl2-count-of-vl-process-define)
-@(thm acl2-count-of-vl-process-define-strong)"
+defines table appropriately if <tt>activep</tt> is set.</p>"
 
   (defund vl-process-define (loc echars defines activep)
     "Returns (MV SUCCESSP NEW-DEFINES REMAINDER)"

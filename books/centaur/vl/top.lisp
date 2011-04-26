@@ -42,6 +42,7 @@
 (include-book "transforms/xf-follow-hids")
 (include-book "transforms/xf-gateredux")
 (include-book "transforms/xf-gatesplit")
+(include-book "transforms/xf-gate-elim")
 (include-book "transforms/xf-hid-elim")
 (include-book "transforms/xf-infer-flops")
 (include-book "transforms/xf-make-implicit-wires")
@@ -909,6 +910,9 @@ from @(see vl-simplify-part2).</p>"
 ; :vl-reasonable :vl-always-known :vl-param-free :vl-ranges-resolved
 ; :vl-selects-resolved :vl-selects-in-bounds :vl-ranges-simple :vl-widths-fixed
 ; :vl-args-compat>>
+
+      (mods (xf-cwtime (vl-modulelist-gate-elim mods)
+                       :name xf-gate-elim))
 
       (mods (xf-cwtime (vl-modulelist-addinstnames mods)
                        :name xf-instname))

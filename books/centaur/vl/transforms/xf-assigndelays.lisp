@@ -19,6 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "../primitives")
 (include-book "../mlib/namefactory")
 (include-book "../transforms/occform/gen-util")
 (local (include-book "../util/arithmetic"))
@@ -28,25 +29,6 @@
          (implies (vl-modulelist-p x)
                   (iff (first x)
                        (consp x)))))
-
-
-(defconst *vl-1-bit-delay-1*
-  (b* ((name "VL_1_BIT_DELAY_1")
-       (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-occform-mkport "in"  :vl-input  1))
-       (one    (vl-make-index 1))
-       (delay  (make-vl-gatedelay :rise one :fall one :high one))
-       (assign (make-vl-assign :lvalue out-expr :expr in-expr :delay delay :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     in-port)
-                           :portdecls (list out-portdecl in-portdecl)
-                           :netdecls  (list out-netdecl  in-netdecl)
-                           :assigns   (list assign)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts)))
 
 
 (defund vl-make-m-bit-delay-insts (n basename modname outs ins)
@@ -164,6 +146,35 @@ endmodule
 
 
 
+(defund vl-gatedelay-simple-p (x)
+  (declare (xargs :guard (vl-gatedelay-p x)))
+  (b* (((vl-gatedelay x) x))
+    (and (vl-expr-resolved-p x.rise)
+         (vl-expr-resolved-p x.fall)
+         (= (vl-resolved->val x.rise) (vl-resolved->val x.fall))
+         (or (not x.high)
+             (and (vl-expr-resolved-p x.high)
+                  (= (vl-resolved->val x.rise) (vl-resolved->val x.high)))))))
+
+(defsection vl-gatedelay-amount
+
+  (local (in-theory (enable vl-gatedelay-simple-p)))
+
+  (defund vl-gatedelay-amount (x)
+    (declare (xargs :guard (and (vl-gatedelay-p x)
+                                (vl-gatedelay-simple-p x))))
+    (vl-resolved->val (vl-gatedelay->rise x)))
+
+  (local (in-theory (enable vl-gatedelay-amount)))
+
+  (defthm natp-of-vl-gatedelay->amount
+    (implies (and (force (vl-gatedelay-p x))
+                  (force (vl-gatedelay-simple-p x)))
+             (natp (vl-gatedelay-amount x)))
+    :rule-classes :type-prescription))
+
+
+
 (defsection vl-assign-assigndelays
 
   (defund vl-assign-assigndelays (x nf warnings)
@@ -176,14 +187,7 @@ endmodule
           ;; No delay, leave this assignment alone.
           (mv warnings (list x) nil nil nil nf))
 
-         ((vl-gatedelay x.delay) x.delay)
-
-         ((unless (and (vl-expr-resolved-p x.delay.rise)
-                       (vl-expr-resolved-p x.delay.fall)
-                       x.delay.high
-                       (vl-expr-resolved-p x.delay.high)
-                       (= (vl-resolved->val x.delay.rise) (vl-resolved->val x.delay.fall))
-                       (= (vl-resolved->val x.delay.rise) (vl-resolved->val x.delay.high))))
+         ((unless (vl-gatedelay-simple-p x.delay))
           (mv (cons (make-vl-warning
                      :type :vl-delay-toohard
                      :msg "~a0: the delay on this assignment is too complex; we only ~
@@ -194,23 +198,18 @@ endmodule
                     warnings)
               (list x) nil nil nil nf))
 
-         ((unless (and (posp (vl-expr->finalwidth x.lvalue))
-                       (posp (vl-expr->finalwidth x.expr))
-                       (= (vl-expr->finalwidth x.lvalue)
-                          (vl-expr->finalwidth x.expr))))
+         ((unless (posp (vl-expr->finalwidth x.lvalue)))
           (mv (cons (make-vl-warning
                      :type :vl-bad-assign
-                     :msg "~a0: expected widths to be computed and in agreement, but lhs ~
-                         width is ~x1 while rhs width is ~x2."
-                     :args (list x
-                                 (vl-expr->finalwidth x.lvalue)
-                                 (vl-expr->finalwidth x.expr))
+                     :msg "~a0: expected widths to be computed and positive, but ~
+                           lhs width is ~x1."
+                     :args (list x (vl-expr->finalwidth x.lvalue))
                      :fatalp t
                      :fn 'vl-assign-assigndelays)
                     warnings)
               (list x) nil nil nil nf))
 
-         (delay (vl-resolved->val x.delay.rise))
+         (delay (vl-gatedelay-amount x.delay))
 
          ((when (= delay 0))
           ;; Goofy, explicit zero delay -- just drop it from this assignment.
@@ -295,22 +294,218 @@ endmodule
 
 
 
+(defsection vl-make-delayed-args
+
+  (defund vl-make-delayed-args (delaymod args nf)
+    "Returns (MV SUCCESSP NETDECLS DELAYED-ARGS MODINSTS NF)"
+    (declare (xargs :guard (and (vl-module-p delaymod)
+                                (vl-plainarglist-p args)
+                                (vl-namefactory-p nf))))
+    (b* (((when (atom args))
+          (mv t nil nil nil nf))
+
+         ((mv cdr-successp cdr-netdecls cdr-delayed-args cdr-modinsts nf)
+          (vl-make-delayed-args delaymod (cdr args) nf))
+         ((unless cdr-successp)
+          (mv nil nil nil nil nf))
+
+         (expr (vl-plainarg->expr (car args)))
+         (dir  (vl-plainarg->dir (car args)))
+
+         ((when (eq dir :vl-inout))
+          ;; This seems crazy, let's not try to support it.
+          (mv nil nil nil nil nf))
+
+         ((unless (and expr (eq dir :vl-input)))
+          ;; We skip blanks just because it's easy.  We skip outputs because,
+          ;; even though it seems somehow more elegant to delay the output, it
+          ;; may be better to delay the inputs.  Why?  If we delay the inputs
+          ;; we get the same drive strength on the output because the output is
+          ;; still produced by this gate.  If we delay the outputs explicitly,
+          ;; we end up driving them with a regular assignment and lose that
+          ;; drive-strength information.  We could probably deal with this
+          ;; better, but this seems sort of okay?
+          (mv t cdr-netdecls (cons (car args) cdr-delayed-args) cdr-modinsts nf))
+
+         (width (vl-expr->finalwidth expr))
+         ((unless (equal width 1))
+          ;; Fail, don't know how big of a wire to make
+          (mv nil nil nil nil nf))
+
+         ((mv del-name nf)   (vl-namefactory-indexed-name "del" nf))
+         ((mv mkdel-name nf) (vl-namefactory-indexed-name "mkdel" nf))
+         (del-netdecl (make-vl-netdecl :name del-name
+                                       :type :vl-wire
+                                       :range (vl-make-n-bit-range width)
+                                       :loc *vl-fakeloc*))
+         (del-expr    (vl-idexpr del-name width :vl-unsigned)) ;; bozo sign?
+         (del-arg     (change-vl-plainarg (car args) :expr del-expr))
+         (args        (list (make-vl-plainarg :expr del-expr :dir :vl-output :portname "out")
+                            (make-vl-plainarg :expr expr :dir :vl-input :portname "in")))
+         (mkdel-inst  (make-vl-modinst :instname  mkdel-name
+                                       :modname   (vl-module->name delaymod)
+                                       :paramargs (vl-arguments nil nil)
+                                       :portargs  (vl-arguments nil args)
+                                       :loc       *vl-fakeloc*)))
+
+      (mv t
+          (cons del-netdecl cdr-netdecls)
+          (cons del-arg cdr-delayed-args)
+          (cons mkdel-inst cdr-modinsts)
+          nf)))
+
+  (local (in-theory (enable vl-make-delayed-args)))
+
+  (defmvtypes vl-make-delayed-args
+    (booleanp true-listp true-listp true-listp nil))
+
+  (defthm vl-make-delayed-args-basics
+    (implies (and (force (vl-module-p delaymod))
+                  (force (vl-plainarglist-p args))
+                  (force (vl-namefactory-p nf)))
+             (b* (((mv ?successp netdecls args modinsts nf)
+                   (vl-make-delayed-args delaymod args nf)))
+               (and (vl-netdecllist-p netdecls)
+                    (vl-plainarglist-p args)
+                    (vl-modinstlist-p modinsts)
+                    (vl-namefactory-p nf))))))
+
+
+
+(defsection vl-gateinst-gateinstdelays
+
+  (defund vl-gateinst-gateinstdelays (x nf warnings)
+    "Returns (MV WARNINGS' NEW-GATEINSTS ADD-NETDECLS ADD-MODINSTS ADD-MODS NF')"
+    (declare (xargs :guard (and (vl-gateinst-p x)
+                                (vl-namefactory-p nf)
+                                (vl-warninglist-p warnings))))
+    (b* (((vl-gateinst x) x)
+         ((unless x.delay)
+          ;; No delay, leave this gateinst alone.
+          (mv warnings (list x) nil nil nil nf))
+
+         ((unless (vl-gatedelay-simple-p x.delay))
+          (mv (cons (make-vl-warning
+                     :type :vl-delay-toohard
+                     :msg "~a0: the delay on this gate is too complex; we ~
+                           only handle plain delays for now."
+                     :args (list x)
+                     :fatalp t
+                     :fn 'vl-gateinst-gateinstdelays)
+                    warnings)
+              (list x) nil nil nil nf))
+
+         (delay (vl-gatedelay-amount x.delay))
+
+         ((when (= delay 0))
+          ;; Goofy, explicit zero delay -- just drop it from this gateinst.
+          (mv warnings
+              (list (change-vl-gateinst x :delay nil))
+              nil nil nil nf))
+
+         (addmods  (vl-make-1-bit-delay-m delay))
+         (delaymod (car addmods))
+
+         ((mv successp del-netdecls del-args del-modinsts nf)
+          (vl-make-delayed-args delaymod x.args nf))
+
+         ((unless successp)
+          (mv (cons (make-vl-warning
+                     :type :vl-delay-failed
+                     :msg "~a0: failed to add delays to the arguments of ~
+                           this module instance, perhaps due to inouts or ~
+                           unresolved/wrong widths."
+                     :args (list x)
+                     :fatalp t
+                     :fn 'vl-gateinst-gateinstdelays)
+                    warnings)
+              (list x) nil nil nil nf))
+
+         (new-x (change-vl-gateinst x :args del-args)))
+
+      (mv warnings
+          (list new-x)
+          del-netdecls
+          del-modinsts
+          addmods
+          nf)))
+
+  (local (in-theory (enable vl-gateinst-gateinstdelays)))
+
+  (defmvtypes vl-gateinst-gateinstdelays
+    (nil true-listp true-listp true-listp true-listp nil))
+
+  (defthm vl-gateinst-gateinstdelays-basics
+    (implies (and (force (vl-gateinst-p x))
+                  (force (vl-namefactory-p nf))
+                  (force (vl-warninglist-p warnings)))
+             (let ((ret (vl-gateinst-gateinstdelays x nf warnings)))
+               (and (vl-warninglist-p  (mv-nth 0 ret))
+                    (vl-gateinstlist-p (mv-nth 1 ret))
+                    (vl-netdecllist-p  (mv-nth 2 ret))
+                    (vl-modinstlist-p  (mv-nth 3 ret))
+                    (vl-modulelist-p   (mv-nth 4 ret))
+                    (vl-namefactory-p  (mv-nth 5 ret)))))))
+
+(defsection vl-gateinstlist-gateinstdelays
+
+  (defund vl-gateinstlist-gateinstdelays (x nf warnings)
+    "Returns (MV WARNINGS' NEW-GATEINSTS ADD-NETDECLS ADD-MODINSTS ADD-MODS NF')"
+    (declare (xargs :guard (and (vl-gateinstlist-p x)
+                                (vl-namefactory-p nf)
+                                (vl-warninglist-p warnings))))
+    (b* (((when (atom x))
+          (mv warnings nil nil nil nil nf))
+         ((mv warnings car-gateinsts car-netdecls car-modinsts car-mods nf)
+          (vl-gateinst-gateinstdelays (car x) nf warnings))
+         ((mv warnings cdr-gateinsts cdr-netdecls cdr-modinsts cdr-mods nf)
+          (vl-gateinstlist-gateinstdelays (cdr x) nf warnings)))
+      (mv warnings
+          (append car-gateinsts cdr-gateinsts)
+          (append car-netdecls cdr-netdecls)
+          (append car-modinsts cdr-modinsts)
+          (append car-mods cdr-mods)
+          nf)))
+
+  (local (in-theory (enable vl-gateinstlist-gateinstdelays)))
+
+  (defmvtypes vl-gateinstlist-gateinstdelays
+    (nil true-listp true-listp true-listp true-listp nil))
+
+  (defthm vl-gateinstlist-gateinstdelays-basics
+    (implies (and (force (vl-gateinstlist-p x))
+                  (force (vl-namefactory-p nf))
+                  (force (vl-warninglist-p warnings)))
+             (let ((ret (vl-gateinstlist-gateinstdelays x nf warnings)))
+               (and (vl-warninglist-p (mv-nth 0 ret))
+                    (vl-gateinstlist-p  (mv-nth 1 ret))
+                    (vl-netdecllist-p (mv-nth 2 ret))
+                    (vl-modinstlist-p (mv-nth 3 ret))
+                    (vl-modulelist-p  (mv-nth 4 ret))
+                    (vl-namefactory-p (mv-nth 5 ret)))))))
+
+
 (defsection vl-module-assigndelays
 
   (defund vl-module-assigndelays (x)
     "Returns (MV NEW-X ADD-MODS)"
     (declare (xargs :guard (vl-module-p x)))
     (b* (((vl-module x) x)
+         ((when (vl-module->hands-offp x))
+          (mv x nil))
          (nf (vl-starting-namefactory x))
-         ((mv warnings assigns add-netdecls add-modinsts add-mods nf)
+         ((mv warnings assigns add-netdecls1 add-modinsts1 add-mods1 nf)
           (vl-assignlist-assigndelays x.assigns nf x.warnings))
+         ((mv warnings gateinsts add-netdecls2 add-modinsts2 add-mods2 nf)
+          (vl-gateinstlist-gateinstdelays x.gateinsts nf warnings))
          (- (vl-free-namefactory nf))
          (new-x (change-vl-module x
-                                  :assigns  assigns
-                                  :netdecls (append add-netdecls x.netdecls)
-                                  :modinsts (append add-modinsts x.modinsts)
-                                  :warnings warnings)))
-      (mv new-x add-mods)))
+                                  :assigns   assigns
+                                  :gateinsts gateinsts
+                                  :netdecls  (append add-netdecls1 add-netdecls2 x.netdecls)
+                                  :modinsts  (append add-modinsts1 add-modinsts2 x.modinsts)
+                                  :warnings  warnings)))
+      (mv new-x (append add-mods1 add-mods2))))
 
   (local (in-theory (enable vl-module-assigndelays)))
 

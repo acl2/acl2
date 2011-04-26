@@ -19,6 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "../primitives")
 (include-book "../mlib/stmt-tools")
 (include-book "../mlib/lvalues")
 (include-book "../mlib/range-tools")
@@ -46,58 +47,6 @@ we think makes it sound.  Note also that <tt>lhs</tt> must be simultaneously
 converted from a <tt>reg</tt> into a <tt>wire</tt>.</p>")
 
 
-(defsection *vl-1-bit-flop-verilog*
-  :parents (flop-inference)
-  :short "One-bit flop primitive, represented as a @(see vl-module-p)."
-
-  :long "<p>Our @(see flop-inference) transform converts certain
-<tt>always</tt> statements into instances of <tt>VL_1_BIT_FLOP</tt>, a special,
-primitive module.  The constant @(srclink *vl-1-bit-flop-verilog*) contains our
-internal (i.e., @(see vl-module-p)) representation of this module.  In Verilog,
-the module might be written as follows:</p>
-
-<code>
-module VL_1_BIT_FLOP (q, clk, d) ;
-
-  output reg q;
-  input wire clk;
-  input wire d;
-
-  always @@(posedge clk)
-     q &lt;= d;
-
-endmodule
-</code>"
-
-  (defconst *vl-1-bit-flop-verilog*
-
-    (b* ((name "VL_1_BIT_FLOP")
-         (atts (acons "VL_HANDS_OFF" nil nil))
-
-         ((mv q-expr q-port q-portdecl &)                 (vl-occform-mkport "q" :vl-output 1))
-         ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-occform-mkport "clk" :vl-input 1))
-         ((mv d-expr d-port d-portdecl d-netdecl)         (vl-occform-mkport "d" :vl-input 1))
-
-         (q-regdecl (make-vl-regdecl :name (hons-copy "q") :loc *vl-fakeloc*))
-
-         ;; always @(posedge clk) q <= d;
-         (q<=d         (make-vl-assignstmt :type :vl-nonblocking :lvalue q-expr :expr d-expr
-                                           :loc *vl-fakeloc*))
-         (clk-evatom   (make-vl-evatom :type :vl-posedge :expr clk-expr))
-         (ctrl         (make-vl-eventcontrol :starp nil :atoms (list clk-evatom)))
-         (stmt         (make-vl-timingstmt :ctrl ctrl :body q<=d))
-         (always       (make-vl-always :stmt stmt :loc *vl-fakeloc*)))
-
-      (make-vl-module :name      name
-                      :origname  name
-                      :atts      atts
-                      :ports     (list q-port clk-port d-port)
-                      :portdecls (list q-portdecl clk-portdecl d-portdecl)
-                      :netdecls  (list clk-netdecl d-netdecl)
-                      :regdecls  (list q-regdecl)
-                      :alwayses  (list always)
-                      :minloc    *vl-fakeloc*
-                      :maxloc    *vl-fakeloc*))))
 
 
 (defsection vl-make-1-bit-flop-instances
@@ -136,7 +85,7 @@ list of module instances.</p>
          (args (list (make-vl-plainarg :expr (car q-wires) :dir :vl-output :portname (hons-copy "q"))
                      (make-vl-plainarg :expr clk-wire      :dir :vl-input  :portname (hons-copy "clk"))
                      (make-vl-plainarg :expr (car d-wires) :dir :vl-input  :portname (hons-copy "d"))))
-         (inst (make-vl-modinst :modname   (vl-module->name *vl-1-bit-flop-verilog*)
+         (inst (make-vl-modinst :modname   (vl-module->name *vl-1-bit-flop*)
                                 :instname  (hons-copy (str::cat "bit_" (str::natstr n)))
                                 :paramargs (vl-arguments nil nil)
                                 :portargs  (vl-arguments nil args)
@@ -172,7 +121,7 @@ that need to be added to the module list for completeness.</p>"
   (defund vl-make-n-bit-flop (n)
     (declare (xargs :guard (posp n)))
     (b* (((when (= n 1))
-          (list *vl-1-bit-flop-verilog*))
+          (list *vl-1-bit-flop*))
 
          (name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_FLOP")))
 
@@ -193,7 +142,7 @@ that need to be added to the module list for completeness.</p>"
                             :atts      (acons "VL_HANDS_OFF" nil nil) ;; <-- maybe not needed with the new sizing code now
                             :minloc    *vl-fakeloc*
                             :maxloc    *vl-fakeloc*)
-            *vl-1-bit-flop-verilog*)))
+            *vl-1-bit-flop*)))
 
   (local (in-theory (enable vl-make-n-bit-flop)))
 
@@ -290,66 +239,6 @@ so, we extract and return the expressions for <tt>clk</tt>, <tt>lhs</tt>, and
 ; along with flop inference, because the two are quite similar and can share
 ; some code at the end of this file.
 
-(defsection *vl-1-bit-latch-verilog*
-  :parents (latch-inference)
-  :short "One-bit latch primitive, representated as a @(see vl-module-p)."
-
-  :long "<p>Our @(see latch-inference) transform converts certain
-<tt>always</tt> statements into instances of <tt>VL_1_BIT_LATCH</tt>, a special
-primitive module.  The constant @(srclink *vl-1-bit-latch-verilog*) contains
-our internal (i.e., @(see vl-module-p)) representation of this module.  In
-Verilog, the module might be written as follows:</p>
-
-<code>
-module VL_1_BIT_LATCH (q, clk, d);
-
-   input  wire clk;
-   input  wire d;
-   output reg  q;
-
-   always @@(d or clk)
-     q &lt;= clk ? d : q;
-
-endmodule
-</code>"
-
-  (defconst *vl-1-bit-latch-verilog*
-
-    (b* ((name (hons-copy "VL_1_BIT_LATCH"))
-         (atts (acons "VL_HANDS_OFF" nil nil))
-
-         ((mv q-expr q-port q-portdecl &)                 (vl-occform-mkport "q" :vl-output 1))
-         ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-occform-mkport "clk" :vl-input 1))
-         ((mv d-expr d-port d-portdecl d-netdecl)         (vl-occform-mkport "d" :vl-input 1))
-
-         (q-regdecl (make-vl-regdecl :name (hons-copy "q") :loc *vl-fakeloc*))
-
-         ;; always @(d or clk) q <= clk ? d : q;
-         (|clk?d:q|     (make-vl-nonatom :op :vl-qmark
-                                         :args (list clk-expr d-expr q-expr)
-                                         :finalwidth 1
-                                         :finaltype :vl-unsigned))
-         (|q<=clk?d:q|  (make-vl-assignstmt :type :vl-nonblocking
-                                            :lvalue q-expr
-                                            :expr |clk?d:q|
-                                            :loc *vl-fakeloc*))
-         (d-evatom     (make-vl-evatom :type :vl-noedge :expr d-expr))
-         (clk-evatom   (make-vl-evatom :type :vl-noedge :expr clk-expr))
-         (ctrl         (make-vl-eventcontrol :starp nil :atoms (list d-evatom clk-evatom)))
-         (stmt         (make-vl-timingstmt :ctrl ctrl :body |q<=clk?d:q|))
-         (always       (make-vl-always :stmt stmt :loc *vl-fakeloc*)))
-
-      (make-vl-module :name      name
-                      :origname  name
-                      :ports     (list q-port clk-port d-port)
-                      :portdecls (list q-portdecl clk-portdecl d-portdecl)
-                      :netdecls  (list clk-netdecl d-netdecl)
-                      :regdecls  (list q-regdecl)
-                      :alwayses  (list always)
-                      :minloc    *vl-fakeloc*
-                      :maxloc    *vl-fakeloc*
-                      :atts      atts))))
-
 
 (defsection vl-make-1-bit-latch-instances
   :parents (latch-inference)
@@ -387,7 +276,7 @@ list of module instances.</p>
          (args (list (make-vl-plainarg :expr (car q-wires) :dir :vl-output :portname (hons-copy "q"))
                      (make-vl-plainarg :expr clk-wire      :dir :vl-input  :portname (hons-copy "clk"))
                      (make-vl-plainarg :expr (car d-wires) :dir :vl-input  :portname (hons-copy "d"))))
-         (inst (make-vl-modinst :modname   (vl-module->name *vl-1-bit-latch-verilog*)
+         (inst (make-vl-modinst :modname   (vl-module->name *vl-1-bit-latch*)
                                 :instname  (hons-copy (str::cat "bit_" (str::natstr n)))
                                 :paramargs (vl-arguments nil nil)
                                 :portargs  (vl-arguments nil args)
@@ -423,7 +312,7 @@ completeness.</p>"
   (defund vl-make-n-bit-latch (n)
     (declare (xargs :guard (posp n)))
     (b* (((when (= n 1))
-          (list *vl-1-bit-latch-verilog*))
+          (list *vl-1-bit-latch*))
 
          (name        (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_LATCH")))
 
@@ -443,7 +332,7 @@ completeness.</p>"
                             :atts      (acons "VL_HANDS_OFF" nil nil)  ; <-- may not be needed with the new sizing code
                             :minloc    *vl-fakeloc*
                             :maxloc    *vl-fakeloc*)
-            *vl-1-bit-latch-verilog*)))
+            *vl-1-bit-latch*)))
 
   (local (in-theory (enable vl-make-n-bit-latch)))
 
