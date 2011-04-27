@@ -1,5 +1,4 @@
 
-
 (in-package "ACL2")
 
 ;; Evaluates several expressions, returning the value of the last one.
@@ -10,13 +9,7 @@ Hello
 (1 2 3)
 ||#
 
-(defun progn$-fn (stmts)
-  (if (atom stmts)
-      nil
-    (if (atom (cdr stmts))
-        (car stmts)
-      `(prog2$ ,(car stmts)
-               ,(progn$-fn (cdr stmts))))))
-
-(defmacro progn$ (&rest stmts)
-  (progn$-fn stmts))
+(defmacro progn$ (&rest rst)
+  (cond ((null rst) nil)
+        ((null (cdr rst)) (car rst))
+        (t (xxxjoin 'prog2$ rst))))
