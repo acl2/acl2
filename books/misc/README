@@ -470,6 +470,10 @@ sort-symbols.lisp -- correctness of a mergesort routine for symbols, used
 
 ===============================================================================
 
+misc2/step-limits.lisp -- basic tests for checking that step limits work
+
+===============================================================================
+
 sticky-disable.lisp -- theory maintenance in spite of included books
 
 This book uses ACL2 tables to specify rules that should remain enabled or
