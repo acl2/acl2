@@ -8838,9 +8838,10 @@
 #-acl2-loop-only
 (progn
 
-(defmacro throw-without-attach (fn formals)
+(defmacro throw-without-attach (ignored-attachment fn formals)
   `(throw-raw-ev-fncall
     (list* 'ev-fncall-null-body-er
+           ,ignored-attachment
            ',fn
            (list ,@formals))))
 
@@ -8880,6 +8881,8 @@
                           at-fn)
                        ,@formals))
              (t (throw-without-attach
+                 (and (boundp ',at-fn)
+                      ,at-fn)
                  ,fn
                  ,(or alt-formals
                       formals)))))))
@@ -11428,8 +11431,19 @@
 ; throw-nonexec-error.
 
     (throw-raw-ev-fncall
-     (list* 'ev-fncall-null-body-er fn actuals))
+     (list* 'ev-fncall-null-body-er
+
+; The following nil means that we never blame non-executability on aokp.  Note
+; that defproxy is not relevant here, since that macro generates a call of
+; install-event-defuns, which calls intro-udf-lst2, which calls null-body-er+
+; to lay down a call of throw-or-attach.  So in the defproxy case,
+; throw-nonexec-error doesn't get called!
+
+            nil
+            fn actuals))
+
 ; Just in case throw-raw-ev-fncall doesn't throw -- though it always should.
+
     (error "This error is caused by what should be dead code!"))
   #+acl2-loop-only
   nil)

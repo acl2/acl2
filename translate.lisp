@@ -371,9 +371,18 @@
          (remove-keyword word (cddr l)))
         (t (list* (car l) (cadr l) (remove-keyword word (cddr l))))))
 
-(defun ev-fncall-null-body-er (fn latches)
+(defun ignored-attachment-msg (prefix ignored-attachment)
+  (cond (ignored-attachment (msg "~@0Note that because of logical ~
+                                  considerations, attachments (including ~x1) ~
+                                  must not be called in this context."
+                                 prefix ignored-attachment))
+        (t "")))
+
+(defun ev-fncall-null-body-er (ignored-attachment fn latches)
   (mv t
-      (msg "ACL2 cannot evaluate the undefined function ~x0." fn)
+      (msg "ACL2 cannot evaluate the undefined function ~x0.~@1"
+           fn
+           (ignored-attachment-msg "  " ignored-attachment))
       latches))
 
 (defconst *safe-mode-guard-er-addendum*
@@ -1462,7 +1471,7 @@
          (mv nil x latches))
         #+:non-standard-analysis
         (I-LARGE-INTEGER ; We could omit this case, allowing a fall-through.
-         (ev-fncall-null-body-er fn latches))
+         (ev-fncall-null-body-er nil fn latches))
         (otherwise
          (let ((alist (pairlis$ (formals fn w) args))
                (body (body fn nil w))
@@ -1488,7 +1497,9 @@
                                      safe-mode gc-off latches
                                      hard-error-returns-nilp aok))
              ((null body)
-              (ev-fncall-null-body-er fn latches))
+              (ev-fncall-null-body-er
+               (and (not aok) attachment)
+               fn latches))
              (t
               (mv-let
                (er val latches)
@@ -2231,9 +2242,10 @@
 ; We get here if val is of the form (ev-fncall-null-body-er fn).
 
     (msg "ACL2 cannot ev the call of undefined function ~x0 on argument ~
-          list:~|~%~x1~|~%~@2"
-         (cadr val)
-         (cddr val)
+          list:~|~%~x1~@2~|~%~@3"
+         (caddr val)
+         (cdddr val)
+         (ignored-attachment-msg "~|~%" (cadr val))
          (error-trace-suggestion nil)))
    ((and (consp val)
          (eq (car val) 'ev-fncall-guard-er))

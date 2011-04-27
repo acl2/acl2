@@ -17546,6 +17546,29 @@
      ...)
   ~ev[]
 
+  The error message has been improved for the case of evaluating an undefined
+  function that has an attachment (~pl[defattach]).  Thanks to Jared Davis for
+  sending the following example, which illustrates the additional part of the
+  message.
+  ~bv[]
+    ACL2 !>(defstub foo (x) t)
+    [[... output omitted ...]]
+    ACL2 !>(defattach foo identity)
+    [[... output omitted ...]]
+    ACL2 !>(defconst *x* (foo 3))
+
+
+    ACL2 Error in ( DEFCONST *X* ...):  ACL2 cannot ev the call of undefined
+    function FOO on argument list:
+
+    (3)
+
+    Note that because of logical considerations, attachments (including
+    IDENTITY) must not be called in this context.
+
+    [[... additional output omitted ...]]
+  ~ev[]
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of
@@ -23084,7 +23107,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 ; object cannot arise in an execution on behalf of an evaluation of a
 ; subexpression in a theorem or proof.
 
-  (let ((ev-fncall-val `(ev-fncall-null-body-er mfc-ts ,term mfc state)))
+  (let ((ev-fncall-val `(ev-fncall-null-body-er nil mfc-ts ,term mfc state)))
     (cond
      ((not (live-state-p state))
 
@@ -23161,8 +23184,9 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
 (defun-one-output mfc-rw-raw (term alist obj equiv-info mfc fn state)
   (declare (xargs :guard (state-p state)))
-  (let ((ev-fncall-val `(ev-fncall-null-body-er mfc-rw-raw ,term ,alist ',obj
-                                                ,equiv-info mfc ,fn state)))
+  (let ((ev-fncall-val `(ev-fncall-null-body-er nil mfc-rw-raw ,term ,alist
+                                                ',obj ,equiv-info mfc ,fn
+                                                state)))
     (cond
      ((not (live-state-p state))
       (throw-raw-ev-fncall ev-fncall-val))
@@ -23246,7 +23270,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 ; to reconsider this.
 
   (declare (xargs :guard (state-p state)))
-  (let ((ev-fncall-val `(ev-fncall-null-body-er mfc-relieve-hyp ,hyp ,alist
+  (let ((ev-fncall-val `(ev-fncall-null-body-er nil mfc-relieve-hyp ,hyp ,alist
                                                 ,rune ,target ,bkptr mfc
                                                 state)))
     (cond
@@ -23346,7 +23370,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
 (defun-one-output mfc-ap-raw (term mfc state)
   (declare (xargs :guard (state-p state)))
-  (let ((ev-fncall-val `(ev-fncall-null-body-er mfc-ap ,term mfc state)))
+  (let ((ev-fncall-val `(ev-fncall-null-body-er nil mfc-ap ,term mfc state)))
     (cond
      ((not (live-state-p state))
       (throw-raw-ev-fncall ev-fncall-val))
