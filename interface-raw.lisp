@@ -1372,7 +1372,7 @@
                     (prog2$ formals ; avoid compiler warning
                             `(,(*1*-symbol fn) ,@(cdr def))))
                    ((fn formals
-                        ('throw-without-attach fn formals))
+                        ('throw-without-attach 'nil fn formals))
                     (prog2$ formals ; avoid compiler warning
                             `(,(*1*-symbol fn) ,@(cdr def))))
                    (& (interface-er 

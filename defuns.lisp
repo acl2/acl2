@@ -8772,7 +8772,7 @@
                  (t formals)))))
     (if maybe-attach
         (list 'throw-or-attach fn formals alt-formals)
-      (list 'throw-without-attach fn alt-formals))))
+      (list 'throw-without-attach nil fn alt-formals))))
 
 (defun intro-udf-lst2 (insigs kwd-alist-lst wrld)
 

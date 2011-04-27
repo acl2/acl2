@@ -8893,7 +8893,7 @@
   (declare (xargs :guard t))
   (if maybe-attach
       (list 'throw-or-attach fn formals nil)
-    (list 'throw-without-attach fn formals)))
+    (list 'throw-without-attach nil fn formals)))
 
 ; CLTL2 and the ANSI standard have made the main Lisp package name be
 ; COMMON-LISP rather than the older LISP.  Before Version_2.6 we
