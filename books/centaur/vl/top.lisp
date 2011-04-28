@@ -721,6 +721,10 @@ from @(see vl-simplify-part1).</p>"
       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
                                      :name propagate-errors))
 
+
+      (mods (xf-cwtime (vl-modulelist-assigndelays mods)
+                       :name xf-assigndelays))
+
       (mods (xf-cwtime (vl-modulelist-split mods)
                        :name xf-split))
 
@@ -761,10 +765,6 @@ from @(see vl-simplify-part1).</p>"
 
       (mods (xf-cwtime (vl-modulelist-trunc mods)
                        :name xf-trunc))
-
-
-      (mods (xf-cwtime (vl-modulelist-assigndelays mods)
-                       :name xf-assigndelays))
 
 
       ;; This might not be the best time to do this, but it seems like here

@@ -24,6 +24,20 @@
 (include-book "../transforms/occform/gen-util")
 (local (include-book "../util/arithmetic"))
 
+; BOZO document this transform
+;
+; Ordering notes.  We need to do this before split.  Otherwise, when we see an
+; assignment like:
+;
+;       assign #1 out = ~in;
+;
+; We end up creating:
+;
+;       VL_1_BIT_DELAY_1 mkdel (del, ~in) ;
+;
+; And the ~in argument to mkdel isn't split up, which can confuse later
+; transforms.
+
 
 (local (defthm crock
          (implies (vl-modulelist-p x)
