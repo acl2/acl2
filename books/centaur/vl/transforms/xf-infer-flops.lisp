@@ -158,29 +158,30 @@ that need to be added to the module list for completeness.</p>"
 suitable for flop inference."
 
   :long "<p><b>Signature:</b> @(call vl-pattern-match-flop) returns
-<tt>(mv successp clk-expr lhs-expr rhs-expr)</tt>.</p>
+<tt>(mv successp clk-expr lhs-expr rhs-expr delay)</tt>.</p>
 
 <p><tt>x</tt> is an always statement (see @(see vl-always-p)).  We try to
 determine if <tt>x</tt> has the form:</p>
 
 <code>
 always @@(posedge clk)
-   lhs [&lt;]= rhs;  // i.e., \"lhs &lt;=rhs\" or \"lhs = rhs\"
+   lhs [&lt;]= [#delay] rhs;  // i.e., \"lhs &lt;=rhs\" or \"lhs = rhs\"
 </code>
 
 <p>Where <tt>clk</tt> and <tt>lhs</tt> are simple identifier expressions.  If
 so, we extract and return the expressions for <tt>clk</tt>, <tt>lhs</tt>, and
-<tt>rhs</tt>.</p>"
+<tt>rhs</tt>.  We only allow simple delays like <tt>#3</tt> and return them as
+a @(see vl-maybe-natp).</p>"
 
   (defund vl-pattern-match-flop (x)
-    "Returns (mv successp clk-expr lhs-expr rhs-expr)"
+    "Returns (mv successp clk-expr lhs-expr rhs-expr delay)"
     (declare (xargs :guard (vl-always-p x)))
 
     (b* ((stmt (vl-always->stmt x))
 
          ((unless (and (eq (tag stmt) :vl-compoundstmt)
                        (eq (vl-compoundstmt->type stmt) :vl-timingstmt)))
-          (mv nil nil nil nil))
+          (mv nil nil nil nil nil))
 
          (ctrl (vl-timingstmt->ctrl stmt))
          (body (vl-timingstmt->body stmt))
@@ -188,30 +189,36 @@ so, we extract and return the expressions for <tt>clk</tt>, <tt>lhs</tt>, and
          ;; Try to match ctrl with (posedge clk)
          ((unless (and (eq (tag ctrl) :vl-eventcontrol)
                        (not (vl-eventcontrol->starp ctrl))))
-          (mv nil nil nil nil))
+          (mv nil nil nil nil nil))
          (evatoms (vl-eventcontrol->atoms ctrl))
          ((unless (and (= (len evatoms) 1)
                        (eq (vl-evatom->type (car evatoms)) :vl-posedge)))
-          (mv nil nil nil nil))
+          (mv nil nil nil nil nil))
          (clk-expr (vl-evatom->expr (car evatoms)))
          ((unless (vl-idexpr-p clk-expr))
-          (mv nil nil nil nil))
+          (mv nil nil nil nil nil))
 
-         ;; Now that we've extracted the clock, try to match body with lhs [<]= rhs
+         ;; Now that we've extracted the clock, try to match body with lhs [<]= #delay rhs
 
          ((unless (and (eq (tag body) :vl-assignstmt)
                        ;; Only allow = and <=, i.e., simple blocking/nonblocking assigns
                        (or (eq (vl-assignstmt->type body) :vl-blocking)
                            (eq (vl-assignstmt->type body) :vl-nonblocking))
-                       ;; Don't allow event controls, but allow and ignore delays.
+                       ;; Don't allow event controls, but allow simple delays.
                        (or (not (vl-assignstmt->ctrl body))
-                           (eq (tag (vl-assignstmt->ctrl body)) :vl-delaycontrol))))
-          (mv nil nil nil nil))
+                           (and (eq (tag (vl-assignstmt->ctrl body)) :vl-delaycontrol)
+                                (vl-expr-resolved-p (vl-delaycontrol->value
+                                                     (vl-assignstmt->ctrl body)))))))
+          (mv nil nil nil nil nil))
          (lhs-expr (vl-assignstmt->lvalue body))
          (rhs-expr (vl-assignstmt->expr body))
+         (delay    (if (vl-assignstmt->ctrl body)
+                       (vl-resolved->val (vl-delaycontrol->value
+                                          (vl-assignstmt->ctrl body)))
+                     nil))
          ((unless (vl-idexpr-p lhs-expr))
-          (mv nil nil nil nil)))
-        (mv t clk-expr lhs-expr rhs-expr)))
+          (mv nil nil nil nil nil)))
+        (mv t clk-expr lhs-expr rhs-expr delay)))
 
   (local (in-theory (enable vl-pattern-match-flop)))
 
@@ -230,7 +237,8 @@ so, we extract and return the expressions for <tt>clk</tt>, <tt>lhs</tt>, and
                   (equal (vl-idexpr-p (mv-nth 2 (vl-pattern-match-flop x)))
                          (if (mv-nth 0 (vl-pattern-match-flop x)) t nil))
                   (equal (vl-expr-p (mv-nth 3 (vl-pattern-match-flop x)))
-                         (if (mv-nth 0 (vl-pattern-match-flop x)) t nil))))))
+                         (if (mv-nth 0 (vl-pattern-match-flop x)) t nil))
+                  (vl-maybe-natp (mv-nth 4 (vl-pattern-match-flop x)))))))
 
 
 
@@ -659,16 +667,18 @@ the module.</li>
                                 (vl-warninglist-p warnings)
                                 (vl-namefactory-p nf))))
 
-    (b* (((mv warnings successp type clk-expr lhs-expr rhs-expr)
+    (b* (((mv warnings successp type clk-expr lhs-expr rhs-expr delay)
 
           ;; Try to match either a flop or latch.
-          (b* (((mv successp clk-expr lhs-expr rhs-expr)
+          (b* (((mv successp clk-expr lhs-expr rhs-expr delay)
                 (vl-pattern-match-flop x))
                ((when successp)
-                (mv warnings t :flop clk-expr lhs-expr rhs-expr))
+                (mv warnings t :flop clk-expr lhs-expr rhs-expr delay))
                ((mv warnings successp clk-expr lhs-expr rhs-expr)
                 (vl-pattern-match-latch x warnings)))
-              (mv warnings successp :latch clk-expr lhs-expr rhs-expr)))
+              (mv warnings successp :latch clk-expr lhs-expr rhs-expr
+                  ;; BOZO maybe eventually think about delays on latches
+                  delay)))
 
          ((unless successp)
           (mv nil warnings nil nil nil nil nil nf))
@@ -771,7 +781,32 @@ the module.</li>
                                           :lvalue rhs-temp-expr
                                           :expr rhs-expr))
 
-         (q-arg    (make-vl-plainarg :expr lhs-expr :portname "q" :dir :vl-output))
+         ;; HACK for delays on flops.  (Not trying latches yet).
+         ;; If there's a delay like always @(posedge clk) q <= #1 d, then we
+         ;; want to essentially replace q with a temporary wire and then add
+         ;; assign #1 q = tmp;  To make the code easy to write, we just always
+         ;; introduce such a temp wire.
+
+         ((mv lhs-temp-name nf)
+          (vl-namefactory-plain-name (str::cat lhs-name "_temp_lhs") nf))
+
+         (lhs-temp-expr (make-vl-atom :guts (make-vl-id :name lhs-temp-name)))
+         (lhs-temp-decl (make-vl-netdecl :loc loc
+                                         :name lhs-temp-name
+                                         :type :vl-wire
+                                         :range (vl-make-n-bit-range n)))
+         (delay (and delay
+                     (not (equal delay 0))
+                     (make-vl-gatedelay :rise (vl-make-index delay)
+                                        :fall (vl-make-index delay)
+                                        :high (vl-make-index delay))))
+
+         (lhs-temp-assign (make-vl-assign :loc loc
+                                          :lvalue lhs-expr
+                                          :expr lhs-temp-expr
+                                          :delay delay))
+
+         (q-arg    (make-vl-plainarg :expr lhs-temp-expr :portname "q" :dir :vl-output))
          (clk-arg  (make-vl-plainarg :expr clk-expr :portname "clk" :dir :vl-input))
          (d-arg    (make-vl-plainarg :expr rhs-temp-expr :portname "d" :dir :vl-input))
          (portargs (vl-arguments nil (list q-arg clk-arg d-arg)))
@@ -788,8 +823,8 @@ the module.</li>
                                    :loc loc)))
 
         (mv t warnings reg inst addmods
-            (list rhs-temp-decl)
-            (list rhs-temp-assign)
+            (list rhs-temp-decl lhs-temp-decl)
+            (list rhs-temp-assign lhs-temp-assign)
             nf)))
 
   (defmvtypes vl-always-infer-latch/flop
