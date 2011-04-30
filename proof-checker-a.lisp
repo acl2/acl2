@@ -1204,11 +1204,18 @@
                           nil))
     (pc-assign old-ss nil)))
 
+(defun pc-main1 (instr-list quit-conditions pc-print-prompt-and-instr-flg
+                            state)
+  (with-prover-step-limit!
+   :start
+   (pc-main-loop instr-list quit-conditions t pc-print-prompt-and-instr-flg
+                 state)))
+
 (defun pc-main (term raw-term event-name rule-classes instr-list
                      quit-conditions pc-print-prompt-and-instr-flg state)
   (pprogn (install-initial-state-stack term raw-term event-name rule-classes)
-          (pc-main-loop instr-list quit-conditions t pc-print-prompt-and-instr-flg
-                        state)))
+          (pc-main1 instr-list quit-conditions pc-print-prompt-and-instr-flg
+                    state)))
 
 (defun pc-top (raw-term event-name rule-classes instr-list quit-conditions state)
   ;; Here instr-list can have a non-nil last cdr, meaning "proceed
@@ -1251,51 +1258,57 @@
                (illegal-fnp-list (cdr x) w)))))
 )
 
-(defun verify-fn (raw-term raw-term-supplied-p event-name rule-classes instructions state)
-  (if (f-get-global 'in-verify-flg state)
-      (er soft 'verify
-          "You are apparently already inside the VERIFY interactive loop.  It is ~
-           illegal to enter such a loop recursively.")
+(defun verify-fn (raw-term raw-term-supplied-p event-name rule-classes
+                           instructions state)
+  (cond
+   ((f-get-global 'in-verify-flg state)
+    (er soft 'verify
+        "You are apparently already inside the VERIFY interactive loop.  It ~
+         is illegal to enter such a loop recursively."))
+   (t
     (mv-let
-      (erp val state)
-      (if raw-term-supplied-p
-          (state-global-let*
-           ((in-verify-flg t)
-            (print-base 10)
-            (inhibit-output-lst
-             (remove1-eq 'proof-checker
-                         (f-get-global 'inhibit-output-lst state))))
-           (pc-top raw-term event-name rule-classes
-                   (append instructions *standard-oi*)
-                   (list 'exit)
-                   state))
-        (if (null (state-stack))
-            (er soft 'verify "There is no interactive verification to re-enter!")
-          (let ((bad-fn
-                 (illegal-fnp
-                  (access goal
-                          (car (access pc-state (car (last (state-stack)))
-                                       :goals))
-                          :conc)
-                  (w state))))
-            (if bad-fn
-                (er soft 'verify
-                    "The current proof-checker session was begun in an ACL2 ~
-                     world with function symbol ~x0, but that function symbol ~
-                     no longer exists."
-                    bad-fn)
-              (state-global-let*
-               ((in-verify-flg t)
-                (print-base 10)
-                (inhibit-output-lst
-                 (remove1-eq 'proof-checker
-                             (f-get-global 'inhibit-output-lst state))))
-               (pc-main-loop (append instructions *standard-oi*)
-                             (list 'exit)
-                             t t state))))))
-      (if (equal erp *pc-complete-signal*)
-          (value val)
-        (mv erp val state)))))
+     (erp val state)
+     (cond
+      (raw-term-supplied-p
+       (state-global-let*
+        ((in-verify-flg t)
+         (print-base 10)
+         (inhibit-output-lst
+          (remove1-eq 'proof-checker
+                      (f-get-global 'inhibit-output-lst state))))
+        (pc-top raw-term event-name rule-classes
+                (append instructions *standard-oi*)
+                (list 'exit)
+                state)))
+      ((null (state-stack))
+       (er soft 'verify "There is no interactive verification to re-enter!"))
+      (t
+       (let ((bad-fn
+              (illegal-fnp
+               (access goal
+                       (car (access pc-state (car (last (state-stack)))
+                                    :goals))
+                       :conc)
+               (w state))))
+         (cond
+          (bad-fn
+           (er soft 'verify
+               "The current proof-checker session was begun in an ACL2 world ~
+                with function symbol ~x0, but that function symbol no longer ~
+                exists."
+               bad-fn))
+          (t
+           (state-global-let*
+            ((in-verify-flg t)
+             (print-base 10)
+             (inhibit-output-lst
+              (remove1-eq 'proof-checker
+                          (f-get-global 'inhibit-output-lst state))))
+            (pc-main1 (append instructions *standard-oi*)
+                      (list 'exit) t state)))))))
+     (cond ((equal erp *pc-complete-signal*)
+            (value val))
+           (t (mv erp val state)))))))
 
 (defun print-unproved-goals-message (goals state)
   (io? proof-checker nil state

@@ -5619,7 +5619,7 @@
 
   (let* ((tag 'binding-lst)
          (binding (cons var term))
-         (old (tagged-value tag ttree)))
+         (old (tagged-object tag ttree)))
     (cond (old (extend-tag-tree tag
                                 (list (cons binding old))
                                 (remove-tag-from-tag-tree! tag ttree)))
@@ -7275,7 +7275,7 @@
               (tag-tree-occur 'literal lit
                               (access history-entry (car hist) :ttree)))
          (or get-clause-id
-             (tagged-value 'clause-id (access history-entry (car hist)
+             (tagged-object 'clause-id (access history-entry (car hist)
                                               :ttree))))
         (t (already-used-by-fertilize-clausep lit (cdr hist) get-clause-id))))
 
@@ -9132,7 +9132,7 @@
                  (cons #\p (if raw-proof-format "" ", "))
                  (cons #\3 (tilde-@-clause-id-phrase cl-id))
                  (cons #\b (tilde-@-bddnote-phrase
-                            (tagged-value 'bddnote ttree)))
+                            (tagged-object 'bddnote ttree)))
                  (cons #\c (tilde-@-case-split-limitations-phrase
                             (tagged-objects 'sr-limit ttree)
                             (tagged-objects 'case-limit ttree)
@@ -9154,7 +9154,7 @@
                                (tagged-objects 'case-limit ttree)
                                "")))
                    (cons #\b (tilde-@-bddnote-phrase
-                              (tagged-value 'bddnote ttree))))
+                              (tagged-object 'bddnote ttree))))
              (proofs-co state)
              state
              (term-evisc-tuple nil state)))
@@ -9164,7 +9164,7 @@
              (list (cons #\0 (if (tagged-objectsp 'assumption ttree) 1 0))
                    (cons #\1 (tilde-*-simp-phrase ttree))
                    (cons #\b (tilde-@-bddnote-phrase
-                              (tagged-value 'bddnote ttree)))
+                              (tagged-object 'bddnote ttree)))
                    (cons #\c (tilde-@-case-split-limitations-phrase
                               (tagged-objects 'sr-limit ttree)
                               (tagged-objects 'case-limit ttree)
@@ -9173,14 +9173,14 @@
              state
              (term-evisc-tuple nil state)))))
      (t
-      (let ((hyp-phrase (tagged-value 'hyp-phrase ttree)))
+      (let ((hyp-phrase (tagged-object 'hyp-phrase ttree)))
         (cond (hyp-phrase
                (fms "We remove HIDE from ~@0, which was used heuristically to ~
                      transform ~@1 by substituting into the rest of that ~
                      goal.  This produces~|"
                     (list (cons #\0 hyp-phrase)
                           (cons #\1 (tilde-@-clause-id-phrase
-                                     (tagged-value 'clause-id ttree))))
+                                     (tagged-object 'clause-id ttree))))
                     (proofs-co state)
                     state
                     (term-evisc-tuple nil state)))
@@ -9192,7 +9192,7 @@
                           (cons #\2 clauses)
                           (cons #\3 (length clauses))
                           (cons #\b (tilde-@-bddnote-phrase
-                                     (tagged-value 'bddnote ttree)))
+                                     (tagged-object 'bddnote ttree)))
                           (cons #\c (tilde-@-case-split-limitations-phrase
                                      (tagged-objectsp 'sr-limit ttree)
                                      (tagged-objectsp 'case-limit ttree)
@@ -9208,7 +9208,7 @@
                           (cons #\2 clauses)
                           (cons #\3 (length clauses))
                           (cons #\b (tilde-@-bddnote-phrase
-                                     (tagged-value 'bddnote ttree)))
+                                     (tagged-object 'bddnote ttree)))
                           (cons #\c (tilde-@-case-split-limitations-phrase
                                      (tagged-objectsp 'sr-limit ttree)
                                      (tagged-objectsp 'case-limit ttree)

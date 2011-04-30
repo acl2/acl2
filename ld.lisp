@@ -17588,9 +17588,11 @@
   ~c[(defattach ancestors-check <your_function>)].  Thanks to Robert Krug for
   providing the necessary proof support, which we modified only in small ways.
 
-  A new macro, ~c[observation-cw], provides formatted printing of observations
-  without ~ilc[state]: ~pl[observation].  Thanks to Harsh Raju Chamarthi for
-  requesting this utility, which is now used in some of the distributed books.
+  New macros, ~c[observation-cw] and ~c[warning$-cw], provide formatted
+  printing of ~ilc[observation]s and warnings (respectively) without
+  ~ilc[state].  Thanks to Harsh Raju Chamarthi and David Rager for requests
+  leading to these utilities.  ~c[Observation-cw] is now used in some of the
+  distributed books (thanks to Robert Krug for useful interaction for that).
 
   The ~il[proof-checker] command ~c[type-alist] (~pl[proof-checker-commands])
   now takes an optional third argument that causes the production of
@@ -17617,11 +17619,10 @@
   The new utility ~ilc[with-prover-step-limit] is analogous to the utility
   ~ilc[with-prover-time-limit], but counts ``prover steps'' rather than
   checking for time elapsed.  ~l[with-prover-step-limit].  Also
-  ~pl[set-prover-step-limit] to set the prover step-limit globally.  Note that
-  just as ~ilc[with-prover-time-limit] may now be used to create ~il[events],
-  as discussed just above, ~ilc[with-prover-step-limit] may also be used to
-  create ~il[events].  Thanks to Carl Eastlund for requesting support for
-  step-limits.
+  ~pl[set-prover-step-limit] to provide a default step-limit.  Note that just
+  as ~ilc[with-prover-time-limit] may now be used to create ~il[events], as
+  discussed just above, ~ilc[with-prover-step-limit] may also be used to create
+  ~il[events].  Thanks to Carl Eastlund for requesting support for step-limits.
 
   ~st[HEURISTIC IMPROVEMENTS]
 

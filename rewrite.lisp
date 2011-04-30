@@ -5209,13 +5209,15 @@
 ; The state global 'step-limit-record is bound to one of these records at the
 ; start of an event by with-ctx-summarized (specifically, by the call of
 ; with-prover-step-limit in save-event-state-globals).  Then, :start is the
-; initial value of state global 'last-step-limit for that event, and :strictp
-; indicates whether an error should occur if the step-limit is exceeded.
+; initial value of state global 'last-step-limit for that event; :strictp
+; indicates whether an error should occur if the step-limit is exceeded; and
+; :sub-limit is the step-limit to use for sub-events, if any, where nil
+; indicates that the sub-limit should be limited by the current step-limit.
 
 ; This record is not often built, but we could change the cheap flag from t to
 ; nil to save a cons if that turns out to be important.
 
-  (start . strictp)
+  (start strictp . sub-limit)
   t)
 
 (defun step-limit-start (state)
@@ -5234,11 +5236,31 @@
 
   (let ((rec (f-get-global 'step-limit-record state)))
     (cond (rec (access step-limit-record rec :strictp))
-          (t (let ((limit (cdr (assoc-eq :step-limit
-                                         (table-alist 'acl2-defaults-table
-                                                      (w state))))))
-               (and limit
-                    (not (eql limit *default-step-limit*))))))))
+          (t nil))))
+
+(defun initial-step-limit (wrld state)
+
+; This function returns the current step limit.  If 'step-limit-record has a
+; non-nil value (see defrec step-limit-record), then we are already tracking
+; step-limits in the state, so we return the value of 'last-step-limit.
+; Otherwise the acl2-defaults-table is consulted for the step-limit.
+
+  (declare (xargs :guard ; also needs rec, bound below, to be suitable
+                  (and (plist-worldp wrld)
+                       (alistp (table-alist 'acl2-defaults-table wrld))
+                       (let ((val (cdr (assoc-eq :step-limit
+                                                 (table-alist 'acl2-defaults-table
+                                                              wrld)))))
+                         (or (null val)
+                             (and (natp val)
+                                  (<= val *default-step-limit*))))
+                       (state-p state)
+                       (boundp-global 'step-limit-record state)
+                       (boundp-global 'last-step-limit state))))
+  (let ((rec (f-get-global 'step-limit-record state)))
+    (cond (rec (or (access step-limit-record rec :sub-limit)
+                   (f-get-global 'last-step-limit state)))
+          (t (step-limit-from-table wrld)))))
 
 (defun step-limit-error1 (ctx str start where state)
   (declare (ignorable state)) ; only used in raw Lisp

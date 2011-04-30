@@ -10250,10 +10250,14 @@
   includes a breakdown of time used and, unless proofs are skipped
   (~pl[ld-skip-proofsp]) or summary output is inhibited
   (~pl[set-inhibit-output-lst]), information about the proof attempt
-  (if any) including a list of rules used and a summary of warnings.  A detail:
+  (if any) including a list of rules used, a summary of warnings, and the
+  number of ``prover steps'' (if any; ~pl[with-prover-step-limit]).  A detail:
   The time is calculated using Common Lisp function ~c[get-internal-run-time],
   which may ignore calls to external tools (~pl[sys-call] and
-  ~pl[clause-processor]).~/")
+  ~pl[clause-processor]).
+
+  ~l[embedded-event-form] for a discussion of events permitted in
+  ~il[books].~/")
 
 (deflabel documentation
   :doc
@@ -24618,6 +24622,7 @@
     position
     catch-step-limit
     step-limit-error
+    with-prover-step-limit
     ))
 
 (defmacro with-live-state (form)
@@ -24825,7 +24830,7 @@
     (iprint-soft-bound . ,*iprint-soft-bound-default*)
     (keep-tmp-files . nil)
     (last-make-event-expansion . nil)
-    (last-step-limit . nil)
+    (last-step-limit . -1) ; any number should be OK
     (ld-level . 0)
     (ld-redefinition-action . nil)
     (ld-skip-proofsp . nil)
@@ -35032,29 +35037,6 @@
                      (table-alist 'acl2-defaults-table wrld)))
       *default-step-limit*))
 
-(defun initial-step-limit (wrld state)
-
-; This function returns the current step limit.  If 'step-limit-record has a
-; non-nil value (see defrec step-limit-record), then we are already tracking
-; step-limits in the state, so we return the value of 'last-step-limit.
-; Otherwise the acl2-defaults-table is consulted for the step-limit.
-
-  (declare (xargs :guard
-                  (and (plist-worldp wrld)
-                       (alistp (table-alist 'acl2-defaults-table wrld))
-                       (let ((val (cdr (assoc-eq :step-limit
-                                                 (table-alist 'acl2-defaults-table
-                                                              wrld)))))
-                         (or (null val)
-                             (and (natp val)
-                                  (<= val *default-step-limit*))))
-                       (state-p state)
-                       (boundp-global 'step-limit-record state)
-                       (boundp-global 'last-step-limit state))))
-  (let ((rec (f-get-global 'step-limit-record state)))
-    (cond (rec (f-get-global 'last-step-limit state))
-          (t (step-limit-from-table wrld)))))
-
 #-acl2-loop-only
 (defparameter *step-limit-error-p*
 
@@ -35069,7 +35051,18 @@
 
   ":Doc-Section switches-parameters-and-modes
 
-  sets the step-limit used by the ACL2 prover~/
+  sets the step-limit used by the ACL2 prover at the top level only~/
+
+  This event provides a way to limit the number of so-called ``prover steps''
+  permitted for an event.  ~l[with-prover-step-limit] for a way to specify the
+  limit on prover steps for a single event, rather than globally (and without
+  the restriction mentioned above, pertaining to the top level).  For a related
+  utility based on time instead of prover steps, ~pl[with-prover-time-limit].
+  For examples of how step limits work, see the distributed book
+  ~c[books/misc/misc2/step-limits.lisp].
+
+  For examples of how step limits work, see the distributed book
+  ~c[books/misc/misc2/step-limits.lisp].
 
   Note: This is an event!  It does not print the usual event summary
   but nevertheless changes the ACL2 logical ~il[world] and is so
@@ -35088,27 +35081,31 @@
   ~ev[]
   where ~c[expr] evaluates either to ~c[nil] or else to a natural number not
   exceeding the value of ~c[*default-step-limit*].  If that value is ~c[nil] or
-  the value of ~c[*default-step-limit*], then no limit is placed on the number
-  of prover ``steps'' (see below) during processing of an event.  Otherwise,
-  that value is the maximum number of prover steps permitted before an error
-  occurs.
+  the value of ~c[*default-step-limit*], then no default limit is placed on the
+  number of prover ``steps'' (see below) during processing of an event.
+  Otherwise, that value is the maximum number of prover steps permitted before
+  an error occurs.
 
   This event specifies the limit on the number of ``steps'' counted by the ACL2
   prover during processing of an event.  Currently, a step is counted for each
-  top-level rewriting call (calls of system functions ~c[rewrite] and
-  ~c[expand-abbreviations]).  However, the steps counted may change in future
-  releases of ACL2, so users would probably be well served by avoiding the
-  assumption that only the above two calls are counted as prover steps.
+  call of the system functions ~c[rewrite] and ~c[expand-abbreviations].
+  However, the steps counted may change in future releases of ACL2, so users
+  would probably be well served by avoiding the assumption that only the above
+  two calls are counted as prover steps.
 
-  Depending on the machine you are using, you may have only (very roughly) a
+  Depending on the computer you are using, you may have only (very roughly) a
   half-hour of time before the number of prover steps exceeds the maximum
   step-limit, which is one less than the value of ~c[*default-step-limit*].
   Note however the exception stated above: if the ``limit'' is ~c[nil] or is
   the value of ~c[*default-step-limit*], then no limit is imposed.
 
-  ~l[with-prover-step-limit] for a way to specify the limit on prover steps for
-  a single event, rather than globally.  For a related utility based on time
-  instead of prover steps, ~pl[with-prover-time-limit].
+  The limit is relevant for every event, to calls of ~ilc[thm] and
+  ~ilc[certify-book], and more generally, to any form that creates a ``summary
+  context'' to print the usual event summary.  The limit is also put in force
+  when entering the ~il[proof-checker].  Below, at the end of this
+  ~il[documentation] topic, we explain in detail when a call of
+  ~c[set-prover-step-limit] is in force: in brief, it applies to all forms that
+  are either at the top level or are inside the same summary contexts.
 
   Note that the limit applies to each event, not just ``atomic'' events.
   Consider the following example.
@@ -35172,8 +35169,8 @@
   Form:  ( MAKE-EVENT (ER-PROGN ...))
   Rules: NIL
   Warnings:  Double-rewrite, Equiv, Subsume and Non-rec
-  Time:  0.87 seconds (prove: 0.34, print: 0.39, other: 0.14)
-  Prover steps counted:  40892
+  Time:  0.38 seconds (prove: 0.04, print: 0.29, other: 0.05)
+  Prover steps counted:  41090
    NIL
   ACL2 !>
   ~ev[]
@@ -35182,17 +35179,38 @@
   function (~pl[extended-metafunctions]), the steps taken during that call are
   forgotten when returning from that call.
 
-  Note: This is an event!  It does not print the usual event summary
-  but nevertheless changes the ACL2 logical ~il[world] and is so
-  recorded.  Moreover, its effect is to set the ~ilc[acl2-defaults-table], and
-  hence its effect is ~ilc[local] to the book or ~ilc[encapsulate] form
-  containing it; ~pl[acl2-defaults-table].~/"
+  Finally, we discuss in some detail with a ~c[set-prover-step-limit] event is
+  in force: it applies to a subsequent form that is either at the top level or
+  at the same level as the ~c[set-prover-step-limit] form, in the following
+  sense.  Let us say that a ``summary context'' is any context for which the
+  usual ACL2 summary will ultimately be printed (if summary printing is not
+  inhibited).  Every event ~-[] a call of ~ilc[defun] or ~ilc[defthm], or more
+  generally, every embedded event form (~pl[embedded-event-form]) ~-[]
+  establishes a summary context, as do certain other top-level forms such as
+  calls of ~ilc[thm] and ~ilc[certify-book].  (But a call of ~ilc[ld] does not
+  establish a summary context.)  Here, we consider two forms to be at the same
+  level if they are in the same summary contexts.  Thus, if
+  ~c[set-prover-step-limit] is called at the top level, then this call is not
+  in force for ~il[events] under a call of ~ilc[certify-book],
+  ~ilc[encapsulate], ~ilc[progn], ~ilc[make-event], or (more generally) under
+  any form that establishes a summary context.  Also, if
+  ~c[set-prover-step-limit] is called inside a summary context, then it does
+  not apply above that summary context except, if it is not local to some
+  event, at the very top level.~/"
 
   `(state-global-let*
     ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
-    (progn (table acl2-defaults-table :step-limit (or ,limit
-                                                      *default-step-limit*))
-           (table acl2-defaults-table :step-limit))))
+    (pprogn
+     (let ((rec (f-get-global 'step-limit-record state)))
+       (cond (rec (f-put-global 'step-limit-record
+                                (change step-limit-record rec
+                                        :sub-limit
+                                        (or ,limit *default-step-limit*))
+                                state))
+             (t state)))
+     (progn (table acl2-defaults-table :step-limit
+                   (or ,limit *default-step-limit*))
+            (table acl2-defaults-table :step-limit)))))
 
 #-acl2-loop-only
 (defmacro set-prover-step-limit (limit)

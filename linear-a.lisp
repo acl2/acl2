@@ -226,8 +226,10 @@
 ; After Version_4.2 we switched to a representation of a tag-tree as an alist,
 ; associating a key with a non-empty list of values, rather than building up
 ; tag-trees with operations (acons tag value ttree) and (cons ttree1 ttree2).
-; Our motivation was to allow the addition of a new key, associated with many
-; values, without degrading performance significantly.
+; Note that we view these lists as sets, and are free to ignore order and
+; duplications (though we attempt to avoid duplicates).   Our motivation was to
+; allow the addition of a new key, associated with many values, without
+; degrading performance significantly.
 
 ; Each definition of a primitive for manipulating tag-trees has the comment: "
 ; Note: Tag-tree primitive".
@@ -512,15 +514,16 @@
 
   `(assoc-eq ,tag ,ttree))
 
-(defun tagged-value (tag ttree)
+(defun tagged-object (tag ttree)
 
 ; Note: Tag-tree primitive
 
-; This function returns obj for the unique (tag . obj) it finds in ttree or nil
-; if there is no object with that tag.  If there may be more than one object
-; associated with tag in ttree, use (car (tagged-objects tag ttree)) instead to
-; obtain one such object, or use (tagged-objectsp tag ttree) if you only want
-; to answer the question "Is there any object associated with tag in ttree?".
+; This function returns obj for the unique obj associated with tag in ttree, or
+; nil if there is no object with that tag.  If there may be more than one
+; object associated with tag in ttree, use (car (tagged-objects tag ttree))
+; instead to obtain one such object, or use (tagged-objectsp tag ttree) if you
+; only want to answer the question "Is there any object associated with tag in
+; ttree?".
 
   (let ((objects (tagged-objects tag ttree)))
     (and objects

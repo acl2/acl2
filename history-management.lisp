@@ -1553,13 +1553,13 @@
       state
     (let* ((forcing-round (access clause-id cl-id :forcing-round))
            (aborting-p (and (eq signal 'abort)
-                            (not (eq (tagged-value 'abort-cause ttree)
+                            (not (eq (tagged-object 'abort-cause ttree)
                                      'revert))))
            (clause-count
             (cond ((eq signal 'or-hit)
                    (assert$
                     (eq processor 'apply-top-hints-clause)
-                    (length (nth 2 (tagged-value :or ttree)))))
+                    (length (nth 2 (tagged-object :or ttree)))))
                   (t clause-count)))
            (processor
             (cond
@@ -3432,43 +3432,48 @@
              (t state))
        (f-put-global 'proof-tree nil state))))))
 
-(defun with-prover-step-limit-fn (limit form)
-  `(mv-let
-    (wpsl-initial-step-limit ; limit from parent environment
-     wpsl-limit              ; new step-limit for child environment
-     wpsl-startp)
-    (let ((limit ,limit)
-          (initial-step-limit (initial-step-limit (w state) state)))
-      (mv initial-step-limit
-          (cond ((null limit)
-                 *default-step-limit*)
-                ((and (natp limit)
-                      (<= limit *default-step-limit*))
-                 limit)
-                ((eq limit :start) ; inherit limit from parent environment
-                 initial-step-limit)
-                (t (er hard 'with-prover-step-limit
-                       "Illegal value for ~x0, ~x1.  See :DOC ~
-                        with-prover-step-limit."
-                       'with-prover-step-limit
-                       limit)))
-          (eq limit :start)))
-    (pprogn
-     (f-put-global 'last-step-limit wpsl-limit state) ; new step-limit
-     (mv-let
-      (erp val state)
-      (state-global-let*
-       ((step-limit-record
-         (make step-limit-record
-               :start wpsl-limit
-               :strictp (cond (wpsl-startp (step-limit-strictp state))
-                              (t (not (eql wpsl-limit
-                                           *default-step-limit*)))))))
-       (check-vars-not-free (wpsl-initial-step-limit
-                             wpsl-limit
-                             wpsl-startp)
-                            ,form))
-       (let* ((steps-taken
+(defun make-step-limit-record (limit)
+  (make step-limit-record
+        :start limit
+        :strictp (not (eql limit *default-step-limit*))
+        :sub-limit nil))
+
+(defun with-prover-step-limit-fn (limit form no-change-flg)
+  (let ((protected-form
+         `(state-global-let*
+           ((step-limit-record (make-step-limit-record wpsl-limit)))
+           (check-vars-not-free (wpsl-limit
+                                 wpsl-old-limit)
+                                ,form))))
+    `(let ((wpsl-limit ; new step-limit for child environment
+            (let ((limit ,limit))
+              (cond ((null limit)
+                     *default-step-limit*)
+                    ((and (natp limit)
+                          (<= limit *default-step-limit*))
+                     limit)
+                    ((eq limit :start) ; inherit limit from parent environment
+                     (initial-step-limit (w state) state))
+                    (t (er hard 'with-prover-step-limit
+                           "Illegal value for ~x0, ~x1.  See :DOC ~
+                            with-prover-step-limit."
+                           'with-prover-step-limit
+                           limit)))))
+           ,@(and (not no-change-flg)
+                  `((wpsl-old-limit ; existing value of last-step-limit
+                     (f-get-global 'last-step-limit state)))))
+       ,(cond
+         (no-change-flg
+          `(state-global-let*
+            ((last-step-limit wpsl-limit))
+            ,protected-form))
+         (t
+          `(pprogn
+            (f-put-global 'last-step-limit wpsl-limit state) ; new step-limit
+            (mv-let
+             (erp val state)
+             ,protected-form
+             (let* ((steps-taken
 
 ; Even if the value of 'last-step-limit is -1, the following difference
 ; correctly records the number of prover steps taken, where we consider it a
@@ -3476,16 +3481,15 @@
 ; all, the sub-event will say "more than", which assumes that this final step
 ; is counted.
 
-               (- wpsl-limit (f-get-global 'last-step-limit state)))
-              (new-step-limit (cond
-                               ((< wpsl-initial-step-limit
-                                   steps-taken)
-                                -1)
-                               (t (- wpsl-initial-step-limit steps-taken)))))
-         (pprogn
-          (f-put-global 'last-step-limit new-step-limit state)
-          (cond
-           (erp (mv erp val state))
+                     (- wpsl-limit (f-get-global 'last-step-limit state)))
+                    (new-step-limit (cond
+                                     ((< wpsl-old-limit steps-taken)
+                                      -1)
+                                     (t (- wpsl-old-limit steps-taken)))))
+               (pprogn
+                (f-put-global 'last-step-limit new-step-limit state)
+                (cond
+                 (erp (mv erp val state))
 
 ; Next we consider the case that the step-limit is exceeded after completion of
 ; a sub-event of a compound event, for example, between the two defthm events
@@ -3500,14 +3504,24 @@
 ;                                   (append x y z))))
 ;  (defthm bar (equal (car (cons x y)) x)))
 
-           ((and (eql new-step-limit -1)
-                 (step-limit-strictp state))
-            (step-limit-error t))
-           (t (value val)))))))))
+                 ((and (eql new-step-limit -1)
+                       (step-limit-strictp state))
+                  (step-limit-error t))
+                 (t (value val))))))))))))
 
-(defmacro with-prover-step-limit (limit form)
+#+acl2-loop-only
+(defmacro with-prover-step-limit (limit form
+                                        &optional (actual-form 'nil
+                                                               actual-form-p))
 
-; Form should evaluate to an error triple.  A value of :start for limit says
+; Warning: Do not attempt to move the extra flag argument to the normal last
+; position one might expect of an optional argument, without considering the
+; need to change several functions (e.g., chk-embedded-event-form,
+; elide-locals-rec, and destructure-expansion) that currently treat
+; with-prover-step-limit as with-output is treated: expecting the event form to
+; be in the last position.
+
+; Form should evaluate to an error triple.  A value of :START for limit says
 ; that we use the current limit, i.e., the value of state global
 ; 'last-step-limit if the value of state global 'step-limit-record is not nil,
 ; else the value from the acl2-defaults-table; see initial-step-limit.
@@ -3515,6 +3529,32 @@
   ":Doc-Section Other
 
   limit the number of steps for proofs~/
+
+  Logically, ~c[(with-prover-step-limit expr form)] is equivalent to ~c[form],
+  except that if the number of ``prover steps'' executed during evaluation of
+  ~c[form] exceeds a bound specified by the value of ~c[expr], then that proof
+  will abort.  ~l[set-prover-step-limit] for a related utility that sets the
+  limit on prover steps globally instead of setting it for just one form, and
+  for a discussion of the notion of ``prover steps'', which could change in
+  future ACL2 releases.  For a related utility based on time instead of prover
+  steps, ~pl[with-prover-time-limit].
+
+  The arguments of ~c[(with-prover-step-limit expr form)] are evaluated.  The
+  optional extra argument, discussed below, is not evaluated.
+
+  Depending on the machine you are using, you may have only (very roughly) a
+  half-hour of time before the number of prover steps exceeds the maximum
+  limit on prover steps that may be imposed, which is one less than the value
+  of ~c[*default-step-limit*].  But there is no limit unless you explicitly
+  call ~c[with-prover-step-limit] or ~ilc[set-prover-step-limit].
+
+  For examples of how step-limits work besdies those presented below, see the
+  distributed book ~c[books/misc/misc2/step-limits.lisp].
+
+  Note that ~c[with-prover-step-limit] may not be called inside definitions,
+  and that it is simply the identity macro in raw Lisp.  However,
+  ~c[with-prover-step-limit!] may be called in place of
+  ~c[with-prover-step-limit], with the same effect as described here.
 
   ~bv[]
   Examples:
@@ -3526,7 +3566,17 @@
   ; mini-proveall call completes, but then we get an error because the second
   ; argument of the outer with-prover-step-limit call took more than 200
   ; steps.
-  (with-prover-step-limit 200 (with-prover-step-limit 100000 (mini-proveall)))
+  (with-prover-step-limit
+   200
+   (with-prover-step-limit 100000 (mini-proveall)))
+
+  ; Same as preceding form just above, except that this time there is no error,
+  ; because the inner call of with-prover-step-limit has an extra argument
+  ; of t inserted into the second argument position, which specifies that this
+  ; entire inner call is treated as though it uses no prover steps.
+  (with-prover-step-limit
+   200
+   (with-prover-step-limit 100000 t (mini-proveall)))
 
   ; The inner call limit (mini-proveall) to 200 prover steps, which fails
   ; almost immediately. 
@@ -3536,8 +3586,8 @@
   ; globally or by the surrounding context.
   (with-prover-step-limit nil (mini-proveall))
 
-  ; Limit the indicated theorem to 100 steps, and if the proof does not
-  ; complete or it fails, then put down a label instead.
+  ; Limit the indicated theorem to 100 steps, and when the proof does not
+  ; complete, then put down a label instead.
   (mv-let (erp val state)
           (with-prover-step-limit
            100
@@ -3545,49 +3595,92 @@
                        (append x x x))))
           (if erp
               (deflabel foo :doc \"Attempt failed.\")
-            (value (list :succeeded-with val))))~/
+            (value (list :succeeded-with val))))
 
-  General Form:
+  ; Use extra argument of t to avoid ``charging'' steps for the indicated
+  ; form.
+  (with-prover-step-limit
+   500
+   (encapsulate
+    ()
+    (with-prover-step-limit
+     500
+     t ; Don't charge prover steps for this first defthm.
+     (defthm test1
+       (equal (append x (append y z)) 
+              (append (append x y) z))
+       :rule-classes nil))
+    (defthm test2
+      (equal (append x (append y z)) 
+             (append (append x y) z))
+      :rule-classes nil)))~/
+
+  General Forms:
   (with-prover-step-limit expr form)
+  (with-prover-step-limit expr flg form)
   ~ev[]
-  where ~c[form] is arbitrary, and ~c[expr] evaluates either to ~c[nil] or else
-  to a natural number not exceeding the value of ~c[*default-step-limit*].
-  (A special value, ~c[:start], is also legal but is only used internally by
-  ACL2, so we do not document it here.)  If the value of ~c[expr] is ~c[nil] or
-  is the value of ~c[*default-step-limit*], then no limit is placed on the
-  number of prover steps during processing of ~c[form].  Otherwise, that value
-  is the maximum number of prover steps permitted during evaluation of ~c[form]
-  before an error occurs.
+  where ~c[form] is an arbitrary form to evaluate, and ~c[expr] evaluates
+  either, ~c[nil], or to a natural number not exceeding the value of
+  ~c[*default-step-limit*], or to the special value, ~c[:START].  The extra
+  argument, ~c[flg], should be Boolean if supplied.
 
-  ~l[set-prover-step-limit] for a related utility that sets the limit on prover
-  steps globally instead of setting it for just one form, and for a discussion
-  of the notion of ``prover steps'', which could change in future ACL2
-  releases.  For a related utility based on time instead of prover steps,
-  ~pl[with-prover-time-limit].
+  If the value of ~c[expr] is a non-negative integer less than the value of
+  ~c[*default-step-limit*], then that value is the maximum number of prover
+  steps permitted during evaluation of ~c[form] before an error occurs.  If
+  however the value of ~c[expr] is ~c[nil] or is the value of
+  ~c[*default-step-limit*], then no limit is placed on the number of prover
+  steps during processing of ~c[form].  Otherwise, that value is the keyword
+  ~c[:START], which is treated as follows.~bq[]
 
-  Depending on the machine you are using, you may have only (very roughly) a
-  half-hour of time before the number of prover steps exceeds the maximum
-  step-limit, which is one less than the value of ~c[*default-step-limit*].
-  Note however the exception stated above: if the value of ~c[expr] is ~c[nil]
-  or is the value of ~c[*default-step-limit*], then no limit is placed on the
-  number of prover steps during processing of ~c[form].
+  - If a preceding call of ~ilc[set-prover-step-limit] is in force, then this
+  call provides the new limit or establishes that there is no limit.
+  ~l[set-prover-step-limit] for a discussion of how this works.
 
-  Logically, ~c[(with-prover-step-limit expr form)] is equivalent to ~c[form],
-  except that if the number of prover steps during evaluation of ~c[form]
-  exceeds the value specified by the value of ~c[expr] (other than the
-  exceptional case noted just above), then that proof will abort.
+  - Otherwise, if there is a superior call of ~c[with-prover-step-limit], then
+  if the immediately superior such call did not establish a limit, then there
+  is no limit.
 
-  Although ~c[with-prover-step-limit] behaves like an ACL2 function in the
-  sense that it evaluates both its arguments, it is however actually a macro
-  that behaves as follows.  (1) The value of its first (step limit) argument
-  affects the evaluation of its second argument (by causing an error during
-  that evaluation if too many prover steps are needed).  (2) The second
-  argument can return multiple values (~pl[mv]), which are then returned by the
-  call of ~c[with-prover-step-limit].  (3) Thus, there is not a fixed output
-  ~il[signature] for ~c[with-prover-step-limit] (not surprisingly, since it is
-  a macro).~/"
+  - Otherwise, if there is a superior call of ~c[with-prover-step-limit], then
+  the limit is the current limit, i.e., the difference between the limit
+  established by that superior call and the number of prover steps already
+  recorded since the point of entering that call.
 
-  (with-prover-step-limit-fn limit form))
+  - Otherwise there is no limit.~eq[]
+
+  Finally we describe the optional extra Boolean argument, ~c[flg].  If ~c[flg]
+  is ~c[nil] or omitted, then a running count of prover steps is maintained
+  after ~c[form] is evaluated; otherwise, that count is not affected by
+  evaluation of ~c[form].  To see how this works when ~c[flg] is nil or
+  omitted, consider an event of shape ~c[(progn form1 form2)], where we are
+  tracking prover steps (say, because of a superior call of
+  ~c[with-prover-step-limit]).  If ~c[n] is the number of prover steps
+  available when the ~ilc[progn] form is entered, and if ~c[s] prover steps are
+  executed while evaluating ~c[form1], then ~c[n-s] steps are available for
+  evaluation of ~c[form2] provided ~c[s] does not exceed ~c[n]; otherwise, an
+  error occurs.  In particular, this is the case if ~c[form] is an event
+  ~c[(with-prover-step-limit k form1')].  However, if ~c[form] is an event
+  ~c[(with-prover-step-limit k t form1')], then because of the extra argument
+  of ~c[t], no steps are ``charged'' to ~c[form]; that is, all ~c[n] steps,
+  rather than ~c[n-s] steps, are available for evaluation of ~c[form2].~/"
+
+  (declare (xargs :guard (or (not actual-form-p)
+                             (booleanp form))))
+  (cond (actual-form-p
+         (with-prover-step-limit-fn limit actual-form form))
+        (t
+         (with-prover-step-limit-fn limit form nil))))
+
+#-acl2-loop-only
+(defmacro with-prover-step-limit (limit form
+                                        &optional (actual-form 'nil
+                                                               actual-form-p))
+  (declare (ignore limit))
+  (cond (actual-form-p actual-form)
+        (t form)))
+
+(defmacro with-prover-step-limit! (limit form &optional no-change-flg)
+  (declare (xargs :guard (booleanp no-change-flg)))
+  (with-prover-step-limit-fn limit form no-change-flg))
 
 (defmacro save-event-state-globals (form)
 
@@ -3604,7 +3697,7 @@
      (proof-tree-ctx nil)
      (saved-output-p t))
     (pprogn (f-put-global 'saved-output-reversed nil state)
-            (with-prover-step-limit :start ,form))))
+            (with-prover-step-limit! :START ,form))))
 
 (defmacro with-ctx-summarized (ctx body)
 

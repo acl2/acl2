@@ -7218,7 +7218,7 @@ Missing functions:
 ; full-book-name have already been evaluated and (if appropriate) proclaimed,
 ; hence in particular so that macros have been defined.
 
-  (er-progn
+  (progn
    (chk-book-name full-book-name full-book-name 'acl2-compile-file
                   *the-live-state*)
    (let ((*readtable* *acl2-readtable*)

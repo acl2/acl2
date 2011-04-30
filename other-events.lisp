@@ -4345,7 +4345,7 @@
     whose expansion is an embedded event (~pl[make-event]);
 
     ~c[x] is of the form ~c[(]~ilc[WITH-OUTPUT]~c[ ... x1)],
-    ~c[(]~ilc[WITH-PROVER-STEP-LIMIT]~c[ ... x1)], or
+    ~c[(]~ilc[WITH-PROVER-STEP-LIMIT]~c[ ... x1 ...)], or
     ~c[(]~ilc[WITH-PROVER-TIME-LIMIT]~c[ ... x1)], where ~c[x1] is an embedded
     event form;
 
@@ -4826,7 +4826,8 @@
 ; The macro being called will check the details of the form structure.
 
            (er-let* ((new-form (chk-embedded-event-form
-                                (car (last form)) orig-form wrld ctx state
+                                (car (last form))
+                                orig-form wrld ctx state
                                 names portcullisp in-local-flg
                                 in-encapsulatep make-event-chk)))
                     (value (and new-form
@@ -14435,10 +14436,10 @@
                            ((equal flg "NIL")
                             (value nil))
                            (t (er soft ctx
-                                  "Illegal value, ~x0, for environment variable ~
-                               ACL2_COMPILE_FLG.  The legal values are (after ~
-                               converting to uppercase) ~x1, ~x2. and ~
-                               (synonymous with ~x1) :ALL."
+                                  "Illegal value, ~x0, for environment ~
+                                   variable ACL2_COMPILE_FLG.  The legal ~
+                                   values are (after converting to uppercase) ~
+                                   ~x1, ~x2. and (synonymous with ~x1) :ALL."
                                   flg
                                   t
                                   nil
@@ -14806,13 +14807,14 @@
 ; above, which calls read-object, which calls chk-bad-lisp-object.
 
                                           (er soft ctx
-                                              "The file ~x0 is not a legal list ~
-                                           of embedded event forms because it ~
-                                           contains an object, ~x1, that ~
-                                           check sum was unable to handle.  ~
-                                           This may be an implementation ~
-                                           error; feel free to contact the ~
-                                           ACL2 implementors."
+                                              "The file ~x0 is not a legal ~
+                                               list of embedded event forms ~
+                                               because it contains an object, ~
+                                               ~x1, that check sum was unable ~
+                                               to handle.  This may be an ~
+                                               implementation error; feel ~
+                                               free to contact the ACL2 ~
+                                               implementors."
                                               full-book-name
                                               chk-sum))
                                          (t

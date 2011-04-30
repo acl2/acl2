@@ -6806,9 +6806,9 @@
 ; Starting after Version_4.1, we use the ACL2 oracle to explain warning frames.
 ; Previously we kept these frames with a state global variable,
 ; 'accumulated-warnings, rather than in the raw lisp variable,
-; *accumulated-warnings*.  But then we introduced warning$-cmp to support the
+; *accumulated-warnings*.  But then we introduced warning$-cw1 to support the
 ; definitions of translate1-cmp and translate-cmp, which do not modify the ACL2
-; state.  Since warning$-cmp uses a wormhole, the warning frames based on a
+; state.  Since warning$-cw1 uses a wormhole, the warning frames based on a
 ; state global variable were unavailable when printing warning summaries.
 
   #+acl2-loop-only

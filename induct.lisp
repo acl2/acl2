@@ -3397,8 +3397,8 @@
 ; function in the waterfall.  See the discussion of the waterfall.
 
   (declare (ignore signal pspv clauses))
-  (let* ((lits (tagged-value 'irrelevant-lits ttree))
-         (clause (tagged-value 'clause ttree))
+  (let* ((lits (tagged-object 'irrelevant-lits ttree))
+         (clause (tagged-object 'clause ttree))
          (concl (car (last clause))))
     (cond
      ((equal (length lits)

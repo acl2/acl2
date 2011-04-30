@@ -1472,7 +1472,7 @@
 ; pool-lst has already been defined, in support of proof-trees.
 
 (defun push-clause-msg1-abort (cl-id ttree pspv state)
-  (let ((temp (tagged-value 'abort-cause ttree))
+  (let ((temp (tagged-object 'abort-cause ttree))
         (cl-id-phrase (tilde-@-clause-id-phrase cl-id))
         (gag-mode (gag-mode)))
     (case temp
@@ -2365,7 +2365,7 @@
 ; length of the third element.  The parent-cl-id in the value is the same as
 ; the cl-id passed in.
 
-  (let* ((val (tagged-value :or ttree))
+  (let* ((val (tagged-object :or ttree))
          (branch-cnt (length (nth 2 val))))
     (msg "The :OR hint for ~@0 gives rise to ~n1 disjunctive ~
           ~#2~[~/branch~/branches~].  Proving any one of these branches would ~
@@ -2397,12 +2397,12 @@
 
          (fms "But we have been asked to pretend that this goal is ~
                subsumed by the yet-to-be-proved ~x0.~|"
-              (list (cons #\0 (car (tagged-value :bye ttree))))
+              (list (cons #\0 (car (tagged-object :bye ttree))))
               (proofs-co state)
               state
               nil))
         ((tagged-objectsp :by ttree)
-         (let* ((obj (tagged-value :by ttree))
+         (let* ((obj (tagged-object :by ttree))
 
 ; Obj is of the form (lmi-lst thm-cl-set constraint-cl k event-names
 ; new-entries).
@@ -2411,7 +2411,7 @@
                 (thm-cl-set (cadr obj))
                 (k (car (cdddr obj)))
                 (event-names (cadr (cdddr obj)))
-                (ttree (tagged-value 'preprocess-ttree ttree)))
+                (ttree (tagged-object 'preprocess-ttree ttree)))
            (fms "~#0~[But, as~/As~/As~] indicated by the hint, this goal is ~
                  subsumed by ~x1, which ~@2.~#3~[~/  By ~*4 we reduce the ~
                  ~#5~[constraint~/~n6 constraints~] to ~#0~[T~/the following ~
@@ -2431,7 +2431,7 @@
                 state
                 (term-evisc-tuple nil state))))
         ((tagged-objectsp :use ttree)
-         (let* ((use-obj (tagged-value :use ttree))
+         (let* ((use-obj (tagged-object :use ttree))
 
 ; The presence of :use indicates that a :use hint was applied to one
 ; or more clauses to give the output clauses.  If there is also a
@@ -2467,13 +2467,13 @@
                 (event-names (cadr (cdddr (car use-obj))))
 ;               (non-tautp-applications (cdr use-obj))      ;;; |A|
                 (preprocess-ttree
-                 (tagged-value 'preprocess-ttree ttree))
+                 (tagged-object 'preprocess-ttree ttree))
 ;               (len-A non-tautp-applications)              ;;; |A|
                 (len-G (len clauses))                       ;;; |G|
                 (len-C k)                                   ;;; |C|
 ;               (len-C-prime (- len-G len-A))               ;;; |C'|
 
-                (cases-obj (tagged-value :cases ttree))
+                (cases-obj (tagged-object :cases ttree))
 
 ; If there is a cases-obj it means we had a :cases and a :use; the
 ; form of cases-obj is (splitting-terms . case-clauses), where
@@ -2509,7 +2509,7 @@
             state
             (term-evisc-tuple nil state))))
         ((tagged-objectsp :cases ttree)
-         (let* ((cases-obj (tagged-value :cases ttree))
+         (let* ((cases-obj (tagged-object :cases ttree))
 
 ; The cases-obj here is of the form (term-list . new-clauses), where
 ; new-clauses is the result of splitting on the literals in term-list.
@@ -2539,7 +2539,7 @@
         ((tagged-objectsp 'hidden-clause ttree)
          state)
         ((tagged-objectsp :clause-processor ttree)
-         (let* ((clause-processor-obj (tagged-value :clause-processor ttree))
+         (let* ((clause-processor-obj (tagged-object :clause-processor ttree))
 
 ; The clause-processor-obj here is produced by apply-top-hints-clause, and is
 ; of the form (clause-processor-hint . new-clauses), where new-clauses is the
@@ -2890,7 +2890,7 @@
                     (t nil))))
         (cond
          (abort-p
-          (mv (cond ((eq (tagged-value 'abort-cause ttree)
+          (mv (cond ((eq (tagged-object 'abort-cause ttree)
                          'revert)
                      (change gag-state gagst :abort-stack new-stack))
                     (t gagst))
@@ -2992,9 +2992,9 @@
                   (gagst2 (cond
                            ((eq signal 'abort)
                             (cond
-                             ((eq (tagged-value 'abort-cause
-                                                (access prove-spec-var pspv
-                                                        :tag-tree))
+                             ((eq (tagged-object 'abort-cause
+                                                 (access prove-spec-var pspv
+                                                         :tag-tree))
                                   'revert)
                               (change gag-state gagst1 ; save abort info
                                       :active-cl-id nil
@@ -5552,8 +5552,8 @@
 ; proof attempt the entries with :signal OR-HIT will have a ttree with
 ; a tag :OR on an object (parent-cl-id i uhs-lst).
 
-  (let* ((val (tagged-value :or
-                            (access history-entry (car hist) :ttree)))
+  (let* ((val (tagged-object :or
+                             (access history-entry (car hist) :ttree)))
          (parent-cl-id (nth 0 val))
          (uhs-lst (nth 2 val)))
     (cons (make history-entry
@@ -5863,10 +5863,10 @@
 
 ; We recover this crucial data first.
 
-     (let* ((val (tagged-value :or
-                               (access history-entry
-                                       (car new-hist)
-                                       :ttree)))
+     (let* ((val (tagged-object :or
+                                (access history-entry
+                                        (car new-hist)
+                                        :ttree)))
 ;           (parent-cl-id (nth 0 val))        ;;; same as our cl-id!
             (uhs-lst (nth 2 val))
             (branch-cnt (length uhs-lst)))
@@ -6162,9 +6162,9 @@
            ledge cl-id clause hist pspv hints ens wrld ctx state
            (cdr uhs-lst) (+ 1 i) branch-cnt
            (or revert-info
-               (and (eq (tagged-value 'abort-cause
-                                      (access prove-spec-var d-new-pspv
-                                              :tag-tree))
+               (and (eq (tagged-object 'abort-cause
+                                       (access prove-spec-var d-new-pspv
+                                               :tag-tree))
                         'revert)
                     (cons d-cl-id d-new-pspv)))
            results step-limit))

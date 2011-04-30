@@ -1538,9 +1538,9 @@
         ((eq mine-flg
              (eq (access history-entry (car history) :processor)
                  process))
-         (union-eq (tagged-value 'variables
-                                 (access history-entry (car history)
-                                         :ttree))
+         (union-eq (tagged-object 'variables
+                                  (access history-entry (car history)
+                                          :ttree))
                    (owned-vars process mine-flg (cdr history))))
         (t (owned-vars process mine-flg (cdr history)))))
 
@@ -1740,7 +1740,7 @@
 ; function in the waterfall.  See the discussion of the waterfall.
 
   (declare (ignore signal pspv))
-  (let ((lst (tagged-value 'elim-sequence ttree))
+  (let ((lst (tagged-object 'elim-sequence ttree))
         (n (length clauses))
         (wrld (w state)))
     (cond
@@ -2284,7 +2284,7 @@
 ; function in the waterfall.  See the discussion of the waterfall.
 
   (declare (ignore signal pspv clauses))
-  (let* ((hyp-phrase (tagged-value 'hyp-phrase ttree))
+  (let* ((hyp-phrase (tagged-object 'hyp-phrase ttree))
          (wrld (w state))
          (ttree
 
@@ -2301,12 +2301,12 @@
           this substitution relies upon ~*7.~]  This produces~|"
           (list
            (cons #\0 hyp-phrase)
-           (cons #\1 (if (tagged-value 'cross-fert-flg ttree)
+           (cons #\1 (if (tagged-object 'cross-fert-flg ttree)
                          1
                          0))
-           (cons #\2 (untranslate (tagged-value 'bullet ttree) nil wrld))
-           (cons #\3 (untranslate (tagged-value 'target ttree) nil wrld))
-           (cons #\4 (if (tagged-value 'delete-lit-flg ttree)
+           (cons #\2 (untranslate (tagged-object 'bullet ttree) nil wrld))
+           (cons #\3 (untranslate (tagged-object 'target ttree) nil wrld))
+           (cons #\4 (if (tagged-object 'delete-lit-flg ttree)
                          1
                          0))
            (cons #\5 (if (and (consp hyp-phrase)
@@ -2711,11 +2711,11 @@
        (list
         (cons #\0
               (tilde-*-gen-phrase
-               (pairlis$ (tagged-value 'terms ttree)
-                         (tagged-value 'variables ttree))
-               (tagged-value 'restricted-vars ttree)
-               (tagged-value 'var-to-runes-alist ttree)
-               (tagged-value 'ts-ttree ttree)
+               (pairlis$ (tagged-object 'terms ttree)
+                         (tagged-object 'variables ttree))
+               (tagged-object 'restricted-vars ttree)
+               (tagged-object 'var-to-runes-alist ttree)
+               (tagged-object 'ts-ttree ttree)
                (w state))))
        (proofs-co state)
        state

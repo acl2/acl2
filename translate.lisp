@@ -3019,21 +3019,21 @@
                                    (caar alist)))
                        (list t (list 'er-let*-cmp (cdr alist) body)))))))
 
-(defun warning1-cmp (ctx summary str alist wrld state-vars)
+(defun warning1-cw (ctx summary str alist wrld state-vars)
 
 ; This function has the same effect as warning1, except that printing is in a
 ; wormhole and hence doesn't modify state.
 
   (warning1-form t))
 
-(defmacro warning$-cmp (&rest args)
+(defmacro warning$-cw1 (&rest args)
 
 ; This macro assumes that wrld and state-vars are bound to a world and
 ; state-vars record, respectively.
 
 ; Warning: Keep this in sync with warning$.
 
-  (list 'warning1-cmp
+  (list 'warning1-cw
         (car args)
 
 ; We seem to have seen a GCL 2.6.7 compiler bug, laying down bogus calls of
@@ -3053,7 +3053,7 @@
 
 (defmacro warning$-cw (ctx &rest args)
 
-; This differs from warning$-cmp only in that state-vars and wrld are bound
+; This differs from warning$-cw1 only in that state-vars and wrld are bound
 ; here for the user, so that warnings are not suppressed merely by virtue of
 ; the value of state global 'ld-skip-proofsp.  Thus, unlike warning$ and
 ; warning$-cw, there is no warning string, and a typical use of this macro
@@ -3062,7 +3062,7 @@
 
   `(let ((state-vars (default-state-vars #-hons nil #+hons :hons))
          (wrld nil))
-     (warning$-cmp ,ctx nil ,@args)))
+     (warning$-cw1 ,ctx nil ,@args)))
 
 (defun chk-length-and-keys (actuals form wrld)
   (cond ((null actuals)
@@ -3087,7 +3087,7 @@
 (defun bind-macro-args-keys1 (args actuals allow-flg alist form wrld
                                    state-vars)
 
-; We need parameter state-vars because of the call of warning$-cmp below.
+; We need parameter state-vars because of the call of warning$-cw1 below.
 
   (cond ((null args)
          (cond ((or (null actuals) allow-flg)
@@ -3121,7 +3121,7 @@
                                (t alist))))
              (prog2$
               (cond ((assoc-keyword key (cddr tl))
-                     (warning$-cmp *macro-expansion-ctx* "Duplicate-Keys"
+                     (warning$-cw1 *macro-expansion-ctx* "Duplicate-Keys"
                                    "The keyword argument ~x0 occurs twice in ~
                                     ~x1.  This situation is explicitly ~
                                     allowed in Common Lisp (see CLTL2, page ~
@@ -4758,7 +4758,7 @@
                (prog2$
                 (cond
                  ((eq ignore-ok :warn)
-                  (warning$-cmp ctx "Ignored-variables"
+                  (warning$-cw1 ctx "Ignored-variables"
                                 "The variable~#0~[ ~&0 is~/s ~&0 are~] not ~
                                  used in the body of an FLET-binding of ~x1 ~
                                  that binds ~&2.  But ~&0 ~#0~[is~/are~] not ~
@@ -5032,7 +5032,7 @@
                   (prog2$
                    (cond
                     ((eq ignore-ok :warn)
-                     (warning$-cmp ctx "Ignored-variables"
+                     (warning$-cw1 ctx "Ignored-variables"
                                    "The variable~#0~[ ~&0 is~/s ~&0 are~] not ~
                                     used in the body of the MV-LET expression ~
                                     that binds ~&1. But ~&0 ~#0~[is~/are~] ~
@@ -5565,7 +5565,8 @@
                        push-untouchable remove-untouchable reset-prehistory
                        set-body table theory-invariant
                        include-book certify-book value-triple
-                       local make-event with-output progn!)))
+                       local make-event with-output progn!
+                       with-prover-step-limit)))
     (trans-er+ x ctx
                "We do not permit the use of ~x0 inside of code to be executed ~
                 by Common Lisp because its Common Lisp runtime value and ~
@@ -5941,7 +5942,7 @@
                       (prog2$
                        (cond
                         ((eq ignore-ok :warn)
-                         (warning$-cmp ctx "Ignored-variables"
+                         (warning$-cw1 ctx "Ignored-variables"
                                        "The variable~#0~[ ~&0 is~/s ~&0 are~] ~
                                         not used in the body of the LET ~
                                         expression that binds ~&1.  But ~&0 ~
