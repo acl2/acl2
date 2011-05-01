@@ -4462,7 +4462,7 @@
   ~ilc[add-to-set]
   ~ilc[assoc]
   ~ilc[delete-assoc]
-  ~ilc[intersection$] ~em[; (see Note below)]
+  ~ilc[intersection$] ; (see Note below)
   ~ilc[intersectp]
   ~ilc[member]
   ~ilc[no-duplicatesp]
@@ -4473,9 +4473,9 @@
   ~ilc[remove-duplicates]
   ~ilc[remove1]
   ~ilc[remove]
-  ~ilc[set-difference$] ~em[; (see Note below)]
+  ~ilc[set-difference$] ; (see Note below)
   ~ilc[subsetp]
-  ~ilc[union$] ~em[; (see Note below)]
+  ~ilc[union$] ; (see Note below)
   ~ef[]
 
   Note: Three of the macros above have names ending with the character,
