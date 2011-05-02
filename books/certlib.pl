@@ -597,11 +597,15 @@ sub get_add_dir {
     my $events = shift;
 
     # Check for ADD-INCLUDE-BOOK-DIR commands
-    my $regexp = "^[^;]*\\(add-include-book-dir[\\s]+:([^\\s]*)[\\s]*\"([^\"]*)\\/\"";
+    my $regexp = "^[^;]*\\(add-include-book-dir[\\s]+:([^\\s]*)[\\s]*\"([^\"]*)\"";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
 	my $name = uc($res[0]);
 	print "$base: add_dir $name $res[1]\n" if $debugging;
+	if (!(substr($res[1], length($res[1])-1, 1) eq "/")) {
+	    print("Warning: ACL2 wants the directory name of an add-include-book-dir to end in a \"/\"\n");
+	    print("in file $base\n$the_line");
+	}
 	push (@$events, [$add_dir_event, $name, $res[1]]);
 	return 1;
     }
