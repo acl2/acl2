@@ -66,9 +66,10 @@
                         *use-set-defines*))
 
        ((mv successp mods ?filemap ?defines warnings state)
-        (cwtime (vl-load override-dirs start-files search-path defines
-                         nil ;; don't generate a filemap
-                         state)
+        (cwtime (vl-load :override-dirs override-dirs
+                         :start-files   start-files
+                         :search-path   search-path
+                         :defines       defines)
                 :name initial-parsing))
        (-
         (or successp (cw "Note: Not all loading was successful.~%")))

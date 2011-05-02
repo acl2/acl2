@@ -1222,15 +1222,31 @@ example:</p>
 replace particular Verilog modules with custom definitions.  See @(see
 overrides) for details on how to write override files.</p>
 
+
+<h4>Start Modnames</h4>
+
+<p>Instead of (or in addition to) explicitly providing <tt>start-files</tt>,
+you can provide the names of some modules that you want to load from the search
+path, e.g.,:</p>
+
+<code>
+ (defmodules foo
+    :start-modnames (list \"foo_control\" \"foo_datapath\")
+    :search-path (list \".\" \"/my/project/libs1\" \"/my/project/libs2\" ...))
+</code>
+
+<p>
+
+
 <h4>Initial `defines</h4>
 
-<p>The <tt>:initial-defines</tt> option can be used to set up any extra
+<p>The <tt>:defines</tt> option can be used to set up any extra
 <tt>`define</tt> directives.  For instance, the following:</p>
 
 <code>
  (defmodules foo
     :start-files (list \"foo_control.v\" \"foo_datapath.v\")
-    :initial-defines (list \"FOO_BAR\" \"FOO_BAZ\"))
+    :defines     (list \"FOO_BAR\" \"FOO_BAZ\"))
 </code>
 
 <p>is essentially like writing:</p>
@@ -1260,24 +1276,29 @@ instance,</p>
 sensible defaults that are not currently configurable.  We may add these
 options in the future, as the need arises.</p>"
 
-  (defund defmodules-fn (override-dirs start-files search-path
-                         initial-defines problem-modules state)
+  (defund defmodules-fn (override-dirs start-files start-modnames
+                                       search-path defines problem-modules state)
     "Returns (MV TRANS STATE)"
     (declare (xargs :guard (and (string-listp override-dirs)
                                 (string-listp start-files)
+                                (string-listp start-modnames)
                                 (string-listp search-path)
-                                (string-listp initial-defines)
+                                (string-listp defines)
                                 (string-listp problem-modules))
                     :stobjs state))
     (b* ((- (cw "Override directories: ~&0.~%" override-dirs))
          (- (cw "Reading Verilog files ~&0.~%" start-files))
          (- (cw "Search path:~%  ~x0.~%" search-path))
 
-         (initial-defs (vl::vl-make-initial-defines initial-defines))
+         (initial-defs (vl::vl-make-initial-defines defines))
          (filemapp     t)
          ((mv successp mods filemap defines warnings state)
-          (vl::vl-load override-dirs start-files search-path
-                       initial-defs filemapp state))
+          (vl::vl-load :override-dirs  override-dirs
+                       :start-files    start-files
+                       :start-modnames start-modnames
+                       :search-path    search-path
+                       :defines        initial-defs
+                       :filemapp       filemapp))
 
          (- (cw "Finished parsing ~x0 files; found ~x1 modules.~%"
                 (len filemap)
@@ -1334,17 +1355,18 @@ options in the future, as the need arises.</p>"
   (defthm defmodules-fn-basics
     (implies (and (force (string-listp override-dirs))
                   (force (string-listp start-files))
+                  (force (string-listp start-modnames))
                   (force (string-listp search-path))
-                  (force (string-listp initial-defines))
+                  (force (string-listp defines))
                   (force (string-listp problem-modules))
                   (force (state-p1 state)))
              (and
               (vl-translation-p
-               (mv-nth 0 (defmodules-fn override-dirs start-files search-path
-                           initial-defines problem-modules state)))
+               (mv-nth 0 (defmodules-fn override-dirs start-files start-modnames
+                           search-path defines problem-modules state)))
               (state-p1
-               (mv-nth 1 (defmodules-fn override-dirs start-files search-path
-                           initial-defines problem-modules state))))))
+               (mv-nth 1 (defmodules-fn override-dirs start-files start-modnames
+                           search-path defines problem-modules state))))))
 
   (defund vl-modulelist-nonnil-emods (x)
     (declare (xargs :guard (vl-modulelist-p x)))
@@ -1359,8 +1381,9 @@ options in the future, as the need arises.</p>"
   (defmacro defmodules (name &key
                              override-dirs
                              start-files
+                             start-modnames
                              search-path
-                             initial-defines
+                             defines
                              problem-modules)
     `(make-event
       (b* ((name ',name)
@@ -1368,9 +1391,15 @@ options in the future, as the need arises.</p>"
             (er soft 'defmodules "Expected name to be a symbol."))
 
            (start-files ,start-files)
-           ((unless (and (consp start-files)
-                         (string-listp start-files)))
-            (er soft 'defmodules "Expected start-files to be a non-empty string list."))
+           ((unless (string-listp start-files))
+            (er soft 'defmodules "Expected start-files to be a string list."))
+
+           (start-modnames ,start-modnames)
+           ((unless (string-listp start-modnames))
+            (er soft 'defmodules "Expected start-modnames to be a string list."))
+
+           ((unless (or start-files start-modnames))
+            (er soft 'defmodules "Expected either some start-files or start-modnames."))
 
            (override-dirs ,override-dirs)
            ((unless (string-listp override-dirs))
@@ -1380,17 +1409,17 @@ options in the future, as the need arises.</p>"
            ((unless (string-listp search-path))
             (er soft 'defmodules "Expected search-path to be a string list."))
 
-           (initial-defines ,initial-defines)
-           ((unless (string-listp initial-defines))
-            (er soft 'defmodules "Expected initial-defines to be a string list."))
+           (defines ,defines)
+           ((unless (string-listp defines))
+            (er soft 'defmodules "Expected defines to be a string list."))
 
            (problem-modules ,problem-modules)
            ((unless (string-listp problem-modules))
             (er soft 'defmodules "Expected problem-modules to be a string list."))
 
            ((mv translation state)
-            (cwtime (defmodules-fn override-dirs start-files search-path initial-defines
-                                   problem-modules state)
+            (cwtime (defmodules-fn override-dirs start-files start-modnames
+                      search-path defines problem-modules state)
                     :name defmodules-fn))
 
            (emods (vl-modulelist-nonnil-emods

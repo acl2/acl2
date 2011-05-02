@@ -137,12 +137,9 @@
   (b* ((- (cw "Starting VL-Lint ~s0~%" *vl-lint-version*))
        (- (cw "~%vl-lint: loading modules...~%"))
        ((mv ?successp mods ?filemap ?defines ?warnings state)
-        (cwtime (vl-load nil         ; override dirs
-                         start-files
-                         search-path
-                         nil         ; defines
-                         nil         ; filemapp
-                         state)))
+        (cwtime (vl-load :override-dirs nil
+                         :start-files start-files
+                         :search-path search-path)))
        ;; Throw away any modules we don't care about, if we have been
        ;; given any top-mods.
        (mods (if (not top-mods)
