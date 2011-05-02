@@ -5,6 +5,8 @@
 (defmacro must-eval-to (&whole must-eval-to-form
                                form expr)
 
+; Warning: Keep this in sync with the definition of must-eval-to in eval.lisp.
+
 ; Form should evaluate to an error triple (mv erp form-val state).  If erp is
 ; nil and expr-val is the value of expr then (must-eval-to form expr) expands
 ; to (value-triple 'expr-val); otherwise expansion causes an appropriate soft
