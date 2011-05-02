@@ -891,7 +891,6 @@ name factory.</li>
                   :type :vl-bad-gate
                   :msg "~a0: unsupported gate type ~x1."
                   :args (list x (vl-gateinst->type x))
-                  :fatalp t
                   :fn 'vl-gateinst-gatesplit)
                  warnings)
            nil
