@@ -1677,6 +1677,7 @@ reverse-by-separation.acl2
 reverse-by-separation.lisp
 ruler-extenders-tests.acl2
 ruler-extenders-tests.lisp
+step-limits.lisp
 
 books/models:
 jvm
