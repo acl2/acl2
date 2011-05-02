@@ -62,6 +62,7 @@
 
 (defmacro save (dir &key
                     (index-pkg 'acl2::foo)
+                    (expand-level '1)
                     (import 't))
   `(progn
      (include-book ,*xdoc-dir/defxdoc-raw* :ttags :all)
@@ -79,7 +80,7 @@
       (b* (((mv all-xdoc-topics state) (all-xdoc-topics state))
            (- (cw "(len all-xdoc-topics): ~x0~%" (len all-xdoc-topics)))
            ((mv & & state) (assign acl2::writes-okp t))
-           (state (save-topics all-xdoc-topics ,dir ',index-pkg state)))
+           (state (save-topics all-xdoc-topics ,dir ',index-pkg ',expand-level state)))
         (value '(value-triple :invisible))))))
 
 (defmacro xdoc-just-from-events (events)

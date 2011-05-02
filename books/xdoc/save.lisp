@@ -163,7 +163,7 @@
 
 (mutual-recursion
 
- (defun make-hierarchy-aux (path dir index-pkg all id acc state)
+ (defun make-hierarchy-aux (path dir index-pkg all id expand-level acc state)
 
 ; - Path is our current location in the hierarchy, and is used to avoid loops.
 ;   (The first element in path is the current topic we are on.)
@@ -176,6 +176,8 @@
 ;   JavaScript.  (We don't use names because the topics might be repeated under
 ;   different parents).
 ;
+; - Expand-level is how deep to expand topics, generally 1 by default.
+;
 ; - Acc is the character list we are building.
 ;
 ; We return (MV ACC-PRIME ID-PRIME STATE)
@@ -185,7 +187,7 @@
         (depth    (len path))
         (children (find-children name all))
         (kind     (cond ((not children) "leaf")
-                        ((< depth 1) "show")
+                        ((< depth expand-level) "show")
                         (t "hide")))
 
         ((when    (member-equal name (cdr path)))
@@ -226,13 +228,13 @@
 
         (id   (+ id 1))
         ((mv acc id state)
-         (make-hierarchy-list-aux children path dir index-pkg all id acc state))
+         (make-hierarchy-list-aux children path dir index-pkg all id expand-level acc state))
         (acc (str::revappend-chars "</hindex_children>" acc))
         (acc (str::revappend-chars "</hindex>" acc))
         (acc (cons #\Newline acc)))
        (mv acc id state)))
 
- (defun make-hierarchy-list-aux (children path dir index-pkg all id acc state)
+ (defun make-hierarchy-list-aux (children path dir index-pkg all id expand-level acc state)
 
 ; - Children are the children of this path.
 ; - Path is our current location in the hierarchy.
@@ -240,12 +242,14 @@
    (if (atom children)
        (mv acc id state)
      (b* (((mv acc id state)
-           (make-hierarchy-aux (cons (car children) path) dir index-pkg all id acc state))
+           (make-hierarchy-aux (cons (car children) path) dir index-pkg all id
+                               expand-level acc state))
           ((mv acc id state)
-           (make-hierarchy-list-aux (cdr children) path dir index-pkg all id acc state)))
+           (make-hierarchy-list-aux (cdr children) path dir index-pkg all id
+                                    expand-level acc state)))
          (mv acc id state)))))
 
-(defun save-hierarchy (x dir index-pkg state)
+(defun save-hierarchy (x dir index-pkg expand-level state)
 
 ; X is all topics.  We assume all parents are normalized.
 
@@ -259,7 +263,8 @@
        (acc   (cons #\Newline acc))
        (acc   (str::revappend-chars "<hindex_root>" acc))
        (acc   (cons #\Newline acc))
-       ((mv acc & state) (make-hierarchy-list-aux roots nil dir index-pkg x 0 acc state))
+       ((mv acc & state) (make-hierarchy-list-aux roots nil dir index-pkg x 0
+                                                  expand-level acc state))
        (acc   (str::revappend-chars "</hindex_root>" acc))
        (acc   (cons #\Newline acc))
        (acc   (str::revappend-chars "</page>" acc))
@@ -525,7 +530,7 @@
                                    dir state)))
     state))
 
-(defun save-topics (x dir index-pkg state)
+(defun save-topics (x dir index-pkg expand-level state)
   (b* ((state (prepare-dir dir state))
        (dir   (acl2::extend-pathname dir "xml" state))
        (- (cw "; Processing ~x0 topics.~%" (len x)))
@@ -540,7 +545,7 @@
        (state  (time$ (save-index x dir index-pkg state)
                       :msg "; Saving flat index: ~st sec, ~sa bytes~%"
                       :mintime 1/2))
-       (state  (time$ (save-hierarchy x dir index-pkg state)
+       (state  (time$ (save-hierarchy x dir index-pkg expand-level state)
                       :msg "; Saving hierarchical index: ~st sec, ~sa bytes~%"))
        (state  (save-success-file (len x) dir state)))
     state))
