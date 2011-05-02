@@ -36106,12 +36106,13 @@
   (add-include-book-dir kwd dir)
   ~ev[]
   where ~c[kwd] is a ~ilc[keywordp] and ~c[dir] is the ~il[pathname] of a
-  directory.  The effect of this event is to modify the meaning of the ~c[:dir]
-  keyword argument of ~ilc[include-book] as indicated by the examples above,
-  namely by associating the indicated directory with the indicated keyword for
-  purposes of the ~ilc[include-book] ~c[:dir] argument.  By the ``indicated
-  directory'' we mean, in the case that the pathname is a relative pathname,
-  the directory relative to the current connected book directory; ~pl[cbd].
+  directory.  (If the final '~c[/]' is missing, ACL2 will add it for you.)  The
+  effect of this event is to modify the meaning of the ~c[:dir] keyword
+  argument of ~ilc[include-book] as indicated by the examples above, namely by
+  associating the indicated directory with the indicated keyword for purposes
+  of the ~ilc[include-book] ~c[:dir] argument.  By the ``indicated directory''
+  we mean, in the case that the pathname is a relative pathname, the directory
+  relative to the current connected book directory; ~pl[cbd].
   ~l[delete-include-book-dir] for how to undo this effect.
 
   A keyword that is already associated with a directory string by an existing

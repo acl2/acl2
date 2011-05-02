@@ -24468,7 +24468,8 @@
            (state-global-let*
             ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst)))
              (modifying-include-book-dir-alist t))
-            (let* ((dir (extend-pathname (cbd) dir state))
+            (let* ((dir (maybe-add-separator
+                         (extend-pathname (cbd) dir state)))
                    (raw-p (not (eq (f-get-global 'raw-include-book-dir-alist
                                                  state)
                                    :ignore)))
@@ -24483,6 +24484,10 @@
                    (new (acons keyword dir old)))
               (cond
                ((not (absolute-pathname-string-p dir t (os (w state))))
+
+; The call above of maybe-add-separator should make this branch dead code, but
+; we leave it here for robustness, e.g., in case we change that call.
+
                 (er soft ctx
                     "The second argument of add-include-book-dir must ~
                      represent a directory, in particular ending with ~

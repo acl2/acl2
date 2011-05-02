@@ -14088,9 +14088,9 @@
                              (mv step-limit
                                  (er hard 'rewrite-with-lemma
                                      "The hypothesis metafunction ~x0, when ~
-                                    applied to the input term ~x1, produced a ~
-                                    term whose use of synp is illegal because ~
-                                    ~@2"
+                                      applied to the input term ~x1, produced ~
+                                      a term whose use of synp is illegal ~
+                                      because ~@2"
                                      hyp-fn
                                      term
                                      bad-synp-hyp-msg)
@@ -14184,9 +14184,9 @@
                         (t (mv step-limit
                                (er hard 'rewrite-with-lemma
                                    "The hypothesis function ~x0 produced the ~
-                                  non-termp ~x1 on the input term ~x2.  Our ~
-                                  implementation requires that ~x0 produce a ~
-                                  term."
+                                    non-termp ~x1 on the input term ~x2.  Our ~
+                                    implementation requires that ~x0 produce ~
+                                    a term."
                                    hyp-fn
                                    evaled-hyp
                                    term
@@ -14194,12 +14194,12 @@
                                term ttree))))))
                    (t (mv step-limit
                           (er hard 'rewrite-with-lemma
-                              "The metafunction ~x0 produced the non-termp ~x1 ~
-                             on the input term ~x2. The proof of the ~
-                             correctness of ~x0 establishes that the ~
-                             quotations of these two s-expressions have the ~
-                             same value, but our implementation additionally ~
-                             requires that ~x0 produce a term."
+                              "The metafunction ~x0 produced the non-termp ~
+                               ~x1 on the input term ~x2. The proof of the ~
+                               correctness of ~x0 establishes that the ~
+                               quotations of these two s-expressions have the ~
+                               same value, but our implementation ~
+                               additionally requires that ~x0 produce a term."
                               (access rewrite-rule lemma :lhs)
                               val
                               term)

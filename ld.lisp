@@ -17569,6 +17569,11 @@
     [[... additional output omitted ...]]
   ~ev[]
 
+  The directory string supplied to ~ilc[add-include-book-dir] no longer must
+  terminate with the `~c[/]' character, as had been required in some Lisp
+  implementations.  Thanks to Sol Swords for bringing this issue to our
+  attention.
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of
