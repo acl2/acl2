@@ -5107,9 +5107,7 @@
                     (and #+gcl (not user::*fast-acl2-gcl-build*)
                          boot-strap-flg) ; delete for build speedup (see above)
                     (and
-                     (not (eq (f-get-global 'ld-skip-proofsp
-                                            *the-live-state*)
-                              'include-book))
+                     (not *inside-include-book-fn*)
                      (default-compile-fns wrld)))
                    (dolist (def new-defs)
                      (assert$
@@ -5244,9 +5242,7 @@
                                        t)
             (when (and (eq (f-get-global 'compiler-enabled *the-live-state*)
                            t)
-                       (not (eq (f-get-global 'ld-skip-proofsp
-                                              *the-live-state*)
-                                'include-book))
+                       (not *inside-include-book-fn*)
                        (default-compile-fns wrld))
               (dolist (def new-defs)
                 (assert$

@@ -17747,6 +17747,12 @@
   Fixed a bug in an error message that was printed when an unexpected
   expression has occurred where a ~ilc[declare] form is expected.
 
+  (Since all functions are compiled when the host Lisp is CCL or SBCL, the
+  following bug fix did not occur for those host Lisps.)  After evaluation of
+  ~c[(]~ilc[set-compile-fns]~c[ t)], all defined functions are expected to run
+  with compiled code; but this was not the case for functions exported from an
+  ~ilc[encapsulate] event.  This has been fixed.
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   ACL2 can once again be built on Lispworks (i.e., as the host Lisp), at least
