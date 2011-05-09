@@ -42,9 +42,7 @@ the following.
 
   1. Type STR:: before the names of the functions,  OR
 
-  2. Import STR::*exports* into your own package, OR
-
-  3. Additionally load a set of ACL2-package macros which are aliases for the
+  2. Additionally load a set of ACL2-package macros which are aliases for the
      functions in the STR package.  To do this, run:
       ~c[(include-book \"str/abbrevs\" :dir :system)]
 
@@ -67,4 +65,3 @@ more details.  You should have received a copy of the GNU General Public
 License along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.")
 
-  

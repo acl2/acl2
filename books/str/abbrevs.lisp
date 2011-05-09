@@ -43,6 +43,13 @@
 (add-macro-alias charlisteqv STR::charlisteqv)
 
 
+(defmacro collect-strs-with-isubstr (a x) `(STR::collect-strs-with-isubstr ,a ,x))
+(add-macro-alias collect-strs-with-isubstr STR::collect-strs-with-isubstr)
+
+(defmacro collect-syms-with-isubstr (a x) `(STR::collect-syms-with-isubstr ,a ,x))
+(add-macro-alias collect-syms-with-isubstr STR::collect-syms-with-isubstr)
+
+
 (defmacro digitp (x) `(STR::digitp ,x))
 (add-macro-alias digitp STR::digitp)
 
@@ -97,7 +104,7 @@
 (add-macro-alias istrprefixp STR::istrprefixp)
 
 (defmacro isubstrp (x y) `(STR::isubstrp ,x ,y))
-(add-macro-alias isubstrp STR::isubstrp) 
+(add-macro-alias isubstrp STR::isubstrp)
 
 
 (defmacro prefix-lines (x prefix) `(STR::prefix-lines ,x ,prefix))

@@ -105,3 +105,10 @@
            (equal (character-listp (simpler-take n x))
                   (<= (nfix n) (len x))))
   :hints(("Goal" :in-theory (enable simpler-take))))
+
+(defthm subsetp-equal-of-cons-right
+  (implies (subsetp-equal x y)
+           (subsetp-equal x (cons b y))))
+
+(defthm subsetp-equal-reflexive
+  (subsetp-equal x x))
