@@ -649,6 +649,18 @@ is NIL or :WARN.~%" name)
       nil
     (aig-or (car x) (aig-or-list (cdr x)))))
 
+(defn aig-and-lists (a b)
+  (if (or (atom a) (atom b))
+      nil
+    (cons (aig-and (car a) (car b))
+          (aig-and-lists (cdr a) (cdr b)))))
+
+(defn aig-or-lists (a b)
+  (if (or (atom a) (atom b))
+      nil
+    (cons (aig-or (car a) (car b))
+          (aig-or-lists (cdr a) (cdr b)))))
+
 (defn aig-iff-lists (a b)
   (if (or (atom a) (atom b))
       nil
