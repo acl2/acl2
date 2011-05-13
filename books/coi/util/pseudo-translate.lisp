@@ -31,7 +31,7 @@
           (translate1-cmp x stobjs-out bindings known-stobjs ctx w
                           (default-state-vars nil))
           (cond (erp ; erp is a ctx and val is a msg
-                 (prog2$ (cw "ERROR in translate1-cw:  ~@0"
+                 (prog2$ (cw "~%~%ERROR in translate1-cw:  ~@0~%~%"
                              msg-or-val)
                          (mv t x bindings)))
                 (t (mv nil msg-or-val bindings)))))
