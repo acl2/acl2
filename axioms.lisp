@@ -11007,7 +11007,7 @@
   ~bv[]
   (equal (length (take n l)) (nfix n))
   ~ev[]
-  If ~c[n] is is an integer greater than the length of ~c[l], then
+  If ~c[n] is an integer greater than the length of ~c[l], then
   ~c[take] pads the list with the appropriate number of ~c[nil]
   elements.  Thus, the following is also a theorem.
   ~bv[]
@@ -21815,7 +21815,7 @@
   (assign slow-array-action nil) ; do not warn or break on slow array access
   ~ev[]
   If you are using ACL2 arrays, then you probably care about performance, in
-  which case is is probably best to avoid the ~c[nil] setting.  Below we assume
+  which case it is probably best to avoid the ~c[nil] setting.  Below we assume
   the default behavior: a warning, but no break.~/
 
   The discussion in the documentation for ~il[arrays] defines what we

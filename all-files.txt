@@ -3094,6 +3094,7 @@ README
 abbrevs.lisp
 acl2-customization.lsp
 arithmetic.lisp
+case-conversion.lisp
 cat.lisp
 cert.acl2
 char-support.lisp

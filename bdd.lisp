@@ -3983,7 +3983,7 @@
 ; which is a data-base kind of function rather than a workhorse function.
 ; 
 ; You'll see things like the following (from local entry to BDD).  The idea here
-; is is that we are boxing a fixnum and pushing it on a stack, but why?  LnkLI253
+; is that we are boxing a fixnum and pushing it on a stack, but why?  LnkLI253
 ; appears to be a function call, which is found near the end of the file to
 ; correspond to leaf-cst-list-array.  If we're still not clear on what's going
 ; on, we can look up 273 as well.  When we do this, we find that we are probably

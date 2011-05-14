@@ -17409,6 +17409,8 @@
 
 ; Eliminated cons-into-ttree in favor of cons-tag-trees.
 
+; Moved assert$ to the right place in cmp-to-error-triple.
+
   :Doc
   ":Doc-Section release-notes
 
@@ -17752,6 +17754,10 @@
   ~c[(]~ilc[set-compile-fns]~c[ t)], all defined functions are expected to run
   with compiled code; but this was not the case for functions exported from an
   ~ilc[encapsulate] event.  This has been fixed.
+
+  It had been the case that the ~ilc[puff] command was broken for
+  ~ilc[include-book] form whose book had been certified in a world with an
+  ~ilc[add-include-book-dir] event.  This has been fixed.
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
@@ -18636,71 +18642,88 @@
 ; the command with relative command number i, that command got puffed up,
 ; and the new commands have the numbers i through j, inclusive.
 
-  (let ((wrld (w state))
-        (ctx 'puff))
-    (er-let* ((cmd-wrld (er-decode-cd cd wrld :puff state))) 
-             (cond ((<= (access-command-tuple-number (cddar cmd-wrld))
-                        (access command-number-baseline-info
-                                (global-val 'command-number-baseline-info wrld)
-                                :current))
+  (state-global-let*
+   ((modifying-include-book-dir-alist
+
+; The Essay on Include-book-dir-alist explains that the above state global must
+; be t in order to set the acl2-defaults-table.  The idea is to enforce the
+; rule that the acl2-defaults-table is used for the include-book-dir-alist when
+; in the ACL2 loop, but state global 'raw-include-book-dir-alist is used
+; instead when in raw Lisp (see for example add-include-book-dir-fn).  Here, we
+; are presumably evaluating puff or puff* in the loop rather than inside
+; include-book, since these are not embedded event forms.  So we need not worry
+; about puff being evaluated inside an event inside a book.  (Note that
+; make-event is not legal inside a book except with a check-expansion argument
+; that is used as the expansion -- re-expansion does not take place.)  Now,
+; with raw mode one can in principle call all sorts of ACL2 system functions in
+; raw Lisp that we never intended to be called there -- but that requires a
+; trust tag, so it's not our problem!
+
+     t))
+   (let ((wrld (w state))
+         (ctx 'puff))
+     (er-let* ((cmd-wrld (er-decode-cd cd wrld :puff state))) 
+       (cond ((<= (access-command-tuple-number (cddar cmd-wrld))
+                  (access command-number-baseline-info
+                          (global-val 'command-number-baseline-info wrld)
+                          :current))
 
 ; See the similar comment in ubt-ubu-fn.
 
-                    (cond
-                     ((<= (access-command-tuple-number (cddar cmd-wrld))
-                          (access command-number-baseline-info
-                                  (global-val 'command-number-baseline-info wrld)
-                                  :original))
-                      (er soft :puff
-                          "Can't puff a command within the system ~
-                           initialization."))
-                     (t
-                      (er soft :puff
-                          "Can't puff a command within prehistory.  See :DOC ~
-                           reset-prehistory."))))
-                   (t
-                    (er-let*
-                     ((cmds (puffed-command-sequence cd :puff wrld state)))
-                     (let* ((pred-wrld (scan-to-command (cdr cmd-wrld)))
-                            (i (absolute-to-relative-command-number
-                                (max-absolute-command-number cmd-wrld)
-                                (w state)))
-                            (k (- (absolute-to-relative-command-number
-                                   (max-absolute-command-number (w state))
-                                   (w state))
-                                  i)))
-                       (pprogn
-                        (set-w 'retraction pred-wrld state)
-                        (er-let*
-                         ((defpkg-items
-                            (defpkg-items
-                              (global-val 'known-package-alist cmd-wrld)
-                              ctx pred-wrld state)))
-                         (er-progn
-                          (state-global-let*
-                           ((guard-checking-on nil)) ; agree with include-book
-                           (ld (append (let ((kpa (global-val
-                                                   'known-package-alist
-                                                   pred-wrld)))
-                                         (new-defpkg-list defpkg-items kpa kpa))
-                                       cmds)
-                               :ld-skip-proofsp 'include-book-with-locals
-                               :ld-keyword-aliases nil
-                               :ld-verbose nil
-                               :ld-prompt nil
-                               :ld-pre-eval-filter :all
-                               :ld-pre-eval-print :never
-                               :ld-post-eval-print nil
-                               :ld-error-triples t
-                               :ld-error-action :error
-                               :ld-query-control-alist
-                               (cons '(:redef :y)
-                                     (ld-query-control-alist state))))
-                          (value (cons i
-                                       (- (absolute-to-relative-command-number
-                                           (max-absolute-command-number (w state))
-                                           (w state))
-                                          k)))))))))))))
+              (cond
+               ((<= (access-command-tuple-number (cddar cmd-wrld))
+                    (access command-number-baseline-info
+                            (global-val 'command-number-baseline-info wrld)
+                            :original))
+                (er soft :puff
+                    "Can't puff a command within the system initialization."))
+               (t
+                (er soft :puff
+                    "Can't puff a command within prehistory.  See :DOC ~
+                     reset-prehistory."))))
+             (t
+              (er-let*
+                  ((cmds (puffed-command-sequence cd :puff wrld state)))
+                (let* ((pred-wrld (scan-to-command (cdr cmd-wrld)))
+                       (i (absolute-to-relative-command-number
+                           (max-absolute-command-number cmd-wrld)
+                           (w state)))
+                       (k (- (absolute-to-relative-command-number
+                              (max-absolute-command-number (w state))
+                              (w state))
+                             i)))
+                  (pprogn
+                   (set-w 'retraction pred-wrld state)
+                   (er-let*
+                       ((defpkg-items
+                          (defpkg-items
+                            (global-val 'known-package-alist cmd-wrld)
+                            ctx pred-wrld state)))
+                     (er-progn
+                      (state-global-let*
+                       ((guard-checking-on nil)) ; agree with include-book
+                       (ld (append (let ((kpa (global-val
+                                               'known-package-alist
+                                               pred-wrld)))
+                                     (new-defpkg-list defpkg-items kpa kpa))
+                                   cmds)
+                           :ld-skip-proofsp 'include-book-with-locals
+                           :ld-keyword-aliases nil
+                           :ld-verbose nil
+                           :ld-prompt nil
+                           :ld-pre-eval-filter :all
+                           :ld-pre-eval-print :never
+                           :ld-post-eval-print nil
+                           :ld-error-triples t
+                           :ld-error-action :error
+                           :ld-query-control-alist
+                           (cons '(:redef :y)
+                                 (ld-query-control-alist state))))
+                      (value (cons i
+                                   (- (absolute-to-relative-command-number
+                                       (max-absolute-command-number (w state))
+                                       (w state))
+                                      k))))))))))))))
 
 (defun puff-report (caller new-cd1 new-cd2 cd state)
   (cond ((eql new-cd1 (1+ new-cd2))

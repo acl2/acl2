@@ -24401,41 +24401,48 @@
 ; of :dir) with absolute directory pathnames.  The macro add-include-book-dir
 ; provides a way to extend that field.  Up through ACL2 Version_3.6.1, when
 ; add-include-book-dir was executed in raw Lisp it would be ignored, because it
-; macroexpanded to a table event.  This could be a problem if we then were to
-; execute include-book with a :dir argument that might have been expected to be
-; installed with that ignored add-include-book-dir command.
+; macroexpanded to a table event.  But consider a file loaded in raw Lisp, say
+; when we are in raw-mode and are executing an include-book command with a :dir
+; argument.  If that :dir value were defined by an add-include-book-dir event
+; also evaluated in raw Lisp, and hence ignored, then that :dir value would not
+; really be defined after all and the include-book would fail.
 
 ; The above problem with raw-mode could be explained away by saying that
-; raw-mode is a hack, and you get what you get.  But as we anticipate support
-; for early loading of compiled files, we anticipate routine evaluation of
-; add-include-book-dir and include-book in raw Lisp.
+; raw-mode is a hack, and you get what you get.  But Version_4.0 introduced the
+; loading of compiled files before corresponding event processing, which causes
+; routine evaluation of add-include-book-dir and include-book in raw Lisp.
 
 ; Therefore we maintain for raw Lisp a variant of the acl2-default-table's
-; include-book-dir-alist, namely state global 'raw-include-book-dir-alist.
-; This variable is initially :ignore, meaning that we are to use the
+; include-book-dir-alist, namely state global 'raw-include-book-dir-alist.  The
+; value of this variable is initially :ignore, meaning that we are to use the
 ; acl2-default-table's include-book-dir-alist.  But when the value is not
 ; :ignore, then it is an alist that is used as the include-book-dir-alist.  We
-; maintain the invariant that :ignore is the value except when in raw-mode or
-; during evaluation of include-book-fn.  When its value is not :ignore, then
-; execution of add-include-book-dir will extend this variable instead of the
-; acl2-defaults-table.  And whenever we execute include-book in raw Lisp, we
-; use this value instead of the one in the acl2-defaults-table, by binding it
-; to nil upon entry.  Thus, any add-include-book-dir will be local to the book,
-; which respects the semantics of include-book.  We bind it to nil because that
-; is also how include-book works: the acl2-defaults-table initially has an
-; empty :include-book-dir-alist field (see process-embedded-events).
+; guarantee that every embedded event form that defines handling of :dir values
+; for include-book does so in a manner that works when loading compiled files,
+; and we weakly extend this guarantee to raw-mode as well (weakly, since we
+; cannot perfectly control raw-mode but anyhow, a trust tag is necessary to
+; enter raw-mode so our guarantee need not be ironclad).  The above :ignore
+; value must then be set to a legitimate include-book-alist when inside
+; include-book or (generally) raw-mode, and should remain :ignore when not in
+; those contexts.  When the value is not :ignore, then execution of
+; add-include-book-dir will extend the value of 'raw-include-book-dir-alist
+; instead of modifying the acl2-defaults-table.  And whenever we execute
+; include-book in raw Lisp, we use this value instead of the one in the
+; acl2-defaults-table, by binding it to nil upon entry.  Thus, any
+; add-include-book-dir will be local to the book, which respects the semantics
+; of include-book.  We bind it to nil because that is also how include-book
+; works: the acl2-defaults-table initially has an empty :include-book-dir-alist
+; field (see process-embedded-events).
 
 ; In order to be able to rely on the above scheme, we disallow any direct table
 ; update of the :include-book-dir-alist field of the acl2-defaults-table.  We
 ; use the state global 'modifying-include-book-dir-alist for this purpose,
 ; which is globally nil but is bound to t by add-include-book-dir and
-; delete-include-book-dir.  We insist that it be non-nil at any table update of
-; the :include-book-dir-alist field.  For convenience we do this check in
-; chk-table-guard.  We considered doing it in chk-embedded-event-form, but that
-; would have been more awkward, and more importantly, it would have allowed
-; such direct updates when developing a book interactively but not when
-; certifying the book, which could provide a rude surprise to the user at
-; certification time.
+; delete-include-book-dir.  We insist that it be non-nil in chk-table-guard.
+; We considered doing it in chk-embedded-event-form, but that would have been
+; more awkward, and more importantly, it would have allowed such direct updates
+; when developing a book interactively but not when certifying the book, which
+; could provide a rude surprise to the user at certification time.
 
 ; End of Essay on Include-book-dir-alist
 

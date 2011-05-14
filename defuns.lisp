@@ -6837,7 +6837,7 @@
 ; occurs in the body of fn (which has the given formals).  Called-fn-posns is
 ; the set of posns for called-fn that are known to be relevant, except for the
 ; case that called-fn is fn, in which case called-fn-posns is :same.  The
-; formal i, which is is initially 0, is the position in called-fn's argument
+; formal i, which is initially 0, is the position in called-fn's argument
 ; list of the first element of actuals.  We extend posns, the posns of fn known
 ; to be relevant, by seeing which posns are used in the actuals in the relevant
 ; posns of called-fn (i.e., called-fn-posns).

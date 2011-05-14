@@ -2950,9 +2950,9 @@
 ; Pairs) to an error triple, printing an error message if one is called for.
 ; See also the analogue cmp-plus-bindings-to-trans-tuple.
 
-  `(assert$ (not (eq ctx t))
-            (mv-let (ctx msg-or-val)
-                    ,form
+  `(mv-let (ctx msg-or-val)
+           ,form
+           (assert$ (not (eq ctx t))
                     (cond (ctx (cond (msg-or-val (er soft ctx "~@0" msg-or-val))
                                      (t (silent-error state))))
                           (t (value msg-or-val))))))
