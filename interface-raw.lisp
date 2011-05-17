@@ -1690,15 +1690,76 @@
 ; NOTE: we have to test for live stobjs before we evaluate the guard, since the
 ; Common Lisp guard may assume all stobjs are live.  We actually only need
 ; stobjs to be live that occur in the guard in other than stobj recognizer
-; calls; but we take the easy way out and check that all stobjs are live before
-; evaluating the raw Lisp guard.  After all, the cost of that check is only
-; some eq tests.
+; calls; but we take the easy way out (except for a stobj-flag case below) and
+; check that all stobjs are live before evaluating the raw Lisp guard.  After
+; all, the cost of that check is only some eq tests.
 
                       `(cond ,(cond ((eq live-stobjp-test t)
                                      `(,guard
                                        (return-from ,*1*fn (,fn ,@formals))))
                                     (t
-                                     `((if ,live-stobjp-test ,guard ,*1*guard)
+                                     `((if ,live-stobjp-test
+                                           ,(if stobj-flag
+
+; We disallow attachments during evaluation of the stobj updater.  The
+; following example, which is a slight modification of one provided by Jared
+; Davis, shows why.
+
+; (progn
+;   (defstub foop (x) t)
+;   (defun barp (x)
+;     (declare (xargs :guard t))
+;     (or (not x)
+; 	(foop x)))
+;   (defstobj st
+;     (fld :type (satisfies barp)))
+;   (defthm barp-of-fld
+;     (implies (stp st)
+; 	     (barp (fld st))))
+;   (defun my-integerp (x)
+;     (declare (xargs :guard t))
+;     (integerp x)))
+; (defattach foop my-integerp)
+; (trace$ foop barp my-integerp)
+; (update-fld 3 st) ; note that foop calls its attachment, my-integerp
+; (defattach foop consp)
+; (barp (fld st)) ; nil (ouch)
+; (stp st) ; returns t, but is really (logically) nil
+
+; The code just below ensures that the updater will be evaluated without
+; attachments.  It might needlessly ensure that other functions introduced by
+; defstobj (for the given stobj-flag) are evaluated without attachments, for
+; example if the getprop below returns nil because the necessary 'stobj
+; property has not yet been put into wrld.  Indeed, array accessors will have
+; the extra check, because unlike ordinary accessors, their guard is not simply
+; a call of the stobj recognizer.  But as of this writing, with that exception
+; (which seems unimportant, given that several calls are already made on behalf
+; of the guard and hence binding *aokp* adds little relative cost), the test
+; seems to apply only to stobj updaters.  Notice that in the special (but
+; common) case that the guard is (r stobj-flag), where r is the stobj
+; recognizer for stobj-flag, we avoid the call of r that is normally done (see
+; the comment about "easy way out", above).
+
+                                                (case-match guard
+                                                  ((recog? !stobj-flag)
+                                                   (let ((recog
+                                                          (cadr
+                                                           (getprop
+                                                            stobj-flag
+                                                            'stobj
+                                                            nil
+                                                            'current-acl2-world
+                                                            wrld))))
+                                                     (cond
+                                                      ((eq recog? recog)
+                                                       t) ; trivial guard
+                                                      (t
+                                                       `(let ((*aokp* nil))
+                                                          ,guard)))))
+                                                  (& `(let ((*aokp* nil))
+                                                        ,guard)))
+                                              guard)
+                                         ,*1*guard)
                                        ,(assert$
 
 ; No user-stobj-based functions are primitives for which we need to give

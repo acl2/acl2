@@ -384,9 +384,13 @@
 
   ":Doc-Section Hons-and-Memoization
 
-  Forget values remembered for the function FN~/
+  forget values remembered for the given function~/
 
-  A logical no-op.  The values memoized for fn are forgotten.~/~/"
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
+
+  This function returns its argument, ~c[fn], unchanged.  The values memoized
+  for ~c[fn] are forgotten.~/~/"
 
   fn)
 
@@ -395,12 +399,14 @@
 
   ":Doc-Section Hons-and-Memoization
 
-  Forget values remembered for all the memoized functions.~/
+  forget values remembered for all the memoized functions~/
 
-  A logical no-op.  All memoized values are forgotten.
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
-  Returns NIL.  Invokes CLEAR-MEMOIZE-TABLE for
-  each memoized function.~/~/"
+  ~c[Clear-memoize-tables] is a logical no-op.  All memoized values are
+  forgotten.  It returns ~c[nil], invoking ~ilc[clear-memoize-table] for each
+  memoized function.~/~/"
 
   nil)
 
@@ -408,10 +414,14 @@
 (defn memoize-summary ()
   ":Doc-Section Hons-and-Memoization
 
-  Display all collected profiling and memoization table info.~/
+  display all collected profiling and memoization table info~/
 
-  Logically, just returns nil.  The profiling statistics may be cleared with
-  ~c[(clear-memoize-statistics)].~/~/"
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
+
+  Logically, this function just returns ~c[nil], but it displays profiling and
+  memoization table information.  The profiling statistics may be cleared with
+  ~c[(]~ilc[clear-memoize-statistics]~c[)].~/~/"
 
   nil)
 
@@ -419,19 +429,26 @@
 (defn clear-memoize-statistics ()
   ":Doc-Section Hons-and-Memoization
 
-  Clears all collected profiling statistics displayed by
-  ~c[(memoize-summary)].~/
+  clears all profiling info displayed by ~c[(]~ilc[memoize-summary]~c[)]~/
 
-  Logically, just returns ~c[nil].~/~/"
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
+
+  Logically, this function just returns ~c[nil].  It clears all profiling info
+  displayed by ~c[(]~ilc[memoize-summary]~c[)]~/~/"
 
   nil)
 
 (defmacro memsum ()
   ":Doc-Section Hons-and-Memoization
 
-  Display all collected profiling and memoization info.~/
+  display all collected profiling and memoization info~/
 
-  An abbreviation of memoize-summary.  Logically, just returns ~c[nil].~/~/"
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
+
+  This macro is abbreviation for ~ilc[memoize-summary].  Logically, it just
+  returns ~c[nil].~/~/"
 
   '(memoize-summary))
 
@@ -645,10 +662,10 @@
 
   turn on memoization for one function~/
 
-  This documentation topic relates to an experimental extension of
-  ACL2 under development by Bob Boyer and Warren Hunt.
-  ~l[hons-and-memoization] for a general discussion of memoization and
-  the related features of hash consing and applicative hash tables.
+  This ~il[documentation] topic relates to an experimental extension of ACL2
+  under development by Bob Boyer and Warren Hunt.  ~l[hons-and-memoization] for
+  a general discussion of memoization and the related features of hash consing
+  and applicative hash tables.
 
   ~bv[]
   Examples:
@@ -1100,9 +1117,9 @@
   (coerce "~/:{}=+-_.,!?@#%^%<>|&$*`\\/\";()" 'list)
 
   ":Doc-Section Hons-and-Memoization
-  Some not so weird characters.~/
 
-  *UNTROUBLESOME-CHARACTERS* should not include single quote,
-  whitespace characters, control characters, or anything else weird
-  for a file name.  Such characters should only be used in file names
-  by experts at quoting.~/~/")
+  some not so weird characters~/
+
+  ~c[*UNTROUBLESOME-CHARACTERS*] should not include single quote, whitespace
+  characters, control characters, or anything else weird for a file name.  Such
+  characters should only be used in file names by experts at quoting.~/~/")

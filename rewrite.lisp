@@ -4925,6 +4925,20 @@
 
 ; Finally the Rewriter
 
+(defrec current-literal (not-flg . atm) t)
+
+(defrec rewrite-constant
+
+; WARNING: If you change the layout of the rewrite-constant in a way that
+; affects the position of :current-clause -- e.g., add a field -- you MUST
+; change the definition in axioms.lisp of the function |Access REWRITE-CONSTANT
+; record field CURRENT-CLAUSE|.  If you don't, however, the build will fail
+; loudly (via a redefinition error).
+
+; WARNING: The name "rewrite-constant" is a misnomer because it is not
+; really constant during rewriting.  The active-theory is frequently
+; toggled.
+
 ; The Rewriter's Constant Argument -- rcnst
 
 ; In nqthm the rewriter accessed many "special variables" -- variables
@@ -4961,20 +4975,6 @@
 
 ; The current-literal not-flg and atm are always used together so we bundle
 ; them so we can extract them both at once:
-
-(defrec current-literal (not-flg . atm) t)
-
-(defrec rewrite-constant
-
-; WARNING: If you change the layout of the rewrite-constant in a way that
-; affects the position of :current-clause -- e.g., add a field -- you MUST
-; change the definition in axioms.lisp of the function |Access REWRITE-CONSTANT
-; record field CURRENT-CLAUSE|.  If you don't, however, the build will fail
-; loudly (via a redefinition error).
-
-; WARNING: The name "rewrite-constant" is a misnomer because it is not
-; really constant during rewriting.  The active-theory is frequently
-; toggled.
 
   ((active-theory . backchain-limit-rw)
    current-enabled-structure
@@ -8988,7 +8988,7 @@
 
 (defun expand-permission-p (term expand-lst geneqv wrld)
 
-; Returns nil is we do not have permission from :expand hints to expand, else
+; Returns nil if we do not have permission from :expand hints to expand, else
 ; non-nil.  It may be more appropriate to use expand-permission-result
 ; instead.
 
@@ -13746,14 +13746,15 @@
 ; relieve-hyps1-free-2) we search ground units in an attempt to extend
 ; unify-subst to make term true.
 
-; We return five values: a relieve-hyps-ans, a failure-reason-lst that is a
-; list of pairs (cons extended-unify-subst_i failure-reason_i), a unify-subst
-; extending the given unify-subst, a ttree, and a resulting allp.  Each
-; failure-reason_i corresponds to the attempt to relieve hyps using
-; extended-unify-subst_i, an extension of unify-subst.  The failure-reason-lst
-; is used in tilde-@-failure-reason-free-phrase to explain why each attempt at
-; extending the unify-subst failed to succeed, except if this list is empty,
-; then a 'hyp-vars token is used in its place (see relieve-hyps1).
+; We return six values: a new step-limit, a relieve-hyps-ans, a
+; failure-reason-lst that is a list of pairs (cons extended-unify-subst_i
+; failure-reason_i), a unify-subst extending the given unify-subst, a ttree,
+; and a resulting allp.  Each failure-reason_i corresponds to the attempt to
+; relieve hyps using extended-unify-subst_i, an extension of unify-subst.  The
+; failure-reason-lst is used in tilde-@-failure-reason-free-phrase to explain
+; why each attempt at extending the unify-subst failed to succeed, except if
+; this list is empty, then a 'hyp-vars token is used in its place (see
+; relieve-hyps1).
 
   (declare (ignore obj geneqv)
            (type (unsigned-byte 29) rdepth)
@@ -14984,8 +14985,9 @@
 ; We investigate the application of lemma to term and the
 ; simplify-clause-pot-lst.  If term unifies with the max-term of lemma and we
 ; can relieve the hypotheses, we add the polynomial produced from lemma's
-; conclusion to the pot-lst.  We return two values.  The first is the standard
-; contradictionp.  The second is a possibly modified simplify-clause-pot-lst.
+; conclusion to the pot-lst.  We return three values.  The second is the
+; standard contradictionp.  The third is a possibly modified
+; simplify-clause-pot-lst.
 
 ; PATCH: We use a new field in the linear pots to catch potential loops.
 ; Loop-stopper-value is initially 0 in all the linear pots.  Let value be the
@@ -16122,9 +16124,10 @@
 ; some pot labels whose product will form part-of-new-var, adding them
 ; to var-list as we go.
 
-; All the deal-with-xxx functions return three values: the standard
-; contradictionp, a potentiall augmented pot-lst (or nil if contradictionp
-; is true), and the accumulated list of products we have already tried.
+; All the deal-with-xxx functions return four values: a new step-limit, the
+; standard contradictionp, a potentially augmented pot-lst (or nil if
+; contradictionp is true), and the accumulated list of products we have already
+; tried.
 
   (declare (ignore obj geneqv ttree)
            (type (unsigned-byte 29) rdepth)
@@ -16230,9 +16233,10 @@
 ; gathering such a set of pot labels, we will multiply the polys in those
 ; pots and add them to the simplify-clause-pot-lst.
 
-; All the deal-with-xxx functions return three values: the standard
-; contradictionp, a potentiall augmented pot-lst (or nil if contradictionp
-; is true), and the accumulated list of products we have already tried.
+; All the deal-with-xxx functions return four values: a new step-limit, the
+; standard contradictionp, a potentially augmented pot-lst (or nil if
+; contradictionp is true), and the accumulated list of products we have already
+; tried.
 
   (declare (ignore obj geneqv ttree)
            (type (unsigned-byte 29) rdepth)
@@ -16283,9 +16287,10 @@
 ; If we are succesful at gathering such a set of pot labels, we will
 ; multiply the polys in those pots and add them to the simplify-clause-pot-lst.
 
-; All the deal-with-xxx functions return three values: the standard
-; contradictionp, a potentiall augmented pot-lst (or nil if contradictionp
-; is true), and the accumulated list of products we have already tried.
+; All the deal-with-xxx functions return four values: a new step-limit, the
+; standard contradictionp, a potentially augmented pot-lst (or nil if
+; contradictionp is true), and the accumulated list of products we have already
+; tried.
 
   (declare (ignore obj geneqv ttree)
            (type (unsigned-byte 29) rdepth)
@@ -16400,9 +16405,10 @@
 ; (1) The bounds polys of new-var with the polys of the found pot, and
 ; (2) the polys of new-var with the bounds polys of the found pot.
 
-; All the deal-with-xxx functions return three values: the standard
-; contradictionp, a potentially augmented pot-lst (or nil if contradictionp
-; is true), and the accumulated list of products we have already tried.
+; All the deal-with-xxx functions return four values: a new step-limit, the
+; standard contradictionp, a potentially augmented pot-lst (or nil if
+; contradictionp is true), and the accumulated list of products we have already
+; tried.
 
   (declare (ignore obj geneqv ttree)
            (type (unsigned-byte 29) rdepth)

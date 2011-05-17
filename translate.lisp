@@ -2948,14 +2948,14 @@
 
 ; Here we convert a context-message pair (see the Essay on Context-message
 ; Pairs) to an error triple, printing an error message if one is called for.
-; See also the analogue cmp-plus-bindings-to-trans-tuple.
 
   `(mv-let (ctx msg-or-val)
            ,form
-           (assert$ (not (eq ctx t))
-                    (cond (ctx (cond (msg-or-val (er soft ctx "~@0" msg-or-val))
-                                     (t (silent-error state))))
-                          (t (value msg-or-val))))))
+           (cond (ctx (cond (msg-or-val
+                             (assert$ (not (eq ctx t))
+                                      (er soft ctx "~@0" msg-or-val)))
+                            (t (silent-error state))))
+                 (t (value msg-or-val)))))
 
 (defun er-cmp-fn (ctx msg)
   (declare (xargs :guard t))

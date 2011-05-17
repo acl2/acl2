@@ -18013,11 +18013,10 @@
                       (true-listp (caddr type))
                       (equal (length (caddr type)) 1)))
             (er soft ctx
-                "When a field descriptor specifies an ARRAY :type, ~
-                 the type must be of the form (ARRAY etype (n)).  ~
-                 Note that we only support single-dimensional arrays. ~
-                  The purported ARRAY :type ~x0 for the ~x1 field of ~
-                 ~x2 is not of this form."
+                "When a field descriptor specifies an ARRAY :type, the type ~
+                 must be of the form (ARRAY etype (n)).  Note that we only ~
+                 support single-dimensional arrays.  The purported ARRAY ~
+                 :type ~x0 for the ~x1 field of ~x2 is not of this form."
                 type field name))
           (t (let* ((etype (cadr type))
                     (etype-term (translate-declaration-to-guard
@@ -22508,10 +22507,9 @@
   Otherwise tracing proceeds as follows.  First the ~c[:entry] form is
   evaluated, and the result is printed.  Then the call of ~c[fn] is evaluated.
   Finally the ~c[:exit] term is evaluated and the result is printed.  As
-  indicated above, the default for the ~c[:entry] term if omitted (or
-  explicitly the term ~c[nil]) is ~c[(cons TRACED-FN ARGLIST)], and the default
-  for the ~c[:exit] term if omitted or explicitly the term ~c[nil] is
-  ~c[(cons TRACED-FN VALUES)].
+  indicated above, the default for the ~c[:entry] term if omitted or explicitly
+  ~c[nil] is ~c[(cons TRACED-FN ARGLIST)], and the default for the ~c[:exit]
+  term if omitted or explicitly ~c[nil] is ~c[(cons TRACED-FN VALUES)].
 
   Note that if the function has a formal named ~c[ARGLIST], then ~c[ARGLIST]
   will nevertheless refer to the entire list of formals, not the single formal
@@ -22520,9 +22518,9 @@
 
   As mentioned above, for each of ~c[:entry] and ~c[:exit], a value of ~c[nil]
   specifies the default behavior.  If you really want a value of ~c[nil], use a
-  non-~c[nil] form that evaluates to ~c[nil], for example ~c[(car nil)].
-  However, for ~c[:cond] a value of ~c[nil] means what it says: do not evaluate
-  the ~c[:entry] or ~c[:exit] forms.
+  non-~c[nil] form that evaluates to ~c[nil], for example ~c[(car nil)] or
+  ~c['nil].  However, for ~c[:cond] a value of ~c[nil] means what it says: do
+  not evaluate the ~c[:entry] or ~c[:exit] forms.
 
   Finally we discuss the case that the ~c[:entry] or ~c[:exit] term is of the
   form ~c[(:fmt u)].  In these cases, the term ~c[u] is evaluated as described

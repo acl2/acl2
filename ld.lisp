@@ -17409,7 +17409,8 @@
 
 ; Eliminated cons-into-ttree in favor of cons-tag-trees.
 
-; Moved assert$ to the right place in cmp-to-error-triple.
+; Moved assert$ to the right place in cmp-to-error-triple (thanks to David
+; Rager for correcting an error in our initial change).
 
   :Doc
   ":Doc-Section release-notes
@@ -17755,9 +17756,15 @@
   with compiled code; but this was not the case for functions exported from an
   ~ilc[encapsulate] event.  This has been fixed.
 
-  It had been the case that the ~ilc[puff] command was broken for
+  It had been the case that the ~c[:]~ilc[puff] command was broken for
   ~ilc[include-book] form whose book had been certified in a world with an
   ~ilc[add-include-book-dir] event.  This has been fixed.
+
+  Evaluation of ~il[stobj] updaters (~pl[defstobj]) may no longer use
+  attachments (~pl[defattach]).  This is a subtle point that will likely not
+  affect many users.  Thanks to Jared Davis for bringing this issue to our
+  attention; a slight variant of his example appears in a comment in ACL2
+  source function ~c[oneify-cltl-code].
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 

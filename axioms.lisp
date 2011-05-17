@@ -17363,17 +17363,18 @@
     ...
     evn)
   ~ev[]
-  where each ~ilc[signature] is a well-formed signature (~pl[signature]), each
-  ~c[signature] describes a different function symbol, and each ~c[evi] is an
-  embedded event form (~l[embedded-event-form]).  There must be at least one
-  ~c[evi].  The ~c[evi] inside ~ilc[local] special forms are called ``local''
-  ~il[events] below.  ~il[Events] that are not ~ilc[local] are sometimes said
-  to be ``exported'' by the encapsulation.  We make the further restriction
-  that no ~ilc[defaxiom] event may be introduced in the scope of an
-  ~c[encapsulate] (not even by ~c[encapsulate] or ~ilc[include-book] events
-  that are among the ~c[evi]).  Furthermore, no non-~ilc[local]
-  ~ilc[include-book] event is permitted in the scope of any ~c[encapsulate]
-  with a non-empty list of signatures.
+  where each ~ilc[signature] is a well-formed signature, each ~c[signature]
+  describes a different function symbol, and each ~c[evi] is an embedded event
+  form (~l[embedded-event-form]).  Also ~pl[signature], in particular for a
+  discussion of how a signature can assign a ~il[guard] to a function symbol.
+  There must be at least one ~c[evi].  The ~c[evi] inside ~ilc[local] special
+  forms are called ``local'' ~il[events] below.  ~il[Events] that are not
+  ~ilc[local] are sometimes said to be ``exported'' by the encapsulation.  We
+  make the further restriction that no ~ilc[defaxiom] event may be introduced
+  in the scope of an ~c[encapsulate] (not even by ~c[encapsulate] or
+  ~ilc[include-book] events that are among the ~c[evi]).  Furthermore, no
+  non-~ilc[local] ~ilc[include-book] event is permitted in the scope of any
+  ~c[encapsulate] with a non-empty list of signatures.
 
   To be well-formed, an ~c[encapsulate] event must have the properties that
   each event in the body (including the ~ilc[local] ones) can be successfully
@@ -19444,9 +19445,10 @@
   or say that ``~c[g] is attached to ~c[f].''  Notable exceptions, where we do
   not use attachments during evaluation, are for macroexpansion, evaluation of
   ~ilc[defconst] and ~ilc[defpkg] terms, evaluation during ~ilc[table] events,
-  and especially evaluation of ground terms (terms without free variables)
-  during proofs.  However, even for these cases we allow the use of attachments
-  in the first argument of ~ilc[prog2$] and, more generally, the next-to-last
+  some ~il[stobj] operations including all ~il[stobj updates], and especially
+  evaluation of ground terms (terms without free variables) during proofs.
+  However, even for these cases we allow the use of attachments in the first
+  argument of ~ilc[prog2$] and, more generally, the next-to-last
   (i.e., second) argument of ~ilc[return-last] when its first argument is not
   of the form ~c['m] for some macro, ~c[m].
 

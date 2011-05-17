@@ -6580,11 +6580,11 @@
 ; to return the false clause in place of any other clause, so our use of fttree
 ; is clearly sound.
 
-; We return 4 values: a flag indicating whether anything was done, the
-; final ecnt, a set, ans, of clauses whose conjunction implies cl
-; under our assumptions, and a ttree that describes what we did.  Our
-; answers are accumulated onto flg, ecnt, ans, and ttree as we recur
-; through the literals of tail.
+; We return 5 values: a new step-limit; a flag indicating whether anything was
+; done; the final ecnt; a set, ans, of clauses whose conjunction implies cl
+; under our assumptions; and a ttree that describes what we did.  Our answers
+; are accumulated onto flg, ecnt, ans, and ttree as we recur through the
+; literals of tail.
 
   (cond
    ((null tail)
@@ -6980,24 +6980,22 @@
 (defun setup-simplify-clause-pot-lst (cl ttrees fc-pair-lst
                                       type-alist rcnst wrld state step-limit)
 
-; We construct the initial value of the simplify-clause-pot-lst in
-; preparation for rewriting clause cl.  We assume rcnst contains the
-; user's hint settings, the correct top-clause and current clause, and a
-; null :pt.
+; We construct the initial value of the simplify-clause-pot-lst in preparation
+; for rewriting clause cl.  We assume rcnst contains the user's hint settings,
+; the correct top-clause and current clause, and a null :pt.
 
-; We return two values.  If the first is non-nil it indicates that we
-; have proved cl and the other value is irrelevant.  In the case that we
-; prove clause the first result is a poly, meaning it was proved by
-; linear arithmetic.  The assumptions in the ttree of that poly must be
-; considered before cl is declared proved.  When the first answer is nil
-; the second is the constructed simplify-clause-pot-lst.
+; We return three values.  The first is a new step-limit.  If the second is
+; non-nil it indicates that we have proved cl and the other value is
+; irrelevant.  In the case that we prove clause the second result is a poly,
+; meaning it was proved by linear arithmetic.  The assumptions in the ttree of
+; that poly must be considered before cl is declared proved.  When the second
+; answer is nil the third is the constructed simplify-clause-pot-lst.
 
-; As of Version_2.8, we start by adding the (negations of) any
-; forward-chaining conclusions to the head of cl and the corresponding
-; ttrees to ttrees.  We then call the original
-; setup-simplify-clause-pot-lst on the resultant expanded clause.
-; This will allow us to use forward-chaining conclusions in linear
-; arithmetic.
+; As of Version_2.8, we start by adding the (negations of) any forward-chaining
+; conclusions to the head of cl and the corresponding ttrees to ttrees.  We
+; then call the original setup-simplify-clause-pot-lst on the resultant
+; expanded clause.  This will allow us to use forward-chaining conclusions in
+; linear arithmetic.
 
 ; Here is one example of why we might want to do this:
 
@@ -7026,14 +7024,13 @@
 ;                 (bytep (+ 7 n)))
 ;            (bytep (+ 3 n))))
 
-; Before linear arithmetic used the conclusions of forward-chaining
-; rules, one would have to re-enable the definition of bytep in order
-; to prove tricky.  But if this appeared in a larger context, in which
-; one had proved a bunch of lemmas about bytep, one could find oneself
-; in a pickle.  By enabling bytep, one loses the ability to use all
-; the lemmas about it.  Without enabling bytep, tricky is hard to
-; prove.
-;
+; Before linear arithmetic used the conclusions of forward-chaining rules, one
+; would have to re-enable the definition of bytep in order to prove tricky.
+; But if this appeared in a larger context, in which one had proved a bunch of
+; lemmas about bytep, one could find oneself in a pickle.  By enabling bytep,
+; one loses the ability to use all the lemmas about it.  Without enabling
+; bytep, tricky is hard to prove.
+
 ; And here is another example:
 
 ;  (defun bvecp (x n)
@@ -7336,14 +7333,14 @@
 ; wants in it, as well as the :force-info based on whether there is a
 ; call of IF in top-clause.
 
-; We return 3 values.  The first indicates whether we changed top-clause and,
-; if so, whether we went through the rewriter; it will help determine signal
-; returned by simplify-clause (and hence will be used, ultimately, to create
-; the 'simplify-clause hist entry).  If we did not change top-clause, the
-; second and third are nil.  If we did change top-clause, the second is a list
-; of new clauses whose conjunction implies top-clause and the third is a ttree
-; explaining what we did.  This ttree will be used to create the
-; 'simplify-clause hist entry.
+; We return 4 values.  The first is a new step-limit.  The next indicates
+; whether we changed top-clause and, if so, whether we went through the
+; rewriter; it will help determine signal returned by simplify-clause (and
+; hence will be used, ultimately, to create the 'simplify-clause hist entry).
+; If we did not change top-clause, the third and fourth are nil.  If we did
+; change top-clause, the third is a list of new clauses whose conjunction
+; implies top-clause and the fourth is a ttree explaining what we did.  This
+; ttree will be used to create the 'simplify-clause hist entry.
 
   (mv-let (hitp current-clause pts remove-trivial-equivalences-ttree)
           (remove-trivial-equivalences top-clause
@@ -7662,94 +7659,88 @@
 ; and that the pt is nil.  We install our top-clause and
 ; current-clause when necessary.
 
-; We return 4 values.  The first is a signal that in general is 'miss,
-; 'abort, 'error, or a "hit".  In this case, it is always either 'miss
-; or one of 'hit, 'hit-rewrite, or 'hit-rewrite2 (as described further
-; below).  When the signal is 'miss, the other 3 values are
-; irrelevant.  When the signal is 'hit, the second result is the list
-; of new clauses, the third is a ttree that will become that component
-; of the history-entry for this simplification, and the fourth is the
-; unmodified pspv.  (We return the fourth thing to adhere to the
-; convention used by all clause processors in the waterfall (q.v.).)
+; We return 4 values.  The first is a new step-limit.  The second is a signal
+; that in general is 'miss, 'abort, 'error, or a "hit".  In this case, it is
+; always either 'miss or one of 'hit, 'hit-rewrite, or 'hit-rewrite2 (as
+; described further below).  When the signal is 'miss, the remaining 3 values
+; are irrelevant.  When the signal is 'hit, the third result is the list of new
+; clauses, the fourth is a ttree that will become that component of the
+; history-entry for this simplification, and the fifth is the unmodified pspv.
+; (We return the fifth thing to adhere to the convention used by all clause
+; processors in the waterfall (q.v.).)
 
-; If the first result is a "hit" then the conjunction of the new
-; clauses returned implies cl.  Equivalently, under the assumption
-; that cl is false, cl is equivalent to the conjunction of the new
-; clauses.
+; If the second result is a "hit" then the conjunction of the new clauses
+; returned implies cl.  Equivalently, under the assumption that cl is false, cl
+; is equivalent to the conjunction of the new clauses.
 
 ; On Tail Biting by Simplify-clause:
 
-; Tail biting can occur at the simplify-clause level, i.e., we can
-; return a set of clauses that is a generalization of the clause cl,
-; e.g., a set whose conjunction is false even though cl is not.  This
-; is because of the way we manage the simplify-clause-pot-lst and
-; pts.  We build a single pot-lst and use parent trees to
-; render inactive those polys that we wish to avoid.  To arrange to
-; bite our own tail, put two slightly different versions of the same
-; inequality literal into cl.  The poly arising from the second can be
-; used to rewrite the first and the poly arising from first can be used
-; to rewrite the second.  If the first rewrites to false immediately our
-; use of parent trees (as arranged by passing local-rcnst to the recursive
-; call of rewrite-clause in rewrite-clause) will wisely prevent the use of
-; its poly while rewriting the second.  But if the first rewrites to some
-; non-linear term (which will be rewritten to false later) then we'll
-; permit ourselves to use the first's poly while working on the second
-; and we could bite our tail.
+; Tail biting can occur at the simplify-clause level, i.e., we can return a set
+; of clauses that is a generalization of the clause cl, e.g., a set whose
+; conjunction is false even though cl is not.  This is because of the way we
+; manage the simplify-clause-pot-lst and pts.  We build a single pot-lst and
+; use parent trees to render inactive those polys that we wish to avoid.  To
+; arrange to bite our own tail, put two slightly different versions of the same
+; inequality literal into cl.  The poly arising from the second can be used to
+; rewrite the first and the poly arising from first can be used to rewrite the
+; second.  If the first rewrites to false immediately our use of parent trees
+; (as arranged by passing local-rcnst to the recursive call of rewrite-clause
+; in rewrite-clause) will wisely prevent the use of its poly while rewriting
+; the second.  But if the first rewrites to some non-linear term (which will be
+; rewritten to false later) then we'll permit ourselves to use the first's poly
+; while working on the second and we could bite our tail.
 
-; This would not happen if we produced a new linear pot-lst for each
-; literal -- a pot-lst in which the literal to be rewritten was not
-; assumed false.  Early experiments with that approach led us to
-; conclude it was too expensive.
+; This would not happen if we produced a new linear pot-lst for each literal --
+; a pot-lst in which the literal to be rewritten was not assumed false.  Early
+; experiments with that approach led us to conclude it was too expensive.
 
-; If the specification of rewrite is correct, then tail biting cannot
-; happen except via the involvement of linear arithmetic.  To see this,
-; consider the assumptions governing the rewriting of each literal in the
-; clause and ask whether the literal being rewritten in in rewrite-clause
-; is assumed false via any of those assumptions.  There are five sources
-; of assumptions in the specification of rewrite: (a) the type-alist
-; (which is constructed so as to avoid that literal), (b) the assumptions
-; in ancestors (which is initially empty), (c) the assumptions in the
-; pot-lst (which we are excepting), and (d) 'assumptions in ttree
-; (which we are excepting).  Thus, the only place that assumption might
-; be found is simplify-clause-pot-lst.  If linear is eliminated, the only
-; assumptions left are free of the literal being worked on.
+; If the specification of rewrite is correct, then tail biting cannot happen
+; except via the involvement of linear arithmetic.  To see this, consider the
+; assumptions governing the rewriting of each literal in the clause and ask
+; whether the literal being rewritten in in rewrite-clause is assumed false via
+; any of those assumptions.  There are five sources of assumptions in the
+; specification of rewrite: (a) the type-alist (which is constructed so as to
+; avoid that literal), (b) the assumptions in ancestors (which is initially
+; empty), (c) the assumptions in the pot-lst (which we are excepting), and (d)
+; 'assumptions in ttree (which we are excepting).  Thus, the only place that
+; assumption might be found is simplify-clause-pot-lst.  If linear is
+; eliminated, the only assumptions left are free of the literal being worked
+; on.
 
-; This is really an interface function between the rewriter and the rest of
-; the prover.  It has three jobs.
+; This is really an interface function between the rewriter and the rest of the
+; prover.  It has three jobs.
 
-; The first is to convert from the world of pspv to the world of
-; rcnst.  That is, from the package of spec vars passed around in the
-; waterfall to the package of constants known to the rewriter.
+; The first is to convert from the world of pspv to the world of rcnst.  That
+; is, from the package of spec vars passed around in the waterfall to the
+; package of constants known to the rewriter.
 
 ; The second job of this function is to control the expansion of the
-; induction-hyp-terms and induction-concl terms (preventing the
-; expansion of the former and forcing the expansion of the latter) by
-; possibly adding them to terms-to-be-ignored-by-rewrite and
-; expand-lst, respectively.  This is done as part of the conversion
-; from pspv (where induction hyps and concl are found) to rcnst (where
-; terms-to-be-ignored-by-rewrite and expand-lst are found).  They are
-; so controlled as long as we are in the first simplification stages
-; after induction.  As soon as the clause has gone through the
-; rewriter with some change, with input free of induction-concl-terms,
-; we stop interfering.  The real work horse of clause level
-; simplification is simplify-clause1.
+; induction-hyp-terms and induction-concl terms (preventing the expansion of
+; the former and forcing the expansion of the latter) by possibly adding them
+; to terms-to-be-ignored-by-rewrite and expand-lst, respectively.  This is done
+; as part of the conversion from pspv (where induction hyps and concl are
+; found) to rcnst (where terms-to-be-ignored-by-rewrite and expand-lst are
+; found).  They are so controlled as long as we are in the first simplification
+; stages after induction.  As soon as the clause has gone through the rewriter
+; with some change, with input free of induction-concl-terms, we stop
+; interfering.  The real work horse of clause level simplification is
+; simplify-clause1.
 
-; The third job is to convert the simplify-clause1 answers into the
-; kind required by a clause processor in the waterfall.  The work
-; horse doesn't return an pspv and we do.
+; The third job is to convert the simplify-clause1 answers into the kind
+; required by a clause processor in the waterfall.  The work horse doesn't
+; return an pspv and we do.
 
  (prog2$
   (initialize-brr-stack state)
   (cond ((assoc-eq 'settled-down-clause hist)
 
-; The clause has settled down under rewriting with the
-; induction-hyp-terms initially ignored and the induction-concl-terms
-; forcibly expanded.  In general, we now want to stop treating those
-; terms specially and continue simplifying.  However, there is a
-; special case that will save a little time.  Suppose that the clause
-; just settled down -- i.e., the most recent hist entry is the one we
-; just found.  And suppose that none of the specially treated terms
-; occurs in the clause we're to simplify.  Then we needn't simplify it
+; The clause has settled down under rewriting with the induction-hyp-terms
+; initially ignored and the induction-concl-terms forcibly expanded.  In
+; general, we now want to stop treating those terms specially and continue
+; simplifying.  However, there is a special case that will save a little time.
+; Suppose that the clause just settled down -- i.e., the most recent hist entry
+; is the one we just found.  And suppose that none of the specially treated
+; terms occurs in the clause we're to simplify.  Then we needn't simplify it
 ; again.
 
          (cond ((and (eq 'settled-down-clause
@@ -7760,11 +7751,11 @@
                                    :induction-hyp-terms)
                            cl)))
 
-; Since we know the induction-concl-terms couldn't occur in the clause
-; -- they would have been expanded -- we are done.  (Or at least: if
-; they do occur in the clause, then still, removing them from the
-; expand-lst should not help the rewriter!)  This test should speed up
-; base cases and preinduction simplification at least.
+; Since we know the induction-concl-terms couldn't occur in the clause -- they
+; would have been expanded -- we are done.  (Or at least: if they do occur in
+; the clause, then still, removing them from the expand-lst should not help the
+; rewriter!)  This test should speed up base cases and preinduction
+; simplification at least.
 
                 (mv step-limit 'miss nil nil nil))
                (t
@@ -7786,24 +7777,23 @@
                          step-limit)
                         (cond (changedp
 
-; Note: It is possible that our input, cl, is a member-equal of our
-; output, clauses!  Such simplifications are said to be "specious."
-; But we do not bother to detect that here because we want to report
-; the specious simplification as though everything were ok and then
-; pretend nothing happened.  This gives the user some indication of
-; where the loop is.  In the old days, we just signalled a 'miss if
-; (member-equal cl clauses) and that caused a lot of confusion among
-; experienced users, who saw simplifiable clauses being passed on to
-; elim, etc.  See :DOC specious-simplification.
+; Note: It is possible that our input, cl, is a member-equal of our output,
+; clauses!  Such simplifications are said to be "specious."  But we do not
+; bother to detect that here because we want to report the specious
+; simplification as though everything were ok and then pretend nothing
+; happened.  This gives the user some indication of where the loop is.  In the
+; old days, we just signalled a 'miss if (member-equal cl clauses) and that
+; caused a lot of confusion among experienced users, who saw simplifiable
+; clauses being passed on to elim, etc.  See :DOC specious-simplification.
 
                                (mv step-limit 'hit clauses ttree pspv))
                               (t (mv step-limit 'miss nil nil nil)))))))
         (t
 
 ; The clause has not settled down yet.  So we arrange to ignore the
-; induction-hyp-terms when appropriate, and to expand the
-; induction-concl-terms without question.  The local-rcnst created
-; below is not passed out of this function.
+; induction-hyp-terms when appropriate, and to expand the induction-concl-terms
+; without question.  The local-rcnst created below is not passed out of this
+; function.
 
          (let* ((rcnst (access prove-spec-var pspv :rewrite-constant))
                 (new-force-info (if (ffnnamep-lst 'if cl)
@@ -7824,26 +7814,24 @@
                 (local-rcnst
                  (cond (hit-rewrite2
 
-; We have previously passed through the rewriter, and either a
-; predecessor goal or this one is free of induction-concl-terms.  In
-; that case we stop meddling with the rewriter by inhibiting rewriting
-; of induction-hyp-terms and forcing expansion of
-; induction-concl-terms.  Before Version_2.8 we waited until
-; 'settled-down-clause before ceasing our meddling.  However, Dave
-; Greve and Matt Wilding reported an example in which that heuristic
-; slowed down the prover substantially by needlessly delaying the
-; rewriting of induction-hyp-terms.  Notice that this heuristic nicely
-; matches the induction heuristics: both consider only the goal, not
-; the result of rewriting it.  (We however ignore rewriting by
-; preprocess-clause for the present purpose: we want to wait for a
-; full-blown rewrite before allowing rewriting of
+; We have previously passed through the rewriter, and either a predecessor goal
+; or this one is free of induction-concl-terms.  In that case we stop meddling
+; with the rewriter by inhibiting rewriting of induction-hyp-terms and forcing
+; expansion of induction-concl-terms.  Before Version_2.8 we waited until
+; 'settled-down-clause before ceasing our meddling.  However, Dave Greve and
+; Matt Wilding reported an example in which that heuristic slowed down the
+; prover substantially by needlessly delaying the rewriting of
+; induction-hyp-terms.  Notice that this heuristic nicely matches the induction
+; heuristics: both consider only the goal, not the result of rewriting it.  (We
+; however ignore rewriting by preprocess-clause for the present purpose: we
+; want to wait for a full-blown rewrite before allowing rewriting of
 ; induction-hyp-terms.)
 
-; Initially we attempted to fix the slowdown mentioned above (the one
-; reported by Greve and Wilding) by eliminating completely the special
-; treatment of induction-hyp-terms.  However, lemma
-; psuedo-termp-binary-op_tree in books/meta/pseudo-termp-lemmas.lisp
-; showed the folly of this attempt.  The relevant goal was as follows.
+; Initially we attempted to fix the slowdown mentioned above (the one reported
+; by Greve and Wilding) by eliminating completely the special treatment of
+; induction-hyp-terms.  However, lemma psuedo-termp-binary-op_tree in
+; books/meta/pseudo-termp-lemmas.lisp showed the folly of this attempt.  The
+; relevant goal was as follows.
 
 ; Subgoal *1/5'
 ; (IMPLIES (AND (CONSP L)
@@ -7859,23 +7847,21 @@
 ;          (PSEUDO-TERMP (BINARY-OP_TREE BINARY-OP-NAME
 ;                                        CONSTANT-NAME FIX-NAME L)))
 
-; In this case induction-hyp-terms contained the single term
-; (binary-op_tree binary-op-name constant-name fix-name (cdr l)).
-; Without special treatment of induction-hyp-terms, the above
-; binary-op_tree term was rewritten, and hence so was the pseudo-termp
-; hypothesis.  The result seemed to give permission to the next
-; hypothesis, (pseudo-term-listp l), to be rewritten much more
-; agressively than it was formerly, which bogged down the rewriter
-; (perhaps even in an infinite loop).
+; In this case induction-hyp-terms contained the single term (binary-op_tree
+; binary-op-name constant-name fix-name (cdr l)).  Without special treatment of
+; induction-hyp-terms, the above binary-op_tree term was rewritten, and hence
+; so was the pseudo-termp hypothesis.  The result seemed to give permission to
+; the next hypothesis, (pseudo-term-listp l), to be rewritten much more
+; agressively than it was formerly, which bogged down the rewriter (perhaps
+; even in an infinite loop).
 
-; A later attempt used the simple algorithm that we stop meddling once
-; we have made a pass through the rewriter, even if there are still
+; A later attempt used the simple algorithm that we stop meddling once we have
+; made a pass through the rewriter, even if there are still
 ; induction-concl-terms around.  Lemma flip-eq-subst-commute in
-; books/workshops/1999/ivy/ivy-v2/ivy-sources/flip.lisp showed the
-; problem with that approach.  Subgoal *1/2' below was produced by
-; preprocess-clause.  It produces goal Subgoal *1/2.16, which has a
-; new occurrence in the conclusion of the induction-concl-term
-; (SUBST-FREE F X TM):
+; books/workshops/1999/ivy/ivy-v2/ivy-sources/flip.lisp showed the problem with
+; that approach.  Subgoal *1/2' below was produced by preprocess-clause.  It
+; produces goal Subgoal *1/2.16, which has a new occurrence in the conclusion
+; of the induction-concl-term (SUBST-FREE F X TM):
 
 ;  Subgoal *1/2'
 ;  (IMPLIES (AND (NOT (WFNOT F))
@@ -7924,25 +7910,23 @@
 ;                        (SUBST-FREE (CADR F) X TM)
 ;                        (SUBST-FREE (CADDR F) X TM))))
 
-; If we stop meddling after Subgoal *1/2', then hypothesis rewriting
-; in Subgoal *1/2.16 is so severe that we are subject to
-; case-split-limitations and never reach the conclusion!  If memory
-; serves, an attempt to turn off case-split-limitations just led the
-; prover off the deep end.
+; If we stop meddling after Subgoal *1/2', then hypothesis rewriting in Subgoal
+; *1/2.16 is so severe that we are subject to case-split-limitations and never
+; reach the conclusion!  If memory serves, an attempt to turn off
+; case-split-limitations just led the prover off the deep end.
 
                         (change rewrite-constant
                                 rcnst
                                 :force-info new-force-info
 
-; We also tried a modification in which we use the same :expand-lst as
-; below, thus continuing to meddle with induction-concl-terms even
-; after we are done meddling with induction-hyp-terms.  However, that
-; caused problems with, for example, the proof of exponents-add-1 in
-; books/arithmetic-2/pass1/expt-helper.lisp.  Apparently the forced
-; expansion of (EXPT R J) looped with rule exponents-add-2 (rewriting
-; r^(i+j)).  At any rate, it seems reasonable enough to keep
-; suppression of induction-hyp-terms rewriting in sync with forced
-; expansion of induction-concl-terms.
+; We also tried a modification in which we use the same :expand-lst as below,
+; thus continuing to meddle with induction-concl-terms even after we are done
+; meddling with induction-hyp-terms.  However, that caused problems with, for
+; example, the proof of exponents-add-1 in
+; books/arithmetic-2/pass1/expt-helper.lisp.  Apparently the forced expansion
+; of (EXPT R J) looped with rule exponents-add-2 (rewriting r^(i+j)).  At any
+; rate, it seems reasonable enough to keep suppression of induction-hyp-terms
+; rewriting in sync with forced expansion of induction-concl-terms.
 
 ; And we tried one more idea: removing the test on whether the clause had been
 ; rewritten.  We got one failure, on collect-times-3b in v2-8 in

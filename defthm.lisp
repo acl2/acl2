@@ -1418,7 +1418,7 @@
                       variable~#2~[~/s~] ~&2 on the right-hand side of the ~
                       rule, which ~#2~[is~/are~] not bound on the left-hand ~
                       side~#3~[~/ or in the hypothesis~/ or in any ~
-                      hypothesis~]. This can cause new variables to be ~
+                      hypothesis~].  This can cause new variables to be ~
                       introduced into the proof, which may surprise you."
                      token name
                      (set-difference-eq rhs-vars
