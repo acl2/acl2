@@ -1694,12 +1694,14 @@
 ; check that all stobjs are live before evaluating the raw Lisp guard.  After
 ; all, the cost of that check is only some eq tests.
 
-                      `(cond ,(cond ((eq live-stobjp-test t)
-                                     `(,guard
-                                       (return-from ,*1*fn (,fn ,@formals))))
-                                    (t
-                                     `((if ,live-stobjp-test
-                                           ,(if stobj-flag
+                      `(cond
+                        ,(cond
+                          ((eq live-stobjp-test t)
+                           `(,guard
+                             (return-from ,*1*fn (,fn ,@formals))))
+                          (t
+                           `((if ,live-stobjp-test
+                                 ,(if stobj-flag
 
 ; We disallow attachments during evaluation of the stobj updater.  The
 ; following example, which is a slight modification of one provided by Jared
@@ -1729,55 +1731,43 @@
 ; The code just below ensures that the updater will be evaluated without
 ; attachments.  It might needlessly ensure that other functions introduced by
 ; defstobj (for the given stobj-flag) are evaluated without attachments, for
-; example if the getprop below returns nil because the necessary 'stobj
-; property has not yet been put into wrld.  Indeed, array accessors will have
-; the extra check, because unlike ordinary accessors, their guard is not simply
-; a call of the stobj recognizer.  But as of this writing, with that exception
-; (which seems unimportant, given that several calls are already made on behalf
-; of the guard and hence binding *aokp* adds little relative cost), the test
-; seems to apply only to stobj updaters.  Notice that in the special (but
-; common) case that the guard is (r stobj-flag), where r is the stobj
-; recognizer for stobj-flag, we avoid the call of r that is normally done (see
-; the comment about "easy way out", above).
+; example if the getprop below returns nil because the necessary property has
+; not yet been put into wrld.  But as of this writing, the test seems to apply
+; only to stobj updaters and resize functions.
 
-                                                (case-match guard
-                                                  ((recog? !stobj-flag)
-                                                   (let ((recog
-                                                          (cadr
-                                                           (getprop
-                                                            stobj-flag
-                                                            'stobj
-                                                            nil
-                                                            'current-acl2-world
-                                                            wrld))))
-                                                     (cond
-                                                      ((eq recog? recog)
-                                                       t) ; trivial guard
-                                                      (t
-                                                       `(let ((*aokp* nil))
-                                                          ,guard)))))
-                                                  (& `(let ((*aokp* nil))
-                                                        ,guard)))
-                                              guard)
-                                         ,*1*guard)
-                                       ,(assert$
+                                      (let ((stobjs-out
+                                             (getprop
+                                              fn
+                                              'stobjs-out
+                                              nil
+                                              'current-acl2-world
+                                              wrld)))
+                                        (cond
+                                         ((and stobjs-out ; property is there
+                                               (all-nils stobjs-out))
+                                          guard)
+                                         (t `(let ((*aokp* nil))
+                                                ,guard))))
+                                    guard)
+                               ,*1*guard)
+                             ,(assert$
 
 ; No user-stobj-based functions are primitives for which we need to give
 ; special consideration to safe-mode.
 
-                                         (not guarded-primitive-p)
-                                         `(cond (,live-stobjp-test
-                                                 (return-from ,*1*fn
-                                                              (,fn ,@formals))))))))
-                             ,@(cond (super-stobjs-in
-                                      `((t ,fail_guard)))
-                                     (guarded-primitive-p
-                                      `(((or ,guard-checking-is-really-on-form
-                                             ,safe-form)
-                                         ,fail_safe)))
-                                     (t
-                                      `((,guard-checking-is-really-on-form
-                                         ,fail_guard))))))))
+                               (not guarded-primitive-p)
+                               `(cond (,live-stobjp-test
+                                       (return-from ,*1*fn
+                                                    (,fn ,@formals))))))))
+                        ,@(cond (super-stobjs-in
+                                 `((t ,fail_guard)))
+                                (guarded-primitive-p
+                                 `(((or ,guard-checking-is-really-on-form
+                                        ,safe-form)
+                                    ,fail_safe)))
+                                (t
+                                 `((,guard-checking-is-really-on-form
+                                    ,fail_guard))))))))
               (if cl-compliant-p-optimization
                   (assert$ (not guard-is-t) ; already handled way above
                            (list cl-compliant-code-guard-not-t))
