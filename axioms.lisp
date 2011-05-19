@@ -42451,7 +42451,8 @@ Lisp definition."
       (apply 'si::gbc args)
     (er hard 'gc$
         "In GCL, gc$ requires exactly one argument, typically T."))
-  #+lispworks (apply 'cl-user::mark-and-sweep (or args (list 3)))
+  #+lispworks (apply 'hcl::gc-generation (or args (list #+lispworks-64bit 7
+                                                        #-lispworks-64bit 3)))
   #+sbcl (apply 'sb-ext:gc args)
   #-(or allegro gcl clisp cmu sbcl ccl lispworks)
   (illegal 'gc$ "GC$ is not supported in this Common Lisp." nil)
@@ -42477,7 +42478,8 @@ Lisp definition."
   CLISP                  ext:gc
   CMU Common Lisp        system::gc
   GCL                    si::gbc
-  Lispworks              cl-user::mark-and-sweep [default argument list: (3)]
+  Lispworks              hcl::gc-generation [default argument list:
+                                             (7) for 64-bit OS, else (3)]
   SBCL                   sb-ext:gc
   ~ev[]
   The arguments, if any, are as documented in the underlying Common Lisp.  It
