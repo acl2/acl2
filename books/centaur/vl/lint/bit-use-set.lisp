@@ -1251,6 +1251,58 @@
 
 
 
+(defsection us-mark-wires-for-initiallist
+
+; Originally I didn't look at "initial" statements at all, and it still seems a
+; little weird to consider them.  (After all, any use of initial statements is
+; sort of an incorrect mixing of simulation and rtl constructs.)  But, for the
+; purposes of the linter, I decided to count them because otherwise we get some
+; warnings that "seem stupid" to the person reading the warning.  That is, we
+; see messages that some register is used but never set, when clearly it is set
+; right at the beginning of the simulation.  While this is fairly rare, it is
+; probably still worth filtering out.
+
+  (defund us-mark-wires-for-initial (x walist db warnings)
+    "Returns (MV WARNINGS DB)"
+    (declare (xargs :guard (and (vl-initial-p x)
+                                (vl-wirealist-p walist)
+                                (us-db-p db)
+                                (vl-warninglist-p warnings))))
+    (us-mark-wires-for-stmt (vl-initial->stmt x) walist db warnings x))
+
+  (defthm us-mark-wires-for-initial-basics
+    (implies (and (force (vl-initial-p x))
+                  (force (vl-wirealist-p walist))
+                  (force (us-db-p db))
+                  (force (vl-warninglist-p warnings)))
+             (let ((ret (us-mark-wires-for-initial x walist db warnings)))
+               (and (vl-warninglist-p (mv-nth 0 ret))
+                    (us-db-p (mv-nth 1 ret)))))
+    :hints(("Goal" :in-theory (enable us-mark-wires-for-initial))))
+
+  (defund us-mark-wires-for-initiallist (x walist db warnings)
+    "Returns (MV WARNINGS DB)"
+    (declare (xargs :guard (and (vl-initiallist-p x)
+                                (vl-wirealist-p walist)
+                                (us-db-p db)
+                                (vl-warninglist-p warnings))))
+    (b* (((when (atom x))
+          (mv warnings db))
+         ((mv warnings db) (us-mark-wires-for-initial (car x) walist db warnings))
+         ((mv warnings db) (us-mark-wires-for-initiallist (cdr x) walist db warnings)))
+      (mv warnings db)))
+
+  (defthm us-mark-wires-for-initiallist-basics
+    (implies (and (force (vl-initiallist-p x))
+                  (force (vl-wirealist-p walist))
+                  (force (us-db-p db))
+                  (force (vl-warninglist-p warnings)))
+             (let ((ret (us-mark-wires-for-initiallist x walist db warnings)))
+               (and (vl-warninglist-p (mv-nth 0 ret))
+                    (us-db-p (mv-nth 1 ret)))))
+    :hints(("Goal" :in-theory (enable us-mark-wires-for-initiallist)))))
+
+
 
 (defsection us-mark-false-inouts
 
@@ -2614,6 +2666,9 @@
                                    :mintime 1/2))
          ((mv warnings db) (cwtime (us-mark-wires-for-alwayslist x.alwayses walist db warnings)
                                    :mintime 1/2))
+         ((mv warnings db) (cwtime (us-mark-wires-for-initiallist x.initials walist db warnings)
+                                   :mintime 1/2))
+
          ((mv warnings db notes)
           (cwtime (us-mark-wires-for-modinstlist x.modinsts walist db mods modalist dbalist all-walists warnings nil)
                   :mintime 1/2))

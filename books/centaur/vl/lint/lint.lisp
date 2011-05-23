@@ -20,7 +20,7 @@
 
 (in-package "VL")
 
-(defconst *vl-lint-version* "0.06")
+(defconst *vl-lint-version* "0.07")
 
 (include-book "bit-use-set")
 (include-book "check-namespace")

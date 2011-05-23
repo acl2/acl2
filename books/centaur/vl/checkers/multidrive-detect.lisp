@@ -102,6 +102,43 @@
 
 
 
+(defsection vl-multidrive-filter-exotic-wires
+
+; We don't want to report multiple drivers of wires that have types like TRI
+; and WOR, since they typically ought to have multiple drivers.
+
+  (defund vl-multidrive-collect-exotic-netdecls (x)
+    (declare (xargs :guard (vl-netdecllist-p x)))
+    (b* (((when (atom x))
+          nil)
+         (type1 (vl-netdecl->type (car x)))
+         ((when (or (eq type1 :vl-tri)
+                    (eq type1 :vl-triand)
+                    (eq type1 :vl-trior)
+                    (eq type1 :vl-tri0)
+                    (eq type1 :vl-tri0)
+                    (eq type1 :vl-trireg)
+                    (eq type1 :vl-wand)
+                    (eq type1 :vl-wor)))
+          (cons (car x)
+                (vl-multidrive-collect-exotic-netdecls (cdr x)))))
+      (vl-multidrive-collect-exotic-netdecls (cdr x))))
+
+  (defthm vl-netdecllist-p-of-vl-multidrive-collect-exotic-netdecls
+    (implies (force (vl-netdecllist-p x))
+             (vl-netdecllist-p (vl-multidrive-collect-exotic-netdecls x)))
+    :hints(("Goal" :in-theory (enable vl-multidrive-collect-exotic-netdecls))))
+
+  (defund vl-multidrive-exotic-bits (netdecls walist)
+    ;; Build the set of all bits from exotic wires.
+    (declare (xargs :guard (and (vl-netdecllist-p netdecls)
+                                (vl-wirealist-p walist))))
+    (b* ((exotic-decls (vl-multidrive-collect-exotic-netdecls netdecls))
+         (exotic-names (vl-netdecllist->names exotic-decls))
+         (exotic-fal   (acl2::fal-extract exotic-names walist))
+         (exotic-bits  (append-domains exotic-fal)))
+      exotic-bits)))
+
 
 
 (defsection vl-module-multidrive-detect
@@ -156,6 +193,14 @@
                   warnings)))
 
          (badbits (duplicated-members allbits))
+
+         ;; Throw away bits that probably ought to be multiply driven due to
+         ;; having types like wor/wand
+         (exotic  (vl-multidrive-exotic-bits x.netdecls walist))
+         (badbits (if exotic
+                      (difference (redundant-mergesort badbits)
+                                  (mergesort exotic))
+                    badbits))
 
          ((mv minor-bad major-bad)
           ;; We treat everything as minor if it's in a module that has mux in

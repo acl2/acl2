@@ -2799,6 +2799,78 @@ a signed value since Verilog-XL doesn't handle them correctly.</p>"
 
 
 
+
+(defsection vl-warn-about-implicit-extension
+
+; Extension warnings are very good to have, but we need to be pretty clever to
+; avoid getting too many trivial, nitpicky complaints about assignments that
+; aren't really bugs.
+;
+; We found that extension warnings were frequently triggered by things like
+; "assign {carry,sum} = a + b" where the designer seems to explicitly intend to
+; get the carry bit.  We therefore only cause a minor warning if the right-hand
+; side is composed only of additions.  Later it turned out we need to permit
+; selects, too.  And later we decided to also add subtraction as a permitted
+; operation.
+;
+; Another kind of extension warning that is stupidly minor is when we just have
+; assignments like "assign foo[127:0] = 0;".  We now do not even create a minor
+; warning for assignments where the rhs is a constant.
+
+  (defund vl-warn-about-implicit-extension (lhs-size x-selfsize x mod ialist elem warnings)
+    (declare (xargs :guard (and (natp lhs-size)
+                                (natp x-selfsize)
+                                (vl-expr-p x)
+                                (vl-module-p mod)
+                                (equal ialist (vl-moditem-alist mod))
+                                (vl-modelement-p elem)
+                                (vl-warninglist-p warnings)))
+
+             ;; We add these in case we want to look at sizes of subexpressions
+             ;; in the future.
+             (ignorable lhs-size mod ialist))
+
+; We assume that LHS-SIZE is greater than the size of X, so we are going to
+; issue an extension warning.  We need to determine what kind of warning to
+; issue.  Note that this can be pretty inefficient since we only call it
+; infrequently.
+
+    (b* ((ops     (vl-expr-ops x))
+
+         ((when (and (vl-fast-atom-p x)
+                     (vl-constint-p (vl-atom->guts x))
+                     (vl-constint->wasunsized (vl-atom->guts x))))
+          ;; Completely trivial, don't give any warning.
+          warnings)
+
+         (minorp (and (or (member-equal :vl-binary-plus ops)
+                          (member-equal :vl-binary-minus ops))
+                      (subsetp-equal ops '(:vl-binary-plus
+                                           :vl-binary-minus
+                                           :vl-partselect-colon
+                                           :vl-bitselect))))
+
+         (w (make-vl-warning
+             :type (if minorp
+                       :vl-warn-extension-minor
+                     :vl-warn-extension)
+             :msg "~a0: implicit extension from ~x1-bit expression to ~x2-bit ~
+                 lvalue.~%     rhs: ~a3"
+             :args (list elem x-selfsize lhs-size x)
+             :fatalp nil
+             :fn 'vl-expr-size)))
+      (cons w warnings)))
+
+  (local (in-theory (enable vl-warn-about-implicit-extension)))
+
+  (defthm vl-warninglist-p-of-vl-warn-about-implicit-extension
+    (implies (force (vl-warninglist-p warnings))
+             (vl-warninglist-p (vl-warn-about-implicit-extension
+                                lhs-size x-selfsize x mod ialist elem warnings)))))
+
+
+
+
 (defsection vl-expr-size
   :parents (expression-sizing)
   :short "Top-level expression-sizing function."
@@ -2931,28 +3003,9 @@ context-determined expressions."
          (b* (((unless (and (natp lhs-size)
                             (> lhs-size x-selfsize)))
                ;; Not an extension
-               warnings)
-              ;; We found that this warning was frequently triggered by things
-              ;; like "assign {carry,sum} = a + b" where the designer seems to
-              ;; explicitly intend to get the carry bit.  We therefore only
-              ;; cause a minor warning if the right-hand side is composed only
-              ;; of additions.  Later it turned out we need to permit selects,
-              ;; too.
-              (ops (vl-expr-ops x))
-              (w (make-vl-warning
-                  :type (if (and (member-equal :vl-binary-plus ops)
-                                 (subsetp-equal ops
-                                                '(:vl-binary-plus :vl-partselect-colon
-                                                                  :vl-bitselect)))
-                            :vl-warn-extension-minor
-                          :vl-warn-extension)
-                  :msg "~a0: implicit extension from ~x1-bit expression to ~
-                        ~x2-bit lvalue.~%     ~
-                          rhs: ~a3"
-                  :args (list elem x-selfsize lhs-size x)
-                  :fatalp nil
-                  :fn 'vl-expr-size)))
-           (cons w warnings))))
+               warnings))
+           (vl-warn-about-implicit-extension lhs-size x-selfsize
+                                             x mod ialist elem warnings))))
 
      ;; Phase 2, propagate desired final width and type of the expression
      ;; into its context-determined operands.
