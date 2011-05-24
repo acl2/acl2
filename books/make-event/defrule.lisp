@@ -7,7 +7,8 @@
 ; expansions introduce IF expressions.
 
 ; Note to those who are learning to use MAKE-EVENT to create events by
-; expanding macro calls:
+; expanding macro calls (really, an apology for using a system-level function,
+; and an explanation of how one can find such functions):
 
 ; Notice the call below of TRANSLATE.  While TRANSLATE is a "system-level"
 ; function (used in the ACL2 implementation) which therefore doesn't have a
@@ -24,18 +25,25 @@
    (equal (true-listp (revappend x y))
           (true-listp y))))
 
+(verify-termination dumb-negate-lit) ; and guards
+
 (defun parse-if-as-implies1 (x hyps)
-  (declare (xargs :guard (true-listp hyps)))
+  (declare (xargs :guard (and (pseudo-termp x)
+                              (true-listp hyps))))
   (case-match x
     (('if test tbr ''t) ; Note that 't is the translated form of t.
      (parse-if-as-implies1 tbr (cons test hyps)))
+    (('if test test fbr) ; (or test test, Boolean equivalent to (if test t fbr)
+     (parse-if-as-implies1 fbr
+                           (cons (dumb-negate-lit test)
+                                 hyps)))
     (&
      (cond ((cdr hyps) `(implies (and ,@(reverse hyps)) ,x))
            (hyps `(implies ,(car hyps) ,x))
            (t x)))))
 
 (defun parse-if-as-implies (x)
-  (declare (xargs :guard t))
+  (declare (xargs :guard (pseudo-termp x)))
   (parse-if-as-implies1 x nil))
 
 (defmacro defrule (name form &rest rest)
@@ -52,3 +60,18 @@
                     (untranslate (parse-if-as-implies tform) t
                                  (w state))
                     ',rest)))))
+
+; Example:
+(local
+ (defrule my-test
+   (or (acl2-numberp x)
+       (acl2-numberp y)
+       (equal (+ x y) 0))))
+
+; Check (apologies for use of low-level system functions):
+(assert-event
+ (equal (getprop 'my-test 'untranslated-theorem nil 'current-acl2-world
+                 (w state))
+        '(IMPLIES (AND (NOT (ACL2-NUMBERP X))
+                       (NOT (ACL2-NUMBERP Y)))
+                  (EQUAL (+ X Y) 0))))
