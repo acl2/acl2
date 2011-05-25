@@ -7016,14 +7016,14 @@
     (floor x 1))
 
   (defun int-binding (term mfc state)
-    ;; The call to mfc-ts returns the encoded type of term.
-    ;; Thus, we are asking if term is known by type reasoning to
-    ;; be an integer.
+    ;; The call to mfc-ts returns the encoded type of term. ;
+    ;; Thus, we are asking if term is known by type reasoning to ;
+    ;; be an integer. ;
     (declare (xargs :stobjs (state) :mode :program))
     (if (ts-subsetp (mfc-ts term mfc state)
                     *ts-integer*)
-          (list (cons 'int term))
-    nil))
+        (list (cons 'int term))
+      nil))
 
   (defun find-int-in-sum (sum mfc state)
     (declare (xargs :stobjs (state) :mode :program))
@@ -11977,9 +11977,9 @@
 
 )
 
-(verify-termination-boot-strap (all-vars1 (declare (xargs :mode :logic
-                                               :verify-guards nil)))
-                    (all-vars1-lst (declare (xargs :mode :logic))))
+(verify-termination-boot-strap
+ (all-vars1 (declare (xargs :mode :logic :verify-guards nil)))
+ (all-vars1-lst (declare (xargs :mode :logic))))
 
 (defun all-vars (term)
 
@@ -17785,16 +17785,17 @@
   supplied, ~c[obj] is an arbitrary ACL2 object, used only in reporting errors
   in expansion, i.e., in the evaluation of form.
 
-  We strongly recommend that you look at ~c[books/make-event/Readme.lsp], which
-  summarizes and suggests browsing of some ~c[.lisp] files in that directory,
-  in order to understand ~c[make-event], perhaps before continuing to read this
-  documentation.  For example, ~c[eval.lisp] contains definitions of macros
-  ~c[must-succeed] and ~c[must-fail] that are useful for testing and are used
-  in many other books in that directory, especially ~c[eval-tests.lisp].
-  Another example, ~c[defrule.lisp], shows how ~c[make-event] can be used to do
-  macroexpansion before generating ~il[events].  Other than the examples, the
-  explanations here should suffice for most users.  If you want explanations of
-  subtler details, ~pl[make-event-details].
+  We strongly recommend that you browse some ~c[.lisp] files in the
+  distribution directory ~c[books/make-event/].  You may even find it helpful,
+  in order to understand ~c[make-event], to do so before continuing to read
+  this documentation.  For example, ~c[eval.lisp] contains definitions of
+  macros ~c[must-succeed] and ~c[must-fail] that are useful for testing and are
+  used in many other books in that directory, especially ~c[eval-tests.lisp].
+  Another example, ~c[defrule.lisp], shows how to use macros whose calls expand
+  to ~c[make-event] forms, which in turn can generate ~il[events].  For more
+  examples, see file ~c[Readme.lsp] in the above directory.  Other than the
+  examples, the explanations here should suffice for most users.  If you want
+  explanations of subtler details, ~pl[make-event-details].
 
   ~c[Make-event] is related to Lisp macroexpansion in the sense that its
   argument is evaluated to obtain an expansion result, which is evaluated

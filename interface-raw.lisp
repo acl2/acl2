@@ -6406,7 +6406,7 @@
 
 ; This function should be called with acl2-files equal to *acl2-files*, in the
 ; build directory.  See the comment about redundant definitions in
-; chk-acceptable-defuns for a pertinent explanation.
+; chk-acceptable-defuns-redundancy for a pertinent explanation.
 
   (let ((filenames (loop for x in acl2-files
                          when (not (raw-source-name-p x))
