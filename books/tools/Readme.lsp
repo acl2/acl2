@@ -34,6 +34,8 @@ safe-case.lisp
 saved-errors.lisp
 stobj-help.lisp
 theory-tools.lisp
+time-dollar-with-gc-raw.lsp
+time-dollar-with-gc.lisp
 types-misc.lisp
 with-arith5-help.lisp
 with-quoted-forms.lisp
@@ -120,6 +122,9 @@ stobj-help.lisp provides a make-event which proves some useful rules
 about a stobj, such as type theorems, access/update rewrite rules,
 etc.
 
+time-dollar-with-gc.lisp provides a time$-with-gc macro that reports both
+timing and garbage collection information.
+
 with-quoted-forms.lisp provides a macro that may be useful for
 computing complicated :USE hints where the terms used in the
 substitutions result from deeply nested variable bindings.
@@ -128,8 +133,8 @@ substitutions result from deeply nested variable bindings.
   "{bstar,cws,defined-const,defsum,deftuple,pack,progndollar,theory-tools,types-misc}.lisp
  copyright (C) 2009 by Sol Swords <sswords@cs.utexas.edu>.
 
-{define-keyed-function}.lisp copyright (C) 2010 by David L. Rager
-<ragerdl@cs.utexas.edu>.
+{define-keyed-function,time-dollar-with-gc}.lisp copyright (C) 2010, 2011 by
+David L. Rager <ragerdl@cs.utexas.edu>.
 
 {plev,plev-ccl}.* were originally in misc/hons-help and are presumably
 copyright (C) Bob Boyer and Warren Hunt.
