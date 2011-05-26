@@ -73,3 +73,73 @@
              (expt-fallback r i)))))
 
 (table gl::preferred-defs 'expt 'optimize-expt-2-for-gl)
+
+
+
+
+
+
+(encapsulate
+  ()
+
+; [Jared]: I ran into performance problems trying to simulate with ACL2's
+; ordinary definition of logcount, so this is a faster replacement.
+;
+; One probably important tweak is to not use NONNEGATIVE-INTEGER-QUOTIENT;
+; instead I use ASH to strip off the bits as we recur.  I can imagine that this
+; might help quite a bit.
+;
+; Another problem with ACL2's logical definition of LOGCOUNT is that we end up
+; checking whether the number is negative at each recursive step.  This seems
+; to get quite expensive.  My replacement definition avoids these checks on the
+; recursive steps since we know that once the number has been coerced to a
+; natural, it will stay positive as we recur.
+
+  (local (include-book "unicode/two-nats-measure" :dir :system))
+  (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
+
+  (local (in-theory (enable ash logbitp acl2-count)))
+
+  (local (defthm ash-of-negative-1
+           (implies (posp x)
+                    (equal (ash x -1)
+                           (floor x 2)))))
+
+  (local (defthm nonnegative-integer-quotient-of-2
+           (implies (natp x)
+                    (equal (nonnegative-integer-quotient x 2)
+                           (floor x 2)))))
+
+  (defun logcount-of-natural (n)
+    (if (zp n)
+        0
+      (+ (if (logbitp 0 n) 1 0)
+         (logcount-of-natural (ash n -1)))))
+
+  (defthm logcount-of-natural-correct
+    (implies (natp n)
+             (equal (logcount-of-natural n)
+                    (logcount n)))
+    :hints(("Goal"
+            :in-theory (enable logcount)
+            :induct (logcount n))))
+
+  (defun logcount-for-gl (x)
+    (cond ((zip x)
+           0)
+          ((< x 0)
+           (logcount-of-natural (lognot x)))
+          (t
+           (logcount-of-natural x))))
+
+  (local (defthm crock
+           (implies (and (integerp a)
+                         (< a 0))
+                    (natp (lognot a)))))
+
+  (defthmd logcount-for-gl-correct
+    (equal (logcount x)
+           (logcount-for-gl x))
+    :rule-classes :definition))
+
+(table gl::preferred-defs 'logcount 'logcount-for-gl-correct)
