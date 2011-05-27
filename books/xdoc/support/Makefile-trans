@@ -69,8 +69,13 @@ endif
 
 
 XML_TOPICS := $(wildcard xml/*.xml)
+XDOC_LINKS := $(wildcard xml/*.xdoc-link)
+
 HTML_TOPICS := $(patsubst xml/%.xml, html/%.html, $(XML_TOPICS))
 TEXT_TOPICS := $(patsubst xml/%.xml, text/%.text, $(XML_TOPICS))
+
+HTML_XDOC_LINKS := $(patsubst xml/%.xdoc-link, html/%.xdoc-link, $(XDOC_LINKS))
+
 
 FORMATS := text html
 
@@ -94,6 +99,7 @@ text/%.text: xml/%.xml xml/text-topic.xsl text-dir
 
 .PHONY: html
 html: $(HTML_TOPICS) \
+      $(HTML_XDOC_LINKS) \
       html/full-index.html \
       html/brief-index.html \
       html/topic-index.html
@@ -104,7 +110,12 @@ html-dir:
 	@mkdir -p html
 	@cp xml/xdoc.css xml/xdoc.js html
 	@cp xml/plus.png xml/minus.png xml/leaf.png html
-	@cp xml/*.xdoc-link html
+
+# Goofy to copy them all one by one, but prevents "too many arguments"
+# warnings during the copy command in some extreme cases
+html/%.xdoc-link: xml/%.xdoc-link
+	@echo $@
+	@cp xml/$*.xdoc-link html/$*.xdoc-link
 
 html/%.html: xml/%.xml xml/html-topic.xsl html-dir
 	@echo $@
