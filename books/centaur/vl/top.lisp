@@ -1235,8 +1235,6 @@ path, e.g.,:</p>
     :search-path (list \".\" \"/my/project/libs1\" \"/my/project/libs2\" ...))
 </code>
 
-<p>
-
 
 <h4>Initial `defines</h4>
 

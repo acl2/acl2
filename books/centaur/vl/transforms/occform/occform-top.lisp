@@ -763,7 +763,7 @@ is <tt>X</tt> or <tt>Z</tt>.</p>"
 bitselects only!)."
 
   :long "<p>This is only for dynamic bitselects, not static selects like
-<tt>foo[3]</tt>.  See @(vl-assign-occform): any sliceable expressions get
+<tt>foo[3]</tt>.  See @(see vl-assign-occform): any sliceable expressions get
 handled by @(see vl-plain-occform), and any static bitselects are
 sliceable.</p>"
 

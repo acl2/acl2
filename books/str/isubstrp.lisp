@@ -67,7 +67,7 @@
 
   ~c[(collect-strs-with-isubstr a x)] returns a list of all the strings in
   ~c[x] that have ~c[a] as a substring.  The substring test is carried out in a
-  case-insensitive way with ~ilc[isubstrp].~/
+  case-insensitive way with ~ilc[str::isubstrp].~/
 
   ~l[str::isubstrp], and ~pl[str::collect-syms-with-isubstr]"
 
@@ -118,7 +118,7 @@
   ~c[(collect-syms-with-isubstr a x)] returns a list of all the symbols in
   ~c[x] that have ~c[a] as a substring of their ~ilc[symbol-name].  The
   substring test is carried out in a case-insensitive way with
-  ~ilc[isubstrp].~/
+  ~ilc[str::isubstrp].~/
 
   ~l[str::isubstrp], and ~pl[str::collect-strs-with-isubstr]"
 
