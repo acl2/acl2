@@ -3287,6 +3287,9 @@ safe-case.lisp
 saved-errors.lisp
 stobj-help.lisp
 theory-tools.lisp
+time-dollar-with-gc-raw.lsp
+time-dollar-with-gc.acl2
+time-dollar-with-gc.lisp
 types-misc.lisp
 with-arith5-help.lisp
 with-quoted-forms.lisp

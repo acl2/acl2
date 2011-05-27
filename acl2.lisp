@@ -171,12 +171,12 @@
 
                      (space #+cmu 1 #-cmu 0)
 
-; WARNING:  Do not proclaim (cl-user::fixnum-safety 0) for Lispworks.  Any
+; WARNING:  Do not proclaim (cl-user::fixnum-safety 0) for LispWorks.  Any
 ; fixnum-safety less than 3 expects all integers to be fixnums!
 
                      (safety
 
-; Consider using (safety 3) if there is a problem with Lispworks.  It enabled
+; Consider using (safety 3) if there is a problem with LispWorks.  It enabled
 ; us to see a stack overflow involving collect-assumptions in the proof of
 ; bitn-lam0 from books/rtl/rel2/support/lop3.lisp.  (See save-acl2-in-lispworks
 ; for how we have eliminated that stack overflow.)
@@ -267,7 +267,7 @@
 (error
  "FATAL ERROR: ACL2 does not yet support GCL ANSI.  Please use a non-ANSI GCL.")
 
-; To use ACL2 under Lispworks 3.2.0, execute the following to work around a
+; To use ACL2 under LispWorks 3.2.0, execute the following to work around a
 ; bug.
 
 ; #+lispworks
@@ -409,7 +409,7 @@
   (or (find-package inv)
       (make-package inv :use nil)))
 
-; Lispworks has a package named "DEF", and that name conflicts with an ACL2
+; LispWorks has a package named "DEF", and that name conflicts with an ACL2
 ; package of that name introduced in books/coi/.  So we rename it here.
 #+lispworks
 (when (find-package "DEF")
@@ -979,14 +979,14 @@ ACL2 from scratch.")
 #+allegro
 (setq compiler:tail-call-non-self-merge-switch t)
 
-; Lispworks Version 4.2.0 has issued the following complaint during compilation
+; LispWorks Version 4.2.0 has issued the following complaint during compilation
 ; until the next form was executed:
 ; **++++ Error in NTH-UPDATE-REWRITER1: 
 ;   Function size 73824 is too large.
 ; But even with the next form, we have seen the following:
 ; **++++ Error in XTRANS-EVAL: 
 ;   Function size 67910 is too large.
-; This problem has disappeared with Lispworks 6.0.  But it seems reasonable to
+; This problem has disappeared with LispWorks 6.0.  But it seems reasonable to
 ; leave the following in place.
 #+lispworks
 (cl-user::toggle-source-debugging nil)

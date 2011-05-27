@@ -4527,7 +4527,7 @@
   The ~il[command] ~ilc[ubt!] has been modified so that it never causes or
   reports an error.  ~l[ubt!].
 
-  ACL2 now works in Harlequin Lispworks.
+  ACL2 now works in Harlequin LispWorks.
 
   The user can now specify the ~c[:trigger-terms] for ~c[:]~ilc[linear] rules.
   ~l[linear].
@@ -7027,9 +7027,9 @@
 
   ACL2 Version  2.7 Notes on System-level Changes~/
 
-  ACL2 now runs (once again) under Lispworks, specifically, Lispworks 4.2.0.
+  ACL2 now runs (once again) under LispWorks, specifically, LispWorks 4.2.0.
   However, we needed a patch, which presumably will be unnecessary after 4.2.7.
-  From Lispworks support:
+  From LispWorks support:
   ~bq[]
   Users with LispWorks4.2.7 should ask us at lisp-support@xanalys.com
   for the transform-if-node patch. It will be helpful if they quote
@@ -7336,7 +7336,7 @@
 
   + ACL2 now starts up inside the ACL2 loop ~-[] that is, ~c[(]~ilc[LP]~c[)] is
   executed automatically ~-[] when built on CLISP or Allegro CL.  This was
-  already the case for GCL and CMUCL, and it still is not true for Lispworks.
+  already the case for GCL and CMUCL, and it still is not true for LispWorks.
 
   + ~l[note-2-8-ordinals] for a discussion of a significant change in ordinal
   represtation, and in particular, for how to preserve existing proofs that
@@ -7921,7 +7921,7 @@
   (CLISP and Allegro CL only) ACL2 now starts up inside the ACL2 loop ~-[] that
   is, ~c[(]~ilc[LP]~c[)] is executed automatically ~-[] when built on CLISP or
   Allegro CL.  This was already the case for GCL and CMUCL, and it still is not
-  true for Lispworks.  Thanks to Joe Corneli for bringing the CLISP
+  true for LispWorks.  Thanks to Joe Corneli for bringing the CLISP
   command-line option ~c[\"-i\"] to our attention, which led to this CLISP
   change and inspired reconsideration of how to do this for Allegro CL.
 
@@ -10139,7 +10139,7 @@
   We fixed an inefficiency that could cause an ~ilc[ld] command to seem to hang
   at its conclusion.  Thanks to Sandip Ray for pointing out this problem.
 
-  We checked that ACL2 runs under Lispworks 4.4.5 (last checked before 4.3),
+  We checked that ACL2 runs under LispWorks 4.4.5 (last checked before 4.3),
   and have inhibited redefinition warnings.
 
   Two changes have been made on behalf of congruence-based reasoning.  Thanks
@@ -10377,7 +10377,7 @@
 
 ; Added a call to the garbage collector before saving in Allegro CL, CMUCL,
 ; SBCL, CLISP, and OpenMCL.  (There was already such a call in GCL and
-; Lispworks.)  We saw a little performance increase and significant shrinkage
+; LispWorks.)  We saw a little performance increase and significant shrinkage
 ; of the saved image when we did this for Allegro CL.
 
   :doc
@@ -13714,7 +13714,7 @@
   Distributed directory ~c[doc/HTML/] now again includes installation
   instructions, in ~c[doc/HTML/installation/installation.html].
 
-  In certain Common Lisp implementations ~-[] CCL (OpenMCL) and Lispworks, at
+  In certain Common Lisp implementations ~-[] CCL (OpenMCL) and LispWorks, at
   least ~-[] an interrupt could leave you in a break such that quitting the
   break would not show the usual summary of key checkpoints.  This has been
   fixed.
@@ -15025,8 +15025,8 @@
   category, though of course many changes could be placed in more than one
   category.
 
-  Note that (starting with ACL2 Version  3.5) Lispworks is no longer supported
-  as a platform for ACL2, as the Lispworks compiler could not handle the ACL2
+  Note that (starting with ACL2 Version  3.5) LispWorks is no longer supported
+  as a platform for ACL2, as the LispWorks compiler could not handle the ACL2
   sources; see comments in the ACL2 sources about ``function size'' being ``too
   large''.
 
@@ -17768,14 +17768,14 @@
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
-  ACL2 can once again be built on Lispworks (i.e., as the host Lisp), at least
-  with Lispworks 6.0.  Thanks to David Rager for useful conversations.
-  Several changes have been made from previous Lispworks-based ACL2
+  ACL2 can once again be built on LispWorks (i.e., as the host Lisp), at least
+  with LispWorks 6.0.  Thanks to David Rager for useful conversations.
+  Several changes have been made from previous LispWorks-based ACL2
   executables:~nl[]
   o ACL2 now starts up in its read-eval-print loop.~nl[]
   o You can save an image with ~ilc[save-exec].~nl[]
   o Multiprocessing is not enabled.~nl[]
-  o The stack size is managed using a Lispworks variable that causes the stack
+  o The stack size is managed using a LispWorks variable that causes the stack
   to grow as needed.
 
   The HTML documentation no longer has extra newlines in <pre> environments.
@@ -20952,7 +20952,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
     * ~b[CLISP],
     * ~b[CMU Common Lisp],
     * ~b[GCL] (Gnu Common Lisp),
-    * ~b[Lispworks], and
+    * ~b[LispWorks], and
     * ~b[SBCL] (Steel Bank Common Lisp)
   ~ef[]
 

@@ -46,7 +46,7 @@ formerly OpenMCL).  CCL runs on many platforms, including
 both 32-bit and 64-bit Linux.  See the ACL2 installation
 instructions for how to obtain CCL.")
 
-; Allow taking advantage of threads in SBCL, CCL, and Lispworks (where we may
+; Allow taking advantage of threads in SBCL, CCL, and LispWorks (where we may
 ; want to build a parallel version tha needs this to take place).
 #+(or (and sbcl sb-thread) ccl lispworks)
 (push :acl2-mv-as-values *features*)
@@ -77,13 +77,6 @@ implementations.")
 
 #+lispworks
 (setq system::*stack-overflow-behaviour* nil) ; could be :warn
-
-; Even with the setting of *stack-overflow-behaviour* above, we cannot
-; eliminate the following form.  (We tried with Lispworks 6.0, but we got a
-; segmentation fault when certifying
-; books/concurrent-programs/bakery/stutter2.)
-#+lispworks
-(cl-user::extend-current-stack 400)
 
 ; Create the packages we use.
 
@@ -878,10 +871,10 @@ implementations.")
 #+lispworks
 (defun lispworks-save-exec-raw (sysout-name)
 
-; Lispworks support (Dave Fox) pointed out, in the days of Lispworks 4, that we
+; LispWorks support (Dave Fox) pointed out, in the days of LispWorks 4, that we
 ; need to be sure to call (mp:initialize-multiprocessing) when starting up.  Up
 ; through ACL2 Version_4.2 we did that by making that call in
-; acl2-default-restart.  But when testing with Lispworks 6.0, we noticed that
+; acl2-default-restart.  But when testing with LispWorks 6.0, we noticed that
 ; some processes hang, and we wondered if that has to do with the fact that
 ; (mp:initialize-multiprocessing) does not return.  That also got in the way of
 ; our running (LP) in acl2-default-restart.  We experimented with removing
@@ -893,14 +886,14 @@ implementations.")
 ; ;; No live processes except internal servers - stopping multiprocessing
 
 ; So we have decided not to call :multiprocessing t, and also not to call
-; (mp:initialize-multiprocessing).  Lispworks 6.0 seems to work fine for ACL2,
+; (mp:initialize-multiprocessing).  LispWorks 6.0 seems to work fine for ACL2,
 ; so it seems that we need not think further about
-; mp:initialize-multiprocessing until perhaps Lispworks is supported with
+; mp:initialize-multiprocessing until perhaps LispWorks is supported with
 ; #+acl2-par.
 
 ; If we are to restore the use of multiprocessing, we should consider that the
-; definition of save-exec-raw for lispworks did not work (Lispworks 4.4.5, and
-; probably Lispworks 4.2).  An attempt resulted in the following error:
+; definition of save-exec-raw for lispworks did not work (LispWorks 4.4.5, and
+; probably LispWorks 4.2).  An attempt resulted in the following error:
 
 ;   ACL2 5 > (save-exec "my-lw" "Changes made")
 
@@ -915,12 +908,12 @@ implementations.")
               system::*complain-about-init-file-loaded*)
 
 ; We hope it's fine to save an image when an init-file has been loaded.  Maybe
-; somebody can explain to us why Lispworks causes a break in such a situation
+; somebody can explain to us why LispWorks causes a break in such a situation
 ; by default (which explains the binding of
 ; system::*complain-about-init-file-loaded* below).
 
          (format t
-                 "Warning: Overriding Lispworks hesitation to save an image~%~
+                 "Warning: Overriding LispWorks hesitation to save an image~%~
                   after init-file has been loaded.")
          (let ((system::*complain-about-init-file-loaded* nil))
            (system::save-image sysout-name

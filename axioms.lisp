@@ -1582,9 +1582,9 @@
 
 ; On the other hand, the CL HyperSpec does not pin down the effect of
 ; defpackage when a package already exists.  Indeed, the defpackage approach
-; that we use for GCL does not work for Lispworks 6.0.
+; that we use for GCL does not work for LispWorks 6.0.
 
-; So, we have quite different definitions of this macro for GCL and Lispworks,
+; So, we have quite different definitions of this macro for GCL and LispWorks,
 ; or more accurately, depending on feature :cltl2.
 
   #+cltl2
@@ -2691,7 +2691,7 @@
 ; We cause an error for the Lisps listed above in order to highlight the
 ; violation of the following expectation for those Lisps: the length of a list
 ; is always bounded by most-positive-fixnum.  To be safe, we omit CLISP and
-; 32-bit Lispworks (where most-positive-fixnum is only 16777215 and 8388607,
+; 32-bit LispWorks (where most-positive-fixnum is only 16777215 and 8388607,
 ; respectively; see the Essay on Fixnum Declarations).  But for the Lisps in
 ; the above readtime conditional, we believe the above expectation because a
 ; cons takes at least 8 bytes and each of the lisps below has
@@ -9001,11 +9001,12 @@
 
 ; Error: The tag RAW-EV-FNCALL is undefined.
 
-  (if (or (= *ld-level* 0)
-          (raw-mode-p *the-live-state*))
-      (interface-er "~@0"
-                    (ev-fncall-msg val (w *the-live-state*)))
-    (throw 'raw-ev-fncall val)))
+  (cond ((or (= *ld-level* 0)
+             (raw-mode-p *the-live-state*))
+         (interface-er "~@0"
+                       (ev-fncall-msg val (w *the-live-state*))))
+        (t
+         (throw 'raw-ev-fncall val))))
 
 (defun hard-error (ctx str alist)
 
@@ -14445,7 +14446,7 @@
                       "Apparently you have tried to execute a form in raw Lisp ~
                        that is only intended to be executed inside the ACL2 ~
                        loop.  You should probably abort (e.g., :Q in akcl or ~
-                       gcl, :A in Lispworks, :POP in Allegro), then type (LP) ~
+                       gcl, :A in LispWorks, :POP in Allegro), then type (LP) ~
                        and try again.  If this explanation seems incorrect, ~
                        then please contact the implementors of ACL2."
                       nil)
@@ -14508,7 +14509,7 @@
   #-acl2-loop-only
   `(let ((temp (and (live-state-p state)
 
-; We have seen warnings from Lispworks 4.2.7 of this form that appear to be
+; We have seen warnings from LispWorks 4.2.7 of this form that appear to be
 ; related to the present binding, but we do not yet know how to eliminate them:
 ;
 ; Eliminating a test of a variable with a declared type : TEMP [type CONS]
@@ -29448,7 +29449,7 @@
 ; 
 ;  ; Allegro gets this wrong, but ACL2 gets it right: potential number!
 ;      |_345|
-;  ;   |_345| ; SBCL 1.0.19, Lispworks 4.4.6, CMU CL 19e, CLISP 2.41, GCL 2.6.7
+;  ;   |_345| ; SBCL 1.0.19, LispWorks 4.4.6, CMU CL 19e, CLISP 2.41, GCL 2.6.7
 ;  ;    _345  ; [wrong] Allegro 8.0, CCL 1.2
 ; 
 ;  ; Also not potential numbers, even in base 16: the first because of the decimal
@@ -42479,7 +42480,7 @@ Lisp definition."
   CLISP                  ext:gc
   CMU Common Lisp        system::gc
   GCL                    si::gbc
-  Lispworks              hcl::gc-generation [default argument list:
+  LispWorks              hcl::gc-generation [default argument list:
                                              (7) for 64-bit OS, else (3)]
   SBCL                   sb-ext:gc
   ~ev[]

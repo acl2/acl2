@@ -555,7 +555,7 @@
 (defun disjoin-clause-segment-to-clause-set (segment cl-set)
 
 ; This code is not tail-recursive, but it could be.  At one time it caused
-; stack overflow problems in Lispworks 4.2.0.  Below is some alternate code,
+; stack overflow problems in LispWorks 4.2.0.  Below is some alternate code,
 ; with a reverse call in order to provide unchanged functionality.  Would we
 ; gain efficiency by eliminating tail recursion at the cost of that reverse
 ; call?  Maybe.  A clearer win would be to avoid the reverse call, which should
