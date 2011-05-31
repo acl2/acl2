@@ -336,7 +336,7 @@ occurrences."
   :short "Transform a plain assignment into occurrences."
 
   :long "<p><tt>x</tt> should have the form <tt>assign lhs = rhs</tt>, where
-<tt>rhs</tt> is a <see topic='@(see vl-expr-sliceable-p)'>sliceable</see>
+<tt>rhs</tt> is a <see topic='@(url vl-expr-sliceable-p)'>sliceable</see>
 expression, such as a plain identifier, bit-select, part-select, or
 concatenation of wires.</p>"
 
