@@ -323,23 +323,39 @@
 
 
 
+(defund vl-add-newlines-after-block-comments (x)
+  (declare (xargs :guard (vl-commentmap-p x)))
+  (b* (((when (atom x))
+        nil)
+       (loc1 (caar x))
+       (str1 (cdar x))
+       ((when (and (> (length str1) 2)
+                   (eql (char str1 1) #\*)))
+        (cons (cons loc1 (str::cat str1 *nls*))
+              (vl-add-newlines-after-block-comments (cdr x)))))
+    (cons (car x)
+          (vl-add-newlines-after-block-comments (cdr x)))))
+
+(defthm vl-commentmap-p-of-vl-add-newlines-after-block-comments
+  (implies (force (vl-commentmap-p x))
+           (vl-commentmap-p (vl-add-newlines-after-block-comments x)))
+  :hints(("Goal" :in-theory (enable vl-add-newlines-after-block-comments))))
+
+
 (defund vl-html-encode-commentmap (x tabsize)
+  ;; BOZO inefficient, potentially bad!
   (declare (xargs :guard (and (vl-commentmap-p x)
-                              (posp tabsize))))
-  ; BOZO inefficient, potentially bad!
-  (if (atom x)
-      nil
-    (let* ((str    (cdar x))
-           (len    (length str))
-           (blockp (and (< 2 len) (eql (char str 1) #\*))))
-      (acons (caar x)
-             (str::cat "<span class=\"vl_cmt\">"
-                       (vl-html-encode-string (cdar x) tabsize)
-                       "</span>"
-                       (if blockp
-                           (coerce '(#\Newline) 'string)
-                         ""))
-             (vl-html-encode-commentmap (cdr x) tabsize)))))
+                              (posp tabsize))
+                  :guard-debug t))
+  (b* (((when (atom x))
+        nil)
+       (loc1 (caar x))
+       (str1 (cdar x)))
+    (cons (cons loc1
+                (str::cat "<span class=\"vl_cmt\">"
+                          (vl-html-encode-string str1 tabsize)
+                          "</span>"))
+          (vl-html-encode-commentmap (cdr x) tabsize))))
 
 (defthm vl-commentmap-p-of-vl-html-encode-commentmap
   (implies (force (vl-commentmap-p x))
@@ -457,6 +473,7 @@ for hyperlinking to submodules in HTML mode.</p>"
 ; the printed elements in the proper order.
 
               (imap     (reverse imap))
+              (comments (vl-add-newlines-after-block-comments comments))
               (comments (if (vl-ps->htmlp)
                             (vl-html-encode-commentmap comments (vl-ps->tabsize))
                           comments))
