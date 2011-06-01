@@ -60,7 +60,7 @@ $(info     ...)
 $(info )
 $(info Note: if you just want to view the documentation and don't care about)
 $(info turning into HTML, try opening preview.html in your web browser.)
-$info )
+$(info )
 $(error Xalan-C++ not found)
 
 endif
