@@ -4396,7 +4396,7 @@
       (set-w! revert-world-on-error-temp state)
       state)))
 
-(defun chk-theory-expr-value1 (lst wrld expr macro-aliases ctx state)
+(defun@par chk-theory-expr-value1 (lst wrld expr macro-aliases ctx state)
 
 ; A theory expression must evaluate to a common theory, i.e., a
 ; truelist of rule name designators.  A rule name designator, recall,
@@ -4408,30 +4408,29 @@
 
   (cond ((atom lst)
          (cond ((null lst)
-                (value nil))
-               (t (er soft ctx
-                      "The value of the alleged theory expression ~x0 ~
-                       is not a true list and, hence, is not a legal ~
-                       theory value.  In particular, the final ~
-                       non-consp cdr is the atom ~x1.  See :DOC theories."
-                      expr lst))))
+                (value@par nil))
+               (t (er@par soft ctx
+                    "The value of the alleged theory expression ~x0 is not a ~
+                     true list and, hence, is not a legal theory value.  In ~
+                     particular, the final non-consp cdr is the atom ~x1.  ~
+                     See :DOC theories."
+                    expr lst))))
         ((rule-name-designatorp (car lst) macro-aliases wrld)
-         (chk-theory-expr-value1 (cdr lst) wrld expr macro-aliases ctx
-                                 state))
-        (t (er soft ctx
-               "The value of the alleged theory expression ~x0 ~
-                includes the element ~x1, which we do not know how to ~
-                interpret as a rule name.  See :DOC theories and :DOC ~
-                rune."
-               expr (car lst)))))
+         (chk-theory-expr-value1@par (cdr lst) wrld expr macro-aliases ctx
+                                     state))
+        (t (er@par soft ctx
+             "The value of the alleged theory expression ~x0 includes the ~
+              element ~x1, which we do not know how to interpret as a rule ~
+              name.  See :DOC theories and :DOC rune."
+             expr (car lst)))))
 
-(defun chk-theory-expr-value (lst wrld expr ctx state)
+(defun@par chk-theory-expr-value (lst wrld expr ctx state)
 
 ; This checker ensures that expr, whose value is lst, evaluated to a theoryp.
 ; Starting after Version_3.0.1 we no longer check the theory-invariant table,
 ; because the ens is not yet available at this point.
 
-  (chk-theory-expr-value1 lst wrld expr (macro-aliases wrld) ctx state))
+  (chk-theory-expr-value1@par lst wrld expr (macro-aliases wrld) ctx state))
 
 (defun theory-fn-translated-callp (x)
 
@@ -4456,6 +4455,8 @@
 
 ; returns a runic theory
 
+; Keep in sync with eval-theory-expr@par.
+
   (cond ((equal expr '(current-theory :here))
          (mv-let (erp val latches)
                  (ev '(current-theory-fn ':here world)
@@ -4467,7 +4468,7 @@
             ((trans-ans
               (state-global-let*
                ((guard-checking-on t) ; see the Essay on Guard Checking
-                ;;; (safe-mode t) ; !! experimental deletion
+;               ;;; (safe-mode t) ; !! experimental deletion
                 )
                (simple-translate-and-eval
                 expr
@@ -4483,6 +4484,49 @@
                    (er-progn
                     (chk-theory-expr-value (cdr trans-ans) wrld expr ctx state)
                     (value (runic-theory (cdr trans-ans) wrld)))))))))
+
+#+acl2-par
+(defun eval-theory-expr@par (expr ctx wrld state)
+
+; returns a runic theory
+
+; Keep in sync with eval-theory-expr.
+
+  (cond ((equal expr '(current-theory :here))
+
+; Parallelism wart: here is another substitution of ev-w for ev which we will
+; need to check.
+
+         (mv-let (erp val)
+                 (ev-w '(current-theory-fn ':here world)
+                       (list (cons 'world wrld))
+                       (w state)
+                       (f-get-global 'safe-mode state) 
+                       (gc-off state)
+                       nil t)
+                 (mv erp val)))
+        (t (er-let*@par
+            ((trans-ans
+              (simple-translate-and-eval@par
+               expr
+               (list (cons 'world wrld))
+               nil
+               "A theory expression" ctx wrld state t
+
+; Parallelism wart: the #-acl2-par definition sets safe-mode to t, so maybe 
+; rather than reading from state, we should be passing in t.
+
+               (f-get-global 'safe-mode state) 
+               t)))
+
+; Trans-ans is (term . val).
+
+            (cond ((theory-fn-translated-callp (car trans-ans))
+                   (value@par (cdr trans-ans)))
+                  (t
+                   (er-progn@par
+                    (chk-theory-expr-value@par (cdr trans-ans) wrld expr ctx state)
+                    (value@par (runic-theory (cdr trans-ans) wrld)))))))))
 
 (defun append-strip-cdrs (x y)
 
@@ -12996,8 +13040,8 @@
                                                   exception
                                                   wrld)))))
 
-(defun translate-term-lst (terms stobjs-out logic-modep known-stobjs-lst
-                                 ctx wrld state)
+(defun@par translate-term-lst (terms stobjs-out logic-modep known-stobjs-lst
+                                     ctx wrld state)
 
 ; WARNING: Keep this in sync with translate-measures.
 
@@ -13017,19 +13061,19 @@
 ; stobjs-out '(nil state nil), for example, if you want to ensure that
 ; each term has the output signature given.
 
-  (cond ((null terms) (value nil))
-        (t (er-let*
-            ((term (translate (car terms) stobjs-out logic-modep
-                              (if (eq known-stobjs-lst t)
-                                  t
-                                (car known-stobjs-lst))
-                              ctx wrld state))
-             (rst (translate-term-lst (cdr terms) stobjs-out logic-modep
-                                      (if (eq known-stobjs-lst t)
-                                          t
-                                        (cdr known-stobjs-lst))
-                                      ctx wrld state)))
-            (value (cons term rst))))))
+  (cond ((null terms) (value@par nil))
+        (t (er-let*@par
+            ((term (translate@par (car terms) stobjs-out logic-modep
+                                  (if (eq known-stobjs-lst t)
+                                      t
+                                    (car known-stobjs-lst))
+                                  ctx wrld state))
+             (rst (translate-term-lst@par (cdr terms) stobjs-out logic-modep
+                                          (if (eq known-stobjs-lst t)
+                                              t
+                                            (cdr known-stobjs-lst))
+                                          ctx wrld state)))
+            (value@par (cons term rst))))))
 
 ; We now turn to the major question of translating user typed hints into
 ; their internal form.  We combine this translation process with the
@@ -13137,49 +13181,49 @@
 
 )
 
-(defun translate-expand-term1 (name form free-vars ctx wrld state)
+(defun@par translate-expand-term1 (name form free-vars ctx wrld state)
 
 ; Returns an error triple (mv erp val state) where if erp is not nil, then val
 ; is an expand-hint determined by the given rune and alist.
 
   (cond
    ((not (arglistp free-vars))
-    (er soft ctx
-        "The use of :FREE in :expand hints should be of the form (:FREE ~
-         var-list x), where var-list is a list of distinct variables, unlike ~
-         ~x0."
-        free-vars))
+    (er@par soft ctx
+      "The use of :FREE in :expand hints should be of the form (:FREE ~
+       var-list x), where var-list is a list of distinct variables, unlike ~
+       ~x0."
+      free-vars))
    (t
-    (er-let*
-     ((term (translate form t t t ctx wrld state)))
+    (er-let*@par
+     ((term (translate@par form t t t ctx wrld state)))
      (cond
       ((or (variablep term)
            (fquotep term))
-       (er soft ctx
-           "The term ~x0 is not expandable.  See the :expand discussion in ~
-            :DOC hints."
-           form))
+       (er@par soft ctx
+         "The term ~x0 is not expandable.  See the :expand discussion in :DOC ~
+          hints."
+         form))
       ((flambda-applicationp term)
        (cond
-        (name (er soft ctx
-                  "An :expand hint may only specify :WITH for an expression ~
-                   that is the application of a function, unlike ~x0."
-                  form))
-        (t (value (make expand-hint
-                        :pattern term
-                        :alist (if (null free-vars)
-                                   :none
-                                 (let ((bound-vars
-                                        (set-difference-eq (all-vars term)
-                                                           free-vars)))
-                                   (pairlis$ bound-vars bound-vars)))
-                        :rune nil
-                        :equiv 'equal
-                        :hyp nil
-                        :lhs term
-                        :rhs (subcor-var (lambda-formals (ffn-symb term))
-                                         (fargs term)
-                                         (lambda-body (ffn-symb term))))))))
+        (name (er@par soft ctx
+                "An :expand hint may only specify :WITH for an expression ~
+                 that is the application of a function, unlike ~x0."
+                form))
+        (t (value@par (make expand-hint
+                            :pattern term
+                            :alist (if (null free-vars)
+                                       :none
+                                     (let ((bound-vars
+                                            (set-difference-eq (all-vars term)
+                                                               free-vars)))
+                                       (pairlis$ bound-vars bound-vars)))
+                            :rune nil
+                            :equiv 'equal
+                            :hyp nil
+                            :lhs term
+                            :rhs (subcor-var (lambda-formals (ffn-symb term))
+                                             (fargs term)
+                                             (lambda-body (ffn-symb term))))))))
       (t
        (mv-let
         (er-msg rune equiv hyp lhs rhs)
@@ -13228,13 +13272,13 @@
          (t (let ((def-body (def-body (ffn-symb term) wrld)))
               (cond
                (def-body
-                (let ((formals (access def-body def-body :formals)))
-                  (mv nil
-                      (access def-body def-body :rune)
-                      'equal
-                      (access def-body def-body :hyp)
-                      (cons-term (ffn-symb term) formals)
-                      (access def-body def-body :concl))))
+                 (let ((formals (access def-body def-body :formals)))
+                   (mv nil
+                       (access def-body def-body :rune)
+                       'equal
+                       (access def-body def-body :hyp)
+                       (cons-term (ffn-symb term) formals)
+                       (access def-body def-body :concl))))
                (t (mv (msg "The :expand hint for ~x0 is illegal, because ~x1 ~
                             is not a defined function."
                            form
@@ -13247,22 +13291,22 @@
 ; seem worth the trouble merely for early user feedback.
 
         (cond
-         (er-msg (er soft ctx "~@0" er-msg))
-         (t (value (make expand-hint
-                         :pattern term
-                         :alist (if (null free-vars)
-                                    :none
-                                  (let ((bound-vars
-                                         (set-difference-eq (all-vars term)
-                                                            free-vars)))
-                                    (pairlis$ bound-vars bound-vars)))
-                         :rune rune
-                         :equiv equiv
-                         :hyp hyp
-                         :lhs lhs
-                         :rhs rhs)))))))))))
+         (er-msg (er@par soft ctx "~@0" er-msg))
+         (t (value@par (make expand-hint
+                             :pattern term
+                             :alist (if (null free-vars)
+                                        :none
+                                      (let ((bound-vars
+                                             (set-difference-eq (all-vars term)
+                                                                free-vars)))
+                                        (pairlis$ bound-vars bound-vars)))
+                             :rune rune
+                             :equiv equiv
+                             :hyp hyp
+                             :lhs lhs
+                             :rhs rhs)))))))))))
 
-(defun translate-expand-term (x ctx wrld state)
+(defun@par translate-expand-term (x ctx wrld state)
 
 ; X is a "term" given to an expand hint, which can be a term or the result of
 ; prepending (:free vars) or (:with name-or-rune), or both, to a term.  We
@@ -13270,40 +13314,40 @@
 
   (case-match x
     (':lambdas
-     (value x))
+     (value@par x))
     ((':free vars (':with name form))
-     (translate-expand-term1 name form vars ctx wrld state))
+     (translate-expand-term1@par name form vars ctx wrld state))
     ((':with name (':free vars form))
-     (translate-expand-term1 name form vars ctx wrld state))
+     (translate-expand-term1@par name form vars ctx wrld state))
     ((':with name form)
-     (translate-expand-term1 name form nil  ctx wrld state))
+     (translate-expand-term1@par name form nil  ctx wrld state))
     ((':free vars form)
-     (translate-expand-term1 nil  form vars ctx wrld state))
+     (translate-expand-term1@par nil  form vars ctx wrld state))
     (&
      (cond ((or (atom x)
                 (keywordp (car x)))
-            (er soft ctx
-                "An :expand hint must either be a term, or of one of the ~
-                 forms (:free vars term) or (:with name term), or a ~
-                 combination of the two forms. The form ~x0 is thus illegal ~
-                 for an :expand hint.  See :DOC hints."
-                x))
-           (t (translate-expand-term1 nil x nil ctx wrld state))))))
+            (er@par soft ctx
+              "An :expand hint must either be a term, or of one of the forms ~
+               (:free vars term) or (:with name term), or a combination of ~
+               the two forms. The form ~x0 is thus illegal for an :expand ~
+               hint.  See :DOC hints."
+              x))
+           (t (translate-expand-term1@par nil x nil ctx wrld state))))))
 
-(defun translate-expand-hint1 (arg acc ctx wrld state)
+(defun@par translate-expand-hint1 (arg acc ctx wrld state)
   (cond ((atom arg)
          (cond
-          ((null arg) (value (reverse acc)))
-          (t (er soft ctx
-                 "The value of the :expand hint must be a true list, ~
-                  but your list ends in ~x0.  See :DOC hints."
-                 arg))))
-        (t (er-let*
-            ((xtrans (translate-expand-term (car arg) ctx wrld state)))
-            (translate-expand-hint1 (cdr arg) (cons xtrans acc) ctx wrld
-                                    state)))))
+          ((null arg) (value@par (reverse acc)))
+          (t (er@par soft ctx
+               "The value of the :expand hint must be a true list, but your ~
+                list ends in ~x0.  See :DOC hints."
+               arg))))
+        (t (er-let*@par
+            ((xtrans (translate-expand-term@par (car arg) ctx wrld state)))
+            (translate-expand-hint1@par (cdr arg) (cons xtrans acc) ctx wrld
+                                        state)))))
 
-(defun translate-expand-hint (arg ctx wrld state)
+(defun@par translate-expand-hint (arg ctx wrld state)
 
 ; Arg is whatever the user typed after the :expand keyword.  We
 ; allow it to be either a term or a list of terms.  For example,
@@ -13324,12 +13368,12 @@
 ; represent the user's desire that all lambda applications be expanded.
 
   (cond ((eq arg :lambdas)
-         (translate-expand-hint1 (list arg) nil ctx wrld state))
+         (translate-expand-hint1@par (list arg) nil ctx wrld state))
         ((atom arg)
 
 ; Arg had better be nil, otherwise we'll cause an error.
 
-         (translate-expand-hint1 arg nil ctx wrld state))
+         (translate-expand-hint1@par arg nil ctx wrld state))
         ((and (consp arg)
               (symbolp (car arg))
               (not (eq (car arg) :lambdas)))
@@ -13340,7 +13384,7 @@
 ; cause an error in translate-expand-hint1 above.  So we will treat
 ; this arg as a term.
 
-         (translate-expand-hint1 (list arg) nil ctx wrld state))
+         (translate-expand-hint1@par (list arg) nil ctx wrld state))
         ((and (consp arg)
               (consp (car arg))
               (eq (caar arg) 'lambda))
@@ -13350,19 +13394,19 @@
 ; list is illegal and would cause an error because lambda is not a
 ; function symbol.  So we will treat arg as a single term.
 
-         (translate-expand-hint1 (list arg) nil ctx wrld state))
+         (translate-expand-hint1@par (list arg) nil ctx wrld state))
         (t
 
 ; Otherwise, arg is treated as a list of terms.
 
-         (translate-expand-hint1 arg nil ctx wrld state))))
+         (translate-expand-hint1@par arg nil ctx wrld state))))
 
 (defun cons-all-to-lst (new-members lst)
   (cond ((null new-members) nil)
         (t (cons (cons (car new-members) lst)
                  (cons-all-to-lst (cdr new-members) lst)))))
 
-(defun translate-substitution (substn ctx wrld state)
+(defun@par translate-substitution (substn ctx wrld state)
 
 ; Note: This function deals with variable substitutions.  For
 ; functional substitutions, use translate-functional-substitution.
@@ -13375,16 +13419,15 @@
 ; term' is the translation of term.  Otherwise, we cause an error.
 
   (cond
-   ((null substn) (value nil))
+   ((null substn) (value@par nil))
    ((not (and (true-listp (car substn))
               (= (length (car substn)) 2)))
-    (er soft ctx
-        "Each element of a substitution must be a pair of the form ~
-         (var term), where var is a variable symbol and term is a ~
-         term.  Your alleged substitution contains the element ~x0, ~
-         which is not of this form.  See the discussion of :instance ~
-         in :MORE-DOC lemma-instance."
-        (car substn)))
+    (er@par soft ctx
+      "Each element of a substitution must be a pair of the form (var term), ~
+       where var is a variable symbol and term is a term.  Your alleged ~
+       substitution contains the element ~x0, which is not of this form.  See ~
+       the discussion of :instance in :MORE-DOC lemma-instance."
+      (car substn)))
    (t (let ((var (caar substn))
             (term (cadar substn)))
         (cond
@@ -13392,35 +13435,35 @@
           (mv-let (x str)
                   (find-first-bad-arg (list var))
                   (declare (ignore x))
-                  (er soft ctx
-                      "It is illegal to substitute for the ~
-                       non-variable ~x0.  It fails to be a variable ~
-                       because ~@1.  See :DOC name and the ~
-                       discussion of :instance in :MORE-DOC ~
-                       lemma-instance."
-                      var
-                      (or str "LEGAL-VARIABLEP says so, but ~
+                  (er@par soft ctx
+                    "It is illegal to substitute for the non-variable ~x0.  ~
+                     It fails to be a variable because ~@1.  See :DOC name ~
+                     and the discussion of :instance in :MORE-DOC ~
+                     lemma-instance."
+                    var
+                    (or str "LEGAL-VARIABLEP says so, but ~
                                FIND-FIRST-BAD-ARG can't see why"))))
-         (t (er-let*
-             ((term (translate term t t t ctx wrld state))
+         (t (er-let*@par
+             ((term (translate@par term t t t ctx wrld state))
 ; known-stobjs = t (stobjs-out = t)
-              (y (translate-substitution (cdr substn) ctx wrld state)))
+              (y (translate-substitution@par (cdr substn) ctx wrld state)))
              (cond ((assoc-eq var y)
-                    (er soft ctx
-                        "It is illegal to bind ~x0 twice in a ~
-                         substitution.  See the discussion of :instance ~
-                         in :MORE-DOC lemma-instance."
-                        var))
-                   (t (value (cons (cons var term) y)))))))))))
+                    (er@par soft ctx
+                      "It is illegal to bind ~x0 twice in a substitution.  ~
+                       See the discussion of :instance in :MORE-DOC ~
+                       lemma-instance."
+                      var))
+                   (t (value@par (cons (cons var term) y)))))))))))
 
-(defun translate-substitution-lst (substn-lst ctx wrld state)
+(defun@par translate-substitution-lst (substn-lst ctx wrld state)
   (cond
-   ((null substn-lst) (value nil))
-   (t (er-let* ((tsubstn
-                 (translate-substitution (car substn-lst) ctx wrld state))
-                (rst
-                 (translate-substitution-lst (cdr substn-lst) ctx wrld state)))
-               (value (cons tsubstn rst))))))
+   ((null substn-lst) (value@par nil))
+   (t (er-let*@par
+       ((tsubstn
+         (translate-substitution@par (car substn-lst) ctx wrld state))
+        (rst
+         (translate-substitution-lst@par (cdr substn-lst) ctx wrld state)))
+       (value@par (cons tsubstn rst))))))
 
 (defun get-rewrite-and-defn-runes-from-runic-mapping-pairs (pairs)
   (cond
@@ -13431,35 +13474,35 @@
           (get-rewrite-and-defn-runes-from-runic-mapping-pairs (cdr pairs))))
    (t (get-rewrite-and-defn-runes-from-runic-mapping-pairs (cdr pairs)))))
 
-(defun translate-restrict-hint (arg ctx wrld state)
+(defun@par translate-restrict-hint (arg ctx wrld state)
 
 ; Arg is whatever the user typed after the :restrict keyword.
 
   (cond
    ((atom arg)
     (cond
-     ((null arg) (value nil))
-     (t (er soft ctx
-            "The value of the :RESTRICT hint must be an alistp (association ~
-             list), and hence a true list, but your list ends in ~x0.  See ~
-             :DOC hints."
-            arg))))
+     ((null arg) (value@par nil))
+     (t (er@par soft ctx
+          "The value of the :RESTRICT hint must be an alistp (association ~
+           list), and hence a true list, but your list ends in ~x0.  See :DOC ~
+           hints."
+          arg))))
    ((not (and (true-listp (car arg))
               (cdr (car arg))))
-    (er soft ctx
-        "Each member of a :RESTRICT hint must be a true list associating a ~
-         name with at least one substitution, but the member ~x0 of your hint ~
-         violates this requirement.  See :DOC hints."
-        (car arg)))
+    (er@par soft ctx
+      "Each member of a :RESTRICT hint must be a true list associating a name ~
+       with at least one substitution, but the member ~x0 of your hint ~
+       violates this requirement.  See :DOC hints."
+      (car arg)))
    ((not (or (symbolp (caar arg))
              (and (runep (caar arg) wrld)
                   (member-eq (car (caar arg)) '(:rewrite :definition)))))
-    (er soft ctx
-        "Each member of a :RESTRICT hint must be a true list whose first ~
-         element is either a symbol or a :rewrite or :definition rune in the ~
-         current ACL2 world.  The member ~x0 of your hint violates this ~
-         requirement."
-        (car arg)))
+    (er@par soft ctx
+      "Each member of a :RESTRICT hint must be a true list whose first ~
+       element is either a symbol or a :rewrite or :definition rune in the ~
+       current ACL2 world.  The member ~x0 of your hint violates this ~
+       requirement."
+      (car arg)))
    (t (let ((runes (if (symbolp (caar arg))
                        (get-rewrite-and-defn-runes-from-runic-mapping-pairs
                         (getprop (caar arg)
@@ -13468,16 +13511,17 @@
                      (list (caar arg)))))
         (cond
          ((null runes)
-          (er soft ctx
-              "The name ~x0 does not correspond to any :rewrite or ~
-               :definition runes, so the element ~x1 of your :RESTRICT hint ~
-               is not valid.  See :DOC hints."
-              (caar arg) (car arg)))
-         (t (er-let* ((subst-lst (translate-substitution-lst
-                                  (cdr (car arg)) ctx wrld state))
-                      (rst (translate-restrict-hint (cdr arg) ctx wrld state)))
-                     (value (append (cons-all-to-lst runes subst-lst)
-                                    rst)))))))))
+          (er@par soft ctx
+            "The name ~x0 does not correspond to any :rewrite or :definition ~
+             runes, so the element ~x1 of your :RESTRICT hint is not valid.  ~
+             See :DOC hints."
+            (caar arg) (car arg)))
+         (t (er-let*@par
+             ((subst-lst (translate-substitution-lst@par
+                          (cdr (car arg)) ctx wrld state))
+              (rst (translate-restrict-hint@par (cdr arg) ctx wrld state)))
+             (value@par (append (cons-all-to-lst runes subst-lst)
+                                rst)))))))))
 
 (defconst *do-not-processes*
   '(generalize preprocess simplify eliminate-destructors
@@ -13497,104 +13541,114 @@
             (coerce-to-acl2-package-lst (cdr lst)))
       nil))
 
-(defun chk-do-not-expr-value (lst expr ctx state)
+(defun@par chk-do-not-expr-value (lst expr ctx state)
 
   ;; here lst is the raw names, coerced to the "ACL2" package
 
   (cond ((atom lst)
          (cond ((null lst)
-                (value nil))
-               (t (er soft ctx
-                      "The value of the :DO-NOT expression ~x0 ~
-                       is not a true list and, hence, is not ~
-                       legal.  In particular, the final ~
-                       non-consp cdr is the atom ~x1.  See :DOC hints."
-                      expr lst))))
+                (value@par nil))
+               (t (er@par soft ctx
+                    "The value of the :DO-NOT expression ~x0 is not a true ~
+                     list and, hence, is not legal.  In particular, the final ~
+                     non-consp cdr is the atom ~x1.  See :DOC hints."
+                    expr lst))))
         ((and (symbolp (car lst))
               (member-eq (car lst) *do-not-processes*))
-         (chk-do-not-expr-value (cdr lst) expr ctx state))
+         (chk-do-not-expr-value@par (cdr lst) expr ctx state))
         ((eq (car lst) 'induct)
-         (er soft ctx
-             "The value of the alleged :DO-NOT expression ~x0 ~
-              includes INDUCT, which is not the name of a ~
-              process to turn off.  You probably mean to use ~
-              :DO-NOT-INDUCT T or :DO-NOT-INDUCT :BYE instead.  The ~
-              legal names are ~&1."
-             expr *do-not-processes*))
-        (t (er soft ctx
-               "The value of the alleged :DO-NOT expression ~x0 ~
-                includes the element ~x1, which is not the name of a ~
-                process to turn off.  The legal names are ~&2."
-               expr (car lst) *do-not-processes*))))
+         (er@par soft ctx
+           "The value of the alleged :DO-NOT expression ~x0 includes INDUCT, ~
+            which is not the name of a process to turn off.  You probably ~
+            mean to use :DO-NOT-INDUCT T or :DO-NOT-INDUCT :BYE instead.  The ~
+            legal names are ~&1."
+           expr *do-not-processes*))
+        (t (er@par soft ctx
+             "The value of the alleged :DO-NOT expression ~x0 includes the ~
+              element ~x1, which is not the name of a process to turn off.  ~
+              The legal names are ~&2."
+             expr (car lst) *do-not-processes*))))
 
-(defun translate-do-not-hint (expr ctx state)
+(defun@par translate-do-not-hint (expr ctx state)
 
 ; We translate and evaluate expr and make sure that it produces something that
 ; is appropriate for :do-not.  We either cause an error or return the resulting
 ; list.
 
   (let ((wrld (w state)))
-    (er-let*
+    (er-let*@par
      ((trans-ans (if (legal-variablep expr)
-                     (value (cons nil (list expr)))
-                     (simple-translate-and-eval
-                      expr
-                      (list (cons 'world wrld))
-                      nil
-                      "A :do-not hint"
-                      ctx wrld state t))))
+                     (value@par (cons nil (list expr)))
+                   (serial-first-form-parallel-second-form@par
+                    (simple-translate-and-eval
+                     expr
+                     (list (cons 'world wrld))
+                     nil
+                     "A :do-not hint"
+                     ctx wrld state t)
+                    (simple-translate-and-eval@par
+                     expr
+                     (list (cons 'world wrld))
+                     nil
+                     "A :do-not hint"
+                     ctx wrld state t 
+
+; Parallelism wart: the next two arguments are safe-mode and gc-off.  Consider
+; whether nil and nil are really correct or whether we should read these from
+; state.
+
+                     nil nil)))))
 
 ; trans-ans is (& . val), where & is either nil or a term.
 
      (cond
       ((not (symbol-listp (cdr trans-ans)))
-       (er soft ctx
-           "The expression following :do-not is required either to be a symbol ~
-            or an expression whose value is a true list of symbols, but the ~
-            expression ~x0 has returned the value ~x1.  See :DOC hints."
-           expr (cdr trans-ans)))
+       (er@par soft ctx
+         "The expression following :do-not is required either to be a symbol ~
+          or an expression whose value is a true list of symbols, but the ~
+          expression ~x0 has returned the value ~x1.  See :DOC hints."
+         expr (cdr trans-ans)))
       (t
-       (er-progn
-        (chk-do-not-expr-value
+       (er-progn@par
+        (chk-do-not-expr-value@par
          (coerce-to-acl2-package-lst (cdr trans-ans)) expr ctx state)
-        (value (coerce-to-process-name-lst (cdr trans-ans)))))))))
+        (value@par (coerce-to-process-name-lst (cdr trans-ans)))))))))
 
-(defun translate-do-not-induct-hint (arg ctx wrld state)
+(defun@par translate-do-not-induct-hint (arg ctx wrld state)
   (declare (ignore wrld))
   (cond ((symbolp arg)
          (cond ((member-eq arg '(:otf :otf-flg-override))
-                (value arg))
+                (value@par arg))
                ((keywordp arg)
                 (let ((name (symbol-name arg)))
                   (cond ((and (<= 3 (length name))
                               (equal (subseq name 0 3) "OTF"))
-                         (er soft ctx
-                             "We do not allow :do-not-induct hint values in ~
-                              the keyword package whose name starts with ~
-                              \"OTF\", unless the value is :OTF-FLG-OVERRIDE, ~
-                              because we suspect you intended ~
-                              :OTF-FLG-OVERRIDE in this case.  The value ~x0 ~
-                              is thus illegal."
-                             arg))
-                        (t (value arg)))))
-               (t (value arg))))
-        (t (er soft ctx
-               "The :do-not-induct hint should be followed by a symbol: ~
-                either T, :QUIT, or the root name to be used in the naming ~
-                of any clauses given byes.  ~x0 is an illegal root name.  See ~
-                the :do-not-induct discussion in :MORE-DOC hints."
-               arg))))
+                         (er@par soft ctx
+                           "We do not allow :do-not-induct hint values in the ~
+                            keyword package whose name starts with \"OTF\", ~
+                            unless the value is :OTF-FLG-OVERRIDE, because we ~
+                            suspect you intended :OTF-FLG-OVERRIDE in this ~
+                            case.  The value ~x0 is thus illegal."
+                           arg))
+                        (t (value@par arg)))))
+               (t (value@par arg))))
+        (t (er@par soft ctx
+             "The :do-not-induct hint should be followed by a symbol: either ~
+              T, :QUIT, or the root name to be used in the naming of any ~
+              clauses given byes.  ~x0 is an illegal root name.  See the ~
+              :do-not-induct discussion in :MORE-DOC hints."
+             arg))))
 
-(defun translate-hands-off-hint1 (arg ctx wrld state)
+(defun@par translate-hands-off-hint1 (arg ctx wrld state)
   (cond
    ((atom arg)
     (cond
-     ((null arg) (value nil))
-     (t (er soft ctx
-            "The value of the :hands-off hint must be a true list, ~
-             but your list ends in ~x0.  See the :hands-off ~
-             discussion in :MORE-DOC hints."
-            arg))))
+     ((null arg) (value@par nil))
+     (t (er@par soft ctx
+          "The value of the :hands-off hint must be a true list, but your ~
+           list ends in ~x0.  See the :hands-off discussion in :MORE-DOC ~
+           hints."
+          arg))))
    ((and (consp (car arg))
          (eq (car (car arg)) 'lambda)
          (consp (cdr (car arg)))
@@ -13605,27 +13659,27 @@
 ; by applying it to a list of terms.  Where do we get a list of the
 ; right number of terms?  We use its own formals!
 
-    (er-let*
-     ((term (translate (cons (car arg) (cadr (car arg)))
-                       t t t ctx wrld state))
+    (er-let*@par
+     ((term (translate@par (cons (car arg) (cadr (car arg)))
+                           t t t ctx wrld state))
 ; known-stobjs = t (stobjs-out = t)
-      (rst (translate-hands-off-hint1 (cdr arg) ctx wrld state)))
+      (rst (translate-hands-off-hint1@par (cdr arg) ctx wrld state)))
 
 ; Below we assume that if you give translate ((lambda ...) ...) and it
 ; does not cause an error, then it gives you back a function application.
 
-     (value (cons (ffn-symb term) rst))))
+     (value@par (cons (ffn-symb term) rst))))
    ((and (symbolp (car arg))
          (function-symbolp (car arg) wrld))
-    (er-let*
-     ((rst (translate-hands-off-hint1 (cdr arg) ctx wrld state)))
-     (value (cons (car arg) rst))))
-   (t (er soft ctx
-          "The object ~x0 is not a legal element of a :hands-off ~
-           hint.  See the :hands-off discussion in :MORE-DOC hints."
-          (car arg)))))
+    (er-let*@par
+     ((rst (translate-hands-off-hint1@par (cdr arg) ctx wrld state)))
+     (value@par (cons (car arg) rst))))
+   (t (er@par soft ctx
+        "The object ~x0 is not a legal element of a :hands-off hint.  See the ~
+         :hands-off discussion in :MORE-DOC hints."
+        (car arg)))))
 
-(defun translate-hands-off-hint (arg ctx wrld state)
+(defun@par translate-hands-off-hint (arg ctx wrld state)
 
 ; Arg is supposed to be a list of function symbols.  However, we
 ; allow either
@@ -13639,13 +13693,13 @@
 ; since lambda is not a function symbol.
 
   (cond ((atom arg)
-         (cond ((null arg) (value nil))
+         (cond ((null arg) (value@par nil))
                ((symbolp arg)
-                (translate-hands-off-hint1 (list arg) ctx wrld state))
-               (t (translate-hands-off-hint1 arg ctx wrld state))))
+                (translate-hands-off-hint1@par (list arg) ctx wrld state))
+               (t (translate-hands-off-hint1@par arg ctx wrld state))))
         ((eq (car arg) 'lambda)
-         (translate-hands-off-hint1 (list arg) ctx wrld state))
-        (t (translate-hands-off-hint1 arg ctx wrld state))))
+         (translate-hands-off-hint1@par (list arg) ctx wrld state))
+        (t (translate-hands-off-hint1@par arg ctx wrld state))))
 
 ; The next few functions are used to produced the formulas represented by
 ; type-prescriptions.
@@ -14568,26 +14622,25 @@
   ~ev[]
   ")  
 
-(defun chk-equal-arities (fn1 n1 fn2 n2 ctx state)
+(defun@par chk-equal-arities (fn1 n1 fn2 n2 ctx state)
   (cond
    ((not (equal n1 n2))
-    (er soft ctx
-        "It is illegal to replace ~x0 by ~x1 because the former ~
-         ~#2~[takes no arguments~/takes one argument~/takes ~n3 ~
-         arguments~] while the latter ~#4~[takes none~/takes ~
-         one~/takes ~n5~].  See the :functional-instance discussion ~
-         in :MORE-DOC :lemma-instance."
-        fn1
-        fn2
-        (cond ((int= n1 0) 0)
-              ((int= n1 1) 1)
-              (t 2))
-        n1
-        (cond ((int= n2 0) 0)
-              ((int= n2 1) 1)
-              (t 2))
-        n2))
-   (t (value nil))))
+    (er@par soft ctx
+      "It is illegal to replace ~x0 by ~x1 because the former ~#2~[takes no ~
+       arguments~/takes one argument~/takes ~n3 arguments~] while the latter ~
+       ~#4~[takes none~/takes one~/takes ~n5~].  See the :functional-instance ~
+       discussion in :MORE-DOC :lemma-instance."
+      fn1
+      fn2
+      (cond ((int= n1 0) 0)
+            ((int= n1 1) 1)
+            (t 2))
+      n1
+      (cond ((int= n2 0) 0)
+            ((int= n2 1) 1)
+            (t 2))
+      n2))
+   (t (value@par nil))))
 
 (defun extend-sorted-symbol-alist (pair alist)
   (cond
@@ -14603,17 +14656,16 @@
 ;; classical or both non-classical
 
 #+:non-standard-analysis
-(defun chk-equiv-classicalp (fn1 fn2 termp ctx wrld state)
+(defun@par chk-equiv-classicalp (fn1 fn2 termp ctx wrld state)
   (let ((cp1 (classicalp fn1 wrld))
         (cp2 (if termp ; fn2 is a term, not a function symbol
                  (classical-fn-list-p (all-fnnames fn2) wrld)
                (classicalp fn2 wrld))))
     (if (equal cp1 cp2)
-        (value nil)
-      (er soft ctx
-        "It is illegal to replace ~x0 by ~x1 because the former ~
-         ~#2~[is classical~/is not classical~] while the latter ~
-         ~#3~[is~/is not~]."
+        (value@par nil)
+      (er@par soft ctx
+        "It is illegal to replace ~x0 by ~x1 because the former ~#2~[is ~
+         classical~/is not classical~] while the latter ~#3~[is~/is not~]."
         (if (symbolp fn1) fn1 (untranslate fn1 nil wrld))
         (if (symbolp fn2) fn2 (untranslate fn2 nil wrld))
         (if cp1 0 1)
@@ -14623,7 +14675,7 @@
 ;; map a non-classical constrained function into a classical function
 ;; or vice versa.
 
-(defun translate-functional-substitution (substn ctx wrld state)
+(defun@par translate-functional-substitution (substn ctx wrld state)
 
 ; Substn is alleged to be a functional substitution.  We know that it is a true
 ; list!  We check that each element is a pair of the form (fn1 fn2), where fn1
@@ -14649,13 +14701,13 @@
 ; substitute.
 
   (cond
-   ((null substn) (value nil))
+   ((null substn) (value@par nil))
    ((not (and (true-listp (car substn))
               (= (length (car substn)) 2)))
-    (er soft ctx
-        "The object ~x0 is not of the form (fi gi) as described in ~
-         the :functional-instance discussion of :MORE-DOC lemma-instance."
-        (car substn)))
+    (er@par soft ctx
+      "The object ~x0 is not of the form (fi gi) as described in the ~
+       :functional-instance discussion of :MORE-DOC lemma-instance."
+      (car substn)))
    (t (let ((fn1 (caar substn))
             (fn2 (cadar substn))
             (str "The object ~x0 is not of the form (fi gi) as ~
@@ -14665,66 +14717,65 @@
         (cond
          ((not (and (symbolp fn1)
                     (function-symbolp fn1 wrld)))
-          (er soft ctx
-              "Each domain element in a functional substitution must ~
-               be a function symbol, but ~x0 is not.  See the :functional-~
-               instance discussion of :MORE-DOC lemma-instance."
-              fn1))
+          (er@par soft ctx
+            "Each domain element in a functional substitution must be a ~
+             function symbol, but ~x0 is not.  See the :functional-instance ~
+             discussion of :MORE-DOC lemma-instance."
+            fn1))
          ((not (eq (instantiablep fn1 wrld) t))
-          (er soft ctx
-              "The function symbol ~x0 cannot be instantiated~@1.  See the ~
-               :functional-instance discussion about `instantiable' in :DOC ~
-               lemma-instance."
-              fn1
-              (if (eq (instantiablep fn1 wrld) nil)
-                  ""
-                (msg " because it was introduced in an encapsulate ~
-                      specifying a dependent clause-processor, ~x0 (see DOC ~
-                      define-trusted-clause-processor)"
-                     (instantiablep fn1 wrld)))))
+          (er@par soft ctx
+            "The function symbol ~x0 cannot be instantiated~@1.  See the ~
+             :functional-instance discussion about `instantiable' in :DOC ~
+             lemma-instance."
+            fn1
+            (if (eq (instantiablep fn1 wrld) nil)
+                ""
+              (msg " because it was introduced in an encapsulate specifying a ~
+                    dependent clause-processor, ~x0 (see DOC ~
+                    define-trusted-clause-processor)"
+                   (instantiablep fn1 wrld)))))
          (t
-          (er-let*
+          (er-let*@par
            ((x
              (cond
               ((symbolp fn2)
                (let ((fn2 (deref-macro-name fn2 (macro-aliases wrld))))
                  (cond
                   ((function-symbolp fn2 wrld)
-                   (er-progn
-                    (chk-equal-arities fn1 (arity fn1 wrld)
-                                       fn2 (arity fn2 wrld)
-                                       ctx state)
+                   (er-progn@par
+                    (chk-equal-arities@par fn1 (arity fn1 wrld)
+                                           fn2 (arity fn2 wrld)
+                                           ctx state)
                     #+:non-standard-analysis
                     (chk-equiv-classicalp fn1 fn2 nil ctx wrld state)
-                    (value (cons fn1 fn2))))
-                  (t (er soft ctx str (car substn) fn2)))))
+                    (value@par (cons fn1 fn2))))
+                  (t (er@par soft ctx str (car substn) fn2)))))
               ((and (true-listp fn2)
                     (= (length fn2) 3)
                     (eq (car fn2) 'lambda))
-               (er-let*
+               (er-let*@par
                 ((body
-                  (translate (caddr fn2) t t t ctx wrld state)))
+                  (translate@par (caddr fn2) t t t ctx wrld state)))
 ; known-stobjs = t (stobjs-out = t)
-                (er-progn
-                 (chk-arglist (cadr fn2) t ctx wrld state)
-                 (chk-equal-arities fn1 (arity fn1 wrld)
-                                    fn2 (length (cadr fn2))
-                                    ctx state)
+                (er-progn@par
+                 (chk-arglist@par (cadr fn2) t ctx wrld state)
+                 (chk-equal-arities@par fn1 (arity fn1 wrld)
+                                        fn2 (length (cadr fn2))
+                                        ctx state)
                  #+:non-standard-analysis
-                 (chk-equiv-classicalp fn1 body t ctx wrld state)
-                 (value (cons fn1 (make-lambda (cadr fn2) body))))))
-              (t (er soft ctx str (car substn) fn2))))
+                 (chk-equiv-classicalp@par fn1 body t ctx wrld state)
+                 (value@par (cons fn1 (make-lambda (cadr fn2) body))))))
+              (t (er@par soft ctx str (car substn) fn2))))
             (y
-             (translate-functional-substitution (cdr substn)
-                                                ctx wrld state)))
+             (translate-functional-substitution@par (cdr substn)
+                                                    ctx wrld state)))
            (cond ((assoc-eq fn1 y)
-                  (er soft ctx
-                      "It is illegal to bind ~x0 twice in a ~
-                       functional substitution.  See the ~
-                       :functional-instance discussion of :MORE-DOC ~
-                       lemma-instance."
-                      fn1))
-                 (t (value (extend-sorted-symbol-alist x y)))))))))))
+                  (er@par soft ctx
+                    "It is illegal to bind ~x0 twice in a functional ~
+                     substitution.  See the :functional-instance discussion ~
+                     of :MORE-DOC lemma-instance."
+                    fn1))
+                 (t (value@par (extend-sorted-symbol-alist x y)))))))))))
 
 (mutual-recursion
 
@@ -15409,7 +15460,7 @@
 
 )
 
-(defun translate-lmi/instance
+(defun@par translate-lmi/instance
   (formula constraints event-names new-entries substn ctx wrld state)
 
 ; Formula is some term, obtained by previous instantiations.  Constraints
@@ -15423,33 +15474,32 @@
 ; and new-entries, which all pass through unchanged.  Otherwise, we cause an
 ; error.
 
-  (er-let*
-   ((alist (translate-substitution substn ctx wrld state)))
+  (er-let*@par
+   ((alist (translate-substitution@par substn ctx wrld state)))
    (let* ((vars (all-vars formula))
           (un-mentioned-vars (set-difference-eq (strip-cars alist) vars)))
-          (cond
-           (un-mentioned-vars
-             (er soft ctx
-                 "The formula you wish to instantiate, ~p3, mentions ~
-                  ~#0~[no variables~/only the variable ~&1~/the ~
-                  variables ~&1~].  Thus, there is no reason to ~
-                  include ~&2 in the domain of your substitution.  We ~
-                  point this out only because it frequently indicates ~
-                  that a mistake has been made.  See the :instance ~
-                  discussion in :MORE-DOC lemma-instance."
-                 (zero-one-or-more vars)
-                 (merge-sort-symbol-< vars)
-                 (merge-sort-symbol-< un-mentioned-vars)
-                 (untranslate formula t wrld)))
-           (t (value (list (sublis-var alist formula)
-                           constraints
-                           event-names
-                           new-entries)))))))
+     (cond
+      (un-mentioned-vars
+       (er@par soft ctx
+         "The formula you wish to instantiate, ~p3, mentions ~#0~[no ~
+          variables~/only the variable ~&1~/the variables ~&1~].  Thus, there ~
+          is no reason to include ~&2 in the domain of your substitution.  We ~
+          point this out only because it frequently indicates that a mistake ~
+          has been made.  See the :instance discussion in :MORE-DOC ~
+          lemma-instance."
+         (zero-one-or-more vars)
+         (merge-sort-symbol-< vars)
+         (merge-sort-symbol-< un-mentioned-vars)
+         (untranslate formula t wrld)))
+      (t (value@par (list (sublis-var alist formula)
+                          constraints
+                          event-names
+                          new-entries)))))))
 
-(defun translate-lmi/functional-instance (formula constraints event-names
-                                                  new-entries substn
-                                                  proved-fnl-insts-alist
-                                                  ctx wrld state)
+(defun@par translate-lmi/functional-instance (formula constraints event-names
+                                                      new-entries substn
+                                                      proved-fnl-insts-alist
+                                                      ctx wrld state)
 
 ; For context, see the Essay on the proved-functional-instances-alist.
 
@@ -15465,19 +15515,19 @@
 ; appended to the new ones added by this functional instantiation.  Otherwise,
 ; we cause an error.
 
-  (er-let*
-   ((alist (translate-functional-substitution substn ctx wrld state)))
+  (er-let*@par
+   ((alist (translate-functional-substitution@par substn ctx wrld state)))
    (mv-let
     (new-constraints new-event-names new-new-entries)
     (relevant-constraints formula alist proved-fnl-insts-alist wrld)
     (cond
      ((eq new-constraints *unknown-constraints*)
-      (er soft ctx
-          "Functional instantiation is disallowed in this context, because ~
-           the function ~x0 has unknown constraints provided by the dependent ~
-           clause-processor ~x1.  See :DOC define-trusted-clause-processor."
-          new-event-names
-          new-new-entries))
+      (er@par soft ctx
+        "Functional instantiation is disallowed in this context, because the ~
+         function ~x0 has unknown constraints provided by the dependent ~
+         clause-processor ~x1.  See :DOC define-trusted-clause-processor."
+        new-event-names
+        new-new-entries))
      (t
       (let ((allow-freevars-p
              #-:non-standard-analysis
@@ -15502,48 +15552,48 @@
 ; simple and simply expect and hope that such a misleading message is never
 ; actually seen by a user.
 
-            (er soft ctx
-                (if allow-freevars-p
-                    "Your functional substitution contains one or more free ~
-                     occurrences of the variable~#0~[~/s~] ~&0 in its range.  ~
-                     Alas, ~#1~[this variable occurrence is~/these variables ~
-                     occurrences are~] bound in a LET or MV-LET expression of ~
-                     ~#2~[the formula you wish to functionally instantiate, ~
-                     ~p3.~|~/the constraints that must be relieved.  ~]You ~
-                     must therefore change your functional substitution so ~
-                     that it avoids such ``capture.''  It will suffice for ~
-                     your functional substitution to stay clear of all the ~
-                     variables bound by a LET or MV-LET expression that are ~
-                     used in the target formula or in the corresponding ~
-                     constraints.  Thus it will suffice for your substitution ~
-                     not to contain free occurrences of ~v4 in its range, by ~
-                     using fresh variables instead.  Once you have fixed this ~
-                     problem, you can :use an :instance of your ~
-                     :functional-instance to bind the fresh variables to ~&4."
+            (er@par soft ctx
+              (if allow-freevars-p
+                  "Your functional substitution contains one or more free ~
+                   occurrences of the variable~#0~[~/s~] ~&0 in its range.  ~
+                   Alas, ~#1~[this variable occurrence is~/these variables ~
+                   occurrences are~] bound in a LET or MV-LET expression of ~
+                   ~#2~[the formula you wish to functionally instantiate, ~
+                   ~p3.~|~/the constraints that must be relieved.  ~]You must ~
+                   therefore change your functional substitution so that it ~
+                   avoids such ``capture.''  It will suffice for your ~
+                   functional substitution to stay clear of all the variables ~
+                   bound by a LET or MV-LET expression that are used in the ~
+                   target formula or in the corresponding constraints.  Thus ~
+                   it will suffice for your substitution not to contain free ~
+                   occurrences of ~v4 in its range, by using fresh variables ~
+                   instead.  Once you have fixed this problem, you can :use ~
+                   an :instance of your :functional-instance to bind the ~
+                   fresh variables to ~&4."
 
 ; With allow-freevars-p = nil, it is impossible for free variables to be
 ; captured, since no free variables are allowed.
 
-                  "Your functional substitution contains one or more free ~
-                   occurrences of the variable~#0~[~/s~] ~&0 in its range.  ~
-                   Alas, the formula you wish to functionally instantiate is ~
-                   not a classical formula, ~p3.  Free variables in lambda ~
-                   expressions are only allowed when the formula to be ~
-                   instantiated is classical, since these variables may admit ~
-                   non-standard values, for which the theorem may be false.")
-                (merge-sort-symbol-< erp)
-                erp
-                (if erp0 0 1)
-                (untranslate formula t wrld)
-                (bound-vars-lst (cons formula new-constraints)
-                                nil)))
-           (t (value
+                "Your functional substitution contains one or more free ~
+                 occurrences of the variable~#0~[~/s~] ~&0 in its range.  ~
+                 Alas, the formula you wish to functionally instantiate is ~
+                 not a classical formula, ~p3.  Free variables in lambda ~
+                 expressions are only allowed when the formula to be ~
+                 instantiated is classical, since these variables may admit ~
+                 non-standard values, for which the theorem may be false.")
+              (merge-sort-symbol-< erp)
+              erp
+              (if erp0 0 1)
+              (untranslate formula t wrld)
+              (bound-vars-lst (cons formula new-constraints)
+                              nil)))
+           (t (value@par
                (list formula0
                      (append constraints new-constraints0)
                      (union-equal new-event-names event-names)
                      (union-equal new-new-entries new-entries)))))))))))))
 
-(defun translate-lmi (lmi normalizep ctx wrld state)
+(defun@par translate-lmi (lmi normalizep ctx wrld state)
 
 ; Lmi is an object that specifies some instance of a theorem.  It may
 ; specify a substitution instance or a functional instantiation, or
@@ -15591,37 +15641,37 @@
      ((atom lmi)
       (cond ((symbolp lmi)
              (let ((term (formula lmi normalizep wrld)))
-               (cond (term (value (list term nil nil nil)))
-                     (t (er soft ctx str
-                            lmi
-                            (msg "there is no formula associated with the ~
-                                  name ~x0"
-                                 lmi))))))
-            (t (er soft ctx str lmi
-                   "it is an atom that is not a symbol"))))
+               (cond (term (value@par (list term nil nil nil)))
+                     (t (er@par soft ctx str
+                          lmi
+                          (msg "there is no formula associated with the name ~
+                                ~x0"
+                               lmi))))))
+            (t (er@par soft ctx str lmi
+                 "it is an atom that is not a symbol"))))
      ((runep lmi wrld)
       (let ((term (and (not (eq (car lmi) :INDUCTION))
                        (corollary lmi wrld))))
-        (cond (term (value (list term nil nil nil)))
-              (t (er soft ctx str lmi
-                     "there is no known formula associated with this rune")))))
+        (cond (term (value@par (list term nil nil nil)))
+              (t (er@par soft ctx str lmi
+                   "there is no known formula associated with this rune")))))
      ((eq (car lmi) :theorem)
-      (cond ((and (true-listp lmi)
-                  (= (length lmi) 2))
-             (er-let*
-              ((term (translate (cadr lmi) t t t ctx wrld state)))
+      (cond
+       ((and (true-listp lmi)
+             (= (length lmi) 2))
+        (er-let*@par
+         ((term (translate@par (cadr lmi) t t t ctx wrld state)))
 ; known-stobjs = t (stobjs-out = t)
-              (value (list term (list term) nil nil))))
-            (t (er soft ctx str lmi
-                   "this :THEOREM lemma instance is not a true list of length ~
-                    2"))))
+         (value@par (list term (list term) nil nil))))
+       (t (er@par soft ctx str lmi
+            "this :THEOREM lemma instance is not a true list of length 2"))))
      ((or (eq (car lmi) :instance)
           (eq (car lmi) :functional-instance))
       (cond
        ((and (true-listp lmi)
              (>= (length lmi) 2))
-        (er-let*
-         ((lst (translate-lmi (cadr lmi) normalizep ctx wrld state)))
+        (er-let*@par
+         ((lst (translate-lmi@par (cadr lmi) normalizep ctx wrld state)))
          (let ((formula (car lst))
                (constraints (cadr lst))
                (event-names (caddr lst))
@@ -15629,20 +15679,19 @@
                (substn (cddr lmi)))
            (cond
             ((eq (car lmi) :instance)
-             (translate-lmi/instance formula constraints event-names
-                                     new-entries substn ctx wrld state))
-            (t (translate-lmi/functional-instance
+             (translate-lmi/instance@par formula constraints event-names
+                                         new-entries substn ctx wrld state))
+            (t (translate-lmi/functional-instance@par
                 formula constraints event-names new-entries substn
                 (global-val 'proved-functional-instances-alist wrld)
                 ctx wrld state))))))
-       (t (er soft ctx str lmi
-              (msg "this ~x0 lemma instance is not a true list of length at ~
-                    least 2"
-                   (car lmi))))))
-     (t (er soft ctx str lmi
-            "is not a symbol, a rune in the current logical world, or a list ~
-             whose first element is :THEOREM, :INSTANCE, or ~
-             :FUNCTIONAL-INSTANCE")))))
+       (t (er@par soft ctx str lmi
+            (msg "this ~x0 lemma instance is not a true list of length at ~
+                  least 2"
+                 (car lmi))))))
+     (t (er@par soft ctx str lmi
+          "is not a symbol, a rune in the current logical world, or a list ~
+           whose first element is :THEOREM, :INSTANCE, or :FUNCTIONAL-INSTANCE")))))
 
 (deflabel lemma-instance
   :doc
@@ -15746,7 +15795,7 @@
   ~l[functional-instantiation-example] for an example of the use
   of ~c[:functional-instance] (so-called ``functional instantiation).''~/")
 
-(defun translate-use-hint1 (arg ctx wrld state)
+(defun@par translate-use-hint1 (arg ctx wrld state)
 
 ; Arg is a list of lemma instantiations and we return a list of the form (hyps
 ; constraints event-names new-entries); see translate-by-hint or translate-lmi
@@ -15755,21 +15804,21 @@
 ; be proved.
 
   (cond ((atom arg)
-         (cond ((null arg) (value '(nil nil nil nil)))
-               (t (er soft ctx
-                      "The value of the :use hint must be a true list ~
-                       but your list ends in ~x0.  See the :use ~
-                       discussion in :MORE-DOC hints."
-                      arg))))
-        (t (er-let*
-            ((lst1 (translate-lmi (car arg) t ctx wrld state))
-             (lst2 (translate-use-hint1 (cdr arg) ctx wrld state)))
-            (value (list (cons (car lst1) (car lst2))
-                         (append (cadr lst1) (cadr lst2))
-                         (union-eq (caddr lst1) (caddr lst2))
-                         (union-equal (cadddr lst1) (cadddr lst2))))))))
+         (cond ((null arg) (value@par '(nil nil nil nil)))
+               (t (er@par soft ctx
+                    "The value of the :use hint must be a true list but your ~
+                     list ends in ~x0.  See the :use discussion in :MORE-DOC ~
+                     hints."
+                    arg))))
+        (t (er-let*@par
+            ((lst1 (translate-lmi@par (car arg) t ctx wrld state))
+             (lst2 (translate-use-hint1@par (cdr arg) ctx wrld state)))
+            (value@par (list (cons (car lst1) (car lst2))
+                             (append (cadr lst1) (cadr lst2))
+                             (union-eq (caddr lst1) (caddr lst2))
+                             (union-equal (cadddr lst1) (cadddr lst2))))))))
 
-(defun translate-use-hint (arg ctx wrld state)
+(defun@par translate-use-hint (arg ctx wrld state)
 
 ; Nominally, the :use hint is followed by a list of lmi objects.
 ; However, if the :use hint is followed by a single lmi, we automatically
@@ -15854,9 +15903,10 @@
 
   (cond
    ((null arg)
-    (er soft ctx "Implementation error:  Empty :USE hints should not be ~
-                  handled by translate-use-hint (for example, they are ~
-                  handled by translate-hint-settings."))
+    (er@par soft ctx
+      "Implementation error:  Empty :USE hints should not be handled by ~
+       translate-use-hint (for example, they are handled by ~
+       translate-hint-settings."))
    (t (let ((lmi-lst (cond ((atom arg) (list arg))
                            ((or (eq (car arg) :instance)
                                 (eq (car arg) :functional-instance)
@@ -15864,8 +15914,8 @@
                                 (runep arg wrld))
                             (list arg))
                            (t arg))))
-        (er-let*
-         ((lst (translate-use-hint1 lmi-lst ctx wrld state)))
+        (er-let*@par
+         ((lst (translate-use-hint1@par lmi-lst ctx wrld state)))
 
 ; Lst is of the form ((hyp1 ... hypn) constraints event-names new-entries),
 ; where constraints is a list of constraint terms, implicitly conjoined.  We
@@ -15873,12 +15923,12 @@
 ; (lmi-lst (hyp1 ... hypn) constraint-cl k event-names new-entries)
 ; where constraint-cl is a clause that is equivalent to the constraints.
 
-         (value (list lmi-lst
-                      (car lst)
-                      (add-literal (conjoin (cadr lst)) nil nil)
-                      (length (cadr lst))
-                      (caddr lst)
-                      (cadddr lst))))))))
+         (value@par (list lmi-lst
+                          (car lst)
+                          (add-literal (conjoin (cadr lst)) nil nil)
+                          (length (cadr lst))
+                          (caddr lst)
+                          (cadddr lst))))))))
 
 (defun convert-name-tree-to-new-name1 (name-tree char-lst sym)
   (cond ((atom name-tree)
@@ -15929,7 +15979,7 @@
                          sym)
                         wrld)))
 
-(defun translate-by-hint (name-tree arg ctx wrld state)
+(defun@par translate-by-hint (name-tree arg ctx wrld state)
 
 ; A :BY hint must either be a single lemma instance, nil, or a new
 ; name which we understand the user intends will eventually become a
@@ -15957,8 +16007,8 @@
                   (symbolp arg)
                   (formula arg t wrld))
              (consp arg))
-         (er-let*
-          ((lst (translate-lmi arg nil ctx wrld state)))
+         (er-let*@par
+          ((lst (translate-lmi@par arg nil ctx wrld state)))
 
 ; Lst is (thm constraints event-names new-entries), where:  thm is a term;
 ; constraints is a list of terms whose conjunction we must prove; event-names
@@ -15968,7 +16018,7 @@
 ; that the present event can contribute to avoiding proof obligations for
 ; future proofs.
 
-          (value
+          (value@par
            (list (list arg)
                  (car lst)
                  (add-literal (conjoin (cadr lst)) nil nil)
@@ -15979,7 +16029,7 @@
 
 ; The name nil is taken to mean make up a suitable name for this subgoal.
 
-         (value (convert-name-tree-to-new-name name-tree wrld)))
+         (value@par (convert-name-tree-to-new-name name-tree wrld)))
         ((and (symbolp arg)
               (not (keywordp arg))
               (not (equal *main-lisp-package-name* (symbol-package-name arg)))
@@ -15990,53 +16040,57 @@
 ; that would otherwise be generated is confusing because the user isn't
 ; really trying to define arg to be something yet.
 
-         (value arg))
+         (value@par arg))
         (t
-         (er soft ctx
-             "The :BY hint must be given a lemma-instance, nil, or a ~
-              new name.  ~x0 is none of these.  See :DOC hints."
-             arg))))
+         (er@par soft ctx
+           "The :BY hint must be given a lemma-instance, nil, or a new name.  ~
+            ~x0 is none of these.  See :DOC hints."
+           arg))))
 
-(defun translate-cases-hint (arg ctx wrld state)
+(defun@par translate-cases-hint (arg ctx wrld state)
 
 ; This function either causes an error or returns (as the value component of
 ; an error/value/state triple) a list of terms.
 
   (cond
    ((null arg)
-    (er soft ctx "We do not permit empty :CASES hints."))
+    (er@par soft ctx "We do not permit empty :CASES hints."))
    ((not (true-listp arg))
-    (er soft ctx
-        "The value associated with a :CASES hint must be a true-list of terms, ~
-         but ~x0 is not."
-        arg))
-   (t (translate-term-lst arg t t t ctx wrld state))))
+    (er@par soft ctx
+      "The value associated with a :CASES hint must be a true-list of terms, ~
+       but ~x0 is not."
+      arg))
+   (t (translate-term-lst@par arg t t t ctx wrld state))))
 
-(defun translate-case-split-limitations-hint (arg ctx wrld state)
+(defun@par translate-case-split-limitations-hint (arg ctx wrld state)
 
 ; This function returns an error triple.  In the non-error case, the value
 ; component of the error triple is a two-element list that controls the
 ; case-splitting, in analogy to set-case-split-limitations.
 
   (declare (ignore wrld))
-  (cond ((null arg) (value '(nil nil)))
+  #+acl2-par
+  (declare (ignorable state))
+  (cond ((null arg) (value@par '(nil nil)))
         ((and (true-listp arg)
               (equal (len arg) 2)
               (or (natp (car arg))
                   (null (car arg)))
               (or (natp (cadr arg))
                   (null (cadr arg))))
-         (value arg))
-        (t (er soft ctx
-               "The value associated with a :CASE-SPLIT-LIMITATIONS hint must ~
-                be either nil (denoting a list of two nils), or a true list ~
-                of length two, each element which is either nil or a natural ~
-                number; but ~x0 is not."
-               arg))))
+         (value@par arg))
+        (t (er@par soft ctx
+             "The value associated with a :CASE-SPLIT-LIMITATIONS hint must ~
+              be either nil (denoting a list of two nils), or a true list of ~
+              length two, each element which is either nil or a natural ~
+              number; but ~x0 is not."
+             arg))))
 
-(defun translate-no-op-hint (arg ctx wrld state)
+(defun@par translate-no-op-hint (arg ctx wrld state)
   (declare (ignore arg ctx wrld))
-  (value t))
+  #+acl2-par
+  (declare (ignorable state))
+  (value@par t))
 
 (defun character-alistp (x)
 
@@ -16060,18 +16114,18 @@
            (stringp (car arg))
            (character-alistp (cdr arg)))))
 
-(defun translate-error-hint (arg ctx wrld state)
+(defun@par translate-error-hint (arg ctx wrld state)
   (declare (ignore wrld))
   (cond ((tilde-@p arg)
-         (er soft ctx "~@0" arg))
-        (t (er soft ctx
-               "The :ERROR hint keyword was included among your hints, with ~
-                value ~x0."
-               arg))))
+         (er@par soft ctx "~@0" arg))
+        (t (er@par soft ctx
+             "The :ERROR hint keyword was included among your hints, with ~
+              value ~x0."
+             arg))))
 
-(defun translate-induct-hint (arg ctx wrld state)
-  (cond ((eq arg nil) (value nil))
-        (t (translate arg t t t ctx wrld state))))
+(defun@par translate-induct-hint (arg ctx wrld state)
+  (cond ((eq arg nil) (value@par nil))
+        (t (translate@par arg t t t ctx wrld state))))
 
 ; known-stobjs = t (stobjs-out = t)
 
@@ -16124,7 +16178,8 @@
 ; common theory.  We either cause an error or return the corresponding
 ; runic theory.
 
-; Keep this definition in sync with minimal-theory.
+; Keep this definition in sync with minimal-theory and
+; translate-in-theory-hint@par.
 
   (er-let*
    ((runic-value (eval-theory-expr expr ctx wrld state)))
@@ -16193,6 +16248,89 @@
              (t state))))
        (value runic-value)))))
 
+#+acl2-par
+(defun translate-in-theory-hint@par
+  (expr chk-boot-strap-fns-flg ctx wrld state)
+
+; We translate and evaluate expr and make sure that it produces a
+; common theory.  We either cause an error or return the corresponding
+; runic theory.
+
+; Keep this definition in sync with minimal-theory and
+; translate-in-theory-hint.
+
+  (declare (ignorable chk-boot-strap-fns-flg)) ; suppress irrelevance warning
+  (er-let*@par
+   ((runic-value (eval-theory-expr@par expr ctx wrld state)))
+   (let* ((warning-disabled-p (warning-disabled-p "Theory"))
+          (ignored-val
+           (cond
+            (warning-disabled-p
+             nil)
+            ((and chk-boot-strap-fns-flg
+                  (f-get-global 'verbose-theory-warning state)
+                  (not (subsetp-equal
+                        (getprop 'definition-minimal-theory 'theory
+                                 nil ; so, returns nil early in boot-strap
+                                 'current-acl2-world wrld)
+                        runic-value)))
+             (warning$@par ctx ("Theory")
+               "The value of the theory expression ~x0 does not ~
+                            include the :DEFINITION rule~#1~[~/s~] for ~v1.  ~
+                            But ~#1~[this function is~/these functions are~] ~
+                            among a set of primitive functions whose ~
+                            definitions are built into the ACL2 system in ~
+                            various places.  This set consists of the ~
+                            functions ~&2.  While excluding them from the ~
+                            current theory will prevent certain expansions it ~
+                            will not prevent others.  Good luck!~|~%To ~
+                            inhibit this warning, evaluate:~|~x3."
+               expr
+               (strip-base-symbols
+                (set-difference-equal
+                 (getprop 'definition-minimal-theory 'theory nil
+                          'current-acl2-world wrld)
+                 runic-value))
+               *definition-minimal-theory*
+               '(assign verbose-theory-warning nil)))
+            (t nil))))
+     (declare (ignore ignored-val))
+     (let ((ignored-val
+            (cond
+             (warning-disabled-p
+              nil)
+             ((and chk-boot-strap-fns-flg
+                   (f-get-global 'verbose-theory-warning state)
+                   (not (subsetp-equal
+                         (getprop 'executable-counterpart-minimal-theory
+                                  'theory
+                                  nil ; so, returns nil early in boot-strap
+                                  'current-acl2-world wrld)
+                         runic-value)))
+              (warning$@par ctx ("Theory")
+                "The value of the theory expression ~x0 does not ~
+                             include the :EXECUTABLE-COUNTERPART ~
+                             rule~#1~[~/s~] for ~v1.  But ~#1~[this function ~
+                             is~/these functions are~] among a set of ~
+                             primitive functions whose executable ~
+                             counterparts are built into the ACL2 system.  ~
+                             This set consists of the functions ~&2.  While ~
+                             excluding them from the current theory may ~
+                             prevent certain expansions it will not prevent ~
+                             others.  Good luck!~|~%To inhibit this warning, ~
+                             evaluate:~|~x3."
+                expr
+                (strip-base-symbols
+                 (set-difference-equal
+                  (getprop 'executable-counterpart-minimal-theory
+                           'theory nil 'current-acl2-world wrld)
+                  runic-value))
+                *built-in-executable-counterparts*
+                '(assign verbose-theory-warning nil)))
+             (t nil))))
+       (declare (ignore ignored-val))
+       (value@par runic-value)))))
+
 (defun all-function-symbolps (fns wrld)
   (cond ((atom fns) (equal fns nil))
         (t (and (symbolp (car fns))
@@ -16214,134 +16352,137 @@
         (t (cons (caar alist)
                  (collect-non-logic-mode (cdr alist) wrld)))))
 
-(defun translate-bdd-hint1 (top-arg rest ctx wrld state)
+(defun@par translate-bdd-hint1 (top-arg rest ctx wrld state)
   (cond
    ((null rest)
-    (value nil))
+    (value@par nil))
    (t (let ((kwd (car rest)))
-        (er-let*
+        (er-let*@par
          ((cdar-alist
            (case kwd
              (:vars
               (cond
                ((eq (cadr rest) t)
-                (value t))
+                (value@par t))
                ((not (true-listp (cadr rest)))
-                (er soft ctx
-                    "The value associated with :VARS in the :BDD hint must ~
-                     either be T or a true list, but ~x0 is neither."
-                    (cadr rest)))
+                (er@par soft ctx
+                  "The value associated with :VARS in the :BDD hint must ~
+                   either be T or a true list, but ~x0 is neither."
+                  (cadr rest)))
                ((collect-non-legal-variableps (cadr rest))
-                (er soft ctx
-                    "The value associated with :VARS in the :BDD hint must ~
-                     either be T or a true list of variables, but in the :BDD ~
-                     hint ~x0, :VARS is associated with the following list of ~
-                     non-variables:  ~x1."
-                    top-arg
-                    (collect-non-legal-variableps (cadr rest))))
-               (t (value (cadr rest)))))
+                (er@par soft ctx
+                  "The value associated with :VARS in the :BDD hint must ~
+                   either be T or a true list of variables, but in the :BDD ~
+                   hint ~x0, :VARS is associated with the following list of ~
+                   non-variables:  ~x1."
+                  top-arg
+                  (collect-non-legal-variableps (cadr rest))))
+               (t (value@par (cadr rest)))))
              (:prove
               (cond ((member-eq (cadr rest) '(t nil))
-                     (value (cadr rest)))
-                    (t (er soft ctx
-                           "The value associated with ~x0 in the :BDD hint ~x1 ~
-                            is ~x2, but it needs to be t or nil."
-                           kwd top-arg (cadr rest)))))
+                     (value@par (cadr rest)))
+                    (t (er@par soft ctx
+                         "The value associated with ~x0 in the :BDD hint ~x1 ~
+                          is ~x2, but it needs to be t or nil."
+                         kwd top-arg (cadr rest)))))
              (:literal
               (cond ((member-eq (cadr rest) '(:conc :all))
-                     (value (cadr rest)))
+                     (value@par (cadr rest)))
                     ((and (integerp (cadr rest))
                           (< 0 (cadr rest)))
 
 ; The user provides a 1-based index, but we want a 0-based index.
 
-                     (value (1- (cadr rest))))
-                    (t (er soft ctx
-                           "The value associated with :LITERAL in a :BDD hint ~
-                            must be either :CONC, :ALL, or a positive integer ~
-                            (indicating the index, starting with 1, of a ~
-                            hypothesis). The value ~x0 from the :BDD hint ~x1 ~
-                            is therefore illegal."
-                           (cadr rest) top-arg))))
+                     (value@par (1- (cadr rest))))
+                    (t (er@par soft ctx
+                         "The value associated with :LITERAL in a :BDD hint ~
+                          must be either :CONC, :ALL, or a positive integer ~
+                          (indicating the index, starting with 1, of a ~
+                          hypothesis). The value ~x0 from the :BDD hint ~x1 ~
+                          is therefore illegal."
+                         (cadr rest) top-arg))))
              (:bdd-constructors
               (cond ((and (consp (cadr rest))
                           (eq (car (cadr rest)) 'quote)
                           (consp (cdr (cadr rest)))
                           (null (cddr (cadr rest))))
-                     (er soft ctx
-                         "The value associated with :BDD-CONSTRUCTORS must be ~
-                          a list of function symbols.  It should not be ~
-                          quoted, but the value supplied is of the form (QUOTE ~
-                          x)."))
+                     (er@par soft ctx
+                       "The value associated with :BDD-CONSTRUCTORS must be a ~
+                        list of function symbols.  It should not be quoted, ~
+                        but the value supplied is of the form (QUOTE x)."))
                     ((not (symbol-listp (cadr rest)))
-                     (er soft ctx
-                           "The value associated with :BDD-CONSTRUCTORS must ~
-                            be a list of symbols, but ~x0 ~ is not."
-                           (cadr rest)))
+                     (er@par soft ctx
+                       "The value associated with :BDD-CONSTRUCTORS must be a ~
+                        list of symbols, but ~x0 ~ is not."
+                       (cadr rest)))
                     ((all-function-symbolps (cadr rest) wrld)
-                     (value (cadr rest)))
-                    (t (er soft ctx
-                           "The value associated with :BDD-CONSTRUCTORS must ~
-                            be a list of :logic mode function symbols, but ~
-                            ~&0 ~#0~[is~/are~] not."
-                           (collect-non-logic-mode
+                     (value@par (cadr rest)))
+                    (t (er@par soft ctx
+                         "The value associated with :BDD-CONSTRUCTORS must be ~
+                          a list of :logic mode function symbols, but ~&0 ~
+                          ~#0~[is~/are~] not."
+                         (collect-non-logic-mode
 
 ; This is an odd construct, but its saves us from defining a new function since
 ; we use collect-non-logic-mode elsewhere anyhow.
                        
-                            (pairlis$ (cadr rest) nil)
-                            wrld)))))
+                          (pairlis$ (cadr rest) nil)
+                          wrld)))))
              (otherwise
-              (er soft ctx
-                  "The keyword ~x0 is not a legal keyword for a :BDD hint.  ~
-                   The hint ~x1 is therefore illegal.  See :DOC hints."
-                  (car rest) top-arg)))))
-         (er-let*
+              (er@par soft ctx
+                "The keyword ~x0 is not a legal keyword for a :BDD hint.  The ~
+                 hint ~x1 is therefore illegal.  See :DOC hints."
+                (car rest) top-arg)))))
+         (er-let*@par
           ((cdr-alist
-            (translate-bdd-hint1 top-arg (cddr rest) ctx wrld state)))
-          (value (cons (cons kwd cdar-alist) cdr-alist))))))))
+            (translate-bdd-hint1@par top-arg (cddr rest) ctx wrld state)))
+          (value@par (cons (cons kwd cdar-alist) cdr-alist))))))))
 
-(defun translate-bdd-hint (arg ctx wrld state)
+(defun@par translate-bdd-hint (arg ctx wrld state)
 
 ; Returns an alist associating each of the permissible keywords with a value.
 
   (cond
    ((not (keyword-value-listp arg))
-    (er soft ctx
-        "The value associated with a :BDD hint must be a list of the form ~
-         (:kw1 val1 :kw2 val2 ...), where each :kwi is a keyword.  However, ~
-         ~x0 does not have this form."
-        arg))
+    (er@par soft ctx
+      "The value associated with a :BDD hint must be a list of the form (:kw1 ~
+       val1 :kw2 val2 ...), where each :kwi is a keyword.  However, ~x0 does ~
+       not have this form."
+      arg))
    ((not (assoc-keyword :vars arg))
-    (er soft ctx
-        "The value associated with a :BDD hint must include an assignment for ~
-         :vars, but ~x0 does not."
-        arg))
-   (t (translate-bdd-hint1 arg arg ctx wrld state))))
+    (er@par soft ctx
+      "The value associated with a :BDD hint must include an assignment for ~
+       :vars, but ~x0 does not."
+      arg))
+   (t (translate-bdd-hint1@par arg arg ctx wrld state))))
 
-(defun translate-nonlinearp-hint (arg ctx wrld state)
+(defun@par translate-nonlinearp-hint (arg ctx wrld state)
   (declare (ignore wrld))
+  #+acl2-par
+  (declare (ignorable state))
   (if (or (equal arg t)
           (equal arg nil))
-      (value arg)
-    (er soft ctx
-        "The only legal values for a :nonlinearp hint are T and NIL, but ~
-         ~x0 is neither of these."
-        arg)))
+      (value@par arg)
+    (er@par soft ctx
+      "The only legal values for a :nonlinearp hint are T and NIL, but ~x0 is ~
+       neither of these."
+      arg)))
 
-(defun translate-backchain-limit-rw-hint (arg ctx wrld state)
+(defun@par translate-backchain-limit-rw-hint (arg ctx wrld state)
   (declare (ignore wrld))
   (if (or (natp arg)
           (equal arg nil))
-      (value arg)
-    (er soft ctx
-        "The only legal values for a :backchain-limit-rw hint are NIL and ~
-         natural numbers, but ~x0 is neither of these."
-        arg)))
+      (value@par arg)
+    (er@par soft ctx
+      "The only legal values for a :backchain-limit-rw hint are NIL and ~
+       natural numbers, but ~x0 is neither of these."
+      arg)))
 
-(defun translate-no-thanks-hint (arg ctx wrld state)
+(defun@par translate-no-thanks-hint (arg ctx wrld state)
   (declare (ignore ctx wrld))
-  (value arg))
+  #+acl2-par
+  (declare (ignorable state))
+  (value@par arg))
 
 (defun pos-listp (l)
   (cond ((atom l)
@@ -16349,15 +16490,17 @@
         (t (and (posp (car l))
                 (pos-listp (cdr l))))))
 
-(defun translate-reorder-hint (arg ctx wrld state)
+(defun@par translate-reorder-hint (arg ctx wrld state)
   (declare (ignore wrld))
+  #+acl2-par
+  (declare (ignorable state))
   (if (and (pos-listp arg)
            (no-duplicatesp arg))
-      (value arg)
-    (er soft ctx
-        "The value for a :reorder hint must be a true list of positive ~
-         integers without duplicates, but ~x0 is not."
-        arg)))
+      (value@par arg)
+    (er@par soft ctx
+      "The value for a :reorder hint must be a true list of positive integers ~
+       without duplicates, but ~x0 is not."
+      arg)))
 
 (defrec clause-processor-hint
   (term stobjs-out . verified-p)
@@ -16394,7 +16537,7 @@
            fn arity expected-arity))
      (t nil))))
 
-(defun translate-clause-processor-hint (form ctx wrld state)
+(defun@par translate-clause-processor-hint (form ctx wrld state)
 
 ; We are given the hint :clause-processor form.  We return an error triple
 ; whose value in the non-error case is a cons pair consisting of the
@@ -16422,62 +16565,62 @@
 ;    or any term macroexpanding to (cl-proc & & stobj1 ... stobjk)
 ;    where CLAUSE is the only legal non-stobj free variable
 
+  #+acl2-par
+  (declare (ignorable state))
   (let ((err-msg (msg "The form ~x0 is not a legal value for a ~
                        :clause-processor hint because ~@1.  See :DOC hints."
                       form)))
-    (er-let*
+    (er-let*@par
      ((form (cond ((atom form)
                    (cond ((symbolp form)
                           (let ((msg (arity-mismatch-msg form 1 wrld)))
-                            (cond (msg (er soft ctx "~@0" err-msg msg))
-                                  (t (value (list form 'clause))))))
-                         (t (er soft ctx "~@0" err-msg
-                                "it is an atom that is not a symbol"))))
+                            (cond (msg (er@par soft ctx "~@0" err-msg msg))
+                                  (t (value@par (list form 'clause))))))
+                         (t (er@par soft ctx "~@0" err-msg
+                              "it is an atom that is not a symbol"))))
                   ((not (true-listp form))
-                   (er soft ctx "~@0" err-msg
-                       "it is a cons that is not a true-listp"))
+                   (er@par soft ctx "~@0" err-msg
+                     "it is a cons that is not a true-listp"))
                   (t (case-match form
                        ((':function cl-proc)
                         (cond
                          ((symbolp cl-proc)
                           (let ((msg (arity-mismatch-msg cl-proc 1 wrld)))
-                            (cond (msg (er soft ctx "~@0" err-msg msg))
-                                  (t (value (list cl-proc 'clause))))))
-                         (t (er soft ctx "~@0" err-msg
-                                "the :FUNCTION is not a symbol"
-                                ))))
+                            (cond (msg (er@par soft ctx "~@0" err-msg msg))
+                                  (t (value@par (list cl-proc 'clause))))))
+                         (t (er@par soft ctx "~@0" err-msg
+                              "the :FUNCTION is not a symbol"))))
                        ((':function cl-proc ':hint hint)
                         (cond ((symbolp cl-proc)
                                (let ((msg
                                       (arity-mismatch-msg cl-proc '(2) wrld)))
                                  (cond
-                                  (msg (er soft ctx "~@0" err-msg msg))
-                                  (t (value
+                                  (msg (er@par soft ctx "~@0" err-msg msg))
+                                  (t (value@par
                                       (list* cl-proc
                                              'clause
                                              hint
                                              (cddr (stobjs-out cl-proc
                                                                wrld))))))))
-                              (t (er soft ctx "~@0" err-msg
-                                     "the :FUNCTION is an atom that is not a ~
-                                      symbol"))))
-                       (& (value form)))))))
-     (mv-let
+                              (t (er@par soft ctx "~@0" err-msg
+                                   "the :FUNCTION is an atom that is not a ~
+                                    symbol"))))
+                       (& (value@par form)))))))
+     (mv-let@par
       (erp term bindings state)
-      (translate1 form
-                  :stobjs-out ; form must be executable
-                  '((:stobjs-out . :stobjs-out))
-                  t ctx wrld state)
+      (translate1@par form
+                      :stobjs-out ; form must be executable
+                      '((:stobjs-out . :stobjs-out))
+                      t ctx wrld state)
       (cond
-       (erp (er soft ctx "~@0" err-msg
-                "it was not successfully translated (see error message ~
-                 above)"))
+       (erp (er@par soft ctx "~@0" err-msg
+              "it was not successfully translated (see error message above)"))
        ((or (variablep term)
             (fquotep term)
             (flambda-applicationp term))
-        (er soft ctx "~@0" err-msg
-            "it is not (even after doing macroexpansion) a call of a function ~
-             symbol"))
+        (er@par soft ctx "~@0" err-msg
+          "it is not (even after doing macroexpansion) a call of a function ~
+           symbol"))
        (t
         (let ((verified-p
                (getprop (ffn-symb term) 'clause-processor nil
@@ -16487,24 +16630,24 @@
                      (assoc-eq (ffn-symb term)
                                (table-alist 'trusted-clause-processor-table
                                             wrld))))
-            (er soft ctx "~@0" err-msg
-                "it is not a call of a clause-processor function"))
+            (er@par soft ctx "~@0" err-msg
+              "it is not a call of a clause-processor function"))
            ((not (eq (fargn term 1) 'clause))
-            (er soft ctx "~@0" err-msg
-                "its first argument is not the variable, CLAUSE"))
+            (er@par soft ctx "~@0" err-msg
+              "its first argument is not the variable, CLAUSE"))
            ((set-difference-eq (non-stobjps (all-vars term) t wrld)
                                '(clause))
-            (er soft ctx "~@0" err-msg
-                (msg "it contains the free variable~#0~[~/s~] ~&0, but the ~
-                      only legal variable (not including stobjs) is ~x1"
-                     (set-difference-eq (non-stobjps (all-vars term) t wrld)
-                                        '(clause))
-                     'clause)))
-           (t (value (make clause-processor-hint
-                           :term term
-                           :stobjs-out (translate-deref :stobjs-out
-                                                        bindings)
-                           :verified-p verified-p)))))))))))
+            (er@par soft ctx "~@0" err-msg
+              (msg "it contains the free variable~#0~[~/s~] ~&0, but the only ~
+                    legal variable (not including stobjs) is ~x1"
+                   (set-difference-eq (non-stobjps (all-vars term) t wrld)
+                                      '(clause))
+                   'clause)))
+           (t (value@par (make clause-processor-hint
+                               :term term
+                               :stobjs-out (translate-deref :stobjs-out
+                                                            bindings)
+                               :verified-p verified-p)))))))))))
 
 ; We next develop code for :custom hints.  See the Essay on the Design of
 ; Custom Keyword Hints.
@@ -16579,11 +16722,36 @@
     ,form))
 
 (defun formal-value-triple (erp val)
+
+; Keep in sync with formal-value-triple@par.
+
   (fcons-term* 'cons erp
                (fcons-term* 'cons val
                             (fcons-term* 'cons 'state *nil*))))
 
-(defun translate-simple-or-error-triple (uform ctx wrld state)
+#+acl2-par
+(defun formal-value-triple@par (erp val)
+
+; Keep in sync with formal-value-triple.
+
+; Parallelism wart: why is this different from formal-value-triple?  Document
+; why once I rediscover the reason.  It obviously has something to do with not
+; using state, but I should explain why fcons-term* is needed.
+
+  (fcons-term* 'cons erp
+               (fcons-term* 'cons val *nil*)))
+
+(defun@par translate-simple-or-error-triple (uform ctx wrld state)
+
+; Parallelism wart: clean up this function's documentation for the #+acl2-par
+; case and for the #-acl2-par case.  The documentation prefixed with ";;;" is
+; an incorrect first attempt at the new version of the documentation.
+
+;;; Uform is an untranslated term that is expected to translate either to a
+;;; context message pair or to an ordinary value.  In those cases we return an
+;;; error triple/double whose value component is the translated term or,
+;;; respectively, the term representing (mv nil tterm [state]) where tterm is
+;;; the translated term.  Otherwise, we return a soft error.
 
 ; Uform is an untranslated term that is expected to translate either to an
 ; error triple or to an ordinary value.  In those cases we return an error
@@ -16591,27 +16759,41 @@
 ; term representing (mv nil tterm state) where tterm is the translated term.
 ; Otherwise, we return a soft error.
 
-  (mv-let
+  (mv-let@par
    (erp term bindings state)
-   (translate1 uform
-               :stobjs-out ; form must be executable
-               '((:stobjs-out . :stobjs-out))
-               '(state) ctx wrld state)
+   (translate1@par uform
+                   :stobjs-out ; form must be executable
+                   '((:stobjs-out . :stobjs-out))
+                   '(state) ctx wrld state)
    (cond
-    (erp (silent-error state))
+    (erp (mv@par t nil state))
     (t
      (let ((stobjs-out (translate-deref :stobjs-out bindings)))
        (cond
-        ((equal stobjs-out '(nil)) ; replace term by (value term)
-         (value (formal-value-triple *nil* term)))
-        ((equal stobjs-out *error-triple-sig*)
-         (value term))
-        (t (er soft ctx
-               "The form ~x0 was expected to represent an ordinary value or ~
-                an error triple (mv erp val state), but it returns a tuple of ~
-                the form ~x1."
-               uform
-               (prettyify-stobj-flags stobjs-out)))))))))
+        ((equal stobjs-out '(nil)) ; replace term by (value@par term)
+         (value@par (formal-value-triple@par *nil* term)))
+        ((equal stobjs-out
+                (serial-first-form-parallel-second-form@par 
+                 *error-triple-sig*
+                 *cmp-sig*))
+         (value@par term))
+        (t (serial-first-form-parallel-second-form@par
+            (er soft ctx
+                "The form ~x0 was expected to represent an ordinary value or ~
+                 an error triple (mv erp val state), but it returns a tuple ~
+                 of the form ~x1."
+                uform
+                (prettyify-stobj-flags stobjs-out))
+            (er@par soft ctx
+
+; Parallelism wart: Consider adding a documentation topic on Context message
+; pairs.
+
+              "The form ~x0 was expected to represent an ordinary value or a ~
+               Context message pair (mv erp msg), but it returns a tuple of ~
+               the form ~x1."
+              uform
+              (prettyify-stobj-flags stobjs-out))))))))))
 
 (defun xtrans-eval (uterm alist trans-flg ev-flg ctx state aok)
 
@@ -16703,7 +16885,84 @@
 
       (mv t 'wait state)))))
 
-(defun translate-custom-keyword-hint (arg uterm2 ctx wrld state)
+#+acl2-par
+(defun xtrans-eval-with-ev-w (uterm alist trans-flg ev-flg ctx state aok)
+
+; See xtrans-eval documentation.
+
+; This function was originally introduced in support of the #+acl2-par version.
+; We could have named it "xtrans-eval@par".  However, this function seems
+; worthy of having its own name, suggestive of what it is: a version of
+; xtrans-eval that uses ev-w for evaluation rather than using ev.  The extra
+; function call adds only trivial cost.
+
+; Parallelism wart: This function calls ev-w in a way that violates the
+; contract that state is not part of one of ev-w's arguments ("alist").  As
+; such, while this implementation "works", it is unlikely that it is both sound
+; and as "user friendly" as it should be.
+
+; Parallelism wart: a correct version of the xtrans-eval documentation needs to
+; be written here.
+
+  (er-let*@par
+   ((term
+     (if trans-flg
+         (translate-simple-or-error-triple@par uterm ctx (w state) state)
+       (value@par uterm))))
+   (cond
+    ((or ev-flg
+         (subsetp-eq (all-vars term)
+                     (cons 'state (strip-cars alist))))
+
+; Parallelism wart: We currently discard any changes to the world.  Figure out
+; whether this is okay.
+
+     (er-let*-cmp
+      ((val
+        (mv-let (erp val)
+                (ev-w term
+                      (cons (cons 'state
+                                  (coerce-state-to-object state))
+                            alist)
+                      (w state)
+                      (f-get-global 'safe-mode state)
+
+; Parallelism wart: why not pull gc-off from the state?
+
+                      nil
+                      nil
+                      aok)
+                (cond
+                 (erp
+                 
+; An evaluation error occurred.  This could happen if we encountered
+; an undefined (but constrained) function.  We print the error
+; message.
+                       
+                  (er@par soft ctx "~@0" val))
+                 (t
+                       
+; Val is the list version of (mv erp' val' state) -- and it really is
+; state in that list (typically, the live state).  We assume that if
+; erp' is non-nil then the evaluation also printed the error message.
+; We return an error triple.
+                       
+                  (mv (car val)
+                      (cadr val)))))))
+      (value@par val)))
+    (t
+
+; In this case, ev-flg is nil and there are variables in tterm that are
+; not bound in the environment.  So we tell our caller to wait to ev the
+; term.
+
+     (mv t 'wait)))))
+
+#+acl2-par
+(defun xtrans-eval@par (uterm alist trans-flg ev-flg ctx state aok)
+  (xtrans-eval-with-ev-w uterm alist trans-flg ev-flg ctx state aok))
+
+(defun@par translate-custom-keyword-hint (arg uterm2 ctx wrld state)
 
 ; We run the checker term for the associated custom keyword and handle
 ; any error it generates.  But if no error is generated, the
@@ -16744,16 +17003,16 @@
 ; isn't, unless we made custom hint authors translate all custom
 ; hints, even those they don't "own."
 
-  (er-progn (xtrans-eval uterm2
-                         (list (cons 'val arg)
-                               (cons 'world wrld)
-                               (cons 'ctx ctx))
-                         t ; trans-flg
-                         t ; ev-flg
-                         ctx
-                         state
-                         t)
-            (value arg)))
+  (er-progn@par (xtrans-eval@par uterm2
+                                 (list (cons 'val arg)
+                                       (cons 'world wrld)
+                                       (cons 'ctx ctx))
+                                 t ; trans-flg
+                                 t ; ev-flg
+                                 ctx
+                                 state
+                                 t)
+                (value@par arg)))
 
 (defun custom-keyword-hint (key wrld)
 
@@ -16816,7 +17075,7 @@
 (defconst *custom-keyword-max-iterations*
   100)
 
-(defun custom-keyword-hint-interpreter1
+(defun@par custom-keyword-hint-interpreter1
   (keyword-alist max specified-id id clause wrld
                  stable-under-simplificationp hist pspv ctx state
                  keyword-alist0 eagerp)
@@ -16853,35 +17112,35 @@
 ; There are no custom keyword hints in the list.  In this case,
 ; we're done and we return keyword-alist.
 
-       (value keyword-alist))
+       (value@par keyword-alist))
       ((zp max)
-       (er soft ctx
-           "We expanded the custom keyword hints in ~x0 a total of ~
-            ~x1 times and were still left with a hint containing ~
-            custom keywords, namely ~x2."
-           keyword-alist0
-           *custom-keyword-max-iterations*
-           keyword-alist))
+       (er@par soft ctx
+         "We expanded the custom keyword hints in ~x0 a total of ~x1 times ~
+          and were still left with a hint containing custom keywords, namely ~
+          ~x2."
+         keyword-alist0
+         *custom-keyword-max-iterations*
+         keyword-alist))
       (t
        (let ((checker-bindings
               (list (cons 'val vali)
                     (cons 'world wrld)
                     (cons 'ctx ctx))))
-         (er-progn
-           (xtrans-eval uterm2
-                        checker-bindings
-                        t ; trans-flg = t
-                        t ; ev-flg = t
-                        ctx state t)
+         (er-progn@par
+          (xtrans-eval@par uterm2
+                           checker-bindings
+                           t ; trans-flg = t
+                           t ; ev-flg = t
+                           ctx state t)
 
 ; We just evaluated the checker term and it did not cause an error.
 ; We ignore its value (though er-let* doesn't).
          
-           (mv-let
-            (erp val state)
-            (xtrans-eval uterm1
-                         (cond
-                          (eagerp
+          (mv-let@par
+           (erp val state)
+           (xtrans-eval@par uterm1
+                            (cond
+                             (eagerp
 
 ; We are trying to evaluate the generator eagerly.  That means that
 ; our given values for some dynamic variables, CLAUSE,
@@ -16889,95 +17148,94 @@
 ; don't pass them in and we tell xtrans-eval it doesn't really have to
 ; ev the term if it finds unbound vars.
 
-                           (list* (cons 'keyword-alist keyword-alist)
-                                  (cons 'id id)
+                              (list* (cons 'keyword-alist keyword-alist)
+                                     (cons 'id id)
 ;                                 (cons 'clause clause) ; bogus
 ;                                 (cons 'stable-under-simplificationp
 ;                                       stable-under-simplificationp)
 ;                                 (cons 'hist hist)
 ;                                 (cons 'pspv pspv)
-                                  checker-bindings))
-                          (t
+                                     checker-bindings))
+                             (t
 
 ; Otherwise, we want all the bindings:
 
-                           (list* (cons 'keyword-alist keyword-alist)
-                                  (cons 'id id)
-                                  (cons 'clause clause) ; bogus
-                                  (cons 'stable-under-simplificationp
-                                        stable-under-simplificationp)
-                                  (cons 'hist hist)
-                                  (cons 'pspv pspv)
-                                  checker-bindings)))
-                         t ; trans-flg
-                         (if eagerp nil t) ; ev-flg
-                         ctx
-                         state
-                         t)
-            (cond
-             (erp
+                              (list* (cons 'keyword-alist keyword-alist)
+                                     (cons 'id id)
+                                     (cons 'clause clause) ; bogus
+                                     (cons 'stable-under-simplificationp
+                                           stable-under-simplificationp)
+                                     (cons 'hist hist)
+                                     (cons 'pspv pspv)
+                                     checker-bindings)))
+                            t              ; trans-flg
+                            (if eagerp nil t) ; ev-flg
+                            ctx
+                            state
+                            t)
+           (cond
+            (erp
 
 ; If an error was caused, there are two possibilities.  One is that
 ; the form actually generated an error.  But the other is that we were
 ; trying eager evaluation with insufficient bindings.  That second
 ; case is characterized by eagerp = t and val = WAIT.  In both cases,
 ; we just pass it up.
-            
-              (mv erp val state))
+
+             (mv@par erp val state))
 
 ; If no error was caused, we check the return value for our invariant.
 
-             ((not (keyword-value-listp val))
-              (er soft ctx
-                  "The custom keyword hint ~x0 in the context below ~
-                   generated a result that is not of the form (:key1 ~
-                   val1 ... :keyn valn), where the :keyi are ~
-                   keywords. The context is ~y1, and the result ~
-                   generated was ~y2."
-                  keyi
-                  keyword-alist
-                  val))
-             (t
+            ((not (keyword-value-listp val))
+             (er@par soft ctx
+               "The custom keyword hint ~x0 in the context below generated a ~
+                result that is not of the form (:key1 val1 ... :keyn valn), ~
+                where the :keyi are keywords. The context is ~y1, and the ~
+                result generated was ~y2."
+               keyi
+               keyword-alist
+               val))
+            (t
 
 ; We now know that val is a plausible new keyword-alist and replaces
 ; the old one.
 
-              (pprogn
-               (cond
-                ((f-get-global 'show-custom-keyword-hint-expansion state)
-                 (io? prove nil state
-                      (keyi id  keyword-alist val)
-                      (fms "~%(Advisory from ~
+             (pprogn@par
+              (cond
+               ((f-get-global 'show-custom-keyword-hint-expansion state)
+                (io?@par prove nil state
+                         (keyi id  keyword-alist val)
+                         (fms "~%(Advisory from ~
                             show-custom-keyword-hint-expansion:  The custom ~
                             keyword hint ~x0, appearing in ~@1, ~
                             transformed~%~%~Y23,~%into~%~%~Y43.)~%"
-                           (list
-                            (cons #\0 keyi)
-                            (cons #\1 (tilde-@-clause-id-phrase id))
-                            (cons #\2 (cons
-                                       (string-for-tilde-@-clause-id-phrase id)
-                                       keyword-alist))
-                            (cons #\3 (term-evisc-tuple nil state))
-                            (cons #\4 (cons
-                                       (string-for-tilde-@-clause-id-phrase id)
-                                       val)))
-                           (proofs-co state)
-                           state
-                           nil)))
-                (t state))
-               (custom-keyword-hint-interpreter1
-                val
-                (- max 1)
-                specified-id
-                id clause wrld stable-under-simplificationp
-                hist pspv ctx state
-                keyword-alist0 eagerp)))))))))))
-   (t (value nil))))
+                              (list
+                               (cons #\0 keyi)
+                               (cons #\1 (tilde-@-clause-id-phrase id))
+                               (cons #\2 (cons
+                                          (string-for-tilde-@-clause-id-phrase id)
+                                          keyword-alist))
+                               (cons #\3 (term-evisc-tuple nil state))
+                               (cons #\4 (cons
+                                          (string-for-tilde-@-clause-id-phrase id)
+                                          val)))
+                              (proofs-co state)
+                              state
+                              nil)))
+               (t (state-mac@par)))
+              (custom-keyword-hint-interpreter1@par
+               val
+               (- max 1)
+               specified-id
+               id clause wrld stable-under-simplificationp
+               hist pspv ctx state
+               keyword-alist0 eagerp)))))))))))
+   (t (value@par nil))))
 
-(defun custom-keyword-hint-interpreter
+(defun@par custom-keyword-hint-interpreter
   (keyword-alist specified-id
-              id clause wrld stable-under-simplificationp
-              hist pspv ctx state eagerp)
+                 id clause wrld stable-under-simplificationp
+                 hist pspv ctx state eagerp)
 
 ; Warning: If you change or rearrange the arguments of this function,
 ; be sure to change custom-keyword-hint-in-computed-hint-form and
@@ -17001,7 +17259,7 @@
 ; variables.  It is not strictly an error, i.e., the caller shouldn't
 ; abort.
 
-  (custom-keyword-hint-interpreter1
+  (custom-keyword-hint-interpreter1@par
    keyword-alist *custom-keyword-max-iterations* specified-id id clause wrld
    stable-under-simplificationp hist pspv ctx state keyword-alist eagerp))
 
@@ -17027,7 +17285,16 @@
   (let ((term (nth 3 computed-hint-tuple)))
     (cond ((and (nvariablep term)
                 (not (fquotep term))
-                (eq (ffn-symb term) 'custom-keyword-hint-interpreter)
+
+; Parallelism wart: is the quoting below of
+; "custom-keyword-hint-interpreter@par" a problem (as compared to the serial
+; case)?  One can issue a tags search for 'custom-keyword-hint-interpreter, and
+; find some changed comparisons.
+
+                (serial-first-form-parallel-second-form@par
+                 (eq (ffn-symb term) 'custom-keyword-hint-interpreter)
+                 (or (eq (ffn-symb term) 'custom-keyword-hint-interpreter)
+                     (eq (ffn-symb term) 'custom-keyword-hint-interpreter@par)))
                 (quotep (fargn term 1))
                 (quotep (fargn term 2)))
            (cadr (fargn term 1)))
@@ -17133,7 +17400,7 @@
                (union-equal *hint-expression-backtrack-vars*
                             *hint-expression-basic-vars*)))
 
-(defun translate-hint-expression (name-tree term hint-type ctx wrld state)
+(defun@par translate-hint-expression (name-tree term hint-type ctx wrld state)
 
 ; Term can be either (a) a non-variable term or (b) a symbol.
 
@@ -17171,7 +17438,7 @@
                 (all-nils (stobjs-in term wrld))
                 (not (eq term 'return-last)) ; avoid taking stobjs-out
                 (equal (stobjs-out term wrld) '(nil)))
-           (value
+           (value@par
             (cond
              ((equal (arity term wrld) 3)
               (list 'eval-and-translate-hint-expression
@@ -17199,17 +17466,17 @@
                                  '(id clause world
                                       stable-under-simplificationp
                                       hist pspv ctx))))))))
-          (t (er soft ctx
-                 "When you give a hint that is a symbol, it must be a ~
-                  function symbol of three, four or seven arguments (not ~
-                  involving STATE or other single-threaded objects) that ~
-                  returns a single value.  The allowable arguments are ID, ~
-                  CLAUSE, WORLD, STABLE-UNDER-SIMPLIFICATIONP, HIST, PSPV, ~
-                  and CTX. See :DOC computed-hints.  ~x0 is not such a symbol."
-                 term))))
+          (t (er@par soft ctx
+               "When you give a hint that is a symbol, it must be a function ~
+                symbol of three, four or seven arguments (not involving STATE ~
+                or other single-threaded objects) that returns a single ~
+                value.  The allowable arguments are ID, CLAUSE, WORLD, ~
+                STABLE-UNDER-SIMPLIFICATIONP, HIST, PSPV, and CTX. See :DOC ~
+                computed-hints.  ~x0 is not such a symbol."
+               term))))
    (t
-    (er-let*
-     ((tterm (translate-simple-or-error-triple term ctx wrld state)))
+    (er-let*@par
+     ((tterm (translate-simple-or-error-triple@par term ctx wrld state)))
      (let ((vars (all-vars tterm)))
        (cond
         ((subsetp-eq vars
@@ -17217,7 +17484,7 @@
                        (backtrack *hint-expression-backtrack-vars*)
                        (override *hint-expression-override-vars*)
                        (otherwise *hint-expression-basic-vars*)))
-         (value
+         (value@par
           (list 'eval-and-translate-hint-expression
                 name-tree
                 (if (member-eq 'stable-under-simplificationp vars) t nil)
@@ -17238,18 +17505,17 @@
                   (t (assert$
                       override-bad-vars ; see subsetp-eq call above
                       (mv override-bad-vars "override-hints"))))
-            (er soft ctx
-                "The hint expression ~x0 mentions ~&1.  But variable~#2~[ ~&2 ~
-                 is~/s ~&2 are~] legal only for ~@3.  See :DOC ~
-                 computed-hints."
-                term vars bad-vars types-string))))
+            (er@par soft ctx
+              "The hint expression ~x0 mentions ~&1.  But variable~#2~[ ~&2 ~
+               is~/s ~&2 are~] legal only for ~@3.  See :DOC computed-hints."
+              term vars bad-vars types-string))))
         (t
          (mv-let
           (type-string legal-vars extra-doc-hint)
           (case hint-type
             (backtrack (mv ":BACKTRACK hint"
-                       *hint-expression-backtrack-vars*
-                       " and see :DOC hints for a discussion of :BACKTRACK ~
+                           *hint-expression-backtrack-vars*
+                           " and see :DOC hints for a discussion of :BACKTRACK ~
                         hints"))
             (override (mv "override-hint"
                           *hint-expression-override-vars*
@@ -17257,22 +17523,22 @@
             (otherwise (mv "Computed"
                            *hint-expression-basic-vars*
                            "")))
-          (er soft ctx
-              "~@0 expressions may not mention any variable symbols other ~
-               than ~&1.  See :DOC computed-hints~@2.  But the hint ~
-               expression ~x3 mentions ~&4."
-              type-string
-              legal-vars
-              extra-doc-hint
-              term
-              vars)))))))))
+          (er@par soft ctx
+            "~@0 expressions may not mention any variable symbols other than ~
+             ~&1.  See :DOC computed-hints~@2.  But the hint expression ~x3 ~
+             mentions ~&4."
+            type-string
+            legal-vars
+            extra-doc-hint
+            term
+            vars)))))))))
 
-(defun translate-backtrack-hint (name-tree arg ctx wrld state)
-  (translate-hint-expression name-tree arg 'backtrack ctx wrld state))
+(defun@par translate-backtrack-hint (name-tree arg ctx wrld state)
+  (translate-hint-expression@par name-tree arg 'backtrack ctx wrld state))
 
-(mutual-recursion
+(mutual-recursion@par
 
-(defun translate-or-hint (name-tree str arg ctx wrld state)
+ (defun@par translate-or-hint (name-tree str arg ctx wrld state)
 
 ; Arg is the value of the :OR key in a user-supplied hint settings,
 ; e.g., if the user typed: :OR ((:in-theory t1 :use lem1) (:in-theory
@@ -17291,21 +17557,20 @@
 ; Note: Unlike other hints, we do some additional translation of :OR
 ; hints on the output of this function!  See translate-hint.
 
-  (cond ((atom arg)
-         (if (null arg)
-             (value nil)
-           (er soft ctx
-               "An :OR hint must be a true-list.")))
-        (t (er-let*
-             ((val (translate-hint name-tree
-                                   (cons
-                                    (make-disjunctive-goal-spec
-                                     str
-                                     (length arg)
-                                     (current-package state))
-                                    (car arg))
-                                   nil ctx wrld state))
-              (tl (translate-or-hint name-tree str (cdr arg) ctx wrld state)))
+   (cond ((atom arg)
+          (if (null arg)
+              (value@par nil)
+            (er@par soft ctx "An :OR hint must be a true-list.")))
+         (t (er-let*@par
+             ((val (translate-hint@par name-tree
+                                       (cons
+                                        (make-disjunctive-goal-spec
+                                         str
+                                         (length arg)
+                                         (current-package state))
+                                        (car arg))
+                                       nil ctx wrld state))
+              (tl (translate-or-hint@par name-tree str (cdr arg) ctx wrld state)))
 
 ; Val is either a translated computed hint expression, whose car
 ; is eval-and-translate-hint-expression, or else it is a pair of
@@ -17314,18 +17579,18 @@
 
              (cond
               ((eq (car val) 'eval-and-translate-hint-expression)
-               (value (cons (cons (car arg) val)
-                            tl)))
+               (value@par (cons (cons (car arg) val)
+                                tl)))
               (t
 
 ; If val is (cl-id . hint-settings), we just let val be hint-settings
 ; below, as the cl-id is being managed by the :OR itself.
 
                (let ((val (cdr val)))
-                 (value (cons (cons (car arg) val)
-                              tl)))))))))
+                 (value@par (cons (cons (car arg) val)
+                                  tl)))))))))
 
-(defun translate-hint-settings (name-tree str key-val-lst ctx wrld state)
+ (defun@par translate-hint-settings (name-tree str key-val-lst ctx wrld state)
 
 ; We assume that key-val-lst is a list of :keyword/value pairs, (:key1
 ; val1 ... :keyn valn), and that each :keyi is one of the acceptable
@@ -17336,84 +17601,84 @@
 ; Str is the goal-spec string identifying the clause to which these
 ; hints are attached.
 
-  (cond
-   ((null key-val-lst) (value nil))
-   ((and (eq (car key-val-lst) :use)
-         (eq (cadr key-val-lst) nil))
+   (cond
+    ((null key-val-lst) (value@par nil))
+    ((and (eq (car key-val-lst) :use)
+          (eq (cadr key-val-lst) nil))
 
 ; We allow empty :use hints, but we do not want to have to think about
 ; how to process them.
 
-    (translate-hint-settings name-tree
-                             str
-                             (cddr key-val-lst) ctx wrld state))
-   (t (er-let*
-       ((val (translate-x-hint-value name-tree
-                                     str
-                                     (car key-val-lst) (cadr key-val-lst)
-                                     ctx wrld state))
-        (tl (translate-hint-settings name-tree
-                                     str
-                                     (cddr key-val-lst) ctx wrld state)))
-       (value
-        (cons (cons (car key-val-lst) val)
-              tl))))))
+     (translate-hint-settings@par name-tree
+                                  str
+                                  (cddr key-val-lst) ctx wrld state))
+    (t (er-let*@par
+        ((val (translate-x-hint-value@par name-tree
+                                          str
+                                          (car key-val-lst) (cadr key-val-lst)
+                                          ctx wrld state))
+         (tl (translate-hint-settings@par name-tree
+                                          str
+                                          (cddr key-val-lst) ctx wrld state)))
+        (value@par
+         (cons (cons (car key-val-lst) val)
+               tl))))))
 
-(defun translate-x-hint-value (name-tree str x arg ctx wrld state)
+ (defun@par translate-x-hint-value (name-tree str x arg ctx wrld state)
 
 ; Str is the goal-spec string identifying the clause to which this
 ; hint was attached.  
 
-  (mv-let
-   (flg uterm1 uterm2)
-   (custom-keyword-hint x wrld)
-   (declare (ignore uterm1))
-   (cond
-    (flg
-     (translate-custom-keyword-hint arg uterm2 ctx wrld state))
-    (t
-     (case x
-       (:expand
-        (translate-expand-hint arg ctx wrld state))
-       (:restrict
-        (translate-restrict-hint arg ctx wrld state))
-       (:hands-off
-        (translate-hands-off-hint arg ctx wrld state))
-       (:do-not-induct
-        (translate-do-not-induct-hint arg ctx wrld state))
-       (:do-not
-        (translate-do-not-hint arg ctx state))
-       (:use
-        (translate-use-hint arg ctx wrld state))
-       (:or
-        (translate-or-hint name-tree str arg ctx wrld state))
-       (:cases
-        (translate-cases-hint arg ctx wrld state))
-       (:case-split-limitations
-        (translate-case-split-limitations-hint arg ctx wrld state))
-       (:by
-        (translate-by-hint name-tree arg ctx wrld state))
-       (:induct
-        (translate-induct-hint arg ctx wrld state))
-       (:in-theory
-        (translate-in-theory-hint arg t ctx wrld state))
-       (:bdd
-        (translate-bdd-hint arg ctx wrld state))
-       (:clause-processor
-        (translate-clause-processor-hint arg ctx wrld state))
-       (:nonlinearp
-        (translate-nonlinearp-hint arg ctx wrld state))
-       (:no-op
-        (translate-no-op-hint arg ctx wrld state))
-       (:no-thanks
-        (translate-no-thanks-hint arg ctx wrld state))
-       (:reorder
-        (translate-reorder-hint arg ctx wrld state))
-       (:backtrack
-        (translate-backtrack-hint name-tree arg ctx wrld state))
-       (:backchain-limit-rw
-        (translate-backchain-limit-rw-hint arg ctx wrld state))
-       (:error
+   (mv-let
+    (flg uterm1 uterm2)
+    (custom-keyword-hint x wrld)
+    (declare (ignore uterm1))
+    (cond
+     (flg
+      (translate-custom-keyword-hint@par arg uterm2 ctx wrld state))
+     (t
+      (case x
+        (:expand
+         (translate-expand-hint@par arg ctx wrld state))
+        (:restrict
+         (translate-restrict-hint@par arg ctx wrld state))
+        (:hands-off
+         (translate-hands-off-hint@par arg ctx wrld state))
+        (:do-not-induct
+         (translate-do-not-induct-hint@par arg ctx wrld state))
+        (:do-not
+         (translate-do-not-hint@par arg ctx state))
+        (:use
+         (translate-use-hint@par arg ctx wrld state))
+        (:or
+         (translate-or-hint@par name-tree str arg ctx wrld state))
+        (:cases
+         (translate-cases-hint@par arg ctx wrld state))
+        (:case-split-limitations
+         (translate-case-split-limitations-hint@par arg ctx wrld state))
+        (:by
+         (translate-by-hint@par name-tree arg ctx wrld state))
+        (:induct
+         (translate-induct-hint@par arg ctx wrld state))
+        (:in-theory
+         (translate-in-theory-hint@par arg t ctx wrld state))
+        (:bdd
+         (translate-bdd-hint@par arg ctx wrld state))
+        (:clause-processor
+         (translate-clause-processor-hint@par arg ctx wrld state))
+        (:nonlinearp
+         (translate-nonlinearp-hint@par arg ctx wrld state))
+        (:no-op
+         (translate-no-op-hint@par arg ctx wrld state))
+        (:no-thanks
+         (translate-no-thanks-hint@par arg ctx wrld state))
+        (:reorder
+         (translate-reorder-hint@par arg ctx wrld state))
+        (:backtrack
+         (translate-backtrack-hint@par name-tree arg ctx wrld state))
+        (:backchain-limit-rw
+         (translate-backchain-limit-rw-hint@par arg ctx wrld state))
+        (:error
 
 ; We know this case never happens.  The error is caught and signalled
 ; early by translate-hint.  But we include it here to remind us that
@@ -17421,37 +17686,37 @@
 ; which causes an immediate error -- is also consistent with the
 ; intended interpretation of :error.
 
-        (translate-error-hint arg ctx wrld state))
-       (otherwise
-        (mv
-         (er hard 'translate-x-hint-value
-             "The object ~x0 not recognized as a legal hint keyword. See :DOC ~
+         (translate-error-hint@par arg ctx wrld state))
+        (otherwise
+         (mv@par
+          (er hard 'translate-x-hint-value
+              "The object ~x0 not recognized as a legal hint keyword. See :DOC ~
               hints."
-             x)
-         nil
-         state)))))))
+              x)
+          nil
+          state)))))))
 
-(defun replace-goal-spec-in-name-tree1 (name-tree goal-spec)
-  (cond
-   ((atom name-tree)
-    (cond ((and (stringp name-tree)
-                (parse-clause-id name-tree))
-           (mv t goal-spec))
-          (t (mv nil name-tree))))
-   (t (mv-let
-       (flg1 name-tree1)
-       (replace-goal-spec-in-name-tree1 (car name-tree)
-                                        goal-spec)
-       (cond
-        (flg1 (mv t (cons name-tree1 (cdr name-tree))))
-        (t (mv-let (flg2 name-tree2)
-                   (replace-goal-spec-in-name-tree1 (cdr name-tree)
-                                                    goal-spec)
-                   (mv flg2 
-                       (cons (car name-tree)
-                             name-tree2)))))))))
+ (defun replace-goal-spec-in-name-tree1 (name-tree goal-spec)
+   (cond
+    ((atom name-tree)
+     (cond ((and (stringp name-tree)
+                 (parse-clause-id name-tree))
+            (mv t goal-spec))
+           (t (mv nil name-tree))))
+    (t (mv-let
+        (flg1 name-tree1)
+        (replace-goal-spec-in-name-tree1 (car name-tree)
+                                         goal-spec)
+        (cond
+         (flg1 (mv t (cons name-tree1 (cdr name-tree))))
+         (t (mv-let (flg2 name-tree2)
+                    (replace-goal-spec-in-name-tree1 (cdr name-tree)
+                                                     goal-spec)
+                    (mv flg2 
+                        (cons (car name-tree)
+                              name-tree2)))))))))
 
-(defun replace-goal-spec-in-name-tree (name-tree goal-spec)
+ (defun replace-goal-spec-in-name-tree (name-tree goal-spec)
 
 ; Name-trees are trees of strings and symbols used to generate
 ; meaningful names for :by hints.  Typically, a name tree will have at
@@ -17467,13 +17732,13 @@
 ; by adding a "Dj" suffice.  We want to replace the original goal spec
 ; in the name-tree by this modified goal spec.
 
-  (mv-let (flg new-name-tree)
-          (replace-goal-spec-in-name-tree1 name-tree goal-spec)
-          (cond
-           (flg new-name-tree)
-           (t (cons name-tree goal-spec)))))
+   (mv-let (flg new-name-tree)
+           (replace-goal-spec-in-name-tree1 name-tree goal-spec)
+           (cond
+            (flg new-name-tree)
+            (t (cons name-tree goal-spec)))))
 
-(defun translate-hint (name-tree pair hint-type ctx wrld state)
+ (defun@par translate-hint (name-tree pair hint-type ctx wrld state)
 
 ; Pair is supposed to be a "hint", i.e., a pair of the form (str :key1
 ; val1 ...  :keyn valn).  We check that it is, that str is a string
@@ -17498,38 +17763,38 @@
 ; 'eval-and-translate-hint-expression the answer is a translated
 ; computed hint, otherwise it is of the form (cl-id . hint-settings).
 
-  (cond ((not (and (consp pair)
-                   (stringp (car pair))
-                   (keyword-value-listp (cdr pair))))
-         (er soft ctx
-             "Each hint is supposed to be a list of the form (str :key1 val1 ~
-              ... :keyn valn), but a proposed hint, ~x0, is not.  See :DOC ~
-              hints."
-             pair))
-        (t (let ((cl-id (parse-clause-id (car pair))))
-             (cond
-              ((null cl-id)
-               (er soft ctx
-                   "The object ~x0 is not a goal-spec.  See :DOC hints and ~
-                    :DOC goal-spec."
-                   (car pair)))
-              ((assoc-keyword :error (cdr pair))
+   (cond ((not (and (consp pair)
+                    (stringp (car pair))
+                    (keyword-value-listp (cdr pair))))
+          (er@par soft ctx
+            "Each hint is supposed to be a list of the form (str :key1 val1 ~
+             ... :keyn valn), but a proposed hint, ~x0, is not.  See :DOC ~
+             hints."
+            pair))
+         (t (let ((cl-id (parse-clause-id (car pair))))
+              (cond
+               ((null cl-id)
+                (er@par soft ctx
+                  "The object ~x0 is not a goal-spec.  See :DOC hints and ~
+                   :DOC goal-spec."
+                  (car pair)))
+               ((assoc-keyword :error (cdr pair))
 
 ; If an :error hint was given, we immediately cause the requested error.
 ; Note that we thus allow :error hints to occur multiple times and just
 ; look at the first one.  If we get past this test, there are no
 ; :error hints.
 
-               (translate-error-hint
-                (cadr (assoc-keyword :error (cdr pair)))
-                ctx wrld state))
-              (t
-               (mv-let
-                (keyi vali uterm1 uterm2)
-                (find-first-custom-keyword-hint (cdr pair) wrld)
-                (declare (ignore vali uterm1 uterm2))
-                (cond
-                 (keyi
+                (translate-error-hint@par
+                 (cadr (assoc-keyword :error (cdr pair)))
+                 ctx wrld state))
+               (t
+                (mv-let
+                 (keyi vali uterm1 uterm2)
+                 (find-first-custom-keyword-hint (cdr pair) wrld)
+                 (declare (ignore vali uterm1 uterm2))
+                 (cond
+                  (keyi
 
 ; There is a custom keyword among the keys.  One of two possibilities
 ; exists.  The first is that the hint can be expanded statically
@@ -17548,14 +17813,14 @@
 ; generator cannot assume that a common hint has a well-formed val or
 ; that other custom hints have well-formed vals.
 
-                  (mv-let
-                   (erp val state)
-                   (custom-keyword-hint-interpreter
-                    (cdr pair)
-                    cl-id
-                    cl-id
-                    NIL wrld NIL NIL NIL ctx state
-                    t)
+                   (mv-let@par
+                    (erp val state)
+                    (custom-keyword-hint-interpreter@par
+                     (cdr pair)
+                     cl-id
+                     cl-id
+                     NIL wrld NIL NIL NIL ctx state
+                     t)
 
 ; The four NILs above are bogus values for the dynamic variables.  The
 ; final t is the eagerp flag which will cause the interpreter to
@@ -17574,15 +17839,15 @@
 ; involved in the actual hint that will be generated by the processing
 ; of these custom hints when the subgoal arises.
 
-                        (er-let*
-                          ((hint-settings
-                            (translate-hint-settings
-                             (replace-goal-spec-in-name-tree
-                              name-tree
-                              (car pair))
-                             (car pair)
-                             (cdr pair)
-                             ctx wrld state)))
+                        (er-let*@par
+                         ((hint-settings
+                           (translate-hint-settings@par
+                            (replace-goal-spec-in-name-tree
+                             name-tree
+                             (car pair))
+                            (car pair)
+                            (cdr pair)
+                            ctx wrld state)))
 
 ; Note: If you ever consider not ignoring the translated
 ; hint-settings, recognize how strange it is.  E.g., it may have
@@ -17590,85 +17855,90 @@
 ; binding custom keywords to their untranslated values, a data
 ; structure we never use.
                   
-                          (translate-hint-expression
-                           name-tree
+                         (translate-hint-expression@par
+                          name-tree
 
 ; Below we generate a standard computed hint that uses the
 ; interpreter.  Note that the interpreter is given the eagerp
 ; NIL flag.
 
+                          (serial-first-form-parallel-second-form@par
                            `(custom-keyword-hint-interpreter
                              ',(cdr pair)
                              ',cl-id
                              ID CLAUSE WORLD STABLE-UNDER-SIMPLIFICATIONP
                              HIST PSPV CTX STATE 'nil)
-                           hint-type ctx wrld state)))
-                       (t (mv t nil state))))
+                           `(custom-keyword-hint-interpreter@par
+                             ',(cdr pair)
+                             ',cl-id
+                             ID CLAUSE WORLD STABLE-UNDER-SIMPLIFICATIONP
+                             HIST PSPV CTX STATE 'nil))
+                          hint-type ctx wrld state)))
+                       (t (mv@par t nil state))))
                      (t
 
 ; In this case, we have eliminated all custom keyword hints
 ; eagerly and val is a keyword alist we ought to
 ; use for the hint.  We translate it from scratch.
 
-                      (translate-hint name-tree
-                                      (cons (car pair) val)
-                                      hint-type ctx wrld state)))))
-                 (t
+                      (translate-hint@par name-tree
+                                          (cons (car pair) val)
+                                          hint-type ctx wrld state)))))
+                  (t
 
 ; There are no custom keywords in the hint.
 
-                  (let* ((key-val-lst (remove-redundant-no-ops (cdr pair)))
+                   (let* ((key-val-lst (remove-redundant-no-ops (cdr pair)))
 
 ; By stripping out redundant :NO-OPs now we allow such lists as (:OR x
 ; :NO-OP T), whereas normally :OR would "object" to the presence of
 ; another hint.
 
-                         (keys (evens key-val-lst))
-                         (expanded-hint-keywords
-                          (append
-                           (strip-cars
-                            (table-alist 'custom-keywords-table wrld))
-                           *hint-keywords*)))
-                    (cond
-                     ((null keys)
-                      (er soft ctx
-                          "There is no point in attaching the empty list of ~
-                           hints to ~x0.  We suspect that you have made a ~
-                           mistake in presenting your hints.  See :DOC hints. ~
-                           ~ If you really want a hint that changes nothing, ~
-                           use ~x1."
-                          (car pair)
-                          (cons (car pair) '(:NO-OP T))))
-                     ((not (subsetp-eq keys expanded-hint-keywords))
-                      (er soft ctx
-                          "The legal hint keywords are ~&0.  ~&1 ~
-                           ~#1~[is~/are~] unrecognized.  See :DOC hints."
-                          expanded-hint-keywords
-                          (set-difference-eq keys expanded-hint-keywords)))
-                     ((member-eq :computed-hints-replacement keys)
+                          (keys (evens key-val-lst))
+                          (expanded-hint-keywords
+                           (append
+                            (strip-cars
+                             (table-alist 'custom-keywords-table wrld))
+                            *hint-keywords*)))
+                     (cond
+                      ((null keys)
+                       (er@par soft ctx
+                         "There is no point in attaching the empty list of ~
+                          hints to ~x0.  We suspect that you have made a ~
+                          mistake in presenting your hints.  See :DOC hints. ~
+                          ~ If you really want a hint that changes nothing, ~
+                          use ~x1."
+                         (car pair)
+                         (cons (car pair) '(:NO-OP T))))
+                      ((not (subsetp-eq keys expanded-hint-keywords))
+                       (er@par soft ctx
+                         "The legal hint keywords are ~&0.  ~&1 ~
+                          ~#1~[is~/are~] unrecognized.  See :DOC hints."
+                         expanded-hint-keywords
+                         (set-difference-eq keys expanded-hint-keywords)))
+                      ((member-eq :computed-hints-replacement keys)
 
 ; If translate-hint is called correctly, then we expect this case not to arise
 ; for well-formed hints.  For example, in eval-and-translate-hint-expression we
 ; remove an appropriate use of :computed-hints-replacement.
 
-                      (er soft ctx
-                          "The hint keyword ~x0 has been used incorrectly.  ~
-                           Its only appropriate use is as a leading hint ~
-                           keyword in computed hints.  See :DOC ~
-                           computed-hints."
-                          :computed-hints-replacement))
-                     ((not (no-duplicatesp-equal keys))
-                      (er soft ctx
-                          "You have duplicate occurrences of the hint keyword ~
-                           ~&0 in your hint.  While duplicate occurrences of ~
-                           keywords are permitted by CLTL, the semantics ~
-                           ignores all but the left-most.  We therefore ~
-                           suspect that you have made a mistake in presenting ~
-                           your hints."
-                          (duplicates keys)))
-                     ((and (assoc-keyword :OR (cdr pair))
-                           (not (minimally-well-formed-or-hintp
-                                 (cadr (assoc-keyword :OR (cdr pair))))))
+                       (er@par soft ctx
+                         "The hint keyword ~x0 has been used incorrectly.  ~
+                          Its only appropriate use is as a leading hint ~
+                          keyword in computed hints.  See :DOC computed-hints."
+                         :computed-hints-replacement))
+                      ((not (no-duplicatesp-equal keys))
+                       (er@par soft ctx
+                         "You have duplicate occurrences of the hint keyword ~
+                          ~&0 in your hint.  While duplicate occurrences of ~
+                          keywords are permitted by CLTL, the semantics ~
+                          ignores all but the left-most.  We therefore ~
+                          suspect that you have made a mistake in presenting ~
+                          your hints."
+                         (duplicates keys)))
+                      ((and (assoc-keyword :OR (cdr pair))
+                            (not (minimally-well-formed-or-hintp
+                                  (cadr (assoc-keyword :OR (cdr pair))))))
 
 ; Users are inclined to write hints like this:
 
@@ -17685,103 +17955,103 @@
 ; hints.  If not, we cause an error now.  We check the rest of the
 ; restrictions on :OR after the transformation.
 
-                      (er soft ctx
-                          "The value supplied to an :OR hint must be a ~
-                           non-empty true-list of non-empty true-lists of ~
-                           even length, i.e., of the form ((...) ...).  But ~
-                           you supplied the value ~x0."
-                          (cdr pair)))
-                     ((and (member-eq :induct keys)
-                           (member-eq :use keys))
-                      (er soft ctx
-                          "We do not support the use of an :INDUCT hint with ~
-                           a :USE hint.  When a subgoal with an :INDUCT hint ~
-                           arises, we push it for proof by induction.  Upon ~
-                           popping it, we interpret the :INDUCT hint to ~
-                           determine the induction and we also install any ~
-                           other non-:USE hints supplied.  On the other hand, ~
-                           when a subgoal with a :USE hint arises, we augment ~
-                           the formula with the additional hypotheses ~
-                           supplied by the hint.  If both an :INDUCT and a ~
-                           :USE hint were attached to the same subgoal we ~
-                           could either add the hypotheses before induction, ~
-                           which is generally detrimental to a successful ~
-                           induction, or add them to each of the formulas ~
-                           produced by the induction, which generally adds ~
-                           the hypotheses in many more places than they are ~
-                           needed.  We therefore do neither and cause this ~
-                           neat, informative error.  You are encouraged to ~
-                           attach the :INDUCT hint to the goal or subgoal to ~
-                           which you want us to apply induction and then ~
-                           attach :USE hints to the individual subgoals ~
-                           produced, as necessary.  For what it is worth, ~
-                           :INDUCT hints get along just fine with hints ~
-                           besides :USE.  For example, an :INDUCT hint and an ~
-                           :IN-THEORY hint would cause an induction and set ~
-                           the post-induction locally enabled theory to be as ~
-                           specified by the :IN-THEORY."))
-                     ((and (member-eq :reorder keys)
-                           (intersectp-eq '(:or :induct) keys))
-                      (cond
-                       ((member-eq :or keys)
-                        (er soft ctx
-                            "We do not support the use of a :REORDER hint ~
-                             with an :OR hint.  The order of disjunctive ~
-                             subgoals corresponds to the list of hints given ~
-                             by the :OR hint, so you may want to reorder that ~
-                             list instead."))
-                       (t
-                        (er soft ctx
-                            "We do not support the use of a :REORDER hint ~
-                             with an :INDUCT hint.  If you want this ~
-                             capability, please send a request to the ACL2 ~
-                             implementors."))))
-                     (t
-                      (let ((bad-keys (intersection-eq
-                                       `(:induct ,@*top-hint-keywords*)
-                                       keys)))
-                        (cond
-                         ((and (< 1 (length bad-keys))
-                               (not (and (member-eq :use bad-keys)
-                                         (member-eq :cases bad-keys)
-                                         (equal 2 (length bad-keys)))))
-                          (er soft ctx
-                              "We do not support the use of a~#0~[n~/~] ~x1 ~
-                               hint with a~#2~[n~/~] ~x3 hint, since they ~
-                               suggest two different ways of replacing the ~
-                               current goal by new goals.  ~@4Which is it to ~
-                               be?  To summarize:  A~#0~[n~/~] ~x1 hint ~
-                               together with a~#2~[n~/~] ~x3 hint is not ~
-                               allowed because the intention of such a ~
-                               combination does not seem sufficiently clear."
-                              (if (member-eq (car bad-keys) '(:or :induct))
-                                  0 1)
-                              (car bad-keys)
-                              (if (member-eq (cadr bad-keys) '(:or :induct))
-                                  0 1)
-                              (cadr bad-keys)
-                              (cond
-                               ((and (eq (car bad-keys) :by)
-                                     (eq (cadr bad-keys) :induct))
-                                "The :BY hint suggests that the goal follows ~
+                       (er@par soft ctx
+                         "The value supplied to an :OR hint must be a ~
+                          non-empty true-list of non-empty true-lists of even ~
+                          length, i.e., of the form ((...) ...).  But you ~
+                          supplied the value ~x0."
+                         (cdr pair)))
+                      ((and (member-eq :induct keys)
+                            (member-eq :use keys))
+                       (er@par soft ctx
+                         "We do not support the use of an :INDUCT hint with a ~
+                          :USE hint.  When a subgoal with an :INDUCT hint ~
+                          arises, we push it for proof by induction.  Upon ~
+                          popping it, we interpret the :INDUCT hint to ~
+                          determine the induction and we also install any ~
+                          other non-:USE hints supplied.  On the other hand, ~
+                          when a subgoal with a :USE hint arises, we augment ~
+                          the formula with the additional hypotheses supplied ~
+                          by the hint.  If both an :INDUCT and a :USE hint ~
+                          were attached to the same subgoal we could either ~
+                          add the hypotheses before induction, which is ~
+                          generally detrimental to a successful induction, or ~
+                          add them to each of the formulas produced by the ~
+                          induction, which generally adds the hypotheses in ~
+                          many more places than they are needed.  We ~
+                          therefore do neither and cause this neat, ~
+                          informative error.  You are encouraged to attach ~
+                          the :INDUCT hint to the goal or subgoal to which ~
+                          you want us to apply induction and then attach :USE ~
+                          hints to the individual subgoals produced, as ~
+                          necessary.  For what it is worth, :INDUCT hints get ~
+                          along just fine with hints besides :USE.  For ~
+                          example, an :INDUCT hint and an :IN-THEORY hint ~
+                          would cause an induction and set the post-induction ~
+                          locally enabled theory to be as specified by the ~
+                          :IN-THEORY."))
+                      ((and (member-eq :reorder keys)
+                            (intersectp-eq '(:or :induct) keys))
+                       (cond
+                        ((member-eq :or keys)
+                         (er@par soft ctx
+                           "We do not support the use of a :REORDER hint with ~
+                            an :OR hint.  The order of disjunctive subgoals ~
+                            corresponds to the list of hints given by the :OR ~
+                            hint, so you may want to reorder that list ~
+                            instead."))
+                        (t
+                         (er@par soft ctx
+                           "We do not support the use of a :REORDER hint with ~
+                            an :INDUCT hint.  If you want this capability, ~
+                            please send a request to the ACL2 implementors."))))
+                      (t
+                       (let ((bad-keys (intersection-eq
+                                        `(:induct ,@*top-hint-keywords*)
+                                        keys)))
+                         (cond
+                          ((and (< 1 (length bad-keys))
+                                (not (and (member-eq :use bad-keys)
+                                          (member-eq :cases bad-keys)
+                                          (equal 2 (length bad-keys)))))
+                           (er@par soft ctx
+                             "We do not support the use of a~#0~[n~/~] ~x1 ~
+                              hint with a~#2~[n~/~] ~x3 hint, since they ~
+                              suggest two different ways of replacing the ~
+                              current goal by new goals.  ~@4Which is it to ~
+                              be?  To summarize:  A~#0~[n~/~] ~x1 hint ~
+                              together with a~#2~[n~/~] ~x3 hint is not ~
+                              allowed because the intention of such a ~
+                              combination does not seem sufficiently clear."
+                             (if (member-eq (car bad-keys) '(:or :induct))
+                                 0 1)
+                             (car bad-keys)
+                             (if (member-eq (cadr bad-keys) '(:or :induct))
+                                 0 1)
+                             (cadr bad-keys)
+                             (cond
+                              ((and (eq (car bad-keys) :by)
+                                    (eq (cadr bad-keys) :induct))
+                               "The :BY hint suggests that the goal follows ~
                                  from an existing theorem, or is to be ~
                                  pushed.  However, the :INDUCT hint provides ~
                                  for replacement of the current goal by ~
                                  appropriate new goals before proceeding.  ")
-                               (t ""))))
-                         (t
-                          (er-let* ((hint-settings
-                                     (translate-hint-settings
-                                      (replace-goal-spec-in-name-tree
-                                       name-tree
-                                       (car pair))
-                                      (car pair)
-                                      (cond
-                                       ((assoc-keyword :or (cdr pair))
-                                        (distribute-other-hints-into-or
-                                         (cdr pair)))
-                                       (t (cdr pair)))
-                                      ctx wrld state)))
+                              (t ""))))
+                          (t
+                           (er-let*@par
+                            ((hint-settings
+                              (translate-hint-settings@par
+                               (replace-goal-spec-in-name-tree
+                                name-tree
+                                (car pair))
+                               (car pair)
+                               (cond
+                                ((assoc-keyword :or (cdr pair))
+                                 (distribute-other-hints-into-or
+                                  (cdr pair)))
+                                (t (cdr pair)))
+                               ctx wrld state)))
                             (cond
 
 ; Hint-settings is of the form ((:key1 . val1) ...(:keyn . valn)).
@@ -17800,31 +18070,32 @@
 
                               (assert$
                                (null (cdr hint-settings))
-                               (value
+                               (value@par
                                 (cons cl-id
                                       (car (cdr (car hint-settings)))))))
-                             (t (value
+                             (t (value@par
                                  (cons cl-id hint-settings))))))))))))))))))))
-)
+ )
 
-(defun translate-hint-expressions (name-tree terms hint-type ctx wrld state)
+(defun@par translate-hint-expressions (name-tree terms hint-type ctx wrld state)
 
 ; This function translates a true-list of hint expressions.  It is used when a
 ; hint generates a new list of hints.
 
   (cond
    ((endp terms)
-    (cond ((equal terms nil) (value nil))
-          (t (er soft ctx
-                 "The value of the :COMPUTED-HINT-REPLACEMENT key must be ~
-                  NIL, T, or a true list of terms.  Your list ends in ~x0."
-                 terms))))
-   (t (er-let* ((thint (translate-hint-expression name-tree (car terms)
-                                                  hint-type ctx wrld
-                                                  state))
-                (thints (translate-hint-expressions name-tree (cdr terms)
-                                                    hint-type ctx wrld state)))
-        (value (cons thint thints))))))
+    (cond ((equal terms nil) (value@par nil))
+          (t (er@par soft ctx
+               "The value of the :COMPUTED-HINT-REPLACEMENT key must be NIL, ~
+                T, or a true list of terms.  Your list ends in ~x0."
+               terms))))
+   (t (er-let*@par
+       ((thint (translate-hint-expression@par name-tree (car terms)
+                                              hint-type ctx wrld
+                                              state))
+        (thints (translate-hint-expressions@par name-tree (cdr terms)
+                                                hint-type ctx wrld state)))
+       (value@par (cons thint thints))))))
 
 (defun check-translated-override-hint (hint uhint ctx state)
   (cond ((not (and (consp hint)
@@ -18109,7 +18380,7 @@
                     nil ; no override-hints are applied
                     ctx wrld state))
 
-(defun apply-override-hint
+(defun@par apply-override-hint
   (override-hint cl-id clause hist pspv ctx wrld
                  stable-under-simplificationp clause-list processor
                  keyword-alist state)
@@ -18120,9 +18391,9 @@
   (let* ((tuple override-hint)
          (flg (cadr (cdr tuple)))
          (term (caddr (cdr tuple))))
-    (er-let*
+    (er-let*@par
      ((new-keyword-alist
-       (xtrans-eval
+       (xtrans-eval@par
         term
         (list* (cons 'id cl-id)
                (cons 'clause clause)
@@ -18139,18 +18410,18 @@
                          nil)
                  nil))
         nil ; trans-flg = nil because term is already translated
-        t ; ev-flg = t because we have bound all the vars
+        t   ; ev-flg = t because we have bound all the vars
         ctx state t)))
      (cond
       ((not (keyword-value-listp new-keyword-alist))
-       (er soft ctx
-           "An override-hint, ~x0, has produced an illegal value from ~
-            keyword-alist ~x1.  That value, ~x2, is illegal because it is not ~
-            a keyword-value-listp, i.e., an alternating list of keywords and ~
-            values."
-           (untranslate term nil wrld)
-           keyword-alist
-           new-keyword-alist))
+       (er@par soft ctx
+         "An override-hint, ~x0, has produced an illegal value from ~
+          keyword-alist ~x1.  That value, ~x2, is illegal because it is not a ~
+          keyword-value-listp, i.e., an alternating list of keywords and ~
+          values."
+         (untranslate term nil wrld)
+         keyword-alist
+         new-keyword-alist))
       (t
 
 ; If an override-hint generates a hint with a custom keyword that is sensitive
@@ -18176,9 +18447,9 @@
 ; (thm (equal (* 4 (car (cons x x))) (* x 4))
 ;      :hints (("Goal" :in-theory (disable car-cons))))
 
-       (mv-let
+       (mv-let@par
         (erp new-keyword-alist state)
-        (custom-keyword-hint-interpreter
+        (custom-keyword-hint-interpreter@par
          new-keyword-alist
          cl-id
          cl-id
@@ -18187,30 +18458,30 @@
          nil)
         (cond
          (erp
-          (er soft ctx
-              "An override-hint applied to ~@0 has generated an illegal ~
-               custom keyword hint, as reported above."
-              (tilde-@-clause-id-phrase cl-id)))
+          (er@par soft ctx
+            "An override-hint applied to ~@0 has generated an illegal custom ~
+             keyword hint, as reported above."
+            (tilde-@-clause-id-phrase cl-id)))
          ((eq (car new-keyword-alist)
               :computed-hints-replacement)
-          (er soft ctx
-              "An override-hint, ~x0, has produced an illegal value from ~
-               keyword-alist ~x1.  That value, ~x2, is illegal because it ~
-               begins with the keyword :COMPUTED-HINT-REPLACEMENT; see :DOC ~
-               override-hints."
-              (untranslate term nil wrld)
-              keyword-alist
-              new-keyword-alist))
+          (er@par soft ctx
+            "An override-hint, ~x0, has produced an illegal value from ~
+             keyword-alist ~x1.  That value, ~x2, is illegal because it ~
+             begins with the keyword :COMPUTED-HINT-REPLACEMENT; see :DOC ~
+             override-hints."
+            (untranslate term nil wrld)
+            keyword-alist
+            new-keyword-alist))
          ((assoc-keyword :error new-keyword-alist)
-          (translate-error-hint
+          (translate-error-hint@par
            (cadr (assoc-keyword :error new-keyword-alist))
            (msg "an override hint applied to ~@0"
                 (tilde-@-clause-id-phrase cl-id))
            wrld state))
          (t
-          (value new-keyword-alist)))))))))
+          (value@par new-keyword-alist)))))))))
 
-(defun apply-override-hints
+(defun@par apply-override-hints
   (override-hints cl-id clause hist pspv ctx wrld
                   stable-under-simplificationp clause-list processor
                   keyword-alist state)
@@ -18220,20 +18491,20 @@
 
   (cond
    ((endp override-hints)
-    (value keyword-alist))
+    (value@par keyword-alist))
    (t
-    (er-let*
+    (er-let*@par
      ((new-keyword-alist
-       (apply-override-hint
+       (apply-override-hint@par
         (car override-hints) cl-id clause hist pspv ctx wrld
         stable-under-simplificationp clause-list processor
         keyword-alist state)))
-     (apply-override-hints
+     (apply-override-hints@par
       (cdr override-hints) cl-id clause hist pspv ctx wrld
       stable-under-simplificationp clause-list processor
       new-keyword-alist state)))))
 
-(defun eval-and-translate-hint-expression
+(defun@par eval-and-translate-hint-expression
   (tuple cl-id clause wrld stable-under-simplificationp hist pspv clause-list
          processor keyword-alist hint-type override-hints ctx state)
 
@@ -18300,7 +18571,12 @@
 
           (if (and (nvariablep term)
                    (not (fquotep term))
-                   (eq (ffn-symb term) 'custom-keyword-hint-interpreter)
+                   (serial-first-form-parallel-second-form@par
+                    (eq (ffn-symb term) 'custom-keyword-hint-interpreter)
+                    (or (eq (ffn-symb term) 
+                            'custom-keyword-hint-interpreter)
+                        (eq (ffn-symb term)
+                            'custom-keyword-hint-interpreter@par)))
                    (quotep (fargn term 1))
                    (quotep (fargn term 2)))
               (cadr (fargn term 1))
@@ -18310,8 +18586,8 @@
 ; can.  The real reason we have have the flg component in the computed hint
 ; tuple has to do with optimizing find-applicable-hint-settings.
 
-    (er-let*
-     ((val0 (xtrans-eval
+    (er-let*@par
+     ((val0 (xtrans-eval@par
              term
              (list* (cons 'id cl-id)
                     (cons 'clause clause)
@@ -18328,14 +18604,14 @@
                               nil)
                       nil))
              nil ; trans-flg = nil because term is already translated
-             t ; ev-flg = t because we have bound all the vars
+             t   ; ev-flg = t because we have bound all the vars
              ctx state t)))
      (cond
       ((null val0)
-       (value nil))
+       (value@par nil))
       (t
-       (er-let*
-        ((str (value (string-for-tilde-@-clause-id-phrase cl-id)))
+       (er-let*@par
+        ((str (value@par (string-for-tilde-@-clause-id-phrase cl-id)))
          (chr-p
 
 ; This is a reasonable place to catch a non-keyword-alist result.  Before we
@@ -18343,55 +18619,55 @@
 ; override-hints expect keyword-alists, so we do our checking earlier now.
 
           (cond ((keyword-value-listp val0)
-                 (value (eq (car val0) :computed-hint-replacement)))
+                 (value@par (eq (car val0) :computed-hint-replacement)))
                 (t
-                 (er soft ctx
-                     "A ~#0~[custom keyword~/computed~] hint for ~x1 has ~
-                      produced a result that is not an alternating list of ~
-                      keywords and values, (str :key1 val1 ... :keyn valn).  ~
-                      That result, ~x2, is thus illegal."
-                     (if custom-keyword-alist 0 1)
-                     str
-                     val0))))
+                 (er@par soft ctx
+                   "A ~#0~[custom keyword~/computed~] hint for ~x1 has ~
+                    produced a result that is not an alternating list of ~
+                    keywords and values, (str :key1 val1 ... :keyn valn).  ~
+                    That result, ~x2, is thus illegal."
+                   (if custom-keyword-alist 0 1)
+                   str
+                   val0))))
          (chr
           (cond
-           ((null chr-p) (value :irrelevant)) ; chr is not used
+           ((null chr-p) (value@par :irrelevant)) ; chr is not used
            (custom-keyword-alist
-            (er soft
-                (msg "a custom keyword hint for ~x0"
-                     str)
-                "The hint ~x0 produced a :COMPUTED-HINT-REPLACEMENT value as ~
-                 part of its result.  It is not permitted for custom keyword ~
-                 hints to produce such a value (only computed hints are ~
-                 allowed to do that). The result produced was ~x1."
-                (cons str
-                      (cadr (fargn term 1)))
-                val0))
+            (er@par soft
+              (msg "a custom keyword hint for ~x0"
+                   str)
+              "The hint ~x0 produced a :COMPUTED-HINT-REPLACEMENT value as ~
+               part of its result.  It is not permitted for custom keyword ~
+               hints to produce such a value (only computed hints are allowed ~
+               to do that). The result produced was ~x1."
+              (cons str
+                    (cadr (fargn term 1)))
+              val0))
            ((not (consp (cdr val0)))
-            (er soft
-                (msg
-                 "a computed hint for ~x0:  The computed hint ~% ~q1 produced ~
-                  the non-nil result~%~y2.  But this is an illegal value"
-                 str
-                 (untranslate term nil wrld)
-                 val0)
-                "The :COMPUTED-HINT-REPLACEMENT keyword must be followed by a ~
-                 list whose first element is NIL, T, or a list of terms.  The ~
-                 remaining elements are to be keyword/value pairs."))
+            (er@par soft
+              (msg
+               "a computed hint for ~x0:  The computed hint ~% ~q1 produced ~
+                the non-nil result~%~y2.  But this is an illegal value"
+               str
+               (untranslate term nil wrld)
+               val0)
+              "The :COMPUTED-HINT-REPLACEMENT keyword must be followed by a ~
+               list whose first element is NIL, T, or a list of terms.  The ~
+               remaining elements are to be keyword/value pairs."))
            ((or (eq (cadr val0) nil) (eq (cadr val0) t))
-            (value (cadr val0)))
+            (value@par (cadr val0)))
            (t 
-            (translate-hint-expressions
+            (translate-hint-expressions@par
              (cons "Computed hint auto-generated for "
                    name-tree)
              (cadr val0)
              hint-type 'auto-generated-hint wrld state))))
-         (val1 (value (if chr-p (cddr val0) val0))))
+         (val1 (value@par (if chr-p (cddr val0) val0))))
         (cond
          ((null val1)
-          (value nil))
+          (value@par nil))
          (t
-          (er-let*
+          (er-let*@par
            ((val (cond ((and (keyword-value-listp val1)
                              (assoc-keyword :ERROR val1))
 
@@ -18399,22 +18675,22 @@
 ; than translate the whole hint we pick out the :ERROR msg and print it
 ; directly.
 
-                        (translate-error-hint
+                        (translate-error-hint@par
                          (cadr (assoc-keyword :ERROR val1))
                          (msg "a ~#0~[custom keyword~/computed~] hint for ~x1"
                               (if custom-keyword-alist 0 1)
                               str)
                          wrld
                          state))
-                       (t (apply-override-hints
+                       (t (apply-override-hints@par
                            override-hints cl-id clause hist pspv ctx wrld
                            stable-under-simplificationp clause-list processor
                            val1 state)))))
            (cond
             ((null val)
-             (value nil))
+             (value@par nil))
             (t
-             (er-let*
+             (er-let*@par
               ((temp
 
 ; Explanation of the call of translate-hint below: The val computed is supposed
@@ -18431,7 +18707,7 @@
 ; The msg below is the context of any error message generated by this
 ; translate-hint.  It will be printed followed by a colon.
 
-                (translate-hint
+                (translate-hint@par
                  name-tree
                  (cons str val)
                  hint-type
@@ -18456,16 +18732,16 @@
                  wrld state)))
               (cond
                ((eq (car temp) 'eval-and-translate-hint-expression)
-                (eval-and-translate-hint-expression
+                (eval-and-translate-hint-expression@par
                  (cdr temp)
                  cl-id clause wrld stable-under-simplificationp hist pspv
                  clause-list processor keyword-alist hint-type
                  nil ; we have already dealt with the override-hints
                  ctx state))
-               (chr-p (value (list* :computed-hint-replacement
-                                    chr
-                                    (cdr temp))))
-               (t (value (cdr temp))))))))))))))))
+               (chr-p (value@par (list* :computed-hint-replacement
+                                        chr
+                                        (cdr temp))))
+               (t (value@par (cdr temp))))))))))))))))
 
 (deflabel goal-spec
   :doc
@@ -21806,22 +22082,23 @@
                          ctx wrld state event-form)))))
 
 (defun set-override-hints-fn (lst at-end ctx wrld state)
-  (er-let* ((tlst (translate-override-hints 'override-hints lst ctx wrld
-                                            state))
-            (new (case at-end
-                   ((t)
-                    (value (append (override-hints wrld) tlst)))
-                   ((nil)
-                    (value (append tlst (override-hints wrld))))
-                   (:clear
-                    (value tlst))
-                   (:remove
-                    (let ((old (override-hints wrld)))
-                      (value (set-difference-equal old tlst))))
-                   (otherwise
-                    (er soft ctx
-                        "Unrecognized operation in ~x0: ~x1."
-                        'set-override-hints-fn at-end)))))
-           (er-progn
-            (table-fn 'default-hints-table (list :override (kwote new)) state nil)
-            (table-fn 'default-hints-table (list :override) state nil))))
+  (er-let*
+   ((tlst (translate-override-hints 'override-hints lst ctx wrld
+                                    state))
+    (new (case at-end
+           ((t)
+            (value (append (override-hints wrld) tlst)))
+           ((nil)
+            (value (append tlst (override-hints wrld))))
+           (:clear
+            (value tlst))
+           (:remove
+            (let ((old (override-hints wrld)))
+              (value (set-difference-equal old tlst))))
+           (otherwise
+            (er soft ctx
+                "Unrecognized operation in ~x0: ~x1."
+                'set-override-hints-fn at-end)))))
+   (er-progn
+    (table-fn 'default-hints-table (list :override (kwote new)) state nil)
+    (table-fn 'default-hints-table (list :override) state nil))))

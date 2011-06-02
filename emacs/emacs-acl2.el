@@ -726,10 +726,12 @@ beginning of the string that was processed."
 (define-key ctl-t-keymap "\C-F" 'bury-buffer)
 
 ;; Make some functions' indentation behave as for defun.
-(put 'case       'lisp-indent-function 'defun)
-(put 'case!      'lisp-indent-function 'defun)
-(put 'case-match 'lisp-indent-function 'defun)
-(put 'dolist     'lisp-indent-function 'defun)
+(put 'case         'lisp-indent-function 'defun)
+(put 'case!        'lisp-indent-function 'defun)
+(put 'case-match   'lisp-indent-function 'defun)
+(put 'dolist       'lisp-indent-function 'defun)
+(put 'er@par       'lisp-indent-function 'defun)
+(put 'warning$@par 'lisp-indent-function 'defun)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ACL2 proof-tree support

@@ -1712,12 +1712,12 @@
 ;   (defun barp (x)
 ;     (declare (xargs :guard t))
 ;     (or (not x)
-; 	(foop x)))
+;         (foop x)))
 ;   (defstobj st
 ;     (fld :type (satisfies barp)))
 ;   (defthm barp-of-fld
 ;     (implies (stp st)
-; 	     (barp (fld st))))
+;              (barp (fld st))))
 ;   (defun my-integerp (x)
 ;     (declare (xargs :guard t))
 ;     (integerp x)))
@@ -6310,7 +6310,7 @@
   (and (consp form)
        (case (car form)
          ((defun defund defn defproxy defun-nx defun-one-output defstub
-            defmacro defabbrev)
+            defmacro defabbrev defun@par)
           (setf (gethash (cadr form) ht)
                 form))
          (defun-for-state
@@ -6329,7 +6329,7 @@
                          (nth 1 form)))))
             (setf (gethash name ht)
                   form)))
-         ((mutual-recursion progn)
+         ((mutual-recursion mutual-recursion@par progn)
           (loop for x in (cdr form)
                 do (note-fns-in-form x ht)))
          (encapsulate
@@ -6351,8 +6351,10 @@
            defconst
            defconstant
            defdoc
+           define-@par-macros
            define-trusted-clause-processor ; should handle :partial-theory
            deflabel
+           deflock
            defparameter
            defpkg
            defstruct
@@ -6997,6 +6999,16 @@ Missing functions:
                   (setq *acl2-time-limit* 0)
                   (invoke-restart 'continue))
                  (t
+
+; Parallelism wart: As of May 16, 2011, we also reset all parallelism variables
+; in Rager's modified version of the source code.  However, that strikes Rager
+; as strange, since we went through so much trouble to find out where we should
+; reset parallelism variables. So, it is now commented out, today, May 16, 
+; 2011, and we will wait to see what happens.
+
+;                  #+acl2-par
+;                  (reset-all-parallelism-variables)
+
                   (ignore-errors ; might not be in scope of catch
                     (throw 'local-top-level :our-abort))))))))
 
@@ -7070,6 +7082,33 @@ Missing functions:
                               cfb2a)
                              (t nil))))))))))))
 
+#+(and acl2-par lispworks)
+(defun spawn-extra-lispworks-listener ()
+
+; In Lispworks, we spawn a thread for the listener before we exit lp for the
+; first time, so that when we exit lp, multiprocessing does not stop.  This
+; strategy is derived from the following quote, from Martin Simmons, of 
+; Lispworks.
+;
+; "If you want it to run a normal REPL, then you could call
+; lw:start-tty-listener when acl2::lp returns.  That will make a new thread
+; running the REPL, which will prevent multiprocessing from stopping."
+;
+; Another strategy, which was never released, involved following the
+; multiprocessing example in section 15.13 of the Lispworks 6.0 manual.  To
+; quickly outline that strategy, we (1) renamed "lp" to "lp1", (2) defined "lp"
+; to spawn a thread that called "lp1", (3) saved the Lispworks image with the
+; ":multiprocessing t" flag, and (4) ensured that the Lispworks image's restart
+; function was acl2-default-restart-function, which called "lp".
+;
+; We feel that Martin's suggested implementation is simpler, and so we
+; use that.
+;
+; We rely on the following property of lw:start-tty-listener: if the tty
+; listener is already running, calling lw:start-tty-listener does nothing.
+
+  (lw:start-tty-listener))
+
 (defun lp (&rest args)
 
 ; This function can only be called from within raw lisp, because no ACL2
@@ -7078,6 +7117,19 @@ Missing functions:
 ; Common Lisps when the given file or directory does not exist, in which case
 ; our-truename will generally return nil.  Hence, we sometimes call
 ; our-truename on "" rather than on a file name.
+  
+; Parallelism wart: is the following call to reset parallelism variables needed?
+
+  #+acl2-par
+  (reset-all-parallelism-variables)
+
+; Parallelism wart: The following call to set-waterfall-parallelism should
+; remain commented out in any released version of ACL2.  Once we are done with
+; the parallelism project, we should delete this wart, and the commented code.
+
+;  #+acl2-par
+;  (unless *lp-ever-entered-p*
+;    (set-waterfall-parallelism-fn :resource-based *the-live-state*))
 
   (let ((state *the-live-state*)
         #+(and gcl (not ansi-cl))
@@ -7241,6 +7293,8 @@ Missing functions:
                 nil))))
     (fms "Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP)."
          nil *standard-co* *the-live-state* nil)
+    #+(and acl2-par lispworks)
+    (spawn-extra-lispworks-listener)
     (values)))
 
 (defmacro lp! (&rest args)

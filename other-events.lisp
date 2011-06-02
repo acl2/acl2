@@ -23187,6 +23187,12 @@
          (throw-raw-ev-fncall-trace-form
           `(throw-raw-ev-fncall
             :def
+
+; Parallelism wart: If we do not implement the better mechanism for throwing
+; and catching tags (as specified in the definition of
+; *thrown-with-raw-ev-fncall-count*), we should modify this definition of
+; throw-raw-ev-fncall to also set the variable *thrown-with-raw-ev-fncall*.
+
             (throw-raw-ev-fncall (val) (throw 'raw-ev-fncall val))
             :multiplicity
             1
@@ -24598,7 +24604,7 @@
                                    (list 'quote new)))
                    (value new))))))))))
 
-(defun add-custom-keyword-hint-fn (key uterm1 uterm2 state)
+(defun@par add-custom-keyword-hint-fn (key uterm1 uterm2 state)
 
 ; We translate uterm1 and uterm2 to check the syntactic requirements and we
 ; cause errors if we don't like what we see.  BUT we store the untranslated
@@ -24626,7 +24632,9 @@
     (er-let*
       ((term1 (translate-simple-or-error-triple uterm1 ctx world state))
        (term2 (translate uterm2
-                         *error-triple-sig*
+                         (serial-first-form-parallel-second-form@par
+                          *error-triple-sig*
+                          *cmp-sig*)
                          nil
                          '(state)
                          ctx world state)))

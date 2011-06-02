@@ -8450,53 +8450,74 @@
   (list "" "~@*" "~@*" "~@*"
          (tilde-*-ancestors-stack-msg1 0 ancestors wrld evisc-tuple)))
 
-(defun brkpt1 (lemma target unify-subst type-alist ancestors initial-ttree gstack state)
-  (brr-wormhole
-   '(lambda (whs)
-      (set-wormhole-entry-code
-       whs
-       (if (and (f-get-global 'gstackp state)
-                (assoc-equal (access rewrite-rule lemma :rune)
-                             (cdr (assoc-eq 'brr-monitored-runes
-                                            (wormhole-data whs)))))
-           :ENTER
+(defun brkpt1 (lemma target unify-subst type-alist ancestors initial-ttree
+                     gstack state)
+
+; Parallelism wart: Since we lock the use of wormholes, brr might be usable
+; within the parallelized waterfall.  However, since locks can serialize
+; computation, we leave brr disabled for now.  Kaufmann has the following
+; reaction to using brr and waterfall parallelism at the same time:
+
+;;; "My immediate reaction is that if someone wants to use brr, they should
+;;; turn off parallelism.  I'd probably even make it illegal to have both
+;;; waterfall-parallelism enabled and :brr t at the same time."
+
+; Parallelism wart: cause an error when a user tries to enable parallelism and
+; brr is enabled.  Also cause an error when enabling brr and 
+; waterfall-parallism is enabled.
+
+  (cond
+   #+acl2-par ; test is always false anyhow when #-acl2-par
+   ((f-get-global 'waterfall-parallelism state)
+    nil)
+   (t
+    (brr-wormhole
+     '(lambda (whs)
+        (set-wormhole-entry-code
+         whs
+         (if (and (f-get-global 'gstackp state)
+                  (assoc-equal (access rewrite-rule lemma :rune)
+                               (cdr (assoc-eq 'brr-monitored-runes
+                                              (wormhole-data whs)))))
+             :ENTER
            :SKIP)))
-   `((brr-gstack . ,gstack)
-     (brr-alist . ((lemma . ,lemma)
-                   (target . ,target)
-                   (unify-subst . ,unify-subst)
-                   (type-alist . ,type-alist)
-                   (ancestors . ,ancestors)
-                   (initial-ttree . ,initial-ttree))))
-   '(pprogn
-     (push-brr-stack-frame state)
-     (put-brr-local 'depth (1+ (or (get-brr-local 'depth state) 0)) state)
-     (let ((pair (assoc-equal (access rewrite-rule
-                                      (get-brr-local 'lemma state)
-                                      :rune)
-                              (get-brr-global 'brr-monitored-runes state))))
+     `((brr-gstack . ,gstack)
+       (brr-alist . ((lemma . ,lemma)
+                     (target . ,target)
+                     (unify-subst . ,unify-subst)
+                     (type-alist . ,type-alist)
+                     (ancestors . ,ancestors)
+                     (initial-ttree . ,initial-ttree))))
+     '(pprogn
+       (push-brr-stack-frame state)
+       (put-brr-local 'depth (1+ (or (get-brr-local 'depth state) 0)) state)
+       (let ((pair (assoc-equal (access rewrite-rule
+                                        (get-brr-local 'lemma state)
+                                        :rune)
+                                (get-brr-global 'brr-monitored-runes state))))
 ; We know pair is non-nil because of the entrance test on wormhole above
-       (er-let*
-        ((okp (eval-break-condition (car pair) (cadr pair) 'wormhole state)))
-        (cond
-         (okp
-          (pprogn
-           (cond ((true-listp okp)
-                  (stuff-standard-oi okp state))
-                 (t state))
-           (prog2$ (cw "~%(~F0 Breaking ~F1 on ~X23:~|"
-                       (get-brr-local 'depth state)
-                       (access rewrite-rule (get-brr-local 'lemma state) :rune)
-                       (get-brr-local 'target state)
-                       (term-evisc-tuple t state))
-                   (value t))))
-         (t (pprogn
-             (pop-brr-stack-frame state)
-             (value nil)))))))
-   '(
+         (er-let*
+          ((okp (eval-break-condition (car pair) (cadr pair) 'wormhole state)))
+          (cond
+           (okp
+            (pprogn
+             (cond ((true-listp okp)
+                    (stuff-standard-oi okp state))
+                   (t state))
+             (prog2$ (cw "~%(~F0 Breaking ~F1 on ~X23:~|"
+                         (get-brr-local 'depth state)
+                         (access rewrite-rule (get-brr-local 'lemma state)
+                                 :rune)
+                         (get-brr-local 'target state)
+                         (term-evisc-tuple t state))
+                     (value t))))
+           (t (pprogn
+               (pop-brr-stack-frame state)
+               (value nil)))))))
+     '(
 ; If you add commands, change the deflabel brr-commands.
-     (:ok
-      0 (lambda nil
+       (:ok
+        0 (lambda nil
 
 ; Note:  Proceed-from-brkpt1 is not defined in this file!  It is here used
 ; in a constant, fortunately, because it cannot yet be defined.  The problem
@@ -8504,202 +8525,210 @@
 ; the rules named by given runes, which is a procedure we can define only
 ; after introducing certain history management utilities.
 
-          (proceed-from-brkpt1 'silent t :ok state)))
-     (:go
-      0 (lambda nil
-          (proceed-from-brkpt1 'print t :go state)))
-     (:eval
-      0 (lambda nil
-          (proceed-from-brkpt1 'break t :eval state)))
-     (:ok!
-      0 (lambda nil
-          (proceed-from-brkpt1 'silent nil :ok! state)))
-     (:go!
-      0 (lambda nil
-          (proceed-from-brkpt1 'print nil :go! state)))
-     (:eval!
-      0 (lambda nil
-          (proceed-from-brkpt1 'break nil :eval! state)))
-     (:ok$
-      1 (lambda (runes)
-          (proceed-from-brkpt1 'silent runes :ok$ state)))
-     (:go$
-      1 (lambda (runes)
-          (proceed-from-brkpt1 'print runes :go$ state)))
-     (:eval$
-      1 (lambda (runes)
-          (proceed-from-brkpt1 'break runes :eval$ state)))
-     (:q
-      0 (lambda nil
-          (prog2$ (cw "Proceed with some flavor of :ok, :go, or :eval, or use ~
+            (proceed-from-brkpt1 'silent t :ok state)))
+       (:go
+        0 (lambda nil
+            (proceed-from-brkpt1 'print t :go state)))
+       (:eval
+        0 (lambda nil
+            (proceed-from-brkpt1 'break t :eval state)))
+       (:ok!
+        0 (lambda nil
+            (proceed-from-brkpt1 'silent nil :ok! state)))
+       (:go!
+        0 (lambda nil
+            (proceed-from-brkpt1 'print nil :go! state)))
+       (:eval!
+        0 (lambda nil
+            (proceed-from-brkpt1 'break nil :eval! state)))
+       (:ok$
+        1 (lambda (runes)
+            (proceed-from-brkpt1 'silent runes :ok$ state)))
+       (:go$
+        1 (lambda (runes)
+            (proceed-from-brkpt1 'print runes :go$ state)))
+       (:eval$
+        1 (lambda (runes)
+            (proceed-from-brkpt1 'break runes :eval$ state)))
+       (:q
+        0 (lambda nil
+            (prog2$ (cw "Proceed with some flavor of :ok, :go, or :eval, or use ~
                        :p! to pop or :a! to abort.~%")
-                  (value :invisible))))
-     (:target
-      0 (lambda nil
-          (prog2$ (cw "~x0~|" (get-brr-local 'target state))
-                  (value :invisible))))
-     (:hyps
-      0 (lambda nil
-          (prog2$
-           (cw "~x0~|"
-               (access rewrite-rule (get-brr-local 'lemma state) :hyps))
-           (value :invisible))))
-     (:hyp
-      1 (lambda (n)
-          (cond
-           ((and (integerp n)
-                 (>= n 1)
-                 (<= n (length (access rewrite-rule (get-brr-local 'lemma state) :hyps))))
-            (prog2$ (cw "~X01~|"
-                        (nth (1- n) (access rewrite-rule (get-brr-local 'lemma state) :hyps))
-                        nil)
-                    (value :invisible)))
-           (t (er soft :HYP
-                  ":HYP must be given an integer argument between 1 and ~x0."
-                  (length (access rewrite-rule (get-brr-local 'lemma state) :hyps)))))))
-     (:lhs
-      0 (lambda nil
-          (prog2$
-           (cw "~x0~|"
-               (access rewrite-rule (get-brr-local 'lemma state) :lhs))
-           (value :invisible))))
-     (:rhs
-      0 (lambda nil
-          (prog2$
-           (cw "~x0~|"
-               (access rewrite-rule (get-brr-local 'lemma state) :rhs))
-           (value :invisible))))
-     (:unify-subst
-      0 (lambda nil
-          (prog2$
-           (cw "~*0"
-               (tilde-*-alist-phrase (get-brr-local 'unify-subst state)
-                                     (term-evisc-tuple t state)
-                                     5))
-           (value :invisible))))
-     (:type-alist
-      0 (lambda nil
-          (prog2$
-           (cw "~%Decoded type-alist:~%")
-           (prog2$
-            (print-type-alist-segments
-             (type-alist-segments (get-brr-local 'type-alist state) nil)
-             (w state))
+                    (value :invisible))))
+       (:target
+        0 (lambda nil
+            (prog2$ (cw "~x0~|" (get-brr-local 'target state))
+                    (value :invisible))))
+       (:hyps
+        0 (lambda nil
             (prog2$
-             (cw "~%==========~%Use ~x0 to see actual type-alist.~%"
-                 '(get-brr-local 'type-alist state))
-             (value :invisible))))))
-     (:ancestors
-      0 (lambda nil
-          (prog2$
-           (cw "Ancestors stack (from first backchain (0) to ~
-                current):~%~*0~%Use ~x1 to see actual ancestors stack.~%"
-               (tilde-*-ancestors-stack-msg
-                (get-brr-local 'ancestors state)
-                (w state)
-                (term-evisc-tuple t state))
-               '(get-brr-local 'ancestors state))
-           (value :invisible))))
-     (:initial-ttree
-      0 (lambda nil
-          (prog2$
-           (cw "~x0~|"
-               (get-brr-local 'initial-ttree state))
-           (value :invisible))))
-     (:final-ttree
-      0 (lambda nil
-          (prog2$
-           (cw "~F0 has not yet been :EVALed.~%"
-               (access rewrite-rule (get-brr-local 'lemma state) :rune))
-           (value :invisible))))
-     (:rewritten-rhs
-      0 (lambda nil
-          (prog2$
-           (cw "~F0 has not yet been :EVALed.~%"
-               (access rewrite-rule (get-brr-local 'lemma state) :rune))
-           (value :invisible))))
-     (:failure-reason
-      0 (lambda nil
-          (prog2$
-           (cw "~F0 has not yet been :EVALed.~%"
-               (access rewrite-rule (get-brr-local 'lemma state) :rune))
-           (value :invisible))))
-     (:wonp
-      0 (lambda nil
-          (prog2$
-           (cw "~F0 has not yet been :EVALed.~%"
-               (access rewrite-rule (get-brr-local 'lemma state) :rune))
-           (value :invisible))))
-     (:path
-      0 (lambda nil
-          (prog2$ (cw-gstack)
-                  (value :invisible))))
-     (:frame
-      1 (lambda (n)
-          (let ((rgstack (reverse (get-brr-global 'brr-gstack state))))
+             (cw "~x0~|"
+                 (access rewrite-rule (get-brr-local 'lemma state) :hyps))
+             (value :invisible))))
+       (:hyp
+        1 (lambda (n)
             (cond
              ((and (integerp n)
                    (>= n 1)
-                   (<= n (length rgstack)))
-              (prog2$
-               (cw-gframe n
-                          (if (= n 1)
-                              nil 
-                              (access gframe (nth (- n 2) rgstack) :sys-fn))
-                          (nth (- n 1) rgstack)
+                   (<= n (length (access rewrite-rule (get-brr-local 'lemma state) :hyps))))
+              (prog2$ (cw "~X01~|"
+                          (nth (1- n) (access rewrite-rule (get-brr-local 'lemma state) :hyps))
                           nil)
-               (value :invisible)))
-             (t (er soft :frame
-                    ":FRAME must be given an integer argument between 1 and ~x0."
-                    (length rgstack)))))))
-     (:top
-      0 (lambda nil
-          (prog2$
-           (cw-gframe 1 nil (car (reverse (get-brr-global 'brr-gstack state))) nil)
-           (value :invisible))))
-     (:help
-      0 (lambda nil
-          (doc 'brr-commands)))
-     (:standard-help 0 help))))
+                      (value :invisible)))
+             (t (er soft :HYP
+                    ":HYP must be given an integer argument between 1 and ~x0."
+                    (length (access rewrite-rule (get-brr-local 'lemma state) :hyps)))))))
+       (:lhs
+        0 (lambda nil
+            (prog2$
+             (cw "~x0~|"
+                 (access rewrite-rule (get-brr-local 'lemma state) :lhs))
+             (value :invisible))))
+       (:rhs
+        0 (lambda nil
+            (prog2$
+             (cw "~x0~|"
+                 (access rewrite-rule (get-brr-local 'lemma state) :rhs))
+             (value :invisible))))
+       (:unify-subst
+        0 (lambda nil
+            (prog2$
+             (cw "~*0"
+                 (tilde-*-alist-phrase (get-brr-local 'unify-subst state)
+                                       (term-evisc-tuple t state)
+                                       5))
+             (value :invisible))))
+       (:type-alist
+        0 (lambda nil
+            (prog2$
+             (cw "~%Decoded type-alist:~%")
+             (prog2$
+              (print-type-alist-segments
+               (type-alist-segments (get-brr-local 'type-alist state) nil)
+               (w state))
+              (prog2$
+               (cw "~%==========~%Use ~x0 to see actual type-alist.~%"
+                   '(get-brr-local 'type-alist state))
+               (value :invisible))))))
+       (:ancestors
+        0 (lambda nil
+            (prog2$
+             (cw "Ancestors stack (from first backchain (0) to ~
+                current):~%~*0~%Use ~x1 to see actual ancestors stack.~%"
+                 (tilde-*-ancestors-stack-msg
+                  (get-brr-local 'ancestors state)
+                  (w state)
+                  (term-evisc-tuple t state))
+                 '(get-brr-local 'ancestors state))
+             (value :invisible))))
+       (:initial-ttree
+        0 (lambda nil
+            (prog2$
+             (cw "~x0~|"
+                 (get-brr-local 'initial-ttree state))
+             (value :invisible))))
+       (:final-ttree
+        0 (lambda nil
+            (prog2$
+             (cw "~F0 has not yet been :EVALed.~%"
+                 (access rewrite-rule (get-brr-local 'lemma state) :rune))
+             (value :invisible))))
+       (:rewritten-rhs
+        0 (lambda nil
+            (prog2$
+             (cw "~F0 has not yet been :EVALed.~%"
+                 (access rewrite-rule (get-brr-local 'lemma state) :rune))
+             (value :invisible))))
+       (:failure-reason
+        0 (lambda nil
+            (prog2$
+             (cw "~F0 has not yet been :EVALed.~%"
+                 (access rewrite-rule (get-brr-local 'lemma state) :rune))
+             (value :invisible))))
+       (:wonp
+        0 (lambda nil
+            (prog2$
+             (cw "~F0 has not yet been :EVALed.~%"
+                 (access rewrite-rule (get-brr-local 'lemma state) :rune))
+             (value :invisible))))
+       (:path
+        0 (lambda nil
+            (prog2$ (cw-gstack)
+                    (value :invisible))))
+       (:frame
+        1 (lambda (n)
+            (let ((rgstack (reverse (get-brr-global 'brr-gstack state))))
+              (cond
+               ((and (integerp n)
+                     (>= n 1)
+                     (<= n (length rgstack)))
+                (prog2$
+                 (cw-gframe n
+                            (if (= n 1)
+                                nil 
+                              (access gframe (nth (- n 2) rgstack) :sys-fn))
+                            (nth (- n 1) rgstack)
+                            nil)
+                 (value :invisible)))
+               (t (er soft :frame
+                      ":FRAME must be given an integer argument between 1 and ~x0."
+                      (length rgstack)))))))
+       (:top
+        0 (lambda nil
+            (prog2$
+             (cw-gframe 1 nil (car (reverse (get-brr-global 'brr-gstack state))) nil)
+             (value :invisible))))
+       (:help
+        0 (lambda nil
+            (doc 'brr-commands)))
+       (:standard-help 0 help))))))
 
 (defun brkpt2 (wonp failure-reason unify-subst gstack rewritten-rhs final-ttree
                     rcnst state)
-  (brr-wormhole
-   '(lambda (whs)
-      (set-wormhole-entry-code
-       whs
-       (if (and (f-get-global 'gstackp state)
-                (assoc-equal gstack
-                             (cdr (assoc-eq 'brr-stack (wormhole-data whs)))))
-           :ENTER
+
+; Parallelism wart: see parallelism warts in brkpt1.
+
+  (cond
+   #+acl2-par ; test is always false anyhow when #-acl2-par
+   ((f-get-global 'waterfall-parallelism state)
+    nil)
+   (t
+    (brr-wormhole
+     '(lambda (whs)
+        (set-wormhole-entry-code
+         whs
+         (if (and (f-get-global 'gstackp state)
+                  (assoc-equal gstack
+                               (cdr (assoc-eq 'brr-stack (wormhole-data whs)))))
+             :ENTER
            :SKIP)))
-   `((brr-gstack . ,gstack)
-     (brr-alist . ((wonp . ,wonp)
-                   (failure-reason . ,failure-reason)
-                   (unify-subst . ,unify-subst) ; maybe changed
-                   (rewritten-rhs . ,rewritten-rhs)
-                   (rcnst . ,rcnst)
-                   (final-ttree . ,final-ttree))))
-   '(cond
-     ((eq (get-brr-local 'action state) 'silent)
-      (prog2$ (cw "~F0)~%" (get-brr-local 'depth state))
-              (pprogn
-               (f-put-global 'brr-monitored-runes
-                             (get-brr-local 'saved-brr-monitored-runes state)
-                             state)
-               (pop-brr-stack-frame state)
-               (value nil))))
-     ((eq (get-brr-local 'action state) 'print)
-      (pprogn
-       (put-brr-local-lst (f-get-global 'brr-alist state) state)
-       (prog2$ (if (get-brr-local 'wonp state)
-                   (cw "~%~F0 ~F1 produced ~X23.~|~F0)~%" 
-                       (get-brr-local 'depth state)
-                       (access rewrite-rule
-                               (get-brr-local 'lemma state)
-                               :rune)
-                       (get-brr-local 'rewritten-rhs state)
-                       (term-evisc-tuple t state))
+     `((brr-gstack . ,gstack)
+       (brr-alist . ((wonp . ,wonp)
+                     (failure-reason . ,failure-reason)
+                     (unify-subst . ,unify-subst) ; maybe changed
+                     (rewritten-rhs . ,rewritten-rhs)
+                     (rcnst . ,rcnst)
+                     (final-ttree . ,final-ttree))))
+     '(cond
+       ((eq (get-brr-local 'action state) 'silent)
+        (prog2$ (cw "~F0)~%" (get-brr-local 'depth state))
+                (pprogn
+                 (f-put-global 'brr-monitored-runes
+                               (get-brr-local 'saved-brr-monitored-runes state)
+                               state)
+                 (pop-brr-stack-frame state)
+                 (value nil))))
+       ((eq (get-brr-local 'action state) 'print)
+        (pprogn
+         (put-brr-local-lst (f-get-global 'brr-alist state) state)
+         (prog2$ (if (get-brr-local 'wonp state)
+                     (cw "~%~F0 ~F1 produced ~X23.~|~F0)~%" 
+                         (get-brr-local 'depth state)
+                         (access rewrite-rule
+                                 (get-brr-local 'lemma state)
+                                 :rune)
+                         (get-brr-local 'rewritten-rhs state)
+                         (term-evisc-tuple t state))
                    (cw "~%~F0x ~F1 failed because ~@2~|~F0)~%" 
                        (get-brr-local 'depth state)
                        (access rewrite-rule
@@ -8711,172 +8740,172 @@
                         (get-brr-local 'unify-subst state)
                         (term-evisc-tuple t state)
                         (free-vars-display-limit state))))
-               (pprogn
-                (f-put-global 'brr-monitored-runes
-                              (get-brr-local 'saved-brr-monitored-runes state)
-                              state)
-                (pop-brr-stack-frame state)
-                (value nil)))))
-     (t (pprogn
-         (put-brr-local-lst (f-get-global 'brr-alist state) state)
-         (er-progn
-          (set-standard-oi
-           (get-brr-local 'saved-standard-oi state)
-           state)
-          (cond ((consp (f-get-global 'standard-oi state))
-                 (set-ld-pre-eval-print t state))
-                (t (value nil)))
-          (pprogn (f-put-global 'brr-monitored-runes
-                                (get-brr-local 'saved-brr-monitored-runes
-                                               state)
+                 (pprogn
+                  (f-put-global 'brr-monitored-runes
+                                (get-brr-local 'saved-brr-monitored-runes state)
                                 state)
-                  (prog2$
-                   (if (get-brr-local 'wonp state)
-                       (cw "~%~F0! ~F1 produced ~X23.~|~%"
+                  (pop-brr-stack-frame state)
+                  (value nil)))))
+       (t (pprogn
+           (put-brr-local-lst (f-get-global 'brr-alist state) state)
+           (er-progn
+            (set-standard-oi
+             (get-brr-local 'saved-standard-oi state)
+             state)
+            (cond ((consp (f-get-global 'standard-oi state))
+                   (set-ld-pre-eval-print t state))
+                  (t (value nil)))
+            (pprogn (f-put-global 'brr-monitored-runes
+                                  (get-brr-local 'saved-brr-monitored-runes
+                                                 state)
+                                  state)
+                    (prog2$
+                     (if (get-brr-local 'wonp state)
+                         (cw "~%~F0! ~F1 produced ~X23.~|~%"
+                             (get-brr-local 'depth state)
+                             (access rewrite-rule
+                                     (get-brr-local 'lemma state)
+                                     :rune)
+                             (get-brr-local 'rewritten-rhs state)
+                             (term-evisc-tuple t state))
+                       (cw "~%~F0x ~F1 failed because ~@2~|~%"
                            (get-brr-local 'depth state)
                            (access rewrite-rule
                                    (get-brr-local 'lemma state)
                                    :rune)
-                           (get-brr-local 'rewritten-rhs state)
-                           (term-evisc-tuple t state))
-                     (cw "~%~F0x ~F1 failed because ~@2~|~%"
-                         (get-brr-local 'depth state)
-                         (access rewrite-rule
-                                 (get-brr-local 'lemma state)
-                                 :rune)
-                         (tilde-@-failure-reason-phrase
-                          (get-brr-local 'failure-reason state)
-                          1
-                          (get-brr-local 'unify-subst state)
-                          (term-evisc-tuple t state)
-                          (free-vars-display-limit state))))
-                   (value t)))))))
-   '(
+                           (tilde-@-failure-reason-phrase
+                            (get-brr-local 'failure-reason state)
+                            1
+                            (get-brr-local 'unify-subst state)
+                            (term-evisc-tuple t state)
+                            (free-vars-display-limit state))))
+                     (value t)))))))
+     '(
 ; If you add commands, change the deflabel brr-commands.     
-     (:ok 0 (lambda nil 
+       (:ok 0 (lambda nil 
 
 ; Note:  Exit-brr is not yet defined because it calls proceed-from-brkpt1.
 ; See the note above about that function.
 
-                        (exit-brr state)))
-     (:eval  0 (lambda nil
-                 (prog2$ (cw "You already have run some flavor of :eval.~%")
-                         (value :invisible))))
-     (:eval!  0 (lambda nil
-                  (prog2$ (cw "You already have run some flavor of :eval.~%")
-                          (value :invisible))))
-     (:eval$  0 (lambda nil
-                  (prog2$ (cw "You already have run some flavor of :eval.~%")
-                          (value :invisible))))
-     (:go  0 (lambda nil 
+                (exit-brr state)))
+       (:eval  0 (lambda nil
+                   (prog2$ (cw "You already have run some flavor of :eval.~%")
+                           (value :invisible))))
+       (:eval!  0 (lambda nil
+                    (prog2$ (cw "You already have run some flavor of :eval.~%")
+                            (value :invisible))))
+       (:eval$  0 (lambda nil
+                    (prog2$ (cw "You already have run some flavor of :eval.~%")
+                            (value :invisible))))
+       (:go  0 (lambda nil 
 
 ; Like :ok, :man.
 
-               (exit-brr state)))
-     (:go!  0 (lambda nil (exit-brr state)))
-     (:go$  0 (lambda nil (exit-brr state)))
-     (:q  0 (lambda nil
-              (prog2$ (cw "Exit with :ok or use :p! to pop or :a! to abort.~%")
-                      (value :invisible))))
-     (:target
-      0 (lambda nil
-          (prog2$ (cw "~x0~|" (get-brr-local 'target state))
-                  (value :invisible))))
-     (:hyps
-      0 (lambda nil
-          (prog2$
-           (cw "~x0~|"
-               (access rewrite-rule (get-brr-local 'lemma state) :hyps))
-           (value :invisible))))
-     (:hyp
-      1 (lambda (n)
-          (cond
-           ((and (integerp n)
-                 (>= n 1)
-                 (<= n (length (access rewrite-rule (get-brr-local 'lemma state) :hyps))))
-            (prog2$ (cw "~X01~|"
-                        (nth (1- n) (access rewrite-rule (get-brr-local 'lemma state) :hyps))
-                        nil)
-                    (value :invisible)))
-           (t (er soft :HYP
-                  ":HYP must be given an integer argument between 1 and ~x0."
-                  (length (access rewrite-rule (get-brr-local 'lemma state) :hyps)))))))
-     (:lhs
-      0 (lambda nil
-          (prog2$
-           (cw "~x0~|"
-               (access rewrite-rule (get-brr-local 'lemma state) :lhs))
-           (value :invisible))))
-     (:rhs
-      0 (lambda nil
-          (prog2$
-           (cw "~x0~|"
-               (access rewrite-rule (get-brr-local 'lemma state) :rhs))
-           (value :invisible))))
-     (:unify-subst
-      0 (lambda nil
-          (prog2$
-           (cw "~*0"
-               (tilde-*-alist-phrase (get-brr-local 'unify-subst state)
-                                     (term-evisc-tuple t state)
-                                     5))
-           (value :invisible))))
-     (:type-alist
-      0 (lambda nil
-          (prog2$
-           (cw "~%Decoded type-alist:~%")
-           (prog2$
-            (print-type-alist-segments
-             (type-alist-segments (get-brr-local 'type-alist state) nil)
-             (w state))
+                 (exit-brr state)))
+       (:go!  0 (lambda nil (exit-brr state)))
+       (:go$  0 (lambda nil (exit-brr state)))
+       (:q  0 (lambda nil
+                (prog2$ (cw "Exit with :ok or use :p! to pop or :a! to abort.~%")
+                        (value :invisible))))
+       (:target
+        0 (lambda nil
+            (prog2$ (cw "~x0~|" (get-brr-local 'target state))
+                    (value :invisible))))
+       (:hyps
+        0 (lambda nil
             (prog2$
-             (cw "~%==========~%Use ~x0 to see actual type-alist.~%"
-                 '(get-brr-local 'type-alist state))
-             (value :invisible))))))
-     (:ancestors
-      0 (lambda nil
-          (prog2$
-           (cw "Ancestors stack (from first backchain (0) to ~
+             (cw "~x0~|"
+                 (access rewrite-rule (get-brr-local 'lemma state) :hyps))
+             (value :invisible))))
+       (:hyp
+        1 (lambda (n)
+            (cond
+             ((and (integerp n)
+                   (>= n 1)
+                   (<= n (length (access rewrite-rule (get-brr-local 'lemma state) :hyps))))
+              (prog2$ (cw "~X01~|"
+                          (nth (1- n) (access rewrite-rule (get-brr-local 'lemma state) :hyps))
+                          nil)
+                      (value :invisible)))
+             (t (er soft :HYP
+                    ":HYP must be given an integer argument between 1 and ~x0."
+                    (length (access rewrite-rule (get-brr-local 'lemma state) :hyps)))))))
+       (:lhs
+        0 (lambda nil
+            (prog2$
+             (cw "~x0~|"
+                 (access rewrite-rule (get-brr-local 'lemma state) :lhs))
+             (value :invisible))))
+       (:rhs
+        0 (lambda nil
+            (prog2$
+             (cw "~x0~|"
+                 (access rewrite-rule (get-brr-local 'lemma state) :rhs))
+             (value :invisible))))
+       (:unify-subst
+        0 (lambda nil
+            (prog2$
+             (cw "~*0"
+                 (tilde-*-alist-phrase (get-brr-local 'unify-subst state)
+                                       (term-evisc-tuple t state)
+                                       5))
+             (value :invisible))))
+       (:type-alist
+        0 (lambda nil
+            (prog2$
+             (cw "~%Decoded type-alist:~%")
+             (prog2$
+              (print-type-alist-segments
+               (type-alist-segments (get-brr-local 'type-alist state) nil)
+               (w state))
+              (prog2$
+               (cw "~%==========~%Use ~x0 to see actual type-alist.~%"
+                   '(get-brr-local 'type-alist state))
+               (value :invisible))))))
+       (:ancestors
+        0 (lambda nil
+            (prog2$
+             (cw "Ancestors stack (from first backchain (0) to ~
                 current):~%~*0~%Use ~x1 to see actual ancestors stack.~%"
-               (tilde-*-ancestors-stack-msg
-                (get-brr-local 'ancestors state)
-                (w state)
-                (term-evisc-tuple t state))
-               '(get-brr-local 'ancestors state))
-           (value :invisible))))
-     (:initial-ttree
-      0 (lambda nil
-          (prog2$
-           (cw "~x0~|"
-               (get-brr-local 'initial-ttree state))
-           (value :invisible))))
-     (:final-ttree
-      0 (lambda nil
-          (prog2$
-           (cw "~x0~|"
-               (get-brr-local 'final-ttree state))
-           (value :invisible))))
-     (:rewritten-rhs
-      0 (lambda nil
-          (prog2$
-           (cond
-            ((or (get-brr-local 'wonp state)
-                 (member-eq (get-brr-local 'failure-reason state)
-                            '(too-many-ifs rewrite-fncallp)))
-             (cw "~x0~|" (get-brr-local 'rewritten-rhs state)))
-            (t (cw "? ~F0 failed.~%"
-                   (access rewrite-rule
-                           (get-brr-local 'lemma state)
-                           :rune))))
-           (value :invisible))))
-     (:failure-reason
-      0 (lambda nil
-          (prog2$
-           (if (get-brr-local 'wonp state)
-               (cw "? ~F0 succeeded.~%"
-                   (access rewrite-rule
-                           (get-brr-local 'lemma state)
-                           :rune))
+                 (tilde-*-ancestors-stack-msg
+                  (get-brr-local 'ancestors state)
+                  (w state)
+                  (term-evisc-tuple t state))
+                 '(get-brr-local 'ancestors state))
+             (value :invisible))))
+       (:initial-ttree
+        0 (lambda nil
+            (prog2$
+             (cw "~x0~|"
+                 (get-brr-local 'initial-ttree state))
+             (value :invisible))))
+       (:final-ttree
+        0 (lambda nil
+            (prog2$
+             (cw "~x0~|"
+                 (get-brr-local 'final-ttree state))
+             (value :invisible))))
+       (:rewritten-rhs
+        0 (lambda nil
+            (prog2$
+             (cond
+              ((or (get-brr-local 'wonp state)
+                   (member-eq (get-brr-local 'failure-reason state)
+                              '(too-many-ifs rewrite-fncallp)))
+               (cw "~x0~|" (get-brr-local 'rewritten-rhs state)))
+              (t (cw "? ~F0 failed.~%"
+                     (access rewrite-rule
+                             (get-brr-local 'lemma state)
+                             :rune))))
+             (value :invisible))))
+       (:failure-reason
+        0 (lambda nil
+            (prog2$
+             (if (get-brr-local 'wonp state)
+                 (cw "? ~F0 succeeded.~%"
+                     (access rewrite-rule
+                             (get-brr-local 'lemma state)
+                             :rune))
                (cw "~@0~|"
                    (tilde-@-failure-reason-phrase
                     (get-brr-local 'failure-reason state)
@@ -8884,38 +8913,38 @@
                     (get-brr-local 'unify-subst state)
                     (term-evisc-tuple t state)
                     (free-vars-display-limit state))))
-           (value :invisible))))
-     (:path
-      0 (lambda nil
-          (prog2$ (cw-gstack)
-                  (value :invisible))))
-     (:frame
-      1 (lambda (n)
-          (let ((rgstack (reverse (get-brr-global 'brr-gstack state))))
-            (cond
-             ((and (integerp n)
-                   (>= n 1)
-                   (<= n (length rgstack)))
-              (prog2$
-               (cw-gframe n
-                          (if (= n 1)
-                              nil 
+             (value :invisible))))
+       (:path
+        0 (lambda nil
+            (prog2$ (cw-gstack)
+                    (value :invisible))))
+       (:frame
+        1 (lambda (n)
+            (let ((rgstack (reverse (get-brr-global 'brr-gstack state))))
+              (cond
+               ((and (integerp n)
+                     (>= n 1)
+                     (<= n (length rgstack)))
+                (prog2$
+                 (cw-gframe n
+                            (if (= n 1)
+                                nil 
                               (access gframe (nth (- n 2) rgstack) :sys-fn))
-                          (nth (- n 1) rgstack)
-                          nil)
-               (value :invisible)))
-             (t (er soft :frame
-                    ":FRAME must be given an integer argument between 1 and ~x0."
-                    (length rgstack)))))))
-     (:top
-      0 (lambda nil
-          (prog2$
-           (cw-gframe 1 nil (car (reverse (get-brr-global 'brr-gstack state))) nil)
-           (value :invisible))))
-     (:help
-      0 (lambda nil
-          (doc 'brr-commands)))
-     (:standard-help 0 help))))
+                            (nth (- n 1) rgstack)
+                            nil)
+                 (value :invisible)))
+               (t (er soft :frame
+                      ":FRAME must be given an integer argument between 1 and ~x0."
+                      (length rgstack)))))))
+       (:top
+        0 (lambda nil
+            (prog2$
+             (cw-gframe 1 nil (car (reverse (get-brr-global 'brr-gstack state))) nil)
+             (value :invisible))))
+       (:help
+        0 (lambda nil
+            (doc 'brr-commands)))
+       (:standard-help 0 help))))))
 
 ; We now develop some of the code for an implementation of an idea put
 ; forward by Diederik Verkest, namely, that patterns should be allowed
@@ -11847,11 +11876,27 @@
           (bad-synp-hyp-msg (cdr hyps) bound-vars all-vars-bound-p wrld)))))
 
 (defmacro sl-let (vars form &rest rest)
+
+; Keep in sync with sl-let@par.
+
   (let ((new-vars (cons 'step-limit vars)))
     `(mv-let ,new-vars
              ,form
              (declare (type (signed-byte 30) step-limit))
              ,@rest)))
+
+#+acl2-par
+(defmacro sl-let@par (vars form &rest rest)
+
+; Keep in sync with sl-let.
+
+  (declare (xargs :guard ; sanity check inherited from mv-let@par
+                  (member-eq 'state vars)))
+  (let ((new-vars (cons 'step-limit vars)))
+    `(mv-let@par ,new-vars
+                 ,form
+                 (declare (type (signed-byte 30) step-limit))
+                 ,@rest)))
 
 (defmacro rewrite-entry-extending-failure (unify-subst failure-reason form
                                                        &rest args)

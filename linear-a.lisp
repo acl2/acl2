@@ -540,7 +540,19 @@
 ; as a 'lemma in the 'accumulated-ttree of the final state.)  This encourages
 ; us to cons a new ttree into the accumulator every time we do output.
 
-(defun accumulate-ttree-and-step-limit-into-state (ttree step-limit state)
+#+(and acl2-par (not acl2-loop-only))
+(deflock *ttree-lock*)
+
+#+(and acl2-par (not acl2-loop-only))
+(defmacro with-ttree-lock (&rest args)
+  `(with-lock *ttree-lock*
+              ,@args))
+
+#-(and acl2-par (not acl2-loop-only))
+(defmacro with-ttree-lock (&rest args)
+  `(progn$ ,@args))
+
+(defun@par accumulate-ttree-and-step-limit-into-state (ttree step-limit state)
 
 ; We add ttree to the 'accumulated-ttree in state and return an error triple
 ; whose value is ttree.  Before Version_3.2 we handled tag-trees a bit
@@ -550,17 +562,24 @@
 
 ; We similarly save the given step-limit in state, unless its value is :skip.
 
-  (pprogn
-   (cond ((eq step-limit :skip) state)
-         (t (f-put-global 'last-step-limit step-limit state)))
+  (declare (ignorable state))
+  (pprogn@par
+   (cond ((eq step-limit :skip) (state-mac@par))
+         (t (f-put-global@par 'last-step-limit step-limit state)))
    (cond
-    ((eq ttree nil) (value nil))
-    (t (pprogn
-        (f-put-global 'accumulated-ttree
-                      (cons-tag-trees ttree
-                                      (f-get-global 'accumulated-ttree state))
-                      state)
-        (value ttree))))))
+    ((eq ttree nil) (value@par nil))
+    (t (pprogn@par
+
+; Parallelism wart: there is probably a way to accumulate the ttree that
+; doesn't involve using a raw Lisp hack, but we just use f-put-global in raw
+; Lisp for now.
+
+        (with-ttree-lock
+         (f-put-global@par 'accumulated-ttree
+                           (cons-tag-trees ttree
+                                           (f-get-global 'accumulated-ttree state))
+                           state))
+        (value@par ttree))))))
 
 (defun pts-to-ttree-lst (pts)
   (cond ((null pts) nil)

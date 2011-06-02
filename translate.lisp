@@ -2949,6 +2949,8 @@
 ; Here we convert a context-message pair (see the Essay on Context-message
 ; Pairs) to an error triple, printing an error message if one is called for.
 
+; Keep in sync with cmp-to-error-triple@par.
+
   `(mv-let (ctx msg-or-val)
            ,form
            (cond (ctx (cond (msg-or-val
@@ -2956,6 +2958,65 @@
                                       (er soft ctx "~@0" msg-or-val)))
                             (t (silent-error state))))
                  (t (value msg-or-val)))))
+
+#+acl2-par
+(defmacro cmp-to-error-triple@par (form)
+
+; Here we convert a context-message pair (see the Essay on Context-message
+; Pairs) to the #+acl2-par version of an error triple, printing an error
+; message if one is called for.
+
+; Keep in sync with cmp-to-error-triple.
+
+  `(mv-let (ctx msg-or-val)
+           ,form
+           (cond (ctx (cond (msg-or-val 
+                             (assert$ (not (eq ctx t))
+                                      (er@par soft ctx "~@0" msg-or-val)))
+                            (t (mv@par t nil state))))
+                 (t (value@par msg-or-val)))))
+
+(defmacro cmp-and-value-to-error-quadruple (form)
+
+; We convert a context-message pair and an extra-value (see the Essay on
+; Context-message Pairs) to an error quadruple (mv t value extra-value state),
+; printing an error message if one is called for.
+
+; Keep in sync with cmp-and-value-to-error-quadruple@par.
+
+  `(mv-let (ctx msg-or-val extra-value)
+           ,form
+           (cond 
+            (ctx (cond (msg-or-val
+                        (assert$ (not (eq ctx t))
+                                 (mv-let (erp val state)
+                                         (er soft ctx "~@0"
+                                             msg-or-val)
+                                         (declare (ignore erp val))
+                                         (mv t nil extra-value state))))
+                       (t (mv t nil extra-value state))))
+            (t (mv nil msg-or-val extra-value state)))))
+
+#+acl2-par
+(defmacro cmp-and-value-to-error-quadruple@par (form)
+
+; We convert a context-message pair and an extra value (see the Essay on
+; Context-message Pairs) to the #+acl2-par version of an error quadruple,
+; printing an error message if one is called for.
+
+; Keep in sync with cmp-and-value-to-error-quadruple.
+
+  `(mv-let (ctx msg-or-val extra-value)
+           ,form
+           (cond 
+            (ctx (cond (msg-or-val
+                        (assert$ (not (eq ctx t))
+                                 (mv-let (erp val)
+                                         (er@par soft ctx "~@0" msg-or-val)
+                                         (declare (ignore erp val))
+                                         (mv t nil extra-value))))
+                       (t (mv t nil extra-value))))
+            (t (mv nil msg-or-val extra-value)))))
 
 (defun er-cmp-fn (ctx msg)
   (declare (xargs :guard t))
@@ -4392,10 +4453,10 @@
 (defun chk-arglist-cmp (args chk-state ctx wrld)
   (msg-to-cmp ctx (chk-arglist-msg args chk-state wrld)))
 
-(defun chk-arglist (args chk-state ctx wrld state)
+(defun@par chk-arglist (args chk-state ctx wrld state)
   (let ((msg (chk-arglist-msg args chk-state wrld)))
-    (cond (msg (er soft ctx "~@0" msg))
-          (t (value nil)))))
+    (cond (msg (er@par soft ctx "~@0" msg))
+          (t (value@par nil)))))
 
 (defun logical-name-type (name wrld quietp)
 
@@ -6529,18 +6590,10 @@
 
   (translate11 x stobjs-out bindings known-stobjs nil x ctx w state-vars))
 
-(defun translate1 (x stobjs-out bindings known-stobjs ctx w state)
-  (mv-let (erp msg-or-val bindings)
-          (translate1-cmp x stobjs-out bindings known-stobjs ctx w
-                          (default-state-vars t))
-          (cond (erp ; erp is a ctx and val is a msg
-                 (mv-let (erp0 val state)
-                         (er soft erp
-                             "~@0"
-                             msg-or-val)
-                         (declare (ignore erp0 val))
-                         (mv t nil bindings state)))
-                (t (mv nil msg-or-val bindings state)))))
+(defun@par translate1 (x stobjs-out bindings known-stobjs ctx w state)
+  (cmp-and-value-to-error-quadruple@par
+   (translate1-cmp x stobjs-out bindings known-stobjs ctx w
+                   (default-state-vars t))))
 
 (defun collect-programs (names wrld)
 ; Names is a list of function symbols.  Collect the :program ones.
@@ -6624,7 +6677,7 @@
                          val))
                 (t (value-cmp val)))))
 
-(defun translate (x stobjs-out logic-modep known-stobjs ctx w state)
+(defun@par translate (x stobjs-out logic-modep known-stobjs ctx w state)
 
 ; This is the toplevel entry into translation throughout ACL2,
 ; excepting translate-bodies, which translates the bodies of
@@ -6651,7 +6704,7 @@
 ; chk-acceptable-defuns1) or T (meaning, all stobj names in world w).  A name
 ; is considered a stobj only if it is in this list.
 
-  (cmp-to-error-triple
+  (cmp-to-error-triple@par
    (translate-cmp x stobjs-out logic-modep known-stobjs ctx w
                   (default-state-vars t))))
 
@@ -6859,6 +6912,69 @@
                        (replace-stobjs stobjs-out val))
                  state))))))))
 
+#+acl2-par
+(defun ev-w-for-trans-eval (trans vars stobjs-out ctx state aok)
+
+; Trans is a translated term with the indicated stobjs-out, and vars is
+; (all-vars term).  We return the result of evaluating trans as an error
+; triple with possibly updated state, as described in trans-eval.
+
+; This function is called by trans-eval, and is a suitable alternative to
+; trans-eval when the term to be evaluated has already been translated by
+; translate1 with stobjs-out = :stobjs-out.
+
+; Parallelism wart: I leave the non-trivial differences between this function
+; and ev-for-trans-eval in comments, because I want to be able to easily see
+; what's missing from it.  I should remove the dead code once Kaufmann and I
+; have a look and discuss whether what I did is reasonable.
+
+  (let ((alist (cons (cons 'state 
+                           (coerce-state-to-object state))
+                     (user-stobj-alist-safe 'trans-eval vars state))))
+    (mv-let
+     (erp val ; latches
+          )
+     (ev-w trans alist (w state) (f-get-global 'safe-mode state) (gc-off state) 
+           ;; alist
+           nil aok)
+
+; The first state binding below is the state produced by the
+; evaluation of the form.  The second state is the first, but with the
+; user-stobj-alist of that state (possibly) updated to contain the
+; modified latches.  Note that we don't bother to modify the
+; user-stobj-alist if the form's output signature does not involve a
+; user-defined stobj.  The particular forms we have in mind for this
+; case are DEFSTOBJ forms and their ``undoers'' and ``re-doers''.
+; They compute the state they mean and we shouldn't mess with the
+; user-stobj-alist of their results, else we risk overturning
+; carefully computed answers by restoring old stobjs.
+
+;    (let ((state (coerce-object-to-state (cdr (car latches)))))
+;      (let ((state
+;             (cond
+;              ((user-stobjsp stobjs-out)
+;               (update-user-stobj-alist
+;                (put-assoc-eq-alist (user-stobj-alist state)
+;                                    (cdr latches))
+;                state))
+;              (t state))))
+     (cond
+      (erp
+
+; If ev caused an error, then val is a pair (str . alist) explaining
+; the error.  We will process it here (as we have already processed the
+; translate errors that might have arisen) so that all the errors that
+; might be caused by this translation and evaluation are handled within
+; this function.
+
+; Parallelism wart: Check that the above comment is true and applicable in this
+; function, even though we call ev-w instead of ev.
+       
+       (error1@par ctx (car val) (cdr val) state))
+      (t (mv nil
+             (cons stobjs-out
+                   (replace-stobjs stobjs-out val))))))))
+
 (defun trans-eval (form ctx state aok)
 
 ; Advice:  See if simple-translate-and-eval will do the job.
@@ -6949,6 +7065,8 @@
 ; Note that we call translate with logic-modep nil.  Thus, :program
 ; mode functions may appear in x.
 
+; Keep in sync with simple-translate-and-eval@par.
+
   (er-let* ((term (translate x '(nil) nil t ctx wrld state)))
 
 ; known-stobjs = t.  We expect simple-translate-and-eval to be used
@@ -6973,7 +7091,7 @@
                    (t (mv-let (erp val latches)
                               (ev term
                                   (append alist
-                                          (cons (cons 'state 
+                                          (cons (cons 'state
                                                       (coerce-state-to-object
                                                        state))
                                                 (user-stobj-alist-safe
@@ -6984,6 +7102,10 @@
                                                  state)))
                                   state nil nil aok)
                               (declare (ignore latches))
+
+; Parallelism wart: Since we ignore latches, we should be able to create a 
+; version of simple-translate-and-eval that returns cmp's.
+
                               (cond
                                (erp (pprogn
                                      (error-fms nil ctx (car val) (cdr val)
@@ -6993,9 +7115,100 @@
                                          msg)))
                                (t (value (cons term val))))))))))
 
+#+acl2-par
+(defmacro error-fms-cw (hardp ctx str alist)
+
+; Keep in sync with error-fms.
+
+  `(wormhole 'comment-window-io
+             '(lambda (whs)
+                (set-wormhole-entry-code whs :ENTER))
+             (list ,hardp ,ctx ,str ,alist)
+             '(let ((chan (f-get-global 'standard-co state)))
+                (pprogn (newline chan state)
+                        (error-fms-channel hardp ctx str alist chan state)
+                        (newline chan state)
+                        (newline chan state)))
+             :ld-verbose nil
+             :ld-pre-eval-print nil
+             :ld-prompt nil))
+
+; Parallelism wart: It could be better to call error-fms directly, as in the
+; following definition of error-fms-wormhole.  Also, delete this wart and the
+; following commented defmacro.
+
+;(defmacro error-fms-wormhole (hardp ctx str alist)
+;  `(wormhole 'comment-window-io
+;             '(lambda (whs)
+;                (set-wormhole-entry-code whs :ENTER))
+;             (list ,hardp ,ctx ,str ,alist)
+;             (error-fms hardp ctx str alist state)
+;             :ld-verbose nil
+;             :ld-pre-eval-print nil
+;             :ld-prompt nil))
+
+#+acl2-par
+(defmacro error-fms@par (&rest args)
+  `(error-fms-cw ,@args))
+
+#+acl2-par
+(defun simple-translate-and-eval@par (x alist ok-stobj-names msg ctx wrld state
+                                        aok safe-mode gc-off)
+
+; Parallelism wart: maybe explain our strategy for how this works without
+; having to call ev.
+
+; Parallelism wart: why don't we obtain safe-mode and gc-off from state?
+
+; Keep in sync with simple-translate-and-eval.
+
+  (er-let*@par
+   ((term (translate@par x '(nil) nil t ctx wrld state)))
+
+; Parallelism wart: I need to figure out why the following comment's
+; restriction exists.
+
+; known-stobjs = t.  We expect simple-translate-and-eval@par to be used only
+; when the user is granted full access to the stobjs in state (without
+; modification rights, of course).
+
+   (let ((vars (all-vars term))
+         (legal-vars (append (strip-cars alist)
+                             ok-stobj-names)))
+     (cond ((not (subsetp-eq vars legal-vars))
+            (er@par soft ctx
+              "~@0 may contain ~#1~[no variables~/only the variable ~&2~/only ~
+               the variables ~&2~], but ~x3 contains ~&4."
+              msg
+              (cond ((null legal-vars) 0)
+                    ((null (cdr legal-vars)) 1)
+                    (t 2))
+              legal-vars
+              x
+              vars))
+           (t (mv-let (erp val)
+                      (ev-w term
+                            (append alist
+                                    (user-stobj-alist-safe
+                                     'simple-translate-and-eval
+                                     (intersection-eq
+                                      ok-stobj-names
+                                      vars)
+                                     state))
+                            (w state) safe-mode gc-off nil aok)
+                      (cond
+                       (erp (pprogn@par
+                             (error-fms@par nil ctx (car val) 
+                                            (cdr val))
+                             (er@par soft ctx
+                               "~@0 could not be evaluated."
+                               msg)))
+                       (t (value@par (cons term val))))))))))
+
 (defun tilde-*-alist-phrase1 (alist evisc-tuple level)
   (cond ((null alist) nil)
-        (t (cons (msg "~t0~s1 : ~Y23~|" level (caar alist) (cdar alist) evisc-tuple)
+        (t (cons (msg "~t0~s1 : ~Y23~|" level (caar alist) (cdar alist)
+                      evisc-tuple)
                  (tilde-*-alist-phrase1 (cdr alist) evisc-tuple level )))))
 
 (defun tilde-*-alist-phrase (alist evisc-tuple level)

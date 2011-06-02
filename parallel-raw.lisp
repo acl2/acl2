@@ -211,103 +211,6 @@
 
 ; End of Essay on Parallelism Strategy
 
-; Parallelism Constants
-
-(defun core-count-raw (&optional (ctx nil) default)
-
-; If ctx is supplied, then we cause an error using the given ctx.  Otherwise we
-; return a suitable default value (see below).
-
-  #+ccl (declare (ignore ctx default))
-  #+ccl (ccl:cpu-count)
-  #-ccl
-  (if ctx
-      (er hard ctx
-          "It is illegal to call cpu-core-count in this Common Lisp ~
-           implementation.")
-
-; If the host Lisp does not provide a means for obtaining the number of cores,
-; then we simply estimate on the high side.  A high estimate is desired in
-; order to make it unlikely that we have needlessly idle cores.  We thus
-; believe that 8 cores is a reasonable estimate for early 2007; but we may well
-; want to increase this number later.
-
-    (or default 8)))
-
-(progn
-
-(defconstant *core-count*
-  (core-count-raw)
-  "The total number of CPU cores in the system.")
-
-(defconstant *unassigned-and-active-work-count-limit*
-
-; The *unassigned-and-active-work-count-limit* limits work on the *work-queue*
-; to what we think the system will be able to process in a reasonable amount of
-; time.  Suppose we have 8 CPU cores.  This means that there can be 8 active
-; work consumers, and that generally not many more than 24 pieces of
-; paralellism work are stored in the *work-queue* to be processed.  This
-; provides us the guarantee that if all worker threads were immediately to
-; finish their piece of parallelism work, that each of them would immediately
-; be able to grab another piece from the work queue.
-
-; We could increase the following coefficient from 4 and further guarantee that
-; consumers have parallelism work to process, but this would come at the
-; expense of backlogging the *work-queue".  We prefer simply to avoid the
-; otherwise parallelized computations in favor of their serial equivalents.
-
-  (* 4 *core-count*))
-
-(defconstant *total-work-limit* ; unassigned, started, resumed AND pending
-
-; The number of pieces of work in the system, *parallelism-work-count*, must be
-; less than *total-work-limit* in order to enable creation of new pieces of
-; work.  (However, we could go from 49 to 69 pieces of work when encountering a
-; pand; just not from 50 to 52.)
-
-; Why limit the amount of work in the system?  :Doc parallelism-how-to
-; (subtopic "Another Granularity Issue Related to Thread Limitations") provides
-; an example showing how cdr recursion can rapidly create threads.  That
-; example shows that if there is no limit on the amount of work we may create,
-; then eventually, many successive cdrs starting at the top will correspond to
-; waiting threads.  If we do not limit the amount of work that can be created,
-; this can exhaust the supply of Lisp threads available to process the elements
-; of the list.
-
-  (let ((val
-
-; Warning: It is possible, in principle to create (+ val
-; *max-idle-thread-count*) threads.  Presumably you'll get a hard Lisp error
-; (or seg fault!) if your Lisp cannot create that many threads.
-
-         50)
-        (bound (* 2 *core-count*)))
-    (when (< val bound)
-      (error "The variable *total-work-limit* needs to be at least ~s, i.e., ~%~
-              at least double the *core-count*.  Please redefine ~%~
-              *total-work-limit* so that it is not ~s."
-             bound
-             val))
-    val))
-
-; We don't want to spawn more worker threads (which are initially idle) when we
-; already have sufficiently many idle worker threads.  We use
-; *max-idle-thread-count* to limit this spawning in function
-; spawn-worker-threads-if-needed.
-
-(defconstant *max-idle-thread-count* (* 2 *core-count*))
-
-; *intial-threads* stores a list of threads that are considered to be part of
-; the non-threaded part of ACL2.  When terminating parallelism threads, only
-; those not appearing in this list will be terminated.  Warning: If ACL2 uses
-; parallelism during the build process, this variable could incorrectly record
-; parallelism threads as initial threads.
-
-(defvar *initial-threads* (all-threads))
-
-) ; end of constant list
-
-
 ; Parallelism Structures
 
 ; If the shape of parallelism-piece changes, update the *work-queue*
@@ -434,18 +337,6 @@
   (defvar *check-work-and-core-availability*)
   (defvar *check-core-availability-for-resuming*)
 
-; When we terminate threads due to a break and abort, we need a way to
-; terminate all threads.  We implement this by having them throw the
-; :worker-thread-no-longer-needed tag.  Unfortunately, sometimes the threads
-; are outside the scope of the associated catch, when throwing the tag would
-; cause a warning.  We avoid this warning by maintaining the dynamically-bound
-; variable *throwable-worker-thread*.  When the throwable context is entered,
-; we let a new copy of the variable into existence and set it to T.  Now, when
-; we throw :worker-thread-no-longer-needed, we only throw it if
-; *throwable-worker-thread* is non-nil.
-
-  (defvar *throwable-worker-thread* nil)
-
 ; *total-parallelism-piece-historical-count* tracks the total number of pieces
 ; of parallelism work processed over the lifetime of the ACL2 session.  It is
 ; reset whenever the parallelism variables are reset.  It is only used for
@@ -459,62 +350,6 @@
 
 ; Following are definitions of functions that help us restore the
 ; parallelism system to a stable state after an interrupt occurs.
-
-(defun throw-all-threads-in-list (thread-list)
-
-; We interrupt each of the given threads with a throw to the catch at the top
-; of consume-work-on-work-queue-when-there, which is the function called
-; by run-thread in spawn-worker-threads-if-needed.
-
-; Compare with kill-all-threads-in-list, which kills all of the given threads
-; (typically all user-produced threads), not just those self-identified as
-; being within the associated catch block.
-
-  (if (endp thread-list)
-      nil
-    (progn
-      (interrupt-thread
-       (car thread-list)
-       #'(lambda () (when *throwable-worker-thread*
-                      (throw :worker-thread-no-longer-needed nil))))
-      (throw-all-threads-in-list (cdr thread-list)))))
-
-(defun kill-all-threads-in-list (thread-list)
-
-; Compare with throw-all-threads-in-list, which uses throw instead of killing
-; threads directly, but only affects threads self identified as being within an
-; associated catch block.
-
-  (if (endp thread-list)
-      nil
-    (progn
-      (kill-thread (car thread-list))
-      (kill-all-threads-in-list (cdr thread-list)))))
-
-(defun all-threads-except-initial-threads-are-dead ()
-  #+sbcl
-  (<= (length (all-threads)) 1)
-  #-sbcl
-  (null (set-difference (all-threads) *initial-threads*)))
-
-
-(defun send-die-to-all-except-initial-threads ()
-
-; This function is evaluated only for side effect.
-
-  (let ((target-threads (set-difference (all-threads)
-                                        *initial-threads*)))
-    (throw-all-threads-in-list target-threads))
-  (thread-wait 'all-threads-except-initial-threads-are-dead))
-
-(defun kill-all-except-initial-threads ()
-
-; This function is evaluated only for side effect.
-
-  (let ((target-threads (set-difference (all-threads)
-                                        *initial-threads*)))
-    (kill-all-threads-in-list target-threads))
-  (thread-wait 'all-threads-except-initial-threads-are-dead))
 
 (defparameter *reset-parallelism-variables* nil)
 
@@ -562,13 +397,18 @@
   (setf *initial-threads* (all-threads))
 
   (setf *reset-parallelism-variables* nil)
+
+  t ; return t
 )
 
-; We reset parallelism variables as a standard part of compilation to make
-; sure the code behind declaring variables and resetting variables is
-; consistent and that we are in a stable state.
+; Parallelism wart: consider deleting the following comment and commented 
+; code.
 
-(reset-parallelism-variables)
+; Once upon a time, we reset parallelism variables as a standard part of 
+; compilation to ensure that the code behind declaring variables and resetting
+; variables is consistent and that we are in a stable state.
+
+; (reset-parallelism-variables)
 
 ;---------------------------------------------------------------------
 ; Section:  Work Consumer Code
@@ -1306,6 +1146,8 @@
           (make-list-until-non-declare (cdr x) nil)
           (mv (car x) declare-forms body)))
 
+; Parallelism wart: isn't the use of #+acl2-par in this file redundant?
+
 #+acl2-par
 (defmacro plet (&rest forms)
 
@@ -1390,3 +1232,63 @@
                          remainder-forms)
                    or-early-termination-function)
              (list 'if (cons 'or remainder-forms) t nil))))))
+
+(defun signal-semaphores (sems)
+  (if (atom sems)
+      nil
+    (progn (signal-semaphore (car sems))
+           (signal-semaphores (cdr sems)))))
+
+#+acl2-par
+(defmacro spec-mv-let (bindings computation body)
+  (assert
+   (and (true-listp body) 
+        (equal (length body) 4) 
+
+; We could easily also allow "mv?-let," but we don't for now, because we don't
+; have a need.  With work, we could also allow "let." We don't do so for now,
+; because we don't have a need, and we also don't want to a non-trivial amount
+; of work.
+
+        (or (equal (car body) 'mv-let@par)
+            (equal (car body) 'mv-let))))
+   
+  (let* ((inner-let (car body))
+         (inner-bindings (cadr body))
+         (inner-body (caddr body))
+         (ite (cadddr body)))
+    (assert (and (true-listp ite) 
+                 (equal (length ite) 4) 
+                 (equal (car ite) 'if)))
+    (let* ((test (cadr ite))
+           (true-branch (caddr ite))
+           (false-branch (cadddr ite)))
+
+; Keep variable name "the-very-obscure-feature" in sync with
+; check-vars-not-free in logical definition.
+
+      `(let ((the-very-obscure-feature (future ,computation)))
+         (,inner-let 
+          ,inner-bindings
+          ,inner-body
+          (if ,test
+              (progn (future-abort the-very-obscure-feature)
+                     ,true-branch)
+            (mv?-let ,bindings
+              (future-read the-very-obscure-feature)
+              ,false-branch)))))))
+
+; Parallelism wart: Should we make a function called "set-gc-threshold" and
+; document it in a performance section?
+
+; Parallelism wart: Should there be a documentation section called performance,
+; with links to sections "Parallelism", "Hons", and "Set-gc-threshold"?
+
+#+ccl
+(ccl:egc nil)
+
+#+ccl
+(ccl:set-lisp-heap-gc-threshold (expt 2 31)) ; a modest 2 gig. 16 is better :]
+
+#+sbcl
+(setf (sb-ext:bytes-consed-between-gcs) (1- (expt 2 31)))

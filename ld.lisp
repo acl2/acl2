@@ -1405,10 +1405,10 @@
 ; is re-entered after that throw is caught, and here we are!
 
 ; In rare cases we might get here without (1) or (2) holding -- say, after :a!.
-; But it's OK to call reset-parallelism-variables in such cases; we simply
+; But it's OK to call reset-all-parallelism-variables in such cases; we simply
 ; prefer to minimize the frequency of calls, for efficiency.
 
-    (reset-parallelism-variables))
+    (reset-all-parallelism-variables))
 
   (pprogn
     (f-put-ld-specials new-ld-specials-alist state)
@@ -17632,6 +17632,15 @@
   discussed just above, ~ilc[with-prover-step-limit] may also be used to create
   ~il[events].  Thanks to Carl Eastlund for requesting support for step-limits.
 
+  The macro ~ilc[progn$] is analogous to ~ilc[prog2$], but allows an arbitrary
+  number of arguments.  For example:
+  ~bv[]
+  ACL2 !>:trans1 (progn$ (f1 x) (f2 x) (f3 x))
+   (PROG2$ (F1 X) (PROG2$ (F2 X) (F3 X)))
+  ACL2 !>
+  ~ev[]
+  Thanks to David Rager for contributing this macro.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   The so-called ``ancestors check,'' which is used to limit backchaining, has
@@ -17804,6 +17813,10 @@
   ~st[EMACS SUPPORT]
 
   ~st[EXPERIMENTAL VERSIONS]
+
+  The parallel version (~pl[parallelism]) now supports parallel evaluation of
+  the ``waterfall'' part of the ACL2 prover; ~pl[set-waterfall-parallelism].
+  Thanks to David Rager for doing the primary design and implementation work.
 
   Among the enchancements for the HONS version (~pl[hons-and-memoization]) are
   the following.
@@ -23985,6 +23998,10 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
   #-acl2-loop-only
   (progn
+
+; Parallelism wart: It may be a good idea to reset the parallelism variables
+; in all #+acl2-par compilations before saving the image.
+
     (if (not (eql *ld-level* 0))
         (er hard 'save-exec
             "Please type :q to exit the ACL2 read-eval-print loop and then try ~

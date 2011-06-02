@@ -8988,6 +8988,20 @@
 #-acl2-loop-only
 (defvar *hard-error-returns-nilp* nil)
 
+#+(and acl2-par (not acl2-loop-only))
+(defvar 
+
+; This variable allows threads to track whether they were thrown with tag
+; RAW-EV-FNCALL.  See the implementation of futures for how this variable is
+; used.
+
+; Parallelism wart: We need to catch more than just RAW-EV-FNCALL.  Also, the
+; code that uses this variable should be converted to a scheme that doesn't use
+; special variables.  See the parallelism wart under variable
+; *thrown-with-raw-ev-fncall-count* for a demonstration of this scheme.
+
+  *thrown-with-raw-ev-fncall* nil)
+
 #-acl2-loop-only
 (defun-one-output throw-raw-ev-fncall (val)
 
@@ -9006,6 +9020,13 @@
          (interface-er "~@0"
                        (ev-fncall-msg val (w *the-live-state*))))
         (t
+
+; Parallelism wart: change the code for catching tags in the mt-future's
+; implementation to use a scheme, as specified in the parallelism wart found
+; under *thrown-with-raw-ev-fncall-count*'s definition.
+
+         #+acl2-par
+         (setf *thrown-with-raw-ev-fncall* t)
          (throw 'raw-ev-fncall val))))
 
 (defun hard-error (ctx str alist)
@@ -11277,6 +11298,9 @@
         (t (collect-cadrs-when-car-eq x (cdr alist)))))
 
 (defmacro value (x)
+
+; Keep in sync with value@par.
+
   `(mv nil ,x state))
 
 (defun value-triple-fn (form on-skip-proofs check)
@@ -12231,6 +12255,9 @@
     ,form))
 
 (defun er-progn-fn (lst)
+
+; Keep in sync with er-progn-fn@par.
+
   (declare (xargs :guard (true-listp lst)))
   (cond ((endp lst) nil)
         ((endp (cdr lst)) (car lst))
@@ -12252,6 +12279,8 @@
                              (er-progn-fn (cdr lst))))))))
 
 (defmacro er-progn (&rest lst)
+
+; Keep in sync with er-progn@par.
 
   ":Doc-Section ACL2::Programming
 
@@ -12282,6 +12311,44 @@
   (declare (xargs :guard (and (true-listp lst)
                               lst)))
   (er-progn-fn lst))
+
+#+acl2-par
+(defun er-progn-fn@par (lst)
+
+; Keep in sync with er-progn-fn.
+
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        ((endp (cdr lst)) (car lst))
+        (t (list 'mv-let
+                 '(er-progn-not-to-be-used-elsewhere-erp
+                   er-progn-not-to-be-used-elsewhere-val)
+                 (car lst)
+; Avoid possible warning after optimized compilation:
+                 '(declare (ignorable er-progn-not-to-be-used-elsewhere-val))
+                 (list 'if
+                       'er-progn-not-to-be-used-elsewhere-erp
+                       '(mv er-progn-not-to-be-used-elsewhere-erp
+                            er-progn-not-to-be-used-elsewhere-val)
+                       (list 'check-vars-not-free
+                             '(er-progn-not-to-be-used-elsewhere-erp
+                               er-progn-not-to-be-used-elsewhere-val)
+                             (er-progn-fn@par (cdr lst))))))))
+
+#+acl2-par
+(defmacro er-progn@par (&rest lst)
+
+; Keep in sync with er-progn.
+
+  ":Doc-Section ACL2::Programming
+
+  State-free version of ~ilc[er-progn].~/
+
+  ~/~/"
+
+  (declare (xargs :guard (and (true-listp lst)
+                              lst)))
+  (er-progn-fn@par lst))
 
 (defun legal-case-clausesp (tl)
   (declare (xargs :guard t))
@@ -14247,6 +14314,8 @@
 
 (defmacro pprogn (&rest lst)
 
+; Keep in sync with pprogn@par.
+
   ":Doc-Section ACL2::Programming
 
   evaluate a sequence of forms that return ~il[state]~/
@@ -14306,6 +14375,37 @@
                  (list (list 'STATE (car lst)))
                  (cons 'pprogn (cdr lst))))))
 
+(defmacro progn$ (&rest rst)
+
+  ":Doc-Section ACL2::Programming
+
+  execute a sequence of forms and return the value of the last one~/
+
+  This macro expands to a corresponding nest of calls of ~c[prog2$];
+  ~pl[prog2$].  The examples below show how this works: the first case below is
+  typical, but we conclude with two special cases.
+  ~bv[]
+  ACL2 !>:trans1 (progn$ (f1 x) (f2 x) (f3 x))
+   (PROG2$ (F1 X) (PROG2$ (F2 X) (F3 X)))
+  ACL2 !>:trans1 (progn$ (f1 x) (f2 x))
+   (PROG2$ (F1 X) (F2 X))
+  ACL2 !>:trans1 (progn$ (f1 x))
+   (F1 X)
+  ACL2 !>:trans1 (progn$)
+   NIL
+  ACL2 !>
+  ~ev[]~/~/"
+
+  (cond ((null rst) nil)
+        ((null (cdr rst)) (car rst))
+        (t (xxxjoin 'prog2$ rst))))
+
+#+acl2-par
+(defmacro pprogn@par (&rest rst)
+
+; Keep in sync with pprogn.
+
+  `(progn$ ,@rst))
 
 ; The Unwind-Protect Essay
 
@@ -22204,6 +22304,29 @@
   (cadr (assoc-keyword :default
                        (cdr (header name l)))))
 
+; Parallelism wart: once upon a time we locked all array operations.  Since
+; then, two improvements have been made to ACL2: (1) the
+; enabled-array-structure now uses unique names based on the current subgoal
+; and (2) the array implementation itself was improved to be "more" thread-safe
+; (you can compare the implementation of aset1 and other related functions in
+; ACL2 3.6.1 and ACL2 4.0 to see the change).  However, there is almost no
+; evidence that arrays are thread-safe.
+;
+; I think that we stopped locking the array operations, because the prover
+; incurred significant overhead (if I can recall correctly, it was about a 40%
+; increase in time required to certify a semi-expensive book) with locking
+; enabled.  I think that the change to enabled arrays, named (1) above, could
+; have eliminated most of this overhead.  However, further investigation is
+; needed.
+
+; For now, we do not lock any array operations, but we leave the dead code as
+; hints to ourselves that we may need to do so before we finish the parallelism
+; project.  When this wart is addressed, this dead code (which can be found by
+; searching for *acl2-par-arrays-lock*) should either be uncommented and
+; modified, or it should be removed.
+;   #+(and acl2-par (not acl2-loop-only))
+;   (deflock *acl2-par-arrays-lock*)
+
 (defun aref1 (name l n)
 
   ":Doc-Section Arrays
@@ -22243,6 +22366,9 @@
   #-acl2-loop-only
   (declare (type (unsigned-byte 31) n))
   #-acl2-loop-only
+; See comment above (for #+acl2-par) about *acl2-par-arrays-lock*:
+; (with-lock 
+;  *acl2-par-arrays-lock*
   (let ((prop (get name 'acl2-array)))
     (cond ((eq l (car prop))
            (svref (the simple-vector (car (cdr prop)))
@@ -22358,6 +22484,9 @@
                              (cons #\3 (maximum-length name l)))))
       l)))
   #-acl2-loop-only
+; See comment above (for #+acl2-par) about *acl2-par-arrays-lock*:
+; (with-lock
+;  *acl2-par-arrays-lock*
   (let* ((old (get name 'acl2-array))
          (header (header name l))
          (length (car (cadr (assoc-keyword :dimensions (cdr header)))))
@@ -22465,7 +22594,7 @@
                  (setf (aref (the (array (unsigned-byte 31) (*)) max-ar)
                              0)
                        (the (unsigned-byte 31)
-                        (- maximum-length num))))
+                            (- maximum-length num))))
             (t (setq max-ar
                      (make-array$ 1
                                   :initial-contents
@@ -22607,6 +22736,9 @@
   #-acl2-loop-only
   (declare (type (unsigned-byte 31) n))
   #-acl2-loop-only
+; See comment above (for #+acl2-par) about *acl2-par-arrays-lock*:
+; (with-lock 
+;  *acl2-par-arrays-lock*
   (let ((prop (get name 'acl2-array)))
     (cond ((eq l (car prop))
            (let* ((ar (cadr prop))
@@ -24436,6 +24568,7 @@
     chk-return-last-entry
     fchecksum-atom
     step-limit-error1
+    waterfall1-lst@par ; for #+acl2-par
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
@@ -24573,7 +24706,8 @@
     clear-pstk add-custom-keyword-hint
     initial-gstack
     acl2-unwind-protect set-well-founded-relation
-    catch-time-limit5 defuns add-default-hints!
+    catch-time-limit5 catch-time-limit5@par
+    defuns add-default-hints!
     local encapsulate remove-default-hints!
     include-book pprogn set-enforce-redundancy
     set-ignore-doc-string-error
@@ -24596,7 +24730,7 @@
     defdoc push-gframe defthmd f-get-global
     set-nu-rewriter-mode
 
-; The following were discovered after we included macros defined in
+; Most of the following were discovered after we included macros defined in
 ; #+acl2-loop-only whose definitions are missing in #-acl-loop-only.
 
     CAAR CADR CDAR CDDR CAAAR CAADR CADAR CADDR CDAAR CDADR CDDAR CDDDR
@@ -24609,6 +24743,7 @@
     UNMEMOIZE HONS-LET MEMOIZE-LET MEMOIZE ; for #+hons
     DEFUNS-STD DEFTHM-STD DEFUN-STD ; for #+:non-standard-analysis
     POR PAND PLET PARGS ; for #+acl2-par
+    SPEC-MV-LET ; for #+acl2-par
 
 ; The following were included after Version_3.4 as ACL2 continued to evolve.
 
@@ -24626,6 +24761,10 @@
     position
     catch-step-limit
     step-limit-error
+    add-custom-keyword-hint@par ; for #+acl2-par
+    waterfall-print-clause-id@par ; for #+acl2-par
+    with-output-lock with-ttree-lock with-wormhole-lock ; for #+acl2-par
+    f-put-global@par ; for #+acl2-par
     with-prover-step-limit
     ))
 
@@ -24785,6 +24924,7 @@
     (connected-book-directory . nil)  ; set-cbd couldn't have put this!
     (current-acl2-world . nil)
     (current-package . "ACL2")
+    (debug-pspv . nil) ; (#+acl2-par) for printing pspv mods in the waterfall
     (debugger-enable . nil) ; keep in sync with :doc set-debugger-enable
     (defaxioms-okp-cert . t) ; t when not inside certify-book
     (deferred-ttag-notes . :not-deferred)
@@ -24849,6 +24989,9 @@
     (more-doc-min-lines . 35)
     (more-doc-state . nil)
     (parallel-evaluation-enabled . ; GCL 2.6.6 breaks with only 2 lines below
+
+; Parallelism wart: Need to move to lp the setting of this value to t.
+
                                  #+acl2-par
                                  t
                                  #-acl2-par
@@ -24925,6 +25068,15 @@
     (user-home-dir . nil) ; set first time entering lp
     (verbose-theory-warning . t)
     (walkabout-alist . nil)
+    (waterfall-parallelism . ; for #+acl2-par
+
+; Waterfall-parallelism and waterfall-printing need to have initial values that
+; are consistent with one another.  See function set-waterfall-parallelism-fn
+; to derive the legal pairings.
+
+                           nil) 
+    (waterfall-printing . ; for #+acl2-par; see waterfall-parallelism above
+                        :full)
     (window-interface-postlude
      . "#>\\>#<\\<e(acl2-window-postlude ?~sw ~xt ~xp)#>\\>")
     (window-interface-prelude
@@ -25676,6 +25828,17 @@
   #+acl2-loop-only
   (list 'put-global key value st))
 
+#+acl2-par
+(defmacro f-put-global@par (key value st)
+
+; Parallelism wart: calls that use this macro might need to be locked.
+
+  (declare (ignorable key value st))
+  #+acl2-loop-only
+  nil
+  #-acl2-loop-only
+  `(f-put-global ,key ,value ,st))
+
 ; We now define state-global-let*, which lets us "bind" state
 ; globals.
 
@@ -25872,6 +26035,10 @@
 
 ; Note: This function is a generalization of the now obsolete
 ; WITH-STATE-GLOBAL-BOUND.
+
+; Parallelism wart: use of this macro in a parallel environment is a terrible
+; idea.  It might work, because maybe no variables are rebound that are changed
+; inside the waterfall, but there should be an observation-cw warning printed.
 
   (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
                               (no-duplicatesp-equal (strip-cars bindings)))))
@@ -28391,6 +28558,9 @@
 )
 
 (defmacro er (severity context str &rest str-args)
+
+; Keep in sync with er@par.
+
   (declare (xargs :guard (and (true-listp str-args)
                               (member-symbol-name (symbol-name severity)
                                                   '(hard hard? hard! soft
@@ -28490,6 +28660,30 @@
                     "Illegal severity, ~x0; macroexpansion of ER failed!"
                     (list (cons #\0 severity)))))))
 
+#+acl2-par
+(defmacro er@par (severity context str &rest str-args)
+
+; Keep in sync with er.
+
+  (declare (xargs :guard (and (true-listp str-args)
+                              (member-symbol-name (symbol-name severity)
+                                                  '(hard hard? hard! soft
+                                                         very-soft))
+                              (<= (length str-args) 10))))
+  (let ((alist (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
+                                    #\5 #\6 #\7 #\8 #\9)
+                                  str-args))
+        (severity-name (symbol-name severity)))
+    (cond ((equal severity-name "SOFT")
+           (list 'error1@par context str alist 'state))
+          (t
+
+; The final case should never happen.
+
+           (illegal 'top-level
+                    "Illegal severity, ~x0; macroexpansion of ER@PAR failed!"
+                    (list (cons #\0 severity)))))))
+
 (defmacro assert$ (test form)
 
   ":Doc-Section ACL2::Programming
@@ -28560,8 +28754,7 @@
 ; same thing.  See the comment on synonym streams in princ$.
 
   #-acl2-loop-only
-  (progn (fmt1  str alist col *standard-co* *the-live-state*
-                evisc-tuple)
+  (progn (fmt1 str alist col *standard-co* *the-live-state* evisc-tuple)
          nil))
 
 (defun fmt-to-comment-window! (str alist col evisc-tuple)
@@ -28725,6 +28918,37 @@
                                        #\5 #\6 #\7 #\8 #\9)
                                      (list ,@args))
                            0 nil))
+
+; Parallelism wart: decide whether to use the following macro.  If not, delete
+; it!
+
+;(defmacro define-lock-and-wrapper-macro (lock-symbol)
+;  (let* ((chars (explode-atom lock-symbol 10))
+;         (trimmed1 (cdr chars))
+;         (trimmed2 (butlast trimmed1))
+;         (wrapper-macro-symbol (intern (string-append "WITH-" trimmed2)
+;                                     "ACL2"))
+;
+;  `(progn #+(and acl2-par (not acl2-loop-only))
+;          (deflock ,lock-symbol)
+;          (defmacro ,wrapper-macro-symbol (&rest args)
+;            #+(and acl2-par (not acl2-loop-only))
+;            (with-lock ,lock-symbol
+;                       ,@args)
+;            #-(and acl2-par (not acl2-loop-only))
+;            (progn$ ,@args))))))
+
+#+(and acl2-par (not acl2-loop-only))
+(deflock *output-lock*)
+
+#+(and acl2-par (not acl2-loop-only))
+(defmacro with-output-lock (&rest args)
+  `(with-lock *output-lock*
+              ,@args))
+
+#-(and acl2-par (not acl2-loop-only))
+(defmacro with-output-lock (&rest args)
+  `(progn$ ,@args))
 
 (skip-proofs ; as with open-output-channel
 (defun get-output-stream-string$-fn (channel state-state)
@@ -31017,6 +31241,17 @@
                                state)))))
 
 (defun increment-timer (name state)
+
+; A note about the integration of #+acl2-par code:
+
+; Why not use defun@par to define increment-timer@par, using
+; serial-first-form-parallel-second-form?  If we do that, then we have to wait
+; until after defun@par is defined, near the end of this file.  But at that
+; point, guard verification fails.  However, guard verification succeeds here,
+; not only during the normal boot-strap when proofs are skipped, but also when
+; we do proofs (as with "make proofs").  After a few minutes of investigation,
+; we have decided to leave well enough alone.
+
   (declare (xargs :guard (and (symbolp name)
                               (state-p state)
                               (consp (get-timer name state)))))
@@ -31056,6 +31291,19 @@
                       (consp (get-timer name state)))))
   (print-rational-as-decimal (car (get-timer name state)) channel state))
 )
+
+(defun known-package-alist (state)
+
+; We avoid using global-val below because this function is called during
+; retract-world1 under set-w under enter-boot-strap-mode, before
+; primordial-world-globals is called.
+
+  (declare (xargs :guard (state-p state)))
+  (getprop 'known-package-alist
+           'global-value
+           nil
+           'current-acl2-world
+           (w state)))
 
 ;  Prin1
 
@@ -31141,10 +31389,7 @@
                                (package-entry-imports
                                 (find-package-entry
                                  (f-get-global 'current-package state)
-                                 (global-val 'known-package-alist
-                                             (f-get-global
-                                              'current-acl2-world
-                                              state))))))
+                                 (known-package-alist state)))))
                           state)
                          (t (let ((p (symbol-package-name x)))
                               (cond ((needs-slashes p state)
@@ -31191,9 +31436,7 @@
                       (package-entry-imports
                        (find-package-entry
                         (f-get-global 'current-package state)
-                        (global-val 'known-package-alist
-                                    (f-get-global 'current-acl2-world
-                                                  state))))))
+                        (known-package-alist state)))))
                  state)
                 (t (let ((p (symbol-package-name x)))
                      (pprogn
@@ -31293,19 +31536,6 @@
   is the same as it was at print-time."
 
   (f-get-global 'current-package state))
-
-(defun known-package-alist (state)
-
-; We avoid using global-val below because this function is called during
-; retract-world1 under set-w under enter-boot-strap-mode, before
-; primordial-world-globals is called.
-
-  (declare (xargs :guard (state-p state)))
-  (getprop 'known-package-alist
-           'global-value
-           nil
-           'current-acl2-world
-           (w state)))
 
 (defthm state-p1-update-nth-2-world
   (implies (and (state-p1 state)
@@ -31521,6 +31751,8 @@
     trace-specs
     retrace-p
     parallel-evaluation-enabled
+    waterfall-parallelism ; for #+acl2-par
+    waterfall-printing ; for #+acl2-par, in support of waterfall-parallelism
     redundant-with-raw-code-okp
 
 ; print control variables
@@ -39164,6 +39396,9 @@
 (defparameter *time-limit-tags* nil)
 
 (defmacro catch-time-limit5 (form)
+
+; Keep in sync with catch-time-limit5@par.
+
   `(mv-let (step-limit x1 x2 x3 x4 ; values that cannot be stobjs
                        state)
            #+acl2-loop-only
@@ -39182,6 +39417,30 @@
                     (declare (ignore nullp))
                     (cond (temp (mv step-limit temp nil nil nil nil state))
                           (t (mv step-limit nil x1 x2 x3 x4 state)))))))
+
+#+acl2-par
+(defmacro catch-time-limit5@par (form)
+
+; Keep in sync with catch-time-limit5.
+
+; Parallelism wart: This definition is rather different from its non-@par
+; counterpart.  We need to check that this is what we need.  I think it
+; is okay, because we don't really support time-limits right now anyway.
+
+  `(mv-let (step-limit x1 x2 x3 x4) ; values that cannot be stobjs
+                       
+           #+acl2-loop-only
+           ,form ; so, form does not return a stobj
+
+; Parallelism wart: time-limit5-tag needs to be added to the list of tags that 
+; futures support.
+
+           #-acl2-loop-only
+           (catch 'time-limit5-tag
+               (let ((*time-limit-tags* (add-to-set-eq 'time-limit5-tag
+                                                       *time-limit-tags*)))
+                 ,form))
+           (mv step-limit nil x1 x2 x3 x4)))
 
 (defun time-limit5-reached-p (msg)
 
@@ -41303,6 +41562,10 @@ Lisp definition."
 (table custom-keywords-table nil nil
        :guard
 
+; Parallelism wart: The comment below starting with "Val must be of the
+; form..." will need to be updated once we finalize the way custom keyword
+; hints work in ACL2(p).
+
 ; Val must be of the form (uterm1 uterm2), where uterm1 and uterm2 are
 ; untranslated terms with certain syntactic properties, including being
 ; single-threaded in state and with output signatures (mv erp val state).  But
@@ -41408,6 +41671,24 @@ Lisp definition."
 
 #-acl2-loop-only
 (defmacro add-custom-keyword-hint (&rest args)
+  (declare (ignore args))
+  nil)
+
+#+(and acl2-par acl2-loop-only)
+(defmacro add-custom-keyword-hint@par (key uterm1
+                                       &key (checker '(value-cmp t)))
+
+; Parallelism wart: We do not currently handle custom keyword hints in a
+; graceful or disciplined manner.  The only promise we currently maintain is
+; that they work in #-acl2-par and in #+acl2-par in the serial mode of the
+; parallelized waterfall.  We should develop a cleaner explanation for how
+; custom-keyword-hints interact with the parallelized waterfall and then
+; document it.
+
+    `(add-custom-keyword-hint-fn@par ',key ',uterm1 ',checker state))
+
+#+(and acl2-par (not acl2-loop-only))
+(defmacro add-custom-keyword-hint@par (&rest args)
   (declare (ignore args))
   nil)
 
@@ -42791,3 +43072,400 @@ Lisp definition."
 ; See comment in true-list-listp-forward-to-true-listp-assoc-equal.
 (in-theory (disable (:type-prescription
                      true-list-listp-forward-to-true-listp-assoc-equal)))
+
+; The definitions that follow provide support for the experimental parallelism
+; extension, ACL2(p), of ACL2.  Also see the Essay on Parallelism and
+; Parallelism Warts.
+
+(defun add-@par-suffix (symbol)
+  (declare (xargs :guard (symbolp symbol)))
+  (intern (string-append (symbol-name symbol)
+                         "@PAR")
+          "ACL2"))
+
+(defun generate-@par-mappings (symbols)
+  (declare (xargs :guard (symbol-listp symbols)))
+  (cond ((endp symbols)
+         nil)
+        (t (cons (cons (add-@par-suffix (car symbols))
+                       (car symbols))
+                 (generate-@par-mappings (cdr symbols))))))
+
+; Parallelism wart: Consider adding a doc topic explaining that if a user finds
+; the #+acl2-par version of an "@par" function to be useful, that they should
+; contact the authors of ACL2.  The authors should then create a version of the
+; desired "@par" function, perhaps suffixing it with "@ns" (for "no state").
+; And then the "@par" function could simply call the "@ns" version.  A good
+; example candidate for this is simple-translate-and-eval@par, which could be
+; used inside Sol Swords's GL system to produce computed hints that don't
+; modify state.
+
+(defconst *@par-mappings*
+
+; Here we enumerate the list of symbols that should automatically have
+; #-acl2-par *@par counterparts defined, where * is the given symbol name.
+; This constant is also used when defining functions with defun@par.
+
+  (generate-@par-mappings
+   '(
+
+; This list contains macros and functions that support the waterfall in
+; different ways for #+acl2-par and #-acl2-par.  It is split into two groups:
+; (1) symbols that have a separate definition for the @par counterpart, and (2)
+; symbols for which defun@par is used for defining both the symbol and its @par
+; counterpart.  Group (1) is further divided into (1a) utilities that are
+; "primitive" in nature and (1b) higher-level functions and macros.
+
+; Note that this list does not contain all *@par symbols.  For example,
+; mutual-recursion@par must be defined explicitly in both #+acl2-par and
+; #-acl2-par.
+
+; Group 1a (see above):
+
+     catch-time-limit5
+     cmp-and-value-to-error-quadruple
+     cmp-to-error-triple
+     er
+     er-let*
+     er-progn
+     error-fms
+     error-in-parallelism-mode
+     error1
+     f-put-global
+     io?
+     io?-prove
+     mv
+     mv-let
+     parallel-only
+     pprogn
+     serial-first-form-parallel-second-form
+     serial-only
+     sl-let
+     state-mac
+     value
+     warning$
+
+; Group 1b (see above):
+
+     add-custom-keyword-hint
+     eval-clause-processor
+     eval-theory-expr
+     formal-value-triple
+     increment-timer
+     simple-translate-and-eval
+     translate-in-theory-hint
+     waterfall-print-clause-id
+     waterfall-print-clause-id-fmt1-call
+     waterfall-update-gag-state
+     waterfall1-lst
+     xtrans-eval
+
+; Group 2 (see above):
+
+     accumulate-ttree-and-step-limit-into-state
+     add-custom-keyword-hint-fn
+     apply-override-hint
+     apply-override-hints
+     apply-reorder-hint
+     apply-top-hints-clause
+     chk-arglist
+     chk-do-not-expr-value
+     chk-equal-arities
+     chk-equiv-classicalp
+     chk-theory-expr-value
+     chk-theory-expr-value1
+     chk-theory-invariant
+     chk-theory-invariant1
+     custom-keyword-hint-interpreter
+     custom-keyword-hint-interpreter1
+     eval-and-translate-hint-expression
+     find-applicable-hint-settings
+     find-applicable-hint-settings1
+     gag-state-exiting-cl-id
+     load-hint-settings-into-pspv
+     load-hint-settings-into-rcnst
+     load-theory-into-enabled-structure
+     maybe-warn-about-theory
+     maybe-warn-about-theory-from-rcnsts
+     maybe-warn-about-theory-simple
+     maybe-warn-for-use-hint
+     process-backtrack-hint
+     record-gag-state
+     thanks-for-the-hint
+     translate
+     translate1
+     translate-backchain-limit-rw-hint
+     translate-backtrack-hint
+     translate-bdd-hint
+     translate-bdd-hint1
+     translate-by-hint
+     translate-case-split-limitations-hint
+     translate-cases-hint
+     translate-clause-processor-hint
+     translate-custom-keyword-hint
+     translate-do-not-hint
+     translate-do-not-induct-hint
+     translate-error-hint
+     translate-expand-hint
+     translate-expand-hint1
+     translate-expand-term
+     translate-expand-term1
+     translate-functional-substitution
+     translate-hands-off-hint
+     translate-hands-off-hint1
+     translate-hint
+     translate-hint-expression
+     translate-hint-expressions
+     translate-hint-settings
+     translate-induct-hint
+     translate-lmi
+     translate-lmi/functional-instance
+     translate-lmi/instance
+     translate-no-op-hint
+     translate-no-thanks-hint
+     translate-nonlinearp-hint
+     translate-or-hint
+     translate-reorder-hint
+     translate-restrict-hint
+     translate-simple-or-error-triple
+     translate-substitution
+     translate-substitution-lst
+     translate-term-lst
+     translate-use-hint
+     translate-use-hint1
+     translate-x-hint-value
+     waterfall-msg
+     waterfall-print-clause
+     waterfall-step
+     waterfall-step-cleanup
+     waterfall0
+     waterfall0-or-hit
+     waterfall0-with-hint-settings
+     waterfall1)))
+
+#-acl2-par
+(defun make-identity-for-@par-mappings (mappings)
+  (declare (xargs :guard (alistp mappings)))
+  (cond ((endp mappings) nil)
+        (t (cons `(defmacro ,(caar mappings) (&rest rst)
+                    (cons ',(cdar mappings) rst))
+                 (make-identity-for-@par-mappings (cdr mappings))))))
+
+#-acl2-par
+(defmacro define-@par-macros ()
+
+; This macro defines the #-acl2-par version of the @par functions and macros.
+
+  `(progn ,@(make-identity-for-@par-mappings *@par-mappings*)))
+
+#-acl2-par
+(define-@par-macros)
+
+; Parallelism wart: remove the following grep tip after the parallelism project
+; is done.
+
+; To find places where we issue definitions both without the "@par" suffix and
+; with the "@par" suffix, one can run the following:
+; grep "@par" *.lisp | grep "defun "
+; grep "@par" *.lisp | grep "defmacro "
+
+(defun replace-defun@par-with-defun (forms)
+  (declare (xargs :guard (alistp forms)))
+  (cond ((endp forms)
+         nil)
+        ((eq (caar forms) 'defun@par)
+         (cons (cons 'defun (cdar forms))
+               (replace-defun@par-with-defun (cdr forms))))
+        (t (cons (car forms)
+                 (replace-defun@par-with-defun (cdr forms))))))
+
+#-acl2-par
+(defmacro mutual-recursion@par (&rest forms)
+  `(mutual-recursion ,@(replace-defun@par-with-defun forms)))
+
+#+acl2-par
+(defun defun@par-fn (name parallel-version rst)
+
+; Parallelism wart: consider having the @par version automatically lay down a
+; "(declare (ignorable state))" form.
+
+  (declare (xargs :guard (and (symbolp name)
+                              (booleanp parallel-version)
+                              (true-listp rst))))
+  (let ((serial-function-symbol 
+         (intern (symbol-name name)
+                 "ACL2"))
+        (parallel-function-symbol
+         (intern (string-append (symbol-name name)
+                                "@PAR")
+                 "ACL2"))
+        (serial-definition-args (sublis *@par-mappings* rst))
+        (parallel-definition-args rst))
+    (if parallel-version
+        `(defun ,parallel-function-symbol
+           ,@parallel-definition-args)
+      `(defun ,serial-function-symbol
+         ,@serial-definition-args))))
+
+#+acl2-par
+(defun mutual-recursion@par-guardp (rst)
+  (declare (xargs :guard t))
+  (cond ((atom rst) (equal rst nil))
+        (t (and (consp (car rst))
+                (true-listp (car rst))
+                (true-listp (caddr (car rst))) ; formals
+                (symbolp (cadar rst))
+                (member-eq (car (car rst)) '(defun defund defun-nx defund-nx
+                                              defun@par))
+                (mutual-recursion@par-guardp (cdr rst))))))
+
+#+acl2-par
+(defun mutual-recursion@par-fn (forms serial-and-par)
+  (declare (xargs :guard (and (mutual-recursion@par-guardp forms)
+                              (booleanp serial-and-par))))
+  (cond ((endp forms)
+         nil)
+        ((equal (caar forms) 'defun@par)
+         (let* ((curr (car forms))
+                (name (cadr curr))
+                (rst (cddr curr)))
+           (cond (serial-and-par
+                  (cons (defun@par-fn name t rst)
+                        (cons (defun@par-fn name nil rst)
+                              (mutual-recursion@par-fn (cdr forms)
+                                                       serial-and-par))))
+                 (t
+                  (cons (defun@par-fn name nil rst)
+                        (mutual-recursion@par-fn (cdr forms)
+                                                 serial-and-par))))))
+        (t (cons (car forms)
+                 (mutual-recursion@par-fn (cdr forms) serial-and-par)))))
+
+#+acl2-par
+(defmacro mutual-recursion@par (&rest forms)
+  (declare (xargs :guard (mutual-recursion@par-guardp forms)))
+  `(mutual-recursion ,@(mutual-recursion@par-fn forms t)))
+
+(defmacro defun@par (name &rest args)
+  #+acl2-par
+  `(progn ,(defun@par-fn name t args)
+          ,(defun@par-fn name nil args))
+  #-acl2-par
+  `(defun ,name ,@args))
+
+(defmacro serial-first-form-parallel-second-form (x y)
+
+; Keep in sync with serial-first-form-parallel-second-form@par.
+
+  (declare (ignore y))
+  x)
+
+#+acl2-par
+(defmacro serial-first-form-parallel-second-form@par (x y)
+
+; Keep in sync with serial-first-form-parallel-second-form.
+
+  (declare (ignore x))
+  y)
+
+(defmacro serial-only (x)
+
+; Keep in sync with serial-only@par.
+
+  x)
+
+#+acl2-par
+(defmacro serial-only@par (x)
+
+; Keep in sync with serial-only.
+
+  (declare (ignore x))
+  nil)
+
+(defmacro parallel-only (x)
+
+; Keep in sync with parallel-only@par.
+
+  (declare (ignore x))
+  nil)
+
+#+acl2-par
+(defmacro parallel-only@par (x)
+
+; Keep in sync with parallel-only.
+
+  x)
+
+#+acl2-par
+(defmacro mv@par (&rest rst)
+  (declare (xargs :guard ; sanity check
+                  (member-eq 'state rst)))
+  `(mv? ,@(remove1-eq 'state rst)))
+
+#+acl2-par
+(defmacro value@par (val)
+
+; Keep in sync with value.
+
+  `(mv nil ,val))
+
+(defmacro state-mac ()
+
+; Keep in sync with state-mac@par.
+
+  'state)
+
+#+acl2-par
+(defmacro state-mac@par ()
+
+; Keep in sync with state-mac.
+
+  nil)
+
+#+acl2-par
+(defmacro mv-let@par (vars call &rest rst)
+  (declare (xargs :guard ; sanity check
+                  (member-eq 'state vars)))
+  `(mv?-let ,(remove1-eq 'state vars) ,call ,@rst))
+
+#+acl2-par
+(defmacro warning$@par (&rest rst)
+
+; We do not simply just call warning$-cw, because we actually have state
+; available when we use warning$@par.
+
+  `(let ((state-vars (default-state-vars t))
+         (wrld (w state)))
+     (warning$-cw1 ,@rst)))
+
+(defmacro error-in-parallelism-mode (fake-return-value form)
+  (declare (ignore fake-return-value))
+  form)
+
+#+acl2-par
+(defmacro error-in-parallelism-mode@par (return-value form)
+  
+; We avoid even trying to evaluate form, instead returning a hard error with a
+; useful message.  Return-value must have the same output signature as that of
+; form.
+
+; Any form enwrapped with error-in-parallelism-mode@par is essentially
+; disabled.  To restore the code to its original form, just remove the wrapper
+; error-in-parallelism-mode@par.
+
+  `(prog2$ 
+    (er hard 'error-in-parallelism-mode@par
+        "There has been an attempt to evaluate a form that is disallowed in ~
+         the parallelized evaluation of the waterfall.  See :doc ~
+         set-waterfall-parallelism for how to discable such parallel ~
+         evaluation.  Please let the ACL2 authors know if you see this ~
+         message, as our intent is that its occurence should be rare.  The ~
+         offending form is: ~x0" 
+        ',form) 
+    ,return-value))
+
+#+acl2-par
+(defun increment-timer@par (name state)
+  (declare (xargs :guard t)
+           (ignore name state))
+  (state-mac@par))

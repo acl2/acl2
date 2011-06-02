@@ -2678,7 +2678,8 @@
 ; the hint settings into the pspv it returns.  Most of the content of
 ; the hint-settings is loaded into the rewrite-constant of the pspv.
 
-(defun load-hint-settings-into-rcnst (hint-settings rcnst cl-id wrld ctx state)
+(defun@par load-hint-settings-into-rcnst (hint-settings rcnst cl-id wrld ctx
+                                                        state)
 
 ; Certain user supplied hint settings find their way into the rewrite-constant.
 ; They are :expand, :restrict, :hands-off, and :in-theory.  Our convention is
@@ -2689,57 +2690,58 @@
 ; new enabled structure, then we we will use that clause-id to build the array
 ; name, rather than simply incrementing a suffix.
 
-  (er-let* ((new-ens
-             (cond
-              ((assoc-eq :in-theory hint-settings)
-               (load-theory-into-enabled-structure
-                :from-hint
-                (cdr (assoc-eq :in-theory hint-settings))
-                nil
-                (access rewrite-constant rcnst :current-enabled-structure)
-                (or cl-id t)
-                nil
-                wrld ctx state))
-              (t (value (access rewrite-constant rcnst
-                                :current-enabled-structure))))))
-           (value (change rewrite-constant rcnst
-                          :expand-lst
-                          (cond
-                           ((assoc-eq :expand hint-settings)
-                            (cdr (assoc-eq :expand hint-settings)))
-                           (t (access rewrite-constant rcnst :expand-lst)))
-                          :restrictions-alist
-                          (cond
-                           ((assoc-eq :restrict hint-settings)
-                            (cdr (assoc-eq :restrict hint-settings)))
-                           (t (access rewrite-constant rcnst
-                                      :restrictions-alist)))
-                          :fns-to-be-ignored-by-rewrite
-                          (cond
-                           ((assoc-eq :hands-off hint-settings)
-                            (cdr (assoc-eq :hands-off hint-settings)))
-                           (t (access rewrite-constant rcnst
-                                      :fns-to-be-ignored-by-rewrite)))
-                          :current-enabled-structure
-                          new-ens
-                          :nonlinearp
-                          (cond
-                           ((assoc-eq :nonlinearp hint-settings)
-                            (cdr (assoc-eq :nonlinearp hint-settings)))
-                           (t (access rewrite-constant rcnst :nonlinearp)))
-                          :backchain-limit-rw
-                          (cond
-                           ((assoc-eq :backchain-limit-rw hint-settings)
-                            (cdr (assoc-eq :backchain-limit-rw hint-settings)))
-                           (t (access rewrite-constant rcnst
-                                      :backchain-limit-rw)))
-                          :case-split-limitations
-                          (cond
-                           ((assoc-eq :case-split-limitations hint-settings)
-                            (cdr (assoc-eq :case-split-limitations
-                                           hint-settings)))
-                           (t (access rewrite-constant rcnst 
-                                      :case-split-limitations)))))))
+  (er-let*@par
+   ((new-ens
+     (cond
+      ((assoc-eq :in-theory hint-settings)
+       (load-theory-into-enabled-structure@par
+        :from-hint
+        (cdr (assoc-eq :in-theory hint-settings))
+        nil
+        (access rewrite-constant rcnst :current-enabled-structure)
+        (or cl-id t)
+        nil
+        wrld ctx state))
+      (t (value@par (access rewrite-constant rcnst
+                            :current-enabled-structure))))))
+   (value@par (change rewrite-constant rcnst
+                      :expand-lst
+                      (cond
+                       ((assoc-eq :expand hint-settings)
+                        (cdr (assoc-eq :expand hint-settings)))
+                       (t (access rewrite-constant rcnst :expand-lst)))
+                      :restrictions-alist
+                      (cond
+                       ((assoc-eq :restrict hint-settings)
+                        (cdr (assoc-eq :restrict hint-settings)))
+                       (t (access rewrite-constant rcnst
+                                  :restrictions-alist)))
+                      :fns-to-be-ignored-by-rewrite
+                      (cond
+                       ((assoc-eq :hands-off hint-settings)
+                        (cdr (assoc-eq :hands-off hint-settings)))
+                       (t (access rewrite-constant rcnst
+                                  :fns-to-be-ignored-by-rewrite)))
+                      :current-enabled-structure
+                      new-ens
+                      :nonlinearp
+                      (cond
+                       ((assoc-eq :nonlinearp hint-settings)
+                        (cdr (assoc-eq :nonlinearp hint-settings)))
+                       (t (access rewrite-constant rcnst :nonlinearp)))
+                      :backchain-limit-rw
+                      (cond
+                       ((assoc-eq :backchain-limit-rw hint-settings)
+                        (cdr (assoc-eq :backchain-limit-rw hint-settings)))
+                       (t (access rewrite-constant rcnst
+                                  :backchain-limit-rw)))
+                      :case-split-limitations
+                      (cond
+                       ((assoc-eq :case-split-limitations hint-settings)
+                        (cdr (assoc-eq :case-split-limitations
+                                       hint-settings)))
+                       (t (access rewrite-constant rcnst 
+                                  :case-split-limitations)))))))
 
 (defun update-hint-settings (new-hint-settings old-hint-settings)
   (cond
@@ -2756,8 +2758,8 @@
 
 ; Thus, a given hint-settings causes us to modify the pspv as follows:
 
-(defun load-hint-settings-into-pspv (increment-flg hint-settings pspv cl-id
-                                                   wrld ctx state)
+(defun@par load-hint-settings-into-pspv (increment-flg hint-settings pspv cl-id
+                                                       wrld ctx state)
 
 ; We load the hint-settings into the rewrite-constant of pspv, thereby making
 ; available the :expand, :case-split-limitations, :restrict, :hands-off, and
@@ -2774,19 +2776,20 @@
 ; changes while not affecting the rest of a newly obtained pspv.  Keep these
 ; two functions in step.
 
-  (er-let* ((rcnst (load-hint-settings-into-rcnst
-                    hint-settings
-                    (access prove-spec-var pspv :rewrite-constant)
-                    cl-id wrld ctx state)))
-           (value
-            (change prove-spec-var pspv
-                    :rewrite-constant rcnst
-                    :hint-settings
-                    (if increment-flg
-                        (update-hint-settings hint-settings
-                                              (access prove-spec-var pspv
-                                                      :hint-settings))
-                      hint-settings)))))
+  (er-let*@par
+   ((rcnst (load-hint-settings-into-rcnst@par
+            hint-settings
+            (access prove-spec-var pspv :rewrite-constant)
+            cl-id wrld ctx state)))
+   (value@par
+    (change prove-spec-var pspv
+            :rewrite-constant rcnst
+            :hint-settings
+            (if increment-flg
+                (update-hint-settings hint-settings
+                                      (access prove-spec-var pspv
+                                              :hint-settings))
+              hint-settings)))))
 
 (defun restore-hint-settings-in-pspv (new-pspv old-pspv)
 
