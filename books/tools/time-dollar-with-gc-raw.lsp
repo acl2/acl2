@@ -11,7 +11,7 @@
           (end-gc-time #+ccl (ccl:gctime)
                        #+sbcl sb-ext:*gc-run-time*)
           (total-gc-time (- end-gc-time start-gc-time)))
-     (format t "Total GC time: ~s" total-gc-time)
+     (format t "Total GC time: ~s~%" total-gc-time)
      (values-list result))
   #+lispworks
   `(hcl:extended-time (time$ ,form)))
