@@ -1087,7 +1087,6 @@
             ,gran-form)
     '(parallelism-resources-available)))
 
-#+acl2-par
 (defmacro pargs (&rest forms)
 
 ; This is the raw lisp version for threaded Lisps.
@@ -1146,9 +1145,6 @@
           (make-list-until-non-declare (cdr x) nil)
           (mv (car x) declare-forms body)))
 
-; Parallelism wart: isn't the use of #+acl2-par in this file redundant?
-
-#+acl2-par
 (defmacro plet (&rest forms)
 
 ; This is the raw Lisp version for threaded Lisps.
@@ -1180,7 +1176,6 @@
     (and (car x)
          (and-list (cdr x)))))
 
-#+acl2-par
 (defmacro pand (&rest forms)
 
 ; This is the raw Lisp version for threaded Lisps.
@@ -1210,7 +1205,6 @@
         t
         (or-list (cdr x)))))
 
-#+acl2-par
 (defmacro por (&rest forms)
 
 ; This is the raw Lisp version for threaded Lisps.
@@ -1239,7 +1233,6 @@
     (progn (signal-semaphore (car sems))
            (signal-semaphores (cdr sems)))))
 
-#+acl2-par
 (defmacro spec-mv-let (bindings computation body)
   (assert
    (and (true-listp body) 
@@ -1272,11 +1265,11 @@
           ,inner-bindings
           ,inner-body
           (if ,test
-              (progn (future-abort the-very-obscure-feature)
-                     ,true-branch)
-            (mv?-let ,bindings
-              (future-read the-very-obscure-feature)
-              ,false-branch)))))))
+              (mv?-let ,bindings
+                       (future-read the-very-obscure-feature)
+                       ,true-branch)
+            (progn (future-abort the-very-obscure-feature)
+                   ,false-branch)))))))
 
 ; Parallelism wart: Should we make a function called "set-gc-threshold" and
 ; document it in a performance section?
