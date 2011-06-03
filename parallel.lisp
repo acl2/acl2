@@ -1545,8 +1545,6 @@
 ; Parallelism wart: Document spec-mv-let.  One can use plet/pargs/pand/por as
 ; starting points for the format.
 
-; Parallelism wart: I want to switch the true and false branches.
-
   (assert$ 
    (and (true-listp body) 
         (equal (length body) 4) 
@@ -1573,7 +1571,15 @@
                    ,inner-bindings
                    ,inner-body
                    (if (check-vars-not-free ,bindings ,test)
-                       (check-vars-not-free ,bindings ,true-branch)
-                     (mv?-let ,bindings
-                              ,computation
-                              ,false-branch)))))))))
+                       (mv?-let ,bindings
+                                ,computation
+                                ,true-branch)                     
+                     (check-vars-not-free ,bindings ,false-branch)))))))))
+
+; Parallelism wart: when set-verify-guards-eagerness is 0, and there is a guard
+; violation in subfunctions that are evaluating in the non-main-thread, we get
+; errors that aren't user friendly (the errors occur in the non-main-threads).
+; I think that the solution to this problem might necessitate catching the
+; errors and re-causing them.  Hitting ctrl+c causes the main thread to abort
+; waiting on the result from those threads, and allows the interactive session
+; to resume.
