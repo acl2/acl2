@@ -13441,8 +13441,8 @@
                      and the discussion of :instance in :MORE-DOC ~
                      lemma-instance."
                     var
-                    (or str "LEGAL-VARIABLEP says so, but ~
-                               FIND-FIRST-BAD-ARG can't see why"))))
+                    (or str "LEGAL-VARIABLEP says so, but FIND-FIRST-BAD-ARG ~
+                             can't see why"))))
          (t (er-let*@par
              ((term (translate@par term t t t ctx wrld state))
 ; known-stobjs = t (stobjs-out = t)

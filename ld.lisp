@@ -17812,6 +17812,10 @@
 
   ~st[EMACS SUPPORT]
 
+  The distributed Emacs file ~c[emacs/emacs-acl2.el] now indents calls of
+  ~c[er@par] and ~c[warning$@par] the same way that calls of ~c[defun] are
+  indented.
+
   ~st[EXPERIMENTAL VERSIONS]
 
   The parallel version (~pl[parallelism]) now supports parallel evaluation of
