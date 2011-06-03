@@ -9,12 +9,14 @@ futures-st-raw.lsp
 matrix-multiplication-parallel.lisp
 matrix-multiplication-serial.lisp
 matrix-multiplication-setup.lisp
+spec-mv-let.lisp
 syntax-tests.lisp
 stress-tests.lisp")
  (:TITLE    "Simple examples and tests of parallelism primitives")
  (:AUTHOR/S "David Rager")
  (:KEYWORDS ; non-empty list of keywords, case-insensitive
-   "parallelism" "parallel" "pand" "por" "plet" "pargs" "performance" "futures")
+   "parallelism" "parallel" "pand" "por" "plet" "pargs" "performance" "futures"
+   "spec-mv-let")
  (:ABSTRACT "Generally speaking, these files illustrate and check the use of
 parallelism primitives.
 
