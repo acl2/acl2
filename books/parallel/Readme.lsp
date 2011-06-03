@@ -19,14 +19,6 @@ stress-tests.lisp")
    "spec-mv-let")
  (:ABSTRACT "Generally speaking, these files illustrate and check the use of
 parallelism primitives.
-
-futures-st.lisp serves as a wrapper for the raw Lisp file for a single-threaded
-futures library.  It isn't much use except as a model for the multi-threaded
-futures library, which should be installed into the books library before the
-next ACL2 release.
-
-futures-st-raw.lsp defines the implementation for the single-threaded futures
-library.  Include futures-st.lisp to use this library.
 ")
   (:PERMISSION ; author/s permission for distribution and copying:
 "parallel
