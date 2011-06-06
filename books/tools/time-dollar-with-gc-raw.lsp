@@ -10,8 +10,14 @@
           (result (multiple-value-list (time$ ,form)))
           (end-gc-time #+ccl (ccl:gctime)
                        #+sbcl sb-ext:*gc-run-time*)
-          (total-gc-time (- end-gc-time start-gc-time)))
-     (format t "Total GC time: ~s~%" total-gc-time)
+          (total-gc-time (/ (- end-gc-time start-gc-time) 
+                            #+ccl 1000000.0
+                            #+sbcl 1000.0)))
+     (format t "Total GC time: ~s seconds ~%" total-gc-time)
      (values-list result))
   #+lispworks
-  `(hcl:extended-time (time$ ,form)))
+  `(hcl:extended-time 
+
+; reported times are in seconds
+
+    (time$ ,form)))
