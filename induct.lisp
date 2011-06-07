@@ -2450,8 +2450,12 @@
 ; Warning: This function should be called under (io? prove ...).
 
   (cond
-   ((and (gag-mode)
-         (cdr pool-lst))
+   ((gag-mode)
+
+; If we decide to print induction schemes after all, then still continue not to
+; print them if (cdr pool-lst) is true, and also, in print-gag-state1,
+; eliminate the printing of "(see :DOC pso to view induction schemes)".
+
     state)
    (t
     (pprogn

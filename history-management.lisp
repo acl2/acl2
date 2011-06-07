@@ -3265,10 +3265,18 @@
                                    'checkpoint-summary-limit
                                    state))))
                   (pprogn
-                   (fms "*** Key checkpoint~#0~[~/s~] under a top-level ~
-                         induction: ***~|"
-                        (list (cons #\0 sub-stack))
-                        chan state nil)
+                   (cond
+                    ((gag-mode)
+                     (fms "*** Key checkpoint~#0~[~/s~] under a top-level ~
+                           induction ***~|*** (see :DOC pso to view induction ~
+                           scheme~#0~[~/s~]):   ***~|"
+                          (list (cons #\0 sub-stack))
+                          chan state nil))
+                    (t
+                     (fms "*** Key checkpoint~#0~[~/s~] under a top-level ~
+                           induction: ***~|"
+                          (list (cons #\0 sub-stack))
+                          chan state nil)))
                    (print-gag-stack-rev
                     (reverse sub-stack)
                     limit

@@ -17577,6 +17577,9 @@
   implementations.  Thanks to Sol Swords for bringing this issue to our
   attention.
 
+  We no longer print induction schemes with ~il[gag-mode]; use ~c[:]~ilc[pso]
+  if you want to see them.  Thanks to Dave Greve for this suggestion.
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of
