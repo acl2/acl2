@@ -6204,6 +6204,7 @@
   ~bv[]
   Useful Forms:
   (accumulated-persistence t)              ; Activate statistics gathering.
+  (accumulated-persistence :all)           ; As above, ``enhanced'' (see below)
 
   (show-accumulated-persistence :frames)   ; Display statistics ordered by
   (show-accumulated-persistence :tries)    ; frames built, times tried,

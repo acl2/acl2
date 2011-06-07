@@ -1542,8 +1542,77 @@
 #+(or acl2-loop-only (not acl2-par))
 (defmacro spec-mv-let (bindings computation body)
 
-; Parallelism wart: Document spec-mv-let.  One can use plet/pargs/pand/por as
-; starting points for the format.
+; Parallelism wart: add pointers to this doc topic inside other
+; parallelism doc topics.
+
+  ":Doc-Section Parallelism
+
+  modification of ~ilc[mv-let] supporting speculative and parallel execution~/
+
+  ~bv[]
+  Example Form:
+  (defun pfib-with-step-count (x)
+    (declare (xargs :mode :program))
+    (if (or (zp x) (< x 33))
+        (fib-with-step-count x)
+      (spec-mv-let 
+       (a cnt1)
+       (pfib-with-step-count (- x 1))
+       (mv-let (b cnt2)
+               (pfib-with-step-count (- x 2))
+               (if t
+                   (mv (+ a b)
+                       (+ 1 cnt1 cnt2))
+                 (mv \"speculative result is always needed\"
+                     -1))))))~/
+  
+  General Form:
+  (spec-mv-let
+   (v1 ... vn)  ; bind distinct variables
+   <spec>       ; evaluate speculatively; return n values
+   (mv-let
+    (w1 ... wk) ; bind distinct variables
+    <eager>     ; evaluate eagerly
+    (if <test>  ; use results from <spec> if true
+        <typical-case> ; may mention v1 ... vn
+      <abort-case>)))  ; does not mention v1 ... vn
+  ~ev[]
+
+  Our design of ~c[spec-mv-let] is guided by its use in ACL2 source code to
+  parallelize part of ACL2's proof process, in the experimental parallel
+  extension of ACL2.  The user can think of ~c[spec-mv-let] as a speculative
+  version of ~ilc[mv-let].  (In ordinary ACL2, the semantics agree with this
+  description but without speculative or parallel evaluation.)
+
+  Evaluation of the above general form proceeds as suggested by the comments.
+  First, ~c[<spec>] is executed speculatively.  Control then passes immediately
+  to the ~ilc[mv-let] call, without waiting for the result of evaluating
+  ~c[<spec>].  The variables ~c[(w1 ... wk)] are bound to the result of
+  evaluating ~c[<eager>], and then ~c[<test>] is evaluated.  If the value of
+  ~c[<test>] is true, then the values of ~c[(v1 ... vn)] are needed, and
+  ~c[<typical-case>] blocks until they are available.  If the value of
+  ~c[<test>] is false, then the values of ~c[(v1 ... vn)] are not needed, and
+  the evaluation of ~c[<spec>] may be aborted.
+
+  The calls to ~c[mv-let] and to ~c[if] displayed above in the General Form are
+  an essential part of the design of ~c[spec-mv-let], and are thus required.
+
+  The following definition of ~c[fib-with-step-count] completes the example
+  above:
+
+  ~bv[]
+  (defun fib-with-step-count (x)
+  (declare (xargs :mode :program))
+  (cond ((<= x 0)
+         (mv 0 1))
+        ((= x 1) (mv 1 1))
+        (t (mv-let (a cnt1)
+                   (fib-with-step-count (- x 1))
+                   (mv-let (b cnt2) 
+                           (fib-with-step-count (- x 2))
+                           (mv (+ a b)
+                               (+ 1 cnt1 cnt2)))))))
+  ~ev[]~/"
 
   (assert$ 
    (and (true-listp body) 

@@ -1785,11 +1785,10 @@ books/parallel:
 Makefile
 Readme.lsp
 fibonacci.lisp
-futures-st-raw.lsp
-futures-st.lisp
 matrix-multiplication-parallel.lisp
 matrix-multiplication-serial.lisp
 matrix-multiplication-setup.lisp
+spec-mv-let.lisp
 stress-tests.lisp
 syntax-tests.lisp
 

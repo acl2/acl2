@@ -15988,6 +15988,15 @@
   ~bv[]
   make -j 8 regression ACL2_BOOK_DIRS='symbolic paco'
   ~ev[]
+  By default, your acl2-customization file (~pl[acl2-customization]) is ignored
+  by all such flavors of ``~c[make regression]''.  However, you can specify the
+  use of an acl2-customization file by setting the value of environment
+  variable ~c[ACL2_CUSTOMIZATION] to the empty string, indicating a default
+  such file, or to the desired absolute pathname.  For example:
+  ~bv[]
+  make regression ACL2_CUSTOMIZATION=''
+  make regression ACL2_CUSTOMIZATION='~~/acl2-customization.lisp'
+  ~ev[]
 
   We now discuss how to create suitable makefiles in individual directories
   containing certifiable ~il[books].~/

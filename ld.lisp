@@ -17822,6 +17822,9 @@
   the ``waterfall'' part of the ACL2 prover; ~pl[set-waterfall-parallelism].
   Thanks to David Rager for doing the primary design and implementation work.
 
+  A new macro, ~ilc[spec-mv-let], supports speculative and parallel execution
+  in the parallel version, courtesy of David Rager.
+
   Among the enchancements for the HONS version (~pl[hons-and-memoization]) are
   the following.
   ~bq[]
