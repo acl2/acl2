@@ -889,87 +889,92 @@
                           state)
 ; X is an ACL2 object to write into filename.
 
-  (let ((*verbose*                  verbosep)
-        (*gather-atoms-seen-sym*    (make-hash-table :test 'eq :size symbol-table-size))
-        (*gather-atoms-seen-eql*    (make-hash-table :test 'eql :size number-table-size))
-        (*gather-atoms-seen-string* (make-hash-table :test 'eq :size string-table-size))
-        (*gather-atoms-seen-cons*   (make-hash-table :test 'eq :size cons-table-size))
-        (*gathered-symbols-ht*      (make-hash-table :test 'eq :size package-table-size))
-        (*gathered-symbols-alist*   nil)
-        (*gathered-naturals*        nil)
-        (*gathered-rationals*       nil)
-        (*gathered-complexes*       nil)
-        (*gathered-strings*         nil)
-        (*gathered-chars*           nil)
-        (*free-index*               0)
-        (*atom-map-eq*              (make-hash-table :test 'eq :size symbol-table-size))
-        (*atom-map-eql*             (make-hash-table :test 'eql :size number-table-size))
-        (*atom-map-string*          (make-hash-table :test 'eq :size string-table-size))
-        (*cons-table*               (make-hash-table :test 'eq :size cons-table-size))
-        (*cons-instructions*        nil)
-        (*encode-stream*            (open filename
-                                          :direction :output
-                                          :if-exists :supersede
-                                          :element-type '(unsigned-byte 8))))
+  (let* ((*verbose*                  verbosep)
+         (symbol-table-size          (or symbol-table-size 32768))
+         (number-table-size          (or number-table-size 32768))
+         (string-table-size          (or string-table-size 32768))
+         (cons-table-size            (or cons-table-size 131072))
+         (package-table-size         (or package-table-size 128))
+         (*gather-atoms-seen-sym*    (make-hash-table :test 'eq :size symbol-table-size))
+         (*gather-atoms-seen-eql*    (make-hash-table :test 'eql :size number-table-size))
+         (*gather-atoms-seen-string* (make-hash-table :test 'eq :size string-table-size))
+         (*gather-atoms-seen-cons*   (make-hash-table :test 'eq :size cons-table-size))
+         (*gathered-symbols-ht*      (make-hash-table :test 'eq :size package-table-size))
+         (*gathered-symbols-alist*   nil)
+         (*gathered-naturals*        nil)
+         (*gathered-rationals*       nil)
+         (*gathered-complexes*       nil)
+         (*gathered-strings*         nil)
+         (*gathered-chars*           nil)
+         (*free-index*               0)
+         (*atom-map-eq*              (make-hash-table :test 'eq :size symbol-table-size))
+         (*atom-map-eql*             (make-hash-table :test 'eql :size number-table-size))
+         (*atom-map-string*          (make-hash-table :test 'eq :size string-table-size))
+         (*cons-table*               (make-hash-table :test 'eq :size cons-table-size))
+         (*cons-instructions*        nil)
+         (*encode-stream*            (open filename
+                                           :direction :output
+                                           :if-exists :supersede
+                                           :element-type '(unsigned-byte 8)))
 
 ; At one point I thought it might be useful to declare all of the above as
 ; dynamic-extent.  But it seems like CCL doesn't stack-allocate hash tables?  I
 ; wonder if there's a way to tell the garbage collector to ignore these until
 ; the function is over, and to throw them away afterwards?  Ask Bob?
 
-    (let ((*gather-atoms-size-sym*                (hash-table-size *gather-atoms-seen-sym*))
-          (*gather-atoms-size-eql*                (hash-table-size *gather-atoms-seen-eql*))
-          (*gather-atoms-size-string*             (hash-table-size *gather-atoms-seen-string*))
-          (*gather-atoms-size-cons*               (hash-table-size *gather-atoms-seen-cons*))
-          (*gather-atoms-size-debug-help-printed* nil)
-          (*gather-atoms-size-debug-start*        60000)
-          (*gather-atoms-size-debug-current*      30000))
+         (*gather-atoms-size-sym*                (hash-table-size *gather-atoms-seen-sym*))
+         (*gather-atoms-size-eql*                (hash-table-size *gather-atoms-seen-eql*))
+         (*gather-atoms-size-string*             (hash-table-size *gather-atoms-seen-string*))
+         (*gather-atoms-size-cons*               (hash-table-size *gather-atoms-seen-cons*))
+         (*gather-atoms-size-debug-help-printed* nil)
+         (*gather-atoms-size-debug-start*        60000)
+         (*gather-atoms-size-debug-current*      30000))
 
-      (maybe-print "; Table sizes: symbols ~a; numbers ~a; strings ~a; conses ~a; packages ~a.~%"
-                   symbol-table-size
-                   number-table-size
-                   string-table-size
-                   cons-table-size
-                   package-table-size)
+    (maybe-print "; Table sizes: symbols ~a; numbers ~a; strings ~a; conses ~a; packages ~a.~%"
+                 symbol-table-size
+                 number-table-size
+                 string-table-size
+                 cons-table-size
+                 package-table-size)
 
-      (maybe-print "; Gathering atoms.~%")
-      (maybe-time (gather-atoms obj))
+    (maybe-print "; Gathering atoms.~%")
+    (maybe-time (gather-atoms obj))
 
-      (maybe-print "; Making atom map.~%")
-      (maybe-time (make-atom-map))
+    (maybe-print "; Making atom map.~%")
+    (maybe-time (make-atom-map))
 
-      (maybe-print "; Making instructions.~%")
-      (maybe-time (make-instructions obj))
-      (setf *cons-instructions* (nreverse *cons-instructions*))
+    (maybe-print "; Making instructions.~%")
+    (maybe-time (make-instructions obj))
+    (setf *cons-instructions* (nreverse *cons-instructions*))
 
-      ;; Do all of the encoding.  We start each file with a 32-bit number,
-      ;; #xAC12OBC7, which, squinted at, looks vaguely like "ACL2 OBCT", i.e.,
-      ;; "ACL2 Object". This gives us a minor sanity check and ensures that the
-      ;; file doesn't start with valid ASCII characters, so programs that convert
-      ;; newlines in text-mode files should hopefully leave us alone.
-      (encoder-write #xAC)
-      (encoder-write #x12)
-      (encoder-write #x0B)
-      (encoder-write #xC7)
+    ;; Do all of the encoding.  We start each file with a 32-bit number,
+    ;; #xAC12OBC7, which, squinted at, looks vaguely like "ACL2 OBCT", i.e.,
+    ;; "ACL2 Object". This gives us a minor sanity check and ensures that the
+    ;; file doesn't start with valid ASCII characters, so programs that convert
+    ;; newlines in text-mode files should hopefully leave us alone.
+    (encoder-write #xAC)
+    (encoder-write #x12)
+    (encoder-write #x0B)
+    (encoder-write #xC7)
 
-      ;; Number of indices needed in the decode array.
-      (maybe-print "; Max index is ~a.~%" *free-index*)
-      (nat-byte-encode *free-index*)
+    ;; Number of indices needed in the decode array.
+    (maybe-print "; Max index is ~a.~%" *free-index*)
+    (nat-byte-encode *free-index*)
 
-      ;; All the contents of the object, put into their types.
-      (maybe-time (encode-to-file))
+    ;; All the contents of the object, put into their types.
+    (maybe-time (encode-to-file))
 
-      ;; As a final sanity check, we again write #xAC12OBC7, which we can look
-      ;; for as a sanity check.
-      (encoder-write #xAC)
-      (encoder-write #x12)
-      (encoder-write #x0B)
-      (encoder-write #xC7)
+    ;; As a final sanity check, we again write #xAC12OBC7, which we can look
+    ;; for as a sanity check.
+    (encoder-write #xAC)
+    (encoder-write #x12)
+    (encoder-write #x0B)
+    (encoder-write #xC7)
 
-      ;; All done.
-      (close *encode-stream*)
+    ;; All done.
+    (close *encode-stream*)
 
-      state)))
+    state))
 
 
 

@@ -183,7 +183,7 @@
 ; who merely includes "serialize/serialize" can see all of the documentation.
 
   ":Doc-Section Serialize
-  Unsound alternative to SERIALIZE::read~/
+  Unsound alternative to ~c[SERIALIZE::read]~/
 
   Note: you should ~pl[SERIALIZE::serialize], \"Notes about books\",
   before reading this topic.
@@ -204,7 +204,7 @@
 
   Because it does not take state, ~c[unsound-read] may be used in ordinary
   ~il[defconst] commands, whereas ordinary ~c[read] may only be used in
-  ~il[make-events] or other contexts where the ~c[state] is available.  The
+  ~il[make-event]s or other contexts where the ~c[state] is available.  The
   interface is just like ~c[read], except that it does not return ~c[state].
   That is,
   ~bv[]
@@ -291,11 +291,16 @@
                           state)
   (declare (xargs :guard (and (stringp filename)
                               (booleanp verbosep)
-                              (posp symbol-table-size)
-                              (posp number-table-size)
-                              (posp string-table-size)
-                              (posp cons-table-size)
-                              (posp package-table-size)
+                              (or (not symbol-table-size)
+                                  (posp symbol-table-size))
+                              (or (not number-table-size)
+                                  (posp number-table-size))
+                              (or (not string-table-size)
+                                  (posp string-table-size))
+                              (or (not cons-table-size)
+                                  (posp cons-table-size))
+                              (or (not package-table-size)
+                                  (posp package-table-size))
                               (state-p state))
                   :stobjs state)
            (ignore filename obj verbosep symbol-table-size number-table-size
@@ -314,11 +319,11 @@
 
 (defmacro write (filename obj &key
                           verbosep
-                          (symbol-table-size '32768)
-                          (number-table-size '32768)
-                          (string-table-size '32768)
-                          (cons-table-size  '131072)
-                          (package-table-size '128))
+                          symbol-table-size
+                          number-table-size
+                          string-table-size
+                          cons-table-size
+                          package-table-size)
   `(write-fn ,filename ,obj ,verbosep ,symbol-table-size ,number-table-size
              ,string-table-size ,cons-table-size ,package-table-size
              state))
