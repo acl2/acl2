@@ -457,9 +457,10 @@
         val)
     (pprogn (observation nil "No change in waterfall printing.")
             (value nil)))
+   #-acl2-par
    (val
     (er soft 'set-waterfall-printing-fn
-        "Customizing waterfall printing only makes sense in the #+ac2l-par ~
+        "Customizing waterfall printing only makes sense in the #+acl2-par ~
          builds of ACL2.  Consequently, the waterfall-printing option will ~
          remain unchanged."))
    (t
