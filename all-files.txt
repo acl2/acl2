@@ -36,6 +36,7 @@ defthm.lisp
 defuns.lisp
 doc
 emacs
+futures-raw.lisp
 # gcl-patch.lisp # not distributed after v2-9
 history-management.lisp
 hons.lisp

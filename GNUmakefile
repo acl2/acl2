@@ -281,7 +281,7 @@ ifdef ACL2_HONS
 	sources := $(sources) hons-raw.lisp memoize-raw.lisp
 endif
 ifdef ACL2_PAR
-	sources := $(sources) multi-threading-raw.lisp parallel-raw.lisp
+	sources := $(sources) multi-threading-raw.lisp parallel-raw.lisp futures-raw.lisp
 endif
 # No change to sources for ACL2_WAG
 

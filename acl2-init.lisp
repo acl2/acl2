@@ -447,9 +447,8 @@ implementations.")
                                                    result)))
                                      (reverse result)))))
 
-; We want to be sure to include hons-raw.lisp and parallel-raw.lisp even if we
-; are not building the hons version, in order to assist in maintaining both
-; versions.
+; We want to be sure to include the *-raw.lisp files even if we are not
+; building the hons version, in order to assist in maintaining both versions.
 
                  (append lst (list "hons-raw.lisp"
                                    "memoize-raw.lisp"
