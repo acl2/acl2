@@ -1024,7 +1024,7 @@
 
     (or default 16)))
 
-(defconstant *core-count*
+(defvar *core-count*
   (core-count-raw)
   "The total number of CPU cores in the system.")
 
