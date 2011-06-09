@@ -52,7 +52,7 @@
 ;     (cw "vl-gc: allocated since last: ~x0~%" allocated)
      (when (> allocated (expt 2 30))
        (finish-output)
-       (acl2::our-gc)
+       (acl2::hl-system-gc)
        (setq *vl-gc-previously-used* (acl2::pkc ccl %usedbytes)))
      nil))
 

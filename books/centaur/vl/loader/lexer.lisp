@@ -1619,7 +1619,7 @@ case.</li>
                                       and is being truncated to ~x2 bits, ~
                                       yielding ~x3."
                                 :args (list (vl-echar->loc firstchar)
-                                            (vl-echarlist->string number)
+                                            value
                                             width
                                             val-fix)
                                 :fn 'vl-lex-integer)
