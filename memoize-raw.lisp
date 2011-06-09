@@ -35,23 +35,88 @@
 
 (in-package "ACL2")
 
+; [Jared] notes about cleanup...
+;
+;   - Added lots of comments that shouldn't change anything
 
-;; FEATURES
 
-(eval-when (:execute :compile-toplevel :load-toplevel)
+(eval-when
+ (:execute :compile-toplevel :load-toplevel)
 
-#-hons
-(error "memoize-raw.lisp should only be included when #+hons is set.")
+ #-hons
+ ;; [Jared]: Is there a real reason that memoization needs hons?
+ (error "memoize-raw.lisp should only be included when #+hons is set.")
 
-#+Clozure
-(unless (> (parse-integer ccl::*openmcl-svn-revision* :junk-allowed t)
-            13296)
-  (fresh-line)
-  (princ "Better use a version of CCL past revision 13295."))
 
-(defparameter *faking-batch-flag* nil)
+ ;; [Jared]: Don't know why we have this restriction.  Per the SVN messages it
+ ;; looks like this version was from December 2009 and dealt with some garbage
+ ;; collection things... we probably want people on a recent version, but I
+ ;; don't think it's our job to defend them from bugs in old Lisps, so I'm
+ ;; going to remove this.
+
+ ;; #+Clozure
+ ;; (unless (> (parse-integer ccl::*openmcl-svn-revision* :junk-allowed t) 13296)
+ ;;   (fresh-line)
+ ;;   (princ "Better use a version of CCL past revision 13295."))
+
+
+
+ ;; [Jared]: Below are the old comments about :parallel.  This feature hasn't
+ ;; been enabled for a long time as far as I can tell.  We probably need to
+ ;; revisit everything related to #+parallel.  We probably also want to use the
+ ;; #+acl2-par feature instead of #+parallel, for eventual compatibility with
+ ;; ACL2(p).  It appears that #+parallel is only used in this file.
+
+ ;; (pushnew :parallel *features*) causes a lot of locking that is of no value
+ ;; in a sequentially executing system.  We have attempted to make honsing,
+ ;; memoizing, and Emod-compilation 'thread safe', whatever in hell that means,
+ ;; but we have no idea what we are really doing and are simply coding based
+ ;; upon what we feel is intuitive common sense.  Very subtle stuff.
+
+
+
+ ;; One may comment out the following PUSHNEW and rebuild to get profiling
+ ;; times not based upon the curious and wondrous RDTSC instruction of some x86
+ ;; processors.  On a machine with several cores, the RDTSC values returned by
+ ;; different cores may be slightly different, which could lead one into such
+ ;; nonsense as instructions apparently executing in negative time, when timing
+ ;; starts on one core and finishes on another.  To some extent we ignore such
+ ;; RDTSC nonsense, but we still can report mysterious results since we have no
+ ;; clue about which core we are running on in CCL.
+
+  #+Clozure
+  (when (fboundp 'ccl::rdtsc) (pushnew :RDTSC *features*))
+
+  )
+
+
+
+
+; MFIXNUM
+;
+; We use the type mfixnum for counting things that are best counted in the
+; trillions or more.  Mfixnums happen to coincide with regular fixnums on
+; 64-bit CCL and SBCL.
+
+(defconstant most-positive-mfixnum (1- (expt 2 60)))
+
+(deftype mfixnum ()
+  `(integer ,(- -1 most-positive-mfixnum)
+            ,most-positive-mfixnum))
+
+
+
+
+
+
+
+
+(defparameter *faking-batch-flag*
+  ;; See live-terminal-p
+  nil)
 
 (defun live-terminal-p ()
+  ;; Part of WATCH
 
   "(LIVE-TERMINAL-P) attempts to determine whether there
   is an active user terminal for this Lisp."
@@ -65,31 +130,10 @@
                                       :readably nil)))))
     #-Clozure t)
 
-; #+Clozure (pushnew :parallel *features*)
-
-; #+Clozure (pushnew :Sol *features*)
-
-; One may comment out the following PUSHNEW and rebuild to get
-; profiling times not based upon the curious and wondrous RDTSC
-; instruction of some x86 processors.  On a machine with several
-; cores, the RDTSC values returned by different cores may be slightly
-; different, which could lead one into such nonsense as instructions
-; apparently executing in negative time, when timing starts on one
-; core and finishes on another.  To some extent we ignore such RDTSC
-; nonsense, but we still can report mysterious results since we have
-; no clue about which core we are running on in CCL.
-
-  #+Clozure
-  (when (fboundp 'ccl::rdtsc) (pushnew :RDTSC *features*))
-
-)
 
 
-;;;;;;;; UTILITIES ;;;;;;;; UTILITIES ;;;;;;;; UTILITIES
-;;;;;;;; UTILITIES ;;;;;;;; UTILITIES ;;;;;;;; UTILITIES
-
-
-; DEFG
+; [Jared]: We probably should work toward getting rid of defg/defv's in favor
+; of regular parameters...
 
 (defmacro defg (&rest r)
 
@@ -120,6 +164,11 @@
   `(defparameter ,@r)
   #+Clozure
   `(ccl::defstaticvar ,@r))
+
+
+
+
+
 
 
 ; PROFILER-IF
@@ -269,7 +318,7 @@
 
 (declaim (hash-table *number-of-arguments-and-values-ht*))
 
-(defun make-list-t (n) (make-list n :initial-element t))
+
 
 (defmacro defn1 (f a &rest r)
   (when (intersection a lambda-list-keywords)
@@ -280,7 +329,9 @@
   `(progn
      (setf (gethash ',f *number-of-arguments-and-values-ht*)
            (cons ,(length a) 1))
-     (declaim (ftype (function ,(make-list-t (len a)) (values t)) ,f))
+     (declaim (ftype (function ,(make-list (len a) :initial-element t)
+                               (values t))
+                     ,f))
      (defun ,f ,a (declare (xargs :guard t)) ,@r)))
 
 (defmacro defn1-one-output (f a &rest r)
@@ -292,7 +343,8 @@
   `(progn
      (setf (gethash ',f *number-of-arguments-and-values-ht*)
            (cons ,(length a) 1))
-     (declaim (ftype (function ,(make-list-t (len a)) (values t)) ,f))
+     (declaim (ftype (function ,(make-list (len a) :initial-element t)
+                               (values t)) ,f))
      (defun-one-output ,f ,a (declare (xargs :guard t)) ,@r)))
 
 (defmacro defn2 (f a &rest r)
@@ -304,48 +356,12 @@
   `(progn
      (setf (gethash ',f *number-of-arguments-and-values-ht*)
            (cons ,(length a) 2))
-     (declaim (ftype (function ,(make-list-t (len a)) (values t t)) ,f))
+     (declaim (ftype (function ,(make-list (len a) :initial-element t)
+                               (values t t)) ,f))
      (defun ,f ,a (declare (xargs :guard t)) ,@r)))
 
-(defmacro globlet (bindings &rest rest)
-
-  "GLOBLET is reminiscent of LET.  It is intended to be used in CCL
-  with variables that are introduced via DEFG or DEFV, i.e., may not
-  be LET or LAMBDA bound.  UNWIND-PROTECT is used to try to make sure
-  that the old value, which is assumed to exist, is restored."
-
-  (unless
-      (and (symbol-alistp bindings)
-           (loop for pair in bindings always
-                 (let ((var (car pair))
-                       (d (cdr pair)))
-                   (and (consp d)
-                        (null (cdr d))
-                        (not (constantp var))))))
-    (ofe "GLOBLET: ** bad bindings ~a." bindings))
-  (let ((vars (loop for b in bindings collect
-                    (make-symbol (symbol-name (car b))))))
-    `(let ,(loop for b in bindings as v in vars collect
-                  (list v (car b)))
-          (unwind-protect
-              (progn (psetq
-                      ,@(loop for b in bindings nconc
-                              (list (car b) (cadr b))))
-                     ,@rest)
-            (psetq ,@(loop for b in bindings as v in vars nconc
-                           (list (car b) v)))))))
 
 
-; MFIXNUM
-
-; We use the type mfixnum for counting things that are best counted in
-; the trillions or more.
-
-(defconstant most-positive-mfixnum (1- (expt 2 60)))
-
-(deftype mfixnum ()
-  `(integer ,(- -1 most-positive-mfixnum)
-            ,most-positive-mfixnum))
 
 
 ; TIMING UTILITIES
@@ -382,42 +398,7 @@
               (and float (satisfies plusp))))
 
 
-; VERY-UNSAFE-INCF
 
-(defmacro very-unsafe-incf (x inc &rest r)
-
-; returns NIL !
-
-  (declare (ignore r))
-  (unless (symbolp x)
-    (error "Do not use very-unsafe-incf on conses: ~a" x))
-  `(locally (declare (type mfixnum ,x))
-            (setq ,x
-                  (the mfixnum (+ ,x
-                                 (the mfixnum ,inc))))
-            nil))
-
-(defmacro very-very-unsafe-aref-incf (ar loc)
- `(setf (aref (the (simple-array mfixnum (*)) ,ar) ,loc)
-        (the mfixnum (1+ (aref (the (simple-array mfixnum (*)) ,ar)
-                              ,loc)))))
-
-
-; WATCH
-
-(defg *watch-file* nil
-  "If *WATCH-FILE* is not NIL, it is a string that names the 'watch
-  file', to which (WATCH-DUMP) prints.")
-
-(defg *watch-string*
-  (let ((ws (make-array 0 :element-type 'character
-                        :adjustable t :fill-pointer t)))
-    (setf (fill-pointer ws) 0)
-    ws)
-  "WATCH-DUMP first writes to the adjustable string *WATCH-STRING*
-  and then prints to the *WATCH-FILE*.")
-
-(declaim (type (array character (*)) *watch-string*))
 
 
 ; SAFE-INCF
@@ -497,17 +478,13 @@
                                               ',where))))))))
 
 
-;                               PARALLEL
-
-; (pushnew :parallel *features*) causes a lot of locking that is of no
-; value in a sequentially executing system.
-
-; We have attempted to make honsing, memoizing, and Emod-compilation
-; 'thread safe', whatever in hell that means, but we have no idea what
-; we are really doing and are simply coding based upon what we feel is
-; intuitive common sense.  Very subtle stuff.
 
 (declaim (hash-table *compiled-module-ht* *memoize-info-ht*))
+
+
+
+
+
 
 (defmacro unwind-mch-lock (&rest forms)
 
@@ -877,17 +854,7 @@
          (fgetprop fn 'absolute-event-number t (w *the-live-state*)))
         (t (ofe "EVENT-NUMBER: ** ~a is not a symbol ~s." fn))))
 
-;;;;;;;; HONS ;;;;;;;; HONS ;;;;;;;; HONS ;;;;;;;; HONS ;;;;;;;; HONS
-;;;;;;;; HONS ;;;;;;;; HONS ;;;;;;;; HONS ;;;;;;;; HONS ;;;;;;;; HONS
 
-
-(defconstant *empty-ht* (make-hash-table)
-  
-  "Sometimes when a variable, say V, has been declared to be a hash
-  table and we are about to rebuild it, we may temporarily set V to
-  *EMPTY-HT* for purposes of garbage collection.")
-
-(declaim (hash-table *empty-ht*))
 
 ; HONS VARIABLES, MACROS, AND DATA STRUCTURES
 
@@ -896,17 +863,9 @@
 
 (defconstant *start-car-ht-size*            18)
 
-; The following DEFV for *MHT-DEFAULT-SIZE* may seem to duplicate what
-; is in hons.lisp for *MHT-DEFAULT-SIZE*, but the DEFV makes
-; *MHT-DEFAULT-SIZE* 'static' in CCL, so access is faster than to
-; an ordinary special, such as DEFPARAMETER introduces.
-
 (defv *mht-default-size* 60)
-
 (defv *mht-default-rehash-size*             1.5)
-
 (defv *mht-default-rehash-threshold*        0.7)
-
 (defv *mht-default-shared* nil)
 
 (declaim (type fixnum *start-car-ht-size* *mht-default-size*))
@@ -938,53 +897,16 @@
   be protected by locks, hons and/or pons call/hit info is remotely
   possibly somewhat low.")
 
-(defparameter *hons-report-discipline-failure* 'break)
+
 
 (declaim (hash-table *compact-print-file-ht*))
 (declaim (type mfixnum *pons-call-counter* *pons-misses-counter*))
 
-(defg *hons-call-counter* 0)
-(defg *hons-misses-counter* 0)
 
 ; Definition. ***** means 'Do not call this function unless you are
 ; sure that a superior caller in this thread has the lock on
 ; *HONS-STR-HT*.
 
-
-
-(defun hons-report-discipline-failure-message ()
-  (ofd
-   "
-          You may ignore this 'discipline' warning.
-
-   There is nothing wrong except that some calls to HONS-GET may be
-   executing slower than you would like or might assume.  You may do
-
-      (setq *hons-report-discipline-failure* nil)
-
-   in raw Lisp to avoid seeing such messages.  Why the warning?  When
-   a concrete alist, say X, has been formed with calls to HONS-ACONS,
-   and is currently secretly backed by a hash table, and then some new
-   concrete object, say Y, is formed by HONS-ACONSing something
-   concrete on to X, the hash table of X is 'stolen' to support Y.
-   HONS-GET on X will then be possibly much slower, calling
-   ASSOC-EQUAL instead of a GETHASH.
-
-   "))
-
-(defmacro maybe-report-discipline-failure (fn args)
-  (cond
-   (*hons-report-discipline-failure*
-    `(cond
-      ((eq *hons-report-discipline-failure* 't)
-       (ofd "~&; Warning: ~s discipline failure on args:~% ~s~%"
-            ',fn ,args)
-       (hons-report-discipline-failure-message))
-      ((eq *hons-report-discipline-failure* 'break)
-       (hons-report-discipline-failure-message)
-       (break "~&; Break: ~s discipline failure on args:~% ~s~%"
-              ',fn ,args)
-       nil)))))
 
 
 ;  WATCH-IF
@@ -1081,22 +1003,6 @@
 
 
 
-(defn1 our-gc ()
-
-  "At least in Clozure Common Lisp, (OUR-GC) does not return until the
-  garbage collection invoked, via GC$, is finished.  This is important
-  for WASH-HONSES.  In Clozure, a call of CCL::GC may not complete a
-  garbage collection, but merely request one, which is then carried
-  out later on, by a separate process."
-
-  #+Clozure
-  (let ((current-gcs (ccl::full-gccount)))
-    (gc$)
-    (loop (when (> (ccl::full-gccount) current-gcs) (return))
-          (sleep 1)
-          (ofvv "Sleeping while waiting for a GC to finish.")))
-  #+Closure
-  (gc$))
 
 
 
@@ -1638,13 +1544,9 @@ the calls took.")
 (defg *2max-memoize-fns* (* 2 *initial-max-memoize-fns*))
 
 (defconstant *ma-bytes-index*       0)
-
 (defconstant *ma-hits-index*        1)
-
 (defconstant *ma-mht-index*         2)
-
 (defconstant *ma-hons-index*        3)
-
 (defconstant *ma-pons-index*        4)
 
 (defconstant *ma-initial-max-symbol-to-fixnum* 4)
@@ -1665,42 +1567,29 @@ the calls took.")
 ; locals used in memoize-on and memoize-off
 
 (defconstant *mo-f* (make-symbol "F"))
-
 (defconstant *mo-h* (make-symbol "H"))
-
 (defconstant *mo-o* (make-symbol "O"))
 
 
 ; locals used in functions generated by memoize-fn
 
 (defconstant *mf-old-caller* (make-symbol "OLD-CALLER"))
-
 (defconstant *mf-start-hons* (make-symbol "START-HONS"))
-
 (defconstant *mf-start-pons* (make-symbol "START-PONS"))
-
 (defconstant *mf-start-bytes* (make-symbol "START-BYTES"))
-
 (defconstant *mf-ans* (make-symbol "ANS"))
-
 (defconstant *mf-ans-p* (make-symbol "ANS-P"))
-
 (defconstant *mf-ma* (make-symbol "MA"))
-
 (defconstant *mf-args* (make-symbol "ARGS"))
-
 (defconstant *mf-2mmf* (make-symbol "MF-2MMF"))
-
 (defconstant *mf-2mmf-fnn* (make-symbol "MF-2MMF-FNN"))
-
 (defconstant *mf-count-loc* (make-symbol "MF-COUNT-LOC"))
 
 (defconstant *mf-cl-error-msg*
   "~%; Redefining a function in the COMMON-LISP package ~
    is forbidden.")
 
-(defg *caller* (* *ma-initial-max-symbol-to-fixnum*
-                  *2max-memoize-fns*)
+(defg *caller* (* *ma-initial-max-symbol-to-fixnum* *2max-memoize-fns*)
   "When memoized functions are executing in parallel, the value of
   *CALLER* and of statistics derived therefrom may be meaningless and
   random.")
@@ -3460,8 +3349,6 @@ the calls took.")
                               (cons d nil))))))
              (if temp (cons (cons 'declare temp) nil)))))
 
-(defn1 timer-error ()
-  (ofe "timer-error."))
 
 ; PRINE  - princ eviscerated
 
@@ -3552,39 +3439,6 @@ the calls took.")
         (t (prine ans *trace-output*)))
   (oftr ")~%"))
 
-(defmacro defnmem (fn args body &key
-                      (condition t)
-                      (inline t)
-                      (trace nil)
-                      (specials nil))
-
-  "DEFNMEM is a raw Lisp macro. (DEFNMEM fn args body) both DEFUNs and
-   MEMOIZEs FN.  The CL-DEFUN, STOBJS-IN, FORMALS, and STOBJS-OUT
-   options to MEMOIZE-FN are taken from ARGS, which may not use STATE
-   or STOBJS.  FN is declared to return only one value."
-
-  `(progn
-     (when (intersection ',args lambda-list-keywords)
-       (ofe "defnmem: In the defintion of ~s, the argument list ~s ~
-             contains a member of lambda-list-keywords so do not ~
-             use defnmem."
-            ',fn ',args))
-     (setf (gethash ',fn *number-of-arguments-and-values-ht*)
-           (cons ,(length args) 1))
-     (declaim (ftype (function ,(make-list-t (length args))
-                               (values t))
-                     ,fn))
-     (defun ,fn ,args ,body)
-     (memoize-fn ',fn
-                 :condition ',condition
-                 :inline ',inline
-                 :trace ',trace
-                 :specials ',specials
-                 :cl-defun '(defun ,fn ,args ,body)
-                 :stobjs-in (make-list (length ',args))
-                 :formals ',args
-                 :stobjs-out '(nil))
-     ',fn))
 
 (defn fle (x)
 
@@ -3748,25 +3602,35 @@ the calls took.")
   (unwind-mch-lock
    (maybe-untrace! fn) ; See the comment about Memoization in trace$-def.
    (with-warnings-suppressed
+
+; Big old bunch of error checking...
+
+
     (unless *memoize-init-done*
       (ofe "Memoize-fn:  *MEMOIZE-INIT-DONE* is still nil."))
+
     (unless (symbolp fn)
       (ofe "Memoize-fn: ~s is not a symbol.") fn)
+
     (unless (or (fboundp fn) (not (eq cl-defun :default)))
       (ofe "Memoize-fn: ~s is not fboundp." fn))
+
     (when (or (macro-function fn)
               (special-operator-p fn)
               (compiler-macro-function fn))
       (ofe "Memoize-fn: ~s is a macro or a special operator or has ~
             a compiler macro." fn))
+
     (when (gethash fn *never-profile-ht*)
       (ofe "Memoize-fn: ~s is in *NEVER-PROFILE-HT*"
            fn))
+
     (when (memoizedp-raw fn)
       (ofd "~%; Memoize-fn: ** Warning: ~s is currently memoized. ~
           ~%; So first we unmemoize it and then memoize it again."
            fn)
       (unmemoize-fn fn))
+
     (when (member fn (eval '(trace)))
       (ofd "~%; Memoize-fn:  Untracing ~s before memoizing it." fn)
       (eval `(untrace ,fn)))
@@ -3778,20 +3642,25 @@ the calls took.")
     (when (ccl::%advised-p fn)
       (ofe "~%; Memoize-fn: Please unadvise ~s before calling ~
             memoize-fn on it."
-           fn))      
+           fn))
+
     (when (and (fboundp 'old-trace)
                (member fn (eval '(old-trace))))
       (ofd "~%; Memoize-fn:  Old-untracing ~s before memoizing it."
            fn)
       (eval `(old-untrace ,fn)))
+
     (when (eq fn 'return-last)
       (ofe "Memoize-fn: RETURN-LAST may not be memoized."
            fn))
+
     (when (getprop fn 'constrainedp nil 'current-acl2-world wrld)
       (ofe "Memoize-fn: ~s is constrained; you may instead wish ~%~
             to memoize a caller or to memoize its attachment (see ~%~
             :DOC defattach)."
            fn))
+
+    ;; Doesn't this get checked below?  See the lambda-list intersection thing
     #+Clozure
     (when (multiple-value-bind (req opt restp keys)
               (ccl::function-args (symbol-function fn))
@@ -3800,31 +3669,44 @@ the calls took.")
                 (not (integerp req))
                 (not (eql opt 0))))
       (ofe "Memoize-fn: ~a has non-simple arguments." fn))
+
+
     (let*
-      ((cl-defun (if (eq cl-defun :default)
-                     (if inline
-                         (cond
-                          ((not (fboundp fn))
-                           (ofe "MEMOIZE-FN: ** ~a is undefined."
-                                fn))
-                          ((cltl-def-from-name fn nil wrld))
-                          ((function-lambda-expression
-                            (symbol-function fn)))
-                          (t
-                           #+Clozure
-                           (unless (and ccl::*save-source-locations*
-                                        ccl::*fasl-save-definitions*)
-                             (ofd "~&; Check the settings of ~
+      ((cl-defun
+        ;; Magic code to try to look up the Common Lisp definition for this function.
+        (if (eq cl-defun :default)
+            (if inline
+                (cond
+
+                 ((not (fboundp fn))
+                  (ofe "MEMOIZE-FN: ** ~a is undefined."
+                       fn))
+
+                 ((cltl-def-from-name fn nil wrld))
+
+                 ((function-lambda-expression
+                   (symbol-function fn)))
+
+                 (t
+                  #+Clozure
+                  (unless (and ccl::*save-source-locations*
+                               ccl::*fasl-save-definitions*)
+                    (ofd "~&; Check the settings of ~
                                    CCL::*SAVE-SOURCE-LOCATIONS* ~
                                    and ~
                                    CCL::*FASL-SAVE-DEFINITIONS*."))
-                           (ofe "MEMOIZE-FN: ** Cannot find a ~
+                  (ofe "MEMOIZE-FN: ** Cannot find a ~
                                       definition for ~a via ACL2 ~
                                       or ~
                                       FUNCTION-LAMBDA-EXPRESSION."
-                                fn))) nil)
-                   cl-defun))
+                       fn))) nil)
+          cl-defun))
+
        (formals
+        ;; Magic code to try to figure out what the formals of the function are.
+        ;; For ACL2 functions this works via looking up the 'formals property
+        ;; For raw Lips functions we may be able to extract the formals from the
+        ;; cl-defun above, or we may generate a list (X1 ... XN) in some cases?
         (if (eq formals :default)
             (let ((fo (getprop fn 'formals t 'current-acl2-world wrld)))
               (if (eq fo t)
@@ -3837,12 +3719,19 @@ the calls took.")
                         (ofe *memoize-fn-signature-error* fn))))
                 fo))
           formals))
-       (stobjs-in (if (eq stobjs-in :default)
-                      (let ((s (getprop fn 'stobjs-in t 'current-acl2-world
-                                        wrld)))
-                        (if (eq s t) (make-list (len formals)) s))
-                    stobjs-in))
+
+       (stobjs-in
+        ;; Either the ACL2 stobjs-in property or (T T T T ...) for the number
+        ;; of formals that we inferred the function has.
+        (if (eq stobjs-in :default)
+            (let ((s (getprop fn 'stobjs-in t 'current-acl2-world
+                              wrld)))
+              (if (eq s t) (make-list (len formals)) s))
+          stobjs-in))
+
        (stobjs-out
+        ;; Either the ACL2 stobjs-out property or (T T T T ...) for the number
+        ;; of return values that we inferred the function has.
         (if (eq stobjs-out :default)
             (let ((s (getprop fn 'stobjs-out t 'current-acl2-world wrld)))
               (if (eq s t)
@@ -3864,71 +3753,106 @@ the calls took.")
                               fn fn fn (len stobjs-in)))))
                     s))
           stobjs-out)))
+
+      ;; Not sure why this check is necessary or useful
       (unless (and (symbol-listp formals)
                    (no-duplicatesp formals)
                    (loop for x in formals never (constantp x)))
         (ofe "Memoize-fn: FORMALS, ~a, must be a true list of ~
               distinct, nonconstant symbols."
              formals))
+
       (when (intersection lambda-list-keywords formals)
         (ofe "Memoize-fn: FORMALS, ~a, may not intersect ~
               LAMBDA-LIST-KEYWORDS."))
+
+      ;; Don't memoize functions involving state.  Fair enough.
+      ;; Can you memoize functions with other stobjs??
       (when (and condition (or (member 'state stobjs-in)
                                (member 'state stobjs-out)))
         (ofe "Memoize-fn:  ~s uses STATE." fn))
+
+
       (let*
-        ((fnn (symbol-to-fixnum-create fn))
-         (2mfnn (* *2max-memoize-fns* fnn))
+        ((fnn (symbol-to-fixnum-create fn))  ; performance counting; see memoize-call-array
+         (2mfnn (* *2max-memoize-fns* fnn))  ; performance counting; see memoize-call-array
+
          (*acl2-unwind-protect-stack*
           (or *acl2-unwind-protect-stack*
               (cons nil *acl2-unwind-protect-stack*)))
+
          (old-fn (if (fboundp fn) (symbol-function fn)))
+
          (body (if (or inline (null old-fn))
                    (car (last cl-defun))
                  `(funcall ,old-fn ,@formals)))
+
+
          (body-name (make-symbol "BODY-NAME"))
          (body-call (list body-name))
+
          (condition-body
           (cond ((booleanp condition) condition)
                 ((symbolp condition)
+                 ;; Bizarre thing where the condition can be just the name of an ACL2 function,
+                 ;; see the documentation above
                  (car (last (cltl-def-from-name condition nil wrld))))
                 (t condition)))
+
          (dcls (dcls (cdddr (butlast cl-defun))))
          (start-time (let ((v (hons-gentemp
                                (suffix "START-TIME-" fn))))
                        (eval `(prog1 (defg ,v -1)
                                 (declaim (type integer ,v))))))
          (tablename
+          ;; Submits the defg form and returns the crazy name that gets generated.
           (eval `(defg
                    ,(hons-gentemp (suffix "MEMOIZE-HT-FOR-" fn))
                    nil)))
-         (localtablename (make-symbol "TABLENAME"))
          (ponstablename
+          ;; Submits the defg form and returns the crazy name that gets generated.
           (eval `(defg
                    ,(hons-gentemp (suffix "PONS-HT-FOR-" fn))
                    nil)))
+
+         (localtablename (make-symbol "TABLENAME"))
          (localponstablename (make-symbol "PONSTABLENAME"))
+
+         ;; When these user-level stobjs change the memo table will need to be cleared, I guess...
          (sts (loop for x in (union stobjs-in stobjs-out)
                     when x collect (st-lst x)))
+
+         ;; Number of arguments.  Specials only matter for common lisp functions, see the notes above in memoize-fn.
+         ;; Basically if the function reads from specials we want to count them as args.
          (nra (+ (len formals) (len specials)))
+
          def
          success)
         (let*
           ((mf-trace-exit
+            ;; Ignore this, just some kind of tracing...
             (and trace `((mf-trace-exit ',fn ,(length stobjs-out)
                                         ,*mf-ans*))))
            (mf-record-mht
+            ;; performance counting, see memoize-call-array
             (and *record-mht-calls*
                  `((safe-incf (aref ,*mf-ma* ,2mfnn) 1 ,fn))))
            (mf-record-hit
+            ;; performance counting, see memoize-call-array
             (and *record-hits* condition-body
                  `((safe-incf (aref ,*mf-ma*
                                     ,(+ 2mfnn *ma-hits-index*))
                               1 ,fn))))
            (lookup-marker (cons :lookup fn))
+
+
+
            (body3
+            ;; Main part of the new function definition...
+
             `(let (,*mf-ans* ,*mf-args* ,*mf-ans-p*)
                (declare (ignorable ,*mf-ans* ,*mf-args* ,*mf-ans-p*))
+
                (profiler-cond
                 ((not ,condition-body)
                  ,@mf-record-hit ; sort of a hit
@@ -3943,121 +3867,134 @@ the calls took.")
                       `(progn (setq ,*mf-ans* ,body-call)
                               ,@mf-trace-exit
                               ,*mf-ans*))))
+
+
                 ,@(and
                    condition-body
                    `((t
+
+                      ;; reinitialize tables if they don't exist...
                       (profiler-when
                        (null ,tablename)
                        ,@mf-record-mht
-                       (setq ,tablename
-                             (make-initial-memoize-hash-table
-                              ',fn ,memo-table-init-size))
-                       ,@(if (> nra 1)
+                       (setq ,tablename (make-initial-memoize-hash-table ',fn ,memo-table-init-size))
+
+                       ,@(if (> nra 1) ; number of arguments
                              `((setq ,ponstablename
-                                     (make-initial-memoize-pons-table
-                                      ',fn ,memo-table-init-size)))))
-                        ;; To avoid a remotely possible
-                        ;; parallelism gethash error.
-                        ,@(if (> nra 1)
-                              `((setq ,localponstablename
-                                      (profiler-or ,ponstablename
-; BOZO should this be a make-initial-memoize-pons-table?
-                                                   (mht)))))
-                        #+parallel
-                        ,@(if (> nra 1)
-                              `((ccl::lock-hash-table ,localponstablename)))
-                        (setq ,*mf-args* (pist* ,localponstablename
-                                                ,@formals
-                                                ,@specials))
-                        #+parallel
-                        ,@(if (> nra 1)
-                              `((ccl::unlock-hash-table ,localponstablename)))
-                        (setq ,localtablename
-; BOZO should this be a make-initial-memoize-hash-table?
-                              (profiler-or ,tablename (mht)))
-                        (multiple-value-setq
-                            (,*mf-ans* ,*mf-ans-p*)
-                          ,(let ((gethash-form
-                                  `(gethash ,*mf-args*
-                                            (the hash-table ,localtablename))))
-                             (cond (aokp `(profiler-cond
-                                           (*aokp* ,gethash-form)
-                                           (t (mv nil nil))))
-                                   (t gethash-form))))
-                        (profiler-cond
-                         (,*mf-ans-p*
-                          ,@(when aokp
-                              `((update-attached-fn-called ',lookup-marker)))
-                          ,@(if trace `((oftr "~% ~s remembered."
-                                              ',fn)))
-                          ,@mf-record-hit
-                          ,@(cond
-                             ((null (cdr stobjs-out))
-                              `(,@mf-trace-exit ,*mf-ans*))
-                             (t
-                              (let ((len-1 (1- (length stobjs-out))))
-                                `(,@(and
-                                     trace
-                                     `(progn
-                                        (let* ((,*mf-ans*
-                                                (append
-                                                 (take ,len-1 ,*mf-ans*)
-                                                 (list
-                                                  (nthcdr ,len-1 ,*mf-ans*)))))
-                                          ,@mf-trace-exit)))
-                                  ,(cons
-                                    'mv
-                                    (nconc (loop for i fixnum below len-1
-                                                 collect `(pop ,*mf-ans*))
-                                           (list *mf-ans*))))))))
-                         (t ,(let* ((vars
-                                     (loop for i fixnum below
-                                           (if (cdr stobjs-out)
-                                               (length stobjs-out)
-                                             1)
-                                           collect (ofni "O~a" i)))
-                                    (prog1-fn (if (cdr stobjs-out)
-                                                  'multiple-value-prog1
-                                                'prog1))
-                                    (mf-trace-exit+
-                                     (and mf-trace-exit
-                                          `((let ((,*mf-ans*
-                                                   ,(if stobjs-out
-                                                        `(list* ,@vars)
-                                                      (car vars))))
-                                              ,@mf-trace-exit)))))
-                               `(let (,*attached-fn-temp*)
-                                  (mv?-let
-                                   ,vars
-                                   (let (*attached-fn-called*)
-                                     (,prog1-fn
-                                      ,body-call
-                                      (setq ,*attached-fn-temp*
-                                            *attached-fn-called*)))
-                                   (progn
-                                     (cond
-                                      ,@(and (not aokp)
-                                             `((,*attached-fn-temp*
-                                                (memoize-use-attachment-warning
-                                                 ',fn ,*attached-fn-temp*))))
-                                      (t
-                                       (setf
-                                        (gethash ,*mf-args*
-                                                 (the hash-table
-                                                   ,localtablename))
-                                        (list* ,@vars))))
-                                     (update-attached-fn-called
-                                      ,*attached-fn-temp*)
-                                     ,@mf-trace-exit+
-                                     (mv? ,@vars)))))))))))))
+                                     (make-initial-memoize-pons-table ',fn ,memo-table-init-size)))))
+
+
+                      ;; To avoid a remotely possible parallelism gethash error.  (jared: what?!?)
+                      ,@(if (> nra 1)
+                            `((setq ,localponstablename
+                                    (profiler-or ,ponstablename
+                                                 ;; BOZO should this be a make-initial-memoize-pons-table?
+                                                 (mht)))))
+
+
+                      ;; Generate the pons key... if there's just one arg, pist* just returns the arg and
+                      ;; doesn't do any ponsing.
+
+                      #+parallel ,@(if (> nra 1) `((ccl::lock-hash-table ,localponstablename)))
+                      (setq ,*mf-args* (pist* ,localponstablename ,@formals ,@specials))
+                      #+parallel ,@(if (> nra 1) `((ccl::unlock-hash-table ,localponstablename)))
+
+
+                      ;; dunno what this is for... maybe we're binding a localtablename variable to avoid
+                      ;; doing special lookups or some such?
+
+                      (setq ,localtablename
+                            ;; BOZO should this be a make-initial-memoize-hash-table?
+                            (profiler-or ,tablename (mht)))
+
+
+                      ;; this is the lookup of the memoized result.
+
+                      (multiple-value-setq
+                       (,*mf-ans* ,*mf-ans-p*)
+                       ,(let ((gethash-form
+                               `(gethash ,*mf-args*
+                                         (the hash-table ,localtablename))))
+                          (cond (aokp `(profiler-cond
+                                        (*aokp* ,gethash-form)
+                                        (t (mv nil nil))))
+                                (t gethash-form))))
+
+
+
+                      (profiler-cond
+                       (,*mf-ans-p*
+
+                        ;; Memoized lookup succeeds.  Do profiling things, return answer...
+
+                        ,@(when aokp `((update-attached-fn-called ',lookup-marker)))
+                        ,@(if trace `((oftr "~% ~s remembered." ',fn)))
+                        ,@mf-record-hit
+                        ,@(cond ((null (cdr stobjs-out))
+                                 `(,@mf-trace-exit ,*mf-ans*))
+                                (t
+                                 ;; No idea what this is doing...
+                                 (let ((len-1 (1- (length stobjs-out))))
+                                   `(,@(and trace
+                                            `(progn
+                                               (let* ((,*mf-ans* (append (take ,len-1 ,*mf-ans*)
+                                                                         (list (nthcdr ,len-1 ,*mf-ans*)))))
+                                                 ,@mf-trace-exit)))
+                                     ,(cons
+                                       'mv
+                                       (nconc (loop for i fixnum below len-1 collect `(pop ,*mf-ans*))
+                                              (list *mf-ans*))))))))
+
+
+                       (t
+
+                        ;; Memoized lookup failed.  Need to run the function and get its results...
+
+                        ,(let* ((vars
+                                 ;; Make variables (O0 O1 ... 0N) for the outputs?  Don't really understand what stobjs-out is
+                                 ;; for here...
+                                 (loop for i fixnum below (if (cdr stobjs-out) (length stobjs-out) 1) collect (ofni "O~a" i)))
+
+                                (prog1-fn (if (cdr stobjs-out) 'multiple-value-prog1 'prog1))
+                                (mf-trace-exit+
+                                 (and mf-trace-exit
+                                      `((let ((,*mf-ans* ,(if stobjs-out `(list* ,@vars) (car vars))))
+                                          ,@mf-trace-exit)))))
+
+                             `(let (,*attached-fn-temp*)
+                                (mv?-let
+                                 ,vars
+                                 (let (*attached-fn-called*)
+                                   ;; This is where the actual function is being run.  The 01...0N vars are being bound to
+                                   ;; the results...
+                                   (,prog1-fn
+                                    ,body-call
+                                    (setq ,*attached-fn-temp* *attached-fn-called*)))
+                                 (progn
+                                   (cond
+                                    ,@(and (not aokp)
+                                           `((,*attached-fn-temp*
+                                              (memoize-use-attachment-warning ',fn ,*attached-fn-temp*))))
+                                    (t
+                                     ;; Actually install the results
+                                     (setf (gethash ,*mf-args* (the hash-table ,localtablename))
+                                           (list* ,@vars))))
+                                   (update-attached-fn-called ,*attached-fn-temp*)
+                                   ,@mf-trace-exit+
+                                   (mv? ,@vars)))))))))))))
+
+
            (body2
+            ;; Bunch of extra profiling stuff wrapped around body3.
+
             `(let ((,*mf-old-caller* *caller*)
                    #+Clozure
                    ,@(and *record-bytes*
                           `((,*mf-start-bytes*
                              (heap-bytes-allocated))))
-                   ,@(and *record-hons-calls*
-                          `((,*mf-start-hons* *hons-call-counter*)))
+                   ;; [Jared]: removing this, hons tracking hasn't worked since hl-hons
+                   ;; ,@(and *record-hons-calls*
+                   ;;        `((,*mf-start-hons* *hons-call-counter*)))
                    ,@(and *record-pons-calls*
                           `((,*mf-start-pons* *pons-call-counter*))))
                (declare
@@ -4079,15 +4016,10 @@ the calls took.")
                                           '0))
                      (setq *caller* ,2mfnn)
                      ,body3)
-                 ,@(and *record-hons-calls*
-                        `((safe-incf
-                           (aref
-                            ,*mf-ma*
-                            ,(+ *ma-hons-index* 2mfnn))
-                           (the mfixnum
-                             (- *hons-call-counter*
-                                ,*mf-start-hons*))
-                           ,fn)))
+                 ;; [Jared]: removing this, hons tracking hasn't worked since hl-hons
+                 ;; ,@(and *record-hons-calls*
+                 ;;        `((safe-incf (aref ,*mf-ma* ,(+ *ma-hons-index* 2mfnn))
+                 ;;          (the mfixnum (- *hons-call-counter* ,*mf-start-hons*)) ,fn)))
                  ,@(and *record-pons-calls*
                         `((safe-incf
                            (aref ,*mf-ma* ,(+ *ma-pons-index* 2mfnn))
@@ -4117,6 +4049,7 @@ the calls took.")
                                        `((setq ,ponstablename nil)))))
                  (setq ,start-time -1)
                  (setq *caller* ,*mf-old-caller*)))))
+
           (setq def
             `(defun ,fn ,formals ,@dcls
                ,@(if trace
@@ -4805,6 +4738,28 @@ the calls took.")
   nil)
 
 
+; VERY-UNSAFE-INCF
+
+(defmacro very-unsafe-incf (x inc &rest r)
+
+; returns NIL !
+
+  (declare (ignore r))
+
+  (unless (symbolp x)
+    ;; Compile-time sanity check
+    (error "very-unsafe-incf should only be used on symbols, not ~a" x))
+
+  `(locally (declare (type mfixnum ,x))
+            (setq ,x (the mfixnum (+ ,x (the mfixnum ,inc))))
+            nil))
+
+(defmacro very-very-unsafe-aref-incf (ar loc)
+ `(setf (aref (the (simple-array mfixnum (*)) ,ar) ,loc)
+        (the mfixnum (1+ (aref (the (simple-array mfixnum (*)) ,ar)
+                              ,loc)))))
+
+
 (defn1 pons-summary ()
   (our-syntax-nice
    (let ((sssub 0) (nponses 0) (nsubs 0) (nponstab 0))
@@ -4866,7 +4821,7 @@ the calls took.")
                              (the hash-table tb)))))))
   nil)
 
-(defvar *acl2--*)
+
 
 (defn print-call-stack ()
 
@@ -4892,8 +4847,9 @@ the calls took.")
                         (ofnum (/ (- time (cdr pair))
                                   *float-ticks/second*)))))
     (our-syntax-brief (when - (oft "~%? ~a" -)))
-    (our-syntax-brief
-     (when (boundp '*acl2--*) (oft "~%> ~a~%" *acl2--*)))
+;; [Jared]: what?
+;;    (our-syntax-brief
+;;     (when (boundp '*acl2--*) (oft "~%> ~a~%" *acl2--*)))
     (when l
       (terpri)
       (print-alist
@@ -6893,32 +6849,6 @@ next GC.~%"
   (float-ticks/second-init)
   (eval *hons-init-hook*))
 
-(defn all-module-names ()
-  (loop for x in (table-alist 'defm-table (w *the-live-state*))
-        collect
-        (cadar x)))
-               
-(defn all-modules ()
-  (loop for n in (all-module-names) collect
-        (symbol-value n)))
-
-(defg *current-module-names-ht* (make-hash-table :test 'eq))
-
-(defn1 current-module-name-p (x)
-  (cond ((eq (w *the-live-state*)
-             (gethash *current-module-names-ht*
-                      *current-module-names-ht*))
-         (gethash x *current-module-names-ht*))
-        (t (clrhash *current-module-names-ht*)
-           (loop for x in (table-alist 'defm-table
-                                       (w *the-live-state*))
-                 do (setf (gethash (cadar x)
-                                   *current-module-names-ht*)
-                          t))
-           (setf (gethash *current-module-names-ht*
-                          *current-module-names-ht*)
-                 (w *the-live-state*))
-           (gethash x *current-module-names-ht*))))
 
 ;;; SHORTER, OLDER NAMES
 
@@ -6949,6 +6879,22 @@ next GC.~%"
 
 ;;;                                WATCH
 
+
+(defg *watch-file* nil
+  "If *WATCH-FILE* is not NIL, it is a string that names the 'watch
+  file', to which (WATCH-DUMP) prints.")
+
+(defg *watch-string*
+  (let ((ws (make-array 0 :element-type 'character
+                        :adjustable t :fill-pointer t)))
+    (setf (fill-pointer ws) 0)
+    ws)
+  "WATCH-DUMP first writes to the adjustable string *WATCH-STRING*
+  and then prints to the *WATCH-FILE*.")
+
+(declaim (type (array character (*)) *watch-string*))
+
+
 (defg *watch-forms*
   '("\"A string or a quoted form in *WATCH-FORMS* is ignored.\""
     (print-call-stack)
@@ -6957,8 +6903,9 @@ next GC.~%"
     (time-since-watch-start)
     (time-of-last-watch-update)
     '(mapc 'print-some-documentation *watch-items*)
-    '(hons-calls/sec-run-time)
-    '(hons-hits/calls)
+    ;; [Jared] removing these, they haven't worked since hl-hons
+    ;; '(hons-calls/sec-run-time)
+    ;; '(hons-hits/calls)
     '(hons-acons-summary)
     '(pons-calls/sec-run-time)
     '(pons-hits/calls)
@@ -7857,14 +7804,6 @@ next GC.~%"
   (/ (- (get-internal-run-time) *watch-start-run-time*)
      *float-internal-time-units-per-second*))
 
-(defw hons-calls/sec-run-time
-  (let* ((c *hons-call-counter*)
-         (ans
-          (cond ((eql c 0) "No hons calls yet.")
-                (t (ofn "~,1e" (round (/ c (+ .000001
-                                              (watch-run-time)))))))))
-    (oft-wrm "~v<~a~;~a~>" fn ans)))
-
 (defw pons-calls/sec-run-time
   (let* ((c *pons-call-counter*)
          (ans
@@ -7881,17 +7820,6 @@ next GC.~%"
                 (t (ofn "~,1e / ~,1e = ~,2f" h c (/ h c))))))
     (oft-wrm "~v<~a~;~a~>" fn ans)))
 
-(defw hons-hits/calls
-  (let* ((c *hons-call-counter*)
-         (h (- c *hons-misses-counter*))
-         (ans
-          (cond ((eql c 0) "No hons calls yet.")
-                (t (ofn "~,1e / ~,1e = ~,2f" h c (/ h c))))))
-    (oft-wrm "~v<~a~;~a~>" fn ans)
-    #+Clozure
-    (oft-wrm "~%~v<Heap bytes allocated since watch start~;~,1e~>"
-             (- (heap-bytes-allocated)
-                *watch-start-heap-bytes-allocated*))))
 
 #+Clozure
 (defw gc-count ()
@@ -7943,10 +7871,6 @@ next GC.~%"
                        (watch-count) fn h1 mi1 sec1 "Run-time"
                    h2 mi2 sec2)))))))
 
-(defw timer-function-name
-  (let ((ans #+RDTSC "RDTSC"
-             #-RDTSC "GET-INTERNAL-REAL-TIME."))
-    (oft-wrm "~v<~a~;~a~>" fn ans)))
 
 #+Clozure
 (defun make-watchdog (duration)
@@ -8732,7 +8656,7 @@ next GC.~%"
                                            nil o nil :eof)))))
                    do (write-char x s))))))))))
 
-                            
+
 ; A SOMETIMES FASTER VERSION OF THE COMMON LISP CASE FUNCTION
 
 #+Clozure
@@ -8794,6 +8718,37 @@ next GC.~%"
          s
          (loop for x in forms when (>= (car x) s) collect x)))))))
 
+
+
+(defmacro globlet (bindings &rest rest)
+  ;; [Jared]: this is only used in with-lower-overhead AFAICT.
+
+  "GLOBLET is reminiscent of LET.  It is intended to be used in CCL
+  with variables that are introduced via DEFG or DEFV, i.e., may not
+  be LET or LAMBDA bound.  UNWIND-PROTECT is used to try to make sure
+  that the old value, which is assumed to exist, is restored."
+
+  (unless
+      (and (symbol-alistp bindings)
+           (loop for pair in bindings always
+                 (let ((var (car pair))
+                       (d (cdr pair)))
+                   (and (consp d)
+                        (null (cdr d))
+                        (not (constantp var))))))
+    (ofe "GLOBLET: ** bad bindings ~a." bindings))
+  (let ((vars (loop for b in bindings collect
+                    (make-symbol (symbol-name (car b))))))
+    `(let ,(loop for b in bindings as v in vars collect
+                  (list v (car b)))
+          (unwind-protect
+              (progn (psetq
+                      ,@(loop for b in bindings nconc
+                              (list (car b) (cadr b))))
+                     ,@rest)
+            (psetq ,@(loop for b in bindings as v in vars nconc
+                           (list (car b) v)))))))
+
 (defmacro with-lower-overhead (&rest r)
   `(let ((*record-bytes* nil)
          (*record-calls* nil)
@@ -8801,8 +8756,7 @@ next GC.~%"
          (*record-hons-calls* nil)
          (*record-mht-calls* nil)
          (*record-pons-calls* nil)
-         (*record-time* nil)
-         (*hons-report-discipline-failure* nil))
+         (*record-time* nil))
      (globlet ((*count-pons-calls* nil))
               ,@ r)))
 
@@ -8815,11 +8769,8 @@ next GC.~%"
   (setq *record-mht-calls* nil)
   (setq *record-pons-calls* nil)
   (setq *record-time* nil)
-  (setq *hons-report-discipline-failure* nil)
   (setq *count-pons-calls* nil))
 
-(let ((state *the-live-state*))
-  (f-put-global 'doc-prefix " " state))
 
 (defun our-gctime ()
   (ccl::timeval->microseconds ccl::*total-gc-microseconds*))
@@ -8875,3 +8826,215 @@ next GC.~%"
                              (setf (gethash k *memoize-info-ht*)
                                    new-entry)))))
                *memoize-info-ht*))))
+
+
+
+
+
+
+; -----------------------------------------------------------------------------
+
+; [Jared] None of this stuff seems to be in use anymore.
+
+
+;; [Jared] This seems to be unused
+;; (defw timer-function-name
+;;   (let ((ans #+RDTSC "RDTSC"
+;;              #-RDTSC "GET-INTERNAL-REAL-TIME."))
+;;     (oft-wrm "~v<~a~;~a~>" fn ans)))
+
+
+;; [Jared]: defnmem is used in the old g.lsp, sort of, but only for one
+;; function (gh-copy).  But... it's actually defined in that file (again), so
+;; there's no reason to define it here.
+
+;; (defmacro defnmem (fn args body &key
+;;                       (condition t)
+;;                       (inline t)
+;;                       (trace nil)
+;;                       (specials nil))
+
+;;   "DEFNMEM is a raw Lisp macro. (DEFNMEM fn args body) both DEFUNs and
+;;    MEMOIZEs FN.  The CL-DEFUN, STOBJS-IN, FORMALS, and STOBJS-OUT
+;;    options to MEMOIZE-FN are taken from ARGS, which may not use STATE
+;;    or STOBJS.  FN is declared to return only one value."
+
+;;   `(progn
+;;      (when (intersection ',args lambda-list-keywords)
+;;        (ofe "defnmem: In the defintion of ~s, the argument list ~s ~
+;;              contains a member of lambda-list-keywords so do not ~
+;;              use defnmem."
+;;             ',fn ',args))
+;;      (setf (gethash ',fn *number-of-arguments-and-values-ht*)
+;;            (cons ,(length args) 1))
+;;      (declaim (ftype (function ,(make-list (length args) :initial-element t)
+;;                                (values t))
+;;                      ,fn))
+;;      (defun ,fn ,args ,body)
+;;      (memoize-fn ',fn
+;;                  :condition ',condition
+;;                  :inline ',inline
+;;                  :trace ',trace
+;;                  :specials ',specials
+;;                  :cl-defun '(defun ,fn ,args ,body)
+;;                  :stobjs-in (make-list (length ',args))
+;;                  :formals ',args
+;;                  :stobjs-out '(nil))
+;;      ',fn))
+
+
+;; [Jared]: I just expanded the few uses of this that I found to their
+;; definitions.
+
+;; (defun make-list-t (n) (make-list n :initial-element t))
+
+
+
+;; [Jared]: this is totally unused now, I think it used to be part of the old
+;; wash-hash-tables code
+
+;; (defconstant *empty-ht* (make-hash-table)
+
+;;   "Sometimes when a variable, say V, has been declared to be a hash
+;;   table and we are about to rebuild it, we may temporarily set V to
+;;   *EMPTY-HT* for purposes of garbage collection.")
+
+;; (declaim (hash-table *empty-ht*))
+
+
+;; [Jared]: old hons code that has been subsumed
+
+;; (defun hons-report-discipline-failure-message ()
+;;   (ofd
+;;    "
+;;           You may ignore this 'discipline' warning.
+
+;;    There is nothing wrong except that some calls to HONS-GET may be
+;;    executing slower than you would like or might assume.  You may do
+
+;;       (setq *hons-report-discipline-failure* nil)
+
+;;    in raw Lisp to avoid seeing such messages.  Why the warning?  When
+;;    a concrete alist, say X, has been formed with calls to HONS-ACONS,
+;;    and is currently secretly backed by a hash table, and then some new
+;;    concrete object, say Y, is formed by HONS-ACONSing something
+;;    concrete on to X, the hash table of X is 'stolen' to support Y.
+;;    HONS-GET on X will then be possibly much slower, calling
+;;    ASSOC-EQUAL instead of a GETHASH.
+
+;;    "))
+
+;; (defmacro maybe-report-discipline-failure (fn args)
+;;   (cond
+;;    (*hons-report-discipline-failure*
+;;     `(cond
+;;       ((eq *hons-report-discipline-failure* 't)
+;;        (ofd "~&; Warning: ~s discipline failure on args:~% ~s~%"
+;;             ',fn ,args)
+;;        (hons-report-discipline-failure-message))
+;;       ((eq *hons-report-discipline-failure* 'break)
+;;        (hons-report-discipline-failure-message)
+;;        (break "~&; Break: ~s discipline failure on args:~% ~s~%"
+;;               ',fn ,args)
+;;        nil)))))
+
+
+;; (defparameter *hons-report-discipline-failure* 'break)
+
+
+;; [Jared]: removing this old hons-tracking stuff, it hasn't worked since hl-hons.
+
+; (defg *hons-call-counter* 0)
+; (defg *hons-misses-counter* 0)
+
+;; (defw hons-hits/calls
+;;   (let* ((c *hons-call-counter*)
+;;          (h (- c *hons-misses-counter*))
+;;          (ans
+;;           (cond ((eql c 0) "No hons calls yet.")
+;;                 (t (ofn "~,1e / ~,1e = ~,2f" h c (/ h c))))))
+;;     (oft-wrm "~v<~a~;~a~>" fn ans)
+;;     #+Clozure
+;;     (oft-wrm "~%~v<Heap bytes allocated since watch start~;~,1e~>"
+;;              (- (heap-bytes-allocated)
+;;                 *watch-start-heap-bytes-allocated*))))
+
+;; (defw hons-calls/sec-run-time
+;;   (let* ((c *hons-call-counter*)
+;;          (ans
+;;           (cond ((eql c 0) "No hons calls yet.")
+;;                 (t (ofn "~,1e" (round (/ c (+ .000001
+;;                                               (watch-run-time)))))))))
+;;     (oft-wrm "~v<~a~;~a~>" fn ans)))
+
+
+;; [Jared]: It seems like this was trying to override how ACL2 prints
+;; documentation, so that :doc foo would print with just " " in front of each
+;; line instead of "| ".  Well, it doesn't seem to work, and also why the hell
+;; are we futzing with how documentation is printed in memoize-raw?  I'm
+;; getting rid of it.
+
+;; (let ((state *the-live-state*))
+;;   (f-put-global 'doc-prefix " " state))
+
+
+;; [Jared]: never used...
+;; (defn1 timer-error ()
+;;   (ofe "timer-error."))
+
+
+
+;; [Jared]: this is now integrated in hons-raw.lisp and is called hl-system-gc.
+
+;; (defn1 our-gc ()
+
+;;   "At least in Clozure Common Lisp, (OUR-GC) does not return until the
+;;   garbage collection invoked, via GC$, is finished.  This is important
+;;   for WASH-HONSES.  In Clozure, a call of CCL::GC may not complete a
+;;   garbage collection, but merely request one, which is then carried
+;;   out later on, by a separate process."
+
+;;   #+Clozure
+;;   (let ((current-gcs (ccl::full-gccount)))
+;;     (gc$)
+;;     (loop (when (> (ccl::full-gccount) current-gcs) (return))
+;;           (sleep 1)
+;;           (ofvv "Sleeping while waiting for a GC to finish.")))
+;;   #+Closure
+;;   (gc$))
+
+
+
+;; [Jared]: removing old emod stuff... why was this in memoize??
+
+;; (defn all-module-names ()
+;;   (loop for x in (table-alist 'defm-table (w *the-live-state*))
+;;         collect
+;;         (cadar x)))
+
+;; (defn all-modules ()
+;;   (loop for n in (all-module-names) collect
+;;         (symbol-value n)))
+
+;; (defg *current-module-names-ht* (make-hash-table :test 'eq))
+
+;; (defn1 current-module-name-p (x)
+;;   (cond ((eq (w *the-live-state*)
+;;              (gethash *current-module-names-ht*
+;;                       *current-module-names-ht*))
+;;          (gethash x *current-module-names-ht*))
+;;         (t (clrhash *current-module-names-ht*)
+;;            (loop for x in (table-alist 'defm-table
+;;                                        (w *the-live-state*))
+;;                  do (setf (gethash (cadar x)
+;;                                    *current-module-names-ht*)
+;;                           t))
+;;            (setf (gethash *current-module-names-ht*
+;;                           *current-module-names-ht*)
+;;                  (w *the-live-state*))
+;;            (gethash x *current-module-names-ht*))))
+
+
+;; No documentation, printed during print-call-stack if bound.  killing it.
+
+;;(defvar *acl2--*)

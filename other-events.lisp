@@ -15973,7 +15973,9 @@
   attempt.
 
   By default, the ACL2 executable used is the file ~c[saved_acl2] in the ACL2
-  sources directory.  But you can specify another instead:
+  sources directory.  But you can specify another instead; indeed, you must do
+  so if you are using an experimental extension (~pl[real],
+  ~pl[hons-and-memoization], and ~pl[parallelism]):
   ~bv[]
   make regression ACL2=<your_favorite_acl2_executable>
   ~ev[]

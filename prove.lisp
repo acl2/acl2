@@ -1279,8 +1279,8 @@
                                                 :hint-settings))))
             (and pool ;(b)
                  (not (assoc-eq 'being-proved-by-induction pool))
-                 (not (assoc-eq :induct  (access prove-spec-var pspv
-                                                 :hint-settings))))))
+                 (not (assoc-eq :induct (access prove-spec-var pspv
+                                                :hint-settings))))))
 
 ; We have not been told to press Onward Thru the Fog and
 

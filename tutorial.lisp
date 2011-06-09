@@ -766,6 +766,14 @@
   concept of key checkpoint is clear in the discussion and the behavior of the
   user.  
 
+  See
+  ~url[http://www.cs.utexas.edu/users/moore/acl2/contrib/POLISHING-PROOFS-TUTORIAL.html]
+  for a tutorial on becoming successful at approaching a formalization and
+  proof problem in ACL2.  That tutorial, written by Shilpi Goel and Sandip Ray,
+  has two parts: it illustrates how to guide the theorem prover to a successful
+  proof, and it shows how to clean up the proof in order to facilitate
+  maintenance and extension of the resulting book (~pl[books]).
+
   At ~url[http://www.cs.utexas.edu/users/moore/publications/tutorial/kaufmann-TPHOLs08/index.html]
   is the demo given by Matt Kaufmann at TPHOLs08, including all the scripts.  There is a gzipped
   tar file containing the entire contents of the demos.

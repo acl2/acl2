@@ -24,17 +24,9 @@
 ; University of Texas at Austin
 ; Austin, TX 78701 U.S.A.
 
-; This file, acl2-init.lisp, is the inititialization file for ACL2.
-
-; ACL2 is designed to run in any Common Lisp, although we have focused
-; especially on AKCL, and we take advantage of a few aspects of AKCL
-; to assist our development.  This file need not be distributed with
-; ACL2 and is unimportant for the correct operation of ACL2.  This
-; file is loaded automatically by ACKL when it starts up.
-
 ; This file cannot be compiled because it changes packages in the middle.
 
-; Next we restrict the hons version to CCL (starting with v3-6), because of
+; We restrict the hons version to CCL (starting with v3-6), because of
 ; CCL-specific changes made to hons-raw.lisp.  With some work this restriction
 ; could probably be relaxed, but it's not clear that it's worth the effort.
 #+(and hons (not ccl))
@@ -107,6 +99,22 @@ implementations.")
 
 #+lispworks
 (setq system::*stack-overflow-behaviour* nil) ; could be :warn
+
+; We have observed a significant speedup with Allegro CL when turning off
+; its cross-referencing capability.  Here are the times before and after
+; evaluating the setq form below, in an example from Dave Greve that spends
+; a lot of time loading compiled files.
+;
+; 165.43 seconds realtime, 163.84 seconds runtime.
+; 120.23 seconds realtime, 118.32 seconds runtime.
+;
+; The user is welcome to edit the form below.  Note that it doesn't seem to
+; affect the profiler.
+#+allegro
+(setq excl::*record-xref-info* nil
+      excl::*load-xref-info* nil
+      excl::*record-source-file-info* nil
+      excl::*load-source-file-info* nil)
 
 ; Create the packages we use.
 

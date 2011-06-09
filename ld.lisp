@@ -17660,6 +17660,12 @@
   (GCL only) The macro ~ilc[mv] has been modified so that certain fixnum boxing
   can be avoided.
 
+  (Allegro CL only) We have set to ~c[nil] four Allegro CL variables that
+  otherwise enable storing of certain source information (for details, see the
+  discussion of ``cross-referencing'' in ACL2 source file ~c[acl2-init.lisp]).
+  As a result of this change we have about a 6% speedup on the regression
+  suite, but a 27% time reduction on an example that includes a lot of books.
+
   ~st[BUG FIXES]
 
   A soundness bug was fixed in some raw-Lisp code implementing the function,
