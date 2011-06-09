@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# Usage: svnc msg [file file ...]
+# which should be equivalent to
+# svn commit -m msg [file file ...]
+# except that file acl2-startup-info.txt is always updated, with
+# a time stamp so that it will always be committed.
+
+rm -f acl2-startup-info.txt
+echo '"$Revision: $"' > acl2-startup-info.txt
+date >> acl2-startup-info.txt
+echo "Books \c" >> acl2-startup-info.txt
+(cd books ; svn info -r head | grep ^Revision) >> acl2-startup-info.txt
+
+if [ $# -lt 1 ] ; then \
+    echo "Usage: svnc msg [file file ...]" ; \
+    exit 1 ; \
+elif [ $# -eq 1 ] ; then \
+    echo "svn commit -m \"$1\""
+    svn commit -m "$1"
+else \
+    export msg="$1"
+    shift 1
+    echo svn commit -m \"$msg\" $* acl2-startup-info.txt
+    svn commit -m "$msg" $* acl2-startup-info.txt
+fi
