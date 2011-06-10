@@ -117,8 +117,6 @@
 
 (defn1 hons-read-list (stream)
 
-  ; ***** hons
-
   ; HONS-READ-LIST must return a HONSP whenever it turns a CONSP, even
   ; when the object comes from some readmacro such as that for quote
   ; or backquote that might return a CONS.  Hence the calls to
@@ -139,8 +137,6 @@
 
 (defn1 hons-read-list-top (stream)
 
-  ; ***** hons
-
   (let ((o (read stream t nil t)))
     (cond
      ((eq o hread-close-paren-obj) nil)
@@ -148,8 +144,6 @@
         (hons o (hons-read-list stream))))))
 
 (defn1 hons-read-reader (stream char)
-
-  ; ***** hons
 
   (declare (ignore char))
   (cond (*read-suppress*
@@ -184,29 +178,27 @@
   (let ((*inside-hons-read* t)
         (our-eofv (cons nil nil)))
     (cond (*use-hons-in-read-object*
-            (our-lock-unlock-hons1
 
 ; Although a readmacro such as quote or backquote might return a CONS
 ; that is not HONSP, HONS-READ-LIST will turn those into HONSES.
 
-              (cond (rp      ; DO NOT BIND *HONS-READ-HT/AR-MAX*.
-                     (let* ((*readtable* *hons-readtable*)
-                            (x (read stream eep our-eofv rp)))
-                       (cond ((and (null eep) (eq x our-eofv))
-                              eofv)
-                             (t (check-hread-nonsense x stream)
-                                (hons-copy x)))))
-                    (t       ; DO BIND *HONS-READ-HT/AR-MAX*,
-                             ; OTHERWISE SAME.
-                     (let* ((*hons-read-ht* nil)
-                            (*hons-read-ar-max* -1)
-                            (*readtable* *hons-readtable*)
-                            (x (read stream eep our-eofv rp)))
-                       (clear-hons-read-ar *hons-read-ar-max*)
-                       (cond ((and (null eep) (eq x our-eofv))
-                              eofv)
-                             (t (check-hread-nonsense x stream)
-                                (hons-copy x))))))))
+           (cond (rp ; DO NOT BIND *HONS-READ-HT/AR-MAX*.
+                  (let* ((*readtable* *hons-readtable*)
+                         (x (read stream eep our-eofv rp)))
+                    (cond ((and (null eep) (eq x our-eofv))
+                           eofv)
+                          (t (check-hread-nonsense x stream)
+                             (hons-copy x)))))
+                 (t ; DO BIND *HONS-READ-HT/AR-MAX*, OTHERWISE SAME.
+                  (let* ((*hons-read-ht* nil)
+                         (*hons-read-ar-max* -1)
+                         (*readtable* *hons-readtable*)
+                         (x (read stream eep our-eofv rp)))
+                    (clear-hons-read-ar *hons-read-ar-max*)
+                    (cond ((and (null eep) (eq x our-eofv))
+                           eofv)
+                          (t (check-hread-nonsense x stream)
+                             (hons-copy x)))))))
           (t (cond (rp ; DO NOT BIND *HONS-READ-HT/AR-MAX*.
                     (let* ((*readtable* *hacked-acl2-readtable*)
                            (x (read stream eep our-eofv rp)))
@@ -367,94 +359,93 @@
         ((not (eq stream *print-circle-stream*))
          (error "Attempt to call compact-print-stream on other ~
                  than the current stream.")))
-  (our-lock-unlock-hons1
-   (let ((*compact-print-file-ht* (mht))
-         (*print-array* t))
-     (setq *space-owed* nil)
-     (let ((p *package*))
-       (loop for two in
+  (let ((*compact-print-file-ht* (mht))
+        (*print-array* t))
+    (setq *space-owed* nil)
+    (let ((p *package*))
+      (loop for two in
 
-             ;; We'll cause an error if the settings of these are
-             ;; different than they will be under OUR-SYNTAX.
+            ;; We'll cause an error if the settings of these are
+            ;; different than they will be under OUR-SYNTAX.
 
-             '((*print-array*                t)
-               (*print-base*                 10)
-               (*print-case*                 :upcase)
-               (*print-circle*               t)
-               (*print-escape*               t)
-               (*print-pretty*               nil)
-               (*print-radix*                nil)
-               (*read-base*                  10)
-               (*read-suppress*              nil)
-               (*readtable*                  *acl2-readtable*))
-             when (not (equal (symbol-value (car two))
-                              (if (symbolp (cadr two))
-                                  (symbol-value (cadr two))
-                                (cadr two))))
-             do
-             (error "PRINT-COMPACT-STREAM: Problem with the setting of ~a" two))
+            '((*print-array*                t)
+              (*print-base*                 10)
+              (*print-case*                 :upcase)
+              (*print-circle*               t)
+              (*print-escape*               t)
+              (*print-pretty*               nil)
+              (*print-radix*                nil)
+              (*read-base*                  10)
+              (*read-suppress*              nil)
+              (*readtable*                  *acl2-readtable*))
+            when (not (equal (symbol-value (car two))
+                             (if (symbolp (cadr two))
+                                 (symbol-value (cadr two))
+                               (cadr two))))
+            do
+            (error "PRINT-COMPACT-STREAM: Problem with the setting of ~a" two))
 
-       ; Currently, there is no way from within ACL2 to alter
-       ; READTABLE-CASE.  Thank goodness.  So the following error will
-       ; never happen.  But if ACL2 were someday 'enhanced' to permit
-       ; control over READTABLE-CASE, there just might be a problem
-       ; about the setting of *PRINT-READABLY* to T by OUR-SYNTAX
-       ; below if the current setting of *PRINT-READABLY* were NIL.
+; Currently, there is no way from within ACL2 to alter
+; READTABLE-CASE.  Thank goodness.  So the following error will
+; never happen.  But if ACL2 were someday 'enhanced' to permit
+; control over READTABLE-CASE, there just might be a problem
+; about the setting of *PRINT-READABLY* to T by OUR-SYNTAX
+; below if the current setting of *PRINT-READABLY* were NIL.
 
-       ;; *PACKAGE* -- we let the user use any ACL2 package.
+      ;; *PACKAGE* -- we let the user use any ACL2 package.
 
-       (unless (eq (readtable-case *acl2-readtable*) :upcase)
-         (error "PRINT-COMPACT-STREAM: Problem with the setting of ~
+      (unless (eq (readtable-case *acl2-readtable*) :upcase)
+        (error "PRINT-COMPACT-STREAM: Problem with the setting of ~
                (readtable-case *acl2-readtable*)."))
 
-       ;; We do not cause an error if the following *PRINT-...*
-       ;; variable settings are different from what OUR-SYNTAX will
-       ;; effect, and for many good reasons, as follows.
+      ;; We do not cause an error if the following *PRINT-...*
+      ;; variable settings are different from what OUR-SYNTAX will
+      ;; effect, and for many good reasons, as follows.
 
-       ;; *PRINT-READABLY* -- a very tedious explanation.  When
-       ;; *PRINT-READABLY* is T, then some extra errors may be caught
-       ;; when attempting to print unprintable objects, and there are
-       ;; effects upon the printing of arrays.  OUR-SYNTAX binds
-       ;; *PRINT-READABLY* to T, and that will be O.K. because (a) we
-       ;; don't print packages or arrays in ACL2, (b) we want an error
-       ;; signaled by PRINT-OBJECT$ whenever it might be appropriate,
-       ;; and (c) as far as we can imagine, when printing any ordinary
-       ;; ACL2 object no errors should arise, excepting of the
-       ;; catastrophic sort, e.g., disk space exhaused, power outage,
-       ;; stack overflow.  But errors may well happen in printing some
-       ;; legitimate Lisp, as opposed to ACL2, objects, when printing
-       ;; with *PRINT-READABLY* bound to T, e.g., some bizarre
-       ;; 'floating point numbers' such as 'infinity', packages, and
-       ;; readtables.  Cf. the ANSI function PRINT-UNREADABLE-OBJECT.
+      ;; *PRINT-READABLY* -- a very tedious explanation.  When
+      ;; *PRINT-READABLY* is T, then some extra errors may be caught
+      ;; when attempting to print unprintable objects, and there are
+      ;; effects upon the printing of arrays.  OUR-SYNTAX binds
+      ;; *PRINT-READABLY* to T, and that will be O.K. because (a) we
+      ;; don't print packages or arrays in ACL2, (b) we want an error
+      ;; signaled by PRINT-OBJECT$ whenever it might be appropriate,
+      ;; and (c) as far as we can imagine, when printing any ordinary
+      ;; ACL2 object no errors should arise, excepting of the
+      ;; catastrophic sort, e.g., disk space exhaused, power outage,
+      ;; stack overflow.  But errors may well happen in printing some
+      ;; legitimate Lisp, as opposed to ACL2, objects, when printing
+      ;; with *PRINT-READABLY* bound to T, e.g., some bizarre
+      ;; 'floating point numbers' such as 'infinity', packages, and
+      ;; readtables.  Cf. the ANSI function PRINT-UNREADABLE-OBJECT.
 
-       ;; *PRINT-LENGTH*          -- only for pretty
-       ;; *PRINT-LEVEL*           -- only for pretty
-       ;; *PRINT-LINES*           -- only for pretty
-       ;; *PRINT-PPRINT-DISPATCH* -- only for pretty
-       ;; *PRINT-MISER-WIDTH*     -- only for pretty
-       ;; *PRINT-RIGHT-MARGIN*    -- only for pretty
+      ;; *PRINT-LENGTH*          -- only for pretty
+      ;; *PRINT-LEVEL*           -- only for pretty
+      ;; *PRINT-LINES*           -- only for pretty
+      ;; *PRINT-PPRINT-DISPATCH* -- only for pretty
+      ;; *PRINT-MISER-WIDTH*     -- only for pretty
+      ;; *PRINT-RIGHT-MARGIN*    -- only for pretty
 
-       ;; *READ-DEFAULT-FLOAT-FORMAT* -- no floats in ACL2
+      ;; *READ-DEFAULT-FLOAT-FORMAT* -- no floats in ACL2
 
-       ;; *PRINT-GENSYM* -- no gensyms in ACL2
+      ;; *PRINT-GENSYM* -- no gensyms in ACL2
 
-       ;; *READ-EVAL* -- OUR-SYNTAX uses T for *READ-EVAL*.  But we
-       ;; don't print #. in compact-printing unless the # is properly
-       ;; quoted with vertical bars or back-slashes.
+      ;; *READ-EVAL* -- OUR-SYNTAX uses T for *READ-EVAL*.  But we
+      ;; don't print #. in compact-printing unless the # is properly
+      ;; quoted with vertical bars or back-slashes.
 
-       ;; Though OUR-SYNTAX binds *PRINT-CIRCLE* to NIL,
-       ;; COMPACT-PRINT-STREAM is designed to do the job that
-       ;; *PRINT-CIRCLE* should do, except for circular objects, which
-       ;; are not found in ACL2.
+      ;; Though OUR-SYNTAX binds *PRINT-CIRCLE* to NIL,
+      ;; COMPACT-PRINT-STREAM is designed to do the job that
+      ;; *PRINT-CIRCLE* should do, except for circular objects, which
+      ;; are not found in ACL2.
 
-       (our-syntax
-        (setq *package* p)  ; Bound by OUR-SYNTAX to *ACL2-READTABLE*.
-        (compact-print-file-scan data)
-        (compact-print-file-help
-         data
-         (gethash data *compact-print-file-ht*)
-         stream)
-        nil)))))
+      (our-syntax
+       (setq *package* p) ; Bound by OUR-SYNTAX to *ACL2-READTABLE*.
+       (compact-print-file-scan data)
+       (compact-print-file-help
+        data
+        (gethash data *compact-print-file-ht*)
+        stream)
+       nil))))
 
 (defun compact-print-file
   (data file-name &key (if-exists :supersede))

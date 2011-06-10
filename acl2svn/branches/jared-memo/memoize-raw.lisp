@@ -545,11 +545,18 @@
 
 (declaim (hash-table *memoize-info-ht*))
 
+;; [Jared]: but.... isn't it NOT special, since it's defined with defg?
+;;
+;; (declaim (special *memoize-info-ht*))
+
 
 (defrec memoize-info-ht-entry
   ;; Main data structure for a particular memoized function.  The fields are
   ;; vaguely ordered by most frequently referenced first.
-  (ext-anc-attachments
+  (
+   ;; this apparently has something to do with attachment tracking...
+   ;; extended ancestors with attachments or some such?
+   ext-anc-attachments
 
    ;; start-time is a symbol whose val is the start time of the current,
    ;; outermost call of fn, or -1 if no call of fn is in progress.
@@ -670,8 +677,6 @@
                                   (floor
                                    (/ (hash-table-count *memoize-info-ht*) 2)))))))))
     (when (posp m) (memoize-call-array-grow (* 2 m)))))
-
-
 
 (defn sync-memoize-call-array ()
 
@@ -897,82 +902,13 @@
                 *float-internal-time-units-per-second*))
 
 (defabbrev internal-real-time ()
+  ;; [Jared]: well, I have no idea why this differs for 32/64 bit ccl...
   #+(and RDTSC (not 32-bit-target)) ; faster for 64
   (the mfixnum (ccl::rdtsc))
   #+(and RDTSC 32-bit-target) ; slower for 32
   (the mfixnum (mod (ccl::rdtsc64) most-positive-mfixnum))
-  #-RDTSC (the mfixnum (mod (get-internal-real-time) most-positive-fixnum)))
-
-
-
-
-
-
-
-
-
-
-
-
-(declaim (special *memoize-info-ht*))
-
-
-
-
-; Lock order.  To avoid deadlock, we always lock HONS before COMPILED
-; and COMPILED before MEMOIZE; we unlock in the exact reverse order.
-
-; If there is a pons table for a memoized function, it may be locked
-; and unlocked during the execution of that memoized function, to
-; ponsing together new arguments to a multiple argument function.  It
-; would be DEADLY if PONS could result in honsing, memoizing, or
-; Emod-compiling.
-
-(defmacro our-lock-unlock-ht1 (ht &rest r)
-  (declare (ignorable ht))
-  #+parallel
-  `(progn (ccl::lock-hash-table ,ht)
-          (prog1 ,@r
-                 (ccl::unlock-hash-table ,ht)))
-  #-parallel `(prog1 ,@ r))
-
-(defmacro our-lock-unlock-hons1 (&rest r)
-  ;; Was `(our-lock-unlock-ht1 *hons-str-ht* ,@r))
-  `(progn ,@r))
-
-(defmacro our-lock-unlock-compile1 (&rest r)
-  ;; `(our-lock-unlock-hons1
-  ;;   (our-lock-unlock-ht1 *compiled-module-ht* ,@r)))
-  `(our-lock-unlock-hons1 ,@r))
-
-(defmacro our-lock-unlock-memoize1 (&rest r)
-  `(our-lock-unlock-compile1
-    (our-lock-unlock-ht1 *memoize-info-ht* ,@r)))
-
-(defmacro our-lock-unlock-htmv1 (ht &rest r)
-  (declare (ignorable ht))
-  #+parallel
-  `(progn (ccl::lock-hash-table ,ht)
-     (multiple-value-prog1 ,@r
-                           (ccl::unlock-hash-table ,ht)))
-  #-parallel `(multiple-value-prog1 ,@r))
-
-(defmacro our-lock-unlock-honsmv1 (&rest r)
-  ;; Was `(our-lock-unlock-htmv1 *hons-str-ht* ,@r))
-  `(progn ,@r))
-
-(defmacro our-lock-unlock-compilemv1 (&rest r)
-;;  `(our-lock-unlock-honsmv1
-;;    (our-lock-unlock-htmv1 *compiled-module-ht* ,@r)))
-  `(our-lock-unlock-honsmv1 ,@r))
-
-(defmacro our-lock-unlock-memoizemv1 (&rest r)
-  `(our-lock-unlock-compilemv1
-    (our-lock-unlock-htmv1 *memoize-info-ht* ,@r)))
-
-
-
-
+  #-RDTSC
+  (the mfixnum (mod (get-internal-real-time) most-positive-fixnum)))
 
 
 
@@ -982,14 +918,13 @@
 (defmacro our-syntax (&rest args)
 
   "OUR-SYNTAX is similar to Common Lisp's WITH-STANDARD-IO-SYNTAX.
-  The settings in OUR-SYNTAX are oriented towards reliable, standard,
-  vanilla, mechanical reading and printing, and less towards human
-  readability.
+  The settings in OUR-SYNTAX are oriented towards reliable, standard, vanilla,
+  mechanical reading and printing, and less towards human readability.
 
-  Please, before changing the following, consider existing uses of
-  this macro insofar as the changes might impact reliable, standard,
-  vanilla, mechanical printing.  Especially consider
-  COMPACT-PRINT-FILE.  Consider using OUR-SYNTAX-NICE."
+  Please, before changing the following, consider existing uses of this macro
+  insofar as the changes might impact reliable, standard, vanilla, mechanical
+  printing.  Especially consider COMPACT-PRINT-FILE.  Consider using
+  OUR-SYNTAX-NICE."
 
 ; We use the *ACL2-PACKAGE* and the *ACL2-READTABLE* because we use
 ; them almost all the time in our code.
@@ -1020,8 +955,6 @@
 (defv *hons-verbose* t)
 (defg *ofv-note-printed* nil)
 (defg *ofv-msg-list* nil)
-
-
 
 
 (defun ofv (&rest r) ; For verbose but helpful info.
@@ -1086,9 +1019,9 @@
 
 (defn looking-at (str1 str2 &key (start1 0) (start2 0))
 
-;  (LOOKING-AT str1 str2 :start1 s1 :start2 s2) is non-NIL if and only
-;  if string STR1, from location S1 to its end, is an initial segment
-;  of string STR2, from location S2 to its end.
+; (LOOKING-AT str1 str2 :start1 s1 :start2 s2) is non-NIL if and only if string
+; STR1, from location S1 to its end, is an initial segment of string STR2, from
+; location S2 to its end.
 
   (unless (typep str1 'simple-base-string)
     (error "looking at:  ~a is not a string." str1))
@@ -1117,11 +1050,10 @@
 
 (defn1 meminfo (pat)
 
-;  General comment about PROBE-FILE.  PROBE-FILE, according to Gary
-;  Byers, may reasonably cause an error.  He is undoubtedly right.  In
-;  such cases, however, Boyer generally thinks and wishes that it
-;  returned NIL, and generally, therefore, ensconces a PROBE-FILE
-;  within an IGNORE-ERROR in his code.
+; General comment about PROBE-FILE.  PROBE-FILE, according to Gary Byers, may
+; reasonably cause an error.  He is undoubtedly right.  In such cases, however,
+; Boyer generally thinks and wishes that it returned NIL, and generally,
+; therefore, ensconces a PROBE-FILE within an IGNORE-ERROR in his code.
 
   (or
    (and
@@ -1140,19 +1072,15 @@
 (defn1 physical-memory ()
   (meminfo "MemTotal:"))
 
+(defmacro heap-bytes-allocated ()
 
+  #+Clozure
+  '(the mfixnum (ccl::%heap-bytes-allocated))
 
-
-
-; Definition. ***** means 'Do not call this function unless you are
-; sure that a superior caller in this thread has the lock on
-; *HONS-STR-HT*.
-
-
-
-
-
-
+  ;; Might be easy to add this sort of thing for some other Lisps, but
+  ;; for now we'll just say 0.
+  #-Clozure
+  0)
 
 
 
@@ -1201,7 +1129,7 @@
 
 ;  reporting vars
 
-(defv *report-bytes* #+Clozure t #-Clozure nil
+(defv *report-bytes* *record-bytes*
   "If *REPORT-BYTES* is not NIL, then MEMOIZE-SUMMARY prints the
   number of bytes allocated on the heap.")
 
@@ -1223,10 +1151,6 @@ the calls took.")
   "If *REPORT-HITS* is not NIL, MEMOIZE-SUMMARY prints the number of
   times that a previously computed answer was reused.")
 
-(defv *report-hons-calls* t
-  "If *REPORT-HONS-CALLS* is not NIL, then MEMOIZE-SUMMARY prints the
-  number of times that hons was called.")
-
 (defv *report-mht-calls* t
   "If *REPORT-MHT-CALLS* is not NIL, then MEMOIZE-SUMMARY prints the
   number of times that a memo hash-table for the function was created.
@@ -1234,10 +1158,6 @@ the calls took.")
   changing stobjs; the memoization machinery sometimes 'forgets' an
   entire memoization hash table out of an abundance of caution, and
   then may later need to create it afresh.")
-
-(defv *report-pons-calls* t
-  "If *REPORT-PONS-CALLS* is not NIL, MEMOIZE-SUMMARY prints the
-  number of calls of PONS.")
 
 (defv *report-time* t
   "If *REPORT-TIME* is not NIL, MEMOIZE-SUMMARY prints the total time
@@ -1295,13 +1215,13 @@ the calls took.")
 (defconstant *mf-count-loc*   (make-symbol "MF-COUNT-LOC"))
 
 
+
 (defg *caller* (* *ma-initial-max-symbol-to-fixnum* *2max-memoize-fns*)
   "When memoized functions are executing in parallel, the value of
   *CALLER* and of statistics derived therefrom may be meaningless and
   random.")
 
 (declaim (type fixnum *caller*))
-
 
 
 (defv *never-profile-ht* (make-hash-table :test 'eq))
@@ -1324,7 +1244,6 @@ the calls took.")
     (or status (eval `(defg ,symbol nil)))
     symbol))
 
-
 (defmacro memoize-flush (st)
 
 ; MEMOIZE-FLUSH 'forgets' all that was remembered for certain functions that
@@ -1337,7 +1256,10 @@ the calls took.")
        (loop for sym in (symbol-value ',s) do
              (when (boundp (the symbol sym)) ; Is this test needed?
                (let ((old (symbol-value (the symbol sym))))
-                 (unless (or (null old) (empty-ht-p old))
+                 (unless (or (null old)
+                             ;; don't clear empty hts?  probably silly
+                             (and (hash-table-p old)
+                                  (eql 0 (hash-table-count old))))
                    (setf (symbol-value (the symbol sym)) nil))))))))
 
 
@@ -1499,9 +1421,6 @@ the calls took.")
 
 ; MEMOIZE FUNCTIONS
 
-#+Clozure
-(defmacro heap-bytes-allocated ()
-  '(the mfixnum (ccl::%heap-bytes-allocated)))
 
 
 
@@ -1511,12 +1430,12 @@ the calls took.")
 (defn1 symbol-to-fixnum-create (s)
   (check-type s symbol)
   (let ((g (gethash s *memoize-info-ht*)))
-    (if g (access memoize-info-ht-entry g :num)
+    (if g
+        (access memoize-info-ht-entry g :num)
       (let (new)
         (loop for i fixnum from
-              (if (eql *caller*
-                       (* *ma-initial-max-symbol-to-fixnum*
-                          *2max-memoize-fns*))
+              (if (eql *caller* (* *ma-initial-max-symbol-to-fixnum*
+                                   *2max-memoize-fns*))
                   (1+ *ma-initial-max-symbol-to-fixnum*)
                 (1+ *max-symbol-to-fixnum*))
               below (the fixnum (floor *2max-memoize-fns* 2))
@@ -1536,14 +1455,12 @@ the calls took.")
   (check-type s symbol)
   (let ((g (gethash s *memoize-info-ht*)))
     (if g (access memoize-info-ht-entry g :num)
-      (error "(symbol-to-fixnum ~s).  Illegal symbol."
-           s))))
+      (error "(symbol-to-fixnum ~s).  Illegal symbol." s))))
 
 (defn1 fixnum-to-symbol (n)
   (check-type n fixnum)
   (or (gethash n *memoize-info-ht*)
-      (error "(fixnum-to-symbol ~s). Illegal number."
-           n)))
+      (error "(fixnum-to-symbol ~s). Illegal number." n)))
 
 (defn1 coerce-index (x)
   (if (and (typep x 'fixnum)
@@ -1595,9 +1512,8 @@ the calls took.")
   nil)
 
 (defn1 memoizedp-raw (fn)
-  (our-lock-unlock-memoize1
-   (and (symbolp fn)
-        (values (gethash fn *memoize-info-ht*)))))
+  (and (symbolp fn)
+       (values (gethash fn *memoize-info-ht*))))
 
 (defg *hons-gentemp-counter* 0)
 (declaim (type fixnum *hons-gentemp-counter*))
@@ -1706,7 +1622,7 @@ the calls took.")
   (cond ((> nrv 1)
          (oftr "returned ~@r values:" nrv)
          (loop for i fixnum from 1 to nrv do
-               (oft "~%~@r.~8t  " i)
+               (format t "~%~@r.~8t  " i)
                (prine (car ans) *trace-output*)))
         (t (prine ans *trace-output*)))
   (oftr ")~%"))
@@ -1725,7 +1641,7 @@ the calls took.")
   #+Clozure
   (let ((loc (ccl::find-definition-sources x)))
     (let ((*print-pretty* nil))
-      (when loc (oft "~%; source: ~s" loc))))
+      (when loc (format t "~%; source: ~s" loc))))
   (cond ((functionp x)
          (function-lambda-expression x))
         ((symbolp x)
@@ -1746,7 +1662,7 @@ the calls took.")
   do (setf (gethash '~:*~a *NUMBER-OF-ARGUMENTS-AND-VALUES-HT*)
          '(3 . 1))")
 
-(defg *sort-to-from-by-calls* nil)
+
 
 (defconstant *attached-fn-temp* (make-symbol "ATTACHED-FN-TEMP"))
 
@@ -2084,8 +2000,8 @@ the calls took.")
 
 
      (let*
-         ((fnn (symbol-to-fixnum-create fn)) ; performance counting; see memoize-call-array
-          (2mfnn (* *2max-memoize-fns* fnn)) ; performance counting; see memoize-call-array
+         ((fnn (symbol-to-fixnum-create fn))
+          (2mfnn (* *2max-memoize-fns* fnn))
 
           (*acl2-unwind-protect-stack*
            (or *acl2-unwind-protect-stack*
@@ -2298,45 +2214,22 @@ the calls took.")
              ;; Bunch of extra profiling stuff wrapped around body3.
 
              `(let ((,*mf-old-caller* *caller*)
-                    #+Clozure
-                    ,@(and *record-bytes*
-                           `((,*mf-start-bytes*
-                              (heap-bytes-allocated)))))
-                (declare
-                 (ignorable
-                  #+Clozure
-                  ,@(and *record-bytes* `(,*mf-start-bytes*)))
-                 (type fixnum
-                       ,*mf-old-caller*
-                       #+Clozure
-                       ,@(and *record-bytes* `(,*mf-start-bytes*))))
+                    (,*mf-start-bytes* (heap-bytes-allocated)))
+                (declare (type fixnum ,*mf-old-caller* ,*mf-start-bytes*))
                 (unwind-protect
-                    (progn
-                      (setq ,start-time ,(if *record-time*
-                                             '(internal-real-time)
-                                           '0))
-                      (setq *caller* ,2mfnn)
-                      ,body3)
-                  #+Clozure
-                  ,@(and *record-bytes*
-                         `((safe-incf
-                            (aref ,*mf-ma* ,(+ *ma-bytes-index* 2mfnn))
-                            (the mfixnum
-                                 (- (heap-bytes-allocated)
-                                    ,*mf-start-bytes*))
-                            ,fn)))
-                  ,@(and *record-time*
-                         `((safe-incf
-                            (aref ,*mf-ma*
-                                  (the mfixnum (1+ ,*mf-count-loc*)))
-                            (mod
-                             (the integer (- (internal-real-time)
-                                             ,start-time))
-                             most-positive-mfixnum)
-                            ,fn)))
-                  ,@(and forget `((setq ,tablename nil)
-                                  ,@(if (> nra 1)
-                                        `((setq ,ponstablename nil)))))
+                    (progn (setq ,start-time (internal-real-time))
+                           (setq *caller* ,2mfnn)
+                           ,body3)
+                  (safe-incf (aref ,*mf-ma* ,(+ *ma-bytes-index* 2mfnn))
+                             (the mfixnum (- (heap-bytes-allocated) ,*mf-start-bytes*))
+                             ,fn)
+                  (safe-incf (aref ,*mf-ma* (the mfixnum (1+ ,*mf-count-loc*)))
+                             (mod (the integer (- (internal-real-time) ,start-time))
+                                  most-positive-mfixnum)
+                             ,fn)
+                  ,@(and forget
+                         `((setq ,tablename nil)
+                           (setq ,ponstablename nil)))
                   (setq ,start-time -1)
                   (setq *caller* ,*mf-old-caller*)))))
 
@@ -2381,6 +2274,7 @@ the calls took.")
                           (profiler-if (eql -1 ,start-time)
                                        ,body2
                                        ,body3))))))
+       ;; why the hell is this here
        (setf (gethash fn *number-of-arguments-and-values-ht*)
              (cons (length stobjs-in) (length stobjs-out)))
        (unwind-protect
@@ -2506,21 +2400,12 @@ the calls took.")
     (unmemoize-fn fn)))
 
 (defn1 memoized-functions ()
-  (our-lock-unlock-memoize1
   (let (l)
     (maphash (lambda (fn v) (declare (ignore v))
                (when (symbolp fn) (push fn l)))
              *memoize-info-ht*)
-    l)))
+    l))
 
-(defn1 length-memoized-functions ()
-
-  "(length-memoized-functions) returns the number of currently
-  memoized/profiled functions."
-
-  (values (floor (1- (hash-table-count (the hash-table
-                                         *memoize-info-ht*)))
-                 2)))
 
 (defn1 unmemoize-all ()
 
@@ -2543,68 +2428,50 @@ the calls took.")
   (let ((v (gethash k *memoize-info-ht*)))
     (and v
          (list (list (access memoize-info-ht-entry v :fn)
-                     :condition
-                     (access memoize-info-ht-entry v :condition)
-                     :inline
-                     (access memoize-info-ht-entry v :inline)
-                     :trace
-                     (access memoize-info-ht-entry v :trace)
-                     :cl-defun
-                     (access memoize-info-ht-entry v :cl-defun)
-                     :formals
-                     (access memoize-info-ht-entry v :formals)
-                     :stobjs-in
-                     (access memoize-info-ht-entry v :stobjs-in)
-                     :specials
-                     (access memoize-info-ht-entry v :specials)
-                     :commutative
-                     (access memoize-info-ht-entry v :commutative)
-                     :stobjs-out
-                     (access memoize-info-ht-entry v
-                             :stobjs-out)
-                     :watch-ifs
-                     (access memoize-info-ht-entry v :watch-ifs)
-                     :forget
-                     (access memoize-info-ht-entry v :forget)
+                     :condition   (access memoize-info-ht-entry v :condition)
+                     :inline      (access memoize-info-ht-entry v :inline)
+                     :trace       (access memoize-info-ht-entry v :trace)
+                     :cl-defun    (access memoize-info-ht-entry v :cl-defun)
+                     :formals     (access memoize-info-ht-entry v :formals)
+                     :stobjs-in   (access memoize-info-ht-entry v :stobjs-in)
+                     :specials    (access memoize-info-ht-entry v :specials)
+                     :commutative (access memoize-info-ht-entry v :commutative)
+                     :stobjs-out  (access memoize-info-ht-entry v :stobjs-out)
+                     :watch-ifs   (access memoize-info-ht-entry v :watch-ifs)
+                     :forget      (access memoize-info-ht-entry v :forget)
                      :memo-table-init-size
-                     (access memoize-info-ht-entry v
-                             :memo-table-init-size))
+                     (access memoize-info-ht-entry v :memo-table-init-size))
 
-               (list
-                (access memoize-info-ht-entry v :record-bytes)
-                (access memoize-info-ht-entry v :record-calls)
-                (access memoize-info-ht-entry v :record-hits)
-                (access memoize-info-ht-entry v
-                        :record-mht-calls)
-                (access memoize-info-ht-entry v :record-time))))))
+               (list (access memoize-info-ht-entry v :record-bytes)
+                     (access memoize-info-ht-entry v :record-calls)
+                     (access memoize-info-ht-entry v :record-hits)
+                     (access memoize-info-ht-entry v :record-mht-calls)
+                     (access memoize-info-ht-entry v :record-time))))))
 
 (defn1 rememoize-all ()
-  (our-lock-unlock-memoize1
-      (let (l)
-        (maphash
-         (lambda (k v)
-           (declare (ignore v))
-           (when (symbolp k) (push (memoize-info k) l)))
-         *memoize-info-ht*)
-        (loop for x in l do (unmemoize-fn (caar x)))
-        (gc$)
-        (clrhash *form-ht*)
-        (setq *max-symbol-to-fixnum*
-              *ma-initial-max-symbol-to-fixnum*)
-        (loop for x in l do
-              (progv '(*record-bytes*
-                       *record-calls*
-                       *record-hits*
-                       *record-mht-calls*
-                       *record-time*)
-                  (cadr x)
-                (apply 'memoize-fn (car x)))))))
+  (let (l)
+    (maphash
+     (lambda (k v)
+       (declare (ignore v))
+       (when (symbolp k) (push (memoize-info k) l)))
+     *memoize-info-ht*)
+    (loop for x in l do (unmemoize-fn (caar x)))
+    (gc$)
+    (clrhash *form-ht*)
+    (setq *max-symbol-to-fixnum* *ma-initial-max-symbol-to-fixnum*)
+    (loop for x in l do
+          (progv '(*record-bytes*
+                   *record-calls*
+                   *record-hits*
+                   *record-mht-calls*
+                   *record-time*)
+                 (cadr x)
+                 (apply 'memoize-fn (car x))))))
 
 (defn1 uses-state (fn)
-  (let* ((w (w *the-live-state*))
-         (stobjs-in (getprop fn 'stobjs-in t 'current-acl2-world w))
-         (stobjs-out (getprop fn 'stobjs-out t
-                              'current-acl2-world w)))
+  (let* ((w          (w *the-live-state*))
+         (stobjs-in  (getprop fn 'stobjs-in t 'current-acl2-world w))
+         (stobjs-out (getprop fn 'stobjs-out t 'current-acl2-world w)))
     (or (and (consp stobjs-in) (member 'state stobjs-in))
         (and (consp stobjs-out) (member 'state stobjs-out)))))
 
@@ -2625,10 +2492,8 @@ the calls took.")
     (maphash
      (lambda (k v)
        (when (and (symbolp k)
-                  (null (access memoize-info-ht-entry
-                                v :condition))
-                  (null (access memoize-info-ht-entry
-                                v :inline)))
+                  (null (access memoize-info-ht-entry v :condition))
+                  (null (access memoize-info-ht-entry v :inline)))
          (push k l)))
      *memoize-info-ht*)
     l))
@@ -2743,7 +2608,7 @@ the calls took.")
    regarded as DUBIOUS-TO-PROFILE, then it is not profiled and an
    explanation is printed."
 
-  (let ((*record-bytes* #+Clozure lots-of-info #-Clozure nil)
+  (let ((*record-bytes* lots-of-info)
         (*record-calls* lots-of-info)
         (*record-hits* lots-of-info)
         (*record-mht-calls* lots-of-info)
@@ -2790,7 +2655,6 @@ the calls took.")
                      :forget forget))
        fns-ht)
       (clear-memoize-call-array)
-      (oft "~%(clear-memoize-call-array) invoked.")
       (format nil "~a function~:p newly profiled."
               (hash-table-count fns-ht)))))
 
@@ -2807,7 +2671,7 @@ the calls took.")
    5. in *PROFILE-REJECT-HT*
    6. otherwise rejected by DUBIOUS-TO-PROFILE."
 
-  (let ((*record-bytes* #+Clozure lots-of-info #-Clozure nil)
+  (let ((*record-bytes* lots-of-info)
         (*record-calls* lots-of-info)
         (*record-hits* lots-of-info)
         (*record-mht-calls* lots-of-info)
@@ -2847,7 +2711,6 @@ the calls took.")
                      :forget forget))
        fns-ht)
       (clear-memoize-call-array)
-      (oft "~%(clear-memoize-call-array) invoked.")
       (format nil "~a function~:p newly profiled."
               (hash-table-count fns-ht)))))
 
@@ -3012,8 +2875,6 @@ the calls took.")
      event-number
      execution-order
      hits/calls
-     hons-calls
-     pons-calls
      number-of-calls
      number-of-hits
      number-of-memoized-entries
@@ -3123,7 +2984,7 @@ the calls took.")
   (our-syntax-nice
    (let ((sssub 0) (nponses 0) (nsubs 0) (nponstab 0))
      (declare (type mfixnum sssub nponses nsubs))
-   (oft "(defun pons-summary~%")
+   (format t "(defun pons-summary~%")
    (maphash
     (lambda (k v)
       (cond ((symbolp k)
@@ -3148,33 +3009,28 @@ the calls took.")
                   tab))))))
     *memoize-info-ht*)
    (print-alist
-    `(;(" Pons hits/calls"
-      ; ,(let* ((c *pons-call-counter*)
-      ;         (d *pons-misses-counter*))
-      ;    (ofn "~,1e / ~,1e = ~,2f" d c (/ (- c d) (+ .0000001 c)))))
-      (" Number of pons tables" ,(ofnum nponstab))
+    `((" Number of pons tables" ,(ofnum nponstab))
       (" Number of pons sub tables" ,(ofnum nsubs))
       (" Sum of pons sub table sizes" ,(ofnum sssub))
       (" Number of ponses" ,(ofnum nponses)))
     5)
-   (oft ")")
+   (format t ")")
    nil)))
 
 (defun memoized-values (&optional (fn (memoized-functions)))
 
-  "(MEMOIZED-VALUES fn) prints all the currently memoized values for
-   FN."
+  "(MEMOIZED-VALUES fn) prints all the currently memoized values for FN."
 
   (cond ((listp fn) (mapc #'memoized-values fn))
         ((not (memoizedp-raw fn))
-         (oft "~%; Memoized-values:  ~s is not memoized." fn))
+         (format t "~%; Memoized-values:  ~s is not memoized." fn))
         (t (let ((tb (symbol-value
                       (access memoize-info-ht-entry
                               (gethash fn *memoize-info-ht*)
                               :tablename))))
              (cond ((and tb (not (eql 0 (hash-table-count
                                          (the hash-table tb)))))
-                    (oft "~%; Memoized values for ~s." fn)
+                    (format t "~%; Memoized values for ~s." fn)
                     (maphash (lambda (key v)
                                (format t "~%~s~%=>~%~s" key v))
                              (the hash-table tb)))))))
@@ -3217,10 +3073,11 @@ the calls took.")
                   (list (car pair)
                         (ofnum (/ (- time (cdr pair))
                                   *float-ticks/second*)))))
-    (our-syntax-brief (when - (oft "~%? ~a" -)))
-;; [Jared]: what?
-;;    (our-syntax-brief
-;;     (when (boundp '*acl2--*) (oft "~%> ~a~%" *acl2--*)))
+    ;; [Jared]: So... from CLHS, - is some kind of special variable that is set
+    ;; to the current form the REPL is executing.  I guess this print
+    ;; statement, then, is trying to show the current form on top, before
+    ;; printing the call stack below it.  Twisted.
+    (our-syntax-brief (when - (format t "~%? ~a" -)))
     (when l
       (terpri)
       (print-alist
@@ -3229,32 +3086,7 @@ the calls took.")
              l)
        5))))
 
-(defn1 hons-calls (x)
 
-  "For a memoized function fn, (HONS-CALLS fn) is the number of times
-  fn has called hons."
-
-  (setq x (coerce-index x))
-  (aref *memoize-call-array*
-        (the mfixnum
-          (+ *ma-hons-index*
-                       (the mfixnum
-                         (* *2max-memoize-fns*
-                            (the mfixnum x)))))))
-
-(defn1 pons-calls (x)
-
-  "For a memoized function X, (PONS-CALLS x) is the number of times
-   X has called pons."
-
-  (setq x (coerce-index x))
-  (aref *memoize-call-array*
-        (the mfixnum (+ *ma-pons-index*
-                       (the mfixnum
-                         (* *2max-memoize-fns*
-                            (the mfixnum x)))))))
-
-#+Clozure
 (defn1 bytes-allocated (x)
 
   "For a memoized function X, (BYTES-ALLOCATED x) is the number of
@@ -3321,7 +3153,6 @@ the calls took.")
   (let ((n (number-of-calls x)))
     (if (zerop n) 0 (/ (number-of-hits x) (float n)))))
 
-#+Clozure
 (defn1 bytes-allocated/call (x)
   (setq x (coerce-index x))
   (let ((n (number-of-calls x)))
@@ -3444,37 +3275,19 @@ the calls took.")
 (defn1 number-of-calls (x)
   (setq x (coerce-index x))
 
-; One must call COMPUTE-CALLS-AND-TIMES before invoking
-; NUMBER-OF-CALLS to get sensible results.
+; One must call COMPUTE-CALLS-AND-TIMES before invoking NUMBER-OF-CALLS to get
+; sensible results.
 
   (aref *memoize-call-array*
         (the mfixnum (* 2 (the mfixnum x)))))
 
-(defn1 print-not-called ()
-
-  "(PRINT-NOT-CALLED) prints, one to a line, in alphabetic order, the
-  currently memoized functions that have never been called.  Possibly
-  useful when looking for test coverage."
-
-  (our-lock-unlock-memoize1
-   (progn
-     (compute-calls-and-times)
-     (let ((ans nil))
-       (maphash (lambda (k v)
-                  (declare (ignore v))
-                  (when (and (symbolp k)
-                             (eql 0 (number-of-calls k)))
-                    (push k ans)))
-                *memoize-info-ht*)
-       (loop for x in (sort ans 'alphorder)
-             do (print x))))))
 
 (defn1 total-time (x)
 
   (setq x (coerce-index x))
 
-; One must call COMPUTE-CALLS-AND-TIMES before invoking
-; TOTAL-TIME to get sensible results.
+; One must call COMPUTE-CALLS-AND-TIMES before invoking TOTAL-TIME to get
+; sensible results.
 
   (/ (aref *memoize-call-array*
            (the fixnum (1+ (the fixnum (* 2 x)))))
@@ -3546,9 +3359,7 @@ the calls took.")
          *REPORT-CALLS-FROM*  boolean
          *REPORT-CALLS-TO*    boolean
          *REPORT-HITS*        boolean
-         *REPORT-HONS-CALLS*  boolean
          *REPORT-MHT-CALLS*   boolean
-         *REPORT-PONS-CALLS*  boolean
          *REPORT-TIME*        boolean
          *REPORT-IFS*         boolean
 
@@ -3602,6 +3413,8 @@ the calls took.")
   (or (<= x *ma-initial-max-symbol-to-fixnum*)
       (null (gethash x *memoize-info-ht*))))
 
+(defg *sort-to-from-by-calls* nil)
+
 (defn1 memoize-summary-after-compute-calls-and-times ()
 
 ;  If COMPUTE-CALLS-AND-TIMES is not called shortly before this
@@ -3614,8 +3427,7 @@ the calls took.")
         (len-fn-pairs 0)
         (global-total-time 0)
         (global-bytes-allocated 0)
-        (global-hons-calls 0)
-        (global-pons-calls 0))
+        )
    (declare (type (simple-array mfixnum (*)) ma)
             (type fixnum len-orig-fn-pairs len-fn-pairs))
    (when (and *memoize-summary-limit*
@@ -3625,11 +3437,11 @@ the calls took.")
                  x in fn-pairs collect x)))
    (setq len-fn-pairs (len fn-pairs))
    (when (> len-fn-pairs 0)
-     (oft "~%Sorted by *memoize-summary-order-list* = ~a."
-          *memoize-summary-order-list*)
+     (format t "~%Sorted by *memoize-summary-order-list* = ~a."
+             *memoize-summary-order-list*)
      (when (< len-fn-pairs len-orig-fn-pairs)
-       (oft "~%Reporting on ~:d of ~:d functions because ~
-             *memoize-summary-limit* = ~a."
+       (format t "~%Reporting on ~:d of ~:d functions because ~
+                  *memoize-summary-limit* = ~a."
             len-fn-pairs
             len-orig-fn-pairs
             *memoize-summary-limit*)))
@@ -3638,12 +3450,8 @@ the calls took.")
    (setq global-bytes-allocated
      (+ 1 (loop for pair in fn-pairs sum
                 (bytes-allocated (car pair)))))
-   (setq global-hons-calls
-     (+ 1 (loop for pair in fn-pairs sum (hons-calls (car pair)))))
-   (setq global-pons-calls
-     (+ 1 (loop for pair in fn-pairs sum (pons-calls (car pair)))))
    (when (null fn-pairs)
-     (oft "~%(memoize-summary) has nothing to report.~%"))
+     (format t "~%(memoize-summary) has nothing to report.~%"))
    (loop for pair in fn-pairs do
     (let* ((fn (car pair))
            (l (gethash fn *memoize-info-ht*))
@@ -3663,11 +3471,8 @@ the calls took.")
            (nmht (the mfixnum (number-of-mht-calls num)))
            (ncalls
             (the mfixnum (max 1 (the mfixnum (number-of-calls num)))))
-           (hons-calls (the mfixnum (hons-calls num)))
-           (pons-calls (the mfixnum (pons-calls num)))
            (no-hits (or (not *report-hits*)
                         (null (memoize-condition fn))))
-           #+Clozure
            (bytes-allocated (bytes-allocated num))
            (tt (total-time num))
            (t/c (time/call num))
@@ -3677,9 +3482,7 @@ the calls took.")
            (selftime tt))
       (declare (type integer start-time)
                (type fixnum num)
-               (type mfixnum nhits nmht ncalls
-                     hons-calls pons-calls
-                     #+Clozure bytes-allocated))
+               (type mfixnum nhits nmht ncalls bytes-allocated))
       (print-alist
        `((,(ofn "(defun ~s~a~a"
                 (short-symbol-name fn)
@@ -3712,7 +3515,6 @@ the calls took.")
                       (< t/c 1e-6)))
                `((,(ofn " Doubtful timing info for ~a." fn)
                   "Heisenberg effect.")))
-         #+Clozure
          ,@(if (and (> bytes-allocated 0) *report-bytes*)
                `((" Heap bytes allocated"
                   ,(ofn "~a; ~4,1f%"
@@ -3721,12 +3523,6 @@ the calls took.")
                                   global-bytes-allocated))))
                  (" Heap bytes allocated per call"
                   ,(ofnum (/ bytes-allocated ncalls)))))
-         ,@(if (and (> hons-calls 0) (> global-hons-calls 0)
-                    *report-hons-calls*)
-               `((" Hons calls"
-                  ,(ofn "~a; ~4,1f%"
-                        (ofnum hons-calls)
-                        (* 100 (/ hons-calls global-hons-calls))))))
          #+Clozure
          ,@(if (and *report-ifs* (gethash fn *watch-if-branches-ht*))
                `((" IF branch coverage"
@@ -3735,13 +3531,6 @@ the calls took.")
                                 fn *watch-if-branches-taken-ht*))
                         (ofnum (gethash
                                 fn *watch-if-branches-ht*))))))
-         ,@(if (and (> pons-calls 0)
-                    (> global-pons-calls 0)
-                    *report-pons-calls*)
-               `((" Pons calls"
-                  ,(ofn "~a; ~4,1f%"
-                        (ofnum pons-calls)
-                        (* 100 (/ pons-calls global-pons-calls))))))
          ,@(if (and *report-hits* *report-time* (not (eql 0 nhits)))
                `((" Time per missed call" ,(ofnum tnh))))
          ,@(if *report-calls-to*
@@ -3921,63 +3710,61 @@ the calls took.")
                        (" (Number of ponses"
                         ,(ofn "~a)" (ofnum nponses)))))))))
        5))
-         (oft ")"))))
+         (format t ")"))))
 
 
-(defn1 empty-ht-p (x)
-  (and (hash-table-p x)
-       (eql 0 (hash-table-count (the hash-table x)))))
 
-(defn clear-one-memo-and-pons-hash (l)
+(defn clear-one-memo-and-pons-hash (info)
 
-;  It is debatable whether one should use the CLRHASH approach or
-;  the set-to-NIL approach in CLEAR-ONE-MEMO-AND-PONS-HASH.  The
-;  CLRHASH approach, in addition to reducing the number of
-;  MAKE-HASH-TABLE calls necessary, has the effect of immediately
-;  clearing a hash-table even if some other function is holding on
-;  to it, so more garbage may get garbage collected sooner than
-;  otherwise.  The set-to-NIL approach has the advantage of costing
-;  very few instructions and very little paging.
+; INFO is a memoize-info-ht-entry.  Throw away its memoization table and its
+; pons table.
 
-  (let* ((fn (access memoize-info-ht-entry l :fn))
-         (mt (symbol-value (access memoize-info-ht-entry l :tablename)))
-         (pt (symbol-value (access memoize-info-ht-entry l :ponstablename)))
+; It is debatable whether one should use the CLRHASH approach or the set-to-NIL
+; approach in CLEAR-ONE-MEMO-AND-PONS-HASH.  The CLRHASH approach, in addition
+; to reducing the number of MAKE-HASH-TABLE calls necessary, has the effect of
+; immediately clearing a hash-table even if some other function is holding on
+; to it, so more garbage may get garbage collected sooner than otherwise.  The
+; set-to-NIL approach has the advantage of costing very few instructions and
+; very little paging.
+
+; [Jared]: I don't really understand the comment above; how could another
+; function be holding onto a memoize or pons table?  Maybe the answer is that
+; if multiple threads are executing a memoized function and we try to clear its
+; table, there might be some other thread that happens to have locally bound
+; the tables and hence they are still reachable?
+
+  (let* ((fn (access memoize-info-ht-entry info :fn))
+         (mt (symbol-value (access memoize-info-ht-entry info :tablename)))
+         (pt (symbol-value (access memoize-info-ht-entry info :ponstablename)))
          (mt-count (and mt (hash-table-count mt)))
          (pt-count (and pt (hash-table-count pt))))
     (when mt
-      (setf (symbol-value (access memoize-info-ht-entry l :tablename)) nil))
+      (setf (symbol-value (access memoize-info-ht-entry info :tablename)) nil))
     (when pt
-      (setf (symbol-value (access memoize-info-ht-entry l :ponstablename)) nil))
+      (setf (symbol-value (access memoize-info-ht-entry info :ponstablename)) nil))
     (when (or mt-count pt-count)
       (update-memo-max-sizes fn (or pt-count 1) (or mt-count 1)))
     nil))
 
-(defn1 clear-memoize-table (k)
-
-; See also hons.lisp.
-
-  (when (symbolp k)
-    (let ((l (gethash k *memoize-info-ht*)))
-      (when l (clear-one-memo-and-pons-hash l)))))
+(defn1 clear-memoize-table (fn)
+  ;; User-level.  See memoize.lisp.
+  (when (symbolp fn)
+    (let ((info (gethash fn *memoize-info-ht*)))
+      (when info
+        (clear-one-memo-and-pons-hash info)))))
 
 (defn1 clear-memoize-tables ()
+  ;; User-level.  See memoize.lisp.
+  (maphash (lambda (key info)
+             (when (symbolp key)
+               (clear-one-memo-and-pons-hash info)))
+           *memoize-info-ht*))
 
-; See hons.lisp.
-
-  (let (success)
-    (unwind-protect
-        (progn
-          (maphash (lambda (k l)
-                     (when (symbolp k)
-                       (clear-one-memo-and-pons-hash l)))
-                   *memoize-info-ht*)
-          (setq success t))
-      (or success (error "clear-memoize-tables failed.")))))
 
 (defn clear-memoize-call-array ()
 
-  "(CLEAR-MEMOIZE-CALL-ARRAY) zeros out all records of function calls
-  as far as reporting by MEMOIZE-SUMMARY, etc. is concerned."
+  "(CLEAR-MEMOIZE-CALL-ARRAY) zeros out all records of function calls as far as
+  reporting by MEMOIZE-SUMMARY, etc. is concerned."
 
   (let ((m *memoize-call-array*))
     (declare (type (simple-array mfixnum (*)) m))
@@ -3985,6 +3772,7 @@ the calls took.")
           do (setf (aref m i) 0))))
 
 (defn clear-memoize-statistics ()
+  ;; User-level.  See memoize.lisp.
   (clear-memoize-call-array)
   nil)
 
@@ -4327,15 +4115,12 @@ the calls took.")
                        ans)))))
      (setq ans (sort ans '> :key 'third))
      (when verbose
-       (oft "~%pid       user               rss comm")
+       (format t "~%pid       user               rss comm")
        (loop for x in ans do
-             (apply 'format
-                    *standard-output*
-                    "~%~a~10t~a~20t~12:d~30t~a"
-                    x))
-       (oft "~%from man proc: rss = Resident Set Size.  Number of ~
+             (apply 'format t "~%~a~10t~a~20t~12:d~30t~a" x))
+       (format t "~%from man proc: rss = Resident Set Size.  Number of ~
           pages in real memory.")
-       (oft "~%host-page-size:  ~:d" CCL:*HOST-PAGE-SIZE*))
+       (format t "~%host-page-size:  ~:d" CCL:*HOST-PAGE-SIZE*))
      ans)))
 
 (defg *hons-init-hook*
@@ -4594,1029 +4379,6 @@ the calls took.")
 
 
 
-;;;                                WATCH
-
-
-(defg *watch-file* nil
-  "If *WATCH-FILE* is not NIL, it is a string that names the 'watch
-  file', to which (WATCH-DUMP) prints.")
-
-(defg *watch-string*
-  (let ((ws (make-array 0 :element-type 'character
-                        :adjustable t :fill-pointer t)))
-    (setf (fill-pointer ws) 0)
-    ws)
-  "WATCH-DUMP first writes to the adjustable string *WATCH-STRING*
-  and then prints to the *WATCH-FILE*.")
-
-(declaim (type (array character (*)) *watch-string*))
-
-
-(defg *watch-forms*
-  '("\"A string or a quoted form in *WATCH-FORMS* is ignored.\""
-    (print-call-stack)
-    #+Clozure '(bytes-used)
-    (memoize-summary)
-    (time-since-watch-start)
-    (time-of-last-watch-update)
-    '(mapc 'print-some-documentation *watch-items*)
-    ;; [Jared] removing these, they haven't worked since hl-hons
-    ;; '(hons-calls/sec-run-time)
-    ;; '(hons-hits/calls)
-    '(hons-acons-summary)
-    ;; [Jared] removing these since i decided to stop counting ponses
-    ;; '(pons-calls/sec-run-time)
-    ;; '(pons-hits/calls)
-    '(pons-summary)
-    '(hons-summary)
-    '(print-fds)
-    '(print-ancestry)
-    #+Clozure '(watch-shell-command "pwd")
-    '(functions-that-may-be-too-fast-to-sensibly-profile)
-    '(physical-memory-on-this-machine)
-    #+Clozure '(number-of-cpus-on-this-machine)
-    #+Clozure (gc-count)
-    )
-
-  "The forms in *WATCH-FORMS* are evaluated periodically and the
-  output is written to *WATCH-FILE*.  Change *WATCH-FORMS*
-  to produce whatever watch output you want.")
-
-(defg *watch-items*
-  '((length-memoized-functions)
-    *memoize-summary-limit*
-    *memoize-summary-order-list*
-    *memoize-summary-order-reversed*
-    *max-mem-usage*
-
-    *watch-forms*
-    *watch-file*
-    *watch-items*
-
-;;    *count-pons-calls*
-
-    *memoize-summary-order-list*
-    *memoize-summary-order-reversed*
-    *memoize-summary-limit*
-
-    *record-bytes*
-    *record-calls*
-    *record-hits*
-    *record-mht-calls*
-    *record-time*
-
-    *report-bytes*
-    *report-calls*
-    *report-calls-from*
-    *report-calls-to*
-    *report-hits*
-    *report-hons-calls*
-    *report-mht-calls*
-    *report-pons-calls*
-    *report-time*
-    *report-on-memo-tables*
-    *report-on-pons-tables*
-
-    #+Clozure (ccl::lisp-heap-gc-threshold)
-    #+Clozure (ccl::%freebytes)
-
-    )
-  "*WATCH-ITEMS* is a list of forms that are printed with their values
-  and documentation if (MAPC 'PRINT-SOME-DOCUMENTATION *WATCH-ITEMS*)
-  is a member of *WATCH-FORMS* and (WATCH-DO) is invoked.")
-
-(defg *watch-last-real-time*  0)
-(defg *watch-last-run-time*   0)
-(defg *watch-start-real-time* 0)
-(defg *watch-start-run-time*  0)
-(defg *watch-start-gc-count*  0)
-(defg *watch-start-gc-time*   0)
-
-(defg *watch-start-heap-bytes-allocated* 0)
-
-(declaim (mfixnum *watch-last-real-time* *watch-last-run-time*
-                  *watch-start-real-time* *watch-start-run-time*
-                  *watch-start-gc-count* *watch-start-gc-time*))
-
-(defg *watch-file-form*
-
-  '(format nil "watch-output-temp-~D.lsp" (getpid$))
-
-  "The value of *WATCH-FILE-FORM* should be a form that is to
-  be evaluated whenever (WATCH) is invoked in order to get
-  the string that is to name *WATCH-FILE*.")
-
-
-#+Clozure
-(defv *watch-dog-process* nil
-
-  "*WATCH-DOG-PROCESS*, when non-NIL is a CCL process that
-  periodically asks the main CCL thread/process,
-  *WATCH-STARTUP-PROCESS*, to invoke MAYBE-WATCH-DUMP.
-
-  It is always ok to kill the *WATCH-DOG-PROCESS*.  (WATCH-KILL) does
-  that.")
-
-#+Clozure
-(defv *watch-startup-process* nil
-
-  "*WATCH-STARTUP-PROCESS*, when non-NIL is the CCL process that
-  created the *WATCH-DOG-PROCESS*, and the only process that should
-  ever run MAYBE-WATCH-DUMP.")
-
-#+Clozure
-(defparameter *with-space-timer-raw-limit* nil)
-
-#+Clozure
-(defparameter *with-run-timer-raw-limit* nil
-
-  "*WITH-RUN-TIMER-RAW-LIMIT* is bound only by WITH-RUN-TIMER-RAW, and
-  is bound to a nonnegative integer representing the value of
-  (INTERNAL-RUN-TIME) after which, if the watch process interrupts the
-  main Lisp process to run MAYBE-WATCH-DUMP, the execution of
-  MAYBE-WATCH-DUMP will raise an error with a condition of type
-  WITH-TIMER-RAW-CONDITION-TYPE.")
-
-#+Clozure
-(defparameter *with-real-timer-raw-limit* nil
-
-  "*WITH-REAL-TIMER-RAW-LIMIT* is bound only by WITH-REAL-TIMER-RAW,
-  and is bound to a nonnegative integer representing the value of
-  (INTERNAL-REAL-TIME) after which, if the watch process interrupts
-  the main Lisp process to run MAYBE-WATCH-DUMP, the execution of
-  MAYBE-WATCH-DUMP will raise an error with a condition of type
-  WITH-TIMER-RAW-CONDITION-TYPE.")
-
-#+Clozure
-(defg *watch-lock-ht* (make-hash-table)
-  "*WATCH-LOCK-HT* is used to provide a locking mechanism to
-  prevent watch-dump from being run twice at the same time.")
-
-#+Clozure
-(declaim (hash-table *watch-lock-ht*))
-
-#+Clozure
-(defg *watch-real-seconds-between-dumps* 5
-
-  "WATCH-DUMP will not run more than once every
-  *WATCH-REAL-SECONDS-BETWEEN-DUMPS* seconds.")
-
-#+Clozure
-(declaim (fixnum *watch-real-seconds-between-dumps*))
-
-(defmacro ofto (&rest r) ; For writing to *terminal-io*
-  ;; only used in watch-condition
-  `(progn (format *terminal-io* ,@r)
-          (force-output *terminal-io*)))
-
-#+Clozure
-(defn watch-condition ()
-  (unless (eq *watch-dog-process* ccl::*current-process*)
-    (ofto "~%WATCH-CONDITION should only be called by ~
-          *watch-dog-process*:~%~a~%never by~%~a."
-          *watch-dog-process*
-          ccl::*current-process*))
-  (and *watch-file*
-       (eql 0 ccl::*break-level*)
-       (let ((run nil) (real nil))
-         (or (and *with-space-timer-raw-limit*
-                  (> (ccl::%usedbytes) *with-space-timer-raw-limit*))
-             (and *with-real-timer-raw-limit*
-                  (> (setq real (get-internal-real-time))
-                     *with-real-timer-raw-limit*))
-             (and *with-run-timer-raw-limit*
-                  (> (setq run (get-internal-run-time))
-                     *with-run-timer-raw-limit*))
-             (and (> (or run (get-internal-run-time))
-                     *watch-last-run-time*)
-                  (> (or real (get-internal-real-time))
-                     (+ *watch-last-real-time*
-                        (* *watch-real-seconds-between-dumps*
-                           internal-time-units-per-second))))))
-       (eql 0 (hash-table-count *watch-lock-ht*))))
-
-#+Clozure
-(defmacro with-watch-lock (&rest r)
-
-; WITH-WATCH-LOCK may well do nothing, knowing that a later call of
-; MAYBE-WATCH-DUMP will probably evenutally be made by the
-; WATCH-DOG-PROCESS, and that will be good enough.  WITH-WATCH-LOCK
-; does not support a queue of pending requests for the lock.
-
-  `(progn
-     (cond ((not (eq *watch-startup-process* ccl::*current-process*))
-            (ofd "~%; WITH-WATCH-LOCK: ** Only the ~
-                   *WATCH-STARTUP-PROCESS* may obtain the watch ~
-                   lock."))
-           ((not (eql 0 ccl::*break-level*))
-            (ofd "~%; WITH-WATCH-LOCK: ** (eql 0 ~
-                  ccl::*break-level*)."))
-           ((not *watch-file*)
-            (ofd "~%; *WATCH-FILE* is NIL.  Invoke (watch)."))
-           ((eql 0 (hash-table-count *watch-lock-ht*))
-
-; At this point, nothing has the watch lock.  We race for the watch
-; lock but unknown others may also get into the race, this very
-; process executing this very code.
-
-            (let ((id (cons nil nil)))  ; a unique object
-              (unwind-protect
-                  (progn
-                    (setf (gethash id *watch-lock-ht*) t)
-                    (cond ((eql (hash-table-count *watch-lock-ht*) 1)
-
-; The watch lock has been obtained by only one of 'us', and any
-; competitors will do nothing.
-
-                           ,@r)
-                          (t (ofd "~%; WITH-WATCH-LOCK: ** the watch ~
-                                   lock is currently taken."))))
-                (remhash id *watch-lock-ht*))
-
-; The watch lock is released as of now, if it was obtained.
-
-              ))
-           (t (ofd "~%; WITH-WATCH-LOCK: ** the watch lock is ~
-                    currently taken.")))
-     *watch-file*))
-
-#+Clozure
-(define-condition with-timer-raw-condition-type (error) ())
-
-; The following 'condition' type and one 'instance' thereof are
-; created to support one use in the HANDLER-CASE form in
-; WITH-RUN-TIMER-RAW or WITH-RUN-TIMER-RAW, permitting time out errors
-; to be distinguished from all other sorts of errors.
-
-#+Clozure
-(defg *with-space-timer-raw-condition-instance*
-  (make-condition 'with-timer-raw-condition-type))
-
-#+Clozure
-(defg *with-real-timer-raw-condition-instance*
-  (make-condition 'with-timer-raw-condition-type))
-
-#+Clozure
-(defg *with-run-timer-raw-condition-instance*
-  (make-condition 'with-timer-raw-condition-type))
-
-#+Clozure
-(defv *space-timer-raw-bytes* 1)
-
-#+Clozure
-(defv *space-timer-raw-value* '("space out"))
-
-#+Clozure
-(defv *real-timer-raw-seconds* 1)
-
-#+Clozure
-(defv *real-timer-raw-value* '("time out"))
-
-#+Clozure
-(defv *run-timer-raw-seconds* 1)
-
-#+Clozure
-(defv *run-timer-raw-value* '("time out"))
-
-#+Clozure
-(defmacro with-space-timer-raw (form
-                                &key
-                          (bytes *space-timer-raw-bytes*)
-                          (space-out-value *space-timer-raw-value*))
-  `(let* ((old *with-space-timer-raw-limit*)
-          (new (+ (ccl::%usedbytes) ,bytes))
-          (new2 (if *with-space-timer-raw-limit*
-                    (min *with-space-timer-raw-limit* new)
-                  new)))
-     (handler-case
-      (progn (setq *with-space-timer-raw-limit* new2)
-             (unwind-protect ,form
-               (setq *with-space-timer-raw-limit* old)))
-      (with-timer-raw-condition-type
-       (c)
-       (cond ((eq c *with-space-timer-raw-condition-instance*)
-              ; (ofd "~&; space-out when evaluating:~%~s." ',form)
-              (setq *with-space-timer-raw-limit* old)
-              ',space-out-value)
-             (t (error c)))))))
-
-#+Clozure
-(defmacro with-real-timer-raw (form
-                          &key
-                          (seconds *real-timer-raw-seconds*)
-                          (time-out-value *real-timer-raw-value*))
-
-  "(WITH-REAL-TIMER-RAW form &key seconds time-out-value) begins an
-  evaluation of FORM, but the evaluation may and should be aborted
-  when more than SECONDS seconds of real-time (wall time) elapses.
-  Whether an abort actually occurs depends upon the vagaries of time,
-  including whether the watch-dog-process, if there is one, is
-  successful in interrupting the main Lisp process.  If and when the
-  evaluation of FORM completes, WITH-REAL-TIMER-RAW returns the
-  value(s) of that evaluation.  But otherwise, TIME-OUT-VALUE is
-  returned.  SECONDS defaults to the value of
-  *REAL-TIMER-RAW-SECONDS*.  TIME-OUT-VALUE defaults to a list of
-  length one whose only member is a string; such an object satisfies
-  TO-IF-ERROR-P.
-
-  If WITH-REAL-TIMER-RAW is called while WITH-REAL-TIMER-RAW is
-  running, the new time limit is bounded by any and all real-timer
-  limits already in place."
-
- `(let* ((old *with-real-timer-raw-limit*)
-         (new (floor
-               (+ (get-internal-real-time)
-                  (* ,seconds internal-time-units-per-second))))
-         (new2 (if *with-real-timer-raw-limit*
-                   (min *with-real-timer-raw-limit* new)
-                 new)))
-    (handler-case
-     (progn (setq *with-real-timer-raw-limit* new2)
-            (unwind-protect ,form
-              (setq *with-real-timer-raw-limit* old)))
-     (with-timer-raw-condition-type
-      (c)
-      (cond ((eq c *with-real-timer-raw-condition-instance*)
-             (ofd "~&; real-time-out when evaluating:~%~s." ',form)
-             (setq *with-real-timer-raw-limit* old)
-             ',time-out-value)
-            (t (error c)))))))
-
-#+Clozure
-(defmacro with-run-timer-raw (form
-                          &key
-                          (seconds *run-timer-raw-seconds*)
-                          (time-out-value *run-timer-raw-value*))
-
-  "(WITH-RUN-TIMER-RAW form &key seconds time-out-value) begins an
-  evaluation of FORM, but the evaluation may and should be aborted
-  when more than SECONDS seconds of run-time (not wall time) elapses.
-  Whether an abort actually occurs depends upon the vagaries of time,
-  including whether the watch-dog-process, if there is one, is
-  successful in interrupting the main Lisp process.  If and when the
-  evaluation of FORM completes, WITH-RUN-TIMER-RAW returns the
-  value(s) of that evaluation.  But otherwise, TIME-OUT-VALUE is
-  returned.  SECONDS defaults to the value of *RUN-TIMER-RAW-SECONDS*,
-  which is initially 5.  TIME-OUT-VALUE defaults to a list of length
-  one whose only member is a string; such an object satisfies
-  TO-IF-ERROR-P.
-
-  If WITH-RUN-TIMER-RAW is called while WITH-RUN-TIMER-RAW is running,
-  the new time limit is bounded by any and all run-time limits already
-  in place."
-
- `(let* ((old *with-run-timer-raw-limit*)
-         (new (floor
-               (+ (get-internal-run-time)
-                  (* ,seconds internal-time-units-per-second))))
-         (new2 (if *with-run-timer-raw-limit*
-                   (min *with-run-timer-raw-limit* new)
-                 new)))
-    (handler-case
-     (progn (setq *with-run-timer-raw-limit* new2)
-            (unwind-protect ,form
-              (setq *with-run-timer-raw-limit* old)))
-     (with-timer-raw-condition-type
-      (c)
-      (cond ((eq c *with-run-timer-raw-condition-instance*)
-             (ofd "~&; run-time-out when evaluating:~%~s." ',form)
-             (setq *with-run-timer-raw-limit* old)
-             ',time-out-value)
-            (t (error c)))))))
-
-(defn1 watch-dump ()
-
-  "(WATCH-DUMP) writes to the watch file the characters sent to
-  *STANDARD-OUTPUT* by the evaluation of the members of *WATCH-FORMS*.
-
-  The value of *WATCH-FILE* is returned by WATCH-DUMP.
-
-  If *WATCH-FILE* is NIL, (WATCH) is invoked."
-
-  (unless *watch-file* (watch))
-  (setf (fill-pointer *watch-string*) 0)
-  (our-syntax-nice
-   (with-output-to-string
-     (*standard-output* *watch-string*)
-     (setq *print-miser-width* 100)
-     (loop for form in *watch-forms* do
-           (handler-case
-            (eval form)
-            (with-timer-raw-condition-type
-             (c) ; pass it on up
-             (incf-watch-count)
-             (error c))
-            (error ()
-                   (oft "~&~s~50t? error in eval ?~%"
-                        form)))
-           (fresh-line)))
-   (with-open-file (stream *watch-file* :direction :output
-                           :if-exists :supersede)
-     (write-string *watch-string* stream))
-   (setq *watch-last-real-time* (get-internal-real-time))
-   (setq *watch-last-run-time* (get-internal-run-time)))
-  *watch-file*)
-
-#+Clozure
-(defn1 maybe-watch-dump ()
-
-  "The function MAYBE-WATCH-DUMP is only executed as an interruption
-  request to the main Lisp thread from the watch dog process.  To
-  repeat, MAYBE-WATCH-DUMP is executed only by the main Lisp thread.
-  There is no overwhelming reason why this should be so, but the issue
-  of 'shared' hash tables, 'static' variables, ERROR handling, and
-  DEFPARAMETER bindings should be carefully considered if this design
-  choice is reconsidered.
-
-  (MAYBE-WATCH-DUMP) performs three unrelated tasks.
-
-  1.  If *WITH-RUN-TIMER-RAW-LIMIT* is a nonnegative integer that is
-  less than (GET-INTERNAL-RUN-TIME), then an error of type
-  TIMER-RAW-CONDITION is raised, which normally will be caught by the
-  error handler established by a pending call of WITH-RUN-TIMER-RAW.
-
-  2.  If *WITH-REAL-TIMER-RAW-LIMIT* is a nonnegative integer that is
-  less than (GET-INTERNAL-REAL-TIME), then an error of type
-  TIMER-RAW-CONDITION is raised, which normally will be caught by
-  the error handler established by a pending call of
-  WITH-REAL-TIMER-RAW.
-
-  3.  If the watch lock can be obtained, (WATCH-DUMP) is run."
-
-  (cond ((not (eql 0 ccl::*break-level*))
-         (incf-watch-count))
-        ((and *watch-file*
-              (eq *watch-startup-process* ccl::*current-process*))
-         (when (and *with-space-timer-raw-limit*
-                    (> (ccl::%usedbytes)
-                       *with-space-timer-raw-limit*))
-           (setq *with-space-timer-raw-limit* nil)
-           (incf-watch-count)
-           (error *with-space-timer-raw-condition-instance*))
-         (when (and *with-run-timer-raw-limit*
-                    (> (get-internal-run-time)
-                       *with-run-timer-raw-limit*))
-           (setq *with-run-timer-raw-limit* nil)
-           (incf-watch-count)
-           (error *with-run-timer-raw-condition-instance*))
-         (when (and *with-real-timer-raw-limit*
-                    (> (get-internal-real-time)
-                       *with-real-timer-raw-limit*))
-           (setq *with-real-timer-raw-limit* nil)
-           (incf-watch-count)
-           (error *with-real-timer-raw-condition-instance*))
-         (handler-case
-
-; No thread or stack frame can be expected to handle an error under
-; MAYBE-WATCH-DUMP in WATCH-DUMP, because MAYBE-WATCH-DUMP is run as
-; the result of an interrupt from the watch dog process.  In this
-; unexpected case, we ignore the error, after printing a note to
-; *DEBUG-IO*.
-
-; MAYBE-WATCH-DUMP calls (INCF-WATCH-COUNT), even if MAYBE-WATCH-DUMP
-; exits via ERROR or exits after catching and ignoring an error.
-; Otherwise, the interrupting watch dog process might wait a very long
-; time before resuming normal operation."
-
-          (with-watch-lock (watch-dump))
-          (with-timer-raw-condition-type
-           (c) ; pass it on up
-           (incf-watch-count)
-           (error c))
-          (error
-           (x)
-           (ofd "~%; MAYBE-WATCH-DUMP: An error is being ignored:~% ~
-                 ~a." x)
-           (incf-watch-count)))
-         (incf-watch-count)
-         *watch-file*)
-        (t (incf-watch-count)
-           (ofd "~%; MAYBE-WATCH-DUMP may only be called by the ~
-                 *WATCH-STARTUP-PROCESS*"))))
-
-(defn1 watch-kill ()
-
-  "(WATCH-KILL) kills the CCL *WATCH-DOG-PROCESS*, if any, and sets
-  the *WATCH-FILE* to NIL.  It is alway OK to invoke (WATCH-KILL)."
-
-  (setq *watch-file* nil)
-  #+Clozure
-  (when *watch-dog-process*
-    (ignore-errors (ccl::process-kill *watch-dog-process*))
-    (setq *watch-dog-process* nil))
-  #+Clozure
-  (setq
-    *watch-dog-process*            nil
-    *with-real-timer-raw-limit*    nil
-    *with-space-timer-raw-limit*   nil
-    *with-run-timer-raw-limit*     nil
-    *watch-startup-process*        nil))
-
-(defg *watch-count-ht* (make-hash-table))
-
-(defn1 watch-count ()
-  (values (gethash 'count *watch-count-ht*)))
-
-(defn1 incf-watch-count ()
-  (incf (gethash 'count *watch-count-ht*)))
-
-(defn1 set-watch-count (x)
-  (setf (gethash 'count *watch-count-ht*) x))
-
-(defv *watch-sleep-seconds* 1
-
-  "The watch dog process sleeps at least *WATCH-SLEEP-SECONDS*
-  before interrupting the main process.")
-
-(defparameter *faking-batch-flag*
-  ;; See live-terminal-p
-  nil)
-
-(defun live-terminal-p ()
-
-  "(LIVE-TERMINAL-P) attempts to determine whether there
-  is an active user terminal for this Lisp."
-
-  #+Clozure
-  (and (null (or *faking-batch-flag* ccl::*batch-flag*))
-       (not (search "FILE"
-                    (with-standard-io-syntax
-                     (write-to-string *terminal-io*
-                                      :escape nil
-                                      :readably nil)))))
-    #-Clozure t)
-
-
-(defun watch (&optional force-dog)
-
-  "WATCH is a raw Lisp function that initiates the printing of
-  profiling information.  (WATCH) sets *WATCH-FILE* to the string that
-  results from the evaluation of *WATCH-FILE-FORM*, a string that is
-  to be the name of a file we call the 'watch file'.
-
-  In Clozure Common Lisp, (WATCH) also initiates the periodic
-  evaluation of (WATCH-DUMP), which evaluates the members of the list
-  *WATCH-FORMS*, but diverts characters for *STANDARD-OUTPUT* to the
-  watch file.  The value of *WATCH-FILE* is returned by both (WATCH)
-  and (WATCH-DUMP).  (WATCH-KILL) ends the periodic printing to the
-  watch file.
-
-  You are most welcome to, even encouraged to, change the members of
-  *WATCH-FORMS* to have your desired output written to the watch file.
-
-  Often (MEMOIZE-SUMMARY) is a member of *WATCH-FORMS*.  It prints
-  information about calls of memoized and/or profiled functions.
-
-  Often (PRINT-CALL-STACK) is a member of *WATCH-FORMS*.  It shows the
-  names of memoized and/or profiled functions that are currently in
-  execution and how long they have been executing.
-
-  Other favorite members of *WATCH-FORMS* include (PRINT-FDS),
-  (BYTES-USED), and (GC-COUNT).
-
-  We suggest the following approach for getting profiling information
-  about calls to Common Lisp functions:
-
-    0. Invoke (WATCH).
-
-    1. Profile some functions that have been defined.
-
-       For example, call (PROFILE-FN 'foo1), ...
-
-       Or, for example, call PROFILE-FILE on the name of a file that
-       contains the definitions of some functions that have been
-       defined.
-
-       Or, as a perhaps extreme example, invoke
-       (PROFILE-ACL2), which will profile many of the functions that
-       have been introduced to ACL2, but may take a minute or two.
-
-       Or, as a very extreme example, invoke
-       (PROFILE-ALL), which will profile many functions, but may take
-       a minute or two.
-
-    2. Run a Lisp computation of interest to you that causes some of
-       the functions you have profiled to be executed.
-
-    3. Invoke (WATCH-DUMP).
-
-    4. Examine, perhaps in Emacs, the watch file, whose name was
-       returned by (WATCH-DUMP).  The watch file contains information
-       about the behavior of the functions you had profiled or
-       memoized during the computation of interest.
-
-  From within ACL2, you may MEMOIZE any of your ACL2 Common Lisp
-  compliant ACL2 functions.  One might MEMOIZE a function that is
-  called repeatedly on the exact same arguments.  Deciding which
-  functions to memoize is tricky.  The information from (WATCH-DUMP)
-  helps.  Sometimes, we are even led to radically recode some of our
-  functions so that they will behave better when memoized.
-
-  In Emacs, the command 'M-X AUTO-REVERT-MODE' toggles auto-revert
-  mode, i.e., causes a buffer to exit auto-revert mode if it is in
-  auto-revert mode, or to enter auto-revert mode if it is not.  In
-  other words, to stop a buffer from being auto-reverted, simply
-  toggle auto-revert mode; toggle it again later if you want more
-  updating.  'M-X AUTO-REVERT-MODE' may be thought of as a way of
-  telling Emacs, 'keep the watch buffer still'.
-
-  In Clozure Common Lisp, if the FORCE-DOG argument to WATCH (default
-  NIL) is non-NIL or if (LIVE-TERMINAL-P) is non-NIL a 'watch dog'
-  thread is created to periodically call (WATCH-DUMP).  The thread is
-  the value of *WATCH-DOG-PROCESS*.
-
-  Invoke (WATCH-HELP) outside of ACL2 for further details."
-
-  #+Clozure
-  (ccl::cpu-count)
-  (watch-kill)
-  #+Clozure
-  (pushnew 'watch-kill ccl::*save-exit-functions*)
-  (setq *watch-lock-ht* (make-hash-table))
-  (setq *watch-file* nil)
-  (setq *watch-start-real-time* (get-internal-real-time))
-  (setq *watch-start-run-time* (get-internal-run-time))
-  (setq *watch-last-real-time* 0)
-  (setq *watch-last-run-time* 0)
-  (set-watch-count 0)
-  (clear-memoize-call-array)
-  (unless (and (ignore-errors
-                 (setq *watch-file* (eval *watch-file-form*)))
-               (stringp *watch-file*))
-    (error "; WATCH: evaluation of *WATCH-FILE-FORM* failed to ~
-          produce a string."))
-  #+Clozure
-  (progn
-    (setq *watch-start-gc-count* (ccl::full-gccount))
-    (setq *watch-start-gc-time* (ccl::gctime))
-    (setq *watch-start-heap-bytes-allocated* (heap-bytes-allocated))
-    (setq *watch-startup-process* ccl::*current-process*)
-    (when (or force-dog (live-terminal-p))
-      (setq *watch-dog-process*
-        (ccl::process-run-function "watch-dog-process"
-         (lambda ()
-           (let (x)
-             (loop (sleep *watch-sleep-seconds*)
-                   (setq x (watch-count))
-                   (when (watch-condition)
-                     (ccl:process-interrupt *watch-startup-process*
-                                            #'maybe-watch-dump)
-                     (loop for i from 1 while (>= x (watch-count))
-                           do (sleep *watch-sleep-seconds*))))))))
-      (ofv "An invocation of (WATCH) has now started a new ~%; ~
-            Aside:  Clozure Common Lisp thread, the ~
-            *WATCH-DOG-PROCESS*, which~%; Aside:  calls ~
-            (MAYBE-WATCH-DUMP) periodically, which writes to the ~
-            file ~%; Aside:  whose name is the value of ~
-            *WATCH-FILE*, viz.,~%; Aside:  ~a.~%(WATCH-KILL) kills ~
-            the thread.~%"
-         *watch-file*)))
-  (watch-dump))
-
-(defn1 first-string (l)
-  (loop for x in l when (stringp x) do (return x)))
-
-(defg *undocumented-symbols* nil)
-
-(defn1 print-some-documentation (x)
-  (let ((state *the-live-state*)
-        (types-of-documentation
-         '(compiler-macro function
-                          method-combination
-                          setf structure type variable
-                          t)))
-
-; 0. Print it, evaluate it, and print the value, if possible.
-
-    (oft "~&~%~a" x)
-    (let* ((avrc (cons nil nil))
-           (value avrc))
-      (cond ((symbolp x)
-             (cond ((boundp x)
-                    (setq value (symbol-value x)))
-                   ((fboundp x) nil)
-                   (t (setq value "unbound"))))
-            (t (setq value "error-in-evaluation")
-               (ignore-errors
-                 (setq value
-                   (multiple-value-list (eval x))))))
-      (cond ((not (eq value avrc))
-             (when (and (consp value) (null (cdr value)))
-               (setq value (car value)))
-             (let ((str (format nil "~a" value)))
-               (cond ((numberp value) (oft " => ~:d." value))
-                     ((> (length str) 40)
-                      (oft " =>~%~a." str))
-                     (t (oft " => ~a." str)))))
-            (t (oft "."))))
-    (cond
-     ((not (symbolp x)) nil)
-     ((get-doc-string x state)
-
-; 1. For a symbol with regular ACL2 documentation, use :doc!.
-
-      (oft "~%:doc! ")
-      (let ((*acl2-unwind-protect-stack*
-             (cons nil *acl2-unwind-protect-stack*)))
-        (doc!-fn x state)))
-     (t (let* ((tem nil)
-               (found nil)
-               (w (w state))
-               (def (first-string (cltl-def-from-name x nil w))))
-          (cond
-           (def
-
-; 2. Else, for an ACL2 function symbol with a DOC string, print it.
-
-            (oft "~%(first-string (cltl-def-from-name '~a nil (w ~
-                   *the-live-state*))) =>~%~a"
-                 x def))
-           (t
-
-; 3. Else, for a symbol with some Common Lisp DOCUMENTATION, print
-; that.
-
-            (loop for type in types-of-documentation
-                  when (setq tem (documentation x type)) do
-                  (oft "~%(documentation '~a '~a) => ~% ~a"
-                       type x tem)
-                  (setq found t))
-            (loop for type-pair in '((function saved-function)
-                                     (variable saved-variable))
-                  when (and (null (documentation x (car type-pair)))
-                            (setq tem (documentation
-                                       x
-                                       (cadr type-pair))))
-                  do
-                  (oft "~%(documentation '~a '~a) => ~% ~a"
-                       (cadr type-pair) x tem)
-                  (setq found t))
-            (cond ((null found)
-
-; 4. Else, call DESCRIBE.
-
-                   (pushnew x *undocumented-symbols*)
-
-                   (oft "~%(describe '~a) =>~%" x)
-                   (describe x))))))))))
-
-(defmacro print-documentation (&rest r)
-
-  "(PRINT-DOCUMENTATION x) prints out some things about the symbols in
-  r, such as values and documentation."
-
-  `(progn
-     (oft "~%For further information about these ~a items, see ~
-           below.~%"
-          (length ',r))
-     (loop for x in ',r as i from 1 do
-           (oft "~% ~3d.~4t~a" i x))
-     (terpri)
-     (terpri)
-     (mapc 'print-some-documentation ',r)
-     (values)))
-
-(defn1 watch-help ()
-
-  "(WATCH-HELP) prints some documentation for WATCH, MEMOIZE, PROFILE,
-  etc."
-
-  (print-documentation
-   watch
-   watch-dump
-   #+Clozure maybe-watch-dump
-   watch-kill
-
-   memoize-summary
-   memoized-values
-   *memoize-summary-order-list*
-   *memoize-summary-limit*
-   *memoize-summary-order-reversed*
-   hons-acons-summary
-   if-report
-
-   #+Clozure bytes-allocated
-   hons-calls
-   hons-statistics
-   hons-summary
-   number-of-memoized-entries
-   number-of-mht-calls
-   print-call-stack
-   symbol-name-order
-
-   clear-memoize-call-array
-   clear-memoize-tables
-   clear-memoize-table
-
-   profile
-   profile-acl2
-   profile-all
-   profile-file
-
-   memoize
-   memoize-fn
-
-   pons-summary
-   print-call-stack
-
-   unmemoize
-   unmemoize-all
-   unmemoize-profiled
-
-   print-documentation
-   compact-print-file
-   compact-read-file
-
-   *watch-items*
-   *watch-forms*
-   *watch-file-form*
-   *watch-string*
-   *watch-file*
-   *watch-startup-process*
-   *watch-last-real-time*
-   *watch-last-run-time*
-   *watch-real-seconds-between-dumps*
-   *watch-lock-ht*
-
-   #+Clozure
-   *watch-dog-process*
-   #+Clozure
-   watch-kill
-
-   bytes-allocated
-   bytes-allocated/call
-   event-number
-   execution-order
-   hits/calls
-   hons-calls
-   pons-calls
-   number-of-calls
-   number-of-hits
-   number-of-memoized-entries
-   number-of-mht-calls
-   symbol-name-order
-   time-for-non-hits/call
-   time/call
-   total-time
-
-   resize-memo
-   resize-pons
-
-   ))
-
-
-;  USER MALEABLE WATCH FUNCTIONS AND VARIABLES
-
-#+Clozure
-(defun bytes-used ()
-  (multiple-value-bind (dynamic static library frozen-size)
-      (ccl::%usedbytes)
-    (declare (ignorable library))
-    (let* ((sum (+ dynamic static library frozen-size))
-           (stack-size (ccl::%stack-space))
-           (id (ccl::getpid))
-           (rwx-size (rwx-size)))
-      (declare (ignorable sum))
-      (oft
-
-; (stat (proc-stat id))
-
-;  ~%reserved:   ~15:d~ (ccl::%reservedbytes)
-
-;  ~%library:   ~15:d  library
-
-; ~%memfree:   ~15:d~29tfrom /proc/meminfo~
-;  (* 1024 (meminfo "MemFree:")
-; ~%swapfree:  ~15:d~29tfrom /proc/meminfo"
-; (* 1024 (meminfo "SwapFree:")
-; ~%rss:       ~15:d~29tfrom /proc/~a/stat - ram used~
-;             (rss-size (* (getf stat :rss) ccl:*host-page-size*))
-; ~%jobs:      ~15:d~29tfrom vmstat~" (number-procs-running)
-; ~%load avg:  ~15f~29tone minute, from uptime" (load-average)
-
- "~%(bytes-used)~
-  ~%dynamic:   ~15:d~29tlisp-heap-gc-threshold:    ~14:d~
-  ~%stack:     ~15:d~29tmax-mem-usage:             ~14:d~
-  ~%free:      ~15:d~29tgc-min-threshold:          ~14:d~
-  ~%rwx:       ~15:d~29tfrom /proc/~a/maps - virtual used"
-
- dynamic               (ccl::lisp-heap-gc-threshold)
- stack-size            *max-mem-usage*
- (ccl::%freebytes)     *gc-min-threshold*
- rwx-size              id))))
-
-
-(defmacro defw (fn &rest r)
-  `(defn ,fn ()
-     (let ((fn (string-capitalize (symbol-name ',fn))))
-       ,@r)))
-
-(defmacro oft-wrm (str &rest r)
-  `(oft ,str (or *print-right-margin* 70) ,@r))
-
-(defn1 date-string ()
-  (multiple-value-bind (sec mi h d mo y)
-      (decode-universal-time (get-universal-time))
-    (let (m)
-      (cond ((> h 12)
-             (setq m " p.m.")
-             (setq h (- h 12)))
-            (t (setq m " a.m.")))
-      (ofn "~2,d:~2,'0d:~2,'0d~a ~4d/~d/~d"
-           h mi sec m y mo d))))
-
-(defw time-of-last-watch-update
-  (oft-wrm "~v<~a~;~a~>" fn (date-string)))
-
-(defun watch-real-time ()
-  (/ (- (get-internal-real-time) *watch-start-real-time*)
-     *float-internal-time-units-per-second*))
-
-(defun watch-run-time ()
-  (/ (- (get-internal-run-time) *watch-start-run-time*)
-     *float-internal-time-units-per-second*))
-
-
-
-#+Clozure
-(defw gc-count ()
-  (if *watch-file*
-      (let ((h 0)
-            (mi 0)
-            (sec (floor (- (ccl::gctime) *watch-start-gc-time*)
-                        internal-time-units-per-second)))
-        (multiple-value-setq (mi sec) (floor sec 60))
-        (multiple-value-setq (h mi) (floor mi 60))
-        (oft-wrm "~v,20<~a~;~a.~;~a~;~2d:~2,'0d:~2,'0d.~>"
-             fn
-             (- (ccl::full-gccount) *watch-start-gc-count*)
-             "Time in gc since watch start"
-             h mi sec))))
-
-(defun functions-that-may-be-too-fast-to-sensibly-profile ()
-  (let ((ans (loop for fn in (profiled-functions)
-                   when (< (total-time fn)
-                           (* 1e-6 (number-of-calls fn)))
-                   collect fn)))
-    (when ans (oft "Too fast to sensibly profile?~%~a" ans))))
-
-#+Clozure
-(defw number-of-cpus-on-this-machine
-  (let* ((ans (ofn "~:d" (ccl::cpu-count))))
-    (oft-wrm "~v<~a~;~a~>" fn ans)))
-
-(defw physical-memory-on-this-machine
-  (let* ((ans (ofn "~:d" (physical-memory))))
-    (oft-wrm "~v<~a~;~a bytes.~>" fn ans)))
-
-#+Clozure
-(defun watch-shell-command (&rest args)
-  (let* ((as (args-spaced args))
-         (output (csh as)))
-    (oft-wrm "~v<~a~;~a~>" as output)))
-
-(defw time-since-watch-start ()
-  (if *watch-file*
-      (multiple-value-bind (mi1 sec1)
-          (floor (round (watch-real-time)) 60)
-        (multiple-value-bind (h1 mi1) (floor mi1 60)
-          (multiple-value-bind (mi2 sec2)
-              (floor (round (watch-run-time)) 60)
-            (multiple-value-bind (h2 mi2) (floor mi2 60)
-              (oft-wrm "~v<Watch update ~a. ~
-                ~;~a~;~2d:~2,'0d:~2,'0d.~;~a~;~2d:~2,'0d:~2,'0d.~>"
-                       (watch-count) fn h1 mi1 sec1 "Run-time"
-                   h2 mi2 sec2)))))))
-
-
-#+Clozure
-(defun make-watchdog (duration)
-
-;   Thanks to Gary Byers for this!
-
-   (let* ((done (ccl:make-semaphore))
-          (current ccl:*current-process*))
-      (ccl::process-run-function "watchdog"
-        (lambda ()
-          (or (ccl:timed-wait-on-semaphore done duration)
-              (ccl:process-interrupt
-               current #'error "Time exceeded"))))
-      done))
-
-#+Clozure
-(defun call-with-timeout (function duration)
-
-  "(CALL-WITH-TIMEOUT function duration) calls FUNCTION on no
-  arguments and returns its values unless more than DURATION seconds
-  elapses before completion, in which case the FUNCTION computation is
-  interrupted and calls ERROR.
-
-  Thanks to Gary Byers for this beaut."
-
-   (let* ((semaphore (make-watchdog duration)))
-      (unwind-protect
-          (funcall function)
-        (ccl:signal-semaphore semaphore))))
 
 
 ;  COMPILER MACRO for IF
@@ -5777,7 +4539,7 @@ the calls took.")
                 (cond
                  ((or (symbolp x)
                       (and (consp x) (not (eq (car x) 'oft))))
-                  `(progn (oft "~&~:a =>~40t" ',x)
+                  `(progn (format t "~&~:a =>~40t" ',x)
                           (setq ,tem ,x)
                           (cond ((integerp ,tem)
                                  (setq ,tem2 (ofn "~20:d" ,tem)))
@@ -5797,11 +4559,11 @@ the calls took.")
                                 (t (setq ,tem2 (ofn "~a" ,tem))))
                           (cond ((and (stringp ,tem2)
                                       (< (length ,tem2) 40))
-                                 (oft "~a" ,tem2))
-                                (t (oft "~%  ")
+                                 (format t "~a" ,tem2))
+                                (t (format t "~%  ")
                                    (prin1 ,tem *terminal-io*)))))
                  ((and (consp x) (eq (car x) 'oft)) x)
-                 (t `(oft "~&~a" (setq ,tem ',x)))))
+                 (t `(format t "~&~a" (setq ,tem ',x)))))
         ,tem))))
 
 #+Clozure
@@ -6534,7 +5296,6 @@ the calls took.")
           date-string
           strip-cars1
           short-symbol-name
-          hons-calls
           memoize-condition
           1-way-unify-top
           absorb-frame
@@ -7176,7 +5937,6 @@ the calls took.")
           partition-according-to-assumption-term
           permute-occs-list
           pons
-          pons-calls
           pop-accp
           pop-clause
           pop-clause-msg
@@ -7556,6 +6316,10 @@ the calls took.")
           zp)
         do
         (setf (gethash sym *profile-reject-ht*) t)))
+
+
+
+
 
 
 

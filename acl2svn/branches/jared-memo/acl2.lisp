@@ -585,6 +585,7 @@
     #+hons "h-compact-print-raw"
     #+hons "h-shells-raw"
     #+hons "h-casemacro-raw"
+    #+hons "h-watch-raw"
     "translate"
     "type-set-a"
     "linear-a"
