@@ -1,0 +1,3 @@
+File emacs-acl2.el makes it easy to use proof-trees (see :DOC proof-tree) and
+contains other potentially useful functionality for ACL2 users.  There is some
+documentation in the file.
