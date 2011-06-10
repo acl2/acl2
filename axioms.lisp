@@ -24944,21 +24944,7 @@
     (gstackp . nil)
     (guard-checking-on . t)
     (hons-read-p . t) ; only of interest in the #+hons version
-    (host-lisp . ; GCL 2.6.7 can fail if instead we do the obvious thing here
-               ,(let ()
-                  #+gcl :gcl
-                  #+ccl :ccl
-                  #+sbcl :sbcl
-                  #+allegro :allegro
-                  #+clisp :clisp
-                  #+cmu :cmu
-                  #+lispworks :lispworks
-                  #-(or gcl ccl sbcl allegro clisp cmu lispworks)
-                  (illegal '*initial-global-table*
-                           "The underlying host Lisp appears not to support ~
-                            ACL2.  Feel free to contact the ACL2 implementors ~
-                            to request such support."
-                           nil)))
+    (host-lisp . nil)
     (in-local-flg . nil)
     (in-prove-flg . nil)
     (in-verify-flg . nil)

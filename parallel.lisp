@@ -58,9 +58,19 @@
   experimental extension for evaluating forms in parallel~/
 
   This documentation topic relates to an experimental extension of ACL2,
-  created initially by David L. Rager.  ~l[parallelism-build] for how to build
-  an executable image that supports parallel evaluation.  Also see
+  ACL2(p), created initially by David L. Rager.  ~l[parallelism-build] for how
+  to build an executable image that supports parallel evaluation.  Also see
   ~c[books/parallel] for examples.
+
+  IMPORTANT NOTE.  We hope and expect that every evaluation result is correctly
+  computed by ACL2(p), and that every formula proved using ACL2(p) is a theorem
+  of the ACL2 logic (and in fact is provable using ACL2).  However, we do not
+  guarantee these properties.  Since ACL2(p) is intended to be an aid in
+  efficient evaluation and proof development, we focus less on ironclad
+  soundness and more on providing an efficient and working implementation.
+  Nevertheless, if you encounter a case where ACL2(p) computes an incorrect
+  result, or produces a proof where ACL2 fails to do so, please tell the
+  implementors.
 
   One of ACL2's strengths lies in its ability to execute industrial models
   efficiently.  The ACL2 source code provides an experimental parallel
@@ -128,9 +138,11 @@
 
   building an ACL2 executable with parallel evaluation enabled~/
 
-  ~l[parallel] and ~pl[parallelism-tutorial] for an introduction to parallel
-  evaluation in ACL2 using parallelism primitives ~ilc[pand], ~ilc[por],
-  ~ilc[plet], and ~ilc[pargs].
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].  ~l[parallel] and
+  ~pl[parallelism-tutorial] for an introduction to parallel evaluation in ACL2
+  using parallelism primitives ~ilc[pand], ~ilc[por], ~ilc[plet], and
+  ~ilc[pargs].
 
   You can build an experimental version of ACL2 that supports parallel
   evaluation in the following host Common Lisp implementations:
@@ -199,9 +211,11 @@
 
   enabling or disabling parallel evaluation for parallelism primitives~/
 
-  ~l[parallel] and ~pl[parallelism-tutorial] for an introduction to parallel
-  evaluation in ACL2 using parallelism primitives ~ilc[pand], ~ilc[por],
-  ~ilc[plet], and ~ilc[pargs].
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].  ~l[parallel] and
+  ~pl[parallelism-tutorial] for an introduction to parallel evaluation in ACL2
+  using parallelism primitives ~ilc[pand], ~ilc[por], ~ilc[plet], and
+  ~ilc[pargs].
 
   ~bv[]
   General Forms:
@@ -289,7 +303,10 @@
   supports parallel execution and proof, ~pl[parallelism].  Please note that
   although this extension is usable and, we hope, robust in its behavior, there
   are still known issues to address beyond those listed explicitly below.  For
-  example, esoteric ``invalid speculation'' messages may appear.
+  example, esoteric ``invalid speculation'' messages may appear.  More
+  generally, while we expect ACL2(p) to perform correctly, it may never have
+  the same level of attention to correctness as is given to ACL2;
+  ~pl[parallelism], specifically the ``IMPORTANT NOTE'' there.
 
   Below we list proof features of ACL2 that are not yet supported when parallel
   execution is enabled for the primary ACL2 proof process, generally known as
@@ -406,6 +423,9 @@
 
   configuring the parallel evaluation of the waterfall~/
 
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].
+
   ~bv[]
   General Forms:
   (set-waterfall-parallelism nil) ; serial evaluation
@@ -475,6 +495,9 @@
 
   configuring the printing that occurs within the parallelized waterfall~/
 
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].
+
   ~bv[]
   General Forms:
   (set-waterfall-printing :full)    ; print everything
@@ -501,6 +524,9 @@
   ":Doc-Section Parallelism
 
   parallel evaluation in the ACL2 top-level loop~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].
 
   Calls of parallelism primitives made explicitly in the ACL2 top-level loop,
   as opposed to inside function bodies, will never cause parallel evaluation.
@@ -551,6 +577,9 @@
   ":Doc-Section Parallelism
 
   a tutorial on how to use the parallelism library.~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].
 
   In this topic we introduce the ACL2 parallelism primitives using the example
   of a doubly-recursive Fibonacci function, whose basic definition is as
@@ -831,6 +860,9 @@
   ":Doc-Section Parallelism
   limit the amount of parallelism~/
 
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].
+
   Some function calls are on arguments whose evaluation time is long enough to
   warrant parallel evaluation, while others are not.  A granularity form can be
   used to make appropriate restrictions on the use of parallelism.~/
@@ -936,6 +968,9 @@
   ":Doc-Section Parallelism
   performance issues for parallel evaluation~/
 
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].
+
   ~l[granularity] for an important construct that limits the spawning of
   parallel computations, which can be important when a computation is too
   short-lived to warrant a separate thread.
@@ -973,6 +1008,9 @@
 (defdoc early-termination
   ":Doc-Section Parallelism
   early termination for ~ilc[pand] and ~ilc[por].~/~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].
 
   The evaluation of ~c[(and expr1 expr2)] returns ~c[nil] if ~c[expr1]
   evaluates to ~c[nil], avoiding the evaluation of ~c[expr2].  More generally,
@@ -1081,6 +1119,9 @@
 
   parallel evaluation of arguments in a function call~/
 
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].
+
   ~bv[]
   Example Forms:
   (pargs (binary-+ (fibonacci (- x 1)) (fibonacci (- x 2))))
@@ -1132,6 +1173,9 @@
   ":Doc-Section Parallelism
 
   parallel version of ~ilc[let]~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].
 
   ~bv[]
   Example Forms:
@@ -1194,6 +1238,9 @@
   ":Doc-Section Parallelism
 
   parallel, Boolean version of ~ilc[and]~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].
 
   ~bv[]
   Example Forms:
@@ -1290,6 +1337,9 @@
   ":Doc-Section Parallelism
 
   parallel, Boolean version of ~ilc[or]~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].
 
   ~bv[]
   Example Forms:
@@ -1549,6 +1599,9 @@
   ":Doc-Section Parallelism
 
   modification of ~ilc[mv-let] supporting speculative and parallel execution~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].
 
   ~bv[]
   Example Form:

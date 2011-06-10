@@ -42,11 +42,11 @@
 (defdoc normed
   ":Doc-Section Hons-and-Memoization
 
-This ~il[documentation] topic relates to the experimental extension of ACL2
-supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
 Normed objects are ACL2 Objects that are \"canonical\" or \"unique\" in a
 certain sense.~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 In Common Lisp, we can tell whether an ACL2 object is ~st[normed] or not, but
 there is no way for an ordinary ACL2 function to see whether an object is
@@ -109,10 +109,10 @@ to occasionally, manually clear out these Hons Space tables with
 (defn hons-copy (x)
   ":Doc-Section Hons-and-Memoization
 
+~c[(hons-copy x)] returns a ~il[normed] object that is equal to X.~/
+
 This ~il[documentation] topic relates to the experimental extension of ACL2
 supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
-~c[(hons-copy x)] returns a ~il[normed] object that is equal to X.~/
 
 In the logic, ~c[hons-copy] is just the identity function; we leave it enabled
 and would think it odd to ever prove a theorem about it.
@@ -148,11 +148,11 @@ object.~/"
 (defn hons-copy-persistent (x)
   ":Doc-Section Hons-and-Memoization
 
-This ~il[documentation] topic relates to the experimental extension of ACL2
-supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
 ~c[(hons-copy-persistent x)] returns a ~il[normed] object that is equal to X
 and which will be re-normed after any calls to ~ilc[hons-clear].~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 Logically ~c[hons-copy-persistent] is the identity; we leave it enabled and
 would think it odd to ever prove a theorem about it.
@@ -171,10 +171,10 @@ out more efficiently than, say, an ordinary ~ilc[hons-copy].~/~/"
 (defn hons (x y)
   ":Doc-Section Hons-and-Memoization
 
+~c[(hons x y)] returns a ~il[normed] object equal to ~c[(cons x y)].~/
+
 This ~il[documentation] topic relates to the experimental extension of ACL2
 supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
-~c[(hons x y)] returns a ~il[normed] object equal to ~c[(cons x y)].~/
 
 In the logic, ~c[hons] is just ~ilc[cons]; we leave it enabled and would think
 it odd to ever prove a theorem about it.
@@ -203,11 +203,11 @@ Generally speaking, these extra operations make ~c[hons] much slower than
 (defn hons-equal (x y)
   ":Doc-Section Hons-and-Memoization
 
-This ~il[documentation] topic relates to the experimental extension of ACL2
-supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
 ~c[(hons-equal x y)] is a recursive equality check that optimizes when parts of
 its arguments are ~il[normed].~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 In the logic, ~c[hons-equal] is just ~ilc[equal]; we leave it enabled and would
 think it odd to ever prove a theorem about it.
@@ -230,11 +230,11 @@ are normed."
 (defn hons-equal-lite (x y)
   ":Doc-Section Hons-and-Memoization
 
-This ~il[documentation] topic relates to the experimental extension of ACL2
-supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
 ~c[(hons-equal-lite x y)] is a non-recursive equality check that optimizes if
 its arguments are ~il[normed].~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 In the logic, ~c[hons-equal-lite] is just ~ilc[equal]; we leave it enabled and
 would think it odd to ever prove a theorem about it.
@@ -256,11 +256,11 @@ whether the subtrees of x and y are normed."
 (defn hons-clear (gc)
   ":Doc-Section Hons-and-Memoization
 
-This ~il[documentation] topic relates to the experimental extension of ACL2
-supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
 ~c[(hons-clear gc)] is a drastic garbage collection mechanism that clears out
 the underlying Hons Space.~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 Logically, ~c[hons-clear] just returns nil; we leave it enabled and would think
 it odd to ever prove a theorem about it.
@@ -290,11 +290,11 @@ discipline."
 (defn hons-wash ()
   ":Doc-Section Hons-and-Memoization
 
-This ~il[documentation] topic relates to the experimental extension of ACL2
-supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
 ~c[(hons-wash)] is like ~ilc[gc$] but can also garbage collect ~il[normed]
 objects (CCL Only).~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 Logically, ~c[hons-wash] just returns nil; we leave it enabled and would think
 it odd to ever prove a theorem about it.
@@ -324,11 +324,11 @@ discipline."
 (defn hons-summary ()
   ":Doc-Section Hons-and-Memoization
 
-This ~il[documentation] topic relates to the experimental extension of ACL2
-supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
 ~c[(hons-summary)] prints basic information about the sizes of the tables in
 the current Hons Space.~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 Logically, ~c[hons-summary] just returns nil; we leave it enabled and would
 think it odd to ever prove a theorem about it.
@@ -349,11 +349,11 @@ your particular computation; see ~ilc[hons-resize]."
                             fal-ht persist-ht)
   ":Doc-Section Hons-and-Memoization
 
-This ~il[documentation] topic relates to the experimental extension of ACL2
-supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
 ~c[(hons-resize ...)] can be used to manually adjust the sizes of the hash
 tables that govern which ACL2 Objects are considered ~il[normed].~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 General form:
 ~bv[]
@@ -435,10 +435,10 @@ soon after a ~ilc[hons-clear]."
 (defdoc fast-alists
   ":Doc-Section Hons-and-Memoization
 
+alists with hidden hash tables for faster execution~/
+
 This ~il[documentation] topic relates to the experimental extension of ACL2
 supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
-Alists with hidden hash tables for faster execution.~/
 
 The implementation of fast alists is, in many ways, similar to that of ACL2
 arrays.  Logically, ~ilc[hons-acons] is just like ~c[acons], and
@@ -482,11 +482,11 @@ that will no longer be used.")
 (defn hons-assoc-equal (key alist)
   ":Doc-Section Hons-and-Memoization
 
-This ~il[documentation] topic relates to the experimental extension of ACL2
-supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
 ~c[(hons-assoc-equal key alist)] is ~st[not fast]; it serves as the logical
 definition for ~ilc[hons-get].~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 The definition of ~c[hons-assoc-equal] is similar to that of ~ilc[assoc-equal],
 except that (1) it does not require ~ilc[alistp] as a guard, and (2) it \"skips
@@ -507,10 +507,10 @@ discipline warnings that might arise from execution during theorem proving."
 (defdoc slow-alist-warning
   ":Doc-Section Hons-and-Memoization
 
+warnings issued when ~ilc[fast-alists] are used inefficiently~/
+
 This ~il[documentation] topic relates to the experimental extension of ACL2
 supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
-Warnings issued when ~ilc[fast-alists] are used inefficiently.~/
 
 Obtaining hash-table performance from ~ilc[hons-get] requires one to follow
 a certain discipline.  If this discipline is violated, you may see a \"slow
@@ -550,11 +550,11 @@ and books, wrapped in ~ilc[local], and so on.")
 (defn hons-get (key alist)
   ":Doc-Section Hons-and-Memoization
 
-This ~il[documentation] topic relates to the experimental extension of ACL2
-supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
 ~c[(hons-get key alist)] is the efficient lookup operation for
 ~il[fast-alists].~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 Logically, ~c[hons-get] is just an alias for ~ilc[hons-assoc-equal]; we
 typically leave it enabled and prefer to reason about ~c[hons-assoc-equal]
@@ -572,11 +572,11 @@ becomes a ~c[gethash] operation on the hidden hash table.~/~/"
 (defn hons-acons (key val alist)
   ":Doc-Section Hons-and-Memoization
 
-This ~il[documentation] topic relates to the experimental extension of ACL2
-supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
 ~c[(hons-acons key val alist)] is the main way to create or extend
 ~il[fast-alists].~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 Logically, ~c[hons-acons] is like ~ilc[acons] except that its guard does not
 require ~ilc[alistp]; we leave it enabled and would think it odd to ever prove
@@ -638,11 +638,11 @@ and size components, but for now we have not implemented this capability."
 (defn hons-acons! (key val alist)
   ":Doc-Section Hons-and-Memoization
 
-This ~il[documentation] topic relates to the experimental extension of ACL2
-supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
 ~c[(hons-acons! key val alist)] is an alternative to ~ilc[hons-acons] that
 produces ~il[normed], fast alists.~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 Logically, ~c[hons-acons!] is like ~ilc[acons] except that its guard does not
 require ~ilc[alistp]; we leave it enabled and would think it odd to ever prove
@@ -702,11 +702,11 @@ and this new object would not be associated with the fast alist's hash table."
 (defn hons-shrink-alist (alist ans)
   ":Doc-Section Hons-and-Memoization
 
-This ~il[documentation] topic relates to the experimental extension of ACL2
-supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
 ~c[(hons-shrink-alist alist ans)] can be used to eliminate \"shadowed pairs\"
 from an alist or to copy ~il[fast-alists].~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 Logically, ~c[hons-shrink-alist] is defined as follows:
 
@@ -752,11 +752,11 @@ similar to ~c[(append ans alist)], but in a different order.~/~/"
 (defn hons-shrink-alist! (alist ans)
   ":Doc-Section Hons-and-Memoization
 
-This ~il[documentation] topic relates to the experimental extension of ACL2
-supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
 ~c[(hons-shrink-alist! alist ans)] is an alternative to ~ilc[hons-shrink-alist]
 that produces a ~il[normed] result.~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 Logically this function is just ~c[hons-shrink-alist]; we leave it enabled and
 would think it odd to ever prove a theorem about it.
@@ -773,10 +773,10 @@ understand the drawbacks discussed in ~ilc[hons-acons!].~/~/"
 (defn fast-alist-len (alist)
   ":Doc-Section Hons-and-Memoization
 
+~c[(fast-alist-len alist)] counts the number of unique keys in a fast alist.~/
+
 This ~il[documentation] topic relates to the experimental extension of ACL2
 supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
-~c[(fast-alist-len alist)] counts the number of unique keys in a fast alist.~/
 
 Logically this function counts how many elements would remain in the alist were
 we to shrink it with ~ilc[hons-shrink-alist].
@@ -793,11 +793,11 @@ and doesn't require us to actually shrink the alist.~/~/"
 (defn fast-alist-free (alist)
   ":Doc-Section Hons-and-Memoization
 
-This ~il[documentation] topic relates to the experimental extension of ACL2
-supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
 ~c[(fast-alist-free alist)] throws away the hash table associated with a fast
 alist.~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 Logically, this function is the identity; we leave it enabled and would think
 it odd to ever prove a theorem about it.
@@ -821,11 +821,11 @@ that have already been freed and objects which are not alists at all."
 (defn fast-alist-summary ()
   ":Doc-Section Hons-and-Memoization
 
-This ~il[documentation] topic relates to the experimental extension of ACL2
-supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
 ~c[(fast-alist-summary)] prints some basic statistics about any current fast
 alists.~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 Logically, ~c[fast-alist-summary] just returns nil; we leave it enabled and
 would think it odd to ever prove a theorem about it.
@@ -840,11 +840,12 @@ should have been freed with ~ilc[fast-alist-free]~/~/"
 (defn cons-subtrees (x al)
   ":Doc-Section Hons-and-Memoization
 
+~c[(cons-subtrees x nil)] builds a fast alist that associates each subtree
+of X with T, without duplication.~/
+
 This ~il[documentation] topic relates to the experimental extension of ACL2
 supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
-~c[(cons-subtrees x nil)] builds a fast alist that associates each subtree
-of X with T, without duplication.~/~/~/"
+~/~/"
 
   (cond ((atom x)
          al)
@@ -859,11 +860,11 @@ of X with T, without duplication.~/~/~/"
 (defn number-subtrees (x)
   ":Doc-Section Hons-and-Memoization
 
-This ~il[documentation] topic relates to the experimental extension of ACL2
-supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
-
 ~c[(number-subtrees x)] returns the number of distinct subtrees of X, in the
 sense of ~ilc[equal]~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 In the logic, ~c[number-subtrees] is defined as the length of
 ~ilc[cons-subtrees].
@@ -878,11 +879,13 @@ count the number of unique conses in X using an EQ hash table.~/~/"
 (defn clear-hash-tables ()
   ":Doc-Section Hons-and-Memoization
 
+deprecated feature~/
+
 This ~il[documentation] topic relates to the experimental extension of ACL2
 supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
 Deprecated.  Calls ~ilc[clear-memoize-tables] and then ~ilc[hons-clear] or
-~ilc[hons-wash], whichever makes sense for the underlying Common Lisp.~/~/~/"
+~ilc[hons-wash], whichever makes sense for the underlying Common Lisp.~/~/"
 
   ;; Has an under-the-hood implementation
   nil)
@@ -890,10 +893,12 @@ Deprecated.  Calls ~ilc[clear-memoize-tables] and then ~ilc[hons-clear] or
 (defn flush-hons-get-hash-table-link (alist)
   ":Doc-Section Hons-and-Memoization
 
+deprecated feature~/
+
 This ~il[documentation] topic relates to the experimental extension of ACL2
 supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
-Deprecated.  Alias for ~ilc[fast-alist-free]~/~/~/"
+Deprecated.  Alias for ~ilc[fast-alist-free]~/~/"
 
   (fast-alist-free alist))
 

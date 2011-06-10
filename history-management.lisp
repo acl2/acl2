@@ -18835,7 +18835,28 @@
   formula into the pool of goals to prove by induction.  The induct
   hint is attached to the formula in the pool and when the time comes
   to turn our attention to that goal, the induct advice is
-  followed.~/")
+  followed.
+
+  We conclude by emphasizing a point made above, that a hint is applied to a
+  goal when the hint's goal specification matches the name ACL2 assigns to the
+  goal.  If there is no such match, then the hint is ignored.  Consider the
+  following example.
+  ~bv[]
+  (thm (equal (append (append x y) z) (append x y z))
+       :hints ((\"Subgoal *1/\" :in-theory nil)))
+  ~ev[]
+  Normally, ~c[:in-theory] hints are inherited by subgoals
+  (~pl[hints-and-the-waterfall]), so you might expect that the empty theory is
+  used in ~c[Subgoal *1/2] and ~c[Subgoal *1/1].  But in fact, since there is
+  no subgoal printed that is labeled ~c[Subgoal *1/], the above ~c[:in-theory]
+  hint is ignored.  The above example is in contrast to the following, where
+  the hint makes the proof fail, because there really is a ~c[Subgoal *1/] in
+  the proof this time.
+  ~bv[]
+  (thm (implies (and (not (endp x)) (not (endp (cdr x))))
+                (equal (append (append x y) z) (append x y z)))
+       :hints ((\"Subgoal *1/\" :in-theory nil)))
+  ~ev[]~/")
 
 (deflabel hints-and-the-waterfall
   :doc

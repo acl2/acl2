@@ -17687,6 +17687,18 @@
   such a proof and a bit of further explanation, see the example at the top of
   the comments for ~c[(deflabel note-4-3 ..)] in ACL2 source file ~c[ld.lisp].
 
+  It had been possible to prove ~c[nil] by proving the following
+  theorem using ACL2 built on CCL and then proving its negation using
+  ACL2 built on a different host Lisp.
+  ~bv[]
+  (defthm host-lisp-is-ccl
+    (equal (cdr (assoc 'host-lisp *initial-global-table*))
+           :ccl)
+    :rule-classes nil)
+  ~ev[]
+  This hole has been plugged by moving the setting of ~c['host-lisp] out
+  of the constant ~c[*initial-global-table*].
+
   Fixed ~ilc[trace$] for arguments that are ~il[stobj] accessors or updaters.
   It also gives an informative error in this case when the accessor or updater
   is a macro (because the introducing ~ilc[defstobj] event specified
