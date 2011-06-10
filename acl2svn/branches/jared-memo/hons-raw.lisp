@@ -773,7 +773,9 @@
 ;
 ; [Jared]: I wonder if a larger threshold would be better.  It might be worth
 ; having slow honsp checks when alists are in the 20-100 range in exchange for
-; lower memory usage.
+; lower memory usage.  The choice of 18 is apparently due to Gary Byers
+; recalling Lisp folklore that alists are faster than hash tables up to length
+; 18.
 
 (defabbrev hl-flex-alist-too-long (x)
 

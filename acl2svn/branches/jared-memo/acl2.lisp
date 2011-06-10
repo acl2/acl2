@@ -580,8 +580,8 @@
     "parallel" ; but only get special under-the-hood treatment with #+acl2-par
     #+acl2-par "futures-raw"
     #+acl2-par "parallel-raw"
-    #+hons "memoize-raw"
     #+hons "hons-raw"
+    #+hons "memoize-raw"
     "translate"
     "type-set-a"
     "linear-a"
