@@ -460,6 +460,7 @@ implementations.")
 
                  (append lst (list "hons-raw.lisp"
                                    "memoize-raw.lisp"
+                                   "compact-print.lisp"
                                    "multi-threading-raw.lisp"
                                    "futures-raw.lisp"
                                    "parallel-raw.lisp")))))

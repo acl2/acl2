@@ -35,6 +35,16 @@
 
 (in-package "ACL2")
 
+
+
+; [Jared]: Thread safety note -- I am getting rid of all of the locking stuff
+; that was here before.  None of it was in use (because it was #+parallel and
+; that was never enabled).  Today, memoize is definitely not thread safe, and
+; making it thread safe will require a lot of time and careful thought.  The
+; locking stuff that was here is just muddying the waters and making things
+; harder to understand, so I want to just get rid of it for now and then do it
+; right later.
+
 (eval-when
  (:execute :compile-toplevel :load-toplevel)
 
@@ -314,10 +324,9 @@
           (t nil))))
 
 
-; ----------------------------------------------------------------------------
 
 
-; ESSAY ON PONS
+; PONSING --------------------------------------------------------------------
 ;
 ; PONS is the critical function for generating memoization keys.  To a rough
 ; approximation, here is how we memoize (F arg1 arg2 ... argN):
@@ -525,6 +534,197 @@
 
 
 
+
+; MEMOIZATION TABLES ---------------------------------------------------------
+
+(defg *memoize-info-ht*
+  ;; This is the main memoize database, and it is actually two maps in one:
+  ;;   - It binds each currently-memoized function symbol FN to its entry
+  ;;   - It binds the number for each memoized function back to the symbol FN
+  (mht))
+
+(declaim (hash-table *memoize-info-ht*))
+
+
+(defrec memoize-info-ht-entry
+  ;; Main data structure for a particular memoized function.  The fields are
+  ;; vaguely ordered by most frequently referenced first.
+  (ext-anc-attachments
+
+   ;; start-time is a symbol whose val is the start time of the current,
+   ;; outermost call of fn, or -1 if no call of fn is in progress.
+   start-time
+
+   num            ;; an integer that is unique to this function
+   tablename      ;; a symbol whose value is the memoize table for fn
+   ponstablename  ;; a symbol whose value is the pons table for fn
+   condition      ;; T or NIL. :condition arg as passed to memoize-fn
+   inline         ;; T or NIL. :inline arg as passed to memoize-fn
+   memoized-fn    ;; the new value of (symbol-function fn)
+   old-fn         ;; the old value of (symbol-function fn), or nil.
+   fn             ;; a symbol, the name of the function being memoized
+   sts            ;; the stobj memotable lists for fn
+   trace          ;; T or NIL. :trace arg as passed to memoize-fn
+   before         ;; form to evaluate first
+
+   ;; cl-defun is the function body actually used, in the inline=t case, as
+   ;; supplied (or as computed, if not supplied)
+   cl-defun
+
+   formals        ;; as supplied (or as computed, if not supplied)
+   commutative    ;; asserts this is a binary commutative function
+
+   ;; (advanced, for raw lisp memoization only) specials are any special
+   ;; variables read by the function, and are treated like extra, implicit
+   ;; arguments.  for real ACL2 functions the specials should always be NIL.
+   specials
+
+   stobjs-in      ;; as supplied (or as computed, if not supplied)
+   stobjs-out     ;; as supplied (or as computed, if not supplied)
+
+   record-bytes      ;; value as bound at the time MEMOIZE-FN is called
+   record-calls      ;;  ''
+   record-hits       ;;  ''
+   record-mht-calls  ;;  ''
+   record-time       ;;  ''
+
+   watch-ifs      ;; Boolean, whether to monitor each IF
+   forget         ;; Boolean, clears memo when outermost call exits.
+
+   ;; memo-table-init-size is an integer that says how big the memo
+   ;; table should be when it is first created, default *mht-default-size*
+   memo-table-init-size
+   )
+  t)
+
+
+
+
+
+; [Jared]: the memoize call array seems really overly complicated.  It's not
+; just that it has a strange format, but also we seem to need all this stuff to
+; grow it, rememoize functions, etc.  It seems like it might be a lot nicer to
+; just make the metering stuff part of the dynamic data associated with the
+; memoized function, i.e., instead of having a separate pons table and memoize
+; table associated with these various symbols, why not just link to a structure
+; that has the pons table, the memo table, the metering stuff, etc., and have
+; it all in one place.
+
+(defg *memoize-call-array*
+  (make-array 1 :element-type 'mfixnum :initial-element 0)
+
+  "*MEMOIZE-CALL-ARRAY*, 'ma' for short, is used for storage of the monitoring
+  information for memoized functions.  ma has as its length 4 times the square
+  of the maximum number of memoized functions.
+
+  ma is initialized in MEMOIZE-INIT.  Think of ma as a two dimensional array
+  with dimensions (twice the max number of memoized functions) x
+  (twice the max number of memoized functions).  Each 'column'
+  corresponds to info about a memoized function, but the first five
+  columns are 'special'.  We count rows and columns starting at 0.
+  Column 0 is used as scratch space by COMPUTE-CALLS-AND-TIMES for
+  sums across all functions.  Columns 1, 2, and 3 are not currently
+  used at all.  Column 4 is for the anonymous 'outside caller'.
+  Column 5 is for the first memoized function.  In columns 5 and
+  greater, row 0 is used to count 'bytes', 1 'hits', 2 MHT calls, 3
+  HONS calls, and 4 PONS calls.
+
+  The elements of an ma column starting at row 10 are for counting and timing
+  info.  Suppose column 7 corresponds to the memoized function FOO and column
+  12 corresponds to the memoized function BAR.  Whenever FOO calls BAR, element
+  2*12 of column 7 will be incremented by 1, and the total elapsed time for the
+  call will be added to element 2*12+1 of column 7.
+
+  Though ma may 'grow', it may not grow while any memoized function is running,
+  and here is why: every memoized function has a cached opinion about the size
+  of ma.  To avoid an abort during a call of MEMOIZE one may
+  call (MEMOIZE-HERE-COME n) to assure that ma has room for at least n more
+  memoized functions.")
+
+(declaim (type (simple-array mfixnum (*)) *memoize-call-array*))
+
+
+
+
+
+(defv *initial-max-memoize-fns* 500)
+
+(defg *2max-memoize-fns* (* 2 *initial-max-memoize-fns*))
+(declaim (type fixnum *2max-memoize-fns*))
+
+(defconstant *ma-bytes-index*       0)
+(defconstant *ma-hits-index*        1)
+(defconstant *ma-mht-index*         2)
+(defconstant *ma-hons-index*        3)
+(defconstant *ma-pons-index*        4)
+
+(defconstant *ma-initial-max-symbol-to-fixnum* 4)
+
+(defg *max-symbol-to-fixnum* *ma-initial-max-symbol-to-fixnum*)
+(declaim (type fixnum *max-symbol-to-fixnum*))
+
+
+(defn memoize-here-come (n)
+  (let ((m (ceiling
+            (+ 100 (* 1.1 (- n (- (/ *2max-memoize-fns* 2)
+                                  (floor
+                                   (/ (hash-table-count *memoize-info-ht*) 2)))))))))
+    (when (posp m) (memoize-call-array-grow (* 2 m)))))
+
+
+
+(defn sync-memoize-call-array ()
+
+  ; To be called only by MEMOIZE-INIT, MEMOIZE-CALL-ARRAY-GROW, or
+  ; SAVE-MEMOIZE-CALL-ARRAY.
+
+  (let ((n1 (the fixnum (* *2max-memoize-fns* *2max-memoize-fns*)))
+        (n2 (1+ *max-symbol-to-fixnum*)))
+    (declare (type fixnum n1 n2))
+    (unless (eql n1 (length *memoize-call-array*))
+      (unless (eql 1 (length *memoize-call-array*))
+        (setq *memoize-call-array*
+              (make-array 1 :element-type 'mfixnum :initial-element 0))
+        ;; [Jared]: What the hell?  Why are we gc'ing?
+        (gc$))
+      (setq *memoize-call-array*
+            (make-array n1 :element-type 'mfixnum :initial-element 0)))
+    (unless (eql n2 (length *compute-array*))
+      (setq *compute-array* (make-array n2 :initial-element nil)))
+    (setq *caller* (* *ma-initial-max-symbol-to-fixnum* *2max-memoize-fns*))))
+
+(defun memoize-call-array-grow
+  (&optional (2nmax (* 2 (ceiling (* 3/2 (/ *2max-memoize-fns* 2))))))
+  (unless (integerp 2nmax)
+    (error "(memoize-call-array-grow ~s).  Arg must be an integer." 2nmax))
+  (unless (evenp 2nmax)
+    (error "(memoize-call-array-grow ~s).  Arg must be even." 2nmax))
+  (unless (> 2nmax 100)
+    (error "(memoize-call-array-grow ~s).  Arg must be > 100." 2nmax))
+  (when (<= 2nmax *2max-memoize-fns*)
+    (error "memoize-call-array-grow: *memoize-call-array* already big enough.")
+    (return-from memoize-call-array-grow))
+  (unless (<= (* 2nmax 2nmax) most-positive-fixnum)
+    (error "memoize-call-array-grow: most-positive-fixnum exceeded.  Too many ~
+            memoized functions."))
+  (unless (< (* 2nmax 2nmax) array-total-size-limit)
+    (error "memoize-call-array-grow: ARRAY-TOTAL-SIZE-LIMIT exceeded.  Too ~
+            many memoized functions."))
+  (unless (eql *caller* (* *ma-initial-max-symbol-to-fixnum* *2max-memoize-fns*))
+    (ofv "MEMOIZE-CALL-ARRAY-GROW was called while a memoized-function~% was ~
+          executing, so call reports may be quite inaccurate."))
+
+  (setq *memoize-call-array*
+        (make-array 1 :element-type 'mfixnum :initial-element 0))
+  (setq *2max-memoize-fns* 2nmax)
+  (sync-memoize-call-array)
+  (rememoize-all)
+  nil)
+
+
+
+
+
 ;; --------------- THE TERRIBLE LINE -------------------------------------
 ;; --------------- THE TERRIBLE LINE -------------------------------------
 ;; --------------- THE TERRIBLE LINE -------------------------------------
@@ -716,30 +916,6 @@
 
 (declaim (special *memoize-info-ht*))
 
-(defmacro unwind-mch-lock (&rest forms)
-
-; Returns NIL.
-
-  #+parallel
-  (let ((v (make-symbol "V")))
-    `(let ((,v nil))
-       (unwind-protect
-         (progn
-           ;; (ccl::lock-hash-table *compiled-module-ht*)
-           (ccl::lock-hash-table *memoize-info-ht*)
-           ,@forms
-           (setq ,v t)
-           nil)
-         (ccl::unlock-hash-table *memoize-info-ht*)
-         ;; (ccl::unlock-hash-table *compiled-module-ht*)
-         (unless ,v (error "unwind-mch-lock failure.")))))
-  #-parallel
-  `(progn ,@forms nil))
-
-
-; We limit our efforts at thread-safedness to locking/unlocking some
-; hash tables.
-
 
 
 
@@ -803,8 +979,6 @@
 
 ;  OUR-SYNTAX
 
-(defg *print-pprint-dispatch-orig* *print-pprint-dispatch*)
-
 (defmacro our-syntax (&rest args)
 
   "OUR-SYNTAX is similar to Common Lisp's WITH-STANDARD-IO-SYNTAX.
@@ -839,15 +1013,6 @@
     (setq *print-miser-width*          100)
     ,@args))
 
-(defmacro our-syntax-brief (&rest args)
-
-; Within OUR-SYNTAX-BRIEF printing may be greatly abbreviated.
-
-  `(our-syntax-nice
-    (setq *print-length* 10)
-    (setq *print-level* 5)
-    (setq *print-lines* 10)
-    ,@args))
 
 (defmacro ofd (&rest r) ; For writing to *debug-io*.
   `(progn (format *debug-io* ,@r) (force-output *debug-io*)))
@@ -855,27 +1020,9 @@
 (defv *hons-verbose* t)
 (defg *ofv-note-printed* nil)
 (defg *ofv-msg-list* nil)
-(defg *ofe-msg-list* nil)
 
 
-(defun ofe (&rest r)  ; For writing to *error-output*; calls (error).
-  (our-syntax-nice
-   (format *error-output* "~%; ** Error:  ")
-   (let ((*print-pretty* t)
-         (*print-level* 4)
-         (*print-length* 10)
-         (*print-lines*  10))
-     (apply #'format *error-output*
-            (loop for x in r collect (abbrev x)))
-     (force-output *terminal-io*)
-     (force-output *error-output*)
-     (force-output *standard-output*)
-     (force-output *debug-io*)
-     (clear-input *terminal-io*)
-     (clear-input *standard-input*)
-     (clear-input *debug-io*)
-     (push (cons 'ofe r) *ofe-msg-list*)
-     (error "~%; See *ofe-msg-list*."))))
+
 
 (defun ofv (&rest r) ; For verbose but helpful info.
   (our-syntax-nice
@@ -896,29 +1043,8 @@
            (setq *ofv-note-printed* t))))
      (force-output *debug-io*))))
 
-(defun ofvv (&rest r) ; For very verbose but helpful info.
-  (our-syntax-nice
-   (when (and (integerp *hons-verbose*) (> *hons-verbose* 1))
-     (format *debug-io* "~%; Aside:  ")
-     (let ((*print-level* 3) (*print-length* 5) (*print-lines* 5))
-       (let ((ab (loop for x in r collect (abbrev x))))
-         (apply #'format *debug-io* ab)
-         (when (loop for x in ab as y in r thereis (not (eq x y)))
-           (push (cons 'ofv r) *ofv-msg-list*)
-           (format *debug-io* "~%; See *ofv-msg-list*."))
-         (unless *ofv-note-printed*
-           (format *debug-io*
-                   "~%; Aside:  (setq acl2::*hons-verbose* nil) ~
-                    to suppress asides.")
-           (setq *ofv-note-printed* t))))
-     (force-output *debug-io*))))
 
 
-(defun ofw (&rest r) ; For writing to *debug-io*, with a warning.
-  (our-syntax-nice
-   (format *debug-io* "~%; ** Warning:  ")
-   (apply #'format *debug-io* r)
-   (force-output *debug-io*)))
 
 (defmacro ofn (&rest r) ; For forming strings.
   `(our-syntax (format nil ,@r)))
@@ -943,10 +1069,6 @@
 (defmacro oft (&rest r) ; For writing to *standard-output*.
   `(progn (format t ,@r) (force-output *standard-output*)))
 
-(defmacro ofto (&rest r) ; For writing to *terminal-io*
-  `(progn (format *terminal-io* ,@r)
-          (force-output *terminal-io*)))
-
 (defmacro oftr (&rest r) ; For writing to *trace-output*.
   `(progn (format *trace-output* ,@r) (force-output *trace-output*)))
 
@@ -955,7 +1077,7 @@
   (check-type sym symbol)
   (let ((spkn (package-name (symbol-package sym)))
         (sn (symbol-name sym)))
-    (ofn "~s,~s,~s" str spkn sn)))
+    (format nil "~s,~s,~s" str spkn sn)))
 
 
 
@@ -1137,37 +1259,6 @@ the calls took.")
 ; array and hash-tables
 
 
-(defg *memoize-call-array*
-  (make-array 1 :element-type 'mfixnum :initial-element 0)
-
-  "*MEMOIZE-CALL-ARRAY*, 'ma' for short, is used for storage of the
-  monitoring information for memoized functions.  ma has as its length
-  4 times the square of the maximum number of memoized functions.
-
-  ma is initialized in MEMOIZE-INIT.  Think of ma as a two dimensional
-  array with dimensions (twice the max number of memoized functions) x
-  (twice the max number of memoized functions).  Each 'column'
-  corresponds to info about a memoized function, but the first five
-  columns are 'special'.  We count rows and columns starting at 0.
-  Column 0 is used as scratch space by COMPUTE-CALLS-AND-TIMES for
-  sums across all functions.  Columns 1, 2, and 3 are not currently
-  used at all.  Column 4 is for the anonymous 'outside caller'.
-  Column 5 is for the first memoized function.  In columns 5 and
-  greater, row 0 is used to count 'bytes', 1 'hits', 2 MHT calls, 3
-  HONS calls, and 4 PONS calls.
-
-  The elements of an ma column starting at row 10 are for counting and
-  timing info.  Suppose column 7 corresponds to the memoized function
-  FOO and column 12 corresponds to the memoized function BAR.
-  Whenever FOO calls BAR, element 2*12 of column 7 will be incremented
-  by 1, and the total elapsed time for the call will be added to
-  element 2*12+1 of column 7.
-
-  Though ma may 'grow', it may not grow while any memoized function is
-  running, and here is why: every memoized function has a cached
-  opinion about the size of ma.  To avoid an abort during a call of
-  MEMOIZE one may call (MEMOIZE-HERE-COME n) to assure that ma has
-  room for at least n more memoized functions.")
 
 (defg *compute-array* (make-array 0)
 
@@ -1178,33 +1269,6 @@ the calls took.")
 
 (declaim (type (simple-array t (*)) *compute-array*))
 
-(eval-when
- #-cltl2
- (load eval)
- #+cltl2
- (:load-toplevel :execute)
- (proclaim `(type (simple-array mfixnum
-                                (*)) *memoize-call-array*)))
-
-(defv *initial-max-memoize-fns* 500)
-
-(defg *2max-memoize-fns* (* 2 *initial-max-memoize-fns*))
-
-(defconstant *ma-bytes-index*       0)
-(defconstant *ma-hits-index*        1)
-(defconstant *ma-mht-index*         2)
-(defconstant *ma-hons-index*        3)
-(defconstant *ma-pons-index*        4)
-
-(defconstant *ma-initial-max-symbol-to-fixnum* 4)
-
-(defg *max-symbol-to-fixnum* *ma-initial-max-symbol-to-fixnum*)
-
-(declaim (type fixnum
-               *max-symbol-to-fixnum*
-               *initial-2max-memoize-fns*
-               *ma-initial-max-symbol-to-fixnum*
-               *2max-memoize-fns*))
 
 ; for initialization
 
@@ -1220,19 +1284,16 @@ the calls took.")
 
 ; locals used in functions generated by memoize-fn
 
-(defconstant *mf-old-caller* (make-symbol "OLD-CALLER"))
+(defconstant *mf-old-caller*  (make-symbol "OLD-CALLER"))
 (defconstant *mf-start-bytes* (make-symbol "START-BYTES"))
-(defconstant *mf-ans* (make-symbol "ANS"))
-(defconstant *mf-ans-p* (make-symbol "ANS-P"))
-(defconstant *mf-ma* (make-symbol "MA"))
-(defconstant *mf-args* (make-symbol "ARGS"))
-(defconstant *mf-2mmf* (make-symbol "MF-2MMF"))
-(defconstant *mf-2mmf-fnn* (make-symbol "MF-2MMF-FNN"))
-(defconstant *mf-count-loc* (make-symbol "MF-COUNT-LOC"))
+(defconstant *mf-ans*         (make-symbol "ANS"))
+(defconstant *mf-ans-p*       (make-symbol "ANS-P"))
+(defconstant *mf-ma*          (make-symbol "MA"))
+(defconstant *mf-args*        (make-symbol "ARGS"))
+(defconstant *mf-2mmf*        (make-symbol "MF-2MMF"))
+(defconstant *mf-2mmf-fnn*    (make-symbol "MF-2MMF-FNN"))
+(defconstant *mf-count-loc*   (make-symbol "MF-COUNT-LOC"))
 
-(defconstant *mf-cl-error-msg*
-  "~%; Redefining a function in the COMMON-LISP package ~
-   is forbidden.")
 
 (defg *caller* (* *ma-initial-max-symbol-to-fixnum* *2max-memoize-fns*)
   "When memoized functions are executing in parallel, the value of
@@ -1243,106 +1304,34 @@ the calls took.")
 
 
 
-
-
-
-
 (defv *never-profile-ht* (make-hash-table :test 'eq))
 (declaim (hash-table *never-profile-ht*))
 
-(defv *profile-reject-ht* (mht :test 'eq)
-  "The user may freely add to the hash table
-  *PROFILE-REJECT-HT*, which inhibits the collection of
-  functions into lists of functions to be memoized and/or profiled.
-
-  Here are some reasons for adding a function fn to
-  *PROFILE-REJECT-HT*.
-
-  1. A call of fn is normally so fast or fn is called so often that
-  the extra instructions executed when a profiled or memoized version
-  of fn is run will distort measurements excessively.  We tend not to
-  profile any function that runs in under 6000 clock ticks or about 2
-  microseconds.  The number of extra instructions seem to range
-  between 20 and 100, depending upon what is being measured.  Counting
-  function calls is relatively fast.  But if one measures elapsed
-  time, one might as well measure everything else too.  Or so it seems
-  in 2007 on terlingua.csres.utexas.edu.
-
-  2. fn is a subroutine of another function being profiled, and we
-  wish to reduce the distortion that profiling fn will cause.
-
-  3. fn is 'transparent', like EVAL.  Is EVAL fast or slow?  The
-  answer, of course, is that it mostly depends upon what one is
-  EVALing.
-
-  4. fn's name ends in '1', meaning 'auxiliary' to some folks.
-
-  5. fn is boring.
-
-  Our additions to *PROFILE-REJECT-HT* are utterly capricious.  The
-  user should feel free to set *PROFILE-REJECT-HT* ad lib, at any
-  time.")
-
-(declaim (hash-table *profile-reject-ht*))
 
 
-(defn1 input-output-number-warning (fn)
-  (format *debug-io*
-          "Can't determine the number of inputs and outputs of ~a.~%To assert ~
-           ~a takes, say, 2 inputs and returns 1 output, do:~%~a.~%"
-          fn fn `(set-number-of-arguments-and-values ',fn 2 1)))
 
+(defn1 st-lst (st)
 
-(defn1 dubious-to-profile (fn)
-  (cond ((not (symbolp fn)) "not a symbol.")
-        ((not (fboundp fn)) "not fboundp.")
-        ((eq (symbol-package fn) *main-lisp-package*)
-         (ofn "~%;~10tin *main-lisp-package*."))
-        #+Clozure
-        ((ccl::%advised-p fn)
-         (ofn "~%;10tadvised, and it will so continue."))
-        ((member fn (eval '(trace)))
-         (ofn "~%;~10ta member of (trace), and it will so ~
-               continue."))
-        ((member fn (eval '(old-trace)))
-         (ofn "~%;~10ta member of (old-trace), and it will so ~
-               continue."))
-        ((eq fn 'return-last)
-         "the function RETURN-LAST.")
-        ((gethash fn *never-profile-ht*)
-         (ofn "~%;~10tin *NEVER-PROFILE-HT*."))
-        ((gethash fn *profile-reject-ht*)
-         (ofn "in~%;~10t*PROFILE-REJECT-HT*.  Override with~
-               ~%;~10t(REMHASH '~a *PROFILE-REJECT-HT*)."
-              fn))
-        ((macro-function fn) "a macro.")
-        ((compiler-macro-function fn) "a compiler-macro-function.")
-        ((special-form-or-op-p fn) "a special operator.")
-        ((getprop fn 'constrainedp nil 'current-acl2-world
-                  (w *the-live-state*))
-         "constrained.")
-        ((memoizedp-raw fn)
-         (ofn "~%;~10tmemoized or profiled, ~
-               and it will so continue."))
-        #+Clozure
-        ((multiple-value-bind (req opt restp keys)
-             (ccl::function-args (symbol-function fn))
-           (if (or restp
-                   keys
-                   (not (integerp req))
-                   (not (eql opt 0)))
-               (ofn "~%;~10thas some non-simple argument, e.g., &key ~
-                     or &rest.")
-             nil)))
-        ((null (number-of-arguments fn))
-         (input-output-number-warning fn))))
+; ST-LST returns a symbol whose value is a list in which are saved the names of
+; the memoize tables that will be set to nil whenever the stobj st is changed.
 
-; memoize-flush 'forgets' all that was remembered for certain
-; functions that use certain stobjs.  We must keep memoize-flush very
-; fast in execution so as not to slow down stobj update or resize
-; operations in general.  We 'forget' the pons table later.
+  (check-type st symbol)
+  (multiple-value-bind (symbol status)
+      (intern (format nil "HONS-S-~s,~s"
+                      (package-name (symbol-package st))
+                      (symbol-name st))
+              (find-package "ACL2_INVISIBLE"))
+    (or status (eval `(defg ,symbol nil)))
+    symbol))
+
 
 (defmacro memoize-flush (st)
+
+; MEMOIZE-FLUSH 'forgets' all that was remembered for certain functions that
+; use certain stobjs.  We must keep memoize-flush very fast in execution so as
+; not to slow down stobj update or resize operations in general.  We 'forget'
+; the pons table later.
+
   (let ((s (st-lst st)))
     `(when (boundp ',s)
        (loop for sym in (symbol-value ',s) do
@@ -1351,77 +1340,9 @@ the calls took.")
                  (unless (or (null old) (empty-ht-p old))
                    (setf (symbol-value (the symbol sym)) nil))))))))
 
-(defg *memoize-info-ht* (mht))
-(declaim (hash-table *memoize-info-ht*))
 
 
-;  THE MEMO-INFO-HT-ENTRY DATA STRUCTURE
 
-; *MEMOIZE-INFO-HT* maps each currently memoized function symbol, fn,
-; to a DEFREC record of type MEMO-INFO-HT-ENTRY with 28 fields.
-
-; fn             a symbol, the name of the function being memoized
-; start-time     a symbol whose val is the start time of the current,
-;                   outermost call of fn, or -1 if no call of fn
-;                   is in progress.
-; num            an integer, unique to fn
-; tablename      a symbol whose value is the memoize table for fn
-; ponstablename  a symbol whose value is the pons table for fn
-; old-fn         the old value of (symbol-function fn), or nil.
-; memoized-fn    the new value of (symbol-function fn)
-; condition      T or NIL. :condition arg as passed to memoize-fn
-; inline         T or NIL. :inline arg as passed to memoize-fn
-; sts            the stobj memotable lists for fn
-; trace          T or NIL. :trace arg as passed to memoize-fn
-; before         form to evaluate first
-; cl-defun       the function body actually used, in the inline=t
-;                case, as supplied (or as computed, if not supplied)
-; formals        as supplied (or as computed, if not supplied)
-; specials       never to be used or explained -- secret args
-; commutative    asserts this is a binary commutative function
-; stobjs-in      as supplied (or as computed, if not supplied)
-; stobjs-out     as supplied (or as computed, if not supplied)
-; record-bytes   value as bound at the time MEMOIZE-FN is called
-; record-calls            ''
-; record-hits             ''
-; record-mht-calls        ''
-; record-time             ''
-; watch-ifs      Boolean, whether to monitor each IF
-; forget         Boolean, clears memo when outermost call exits.
-; memo-table-init-size integer, default *mht-default-size*
-
-; *memoize-info-ht* also maps num back to the corresponding symbol.
-
-(defrec memoize-info-ht-entry
-; vaguely ordered by most frequently referenced first
-  (ext-anc-attachments
-   start-time
-   num
-   tablename
-   ponstablename
-   condition
-   inline
-   memoized-fn
-   old-fn
-   fn
-   sts
-   trace
-   before
-   cl-defun
-   formals
-   commutative
-   specials
-   stobjs-in
-   stobjs-out
-   record-bytes
-   record-calls
-   record-hits
-   record-mht-calls
-   record-time
-   watch-ifs
-   forget
-   memo-table-init-size)
-  t)
 
 (defparameter *memo-max-sizes*
   ;; Binds function names to memo-max-sizes-entry structures.
@@ -1582,62 +1503,6 @@ the calls took.")
 (defmacro heap-bytes-allocated ()
   '(the mfixnum (ccl::%heap-bytes-allocated)))
 
-(defn sync-memoize-call-array ()
-
-  ; To be called only by MEMOIZE-INIT, MEMOIZE-CALL-ARRAY-GROW, or
-  ; SAVE-MEMOIZE-CALL-ARRAY.
-
-  (let ((n1 (the fixnum
-              (* *2max-memoize-fns* *2max-memoize-fns*)))
-        (n2 (1+ *max-symbol-to-fixnum*)))
-    (declare (type fixnum n1 n2))
-    (unless (eql n1 (length *memoize-call-array*))
-      (unless (eql 1 (length *memoize-call-array*))
-        (setq *memoize-call-array*
-              (make-array 1 :element-type 'mfixnum
-                          :initial-element 0))
-        (gc$))
-      (setq *memoize-call-array*
-            (make-array n1
-                        :element-type 'mfixnum
-                        :initial-element 0)))
-    (unless (eql n2 (length *compute-array*))
-      (setq *compute-array*
-            (make-array n2 :initial-element nil)))
-    (setq *caller* (* *ma-initial-max-symbol-to-fixnum*
-                      *2max-memoize-fns*))))
-
-(defun memoize-call-array-grow
-  (&optional (2nmax (* 2 (ceiling (* 3/2 (/ *2max-memoize-fns* 2))))))
-  (unwind-mch-lock
-   (unless (integerp 2nmax)
-     (ofe "(memoize-call-array-grow ~s).  Arg must be an integer."
-          2nmax))
-   (unless (evenp 2nmax)
-     (ofe "(memoize-call-array-grow ~s).  Arg must be even." 2nmax))
-   (unless (> 2nmax 100)
-     (ofe "(memoize-call-array-grow ~s).  Arg must be > 100." 2nmax))
-   (when (<= 2nmax *2max-memoize-fns*)
-     (ofv "memoize-call-array-grow: *memoize-call-array* already ~
-           big enough.")
-     (return-from memoize-call-array-grow))
-   (unless (<= (* 2nmax 2nmax) most-positive-fixnum)
-     (ofe "memoize-call-array-grow:  most-positive-fixnum~%~
-            exceeded.  Too many memoized functions."))
-   (unless (< (* 2nmax 2nmax) array-total-size-limit)
-     (ofe "memoize-call-array-grow: ARRAY-TOTAL-SIZE-LIMIT ~%~
-            exceeded.  Too many memoized functions."))
-   (unless (eql *caller* (* *ma-initial-max-symbol-to-fixnum*
-                            *2max-memoize-fns*))
-     (ofv "MEMOIZE-CALL-ARRAY-GROW was called while a ~
-           memoized-function~% was executing, so call reports may ~
-           be quite inaccurate."))
-
-   (setq *memoize-call-array*
-     (make-array 1 :element-type 'mfixnum :initial-element 0))
-   (setq *2max-memoize-fns* 2nmax)
-   (sync-memoize-call-array)
-   (rememoize-all)))
 
 
 
@@ -1671,13 +1536,13 @@ the calls took.")
   (check-type s symbol)
   (let ((g (gethash s *memoize-info-ht*)))
     (if g (access memoize-info-ht-entry g :num)
-      (ofe "(symbol-to-fixnum ~s).  Illegal symbol."
+      (error "(symbol-to-fixnum ~s).  Illegal symbol."
            s))))
 
 (defn1 fixnum-to-symbol (n)
   (check-type n fixnum)
   (or (gethash n *memoize-info-ht*)
-      (ofe "(fixnum-to-symbol ~s). Illegal number."
+      (error "(fixnum-to-symbol ~s). Illegal number."
            n)))
 
 (defn1 coerce-index (x)
@@ -1698,11 +1563,9 @@ the calls took.")
 ; were loaded twice.
 
 (defvar *unsmashed-if* (compiler-macro-function 'if))
-
 (defvar *unsmashed-or* (compiler-macro-function 'or))
 
 (defg *smashed-if* nil)
-
 (defg *smashed-or* nil)
 
 (defn1 memoize-eval-compile (def watch-ifs)
@@ -1710,7 +1573,7 @@ the calls took.")
                (eq 'defun (car def))
                (consp (cdr def))
                (symbolp (cadr def)))
-    (ofe "MEMOIZE-EVAL-COMPILE:  Bad input:~%~s." def))
+    (error "MEMOIZE-EVAL-COMPILE:  Bad input:~%~s." def))
   (flet ((what-to-do () (compile (eval def))))
     (cond
      #+Clozure
@@ -1742,25 +1605,11 @@ the calls took.")
   (check-type root string)
   (loop
    (safe-incf *hons-gentemp-counter* 1 hons-gentemp)
-   (let ((name (ofn "HONS-G-~s,~s" root *hons-gentemp-counter*)))
+   (let ((name (format nil "HONS-G-~s,~s" root *hons-gentemp-counter*)))
      (multiple-value-bind (sym status)
          (intern name (find-package "ACL2_INVISIBLE"))
        (if (null status) (return sym))))))
 
-(defn1 st-lst (st)
-
-; ST-LST returns a symbol whose value is a list in which are saved the
-; names of the memoize tables that will be set to nil whenever the
-; stobj st is changed.
-
-  (check-type st symbol)
-  (multiple-value-bind (symbol status)
-      (intern (ofn "HONS-S-~s,~s"
-                   (package-name (symbol-package st))
-                   (symbol-name st))
-              (find-package "ACL2_INVISIBLE"))
-    (or status (eval `(defg ,symbol nil)))
-    symbol))
 
 (defn1 dcls (l)
      (loop for dec in l nconc
@@ -1838,7 +1687,7 @@ the calls took.")
                                 0)))))
         (loop for tail on obj do
               (cond ((eq obj tail) (write-char #\Space stream))
-                    (t (oft "~&    ")))
+                    (t (format t "~&    ")))
               (princ (caar tail) stream)
               (loop for i fixnum below
                     (- max
@@ -1886,7 +1735,7 @@ the calls took.")
                  #+Clozure
                  ((and (arrayp fn) (functionp (aref fn 1)))
                   (function-lambda-expression (aref fn 1)))
-                 (t (ofe "Can't figure out ~a as a function." x)))))))
+                 (t (error "Can't figure out ~a as a function." x)))))))
 
 (defg *memoize-fn-signature-error*
   "
@@ -2061,149 +1910,148 @@ the calls took.")
   (when (equal condition *nil*)
     (setq condition nil))
 
-  (unwind-mch-lock
-   (maybe-untrace! fn) ; See the comment about Memoization in trace$-def.
-   (with-warnings-suppressed
+  (maybe-untrace! fn) ; See the comment about Memoization in trace$-def.
+  (with-warnings-suppressed
 
 ; Big old bunch of error checking...
 
 
-    (unless *memoize-init-done*
-      (ofe "Memoize-fn:  *MEMOIZE-INIT-DONE* is still nil."))
+   (unless *memoize-init-done*
+     (error "Memoize-fn:  *MEMOIZE-INIT-DONE* is still nil."))
 
-    (unless (symbolp fn)
-      (ofe "Memoize-fn: ~s is not a symbol.") fn)
+   (unless (symbolp fn)
+     (error "Memoize-fn: ~s is not a symbol.") fn)
 
-    (unless (or (fboundp fn) (not (eq cl-defun :default)))
-      (ofe "Memoize-fn: ~s is not fboundp." fn))
+   (unless (or (fboundp fn) (not (eq cl-defun :default)))
+     (error "Memoize-fn: ~s is not fboundp." fn))
 
-    (when (or (macro-function fn)
-              (special-operator-p fn)
-              (compiler-macro-function fn))
-      (ofe "Memoize-fn: ~s is a macro or a special operator or has ~
+   (when (or (macro-function fn)
+             (special-operator-p fn)
+             (compiler-macro-function fn))
+     (error "Memoize-fn: ~s is a macro or a special operator or has ~
             a compiler macro." fn))
 
-    (when (gethash fn *never-profile-ht*)
-      (ofe "Memoize-fn: ~s is in *NEVER-PROFILE-HT*"
-           fn))
+   (when (gethash fn *never-profile-ht*)
+     (error "Memoize-fn: ~s is in *NEVER-PROFILE-HT*"
+            fn))
 
-    (when (memoizedp-raw fn)
-      (ofd "~%; Memoize-fn: ** Warning: ~s is currently memoized. ~
+   (when (memoizedp-raw fn)
+     (ofd "~%; Memoize-fn: ** Warning: ~s is currently memoized. ~
           ~%; So first we unmemoize it and then memoize it again."
-           fn)
-      (unmemoize-fn fn))
+          fn)
+     (unmemoize-fn fn))
 
-    (when (member fn (eval '(trace)))
-      (ofd "~%; Memoize-fn:  Untracing ~s before memoizing it." fn)
-      (eval `(untrace ,fn)))
+   (when (member fn (eval '(trace)))
+     (ofd "~%; Memoize-fn:  Untracing ~s before memoizing it." fn)
+     (eval `(untrace ,fn)))
 
 ; TRACE, UNTRACE, OLD-TRACE, and OLD-UNTRACE are macros that get
 ; redefined sometimes.  So we use EVAL in calling them.
 
-    #+Clozure
-    (when (ccl::%advised-p fn)
-      (ofe "~%; Memoize-fn: Please unadvise ~s before calling ~
+   #+Clozure
+   (when (ccl::%advised-p fn)
+     (error "~%; Memoize-fn: Please unadvise ~s before calling ~
             memoize-fn on it."
-           fn))
+            fn))
 
-    (when (and (fboundp 'old-trace)
-               (member fn (eval '(old-trace))))
-      (ofd "~%; Memoize-fn:  Old-untracing ~s before memoizing it."
-           fn)
-      (eval `(old-untrace ,fn)))
+   (when (and (fboundp 'old-trace)
+              (member fn (eval '(old-trace))))
+     (ofd "~%; Memoize-fn:  Old-untracing ~s before memoizing it."
+          fn)
+     (eval `(old-untrace ,fn)))
 
-    (when (eq fn 'return-last)
-      (ofe "Memoize-fn: RETURN-LAST may not be memoized."
-           fn))
+   (when (eq fn 'return-last)
+     (error "Memoize-fn: RETURN-LAST may not be memoized."
+            fn))
 
-    (when (getprop fn 'constrainedp nil 'current-acl2-world wrld)
-      (ofe "Memoize-fn: ~s is constrained; you may instead wish ~%~
+   (when (getprop fn 'constrainedp nil 'current-acl2-world wrld)
+     (error "Memoize-fn: ~s is constrained; you may instead wish ~%~
             to memoize a caller or to memoize its attachment (see ~%~
             :DOC defattach)."
-           fn))
+            fn))
 
-    ;; Doesn't this get checked below?  See the lambda-list intersection thing
-    #+Clozure
-    (when (multiple-value-bind (req opt restp keys)
-              (ccl::function-args (symbol-function fn))
-            (or restp
-                keys
-                (not (integerp req))
-                (not (eql opt 0))))
-      (ofe "Memoize-fn: ~a has non-simple arguments." fn))
+   ;; Doesn't this get checked below?  See the lambda-list intersection thing
+   #+Clozure
+   (when (multiple-value-bind (req opt restp keys)
+                              (ccl::function-args (symbol-function fn))
+                              (or restp
+                                  keys
+                                  (not (integerp req))
+                                  (not (eql opt 0))))
+     (error "Memoize-fn: ~a has non-simple arguments." fn))
 
 
-    (let*
-      ((cl-defun
-        ;; Magic code to try to look up the Common Lisp definition for this function.
-        (if (eq cl-defun :default)
-            (if inline
-                (cond
+   (let*
+       ((cl-defun
+         ;; Magic code to try to look up the Common Lisp definition for this function.
+         (if (eq cl-defun :default)
+             (if inline
+                 (cond
 
-                 ((not (fboundp fn))
-                  (ofe "MEMOIZE-FN: ** ~a is undefined."
-                       fn))
+                  ((not (fboundp fn))
+                   (error "MEMOIZE-FN: ** ~a is undefined."
+                          fn))
 
-                 ((cltl-def-from-name fn nil wrld))
+                  ((cltl-def-from-name fn nil wrld))
 
-                 ((function-lambda-expression
-                   (symbol-function fn)))
+                  ((function-lambda-expression
+                    (symbol-function fn)))
 
-                 (t
-                  #+Clozure
-                  (unless (and ccl::*save-source-locations*
-                               ccl::*fasl-save-definitions*)
-                    (ofd "~&; Check the settings of ~
+                  (t
+                   #+Clozure
+                   (unless (and ccl::*save-source-locations*
+                                ccl::*fasl-save-definitions*)
+                     (ofd "~&; Check the settings of ~
                                    CCL::*SAVE-SOURCE-LOCATIONS* ~
                                    and ~
                                    CCL::*FASL-SAVE-DEFINITIONS*."))
-                  (ofe "MEMOIZE-FN: ** Cannot find a ~
+                   (error "MEMOIZE-FN: ** Cannot find a ~
                                       definition for ~a via ACL2 ~
                                       or ~
                                       FUNCTION-LAMBDA-EXPRESSION."
-                       fn))) nil)
-          cl-defun))
+                          fn))) nil)
+           cl-defun))
 
-       (formals
-        ;; Magic code to try to figure out what the formals of the function are.
-        ;; For ACL2 functions this works via looking up the 'formals property
-        ;; For raw Lips functions we may be able to extract the formals from the
-        ;; cl-defun above, or we may generate a list (X1 ... XN) in some cases?
-        (if (eq formals :default)
-            (let ((fo (getprop fn 'formals t 'current-acl2-world wrld)))
-              (if (eq fo t)
-                  (if (consp cl-defun)
-                      (cadr cl-defun)
-                    (let ((n (number-of-arguments fn)))
-                      (if n
-                          (loop for i fixnum below n
-                                collect (ofni "X~a" i))
-                        (ofe *memoize-fn-signature-error* fn))))
-                fo))
-          formals))
+        (formals
+         ;; Magic code to try to figure out what the formals of the function are.
+         ;; For ACL2 functions this works via looking up the 'formals property
+         ;; For raw Lips functions we may be able to extract the formals from the
+         ;; cl-defun above, or we may generate a list (X1 ... XN) in some cases?
+         (if (eq formals :default)
+             (let ((fo (getprop fn 'formals t 'current-acl2-world wrld)))
+               (if (eq fo t)
+                   (if (consp cl-defun)
+                       (cadr cl-defun)
+                     (let ((n (number-of-arguments fn)))
+                       (if n
+                           (loop for i fixnum below n
+                                 collect (ofni "X~a" i))
+                         (error *memoize-fn-signature-error* fn))))
+                 fo))
+           formals))
 
-       (stobjs-in
-        ;; Either the ACL2 stobjs-in property or (T T T T ...) for the number
-        ;; of formals that we inferred the function has.
-        (if (eq stobjs-in :default)
-            (let ((s (getprop fn 'stobjs-in t 'current-acl2-world
-                              wrld)))
-              (if (eq s t) (make-list (len formals)) s))
-          stobjs-in))
+        (stobjs-in
+         ;; Either the ACL2 stobjs-in property or (T T T T ...) for the number
+         ;; of formals that we inferred the function has.
+         (if (eq stobjs-in :default)
+             (let ((s (getprop fn 'stobjs-in t 'current-acl2-world
+                               wrld)))
+               (if (eq s t) (make-list (len formals)) s))
+           stobjs-in))
 
-       (stobjs-out
-        ;; Either the ACL2 stobjs-out property or (T T T T ...) for the number
-        ;; of return values that we inferred the function has.
-        (if (eq stobjs-out :default)
-            (let ((s (getprop fn 'stobjs-out t 'current-acl2-world wrld)))
-              (if (eq s t)
-                  (let ((n (number-of-return-values fn)))
-                    (cond (n (make-list n))
-                          ((and (null condition)
-                                (null trace))
-                           (list nil nil))
-                          (t (ofe
-                              "Memoize-fn: cannot determine the ~
+        (stobjs-out
+         ;; Either the ACL2 stobjs-out property or (T T T T ...) for the number
+         ;; of return values that we inferred the function has.
+         (if (eq stobjs-out :default)
+             (let ((s (getprop fn 'stobjs-out t 'current-acl2-world wrld)))
+               (if (eq s t)
+                   (let ((n (number-of-return-values fn)))
+                     (cond (n (make-list n))
+                           ((and (null condition)
+                                 (null trace))
+                            (list nil nil))
+                           (t (error
+                               "Memoize-fn: cannot determine the ~
                                number of return values of ~a.~%~
                                You may put a cons of ~
                                two numbers in the hash-table~%~
@@ -2212,437 +2060,437 @@ the calls took.")
                                (gethash '~a ~
                                *NUMBER-OF-ARGUMENTS-AND-VALUES-HT*) ~
                                '(~a . 1))"
-                              fn fn fn (len stobjs-in)))))
-                    s))
-          stobjs-out)))
+                               fn fn fn (len stobjs-in)))))
+                 s))
+           stobjs-out)))
 
-      ;; Not sure why this check is necessary or useful
-      (unless (and (symbol-listp formals)
-                   (no-duplicatesp formals)
-                   (loop for x in formals never (constantp x)))
-        (ofe "Memoize-fn: FORMALS, ~a, must be a true list of ~
+     ;; Not sure why this check is necessary or useful
+     (unless (and (symbol-listp formals)
+                  (no-duplicatesp formals)
+                  (loop for x in formals never (constantp x)))
+       (error "Memoize-fn: FORMALS, ~a, must be a true list of ~
               distinct, nonconstant symbols."
-             formals))
+              formals))
 
-      (when (intersection lambda-list-keywords formals)
-        (ofe "Memoize-fn: FORMALS, ~a, may not intersect ~
+     (when (intersection lambda-list-keywords formals)
+       (error "Memoize-fn: FORMALS, ~a, may not intersect ~
               LAMBDA-LIST-KEYWORDS."))
 
-      ;; Don't memoize functions involving state.  Fair enough.
-      ;; Can you memoize functions with other stobjs??
-      (when (and condition (or (member 'state stobjs-in)
-                               (member 'state stobjs-out)))
-        (ofe "Memoize-fn:  ~s uses STATE." fn))
+     ;; Don't memoize functions involving state.  Fair enough.
+     ;; Can you memoize functions with other stobjs??
+     (when (and condition (or (member 'state stobjs-in)
+                              (member 'state stobjs-out)))
+       (error "Memoize-fn:  ~s uses STATE." fn))
 
 
-      (let*
-        ((fnn (symbol-to-fixnum-create fn))  ; performance counting; see memoize-call-array
-         (2mfnn (* *2max-memoize-fns* fnn))  ; performance counting; see memoize-call-array
+     (let*
+         ((fnn (symbol-to-fixnum-create fn)) ; performance counting; see memoize-call-array
+          (2mfnn (* *2max-memoize-fns* fnn)) ; performance counting; see memoize-call-array
 
-         (*acl2-unwind-protect-stack*
-          (or *acl2-unwind-protect-stack*
-              (cons nil *acl2-unwind-protect-stack*)))
+          (*acl2-unwind-protect-stack*
+           (or *acl2-unwind-protect-stack*
+               (cons nil *acl2-unwind-protect-stack*)))
 
-         (old-fn (if (fboundp fn) (symbol-function fn)))
+          (old-fn (if (fboundp fn) (symbol-function fn)))
 
-         (body (if (or inline (null old-fn))
-                   (car (last cl-defun))
-                 `(funcall ,old-fn ,@formals)))
-
-
-         (body-name (make-symbol "BODY-NAME"))
-         (body-call (list body-name))
-
-         (condition-body
-          (cond ((booleanp condition) condition)
-                ((symbolp condition)
-                 ;; Bizarre thing where the condition can be just the name of an ACL2 function,
-                 ;; see the documentation above
-                 (car (last (cltl-def-from-name condition nil wrld))))
-                (t condition)))
-
-         (dcls (dcls (cdddr (butlast cl-defun))))
-         (start-time (let ((v (hons-gentemp
-                               (suffix "START-TIME-" fn))))
-                       (eval `(prog1 (defg ,v -1)
-                                (declaim (type integer ,v))))))
-         (tablename
-          ;; Submits the defg form and returns the crazy name that gets generated.
-          (eval `(defg
-                   ,(hons-gentemp (suffix "MEMOIZE-HT-FOR-" fn))
-                   nil)))
-         (ponstablename
-          ;; Submits the defg form and returns the crazy name that gets generated.
-          (eval `(defg
-                   ,(hons-gentemp (suffix "PONS-HT-FOR-" fn))
-                   nil)))
-
-         (localtablename (make-symbol "TABLENAME"))
-         (localponstablename (make-symbol "PONSTABLENAME"))
-
-         ;; When these user-level stobjs change the memo table will need to be cleared, I guess...
-         (sts (loop for x in (union stobjs-in stobjs-out)
-                    when x collect (st-lst x)))
-
-         ;; Number of arguments.  Specials only matter for common lisp functions, see the notes above in memoize-fn.
-         ;; Basically if the function reads from specials we want to count them as args.
-         (nra (+ (len formals) (len specials)))
-
-         def
-         success)
-        (let*
-          ((mf-trace-exit
-            ;; Ignore this, just some kind of tracing...
-            (and trace `((mf-trace-exit ',fn ,(length stobjs-out)
-                                        ,*mf-ans*))))
-           (mf-record-mht
-            ;; performance counting, see memoize-call-array
-            (and *record-mht-calls*
-                 `((safe-incf (aref ,*mf-ma* ,2mfnn) 1 ,fn))))
-           (mf-record-hit
-            ;; performance counting, see memoize-call-array
-            (and *record-hits* condition-body
-                 `((safe-incf (aref ,*mf-ma*
-                                    ,(+ 2mfnn *ma-hits-index*))
-                              1 ,fn))))
-           (lookup-marker (cons :lookup fn))
+          (body (if (or inline (null old-fn))
+                    (car (last cl-defun))
+                  `(funcall ,old-fn ,@formals)))
 
 
+          (body-name (make-symbol "BODY-NAME"))
+          (body-call (list body-name))
 
-           (body3
-            ;; Main part of the new function definition...
+          (condition-body
+           (cond ((booleanp condition) condition)
+                 ((symbolp condition)
+                  ;; Bizarre thing where the condition can be just the name of an ACL2 function,
+                  ;; see the documentation above
+                  (car (last (cltl-def-from-name condition nil wrld))))
+                 (t condition)))
 
-            `(let (,*mf-ans* ,*mf-args* ,*mf-ans-p*)
-               (declare (ignorable ,*mf-ans* ,*mf-args* ,*mf-ans-p*))
+          (dcls (dcls (cdddr (butlast cl-defun))))
+          (start-time (let ((v (hons-gentemp
+                                (suffix "START-TIME-" fn))))
+                        (eval `(prog1 (defg ,v -1)
+                                 (declaim (type integer ,v))))))
+          (tablename
+           ;; Submits the defg form and returns the crazy name that gets generated.
+           (eval `(defg
+                    ,(hons-gentemp (suffix "MEMOIZE-HT-FOR-" fn))
+                    nil)))
+          (ponstablename
+           ;; Submits the defg form and returns the crazy name that gets generated.
+           (eval `(defg
+                    ,(hons-gentemp (suffix "PONS-HT-FOR-" fn))
+                    nil)))
 
-               (profiler-cond
-                ((not ,condition-body)
-                 ,@mf-record-hit ; sort of a hit
-                 ,(if (not trace)
-                      body-call
-                    (if (cdr stobjs-out)
-                        `(progn
-                           (setq ,*mf-ans*
-                                 (multiple-value-list ,body-call))
-                           ,@mf-trace-exit
-                           (values-list ,*mf-ans*))
-                      `(progn (setq ,*mf-ans* ,body-call)
-                              ,@mf-trace-exit
-                              ,*mf-ans*))))
+          (localtablename (make-symbol "TABLENAME"))
+          (localponstablename (make-symbol "PONSTABLENAME"))
 
+          ;; When these user-level stobjs change the memo table will need to be cleared, I guess...
+          (sts (loop for x in (union stobjs-in stobjs-out)
+                     when x collect (st-lst x)))
 
-                ,@(and
-                   condition-body
-                   `((t
+          ;; Number of arguments.  Specials only matter for common lisp functions, see the notes above in memoize-fn.
+          ;; Basically if the function reads from specials we want to count them as args.
+          (nra (+ (len formals) (len specials)))
 
-                      ;; reinitialize tables if they don't exist...
-                      (profiler-when
-                       (null ,tablename)
-                       ,@mf-record-mht
-                       (setq ,tablename (make-initial-memoize-hash-table ',fn ,memo-table-init-size))
-
-                       ,@(if (> nra 1) ; number of arguments
-                             `((setq ,ponstablename
-                                     (make-initial-memoize-pons-table ',fn ,memo-table-init-size)))))
-
-
-                      ;; To avoid a remotely possible parallelism gethash error.  (jared: what?!?)
-                      ,@(if (> nra 1)
-                            `((setq ,localponstablename
-                                    (profiler-or ,ponstablename
-                                                 ;; BOZO should this be a make-initial-memoize-pons-table?
-                                                 (mht)))))
-
-
-                      ;; Generate the pons key... if there's just one arg, pist* just returns the arg and
-                      ;; doesn't do any ponsing.
-
-                      #+parallel ,@(if (> nra 1) `((ccl::lock-hash-table ,localponstablename)))
-                      (setq ,*mf-args* (pist* ,localponstablename ,@formals ,@specials))
-                      #+parallel ,@(if (> nra 1) `((ccl::unlock-hash-table ,localponstablename)))
-
-
-                      ;; dunno what this is for... maybe we're binding a localtablename variable to avoid
-                      ;; doing special lookups or some such?
-
-                      (setq ,localtablename
-                            ;; BOZO should this be a make-initial-memoize-hash-table?
-                            (profiler-or ,tablename (mht)))
-
-
-                      ;; this is the lookup of the memoized result.
-
-                      (multiple-value-setq
-                       (,*mf-ans* ,*mf-ans-p*)
-                       ,(let ((gethash-form
-                               `(gethash ,*mf-args*
-                                         (the hash-table ,localtablename))))
-                          (cond (aokp `(profiler-cond
-                                        (*aokp* ,gethash-form)
-                                        (t (mv nil nil))))
-                                (t gethash-form))))
+          def
+          success)
+       (let*
+           ((mf-trace-exit
+             ;; Ignore this, just some kind of tracing...
+             (and trace `((mf-trace-exit ',fn ,(length stobjs-out)
+                                         ,*mf-ans*))))
+            (mf-record-mht
+             ;; performance counting, see memoize-call-array
+             (and *record-mht-calls*
+                  `((safe-incf (aref ,*mf-ma* ,2mfnn) 1 ,fn))))
+            (mf-record-hit
+             ;; performance counting, see memoize-call-array
+             (and *record-hits* condition-body
+                  `((safe-incf (aref ,*mf-ma*
+                                     ,(+ 2mfnn *ma-hits-index*))
+                               1 ,fn))))
+            (lookup-marker (cons :lookup fn))
 
 
 
-                      (profiler-cond
-                       (,*mf-ans-p*
+            (body3
+             ;; Main part of the new function definition...
 
-                        ;; Memoized lookup succeeds.  Do profiling things, return answer...
+             `(let (,*mf-ans* ,*mf-args* ,*mf-ans-p*)
+                (declare (ignorable ,*mf-ans* ,*mf-args* ,*mf-ans-p*))
 
-                        ,@(when aokp `((update-attached-fn-called ',lookup-marker)))
-                        ,@(if trace `((oftr "~% ~s remembered." ',fn)))
-                        ,@mf-record-hit
-                        ,@(cond ((null (cdr stobjs-out))
-                                 `(,@mf-trace-exit ,*mf-ans*))
-                                (t
-                                 ;; No idea what this is doing...
-                                 (let ((len-1 (1- (length stobjs-out))))
-                                   `(,@(and trace
-                                            `(progn
-                                               (let* ((,*mf-ans* (append (take ,len-1 ,*mf-ans*)
-                                                                         (list (nthcdr ,len-1 ,*mf-ans*)))))
-                                                 ,@mf-trace-exit)))
-                                     ,(cons
-                                       'mv
-                                       (nconc (loop for i fixnum below len-1 collect `(pop ,*mf-ans*))
-                                              (list *mf-ans*))))))))
+                (profiler-cond
+                 ((not ,condition-body)
+                  ,@mf-record-hit ; sort of a hit
+                  ,(if (not trace)
+                       body-call
+                     (if (cdr stobjs-out)
+                         `(progn
+                            (setq ,*mf-ans*
+                                  (multiple-value-list ,body-call))
+                            ,@mf-trace-exit
+                            (values-list ,*mf-ans*))
+                       `(progn (setq ,*mf-ans* ,body-call)
+                               ,@mf-trace-exit
+                               ,*mf-ans*))))
 
 
-                       (t
+                 ,@(and
+                    condition-body
+                    `((t
 
-                        ;; Memoized lookup failed.  Need to run the function and get its results...
+                       ;; reinitialize tables if they don't exist...
+                       (profiler-when
+                        (null ,tablename)
+                        ,@mf-record-mht
+                        (setq ,tablename (make-initial-memoize-hash-table ',fn ,memo-table-init-size))
 
-                        ,(let* ((vars
-                                 ;; Make variables (O0 O1 ... 0N) for the outputs?  Don't really understand what stobjs-out is
-                                 ;; for here...
-                                 (loop for i fixnum below (if (cdr stobjs-out) (length stobjs-out) 1) collect (ofni "O~a" i)))
-
-                                (prog1-fn (if (cdr stobjs-out) 'multiple-value-prog1 'prog1))
-                                (mf-trace-exit+
-                                 (and mf-trace-exit
-                                      `((let ((,*mf-ans* ,(if stobjs-out `(list* ,@vars) (car vars))))
-                                          ,@mf-trace-exit)))))
-
-                             `(let (,*attached-fn-temp*)
-                                (mv?-let
-                                 ,vars
-                                 (let (*attached-fn-called*)
-                                   ;; This is where the actual function is being run.  The 01...0N vars are being bound to
-                                   ;; the results...
-                                   (,prog1-fn
-                                    ,body-call
-                                    (setq ,*attached-fn-temp* *attached-fn-called*)))
-                                 (progn
-                                   (cond
-                                    ,@(and (not aokp)
-                                           `((,*attached-fn-temp*
-                                              (memoize-use-attachment-warning ',fn ,*attached-fn-temp*))))
-                                    (t
-                                     ;; Actually install the results
-                                     (setf (gethash ,*mf-args* (the hash-table ,localtablename))
-                                           (list* ,@vars))))
-                                   (update-attached-fn-called ,*attached-fn-temp*)
-                                   ,@mf-trace-exit+
-                                   (mv? ,@vars)))))))))))))
+                        ,@(if (> nra 1) ; number of arguments
+                              `((setq ,ponstablename
+                                      (make-initial-memoize-pons-table ',fn ,memo-table-init-size)))))
 
 
-           (body2
-            ;; Bunch of extra profiling stuff wrapped around body3.
+                       ;; To avoid a remotely possible parallelism gethash error.  (jared: what?!?)
+                       ,@(if (> nra 1)
+                             `((setq ,localponstablename
+                                     (profiler-or ,ponstablename
+                                                  ;; BOZO should this be a make-initial-memoize-pons-table?
+                                                  (mht)))))
 
-            `(let ((,*mf-old-caller* *caller*)
-                   #+Clozure
-                   ,@(and *record-bytes*
-                          `((,*mf-start-bytes*
-                             (heap-bytes-allocated)))))
-               (declare
-                (ignorable
-                 #+Clozure
-                 ,@(and *record-bytes* `(,*mf-start-bytes*)))
-                (type fixnum
-                      ,*mf-old-caller*
-                      #+Clozure
-                      ,@(and *record-bytes* `(,*mf-start-bytes*))))
-               (unwind-protect
-                   (progn
-                     (setq ,start-time ,(if *record-time*
-                                            '(internal-real-time)
-                                          '0))
-                     (setq *caller* ,2mfnn)
-                     ,body3)
-                 #+Clozure
-                 ,@(and *record-bytes*
-                        `((safe-incf
-                           (aref ,*mf-ma* ,(+ *ma-bytes-index* 2mfnn))
-                           (the mfixnum
-                             (- (heap-bytes-allocated)
-                                ,*mf-start-bytes*))
-                           ,fn)))
-                 ,@(and *record-time*
-                        `((safe-incf
-                           (aref ,*mf-ma*
-                                 (the mfixnum (1+ ,*mf-count-loc*)))
-                           (mod
-                            (the integer (- (internal-real-time)
-                                            ,start-time))
-                            most-positive-mfixnum)
-                           ,fn)))
-                 ,@(and forget `((setq ,tablename nil)
-                                 ,@(if (> nra 1)
-                                       `((setq ,ponstablename nil)))))
-                 (setq ,start-time -1)
-                 (setq *caller* ,*mf-old-caller*)))))
 
-          (setq def
-            `(defun ,fn ,formals ,@dcls
-               ,@(if trace
-                     (if (member trace '(notinline inline))
-                         `((declare (,trace ,fn)))
-                       `((declare (notinline ,fn)))))
-               (declare (ignorable ,@formals ,@specials))
-               ,@(and commutative
-                      `((cond ((mis-ordered-commutative-args
-                                ,(car formals)
-                                ,(cadr formals))
-                               (rotatef ,(car formals)
-                                        ,(cadr formals))))))
-               ,@(and trace
-                      `((oftr "~%(> ~s (" ',fn)
-                        ,@(loop for v in (append formals specials)
-                                append
-                                `((oftr "~& ~s = " ',v)
-                                  (prine ,v *trace-output*)))
-                        (oftr "~& )")))
-               (let* ((,*mf-count-loc*
-                       ,(if (or *record-calls* *record-time*)
-                            `(the fixnum (+ *caller* (* 2 ,fnn)))
-                            0))
-                      (,*mf-ma* *memoize-call-array*)
-                      ,localtablename ,localponstablename)
-                 (declare (type fixnum ,*mf-count-loc*)
-                          (ignorable ,*mf-count-loc* ,*mf-ma*
-                                     ,localponstablename
-                                     ,localtablename)
-                          (type (simple-array mfixnum (*))
-                                ,*mf-ma*))
-                 ,@(and *record-calls*
-                        `((safe-incf (aref ,*mf-ma*
-                                           ,*mf-count-loc*)
-                                     1
-                                     ,fn)))
-                 (flet ((,body-name () ,body))
-                   (profiler-if (eql -1 ,start-time)
-                                ,body2
-                                ,body3))))))
-        (setf (gethash fn *number-of-arguments-and-values-ht*)
-              (cons (length stobjs-in) (length stobjs-out)))
-        (unwind-protect
-          (progn
-            (let ((ma *memoize-call-array*))
-              (declare (type (simple-array mfixnum (*)) ma))
-              (loop for i fixnum from 2mfnn
-                    below (the fixnum (+ 2mfnn *2max-memoize-fns*))
-                    unless (eql (aref ma i) 0)
-                    do (setf (aref ma i) 0)))
-            (memoize-eval-compile def watch-ifs)
-            (setf (gethash fn *memoize-info-ht*)
-                  (make memoize-info-ht-entry
-                        :fn fn
-                        :ext-anc-attachments
-                        (and aokp (extended-ancestors fn wrld))
-                        :tablename tablename
-                        :ponstablename ponstablename
-                        :old-fn old-fn
-                        :memoized-fn (symbol-function fn)
-                        :condition condition
-                        :inline inline
-                        :num fnn
-                        :sts sts
-                        :trace trace
-                        :start-time start-time
-                        :cl-defun cl-defun
-                        :formals formals
-                        :commutative commutative
-                        :specials specials
-                        :stobjs-in stobjs-in
-                        :stobjs-out stobjs-out
-                        :record-bytes      *record-bytes*
-                        :record-calls      *record-calls*
-                        :record-hits       *record-hits*
-                        :record-mht-calls  *record-mht-calls*
-                        :record-time       *record-time*
-                        :watch-ifs         watch-ifs
-                        :forget            forget
-                        :memo-table-init-size memo-table-init-size))
-            (setf (gethash fnn *memoize-info-ht*) fn)
-            (and condition (loop for s in sts do
-                                 (push tablename
-                                       (symbol-value s))))
-            (setq success t))
-          (unless success
-            (setf (symbol-function fn) old-fn)
-            (remhash fn *memoize-info-ht*)
-            (remhash fnn *memoize-info-ht*)
-            (maphash (lambda (k v)
-                       (when (eq fn (cadr v))
-                         (remhash k *form-ht*)))
-                     *form-ht*)
-            (and condition
-                 (loop for s in sts
-                       when (eq tablename
-                                (car (symbol-value
-                                      (the symbol s))))
-                       do (pop (symbol-value (the symbol s)))))
-            (ofd "~&; Memoize-fn:  Failed to memoize ~s." fn)
-            (setq fn nil)))))))
+                       ;; Generate the pons key... if there's just one arg, pist* just returns the arg and
+                       ;; doesn't do any ponsing.
+
+                       #+parallel ,@(if (> nra 1) `((ccl::lock-hash-table ,localponstablename)))
+                       (setq ,*mf-args* (pist* ,localponstablename ,@formals ,@specials))
+                       #+parallel ,@(if (> nra 1) `((ccl::unlock-hash-table ,localponstablename)))
+
+
+                       ;; dunno what this is for... maybe we're binding a localtablename variable to avoid
+                       ;; doing special lookups or some such?
+
+                       (setq ,localtablename
+                             ;; BOZO should this be a make-initial-memoize-hash-table?
+                             (profiler-or ,tablename (mht)))
+
+
+                       ;; this is the lookup of the memoized result.
+
+                       (multiple-value-setq
+                        (,*mf-ans* ,*mf-ans-p*)
+                        ,(let ((gethash-form
+                                `(gethash ,*mf-args*
+                                          (the hash-table ,localtablename))))
+                           (cond (aokp `(profiler-cond
+                                         (*aokp* ,gethash-form)
+                                         (t (mv nil nil))))
+                                 (t gethash-form))))
+
+
+
+                       (profiler-cond
+                        (,*mf-ans-p*
+
+                         ;; Memoized lookup succeeds.  Do profiling things, return answer...
+
+                         ,@(when aokp `((update-attached-fn-called ',lookup-marker)))
+                         ,@(if trace `((oftr "~% ~s remembered." ',fn)))
+                         ,@mf-record-hit
+                         ,@(cond ((null (cdr stobjs-out))
+                                  `(,@mf-trace-exit ,*mf-ans*))
+                                 (t
+                                  ;; No idea what this is doing...
+                                  (let ((len-1 (1- (length stobjs-out))))
+                                    `(,@(and trace
+                                             `(progn
+                                                (let* ((,*mf-ans* (append (take ,len-1 ,*mf-ans*)
+                                                                          (list (nthcdr ,len-1 ,*mf-ans*)))))
+                                                  ,@mf-trace-exit)))
+                                      ,(cons
+                                        'mv
+                                        (nconc (loop for i fixnum below len-1 collect `(pop ,*mf-ans*))
+                                               (list *mf-ans*))))))))
+
+
+                        (t
+
+                         ;; Memoized lookup failed.  Need to run the function and get its results...
+
+                         ,(let* ((vars
+                                  ;; Make variables (O0 O1 ... 0N) for the outputs?  Don't really understand what stobjs-out is
+                                  ;; for here...
+                                  (loop for i fixnum below (if (cdr stobjs-out) (length stobjs-out) 1) collect (ofni "O~a" i)))
+
+                                 (prog1-fn (if (cdr stobjs-out) 'multiple-value-prog1 'prog1))
+                                 (mf-trace-exit+
+                                  (and mf-trace-exit
+                                       `((let ((,*mf-ans* ,(if stobjs-out `(list* ,@vars) (car vars))))
+                                           ,@mf-trace-exit)))))
+
+                            `(let (,*attached-fn-temp*)
+                               (mv?-let
+                                ,vars
+                                (let (*attached-fn-called*)
+                                  ;; This is where the actual function is being run.  The 01...0N vars are being bound to
+                                  ;; the results...
+                                  (,prog1-fn
+                                   ,body-call
+                                   (setq ,*attached-fn-temp* *attached-fn-called*)))
+                                (progn
+                                  (cond
+                                   ,@(and (not aokp)
+                                          `((,*attached-fn-temp*
+                                             (memoize-use-attachment-warning ',fn ,*attached-fn-temp*))))
+                                   (t
+                                    ;; Actually install the results
+                                    (setf (gethash ,*mf-args* (the hash-table ,localtablename))
+                                          (list* ,@vars))))
+                                  (update-attached-fn-called ,*attached-fn-temp*)
+                                  ,@mf-trace-exit+
+                                  (mv? ,@vars)))))))))))))
+
+
+            (body2
+             ;; Bunch of extra profiling stuff wrapped around body3.
+
+             `(let ((,*mf-old-caller* *caller*)
+                    #+Clozure
+                    ,@(and *record-bytes*
+                           `((,*mf-start-bytes*
+                              (heap-bytes-allocated)))))
+                (declare
+                 (ignorable
+                  #+Clozure
+                  ,@(and *record-bytes* `(,*mf-start-bytes*)))
+                 (type fixnum
+                       ,*mf-old-caller*
+                       #+Clozure
+                       ,@(and *record-bytes* `(,*mf-start-bytes*))))
+                (unwind-protect
+                    (progn
+                      (setq ,start-time ,(if *record-time*
+                                             '(internal-real-time)
+                                           '0))
+                      (setq *caller* ,2mfnn)
+                      ,body3)
+                  #+Clozure
+                  ,@(and *record-bytes*
+                         `((safe-incf
+                            (aref ,*mf-ma* ,(+ *ma-bytes-index* 2mfnn))
+                            (the mfixnum
+                                 (- (heap-bytes-allocated)
+                                    ,*mf-start-bytes*))
+                            ,fn)))
+                  ,@(and *record-time*
+                         `((safe-incf
+                            (aref ,*mf-ma*
+                                  (the mfixnum (1+ ,*mf-count-loc*)))
+                            (mod
+                             (the integer (- (internal-real-time)
+                                             ,start-time))
+                             most-positive-mfixnum)
+                            ,fn)))
+                  ,@(and forget `((setq ,tablename nil)
+                                  ,@(if (> nra 1)
+                                        `((setq ,ponstablename nil)))))
+                  (setq ,start-time -1)
+                  (setq *caller* ,*mf-old-caller*)))))
+
+         (setq def
+               `(defun ,fn ,formals ,@dcls
+                  ,@(if trace
+                        (if (member trace '(notinline inline))
+                            `((declare (,trace ,fn)))
+                          `((declare (notinline ,fn)))))
+                  (declare (ignorable ,@formals ,@specials))
+                  ,@(and commutative
+                         `((cond ((mis-ordered-commutative-args
+                                   ,(car formals)
+                                   ,(cadr formals))
+                                  (rotatef ,(car formals)
+                                           ,(cadr formals))))))
+                  ,@(and trace
+                         `((oftr "~%(> ~s (" ',fn)
+                           ,@(loop for v in (append formals specials)
+                                   append
+                                   `((oftr "~& ~s = " ',v)
+                                     (prine ,v *trace-output*)))
+                           (oftr "~& )")))
+                  (let* ((,*mf-count-loc*
+                          ,(if (or *record-calls* *record-time*)
+                               `(the fixnum (+ *caller* (* 2 ,fnn)))
+                             0))
+                         (,*mf-ma* *memoize-call-array*)
+                         ,localtablename ,localponstablename)
+                    (declare (type fixnum ,*mf-count-loc*)
+                             (ignorable ,*mf-count-loc* ,*mf-ma*
+                                        ,localponstablename
+                                        ,localtablename)
+                             (type (simple-array mfixnum (*))
+                                   ,*mf-ma*))
+                    ,@(and *record-calls*
+                           `((safe-incf (aref ,*mf-ma*
+                                              ,*mf-count-loc*)
+                                        1
+                                        ,fn)))
+                    (flet ((,body-name () ,body))
+                          (profiler-if (eql -1 ,start-time)
+                                       ,body2
+                                       ,body3))))))
+       (setf (gethash fn *number-of-arguments-and-values-ht*)
+             (cons (length stobjs-in) (length stobjs-out)))
+       (unwind-protect
+           (progn
+             (let ((ma *memoize-call-array*))
+               (declare (type (simple-array mfixnum (*)) ma))
+               (loop for i fixnum from 2mfnn
+                     below (the fixnum (+ 2mfnn *2max-memoize-fns*))
+                     unless (eql (aref ma i) 0)
+                     do (setf (aref ma i) 0)))
+             (memoize-eval-compile def watch-ifs)
+             (setf (gethash fn *memoize-info-ht*)
+                   (make memoize-info-ht-entry
+                         :fn fn
+                         :ext-anc-attachments
+                         (and aokp (extended-ancestors fn wrld))
+                         :tablename tablename
+                         :ponstablename ponstablename
+                         :old-fn old-fn
+                         :memoized-fn (symbol-function fn)
+                         :condition condition
+                         :inline inline
+                         :num fnn
+                         :sts sts
+                         :trace trace
+                         :start-time start-time
+                         :cl-defun cl-defun
+                         :formals formals
+                         :commutative commutative
+                         :specials specials
+                         :stobjs-in stobjs-in
+                         :stobjs-out stobjs-out
+                         :record-bytes      *record-bytes*
+                         :record-calls      *record-calls*
+                         :record-hits       *record-hits*
+                         :record-mht-calls  *record-mht-calls*
+                         :record-time       *record-time*
+                         :watch-ifs         watch-ifs
+                         :forget            forget
+                         :memo-table-init-size memo-table-init-size))
+             (setf (gethash fnn *memoize-info-ht*) fn)
+             (and condition (loop for s in sts do
+                                  (push tablename
+                                        (symbol-value s))))
+             (setq success t))
+         (unless success
+           (setf (symbol-function fn) old-fn)
+           (remhash fn *memoize-info-ht*)
+           (remhash fnn *memoize-info-ht*)
+           (maphash (lambda (k v)
+                      (when (eq fn (cadr v))
+                        (remhash k *form-ht*)))
+                    *form-ht*)
+           (and condition
+                (loop for s in sts
+                      when (eq tablename
+                               (car (symbol-value
+                                     (the symbol s))))
+                      do (pop (symbol-value (the symbol s)))))
+           (ofd "~&; Memoize-fn:  Failed to memoize ~s." fn)
+           (setq fn nil))))))
+
   fn)
 
 (defn1 unmemoize-fn (fn)
-  (unwind-mch-lock
-   (maybe-untrace! fn) ; See the comment about Memoization in trace$-def.
-   (let* ((ma *memoize-call-array*)
-          (l (memoizedp-raw fn)))
-     (declare (type (simple-array mfixnum (*)) ma))
-     (unless l (ofe "Unmemoize-fn: ~s is not memoized." fn))
-     (let* ((num (the fixnum (access memoize-info-ht-entry l
-                                     :num)))
-            (tablename (and l (access memoize-info-ht-entry l
-                                      :tablename)))
-            (n2 (* num *2max-memoize-fns*))
-            (w (access memoize-info-ht-entry l :watch-ifs)))
-       (declare (fixnum num n2))
+  (maybe-untrace! fn) ; See the comment about Memoization in trace$-def.
+  (let* ((ma *memoize-call-array*)
+         (l (memoizedp-raw fn)))
+    (declare (type (simple-array mfixnum (*)) ma))
+    (unless l (error "Unmemoize-fn: ~s is not memoized." fn))
+    (let* ((num (the fixnum (access memoize-info-ht-entry l
+                                    :num)))
+           (tablename (and l (access memoize-info-ht-entry l
+                                     :tablename)))
+           (n2 (* num *2max-memoize-fns*))
+           (w (access memoize-info-ht-entry l :watch-ifs)))
+      (declare (fixnum num n2))
 
-       #+Clozure
-       (when w
-         (maphash (lambda (k v)
-                    (when (eq fn (cadr v))
-                      (remhash k *form-ht*)))
-                  *form-ht*))
+      #+Clozure
+      (when w
+        (maphash (lambda (k v)
+                   (when (eq fn (cadr v))
+                     (remhash k *form-ht*)))
+                 *form-ht*))
 
 ; Note: condition is a first-class ACL2 function, not to be messed
 ; with here.
 
-       (let (#+Clozure (ccl:*warn-if-redefine-kernel* nil))
-         (let ((old-fn (access memoize-info-ht-entry
-                               l :old-fn)))
-           (if old-fn
-               (setf (symbol-function (the symbol fn)) old-fn)
-             (fmakunbound fn))))
-       (loop for i fixnum from n2
-             below (the fixnum (+ n2 *2max-memoize-fns*))
-             unless (eql (aref ma i) 0)
-             do (setf (aref ma i) 0))
-       (remhash fn *memoize-info-ht*)
-       (remhash num *memoize-info-ht*)
-       (setf (symbol-value (the symbol tablename)) nil)
-       (setf (symbol-value
-              (the symbol (access memoize-info-ht-entry
-                                  l :ponstablename)))
-             nil)
-       (loop for s in (access memoize-info-ht-entry l :sts) do
-             (when (boundp s)
-               (setf (symbol-value (the symbol s))
-                     (remove tablename (symbol-value
-                                        (the symbol s)))))))))
+      (let (#+Clozure (ccl:*warn-if-redefine-kernel* nil))
+        (let ((old-fn (access memoize-info-ht-entry
+                              l :old-fn)))
+          (if old-fn
+              (setf (symbol-function (the symbol fn)) old-fn)
+            (fmakunbound fn))))
+      (loop for i fixnum from n2
+            below (the fixnum (+ n2 *2max-memoize-fns*))
+            unless (eql (aref ma i) 0)
+            do (setf (aref ma i) 0))
+      (remhash fn *memoize-info-ht*)
+      (remhash num *memoize-info-ht*)
+      (setf (symbol-value (the symbol tablename)) nil)
+      (setf (symbol-value
+             (the symbol (access memoize-info-ht-entry
+                                 l :ponstablename)))
+            nil)
+      (loop for s in (access memoize-info-ht-entry l :sts) do
+            (when (boundp s)
+              (setf (symbol-value (the symbol s))
+                    (remove tablename (symbol-value
+                                       (the symbol s))))))))
   fn)
 
 (defn1 maybe-unmemoize (fn)
@@ -2760,14 +2608,6 @@ the calls took.")
     (or (and (consp stobjs-in) (member 'state stobjs-in))
         (and (consp stobjs-out) (member 'state stobjs-out)))))
 
-(defn memoize-here-come (n)
-  (let ((m (ceiling
-            (+ 100 (* 1.1 (- n (- (/ *2max-memoize-fns* 2)
-                                  (floor
-                                   (/ (hash-table-count
-                                       *memoize-info-ht*)
-                                      2)))))))))
-    (when (posp m) (memoize-call-array-grow (* 2 m)))))
 
 (defun profile-fn (fn &rest r &key (condition nil) (inline nil)
                       &allow-other-keys)
@@ -2806,7 +2646,89 @@ the calls took.")
 (defn1 event-number (fn)
   (cond ((symbolp fn)
          (fgetprop fn 'absolute-event-number t (w *the-live-state*)))
-        (t (ofe "EVENT-NUMBER: ** ~a is not a symbol ~s." fn))))
+        (t (error "EVENT-NUMBER: ** ~a is not a symbol ~s." fn))))
+
+
+
+
+(defv *profile-reject-ht* (mht :test 'eq)
+  "The user may freely add to the hash table *PROFILE-REJECT-HT*, which
+  inhibits the collection of functions into lists of functions to be memoized
+  and/or profiled.
+
+  Here are some reasons for adding a function fn to *PROFILE-REJECT-HT*.
+
+  1. A call of fn is normally so fast or fn is called so often that the extra
+  instructions executed when a profiled or memoized version of fn is run will
+  distort measurements excessively.  We tend not to profile any function that
+  runs in under 6000 clock ticks or about 2 microseconds.  The number of extra
+  instructions seem to range between 20 and 100, depending upon what is being
+  measured.  Counting function calls is relatively fast.  But if one measures
+  elapsed time, one might as well measure everything else too.  Or so it seems
+  in 2007 on terlingua.csres.utexas.edu.
+
+  2. fn is a subroutine of another function being profiled, and we wish to
+  reduce the distortion that profiling fn will cause.
+
+  3. fn is 'transparent', like EVAL.  Is EVAL fast or slow?  The answer, of
+  course, is that it mostly depends upon what one is EVALing.
+
+  4. fn's name ends in '1', meaning 'auxiliary' to some folks.
+
+  5. fn is boring.
+
+  Our additions to *PROFILE-REJECT-HT* are utterly capricious.  The user should
+  feel free to set *PROFILE-REJECT-HT* ad lib, at any time.")
+
+(declaim (hash-table *profile-reject-ht*))
+
+
+(defn1 input-output-number-warning (fn)
+  (format *debug-io*
+          "Can't determine the number of inputs and outputs of ~a.~%To assert ~
+           ~a takes, say, 2 inputs and returns 1 output, do:~%~a.~%"
+          fn fn `(set-number-of-arguments-and-values ',fn 2 1)))
+
+
+(defn1 dubious-to-profile (fn)
+  (cond ((not (symbolp fn)) "not a symbol.")
+        ((not (fboundp fn)) "not fboundp.")
+        ((eq (symbol-package fn) *main-lisp-package*)
+         (format nil "~%;~10tin *main-lisp-package*."))
+        #+Clozure
+        ((ccl::%advised-p fn)
+         (format nil "~%;10tadvised, and it will so continue."))
+        ((member fn (eval '(trace)))
+         (format nil "~%;~10ta member of (trace), and it will so continue."))
+        ((member fn (eval '(old-trace)))
+         (format nil "~%;~10ta member of (old-trace), and it will so continue."))
+        ((eq fn 'return-last)
+         "the function RETURN-LAST.")
+        ((gethash fn *never-profile-ht*)
+         (format nil "~%;~10tin *NEVER-PROFILE-HT*."))
+        ((gethash fn *profile-reject-ht*)
+         (format nil "in~%;~10t*PROFILE-REJECT-HT*.  Override with ~%;~10t~a"
+                 `(remhash ',~a *profile-reject-ht*)))
+        ((macro-function fn) "a macro.")
+        ((compiler-macro-function fn) "a compiler-macro-function.")
+        ((special-form-or-op-p fn) "a special operator.")
+        ((getprop fn 'constrainedp nil 'current-acl2-world
+                  (w *the-live-state*))
+         "constrained.")
+        ((memoizedp-raw fn)
+         (format nil "~%;~10tmemoized or profiled, and it will so continue."))
+        #+Clozure
+        ((multiple-value-bind (req opt restp keys)
+             (ccl::function-args (symbol-function fn))
+           (if (or restp
+                   keys
+                   (not (integerp req))
+                   (not (eql opt 0)))
+               (format nil "~%;~10thas non-simple arguments, e.g., &key or &rest.")
+             nil)))
+        ((null (number-of-arguments fn))
+         (input-output-number-warning fn))))
+
 
 
 (defun profile-acl2 (&key (start 0)
@@ -2828,10 +2750,10 @@ the calls took.")
         (*record-time* lots-of-info))
     (unless (integerp start)
       (unless (symbolp start)
-        (ofe "~%; PROFILE-ACL2: ** ~a is not an event." start))
+        (error "~%; PROFILE-ACL2: ** ~a is not an event." start))
       (setq start (event-number start))
       (unless (integerp start)
-        (ofe "~%; PROFILE-ACL2: ** ~a is not an event." start)))
+        (error "~%; PROFILE-ACL2: ** ~a is not an event." start)))
     (let ((fns-ht (make-hash-table :test 'eq)))
       (declare (hash-table fns-ht))
       (loop for p in (set-difference-equal
@@ -2869,8 +2791,8 @@ the calls took.")
        fns-ht)
       (clear-memoize-call-array)
       (oft "~%(clear-memoize-call-array) invoked.")
-      (ofn "~a function~:p newly profiled."
-           (hash-table-count fns-ht)))))
+      (format nil "~a function~:p newly profiled."
+              (hash-table-count fns-ht)))))
 
 (defun profile-all (&key trace (lots-of-info t) forget watch-ifs pkg)
 
@@ -2926,8 +2848,8 @@ the calls took.")
        fns-ht)
       (clear-memoize-call-array)
       (oft "~%(clear-memoize-call-array) invoked.")
-      (ofn "~a function~:p newly profiled."
-           (hash-table-count fns-ht)))))
+      (format nil "~a function~:p newly profiled."
+              (hash-table-count fns-ht)))))
 
 (defn functions-defined-in-form (form)
   (cond ((consp form)
@@ -2984,7 +2906,7 @@ the calls took.")
 ; forward, with HOPY-CONS-CONSUME, of other honses.
 
 (defn1 not-memoized-error (f)
-  (ofe "NOT-MEMOIZED-ERROR:  ~s is not memoized." f))
+  (error "NOT-MEMOIZED-ERROR:  ~s is not memoized." f))
 
 (defmacro memoize-let-raw (fn form)
   (let ((fn-name (gensym "FN-NAME"))
@@ -3260,6 +3182,18 @@ the calls took.")
 
 
 
+
+(defmacro our-syntax-brief (&rest args)
+
+; Within OUR-SYNTAX-BRIEF printing may be greatly abbreviated.
+;; only used in print-call-stack
+
+  `(our-syntax-nice
+    (setq *print-length* 10)
+    (setq *print-level* 5)
+    (setq *print-lines* 10)
+    ,@args))
+
 (defn print-call-stack ()
 
   "(PRINT-CALL-STACK) prints the stack of memoized function calls
@@ -3351,7 +3285,7 @@ the calls took.")
   number of entries currently stored for X."
 
   (let ((h (gethash x *memoize-info-ht*)))
-    (unless h (ofe "~a is not memoized." x))
+    (unless h (error "~a is not memoized." x))
     (let* ((sym (access memoize-info-ht-entry
                         h
                         :tablename))
@@ -3656,14 +3590,11 @@ the calls took.")
   (memoize-summary-after-compute-calls-and-times)
   nil)
 
-(defg *short-symbol-name-width* 30)
-
 (defn short-symbol-name (sym)
-  (let ((str (symbol-name sym)))
-    (cond ((> (length str) *short-symbol-name-width*)
-           (intern (ofn "~a..."
-                        (subseq str 0
-                                *short-symbol-name-width*))
+  (let ((str    (symbol-name sym))
+        (cutoff 30))
+    (cond ((> (length str) cutoff)
+           (intern (format nil "~a..." (subseq str 0 cutoff))
                    (symbol-package sym)))
           (t sym))))
 
@@ -4033,7 +3964,6 @@ the calls took.")
 
 ; See hons.lisp.
 
-  (ofvv "Running (clear-memoize-tables).")
   (let (success)
     (unwind-protect
         (progn
@@ -4042,14 +3972,13 @@ the calls took.")
                        (clear-one-memo-and-pons-hash l)))
                    *memoize-info-ht*)
           (setq success t))
-      (or success (ofe "clear-memoize-tables failed.")))))
+      (or success (error "clear-memoize-tables failed.")))))
 
 (defn clear-memoize-call-array ()
 
   "(CLEAR-MEMOIZE-CALL-ARRAY) zeros out all records of function calls
   as far as reporting by MEMOIZE-SUMMARY, etc. is concerned."
 
-  (ofvv "Running (clear-memoize-call-array).")
   (let ((m *memoize-call-array*))
     (declare (type (simple-array mfixnum (*)) m))
     (loop for i fixnum below (length m)
@@ -4059,684 +3988,39 @@ the calls took.")
   (clear-memoize-call-array)
   nil)
 
-; HONS READ
-
-; Hash consing when reading is implemented via a change to the
-; readtable for the characters open parenthesis, close parenthesis,
-; and period, the consing dot.
-
-; *** NOTE:  The following collection of functions is just that: a
-;            collection.  Unless you understand everything about the
-;            various read table macros, then don't touch this code!
-
-; See matching comment below.
-
-; Note: our implementation of the #=/## reader, which we built because
-; some Lisps would not let us get past #500 or so, does not comply
-; with ANSI at least in this regard: it does not allow the entry of
-; looping structures as in '(#0= (3 #0#)), which is no problem for
-; ACL2 users.
-
-; WARNING: Any call of READ using *hons-readtable* as *readtable*
-; needs to worry about the possible top-level return of
-; *CLOSE-PAREN-OBJ* and *DOT-OBJ*, which are simply part of the
-; fiction whereby we read while honsing.  Those two objects should
-; absolutely not be returned as the value of an ACL2 function.  See,
-; for example, the definition of HONS-READ.
-
-(defg *close-paren-obj* '(#\)))
-
-(defg *dot-obj*         '(#\.))
-
-(defg *hons-readtable* (copy-readtable *acl2-readtable*))
-
-(defg *hacked-acl2-readtable* (copy-readtable *acl2-readtable*))
-
-(defparameter *compact-print-file-ht* nil)
-(declaim (hash-table *compact-print-file-ht*))
-
-(defparameter *hons-read-ht* nil) ; bound sometimes
-
-(defmacro hons-read-ar-len () (expt 2 21))
-
-(defparameter *hons-read-ar*
-  (make-array (hons-read-ar-len) :initial-element 0))
-
-(defparameter *hons-read-ar-max* -1)
-
-(defparameter *compact-print-file-n* 0)
-
-(declaim (type fixnum *compact-print-file-n*))
-
-(defg *space-owed* nil)
-
-(defg *hons-readtable-init-done* nil)
-
-(defn1 hread-nonsense (x)
-  (or (eq x *close-paren-obj*) (eq x *dot-obj*)))
-
-(defn1 check-hread-nonsense (x stream)
-  (cond ((hread-nonsense x)
-         (hread-error "~&;  Illegal object: ~s." stream (car x)))))
-
-(defun hread-error (string stream &rest r)
-  (our-syntax-nice
-   (let* ((*standard-input* *debug-io*))
-     (apply #'format *error-output* string r)
-     (cond ((and (streamp stream) (file-position stream))
-            (format *error-output*
-                    "~&; near file-position ~s in stream ~s."
-                    (file-position stream) stream)))
-     (ofe "hread."))))
-
-(defn1 illegal-error1 (x stream)
-  (hread-error "~&; ** Error:  Illegal:  ~s." stream x))
-
-(defn1 illegal-error2 (stream char)
-  (illegal-error1 char stream))
-
-(defn1 close-paren-read-macro (stream char)
-  (declare (ignore char))
-  (if *read-suppress* (illegal-error1 #\\ stream))
-  *close-paren-obj*)
-
-(defn1 dot-read-macro (stream char)
-  (declare (ignore char))
-  (if *read-suppress* (illegal-error1 #\. stream))
-  (let ((ch (peek-char nil stream t nil t)))
-    (cond ((or (member ch '(#\( #\) #\' #\` #\, #\" #\;
-                            #\Tab #\Space #\Newline))
-               (eql 13 (char-code ch))
-               (multiple-value-bind (fn nonterminating)
-                   (get-macro-character ch)
-                 (and fn (not nonterminating))))
-           *dot-obj*)
-          (t (let ((*readtable* *acl2-readtable*))
-               (unread-char #\. stream)
-               (hons-copy (read stream t nil t)))))))
-
-(defn1 hons-read-list (stream)
-
-  ; ***** hons
-
-  ; HONS-READ-LIST must return a HONSP whenever it turns a CONSP, even
-  ; when the object comes from some readmacro such as that for quote
-  ; or backquote that might return a CONS.  Hence the calls to
-  ; HONS-COPY.
-
-  (let ((o (read stream t nil t)))
-    (cond
-     ((eq o *close-paren-obj*) nil)
-     ((eq o *dot-obj*)
-      (let ((lo (read stream t nil t))
-            (lp (read stream t nil t)))
-        (check-hread-nonsense lo stream)
-        (cond
-         ((eq lp *close-paren-obj*)
-          (hons-copy lo))
-         (t (illegal-error1 #\. stream)))))
-     (t (hons o (hons-read-list stream))))))
-
-(defn1 hons-read-list-top (stream)
-
-  ; ***** hons
-
-  (let ((o (read stream t nil t)))
-    (cond
-     ((eq o *close-paren-obj*) nil)
-     (t (check-hread-nonsense o stream)
-        (hons o (hons-read-list stream))))))
-
-(defn1 hons-read-reader (stream char)
-
-  ; ***** hons
-
-  (declare (ignore char))
-  (cond (*read-suppress*
-         (unread-char #\( stream)
-         (let ((*readtable* *acl2-readtable*))
-           (read stream t nil t)
-           nil))
-        (t (hons-read-list-top stream))))
-
-(defg *use-hons-in-read-object* t)
-
-(defun clear-hons-read-ar (index)
-  (loop for i from 0 to index do
-        (setf (aref (the (simple-array t (*)) *hons-read-ar*)
-                    (the fixnum i))
-              0)))
-
-(defvar *inside-hons-read*
-; WARNING: Do not use defg, since this variable can be let-bound.
-  nil)
-
-(defun hons-read (&optional stream (eep t) eofv rp)
-
-  "HONS-READ takes the same args as READ.  If
-  *USE-HONS-IN-READ-OBJECT* is non-NIL, then HONS is used in the
-  reading instead of CONS.
-
-  We currently disallow any call of hons-read with rp=nil inside
-  a call of hons-read."
-
-  (when (and (not rp) *inside-hons-read*)
-    (error "Recursive hons-read!"))
-  (let ((*inside-hons-read* t)
-        (our-eofv (cons nil nil)))
-    (cond (*use-hons-in-read-object*
-            (our-lock-unlock-hons1
-
-; Although a readmacro such as quote or backquote might return a CONS
-; that is not HONSP, HONS-READ-LIST will turn those into HONSES.
-
-              (cond (rp      ; DO NOT BIND *HONS-READ-HT/AR-MAX*.
-                     (let* ((*readtable* *hons-readtable*)
-                            (x (read stream eep our-eofv rp)))
-                       (cond ((and (null eep) (eq x our-eofv))
-                              eofv)
-                             (t (check-hread-nonsense x stream)
-                                (hons-copy x)))))
-                    (t       ; DO BIND *HONS-READ-HT/AR-MAX*,
-                             ; OTHERWISE SAME.
-                     (let* ((*hons-read-ht* nil)
-                            (*hons-read-ar-max* -1)
-                            (*readtable* *hons-readtable*)
-                            (x (read stream eep our-eofv rp)))
-                       (clear-hons-read-ar *hons-read-ar-max*)
-                       (cond ((and (null eep) (eq x our-eofv))
-                              eofv)
-                             (t (check-hread-nonsense x stream)
-                                (hons-copy x))))))))
-          (t (cond (rp ; DO NOT BIND *HONS-READ-HT/AR-MAX*.
-                    (let* ((*readtable* *hacked-acl2-readtable*)
-                           (x (read stream eep our-eofv rp)))
-                      (cond ((and (null eep) (eq x our-eofv))
-                             eofv)
-                            (t x))))
-                   (t ; DO BIND *HONS-READ-HT/AR-MAX*, OTHERWISE SAME.
-                    (let* ((*hons-read-ht* nil)
-                           (*hons-read-ar-max* -1)
-                           (*readtable* *hacked-acl2-readtable*)
-                           (x (read stream eep our-eofv rp)))
-                      (clear-hons-read-ar *hons-read-ar-max*)
-                      (cond ((and (null eep) (eq x our-eofv))
-                             eofv)
-                            (t x)))))))))
-
-(defn1 hons-read-file (file-name)
-  (with-open-file (stream file-name)
-    (let ((eof (cons nil nil)) temp ans)
-      (loop (setq temp (hons-read stream nil eof nil))
-            (cond ((eq eof temp)
-                   (setq ans (nreverse ans))
-                   (when *use-hons-in-read-object*
-                     (setq ans (hons-copy ans)))
-                   (return ans))
-                  (t (push temp ans)))))))
-
-
-;  COMPACT PRINT AND READ
-
-(defmacro space-if-necessary (stream)
-
-; do not call
-
-  `(when *space-owed*
-     (write-char #\Space ,stream)
-     (setq *space-owed* nil)))
-
-(defn1 compact-print-file-scan (x)
-
-; do not call
-
-  (unless (or (and (symbolp x)
-                   (let ((p (symbol-package x)))
-                     (or (eq p *main-lisp-package*)
-                         (eq p *package*)))
-                   (<= (length (symbol-name x)) 4))
-
-              ; On the one hand, in ANSI Lisp, you can't READ the same
-              ; string twice.  On the other hand, in HONSing, we
-              ; cannonicalize strings.  Should we or shouldn't we
-              ; identify common strings here?  Sometimes we do, and
-              ; sometimes we don't.
-
-              (and (stringp x) (<= (length x) 2))
-              (and (integerp x) (< -100 x 1000))
-              (characterp x))
-    (let ((g (gethash x *compact-print-file-ht*)))
-      (unless (or (atom x) g)
-        (compact-print-file-scan (car x))
-        (compact-print-file-scan (cdr x)))
-      (unless (eq g 'give-it-a-name)
-        (setf (gethash x *compact-print-file-ht*)
-              (if g 'give-it-a-name 'found-at-least-once))))))
-
-(defn1 compact-print-file-help (x hash stream)
-
-; do not call directly.
-
-  (cond ((typep hash 'fixnum)
-         (space-if-necessary stream)
-         (write-char #\# stream)
-         (princ hash stream)
-         (write-char #\# stream))
-        (t (cond ((eq hash 'give-it-a-name)
-                  (let ((n *compact-print-file-n*))
-                    (declare (type fixnum n))
-                    (when (eql n most-positive-fixnum)
-                      (ofe "*compact-print-file-n* overflow."))
-                    (setq n (the fixnum (+ 1 n)))
-                    (setq *compact-print-file-n* n)
-                    (setf (gethash x *compact-print-file-ht*) n)
-                    (space-if-necessary stream)
-                    (write-char #\# stream)
-                    (princ n stream)
-                    (write-char #\= stream))))
-           (cond
-            ((null x)
-             (write-char #\( stream)
-             (write-char #\) stream)
-             (setq *space-owed* nil))
-            ((atom x)
-             (space-if-necessary stream)
-
-             ; This PRIN1 could commence with a vertical bar that
-             ; might be immediately preceded by a sharp sign, which
-             ; could confuse comment reading.
-
-             (prin1 x stream)
-             (setq *space-owed* t))
-            (t (write-char #\( stream)
-               (setq *space-owed* nil)
-               (loop (compact-print-file-help
-                      (car x)
-                      (gethash (car x) *compact-print-file-ht*)
-                      stream)
-                     (cond
-                      ((null (cdr x))
-                       (write-char #\) stream)
-                       (setq *space-owed* nil)
-                       (return))
-                      ((or (progn
-                             (setq hash
-                                   (gethash (cdr x)
-                                            *compact-print-file-ht*))
-                             (or (eq hash 'give-it-a-name)
-                                 (typep hash 'fixnum)))
-                           (atom (cdr x)))
-                       (space-if-necessary stream)
-                       (write-char #\. stream)
-                       (setq *space-owed* t)
-                       (compact-print-file-help (cdr x) hash stream)
-                       (write-char #\) stream)
-                       (setq *space-owed* nil)
-                       (return))
-                      (t (pop x)))))))))
-
-(defun compact-print-stream (data stream)
-  (cond ((null *print-circle-stream*)
-         (error "Attempt to call compact-print-stream without ~
-                 initializing ~% *print-circle-stream*.  Consider ~
-                 opening output ~% channel with macro ~
-                 with-output-object-channel-sharing."))
-        ((not (eq stream *print-circle-stream*))
-         (error "Attempt to call compact-print-stream on other ~
-                 than the current stream.")))
-  (our-lock-unlock-hons1
-   (let ((*compact-print-file-ht* (mht))
-         (*print-array* t))
-     (setq *space-owed* nil)
-     (let ((p *package*))
-       (loop for two in
-
-             ;; We'll cause an error if the settings of these are
-             ;; different than they will be under OUR-SYNTAX.
-
-             '((*print-array*                t)
-               (*print-base*                 10)
-               (*print-case*                 :upcase)
-               (*print-circle*               t)
-               (*print-escape*               t)
-               (*print-pretty*               nil)
-               (*print-radix*                nil)
-               (*read-base*                  10)
-               (*read-suppress*              nil)
-               (*readtable*                  *acl2-readtable*))
-             when (not (equal (symbol-value (car two))
-                              (if (symbolp (cadr two))
-                                  (symbol-value (cadr two))
-                                (cadr two))))
-             do
-             (ofe "PRINT-COMPACT-STREAM: Problem with the setting ~
-                   of ~a" two))
-
-       ; Currently, there is no way from within ACL2 to alter
-       ; READTABLE-CASE.  Thank goodness.  So the following error will
-       ; never happen.  But if ACL2 were someday 'enhanced' to permit
-       ; control over READTABLE-CASE, there just might be a problem
-       ; about the setting of *PRINT-READABLY* to T by OUR-SYNTAX
-       ; below if the current setting of *PRINT-READABLY* were NIL.
-
-       ;; *PACKAGE* -- we let the user use any ACL2 package.
-
-       (unless (eq (readtable-case *acl2-readtable*) :upcase)
-         (ofe "PRINT-COMPACT-STREAM: Problem with the setting of ~
-               (readtable-case *acl2-readtable*)."))
-
-       ;; We do not cause an error if the following *PRINT-...*
-       ;; variable settings are different from what OUR-SYNTAX will
-       ;; effect, and for many good reasons, as follows.
-
-       ;; *PRINT-READABLY* -- a very tedious explanation.  When
-       ;; *PRINT-READABLY* is T, then some extra errors may be caught
-       ;; when attempting to print unprintable objects, and there are
-       ;; effects upon the printing of arrays.  OUR-SYNTAX binds
-       ;; *PRINT-READABLY* to T, and that will be O.K. because (a) we
-       ;; don't print packages or arrays in ACL2, (b) we want an error
-       ;; signaled by PRINT-OBJECT$ whenever it might be appropriate,
-       ;; and (c) as far as we can imagine, when printing any ordinary
-       ;; ACL2 object no errors should arise, excepting of the
-       ;; catastrophic sort, e.g., disk space exhaused, power outage,
-       ;; stack overflow.  But errors may well happen in printing some
-       ;; legitimate Lisp, as opposed to ACL2, objects, when printing
-       ;; with *PRINT-READABLY* bound to T, e.g., some bizarre
-       ;; 'floating point numbers' such as 'infinity', packages, and
-       ;; readtables.  Cf. the ANSI function PRINT-UNREADABLE-OBJECT.
-
-       ;; *PRINT-LENGTH*          -- only for pretty
-       ;; *PRINT-LEVEL*           -- only for pretty
-       ;; *PRINT-LINES*           -- only for pretty
-       ;; *PRINT-PPRINT-DISPATCH* -- only for pretty
-       ;; *PRINT-MISER-WIDTH*     -- only for pretty
-       ;; *PRINT-RIGHT-MARGIN*    -- only for pretty
-
-       ;; *READ-DEFAULT-FLOAT-FORMAT* -- no floats in ACL2
-
-       ;; *PRINT-GENSYM* -- no gensyms in ACL2
-
-       ;; *READ-EVAL* -- OUR-SYNTAX uses T for *READ-EVAL*.  But we
-       ;; don't print #. in compact-printing unless the # is properly
-       ;; quoted with vertical bars or back-slashes.
-
-       ;; Though OUR-SYNTAX binds *PRINT-CIRCLE* to NIL,
-       ;; COMPACT-PRINT-STREAM is designed to do the job that
-       ;; *PRINT-CIRCLE* should do, except for circular objects, which
-       ;; are not found in ACL2.
-
-       (our-syntax
-        (setq *package* p)  ; Bound by OUR-SYNTAX to *ACL2-READTABLE*.
-        (compact-print-file-scan data)
-        (compact-print-file-help
-         data
-         (gethash data *compact-print-file-ht*)
-         stream)
-        nil)))))
-
-(defun compact-print-file
-  (data file-name &key (if-exists :supersede))
-
-; May be called directly.
-
-  "(COMPACT-PRINT-FILE x str) PRIN1s x to a new file named str so that
-   Common Lisp can READ the result and get back something EQUAL,
-   assuming the package and readtable are the same on print and read.
-   COMPACT-PRINT-FILE prints as though *PRINT-CIRCLE* were T to
-   minimize printing by a kind of compression, using traditional Lisp
-   #..# syntax.  However, circular object are not handled.  See the
-   bindings of some *PRINT-...* variables via OUR-SYNTAX in
-   COMPACT-PRINT-STREAM, which favor accuracy and not prettiness.  The
-   ACL2 package, ACL2 readtable, and decimal *PRINT-BASE* are used."
-
-  (setq *compact-print-file-n* 0)
-  (with-open-file (stream file-name
-                          :direction :output
-                          :if-exists if-exists)
-    (let ((*print-circle-stream* stream)
-
-; These *print... and *read... settings are deliberately inflicted
-; upon the user of COMPACT-PRINT-FILE.  The user is still free to
-; choose *PACKAGE*.  Read the comment in compact-print-stream for
-; information about our rather fascist approach to these settings.
-
-          (*print-base* 10)
-          (*print-case* :UPCASE)
-          (*print-circle* t)
-          (*print-escape* t)
-          (*print-pretty* nil)
-          (*read-base* 10)
-          (*read-eval* t)  ; to support #.constant printing
-          (*read-suppress* nil)
-          (*readtable* *acl2-readtable*)
-
-          ; Not relevant once one knows that *PRINT-PRETTY* is NIL:
-
-          (*print-length* nil)
-          (*print-level* nil)
-          (*print-lines* nil)
-          (*print-radix* nil)
-          (*print-right-margin* nil)
-
-          ; Not relevant when printing only ACL2 objects:
-
-          (*print-readably* t)
-          (*read-default-float-format*  'single-float)
-          (*print-gensym* t)
-          (*print-array* t)
-
-          ; This one is crucial to know about since strings are ACL2
-          ; objects:
-
-          #+CCL
-          (ccl::*print-string-length* nil)
-
-          #+CCL
-          (ccl::*print-abbreviate-quote* nil)
-
-          ; These are irrelevant as long as we are printing
-          ; an ACL2 object.
-
-          #+CCL
-          (ccl::*print-structure* t)
-          #+CCL
-          (ccl::*print-simple-vector* nil)
-          #+CCL
-          (ccl::*print-simple-bit-vector* nil)
-
-          ; Do many other Lisps have their own private set of secret
-          ; print control variables?
-
-          )
-      (compact-print-stream data stream))
-    (namestring (our-truename stream))))
-
-(defun ns-=-reader (stream subchar arg)
-
-; We don't use DEFN1 because this function might return 0 values.
-
-; Do not call ns-=-reader directly.
-
-; NS-=-READER intentionally does not read circular Lisp objects
-; correctly, such as those normally created by reading #2=(1 #2#).
-; Such a circular object could not be an ACL2 object anyway.  An
-; attempt to read such an object will result in a clean error, e.g., a
-; report that the expression #2# makes no sense because a #2= ?
-; expression has not been fully read.
-
-; *HONS-READ-HT* must always have a value, either NIL or a hash table;
-; cf. READ-OBJECT and COMPACT-READ-FILE.
-
-; *HONS-READ-AR* must always have a value, either NIL or a simple
-; vector.  cf. READ-OBJECT and COMPACT-READ-FILE.
-
-  (declare (ignore subchar))
-  (cond ((null arg)
-         (hread-error "~&; ns-=-reader: ** Error: #= is illegal."
-                      stream arg))
-        (*read-suppress* (values))
-        ((< arg (hons-read-ar-len))
-         (let ((x (read stream t nil t)))
-           (cond ((eql x 0) ; 0 might be confused for the default
-                  (unless *hons-read-ht*
-                    (setq *hons-read-ht* (make-hash-table)))
-                  (multiple-value-bind (val present-p)
-                      (gethash arg *hons-read-ht*)
-                    (when present-p
-                      (hread-error
-                       "~&; ns-=-reader: ** Error: #~s= is already ~
-                        defined to be ~s."
-                       stream arg val))
-                    (setf (gethash arg *hons-read-ht*) 0)))
-                 (t (setf *hons-read-ar-max*
-                          (max (the fixnum *hons-read-ar-max*)
-                               (the fixnum arg)))
-                    (setf (aref (the (simple-array t (*))
-                                  *hons-read-ar*)
-                                (the fixnum arg))
-                          x)))))
-        (*hons-read-ht*
-         (multiple-value-bind (val present-p)
-             (gethash arg *hons-read-ht*)
-           (when present-p
-             (hread-error
-              "~&; ns-=-reader: ** Error: #~s= is already ~
-               defined to be ~s."
-              stream arg val))
-           (setf (gethash arg *hons-read-ht*)
-                 (read stream t nil t))))
-        (t (setq *hons-read-ht* (make-hash-table))
-           (setf (gethash arg *hons-read-ht*)
-                 (read stream t nil t)))))
-
-(defn1 ns-ns-reader (stream subchar arg)
-
-; Do not call NS-NS-READER directly.
-
-; *HONS-READ-HT* must always have as its value NIL or a hash table.
-; *HONS-READ-AR* must always have as its value NIL or a simple,
-; one-dimensional array.  cf. READ-OBJECT and COMPACT-READ-FILE.
-
-  (declare (ignore subchar))
-  (cond (*read-suppress* nil)  ; ?
-        ((null arg)
-         (hread-error
-          "~&; ns-ns-reader: ** Error: meaningless ##."
-          stream arg))
-        ((and *hons-read-ar* (< arg (hons-read-ar-len)))
-         (let ((ans (aref (the (simple-array t (*)) *hons-read-ar*)
-                          (the fixnum arg))))
-           (cond ((eql ans 0) ; could be the default
-                  (unless *hons-read-ht*
-                    (setq *hons-read-ht* (make-hash-table)))
-                  (multiple-value-bind (val present-p)
-                      (gethash arg *hons-read-ht*)
-                    (cond (present-p val)
-                          (t (hread-error
-                              "~&; ns-ns-reader: ** Error: ~
-                               meaningless #~s#."
-                              stream arg)))))
-                 (t ans))))
-        (*hons-read-ht*
-         (multiple-value-bind (val present-p)
-             (gethash arg *hons-read-ht*)
-           (cond (present-p val)
-                 (t (hread-error
-                     "~&; ns-ns-reader: ** Error: meaningless ~
-                      #~s#."
-                     stream arg)))))
-        (t (hread-error
-            "~&; ns-ns-reader:  ** Error:  meaningless #~s#."
-            stream arg))))
-
-(defn1 compact-read-file (fn)
-
-; May be called directly.
-
-   "(COMPACT-READ-FILE fn) READs the first Lisp/ACL2 form of the file
-   named FN.  The file should have exactly one Lisp object in it.
-
-   HONS is used instead of CONS while reading when
-   *USE-HONS-IN-READ-OBJECT* is not NIL.
-
-   The *ACL2-READTABLE* is used during reading.  The reading respects
-   Common Lisp's #2= and #2# readmacro support, however not for
-   circular cons structures."
-
-   (with-open-file (stream fn)
-     (let* ((eof (cons nil nil))
-            (p (hons-read stream nil eof nil)))
-          (when (eq p eof)
-            (ofe "compact-read-file: ~s appears empty." fn))
-          (unless (eq (read stream nil eof) eof)
-            (ofe "compact-read-file: ~s has too many ~
-                 forms." fn))
-          p)))
-
-
-;  HONS READTABLE INIT
-
-(defn1 hons-readtable-init ()
-
-  (when *hons-readtable-init-done*
-    (ofe "hons-readtable-init: already done."))
-
-  (setq *hons-readtable* (copy-readtable *acl2-readtable*))
-  (set-macro-character
-   #\( #'hons-read-reader       nil *hons-readtable*)
-  (set-macro-character
-   #\) #'close-paren-read-macro nil *hons-readtable*)
-  (set-macro-character
-   #\. #'dot-read-macro         t   *hons-readtable*)
-  (set-dispatch-macro-character
-   #\# #\# #'ns-ns-reader           *hons-readtable*)
-  (set-dispatch-macro-character
-   #\# #\= #'ns-=-reader            *hons-readtable*)
-
-  (setq *hacked-acl2-readtable* (copy-readtable *acl2-readtable*))
-  (set-dispatch-macro-character
-   #\# #\# #'ns-ns-reader           *hacked-acl2-readtable*)
-  (set-dispatch-macro-character
-   #\# #\= #'ns-=-reader            *hacked-acl2-readtable*)
-
-  (setq *hons-readtable-init-done* t))
-
-
 ; MEMOIZE INIT
 
 (defn1 memoize-init ()
 
-; May not be repeated.
-
-  (when *memoize-init-done* (ofe "memoize-init:  already done."))
+  (when *memoize-init-done*
+    ;; BOZO could just exit instead...
+    (error "memoize-init:  already done."))
 
   (initialize-never-profile-ht)
   (initialize-profile-reject-ht)
 
-  (unwind-mch-lock
-   (unless (eql *caller* (the fixnum
-                          (* *ma-initial-max-symbol-to-fixnum*
-                             *2max-memoize-fns*)))
-     (ofe "memoize-init:  A memoized function is running."))
-   (let (success)
-     (unwind-protect
-       (progn
-         #+Clozure (setup-smashed-if)
-;         (setq *pons-call-counter* 0)
-;         (setq *pons-misses-counter* 0)
-         (setq *memoize-info-ht* (mht))
-         (setf (gethash *ma-initial-max-symbol-to-fixnum*
-                        *memoize-info-ht*)
-               "outside-caller")
-         (setq *max-symbol-to-fixnum*
-           *ma-initial-max-symbol-to-fixnum*)
-         (setq *2max-memoize-fns*
-           (* 2 *initial-max-memoize-fns*))
-         (sync-memoize-call-array)
-         (clrhash *form-ht*)
-         (setq success t))
-       (if success (setq *memoize-init-done* t)
-         (ofd "~%; memoize init: Error **"))))))
+  (unless (eql *caller* (the fixnum
+                             (* *ma-initial-max-symbol-to-fixnum*
+                                *2max-memoize-fns*)))
+    (error "memoize-init:  A memoized function is running."))
+  (let (success)
+    (unwind-protect
+        (progn
+          #+Clozure (setup-smashed-if)
+          (setq *memoize-info-ht* (mht))
+          (setf (gethash *ma-initial-max-symbol-to-fixnum*
+                         *memoize-info-ht*)
+                "outside-caller")
+          (setq *max-symbol-to-fixnum*
+                *ma-initial-max-symbol-to-fixnum*)
+          (setq *2max-memoize-fns*
+                (* 2 *initial-max-memoize-fns*))
+          (sync-memoize-call-array)
+          (clrhash *form-ht*)
+          (setq success t))
+      (if success (setq *memoize-init-done* t)
+        (ofd "~%; memoize init: Error **"))))
+  nil)
 
 
 (defg *max-mem-usage* (expt 2 32)
@@ -4752,17 +4036,12 @@ the calls took.")
                 *gc-min-threshold*)))
     (cond ((not (eql n (ccl::lisp-heap-gc-threshold)))
            (ccl::set-lisp-heap-gc-threshold n)
-           (ofvv "~&; set-and-reset-gc-thresholds: Reserving ~:d additional bytes.~%"
-                 n))))
+           )))
   (ccl::use-lisp-heap-gc-threshold)
-; (ofvv "~&; set-and-reset-gc-thresholds: Calling ~
-;        ~%(use-lisp-heap-gc-threshold).")
   (cond ((not (eql *gc-min-threshold*
                    (ccl::lisp-heap-gc-threshold)))
          (ccl::set-lisp-heap-gc-threshold *gc-min-threshold*)
-         (ofvv "~&; set-and-reset-gc-thresholds: Will reserve ~:d bytes after
-next GC.~%"
-               *gc-min-threshold*))))
+         )))
 
 (defvar *sol-gc-installed* nil)
 
@@ -5180,43 +4459,24 @@ next GC.~%"
 
        (unless (equal '(t t)
                       (multiple-value-list (ccl::gc-verbose-p)))
-         (ofvv "*hons-init-hook*:  Setting CCL's gc to verbose.")
+         (ofv "*hons-init-hook*:  Setting CCL's gc to verbose.")
          (ccl::gc-verbose t t))
 
        "CCL's ephemeral gc doesn't seem to work well with honsing and
         memoizing, so we always shut it off."
 
        (when (ccl::egc-active-p)
-         (ofvv "*hons-init-hook*:  Turning off CCL's ephemeral gc.")
+         (ofv "*hons-init-hook*:  Turning off CCL's ephemeral gc.")
          (ccl::egc nil))
 
        "Sol Swords's scheme to control GC in CCL.  See long comment in
         memoize-raw.lisp."
 
-       #+Clozure (start-sol-gc)
-
-
-;; [Jared]: removing the (user-INIT) thing because it's just asking
-;; for inconsistencies.  Instead, replacing it with the what Sol and
-;; Warren and I have been using:
-
-       ;; "Run (user-INIT) if it exists."
-
-       ;; #+Clozure
-       ;; (let ((init-fn
-       ;;        (intern
-       ;;         (string-upcase
-       ;;          (format nil "~a-init" (ccl::getenv "USER")))
-       ;;         :acl2)))
-       ;;   (cond ((fboundp init-fn)
-       ;;          (ofvv "Running (~a)." init-fn)
-       ;;          (funcall init-fn))
-       ;;         (t (ofvv "~% ~a not fboundp, hence not funcalled."
-       ;;                  init-fn))))
+       #+Clozure
+       (start-sol-gc)
 
        #+Clozure
-       (progn (ccl::egc nil)
-              (set-and-reset-gc-thresholds))
+       (set-and-reset-gc-thresholds)
 
        ))
 
@@ -5228,7 +4488,7 @@ next GC.~%"
 
 (defn hons-init-hook-set (var val)
   (unless (symbolp var)
-    (ofe "HONS-INIT-HOOK-SET works for symbols, not ~a." var))
+    (error "HONS-INIT-HOOK-SET works for symbols, not ~a." var))
   (when (not (equal val (symbol-value var)))
     (ofv "*hons-init-hook*:  Setting ~a to ~a." var val)
     (setf (symbol-value var) val)))
@@ -5425,17 +4685,12 @@ next GC.~%"
   and documentation if (MAPC 'PRINT-SOME-DOCUMENTATION *WATCH-ITEMS*)
   is a member of *WATCH-FORMS* and (WATCH-DO) is invoked.")
 
-(defg *watch-last-real-time* 0)
-
-(defg *watch-last-run-time* 0)
-
+(defg *watch-last-real-time*  0)
+(defg *watch-last-run-time*   0)
 (defg *watch-start-real-time* 0)
-
-(defg *watch-start-run-time* 0)
-
+(defg *watch-start-run-time*  0)
 (defg *watch-start-gc-count*  0)
-
-(defg *watch-start-gc-time* 0)
+(defg *watch-start-gc-time*   0)
 
 (defg *watch-start-heap-bytes-allocated* 0)
 
@@ -5508,6 +4763,11 @@ next GC.~%"
 
 #+Clozure
 (declaim (fixnum *watch-real-seconds-between-dumps*))
+
+(defmacro ofto (&rest r) ; For writing to *terminal-io*
+  ;; only used in watch-condition
+  `(progn (format *terminal-io* ,@r)
+          (force-output *terminal-io*)))
 
 #+Clozure
 (defn watch-condition ()
@@ -5983,7 +5243,7 @@ next GC.~%"
   (unless (and (ignore-errors
                  (setq *watch-file* (eval *watch-file-form*)))
                (stringp *watch-file*))
-    (ofe "; WATCH: evaluation of *WATCH-FILE-FORM* failed to ~
+    (error "; WATCH: evaluation of *WATCH-FILE-FORM* failed to ~
           produce a string."))
   #+Clozure
   (progn
@@ -6813,362 +6073,6 @@ next GC.~%"
         (maphash (lambda (k v) (setf (gethash k new) v)) ht)
         new))
 
-;;   CSH
-
-;
-; Here is a quite simple version of OPEN-GZIPPED-FILE that is fine to
-; use in CCL for a few files, but perhaps not for thousands of files
-; because FORK can take a serious amount of time for a big CCL job such
-; as ACL2 since a copy is made by FORK of the entire job.
-;
-; (defun open-gzipped-file (name)
-;    (ccl::external-process-output-stream
-;      (ccl::run-program "gunzip" (list "-c"  name)
-;                        :output :stream :wait nil)))
-;
-; To eliminate FORK as a source of such inefficiency, we provide the
-; function CSH, which establishes a lasting subsidiary cshell process
-; executing a 'read-and-execute one CSH line' loop.  It may be a good
-; idea to call CSH very early, even before you need it, simply to get
-; that process running when you can, i.e., when your image is small
-; enough.
-
-(defv *csh-process* nil
-
-  "When not NIL, *CSH-PROCESS* has as its value the Lisp process
-  object for an underlying csh process.")
-
-(defv *csh-temporary-file-name* nil
-
-  "When not NIL, *CSH-TEMPORARY-FILE-NAME* has as its value a stream
-  via which an underlying csh process sends synchronizing info back to
-  Lisp.")
-
-#+Clozure
-(defn1 csh-stop ()
-
-  "(csh-stop) kills the subsidiary csh process if there is one."
-
-  (ignore-errors
-    (when (ccl::external-process-p *csh-process*)
-      (ccl::signal-external-process *csh-process* 9)))
-  (setq *csh-process* nil)
-  (ignore-errors
-    (when (and *csh-temporary-file-name*
-               (probe-file *csh-temporary-file-name*))
-      (delete-file *csh-temporary-file-name*)))
-  (setq *csh-temporary-file-name* nil))
-
-#+Clozure
-(defv *csh-start-string*
-  "set tm=`mktemp /tmp/acl2-csh-temp.XXXXXX`; echo $tm")
-
-#+Clozure
-(defn1 csh-start ()
-
-  "(CSH-START) creates a subsidiary csh process.  CSH-START
-  is called automatically by CSH."
-
-  (csh-stop)
-  (setq *csh-process*
-    (ccl::run-program "/bin/csh" (list "-f")
-                      :input :stream
-                      :output :stream
-                      :wait nil))
-  (let ((is (ccl::external-process-input-stream *csh-process*)))
-    (our-syntax
-     (write-line *csh-start-string* is)
-     (finish-output is)
-     (setq *csh-temporary-file-name*
-       (read-line
-        (ccl::external-process-output-stream *csh-process*)
-        nil
-        :eof)) ; wait
-     (cond ((ignore-errors
-              (probe-file *csh-temporary-file-name*))
-            *csh-temporary-file-name*)
-           (t (ofe "csh-start: failed."))))))
-
-(defn1 args-spaced (args)
-  (cond ((atom args) "")
-        ((and (atom (cdr args))
-              (stringp (car args)))
-         (car args))
-        (t (with-output-to-string (s)
-             (loop for tail on args do
-                   (our-syntax
-                    (princ (car tail) s)
-                    (when (cdr tail) (write-char #\Space s))))))))
-
-#+Clozure
-(defun csh (&rest args)
-
-  "CSH is a raw Lisp function.  Called with no arguments, (CSH)
-  returns a status report on a process, which is created if necessary,
-  and which, once created, is the value of the Lisp variable
-  *CSH-PROCESS*.
-
-  On each call to CSH, one csh shell command is executed.  Unless for
-  some unusual reason the process is killed, the same process executes
-  all the commands.  That is, to repeat, a new process is not created
-  for each command, but the same csh process is used repeatedly.  This
-  may significantly reduce the copying overhead of a call to FORK to
-  create a new process under a big Lisp job, as the ACL2 function
-  SYSTEM-CALL does on each call.
-
-  (CSH :STREAM arg1 ... argn) executes a single csh command, namely,
-  the string obtained by placing spaces between the strings, symbols,
-  or numbers arg1 ... argn.  A stream of the command's standard output
-  is returned as the value of CSH.  For example,
-
-     (CSH :STREAM '|gunzip -c foo.gz|)
-
-  returns an open input stream that contains the ungzipped contents of
-  the file 'foo.gz'.
-
-  If arg1 is not :STREAM, (CSH arg1 ... argn) executes one csh command
-  exactly as in the :STREAM case, namely, the string obtained by
-  placing spaces between the strings, symbols, or numbers arg1
-  ... argn.  But the standard output of the command is printed into a
-  string, which is returned as the value of CSH.  If the last
-  character of that output is a newline, it is not included in the
-  string returned.
-
-  The standard output from the command is diverted through a unique
-  /tmp file, whose name is the value of the variable
-  *CSH-TEMPORARY-FILE-NAME*.
-
-  If the command sends any output to error output, a Lisp ERROR is
-  caused and the error output of the command is printed to Lisp's
-  *STANDARD-OUTPUT*.
-
-  Each single csh command fed to CSH should be only one line long, and
-  should not involve any of the fancier csh characters such *, ~, !,
-  =, |, <, >, &, \, {, }, single quote, semicolon, period, question
-  mark, parentheses, square brackets, double quote, and backquote.
-  Stick to alphanumeric characters, space, and hyphen if possible.
-  Create a separate, small .csh file to do anything fancy involving
-  csh and those punctuation characters.  See abc-iprove.csh for one
-  example, which involves creating a temp file."
-
-  ;; CSH is at least as dangerous as SYSCALL, so would need a
-  ;; trust-tag if made into an ACL2 command.
-
-  ;; Implementation note: For CSH to work, the csh shell command
-  ;; 'echo' with no arguments must 'flush' its output, in addition to
-  ;; printing a newline, or in Lisp terminology, 'echo' must
-  ;; 'finish-output'.  We believe 'echo' does that, but we have not
-  ;; tracked down where it officially says so.  If 'echo' does not
-  ;; flush its output, then the READ-CHAR below may wait forever.
-  ;; Probably, adding a 'sync' command would guarantee the flushing.
-
-  (with-standard-io-syntax
-   (pushnew 'csh-stop ccl::*save-exit-functions*)
-   (unless (ccl::external-process-p *csh-process*) (csh-start))
-   (prog*
-    ((p *csh-process*)
-     (command (if (eq (car args) :stream) (cdr args) args))
-     (is (ccl::external-process-input-stream p))
-     (os (ccl::external-process-output-stream p))
-     (x nil))
-
-    (unless args
-      (return
-       (list :status (ccl::external-process-status p)
-             :process p
-             :input-stream (ccl::external-process-input-stream p)
-             :output-stream (ccl::external-process-output-stream p)
-             :temp-file-name *csh-temporary-file-name*)))
-
-    ;; It seems so peculiar to 'print' to an 'input' here, but input
-    ;; and output are opposite on the other end.
-
-    (write-string (args-spaced command) is)
-    (write-line " > $tm < /dev/null ; echo" is)
-    (finish-output is)
-    (setq x (read-char os nil :eof))
-
-    ;; If necessary, READ-CHAR will wait.
-
-    (unless (and (eql x #\Newline) (null (listen os)))
-      (loop while (characterp x) do
-            (write-char x *error-output*)
-            (force-output *error-output*)
-            (setq x (read-char-no-hang os nil :eof)))
-      (csh-stop)
-      (ofe "CSH: ~a." args))
-    (return
-     (cond
-      ((eq :stream (car args)) (open *csh-temporary-file-name*))
-      (t (with-open-file (o *csh-temporary-file-name*)
-           (with-output-to-string
-             (s)
-             (loop while
-                   (and (not (eq :eof (setq x (read-char
-                                               o nil :eof))))
-                        (or (not (eql x #\Newline))
-                            (not (eq :eof (peek-char
-                                           nil o nil :eof)))))
-                   do (write-char x s))))))))))
-
-(defv *sh-process* nil
-
-  "When not NIL, *SH-PROCESS* has as its value the Lisp process
-  object for an underlying sh process.")
-
-(defv *sh-temporary-file-name* nil
-
-  "When not NIL, *SH-TEMPORARY-FILE-NAME* has as it value a stream
-  via which an underlying sh process sends synchronizing info back to
-  Lisp.")
-
-#+Clozure
-(defn1 sh-stop ()
-
-  "(sh-stop) kills the subsidiary sh process if there is one."
-
-  (ignore-errors
-    (when (ccl::external-process-p *sh-process*)
-      (ccl::signal-external-process *sh-process* 9)))
-  (setq *sh-process* nil)
-  (ignore-errors
-    (when (and *sh-temporary-file-name*
-               (probe-file *sh-temporary-file-name*))
-      (delete-file *sh-temporary-file-name*)))
-  (setq *sh-temporary-file-name* nil))
-
-#+Clozure
-(defv *sh-start-string*
-  "tm=`mktemp /tmp/acl2-sh-temp.XXXXXX`; echo $tm")
-
-#+Clozure
-(defn1 sh-start ()
-
-  "(SH-START) creates a subsidiary sh process.  SH-START
-  is called automatically by SH."
-
-  (sh-stop)
-  (setq *sh-process*
-    (ccl::run-program "/bin/sh" nil
-                      :input :stream
-                      :output :stream
-                      :wait nil))
-  (let ((is (ccl::external-process-input-stream *sh-process*)))
-    (our-syntax
-     (write-line *sh-start-string* is)
-     (finish-output is)
-     (setq *sh-temporary-file-name*
-       (read-line
-        (ccl::external-process-output-stream *sh-process*)
-        nil
-        :eof)) ; wait
-     (cond ((probe-file *sh-temporary-file-name*)
-            *sh-temporary-file-name*)
-           (t (ofe "sh-start: failed."))))))
-
-#+Clozure
-(defun sh (&rest args)
-
-  "SH is a raw Lisp function.  (SH) returns a status report on a lower
-  'sh' shell process, which is created if necessary, and which, once
-  created, is the value of the Lisp variable *SH-PROCESS*.
-
-  On each call to SH, one sh shell command is executed.  The same sh
-  process executes all the commands.  That is, a new process is not
-  created for each command, but the same sh process is used
-  repeatedly.  This may significantly reduce the copying overhead
-  incurred by a call to FORK to create a new process under a big Lisp
-  job, as the ACL2 function SYSTEM-CALL might on each call.
-
-  (SH :STREAM arg1 ... argn) executes a single sh command, namely,
-  the string obtained by placing spaces between the strings, symbols,
-  or numbers arg1 ... argn.  A stream of the command's standard output
-  is returned as the value of SH.  For example,
-
-     (SH :STREAM '|gunzip -c foo.gz|)
-
-  returns an open input stream that contains the ungzipped contents of
-  the file 'foo.gz'.
-
-  If arg1 is not :STREAM, (SH arg1 ... argn) executes one sh command
-  exactly as in the :STREAM case, namely, the string obtained by
-  placing spaces between the strings, symbols, or numbers arg1
-  ... argn.  But the standard output of the command is printed into a
-  string, which is returned as the value of SH.  If the last character
-  of that output is a newline, it is not included in the string
-  returned.
-
-  The standard output from the command is diverted through a unique
-  /tmp file, whose name is the value of the variable
-  *SH-TEMPORARY-FILE-NAME*.
-
-  If the command sends any output to error output, a Lisp ERROR is
-  caused and the error output of the command is printed to Lisp's
-  *STANDARD-OUTPUT*.
-
-  SH is almost identical to CSH.
-
-  For the best of hacking luck, each single SH command fed to SH
-  should be only one line long, and should not involve any of the
-  fancier SH characters such *, ~, !, =, |, <, >, &, \, {, }, single
-  quote, semicolon, period, question mark, parentheses, square
-  brackets, double quote, and backquote.  Stick to alphanumeric
-  characters, space, and hyphen if possible.  Create a separate, small
-  .sh file to do anything fancy involving sh and such punctuation
-  characters.  See abc-iprove.csh for one example, which involves
-  creating a temp file."
-
-  (with-standard-io-syntax
-   (pushnew 'sh-stop ccl::*save-exit-functions*)
-   (unless (ccl::external-process-p *sh-process*) (sh-start))
-   (prog*
-    ((p *sh-process*)
-     (command (if (eq (car args) :stream) (cdr args) args))
-     (is (ccl::external-process-input-stream p))
-     (os (ccl::external-process-output-stream p))
-     (x nil))
-
-    (unless args
-      (return
-       (list :status (ccl::external-process-status p)
-             :process p
-             :input-stream (ccl::external-process-input-stream p)
-             :output-stream (ccl::external-process-output-stream p)
-             :temp-file-name *sh-temporary-file-name*)))
-
-    ;; It seems so peculiar to 'print' to an 'input' here, but input
-    ;; and output are opposite on the other end.
-
-    (write-string (args-spaced command) is)
-    (write-line " > $tm < /dev/null ; echo" is)
-    (finish-output is)
-    (setq x (read-char os nil :eof))
-
-    ;; If necessary, READ-CHAR will wait.
-
-    (unless (and (eql x #\Newline) (null (listen os)))
-      (loop while (characterp x) do
-            (write-char x *error-output*)
-            (force-output *error-output*)
-            (setq x (read-char-no-hang os nil :eof)))
-      (sh-stop)
-      (ofe "SH: ~a." args))
-    (return
-     (cond
-      ((eq :stream (car args))
-       (open *sh-temporary-file-name*))
-      (t (with-open-file
-           (o *sh-temporary-file-name*)
-           (with-output-to-string
-             (s)
-             (loop while
-                   (and (not (eq :eof (setq x (read-char
-                                               o nil :eof))))
-                        (or (not (eql x #\Newline))
-                            (not (eq :eof (peek-char
-                                           nil o nil :eof)))))
-                   do (write-char x s))))))))))
-
 
 
 
@@ -7247,79 +6151,7 @@ next GC.~%"
 
 
 
-
-
-
-
-
 ; -----------------------------------------------------------------------------
-; A SOMETIMES FASTER VERSION OF THE COMMON LISP CASE FUNCTION
-
-; [Jared]: I think this should be either (1) submitted to Gary and integrated
-; into CCL, or (2) be moved into a ttag-based book so that it can be loaded if
-; needed.  We shouldn't be mucking with stuff like this.  It's certainly got
-; nothing to do with memoization.
-
-#+Clozure
-(defmacro fixnum-case (key &body forms)
-  ; For use only when key is a symbol known to hold a fixum.
-  (multiple-value-bind (less-than-or-equal n greater-than)
-    (splitable-case forms)
-    (cond (less-than-or-equal
-           `(cond ((< (the fixnum ,key) ,n)
-                   (fixnum-case ,key ,@less-than-or-equal))
-                  (t (fixnum-case ,key ,@greater-than))))
-          (t (let ((key-var (gensym)))
-               `(let ((,key-var (the fixnum ,key)))
-                  (declare (ignorable ,key-var) (fixnum ,key-var))
-                  (cond ,@(ccl::case-aux forms key-var nil nil))))))))
-
-#+Clozure
-(defun splitable-case (forms)
-  (let ((l (length forms)))
-    (cond
-     ((and (> l 8)
-           (loop for x in forms
-                 always (and (consp x) (typep (car x) 'fixnum))))
-      (let* ((c (sort (copy-list forms) #'< :key #'car))
-             (h (floor l 2))
-             (s (car (nth h c))))
-        (loop for tail on c
-              when (and (cdr tail) (eql (car tail) (cadr tail)))
-              do (error "CASE: duplicate-keys: ~a." (car tail)))
-        (values
-         (loop for x in forms when (< (car x) s) collect x)
-         s
-         (loop for x in forms when (>= (car x) s) collect x)))))))
-
-
-#+Clozure
-(let ((ccl::*warn-if-redefine-kernel* nil))
-
-  #+Clozure
-  (defmacro case (key &body forms)
-
-; A modification of the CCL DEFMACRO for CASE.
-
-    "CASE Keyform {({(Key*) | Key} Form*)}* Evaluates the Forms in the
-  first clause with a Key EQL to the value of Keyform. If a singleton
-  key is T then the clause is a default clause."
-
-    (multiple-value-bind (less-than-or-equal n greater-than)
-                         (splitable-case forms)
-                         (cond
-                          (less-than-or-equal
-                           (let ((key-var (gensym)))
-                             `(let ((,key-var ,key))
-                                (cond ((not (typep ,key-var 'fixnum)) nil)
-                                      ((< (the fixnum ,key-var) ,n)
-                                       (fixnum-case ,key-var ,@less-than-or-equal))
-                                      (t (fixnum-case ,key-var ,@greater-than))))))
-                          (t (let ((key-var (gensym)))
-                               `(let ((,key-var ,key))
-                                  (declare (ignorable ,key-var))
-                                  (cond ,@(ccl::case-aux forms key-var nil nil)))))))))
-
 
 
 (defun initialize-never-profile-ht ()
@@ -7683,6 +6515,7 @@ next GC.~%"
 
 
 (defun initialize-profile-reject-ht ()
+  ;; [Jared]: ugh, horrible! we should get rid of this kind of nonsense!
   (loop for sym in
         '(ld-fn0
           protected-eval
@@ -8726,539 +7559,3 @@ next GC.~%"
 
 
 
-; -----------------------------------------------------------------------------
-; STUFF I KILLED
-
-; [Jared] None of this stuff seems to be in use anymore.
-
-; Feature stuff...
-
- ;; [Jared]: Don't know why we have this restriction.  Per the SVN messages it
- ;; looks like this version was from December 2009 and dealt with some garbage
- ;; collection things... we probably want people on a recent version, but I
- ;; don't think it's our job to defend them from bugs in old Lisps, so I'm
- ;; going to remove this.
-
- ;; #+Clozure
- ;; (unless (> (parse-integer ccl::*openmcl-svn-revision* :junk-allowed t) 13296)
- ;;   (fresh-line)
- ;;   (princ "Better use a version of CCL past revision 13295."))
-
-
-
- ;; [Jared]: Below are the old comments about :parallel.  This feature hasn't
- ;; been enabled for a long time as far as I can tell.  We probably need to
- ;; revisit everything related to #+parallel.  We probably also want to use the
- ;; #+acl2-par feature instead of #+parallel, for eventual compatibility with
- ;; ACL2(p).  It appears that #+parallel is only used in this file.
-
- ;; (pushnew :parallel *features*) causes a lot of locking that is of no value
- ;; in a sequentially executing system.  We have attempted to make honsing,
- ;; memoizing, and Emod-compilation 'thread safe', whatever in hell that means,
- ;; but we have no idea what we are really doing and are simply coding based
- ;; upon what we feel is intuitive common sense.  Very subtle stuff.
-
- ;; #+parallel
- ;; (unless (member :Clozure *features*)
- ;;  (error "We use CCL primitives for parallelism."))
-
-
-
-
-; Dead and killed code...
-
-
-;; [Jared] This seems to be unused
-;; (defw timer-function-name
-;;   (let ((ans #+RDTSC "RDTSC"
-;;              #-RDTSC "GET-INTERNAL-REAL-TIME."))
-;;     (oft-wrm "~v<~a~;~a~>" fn ans)))
-
-
-;; [Jared]: defnmem is used in the old g.lsp, sort of, but only for one
-;; function (gh-copy).  But... it's actually defined in that file (again), so
-;; there's no reason to define it here.
-
-;; (defmacro defnmem (fn args body &key
-;;                       (condition t)
-;;                       (inline t)
-;;                       (trace nil)
-;;                       (specials nil))
-
-;;   "DEFNMEM is a raw Lisp macro. (DEFNMEM fn args body) both DEFUNs and
-;;    MEMOIZEs FN.  The CL-DEFUN, STOBJS-IN, FORMALS, and STOBJS-OUT
-;;    options to MEMOIZE-FN are taken from ARGS, which may not use STATE
-;;    or STOBJS.  FN is declared to return only one value."
-
-;;   `(progn
-;;      (when (intersection ',args lambda-list-keywords)
-;;        (ofe "defnmem: In the defintion of ~s, the argument list ~s ~
-;;              contains a member of lambda-list-keywords so do not ~
-;;              use defnmem."
-;;             ',fn ',args))
-;;      (setf (gethash ',fn *number-of-arguments-and-values-ht*)
-;;            (cons ,(length args) 1))
-;;      (declaim (ftype (function ,(make-list (length args) :initial-element t)
-;;                                (values t))
-;;                      ,fn))
-;;      (defun ,fn ,args ,body)
-;;      (memoize-fn ',fn
-;;                  :condition ',condition
-;;                  :inline ',inline
-;;                  :trace ',trace
-;;                  :specials ',specials
-;;                  :cl-defun '(defun ,fn ,args ,body)
-;;                  :stobjs-in (make-list (length ',args))
-;;                  :formals ',args
-;;                  :stobjs-out '(nil))
-;;      ',fn))
-
-
-;; [Jared]: I just expanded the few uses of this that I found to their
-;; definitions.
-
-;; (defun make-list-t (n) (make-list n :initial-element t))
-
-
-
-;; [Jared]: this is totally unused now, I think it used to be part of the old
-;; wash-hash-tables code
-
-;; (defconstant *empty-ht* (make-hash-table)
-
-;;   "Sometimes when a variable, say V, has been declared to be a hash
-;;   table and we are about to rebuild it, we may temporarily set V to
-;;   *EMPTY-HT* for purposes of garbage collection.")
-
-;; (declaim (hash-table *empty-ht*))
-
-
-;; [Jared]: old hons code that has been subsumed
-
-;; (defun hons-report-discipline-failure-message ()
-;;   (ofd
-;;    "
-;;           You may ignore this 'discipline' warning.
-
-;;    There is nothing wrong except that some calls to HONS-GET may be
-;;    executing slower than you would like or might assume.  You may do
-
-;;       (setq *hons-report-discipline-failure* nil)
-
-;;    in raw Lisp to avoid seeing such messages.  Why the warning?  When
-;;    a concrete alist, say X, has been formed with calls to HONS-ACONS,
-;;    and is currently secretly backed by a hash table, and then some new
-;;    concrete object, say Y, is formed by HONS-ACONSing something
-;;    concrete on to X, the hash table of X is 'stolen' to support Y.
-;;    HONS-GET on X will then be possibly much slower, calling
-;;    ASSOC-EQUAL instead of a GETHASH.
-
-;;    "))
-
-;; (defmacro maybe-report-discipline-failure (fn args)
-;;   (cond
-;;    (*hons-report-discipline-failure*
-;;     `(cond
-;;       ((eq *hons-report-discipline-failure* 't)
-;;        (ofd "~&; Warning: ~s discipline failure on args:~% ~s~%"
-;;             ',fn ,args)
-;;        (hons-report-discipline-failure-message))
-;;       ((eq *hons-report-discipline-failure* 'break)
-;;        (hons-report-discipline-failure-message)
-;;        (break "~&; Break: ~s discipline failure on args:~% ~s~%"
-;;               ',fn ,args)
-;;        nil)))))
-
-
-;; (defparameter *hons-report-discipline-failure* 'break)
-
-
-;; [Jared]: removing this old hons-tracking stuff, it hasn't worked since hl-hons.
-
-; (defg *hons-call-counter* 0)
-; (defg *hons-misses-counter* 0)
-
-;; (defw hons-hits/calls
-;;   (let* ((c *hons-call-counter*)
-;;          (h (- c *hons-misses-counter*))
-;;          (ans
-;;           (cond ((eql c 0) "No hons calls yet.")
-;;                 (t (ofn "~,1e / ~,1e = ~,2f" h c (/ h c))))))
-;;     (oft-wrm "~v<~a~;~a~>" fn ans)
-;;     #+Clozure
-;;     (oft-wrm "~%~v<Heap bytes allocated since watch start~;~,1e~>"
-;;              (- (heap-bytes-allocated)
-;;                 *watch-start-heap-bytes-allocated*))))
-
-;; (defw hons-calls/sec-run-time
-;;   (let* ((c *hons-call-counter*)
-;;          (ans
-;;           (cond ((eql c 0) "No hons calls yet.")
-;;                 (t (ofn "~,1e" (round (/ c (+ .000001
-;;                                               (watch-run-time)))))))))
-;;     (oft-wrm "~v<~a~;~a~>" fn ans)))
-
-
-;; [Jared]: It seems like this was trying to override how ACL2 prints
-;; documentation, so that :doc foo would print with just " " in front of each
-;; line instead of "| ".  Well, it doesn't seem to work, and also why the hell
-;; are we futzing with how documentation is printed in memoize-raw?  I'm
-;; getting rid of it.
-
-;; (let ((state *the-live-state*))
-;;   (f-put-global 'doc-prefix " " state))
-
-
-;; [Jared]: never used...
-;; (defn1 timer-error ()
-;;   (ofe "timer-error."))
-
-
-
-;; [Jared]: this is now integrated in hons-raw.lisp and is called hl-system-gc.
-
-;; (defn1 our-gc ()
-
-;;   "At least in Clozure Common Lisp, (OUR-GC) does not return until the
-;;   garbage collection invoked, via GC$, is finished.  This is important
-;;   for WASH-HONSES.  In Clozure, a call of CCL::GC may not complete a
-;;   garbage collection, but merely request one, which is then carried
-;;   out later on, by a separate process."
-
-;;   #+Clozure
-;;   (let ((current-gcs (ccl::full-gccount)))
-;;     (gc$)
-;;     (loop (when (> (ccl::full-gccount) current-gcs) (return))
-;;           (sleep 1)
-;;           (ofvv "Sleeping while waiting for a GC to finish.")))
-;;   #+Closure
-;;   (gc$))
-
-
-
-;; [Jared]: removing old emod stuff... why was this in memoize??
-
-;; (defn all-module-names ()
-;;   (loop for x in (table-alist 'defm-table (w *the-live-state*))
-;;         collect
-;;         (cadar x)))
-
-;; (defn all-modules ()
-;;   (loop for n in (all-module-names) collect
-;;         (symbol-value n)))
-
-;; (defg *current-module-names-ht* (make-hash-table :test 'eq))
-
-;; (defn1 current-module-name-p (x)
-;;   (cond ((eq (w *the-live-state*)
-;;              (gethash *current-module-names-ht*
-;;                       *current-module-names-ht*))
-;;          (gethash x *current-module-names-ht*))
-;;         (t (clrhash *current-module-names-ht*)
-;;            (loop for x in (table-alist 'defm-table
-;;                                        (w *the-live-state*))
-;;                  do (setf (gethash (cadar x)
-;;                                    *current-module-names-ht*)
-;;                           t))
-;;            (setf (gethash *current-module-names-ht*
-;;                           *current-module-names-ht*)
-;;                  (w *the-live-state*))
-;;            (gethash x *current-module-names-ht*))))
-
-
-;; No documentation, printed during print-call-stack if bound.  killing it.
-
-;;(defvar *acl2--*)
-
-
-;; never used
-;; (defn1 input-output-number-error (fn)
-;;   (ofd (input-output-number-warning fn))
-;;   (ofe "input-output-number-error: **: ~a" fn))
-
-
-;; never used
-;; (defun our-gctime ()
-;;   (ccl::timeval->microseconds ccl::*total-gc-microseconds*))
-
-
-
-;; [Jared]: removing all compiled-module-ht stuff, this should never have
-;; been part of memoize
-
-;; (defg *compiled-module-ht* (mht :test 'eq)
-
-;;   "The hash table *COMPILED-MODULE-HT* maps a module name n to a cons
-;;   of (1) the module named n with (2) the compiled version of module n,
-;;   which is a compiled function, for primitive modules, and an array,
-;;   for nonprimitive modules.  The car is EQ to the module that was the
-;;   symbol value of n when the compilation was done.")
-
-;; (declaim (hash-table *compiled-module-ht*))
-;; (declaim (special *compiled-module-ht*))
-
-
-
-
-;; never used
-;; (defn1 swap-total ()
-;;   (meminfo "SwapTotal:"))
-
-
-
-;; replaced its use with hl-flex-alist-too-long
-
-;; (defn1 too-long (x n)
-;;   (declare (type fixnum n))
-
-;; ; (TOO-LONG x n) == (> (LENGTH x) n) provided x a noncircular list and
-;; ; n is a nonnegative fixnum.  TOO-LONG is perhaps faster than LENGTH
-;; ; because (a) LENGTH has to worry about its argument being a circular
-;; ; list, (b) LENGTH may worry about the answer exceeding
-;; ; MOST-POSITIVE-FIXNUM, and (c) LENGTH must consider the possibility
-;; ; that its argument is a vector.
-
-;;   (loop (cond ((atom x) (return nil))
-;;               ((eql n 0) (return t))
-;;               (t (setq x (cdr x))
-;;                  (setq n (the fixnum (1- n)))))))
-
-
-;; never used
-;; (defn1 integer-pair (x y)
-;;   (let ((z (+ x y)))
-;;     (+ (/ (* z (1+ z)) 2) y)))
-
-
-
-
-;; Old pons addressing code...
-
-
-;; ;; ADDR-FOR.  This is fixed up in the new hons code and we have a proof of it,
-;; ;; but I'm not touching pons yet.
-
-;; (defconstant atom-case-fudge (+ 129 (expt 2 25)))
-;; (defconstant most-positive-fudge (1- (expt 2 24)))
-;; (defconstant most-negative-fudge (- (expt 2 24)))
-;; (defconstant -most-negative-fudge (- most-negative-fudge))
-
-;; (defn1 atom-case (s)
-;;   (cond
-;;    ((symbolp s)
-;;     (cond ((eq s nil) 0)
-;;           ((eq s t) 1)
-;;           (t (let ((v (get (the symbol s) 'hons-hash-key)))
-;;                (cond ((null v)
-;;                       (let ((c (ccl::static-cons s nil)))
-;;                         (setq v (+ atom-case-fudge
-;;                                    (the fixnum (ccl::%staticp c))))
-;;                         (setf (get (the symbol s) 'hons-hash-key) c)
-;;                         (rplacd (the cons c) v)
-;;                         v))
-;;                      (t (cdr (the cons v))))))))
-;;    ((and (typep s 'fixnum)
-;;          (> (the fixnum s) most-negative-fudge)
-;;          (<= (the fixnum s) most-positive-fudge))
-;;     (the fixnum (+ -most-negative-fudge (the fixnum s))))))
-
-;; (defmacro sqmpf ()
-;;   (isqrt most-positive-fixnum))
-
-;; (defmacro hmnf ()
-
-;; ; Half MOST-NEGATIVE-FIXNUM.
-
-;;   (ceiling (/ most-negative-fixnum 2)))
-
-;; (defmacro static-hons-shift ()
-;;   (ceiling (/ (integer-length most-positive-fixnum) 2)))
-
-;; (defn1 addr-for (x y)
-;;   (let ((idx (let ((n (ccl::%staticp x)))
-;;                (cond (n (+ atom-case-fudge (the fixnum n)))
-;;                      (t (atom-case x)))))
-;;         (large-case nil))
-;;     (cond (idx (cond ((and (typep idx 'fixnum)
-;;                            (< (the fixnum idx) (sqmpf)) nil))
-;;                      (t (setq large-case t))))
-;;           (t (return-from addr-for nil)))
-;;     (let ((idy (let ((n (ccl::%staticp y)))
-;;                  (cond (n (+ atom-case-fudge (the fixnum n)))
-;;                        (t (atom-case y))))))
-;;       (cond (idy (cond ((and (typep idy 'fixnum)
-;;                              (< (the fixnum idy) (sqmpf))) nil)
-;;                        (t (setq large-case t))))
-;;             (t (return-from addr-for nil)))
-
-;; ; ADDR-FOR is 1-1, in a sense, for a two argument function, when not
-;; ; NIL.  That is, for all ACL2 objects x1, x2, y1, and y1, if (addr-for
-;; ; x1 y1) is not NIL and is equal to (addr-for x2 y2), then x1 is equal
-;; ; to x2 and y1 is equal to y2.
-
-;; ; Here is a sketch of a proof that if mpf = 2^60-1 and mnf = -2^60,
-;; ; then the ranges of large-case and the non-large case of ADDR-FOR do
-;; ; not intersect.  In the large case, one of idx or idy, must be >=
-;; ; 2^30, so (+ (/ (* (idx+idy+1) (idx+idy)) 2) idy) > 2^59.  Adding in
-;; ; -2^59 means that the large result will be positive. In the non-large
-;; ; case, the result of the logior will be <= 2^60-1, so the result of
-;; ; adding -2^60 will make the non-large result negative.
-
-;;       (cond (large-case
-;;              (let* ((z (+ idx idy))
-;;                     (z1 (+ 1 z)))
-;;                (if (oddp z)
-;;                    (setq z1 (ash z1 -1))
-;;                  (setq z (ash z -1)))
-;;                (+ idy (+ (hmnf) (* z z1)))))
-;;             (t (+ (the fixnum
-;;                     (logior
-;;                      (the fixnum
-;;                        (ash (the fixnum idx) (static-hons-shift)))
-;;                      (the fixnum idy)))
-;;                   most-negative-fixnum))))))
-
-;; never used
-;; (defmacro pist (table &rest x)
-;;   (cond ((atom x) nil)
-;;         (t (list 'pons (car x)
-;;                  (cons 'pist (cdr x)) table))))
-
-
-
-; [Jared] I'm eliminating *count-pons-calls*.
-;
-; Note that the old functions maybe-count-pons-[calls|misses] macros were
-; testing *count-pons-calls* at macroexpansion time, so despite this thing
-; having been a defparameter, it wasn't meaningful to rebind it at runtime.
-; In practice we were always counting pons calls.  So, if that's what we
-; want to do, let's just do it.
-
-;; (defparameter *count-pons-calls* t
-
-;;   "If *COUNT-PONS-CALLS*, then each call of PONS increments *PONS-CALL-COUNTER*
-;;   by 1, and each call of PONS that does not find the desired PONS to already
-;;   exist increments *PONS-MISSES-COUNTER* by 1.
-
-;;   Thread Safety Note: these counters aren't protected by locks.  If we ever
-;;   have multiple threads executing memoized functions, the counts may be
-;;   somewhat low.  But that's probably no big deal.")
-
-
-
-
-
-
-;; (defparameter *count-pons-calls* t
-
-;; ; [Jared]: BOZO note that the maybe-count-pons-[calls|misses] macros test this
-;; ; at macroexpansion time, so despite being a defparameter, rebinding this or
-;; ; setting it to NIL at runtime will not be meaningful!
-
-;;   "If *COUNT-PONS-CALLS*, then each call of PONS increments *PONS-CALL-COUNTER*
-;;   by 1, and each call of PONS that does not find the desired PONS to already
-;;   exist increments *PONS-MISSES-COUNTER* by 1.
-
-;;   Thread Safety Note: these counters aren't protected by locks.  If we ever
-;;   have multiple threads executing memoized functions, the counts may be
-;;   somewhat low.  But that's probably no big deal.")
-
-
-;; Hooray, eliminating *count-pons-calls* means we don't need globlet.
-
-;; (defmacro globlet (bindings &rest rest)
-;;   ;; [Jared]: this is only used in with-lower-overhead AFAICT.
-
-;;   "GLOBLET is reminiscent of LET.  It is intended to be used in CCL
-;;   with variables that are introduced via DEFG or DEFV, i.e., may not
-;;   be LET or LAMBDA bound.  UNWIND-PROTECT is used to try to make sure
-;;   that the old value, which is assumed to exist, is restored."
-
-;;   (unless
-;;       (and (symbol-alistp bindings)
-;;            (loop for pair in bindings always
-;;                  (let ((var (car pair))
-;;                        (d (cdr pair)))
-;;                    (and (consp d)
-;;                         (null (cdr d))
-;;                         (not (constantp var))))))
-;;     (ofe "GLOBLET: ** bad bindings ~a." bindings))
-;;   (let ((vars (loop for b in bindings collect
-;;                     (make-symbol (symbol-name (car b))))))
-;;     `(let ,(loop for b in bindings as v in vars collect
-;;                   (list v (car b)))
-;;           (unwind-protect
-;;               (progn (psetq
-;;                       ,@(loop for b in bindings nconc
-;;                               (list (car b) (cadr b))))
-;;                      ,@rest)
-;;             (psetq ,@(loop for b in bindings as v in vars nconc
-;;                            (list (car b) v)))))))
-
-;; never used
-;; (defg *ofb-msg-list* nil)
-
-;; never used
-;; (defun ofb (&rest r) ; For writing to *debug-io* and breaking.
-;;   (our-syntax-nice
-;;    (format *debug-io* "~%; ** Warning and break:  ")
-;;    (let ((*print-level* 3) (*print-length* 5) (*print-lines* 6))
-;;      (let ((ab (loop for x in r collect (abbrev x))))
-;;        (apply #'format *debug-io* ab)
-;;        (when (loop for x in ab as y in r thereis (not (eq x y)))
-;;          (push (cons 'ofe r) *ofb-msg-list*)
-;;          (format *error-output* "~%; See *ofb-msg-list*."))
-;;        (force-output *debug-io*)
-;;        (error "")))
-;;    (break "ofb")))
-
-;; never used
-;; (defmacro ofg (&rest r) ; For verbose gc info.
-;;     `(when *hons-verbose*
-;;        (format *debug-io* ,@r)
-;;        (force-output *debug-io*)))
-
-
-
-; [Jared] I decided to stop counting ponses.  I think we really don't care.
-; before I decided to do this, I had changed the implementation a bit to just
-; use regular incf instead of safe-incf.
-
-;; ; To keep counting cheap, these counters aren't protected by locks.  If
-;; ; multiple threads are ever simultaneously ponsing, the counts may be
-;; ; under-reported.
-;; ;
-;; ; The mfixnum declarations aren't justified, but a rough timing loop says a
-;; ; billion calls of (pons nil nil nil) takes 16 seconds, so you'd have to do
-;; ; nothing but pons for 584 years to exceed the mfixnum range.
-
-;; (defg *pons-call-counter*   0)
-;; (defg *pons-misses-counter* 0)
-
-;; (declaim (type mfixnum *pons-call-counter*))
-;; (declaim (type mfixnum *pons-misses-counter*))
-
-;; (defw pons-calls/sec-run-time
-;;   (let* ((c *pons-call-counter*)
-;;          (ans
-;;           (cond ((eql c 0) "No pons calls yet.")
-;;                 (t (ofn "~,1e" (round (/ c (+ .000001
-;;                                               (watch-run-time)))))))))
-;;     (oft-wrm "~v<~a~;~a~>" fn ans)))
-
-;; (defw pons-hits/calls
-;;   (let* ((c *pons-call-counter*)
-;;          (h (- c *pons-misses-counter*))
-;;          (ans
-;;           (cond ((eql c 0) "No pons calls yet.")
-;;                 (t (ofn "~,1e / ~,1e = ~,2f" h c (/ h c))))))
-;;     (oft-wrm "~v<~a~;~a~>" fn ans)))
-
-
-;; (defparameter *record-hons-calls* t
-;;   "If *RECORD-HONS-CALLS* in not NIL a function is memoized, HONS
-;;   calls are counted.")
-
-;; (defparameter *record-pons-calls* t
-;;   "If *RECORD-PONS-CALLS* is not NIL at the time a function is
-;;   memoized, pons calls are counted.")
