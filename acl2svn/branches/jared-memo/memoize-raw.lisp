@@ -35,70 +35,32 @@
 
 (in-package "ACL2")
 
-
-
 (eval-when
  (:execute :compile-toplevel :load-toplevel)
 
  #-hons
- ;; [Jared]: Is there a real reason that memoization needs hons?
+ ;; [Jared] This restriction makes some sense since we need at least things
+ ;; like the hons addressing scheme for ponsing to work.  It also makes sense
+ ;; for things like compact-print-file that shouldn't really be part of
+ ;; memoize.
  (error "memoize-raw.lisp should only be included when #+hons is set.")
 
-
- ;; [Jared]: Don't know why we have this restriction.  Per the SVN messages it
- ;; looks like this version was from December 2009 and dealt with some garbage
- ;; collection things... we probably want people on a recent version, but I
- ;; don't think it's our job to defend them from bugs in old Lisps, so I'm
- ;; going to remove this.
-
- ;; #+Clozure
- ;; (unless (> (parse-integer ccl::*openmcl-svn-revision* :junk-allowed t) 13296)
- ;;   (fresh-line)
- ;;   (princ "Better use a version of CCL past revision 13295."))
-
-
-
- ;; [Jared]: Below are the old comments about :parallel.  This feature hasn't
- ;; been enabled for a long time as far as I can tell.  We probably need to
- ;; revisit everything related to #+parallel.  We probably also want to use the
- ;; #+acl2-par feature instead of #+parallel, for eventual compatibility with
- ;; ACL2(p).  It appears that #+parallel is only used in this file.
-
- ;; (pushnew :parallel *features*) causes a lot of locking that is of no value
- ;; in a sequentially executing system.  We have attempted to make honsing,
- ;; memoizing, and Emod-compilation 'thread safe', whatever in hell that means,
- ;; but we have no idea what we are really doing and are simply coding based
- ;; upon what we feel is intuitive common sense.  Very subtle stuff.
-
- ;; #+parallel
- ;; (unless (member :Clozure *features*)
- ;;  (error "We use CCL primitives for parallelism."))
+ #+Clozure
+ (when (fboundp 'ccl::rdtsc)
+   ;; Make use of the x86 RDTSC (read time stamp counter) instruction.  Note
+   ;; that on machines with several cores, the RDTSC values returned by
+   ;; different cores may be slightly different, which could lead one into such
+   ;; nonsense as instructions apparently executing in negative time when
+   ;; timing starts on one core and finishes on another.  To some extent we
+   ;; ignore such RDTSC nonsense, but we still can report mysterious results
+   ;; since we have no clue about which core we are running on in CCL.
+   (pushnew :RDTSC *features*)))
 
 
 
-
- ;; One may comment out the following PUSHNEW and rebuild to get profiling
- ;; times not based upon the curious and wondrous RDTSC instruction of some x86
- ;; processors.  On a machine with several cores, the RDTSC values returned by
- ;; different cores may be slightly different, which could lead one into such
- ;; nonsense as instructions apparently executing in negative time, when timing
- ;; starts on one core and finishes on another.  To some extent we ignore such
- ;; RDTSC nonsense, but we still can report mysterious results since we have no
- ;; clue about which core we are running on in CCL.
-
-  #+Clozure
-  (when (fboundp 'ccl::rdtsc) (pushnew :RDTSC *features*))
-
-  )
-
-
-
-
-; MFIXNUM
-;
-; We use the type mfixnum for counting things that are best counted in the
-; trillions or more.  Mfixnums happen to coincide with regular fixnums on
-; 64-bit CCL and SBCL.
+; MFIXNUM.  We use the type mfixnum for counting things that are best counted
+; in the trillions or more.  Mfixnums just so happen to coincide with regular
+; fixnums on 64-bit CCL and SBCL.
 
 (defconstant most-positive-mfixnum (1- (expt 2 60)))
 
@@ -186,8 +148,8 @@
 ;
 ;    (set-number-of-arguments-and-values fn nargs nvals)
 ;      - Explicitly asserts that FN has NARGS arguments and NVALS return values
-;      - This takes precedence over the introspection code in number-of-arguments
-;        and number-of-values.
+;      - This takes precedence over the introspection code in
+;        number-of-arguments and number-of-values.
 ;      - You'd better be right for soundness.
 
 (defv *number-of-arguments-and-values-ht*
@@ -290,11 +252,6 @@
                                (values t t)) ,f))
      (defun ,f ,a (declare (xargs :guard t)) ,@r)))
 
-(defn1 input-output-number-warning (fn)
-  (format *debug-io*
-          "Can't determine the number of inputs and outputs of ~a.~%To assert ~
-           ~a takes, say, 2 inputs and returns 1 output, do:~%~a.~%"
-          fn fn `(set-number-of-arguments-and-values ',fn 2 1)))
 
 (defn1 number-of-arguments (fn)
   (let* ((state *the-live-state*)
@@ -357,10 +314,220 @@
           (t nil))))
 
 
+; ----------------------------------------------------------------------------
+
+
+; ESSAY ON PONS
+;
+; PONS is the critical function for generating memoization keys.  To a rough
+; approximation, here is how we memoize (F arg1 arg2 ... argN):
+;
+;     PONS := (PIST* arg1 ... argN)
+;     LOOK := F-MemoTable[PONS]
+;     if (LOOK exists)
+;        return LOOK
+;     else
+;        RESULT := (F arg1 arg2 ... argN)
+;        F-MemoTable[PONS] = RESULT
+;        return RESULT
+;
+; In other words, we use (PIST* arg1 ... argN) to create the hash key for the
+; arguments arg1 ... argN.  And PIST* is defined in terms of PONS.
+;
+;    (PIST*)          = NIL
+;    (PIST* X1)       = X1
+;    (PIST* X1 X2)    = (PONS X1 X2)
+;    (PIST* X1 X2 X3) = (PONS X1 (PONS X2 X3))
+;      ...                ...
+;
+; As its name suggests, PONS is similar to a HONS.  The main difference is that
+; whereas (HONS X Y) requires us to recursively generate a "canonical" version
+; of X and Y, (PONS X Y) does not descend into its arguments.
+;
+; It is worth noting that in the 0 and 1-ary cases of PIST*, no PONSing is
+; necessary!  Because of this it can be considerably cheaper to memoize unary
+; and zero-ary functions than higher-arity functions.  Note also that as the
+; arity of the function increases, the amount of ponsing (and hence its cost)
+; increases.
+;
+; The soundness requirement on PIST* is that two argument lists should produce
+; an EQL keys only if they are pairwise EQUAL.  This follows from a stronger
+; property of PONS:
+;
+;     (EQL (PONS A B) (PONS C D))  --->  (EQL A C) && (EQL B D).
+;
+; Why is this property sufficient?  The 0-2 argument cases are trivial.  Here
+; is an sketch of the 3-ary case, which generalizes easily to the N-ary case:
+;
+;    Our goal is to ensure:
+;
+;       If   (EQL (PIST* A1 B1 C1) (PIST* A2 B2 C2))
+;       Then (EQUAL A1 A2) && (EQUAL B1 B2) && (EQUAL C2 C2)
+;
+;    Assume the hypothesis:
+;
+;       (EQL (PONS A1 (PONS B1 C1)) (PONS A2 (PONS B2 C2)))
+;
+;    Then from our PONS property it follows immediately that
+;
+;      1. (EQL A1 A2), and hence (EQUAL A1 A2) since EQL implies EQUAL.
+;      2. (EQL (PONS B1 C1) (PONS B2 C2)).
+;
+;    From 2, again from our PONS property it follows that
+;
+;      1. (EQL B1 B2), and hence (EQUAL B1 B2) since EQL implies EQUAL.
+;      2. (EQL C1 C2), and hence (EQUAL C1 C2) since EQL implies EQUAL.
+;
+;    Which is what we wanted to show.
+;
+; For our memoization scheme to be effective, it is desirable for PIST* to
+; produce EQL keys when given pairwise-EQL argument lists.  This follows easily
+; if our PONS property holds in both directions, that is:
+;
+;     (EQL (PONS A B) (PONS C D))  <--->  (EQL A C) && (EQL B D).
+;
+; Okay, so how does PONS actually work?  First we will introduce a "slow"
+; ponsing scheme, and then explain an optimization that avoids slow ponsing in
+; many cases.
+;
+;
+; Slow Ponsing.
+;
+; The above discussion hides the fact that PONS and PIST* take an additional
+; argument, called the Pons Table.  This table is essentially a scheme for
+; remembering which keys we have produced for argument lists that have been
+; encountered thus far.  Note that the act of PONSing implicitly modifies the
+; Pons Table.
+;
+; The Pons Table is similar to the CDR-HT-EQL in the Classic Honsing scheme;
+; see the Essay on Classic Honsing.  That is, it is an EQL hash table that
+; binds each
+;
+;    Y ->  { key : key is the key for (PONS X Y) }
+;
+; As in classic honsing, these sets are represented as Flex Alists.  The basic
+; implementation of (PONS X Y), then, is as follows:
+;
+;     Y_KEYS := PonsTable[Y]
+;     XY_KEY := FlexAssoc(X, Y_KEYS)
+;     If (XY_KEY was found)
+;        return XY_KEY
+;     Else
+;        NewKey = (CONS X Y)
+;        Y_KEYS := FlexAcons(NewKey, Y_KEYS)
+;        PonsTable[Y] := Y_KEYS
+;        return NewKey
+;
+; In other words, we build a new (X . Y) cons and use it as the key, unless we
+; had previously seen these same arguments and such a key is already available.
+;
+;
+; Avoiding Slow Ponsing.
+;
+; When static honsing is enabled, we activate an improvement to slow ponsing.
+;
+; In particular, if X and Y can be assigned addresses (see the discussion of
+; Static Hons Addressing from hons-raw.lisp) without the use of an OTHER-HT or
+; STR-HT, then we can just combine their addresses with hl-addr-combine (which
+; is one-to-one) and use the resulting integer as our key.  In many cases this
+; allows us to avoid the hash table lookups required in Slow Ponsing.
+;
+; The basic ideas here are:
+;
+;   - Some ACL2 objects (any static conses, symbol, or small fixnum) have
+;     addresses, but other objects (larger numbers, characters, strings, and
+;     ordinary conses) do not.
+;
+;   - If (PONS X Y) is given X and Y that both had addresses, we basically just
+;     hash their addresses with hl-addr-combine.  The resulting integer is used
+;     as the key.
+;
+;   - Otherwise, we fall back to Slow Ponsing.  Since slow ponsing always
+;     creates a cons instead of an integer, there's no possibility of confusion
+;     between the keys from the two schemes.
+
+#+static-hons
+(defun pons-addr-of-argument (x)
+
+; See hl-addr-of.  This is similar, except without the STR-HT or OTHER-HT we
+; can simply fail to assign addresses to strings, large numbers, rationals, and
+; so forth.
+
+; NOTE: Keep this in sync with hl-addr-of and hl-addr-of-unusual-atom.
+
+  (cond ((eq x nil) 256)
+        ((eq x t)   257)
+
+        ((symbolp x)
+         (hl-symbol-addr x))
+
+        ((and (typep x 'fixnum)
+              (<= hl-minimum-static-int (the fixnum x))
+              (<= (the fixnum x) hl-maximum-static-int))
+         (the fixnum
+           (+ hl-static-int-shift (the fixnum x))))
+
+        ((characterp x)
+         (char-code x))
+
+        (t
+         nil)))
+
+(defabbrev pons-addr-hash (x y)
+
+; We try to compute the addresses of X and Y and hash them together.  If either
+; doesn't have an address, we just return NIL.
+
+  #+static-hons
+  (let ((xaddr (pons-addr-of-argument x)))
+    (if (not xaddr)
+        nil
+      (let ((yaddr (pons-addr-of-argument y)))
+        (if (not yaddr)
+            nil
+          (hl-addr-combine* xaddr yaddr)))))
+
+  #-static-hons
+  ;; We don't try to avoid ponsing here.
+  nil)
+
+(defn1 pons (x y ht)
+  (declare (hash-table ht))
+
+  #+static-hons
+  (let ((addr (pons-addr-hash x y)))
+    (when addr (return-from pons addr)))
+
+  (let* ((flex-alist (gethash y ht))
+         (entry      (hl-flex-assoc x flex-alist)))
+    (or entry
+        (let* ((was-alistp (listp flex-alist))
+               ;; BOZO think about maybe using static cons here... ??
+               (new-cons       (cons x y))
+               (new-flex-alist (hl-flex-acons new-cons flex-alist)))
+          ;; Ctrl+C safety is subtle.  If was-alistp, then the above
+          ;; was applicative.  We now install the flex alist, which
+          ;; occurs as a single update to the hash table.
+          (when was-alistp
+            (setf (gethash y ht) new-flex-alist))
+          ;; Otherwise, the flex-acons was non-applicative and the table
+          ;; was already extended, so there's nothing more we need to do.
+          new-cons))))
+
+(defmacro pist* (table &rest x)
+  (cond ((atom x) x)
+        ((atom (cdr x)) (car x))
+        (t (list 'pons (car x)
+                 (cons 'pist* (cons table (cdr x))) table))))
 
 
 
 
+
+
+;; --------------- THE TERRIBLE LINE -------------------------------------
+;; --------------- THE TERRIBLE LINE -------------------------------------
+;; --------------- THE TERRIBLE LINE -------------------------------------
 
 
 
@@ -499,279 +666,7 @@
 
 
 
-
-; ----------------------------------------------------------------------------
-; ESSAY ON PONS (generating memoization keys from argument lists)
-;
-;
-; Purpose and essential property.
-;
-; PONS is the critical function for generating memoization keys.  To a rough
-; approximation, here is how we memoize (F arg1 arg2 ... argN):
-;
-;     PONS := (PIST* arg1 ... argN)
-;     LOOK := F-MemoTable[PONS]
-;     if (LOOK exists)
-;        return LOOK
-;     else
-;        RESULT := (F arg1 arg2 ... argN)
-;        F-MemoTable[PONS] = RESULT
-;        return RESULT
-;
-; In other words, we use (PIST* arg1 ... argN) as the hash key for the
-; arguments arg1 ... argN.  Meanwhile, PIST* is defined in terms of PONS.
-;
-;    (PIST*)          = NIL
-;    (PIST* X1)       = X1
-;    (PIST* X1 X2)    = (PONS X1 X2)
-;    (PIST* X1 X2 X3) = (PONS X1 (PONS X2 X3))
-;      ...                ...
-;
-; PONS is in many ways similar to a HONS.  The main difference is that whereas
-; (HONS X Y) requires us to recursively generate a "canonical" version of X,
-; (PONS X Y) does not descend into its arguments.  It is worth noting that in
-; the 0 and 1-ary cases, no PONSing is necessary!  Because of this it can be
-; considerably cheaper to memoize unary and zero-ary functions than
-; higher-arity functions.  The cost of ponsing grows with the size of the
-; argument list.
-;
-; The essential soundness requirement on PIST* is that two argument lists
-; should produce an EQL keys only if they are pairwise EQUAL.  This property
-; follows as a consequence of a stronger property of PONS:
-;
-;     (EQL (PONS A B) (PONS C D))  --->  (EQL A C) && (EQL B D).
-;
-; Why is this sufficient?  The 0-2 argument cases are trivial.  Here is an
-; sketch of the 3-ary case, which generalizes easily to the N-ary case:
-;
-;    Our goal is to ensure:
-;
-;       If   (EQL (PIST* A1 B1 C1) (PIST* A2 B2 C2))
-;       Then (EQUAL A1 A2) && (EQUAL B1 B2) && (EQUAL C2 C2)
-;
-;    Assume the hypothesis:
-;
-;       (EQL (PONS A1 (PONS B1 C1)) (PONS A2 (PONS B2 C2)))
-;
-;    Then from our PONS property it follows immediately that
-;
-;      1. (EQL A1 A2), and hence (EQUAL A1 A2) since EQL implies EQUAL.
-;      2. (EQL (PONS B1 C1) (PONS B2 C2)).
-;
-;    Now again from our PONS property, it follows that
-;
-;      1. (EQL B1 B2) and hence (EQUAL B1 B2) since EQL implies EQUAL.
-;      2. (EQL C1 C2) and hence (EQUAL C1 C2) since EQL implies EQUAL.
-;
-;    Which is what we wanted to show.
-;
-; For our hashing scheme to be effective, it is desirable for PIST* to produce
-; EQL keys when given pairwise-EQL argument lists.  This follows easily if we
-; strengthen our desired PONS property to be in both directions, viz.:
-;
-;     (EQL (PONS A B) (PONS C D))  <--->  (EQL A C) && (EQL B D).
-;
-;
-; Implementation.
-;
-; Okay, so how does PONS actually work?  First we will introduce a "slow"
-; ponsing scheme, and then explain a twist that is used to avoid slow ponsing
-; in many cases.
-;
-; The above discussion hides the fact that PONS (and therefore PIST*) take an
-; additional argument, called the Pons Table, which essentially remembers the
-; keys we have produced for argument lists that have been encountered thus far.
-; Note that the act of PONSing implicitly modifies the Pons Table.
-;
-; The Pons Table is similar to the CDR-HT-EQL in the Classic Honsing scheme;
-; see the Essay on Classic Honsing.  That is, it is a hash table that binds
-; each
-;
-;    Y ->  { key : key is the key for (PONS X Y) }
-;
-; As in classic honsing, these sets are represented as Flex Alists.  The basic
-; implementation of (PONS X Y), then, is as follows:
-;
-;     Y_KEYS := PonsTable[Y]
-;     XY_KEY := FlexAssoc(X, Y_KEYS)
-;     If (XY_KEY was found)
-;        return XY_KEY
-;     Else
-;        NewKey = (CONS X Y)
-;        Y_KEYS := FlexAcons(NewKey, Y_KEYS)
-;        PonsTable[Y] := Y_KEYS
-;        return NewKey
-;
-; In other words, we build a new (X . Y) cons and use it as the key, unless we
-; had previously seen these same arguments and such a key is already available.
-;
-; An improvement to this scheme for CCL only is that if X and Y can be assigned
-; addresses (without an OTHER-HT or STR-HT), then we can just combine these
-; addresses together with hl-addr-combine and use that as our key.  This allows
-; us to avoid hash table lookups in many cases.
-
-(defparameter *count-pons-calls* t
-
-; [Jared]: BOZO note that the maybe-count-pons-[calls|misses] macros test this
-; at macroexpansion time, so despite being a defparameter, rebinding this or
-; setting it to NIL at runtime will not be meaningful!
-
-  "If *COUNT-PONS-CALLS*, then each call of PONS increments *PONS-CALL-COUNTER*
-  by 1, and each call of PONS that does not find the desired PONS to already
-  exist increments *PONS-MISSES-COUNTER* by 1.
-
-  Thread Safety Note: these counters aren't protected by locks.  If we ever
-  have multiple threads executing memoized functions, the counts may be
-  somewhat low.  But that's probably no big deal.")
-
-(defg *pons-call-counter* 0)
-(declaim (type mfixnum *pons-call-counter*))
-
-(defg *pons-misses-counter* 0)
-(declaim (type mfixnum *pons-misses-counter*))
-
-(defmacro maybe-count-pons-calls ()
-  (and *count-pons-calls*
-       '(safe-incf *pons-call-counter* 1 maybe-count-pons-calls)))
-
-(defmacro maybe-count-pons-misses ()
-  (and *count-pons-calls*
-       '(safe-incf *pons-misses-counter* 1 maybe-count-pons-misses)))
-
-
-
-; NOTES ON PONS ADDRESSING
-;
-; In the beginning, PONS and HONS used the same addressing scheme.  When I
-; redid the HONS system, I developed a new scheme where every ACL2 object can
-; be assigned an address.  But I left PONS using the old scheme because it was
-; too complex to think about.
-;
-; The original PONS addressing scheme was essentially like this:
-;
-;   - Some ACL2 objects (any static conses, symbol, or small fixnum) had
-;     addresses, but other objects (larger numbers, characters, strings, and
-;     ordinary conses) did not.
-;
-;   - If (PONS X Y) was given X and Y that both had addresses, it would
-;     basically hash their addresses using something like hl-addr-combine.
-;     The resulting hash code would then be used as the key.
-;
-;   - Otherwise, a mechanism similar to classic honsing would be used to look
-;     up Y and then X in hash tables (really flex alists).  The result would
-;     be some particular (CONS X Y) pair that had been seen before.
-;
-; The new scheme is essentially the same.  The only difference is that we reuse
-; some of the same code from hons-raw.lisp, namely hl-addr-combine* and
-; hl-symbol-addr, and the flex alist stuff.
-
-#+static-hons
-(defun pons-addr-of-argument (x)
-  ;; This is now similar to hl-addr-of-unusual-atom, except that without the
-  ;; str-ht and other-ht we simply fail to assign addresses to strings, large
-  ;; numbers, ratioanls, etc.
-  (cond ((eq x nil) 256)
-        ((eq x t)   257)
-
-        ((symbolp x)
-         (hl-symbol-addr x))
-
-        ((and (typep x 'fixnum)
-              (<= hl-minimum-static-int (the fixnum x))
-              (<= (the fixnum x) hl-maximum-static-int))
-         (the fixnum
-           (+ hl-static-int-shift (the fixnum x))))
-
-        ((characterp x)
-         (char-code x))
-
-        (t
-         nil)))
-
-(defabbrev pons-addr-hash (x y)
-  ;; Try to compute the addresses of X and Y and hash them together.  If either
-  ;; doesn't have an address, just return NIL.
-
-  #+static-hons
-  (let ((xaddr (pons-addr-of-argument x)))
-    (if (not xaddr)
-        nil
-      (let ((yaddr (pons-addr-of-argument y)))
-        (if (not yaddr)
-            nil
-          (hl-addr-combine* xaddr yaddr)))))
-
-  #-static-hons
-  ;; There's no addressing here.
-  nil)
-
-(defn1 pons (x y ht)
-  (declare (hash-table ht))
-
-  (maybe-count-pons-calls)
-
-  #+static-hons
-  (let ((addr (pons-addr-hash x y)))
-    (when addr (return-from pons addr)))
-
-  (let* ((flex-alist (gethash y ht))
-         (entry      (hl-flex-assoc x flex-alist)))
-    (or entry
-        (let* ((was-alistp (listp flex-alist))
-               ;; BOZO think about maybe using static cons here... ??
-               (new-cons       (cons x y))
-               (new-flex-alist (hl-flex-acons new-cons flex-alist)))
-          (maybe-count-pons-misses)
-          ;; Ctrl+C safety is subtle.  If was-alistp, then the above
-          ;; was applicative.  We now install the flex alist, which
-          ;; occurs as a single update to the hash table.
-          (when was-alistp
-            (setf (gethash y ht) new-flex-alist))
-          ;; Otherwise, the flex-acons was non-applicative and the table
-          ;; was already extended, so there's nothing more we need to do.
-          new-cons))))
-
-(defmacro pist* (table &rest x)
-  (cond ((atom x) x)
-        ((atom (cdr x)) (car x))
-        (t (list 'pons (car x)
-                 (cons 'pist* (cons table (cdr x))) table))))
-
-
-
-
-
-
-;; --------------- THE TERRIBLE LINE -------------------------------------
-;; --------------- THE TERRIBLE LINE -------------------------------------
-;; --------------- THE TERRIBLE LINE -------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ;; ---------------------------------------------------------------------------
-
-
-
-
-
-
-
 
 
 
@@ -961,7 +856,7 @@
 (defg *ofv-note-printed* nil)
 (defg *ofv-msg-list* nil)
 (defg *ofe-msg-list* nil)
-(defg *ofb-msg-list* nil)
+
 
 (defun ofe (&rest r)  ; For writing to *error-output*; calls (error).
   (our-syntax-nice
@@ -1018,29 +913,12 @@
            (setq *ofv-note-printed* t))))
      (force-output *debug-io*))))
 
-(defmacro ofg (&rest r) ; For verbose gc info.
-    `(when *hons-verbose*
-       (format *debug-io* ,@r)
-       (force-output *debug-io*)))
 
 (defun ofw (&rest r) ; For writing to *debug-io*, with a warning.
   (our-syntax-nice
    (format *debug-io* "~%; ** Warning:  ")
    (apply #'format *debug-io* r)
    (force-output *debug-io*)))
-
-(defun ofb (&rest r) ; For writing to *debug-io* and breaking.
-  (our-syntax-nice
-   (format *debug-io* "~%; ** Warning and break:  ")
-   (let ((*print-level* 3) (*print-length* 5) (*print-lines* 6))
-     (let ((ab (loop for x in r collect (abbrev x))))
-       (apply #'format *debug-io* ab)
-       (when (loop for x in ab as y in r thereis (not (eq x y)))
-         (push (cons 'ofe r) *ofb-msg-list*)
-         (format *error-output* "~%; See *ofb-msg-list*."))
-       (force-output *debug-io*)
-       (error "")))
-   (break "ofb")))
 
 (defmacro ofn (&rest r) ; For forming strings.
   `(our-syntax (format nil ,@r)))
@@ -1144,17 +1022,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 ; Definition. ***** means 'Do not call this function unless you are
 ; sure that a superior caller in this thread has the lock on
 ; *HONS-STR-HT*.
@@ -1199,18 +1066,11 @@
   the number of times that a previously computed answer is used
   again.")
 
-(defparameter *record-hons-calls* t
-  "If *RECORD-HONS-CALLS* in not NIL a function is memoized, HONS
-  calls are counted.")
-
 (defparameter *record-mht-calls* t
   "If *RECORD-HONS-CALLS* is not NIL at the time a function is
   memoized, we record the number of times that a memo hash-table for
   the function was is counted.")
 
-(defparameter *record-pons-calls* t
-  "If *RECORD-PONS-CALLS* is not NIL at the time a function is
-  memoized, pons calls are counted.")
 
 (defparameter *record-time* t
   "If *RECORD-TIME* is not NIL the time a function is memoized, we
@@ -1361,8 +1221,6 @@ the calls took.")
 ; locals used in functions generated by memoize-fn
 
 (defconstant *mf-old-caller* (make-symbol "OLD-CALLER"))
-(defconstant *mf-start-hons* (make-symbol "START-HONS"))
-(defconstant *mf-start-pons* (make-symbol "START-PONS"))
 (defconstant *mf-start-bytes* (make-symbol "START-BYTES"))
 (defconstant *mf-ans* (make-symbol "ANS"))
 (defconstant *mf-ans-p* (make-symbol "ANS-P"))
@@ -1389,1413 +1247,10 @@ the calls took.")
 
 
 
-(defv *never-profile-ht*
-  (let ((h (make-hash-table :test 'eq)))
-    (loop for x in
-          '(bytes-used
-            memoize-summary
-            memoize-summary-after-compute-calls-and-times
-            watch-dump
-            #+rdtsc ccl::rdtsc
-            *
-            +
-            -
-            <
-            <=
-            =
-            >
-            >=
-            abort
-            adjoin
-            adjust-array
-            allocate-instance
-            append
-            apply
-            apropos
-            apropos-list
-            aref
-            arrayp
-            assoc
-            assoc-if
-            assoc-if-not
-            atan
-            atom
-            bit
-            bit-and
-            bit-andc1
-            bit-andc2
-            bit-eqv
-            bit-ior
-            bit-nand
-            bit-nor
-            bit-not
-            bit-orc1
-            bit-orc2
-            bit-xor
-            break
-            butlast
-            car
-            cdr
-            ceiling
-            cerror
-            change-class
-            char-equal
-            char-greaterp
-            char-lessp
-            char-not-equal
-            char-not-greaterp
-            char-not-lessp
-            char/=
-            char<
-            char<=
-            char=
-            char>
-            char>=
-            clear-input
-            clear-memoize-tables
-            clear-output
-            compile
-            compile-file
-            compile-file-pathname
-            compiler-macro-function
-            complex
-            compute-restarts
-            concatenate
-            continue
-            copy-pprint-dispatch
-            copy-readtable
-            copy-symbol
-            count
-            count-if
-            count-if-not
-            decode-universal-time
-            delete
-            delete-duplicates
-            delete-if
-            delete-if-not
-            describe
-            digit-char
-            digit-char-p
-            directory
-            dribble
-            ed
-            encode-universal-time
-            enough-namestring
-            ensure-directories-exist
-            ensure-generic-function
-            eq
-            eql
-            error
-            eval
-            every
-            export
-            fboundp
-            fceiling
-            ffloor
-            file-position
-            fill
-            find
-            find-class
-            find-if
-            find-if-not
-            find-method
-            find-restart
-            find-symbol
-            finish-output
-            fixnum-to-symbol
-            float
-            float-sign
-            floor
-            force-output
-            format
-            fresh-line
-            fround
-            ftruncate
-            funcall
-            gensym
-            gentemp
-            get
-            get-dispatch-macro-character
-            get-internal-real-time
-            get-internal-run-time
-            get-macro-character
-            get-properties
-            get-setf-expansion
-            getf
-            gethash
-            if
-            import
-            initialize-instance
-            intern
-            internal-real-time
-            intersection
-            invalid-method-error
-            invoke-restart
-            last
-            ld-fn
-            len
-            len1
-            length
-            lisp-implementation-type
-            list
-            list*
-            listen
-            load
-            log
-            macro-function
-            macroexpand
-            macroexpand-1
-            make-array
-            make-broadcast-stream
-            make-concatenated-stream
-            make-condition
-            make-dispatch-macro-character
-            make-hash-table
-            make-instance
-            make-list
-            make-load-form
-            make-load-form-saving-slots
-            make-package
-            make-pathname
-            make-random-state
-            make-sequence
-            make-string
-            make-string-input-stream
-            make-string-output-stream
-            map
-            map-into
-            mapc
-            mapcan
-            mapcar
-            mapcon
-            mapl
-            maplist
-            max
-            member
-            member-if
-            member-if-not
-            memoize-call-array-grow
-            memoize-eval-compile
-            memoize-fn
-            merge
-            merge-pathnames
-            method-combination-error
-            mf-1st-warnings
-            mf-2nd-warnings
-            mf-warnings
-            mismatch
-            muffle-warning
-            nbutlast
-            nconc
-            nintersection
-            no-applicable-method
-            no-next-method
-            not
-            notany
-            notevery
-            nset-difference
-            nset-exclusive-or
-            nstring-capitalize
-            nstring-downcase
-            nstring-upcase
-            nsublis
-            nsubst
-            nsubst-if
-            nsubst-if-not
-            nsubstitute
-            nsubstitute-if
-            nsubstitute-if-not
-            null
-            nunion
-            open
-            pairlis
-            parse-integer
-            parse-namestring
-            pathname-device
-            pathname-directory
-            pathname-host
-            pathname-name
-            pathname-type
-            peek-char
-            position
-            position-if
-            position-if-not
-            pprint
-            pprint-dispatch
-            pprint-fill
-            pprint-indent
-            pprint-linear
-            pprint-newline
-            pprint-tab
-            pprint-tabular
-            prin1
-            princ
-            princ-to-string
-            print
-            print-object
-            profile-fn
-            profile-acl2
-            profile-all
-            random
-            rassoc
-            rassoc-if
-            rassoc-if-not
-            read
-            read-byte
-            read-char
-            read-char-no-hang
-            read-delimited-list
-            read-from-string
-            read-line
-            read-preserving-whitespace
-            read-sequence
-            reduce
-            reinitialize-instance
-            remove
-            remove-duplicates
-            remove-if
-            remove-if-not
-            rename-file
-            rename-package
-            replace
-            require
-            room
-            round
-            sbit
-            search
-            set-difference
-            set-dispatch-macro-character
-            set-exclusive-or
-            set-macro-character
-            set-pprint-dispatch
-            set-syntax-from-char
-            shadow
-            shadowing-import
-            shared-initialize
-            signal
-            signum
-            slot-missing
-            some
-            sort
-            stable-sort
-            store-value
-            string-capitalize
-            string-downcase
-            string-equal
-            string-greaterp
-            string-lessp
-            string-not-equal
-            string-not-greaterp
-            string-not-lessp
-            string-upcase
-            string/=
-            string<
-            string<=
-            string=
-            string>
-            string>=
-            stringp
-            sublis
-            subseq
-            subsetp
-            subst
-            subst-if
-            subst-if-not
-            substitute
-            substitute-if
-            substitute-if-not
-            subtypep
-            svref
-            symbol-to-fixnum
-            symbol-to-fixnum-create
-            symbolp
-            sync-memoize-call-array
-            sync-watch-array
-            terpri
-            time-of-last-watch-update
-            time-since-watch-start
-            translate-logical-pathname
-            translate-pathname
-            tree-equal
-            true-listp
-            truncate
-            typep
-            unexport
-            unintern
-            union
-            unread-char
-            unuse-package
-            update-instance-for-different-class
-            update-instance-for-redefined-class
-            upgraded-array-element-type
-            upgraded-complex-part-type
-            use-package
-            use-value
-            user-homedir-pathname
-            values
-            vector-push-extend
-            warn
-            watch-array-grow
-            wild-pathname-p
-            write
-            write-byte
-            write-char
-            write-line
-            write-sequence
-            write-string
-            write-to-string
-            y-or-n-p
-            yes-or-no-p)
-          do (setf (gethash x h) t))
-    h))
-
+(defv *never-profile-ht* (make-hash-table :test 'eq))
 (declaim (hash-table *never-profile-ht*))
 
-
-
-(defv *profile-reject-ht*
-  (let ((ht (mht :test 'eq)))
-    (loop for sym in
-          '(ld-fn0
-            protected-eval
-            hons-read-list-top
-            hons-read-list
-            raw-ev-fncall
-            read-char$
-            1-way-unify
-            hons-copy1
-            grow-static-conses
-            bytes-used
-            lex->
-            gc-count
-            outside-p
-            shorten
-            date-string
-            strip-cars1
-            short-symbol-name
-            hons-calls
-            memoize-condition
-            1-way-unify-top
-            absorb-frame
-            access-command-tuple-number
-            access-event-tuple-depth
-            access-event-tuple-form
-            access-event-tuple-number
-            accumulate-ttree-and-step-limit-into-state
-            acl2-macro-p
-            acl2-numberp
-            add-car-to-all
-            add-cdr-to-all
-            add-command-landmark
-            add-event-landmark
-            add-g-prefix
-            add-literal
-            add-literal-and-pt
-            add-name
-            add-new-fc-pots
-            add-new-fc-pots-lst
-            add-timers
-            add-to-pop-history
-            add-to-set-eq
-            add-to-set-equal
-            add-to-tag-tree
-            advance-fc-activations
-            advance-fc-pot-lst
-            all-args-occur-in-top-clausep
-            all-calls
-            all-fnnames1
-            all-nils
-            all-ns
-            all-quoteps
-            all-runes-in-ttree
-            all-vars
-            all-vars1
-            all-vars1-lst
-            alphorder
-            ancestors-check
-            and-macro
-            and-orp
-            apply-top-hints-clause
-            approve-fc-derivations
-            aref1
-            aref2
-            arglistp
-            arglistp1
-            arith-fn-var-count
-            arith-fn-var-count-lst
-            arity
-            assoc-eq
-            assoc-equal
-            assoc-equal-cdr
-            assoc-equiv
-            assoc-equiv+
-            assoc-keyword
-            assoc-no-error-at-end
-            assoc-type-alist
-            assume-true-false
-            assume-true-false1
-            atoms
-            augment-ignore-vars
-            backchain-limit
-            bad-cd-list
-            not-pat-p
-            basic-worse-than
-            being-openedp-rec
-            big-n
-            binary-+
-            binary-append
-            bind-macro-args
-            bind-macro-args-after-rest
-            bind-macro-args-keys
-            bind-macro-args-keys1
-            bind-macro-args-optional
-            bind-macro-args1
-            binding-hyp-p
-            binop-table
-            body
-            boolean-listp
-            booleanp
-            boundp-global
-            boundp-global1
-            brkpt1
-            brkpt2
-            built-in-clausep
-            built-in-clausep1
-            bytes-allocated
-            bytes-allocated/call
-            call-stack
-            canonical-representative
-            car-cdr-nest
-            case-list
-            case-split-limitations
-            case-test
-            change-plist
-            change-plist-first-preferred
-            character-listp
-            chars-for-int
-            chars-for-num
-            chars-for-pos
-            chars-for-pos-aux
-            chars-for-rat
-            chase-bindings
-            chk-acceptable-defuns
-            chk-acceptable-ld-fn
-            chk-acceptable-ld-fn1
-            chk-acceptable-ld-fn1-pair
-            chk-all-but-new-name
-            chk-arglist
-            chk-assumption-free-ttree
-            chk-dcl-lst
-            chk-declare
-            chk-defun-mode
-            chk-defuns-tuples
-            chk-embedded-event-form
-            chk-free-and-ignored-vars
-            chk-free-and-ignored-vars-lsts
-            chk-irrelevant-formals
-            chk-just-new-name
-            chk-just-new-names
-            chk-legal-defconst-name
-            chk-length-and-keys
-            chk-no-duplicate-defuns
-            chk-table-guard
-            chk-table-nil-args
-            chk-xargs-keywords
-            chk-xargs-keywords1
-            clausify
-            clausify-assumptions
-            clausify-input
-            clausify-input1
-            clausify-input1-lst
-            clean-type-alist
-            clear-memoize-table
-            clear-memoize-tables
-            cltl-def-from-name
-            coerce-index
-            coerce-object-to-state
-            coerce-state-to-object
-            collect-assumptions
-            collect-dcls
-            collect-declarations
-            collect-non-x
-            comm-equal
-            complementaryp
-            complex-rationalp
-            compute-calls-and-times
-            compute-inclp-lst
-            compute-inclp-lst1
-            compute-stobj-flags
-            cond-clausesp
-            cond-macro
-            conjoin
-            conjoin-clause-sets
-            conjoin-clause-to-clause-set
-            conjoin2
-            cons-make-list
-            cons-ppr1
-            cons-term
-            cons-term2
-            const-list-acc
-            constant-controller-pocketp
-            constant-controller-pocketp1
-            contains-guard-holdersp
-            contains-guard-holdersp-lst
-            contains-rewriteable-callp
-            controller-complexity
-            controller-complexity1
-            controller-pocket-simplerp
-            controllers
-            convert-clause-to-assumptions
-            csh
-            current-package
-            dcls
-            def-body
-            default-defun-mode
-            default-hints
-            default-print-prompt
-            default-verify-guards-eagerness
-            defconst-fn
-            defined-constant
-            defn-listp
-            defnp
-            defun-fn
-            defuns-fn
-            defuns-fn0
-            delete-assumptions
-            delete-assumptions-1
-            digit-to-char
-            disjoin
-            disjoin-clause-segment-to-clause-set
-            disjoin-clauses
-            disjoin-clauses1
-            disjoin2
-            distribute-first-if
-            doc-stringp
-            doubleton-list-p
-            dumb-assumption-subsumption
-            dumb-assumption-subsumption1
-            dumb-negate-lit
-            dumb-negate-lit-lst
-            dumb-occur
-            dumb-occur-lst
-            duplicate-keysp
-            eapply
-            enabled-numep
-            enabled-xfnp
-            ens
-            eoccs
-            eqlable-listp
-            eqlablep
-            equal-mod-alist
-            equal-mod-alist-lst
-            er-progn-fn
-            ev
-            ev-fncall
-            ev-fncall-rec
-            ev-for-trans-eval
-            ev-rec
-            ev-rec-lst
-            eval-bdd-ite
-            eval-event-lst
-            eval-ground-subexpressions
-            eval-ground-subexpressions-lst
-            evens
-            every-occurrence-equiv-hittablep1
-            every-occurrence-equiv-hittablep1-listp
-            eviscerate
-            eviscerate-stobjs
-            eviscerate-stobjs1
-            eviscerate1
-            eviscerate1-lst
-            eviscerate1p
-            eviscerate1p-lst
-            evisceration-stobj-marks
-            expand-abbreviations
-            expand-abbreviations-lst
-            expand-abbreviations-with-lemma
-            expand-and-or
-            expand-any-final-implies1
-            expand-any-final-implies1-lst
-            expand-clique-alist
-            expand-clique-alist-term
-            expand-clique-alist-term-lst
-            expand-clique-alist1
-            expand-permission-result
-            expand-some-non-rec-fns
-            expand-some-non-rec-fns-lst
-            explode-atom
-            extend-car-cdr-sorted-alist
-            extend-type-alist
-            extend-type-alist-simple
-            extend-type-alist-with-bindings
-            extend-type-alist1
-            extend-with-proper/improper-cons-ts-tuple
-            extract-and-clausify-assumptions
-            f-and
-            f-booleanp
-            f-ite
-            f-not
-            fc-activation
-            fc-activation-lst
-            fc-pair-lst
-            fc-pair-lst-type-alist
-            fetch-from-zap-table
-            ffnnamep
-            ffnnamep-hide
-            ffnnamep-hide-lst
-            ffnnamep-lst
-            ffnnamep-mod-mbe
-            ffnnamep-mod-mbe-lst
-            ffnnamesp
-            ffnnamesp-lst
-            fgetprop
-            filter-geneqv-lst
-            filter-with-and-without
-            find-abbreviation-lemma
-            find-alternative-skip
-            find-alternative-start
-            find-alternative-start1
-            find-alternative-stop
-            find-and-or-lemma
-            find-applicable-hint-settings
-            find-clauses
-            find-clauses1
-            find-mapping-pairs-tail
-            find-mapping-pairs-tail1
-            find-rewriting-equivalence
-            find-subsumer-replacement
-            first-assoc-eq
-            first-if
-            fix-declares
-            flpr
-            flpr1
-            flpr11
-            flsz
-            flsz-atom
-            flsz-integer
-            flsz1
-            flush-hons-get-hash-table-link
-            fms
-            fmt
-            fmt-char
-            fmt-ctx
-            fmt-hard-right-margin
-            fmt-ppr
-            fmt-soft-right-margin
-            fmt-symbol-name
-            fmt-symbol-name1
-            fmt-var
-            fmt0
-            fmt0&v
-            fmt0*
-            fmt1
-            fn-count-1
-            fn-count-evg-rec
-            fn-rune-nume
-            fnstack-term-member
-            formal-position
-            formals
-            free-varsp
-            free-varsp-lst
-            function-symbolp
-            gatom
-            gatom-booleanp
-            gen-occs
-            gen-occs-list
-            geneqv-lst
-            geneqv-lst1
-            geneqv-refinementp
-            geneqv-refinementp1
-            general
-            gentle-binary-append
-            gentle-atomic-member
-            gentle-caaaar
-            gentle-caaadr
-            gentle-caaar
-            gentle-caadar
-            gentle-caaddr
-            gentle-caadr
-            gentle-caar
-            gentle-cadaar
-            gentle-cadadr
-            gentle-cadar
-            gentle-caddar
-            gentle-cadddr
-            gentle-caddr
-            gentle-cadr
-            gentle-car
-            gentle-cdaaar
-            gentle-cdaadr
-            gentle-cdaar
-            gentle-cdadar
-            gentle-cdaddr
-            gentle-cdadr
-            gentle-cdar
-            gentle-cddaar
-            gentle-cddadr
-            gentle-cddar
-            gentle-cdddar
-            gentle-cddddr
-            gentle-cdddr
-            gentle-cddr
-            gentle-cdr
-            gentle-getf
-            gentle-length
-            gentle-revappend
-            gentle-reverse
-            gentle-strip-cars
-            gentle-strip-cdrs
-            gentle-take
-            genvar
-            get-and-chk-last-make-event-expansion
-            get-declared-stobj-names
-            get-doc-string
-            get-docs
-            get-global
-            get-guards
-            get-guards1
-            get-guardsp
-            get-ignorables
-            get-ignores
-            get-integer-from
-            get-level-no
-            get-package-and-name
-            get-stobjs-in-lst
-            get-string
-            get-timer
-            get-unambiguous-xargs-flg
-            get-unambiguous-xargs-flg1
-            get-unambiguous-xargs-flg1/edcls
-            getprop-default
-            gify
-            gify-all
-            gify-file
-            gify-list
-            global-set
-            global-val
-            good-defun-mode-p
-            gsal
-            gtrans-atomic
-            guard
-            guard-clauses
-            guard-clauses-for-clique
-            guard-clauses-for-fn
-            guard-clauses-lst
-            guess-and-putprop-type-prescription-lst-for-clique
-            guess-and-putprop-type-prescription-lst-for-clique-step
-            guess-type-prescription-for-fn-step
-            hide-ignored-actuals
-            hide-noise
-            hits/calls
-            hons
-            hons-acons
-            hons-acons!
-            hons-acons-summary
-            hons-copy-restore
-            hons-copy2-consume
-            hons-copy3-consume
-            hons-copy1-consume
-            hons-copy1-consume-top
-            hons-copy2
-            hons-copy3
-            hons-copy1
-            hons-copy1-top
-            hons-copy
-            hons-copy-list-cons
-            hons-copy-r
-            hons-copy-list-r
-            hons-copy
-            hons-dups-p
-            hons-dups-p1
-            hons-gentemp
-            hons-get-fn-do-hopy
-            hons-get-fn-do-not-hopy
-            hons-int1
-            hons-intersection
-            hons-intersection2
-            hons-len
-            hons-member-equal
-            hons-normed
-            hons-put-list
-            hons-sd1
-            hons-set-diff
-            hons-set-diff2
-            hons-set-equal
-            hons-shrink-alist
-            hons-shrink-alist!
-            hons-subset
-            hons-subset2
-            hons-union1
-            hons-union2
-            if-compile
-            if-compile-formal
-            if-compile-lst
-            if-interp
-            if-interp-add-clause
-            if-interp-assume-true
-            if-interp-assumed-value
-            if-interp-assumed-value-x
-            if-interp-assumed-value1
-            if-interp-assumed-value2
-            ignorable-vars
-            ignore-vars
-            in-encapsulatep
-            increment-timer
-            induct-msg/continue
-            initialize-brr-stack
-            initialize-summary-accumulators
-            initialize-timers
-            inst
-            install-event
-            install-global-enabled-structure
-            intern-in-package-of-symbol
-            intersection-eq
-            intersectp-eq
-            irrelevant-non-lambda-slots-clique
-            keyword-param-valuep
-            keyword-value-listp
-            known-package-alist
-            known-whether-nil
-            kwote
-            lambda-nest-hidep
-            latch-stobjs
-            latch-stobjs1
-            ld-error-triples
-            ld-evisc-tuple
-            ld-filter-command
-            ld-fn-alist
-            ld-fn-body
-            ld-loop
-            ld-post-eval-print
-            ld-pre-eval-filter
-            ld-pre-eval-print
-            ld-print-command
-            ld-print-prompt
-            ld-print-results
-            ld-prompt
-            ld-read-command
-            ld-read-eval-print
-            ld-skip-proofsp
-            ld-verbose
-            legal-case-clausesp
-            legal-constantp
-            legal-variable-or-constant-namep
-            legal-variablep
-            len
-            let*-macro
-            lexorder
-            list*-macro
-            list-fast-fns
-            list-macro
-            list-to-pat
-            listify
-            listlis
-            locn-acc
-            look-in-type-alist
-            lookup-hyp
-            lookup-world-index
-            lookup-world-index1
-            loop-stopperp
-            macro-args
-            macroexpand1
-            main-timer
-            make-bit
-            make-clique-alist
-            make-event-ctx
-            make-event-debug-post
-            make-event-debug-pre
-            make-event-fn
-            make-fmt-bindings
-            make-list-of-symbols
-            make-list-with-tail
-            make-occs-map1
-            make-slot
-            make-symbol-with-number
-            map-type-sets-via-formals
-            match-free-override
-            max-absolute-command-number
-            max-absolute-event-number
-            max-form-count
-            max-form-count-lst
-            max-level-no
-            max-level-no-lst
-            max-width
-            may-need-slashes
-            maybe-add-command-landmark
-            maybe-add-space
-            maybe-gify
-            maybe-reduce-memoize-tables
-            maybe-str-hash
-            maybe-zify
-            member-complement-term
-            member-complement-term1
-            member-eq
-            member-equal
-            member-equal-+-
-            member-symbol-name
-            member-term
-            memoizedp-raw
-            mer-star-star
-            merge-runes
-            merge-sort
-            merge-sort-car->
-            merge-sort-length
-            merge-sort-runes
-            most-recent-enabled-recog-tuple
-            mv-atf
-            mv-nth
-            mv-nth-list
-            n2char
-            nat-list-to-list-of-chars
-            nat-to-list
-            nat-to-string
-            nat-to-v
-            natp
-            new-backchain-limit
-            newline
-            next-absolute-event-number
-            next-tag
-            next-wires
-            nfix
-            nmake-if
-            nmerge
-            no-duplicatesp
-            no-duplicatesp-equal
-            no-op-histp
-            nominate-destructor-candidates
-            non-linearp
-            non-stobjps
-            normalize
-            normalize-lst
-            normalize-with-type-set
-            not-instance-name-p
-            not-pat-receiving
-            dubious-to-profile
-            not-safe-for-synthesis-list
-            not-to-be-rewrittenp
-            not-to-be-rewrittenp1
-            nth-update-rewriter
-            nth-update-rewriter-target-lstp
-            nth-update-rewriter-targetp
-            nu-rewriter-mode
-            num-0-to-9-to-char
-            num-to-bits
-            number-of-arguments
-            number-of-calls
-            number-of-hits
-            number-of-memoized-entries
-            number-of-mht-calls
-            number-of-return-values
-            number-of-strings
-            obfb
-            obj-table
-            odds
-            ofe
-            ofnum
-            ofv
-            ofvv
-            ofw
-            ok-to-force
-            oncep
-            one-way-unify
-            one-way-unify-restrictions
-            one-way-unify1
-            one-way-unify1-equal
-            one-way-unify1-equal1
-            one-way-unify1-lst
-            open-input-channel
-            open-output-channel
-            open-output-channel-p
-            or-macro
-            output-ignored-p
-            output-in-infixp
-            pairlis$
-            pairlis2
-            pal
-            partition-according-to-assumption-term
-            permute-occs-list
-            pons
-            pons-calls
-            pop-accp
-            pop-clause
-            pop-clause-msg
-            pop-clause-msg1
-            pop-clause1
-            pop-timer
-            pop-warning-frame
-            posp
-            ppr
-            ppr1
-            ppr1-lst
-            ppr2
-            ppr2-column
-            ppr2-flat
-            prefix
-            preprocess-clause
-            preprocess-clause-msg1
-            prin1$
-            princ$
-            print-alist
-            print-base-p
-            print-call-stack
-            print-defun-msg
-            print-defun-msg/collect-type-prescriptions
-            print-defun-msg/type-prescriptions
-            print-defun-msg/type-prescriptions1
-            print-prompt
-            print-rational-as-decimal
-            print-redefinition-warning
-            print-rules-summary
-            print-summary
-            print-time-summary
-            print-timer
-            print-verify-guards-msg
-            print-warnings-summary
-            profile-g-fns
-            progn-fn
-            progn-fn1
-            program-term-listp
-            program-termp
-            proofs-co
-            proper/improper-cons-ts-tuple
-            prove
-            prove-guard-clauses
-            prove-loop
-            prove-loop1
-            pseudo-term-listp
-            pseudo-termp
-            pseudo-variantp
-            pseudo-variantp-list
-            pt-intersectp
-            pt-occur
-            pts-to-ttree-lst
-            puffert
-            push-accp
-            push-ancestor
-            push-io-record
-            push-lemma
-            push-timer
-            push-warning-frame
-            put-assoc-eq
-            put-global
-            put-ttree-into-pspv
-            putprop
-            putprop-defun-runic-mapping-pairs
-            quickly-count-assumptions
-            quote-listp
-            quotep
-            qzget-sign-abs
-            raw-mode-p
-            read-acl2-oracle
-            read-object
-            read-run-time
-            read-standard-oi
-            recompress-global-enabled-structure
-            recompress-stobj-accessor-arrays
-            record-accessor-function-name
-            recursive-fn-on-fnstackp
-            redundant-or-reclassifying-defunsp1
-            relevant-slots-call
-            relevant-slots-clique
-            relevant-slots-clique1
-            relevant-slots-def
-            relevant-slots-term
-            relevant-slots-term-lst
-            relieve-hyp
-            relieve-hyps
-            relieve-hyps1
-            remove-evisc-marks
-            remove-evisc-marks-al
-            remove-invisible-fncalls
-            remove-keyword
-            remove-one-+-
-            remove-strings
-            replace-stobjs
-            replace-stobjs1
-            replaced-stobj
-            ret-stack
-            return-type-alist
-            rewrite
-            rewrite-args
-            rewrite-fncall
-            rewrite-fncallp
-            rewrite-fncallp-listp
-            rewrite-if
-            rewrite-if1
-            rewrite-if11
-            rewrite-primitive
-            rewrite-recognizer
-            rewrite-solidify
-            rewrite-solidify-plus
-            rewrite-solidify-rec
-            rewrite-stack-limit
-            rewrite-with-lemma
-            rewrite-with-lemmas
-            rewrite-with-lemmas1
-            rewrite-with-linear
-            rune-<
-            runep
-            safe-1+
-            safe-1-
-            safe-<
-            safe-<=
-            safe-binary-+
-            safe-binary--
-            safe-caaaar
-            safe-caaadr
-            safe-caaar
-            safe-caadar
-            safe-caaddr
-            safe-caadr
-            safe-caar
-            safe-cadaar
-            safe-cadadr
-            safe-cadar
-            safe-caddar
-            safe-cadddr
-            safe-caddr
-            safe-cadr
-            safe-car
-            safe-cdaaar
-            safe-cdaadr
-            safe-cdaar
-            safe-cdadar
-            safe-cdaddr
-            safe-cdadr
-            safe-cdar
-            safe-cddaar
-            safe-cddadr
-            safe-cddar
-            safe-cdddar
-            safe-cddddr
-            safe-cdddr
-            safe-cddr
-            safe-cdr
-            safe-code-char
-            safe-coerce
-            safe-floor
-            safe-intern-in-package-of-symbol
-            safe-lognot
-            safe-max
-            safe-mod
-            safe-nthcdr
-            safe-rem
-            safe-strip-cars
-            safe-symbol-name
-            saved-output-token-p
-            scan-past-whitespace
-            scan-to-cltl-command
-            scan-to-landmark-number
-            scons-tag-trees
-            scons-tag-trees1
-            search-type-alist
-            search-type-alist-rec
-            set-cl-ids-of-assumptions
-            set-difference-eq
-            set-timer
-            set-w
-            set-w!
-            sgetprop
-            simple-translate-and-eval
-            simplify-clause-msg1
-            simplify-clause1
-            slot-member
-            some-congruence-rule-disabledp
-            some-controller-pocket-constant-and-non-controller-simplerp
-            some-geneqv-disabledp
-            some-subterm-worse-than-or-equal
-            some-subterm-worse-than-or-equal-lst
-            sort-approved
-            sort-approved1
-            sort-approved1-rating1
-            sort-occurrences
-            spaces
-            splice-instrs
-            splice-instrs1
-            split-on-assumptions
-            ssn
-            standard-co
-            standard-oi
-            state-p1
-            std-apart
-            std-apart-top
-            step-limit
-            stobjp
-            stobjs-in
-            stobjs-out
-            stop-redundant-event
-            store-clause
-            store-clause1
-            string-append-lst
-            string-from-list-of-chars
-            string-listp
-            strip-assumption-terms
-            strip-branches
-            strip-cadrs
-            strip-cars
-            strip-cdrs
-            subcor-var
-            subcor-var-lst
-            subcor-var1
-            sublis-expr
-            sublis-expr-lst
-            sublis-occ
-            sublis-pat
-            sublis-var
-            sublis-var-lst
-            subsetp-eq
-            subsumption-replacement-loop
-            suffix
-            sweep-clauses
-            sweep-clauses1
-            symbol-<
-            symbol-alistp
-            symbol-class
-            symbol-listp
-            symbol-package-name
-            t-and
-            t-fix
-            t-ite
-            t-list
-            t-not
-            t-or
-            table-alist
-            table-fn
-            table-fn1
-            tag-tree-occur
-            tagged-object
-            tagged-objects
-            tame-symbolp
-            term-and-typ-to-lookup
-            term-order
-            termp
-            thm-fn
-            tilde-*-preprocess-phrase
-            tilde-*-simp-phrase
-            tilde-*-simp-phrase1
-            tilde-@-abbreviate-object-phrase
-            time-for-non-hits/call
-            time-limit5-reached-p
-            time/call
-            to
-            to-be-ignoredp
-            to-if-error-p
-            too-long
-            total-time
-            trans-alist
-            trans-alist1
-            trans-eval
-            translate-bodies
-            translate-bodies1
-            translate-dcl-lst
-            translate-deref
-            translate-doc
-            translate-hints
-            translate-term-lst
-            translate1
-            translate11
-            translate11-lst
-            translate11-mv-let
-            translated-acl2-unwind-protectp
-            translated-acl2-unwind-protectp4
-            tree-occur
-            true-listp
-            type-alist-clause-finish
-            type-alist-clause-finish1
-            type-alist-equality-loop
-            type-alist-equality-loop1
-            type-alist-fcd-lst
-            type-set
-            type-set-<
-            type-set-<-1
-            type-set-and-returned-formals
-            type-set-and-returned-formals-with-rule
-            type-set-car
-            type-set-cdr
-            type-set-cons
-            type-set-equal
-            type-set-finish
-            type-set-lst
-            type-set-not
-            type-set-primitive
-            type-set-quote
-            type-set-recognizer
-            type-set-relieve-hyps
-            type-set-with-rule
-            type-set-with-rule1
-            type-set-with-rules
-            unencumber-assumptions
-            unify
-            unify-sa-p
-            union-eq
-            union-equal
-            untranslate
-            untranslate-lst
-            untranslate-preprocess-fn
-            untranslate1
-            untranslate1-lst
-            update-world-index
-            us
-            user-stobj-alist
-            user-stobj-alist-safe
-            user-stobjsp
-            v-to-nat
-            var-fn-count
-            var-fn-count-lst
-            var-lessp
-            var-to-tree
-            var-to-tree-list
-            vars-of-fal-aux
-            verify-guards-fn1
-            vx2
-            w
-            warning-off-p
-            wash-memory
-            watch-count
-            maybe-watch-dump
-            incf-watch-count
-            set-watch-count
-            watch-help
-            time-of-last-watch-update
-            watch-shell-command
-            time-since-watch-start
-            make-watchdog
-            watch
-            watch-kill
-            watch-condition
-            waterfall
-            waterfall-msg
-            waterfall-msg1
-            waterfall-print-clause
-            waterfall-step
-            waterfall-step1
-            waterfall0
-            waterfall1
-            waterfall1-lst
-            widen
-            watch-real-time
-            watch-run-time
-            world-evisceration-alist
-            worse-than
-            worth-hashing
-            worth-hashing1
-            x-and
-            x-buf
-            x-ff
-            x-latch+
-            x-latch-
-            x-latch-+
-            x-mux
-            x-not
-            x-or
-            x-xor
-            xor
-            xxxjoin
-            zip-variable-type-alist
-            zp)
-          do (setf (gethash sym ht) t))
-    ht)
-
+(defv *profile-reject-ht* (mht :test 'eq)
   "The user may freely add to the hash table
   *PROFILE-REJECT-HT*, which inhibits the collection of
   functions into lists of functions to be memoized and/or profiled.
@@ -2827,6 +1282,16 @@ the calls took.")
   Our additions to *PROFILE-REJECT-HT* are utterly capricious.  The
   user should feel free to set *PROFILE-REJECT-HT* ad lib, at any
   time.")
+
+(declaim (hash-table *profile-reject-ht*))
+
+
+(defn1 input-output-number-warning (fn)
+  (format *debug-io*
+          "Can't determine the number of inputs and outputs of ~a.~%To assert ~
+           ~a takes, say, 2 inputs and returns 1 output, do:~%~a.~%"
+          fn fn `(set-number-of-arguments-and-values ',fn 2 1)))
+
 
 (defn1 dubious-to-profile (fn)
   (cond ((not (symbolp fn)) "not a symbol.")
@@ -2919,9 +1384,7 @@ the calls took.")
 ; record-bytes   value as bound at the time MEMOIZE-FN is called
 ; record-calls            ''
 ; record-hits             ''
-; record-hons-calls       ''
 ; record-mht-calls        ''
-; record-pons-calls       ''
 ; record-time             ''
 ; watch-ifs      Boolean, whether to monitor each IF
 ; forget         Boolean, clears memo when outermost call exits.
@@ -2953,9 +1416,7 @@ the calls took.")
    record-bytes
    record-calls
    record-hits
-   record-hons-calls
    record-mht-calls
-   record-pons-calls
    record-time
    watch-ifs
    forget
@@ -3177,6 +1638,10 @@ the calls took.")
    (setq *2max-memoize-fns* 2nmax)
    (sync-memoize-call-array)
    (rememoize-all)))
+
+
+
+
 
 (defn1 symbol-to-fixnum-create (s)
   (check-type s symbol)
@@ -3988,22 +2453,13 @@ the calls took.")
                    #+Clozure
                    ,@(and *record-bytes*
                           `((,*mf-start-bytes*
-                             (heap-bytes-allocated))))
-                   ;; [Jared]: removing this, hons tracking hasn't worked since hl-hons
-                   ;; ,@(and *record-hons-calls*
-                   ;;        `((,*mf-start-hons* *hons-call-counter*)))
-                   ,@(and *record-pons-calls*
-                          `((,*mf-start-pons* *pons-call-counter*))))
+                             (heap-bytes-allocated)))))
                (declare
                 (ignorable
                  #+Clozure
-                 ,@(and *record-bytes* `(,*mf-start-bytes*))
-                 ,@(and *record-hons-calls* `(,*mf-start-hons*))
-                 ,@(and *record-pons-calls* `(,*mf-start-pons*)))
+                 ,@(and *record-bytes* `(,*mf-start-bytes*)))
                 (type fixnum
                       ,*mf-old-caller*
-                      ,@(and *record-hons-calls* `(,*mf-start-hons*))
-                      ,@(and *record-pons-calls* `(,*mf-start-pons*))
                       #+Clozure
                       ,@(and *record-bytes* `(,*mf-start-bytes*))))
                (unwind-protect
@@ -4013,17 +2469,6 @@ the calls took.")
                                           '0))
                      (setq *caller* ,2mfnn)
                      ,body3)
-                 ;; [Jared]: removing this, hons tracking hasn't worked since hl-hons
-                 ;; ,@(and *record-hons-calls*
-                 ;;        `((safe-incf (aref ,*mf-ma* ,(+ *ma-hons-index* 2mfnn))
-                 ;;          (the mfixnum (- *hons-call-counter* ,*mf-start-hons*)) ,fn)))
-                 ,@(and *record-pons-calls*
-                        `((safe-incf
-                           (aref ,*mf-ma* ,(+ *ma-pons-index* 2mfnn))
-                           (the mfixnum
-                             (- *pons-call-counter*
-                                ,*mf-start-pons*))
-                           ,fn)))
                  #+Clozure
                  ,@(and *record-bytes*
                         `((safe-incf
@@ -4123,9 +2568,7 @@ the calls took.")
                         :record-bytes      *record-bytes*
                         :record-calls      *record-calls*
                         :record-hits       *record-hits*
-                        :record-hons-calls *record-hons-calls*
                         :record-mht-calls  *record-mht-calls*
-                        :record-pons-calls *record-pons-calls*
                         :record-time       *record-time*
                         :watch-ifs         watch-ifs
                         :forget            forget
@@ -4284,11 +2727,7 @@ the calls took.")
                 (access memoize-info-ht-entry v :record-calls)
                 (access memoize-info-ht-entry v :record-hits)
                 (access memoize-info-ht-entry v
-                        :record-hons-calls)
-                (access memoize-info-ht-entry v
                         :record-mht-calls)
-                (access memoize-info-ht-entry v
-                        :record-pons-calls)
                 (access memoize-info-ht-entry v :record-time))))))
 
 (defn1 rememoize-all ()
@@ -4308,9 +2747,7 @@ the calls took.")
               (progv '(*record-bytes*
                        *record-calls*
                        *record-hits*
-                       *record-hons-calls*
                        *record-mht-calls*
-                       *record-pons-calls*
                        *record-time*)
                   (cadr x)
                 (apply 'memoize-fn (car x)))))))
@@ -4387,9 +2824,7 @@ the calls took.")
   (let ((*record-bytes* #+Clozure lots-of-info #-Clozure nil)
         (*record-calls* lots-of-info)
         (*record-hits* lots-of-info)
-        (*record-hons-calls* lots-of-info)
         (*record-mht-calls* lots-of-info)
-        (*record-pons-calls* lots-of-info)
         (*record-time* lots-of-info))
     (unless (integerp start)
       (unless (symbolp start)
@@ -4453,9 +2888,7 @@ the calls took.")
   (let ((*record-bytes* #+Clozure lots-of-info #-Clozure nil)
         (*record-calls* lots-of-info)
         (*record-hits* lots-of-info)
-        (*record-hons-calls* lots-of-info)
         (*record-mht-calls* lots-of-info)
-        (*record-pons-calls* lots-of-info)
         (*record-time* lots-of-info))
     (let ((fns-ht (make-hash-table :test 'eq)))
       (declare (hash-table fns-ht))
@@ -4793,10 +3226,10 @@ the calls took.")
                   tab))))))
     *memoize-info-ht*)
    (print-alist
-    `((" Pons hits/calls"
-       ,(let* ((c *pons-call-counter*)
-               (d *pons-misses-counter*))
-          (ofn "~,1e / ~,1e = ~,2f" d c (/ (- c d) (+ .0000001 c)))))
+    `(;(" Pons hits/calls"
+      ; ,(let* ((c *pons-call-counter*)
+      ;         (d *pons-misses-counter*))
+      ;    (ofn "~,1e / ~,1e = ~,2f" d c (/ (- c d) (+ .0000001 c)))))
       (" Number of pons tables" ,(ofnum nponstab))
       (" Number of pons sub tables" ,(ofnum nsubs))
       (" Sum of pons sub table sizes" ,(ofnum sssub))
@@ -5164,9 +3597,7 @@ the calls took.")
          *RECORD-BYTES*       boolean    (available in CCL only)
          *RECORD-CALLS*       boolean
          *RECORD-HITS*        boolean
-         *RECORD-HONS-CALLS*  boolean
          *RECORD-MHT-CALLS*   boolean
-         *RECORD-PONS-CALLS*  boolean
          *RECORD-TIME*        boolean
 
   In Clozure Common Lisp, the :WATCH-IFS keyword parameter of
@@ -6279,6 +4710,9 @@ the calls took.")
 
   (when *memoize-init-done* (ofe "memoize-init:  already done."))
 
+  (initialize-never-profile-ht)
+  (initialize-profile-reject-ht)
+
   (unwind-mch-lock
    (unless (eql *caller* (the fixnum
                           (* *ma-initial-max-symbol-to-fixnum*
@@ -6288,8 +4722,8 @@ the calls took.")
      (unwind-protect
        (progn
          #+Clozure (setup-smashed-if)
-         (setq *pons-call-counter* 0)
-         (setq *pons-misses-counter* 0)
+;         (setq *pons-call-counter* 0)
+;         (setq *pons-misses-counter* 0)
          (setq *memoize-info-ht* (mht))
          (setf (gethash *ma-initial-max-symbol-to-fixnum*
                         *memoize-info-ht*)
@@ -6894,8 +5328,8 @@ next GC.~%"
   `(memoize-off ,@r))
 
 (defun clear-memo-tables (&rest r)
-  (setq *pons-call-counter* 0)
-  (setq *pons-misses-counter* 0)
+;  (setq *pons-call-counter* 0)
+;  (setq *pons-misses-counter* 0)
   (apply #'clear-memoize-tables r))
 
 
@@ -6930,8 +5364,9 @@ next GC.~%"
     ;; '(hons-calls/sec-run-time)
     ;; '(hons-hits/calls)
     '(hons-acons-summary)
-    '(pons-calls/sec-run-time)
-    '(pons-hits/calls)
+    ;; [Jared] removing these since i decided to stop counting ponses
+    ;; '(pons-calls/sec-run-time)
+    ;; '(pons-hits/calls)
     '(pons-summary)
     '(hons-summary)
     '(print-fds)
@@ -6958,7 +5393,7 @@ next GC.~%"
     *watch-file*
     *watch-items*
 
-    *count-pons-calls*
+;;    *count-pons-calls*
 
     *memoize-summary-order-list*
     *memoize-summary-order-reversed*
@@ -6967,9 +5402,7 @@ next GC.~%"
     *record-bytes*
     *record-calls*
     *record-hits*
-    *record-hons-calls*
     *record-mht-calls*
-    *record-pons-calls*
     *record-time*
 
     *report-bytes*
@@ -7843,21 +6276,6 @@ next GC.~%"
   (/ (- (get-internal-run-time) *watch-start-run-time*)
      *float-internal-time-units-per-second*))
 
-(defw pons-calls/sec-run-time
-  (let* ((c *pons-call-counter*)
-         (ans
-          (cond ((eql c 0) "No pons calls yet.")
-                (t (ofn "~,1e" (round (/ c (+ .000001
-                                              (watch-run-time)))))))))
-    (oft-wrm "~v<~a~;~a~>" fn ans)))
-
-(defw pons-hits/calls
-  (let* ((c *pons-call-counter*)
-         (h (- c *pons-misses-counter*))
-         (ans
-          (cond ((eql c 0) "No pons calls yet.")
-                (t (ofn "~,1e / ~,1e = ~,2f" h c (/ h c))))))
-    (oft-wrm "~v<~a~;~a~>" fn ans)))
 
 
 #+Clozure
@@ -8753,60 +7171,23 @@ next GC.~%"
 
 
 
-(defmacro globlet (bindings &rest rest)
-  ;; [Jared]: this is only used in with-lower-overhead AFAICT.
-
-  "GLOBLET is reminiscent of LET.  It is intended to be used in CCL
-  with variables that are introduced via DEFG or DEFV, i.e., may not
-  be LET or LAMBDA bound.  UNWIND-PROTECT is used to try to make sure
-  that the old value, which is assumed to exist, is restored."
-
-  (unless
-      (and (symbol-alistp bindings)
-           (loop for pair in bindings always
-                 (let ((var (car pair))
-                       (d (cdr pair)))
-                   (and (consp d)
-                        (null (cdr d))
-                        (not (constantp var))))))
-    (ofe "GLOBLET: ** bad bindings ~a." bindings))
-  (let ((vars (loop for b in bindings collect
-                    (make-symbol (symbol-name (car b))))))
-    `(let ,(loop for b in bindings as v in vars collect
-                  (list v (car b)))
-          (unwind-protect
-              (progn (psetq
-                      ,@(loop for b in bindings nconc
-                              (list (car b) (cadr b))))
-                     ,@rest)
-            (psetq ,@(loop for b in bindings as v in vars nconc
-                           (list (car b) v)))))))
 
 (defmacro with-lower-overhead (&rest r)
   `(let ((*record-bytes* nil)
          (*record-calls* nil)
          (*record-hits* nil)
-         (*record-hons-calls* nil)
          (*record-mht-calls* nil)
-         (*record-pons-calls* nil)
          (*record-time* nil))
-     ;; [Jared]: changing count-pons-calls does nothing...
-     (globlet ((*count-pons-calls* nil))
-              ,@ r)))
+     ,@r))
+
 
 (defn lower-overhead ()
   ;; Doesn't help much.
-  ;; [jared]: well no wonder -- they all seem to get checked at macroexpansion
-  ;; time, so this is probably totally worthless
   (setq *record-bytes* nil)
   (setq *record-calls* nil)
   (setq *record-hits* nil)
-  (setq *record-hons-calls* nil)
   (setq *record-mht-calls* nil)
-  (setq *record-pons-calls* nil)
-  (setq *record-time* nil)
-  ;; [Jared]: changing count-pons-calls does nothing...
-  (setq *count-pons-calls* nil))
+  (setq *record-time* nil))
 
 
 
@@ -8941,13 +7322,1450 @@ next GC.~%"
 
 
 
+(defun initialize-never-profile-ht ()
+  ;; [Jared]: ugh, horrible! we should get rid of this kind of nonsense!
+  (loop for x in
+        '(bytes-used
+          memoize-summary
+          memoize-summary-after-compute-calls-and-times
+          watch-dump
+          #+rdtsc ccl::rdtsc
+          *
+          +
+          -
+          <
+          <=
+          =
+          >
+          >=
+          abort
+          adjoin
+          adjust-array
+          allocate-instance
+          append
+          apply
+          apropos
+          apropos-list
+          aref
+          arrayp
+          assoc
+          assoc-if
+          assoc-if-not
+          atan
+          atom
+          bit
+          bit-and
+          bit-andc1
+          bit-andc2
+          bit-eqv
+          bit-ior
+          bit-nand
+          bit-nor
+          bit-not
+          bit-orc1
+          bit-orc2
+          bit-xor
+          break
+          butlast
+          car
+          cdr
+          ceiling
+          cerror
+          change-class
+          char-equal
+          char-greaterp
+          char-lessp
+          char-not-equal
+          char-not-greaterp
+          char-not-lessp
+          char/=
+          char<
+          char<=
+          char=
+          char>
+          char>=
+          clear-input
+          clear-memoize-tables
+          clear-output
+          compile
+          compile-file
+          compile-file-pathname
+          compiler-macro-function
+          complex
+          compute-restarts
+          concatenate
+          continue
+          copy-pprint-dispatch
+          copy-readtable
+          copy-symbol
+          count
+          count-if
+          count-if-not
+          decode-universal-time
+          delete
+          delete-duplicates
+          delete-if
+          delete-if-not
+          describe
+          digit-char
+          digit-char-p
+          directory
+          dribble
+          ed
+          encode-universal-time
+          enough-namestring
+          ensure-directories-exist
+          ensure-generic-function
+          eq
+          eql
+          error
+          eval
+          every
+          export
+          fboundp
+          fceiling
+          ffloor
+          file-position
+          fill
+          find
+          find-class
+          find-if
+          find-if-not
+          find-method
+          find-restart
+          find-symbol
+          finish-output
+          fixnum-to-symbol
+          float
+          float-sign
+          floor
+          force-output
+          format
+          fresh-line
+          fround
+          ftruncate
+          funcall
+          gensym
+          gentemp
+          get
+          get-dispatch-macro-character
+          get-internal-real-time
+          get-internal-run-time
+          get-macro-character
+          get-properties
+          get-setf-expansion
+          getf
+          gethash
+          if
+          import
+          initialize-instance
+          intern
+          internal-real-time
+          intersection
+          invalid-method-error
+          invoke-restart
+          last
+          ld-fn
+          len
+          len1
+          length
+          lisp-implementation-type
+          list
+          list*
+          listen
+          load
+          log
+          macro-function
+          macroexpand
+          macroexpand-1
+          make-array
+          make-broadcast-stream
+          make-concatenated-stream
+          make-condition
+          make-dispatch-macro-character
+          make-hash-table
+          make-instance
+          make-list
+          make-load-form
+          make-load-form-saving-slots
+          make-package
+          make-pathname
+          make-random-state
+          make-sequence
+          make-string
+          make-string-input-stream
+          make-string-output-stream
+          map
+          map-into
+          mapc
+          mapcan
+          mapcar
+          mapcon
+          mapl
+          maplist
+          max
+          member
+          member-if
+          member-if-not
+          memoize-call-array-grow
+          memoize-eval-compile
+          memoize-fn
+          merge
+          merge-pathnames
+          method-combination-error
+          mf-1st-warnings
+          mf-2nd-warnings
+          mf-warnings
+          mismatch
+          muffle-warning
+          nbutlast
+          nconc
+          nintersection
+          no-applicable-method
+          no-next-method
+          not
+          notany
+          notevery
+          nset-difference
+          nset-exclusive-or
+          nstring-capitalize
+          nstring-downcase
+          nstring-upcase
+          nsublis
+          nsubst
+          nsubst-if
+          nsubst-if-not
+          nsubstitute
+          nsubstitute-if
+          nsubstitute-if-not
+          null
+          nunion
+          open
+          pairlis
+          parse-integer
+          parse-namestring
+          pathname-device
+          pathname-directory
+          pathname-host
+          pathname-name
+          pathname-type
+          peek-char
+          position
+          position-if
+          position-if-not
+          pprint
+          pprint-dispatch
+          pprint-fill
+          pprint-indent
+          pprint-linear
+          pprint-newline
+          pprint-tab
+          pprint-tabular
+          prin1
+          princ
+          princ-to-string
+          print
+          print-object
+          profile-fn
+          profile-acl2
+          profile-all
+          random
+          rassoc
+          rassoc-if
+          rassoc-if-not
+          read
+          read-byte
+          read-char
+          read-char-no-hang
+          read-delimited-list
+          read-from-string
+          read-line
+          read-preserving-whitespace
+          read-sequence
+          reduce
+          reinitialize-instance
+          remove
+          remove-duplicates
+          remove-if
+          remove-if-not
+          rename-file
+          rename-package
+          replace
+          require
+          room
+          round
+          sbit
+          search
+          set-difference
+          set-dispatch-macro-character
+          set-exclusive-or
+          set-macro-character
+          set-pprint-dispatch
+          set-syntax-from-char
+          shadow
+          shadowing-import
+          shared-initialize
+          signal
+          signum
+          slot-missing
+          some
+          sort
+          stable-sort
+          store-value
+          string-capitalize
+          string-downcase
+          string-equal
+          string-greaterp
+          string-lessp
+          string-not-equal
+          string-not-greaterp
+          string-not-lessp
+          string-upcase
+          string/=
+          string<
+          string<=
+          string=
+          string>
+          string>=
+          stringp
+          sublis
+          subseq
+          subsetp
+          subst
+          subst-if
+          subst-if-not
+          substitute
+          substitute-if
+          substitute-if-not
+          subtypep
+          svref
+          symbol-to-fixnum
+          symbol-to-fixnum-create
+          symbolp
+          sync-memoize-call-array
+          sync-watch-array
+          terpri
+          time-of-last-watch-update
+          time-since-watch-start
+          translate-logical-pathname
+          translate-pathname
+          tree-equal
+          true-listp
+          truncate
+          typep
+          unexport
+          unintern
+          union
+          unread-char
+          unuse-package
+          update-instance-for-different-class
+          update-instance-for-redefined-class
+          upgraded-array-element-type
+          upgraded-complex-part-type
+          use-package
+          use-value
+          user-homedir-pathname
+          values
+          vector-push-extend
+          warn
+          watch-array-grow
+          wild-pathname-p
+          write
+          write-byte
+          write-char
+          write-line
+          write-sequence
+          write-string
+          write-to-string
+          y-or-n-p
+          yes-or-no-p)
+        do (setf (gethash x *never-profile-ht*) t)))
 
+
+(defun initialize-profile-reject-ht ()
+  (loop for sym in
+        '(ld-fn0
+          protected-eval
+          hons-read-list-top
+          hons-read-list
+          raw-ev-fncall
+          read-char$
+          1-way-unify
+          hons-copy1
+          grow-static-conses
+          bytes-used
+          lex->
+          gc-count
+          outside-p
+          shorten
+          date-string
+          strip-cars1
+          short-symbol-name
+          hons-calls
+          memoize-condition
+          1-way-unify-top
+          absorb-frame
+          access-command-tuple-number
+          access-event-tuple-depth
+          access-event-tuple-form
+          access-event-tuple-number
+          accumulate-ttree-and-step-limit-into-state
+          acl2-macro-p
+          acl2-numberp
+          add-car-to-all
+          add-cdr-to-all
+          add-command-landmark
+          add-event-landmark
+          add-g-prefix
+          add-literal
+          add-literal-and-pt
+          add-name
+          add-new-fc-pots
+          add-new-fc-pots-lst
+          add-timers
+          add-to-pop-history
+          add-to-set-eq
+          add-to-set-equal
+          add-to-tag-tree
+          advance-fc-activations
+          advance-fc-pot-lst
+          all-args-occur-in-top-clausep
+          all-calls
+          all-fnnames1
+          all-nils
+          all-ns
+          all-quoteps
+          all-runes-in-ttree
+          all-vars
+          all-vars1
+          all-vars1-lst
+          alphorder
+          ancestors-check
+          and-macro
+          and-orp
+          apply-top-hints-clause
+          approve-fc-derivations
+          aref1
+          aref2
+          arglistp
+          arglistp1
+          arith-fn-var-count
+          arith-fn-var-count-lst
+          arity
+          assoc-eq
+          assoc-equal
+          assoc-equal-cdr
+          assoc-equiv
+          assoc-equiv+
+          assoc-keyword
+          assoc-no-error-at-end
+          assoc-type-alist
+          assume-true-false
+          assume-true-false1
+          atoms
+          augment-ignore-vars
+          backchain-limit
+          bad-cd-list
+          not-pat-p
+          basic-worse-than
+          being-openedp-rec
+          big-n
+          binary-+
+          binary-append
+          bind-macro-args
+          bind-macro-args-after-rest
+          bind-macro-args-keys
+          bind-macro-args-keys1
+          bind-macro-args-optional
+          bind-macro-args1
+          binding-hyp-p
+          binop-table
+          body
+          boolean-listp
+          booleanp
+          boundp-global
+          boundp-global1
+          brkpt1
+          brkpt2
+          built-in-clausep
+          built-in-clausep1
+          bytes-allocated
+          bytes-allocated/call
+          call-stack
+          canonical-representative
+          car-cdr-nest
+          case-list
+          case-split-limitations
+          case-test
+          change-plist
+          change-plist-first-preferred
+          character-listp
+          chars-for-int
+          chars-for-num
+          chars-for-pos
+          chars-for-pos-aux
+          chars-for-rat
+          chase-bindings
+          chk-acceptable-defuns
+          chk-acceptable-ld-fn
+          chk-acceptable-ld-fn1
+          chk-acceptable-ld-fn1-pair
+          chk-all-but-new-name
+          chk-arglist
+          chk-assumption-free-ttree
+          chk-dcl-lst
+          chk-declare
+          chk-defun-mode
+          chk-defuns-tuples
+          chk-embedded-event-form
+          chk-free-and-ignored-vars
+          chk-free-and-ignored-vars-lsts
+          chk-irrelevant-formals
+          chk-just-new-name
+          chk-just-new-names
+          chk-legal-defconst-name
+          chk-length-and-keys
+          chk-no-duplicate-defuns
+          chk-table-guard
+          chk-table-nil-args
+          chk-xargs-keywords
+          chk-xargs-keywords1
+          clausify
+          clausify-assumptions
+          clausify-input
+          clausify-input1
+          clausify-input1-lst
+          clean-type-alist
+          clear-memoize-table
+          clear-memoize-tables
+          cltl-def-from-name
+          coerce-index
+          coerce-object-to-state
+          coerce-state-to-object
+          collect-assumptions
+          collect-dcls
+          collect-declarations
+          collect-non-x
+          comm-equal
+          complementaryp
+          complex-rationalp
+          compute-calls-and-times
+          compute-inclp-lst
+          compute-inclp-lst1
+          compute-stobj-flags
+          cond-clausesp
+          cond-macro
+          conjoin
+          conjoin-clause-sets
+          conjoin-clause-to-clause-set
+          conjoin2
+          cons-make-list
+          cons-ppr1
+          cons-term
+          cons-term2
+          const-list-acc
+          constant-controller-pocketp
+          constant-controller-pocketp1
+          contains-guard-holdersp
+          contains-guard-holdersp-lst
+          contains-rewriteable-callp
+          controller-complexity
+          controller-complexity1
+          controller-pocket-simplerp
+          controllers
+          convert-clause-to-assumptions
+          csh
+          current-package
+          dcls
+          def-body
+          default-defun-mode
+          default-hints
+          default-print-prompt
+          default-verify-guards-eagerness
+          defconst-fn
+          defined-constant
+          defn-listp
+          defnp
+          defun-fn
+          defuns-fn
+          defuns-fn0
+          delete-assumptions
+          delete-assumptions-1
+          digit-to-char
+          disjoin
+          disjoin-clause-segment-to-clause-set
+          disjoin-clauses
+          disjoin-clauses1
+          disjoin2
+          distribute-first-if
+          doc-stringp
+          doubleton-list-p
+          dumb-assumption-subsumption
+          dumb-assumption-subsumption1
+          dumb-negate-lit
+          dumb-negate-lit-lst
+          dumb-occur
+          dumb-occur-lst
+          duplicate-keysp
+          eapply
+          enabled-numep
+          enabled-xfnp
+          ens
+          eoccs
+          eqlable-listp
+          eqlablep
+          equal-mod-alist
+          equal-mod-alist-lst
+          er-progn-fn
+          ev
+          ev-fncall
+          ev-fncall-rec
+          ev-for-trans-eval
+          ev-rec
+          ev-rec-lst
+          eval-bdd-ite
+          eval-event-lst
+          eval-ground-subexpressions
+          eval-ground-subexpressions-lst
+          evens
+          every-occurrence-equiv-hittablep1
+          every-occurrence-equiv-hittablep1-listp
+          eviscerate
+          eviscerate-stobjs
+          eviscerate-stobjs1
+          eviscerate1
+          eviscerate1-lst
+          eviscerate1p
+          eviscerate1p-lst
+          evisceration-stobj-marks
+          expand-abbreviations
+          expand-abbreviations-lst
+          expand-abbreviations-with-lemma
+          expand-and-or
+          expand-any-final-implies1
+          expand-any-final-implies1-lst
+          expand-clique-alist
+          expand-clique-alist-term
+          expand-clique-alist-term-lst
+          expand-clique-alist1
+          expand-permission-result
+          expand-some-non-rec-fns
+          expand-some-non-rec-fns-lst
+          explode-atom
+          extend-car-cdr-sorted-alist
+          extend-type-alist
+          extend-type-alist-simple
+          extend-type-alist-with-bindings
+          extend-type-alist1
+          extend-with-proper/improper-cons-ts-tuple
+          extract-and-clausify-assumptions
+          f-and
+          f-booleanp
+          f-ite
+          f-not
+          fc-activation
+          fc-activation-lst
+          fc-pair-lst
+          fc-pair-lst-type-alist
+          fetch-from-zap-table
+          ffnnamep
+          ffnnamep-hide
+          ffnnamep-hide-lst
+          ffnnamep-lst
+          ffnnamep-mod-mbe
+          ffnnamep-mod-mbe-lst
+          ffnnamesp
+          ffnnamesp-lst
+          fgetprop
+          filter-geneqv-lst
+          filter-with-and-without
+          find-abbreviation-lemma
+          find-alternative-skip
+          find-alternative-start
+          find-alternative-start1
+          find-alternative-stop
+          find-and-or-lemma
+          find-applicable-hint-settings
+          find-clauses
+          find-clauses1
+          find-mapping-pairs-tail
+          find-mapping-pairs-tail1
+          find-rewriting-equivalence
+          find-subsumer-replacement
+          first-assoc-eq
+          first-if
+          fix-declares
+          flpr
+          flpr1
+          flpr11
+          flsz
+          flsz-atom
+          flsz-integer
+          flsz1
+          flush-hons-get-hash-table-link
+          fms
+          fmt
+          fmt-char
+          fmt-ctx
+          fmt-hard-right-margin
+          fmt-ppr
+          fmt-soft-right-margin
+          fmt-symbol-name
+          fmt-symbol-name1
+          fmt-var
+          fmt0
+          fmt0&v
+          fmt0*
+          fmt1
+          fn-count-1
+          fn-count-evg-rec
+          fn-rune-nume
+          fnstack-term-member
+          formal-position
+          formals
+          free-varsp
+          free-varsp-lst
+          function-symbolp
+          gatom
+          gatom-booleanp
+          gen-occs
+          gen-occs-list
+          geneqv-lst
+          geneqv-lst1
+          geneqv-refinementp
+          geneqv-refinementp1
+          general
+          gentle-binary-append
+          gentle-atomic-member
+          gentle-caaaar
+          gentle-caaadr
+          gentle-caaar
+          gentle-caadar
+          gentle-caaddr
+          gentle-caadr
+          gentle-caar
+          gentle-cadaar
+          gentle-cadadr
+          gentle-cadar
+          gentle-caddar
+          gentle-cadddr
+          gentle-caddr
+          gentle-cadr
+          gentle-car
+          gentle-cdaaar
+          gentle-cdaadr
+          gentle-cdaar
+          gentle-cdadar
+          gentle-cdaddr
+          gentle-cdadr
+          gentle-cdar
+          gentle-cddaar
+          gentle-cddadr
+          gentle-cddar
+          gentle-cdddar
+          gentle-cddddr
+          gentle-cdddr
+          gentle-cddr
+          gentle-cdr
+          gentle-getf
+          gentle-length
+          gentle-revappend
+          gentle-reverse
+          gentle-strip-cars
+          gentle-strip-cdrs
+          gentle-take
+          genvar
+          get-and-chk-last-make-event-expansion
+          get-declared-stobj-names
+          get-doc-string
+          get-docs
+          get-global
+          get-guards
+          get-guards1
+          get-guardsp
+          get-ignorables
+          get-ignores
+          get-integer-from
+          get-level-no
+          get-package-and-name
+          get-stobjs-in-lst
+          get-string
+          get-timer
+          get-unambiguous-xargs-flg
+          get-unambiguous-xargs-flg1
+          get-unambiguous-xargs-flg1/edcls
+          getprop-default
+          gify
+          gify-all
+          gify-file
+          gify-list
+          global-set
+          global-val
+          good-defun-mode-p
+          gsal
+          gtrans-atomic
+          guard
+          guard-clauses
+          guard-clauses-for-clique
+          guard-clauses-for-fn
+          guard-clauses-lst
+          guess-and-putprop-type-prescription-lst-for-clique
+          guess-and-putprop-type-prescription-lst-for-clique-step
+          guess-type-prescription-for-fn-step
+          hide-ignored-actuals
+          hide-noise
+          hits/calls
+          hons
+          hons-acons
+          hons-acons!
+          hons-acons-summary
+          hons-copy-restore
+          hons-copy2-consume
+          hons-copy3-consume
+          hons-copy1-consume
+          hons-copy1-consume-top
+          hons-copy2
+          hons-copy3
+          hons-copy1
+          hons-copy1-top
+          hons-copy
+          hons-copy-list-cons
+          hons-copy-r
+          hons-copy-list-r
+          hons-copy
+          hons-dups-p
+          hons-dups-p1
+          hons-gentemp
+          hons-get-fn-do-hopy
+          hons-get-fn-do-not-hopy
+          hons-int1
+          hons-intersection
+          hons-intersection2
+          hons-len
+          hons-member-equal
+          hons-normed
+          hons-put-list
+          hons-sd1
+          hons-set-diff
+          hons-set-diff2
+          hons-set-equal
+          hons-shrink-alist
+          hons-shrink-alist!
+          hons-subset
+          hons-subset2
+          hons-union1
+          hons-union2
+          if-compile
+          if-compile-formal
+          if-compile-lst
+          if-interp
+          if-interp-add-clause
+          if-interp-assume-true
+          if-interp-assumed-value
+          if-interp-assumed-value-x
+          if-interp-assumed-value1
+          if-interp-assumed-value2
+          ignorable-vars
+          ignore-vars
+          in-encapsulatep
+          increment-timer
+          induct-msg/continue
+          initialize-brr-stack
+          initialize-summary-accumulators
+          initialize-timers
+          inst
+          install-event
+          install-global-enabled-structure
+          intern-in-package-of-symbol
+          intersection-eq
+          intersectp-eq
+          irrelevant-non-lambda-slots-clique
+          keyword-param-valuep
+          keyword-value-listp
+          known-package-alist
+          known-whether-nil
+          kwote
+          lambda-nest-hidep
+          latch-stobjs
+          latch-stobjs1
+          ld-error-triples
+          ld-evisc-tuple
+          ld-filter-command
+          ld-fn-alist
+          ld-fn-body
+          ld-loop
+          ld-post-eval-print
+          ld-pre-eval-filter
+          ld-pre-eval-print
+          ld-print-command
+          ld-print-prompt
+          ld-print-results
+          ld-prompt
+          ld-read-command
+          ld-read-eval-print
+          ld-skip-proofsp
+          ld-verbose
+          legal-case-clausesp
+          legal-constantp
+          legal-variable-or-constant-namep
+          legal-variablep
+          len
+          let*-macro
+          lexorder
+          list*-macro
+          list-fast-fns
+          list-macro
+          list-to-pat
+          listify
+          listlis
+          locn-acc
+          look-in-type-alist
+          lookup-hyp
+          lookup-world-index
+          lookup-world-index1
+          loop-stopperp
+          macro-args
+          macroexpand1
+          main-timer
+          make-bit
+          make-clique-alist
+          make-event-ctx
+          make-event-debug-post
+          make-event-debug-pre
+          make-event-fn
+          make-fmt-bindings
+          make-list-of-symbols
+          make-list-with-tail
+          make-occs-map1
+          make-slot
+          make-symbol-with-number
+          map-type-sets-via-formals
+          match-free-override
+          max-absolute-command-number
+          max-absolute-event-number
+          max-form-count
+          max-form-count-lst
+          max-level-no
+          max-level-no-lst
+          max-width
+          may-need-slashes
+          maybe-add-command-landmark
+          maybe-add-space
+          maybe-gify
+          maybe-reduce-memoize-tables
+          maybe-str-hash
+          maybe-zify
+          member-complement-term
+          member-complement-term1
+          member-eq
+          member-equal
+          member-equal-+-
+          member-symbol-name
+          member-term
+          memoizedp-raw
+          mer-star-star
+          merge-runes
+          merge-sort
+          merge-sort-car->
+          merge-sort-length
+          merge-sort-runes
+          most-recent-enabled-recog-tuple
+          mv-atf
+          mv-nth
+          mv-nth-list
+          n2char
+          nat-list-to-list-of-chars
+          nat-to-list
+          nat-to-string
+          nat-to-v
+          natp
+          new-backchain-limit
+          newline
+          next-absolute-event-number
+          next-tag
+          next-wires
+          nfix
+          nmake-if
+          nmerge
+          no-duplicatesp
+          no-duplicatesp-equal
+          no-op-histp
+          nominate-destructor-candidates
+          non-linearp
+          non-stobjps
+          normalize
+          normalize-lst
+          normalize-with-type-set
+          not-instance-name-p
+          not-pat-receiving
+          dubious-to-profile
+          not-safe-for-synthesis-list
+          not-to-be-rewrittenp
+          not-to-be-rewrittenp1
+          nth-update-rewriter
+          nth-update-rewriter-target-lstp
+          nth-update-rewriter-targetp
+          nu-rewriter-mode
+          num-0-to-9-to-char
+          num-to-bits
+          number-of-arguments
+          number-of-calls
+          number-of-hits
+          number-of-memoized-entries
+          number-of-mht-calls
+          number-of-return-values
+          number-of-strings
+          obfb
+          obj-table
+          odds
+          ofe
+          ofnum
+          ofv
+          ofvv
+          ofw
+          ok-to-force
+          oncep
+          one-way-unify
+          one-way-unify-restrictions
+          one-way-unify1
+          one-way-unify1-equal
+          one-way-unify1-equal1
+          one-way-unify1-lst
+          open-input-channel
+          open-output-channel
+          open-output-channel-p
+          or-macro
+          output-ignored-p
+          output-in-infixp
+          pairlis$
+          pairlis2
+          pal
+          partition-according-to-assumption-term
+          permute-occs-list
+          pons
+          pons-calls
+          pop-accp
+          pop-clause
+          pop-clause-msg
+          pop-clause-msg1
+          pop-clause1
+          pop-timer
+          pop-warning-frame
+          posp
+          ppr
+          ppr1
+          ppr1-lst
+          ppr2
+          ppr2-column
+          ppr2-flat
+          prefix
+          preprocess-clause
+          preprocess-clause-msg1
+          prin1$
+          princ$
+          print-alist
+          print-base-p
+          print-call-stack
+          print-defun-msg
+          print-defun-msg/collect-type-prescriptions
+          print-defun-msg/type-prescriptions
+          print-defun-msg/type-prescriptions1
+          print-prompt
+          print-rational-as-decimal
+          print-redefinition-warning
+          print-rules-summary
+          print-summary
+          print-time-summary
+          print-timer
+          print-verify-guards-msg
+          print-warnings-summary
+          profile-g-fns
+          progn-fn
+          progn-fn1
+          program-term-listp
+          program-termp
+          proofs-co
+          proper/improper-cons-ts-tuple
+          prove
+          prove-guard-clauses
+          prove-loop
+          prove-loop1
+          pseudo-term-listp
+          pseudo-termp
+          pseudo-variantp
+          pseudo-variantp-list
+          pt-intersectp
+          pt-occur
+          pts-to-ttree-lst
+          puffert
+          push-accp
+          push-ancestor
+          push-io-record
+          push-lemma
+          push-timer
+          push-warning-frame
+          put-assoc-eq
+          put-global
+          put-ttree-into-pspv
+          putprop
+          putprop-defun-runic-mapping-pairs
+          quickly-count-assumptions
+          quote-listp
+          quotep
+          qzget-sign-abs
+          raw-mode-p
+          read-acl2-oracle
+          read-object
+          read-run-time
+          read-standard-oi
+          recompress-global-enabled-structure
+          recompress-stobj-accessor-arrays
+          record-accessor-function-name
+          recursive-fn-on-fnstackp
+          redundant-or-reclassifying-defunsp1
+          relevant-slots-call
+          relevant-slots-clique
+          relevant-slots-clique1
+          relevant-slots-def
+          relevant-slots-term
+          relevant-slots-term-lst
+          relieve-hyp
+          relieve-hyps
+          relieve-hyps1
+          remove-evisc-marks
+          remove-evisc-marks-al
+          remove-invisible-fncalls
+          remove-keyword
+          remove-one-+-
+          remove-strings
+          replace-stobjs
+          replace-stobjs1
+          replaced-stobj
+          ret-stack
+          return-type-alist
+          rewrite
+          rewrite-args
+          rewrite-fncall
+          rewrite-fncallp
+          rewrite-fncallp-listp
+          rewrite-if
+          rewrite-if1
+          rewrite-if11
+          rewrite-primitive
+          rewrite-recognizer
+          rewrite-solidify
+          rewrite-solidify-plus
+          rewrite-solidify-rec
+          rewrite-stack-limit
+          rewrite-with-lemma
+          rewrite-with-lemmas
+          rewrite-with-lemmas1
+          rewrite-with-linear
+          rune-<
+          runep
+          safe-1+
+          safe-1-
+          safe-<
+          safe-<=
+          safe-binary-+
+          safe-binary--
+          safe-caaaar
+          safe-caaadr
+          safe-caaar
+          safe-caadar
+          safe-caaddr
+          safe-caadr
+          safe-caar
+          safe-cadaar
+          safe-cadadr
+          safe-cadar
+          safe-caddar
+          safe-cadddr
+          safe-caddr
+          safe-cadr
+          safe-car
+          safe-cdaaar
+          safe-cdaadr
+          safe-cdaar
+          safe-cdadar
+          safe-cdaddr
+          safe-cdadr
+          safe-cdar
+          safe-cddaar
+          safe-cddadr
+          safe-cddar
+          safe-cdddar
+          safe-cddddr
+          safe-cdddr
+          safe-cddr
+          safe-cdr
+          safe-code-char
+          safe-coerce
+          safe-floor
+          safe-intern-in-package-of-symbol
+          safe-lognot
+          safe-max
+          safe-mod
+          safe-nthcdr
+          safe-rem
+          safe-strip-cars
+          safe-symbol-name
+          saved-output-token-p
+          scan-past-whitespace
+          scan-to-cltl-command
+          scan-to-landmark-number
+          scons-tag-trees
+          scons-tag-trees1
+          search-type-alist
+          search-type-alist-rec
+          set-cl-ids-of-assumptions
+          set-difference-eq
+          set-timer
+          set-w
+          set-w!
+          sgetprop
+          simple-translate-and-eval
+          simplify-clause-msg1
+          simplify-clause1
+          slot-member
+          some-congruence-rule-disabledp
+          some-controller-pocket-constant-and-non-controller-simplerp
+          some-geneqv-disabledp
+          some-subterm-worse-than-or-equal
+          some-subterm-worse-than-or-equal-lst
+          sort-approved
+          sort-approved1
+          sort-approved1-rating1
+          sort-occurrences
+          spaces
+          splice-instrs
+          splice-instrs1
+          split-on-assumptions
+          ssn
+          standard-co
+          standard-oi
+          state-p1
+          std-apart
+          std-apart-top
+          step-limit
+          stobjp
+          stobjs-in
+          stobjs-out
+          stop-redundant-event
+          store-clause
+          store-clause1
+          string-append-lst
+          string-from-list-of-chars
+          string-listp
+          strip-assumption-terms
+          strip-branches
+          strip-cadrs
+          strip-cars
+          strip-cdrs
+          subcor-var
+          subcor-var-lst
+          subcor-var1
+          sublis-expr
+          sublis-expr-lst
+          sublis-occ
+          sublis-pat
+          sublis-var
+          sublis-var-lst
+          subsetp-eq
+          subsumption-replacement-loop
+          suffix
+          sweep-clauses
+          sweep-clauses1
+          symbol-<
+          symbol-alistp
+          symbol-class
+          symbol-listp
+          symbol-package-name
+          t-and
+          t-fix
+          t-ite
+          t-list
+          t-not
+          t-or
+          table-alist
+          table-fn
+          table-fn1
+          tag-tree-occur
+          tagged-object
+          tagged-objects
+          tame-symbolp
+          term-and-typ-to-lookup
+          term-order
+          termp
+          thm-fn
+          tilde-*-preprocess-phrase
+          tilde-*-simp-phrase
+          tilde-*-simp-phrase1
+          tilde-@-abbreviate-object-phrase
+          time-for-non-hits/call
+          time-limit5-reached-p
+          time/call
+          to
+          to-be-ignoredp
+          to-if-error-p
+          too-long
+          total-time
+          trans-alist
+          trans-alist1
+          trans-eval
+          translate-bodies
+          translate-bodies1
+          translate-dcl-lst
+          translate-deref
+          translate-doc
+          translate-hints
+          translate-term-lst
+          translate1
+          translate11
+          translate11-lst
+          translate11-mv-let
+          translated-acl2-unwind-protectp
+          translated-acl2-unwind-protectp4
+          tree-occur
+          true-listp
+          type-alist-clause-finish
+          type-alist-clause-finish1
+          type-alist-equality-loop
+          type-alist-equality-loop1
+          type-alist-fcd-lst
+          type-set
+          type-set-<
+          type-set-<-1
+          type-set-and-returned-formals
+          type-set-and-returned-formals-with-rule
+          type-set-car
+          type-set-cdr
+          type-set-cons
+          type-set-equal
+          type-set-finish
+          type-set-lst
+          type-set-not
+          type-set-primitive
+          type-set-quote
+          type-set-recognizer
+          type-set-relieve-hyps
+          type-set-with-rule
+          type-set-with-rule1
+          type-set-with-rules
+          unencumber-assumptions
+          unify
+          unify-sa-p
+          union-eq
+          union-equal
+          untranslate
+          untranslate-lst
+          untranslate-preprocess-fn
+          untranslate1
+          untranslate1-lst
+          update-world-index
+          us
+          user-stobj-alist
+          user-stobj-alist-safe
+          user-stobjsp
+          v-to-nat
+          var-fn-count
+          var-fn-count-lst
+          var-lessp
+          var-to-tree
+          var-to-tree-list
+          vars-of-fal-aux
+          verify-guards-fn1
+          vx2
+          w
+          warning-off-p
+          wash-memory
+          watch-count
+          maybe-watch-dump
+          incf-watch-count
+          set-watch-count
+          watch-help
+          time-of-last-watch-update
+          watch-shell-command
+          time-since-watch-start
+          make-watchdog
+          watch
+          watch-kill
+          watch-condition
+          waterfall
+          waterfall-msg
+          waterfall-msg1
+          waterfall-print-clause
+          waterfall-step
+          waterfall-step1
+          waterfall0
+          waterfall1
+          waterfall1-lst
+          widen
+          watch-real-time
+          watch-run-time
+          world-evisceration-alist
+          worse-than
+          worth-hashing
+          worth-hashing1
+          x-and
+          x-buf
+          x-ff
+          x-latch+
+          x-latch-
+          x-latch-+
+          x-mux
+          x-not
+          x-or
+          x-xor
+          xor
+          xxxjoin
+          zip-variable-type-alist
+          zp)
+        do
+        (setf (gethash sym *profile-reject-ht*) t)))
 
 
 
 ; -----------------------------------------------------------------------------
+; STUFF I KILLED
 
 ; [Jared] None of this stuff seems to be in use anymore.
+
+; Feature stuff...
+
+ ;; [Jared]: Don't know why we have this restriction.  Per the SVN messages it
+ ;; looks like this version was from December 2009 and dealt with some garbage
+ ;; collection things... we probably want people on a recent version, but I
+ ;; don't think it's our job to defend them from bugs in old Lisps, so I'm
+ ;; going to remove this.
+
+ ;; #+Clozure
+ ;; (unless (> (parse-integer ccl::*openmcl-svn-revision* :junk-allowed t) 13296)
+ ;;   (fresh-line)
+ ;;   (princ "Better use a version of CCL past revision 13295."))
+
+
+
+ ;; [Jared]: Below are the old comments about :parallel.  This feature hasn't
+ ;; been enabled for a long time as far as I can tell.  We probably need to
+ ;; revisit everything related to #+parallel.  We probably also want to use the
+ ;; #+acl2-par feature instead of #+parallel, for eventual compatibility with
+ ;; ACL2(p).  It appears that #+parallel is only used in this file.
+
+ ;; (pushnew :parallel *features*) causes a lot of locking that is of no value
+ ;; in a sequentially executing system.  We have attempted to make honsing,
+ ;; memoizing, and Emod-compilation 'thread safe', whatever in hell that means,
+ ;; but we have no idea what we are really doing and are simply coding based
+ ;; upon what we feel is intuitive common sense.  Very subtle stuff.
+
+ ;; #+parallel
+ ;; (unless (member :Clozure *features*)
+ ;;  (error "We use CCL primitives for parallelism."))
+
+
+
+
+; Dead and killed code...
 
 
 ;; [Jared] This seems to be unused
@@ -9305,3 +9123,142 @@ next GC.~%"
 ;;   (cond ((atom x) nil)
 ;;         (t (list 'pons (car x)
 ;;                  (cons 'pist (cdr x)) table))))
+
+
+
+; [Jared] I'm eliminating *count-pons-calls*.
+;
+; Note that the old functions maybe-count-pons-[calls|misses] macros were
+; testing *count-pons-calls* at macroexpansion time, so despite this thing
+; having been a defparameter, it wasn't meaningful to rebind it at runtime.
+; In practice we were always counting pons calls.  So, if that's what we
+; want to do, let's just do it.
+
+;; (defparameter *count-pons-calls* t
+
+;;   "If *COUNT-PONS-CALLS*, then each call of PONS increments *PONS-CALL-COUNTER*
+;;   by 1, and each call of PONS that does not find the desired PONS to already
+;;   exist increments *PONS-MISSES-COUNTER* by 1.
+
+;;   Thread Safety Note: these counters aren't protected by locks.  If we ever
+;;   have multiple threads executing memoized functions, the counts may be
+;;   somewhat low.  But that's probably no big deal.")
+
+
+
+
+
+
+;; (defparameter *count-pons-calls* t
+
+;; ; [Jared]: BOZO note that the maybe-count-pons-[calls|misses] macros test this
+;; ; at macroexpansion time, so despite being a defparameter, rebinding this or
+;; ; setting it to NIL at runtime will not be meaningful!
+
+;;   "If *COUNT-PONS-CALLS*, then each call of PONS increments *PONS-CALL-COUNTER*
+;;   by 1, and each call of PONS that does not find the desired PONS to already
+;;   exist increments *PONS-MISSES-COUNTER* by 1.
+
+;;   Thread Safety Note: these counters aren't protected by locks.  If we ever
+;;   have multiple threads executing memoized functions, the counts may be
+;;   somewhat low.  But that's probably no big deal.")
+
+
+;; Hooray, eliminating *count-pons-calls* means we don't need globlet.
+
+;; (defmacro globlet (bindings &rest rest)
+;;   ;; [Jared]: this is only used in with-lower-overhead AFAICT.
+
+;;   "GLOBLET is reminiscent of LET.  It is intended to be used in CCL
+;;   with variables that are introduced via DEFG or DEFV, i.e., may not
+;;   be LET or LAMBDA bound.  UNWIND-PROTECT is used to try to make sure
+;;   that the old value, which is assumed to exist, is restored."
+
+;;   (unless
+;;       (and (symbol-alistp bindings)
+;;            (loop for pair in bindings always
+;;                  (let ((var (car pair))
+;;                        (d (cdr pair)))
+;;                    (and (consp d)
+;;                         (null (cdr d))
+;;                         (not (constantp var))))))
+;;     (ofe "GLOBLET: ** bad bindings ~a." bindings))
+;;   (let ((vars (loop for b in bindings collect
+;;                     (make-symbol (symbol-name (car b))))))
+;;     `(let ,(loop for b in bindings as v in vars collect
+;;                   (list v (car b)))
+;;           (unwind-protect
+;;               (progn (psetq
+;;                       ,@(loop for b in bindings nconc
+;;                               (list (car b) (cadr b))))
+;;                      ,@rest)
+;;             (psetq ,@(loop for b in bindings as v in vars nconc
+;;                            (list (car b) v)))))))
+
+;; never used
+;; (defg *ofb-msg-list* nil)
+
+;; never used
+;; (defun ofb (&rest r) ; For writing to *debug-io* and breaking.
+;;   (our-syntax-nice
+;;    (format *debug-io* "~%; ** Warning and break:  ")
+;;    (let ((*print-level* 3) (*print-length* 5) (*print-lines* 6))
+;;      (let ((ab (loop for x in r collect (abbrev x))))
+;;        (apply #'format *debug-io* ab)
+;;        (when (loop for x in ab as y in r thereis (not (eq x y)))
+;;          (push (cons 'ofe r) *ofb-msg-list*)
+;;          (format *error-output* "~%; See *ofb-msg-list*."))
+;;        (force-output *debug-io*)
+;;        (error "")))
+;;    (break "ofb")))
+
+;; never used
+;; (defmacro ofg (&rest r) ; For verbose gc info.
+;;     `(when *hons-verbose*
+;;        (format *debug-io* ,@r)
+;;        (force-output *debug-io*)))
+
+
+
+; [Jared] I decided to stop counting ponses.  I think we really don't care.
+; before I decided to do this, I had changed the implementation a bit to just
+; use regular incf instead of safe-incf.
+
+;; ; To keep counting cheap, these counters aren't protected by locks.  If
+;; ; multiple threads are ever simultaneously ponsing, the counts may be
+;; ; under-reported.
+;; ;
+;; ; The mfixnum declarations aren't justified, but a rough timing loop says a
+;; ; billion calls of (pons nil nil nil) takes 16 seconds, so you'd have to do
+;; ; nothing but pons for 584 years to exceed the mfixnum range.
+
+;; (defg *pons-call-counter*   0)
+;; (defg *pons-misses-counter* 0)
+
+;; (declaim (type mfixnum *pons-call-counter*))
+;; (declaim (type mfixnum *pons-misses-counter*))
+
+;; (defw pons-calls/sec-run-time
+;;   (let* ((c *pons-call-counter*)
+;;          (ans
+;;           (cond ((eql c 0) "No pons calls yet.")
+;;                 (t (ofn "~,1e" (round (/ c (+ .000001
+;;                                               (watch-run-time)))))))))
+;;     (oft-wrm "~v<~a~;~a~>" fn ans)))
+
+;; (defw pons-hits/calls
+;;   (let* ((c *pons-call-counter*)
+;;          (h (- c *pons-misses-counter*))
+;;          (ans
+;;           (cond ((eql c 0) "No pons calls yet.")
+;;                 (t (ofn "~,1e / ~,1e = ~,2f" h c (/ h c))))))
+;;     (oft-wrm "~v<~a~;~a~>" fn ans)))
+
+
+;; (defparameter *record-hons-calls* t
+;;   "If *RECORD-HONS-CALLS* in not NIL a function is memoized, HONS
+;;   calls are counted.")
+
+;; (defparameter *record-pons-calls* t
+;;   "If *RECORD-PONS-CALLS* is not NIL at the time a function is
+;;   memoized, pons calls are counted.")

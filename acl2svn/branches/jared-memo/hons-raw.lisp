@@ -1089,6 +1089,8 @@
 ; and NIL.  Wrapping this in a function is mainly intended to avoid code blowup
 ; from inlining.
 
+; NOTE: Keep this in sync with pons-addr-of-argument.
+
   (cond ((symbolp x)
          (hl-symbol-addr x))
 
@@ -1139,6 +1141,8 @@
 ; Even though it may modify the hons space, all invariants are preserved by the
 ; update; the only change is that OTHER-HT may be extended with a new entry,
 ; but the new entry is already valid by the time it is installed.
+
+; NOTE: Keep this in sync with pons-addr-of-argument.
 
   `(let ((x ,x))
      (cond ((consp x)
