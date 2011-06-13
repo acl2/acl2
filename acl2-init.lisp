@@ -120,6 +120,35 @@ implementations.")
 
 (load "acl2.lisp")
 
+; Fix a bug in SBCL 1.0.49 (https://bugs.launchpad.net/bugs/795705), thanks to
+; patch provided by Nikodemus Siivola.
+#+sbcl
+(in-package :sb-c)
+#+sbcl
+(when (equal (lisp-implementation-version) "1.0.49")
+  (without-package-locks
+
+   (defun undefine-fun-name (name)
+     (when name
+       (macrolet ((frob (type &optional val)
+                        `(unless (eq (info :function ,type name) ,val)
+                           (setf (info :function ,type name) ,val))))
+                 (frob :info)
+                 (frob :type (specifier-type 'function))
+                 (frob :where-from :assumed)
+                 (frob :inlinep)
+                 (frob :kind)
+                 (frob :macro-function)
+                 (frob :inline-expansion-designator)
+                 (frob :source-transform)
+                 (frob :structure-accessor)
+                 (frob :assumed-type)))
+     (values))
+   ))
+
+; WARNING: The next form should be an in-package (see in-package form for sbcl
+; just above).
+
 ;  Now over to the "ACL2" package for the rest of this file.
 
 (in-package "ACL2")
