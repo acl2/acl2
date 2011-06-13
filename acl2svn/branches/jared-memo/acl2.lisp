@@ -586,6 +586,7 @@
     #+hons "h-shells-raw"
     #+hons "h-casemacro-raw"
     #+hons "h-watch-raw"
+    #+hons "h-memsum-raw"
     "translate"
     "type-set-a"
     "linear-a"

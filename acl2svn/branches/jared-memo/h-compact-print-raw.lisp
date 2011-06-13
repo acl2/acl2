@@ -628,11 +628,10 @@
 (defg *hons-readtable-init-done* nil)
 
 (defn1 hons-readtable-init ()
-  ;; called as part of hons-init
 
   (when *hons-readtable-init-done*
-    ;; [Jared]: hrmn, we could just return instead...
-    (error "hons-readtable-init: already done."))
+    ;; Already initialized
+    (return-from hons-readtable-init nil))
 
   (setq *hons-readtable*
         ;; BOZO why?  it already started as a copy of the acl2-readtable...

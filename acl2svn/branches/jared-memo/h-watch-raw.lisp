@@ -24,6 +24,36 @@
 (declaim (type (array character (*)) *watch-string*))
 
 
+
+(defn print-ancestry (&optional (p (ccl::getpid)))
+  (with-open-stream
+   (s (csh :stream "ps ww -A -o pid,ppid,cmd"))
+   (let (first l ans trip)
+     (loop (setq first (read s nil nil))
+           (when (null first) (return nil))
+           (push (list first (read s nil nil) (read-line s nil nil))
+                 l))
+     (loop (setq trip (assoc p l))
+           (when (null trip) (return nil))
+           (push (caddr trip) ans)
+           (setq p (cadr trip)))
+     (setq ans (nreverse ans))
+     (loop for i from 0 while ans do
+           (terpri)
+           (loop repeat i do (write-char #\Space))
+           (princ (pop ans))))))
+
+(defn print-fds (&optional (p (ccl::getpid)))
+  (loop for x in (directory (ofn "/proc/~a/fd/*" p))
+        do
+        (let ((n (namestring x)))
+          (unless (or (eql #\/ (char n (1- (length n))))
+                      (looking-at "/dev/pts/" n)
+                      (looking-at "/scratch/" n)
+                      (looking-at "/proc/" n))
+            (fresh-line)
+            (princ n)))))
+
 (defg *watch-forms*
   '("\"A string or a quoted form in *WATCH-FORMS* is ignored.\""
     (print-call-stack)
@@ -207,14 +237,12 @@
 
   `(progn
      (cond ((not (eq *watch-startup-process* ccl::*current-process*))
-            (ofd "~%; WITH-WATCH-LOCK: ** Only the ~
-                   *WATCH-STARTUP-PROCESS* may obtain the watch ~
-                   lock."))
+            (format t "~%; WITH-WATCH-LOCK: ** Only the ~
+                       *WATCH-STARTUP-PROCESS* may obtain the watch lock."))
            ((not (eql 0 ccl::*break-level*))
-            (ofd "~%; WITH-WATCH-LOCK: ** (eql 0 ~
-                  ccl::*break-level*)."))
+            (format t "~%; WITH-WATCH-LOCK: ** (eql 0 ccl::*break-level*)."))
            ((not *watch-file*)
-            (ofd "~%; *WATCH-FILE* is NIL.  Invoke (watch)."))
+            (format t "~%; *WATCH-FILE* is NIL.  Invoke (watch)."))
            ((eql 0 (hash-table-count *watch-lock-ht*))
 
 ; At this point, nothing has the watch lock.  We race for the watch
@@ -231,15 +259,15 @@
 ; competitors will do nothing.
 
                            ,@r)
-                          (t (ofd "~%; WITH-WATCH-LOCK: ** the watch ~
-                                   lock is currently taken."))))
+                          (t (format t "~%; WITH-WATCH-LOCK: ** the watch ~
+                                        lock is currently taken."))))
                 (remhash id *watch-lock-ht*))
 
 ; The watch lock is released as of now, if it was obtained.
 
               ))
-           (t (ofd "~%; WITH-WATCH-LOCK: ** the watch lock is ~
-                    currently taken.")))
+           (t (format t "~%; WITH-WATCH-LOCK: ** the watch lock is currently ~
+                         taken.")))
      *watch-file*))
 
 #+Clozure
@@ -297,7 +325,6 @@
       (with-timer-raw-condition-type
        (c)
        (cond ((eq c *with-space-timer-raw-condition-instance*)
-              ; (ofd "~&; space-out when evaluating:~%~s." ',form)
               (setq *with-space-timer-raw-limit* old)
               ',space-out-value)
              (t (error c)))))))
@@ -339,7 +366,7 @@
      (with-timer-raw-condition-type
       (c)
       (cond ((eq c *with-real-timer-raw-condition-instance*)
-             (ofd "~&; real-time-out when evaluating:~%~s." ',form)
+             (format t "~&; real-time-out when evaluating:~%~s." ',form)
              (setq *with-real-timer-raw-limit* old)
              ',time-out-value)
             (t (error c)))))))
@@ -381,7 +408,7 @@
      (with-timer-raw-condition-type
       (c)
       (cond ((eq c *with-run-timer-raw-condition-instance*)
-             (ofd "~&; run-time-out when evaluating:~%~s." ',form)
+             (format t "~&; run-time-out when evaluating:~%~s." ',form)
              (setq *with-run-timer-raw-limit* old)
              ',time-out-value)
             (t (error c)))))))
@@ -486,14 +513,14 @@
            (error c))
           (error
            (x)
-           (ofd "~%; MAYBE-WATCH-DUMP: An error is being ignored:~% ~
-                 ~a." x)
+           (format t "~%; MAYBE-WATCH-DUMP: An error is being ignored:~% ~a."
+                   x)
            (incf-watch-count)))
          (incf-watch-count)
          *watch-file*)
         (t (incf-watch-count)
-           (ofd "~%; MAYBE-WATCH-DUMP may only be called by the ~
-                 *WATCH-STARTUP-PROCESS*"))))
+           (format t "~%; MAYBE-WATCH-DUMP may only be called by the ~
+                      *WATCH-STARTUP-PROCESS*"))))
 
 (defn1 watch-kill ()
 
@@ -800,7 +827,6 @@
    number-of-memoized-entries
    number-of-mht-calls
    print-call-stack
-   symbol-name-order
 
    clear-memoize-call-array
    clear-memoize-tables
@@ -844,13 +870,11 @@
    bytes-allocated
    bytes-allocated/call
    event-number
-   execution-order
    hits/calls
    number-of-calls
    number-of-hits
    number-of-memoized-entries
    number-of-mht-calls
-   symbol-name-order
    time-for-non-hits/call
    time/call
    total-time

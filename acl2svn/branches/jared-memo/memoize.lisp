@@ -1092,34 +1092,4 @@
   (declare (xargs :guard t))
   `(memoizedp-world ,fn (w state)))
 
-;;; hons-shrink-alist
 
-; HONS-SHRINK-ALIST, when called with an atomic second
-; argument, produces an alist that is alist-equivalent
-; to the first argument, but with all irrelevant entries in
-; the first argument deleted.  Informal remark: the alist
-; returned is a hons when the initial ANS is not an atom.
-
-; Comment about the last clause above.  Or really? 
-; Counterexamples?
-; 
-; mbu> stp
-; ? (honsp (hons-shrink-alist '((a . b) (a . b2)) (hons-acons 1 2 3)))
-; NIL
-; 
-; mbu> stp
-; ? (honsp (hons-shrink-alist '((a . b) (a . b2)) nil))
-; NIL
-; ? 
-
-(defconst *untroublesome-characters*
-
-  (coerce "~/:{}=+-_.,!?@#%^%<>|&$*`\\/\";()" 'list)
-
-  ":Doc-Section Hons-and-Memoization
-
-  some not so weird characters~/
-
-  ~c[*UNTROUBLESOME-CHARACTERS*] should not include single quote, whitespace
-  characters, control characters, or anything else weird for a file name.  Such
-  characters should only be used in file names by experts at quoting.~/~/")
