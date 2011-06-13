@@ -521,9 +521,9 @@
 (defun expand-and-or (term bool fns-to-be-ignored-by-rewrite ens wrld state
                            ttree step-limit)
 
-; We expand the top-level fn symbol of term provided the expansion
-; produces a conjunction -- when bool is nil -- or a disjunction -- when
-; bool is t.  We return three values:  wonp, the new term, and a new ttree.
+; We expand the top-level fn symbol of term provided the expansion produces a
+; conjunction -- when bool is nil -- or a disjunction -- when bool is t.  We
+; return four values: the new step-limit, wonp, the new term, and a new ttree.
 ; This fn is a No-Change Loser.
 
   (cond ((variablep term) (mv step-limit nil term ttree))
@@ -606,11 +606,11 @@
 (defun clausify-input1 (term bool fns-to-be-ignored-by-rewrite ens wrld state
                              ttree step-limit)
 
-; We return two things, a clause and a ttree.  If bool is t, the
-; (disjunction of the literals in the) clause is equivalent to term.
-; If bool is nil, the clause is equivalent to the negation of term.
-; This function opens up some nonrec fns and applies some rewrite
-; rules.  The final ttree contains the symbols and rules used.
+; We return three things: a new step-limit, a clause, and a ttree.  If bool is
+; t, the (disjunction of the literals in the) clause is equivalent to term.  If
+; bool is nil, the clause is equivalent to the negation of term.  This function
+; opens up some nonrec fns and applies some rewrite rules.  The final ttree
+; contains the symbols and rules used.
 
   (cond
    ((equal term (if bool *nil* *t*)) (mv step-limit nil ttree))
@@ -699,25 +699,24 @@
 (defun clausify-input (term fns-to-be-ignored-by-rewrite ens wrld state ttree
                             step-limit)
 
-; This function converts term to a set of clauses, expanding some
-; non-rec functions when they produce results of the desired parity
-; (i.e., we expand AND-like functions in the hypotheses and OR-like
-; functions in the conclusion.)  AND and OR themselves are, of course,
-; already expanded into IFs, but we will expand other functions when
-; they generate the desired IF structure.  We also apply :REWRITE rules
-; deemed appropriate.  We return two results, the set of clauses and a
-; ttree documenting the expansions.
+; This function converts term to a set of clauses, expanding some non-rec
+; functions when they produce results of the desired parity (i.e., we expand
+; AND-like functions in the hypotheses and OR-like functions in the
+; conclusion.)  AND and OR themselves are, of course, already expanded into
+; IFs, but we will expand other functions when they generate the desired IF
+; structure.  We also apply :REWRITE rules deemed appropriate.  We return three
+; results: a new step-limit, the set of clauses, and a ttree documenting the
+; expansions.
 
   (sl-let (neg-clause ttree)
           (clausify-input1 term nil fns-to-be-ignored-by-rewrite ens
                            wrld state ttree step-limit)
 
-; neg-clause is a clause that is equivalent to the negation of term.
-; That is, if the literals of neg-clause are lit1, ..., litn, then
-; (or lit1 ... litn) <-> (not term).  Therefore, term is the negation
-; of the clause, i.e., (and (not lit1) ... (not litn)).  We will
-; form a clause from each (not lit1) and return the set of clauses,
-; implicitly conjoined.
+; Neg-clause is a clause that is equivalent to the negation of term.  That is,
+; if the literals of neg-clause are lit1, ..., litn, then (or lit1 ... litn)
+; <-> (not term).  Therefore, term is the negation of the clause, i.e., (and
+; (not lit1) ... (not litn)).  We will form a clause from each (not lit1) and
+; return the set of clauses, implicitly conjoined.
 
           (clausify-input1-lst (dumb-negate-lit-lst neg-clause)
                                fns-to-be-ignored-by-rewrite
@@ -846,11 +845,11 @@
 (defun preprocess-clause (cl hist pspv wrld state step-limit)
 
 ; This is the first "real" clause processor (after a little remembered
-; apply-top-hints-clause) in the waterfall.  Its arguments and
-; values are the standard ones.  We expand abbreviations and clausify
-; the clause cl.  For mainly historic reasons, expand-abbreviations
-; and clausify-input operate on terms.  Thus, our first move is to
-; convert cl into a term.
+; apply-top-hints-clause) in the waterfall.  Its arguments and values are the
+; standard ones, except that it takes a step-limit and returns a new step-limit
+; in the first position.  We expand abbreviations and clausify the clause cl.
+; For mainly historic reasons, expand-abbreviations and clausify-input operate
+; on terms.  Thus, our first move is to convert cl into a term.
 
   (let ((rcnst (access prove-spec-var pspv :rewrite-constant)))
     (mv-let
@@ -1628,7 +1627,7 @@
 ; structure of a typical conjunct.  We remove the :use hint from the
 ; hint-settings so we don't fire the same :use again on the subgoals.
 
-; We return (mv 'hit new-clauses ttree new-pspv).
+; We return (mv new-step-limit 'hit new-clauses ttree new-pspv).
 
 ; The ttree returned has at most two tags.  The first is :use and has
 ; ((lmi-lst hyps constraint-cl k event-names new-entries)
@@ -2204,14 +2203,14 @@
 ; take advantage of the waterfall's already-provided mechanisms for handling
 ; multiple clauses and output.
 
-; We return 5 values.  The fifth is state.  The first is a signal that is
-; either 'hit, 'miss, or 'error.  When the signal is 'miss, the next 3 values
-; are irrelevant.  When the signal is 'error, the second result is a pair of
-; the form (str . alist) which allows us to give our caller an error message to
-; print.  In this case, the next two values are irrelevant.  When the signal is
-; 'hit, the second result is the list of new clauses, the third is a ttree that
-; will become that component of the history-entry for this process, and the
-; fourth is the modified pspv.
+; We return five values.  The first is a new step-limit and the sixth is state.
+; The second is a signal that is either 'hit, 'miss, or 'error.  When the
+; signal is 'miss, the remaining three values are irrelevant.  When the signal
+; is 'error, the third result is a pair of the form (str . alist) which allows
+; us to give our caller an error message to print.  In this case, the remaining
+; two values are irrelevant.  When the signal is 'hit, the third result is the
+; list of new clauses, the fourth is a ttree that will become that component of
+; the history-entry for this process, and the fifth is the modified pspv.
 
 ; We need cl-id passed in so that we can store it in the bddnote, in the case
 ; of a :bdd hint.
@@ -4904,15 +4903,18 @@
                                      step-limit)
 
 ; Processor is one of the known waterfall processors.  This function applies
-; processor and returns six results: signal, clauses, new-hist, new-pspv,
-; jppl-flg, and state.
+; processor and returns seven results: step-limit signal, clauses, new-hist,
+; new-pspv, jppl-flg, and state.
 
 ; All processor functions take as input a clause, its hist, a pspv, wrld, and
-; state.  They all deliver four values: a signal, some clauses, a ttree, and a
-; new pspv.  The signal delivered by such processors is one of 'error, 'miss,
-; 'abort, or else indicates a "hit" via the signals 'hit, 'hit-rewrite,
-; 'hit-rewrite2 and 'or-hit.  We identify the first three kinds of hits.
-; 'Or-hits indicate that a set of disjunctive branches has been produced.
+; state.  They all deliver four values (but apply-top-hints-clause,
+; preprocess-clause, and simplify-clause also take a step-limit input and
+; deliver a new step-limit as an additional value, in the first position): a
+; signal, some clauses, a ttree, and a new pspv.  The signal delivered by such
+; processors is one of 'error, 'miss, 'abort, or else indicates a "hit" via the
+; signals 'hit, 'hit-rewrite, 'hit-rewrite2 and 'or-hit.  We identify the first
+; three kinds of hits.  'Or-hits indicate that a set of disjunctive branches
+; has been produced.
 
 ; If the returned signal is 'error or 'miss, we immediately return with that
 ; signal.  But if the signal is a "hit" or 'abort (which in this context means
@@ -6240,35 +6242,35 @@
   (ledge cl-id clause hist pspv hints suppress-print ens wrld ctx state
          step-limit)
 
-; ledge     - In general in this mutually recursive definition, the
-;             formal "ledge" is any one of the waterfall ledges.  But
-;             by convention, in this function, waterfall1, it is
-;             always either the 'apply-top-hints-clause ledge or
-;             the next one, 'preprocess-clause.  Waterfall1 is the
-;             place in the waterfall that hints are applied.
-;             Waterfall0 is the straightforward encoding of the
-;             waterfall, except that every time it sends clauses back
-;             to the top, it send them to waterfall1 so that hints get
-;             used again.
+; ledge      - In general in this mutually recursive definition, the
+;              formal "ledge" is any one of the waterfall ledges.  But
+;              by convention, in this function, waterfall1, it is
+;              always either the 'apply-top-hints-clause ledge or
+;              the next one, 'preprocess-clause.  Waterfall1 is the
+;              place in the waterfall that hints are applied.
+;              Waterfall0 is the straightforward encoding of the
+;              waterfall, except that every time it sends clauses back
+;              to the top, it send them to waterfall1 so that hints get
+;              used again.
 
-; cl-id     - the clause id for clause.
-; clause    - the clause to process
-; hist      - the history of clause
-; pspv      - an assortment of special vars that any clause processor might
-;             change
-; hints     - an alist mapping clause-ids to hint-settings.
-; wrld      - the current world
-; state     - the usual state.
+; cl-id      - the clause id for clause.
+; clause     - the clause to process
+; hist       - the history of clause
+; pspv       - an assortment of special vars that any clause processor might
+;              change
+; hints      - an alist mapping clause-ids to hint-settings.
+; wrld       - the current world
+; state      - the usual state
+; step-limit - the new step-limit.
 
-; We return 4 values: the first is a "signal" and is one of 'abort,
-; 'error, or 'continue.  The last three returned values are the final
-; values of pspv, the jppl-flg for this trip through the falls, and
-; state.  The 'abort signal is used by our recursive processing to
-; implement aborts from below.  When an abort occurs, the clause
-; processor that caused the abort sets the pspv and state as it wishes
-; the top to see them.  When the signal is 'error, the error message
-; has been printed.  The returned pspv is irrelevant (and typically
-; nil).
+; We return 4 values.  The first is a new step-limit.  The second is a "signal"
+; and is one of 'abort, 'error, or 'continue.  The last three returned values
+; are the final values of pspv, the jppl-flg for this trip through the falls,
+; and state.  The 'abort signal is used by our recursive processing to
+; implement aborts from below.  When an abort occurs, the clause processor that
+; caused the abort sets the pspv and state as it wishes the top to see them.
+; When the signal is 'error, the error message has been printed.  The returned
+; pspv is irrelevant (and typically nil).
 
   (prog2$
    (parallel-only@par
@@ -7185,10 +7187,10 @@
 ; round other than the first, x is really a list of pairs (assumnotes .
 ; clause).
 
-; Pool-lst is the pool-lst of the clauses and will be used as the
-; first field in the clause-id's we generate for them.  We return the
-; four values: an error flag, the final value of pspv, the jppl-flg,
-; and the final state.
+; Pool-lst is the pool-lst of the clauses and will be used as the first field
+; in the clause-id's we generate for them.  We return the five values: a new
+; step-limit, an error flag, the final value of pspv, the jppl-flg, and the
+; final state.
 
   (let ((parent-clause-id
          (cond ((and (= forcing-round 0)
@@ -8284,9 +8286,10 @@
 ; pspv.  If the pool is then empty, we are done.  Otherwise, we pick one to
 ; induct on, do the induction and repeat.
 
-; We either cause an error or return (as the "value" result in the usual
-; error/value/state triple) the final tag-tree.  That tag-tree might contain
-; some byes, indicating that the proof has failed.
+; We return a tuple (mv new-step-limit error value state).  Either we cause an
+; error (i.e., return a non-nil error as the second result), or else the value
+; result is the final tag-tree.  That tag-tree might contain some byes,
+; indicating that the proof has failed.
 
 ; WARNING:  A non-erroneous return is not equivalent to success!
 

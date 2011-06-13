@@ -7659,9 +7659,9 @@
 ; and that the pt is nil.  We install our top-clause and
 ; current-clause when necessary.
 
-; We return 4 values.  The first is a new step-limit.  The second is a signal
-; that in general is 'miss, 'abort, 'error, or a "hit".  In this case, it is
-; always either 'miss or one of 'hit, 'hit-rewrite, or 'hit-rewrite2 (as
+; We return five values.  The first is a new step-limit.  The second is a
+; signal that in general is 'miss, 'abort, 'error, or a "hit".  In this case,
+; it is always either 'miss or one of 'hit, 'hit-rewrite, or 'hit-rewrite2 (as
 ; described further below).  When the signal is 'miss, the remaining 3 values
 ; are irrelevant.  When the signal is 'hit, the third result is the list of new
 ; clauses, the fourth is a ttree that will become that component of the
