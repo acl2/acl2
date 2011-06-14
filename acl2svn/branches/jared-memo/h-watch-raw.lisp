@@ -1,7 +1,6 @@
-
 ;; BOZO copyright stuff.
 
-; h-watch.lisp
+; h-watch-raw.lisp
 ;
 ; This is WATCH stuff that Jared pulled out of memoize-raw.lisp.  I don't
 ; really know how WATCH is supposed to work, or if it works at all.
@@ -53,6 +52,56 @@
                       (looking-at "/proc/" n))
             (fresh-line)
             (princ n)))))
+
+
+
+(defmacro our-syntax-brief (&rest args)
+
+; Within OUR-SYNTAX-BRIEF printing may be greatly abbreviated.
+;; only used in print-call-stack
+
+  `(our-syntax-nice
+    (setq *print-length* 10)
+    (setq *print-level* 5)
+    (setq *print-lines* 10)
+    ,@args))
+
+(defn print-call-stack ()
+
+  "(PRINT-CALL-STACK) prints the stack of memoized function calls
+  currently running and the time they have been running."
+
+  (let (l
+        (time (acl2h-ticks))
+        (*print-case* :downcase))
+    (maphash (lambda (k v)
+               (cond ((symbolp k)
+                      (let ((x (symbol-value
+                                (access memoize-info-ht-entry
+                                        v :start-time))))
+                        (declare (type mfixnum x))
+                        (when (> x 0)
+                          (push (cons k x) l))))))
+             *memoize-info-ht*)
+    (setq l (sort l #'< :key #'cdr))
+    (setq l (loop for pair in l collect
+                  (list (car pair)
+                        (ofnum (/ (- time (cdr pair))
+                                  (acl2h-ticks-per-second))))))
+    ;; [Jared]: So... from CLHS, - is some kind of special variable that is set
+    ;; to the current form the REPL is executing.  I guess this print
+    ;; statement, then, is trying to show the current form on top, before
+    ;; printing the call stack below it.  Twisted.
+    (our-syntax-brief (when - (format t "~%? ~a" -)))
+    (when l
+      (terpri)
+      (print-alist
+       (cons '("Stack of monitored function calls."
+               "Time since outermost call.")
+             l)
+       5))))
+
+
 
 (defg *watch-forms*
   '("\"A string or a quoted form in *WATCH-FORMS* is ignored.\""
@@ -953,11 +1002,11 @@
 
 (defun watch-real-time ()
   (/ (- (get-internal-real-time) *watch-start-real-time*)
-     *float-internal-time-units-per-second*))
+     (float internal-time-units-per-second)))
 
 (defun watch-run-time ()
   (/ (- (get-internal-run-time) *watch-start-run-time*)
-     *float-internal-time-units-per-second*))
+     (float internal-time-units-per-second*)))
 
 
 

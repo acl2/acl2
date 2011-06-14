@@ -53,18 +53,7 @@
  ;; like the hons addressing scheme for ponsing to work.  It also makes sense
  ;; for things like compact-print-file that shouldn't really be part of
  ;; memoize.
- (error "memoize-raw.lisp should only be included when #+hons is set.")
-
- #+Clozure
- (when (fboundp 'ccl::rdtsc)
-   ;; Make use of the x86 RDTSC (read time stamp counter) instruction.  Note
-   ;; that on machines with several cores, the RDTSC values returned by
-   ;; different cores may be slightly different, which could lead one into such
-   ;; nonsense as instructions apparently executing in negative time when
-   ;; timing starts on one core and finishes on another.  To some extent we
-   ;; ignore such RDTSC nonsense, but we still can report mysterious results
-   ;; since we have no clue about which core we are running on in CCL.
-   (pushnew :RDTSC *features*)))
+ (error "memoize-raw.lisp should only be included when #+hons is set."))
 
 
 
@@ -80,8 +69,8 @@
 
 
 
-; [Jared]: We probably should work toward getting rid of defg/defv's in favor
-; of regular parameters...
+; [Jared]: We probably should generally work toward getting rid of defg/defv's
+; in favor of regular parameters, for better thread safety, etc.
 
 (defmacro defg (&rest r)
 
@@ -141,6 +130,56 @@
                    :rehash-threshold rehash-threshold
                    #+Clozure :weak   #+Clozure weak
                    #+Clozure :shared #+Clozure *mht-default-shared*))
+
+
+
+; MACROS FOR PROFILING -------------------------------------------------------
+;
+; We use PROFILER-IF to avoid monitoring of code that we have introduced into
+; the user's code for the purpose of profiling.
+;
+; Semantically, PROFILER-IF is the same as IF.  However, the execution of the
+; PROFILER-IF macro also puts the IF form into *IGNORE-FORM-HT* so that the
+; compiler macro for IF will not consider 'fixing' it with code to monitor
+; which branch of the IF is taken.
+
+#+Clozure
+(progn
+  (defg *ignore-form-ht* (make-hash-table :test 'eq))
+  (declaim (hash-table *ignore-form-ht*)))
+
+(defmacro profiler-if (test true &optional false)
+  (let ((val `(if ,test ,true ,false)))
+    #+Clozure
+    (setf (gethash val *ignore-form-ht*) t)
+    val))
+
+(defmacro profiler-cond (&rest r)
+  (cond ((null r) nil)
+        (t `(profiler-if ,(caar r)
+                     (progn ,@(cdar r))
+                     (profiler-cond ,@(cdr r))))))
+
+(defmacro profiler-and (&rest r)
+  (cond ((null r) t)
+        ((null (cdr r)) (car r))
+        (t `(profiler-if ,(car r)
+                         (profiler-and ,@(cdr r))
+                         nil))))
+
+(defmacro profiler-or (&rest r)
+  (cond ((null r) nil)
+        ((null (cdr r)) (car r))
+        (t (let ((temp (make-symbol "TEMP")))
+             `(let ((,temp ,(car r)))
+                (profiler-if ,temp
+                             ,temp
+                             (profiler-or ,@(cdr r))))))))
+
+(defmacro profiler-when (test &rest r)
+  `(profiler-if ,test (progn ,@r)))
+
+
 
 
 
@@ -646,8 +685,6 @@
 ; which is probably why (or part of the reason) that growing the array requires
 ; us to rememoize everything.
 
-
-
 (defg *memoize-call-array*
   (make-array 1 :element-type 'mfixnum :initial-element 0)
 
@@ -656,16 +693,29 @@
   of the maximum number of memoized functions.
 
   ma is initialized in MEMOIZE-INIT.  Think of ma as a two dimensional array
-  with dimensions (twice the max number of memoized functions) x
-  (twice the max number of memoized functions).  Each 'column'
-  corresponds to info about a memoized function, but the first five
-  columns are 'special'.  We count rows and columns starting at 0.
-  Column 0 is used as scratch space by COMPUTE-CALLS-AND-TIMES for
-  sums across all functions.  Columns 1, 2, and 3 are not currently
-  used at all.  Column 4 is for the anonymous 'outside caller'.
-  Column 5 is for the first memoized function.  In columns 5 and
-  greater, row 0 is used to count 'bytes', 1 'hits', 2 MHT calls, 3
-  HONS calls, and 4 PONS calls.
+  with dimensions
+
+     (twice the max number of memoized functions) x
+     (twice the max number of memoized functions).
+
+  Each 'column' corresponds to info about a memoized function, but the first
+  five columns are 'special'.  We count rows and columns starting at 0.
+
+      Column 0 is used as scratch space by COMPUTE-CALLS-AND-TIMES for sums
+      across all functions.
+
+      Columns 1, 2, and 3 are not currently used at all.
+
+      Column 4 is for the anonymous 'outside caller'.
+
+      Column 5 is for the first memoized function.
+
+      In columns 5 and greater,
+         - row 0 is used to count 'bytes',
+         - row 1 for 'hits',
+         - row 2 for MHT calls,
+         - row 3 for 3 HONS calls (defunct), and
+         - row 4 for PONS calls (defunct).
 
   The elements of an ma column starting at row 10 are for counting and timing
   info.  Suppose column 7 corresponds to the memoized function FOO and column
@@ -699,6 +749,35 @@
 
 (defg *max-symbol-to-fixnum* *ma-initial-max-symbol-to-fixnum*)
 (declaim (type fixnum *max-symbol-to-fixnum*))
+
+
+(defn clear-memoize-call-array ()
+
+  "(CLEAR-MEMOIZE-CALL-ARRAY) zeros out all records of function calls as far as
+  reporting by MEMOIZE-SUMMARY, etc. is concerned."
+
+  (let ((m *memoize-call-array*))
+    (declare (type (simple-array mfixnum (*)) m))
+    (loop for i fixnum below (length m)
+          do (setf (aref m i) 0))))
+
+(defn clear-memoize-statistics ()
+  ;; User-level.  See memoize.lisp.
+  (clear-memoize-call-array)
+  nil)
+
+
+
+(defmacro heap-bytes-allocated ()
+
+  #+Clozure
+  '(the mfixnum (ccl::%heap-bytes-allocated))
+
+  ;; Might be easy to add this sort of thing for some other Lisps, but
+  ;; for now we'll just say 0.
+  #-Clozure
+  0)
+
 
 (defn1 bytes-allocated (x)
 
@@ -825,59 +904,6 @@
 
 
 ; ----------------------------------------------------------------------------
-; PROFILER-IF
-
-; See also comments in SETUP-SMASHED-IF.
-
-(defg *form-ht*        (make-hash-table :test 'eq))
-(defg *ignore-form-ht* (make-hash-table :test 'eq))
-(declaim (hash-table *form-ht* *ignore-form-ht*))
-
-(defmacro profiler-if (test true &optional false)
-
-  "Semantically, PROFILER-IF is the same as IF.  However, the execution of the
-  PROFILER-IF macro also puts the IF form into *IGNORE-FORM-HT* so that the
-  compiler macro for IF will not consider 'fixing' it with code to monitor
-  which branch of the IF is taken.  We use PROFILER-IF to avoid monitoring of
-  code that we have introduced into the user's code for the purpose of
-  profiling."
-
-  (let ((val `(if ,test ,true ,false)))
-    #+Clozure
-    (setf (gethash val *ignore-form-ht*) t)
-    val))
-
-(defmacro profiler-cond (&rest r)
-  (cond ((null r) nil)
-        (t `(profiler-if ,(caar r)
-                     (progn ,@(cdar r))
-                     (profiler-cond ,@(cdr r))))))
-
-(defmacro profiler-and (&rest r)
-  (cond ((null r) t)
-        ((null (cdr r)) (car r))
-        (t `(profiler-if ,(car r)
-                         (profiler-and ,@(cdr r))
-                         nil))))
-
-(defmacro profiler-or (&rest r)
-  (cond ((null r) nil)
-        ((null (cdr r)) (car r))
-        (t (let ((temp (make-symbol "TEMP")))
-             `(let ((,temp ,(car r)))
-                (profiler-if ,temp
-                             ,temp
-                             (profiler-or ,@(cdr r))))))))
-
-(defmacro profiler-when (test &rest r)
-  `(profiler-if ,test (progn ,@r)))
-
-(defmacro profiler-unless (test &rest r)
-  `(profiler-if (not ,test) (progn ,@r)))
-
-
-
-; ----------------------------------------------------------------------------
 ; SAFE-INCF
 
 ;; [Jared]: this seems kind of awful.
@@ -954,49 +980,6 @@
 
 
 
-
-
-
-
-
-;; ---------------------------------------------------------------------------
-
-
-
-
-; TIMING UTILITIES
-
-(defg *float-ticks/second*
-  ;; *float-ticks/second* is set correctly by HONS-INIT; this makes sense since
-  ;; the machine you build ACL2 on may not be the same machine you run it on.
-  1.0)
-
-(defn1 float-ticks/second-init ()
-  (setq *float-ticks/second*
-        #+RDTSC
-        (let ((i1 (ccl::rdtsc64))
-              (i2 (progn (sleep .01) (ccl::rdtsc64))))
-          (if (>= i2 i1)
-              (* 100 (float (- i2 i1)))
-            (error "(float-ticks/second-init).")))
-        #-RDTSC
-        *float-internal-time-units-per-second*)
-  (check-type *float-ticks/second* (and float (satisfies plusp))))
-
-(defg *float-internal-time-units-per-second*
-  (float internal-time-units-per-second))
-
-(declaim (float *float-ticks/second*
-                *float-internal-time-units-per-second*))
-
-(defabbrev internal-real-time ()
-  ;; [Jared]: well, I have no idea why this differs for 32/64 bit ccl...
-  #+(and RDTSC (not 32-bit-target)) ; faster for 64
-  (the mfixnum (ccl::rdtsc))
-  #+(and RDTSC 32-bit-target) ; slower for 32
-  (the mfixnum (mod (ccl::rdtsc64) most-positive-mfixnum))
-  #-RDTSC
-  (the mfixnum (mod (get-internal-real-time) most-positive-fixnum)))
 
 
 
@@ -1098,72 +1081,7 @@
 
 
 
-; MEMORY UTILITIES -----------------------------------------------------------
 
-(defn looking-at (str1 str2 &key (start1 0) (start2 0))
-
-; (LOOKING-AT str1 str2 :start1 s1 :start2 s2) is non-NIL if and only if string
-; STR1, from location S1 to its end, is an initial segment of string STR2, from
-; location S2 to its end.
-
-  (unless (typep str1 'simple-base-string)
-    (error "looking at:  ~a is not a string." str1))
-  (unless (typep str2 'simple-base-string)
-    (error "looking at:  ~a is not a string." str2))
-  (unless (typep start1 'fixnum)
-    (error "looking at:  ~a is not a fixnum." start1))
-  (unless (typep start2 'fixnum)
-    (error "looking at:  ~a is not a fixnum." start2))
-
-  ;; [Jared]: ugh, we should not care at all about performance here
-
-  (locally
-    (declare (simple-base-string str1 str2)
-             (fixnum start1 start2))
-    (let ((l1 (length str1)) (l2 (length str2)))
-      (declare (fixnum l1 l2))
-      (loop
-       (when (>= start1 l1) (return t))
-       (when (or (>= start2 l2)
-                 (not (eql (char str1 start1)
-                           (char str2 start2))))
-         (return nil))
-       (incf start1)
-       (incf start2)))))
-
-(defn1 meminfo (pat)
-
-; General comment about PROBE-FILE.  PROBE-FILE, according to Gary Byers, may
-; reasonably cause an error.  He is undoubtedly right.  In such cases, however,
-; Boyer generally thinks and wishes that it returned NIL, and generally,
-; therefore, ensconces a PROBE-FILE within an IGNORE-ERROR in his code.
-
-  (or
-   (and
-    (ignore-errors (probe-file "/proc/meminfo"))
-    (with-standard-io-syntax
-     (with-open-file (stream "/proc/meminfo")
-       (let (line)
-         (loop while (setq line (read-line stream nil nil)) do
-               (when (looking-at pat line)
-                 (return
-                  (values
-                   (read-from-string line nil nil
-                                     :start (length pat))))))))))
-   0))
-
-(defn1 physical-memory ()
-  (meminfo "MemTotal:"))
-
-(defmacro heap-bytes-allocated ()
-
-  #+Clozure
-  '(the mfixnum (ccl::%heap-bytes-allocated))
-
-  ;; Might be easy to add this sort of thing for some other Lisps, but
-  ;; for now we'll just say 0.
-  #-Clozure
-  0)
 
 
 
@@ -1411,12 +1329,10 @@
                    (setq new i)
                    (return)))
         (cond (new
-               (setq *max-symbol-to-fixnum*
-                     (max *max-symbol-to-fixnum* new))
+               (setq *max-symbol-to-fixnum* (max *max-symbol-to-fixnum* new))
                new)
               (t (memoize-call-array-grow)
-                 (safe-incf *max-symbol-to-fixnum*
-                            1 symbol-to-fixnum-create)
+                 (safe-incf *max-symbol-to-fixnum* 1 symbol-to-fixnum-create)
                  *max-symbol-to-fixnum*))))))
 
 (defn1 symbol-to-fixnum (s)
@@ -1459,29 +1375,32 @@
                (consp (cdr def))
                (symbolp (cadr def)))
     (error "MEMOIZE-EVAL-COMPILE:  Bad input:~%~s." def))
-  (flet ((what-to-do () (compile (eval def))))
-    (cond
-     #+Clozure
-     ((and watch-ifs *smashed-if* *unsmashed-if*)
-      (cond ((and (eql ccl::*nx-speed* 3)
-                  (eql ccl::*nx-safety* 0))
-             (unwind-protect
+  (cond
+   #+Clozure
+   ((and watch-ifs *smashed-if* *unsmashed-if*)
+    (cond ((and (eql ccl::*nx-speed* 3)
+                (eql ccl::*nx-safety* 0))
+           (unwind-protect
                (progn
                  (setf (compiler-macro-function 'if) *smashed-if*)
                  (setf (compiler-macro-function 'or) *smashed-or*)
-                 (what-to-do))
-               (setf (compiler-macro-function 'if) *unsmashed-if*)
-               (setf (compiler-macro-function 'or) *unsmashed-or*)))
-            (t (format t "~%; MEMOIZE-EVAL-COMPILE: ~a.  WATCH-IF does not ~
-                          work unless SAFETY=0 and SPEED=3."
-                    (cadr def))
-               (what-to-do))))
-     (t (what-to-do))))
+                 (compile (eval def)))
+             (setf (compiler-macro-function 'if) *unsmashed-if*)
+             (setf (compiler-macro-function 'or) *unsmashed-or*)))
+          (t (format t "~%; MEMOIZE-EVAL-COMPILE: ~a.  WATCH-IF does not work ~
+                        unless SAFETY=0 and SPEED=3."
+                     (cadr def))
+             (compile (eval def)))))
+   (t
+    (compile (eval def))))
   nil)
+
+
 
 
 (defg *hons-gentemp-counter* 0)
 (declaim (type fixnum *hons-gentemp-counter*))
+
 (defn1-one-output hons-gentemp (root)
   (check-type root string)
   (loop
@@ -1579,6 +1498,10 @@
 
 ; MEMOIZE-FN
 
+
+; [Jared]: it seems like we don't care about memoize tracing, whatever that is,
+; but maybe this sort of thing is meant for debugging the memoization code.
+
 (defn1 mf-trace-exit (fn nrv ans)
   (oftr "~%< ~s " fn)
   (cond ((> nrv 1)
@@ -1613,16 +1536,6 @@
                  ((and (arrayp fn) (functionp (aref fn 1)))
                   (function-lambda-expression (aref fn 1)))
                  (t (error "Can't figure out ~a as a function." x)))))))
-
-(defg *memoize-fn-signature-error*
-  "
-  Memoize-fn: could not determine a signature for ~a.~%~
-  To assert the (number-of-inputs . number-of-outputs)~%~
-  signature of ~:*~a, put a cons of two numbers in the hash-table ~%~
-  *NUMBER-OF-ARGUMENTS-AND-VALUES-HT* under ~:*~a.  For example, ~%~
-  do (setf (gethash '~:*~a *NUMBER-OF-ARGUMENTS-AND-VALUES-HT*)
-         '(3 . 1))")
-
 
 
 (defconstant *attached-fn-temp* (make-symbol "ATTACHED-FN-TEMP"))
@@ -1907,7 +1820,11 @@
                        (if n
                            (loop for i fixnum below n
                                  collect (ofni "X~a" i))
-                         (error *memoize-fn-signature-error* fn))))
+                         (error "Memoize-fn: can't determine the number of ~
+                                 inputs and outputs of ~a.  To assert that ~a ~
+                                 takes, say, 2 inputs and returns 1 output, ~
+                                 do:~%~a.~%"
+                                fn fn `(set-number-of-arguments-and-values ',fn 2 1)))))
                  fo))
            formals))
 
@@ -2177,14 +2094,14 @@
                     (,*mf-start-bytes* (heap-bytes-allocated)))
                 (declare (type fixnum ,*mf-old-caller* ,*mf-start-bytes*))
                 (unwind-protect
-                    (progn (setq ,start-time (internal-real-time))
+                    (progn (setq ,start-time (acl2h-ticks))
                            (setq *caller* ,2mfnn)
                            ,body3)
                   (safe-incf (aref ,*mf-ma* ,(+ *ma-bytes-index* 2mfnn))
                              (the mfixnum (- (heap-bytes-allocated) ,*mf-start-bytes*))
                              ,fn)
                   (safe-incf (aref ,*mf-ma* (the mfixnum (1+ ,*mf-count-loc*)))
-                             (mod (the integer (- (internal-real-time) ,start-time))
+                             (mod (the integer (- (acl2h-ticks) ,start-time))
                                   most-positive-mfixnum)
                              ,fn)
                   ,@(and forget
@@ -2393,286 +2310,6 @@
 
 
 
-(defun profile-fn (fn &rest r &key (condition nil) (inline nil)
-                      &allow-other-keys)
-  (apply #'memoize-fn fn
-         :condition condition
-         :inline inline
-         r))
-
-(defn1 profiled-functions ()
-
-  ; The profiled functions are hereby arbitrarily defined as those produced by
-  ; MEMOIZE-FN with null :CONDITION and :INLINE fields.
-
-  (let (l)
-    (maphash
-     (lambda (k v)
-       (when (and (symbolp k)
-                  (null (access memoize-info-ht-entry v :condition))
-                  (null (access memoize-info-ht-entry v :inline)))
-         (push k l)))
-     *memoize-info-ht*)
-    l))
-
-(defn1 unmemoize-profiled ()
-
-  "UNMEMOIZE-PROFILED is a raw Lisp function.  (UNMEMOIZE-PROFILED)
-  unmemoizes and unprofiles all functions currently memoized with
-  :CONDITION=NIL and :INLINE=NIL."
-
-  (loop for x in (profiled-functions) do
-        (unmemoize-fn (car x))))
-
-
-
-
-
-
-(defv *profile-reject-ht* (mht :test 'eq)
-  "The user may freely add to the hash table *PROFILE-REJECT-HT*, which
-  inhibits the collection of functions into lists of functions to be memoized
-  and/or profiled.
-
-  Here are some reasons for adding a function fn to *PROFILE-REJECT-HT*.
-
-  1. A call of fn is normally so fast or fn is called so often that the extra
-  instructions executed when a profiled or memoized version of fn is run will
-  distort measurements excessively.  We tend not to profile any function that
-  runs in under 6000 clock ticks or about 2 microseconds.  The number of extra
-  instructions seem to range between 20 and 100, depending upon what is being
-  measured.  Counting function calls is relatively fast.  But if one measures
-  elapsed time, one might as well measure everything else too.  Or so it seems
-  in 2007 on terlingua.csres.utexas.edu.
-
-  2. fn is a subroutine of another function being profiled, and we wish to
-  reduce the distortion that profiling fn will cause.
-
-  3. fn is 'transparent', like EVAL.  Is EVAL fast or slow?  The answer, of
-  course, is that it mostly depends upon what one is EVALing.
-
-  4. fn's name ends in '1', meaning 'auxiliary' to some folks.
-
-  5. fn is boring.
-
-  Our additions to *PROFILE-REJECT-HT* are utterly capricious.  The user should
-  feel free to set *PROFILE-REJECT-HT* ad lib, at any time.")
-
-(declaim (hash-table *profile-reject-ht*))
-
-
-(defn1 input-output-number-warning (fn)
-  (format *debug-io*
-          "Can't determine the number of inputs and outputs of ~a.~%To assert ~
-           ~a takes, say, 2 inputs and returns 1 output, do:~%~a.~%"
-          fn fn `(set-number-of-arguments-and-values ',fn 2 1)))
-
-
-(defn1 dubious-to-profile (fn)
-  (cond ((not (symbolp fn)) "not a symbol.")
-        ((not (fboundp fn)) "not fboundp.")
-        ((eq (symbol-package fn) *main-lisp-package*)
-         (format nil "~%;~10tin *main-lisp-package*."))
-        #+Clozure
-        ((ccl::%advised-p fn)
-         (format nil "~%;10tadvised, and it will so continue."))
-        ((member fn (eval '(trace)))
-         (format nil "~%;~10ta member of (trace), and it will so continue."))
-        ((member fn (eval '(old-trace)))
-         (format nil "~%;~10ta member of (old-trace), and it will so continue."))
-        ((eq fn 'return-last)
-         "the function RETURN-LAST.")
-        ((gethash fn *never-profile-ht*)
-         (format nil "~%;~10tin *NEVER-PROFILE-HT*."))
-        ((gethash fn *profile-reject-ht*)
-         (format nil "in~%;~10t*PROFILE-REJECT-HT*.  Override with ~%;~10t~a"
-                 `(remhash ',fn *profile-reject-ht*)))
-        ((macro-function fn) "a macro.")
-        ((compiler-macro-function fn) "a compiler-macro-function.")
-        ((special-form-or-op-p fn) "a special operator.")
-        ((getprop fn 'constrainedp nil 'current-acl2-world
-                  (w *the-live-state*))
-         "constrained.")
-        ((memoizedp-raw fn)
-         (format nil "~%;~10tmemoized or profiled, and it will so continue."))
-        #+Clozure
-        ((multiple-value-bind (req opt restp keys)
-             (ccl::function-args (symbol-function fn))
-           (if (or restp
-                   keys
-                   (not (integerp req))
-                   (not (eql opt 0)))
-               (format nil "~%;~10thas non-simple arguments, e.g., &key or &rest.")
-             nil)))
-        ((null (number-of-arguments fn))
-         (input-output-number-warning fn))))
-
-
-
-(defn1 event-number (fn)
-  (cond ((symbolp fn)
-         (fgetprop fn 'absolute-event-number t (w *the-live-state*)))
-        (t
-         (error "EVENT-NUMBER: ** ~a is not a symbol." fn))))
-
-(defun profile-acl2 (&key (start 0)
-                          trace
-                          watch-ifs
-                          forget)
-
-  "PROFILE-ACL2 is a raw Lisp function.  (PROFILE-ACL2 :start 'foo)
-   profiles many functions that have been accepted by ACL2, starting
-   with the acceptance of the function foo.  However, if a function is
-   regarded as DUBIOUS-TO-PROFILE, then it is not profiled and an
-   explanation is printed."
-
-  (unless (integerp start)
-    (unless (symbolp start)
-      (error "~%; PROFILE-ACL2: ** ~a is not an event." start))
-    (setq start (event-number start))
-    (unless (integerp start)
-      (error "~%; PROFILE-ACL2: ** ~a is not an event." start)))
-  (let ((fns-ht (make-hash-table :test 'eq)))
-    (declare (hash-table fns-ht))
-    (loop for p in (set-difference-equal
-                    (strip-cars (known-package-alist *the-live-state*))
-                    '("ACL2-INPUT-CHANNEL" "ACL2-OUTPUT-CHANNEL"
-                      "COMMON-LISP" "KEYWORD"))
-          do
-          (do-symbols (fn p)
-                      (cond ((gethash fn fns-ht) nil)
-                            ((or (not (fboundp fn))
-                                 (macro-function fn)
-                                 (special-form-or-op-p fn))
-                             (setf (gethash fn fns-ht) 'no))
-                            ((or (not (integerp (event-number fn)))
-                                 (< (event-number fn) start))
-                             (setf (gethash fn fns-ht) 'no))
-                            ((dubious-to-profile fn)
-                             (setf (gethash fn fns-ht) 'no)
-                             (ofv "Not profiling '~a' because it's ~a"
-                                  (shorten fn 20)
-                                  (dubious-to-profile fn)))
-                            (t (setf (gethash fn fns-ht) 'yes)))))
-    (maphash (lambda (k v)
-               (if (eq v 'no) (remhash k fns-ht)))
-             fns-ht)
-    (ofv "Profiling ~:d functions." (hash-table-count fns-ht))
-    (memoize-here-come (hash-table-count fns-ht))
-    (maphash
-     (lambda (k v)
-       (declare (ignore v))
-       (profile-fn k
-                   :trace trace
-                   :watch-ifs watch-ifs
-                   :forget forget))
-     fns-ht)
-    (clear-memoize-call-array)
-    (format nil "~a function~:p newly profiled."
-            (hash-table-count fns-ht))))
-
-(defun profile-all (&key trace forget watch-ifs pkg)
-
-  "PROFILE-ALL is a raw Lisp function.  (PROFILE-ALL) profiles each
-  symbol that has a function-symbol and occurs in a package known
-  to ACL2, unless it is
-
-   1. memoized,
-   2. traced,
-   3. in the package COMMON-LISP,
-   4. in *NEVER-PROFILE-HT*, or
-   5. in *PROFILE-REJECT-HT*
-   6. otherwise rejected by DUBIOUS-TO-PROFILE."
-
-  (let ((fns-ht (make-hash-table :test 'eq)))
-    (declare (hash-table fns-ht))
-    (loop for p in
-          (if pkg
-              (if (stringp pkg) (list pkg) pkg)
-            (set-difference-equal
-             (strip-cars (known-package-alist *the-live-state*))
-             '("ACL2-INPUT-CHANNEL" "ACL2-OUTPUT-CHANNEL"
-               "COMMON-LISP" "KEYWORD")))
-          do
-          (do-symbols (fn p)
-                      (cond ((gethash fn fns-ht) nil)
-                            ((or (not (fboundp fn))
-                                 (macro-function fn)
-                                 (special-form-or-op-p fn))
-                             (setf (gethash fn fns-ht) 'no))
-                            ((dubious-to-profile fn)
-                             (setf (gethash fn fns-ht) 'no)
-                             (ofv "Not profiling '~a' because it's ~a"
-                                  (shorten fn 20)
-                                  (dubious-to-profile fn)))
-                            (t (setf (gethash fn fns-ht) 'yes)))))
-    (maphash (lambda (k v)
-               (if (eq v 'no) (remhash k fns-ht)))
-             fns-ht)
-    (ofv "Profiling ~:d functions." (hash-table-count fns-ht))
-    (memoize-here-come (hash-table-count fns-ht))
-    (maphash
-     (lambda (k v) (declare (ignore v))
-       (profile-fn k
-                   :trace trace
-                   :watch-ifs watch-ifs
-                   :forget forget))
-     fns-ht)
-    (clear-memoize-call-array)
-    (format nil "~a function~:p newly profiled."
-            (hash-table-count fns-ht))))
-
-(defn functions-defined-in-form (form)
-  (cond ((consp form)
-         (cond ((and (symbolp (car form))
-                     (fboundp (car form))
-                     (cdr form)
-                     (symbolp (cadr form))
-                     (fboundp (cadr form))
-                     (eql 0 (search "def" (symbol-name (car form))
-                                    :test #'char-equal)))
-                (list (cadr form)))
-               ((member (car form) '(progn progn!))
-                (loop for z in (cdr form) nconc
-                      (functions-defined-in-form z)))))))
-
-(defn functions-defined-in-file (file)
-  (let ((x nil)
-        (avrc (cons nil nil)))
-    (our-syntax ; protects against changes to *package*, etc.
-     (let ((*readtable* (copy-readtable nil)))
-       (set-dispatch-macro-character
-        #\# #\, #'(lambda (stream char n)
-                    (declare (ignore stream char n))
-                    (values)))
-       (set-dispatch-macro-character
-        #\#
-        #\.
-        #'(lambda (stream char n)
-            (declare (ignore stream char n))
-            (values)))
-       (with-open-file (stream file)
-         (ignore-errors
-           (loop until (eq avrc (setq x (read stream nil avrc)))
-                 nconc
-                 (functions-defined-in-form x))))))))
-
-(defun profile-file (file &rest r)
-
-  "PROFILE-FILE is a raw Lisp function.  (PROFILE-FILE file) calls
-  PROFILE-FN on 'all the functions defined in' FILE, a relatively vague
-  concept.  However, if packages are changed in FILE as it is read, in
-  a sneaky way, or if macros are defined and then used at the top of
-  FILE, who knows which functions will be profiled?  Functions that do
-  not pass the test DUBIOUS-TO-PROFILE are not profiled.  A list of
-  the names of the functions profiled is returned."
-
-  (loop for fn in (functions-defined-in-file file)
-        unless (dubious-to-profile fn)
-        collect (apply #'profile-fn fn r)))
-
-
-
 
 ; MEMOIZE-ON AND MEMOIZE-OFF
 
@@ -2802,10 +2439,6 @@
             (setq ,x (the mfixnum (+ ,x (the mfixnum ,inc))))
             nil))
 
-(defmacro very-very-unsafe-aref-incf (ar loc)
- `(setf (aref (the (simple-array mfixnum (*)) ,ar) ,loc)
-        (the mfixnum (1+ (aref (the (simple-array mfixnum (*)) ,ar)
-                              ,loc)))))
 
 
 (defn1 pons-summary ()
@@ -2863,52 +2496,6 @@
 
 
 
-(defmacro our-syntax-brief (&rest args)
-
-; Within OUR-SYNTAX-BRIEF printing may be greatly abbreviated.
-;; only used in print-call-stack
-
-  `(our-syntax-nice
-    (setq *print-length* 10)
-    (setq *print-level* 5)
-    (setq *print-lines* 10)
-    ,@args))
-
-(defn print-call-stack ()
-
-  "(PRINT-CALL-STACK) prints the stack of memoized function calls
-  currently running and the time they have been running."
-
-  (let (l
-        (time (internal-real-time))
-        (*print-case* :downcase))
-    (maphash (lambda (k v)
-               (cond ((symbolp k)
-                      (let ((x (symbol-value
-                                (access memoize-info-ht-entry
-                                        v :start-time))))
-                        (declare (type mfixnum x))
-                        (when (> x 0)
-                          (push (cons k x) l))))))
-             *memoize-info-ht*)
-    (setq l (sort l #'< :key #'cdr))
-    (setq l (loop for pair in l collect
-                  (list (car pair)
-                        (ofnum (/ (- time (cdr pair))
-                                  *float-ticks/second*)))))
-    ;; [Jared]: So... from CLHS, - is some kind of special variable that is set
-    ;; to the current form the REPL is executing.  I guess this print
-    ;; statement, then, is trying to show the current form on top, before
-    ;; printing the call stack below it.  Twisted.
-    (our-syntax-brief (when - (format t "~%? ~a" -)))
-    (when l
-      (terpri)
-      (print-alist
-       (cons '("Stack of monitored function calls."
-               "Time since outermost call.")
-             l)
-       5))))
-
 
 
 (defn1 number-of-memoized-entries (x)
@@ -2962,25 +2549,9 @@
 
 
 
-#+Clozure
-(defg *current-compiler-function* 'unknown)
-
-#+Clozure
-(defg *trace-if-compiler-macro* nil)
 
 
-(defg *if-true-array* (make-array 2000
-                                  :element-type
-                                  '(integer -1 1152921504606846975)
-                                  :initial-element -1))
 
-(defg *if-false-array* (make-array 2000
-                                   :element-type
-                                   '(integer -1 1152921504606846975)
-                                   :initial-element -1))
-
-(declaim (type (simple-array (integer -1 1152921504606846975) (*))
-               *if-true-array* *if-false-array*))
 
 
 
@@ -3032,20 +2603,6 @@
            *memoize-info-ht*))
 
 
-(defn clear-memoize-call-array ()
-
-  "(CLEAR-MEMOIZE-CALL-ARRAY) zeros out all records of function calls as far as
-  reporting by MEMOIZE-SUMMARY, etc. is concerned."
-
-  (let ((m *memoize-call-array*))
-    (declare (type (simple-array mfixnum (*)) m))
-    (loop for i fixnum below (length m)
-          do (setf (aref m i) 0))))
-
-(defn clear-memoize-statistics ()
-  ;; User-level.  See memoize.lisp.
-  (clear-memoize-call-array)
-  nil)
 
 ; MEMOIZE INIT
 
@@ -3067,13 +2624,10 @@
         (progn
           #+Clozure (setup-smashed-if)
           (setq *memoize-info-ht* (mht))
-          (setf (gethash *ma-initial-max-symbol-to-fixnum*
-                         *memoize-info-ht*)
+          (setf (gethash *ma-initial-max-symbol-to-fixnum* *memoize-info-ht*)
                 "outside-caller")
-          (setq *max-symbol-to-fixnum*
-                *ma-initial-max-symbol-to-fixnum*)
-          (setq *2max-memoize-fns*
-                (* 2 *initial-max-memoize-fns*))
+          (setq *max-symbol-to-fixnum* *ma-initial-max-symbol-to-fixnum*)
+          (setq *2max-memoize-fns* (* 2 *initial-max-memoize-fns*))
           (sync-memoize-call-array)
           (clrhash *form-ht*)
           (setq success t))
@@ -3084,151 +2638,9 @@
   nil)
 
 
-(defg *max-mem-usage* (expt 2 32)
-
-  "*MAX-MEM-USAGE* an upper bound, in bytes of memory used, that when
-  exceeded results in certain garbage collection actions.")
-
-(defg *gc-min-threshold* (expt 2 30))
-
-#+Clozure
-(defn1 set-and-reset-gc-thresholds ()
-  (let ((n (max (- *max-mem-usage* (ccl::%usedbytes))
-                *gc-min-threshold*)))
-    (cond ((not (eql n (ccl::lisp-heap-gc-threshold)))
-           (ccl::set-lisp-heap-gc-threshold n)
-           )))
-  (ccl::use-lisp-heap-gc-threshold)
-  (cond ((not (eql *gc-min-threshold*
-                   (ccl::lisp-heap-gc-threshold)))
-         (ccl::set-lisp-heap-gc-threshold *gc-min-threshold*)
-         )))
-
-(defvar *sol-gc-installed* nil)
-
-#+Clozure
-(defn1 start-sol-gc ()
-
-; The following settings are highly heuristic.  We arrange that gc
-; occurs at 1/8 of the physical memory size in bytes, in order to
-; leave room for the gc point to grow (as per
-; set-and-reset-gc-thresholds).  If we can determine the physical
-; memory; great; otherwise we assume that it it contains at least 4GB,
-; a reasonable assumption we think for anyone using the HONS version
-; of ACL2.
-
-  (let* ((phys (physical-memory))
-         (memsize (cond ((> phys 0) (* phys 1024)) ; to bytes
-                        (t (expt 2 32)))))
-    (setq *max-mem-usage* (min (floor memsize 8)
-                               (expt 2 32)))
-    (setq *gc-min-threshold* (floor *max-mem-usage* 4)))
-
-; OLD COMMENT:
-; Trigger GC after we've used all but (1/8, but not more than 1 GB) of
-; the physical memory.
-
-  (unless *sol-gc-installed*
-    (ccl::add-gc-hook
-     #'(lambda ()
-         (ccl::process-interrupt
-          (slot-value ccl:*application* 'ccl::initial-listener-process)
-          #'set-and-reset-gc-thresholds))
-     :post-gc)
-    (setq *sol-gc-installed* t))
-
-  (set-and-reset-gc-thresholds))
-
-#+Clozure
-(defn1 set-gc-threshold (bound)
-  (when (< (ccl::lisp-heap-gc-threshold) bound)
-    (ofv "*hons-init-hook*:  Setting (ccl::lisp-heap-gc-threshold) ~
-          to ~:d bytes."
-         bound)
-    (ccl::set-lisp-heap-gc-threshold bound)
-    (ccl::use-lisp-heap-gc-threshold))
-  nil)
-
-#+Clozure
-(defun maybe-set-gc-threshold (&optional (fraction 1/32))
-  (let (n)
-    (setq n (physical-memory))
-    (cond ((and (integerp n) (> n (* 2 (expt 10 9))))
-           (setq n (floor (* n fraction)))
-           (set-gc-threshold n)))))
 
 
-#+Clozure
-(defun rwx-size (&optional verbose)
 
-  "(RWX-SIZE) returns two numbers: (a) the number of bytes that are in
-  use by the current CCL process, according to Gary Byers, as detailed
-  below, and (b) the number of bytes that are not in use by the
-  current Lisp process, but that have been merely imagined in secret
-  correspondence between CCL and Gnu-Linux.  Do not worry about (b).
-
-  If the optional argument, VERBOSE, is T, then information about
-  memory chunks that both contribute to (a) and that exceed
-  1 million bytes are printed to *debug-io*."
-
-;; From an email sent by Gary Byers:
-
-;; If you want a meaningful and accurate answer to the question of how
-;; much memory the process is using, I don't know of a more accurate
-;; or meaningful answer than what you'd get if you looked at each line
-;; in the pseudofile
-
-;; /proc/<pid>/maps
-
-;; on Linux (where <pid> is the process ID of the process) and totaled
-;; the sizes of each region that was readable, writable, or
-;; executable.  The regions are described by lines that look something
-;; like:
-
-;; 300040eef000-300042f60000 rwxp 300040eef000 00:00 0
-;; 300042f60000-307c00000000 ---p 300042f60000 00:00 0
-
-;; The first of these lines describes a region that's readable (r),
-;; writable (w), and executable (x); the second line descibes a much
-;; larger region that has none of these attributes.  The first region
-;; costs something: we have to have some physical memory in order to
-;; read/write/execute the contents of those pages (and if we're low on
-;; physical memory the OS might move those contents to swap space, and
-;; if this happens a lot we'll see delays like those that you
-;; describe.)  It's sometimes said that the first region is
-;; "committed" memory (the OS has to commit some real resources in
-;; order for you to be able to read and write to it) and the second
-;; region isn't committed.
-
-; The following code by Boyer is not to be blamed on Byers.
-
-  (let ((fn (format nil "/proc/~a/maps" (ccl::getpid)))
-        (count '?)
-        potential
-        int1 int2 pos1 pos2 next)
-    (with-standard-io-syntax
-     (when (ignore-errors (probe-file fn))
-       (setq count 0)
-       (setq potential 0)
-       (with-open-file (s fn)
-         (loop while (setq next (read-line s nil nil)) do
-               (multiple-value-setq (int1 pos1)
-                 (parse-integer next :radix 16 :junk-allowed t))
-               (multiple-value-setq (int2 pos2)
-                 (parse-integer next :start (1+ pos1)
-                                :radix 16 :junk-allowed t))
-               (let ((add (- int2 int1)))
-                 (cond ((loop for i from (+ pos2 1) to (+ pos2 3)
-                              thereis
-                              (member (char next i) '(#\r #\w #\x)))
-                        (incf count add)
-                        (when verbose
-                          (format *debug-io*
-                                  "~&~a~%adds ~:d"
-                                  next (- int2 int1))))
-                       (t (incf potential add))))))))
-    (when verbose (format *debug-io* "~%(rwx-size)=~:d" count))
-    (values count potential)))
 
 
 
@@ -3316,31 +2728,12 @@
 ;                 (progn (watch-kill) (csh-stop) (sh-stop))
 ;                 :when :before)
 
-       "It is usually best for the user to know what the garbage
-        collector is doing when using HONS and MEMOIZE."
+       )
 
-       (unless (equal '(t t)
-                      (multiple-value-list (ccl::gc-verbose-p)))
-         (ofv "*hons-init-hook*:  Setting CCL's gc to verbose.")
-         (ccl::gc-verbose t t))
+     (acl2h-initialize-gc)
 
-       "CCL's ephemeral gc doesn't seem to work well with honsing and
-        memoizing, so we always shut it off."
 
-       (when (ccl::egc-active-p)
-         (ofv "*hons-init-hook*:  Turning off CCL's ephemeral gc.")
-         (ccl::egc nil))
-
-       "Sol Swords's scheme to control GC in CCL.  See long comment in
-        memoize-raw.lisp."
-
-       #+Clozure
-       (start-sol-gc)
-
-       #+Clozure
-       (set-and-reset-gc-thresholds)
-
-       ))
+     )
 
   "*HONS-INIT-HOOK* is EVALed by HONS-INIT.  *HONS-INIT-HOOK* may be
   EVALed several times because HONS-INIT may be called several times.
@@ -3355,71 +2748,6 @@
     (ofv "*hons-init-hook*:  Setting ~a to ~a." var val)
     (setf (symbol-value var) val)))
 
-;          Sol Swords's scheme to control GC in CCL
-;
-; The goal is to get CCL to perform a GC whenever we're using almost
-; all the physical memory, but not otherwise.
-;
-; The usual way of controlling GC on CCL is via LISP-HEAP-GC-THRESHOLD.
-; This value is approximately amount of memory that will be allocated
-; immediately after GC.  This means that the next GC will occur after
-; LISP-HEAP-GC-THRESHOLD more bytes are used (by consing or array
-; allocation or whatever.)  But this means the total memory used by the
-; time the next GC comes around is the threshold plus the amount that
-; remained in use at the end of the previous GC.  This is a problem
-; because of the following scenario:
-;
-;  - We set the LISP-HEAP-GC-THRESHOLD to 3GB since we'd like to be able
-;    to use most of the 4GB physical memory available.
-;
-;  - A GC runs or we say USE-LISP-HEAP-GC-THRESHOLD to ensure that 3GB
-;    is available to us.
-;
-;  - We run a computation until we've exhausted this 3GB, at which point
-;    a GC occurs.
-;
-;  - The GC reclaims 1.2 GB out of the 3GB used, so there is 1.8 GB
-;    still in use.
-;
-;  - After GC, 3GB more is automatically allocated -- but this means we
-;    won't GC again until we have 4.8 GB in use, meaning we've gone to
-;    swap.
-;
-; What we really want is, instead of allocating a constant additional
-; amount after each GC, to allocate up to a fixed total amount including
-; what's already in use.  To emulate that behavior, we use the hack
-; below.  This operates as follows (assuming the same 4GB total physical
-; memory as in the above example:)
-;
-; 1. We set the LISP-HEAP-GC-THRESHOLD to (3.5G - used bytes) and call
-; USE-LISP-HEAP-GC-THRESHOLD so that our next GC will occur when we've
-; used a total of 3.5G.
-;
-; 2. We set the threshold back to 1GB without calling
-; USE-LISP-HEAP-GC-THRESHOLD.
-;
-; 3. Run a computation until we use up the 3.5G and the GC is called.
-; Say the GC reclaims 1.2GB so there's 2.3GB in use.  1GB more (the
-; current LISP-HEAP-GC-THRESHOLD) is allocated so the ceiling is 3.3GB.)
-;
-; 4. A post-GC hook runs which again sets the threshold to (3.5G -
-; used bytes), calls USE-LISP-HEAP-GC-THRESHOLD to raise the ceiling to
-; 3.5G, then sets the threshold back to 1GB, and the process repeats.
-;
-; A subtlety about this scheme is that post-GC hooks runs in a separate
-; thread from the main execution.  A possible bug is that in step 4,
-; between checking the amount of memory in use and calling
-; USE-LISP-HEAP-GC-THRESHOLD, more memory might be used up by the main
-; execution, which would set the ceiling higher than we intended.  To
-; prevent this, we interrupt the main thread to run step 4.
-
-;;   "*EMOD-TRACE-AND-COMPILE-FUNCTION-SYMBOLS* is a global, raw Lisp
-;;   variable containing symbols whose FUNCTION-SYMBOL we save at startup
-;;   for purposes of doing and undoing (FAST-ADVICE) and
-;;   (EMOD-TRACE).")
-
-;; (loop for sym in *emod-trace-and-compile-function-symbols* do
-;;       (proclaim `(special ,(ofni "*~a-FN*" sym))))
 
 (defn1 hons-init ()
 
@@ -3431,8 +2759,8 @@
 
   (in-package "ACL2")
   (hons-readtable-init)
+  (acl2h-ticks-init)
   (memoize-init)
-  (float-ticks/second-init)
   (eval *hons-init-hook*))
 
 
@@ -3455,374 +2783,6 @@
   (apply #'clear-memoize-tables r))
 
 
-
-
-
-;  COMPILER MACRO for IF
-
-(defg *if-counter* -1)
-(declaim (type (integer -1 1152921504606846975) *if-counter*))
-
-
-#+Clozure
-(ccl::advise ccl::compile-named-function
-             (when (and (consp ccl::arglist)
-                        (consp (cdr ccl::arglist))
-                        (consp (cddr ccl::arglist))
-                        (symbolp (caddr ccl::arglist)))
-               (clrhash *ignore-form-ht*)
-               (setq *current-compiler-function*
-                 (caddr ccl::arglist)))
-             )
-
-#+Clozure
-(defun if-report (&optional fn stream)
-
-  "(IF-REPORT) prints information about the execution of every branch
-  of every IF, COND, AND, OR, CASE, WHEN, and UNLESS form of every
-  memoized/profiled function that was memoized with :WATCH-IFS
-  non-NIL.  (IF-REPORT fn) prints the same information, but only about
-  the given function name, FN."
-
-  (compute-calls-and-times)
-  (let ((*print-level* 4)
-        (*print-length* 4)
-        (*print-pretty* t)
-        last-fn n (ifs-found 0) (if-true 0) (if-false 0)
-        (not-called 0)
-        (called 0))
-    (when (>= *if-counter* 0)
-      (format stream "~2%Report on IF branches taken.")
-      (let ((form-ar (make-array (the fixnum (1+ *if-counter*))
-                                 :initial-element 0)))
-        (declare (type (simple-array t (*)) form-ar))
-        (maphash (lambda (k v) (declare (ignore k))
-                   (when (or (null fn)
-                             (eq (cadr v) fn))
-                     (setf (aref form-ar (car v))
-                           (cons (cddr v) (cadr v)))))
-                 *form-ht*)
-        (let ((top *if-counter*)
-              ref)
-          (declare (type fixnum top))
-          (loop
-           for i from 0 to top
-           unless (eql 0 (setq ref (aref form-ar i)))
-           do
-           (let ((call (car ref))
-                 (fn (cdr ref)))
-             ;; ref has the form
-             ;; (orig-call . function)
-             (cond ((not (eq fn last-fn))
-                    (setq n (number-of-calls fn))
-                    (if (eq n 0)
-                        (incf not-called)
-                      (incf called))
-                    (format stream "~2%~a was called ~a time~:P."
-                         fn n)
-                    (setq last-fn fn)))
-             (cond
-              ((> n 0)
-               (incf ifs-found)
-               (cond
-                ((eql 0 (aref *if-true-array* i))
-                 (cond
-                  ((eql 0 (aref *if-false-array* i))
-                   (format stream
-                           "~%Neither branch of ~%~a~%was taken."
-                           call))
-                  (t (incf if-true)
-                     (format
-                      stream
-                      "~%The true branch of ~%~a~%was not taken."
-                      call))))
-                ((eql 0 (aref *if-false-array* i))
-                 (incf if-false)
-                 (format stream
-                         "~%The false branch of ~%~a~%was not taken."
-                         call))
-                (t (incf if-true) (incf if-false))))))))
-        (format stream
-                "~3%~:d ~10tnumber of functions called.~
-              ~%~:d ~10tnumber of functions not called.~
-              ~%~,2f% ~10tpercentage of functions called.~
-              ~%~:d ~10tnumber of branches taken.~
-              ~%~:d ~10tnumber of branches not taken.~
-              ~%~,2f% ~10tpercentage of branches taken.
-              ~%"
-                called
-                not-called
-                (if (eql (+ called not-called) 0)
-                    100
-                  (* 100
-                     (/ called
-                        (float (+ called not-called)))))
-                (+ if-true if-false)
-                (- (* 2 ifs-found) (+ if-true if-false))
-                (if (eql ifs-found 0)
-                    100
-                  (* 100
-                     (float
-                      (/ (+ if-true if-false)
-                         (* 2 ifs-found))))))
-        (format stream "~2%End of report on IF branches taken.~%")))))
-
-#+Clozure
-(defun dump-if-report (&optional (out "if-report.text"))
-  (with-open-file (stream
-                   out
-                   :direction :output
-                   :if-exists :supersede)
-    (if-report stream))
-  "if-report.text")
-
-; The compiler macro for IF in the Clozure Common Lisp sources circa 2008:
-
-; (define-compiler-macro if (&whole call test true &optional false
-;                                   &environment env)
-;   (multiple-value-bind (test test-win) (nx-transform test env)
-;     (multiple-value-bind (true true-win) (nx-transform true env)
-;       (multiple-value-bind (false false-win) (nx-transform false env)
-;         (if (or (quoted-form-p test) (self-evaluating-p test))
-;           (if (eval test)
-;             true
-;             false)
-;           (if (or test-win true-win false-win)
-;             `(if ,test ,true ,false)
-;             call))))))
-
-
-
-(defmacro prinl (&rest r)
-
-  "PRINL is for debugging.  In general, PRINL PRIN1s the members of r
-  followed by their values to *STANDARD-OUTPUT*.  The values are first
-  followed by =>, to indicate evaluation.
-
-  For example, (prinl a b (+ a b)) might print:
-    A => 1
-    B => 2
-    (+ A B) => 3
-  PRINL returns the principal value of the last member of r.  PRINL
-  does not evaluate the members of r that are neither symbols nor
-  conses, but it does PRINC those members.  PRINL evalutes (oft ...)
-  forms, but does not do the printing twice."
-
-  (let ((tem (make-symbol "TEM"))
-        (tem2 (make-symbol "TEM2")))
-    `(our-syntax-nice
-      (let ((,tem nil) (,tem2 nil))
-        (declare (ignorable ,tem2))
-        ,@(loop for x in r collect
-                (cond
-                 ((or (symbolp x)
-                      (and (consp x) (not (eq (car x) 'oft))))
-                  `(progn (format t "~&~:a =>~40t" ',x)
-                          (setq ,tem ,x)
-                          (cond ((integerp ,tem)
-                                 (setq ,tem2 (ofn "~20:d" ,tem)))
-                                ((floatp ,tem)
-                                 (setq ,tem2 (ofn "~20,4f" ,tem)))
-                                ((hash-table-p ,tem)
-                                 (let ((l nil))
-                                   (maphash (lambda (k v)
-                                              (push (cons k v) l))
-                                            ,tem)
-                                   (setq l (nreverse l))
-                                   (setq l (list* 'hash-table-size
-                                                  (hash-table-size
-                                                   ,tem)
-                                                  l))
-                                   (setq ,tem l)))
-                                (t (setq ,tem2 (ofn "~a" ,tem))))
-                          (cond ((and (stringp ,tem2)
-                                      (< (length ,tem2) 40))
-                                 (format t "~a" ,tem2))
-                                (t (format t "~%  ")
-                                   (prin1 ,tem *terminal-io*)))))
-                 ((and (consp x) (eq (car x) 'oft)) x)
-                 (t `(format t "~&~a" (setq ,tem ',x)))))
-        ,tem))))
-
-
-#+Clozure
-(defun setup-smashed-if ()
-
-; SETUP-SMASHED-IF creates COMPILER-MACRO for IF and OR via calls of
-; DEFINE-COMPILER-MACRO, stores the compiler macros, and restores the
-; previous values.
-
-  (let ((ccl::*nx-safety* 0)
-        (ccl::*nx-speed* 3))
-
-; Warning: In Clozure, (DEFINE-COMPILER-MACRO IF ...) 'seems' to do
-; nothing, not even cause an error, if SAFETY=3.
-
-; According to the ANSI standard, one is not supposed to mess with a
-; compiler macro for any symbol in the Common Lisp package.  So the
-; following hacking of the compiler macros for IF and OR is very
-; dubious.  But it seemed easier than writing a code walker for all of
-; Common Lisp, with its 50 or so special forms.  Our purpose this is
-; to help get statistical performance information, and that is all
-; that justifies this dangerous behavior.
-
- (when (and *unsmashed-if* (null *smashed-if*))
-      (unwind-protect
-        (progn
-
-(define-compiler-macro if
-  (&whole call test true &optional false &environment env)
-  (declare (ignorable env))
-  (when *trace-if-compiler-macro*
-    (prinl call test true false))
-  (let
-    ((ans
-      (cond
-       ((gethash call *form-ht*)
-
-; According to the ANSI standard, there is no guarantee that a Common
-; Lisp compiler macro ever gets called!  We hope and believe that
-; Clozure's compiler arranges that every IF forms gets processed by
-; the compiler macro for IF so that we can 'IF-fix' it, when
-; approriate.  A form in *FORM-HT* is an IF form that has been
-; 'IF-fixed': both its true and false branch first increment a special
-; counter for the the number of times that each branch is taken.  We
-; do not want to 'IF-fix' again a form that has already been
-; 'IF-fixed'; if it has, the new compiler macro for IF returns it as
-; the answer.  Any caller of this compiler macro for IF will know, by
-; the ANSI rules for compiler macros, not to hope for any further
-; improvement on the form.  If an ordinary macro (not a compiler
-; macro) returned its input, macro expansion would enter an immediate
-; infinite loop.  It is lucky for us that Clozure translates COND and
-; CASE into IF via macros.
-
-        call)
-       (t
-
-; Although it may seem very hard to tell, we do closely follow the
-; code for the compiler-macro for IF from the Clozure compiler.  See
-; that code below.
-
-        (multiple-value-bind (test test-win)
-            (ccl::nx-transform test env)
-        (multiple-value-bind (true true-win)
-            (ccl::nx-transform true env)
-        (multiple-value-bind (false false-win)
-            (ccl::nx-transform false env)
-          (cond
-           ((or (ccl::quoted-form-p test)
-                (ccl::self-evaluating-p test))
-            (when *trace-if-compiler-macro*
-              (prinl "IF test already settled"))
-            (if (eval test) true false))
-           ((gethash call *ignore-form-ht*)
-
-; Forms in *IGNORE-FORM-HT* are not to be 'fixed' because they are
-; part of the profiling machinery.  See the definition of PROFILER-IF
-; and those macros that use PROFILER-IF, such as PROFILER-AND,
-; PROFILER-OR, PROFILER-WHEN, and PROFILER-UNLESS.
-
-            (when *trace-if-compiler-macro*
-              (prinl "ignore case" test true false))
-            (cond ((or test-win true-win false-win)
-                   (let ((new `(if ,test ,true ,false)))
-
-; We make ignorability contagious.
-
-                     (setf (gethash new *ignore-form-ht*) t)
-                     new))
-                  (t call)))
-           (t
-            (incf *if-counter*)
-            (when *trace-if-compiler-macro*
-              (prinl "*IF-COUNTER* incremented"
-                     call test true false))
-
-; Our code here would be much simpler if in place of *IF-TRUE-ARRAY*
-; and *IF-FALSE-ARRAY* we used two adjustable arrays and the function
-; VECTOR-PUSH-EXTEND.  However, an adjustable array is not a
-; SIMPLE-ARRAY, and so we possibly could lose efficiency, which we
-; need when incrementing IF-branch counters.
-
-            (when (>= *if-counter* (length *if-true-array*))
-              (let ((ar (make-array
-                         (+ (length *if-true-array*) 1000)
-                         :element-type 'mfixnum
-                         :initial-element -1)))
-                (declare (type (simple-array mfixnum (*)) ar))
-                (loop for i fixnum
-                      below (length *if-true-array*)
-                      do (setf (aref ar i)
-                               (aref *if-true-array* i)))
-                (setq *if-true-array* ar)))
-            (when (>= *if-counter* (length *if-false-array*))
-              (let ((ar (make-array (+ (length *if-false-array*)
-                                       1000)
-                                    :element-type 'mfixnum
-                                    :initial-element -1)))
-                (declare (type (simple-array mfixnum (*)) ar))
-                (loop for i fixnum
-                      below (length *if-false-array*)
-                      do (setf (aref ar i)
-                               (aref *if-false-array* i)))
-                (setq *if-false-array* ar)))
-            (setf (aref *if-true-array* *if-counter*) 0)
-            (setf (aref *if-false-array* *if-counter*) 0)
-            (let ((new-call `(if ,test
-                                 (progn
-                                   (very-very-unsafe-aref-incf
-                                    *if-true-array*
-                                    ,*if-counter*)
-                                   ,true)
-                               (progn
-                                 (very-very-unsafe-aref-incf
-                                  *if-false-array*
-                                  ,*if-counter*)
-                                 ,false))))
-
-; The immediately preceding backquoted form is what we call the
-; 'IF-fixing' of an expression.
-
-              (when *trace-if-compiler-macro*
-                (prinl new-call call))
-              (setf (gethash new-call *form-ht*)
-                    (list* *if-counter*
-                           *current-compiler-function*
-                           call))
-              new-call))))))))))
-    (when *trace-if-compiler-macro* (prinl ans))
-    ans))
-(setq *smashed-if* (compiler-macro-function 'if)))
-(setf (compiler-macro-function 'if) *unsmashed-if*))
-
-(unwind-protect
-  (progn
-
-; Apparently some times in CCL compilation, OR is not expanded to IF,
-; so we force it here.
-
-(define-compiler-macro or (&whole call &rest r &environment env)
-  (declare (ignore r) (ignorable env))
-  (cond ((null (cdr call)) nil)
-        ((null (cddr call)) (cadr call))
-        ((null (cdddr call))
-         (cond ((atom (cadr call))
-                `(if ,(cadr call)
-                     ,(cadr call)
-                   ,(caddr call)))
-               (t (let ((v (gensym)))
-                    `(let ((,v ,(cadr call)))
-                       (if ,v ,v ,(caddr call)))))))
-        (t (cond ((atom (cadr call))
-                  `(if ,(cadr call) ,(cadr call) (or ,@(cddr call))))
-                 (t (let ((v (gensym)))
-                      `(let ((,v ,(cadr call)))
-                         (if ,v ,v (or ,@(cddr call))))))))))
-
-(setq *smashed-or* (compiler-macro-function 'or)))
-(setf (compiler-macro-function 'or) *unsmashed-or*))
-
-)))
 
 
 
@@ -3887,9 +2847,33 @@
 
 ; -----------------------------------------------------------------------------
 
-
 (defun initialize-never-profile-ht ()
-  ;; [Jared]: ugh, horrible! we should get rid of this kind of nonsense!
+
+; [Jared]: Ugh. These kinds of big lists seem really bad.  There might be
+; important reasons that some functions must never be memoized, for instance:
+;
+;   - It might not be legitimate for functions used in the memoize code itself
+;     (e.g., +) to be memoized.  We may also want to make sure we never memoize
+;     things like Common Lisp primitives.  I'm not very worried about things
+;     like Lisp kernel code; for that you'd have to be in raw Lisp anyway.
+;
+;   - Certain functions may operate destructively, e.g., strip-cars is
+;     implemented as (nreverse (reverse-strip-cars x nil)), so if we memoize
+;     reverse-strip-cars we could get into trouble.  In fact this was a
+;     soundness bug with ACL2(h) as of ACL2 4.2.  So, we need to be sure not to
+;     memoize these.
+;
+; But there is probably no reason we can't memoize some of the other functions
+; here, like string< and remove-duplicates.  Of course it's probably a bad idea
+; to memoize these for performance reasons, but really the whole question of
+; "how to memoize intelligently" should stay firmly beyond the scope of the
+; memoize code.  In these cases, we should probably move the functions into the
+; profile-reject-ht instead of making it outright illegal to memoize them.
+;
+; This list also has a lot of other functions that aren't even defined in ACL2
+; and might not even be defined in STP anymore.  We should probably never put
+; function names here that aren't defined for regular ACL2(h) users.
+
   (loop for x in
         '(bytes-used
           memoize-summary
@@ -4026,7 +3010,6 @@
           import
           initialize-instance
           intern
-          internal-real-time
           intersection
           invalid-method-error
           invoke-restart
@@ -4248,1044 +3231,5 @@
         do (setf (gethash x *never-profile-ht*) t)))
 
 
-(defun initialize-profile-reject-ht ()
-  ;; [Jared]: ugh, horrible! we should get rid of this kind of nonsense!
-  (loop for sym in
-        '(ld-fn0
-          protected-eval
-          hons-read-list-top
-          hons-read-list
-          raw-ev-fncall
-          read-char$
-          1-way-unify
-          hons-copy1
-          grow-static-conses
-          bytes-used
-          lex->
-          gc-count
-          outside-p
-          shorten
-          date-string
-          strip-cars1
-          short-symbol-name
-          memoize-condition
-          1-way-unify-top
-          absorb-frame
-          access-command-tuple-number
-          access-event-tuple-depth
-          access-event-tuple-form
-          access-event-tuple-number
-          accumulate-ttree-and-step-limit-into-state
-          acl2-macro-p
-          acl2-numberp
-          add-car-to-all
-          add-cdr-to-all
-          add-command-landmark
-          add-event-landmark
-          add-g-prefix
-          add-literal
-          add-literal-and-pt
-          add-name
-          add-new-fc-pots
-          add-new-fc-pots-lst
-          add-timers
-          add-to-pop-history
-          add-to-set-eq
-          add-to-set-equal
-          add-to-tag-tree
-          advance-fc-activations
-          advance-fc-pot-lst
-          all-args-occur-in-top-clausep
-          all-calls
-          all-fnnames1
-          all-nils
-          all-ns
-          all-quoteps
-          all-runes-in-ttree
-          all-vars
-          all-vars1
-          all-vars1-lst
-          alphorder
-          ancestors-check
-          and-macro
-          and-orp
-          apply-top-hints-clause
-          approve-fc-derivations
-          aref1
-          aref2
-          arglistp
-          arglistp1
-          arith-fn-var-count
-          arith-fn-var-count-lst
-          arity
-          assoc-eq
-          assoc-equal
-          assoc-equal-cdr
-          assoc-equiv
-          assoc-equiv+
-          assoc-keyword
-          assoc-no-error-at-end
-          assoc-type-alist
-          assume-true-false
-          assume-true-false1
-          atoms
-          augment-ignore-vars
-          backchain-limit
-          bad-cd-list
-          not-pat-p
-          basic-worse-than
-          being-openedp-rec
-          big-n
-          binary-+
-          binary-append
-          bind-macro-args
-          bind-macro-args-after-rest
-          bind-macro-args-keys
-          bind-macro-args-keys1
-          bind-macro-args-optional
-          bind-macro-args1
-          binding-hyp-p
-          binop-table
-          body
-          boolean-listp
-          booleanp
-          boundp-global
-          boundp-global1
-          brkpt1
-          brkpt2
-          built-in-clausep
-          built-in-clausep1
-          bytes-allocated
-          bytes-allocated/call
-          call-stack
-          canonical-representative
-          car-cdr-nest
-          case-list
-          case-split-limitations
-          case-test
-          change-plist
-          change-plist-first-preferred
-          character-listp
-          chars-for-int
-          chars-for-num
-          chars-for-pos
-          chars-for-pos-aux
-          chars-for-rat
-          chase-bindings
-          chk-acceptable-defuns
-          chk-acceptable-ld-fn
-          chk-acceptable-ld-fn1
-          chk-acceptable-ld-fn1-pair
-          chk-all-but-new-name
-          chk-arglist
-          chk-assumption-free-ttree
-          chk-dcl-lst
-          chk-declare
-          chk-defun-mode
-          chk-defuns-tuples
-          chk-embedded-event-form
-          chk-free-and-ignored-vars
-          chk-free-and-ignored-vars-lsts
-          chk-irrelevant-formals
-          chk-just-new-name
-          chk-just-new-names
-          chk-legal-defconst-name
-          chk-length-and-keys
-          chk-no-duplicate-defuns
-          chk-table-guard
-          chk-table-nil-args
-          chk-xargs-keywords
-          chk-xargs-keywords1
-          clausify
-          clausify-assumptions
-          clausify-input
-          clausify-input1
-          clausify-input1-lst
-          clean-type-alist
-          clear-memoize-table
-          clear-memoize-tables
-          cltl-def-from-name
-          coerce-index
-          coerce-object-to-state
-          coerce-state-to-object
-          collect-assumptions
-          collect-dcls
-          collect-declarations
-          collect-non-x
-          comm-equal
-          complementaryp
-          complex-rationalp
-          compute-calls-and-times
-          compute-inclp-lst
-          compute-inclp-lst1
-          compute-stobj-flags
-          cond-clausesp
-          cond-macro
-          conjoin
-          conjoin-clause-sets
-          conjoin-clause-to-clause-set
-          conjoin2
-          cons-make-list
-          cons-ppr1
-          cons-term
-          cons-term2
-          const-list-acc
-          constant-controller-pocketp
-          constant-controller-pocketp1
-          contains-guard-holdersp
-          contains-guard-holdersp-lst
-          contains-rewriteable-callp
-          controller-complexity
-          controller-complexity1
-          controller-pocket-simplerp
-          controllers
-          convert-clause-to-assumptions
-          csh
-          current-package
-          dcls
-          def-body
-          default-defun-mode
-          default-hints
-          default-print-prompt
-          default-verify-guards-eagerness
-          defconst-fn
-          defined-constant
-          defn-listp
-          defnp
-          defun-fn
-          defuns-fn
-          defuns-fn0
-          delete-assumptions
-          delete-assumptions-1
-          digit-to-char
-          disjoin
-          disjoin-clause-segment-to-clause-set
-          disjoin-clauses
-          disjoin-clauses1
-          disjoin2
-          distribute-first-if
-          doc-stringp
-          doubleton-list-p
-          dumb-assumption-subsumption
-          dumb-assumption-subsumption1
-          dumb-negate-lit
-          dumb-negate-lit-lst
-          dumb-occur
-          dumb-occur-lst
-          duplicate-keysp
-          eapply
-          enabled-numep
-          enabled-xfnp
-          ens
-          eoccs
-          eqlable-listp
-          eqlablep
-          equal-mod-alist
-          equal-mod-alist-lst
-          er-progn-fn
-          ev
-          ev-fncall
-          ev-fncall-rec
-          ev-for-trans-eval
-          ev-rec
-          ev-rec-lst
-          eval-bdd-ite
-          eval-event-lst
-          eval-ground-subexpressions
-          eval-ground-subexpressions-lst
-          evens
-          every-occurrence-equiv-hittablep1
-          every-occurrence-equiv-hittablep1-listp
-          eviscerate
-          eviscerate-stobjs
-          eviscerate-stobjs1
-          eviscerate1
-          eviscerate1-lst
-          eviscerate1p
-          eviscerate1p-lst
-          evisceration-stobj-marks
-          expand-abbreviations
-          expand-abbreviations-lst
-          expand-abbreviations-with-lemma
-          expand-and-or
-          expand-any-final-implies1
-          expand-any-final-implies1-lst
-          expand-clique-alist
-          expand-clique-alist-term
-          expand-clique-alist-term-lst
-          expand-clique-alist1
-          expand-permission-result
-          expand-some-non-rec-fns
-          expand-some-non-rec-fns-lst
-          explode-atom
-          extend-car-cdr-sorted-alist
-          extend-type-alist
-          extend-type-alist-simple
-          extend-type-alist-with-bindings
-          extend-type-alist1
-          extend-with-proper/improper-cons-ts-tuple
-          extract-and-clausify-assumptions
-          f-and
-          f-booleanp
-          f-ite
-          f-not
-          fc-activation
-          fc-activation-lst
-          fc-pair-lst
-          fc-pair-lst-type-alist
-          fetch-from-zap-table
-          ffnnamep
-          ffnnamep-hide
-          ffnnamep-hide-lst
-          ffnnamep-lst
-          ffnnamep-mod-mbe
-          ffnnamep-mod-mbe-lst
-          ffnnamesp
-          ffnnamesp-lst
-          fgetprop
-          filter-geneqv-lst
-          filter-with-and-without
-          find-abbreviation-lemma
-          find-alternative-skip
-          find-alternative-start
-          find-alternative-start1
-          find-alternative-stop
-          find-and-or-lemma
-          find-applicable-hint-settings
-          find-clauses
-          find-clauses1
-          find-mapping-pairs-tail
-          find-mapping-pairs-tail1
-          find-rewriting-equivalence
-          find-subsumer-replacement
-          first-assoc-eq
-          first-if
-          fix-declares
-          flpr
-          flpr1
-          flpr11
-          flsz
-          flsz-atom
-          flsz-integer
-          flsz1
-          flush-hons-get-hash-table-link
-          fms
-          fmt
-          fmt-char
-          fmt-ctx
-          fmt-hard-right-margin
-          fmt-ppr
-          fmt-soft-right-margin
-          fmt-symbol-name
-          fmt-symbol-name1
-          fmt-var
-          fmt0
-          fmt0&v
-          fmt0*
-          fmt1
-          fn-count-1
-          fn-count-evg-rec
-          fn-rune-nume
-          fnstack-term-member
-          formal-position
-          formals
-          free-varsp
-          free-varsp-lst
-          function-symbolp
-          gatom
-          gatom-booleanp
-          gen-occs
-          gen-occs-list
-          geneqv-lst
-          geneqv-lst1
-          geneqv-refinementp
-          geneqv-refinementp1
-          general
-          gentle-binary-append
-          gentle-atomic-member
-          gentle-caaaar
-          gentle-caaadr
-          gentle-caaar
-          gentle-caadar
-          gentle-caaddr
-          gentle-caadr
-          gentle-caar
-          gentle-cadaar
-          gentle-cadadr
-          gentle-cadar
-          gentle-caddar
-          gentle-cadddr
-          gentle-caddr
-          gentle-cadr
-          gentle-car
-          gentle-cdaaar
-          gentle-cdaadr
-          gentle-cdaar
-          gentle-cdadar
-          gentle-cdaddr
-          gentle-cdadr
-          gentle-cdar
-          gentle-cddaar
-          gentle-cddadr
-          gentle-cddar
-          gentle-cdddar
-          gentle-cddddr
-          gentle-cdddr
-          gentle-cddr
-          gentle-cdr
-          gentle-getf
-          gentle-length
-          gentle-revappend
-          gentle-reverse
-          gentle-strip-cars
-          gentle-strip-cdrs
-          gentle-take
-          genvar
-          get-and-chk-last-make-event-expansion
-          get-declared-stobj-names
-          get-doc-string
-          get-docs
-          get-global
-          get-guards
-          get-guards1
-          get-guardsp
-          get-ignorables
-          get-ignores
-          get-integer-from
-          get-level-no
-          get-package-and-name
-          get-stobjs-in-lst
-          get-string
-          get-timer
-          get-unambiguous-xargs-flg
-          get-unambiguous-xargs-flg1
-          get-unambiguous-xargs-flg1/edcls
-          getprop-default
-          gify
-          gify-all
-          gify-file
-          gify-list
-          global-set
-          global-val
-          good-defun-mode-p
-          gsal
-          gtrans-atomic
-          guard
-          guard-clauses
-          guard-clauses-for-clique
-          guard-clauses-for-fn
-          guard-clauses-lst
-          guess-and-putprop-type-prescription-lst-for-clique
-          guess-and-putprop-type-prescription-lst-for-clique-step
-          guess-type-prescription-for-fn-step
-          hide-ignored-actuals
-          hide-noise
-          hits/calls
-          hons
-          hons-acons
-          hons-acons!
-          hons-acons-summary
-          hons-copy-restore
-          hons-copy2-consume
-          hons-copy3-consume
-          hons-copy1-consume
-          hons-copy1-consume-top
-          hons-copy2
-          hons-copy3
-          hons-copy1
-          hons-copy1-top
-          hons-copy
-          hons-copy-list-cons
-          hons-copy-r
-          hons-copy-list-r
-          hons-copy
-          hons-dups-p
-          hons-dups-p1
-          hons-gentemp
-          hons-get-fn-do-hopy
-          hons-get-fn-do-not-hopy
-          hons-int1
-          hons-intersection
-          hons-intersection2
-          hons-len
-          hons-member-equal
-          hons-normed
-          hons-put-list
-          hons-sd1
-          hons-set-diff
-          hons-set-diff2
-          hons-set-equal
-          hons-shrink-alist
-          hons-shrink-alist!
-          hons-subset
-          hons-subset2
-          hons-union1
-          hons-union2
-          if-compile
-          if-compile-formal
-          if-compile-lst
-          if-interp
-          if-interp-add-clause
-          if-interp-assume-true
-          if-interp-assumed-value
-          if-interp-assumed-value-x
-          if-interp-assumed-value1
-          if-interp-assumed-value2
-          ignorable-vars
-          ignore-vars
-          in-encapsulatep
-          increment-timer
-          induct-msg/continue
-          initialize-brr-stack
-          initialize-summary-accumulators
-          initialize-timers
-          inst
-          install-event
-          install-global-enabled-structure
-          intern-in-package-of-symbol
-          intersection-eq
-          intersectp-eq
-          irrelevant-non-lambda-slots-clique
-          keyword-param-valuep
-          keyword-value-listp
-          known-package-alist
-          known-whether-nil
-          kwote
-          lambda-nest-hidep
-          latch-stobjs
-          latch-stobjs1
-          ld-error-triples
-          ld-evisc-tuple
-          ld-filter-command
-          ld-fn-alist
-          ld-fn-body
-          ld-loop
-          ld-post-eval-print
-          ld-pre-eval-filter
-          ld-pre-eval-print
-          ld-print-command
-          ld-print-prompt
-          ld-print-results
-          ld-prompt
-          ld-read-command
-          ld-read-eval-print
-          ld-skip-proofsp
-          ld-verbose
-          legal-case-clausesp
-          legal-constantp
-          legal-variable-or-constant-namep
-          legal-variablep
-          len
-          let*-macro
-          lexorder
-          list*-macro
-          list-fast-fns
-          list-macro
-          list-to-pat
-          listify
-          listlis
-          locn-acc
-          look-in-type-alist
-          lookup-hyp
-          lookup-world-index
-          lookup-world-index1
-          loop-stopperp
-          macro-args
-          macroexpand1
-          main-timer
-          make-bit
-          make-clique-alist
-          make-event-ctx
-          make-event-debug-post
-          make-event-debug-pre
-          make-event-fn
-          make-fmt-bindings
-          make-list-of-symbols
-          make-list-with-tail
-          make-occs-map1
-          make-slot
-          make-symbol-with-number
-          map-type-sets-via-formals
-          match-free-override
-          max-absolute-command-number
-          max-absolute-event-number
-          max-form-count
-          max-form-count-lst
-          max-level-no
-          max-level-no-lst
-          max-width
-          may-need-slashes
-          maybe-add-command-landmark
-          maybe-add-space
-          maybe-gify
-          maybe-reduce-memoize-tables
-          maybe-str-hash
-          maybe-zify
-          member-complement-term
-          member-complement-term1
-          member-eq
-          member-equal
-          member-equal-+-
-          member-symbol-name
-          member-term
-          memoizedp-raw
-          mer-star-star
-          merge-runes
-          merge-sort
-          merge-sort-car->
-          merge-sort-length
-          merge-sort-runes
-          most-recent-enabled-recog-tuple
-          mv-atf
-          mv-nth
-          mv-nth-list
-          n2char
-          nat-list-to-list-of-chars
-          nat-to-list
-          nat-to-string
-          nat-to-v
-          natp
-          new-backchain-limit
-          newline
-          next-absolute-event-number
-          next-tag
-          next-wires
-          nfix
-          nmake-if
-          nmerge
-          no-duplicatesp
-          no-duplicatesp-equal
-          no-op-histp
-          nominate-destructor-candidates
-          non-linearp
-          non-stobjps
-          normalize
-          normalize-lst
-          normalize-with-type-set
-          not-instance-name-p
-          not-pat-receiving
-          dubious-to-profile
-          not-safe-for-synthesis-list
-          not-to-be-rewrittenp
-          not-to-be-rewrittenp1
-          nth-update-rewriter
-          nth-update-rewriter-target-lstp
-          nth-update-rewriter-targetp
-          nu-rewriter-mode
-          num-0-to-9-to-char
-          num-to-bits
-          number-of-arguments
-          number-of-calls
-          number-of-hits
-          number-of-memoized-entries
-          number-of-mht-calls
-          number-of-return-values
-          number-of-strings
-          obfb
-          obj-table
-          odds
-          ofe
-          ofnum
-          ofv
-          ofvv
-          ofw
-          ok-to-force
-          oncep
-          one-way-unify
-          one-way-unify-restrictions
-          one-way-unify1
-          one-way-unify1-equal
-          one-way-unify1-equal1
-          one-way-unify1-lst
-          open-input-channel
-          open-output-channel
-          open-output-channel-p
-          or-macro
-          output-ignored-p
-          output-in-infixp
-          pairlis$
-          pairlis2
-          pal
-          partition-according-to-assumption-term
-          permute-occs-list
-          pons
-          pop-accp
-          pop-clause
-          pop-clause-msg
-          pop-clause-msg1
-          pop-clause1
-          pop-timer
-          pop-warning-frame
-          posp
-          ppr
-          ppr1
-          ppr1-lst
-          ppr2
-          ppr2-column
-          ppr2-flat
-          prefix
-          preprocess-clause
-          preprocess-clause-msg1
-          prin1$
-          princ$
-          print-alist
-          print-base-p
-          print-call-stack
-          print-defun-msg
-          print-defun-msg/collect-type-prescriptions
-          print-defun-msg/type-prescriptions
-          print-defun-msg/type-prescriptions1
-          print-prompt
-          print-rational-as-decimal
-          print-redefinition-warning
-          print-rules-summary
-          print-summary
-          print-time-summary
-          print-timer
-          print-verify-guards-msg
-          print-warnings-summary
-          profile-g-fns
-          progn-fn
-          progn-fn1
-          program-term-listp
-          program-termp
-          proofs-co
-          proper/improper-cons-ts-tuple
-          prove
-          prove-guard-clauses
-          prove-loop
-          prove-loop1
-          pseudo-term-listp
-          pseudo-termp
-          pseudo-variantp
-          pseudo-variantp-list
-          pt-intersectp
-          pt-occur
-          pts-to-ttree-lst
-          puffert
-          push-accp
-          push-ancestor
-          push-io-record
-          push-lemma
-          push-timer
-          push-warning-frame
-          put-assoc-eq
-          put-global
-          put-ttree-into-pspv
-          putprop
-          putprop-defun-runic-mapping-pairs
-          quickly-count-assumptions
-          quote-listp
-          quotep
-          qzget-sign-abs
-          raw-mode-p
-          read-acl2-oracle
-          read-object
-          read-run-time
-          read-standard-oi
-          recompress-global-enabled-structure
-          recompress-stobj-accessor-arrays
-          record-accessor-function-name
-          recursive-fn-on-fnstackp
-          redundant-or-reclassifying-defunsp1
-          relevant-slots-call
-          relevant-slots-clique
-          relevant-slots-clique1
-          relevant-slots-def
-          relevant-slots-term
-          relevant-slots-term-lst
-          relieve-hyp
-          relieve-hyps
-          relieve-hyps1
-          remove-evisc-marks
-          remove-evisc-marks-al
-          remove-invisible-fncalls
-          remove-keyword
-          remove-one-+-
-          remove-strings
-          replace-stobjs
-          replace-stobjs1
-          replaced-stobj
-          ret-stack
-          return-type-alist
-          rewrite
-          rewrite-args
-          rewrite-fncall
-          rewrite-fncallp
-          rewrite-fncallp-listp
-          rewrite-if
-          rewrite-if1
-          rewrite-if11
-          rewrite-primitive
-          rewrite-recognizer
-          rewrite-solidify
-          rewrite-solidify-plus
-          rewrite-solidify-rec
-          rewrite-stack-limit
-          rewrite-with-lemma
-          rewrite-with-lemmas
-          rewrite-with-lemmas1
-          rewrite-with-linear
-          rune-<
-          runep
-          safe-1+
-          safe-1-
-          safe-<
-          safe-<=
-          safe-binary-+
-          safe-binary--
-          safe-caaaar
-          safe-caaadr
-          safe-caaar
-          safe-caadar
-          safe-caaddr
-          safe-caadr
-          safe-caar
-          safe-cadaar
-          safe-cadadr
-          safe-cadar
-          safe-caddar
-          safe-cadddr
-          safe-caddr
-          safe-cadr
-          safe-car
-          safe-cdaaar
-          safe-cdaadr
-          safe-cdaar
-          safe-cdadar
-          safe-cdaddr
-          safe-cdadr
-          safe-cdar
-          safe-cddaar
-          safe-cddadr
-          safe-cddar
-          safe-cdddar
-          safe-cddddr
-          safe-cdddr
-          safe-cddr
-          safe-cdr
-          safe-code-char
-          safe-coerce
-          safe-floor
-          safe-intern-in-package-of-symbol
-          safe-lognot
-          safe-max
-          safe-mod
-          safe-nthcdr
-          safe-rem
-          safe-strip-cars
-          safe-symbol-name
-          saved-output-token-p
-          scan-past-whitespace
-          scan-to-cltl-command
-          scan-to-landmark-number
-          scons-tag-trees
-          scons-tag-trees1
-          search-type-alist
-          search-type-alist-rec
-          set-cl-ids-of-assumptions
-          set-difference-eq
-          set-timer
-          set-w
-          set-w!
-          sgetprop
-          simple-translate-and-eval
-          simplify-clause-msg1
-          simplify-clause1
-          slot-member
-          some-congruence-rule-disabledp
-          some-controller-pocket-constant-and-non-controller-simplerp
-          some-geneqv-disabledp
-          some-subterm-worse-than-or-equal
-          some-subterm-worse-than-or-equal-lst
-          sort-approved
-          sort-approved1
-          sort-approved1-rating1
-          sort-occurrences
-          spaces
-          splice-instrs
-          splice-instrs1
-          split-on-assumptions
-          ssn
-          standard-co
-          standard-oi
-          state-p1
-          std-apart
-          std-apart-top
-          step-limit
-          stobjp
-          stobjs-in
-          stobjs-out
-          stop-redundant-event
-          store-clause
-          store-clause1
-          string-append-lst
-          string-from-list-of-chars
-          string-listp
-          strip-assumption-terms
-          strip-branches
-          strip-cadrs
-          strip-cars
-          strip-cdrs
-          subcor-var
-          subcor-var-lst
-          subcor-var1
-          sublis-expr
-          sublis-expr-lst
-          sublis-occ
-          sublis-pat
-          sublis-var
-          sublis-var-lst
-          subsetp-eq
-          subsumption-replacement-loop
-          suffix
-          sweep-clauses
-          sweep-clauses1
-          symbol-<
-          symbol-alistp
-          symbol-class
-          symbol-listp
-          symbol-package-name
-          t-and
-          t-fix
-          t-ite
-          t-list
-          t-not
-          t-or
-          table-alist
-          table-fn
-          table-fn1
-          tag-tree-occur
-          tagged-object
-          tagged-objects
-          tame-symbolp
-          term-and-typ-to-lookup
-          term-order
-          termp
-          thm-fn
-          tilde-*-preprocess-phrase
-          tilde-*-simp-phrase
-          tilde-*-simp-phrase1
-          tilde-@-abbreviate-object-phrase
-          time-for-non-hits/call
-          time-limit5-reached-p
-          time/call
-          to
-          to-be-ignoredp
-          to-if-error-p
-          too-long
-          total-time
-          trans-alist
-          trans-alist1
-          trans-eval
-          translate-bodies
-          translate-bodies1
-          translate-dcl-lst
-          translate-deref
-          translate-doc
-          translate-hints
-          translate-term-lst
-          translate1
-          translate11
-          translate11-lst
-          translate11-mv-let
-          translated-acl2-unwind-protectp
-          translated-acl2-unwind-protectp4
-          tree-occur
-          true-listp
-          type-alist-clause-finish
-          type-alist-clause-finish1
-          type-alist-equality-loop
-          type-alist-equality-loop1
-          type-alist-fcd-lst
-          type-set
-          type-set-<
-          type-set-<-1
-          type-set-and-returned-formals
-          type-set-and-returned-formals-with-rule
-          type-set-car
-          type-set-cdr
-          type-set-cons
-          type-set-equal
-          type-set-finish
-          type-set-lst
-          type-set-not
-          type-set-primitive
-          type-set-quote
-          type-set-recognizer
-          type-set-relieve-hyps
-          type-set-with-rule
-          type-set-with-rule1
-          type-set-with-rules
-          unencumber-assumptions
-          unify
-          unify-sa-p
-          union-eq
-          union-equal
-          untranslate
-          untranslate-lst
-          untranslate-preprocess-fn
-          untranslate1
-          untranslate1-lst
-          update-world-index
-          us
-          user-stobj-alist
-          user-stobj-alist-safe
-          user-stobjsp
-          v-to-nat
-          var-fn-count
-          var-fn-count-lst
-          var-lessp
-          var-to-tree
-          var-to-tree-list
-          vars-of-fal-aux
-          verify-guards-fn1
-          vx2
-          w
-          warning-off-p
-          wash-memory
-          watch-count
-          maybe-watch-dump
-          incf-watch-count
-          set-watch-count
-          watch-help
-          time-of-last-watch-update
-          watch-shell-command
-          time-since-watch-start
-          make-watchdog
-          watch
-          watch-kill
-          watch-condition
-          waterfall
-          waterfall-msg
-          waterfall-msg1
-          waterfall-print-clause
-          waterfall-step
-          waterfall-step1
-          waterfall0
-          waterfall1
-          waterfall1-lst
-          widen
-          watch-real-time
-          watch-run-time
-          world-evisceration-alist
-          worse-than
-          worth-hashing
-          worth-hashing1
-          x-and
-          x-buf
-          x-ff
-          x-latch+
-          x-latch-
-          x-latch-+
-          x-mux
-          x-not
-          x-or
-          x-xor
-          xor
-          xxxjoin
-          zip-variable-type-alist
-          zp)
-        do
-        (setf (gethash sym *profile-reject-ht*) t)))
+
 

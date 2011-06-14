@@ -1,6 +1,6 @@
 ;; BOZO copyright stuff.
 
-; h-memsum.lisp
+; h-memsum-raw.lisp
 ;
 ; Memoize summary stuff.
 
@@ -100,7 +100,7 @@
 
   (/ (aref *memoize-call-array*
            (the fixnum (1+ (the fixnum (* 2 x)))))
-     *float-ticks/second*))
+     (acl2h-ticks-per-second)))
 
 
 
@@ -441,7 +441,7 @@ the calls took.")
                              (type mfixnum calls))
                     (let* ((time-loc (the fixnum (1+ call-loc)))
                            (time (aref ma time-loc))
-                           (ltt (/ time *float-ticks/second*)))
+                           (ltt (/ time (acl2h-ticks-per-second))))
                       (decf selftime ltt)
                       (cond ((or (outside-p callern)
                                  (< (* 100 ltt) tt))
@@ -484,7 +484,7 @@ the calls took.")
                                     '?)))
                            . ,(if *sort-to-from-by-calls*
                                   0 ;; ?
-                                (* selftime *float-ticks/second*)))
+                                (* selftime (acl2h-ticks-per-second))))
                          l))
                  (setq l (sort l #'> :key #'cdr))
                  ; (cw "l: ~x0~%" l)
@@ -507,7 +507,7 @@ the calls took.")
                              (type mfixnum calls))
                     (let* ((time-loc (the fixnum (1+ call-loc)))
                            (time (aref ma time-loc))
-                           (ltt (/ time *float-ticks/second*)))
+                           (ltt (/ time (acl2h-ticks-per-second))))
                       (cond
                        ((or (outside-p callern) (< (* 100 ltt) tt))
                         (incf outside-caller-time ltt)
