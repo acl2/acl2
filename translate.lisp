@@ -5431,9 +5431,9 @@
 ; value and can bind it.
 
             (cond
-             ((eq stobjs-out t)              ;;; (1)
+             ((eq stobjs-out t) ;;; (1)
               (trans-value transx))
-             ((consp stobjs-out)             ;;; (2)
+             ((consp stobjs-out) ;;; (2)
               (cond
                ((cdr stobjs-out)
                 (trans-er+? cform x
@@ -5465,7 +5465,7 @@
                                the single-threaded object ~x1 was expected."
                               transx (car stobjs-out)))))
                (t (trans-value transx))))
-             (t                              ;;; (3)
+             (t ;;; (3)
               (trans-value transx
                            (translate-bind
                             stobjs-out
@@ -5700,8 +5700,8 @@
               (mv-let
                (test-erp test-term test-bindings)
                (translate11 (list (cadr x) 'form)
-                           '(nil) nil known-stobjs flet-alist x ctx wrld
-                           state-vars)
+                            '(nil) nil known-stobjs flet-alist x ctx wrld
+                            state-vars)
                (declare (ignore test-bindings))
                (cond
                 (test-erp (mv test-erp test-term bindings))
@@ -5755,28 +5755,28 @@
                          evaluated directly in the top-level loop.  ~
                          See :DOC with-local-stobj and see :DOC top-level."
                         x))
-             ((and (eq st 'state)
-                   (eq creator 'create-state)
-                   (member-eq 'create-state
+             ((and (member-eq creator
                               (global-val 'untouchable-fns wrld))
                    (not (eq (access state-vars state-vars :temp-touchable-fns)
                             t))
-                   (not (member-eq 'create-state
+                   (not (member-eq creator
                                    (access state-vars state-vars
                                            :temp-touchable-fns))))
-
-; We provide a courtesy error here, rather than waiting to encounter
-; create-state.
-
               (trans-er ctx
-                        "Illegal with-local-stobj form, ~x0 (perhaps expanded ~
-                         from a corresponding with-local-state form).  By ~
-                         default, it is illegal to bind state using ~
-                         with-local-stobj because it is generally dangerous ~
-                         and unsound; see :DOC with-local-state, which ~
-                         describes how to get around this restriction and ~
-                         when it may be appropriate to do so."
-                        x))
+                        "Illegal with-local-stobj form~@0~|~%  ~y1:~%the stobj ~
+                         creator function ~x2 is untouchable.  See :DOC ~
+                         remove-untouchable.~@3"
+                        (if (eq creator 'create-state)
+                            " (perhaps expanded from a corresponding ~
+                             with-local-state form),"
+                          ",")
+                        x
+                        creator
+                        (if (eq creator 'create-state)
+                            "  Also see :DOC with-local-state, which ~
+                             describes how to get around this restriction and ~
+                             when it may be appropriate to do so."
+                          "")))
              ((and st
                    (if (eq st 'state)
                        (eq creator 'create-state)
@@ -5885,9 +5885,9 @@
                  LET, but ~x1 binds more than one variable."
                 (car
                  (collect-non-x nil
-                  (compute-stobj-flags (strip-cars (cadr x))
-                                       known-stobjs
-                                       wrld)))
+                                (compute-stobj-flags (strip-cars (cadr x))
+                                                     known-stobjs
+                                                     wrld)))
                 x))
      (t (let* ((bound-vars (strip-cars (cadr x)))
                (stobjs-bound
@@ -5920,7 +5920,7 @@
                       (t (translate11-lst (strip-cadrs (cadr x))
                                           (if (eq stobjs-out t)
                                               t
-                                            nil)       ;;; '(nil ... nil)
+                                            nil) ;;; '(nil ... nil)
                                           bindings known-stobjs
                                           "in a LET binding (or ~
                                            LAMBDA application)"
@@ -5932,7 +5932,7 @@
                        (translate-dcl-lst edcls wrld)
                        (if (eq stobjs-out t)
                            t
-                         nil)         ;;; '(nil ... nil)
+                         nil) ;;; '(nil ... nil)
                        bindings known-stobjs
                        "in a DECLARE form in a LET (or LAMBDA)"
                        flet-alist x ctx wrld state-vars)))

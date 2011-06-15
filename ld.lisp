@@ -17812,6 +17812,11 @@
   attention; a slight variant of his example appears in a comment in ACL2
   source function ~c[oneify-cltl-code].
 
+  It had been the case that even when a ~il[stobj] creator function was
+  declared to be untouchable (~pl[push-untouchable]), a ~ilc[with-local-stobj]
+  form based on that same stobj was permitted.  Now, such forms are not
+  admitted.  Thanks to Jared Davis for a query leading to this fix.
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   ACL2 can once again be built on LispWorks (i.e., as the host Lisp), at least
