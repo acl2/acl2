@@ -670,8 +670,8 @@ is NIL or :WARN.~%" name)
 (defn aig-xor-lists (a b)
   (if (or (atom a) (atom b))
       nil
-    (cons (aig-iff (car a) (car b))
-          (aig-iff-lists (cdr a) (cdr b)))))
+    (cons (aig-xor (car a) (car b))
+          (aig-xor-lists (cdr a) (cdr b)))))
 
 (defn aig-implies-lists (a b)
   (if (or (atom a) (atom b))
