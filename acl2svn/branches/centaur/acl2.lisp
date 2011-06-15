@@ -702,6 +702,21 @@ ACL2 from scratch.")
                                  #-(or ccl sbcl)
                                  t))
                           *the-live-state*)
+            (f-put-global
+             'host-lisp
+             ,(let () ; such empty binding has avoided errors in  GCL 2.6.7
+                #+gcl :gcl
+                #+ccl :ccl
+                #+sbcl :sbcl
+                #+allegro :allegro
+                #+clisp :clisp
+                #+cmu :cmu
+                #+lispworks :lispworks
+                #-(or gcl ccl sbcl allegro clisp cmu lispworks)
+                (error
+                 "The underlying host Lisp appears not to support ACL2. ~%~
+                  Contact the ACL2 implementors to request such support."))
+             *the-live-state*)
             #+unix
             (f-put-global 'tmp-dir "/tmp" *the-live-state*)
             #-acl2-mv-as-values

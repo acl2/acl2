@@ -781,7 +781,8 @@
           :oncep-override (match-free-override wrld)
           :force-info t
           :nonlinearp (non-linearp wrld)
-          :backchain-limit-rw (backchain-limit wrld :rewrite)))
+          :backchain-limit-rw (backchain-limit wrld :rewrite)
+          :rw-cache-state (rw-cache-state wrld)))
 
 (defun make-new-goals-fixed-hyps (termlist hyps goal-name start-index)
   ;; similar to make-new-goals

@@ -2709,6 +2709,11 @@
       (t (value@par (access rewrite-constant rcnst
                             :current-enabled-structure))))))
    (value@par (change rewrite-constant rcnst
+                      :rw-cache-state
+                      (cond
+                       ((assoc-eq :rw-cache-state hint-settings)
+                        (cdr (assoc-eq :rw-cache-state hint-settings)))
+                       (t (access rewrite-constant rcnst :rw-cache-state)))
                       :expand-lst
                       (cond
                        ((assoc-eq :expand hint-settings)
@@ -2766,10 +2771,10 @@
                                                        wrld ctx state)
 
 ; We load the hint-settings into the rewrite-constant of pspv, thereby making
-; available the :expand, :case-split-limitations, :restrict, :hands-off, and
-; :in-theory hint settings.  We also store the hint-settings in the
-; hint-settings field of the pspv, making available the :induct and
-; :do-not-induct hint settings.
+; available the :expand, :case-split-limitations, :restrict, :hands-off,
+; :in-theory, and :rw-cache-state hint settings.  We also store the
+; hint-settings in the hint-settings field of the pspv, making available the
+; :induct and :do-not-induct hint settings.
 
 ; When increment-flg is non-nil, we want to preserve the input pspv's hint
 ; settings except when they collide with hint-settings.  Otherwise (for
