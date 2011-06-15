@@ -4242,6 +4242,7 @@
      logic program
      add-default-hints!
      remove-default-hints!
+     set-rw-cache-state!
      set-override-hints-macro
      set-match-free-default
      set-enforce-redundancy

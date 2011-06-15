@@ -24698,7 +24698,8 @@
     set-ruler-extenders
     delete-include-book-dir certify-book progn!
     f-put-global push-untouchable
-    set-backchain-limit set-default-hints! set-override-hints-macro
+    set-backchain-limit set-default-hints!
+    set-rw-cache-state! set-override-hints-macro
     deftheory pstk verify-guards defchoose
     set-default-backchain-limit set-state-ok
     set-ignore-ok set-non-linearp with-output
@@ -37704,6 +37705,312 @@
   `(local
     (set-override-hints-macro ,lst :remove 'remove-override-hints)))
 
+(defmacro set-rw-cache-state (val)
+
+; Essay on Rw-cache
+
+; Introduction
+
+; We cache failed attempts to relieve hypotheses.  The basic idea is that
+; whenever a hypothesis rewrites to other than true, we store that fact so that
+; the rewrite rule is not tried again with the same unify-subst.  The failure
+; information is stored in tag-trees.  Two kinds of failures are stored: those
+; for which the unify-subst includes at least one variable bound from an
+; earlier free-variable hypothesis (the "free-failure" cases), and the rest
+; (the "normal-failure" cases).  The free-failure case is stored in a tree
+; structure with normal-failures at the leaves; see the definition of record
+; rw-cache-entry.  Normal-failures are recognized by
+; rw-cacheable-failure-reason, which is an attachable function.  When cached
+; failures are found, they can be ignored if the user attaches to
+; relieve-hyp-failure-entry-skip-p.
+
+; When relieve-hyps is called, it looks in the tag-tree for a relevant failure.
+; If a normal-failure record is found, then the attempt can quickly fail.  If a
+; free-failure record is found, then it is passed along through the process of
+; relieving the hypotheses, so that after variables are bound by a hypothesis,
+; this record can be consulted on subsequent hypotheses to abort rewriting.
+; New failure information is recorded upon exit from relieve-hyps; in the
+; free-failure case, the information to be recorded was accumulated during the
+; process of relieving hypotheses.
+
+; Rw-cache-states: *legal-rw-cache-states* = (t nil :disabled :atom)
+
+; In a preliminary implementation we tried a scheme in which the rw-cache
+; persisted through successive literals of a clause.  However, we encountered
+; dozens of failures in the regression suite, some of them probably because the
+; tail-biting heuristic was causing failures whose caching wasn't suitable for
+; other literals.  Such a scheme, which also allows the rw-cache to persist to
+; a single child, is represented by rw-cache-state t.  When a clause reaches
+; stable-under-simplificationp without any appropriate computed hint, if the
+; state is t then it transitions to :disabled so that a pass is made through
+; simplify-clause without interference from the rw-cache.  (See for example the
+; end of waterfall-step-cleanup.)  Some failures with rw-cache-state t
+; disappear if the rw-cache-state begins at :disabled, so that some preliminary
+; simplification occurs before any failure caching.
+
+; But even starting with :disabled, we have seen regression failures.
+; Therefore our default rw-cache-state is :atom, which creates a fresh rw-cache
+; for each literal of a clause; see rewrite-atm.  An advantage of :atom is that
+; we do not transition to a disabled state.  That transition for rw-cache-state
+; t is responsible for larger numbers reported in event summaries for "Prover
+; steps counted" in the mini-proveall, presumably because an extra pass must be
+; made through the simplifier sometime before going into induction even though
+; that rarely helps (probably, never in the mini-proveall).
+
+; Overview of some terminology, data structures, and algorithms
+
+; We store relieve-hyps failures in tag-trees.  As we discuss below, there are
+; two tags associated with this failure information: 'rw-cache-any-tag and
+; 'rw-cache-nil-tag.  Each tag is associated with what we also call an
+; "rw-cache".  Sometimes we refer abstractly the the values of both tags as the
+; "rw-cache"; we expect that the context will resolve any possible confusion
+; between the value of a tag and the entire cache (from both tags).  Each tag's
+; value is what we call a "psorted symbol-alist": a true list that may have at
+; most one occurrence of t, where each non-t element is a cons pair whose car
+; is a symbol, and where the tail past the occurrence of t (if any) is sorted
+; by car.  In general, the notion of "psorted" can be applied to any kind of
+; true-list that has a natural notion of "sort" associated with it: then a
+; psorted list is one that has at most one occurrence of t as a member, such
+; that (cdr (member-equal t s)) is sorted.  Indeed, we use a second kind of
+; psorted list, which we call an "rw-cache-list": the elements (other than t)
+; are rw-cache-entry records, and the sort relation is lexorder.  By using
+; psorted lists, we defer the cost of sorting until merge-time, where sorting
+; is important to avoid quadratic blow-up; the use of t as a marker allows us
+; to avoid re-sorting the same list.
+
+; We maintain the invariant that the information in the "nil" cache is also in
+; the "any" cache.  The "nil" cache is thus more restrictive: it only stores
+; cases in which the failure is suitable for a stronger context.  It gets its
+; name because one such case is when a hypothesis rewrites to nil.  But we also
+; store syntaxp and bind-free hypotheses that fail (except, we never store such
+; failures when extended metafunctions are involved, because of their high
+; level of dependence on context beyond the unify-subst).  Thus, the "nil"
+; cache is preserved when we pass to a branch of an IF term; the "any" cache is
+; however replaced in that case by the "nil" cache (which preserves the above
+; invariant).  On the other hand, when we pop up out of an IF branch, we throw
+; away any accumulation into the "nil" cache but we merge the new "any" cache
+; into the old "any" cache.  See rw-cache-enter-context and
+; rw-cache-exit-context.
+
+; The following definitions and trace$ forms can be evaluated in order to do
+; some checking of the above invariant during subsequent proofs (e.g., when
+; followed by :mini-proveall).
+
+;   (defun rw-tagged-objects-subsetp (alist1 alist2)
+;     (declare (xargs :mode :program))
+;     (cond ((endp alist1) t)
+;           (t (and (or (eq (car alist1) t)
+;                       (subsetp-equal (cdar alist1)
+;                                      (cdr (assoc-rw-cache (caar alist1)
+;                                                           alist2))))
+;                   (rw-tagged-objects-subsetp (cdr alist1) alist2)))))
+;   
+;   (defun chk-rw-cache-inv (ttree string)
+;     (declare (xargs :mode :program))
+;     (or (rw-tagged-objects-subsetp (tagged-objects 'rw-cache-nil-tag ttree)
+;                                    (tagged-objects 'rw-cache-any-tag ttree))
+;         (prog2$ (cw string)
+;                 (break$))))
+;   
+;   (trace$ (relieve-hyps
+;            :entry (chk-rw-cache-inv ttree "Relieve-hyps entry~%")
+;            :exit (chk-rw-cache-inv (car (last values)) "Relieve-hyps exit~%")
+;            :evisc-tuple :no-print))
+;   (trace$ (rewrite
+;            :entry (chk-rw-cache-inv ttree "Rewrite entry~%")
+;            :exit (chk-rw-cache-inv (car (last values)) "Rewrite exit~%")
+;            :evisc-tuple :no-print))
+;   (trace$ (rewrite-fncall
+;            :entry (chk-rw-cache-inv ttree "Rewrite-fncall entry~%")
+;            :exit (chk-rw-cache-inv (car (last values)) "Rewrite-fncall exit~%")
+;            :evisc-tuple :no-print))
+
+; Our rw-cache-entry records store a unify-subst rather than an instance of a
+; rule's left-hand side.  One advantage is that the unify-subst may be smaller,
+; because of repeated occurrences of a variable on the left-hand side.  Another
+; advantage is that in the normal-failure case, we restrict the unify-subst to
+; the variables occurring in the failed hypothesis; see the call of
+; restrict-alist-to-all-vars in note-relieve-hyp-failure.  This clearly permits
+; more hits in the rw-cache, and of course it may result in less time being
+; spent in equality checking (see the comment in restrict-alist-to-all-vars
+; about the order being unchanged by restriction).
+
+; Here we record some thoughts on a preliminary implementation, in which we
+; kept the "nil" and "any" caches disjoint, rather than including the "nil"
+; cache in the "any" cache.
+
+;   With that preliminary implementation, we accumulated both the "nil" and
+;   "any" caches into the "any" cache when popping out of an IF context.  We
+;   experimented a bit with instead ignoring the "nil" cache, even though we
+;   could lose some cache hits.  We saw two potential benefits for such a
+;   change.  For one, it would save the cost of doing the union operation that
+;   would be required.  For another, it would give us a chance to record a hit
+;   outside that IF context as a bona fide "nil" entry, which is preserved when
+;   diving into future IF contexts or (for rw-cache-state t) into a unique
+;   subgoal.  Ultimately, though, experiments pointed us to continuing our
+;   popping of "nil" entries into the "any" cache.
+
+; Finally, we list some possible improvements that could be considered.
+
+;   Consider sorting in the free-failure case (see
+;   combine-free-failure-alists).
+
+;   Remove assert$ in split-psorted-list1 (which checks that t doesn't occur
+;   twice in a list).
+
+;   For free-failure case, consider optimizing to avoid checking for equality
+;   against a suitable tail of unify-subst that know must be equal; see for
+;   example rw-cache-list-lookup and replace-free-rw-cache-entry1.
+
+;   For free-failure case, consider doing a tighter job of assigning the
+;   failure-reason to a unify-subst.  For example, if hypothesis 2 binds free
+;   variable y and hypothesis 5 binds free variable z, and hypothesis 6 is (foo
+;   y) and its rewrite fails, then associate the failure with the binding of y
+;   at hypothesis 2.  And in that same scenario, if hypothesis 6 is instead
+;   (foo x), where x is bound on the left-hand side of the rule, then create a
+;   normal-failure reason instead of a free-failure reason.  If we make any
+;   such change, then revisit the comments in (defrec rw-cache-entry ...).
+
+;   In restrict-alist-to-all-vars, as noted in a comment there,
+;   we could do a better job of restricting the unify-subst in the case of
+;   at least one binding hypothesis.
+
+;   In accumulate-rw-cache1, consider eliminating a COND branch that can
+;   require an equality test to save a few conses, as noted in a comment
+;   there.
+
+;   Modify accumulate-rw-cache to be more efficient, by taking advantage of the
+;   invariant that the "nil" cache is contained in the "any" cache.
+
+;   Consider saving a few conses in rw-cache-exit-context by avoiding
+;   modification of the nil cache if the old and new nil caches are equal,
+;   indeed, eq.  Maybe a new primitive that tests with eq, but has a guard that
+;   the true and false branches are equal, would help.  (Maybe this would
+;   somehow be implemented using return-last.)  It is not sufficient to check
+;   the lengths of the caches, or even of their elements, because with
+;   free-vars one can make an extension without changing these lengths.
+
+;   Perhaps modify restore-rw-cache-any-tag to extend old "any" cache with the
+;   new "nil" cache, instead of throwing away new "nil" entries entirely.  See
+;   restore-rw-cache-any-tag.
+
+;   Extend debug handling to free case in relieve-hyps, and/or explain in :doc
+;   (or at least comments) how this works.
+
+;   Perhaps we could keep around the "nil" cache longer than we currently do.
+
+;   Consider changing functions in the rewrite nest that deal with linear
+;   arithmetic, such as add-linear-lemma, to use the rw-cache of the input
+;   ttree rather than ignoring it, and to return a ttree with an extension of
+;   that rw-cache.  A related idea is to take more advantage in such functions
+;   of rw-caches in intermediate ttrees, such as rw-caches in ttrees of
+;   irrelevant-pot-lst values in rewrite-with-linear.  [The two of us discussed
+;   this idea.  I think we decided that although we can't rule out the value of
+;   the above, maybe it's not too important.  Note that when the pot-lst
+;   contributes to the proof, the cache entries will then work their way into
+;   the main tag-tree.]  There may be other opportunities to accumulate into
+;   rw-caches, for example inside simplify-clause1 by passing input ttree0 into
+;   pts-to-ttree-lst, under the call of setup-simplify-clause-pot-lst.
+
+  ":Doc-Section switches-parameters-and-modes
+
+  set the default rw-cache-state~/
+
+  The ACL2 rewriter uses a data structure, called the rw-cache (rewriter
+  cache), to save failed attempts to apply conditional ~il[rewrite] rules.  The
+  regression suite has taken approximately 11% less time with this mechanism.
+  The rw-cache is active by default but this event allows it to be turned off
+  or modified.  Note that this event is ~il[local] to its context (from
+  ~ilc[encapsulate] or ~ilc[include-book]).  For a non-local version, use
+  ~il[set-rw-cache-state!].
+
+  ~bv[]
+  Example forms:
+  (set-rw-cache-state :atom)     ; default: rw-cache cleared for each literal
+                                 ;   (i.e., hypothesis or conclusion of a goal)
+  (set-rw-cache-state nil)       ; rw-cache is inactive
+  (set-rw-cache-state t)         ; rw-cache persists beyond each literal
+  (set-rw-cache-state :disabled) ; rw-cache is inactive, but the rw-cache-state
+                                 ;   transitions to state t after
+                                 ;   simplification takes place~/
+
+  General Form:
+  (set-rw-cache-state val)
+  ~ev[]
+  where ~c[val] evaluates to one of the four values shown in ``Example forms''
+  above.  The default is ~c[:atom], which enables the rw-cache but clears it
+  before rewriting a hypothesis or conclusion of any goal.  The value ~c[t] is
+  provides more aggresive use of the rw-cache, basically preserving the
+  rw-cache when there is a single subgoal.  The value ~c[:disabled] is the same
+  as ~c[t], except that the rw-cache is initially inactive and only becomes
+  active when some simplification has taken place.  We have seen a few cases
+  where value ~c[t] will make a proof fail but ~c[:disabled] does not.
+
+  The following example illustrates the rw-cache in action.  You will see a
+  break during evaluation of the ~ilc[thm] form.  Type ~c[:eval] and you will
+  see a failed rewriting attempt.  Type ~c[:go] to continue, and at the next
+  break type ~c[:eval] again.  This time you will see the same failed rewriting
+  attempt, but this time labeled with a notation saying that the failure was
+  cached earlier, which indicates that this time the rewriter did not even
+  attempt to prove the hypothesis of the ~il[rewrite] rule ~c[f1->f2].
+
+  ~bv[]
+  (defstub f1 (x) t)
+  (defstub f2 (x) t)
+  (defaxiom f1->f2
+           (implies (f1 x) (equal (f2 x) t)))
+  :brr t
+  :monitor (:rewrite f1->f2) t
+  (thm (equal (car (f2 a)) (cdr (f2 a))))
+  ~ev[]
+
+  Note: This is an event!  It does not print the usual event summary
+  but nevertheless changes the ACL2 logical ~il[world] and is so
+  recorded.  It is ~ilc[local] to the book or ~ilc[encapsulate] form in which it
+  occurs (~pl[set-rw-cache-state!] for a corresponding non-~ilc[local] event).
+
+  We also note that rw-cache-state changes may also be caused at the subgoal
+  level; ~pl[hints].
+
+  We welcome you to experiment with different rw-cache states.  If the more
+  aggressive values of ~c[t] and ~c[:disabled] cause proofs to fail, then you
+  can revert to the default of ~c[:atom] or even turn off the rw-cache using
+  ~c[(set-rw-cache-state nil)].  We don't expect users to need a deep knowledge
+  of the rw-cache in order to do such experiments, but readers interested in
+  details of the rw-cache implementation are invited to read the ``Essay on
+  Rw-cache'' in the ACL2 source code.~/"
+
+  `(local (set-rw-cache-state! ,val)))
+
+#+acl2-loop-only
+(defmacro set-rw-cache-state! (val)
+
+  ":Doc-Section switches-parameters-and-modes
+
+  set the default rw-cache-state non-~ilc[local]ly~/
+  Please ~pl[set-rw-cache-state], which is the same as ~c[set-rw-cache-state!]
+  except that the latter is not ~ilc[local] to the ~ilc[encapsulate] or the book
+  in which it occurs.~/~/"
+
+  `(state-global-let*
+    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    (progn (table rw-cache-state-table t ,val)
+           (table rw-cache-state-table t))))
+
+#-acl2-loop-only
+(defmacro set-rw-cache-state! (val)
+  (declare (ignore val))
+  nil)
+
+(defconst *legal-rw-cache-states*
+  '(t nil :disabled :atom))
+
+(table rw-cache-state-table nil nil
+       :guard
+       (case key
+         ((t) (member-eq val *legal-rw-cache-states*))
+         (t nil)))
+
 (defun fix-true-list (x)
 
   ":Doc-Section ACL2::Programming
@@ -41543,7 +41850,8 @@ Lisp definition."
             :backchain-limit-rw
             :reorder
             :backtrack
-            :induct)))
+            :induct
+            :rw-cache-state)))
 
 (table custom-keywords-table nil nil
        :guard
@@ -43213,6 +43521,7 @@ Lisp definition."
      translate-or-hint
      translate-reorder-hint
      translate-restrict-hint
+     translate-rw-cache-state-hint
      translate-simple-or-error-triple
      translate-substitution
      translate-substitution-lst

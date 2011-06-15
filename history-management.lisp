@@ -17544,9 +17544,18 @@
 (defun@par translate-backtrack-hint (name-tree arg ctx wrld state)
   (translate-hint-expression@par name-tree arg 'backtrack ctx wrld state))
 
+(defun@par translate-rw-cache-state-hint (arg ctx wrld state)
+  (declare (ignore wrld))
+  (cond ((member-eq arg *legal-rw-cache-states*)
+         (value@par arg))
+        (t (er@par soft ctx
+             "Illegal :rw-cache-state argument, ~x0 (should be ~v1)"
+             arg
+             *legal-rw-cache-states*))))
+
 (mutual-recursion@par
 
- (defun@par translate-or-hint (name-tree str arg ctx wrld state)
+(defun@par translate-or-hint (name-tree str arg ctx wrld state)
 
 ; Arg is the value of the :OR key in a user-supplied hint settings,
 ; e.g., if the user typed: :OR ((:in-theory t1 :use lem1) (:in-theory
@@ -17565,40 +17574,40 @@
 ; Note: Unlike other hints, we do some additional translation of :OR
 ; hints on the output of this function!  See translate-hint.
 
-   (cond ((atom arg)
-          (if (null arg)
-              (value@par nil)
-            (er@par soft ctx "An :OR hint must be a true-list.")))
-         (t (er-let*@par
-             ((val (translate-hint@par name-tree
-                                       (cons
-                                        (make-disjunctive-goal-spec
-                                         str
-                                         (length arg)
-                                         (current-package state))
-                                        (car arg))
-                                       nil ctx wrld state))
-              (tl (translate-or-hint@par name-tree str (cdr arg) ctx wrld state)))
+  (cond ((atom arg)
+         (if (null arg)
+             (value@par nil)
+           (er@par soft ctx "An :OR hint must be a true-list.")))
+        (t (er-let*@par
+            ((val (translate-hint@par name-tree
+                                      (cons
+                                       (make-disjunctive-goal-spec
+                                        str
+                                        (length arg)
+                                        (current-package state))
+                                       (car arg))
+                                      nil ctx wrld state))
+             (tl (translate-or-hint@par name-tree str (cdr arg) ctx wrld state)))
 
 ; Val is either a translated computed hint expression, whose car
 ; is eval-and-translate-hint-expression, or else it is a pair of
 ; the form (cl-id . hint-settings), where cl-id was derived from
 ; str.
 
-             (cond
-              ((eq (car val) 'eval-and-translate-hint-expression)
-               (value@par (cons (cons (car arg) val)
-                                tl)))
-              (t
+            (cond
+             ((eq (car val) 'eval-and-translate-hint-expression)
+              (value@par (cons (cons (car arg) val)
+                               tl)))
+             (t
 
 ; If val is (cl-id . hint-settings), we just let val be hint-settings
 ; below, as the cl-id is being managed by the :OR itself.
 
-               (let ((val (cdr val)))
-                 (value@par (cons (cons (car arg) val)
-                                  tl)))))))))
+              (let ((val (cdr val)))
+                (value@par (cons (cons (car arg) val)
+                                 tl)))))))))
 
- (defun@par translate-hint-settings (name-tree str key-val-lst ctx wrld state)
+(defun@par translate-hint-settings (name-tree str key-val-lst ctx wrld state)
 
 ; We assume that key-val-lst is a list of :keyword/value pairs, (:key1
 ; val1 ... :keyn valn), and that each :keyi is one of the acceptable
@@ -17609,84 +17618,84 @@
 ; Str is the goal-spec string identifying the clause to which these
 ; hints are attached.
 
-   (cond
-    ((null key-val-lst) (value@par nil))
-    ((and (eq (car key-val-lst) :use)
-          (eq (cadr key-val-lst) nil))
+  (cond
+   ((null key-val-lst) (value@par nil))
+   ((and (eq (car key-val-lst) :use)
+         (eq (cadr key-val-lst) nil))
 
 ; We allow empty :use hints, but we do not want to have to think about
 ; how to process them.
 
-     (translate-hint-settings@par name-tree
-                                  str
-                                  (cddr key-val-lst) ctx wrld state))
-    (t (er-let*@par
-        ((val (translate-x-hint-value@par name-tree
-                                          str
-                                          (car key-val-lst) (cadr key-val-lst)
-                                          ctx wrld state))
-         (tl (translate-hint-settings@par name-tree
-                                          str
-                                          (cddr key-val-lst) ctx wrld state)))
-        (value@par
-         (cons (cons (car key-val-lst) val)
-               tl))))))
+    (translate-hint-settings@par name-tree
+                                 str
+                                 (cddr key-val-lst) ctx wrld state))
+   (t (er-let*@par
+       ((val (translate-x-hint-value@par name-tree
+                                         str
+                                         (car key-val-lst) (cadr key-val-lst)
+                                         ctx wrld state))
+        (tl (translate-hint-settings@par name-tree
+                                         str
+                                         (cddr key-val-lst) ctx wrld state)))
+       (value@par
+        (cons (cons (car key-val-lst) val)
+              tl))))))
 
- (defun@par translate-x-hint-value (name-tree str x arg ctx wrld state)
+(defun@par translate-x-hint-value (name-tree str x arg ctx wrld state)
 
 ; Str is the goal-spec string identifying the clause to which this
 ; hint was attached.  
 
-   (mv-let
-    (flg uterm1 uterm2)
-    (custom-keyword-hint x wrld)
-    (declare (ignore uterm1))
-    (cond
-     (flg
-      (translate-custom-keyword-hint@par arg uterm2 ctx wrld state))
-     (t
-      (case x
-        (:expand
-         (translate-expand-hint@par arg ctx wrld state))
-        (:restrict
-         (translate-restrict-hint@par arg ctx wrld state))
-        (:hands-off
-         (translate-hands-off-hint@par arg ctx wrld state))
-        (:do-not-induct
-         (translate-do-not-induct-hint@par arg ctx wrld state))
-        (:do-not
-         (translate-do-not-hint@par arg ctx state))
-        (:use
-         (translate-use-hint@par arg ctx wrld state))
-        (:or
-         (translate-or-hint@par name-tree str arg ctx wrld state))
-        (:cases
-         (translate-cases-hint@par arg ctx wrld state))
-        (:case-split-limitations
-         (translate-case-split-limitations-hint@par arg ctx wrld state))
-        (:by
-         (translate-by-hint@par name-tree arg ctx wrld state))
-        (:induct
-         (translate-induct-hint@par arg ctx wrld state))
-        (:in-theory
-         (translate-in-theory-hint@par arg t ctx wrld state))
-        (:bdd
-         (translate-bdd-hint@par arg ctx wrld state))
-        (:clause-processor
-         (translate-clause-processor-hint@par arg ctx wrld state))
-        (:nonlinearp
-         (translate-nonlinearp-hint@par arg ctx wrld state))
-        (:no-op
-         (translate-no-op-hint@par arg ctx wrld state))
-        (:no-thanks
-         (translate-no-thanks-hint@par arg ctx wrld state))
-        (:reorder
-         (translate-reorder-hint@par arg ctx wrld state))
-        (:backtrack
-         (translate-backtrack-hint@par name-tree arg ctx wrld state))
-        (:backchain-limit-rw
-         (translate-backchain-limit-rw-hint@par arg ctx wrld state))
-        (:error
+  (mv-let
+   (flg uterm1 uterm2)
+   (custom-keyword-hint x wrld)
+   (declare (ignore uterm1))
+   (cond
+    (flg
+     (translate-custom-keyword-hint@par arg uterm2 ctx wrld state))
+    (t
+     (case x
+       (:expand
+        (translate-expand-hint@par arg ctx wrld state))
+       (:restrict
+        (translate-restrict-hint@par arg ctx wrld state))
+       (:hands-off
+        (translate-hands-off-hint@par arg ctx wrld state))
+       (:do-not-induct
+        (translate-do-not-induct-hint@par arg ctx wrld state))
+       (:do-not
+        (translate-do-not-hint@par arg ctx state))
+       (:use
+        (translate-use-hint@par arg ctx wrld state))
+       (:or
+        (translate-or-hint@par name-tree str arg ctx wrld state))
+       (:cases
+        (translate-cases-hint@par arg ctx wrld state))
+       (:case-split-limitations
+        (translate-case-split-limitations-hint@par arg ctx wrld state))
+       (:by
+        (translate-by-hint@par name-tree arg ctx wrld state))
+       (:induct
+        (translate-induct-hint@par arg ctx wrld state))
+       (:in-theory
+        (translate-in-theory-hint@par arg t ctx wrld state))
+       (:bdd
+        (translate-bdd-hint@par arg ctx wrld state))
+       (:clause-processor
+        (translate-clause-processor-hint@par arg ctx wrld state))
+       (:nonlinearp
+        (translate-nonlinearp-hint@par arg ctx wrld state))
+       (:no-op
+        (translate-no-op-hint@par arg ctx wrld state))
+       (:no-thanks
+        (translate-no-thanks-hint@par arg ctx wrld state))
+       (:reorder
+        (translate-reorder-hint@par arg ctx wrld state))
+       (:backtrack
+        (translate-backtrack-hint@par name-tree arg ctx wrld state))
+       (:backchain-limit-rw
+        (translate-backchain-limit-rw-hint@par arg ctx wrld state))
+       (:error
 
 ; We know this case never happens.  The error is caught and signalled
 ; early by translate-hint.  But we include it here to remind us that
@@ -17694,37 +17703,39 @@
 ; which causes an immediate error -- is also consistent with the
 ; intended interpretation of :error.
 
-         (translate-error-hint@par arg ctx wrld state))
-        (otherwise
-         (mv@par
-          (er hard 'translate-x-hint-value
-              "The object ~x0 not recognized as a legal hint keyword. See :DOC ~
+        (translate-error-hint@par arg ctx wrld state))
+       (:rw-cache-state
+        (translate-rw-cache-state-hint@par arg ctx wrld state))
+       (otherwise
+        (mv@par
+         (er hard 'translate-x-hint-value
+             "The object ~x0 not recognized as a legal hint keyword. See :DOC ~
               hints."
-              x)
-          nil
-          state)))))))
+             x)
+         nil
+         state)))))))
 
- (defun replace-goal-spec-in-name-tree1 (name-tree goal-spec)
-   (cond
-    ((atom name-tree)
-     (cond ((and (stringp name-tree)
-                 (parse-clause-id name-tree))
-            (mv t goal-spec))
-           (t (mv nil name-tree))))
-    (t (mv-let
-        (flg1 name-tree1)
-        (replace-goal-spec-in-name-tree1 (car name-tree)
-                                         goal-spec)
-        (cond
-         (flg1 (mv t (cons name-tree1 (cdr name-tree))))
-         (t (mv-let (flg2 name-tree2)
-                    (replace-goal-spec-in-name-tree1 (cdr name-tree)
-                                                     goal-spec)
-                    (mv flg2 
-                        (cons (car name-tree)
-                              name-tree2)))))))))
+(defun replace-goal-spec-in-name-tree1 (name-tree goal-spec)
+  (cond
+   ((atom name-tree)
+    (cond ((and (stringp name-tree)
+                (parse-clause-id name-tree))
+           (mv t goal-spec))
+          (t (mv nil name-tree))))
+   (t (mv-let
+       (flg1 name-tree1)
+       (replace-goal-spec-in-name-tree1 (car name-tree)
+                                        goal-spec)
+       (cond
+        (flg1 (mv t (cons name-tree1 (cdr name-tree))))
+        (t (mv-let (flg2 name-tree2)
+                   (replace-goal-spec-in-name-tree1 (cdr name-tree)
+                                                    goal-spec)
+                   (mv flg2 
+                       (cons (car name-tree)
+                             name-tree2)))))))))
 
- (defun replace-goal-spec-in-name-tree (name-tree goal-spec)
+(defun replace-goal-spec-in-name-tree (name-tree goal-spec)
 
 ; Name-trees are trees of strings and symbols used to generate
 ; meaningful names for :by hints.  Typically, a name tree will have at
@@ -17740,13 +17751,13 @@
 ; by adding a "Dj" suffice.  We want to replace the original goal spec
 ; in the name-tree by this modified goal spec.
 
-   (mv-let (flg new-name-tree)
-           (replace-goal-spec-in-name-tree1 name-tree goal-spec)
-           (cond
-            (flg new-name-tree)
-            (t (cons name-tree goal-spec)))))
+  (mv-let (flg new-name-tree)
+          (replace-goal-spec-in-name-tree1 name-tree goal-spec)
+          (cond
+           (flg new-name-tree)
+           (t (cons name-tree goal-spec)))))
 
- (defun@par translate-hint (name-tree pair hint-type ctx wrld state)
+(defun@par translate-hint (name-tree pair hint-type ctx wrld state)
 
 ; Pair is supposed to be a "hint", i.e., a pair of the form (str :key1
 ; val1 ...  :keyn valn).  We check that it is, that str is a string
@@ -17771,38 +17782,38 @@
 ; 'eval-and-translate-hint-expression the answer is a translated
 ; computed hint, otherwise it is of the form (cl-id . hint-settings).
 
-   (cond ((not (and (consp pair)
-                    (stringp (car pair))
-                    (keyword-value-listp (cdr pair))))
-          (er@par soft ctx
-            "Each hint is supposed to be a list of the form (str :key1 val1 ~
+  (cond ((not (and (consp pair)
+                   (stringp (car pair))
+                   (keyword-value-listp (cdr pair))))
+         (er@par soft ctx
+           "Each hint is supposed to be a list of the form (str :key1 val1 ~
              ... :keyn valn), but a proposed hint, ~x0, is not.  See :DOC ~
              hints."
-            pair))
-         (t (let ((cl-id (parse-clause-id (car pair))))
-              (cond
-               ((null cl-id)
-                (er@par soft ctx
-                  "The object ~x0 is not a goal-spec.  See :DOC hints and ~
+           pair))
+        (t (let ((cl-id (parse-clause-id (car pair))))
+             (cond
+              ((null cl-id)
+               (er@par soft ctx
+                 "The object ~x0 is not a goal-spec.  See :DOC hints and ~
                    :DOC goal-spec."
-                  (car pair)))
-               ((assoc-keyword :error (cdr pair))
+                 (car pair)))
+              ((assoc-keyword :error (cdr pair))
 
 ; If an :error hint was given, we immediately cause the requested error.
 ; Note that we thus allow :error hints to occur multiple times and just
 ; look at the first one.  If we get past this test, there are no
 ; :error hints.
 
-                (translate-error-hint@par
-                 (cadr (assoc-keyword :error (cdr pair)))
-                 ctx wrld state))
-               (t
-                (mv-let
-                 (keyi vali uterm1 uterm2)
-                 (find-first-custom-keyword-hint (cdr pair) wrld)
-                 (declare (ignore vali uterm1 uterm2))
-                 (cond
-                  (keyi
+               (translate-error-hint@par
+                (cadr (assoc-keyword :error (cdr pair)))
+                ctx wrld state))
+              (t
+               (mv-let
+                (keyi vali uterm1 uterm2)
+                (find-first-custom-keyword-hint (cdr pair) wrld)
+                (declare (ignore vali uterm1 uterm2))
+                (cond
+                 (keyi
 
 ; There is a custom keyword among the keys.  One of two possibilities
 ; exists.  The first is that the hint can be expanded statically
@@ -17821,24 +17832,24 @@
 ; generator cannot assume that a common hint has a well-formed val or
 ; that other custom hints have well-formed vals.
 
-                   (mv-let@par
-                    (erp val state)
-                    (custom-keyword-hint-interpreter@par
-                     (cdr pair)
-                     cl-id
-                     cl-id
-                     NIL wrld NIL NIL NIL ctx state
-                     t)
+                  (mv-let@par
+                   (erp val state)
+                   (custom-keyword-hint-interpreter@par
+                    (cdr pair)
+                    cl-id
+                    cl-id
+                    NIL wrld NIL NIL NIL ctx state
+                    t)
 
 ; The four NILs above are bogus values for the dynamic variables.  The
 ; final t is the eagerp flag which will cause the interpreter to
 ; signal the WAIT ``error'' if the expansion fails because of some
 ; unbound dynamic variable.
 
-                    (cond
-                     (erp
-                      (cond
-                       ((eq val 'WAIT)
+                   (cond
+                    (erp
+                     (cond
+                      ((eq val 'WAIT)
 
 ; In this case, we must treat this as a computed hint so we will
 ; manufacture an appropriate one.  As a courtesy to the user, we will
@@ -17847,15 +17858,15 @@
 ; involved in the actual hint that will be generated by the processing
 ; of these custom hints when the subgoal arises.
 
-                        (er-let*@par
-                         ((hint-settings
-                           (translate-hint-settings@par
-                            (replace-goal-spec-in-name-tree
-                             name-tree
-                             (car pair))
-                            (car pair)
-                            (cdr pair)
-                            ctx wrld state)))
+                       (er-let*@par
+                        ((hint-settings
+                          (translate-hint-settings@par
+                           (replace-goal-spec-in-name-tree
+                            name-tree
+                            (car pair))
+                           (car pair)
+                           (cdr pair)
+                           ctx wrld state)))
 
 ; Note: If you ever consider not ignoring the translated
 ; hint-settings, recognize how strange it is.  E.g., it may have
@@ -17863,90 +17874,90 @@
 ; binding custom keywords to their untranslated values, a data
 ; structure we never use.
                   
-                         (translate-hint-expression@par
-                          name-tree
+                        (translate-hint-expression@par
+                         name-tree
 
 ; Below we generate a standard computed hint that uses the
 ; interpreter.  Note that the interpreter is given the eagerp
 ; NIL flag.
 
-                          (serial-first-form-parallel-second-form@par
-                           `(custom-keyword-hint-interpreter
-                             ',(cdr pair)
-                             ',cl-id
-                             ID CLAUSE WORLD STABLE-UNDER-SIMPLIFICATIONP
-                             HIST PSPV CTX STATE 'nil)
-                           `(custom-keyword-hint-interpreter@par
-                             ',(cdr pair)
-                             ',cl-id
-                             ID CLAUSE WORLD STABLE-UNDER-SIMPLIFICATIONP
-                             HIST PSPV CTX STATE 'nil))
-                          hint-type ctx wrld state)))
-                       (t (mv@par t nil state))))
-                     (t
+                         (serial-first-form-parallel-second-form@par
+                          `(custom-keyword-hint-interpreter
+                            ',(cdr pair)
+                            ',cl-id
+                            ID CLAUSE WORLD STABLE-UNDER-SIMPLIFICATIONP
+                            HIST PSPV CTX STATE 'nil)
+                          `(custom-keyword-hint-interpreter@par
+                            ',(cdr pair)
+                            ',cl-id
+                            ID CLAUSE WORLD STABLE-UNDER-SIMPLIFICATIONP
+                            HIST PSPV CTX STATE 'nil))
+                         hint-type ctx wrld state)))
+                      (t (mv@par t nil state))))
+                    (t
 
 ; In this case, we have eliminated all custom keyword hints
 ; eagerly and val is a keyword alist we ought to
 ; use for the hint.  We translate it from scratch.
 
-                      (translate-hint@par name-tree
-                                          (cons (car pair) val)
-                                          hint-type ctx wrld state)))))
-                  (t
+                     (translate-hint@par name-tree
+                                         (cons (car pair) val)
+                                         hint-type ctx wrld state)))))
+                 (t
 
 ; There are no custom keywords in the hint.
 
-                   (let* ((key-val-lst (remove-redundant-no-ops (cdr pair)))
+                  (let* ((key-val-lst (remove-redundant-no-ops (cdr pair)))
 
 ; By stripping out redundant :NO-OPs now we allow such lists as (:OR x
 ; :NO-OP T), whereas normally :OR would "object" to the presence of
 ; another hint.
 
-                          (keys (evens key-val-lst))
-                          (expanded-hint-keywords
-                           (append
-                            (strip-cars
-                             (table-alist 'custom-keywords-table wrld))
-                            *hint-keywords*)))
-                     (cond
-                      ((null keys)
-                       (er@par soft ctx
-                         "There is no point in attaching the empty list of ~
+                         (keys (evens key-val-lst))
+                         (expanded-hint-keywords
+                          (append
+                           (strip-cars
+                            (table-alist 'custom-keywords-table wrld))
+                           *hint-keywords*)))
+                    (cond
+                     ((null keys)
+                      (er@par soft ctx
+                        "There is no point in attaching the empty list of ~
                           hints to ~x0.  We suspect that you have made a ~
                           mistake in presenting your hints.  See :DOC hints. ~
                           ~ If you really want a hint that changes nothing, ~
                           use ~x1."
-                         (car pair)
-                         (cons (car pair) '(:NO-OP T))))
-                      ((not (subsetp-eq keys expanded-hint-keywords))
-                       (er@par soft ctx
-                         "The legal hint keywords are ~&0.  ~&1 ~
+                        (car pair)
+                        (cons (car pair) '(:NO-OP T))))
+                     ((not (subsetp-eq keys expanded-hint-keywords))
+                      (er@par soft ctx
+                        "The legal hint keywords are ~&0.  ~&1 ~
                           ~#1~[is~/are~] unrecognized.  See :DOC hints."
-                         expanded-hint-keywords
-                         (set-difference-eq keys expanded-hint-keywords)))
-                      ((member-eq :computed-hints-replacement keys)
+                        expanded-hint-keywords
+                        (set-difference-eq keys expanded-hint-keywords)))
+                     ((member-eq :computed-hints-replacement keys)
 
 ; If translate-hint is called correctly, then we expect this case not to arise
 ; for well-formed hints.  For example, in eval-and-translate-hint-expression we
 ; remove an appropriate use of :computed-hints-replacement.
 
-                       (er@par soft ctx
-                         "The hint keyword ~x0 has been used incorrectly.  ~
+                      (er@par soft ctx
+                        "The hint keyword ~x0 has been used incorrectly.  ~
                           Its only appropriate use is as a leading hint ~
                           keyword in computed hints.  See :DOC computed-hints."
-                         :computed-hints-replacement))
-                      ((not (no-duplicatesp-equal keys))
-                       (er@par soft ctx
-                         "You have duplicate occurrences of the hint keyword ~
+                        :computed-hints-replacement))
+                     ((not (no-duplicatesp-equal keys))
+                      (er@par soft ctx
+                        "You have duplicate occurrences of the hint keyword ~
                           ~&0 in your hint.  While duplicate occurrences of ~
                           keywords are permitted by CLTL, the semantics ~
                           ignores all but the left-most.  We therefore ~
                           suspect that you have made a mistake in presenting ~
                           your hints."
-                         (duplicates keys)))
-                      ((and (assoc-keyword :OR (cdr pair))
-                            (not (minimally-well-formed-or-hintp
-                                  (cadr (assoc-keyword :OR (cdr pair))))))
+                        (duplicates keys)))
+                     ((and (assoc-keyword :OR (cdr pair))
+                           (not (minimally-well-formed-or-hintp
+                                 (cadr (assoc-keyword :OR (cdr pair))))))
 
 ; Users are inclined to write hints like this:
 
@@ -17963,16 +17974,16 @@
 ; hints.  If not, we cause an error now.  We check the rest of the
 ; restrictions on :OR after the transformation.
 
-                       (er@par soft ctx
-                         "The value supplied to an :OR hint must be a ~
+                      (er@par soft ctx
+                        "The value supplied to an :OR hint must be a ~
                           non-empty true-list of non-empty true-lists of even ~
                           length, i.e., of the form ((...) ...).  But you ~
                           supplied the value ~x0."
-                         (cdr pair)))
-                      ((and (member-eq :induct keys)
-                            (member-eq :use keys))
-                       (er@par soft ctx
-                         "We do not support the use of an :INDUCT hint with a ~
+                        (cdr pair)))
+                     ((and (member-eq :induct keys)
+                           (member-eq :use keys))
+                      (er@par soft ctx
+                        "We do not support the use of an :INDUCT hint with a ~
                           :USE hint.  When a subgoal with an :INDUCT hint ~
                           arises, we push it for proof by induction.  Upon ~
                           popping it, we interpret the :INDUCT hint to ~
@@ -17998,32 +18009,32 @@
                           would cause an induction and set the post-induction ~
                           locally enabled theory to be as specified by the ~
                           :IN-THEORY."))
-                      ((and (member-eq :reorder keys)
-                            (intersectp-eq '(:or :induct) keys))
-                       (cond
-                        ((member-eq :or keys)
-                         (er@par soft ctx
-                           "We do not support the use of a :REORDER hint with ~
+                     ((and (member-eq :reorder keys)
+                           (intersectp-eq '(:or :induct) keys))
+                      (cond
+                       ((member-eq :or keys)
+                        (er@par soft ctx
+                          "We do not support the use of a :REORDER hint with ~
                             an :OR hint.  The order of disjunctive subgoals ~
                             corresponds to the list of hints given by the :OR ~
                             hint, so you may want to reorder that list ~
                             instead."))
-                        (t
-                         (er@par soft ctx
-                           "We do not support the use of a :REORDER hint with ~
+                       (t
+                        (er@par soft ctx
+                          "We do not support the use of a :REORDER hint with ~
                             an :INDUCT hint.  If you want this capability, ~
                             please send a request to the ACL2 implementors."))))
-                      (t
-                       (let ((bad-keys (intersection-eq
-                                        `(:induct ,@*top-hint-keywords*)
-                                        keys)))
-                         (cond
-                          ((and (< 1 (length bad-keys))
-                                (not (and (member-eq :use bad-keys)
-                                          (member-eq :cases bad-keys)
-                                          (equal 2 (length bad-keys)))))
-                           (er@par soft ctx
-                             "We do not support the use of a~#0~[n~/~] ~x1 ~
+                     (t
+                      (let ((bad-keys (intersection-eq
+                                       `(:induct ,@*top-hint-keywords*)
+                                       keys)))
+                        (cond
+                         ((and (< 1 (length bad-keys))
+                               (not (and (member-eq :use bad-keys)
+                                         (member-eq :cases bad-keys)
+                                         (equal 2 (length bad-keys)))))
+                          (er@par soft ctx
+                            "We do not support the use of a~#0~[n~/~] ~x1 ~
                               hint with a~#2~[n~/~] ~x3 hint, since they ~
                               suggest two different ways of replacing the ~
                               current goal by new goals.  ~@4Which is it to ~
@@ -18031,36 +18042,36 @@
                               together with a~#2~[n~/~] ~x3 hint is not ~
                               allowed because the intention of such a ~
                               combination does not seem sufficiently clear."
-                             (if (member-eq (car bad-keys) '(:or :induct))
-                                 0 1)
-                             (car bad-keys)
-                             (if (member-eq (cadr bad-keys) '(:or :induct))
-                                 0 1)
-                             (cadr bad-keys)
-                             (cond
-                              ((and (eq (car bad-keys) :by)
-                                    (eq (cadr bad-keys) :induct))
-                               "The :BY hint suggests that the goal follows ~
+                            (if (member-eq (car bad-keys) '(:or :induct))
+                                0 1)
+                            (car bad-keys)
+                            (if (member-eq (cadr bad-keys) '(:or :induct))
+                                0 1)
+                            (cadr bad-keys)
+                            (cond
+                             ((and (eq (car bad-keys) :by)
+                                   (eq (cadr bad-keys) :induct))
+                              "The :BY hint suggests that the goal follows ~
                                  from an existing theorem, or is to be ~
                                  pushed.  However, the :INDUCT hint provides ~
                                  for replacement of the current goal by ~
                                  appropriate new goals before proceeding.  ")
-                              (t ""))))
-                          (t
-                           (er-let*@par
-                            ((hint-settings
-                              (translate-hint-settings@par
-                               (replace-goal-spec-in-name-tree
-                                name-tree
-                                (car pair))
-                               (car pair)
-                               (cond
-                                ((assoc-keyword :or (cdr pair))
-                                 (distribute-other-hints-into-or
-                                  (cdr pair)))
-                                (t (cdr pair)))
-                               ctx wrld state)))
-                            (cond
+                             (t ""))))
+                         (t
+                          (er-let*@par
+                           ((hint-settings
+                             (translate-hint-settings@par
+                              (replace-goal-spec-in-name-tree
+                               name-tree
+                               (car pair))
+                              (car pair)
+                              (cond
+                               ((assoc-keyword :or (cdr pair))
+                                (distribute-other-hints-into-or
+                                 (cdr pair)))
+                               (t (cdr pair)))
+                              ctx wrld state)))
+                           (cond
 
 ; Hint-settings is of the form ((:key1 . val1) ...(:keyn . valn)).
 ; If :key1 is :OR, we know n=1; translated :ORs always occur as
@@ -18069,21 +18080,21 @@
 ; If there is only one alist in that list, then we're dealing
 ; with an :OR with only one disjunct.
 
-                             ((and (consp hint-settings)
-                                   (eq (caar hint-settings) :OR)
-                                   (consp (cdr (car hint-settings)))
-                                   (null (cddr (car hint-settings))))
+                            ((and (consp hint-settings)
+                                  (eq (caar hint-settings) :OR)
+                                  (consp (cdr (car hint-settings)))
+                                  (null (cddr (car hint-settings))))
 
 ; This is a singleton :OR.  We just drop the :OR.
 
-                              (assert$
-                               (null (cdr hint-settings))
-                               (value@par
-                                (cons cl-id
-                                      (car (cdr (car hint-settings)))))))
-                             (t (value@par
-                                 (cons cl-id hint-settings))))))))))))))))))))
- )
+                             (assert$
+                              (null (cdr hint-settings))
+                              (value@par
+                               (cons cl-id
+                                     (car (cdr (car hint-settings)))))))
+                            (t (value@par
+                                (cons cl-id hint-settings))))))))))))))))))))
+)
 
 (defun@par translate-hint-expressions (name-tree terms hint-type ctx wrld state)
 
@@ -19102,6 +19113,7 @@
            :no-thanks t
            :error (\"Bad value ~~x0.\" 123)
            :or (hint-kwd-alist-1 ... hint-kwd-alist-k)
+           :rw-cache-state nil
            :backtrack (my-computed-hint clause processor clause-list)))
   ~ev[]
   A very common hint is the ~c[:use] hint, which in general takes as its
@@ -19679,6 +19691,12 @@
   any) supplied for the given goal, in order.  A corresponding subgoal is
   created for each ~c[i], numbered in the usual manner (hence, counting down)
   except that the ``~c[D]'' is prefixed to each resulting goal.
+
+  ~c[:RW-CACHE-STATE]~nl[]
+  ~c[Value] is an element of the list constant ~c[*legal-rw-cache-states*]:
+  ~c[:atom] (the default), ~c[nil], ~c[t], or ~c[:disabled].  This hint applies
+  to the indicated goal and all its descendents, to set the so-called
+  ``rw-cache-state'' to the indicated value; ~pl[set-rw-cache-state].
 
   ~c[:BACKTRACK]~nl[]
   This is an advanced hint.  You can probably accomplish its effect by the use

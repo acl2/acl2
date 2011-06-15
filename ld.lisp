@@ -17646,6 +17646,22 @@
 
   ~st[HEURISTIC IMPROVEMENTS]
 
+  ACL2 now avoids some repeated attempts to rewrite hypotheses of rewrite
+  rules.  ~l[set-rw-cache-state] for a discussion of this behavior and how to
+  avoid it.  The default behavior has been observed to reduce by 11% the
+  overall time required to complete a regression.  Here are the directories
+  that had the top three time decreases and top three time increases, shown in
+  seconds.
+  ~bv[]
+    -368 coi/gacc (1064 down to 696: decrease of 35%)
+    -220 workshops/1999/ste (664 down to 444: decrease of 33%)
+    -148 unicode (331 down to 183: decrease of 45%)
+    ....
+      +7 workshops/2002/cowles-flat/support (229 up to 236: increase of 3%)
+      +8 workshops/1999/ivy/ivy-v2/ivy-sources (508 up to 516: increase of 2%)
+     +12 workshops/2009/hardin/deque-stobj (78 up to 91: increase of 17%)
+  ~ev[]
+
   The so-called ``ancestors check,'' which is used to limit backchaining, has
   been strengthened so that two calls of ~ilc[equal] are considered the same
   even if their arguments appear in the opposite order.  Thanks to Robert Krug

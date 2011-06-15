@@ -711,6 +711,22 @@
             hons-copy-with-state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Attachments: rw-cache utilities
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination-boot-strap rw-cache-debug-builtin) ; and guards
+
+(defattach rw-cache-debug rw-cache-debug-builtin)
+
+(verify-termination-boot-strap rw-cache-debug-action-builtin) ; and guards
+
+(defattach rw-cache-debug-action rw-cache-debug-action-builtin)
+
+(verify-termination-boot-strap rw-cacheable-failure-reason-builtin) ; and guards
+
+(defattach rw-cacheable-failure-reason rw-cacheable-failure-reason-builtin)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -4791,14 +4791,16 @@
   (or ttree
       *trivial-non-nil-ttree*))
 
-(defun try-type-set-and-clause (atm ans ttree current-clause wrld ens knownp)
+(defun try-type-set-and-clause (atm ans ttree ttree0 current-clause wrld ens
+                                    knownp)
 
 ; We are finishing off a call to rewrite-atm on atm that is about to return ans
-; with associated ttree.  Ans is *t* or *nil*, but in a context in which this
-; would produce a removal of ans rather than a win.  We have found it
-; heuristically useful to disallow such removals except when atm is trivially
-; known to be true or false.  We return the desired rewritten value of atm and
-; associated justifying ttree.
+; with associated ttree, which is assumed to extend ttree0.  Ans is *t* or
+; *nil*, but in a context in which this would produce a removal of ans rather
+; than a win.  We have found it heuristically useful to disallow such removals
+; except when atm is trivially known to be true or false.  We return the
+; desired rewritten value of atm and associated justifying ttree that extends
+; ttree0.
 
   (mv-let (ts ttree1)
           (type-set atm nil nil nil ens wrld nil nil nil)
@@ -4810,13 +4812,13 @@
 ; from the clause to reduce clutter.  We certainly do not lose anything by
 ; allowing such removals.
 
-                 (mv *nil* ttree1 nil))
+                 (mv *nil* (cons-tag-trees ttree1 ttree0) nil))
                 ((ts-subsetp ts *ts-non-nil*)
-                 (mv *t* ttree1 nil))
+                 (mv *t* (cons-tag-trees ttree1 ttree0) nil))
                 ((try-clause atm current-clause wrld)
                  (mv ans ttree nil))
                 (t
-                 (mv atm nil (and knownp (make-non-nil-ttree ttree)))))))
+                 (mv atm ttree0 (and knownp (make-non-nil-ttree ttree)))))))
 
 (mutual-recursion
 
@@ -4840,7 +4842,7 @@
 
 (defun rewrite-atm (atm not-flg bkptr gstack type-alist wrld
                         simplify-clause-pot-lst rcnst current-clause state
-                        step-limit)
+                        step-limit ttree0)
 
 ; This function rewrites atm with nth-update-rewriter, recursively.  Then it
 ; rewrites the result with rewrite, in the given context, maintaining iff.
@@ -4884,7 +4886,7 @@
                                      :current-enabled-structure)
                              (ok-to-force rcnst)
                              wrld
-                             nil)
+                             ttree0)
           (cond
 
 ; Before Version  2.6 we had
@@ -4999,7 +5001,10 @@
                              (lambda-abstract
                               (cleanup-if-expr atm1 nil nil)
                               (pkg-witness (current-package state)))
-                           atm)))
+                           atm))
+                   (lemmas0 (tagged-objects 'lemma ttree0))
+                   (lemmas1 (and hitp (tagged-objects 'lemma ttree1)))
+                   (ttree00 (remove-tag-from-tag-tree 'lemma ttree0)))
                (sl-let (ans1 ans2)
                        (rewrite-entry
                         (rewrite atm2
@@ -5018,7 +5023,23 @@
                         :simplify-clause-pot-lst simplify-clause-pot-lst
                         :rcnst rcnst
                         :gstack gstack
-                        :ttree (if hitp ttree1 nil))
+                        :ttree (if hitp
+                                   (cons-tag-trees
+                                    (remove-tag-from-tag-tree 'lemma ttree1)
+                                    ttree00)
+                                 ttree00))
+                       (let* ((old-lemmas (if lemmas0
+                                              (union-equal lemmas1 lemmas0)
+                                            lemmas1))
+                              (new-lemmas (tagged-objects 'lemma ans2))
+                              (final-lemmas (if old-lemmas
+                                                (union-equal new-lemmas
+                                                             old-lemmas)
+                                              new-lemmas))
+                              (ttree (maybe-extend-tag-tree
+                                      'lemma
+                                      final-lemmas
+                                      (remove-tag-from-tag-tree 'lemma ans2))))
 
 ; But we need to do even more work to prevent type-set from removing
 ; ``facts'' from the goal.  Here is another (edited) transcript:
@@ -5084,34 +5105,34 @@
 ; which a proof succeeds or fails depending on the order of hypotheses really
 ; gets Robert's goat.
 
-                 (cond ((not (or (equal ans1 *nil*)
-                                 (equal ans1 *t*)))
+                         (cond ((not (or (equal ans1 *nil*)
+                                         (equal ans1 *t*)))
 
 ; We have, presumably, not removed any facts, so we allow this rewrite.
 
-                        (mv step-limit ans1 ans2
-                            (and knownp *trivial-non-nil-ttree*)))
-                       ((and (nvariablep atm2)
-                             (not (fquotep atm2))
-                             (equivalence-relationp (ffn-symb atm2)
-                                                    wrld))
+                                (mv step-limit ans1 ttree
+                                    (and knownp *trivial-non-nil-ttree*)))
+                               ((and (nvariablep atm2)
+                                     (not (fquotep atm2))
+                                     (equivalence-relationp (ffn-symb atm2)
+                                                            wrld))
 
 ; We want to blow away equality (and equivalence) hypotheses, because for
 ; example there may be a :use or :cases hint that is intended to blow away (by
 ; implication) such hypotheses.
 
-                        (mv step-limit ans1 ans2 nil))
-                       ((equal ans1 (if not-flg *nil* *t*))
+                                (mv step-limit ans1 ttree nil))
+                               ((equal ans1 (if not-flg *nil* *t*))
 
 ; We have proved the original literal from which atm is derived; hence we have
 ; proved the clause.  So we report this reduction.
 
-                        (mv step-limit ans1 ans2 nil))
-                       ((all-type-reasoning-tags-p ans2)
+                                (mv step-limit ans1 ttree nil))
+                               ((all-type-reasoning-tags-p ans2)
 
 ; Type-reasoning alone has been used, so we are careful in what we allow.
 
-                        (cond ((lambda-subtermp atm2)
+                                (cond ((lambda-subtermp atm2)
 
 ; We received an example from Jared Davis in which a hypothesis of the form
 ; (not (let ...)) rewrites to true with a tag-tree of nil, and hence was kept
@@ -5137,8 +5158,8 @@
 ; or *nil*, we can probably feel comfortable in adding conditions as we have
 ; done with the lambda-subtermp test above.
 
-                               (mv step-limit ans1 ans2 nil))
-                              ((eq (fn-symb atm2) 'implies)
+                                       (mv step-limit ans1 ttree nil))
+                                      ((eq (fn-symb atm2) 'implies)
 
 ; We are contemplating throwing away the progress made by the above call of
 ; rewrite.  However, we want to keep progress made by expanding terms of the
@@ -5146,32 +5167,32 @@
 ; reasonable to keep this in sync with the corresponding use of subcor-var in
 ; rewrite.
 
-                               (prepend-step-limit
-                                3
-                                (try-type-set-and-clause
-                                 (subcor-var (formals 'implies wrld)
-                                             (list (fargn atm2 1)
-                                                   (fargn atm2 2))
-                                             (body 'implies t wrld))
-                                 ans1 ans2 current-clause wrld
-                                 (access rewrite-constant rcnst
-                                         :current-enabled-structure)
-                                 knownp)))
-                              (t
+                                       (prepend-step-limit
+                                        3
+                                        (try-type-set-and-clause
+                                         (subcor-var (formals 'implies wrld)
+                                                     (list (fargn atm2 1)
+                                                           (fargn atm2 2))
+                                                     (body 'implies t wrld))
+                                         ans1 ttree ttree0 current-clause wrld
+                                         (access rewrite-constant rcnst
+                                                 :current-enabled-structure)
+                                         knownp)))
+                                      (t
 
 ; We make one last effort to allow removal of certain ``trivial'' facts from
 ; the goal.
 
-                               (prepend-step-limit
-                                3
-                                (try-type-set-and-clause
-                                 atm2
-                                 ans1 ans2 current-clause wrld
-                                 (access rewrite-constant rcnst
-                                         :current-enabled-structure)
-                                 knownp)))))
-                       (t
-                        (mv step-limit ans1 ans2 nil))))))))))
+                                       (prepend-step-limit
+                                        3
+                                        (try-type-set-and-clause
+                                         atm2
+                                         ans1 ttree ttree0 current-clause wrld
+                                         (access rewrite-constant rcnst
+                                                 :current-enabled-structure)
+                                         knownp)))))
+                               (t
+                                (mv step-limit ans1 ttree nil)))))))))))
 
 ; Now we develop the functions for finding trivial equivalence hypotheses and
 ; stuffing them into the clause, transforming {(not (equal n '27)) (p n x)},
@@ -6559,8 +6580,8 @@
 (mutual-recursion
 
 (defun rewrite-clause (tail pts bkptr gstack new-clause fc-pair-lst wrld
-                            simplify-clause-pot-lst
-                            rcnst flg ecnt ans ttree fttree state step-limit)
+                            simplify-clause-pot-lst rcnst flg ecnt ans ttree
+                            fttree splitp state step-limit)
 
 ; In nqthm this function was called SIMPLIFY-CLAUSE1.
 
@@ -6573,7 +6594,7 @@
 ; parents (via 'pt tags) and we may use any concl not dependent upon the
 ; literals contained in the :pt of rcnst (to which we add the current literal's
 ; pt).  Ecnt is the estimated number of output clauses.  We refine it as we go
-; and it is ultimately returned and is the length of of ans.  Fttree (``false
+; and it is ultimately returned and is the length of ans.  Fttree (``false
 ; tag-tree'') is either nil or else is a non-nil tag-tree justifying the
 ; falsity of every literal in new-clause; see the comment in rewrite-atm about
 ; the third argument returned by that function.  Note that it is always legal
@@ -6585,6 +6606,18 @@
 ; under our assumptions; and a ttree that describes what we did.  Our answers
 ; are accumulated onto flg, ecnt, ans, and ttree as we recur through the
 ; literals of tail.
+
+; Finally, we comment on parameter splitp, which controls the rw-cache in the
+; case that the rw-cache-state is t.  (See the Essay on Rw-cache.)  This
+; parameter is true when we are part of a split into two or more clauses, which
+; case (if the rw-cache-state is t) we think of the split into children the way
+; we think of entering branches of an IF expression, discarding the "any" cache
+; since we do not trust its use in a stronger context.  If there is just one
+; child, our heuristic is to keep the rw-cache, with the (perhaps bold)
+; expectation that because there is no case-split, we can continue to trust its
+; full rw-cache.  While this assumption may be bold, it might be true in many
+; cases, and we are willing to make it since the default rw-cache-state is
+; :atom, not t.
 
   (cond
    ((null tail)
@@ -6661,8 +6694,12 @@
               ans
               (cons-tag-trees ttree0 ttree)))
          (t
-          (sl-let
-           (val ttree1 fttree1)
+          (let ((skip-rewrite-atm (and case-limit
+                                       (> ecnt case-limit)))
+                (rw-cache-state (access rewrite-constant rcnst
+                                        :rw-cache-state)))
+            (sl-let
+             (val ttree1 fttree1)
 
 ; Note: Nqthm used a call of (rewrite atm ...) here, while we now look on the
 ; type-alist for atm and then rewrite.  See the Nqthm note below.
@@ -6671,58 +6708,70 @@
 ; interpretation (2).  We just bail out if we have exceeded the case
 ; limit.
 
-           (if (and case-limit
-                    (> ecnt case-limit))
-               (mv step-limit
-                   atm
-                   (add-to-tag-tree! 'case-limit t nil)
-                   nil)
-             (pstk
-              (rewrite-atm atm not-flg bkptr gstack type-alist wrld
-                           simplify-clause-pot-lst local-rcnst
-                           current-clause state step-limit)))
-           (let* ((val (if not-flg
-                           (dumb-negate-lit val)
-                         val))
-                  (branches (pstk
-                             (clausify val
-                                       (convert-clause-to-assumptions
-                                        (cdr tail)
-                                        (convert-clause-to-assumptions
-                                         new-clause nil))
-                                       nil
-                                       sr-limit)))
-                  (ttree1 (if (and sr-limit
-                                   (> (length branches)
-                                      sr-limit))
-                              (add-to-tag-tree 'sr-limit
-                                               t
-                                               ttree1)
-                            ttree1))
-                  (action (rewrite-clause-action (car tail) branches))
-                  (segs
+             (if skip-rewrite-atm
+                 (mv step-limit
+                     atm
+                     (add-to-tag-tree! 'case-limit t ttree)
+                     nil)
+               (pstk
+                (rewrite-atm atm not-flg bkptr gstack type-alist wrld
+                             simplify-clause-pot-lst local-rcnst
+                             current-clause state step-limit
+                             (cond ((eq rw-cache-state :atom)
+                                    (erase-rw-cache ttree))
+                                   ((and (eq rw-cache-state t)
+                                         splitp)
+                                    (rw-cache-enter-context ttree))
+                                   (t ttree)))))
+             (let* ((ttree1 (cond (skip-rewrite-atm ttree1)
+                                  ((eq rw-cache-state :atom)
+                                   (erase-rw-cache ttree1))
+                                  ((and (eq rw-cache-state t)
+                                        splitp)
+                                   (rw-cache-exit-context ttree ttree1))
+                                  (t ttree1)))
+                    (val (if not-flg
+                             (dumb-negate-lit val)
+                           val))
+                    (branches (pstk
+                               (clausify val
+                                         (convert-clause-to-assumptions
+                                          (cdr tail)
+                                          (convert-clause-to-assumptions
+                                           new-clause nil))
+                                         nil
+                                         sr-limit)))
+                    (ttree1 (if (and sr-limit
+                                     (> (length branches)
+                                        sr-limit))
+                                (add-to-tag-tree 'sr-limit
+                                                 t
+                                                 ttree1)
+                              ttree1))
+                    (action (rewrite-clause-action (car tail) branches))
+                    (segs
 
 ; Perhaps we can simply use branches below.  But that requires some thought,
 ; because the form below handles true clauses (including *true-clause*) with
 ; special care.  This issue arose as we removed old-style-forcing from the
 ; code.
 
-                   (disjoin-clause-segment-to-clause-set nil branches))
-                  (nsegs (length segs)))
-             (sl-let
-              (bad-ass ttree1)
-              (resume-suspended-assumption-rewriting
-               ttree1
-               nil ;ancestors - the fact that this isn't what it was when
-                   ;we pushed the assumption could let rewriting go deeper
-               gstack
-               simplify-clause-pot-lst
-               local-rcnst
-               wrld
-               state
-               step-limit)
-              (cond
-               (bad-ass
+                     (disjoin-clause-segment-to-clause-set nil branches))
+                    (nsegs (length segs)))
+               (sl-let
+                (bad-ass ttree1)
+                (resume-suspended-assumption-rewriting
+                 ttree1
+                 nil ;ancestors - the fact that this isn't what it was when
+;we pushed the assumption could let rewriting go deeper
+                 gstack
+                 simplify-clause-pot-lst
+                 local-rcnst
+                 wrld
+                 state
+                 step-limit)
+                (cond
+                 (bad-ass
 
 ; When we rewrote the current literal of the clause we made an assumption
 ; that we now know to be false.  We must abandon that rewrite.  We
@@ -6730,51 +6779,52 @@
 ; done the rewrite-atm above and obtained atm instead of val.  We just
 ; reproduce the code, except we don't worry about assumptions.
 
-                (let* ((val (if not-flg (dumb-negate-lit atm) atm))
-                       (branches (pstk
-                                  (clausify val
-                                            (convert-clause-to-assumptions
-                                             (cdr tail)
-                                             (convert-clause-to-assumptions
-                                              new-clause nil))
-                                            nil
-                                            sr-limit)))
-                       (ttree2 (if (and sr-limit
-                                        (> (length branches)
-                                           sr-limit))
-                                   (add-to-tag-tree 'sr-limit
-                                                    t
-                                                    ttree)
-                                 ttree))
-                       (action (rewrite-clause-action (car tail) branches))
-                       (segs branches)
-                       (nsegs (length segs)))
+                  (let* ((val (if not-flg (dumb-negate-lit atm) atm))
+                         (branches (pstk
+                                    (clausify val
+                                              (convert-clause-to-assumptions
+                                               (cdr tail)
+                                               (convert-clause-to-assumptions
+                                                new-clause nil))
+                                              nil
+                                              sr-limit)))
+                         (ttree2 (if (and sr-limit
+                                          (> (length branches)
+                                             sr-limit))
+                                     (add-to-tag-tree 'sr-limit
+                                                      t
+                                                      ttree)
+                                   ttree))
+                         (action (rewrite-clause-action (car tail) branches))
+                         (segs branches)
+                         (nsegs (length segs)))
 
 ; For an explanation of the following call of rewrite-clause-lst, see
 ; the standard call below.  This is just like it, except we are ignoring
 ; ttree1.  Note that ttree2 is an extension of ttree.
 
-                  (rewrite-clause-lst segs
-                                      (1+ bkptr)
-                                      gstack
-                                      (cdr tail)
-                                      (cdr pts)
-                                      new-clause
-                                      fc-pair-lst
-                                      wrld
-                                      simplify-clause-pot-lst
-                                      (if (eq action 'shown-false)
-                                          local-rcnst
-                                        rcnst)
-                                      (or flg (not (eq action 'no-change)))
-                                      (helpful-little-ecnt-msg
-                                       case-limit
-                                       (+ ecnt -1 nsegs))
-                                      ans
-                                      ttree2
-                                      nil ; literal is not known to be false
-                                      state
-                                      step-limit)))
+                    (rewrite-clause-lst segs
+                                        (1+ bkptr)
+                                        gstack
+                                        (cdr tail)
+                                        (cdr pts)
+                                        new-clause
+                                        fc-pair-lst
+                                        wrld
+                                        simplify-clause-pot-lst
+                                        (if (eq action 'shown-false)
+                                            local-rcnst
+                                          rcnst)
+                                        (or flg (not (eq action 'no-change)))
+                                        (helpful-little-ecnt-msg
+                                         case-limit
+                                         (+ ecnt -1 nsegs))
+                                        ans
+                                        ttree2
+                                        nil ; literal is not known to be false
+                                        (cdr segs) ; splitp
+                                        state
+                                        step-limit)))
 
 ; Here, once upon a time, we implemented the ``creep up on the limit''
 ; twist of case limit interpretation (3).  Instead of short-circuiting
@@ -6805,20 +6855,20 @@
 ; has been exceeded, we no longer implement this creepy idea.
 ; Instead, we just blast past the limit and then shut 'er down.
 
-               (t
+                 (t
 
 ; In the case that there is no bad assumption, then ttree1 is a ttree in which
 ; all assumptions have been rewritten.
 
-                (rewrite-clause-lst segs
-                                    (1+ bkptr)
-                                    gstack
-                                    (cdr tail)
-                                    (cdr pts)
-                                    new-clause
-                                    fc-pair-lst
-                                    wrld
-                                    simplify-clause-pot-lst
+                  (rewrite-clause-lst segs
+                                      (1+ bkptr)
+                                      gstack
+                                      (cdr tail)
+                                      (cdr pts)
+                                      new-clause
+                                      fc-pair-lst
+                                      wrld
+                                      simplify-clause-pot-lst
 
 ; If the current lit rewrote to false, or even if it rewrote at all
 ; (since critical information may be lost), then we should continue to
@@ -6846,11 +6896,11 @@
 ;                    (<= 30 n))
 ;               (foo n)))
 
-                                    (if (eq action 'no-change)
-                                        rcnst
-                                      local-rcnst)
-                                    (or flg
-                                        (not (eq action 'no-change)))
+                                      (if (eq action 'no-change)
+                                          rcnst
+                                        local-rcnst)
+                                      (or flg
+                                          (not (eq action 'no-change)))
 
 ; Prior to this literal, we estimated the number of output clauses to
 ; be ecnt.  This literal of this clause rewrote to nsegs segments.  So
@@ -6869,26 +6919,35 @@
 ; too large and kick in even though some of the previous splitting was
 ; tautologous.  
 
-                                    (helpful-little-ecnt-msg
-                                     case-limit
-                                     (+ ecnt -1 nsegs))
-                                    ans
-                                    (if (eq action 'no-change)
-                                        ttree
-                                      (cons-tag-trees ttree1 ttree))
-                                    (and fttree1
-                                         fttree
-                                         (cons-tag-trees fttree1 fttree))
-                                    state
-                                    step-limit))))))))))))))
+                                      (helpful-little-ecnt-msg
+                                       case-limit
+                                       (+ ecnt -1 nsegs))
+                                      ans
+                                      (if (eq action 'no-change)
+                                          (if (eq rw-cache-state :atom)
+                                              ttree
+                                            (accumulate-rw-cache t
+                                                                 ttree1
+                                                                 ttree))
+                                        ttree1)
+                                      (and fttree1
+                                           fttree
+                                           (cons-tag-trees fttree1 fttree))
+                                      (cdr segs) ; splitp
+                                      state
+                                      step-limit)))))))))))))))
 
 (defun rewrite-clause-lst (segs bkptr gstack cdr-tail cdr-pts new-clause
                                 fc-pair-lst wrld simplify-clause-pot-lst rcnst
-                                flg ecnt ans ttree fttree state step-limit)
+                                flg ecnt ans ttree fttree splitp state
+                                step-limit)
 
 ; Fttree is either nil or else is a tag-tree justifying the falsity of every
 ; literal in segs and every literal in new-clause; see the comment in
 ; rewrite-atm about the third argument returned by that function.
+
+; Splitp is true when we do not want to trust the "any" cache of ttree; for
+; more explanation, see rewrite-clause.
 
   (cond ((null segs)
          (mv step-limit flg ecnt ans ttree))
@@ -6909,6 +6968,7 @@
                                ans
                                ttree
                                fttree
+                               splitp
                                state
                                step-limit)
            (mv-let (unrewritten unwritten-pts rewritten ttree2)
@@ -6935,6 +6995,7 @@
                                    ans1
                                    ttree2
                                    fttree
+                                   splitp
                                    state
                                    step-limit))))))
 
@@ -7328,19 +7389,17 @@
 
 ; In Nqthm, this function was called SIMPLIFY-CLAUSE0.
 
-; Top-clause is a clause with history hist.  We assume that rcnst has
-; a null pt and contains whatever hint settings the user
-; wants in it, as well as the :force-info based on whether there is a
-; call of IF in top-clause.
+; Top-clause is a clause with history hist.  We assume that rcnst has a null pt
+; and contains whatever hint settings the user wants in it, as well as the
+; :force-info based on whether there is a call of IF in top-clause.
 
 ; We return 4 values.  The first is a new step-limit.  The next indicates
 ; whether we changed top-clause and, if so, whether we went through the
 ; rewriter; it will help determine signal returned by simplify-clause (and
 ; hence will be used, ultimately, to create the 'simplify-clause hist entry).
-; If we did not change top-clause, the third and fourth are nil.  If we did
-; change top-clause, the third is a list of new clauses whose conjunction
-; implies top-clause and the fourth is a ttree explaining what we did.  This
-; ttree will be used to create the 'simplify-clause hist entry.
+; If we did not change top-clause, the third is; otherwise, it is a list of new
+; clauses whose conjunction implies top-clause.  The last argument is a ttree
+; that explains what we did, and is used in the 'simplify-clause hist entry.
 
   (mv-let (hitp current-clause pts remove-trivial-equivalences-ttree)
           (remove-trivial-equivalences top-clause
@@ -7385,8 +7444,9 @@
                (mv step-limit
                    'hit
                    nil
-                   (cons-tag-trees remove-trivial-equivalences-ttree
-                                   fc-pair-lst)))
+                   (cons-tag-trees
+                    remove-trivial-equivalences-ttree
+                    fc-pair-lst)))
               (t
 
 ; We next construct the initial simplify-clause-pot-lst.
@@ -7473,6 +7533,7 @@
                                       nil
                                       remove-trivial-equivalences-ttree
                                       *trivial-non-nil-ttree*
+                                      nil ; splitp
                                       state
                                       step-limit)
                       (declare (ignore ecnt))
@@ -7496,7 +7557,7 @@
                                             'clause-id old-cl-id
                                             (push-lemma (fn-rune-nume 'hide nil
                                                                       nil wrld)
-                                                        nil))))))
+                                                        (rw-cache ttree)))))))
                                (t (mv step-limit nil ans ttree)))))
                        (t
                         #-acl2-loop-only (dmr-flush t)
@@ -7516,6 +7577,10 @@
 ; bundle of variables.  So it is time to lay out prove's spec vars:
 
 (defrec prove-spec-var
+
+; Warning: Keep this in sync with #+acl2-par function
+; pspv-equal-except-for-tag-tree-and-pool.
+
   ((rewrite-constant induction-hyp-terms . induction-concl-terms)
    (tag-tree . hint-settings)
    (pool . gag-state)
@@ -7649,25 +7714,25 @@
 ; Warning: Keep this in sync with function simplify-clause-rcnst defined in
 ; books/misc/computed-hint-rewrite.lisp.
 
-; This is the first "clause processor" of the waterfall.  Its input and
-; output spec is consistent with that of all such processors.  See the
-; waterfall for a general discussion.
+; This is a "clause processor" of the waterfall.  Its input and output spec is
+; consistent with that of all such processors.  See the waterfall for a general
+; discussion.
 
-; Cl is a clause with history hist.  We can obtain a rewrite-constant
-; from the prove spec var pspv.  We assume nothing about the
-; rewrite-constant except that it has the user's hint settings in it
-; and that the pt is nil.  We install our top-clause and
-; current-clause when necessary.
+; Cl is a clause with history hist.  We can obtain a rewrite-constant from the
+; prove spec var pspv.  We assume nothing about the rewrite-constant except
+; that it has the user's hint settings in it and that the pt is nil.  We
+; install our top-clause and current-clause when necessary.
 
 ; We return five values.  The first is a new step-limit.  The second is a
 ; signal that in general is 'miss, 'abort, 'error, or a "hit".  In this case,
 ; it is always either 'miss or one of 'hit, 'hit-rewrite, or 'hit-rewrite2 (as
-; described further below).  When the signal is 'miss, the remaining 3 values
-; are irrelevant.  When the signal is 'hit, the third result is the list of new
-; clauses, the fourth is a ttree that will become that component of the
-; history-entry for this simplification, and the fifth is the unmodified pspv.
-; (We return the fifth thing to adhere to the convention used by all clause
-; processors in the waterfall (q.v.).)
+; described further below).  When the signal is 'hit, the third result is the
+; list of new clauses, the fourth is a ttree that will become that component of
+; the history-entry for this simplification, and the fifth is the unmodified
+; pspv.  (We return the fifth thing to adhere to the convention used by all
+; clause processors in the waterfall (q.v.).)  When the signal is 'miss, the
+; third and fifth results are irrelevant, but we return a ttree whose rw-cache
+; may extend the ttree of the input pspv.
 
 ; If the second result is a "hit" then the conjunction of the new clauses
 ; returned implies cl.  Equivalently, under the assumption that cl is false, cl
@@ -7745,6 +7810,16 @@
 
          (cond ((and (eq 'settled-down-clause
                          (access history-entry (car hist) :processor))
+
+; If the rw-cache-state is :disabled immediately after a hit from
+; settled-down-clause, then we want to do the work of making a "desperation"
+; attempt at simplification.
+
+                     (not (eq (access rewrite-constant
+                                      (access prove-spec-var pspv
+                                              :rewrite-constant)
+                                      :rw-cache-state)
+                              :disabled))
                      (not (some-element-dumb-occur-lst
                            (access prove-spec-var
                                    pspv
@@ -7787,7 +7862,7 @@
 ; clauses being passed on to elim, etc.  See :DOC specious-simplification.
 
                                (mv step-limit 'hit clauses ttree pspv))
-                              (t (mv step-limit 'miss nil nil nil)))))))
+                              (t (mv step-limit 'miss nil ttree nil)))))))
         (t
 
 ; The clause has not settled down yet.  So we arrange to ignore the
@@ -7983,7 +8058,7 @@
                     (hitp (mv step-limit
                               (if hit-rewrite2 'hit-rewrite2 hitp)
                               clauses ttree pspv))
-                    (t (mv step-limit 'miss nil nil nil)))))))))
+                    (t (mv step-limit 'miss nil ttree nil)))))))))
 
 ; Inside the waterfall, the following clause processor immediately follows
 ; simplify-clause.
@@ -8321,6 +8396,10 @@
              binding-lst      ;;;        alist binding vars to terms
              terms            ;;;        list of terms
              restricted-vars) ;;;        list of vars
+            ans)
+           ((rw-cache-nil-tag
+             rw-cache-any-tag)
+; Shape: rw-cache-entry
             ans)
            (var-to-runes-alist
 ; Shape: (...(var . (rune1 ...))...)

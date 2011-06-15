@@ -400,7 +400,7 @@
                  waterfall-printing to ~x0 (see :DOC set-waterfall-printing).")
                (:pseudo-serial
                 "Running the version of the waterfall prepared for parallel ~
-                 execution (stateless). However, we will evaluate this ~
+                 execution (stateless).  However, we will evaluate this ~
                  version of the waterfall serially.  Setting ~
                  waterfall-printing to ~x0 (see :DOC set-waterfall-printing).")
                (otherwise ; :resource-based

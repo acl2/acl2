@@ -4954,7 +4954,7 @@
 ; We package up these "rewrite constants" as a single record so that
 ; we can pass all of them in one argument.
 
-; We list below the "constants" in question and where they are set.  We
+; We list below some of the "constants" in question and where they are set.  We
 ; then give the meaning of each field.
 
 ;    field                           where set        soundness
@@ -4976,7 +4976,7 @@
 ; The current-literal not-flg and atm are always used together so we bundle
 ; them so we can extract them both at once:
 
-  ((active-theory . backchain-limit-rw)
+  ((active-theory . (backchain-limit-rw . rw-cache-state))
    current-enabled-structure
    (pt restrictions-alist . expand-lst)
    (force-info fns-to-be-ignored-by-rewrite . terms-to-be-ignored-by-rewrite)
@@ -5042,23 +5042,27 @@
 ; the following empty constant.  Warning: The constant below is dangerously
 ; useless less the current-enabled-structure is set to an enabled-structure.
 
+(defconst *default-rw-cache-state*
+  :atom)
+
 (defconst *empty-rewrite-constant*
   (make rewrite-constant
-        :pt nil
-        :current-literal nil
-        :top-clause nil
-        :current-clause nil
-        :terms-to-be-ignored-by-rewrite nil
-        :expand-lst nil
-        :case-split-limitations nil
-        :restrictions-alist nil
-        :force-info nil
-        :fns-to-be-ignored-by-rewrite nil
-        :current-enabled-structure nil
         :active-theory :standard
         :backchain-limit-rw nil
+        :case-split-limitations nil
+        :current-clause nil
+        :current-enabled-structure nil
+        :current-literal nil
+        :expand-lst nil
+        :fns-to-be-ignored-by-rewrite nil
+        :force-info nil
         :nonlinearp nil
-        :oncep-override :clear))
+        :oncep-override :clear
+        :pt nil
+        :restrictions-alist nil
+        :rw-cache-state *default-rw-cache-state*
+        :terms-to-be-ignored-by-rewrite nil
+        :top-clause nil))
 
 ; So much for the rcnst.  
 
@@ -7578,6 +7582,34 @@
 
 (mutual-recursion
 
+(defun fix-free-failure-reason (failure-reason)
+
+; See tilde-@-failure-reason-phrase.
+
+  (case-match failure-reason
+    ((& 'free-vars 'hyp-vars . &)
+     failure-reason)
+    ((bkptr 'free-vars . failure-reason-lst)
+     (list* bkptr
+            'free-vars
+            (fix-free-failure-reason-alist failure-reason-lst nil)))
+    (& failure-reason)))
+
+(defun fix-free-failure-reason-alist (x acc)
+
+; We deliberately reverse x as we fix it; see tilde-@-failure-reason-phrase.
+
+  (cond ((endp x) acc)
+        (t ; x is (cons (cons unify-subst failure-reason) &)
+         (fix-free-failure-reason-alist
+          (cdr x)
+          (cons (cons (caar x)
+                      (fix-free-failure-reason (cdar x)))
+                acc)))))
+)
+
+(mutual-recursion
+
 (defun tilde-@-failure-reason-free-phrase (hyp-number alist level unify-subst
                                                       evisc-tuple)
 
@@ -7595,25 +7627,29 @@
            (tilde-*-alist-phrase (alist-difference-eq new-unify-subst unify-subst)
                                  evisc-tuple
                                  (+ 4 (* 4 level)))
-           (if (and (consp new-failure-reason)
-                    (integerp (car new-failure-reason))
-                    (or (not (and (consp (cdr new-failure-reason))
-                                  (eq (cadr new-failure-reason) 'free-vars)))
-                        (and (consp (cdr new-failure-reason))
-                             (consp (cddr new-failure-reason))
-                             (member-eq (caddr new-failure-reason)
-                                        '(hyp-vars elided)))))
+           (if (let ((fr (if (and (consp new-failure-reason)
+                                  (eq (car new-failure-reason) 'cached))
+                             (cdr new-failure-reason)
+                           new-failure-reason)))
+                 (and (consp fr)
+                      (integerp (car fr))
+                      (or (not (and (consp (cdr fr))
+                                    (eq (cadr fr) 'free-vars)))
+                          (and (consp (cdr fr))
+                               (consp (cddr fr))
+                               (member-eq (caddr fr)
+                                          '(hyp-vars elided))))))
                "Failed because "
              "")
-           (tilde-@-failure-reason-phrase new-failure-reason (1+ level)
-                                          new-unify-subst evisc-tuple nil)
+           (tilde-@-failure-reason-phrase1 new-failure-reason (1+ level)
+                                           new-unify-subst evisc-tuple nil)
            (tilde-@-failure-reason-free-phrase hyp-number
                                                (cdr alist) level unify-subst
                                                evisc-tuple))))))
 
-(defun tilde-@-failure-reason-phrase (failure-reason level unify-subst
-                                                     evisc-tuple
-                                                     free-vars-display-limit)
+(defun tilde-@-failure-reason-phrase1 (failure-reason level unify-subst
+                                                      evisc-tuple
+                                                      free-vars-display-limit)
   (cond ((eq failure-reason 'time-out)
          "we ran out of time.")
         ((eq failure-reason 'loop-stopper)
@@ -7624,104 +7660,131 @@
          "the rewritten :RHS contains too many IFs for the given args.")
         ((eq failure-reason 'rewrite-fncallp)
          "the :REWRITTEN-RHS is judged heuristically unattractive.")
-        ((consp failure-reason)
-         (cond
-          ((integerp (car failure-reason))
-           (let ((n (car failure-reason)))
-             (case
-              (cdr failure-reason)
-              (time-out (msg "we ran out of time while processing :HYP ~x0."
+        ((and (consp failure-reason)
+              (integerp (car failure-reason)))
+         (let ((n (car failure-reason)))
+           (case
+             (cdr failure-reason)
+             (time-out (msg "we ran out of time while processing :HYP ~x0."
+                            n))
+             (ancestors (msg ":HYP ~x0 is judged more complicated than its ~
+                                ancestors (type :ANCESTORS to see the ~
+                                ancestors and :PATH to see how we got to this ~
+                                point)."
                              n))
-              (ancestors (msg ":HYP ~x0 is judged more complicated ~
-                               than its ancestors (type :ANCESTORS to ~
-                               see the ancestors and :PATH to see how ~
-                               we got to this point)."
-                              n))
-              (known-nil (msg ":HYP ~x0 is known nil by type-set."
-                              n))
-              (otherwise
-               (cond
-                ((eq (cadr failure-reason) 'free-vars)
-                 (mv-let (failures-remaining failure-reason elided-p)
-                   (if free-vars-display-limit
-                       (limit-failure-reason free-vars-display-limit
-                                             failure-reason
-                                             nil)
-                     (mv nil failure-reason nil))
-                   (declare (ignore failures-remaining))
-                   (cond ((eq (caddr failure-reason) 'hyp-vars)
-                          (msg ":HYP ~x0 contains free variables ~&1, for ~
-                                which no suitable bindings were found."
-                               n
-                               (set-difference-equal (cdddr failure-reason)
-                                                     (strip-cars unify-subst))))
-                         ((eq (caddr failure-reason) 'elided)
-                          (msg ":HYP ~x0 contains free variables (further ~
-                                reasons elided, as noted above)."
-                               n))
-                         (t
-                          (msg
-                           "~@0~@1"
-                           (if (eql level 1)
-                               (msg ":HYP ~x0 contains free variables.  The ~
-                                     following display summarizes the ~
-                                     attempts to relieve hypotheses by ~
-                                     binding free variables; see :DOC ~
-                                     free-variables.~|~@1~%"
-                                    n
-                                    (if elided-p
-                                        (msg
-                                         "     Also, if you want to avoid ~
-                                          ``reasons elided'' notes below, then ~
-                                          evaluate (assign ~
-                                          free-vars-display-limit k) for ~
-                                          larger k (currently ~x0, default ~
-                                          ~x1); then :failure-reason will ~
-                                          show the first k or so failure ~
-                                          sub-reasons before eliding.  Note ~
-                                          that you may want to do this ~
-                                          evaluation outside break-rewrite, ~
-                                          so that it persists.~|"
-                                         free-vars-display-limit
-                                         *default-free-vars-display-limit*)
-                                      ""))
-                             "")
-                           (tilde-@-failure-reason-free-phrase
-                            n
-                            (cddr failure-reason)
-                            level unify-subst evisc-tuple))))))
-                ((eq (cadr failure-reason) 'backchain-limit)
+             (known-nil (msg ":HYP ~x0 is known nil by type-set."
+                             n))
+             (otherwise
+              (cond
+               ((eq (cadr failure-reason) 'free-vars)
+                (mv-let
+                 (failures-remaining failure-reason elided-p)
+                 (if free-vars-display-limit
+                     (limit-failure-reason free-vars-display-limit
+                                           failure-reason
+                                           nil)
+                   (mv nil failure-reason nil))
+                 (declare (ignore failures-remaining))
+                 (cond
+                  ((eq (caddr failure-reason) 'hyp-vars)
+                   (msg ":HYP ~x0 contains free variables ~&1, for which no ~
+                           suitable bindings were found."
+                        n
+                        (set-difference-equal (cdddr failure-reason)
+                                              (strip-cars unify-subst))))
+                  ((eq (caddr failure-reason) 'elided)
+                   (msg ":HYP ~x0 contains free variables (further reasons ~
+                           elided, as noted above)."
+                        n))
+                  (t
+                   (msg
+                    "~@0~@1"
+                    (if (eql level 1)
+                        (msg ":HYP ~x0 contains free variables. The ~
+                                following display summarizes the attempts to ~
+                                relieve hypotheses by binding free variables; ~
+                                see :DOC free-variables.~|~@1~%"
+                             n
+                             (if elided-p
+                                 (msg
+                                  "     Also, if you want to avoid ~
+                                     ``reasons elided'' notes below, then ~
+                                     evaluate (assign free-vars-display-limit ~
+                                     k) for larger k (currently ~x0, default ~
+                                     ~x1); then :failure-reason will show the ~
+                                     first k or so failure sub-reasons before ~
+                                     eliding.  Note that you may want to do ~
+                                     this evaluation outside break-rewrite, ~
+                                     so that it persists.~|"
+                                  free-vars-display-limit
+                                  *default-free-vars-display-limit*)
+                               ""))
+                      "")
+                    (tilde-@-failure-reason-free-phrase
+                     n
+                     (cddr failure-reason)
+                     level unify-subst evisc-tuple))))))
+               ((eq (cadr failure-reason) 'backchain-limit)
 
 ; (cddr failure-reason) is the backchain-limit at the point of
 ; failure.  But that number was calculated by successive additions of
 ; backchain limits for individual rules and we have no record of which
 ; rules were involved in this calculation.
 
-                 (msg "a backchain limit was reached while processing :HYP ~x0 ~
-                       (but we cannot tell you which rule imposed the limit)"
-                      n))
-                ((eq (cadr failure-reason) 'rewrote-to)
-                 (msg ":HYP ~x0 rewrote to ~X12."
-                      n
-                      (cddr failure-reason)
-                      evisc-tuple))
-                ((member-eq (cadr failure-reason) '(syntaxp bind-free))
-                 (cond ((caddr failure-reason)
-                        (msg "the evaluation of the ~x0 test in :HYP ~x1 ~
-                              produced the error ``~@2''"
-                             (cadr failure-reason)
-                             n
-                             (cadddr failure-reason)))
-                       (t (msg "the ~x0 test in :HYP ~x1 evaluated to NIL."
-                               (cadr failure-reason)
-                               n))))
-                (t (er hard 'tilde-@-failure-reason-phrase
-                       "Unrecognized failure reason, ~x0." failure-reason)))))))
-          (t (er hard 'tilde-@-failure-reason-phrase
-                 "Unrecognized failure reason, ~x0." failure-reason))))
-        (t (er hard 'tilde-@-failure-reason-phrase
-                 "Unrecognized failure reason, ~x0." failure-reason))))
+                (msg "a backchain limit was reached while processing :HYP ~x0 ~
+                      (but we cannot tell you which rule imposed the limit)"
+                     n))
+               ((eq (cadr failure-reason) 'rewrote-to)
+                (msg ":HYP ~x0 rewrote to ~X12."
+                     n
+                     (cddr failure-reason)
+                     evisc-tuple))
+               ((member-eq (cadr failure-reason) '(syntaxp
+                                                   syntaxp-extended
+                                                   bind-free
+                                                   bind-free-extended))
+                (let ((synp-fn (case (cadr failure-reason)
+                                 (syntaxp-extended 'syntaxp)
+                                 (bind-free-extended 'bind-free)
+                                 (otherwise (cadr failure-reason)))))
+                  (cond ((caddr failure-reason)
+                         (msg "the evaluation of the ~x0 test in :HYP ~x1 ~
+                               produced the error ``~@2''"
+                              synp-fn
+                              n
+                              (cadddr failure-reason)))
+                        (t (msg "the ~x0 test in :HYP ~x1 evaluated to NIL."
+                                synp-fn
+                                n)))))
+               (t (er hard 'tilde-@-failure-reason-phrase1
+                      "Unrecognized failure reason, ~x0."
+                      failure-reason)))))))
+        ((and (consp failure-reason)
+              (eq (car failure-reason) 'cached))
+         (msg "~@0~|*NOTE*: This failure was cached earlier.  Use the hint ~
+               :RW-CACHE-STATE ~x1 to disable failure caching."
+              (tilde-@-failure-reason-phrase1
+               (cdr failure-reason)
+               level unify-subst evisc-tuple free-vars-display-limit)
+              nil))
+        (t (er hard 'tilde-@-failure-reason-phrase1
+               "Unrecognized failure reason, ~x0."
+               failure-reason))))
 )
+
+(defun tilde-@-failure-reason-phrase (failure-reason level unify-subst
+                                                     evisc-tuple
+                                                     free-vars-display-limit)
+
+; In relieve-hyps1 we store a 'free-vars failure reason in which we formerly
+; reversed a "failure-reason-lst", which is really an alist mapping extended
+; unify-substs to failure reasons.  Now, we save consing by delaying such
+; reversal until the relatively rare times that we are ready to display the
+; failure reason.
+
+  (tilde-@-failure-reason-phrase1 (fix-free-failure-reason failure-reason)
+                                  level unify-subst evisc-tuple
+                                  free-vars-display-limit))
 
 (defun stuff-standard-oi (cmds state)
 
@@ -11901,16 +11964,17 @@
 (defmacro rewrite-entry-extending-failure (unify-subst failure-reason form
                                                        &rest args)
   `(mv-let (step-limitxx relieve-hyps-ansxx failure-reason-lstxx unify-substxx
-                         ttreexx allpxx)
-     (rewrite-entry ,form ,@args)
-     (mv step-limitxx relieve-hyps-ansxx
-         (and (null relieve-hyps-ansxx)
-              (cons (check-vars-not-free
-                     (step-limitxx relieve-hyps-ansxx failure-reason-lstxx
-                                   unify-substxx ttreexx allpxx)
-                     (cons ,unify-subst ,failure-reason))
-                    failure-reason-lstxx))
-         unify-substxx ttreexx allpxx)))
+                         ttreexx allpxx rw-cache-alist-newxx)
+           (rewrite-entry ,form ,@args)
+           (mv step-limitxx relieve-hyps-ansxx
+               (and (null relieve-hyps-ansxx)
+                    (cons (check-vars-not-free
+                           (step-limitxx relieve-hyps-ansxx
+                                         failure-reason-lstxx unify-substxx
+                                         ttreexx allpxx rw-cache-alist-newxx)
+                           (cons ,unify-subst ,failure-reason))
+                          failure-reason-lstxx))
+               unify-substxx ttreexx allpxx rw-cache-alist-newxx)))
 
 (defun set-difference-assoc-eq (lst alist)
   (declare (xargs :guard (and (true-listp lst)
@@ -11967,10 +12031,15 @@
             #-acl2-loop-only (setq *deep-gstack* gstack)
             (cond
              ((or erp (null val))
-              (mv nil 
-                  (list synp-fn erp val)
-                  unify-subst 
-                  ttree))
+              (let ((sym (cond ((null mfc) synp-fn)
+                               ((eq synp-fn 'syntaxp) 'syntaxp-extended)
+                               ((eq synp-fn 'bind-free) 'bind-free-extended)
+                               (t ; impossible?
+                                synp-fn))))
+                (mv nil
+                    (list sym erp val)
+                    unify-subst 
+                    ttree)))
              ((eq synp-fn 'syntaxp)
               (cond
                ((eq val t)
@@ -12048,6 +12117,1258 @@
     `(mv-let ,vars
              ,form
              (mv step-limit ,@vars))))
+
+; We are almost ready to define the rewrite mutual-recursion nest.  But first
+; we provide support for the rw-cache; see the Essay on Rw-cache.
+
+(defrec rw-cache-entry
+
+; This structure is a record of a failed attempt at relieve-hyps.  The
+; :step-limit is set to the step-limit upon entry to the failed relieve-hyps
+; call.
+
+; There are two cases, which we call the "normal-failure" case and the
+; "free-failure" case.  In the free-failure case, a preceding hypothesis bound
+; a free variable without using bind-free or being a binding hypothesis;
+; otherwise, we are in the normal-failure case.
+
+; Consider first the normal-failure case.  Then the :unify-subst is the
+; restriction of a failed attempt to rewrite the nth hypothesis, stored in
+; :hyp-info, to true, where the :failure-reason has the form (n . &), and the
+; indexing is one-based.
+
+; In the free-failure case, failure-reason is a structure satisfying
+; free-failure-p, i.e.  of the form (:RW-CACHE-ALIST . alist), where each key
+; of alist is a unify-subst and each value is a failure reason (either
+; normal-failure or recursively of this form).  We sometimes call alist an
+; "rw-cache-alist".  The :hyp-info field contains the :hyps field of the
+; rewrite-rule, and the :step-limit is as above.  The following example
+; illustrates the form of the :failure-reason.  Suppose we have a rewrite rule
+; whose left-hand side has variables x1 and x2, such that hypthesis 2 binds
+; free variable y and hypothesis 6 binds free variable z.  Suppose that when
+; binding x1 to a1 and x2 to a2 we find:
+
+; - bind y to b1
+;    - obtained failure-reason-1 at hypothesis 4
+; - bind y to b2
+;    - bind z to c1
+;      - obtained failure-reason-2 at hypothesis 8
+;    - bind z to c2
+;      - obtained failure-reason-3 at hypothesis 8
+
+; Then the :unify-subst is ((x1 . a1) (x2 . a2)), and the corresponding
+; :failure-reason looks as follows.
+
+; (:RW-CACHE-ALIST
+;  (((y . b1) (x1 . a1) (x2 . a2)) ; unify-subst
+;   . failure-reason-1)
+;  (((y . b2) (x1 . a1) (x2 . a2)) ; unify-subst
+;   . (:RW-CACHE-ALIST
+;      (((z . c1) (y . b2) (x1 . a1) (x2 . a2)) ; unify-subst
+;       . failure-reason-2)
+;      (((z . c2) (y . b2) (x1 . a1) (x2 . a2)) ; unify-subst
+;       . failure-reason-3))))
+
+; Note that if for example we bind y to b3 at hypothesis 2 and fail by finding
+; no binding of z at hypothesis 6, then we do not store a failure-reason; and
+; this is reasonable, because maybe a later context will find a binding of z.
+; Another way to look at this case is to notice that above, we are storing a
+; failure reason for each binding of z; so if there are no bindings of z, then
+; there is nothing to store!
+
+; We use lexorder a lot, so we put the step-limit field first.
+
+  ((step-limit . failure-reason)
+   .
+   (unify-subst . hyp-info))
+  t)
+
+(defmacro free-failure-p (r)
+  `(eq (car ,r) :RW-CACHE-ALIST))
+
+(defabbrev combine-free-failure-reasons (r1 r2)
+
+; See the Essay on Rw-cache.
+
+; R1 and r2 are failure reasons satisfying free-failure-p.  We return (mv flg
+; r), where r is a merge of the given failure reasons and if flg is t, then r
+; is equal (in fact eq) to r2.
+
+  (mv-let (flg alist)
+          (combine-free-failure-alists (cdr r1) (cdr r2))
+          (cond (flg (mv t r2))
+                (t (mv nil (cons :RW-CACHE-ALIST alist))))))
+
+(defun combine-free-failure-alists (a1 a2)
+
+; A1 and a2 are free-failure reasons, as described in (defrec rw-cache-entry
+; ...).
+
+  (cond
+   ((endp a1) (mv t a2))
+   (t
+    (let ((pair (assoc-equal (caar a1) a2)))
+      (cond
+       (pair ; then first update a2 with (car a1)
+        (let ((failure-reason (cdar pair)))
+          (mv-let
+           (flg a2)
+           (cond
+            ((not (free-failure-p (cdr pair))) ; keep normal-failure reason
+             (mv t a2))
+            ((not (free-failure-p failure-reason))
+             (mv nil (put-assoc-equal (caar a1) failure-reason a2)))
+            (t
+             (mv-let
+              (flg2 new-reason)
+              (combine-free-failure-reasons failure-reason (cdr pair))
+              (cond
+               (flg2 (mv t a2))
+               (t (mv nil (put-assoc-equal (caar a1) new-reason a2)))))))
+           (cond
+            (flg (combine-free-failure-alists (cdr a1) a2))
+            (t ; a2 has been updated, so returned flag must be nil
+             (mv-let
+              (flg alist)
+              (combine-free-failure-alists (cdr a1) a2)
+              (declare (ignore flg))
+              (mv nil alist)))))))
+       (t ; (null pair); in this case, a2 has not yet been updated
+        (mv-let
+         (flg alist)
+         (combine-free-failure-alists (cdr a1) a2)
+         (declare (ignore flg))
+         (mv nil (cons (car a1) alist)))))))))
+
+(defun combine-sorted-rw-cache-lists1 (l1 l2)
+
+; We are given two rw-cache-lists l1 and l2, where each element is an
+; rw-cache-entry record (not t) and the lists are sorted by lexorder.  We
+; return (mv flg lst), where lst is a sorted list that suitably combines l1 and
+; l2, and if flg is true then lst is l2.  Note that t is not a member of the
+; result.
+
+  (cond ((endp l1) (mv t l2))
+        ((endp l2) (mv nil l1))
+        ((and (equal (access rw-cache-entry (car l1) :unify-subst)
+                     (access rw-cache-entry (car l2) :unify-subst))
+              (equal (access rw-cache-entry (car l1) :hyp-info)
+                     (access rw-cache-entry (car l2) :hyp-info)))
+         (mv-let
+          (flg lst)
+          (combine-sorted-rw-cache-lists1 (cdr l1) (cdr l2))
+          (let ((r1 (access rw-cache-entry (car l1) :failure-reason))
+                (r2 (access rw-cache-entry (car l2) :failure-reason)))
+            (cond
+             ((and (free-failure-p r1)
+                   (free-failure-p r2))
+              (mv-let
+               (flg2 failure-reason)
+               (combine-free-failure-reasons r1 r2)
+               (cond
+                ((and flg flg2)
+                 (mv t l2))
+                (t (mv nil (cons (change rw-cache-entry (car l2)
+                                         :failure-reason
+                                         failure-reason)
+                                 lst))))))
+
+; Otherwise we prefer r2 to r1, at least if flg is true (so that we return a
+; true flg).  If r2 is a free-failure-p and r1 is not, then r1 would actually
+; be preferable.  But we expect that case to be virtually impossible, both
+; because the failure that produced r1 would presumably have produced r2 as
+; well, and because the :hyp-info field of r1 would be a single hypothesis but
+; for r2 it would be a list of hypotheses.
+
+             (flg (mv flg l2))
+             (t (mv nil (cons (car l2) lst)))))))
+        ((lexorder (car l1) (car l2))
+         (mv-let (flg lst)
+                 (combine-sorted-rw-cache-lists1 (cdr l1) l2)
+                 (declare (ignore flg))
+                 (mv nil (cons (car l1) lst))))
+        (t
+         (mv-let (flg lst)
+                 (combine-sorted-rw-cache-lists1 l1 (cdr l2))
+                 (cond (flg (mv t l2))
+                       (t (mv nil (cons (car l2) lst))))))))
+
+(defun split-psorted-list1 (lst acc)
+  (cond ((endp lst)
+         (mv acc nil))
+        ((eq (car lst) t)
+         (assert$ (not (member-eq t (cdr lst)))
+                  (mv acc (cdr lst))))
+        (t (split-psorted-list1 (cdr lst) (cons (car lst) acc)))))
+
+(defun split-psorted-list (lst)
+
+; Lst is a list with at most one occurrence of t, the idea being that the tail
+; after T is sorted.  We return the list of elements of lst preceding that
+; occurrence of T if any, in any order, together with the list of elements
+; after the T (possibly empty, if there is no such T), in their given order.
+
+; We assume that (car lst) is not t.
+
+  (cond ((member-eq t (cdr lst))
+         (split-psorted-list1 (cdr lst) (list (car lst))))
+        (t (mv lst nil))))
+
+(defun merge-lexorder-fast (l1 l2)
+  (declare (xargs :guard (and (true-listp l1)
+                              (true-listp l2))
+                  :measure (+ (len l1) (len l2))))
+  (cond ((endp l1) (mv t l2))
+        ((endp l2) (mv nil l1))
+        ((lexorder (car l1) (car l2))
+         (mv-let (flg x)
+                 (merge-lexorder-fast (cdr l1) l2)
+                 (declare (ignore flg))
+                 (mv nil (cons (car l1) x))))
+        (t ; (lexorder (car l2) (car l1))
+         (mv-let (flg x)
+                 (merge-lexorder-fast l1 (cdr l2))
+                 (cond (flg (mv t l2))
+                       (t (mv nil (cons (car l2) x))))))))
+
+(defun merge-sort-lexorder-fast (l)
+
+; We have considered calling merge-lexorder below instead of
+; merge-lexorder-fast.  However, the realtime of a one-processor regression
+; increased by nearly 1% when we tried that -- not a lot, but enough to keep
+; using merge-lexorder-fast, especially since it might generate less garbage
+; (which could be useful for ACL2(p)).  Note: The above experiment took place
+; before adding the cddr case, and before removing the equal case from
+; merge-lexorder-fast, which should be an impossible case for our application
+; of sorting the "front" (unsorted) part of a psorted list.  But we did a
+; second experiment with a later version, on an "insert-proof" example from
+; Dave Greve.
+
+; Using merge-lexorder-fast:
+; ; 387.18 seconds realtime, 297.43 seconds runtime
+; ; (19,564,695,712 bytes allocated).
+; Total GC time: 44573873 T
+
+; Using merge-lexorder:
+; ; 388.84 seconds realtime, 298.74 seconds runtime
+; ; (19,739,620,816 bytes allocated).
+; Total GC time: 44831695 T
+
+; So, we'll use merge-lexorder-fast.
+
+  (declare (xargs :guard (true-listp l)
+                  :measure (len l)))
+  (cond ((endp (cdr l)) l)
+        ((endp (cddr l)) ; avoid the cons built by calling take below
+         (cond ((lexorder (car l) (cadr l)) l)
+               (t (list (cadr l) (car l)))))
+        (t (let* ((n (length l))
+                  (a (ash n -1)))
+             (mv-let (flg x)
+                     (merge-lexorder-fast
+                      (merge-sort-lexorder-fast (take a l))
+                      (merge-sort-lexorder-fast (nthcdr a l)))
+                     (declare (ignore flg))
+                     x)))))
+
+(defun sort-rw-cache-list (lst)
+
+; See the Essay on Rw-cache.
+
+; Lst is an rw-cache-list.  We return a corresponding sorted list of
+; rw-cache-entry records, without t as a member.
+
+  (cond ((eq (car lst) t) (cdr lst))
+        ((null (cdr lst)) lst)
+        (t (mv-let (front back)
+                   (split-psorted-list lst)
+                   (mv-let (flg ans)
+                           (combine-sorted-rw-cache-lists1
+                            (merge-sort-lexorder-fast front)
+                            back)
+                           (declare (ignore flg))
+                           ans)))))
+
+(defun combine-rw-cache-lists (lst1 lst2)
+
+; See the Essay on Rw-cache.
+
+; Lst1 and lst2 are rw-cache-lists.  We return a suitable combination of the
+; two, together with a flag which, when true, implies that the result is equal
+; (in fact, eq) to lst2.
+
+  (cond ((null lst1) (mv t lst2))
+        ((null lst2) (mv nil lst1))
+        ((eq (car lst2) t)
+         (mv-let (flg ans)
+                 (combine-sorted-rw-cache-lists1 (sort-rw-cache-list lst1)
+                                                 (cdr lst2))
+                 (cond (flg (mv t lst2))
+                       (t (mv nil (cons t ans))))))
+        (t (mv nil (cons t
+                         (mv-let (flg ans)
+                                 (combine-sorted-rw-cache-lists1
+                                  (sort-rw-cache-list lst1)
+                                  (sort-rw-cache-list lst2))
+                                 (declare (ignore flg))
+                                 ans))))))
+
+(defun merge-rw-caches (alist1 alist2)
+
+; Each of alist1 and alist2 is a symbol-alist sorted by car according to
+; symbol-<.  The value of each key is a sorted-rw-cache-list.  We return a
+; symbol-alist, sorted that same way, such that each key's value is the
+; suitable combination of its values in the two alists.  We avoid some consing
+; by returning an additional value: a flag which, if true, implies that the
+; result is equal (in fact, eq) to alist2.
+
+  (cond ((endp alist1) (mv t alist2))
+        ((endp alist2) (mv nil alist1))
+        ((eq (caar alist1) (caar alist2))
+         (mv-let (flg rest)
+                 (merge-rw-caches (cdr alist1) (cdr alist2))
+                 (mv-let (flg2 objs)
+                         (combine-rw-cache-lists
+                          (cdar alist1)
+                          (cdar alist2))
+                         (cond ((and flg flg2) (mv t alist2))
+                               (flg2 (mv nil (cons (car alist2) rest)))
+                               (t (mv nil (acons (caar alist2) objs rest)))))))
+        ((symbol-< (caar alist1) (caar alist2))
+         (mv-let (flg rest)
+                 (merge-rw-caches (cdr alist1) alist2)
+                 (declare (ignore flg))
+                 (mv nil (cons (car alist1) rest))))
+        (t ; (symbol-< (caar alist2) (caar alist1))
+         (mv-let (flg rest)
+                 (merge-rw-caches alist1 (cdr alist2))
+                 (cond (flg (mv t alist2))
+                       (t   (mv nil (cons (car alist2) rest))))))))
+
+(defmacro sorted-rw-cache-p (cache)
+
+; WARNING: This macro assumes that the given rw-cache is non-empty.
+
+  `(eq (car ,cache) t))
+
+(defun merge-symbol-alistp (a1 a2)
+  (cond ((endp a1) a2)
+        ((endp a2) a1)
+        ((symbol-< (caar a1) (caar a2))
+         (cons (car a1)
+               (merge-symbol-alistp (cdr a1) a2)))
+        (t
+         (cons (car a2)
+               (merge-symbol-alistp a1 (cdr a2))))))
+
+(defun merge-sort-symbol-alistp (alist)
+  (cond ((endp (cdr alist)) alist)
+        ((endp (cddr alist))
+         (cond ((symbol-< (car (car alist)) (car (cadr alist)))
+                alist)
+               (t (list (cadr alist) (car alist)))))
+        (t (let* ((n (length alist))
+                  (a (ash n -1)))
+             (merge-symbol-alistp
+              (merge-sort-symbol-alistp (take a alist))
+              (merge-sort-symbol-alistp (nthcdr a alist)))))))
+
+(defun cdr-sort-rw-cache (cache)
+
+; We sort the given rw-cache.
+
+  (assert$
+   cache
+   (cond ((sorted-rw-cache-p cache) (cdr cache))
+         (t (mv-let (front back)
+                    (split-psorted-list cache)
+                    (mv-let (flg ans)
+                            (merge-rw-caches (merge-sort-symbol-alistp front)
+                                             back)
+                            (declare (ignore flg))
+                            ans))))))
+
+(defun combine-rw-caches (c1 c2)
+
+; See the Essay on Rw-cache.
+
+; C1 and c2 are rw-caches, typically the respective values in two caches of
+; either 'rw-cache-any-tag or 'rw-cache-nil-tag.  Thus, they are psorted
+; symbol-alists.  We return a suitable combination of c1 and c2, together with
+; a flag implying that the result is equal (in fact eq) to c2.
+
+  (cond ((null c1) (mv t c2))
+        ((null c2) (mv nil c1))
+        (t (mv-let (flg x)
+                   (merge-rw-caches (cdr-sort-rw-cache c1)
+                                    (cdr-sort-rw-cache c2))
+                   (cond ((and flg (sorted-rw-cache-p c2))
+                          (mv t c2))
+                         (t (mv nil (cons t x))))))))
+
+(defun unify-subst-subsetp (a1 a2)
+
+; Both a1 and a2 satisfy symbol-alistp.  We assume that if a1 is a subset of
+; a2, then their keys occur in the same order.
+
+  (cond ((endp a1) t)
+        ((endp a2) nil)
+        ((eq (caar a1) (caar a2))
+         (and (equal (cdar a1) (cdar a2))
+              (unify-subst-subsetp (cdr a1) (cdr a2))))
+        (t (unify-subst-subsetp a1 (cdr a2)))))
+
+(defun rw-cache-list-lookup (unify-subst hyps recs)
+  (cond
+   ((endp recs) nil)
+   ((eq (car recs) t)
+    (rw-cache-list-lookup unify-subst hyps (cdr recs)))
+   ((let* ((rec (car recs))
+           (failure-reason (access rw-cache-entry rec :failure-reason))
+           (hyp-info (access rw-cache-entry rec :hyp-info)))
+      (and
+       (cond ((free-failure-p failure-reason)
+              (and (equal hyps hyp-info)
+                   (equal (access rw-cache-entry rec :unify-subst)
+                          unify-subst)))
+             (t (and (equal hyp-info
+
+; We test the stored hypothesis against the corresponding current hypothesis
+; because the same rune can correspond to several different rules.  Theorem
+; mod-completion in distributed book arithmetic-2/floor-mod/floor-mod.lisp
+; fails if we cache a failure for one rule stored under (:rewrite
+; mod-completionxxx) and then decide not to fire the other rule because we come
+; across the same unify-subst.
+
+                            (nth (1- (car failure-reason)) hyps))
+                     (unify-subst-subsetp (access rw-cache-entry rec
+                                                  :unify-subst)
+                                          unify-subst))))
+           rec)))
+   (t (rw-cache-list-lookup unify-subst hyps (cdr recs)))))
+
+(defstub relieve-hyp-failure-entry-skip-p
+  (rune unify-subst hyps ttree step-limit)
+  t)
+
+(defun relieve-hyp-failure-entry-skip-p-builtin (rune unify-subst hyps ttree
+                                                      step-limit)
+  (declare (ignore rune unify-subst hyps ttree step-limit)
+           (xargs :mode :logic :guard t))
+  nil)
+
+(defattach (relieve-hyp-failure-entry-skip-p
+            relieve-hyp-failure-entry-skip-p-builtin))
+
+(defmacro rw-cache-active-p (rcnst)
+  `(member-eq (access rewrite-constant ,rcnst :rw-cache-state)
+              '(t :atom)))
+
+(defun assoc-rw-cache (key alist)
+  (cond ((endp alist) nil)
+        ((eq (car alist) t)
+         (assoc-eq key (cdr alist)))
+        ((eql key (caar alist))
+         (car alist))
+        (t (assoc-rw-cache key (cdr alist)))))
+
+(defun put-assoc-rw-cache1 (key val alist)
+
+; Alist is a psorted-alist (see the Essay on Rw-cache) and key is a key of
+; alist.  We return the result of replacing the value of key with val in alist.
+
+  (cond ((atom alist) (list (cons key val)))
+        ((eq (car alist) t)
+         (cons (car alist)
+               (put-assoc-eq key val (cdr alist))))
+        ((eq key (caar alist)) (cons (cons key val) (cdr alist)))
+        (t (cons (car alist) (put-assoc-rw-cache1 key val (cdr alist))))))
+
+(defun put-assoc-rw-cache (key val alist)
+
+; Alist is a psorted-alist (see the Essay on Rw-cache).  We return a
+; psorted-alist that associates key with val.
+
+  (cond ((assoc-rw-cache key alist)
+         (put-assoc-rw-cache1 key val alist))
+        (t (acons key val alist))))
+
+(defun relieve-hyp-failure-entry (rune unify-subst hyps ttree step-limit)
+
+; We return either nil or else an rw-cache-entry from the rw-cache of the
+; ttree.
+
+  (let* ((cache (tagged-objects 'rw-cache-any-tag ttree))
+         (entry (and cache ; optimization
+                     (rw-cache-list-lookup
+                      unify-subst
+                      hyps
+                      (cdr (assoc-rw-cache (base-symbol rune) cache))))))
+
+; We could do our check with relieve-hyp-failure-entry-skip-p before even
+; looking up the entry, above.  Instead, we optimize for the common case that
+; relieve-hyp-failure-entry-skip-p returns nil, hence only calling it when
+; necessary.  This way, the user's attachment to
+; relieve-hyp-failure-entry-skip-p could print (with cw or observation-cw, say)
+; when an entry is found but skipped.
+
+    (cond ((null entry) nil)
+          ((relieve-hyp-failure-entry-skip-p rune unify-subst hyps ttree
+                                             step-limit)
+           nil)
+          (t entry))))
+
+(defun maybe-extend-tag-tree (tag vals ttree)
+
+; Warning: We assume that tag is not a key of ttree.
+
+  (cond ((null vals) ttree)
+        (t (extend-tag-tree tag vals ttree))))
+
+(defun accumulate-rw-cache1 (replace-p tag new-ttree old-ttree)
+
+; This function is intended to return an extension of the rw-cache of old-ttree
+; according to new-ttree, or else nil if the "extension" would not actually
+; change old-ttree.  Below we describe more precisely what we mean by
+; "extension", hence specifying the tag-tree returned in the non-nil case.
+
+; If replace-p is true, then replace the caches tagged by the rw-cache tag in
+; old-ttree with those tagged by tag in new-ttree, the expectation being that
+; the value of tag in new-ttree extends its value in old-ttree.  If replace-p
+; is false, then instead of replacing, combine the two caches.  In the case
+; that replace-p is nil, performance may be best if the value of tag in
+; new-ttree is more likely to be contained in its value in old-ttree, than the
+; other way around (given our use below of combine-rw-caches).
+
+  (let ((new-vals (tagged-objects tag new-ttree))
+        (old-vals (tagged-objects tag old-ttree)))
+    (cond
+     ((and replace-p ; restrict optimization (else equality is unlikely)
+           (equal new-vals old-vals))
+
+; It's not clear to us whether this COND branch is helpful or harmful.  It can
+; avoid modifying the tag-tree, but only to save at most a few conses, and at
+; the cost of the above equality check.
+
+      nil)
+     (old-vals
+      (cond
+       (replace-p
+        (assert$
+         new-vals ; extends non-nil old-vals
+         (extend-tag-tree tag
+                          new-vals
+                          (remove-tag-from-tag-tree! tag old-ttree))))
+       (t (mv-let
+           (flg objs)
+           (combine-rw-caches new-vals old-vals)
+           (assert$
+            objs
+            (cond (flg old-ttree)
+                  (t (extend-tag-tree
+                      tag
+                      objs
+                      (remove-tag-from-tag-tree! tag old-ttree)))))))))
+     (new-vals (extend-tag-tree tag new-vals old-ttree))
+     (t nil))))
+
+(defun accumulate-rw-cache (replace-p new-ttree old-ttree)
+
+; Keep this in sync with accumulate-rw-cache?, which is similar but may (and
+; usually will) return nil if old-ttree is unchanged.
+
+; New-ttree is an extension of old-ttree.  We incorporate the rw-cache from
+; new-ttree into old-ttree, generally because new-ttree is to be discarded
+; after a failure but we want to save its cached failures to relieve
+; hypotheses.  If replace-p is true then we actually ignore the list of values
+; of the relevant tags in old-ttree, assuming (and perhaps checking with an
+; assert$) that this list forms a tail of the corresponding list of values in
+; new-ttree.
+
+  (let ((ttree1 (or (accumulate-rw-cache1 replace-p 'rw-cache-nil-tag
+                                          new-ttree old-ttree)
+                    old-ttree)))
+    (or (accumulate-rw-cache1 replace-p 'rw-cache-any-tag new-ttree ttree1)
+        ttree1)))
+
+(defun accumulate-rw-cache? (replace-p new-ttree old-ttree)
+
+; Keep this in sync with accumulate-rw-cache, which is similar; see comments
+; there.  However, that function always returns a tag-tree, while the present
+; function may (and usually will) return nil if old-ttree is unchanged.
+
+  (let* ((ttree1-or-nil (accumulate-rw-cache1 replace-p 'rw-cache-nil-tag
+                                              new-ttree old-ttree))
+         (ttree1 (or ttree1-or-nil old-ttree))
+         (ttree2-or-nil (accumulate-rw-cache1 replace-p 'rw-cache-any-tag
+                                              new-ttree ttree1)))
+    (or ttree2-or-nil
+        ttree1-or-nil)))
+
+(mutual-recursion
+
+(defun dumb-occur-var (var term)
+
+; This function determines if variable var occurs in the given term.  This is
+; the same as dumb-occur, but optimized for the case that var is a variable.
+
+  (cond ((eq var term) t)
+        ((variablep term) nil)
+        ((fquotep term) nil)
+        (t (dumb-occur-var-lst var (fargs term)))))
+
+(defun dumb-occur-var-lst (var lst)
+  (cond ((null lst) nil)
+        (t (or (dumb-occur-var var (car lst))
+               (dumb-occur-var-lst var (cdr lst))))))
+)
+
+(defun restrict-alist-to-all-vars1 (alist term)
+
+; Return the result of restricting alist to those pairs whose key is a variable
+; occurring free in term, together with a flag that, if nil, implies that the
+; result is equal (in fact eq) to alist.
+
+  (declare (xargs :guard (and (symbol-alistp alist)
+                              (pseudo-termp term))))
+  (cond ((endp alist) (mv nil nil))
+        (t (mv-let (changedp rest)
+                   (restrict-alist-to-all-vars1 (cdr alist) term)
+                   (cond ((dumb-occur-var (caar alist) term)
+                          (cond (changedp (mv t (cons (car alist) rest)))
+                                (t (mv nil alist))))
+                         (t (mv t rest)))))))
+
+(mutual-recursion
+
+(defun all-vars-boundp (term alist)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (symbol-alistp alist))))
+  (cond ((variablep term)
+         (assoc-eq term alist))
+        ((fquotep term) t)
+        (t (all-vars-lst-boundp (fargs term) alist))))
+
+(defun all-vars-lst-boundp (lst alist)
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (symbol-alistp alist))))
+  (cond ((endp lst) t)
+        (t (and (all-vars-boundp (car lst) alist)
+                (all-vars-lst-boundp (cdr lst) alist)))))
+
+)
+
+(defun restrict-alist-to-all-vars (alist term)
+
+; We return a subset of alist, with the order of elements unchanged.  In our
+; intended application of this function, alist is a unify-subst obtained by
+; matching the lhs of a rewrite-rule, and term is a hypothesis of that rule
+; that has generated a failure reason other than a free-failure.  The return
+; value is then intended to capture enough of the unify-subst such that for any
+; extension of it encountered subsequently, we can reasonably expect the same
+; hypothesis to fail again.
+
+  (cond ((all-vars-boundp term alist)
+         (mv-let (changedp result)
+                 (restrict-alist-to-all-vars1 alist term)
+                 (declare (ignore changedp))
+                 result))
+        (t
+
+; This case can happen when we have a binding hypothesis.  If we pass in the
+; list of all hypotheses in our intended application (see above), we could
+; compute which variables bound by alist are really relevant to term.
+
+         alist)))
+
+(defun push-rw-cache-entry (entry tag rune ttree)
+
+; Add entry, an rw-cache-entry record that corresponds to rune, to the records
+; associated with tag (which is 'rw-cache-any-tag or 'rw-cache-nil-tag) in
+; ttree.
+
+  (let* ((cache (tagged-objects tag ttree))
+         (base (base-symbol rune))
+         (recs (and cache ; optimization
+                    (cdr (assoc-rw-cache base cache)))))
+    (cond ((null cache)
+           (extend-tag-tree tag
+                            (list (cons base (list entry)))
+                            ttree))
+          (t (extend-tag-tree
+              tag
+              (put-assoc-rw-cache
+               base
+               (cons entry recs)
+               cache)
+              (remove-tag-from-tag-tree tag ttree))))))
+
+(defstub rw-cache-debug
+  (rune target unify-subst relieve-hyp-failure-reason step-limit)
+  t)
+
+(defstub rw-cache-debug-action
+  (rune target unify-subst relieve-hyp-failure-reason step-limit)
+  t)
+
+(defun rw-cache-debug-builtin (rune target unify-subst failure-reason
+                                    step-limit)
+  (declare (ignore rune target unify-subst failure-reason step-limit)
+           (xargs :guard t))
+  nil)
+
+(defun rw-cache-debug-action-builtin (rune target unify-subst failure-reason
+                                           step-limit)
+  (declare (xargs :guard t))
+  (cw "@@ rw-cache-debug:~|~x0~|"
+      (list :step-limit step-limit
+            :rune rune
+            :target target
+            :unify-subst unify-subst
+            :relieve-hyp-failure-reason failure-reason)))
+
+(encapsulate
+ (((rw-cacheable-failure-reason *) => *
+   :formals (failure-reason)
+   :guard (and (consp failure-reason)
+               (posp (car failure-reason)))))
+ (local (defun rw-cacheable-failure-reason (failure-reason)
+          failure-reason)))
+
+(defun rw-cacheable-failure-reason-builtin (failure-reason)
+
+; This function recognizes non-free-failure reasons.  The guard is important
+; for note-relieve-hyp-failure, as noted in a comment in its definition.
+
+  (declare (xargs :guard (and (consp failure-reason)
+                              (posp (car failure-reason)))))
+  (and (consp (cdr failure-reason))
+       (member-eq (cadr failure-reason) '(rewrote-to syntaxp bind-free))))
+
+(defattach (rw-cacheable-failure-reason rw-cacheable-failure-reason-builtin)
+  :skip-checks t)
+
+(defun rw-cacheable-nil-tag (failure-reason)
+
+; Failure-reason is assumed to satisfy rw-cacheable-failure-reason.  We return
+; true if it is a reason we want to put into the "nil" cache, i.e., one that we
+; generally expect to remain suitable when we strengthen the original context
+; of the failure.
+
+  (and (consp (cdr failure-reason))
+       (cond ((eq (cadr failure-reason) 'rewrote-to)
+              (equal (cddr failure-reason) *nil*))
+             (t
+              (assert$ (member-eq (cadr failure-reason)
+                                  '(syntaxp bind-free))
+
+; Quoting :doc bind-free (and similarly for syntaxp): "every variable occuring
+; freely in term occurs freely in lhs or in some hypi, i<n."  So the
+; unify-subst for which we obtained this failure-reason will continue to yield
+; this failure-reason in stronger contexts.
+
+                       t)))))
+
+(defun note-relieve-hyp-failure (rune unify-subst failure-reason ttree hyps
+                                      step-limit)
+
+; We return the given ttree but with its rw-cache possibly extended according
+; to the indicated failure information.  See the Essay on Rw-cache.
+
+; We considered checking (rw-cache-list-lookup rune unify-subst recs), where
+; recs is the list of rw-cache-entry records that may be extended, before
+; making any such extension.  However, our intended use of this function is
+; only for situations where a relieve-hyps call fails after a cache miss.  So a
+; cache hit here would mean that the same relieve-hyps call failed in the
+; course of relieving the original hyps.  That seems sufficiently rare not to
+; justify the cost of the lookup, since the penalty is just an occasional
+; duplicate entry.  Indeed, using a preliminary version of our rw-cache
+; implementation, we found no such cases in
+; books/workshops/2004/legato/support/proof-by-generalization-mult.lisp,
+; books/workshops/2004/smith-et-al/support/bags/eric-meta.lisp, or an
+; "insert-proof" example sent to us by Dave Greve.
+
+  (cond
+   ((rw-cacheable-failure-reason failure-reason)
+
+; We take advantage here of the guard on rw-cacheable-failure-reason, i.e.,
+; that (consp failure-reason) and (posp (car failure-reason)).
+
+    (let* ((hyp (nth (1- (car failure-reason)) hyps))
+           (entry (make rw-cache-entry
+                        :unify-subst
+                        (restrict-alist-to-all-vars
+                         unify-subst
+
+; In the case of a synp hypothesis, our possible restriction of unify-subst is
+; based on the variables occurring free in the term that is to be evaluated.
+
+                         (cond ((and (nvariablep hyp)
+                                     (eq (ffn-symb hyp) 'synp))
+                                (let ((qterm (fargn hyp 3)))
+                                  (assert$ (quotep qterm)
+                                           (unquote qterm))))
+                               (t hyp)))
+                        :failure-reason failure-reason
+                        :hyp-info hyp
+                        :step-limit step-limit))
+           (ttree
+            (cond ((rw-cacheable-nil-tag failure-reason)
+                   (push-rw-cache-entry entry 'rw-cache-nil-tag rune ttree))
+                  (t ttree))))
+      (push-rw-cache-entry entry 'rw-cache-any-tag rune ttree)))
+   (t ttree)))
+
+(defun replace-free-rw-cache-entry1 (unify-subst hyps entry recs)
+
+; Recs is a psorted list of rw-cache-entry records.  We know that some record
+; in recs whose :failure-reason satisfies free-failure-p has the given
+; unify-subst and hyps fields, and we replace that one by the given entry.
+
+  (cond ((endp recs)
+         (er hard 'replace-free-rw-cache-entry1 ; see comment above
+             "Implementation error: see 'replace-free-rw-cache-entry"))
+        ((and (not (eq (car recs) t))
+              (free-failure-p (access rw-cache-entry (car recs)
+                                      :failure-reason))
+              (equal unify-subst
+                     (access rw-cache-entry (car recs) :unify-subst))
+              (equal hyps
+                     (access rw-cache-entry (car recs) :hyp-info)))
+         (cons entry (cdr recs)))
+        (t (cons (car recs)
+                 (replace-free-rw-cache-entry1 unify-subst hyps entry
+                                               (cdr recs))))))
+
+(defun replace-free-rw-cache-entry (entry tag rune unify-subst hyps ttree)
+
+; Some existing entry in the "any" or "nil" cache of ttree (depending on tag),
+; stored under the base-symbol of rune as the key, has the given unify-subst
+; and hyps.  We replace it with entry.
+
+  (let* ((cache (tagged-objects tag ttree))
+         (base (base-symbol rune))
+         (recs (cdr (assoc-rw-cache base cache))))
+    (assert$
+     recs ; otherwise we wouldn't be doing a replacement
+     (extend-tag-tree
+      tag
+      (put-assoc-rw-cache
+       base
+       (replace-free-rw-cache-entry1 unify-subst hyps entry recs)
+       cache)
+      (remove-tag-from-tag-tree tag ttree)))))
+
+(defun rw-cache-alist-nil-tag-p (alist)
+
+; Alist is an rw-cache-alist, i.e., an alist mapping unify-substs to
+; failure-reasons.  We return true when there is at least one normal-failure
+; reason somewhere within one of these failure-reasons that could belong in a
+; "nil" cache.
+
+  (cond ((endp alist) nil)
+        (t (or (let ((failure-reason (cdar alist)))
+                 (cond ((free-failure-p failure-reason)
+                        (rw-cache-alist-nil-tag-p (cdr failure-reason)))
+                       (t (rw-cacheable-nil-tag failure-reason))))
+               (rw-cache-alist-nil-tag-p (cdr alist))))))
+
+(defabbrev merge-free-failure-reasons-nil-tag (r1 r2)
+
+; R1 is a failure reason satisfying free-failure-p, as is r2 unless r2 is nil.
+; This function is analogous to combine-free-failure-reasons, but where we are
+; merging into r2 only those parts of r1 that are suitable for the "nil" cache.
+
+  (mv-let (flg alist)
+          (merge-free-failure-alists-nil-tag (cdr r1) (cdr r2))
+          (cond (flg (mv t r2))
+                (t (assert$
+                    alist ; even if r2 is nil, flg implies alist is not nil
+                    (mv nil (cons :RW-CACHE-ALIST alist)))))))
+
+(defun merge-free-failure-alists-nil-tag (a1 a2)
+
+; Each of the arguments is an rw-cache-alist.  We merge the part of a1 suitable
+; for a "nil" cache into a2 to obtain an rw-cache-alist, alist.  We return (mv
+; flg alist), where if flg is true then alist is a2.
+
+; See also combine-free-failure-alists for a related function for the "any"
+; cache.
+
+  (cond
+   ((endp a1) (mv t a2))
+   (t
+    (let* ((failure-reason (cdar a1))
+           (free-p (free-failure-p failure-reason)))
+      (cond
+       ((and (not free-p)
+             (not (rw-cacheable-nil-tag failure-reason)))
+        (merge-free-failure-alists-nil-tag (cdr a1) a2))
+       (t ; then first update a2 with (car a1)
+        (mv-let
+         (flg a2)
+         (let ((pair (assoc-equal (caar a1) a2)))
+           (cond
+            ((and pair (not (free-failure-p (cdr pair))))
+             (mv t a2))   ; keep normal-failure reason
+            ((not free-p) ; then (rw-cacheable-nil-tag failure-reason)
+             (mv nil
+                 (cond (pair (put-assoc-equal (caar a1) failure-reason a2))
+                       (t (acons (caar a1) failure-reason a2)))))
+            (t
+             (mv-let
+              (flg2 sub-reason)
+              (merge-free-failure-reasons-nil-tag failure-reason (cdr pair))
+              (cond
+               (flg2 (mv t a2))
+               (pair (mv nil (put-assoc-equal (caar a1) sub-reason a2)))
+               (t (mv nil (acons (caar a1) sub-reason a2))))))))
+         (cond
+          (flg (merge-free-failure-alists-nil-tag (cdr a1) a2))
+          (t ; a2 has been updated, so returned flag must be nil
+           (mv-let
+            (flg alist)
+            (merge-free-failure-alists-nil-tag (cdr a1) a2)
+            (declare (ignore flg))
+            (mv nil alist)))))))))))
+
+(defun note-rw-cache-free-nil-tag (rune unify-subst hyps ttree
+                                        new-rw-cache-alist step-limit)
+  (cond
+   ((rw-cache-alist-nil-tag-p new-rw-cache-alist)
+    (let* ((cache (tagged-objects 'rw-cache-nil-tag ttree))
+           (base (base-symbol rune))
+           (recs (and cache ; optimization
+                      (cdr (assoc-rw-cache base cache))))
+           (entry (rw-cache-list-lookup unify-subst hyps recs))
+           (failure-reason (and entry (access rw-cache-entry entry
+                                              :failure-reason))))
+      (cond
+       ((and entry
+             (not (free-failure-p failure-reason)))
+        ttree) ; odd case; keep the old normal-failure reason
+       (t
+        (mv-let
+         (flg alist)
+         (merge-free-failure-alists-nil-tag new-rw-cache-alist
+                                            (cdr failure-reason))
+         (cond
+          (flg ttree)
+          (entry
+           (replace-free-rw-cache-entry
+            (change rw-cache-entry entry
+                    :failure-reason (cons :RW-CACHE-ALIST alist))
+            'rw-cache-nil-tag rune unify-subst hyps ttree))
+          (t
+           (let ((new-entry (make rw-cache-entry
+                                  :unify-subst unify-subst
+                                  :failure-reason (cons :RW-CACHE-ALIST alist)
+                                  :hyp-info hyps
+                                  :step-limit step-limit)))
+             (cond
+              ((null cache)
+               (extend-tag-tree 'rw-cache-nil-tag
+                                (list (cons base (list new-entry)))
+                                ttree))
+              ((null recs)
+               (extend-tag-tree
+                'rw-cache-nil-tag
+                (acons ; put-assoc-rw-cache
+                 base
+                 (cons new-entry nil)
+                 cache)
+                (remove-tag-from-tag-tree 'rw-cache-nil-tag ttree)))
+              (t
+               (push-rw-cache-entry new-entry 'rw-cache-nil-tag rune
+                                    ttree)))))))))))
+   (t ttree)))
+
+(defun note-relieve-hyps-failure-free (rune unify-subst hyps ttree old-entry
+                                            old-rw-cache-alist
+                                            new-rw-cache-alist step-limit)
+
+; We update ttree by replacing the existing rw-cache-entry record for
+; rune, unify-subst, and hyps, namely old-rw-cache-alist, by one that is based
+; on new-rw-cache-alist.
+
+  (assert$
+   new-rw-cache-alist
+   (mv-let
+    (flg alist)
+    (cond
+     (old-rw-cache-alist
+      (combine-free-failure-alists new-rw-cache-alist old-rw-cache-alist))
+     (t (mv nil new-rw-cache-alist)))
+    (cond
+     (flg ; If the "any" cache is unchanged, then so is the "nil" cache.
+      ttree)
+     (t
+      (let ((ttree (note-rw-cache-free-nil-tag rune unify-subst hyps ttree
+                                               new-rw-cache-alist step-limit)))
+        (cond
+         (old-entry
+          (replace-free-rw-cache-entry
+           (change rw-cache-entry old-entry
+                   :failure-reason (cons :RW-CACHE-ALIST alist))
+           'rw-cache-any-tag rune unify-subst hyps ttree))
+         (t
+          (push-rw-cache-entry
+           (make rw-cache-entry
+                 :unify-subst unify-subst
+                 :failure-reason (cons :RW-CACHE-ALIST alist)
+                 :hyp-info hyps
+                 :step-limit step-limit)
+           'rw-cache-any-tag rune ttree)))))))))
+
+(defun rw-cache-enter-context (ttree)
+
+; Restrict the "any" cache to the "nil" cache.
+
+  (maybe-extend-tag-tree 'rw-cache-any-tag
+                         (tagged-objects 'rw-cache-nil-tag ttree)
+                         (remove-tag-from-tag-tree 'rw-cache-any-tag ttree)))
+
+(defun erase-rw-cache (ttree)
+
+; Erase all rw-cache tagged objects from ttree.  See also
+; erase-rw-cache-from-pspv.
+
+  (remove-tag-from-tag-tree
+   'rw-cache-nil-tag
+   (remove-tag-from-tag-tree 'rw-cache-any-tag ttree)))
+
+(defun rw-cache-exit-context (old-ttree new-ttree)
+
+; Return the result of modifying new-ttree by restoring the "nil" cache from
+; old-ttree and by combining the "any" caches of the two ttrees.
+
+  (mv-let (flg new-any)
+          (combine-rw-caches
+
+; If we reverse the order of arguments just below, then in the case that flg is
+; t, we could avoid modifying the "any" cache of new-ttree in the case that it
+; contains the "any" cache of old-ttree.  However, since rw-cache-enter-context
+; clears the "any" cache except for entries from the "nil" cache, it could be
+; relatively rare for the "any" cache of new-ttree to have grown enough to
+; contain that of old-ttree.  Indeed, we expect that in general new-ttree could
+; have a much smaller "any" cache than that of old-ttree, in which case we may
+; do less consing by combining new into old, which is what we do.
+
+           (tagged-objects 'rw-cache-any-tag new-ttree)
+           (tagged-objects 'rw-cache-any-tag old-ttree))
+          (declare (ignore flg))
+          (maybe-extend-tag-tree
+           'rw-cache-any-tag
+           new-any
+           (maybe-extend-tag-tree
+            'rw-cache-nil-tag
+            (tagged-objects 'rw-cache-nil-tag old-ttree)
+            (erase-rw-cache new-ttree)))))
+
+(defun restore-rw-cache-any-tag (new-ttree old-ttree)
+
+; New-ttree has an "any" cache that was constructed in a context we do not
+; trust for further computation; for example, the fnstack may have extended the
+; current fnstack.  We restore the "any" cache of new-ttree to that of
+; old-ttree.  While we may be happy to preserve the "nil" cache of new-ttree,
+; we have an invariant to maintain: the "nil" cache is always contained in the
+; "any" cache.  In a preliminary implementation we kept these two caches
+; separate, at the cost of maintaining a third "nil-saved" cache, which added
+; complexity.  In the present implementation, we preserve the invariant by
+; throwing away new "nil" cache entries.  Early experiments with the regression
+; suite suggest that performance does not suffer significantly with such
+; deletion.  But it would be interesting to experiment with the alternate
+; approach of extending the old "any" cache with the new "nil" cache.
+
+  (maybe-extend-tag-tree
+   'rw-cache-any-tag
+   (tagged-objects 'rw-cache-any-tag old-ttree)
+   (maybe-extend-tag-tree
+    'rw-cache-nil-tag
+    (tagged-objects 'rw-cache-nil-tag old-ttree)
+    (erase-rw-cache new-ttree))))
+
+(defun cons-tag-trees-rw-cache (ttree1 ttree2)
+
+; This is cons-tag-trees, but with normalized rw-caches in the result.  This
+; function, as is probably the case for all rw-cache functions, is purely
+; heuristic.  So, it is fine to call cons-tag-trees instead of this function.
+; But we think that cons-tag-trees-rw-cache might sometimes produce better
+; results, by avoiding duplicate keys (base-symbols of runes), since such
+; duplicates would make the second occurrence of the key invisible to
+; rw-cache-list-lookup.
+
+; We avoid the expense of calling this function when we expect that at least
+; one of the ttrees is lacking rw-cache tags, for example because it was
+; produced by operations defined before the rewrite nest (such as type-set and
+; assume-true-false).
+
+  (let ((rw-cache-any1 (tagged-objects 'rw-cache-any-tag ttree1))
+        (rw-cache-any2 (tagged-objects 'rw-cache-any-tag ttree2))
+        (rw-cache-nil1 (tagged-objects 'rw-cache-nil-tag ttree1))
+        (rw-cache-nil2 (tagged-objects 'rw-cache-nil-tag ttree2)))
+
+; The code below could be simplified by using only the case that all four of
+; the above caches are non-nil.  But since we know which ones are nil and which
+; ones are not, we might as well use that information to save a bit of
+; computation.
+
+    (cond
+     ((and rw-cache-any1 rw-cache-any2)
+      (mv-let
+       (flg-any cache-any)
+       (combine-rw-caches rw-cache-any1 rw-cache-any2)
+       (declare (ignore flg-any))
+       (cond
+        ((and rw-cache-nil1 rw-cache-nil2)
+         (mv-let
+          (flg-nil cache-nil)
+          (combine-rw-caches rw-cache-nil1 rw-cache-nil2)
+          (declare (ignore flg-nil))
+          (extend-tag-tree
+           'rw-cache-any-tag
+           cache-any
+           (extend-tag-tree
+            'rw-cache-nil-tag
+            cache-nil
+            (cons-tag-trees (erase-rw-cache ttree1)
+                            (erase-rw-cache ttree2))))))
+        (t
+         (extend-tag-tree
+          'rw-cache-any-tag
+          cache-any
+          (cons-tag-trees (remove-tag-from-tag-tree
+                           'rw-cache-any-tag
+                           ttree1)
+                          (remove-tag-from-tag-tree
+                           'rw-cache-any-tag
+                           ttree2)))))))
+     ((and rw-cache-nil1 rw-cache-nil2)
+      (mv-let
+       (flg-nil cache-nil)
+       (combine-rw-caches rw-cache-nil1 rw-cache-nil2)
+       (declare (ignore flg-nil))
+       (extend-tag-tree
+        'rw-cache-nil-tag
+        cache-nil
+        (cons-tag-trees (remove-tag-from-tag-tree
+                         'rw-cache-nil-tag
+                         ttree1)
+                        (remove-tag-from-tag-tree
+                         'rw-cache-nil-tag
+                         ttree2)))))
+     (t (cons-tag-trees ttree1 ttree2)))))
+
+(defun normalize-rw-any-cache (ttree)
+  (let ((cache (tagged-objects 'rw-cache-any-tag ttree)))
+    (cond ((or (null cache)
+               (sorted-rw-cache-p cache))
+           ttree)
+          (t (extend-tag-tree
+              'rw-cache-any-tag
+              (cons t (cdr-sort-rw-cache cache))
+              (remove-tag-from-tag-tree
+               'rw-cache-any-tag
+               ttree))))))
+
+(defun cons-tag-trees-rw-cache-first (ttree1 ttree2)
+
+; Combine the two tag-trees, except that the rw-cache of the result is taken
+; solely from ttree1.
+
+  (maybe-extend-tag-tree
+   'rw-cache-any-tag
+   (tagged-objects 'rw-cache-any-tag ttree1)
+   (maybe-extend-tag-tree
+    'rw-cache-nil-tag
+    (tagged-objects 'rw-cache-nil-tag ttree1)
+    (cons-tag-trees (erase-rw-cache ttree1)
+                    (erase-rw-cache ttree2)))))
+
+(defun alist-keys-subsetp (x keys)
+  (cond ((endp x) t)
+        ((member-eq (caar x) keys)
+         (alist-keys-subsetp (cdr x) keys))
+        (t nil)))
+
+(defmacro tag-tree-tags-subsetp (ttree tags)
+
+; Note: Tag-tree primitive
+
+  `(alist-keys-subsetp ,ttree ,tags))
+
+(defun rw-cache (ttree)
+
+; Restrict ttree to its rw-cache tagged objects.
+
+  (cond ((tag-tree-tags-subsetp ttree
+                                '(rw-cache-nil-tag rw-cache-any-tag))
+         ttree)
+        (t (maybe-extend-tag-tree
+            'rw-cache-any-tag
+            (tagged-objects 'rw-cache-any-tag ttree)
+            (maybe-extend-tag-tree
+             'rw-cache-nil-tag
+             (tagged-objects 'rw-cache-nil-tag ttree)
+             nil)))))
+
+(defun rw-cached-failure-pair (unify-subst rw-cache-alist)
+
+; We assume that rw-cache-active-p holds for the current rewrite-constant.
+
+; This function returns (mv cached-free-failure-reason
+; cached-normal-failure-reason), where at most one of the two returned values
+; is non-nil and as the names suggest: the second is a normal sort of
+; failure-reason (as recognized by rw-cacheable-failure-reason), while the
+; first is a failure-reason satisfying free-failure-p.
+
+  (let* ((cached-failure-reason-raw
+          (and rw-cache-alist ; cheap optimization for (perhaps) common case
+               (cdr (assoc-equal unify-subst rw-cache-alist))))
+         (cached-failure-reason-free-p
+          (and (consp cached-failure-reason-raw)
+               (free-failure-p cached-failure-reason-raw))))
+    (mv (and cached-failure-reason-free-p
+             cached-failure-reason-raw)
+        (and (not cached-failure-reason-free-p)
+             cached-failure-reason-raw))))
+
+(defun extend-rw-cache-alist-free (rcnst new-unify-subst
+                                         inferior-rw-cache-alist-new
+                                         rw-cache-alist-new)
+
+; This function ultimately supports the extension of an rw-cache in the
+; free-failure case.  If the rw-cache is active (as per rcnst), then we extend
+; rw-cache-alist-new by associating a non-nil inferior-rw-cache-alist-new, an
+; rw-cache-alist (see the definition of record structure rw-cache-entry) with
+; new-unify-subst (which we generally expect to have no such association in
+; rw-cache-alist).  See also rw-cache-add-failure-reason, which extends
+; new-unify-subst in the case of a normal-failure reason.
+
+  (cond ((and inferior-rw-cache-alist-new
+              (rw-cache-active-p rcnst))
+         (put-assoc-equal new-unify-subst
+                          (cons :RW-CACHE-ALIST
+                                inferior-rw-cache-alist-new)
+                          rw-cache-alist-new))
+        (t rw-cache-alist-new)))
+
+(defun rw-cache-add-failure-reason (rcnst new-unify-subst
+                                          failure-reason
+                                          rw-cache-alist-new)
+
+; If the rw-cache is active (as per rcnst), then this function extends
+; rw-cache-alist-new by associating failure-reason, a normal-failure reason,
+; with new-unify-subst (which we generally expect to have no such association
+; in rw-cache-alist).  See also extend-rw-cache-alist-free, which is analogous
+; but for a free-failure reason.
+
+  (cond ((and (rw-cache-active-p rcnst)
+              (rw-cacheable-failure-reason failure-reason))
+         (acons new-unify-subst
+                failure-reason
+                rw-cache-alist-new))
+        (t rw-cache-alist-new)))
 
 (mutual-recursion
 
@@ -12663,8 +13984,7 @@
 ; errored out) is a compound recognizer.
 
                                 (let ((new-term1
-                                       (cons-term fn
-                                                  rewritten-args)))
+                                       (cons-term fn rewritten-args)))
                                   (sl-let
                                    (new-term2 ttree)
                                    (rewrite-entry
@@ -12772,7 +14092,7 @@
                       (not (equal term new-term)))
                   (mv step-limit new-term new-ttree))
                  (t
-                  (sl-let (rewrittenp term1 ttree1)
+                  (sl-let (rewrittenp term1 ttree)
                           (rewrite-entry
 
 ; We are tempted to call rewrite here.  But the point of this call is to handle
@@ -12781,11 +14101,12 @@
 ; we really want to do here is to make another pass through the lemmas in case
 ; one of them applies this time.
 
-                           (rewrite-with-lemmas1 term
-                                                 (getprop (ffn-symb new-term) 'lemmas nil
-                                                          'current-acl2-world wrld)))
-                          (cond (rewrittenp (mv step-limit term1 ttree1))
-                                (t (mv step-limit term ttree)))))))))
+                           (rewrite-with-lemmas1
+                            term
+                            (getprop (ffn-symb new-term) 'lemmas nil
+                                     'current-acl2-world wrld)))
+                          (declare (ignore rewrittenp))
+                          (mv step-limit term1 ttree)))))))
 
 (defun rewrite-if (test unrewritten-test left right alist ; &extra formals
                         rdepth step-limit
@@ -12911,24 +14232,32 @@
             (rewrite-entry (rewrite right alist 3)
                            :type-alist false-type-alist
                            :ttree (cons-tag-trees ts-ttree ttree)))
-           (t (sl-let
-               (rewritten-left ttree)
-               (if (and unrewritten-test
-                        (geneqv-refinementp 'iff geneqv wrld)
-                        (equal unrewritten-test left))
-                   (mv step-limit *t* ttree)
-                 (rewrite-entry (rewrite left alist 2)
-                                :type-alist true-type-alist))
-               (sl-let (rewritten-right ttree)
-                       (rewrite-entry (rewrite right alist 3)
-                                      :type-alist false-type-alist)
-                       (prepend-step-limit
-                        2
-                        (rewrite-if1 test
-                                     rewritten-left rewritten-right
-                                     type-alist geneqv ens
-                                     (ok-to-force rcnst)
-                                     wrld ttree))))))))))))
+           (t (let ((ttree (normalize-rw-any-cache ttree)))
+                (sl-let
+                 (rewritten-left ttree)
+                 (if (and unrewritten-test
+                          (geneqv-refinementp 'iff geneqv wrld)
+                          (equal unrewritten-test left))
+                     (mv step-limit *t* ttree)
+                   (sl-let (rw-left ttree1)
+                           (rewrite-entry (rewrite left alist 2)
+                                          :type-alist true-type-alist
+                                          :ttree (rw-cache-enter-context ttree))
+                           (mv step-limit
+                               rw-left
+                               (rw-cache-exit-context ttree ttree1))))
+                 (sl-let (rewritten-right ttree1)
+                         (rewrite-entry (rewrite right alist 3)
+                                        :type-alist false-type-alist
+                                        :ttree (rw-cache-enter-context ttree))
+                         (let ((ttree (rw-cache-exit-context ttree ttree1)))
+                           (prepend-step-limit
+                            2
+                            (rewrite-if1 test
+                                         rewritten-left rewritten-right
+                                         type-alist geneqv ens
+                                         (ok-to-force rcnst)
+                                         wrld ttree))))))))))))))
 
 (defun rewrite-args (args alist bkptr; &extra formals
                           rdepth step-limit
@@ -13238,10 +14567,11 @@
                             (mv step-limit *nil* (puffert new-ttree)))
                            (t (mv step-limit
                                   (mcons-term* 'equal lhs rhs)
-                                  ttree)))))
+                                  (accumulate-rw-cache t new-ttree ttree))))))
                    ((equal equal-cars *nil*)
                     (mv step-limit *nil* (puffert new-ttree)))
                    (t
+                    (let ((ttree (accumulate-rw-cache t new-ttree ttree)))
 
 ; If we fail to get a definitive answer then we still might be able to
 ; answer negatively by rewriting the cdrs.  We have been asymmetric
@@ -13268,29 +14598,32 @@
 ; then we return appropriately and otherwise we fall through to
 ; whatever other rewrites we consider.  But we didn't.
 
-                    (sl-let (equal-cdrs new-ttree)
-                            (sl-let
-                             (cdrs ttree0)
-                             (rewrite-entry (rewrite-args '((cdr lhs) (cdr rhs))
-                                                          alist
-                                                          1)
-                                            :obj '?
-                                            :geneqv nil
-                                            :ttree ttree)
-                             (rewrite-entry
-                              (rewrite-equal
-                               (car cdrs)
-                               (cadr cdrs)
-                               (cons lhs lhs-ancestors)
-                               (cons rhs rhs-ancestors))
-                              :obj '?
-                              :geneqv nil
-                              :ttree ttree0))
-                            (cond ((equal equal-cdrs *nil*)
-                                   (mv step-limit *nil* (puffert new-ttree)))
-                                  (t (mv step-limit
+                      (sl-let (equal-cdrs new-ttree)
+                              (sl-let
+                               (cdrs ttree0)
+                               (rewrite-entry (rewrite-args '((cdr lhs) (cdr rhs))
+                                                            alist
+                                                            1)
+                                              :obj '?
+                                              :geneqv nil
+                                              :ttree ttree)
+                               (rewrite-entry
+                                (rewrite-equal
+                                 (car cdrs)
+                                 (cadr cdrs)
+                                 (cons lhs lhs-ancestors)
+                                 (cons rhs rhs-ancestors))
+                                :obj '?
+                                :geneqv nil
+                                :ttree ttree0))
+                              (cond ((equal equal-cdrs *nil*)
+                                     (mv step-limit *nil* (puffert new-ttree)))
+                                    (t
+                                     (mv step-limit
                                          (mcons-term* 'equal lhs rhs)
-                                         ttree)))))))))
+                                         (accumulate-rw-cache t
+                                                              new-ttree
+                                                              ttree)))))))))))
               (t (mv step-limit
                      (mcons-term* 'equal lhs rhs)
                      ttree))))))))))))))
@@ -13328,7 +14661,9 @@
 ; type-alist or extend unify-subst to make hyp0 true via ground units.  This is
 ; called the SPECIAL CASE.
 
-; This function is a No-Change Loser.
+; This function is a No-Change Loser modulo rw-cache: only the values of
+; 'rw-cache-any-tag and 'rw-cache-nil-tag may differ between the input and
+; output ttrees.
 
 ; Below we describe the memo argument, but first, here is an example that
 ; illustrates how it is used.
@@ -13442,12 +14777,20 @@
                    (cond
                     (old-entry
                      (mv step-limit t nil unify-subst
-                         (cons-tag-trees (cdr old-entry) ttree)
+                         (cons-tag-trees-rw-cache (cdr old-entry) ttree)
                          memo))
                     (t
                      (sl-let
                       (relieve-hyp-ans failure-reason unify-subst ttree0)
-                      (let ((ttree (and (not memo-active) ttree)))
+                      (let ((ttree (if memo-active
+
+; If memo-active is true, we may be storing a ttree from the work done below,
+; and we do not want to accumulate the existing ttree into that one.  Later
+; below, if memo-active is true, then we will cons ttree0 (bound above) with
+; ttree.
+
+                                       (rw-cache ttree)
+                                     ttree)))
                         (mv-let
                          (lookup-hyp-ans unify-subst ttree)
                          (lookup-hyp hyp type-alist wrld unify-subst ttree)
@@ -13585,7 +14928,9 @@
                                                   (cons 'rewrote-to
                                                         (dumb-negate-lit
                                                          rewritten-atm))
-                                                  unify-subst ttree))))))
+                                                  unify-subst
+                                                  (accumulate-rw-cache
+                                                   t new-ttree ttree)))))))
                                         ((if-tautologyp rewritten-atm)
                                          (mv step-limit t nil unify-subst
                                              new-ttree))
@@ -13620,13 +14965,16 @@
                                                     (cons 'rewrote-to
                                                           rewritten-atm)
                                                     unify-subst
-                                                    ttree))))))))))))))))))))
+                                                    (accumulate-rw-cache
+                                                     t
+                                                     new-ttree
+                                                     ttree)))))))))))))))))))))
                       (cond
                        (relieve-hyp-ans
                         (mv step-limit relieve-hyp-ans failure-reason
                             unify-subst
                             (if memo-active
-                                (cons-tag-trees ttree0 ttree)
+                                (cons-tag-trees-rw-cache-first ttree ttree0)
                               ttree0)
                             (cond
                              (memo-entry
@@ -13643,23 +14991,26 @@
                                       (cons (cons restricted-unify-subst ttree0)
                                             nil))
                                (if (eq memo :start) nil memo)))
-                             (t memo)))) ; fixed in v2-8; formerly nil
+                             (t memo))))
                        (t (mv step-limit relieve-hyp-ans failure-reason
-                              unify-subst ttree memo)))))))))))))))
+                              unify-subst
+                              (accumulate-rw-cache t ttree0 ttree)
+                              memo)))))))))))))))
 
 (defun relieve-hyps1 (rune target hyps backchain-limit-lst
                            unify-subst bkptr unify-subst0
-                           ttree0 allp ; &extra formals
+                           ttree0 allp
+                           rw-cache-alist rw-cache-alist-new ; &extra formals
                            rdepth step-limit
                            type-alist obj geneqv wrld state fnstack ancestors
                            backchain-limit
                            simplify-clause-pot-lst rcnst gstack
                            ttree)
 
-; In order to make relieve-hyps a No-Change Loser without making it
-; have to test the answer to its own recursive calls, we have to pass
-; down the original unify-subst and ttree so that when it fails it can
-; return them instead of the accumulated ones it otherwise would have.
+; In order to make relieve-hyps a No-Change Loser (modulo rw-cache) without
+; making it have to test the answer to its own recursive calls, we have to pass
+; down the original unify-subst and ttree so that when it fails it can return
+; them instead of the accumulated ones it otherwise would have.
 
 ; Parameter allp is nil iff rune has behavior :match-free :once (as opposed to
 ; :match-free :all).  Its legal non-nil values are explained in a comment in
@@ -13667,6 +15018,12 @@
 ; allp does not change if we fail, but if allp is :start or an alist then its
 ; returned value can change even if relieve-hyps1 fails, in order for it to
 ; serve its memoization purpose.
+
+; We accumulate updates to make to rw-cache-alist into parameter
+; rw-cache-alist-new, which is ultimately returned.  Note that
+; relieve-hyps1-free-1 and relieve-hyps1-free-2 take responsibility for
+; extending rw-cache-alist-new.  Note that rw-cache-alist-new contains only new
+; entries, rather than extending rw-cache-alist.
 
   (declare (ignore obj geneqv)
            (type (unsigned-byte 29) rdepth)
@@ -13679,44 +15036,46 @@
 ; function pass nils into them.
 
   (the-mv
-   6
+   7
    (signed-byte 30)
-   (cond ((null hyps) (mv step-limit t nil unify-subst ttree allp))
-         (t
-          (sl-let
-           (relieve-hyp-ans failure-reason new-unify-subst new-ttree
-                            allp)
-           (with-accumulated-persistence
-            rune
-            ((the (signed-byte 30) step-limit)
-             relieve-hyp-ans failure-reason new-unify-subst new-ttree allp)
+   (cond
+    ((null hyps)
+     (mv step-limit t nil unify-subst ttree allp rw-cache-alist-new))
+    (t
+     (sl-let
+      (relieve-hyp-ans failure-reason new-unify-subst new-ttree allp)
+      (with-accumulated-persistence
+       rune
+       ((the (signed-byte 30) step-limit)
+        relieve-hyp-ans failure-reason new-unify-subst new-ttree allp)
 
 ; Even in the "special case" for relieve-hyp, we can mark this as a success
 ; because it will ultimately be counted as a failure if the surrounding call of
 ; relieve-hyps fails.
 
-            relieve-hyp-ans
-            (rewrite-entry (relieve-hyp rune target (car hyps)
-                                        unify-subst bkptr allp)
-                           :backchain-limit 
-                           (new-backchain-limit (car backchain-limit-lst)
-                                                backchain-limit
-                                                ancestors)
-                           :obj nil
-                           :geneqv nil)
-            bkptr)
-           (cond
-            ((eq relieve-hyp-ans t)
-             (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
-                                           (cdr backchain-limit-lst)
-                                           new-unify-subst
-                                           (1+ bkptr)
-                                           unify-subst0 ttree0
-                                           allp)
-                            :obj nil
-                            :geneqv nil
-                            :ttree new-ttree))
-            (relieve-hyp-ans
+       relieve-hyp-ans
+       (rewrite-entry (relieve-hyp rune target (car hyps)
+                                   unify-subst bkptr allp)
+                      :backchain-limit 
+                      (new-backchain-limit (car backchain-limit-lst)
+                                           backchain-limit
+                                           ancestors)
+                      :obj nil
+                      :geneqv nil)
+       bkptr)
+      (cond
+       ((eq relieve-hyp-ans t)
+        (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
+                                      (cdr backchain-limit-lst)
+                                      new-unify-subst
+                                      (1+ bkptr)
+                                      unify-subst0 ttree0
+                                      allp
+                                      rw-cache-alist rw-cache-alist-new)
+                       :obj nil
+                       :geneqv nil
+                       :ttree new-ttree))
+       (relieve-hyp-ans
 
 ; As explained in the "SPECIAL CASE" comment in relieve-hyp, relieve-hyp
 ; returned (mv step-limit term typ unify-subst ttree allp).  We enter a loop in
@@ -13724,15 +15083,15 @@
 ; instantiating the variables in term that are free with respect to
 ; unify-subst.
 
-             (let* ((hyp (car hyps))
-                    (forcep1 (and (nvariablep hyp)
-                                  (not (fquotep hyp))
-                                  (or (eq (ffn-symb hyp) 'force)
-                                      (eq (ffn-symb hyp) 'case-split))))
-                    (forcer-fn (and forcep1 (ffn-symb hyp)))
-                    (hyp (if forcep1 (fargn hyp 1) (car hyps)))
-                    (force-flg (ok-to-force rcnst))
-                    (forcep (and forcep1 force-flg)))
+        (let* ((hyp (car hyps))
+               (forcep1 (and (nvariablep hyp)
+                             (not (fquotep hyp))
+                             (or (eq (ffn-symb hyp) 'force)
+                                 (eq (ffn-symb hyp) 'case-split))))
+               (forcer-fn (and forcep1 (ffn-symb hyp)))
+               (hyp (if forcep1 (fargn hyp 1) (car hyps)))
+               (force-flg (ok-to-force rcnst))
+               (forcep (and forcep1 force-flg)))
 
 ; The following call of relieve-hyps1-free-1 will return an "activated" allp
 ; structure even if the current allp is t.  But if the current allp is t, then
@@ -13741,93 +15100,132 @@
 ; relieve-hyps1 under the call of relieve-hyps that we are inside.  So, the
 ; returned value for allp is irrelevant if the current allp is t.
 
-               (sl-let (relieve-hyps-ans failure-reason-lst unify-subst
-                                         ttree allp)
-                       (rewrite-entry
-                        (relieve-hyps1-free-1 relieve-hyp-ans ; term
-                                              failure-reason  ; typ
-                                              hyp
-                                              type-alist
-                                              forcer-fn
-                                              forcep
-                                              force-flg
-                                              rune target hyps
-                                              backchain-limit-lst
-                                              unify-subst bkptr
-                                              unify-subst0
-                                              ttree0
-                                              (activate-memo allp))
-                        :obj nil
-                        :geneqv nil)
-                       (mv step-limit relieve-hyps-ans
-                           (and (null relieve-hyps-ans)
-                                (f-get-global 'gstackp state) ; optimization
-                                (cond (failure-reason-lst
-                                       (list* bkptr
-                                              'free-vars
-                                              (reverse failure-reason-lst)))
-                                      (t ; variable binding failed
-                                       (list* bkptr 'free-vars 'hyp-vars
-                                              (reverse
-                                               (set-difference-assoc-eq
-                                                (all-vars hyp)
-                                                unify-subst))))))
-                           unify-subst ttree allp))))
-            (t (mv step-limit nil (cons bkptr failure-reason) unify-subst0
-                   ttree0 allp))))))))
+          (sl-let (relieve-hyps-ans failure-reason-lst unify-subst
+                                    ttree allp rw-cache-alist-new)
+                  (rewrite-entry
+                   (relieve-hyps1-free-1 relieve-hyp-ans ; term
+                                         failure-reason  ; typ
+                                         hyp
+                                         type-alist
+                                         forcer-fn
+                                         forcep
+                                         force-flg
+                                         rune target hyps
+                                         backchain-limit-lst
+                                         unify-subst bkptr
+                                         unify-subst0
+                                         ttree0
+                                         (activate-memo allp)
+                                         rw-cache-alist
+                                         rw-cache-alist-new)
+                   :obj nil
+                   :geneqv nil)
+                  (mv step-limit relieve-hyps-ans
+                      (and (null relieve-hyps-ans)
+                           (cond ((null (f-get-global 'gstackp state))
+                                  nil) ; save some conses
+                                 (failure-reason-lst
+                                  (list* bkptr
+                                         'free-vars
+                                         failure-reason-lst))
+                                 (t ; There were no variable bindings.
+                                  (list* bkptr 'free-vars 'hyp-vars
+                                         (reverse
+                                          (set-difference-assoc-eq
+                                           (all-vars hyp)
+                                           unify-subst))))))
+                      unify-subst ttree allp rw-cache-alist-new))))
+       (t (mv step-limit nil (cons bkptr failure-reason) unify-subst0
+              (accumulate-rw-cache t new-ttree ttree0)
+              allp rw-cache-alist-new))))))))
 
-(defun relieve-hyps1-free-1 (term typ hyp rest-type-alist forcer-fn forcep force-flg
-                                  rune target hyps backchain-limit-lst
-                                  unify-subst bkptr unify-subst0
-                                  ttree0 allp ; &extra formals
-                                  rdepth step-limit
-                                  type-alist obj geneqv wrld state fnstack ancestors
-                                  backchain-limit
-                                  simplify-clause-pot-lst rcnst gstack
-                                  ttree)
+(defun relieve-hyps1-free-1
+  (term typ hyp rest-type-alist forcer-fn forcep force-flg
+        rune target hyps backchain-limit-lst
+        unify-subst bkptr unify-subst0
+        ttree0 allp rw-cache-alist rw-cache-alist-new ; &extra formals
+        rdepth step-limit
+        type-alist obj geneqv wrld state fnstack ancestors
+        backchain-limit
+        simplify-clause-pot-lst rcnst gstack
+        ttree)
 
 ; We search the type-alist in order to extend unify-subst so that a
 ; corresponding instance of term has type typ.  Then (with a call to
 ; relieve-hyps1-free-2) we search ground units in an attempt to extend
 ; unify-subst to make term true.
 
-; We return six values: a new step-limit, a relieve-hyps-ans, a
+; We return seven values: a new step-limit, a relieve-hyps-ans, a
 ; failure-reason-lst that is a list of pairs (cons extended-unify-subst_i
-; failure-reason_i), a unify-subst extending the given unify-subst, a ttree,
-; and a resulting allp.  Each failure-reason_i corresponds to the attempt to
-; relieve hyps using extended-unify-subst_i, an extension of unify-subst.  The
-; failure-reason-lst is used in tilde-@-failure-reason-free-phrase to explain
-; why each attempt at extending the unify-subst failed to succeed, except if
-; this list is empty, then a 'hyp-vars token is used in its place (see
-; relieve-hyps1).
+; failure-reason_i), a unify-subst extending the given unify-subst, a ttree, a
+; resulting allp, and an alist extending rw-cache-alist-new that will
+; ultimately (in relieve-hyps) be merged into rw-cache-alist (and a
+; corresponding alist for the "nil" cache).  Each failure-reason_i corresponds
+; to the attempt to relieve hyps using extended-unify-subst_i, an extension of
+; unify-subst.  The failure-reason-lst is used in
+; tilde-@-failure-reason-free-phrase to explain why each attempt at extending
+; the unify-subst failed to succeed, except if this list is empty, then a
+; 'hyp-vars token is used in its place (see relieve-hyps1).
 
   (declare (ignore obj geneqv)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
   (the-mv
-   6
+   7
    (signed-byte 30)
-   (mv-let (ans new-unify-subst new-ttree new-rest-type-alist)
-           (search-type-alist+ term typ rest-type-alist unify-subst ttree wrld)
-           (cond
-            (ans
-             (sl-let
-              (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp)
-              (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
-                                            (cdr backchain-limit-lst)
-                                            new-unify-subst
-                                            (1+ bkptr)
-                                            unify-subst0 ttree0 allp)
-                             :obj nil
-                             :geneqv nil
-                             :ttree new-ttree)
+   (mv-let
+    (ans new-unify-subst new-ttree new-rest-type-alist)
+    (search-type-alist+ term typ rest-type-alist unify-subst ttree wrld)
+    (cond
+     (ans
+      (mv-let
+       (cached-failure-reason-free cached-failure-reason)
+       (rw-cached-failure-pair new-unify-subst rw-cache-alist)
+       (sl-let
+        (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp
+                          inferior-rw-cache-alist-new)
+        (cond
+         (cached-failure-reason
+          (mv step-limit nil
+              (and (f-get-global 'gstackp state) ; cons optimization
+                   (cons 'cached cached-failure-reason))
+              unify-subst ttree allp nil))
+         (t
+          (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
+                                        (cdr backchain-limit-lst)
+                                        new-unify-subst
+                                        (1+ bkptr)
+                                        unify-subst0 ttree0 allp
+                                        (cdr cached-failure-reason-free)
+                                        nil)
+                         :obj nil
+                         :geneqv nil
+                         :ttree new-ttree)))
+        (let ((rw-cache-alist-new
+               (extend-rw-cache-alist-free rcnst
+                                           new-unify-subst
+                                           inferior-rw-cache-alist-new
+                                           rw-cache-alist-new)))
+          (cond
+           (relieve-hyps-ans
+            (mv step-limit relieve-hyps-ans nil unify-subst1 ttree1 allp
+                rw-cache-alist-new))
+           (t
+            (let ((rw-cache-alist-new ; add normal-failure reason
+                   (rw-cache-add-failure-reason rcnst
+                                                new-unify-subst
+                                                failure-reason
+                                                rw-cache-alist-new)))
               (cond
-               (relieve-hyps-ans
-                (mv step-limit relieve-hyps-ans nil unify-subst1 ttree1 allp))
                ((not allp) ; hence original allp is nil
                 (mv step-limit nil
-                    (list (cons new-unify-subst failure-reason)) ; failure-reason-lst
-                    unify-subst0 ttree0 nil))
+                    (and (f-get-global 'gstackp state) ; cons optimization
+                         (list (cons new-unify-subst
+                                     failure-reason)))
+                    unify-subst0
+                    (accumulate-rw-cache t ttree1 ttree0)
+                    nil ; allp
+                    rw-cache-alist-new))
                (t ; look for the next binding in the type-alist
                 (rewrite-entry-extending-failure
                  new-unify-subst
@@ -13838,34 +15236,38 @@
                                        backchain-limit-lst
                                        unify-subst
                                        bkptr
-                                       unify-subst0 ttree0 allp)
+                                       unify-subst0 ttree0 allp
+                                       rw-cache-alist rw-cache-alist-new)
                  :obj nil
-                 :geneqv nil)))))
-            (t ; failed to relieve hyp using rest-type-alist
-             (rewrite-entry
-              (relieve-hyps1-free-2 hyp
-                                    (relevant-ground-lemmas hyp wrld)
-                                    forcer-fn forcep
-                                    (access rewrite-constant rcnst
-                                            :current-enabled-structure)
-                                    force-flg
-                                    rune target hyps
-                                    backchain-limit-lst
-                                    unify-subst
-                                    bkptr
-                                    unify-subst0 ttree0 allp)
-              :obj nil
-              :geneqv nil))))))
+                 :geneqv nil
+                 :ttree (accumulate-rw-cache t ttree1 ttree)))))))))))
+     (t ; failed to relieve hyp using rest-type-alist
+      (rewrite-entry
+       (relieve-hyps1-free-2 hyp
+                             (relevant-ground-lemmas hyp wrld)
+                             forcer-fn forcep
+                             (access rewrite-constant rcnst
+                                     :current-enabled-structure)
+                             force-flg
+                             rune target hyps
+                             backchain-limit-lst
+                             unify-subst
+                             bkptr
+                             unify-subst0 ttree0 allp
+                             rw-cache-alist rw-cache-alist-new)
+       :obj nil
+       :geneqv nil))))))
 
-(defun relieve-hyps1-free-2 (hyp lemmas forcer-fn forcep ens force-flg
-                                 rune target hyps backchain-limit-lst
-                                 unify-subst bkptr unify-subst0
-                                 ttree0 allp ; &extra formals
-                                 rdepth step-limit
-                                 type-alist obj geneqv wrld state fnstack ancestors
-                                 backchain-limit
-                                 simplify-clause-pot-lst rcnst gstack
-                                 ttree)
+(defun relieve-hyps1-free-2
+  (hyp lemmas forcer-fn forcep ens force-flg
+       rune target hyps backchain-limit-lst
+       unify-subst bkptr unify-subst0
+       ttree0 allp rw-cache-alist rw-cache-alist-new ; &extra formals
+       rdepth step-limit
+       type-alist obj geneqv wrld state fnstack ancestors
+       backchain-limit
+       simplify-clause-pot-lst rcnst gstack
+       ttree)
 
 ; We search ground units in an attempt to extend unify-subst to make term true,
 ; As with relieve-hyps1-free-1, we return a relieve-hyps-ans, a
@@ -13878,7 +15280,7 @@
            (type (signed-byte 30) step-limit))
 
   (the-mv
-   6
+   7
    (signed-byte 30)
    (cond
     ((endp lemmas)
@@ -13911,67 +15313,139 @@
              ttree)))
         (cond
          (force-flg
-          (sl-let
-           (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp)
-           (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
-                                         (cdr backchain-limit-lst)
-                                         fully-bound-unify-subst
-                                         (1+ bkptr)
-                                         unify-subst0 ttree0 allp)
-                          :obj nil
-                          :geneqv nil)
-           (declare (ignore failure-reason))
-           (cond (relieve-hyps-ans
-                  (mv step-limit relieve-hyps-ans
-                      nil ; failure-reason-lst
-                      unify-subst1 ttree1 allp))
-                 (t ; treat failure to force as failure to find any bindings
-                  (mv step-limit nil
-                      nil ; failure-reason-lst
-                      unify-subst0 ttree0 allp)))))
+          (mv-let
+           (cached-failure-reason-free cached-failure-reason)
+           (rw-cached-failure-pair fully-bound-unify-subst rw-cache-alist)
+           (cond
+            (cached-failure-reason
+             (mv step-limit nil
+                 (and (f-get-global 'gstackp state) ; cons optimization
+                      (list                         ; failure-reason-lst
+                       (cons fully-bound-unify-subst
+                             (cons 'cached cached-failure-reason))))
+                 unify-subst0
+                 (accumulate-rw-cache t ttree ttree0)
+                 allp rw-cache-alist-new))
+            (t
+             (sl-let
+              (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp
+                                inferior-rw-cache-alist-new)
+              (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
+                                            (cdr backchain-limit-lst)
+                                            fully-bound-unify-subst
+                                            (1+ bkptr)
+                                            unify-subst0 ttree0 allp
+                                            (cdr cached-failure-reason-free)
+                                            nil)
+                             :obj nil
+                             :geneqv nil)
+              (let ((rw-cache-alist-new
+                     (extend-rw-cache-alist-free
+                      rcnst
+                      fully-bound-unify-subst
+                      inferior-rw-cache-alist-new
+                      rw-cache-alist-new)))
+                (cond (relieve-hyps-ans
+                       (mv step-limit relieve-hyps-ans
+                           nil ; failure-reason-lst
+                           unify-subst1 ttree1 allp rw-cache-alist-new))
+                      (t
+                       (mv step-limit nil
+                           (and (f-get-global 'gstackp state) ; cons optimization
+                                (list (cons fully-bound-unify-subst
+                                            failure-reason)))
+                           unify-subst0
+                           (accumulate-rw-cache t ttree1 ttree0)
+                           allp
+                           (rw-cache-add-failure-reason
+                            rcnst
+                            fully-bound-unify-subst
+                            failure-reason
+                            rw-cache-alist-new))))))))))
          (t (mv step-limit nil
                 nil ; failure-reason-lst
-                unify-subst0 ttree0 allp))))))
+                unify-subst0
+                (accumulate-rw-cache t ttree ttree0)
+                allp rw-cache-alist-new))))))
     (t
-     (mv-let (winp new-unify-subst new-ttree rest-lemmas)
-             (search-ground-units1
-              hyp unify-subst lemmas type-alist
-              ens force-flg wrld ttree)
-             (cond
-              (winp
-               (sl-let
-                (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp)
-                (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
-                                              (cdr backchain-limit-lst)
-                                              new-unify-subst
-                                              (1+ bkptr)
-                                              unify-subst0 ttree0 allp)
-                               :obj nil
-                               :geneqv nil
-                               :ttree new-ttree)
+     (mv-let
+      (winp new-unify-subst new-ttree rest-lemmas)
+      (search-ground-units1
+       hyp unify-subst lemmas type-alist
+       ens force-flg wrld ttree)
+      (cond
+       (winp
+        (mv-let
+         (cached-failure-reason-free cached-failure-reason)
+         (rw-cached-failure-pair new-unify-subst rw-cache-alist)
+         (sl-let
+          (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp
+                            inferior-rw-cache-alist-new)
+          (cond
+           (cached-failure-reason
+            (mv step-limit nil
+                (and (f-get-global 'gstackp state) ; cons optimization
+                     (list                         ; failure-reason-lst
+                      (cons new-unify-subst
+                            (cons 'cached cached-failure-reason))))
+                unify-subst ttree allp nil))
+           (t
+            (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
+                                          (cdr backchain-limit-lst)
+                                          new-unify-subst
+                                          (1+ bkptr)
+                                          unify-subst0 ttree0 allp
+                                          (cdr cached-failure-reason-free)
+                                          nil)
+                           :obj nil
+                           :geneqv nil
+                           :ttree new-ttree)))
+          (let ((rw-cache-alist-new
+                 (extend-rw-cache-alist-free rcnst
+                                             new-unify-subst
+                                             inferior-rw-cache-alist-new
+                                             rw-cache-alist-new)))
+            (cond
+             (relieve-hyps-ans
+              (mv step-limit relieve-hyps-ans nil unify-subst1 ttree1 allp
+                  rw-cache-alist-new))
+             (t
+              (let ((rw-cache-alist-new ; add normal-failure reason
+                     (rw-cache-add-failure-reason rcnst
+                                                  new-unify-subst
+                                                  failure-reason
+                                                  rw-cache-alist-new)))
                 (cond
-                 (relieve-hyps-ans
-                  (mv step-limit relieve-hyps-ans nil unify-subst1 ttree1 allp))
                  ((not allp) ; hence original allp is nil
                   (mv step-limit nil
-                      (list (cons new-unify-subst failure-reason))
-                      unify-subst0 ttree0 nil))
+                      (and (f-get-global 'gstackp state) ; cons optimization
+                           (list                         ; failure-reason-lst
+                            (cons new-unify-subst
+                                  failure-reason)))
+                      unify-subst0
+                      (accumulate-rw-cache t ttree1 ttree0)
+                      nil rw-cache-alist-new))
                  (t
                   (rewrite-entry-extending-failure
                    new-unify-subst
                    failure-reason
-                   (relieve-hyps1-free-2 hyp rest-lemmas forcer-fn forcep
-                                         ens force-flg
-                                         rune target hyps
-                                         backchain-limit-lst
-                                         unify-subst
-                                         bkptr
-                                         unify-subst0 ttree0 allp)
+                   (relieve-hyps1-free-2
+                    hyp rest-lemmas forcer-fn forcep ens force-flg rune
+                    target hyps backchain-limit-lst unify-subst bkptr
+                    unify-subst0 ttree0 allp rw-cache-alist rw-cache-alist-new)
                    :obj nil
-                   :geneqv nil)))))
-              (t (mv step-limit nil
-                     nil ; failure-reason-lst
-                     unify-subst0 ttree0 allp))))))))
+                   :geneqv nil
+                   :ttree (accumulate-rw-cache t ttree1 ttree)))))))))))
+       (t (mv step-limit nil
+              nil ; failure-reason-lst
+              unify-subst0
+
+; We believe that new-ttree is unlikely to have rw-cache entries that are not
+; already in ttree0, as they would generally (always?) come from type-set
+; computations.  But we expect the following call to be cheap, so we make it.
+
+              (accumulate-rw-cache t new-ttree ttree0)
+              allp rw-cache-alist-new))))))))
 
 (defun relieve-hyps (rune target hyps backchain-limit-lst
                           unify-subst allp ; &extra formals
@@ -13985,7 +15459,9 @@
 ; either t or nil, according to whether or not we are to attempt all free
 ; variable matches until we succeed.
 
-; This function is a No-Change Loser.
+; This function is a No-Change Loser modulo rw-cache: only the values of
+; 'rw-cache-any-tag and 'rw-cache-nil-tag may differ between the input and
+; output ttrees.
 
   (declare (ignore obj geneqv)
            (type (unsigned-byte 29) rdepth)
@@ -14000,28 +15476,111 @@
   (the-mv
    5
    (signed-byte 30)
-   (sl-let (relieve-hyps-ans failure-reason unify-subst ttree allp)
-           (rewrite-entry (relieve-hyps1 rune target hyps
-                                         backchain-limit-lst
-                                         unify-subst 1
-                                         unify-subst ttree allp)
-                          :obj nil
-                          :geneqv nil
+   (let* ((ttree-saved ttree)
+          (rw-cache-active-p (rw-cache-active-p rcnst))
+          (cached-failure-entry
+           (and rw-cache-active-p
+                (relieve-hyp-failure-entry rune unify-subst hyps ttree
+                                           step-limit)))
+          (cached-failure-reason-raw
+           (and cached-failure-entry
+                (access rw-cache-entry cached-failure-entry :failure-reason)))
+          (cached-failure-reason-free-p
+           (and (consp cached-failure-reason-raw)
+                (free-failure-p cached-failure-reason-raw)))
+          (cached-failure-reason-free
+           (and cached-failure-reason-free-p
+                (equal (access rw-cache-entry cached-failure-entry
+                               :hyp-info)
+                       hyps)
+                cached-failure-reason-raw))
+          (cached-failure-reason
+           (and (not cached-failure-reason-free-p)
+                cached-failure-reason-raw))
+          (debug
+           (and cached-failure-reason
+                (rw-cache-debug rune target unify-subst
+                                cached-failure-reason step-limit))))
+     (cond
+      ((and cached-failure-reason
+            (not debug))
+       (mv step-limit nil
+           (and (f-get-global 'gstackp state) ; cons optimization
+                (cons 'cached cached-failure-reason))
+           unify-subst ttree))
+      (t (let ((step-limit-saved step-limit)
+               (unify-subst-saved unify-subst)
+               (old-rw-cache-alist (cdr cached-failure-reason-free)))
+           (sl-let (relieve-hyps-ans failure-reason unify-subst ttree allp
+                                     new-rw-cache-alist)
+                   (rewrite-entry
+                    (relieve-hyps1 rune target hyps backchain-limit-lst
+                                   unify-subst 1 unify-subst ttree allp
+                                   old-rw-cache-alist nil)
+                    :obj nil
+                    :geneqv nil
 
 ; If we are doing non-linear arithmetic, we will be rewriting linear
 ; terms under a different theory than the standard one.  However, when
 ; relieving hypotheses, we want to use the standard one, so we make
 ; sure that that is what we are using.
 
-                          :rcnst
-                          (if (eq (access rewrite-constant rcnst 
-                                          :active-theory)
-                                  :standard)
-                              rcnst
-                            (change rewrite-constant rcnst
-                                    :active-theory :standard)))
-           (declare (ignore allp))
-           (mv step-limit relieve-hyps-ans failure-reason unify-subst ttree))))
+                    :rcnst
+                    (if (eq (access rewrite-constant rcnst 
+                                    :active-theory)
+                            :standard)
+                        rcnst
+                      (change rewrite-constant rcnst
+                              :active-theory :standard)))
+                   (declare (ignore allp))
+                   (cond ((and debug relieve-hyps-ans)
+                          (prog2$
+                           (rw-cache-debug-action
+                            rune target unify-subst-saved
+                            cached-failure-reason step-limit-saved)
+                           (mv step-limit nil cached-failure-reason
+                               unify-subst-saved ttree-saved)))
+                         (t (mv step-limit relieve-hyps-ans failure-reason
+                                unify-subst
+                                (cond
+                                 ((or relieve-hyps-ans
+                                      backchain-limit
+                                      (not rw-cache-active-p))
+                                  ttree)
+                                 (new-rw-cache-alist ; free vars case
+                                  (note-relieve-hyps-failure-free
+                                   rune unify-subst hyps
+                                   ttree
+                                   cached-failure-entry
+                                   old-rw-cache-alist
+                                   new-rw-cache-alist
+
+; At one time we only saved the step-limit in debug mode, so that when we merge
+; rw-caches after calls of cons-tag-trees, we avoid essentially duplicated
+; rw-cache-entry records, differing only in their :step-limit fields.  However,
+; we now save the step-limit unconditionally, because we may be calling
+; merge-lexorder-fast a lot and the :step-limit field of a rw-cache-entry
+; record can give a quick result.  The potential for rare duplication seems
+; harmless.
+
+                                   step-limit-saved))
+                                 (t
+
+; We cache the rewriting failure into the ttree.  It would be a mistake to
+; extend the rw-cache if there is a backchain-limit, because a later lookup
+; might be made with a different backchain-limit.  This may be why
+; Prime-property-lemma, in distributed book
+; workshops/2006/cowles-gamboa-euclid/Euclid/ed3.lisp, fails with
+; :rw-cache-state :atom.
+
+                                  (note-relieve-hyp-failure
+                                   rune unify-subst failure-reason
+                                   ttree hyps
+
+; See comment above about regarding our formerly saving the step-limit only in
+; debug mode.
+
+                                   step-limit-saved)))))))))))))
 
 (defun rewrite-with-lemma (term lemma ; &extra formals
                                 rdepth step-limit
@@ -14033,7 +15592,11 @@
 
 ; The four values returned by this function are: a new step-limit, t or nil
 ; indicating whether lemma was used to rewrite term, the rewritten version of
-; term, and the final version of ttree.  This is a No-Change Loser.
+; term, and the final version of ttree.
+
+; This function is a No-Change Loser modulo rw-cache: only the values of
+; 'rw-cache-any-tag and 'rw-cache-nil-tag may differ between the input and
+; output ttrees.
 
   (declare (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
@@ -14143,7 +15706,7 @@
                                  term ttree))
                             (t
                              (sl-let
-                              (relieve-hyps-ans failure-reason unify-subst ttree1)
+                              (relieve-hyps-ans failure-reason unify-subst ttree)
                               (rewrite-entry (relieve-hyps
 
 ; The next argument of relieve-hyps is a rune on which to "blame" a
@@ -14222,7 +15785,7 @@
                                                    (access rewrite-rule lemma :equiv)
                                                    geneqv
                                                    wrld)
-                                                  (push-lemma rune ttree1)))
+                                                  (push-lemma rune ttree)))
                                   :conc
                                   hyps)
                                  (mv step-limit t rewritten-rhs ttree)))
@@ -14370,8 +15933,11 @@
                                   simplify-clause-pot-lst rcnst gstack ttree)
 
 ; Try to rewrite term with the lemmas in lemmas.  Return t or nil indicating
-; success, the rewritten term, and the final ttree.  This function is a
-; No-Change Loser.
+; success, the rewritten term, and the final ttree.
+
+; This function is a No-Change Loser modulo rw-cache: only the values of
+; 'rw-cache-any-tag and 'rw-cache-nil-tag may differ between the input and
+; output ttrees.
 
   (declare (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
@@ -14440,8 +16006,8 @@
                     (or (lambda-body fn)
                         (er hard 'rewrite-fncall
                             "We had thought that a lambda function symbol ~
-                            always has a non-nil lambda-body, but the ~
-                            following lambda does not: ~x0"
+                             always has a non-nil lambda-body, but the ~
+                             following lambda does not: ~x0"
                             fn))
                   (or (access rewrite-rule rule :rhs)
                       "We had thought that a rewrite-rule always has a non-nil ~
@@ -14501,7 +16067,8 @@
                   (rewrite-solidify term type-alist obj geneqv
                                     (access rewrite-constant rcnst
                                             :current-enabled-structure)
-                                    wrld ttree
+                                    wrld
+                                    (accumulate-rw-cache t ttree1 ttree)
                                     simplify-clause-pot-lst
                                     (access rewrite-constant rcnst :pt))))
                 (t (mv step-limit rewritten-body ttree1)))))))
@@ -14587,7 +16154,7 @@
                         ((the (signed-byte 30) step-limit) term-out ttree)
                         t ; considered a success unless the parent with-acc-p fails
                         (sl-let
-                         (rewritten-body ttree1)
+                         (rewritten-body new-ttree1)
                          (rewrite-entry (rewrite body unify-subst 'body)
                                         :fnstack new-fnstack
                                         :ttree ttree1)
@@ -14595,8 +16162,10 @@
 ; Again, we use ttree1 to accumulate the successful rewrites and we'll
 ; return it in our answer if we like our answer.
 
-                         (cond
-                          ((null recursivep)
+                         (let ((ttree1 (restore-rw-cache-any-tag new-ttree1
+                                                                 ttree1)))
+                           (cond
+                            ((null recursivep)
 
 ; We are dealing with a nonrecursive fn.  If we are at the top-level of the
 ; clause but the expanded body has too many IFs in it compared to the number
@@ -14604,37 +16173,38 @@
 ; the args will be clausified out soon and then this will be permitted to
 ; open.
 
-                           (cond
-                            ((and (not (recursive-fn-on-fnstackp fnstack))
-                                  (too-many-ifs-post-rewrite args
-                                                             rewritten-body))
-                             (prog2$
-                              (brkpt2 nil 'too-many-ifs-post-rewrite unify-subst
-                                      gstack rewritten-body ttree1 rcnst state)
-                              (prepend-step-limit
-                               2
-                               (rewrite-solidify
-                                term type-alist obj geneqv
-                                (access rewrite-constant rcnst
-                                        :current-enabled-structure)
-                                wrld ttree
-                                simplify-clause-pot-lst
-                                (access rewrite-constant rcnst :pt)))))
-                            (t (prog2$
-                                (brkpt2 t nil unify-subst gstack
-                                        rewritten-body ttree1 rcnst state)
-                                (mv step-limit
-                                    rewritten-body
-                                    (push-lemma rune ttree1))))))
-                          ((rewrite-fncallp
-                            term rewritten-body
-                            (if (cdr recursivep) recursivep nil)
-                            (access rewrite-constant rcnst
-                                    :top-clause)
-                            (access rewrite-constant rcnst
-                                    :current-clause)
-                            (cdr (access rewrite-rule rule :heuristic-info)))
-                           (cond 
+                             (cond
+                              ((and (not (recursive-fn-on-fnstackp fnstack))
+                                    (too-many-ifs-post-rewrite args
+                                                               rewritten-body))
+                               (prog2$
+                                (brkpt2 nil 'too-many-ifs-post-rewrite unify-subst
+                                        gstack rewritten-body ttree1 rcnst state)
+                                (prepend-step-limit
+                                 2
+                                 (rewrite-solidify
+                                  term type-alist obj geneqv
+                                  (access rewrite-constant rcnst
+                                          :current-enabled-structure)
+                                  wrld
+                                  (accumulate-rw-cache t ttree1 ttree)
+                                  simplify-clause-pot-lst
+                                  (access rewrite-constant rcnst :pt)))))
+                              (t (prog2$
+                                  (brkpt2 t nil unify-subst gstack
+                                          rewritten-body ttree1 rcnst state)
+                                  (mv step-limit
+                                      rewritten-body
+                                      (push-lemma rune ttree1))))))
+                            ((rewrite-fncallp
+                              term rewritten-body
+                              (if (cdr recursivep) recursivep nil)
+                              (access rewrite-constant rcnst
+                                      :top-clause)
+                              (access rewrite-constant rcnst
+                                      :current-clause)
+                              (cdr (access rewrite-rule rule :heuristic-info)))
+                             (cond 
 
 ; Once upon a time, before we were heavily involved with ACL2 proofs, we had
 ; the following code here.  Roughly speaking this code forced recursive
@@ -14691,13 +16261,13 @@
 
 ; takes forever unless you give the two disable hints shown above.
 
-                            ((contains-rewriteable-callp
-                              fn rewritten-body
-                              (if (cdr recursivep)
-                                  recursivep
-                                nil)
-                              (access rewrite-constant
-                                      rcnst :terms-to-be-ignored-by-rewrite))
+                              ((contains-rewriteable-callp
+                                fn rewritten-body
+                                (if (cdr recursivep)
+                                    recursivep
+                                  nil)
+                                (access rewrite-constant
+                                        rcnst :terms-to-be-ignored-by-rewrite))
 
 ; Ok, we are prepared to rewrite the once rewritten body.  But beware!  There
 ; is an infinite loop lurking here.  It can be broken by using :fnstack
@@ -14708,40 +16278,45 @@
 ; fnstack-term-member for a discussion of loop avoidance (which involved code
 ; that was here before Version_2.9).
 
-                             (sl-let (rewritten-body ttree2)
-                                     (rewrite-entry (rewrite rewritten-body nil
-                                                             'rewritten-body)
-                                                    :fnstack
+                               (sl-let (rewritten-body ttree2)
+                                       (rewrite-entry (rewrite rewritten-body nil
+                                                               'rewritten-body)
+                                                      :fnstack
 
 ; See the reference to fnstack in the comment above.
 
-                                                    (cons (cons :TERM term)
-                                                          fnstack)
-                                                    :ttree (push-lemma rune
-                                                                       ttree1))
-                                     (prog2$
-                                      (brkpt2 t nil unify-subst gstack
-                                              rewritten-body ttree2 rcnst state)
-                                      (mv step-limit rewritten-body ttree2))))
-                            (t 
-                             (prog2$
-                              (brkpt2 t nil unify-subst gstack rewritten-body
-                                      ttree1 rcnst state)
-                              (mv step-limit
-                                  rewritten-body
-                                  (push-lemma rune ttree1))))))
-                          (t (prog2$
-                              (brkpt2 nil 'rewrite-fncallp unify-subst gstack
-                                      rewritten-body ttree1 rcnst state)
-                              (prepend-step-limit
-                               2
-                               (rewrite-solidify
-                                term type-alist obj geneqv
-                                (access rewrite-constant rcnst
-                                        :current-enabled-structure)
-                                wrld ttree simplify-clause-pot-lst
-                                (access rewrite-constant rcnst
-                                        :pt)))))))
+                                                      (cons (cons :TERM term)
+                                                            fnstack)
+                                                      :ttree (push-lemma rune
+                                                                         ttree1))
+                                       (let ((ttree2
+                                              (restore-rw-cache-any-tag ttree2
+                                                                        ttree1)))
+                                         (prog2$
+                                          (brkpt2 t nil unify-subst gstack
+                                                  rewritten-body ttree2 rcnst state)
+                                          (mv step-limit rewritten-body ttree2)))))
+                              (t
+                               (prog2$
+                                (brkpt2 t nil unify-subst gstack rewritten-body
+                                        ttree1 rcnst state)
+                                (mv step-limit
+                                    rewritten-body
+                                    (push-lemma rune ttree1))))))
+                            (t (prog2$
+                                (brkpt2 nil 'rewrite-fncallp unify-subst gstack
+                                        rewritten-body ttree1 rcnst state)
+                                (prepend-step-limit
+                                 2
+                                 (rewrite-solidify
+                                  term type-alist obj geneqv
+                                  (access rewrite-constant rcnst
+                                          :current-enabled-structure)
+                                  wrld
+                                  (accumulate-rw-cache t ttree1 ttree)
+                                  simplify-clause-pot-lst
+                                  (access rewrite-constant rcnst
+                                          :pt))))))))
                         :conc
                         (access rewrite-rule rule :hyps)))
                       (t (prog2$
@@ -14752,7 +16327,9 @@
                            (rewrite-solidify term type-alist obj geneqv
                                              (access rewrite-constant rcnst
                                                      :current-enabled-structure)
-                                             wrld ttree
+                                             wrld
+                                             (accumulate-rw-cache
+                                              t ttree1 ttree)
                                              simplify-clause-pot-lst
                                              (access rewrite-constant rcnst
                                                      :pt)))))))))))
@@ -14852,20 +16429,28 @@
                             (fcons-term* 'hide term)
                             (push-lemma (fn-rune-nume 'hide nil nil wrld)
                                         (cons-tag-trees ts-ttree ttree))))
-                       (t (sl-let
-                           (rewritten-left ttree)
-                           (rewrite-entry (rewrite new-term alist 2)
-                                          :type-alist true-type-alist)
-                           (prepend-step-limit
-                            2
-                            (rewrite-if11 (fcons-term* 'if
-                                                       rewritten-test
-                                                       rewritten-left
-                                                       (fcons-term* 'hide term))
-                                          type-alist geneqv wrld
-                                          (push-lemma (fn-rune-nume 'hide nil
-                                                                    nil wrld)
-                                                      ttree))))))))))
+                       (t
+
+; We are tempted to bind ttree here to (normalize-rw-any-cache ttree), as we do
+; in a similar situation in rewrite-if.  But limited experiments suggest that
+; we may get better performance without doing so.
+
+                        (sl-let
+                         (rewritten-left ttree1)
+                         (rewrite-entry (rewrite new-term alist 2)
+                                        :type-alist true-type-alist
+                                        :ttree (rw-cache-enter-context ttree))
+                         (prepend-step-limit
+                          2
+                          (rewrite-if11 (fcons-term* 'if
+                                                     rewritten-test
+                                                     rewritten-left
+                                                     (fcons-term* 'hide term))
+                                        type-alist geneqv wrld
+                                        (push-lemma (fn-rune-nume 'hide nil
+                                                                  nil wrld)
+                                                    (rw-cache-exit-context
+                                                     ttree ttree1)))))))))))
                  (new-term
                   (rewrite-entry (rewrite new-term alist 'expansion)
                                  :ttree (push-lemma? rune ttree)))
@@ -15221,7 +16806,7 @@
                                         wrld
                                         (push-lemma
                                          rune
-                                         ttree1)
+                                         (accumulate-rw-cache t ttree2 ttree1))
                                         state))))
                (cond
                 ((and (null (cdr lst))
@@ -15364,9 +16949,9 @@
       (let ((new-poly (add-linear-term new-entry 'rhs poly)))
         (mv step-limit
             (change poly new-poly
-                    :ttree (cons-tag-trees new-ttree
-                                           (access poly new-poly
-                                                   :ttree))
+                    :ttree (cons-tag-trees-rw-cache new-ttree
+                                                    (access poly new-poly
+                                                            :ttree))
                     :parents (marry-parents
                               (collect-parents new-ttree)
                               (access poly new-poly :parents)))))))))
@@ -15690,7 +17275,7 @@
          (ratp2 (access poly poly2 :rational-poly-p)))
      (let ((pre-poly (make poly
                            :alist nil
-                           :ttree (cons-tag-trees ttree1 ttree2)
+                           :ttree (cons-tag-trees-rw-cache ttree1 ttree2)
                            :parents (marry-parents parents1 parents2)
                            :constant (* const1 const2)
                            :relation (if (and (eq rel1 '<)
@@ -17752,7 +19337,7 @@
                             *t*)
                           (push-lemma
                            *fake-rune-for-linear*
-                           (cons-tag-trees
+                           (cons-tag-trees-rw-cache
                             (access poly contradictionp :ttree)
                             ttree))))
                      (t (mv step-limit nil term ttree)))))

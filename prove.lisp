@@ -4721,8 +4721,131 @@
          (pstk
           (push-clause clause hist pspv wrld state))))))))
 
+(defun@par process-backtrack-hint (cl-id clause clauses processor new-hist
+                                         new-pspv ctx wrld state)
+
+; A step of the indicated clause with cl-id through the waterfall, via
+; waterfall-step, has tentatively returned the indicated clauses, new-hist, and
+; new-pspv.  If the original pspv contains a :backtrack hint-setting, we replace
+; the hint-settings with the computed hint that it specifies.
+
+  (let ((backtrack-hint (cdr (assoc-eq :backtrack
+                                       (access prove-spec-var new-pspv
+                                               :hint-settings)))))
+    (cond
+     (backtrack-hint
+      (assert$
+       (eq (car backtrack-hint) 'eval-and-translate-hint-expression)
+       (mv-let@par
+        (erp val state)
+        (eval-and-translate-hint-expression@par
+         (cdr backtrack-hint) ; tuple of the form (name-tree flg term)
+         cl-id clause wrld
+         :OMITTED ; stable-under-simplificationp, unused in :backtrack hints
+         new-hist new-pspv clauses processor
+         :OMITTED ; keyword-alist, unused in :backtrack hints
+         'backtrack (override-hints wrld) ctx state)
+        (cond (erp (mv@par t nil nil state))
+              ((assert$ (listp val)
+                        (eq (car val) :computed-hint-replacement))
+               (mv@par nil
+                       (cddr val)
+                       (assert$ (consp (cdr val))
+                                (case (cadr val)
+                                  ((t) (list backtrack-hint))
+                                  ((nil) nil)
+                                  (otherwise (cadr val))))
+                       state))
+              (t (mv@par nil val nil state))))))
+     (t (mv@par nil nil nil state)))))
+
+; Before we can can complete the definition of waterfall-step, we need support
+; for rw-cache operations (see the Essay on Rw-cache) at the pspv level.
+
+(defun set-rw-cache-state-in-pspv (pspv val)
+  (declare (xargs :guard (member-eq val *legal-rw-cache-states*)))
+  (change prove-spec-var pspv
+          :rewrite-constant
+          (change rewrite-constant
+                  (access prove-spec-var pspv :rewrite-constant)
+                  :rw-cache-state val)))
+
+(defun maybe-set-rw-cache-state-disabled (pspv)
+  (cond ((eq (access rewrite-constant
+                     (access prove-spec-var pspv :rewrite-constant)
+                     :rw-cache-state)
+             t)
+         (set-rw-cache-state-in-pspv pspv :disabled))
+        (t pspv)))
+
+(defun maybe-set-rw-cache-state-enabled (pspv)
+  (cond ((eq (access rewrite-constant
+                     (access prove-spec-var pspv :rewrite-constant)
+                     :rw-cache-state)
+             :disabled)
+         (set-rw-cache-state-in-pspv pspv t))
+        (t pspv)))
+
+(defun accumulate-rw-cache-into-pspv (processor ttree pspv)
+
+; This function is called during waterfall-step before modifying the pspv, in
+; order to accumulate the rw-cache of ttree into the ttree of pspv.  This need
+; only happen when the processor can put significant entries into the rw-cache,
+; so this function is a no-op unless the processor is simplify-clause.  This
+; need not happen when simplify-clause produces a hit, since the ttree will
+; accumulated into the pspv elsewhere (so that runes are reported, forcing
+; takes place, etc.); so it should suffice to call this function when there is
+; a miss.  If the ttree is empty or if the rw-cache is not active, there is
+; nothing to accumulate.  Also, as we clear the rw-cache for every call of
+; rewrite-atm, there is no need to accumulate when the rw-cache-state is
+; :atom.
+
+  (cond ((and (eq processor 'simplify-clause)
+              ttree
+              (eq (access rewrite-constant
+                          (access prove-spec-var pspv :rewrite-constant)
+                          :rw-cache-state)
+                  t))
+         (let ((new-ttree-or-nil
+                (accumulate-rw-cache? nil ttree (access prove-spec-var pspv
+                                                        :tag-tree))))
+           (cond (new-ttree-or-nil
+                  (change prove-spec-var pspv
+                          :tag-tree
+                          new-ttree-or-nil))
+                 (t pspv))))
+        (t pspv)))
+
+(defun erase-rw-cache-from-pspv (pspv)
+
+; Erase all rw-cache tagged objects from the ttree of pspv.  We could call
+; erase-rw-cache, but since we have the opportunity to call
+; remove-tag-from-tag-tree! to save assoc-eq calls, we do so.
+
+  (let ((ttree (access prove-spec-var pspv :tag-tree)))
+    (cond ((tagged-objectsp 'rw-cache-any-tag ttree)
+           (change prove-spec-var pspv
+                   :tag-tree (remove-tag-from-tag-tree
+                              'rw-cache-nil-tag
+                              (remove-tag-from-tag-tree!
+                               'rw-cache-any-tag
+                               ttree))))
+          ((tagged-objectsp 'rw-cache-nil-tag ttree)
+           (change prove-spec-var pspv
+                   :tag-tree (remove-tag-from-tag-tree!
+                              'rw-cache-nil-tag
+                              ttree)))
+          (t pspv))))
+
+(defconst *simplify-clause-ledge*
+  (member-eq 'simplify-clause *preprocess-clause-ledge*))
+
+(defconst *simplify-clause-ledge-complement*
+  (set-difference-eq *preprocess-clause-ledge*
+                     *simplify-clause-ledge*))
+
 (defun@par waterfall-step-cleanup (processor cl-id clause hist wrld state
-                                             signal clauses ttree new-pspv
+                                             signal clauses ttree pspv new-pspv
                                              step-limit)
 
 ; Signal here can be either some form of HIT (hit, hit-rewrite,
@@ -4856,54 +4979,29 @@
       (cond
        ((consp (access history-entry ; (SPECIOUS . processor)
                        (car new-hist) :processor))
-        (mv@par 'MISS nil ttree new-hist nil state))
+        (mv@par 'MISS nil ttree new-hist
+                (accumulate-rw-cache-into-pspv processor ttree pspv)
+                state))
        (t (mv@par signal clauses ttree new-hist
-                  (put-ttree-into-pspv ttree new-pspv)
+                  (cond
+                   ((or (member-eq processor *simplify-clause-ledge-complement*)
+                        (eq processor 'settled-down-clause))
+                    (put-ttree-into-pspv ttree new-pspv))
+                   ((eq processor 'simplify-clause)
+                    (put-ttree-into-pspv ttree
+                                         (maybe-set-rw-cache-state-enabled
+                                          new-pspv)))
+                   (t
+                    (put-ttree-into-pspv (erase-rw-cache ttree)
+                                         (maybe-set-rw-cache-state-disabled
+                                          (erase-rw-cache-from-pspv new-pspv)))))
                   state)))))))
-
-(defun@par process-backtrack-hint (cl-id clause clauses processor new-hist
-                                         new-pspv ctx wrld state)
-
-; A step of the indicated clause with cl-id through the waterfall, via
-; waterfall-step, has tentatively returned the indicated clauses, new-hist, and
-; new-pspv.  If the original pspv contains a :backtrack hint-setting, we replace
-; the hint-settings with the computed hint that it specifies.
-
-  (let ((backtrack-hint (cdr (assoc-eq :backtrack
-                                       (access prove-spec-var new-pspv
-                                               :hint-settings)))))
-    (cond
-     (backtrack-hint
-      (assert$
-       (eq (car backtrack-hint) 'eval-and-translate-hint-expression)
-       (mv-let@par
-        (erp val state)
-        (eval-and-translate-hint-expression@par
-         (cdr backtrack-hint) ; tuple of the form (name-tree flg term)
-         cl-id clause wrld
-         :OMITTED ; stable-under-simplificationp, unused in :backtrack hints
-         new-hist new-pspv clauses processor
-         :OMITTED ; keyword-alist, unused in :backtrack hints
-         'backtrack (override-hints wrld) ctx state)
-        (cond (erp (mv@par t nil nil state))
-              ((assert$ (listp val)
-                        (eq (car val) :computed-hint-replacement))
-               (mv@par nil
-                       (cddr val)
-                       (assert$ (consp (cdr val))
-                                (case (cadr val)
-                                  ((t) (list backtrack-hint))
-                                  ((nil) nil)
-                                  (otherwise (cadr val))))
-                       state))
-              (t (mv@par nil val nil state))))))
-     (t (mv@par nil nil nil state)))))
 
 (defun@par waterfall-step (processor cl-id clause hist pspv wrld ctx state
                                      step-limit)
 
 ; Processor is one of the known waterfall processors.  This function applies
-; processor and returns seven results: step-limit signal, clauses, new-hist,
+; processor and returns seven results: step-limit, signal, clauses, new-hist,
 ; new-pspv, jppl-flg, and state.
 
 ; All processor functions take as input a clause, its hist, a pspv, wrld, and
@@ -4933,7 +5031,8 @@
 ; specious-appearing output but we never mark it as 'SPECIOUS because we want
 ; to be able to assoc for settled-down-clause and we know it's specious anyway.
 
-; We typically return (mv signal clauses new-hist new-pspv jppl-flg state).
+; We typically return (mv step-limit signal clauses new-hist new-pspv jppl-flg
+; state).
 
 ; Signal             Meaning
 
@@ -4943,8 +5042,9 @@
 ;                are all irrelevant (and nil).
 
 ; 'miss          The processor did not apply or was specious.  Clauses,
-;                new-pspv, and jppl-flg are irrelevant and nil.  But
-;                new-hist has the specious processor recorded in it.
+;                and jppl-flg are irrelevant and nil, but new-hist has the
+;                specious processor recorded in it, and new-pspv records
+;                rw-cache modifications to the :tag-tree of the input pspv.
 ;                State is unchanged.
 
 ; 'abort         Like a "hit", except that we are not to continue with
@@ -5024,13 +5124,15 @@
                           (declare (ignore erp val))
                           (mv@par 'error nil nil nil nil state)))
              ((eq signal 'miss)
-              (mv@par 'miss nil hist nil nil state))
+              (mv@par 'miss nil hist
+                      (accumulate-rw-cache-into-pspv processor ttree pspv)
+                      nil state))
              (t
               (mv-let@par
                (signal clauses ttree new-hist new-pspv state)
                (waterfall-step-cleanup@par processor cl-id clause hist wrld
-                                           state signal clauses ttree new-pspv
-                                           step-limit)
+                                           state signal clauses ttree pspv
+                                           new-pspv step-limit)
                (mv-let@par
                 (erp new-hint-settings new-hints state)
                 (cond
@@ -5897,10 +5999,15 @@
           (t (mv@par nil nil clauses state)))))
 
 ; This completes the preliminaries for hints and we can get on with the
-; waterfall itself.
+; waterfall itself soon.  But first we provide additional rw-cache support (see
+; the Essay on Rw-cache).
 
 #+acl2-par
 (defun pspv-equal-except-for-tag-tree-and-pool (x y)
+
+; Warning: Keep this in sync with prove-spec-var.  The only fields not
+; addressed here should be the :tag-tree and :pool fields.
+
   (and (equal (access prove-spec-var x :rewrite-constant)
               (access prove-spec-var y :rewrite-constant))
        (equal (access prove-spec-var x :induction-hyp-terms)
@@ -6005,7 +6112,7 @@
 
 #+acl2-par
 (defun combine-pspv-tag-trees (x y)
-  (cons-tag-trees y x))
+  (cons-tag-trees-rw-cache y x))
 
 #+acl2-par
 (defun print-pspvs (base x y debug-pspv)
@@ -6236,6 +6343,34 @@
                  nil)
        t))))
 
+; This completes the preliminaries for hints and we can get on with the
+; waterfall itself soon.  But first we provide additional rw-cache support (see
+; the Essay on Rw-cache).
+
+(defun erase-rw-cache-any-tag-from-pspv (pspv)
+
+; We maintain the invariant that the "nil" cache is contained in the "any"
+; cache. 
+
+  (let ((ttree (access prove-spec-var pspv :tag-tree)))
+    (cond ((tagged-objectsp 'rw-cache-any-tag ttree)
+           (change prove-spec-var pspv
+                   :tag-tree (rw-cache-enter-context ttree)))
+          (t pspv))))
+
+(defun restore-rw-cache-state-in-pspv (new-pspv old-pspv)
+  (let* ((old-rcnst (access prove-spec-var old-pspv :rewrite-constant))
+         (old-rw-cache-state (access rewrite-constant old-rcnst
+                                     :rw-cache-state))
+         (new-rcnst (access prove-spec-var new-pspv :rewrite-constant))
+         (new-rw-cache-state (access rewrite-constant new-rcnst
+                                     :rw-cache-state)))
+    (cond ((eq old-rw-cache-state new-rw-cache-state) new-pspv)
+          (t (change prove-spec-var new-pspv
+                     :rewrite-constant
+                     (change rewrite-constant new-rcnst
+                             :rw-cache-state old-rw-cache-state))))))
+
 (mutual-recursion@par
 
 (defun@par waterfall1
@@ -6263,7 +6398,7 @@
 ; state      - the usual state
 ; step-limit - the new step-limit.
 
-; We return 4 values.  The first is a new step-limit.  The second is a "signal"
+; We return 5 values.  The first is a new step-limit.  The second is a "signal"
 ; and is one of 'abort, 'error, or 'continue.  The last three returned values
 ; are the final values of pspv, the jppl-flg for this trip through the falls,
 ; and state.  The 'abort signal is used by our recursive processing to
@@ -6304,7 +6439,7 @@
          
       (mv@par step-limit 'error nil nil state))  
      (t (sl-let@par
-         (signal pspv jppl-flg state)
+         (signal new-pspv jppl-flg state)
          (cond
           ((null pair) ; There was no hint.
            (pprogn@par
@@ -6325,13 +6460,16 @@
               (car pair)
               ledge cl-id clause hist pspv (cdr pair) suppress-print ens wrld
               ctx state step-limit)))
-         (mv-let@par
-          (pspv state)
-          (cond ((or (eq signal 'miss)
-                     (eq signal 'error))
-                 (mv@par pspv state))
-                (t (gag-state-exiting-cl-id@par signal cl-id pspv state)))
-          (mv@par step-limit signal pspv jppl-flg state))))))))
+         (let ((pspv (cond ((null pair)
+                            (restore-rw-cache-state-in-pspv new-pspv pspv))
+                           (t new-pspv))))
+           (mv-let@par
+            (pspv state)
+            (cond ((or (eq signal 'miss)
+                       (eq signal 'error))
+                   (mv@par pspv state))
+                  (t (gag-state-exiting-cl-id@par signal cl-id pspv state)))
+            (mv@par step-limit signal pspv jppl-flg state)))))))))
 
 (defun@par waterfall0-with-hint-settings 
   (hint-settings ledge cl-id clause hist pspv hints goal-already-printedp
@@ -6430,21 +6568,7 @@
                             (mv@par step-limit 'error nil nil nil nil state))
                    #-acl2-par
                    (mv@par step-limit 'error nil nil nil nil state))
-                  ((null pair)
-
-; No hint was applicable.  We do exactly the same thing we would have done
-; had (car ledge) not been 'eliminate-destructors-clause.  Keep these two
-; code segments in sync!
-               
-                   (cond
-                    ((member-eq (car ledge)
-                                (assoc-eq :do-not
-                                          (access prove-spec-var pspv
-                                                  :hint-settings)))
-                     (mv@par step-limit 'miss nil hist nil nil state))
-                    (t (waterfall-step@par (car ledge) cl-id clause hist pspv
-                                           wrld ctx state step-limit))))
-                  (t
+                  (pair
 
 ; A hint was found.  The car of pair is the new hint-settings and the
 ; cdr of pair is the new value of hints.  We need to arrange for
@@ -6454,10 +6578,40 @@
 
                    (mv@par step-limit 
                            'top-of-waterfall-hint
-                           (car pair) hist (cdr pair) nil state)))))
+                           (car pair) hist (cdr pair) nil state))
+
+; Otherwise no hint was applicable.  We do exactly the same thing we would have
+; done had (car ledge) not been 'eliminate-destructors-clause, after checking
+; whether we should make a desperate final attempt to simplify, with caching
+; turned off.  Keep these two calls of waterfall-step in sync!
+               
+                  ((eq (access rewrite-constant
+                               (access prove-spec-var pspv
+                                       :rewrite-constant)
+                               :rw-cache-state)
+                       t)
+
+; We return an updated pspv, together with a bogus signal indicating that we
+; are to make a "desperation" run through the simplifier with the rw-cache
+; disabled.  The nil values returned below will be ignored.
+
+                   (mv@par step-limit
+                           'top-of-waterfall-avoid-rw-cache
+                           nil nil
+                           (set-rw-cache-state-in-pspv
+                            (erase-rw-cache-from-pspv pspv)
+                            :disabled)
+                           nil state))
+                  ((member-eq (car ledge)
+                              (assoc-eq :do-not
+                                        (access prove-spec-var pspv
+                                                :hint-settings)))
+                   (mv@par step-limit 'miss nil hist pspv nil state))
+                  (t (waterfall-step@par (car ledge) cl-id clause hist pspv
+                                         wrld ctx state step-limit)))))
     ((member-eq (car ledge)
                 (assoc-eq :do-not (access prove-spec-var pspv :hint-settings)))
-     (mv@par step-limit 'miss nil hist nil nil state))
+     (mv@par step-limit 'miss nil hist pspv nil state))
     (t (waterfall-step@par (car ledge) cl-id clause hist pspv wrld ctx state
                            step-limit))) 
    (cond
@@ -6547,7 +6701,8 @@
 
 ; We will act as though we have just discovered the hint-settings and leave it
 ; up to waterfall0-with-hint-settings to restore the pspv if necessary after
-; trying those hint-settings.
+; trying those hint-settings.  Note that the rw-cache is restored (as part of
+; the tag-tree, which is part of the rewrite-constant of the pspv).
 
                      (change prove-spec-var pspv :hint-settings
                              (delete-assoc-eq :backtrack
@@ -6582,6 +6737,15 @@
                   (cdr hist))
                  (t hist))
            pspv hints goal-already-printedp ens wrld ctx state step-limit)))
+        ((eq signal 'top-of-waterfall-avoid-rw-cache)
+
+; New-pspv already has the rw-cache disabled.  Pop up to simplify-clause.  The
+; next waterfall-step, which will be a simplify-clause step unless a :do-not
+; hint prohibits that, will re-enable the rw-cache.
+
+         (waterfall0@par *simplify-clause-ledge*
+                         cl-id clause hist new-pspv hints ens wrld ctx state
+                         step-limit))
         ((eq signal 'error)
          (mv@par step-limit 'error nil nil state))
         ((eq signal 'abort) 
@@ -6592,7 +6756,7 @@
                              cl-id
                              clause
                              new-hist ; used because of specious entries
-                             pspv
+                             new-pspv
                              hints
                              ens
                              wrld
@@ -6616,32 +6780,44 @@
            (erp
             (mv@par step-limit 'error nil nil state))
            (t
-            (waterfall1-lst@par
-             (cond ((eq (car ledge) 'settled-down-clause)
-                    'settled-down-clause)
-                   ((null clauses) 0)
-                   ((null (cdr clauses)) nil)
-                   (t (length clauses)))
-             cl-id
-             clauses
-             new-hist
-             (if hint-setting
-                 (change
-                  prove-spec-var new-pspv
-                  :hint-settings
-                  (remove1-equal hint-setting
-                                 (access prove-spec-var
-                                         new-pspv
-                                         :hint-settings)))
-               new-pspv)
-             new-jppl-flg
-             hints
-             (eq (car ledge) 'settled-down-clause)
-             ens
-             wrld
-             ctx
-             state
-             step-limit)))))))))))
+            (let ((new-pspv
+                   (if (cddr clauses)
+
+; We erase the "any" cache if there are at least two children, much as we erase
+; it (more accurately, replace it by the smaller "nil" cache) when diving into
+; a branch of an IF term.  Actually, we needn't erase the "any" cache if the
+; rw-cache is inactive.  But rather than consider carefully when the cache
+; becomes active and inactive due to hints, we simply go ahead and do the cheap
+; erase operation here.
+
+                       (erase-rw-cache-any-tag-from-pspv new-pspv)
+                     new-pspv)))
+              (waterfall1-lst@par
+               (cond ((eq (car ledge) 'settled-down-clause)
+                      'settled-down-clause)
+                     ((null clauses) 0)
+                     ((null (cdr clauses)) nil)
+                     (t (length clauses)))
+               cl-id
+               clauses
+               new-hist
+               (if hint-setting
+                   (change
+                    prove-spec-var new-pspv
+                    :hint-settings
+                    (remove1-equal hint-setting
+                                   (access prove-spec-var
+                                           new-pspv
+                                           :hint-settings)))
+                 new-pspv)
+               new-jppl-flg
+               hints
+               (eq (car ledge) 'settled-down-clause)
+               ens
+               wrld
+               ctx
+               state
+               step-limit))))))))))))
 
 (defun@par waterfall0-or-hit (ledge cl-id clause hist pspv hints ens wrld ctx
                                     state uhs-lst i branch-cnt revert-info
@@ -7209,7 +7385,9 @@
          (cond ((and (not (= forcing-round 0))
                      (null pool-lst))
                 (strip-cdrs x))
-               (t x))))
+               (t x)))
+        (pspv (maybe-set-rw-cache-state-disabled (erase-rw-cache-from-pspv
+                                                  pspv))))
     (pprogn
      (cond ((output-ignored-p 'proof-tree state)
             state)
@@ -8473,6 +8651,11 @@
                      (erp (mv erp nil state))
                      (t (value ttree))))))))
 
+(defun rw-cache-state (wrld)
+  (let ((pair (assoc-eq t (table-alist 'rw-cache-state-table wrld))))
+    (cond (pair (cdr pair))
+          (t *default-rw-cache-state*))))
+
 (defmacro make-rcnst (ens wrld &rest args)
 
 ; (Make-rcnst w) will make a rewrite-constant that is the result of filling in
@@ -8497,7 +8680,8 @@
                    :oncep-override (match-free-override ,wrld)
                    :case-split-limitations (case-split-limitations ,wrld)
                    :nonlinearp (non-linearp ,wrld)
-                   :backchain-limit-rw (backchain-limit ,wrld :rewrite))
+                   :backchain-limit-rw (backchain-limit ,wrld :rewrite)
+                   :rw-cache-state (rw-cache-state ,wrld))
            ,@args))
 
 (defmacro make-pspv (ens wrld &rest args)
