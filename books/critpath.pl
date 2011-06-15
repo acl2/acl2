@@ -89,6 +89,8 @@ my $HELP_MESSAGE = "
        --nopath     Suppress critical path information.
        --nolist     Suppress individual-files list.
 
+       -r, --real   Toggle real time versus user+system
+
        --help       Print this help message and exit.
 
        -t, --targets <filename>
@@ -106,6 +108,7 @@ my %OPTIONS = (
   'nopath'  => '',
   'nolist'  => '',
   'short'   => 1,
+  'real'    => 0
 );
 
 my @user_targets = ();
@@ -122,6 +125,7 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     'nopath' => \$OPTIONS{'nopath'},
 			     'nolist' => \$OPTIONS{'nolist'},
 			     'short=i' =>  \$OPTIONS{'short'},
+			     'real|r'  => \$OPTIONS{'real'},
 			     'debug|d' => \$debug,
 			     "targets|t=s"          
 			              => sub { shift;
@@ -187,7 +191,7 @@ foreach my $target (@targets) {
 $cache_file && store($cache, $cache_file);
 
 my $basecosts = {};
-read_costs(\%deps, $basecosts, $warnings);
+read_costs(\%deps, $basecosts, $warnings, $OPTIONS{'real'});
 print "done read_costs\n" if $debug;
 
 compute_cost_paths(\%deps, $basecosts, $costs, $warnings);

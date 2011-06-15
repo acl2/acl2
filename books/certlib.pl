@@ -172,22 +172,51 @@ sub get_cert_time {
 
     my $path = shift;
     my $warnings = shift;
+    my $use_realtime = shift;
 
     $path =~ s/\.cert$/\.time/;
     $path =~ s/\.acl2x$/\.acl2x\.time/;
     
     if (open (my $timefile, "<", $path)) {
+
+	# The following while loop works for GNU time, but 
+	# we now prefer one that works with the POSIX standard instead.
+	# while (my $the_line = <$timefile>) {
+	#     my $regexp = "^([0-9]*\\.[0-9]*)user ([0-9]*\\.[0-9]*)system";
+	#     my @res = $the_line =~ m/$regexp/;
+	#     if (@res) {
+	# 	close $timefile;
+	# 	return 0.0 + $res[0] + $res[1];
+	#     }
+	
+	# Should we go by user+system or just real time?
+	my $usertime;
+	my $systime;
+	my $realtime;
 	while (my $the_line = <$timefile>) {
-	    my $regexp = "^([0-9]*\\.[0-9]*)user ([0-9]*\\.[0-9]*)system";
-	    my @res = $the_line =~ m/$regexp/;
+	    my @res = $the_line =~ m/^(\S*)\s*([0-9]*)m([0-9]*\.[0-9]*)s/;
 	    if (@res) {
-		close $timefile;
-		return 0.0 + $res[0] + $res[1];
+		# print "$res[0]_$res[1]_$res[2]\n";
+		my $secs = 60*$res[1] + $res[2];
+		if ($res[0] eq "user") {
+		    $usertime = $secs;
+		} elsif ($res[0] eq "sys") {
+		    $systime = $secs;
+		} elsif ($res[0] eq "real") {
+		    $realtime = $secs;
+		}
 	    }
 	}
-	push(@$warnings, "Corrupt timings in $path\n");
 	close $timefile;
-	return 0;
+	if (!defined($usertime) || !defined($systime)) {
+	    push(@$warnings, "Corrupt timings in $path\n");
+	    return 0;
+	}
+	if ($use_realtime) {
+	    return 0.0 + $realtime;
+	} else {
+	    return 0.0 + $usertime + $systime;
+	}
     } else {
 	push(@$warnings, "Could not open $path: $!\n");
 	return 0;
@@ -199,10 +228,11 @@ sub read_costs {
     my $deps = shift;
     my $basecosts = shift;
     my $warnings = shift;
+    my $use_realtime = shift;
 
     foreach my $certfile (keys %{$deps}) {
 	if ($certfile =~ /\.(cert|acl2x)$/) {
-	    my $cost = get_cert_time($certfile, $warnings);
+	    my $cost = get_cert_time($certfile, $warnings, $use_realtime);
 	    $basecosts->{$certfile} = $cost;
 	}
     }

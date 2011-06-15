@@ -103,7 +103,7 @@ define make_cert
 	echo "$(OUTFILE_HEADER)" > $$OUTFILE ;\
 	if [ "$$TIME_CERT" != "" ] ;\
 	then \
-	  (env time -o $$TIMEFILE $$ACL2 < $$WORKXXXFILE 2>&1) >> $$OUTFILE ;\
+	  ( time ( ( $$ACL2 < $$WORKXXXFILE 2>&1) >> $$OUTFILE ) ) 2> $$TIMEFILE ;\
 	else \
 	  ($$ACL2 < $$WORKXXXFILE 2>&1) >> $$OUTFILE ;\
 	fi ;\
