@@ -93,7 +93,7 @@
 ; assoc-eq on histories to detect the presence of a history-entry for
 ; a given processor.  Do not move the processor field!
 
-  (processor ttree clause . signal)
+  (processor ttree #+acl2-par cl-id clause . signal)
   t)
 
 ; Processor is a waterfall processor (e.g., 'simplify-clause).  The

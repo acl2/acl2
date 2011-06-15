@@ -39721,12 +39721,11 @@
 ; is okay, because we don't really support time-limits right now anyway.
 
   `(mv-let (step-limit x1 x2 x3 x4) ; values that cannot be stobjs
-                       
            #+acl2-loop-only
            ,form ; so, form does not return a stobj
 
-; Parallelism wart: time-limit5-tag needs to be added to the list of tags that 
-; futures support.
+; Parallelism wart: time-limit5-tag needs to be added to the list of throw tags
+; that futures support.
 
            #-acl2-loop-only
            (catch 'time-limit5-tag
@@ -43484,6 +43483,7 @@ Lisp definition."
      maybe-warn-about-theory-simple
      maybe-warn-for-use-hint
      process-backtrack-hint
+     push-clause
      record-gag-state
      thanks-for-the-hint
      translate
@@ -43532,6 +43532,7 @@ Lisp definition."
      waterfall-msg
      waterfall-print-clause
      waterfall-step
+     waterfall-step1
      waterfall-step-cleanup
      waterfall0
      waterfall0-or-hit

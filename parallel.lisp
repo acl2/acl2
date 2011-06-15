@@ -53,6 +53,9 @@
 ; End of Section "To Consider".
 
 (defdoc parallelism
+
+; Parallelism wart: mention proof parallelism inside this topic.
+
   ":Doc-Section Parallelism
 
   experimental extension for evaluating forms in parallel~/
@@ -260,7 +263,7 @@
       state)))
 
 (defconst *waterfall-parallelism-values*
-  '(nil :full :top-level :resource-based :pseudo-serial))
+  '(nil :full :top-level :resource-based :pseudo-parallel))
 
 (defun waterfall-printing-value-for-parallelism-value (value)
 
@@ -270,14 +273,14 @@
   (cond ((eq value nil)
          :full)
         ((eq value :full)
-         :limited)
+         :very-limited)
         ((eq value :top-level)
-         :limited)
+         :very-limited)
         ((eq value :resource-based)
-         :limited)
+         :very-limited)
         (t 
-         (assert$ (eq value :pseudo-serial)
-                  :limited))))
+         (assert$ (eq value :pseudo-parallel)
+                  :very-limited))))
 
 ; Parallelism wart: either support the reading of state by computed hints, or
 ; explicitly disallow it with a user-friendly error message; modify :doc
@@ -352,6 +355,9 @@
   The use of ~ilc[wormhole]s is not recommended, as there may be race
   conditions.
 
+  When waterfall-parallelism is enabled (~pl[set-waterfall-parallelism]),
+  the use of ~ilc[set-inhibit-output-lst] may not fully inhibit proof output.
+
   If the host Lisp is Lispworks, you may see messages about misaligned conses.
   The state of the system may be corrupted after such a message has been
   printed.~/~/")
@@ -398,7 +404,7 @@
                (:top-level
                 "Parallelizing the proof of top-level subgoals only.  Setting ~
                  waterfall-printing to ~x0 (see :DOC set-waterfall-printing).")
-               (:pseudo-serial
+               (:pseudo-parallel
                 "Running the version of the waterfall prepared for parallel ~
                  execution (stateless).  However, we will evaluate this ~
                  version of the waterfall serially.  Setting ~
@@ -421,23 +427,23 @@
 
   ":Doc-Section Parallelism
 
-  configuring the parallel evaluation of the waterfall~/
+  configuring the parallel execution of the waterfall~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
   supporting parallel evaluation and proof; ~pl[parallelism].
 
   ~bv[]
   General Forms:
-  (set-waterfall-parallelism nil) ; serial evaluation
+  (set-waterfall-parallelism nil) ; serial execution
   (set-waterfall-parallelism :full)   ; always parallelize
   (set-waterfall-parallelism :top-level) ; parallelize top-level subgoals
   (set-waterfall-parallelism :resource-based) ; parallelize all subgoals, but
                                               ; only when resources are 
                                               ; available
-  (set-waterfall-parallelism :pseudo-serial)  ; serial evaluation of the
-                                              ; version of the waterfall made
-                                              ; for parallel execution
-                                              ; useful for debugging
+  (set-waterfall-parallelism :pseudo-parallel) ; serial execution of the
+                                               ; version of the waterfall made
+                                               ; for parallel execution
+                                               ; useful for debugging
   ~ev[]
   ~/
 
@@ -454,8 +460,6 @@
 ; Parallelism wart: add a reference to
 ; unsupported-waterfall-parallelism-features, above.
 
-; Parallelism wart: rename :psuedo-serial to :pseudo-parallel.
-
   (declare (xargs :guard
                   (or (member-eq value *waterfall-parallelism-values*)
                       (and (consp value)
@@ -471,7 +475,7 @@
       state)))
 
 (defun set-waterfall-printing-fn (val state)
-  (declare (xargs :guard (member-eq val '(:full :limited))))
+  (declare (xargs :guard (member-eq val '(:full :limited :very-limited))))
   (cond
    ((eq (f-get-global 'waterfall-printing state)
         val)
@@ -491,6 +495,11 @@
 
 (defmacro set-waterfall-printing (value)
 
+; Parallelism wart: after the checkpoint-like printing is finalized, revisit
+; this topic.  In particular, the explanation under :limited will be outdated,
+; and it could be good to reference a :doc topic that explains ACL2(p)
+; checkpoints (such a topic has yet to be written).
+
   ":Doc-Section Parallelism
 
   configuring the printing that occurs within the parallelized waterfall~/
@@ -502,6 +511,7 @@
   General Forms:
   (set-waterfall-printing :full)    ; print everything
   (set-waterfall-printing :limited) ; print a subset that's thought to be useful
+  (set-waterfall-printing :very-limited) ; print an even smaller subset
   ~ev[]
   ~/
 
@@ -509,11 +519,28 @@
   printing should occur when executing ACL2 with the parallelized version of the
   waterfall.  It only affects the printing that occurs when parallelism mode is
   enabled for the waterfall (~pl[set-waterfall-parallelism]).
-  ~/"
+
+  A value of ~c[:full] is intended to print the same output as in serial mode.
+  This output will be interleaved unless the waterfall-parallelism mode is one
+  of ~c[nil] or ~c[pseudo-parallel].
+
+  A value of ~c[:limited] omits most of the output that occurs in the serial
+  version of the waterfall.  Instead, the proof attempt prints proof
+  checkpoints, similar to (but still distinct from) gag-mode (see
+  ~ilc[set-gag-mode]).  As applies to much of the parallelism extension, the
+  presentation of these checkpoints is still under development, and feedback
+  concerning them is welcome.  The value of ~c[:limited] also prints messages
+  that indicate which subgoal is currently being proved.  Naturally, these
+  subgoal numbers can be out of order, because they can be proved in parallel.
+
+  A value of ~c[:very-limited] is treated the same as ~c[:limited], except that
+  instead of printing subgoal numbers, the proof attempt prints a
+  period (`~c[.]') each time it starts a new subgoal.~/"
 
   (declare (xargs :guard (member-equal value
                                        '(:full ':full
-                                               :limited ':limited))))
+                                               :limited ':limited
+                                               :very-limited ':very-limited))))
   `(let ((val ,value))
      (set-waterfall-printing-fn
       (cond ((consp val) (cadr val))
@@ -1054,6 +1081,37 @@
 
   The concept of early termination also applies to ~ilc[por], except that early
   termination occurs when an argument evaluates to non-~c[nil].~/")
+
+(defdoc parallel-push-for-inductions-and-subgoal-naming
+
+; Parallelism wart: figure out whether we'll be able to early terminate once
+; the second push occurs.  If not, discuss how the parallelized waterfall will
+; continue to prove beyond the second push of
+; '[maybe-]to-be-proved-by-induction (similar to having the :otf-flg set to t),
+; instead of immediately aborting to prove the original conjecture.
+
+  ":Doc-Section Parallelism
+  a discussion of the naming of subgoals pushed for induction~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].
+
+  The following discussion, concerning the naming of subgoals pushed for proof
+  by induction, only applies when waterfall parallelism is enabled
+  (~pl[set-waterfall-parallelism]).~/
+
+  When two sibling subgoals (e.g. 4.5 and 4.6) both push goals to be proved by
+  induction (e.g., 4.6 pushes *1 and 4.5 pushes *2), the second push doesn't
+  know about the first proof's push (the reason is an implementation detail
+  related to how the pool of clauses to be proved by induction is shared
+  between subgoals).  So, the number of the second pushed subgoal (e.g., *2)
+  gets printed as if the first push hasn't happened (e.g., *2 gets mistakenly
+  called *1).  Rather than fix this (the problem is inherent to the naming
+  scheme of ACL2), we punt and say what the name _could_ be (e.g., we print *2
+  for what's really *1).  The following non-theorem show-cases this decision.
+  ~bv[]
+  (thm (equal (append (car (cons x x)) y z) (append x x y)))
+  ~ev[]~/")
 
 (defun caar-is-declarep (x)
 

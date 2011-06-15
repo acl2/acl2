@@ -1185,7 +1185,97 @@
                   (t (remove-tag-from-tag-tree! 'assumption ttree)))))
           (t ttree))))
 
-(defun push-clause (cl hist pspv wrld state)
+#+acl2-par
+(defun find-the-first-checkpoint (h checkpoint-processors)
+
+; "H" is the history reversed, which really means h is in the order that the
+; entries were added.  E.g. the history entry for subgoal 1.2 is before the
+; entry for 1.1.4.  To remind us that this is not the "standard ACL2 history"
+; (which is often in the other order), we name the variable "h" instead of
+; "hist."
+
+  (cond ((atom h) ; occurs when we are at the top-level goal
+         nil)
+        ((atom (cdr h))
+         (car h)) ; maybe this should also be an error
+        ((member (access history-entry (cadr h) :processor)
+                 checkpoint-processors)
+         (car h))
+
+; Parallelism wart: We haven't thought through how specious entries affect this
+; function.  The following code is left as a hint at what might be needed.
+
+;        ((or (and (consp (access history-entry (cadr h) :processor))
+;                  (equal (access history-entry (cadr h) :processor)
+;                         'specious))
+        
+        (t (find-the-first-checkpoint (cdr h) checkpoint-processors))))
+
+#+acl2-par
+(defun acl2p-push-clause-printing (cl hist pspv wrld state)
+  (cond 
+   ((null cl)
+
+; The following non-theorem illustrates the case where we generate the clause
+; nil, and instead of printing the associated key checkpoint, we inform the
+; user that nil was generated from that checkpoint.
+
+; (thm (equal (append (car (cons x x)) y z) (append x x y)))
+
+    (cw "~%~%A goal of ~x0 has been generated!  Obviously, the proof attempt ~
+         has failed.~%"
+        cl))
+   (t
+    (let* ((hist-entry 
+          (find-the-first-checkpoint
+                (reverse hist) 
+                (f-get-global 'checkpoint-processors state)))
+
+         (checkpoint-clause 
+          (or (access history-entry hist-entry :clause)
+
+; We should be able to add an assertion that, if the hist-entry is nil (and
+; thus, the :clause field of hist-entry is also nil), cl always has the same
+; printed representation as the original conjecture.  However, since we do not
+; have access to the original conjecture in this function, we avoid such an
+; assertion.
+
+              cl))
+         (cl-id (access history-entry hist-entry :cl-id))
+         (cl-id (if cl-id cl-id *initial-clause-id*))
+         (forcing-round (access clause-id cl-id :forcing-round))
+         (old-pspv-pool-lst
+          (pool-lst (cdr (access prove-spec-var pspv :pool)))))
+    (with-output-lock
+     (progn$
+       (cw "~%~%([ A key ACL2(p) checkpoint:~%~%~s0~%"
+           (string-for-tilde-@-clause-id-phrase cl-id))
+       (cw "~x0" (prettyify-clause checkpoint-clause 
+                                 (let*-abstractionp state) 
+                                 wrld))
+
+; Parallelism wart: we are encountering a problem that we've known about from
+; within the first few months of looking at parallelizing the
+; waterfall.  When two sibling subgoals both push for induction, the second
+; push doesn't know about the first proof's push in parallel mode.  So, the
+; number of the second proof (e.g., *1.2) gets printed as if the first push
+; hasn't happened (e.g., *1.2 gets mistakenly called *1.1).  Rather than fix
+; this (the problem is inherent to the naming scheme of ACL2), we punt and say
+; what the name _could_ be (e.g., we print *1.1 for what's really *1.2).  The
+; following non-theorem show-cases this problem.  See :doc topic 
+; set-waterfall-printing.
+
+; (thm (equal (append (car (cons x x)) y z) (append x x y)))
+
+       (cw "~%~%The above subgoal may cause a goal to be pushed for proof by ~
+            induction.  The pushed goal's new name might be ~@0.  Note that ~
+            we may instead decide (either now or later) to prove the original ~
+            conjecture by induction.~%~%])~%~%"
+           (tilde-@-pool-name-phrase
+            forcing-round
+            old-pspv-pool-lst))))))))
+
+(defun@par push-clause (cl hist pspv wrld state)
 
 ; Roughly speaking, we drop cl into the pool of pspv and return.
 ; However, we sometimes cause the waterfall to abort further
@@ -1221,33 +1311,49 @@
 ; since waterfall0 assumes that it falls off the ledge only in that
 ; case.
 
-  (declare (ignore state wrld))
-  (let ((pool (access prove-spec-var pspv :pool))
-        (do-not-induct-hint-val
-         (cdr (assoc-eq :do-not-induct
-                        (access prove-spec-var pspv :hint-settings)))))
-    (cond
-     ((null cl)
+  (declare (ignorable state wrld)) ; actually ignored in #-acl2-par
+  (prog2$
+
+; Parallelism wart: we considered trying to print in a manner more consistent
+; with waterfall-msg1 but have currently opt'd for this simpler solution.
+; However, maybe using waterfall-msg1 would be better in the long-run.
+
+; Every branch of the cond below, with the exception of when cl is null,
+; results in a key ACL2(p) checkpoint.  As such, it is reasonable to print the
+; checkpoint at the very beginning of this function.
+; Acl2p-push-clause-printing contains code that handles the case where cl is
+; nil.
+
+; Parallelism wart: create a :doc topic on key ACL2(p) checkpoints and
+; reference it in the above comment.
+
+   (parallel-only@par (acl2p-push-clause-printing cl hist pspv wrld state))
+   (let ((pool (access prove-spec-var pspv :pool))
+         (do-not-induct-hint-val
+          (cdr (assoc-eq :do-not-induct
+                         (access prove-spec-var pspv :hint-settings)))))
+     (cond
+      ((null cl)
 
 ; The empty clause was produced.  Stop the waterfall by aborting.  Produce the
 ; ttree that expains the abort.  Drop the clause set containing the empty
 ; clause into the pool so that when we look for the next goal we see it and
 ; quit.
 
-      (mv 'abort
-          nil
-          (add-to-tag-tree! 'abort-cause 'empty-clause nil)
-          (change prove-spec-var pspv
-                  :pool (cons (make pool-element
-                                    :tag 'TO-BE-PROVED-BY-INDUCTION
-                                    :clause-set '(nil)
-                                    :hint-settings nil)
-                              pool))))
-     ((and (or (and (not (access prove-spec-var pspv :otf-flg))
-                    (eq do-not-induct-hint-val t))
-               (eq do-not-induct-hint-val :otf-flg-override))
-           (not (assoc-eq :induct (access prove-spec-var pspv
-                                          :hint-settings))))
+       (mv 'abort
+           nil
+           (add-to-tag-tree! 'abort-cause 'empty-clause nil)
+           (change prove-spec-var pspv
+                   :pool (cons (make pool-element
+                                     :tag 'TO-BE-PROVED-BY-INDUCTION
+                                     :clause-set '(nil)
+                                     :hint-settings nil)
+                               pool))))
+      ((and (or (and (not (access prove-spec-var pspv :otf-flg))
+                     (eq do-not-induct-hint-val t))
+                (eq do-not-induct-hint-val :otf-flg-override))
+            (not (assoc-eq :induct (access prove-spec-var pspv
+                                           :hint-settings))))
 
 ; We need induction but can't use it.  Stop the waterfall by aborting.  Produce
 ; the ttree that expains the abort.  Drop the clause set containing the empty
@@ -1256,30 +1362,30 @@
 ; do not want to quit just yet.  We will see the :do-not-induct value again in
 ; prove-loop1 when we return to the goal we are pushing.
 
-      (mv 'abort
-          nil
-          (add-to-tag-tree! 'abort-cause
-                            (if (eq do-not-induct-hint-val :otf-flg-override)
-                                'do-not-induct-otf-flg-override
-                              'do-not-induct)
-                            nil)
-          (change prove-spec-var pspv
-                  :pool (cons (make pool-element
-                                    :tag 'TO-BE-PROVED-BY-INDUCTION
-                                    :clause-set '(nil)
-                                    :hint-settings nil)
-                              pool))))
-     ((and (not (access prove-spec-var pspv :otf-flg))
-           (not (eq do-not-induct-hint-val :otf))
-           (or
-            (and (null pool) ;(a)
-                 (more-than-simplifiedp hist)
-                 (not (assoc-eq :induct (access prove-spec-var pspv
-                                                :hint-settings))))
-            (and pool ;(b)
-                 (not (assoc-eq 'being-proved-by-induction pool))
-                 (not (assoc-eq :induct (access prove-spec-var pspv
-                                                :hint-settings))))))
+       (mv 'abort
+           nil
+           (add-to-tag-tree! 'abort-cause
+                             (if (eq do-not-induct-hint-val :otf-flg-override)
+                                 'do-not-induct-otf-flg-override
+                               'do-not-induct)
+                             nil)
+           (change prove-spec-var pspv
+                   :pool (cons (make pool-element
+                                     :tag 'TO-BE-PROVED-BY-INDUCTION
+                                     :clause-set '(nil)
+                                     :hint-settings nil)
+                               pool))))
+      ((and (not (access prove-spec-var pspv :otf-flg))
+            (not (eq do-not-induct-hint-val :otf))
+            (or
+             (and (null pool) ;(a)
+                  (more-than-simplifiedp hist)
+                  (not (assoc-eq :induct (access prove-spec-var pspv
+                                                 :hint-settings))))
+             (and pool ;(b)
+                  (not (assoc-eq 'being-proved-by-induction pool))
+                  (not (assoc-eq :induct (access prove-spec-var pspv
+                                                 :hint-settings))))))
 
 ; We have not been told to press Onward Thru the Fog and
 
@@ -1299,10 +1405,10 @@
 ; induction on.  The theorem that preprocess-clause screwed us on was HACK1.
 ; It screwed us by distributing * and GCD.
 
-      (mv 'abort
-          nil
-          (add-to-tag-tree! 'abort-cause 'revert nil)
-          (change prove-spec-var pspv
+       (mv 'abort
+           nil
+           (add-to-tag-tree! 'abort-cause 'revert nil)
+           (change prove-spec-var pspv
 
 ; Before Version_2.6 we did not modify the tag-tree here.  The result was that
 ; assumptions created by forcing before reverting to the original goal still
@@ -1332,10 +1438,10 @@
 ; from the :tag-tree of pspv, we would just replace that tag-tree by the empty
 ; tag-tree.  We do not want to get burned by a third such problem!
 
-                  :tag-tree nil
-                  :pool (list (make pool-element
-                                    :tag 'TO-BE-PROVED-BY-INDUCTION
-                                    :clause-set
+                   :tag-tree nil
+                   :pool (list (make pool-element
+                                     :tag 'TO-BE-PROVED-BY-INDUCTION
+                                     :clause-set
 
 ; At one time we clausified here.  But some experiments suggested that the
 ; prover can perhaps do better by simply doing its thing on each induction
@@ -1343,9 +1449,9 @@
 ; to induction as it would get if there were a hint of the form ("Goal" :induct
 ; term), where term is the user-supplied-term.
 
-                                    (list (list
-                                           (access prove-spec-var pspv
-                                                   :user-supplied-term)))
+                                     (list (list
+                                            (access prove-spec-var pspv
+                                                    :user-supplied-term)))
 
 ; Below we set the :hint-settings for the input clause, doing exactly what
 ; find-applicable-hint-settings does.  Unfortunately, we haven't defined that
@@ -1355,39 +1461,97 @@
 ; code the part we need.  We also remove top-level hints that were supposed to
 ; apply before we got to push-clause.
 
-                                    :hint-settings
-                                    (delete-assoc-eq-lst
-                                     (cons ':reorder *top-hint-keywords*)
+                                     :hint-settings
+                                     (delete-assoc-eq-lst
+                                      (cons ':reorder *top-hint-keywords*)
 
 ; We could also delete :induct, but we know it's not here!
 
-                                     (cdr
-                                      (assoc-equal
-                                       *initial-clause-id*
-                                       (access prove-spec-var pspv
-                                               :orig-hints)))))))))
-     ((and do-not-induct-hint-val
-           (not (member-eq do-not-induct-hint-val '(t :otf :otf-flg-override)))
-           (not (assoc-eq :induct
-                          (access prove-spec-var pspv :hint-settings))))
+                                      (cdr
+                                       (assoc-equal
+                                        *initial-clause-id*
+                                        (access prove-spec-var pspv
+                                                :orig-hints)))))))))
+      ((and do-not-induct-hint-val
+            (not (member-eq do-not-induct-hint-val '(t :otf :otf-flg-override)))
+            (not (assoc-eq :induct
+                           (access prove-spec-var pspv :hint-settings))))
 
 ; In this case, we have seen a :DO-NOT-INDUCT name hint (where name isn't t)
 ; that is not overridden by an :INDUCT hint.  We would like to give this clause
 ; a :BY.  We can't do it here, as explained above.  So we will 'MISS instead.
 
-      (mv 'miss nil nil nil))
-     (t (mv 'hit
-            nil
-            nil
-            (change prove-spec-var pspv
-                    :pool
-                    (cons
-                     (make pool-element
-                           :tag 'TO-BE-PROVED-BY-INDUCTION
-                           :clause-set (list cl)
-                           :hint-settings (access prove-spec-var pspv
-                                                  :hint-settings))
-                     pool)))))))
+       (mv 'miss nil nil nil))
+
+; Parallelism wart: it's unclear whether the branch of the conditional above
+; this comment or the #+acl2-par branch following it should come first.
+; :Mini-proveall breaks when the order is switched.  As of Jun 13, 2011, if you
+; trace push-clause, the relevant call and return of push-clause are search
+; results number 17 and 18.
+
+      #+acl2-par
+      ((and (serial-first-form-parallel-second-form@par nil t)
+            (not (access prove-spec-var pspv :otf-flg))
+            (not (eq do-not-induct-hint-val :otf))
+            (null pool)
+            ;; (not (more-than-simplifiedp hist)) ; implicit to the cond
+            (not (assoc-eq :induct (access prove-spec-var pspv
+                                           :hint-settings))))
+       (mv 'hit
+           nil
+           (add-to-tag-tree! 'abort-cause 'maybe-revert nil)
+           (change prove-spec-var pspv
+
+; Parallelism wart: There may be a bug in ACL2(p) related to the comment above
+; (in this function's definition) that starts with "Before Version_2.6 we did
+; not modify the tag-tree here."
+
+                   :tag-tree nil
+                   :pool 
+                   (append 
+                    (list 
+                     (list 'maybe-to-be-proved-by-induction
+                           (make pool-element
+                                 :tag 'TO-BE-PROVED-BY-INDUCTION
+                                 :clause-set (list cl)
+                                 :hint-settings (access prove-spec-var pspv
+                                                        :hint-settings))     
+                           (make pool-element
+                                 :tag 'TO-BE-PROVED-BY-INDUCTION
+                                 :clause-set
+                                     
+; See above comment that starts with "At one time we clausified here."
+
+                                 (list (list
+                                        (access prove-spec-var pspv
+                                                :user-supplied-term)))
+
+; See above comment that starts with "Below we set the :hint-settings for..."
+
+                                 :hint-settings
+                                 (delete-assoc-eq-lst
+                                  (cons ':reorder *top-hint-keywords*)
+
+; We could also delete :induct, but we know it's not here!
+
+                                  (cdr
+                                   (assoc-equal
+                                    *initial-clause-id*
+                                    (access prove-spec-var pspv
+                                            :orig-hints)))))))
+                    pool))))
+      (t (mv 'hit
+             nil
+             nil
+             (change prove-spec-var pspv
+                     :pool
+                     (cons
+                      (make pool-element
+                            :tag 'TO-BE-PROVED-BY-INDUCTION
+                            :clause-set (list cl)
+                            :hint-settings (access prove-spec-var pspv
+                                                   :hint-settings))
+                      pool))))))))
 
 ; Below is the soundness bug example reported by Francisco J. Martin-Mateos.
 
@@ -3459,29 +3623,6 @@
                    (pspv ttree new-hist clauses signal cl-id processor msg)
                    (waterfall-msg1 processor cl-id signal clauses new-hist msg 
                                    ttree pspv state))) 
-             
-             ((and (not (some-parent-is-checkpointp
-
-; Parallelism wart: we are uncertain that (cdr new-hist) is the correct value
-; to pass into some-parent-is-checkpointp.
-
-                         (cdr new-hist)
-                         state))
-                   (member-eq processor (f-get-global 'checkpoint-processors
-                                                      state)))
-              
-; Currently, if this clause is later proved by induction, we don't renege on
-; our printing of this checkpoint.  So, maybe we should only be printing at
-; push-clause time.  This could be implemented by setting a thread-local
-; variable that stores the message to print, but in an effort to avoid global
-; variables, I'm ommitting that for now.
-              
-              (with-output-lock
-               (prog2$
-                (cw "~%About to print a subgoal that could be a checkpoint.  ~
-                      It is likely we will attempt to prove it by induction ~
-                      at a later moment.~%")
-                (waterfall-print-clause@par nil cl-id clause state))))
              (t 'no-need-to-print)))
       (increment-timer@par 'print-time state)
       (mv@par (cond ((eq processor 'push-clause)
@@ -4687,7 +4828,8 @@
 ; Finally, we put it all together in the primitive function that
 ; applies a processor to a clause.
 
-(defun waterfall-step1 (processor cl-id clause hist pspv wrld state step-limit)
+(defun@par waterfall-step1 (processor cl-id clause hist pspv wrld state
+                                      step-limit)
 
 ; Note that apply-top-hints-clause is handled in waterfall-step.
 
@@ -4719,7 +4861,7 @@
           (eliminate-irrelevance-clause clause hist pspv wrld state)))
         (otherwise
          (pstk
-          (push-clause clause hist pspv wrld state))))))))
+          (push-clause@par clause hist pspv wrld state))))))))
 
 (defun@par process-backtrack-hint (cl-id clause clauses processor new-hist
                                          new-pspv ctx wrld state)
@@ -4974,7 +5116,9 @@
                             (cons 'SPECIOUS processor)
                           processor)
                         :clause clause
-                        :ttree ttree)
+                        :ttree ttree
+                        #+acl2-par :cl-id 
+                        #+acl2-par cl-id)
                   hist)))
       (cond
        ((consp (access history-entry ; (SPECIOUS . processor)
@@ -5083,7 +5227,8 @@
           (t
            (sl-let
             (signal clauses ttree new-pspv)
-            (waterfall-step1 processor cl-id clause hist pspv wrld state step-limit)
+            (waterfall-step1@par processor cl-id clause hist pspv wrld state
+                                 step-limit)
             (mv@par step-limit signal clauses ttree new-pspv state)))))
    (cond
     (erp ; from out-of-time or clause-processor failure; treat as 'error signal
@@ -5389,7 +5534,9 @@
           (cond
            ((serial-first-form-parallel-second-form@par 
              nil
-             (equal (f-get-global 'waterfall-printing state) :limited))
+             (or (equal (f-get-global 'waterfall-printing state) :limited)
+                 (equal (f-get-global 'waterfall-printing state)
+                        :very-limited)))
             (state-mac@par))
            (t
             (io?-prove@par
@@ -5868,7 +6015,7 @@
    nil   ; summary
    ))
 
-(defun change-or-hit-history-entry (i hist)
+(defun change-or-hit-history-entry (i hist #+acl2-par cl-id)
   
 ; The first entry in hist is a history-entry of the form
 
@@ -5915,7 +6062,9 @@
                                          (list parent-cl-id
                                                i
                                                uhs-lst)
-                                         nil))
+                                         nil)
+                #+acl2-par :cl-id 
+                #+acl2-par cl-id)
           (cdr hist))))
 
 (defun pair-cl-id-with-hint-setting (cl-id hint-settings)
@@ -6063,55 +6212,22 @@
 
 #+acl2-par
 (defun combine-pspv-pools (base x y debug-pspv)
-
-; Combine three pspv pools that have the following properties: 
-
-; (1) In the normal case, x and y both extend pool.  In this case, we just
-; append up the changes.  We do this in the reverse order because y's push
-; occurs after x's push, which is a push onto base.
-
-; (2) If y doesn't extend the base, then y must have made a change that didn't
-; use the original pool.  As such, we just return y.  If we were creating
-; versions of base that were, say, "one smaller" (perhaps via pop'ing off the
-; head of base), such that y was the result of pop'ing and cons'ing on a new
-; element, we'd be in trouble.  However, by inspection of the code, we know
-; that we're not performing such updates.  The only time that :pool is modified
-; without including the old version of :pool, the "old version of :pool" is
-; really just nil.  In this case, the right thing to do is to simply return y's
-; updates.
-
-; (3) If x doesn't extend the base, then we simply need to append x's changes
-; to y's changes (in an inverse order because y's push occurs after x's push).
-
-; Parallelism wart: consider renaming x and y to include the notion of which
-; variable represents the "current clause" and which represents proving the
-; remaining (speculative) clauses.  My intuition is that x is the "current 
-; clause and y is "the rest", but I'm not sure.
-
   (prog2$ 
    (if debug-pspv
-       (cw "Combinining base: ~x0 with x: ~x1 and with y: ~x2" base x y)
+       (with-output-lock
+        (cw "Combining base: ~x0 with x: ~%~x1 and with y: ~%~x2~%" base x y))
      nil)
-   (cond 
-           
-; Parallelism wart: the following commented code represents an experimental 
-; test and return value that is not currently needed.  I leave it here in case 
-; we find it useful at a later date.  Once the parallelism of the waterfall 
-; project is finished, it will be safe to remove this comment and code.
-
-;   ((or (not (list-extensionp base y))
-;        (not (list-extensionp x y)))
-;    y)
-
-    ((not (list-extensionp base x))
-     (append y x))
-    (t 
-     (append (find-list-extensions base y nil)
-             (find-list-extensions base x nil)
-             base)))))
+   (append (find-list-extensions base y nil)
+           (find-list-extensions base x nil)
+           base)))
 
 #+acl2-par
 (defun combine-pspv-tag-trees (x y)
+
+; We reverse the arguments, because y was generated after x in time (in the
+; serial case).  And since accumulating into a tag-tree is akin to pushing onto
+; the front of a list, y is the first argument to the "cons".
+
   (cons-tag-trees-rw-cache y x))
 
 #+acl2-par
@@ -6124,224 +6240,224 @@
     nil))
 
 #+acl2-par
-(defun combine-prove-spec-vars (base x y ctx debug-pspv)
+(defun combine-prove-spec-vars (base x y ctx debug-pspv signal1 signal2)
 
 ; X and Y should be extensions of the base.  That is, every member of base
 ; should be in both x and y.  Also, note that switching the order of x and y
 ; returns a result that means something different.  The order with which we
 ; combine pspv's matters.
 
-  (declare (ignorable base))
-  (cond
+  (assert$ 
+
+; We check that the signals aren't abort.  This way we know that we are in case
+; (1), as described in "Essay on prove-spec-var pool modifications".  We also
+; know that this assertion is always true from just examining the code.
+
+   (and (not (equal signal1 'abort))
+        (not (equal signal2 'abort)))
+   (cond
    
 ; We first test to make sure that the pspv's were only changed in the two
 ; fields that we know how to combine.
    
-   ((not (pspv-equal-except-for-tag-tree-and-pool x y))
-    (prog2$ 
-     (print-pspvs base x y debug-pspv)
-     (er hard ctx
-         "Implementation error: waterfall1 returns the pspv changed in a way ~
-          other than the :tag-tree and :pool fields.")))
-   (t
-    (change prove-spec-var x
-            :tag-tree 
-            (combine-pspv-tag-trees
-             (access prove-spec-var x :tag-tree)
-             (access prove-spec-var y :tag-tree))
-            :pool
-            (combine-pspv-pools
-             (access prove-spec-var base :pool)
-             (access prove-spec-var x :pool)
-             (access prove-spec-var y :pool)
-             debug-pspv)))))
+    ((not (pspv-equal-except-for-tag-tree-and-pool x y))
+     (prog2$ 
+      (print-pspvs base x y debug-pspv)
+      (er hard ctx
+          "Implementation error: waterfall1 returns the pspv changed in a way ~
+           other than the :tag-tree and :pool fields.")))
+    (t
+     (change prove-spec-var x
+             :tag-tree 
+             (combine-pspv-tag-trees
+              (access prove-spec-var x :tag-tree)
+              (access prove-spec-var y :tag-tree))
+             :pool
+             (combine-pspv-pools
+              (access prove-spec-var base :pool)
+              (access prove-spec-var x :pool)
+              (access prove-spec-var y :pool)
+              debug-pspv))))))
+
+; Parallelism wart: delete this comment and the associated trace$ form once the
+; parallelism project is finished.  Here is a form helpful for tracing
+; waterfall1-lst in an effort to understand how the pspv's :pool is modified.
+
+;; (trace$
+;;  (waterfall1-lst
+;;   :entry (list 'waterfall1-lst 
+;;                'clauses=
+;;                clauses
+;;                'pspv-pool=
+;;                (access prove-spec-var pspv :pool))
+;;   :exit (list 'waterfall1-lst
+;;               'signal=
+;;               (cadr values)
+;;               'pspv-pool=
+;;               (access prove-spec-var (caddr values) :pool))))
 
 #+acl2-par
-(defun print-pool-mismatch (a b debug-pspv)
-
-; A and B should be pspv's.
-
-  (if debug-pspv
-      (cw "PSPV Pool mismatch. ~%a: ~x0 b: ~x1" 
-          (access prove-spec-var a :pool)
-          (access prove-spec-var b :pool))
-    nil))
-
-#+acl2-par
-(defun pools-equal-except-for-tag-TO-BE-PROVED-BY-INDUCTION (x y)
-
-; This function definition is dead code.  However, we leave it here for now in
-; case it is useful in our future investigations involving determining whether
-; a speculative execution of the waterfall is valid.
-
-  (cond ((and (atom x) (atom y))
-         t)
-        ((and (consp x) (eq (access pool-element (car x) :tag)
-                            'TO-BE-PROVED-BY-INDUCTION))
-         (pools-equal-except-for-tag-TO-BE-PROVED-BY-INDUCTION (cdr x) y))
-        ((and (consp y) (eq (access pool-element (car y) :tag)
-                            'TO-BE-PROVED-BY-INDUCTION))
-         (pools-equal-except-for-tag-TO-BE-PROVED-BY-INDUCTION x (cdr y)))
-
-; Different lengths implies different pools
-
-        ((or (and (atom x) (consp y))
-             (and (consp x) (atom y)))
-         nil)
-        ((assert$ (and (consp x) (consp y))
-                  (not (equal (car x) (car y))))
-         nil)
-        (t 
-         (pools-equal-except-for-tag-TO-BE-PROVED-BY-INDUCTION 
-          (cdr x) 
-          (cdr y)))))
-
-#+acl2-par
-(defun pools-have-different-TO-BE-PROVED-BY-INDUCTION-tags (x y)
-
-; This function returns non-nil when there is a TO-BE-PROVED-BY-INDUCTION tag
-; in one pspv pool's (X's) nth-slot but not the other's (Y's) nth-slot.  
-
-; By "nth-slot", I mean "n cons pairs from the top of the list".  So, if the
-; first list was '(1 TO-BE-PROVED-BY-INDUCTION 3 TO-BE-PROVED-BY-INDUCTION) and
-; the second list was 
-; '(4 TO-BE-PROVED-BY-INDUCTION 6 TO-BE-PROVED-BY-INDUCTION), this function
-; would return nil, because the occurences of 'TO-BE-PROVED-BY-INDUCTION occur
-; in the same nth-spots in each list.
-
-  (let ((car-of-x-is-TO-BE-PROVED-BY-INDUCTION
-         (and (consp x)
-              (eq (access pool-element (car x) :tag)
-                  'TO-BE-PROVED-BY-INDUCTION)))
-        (car-of-y-is-TO-BE-PROVED-BY-INDUCTION
-         (and (consp y)
-              (eq (access pool-element (car y) :tag)
-                  'TO-BE-PROVED-BY-INDUCTION))))
-        
-    (cond ((and (atom x) (atom y))
-           nil)
-          ((or (and car-of-x-is-TO-BE-PROVED-BY-INDUCTION 
-                    (not car-of-y-is-TO-BE-PROVED-BY-INDUCTION))
-               (and (not car-of-x-is-TO-BE-PROVED-BY-INDUCTION)
-                    car-of-y-is-TO-BE-PROVED-BY-INDUCTION))
-           t)
-
-; Parallelism wart: I think I intended the following assertion to always be
-; true because of the cond conditionals above.  However, I don't see that as
-; the case at the moment.  As such, this assertion should be revisited, and we
-; should document more clearly why we don't worry about the case where there
-; are TO-BE-PROVED-BY-INDUCTION tags in different spots in the list (I think
-; the reason is that the current definition returns non-nil in this case, which
-; is still the conservative thing to do).
-
-          ((assert$
-            (and (consp x) (consp y)) t)
-
-; Even though the spec of the function is clear from the name, I still feel the
-; need to document why I don't care about the car's being equal.  Put simply,
-; we know how to combine different cars -- it's the TO-BE-PROVED-BY-INDUCTION
-; tag that we do not know how to combine.  So, all we care about is finding
-; 'TO-BE-PROVED-BY-INDUCTION tags.
-
-; There is the potential case where the car's are unequal, but the cadr's of X
-; and Y are both 'TO-BE-PROVED-BY-INDUCTION.  In this case, I'm not sure what
-; we should think, and this inconsideration is definitely a potential source of
-; bugs.
-
-; Parallelism wart: the above "potential source of bugs" seems illegitimate,
-; and I should probably delete that paragraph after I've given it some more
-; thought.
-
-           (pools-have-different-TO-BE-PROVED-BY-INDUCTION-tags
-            (cdr x)
-            (cdr y))))))
-
-#+acl2-par
-(defun anomaly-in-push-clause1 (orig-pspv extension-pspv hist)
-
-; Parallelism wart: this function definition is dead code, in that it's called 
-; from code that's commented out.  However, we leave it here for now in case 
-; it is useful in our future investigations involving determining whether a 
-; speculative execution of the waterfall is valid.
-
-  (let ((orig-pool (access prove-spec-var orig-pspv :pool))
-        (extension-pool (access prove-spec-var extension-pspv :pool)))
-    (not (equal 
-          (or
-           (and (null orig-pool) 
-                (more-than-simplifiedp hist)
-                (not (assoc-eq :induct (access prove-spec-var orig-pspv
-                                               :hint-settings))))
-           (and orig-pool 
-                (not (assoc-eq 'being-proved-by-induction orig-pool))
-                (not (assoc-eq :induct (access prove-spec-var orig-pspv
-                                               :hint-settings)))))
-          (or
-           (and (null extension-pool) 
-                (more-than-simplifiedp hist)
-                (not (assoc-eq :induct (access prove-spec-var extension-pspv
-                                               :hint-settings))))
-           (and extension-pool 
-                (not (assoc-eq 'being-proved-by-induction extension-pool))
-                (not (assoc-eq :induct (access prove-spec-var extension-pspv
-                                               :hint-settings)))))))))
-
-#+acl2-par
-(defun speculative-execution-valid (x y hist debug-pspv)
+(defun speculative-execution-valid (x y)
 
 ; This function aids in determining whether a speculative evaluation of the
 ; waterfall is valid.  Typically, X is the pspv given to the current call of
 ; waterfall1-lst, and Y is the pspv returned from calling waterfall1 on the
 ; first clause.
 
-; Some very high percentage of the time this function returns a non-nil result,
-; meaning that the speculative execution is valid.  This enables us to use our
-; speculative results and obtain parallelism speedup.  Some very low percentage
-; of the time, this function determines the Y is an invalid "extension" of X,
-; and that the speculative results must be [aborted and] discarded.
-
-; Since it is always okay to [abort and] discard speculative results, this
-; function definition is conservative.  That is, if I don't know what a
-; particular change in the PSPV's means, then the function returns nil.
-
-; Parallelism wart: While we intend to be conservative, it's possible that we
-; don't understand every condition where we need to return nil.  If the
-; parallel version of the waterfall is discovered to be dropping proof
-; obligations, this function and its subfunctions are the most likely places
-; that we have made a mistake.
-
-  (declare (ignorable hist))
-  (and
-
 ; For now, if anything but the tag-tree or pool is different, we want to
 ; immediately return nil, because we don't know how to handle the combining of
 ; such pspv's.
 
-   (pspv-equal-except-for-tag-tree-and-pool x y) 
-   (let* ((x-pool (access prove-spec-var x :pool))
-          (y-pool (access prove-spec-var y :pool))
-          (pools-ok  
-           (or (equal x-pool y-pool)
+  (assert$ (pspv-equal-except-for-tag-tree-and-pool x y) 
+           t))
+   
+#+acl2-par
+(defun abort-will-occur-in-pool (pool)
 
-; We don't currently know how to combine TO-BE-PROVED-BY-INDUCTION tags, so we
-; note here that the pools are not okay.
-               
-               (and (not (pools-have-different-TO-BE-PROVED-BY-INDUCTION-tags
-                          x-pool y-pool))
+; Returns t if the given pool requires that we abort the current set of subgoal
+; proof attempts and revert to prove the original conjecture by induction.  The
+; function must only consider the case where 'maybe-to-be-proved-by-induction
+; tags are present, because push-clause[@par] handles all other cases.
 
-; Once upon a time, there was a problem involving an anomaly in push-clause1,
-; which this function knew how to detect.  It's dead code at the moment (and
-; can be removed once the parallelism project is finished), but I leave it here
-; until then.  If one removes this comment and commented code, consider also
-; removing the definition of anomaly-in-push-clause1.
+  (cond ((atom pool)
+         nil)
+        ((and (equal (caar pool) 'maybe-to-be-proved-by-induction)
+              (consp (cdr pool)))
+         t)
+        (t (abort-will-occur-in-pool (cdr pool)))))
 
-;                   (not (anomaly-in-push-clause1 x y hist))
+; Parallelism wart: place the following example usages of
+; abort-will-occur-in-pool in a book.  Place a reference to that book inside
+; the definition of abort-will-occur-in-pool.
 
-                    ))))
-     (if (not pools-ok)
-         (prog2$ (print-pool-mismatch x y debug-pspv)
-                 nil)
-       t))))
+;; (assert$ 
+;;  (and
+;;   (not (abort-will-occur-in-pool '((maybe-to-be-proved-by-induction sub orig))))
+;;   (abort-will-occur-in-pool '((maybe-to-be-proved-by-induction sub orig)
+;;                               (to-be-proved-by-induction) 
+;;                               (to-be-proved-by-induction)))
+;;   (not (abort-will-occur-in-pool '((to-be-proved-by-induction))))
+;;   (not (abort-will-occur-in-pool '((to-be-proved-by-induction)
+;;                                    (maybe-to-be-proved-by-induction sub orig))))
+;;   (not (abort-will-occur-in-pool '((maybe-to-be-proved-by-induction sub orig))))
+;;   (not (abort-will-occur-in-pool '((to-be-proved-by-induction)
+;;                                    (to-be-proved-by-induction)
+;;                                    (to-be-proved-by-induction))))
+;;   (abort-will-occur-in-pool '((maybe-to-be-proved-by-induction sub orig)
+;;                               (to-be-proved-by-induction) 
+;;                               (to-be-proved-by-induction)
+;;                               (maybe-to-be-proved-by-induction sub2 orig2)))
+;;   (abort-will-occur-in-pool '((to-be-proved-by-induction a)
+;;                               (maybe-to-be-proved-by-induction sub orig)
+;;                               (to-be-proved-by-induction b) 
+;;                               (to-be-proved-by-induction c)
+;;                               (maybe-to-be-proved-by-induction sub2 orig2))))
+;;  "abort-will-occur-in-pool tests passed")
+
+#+acl2-par
+(defrec maybe-to-be-proved-by-induction
+
+; Important Note: This record is laid out this way so that we can use assoc-eq
+; on the pspv pool to detect the presence of a maybe-to-be-proved-by-induction
+; tag.  Do not move the key field!
+
+  (key subgoal original)
+  t)
+
+#+acl2-par
+(defun convert-maybes-to-tobe-subgoals (pool)
+
+; This function converts all 'maybe-to-be-proved-by-induction records to
+; 'to-be-proved-by-induction pool-elements.  Since this function is only called
+; in the non-abort case, it uses the :subgoal field of the record.
+
+  (cond ((atom pool)
+         nil)
+        ((equal (caar pool) 'maybe-to-be-proved-by-induction)
+         (cons (access maybe-to-be-proved-by-induction (car pool) :subgoal)
+               (convert-maybes-to-tobe-subgoals (cdr pool))))
+        (t (cons (car pool)
+                 (convert-maybes-to-tobe-subgoals (cdr pool))))))
+
+#+acl2-par
+(defun convert-maybes-to-tobes (pool)
+
+; This function converts a pool that contains 'maybe-to-be-proved-by-induction
+; records to a pool that either (1) aborts and proves the :original conjecture
+; or (2) replaces all such clauses with their :subgoal
+; 'to-be-proved-by-induction pool-element.  This function outsources all
+; thinking about whether we are in an abort case to the function
+; abort-will-occur-in-pool.
+
+  (cond ((atom pool)
+         nil)
+        ((abort-will-occur-in-pool pool)
+         (list (access maybe-to-be-proved-by-induction
+
+; It doesn't matter whether we use the first 'maybe-to-be-proved-by-induction
+; tag to cause an abort, because the :original field will be the same for all
+; of them.
+
+                       (assoc-eq 'maybe-to-be-proved-by-induction pool)
+                       :original)))
+        (t (convert-maybes-to-tobe-subgoals pool))))
+
+; Parallelism wart: place the following example usages of
+; convert-maybes-to-tobes in a book.  Place a reference to that book inside
+; the definition of convert-maybes-to-tobes.
+
+;; (assert$ 
+;;  (and
+;;   (equal (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig)))
+;;          '(sub))
+;;   (equal
+;;    (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig)
+;;                               (to-be-proved-by-induction) 
+;;                               (to-be-proved-by-induction)))
+;;    '(orig))
+;;   (equal
+;;    (convert-maybes-to-tobes '((to-be-proved-by-induction)))
+;;    '((to-be-proved-by-induction)))
+;;   (equal (convert-maybes-to-tobes '((to-be-proved-by-induction)
+;;                                     (maybe-to-be-proved-by-induction sub orig)))
+;;          '((to-be-proved-by-induction)
+;;            sub))
+;;   (equal (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig)))
+;;          '(sub))
+;;   (equal (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig)
+;;                                     (to-be-proved-by-induction) 
+;;                                     (to-be-proved-by-induction)
+;;                                     (maybe-to-be-proved-by-induction sub2 orig2)))
+;;          '(orig))
+;;   (equal (convert-maybes-to-tobes '((to-be-proved-by-induction a)
+;;                                     (maybe-to-be-proved-by-induction sub orig)
+;;                                     (to-be-proved-by-induction b) 
+;;                                     (to-be-proved-by-induction c)
+;;                                     (maybe-to-be-proved-by-induction sub2
+;;                                                                      orig2)))
+;;          '(orig))
+
+;; ; We could require the following assertion, but since orig3==orig, we don't
+;; ; mind that our function returns orig3 instead of orig.
+
+;;   ;; (equal (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig3)
+;;   ;;                                   (to-be-proved-by-induction a)
+;;   ;;                                   (maybe-to-be-proved-by-induction sub orig)
+;;   ;;                                   (to-be-proved-by-induction b) 
+;;   ;;                                   (to-be-proved-by-induction c)
+;;   ;;                                   (maybe-to-be-proved-by-induction sub2
+;;   ;;                                                                    orig2)))
+;;   ;;        '(orig))
+
+;;   )
+;;  "convert-maybes-to-tobes tests worked."
+;; )
+
+#+acl2-par
+(defun convert-maybes-to-tobes-in-pspv (pspv)
+  (change prove-spec-var pspv
+          :pool
+          (convert-maybes-to-tobes (access prove-spec-var pspv :pool))))
 
 ; This completes the preliminaries for hints and we can get on with the
 ; waterfall itself soon.  But first we provide additional rw-cache support (see
@@ -6409,17 +6525,23 @@
 
   (prog2$
    (parallel-only@par
-    (if (equal (f-get-global 'waterfall-printing state) :limited)
-        (with-output-lock
+    (cond ((equal (f-get-global 'waterfall-printing state) :limited)
+           (with-output-lock
 
 ; Parallelism wart: Kaufmann suggests that we need to not print clause-ids that
-; have already been printed.
+; have already been printed.  Note that using the printing of clause-ids to
+; show that the prover is still making progress is no longer the default
+; setting (see :doc set-waterfall-printing).
 
-; Parallelism wart: consider using observation-cw instead of cw.
+; Parallelism wart: here, and at many other ACL2(p)-specific places, consider
+; using observation-cw or printing that can be inhibited, instead of cw.
 
-         (cw "Starting ~x0~%"
-             (string-for-tilde-@-clause-id-phrase cl-id)))
-      nil))
+            (cw "Starting ~x0~%"
+                (string-for-tilde-@-clause-id-phrase cl-id))))
+          ((equal (f-get-global 'waterfall-printing state) :very-limited)
+           (with-output-lock
+            (cw ".")))
+          (t nil)))
    (mv-let@par
     (erp pair state)
     (find-applicable-hint-settings@par cl-id clause hist pspv ctx hints
@@ -6450,7 +6572,10 @@
            
             (cond ((serial-first-form-parallel-second-form@par
                     nil
-                    (equal (f-get-global 'waterfall-printing state) :limited))
+                    (or (equal (f-get-global 'waterfall-printing state)
+                               :limited)
+                        (equal (f-get-global 'waterfall-printing state)
+                               :very-limited)))
                    (state-mac@par))
                   (t (waterfall-print-clause@par suppress-print cl-id clause
                                                  state)))
@@ -6943,7 +7068,7 @@
         (waterfall1@par ledge
                         d-cl-id
                         clause
-                        (change-or-hit-history-entry i hist)
+                        (change-or-hit-history-entry i hist #+acl2-par cl-id)
                         pspv
                         (cons (pair-cl-id-with-hint-setting d-cl-id
                                                             hint-settingsi)
@@ -7098,9 +7223,9 @@
                                     hints suppress-print ens wrld ctx state
                                     step-limit)
 
-; Keep the main body of waterfall1-lst in sync with waterfall1-lst@par-serial
-; and waterfall1-lst@par-parallel.  Keep the calculation of cl-id in sync with
-; waterfall1-lst@par.
+; Keep the main body of waterfall1-lst in sync with waterfall1-lst@par-serial,
+; waterfall1-lst@par-parallel, and waterfall1-lst@par-pseudo-parallel.  Keep
+; the calculation of cl-id in sync with waterfall1-lst@par.
 
   (cond
    ((null clauses) (mv@par step-limit 'continue pspv jppl-flg state))
@@ -7157,13 +7282,156 @@
                                step-limit))))))))
 
 #+acl2-par
+(defun waterfall1-lst@par-pseudo-parallel (n parent-cl-id clauses hist pspv
+                                             jppl-flg hints suppress-print ens
+                                             wrld ctx state step-limit)
+
+; Keep the main body of waterfall1-lst in sync with waterfall1-lst@par-serial,
+; waterfall1-lst@par-parallel, and waterfall1-lst@par-pseudo-parallel.  Keep
+; the calculation of cl-id in sync with waterfall1-lst@par.
+
+; Since waterfall1-lst@par-pseudo-parallel is just a refactoring of
+; waterfall1-lst@par-parallel, I remove many comments from this defintion.  So,
+; see waterfall1-lst@par-parallel for a more complete set of comments.
+
+  (declare (ignorable ens))
+  (cond
+   ((null clauses) (mv@par step-limit 'continue pspv jppl-flg state))
+   (t (let ((cl-id (cond
+                    ((and (equal parent-cl-id *initial-clause-id*)
+                          (no-op-histp hist))
+                     parent-cl-id)
+                    ((eq n 'settled-down-clause) parent-cl-id)
+                    ((null n)
+                     (change clause-id parent-cl-id
+                             :primes
+                             (1+ (access clause-id
+                                         parent-cl-id
+                                         :primes))))
+                    (t (change clause-id parent-cl-id
+                               :case-lst
+                               (append (access clause-id
+                                               parent-cl-id
+                                               :case-lst)
+                                       (list n))
+                               :primes 0)))))
+        (mv-let@par
+         (step-limit1 signal1 pspv1 jppl-flg1 state)
+         (waterfall1@par *preprocess-clause-ledge* 
+                         cl-id
+                         (car clauses) 
+                         hist 
+                         pspv
+                         hints
+                         suppress-print
+                         ens
+                         wrld
+                         ctx
+                         state
+                         step-limit)
+         (if
+
+; Conditions that must be true for the speculative call to be valid:
+
+             (and (not (eq signal1 'error))
+                  (not (eq signal1 'abort))
+                  (speculative-execution-valid pspv pspv1))
+             (mv-let 
+
+; Here, we perform the speculative call of waterfall1-lst@par, which is the
+; recursion on the cdr of clauses.  As such, this code matches the code at the
+; end of waterfall1-lst.
+
+              (step-limit2 signal2 pspv2 jppl-flg2)
+              (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n)
+                                        ((null n) nil)
+                                        (t (1- n)))
+                                  parent-cl-id
+                                  (cdr clauses) 
+                                  hist 
+                                  pspv 
+                                  jppl-flg
+                                  hints
+                                  nil
+                                  ens
+                                  wrld
+                                  ctx
+                                  state
+                                  step-limit)
+
+              (cond ((eq signal2 'error)
+                     (mv@par step-limit2 'error nil nil state))
+                    ((eq signal2 'abort)
+                     (mv@par step-limit2 'abort pspv2 jppl-flg2
+                             state))
+                    (t
+                     (let ((combined-step-limit (- (- step-limit
+                                                      (- step-limit step-limit1))
+                                                   (- step-limit step-limit2)))
+                           (combined-prove-spec-vars 
+                            (combine-prove-spec-vars 
+                             pspv pspv1 pspv2 ctx
+                             (f-get-global 'debug-pspv state)
+                             signal1 signal2)))
+
+                       (if (abort-will-occur-in-pool
+                            (access prove-spec-var combined-prove-spec-vars :pool))
+                           (prog2$ 
+                            (with-output-lock
+                             (cw "Normally we would attempt to prove two or ~
+                                  more of the previously printed subgoals by ~
+                                  induction.  However, we prefer in this ~
+                                  instance to focus on the original input ~
+                                  conjecture rather than those simplified ~
+                                  special cases.  We therefore abandon our ~
+                                  previous work on these conjectures and ~
+                                  reassign the name *1 to the original ~
+                                  conjecture."))
+                            (mv@par combined-step-limit 
+                                    'abort
+                                    combined-prove-spec-vars
+                                    jppl-flg2
+                                    state))
+                         (mv@par combined-step-limit 
+                                 signal2
+                                 combined-prove-spec-vars
+                                 jppl-flg2 state))))))
+           (cond
+            ((eq signal1 'error) (mv@par step-limit1 'error nil nil state))
+            ((eq signal1 'abort) (mv@par step-limit1 'abort pspv1 jppl-flg1
+                                         state))
+            (t ; we need to recompute the recursive call
+             (prog2$
+              (cond ((member-eq 'prove
+                                (f-get-global 'inhibit-output-lst state))
+                     nil)
+                    (t (with-output-lock
+                        (cw "Invalid speculation for children of subgoal ~
+                                ~x0~%"
+                            (string-for-tilde-@-clause-id-phrase cl-id)))))
+              (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n) 
+                                        ((null n) nil)
+                                        (t (1- n))) 
+                                  parent-cl-id
+                                  (cdr clauses) 
+                                  hist
+                                  pspv1
+                                  jppl-flg1
+                                  hints
+                                  nil
+                                  ens
+                                  wrld
+                                  ctx
+                                  state step-limit1))))))))))
+
+#+acl2-par
 (defun waterfall1-lst@par-parallel (n parent-cl-id clauses hist pspv jppl-flg
                                       hints suppress-print ens wrld ctx state
                                       step-limit)
 
-; Keep the main body of waterfall1-lst in sync with waterfall1-lst@par-serial
-; and waterfall1-lst@par-parallel.  Keep the calculation of cl-id in sync with
-; waterfall1-lst@par.
+; Keep the main body of waterfall1-lst in sync with waterfall1-lst@par-serial,
+; waterfall1-lst@par-parallel, and waterfall1-lst@par-pseudo-parallel.  Keep
+; the calculation of cl-id in sync with waterfall1-lst@par.
 
   (declare (ignorable ens))
   (cond
@@ -7192,7 +7460,7 @@
 ; recursion on the cdr of clauses.  As such, this code matches the code at the
 ; end of waterfall1-lst.
 
-         (step-limit2 signal2 newer-pspv ignored-jppl-flg)
+         (step-limit2 signal2 pspv2 jppl-flg2)
          (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n)
                                    ((null n) nil)
                                    (t (1- n)))
@@ -7209,7 +7477,7 @@
                              state
                              step-limit)
          (mv-let@par
-          (step-limit1 signal new-pspv new-jppl-flg state)
+          (step-limit1 signal1 pspv1 jppl-flg1 state)
           (waterfall1@par *preprocess-clause-ledge* 
                           cl-id
                           (car clauses) 
@@ -7226,39 +7494,76 @@
 
 ; Conditions that must be true for the speculative call to be valid:
 
-              (and (not (eq signal 'error))
-                   (not (eq signal 'abort))
-                   (speculative-execution-valid pspv new-pspv hist 
-                                                (f-get-global 'debug-pspv
-                                                              state)))
+              (and (not (eq signal1 'error))
+                   (not (eq signal1 'abort))
+                   (speculative-execution-valid pspv pspv1))
 
 ; Parallelism wart: document that variables xxx1 is from the "current subogal"
 ; and variables xxx2 are from the speculative execution.
               
-; Parallelism wart: I think I got the step-limit2, signal2, signal1,
-; etc. correct, but it's probably worth making another check that I use the
-; correct number in each suffix.
-              
               (cond ((eq signal2 'error)
                      (mv@par step-limit2 'error nil nil state))
                     ((eq signal2 'abort)
-                     (mv@par step-limit2 'abort newer-pspv ignored-jppl-flg
-                             state))
+
+; It is okay to just return pspv2, because if there is an abort, any clauses
+; pushed for induction into pspv1 would be discarded anyway.  See Essay on
+; prove-spec-var pool modifications for further discussion.
+
+                     (mv@par step-limit2 'abort pspv2 jppl-flg2 state))
                     (t
                      (let ((combined-step-limit (- (- step-limit
                                                       (- step-limit step-limit1))
-                                                   (- step-limit step-limit2))))
-                       (mv@par combined-step-limit 
-                               signal2
-                               (combine-prove-spec-vars pspv new-pspv
-                                                        newer-pspv ctx
-                                                        (f-get-global
-                                                         'debug-pspv state))
-                               ignored-jppl-flg state))))
+                                                   (- step-limit step-limit2)))
+                           (combined-prove-spec-vars 
+                            (combine-prove-spec-vars 
+                             pspv pspv1 pspv2 ctx
+                             (f-get-global 'debug-pspv state)
+                             signal1 signal2)))
+                       (if (abort-will-occur-in-pool
+                            (access prove-spec-var combined-prove-spec-vars :pool))
+                           (prog2$ 
+
+; Parallelism wart: maybe this call to cw should be inside waterfall instead of
+; here.  The potential problem with printing the message here is that printing
+; can still occur after we say that we are "focus[sing] on the original
+; conjecture".  
+
+; For example, suppose we are Subgoal 3.2.4, and we know we need to abort.
+; Subgoal 3.3.4 could still be proving and print a checkpoint, even though this
+; call of Subgoal 3.2.4 knows we need to abort.  It is not until control
+; returns to the waterfall1-lst@par call on Subgoal 3.3 that the 'abort from
+; Subgoal 3.2.4 will be seen, and that we will then know that all such calls 
+; that might print have already returned (because Subgoal 3.3.4 must be 
+; finished before the call of waterfall1 on Subgoal 3.3 returns).
+
+                            (with-output-lock
+                             (cw "Normally we would attempt to prove two or ~
+                                  more of the previously printed subgoals by ~
+                                  induction.  However, we prefer in this ~
+                                  instance to focus on the original input ~
+                                  conjecture rather than those simplified ~
+                                  special cases.  We therefore abandon our ~
+                                  previous work on these conjectures and ~
+                                  reassign the name *1 to the original ~
+                                  conjecture."))
+                            (mv@par combined-step-limit 
+                                    'abort
+
+; We do not adjust the pspv's pool here.  Instead, we rely upon waterfall to
+; correctly convert the 'maybe-to-be-proved-by-induction tag to a
+; 'to-be-proved-by-induction and discard the other clauses.
+
+                                    combined-prove-spec-vars
+                                    jppl-flg2
+                                    state))
+                         (mv@par combined-step-limit 
+                                 signal2
+                                 combined-prove-spec-vars
+                                 jppl-flg2 state)))))
             (cond
-             ((eq signal 'error) (mv@par step-limit1 'error nil nil state))
-             ((eq signal 'abort) (mv@par step-limit1 'abort new-pspv
-                                         new-jppl-flg state))
+             ((eq signal1 'error) (mv@par step-limit1 'error nil nil state))
+             ((eq signal1 'abort) (mv@par step-limit1 'abort pspv1
+                                          jppl-flg1 state))
              (t ; we need to recompute the recursive call
               (prog2$
 
@@ -7268,12 +7573,17 @@
 ; And finally, deal the same way with all cw printing done on behalf of the
 ; prover; consider searching for with-output-lock to find those.
 
+; Parallelism wart: due to the definition of speculative-execution-valid, this
+; code should no longer be reachable.  It should be deleted by the time the
+; parallelism project is finished.  I leave it now because it is an example of
+; use of 'inhitibt-output-lst (also see parallelism wart immediately above).
+
                (cond ((member-eq 'prove
                                  (f-get-global 'inhibit-output-lst state))
                       nil)
                      (t (with-output-lock
                          (cw "Invalid speculation for children of subgoal ~
-                                ~x0~%"
+                              ~x0~%"
                              (string-for-tilde-@-clause-id-phrase cl-id)))))
                (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n) 
                                          ((null n) nil)
@@ -7281,8 +7591,8 @@
                                    parent-cl-id
                                    (cdr clauses) 
                                    hist
-                                   new-pspv
-                                   new-jppl-flg
+                                   pspv1
+                                   jppl-flg1
                                    hints
                                    nil
                                    ens
@@ -7328,30 +7638,55 @@
                              (list n))
                      :primes 0)))))
     (declare (ignorable primes-subproof cl-id))
-    (if (and (not primes-subproof) 
-             (let ((par-type (f-get-global 'waterfall-parallelism state)))
-               (case par-type
-                 ((nil)
-                  nil)
-                 ((:full)
-                  t)
-                 ((:pseudo-serial)
-                  nil) ; see set-waterfall-parallelism
-                 ((:top-level)
-                  (equal parent-cl-id '((0) NIL . 0)))
-                 ((:resource-based)
-                  #-acl2-loop-only (futures-resources-available)
-                  #+acl2-loop-only t)
-                 (otherwise 
-                  (assert$ nil "Waterfall-parallelism type is not what it's ~
-                                supposed to be.  Please contact the ACL2 ~
-                                authors.")))))
-        (waterfall1-lst@par-parallel n parent-cl-id clauses hist pspv
-                                     jppl-flg hints suppress-print ens
-                                     wrld ctx state step-limit)
-      (waterfall1-lst@par-serial n parent-cl-id clauses hist pspv jppl-flg
-                                 hints suppress-print ens wrld ctx state
-                                 step-limit)))) 
+    (let ((call-type
+           (cond 
+            (primes-subproof
+             'serial)
+            (t
+             (case (f-get-global 'waterfall-parallelism state)
+               ((nil)
+                'serial)
+               ((:full)
+                'parallel)
+               ((:pseudo-parallel)
+                'pseudo-parallel)
+               ((:top-level)
+                (cond ((equal parent-cl-id '((0) NIL . 0))
+                       'parallel)
+                      (t 'serial)))
+               ((:resource-based)
+                #-acl2-loop-only (if (futures-resources-available) 'parallel 'serial)
+
+; Parallelism wart: consider using the oracle instead of just returning
+; 'serial.
+
+                #+acl2-loop-only 'serial)
+               (otherwise
+                (er hard 'waterfall1-lst@par 
+                    "Waterfall-parallelism type is not what it's supposed to ~
+                     be.  Please contact the ACL2 authors.")))))))
+      (case call-type
+        ((serial)
+         (waterfall1-lst@par-serial n parent-cl-id clauses hist pspv jppl-flg
+                                    hints suppress-print ens wrld ctx state
+                                    step-limit))
+        ((parallel)
+         (waterfall1-lst@par-parallel n parent-cl-id clauses hist pspv
+                                      jppl-flg hints suppress-print ens
+                                      wrld ctx state step-limit))
+        ((pseudo-parallel)
+         (waterfall1-lst@par-pseudo-parallel n parent-cl-id clauses hist pspv
+                                             jppl-flg hints suppress-print ens
+                                             wrld ctx state step-limit))
+
+; Parallelism wart: remove this call to er, and make pseudo-parallel the
+; otherwise case.
+
+        (otherwise 
+         (prog2$ (er hard 'waterfall1-lst@par
+                     "Implementation error in waterfall1-lst@par.  Please ~
+                      contact the ACL2 authors.")
+                 (mv@par nil nil nil nil state)))))))
 )
 
 ; And here is the waterfall:
@@ -7406,7 +7741,11 @@
                                              (and (eql forcing-round 0)
                                                   (null pool-lst)) ; suppress-print
                                              ens wrld ctx state step-limit)
-                         (mv step-limit signal new-pspv new-jppl-flg state))
+                         (mv step-limit
+                             signal 
+                             (convert-maybes-to-tobes-in-pspv new-pspv)
+                             new-jppl-flg
+                             state))
                (sl-let (signal new-pspv new-jppl-flg state)
                        (waterfall1-lst (cond ((null clauses) 0)
                                              ((null (cdr clauses))
