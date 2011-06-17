@@ -93,7 +93,7 @@ DIRS =  cowles-gamboa-triangle-square/triangle=square-materials \
 	liu/support \
 	pierre-clavel-leveugle/Fault-tolerance \
 	sumners/support \
-	vandenbroek-schmaltz/GeNieroC \
+	vandenbroek-schmaltz/GeNoC \
 	verbeek-schmaltz/verbeek
 
 include ../../Makefile-psubdirs
