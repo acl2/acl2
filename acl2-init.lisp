@@ -1120,12 +1120,23 @@ implementations.")
 
         ("~a~%"
          (let ((contrib-dir
-                (and (fboundp 'sb-int::sbcl-homedir-pathname)
-                     (funcall 'sb-int::sbcl-homedir-pathname))))
+                (and (boundp 'sb-ext::*core-pathname*)
+                     (ignore-errors
+                      (let* ((core-dir
+                              (pathname-directory sb-ext::*core-pathname*))
+                             (contrib-dir-pathname
+                              (and (equal (car (last core-dir))
+                                          "output")
+                                   (make-pathname
+                                    :directory
+                                    (append (butlast core-dir 1)
+                                            (list "contrib"))))))
+                        (and (probe-file contrib-dir-pathname)
+                             (namestring contrib-dir-pathname)))))))
            (if contrib-dir
                (format nil
                        "export SBCL_HOME=~s"
-                       (namestring contrib-dir))
+                       contrib-dir)
              "")))
         "~s --core ~s~a --eval '(acl2::sbcl-restart)'"
         prog

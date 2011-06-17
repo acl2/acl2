@@ -3808,7 +3808,7 @@
   ~ilc[table] ~il[events] directly for this purpose, it is probably more
   convenient to use a macro, ~c[defmacro-last].  We describe the distributed
   book ~c[books/misc/profiling.lisp] in order to illustrate how this works.
-  The events in that book are as follows, and are described below.
+  The events in that book include the following, which are described below.
   ~bv[]
   (defttag :profiling)
 
