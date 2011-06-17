@@ -52,6 +52,9 @@
 
 ; End of Section "To Consider".
 
+; Parallelism wart: decide to use either the phrase "parallel execution" or
+; "parallel evaluation."  Then update the doc topics to use the chosen phrase.
+
 (defdoc parallelism
 
 ; Parallelism wart: mention proof parallelism inside this topic.
@@ -455,10 +458,7 @@
   ~l[set-waterfall-printing].
 
   Note that not all ACL2 features are supported when waterfall-parallelism is
-  set to non-nil.~/"
-
-; Parallelism wart: add a reference to
-; unsupported-waterfall-parallelism-features, above.
+  set to non-nil (~pl[unsupported-waterfall-parallelism-features]).~/"
 
   (declare (xargs :guard
                   (or (member-eq value *waterfall-parallelism-values*)
@@ -1082,7 +1082,7 @@
   The concept of early termination also applies to ~ilc[por], except that early
   termination occurs when an argument evaluates to non-~c[nil].~/")
 
-(defdoc parallel-push-for-inductions-and-subgoal-naming
+(defdoc parallel-pushing-of-subgoals-for-induction
 
 ; Parallelism wart: figure out whether we'll be able to early terminate once
 ; the second push occurs.  If not, discuss how the parallelized waterfall will
@@ -1091,27 +1091,44 @@
 ; instead of immediately aborting to prove the original conjecture.
 
   ":Doc-Section Parallelism
-  a discussion of the naming of subgoals pushed for induction~/
+  consequences of how parallelized proofs of subgoals are pushed for induction~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
   supporting parallel evaluation and proof; ~pl[parallelism].
 
   The following discussion, concerning the naming of subgoals pushed for proof
-  by induction, only applies when waterfall parallelism is enabled
+  by induction and the timeliness of aborting when two or more goals are pushed
+  for proof by induction, only applies when waterfall parallelism is enabled
   (~pl[set-waterfall-parallelism]).~/
 
   When two sibling subgoals (e.g. 4.5 and 4.6) both push goals to be proved by
-  induction (e.g., 4.6 pushes *1 and 4.5 pushes *2), the second push doesn't
-  know about the first proof's push (the reason is an implementation detail
-  related to how the pool of clauses to be proved by induction is shared
-  between subgoals).  So, the number of the second pushed subgoal (e.g., *2)
-  gets printed as if the first push hasn't happened (e.g., *2 gets mistakenly
-  called *1).  Rather than fix this (the problem is inherent to the naming
-  scheme of ACL2), we punt and say what the name _could_ be (e.g., we print *2
-  for what's really *1).  The following non-theorem show-cases this decision.
+  induction (e.g., 4.6 pushes *1 and 4.5 pushes *2), a name is assigned to the
+  second pushed subgoal (e.g., *2) as if the first push hasn't happened (e.g.,
+  *2 is mistakenly called *1).  In such a case, we say what the name _could_
+  be.  The following non-theorem illustrates how this works.
   ~bv[]
+  (set-waterfall-parallelism :full)
   (thm (equal (append (car (cons x x)) y z) (append x x y)))
-  ~ev[]~/")
+  ~ev[]
+
+  There is another consequence of the way the parallelized waterfall pushes
+  subgoals for proof by induction.  Without waterfall parallelism enabled, ACL2
+  sometimes decides to abort instead of pushing a goal for later proof by
+  induction, preferring instead to induct on the original conjecture.  But with
+  waterfall parallelism enabled, the prover no longer necessarily immediately
+  aborts to prove the original conjecture.  Suppose for example that sibling
+  subgoals, Subgoal 4.6 and Subgoal 4.5, each push a subgoal for induction.  If
+  the waterfall is performing the proof of each of these subgoals in parallel,
+  the proof will no longer abort immediately after the second push occurs, that
+  is at Subgoal 4.5.  As a result, the prover will continue through Subgoal
+  4.4, Subgoal 4.3, and beyond.  It is not until the results of combining the
+  proof results of Subgoal 4.6 with the results from the remaining sibling
+  subgoals (4.5, 4.4, and so on), that the proof attempt will abort and revert
+  to prove the original conjecture by induction.  This example illustrates
+  behavior that is rather like the case that ~c[:]~ilc[otf-flg] is ~c[t], in
+  the sense that the abort does not happen immediately, but also rather like
+  the case that ~c[:]~ilc[otf-flg] is ~c[nil], in the sense that the abort does
+  occur before getting to Subgoal 3.~/")
 
 (defun caar-is-declarep (x)
 
