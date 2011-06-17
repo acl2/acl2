@@ -1,7 +1,7 @@
 ; See profiling.lisp for information on how to use with-profiling.
 
-; We have seen problems on Windows CCL, so we avoid Windows here.  It would be
-; great if someone cares to look into this.
+; We have seen problems on Windows CCL, so we avoid Windows here for CCL.  It
+; would be great if someone cares to look into this.
 
 (in-package "ACL2")
 
@@ -19,7 +19,7 @@
 #+(and ccl (not mswindows))
 (ignore-errors (profiler::open-shared-library "librt.so"))
 
-#+(and (not mswindows) (or ccl sbcl))
+#+(or (and (not mswindows) ccl) sbcl)
 (defmacro with-profiling-raw (syms form)
   (let ((prof #+ccl 'profiler::profile
               #+sbcl 'sb-profile:profile)
@@ -94,16 +94,15 @@
              (,report)
            (eval (cons ',unprof unprof-fns)))))))
 
-#-(and (not mswindows) (or ccl sbcl))
-(defmacro with-profiling-raw (syms form)
+(defmacro with-profiling-no-op-warning (macro-name supported-lisps form)
   `(with-live-state
     (progn
-      ,syms ; evaluate both arguments, not just form
       (case (f-get-global 'host-lisp state)
-        ((:ccl :sbcl) state)
-        (t (warning$ 'with-profiling nil
-                     "The macro WITH-PROFILING does not do any profiling in ~
-                      this host Lisp and OS:~|  ~x0 = ~x1.~|  ~x2 = ~x3"
+        (,supported-lisps state)
+        (t (warning$ ',macro-name nil
+                     "The macro ~x0 does not do any profiling in ~
+                      this host Lisp and OS:~|  ~x1 = ~x2.~|  ~x3 = ~x4"
+                     ',macro-name
                      '(f-get-global 'host-lisp state)
                      (f-get-global 'host-lisp state)
                      '(os (w state))
@@ -121,6 +120,40 @@
 
        ,(protect-mv
          `(warning$
-           'with-profiling nil
-           "To repeat the warning above:  The macro WITH-PROFILING does not ~
-            do any profiling on this host Lisp and platform."))))))
+           ',macro-name nil
+           "To repeat the warning above:  The macro ~x0 does not do any ~
+            profiling on this host Lisp and platform."
+           ',macro-name))))))
+
+#-(or (and (not mswindows) ccl) sbcl)
+(defmacro with-profiling-raw (syms form)
+  (declare (ignore syms))
+  `(with-profiling-no-op-warning with-profiling (:ccl :sbcl) ,form))
+
+#+sbcl
+(require :sb-sprof)
+
+#+(and sbcl acl2-mv-as-values)
+; We expect acl2-mv-as-values to be set for every sbcl installation these days
+; (June 2011).  If not, someone can complain and we can fix this.
+(defmacro with-sprofiling-internal-raw (&whole whole options form)
+
+; A good value for options is (:report :graph :loop nil).  See
+; http://www.sbcl.org/manual/Statistical-Profiler.html for other possibilities.
+
+  (let ((result-var (gensym)))
+    `(let ((sb-sprof::*report-sort-by* :cumulative-samples)
+           (sb-sprof::*report-sort-order* :descending)
+           ,result-var)
+       (sb-sprof::with-profiling
+        ,(eval options)
+        (progn (setq ,result-var
+                     (multiple-value-list ,form))
+               (format t "~%*** SEE BELOW FOR PROFILING RESULTS. ***")))
+       (format t "~%")
+       (values-list ,result-var))))
+
+#-(and sbcl acl2-mv-as-values)
+(defmacro with-sprofiling-internal-raw (options form)
+  (declare (ignore options))
+  `(with-profiling-no-op-warning with-sprofiling (:sbcl) ,form))
