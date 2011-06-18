@@ -26671,6 +26671,7 @@
          (let ((arg (car args))
                (see-doc "  See :DOC defattach.")
                (ld-skip-proofsp (ld-skip-proofsp state))
+               (skip-checks-t (eq skip-checks t))
                (unless-ttag
                 (msg
                  " (unless :SKIP-CHECKS T is specified with an active trust ~
@@ -26734,7 +26735,7 @@
                       untouchable-fns.  See :DOC remove-untouchable."
                      (intersection-eq (list f g)
                                       (global-val 'untouchable-fns wrld))))
-                ((and (not skip-checks)
+                ((and (not skip-checks-t)
                       (not (logicalp f wrld)))
                  (cond ((null g)
                         (er soft ctx
@@ -26770,7 +26771,7 @@
                                       wrld))
                             (attach-pair (assoc-eq :ATTACH helper-alist)))
                        (cond
-                        ((and (not skip-checks)
+                        ((and (not skip-checks-t)
                               (eq constraint-lst *unknown-constraints*))
                          (defattach-unknown-constraints-error
                            f wrld ctx state))
@@ -26807,10 +26808,10 @@
                                                      skip-checks)))))
                         ((and (or (null attach-pair)
                                   (cdr attach-pair)) ; attaching for execution
-                              (not (and skip-checks
+                              (not (and skip-checks-t
 
-; If skip-checks is true and we have a non-executable program-mode function,
-; then it is legal to attach for execution, so we can move on to the next COND
+; If skip-checks is tand we have a non-executable program-mode function, then
+; it is legal to attach for execution, so we can move on to the next COND
 ; branch.
 
                                         (eq (getprop f 'non-executablep nil
@@ -26882,13 +26883,13 @@
                                             function symbol."
                                            g))
                                      (t "")))))
-                        ((and (not skip-checks)
+                        ((and (not skip-checks-t)
                               (not (logicalp g wrld)))
                          (er soft ctx
                              "Attachments must be function symbols in :LOGIC ~
                               mode~@0, but ~x1 is in :PROGRAM mode.~@2"
                              unless-ttag g see-doc))
-                        ((and (not skip-checks)
+                        ((and (not skip-checks-t)
                               (not (eq (symbol-class g wrld)
                                        :common-lisp-compliant)))
                          (er soft ctx
@@ -26910,9 +26911,13 @@
                              "It is illegal to attach a function to itself, ~
                               such as ~x0.~@1"
                              f see-doc))
-                        ((and (not skip-checks)
+                        ((and (not skip-checks-t)
                               (eq (canonical-sibling f wrld)
                                   (canonical-sibling g wrld)))
+
+; Perhaps we should avoid causing an error if skip-checks is :cycles.  But that
+; will require some thought, so we'll wait for a complaint.
+
                          (er soft ctx
                              "The function ~x0 is an illegal attachment for ~
                               ~x1~@2, because the two functions were ~
@@ -27065,16 +27070,18 @@
                      constraint-kwd-alist)))
              (cond
               ((and skip-checks
-                    (not (eq skip-checks t)))
+                    (not (eq skip-checks t))
+                    (not (eq skip-checks :cycles)))
                (er soft ctx
-                   "Illegal value for :SKIP-CHECKS (must be ~x0 or ~x1): ~x2."
-                   t nil skip-checks))
+                   "Illegal value for :SKIP-CHECKS (must be ~x0, ~x1, or ~
+                    ~x2): ~x3."
+                   t nil :cycles skip-checks))
               ((and skip-checks
                     (not (or (global-val 'boot-strap-flg wrld)
                              (ttag wrld))))
                (er soft ctx
-                   "It is illegal to specify :SKIP-CHECKS T for defattach ~
-                    unless there is an active trust tag."))
+                   "It is illegal to specify a non-nil value of :SKIP-CHECKS ~
+                    for defattach unless there is an active trust tag."))
               (t
                (er-let* ((tuple
                           (process-defattach-args1 args ctx wrld state nil nil
@@ -28210,6 +28217,7 @@
            (attachment-alist-exec   (nth 4 tuple))
            (guard-helpers-lst       (nth 5 tuple))
            (skip-checks             (nth 6 tuple))
+           (skip-checks-t           (eq (nth 6 tuple) t))
            (ens (ens state))
            (ld-skip-proofsp (ld-skip-proofsp state)))
        (er-let*
@@ -28217,7 +28225,7 @@
                         (t (chk-defattach-loop attachment-alist erasures wrld
                                                ctx state))))
          (goal/event-names/new-entries
-          (cond ((and (not skip-checks)
+          (cond ((and (not skip-checks-t)
                       attachment-alist)
                  (defattach-constraint attachment-alist proved-fnl-insts-alist
                    wrld ctx state))
@@ -28225,7 +28233,7 @@
          (goal (value (car goal/event-names/new-entries)))
          (event-names (value (cadr goal/event-names/new-entries)))
          (new-entries (value (cddr goal/event-names/new-entries)))
-         (ttree1 (cond ((or skip-checks
+         (ttree1 (cond ((or skip-checks-t
                             ld-skip-proofsp
                             (null attachment-alist-exec))
                         (value nil))
@@ -28235,7 +28243,7 @@
          (ttree2
           (er-progn
            (chk-assumption-free-ttree ttree1 ctx state)
-           (cond ((and (not skip-checks)
+           (cond ((and (not skip-checks-t)
                        (not ld-skip-proofsp)
                        attachment-alist)
                   (prove-defattach-constraint goal event-names attachment-alist
@@ -28316,7 +28324,7 @@
                                (append new-entries proved-fnl-insts-alist)
                                wrld2))
                              (t wrld2)))
-                (wrld4 (cond (skip-checks wrld3)
+                (wrld4 (cond (skip-checks wrld3) ; for skip-checks t or :cycles
                              (t (global-set 'attachment-records records
                                             wrld3))))
                 (cltl-cmd (attachment-cltl-cmd
@@ -28860,15 +28868,17 @@
                         (extended-ancestors2
                          (cdr canon-gs) arfal wrld
                          (hons-acons g fal canon-gs-fal)
-                         (assert$
-                          rec
-                          (extended-ancestors3
-                           (access attachment rec :components)
-                           wrld
-                           (hons-acons g
-                                       (sibling-attachments (car canon-gs)
-                                                            wrld)
-                                       fal)))))))))))
+                         (let ((fal (hons-acons
+                                     g
+                                     (sibling-attachments (car canon-gs)
+                                                          wrld)
+                                     fal)))
+                           (cond (rec (extended-ancestors3
+                                       (access attachment rec :components)
+                                       wrld
+                                       fal))
+                                 (t ; :skip-checks was used
+                                  fal)))))))))))
 
 (defun canonical-cdrs (alist wrld acc)
   (cond ((endp alist) acc)
@@ -28879,12 +28889,11 @@
 
 (defun extended-ancestors1 (fns canon-gs arfal wrld fal)
 
-; Arfal is a fast alist mapping every g-canonical function symbols to its
-; attachment record.  We accumulate ordinary ancestors of members of fns,
-; including those functions, into fal, as we accumulate immediate extended
-; ancestors of members of fns into canon-gs.  Once fns is empty, however, we
-; accumulate all extended ancestors of members of canon-gs (including those
-; functions) into fal.
+; Arfal is a fast alist mapping g-canonical function symbols to attachment
+; records.  We accumulate ordinary ancestors of members of fns, including those
+; functions, into fal, as we accumulate immediate extended ancestors of members
+; of fns into canon-gs.  Once fns is empty, however, we accumulate all extended
+; ancestors of members of canon-gs (including those functions) into fal.
 
   (cond ((endp fns)
          (extended-ancestors2 canon-gs arfal wrld 'extended-ancestors2 fal))

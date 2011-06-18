@@ -1344,10 +1344,10 @@
 ; Suppose an attachment is to be invoked.  In the :non-executable :program case
 ; (i.e., ``proxy'' case, as in defproxy), we pass control to the *1* function
 ; for the attachment, since :skip-checks t is specified not to do any checking
-; in this case (see :DOC defproxy).  Otherwise, we proceed as though that all
-; checks have been made (again, see :DOC defproxy), in particular going
-; straight to the raw Lisp function if we see that the guard is t, since then
-; the guard of the attachment is also presumably true.
+; in this case (see :DOC defproxy).  Otherwise, we proceed as though all checks
+; have been made (again, see :DOC defproxy), in particular going straight to
+; the raw Lisp function if we see that the guard is t, since then the guard of
+; the attachment is also presumably true.
 
     (return-from oneify-cltl-code
                  (case-match def

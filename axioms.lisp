@@ -19381,10 +19381,18 @@
   like ``higher-order'' programs, in which constrained functions may be refined
   to different executable functions.
 
-  A ~c[:skip-checks] argument enables easy experimentation with ~c[defattach],
-  by permitting use of ~c[:]~ilc[program] mode functions and the skipping of
-  semantic checks.  We do not cover ~c[:skip-checks] here, as most users will
-  probably not need it; rather, ~pl[defproxy].
+  The argument ~c[:skip-checks t] enables easy experimentation with
+  ~c[defattach], by permitting use of ~c[:]~ilc[program] mode functions and the
+  skipping of semantic checks.  Also permitted is ~c[:skip-checks nil] (the
+  default) and ~c[:skip-checks :cycles], which turns off only the update of the
+  extended ancestor relation and hence the check for cycles in this relation;
+  see below.  We do not make any logical claims when the value of
+  ~c[:skip-checks] is non-~c[nil]; indeed, a trust tag is required in this
+  case (~pl[defttag]).  Remark for those who use the experimental HONS
+  extension (~pl[hons-and-memoization]): the interaction of memoization and
+  attachments is not tracked for attachments introduced with a non-~c[nil]
+  value of ~c[:skip-checks].  For more discussion of ~c[:skip-checks t],
+  ~pl[defproxy]; we do not discuss ~c[:skip-checks] further, here.
 
   ~st[Introductory example.]
 
@@ -19643,8 +19651,8 @@
   call of ~c[f].
 
   We consider a function symbol ~c[g] to be an ``extended ancestor of'' a
-  function symbol ~c[f] if either of the following two criteria is met: (a) ~c[g]
-  occurs in the formula that introduces ~c[f] (i.e., definition body or
+  function symbol ~c[f] if either of the following two criteria is met: (a)
+  ~c[g] occurs in the formula that introduces ~c[f] (i.e., definition body or
   constraint) and ~c[g] is introduced by an event different from (earlier than)
   the event introducing ~c[f]; or (b) ~c[g] is attached to ~c[f].  For a
   proposed ~c[defattach] event, we check that the resulting extended ancestor
@@ -19721,7 +19729,9 @@
   ~c[Defattach] events are illegal inside any ~ilc[encapsulate] event with a
   non-empty ~il[signature] unless they are ~il[local] to the ~ilc[encapsulate].
 
-  To see all attachments: ~c[(all-attachments (w state))].
+  To see all attachments: ~c[(all-attachments (w state))].  (Note that
+  attachments introduced with a non-~c[nil] value of ~c[:skip-checks] will be
+  omitted from this list.)
 
   We conclude with an example promised above, showing why it is necessary in
   general to unattach all function symbols in an existing attachment nest when

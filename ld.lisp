@@ -17644,6 +17644,12 @@
   ~ev[]
   Thanks to David Rager for contributing this macro.
 
+  The macro ~ilc[defattach] may now be supplied the argument
+  ~c[:skip-checks :cycles].  In this case, as with argument ~c[:skip-checks t],
+  a trust tag is reuired (~pl[defttag]), and no logical claims are made.  The
+  effect is to avoid the usual check that the extended ancestor relation has no
+  cycles (~pl[defattach]).  Thanks to Dave Greve for requesting this feature.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   ACL2 now avoids some repeated attempts to rewrite hypotheses of rewrite
