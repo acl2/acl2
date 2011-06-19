@@ -530,8 +530,10 @@
   ~ilc[set-gag-mode]).  As applies to much of the parallelism extension, the
   presentation of these checkpoints is still under development, and feedback
   concerning them is welcome.  The value of ~c[:limited] also prints messages
-  that indicate which subgoal is currently being proved.  Naturally, these
-  subgoal numbers can be out of order, because they can be proved in parallel.
+  that indicate which subgoal is currently being proved.  (The function
+  ~c[print-clause-id-okp] may receive an attachment to limit such printing;
+  ~pl[set-print-clause-ids].)  Naturally, these subgoal numbers can be out of
+  order, because they can be proved in parallel.
 
   A value of ~c[:very-limited] is treated the same as ~c[:limited], except that
   instead of printing subgoal numbers, the proof attempt prints a

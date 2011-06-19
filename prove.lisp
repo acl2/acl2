@@ -3545,6 +3545,47 @@
   #-acl2-loop-only
   `(waterfall-print-clause-id-fmt1-call@par ,cl-id))
 
+(defun all-digits-p (lst radix)
+  (declare (xargs :guard (and (character-listp lst)
+                              (integerp radix)
+                              (<= 2 radix)
+                              (<= radix 36))))
+  (cond ((endp lst) t)
+        (t (and (digit-char-p (car lst) radix)
+                (all-digits-p (cdr lst) radix)))))
+
+(defun d-pos-listp (lst)
+  (declare (xargs :guard t))
+  (cond ((atom lst) (null lst))
+        ((natp (car lst))
+         (d-pos-listp (cdr lst)))
+        (t (and (symbolp (car lst))
+                (let ((name (symbol-name (car lst))))
+                  (and (not (equal name ""))
+                       (eql (char name 0) #\D)
+                       (all-digits-p (cdr (coerce name 'list)) 10)))
+                (d-pos-listp (cdr lst))))))
+
+(defun clause-id-p (cl-id)
+  (declare (xargs :guard t))
+  (case-match cl-id
+    (((forcing-round . pool-lst) case-lst . primes)
+     (and (natp forcing-round)
+          (pos-listp pool-lst)
+          (d-pos-listp case-lst)
+          (natp primes)))
+    (& nil)))
+
+(defproxy print-clause-id-okp (*) => *)
+
+(defun print-clause-id-okp-builtin (cl-id)
+  (declare (ignore cl-id)
+           (xargs :guard (clause-id-p cl-id)))
+  t)
+
+(defattach (print-clause-id-okp print-clause-id-okp-builtin)
+  :skip-checks t)
+
 (defun@par waterfall-print-clause (suppress-print cl-id clause state)
   (cond ((or suppress-print (equal cl-id *initial-clause-id*))
          (state-mac@par))
@@ -3552,7 +3593,8 @@
             (if (and (or (gag-mode)
                          (member-eq 'prove
                                     (f-get-global 'inhibit-output-lst state)))
-                     (f-get-global 'print-clause-ids state))
+                     (f-get-global 'print-clause-ids state)
+                     (print-clause-id-okp cl-id))
                 (waterfall-print-clause-id@par cl-id)
               (state-mac@par))
             (io?-prove@par
@@ -6526,7 +6568,8 @@
   (prog2$
    (parallel-only@par
     (cond ((equal (f-get-global 'waterfall-printing state) :limited)
-           (with-output-lock
+           (and (print-clause-id-okp cl-id)
+                (with-output-lock
 
 ; Parallelism wart: Kaufmann suggests that we need to not print clause-ids that
 ; have already been printed.  Note that using the printing of clause-ids to
@@ -6536,8 +6579,8 @@
 ; Parallelism wart: here, and at many other ACL2(p)-specific places, consider
 ; using observation-cw or printing that can be inhibited, instead of cw.
 
-            (cw "Starting ~x0~%"
-                (string-for-tilde-@-clause-id-phrase cl-id))))
+                 (cw "Starting ~x0~%"
+                     (string-for-tilde-@-clause-id-phrase cl-id)))))
           ((equal (f-get-global 'waterfall-printing state) :very-limited)
            (with-output-lock
             (cw ".")))

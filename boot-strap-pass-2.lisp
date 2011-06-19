@@ -727,6 +727,45 @@
 (defattach rw-cacheable-failure-reason rw-cacheable-failure-reason-builtin)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Attachments: print-clause-id-okp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination-boot-strap all-digits-p) ; and guards
+
+(verify-termination-boot-strap ; and guards
+ (d-pos-listp
+  (declare
+   (xargs
+    :guard-hints
+    (("Goal"
+      :use ((:instance coerce-inverse-2
+                       (x (symbol-name (car lst))))
+            (:instance character-listp-coerce
+                       (str (symbol-name (car lst)))))
+      :expand ((len (coerce (symbol-name (car lst)) 'list)))
+      :in-theory (disable coerce-inverse-2
+                          character-listp-coerce)))))))
+
+(verify-termination-boot-strap pos-listp)
+(verify-guards pos-listp)
+
+(defthm d-pos-listp-forward-to-true-listp
+  (implies (d-pos-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining)
+
+(verify-termination-boot-strap clause-id-p) ; and guards
+
+(encapsulate
+ (((print-clause-id-okp *) => * :formals (cl-id) :guard (clause-id-p cl-id)))
+ (local (defun print-clause-id-okp (x)
+          x)))
+
+(verify-termination-boot-strap print-clause-id-okp-builtin) ; and guards
+
+(defattach print-clause-id-okp print-clause-id-okp-builtin)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

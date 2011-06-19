@@ -17650,6 +17650,10 @@
   effect is to avoid the usual check that the extended ancestor relation has no
   cycles (~pl[defattach]).  Thanks to Dave Greve for requesting this feature.
 
+  You can now restrict the printing of subgoal names when using
+  ~c[:]~ilc[set-gag-mode]~c[ :goals].  ~l[set-print-clause-ids].  Thanks to
+  Karl Hoech for a suggestion leading to this enhancement.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   ACL2 now avoids some repeated attempts to rewrite hypotheses of rewrite
@@ -23860,12 +23864,34 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   :set-print-clause-ids nil
   ~ev[]
   This command affects output from the theorem prover only when ~c['prove]
-  output is inhibited; ~pl[set-inhibit-output-lst].  Calling this macro with
-  value ~c[t] as shown above will cause subsequent proof attempts with
-  ~c['prove] output inhibited to print the subgoal number, so that you can see
-  the progress of the proof; value ~c[nil] reverts to the default behavior,
-  where this is not the case.  On a related note, we point out that you can
-  cause output to be saved for later display; ~pl[pso] and ~pl[pso!].~/~/"
+  output is inhibited (~pl[set-inhibit-output-lst]) or gag-mode is on (but in
+  that case the ~c[:goals] setting issues this command automatically;
+  ~pl[set-gag-mode]).  Calling this macro with value ~c[t] as shown above will
+  cause subsequent proof attempts with ~c['prove] output inhibited to print the
+  subgoal number, so that you can see the progress of the proof; value ~c[nil]
+  reverts to the default behavior, where this is not the case.  On a related
+  note, we point out that you can cause output to be saved for later display;
+  ~pl[pso] and ~pl[pso!].~/
+
+  If ~c['prove] output is inhibited or gag-mode is on, and if you issue
+  ~c[(set-print-clause-ids t)] (either explicitly or with
+  ~c[(set-gag-mode :goals)]), then you can restrict when subgoal numbers are
+  printed.  In the following example we restrict to subgoals that are no more
+  than four inductions deep, no more than four casesplits deep, and no more
+  than four single-subgoals deep.  For additional relevant explanation,
+  ~pl[clause-identifier] and ~pl[defattach].
+  ~bv[]
+  (defun print-clause-id-okp-level-4 (cl-id)
+    (declare (xargs :mode :logic :guard (clause-id-p cl-id)))
+    (and (<= (length (access clause-id cl-id :pool-lst))
+             4)
+         (<= (length (access clause-id cl-id :case-lst))
+             4)
+         (<= (access clause-id cl-id :primes)
+             4)))
+
+  (defattach print-clause-id-okp print-clause-id-okp-level-4)
+  ~ev[]~/"
 
   (declare (xargs :guard (member-equal flg '(t 't nil 'nil))))
   (let ((flg (if (atom flg)
