@@ -49,6 +49,37 @@
          (faig-eval-alist x (append (aig-eval-alist al1 al2) al2))))
 
 
+
+
+
+(defthm aig-eval-of-aig-partial-eval
+  (equal (aig-eval (aig-partial-eval x al1) al2)
+         (aig-eval x (append al1 al2)))
+  :hints(("Goal" :in-theory (enable aig-eval aig-partial-eval))))
+
+(in-theory (disable aig-partial-eval))
+
+(defthm aig-eval-alist-of-aig-partial-eval-alist
+  (equal (aig-eval-alist (aig-partial-eval-alist x al1) al2)
+         (aig-eval-alist x (append al1 al2))))
+
+(defthm faig-eval-of-faig-partial-eval
+  (equal (faig-eval (faig-partial-eval x al1) al2)
+         (faig-eval x (append al1 al2)))
+  :hints(("Goal" :in-theory (enable faig-eval faig-partial-eval))))
+
+(in-theory (disable faig-partial-eval))
+
+(defthm faig-eval-pat-of-faig-partial-eval-pat
+  (equal (faig-eval-pat pat (faig-partial-eval-pat pat aigs al1) al2)
+         (faig-eval-pat pat aigs (append al1 al2))))
+
+(defthm faig-eval-alist-of-faig-partial-eval-alist
+  (equal (faig-eval-alist (faig-partial-eval-alist x al1) al2)
+         (faig-eval-alist x (append al1 al2))))
+
+
+
 (defthm aig-eval-of-aig-compose
   (equal (aig-eval (aig-compose x al1) al2)
          (aig-eval x (aig-eval-alist al1 al2))))
@@ -190,8 +221,12 @@
 (defcong aig-equiv aig-equiv (aig-restrict x al) 1
   :hints ((witness :ruleset aig-equiv-witnessing)))
 
+(defcong aig-equiv aig-equiv (aig-partial-eval x al) 1
+  :hints ((witness :ruleset aig-equiv-witnessing)))
+
 (defcong aig-alist-equiv aig-equiv (aig-restrict x al) 2
   :hints ((witness :ruleset aig-equiv-witnessing)))
+
 
 (defexample aig-alist-equiv-restrict-example
   :pattern (hons-assoc-equal k (aig-restrict-alist x env))
@@ -208,11 +243,29 @@
 (defcong aig-alist-equiv aig-alist-equiv (aig-restrict-alist x al) 1
   :hints ((witness)))
 
+(defexample aig-alist-equiv-partial-eval-example
+  :pattern (hons-assoc-equal k (aig-partial-eval-alist x env))
+  :templates (k)
+  :instance-rulename aig-alist-equiv-instancing)
+
+(defthm lookup-in-aig-partial-eval-alist
+  (equal (hons-assoc-equal k (aig-partial-eval-alist x env))
+         (and (hons-assoc-equal k x)
+              (cons k (aig-partial-eval (cdr (hons-assoc-equal k x))
+                                    env))))
+  :hints (("goal" :induct t)))
+
+(defcong aig-alist-equiv aig-alist-equiv (aig-partial-eval-alist x al) 1
+  :hints ((witness)))
+
 (defcong aig-alist-equiv aig-alist-equiv (aig-restrict-alist x al) 2
   :hints ((witness :ruleset aig-alist-equiv-witnessing)))
 
 
 (defcong faig-equiv faig-equiv (faig-restrict x al) 1
+  :hints ((witness :ruleset faig-equiv-witnessing)))
+
+(defcong faig-equiv faig-equiv (faig-partial-eval x al) 1
   :hints ((witness :ruleset faig-equiv-witnessing)))
 
 (defcong aig-alist-equiv faig-equiv (faig-restrict x al) 2
@@ -233,6 +286,23 @@
 
 (defcong faig-alist-equiv faig-alist-equiv (faig-restrict-alist x al) 1
   :hints ((witness)))
+
+(defexample faig-alist-equiv-partial-eval-example
+  :pattern (hons-assoc-equal k (faig-partial-eval-alist x env))
+  :templates (k)
+  :instance-rulename faig-alist-equiv-instancing)
+
+(defthm lookup-in-faig-partial-eval-alist
+  (equal (hons-assoc-equal k (faig-partial-eval-alist x env))
+         (and (hons-assoc-equal k x)
+              (cons k (faig-partial-eval (cdr (hons-assoc-equal k x))
+                                     env))))
+  :hints (("goal" :induct t)))
+
+(defcong faig-alist-equiv faig-alist-equiv (faig-partial-eval-alist x al) 1
+  :hints ((witness)))
+
+
 
 (defcong aig-alist-equiv faig-alist-equiv (faig-restrict-alist x al) 2
   :hints ((witness :ruleset faig-alist-equiv-witnessing)))
@@ -358,12 +428,25 @@
   :hints (("goal" :induct t
            :in-theory (enable aig-restrict))))
 
+(defcong alist-equiv equal (aig-partial-eval x env) 2
+  :hints (("goal" :induct t
+           :in-theory (enable aig-partial-eval))))
+
 (defcong alist-equiv equal (faig-restrict x env) 2
   :hints(("Goal" :in-theory (enable faig-restrict))))
 
 (defcong alist-equiv equal (faig-restrict-alist x env) 2
   :hints(("goal" :in-theory (enable faig-restrict-alist)
           :induct (len x))))
+
+
+(defcong alist-equiv equal (faig-partial-eval x env) 2
+  :hints(("Goal" :in-theory (enable faig-partial-eval))))
+
+(defcong alist-equiv equal (faig-partial-eval-alist x env) 2
+  :hints(("goal" :in-theory (enable faig-partial-eval-alist)
+          :induct (len x))))
+
 
 
 
@@ -418,6 +501,26 @@
 
 
 
+(defthm aig-partial-eval-aig-partial-eval
+  (aig-equiv (aig-partial-eval (aig-partial-eval x al1) al2)
+             (aig-partial-eval x (append al1 al2)))
+  :hints ((witness)))
+
+(defthm aig-partial-eval-alist-aig-partial-eval-alist
+  (aig-alist-equiv (aig-partial-eval-alist (aig-partial-eval-alist x al1) al2)
+                   (aig-partial-eval-alist x (append al1 al2)))
+  :hints ((witness)))
+
+(defthm faig-partial-eval-faig-partial-eval
+  (faig-equiv (faig-partial-eval (faig-partial-eval x al1) al2)
+              (faig-partial-eval x (append al1 al2)))
+  :hints ((witness)))
+
+(defthm faig-partial-eval-alist-faig-partial-eval-alist
+  (faig-alist-equiv (faig-partial-eval-alist (faig-partial-eval-alist x al1) al2)
+                    (faig-partial-eval-alist x (append al1 al2)))
+  :hints ((witness)))
+
 
 
 
@@ -457,6 +560,16 @@
          (faig-restrict-alist a env))
   :hints(("Goal" :in-theory (disable faig-fix))))
 
+(defthm faig-partial-eval-faig-fix
+  (equal (faig-partial-eval (faig-fix x) al)
+         (faig-partial-eval x al))
+  :hints(("Goal" :in-theory (e/d (faig-partial-eval aig-partial-eval)))))
+
+(defthm faig-partial-eval-alist-faig-fix-alist
+  (equal (faig-partial-eval-alist (faig-fix-alist a) env)
+         (faig-partial-eval-alist a env))
+  :hints(("Goal" :in-theory (disable faig-fix))))
+
 (defthm hons-assoc-equal-faig-fix-alist
   (equal (hons-assoc-equal x (faig-fix-alist a))
          (and (hons-assoc-equal x a)
@@ -476,6 +589,10 @@
   (equal (alist-keys (faig-restrict-alist al env))
          (alist-keys al)))
 
+(defthm alist-keys-faig-partial-eval-alist
+  (equal (alist-keys (faig-partial-eval-alist al env))
+         (alist-keys al)))
+
 (defthm alist-keys-faig-eval-alist
   (equal (alist-keys (faig-eval-alist al env))
          (alist-keys al)))
@@ -491,6 +608,12 @@
   (equal (hons-assoc-equal x (faig-restrict-alist al env))
          (and (hons-assoc-equal x al)
               (cons x (faig-restrict (cdr (hons-assoc-equal x al))
+                                     env)))))
+
+(defthm faig-partial-eval-alist-look
+  (equal (hons-assoc-equal x (faig-partial-eval-alist al env))
+         (and (hons-assoc-equal x al)
+              (cons x (faig-partial-eval (cdr (hons-assoc-equal x al))
                                      env)))))
 
 

@@ -29,7 +29,7 @@
 (set-aig-patterns nil)
 
 (add-aig-fn-pats
- aig-and aig-not aig-or aig-xor aig-iff aig-ite aig-restrict)
+ aig-and aig-not aig-or aig-xor aig-iff aig-ite aig-restrict aig-partial-eval)
 
 (add-aig-pats 't 'nil)
 

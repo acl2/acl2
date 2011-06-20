@@ -38,6 +38,12 @@
            (not (member-equal v (aig-vars (aig-restrict x al)))))
   :hints(("Goal" :in-theory (enable aig-restrict))))
 
+(defthm member-aig-vars-aig-partial-eval
+  (implies (not (and (member-equal v (aig-vars x))
+                     (not (member-equal v (alist-keys al)))))
+           (not (member-equal v (aig-vars (aig-partial-eval x al)))))
+  :hints(("Goal" :in-theory (enable aig-partial-eval))))
+
 (defthm aig-vars-cons
   (set-equivp (aig-vars (cons x y))
               (append (aig-vars x)

@@ -409,6 +409,76 @@ is NIL or :WARN.~%" name)
 
 
 
+;; aig-partial-eval is like aig-restrict, but treats the alist as
+;; Boolean-valued.  So one never replaces a variable by a subtree, only a
+;; boolean.
+(defun aig-partial-eval (x al)
+  (declare (xargs :guard t))
+  (aig-cases
+   x
+   :true t
+   :false nil
+   :var (let ((a (hons-get x al)))
+          (if a (and (cdr a) t) x))
+   :inv (aig-not (aig-partial-eval (car x) al))
+   :and (let ((a (aig-partial-eval (car x) al)))
+          (and a
+               (aig-and a (aig-partial-eval (cdr x) al))))))
+
+(memoize 'aig-partial-eval)
+
+(defn aig-partial-eval-alist (x-alst al)
+  (if (atom x-alst)
+      nil
+    (if (atom (car x-alst))
+        (aig-partial-eval-alist (cdr x-alst) al)
+      (cons (cons (caar x-alst)
+                  (aig-partial-eval (cdar x-alst) al))
+            (aig-partial-eval-alist (cdr x-alst) al)))))
+
+(defthm alistp-of-aig-partial-eval-alist
+  (alistp (aig-partial-eval-alist x-alst al)))
+
+
+(defn aig-partial-eval-list (x al)
+  (if (atom x)
+      nil
+    (cons (aig-partial-eval (car x) al)
+          (aig-partial-eval-list (cdr x) al))))
+
+
+(defn faig-partial-eval (x restr-al)
+  (if (atom x)
+      '(t . t)
+    (cons (aig-partial-eval (car x) restr-al)
+          (aig-partial-eval (cdr x) restr-al))))
+
+(defn faig-partial-eval-pat (pat fpat al)
+  (if pat
+      (if (atom pat)
+          (faig-partial-eval fpat al)
+        (cons (faig-partial-eval-pat (car pat) (ec-call (car fpat)) al)
+              (faig-partial-eval-pat (cdr pat) (ec-call (cdr fpat)) al)))
+    nil))
+
+
+(defn faig-partial-eval-alist (al comp-al)
+  (if (atom al)
+      nil
+    (let ((rest (faig-partial-eval-alist (cdr al) comp-al)))
+      (if (atom (car al))
+          rest
+        (cons (cons (caar al) (faig-partial-eval (cdar al) comp-al))
+              rest)))))
+
+(defn faig-partial-eval-alists (als restr-al)
+  (if (atom als)
+      nil
+    (cons (faig-partial-eval-alist (car als) restr-al)
+          (faig-partial-eval-alists (cdr als) restr-al))))
+
+
+
 
 
 
