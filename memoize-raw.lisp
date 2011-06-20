@@ -1282,6 +1282,8 @@
             rename-package 
             replace 
             require 
+            reverse-strip-cars
+            reverse-strip-cdrs
             room 
             round 
             sbit 
