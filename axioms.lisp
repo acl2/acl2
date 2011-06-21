@@ -24776,6 +24776,7 @@
     waterfall-print-clause-id@par ; for #+acl2-par
     with-output-lock with-ttree-lock with-wormhole-lock ; for #+acl2-par
     f-put-global@par ; for #+acl2-par
+    set-waterfall-parallelism
     with-prover-step-limit
     ))
 
@@ -25065,15 +25066,6 @@
     (user-home-dir . nil) ; set first time entering lp
     (verbose-theory-warning . t)
     (walkabout-alist . nil)
-    (waterfall-parallelism . ; for #+acl2-par
-
-; Waterfall-parallelism and waterfall-printing need to have initial values that
-; are consistent with one another.  See function set-waterfall-parallelism-fn
-; to derive the legal pairings.
-
-                           nil) 
-    (waterfall-printing . ; for #+acl2-par; see waterfall-parallelism above
-                        :full)
     (window-interface-postlude
      . "#>\\>#<\\<e(acl2-window-postlude ?~sw ~xt ~xp)#>\\>")
     (window-interface-prelude
@@ -31748,8 +31740,6 @@
     trace-specs
     retrace-p
     parallel-evaluation-enabled
-    waterfall-parallelism ; for #+acl2-par
-    waterfall-printing ; for #+acl2-par, in support of waterfall-parallelism
     redundant-with-raw-code-okp
 
 ; print control variables
@@ -43781,3 +43771,24 @@ Lisp definition."
   (declare (xargs :guard t)
            (ignore name state))
   (state-mac@par))
+
+; These constants are needed both in parallel.lisp and boot-strap-pass-2.lisp,
+; so we define them here.
+
+(defconst *waterfall-printing-values*
+  '(:full :limited :very-limited))
+
+(defconst *waterfall-parallelism-values*
+  '(nil :full :top-level :resource-based :pseudo-parallel))
+
+; This is needed in both boot-strap-pass-2.lisp and parallel.lisp, so we put it
+; here.
+
+(defun symbol-constant-fn (prefix sym)
+  (declare (xargs :guard (and (symbolp prefix)
+                              (symbolp sym))))
+  (intern (concatenate 'string
+                       (symbol-name prefix)
+                       "-"
+                       (symbol-name sym))
+          "ACL2"))

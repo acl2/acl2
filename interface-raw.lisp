@@ -6370,8 +6370,11 @@
            link-doc-to
            link-doc-to-keyword 
            logic
+           make-waterfall-parallelism-constants
+           make-waterfall-printing-constants
            set-invisible-fns-table
            set-ld-skip-proofsp
+           set-waterfall-parallelism
            table
            value
            verify-guards
@@ -7122,14 +7125,6 @@ Missing functions:
 
   #+acl2-par
   (reset-all-parallelism-variables)
-
-; Parallelism wart: The following call to set-waterfall-parallelism should
-; remain commented out in any released version of ACL2.  Once we are done with
-; the parallelism project, we should delete this wart, and the commented code.
-
-;  #+acl2-par
-;  (unless *lp-ever-entered-p*
-;    (set-waterfall-parallelism-fn :resource-based *the-live-state*))
 
   (let ((state *the-live-state*)
         #+(and gcl (not ansi-cl))

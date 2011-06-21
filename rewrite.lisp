@@ -8638,7 +8638,7 @@
 
   (cond
    #+acl2-par ; test is always false anyhow when #-acl2-par
-   ((f-get-global 'waterfall-parallelism state)
+   ((waterfall-parallelism)
     nil)
    (t
     (brr-wormhole
@@ -8860,7 +8860,7 @@
 
   (cond
    #+acl2-par ; test is always false anyhow when #-acl2-par
-   ((f-get-global 'waterfall-parallelism state)
+   ((waterfall-parallelism)
     nil)
    (t
     (brr-wormhole

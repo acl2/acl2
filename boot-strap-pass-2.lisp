@@ -789,6 +789,54 @@
 (defattach oncep-tp oncep-tp-builtin)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Attachments: waterfall-parallelism and waterfall-printin
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(encapsulate
+ ((waterfall-parallelism () t))
+ (local (defun waterfall-parallelism () nil))
+ (defthm waterfall-parallelism-constraint
+   (member-eq (waterfall-parallelism)
+              *waterfall-parallelism-values*)))
+
+(encapsulate
+ ((waterfall-printing () t))
+ (logic)
+ (local (defun waterfall-printing () :full))
+ (defthm waterfall-printing-constraint
+   (member-eq (waterfall-printing)
+              *waterfall-printing-values*)))
+
+(defun make-symbol-constants-fn (prefix lst)
+  (declare (xargs :guard (and (symbolp prefix)
+                              (symbol-listp lst))))
+  (cond ((endp lst) nil)
+        (t (cons `(defun ,(symbol-constant-fn prefix (car lst)) ()
+                    (declare (xargs :guard t :mode :logic))
+                    ,(car lst))
+                 (make-symbol-constants-fn prefix (cdr lst))))))
+
+(defmacro make-waterfall-parallelism-constants (prefix)
+  (cons 'progn (make-symbol-constants-fn prefix
+                                         *waterfall-parallelism-values*)))
+
+(make-waterfall-parallelism-constants waterfall-parallelism)
+
+(defmacro make-waterfall-printing-constants (prefix)
+  (cons 'progn (make-symbol-constants-fn prefix
+                                         *waterfall-printing-values*)))
+
+(make-waterfall-printing-constants waterfall-printing)
+
+; We execute defattach events without :skip-checks.  But we avoid using
+; set-waterfall-parallelism, because that causes an invocation of
+; set-waterfall-printing, which is an error when #-acl2-par.
+#+acl2-loop-only
+(progn
+  (defattach (waterfall-parallelism waterfall-parallelism-nil))
+  (defattach (waterfall-printing waterfall-printing-full)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

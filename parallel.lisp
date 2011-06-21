@@ -265,12 +265,13 @@
       ctx
       state)))
 
-(defconst *waterfall-parallelism-values*
-  '(nil :full :top-level :resource-based :pseudo-parallel))
-
 (defun waterfall-printing-value-for-parallelism-value (value)
 
-; Warning: Keep guard in sync with guard of set-waterfall-parallelism-fn.
+; Warning: We assume the the value of this function on input nil is :full.  If
+; that changes, then we will need to replace the definition of
+; waterfall-printing-full in front of the defproxy event below for
+; waterfall-printing, as well as the corresponding defattach event in
+; boot-strap-pass-2.lisp.
 
   (declare (xargs :guard (member-eq value *waterfall-parallelism-values*)))
   (cond ((eq value nil)
@@ -365,72 +366,80 @@
   The state of the system may be corrupted after such a message has been
   printed.~/~/")
 
-(defun set-waterfall-parallelism-fn (val state)
+; Parallelism wart: consider adding a :doc topic for waterfall-printing and
+; waterfall-parallelism that just point to set-waterfall-printing and
+; set-waterfall-parallelism, respectively.
 
-; Warning: Keep guard in sync with guard of
-; waterfall-printing-value-for-parallelism-value.
+; Here are the two functions we need now from
+; make-waterfall-parallelism-constants and make-waterfall-printing-constants
+; (see boot-strap-pass-2.lisp).
+
+(defun waterfall-parallelism-nil ()
+  (declare (xargs :guard t :mode :logic))
+  nil)
+
+(defun waterfall-printing-full ()
+  (declare (xargs :guard t :mode :logic))
+  :FULL)
+
+(defproxy waterfall-parallelism () => *)
+(defproxy waterfall-printing () => *)
+
+(defun check-set-waterfall-parallelism (val print-val)
 
 ; Parallelism wart: perhaps change the wording to make it more obvious that
 ; there are two settings involved here, waterfall-parallelism and
 ; waterfall-printing.
 
-  (declare (xargs :guard (member-eq val *waterfall-parallelism-values*)))
-  (let ((printing-value
-         (waterfall-printing-value-for-parallelism-value val)))
-    (cond
-     ((and (eq (f-get-global 'waterfall-parallelism state)
-               val)
-           (eq (f-get-global 'waterfall-printing state)
-               printing-value))
-      (pprogn (observation nil "No change in waterfall parallelism or ~
-                                waterfall printing.")
-              (value val)))
-     #-acl2-par
-     (val
-      (er soft 'set-waterfall-parallelism-fn
-          "Parallelism can only be enabled in CCL, threaded SBCL, or ~
-           Lispworks.  Additionally, the feature :ACL2-PAR must be set when ~
-           compiling ACL2 (for example, by using `make' with argument ~
-           `ACL2_PAR=t').  Either the current Lisp is neither CCL nor ~
-           threaded SBCL nor Lispworks, or this feature is missing.  ~
-           Consequently, parallel evaluation of the waterfall will remain ~
-           disabled."))
-     (t
-      (let ((observation-string
-             (case val
-               ((nil)
-                "Disabling parallel evaluation of the waterfall.  Setting ~
-                 waterfall-printing to ~x0 (see :DOC set-waterfall-printing).")
-               (:full
-                "Parallelizing the proof of every subgoal.  Setting ~
-                 waterfall-printing to ~x0 (see :DOC set-waterfall-printing).")
-               (:top-level
-                "Parallelizing the proof of top-level subgoals only.  Setting ~
-                 waterfall-printing to ~x0 (see :DOC set-waterfall-printing).")
-               (:pseudo-parallel
-                "Running the version of the waterfall prepared for parallel ~
-                 execution (stateless).  However, we will evaluate this ~
-                 version of the waterfall serially.  Setting ~
-                 waterfall-printing to ~x0 (see :DOC set-waterfall-printing).")
-               (otherwise ; :resource-based
-                "Parallelizing the proof of every subgoal, as long as CPU ~
-                 core resources are available.  Setting waterfall-printing to ~
-                 ~x0 (see :DOC set-waterfall-printing)."))))
-        (pprogn
-         (f-put-global 'waterfall-parallelism val state)
-         (f-put-global 'waterfall-printing printing-value state)
-         (observation nil observation-string printing-value)
-         (value val)))))))
+; Warning: This function should only be called inside the ACL2 loop, because of
+; the calls of observation-cw.
 
-; Parallelism wart: consider adding a :doc topic for waterfall-printing and
-; waterfall-parallelism that just point to set-waterfall-printing and
-; set-waterfall-parallelism, respectively.
+  (declare (xargs :guard (and (member-eq val *waterfall-parallelism-values*)
+                              (keywordp print-val))))
+  (cond
+   ((and (eq (waterfall-parallelism) val)
+         (eq (waterfall-printing) print-val))
+    (observation-cw
+     nil
+     "No change in waterfall parallelism or waterfall printing (but the ~
+      set-waterfall-parallelism event is not redundant)."))
+   (t
+    (let ((observation-string
 
-(defmacro set-waterfall-parallelism (value)
+; The strange use of concatenate below, rather than creating a formatted string
+; to pass to observation-cw below, is due to the use of wormholes in the
+; implementation of observation-cw.  An initial implementation produced an
+; error because the wormhole call resulted in a call of the *1* function for
+; flpr, which was illegal because that function is program-only.
 
-  ":Doc-Section Parallelism
+           (concatenate
+            'string
+            (case val
+              ((nil)
+               "Disabling parallel evaluation of the waterfall.  Setting ~
+               waterfall-printing to :")
+              (:full
+               "Parallelizing the proof of every subgoal.  Setting ~
+               waterfall-printing to :")
+              (:top-level
+               "Parallelizing the proof of top-level subgoals only.  Setting ~
+               waterfall-printing to :")
+              (:pseudo-parallel
+               "Running the version of the waterfall prepared for parallel ~
+               execution (stateless).  However, we will evaluate this version ~
+               of the waterfall serially.  Setting waterfall-printing to :")
+              (otherwise ; :resource-based
+               "Parallelizing the proof of every subgoal, as long as CPU core ~
+               resources are available.  Setting waterfall-printing to :"))
+            (symbol-name print-val)
+            " (see :DOC set-waterfall-printing).")))
+      (observation-cw nil observation-string)))))
 
-  configuring the parallel execution of the waterfall~/
+(defmacro set-waterfall-parallelism (value &optional no-error)
+
+  ":Doc-Section switches-parameters-and-modes
+
+  for ACL2(p): configuring the parallel execution of the waterfall~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
   supporting parallel evaluation and proof; ~pl[parallelism].
@@ -458,40 +467,60 @@
   ~l[set-waterfall-printing].
 
   Note that not all ACL2 features are supported when waterfall-parallelism is
-  set to non-nil (~pl[unsupported-waterfall-parallelism-features]).~/"
+  set to non-nil (~pl[unsupported-waterfall-parallelism-features]).
+
+  Note: This is an event!  It does not print the usual event summary but
+  nevertheless changes the ACL2 logical world and is so recorded.  Moreover,
+  ~c[set-waterfall-parallelism] ~il[events] are never redundant
+  (~pl[redundant-events]).~/
+
+  :cited-by parallelism"
 
   (declare (xargs :guard
                   (or (member-eq value *waterfall-parallelism-values*)
-                      (and (consp value)
-                           (eq (car value) 'quote)
-                           (consp (cdr value))
-                           (null (cddr value))
-                           (member-eq (cadr value)
-                                      *waterfall-parallelism-values*)))))
-  `(let ((val ,value))
-     (set-waterfall-parallelism-fn
-      (cond ((consp val) (cadr val))
-            (t val))
-      state)))
+                      (member-equal value (kwote-lst
+                                           *waterfall-parallelism-values*))))
+           #+acl2-par (ignore no-error))
+  (let* ((val (if (consp value) (cadr value) value))
+         (print-val (waterfall-printing-value-for-parallelism-value val)))
+    (prog2$
+     #+(and acl2-par acl2-loop-only)
+     (check-set-waterfall-parallelism val print-val)
+     #+(and acl2-par (not acl2-loop-only))
+     nil ; avoid observation-cw call in raw Lisp
 
-(defun set-waterfall-printing-fn (val state)
-  (declare (xargs :guard (member-eq val '(:full :limited :very-limited))))
-  (cond
-   ((eq (f-get-global 'waterfall-printing state)
-        val)
-    (pprogn (observation nil "No change in waterfall printing.")
-            (value nil)))
-   #-acl2-par
-   (val
-    (er soft 'set-waterfall-printing-fn
-        "Customizing waterfall printing only makes sense in the #+acl2-par ~
-         builds of ACL2.  Consequently, the waterfall-printing option will ~
-         remain unchanged."))
-   (t
-    (pprogn
-     (f-put-global 'waterfall-printing val state)
-     (observation nil "Setting waterfall-printing to ~x0." val)
-     (value val)))))
+; Note that one can submit defattach forms directly, rather than in place of
+; this macro, in order to set waterfall-parallelism and waterfall-printing,
+; even when #-acl2-par.  However, these settings will be ignored.  The error
+; message below is therefore simply a courtesy to the user.  We include the
+; no-error argument in case one wants to put a set-waterfall-parallelism event
+; into a book that can be certified with either ACL2 or ACL2(p).
+
+; Parallelism wart: document the no-error argument.
+
+     #-acl2-par
+     (or no-error
+         (null val)
+         (er hard 'set-waterfall-parallelism
+             "Parallelism can only be enabled in CCL, threaded SBCL, or ~
+              Lispworks. ~ Additionally, the feature :ACL2-PAR must be set ~
+              when compiling ACL2 (for example, by using `make' with argument ~
+              `ACL2_PAR=t').  Either the current Lisp is neither CCL nor ~
+              threaded SBCL nor Lispworks, or this feature is missing.  ~
+              Consequently, parallel evaluation of the waterfall will remain ~
+              disabled."))
+     (let ((val-fn (symbol-constant-fn 'waterfall-parallelism val)))
+       `(with-output
+         :off (event observation proof-tree prove summary warning)
+         (progn
+           (defattach (waterfall-parallelism
+                       ,val-fn
+                       :hints
+                       (("Goal"
+                         :in-theory
+                         '(return-last (member-equal) (,val-fn))))))
+           (set-waterfall-printing ,print-val)
+           (value-triple ,val)))))))
 
 (defmacro set-waterfall-printing (value)
 
@@ -500,9 +529,9 @@
 ; and it could be good to reference a :doc topic that explains ACL2(p)
 ; checkpoints (such a topic has yet to be written).
 
-  ":Doc-Section Parallelism
+  ":Doc-Section switches-parameters-and-modes
 
-  configuring the printing that occurs within the parallelized waterfall~/
+  for ACL2(p): configuring the printing that occurs within the parallelized waterfall~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
   supporting parallel evaluation and proof; ~pl[parallelism].
@@ -537,17 +566,43 @@
 
   A value of ~c[:very-limited] is treated the same as ~c[:limited], except that
   instead of printing subgoal numbers, the proof attempt prints a
-  period (`~c[.]') each time it starts a new subgoal.~/"
+  period (`~c[.]') each time it starts a new subgoal.
 
-  (declare (xargs :guard (member-equal value
-                                       '(:full ':full
-                                               :limited ':limited
-                                               :very-limited ':very-limited))))
-  `(let ((val ,value))
-     (set-waterfall-printing-fn
-      (cond ((consp val) (cadr val))
-            (t val))
-      state)))
+  Note: This is an event!  It does not print the usual event summary but
+  nevertheless changes the ACL2 logical world and is so recorded.  Moreover,
+  ~c[set-waterfall-printing] ~il[events] are never redundant
+  (~pl[redundant-events]).~/
+
+  :cited-by parallelism"
+
+  (declare (xargs
+            :guard
+            (or (member-eq value *waterfall-printing-values*)
+                (member-equal value (kwote-lst *waterfall-printing-values*)))))
+  #-acl2-par
+  (er hard 'set-waterfall-printing
+      "Customizing waterfall printing only makes sense in the #+acl2-par ~
+       builds of ACL2.  Consequently, the attempt to set waterfall-printing ~
+       to ~x0 will be ignored."
+      value)
+  #+acl2-par
+  (let* ((val (if (consp value) (cadr value) value))
+         (val-fn (symbol-constant-fn 'waterfall-printing val)))
+    `(with-output
+      :off (event observation proof-tree prove summary warning)
+      (progn (defattach (waterfall-printing
+                         ,val-fn
+                         :hints
+                         (("Goal"
+                           :in-theory
+                           '(return-last (member-equal) (,val-fn))))))
+             (value-triple ,val)))))
+
+; (set-waterfall-parallelism nil) ; see boot-strap-pass-2.lisp
+(defattach (waterfall-parallelism waterfall-parallelism-nil)
+  :skip-checks t)
+(defattach (waterfall-printing waterfall-printing-full)
+  :skip-checks t)
 
 (defdoc parallelism-at-the-top-level
   ":Doc-Section Parallelism

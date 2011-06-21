@@ -3280,12 +3280,10 @@
            (t (mv pspv state))))
    (mv@par pspv state)))
 
-(defun remove-pool-lst-from-gag-state (pool-lst gag-state
-                                                #+acl2-par
-                                                waterfall-parallelism-mode)
+(defun remove-pool-lst-from-gag-state (pool-lst gag-state)
   (cond
    #+acl2-par
-   (waterfall-parallelism-mode
+   ((waterfall-parallelism)
 
 ; This function contains an assertion that fails when executing the waterfall
 ; in parallel.  The assertion fails because parallelism mode doesn't save the
@@ -3334,9 +3332,7 @@
                         (and pop-car-p
                              (access gag-info ci :clause-id)))))))))))
 
-(defun pop-clause-update-gag-state-pop (pool-lsts gag-state msgs msg-p
-                                                  #+acl2-par
-                                                  waterfall-parallelism-mode)
+(defun pop-clause-update-gag-state-pop (pool-lsts gag-state msgs msg-p)
 
 ; Pool-lsts is in reverse chronological order.
 
@@ -3346,12 +3342,10 @@
    (t
     (mv-let
      (gag-state msgs)
-     (pop-clause-update-gag-state-pop (cdr pool-lsts) gag-state msgs msg-p
-                                      #+acl2-par waterfall-parallelism-mode)
+     (pop-clause-update-gag-state-pop (cdr pool-lsts) gag-state msgs msg-p)
      (mv-let (gagst cl-id)
              (remove-pool-lst-from-gag-state
-              (car pool-lsts) gag-state
-              #+acl2-par waterfall-parallelism-mode)
+              (car pool-lsts) gag-state)
              (mv gagst
                  (if (and msg-p cl-id)
                      (cons (msg "~@0"
@@ -3659,7 +3653,7 @@
             (pspv ttree new-hist clauses signal cl-id processor msg)
             (waterfall-msg1 processor cl-id signal clauses new-hist msg ttree
                             pspv state))
-       (cond ((equal (f-get-global 'waterfall-printing state) :full)
+       (cond ((equal (waterfall-printing) :full)
               (io? prove t
                    state
                    (pspv ttree new-hist clauses signal cl-id processor msg)
@@ -5576,9 +5570,8 @@
           (cond
            ((serial-first-form-parallel-second-form@par 
              nil
-             (or (equal (f-get-global 'waterfall-printing state) :limited)
-                 (equal (f-get-global 'waterfall-printing state)
-                        :very-limited)))
+             (member-equal (waterfall-printing)
+                           '(:limited :very-limited)))
             (state-mac@par))
            (t
             (io?-prove@par
@@ -6567,9 +6560,10 @@
 
   (prog2$
    (parallel-only@par
-    (cond ((equal (f-get-global 'waterfall-printing state) :limited)
-           (and (print-clause-id-okp cl-id)
-                (with-output-lock
+    (case (waterfall-printing)
+      (:limited
+       (and (print-clause-id-okp cl-id)
+            (with-output-lock
 
 ; Parallelism wart: Kaufmann suggests that we need to not print clause-ids that
 ; have already been printed.  Note that using the printing of clause-ids to
@@ -6579,12 +6573,12 @@
 ; Parallelism wart: here, and at many other ACL2(p)-specific places, consider
 ; using observation-cw or printing that can be inhibited, instead of cw.
 
-                 (cw "Starting ~x0~%"
-                     (string-for-tilde-@-clause-id-phrase cl-id)))))
-          ((equal (f-get-global 'waterfall-printing state) :very-limited)
-           (with-output-lock
-            (cw ".")))
-          (t nil)))
+             (cw "Starting ~x0~%"
+                 (string-for-tilde-@-clause-id-phrase cl-id)))))
+      (:very-limited
+       (with-output-lock
+        (cw ".")))
+      (otherwise nil)))
    (mv-let@par
     (erp pair state)
     (find-applicable-hint-settings@par cl-id clause hist pspv ctx hints
@@ -6609,16 +6603,14 @@
           ((null pair) ; There was no hint.
            (pprogn@par
 
-; In the #+acl2-par version of the waterfall, with 'waterfall-printing set to
+; In the #+acl2-par version of the waterfall, with (waterfall-printing) set to
 ; :limited, the need to print the clause on a checkpoint is taken care of
 ; inside waterfall-msg@par.
            
             (cond ((serial-first-form-parallel-second-form@par
                     nil
-                    (or (equal (f-get-global 'waterfall-printing state)
-                               :limited)
-                        (equal (f-get-global 'waterfall-printing state)
-                               :very-limited)))
+                    (member-equal (waterfall-printing)
+                                  '(:limited :very-limited)))
                    (state-mac@par))
                   (t (waterfall-print-clause@par suppress-print cl-id clause
                                                  state)))
@@ -7686,7 +7678,7 @@
             (primes-subproof
              'serial)
             (t
-             (case (f-get-global 'waterfall-parallelism state)
+             (case (waterfall-parallelism)
                ((nil)
                 'serial)
                ((:full)
@@ -7772,7 +7764,7 @@
            (t (initialize-proof-tree parent-clause-id x ctx state)))
      (sl-let (signal new-pspv new-jppl-flg state)
              #+acl2-par
-             (if (f-get-global 'waterfall-parallelism state)
+             (if (waterfall-parallelism)
                  (mv-let (step-limit signal new-pspv new-jppl-flg)
                          (waterfall1-lst@par (cond ((null clauses) 0)
                                                    ((null (cdr clauses))
@@ -8005,9 +7997,7 @@
          (('pop . pool-lsts)
           (mv-let
            (gagst msgs)
-           (pop-clause-update-gag-state-pop
-            pool-lsts gag-state nil msg-p
-            #+acl2-par (f-get-global 'waterfall-parallelism state))
+           (pop-clause-update-gag-state-pop pool-lsts gag-state nil msg-p)
            (pprogn
             (io? prove nil state
                  (prev-action pool-lsts forcing-round msgs)
@@ -8060,9 +8050,7 @@
              (gagst cl-id)
              (cond ((eq (car entry) 'consider)
                     (mv gag-state nil))
-                   (t (remove-pool-lst-from-gag-state
-                       pool-lst gag-state
-                       #+acl2-par (f-get-global 'waterfall-parallelism state))))
+                   (t (remove-pool-lst-from-gag-state pool-lst gag-state)))
              (pprogn
               (io? prove nil state
                    (prev-action forcing-round pool-lst entry cl-id jppl-flg
