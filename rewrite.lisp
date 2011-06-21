@@ -7969,7 +7969,15 @@
   by break-rewrite disappears.  Thus, break-rewrite lets you query the
   state of the rewriter and even do experiments involving proofs,
   etc., but these experiments have no effect on the ongoing proof
-  attempt.
+  attempt.  In particular:
+
+  Note that the output from break-rewrite is sometimes abbreviated by default,
+  such as for the term causing the break.  This can be controlled by setting
+  the ~c[:term] evisc-tuple; ~pl[set-evisc-tuple].  (Another option: use
+  iprinting.  ~l[set-iprint].)  But as noted above, if you use
+  ~c[set-evisc-tuple] from inside the break-rewrite ~il[wormhole], its effect
+  will disappear when you exit the break.  So you might want to issue a
+  ~c[set-evisc-tuple] command from the top level, outside break-rewrite.
 
   When you first enter break-rewrite a simple herald is printed such
   as:

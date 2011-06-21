@@ -7692,8 +7692,10 @@
                ((:resource-based)
                 #-acl2-loop-only (if (futures-resources-available) 'parallel 'serial)
 
-; Parallelism wart: consider using the oracle instead of just returning
-; 'serial.
+; Here we have an unusual functional discrepancy between #+acl2-loop-only code
+; and corresponding #-acl2-loop-only code.  But the alternative we have
+; considered would involve some complicated use of the acl2-oracle, which seems
+; unjustified for this #+acl2-par code.
 
                 #+acl2-loop-only 'serial)
                (otherwise

@@ -12963,17 +12963,6 @@
 #+acl2-loop-only
 (progn
 
-;; RAG - This function had to be modified in a major way.  It was
-;; originally defined only for rationals, and it used the fact that
-;; the floor of "p/q" could be found by repeatedly subtracting "q"
-;; from "p" (roughly speaking).  This same trick, sadly, does not work
-;; for the reals.  Instead, we need something similar to the
-;; archimedean axiom.  Our version thereof is the _undefined_ function
-;; "floor1", which takes a single argument and returns an integer
-;; equal to it or smaller to it by no more than 1.  Using this
-;; function, we can define the more general floor function offered
-;; below.
-
 (defdoc real
   ":Doc-Section ACL2::Real
 
@@ -13012,6 +13001,17 @@
   future releases.  Please feel free to query the authors if you are
   interested in learning more about ACL2(r).  Gamboa's dissertation
   may also be helpful.~/")
+
+;; RAG - This function had to be modified in a major way.  It was
+;; originally defined only for rationals, and it used the fact that
+;; the floor of "p/q" could be found by repeatedly subtracting "q"
+;; from "p" (roughly speaking).  This same trick, sadly, does not work
+;; for the reals.  Instead, we need something similar to the
+;; archimedean axiom.  Our version thereof is the _undefined_ function
+;; "floor1", which takes a single argument and returns an integer
+;; equal to it or smaller to it by no more than 1.  Using this
+;; function, we can define the more general floor function offered
+;; below.
 
 (defun floor (i j)
 
