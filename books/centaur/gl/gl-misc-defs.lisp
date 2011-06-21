@@ -143,3 +143,17 @@
     :rule-classes :definition))
 
 (table gl::preferred-defs 'logcount 'logcount-for-gl-correct)
+
+
+
+
+(encapsulate
+  ()
+  (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
+  (local (in-theory (enable nonnegative-integer-quotient)))
+
+  (defthm nonnegative-integer-quotient-for-gl
+    (equal (nonnegative-integer-quotient i j)
+           (floor (nfix i) (nfix j)))))
+
+(table gl::preferred-defs 'nonnegative-integer-quotient 'nonnegative-integer-quotient-for-gl)
