@@ -7348,10 +7348,10 @@
                          "The :type-prescription rule generated from ~x0 ~
                           contains the free variable~#1~[ ~&1.  This ~
                           variable~/s ~&1.  These variables~] will be chosen ~
-                          by searching for ~#2~[an instance~/instances~] of ~
-                          ~&2 among the hypotheses of the conjecture being ~
-                          rewritten.  This is generally a severe restriction ~
-                          on the applicability of the :type-prescription rule."
+                          by searching for instances of ~&2 among the ~
+                          hypotheses of conjectures being rewritten.  This is ~
+                          generally a severe restriction on the applicability ~
+                          of the :type-prescription rule."
                          name warned-free-vars inst-hyps))
               (t state))
              (cond

@@ -36024,11 +36024,15 @@
   (set-match-free-default nil)
   ~ev[]
 
+  Note: This utility does not apply to ~il[type-prescription] rules; for
+  a related topic pertinent to such rules,
+  ~pl[free-variables-type-prescription].
+
   As described elsewhere (~pl[free-variables]), a ~il[rewrite], ~il[linear], or
   ~il[forward-chaining] rule may have free variables in its hypotheses, and
   ACL2 can be directed either to try all bindings (``~c[:all]'') or just the
   first (``~c[:once]'') when relieving that hypothesis, as a basis for
-  relieving subsequent hypotheses.  This direction of ~c[:all] or ~c[:once] is
+  relieving subsequent hypotheses.  This directing of ~c[:all] or ~c[:once] is
   generally provided by specifying either ~c[:match-free :once] or
   ~c[:match-free :all] in the ~c[:]~ilc[rule-classes] of the rule.  If neither
   of these is specified, then the most recent ~c[set-match-free-default] is
@@ -36095,13 +36099,14 @@
   ~i[:match-free :once] or ~i[:match-free :all] in the ~c[:]~ilc[rule-classes]
   of the rule.
 
-  But suppose that neither of these is specified, and that
-  ~c[set-match-free-default] has not specified a default of ~c[:once] or
-  ~c[:all] (~pl[set-match-free-default]).  In this case a warning will occur
-  except when in the context of ~ilc[include-book].  If you prefer to see an
-  error in such cases, except in the context of ~ilc[certify-book], execute
-  ~c[(set-match-free-error t)].  If there is no error, then a default of
-  ~c[:all] is used.~/
+  But suppose that neither of these is specified for such a rule.  (Note:
+  ~c[set-match-free-error] is not relevant for ~il[type-prescription] rules.)
+  Also suppose that ~c[set-match-free-default] has not specified a default of
+  ~c[:once] or ~c[:all] (~pl[set-match-free-default]).  In this case a warning
+  will occur except when in the context of ~ilc[include-book].  If you prefer
+  to see an error in such cases, except in the context of ~ilc[certify-book],
+  execute ~c[(set-match-free-error t)].  If there is no error, then a default
+  of ~c[:all] is used.~/
 
   Note: This is ~sc[not] an event!  Instead, ~c[set-match-free-error] sets the
   state global ~c['match-free-error] (~pl[state] and ~pl[assign]).  Thus, this
@@ -36164,10 +36169,11 @@
   However, if a proof is going slowly, you may want to modify the behavior of
   some such rules so that they use only the first match for free variables in a
   hypothesis when relieving subsequent hypotheses, rather than backtracking and
-  trying additional matches as necessary.  The event
-  ~c[(add-match-free-override :once t)] has that effect.  Or at the other
-  extreme, perhaps you want to specify all rules as ~c[:all] rules except for a
-  some specific exceptions.  Then you can execute
+  trying additional matches as necessary.  (But note:
+  ~c[add-match-free-override] is not relevant for ~il[type-prescription]
+  rules.)  The event ~c[(add-match-free-override :once t)] has that effect.  Or
+  at the other extreme, perhaps you want to specify all rules as ~c[:all] rules
+  except for a some specific exceptions.  Then you can execute
   ~c[(add-match-free-override :all t)] followed by, say,
   ~c[(add-match-free-override :once (:rewrite foo) (:linear bar))].~/
 
@@ -43763,7 +43769,7 @@ Lisp definition."
     (er hard 'error-in-parallelism-mode@par
         "There has been an attempt to evaluate a form that is disallowed in ~
          the parallelized evaluation of the waterfall.  See :doc ~
-         set-waterfall-parallelism for how to discable such parallel ~
+         set-waterfall-parallelism for how to disable such parallel ~
          evaluation.  Please let the ACL2 authors know if you see this ~
          message, as our intent is that its occurence should be rare.  The ~
          offending form is: ~x0" 

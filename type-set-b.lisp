@@ -5616,6 +5616,39 @@
 
 )
 
+(defun search-type-alist-with-rest (term typ type-alist unify-subst ttree wrld)
+
+; See search-type-alist.
+
+  (mv-let (term alt-term)
+    (cond ((or (variablep term)
+               (fquotep term)
+               (not (equivalence-relationp (ffn-symb term) wrld)))
+           (mv term nil))
+
+; Otherwise, term is of the form (equiv term1 term2).  If term1 precedes term2
+; in term-order, then term would be stored on a type-alist as (equiv term2
+; term1); see the Essay on the Invariants on Type-alists, and Canonicality
+; (specifically, the third invariant described there).  In such a case we may
+; wish to search for the commuted version instead of term.  However, if there
+; are free variables in term with respect to unify-subst then we need to search
+; both for term and its commuted version, because the more specific term on
+; type-alist can have its arguments in either term-order (unless we engage in a
+; relatively expensive check; see e.g. maximal-terms).
+
+          ((free-varsp term unify-subst)
+           (mv term
+               (fcons-term* (ffn-symb term) (fargn term 2) (fargn term 1))))
+          (t (let ((arg1 (fargn term 1))
+                   (arg2 (fargn term 2)))
+               (cond ((term-order arg1 arg2)
+                      (mv (fcons-term* (ffn-symb term)
+                                       (fargn term 2)
+                                       (fargn term 1))
+                          nil))
+                     (t (mv term nil))))))
+    (search-type-alist-rec term alt-term typ type-alist unify-subst ttree)))
+
 (defun search-type-alist (term typ type-alist unify-subst ttree wrld)
 
 ; We search type-alist for an instance of term bound to a type-set
@@ -5659,37 +5692,11 @@
 ; loses.  We will note explicitly when a function is a No-Change
 ; Loser.
 
-  (mv-let (term alt-term)
-    (cond ((or (variablep term)
-               (fquotep term)
-               (not (equivalence-relationp (ffn-symb term) wrld)))
-           (mv term nil))
-
-; Otherwise, term is of the form (equiv term1 term2).  If term1 precedes term2
-; in term-order, then term would be stored on a type-alist as (equiv term2
-; term1); see the Essay on the Invariants on Type-alists, and Canonicality
-; (specifically, the third invariant described there).  In such a case we may
-; wish to search for the commuted version instead of term.  However, if there
-; are free variables in term with respect to unify-subst then we need to search
-; both for term and its commuted version, because the more specific term on
-; type-alist can have its arguments in either term-order (unless we engage in a
-; relatively expensive check; see e.g. maximal-terms).
-
-          ((free-varsp term unify-subst)
-           (mv term
-               (fcons-term* (ffn-symb term) (fargn term 2) (fargn term 1))))
-          (t (let ((arg1 (fargn term 1))
-                   (arg2 (fargn term 2)))
-               (cond ((term-order arg1 arg2)
-                      (mv (fcons-term* (ffn-symb term)
-                                       (fargn term 2)
-                                       (fargn term 1))
-                          nil))
-                     (t (mv term nil))))))
-    (mv-let (ans unify-subst ttree rest-type-alist)
-      (search-type-alist-rec term alt-term typ type-alist unify-subst ttree)
-      (declare (ignore rest-type-alist))
-      (mv ans unify-subst ttree))))
+  (mv-let (ans unify-subst ttree rest-type-alist)
+          (search-type-alist-with-rest term typ type-alist unify-subst ttree
+                                       wrld)
+          (declare (ignore rest-type-alist))
+          (mv ans unify-subst ttree)))
 
 (defun term-and-typ-to-lookup (hyp wrld)
   (mv-let
@@ -7596,6 +7603,16 @@
          (min (+ (length ancestors) new-offset)
               old-limit))))
 
+(defproxy oncep-tp (* *) => *)
+
+(defun oncep-tp-builtin (rune wrld)
+  (declare (ignore rune wrld)
+           (xargs :mode :logic :guard t))
+  nil)
+
+(defattach (oncep-tp oncep-tp-builtin)
+  :skip-checks t)
+
 (mutual-recursion
 
 (defun type-set-rec (x force-flg dwp type-alist ancestors ens w ttree
@@ -8151,6 +8168,205 @@
                                   force-flg dwp type-alist ancestors ens w
                                   pot-lst pt backchain-limit))))))
 
+(defun type-set-relieve-hyps-free (term typ forcep rest-type-alist
+                                        rune target hyps backchain-limit-lst
+                                        force-flg dwp alist type-alist
+                                        ancestors ens wrld ttree ttree0 pot-lst pt
+                                        backchain-limit bkptr+1)
+
+  (assert$
+   rest-type-alist
+   (mv-let
+    (lookup-hyp-ans alist+ ttree rest-type-alist)
+    (search-type-alist-with-rest term typ rest-type-alist alist ttree wrld)
+    (cond
+     ((null lookup-hyp-ans) (mv nil type-alist ttree0))
+     ((null rest-type-alist) ; optimization (prefer this tail call)
+      (type-set-relieve-hyps rune
+                             target
+                             (cdr hyps)
+                             (cdr backchain-limit-lst)
+                             force-flg dwp alist+
+                             type-alist ancestors ens wrld
+                             ttree ttree0
+                             pot-lst pt backchain-limit
+                             bkptr+1))
+     (t ; lookup-hyp-ans and non-nil new value of rest-type-alist
+      (mv-let
+       (relieve-hyps-ans type-alist ttree)
+       (type-set-relieve-hyps rune
+                              target
+                              (cdr hyps)
+                              (cdr backchain-limit-lst)
+                              force-flg dwp alist+
+                              type-alist ancestors ens wrld
+                              ttree ttree0
+                              pot-lst pt backchain-limit
+                              bkptr+1)
+       (cond
+        (relieve-hyps-ans (mv relieve-hyps-ans type-alist ttree))
+        (t (type-set-relieve-hyps-free term typ forcep rest-type-alist
+                                       rune target hyps backchain-limit-lst
+                                       force-flg dwp alist type-alist
+                                       ancestors ens wrld ttree ttree0 pot-lst pt
+                                       backchain-limit bkptr+1)))))))))
+
+(defun type-set-relieve-hyps1 (hyp forcep rune target hyps backchain-limit-lst
+                                   force-flg dwp alist type-alist ancestors ens
+                                   wrld ttree ttree0 pot-lst pt backchain-limit
+                                   bkptr)
+  (mv-let
+   (not-flg atm)
+   (strip-not hyp)
+   (mv-let
+    (atm1 quotep-atm1 ttree)
+    (sublis-var! alist atm ens wrld ttree)
+
+; Note that we stripped off the force (or case-split) symbol if it was
+; present.  We don't have to do that (given that the type-set of
+; (force x) and of (case-split x) is known to be that of x) but it ought
+; to speed things up slightly.  Note that we also stripped off the NOT
+; if it was present and have not-flg and the instantiated atom, atm1,
+; to work on.  We work on the atom so that we can record its type-set
+; in the final type-alist, rather than recording the type-set of (NOT
+; atm1).
+
+    (cond
+     (quotep-atm1
+      (cond ((eq not-flg (equal atm1 *nil*))
+             (type-set-relieve-hyps rune
+                                    target
+                                    (cdr hyps)
+                                    (cdr backchain-limit-lst)
+                                    force-flg dwp alist
+                                    type-alist ancestors ens wrld
+                                    ttree ttree0
+                                    pot-lst pt backchain-limit
+                                    (1+ bkptr)))
+            (t (mv nil type-alist ttree0))))
+     (t
+      (mv-let
+       (on-ancestorsp assumed-true)
+
+; Here is the one place where we (potentially) use the t-ancestors 
+; hack to abort early.
+
+       (if (eq ancestors t)
+           (mv t nil)
+         (ancestors-check (if not-flg
+                              (mcons-term* 'not atm1)
+                            atm1)
+                          ancestors
+                          (list rune)))
+       (cond
+        (on-ancestorsp
+         (cond
+          (assumed-true
+           (type-set-relieve-hyps rune
+                                  target
+                                  (cdr hyps)
+                                  (cdr backchain-limit-lst)
+                                  force-flg dwp alist
+                                  type-alist ancestors ens wrld
+                                  ttree ttree0
+                                  pot-lst pt backchain-limit
+                                  (1+ bkptr)))
+          (t (mv nil type-alist ttree0))))
+        ((backchain-limit-reachedp backchain-limit ancestors)
+         (mv-let
+          (force-flg ttree)
+          (cond
+           ((not (and force-flg forcep))
+            (mv nil ttree))
+           (t (force-assumption
+               rune
+               target
+               (if not-flg
+                   (mcons-term* 'not atm1)
+                 atm1)
+               type-alist nil
+               (immediate-forcep
+                (ffn-symb (car hyps))
+                ens)
+               force-flg
+               ttree)))
+          (cond
+           (force-flg
+            (type-set-relieve-hyps
+             rune
+             target
+             (cdr hyps)
+             (cdr backchain-limit-lst)
+             force-flg dwp alist type-alist ancestors
+             ens wrld ttree ttree0 pot-lst pt
+             backchain-limit (1+ bkptr)))
+           (t (mv nil type-alist ttree0)))))
+        (t
+         (mv-let
+          (flg type-alist ttree2)
+          (with-accumulated-persistence
+           rune
+           (flg type-alist ttree2)
+           flg
+           (mv-let
+            (ts1 ttree1)
+            (type-set-rec atm1 force-flg dwp type-alist
+
+; We know ancestors is not t here, by the tests above.
+
+                          (push-ancestor
+                           (if not-flg
+                               atm1
+                             (mcons-term* 'not atm1))
+                           (list rune)
+                           ancestors)
+                          ens wrld ttree
+                          pot-lst pt
+                          (new-backchain-limit
+                           (car backchain-limit-lst)
+                           backchain-limit
+                           ancestors))
+            (let ((ts (if not-flg
+                          (cond ((ts= ts1 *ts-nil*) *ts-t*)
+                                ((ts-intersectp ts1 *ts-nil*)
+                                 *ts-boolean*)
+                                (t *ts-nil*))
+                        ts1)))
+              (cond
+               ((ts= ts *ts-nil*) (mv nil type-alist ttree0))
+               ((ts-intersectp *ts-nil* ts)
+                (mv-let
+                 (force-flg ttree)
+                 (cond
+                  ((not (and force-flg forcep))
+                   (mv nil ttree))
+                  (t (force-assumption
+                      rune
+                      target
+                      (if not-flg
+                          (mcons-term* 'not atm1)
+                        atm1)
+                      type-alist nil
+                      (immediate-forcep
+                       (ffn-symb (car hyps))
+                       ens)
+                      force-flg
+                      ttree)))
+                 (cond
+                  (force-flg (mv t type-alist ttree))
+                  (t (mv nil type-alist ttree0)))))
+               (t (mv t type-alist ttree1)))))
+           bkptr)
+          (cond (flg (type-set-relieve-hyps
+                      rune
+                      target
+                      (cdr hyps)
+                      (cdr backchain-limit-lst)
+                      force-flg dwp alist type-alist ancestors
+                      ens wrld ttree2 ttree0 pot-lst pt
+                      backchain-limit (1+ bkptr)))
+                (t (mv nil type-alist ttree2))))))))))))
+
 (defun type-set-relieve-hyps (rune target hyps backchain-limit-lst
                                    force-flg dwp alist type-alist
                                    ancestors ens wrld ttree ttree0 pot-lst pt
@@ -8186,25 +8402,53 @@
             pot-lst pt backchain-limit (1+ bkptr)))
           (t
            (mv-let
-            (lookup-hyp-ans alist ttree)
-            (lookup-hyp hyp type-alist wrld alist ttree)
-            (cond
-             (lookup-hyp-ans
-              (type-set-relieve-hyps rune
-                                     target
-                                     (cdr hyps)
-                                     (cdr backchain-limit-lst)
-                                     force-flg dwp alist
-                                     type-alist ancestors ens wrld
-                                     ttree ttree0
-                                     pot-lst pt backchain-limit (1+ bkptr)))
-             ((free-varsp hyp alist)
-              (let ((fully-bound-alist
-                     (if (and forcep force-flg)
-                         (bind-free-vars-to-unbound-free-vars
-                          (all-vars hyp)
-                          alist)
-                         alist)))
+            (term typ)
+            (term-and-typ-to-lookup hyp wrld)
+            (mv-let
+             (lookup-hyp-ans alist+ ttree rest-type-alist)
+             (search-type-alist-with-rest term typ type-alist alist ttree wrld)
+             (cond
+              (lookup-hyp-ans
+               (cond
+                ((and rest-type-alist
+                      (not (eq (caar alist) (caar alist+))) ; free vars
+                      (not (oncep-tp rune wrld)))
+                 (let ((bkptr+1 (1+ bkptr)))
+                   (mv-let
+                    (relieve-hyps-ans type-alist ttree)
+                    (type-set-relieve-hyps rune
+                                           target
+                                           (cdr hyps)
+                                           (cdr backchain-limit-lst)
+                                           force-flg dwp alist+
+                                           type-alist ancestors ens wrld
+                                           ttree ttree0
+                                           pot-lst pt backchain-limit
+                                           bkptr+1)
+                    (cond
+                     (relieve-hyps-ans (mv relieve-hyps-ans type-alist ttree))
+                     (t (type-set-relieve-hyps-free
+                         term typ forcep rest-type-alist
+                         rune target hyps backchain-limit-lst
+                         force-flg dwp alist type-alist
+                         ancestors ens wrld ttree ttree0 pot-lst pt
+                         backchain-limit bkptr+1))))))
+                (t (type-set-relieve-hyps rune
+                                          target
+                                          (cdr hyps)
+                                          (cdr backchain-limit-lst)
+                                          force-flg dwp alist+
+                                          type-alist ancestors ens wrld
+                                          ttree ttree0
+                                          pot-lst pt backchain-limit
+                                          (1+ bkptr)))))
+              ((free-varsp hyp alist)
+               (let ((fully-bound-alist
+                      (if (and forcep force-flg)
+                          (bind-free-vars-to-unbound-free-vars
+                           (all-vars hyp)
+                           alist)
+                        alist)))
 
 ; Fully-bound-alist is an extension of alist in which all vars occurring
 ; in hyp are bound to something.  A var v that occurs freely in hyp wrt
@@ -8213,41 +8457,41 @@
 ; below.  For sanity, fully-bound-alist is just alist if we're not
 ; actually intending to use it.
 
-              (mv-let
-               (force-flg ttree)
-               (cond
-                ((not (and forcep force-flg))
-                 (mv nil ttree))
-                (t (force-assumption
-                    rune
-                    target
-                    (sublis-var fully-bound-alist hyp)
-                    type-alist
-                    nil
-                    (immediate-forcep (ffn-symb (car hyps)) ens)
-                    force-flg
-                    ttree)))
+                 (mv-let
+                  (force-flg ttree)
+                  (cond
+                   ((not (and forcep force-flg))
+                    (mv nil ttree))
+                   (t (force-assumption
+                       rune
+                       target
+                       (sublis-var fully-bound-alist hyp)
+                       type-alist
+                       nil
+                       (immediate-forcep (ffn-symb (car hyps)) ens)
+                       force-flg
+                       ttree)))
 
 ; Note that force-flg has been rebound by the mv-let above.  Think of
 ; it as just a temporary variable meaning (and forcep force-flg) and
 ; we use it only if it is true.
  
-               (cond
-                (force-flg
-                 (type-set-relieve-hyps
-                  rune target (cdr hyps) (cdr backchain-limit-lst)
-                  force-flg dwp
-                  fully-bound-alist type-alist ancestors ens wrld
-                  ttree ttree0
-                  pot-lst pt backchain-limit (1+ bkptr)))
-                (t (mv nil type-alist ttree0))))))
-             (t
-              (mv-let
-               (not-flg atm)
-               (strip-not hyp)
+                  (cond
+                   (force-flg
+                    (type-set-relieve-hyps
+                     rune target (cdr hyps) (cdr backchain-limit-lst)
+                     force-flg dwp
+                     fully-bound-alist type-alist ancestors ens wrld
+                     ttree ttree0
+                     pot-lst pt backchain-limit (1+ bkptr)))
+                   (t (mv nil type-alist ttree0))))))
+              (t
                (mv-let
-                (atm1 quotep-atm1 ttree)
-                (sublis-var! alist atm ens wrld ttree)
+                (not-flg atm)
+                (strip-not hyp)
+                (mv-let
+                 (atm1 quotep-atm1 ttree)
+                 (sublis-var! alist atm ens wrld ttree)
 
 ; Note that we stripped off the force (or case-split) symbol if it was
 ; present.  We don't have to do that (given that the type-set of
@@ -8258,141 +8502,141 @@
 ; in the final type-alist, rather than recording the type-set of (NOT
 ; atm1).
 
-                (cond
-                 (quotep-atm1
-                  (cond ((eq not-flg (equal atm1 *nil*))
-                         (type-set-relieve-hyps rune
-                                                target
-                                                (cdr hyps)
-                                                (cdr backchain-limit-lst)
-                                                force-flg dwp alist
-                                                type-alist ancestors ens wrld
-                                                ttree ttree0
-                                                pot-lst pt backchain-limit
-                                                (1+ bkptr)))
-                        (t (mv nil type-alist ttree0))))
-                 (t
-                  (mv-let
-                   (on-ancestorsp assumed-true)
+                 (cond
+                  (quotep-atm1
+                   (cond ((eq not-flg (equal atm1 *nil*))
+                          (type-set-relieve-hyps rune
+                                                 target
+                                                 (cdr hyps)
+                                                 (cdr backchain-limit-lst)
+                                                 force-flg dwp alist
+                                                 type-alist ancestors ens wrld
+                                                 ttree ttree0
+                                                 pot-lst pt backchain-limit
+                                                 (1+ bkptr)))
+                         (t (mv nil type-alist ttree0))))
+                  (t
+                   (mv-let
+                    (on-ancestorsp assumed-true)
 
 ; Here is the one place where we (potentially) use the t-ancestors 
 ; hack to abort early.
 
-                   (if (eq ancestors t)
-                       (mv t nil)
-                     (ancestors-check (if not-flg
-                                          (mcons-term* 'not atm1)
-                                        atm1)
-                                      ancestors
-                                      (list rune)))
-                   (cond
-                    (on-ancestorsp
-                     (cond
-                      (assumed-true
-                       (type-set-relieve-hyps rune
-                                              target
-                                              (cdr hyps)
-                                              (cdr backchain-limit-lst)
-                                              force-flg dwp alist
-                                              type-alist ancestors ens wrld
-                                              ttree ttree0
-                                              pot-lst pt backchain-limit
-                                              (1+ bkptr)))
-                      (t (mv nil type-alist ttree0))))
-                    ((backchain-limit-reachedp backchain-limit ancestors)
-                     (mv-let
-                      (force-flg ttree)
+                    (if (eq ancestors t)
+                        (mv t nil)
+                      (ancestors-check (if not-flg
+                                           (mcons-term* 'not atm1)
+                                         atm1)
+                                       ancestors
+                                       (list rune)))
+                    (cond
+                     (on-ancestorsp
                       (cond
-                       ((not (and force-flg forcep))
-                        (mv nil ttree))
-                       (t (force-assumption
-                           rune
-                           target
-                           (if not-flg
-                               (mcons-term* 'not atm1)
-                             atm1)
-                           type-alist nil
-                           (immediate-forcep
-                            (ffn-symb (car hyps))
-                            ens)
-                           force-flg
-                           ttree)))
-                      (cond
-                       (force-flg
-                        (type-set-relieve-hyps
-                         rune
-                         target
-                         (cdr hyps)
-                         (cdr backchain-limit-lst)
-                         force-flg dwp alist type-alist ancestors
-                         ens wrld ttree ttree0 pot-lst pt
-                         backchain-limit (1+ bkptr)))
-                       (t (mv nil type-alist ttree0)))))
-                    (t
-                     (mv-let
-                      (flg type-alist ttree2)
-                      (with-accumulated-persistence
-                       rune
+                       (assumed-true
+                        (type-set-relieve-hyps rune
+                                               target
+                                               (cdr hyps)
+                                               (cdr backchain-limit-lst)
+                                               force-flg dwp alist
+                                               type-alist ancestors ens wrld
+                                               ttree ttree0
+                                               pot-lst pt backchain-limit
+                                               (1+ bkptr)))
+                       (t (mv nil type-alist ttree0))))
+                     ((backchain-limit-reachedp backchain-limit ancestors)
+                      (mv-let
+                       (force-flg ttree)
+                       (cond
+                        ((not (and force-flg forcep))
+                         (mv nil ttree))
+                        (t (force-assumption
+                            rune
+                            target
+                            (if not-flg
+                                (mcons-term* 'not atm1)
+                              atm1)
+                            type-alist nil
+                            (immediate-forcep
+                             (ffn-symb (car hyps))
+                             ens)
+                            force-flg
+                            ttree)))
+                       (cond
+                        (force-flg
+                         (type-set-relieve-hyps
+                          rune
+                          target
+                          (cdr hyps)
+                          (cdr backchain-limit-lst)
+                          force-flg dwp alist type-alist ancestors
+                          ens wrld ttree ttree0 pot-lst pt
+                          backchain-limit (1+ bkptr)))
+                        (t (mv nil type-alist ttree0)))))
+                     (t
+                      (mv-let
                        (flg type-alist ttree2)
-                       flg
-                       (mv-let
-                        (ts1 ttree1)
-                        (type-set-rec atm1 force-flg dwp type-alist
+                       (with-accumulated-persistence
+                        rune
+                        (flg type-alist ttree2)
+                        flg
+                        (mv-let
+                         (ts1 ttree1)
+                         (type-set-rec atm1 force-flg dwp type-alist
 
 ; We know ancestors is not t here, by the tests above.
 
-                                      (push-ancestor
-                                       (if not-flg
-                                           atm1
-                                         (mcons-term* 'not atm1))
-                                       (list rune)
-                                       ancestors)
-                                      ens wrld ttree
-                                      pot-lst pt
-                                      (new-backchain-limit
-                                       (car backchain-limit-lst)
-                                       backchain-limit
-                                       ancestors))
-                        (let ((ts (if not-flg
-                                      (cond ((ts= ts1 *ts-nil*) *ts-t*)
-                                            ((ts-intersectp ts1 *ts-nil*)
-                                             *ts-boolean*)
-                                            (t *ts-nil*))
-                                    ts1)))
-                          (cond
-                           ((ts= ts *ts-nil*) (mv nil type-alist ttree0))
-                           ((ts-intersectp *ts-nil* ts)
-                            (mv-let
-                             (force-flg ttree)
-                             (cond
-                              ((not (and force-flg forcep))
-                               (mv nil ttree))
-                              (t (force-assumption
-                                  rune
-                                  target
-                                  (if not-flg
-                                      (mcons-term* 'not atm1)
-                                    atm1)
-                                  type-alist nil
-                                  (immediate-forcep
-                                   (ffn-symb (car hyps))
-                                   ens)
-                                  force-flg
-                                  ttree)))
-                             (cond
-                              (force-flg (mv t type-alist ttree))
-                              (t (mv nil type-alist ttree0)))))
-                           (t (mv t type-alist ttree1)))))
-                       bkptr)
-                      (cond (flg (type-set-relieve-hyps
-                                  rune
-                                  target
-                                  (cdr hyps)
-                                  (cdr backchain-limit-lst)
-                                  force-flg dwp alist type-alist ancestors
-                                  ens wrld ttree2 ttree0 pot-lst pt
-                                  backchain-limit (1+ bkptr)))
-                            (t (mv nil type-alist ttree2)))))))))))))))))))))
+                                       (push-ancestor
+                                        (if not-flg
+                                            atm1
+                                          (mcons-term* 'not atm1))
+                                        (list rune)
+                                        ancestors)
+                                       ens wrld ttree
+                                       pot-lst pt
+                                       (new-backchain-limit
+                                        (car backchain-limit-lst)
+                                        backchain-limit
+                                        ancestors))
+                         (let ((ts (if not-flg
+                                       (cond ((ts= ts1 *ts-nil*) *ts-t*)
+                                             ((ts-intersectp ts1 *ts-nil*)
+                                              *ts-boolean*)
+                                             (t *ts-nil*))
+                                     ts1)))
+                           (cond
+                            ((ts= ts *ts-nil*) (mv nil type-alist ttree0))
+                            ((ts-intersectp *ts-nil* ts)
+                             (mv-let
+                              (force-flg ttree)
+                              (cond
+                               ((not (and force-flg forcep))
+                                (mv nil ttree))
+                               (t (force-assumption
+                                   rune
+                                   target
+                                   (if not-flg
+                                       (mcons-term* 'not atm1)
+                                     atm1)
+                                   type-alist nil
+                                   (immediate-forcep
+                                    (ffn-symb (car hyps))
+                                    ens)
+                                   force-flg
+                                   ttree)))
+                              (cond
+                               (force-flg (mv t type-alist ttree))
+                               (t (mv nil type-alist ttree0)))))
+                            (t (mv t type-alist ttree1)))))
+                        bkptr)
+                       (cond (flg (type-set-relieve-hyps
+                                   rune
+                                   target
+                                   (cdr hyps)
+                                   (cdr backchain-limit-lst)
+                                   force-flg dwp alist type-alist ancestors
+                                   ens wrld ttree2 ttree0 pot-lst pt
+                                   backchain-limit (1+ bkptr)))
+                             (t (mv nil type-alist ttree2))))))))))))))))))))))
 
 (defun extend-type-alist-with-bindings (alist force-flg dwp type-alist
                                               ancestors ens w ttree pot-lst pt

@@ -17692,6 +17692,12 @@
   As a result of this change we have about a 6% speedup on the regression
   suite, but a 27% time reduction on an example that includes a lot of books.
 
+  Exhaustive matching for the case of ~il[free-variables] has been extended to
+  ~il[type-prescription] rules, in analogy to the default setting
+  ~c[:match-free :all] already in place for ~il[rewrite], ~il[linear], and
+  ~il[forward-chaining] rules.  ~l[free-variables-type-prescription].  Thanks
+  to Dave Greve for requesting this enhancement.
+
   ~st[BUG FIXES]
 
   A soundness bug was fixed in some raw-Lisp code implementing the function,

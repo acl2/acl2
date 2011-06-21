@@ -5634,7 +5634,9 @@
 
   ~c[:Match-free] ~-[] this field must be ~c[:all] or ~c[:once] and may be
   supplied only if the ~c[:class] is either ~c[:]~ilc[rewrite],
-  ~c[:]~ilc[linear], or ~c[:]~ilc[forward-chaining].  ~l[free-variables] for a
+  ~c[:]~ilc[linear], or ~c[:]~ilc[forward-chaining].  (This field is not
+  implemented for other rule classes, including the
+  ~c[:]~ilc[type-prescription] rule class.)  ~l[free-variables] for a
   description of this field.  Note: Although this field is intended to be used
   for controlling retries of matching free variables in hypotheses, it is legal
   to supply it even if there are no such free variables.  This can simplify the
@@ -5713,16 +5715,19 @@
 
   Let us discuss the method for relieving hypotheses of ~il[rewrite] rules with
   free variables.  Similar considerations apply to ~il[linear] and
-  ~il[forward-chaining] rules, while for other rules (in particular,
-  ~il[type-prescription] rules), only one binding is tried, much as described
-  in the discussion about ~c[:once] below.
+  ~il[forward-chaining] rules, and ~il[type-prescription] rules.
 
   ~l[free-variables-examples] for more examples of how this all works,
   including illustration of how the user can exercise some control over it.  In
   particular, ~pl[free-variables-examples-rewrite] for an explanation of output
   from the ~il[break-rewrite] facility in the presence of rewriting failures
   involving free variables, as well as an example exploring ``binding
-  hypotheses'' as described below.~/
+  hypotheses'' as described below.
+
+  Note that the ~c[:match-free] mechanism discussed below does not apply to
+  ~il[type-prescription] rules.  ~l[free-variables-type-prescription] for a
+  discussion of how to control free-variable matchng for ~il[type-prescription]
+  rules.~/
 
   We begin with an example.  Does the proof of the ~ilc[thm] below succeed?
   ~bv[]
@@ -5846,12 +5851,19 @@
            (equal (bar x) (bar-prime x)))
   ~ev[]
 
-  ~em[Specifying `once' or `all'.] One method for specifying ~c[:once] or
-  ~c[:all] for free-variable matching is to provide the ~c[:match-free] field of
-  the ~c[:rule-classes] of the rule, for example, ~c[(:rewrite :match-free :all)].
-  ~l[rule-classes].  However, there are global events that can be used
-  to specify ~c[:once] or ~c[:all]; ~pl[set-match-free-default] and
-  ~pl[add-match-free-override].  Here are some examples.
+  ~em[Specifying `once' or `all'.]
+
+  As noted above, the following discussion applies only to ~il[rewrite],
+  ~il[linear], and ~il[forward-chaining] rules.
+  ~l[free-variables-type-prescription] for a discussion of analogous
+  considerations for ~il[type-prescription] rules.
+
+  One method for specifying ~c[:once] or ~c[:all] for free-variable matching is
+  to provide the ~c[:match-free] field of the ~c[:rule-classes] of the rule,
+  for example, ~c[(:rewrite :match-free :all)].  ~l[rule-classes].  However,
+  there are global events that can be used to specify ~c[:once] or ~c[:all];
+  ~pl[set-match-free-default] and ~pl[add-match-free-override].  Here are some
+  examples.
   ~bv[]
   (set-match-free-default :once)    ; future rules without a :match-free field
                                     ; are stored as :match-free :once (but this
@@ -5876,6 +5888,101 @@
 
 ; :cited-by set-match-free
   )
+
+(deflabel free-variables-type-prescription
+  :doc
+  ":Doc-Section Free-Variables
+
+  matching for free variable in ~il[type-prescription] rules~/
+
+  We assume familiarity with the issue of dealing with free variables in
+  hypotheses; ~pl[free-variables].
+
+  By default, starting with Version  4.3, ACL2 attempts all possible matches
+  for free variables.  Consider the following example.
+
+  ~bv[]
+  (defstub f1 (x) t)
+  (defstub f2 (x y) t)
+  (defstub f3 (y) t)
+
+  (defaxiom f1-prop
+    (implies (and (f2 x y) ; <-- y is free in this hypothesis
+                  (f3 y))
+             (f1 x))       ; <-- (f1 x) is the type-term (type is `non-nil')
+    :rule-classes :type-prescription)
+
+  ; Succeeds:
+  (thm (implies (and (f2 a b)
+                     (f3 b))
+                (f1 a)))
+
+  ; The following fails unless we try more than one match for free variables in
+  ; hypotheses.
+  (thm (implies (and (f2 a b)
+                     (f2 a c)
+                     (f2 a d)
+                     (f3 b))
+                (f1 a)))
+  ~ev[]
+
+  There may be times when you want to match only the first free variable.  In
+  that case, you can write a function of two arguments, the
+  ~i[type-prescription] ~il[rune] being applied and the current ACL2 world,
+  that prohibits multiple matching for those times.  Your function is then
+  `attached' to the built-in constrained function, ~c[oncep-ts].  The following
+  examples are intended to explain how this works.
+
+  First, let us disallow all mutliple matching of free variables (i.e.,
+  implement the behavior often referred to as ``~c[:match-free :once]'';
+  ~pl[free-variables]).
+  ~bv[]
+  (defun oncep-tp-always (rune wrld)
+    (declare (ignore rune wrld)
+             (xargs :mode :logic :guard t))
+    t)
+
+  (defattach oncep-tp oncep-tp-always)
+  ~ev[]
+  The second ~c[thm] form above will now fail, because only one free-variable
+  match is permitted for the first hypothesis of rule ~c[f1-prop] above.
+
+  Now suppose that instead, we want to disallow multiple matches for free variables
+  in hypotheses of type-prescription rules ~em[except] for the rule ~c[f1-prop]
+  above.  With the following events, the second ~c[thm] form above once again
+  succeeds.
+  ~bv[]
+  (defun oncep-tp-always-except-f1-prop (rune wrld)
+    (declare (ignore wrld)
+             (xargs :mode :logic :guard (and (consp rune)
+                                             (consp (cdr rune))
+                                             (symbolp (cadr rune)))))
+    (not (eq (base-symbol rune) 'f1-prop)))
+
+  (defattach oncep-tp oncep-tp-always-except-f1-prop)
+  ~ev[]
+
+  In general, your ~ilc[defattach] event will attach a function symbol to
+  ~c[oncep-tp].  The ~il[guard] of that function symbol must be implied by the
+  tuard of ~c[oncep-tp]:
+  ~bv[]
+  ACL2 !>:args oncep-tp
+
+  Function         ONCEP-TP
+  Formals:         (RUNE WRLD)
+  Signature:       (ONCEP-TP * *)
+                   => *
+  Guard:           (AND (PLIST-WORLDP WRLD)
+                        (CONSP RUNE)
+                        (CONSP (CDR RUNE))
+                        (SYMBOLP (CADR RUNE)))
+  Guards Verified: T
+  Defun-Mode:      :logic
+  Type:            built-in (or unrestricted)
+
+   ONCEP-TP
+  ACL2 !>
+  ~ev[]~/~/")
 
 (deflabel free-variables-examples
   :doc

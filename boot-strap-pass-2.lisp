@@ -766,6 +766,29 @@
 (defattach print-clause-id-okp print-clause-id-okp-builtin)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Attachments: oncep-tp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(encapsulate
+ (((oncep-tp * *) => *
+   :formals (rune wrld)
+   :guard (and (plist-worldp wrld)
+
+; Although (runep rune wrld) is appropriate here, we don't want to fight the
+; battle yet of putting runep into :logic mode.  So we just lay down the
+; syntactic part of its code, which should suffice for user-defined attachments
+; to oncep-tp.
+
+               (and (consp rune)
+                    (consp (cdr rune))
+                    (symbolp (cadr rune))))))
+ (logic)
+ (local (defun oncep-tp (rune wrld)
+          (oncep-tp-builtin rune wrld))))
+
+(defattach oncep-tp oncep-tp-builtin)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
