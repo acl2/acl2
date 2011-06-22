@@ -18880,9 +18880,10 @@
   point is important to take away from this ~il[documentation] topic: you may
   specify hints during a proof (~pl[hints]; perhaps also ~pl[computed-hints]
   and ~pl[default-hints]), and they can be expected to behave intuitively.
-  ~l[the-method] for a summary of how to interact with the ACL2 prover, and
-  ~pl[hints] for an introduction to ACL2 hints and detailed ~il[documentation]
-  for specific hint types.
+  ~l[the-method] for a summary of how to interact with the ACL2 prover;
+  ~pl[introduction-to-the-theorem-prover] for a more detailed tutorial; and
+  ~pl[hints] for an introduction to ACL2 hints, including detailed
+  ~il[documentation] for specific hint types.
 
   The remainder of this topic serves as a references in case one needs a deeper
   understanding of the workings of ACL2's handling of hints.  Also, for

@@ -17580,6 +17580,9 @@
   We no longer print induction schemes with ~il[gag-mode]; use ~c[:]~ilc[pso]
   if you want to see them.  Thanks to Dave Greve for this suggestion.
 
+  It is now legal to supply a constant for a ~il[stobj] array dimension.
+  ~l[defstobj].  Thanks to Warren Hunt for requesting this enhancement.
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of
@@ -17930,96 +17933,94 @@
 
   how to find proofs~/
 
-  Many users develop proof scripts in an Emacs buffer and submit one
-  event at a time to the theorem prover running in a ~c[*shell*] buffer.
-  The script buffer is logically divided into two regions: the events
-  that have been accepted by the theorem prover and those that have
-  not yet been accepted.  An imaginary ``barrier'' divides these two
-  regions.  The region above the barrier describes the state of the
-  ~c[*shell*] buffer (and ACL2's logical world).  The region below the
-  barrier is the ``to do'' list.
+  Also ~pl[introduction-to-the-theorem-prover] for a more detailed tutorial on
+  how to prove theorems with ACL2.
 
-  We usually start a proof project by typing the key lemmas, and main
-  goal into the to do list.  Definitions are here just regarded as
-  theorems to prove (i.e., the measure conjectures).  Then we follow
-  ``The Method.''
+  Many users develop proof scripts in an Emacs buffer and submit one event at a
+  time to the theorem prover running in a ~c[*shell*] buffer.  The script
+  buffer is logically divided into two regions: the events that have been
+  accepted by the theorem prover and those that have not yet been accepted.  An
+  imaginary ``barrier'' divides these two regions.  The region above the
+  barrier describes the state of the ~c[*shell*] buffer (and ACL2's logical
+  world).  The region below the barrier is the ``to do'' list.
 
-  (1) Think about the proof of the first theorem in the to do list.
-  Structure the proof either as an induction followed by
-  simplification or just simplification.  Have the necessary lemmas
-  been proved? That is, are the necessary lemmas in the done list
-  already?  If so, proceed to Step 2.  Otherwise, add the necessary
-  lemmas at the front of the to do list and repeat Step 1.
+  We usually start a proof project by typing the key lemmas, and main goal into
+  the to do list.  Definitions are here just regarded as theorems to
+  prove (i.e., the measure conjectures).  Then we follow ``The Method.''
 
-  (2) Call the theorem prover on the first theorem in the to do list
-  and let the output stream into the *shell* buffer.  Abort the proof
-  if it runs more than a few seconds.
+  (1) Think about the proof of the first theorem in the to do list.  Structure
+  the proof either as an induction followed by simplification or just
+  simplification.  Have the necessary lemmas been proved? That is, are the
+  necessary lemmas in the done list already?  If so, proceed to Step 2.
+  Otherwise, add the necessary lemmas at the front of the to do list and repeat
+  Step 1.
 
-  (3) If the theorem prover succeeded, advance the barrier past the
-  successful command and go to Step 1.
+  (2) Call the theorem prover on the first theorem in the to do list and let
+  the output stream into the *shell* buffer.  Abort the proof if it runs more
+  than a few seconds.
 
-  (4) Otherwise, inspect the failed proof attempt, starting from the
-  beginning, not the end.  Basically you should look for the first
-  place the proof attempt deviates from your imagined proof.  If your
-  imagined proof was inductive, inspect the induction scheme used by
-  ACL2.  If that is ok, then find the first subsequent subgoal that is
-  stable under simplification and think about why it was not proved by
-  the simplifier.  If your imagined proof was not inductive, then
-  think about the first subgoal stable under simplification, as above.
-  Modify the script appropriately.  It usually means adding lemmas to
-  the to do list, just in front of the theorem just tried.  It could
-  mean adding hints to the current theorem.  In any case, after the
-  modifications go to Step 1.~/
+  (3) If the theorem prover succeeded, advance the barrier past the successful
+  command and go to Step 1.
 
-  We do not seriously suggest that this or any rotely applied
-  algorithm will let you drive ACL2 to difficult proofs.  Indeed, to
-  remind you of this we call this ``The Method'' rather than ``the
-  method.''  That is, we are aware of the somewhat pretentious nature
-  of any such advice.  But these remarks have helped many users
-  approach ACL2 in a constructive and disciplined way.
+  (4) Otherwise, inspect the failed proof attempt, starting from the beginning,
+  not the end.  Basically you should look for the first place the proof attempt
+  deviates from your imagined proof.  If your imagined proof was inductive,
+  inspect the induction scheme used by ACL2.  If that is ok, then find the
+  first subsequent subgoal that is stable under simplification and think about
+  why it was not proved by the simplifier.  If your imagined proof was not
+  inductive, then think about the first subgoal stable under simplification, as
+  above.  Modify the script appropriately.  It usually means adding lemmas to
+  the to do list, just in front of the theorem just tried.  It could mean
+  adding hints to the current theorem.  In any case, after the modifications go
+  to Step 1.~/
 
-  We say much more about The Method in the ACL2 book.  See the
-  home page.  Also ~pl[set-gag-mode] for a discussion of a way for
-  ACL2 to help you to use The Method.
+  We do not seriously suggest that this or any rotely applied algorithm will
+  let you drive ACL2 to difficult proofs.  Indeed, to remind you of this we
+  call this ``The Method'' rather than ``the method.''  That is, we are aware
+  of the somewhat pretentious nature of any such advice.  But these remarks
+  have helped many users approach ACL2 in a constructive and disciplined way.
 
-  Learning to read failed proofs is a useful skill.  There are several
-  kinds of ``checkpoints'' in a proof: (1) a formula to which induction
-  is being (or would be) applied, (2) the first formula stable under
-  simplification, (3) a formula that is possibly generalized, either
-  by cross-fertilizing with and throwing away an equivalence hypothesis
-  or by explicit generalization of a term with a new variable.  
+  We say much more about The Method in the ACL2 book.  See the home page.  Also
+  ~pl[set-gag-mode] for a discussion of a way for ACL2 to help you to use The
+  Method.  And again, ~pl[introduction-to-the-theorem-prover] for a more
+  detailed tutorial.
 
-  At the induction checkpoint, confirm that you believe the formula
-  being proved is a theorem and that it is appropriately strong for an
-  inductive proof.  Read the selected induction scheme and make sure it
-  agrees with your idea of how the proof should go.
+  Learning to read failed proofs is a useful skill.  There are several kinds of
+  ``checkpoints'' in a proof: (1) a formula to which induction is being (or
+  would be) applied, (2) the first formula stable under simplification, (3) a
+  formula that is possibly generalized, either by cross-fertilizing with and
+  throwing away an equivalence hypothesis or by explicit generalization of a
+  term with a new variable.
 
-  At the post-simplification checkpoint, which is probably the most
-  commonly seen, consider whether there are additional rewrite rules
-  you could prove to make the formula simplify still further.  Look
-  for compositions of function symbols you could rewrite.  Look for
-  contradictions among hypotheses and prove the appropriate
-  implications: for example, the checkpoint might contain the two
-  hypotheses ~c[(P (F A))] and ~c[(NOT (Q (G (F A))))] and you might
-  realize that ~c[(implies (p x) (q (g x)))] is a theorem.  Look for
-  signs that your existing rules did not apply, e.g., for terms that
-  should have been rewritten, and figure out why they were not.
-  Possible causes include that they do not exactly match your old
-  rules, that your old rules have hypotheses that cannot be relieved
-  here -- perhaps because some other rules are missing, or perhaps
-  your old rules are disabled.  If you cannot find any further
-  simplifications to make in the formula, ask yourself whether it is
-  valid.  If so, sketch a proof.  Perhaps the proof is by appeal to a
-  combination of lemmas you should now prove?  
+  At the induction checkpoint, confirm that you believe the formula being
+  proved is a theorem and that it is appropriately strong for an inductive
+  proof.  Read the selected induction scheme and make sure it agrees with your
+  idea of how the proof should go.
 
-  At the two generalization checkpoints --- where hypotheses are
-  discarded or terms are replaced by variables --- ask yourself whether
-  the result is a theorem.  It often is not.  Think about rewrite rules
-  that would prove the formula.  These are often restricted versions of the
-  overly-general formulas created by the system's heuristics.
+  At the post-simplification checkpoint, which is probably the most commonly
+  seen, consider whether there are additional rewrite rules you could prove to
+  make the formula simplify still further.  Look for compositions of function
+  symbols you could rewrite.  Look for contradictions among hypotheses and
+  prove the appropriate implications: for example, the checkpoint might contain
+  the two hypotheses ~c[(P (F A))] and ~c[(NOT (Q (G (F A))))] and you might
+  realize that ~c[(implies (p x) (q (g x)))] is a theorem.  Look for signs that
+  your existing rules did not apply, e.g., for terms that should have been
+  rewritten, and figure out why they were not.  Possible causes include that
+  they do not exactly match your old rules, that your old rules have hypotheses
+  that cannot be relieved here -- perhaps because some other rules are missing,
+  or perhaps your old rules are disabled.  If you cannot find any further
+  simplifications to make in the formula, ask yourself whether it is valid.  If
+  so, sketch a proof.  Perhaps the proof is by appeal to a combination of
+  lemmas you should now prove?
 
-  ~l[proof-tree] for a discussion of a tool to help you navigate through
-  ACL2 proofs.")
+  At the two generalization checkpoints --- where hypotheses are discarded or
+  terms are replaced by variables --- ask yourself whether the result is a
+  theorem.  It often is not.  Think about rewrite rules that would prove the
+  formula.  These are often restricted versions of the overly-general formulas
+  created by the system's heuristics.
+
+  ~l[proof-tree] for a discussion of a tool to help you navigate through ACL2
+  proofs.")
 
 (deflabel lp
   :doc
@@ -23972,7 +23973,8 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   ``Descended'' signifies that both goals are at the top level in the same
   forcing round, or are in the same proof by induction.)  Successful ACL2 users
   generally focus their attention on key checkpoints; for a discussion of how
-  to use ACL2 prover output in an effective manner, ~pl[the-method].  In
+  to use ACL2 prover output in an effective manner, ~pl[the-method], and
+  ~pl[introduction-to-the-theorem-prover] for a more detailed tutorial.  In
   gag-mode, a key checkpoint is only displayed when ACL2 is unable to make any
   further progress on that goal or some descendent of it, other than with a
   proof by induction.

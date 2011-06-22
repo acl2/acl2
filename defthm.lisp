@@ -6708,7 +6708,9 @@
   At the moment, the best description of how ACL2 ~c[:generalize] rules
   are used may be found in the discussion of ``Generalize Rules,'' page
   248 of A Computational Logic Handbook, or ``Generalization,'' page
-  132 of ``Computer-Aided Reasoning: An Approach.''")
+  132 of ``Computer-Aided Reasoning: An Approach.''  Also
+  ~pl[introduction-to-the-theorem-prover] for detailed tutorial on using ACL2
+  to prove theorems, which includes some discussion of generalization.")
 
 (defun chk-acceptable-generalize-rule (name term ctx wrld state)
 

@@ -1790,7 +1790,7 @@
 ; stobj.  We use redundant-raw-lisp-discriminator in much the same way as in
 ; the raw lisp defmacro of acl2::defconst.
 
-  (let* ((template (defstobj-template name args))
+  (let* ((template (defstobj-template name args :raw-lisp))
          (init (defstobj-raw-init template))
          (the-live-name (the-live-var name)))
     `(progn
@@ -16515,7 +16515,7 @@
             (p-c :type (unsigned-byte 31)
                  :initially 555)
             halt                  ; = (halt :type t :initially nil)
-            (mem :type (array (unsigned-byte 31) (64))
+            (mem :type (array (unsigned-byte 31) (*mem-size*))
                  :initially 0 :resizable t))
 
   General Form:
@@ -16544,8 +16544,7 @@
   The effect of this event is to introduce a new single-threaded object (i.e.,
   a ``~il[stobj]''), named ~c[name], and the associated recognizers, creator,
   accessors, updaters, constants, and, for fields of ~c[ARRAY] type, length and
-  resize functions.
-  ~/
+  resize functions.~/
 
   ~em[The Single-Threaded Object Introduced]
 
@@ -16553,13 +16552,15 @@
   ~c[name], which has as its initial logical value a list of ~c[k] elements,
   where ~c[k] is the number of ``field descriptors'' provided.  The elements
   are listed in the same order in which the field descriptors appear.  If the
-  ~c[:type] of a field is ~c[(ARRAY type-spec (max))] then the corresponding
-  element of the stobj is initially a list of length ~c[max] containing the
-  value, ~c[val], specified by ~c[:initially val].  Otherwise, the ~c[:type] of
-  the field is a ~ilc[type-spec] and the corresponding element of the stobj is
-  the specified initial value ~c[val].  (The actual representation of the stobj
-  in the underlying Lisp may be quite different; ~pl[stobj-example-2].  For the
-  moment we focus entirely on the logical aspects of the object.)
+  ~c[:type] of a field is ~c[(ARRAY type-spec (max))] then ~c[max] is a
+  non-negative integer or a constant (~pl[defconst]) whose value is a
+  non-negative integer, and the corresponding element of the stobj is initially
+  of length specified by ~c[max] containing the value, ~c[val], specified by
+  ~c[:initially val].  Otherwise, the ~c[:type] of the field is a
+  ~ilc[type-spec] and the corresponding element of the stobj is the specified
+  initial value ~c[val].  (The actual representation of the stobj in the
+  underlying Lisp may be quite different; ~pl[stobj-example-2].  For the moment
+  we focus entirely on the logical aspects of the object.)
 
   In addition, the ~c[defstobj] event introduces functions for recognizing and
   creating the stobj and for recognizing, accessing, and updating its fields.
@@ -16585,6 +16586,7 @@
   (INTEGER 0 31)
   (SIGNED-BYTE 31)
   (ARRAY (SIGNED-BYTE 31) (16))
+  (ARRAY (SIGNED-BYTE 31) (*c*)) ; where *c* has a non-negative integer value
   ~ev[]
 
   The ~c[typei] describes the objects which are expected to occupy the given
@@ -16626,20 +16628,23 @@
   Array Types
 
   When ~c[typei] is of the form ~c[(ARRAY type-spec (max))], the field is
-  supposed to be a list of items, initially of length ~c[max], each of which
-  satisfies the indicated ~c[type-spec].  ~c[Max] must be a non-negative
-  integer.  Thus,
+  supposed to be a list of items, initially of length specified by ~c[max],
+  each of which satisfies the indicated ~c[type-spec].  ~c[Max] must be a
+  non-negative integer or a defined constant evaluating to a non-negative
+  integer. Thus, each of
   ~bv[]
   (ARRAY (SIGNED-BYTE 31) (16))
+  (ARRAY (SIGNED-BYTE 31) (*c*)) ; given previous event (defconst *c* 16)
   ~ev[]
   restricts the field to be a list of integers, initially of length 16, where
   each integer in the list is a ~c[(SIGNED-BYTE 31)].  We sometimes call such a
   list an ``array'' (because it is represented as an array in the underlying
   Common Lisp).  The elements of an array field are indexed by position,
-  starting at 0.  Thus, the maximum legal index of an array field is ~c[max]-1.
-  Note that ~c[max] must be less than the Common Lisp constant
-  ~c[array-dimension-limit], and also (though this presumably follows) less
-  than the Common Lisp constant ~c[array-total-size-limit].
+  starting at 0.  Thus, the maximum legal index of an array field one less than
+  is specified by ~c[max].  Note that the value of ~c[max] must be less than
+  the Common Lisp constant ~c[array-dimension-limit], and also (though this
+  presumably follows) less than the Common Lisp constant
+  ~c[array-total-size-limit].
 
   Note also that the ~c[ARRAY] type requires that the ~c[max] be enclosed in
   parentheses.  This makes ACL2's notation consistent with the Common Lisp
@@ -16689,23 +16694,21 @@
   stobj and return a new stobj with the component replaced by the new
   value.  But that summary is inaccurate for array fields.
 
-  The accessor function for an array field does not take the stobj
-  and return the indicated component array, which is a list of length
-  ~c[max].  Instead, it takes an additional index argument and
-  returns the indicated element of the array component.  Similarly,
-  the updater function for an array field takes an index, a new
-  value, and the stobj, and returns a new stobj with the indicated
-  element replaced by the new value.
+  The accessor function for an array field does not take the stobj and return
+  the indicated component array, which is a list of length specified by
+  ~c[max].  Instead, it takes an additional index argument and returns the
+  indicated element of the array component.  Similarly, the updater function
+  for an array field takes an index, a new value, and the stobj, and returns a
+  new stobj with the indicated element replaced by the new value.
 
-  These functions ~-[] the recognizer, accessor, and updater, and also
-  length and resize functions in the case of array fields ~-[] have
-  ``default names.''  The default names depend on the field name,
-  ~c[fieldi], and on whether the field is an array field or not.  For
-  clarity, suppose ~c[fieldi] is named ~c[c]. The default names are
-  shown below in calls, which also indicate the arities of the
-  functions.  In the expressions, we use ~c[x] as the object to be
-  recognized by field recognizers, ~c[i] as an array index, ~c[v] as
-  the ``new value'' to be installed by an updater, and ~c[name] as the
+  These functions ~-[] the recognizer, accessor, and updater, and also length
+  and resize functions in the case of array fields ~-[] have ``default names.''
+  The default names depend on the field name, ~c[fieldi], and on whether the
+  field is an array field or not.  For clarity, suppose ~c[fieldi] is named
+  ~c[c]. The default names are shown below in calls, which also indicate the
+  arities of the functions.  In the expressions, we use ~c[x] as the object to
+  be recognized by field recognizers, ~c[i] as an array index, ~c[v] as the
+  ``new value'' to be installed by an updater, and ~c[name] as the
   single-threaded object.
 
   ~bv[]
@@ -16717,11 +16720,10 @@
   resize                                   (RESIZE-c k name)
   ~ev[]
 
-  Finally, a recognizer and a creator for the entire single-threaded
-  object are introduced.  The creator returns the initial stobj, but
-  may only be used in limited contexts; ~pl[with-local-stobj].  If
-  the single-threaded object is named ~c[name], then the default names
-  and arities are as shown below.
+  Finally, a recognizer and a creator for the entire single-threaded object are
+  introduced.  The creator returns the initial stobj, but may only be used in
+  limited contexts; ~pl[with-local-stobj].  If the single-threaded object is
+  named ~c[name], then the default names and arities are as shown below.
   ~bv[]
   top recognizer     (nameP x)
   creator            (CREATE-name)
@@ -16733,11 +16735,11 @@
     (X :TYPE INTEGER :INITIALLY 0)
     (A :TYPE (ARRAY (INTEGER 0 9) (3)) :INITIALLY 9))
   ~ev[]
-  introduces a stobj named ~c[$S].  The stobj has two fields, ~c[X] and
-  ~c[A].  The ~c[A] field is an array.  The ~c[X] field contains an
-  integer and is initially 0.  The ~c[A] field contains a list of
-  integers, each between 0 and 9, inclusively.  Initially, each of the
-  three elements of the ~c[A] field is 9.
+  introduces a stobj named ~c[$S].  The stobj has two fields, ~c[X] and ~c[A].
+  The ~c[A] field is an array.  The ~c[X] field contains an integer and is
+  initially 0.  The ~c[A] field contains a list of integers, each between 0 and
+  9, inclusively.  Initially, each of the three elements of the ~c[A] field is
+  9.
 
   This event introduces the following sequence of definitions:
   ~bv[]
@@ -16755,11 +16757,10 @@
 
   ~em[Avoiding the Default Function Names]
 
-  If you do not like the default names listed above you may use the
-  optional ~c[:renaming] alist to substitute names of your own
-  choosing.  Each element of ~c[alist] should be of the form
-  ~c[(fn1 fn2)], where ~c[fn1] is a default name and ~c[fn2] is your choice
-  for that name.
+  If you do not like the default names listed above you may use the optional
+  ~c[:renaming] alist to substitute names of your own choosing.  Each element
+  of ~c[alist] should be of the form ~c[(fn1 fn2)], where ~c[fn1] is a default
+  name and ~c[fn2] is your choice for that name.
 
   For example
   ~bv[]
@@ -16781,43 +16782,41 @@
   (DEFUN AI (I $S) ...)            ; accessor for A field at index I
   (DEFUN UPDATE-AI (I V $S) ...)   ; updater for A field at index I
   ~ev[]
-  Note that even though the renaming alist substitutes ``~c[XACCESSOR]''
-  for ``~c[X]'' the updater for the ~c[X] field is still called
-  ``~c[UPDATE-X].''  That is because the renaming is applied to the
-  default function names, not to the field descriptors in the
-  event.
+  Note that even though the renaming alist substitutes ``~c[XACCESSOR]'' for
+  ``~c[X]'' the updater for the ~c[X] field is still called ``~c[UPDATE-X].''
+  That is because the renaming is applied to the default function names, not to
+  the field descriptors in the event.
 
-  Use of the ~c[:renaming] alist may be necessary to avoid name
-  clashes between the default names and and pre-existing function
-  symbols.
+  Use of the ~c[:renaming] alist may be necessary to avoid name clashes between
+  the default names and and pre-existing function symbols.
 
   ~em[Constants]
 
   ~c[Defstobj] events also introduce constant definitions
-  (~pl[defconst]).  One constant is introduced for each accessor
-  function by prefixing and suffixing a `~c[*]' character on the function
-  name.  The value of that constant is the position of the field being
-  accessed.  For example, if the accessor functions are ~c[a], ~c[b], and ~c[c],
-  in that order, then the following constant definitions are introduced.
+  (~pl[defconst]).  One constant is introduced for each accessor function by
+  prefixing and suffixing a `~c[*]' character on the function name.  The value
+  of that constant is the position of the field being accessed.  For example,
+  if the accessor functions are ~c[a], ~c[b], and ~c[c], in that order, then
+  the following constant definitions are introduced.
   ~bv[]
   (defconst *a* 0)
   (defconst *b* 1)
   (defconst *c* 2)
   ~ev[]
   These constants are used for certain calls of ~ilc[nth] and ~ilc[update-nth]
-  that are displayed to the user in proof output.  For example, for
-  stobj ~c[st] with accessor functions ~c[a], ~c[b], and ~c[c], in that order, the
+  that are displayed to the user in proof output.  For example, for stobj
+  ~c[st] with accessor functions ~c[a], ~c[b], and ~c[c], in that order, the
   term ~c[(nth '2 st)] would be printed during a proof as ~c[(nth *c* st)].
-  Also ~pl[term], in particular the discussion there of untranslated
-  terms, and ~pl[nth-aliases-table].
+  Also ~pl[term], in particular the discussion there of untranslated terms, and
+  ~pl[nth-aliases-table].
 
   ~em[Inspecting the Effects of a Defstobj]
 
   Because the stobj functions are introduced as ``sub-events'' of the
-  ~c[defstobj] the history commands ~c[:]~ilc[pe] and ~c[:]~ilc[pc]
-  will not print the definitions of these functions but will print
-  the superior ~c[defstobj] event.  To see the definitions of these
-  functions use the history command ~c[:]~ilc[pcb!].
+  ~c[defstobj] the history commands ~c[:]~ilc[pe] and ~c[:]~ilc[pc] will not
+  print the definitions of these functions but will print the superior
+  ~c[defstobj] event.  To see the definitions of these functions use the
+  history command ~c[:]~ilc[pcb!].
 
   To see an s-expression containing the definitions what constitute the raw
   Lisp implementation of the event, evaluate the form
@@ -24579,6 +24578,7 @@
     fchecksum-atom
     step-limit-error1
     waterfall1-lst@par ; for #+acl2-par
+    fix-stobj-array-type
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
@@ -35735,15 +35735,15 @@
   (set-case-split-limitations '(500 nil))
   ~ev[]
   The first of these prevents ~c[clausify] from trying the
-  subsumption/replacement (see below) loop if more than 500 clauses
-  are involved.  It also discourages the clause simplifier from
-  splitting into more than 100 cases at once.
+  subsumption/replacement (see below) loop if more than 500 clauses are
+  involved.  It also discourages the clause simplifier from splitting into more
+  than 100 cases at once.
 
-  Note: This is an event!  It does not print the usual event summary
-  but nevertheless changes the ACL2 logical ~il[world] and is so
-  recorded.  Moreover, its effect is to set the ~ilc[acl2-defaults-table], and
-  hence its effect is ~ilc[local] to the book or ~ilc[encapsulate] form
-  containing it; ~pl[acl2-defaults-table].
+  Note: This is an event!  It does not print the usual event summary but
+  nevertheless changes the ACL2 logical ~il[world] and is so recorded.
+  Moreover, its effect is to set the ~ilc[acl2-defaults-table], and hence its
+  effect is ~ilc[local] to the book or ~ilc[encapsulate] form containing it;
+  ~pl[acl2-defaults-table].
 
   Also ~pl[hints] for discussion of a related hint,
   ~c[:case-split-limitations].~/
@@ -35751,26 +35751,25 @@
   General Form:
   (set-case-split-limitations lst)
   ~ev[]
-  where ~c[lst] is either ~c[nil] (denoting a list of two ~c[nil]s), or a
-  list of length two, each element of which is either ~c[nil] or a natural
-  number.  When ~c[nil] is used as an element, it is treated as positive
-  infinity.  The default setting is ~c[(500 100)].
+  where ~c[lst] is either ~c[nil] (denoting a list of two ~c[nil]s), or a list
+  of length two, each element of which is either ~c[nil] or a natural number.
+  When ~c[nil] is used as an element, it is treated as positive infinity.  The
+  default setting is ~c[(500 100)].
 
-  The first number specifies the maximum number of clauses that may
-  participate in the ``subsumption/replacement'' loop.  Because of the
-  expensive nature of that loop (which compares every clause to every
-  other in a way that is quadratic in the number of literals in the
-  clauses), when the number of clauses exceeds about 1000, the system
-  tends to ``go into a black hole,'' printing nothing and not even
-  doing many garbage collections (because the subsumption/replacement
-  loop does not create new clauses so much as it just tries to delete
-  old ones).  The initial setting is lower than the threshold at which
-  we see noticeably bad performance, so you probably will not see this
+  The first number specifies the maximum number of clauses that may participate
+  in the ``subsumption/replacement'' loop.  Because of the expensive nature of
+  that loop (which compares every clause to every other in a way that is
+  quadratic in the number of literals in the clauses), when the number of
+  clauses exceeds about 1000, the system tends to ``go into a black hole,''
+  printing nothing and not even doing many garbage collections (because the
+  subsumption/replacement loop does not create new clauses so much as it just
+  tries to delete old ones).  The initial setting is lower than the threshold
+  at which we see noticeably bad performance, so you probably will not see this
   behavior unless you have raised or disabled the limit.
 
-  Why raise the subsumption/replacement limit?  The
-  subsumption/replacement loop cleans up the set of subgoals produced
-  by the simplifier.  For example, if one subgoal is
+  Why raise the subsumption/replacement limit?  The subsumption/replacement
+  loop cleans up the set of subgoals produced by the simplifier.  For example,
+  if one subgoal is
   ~bv[]
   (implies (and p q r) s)            [1]
   ~ev[]
@@ -35778,88 +35777,80 @@
   ~bv[]
   (implies (and p (not q) r) s)      [2]
   ~ev[]
-  then the subsumption/replacement loop would produce the single
-  subgoal
+  then the subsumption/replacement loop would produce the single subgoal
   ~bv[]
   (implies (and p r) s)              [3]
   ~ev[]
-  instead.  This cleanup process is simply skipped when the number of
-  subgoals exceeds the subsumption/replacement limit.  But each subgoal
-  must nonetheless be proved.  The proofs of [1] and [2] are likely to
-  duplicate much work, which is only done once in proving [3].  So
-  with a low limit, you may find the system quickly produces a set of
-  subgoals but then takes a long time to prove that set.  With a higher
-  limit, you may find the set of subgoals to be ``cleaner'' and faster
-  to prove.
+  instead.  This cleanup process is simply skipped when the number of subgoals
+  exceeds the subsumption/replacement limit.  But each subgoal must nonetheless
+  be proved.  The proofs of [1] and [2] are likely to duplicate much work,
+  which is only done once in proving [3].  So with a low limit, you may find
+  the system quickly produces a set of subgoals but then takes a long time to
+  prove that set.  With a higher limit, you may find the set of subgoals to be
+  ``cleaner'' and faster to prove.
 
-  Why lower the subsumption/replacement limit?  If you see the system
-  go into a ``black hole'' of the sort described above (no output, and
-  few garbage collections), it could due to the
-  subsumption/replacement loop working on a large set of large
-  subgoals.  You might temporarily lower the limit so that
-  it begins to print the uncleaned set of subgoals.  Perhaps by
-  looking at the output you will realize that some function can be
-  disabled so as to prevent the case explosion.  Then raise or disable
-  the limit again!
+  Why lower the subsumption/replacement limit?  If you see the system go into a
+  ``black hole'' of the sort described above (no output, and few garbage
+  collections), it could due to the subsumption/replacement loop working on a
+  large set of large subgoals.  You might temporarily lower the limit so that
+  it begins to print the uncleaned set of subgoals.  Perhaps by looking at the
+  output you will realize that some function can be disabled so as to prevent
+  the case explosion.  Then raise or disable the limit again!
 
-  The second number in the case-split-limitations specifies how many
-  case splits the simplifier will allow before it begins to shut down
-  case splitting.  In normal operation, when a literal rewrites to a
-  nest of ~c[IF]s, the system simplifies all subsequent literals in
-  all the contexts generated by walking through the nest in all
-  possible ways.  This can also cause the system to ``go into a black
-  hole'' printing nothing except garbage collection messages.  This
-  ``black hole'' behavior is different from than mentioned above
-  because space is typically being consumed at a prodigious rate,
-  since the system is rewriting the literals over and over in many
+  The second number in the case-split-limitations specifies how many case
+  splits the simplifier will allow before it begins to shut down case
+  splitting.  In normal operation, when a literal rewrites to a nest of
+  ~c[IF]s, the system simplifies all subsequent literals in all the contexts
+  generated by walking through the nest in all possible ways.  This can also
+  cause the system to ``go into a black hole'' printing nothing except garbage
+  collection messages.  This ``black hole'' behavior is different from than
+  mentioned above because space is typically being consumed at a prodigious
+  rate, since the system is rewriting the literals over and over in many
   different contexts.
 
-  As the simplifier sweeps across the clause, it keeps track of the
-  number of cases that have been generated.  When that number exceeds
-  the second number in case-split-limitations, the simplifier stops
-  rewriting literals.  The remaining, unrewritten, literals are copied
-  over into the output clauses.  ~c[IF]s in those literals are split
-  out, but the literals themselves are not rewritten.  Each output
-  clause is then attacked again, by subsequent simplification, and
-  eventually the unrewritten literals in the tail of the clause will
-  be rewritten because the earlier literals will stabilize and stop
+  As the simplifier sweeps across the clause, it keeps track of the number of
+  cases that have been generated.  When that number exceeds the second number
+  in case-split-limitations, the simplifier stops rewriting literals.  The
+  remaining, unrewritten, literals are copied over into the output clauses.
+  ~c[IF]s in those literals are split out, but the literals themselves are not
+  rewritten.  Each output clause is then attacked again, by subsequent
+  simplification, and eventually the unrewritten literals in the tail of the
+  clause will be rewritten because the earlier literals will stabilize and stop
   producing case splits.
 
-  The default setting of 100 is fairly low.  We have seen successful
-  proofs in which thousands of subgoals were created by a
-  simplification.  By setting the second number to small values, you
-  can force the system to case split slowly.  For example, a setting
-  of 5 will cause it to generate ``about 5'' subgoals per
-  simplification.
+  The default setting of 100 is fairly low.  We have seen successful proofs in
+  which thousands of subgoals were created by a simplification.  By setting the
+  second number to small values, you can force the system to case split slowly.
+  For example, a setting of 5 will cause it to generate ``about 5'' subgoals
+  per simplification.
 
-  You can read about how the simplifier works in the book
-  Computer-Aided Reasoning: An Approach (Kaufmann, Manolios, Moore).
-  If you think about it, you will see that with a low case limit, the
-  initial literals of a goal are repeatedly simplified, because each time
-  a subgoal is simplified we start at the left-most subterm.  So when
-  case splitting prevents the later subterms from being fully split out,
-  we revisit the earlier terms before getting to the later ones.  This
-  can be good.  Perhaps it takes several rounds of rewriting before
-  the earlier terms are in normal form and then the later terms rewrite
-  quickly.  But it could happen that the earlier terms are expensive to
-  rewrite and do not change, making the strategy of delayed case splits
-  less efficient.  It is up to you.
+  You can read about how the simplifier works in the book Computer-Aided
+  Reasoning: An Approach (Kaufmann, Manolios, Moore); also
+  ~pl[introduction-to-the-theorem-prover] for a detailed tutorial on using the
+  ACL2 prover.  If you think about it, you will see that with a low case limit,
+  the initial literals of a goal are repeatedly simplified, because each time a
+  subgoal is simplified we start at the left-most subterm.  So when case
+  splitting prevents the later subterms from being fully split out, we revisit
+  the earlier terms before getting to the later ones.  This can be good.
+  Perhaps it takes several rounds of rewriting before the earlier terms are in
+  normal form and then the later terms rewrite quickly.  But it could happen
+  that the earlier terms are expensive to rewrite and do not change, making the
+  strategy of delayed case splits less efficient.  It is up to you.
 
-  Sometimes the simplifier produces more clauses than you might
-  expect, even with case-split-limitations in effect.  As noted above,
-  once the limit has been exceeded, the simplifier does not rewrite
-  subsequent literals.  But ~c[IF]s in those literals are split out
-  nonetheless.  Furthermore, the enforcement of the limit is -- as
-  described above -- all or nothing: if the limit allows us to rewrite
-  a literal then we rewrite the literal fully, without regard for
-  limitations, and get as many cases as ``naturally'' are produced.
-  It quite often happens that a single literal, when expanded, may
+  Sometimes the simplifier produces more clauses than you might expect, even
+  with case-split-limitations in effect.  As noted above, once the limit has
+  been exceeded, the simplifier does not rewrite subsequent literals.  But
+  ~c[IF]s in those literals are split out nonetheless.  Furthermore, the
+  enforcement of the limit is -- as described above -- all or nothing: if the
+  limit allows us to rewrite a literal then we rewrite the literal fully,
+  without regard for limitations, and get as many cases as ``naturally'' are
+  produced.  It quite often happens that a single literal, when expanded, may
   grossly exceed the specified limits.
 
-  If the second ``number'' is ~c[nil] and the simplifier is going to
-  produce more than 1000 clauses, a ``helpful little message'' to
-  this effect is printed out.  This output is printed to the
-  system's ``comment window'' not the standard proofs output.~/"
+  If the second ``number'' is ~c[nil] and the simplifier is going to produce
+  more than 1000 clauses, a ``helpful little message'' to this effect is
+  printed out.  This output is printed to the system's ``comment window'' not
+  the standard proofs output.~/"
 
   `(state-global-let*
     ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))

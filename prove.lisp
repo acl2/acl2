@@ -8513,7 +8513,8 @@
   conjecture and how to impart that knowledge to ACL2 in the form of rules.
   The ``key checkpoint'' information printed at the end of the summary provides
   a fine place to start.  ~l[the-method] for a general discussion of how to
-  prove theorems with ACL2.  Also ~pl[set-gag-mode] for discussion of key
+  prove theorems with ACL2, and ~pl[introduction-to-the-theorem-prover] for a
+  more detailed tutorial.  Also ~pl[set-gag-mode] for discussion of key
   checkpoints and an abbreviated output mode that focuses attention on them.
   You may find it most useful to start by focusing on key checkpoints that are
   not under a proof by induction, if any, both because these are more likely to
@@ -8527,9 +8528,12 @@
   For information on a tool to help debug failures of ~ilc[encapsulate] and
   ~ilc[progn] events, as well as ~ilc[certify-book] failures, ~pl[redo-flat].
 
-  See also the book ``Computer-Aided Reasoning: An Approach'' (Kaufmann,
-  Manolios, Moore), as well as the discussion of how to read Nqthm proofs and how
-  to use Nqthm rules in ``A Computational Logic Handbook'' by Boyer and Moore
+  Again, ~pl[the-method] for a general discussion of how to prove theorems with
+  ACL2, and ~pl[introduction-to-the-theorem-prover] for a more detailed
+  tutorial.  See also the book ``Computer-Aided Reasoning: An
+  Approach'' (Kaufmann, Manolios, Moore), as well as the discussion of how to
+  read Nqthm proofs and how to use Nqthm rules in ``A Computational Logic
+  Handbook'' by Boyer and Moore
   (Academic Press, 1988).
 
   If the failure occurred during a forcing round, ~pl[failed-forcing].")

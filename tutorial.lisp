@@ -832,7 +832,8 @@
   Calling ACL2 from another program~/
 
   ACL2 is intended for interactive use.  It is generally unrealistic to expect
-  it to prove theorems fully automatically; ~pl[the-method].
+  it to prove theorems fully automatically; ~pl[the-method], and
+  ~pl[introduction-to-the-theorem-prover] for a more detailed tutorial.
 
   Nevertheless, here we describe an approach for how to call the ACL2 theorem
   prover noninteractively.  These steps can of course be modified according to
@@ -8195,7 +8196,7 @@
    ~c[\"arithmetic-5/top\"] provides an ~c[elim] rule that eliminates ~c[(floor x y)]
    and ~c[(mod x y)] by replacing ~c[x] by ~c[(+ r (* y q))], so that the
    ~c[floor] expression becomes ~c[q] and the ~c[mod] expression becomes ~c[r].
-   When introducing your own ~c[elim] rules you will probably also need to into
+   When introducing your own ~c[elim] rules you will probably also need to
    introduce ~c[generalize] rules (see below) so that the new variables are
    appropriately constrained.
 

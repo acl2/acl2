@@ -17974,6 +17974,28 @@
 
 (defconst *expt2-28* (expt 2 28))
 
+(defun fix-stobj-array-type (type wrld)
+
+; Note: Wrld may be a world, nil, or (in raw Lisp only) the symbol :raw-lisp.
+; If wrld is :raw-lisp then this function should be called in a context where
+; the symbol-value is available for any symbol introduced by a previous
+; defconst event.  Our intended use case meets that criterion: evaluation of a
+; defstobj form during loading of the compiled file for a book.
+
+  (let* ((max (car (caddr type)))
+         (n (cond ((consp wrld)
+                   (let ((qc (defined-constant max wrld)))
+                     (and qc (unquote qc))))
+                  #-acl2-loop-only
+                  ((eq wrld :raw-lisp)
+                   (and (symbolp max)
+                        (symbol-value max)))
+                  (t nil))))
+    (cond (n (list (car type)
+                   (cadr type)
+                   (list n)))
+          (t type))))
+
 (defun chk-stobj-field-descriptor (name field-descriptor ctx wrld state)
 
 ; See the comment just before chk-acceptable-defstobj1 for an
@@ -18030,10 +18052,11 @@
                  support single-dimensional arrays.  The purported ARRAY ~
                  :type ~x0 for the ~x1 field of ~x2 is not of this form."
                 type field name))
-          (t (let* ((etype (cadr type))
+          (t (let* ((type0 (fix-stobj-array-type type wrld))
+                    (etype (cadr type0))
                     (etype-term (translate-declaration-to-guard
                                  etype 'x wrld))
-                    (n (car (caddr type))))
+                    (n (car (caddr type0))))
                (cond
                 ((null etype-term)
                  (er soft ctx
@@ -18041,13 +18064,13 @@
                       ~x1, namely ~x0, is not recognized by ACL2 as a ~
                       type-spec.  See :DOC type-spec."
                      field name type))
-                ((not (and (integerp n)
-                           (<= 0 n)))
+                ((not (natp n))
                  (er soft ctx
-                     "Array dimensions must be non-negative integers.  ~
-                      The :type ~x0 for the ~x1 field of ~x2 is thus ~
+                     "An array dimension must be a non-negative integer or a ~
+                      defined constant whose value is a non-negative integer. ~
+                      ~ The :type ~x0 for the ~x1 field of ~x2 is thus ~
                       illegal."
-                     type field name))
+                     type0 field name))
                 (t
                  (er-let*
                    ((pair (simple-translate-and-eval etype-term
@@ -18573,7 +18596,11 @@
 ; includes a normalized version of the field descriptors under the
 ; renaming.
 
-(defun defstobj-fields-template (field-descriptors renaming)
+(defun defstobj-fields-template (field-descriptors renaming wrld)
+
+; Note: Wrld may be a world, nil, or (in raw Lisp only) the symbol :raw-lisp.
+; See fix-stobj-array-type.
+
   (cond
    ((endp field-descriptors) nil)
    (t
@@ -18603,14 +18630,18 @@
            (resize-name (defstobj-fnname field :resize key2 renaming))
            (length-name (defstobj-fnname field :length key2 renaming)))
       (cons (list fieldp-name
-                  type
+                  (cond ((and (consp type)
+                              (eq (car type) 'array))
+                         (fix-stobj-array-type type wrld))
+                        (t type))
                   init
                   accessor-name
                   updater-name
                   length-name
                   resize-name
                   resizable)
-            (defstobj-fields-template (cdr field-descriptors) renaming))))))
+            (defstobj-fields-template
+              (cdr field-descriptors) renaming wrld))))))
 
 (defun defstobj-doc (args)
 
@@ -18622,7 +18653,10 @@
           (assert$ (not erp)
                    (cdr (assoc-eq :doc key-alist)))))
 
-(defun defstobj-template (name args)
+(defun defstobj-template (name args wrld)
+
+; Note: Wrld may be a world, nil, or (in raw Lisp only) the symbol :raw-lisp.
+; See fix-stobj-array-type.
 
 ; We unpack the args to get the renamed field descriptors.  We return
 ; a list of the form (namep create-name fields doc inline), where:
@@ -18660,7 +18694,7 @@
            (inline (cdr (assoc-eq :inline key-alist))))
        (list (defstobj-fnname name :recognizer :top renaming)
              (defstobj-fnname name :creator :top renaming)
-             (defstobj-fields-template field-descriptors renaming)
+             (defstobj-fields-template field-descriptors renaming wrld)
              doc
              inline))))))
 
@@ -19224,17 +19258,18 @@
      (all-but-last
       (defstobj-component-recognizer-axiomatic-defs name template
         field-templates wrld))
-     (list* `(,recog (,name)
-                     (cond
-                      ((the-live-stobjp ,name)
-                       t)
-                      (t (and (true-listp ,name)
-                              (= (length ,name) ,(length field-templates))
-                              ,@(defstobj-component-recognizer-calls
-                                  field-templates 0 name nil)))))
-            `(,creator ()
-                       ,(defstobj-raw-init template))
-            (defstobj-field-fns-raw-defs name inline 0 field-templates)))))
+     `((,recog (,name)
+               (cond
+                ((the-live-stobjp ,name)
+                 t)
+                (t (and (true-listp ,name)
+                        (= (length ,name) ,(length field-templates))
+                        ,@(defstobj-component-recognizer-calls
+                            field-templates 0 name nil)))))
+       ,@(and wrld
+              `((,creator ()
+                          ,(defstobj-raw-init template))))
+       ,@(defstobj-field-fns-raw-defs name inline 0 field-templates)))))
 
 (defun put-stobjs-in-and-outs1 (name ftemps wrld)
 
@@ -19378,7 +19413,7 @@
         (t
          (enforce-redundancy
           event-form ctx wrld0
-          (let* ((template (defstobj-template name args))
+          (let* ((template (defstobj-template name args wrld1))
                  (field-names (strip-accessor-names (caddr template)))
                  (defconsts (defstobj-defconsts field-names 0))
                  (field-const-names (strip-cadrs defconsts))
