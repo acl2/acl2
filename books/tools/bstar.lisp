@@ -183,9 +183,9 @@ A new binder form may be created by defining a macro named PATBIND-<name>.  We
 discuss the detailed interface of user-defined binders below.  First,
 DEF-PATBIND-MACRO provides a simple way to define certain user binders.  For
 example, this form is used to define the binder for CONS:
-\bv[]
+~bv[]
  (def-patbind-macro cons (car cdr))
-\ev[]
+~ev[]
 This defines a binder macro ~c[PATBIND-CONS] which enables ~c[(cons a b)] to be used as
 a binder form.  This binder form must take two arguments since two destructor
 functions (car cdr) are given to def-patbind-macro.  The destructor functions
