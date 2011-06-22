@@ -6522,6 +6522,157 @@
                      (change rewrite-constant new-rcnst
                              :rw-cache-state old-rw-cache-state))))))
 
+#+(and acl2-par (not acl2-loop-only))
+(defvar *waterfall-parallelism-timings-ht-alist* nil
+  "Association list of hashtables, where the key is the name of a theorem
+   attempted with a defthm, and the value is a hashtable mapping from
+   clause-ids to the time it took to prove that clause.")
+
+#+(and acl2-par (not acl2-loop-only))
+(defvar *waterfall-parallelism-timings-ht* nil
+  "Contains the hashtable that associates waterfall-parallelism timings with
+   each clause-id.  This variable should always be nil unless ACL2(p) is in the
+   middle of attempting a proof initiated by the user with a defthm.")
+
+#+acl2-par
+(defun setup-waterfall-parallelism-ht-for-name (name)
+  #-acl2-loop-only
+  (let ((curr-ht (assoc-eq name *waterfall-parallelism-timings-ht-alist*)))
+    (cond ((null curr-ht)
+           (let ((new-ht (make-hash-table :test 'equal :size (expt 2 13)
+                                          :shared t)))
+             (setf *waterfall-parallelism-timings-ht-alist*
+                   (acons name
+                          new-ht
+                          (take 4 *waterfall-parallelism-timings-ht-alist*)))
+             (setf *waterfall-parallelism-timings-ht* new-ht)))
+          (t (setf *waterfall-parallelism-timings-ht* (cdr curr-ht)))))
+  name)
+
+#+acl2-par
+(defun clear-current-waterfall-parallelism-ht ()
+  #-acl2-loop-only
+  (setf *waterfall-parallelism-timings-ht* nil)
+  t)
+
+#+acl2-par
+(defun flush-waterfall-parallelism-hashtables ()
+  #-acl2-loop-only
+  (progn
+    (setf *waterfall-parallelism-timings-ht-alist* nil)
+    (setf *waterfall-parallelism-timings-ht* nil))
+  t)
+
+#+(and acl2-par (not acl2-loop-only))
+(defun save-waterfall-timings-for-cl-id (key value)
+  (when *waterfall-parallelism-timings-ht*
+    (setf (gethash key *waterfall-parallelism-timings-ht*)
+          value))
+  value)
+
+#+(and acl2-par (not acl2-loop-only))
+(defun lookup-waterfall-timings-for-cl-id (key)
+  (mv-let (val found)
+          (cond (*waterfall-parallelism-timings-ht*
+                 (gethash key *waterfall-parallelism-timings-ht*))
+                (t (mv nil nil)))
+          (declare (ignore found))
+          (or val 0)))
+
+(defmacro waterfall1-wrapper (form)
+  form)
+
+#+acl2-par
+(defun waterfall1-wrapper@par-before (cl-id)
+  (case (waterfall-printing)
+    (:limited
+     (and (print-clause-id-okp cl-id)
+          (with-output-lock
+
+; Parallelism wart: Kaufmann suggests that we need to skip printing clause-ids
+; that have already been printed.  Note that using the printing of clause-ids
+; to show that the prover is still making progress is no longer the default
+; setting (see :doc set-waterfall-printing).
+
+; Parallelism wart: here, and at many other ACL2(p)-specific places, consider
+; using observation-cw or printing that can be inhibited, instead of cw.
+
+           (cw "Starting ~x0~%"
+               (string-for-tilde-@-clause-id-phrase cl-id)))))
+    (:very-limited
+     (with-output-lock
+      (cw ".")))
+    (otherwise nil)))
+
+#+acl2-par
+(defun waterfall1-wrapper@par-after (cl-id start-time state)
+  #+acl2-loop-only
+  (declare (ignore cl-id start-time))
+  #-acl2-loop-only 
+  (save-waterfall-timings-for-cl-id 
+   cl-id 
+   (- (get-internal-real-time) ; end time
+      start-time))
+  (cond ((and (equal (waterfall-printing) :very-limited)
+              (f-get-global 'waterfall-printing-when-finished state))
+         (with-output-lock
+          (cw ",")))
+        (t nil)))
+
+#+acl2-par
+(defmacro waterfall1-wrapper@par (&rest form)
+
+; We need a version of waterfall1-wrapper named waterfall1-wrapper@par so that
+; defun@par knows to replace it with the appropriate identity macro (i.e.,
+; waterfall1-wrapper) in serial definitions of each function that uses
+; waterfall1-wrapper@par.  Without both versions of this macro, there is a
+; signature mismatch when trying to define the serial version of any function
+; that uses waterfall1-wrapper@par.  
+
+; Note that if defun@par were smart enough to run the macro call to
+; waterfall1-wrapper@par before attempting to run the call below to mv@par
+; (which should not be run, but instead replaced in the serial version), we
+; wouldn't have this problem.  But, since defun@par cannot resolve just some of
+; the macros (without some extra coding), instead, we simply define both
+; waterfall1-wrapper and waterfall1-wrapper@par (see the constant inside
+; *@par-mappings* for the #-acl2-par definition of waterfall1-wrapper@par).
+
+  `(let ((start-time 
+          #+acl2-loop-only 'ignored-value
+          #-acl2-loop-only (get-internal-real-time)))
+     (prog2$
+      (waterfall1-wrapper@par-before cl-id)
+      (mv-let@par
+       (step-limit signal pspv jppl-flg state)
+       ,@form
+       (prog2$ (waterfall1-wrapper@par-after cl-id start-time state)
+               (mv@par step-limit signal pspv jppl-flg state))))))
+
+#+acl2-par
+(defun increment-waterfall-parallelism-counter (abbreviated-symbol)
+  (case abbreviated-symbol
+    ((resource-and-timing-parallel)
+     #-acl2-loop-only
+     (incf *resource-and-timing-based-parallelizations*)
+     'parallel)
+    ((resource-and-timing-serial)
+     #-acl2-loop-only
+     (incf *resource-and-timing-based-serializations*)
+     'serial)
+    ((resource-parallel)
+     #-acl2-loop-only
+     (incf *resource-based-parallelizations*)
+     'parallel)
+    ((resource-serial)
+     #-acl2-loop-only
+     (incf *resource-based-serializations*)
+     'serial)
+    (otherwise
+     (er hard 'increment-waterfall-parallelism-counter
+         "Illegal value ~x0 was given to ~
+          increment-waterfall-parallelism-counter"
+         abbreviated-symbol))))
+
 (mutual-recursion@par
 
 (defun@par waterfall1
@@ -6558,78 +6709,57 @@
 ; When the signal is 'error, the error message has been printed.  The returned
 ; pspv is irrelevant (and typically nil).
 
-  (prog2$
-   (parallel-only@par
-    (case (waterfall-printing)
-      (:limited
-       (and (print-clause-id-okp cl-id)
-            (with-output-lock
-
-; Parallelism wart: Kaufmann suggests that we need to not print clause-ids that
-; have already been printed.  Note that using the printing of clause-ids to
-; show that the prover is still making progress is no longer the default
-; setting (see :doc set-waterfall-printing).
-
-; Parallelism wart: here, and at many other ACL2(p)-specific places, consider
-; using observation-cw or printing that can be inhibited, instead of cw.
-
-             (cw "Starting ~x0~%"
-                 (string-for-tilde-@-clause-id-phrase cl-id)))))
-      (:very-limited
-       (with-output-lock
-        (cw ".")))
-      (otherwise nil)))
-   (mv-let@par
-    (erp pair state)
-    (find-applicable-hint-settings@par cl-id clause hist pspv ctx hints
-                                       wrld nil state)
+  (mv-let@par
+   (erp pair state)
+   (find-applicable-hint-settings@par cl-id clause hist pspv ctx hints
+                                      wrld nil state)
 
 ; If no error occurs and pair is non-nil, then pair is of the form
 ; (hint-settings . hints') where hint-settings is the hint-settings
 ; corresponding to cl-id and clause and hints' is hints with the appropriate
 ; element removed.
 
-    (cond
-     (erp 
+   (cond
+    (erp 
 
 ; This only happens if some hint function caused an error, e.g., by 
 ; generating a hint that would not translate.  The error message has been
 ; printed and pspv is irrelevant.  We pass the error up.
          
-      (mv@par step-limit 'error nil nil state))  
-     (t (sl-let@par
-         (signal new-pspv jppl-flg state)
-         (cond
-          ((null pair) ; There was no hint.
-           (pprogn@par
+     (mv@par step-limit 'error nil nil state))  
+    (t (sl-let@par
+        (signal new-pspv jppl-flg state)
+        (cond
+         ((null pair) ; There was no hint.
+          (pprogn@par
 
 ; In the #+acl2-par version of the waterfall, with (waterfall-printing) set to
 ; :limited, the need to print the clause on a checkpoint is taken care of
 ; inside waterfall-msg@par.
            
-            (cond ((serial-first-form-parallel-second-form@par
-                    nil
-                    (member-equal (waterfall-printing)
-                                  '(:limited :very-limited)))
-                   (state-mac@par))
-                  (t (waterfall-print-clause@par suppress-print cl-id clause
-                                                 state)))
-            (waterfall0@par ledge cl-id clause hist pspv hints ens wrld ctx
-                            state step-limit)))
-          (t (waterfall0-with-hint-settings@par
-              (car pair)
-              ledge cl-id clause hist pspv (cdr pair) suppress-print ens wrld
-              ctx state step-limit)))
-         (let ((pspv (cond ((null pair)
-                            (restore-rw-cache-state-in-pspv new-pspv pspv))
-                           (t new-pspv))))
-           (mv-let@par
-            (pspv state)
-            (cond ((or (eq signal 'miss)
-                       (eq signal 'error))
-                   (mv@par pspv state))
-                  (t (gag-state-exiting-cl-id@par signal cl-id pspv state)))
-            (mv@par step-limit signal pspv jppl-flg state)))))))))
+           (cond ((serial-first-form-parallel-second-form@par
+                   nil
+                   (member-equal (waterfall-printing)
+                                 '(:limited :very-limited)))
+                  (state-mac@par))
+                 (t (waterfall-print-clause@par suppress-print cl-id clause
+                                                state)))
+           (waterfall0@par ledge cl-id clause hist pspv hints ens wrld ctx
+                           state step-limit)))
+         (t (waterfall0-with-hint-settings@par
+             (car pair)
+             ledge cl-id clause hist pspv (cdr pair) suppress-print ens wrld
+             ctx state step-limit)))
+        (let ((pspv (cond ((null pair)
+                           (restore-rw-cache-state-in-pspv new-pspv pspv))
+                          (t new-pspv))))
+          (mv-let@par
+           (pspv state)
+           (cond ((or (eq signal 'miss)
+                      (eq signal 'error))
+                  (mv@par pspv state))
+                 (t (gag-state-exiting-cl-id@par signal cl-id pspv state)))
+           (mv@par step-limit signal pspv jppl-flg state))))))))
 
 (defun@par waterfall0-with-hint-settings 
   (hint-settings ledge cl-id clause hist pspv hints goal-already-printedp
@@ -7100,17 +7230,18 @@
                  (increment-timer@par 'print-time state)))
        (sl-let@par
         (d-signal d-new-pspv d-new-jppl-flg state)
-        (waterfall1@par ledge
-                        d-cl-id
-                        clause
-                        (change-or-hit-history-entry i hist #+acl2-par cl-id)
-                        pspv
-                        (cons (pair-cl-id-with-hint-setting d-cl-id
-                                                            hint-settingsi)
-                              hints)
-                        t ;;; suppress-print
-                        ens
-                        wrld ctx state step-limit)
+        (waterfall1-wrapper@par
+         (waterfall1@par ledge
+                         d-cl-id
+                         clause
+                         (change-or-hit-history-entry i hist #+acl2-par cl-id)
+                         pspv
+                         (cons (pair-cl-id-with-hint-setting d-cl-id
+                                                             hint-settingsi)
+                               hints)
+                         t ;;; suppress-print
+                         ens
+                         wrld ctx state step-limit))
         (declare (ignore d-new-jppl-flg))
                      
 ; Here, d-signal is one of 'error, 'abort or 'continue.  We pass 'error up
@@ -7284,18 +7415,19 @@
                                :primes 0)))))
         (sl-let@par
          (signal new-pspv new-jppl-flg state)
-         (waterfall1@par *preprocess-clause-ledge*
-                         cl-id
-                         (car clauses)
-                         hist
-                         pspv
-                         hints
-                         suppress-print
-                         ens
-                         wrld
-                         ctx
-                         state
-                         step-limit)
+         (waterfall1-wrapper@par
+          (waterfall1@par *preprocess-clause-ledge*
+                          cl-id
+                          (car clauses)
+                          hist
+                          pspv
+                          hints
+                          suppress-print
+                          ens
+                          wrld
+                          ctx
+                          state
+                          step-limit))
          (cond
           ((eq signal 'error) (mv@par step-limit 'error nil nil state))
           ((eq signal 'abort) (mv@par step-limit 'abort new-pspv new-jppl-flg state))
@@ -7352,18 +7484,19 @@
                                :primes 0)))))
         (mv-let@par
          (step-limit1 signal1 pspv1 jppl-flg1 state)
-         (waterfall1@par *preprocess-clause-ledge* 
-                         cl-id
-                         (car clauses) 
-                         hist 
-                         pspv
-                         hints
-                         suppress-print
-                         ens
-                         wrld
-                         ctx
-                         state
-                         step-limit)
+         (waterfall1-wrapper@par
+          (waterfall1@par *preprocess-clause-ledge* 
+                          cl-id
+                          (car clauses) 
+                          hist 
+                          pspv
+                          hints
+                          suppress-print
+                          ens
+                          wrld
+                          ctx
+                          state
+                          step-limit))
          (if
 
 ; Conditions that must be true for the speculative call to be valid:
@@ -7513,18 +7646,19 @@
                              step-limit)
          (mv-let@par
           (step-limit1 signal1 pspv1 jppl-flg1 state)
-          (waterfall1@par *preprocess-clause-ledge* 
-                          cl-id
-                          (car clauses) 
-                          hist 
-                          pspv
-                          hints
-                          suppress-print
-                          ens
-                          wrld
-                          ctx
-                          state
-                          step-limit)
+          (waterfall1-wrapper@par
+           (waterfall1@par *preprocess-clause-ledge* 
+                           cl-id
+                           (car clauses) 
+                           hist 
+                           pspv
+                           hints
+                           suppress-print
+                           ens
+                           wrld
+                           ctx
+                           state
+                           step-limit))
           (if
 
 ; Conditions that must be true for the speculative call to be valid:
@@ -7689,15 +7823,46 @@
                 (cond ((equal parent-cl-id '((0) NIL . 0))
                        'parallel)
                       (t 'serial)))
+               ((:resource-and-timing-based)
+                (cond #-acl2-loop-only
+                      ((and 
+                        
+; We could test to see whether doing the lookup or testing for resource
+; availability is faster.  It probably doesn't matter since they're both
+; supposed to be "lock free."  Since we control the lock-freeness for the
+; resource availability test in the definition of futures-resources-available
+; (as opposed to relying upon the underlying CCL implementation), we call that
+; first.
+                        
+                        (futures-resources-available)
+                        (> (or (lookup-waterfall-timings-for-cl-id cl-id) 0)
+                           (f-get-global 'waterfall-parallelism-timing-threshold
+                                         state)))
+                       (increment-waterfall-parallelism-counter 
+                        'resource-and-timing-parallel))
+
+; Here, and in the :resource-based branch below, we have an unusual functional
+; discrepancy between #+acl2-loop-only code and the corresponding
+; #-acl2-loop-only code.  But the alternative we have considered would involve
+; some complicated use of the acl2-oracle, which seems unjustified for this
+; #+acl2-par code.
+
+                      (t 
+                       (increment-waterfall-parallelism-counter
+                        'resource-and-timing-serial))))
                ((:resource-based)
-                #-acl2-loop-only (if (futures-resources-available) 'parallel 'serial)
 
 ; Here we have an unusual functional discrepancy between #+acl2-loop-only code
 ; and corresponding #-acl2-loop-only code.  But the alternative we have
 ; considered would involve some complicated use of the acl2-oracle, which seems
 ; unjustified for this #+acl2-par code.
 
-                #+acl2-loop-only 'serial)
+                (cond #-acl2-loop-only 
+                      ((futures-resources-available)                     
+                       (increment-waterfall-parallelism-counter
+                        'resource-parallel))
+                      (t (increment-waterfall-parallelism-counter
+                          'resource-serial))))
                (otherwise
                 (er hard 'waterfall1-lst@par 
                     "Waterfall-parallelism type is not what it's supposed to ~

@@ -13804,6 +13804,19 @@
           `("<MissingFunction>" "~x*" "~x* and " "~x*," 
             ,non-classical-fns)))))
 
+#+(and acl2-par (not acl2-loop-only))
+(defmacro with-waterfall-parallelism-timings (name form)
+  `(unwind-protect-disable-interrupts-during-cleanup
+    (prog2$
+      (setup-waterfall-parallelism-ht-for-name ,name)
+      ,form)
+    (clear-current-waterfall-parallelism-ht)))
+
+#-(and acl2-par (not acl2-loop-only))
+(defmacro with-waterfall-parallelism-timings (name form)
+  (declare (ignore name))
+  form)
+
 (defun defthm-fn1 (name term state
                         rule-classes
                         instructions
@@ -13812,7 +13825,6 @@
                         doc
                         event-form
                         #+:non-standard-analysis std-p)
-
   (with-ctx-summarized
    (if (output-in-infixp state) event-form (cons 'defthm name))
    (let ((wrld (w state))
@@ -13838,46 +13850,48 @@
          (ld-skip-proofsp (ld-skip-proofsp state)))
      (pprogn
       (warn-on-inappropriate-defun-mode ld-skip-proofsp event-form ctx state)
-      (er-progn
-       (chk-all-but-new-name name ctx nil wrld state)
-       (er-let*
-        ((tterm0 (translate term t t t ctx wrld state))
+      (with-waterfall-parallelism-timings
+       name
+       (er-progn
+        (chk-all-but-new-name name ctx nil wrld state)
+        (er-let*
+         ((tterm0 (translate term t t t ctx wrld state))
 ; known-stobjs = t (stobjs-out = t)
-         (tterm 
-          #+:non-standard-analysis
-          (if std-p
-              (er-progn
-               (chk-classical-term-or-standardp-of-classical-term
-                tterm0 term ctx wrld state)
-               (translate (weaken-using-transfer-principle term)
-                          t t t ctx wrld state))
-            (value tterm0))
-          #-:non-standard-analysis
-          (value tterm0))
-         (classes
+          (tterm 
+           #+:non-standard-analysis
+           (if std-p
+               (er-progn
+                (chk-classical-term-or-standardp-of-classical-term
+                 tterm0 term ctx wrld state)
+                (translate (weaken-using-transfer-principle term)
+                           t t t ctx wrld state))
+             (value tterm0))
+           #-:non-standard-analysis
+           (value tterm0))
+          (classes
 
 ; (#+:non-standard-analysis) We compute rule classes with respect to the
 ; original (translated) term.  The modified term is only relevant for proof.
 
-          (translate-rule-classes name rule-classes tterm0 ctx ens wrld
-                                  state)))
-        (cond
-         ((redundant-theoremp name tterm0 classes wrld)
-          (stop-redundant-event ctx state))
-         (t
-          (enforce-redundancy
-           event-form ctx wrld
-           (er-let*
-            ((ttree1 (chk-acceptable-rules name classes ctx ens wrld
-                                           state))
-             (wrld1 (chk-just-new-name name 'theorem nil ctx wrld state)))
+           (translate-rule-classes name rule-classes tterm0 ctx ens wrld
+                                   state)))
+         (cond
+          ((redundant-theoremp name tterm0 classes wrld)
+           (stop-redundant-event ctx state))
+          (t
+           (enforce-redundancy
+            event-form ctx wrld
             (er-let*
-             ((instructions (if (or (eq ld-skip-proofsp 'include-book)
-                                    (eq ld-skip-proofsp 'include-book-with-locals)
-                                    (eq ld-skip-proofsp 'initialize-acl2))
-                                (value nil)
-                              (translate-instructions name instructions
-                                                      ctx wrld1 state)))
+             ((ttree1 (chk-acceptable-rules name classes ctx ens wrld
+                                            state))
+              (wrld1 (chk-just-new-name name 'theorem nil ctx wrld state)))
+             (er-let*
+              ((instructions (if (or (eq ld-skip-proofsp 'include-book)
+                                     (eq ld-skip-proofsp 'include-book-with-locals)
+                                     (eq ld-skip-proofsp 'initialize-acl2))
+                                 (value nil)
+                               (translate-instructions name instructions
+                                                       ctx wrld1 state)))
 
 ; Observe that we do not translate the hints if ld-skip-proofsp is non-nil.
 ; Once upon a time we translated the hints unless ld-skip-proofsp was
@@ -13886,66 +13900,66 @@
 ; was not defined when it was first used in axioms.lisp.  This choice is
 ; a little unsettling because it means
 
-              (hints (if (or (eq ld-skip-proofsp 'include-book)
-                             (eq ld-skip-proofsp 'include-book-with-locals)
-                             (eq ld-skip-proofsp 'initialize-acl2))
-                         (value nil)
-                       (translate-hints+ name
-                                         hints
+               (hints (if (or (eq ld-skip-proofsp 'include-book)
+                              (eq ld-skip-proofsp 'include-book-with-locals)
+                              (eq ld-skip-proofsp 'initialize-acl2))
+                          (value nil)
+                        (translate-hints+ name
+                                          hints
   
 ; If there are :instructions, then default hints are to be ignored; otherwise
 ; the error just below will prevent :instructions in the presence of default
 ; hints.
 
-                                         (and (null instructions)
-                                              (default-hints wrld1))
-                                         ctx wrld1 state)))
-              (doc-pair (translate-doc name doc ctx state))
-              (ttree2 (cond (instructions
-                             (er-progn
-                              (cond (hints (er soft ctx
-                                               "It is not permitted to supply ~
-                                                both :INSTRUCTIONS and :HINTS ~
-                                                to DEFTHM."))
-                                    (t (value nil)))
-                              #+:non-standard-analysis
-                              (if std-p
+                                          (and (null instructions)
+                                               (default-hints wrld1))
+                                          ctx wrld1 state)))
+               (doc-pair (translate-doc name doc ctx state))
+               (ttree2 (cond (instructions
+                              (er-progn
+                               (cond (hints (er soft ctx
+                                                "It is not permitted to ~
+                                                 supply both :INSTRUCTIONS ~
+                                                 and :HINTS to DEFTHM."))
+                                     (t (value nil)))
+                               #+:non-standard-analysis
+                               (if std-p
 
 ; How could this happen?  Presumably the user created a defthm event using the
 ; proof-checker, and then absent-mindedly somehow suffixed "-std" on to the
 ; car, defthm, of that form.
 
-                                  (er soft ctx
-                                      ":INSTRUCTIONS are not supported for ~
+                                   (er soft ctx
+                                       ":INSTRUCTIONS are not supported for ~
                                         defthm-std events.")
-                                (value nil))
-                              (proof-checker name term
-                                             tterm classes instructions
-                                             wrld1 state)))
-                            (t (prove tterm
-                                      (make-pspv ens wrld1
-                                                 :displayed-goal term
-                                                 :otf-flg otf-flg)
-                                      hints ens wrld1 ctx state))))
-              (ttree3 (cond (ld-skip-proofsp (value nil))
-                            (t (prove-corollaries name tterm0 classes ens wrld1
-                                                  ctx state)))))
-             (let ((wrld2
-                    (update-doc-data-base
-                     name doc doc-pair
-                     (add-rules name classes tterm0 term ens wrld1 state)))
-                   (ttree4 (cons-tag-trees ttree1
-                                           (cons-tag-trees ttree2 ttree3))))
-               (er-progn
-                (chk-assumption-free-ttree ttree4 ctx state)
-                (print-rule-storage-dependencies name ttree1 state)
-                (install-event name
-                               event-form
-                               'defthm
-                               name
-                               ttree4
-                               nil :protect ctx wrld2
-                               state))))))))))))))
+                                 (value nil))
+                               (proof-checker name term
+                                              tterm classes instructions
+                                              wrld1 state)))
+                             (t (prove tterm
+                                       (make-pspv ens wrld1
+                                                  :displayed-goal term
+                                                  :otf-flg otf-flg)
+                                       hints ens wrld1 ctx state))))
+               (ttree3 (cond (ld-skip-proofsp (value nil))
+                             (t (prove-corollaries name tterm0 classes ens wrld1
+                                                   ctx state)))))
+              (let ((wrld2
+                     (update-doc-data-base
+                      name doc doc-pair
+                      (add-rules name classes tterm0 term ens wrld1 state)))
+                    (ttree4 (cons-tag-trees ttree1
+                                            (cons-tag-trees ttree2 ttree3))))
+                (er-progn
+                 (chk-assumption-free-ttree ttree4 ctx state)
+                 (print-rule-storage-dependencies name ttree1 state)
+                 (install-event name
+                                event-form
+                                'defthm
+                                name
+                                ttree4
+                                nil :protect ctx wrld2
+                                state)))))))))))))))
 
 (defun defthm-fn (name term state
                        rule-classes

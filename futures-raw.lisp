@@ -350,7 +350,8 @@
   (format t "Resetting parallelism and futures variables.  This may take a ~
              few seconds (often either~% 0 or 15).~%")
   (reset-parallelism-variables)
-  (reset-future-parallelism-variables))
+  (reset-future-parallelism-variables)
+  (format t "Done resetting parallelism and futures variables.~%"))
 
 (defun futures-resources-available ()
 
@@ -804,34 +805,6 @@
       (progn (print n) 
              (print (faref array n)) 
              (print-non-nils-in-array array (1+ n))))))
-#+ccl
-(ccl:egc nil)
-
-(defun print-interesting-variables()
-  (format t "Printing vars related to evaluating futures.~%")
-  (format t "*idle-future-core-count* is ~s~%"
-          (atomically-modifiable-counter-read *idle-future-core-count*))
-  (format t "*idle-future-resumptive-core-count* is ~s~%"
-          (atomically-modifiable-counter-read
-           *idle-future-resumptive-core-count*))
-  (format t "*idle-future-thread-count* is ~s~%"
-          (atomically-modifiable-counter-read *idle-future-thread-count*))
-  (format t "*unassigned-and-active-future-count* is ~s~%"
-          (atomically-modifiable-counter-read
-           *unassigned-and-active-future-count*))
-  (format t "*total-future-count* is ~s~%"
-          (atomically-modifiable-counter-read *total-future-count*))  
-  (format t "*futures-resources-available-count* is ~s~%"
-          *futures-resources-available-count*)
-  (format t "*futures-resources-unavailable-count* is ~s~%"
-          *futures-resources-unavailable-count*)
-
-  (format t "~%Printing vars related to aborting futures.~%")
-  (format t "*aborted-futures-total* is ~s~%" *aborted-futures-total*)
-  (format t "*aborted-futures-via-throw* is ~s~%" *aborted-futures-via-throw*)
-  (format t "*aborted-futures-via-flag* is ~s~%" *aborted-futures-via-flag*)
-  (format t "*almost-aborted-future-count* is ~s~%" *almost-aborted-future-count*))
-
 
 ;---------------------------------------------------------------------
 ; Section:  Futures Interface

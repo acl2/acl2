@@ -282,6 +282,8 @@
          :very-limited)
         ((eq value :resource-based)
          :very-limited)
+        ((eq value :resource-and-timing-based)
+         :very-limited)
         (t 
          (assert$ (eq value :pseudo-parallel)
                   :very-limited))))
@@ -428,9 +430,13 @@
                "Running the version of the waterfall prepared for parallel ~
                execution (stateless).  However, we will evaluate this version ~
                of the waterfall serially.  Setting waterfall-printing to :")
+              (:resource-and-timing-based
+               "Parallelizing the proof of every subgoal that was determined ~
+                to take a non-trivial amount of time in a previous proof ~
+                attempt.  Setting waterfall-printing to :")
               (otherwise ; :resource-based
                "Parallelizing the proof of every subgoal, as long as CPU core ~
-               resources are available.  Setting waterfall-printing to :"))
+                resources are available.  Setting waterfall-printing to :"))
             (symbol-name print-val)
             " (see :DOC set-waterfall-printing).")))
       (observation-cw nil observation-string)))))
@@ -446,21 +452,20 @@
 
   ~bv[]
   General Forms:
-  (set-waterfall-parallelism nil) ; serial execution
-  (set-waterfall-parallelism :full)   ; always parallelize
+  (set-waterfall-parallelism nil)        ; never parallelize (serial execution)
+  (set-waterfall-parallelism :full)      ; always parallelize
   (set-waterfall-parallelism :top-level) ; parallelize top-level subgoals
-  (set-waterfall-parallelism :resource-based) ; parallelize all subgoals, but
-                                              ; only when resources are 
-                                              ; available
-  (set-waterfall-parallelism :pseudo-parallel) ; serial execution of the
-                                               ; version of the waterfall made
-                                               ; for parallel execution
-                                               ; useful for debugging
+  (set-waterfall-parallelism             ; parallelize if sufficient resources
+    :resource-based)                     ;   (recommended setting)
+  (set-waterfall-parallelism             ; parallelize if sufficient resources
+    :resource-and-timing-based           ;   and suggested by prior attempts
+  (set-waterfall-parallelism             ; never parallelize but use parallel
+    :pseudo-parallel)                    ;   code base (a debug mode)
   ~ev[]
   ~/
 
-  ~c[Set-waterfall-parallelism] takes an argument that specifies the enabling or
-  disabling of ~il[parallel] evaluation of ACL2's main proof process, the
+  ~c[Set-waterfall-parallelism] takes an argument that specifies the enabling
+  or disabling of the ~il[parallel] execution of ACL2's main proof process, the
   waterfall.
 
   It also sets state global ~c[waterfall-printing] to an appropriate value.
@@ -468,6 +473,48 @@
 
   Note that not all ACL2 features are supported when waterfall-parallelism is
   set to non-nil (~pl[unsupported-waterfall-parallelism-features]).
+
+  A value of ~c[nil] indicates that ACL2(p) should never prove subgoals in
+  parallel.
+
+  A value of ~c[:full] indicates that ACL2(p) should always prove independent
+  subgoals in parallel.
+
+  A value of ~c[:top-level] indicates that ACL2(p) should prove each of the
+  top-level subgoals in parallel but otherwise prove subgoals in a serial
+  manner.  This mode is useful when the user knows that there are enough
+  top-level subgoals, many of which take a non-trivial amount of time to be
+  proved, such that proving them in parallel will result in a useful reduction
+  in overall proof time.
+
+  A value of ~c[:resource-based] indicates that ACL2(p) should use its built-in
+  heuristics to determine whether CPU core resources are available for parallel
+  execution.  Note that ACL2(p) does not hook into the operating system to
+  determine the workload on the machine.  ACL2(p) works off the assumption that
+  it is the main process running on the machine, and it optimizes the amount of
+  parallelism based on the number of CPU cores in the system.  (Note that
+  ACL2(p) knows how to obtain the number of CPU cores from the operating system
+  in CCL, but that, in SBCL and in Lispworks, a constant is used instead).
+  ~c[:Resource-based] is the recommended setting for ACL2(p).
+
+  During the first proof attempt of a given conjecture, a value of
+  ~c[:resource-and-timing-based] results in the same behavior as with
+  ~c[:resource-based].  However, on subsequent proof attempts, the time it took
+  to prove each subgoal will be considered when deciding whether to parallelize
+  execution.  If a particular theorem's proof is already achieving satisfactory
+  speedup via ~c[:resource-based] parallelism, there is no reason to try this
+  setting.  However, if the user wishes to experiment, the
+  ~c[:resource-and-timing-based] setting may improve performance.  Note that
+  since the initial run does not have the subgoal proof times available, this
+  mode will never be better than the ~c[:resource-based] setting for
+  non-interactive theorem proving.
+
+  A value of ~c[:pseudo-parallel] runs all of the parallelism code, but in a
+  serial mode.  This setting is useful for debugging the code base that
+  supports parallel execution of the waterfall.  For example, you may wish to
+  use this mode if you are an \"ACL2 Hacker\" who would like to see
+  comprehensible output from tracing (~pl[trace$]) the ~c[@par] versions of the
+  waterfall functions.
 
   Note: This is an event!  It does not print the usual event summary but
   nevertheless changes the ACL2 logical world and is so recorded.  Moreover,

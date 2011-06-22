@@ -24578,6 +24578,11 @@
     fchecksum-atom
     step-limit-error1
     waterfall1-lst@par ; for #+acl2-par
+    waterfall1-wrapper@par-after ; for #+acl2-par
+    increment-waterfall-parallelism-counter ; for #+acl2-par
+    flush-waterfall-parallelism-hashtables ; for #+acl2-par
+    clear-current-waterfall-parallelism-ht ; for #+acl2-par
+    setup-waterfall-parallelism-ht-for-name ; for #+acl2-par
     fix-stobj-array-type
     ))
 
@@ -24778,6 +24783,8 @@
     f-put-global@par ; for #+acl2-par
     set-waterfall-parallelism
     with-prover-step-limit
+    waterfall1-wrapper@par ; for #+acl2-par
+    with-waterfall-parallelism-timings ; for #+acl2-par
     ))
 
 (defmacro with-live-state (form)
@@ -24936,6 +24943,10 @@
     (connected-book-directory . nil)  ; set-cbd couldn't have put this!
     (current-acl2-world . nil)
     (current-package . "ACL2")
+
+; Parallelism wart: remove this definition and uses of the global variable
+; debug-pspv.
+
     (debug-pspv . nil) ; (#+acl2-par) for printing pspv mods in the waterfall
     (debugger-enable . nil) ; keep in sync with :doc set-debugger-enable
     (defaxioms-okp-cert . t) ; t when not inside certify-book
@@ -25066,6 +25077,8 @@
     (user-home-dir . nil) ; set first time entering lp
     (verbose-theory-warning . t)
     (walkabout-alist . nil)
+    (waterfall-parallelism-timing-threshold . 10000) ; for #+acl2-par
+    (waterfall-printing-when-finished . nil) ; for #+acl2-par
     (window-interface-postlude
      . "#>\\>#<\\<e(acl2-window-postlude ?~sw ~xt ~xp)#>\\>")
     (window-interface-prelude
@@ -43448,6 +43461,7 @@ Lisp definition."
      waterfall-print-clause-id-fmt1-call
      waterfall-update-gag-state
      waterfall1-lst
+     waterfall1-wrapper
      xtrans-eval
 
 ; Group 2 (see above):
@@ -43770,7 +43784,8 @@ Lisp definition."
   '(:full :limited :very-limited))
 
 (defconst *waterfall-parallelism-values*
-  '(nil :full :top-level :resource-based :pseudo-parallel))
+  '(nil :full :top-level :resource-based :resource-and-timing-based
+        :pseudo-parallel))
 
 ; This is needed in both boot-strap-pass-2.lisp and parallel.lisp, so we put it
 ; here.

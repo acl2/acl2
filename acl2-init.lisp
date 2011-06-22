@@ -903,8 +903,8 @@ implementations.")
   (maybe-load-acl2-init)
   (eval `(in-package ,*startup-package-name*))
 
-; Remark for #+acl2-par.  Here (for Lispworks) and in parallel-raw.lisp (for
-; CCL and SBCL), we set the gc-threshold to a high number.  If the Lisps
+; Remark for #+acl2-par.  Here (for 64-bit Lispworks) and in parallel-raw.lisp
+; (for CCL and SBCL), we set the gc-threshold to a high number.  If the Lisps
 ; support it, this threshold could be based off the actual memory in the
 ; system, but we just leave it at 2 gigabytes for now.  We peform this setting
 ; of the threshold for Lispworks inside the restart function, because Lispworks
@@ -913,7 +913,7 @@ implementations.")
 ; Parallelism wart: the 2 gigabyte threshold may cause problems for machines
 ; with less than 2 gigabytes of free RAM.
 
-  #+(and acl2-par lispworks)
+  #+(and acl2-par (and lispworks lispworks-64bit))
   (progn
 
 ; Calling set-gen-num-gc-threshold sets the GC threshold for the given
@@ -962,7 +962,7 @@ implementations.")
                   :full-gc t))
 
 #+lispworks
-(defun lispworks-save-exec-raw (sysout-name)
+(defun lispworks-save-exec-aux (sysout-name eventual-sysout-name)
 
 ; LispWorks support (Dave Fox) pointed out, in the days of LispWorks 4, that we
 ; need to be sure to call (mp:initialize-multiprocessing) when starting up.  Up
@@ -1003,33 +1003,76 @@ implementations.")
              'mp:initialize-multiprocessing' instead of calling 'lp'.  This ~%~
              is necessary because of the way multiprocessing works in ~%~
              Lispworks.~%~%"))
-  (cond ((and system::*init-file-loaded*
-              system::*complain-about-init-file-loaded*)
+
+; We just make a guess that Lispworks can be handled the way that GCL is
+; handled.
+
+  (if (probe-file "worklispext")
+      (delete-file "worklispext"))
+  (let* ((ext "lw")
+         (ext+
+
+; We deal with the apparent fact that Windows implementations of GCL append
+; ".exe" to the filename created by save-system -- and assume, until someone
+; tells us otherwise, that Lispworks does similarly.
+
+          #+mswindows "lw.exe"
+          #-mswindows "lw")
+         (lw-exec-file
+          (unix-full-pathname sysout-name ext+))
+         (eventual-lw-exec-file
+          (unix-full-pathname eventual-sysout-name ext+)))
+    (with-open-file (str "worklispext" :direction :output)
+                    (format str ext+))
+    (if (probe-file sysout-name)
+        (delete-file sysout-name))
+    (if (probe-file lw-exec-file)
+        (delete-file lw-exec-file))
+    (with-open-file (str sysout-name :direction :output)
+                    (write-exec-file str nil
+
+; We pass options "-init -" and "-siteinit -" to inhibit loading init and patch
+; files because because we assume that whatever such files were to be loaded,
+; were in fact loaded at the time the original Lispworks executable was saved.
+; Of course, individual users who doesn't like this decision and know better
+; could always edit this script file, i.e., lw-exec-file, in the same spirit as
+; changing the underlying Lisp implementation before building ACL2 (again,
+; presumably based on knowledge of the host Lisp implementation).
+
+                                     "~s -init - -siteinit - $*~%"
+                                     eventual-lw-exec-file))
+    (chmod-executable sysout-name)
+    (cond ((and system::*init-file-loaded*
+                system::*complain-about-init-file-loaded*)
 
 ; We hope it's fine to save an image when an init-file has been loaded.  Maybe
 ; somebody can explain to us why LispWorks causes a break in such a situation
 ; by default (which explains the binding of
 ; system::*complain-about-init-file-loaded* below).
 
-         (format t
-                 "Warning: Overriding LispWorks hesitation to save an image~%~
+           (format t
+                   "Warning: Overriding LispWorks hesitation to save an image~%~
                   after init-file has been loaded.~%")
-         (let ((system::*complain-about-init-file-loaded* nil))
-           (system::save-image sysout-name
-                               :restart-function 'acl2-default-restart
-                               #+acl2-par :multiprocessing
-                               #+acl2-par t
-                               :gc t)))
-        (t (system::save-image sysout-name
-                               :restart-function 'acl2-default-restart
-                               #+acl2-par :multiprocessing
-                               #+acl2-par t
-                               :gc t))))
+           (let ((system::*complain-about-init-file-loaded* nil))
+             (system::save-image lw-exec-file
+                                 :restart-function 'acl2-default-restart
+                                 #+acl2-par :multiprocessing
+                                 #+acl2-par t
+                                 :gc t)))
+          (t (system::save-image lw-exec-file
+                                 :restart-function 'acl2-default-restart
+                                 #+acl2-par :multiprocessing
+                                 #+acl2-par t
+                                 :gc t)))))
 
 #+lispworks
-(defun save-acl2-in-lispworks (sysout-name &optional mode)
+(defun save-acl2-in-lispworks (sysout-name mode eventual-sysout-name)
   (setq *saved-mode* mode)
-  (lispworks-save-exec-raw sysout-name))
+  (if (probe-file "worklispext")
+      (delete-file "worklispext"))
+  (with-open-file (str "worklispext" :direction :output)
+                  (format str "lw"))
+  (lispworks-save-exec-aux sysout-name eventual-sysout-name))
 
 #+lispworks
 (defun save-exec-raw (sysout-name)
@@ -1037,7 +1080,7 @@ implementations.")
 ; See the comment above about :multiprocessing t.
 
   (setq *acl2-default-restart-complete* nil)
-  (lispworks-save-exec-raw sysout-name))
+  (lispworks-save-exec-aux sysout-name sysout-name))
 
 #+cmu
 (defun save-acl2-in-cmulisp-aux (sysout-name core-name)
@@ -1459,7 +1502,7 @@ implementations.")
   #+lucid
   (save-acl2-in-lucid "nsaved_acl2" mode)
   #+lispworks
-  (save-acl2-in-lispworks "nsaved_acl2" mode)
+  (save-acl2-in-lispworks "nsaved_acl2" mode other-info)
   #+allegro
   (save-acl2-in-allegro "nsaved_acl2" mode other-info)
   #+cmu

@@ -17846,7 +17846,11 @@
   o You can save an image with ~ilc[save-exec].~nl[]
   o Multiprocessing is not enabled.~nl[]
   o The stack size is managed using a LispWorks variable that causes the stack
-  to grow as needed.
+  to grow as needed.~nl[]
+  o When ACL2 is built a script file is written, as is done for other host
+  Lisps.  Thus, (assuming that no ~c[PREFIX] is specified), ~c[saved_acl2] is
+  just a small text file that invokes a binary executable, which for Lispworks
+  is ~c[saved_acl2.lw].
 
   The HTML documentation no longer has extra newlines in <pre> environments.
 
