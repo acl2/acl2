@@ -382,3 +382,11 @@
 (defthmd consp-hons-assoc-equal
   (iff (consp (hons-assoc-equal x y))
        (hons-assoc-equal x y)))
+
+
+
+(defcong alist-equiv equal (alists-agree keys a b) 2
+  :hints (("goal" :in-theory (enable alists-agree))))
+
+(defcong alist-equiv equal (alists-agree keys a b) 3
+  :hints (("goal" :in-theory (enable alists-agree))))

@@ -1,7 +1,7 @@
 
 (in-package "ACL2")
 
-(include-book "centaur/aig/eval-restrict" :dir :system)
+(include-book "eval-restrict")
 
 ;; This book defines check-property, which checks that a safety property
 ;; on a FSM holds after some number of steps in which provided inputs are
@@ -16,11 +16,69 @@
 ;; proofs.
 
 (defun check-property (updates prop curr-st inputs)
-  (b* ((assign (append curr-st (car inputs)))
+  (declare (Xargs :guard (consp inputs)))
+  (b* ((assign (hons-shrink-alist
+                (car inputs)
+                (hons-shrink-alist curr-st nil)))
        ((when (atom (cdr inputs)))
-        (aig-eval prop assign))
+        (b* ((res (aig-eval prop assign)))
+          (fast-alist-free assign)
+          res))
        (next-st (aig-eval-alist updates assign)))
+    (fast-alist-free assign)
     (check-property updates prop next-st (cdr inputs))))
+
+(defcong alist-equiv equal (check-property updates prop curr-st inputs) 3)
+(defcong alist-equiv equal (check-property updates prop curr-st inputs) 1)
+
+(defun check-property-strong (updates prop curr-st inputs)
+  (declare (Xargs :measure (len inputs)
+                  :guard t))
+  (if (atom inputs)
+      t
+    (b* ((assign (hons-shrink-alist
+                  (car inputs)
+                  (hons-shrink-alist curr-st nil)))
+         ((when (not (aig-eval prop assign)))
+          (fast-alist-free assign)
+          nil)
+         (next-st (aig-eval-alist updates assign)))
+      (fast-alist-free assign)
+      (check-property-strong updates prop next-st (cdr inputs)))))
+
+(defun-sk check-ag-property (updates prop curr-st)
+  (forall inputs (check-property updates prop curr-st inputs)))
+
+(defthm check-ag-property-implies-check-property-strong
+  (implies (check-ag-property updates prop curr-st)
+           (check-property-strong updates prop curr-st inputs))
+  :hints (("goal" :in-theory (disable check-ag-property
+                                      check-ag-property-necc)
+           :induct (check-property-strong updates prop curr-st inputs))
+          (and stable-under-simplificationp
+               (cond
+                ((member-equal 
+                  '(AIG-EVAL PROP (binary-APPEND CURR-ST (CAR INPUTS)))
+                  clause)
+                 '(:use ((:instance check-ag-property-necc
+                          (inputs (list (car inputs)))))))
+                (t
+                 '(:expand
+                   ((CHECK-AG-PROPERTY
+                     UPDATES PROP
+                     (AIG-EVAL-ALIST UPDATES (APPEND CURR-ST (CAR INPUTS)))))
+                   :use ((:instance check-ag-property-necc
+                          (inputs (cons (car inputs)
+                                        (let ((rest (check-ag-property-witness
+                                                     updates prop
+                                                     (aig-eval-alist
+                                                      updates
+                                                      (append curr-st (car inputs))))))
+                                          (if (consp rest)
+                                              rest
+                                            (list nil)))))))))))))
+  
+
 
 (defun-sk unsat-p (x)
   (forall env (not (aig-eval x env))))
@@ -112,6 +170,40 @@
            (check-property updates prop initst inputs))
   :hints (("goal" :induct (check-property updates prop initst inputs)
            :in-theory (disable unsat-p))))
+
+(defthm inductive-invariant-impl-check-ag-property
+  (implies (and 
+            ;; The variables of the invariant must be state variables, not inputs
+            (subsetp-equal (aig-vars invar)
+                           (alist-keys updates))
+            ;; The invariant is inductive, i.e. it is preserved by the update function
+            (unsat-p (aig-and
+                      invar
+                      (aig-not
+                       (aig-restrict invar updates))))
+            ;; The invariant implies the property
+            (unsat-p (aig-and invar (aig-not prop)))
+            ;; The invariant holds under the initial state.
+            (unsat-p (aig-not (aig-partial-eval invar initst))))
+           (check-ag-property updates prop initst)))
+
+(defthm inductive-invariant-impl-check-property-strong
+  (implies (and 
+            ;; The variables of the invariant must be state variables, not inputs
+            (subsetp-equal (aig-vars invar)
+                           (alist-keys updates))
+            ;; The invariant is inductive, i.e. it is preserved by the update function
+            (unsat-p (aig-and
+                      invar
+                      (aig-not
+                       (aig-restrict invar updates))))
+            ;; The invariant implies the property
+            (unsat-p (aig-and invar (aig-not prop)))
+            ;; The invariant holds under the initial state.
+            (unsat-p (aig-not (aig-partial-eval invar initst))))
+           (check-property-strong updates prop initst inputs)))
+
+
 
 
 

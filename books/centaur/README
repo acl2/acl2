@@ -32,7 +32,7 @@ Copyright Notice
                    Quick Overview of the Available Books
 
   ubdds/
-    * unordered bdd library
+    * unlabeled bdd library
     * needs Hons and lots of memory
     * mainly used by GL
 
@@ -93,7 +93,8 @@ Copyright Notice
        symlink to your PATH)
 
   Alternately, you can invoke cert.pl directly and use the --acl2 option to
-  tell it which ACL2 image to use, but this can be cumbersome.
+  tell it which ACL2 image to use and/or the --acl2-books option to tell it
+  where the acl2 system books directory is,, but this can be cumbersome.
 
 
   Building Books and Documentation.
@@ -112,13 +113,21 @@ Copyright Notice
   as the documentation for several other ordinary ACL2 libraries that we rely
   on (e.g., str, serialize, and ihs).
 
+  To clean the cert files, you should be able to run:
+
+      cert.pl -c doc.lisp
+
+  HOWEVER, note that this will also delete all certificates of books included by
+  these books, including ones not under the centaur directory.
+
 
   Getting Help.
 
   We can't offer any serious technical support.
 
-  If you have questions or comments about these books, please email Jared Davis
-  and Sol Swords, {jared,sswords}@centtech.com; we may be able to answer some
-  questions on an informal, "low bandwidth" basis.
+  If you have questions, comments, or bug reports about these books or about
+  cert.pl, please email Jared Davis and Sol Swords,
+  {jared,sswords}@centtech.com; we may be able to answer some questions on an
+  informal, "low bandwidth" basis.
 
 
