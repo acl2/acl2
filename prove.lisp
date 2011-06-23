@@ -7824,6 +7824,12 @@
                        'parallel)
                       (t 'serial)))
                ((:resource-and-timing-based)
+
+; Here, and in the :resource-based branch below, we have an unusual functional
+; discrepancy between code in the #+acl2-loop-only and #-acl2-loop-only cases.
+; But the alternative we have considered would involve some complicated use of
+; the acl2-oracle, which seems unjustified for this #+acl2-par code.
+
                 (cond #-acl2-loop-only
                       ((and 
                         
@@ -7840,22 +7846,13 @@
                                          state)))
                        (increment-waterfall-parallelism-counter 
                         'resource-and-timing-parallel))
-
-; Here, and in the :resource-based branch below, we have an unusual functional
-; discrepancy between #+acl2-loop-only code and the corresponding
-; #-acl2-loop-only code.  But the alternative we have considered would involve
-; some complicated use of the acl2-oracle, which seems unjustified for this
-; #+acl2-par code.
-
                       (t 
                        (increment-waterfall-parallelism-counter
                         'resource-and-timing-serial))))
                ((:resource-based)
 
-; Here we have an unusual functional discrepancy between #+acl2-loop-only code
-; and corresponding #-acl2-loop-only code.  But the alternative we have
-; considered would involve some complicated use of the acl2-oracle, which seems
-; unjustified for this #+acl2-par code.
+; See comment above about discrepancy between #+acl2-loop-only and
+; #-acl2-loop-only code.
 
                 (cond #-acl2-loop-only 
                       ((futures-resources-available)                     

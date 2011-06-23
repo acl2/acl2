@@ -364,6 +364,13 @@
   When waterfall-parallelism is enabled (~pl[set-waterfall-parallelism]),
   the use of ~ilc[set-inhibit-output-lst] may not fully inhibit proof output.
 
+  Interrupting a proof attempt is not yet properly supported.  At a minimum,
+  interrupts are trickier with waterfall parallelism enabled.  For one, the
+  user typically needs to issue the interrupt twice before the proof attempt is
+  actually interrupted.  Additionally, sometimes the theorem is registered as
+  proved, even though the prover did not finish the proof.  If this occurs,
+  issue a ~c[:u] (~pl[ubt]) and you will be at a stable state.
+
   If the host Lisp is Lispworks, you may see messages about misaligned conses.
   The state of the system may be corrupted after such a message has been
   printed.~/~/")
@@ -1885,3 +1892,6 @@
 ; errors and re-causing them.  Hitting ctrl+c causes the main thread to abort
 ; waiting on the result from those threads, and allows the interactive session
 ; to resume.
+
+; Parallelism wart: interrupting a proof with waterfall-parallelism enabled is
+; currently broken.  See :doc unsupported-waterfall-parallelism-features.

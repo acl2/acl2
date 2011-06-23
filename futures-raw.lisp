@@ -497,6 +497,9 @@
 ; *Throwable-future-worker-thread* is unrelated to tag
 ; *:worker-thread-no-longer-needed.
 
+; Parallelism wart: pick a name that makes it more obvious that this variable
+; is unrelated to variable *throwable-worker-thread*.
+
  nil)
 
 (defun wait-for-a-closure ()
@@ -557,11 +560,11 @@
     (setf 
      thrown-tag-result
      (catch 'raw-ev-fncall 
-      (catch :result-no-longer-needed
-        (let ((*throwable-future-worker-thread* t))
-          (progn (setq future (faref *future-array* index))
-                 (set-thread-check-for-abort-and-funcall future))))
-      (setq *thrown-with-raw-ev-fncall* nil)))
+       (catch :result-no-longer-needed
+         (let ((*throwable-future-worker-thread* t))
+           (progn (setq future (faref *future-array* index))
+                  (set-thread-check-for-abort-and-funcall future))))
+       (setq *thrown-with-raw-ev-fncall* nil)))
 ; The following does not need to be inside an unwindprotect-cleanup because
 ; set-thread-check-for-abort-and-funcall also removes the pointer to this
 ; thread in *thread-array*.
@@ -576,10 +579,11 @@
 (defun eval-closures ()
   ;; (atomic-incf *idle-future-thread-count*) ; done inside the spawner
   (catch :worker-thread-no-longer-needed
-    (loop 
-     (wait-for-a-closure)
+    (let ((*throwable-worker-thread* t))
+      (loop 
+       (wait-for-a-closure)
 ; the catch of tag :result-no-longer-needed is performed inside eval-a-closure
-     (eval-a-closure)))
+       (eval-a-closure))))
 ; The following decrement will always execute, unless the user terminates the
 ; thread in some manual raw Lisp way.
   (atomic-decf *idle-future-thread-count*))
