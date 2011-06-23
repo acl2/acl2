@@ -5546,12 +5546,6 @@
                                       (override-hints wrld)
                                       state))
 
-(defun alist-keys-subsetp (x keys)
-  (cond ((endp x) t)
-        ((member-eq (caar x) keys)
-         (alist-keys-subsetp (cdr x) keys))
-        (t nil)))
-
 (defun@par thanks-for-the-hint (goal-already-printed-p hint-settings state)
 
 ; This function prints the note that we have noticed the hint.  We have to

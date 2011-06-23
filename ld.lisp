@@ -17653,7 +17653,7 @@
   effect is to avoid the usual check that the extended ancestor relation has no
   cycles (~pl[defattach]).  Thanks to Dave Greve for requesting this feature.
 
-  You can now restrict the printing of subgoal names when using
+  You can now limit the printing of subgoal names when using
   ~c[:]~ilc[set-gag-mode]~c[ :goals].  ~l[set-print-clause-ids].  Thanks to
   Karl Hoech for a suggestion leading to this enhancement.
 
@@ -17868,12 +17868,29 @@
   ~c[doc/acl2-code-size.txt].  This file and other information can be found in
   a new ~il[documentation] topic, ~il[about-acl2].
 
-  (SBCL only) More warnings are suppressed when the host Lisp is SBCL.
-
   Fixed the build process to pay attention to environment variable
   ~c[ACL2_SYSTEM_BOOKS] (which may be supplied as a command-line argument to
   `~c[make]').  An ACL2 executable can thus now be built even when there is no
   ~c[books/] subdirectory if a suitable replacement directory is supplied.
+
+  Some warnings from the host Lisp are now suppressed that could formerly
+  appear.  For example, the warnings shown below occurs in Version  4.2 using
+  Allegro CL, but not in Version  4.3.
+  ~bv[]
+  ACL2 !>(progn (set-ignore-ok t)
+                (set-irrelevant-formals-ok t)
+                (defun bar (x y)
+                  x))
+  [[.. output omitted ..]]
+   BAR
+  ACL2 !>:comp bar
+  ; While compiling BAR:
+  Warning: Variable Y is never used.
+  ; While compiling (LABELS ACL2_*1*_ACL2::BAR ACL2_*1*_ACL2::BAR):
+  Warning: Variable Y is never used.
+   BAR
+  ACL2 !>
+  ~ev[]
 
   ~st[EMACS SUPPORT]
 
@@ -18143,30 +18160,31 @@
                (assoc-eq fn (f-get-global 'trace-specs state))))
           (when trace-spec
             (untrace$-fn (list fn) state))
-          (let* ((stobj-function (getprop fn 'stobj-function nil
-                                          'current-acl2-world wrld))
-                 (form (cltl-def-from-name fn stobj-function wrld))
-                 (*1*fn (*1*-symbol fn))
-                 (raw-only-p  (and (consp fn0) (eq (car fn0) :raw)))
-                 (exec-only-p (and (consp fn0) (eq (car fn0) :exec))))
-            (cond
-             ((not (or exec-only-p
-                       (compiled-function-p! fn)))
-              (cond (form
-                     (eval (make-defun-declare-form fn form))))
-              (compile fn)))
-            (cond
-             ((and (not raw-only-p)
-                   (fboundp *1*fn)
-                   (not (compiled-function-p! *1*fn)))
-              #-acl2-mv-as-values ; may delete this restriction in the future
-              (eval
-               (make-defun-declare-form
-                fn
-                (cons 'defun (oneified-def fn wrld))))
-              (compile *1*fn)))
-            (when trace-spec
-              (trace$-fn trace-spec ctx state))))
+          (with-more-warnings-suppressed
+           (let* ((stobj-function (getprop fn 'stobj-function nil
+                                           'current-acl2-world wrld))
+                  (form (cltl-def-from-name fn stobj-function wrld))
+                  (*1*fn (*1*-symbol fn))
+                  (raw-only-p  (and (consp fn0) (eq (car fn0) :raw)))
+                  (exec-only-p (and (consp fn0) (eq (car fn0) :exec))))
+             (cond
+              ((not (or exec-only-p
+                        (compiled-function-p! fn)))
+               (cond (form
+                      (eval (make-defun-declare-form fn form))))
+               (compile fn)))
+             (cond
+              ((and (not raw-only-p)
+                    (fboundp *1*fn)
+                    (not (compiled-function-p! *1*fn)))
+               #-acl2-mv-as-values ; may delete this restriction in the future
+               (eval
+                (make-defun-declare-form
+                 fn
+                 (cons 'defun (oneified-def fn wrld))))
+               (compile *1*fn)))
+             (when trace-spec
+               (trace$-fn trace-spec ctx state)))))
         (value fn)))))))
 
 #-acl2-loop-only
