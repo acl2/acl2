@@ -17838,6 +17838,26 @@
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
+  Many changes have been made to the distributed books, as recorded in svn logs
+  under the `Source' and 'Updates' links at
+  ~url[http://acl2-books.googlecode.com/].  Here we list some of the more
+  significant changes.~bq[]
+
+  A large library has been graciously contributed by the formal verification
+  group at Centaur Technology.  See ~c[books/centaur/] and, in particular, file
+  ~c[books/centaur/README], which explains how the library depends on the
+  experimental HONS extension (~pl[hons-and-memoization]).
+
+  Among the new books is an illustration of ~ilc[defattach],
+  ~c[books/misc/defattach-example.lisp], as well as a variant of defattach that
+  avoids the need for ~il[guard] verification,
+  ~c[books/misc/defattach-bang.lisp].
+
+  Distributed book ~c[books/misc/trace1.lisp] has been deleted.  It had
+  provided slightly more friendly ~il[trace] output for new users, but 
+  distributed book ~c[books/misc/trace-star.lisp] may be better suited for that
+  purpose.~eq[]
+
   ACL2 can once again be built on LispWorks (i.e., as the host Lisp), at least
   with LispWorks 6.0.  Thanks to David Rager for useful conversations.
   Several changes have been made from previous LispWorks-based ACL2
@@ -17853,16 +17873,6 @@
   is ~c[saved_acl2.lw].
 
   The HTML documentation no longer has extra newlines in <pre> environments.
-
-  Among the new books is an illustration of ~ilc[defattach],
-  ~c[books/misc/defattach-example.lisp], as well as a variant of defattach that
-  avoids the need for ~il[guard] verification,
-  ~c[books/misc/defattach-bang.lisp].
-
-  Distributed book ~c[books/misc/trace1.lisp] has been deleted.  It had
-  provided slightly more friendly ~il[trace] output for new users, but 
-  distributed book ~c[books/misc/trace-star.lisp] may be better suited for that
-  purpose.
 
   Statistics on ACL2 code size may be found in distributed file
   ~c[doc/acl2-code-size.txt].  This file and other information can be found in

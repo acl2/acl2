@@ -8988,20 +8988,6 @@
 #-acl2-loop-only
 (defvar *hard-error-returns-nilp* nil)
 
-#+(and acl2-par (not acl2-loop-only))
-(defvar 
-
-; This variable allows threads to track whether they were thrown with tag
-; RAW-EV-FNCALL.  See the implementation of futures for how this variable is
-; used.
-
-; Parallelism wart: We need to catch more than just RAW-EV-FNCALL.  Also, the
-; code that uses this variable should be converted to a scheme that doesn't use
-; special variables.  See the parallelism wart under variable
-; *thrown-with-raw-ev-fncall-count* for a demonstration of this scheme.
-
-  *thrown-with-raw-ev-fncall* nil)
-
 #-acl2-loop-only
 (defun-one-output throw-raw-ev-fncall (val)
 
@@ -9020,13 +9006,6 @@
          (interface-er "~@0"
                        (ev-fncall-msg val (w *the-live-state*))))
         (t
-
-; Parallelism wart: change the code for catching tags in the mt-future's
-; implementation to use a scheme, as specified in the parallelism wart found
-; under *thrown-with-raw-ev-fncall-count*'s definition.
-
-         #+acl2-par
-         (setf *thrown-with-raw-ev-fncall* t)
          (throw 'raw-ev-fncall val))))
 
 (defun hard-error (ctx str alist)

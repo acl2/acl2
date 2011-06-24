@@ -475,6 +475,7 @@ copy-distribution:
 # match what lisp returns from truename.
 	rm -f workxxx
 	rm -f workyyy
+	rm -f acl2r.lisp
 	echo '(load "init.lisp")' > workxxx
 	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}")' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
@@ -492,6 +493,7 @@ copy-workshops:
 # DIR for both.
 	rm -f workxxx
 	rm -f workyyy
+	rm -f acl2r.lisp
 	echo '(load "init.lisp")' > workxxx
 	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}" "all-files-workshops.txt" t)' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
@@ -509,6 +511,7 @@ copy-nonstd:
 # DIR for both.
 	rm -f workxxx
 	rm -f workyyy
+	rm -f acl2r.lisp
 	echo '(load "init.lisp")' > workxxx
 	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}" "all-files-nonstd.txt" t)' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
@@ -526,6 +529,7 @@ copy-extra:
 	$(MAKE) copy-distribution DIR=$(DIR)
 	rm -f workxxx
 	rm -f workyyy
+	rm -f acl2r.lisp
 	echo '(load "init.lisp")' > workxxx
 	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}" "all-files-extra.txt" t)' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
@@ -768,6 +772,27 @@ regression:
 	uname -a
 	cd books ; $(MAKE) $(ACL2_IGNORE) all-plus
 
+.PHONY: hons-check
+hons-check:
+	@if [ "$(ACL2)" = "" ]; then \
+		echo 'Error: "make" variable ACL2 must be set for "hons" targets.' ;\
+		exit 1 ;\
+	fi
+
+.PHONY: regression-hons-only
+regression-hons-only: hons-check
+	uname -a
+	cd books ; \
+	  $(MAKE) $(ACL2_IGNORE) hons ACL2_HONS_OPT=$(ACL2_HONS_OPT) ACL2=$(ACL2)
+
+.PHONY: regression-hons
+# For a HONS regression, we do regression-hons-only first both to get
+# the extra parallelism and (primarily) to check up front that `make'
+# variable ACL2 is bound.
+regression-hons:
+	$(MAKE) regression-hons-only
+	$(MAKE) regression
+
 .PHONY: regression-fast
 regression-fast:
 	uname -a
@@ -790,6 +815,8 @@ certify-books-fresh: clean-books
 .PHONY: regression-fresh regression-fast-fresh regression-nonstd-fresh
 regression-fresh: clean-books
 	$(MAKE) $(ACL2_IGNORE) regression
+regression-hons-fresh: hons-check clean-books
+	$(MAKE) $(ACL2_IGNORE) regression-hons
 regression-fast-fresh: clean-books
 	$(MAKE) $(ACL2_IGNORE) regression-fast
 regression-nonstd-fresh: clean-books-nonstd
@@ -874,7 +901,7 @@ clean-doc:
 
 .PHONY: clean-books
 clean-books:
-	cd books ; $(MAKE) $(ACL2_IGNORE) clean
+	cd books ; $(MAKE) $(ACL2_IGNORE) clean ; $(MAKE) $(ACL2_IGNORE) clean-hons
 
 .PHONY: clean-books-nonstd
 clean-books-nonstd:

@@ -512,68 +512,170 @@
 (defvar *busy-wait-var* 0)
 (defvar *current-waiting-thread* nil)
 (defvar *fresh-waiting-threads* 0)
-(defvar *thrown-with-raw-ev-fncall* nil)
-(defvar *thrown-with-raw-ev-fncall-count*
 
-; Used for debugging.
+(defun make-tclet-thrown-symbol1 (tags first-tag)
+  (if (endp tags)
+      ""
+    (concatenate 'string
+                 (if first-tag
+                     ""
+                   "-OR-")
+                 (symbol-name (car tags))
+                 "-THROWN"
+                 (make-tclet-thrown-symbol1 (cdr tags) nil))))
 
-; Parallelism wart: change the code for catching tags in the mt-future's
-; implementation to use a scheme like the following:
+(defun make-tclet-thrown-symbol (tags)
+  (intern (make-tclet-thrown-symbol1 tags t) "ACL2"))
+
+(defun make-tclet-bindings1 (tags)
+  (if (endp tags)
+      nil
+    (cons (list (make-tclet-thrown-symbol (reverse tags))
+                t)
+          (make-tclet-bindings1 (cdr tags)))))
+
+(defun make-tclet-bindings (tags)
+  (Reverse (make-tclet-bindings1 (reverse tags))))
+
+(defun make-tclet-thrown-tags1 (tags)
+  (if (endp tags)
+      nil
+    (cons (make-tclet-thrown-symbol (reverse tags))
+          (make-tclet-thrown-tags1 (cdr tags)))))
+
+(defun make-tclet-thrown-tags (tags)
+  (reverse (make-tclet-thrown-tags1 (reverse tags))))
+
+(defun make-tclet-catches (rtags body thrown-tag-bindings)
+  (if (endp rtags)
+      body
+    (list 'catch
+          (list 'quote (car rtags))
+          (list 'prog1 ; 'our-multiple-value-prog1 ; we don't support multiple-values at all
+           (make-tclet-catches (cdr rtags) body (cdr thrown-tag-bindings))
+           `(setq ,(car thrown-tag-bindings) nil)))))
+
+
+(defun make-tclet-cleanups (thrown-tags cleanups)
+  (if (endp thrown-tags)
+      '((t nil))
+    (cons (list (car thrown-tags)
+                (car cleanups))
+          (make-tclet-cleanups (cdr thrown-tags)
+                         (cdr cleanups)))))
+
+(defmacro throw-catch-let (tags body cleanups)
+
+; This macro takes three arguments:
+
+; Tags is a list of tags that can be thrown from within body.
+
+; Body is the body to execute.
+
+; Cleanups is a list of forms, one of which will be executed in the event that
+; the corresponding tag is thrown.  The tags and cleanup forms are given their
+; association with each other by their order.  So, if tag 'x-tag is the third
+; element in tags, the cleanup form for 'x-tag should also be the third form in
+; cleanups.
+
+; This macro does not support throwing multiple-values as a throw's return
+; value.
+
+; Here is an example of what we expect throw-catch-let to automatically do for
+; us.  We let throw-catch-let worry about the details.  Some examples of such
+; details are: (1) whether we have the right order for checking one-thrown,
+; one-or-two-thrown, et al. (2) whether our catches are in the right order, (3)
+; whether the value returned by the catches is the right value (which is why we
+; have to use prog1).  Note that this form is missing some of the detail (e.g.,
+; the aforementioned prog1).
 
 ;; (let ((one-thrown 't)
-;;      (one-or-two-thrown 't)
-;;      (one-or-two-or-three-thrown 't))
-;;  (catch 'one
-;;    (catch 'two
-;;      (catch 'three
-;;        (arbitrary-code-here)
-;;        ;; (if X
-;;        ;;     (throw 'one)
-;;        ;;   (if Y
-;;        ;;       (throw 'two)
-;;        ;;     (if Z
-;;        ;;         (throw 'three)
-;;        ;;       nil)))
-;;        (setq one-or-two-or-three-thrown nil))
-;;      (setq one-or-two-thrown nil))
-;;    (setq one-thrown nil))
-;;  (cond
-;;   (one-thrown (handle-one))
-;;   (one-or-two-thrown (handle-two))
-;;   (one-or-two-or-three-thrown (handle-three))))
-  
-  0)
+;;       (one-or-two-thrown 't)
+;;       (one-or-two-or-three-thrown 't))
+;;   (catch 'one
+;;     (catch 'two
+;;       (catch 'three
+;;         (arbitrary-code-here)
+;;         ;; (if X
+;;         ;;     (throw 'one)
+;;         ;;   (if Y
+;;         ;;       (throw 'two)
+;;         ;;     (if Z
+;;         ;;         (throw 'three)
+;;         ;;       nil)))
+;;         (setq one-or-two-or-three-thrown nil))
+;;       (setq one-or-two-thrown nil))
+;;     (setq one-thrown nil))
+;;   (cond
+;;    (one-thrown (handle-one))
+;;    (one-or-two-thrown (handle-two))
+;;    (one-or-two-or-three-thrown (handle-three))))
+
+; Here is an example use of throw-catch-let.
+       
+;; (throw-catch-let
+;;  (x y)
+;;  (cond ((equal *flg* 3) (throw 'x 10))
+;;        ((equal *flg* 4) (throw 'y 11))
+;;        (t 7))  
+;;  ((setq *x-thrown* t)
+;;   (setq *y-thrown* t)))
+
+; While Rager wrote this macro, Nathan Wetzler has his gratitude for helping
+; derive the main ideas.
+
+  (let* ((thrown-tags (make-tclet-thrown-tags tags)))    
+    `(let ,(make-tclet-bindings tags)
+       (let ((tclet-result ,(make-tclet-catches tags body thrown-tags)))
+         (prog2 (cond ,@(make-tclet-cleanups thrown-tags cleanups))
+             tclet-result)))))
 
 (defun eval-a-closure ()
   (let* ((index (atomic-incf *last-slot-taken*))
          (*current-thread-index* index)
-         (*thrown-with-raw-ev-fncall* t)
-         (thrown-tag-result nil)
+         (thrown-tag nil)
+         (thrown-val nil)
          (future nil))
-; very rarely busy wait for the future to arrive
+
+; Hopefully very rarely, we busy wait for the future to arrive.
+
     (loop while (not (faref *future-array* index)) do
           (incf *busy-wait-var*)
           (when (not (equal (current-thread) *current-waiting-thread*))
             (setf *current-waiting-thread* (current-thread))
             (incf *fresh-waiting-threads*)))
-; semi-bozo: the value from the throw/catch is discarded
-    (setf 
-     thrown-tag-result
-     (catch 'raw-ev-fncall 
-       (catch :result-no-longer-needed
+
+; The tags we need to catch for throwing again later are raw-ev-fncall,
+; local-top-level, time-limit5-tag, and step-limit-tag.  We do not bother
+; catching missing-compiled-book, because the code that throws it says it would
+; be an ACL2 implementation error to actually execute the throw.  If other tags
+; are later added to the ACL2 source code, we should add them to the below
+; throw-catch-let.
+
+    (throw-catch-let
+     (raw-ev-fncall local-top-level time-limit5-tag step-limit-tag)
+     (catch :result-no-longer-needed
          (let ((*throwable-future-worker-thread* t))
            (progn (setq future (faref *future-array* index))
                   (set-thread-check-for-abort-and-funcall future))))
-       (setq *thrown-with-raw-ev-fncall* nil)))
+     ((progn (setf thrown-tag 'raw-ev-fncall) (setf thrown-val tclet-result))
+      (progn (setf thrown-tag 'local-top-level) (setf thrown-val tclet-result))
+      (progn (setf thrown-tag 'time-limit5-tag) (setf thrown-val tclet-result))
+      (progn (setf thrown-tag 'step-limit-tag) (setf thrown-val tclet-result))))
+
 ; The following does not need to be inside an unwindprotect-cleanup because
 ; set-thread-check-for-abort-and-funcall also removes the pointer to this
 ; thread in *thread-array*.
+
     (atomic-decf *unassigned-and-active-future-count*)
     (atomic-decf *total-future-count*)
-    (when *thrown-with-raw-ev-fncall*
-      (incf *thrown-with-raw-ev-fncall-count*) ; debugging
-      (setf (mt-future-thrown-tag future) (cons 'raw-ev-fncall thrown-tag-result))
-; a future that threw a tag is still a legal future to read
+    (when thrown-tag
+      (setf (mt-future-thrown-tag future)
+            (cons thrown-tag thrown-val))
+
+; A future that threw a tag is still a legal future to read.  In fact, the
+; throw does not re-occur until the future is read.
+
       (broadcast-barrier (mt-future-valid future)))))
 
 (defun eval-closures ()

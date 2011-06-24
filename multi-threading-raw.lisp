@@ -755,16 +755,6 @@
    (without-interrupts
     (incf (acl2-semaphore-count semaphore))
     (signal-condition-variable (acl2-semaphore-cv semaphore))))
-
-; Parallelism wart: delete the following commented code.
-
-;  #+lispworks
-;  (mp:with-lock
-;   ((lispworks-semaphore-lock semaphore))
-;   (without-interrupts
-;    (incf (lispworks-semaphore-count semaphore))
-;    (mp:condition-variable-signal (lispworks-semaphore-cv semaphore))))
-
   #-(or ccl sb-thread lispworks)
   nil)
 
