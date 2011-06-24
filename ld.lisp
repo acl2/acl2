@@ -17843,17 +17843,17 @@
   ~url[http://acl2-books.googlecode.com/].  Here we list some of the more
   significant changes.~bq[]
 
-  A large library has been graciously contributed by the formal verification
+  o A large library has been graciously contributed by the formal verification
   group at Centaur Technology.  See ~c[books/centaur/] and, in particular, file
   ~c[books/centaur/README], which explains how the library depends on the
   experimental HONS extension (~pl[hons-and-memoization]).
 
-  Among the new books is an illustration of ~ilc[defattach],
+  o Among the new books is an illustration of ~ilc[defattach],
   ~c[books/misc/defattach-example.lisp], as well as a variant of defattach that
   avoids the need for ~il[guard] verification,
   ~c[books/misc/defattach-bang.lisp].
 
-  Distributed book ~c[books/misc/trace1.lisp] has been deleted.  It had
+  o Distributed book ~c[books/misc/trace1.lisp] has been deleted.  It had
   provided slightly more friendly ~il[trace] output for new users, but 
   distributed book ~c[books/misc/trace-star.lisp] may be better suited for that
   purpose.~eq[]
@@ -20050,7 +20050,12 @@ Davis's xdoc utility, visit <CODE><A
 HREF=\"http://www.cs.utexas.edu/users/moore/acl2/~s3/distrib/xdoc/manual/preview.html\">xdoc/manual/preview.html</A></CODE>.
 Better yet, view a local copy of this file found under your
 <CODE>acl2-sources/books/</CODE> directory, if you have certified your distributed
-books.</li>
+books.  If you use the experimental HONS version of ACL2 then you can build a
+more complete manual in <CODE>books/centaur/manual/preview.html</A> by running:
+<pre>
+  make regression-hons-fresh ACL2=<path to your saved_acl2>
+</pre>
+</li>
 
 <li>Those familiar with Emacs Info can read the documentation in that format by
 loading the file <CODE>emacs/emacs-acl2.el</CODE> distributed with ACL2 (under
