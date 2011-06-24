@@ -70,6 +70,12 @@ SHORTDIRS2 = ordinals data-structures bdd
 # explicitly in ACL2_BOOK_DIRS.
 ACL2_BOOK_DIRS ?= $(DIRS2)
 
+ifdef ACL2
+	ACL2_FOR_HONS = $(ACL2)
+else
+	ACL2_FOR_HONS ?= `cd .. ; pwd`/saved_acl2h
+endif
+
 # Since we have specified that ACL2_BOOK_DIRS is to be a subset of
 # DIRS2, we do need to add it explicitly on the next line.
 .PHONY: $(DIRS1) $(DIRS2)
@@ -450,6 +456,25 @@ lx32fsl-aux:
 # for certifying all books, then first do "make clean".
 .PHONY: all-plus
 all-plus: $(DIRS1) $(ACL2_BOOK_DIRS)
+
+.PHONY: hons clean-hons
+# For a parallel "make hons", use e.g.:
+#   make hons ACL2_HONS_OPT="-j4"
+# In general, ACL2_HONS_OPT is passed to the cert.pl command in centaur/.
+hons:
+	./cert.pl centaur/doc.lisp \
+	  $(ACL2_HONS_OPT) \
+	  --acl2-books "`pwd`" \
+	  --acl2 $(ACL2_FOR_HONS)
+
+# WARNING: clean-hons will clean everywhere relevant to books/centaur/ under
+# the books/ directory, not merely under books/centaur/.
+clean-hons:
+	rm -rf centaur/manual
+	./cert.pl -c centaur/doc.lisp \
+	  $(ACL2_HONS_OPT) \
+	  --acl2-books "`pwd`" \
+	  --acl2 $(ACL2_FOR_HONS)
 
 # Keep the following three pairs in sync with the two targets just above.
 # They will create compiled files for books that may have already been

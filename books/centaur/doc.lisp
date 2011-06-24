@@ -43,5 +43,13 @@
 (include-book "misc/witness-cp")
 (include-book "gl/gl")
 (include-book "gl/bfr-aig-bddify")
+; The following are included automatically by the xdoc::save command below, but
+; we include them explicitly to support the hons `make' target in the books/
+; directory (and hence the regression-hons `make' target in the acl2-sources
+; directory).
+(include-book "../xdoc/save")
+(include-book "../xdoc/defxdoc-raw")
+(include-book "../xdoc/mkdir-raw")
+(include-book "../xdoc/topics")
 
 (xdoc::save "./manual")
