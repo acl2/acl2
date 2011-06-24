@@ -17836,6 +17836,10 @@
   form based on that same stobj was permitted.  Now, such forms are not
   admitted.  Thanks to Jared Davis for a query leading to this fix.
 
+  Fixed a buggy message upon ~il[guard] violations, which was suggesting the
+  use of ~c[(set-guard-checking :none)] in some cases when guard-checking was
+  already set to ~c[:none].
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Many changes have been made to the distributed books, as recorded in svn logs

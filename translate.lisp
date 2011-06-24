@@ -2170,7 +2170,7 @@
      (symbolp empty-iprint-alist)
      (msg
       "The guard for the~#0~[ :program~/~] function call ~x1, which is ~P23, ~
-       is violated by the arguments in the call ~P45.~@6~@7~@8~@9"
+       is violated by the arguments in the call ~P45.~@6~@7~@8"
       (if (programp fn w) 0 1)
       (cons fn (formals fn w))
       guard
@@ -2219,13 +2219,10 @@
                   (find-first-non-nil stobjs-in)))
             ((eq extra :no-extra) "")
             (extra *safe-mode-guard-er-addendum*)
-            (t ""))
-      (error-trace-suggestion t)
-      (if (keywordp extra) ; skip the following for safe-mode or stobjs
-          ""
-        "  See :DOC set-guard-checking for information about suppressing this ~
-         check with (set-guard-checking :none), as recommended for new ~
-         users."))))))
+            (t "~|See :DOC set-guard-checking for information about ~
+                suppressing this check with (set-guard-checking :none), as ~
+                recommended for new users."))
+      (error-trace-suggestion t))))))
 
 (defun ev-fncall-guard-er (fn args w latches extra)
   (mv t
