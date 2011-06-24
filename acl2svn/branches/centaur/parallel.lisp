@@ -52,7 +52,13 @@
 
 ; End of Section "To Consider".
 
+; Parallelism wart: decide to use either the phrase "parallel execution" or
+; "parallel evaluation."  Then update the doc topics to use the chosen phrase.
+
 (defdoc parallelism
+
+; Parallelism wart: mention proof parallelism inside this topic.
+
   ":Doc-Section Parallelism
 
   experimental extension for evaluating forms in parallel~/
@@ -259,25 +265,28 @@
       ctx
       state)))
 
-(defconst *waterfall-parallelism-values*
-  '(nil :full :top-level :resource-based :pseudo-serial))
-
 (defun waterfall-printing-value-for-parallelism-value (value)
 
-; Warning: Keep guard in sync with guard of set-waterfall-parallelism-fn.
+; Warning: We assume the the value of this function on input nil is :full.  If
+; that changes, then we will need to replace the definition of
+; waterfall-printing-full in front of the defproxy event below for
+; waterfall-printing, as well as the corresponding defattach event in
+; boot-strap-pass-2.lisp.
 
   (declare (xargs :guard (member-eq value *waterfall-parallelism-values*)))
   (cond ((eq value nil)
          :full)
         ((eq value :full)
-         :limited)
+         :very-limited)
         ((eq value :top-level)
-         :limited)
+         :very-limited)
         ((eq value :resource-based)
-         :limited)
+         :very-limited)
+        ((eq value :resource-and-timing-based)
+         :very-limited)
         (t 
-         (assert$ (eq value :pseudo-serial)
-                  :limited))))
+         (assert$ (eq value :pseudo-parallel)
+                  :very-limited))))
 
 ; Parallelism wart: either support the reading of state by computed hints, or
 ; explicitly disallow it with a user-friendly error message; modify :doc
@@ -352,148 +361,231 @@
   The use of ~ilc[wormhole]s is not recommended, as there may be race
   conditions.
 
+  When waterfall-parallelism is enabled (~pl[set-waterfall-parallelism]),
+  the use of ~ilc[set-inhibit-output-lst] may not fully inhibit proof output.
+
+  Interrupting a proof attempt is not yet properly supported.  At a minimum,
+  interrupts are trickier with waterfall parallelism enabled.  For one, the
+  user typically needs to issue the interrupt twice before the proof attempt is
+  actually interrupted.  Additionally, sometimes the theorem is registered as
+  proved, even though the prover did not finish the proof.  If this occurs,
+  issue a ~c[:u] (~pl[ubt]) and you will be at a stable state.
+
   If the host Lisp is Lispworks, you may see messages about misaligned conses.
   The state of the system may be corrupted after such a message has been
   printed.~/~/")
-
-(defun set-waterfall-parallelism-fn (val state)
-
-; Warning: Keep guard in sync with guard of
-; waterfall-printing-value-for-parallelism-value.
-
-; Parallelism wart: perhaps change the wording to make it more obvious that
-; there are two settings involved here, waterfall-parallelism and
-; waterfall-printing.
-
-  (declare (xargs :guard (member-eq val *waterfall-parallelism-values*)))
-  (let ((printing-value
-         (waterfall-printing-value-for-parallelism-value val)))
-    (cond
-     ((and (eq (f-get-global 'waterfall-parallelism state)
-               val)
-           (eq (f-get-global 'waterfall-printing state)
-               printing-value))
-      (pprogn (observation nil "No change in waterfall parallelism or ~
-                                waterfall printing.")
-              (value val)))
-     #-acl2-par
-     (val
-      (er soft 'set-waterfall-parallelism-fn
-          "Parallelism can only be enabled in CCL, threaded SBCL, or ~
-           Lispworks.  Additionally, the feature :ACL2-PAR must be set when ~
-           compiling ACL2 (for example, by using `make' with argument ~
-           `ACL2_PAR=t').  Either the current Lisp is neither CCL nor ~
-           threaded SBCL nor Lispworks, or this feature is missing.  ~
-           Consequently, parallel evaluation of the waterfall will remain ~
-           disabled."))
-     (t
-      (let ((observation-string
-             (case val
-               ((nil)
-                "Disabling parallel evaluation of the waterfall.  Setting ~
-                 waterfall-printing to ~x0 (see :DOC set-waterfall-printing).")
-               (:full
-                "Parallelizing the proof of every subgoal.  Setting ~
-                 waterfall-printing to ~x0 (see :DOC set-waterfall-printing).")
-               (:top-level
-                "Parallelizing the proof of top-level subgoals only.  Setting ~
-                 waterfall-printing to ~x0 (see :DOC set-waterfall-printing).")
-               (:pseudo-serial
-                "Running the version of the waterfall prepared for parallel ~
-                 execution (stateless).  However, we will evaluate this ~
-                 version of the waterfall serially.  Setting ~
-                 waterfall-printing to ~x0 (see :DOC set-waterfall-printing).")
-               (otherwise ; :resource-based
-                "Parallelizing the proof of every subgoal, as long as CPU ~
-                 core resources are available.  Setting waterfall-printing to ~
-                 ~x0 (see :DOC set-waterfall-printing)."))))
-        (pprogn
-         (f-put-global 'waterfall-parallelism val state)
-         (f-put-global 'waterfall-printing printing-value state)
-         (observation nil observation-string printing-value)
-         (value val)))))))
 
 ; Parallelism wart: consider adding a :doc topic for waterfall-printing and
 ; waterfall-parallelism that just point to set-waterfall-printing and
 ; set-waterfall-parallelism, respectively.
 
-(defmacro set-waterfall-parallelism (value)
+; Here are the two functions we need now from
+; make-waterfall-parallelism-constants and make-waterfall-printing-constants
+; (see boot-strap-pass-2.lisp).
 
-  ":Doc-Section Parallelism
+(defun waterfall-parallelism-nil ()
+  (declare (xargs :guard t :mode :logic))
+  nil)
 
-  configuring the parallel evaluation of the waterfall~/
+(defun waterfall-printing-full ()
+  (declare (xargs :guard t :mode :logic))
+  :FULL)
+
+(defproxy waterfall-parallelism () => *)
+(defproxy waterfall-printing () => *)
+
+(defun check-set-waterfall-parallelism (val print-val)
+
+; Parallelism wart: perhaps change the wording to make it more obvious that
+; there are two settings involved here, waterfall-parallelism and
+; waterfall-printing.
+
+; Warning: This function should only be called inside the ACL2 loop, because of
+; the calls of observation-cw.
+
+  (declare (xargs :guard (and (member-eq val *waterfall-parallelism-values*)
+                              (keywordp print-val))))
+  (cond
+   ((and (eq (waterfall-parallelism) val)
+         (eq (waterfall-printing) print-val))
+    (observation-cw
+     nil
+     "No change in waterfall parallelism or waterfall printing (but the ~
+      set-waterfall-parallelism event is not redundant)."))
+   (t
+    (let ((observation-string
+
+; The strange use of concatenate below, rather than creating a formatted string
+; to pass to observation-cw below, is due to the use of wormholes in the
+; implementation of observation-cw.  An initial implementation produced an
+; error because the wormhole call resulted in a call of the *1* function for
+; flpr, which was illegal because that function is program-only.
+
+           (concatenate
+            'string
+            (case val
+              ((nil)
+               "Disabling parallel evaluation of the waterfall.  Setting ~
+               waterfall-printing to :")
+              (:full
+               "Parallelizing the proof of every subgoal.  Setting ~
+               waterfall-printing to :")
+              (:top-level
+               "Parallelizing the proof of top-level subgoals only.  Setting ~
+               waterfall-printing to :")
+              (:pseudo-parallel
+               "Running the version of the waterfall prepared for parallel ~
+               execution (stateless).  However, we will evaluate this version ~
+               of the waterfall serially.  Setting waterfall-printing to :")
+              (:resource-and-timing-based
+               "Parallelizing the proof of every subgoal that was determined ~
+                to take a non-trivial amount of time in a previous proof ~
+                attempt.  Setting waterfall-printing to :")
+              (otherwise ; :resource-based
+               "Parallelizing the proof of every subgoal, as long as CPU core ~
+                resources are available.  Setting waterfall-printing to :"))
+            (symbol-name print-val)
+            " (see :DOC set-waterfall-printing).")))
+      (observation-cw nil observation-string)))))
+
+(defmacro set-waterfall-parallelism (value &optional no-error)
+
+  ":Doc-Section switches-parameters-and-modes
+
+  for ACL2(p): configuring the parallel execution of the waterfall~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
   supporting parallel evaluation and proof; ~pl[parallelism].
 
   ~bv[]
   General Forms:
-  (set-waterfall-parallelism nil) ; serial evaluation
-  (set-waterfall-parallelism :full)   ; always parallelize
+  (set-waterfall-parallelism nil)        ; never parallelize (serial execution)
+  (set-waterfall-parallelism :full)      ; always parallelize
   (set-waterfall-parallelism :top-level) ; parallelize top-level subgoals
-  (set-waterfall-parallelism :resource-based) ; parallelize all subgoals, but
-                                              ; only when resources are 
-                                              ; available
-  (set-waterfall-parallelism :pseudo-serial)  ; serial evaluation of the
-                                              ; version of the waterfall made
-                                              ; for parallel execution
-                                              ; useful for debugging
+  (set-waterfall-parallelism             ; parallelize if sufficient resources
+    :resource-based)                     ;   (recommended setting)
+  (set-waterfall-parallelism             ; parallelize if sufficient resources
+    :resource-and-timing-based           ;   and suggested by prior attempts
+  (set-waterfall-parallelism             ; never parallelize but use parallel
+    :pseudo-parallel)                    ;   code base (a debug mode)
   ~ev[]
   ~/
 
-  ~c[Set-waterfall-parallelism] takes an argument that specifies the enabling or
-  disabling of ~il[parallel] evaluation of ACL2's main proof process, the
+  ~c[Set-waterfall-parallelism] takes an argument that specifies the enabling
+  or disabling of the ~il[parallel] execution of ACL2's main proof process, the
   waterfall.
 
   It also sets state global ~c[waterfall-printing] to an appropriate value.
   ~l[set-waterfall-printing].
 
   Note that not all ACL2 features are supported when waterfall-parallelism is
-  set to non-nil.~/"
+  set to non-nil (~pl[unsupported-waterfall-parallelism-features]).
 
-; Parallelism wart: add a reference to
-; unsupported-waterfall-parallelism-features, above.
+  A value of ~c[nil] indicates that ACL2(p) should never prove subgoals in
+  parallel.
 
-; Parallelism wart: rename :psuedo-serial to :pseudo-parallel.
+  A value of ~c[:full] indicates that ACL2(p) should always prove independent
+  subgoals in parallel.
+
+  A value of ~c[:top-level] indicates that ACL2(p) should prove each of the
+  top-level subgoals in parallel but otherwise prove subgoals in a serial
+  manner.  This mode is useful when the user knows that there are enough
+  top-level subgoals, many of which take a non-trivial amount of time to be
+  proved, such that proving them in parallel will result in a useful reduction
+  in overall proof time.
+
+  A value of ~c[:resource-based] indicates that ACL2(p) should use its built-in
+  heuristics to determine whether CPU core resources are available for parallel
+  execution.  Note that ACL2(p) does not hook into the operating system to
+  determine the workload on the machine.  ACL2(p) works off the assumption that
+  it is the main process running on the machine, and it optimizes the amount of
+  parallelism based on the number of CPU cores in the system.  (Note that
+  ACL2(p) knows how to obtain the number of CPU cores from the operating system
+  in CCL, but that, in SBCL and in Lispworks, a constant is used instead).
+  ~c[:Resource-based] is the recommended setting for ACL2(p).
+
+  During the first proof attempt of a given conjecture, a value of
+  ~c[:resource-and-timing-based] results in the same behavior as with
+  ~c[:resource-based].  However, on subsequent proof attempts, the time it took
+  to prove each subgoal will be considered when deciding whether to parallelize
+  execution.  If a particular theorem's proof is already achieving satisfactory
+  speedup via ~c[:resource-based] parallelism, there is no reason to try this
+  setting.  However, if the user wishes to experiment, the
+  ~c[:resource-and-timing-based] setting may improve performance.  Note that
+  since the initial run does not have the subgoal proof times available, this
+  mode will never be better than the ~c[:resource-based] setting for
+  non-interactive theorem proving.
+
+  A value of ~c[:pseudo-parallel] runs all of the parallelism code, but in a
+  serial mode.  This setting is useful for debugging the code base that
+  supports parallel execution of the waterfall.  For example, you may wish to
+  use this mode if you are an \"ACL2 Hacker\" who would like to see
+  comprehensible output from tracing (~pl[trace$]) the ~c[@par] versions of the
+  waterfall functions.
+
+  Note: This is an event!  It does not print the usual event summary but
+  nevertheless changes the ACL2 logical world and is so recorded.  Moreover,
+  ~c[set-waterfall-parallelism] ~il[events] are never redundant
+  (~pl[redundant-events]).~/
+
+  :cited-by parallelism"
 
   (declare (xargs :guard
                   (or (member-eq value *waterfall-parallelism-values*)
-                      (and (consp value)
-                           (eq (car value) 'quote)
-                           (consp (cdr value))
-                           (null (cddr value))
-                           (member-eq (cadr value)
-                                      *waterfall-parallelism-values*)))))
-  `(let ((val ,value))
-     (set-waterfall-parallelism-fn
-      (cond ((consp val) (cadr val))
-            (t val))
-      state)))
+                      (member-equal value (kwote-lst
+                                           *waterfall-parallelism-values*))))
+           #+acl2-par (ignore no-error))
+  (let* ((val (if (consp value) (cadr value) value))
+         (print-val (waterfall-printing-value-for-parallelism-value val)))
+    (prog2$
+     #+(and acl2-par acl2-loop-only)
+     (check-set-waterfall-parallelism val print-val)
+     #+(and acl2-par (not acl2-loop-only))
+     nil ; avoid observation-cw call in raw Lisp
 
-(defun set-waterfall-printing-fn (val state)
-  (declare (xargs :guard (member-eq val '(:full :limited))))
-  (cond
-   ((eq (f-get-global 'waterfall-printing state)
-        val)
-    (pprogn (observation nil "No change in waterfall printing.")
-            (value nil)))
-   #-acl2-par
-   (val
-    (er soft 'set-waterfall-printing-fn
-        "Customizing waterfall printing only makes sense in the #+acl2-par ~
-         builds of ACL2.  Consequently, the waterfall-printing option will ~
-         remain unchanged."))
-   (t
-    (pprogn
-     (f-put-global 'waterfall-printing val state)
-     (observation nil "Setting waterfall-printing to ~x0." val)
-     (value val)))))
+; Note that one can submit defattach forms directly, rather than in place of
+; this macro, in order to set waterfall-parallelism and waterfall-printing,
+; even when #-acl2-par.  However, these settings will be ignored.  The error
+; message below is therefore simply a courtesy to the user.  We include the
+; no-error argument in case one wants to put a set-waterfall-parallelism event
+; into a book that can be certified with either ACL2 or ACL2(p).
+
+; Parallelism wart: document the no-error argument.
+
+     #-acl2-par
+     (or no-error
+         (null val)
+         (er hard 'set-waterfall-parallelism
+             "Parallelism can only be enabled in CCL, threaded SBCL, or ~
+              Lispworks. ~ Additionally, the feature :ACL2-PAR must be set ~
+              when compiling ACL2 (for example, by using `make' with argument ~
+              `ACL2_PAR=t').  Either the current Lisp is neither CCL nor ~
+              threaded SBCL nor Lispworks, or this feature is missing.  ~
+              Consequently, parallel evaluation of the waterfall will remain ~
+              disabled."))
+     (let ((val-fn (symbol-constant-fn 'waterfall-parallelism val)))
+       `(with-output
+         :off (event observation proof-tree prove summary warning)
+         (progn
+           (defattach (waterfall-parallelism
+                       ,val-fn
+                       :hints
+                       (("Goal"
+                         :in-theory
+                         '(return-last (member-equal) (,val-fn))))))
+           (set-waterfall-printing ,print-val)
+           (value-triple ,val)))))))
 
 (defmacro set-waterfall-printing (value)
 
-  ":Doc-Section Parallelism
+; Parallelism wart: after the checkpoint-like printing is finalized, revisit
+; this topic.  In particular, the explanation under :limited will be outdated,
+; and it could be good to reference a :doc topic that explains ACL2(p)
+; checkpoints (such a topic has yet to be written).
 
-  configuring the printing that occurs within the parallelized waterfall~/
+  ":Doc-Section switches-parameters-and-modes
+
+  for ACL2(p): configuring the printing that occurs within the parallelized waterfall~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
   supporting parallel evaluation and proof; ~pl[parallelism].
@@ -502,6 +594,7 @@
   General Forms:
   (set-waterfall-printing :full)    ; print everything
   (set-waterfall-printing :limited) ; print a subset that's thought to be useful
+  (set-waterfall-printing :very-limited) ; print an even smaller subset
   ~ev[]
   ~/
 
@@ -509,16 +602,61 @@
   printing should occur when executing ACL2 with the parallelized version of the
   waterfall.  It only affects the printing that occurs when parallelism mode is
   enabled for the waterfall (~pl[set-waterfall-parallelism]).
-  ~/"
 
-  (declare (xargs :guard (member-equal value
-                                       '(:full ':full
-                                               :limited ':limited))))
-  `(let ((val ,value))
-     (set-waterfall-printing-fn
-      (cond ((consp val) (cadr val))
-            (t val))
-      state)))
+  A value of ~c[:full] is intended to print the same output as in serial mode.
+  This output will be interleaved unless the waterfall-parallelism mode is one
+  of ~c[nil] or ~c[pseudo-parallel].
+
+  A value of ~c[:limited] omits most of the output that occurs in the serial
+  version of the waterfall.  Instead, the proof attempt prints proof
+  checkpoints, similar to (but still distinct from) gag-mode (see
+  ~ilc[set-gag-mode]).  As applies to much of the parallelism extension, the
+  presentation of these checkpoints is still under development, and feedback
+  concerning them is welcome.  The value of ~c[:limited] also prints messages
+  that indicate which subgoal is currently being proved.  (The function
+  ~c[print-clause-id-okp] may receive an attachment to limit such printing;
+  ~pl[set-print-clause-ids].)  Naturally, these subgoal numbers can be out of
+  order, because they can be proved in parallel.
+
+  A value of ~c[:very-limited] is treated the same as ~c[:limited], except that
+  instead of printing subgoal numbers, the proof attempt prints a
+  period (`~c[.]') each time it starts a new subgoal.
+
+  Note: This is an event!  It does not print the usual event summary but
+  nevertheless changes the ACL2 logical world and is so recorded.  Moreover,
+  ~c[set-waterfall-printing] ~il[events] are never redundant
+  (~pl[redundant-events]).~/
+
+  :cited-by parallelism"
+
+  (declare (xargs
+            :guard
+            (or (member-eq value *waterfall-printing-values*)
+                (member-equal value (kwote-lst *waterfall-printing-values*)))))
+  #-acl2-par
+  (er hard 'set-waterfall-printing
+      "Customizing waterfall printing only makes sense in the #+acl2-par ~
+       builds of ACL2.  Consequently, the attempt to set waterfall-printing ~
+       to ~x0 will be ignored."
+      value)
+  #+acl2-par
+  (let* ((val (if (consp value) (cadr value) value))
+         (val-fn (symbol-constant-fn 'waterfall-printing val)))
+    `(with-output
+      :off (event observation proof-tree prove summary warning)
+      (progn (defattach (waterfall-printing
+                         ,val-fn
+                         :hints
+                         (("Goal"
+                           :in-theory
+                           '(return-last (member-equal) (,val-fn))))))
+             (value-triple ,val)))))
+
+; (set-waterfall-parallelism nil) ; see boot-strap-pass-2.lisp
+(defattach (waterfall-parallelism waterfall-parallelism-nil)
+  :skip-checks t)
+(defattach (waterfall-printing waterfall-printing-full)
+  :skip-checks t)
 
 (defdoc parallelism-at-the-top-level
   ":Doc-Section Parallelism
@@ -1054,6 +1192,54 @@
 
   The concept of early termination also applies to ~ilc[por], except that early
   termination occurs when an argument evaluates to non-~c[nil].~/")
+
+(defdoc parallel-pushing-of-subgoals-for-induction
+
+; Parallelism wart: figure out whether we'll be able to early terminate once
+; the second push occurs.  If not, discuss how the parallelized waterfall will
+; continue to prove beyond the second push of
+; '[maybe-]to-be-proved-by-induction (similar to having the :otf-flg set to t),
+; instead of immediately aborting to prove the original conjecture.
+
+  ":Doc-Section Parallelism
+  consequences of how parallelized proofs of subgoals are pushed for induction~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].
+
+  The following discussion, concerning the naming of subgoals pushed for proof
+  by induction and the timeliness of aborting when two or more goals are pushed
+  for proof by induction, only applies when waterfall parallelism is enabled
+  (~pl[set-waterfall-parallelism]).~/
+
+  When two sibling subgoals (e.g. 4.5 and 4.6) both push goals to be proved by
+  induction (e.g., 4.6 pushes *1 and 4.5 pushes *2), a name is assigned to the
+  second pushed subgoal (e.g., *2) as if the first push hasn't happened (e.g.,
+  *2 is mistakenly called *1).  In such a case, we say what the name _could_
+  be.  The following non-theorem illustrates how this works.
+  ~bv[]
+  (set-waterfall-parallelism :full)
+  (thm (equal (append (car (cons x x)) y z) (append x x y)))
+  ~ev[]
+
+  There is another consequence of the way the parallelized waterfall pushes
+  subgoals for proof by induction.  Without waterfall parallelism enabled, ACL2
+  sometimes decides to abort instead of pushing a goal for later proof by
+  induction, preferring instead to induct on the original conjecture.  But with
+  waterfall parallelism enabled, the prover no longer necessarily immediately
+  aborts to prove the original conjecture.  Suppose for example that sibling
+  subgoals, Subgoal 4.6 and Subgoal 4.5, each push a subgoal for induction.  If
+  the waterfall is performing the proof of each of these subgoals in parallel,
+  the proof will no longer abort immediately after the second push occurs, that
+  is at Subgoal 4.5.  As a result, the prover will continue through Subgoal
+  4.4, Subgoal 4.3, and beyond.  It is not until the results of combining the
+  proof results of Subgoal 4.6 with the results from the remaining sibling
+  subgoals (4.5, 4.4, and so on), that the proof attempt will abort and revert
+  to prove the original conjecture by induction.  This example illustrates
+  behavior that is rather like the case that ~c[:]~ilc[otf-flg] is ~c[t], in
+  the sense that the abort does not happen immediately, but also rather like
+  the case that ~c[:]~ilc[otf-flg] is ~c[nil], in the sense that the abort does
+  occur before getting to Subgoal 3.~/")
 
 (defun caar-is-declarep (x)
 
@@ -1706,3 +1892,6 @@
 ; errors and re-causing them.  Hitting ctrl+c causes the main thread to abort
 ; waiting on the result from those threads, and allows the interactive session
 ; to resume.
+
+; Parallelism wart: interrupting a proof with waterfall-parallelism enabled is
+; currently broken.  See :doc unsupported-waterfall-parallelism-features.

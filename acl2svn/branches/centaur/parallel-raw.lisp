@@ -1287,3 +1287,59 @@
 
 #+sbcl
 (setf (sb-ext:bytes-consed-between-gcs) (1- (expt 2 31)))
+
+(defvar *resource-and-timing-based-parallelizations*
+  0
+  "Tracks the number of times that we parallelize execution when
+  waterfall-parallelism is set to :resource-and-timing-based")
+
+(defvar *resource-and-timing-based-serializations*
+  0
+  "Tracks the number of times that we do not parallize execution when
+  waterfall-parallelism is set to :resource-and-timing-based")
+
+(defvar *resource-based-parallelizations*
+  0
+  "Tracks the number of times that we parallelize execution when
+  waterfall-parallelism is set to :resource-based")
+
+(defvar *resource-based-serializations*
+  0
+  "Tracks the number of times that we do not parallize execution when
+  waterfall-parallelism is set to :resource-based")
+
+(defun print-interesting-parallelism-variables()
+  (format t "Printing vars related to executing in parallel.~%")
+  (format t "*idle-future-core-count* is ~s~%"
+          (atomically-modifiable-counter-read *idle-future-core-count*))
+  (format t "*idle-future-resumptive-core-count* is ~s~%"
+          (atomically-modifiable-counter-read
+           *idle-future-resumptive-core-count*))
+  (format t "*idle-future-thread-count* is ~s~%"
+          (atomically-modifiable-counter-read *idle-future-thread-count*))
+  (format t "*unassigned-and-active-future-count* is ~s~%"
+          (atomically-modifiable-counter-read
+           *unassigned-and-active-future-count*))
+  (format t "*total-future-count* is ~s~%"
+          (atomically-modifiable-counter-read *total-future-count*))  
+  (format t "*futures-resources-available-count* is ~s~%"
+          *futures-resources-available-count*)
+  (format t "*futures-resources-unavailable-count* is ~s~%"
+          *futures-resources-unavailable-count*)
+
+  (format t "~%Printing vars related to aborting futures.~%")
+  (format t "*aborted-futures-total* is ~s~%" *aborted-futures-total*)
+  (format t "*aborted-futures-via-throw* is ~s~%" *aborted-futures-via-throw*)
+  (format t "*aborted-futures-via-flag* is ~s~%" *aborted-futures-via-flag*)
+  (format t "*almost-aborted-future-count* is ~s~%~%"
+          *almost-aborted-future-count*)
+
+  (format t "*resource-based-parallelizations* is ~s~%"
+          *resource-based-parallelizations*)
+  (format t "*resource-based-serializations* is ~s~%"
+          *resource-based-serializations*)
+
+  (format t "*resource-and-timing-based-parallelizations* is ~s~%"
+          *resource-and-timing-based-parallelizations*)
+  (format t "*resource-and-timing-based-serializations* is ~s~%"
+          *resource-and-timing-based-serializations*))

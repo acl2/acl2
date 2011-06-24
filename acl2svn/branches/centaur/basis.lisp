@@ -1726,7 +1726,7 @@
 
   In order to take advantage of a ~ilc[defproxy] form, one provides a
   subsequent ~c[defattach] form to attach an executable function to the
-  ~c[defproxy]-introduced function.  When ~c[:skip-checks t] in a
+  ~c[defproxy]-introduced function.  When ~c[:skip-checks t] is provided in a
   ~ilc[defattach] form, the usual checks for ~c[defattach] ~il[events] are
   skipped, including proof obligations and the check that the extended ancestor
   relation has no cycles (~pl[defattach]).  There must be an active trust tag

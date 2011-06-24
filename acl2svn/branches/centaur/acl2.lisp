@@ -834,8 +834,8 @@ ACL2 from scratch.")
 
 (defmacro with-warnings-suppressed (&rest forms)
 
-; Keep this in sync with the handler-bind call in init.lisp.  Thanks to Juho
-; Snellman for the SBCL form.
+; See also the handler-bind call in init.lisp.  Thanks to Juho Snellman for his
+; assistance with handler-bind.
 
 ; We are happy to turn off redefinition warnings because we trust that
 ; functions such as add-trip know what they are doing.  Without this code, for
@@ -843,65 +843,106 @@ ACL2 from scratch.")
 
   #+sbcl
 
-; Warning: We turn off all warnings in SBCL because they are so noisy.  Here is
-; the story:
-
-; In the case of SBCL, we have noticed that the inhibition of style-warnings
-; eliminates a huge amount of noise during the build, probably because
-; with-warnings-suppressed is called in compile-acl2.  Unfortunately, some of
-; that "noise" is the reporting of unused formals.  So, developers may want to
-; compile in some Lisp other than SBCL in order to see warnings about unused
-; formals and perhaps other warnings as well.
-
-; Considerable noise can be eliminated even if we only turn off
-; sb-kernel:redefinition-warning (at least, we tried this in SBCL 1.0.19;
-; sb-kernel:redefinition-warning doesn't work in SBCL 1.0.3).  But there is
-; still a lot of noise left when suppressing only
-; sb-kernel:redefinition-warning and not all style-warnings, e.g. on constant
-; names, ignorable variable CONDITION-P in memoize, and undefined function
-; warnings for *1* functions defined in mutual-recursions.
-
-; So, we suppress style-warnings.  We formerly did so as follows.
+; Warning: We turn off all warnings in SBCL because they are so noisy.  We
+; eliminate most of them in the proclaim form earlier in this file, using
+; (sb-ext:inhibit-warnings 3), because without that the following doesn't work;
+; just start up sbcl and submit the following form without the leading
+; backquote and replacing ,@forms by (defun f (x y) x).
 
 ; `(handler-bind
-;;   ((style-warning (lambda (c)
+;   ((warning       (lambda (c)
+;                     (declare (ignore c))
+;                     (invoke-restart 'muffle-warning)))
+;    (style-warning (lambda (c)
 ;                     (declare (ignore c))
 ;                     (invoke-restart 'muffle-warning))))
 ;   ,@forms)
 
-; However, sbcl still gives a warning in the following example:
-
-; (handler-bind
-;  ((style-warning (lambda (c)
-;                    (declare (ignore c))
-;                    (invoke-restart 'muffle-warning))))
-;  (eval '(defun foo () (= 'a 3))))
-
-; So we turn off all warnings, not just style warnings, as follows.
+; However, even with the above proclaim form we still get redefinition
+; warnings.  So we wrap the following handler-bind around forms in order to
+; eliminate redefinition warnings as well.
 
   `(handler-bind
     ((warning (lambda (c)
                 (declare (ignore c))
                 (invoke-restart 'muffle-warning))))
     ,@forms)
+
   #+cmucl
-  `(progn (setq ext:*gc-verbose* nil) ,@forms)
+  `(progn (setq ext:*gc-verbose* nil)
+          (handler-bind
+           ((warning (lambda (c)
+                       (declare (ignore c))
+                       (invoke-restart 'muffle-warning))))
+           ,@forms))
+
   #+lispworks
-  `(let ((compiler::*redefinition-action* :QUIET)) ,@forms)
+  `(let ((compiler::*redefinition-action* :QUIET))
+     ,@forms)
+
   #+allegro
   `(let ((excl:*redefinition-warnings* nil)) ,@forms)
+
   #+clisp
+  `(let ((custom::*suppress-check-redefinition* t))
 
-; Setting custom::*suppress-check-redefinition* seems harmless, but doesn't
-; help avoid warnings (as of CLISP 2.47) for more than one definition of the
-; same function in the same file.  We could bind *compile-verbose* to nil, but
-; that seems too extreme; although we do something analogous for SBCL, we felt
-; compelled there because of extreme noise, which isn't the case for CLISP.
+; Unfortunately, the above binding seems to be ignored when in the scope of
+; with-compilation-unity, so we get redefinition warnings from clisp during the
+; build.  Here is an example that exhibits that behavior CLISP 2.44.1 (even
+; without ACL2); and the same problem occurs if we switch the order of
+; with-compilation-unit and the binding of *suppress-check-redefinition*.
 
-  `(let ((custom::*suppress-check-redefinition* t)) ,@forms)
+;   (common-lisp::with-compilation-unit
+;    ()
+;    (let ((custom::*suppress-check-redefinition* t))
+;      (dolist (name '("foo" "bar"))
+;        (let ((source (make-pathname :name name :type "lisp")))
+;          (load source)
+;          (progn
+;            (compile-file source)
+;            (load (make-pathname :name name :type "fas")))))))
+
+     ,@forms)
+
   #+ccl
   `(let ((ccl::*compiler-warn-on-duplicate-definitions* nil)) ,@forms)
+
   #-(or cmucl sbcl lispworks allegro clisp ccl)
+  (if (cdr forms) `(progn ,@forms) (car forms)))
+
+(defmacro with-more-warnings-suppressed (&rest forms)
+
+; We add additional warning suppression beyond what is provided by
+; with-warnings-suppressed.  Warning: We do not necessarily suppress all
+; warnings that are suppressed by with-warnings-suppressed, so you will
+; probably want to call this macro in a context underneath
+; with-warnings-suppressed.
+
+; The handler-bind form given in with-warnings-suppressed for sbcl and cmucl is
+; sufficient; we do not need anything further here.  But even with the addition
+; of style-warnings (as commented there), that form doesn't seem to work for
+; CCL, Allegro CL, Lispworks, or CLISP.  So we bind some globals instead.
+
+  #+lispworks
+  `(let ((compiler::*compiler-warnings* nil))
+     ,@forms)
+
+  #+allegro
+  `(handler-bind
+    ((style-warning (lambda (c)
+                      (declare (ignore c))
+                      (invoke-restart 'muffle-warning))))
+    ,@forms)
+
+  #+clisp
+  `(let ((*compile-verbose* nil))
+     ,@forms)
+
+  #+ccl
+  `(let ((ccl::*suppress-compiler-warnings* t))
+     ,@forms)
+
+  #-(or lispworks allegro clisp ccl)
   (if (cdr forms) `(progn ,@forms) (car forms)))
 
 (defmacro with-suppression (&rest forms)

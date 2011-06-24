@@ -592,7 +592,7 @@
 ; The loss of efficiency caused by using symbol-value below should be more than
 ; compensated for by the lack of a warning here when building the system.
 
-           (template (qfuncall defstobj-template name args))
+           (template (qfuncall defstobj-template name args nil))
            (raw-defs (qfuncall defstobj-raw-defs name template
 
 ; We do not want to rely on having the world available here, so we pass in nil

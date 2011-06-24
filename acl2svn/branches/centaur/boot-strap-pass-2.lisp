@@ -727,6 +727,116 @@
 (defattach rw-cacheable-failure-reason rw-cacheable-failure-reason-builtin)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Attachments: print-clause-id-okp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination-boot-strap all-digits-p) ; and guards
+
+(verify-termination-boot-strap ; and guards
+ (d-pos-listp
+  (declare
+   (xargs
+    :guard-hints
+    (("Goal"
+      :use ((:instance coerce-inverse-2
+                       (x (symbol-name (car lst))))
+            (:instance character-listp-coerce
+                       (str (symbol-name (car lst)))))
+      :expand ((len (coerce (symbol-name (car lst)) 'list)))
+      :in-theory (disable coerce-inverse-2
+                          character-listp-coerce)))))))
+
+(verify-termination-boot-strap pos-listp)
+(verify-guards pos-listp)
+
+(defthm d-pos-listp-forward-to-true-listp
+  (implies (d-pos-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining)
+
+(verify-termination-boot-strap clause-id-p) ; and guards
+
+(encapsulate
+ (((print-clause-id-okp *) => * :formals (cl-id) :guard (clause-id-p cl-id)))
+ (local (defun print-clause-id-okp (x)
+          x)))
+
+(verify-termination-boot-strap print-clause-id-okp-builtin) ; and guards
+
+(defattach print-clause-id-okp print-clause-id-okp-builtin)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Attachments: oncep-tp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(encapsulate
+ (((oncep-tp * *) => *
+   :formals (rune wrld)
+   :guard (and (plist-worldp wrld)
+
+; Although (runep rune wrld) is appropriate here, we don't want to fight the
+; battle yet of putting runep into :logic mode.  So we just lay down the
+; syntactic part of its code, which should suffice for user-defined attachments
+; to oncep-tp.
+
+               (and (consp rune)
+                    (consp (cdr rune))
+                    (symbolp (cadr rune))))))
+ (logic)
+ (local (defun oncep-tp (rune wrld)
+          (oncep-tp-builtin rune wrld))))
+
+(defattach oncep-tp oncep-tp-builtin)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Attachments: waterfall-parallelism and waterfall-printin
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(encapsulate
+ ((waterfall-parallelism () t))
+ (local (defun waterfall-parallelism () nil))
+ (defthm waterfall-parallelism-constraint
+   (member-eq (waterfall-parallelism)
+              *waterfall-parallelism-values*)))
+
+(encapsulate
+ ((waterfall-printing () t))
+ (logic)
+ (local (defun waterfall-printing () :full))
+ (defthm waterfall-printing-constraint
+   (member-eq (waterfall-printing)
+              *waterfall-printing-values*)))
+
+(defun make-symbol-constants-fn (prefix lst)
+  (declare (xargs :guard (and (symbolp prefix)
+                              (symbol-listp lst))))
+  (cond ((endp lst) nil)
+        (t (cons `(defun ,(symbol-constant-fn prefix (car lst)) ()
+                    (declare (xargs :guard t :mode :logic))
+                    ,(car lst))
+                 (make-symbol-constants-fn prefix (cdr lst))))))
+
+(defmacro make-waterfall-parallelism-constants (prefix)
+  (cons 'progn (make-symbol-constants-fn prefix
+                                         *waterfall-parallelism-values*)))
+
+(make-waterfall-parallelism-constants waterfall-parallelism)
+
+(defmacro make-waterfall-printing-constants (prefix)
+  (cons 'progn (make-symbol-constants-fn prefix
+                                         *waterfall-printing-values*)))
+
+(make-waterfall-printing-constants waterfall-printing)
+
+; We execute defattach events without :skip-checks.  But we avoid using
+; set-waterfall-parallelism, because that causes an invocation of
+; set-waterfall-printing, which is an error when #-acl2-par.
+#+acl2-loop-only
+(progn
+  (defattach (waterfall-parallelism waterfall-parallelism-nil))
+  (defattach (waterfall-printing waterfall-printing-full)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
