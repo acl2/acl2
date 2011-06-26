@@ -6,6 +6,7 @@ workxxx*
 *.cert.temp
 *.acl2x
 Makefile-deps
+Makefile-tmp
 *.h
 *.c
 *.data
