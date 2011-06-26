@@ -343,7 +343,7 @@
   t ; return t
 )
 
-#-lisp-works
+#-lispworks
 (reset-future-parallelism-variables)
 
 (defun reset-all-parallelism-variables ()

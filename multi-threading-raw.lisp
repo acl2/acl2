@@ -913,11 +913,15 @@
       (kill-thread (car thread-list))
       (kill-all-threads-in-list (cdr thread-list)))))
 
-#+lispworks
+#+(or ccl lispworks)
 (defun initial-threads1 (threads)
   (cond ((endp threads)
          nil)
-        ((member-equal (mp:process-name (car threads))
+        (#+ccl
+         (member-equal (ccl:process-name (car threads))
+                       '("listener" "Initial"))
+         #+lispworks
+         (member-equal (mp:process-name (car threads))
                        '("TTY Listener" "The idle process" 
                          "Restart Function Process"))
          (cons (car threads)
@@ -947,9 +951,9 @@
 ; SBCL and CCL.  This would allow us to get rid of *initial-threads*
 ; altogether.
 
-  #-lispworks
+  #-(or ccl lispworks)
   *initial-threads* 
-  #+lispworks
+  #+(or ccl lispworks)
   (initial-threads1 (all-threads)))
 
 (defun all-threads-except-initial-threads-are-dead ()
@@ -957,6 +961,35 @@
   (<= (length (all-threads)) 1)
   #-sbcl
   (null (set-difference (all-threads) (initial-threads))))
+
+; Parallelism wart: consider deleting the following comment and associated
+; code.
+
+; The below commented code (functions all-given-threads-are-reset and
+; all-threads-except-initial-threads-are-dead-or-reset) implements a scheme for
+; CCL that, for the most part, would prevent the need to call sleep inside
+; send-die-to-all-except-initial-threads.  That being said, the solution to
+; call sleep is simpler (and ports more easily to other Lisps), so we use that
+; solution instead.  We preserve this code as an example alternative to calling
+; sleep.
+
+;; (defun all-given-threads-are-reset (threads)
+;;   (if (endp threads)
+;;       t
+;;     (and (equal (ccl:process-whostate (car threads))
+;;                 "Reset")
+;;          (all-given-threads-are-reset (cdr threads)))))
+
+;; (defun all-threads-except-initial-threads-are-dead-or-reset ()
+;;   (format t "All-threads is ~s~%" (all-threads))
+;;   #+ccl
+;;   (all-given-threads-are-reset 
+;;    (set-difference (all-threads) (initial-threads)))
+;;   #+sbcl
+;;   (<= (length (all-threads)) 1)
+;;   #-(or ccl sbcl)
+;;   (null (set-difference (all-threads) (initial-threads))))
+
 
 (defun send-die-to-all-except-initial-threads ()
 
@@ -968,14 +1001,26 @@
 
   (let ((target-threads (set-difference (all-threads)
                                         (initial-threads))))
-    (throw-all-threads-in-list target-threads))
+    (throw-all-threads-in-list target-threads)
+    (let ((round 0))
+      (when (not (all-threads-except-initial-threads-are-dead))
 
-; We can't call thread-wait in Lispworks until after multiprocessing is
-; enabled.  We therefore conditionalize the call on a condition that should be
-; nil when multiprocessing is disabled.
+      
+; We used to call "(thread-wait 'all-threads-except-initial-threads-are-dead)".
+; However, we noticed a synchronization problem between what we might prefer
+; the underlying Lisp to do (in this one case) and what the Lisp actually does.
+; In particular, when we call run-thread, the call to run-thread returns,
+; before we know that the thread has actually started running.  This is
+; probably fine in the general case.  However, in this instance, it is possible
+; for the threads that are about to be run to not receive the throw, because
+; they haven't really started running yet.  Rather than work out the details of
+; this problem, we punt, and simply wait for one second before issuing a new
+; throw.  In practice, this works just fine.
 
-  (when (not (all-threads-except-initial-threads-are-dead))
-    (thread-wait 'all-threads-except-initial-threads-are-dead)))
+        (when (equal (mod round 10) 0)
+          (throw-all-threads-in-list target-threads))
+        (sleep 0.1)
+        (incf round)))))
 
 (defun kill-all-except-initial-threads ()
 
