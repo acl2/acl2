@@ -6,4 +6,9 @@
 (ld "cert.acl2")
 (ld "../alists/alist-defpkg.lsp")
 (include-book "records")
+; The following was added by Matt K. after ACL2 Version 4.2, because the
+; "ADVISOR" package was hidden (formerly, it was not hidden) and hence the
+; symbol ADVISER::defadvice in domain.lisp could not be read during
+; certification.
+(ld "../adviser/adviser-defpkg.lsp")
 (certify-book "domain" ? t)

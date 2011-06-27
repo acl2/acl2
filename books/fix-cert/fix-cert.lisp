@@ -55,7 +55,7 @@
               (create-pkgs-for-cert-file1 file1 file2 ch known-pkgs
                                           new-pkgs-sofar ctx state)
               (er-progn
-               (defpkg-fn pkg nil state nil nil
+               (defpkg-fn pkg nil state nil nil nil
                  `(defpkg ,pkg nil))
                (create-pkgs-for-cert-file1 file1 file2 ch known-pkgs
                                            (cons pkg new-pkgs-sofar)

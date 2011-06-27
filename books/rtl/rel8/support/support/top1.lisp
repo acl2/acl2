@@ -167,15 +167,24 @@ So the correct result is, alteratively:
 
 |# ; |
 
+; After Version_4.2, changes to defpkg eliminated the creation of rewrite rules
+; for hidden defpkgs, e.g., (:REWRITE U-PACKAGE).  We tried replacing the next
+; two forms below with more flexible forms (at least, in
+; rtl/rel4/support/top.lisp) that are more likely to survive version changes,
+; including the one just mentioned; but the theorem bits-guard failed in
+; rtl/rel4/support/guards.cert.  So we just comment out the offending rules in
+; the first deftheory below.
+
 (deftheory lib-top1-non-built-ins
 
 ;(let ((world (w state)))
 ;  (set-difference-theories (current-theory :here) (universal-theory 'ground-zero)))
 
-  '((:REWRITE U-PACKAGE)
-    (:REWRITE ACL2-ASG-PACKAGE)
-    (:REWRITE ACL2-AGP-PACKAGE)
-    (:REWRITE ACL2-CRG-PACKAGE)
+  '(
+;    (:REWRITE U-PACKAGE)
+;    (:REWRITE ACL2-ASG-PACKAGE)
+;    (:REWRITE ACL2-AGP-PACKAGE)
+;    (:REWRITE ACL2-CRG-PACKAGE)
     (:EXECUTABLE-COUNTERPART FL)
     (:TYPE-PRESCRIPTION FL)
     (:EXECUTABLE-COUNTERPART BITS)
