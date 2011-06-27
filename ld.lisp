@@ -17649,6 +17649,10 @@
   found in a comment in the ~ilc[deflabel] for ~c[note-4-3] (in ACL2 source
   file ~c[ld.lisp]).~eq[]
 
+  The undocumented (but sometimes useful) functions ~c[packn1] and ~c[packn]
+  are now ~il[guard]-verified ~c[:]~ilc[logic] mode functions.  Thanks to
+  Sandip Ray for requesting this enhancement.
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of

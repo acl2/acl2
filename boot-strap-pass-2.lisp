@@ -131,8 +131,32 @@
 ;;; Miscellaneous verify-termination and guard verification
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; observation1-cw
+
 (verify-termination-boot-strap observation1-cw)
 (verify-guards observation1-cw)
+
+; packn1 and packn
+
+(verify-termination-boot-strap packn1) ; and guards
+
+(encapsulate ()
+
+(local
+ (defthm character-listp-explode-nonnegative-integer
+   (implies (character-listp z)
+            (character-listp (explode-nonnegative-integer x y z)))
+   :rule-classes ((:forward-chaining :trigger-terms
+                                     ((explode-nonnegative-integer x y z))))))
+
+(local
+ (defthm character-listp-explode-atom
+   (character-listp (explode-atom x y))
+   :rule-classes ((:forward-chaining :trigger-terms
+                                     ((explode-atom x y))))))
+
+(verify-termination-boot-strap packn) ; and guards
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite

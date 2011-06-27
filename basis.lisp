@@ -1597,11 +1597,13 @@
                      (t (genvar1 pkg-witness prefix avoid-lst cnt))))))))
 
 (defun packn1 (lst)
-  (cond ((null lst) nil)
+  (declare (xargs :guard (good-atom-listp lst)))
+  (cond ((endp lst) nil)
         (t (append (explode-atom (car lst) 10)
                    (packn1 (cdr lst))))))
 
 (defun packn (lst)
+  (declare (xargs :guard (good-atom-listp lst)))
   (let ((ans
 ; See comment in intern-in-package-of-symbol for an explanation of this trick.
          (intern (coerce (packn1 lst) 'string)

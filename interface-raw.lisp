@@ -7749,7 +7749,7 @@ Missing functions:
               (when chan0
 
 ; Print all the defs in a single progn, for maximum structure sharing via #n=
-; and #n3.
+; and #n#.
 
                 (print-object$ (cons 'progn (nreverse defs)) chan state))
               (newline chan state)

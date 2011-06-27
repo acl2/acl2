@@ -8102,7 +8102,9 @@
   recognizer for a true list of ~il[atom]s~/
 
   The predicate ~c[atom-listp] tests whether its argument is a
-  ~ilc[true-listp] of ~il[atom]s, i.e., of non-conses.~/~/"
+  ~ilc[true-listp] of ~il[atom]s, i.e., of non-conses.~/
+
+  Also ~pl[good-atom-listp].~/"
 
   (declare (xargs :guard t))
   (cond ((atom lst) (eq lst nil))
@@ -8116,6 +8118,33 @@
 
 (defthm eqlable-listp-forward-to-atom-listp
   (implies (eqlable-listp x)
+           (atom-listp x))
+  :rule-classes :forward-chaining)
+
+(defun good-atom-listp (lst)
+
+; Keep this in sync with bad-atom.
+
+  ":Doc-Section ACL2::Programming
+
+  recognizer for a true list of ``good'' ~il[atom]s~/
+
+  The predicate ~c[good-atom-listp] tests whether its argument is a
+  ~ilc[true-listp] of ``good'' ~il[atom]s, i.e., where each element is a
+  number, a symbol, a character, or a string.~/
+
+  Also ~pl[atom-listp].~/"
+
+  (declare (xargs :guard t))
+  (cond ((atom lst) (eq lst nil))
+        (t (and (or (acl2-numberp (car lst))
+                    (symbolp (car lst))
+                    (characterp (car lst))
+                    (stringp (car lst)))
+                (good-atom-listp (cdr lst))))))
+
+(defthm good-atom-listp-forward-to-atom-listp
+  (implies (good-atom-listp x)
            (atom-listp x))
   :rule-classes :forward-chaining)
 
@@ -27239,9 +27268,11 @@
                                        #\o)
                                       ((eql print-base 16)
                                        #\x)
-                                      (t (illegal 'explode-atom
-                                                  "Unexpected base, ~x0"
-                                                  print-base)))
+                                      (t (prog2$
+                                          (illegal 'explode-atom
+                                                   "Unexpected base, ~x0"
+                                                   print-base)
+                                          #\?)))
                                 digits)))))
                (t (append
                    (explode-atom (numerator x) print-base)
@@ -27265,15 +27296,9 @@
          (coerce "SOME IRRATIONAL OR COMPLEX IRRATIONAL NUMBER" 'list))
         (t (coerce (symbol-name x) 'list))))
 
-(verify-termination-boot-strap
+(verify-termination-boot-strap ; and guards
  explode-atom
  (declare (xargs :mode :logic)))
-
-(local
- (defthm true-listp-explode-atom
-   (true-listp (explode-atom x print-base))))
-
-(verify-guards explode-atom)
 
 (defthm true-list-listp-forward-to-true-listp-assoc-equal
 
@@ -40632,6 +40657,9 @@
 ; Sumners for useful discussions and a modification of Pete's events.
 
 (defun bad-atom (x)
+
+; Keep this in sync with good-atom-listp.
+
   (declare (xargs :guard t))
   (not (or (consp x)
            (acl2-numberp x)

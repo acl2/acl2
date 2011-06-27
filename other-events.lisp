@@ -4610,7 +4610,7 @@
 ; pathnames so that they use absolute pathnames instead, or cause an error
 ; trying.
 
-; We allow defaxioms skip-proofs, and defttags in the portcullis, but we mark
+; We allow defaxioms, skip-proofs, and defttags in the portcullis, but we mark
 ; the book's certificate appropriately.
 
 ; In-local-flg is used to enforce restrictions in the context of LOCAL on the
@@ -4646,9 +4646,9 @@
 ; to the subform (of form) that was rejected.
 
 ; We return a value triple (mv erp val state).  If erp is nil then val is the
-; form to be evaluated.  Generally that is the result of macroexpanding the
-; input form.  However, if (perhaps after some macroexpansion) form is a call
-; of local that should be skipped, then val is nil.
+; event form to be evaluated.  Generally that is the result of macroexpanding
+; the input form.  However, if (perhaps after some macroexpansion) form is a
+; call of local that should be skipped, then val is nil.
 
   (let* ((er-str
 
