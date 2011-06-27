@@ -1778,9 +1778,10 @@
                  (if (or include-book-path
                          defpkg-book-path)
                      (msg "~|The new proposed defpkg event may be found by ~
-                         following the sequence of include-books below, from ~
-                         top-most book down to the book whose portcullis ~
-                         contains the new proposed defpkg event.~|  ~F0"
+                           following the sequence of include-books below, ~
+                           from top-most book down to the book whose ~
+                           portcullis contains the new proposed defpkg ~
+                           event.~|  ~F0"
                           (reverse (append defpkg-book-path include-book-path)))
                    ""))))))
 

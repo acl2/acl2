@@ -31975,9 +31975,10 @@
                 ((or (eq pkg *main-lisp-package*)
                      (get x *initial-lisp-symbol-mark*))
                  nil)
-                ((not (find-non-hidden-package-entry
-                       (package-name pkg)
-                       (known-package-alist *the-live-state*)))
+                ((let ((entry
+                        (find-package-entry
+                         (package-name pkg)
+                         (known-package-alist *the-live-state*))))
 
 ; We maintain the following Invariant on Symbols in the Common Lisp Package: If
 ; a symbol arising in ACL2 evaluation or state resides in *main-lisp-package*,
@@ -32010,9 +32011,32 @@
 ; a symbol, i.e.: a symbol violating the above Invariant on Symbols in the
 ; Common Lisp Package.
 
-                 (cons "The symbol CLTL displays as ~s0 is not in any of the ~
-                        packages known to ACL2."
-                       (list (cons #\0 (format nil "~s" x)))))
+                   (and
+                    (or (null entry)
+                        (package-entry-hidden-p entry))
+                    (cons
+                     "The symbol CLTL displays as ~s0 is not in any of the ~
+                      packages known to ACL2.~@1"
+                     (list
+                      (cons #\0 (format nil "~s" x))
+                      (cons #\1
+                            (cond
+                             ((or (null entry)
+                                  (null (package-entry-book-path entry)))
+                              "")
+                             (t
+                              (msg "  This package was defined under a ~
+                                    locally included book.  Thus, some ~
+                                    include-book was local in the following ~
+                                    sequence of included books, from top-most ~
+                                    book down to the book whose portcullis ~
+                                    defines this package (with a defpkg ~
+                                    event).~|~%  ~F0"
+                                   (reverse
+                                    (unrelativize-book-path
+                                     (package-entry-book-path entry)
+                                     (f-get-global 'distributed-books-dir
+                                                   *the-live-state*))))))))))))
                 (t nil))))))
         ((stringp x)
          (cond
