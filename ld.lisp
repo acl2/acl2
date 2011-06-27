@@ -17412,6 +17412,43 @@
 ; Moved assert$ to the right place in cmp-to-error-triple (thanks to David
 ; Rager for correcting an error in our initial change).
 
+; Below we show how to obtain a hard Lisp error in Version_4.2, when, as
+; mentioned in the :doc string below, "including books with hidden packages".
+; The problem was that write-expansion-file was deciding whether to push
+; maybe-introduce-empty-pkg-1 and maybe-introduce-empty-pkg-2 forms based on
+; the known-package-alist just before pass 1 of certify-book, rather than just
+; after it.  But a second defpkg form can use symbols defined in the first, so
+; since it's pretty cheap just to lay down all such forms, that's what we do.
+
+;   sloth:~/temp> cat sub.lisp
+;   ; First execute these two commands in the certification world:
+;   ; (defpkg "FOO" '(a))
+;   ; (defpkg "BAR" '(foo::b))
+;   
+;   ; Then:
+;   ; (certify-book "sub" 2)
+;   
+;   (in-package "ACL2")
+;   
+;   (defun g (x) x)
+;   sloth:~/temp> cat top.lisp
+;   ; Just do this:
+;   ; (certify-book "top")
+;   
+;   (in-package "ACL2")
+;   
+;   (local (include-book "sub"))
+;   
+;   (defun h (x) x)
+;   sloth:~/temp> 
+;   
+;   ACL2 !>(include-book "top")
+;   
+;   ***********************************************
+;   ************ ABORTING from raw Lisp ***********
+;   Error:  There is no package named "FOO" .
+;   ***********************************************
+
   :Doc
   ":Doc-Section release-notes
 
@@ -17582,6 +17619,35 @@
 
   It is now legal to supply a constant for a ~il[stobj] array dimension.
   ~l[defstobj].  Thanks to Warren Hunt for requesting this enhancement.
+
+  We cleaned up a few issues with ~ilc[defpkg].~bq[]
+
+  o It is no longer illegal to submit a ~ilc[defpkg] form in raw-mode
+  (~pl[set-raw-mode]).  Thanks to Jun Sawada for reporting an example in which
+  an ~ilc[include-book] form submitted in raw-mode caused an error because of a
+  `hidden' ~ilc[defpkg] form (~pl[hidden-defpkg]).  There will no longer be an
+  error in such cases.
+
+  o It had been the case that ~il[local]ly including a book could make it
+  possible to use a package defined by that book.  Consider for example the
+  following book, ~c[foo.lisp].
+  ~bv[]
+  (in-package \"ACL2\")
+  (local (include-book \"arithmetic/top\" :dir :system))
+  ~ev[]
+  After certifying this book, it had been possible to admit the following
+  events in a new session.
+  ~bv[]
+  (include-book \"foo\")
+  (defconst acl2-asg::*foo* 3)
+  (defconst *c* 'acl2-asg::xyz)
+  ~ev[]
+  In Version_4.3, neither of these ~ilc[defconst] events is admitted.
+
+  o A hard Lisp error is now avoided that had been possible in rare cases when
+  including books with hidden packages (~pl[hidden-defpkg]). An example may be
+  found in a comment in the ~ilc[deflabel] for ~c[note-4-3] (in ACL2 source
+  file ~c[ld.lisp]).~eq[]
 
   ~st[NEW FEATURES]
 

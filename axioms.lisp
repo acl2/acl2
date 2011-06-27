@@ -1456,37 +1456,32 @@
 (defvar *defpkg-virgins* nil)
 
 (defun-one-output defpkg-raw1 (name imports event-form)
-  (let ((package-entry (find-package-entry name *ever-known-package-alist*)))
-    (cond
-     ((raw-mode-p *the-live-state*)
-      (interface-er
-       "It is illegal to execute defpkg in raw mode.  See :DOC set-raw-mode."))
-     (t
-      (let ((pkg (find-package name))
-            (global-name (concatenate 'string
-                                      acl2::*global-package-prefix*
-                                      name))
-            (*1*-name (concatenate 'string
-                                   acl2::*1*-package-prefix*
-                                   name))
-            (proposed-imports (sort-symbol-listp imports)))
-        (assert pkg) ; see defpkg-raw
+  (let ((package-entry (find-package-entry name *ever-known-package-alist*))
+        (pkg (find-package name))
+        (global-name (concatenate 'string
+                                  acl2::*global-package-prefix*
+                                  name))
+        (*1*-name (concatenate 'string
+                               acl2::*1*-package-prefix*
+                               name))
+        (proposed-imports (sort-symbol-listp imports)))
+    (assert pkg) ; see defpkg-raw
 
 ; We bind proposed-imports to the value of the imports argument.  We do not
 ; want to evaluate it more than once below.  We DO reference, and hence
 ; evaluate, name more than once below.  But name must be an explicit string
 ; constant.
 
-        (cond
-         (package-entry
-          (cond
-           ((equal proposed-imports (package-entry-imports package-entry))
+    (cond
+     (package-entry
+      (cond
+       ((equal proposed-imports (package-entry-imports package-entry))
 
 ; The package has already been built in Common Lisp and the imports are
 ; identical.  There is nothing for us to do.
 
-            name)
-           (t
+        name)
+       (t
 
 ; The package has already been built in Common Lisp but with the wrong imports.
 ; There is nothing we can do.  We do not want to unintern any symbols in it
@@ -1495,68 +1490,68 @@
 ; that is part of that deflabel (but which is not actually part of the
 ; ACL2 documentation).
 
-            (error
-             "~%We cannot reincarnate the package ~s with imports ~s~%because ~
+        (error
+         "~%We cannot reincarnate the package ~s with imports ~s~%because ~
               it was previously defined with imports ~s.  See~%:DOC ~
               package-reincarnation-import-restrictions."
-             name
-             proposed-imports
-             (package-entry-imports package-entry)))))
-         ((not (member-equal name *defpkg-virgins*))
+         name
+         proposed-imports
+         (package-entry-imports package-entry)))))
+     ((not (member-equal name *defpkg-virgins*))
 
 ; The package has been built in this Common Lisp but not by defpkg-raw1.  It
 ; may be new because of the defpackage form in defpkg-raw, in which case it is
 ; an element of *defpkg-virgins*.  Otherwise, it was defined in Common Lisp
 ; outside ACL2, and we should cause an error.
 
-          (error
-           "~%It is illegal to defpkg ~s because a package of that name ~
+      (error
+       "~%It is illegal to defpkg ~s because a package of that name ~
             already exists in this lisp.~%"
-           name))
-         (t
-          (assert (not (assoc-equal name *package-alist*)))
-          (let ((incomplete-p t)
-                (saved-ever-known-package-alist *ever-known-package-alist*))
-            (setq *defpkg-virgins*
-                  (remove1-equal name *defpkg-virgins*))
-            (unwind-protect
-                (progn
-                  (setq *ever-known-package-alist*
-                        (cons (make-package-entry :name name
-                                                  :imports proposed-imports
-                                                  :defpkg-event-form event-form)
-                              *ever-known-package-alist*))
-                  (when proposed-imports
+       name))
+     (t
+      (assert (not (assoc-equal name *package-alist*)))
+      (let ((incomplete-p t)
+            (saved-ever-known-package-alist *ever-known-package-alist*))
+        (setq *defpkg-virgins*
+              (remove1-equal name *defpkg-virgins*))
+        (unwind-protect
+            (progn
+              (setq *ever-known-package-alist*
+                    (cons (make-package-entry :name name
+                                              :imports proposed-imports
+                                              :defpkg-event-form event-form)
+                          *ever-known-package-alist*))
+              (when proposed-imports
 
 ; Without the qualifier above, clisp imports nil if proposed-imports = nil.
 
-                    (our-import proposed-imports (find-package name)))
+                (our-import proposed-imports (find-package name)))
 
 ; So at this point we have set the package's imports appropriately.  We now
 ; handle the dual packages in which the state globals and executable
 ; counterparts of symbols from pkg will reside.  We do not reinitialize these
 ; hidden variables if we are recovering from an error or booting.
 
-                  (cond
-                   ((and (not *in-recover-world-flg*)
-                         (not (getprop 'boot-strap-flg 'global-value nil
-                                       'current-acl2-world
-                                       (w *the-live-state*))))
-                    (cond ((find-package global-name)
-                           (do-symbols (sym (find-package global-name))
-                             (makunbound sym)))
-                          (t (make-package global-name :use nil)))
-                    (cond ((find-package *1*-name)
-                           nil)
-                          (t (make-package *1*-name :use nil)))))
-                  (setq incomplete-p nil)
-                  name)
-              (when incomplete-p
-                (setq *ever-known-package-alist*
-                      saved-ever-known-package-alist)
-                (do-symbols (sym pkg)
-                  (unintern sym))
-                (delete-package (find-package name))))))))))))
+              (cond
+               ((and (not *in-recover-world-flg*)
+                     (not (getprop 'boot-strap-flg 'global-value nil
+                                   'current-acl2-world
+                                   (w *the-live-state*))))
+                (cond ((find-package global-name)
+                       (do-symbols (sym (find-package global-name))
+                                   (makunbound sym)))
+                      (t (make-package global-name :use nil)))
+                (cond ((find-package *1*-name)
+                       nil)
+                      (t (make-package *1*-name :use nil)))))
+              (setq incomplete-p nil)
+              name)
+          (when incomplete-p
+            (setq *ever-known-package-alist*
+                  saved-ever-known-package-alist)
+            (do-symbols (sym pkg)
+                        (unintern sym))
+            (delete-package (find-package name)))))))))
 
 (defun package-has-no-imports (name)
   (let ((pkg (find-package name)))
@@ -1648,8 +1643,8 @@
        (maybe-introduce-empty-pkg-2 ,name)
        (defpkg-raw1 ,name ,imports ,event-form)))))
 
-(defmacro defpkg (&whole event-form name imports &optional doc book-path)
-  (declare (ignore doc book-path))
+(defmacro defpkg (&whole event-form name imports &optional doc book-path hidden-p)
+  (declare (ignore doc book-path hidden-p))
   (or (stringp name)
       (interface-er "Attempt to call defpkg on a non-string, ~x0."
                     name))
@@ -14868,7 +14863,7 @@
   (list 'in-package-fn (list 'quote str) 'state))
 
 #+acl2-loop-only
-(defmacro defpkg (&whole event-form name form &optional doc book-path)
+(defmacro defpkg (&whole event-form name form &optional doc book-path hidden-p)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -14983,6 +14978,7 @@
         'state
         (list 'quote doc)
         (list 'quote book-path)
+        (list 'quote hidden-p)
         (list 'quote event-form)))
 
 (defdoc managing-acl2-packages
