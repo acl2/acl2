@@ -3,9 +3,13 @@
 # For example:
 # ACL2 := /Users/smith/acl2/v4-2/acl2-sources
 
-# Edit the next line according to your own ACL2 books path.
+wp-gen-top: top all
+all: top
+
+DIRS = mutrec
+
+# Edit the next lines according to your own ACL2 books path.
+include ../Makefile-subdirs
 include ../Makefile-generic
 
 -include Makefile-deps
-
-

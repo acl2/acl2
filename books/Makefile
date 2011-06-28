@@ -57,7 +57,7 @@ DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3
 	data-structures/memories unicode str concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity tools paco hacking hons-bdds security regex \
-        defsort hons-archive serialize xdoc system tutorial-problems cutil
+        defsort hons-archive serialize wp-gen xdoc system tutorial-problems cutil
 DIRS2_EXCEPT_WK = $(DIRS2_EXCEPT_WK_COI) coi misc/misc2
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 SHORTDIRS2 = ordinals data-structures bdd
@@ -133,6 +133,7 @@ hons-archive: defsort unicode tools arithmetic-3
 str: arithmetic unicode defsort tools make-event
 coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
 	misc ordinals rtl
+wp-gen: ordinals
 xdoc: str unicode finite-set-theory/osets tools
 system: tools arithmetic arithmetic-5
 cutil: xdoc tools str misc finite-set-theory defsort unicode make-event
