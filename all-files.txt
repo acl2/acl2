@@ -159,6 +159,7 @@ tools
 tutorial-problems
 unicode
 # workshops -- distributed separately
+wp-gen
 xdoc
 
 books/add-ons:
@@ -3777,6 +3778,31 @@ timing.lisp
 unicode.lisp
 
 # ./books/workshops: -- distributed separately
+
+books/wp-gen:
+Makefile
+README
+Readme.lsp
+examples
+examples.lsp
+mutrec
+shared.lisp
+wp-gen.acl2
+wp-gen.lisp
+
+books/wp-gen/examples:
+false-prog.lisp
+new-program.lisp
+new-program2.lisp
+pcode.lisp
+sum-simple-wrong.lisp
+sum-simple.lisp
+sum-simpler.lisp
+sum.lisp
+
+books/wp-gen/mutrec:
+Makefile
+mutrec.lisp
 
 books/xdoc:
 LICENSE
