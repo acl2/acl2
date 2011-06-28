@@ -127,3 +127,5 @@ Generates:
 Note: This form will generate an error from ACL2 as given, because it
 contains irrelevant formals.
 
+Please direct questions/comments/bugs to Sarah Weissman
+(seweissman@gmail.com).
