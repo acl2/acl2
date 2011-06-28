@@ -1,0 +1,131 @@
+
+*OVERVIEW*
+
+This book generates weakest precondition predicates, which are
+admitted as (possibly mutually recursive) ACL2 functions as described
+in the paper “A Weakest Precondition Model for Assembly Language
+Programs” by Bill Legato, dated January 28, 2003.
+
+The input program is given in a variation of Legato's format for
+assembly language programs. In this format each node of the program
+(where node roughly corresponds to program line) is represetned as a
+sequential substitution defining updates to state. Presently, state
+variables are inferred from the given substitutions and predicates and
+all functions are given as functions of full state with irrelevant
+formals ignored. (See :DOC IRRELEVANT-FORMALS)
+
+No particular program language is required. The right hand side of a
+substitution can be any function defined in the current ACL2 logical
+world, although we typically think of these operations as being
+low-level or primitive. Many of the examples provided with the book
+use pcode operations, for which a partial semantics has been provided
+in "examples/pcode.lisp".
+
+*GENERAL FORM*
+	(run-wp main)
+
+Here main is the program to be analyzed, in the format as specified
+below in the section *PROGRAM FORMAT*.  (Also, see examples directory
+for some sample programs).
+
+A user of this book will generally want to specify one or more of the
+following options.
+
+
+*OPTIONS*
+
+:prefix - a prefix for the generated function names, which is
+appended to the node label when the WP for the node is generated. This
+is generally useful for providing meaningful function names and for
+avoiding function naming conflicts. If no prefix is specified, the
+default prefix for each function is "wp-".
+
+:count-var - a count variable to be decremented by the substitution at
+each node. This allows ACL2 to automatically calculate a measure for
+the (possibly) mutually recursive WP definitions. If the count
+variable is not unique from the state variables in main, run-wp will
+generate an error.
+
+:prog-mode - Default value is nil. If prog-mode is set to t the WP functions
+are defined in prog-mode, which allows ACL2 to skip proofs.
+
+:ccg - Default value is nil. If the ccg books are available and
+included in the current ACL2 environment then setting :ccg to t will
+attempt to use CCG analysis to automatically calculate a measure. (See
+"" for more details on CCG.)
+
+:mutrec - Default value is t. Uses a call tree analysis to determine
+which WP functions are mutually recursive, and defines those in a
+mutual-recursion form. The rest are defined as individual defuns. This
+should generally be on (unless it is acting buggy, in which case
+contact the author) as bogus mutual recursions can make ACL2 proofs
+more difficult.
+
+
+*PROGRAM FORMAT*
+
+A program consists of a list of nodes in the following format.
+
+(:node 
+   :label idx 
+   :pre annot-pre
+   :subst sub
+   :branches ((pred1 . idx1) ... (predn . idxn)) 
+   :post annot-post)
+
+where:
+ idx is a unique node label (possibly corresponding to a program line number, 
+     e.g. l_1, l_2,...)
+ annot-pre is a predicate on state prior to execution of the line (i.e., before 
+           the given substituation on program state is applied)
+ sub is a substitution representing execution as an alist
+ branches specifies program control using (pred . idx) pairs, where pred is a 
+          condition on state and idx is the label of a node
+ annot-post is a predicate on state after execution of the line
+
+
+*MISCELLANY*
+
+To generate a list of WP functions without admitting them, use run-wp-list:
+
+(run-wp-list main prefix count-var mutrec prog-mode)
+
+e.g.
+
+(ld "examples/sum.lisp")
+(run-wp-list (@ new-prog) 'wp-new1 'count t nil)
+
+Generates:
+
+(MUT-REC (DEFUN WP-NEW1-L_1 (U V W COUNT)
+                (DECLARE (XARGS :MEASURE (ACL2-COUNT COUNT)))
+                (IF (ZP COUNT)
+                    NIL
+                    (WP-NEW1-L_2 U (INT_XOR U 12345 32)
+                                 W (- COUNT 1))))
+         (DEFUN WP-NEW1-L_2 (U V W COUNT)
+                (DECLARE (XARGS :MEASURE (ACL2-COUNT COUNT)))
+                (IF (ZP COUNT)
+                    NIL
+                    (WP-NEW1-L_3 U V (INT_ADD V 2345345299 32)
+                                 (- COUNT 1))))
+         (DEFUN WP-NEW1-L_3 (U V W COUNT)
+                (DECLARE (XARGS :MEASURE (ACL2-COUNT COUNT)))
+                (IF (ZP COUNT)
+                    NIL
+                    (OR (AND (NOT (= (INT_EQUAL W 8281919193 32) 1))
+                             (WP-NEW1-L_END U V W (- COUNT 1)))
+                        (AND (= (INT_EQUAL W 8281919193 32) 1)
+                             (WP-NEW1-L_BAD U V W (- COUNT 1))))))
+         (DEFUN WP-NEW1-L_BAD (U V W COUNT)
+                (DECLARE (XARGS :MEASURE (ACL2-COUNT COUNT)))
+                (IF (ZP COUNT) NIL T))
+         (DEFUN WP-NEW1-L_END (U V W COUNT)
+                (DECLARE (XARGS :MEASURE (ACL2-COUNT COUNT)))
+                (IF (ZP COUNT) NIL NIL)))
+
+Note: This form will generate an error from ACL2 as given, because it
+contains irrelevant formals.
+
+Please direct questions/comments/bugs to Sarah Weissman
+(seweissman@gmail.com).
