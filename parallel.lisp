@@ -498,11 +498,11 @@
   heuristics to determine whether CPU core resources are available for parallel
   execution.  Note that ACL2(p) does not hook into the operating system to
   determine the workload on the machine.  ACL2(p) works off the assumption that
-  it is the main process running on the machine, and it optimizes the amount of
-  parallelism based on the number of CPU cores in the system.  (Note that
-  ACL2(p) knows how to obtain the number of CPU cores from the operating system
-  in CCL, but that, in SBCL and in Lispworks, a constant is used instead).
-  ~c[:Resource-based] is the recommended setting for ACL2(p).
+  it is the only process using significant CPU resources, and it optimizes the
+  amount of parallelism based on the number of CPU cores in the system.  (Note
+  that ACL2(p) knows how to obtain the number of CPU cores from the operating
+  system in CCL, but that, in SBCL and in Lispworks, a constant is used
+  instead).  ~c[:Resource-based] is the recommended setting for ACL2(p).
 
   During the first proof attempt of a given conjecture, a value of
   ~c[:resource-and-timing-based] results in the same behavior as with
@@ -516,10 +516,10 @@
   mode will never be better than the ~c[:resource-based] setting for
   non-interactive theorem proving.
 
-  A value of ~c[:pseudo-parallel] runs all of the parallelism code, but in a
-  serial mode.  This setting is useful for debugging the code base that
-  supports parallel execution of the waterfall.  For example, you may wish to
-  use this mode if you are an \"ACL2 Hacker\" who would like to see
+  A value of ~c[:pseudo-parallel] results in using the parallel waterfall code,
+  but with serial execution.  This setting is useful for debugging the code
+  base that supports parallel execution of the waterfall.  For example, you may
+  wish to use this mode if you are an ``ACL2 Hacker'' who would like to see
   comprehensible output from tracing (~pl[trace$]) the ~c[@par] versions of the
   waterfall functions.
 

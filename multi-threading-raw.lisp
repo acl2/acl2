@@ -275,15 +275,26 @@
 
 ; Deflock defines what some Lisps call a "recursive lock", namely a lock that
 ; can be grabbed more than once by the same thread, but such that if a thread
-; outside the owner tries to grab it, that thread will block.
+; outside the owner tries to grab it, that thread will block.  In addition to
+; defining a lock, this macro also defines a macro that uses the lock to
+; provide mutual-exclusion for a given list of operations.  This macro has the
+; name with-<modified-lock-name>, where <modified-lock-name> is the given
+; lock-symbol without the leading and trailing * characters.
 
 ; Note that if lock-symbol is already bound, then deflock will not re-bind
 ; lock-symbol.
 
-; Parallelism wart: this could also define #+acl2-par wrappers.
-
-  `(defvar ,lock-symbol
-     (make-lock (symbol-name ',lock-symbol))))
+  (let* ((name (symbol-name lock-symbol))
+         (macro-symbol (intern 
+                        (concatenate 'string
+                                     "WITH-"
+                                     (subseq name 1 (1- (length name))))
+                        "ACL2")))
+    `(progn
+       (defvar ,lock-symbol
+         (make-lock (symbol-name ',lock-symbol)))
+       (defmacro ,macro-symbol (&rest args)
+         (list* 'with-lock ',lock-symbol args)))))
 
 (defmacro reset-lock (bound-symbol)
 
@@ -948,8 +959,7 @@
 ; threads that we associate with "initial" threads.
 
 ; Parallelism wart: we might want to adapt a similar name-based strategy for
-; SBCL and CCL.  This would allow us to get rid of *initial-threads*
-; altogether.
+; SBCL.  This would allow us to get rid of *initial-threads* altogether.
 
   #-(or ccl lispworks)
   *initial-threads* 
@@ -995,16 +1005,11 @@
 
 ; This function is evaluated only for side effect.
 
-; Parallelism wart: When building ACL2(p), we receive a warning message about
-; send-die-to-all-except-initial-threads being undefined.  This warning is
-; benign, but it would be nice to remove it.
-
   (let ((target-threads (set-difference (all-threads)
                                         (initial-threads))))
     (throw-all-threads-in-list target-threads)
     (let ((round 0))
       (when (not (all-threads-except-initial-threads-are-dead))
-
       
 ; We used to call "(thread-wait 'all-threads-except-initial-threads-are-dead)".
 ; However, we noticed a synchronization problem between what we might prefer

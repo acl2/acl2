@@ -760,17 +760,7 @@
                    (put-assoc-equal ,qname ,val *wormhole-status-alist*)))
          nil))))
 
-#+(and acl2-par (not acl2-loop-only))
 (deflock *wormhole-lock*)
-
-#+(and acl2-par (not acl2-loop-only))
-(defmacro with-wormhole-lock (&rest args)
-  `(with-lock *wormhole-lock*
-              ,@args))
-
-#-(and acl2-par (not acl2-loop-only))
-(defmacro with-wormhole-lock (&rest args)
-  `(progn$ ,@args))
 
 (defmacro wormhole (name entry-lambda input form
                          &key

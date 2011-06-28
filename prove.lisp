@@ -6574,6 +6574,13 @@
           (or val 0)))
 
 (defmacro waterfall1-wrapper (form)
+
+; We create a non-@par version of waterfall1-wrapper that is the identity, so
+; we can later have an @par version that does something important for the
+; parallel case.  In the #-acl2-par case, or the serial case,
+; waterfall1-wrapper will have no effect, returning its argument unchanged.
+; For a discussion about such matters, see the long comment in *@par-mappings*.
+
   form)
 
 #+acl2-par
@@ -6615,22 +6622,6 @@
 
 #+acl2-par
 (defmacro waterfall1-wrapper@par (&rest form)
-
-; We need a version of waterfall1-wrapper named waterfall1-wrapper@par so that
-; defun@par knows to replace it with the appropriate identity macro (i.e.,
-; waterfall1-wrapper) in serial definitions of each function that uses
-; waterfall1-wrapper@par.  Without both versions of this macro, there is a
-; signature mismatch when trying to define the serial version of any function
-; that uses waterfall1-wrapper@par.  
-
-; Note that if defun@par were smart enough to run the macro call to
-; waterfall1-wrapper@par before attempting to run the call below to mv@par
-; (which should not be run, but instead replaced in the serial version), we
-; wouldn't have this problem.  But, since defun@par cannot resolve just some of
-; the macros (without some extra coding), instead, we simply define both
-; waterfall1-wrapper and waterfall1-wrapper@par (see the constant inside
-; *@par-mappings* for the #-acl2-par definition of waterfall1-wrapper@par).
-
   `(let ((start-time 
           #+acl2-loop-only 'ignored-value
           #-acl2-loop-only (get-internal-real-time)))

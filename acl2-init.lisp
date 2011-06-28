@@ -57,6 +57,11 @@ instructions for how to obtain CCL.")
 ; address most of these parallelism warts by the time his dissertation work is
 ; complete.
 
+; In an effort to avoid code duplication, we created a definition scheme that
+; supports defining both serial and parallel versions of a function with one
+; call to a defun-like macro.  See the definitions of @par-mappings and
+; defun@par for an explanation of this scheme.
+
 ; Developer note on emacs and parallelism.  When comparing with versions up
 ; through svn revision 335 (May 27, 2011), it may be useful to ignore "@par"
 ; when ignoring whitespace with meta-x compare-windows in emacs.
@@ -910,8 +915,8 @@ implementations.")
 ; of the threshold for Lispworks inside the restart function, because Lispworks
 ; doesn't save the GC configuration as part of the Lisp image.
 
-; Parallelism wart: the 2 gigabyte threshold may cause problems for machines
-; with less than 2 gigabytes of free RAM.
+; Parallelism wart: the 1 gigabyte threshold may cause problems for machines
+; with less than 1 gigabytes of free RAM.
 
   #+(and acl2-par (and lispworks lispworks-64bit))
   (progn
@@ -927,7 +932,7 @@ implementations.")
 ; third generation as the "final" generation -- nothing can be promoted to
 ; generation four or higher.  (2) It sets the GC threshold for generation 3.
 
-    (system:set-blocking-gen-num 3 :gc-threshold (expt 2 31)))
+    (system:set-blocking-gen-num 3 :gc-threshold (expt 2 30)))
    
 ; The following two lines follow the recommendation in Allegro CL's
 ; documentation file doc/delivery.htm.
@@ -984,7 +989,7 @@ implementations.")
 ; mp:initialize-multiprocessing until perhaps LispWorks is supported with
 ; #+acl2-par.
 
-; Parallelism wart: It's unclear whether calling stop-multiprocessing really
+; Parallelism wart: it's unclear whether calling stop-multiprocessing really
 ; works.  We are currently seeing an error in ACL2(p) on Lispworks, where
 ; cons's are reported as misaligned when including books and also when
 ; executing proofs in parallel.  This error didn't occur initially, and it
