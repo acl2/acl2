@@ -92,7 +92,7 @@ To generate a list of WP functions without admitting them, use run-wp-list:
 
 e.g.
 
-(ld "examples/sum.lisp")
+(ld "examples/new-program.lisp")
 (run-wp-list (@ new-prog) 'wp-new1 'count t nil)
 
 Generates:
