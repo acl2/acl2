@@ -387,8 +387,8 @@
 
 (defconst *safe-mode-guard-er-addendum*
   "  The guard is being checked because this function is a primitive and a ~
-   \"safe\" mode is being used for macroexpansion, defpkg, or another ~
-   operation where safe mode is required.")
+   \"safe\" mode is being used for defconst, defpkg, macroexpansion, or ~
+   another operation where safe mode is required.")
 
 (defun error-trace-suggestion (two-leading-spaces)
 

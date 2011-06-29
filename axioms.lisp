@@ -25001,14 +25001,7 @@
     (more-doc-max-lines . 45)
     (more-doc-min-lines . 35)
     (more-doc-state . nil)
-    (parallel-evaluation-enabled . ; GCL 2.6.6 breaks with only 2 lines below
-
-; Parallelism wart: Need to move to lp the setting of this value to t.
-
-                                 #+acl2-par
-                                 t
-                                 #-acl2-par
-                                 nil)
+    (parallel-evaluation-enabled . nil)
     (pc-erp . nil)
     (pc-output . nil)
     (pc-print-macroexpansion-flg . nil)
@@ -28998,7 +28991,7 @@
 
 ;; This macro defines another macro that guarantees mutually exclusive
 ;; execution, based off the given lock-symbol, in the #+acl2-par
-;; (~pl[parallelism-build]) build of ACL2.
+;; (~pl[compiling-acl2p]) build of ACL2.
 
 ;; The defined macro has the name ~c[with-<modified-lock-symbol>], where
 ;; ~c[<modified-lock-symbol>], is the given symbol with the leading and

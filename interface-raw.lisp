@@ -7117,11 +7117,15 @@ Missing functions:
 ; our-truename will generally return nil.  Hence, we sometimes call
 ; our-truename on "" rather than on a file name.
   
-; Parallelism wart: is the following call to reset parallelism variables needed?
+; Parallelism wart: we currently reset the parallelism variables twice on
+; startup.  Removing the below call to reset-all-parallelism-variables should
+; be the correct way to remove this double-reset, because we more thoroughly
+; determine where to reset parallelism variables elsewhere in the code.
 
   #+acl2-par
   (reset-all-parallelism-variables)
-
+  #+acl2-par
+  (f-put-global 'parallel-evaluation-enabled t *the-live-state*)
   (let ((state *the-live-state*)
         #+(and gcl (not ansi-cl))
         (lisp::*break-enable* (debugger-enabledp *the-live-state*))
