@@ -100,12 +100,20 @@ Copyright Notice
   Building Books and Documentation.
 
   To build all of the books and all of the available documentation, you should
-  be able to run:
+  be able to run, in the books/centaur directory:
 
       cert.pl doc.lisp -j 4       # -j 4 for a quad-core processor
 
-  In the books/centaur directory.  To see the resulting manual, just point your
-  web browser to:
+  Alternatively, you can do a full regression (for all of books/, not just
+  books/centaur/) by standing in the acl2-sources directory and executing one
+  of the following commands, where the first of these starts by cleaning all
+  books.  As above, we assume four cores; also, we write "<acl2h>" for the path
+  to your saved_acl2h image.
+
+      make -j 4 regression-hons-fresh ACL2_HONS_OPT='-j4' ACL2=<acl2h>
+      make -j 4 regression-hons       ACL2_HONS_OPT='-j4' ACL2=<acl2h>
+
+  To see the resulting manual, just point your web browser to:
 
       books/centaur/manual/preview.html
 
@@ -113,12 +121,15 @@ Copyright Notice
   as the documentation for several other ordinary ACL2 libraries that we rely
   on (e.g., str, serialize, and ihs).
 
-  To clean the cert files, you should be able to run:
+  To clean the cert files, you should be able to run either of the following.
 
-      cert.pl -c doc.lisp
+      cert.pl -c doc.lisp  # in acl2-sources/books/centaur
+      make clean-books     # in acl2-sources
 
-  HOWEVER, note that this will also delete all certificates of books included by
-  these books, including ones not under the centaur directory.
+  Of course, the second of these will delete all certificates under the books/
+  directory.  HOWEVER, note that the above cert.pl command also will delete
+  some certificates not under books/centaur, namely: all certificates of books
+  included by the books/centaur books.
 
 
   Getting Help.
