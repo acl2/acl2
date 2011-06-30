@@ -1620,8 +1620,8 @@
 ; Defpkg checks that name is a string.  Event-form is a cons.  So we don't need
 ; to worry about capture below.
 
-  `(let ((package-entry
-          (find-package-entry ,name *ever-known-package-alist*)))
+  `(let ((package-entry (find-package-entry ,name *ever-known-package-alist*))
+         (*safe-mode-verified-p* t))
      (cond
       ((and package-entry
             (let ((old-event-form
@@ -5649,8 +5649,36 @@
 (defmacro ec-call1-raw (ign x)
   (declare (ignore ign))
   (assert (and (consp x) (symbolp (car x)))) ; checked by translate11
-  (cons (*1*-symbol (car x))
-        (cdr x)))
+  (let ((*1*fn (*1*-symbol (car x))))
+    `(funcall
+      (cond
+       (*safe-mode-verified-p* ; see below for discussion of this case
+        ',(car x))
+       ((fboundp ',*1*fn) ',*1*fn)
+       (t
+
+; We should never hit this case, unless the user is employing trust tags or raw
+; Lisp.  For ACL2 events that might hit this case, such as a defconst using
+; ec-call in a book (see below), we should ensure that *safe-mode-verified-p*
+; is bound to t.  For example, we do so in the raw Lisp definition of defconst,
+; which is justified because when ACL2 processes the defconst it will evaluate
+; in safe-mode to ensure that no raw Lisp error could occur.
+
+; Why is the use above of *safe-mode-verified-p* necessary?  If an event in a
+; book calls ec-call in raw Lisp, then we believe that the event is a defpkg or
+; defconst event.  In such cases, ec-call may be expected to invoke a *1*
+; function.  Unfortunately, the *1* function definitions are laid down (by
+; write-expansion-file) at the end of the expansion file.  However, we cannot
+; simply move the *1* definitions to the front of the expansion file, because
+; some may refer to constants or packages defined in the book.  We might wish
+; to consider interleaving *1* definitions with events from the book but that
+; seems difficult to do.  Instead, we arrange with *safe-mode-verified-p* to
+; avoid the *1* function calls entirely when loading the expansion file (or its
+; compilation).
+
+        (error "Undefined function, ~s.  Please contact the ACL2 implementors."
+               ',*1*fn)))
+      ,@(cdr x))))
 
 (defmacro ec-call1 (ign x)
 

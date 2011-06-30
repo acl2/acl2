@@ -17653,6 +17653,11 @@
   are now ~il[guard]-verified ~c[:]~ilc[logic] mode functions.  Thanks to
   Sandip Ray for requesting this enhancement.
 
+  It had been the case that when including a book, functions defined in the
+  book's certification ~il[world] (that is, in its ~il[portcullis]
+  ~il[command]s) were typically not defined with compiled code.  That has been
+  fixed.
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of
@@ -17909,6 +17914,16 @@
   Fixed a buggy message upon ~il[guard] violations, which was suggesting the
   use of ~c[(set-guard-checking :none)] in some cases when guard-checking was
   already set to ~c[:none].
+
+  It had been possible to get a hard Lisp error when computing with
+  ~ilc[ec-call] in ~il[books].  The following is an example of such a book,
+  whose certification no longer causes an error.
+  ~bv[]
+  (in-package \"ACL2\")
+  (defun f (x) x)
+  (defconst *c* (ec-call (f 3)))
+  (defun g (x) (cons x x))
+  ~ev[]
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 

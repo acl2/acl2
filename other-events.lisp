@@ -369,6 +369,11 @@
    ((pair (state-global-let*
            ((safe-mode
 
+; Warning: If you are tempted to bind safe-mode to nil outside the boot-strap,
+; then revisit the binding of *safe-mode-verified-p* to t in the
+; #-acl2-loop-only definition of defconst.  See the defparameter for
+; *safe-mode-verified-p*.
+
 ; Why do we need to bind safe-mode to t?  An important reason is that we will
 ; be loading compiled files corresponding to certified books, where defconst
 ; forms will be evaluated in raw Lisp.  By using safe-mode, we can guarantee
@@ -1900,6 +1905,11 @@
 
        (state-global-let*
         ((safe-mode
+
+; Warning: If you are tempted to bind safe-mode to nil outside the boot-strap,
+; then revisit the binding of *safe-mode-verified-p* to t in the
+; #-acl2-loop-only definition of defpkg-raw.  See the defparameter for
+; *safe-mode-verified-p*.
 
 ; In order to build a profiling image for GCL, we have observed a need to avoid
 ; going into safe-mode when building the system.
@@ -12402,7 +12412,8 @@
 ; event for full-book-name.  We accumulate into acc (which is eventually
 ; returned) the list of function symbols defined in trips whose definition
 ; comes from the top level of the book with path full-book-name, rather than
-; some sub-book.  Collect-p is true only when we are to collect up such
+; some sub-book; or, if full-book-name is nil, then we accumulate events not
+; inside any book.  Collect-p is true only when we are to collect up such
 ; function symbols.
 
   (cond ((endp trips)
@@ -12430,17 +12441,34 @@
 
 (defun newly-defined-top-level-fns (old-wrld new-wrld full-book-name)
   
-; New-wrld is an extension of old-wrld.
+; New-wrld is the installed world, an extension of old-wrld.
 
   (let ((old-len (length old-wrld))
         (new-len (length new-wrld)))
     (assert$
      (<= old-len new-len)
-     (newly-defined-top-level-fns-rec
-      (first-n-ac-rev (- new-len old-len) new-wrld nil)
-      t
-      full-book-name
-      nil))))
+     (let* ((len-old-past-boot-strap
+             (cond
+              ((equal (access-command-tuple-form (cddar old-wrld))
+                      '(exit-boot-strap-mode)) ; optimization for common case
+               0)
+              (t (- old-len
+                    (length (lookup-world-index
+                             'command
+                             (access command-number-baseline-info
+                                     (global-val 'command-number-baseline-info
+                                                 new-wrld) ; installed world
+                                     :original)
+                             new-wrld)))))))
+       (newly-defined-top-level-fns-rec
+        (first-n-ac-rev (- new-len old-len) new-wrld nil)
+        t
+        full-book-name
+        (newly-defined-top-level-fns-rec
+         (first-n-ac-rev len-old-past-boot-strap old-wrld nil)
+         t
+         nil
+         nil))))))
 
 (defun accumulate-post-alist (post-alist include-book-alist)
 

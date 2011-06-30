@@ -482,14 +482,24 @@
            (error "Illegal attempt to redeclare the constant ~s."
                   name)))))
 
+(defparameter acl2::*safe-mode-verified-p*
+
+; This global may be bound to t when we are evaluating a form that we know will
+; not lead to an ill-guarded call in raw Lisp (say, because the form was
+; previously evaluated by ACL2 in safe-mode).  See also the comment in
+; ec-call1-raw.
+
+  nil)
+
 (defmacro acl2::defconst (name term &rest rst)
   (declare (ignore rst)) ; e.g., documentation
   (let ((disc (gensym)))
     `(defparameter ,name
-       (cond
-        ((boundp ',name)
+       (let ((acl2::*safe-mode-verified-p* t))
          (cond
-          (acl2::*compiling-certified-file*
+          ((boundp ',name)
+           (cond
+            (acl2::*compiling-certified-file*
 
 ; We avoid the potentially expensive redundancy check done below, which is
 ; legitimate since we are simply loading a compiled file at the end of
@@ -507,32 +517,33 @@
 ;    `(defconst ,name ',(tree n)))
 ; (deftree *big* 35)
 
-           (symbol-value ',name))
-          (t
+             (symbol-value ',name))
+            (t
 
 ; Even though ',name is bound, we refer to its value with
 ; (symbol-value ',name) rather than simply an in-line ,name, to avoid
 ; compiler warnings.
 
-           (let ((,disc (get ',name 'acl2::redundant-raw-lisp-discriminator)))
-             (cond
-              ((and (consp ,disc)
-                    (eq (car ,disc) 'acl2::defconst))
-               (assert (consp (cdr ,disc)))
+             (let ((,disc (get ',name
+                               'acl2::redundant-raw-lisp-discriminator)))
                (cond
-                ((and (eq (cdr (cdr ,disc)) (symbol-value ',name))
-                      (or (equal (car (cdr ,disc)) ',term)
-                          (equal (cdr (cdr ,disc)) ,term)))
-                 (symbol-value ',name))
-                (t (acl2::defconst-redeclare-error ',name))))
-              ((acl2::raw-mode-p acl2::*the-live-state*)
+                ((and (consp ,disc)
+                      (eq (car ,disc) 'acl2::defconst))
+                 (assert (consp (cdr ,disc)))
+                 (cond
+                  ((and (eq (cdr (cdr ,disc)) (symbol-value ',name))
+                        (or (equal (car (cdr ,disc)) ',term)
+                            (equal (cdr (cdr ,disc)) ,term)))
+                   (symbol-value ',name))
+                  (t (acl2::defconst-redeclare-error ',name))))
+                ((acl2::raw-mode-p acl2::*the-live-state*)
 
 ; In this case we allow redeclaration of the constant; this is, after all, raw
 ; mode, where there are no guarantees.
 
-               ,term)
-              (t 
-               (acl2::defconst-redeclare-error ',name)))))))
+                 ,term)
+                (t 
+                 (acl2::defconst-redeclare-error ',name)))))))
 
 ; If ',name is not bound, we must evaluate ,term.  Note that we do so
 ; outside of all local bindings, so as not to disturb variables in
@@ -540,11 +551,11 @@
 ; but you never know!)  We may want to enforce that this code is only executed
 ; during the boot-strap; see the Essay on Guard Checking.
 
-        (t (let* ((val ,term)
-                  (d (list* 'acl2::defconst ',term val)))
-             (setf (get ',name 'acl2::redundant-raw-lisp-discriminator)
-                   d)
-             (cdr (cdr d))))))))
+          (t (let* ((val ,term)
+                    (d (list* 'acl2::defconst ',term val)))
+               (setf (get ',name 'acl2::redundant-raw-lisp-discriminator)
+                     d)
+               (cdr (cdr d)))))))))
 
 ; We now get our imports for package ACL2, putting them into the
 ; variable acl2::*common-lisp-symbols-from-main-lisp-package*.
