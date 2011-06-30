@@ -57,8 +57,6 @@
 
 (defdoc parallelism
 
-; Parallelism wart: mention proof parallelism inside this topic.
-
   ":Doc-Section Parallelism
 
   experimental extension for evaluating forms in parallel~/
@@ -103,6 +101,10 @@
   begin by reading examples: ~pl[parallelism-tutorial].  That section will
   direct you to further documentation topics.
 
+  In addition to providing parallel programming primitives, ACL2(p) also
+  provides the ability to execute the main ACL2 proof process in parallel.
+  ~l[set-waterfall-parallelism] for further details.
+
   While we aim to support Clozure Common Lisp (CCL), Steel Bank Common
   Lisp (SBCL), and Lispworks, SBCL and Lispworks both currently sometimes
   experience problems when evaluating the ACL2 proof process (the
@@ -111,7 +113,10 @@
 
 (defdoc compiling-acl2p
 
-; Keep this documentation in sync with the acl2-par error in acl2-init.lisp.
+; Keep this documentation in sync with comments above the error in
+; acl2-init.lisp about it being "illegal to build the parallel
+; version", and also with the error message about supported Lisps in
+; set-parallel-evaluation-fn.
 
   ":Doc-Section ACL2::Parallelism
 
@@ -208,11 +213,14 @@
 
 (defmacro set-parallel-evaluation (value)
 
-; Parallelism wart: Should we add spec-mv-let to this doc topic?
+; Parallelism wart: the introduction that starts "This ~il[documentation] topic
+; relates to the experimental extension..." should include a reference to
+; spec-mv-let.  This needs to be fixed in all of the parallelism doc topic
+; introductions.
 
   ":Doc-Section Parallelism
 
-  enabling or disabling parallel evaluation for parallelism primitives~/
+  enabling parallel evaluation for four of the parallelism primitives~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
   supporting parallel evaluation and proof; ~pl[parallelism].  ~l[parallel] and
@@ -229,11 +237,14 @@
   ~/
 
   ~c[Set-parallel-evaluation] takes an argument that specifies the enabling or
-  disabling of ~il[parallel] evaluation.  However, calls of parallelism
-  primitives made explicitly in the ACL2 top-level loop, as opposed to inside
-  function bodies, will never cause parallel evaluation;
-  ~pl[parallelism-at-the-top-level].  Parallel evaluation is determined by the
-  value of the argument to ~c[set-parallel-evaluation], as follows.
+  disabling of ~il[parallel] evaluation for the primitives ~ilc[pand],
+  ~ilc[por], ~ilc[plet], and ~ilc[pargs] (but not ~ilc[spec-mv-let], whose
+  parallel evaluation remains enabled).  However, without using
+  ~ilc[top-level], calls of parallelism primitives made explicitly in the ACL2
+  top-level loop, as opposed to inside function bodies, will never cause
+  parallel evaluation; ~pl[parallelism-at-the-top-level].  Parallel evaluation
+  is determined by the value of the argument to ~c[set-parallel-evaluation], as
+  follows.
 
   Value ~c[t]:~nl[]
   All parallelism primitives used in bodies of function definitions are given
@@ -372,9 +383,22 @@
   The state of the system may be corrupted after such a message has been
   printed.~/~/")
 
-; Parallelism wart: consider adding a :doc topic for waterfall-printing and
-; waterfall-parallelism that just point to set-waterfall-printing and
-; set-waterfall-parallelism, respectively.
+(defdoc waterfall-printing
+
+  ":Doc-Section Parallelism
+
+  for ACL2(p): configuring the printing within the parallelized waterfall~/
+
+  ~l[set-waterfall-printing].~/~/")
+
+(defdoc waterfall-parallelism
+
+  ":Doc-Section Parallelism
+
+  for ACL2(p): configuring the parallel execution of the waterfall~/
+
+  ~l[set-waterfall-parallelism].~/~/")
+
 
 ; Here are the two functions we need now from
 ; make-waterfall-parallelism-constants and make-waterfall-printing-constants
@@ -656,6 +680,11 @@
   :skip-checks t)
 
 (defdoc parallelism-at-the-top-level
+
+; Parallelism wart: add an example that uses top-level to this doc topic.  Also
+; modify the portions of the doc topic that state that forms will never
+; evaluate in parallel at the top-level.
+
   ":Doc-Section Parallelism
 
   parallel evaluation in the ACL2 top-level loop~/
@@ -1191,12 +1220,6 @@
   termination occurs when an argument evaluates to non-~c[nil].~/")
 
 (defdoc parallel-pushing-of-subgoals-for-induction
-
-; Parallelism wart: figure out whether we'll be able to early terminate once
-; the second push occurs.  If not, discuss how the parallelized waterfall will
-; continue to prove beyond the second push of
-; '[maybe-]to-be-proved-by-induction (similar to having the :otf-flg set to t),
-; instead of immediately aborting to prove the original conjecture.
 
   ":Doc-Section Parallelism
   consequences of how parallelized proofs of subgoals are pushed for induction~/

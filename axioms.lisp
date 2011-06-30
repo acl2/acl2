@@ -25857,9 +25857,6 @@
 
 #+acl2-par
 (defmacro f-put-global@par (key value st)
-
-; Parallelism wart: calls that use this macro might need to be locked.
-
   (declare (ignorable key value st))
   #+acl2-loop-only
   nil

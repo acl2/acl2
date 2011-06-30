@@ -38,8 +38,8 @@
 ; this file.
 
 ; Parallelism wart: cleanup this file by removing blank lines that are
-; inconsistent with the ACL2 style guide (and other ways that trike the
-; author's fancy).
+; inconsistent with the ACL2 style guide (and other improvements that strike 
+; the author's fancy).
 
 ;---------------------------------------------------------------------
 ; Section:  Single-threaded Futures
@@ -176,11 +176,11 @@
 ; stored at the given index.  It's possible to change the design, but it would
 ; require more locking and be slower.
 
+; We currently use a feature to control whether resources are tested for
+; availability at the level of futures.  Since this feature only controls
+; futures, it only impacts the implementation underlying spec-mv-let.  Plet,
+; pargs, pand, and por are unaffected.
 
-; Parallelism wart: there was once a problem when :debugging wasn't on the
-; features list.  I need to clean this up.
-
-(push :debugging *features*)
 (push :skip-resource-availability-test *features*)
 
 ; Parallelism wart: I leave the pushing of feature :studless-waterfall as
@@ -260,7 +260,6 @@
 (defvar *future-array*)
 (defvar *future-dependencies*)
 
-
 (defvar *current-thread-index* 0) ; set to 0 for the main thread
 (defconstant *starting-core* 'start)
 (defconstant *resumptive-core* 'resumptive)
@@ -279,7 +278,6 @@
 (defvar *future-added* (make-semaphore))
 
 (defvar *idle-resumptive-core* (make-semaphore))
-#+debugging
 (defvar *threads-spawned* 0)
 
 
@@ -287,8 +285,7 @@
 
 (define-atomically-modifiable-counter *total-future-count* 0)
 
-(defconstant *future-array-size* ; #+debugging 100 #-debugging
-  200000)
+(defconstant *future-array-size* 200000)
 
 (defmacro faref (array subscript)
   `(aref ,array 
@@ -330,7 +327,6 @@
 
   (setf *last-slot-taken* (make-atomically-modifiable-counter 0))
   (setf *last-slot-saved* (make-atomically-modifiable-counter 0))
-  #+debugging
   (setf *threads-spawned* 0)
 
 ; If we let the threads expire naturally instead of calling the above
@@ -437,7 +433,6 @@
 ; "early-terminate-relatives".
 
   (abort-future-indexes (faref *future-dependencies* index))
-  ;#-debugging
   (setf (faref *future-dependencies* index) nil)
 )
 
@@ -482,7 +477,6 @@
          (atomic-incf *idle-future-thread-count*))
        (free-allocated-core)
 
-       ;#-debugging
        (setf (faref *future-array* index) nil)
        ;; (setf *current-thread-index* -1) ; falls out of scope
        ))))
@@ -698,7 +692,7 @@
                   *max-idle-thread-count*) 
      do
      (progn (atomic-incf *idle-future-thread-count*)
-            #+debugging (incf *threads-spawned*)
+            (incf *threads-spawned*)
             (run-thread "Worker thread" 'eval-closures)))))
 
 (defun make-future-with-closure (closure)
@@ -729,42 +723,43 @@
   `(if #-skip-resource-availability-test (not (futures-resources-available))
        #+skip-resource-availability-test nil
 ; need to return a "single-threaded" future, as in futures-st.lisp
-       (prog2 (incf *futures-resources-unavailable-count*)
-           (st-future ,x))
-     ;;       ,(multiple-value-list x)
+     (prog2 (incf *futures-resources-unavailable-count*)
+         (st-future ,x))
+     ;;     ,(multiple-value-list x)
      (prog2 (incf *futures-resources-available-count*)
          (let* ((ld-level *ld-level*)
 ; consider also *ev-shortcut-okp* *raw-guard-warningp*
                 (acl2-unwind-protect-stack *acl2-unwind-protect-stack*)
                 (wormholep *wormholep*)
-;                (wormhole-cleanup-form *wormhole-cleanup-form*)
+                ;; (wormhole-cleanup-form *wormhole-cleanup-form*)
                 (standard-oi  *standard-oi*)
                 (standard-co *standard-co*)
-                ; *deep-gstack*  ???
-;                (proofs-co *standard-co*)
-;    (ld-skip-proofsp (f-get-global 'ld-skip-proofsp *the-live-state*))
-#|    (ld-redefinition-action . nil)
-    (ld-prompt . t)
-    (ld-keyword-aliases . nil)
-    (ld-pre-eval-filter . :all)
-    (ld-pre-eval-print . nil)
-    (ld-post-eval-print . :command-conventions)
-    (ld-evisc-tuple . nil)
-    (ld-error-triples . t)
-    (ld-error-action . :continue)
-    (ld-query-control-alist . nil)
-    (ld-verbose |# 
+                ;; *deep-gstack*  ???
+                ;; (proofs-co *standard-co*)
+                ;; (ld-skip-proofsp (f-get-global 'ld-skip-proofsp
+                ;;                                 *the-live-state*)) 
+                ;; (ld-redefinition-action . nil)
+                ;; (ld-prompt . t)
+                ;; (ld-keyword-aliases . nil)
+                ;; (ld-pre-eval-filter . :all)
+                ;; (ld-pre-eval-print . nil)
+                ;; (ld-post-eval-print . :command-conventions)
+                ;; (ld-evisc-tuple . nil)
+                ;; (ld-error-triples . t)
+                ;; (ld-error-action . :continue)
+                ;; (ld-query-control-alist . nil)
+                ;; (ld-verbose 
     
                 (closure (lambda () 
                            (let ((*ld-level* ld-level)
                                  (*acl2-unwind-protect-stack*
                                   acl2-unwind-protect-stack) 
                                  (*wormholep* wormholep)
-                                 ;(*wormhole-cleanup-form*
-                                 ; wormhole-cleanup-form)
+                                 ;; (*wormhole-cleanup-form*
+                                 ;;  wormhole-cleanup-form)
                                  (*standard-oi* standard-oi)
                                  (*standard-co* standard-co)
-                                 ;(*proofs-co* proofs-co)
+                                 ;; (*proofs-co* proofs-co)
                                  )
                              ,x))))
            (without-interrupts
@@ -807,12 +802,8 @@
                 
                 (progn
                   (when notif
-                    (atomic-incf *unassigned-and-active-future-count*))
-                    #-debugging
-                    (setf (faref *future-dependencies*
-                                 *current-thread-index*)
-                          nil)))))
-           (when (mt-future-thrown-tag future) 
+                    (atomic-incf *unassigned-and-active-future-count*))))))
+           (when (mt-future-thrown-tag future)
              (throw (car (mt-future-thrown-tag future)) 
                     (cdr (mt-future-thrown-tag future))))
            (values-list (mt-future-value future))))
@@ -919,17 +910,9 @@
   `(mt-future ,x))
 
 (defun future-read (x)
-
-; Parallelism wart: Make macro to avoid the function call.  I leave as a
-; function call for now so that I get an extra debuggin layer.
-
   (mt-future-read x))
 
 (defun future-abort (x)
-
-; Parallelism wart: Make macro to avoid the function call.  I leave as a
-; function call for now so that I get an extra debuggin layer.
-
   (mt-future-abort x))
 
 (defun abort-futures (futures)

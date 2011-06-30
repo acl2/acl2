@@ -17655,8 +17655,7 @@
 
   It had been the case that when including a book, functions defined in the
   book's certification ~il[world] (that is, in its ~il[portcullis]
-  ~il[command]s) were typically not defined with compiled code.  That has been
-  fixed.
+  ~il[command]s) were typically not given compiled code.  That has been fixed.
 
   ~st[NEW FEATURES]
 

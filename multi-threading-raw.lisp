@@ -326,10 +326,6 @@
     `(sb-thread:with-recursive-lock (,bound-symbol) nil ,@forms)
     #+lispworks
     `(mp:with-lock (,bound-symbol) nil ,@forms)
-
-; Parallelism wart: we could define deflock to also define with-lock 
-; accessors (e.g., "with-output-lock").
-
     #-(or ccl sb-thread lispworks)
     `(progn ,@forms)))
 
