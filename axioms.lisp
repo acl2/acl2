@@ -5724,11 +5724,20 @@
   raw Lisp.  In particular, the ~il[guard] of ~c[fn] is checked, at least by
   default (~pl[set-guard-checking].~eq[]
 
-  Note that in the term ~c[(ec-call (fn term1 ... termk))], only the indicated
+  Note that in the term (ec-call (fn term1 ... termk))~c[], only the indicated
   call of ~c[fn] is made in the logic; each ~c[termi] is evaluated in the
   normal manner.  If you want an entire term evaluated in the logic, wrap
   ~c[ec-call] around each function call in the term (other than calls of ~c[if]
   and ~c[ec-call]).
+
+  ~st[Technical Remark] (probably best ignored).  During evaluation of a call
+  of ~ilc[defconst] or ~ilc[defpkg] in raw Lisp, a form
+  ~c[(ec-call (fn term1 ... termk))] is treated as ~c[(fn term1 ... termk)],
+  that is, without calling the executable counterpart of ~c[fn].  This
+  situation occurs when loading a compiled file (or expansion file) on behalf
+  of an ~ilc[include-book] event.  The reason is technical: executable
+  counterparts are defined below a book's events in the book's compiled file.
+  End of Technical Remark.
 
   Here is a small example.  We define ~c[foo] recursively but with guard
   verification inhibited on the recursive call, which is to be evaluated in the

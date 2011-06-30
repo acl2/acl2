@@ -24253,13 +24253,14 @@
   (let ((name (and (symbolp rule-id) rule-id))
         (index (and (integerp rule-id) (< 0 rule-id) rule-id))
         (rune (and (consp rule-id)
-                   (equal (car rule-id) :rewrite)
+                   (member-eq (car rule-id) '(:rewrite :definition))
                    rule-id))
         (w (w state)))
     (cond
      ((and rule-id (not (or name index rune)))
       (fms "The rule-id argument to SHOW-REWRITES must be a name, a positive ~
-            integer, or a rewrite rule rune, but ~x0 is none of these.~|"
+            integer, or a rune representing a rewrite or definition rule, but ~
+            ~x0 is none of these.~|"
            (list (cons #\0 rule-id)) (standard-co state) state nil))
      ((or (variablep current-term)
           (fquotep current-term)
@@ -24276,31 +24277,39 @@
            (list (cons #\0 current-term)) (standard-co state) state
            (term-evisc-tuple nil state)))
      (t
-      (mv-let (flg hyps-type-alist ttree)
-        (hyps-type-alist all-hyps ens w state)
-        (declare (ignore ttree))
-        (if flg
-            (fms "*** Contradiction in the hypotheses! ***~%The S command ~
-                  should complete this goal.~|"
-                 nil (standard-co state) state nil)
-          (let ((app-rewrite-rules
-                 (applicable-rewrite-rules1
-                  current-term
-                  geneqv
-                  (getprop (ffn-symb current-term) 'lemmas nil 'current-acl2-world w)
-                  1 (or name rune) index w)))
-            (if (null app-rewrite-rules)
-                (if (and index (> index 1))
-                    (fms "~|*** There are fewer than ~x0 applicable rewrite ~
-                          rules. ***~%"
-                         (list (cons #\0 index)) (standard-co state) state nil)
-                  (fms "~|*** There are no applicable rewrite rules. ***~%"
-                       nil  (standard-co state) state nil))
-              (show-rewrites app-rewrite-rules
-                             (floor (length app-rewrite-rules) 10)
-                             abbreviations term-id-iff
-                             ens hyps-type-alist
-                             enabled-only-flg pl-p w state)))))))))
+      (mv-let
+       (flg hyps-type-alist ttree)
+       (hyps-type-alist all-hyps ens w state)
+       (declare (ignore ttree))
+       (cond
+        (flg ; contradiction, so there are hyps, so we are in the proof-checker
+         (assert$
+          (not pl-p)
+          (fms "*** Contradiction in the hypotheses! ***~%The S command ~
+                should complete this goal.~|"
+               nil (standard-co state) state nil)))
+        (t (let ((app-rewrite-rules
+                  (applicable-rewrite-rules1
+                   current-term
+                   geneqv
+                   (getprop (ffn-symb current-term) 'lemmas nil
+                            'current-acl2-world w)
+                   1 (or name rune) index w)))
+             (cond
+              ((null app-rewrite-rules)
+               (cond ((and index (> index 1))
+                      (fms "~|*** There are fewer than ~x0 applicable rewrite ~
+                            rules. ***~%"
+                           (list (cons #\0 index)) (standard-co state) state
+                           nil))
+                     (t (fms "~|*** There are no applicable rewrite rules. ~
+                              ***~%"
+                             nil  (standard-co state) state nil))))
+              (t (show-rewrites app-rewrite-rules
+                                (floor (length app-rewrite-rules) 10)
+                                abbreviations term-id-iff
+                                ens hyps-type-alist
+                                enabled-only-flg pl-p w state)))))))))))
 
 (defun show-meta-lemmas1 (lemmas index term wrld ens state)
   (cond ((endp lemmas) state)
@@ -24453,16 +24462,17 @@
   ~ev[]~/
 
   ~c[Pl2] takes two arguments.  The first is a term.  The second is either
-  ~c[nil] or one of the following ``rule-ids'': a symbol, a ~il[rune], or a
-  natural number.  The result is to print exactly what is printed by applying
-  ~c[:]~ilc[pl] to the first argument ~-[] ~pl[pl] ~-[] except that if the
-  second argument is not ~c[nil] then it is used to filter the rewrite rules
-  printed, as follows.~bq[]
+  ~c[nil] or one of the following ``rule-ids'': a symbol, a ~c[:]~ilc[rewrite]
+  or ~c[:]~ilc[definition] ~il[rune], or a natural number.  The result is to
+  print exactly what is printed by applying ~c[:]~ilc[pl] to the first argument
+  ~-[] ~pl[pl] ~-[] except that if the second argument is not ~c[nil] then it
+  is used to filter the (rewrite and definition) rules printed, as
+  follows.~bq[]
 
   If the rule-id is a symbol, then only rewrite rules whose name is that symbol
   will be printed.
 
-  If the rule-id is a ~il[rune], then at most rewrite rule will be printed: the
+  If the rule-id is a ~il[rune], then at most one rule will be printed: the
   rule named by that rune (if the rule would be printed by ~c[:]~ilc[pl]).
 
   If the rule-id is a natural number, k, then the kth rewrite rule that would

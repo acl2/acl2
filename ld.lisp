@@ -17924,6 +17924,18 @@
   (defun g (x) (cons x x))
   ~ev[]
 
+  The command ~c[:]~ilc[pl2], and also the ~il[proof-checker] commands
+  ~c[rewrite] and ~c[show-rewrites] (and hence their respective aliases ~c[r]
+  and ~c[sr]), now take rule-id arguments that can be ~c[:]~ilc[definition]
+  ~il[rune]s.  These commands dealt with definition rules already, e.g.
+  ~bv[]
+  :pl2 (append x y) binary-append
+  ~ev[]
+  but they did not allow explicit specification of ~c[:definition] runes, e.g.:
+  ~bv[]
+  :pl2 (append x y) (:definition binary-append)
+  ~ev[]
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Many changes have been made to the distributed books, as recorded in svn logs

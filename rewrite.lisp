@@ -3038,7 +3038,7 @@
 ; A heuristic question arises.  Suppose we have several such
 ; equiv-terms for lhs, all different refinements of geneqv.  What do
 ; we do?  Well, we will chose the first we find.  Ugh.  But suppose
-; they are refinements of eachother.  E.g., we have three hypotheses,
+; they are refinements of each other.  E.g., we have three hypotheses,
 ; (set-equal b a1), (list-equal b a2) and (equal b a3), where
 ; list-equal is a refinement of set-equal.  Then because we know, for
 ; every equivalence relation equiv, that iff is preserved by equiv in

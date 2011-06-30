@@ -4345,16 +4345,17 @@
   ~ev[]
   Display rewrite rules whose left-hand side matches the current subterm.  This
   command shows how the ~c[rewrite] command can be applied.  If ~c[rule-id] is
-  supplied and is a name (non-~c[nil] symbol) or a rune, then only the
-  corresponding rewrite rule(s) will be displayed, while if ~c[rule-id] is a
-  positive integer ~c[n], then only the ~c[n]th rule that would be in the list
-  is displayed.  In each case, the display will point out when a rule is
-  currently disabled (in the interactive environment), except that if
-  ~c[enabled-only-flg] is supplied and not ~c[nil], then disabled rules will
-  not be displayed at all.  Finally, among the free variables of any rule (those
-  occurring in the rule that do not occur in the left-hand side of its
-  conclusion), those that would remain free if the rule were applied will be
-  displayed.  See also the documentation for ~c[rewrite]."
+  supplied and is a name (non-~c[nil] symbol) or a ~c[:]~ilc[rewrite] or
+  ~c[:]~ilc[definition] ~il[rune], then only the corresponding rewrite rule(s)
+  will be displayed, while if ~c[rule-id] is a positive integer ~c[n], then
+  only the ~c[n]th rule that would be in the list is displayed.  In each case,
+  the display will point out when a rule is currently disabled (in the
+  interactive environment), except that if ~c[enabled-only-flg] is supplied and
+  not ~c[nil], then disabled rules will not be displayed at all.  Finally,
+  among the free variables of any rule (those occurring in the rule that do not
+  occur in the left-hand side of its conclusion), those that would remain free
+  if the rule were applied will be displayed.  See also the documentation for
+  ~c[rewrite]."
 
   (when-goals
    (let ((conc (conc t))
@@ -4482,17 +4483,17 @@
   General Form:
   (rewrite &optional rule-id substitution instantiate-free)
   ~ev[]
-  Replace the current subterm with a new term by applying a rewrite
-  rule.  The replacement will be done according to the information provided by
-  the ~c[show-rewrites] (~c[sr]) command.
+  Replace the current subterm with a new term by applying a rewrite or
+  definition rule.  The replacement will be done according to the information
+  provided by the ~c[show-rewrites] (~c[sr]) command.
 
-  If ~c[rule-id] is a positive integer ~c[n], then the ~c[n]th rewrite
-  rule as displayed by ~c[show-rewrites] is the one that is applied.  If
-  ~c[rule-id] is ~c[nil] or is not supplied, then it is treated as the number
-  1.  Otherwise, ~c[rule-id] should be either a rune of or name of a
-  rewrite rule.  If a name is supplied, then any rule of that name may
-  be used.  We say more about this, and describe the other optional arguments,
-  below.
+  If ~c[rule-id] is a positive integer ~c[n], then the ~c[n]th rule as
+  displayed by ~c[show-rewrites] is the one that is applied.  If ~c[rule-id] is
+  ~c[nil] or is not supplied, then it is treated as the number 1.  Otherwise,
+  ~c[rule-id] should be either a symbol or else a ~c[:rewrite] or
+  ~c[:definition] ~il[rune].  If a symbol is supplied, then any (~c[:rewrite]
+  or ~c[:definition]) rule of that name may be used.  We say more about this,
+  and describe the other optional arguments, below.
 
   Consider first the following example.  Suppose that the current subterm is
   ~c[(reverse (reverse y))] and that there is a rewrite rule called
@@ -4518,9 +4519,9 @@
 
   Speaking in general, then, a ~c[rewrite] instruction works as follows:
 
-  First, a rewrite rule is selected according to the arguments of the
-  ~c[rewrite] instruction.  The selection is made as explained under ``General
-  Form'' above.
+  First, a rewrite or definition rule is selected according to the arguments of
+  the ~c[rewrite] instruction.  The selection is made as explained under
+  ``General Form'' above.
 
   Next, the left-hand side of the rule is matched with the current subterm,
   i.e., a substitution ~c[unify-subst] is found such that if one instantiates
@@ -4531,27 +4532,26 @@
   theorem prover relieves hypotheses except that there is no call to the
   rewriter.  First, the substitution ~c[unify-subst] is extended with the
   ~c[substitution] argument, which may bind free variables
-  (~pl[free-variables]).  Each hypothesis of the ~il[rewrite] rule is then
-  considered in turn, from first to last.  For each hypothesis, first the
-  current substitution is applied, and then the system checks whether the
-  hypothesis is ``clearly'' true in the current context.  If there are
-  variables in the hypotheses of the rewrite rule that are not bound by the
-  current substitution, then a weak attempt is made to extend that substitution
-  so that the hypothesis is present in the current context (see the
-  documentation for the proof-checker ~c[hyps] command under
-  ~il[proof-checker-commands]), much as would be done by the theorem prover's
-  rewriter.
+  (~pl[free-variables]).  Each hypothesis of the rule is then considered in
+  turn, from first to last.  For each hypothesis, first the current
+  substitution is applied, and then the system checks whether the hypothesis is
+  ``clearly'' true in the current context.  If there are variables in the
+  hypotheses of the rule that are not bound by the current substitution, then a
+  weak attempt is made to extend that substitution so that the hypothesis is
+  present in the current context (see the documentation for the proof-checker
+  ~c[hyps] command under ~il[proof-checker-commands]), much as would be done by
+  the theorem prover's rewriter.
 
-  If in the process above there are free variables, but the proof-checker can
-  see how to bind them to relieve all hypotheses, then it will do so in both
-  the ~c[show-rewrites] (~c[sr]) and ~c[rewrite] commands.  But normally, if
-  even one hypothesis remains unrelieved, then no automatic extension of the
-  substitution is made.  Except, if ~c[instantiate-free] is not ~c[nil], then
-  that extension to the substitution is kept.
+  If in the process above there are free variables (~pl[free-variables]), but
+  the proof-checker can see how to bind them to relieve all hypotheses, then it
+  will do so in both the ~c[show-rewrites] (~c[sr]) and ~c[rewrite] commands.
+  But normally, if even one hypothesis remains unrelieved, then no automatic
+  extension of the substitution is made.  Except, if ~c[instantiate-free] is
+  not ~c[nil], then that extension to the substitution is kept.
 
   Finally, the instruction is applied as follows.  The current subterm is
   replaced by applying the final substitution described above to the right-hand
-  side of the selected rewrite rule.  And, one new subgoal is created for each
+  side of the selected rule.  And, one new subgoal is created for each
   unrelieved hypothesis of the rule, whose top-level hypotheses are the
   governors and top-level hypotheses of the current goal and whose conclusion
   and current subterm are the instance, by that same final substitution, of
@@ -4569,7 +4569,7 @@
                          (list (cons #\0 (cons :rewrite args))))
      (let ((name (and (symbolp rule-id) rule-id))
            (rune (and (consp rule-id)
-                      (equal (car rule-id) :rewrite)
+                      (member-eq (car rule-id) '(:rewrite :definition))
                       rule-id))
            (index (if (and (integerp rule-id) (< 0 rule-id))
                       rule-id
@@ -4591,9 +4591,9 @@
           (list (cons #\0 current-term))))
         ((not (or name index rune))
          (print-no-change2
-          "The rule-id argument to REWRITE must be a ~
-           name, a positive integer, or a rewrite ~
-           rule rune, but ~x0 is none of these.~|"
+          "The rule-id argument to REWRITE must be a name, a positive ~
+           integer, or a :rewrite or :definition rune, but ~x0 is none of ~
+           these.~|"
           (list (cons #\0 rule-id))))
         (t
          (mv-let
@@ -4602,8 +4602,8 @@
           (declare (ignore ttree))
           (if flg
               (print-no-change2
-               "Contradiction in the hypotheses!~%~
-                The S command should complete this goal.~|")
+               "Contradiction in the hypotheses!~%The S command should ~
+                complete this goal.~|")
             (let ((app-rewrite-rules
                    (applicable-rewrite-rules
                     current-term conc current-addr (or name rune) index
@@ -4623,82 +4623,84 @@
                        (lemma-rune (access rewrite-rule lemma :rune))
                        (lemma-name (cadr lemma-rune))
                        (lemma-id (if (cddr lemma-rune) lemma-rune lemma-name))
-                       (non-free (union-eq (intersection-domains sub start-alist)
+                       (non-free (union-eq (intersection-domains sub
+                                                                 start-alist)
                                            (set-difference-eq
                                             (strip-cars sub)
                                             (append (all-vars rhs)
-                                                    (all-vars1-lst lemma-hyps nil))))))
+                                                    (all-vars1-lst lemma-hyps
+                                                                   nil))))))
                   (if non-free
                       (print-no-change2
-                       "The variable~#0~[~/~/s~] ~&1 supplied by the substitution in ~
-                        this instruction ~#0~[~/is~/are~] not free for instantiation ~
-                        in the current context.~|"
+                       "The variable~#0~[~/~/s~] ~&1 supplied by the ~
+                        substitution in this instruction ~#0~[~/is~/are~] not ~
+                        free for instantiation in the current context.~|"
                        (list (cons #\0 (zero-one-or-more (length non-free)))
                              (cons #\1 non-free)))
-                    (mv-let (subst-hyps unify-subst ttree2)
-                            (unrelieved-hyps lemma-rune lemma-hyps alist
-                                             hyps-type-alist instantiate-free w
-                                             state pc-ens nil)
-                            (pprogn
-                             (let ((extra-alist (alist-difference-eq unify-subst alist)))
-                               (if extra-alist
-                                   (io? proof-checker nil state
-                                        (abbreviations extra-alist sub
-                                                       lemma-id)
-                                        (fms0 "~|Rewriting with ~x0 under the ~
-                                               following extension of the the ~
-                                               substitution generated by ~
-                                               matching that rewrite rule with ~
-                                               the current term ~#1~[ (after ~
-                                               extending it with the ~
-                                               substitution ~x2 supplied in ~
-                                               the instruction)~/~]:  ~x3.~|"
-                                              (list (cons #\0 lemma-id)
-                                                    (cons #\1 (if sub 0 1))
-                                                    (cons #\2 sub)
-                                                    (cons #\3 (untranslate-subst-abb
-                                                               extra-alist
-                                                               abbreviations
-                                                               state)))))
-                                 (io? proof-checker nil state
-                                      (lemma-id)
-                                      (fms0 "~|Rewriting with ~x0.~|"
-                                            (list (cons #\0 lemma-id))))))
-                             (let ((runes (all-runes-in-ttree ttree2 nil)))
-                               (if runes
-                                   (io? proof-checker nil state
-                                        (runes)
-                                        (fms0 "~|--NOTE-- Using the following ~
-                                               runes in addition to the ~
-                                               indicated rewrite rule:~%  ~
-                                               ~x0.~|"
-                                              (list (cons #\0 runes))))
-                                 state))
-                             (let ((new-goals
-                                    (make-new-goals-fixed-hyps subst-hyps
-                                                               assumptions
-                                                               goal-name
-                                                               depends-on)))
-                               (mv-let
-                                (new-goal state)
-                                (deposit-term-in-goal
-                                 (car goals) conc current-addr
-                                 (sublis-var unify-subst
-                                             (access rewrite-rule lemma :rhs))
-                                 state)
-                                (mv 
-                                 (change-pc-state
-                                  pc-state
-                                  :instruction
-                                  (make-rewrite-instr lemma-id raw-sub
-                                                      instantiate-free)
-                                  :goals
-                                  (cons (change goal new-goal
-                                                :depends-on (+ depends-on (length new-goals)))
-                                        (append new-goals (cdr goals)))
-                                  :local-tag-tree
-                                  (push-lemma lemma-rune ttree2))
-                                 state)))))))))))))))))
+                    (mv-let
+                     (subst-hyps unify-subst ttree2)
+                     (unrelieved-hyps lemma-rune lemma-hyps alist
+                                      hyps-type-alist instantiate-free w
+                                      state pc-ens nil)
+                     (pprogn
+                      (let ((extra-alist (alist-difference-eq unify-subst alist)))
+                        (if extra-alist
+                            (io? proof-checker nil state
+                                 (abbreviations extra-alist sub
+                                                lemma-id)
+                                 (fms0 "~|Rewriting with ~x0 under the ~
+                                        following extension of the the ~
+                                        substitution generated by matching ~
+                                        that rewrite rule with the current ~
+                                        term ~#1~[ (after extending it with ~
+                                        the substitution ~x2 supplied in the ~
+                                        instruction)~/~]:  ~x3.~|"
+                                       (list (cons #\0 lemma-id)
+                                             (cons #\1 (if sub 0 1))
+                                             (cons #\2 sub)
+                                             (cons #\3 (untranslate-subst-abb
+                                                        extra-alist
+                                                        abbreviations
+                                                        state)))))
+                          (io? proof-checker nil state
+                               (lemma-id)
+                               (fms0 "~|Rewriting with ~x0.~|"
+                                     (list (cons #\0 lemma-id))))))
+                      (let ((runes (all-runes-in-ttree ttree2 nil)))
+                        (if runes
+                            (io? proof-checker nil state
+                                 (runes)
+                                 (fms0 "~|--NOTE-- Using the following runes ~
+                                        in addition to the indicated rule:~%  ~
+                                        ~x0.~|"
+                                       (list (cons #\0 runes))))
+                          state))
+                      (let ((new-goals
+                             (make-new-goals-fixed-hyps subst-hyps
+                                                        assumptions
+                                                        goal-name
+                                                        depends-on)))
+                        (mv-let
+                         (new-goal state)
+                         (deposit-term-in-goal
+                          (car goals) conc current-addr
+                          (sublis-var unify-subst
+                                      (access rewrite-rule lemma :rhs))
+                          state)
+                         (mv 
+                          (change-pc-state
+                           pc-state
+                           :instruction
+                           (make-rewrite-instr lemma-id raw-sub
+                                               instantiate-free)
+                           :goals
+                           (cons (change goal new-goal
+                                         :depends-on
+                                         (+ depends-on (length new-goals)))
+                                 (append new-goals (cdr goals)))
+                           :local-tag-tree
+                           (push-lemma lemma-rune ttree2))
+                          state)))))))))))))))))
 
 (defun pc-help-fn (name state)
   ;; Adapted in part from doc-fn.
