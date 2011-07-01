@@ -493,3 +493,39 @@ This is the default, relatively stable form of GL symbolic simulation.~/~/"
 ;; Default to BDD mode.
 (gl-bdd-mode)
 
+
+
+
+
+;; Utilities for debugging.
+(defun evisc-symbolic-al (x)
+  (if (atom x)
+      nil
+    (if (atom (car x))
+        (cons (car x) (evisc-symbolic-al (cdr x)))
+      (cons (cons (caar x)
+                  (if (general-concretep (cdar x))
+                      (general-concrete-obj (cdar x))
+                    'acl2::???))
+            (evisc-symbolic-al (cdr x))))))
+
+(defmacro trace-gl-interp (fnname &key show-values)
+  `(trace$
+    (,fnname :entry ,(if show-values
+                         '(list (car acl2::arglist)
+                                (evisc-symbolic-al (cadr acl2::arglist)))
+                       '(car acl2::arglist))
+             :exit ,(if show-values
+                        '(if (general-concretep (nth 2 acl2::values))
+                             (general-concrete-obj (nth 2 acl2::values))
+                           'acl2::???)
+                      '-))))
+
+(defmacro break-on-g-apply ()
+  `(trace$ (g-apply :entry (prog2$ (acl2::fmt-to-comment-window!
+                                    "(g-apply ~x0 ~x1~%"
+                                    `((#\0 . ,(car acl2::arglist))
+                                      (#\1 . ,(cadr acl2::arglist)))
+                                    0
+                                    (acl2::evisc-tuple 3 6 nil nil))
+                                   (break$)))))

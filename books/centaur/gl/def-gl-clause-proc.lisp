@@ -228,6 +228,10 @@
 (add-clause-proc-exec-fns *exec-fns*)
 (forbid-clause-proc-exec-fns *forbidden-apply-functions*)
 
+
+(defun interp-term-fnname (clause-proc)
+  (incat clause-proc (symbol-name clause-proc) "-INTERP-TERM"))
+
 (defun def-gl-clause-processor-fn
   (clause-proc apply-fns include-nonrec top-apply-fns output state)
   (declare (xargs :mode :program :stobjs state))
@@ -284,7 +288,7 @@
         (incat run-gified (symbol-name run-gified) "-GOBJECTP"))
        (run-gified-state-p1
         (incat run-gified (symbol-name run-gified) "-STATE-P1"))
-       (interp-term (incat clause-proc (symbol-name clause-proc) "-INTERP-TERM"))
+       (interp-term (interp-term-fnname clause-proc))
        (interp-list (incat clause-proc (symbol-name clause-proc)
                            "-INTERP-LIST"))
        (run-parametrized (incat clause-proc (symbol-name clause-proc)
@@ -806,9 +810,18 @@ See :DOC GL::COVERAGE-PROOFS.
         ((er trconcl)
          (acl2::translate concl t t nil 'gl-hint-fn (w state) state))
         (vars (collect-vars trconcl))
-        (bindings
-         (add-var-bindings (set-difference-eq
-                            vars (strip-cars bindings))
+        (missing-vars (set-difference-eq vars (strip-cars bindings)))
+        (- (and missing-vars
+                (let ((msg (acl2::msg "~
+The following variables are present in the theorem but have no symbolic object ~
+bindings:
+~x0~%" missing-vars)))
+                  ;; (if missing-vars-ok
+                      (cw "****  WARNING ****~%~@0~%" msg)
+                  ;;  (er hard? 'gl-hint "~@0" msg)
+                      )))
+        (bindings 
+         (add-var-bindings missing-vars
                            bindings))
         (param-bindings (add-param-var-bindings vars param-bindings))
         (call `(,(if test-side-goals 'glcp-side-goals-clause-proc clause-proc)
@@ -947,7 +960,17 @@ in DEF-GL-THM.~%"))
           (make-event (er-progn (with-output :stack :pop ,form)
                                 (value '(value-triple 'test-side-goals)))))
       form)))
-                       
+
+(defmacro latest-gl-clause-proc ()
+  '(caar (table-alist
+          'latest-greatest-gl-clause-proc
+          (w state))))
+
+(defmacro latest-gl-interp ()
+  '(interp-term-fnname
+    (caar (table-alist
+           'latest-greatest-gl-clause-proc
+           (w state)))))
 
 ;; If a clause-processor name is supplied, this creates a defthm event
 ;; using def-gl-thm-fn.  Otherwise, this creates a make-event which
@@ -959,10 +982,7 @@ in DEF-GL-THM.~%"))
   (if clause-procp
       (def-gl-thm-fn name clause-proc rest)
     `(make-event
-      (let ((clause-proc
-             (caar (table-alist
-                    'latest-greatest-gl-clause-proc
-                    (w state)))))
+      (let ((clause-proc (latest-gl-clause-proc)))
         (def-gl-thm-fn ',name clause-proc ',rest)))))
 
 
