@@ -6999,7 +6999,7 @@ Missing functions:
                   (invoke-restart 'continue))
                  (t
 
-; Parallelism wart: As of May 16, 2011, we also reset all parallelism variables
+; Parallelism wart: as of May 16, 2011, we also reset all parallelism variables
 ; in Rager's modified version of the source code.  However, that strikes Rager
 ; as strange, since we went through so much trouble to find out where we should
 ; reset parallelism variables. So, it is now commented out, today, May 16, 

@@ -6964,7 +6964,7 @@
 ; might be caused by this translation and evaluation are handled within
 ; this function.
 
-; Parallelism wart: Check that the above comment is true and applicable in this
+; Parallelism wart: check that the above comment is true and applicable in this
 ; function, even though we call ev-w instead of ev.
        
        (error1@par ctx (car val) (cdr val) state))
@@ -7100,7 +7100,7 @@
                                   state nil nil aok)
                               (declare (ignore latches))
 
-; Parallelism wart: Since we ignore latches, we should be able to create a 
+; Parallelism wart: since we ignore latches, we should be able to create a 
 ; version of simple-translate-and-eval that returns cmp's.
 
                               (cond
@@ -7130,7 +7130,7 @@
              :ld-pre-eval-print nil
              :ld-prompt nil))
 
-; Parallelism wart: It could be better to call error-fms directly, as in the
+; Parallelism wart: it could be better to call error-fms directly, as in the
 ; following definition of error-fms-wormhole.  Also, delete this wart and the
 ; following commented defmacro.
 
@@ -7152,23 +7152,17 @@
 (defun simple-translate-and-eval@par (x alist ok-stobj-names msg ctx wrld state
                                         aok safe-mode gc-off)
 
-; Parallelism wart: maybe explain our strategy for how this works without
-; having to call ev.
-
-; Parallelism wart: why don't we obtain safe-mode and gc-off from state?
-
 ; Keep in sync with simple-translate-and-eval.
+
+; Notice that we pass in safe-mode and gc-off explicitly, rather than reading
+; them from state, because there are occasions (e.g., eval-theory-expr@par)
+; where at least one of these parameters could differ from its corresponding
+; state value.  But couldn't we have simply state-global-let*-bound the
+; relevant state globals?  Well, no, in contexts like eval-theory-expr@par that
+; do not allow modification of state.
 
   (er-let*@par
    ((term (translate@par x '(nil) nil t ctx wrld state)))
-
-; Parallelism wart: I need to figure out why the following comment's
-; restriction exists.
-
-; known-stobjs = t.  We expect simple-translate-and-eval@par to be used only
-; when the user is granted full access to the stobjs in state (without
-; modification rights, of course).
-
    (let ((vars (all-vars term))
          (legal-vars (append (strip-cars alist)
                              ok-stobj-names)))
@@ -7184,14 +7178,22 @@
               x
               vars))
            (t (mv-let (erp val)
+
+; Note that because translate@par is called above with parameter stobjs-out =
+; '(nil), we have met the requirement on ev-w; specifically, evaluation of the
+; given form cannot modify any stobj.
+
                       (ev-w term
                             (append alist
-                                    (user-stobj-alist-safe
-                                     'simple-translate-and-eval
-                                     (intersection-eq
-                                      ok-stobj-names
-                                      vars)
-                                     state))
+                                    (cons (cons 'state
+                                                (coerce-state-to-object
+                                                 state))
+                                          (user-stobj-alist-safe
+                                           'simple-translate-and-eval
+                                           (intersection-eq
+                                            ok-stobj-names
+                                            vars)
+                                           state)))
                             (w state) safe-mode gc-off nil aok)
                       (cond
                        (erp (pprogn@par

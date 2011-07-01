@@ -1165,7 +1165,7 @@
   (time$ (length (sets::pmergesort-exec *x* 0)))
   ~ev[]~/~/")
 
-; Parallelism wart: Add a section on waterfall-parallelism-performance.  It
+; Parallelism wart: add a section on waterfall-parallelism-performance.  It
 ; should be a discussion of the advantages of each argument to
 ; set-waterfall-parallelism.
 

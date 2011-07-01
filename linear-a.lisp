@@ -559,11 +559,6 @@
    (cond
     ((eq ttree nil) (value@par nil))
     (t (pprogn@par
-
-; Parallelism wart: there is probably a way to accumulate the ttree that
-; doesn't involve using a raw Lisp hack, but we just use f-put-global in raw
-; Lisp for now.
-
         (with-ttree-lock
          (f-put-global@par 'accumulated-ttree
                            (cons-tag-trees ttree

@@ -25866,11 +25866,19 @@
 
 #+acl2-par
 (defmacro f-put-global@par (key value st)
+
+; Warning: This macro is used to modify the live ACL2 state, without passing
+; state back!
+
+; Parallelism wart: probably should make this macro untouchable so that
+; programmers can't modify the system state in arbitrary ways.
+
   (declare (ignorable key value st))
   #+acl2-loop-only
   nil
   #-acl2-loop-only
-  `(f-put-global ,key ,value ,st))
+  `(progn (f-put-global ,key ,value ,st)
+          nil))
 
 ; We now define state-global-let*, which lets us "bind" state
 ; globals.
@@ -26093,6 +26101,10 @@
 
 #-acl2-loop-only
 (defmacro state-free-global-let* (bindings body)
+
+; Parallelism wart: look for calls of this macro, and make sure that when a
+; child thread starts processing, we arrange that it binds corresponding values
+; from the parent.
 
 ; This raw Lisp macro is a variant of state-global-let* that should be used
 ; only when state is *not* lexically available, or at least not a formal
@@ -39809,17 +39821,13 @@
 
 ; Keep in sync with catch-time-limit5.
 
-; Parallelism wart: This definition is rather different from its non-@par
+; Parallelism wart: this definition is rather different from its non-@par
 ; counterpart.  We need to check that this is what we need.  I think it
 ; is okay, because we don't really support time-limits right now anyway.
 
   `(mv-let (step-limit x1 x2 x3 x4) ; values that cannot be stobjs
            #+acl2-loop-only
            ,form ; so, form does not return a stobj
-
-; Parallelism wart: time-limit5-tag needs to be added to the list of throw tags
-; that futures support.
-
            #-acl2-loop-only
            (catch 'time-limit5-tag
                (let ((*time-limit-tags* (add-to-set-eq 'time-limit5-tag
@@ -41951,7 +41959,7 @@ Lisp definition."
 (table custom-keywords-table nil nil
        :guard
 
-; Parallelism wart: The comment below starting with "Val must be of the
+; Parallelism wart: the comment below starting with "Val must be of the
 ; form..." will need to be updated once we finalize the way custom keyword
 ; hints work in ACL2(p).
 
@@ -42067,7 +42075,7 @@ Lisp definition."
 (defmacro add-custom-keyword-hint@par (key uterm1
                                        &key (checker '(value-cmp t)))
 
-; Parallelism wart: We do not currently handle custom keyword hints in a
+; Parallelism wart: we do not currently handle custom keyword hints in a
 ; graceful or disciplined manner.  The only promise we currently maintain is
 ; that they work in #-acl2-par and in #+acl2-par in the serial mode of the
 ; parallelized waterfall.  We should develop a cleaner explanation for how
@@ -43480,7 +43488,7 @@ Lisp definition."
                        (car symbols))
                  (generate-@par-mappings (cdr symbols))))))
 
-; Parallelism wart: Consider adding a doc topic explaining that if a user finds
+; Parallelism wart: consider adding a doc topic explaining that if a user finds
 ; the #+acl2-par version of an "@par" function to be useful, that they should
 ; contact the authors of ACL2.  The authors should then create a version of the
 ; desired "@par" function, perhaps suffixing it with "@ns" (for "no state").

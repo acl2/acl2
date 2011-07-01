@@ -16794,7 +16794,7 @@
                 (prettyify-stobj-flags stobjs-out))
             (er@par soft ctx
 
-; Parallelism wart: Consider adding a documentation topic on Context message
+; Parallelism wart: consider adding a documentation topic on Context message
 ; pairs.
 
               "The form ~x0 was expected to represent an ordinary value or a ~
@@ -16904,13 +16904,13 @@
 ; xtrans-eval that uses ev-w for evaluation rather than using ev.  The extra
 ; function call adds only trivial cost.
 
-; Parallelism wart: This function calls ev-w in a way that violates the
+; Parallelism wart: this function calls ev-w in a way that violates the
 ; contract that state is not part of one of ev-w's arguments ("alist").  As
 ; such, while this implementation "works", it is unlikely that it is both sound
 ; and as "user friendly" as it should be.
 
-; Parallelism wart: a correct version of the xtrans-eval documentation needs to
-; be written here.
+; Parallelism wart: a correct version of the xtrans-eval-with-ev-w comments
+; needs to be written here.
 
   (er-let*@par
    ((term
@@ -16922,7 +16922,7 @@
          (subsetp-eq (all-vars term)
                      (cons 'state (strip-cars alist))))
 
-; Parallelism wart: We currently discard any changes to the world.  Figure out
+; Parallelism wart: we currently discard any changes to the world.  Figure out
 ; whether this is okay.
 
      (er-let*-cmp

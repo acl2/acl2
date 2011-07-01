@@ -8631,7 +8631,7 @@
 (defun brkpt1 (lemma target unify-subst type-alist ancestors initial-ttree
                      gstack state)
 
-; Parallelism wart: Since we lock the use of wormholes, brr might be usable
+; Parallelism wart: since we lock the use of wormholes, brr might be usable
 ; within the parallelized waterfall.  However, since locks can serialize
 ; computation, we leave brr disabled for now.  Kaufmann has the following
 ; reaction to using brr and waterfall parallelism at the same time:
