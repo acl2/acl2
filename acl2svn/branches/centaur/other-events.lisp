@@ -369,6 +369,11 @@
    ((pair (state-global-let*
            ((safe-mode
 
+; Warning: If you are tempted to bind safe-mode to nil outside the boot-strap,
+; then revisit the binding of *safe-mode-verified-p* to t in the
+; #-acl2-loop-only definition of defconst.  See the defparameter for
+; *safe-mode-verified-p*.
+
 ; Why do we need to bind safe-mode to t?  An important reason is that we will
 ; be loading compiled files corresponding to certified books, where defconst
 ; forms will be evaluated in raw Lisp.  By using safe-mode, we can guarantee
@@ -908,6 +913,7 @@
             'state
             (list 'quote doc)
             (list 'quote book-path)
+            (list 'quote hidden-p)
             (list 'quote event-form)))
     (defmacro defchoose (&whole event-form &rest def)
       (list 'defchoose-fn
@@ -1777,9 +1783,10 @@
                  (if (or include-book-path
                          defpkg-book-path)
                      (msg "~|The new proposed defpkg event may be found by ~
-                         following the sequence of include-books below, from ~
-                         top-most book down to the book whose portcullis ~
-                         contains the new proposed defpkg event.~|  ~F0"
+                           following the sequence of include-books below, ~
+                           from top-most book down to the book whose ~
+                           portcullis contains the new proposed defpkg ~
+                           event.~|  ~F0"
                           (reverse (append defpkg-book-path include-book-path)))
                    ""))))))
 
@@ -1796,7 +1803,7 @@
              *1*-pkg-prefix* in sync."))
     result))
 
-(defun chk-acceptable-defpkg (name form defpkg-book-path ctx w state)
+(defun chk-acceptable-defpkg (name form defpkg-book-path hidden-p ctx w state)
 
 ; We return an error triple.  The non-error value is either 'redundant or a
 ; triple (tform value . package-entry), where tform and value are a translated
@@ -1812,7 +1819,8 @@
                (global-val 'known-package-alist w)))))
     (cond
      ((and package-entry
-           (not (package-entry-hidden-p package-entry))
+           (or hidden-p
+               (not (package-entry-hidden-p package-entry)))
            (equal (caddr (package-entry-defpkg-event-form package-entry))
                   form))
       (value 'redundant))
@@ -1898,6 +1906,11 @@
        (state-global-let*
         ((safe-mode
 
+; Warning: If you are tempted to bind safe-mode to nil outside the boot-strap,
+; then revisit the binding of *safe-mode-verified-p* to t in the
+; #-acl2-loop-only definition of defpkg-raw.  See the defparameter for
+; *safe-mode-verified-p*.
+
 ; In order to build a profiling image for GCL, we have observed a need to avoid
 ; going into safe-mode when building the system.
 
@@ -1955,7 +1968,8 @@
                             w
                             (f-get-global 'distributed-books-dir state))))
                       ((and package-entry
-                            (not (package-entry-hidden-p package-entry)))
+                            (or hidden-p
+                                (not (package-entry-hidden-p package-entry))))
                        (prog2$
                         (chk-package-reincarnation-import-restrictions
                          name imports)
@@ -1972,7 +1986,7 @@
 ; on the fact that the symbol name-PACKAGE is new!
 
                           (chk-just-new-name base-symbol
-                                             'package nil ctx w state)
+                                             'theorem nil ctx w state)
                           (prog2$
                            (chk-package-reincarnation-import-restrictions
                             name imports)
@@ -1981,7 +1995,7 @@
                                          package-entry ; hidden-p is true
                                          )))))))))))))))))))
 
-(defun defpkg-fn (name form state doc book-path event-form)
+(defun defpkg-fn (name form state doc book-path hidden-p event-form)
 
 ; Important Note:  Don't change the formals of this function without
 ; reading the *initial-event-defmacros* discussion in axioms.lisp.
@@ -2005,7 +2019,8 @@
                                 (if book-path (list book-path) nil)))))
      (er-let* ((doc-pair (translate-doc name doc ctx state))
                (tform-imports-entry
-                (chk-acceptable-defpkg name form book-path ctx w state)))
+                (chk-acceptable-defpkg name form book-path hidden-p ctx w
+                                       state)))
               (cond
                ((eq tform-imports-entry 'redundant)
                 (stop-redundant-event ctx state))
@@ -2016,7 +2031,7 @@
                             (cons (make-package-entry
                                    :name name
                                    :imports imports
-                                   :hidden-p nil
+                                   :hidden-p hidden-p
                                    :book-path
                                    (append book-path
                                            (global-val
@@ -2038,15 +2053,18 @@
 ; is a defaxiom in axioms.lisp exactly analogous to the add-rule below.  So if
 ; you change this code, change that code.
 
-                       (ax
-                        `(equal (pkg-imports (quote ,name))
-                                (quote ,imports)))
                        (w2
-                        (add-rules
-                         (packn (cons name '("-PACKAGE")))
-                         `((:REWRITE :COROLLARY ,ax))
-                         ax ax (ens state) w1 state))
-                       (w3 (update-doc-data-base name doc doc-pair w2)))
+                        (cond
+                         (hidden-p w1)
+                         (t (let ((ax `(equal (pkg-imports (quote ,name))
+                                              (quote ,imports))))
+                              (add-rules
+                               (packn (cons name '("-PACKAGE")))
+                               `((:REWRITE :COROLLARY ,ax))
+                               ax ax (ens state) w1 state)))))
+                       (w3 (cond
+                            (hidden-p w2) ; may as well skip :doc on hidden pkg
+                            (t (update-doc-data-base name doc doc-pair w2)))))
                   (install-event name
                                  event-form
                                  'defpkg
@@ -4602,7 +4620,7 @@
 ; pathnames so that they use absolute pathnames instead, or cause an error
 ; trying.
 
-; We allow defaxioms skip-proofs, and defttags in the portcullis, but we mark
+; We allow defaxioms, skip-proofs, and defttags in the portcullis, but we mark
 ; the book's certificate appropriately.
 
 ; In-local-flg is used to enforce restrictions in the context of LOCAL on the
@@ -4638,9 +4656,9 @@
 ; to the subform (of form) that was rejected.
 
 ; We return a value triple (mv erp val state).  If erp is nil then val is the
-; form to be evaluated.  Generally that is the result of macroexpanding the
-; input form.  However, if (perhaps after some macroexpansion) form is a call
-; of local that should be skipped, then val is nil.
+; event form to be evaluated.  Generally that is the result of macroexpanding
+; the input form.  However, if (perhaps after some macroexpansion) form is a
+; call of local that should be skipped, then val is nil.
 
   (let* ((er-str
 
@@ -10239,14 +10257,11 @@
                   (t (new-defpkg-list2
                       (cdr imports) all-defpkg-items acc seen))))))))))
 
-(defun make-defpkg (name imports/doc/book-path)
+(defun make-hidden-defpkg (name imports/doc/book-path)
   (let ((imports (car imports/doc/book-path))
         (doc (cadr imports/doc/book-path))
         (book-path (caddr imports/doc/book-path)))
-    (cond
-     (book-path `(defpkg ,name ,imports ,doc ,book-path))
-     (doc       `(defpkg ,name ,imports ,doc))
-     (t         `(defpkg ,name ,imports)))))
+    `(defpkg ,name ,imports ,doc ,book-path t)))
 
 (defun new-defpkg-list1
   (defpkg-items all-defpkg-items base-kpa earlier-kpa added-defpkgs)
@@ -10268,7 +10283,7 @@
        ((find-package-entry name base-kpa)
         added-defpkgs)
        (t ; we want to add event, so may need to add some already "discarded"
-        (cons (make-defpkg name (cddr item))
+        (cons (make-hidden-defpkg name (cddr item))
               (new-defpkg-list1
                (new-defpkg-list2 (cadr item) ; imports
                                  all-defpkg-items nil added-defpkgs)
@@ -10316,8 +10331,9 @@
 ; need for the "second reason" above, but for simplicity we call this same
 ; function.
 
-  (reverse (new-defpkg-list1 defpkg-items defpkg-items base-kpa earlier-kpa
-                             nil)))
+  (reverse
+   (remove-duplicates-equal
+    (new-defpkg-list1 defpkg-items defpkg-items base-kpa earlier-kpa nil))))
 
 (mutual-recursion
 
@@ -10394,10 +10410,9 @@
                            tterm)
                           (t
                            (kwote imports)))))
-                 ,@(and (or doc book-path)
-                        (list doc))
-                 ,@(and book-path
-                        (list book-path)))
+                 ,doc
+                 ,book-path
+                 t)
               acc)))))))
 
 (defun hidden-defpkg-events (kpa w ctx state)
@@ -12397,7 +12412,8 @@
 ; event for full-book-name.  We accumulate into acc (which is eventually
 ; returned) the list of function symbols defined in trips whose definition
 ; comes from the top level of the book with path full-book-name, rather than
-; some sub-book.  Collect-p is true only when we are to collect up such
+; some sub-book; or, if full-book-name is nil, then we accumulate events not
+; inside any book.  Collect-p is true only when we are to collect up such
 ; function symbols.
 
   (cond ((endp trips)
@@ -12425,17 +12441,34 @@
 
 (defun newly-defined-top-level-fns (old-wrld new-wrld full-book-name)
   
-; New-wrld is an extension of old-wrld.
+; New-wrld is the installed world, an extension of old-wrld.
 
   (let ((old-len (length old-wrld))
         (new-len (length new-wrld)))
     (assert$
      (<= old-len new-len)
-     (newly-defined-top-level-fns-rec
-      (first-n-ac-rev (- new-len old-len) new-wrld nil)
-      t
-      full-book-name
-      nil))))
+     (let* ((len-old-past-boot-strap
+             (cond
+              ((equal (access-command-tuple-form (cddar old-wrld))
+                      '(exit-boot-strap-mode)) ; optimization for common case
+               0)
+              (t (- old-len
+                    (length (lookup-world-index
+                             'command
+                             (access command-number-baseline-info
+                                     (global-val 'command-number-baseline-info
+                                                 new-wrld) ; installed world
+                                     :original)
+                             new-wrld)))))))
+       (newly-defined-top-level-fns-rec
+        (first-n-ac-rev (- new-len old-len) new-wrld nil)
+        t
+        full-book-name
+        (newly-defined-top-level-fns-rec
+         (first-n-ac-rev len-old-past-boot-strap old-wrld nil)
+         t
+         nil
+         nil))))))
 
 (defun accumulate-post-alist (post-alist include-book-alist)
 
@@ -13542,7 +13575,8 @@
 (defun write-expansion-file (portcullis-cmds declaim-list new-fns-exec
                                              expansion-filename expansion-alist
                                              expansion-alist-pkg-names
-                                             ev-lst ctx state)
+                                             ev-lst known-package-alist
+                                             ctx state)
 
 ; Expansion-filename is the expansion file for a certified book (or, a book
 ; whose certification is nearly complete) that has been through
@@ -13552,7 +13586,7 @@
 ; cannot open it.
 
   #+acl2-loop-only
-  (declare (ignore new-fns-exec expansion-alist-pkg-names))
+  (declare (ignore new-fns-exec expansion-alist-pkg-names known-package-alist))
   (with-output-object-channel-sharing
    ch expansion-filename
    (cond
@@ -13594,7 +13628,7 @@
        #-acl2-loop-only
        (let ((ans1 nil)
              (ans2 nil))
-         (dolist (entry (known-package-alist state))
+         (dolist (entry known-package-alist)
            (let ((pkg-name (package-entry-name entry)))
              (when (not (member-equal
                          pkg-name ; from initial known-package-alist
@@ -14788,10 +14822,8 @@
                                       (print-certify-book-step-4 ; write certificate
                                        full-book-name os-expansion-filename state)
                                       (let* ((portcullis-cmds
-                                              (remove-duplicates-equal-from-end
-                                               (append (car portcullis)
-                                                       new-defpkg-list)
-                                               nil))
+                                              (append? (car portcullis)
+                                                       new-defpkg-list))
                                              (chk-sum
                                               (check-sum-cert portcullis-cmds
                                                               ev-lst))
@@ -14855,7 +14887,9 @@
                                                    full-book-name nil state)
                                                   expansion-alist
                                                   expansion-alist-pkg-names
-                                                  ev-lst ctx state)
+                                                  ev-lst
+                                                  pass1-known-package-alist
+                                                  ctx state)
                                                  #-acl2-loop-only
                                                  (let ((cert-file
                                                         (pathname-unix-to-os

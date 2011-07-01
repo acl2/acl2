@@ -1456,37 +1456,32 @@
 (defvar *defpkg-virgins* nil)
 
 (defun-one-output defpkg-raw1 (name imports event-form)
-  (let ((package-entry (find-package-entry name *ever-known-package-alist*)))
-    (cond
-     ((raw-mode-p *the-live-state*)
-      (interface-er
-       "It is illegal to execute defpkg in raw mode.  See :DOC set-raw-mode."))
-     (t
-      (let ((pkg (find-package name))
-            (global-name (concatenate 'string
-                                      acl2::*global-package-prefix*
-                                      name))
-            (*1*-name (concatenate 'string
-                                   acl2::*1*-package-prefix*
-                                   name))
-            (proposed-imports (sort-symbol-listp imports)))
-        (assert pkg) ; see defpkg-raw
+  (let ((package-entry (find-package-entry name *ever-known-package-alist*))
+        (pkg (find-package name))
+        (global-name (concatenate 'string
+                                  acl2::*global-package-prefix*
+                                  name))
+        (*1*-name (concatenate 'string
+                               acl2::*1*-package-prefix*
+                               name))
+        (proposed-imports (sort-symbol-listp imports)))
+    (assert pkg) ; see defpkg-raw
 
 ; We bind proposed-imports to the value of the imports argument.  We do not
 ; want to evaluate it more than once below.  We DO reference, and hence
 ; evaluate, name more than once below.  But name must be an explicit string
 ; constant.
 
-        (cond
-         (package-entry
-          (cond
-           ((equal proposed-imports (package-entry-imports package-entry))
+    (cond
+     (package-entry
+      (cond
+       ((equal proposed-imports (package-entry-imports package-entry))
 
 ; The package has already been built in Common Lisp and the imports are
 ; identical.  There is nothing for us to do.
 
-            name)
-           (t
+        name)
+       (t
 
 ; The package has already been built in Common Lisp but with the wrong imports.
 ; There is nothing we can do.  We do not want to unintern any symbols in it
@@ -1495,68 +1490,68 @@
 ; that is part of that deflabel (but which is not actually part of the
 ; ACL2 documentation).
 
-            (error
-             "~%We cannot reincarnate the package ~s with imports ~s~%because ~
+        (error
+         "~%We cannot reincarnate the package ~s with imports ~s~%because ~
               it was previously defined with imports ~s.  See~%:DOC ~
               package-reincarnation-import-restrictions."
-             name
-             proposed-imports
-             (package-entry-imports package-entry)))))
-         ((not (member-equal name *defpkg-virgins*))
+         name
+         proposed-imports
+         (package-entry-imports package-entry)))))
+     ((not (member-equal name *defpkg-virgins*))
 
 ; The package has been built in this Common Lisp but not by defpkg-raw1.  It
 ; may be new because of the defpackage form in defpkg-raw, in which case it is
 ; an element of *defpkg-virgins*.  Otherwise, it was defined in Common Lisp
 ; outside ACL2, and we should cause an error.
 
-          (error
-           "~%It is illegal to defpkg ~s because a package of that name ~
+      (error
+       "~%It is illegal to defpkg ~s because a package of that name ~
             already exists in this lisp.~%"
-           name))
-         (t
-          (assert (not (assoc-equal name *package-alist*)))
-          (let ((incomplete-p t)
-                (saved-ever-known-package-alist *ever-known-package-alist*))
-            (setq *defpkg-virgins*
-                  (remove1-equal name *defpkg-virgins*))
-            (unwind-protect
-                (progn
-                  (setq *ever-known-package-alist*
-                        (cons (make-package-entry :name name
-                                                  :imports proposed-imports
-                                                  :defpkg-event-form event-form)
-                              *ever-known-package-alist*))
-                  (when proposed-imports
+       name))
+     (t
+      (assert (not (assoc-equal name *package-alist*)))
+      (let ((incomplete-p t)
+            (saved-ever-known-package-alist *ever-known-package-alist*))
+        (setq *defpkg-virgins*
+              (remove1-equal name *defpkg-virgins*))
+        (unwind-protect
+            (progn
+              (setq *ever-known-package-alist*
+                    (cons (make-package-entry :name name
+                                              :imports proposed-imports
+                                              :defpkg-event-form event-form)
+                          *ever-known-package-alist*))
+              (when proposed-imports
 
 ; Without the qualifier above, clisp imports nil if proposed-imports = nil.
 
-                    (our-import proposed-imports (find-package name)))
+                (our-import proposed-imports (find-package name)))
 
 ; So at this point we have set the package's imports appropriately.  We now
 ; handle the dual packages in which the state globals and executable
 ; counterparts of symbols from pkg will reside.  We do not reinitialize these
 ; hidden variables if we are recovering from an error or booting.
 
-                  (cond
-                   ((and (not *in-recover-world-flg*)
-                         (not (getprop 'boot-strap-flg 'global-value nil
-                                       'current-acl2-world
-                                       (w *the-live-state*))))
-                    (cond ((find-package global-name)
-                           (do-symbols (sym (find-package global-name))
-                             (makunbound sym)))
-                          (t (make-package global-name :use nil)))
-                    (cond ((find-package *1*-name)
-                           nil)
-                          (t (make-package *1*-name :use nil)))))
-                  (setq incomplete-p nil)
-                  name)
-              (when incomplete-p
-                (setq *ever-known-package-alist*
-                      saved-ever-known-package-alist)
-                (do-symbols (sym pkg)
-                  (unintern sym))
-                (delete-package (find-package name))))))))))))
+              (cond
+               ((and (not *in-recover-world-flg*)
+                     (not (getprop 'boot-strap-flg 'global-value nil
+                                   'current-acl2-world
+                                   (w *the-live-state*))))
+                (cond ((find-package global-name)
+                       (do-symbols (sym (find-package global-name))
+                                   (makunbound sym)))
+                      (t (make-package global-name :use nil)))
+                (cond ((find-package *1*-name)
+                       nil)
+                      (t (make-package *1*-name :use nil)))))
+              (setq incomplete-p nil)
+              name)
+          (when incomplete-p
+            (setq *ever-known-package-alist*
+                  saved-ever-known-package-alist)
+            (do-symbols (sym pkg)
+                        (unintern sym))
+            (delete-package (find-package name)))))))))
 
 (defun package-has-no-imports (name)
   (let ((pkg (find-package name)))
@@ -1625,8 +1620,8 @@
 ; Defpkg checks that name is a string.  Event-form is a cons.  So we don't need
 ; to worry about capture below.
 
-  `(let ((package-entry
-          (find-package-entry ,name *ever-known-package-alist*)))
+  `(let ((package-entry (find-package-entry ,name *ever-known-package-alist*))
+         (*safe-mode-verified-p* t))
      (cond
       ((and package-entry
             (let ((old-event-form
@@ -1648,8 +1643,8 @@
        (maybe-introduce-empty-pkg-2 ,name)
        (defpkg-raw1 ,name ,imports ,event-form)))))
 
-(defmacro defpkg (&whole event-form name imports &optional doc book-path)
-  (declare (ignore doc book-path))
+(defmacro defpkg (&whole event-form name imports &optional doc book-path hidden-p)
+  (declare (ignore doc book-path hidden-p))
   (or (stringp name)
       (interface-er "Attempt to call defpkg on a non-string, ~x0."
                     name))
@@ -5654,8 +5649,36 @@
 (defmacro ec-call1-raw (ign x)
   (declare (ignore ign))
   (assert (and (consp x) (symbolp (car x)))) ; checked by translate11
-  (cons (*1*-symbol (car x))
-        (cdr x)))
+  (let ((*1*fn (*1*-symbol (car x))))
+    `(funcall
+      (cond
+       (*safe-mode-verified-p* ; see below for discussion of this case
+        ',(car x))
+       ((fboundp ',*1*fn) ',*1*fn)
+       (t
+
+; We should never hit this case, unless the user is employing trust tags or raw
+; Lisp.  For ACL2 events that might hit this case, such as a defconst using
+; ec-call in a book (see below), we should ensure that *safe-mode-verified-p*
+; is bound to t.  For example, we do so in the raw Lisp definition of defconst,
+; which is justified because when ACL2 processes the defconst it will evaluate
+; in safe-mode to ensure that no raw Lisp error could occur.
+
+; Why is the use above of *safe-mode-verified-p* necessary?  If an event in a
+; book calls ec-call in raw Lisp, then we believe that the event is a defpkg or
+; defconst event.  In such cases, ec-call may be expected to invoke a *1*
+; function.  Unfortunately, the *1* function definitions are laid down (by
+; write-expansion-file) at the end of the expansion file.  However, we cannot
+; simply move the *1* definitions to the front of the expansion file, because
+; some may refer to constants or packages defined in the book.  We might wish
+; to consider interleaving *1* definitions with events from the book but that
+; seems difficult to do.  Instead, we arrange with *safe-mode-verified-p* to
+; avoid the *1* function calls entirely when loading the expansion file (or its
+; compilation).
+
+        (error "Undefined function, ~s.  Please contact the ACL2 implementors."
+               ',*1*fn)))
+      ,@(cdr x))))
 
 (defmacro ec-call1 (ign x)
 
@@ -8107,7 +8130,9 @@
   recognizer for a true list of ~il[atom]s~/
 
   The predicate ~c[atom-listp] tests whether its argument is a
-  ~ilc[true-listp] of ~il[atom]s, i.e., of non-conses.~/~/"
+  ~ilc[true-listp] of ~il[atom]s, i.e., of non-conses.~/
+
+  Also ~pl[good-atom-listp].~/"
 
   (declare (xargs :guard t))
   (cond ((atom lst) (eq lst nil))
@@ -8121,6 +8146,33 @@
 
 (defthm eqlable-listp-forward-to-atom-listp
   (implies (eqlable-listp x)
+           (atom-listp x))
+  :rule-classes :forward-chaining)
+
+(defun good-atom-listp (lst)
+
+; Keep this in sync with bad-atom.
+
+  ":Doc-Section ACL2::Programming
+
+  recognizer for a true list of ``good'' ~il[atom]s~/
+
+  The predicate ~c[good-atom-listp] tests whether its argument is a
+  ~ilc[true-listp] of ``good'' ~il[atom]s, i.e., where each element is a
+  number, a symbol, a character, or a string.~/
+
+  Also ~pl[atom-listp].~/"
+
+  (declare (xargs :guard t))
+  (cond ((atom lst) (eq lst nil))
+        (t (and (or (acl2-numberp (car lst))
+                    (symbolp (car lst))
+                    (characterp (car lst))
+                    (stringp (car lst)))
+                (good-atom-listp (cdr lst))))))
+
+(defthm good-atom-listp-forward-to-atom-listp
+  (implies (good-atom-listp x)
            (atom-listp x))
   :rule-classes :forward-chaining)
 
@@ -14868,7 +14920,7 @@
   (list 'in-package-fn (list 'quote str) 'state))
 
 #+acl2-loop-only
-(defmacro defpkg (&whole event-form name form &optional doc book-path)
+(defmacro defpkg (&whole event-form name form &optional doc book-path hidden-p)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -14983,6 +15035,7 @@
         'state
         (list 'quote doc)
         (list 'quote book-path)
+        (list 'quote hidden-p)
         (list 'quote event-form)))
 
 (defdoc managing-acl2-packages
@@ -24758,7 +24811,7 @@
     step-limit-error
     add-custom-keyword-hint@par ; for #+acl2-par
     waterfall-print-clause-id@par ; for #+acl2-par
-    with-output-lock with-ttree-lock with-wormhole-lock ; for #+acl2-par
+    deflock ; for #+acl2-par
     f-put-global@par ; for #+acl2-par
     set-waterfall-parallelism
     with-prover-step-limit
@@ -24976,14 +25029,7 @@
     (more-doc-max-lines . 45)
     (more-doc-min-lines . 35)
     (more-doc-state . nil)
-    (parallel-evaluation-enabled . ; GCL 2.6.6 breaks with only 2 lines below
-
-; Parallelism wart: Need to move to lp the setting of this value to t.
-
-                                 #+acl2-par
-                                 t
-                                 #-acl2-par
-                                 nil)
+    (parallel-evaluation-enabled . nil)
     (pc-erp . nil)
     (pc-output . nil)
     (pc-print-macroexpansion-flg . nil)
@@ -25811,9 +25857,6 @@
 
 #+acl2-par
 (defmacro f-put-global@par (key value st)
-
-; Parallelism wart: calls that use this macro might need to be locked.
-
   (declare (ignorable key value st))
   #+acl2-loop-only
   nil
@@ -27243,9 +27286,11 @@
                                        #\o)
                                       ((eql print-base 16)
                                        #\x)
-                                      (t (illegal 'explode-atom
-                                                  "Unexpected base, ~x0"
-                                                  print-base)))
+                                      (t (prog2$
+                                          (illegal 'explode-atom
+                                                   "Unexpected base, ~x0"
+                                                   print-base)
+                                          #\?)))
                                 digits)))))
                (t (append
                    (explode-atom (numerator x) print-base)
@@ -27269,15 +27314,9 @@
          (coerce "SOME IRRATIONAL OR COMPLEX IRRATIONAL NUMBER" 'list))
         (t (coerce (symbol-name x) 'list))))
 
-(verify-termination-boot-strap
+(verify-termination-boot-strap ; and guards
  explode-atom
  (declare (xargs :mode :logic)))
-
-(local
- (defthm true-listp-explode-atom
-   (true-listp (explode-atom x print-base))))
-
-(verify-guards explode-atom)
 
 (defthm true-list-listp-forward-to-true-listp-assoc-equal
 
@@ -28900,36 +28939,117 @@
                                      (list ,@args))
                            0 nil))
 
-; Parallelism wart: decide whether to use the following macro.  If not, delete
-; it!
+(defun subseq-list (lst start end)
+  (declare (xargs :guard (and (true-listp lst)
+                              (integerp start)
+                              (integerp end)
+                              (<= 0 start)
+                              (<= start end))
+                  :mode :program))
+  (take (- end start)
+        (nthcdr start lst)))
 
-;(defmacro define-lock-and-wrapper-macro (lock-symbol)
-;  (let* ((chars (explode-atom lock-symbol 10))
-;         (trimmed1 (cdr chars))
-;         (trimmed2 (butlast trimmed1))
-;         (wrapper-macro-symbol (intern (string-append "WITH-" trimmed2)
-;                                     "ACL2"))
-;
-;  `(progn #+(and acl2-par (not acl2-loop-only))
-;          (deflock ,lock-symbol)
-;          (defmacro ,wrapper-macro-symbol (&rest args)
-;            #+(and acl2-par (not acl2-loop-only))
-;            (with-lock ,lock-symbol
-;                       ,@args)
-;            #-(and acl2-par (not acl2-loop-only))
-;            (progn$ ,@args))))))
+#+acl2-loop-only
+(defun subseq (seq start end)
 
-#+(and acl2-par (not acl2-loop-only))
+  ":Doc-Section ACL2::Programming
+
+  subsequence of a string or list~/
+
+  For any natural numbers ~c[start] and ~c[end], where ~c[start] ~c[<=]
+  ~c[end] ~c[<=] ~c[(length seq)], ~c[(subseq seq start end)] is the
+  subsequence of ~c[seq] from index ~c[start] up to, but not including,
+  index ~c[end].  ~c[End] may be ~c[nil], which which case it is treated
+  as though it is ~c[(length seq)], i.e., we obtain the subsequence of
+  ~c[seq] from index ~c[start] all the way to the end.~/
+
+  The ~il[guard] for ~c[(subseq seq start end)] is that ~c[seq] is a
+  true list or a string, ~c[start] and ~c[end] are integers (except,
+  ~c[end] may be ~c[nil], in which case it is treated as ~c[(length seq)]
+  for the rest of this discussion), and ~c[0] ~c[<=] ~c[start] ~c[<=]
+  ~c[end] ~c[<=] ~c[(length seq)].
+
+  ~c[Subseq] is a Common Lisp function.  See any Common Lisp
+  documentation for more information.  Note:  In Common Lisp the third
+  argument of ~c[subseq] is optional, but in ACL2 it is required,
+  though it may be ~c[nil] as explained above.~/"
+
+  (declare (xargs :guard (and (or (true-listp seq)
+                                  (stringp seq))
+                              (integerp start)
+                              (<= 0 start)
+                              (or (null end)
+                                  (and (integerp end)
+                                       (<= end (length seq))))
+                              (<= start (or end (length seq))))
+                  :mode :program))
+  (if (stringp seq)
+      (coerce (subseq-list (coerce seq 'list) start (or end (length seq)))
+              'string)
+    (subseq-list seq start (or end (length seq)))))
+
+#+(or (not acl2-par) acl2-loop-only)
+(defmacro deflock (lock-symbol)
+
+; In the logic, and even in raw Lisp if #-acl2-par, a call of deflock
+; macroexpands to a definition of a macro that returns its last argument
+; (basically, an identity macro).  The raw Lisp #+acl2-par definition may be
+; found elsewhere.  The "wart" just below was, as with all parallelism warts as
+; of Version_4.3, contributed by David Rager.
+
+; Parallelism wart: see if Kaufmann and Moore are okay with the following
+; documentation.  Since deflock may still change in the short-run, this wart
+; should probably be addressed after the release of 4.3.
+
+;; ":Doc-Section ACL2::Parallelism
+
+;; define a wrapper macro that provides mutual exclusion in #+acl2-par!~/
+
+;; This ~il[documentation] topic relates to the experimental extension of
+;; ACL2 supporting parallel evaluation and proof; ~pl[parallelism].
+
+;; ~bv[]
+;; General Forms:
+;; (deflock *my-lock*)
+;; ~ev[]
+;; ~/
+
+;; This macro defines another macro that guarantees mutually exclusive
+;; execution, based off the given lock-symbol, in the #+acl2-par
+;; (~pl[compiling-acl2p]) build of ACL2.
+
+;; The defined macro has the name ~c[with-<modified-lock-symbol>], where
+;; ~c[<modified-lock-symbol>], is the given symbol with the leading and
+;; trailing ~c[*] characters removed.  In the raw Lisp version of the code,
+;; the provided macro uses a lock, with the given ~c[lock-symbol] name, to
+;; guarantee that no forms surrounded with the same use of
+;; ~c[with-<modified-lock-symbol>] execute concurrently with one another.
+
+;; An example script is as follows:
+
+;; ~bv[]
+;; (deflock *my-cw-lock*)
+;; (with-my-cw-lock 
+;;   (cw \"No other use of with-my-cw-lock can print concurrently with me\"))
+;; ~ev[]
+;; ~/"
+
+  (declare (xargs :guard 
+                  (and (symbolp lock-symbol)
+                       (let ((name (symbol-name lock-symbol)))
+                         (and (> (length name) 2)
+                              (eql (char name 0) #\*)
+                              (eql (char name (1- (length name))) #\*))))))
+  (let* ((name (symbol-name lock-symbol))
+         (macro-symbol (intern 
+                        (concatenate 'string
+                                     "WITH-"
+                                     (subseq name 1 (1- (length name))))
+                        "ACL2")))
+    `(defmacro ,macro-symbol (&rest args)
+       (cons 'progn$ args))))
+
 (deflock *output-lock*)
-
-#+(and acl2-par (not acl2-loop-only))
-(defmacro with-output-lock (&rest args)
-  `(with-lock *output-lock*
-              ,@args))
-
-#-(and acl2-par (not acl2-loop-only))
-(defmacro with-output-lock (&rest args)
-  `(progn$ ,@args))
 
 (skip-proofs ; as with open-output-channel
 (defun get-output-stream-string$-fn (channel state-state)
@@ -29874,55 +29994,6 @@
    (append (t-stack state-state)
            (make-list-ac n val nil))
    state-state))
-
-(defun subseq-list (lst start end)
-  (declare (xargs :guard (and (true-listp lst)
-                              (integerp start)
-                              (integerp end)
-                              (<= 0 start)
-                              (<= start end))
-                  :mode :program))
-  (take (- end start)
-        (nthcdr start lst)))
-
-#+acl2-loop-only
-(defun subseq (seq start end)
-
-  ":Doc-Section ACL2::Programming
-
-  subsequence of a string or list~/
-
-  For any natural numbers ~c[start] and ~c[end], where ~c[start] ~c[<=]
-  ~c[end] ~c[<=] ~c[(length seq)], ~c[(subseq seq start end)] is the
-  subsequence of ~c[seq] from index ~c[start] up to, but not including,
-  index ~c[end].  ~c[End] may be ~c[nil], which which case it is treated
-  as though it is ~c[(length seq)], i.e., we obtain the subsequence of
-  ~c[seq] from index ~c[start] all the way to the end.~/
-
-  The ~il[guard] for ~c[(subseq seq start end)] is that ~c[seq] is a
-  true list or a string, ~c[start] and ~c[end] are integers (except,
-  ~c[end] may be ~c[nil], in which case it is treated as ~c[(length seq)]
-  for the rest of this discussion), and ~c[0] ~c[<=] ~c[start] ~c[<=]
-  ~c[end] ~c[<=] ~c[(length seq)].
-
-  ~c[Subseq] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.  Note:  In Common Lisp the third
-  argument of ~c[subseq] is optional, but in ACL2 it is required,
-  though it may be ~c[nil] as explained above.~/"
-
-  (declare (xargs :guard (and (or (true-listp seq)
-                                  (stringp seq))
-                              (integerp start)
-                              (<= 0 start)
-                              (or (null end)
-                                  (and (integerp end)
-                                       (<= end (length seq))))
-                              (<= start (or end (length seq))))
-                  :mode :program))
-  (if (stringp seq)
-      (coerce (subseq-list (coerce seq 'list) start (or end (length seq)))
-              'string)
-    (subseq-list seq start (or end (length seq)))))
 
 (encapsulate
  ()
@@ -31979,9 +32050,10 @@
                 ((or (eq pkg *main-lisp-package*)
                      (get x *initial-lisp-symbol-mark*))
                  nil)
-                ((not (find-non-hidden-package-entry
-                       (package-name pkg)
-                       (known-package-alist *the-live-state*)))
+                ((let ((entry
+                        (find-package-entry
+                         (package-name pkg)
+                         (known-package-alist *the-live-state*))))
 
 ; We maintain the following Invariant on Symbols in the Common Lisp Package: If
 ; a symbol arising in ACL2 evaluation or state resides in *main-lisp-package*,
@@ -32014,9 +32086,32 @@
 ; a symbol, i.e.: a symbol violating the above Invariant on Symbols in the
 ; Common Lisp Package.
 
-                 (cons "The symbol CLTL displays as ~s0 is not in any of the ~
-                        packages known to ACL2."
-                       (list (cons #\0 (format nil "~s" x)))))
+                   (and
+                    (or (null entry)
+                        (package-entry-hidden-p entry))
+                    (cons
+                     "The symbol CLTL displays as ~s0 is not in any of the ~
+                      packages known to ACL2.~@1"
+                     (list
+                      (cons #\0 (format nil "~s" x))
+                      (cons #\1
+                            (cond
+                             ((or (null entry)
+                                  (null (package-entry-book-path entry)))
+                              "")
+                             (t
+                              (msg "  This package was defined under a ~
+                                    locally included book.  Thus, some ~
+                                    include-book was local in the following ~
+                                    sequence of included books, from top-most ~
+                                    book down to the book whose portcullis ~
+                                    defines this package (with a defpkg ~
+                                    event).~|~%  ~F0"
+                                   (reverse
+                                    (unrelativize-book-path
+                                     (package-entry-book-path entry)
+                                     (f-get-global 'distributed-books-dir
+                                                   *the-live-state*))))))))))))
                 (t nil))))))
         ((stringp x)
          (cond
@@ -40612,6 +40707,9 @@
 ; Sumners for useful discussions and a modification of Pete's events.
 
 (defun bad-atom (x)
+
+; Keep this in sync with good-atom-listp.
+
   (declare (xargs :guard t))
   (not (or (consp x)
            (acl2-numberp x)
@@ -43384,23 +43482,61 @@ Lisp definition."
 
 (defconst *@par-mappings*
 
-; Here we enumerate the list of symbols that should automatically have
-; #-acl2-par *@par counterparts defined, where * is the given symbol name.
-; This constant is also used when defining functions with defun@par.
+; For each symbol SYM in the quoted list below, the #-acl2-par call below of
+; define-@par-macros will automatically define a macro SYM@par that expands to
+; the corresponding call of SYM.  For #+acl2-par, however, SYM@par must be
+; defined explicitly.  For example, in #-acl2-par, waterfall1-lst@par is
+; automatically defined to call waterfall1-lst, but in #+acl2-par we explicitly
+; define waterfall1-lst@par.
+
+; Next we consider the role played by the list below in expanding calls of the
+; macro defun@par.  In #-acl2-par, there actually is no role: a call of
+; defun@par simply expands to a call of defun on the same arguments, i.e.,
+; defun@par is simply replaced by defun.
+
+; Consider then the #+acl2-par case for a call (defun@par FN . rest).  This
+; call expands to a progn of two defuns, which we refer to as the "parallel"
+; (or "@par") and "serial" (or "non-@par") versions of (the definition on) FN.
+; For the parallel version we obtain (defun FN@par . rest).  For the serial
+; version we obtain (defun FN . rest'), where rest' is the result of replacing
+; SYM@par by SYM in rest for each symbol SYM in the list below.  Consider for
+; example the definition (defun@par waterfall-step formals body); note that we
+; are still considering only the #+acl2-par case.  This call expands to a progn
+; of parallel and serial versions.  The parallel version is (defun
+; waterfall-step@par formals body), i.e., with no change to the body of the
+; given defun@par.  The serial version is of the form (defun waterfall-step
+; formals body'), where for example the call of waterfall-step1@par in body is
+; replaced by a corresponding call of waterfall-step1 in body'.
+
+; Suppose that F is a function that has both a parallel definition (defining
+; F@par) and serial definition (defining F), such that F@par is called in the
+; body of (defun@par G ...).  Then it is useful to include F in the list below.
+; To see why, consider the #-acl2-par expansion of (defun@par G ...), which
+; still has a call of F@par.  By including F in the list below, we ensure that
+; F@par is automatically defined as a macro that replaces F@par by F.
+
+; Note that this list does not contain all symbols defined with an @par
+; counterpart.  For example, the symbol mutual-recursion is omitted from this
+; list, and mutual-recursion@par must be defined explicitly in both #+acl2-par
+; and #-acl2-par.  This works because mutual-recursion@par does not need to be
+; called from inside any functions defined with defun@par.
+
+; Also, sometimes we need to create a non-@par version of a macro that is the
+; identity macro, just so that we can have an @par version that does something
+; important for the parallel case inside a call of defun@par.
+; Waterfall1-wrapper is an example of such a macro (and it may be the only
+; example).  Since waterfall1-wrapper@par is called within functions defined
+; with defun@par, waterfall1-wrapper must be included in this list, as
+; explained above.
+
+; This list is split into two groups: (1) symbols that have an explicit
+; #+acl2-par definition for the parallel (@par) version, and (2) symbols for
+; which defun@par is used for defining both the symbol and its @par version.
+; Group (1) is further divided into (1a) utilities that are "primitive" in
+; nature and (1b) higher-level functions and macros.
 
   (generate-@par-mappings
    '(
-
-; This list contains macros and functions that support the waterfall in
-; different ways for #+acl2-par and #-acl2-par.  It is split into two groups:
-; (1) symbols that have a separate definition for the @par counterpart, and (2)
-; symbols for which defun@par is used for defining both the symbol and its @par
-; counterpart.  Group (1) is further divided into (1a) utilities that are
-; "primitive" in nature and (1b) higher-level functions and macros.
-
-; Note that this list does not contain all *@par symbols.  For example,
-; mutual-recursion@par must be defined explicitly in both #+acl2-par and
-; #-acl2-par.
 
 ; Group 1a (see above):
 
@@ -43633,6 +43769,13 @@ Lisp definition."
   `(mutual-recursion ,@(mutual-recursion@par-fn forms t)))
 
 (defmacro defun@par (name &rest args)
+
+; See *@par-mappings* for a discussion of this macro.  In brief: for
+; #-acl2-par, defun@par is just defun.  But for #+acl2-par, defun@par defines
+; two functions, a "parallel" and a "serial" version.  The serial version
+; defines the given symbol, but the parallel version defines a corresponding
+; symbol with suffix "@PAR".
+
   #+acl2-par
   `(progn ,(defun@par-fn name t args)
           ,(defun@par-fn name nil args))

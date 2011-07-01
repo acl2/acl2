@@ -540,17 +540,7 @@
 ; as a 'lemma in the 'accumulated-ttree of the final state.)  This encourages
 ; us to cons a new ttree into the accumulator every time we do output.
 
-#+(and acl2-par (not acl2-loop-only))
 (deflock *ttree-lock*)
-
-#+(and acl2-par (not acl2-loop-only))
-(defmacro with-ttree-lock (&rest args)
-  `(with-lock *ttree-lock*
-              ,@args))
-
-#-(and acl2-par (not acl2-loop-only))
-(defmacro with-ttree-lock (&rest args)
-  `(progn$ ,@args))
 
 (defun@par accumulate-ttree-and-step-limit-into-state (ttree step-limit state)
 

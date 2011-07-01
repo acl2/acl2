@@ -1283,10 +1283,10 @@
 (ccl:egc nil)
 
 #+ccl
-(ccl:set-lisp-heap-gc-threshold (expt 2 31)) ; a modest 2 gig. 16 is better :]
+(ccl:set-lisp-heap-gc-threshold (expt 2 30))
 
 #+sbcl
-(setf (sb-ext:bytes-consed-between-gcs) (1- (expt 2 31)))
+(setf (sb-ext:bytes-consed-between-gcs) (1- (expt 2 30)))
 
 (defvar *resource-and-timing-based-parallelizations*
   0

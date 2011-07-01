@@ -760,17 +760,7 @@
                    (put-assoc-equal ,qname ,val *wormhole-status-alist*)))
          nil))))
 
-#+(and acl2-par (not acl2-loop-only))
 (deflock *wormhole-lock*)
-
-#+(and acl2-par (not acl2-loop-only))
-(defmacro with-wormhole-lock (&rest args)
-  `(with-lock *wormhole-lock*
-              ,@args))
-
-#-(and acl2-par (not acl2-loop-only))
-(defmacro with-wormhole-lock (&rest args)
-  `(progn$ ,@args))
 
 (defmacro wormhole (name entry-lambda input form
                          &key
@@ -1597,11 +1587,13 @@
                      (t (genvar1 pkg-witness prefix avoid-lst cnt))))))))
 
 (defun packn1 (lst)
-  (cond ((null lst) nil)
+  (declare (xargs :guard (good-atom-listp lst)))
+  (cond ((endp lst) nil)
         (t (append (explode-atom (car lst) 10)
                    (packn1 (cdr lst))))))
 
 (defun packn (lst)
+  (declare (xargs :guard (good-atom-listp lst)))
   (let ((ans
 ; See comment in intern-in-package-of-symbol for an explanation of this trick.
          (intern (coerce (packn1 lst) 'string)
@@ -10287,6 +10279,45 @@
   goals, some of which may not be theorems if the definition being processed
   has bugs.  It can be difficult to find such bugs.  This ~il[documentation]
   topic explains a capability provided by ACL2 to help find such bugs.
+
+  We begin with the following example.  Although it is contrived and a bit
+  simplistic, it illustrates how the guard-debug utility works.
+
+  ~bv[]
+  (defun length-repeat (x)
+    (length (append x x)))
+  (verify-guards length-repeat :guard-debug t)
+  ~ev[]
+
+  The output produces two top-level key checkpoints, as follows.
+  ~bv[]
+  Subgoal 2
+  (IMPLIES (EXTRA-INFO '(:GUARD (:BODY LENGTH-REPEAT))
+                       '(APPEND X X))
+           (TRUE-LISTP X))
+
+  Subgoal 1
+  (IMPLIES (AND (EXTRA-INFO '(:GUARD (:BODY LENGTH-REPEAT))
+                            '(LENGTH (APPEND X X)))
+                (NOT (TRUE-LISTP (APPEND X X))))
+           (STRINGP (APPEND X X)))
+  ~ev[]
+  The upper subgoal (numbered 2) says that the body of the definition of
+  ~c[length-repeat] contains a call ~c[(APPEND X X)], which is the source of
+  the goal.  In this case, that makes sense: the ~il[guard] for a call
+  ~c[(append arg1 arg2)] is ~c[(true-listp arg1)], which in this case is
+  ~c[(TRUE-LISTP X)].  The lower subgoal (numbered 1) says that the same
+  definition contains the call ~c[(LENGTH (APPEND X X))], which generates the
+  proof obligation that if ~c[(APPEND X X)] does not satisfy ~c[true-listp],
+  then it must satisfy ~c[stringp].  That proof obligation comes directly from
+  the ~il[guard] for ~ilc[length].
+
+  Of course, the example above is a bit obvious.  But for large definitional
+  bodies such information can be very helpful.  Note that guard-debug can be
+  specified not only in ~ilc[verify-guards] events but also in ~ilc[xargs]
+  ~ilc[declare] forms of ~ilc[defun] events.
+
+  We now describe the guard-debug utility in some detail.
 
   ~c[(Extra-info x y)] always returns ~c[t] by definition.  However, if
   ~il[guard] verification takes place with a non-~c[nil] setting of

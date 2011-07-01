@@ -57,15 +57,13 @@
 
 (defdoc parallelism
 
-; Parallelism wart: mention proof parallelism inside this topic.
-
   ":Doc-Section Parallelism
 
   experimental extension for evaluating forms in parallel~/
 
   This documentation topic relates to an experimental extension of ACL2,
-  ACL2(p), created initially by David L. Rager.  ~l[parallelism-build] for how
-  to build an executable image that supports parallel evaluation.  Also see
+  ACL2(p), created initially by David L. Rager.  ~l[compiling-acl2p] for how to
+  build an executable image that supports parallel evaluation.  Also see
   ~c[books/parallel] for examples.
 
   IMPORTANT NOTE.  We hope and expect that every evaluation result is correctly
@@ -84,21 +82,28 @@
   including simulator runs using such models, and it can also decrease the time
   required for proofs that make heavy use of the evaluation of ground terms.
 
-  The parallelism primitives are ~ilc[plet], ~ilc[pargs], ~ilc[pand], and
-  ~ilc[por].  ~ilc[Pand] and ~ilc[por] terminate early when an argument is
-  found to evaluate to ~c[nil] or non-~c[nil], respectively, thus potentially
-  improving on the efficiency of lazy evaluation.~/
+  The parallelism primitives are ~ilc[plet], ~ilc[pargs], ~ilc[pand],
+  ~ilc[por], and ~ilc[spec-mv-let].  ~ilc[Pand] and ~ilc[por] terminate early
+  when an argument is found to evaluate to ~c[nil] or non-~c[nil],
+  respectively, thus potentially improving on the efficiency of lazy
+  evaluation.  ~ilc[Spec-mv-let] is a modification of ~ilc[mv-let] that
+  supports speculative and parallel execution.~/
 
-  The above four parallelism primitives allow for limiting parallel evaluation
-  (spawning of so-called ``threads'') depending on resource availability.
-  Specifically, the primitives allow specification of a size condition to
-  control the granularity under which threads are allowed to spawn.  You can
-  use such granularity declarations in recursively-defined functions to
-  implement data-dependent parallelism in their execution.
+  Of the above five parallelism primitives, all but ~ilc[spec-mv-let] allow for
+  limiting parallel evaluation (spawning of so-called ``threads'') depending on
+  resource availability.  Specifically, the primitives allow specification of a
+  size condition to control the ~il[granularity] under which threads are
+  allowed to spawn.  You can use such ~il[granularity] declarations in
+  recursively-defined functions to implement data-dependent parallelism in
+  their execution.
 
   We recommend that in order to learn to use the parallelism primitives, you
   begin by reading examples: ~pl[parallelism-tutorial].  That section will
   direct you to further documentation topics.
+
+  In addition to providing parallel programming primitives, ACL2(p) also
+  provides the ability to execute the main ACL2 proof process in parallel.
+  ~l[set-waterfall-parallelism] for further details.
 
   While we aim to support Clozure Common Lisp (CCL), Steel Bank Common
   Lisp (SBCL), and Lispworks, SBCL and Lispworks both currently sometimes
@@ -106,14 +111,31 @@
   ``waterfall'') in parallel.  Therefore, CCL is the recommend Lisp for anyone
   that wants to use parallelism and isn't working on fixing those problems.")
 
-; Parallelism wart: complete the following documentation topic for compiling
-; with #+acl2-par.  Link to it from :doc parallelism (and maybe elsewhere).
-
 (defdoc compiling-acl2p
+
+; Keep this documentation in sync with comments above the error in
+; acl2-init.lisp about it being "illegal to build the parallel
+; version", and also with the error message about supported Lisps in
+; set-parallel-evaluation-fn.
 
   ":Doc-Section ACL2::Parallelism
 
   compiling ACL2(p)~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].  ~l[parallel] and
+  ~pl[parallelism-tutorial] for an introduction to parallel programming in ACL2
+  using primitives ~ilc[plet], ~ilc[pargs], ~ilc[pand], ~ilc[por], and
+  ~ilc[spec-mv-let].
+
+  You can build an experimental version of ACL2 that supports parallel
+  evaluation in the following host Common Lisp implementations:
+  ~bq[]
+  * CCL (OpenMCL)
+
+  * Lispworks 6.0
+
+  * SBCL with threads (feature ~c[:sb-thread])~eq[]
 
   The command below will compile ACL2 to support parallel execution, including
   parallel execution during proofs.  Any non-empty string may be used in place
@@ -121,14 +143,18 @@
   executable on which one can build ACL2(p) (~pl[parallelism]).
   ~bv[]
   make ACL2_PAR=t LISP=ccl
-  ~ev[]~/~/")
+  ~ev[]
 
-; Parallelism wart: need to add a doc topic on what's not currently supported
-; inside the parallelized waterfall.
+  So for example, to make an executable image and also documentation (which
+  will appear in subdirectories ~c[doc/EMACS] and ~c[doc/HTML]), using the Lisp
+  executable ~c[ccl]:
+  ~bv[]
+  make large DOC ACL2_PAR=t LISP=ccl
+  ~ev[]~/~/")
 
 (defdoc parallel
 
-; Just in case someone types :doc parallel!
+; Just in case someone types :doc parallel.
 
   ":Doc-Section Parallelism
 
@@ -138,35 +164,11 @@
 
 (defdoc parallelism-build
 
-; Keep this documentation in sync with the acl2-par error in acl2-init.lisp.
-
   ":Doc-Section Parallelism
 
   building an ACL2 executable with parallel evaluation enabled~/
 
-  This ~il[documentation] topic relates to the experimental extension of ACL2
-  supporting parallel evaluation and proof; ~pl[parallelism].  ~l[parallel] and
-  ~pl[parallelism-tutorial] for an introduction to parallel evaluation in ACL2
-  using parallelism primitives ~ilc[pand], ~ilc[por], ~ilc[plet], and
-  ~ilc[pargs].
-
-  You can build an experimental version of ACL2 that supports parallel
-  evaluation in the following host Common Lisp implementations:
-  ~bq[]
-  * CCL (OpenMCL)
-
-  * SBCL with threads (feature ~c[:sb-thread])~eq[]
-
-  An easy way is to build an executable supporting parallel evaluation is to
-  include the following with a ~c[make] command:
-  ~bv[]
-  ACL2_PAR=p
-  ~ev[]
-  So for example, to make an executable image and also documentation (which
-  will appear in subdirectories ~c[doc/EMACS] and ~c[doc/HTML]):
-  ~bv[]
-  make large DOC ACL2_PAR=p
-  ~ev[]~/~/")
+  ~l[compiling-acl2p].~/~/")
 
 (defun set-parallel-evaluation-fn (val ctx state)
   (declare (xargs :guard (member-eq val '(t nil :bogus-parallelism-ok))))
@@ -211,11 +213,14 @@
 
 (defmacro set-parallel-evaluation (value)
 
-; Parallelism wart: Should we add spec-mv-let to this doc topic?
+; Parallelism wart: the introduction that starts "This ~il[documentation] topic
+; relates to the experimental extension..." should include a reference to
+; spec-mv-let.  This needs to be fixed in all of the parallelism doc topic
+; introductions.
 
   ":Doc-Section Parallelism
 
-  enabling or disabling parallel evaluation for parallelism primitives~/
+  enabling parallel evaluation for four of the parallelism primitives~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
   supporting parallel evaluation and proof; ~pl[parallelism].  ~l[parallel] and
@@ -232,11 +237,14 @@
   ~/
 
   ~c[Set-parallel-evaluation] takes an argument that specifies the enabling or
-  disabling of ~il[parallel] evaluation.  However, calls of parallelism
-  primitives made explicitly in the ACL2 top-level loop, as opposed to inside
-  function bodies, will never cause parallel evaluation;
-  ~pl[parallelism-at-the-top-level].  Parallel evaluation is determined by the
-  value of the argument to ~c[set-parallel-evaluation], as follows.
+  disabling of ~il[parallel] evaluation for the primitives ~ilc[pand],
+  ~ilc[por], ~ilc[plet], and ~ilc[pargs] (but not ~ilc[spec-mv-let], whose
+  parallel evaluation remains enabled).  However, without using
+  ~ilc[top-level], calls of parallelism primitives made explicitly in the ACL2
+  top-level loop, as opposed to inside function bodies, will never cause
+  parallel evaluation; ~pl[parallelism-at-the-top-level].  Parallel evaluation
+  is determined by the value of the argument to ~c[set-parallel-evaluation], as
+  follows.
 
   Value ~c[t]:~nl[]
   All parallelism primitives used in bodies of function definitions are given
@@ -375,9 +383,22 @@
   The state of the system may be corrupted after such a message has been
   printed.~/~/")
 
-; Parallelism wart: consider adding a :doc topic for waterfall-printing and
-; waterfall-parallelism that just point to set-waterfall-printing and
-; set-waterfall-parallelism, respectively.
+(defdoc waterfall-printing
+
+  ":Doc-Section Parallelism
+
+  for ACL2(p): configuring the printing within the parallelized waterfall~/
+
+  ~l[set-waterfall-printing].~/~/")
+
+(defdoc waterfall-parallelism
+
+  ":Doc-Section Parallelism
+
+  for ACL2(p): configuring the parallel execution of the waterfall~/
+
+  ~l[set-waterfall-parallelism].~/~/")
+
 
 ; Here are the two functions we need now from
 ; make-waterfall-parallelism-constants and make-waterfall-printing-constants
@@ -498,11 +519,11 @@
   heuristics to determine whether CPU core resources are available for parallel
   execution.  Note that ACL2(p) does not hook into the operating system to
   determine the workload on the machine.  ACL2(p) works off the assumption that
-  it is the main process running on the machine, and it optimizes the amount of
-  parallelism based on the number of CPU cores in the system.  (Note that
-  ACL2(p) knows how to obtain the number of CPU cores from the operating system
-  in CCL, but that, in SBCL and in Lispworks, a constant is used instead).
-  ~c[:Resource-based] is the recommended setting for ACL2(p).
+  it is the only process using significant CPU resources, and it optimizes the
+  amount of parallelism based on the number of CPU cores in the system.  (Note
+  that ACL2(p) knows how to obtain the number of CPU cores from the operating
+  system in CCL, but that, in SBCL and in Lispworks, a constant is used
+  instead).  ~c[:Resource-based] is the recommended setting for ACL2(p).
 
   During the first proof attempt of a given conjecture, a value of
   ~c[:resource-and-timing-based] results in the same behavior as with
@@ -516,10 +537,10 @@
   mode will never be better than the ~c[:resource-based] setting for
   non-interactive theorem proving.
 
-  A value of ~c[:pseudo-parallel] runs all of the parallelism code, but in a
-  serial mode.  This setting is useful for debugging the code base that
-  supports parallel execution of the waterfall.  For example, you may wish to
-  use this mode if you are an \"ACL2 Hacker\" who would like to see
+  A value of ~c[:pseudo-parallel] results in using the parallel waterfall code,
+  but with serial execution.  This setting is useful for debugging the code
+  base that supports parallel execution of the waterfall.  For example, you may
+  wish to use this mode if you are an ``ACL2 Hacker'' who would like to see
   comprehensible output from tracing (~pl[trace$]) the ~c[@par] versions of the
   waterfall functions.
 
@@ -659,6 +680,11 @@
   :skip-checks t)
 
 (defdoc parallelism-at-the-top-level
+
+; Parallelism wart: add an example that uses top-level to this doc topic.  Also
+; modify the portions of the doc topic that state that forms will never
+; evaluate in parallel at the top-level.
+
   ":Doc-Section Parallelism
 
   parallel evaluation in the ACL2 top-level loop~/
@@ -690,7 +716,7 @@
   (top-level (pargs (cons (expensive-fn-1 4) (expensive-fn-2 5))))
   ~ev[]
   Then in an executable image that supports parallel evaluation ~-[]
-  ~pl[parallelism-build] for instructions on how to build such an executable
+  ~pl[compiling-acl2p] for instructions on how to build such an executable
   ~-[] ~c[(expensive-fn-1 4)] and ~c[(expensive-fn-2 5)] can evaluate in 
   parallel.
 
@@ -721,8 +747,8 @@
 
   In this topic we introduce the ACL2 parallelism primitives using the example
   of a doubly-recursive Fibonacci function, whose basic definition is as
-  follows.  ~l[parallelism ] for a very high-level summary of the parallelism
-  capability described here, and ~pl[parallelism-build] for how to build an
+  follows.  ~l[parallelism] for a very high-level summary of the parallelism
+  capability described here, and ~pl[compiling-acl2p] for how to build an
   executable image that supports parallel evaluation.  Here, we assume that
   such an executable is being used.~/
 
@@ -1194,12 +1220,6 @@
   termination occurs when an argument evaluates to non-~c[nil].~/")
 
 (defdoc parallel-pushing-of-subgoals-for-induction
-
-; Parallelism wart: figure out whether we'll be able to early terminate once
-; the second push occurs.  If not, discuss how the parallelized waterfall will
-; continue to prove beyond the second push of
-; '[maybe-]to-be-proved-by-induction (similar to having the :otf-flg set to t),
-; instead of immediately aborting to prove the original conjecture.
 
   ":Doc-Section Parallelism
   consequences of how parallelized proofs of subgoals are pushed for induction~/
