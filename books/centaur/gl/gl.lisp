@@ -509,17 +509,33 @@ This is the default, relatively stable form of GL symbolic simulation.~/~/"
                     'acl2::???))
             (evisc-symbolic-al (cdr x))))))
 
-(defmacro trace-gl-interp (fnname &key show-values)
-  `(trace$
-    (,fnname :entry ,(if show-values
-                         '(list (car acl2::arglist)
-                                (evisc-symbolic-al (cadr acl2::arglist)))
-                       '(car acl2::arglist))
-             :exit ,(if show-values
-                        '(if (general-concretep (nth 2 acl2::values))
-                             (general-concrete-obj (nth 2 acl2::values))
-                           'acl2::???)
-                      '-))))
+(defmacro trace-gl-interp (&key show-values)
+  (declare (xargs :guard (booleanp show-values)))
+  `(make-event
+    ;; This is pretty hideous.  We need two make-events.  The outer make-event
+    ;; just gets the name of the latest interpreter from the world, and
+    ;; constructs a trace$ command that has the name literally embedded in it.
+    (let* ((fn          (latest-gl-interp))
+           (show-values ',show-values)
+           (trace-cmd
+            `(trace$ (,fn
+                      :entry ,(if show-values
+                                  '(list (car acl2::arglist)
+                                         (evisc-symbolic-al (cadr acl2::arglist)))
+                                '(car acl2::arglist))
+                      :exit ,(if show-values
+                                 '(if (general-concretep (nth 2 acl2::values))
+                                      (general-concrete-obj (nth 2 acl2::values))
+                                    'acl2::???)
+                               '(:fmt ""))))))
+      ;; Now, if trace$ was an event, we could just use it as our expansion.
+      ;; But it isn't, so instead we expand into an other make-event, where
+      ;; we run the trace command and produce a silly value-triple.
+      `(make-event
+        (mv-let (erp val state)
+          ,trace-cmd
+          (declare (ignore erp val))
+          (value '(value-triple ',fn)))))))
 
 (defmacro break-on-g-apply ()
   `(trace$ (g-apply :entry (prog2$ (acl2::fmt-to-comment-window!
