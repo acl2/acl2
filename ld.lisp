@@ -17948,6 +17948,15 @@
        :hints ((\"Subgoal 1\" :do-not-induct some-name)))
   ~ev[]
 
+  Fixed a slight bug in the definitions of built-in ~ilc[theories].  For
+  example, in a fresh ACL2 session the value of the following form is ~c[nil],
+  but formerly included several ~c[:]~ilc[definition] ~il[rune]s.
+  ~bv[]
+  (let ((world (w state)))
+    (set-difference-theories (function-theory :here)
+                             (function-theory 'ground-zero)))
+  ~ev[]
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Many changes have been made to the distributed books, as recorded in svn logs

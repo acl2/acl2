@@ -29,9 +29,9 @@
 ; This file, boot-strap-pass-2, is compiled and loaded; but it is only
 ; processed during the second pass of the boot-strap process, not the first.
 
-; After defining some theories, we introduce propert defattach events (i.e.,
-; without :skip-checks t).  Here are some guiding principles for making system
-; functions available for attachment by users.
+; We introduce proper defattach events, i.e., without :skip-checks t.  Here are
+; some guiding principles for making system functions available for attachment
+; by users.
 
 ; - The initial attachment is named by adding the suffix -builtin.  For
 ;   example, worse-than is a constrained function initially attached to
@@ -46,86 +46,8 @@
 ;   worse-than-list as a constrained function, since its only use is in the
 ;   mutual-recursion event that defines worse-than.
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Theories
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(deftheory definition-minimal-theory
-  (definition-runes
-    *definition-minimal-theory*
-    nil
-    world))
-
-(deftheory executable-counterpart-minimal-theory
-  (definition-runes
-    *built-in-executable-counterparts*
-    t
-    world))
-
-(deftheory minimal-theory
-
-; Warning: The resulting value must be a runic-theoryp.  See
-; theory-fn-callp.
-
-; Keep this definition in sync with translate-in-theory-hint.
-
-  (union-theories (theory 'definition-minimal-theory)
-                  (union-theories
-
-; Without the :executable-counterpart of force, the use of (theory
-; 'minimal-theory) will produce the warning "Forcing has transitioned
-; from enabled to disabled", at least if forcing is enabled (as is the
-; default).
-
-                   '((:executable-counterpart force))
-                   (theory 'executable-counterpart-minimal-theory)))
-  :doc
-  ":Doc-Section Theories
-
-  a minimal theory to enable~/~/
-
-  This ~ilc[theory] (~pl[theories]) enables only a few built-in
-  functions and executable counterparts.  It can be useful when you
-  want to formulate lemmas that rather immediately imply the theorem
-  to be proved, by way of a ~c[:use] hint (~pl[hints]), for example as
-  follows.
-  ~bv[]
-  :use (lemma-1 lemma-2 lemma-3)
-  :in-theory (union-theories '(f1 f2) (theory 'minimal-theory))
-  ~ev[]
-  In this example, we expect the current goal to follow from lemmas
-  ~c[lemma-1], ~c[lemma-2], and ~c[lemma-3] together with rules ~c[f1]
-  and ~c[f2] and some obvious facts about built-in functions (such as
-  the ~il[definition] of ~ilc[implies] and the
-  ~c[:]~ilc[executable-counterpart] of ~ilc[car]).  The
-  ~c[:]~ilc[in-theory] hint above is intended to speed up the proof by
-  turning off all inessential rules.~/
-
-  :cited-by theory-functions")
-
-(deftheory ground-zero (current-theory :here)
-
-; WARNING: Keep this near the end of *acl2-pass-2-files* in order for
-; the ground-zero theory to be as expected.
-
-  :doc
-  ":Doc-Section Theories
-
-  ~il[enable]d rules in the ~il[startup] theory~/
-
-  ACL2 concludes its initialization ~c[(boot-strapping)] procedure by
-  defining the theory ~c[ground-zero]; ~pl[theories].  In fact, this
-  theory is just the theory defined by ~c[(current-theory :here)] at
-  the conclusion of initialization; ~pl[current-theory].~/
-
-  Note that by evaluating the event
-  ~bv[]
-  (in-theory (current-theory 'ground-zero))
-  ~ev[]
-  you can restore the current theory to its value at the time you
-  started up ACL2.~/
-
-  :cited-by theory-functions")
+; We conclude by defining some theories, at the end so that they pick up the
+; rest of this file.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Miscellaneous verify-termination and guard verification
@@ -859,6 +781,87 @@
 (progn
   (defattach (waterfall-parallelism waterfall-parallelism-nil))
   (defattach (waterfall-printing waterfall-printing-full)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Theories
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftheory definition-minimal-theory
+  (definition-runes
+    *definition-minimal-theory*
+    nil
+    world))
+
+(deftheory executable-counterpart-minimal-theory
+  (definition-runes
+    *built-in-executable-counterparts*
+    t
+    world))
+
+(deftheory minimal-theory
+
+; Warning: The resulting value must be a runic-theoryp.  See
+; theory-fn-callp.
+
+; Keep this definition in sync with translate-in-theory-hint.
+
+  (union-theories (theory 'definition-minimal-theory)
+                  (union-theories
+
+; Without the :executable-counterpart of force, the use of (theory
+; 'minimal-theory) will produce the warning "Forcing has transitioned
+; from enabled to disabled", at least if forcing is enabled (as is the
+; default).
+
+                   '((:executable-counterpart force))
+                   (theory 'executable-counterpart-minimal-theory)))
+  :doc
+  ":Doc-Section Theories
+
+  a minimal theory to enable~/~/
+
+  This ~ilc[theory] (~pl[theories]) enables only a few built-in
+  functions and executable counterparts.  It can be useful when you
+  want to formulate lemmas that rather immediately imply the theorem
+  to be proved, by way of a ~c[:use] hint (~pl[hints]), for example as
+  follows.
+  ~bv[]
+  :use (lemma-1 lemma-2 lemma-3)
+  :in-theory (union-theories '(f1 f2) (theory 'minimal-theory))
+  ~ev[]
+  In this example, we expect the current goal to follow from lemmas
+  ~c[lemma-1], ~c[lemma-2], and ~c[lemma-3] together with rules ~c[f1]
+  and ~c[f2] and some obvious facts about built-in functions (such as
+  the ~il[definition] of ~ilc[implies] and the
+  ~c[:]~ilc[executable-counterpart] of ~ilc[car]).  The
+  ~c[:]~ilc[in-theory] hint above is intended to speed up the proof by
+  turning off all inessential rules.~/
+
+  :cited-by theory-functions")
+
+(deftheory ground-zero (current-theory :here)
+
+; WARNING: Keep this near the end of *acl2-pass-2-files* in order for
+; the ground-zero theory to be as expected.
+
+  :doc
+  ":Doc-Section Theories
+
+  ~il[enable]d rules in the ~il[startup] theory~/
+
+  ACL2 concludes its initialization ~c[(boot-strapping)] procedure by
+  defining the theory ~c[ground-zero]; ~pl[theories].  In fact, this
+  theory is just the theory defined by ~c[(current-theory :here)] at
+  the conclusion of initialization; ~pl[current-theory].~/
+
+  Note that by evaluating the event
+  ~bv[]
+  (in-theory (current-theory 'ground-zero))
+  ~ev[]
+  you can restore the current theory to its value at the time you
+  started up ACL2.~/
+
+  :cited-by theory-functions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End
