@@ -575,7 +575,6 @@
 
      #-acl2-par
      (or no-error
-         (null val)
          (er hard 'set-waterfall-parallelism
              "Parallelism can only be enabled in CCL, threaded SBCL, or ~
               Lispworks. ~ Additionally, the feature :ACL2-PAR must be set ~

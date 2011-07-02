@@ -6859,8 +6859,8 @@
 (defun ev-for-trans-eval (trans vars stobjs-out ctx state aok)
 
 ; Trans is a translated term with the indicated stobjs-out, and vars is
-; (all-vars term).  We return the result of evaluating trans as an error
-; triple with possibly updated state, as described in trans-eval.
+; (all-vars term).  We return the result of evaluating trans, but formulated as
+; an error triple with possibly updated state as described in trans-eval.
 
 ; This function is called by trans-eval, and is a suitable alternative to
 ; trans-eval when the term to be evaluated has already been translated by
@@ -6912,49 +6912,27 @@
 #+acl2-par
 (defun ev-w-for-trans-eval (trans vars stobjs-out ctx state aok)
 
-; Trans is a translated term with the indicated stobjs-out, and vars is
-; (all-vars term).  We return the result of evaluating trans as an error
-; triple with possibly updated state, as described in trans-eval.
+; See analogous function ev-for-trans-eval.
 
-; This function is called by trans-eval, and is a suitable alternative to
-; trans-eval when the term to be evaluated has already been translated by
-; translate1 with stobjs-out = :stobjs-out.
-
-; Parallelism wart: I leave the non-trivial differences between this function
-; and ev-for-trans-eval in comments, because I want to be able to easily see
-; what's missing from it.  I should remove the dead code once Kaufmann and I
-; have a look and discuss whether what I did is reasonable.
+; Parallelism wart: The call of this function in eval-clause-processor@par can
+; lead to an ev-w call below that violates the input requirement on ev-w,
+; namely that we don't modify stobjs.  The parallelism wart in
+; xtrans-eval-with-ev-w explains a similar issue with custom keyword hints that
+; we have already begun to address.  But in the present situation, we can
+; easily permit a computed hint that modifies state without recording that
+; modification in the logic.  Perhaps that's not so important for the
+; #+acl2-par code, but it's certainly a logical wart at the least that should
+; be documented.  Alternately, we could "do the right thing" and prohibit
+; computed hints that modify state or stobjs.
 
   (let ((alist (cons (cons 'state 
                            (coerce-state-to-object state))
                      (user-stobj-alist-safe 'trans-eval vars state))))
     (mv-let
-     (erp val ; latches
-          )
-     (ev-w trans alist (w state) (f-get-global 'safe-mode state) (gc-off state) 
-           ;; alist
+     (erp val)
+     (ev-w trans alist (w state) (f-get-global 'safe-mode state) (gc-off state)
            nil aok)
 
-; The first state binding below is the state produced by the
-; evaluation of the form.  The second state is the first, but with the
-; user-stobj-alist of that state (possibly) updated to contain the
-; modified latches.  Note that we don't bother to modify the
-; user-stobj-alist if the form's output signature does not involve a
-; user-defined stobj.  The particular forms we have in mind for this
-; case are DEFSTOBJ forms and their ``undoers'' and ``re-doers''.
-; They compute the state they mean and we shouldn't mess with the
-; user-stobj-alist of their results, else we risk overturning
-; carefully computed answers by restoring old stobjs.
-
-;    (let ((state (coerce-object-to-state (cdr (car latches)))))
-;      (let ((state
-;             (cond
-;              ((user-stobjsp stobjs-out)
-;               (update-user-stobj-alist
-;                (put-assoc-eq-alist (user-stobj-alist state)
-;                                    (cdr latches))
-;                state))
-;              (t state))))
      (cond
       (erp
 

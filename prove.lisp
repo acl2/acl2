@@ -1371,6 +1371,16 @@
                                      :clause-set '(nil)
                                      :hint-settings nil)
                                pool))))
+      ((and do-not-induct-hint-val
+            (not (member-eq do-not-induct-hint-val '(t :otf :otf-flg-override)))
+            (not (assoc-eq :induct
+                           (access prove-spec-var pspv :hint-settings))))
+
+; In this case, we have seen a :DO-NOT-INDUCT name hint (where name isn't t)
+; that is not overridden by an :INDUCT hint.  We would like to give this clause
+; a :BY.  We can't do it here, as explained above.  So we will 'MISS instead.
+
+       (mv 'miss nil nil nil))
       ((and (not (access prove-spec-var pspv :otf-flg))
             (not (eq do-not-induct-hint-val :otf))
             (or
@@ -1410,7 +1420,7 @@
 ; assumptions created by forcing before reverting to the original goal still
 ; generated forcing rounds after the subsequent proof by induction.  When this
 ; bug was discovered we added code below to use delete-assumptions to remove
-; assumptions from the the tag-tree.  Note that we are not modifying the
+; assumptions from the tag-tree.  Note that we are not modifying the
 ; 'accumulated-ttree in state, so these assumptions still reside there; but
 ; since that ttree is only used for reporting rules used and is intended to
 ; reflect the entire proof attempt, this decision seems reasonable.
@@ -1468,23 +1478,6 @@
                                         *initial-clause-id*
                                         (access prove-spec-var pspv
                                                 :orig-hints)))))))))
-      ((and do-not-induct-hint-val
-            (not (member-eq do-not-induct-hint-val '(t :otf :otf-flg-override)))
-            (not (assoc-eq :induct
-                           (access prove-spec-var pspv :hint-settings))))
-
-; In this case, we have seen a :DO-NOT-INDUCT name hint (where name isn't t)
-; that is not overridden by an :INDUCT hint.  We would like to give this clause
-; a :BY.  We can't do it here, as explained above.  So we will 'MISS instead.
-
-       (mv 'miss nil nil nil))
-
-; Parallelism wart: it's unclear whether the branch of the conditional above
-; this comment or the #+acl2-par branch following it should come first.
-; :Mini-proveall breaks when the order is switched.  As of Jun 13, 2011, if you
-; trace push-clause, the relevant call and return of push-clause are search
-; results number 17 and 18.
-
       #+acl2-par
       ((and (serial-first-form-parallel-second-form@par nil t)
             (not (access prove-spec-var pspv :otf-flg))
@@ -1500,7 +1493,9 @@
 
 ; Parallelism wart: there may be a bug in ACL2(p) related to the comment above
 ; (in this function's definition) that starts with "Before Version_2.6 we did
-; not modify the tag-tree here."
+; not modify the tag-tree here."  To fix this (likely) bug, don't reset the
+; tag-tree here -- just remove the ":tag-tree nil" -- and instead do it when we
+; convert a maybe-to-be-proved-by-induction to a to-be-proved-by-induction.
 
                    :tag-tree nil
                    :pool 
@@ -2018,16 +2013,10 @@
 
 ; Keep in sync with eval-clause-processor.
 
-; Parallelism wart: I leave the non-trivial differences between this function
-; and eval-clause-processor in comments, because I want to be able to easily
-; see what's missing from it.  I should remove the dead code once Kaufmann and
-; I have a look and discuss whether what I did is reasonable.
+; Parallelism wart: See the parallelism wart in ev-w-for-trans-eval.
 
-;  (revert-world-on-error
   (let ((wrld (w state))
         (cl-term (subst-var (kwote clause) 'clause term)))
-;     (protect-system-state-globals
-;      (pprogn
     (mv-let
      (erp trans-result)
 
@@ -2062,17 +2051,16 @@
                           term
                           nil)
                      nil))
-                (t (pprogn ; (set-w! wrld state)
-                    (cond ((not (term-list-listp val
-                                                 wrld))
-                           (mv (msg "The :CLAUSE-PROCESSOR hint~|~%  ~
-                                      ~Y01~%did not evaluate to a list of ~
-                                      clauses, but instead to~|~%  ~Y23~%~@4"
-                                    term nil
-                                    val nil
-                                    (non-term-list-listp-msg val wrld))
-                               nil))
-                          (t (value@par val)))))))))))))
+                (t (cond ((not (term-list-listp val
+                                                wrld))
+                          (mv (msg "The :CLAUSE-PROCESSOR hint~|~%  ~Y01~%did ~
+                                    not evaluate to a list of clauses, but ~
+                                    instead to~|~%  ~Y23~%~@4"
+                                   term nil
+                                   val nil
+                                   (non-term-list-listp-msg val wrld))
+                              nil))
+                         (t (value@par val))))))))))))
 
 (defun apply-top-hints-clause1 (temp cl-id cl pspv wrld state step-limit)
 

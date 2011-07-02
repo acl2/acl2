@@ -17936,6 +17936,18 @@
   :pl2 (append x y) (:definition binary-append)
   ~ev[]
 
+  The following example illustrates a bug in the processing of (admittedly
+  obscure) ~il[hints] of the form ~c[:do-not-induct name], where ~c[name] is
+  not ~c[t], ~c[:otf-flg-override], ~c[:otf], or ~c[nil].  In this example,
+  ACL2 had essentially ignored the hint and reverted to prove the original goal
+  by induction, rather than to skip the goal temporarily as is expected for
+  such hints.  Thanks to David Rager for a helpful discussion.
+  ~bv[]
+  (thm (and (equal (append (append x y) z) (append x y z))
+            (equal (append (append x2 y2) z2) (append x2 y2 z2)))
+       :hints ((\"Subgoal 1\" :do-not-induct some-name)))
+  ~ev[]
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Many changes have been made to the distributed books, as recorded in svn logs

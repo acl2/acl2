@@ -42080,7 +42080,8 @@ Lisp definition."
 ; that they work in #-acl2-par and in #+acl2-par in the serial mode of the
 ; parallelized waterfall.  We should develop a cleaner explanation for how
 ; custom-keyword-hints interact with the parallelized waterfall and then
-; document it.
+; document it.  Another parallelism wart related to custom keyword hints may be
+; found in xtrans-eval-with-ev-w.
 
     `(add-custom-keyword-hint-fn@par ',key ',uterm1 ',checker state))
 
