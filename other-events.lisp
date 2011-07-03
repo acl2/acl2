@@ -24261,20 +24261,24 @@
                    rule-id))
         (w (w state)))
     (cond
-     ((and rule-id (not (or name index rune)))
+     ((and (not pl-p) ; optimization -- check is already made by pl2-fn
+           rule-id
+           (not (or name index rune)))
       (fms "The rule-id argument to SHOW-REWRITES must be a name, a positive ~
             integer, or a rune representing a rewrite or definition rule, but ~
             ~x0 is none of these.~|"
            (list (cons #\0 rule-id)) (standard-co state) state nil))
-     ((or (variablep current-term)
-          (fquotep current-term)
-          (flambdap (ffn-symb current-term)))
+     ((and (not pl-p) ; optimization -- check is already made by pl2-fn
+           (or (variablep current-term)
+               (fquotep current-term)
+               (flambdap (ffn-symb current-term))))
       (fms "It is only possible to apply rewrite rules to terms that are not ~
             variables, (quoted) constants, or applications of lambda ~
             expressions.  However, the current term is:~%~ ~ ~y0.~|"
            (list (cons #\0 current-term)) (standard-co state) state
            (term-evisc-tuple nil state)))
-     ((eq (ffn-symb current-term) 'if)
+     ((and (not pl-p) ; optimization -- check is already made by pl2-fn
+           (eq (ffn-symb current-term) 'if))
       (fms "It is only possible to apply rewrite rules to terms that are ~
             applications of function symbols other than IF.  However, the ~
             current term is~|~ ~ ~y0.~|"
@@ -24469,7 +24473,8 @@
                                           state)
   (cond ((and (nvariablep term)
               (not (fquotep term))
-              (not (flambdap (ffn-symb term))))
+              (not (flambdap (ffn-symb term)))
+              (not (eq (ffn-symb term) 'if)))
          (let ((wrld (w state)))
            (mv-let
             (flg hyps-type-alist ttree)
@@ -24485,16 +24490,49 @@
                           'current-acl2-world wrld)
                  term rule-id hyps-type-alist abbreviations wrld ens
                  state))))))
-        (t state)))
+        (t
 
-(defun pl2-fn (form rule-id state)
+; Presumably we are inside the proof-checker, since pl2-fn has already checked
+; term.
+
+         (fms "Type-prescription rules are associated with function symbols ~
+               (other than IF).  The current term, ~x0, is therefore not ~
+               suitable for listing associated type-prescription rules.~|"
+              (list (cons #\0 term))
+              (standard-co state) state nil))))
+
+(defun pl2-fn (form rule-id caller state)
   (let ((ens (ens state)))
     (er-let*
-     ((term (translate form t t nil 'pl (w state) state)))
-     (pprogn (show-rewrites-fn rule-id nil ens term nil nil nil :none t state)
-             (show-meta-lemmas term rule-id state)
-             (show-type-prescription-rules term rule-id nil nil ens state)
-             (value :invisible)))))
+     ((term (translate form t t nil caller (w state) state)))
+     (cond
+      ((not (or (symbolp rule-id)
+                (and (consp rule-id)
+                     (keywordp (car rule-id)))))
+       (er soft caller
+           "The rule-id supplied to ~x0 must be a symbol or a rune, but ~x1 ~
+            is neither.  See :DOC ~x0."
+           caller rule-id))
+      ((or (variablep term)
+           (fquotep term)
+           (flambdap (ffn-symb term))
+           (eq (ffn-symb term) 'if))
+       (er soft caller
+           "~@0 must be a term that is not a variable or a constant, which is ~
+            not a LET (or LAMBDA application), and whose function symbol is ~
+            not IF.  But ~x1 does not meet this requirement."
+           (case caller
+             (pl (msg "A non-symbol argument of ~x0" caller))
+             (pl2 (msg "The first argument of ~x0" caller))
+             (otherwise (er hard 'pl2-fn
+                            "Implementation error: Unexpected case!  Please ~
+                             contact the ACL2 implementors.")))
+           form))
+      (t (pprogn (show-rewrites-fn rule-id nil ens term nil nil nil :none t
+                                   state)
+                 (show-meta-lemmas term rule-id state)
+                 (show-type-prescription-rules term rule-id nil nil ens state)
+                 (value :invisible)))))))
 
 (defun pl-fn (name state)
   (cond
@@ -24527,16 +24565,11 @@
            (getprop name 'induction-rules nil 'current-acl2-world wrld)
            t ens wrld))
          (standard-co state) state))
-       ((getprop name 'macro-body nil 'current-acl2-world wrld)
-        (er soft 'pl
-            "The argument to PL must be a function symbol in the current ~
-             world, but ~x0 is a macro."
-            name))
        (t (er soft 'pl
-              "The argument to PL must be a function symbol in the current ~
-               world, or else a macro that is associated with a function ~
-               symbol (see :DOC add-macro-alias).")))))
-   (t (pl2-fn name nil state))))
+              "If the argument to PL is a symbol, then it must be a function ~
+               symbol in the current world or else a macro that is associated ~
+               with a function symbol (see :DOC add-macro-alias).")))))
+   (t (pl2-fn name nil 'pl state))))
 
 (defmacro pl (name)
 
@@ -24591,17 +24624,22 @@
   print rule(s) for the given form~/
   ~bv[]
   Examples:
-  :pl2 (+ x y) nil ; prints all rules that rewrite (+ x y)
-  :pl2 (+ x y) foo ; prints all rules named foo that rewrite (+ x y)
-  :pl2 (+ x y) (:rewrite foo) ; if the rule with rune (:rewrite foo) can
-                              ;   rewrite (+ x y), then print it
+  :pl2 (+ x y) nil ; prints rules that apply to (+ x y)
+  :pl2 (+ x y) foo ; prints rules named foo that apply to (+ x y)
+  :pl2 (+ x y) (:rewrite foo) ; if the rule with rune (:rewrite foo) applies
+                              ;   to (+ x y), then print it
+  :pl2 (+ x y) (:type-prescription foo)
+                              ; as above, but for the indicated
+                              ;   type-prescription rule
   ~ev[]~/
 
   ~c[Pl2] takes two arguments.  The first is a term.  The second is either
   ~c[nil] or a ``rule-id'' that is either a symbol or a ~il[rune].  The result
-  is to print exactly what is printed by applying ~c[:]~ilc[pl] to the first
-  argument ~-[] ~pl[pl] ~-[] except that if the second argument is not ~c[nil]
-  then it is used to filter the rules printed, as follows.~bq[]
+  is to print rules of class ~c[:]~ilc[rewrite], ~c[:]~ilc[definition],
+  ~c[:meta] and ~c[:]~ilc[type-prescription] that apply to the given term.
+  Indeed, ~c[:pl2] prints exactly what is printed by applying ~c[:]~ilc[pl] to
+  the first argument ~-[] ~pl[pl] ~-[] except that if the second argument is
+  not ~c[nil] then it is used to filter the rules printed, as follows.~bq[]
 
   If the rule-id is a symbol, then only rules whose name is that symbol will be
   printed.
@@ -24610,7 +24648,7 @@
   rule named by that rune (if the rule would be printed by
   ~c[:]~ilc[pl]).~eq[]~/"
 
-  (list 'pl2-fn form rule-id 'state))
+  (list 'pl2-fn form rule-id ''pl2 'state))
 
 ; Essay on Include-book-dir-alist
 
