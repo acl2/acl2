@@ -17657,6 +17657,11 @@
   book's certification ~il[world] (that is, in its ~il[portcullis]
   ~il[command]s) were typically not given compiled code.  That has been fixed.
 
+  The commands ~c[:]~ilc[pl] and ~c[:]~ilc[pl2] have been improved, primarily
+  by printing information for more rule classes.  ~l[pl] and ~pl[pl2].  Thanks
+  to Dave Greve for requesting an extension of ~c[:pl] to show rules of class
+  ~c[:]~ilc[type-prescription] that match a given term.
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of

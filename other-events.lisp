@@ -24071,13 +24071,15 @@
              (not enabledp))
         state
       (pprogn
-       (fms "~|~#a~[~c0. ~/  ~]~x1~#2~[~/ (disabled)~]"
-            (list (cons #\a (if index 0 1))
+       (fms "~|~#a~[~/~c0. ~/  ~]~x1~#2~[~/ (disabled)~]"
+            (list (cons #\a (if pl-p 0 (if index 1 2)))
                   (cons #\0 (cons index col))
                   (cons #\1
-                        ;; Let's just print the name of the rune if it appears
-                        ;; to be unique.
-                        (if (cddr rune) rune (base-symbol rune)))
+                        (cond
+                         (pl-p rune)
+                         ((cddr rune)
+                          rune) ; just print name if rune seems unique for it
+                         (t (base-symbol rune))))
                   (cons #\2 (if enabledp 0 1)))
             (standard-co state) state nil)
        (let ((fmt-string
@@ -24253,7 +24255,9 @@
   (let ((name (and (symbolp rule-id) rule-id))
         (index (and (integerp rule-id) (< 0 rule-id) rule-id))
         (rune (and (consp rule-id)
-                   (member-eq (car rule-id) '(:rewrite :definition))
+                   (if pl-p
+                       (keywordp (car rule-id))
+                     (member-eq (car rule-id) '(:rewrite :definition)))
                    rule-id))
         (w (w state)))
     (cond
@@ -24297,7 +24301,8 @@
                    1 (or name rune) index w)))
              (cond
               ((null app-rewrite-rules)
-               (cond ((and index (> index 1))
+               (cond (pl-p state)
+                     ((and index (> index 1))
                       (fms "~|*** There are fewer than ~x0 applicable rewrite ~
                             rules. ***~%"
                            (list (cons #\0 index)) (standard-co state) state
@@ -24311,103 +24316,211 @@
                                 ens hyps-type-alist
                                 enabled-only-flg pl-p w state)))))))))))
 
-(defun show-meta-lemmas1 (lemmas index term wrld ens state)
-  (cond ((endp lemmas) state)
-        (t
-         (mv-let
-          (new-index state)
-          (let ((lemma (car lemmas)))
-            (cond ((eq (access rewrite-rule lemma :subclass)
-                       'meta)
-                   (let* ((fn (access rewrite-rule lemma :lhs))
-                          (extendedp (access rewrite-rule lemma :rhs))
-                          (args (meta-fn-args term extendedp ens state)))
-                     (mv-let
-                      (erp new-term latches)
-                      (ev-fncall-meta fn args state)
-                      (declare (ignore latches))
-                      (cond ((or erp
-                                 (equal new-term term)
-                                 (not (termp new-term wrld)))
-                             (mv index state))
+(defun show-meta-lemmas1 (lemmas rule-id term wrld ens state)
+  (cond
+   ((endp lemmas) state)
+   (t
+    (pprogn
+     (let* ((lemma (car lemmas))
+            (rune (and (eq (access rewrite-rule lemma :subclass)
+                           'meta)
+                       (access rewrite-rule lemma :rune))))
+       (cond ((and rune ; hence lemma is a meta lemma
+                   (or (null rule-id)
+                       (if (symbolp rule-id)
+                           (eq rule-id (base-symbol rune))
+                         (equal rule-id rune))))
+              (let* ((fn (access rewrite-rule lemma :lhs))
+                     (extendedp (access rewrite-rule lemma :rhs))
+                     (args (meta-fn-args term extendedp ens state)))
+                (mv-let
+                 (erp new-term latches)
+                 (ev-fncall-meta fn args state)
+                 (declare (ignore latches))
+                 (cond ((or erp
+                            (equal new-term term)
+                            (not (termp new-term wrld)))
+                        state)
+                       (t
+                        (let ((hyp-fn (access rewrite-rule lemma :hyps)))
+                          (mv-let
+                           (erp hyp latches)
+                           (if hyp-fn
+                               (ev-fncall-meta
+                                hyp-fn
+                                (meta-fn-args term extendedp ens state)
+                                state)
+                             (mv nil *t* nil))
+                           (declare (ignore latches))
+                           (cond
+                            ((or erp (not (termp hyp wrld)))
+                             state)
                             (t
-                             (let ((hyp-fn (access rewrite-rule lemma :hyps)))
-                               (mv-let
-                                (erp hyp latches)
-                                (if hyp-fn
-                                    (ev-fncall-meta
-                                     hyp-fn
-                                     (meta-fn-args term extendedp ens state)
-                                     state)
-                                  (mv nil *t* nil))
-                                (declare (ignore latches))
-                                (cond
-                                 ((or erp (not (termp hyp wrld)))
-                                  (mv index state))
-                                 (t
-                                  (pprogn
-                                   (fms
-                                    "META ~x0. ~y1~|~
-                                     ~ ~ New term: ~Y2t~|~
-                                     ~ ~ Hypothesis: ~Y3t~|~
-                                     ~ ~ Equiv: ~y4~|"
-                                    (list (cons #\0 index)
-                                          (cons #\1
-                                                (let ((rune
-                                                       (access rewrite-rule
-                                                               lemma
-                                                               :rune)))
-                                                  (if (cddr rune)
-                                                      rune
-                                                    (base-symbol rune))))
-                                          (cons #\2 new-term)
-                                          (cons #\3 (untranslate hyp nil wrld))
-                                          (cons #\4 (access rewrite-rule lemma
-                                                            :equiv))
-                                          (cons #\t
-                                                (term-evisc-tuple nil state)))
-                                    (standard-co state) state nil)
-                                   (mv (1+ index) state)))))))))))
-                  (t (mv index state))))
-          (show-meta-lemmas1 (cdr lemmas) new-index term wrld ens state)))))
+                             (fms
+                              "~Y01~|~
+                               ~ ~ New term: ~Y2t~|~
+                               ~ ~ Hypothesis: ~Y3t~|~
+                               ~ ~ Equiv: ~y4~|"
+                              (list (cons #\0 rune)
+                                    (cons #\1 nil)
+                                    (cons #\2 new-term)
+                                    (cons #\3 (untranslate hyp nil wrld))
+                                    (cons #\4 (access rewrite-rule lemma
+                                                      :equiv))
+                                    (cons #\t
+                                          (term-evisc-tuple nil state)))
+                              (standard-co state) state nil))))))))))
+             (t state)))
+     (show-meta-lemmas1 (cdr lemmas) rule-id term wrld ens state)))))
 
-(defun show-meta-lemmas (term state)
+(defun show-meta-lemmas (term rule-id state)
   (cond ((and (nvariablep term)
               (not (fquotep term))
               (not (flambdap (ffn-symb term))))
          (let ((wrld (w state)))
            (show-meta-lemmas1 (getprop (ffn-symb term) 'lemmas nil
                                        'current-acl2-world wrld)
-                              1 term wrld (ens state) state)))
+                              rule-id term wrld (ens state) state)))
+        (t state)))
+
+(defun decoded-type-set-from-tp-rule (tp unify-subst wrld ens)
+  (mv-let
+   (ts type-alist ttree)
+   (type-set-with-rule1 unify-subst
+                        (access type-prescription tp :vars)
+                        (ok-to-force-ens ens)
+                        nil ; dwp, as in known-whether-nil (see relieve-hyp)
+                        nil ; type-alist
+                        nil ; ancestors
+                        ens
+                        wrld
+                        (access type-prescription tp :basic-ts)
+                        nil ; ttree
+                        nil ; pot-lst
+                        nil ; pt
+                        nil ; backchain-limit
+                        )
+   (declare (ignore type-alist ttree))
+   (decode-type-set ts)))
+
+(defun show-type-prescription-rule (rule unify-subst wrld ens state)
+  (let ((rune (access type-prescription rule :rune))
+        (nume (access type-prescription rule :nume))
+        (hyps (access type-prescription rule :hyps)))
+    (pprogn
+     (fms "~x1~#2~[~/ (disabled)~]"
+          (list (cons #\1 rune)
+                (cons #\2 (if (enabled-numep nume ens) 0 1)))
+          (standard-co state) state nil)
+     (let ((fmt-string
+            "~ ~ Type: ~Y01~|~
+             ~ ~ Hypotheses: ~#b~[<none>~/~Y4t~]~|~
+             ~ ~ Substitution: ~Yat~|~
+             ~#5~[~/~
+                  ~ ~ Remaining free variable: ~&6~/~
+                  ~ ~ Remaining free variables: ~&6~sn~]~
+             ~#7~[~/  WARNING:  One of the hypotheses is (equivalent to) NIL, ~
+                  and hence will apparently be impossible to relieve.~]~|"))
+       (mv-let
+        (subst-hyps unify-subst ttree)
+        (unrelieved-hyps rune hyps unify-subst nil nil wrld state ens nil)
+        (declare (ignore ttree))
+        (let ((free (set-difference-assoc-eq (all-vars1-lst hyps nil)
+                                             unify-subst)))
+          (fms fmt-string
+               (list (cons #\a (untranslate-subst-abb unify-subst nil state))
+                     (cons #\b (if subst-hyps 1 0))
+                     (cons #\0 (decoded-type-set-from-tp-rule rule unify-subst
+                                                              wrld ens))
+                     (cons #\1 nil)
+                     (cons #\4 (untrans0-lst subst-hyps t nil))
+                     (cons #\5 (zero-one-or-more (length free)))
+                     (cons #\6 free)
+                     (cons #\n "")
+                     (cons #\7 (if (member-eq nil subst-hyps) 1 0))
+                     (cons #\t (term-evisc-tuple nil state)))
+               (standard-co state) state nil)))))))
+
+(defun show-type-prescription-rules1 (rules term rule-id wrld ens state)
+  (cond
+   ((endp rules) state)
+   (t (pprogn
+       (mv-let (unify-ans unify-subst)
+               (cond
+                ((or (null rule-id)
+                     (let ((rune (access type-prescription (car rules) :rune)))
+                       (if (symbolp rule-id)
+                           (eq rule-id (base-symbol rune))
+                         (equal rule-id rune))))
+                 (one-way-unify (access type-prescription (car rules) :term)
+                                term))
+                (t (mv nil nil)))
+               (cond (unify-ans (show-type-prescription-rule
+                                 (car rules) unify-subst wrld ens state))
+                     (t state)))
+       (show-type-prescription-rules1 (cdr rules) term rule-id wrld ens
+                                      state)))))
+
+(defun show-type-prescription-rules (term rule-id state)
+  (cond ((and (nvariablep term)
+              (not (fquotep term))
+              (not (flambdap (ffn-symb term))))
+         (let ((wrld (w state)))
+           (show-type-prescription-rules1
+            (getprop (ffn-symb term) 'type-prescriptions nil
+                     'current-acl2-world wrld)
+            term rule-id wrld (ens state) state)))
         (t state)))
 
 (defun pl2-fn (form rule-id state)
   (er-let* ((term (translate form t t nil 'pl (w state) state)))
            (pprogn (show-rewrites-fn rule-id nil (ens state) term
                                      nil nil nil :none t state)
-                   (show-meta-lemmas term state)
+                   (show-meta-lemmas term rule-id state)
+                   (show-type-prescription-rules term rule-id state)
                    (value :invisible))))
 
 (defun pl-fn (name state)
-  (if (symbolp name)
-      (let* ((wrld (w state))
-             (name (deref-macro-name name (macro-aliases wrld))))
-        (if (function-symbolp name wrld)
-            (print-info-for-rules (info-for-lemmas (getprop name 'lemmas nil
-                                                            'current-acl2-world
-                                                            wrld)
-                                                   t (ens state) wrld)
-                                  (standard-co state) state)
-          (if (getprop name 'macro-body nil 'current-acl2-world wrld)
-              (er soft 'pl
-                  "The argument to PL must be a function symbol in ~
-                   the current world, but ~x0 is a macro."
-                  name)
-            (er soft 'pl
-                "The argument to PL must be a function symbol in the current ~
-                 world, or else a macro that is associated with a function ~
-                 symbol (see :DOC add-macro-alias)."))))
-    (pl2-fn name nil state)))
+  (cond
+   ((symbolp name)
+    (let* ((wrld (w state))
+           (ens (ens state))
+           (name (deref-macro-name name (macro-aliases wrld))))
+      (cond
+       ((function-symbolp name wrld)
+        (print-info-for-rules
+         (append
+          (info-for-lemmas
+           (getprop name 'lemmas nil 'current-acl2-world wrld)
+           t ens wrld)
+          (info-for-linear-lemmas
+           (getprop name 'linear-lemmas nil 'current-acl2-world wrld)
+           t ens wrld)
+          (info-for-type-prescriptions
+           (getprop name 'type-prescriptions nil 'current-acl2-world wrld)
+           t ens wrld)
+          (info-for-forward-chaining-rules
+           (getprop name 'forward-chaining-rules nil 'current-acl2-world wrld)
+           t ens wrld)
+          (let ((elim-rule (getprop name 'eliminate-destructors-rule nil
+                                    'current-acl2-world wrld)))
+            (and elim-rule
+                 (info-for-eliminate-destructors-rule
+                  elim-rule t ens wrld)))
+          (info-for-induction-rules
+           (getprop name 'induction-rules nil 'current-acl2-world wrld)
+           t ens wrld))
+         (standard-co state) state))
+       ((getprop name 'macro-body nil 'current-acl2-world wrld)
+        (er soft 'pl
+            "The argument to PL must be a function symbol in the current ~
+             world, but ~x0 is a macro."
+            name))
+       (t (er soft 'pl
+              "The argument to PL must be a function symbol in the current ~
+               world, or else a macro that is associated with a function ~
+               symbol (see :DOC add-macro-alias).")))))
+   (t (pl2-fn name nil state))))
 
 (defmacro pl (name)
 
@@ -24420,28 +24533,35 @@
   :pl (+ x y) ; prints rules that rewrite (+ x y)
   ~ev[]~/
 
-  Also ~pl[pl2], which restricts output to rules that you specify.
+  Also ~pl[pl2], which restricts output to rules that you specify for a given
+  term.
 
-  ~c[Pl] takes one argument, which should be a symbol or a term.  If the
-  argument is a function symbol (or a macro corresponding to a function;
-  ~pl[macro-aliases-table]), ~c[:pl] displays the ~c[:]~ilc[rewrite],
-  ~c[:]~ilc[definition], and ~c[:]~ilc[meta] rules that rewrite some term whose
-  top function symbol is the one specified.  Otherwise, ~c[:pl] displays the
-  ~c[:]~ilc[rewrite] and ~c[:]~ilc[definition] rules that rewrite the specified
-  term, followed by the applicable ~c[:]~ilc[meta] rules.  For
-  ~c[:]~ilc[rewrite] and ~c[:]~ilc[definition] rules, ~c[:pl] also shows the
-  substitution that, when applied to the left-hand side of the rule, yields the
-  specified term.  For ~c[:]~ilc[meta] rules, only those are displayed that
-  meet two conditions: the application of the metafunction returns a term
-  different from the input term, and if there is a hypothesis metafunction then
-  it also returns a term.  (A subtlety: In the case of extended metafunctions
-  (~pl[extended-metafunctions]), a trivial metafunction context is used for the
-  application of the metafunction.)
+  ~c[Pl] takes one argument, which should be a symbol or a term.
 
-  The kinds of rules printed by ~c[:pl] are ~c[:]~ilc[rewrite] rules,
-  ~c[:]~ilc[definition] rules, and ~il[meta] rules (not, for example,
-  ~c[:]~ilc[forward-chaining] rules).  If you want to see all
-  ~c[:]~ilc[clause-processor] rules, issue the command
+  First suppose that the argument is a symbol.  Then it should be either a
+  function symbol or else a macro alias for a function symbol
+  (~pl[macro-aliases-table]), which is treated as the corresponding function
+  symbol.  In this case ~c[:pl] displays rules that apply to terms whose top
+  function symbol is the one specified, specifically, rules of class
+  ~c[:]~ilc[rewrite], ~c[:]~ilc[definition], ~c[:]~ilc[meta],
+  ~c[:]~ilc[linear], ~c[:]~ilc[type-prescription], ~c[:]~ilc[forward-chaining],
+  ~c[:]~ilc[elim], and ~c[:]~ilc[induction].
+
+  Otherwise the argument should be a term (in user syntax, so that for example
+  macros are permitted).  In this case, ~c[:pl] displays the
+  ~c[:]~ilc[rewrite], ~c[:]~ilc[definition], and ~c[:meta] rules that rewrite
+  the specified term, followed by the applicable ~c[:]~ilc[type-prescription]
+  rules.  Each rule is displayed with additional information, such as the
+  hypotheses that remain after applying some simple techniques to discharge
+  them that are likely to apply in any context.  Note that for ~c[:]~ilc[meta]
+  rules, only those are displayed that meet two conditions: the application of
+  the metafunction returns a term different from the input term, and if there
+  is a hypothesis metafunction then it also returns a term.  (A subtlety: In
+  the case of extended metafunctions (~pl[extended-metafunctions]), a trivial
+  metafunction context is used for the application of the metafunction.)
+
+  Note that some rule classes are not handled by ~c[:pl].  In particular, if
+  you want to see all ~c[:]~ilc[clause-processor] rules, issue the command
   ~c[:print-clause-processor-rules], and for trusted clause-processors,
   ~c[(table trusted-clause-processor-table)]; ~pl[clause-processor] and
   ~pl[define-trusted-clause-processor].~/"
@@ -24462,24 +24582,17 @@
   ~ev[]~/
 
   ~c[Pl2] takes two arguments.  The first is a term.  The second is either
-  ~c[nil] or one of the following ``rule-ids'': a symbol, a ~c[:]~ilc[rewrite]
-  or ~c[:]~ilc[definition] ~il[rune], or a natural number.  The result is to
-  print exactly what is printed by applying ~c[:]~ilc[pl] to the first argument
-  ~-[] ~pl[pl] ~-[] except that if the second argument is not ~c[nil] then it
-  is used to filter the (rewrite and definition) rules printed, as
-  follows.~bq[]
+  ~c[nil] or a ``rule-id'' that is either a symbol or a ~il[rune].  The result
+  is to print exactly what is printed by applying ~c[:]~ilc[pl] to the first
+  argument ~-[] ~pl[pl] ~-[] except that if the second argument is not ~c[nil]
+  then it is used to filter the rules printed, as follows.~bq[]
 
-  If the rule-id is a symbol, then only rewrite rules whose name is that symbol
-  will be printed.
+  If the rule-id is a symbol, then only rules whose name is that symbol will be
+  printed.
 
   If the rule-id is a ~il[rune], then at most one rule will be printed: the
-  rule named by that rune (if the rule would be printed by ~c[:]~ilc[pl]).
-
-  If the rule-id is a natural number, k, then the kth rewrite rule that would
-  be printed by ~c[:]~ilc[pl] is the one printed.~eq[]
-
-  Note that as of this writing, meta lemmas are not filtered using the second
-  argument.~/"
+  rule named by that rune (if the rule would be printed by
+  ~c[:]~ilc[pl]).~eq[]~/"
 
   (list 'pl2-fn form rule-id 'state))
 
