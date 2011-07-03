@@ -4335,7 +4335,7 @@
 
 (define-pc-help show-rewrites (&optional rule-id enabled-only-flg)
 
-  "display the applicable rewrite rules~/
+  "display the applicable ~il[rewrite] rules~/
   ~bv[]
   Example:
   show-rewrites~/
@@ -4343,19 +4343,18 @@
   General Form:
   (show-rewrites &optional rule-id enabled-only-flg)
   ~ev[]
-  Display rewrite rules whose left-hand side matches the current subterm.  This
-  command shows how the ~c[rewrite] command can be applied.  If ~c[rule-id] is
-  supplied and is a name (non-~c[nil] symbol) or a ~c[:]~ilc[rewrite] or
-  ~c[:]~ilc[definition] ~il[rune], then only the corresponding rewrite rule(s)
-  will be displayed, while if ~c[rule-id] is a positive integer ~c[n], then
-  only the ~c[n]th rule that would be in the list is displayed.  In each case,
-  the display will point out when a rule is currently disabled (in the
-  interactive environment), except that if ~c[enabled-only-flg] is supplied and
-  not ~c[nil], then disabled rules will not be displayed at all.  Finally,
-  among the free variables of any rule (those occurring in the rule that do not
-  occur in the left-hand side of its conclusion), those that would remain free
-  if the rule were applied will be displayed.  See also the documentation for
-  ~c[rewrite]."
+  Display ~il[rewrite] rules whose left-hand side matches the current subterm.
+  This command shows how the ~c[rewrite] command can be applied.  If
+  ~c[rule-id] is supplied and is a name (non-~c[nil] symbol) or a
+  ~c[:]~ilc[rewrite] or ~c[:]~ilc[definition] ~il[rune], then only the
+  corresponding rewrite rule(s) will be displayed, while if ~c[rule-id] is a
+  positive integer ~c[n], then only the ~c[n]th rule that would be in the list
+  is displayed.  In each case, the display will point out when a rule is
+  currently disabled (in the interactive environment), except that if
+  ~c[enabled-only-flg] is supplied and not ~c[nil], then disabled rules will
+  not be displayed at all.  Finally, among the free variables of any
+  rule (~pl[free-variables]), those that would remain free if the rule were
+  applied will be displayed.  Also ~pl[rewrite]."
 
   (when-goals
    (let ((conc (conc t))
@@ -4370,6 +4369,63 @@
                          abbreviations term-id-iff all-hyps
                          (geneqv-at-subterm-top conc current-addr ens w)
                          nil state)))))
+
+(define-pc-macro sr (&rest args)
+
+  "same as SHOW-REWRITES~/
+  ~bv[]
+  Example:
+  sr~/
+
+  General Form:
+  (sr &optional rule-id enabled-only-flg)
+  ~ev[]
+  See the documentation for ~c[show-rewrites], as ~c[sr] and ~c[show-rewrites]
+  are identical."
+
+  (value (cons :show-rewrites args)))
+
+(define-pc-help show-type-prescriptions (&optional rule-id)
+
+  "display the applicable ~il[type-prescription] rules~/
+  ~bv[]
+  Example:
+  show-type-prescriptions~/
+
+  General Form:
+  (show-type-prescriptions &optional rule-id)
+  ~ev[]
+  Display ~il[type-prescription] rules that apply to the current subterm.  If
+  ~c[rule-id] is supplied and is a name (non-~c[nil] symbol) or a
+  ~c[:]~ilc[rewrite] or ~c[:]~ilc[definition] ~il[rune], then only the
+  corresponding rewrite rule(s) will be displayed.  In each case, the display
+  will point out when a rule is currently disabled (in the interactive
+  environment).  Also ~pl[type-prescription]."
+
+  (when-goals
+   (let ((conc (conc t))
+         (current-addr (current-addr t)))
+     (let ((ens (make-pc-ens (pc-ens t) state))
+           (current-term (fetch-term conc current-addr))
+           (abbreviations (abbreviations t))
+           (all-hyps (union-equal (hyps t) (governors conc current-addr))))
+       (show-type-prescription-rules current-term rule-id abbreviations
+                                     all-hyps ens state)))))
+
+(define-pc-macro st (&rest args)
+
+  "same as SHOW-TYPE-PRESCRIPTIONS~/
+  ~bv[]
+  Example:
+  sr~/
+
+  General Form:
+  (st &optional rule-id)
+  ~ev[]
+  See the documentation for ~c[show-type-prescriptions], as ~c[st] and
+  ~c[show-type-prescriptions] are identical."
+
+  (value (cons :show-type-prescriptions args)))
 
 (defun translate-subst-abb1 (sub abbreviations state)
   ;; Here sub is a list of doublets (variable form)
@@ -6501,21 +6557,6 @@
               your instruction,~%~ ~ ~x0,~%is not legal."
              (list (cons #\0 (cons :reduce-by-induction hints))))
             (value :fail))))
-
-(define-pc-macro sr (&rest args)
-
-  "same as SHOW-REWRITES~/
-  ~bv[]
-  Example:
-  sr~/
-
-  General Form:
-  (sr &optional rule-id)
-  ~ev[]
-  See the documentation for ~c[show-rewrites], as ~c[sr] and ~c[show-rewrites]
-  are identical."
-
-  (value (cons :show-rewrites args)))
 
 (define-pc-macro r (&rest args)
 

@@ -24403,7 +24403,8 @@
    (declare (ignore type-alist ttree))
    (decode-type-set ts)))
 
-(defun show-type-prescription-rule (rule unify-subst wrld ens state)
+(defun show-type-prescription-rule (rule unify-subst type-alist abbreviations
+                                         wrld ens state)
   (let ((rune (access type-prescription rule :rune))
         (nume (access type-prescription rule :nume))
         (hyps (access type-prescription rule :hyps)))
@@ -24423,17 +24424,18 @@
                   and hence will apparently be impossible to relieve.~]~|"))
        (mv-let
         (subst-hyps unify-subst ttree)
-        (unrelieved-hyps rune hyps unify-subst nil nil wrld state ens nil)
+        (unrelieved-hyps rune hyps unify-subst type-alist nil wrld state ens nil)
         (declare (ignore ttree))
         (let ((free (set-difference-assoc-eq (all-vars1-lst hyps nil)
                                              unify-subst)))
           (fms fmt-string
-               (list (cons #\a (untranslate-subst-abb unify-subst nil state))
+               (list (cons #\a (untranslate-subst-abb unify-subst abbreviations
+                                                      state))
                      (cons #\b (if subst-hyps 1 0))
                      (cons #\0 (decoded-type-set-from-tp-rule rule unify-subst
                                                               wrld ens))
                      (cons #\1 nil)
-                     (cons #\4 (untrans0-lst subst-hyps t nil))
+                     (cons #\4 (untrans0-lst subst-hyps t abbreviations))
                      (cons #\5 (zero-one-or-more (length free)))
                      (cons #\6 free)
                      (cons #\n "")
@@ -24441,7 +24443,8 @@
                      (cons #\t (term-evisc-tuple nil state)))
                (standard-co state) state nil)))))))
 
-(defun show-type-prescription-rules1 (rules term rule-id wrld ens state)
+(defun show-type-prescription-rules1 (rules term rule-id type-alist
+                                            abbreviations wrld ens state)
   (cond
    ((endp rules) state)
    (t (pprogn
@@ -24456,29 +24459,42 @@
                                 term))
                 (t (mv nil nil)))
                (cond (unify-ans (show-type-prescription-rule
-                                 (car rules) unify-subst wrld ens state))
+                                 (car rules) unify-subst type-alist
+                                 abbreviations wrld ens state))
                      (t state)))
-       (show-type-prescription-rules1 (cdr rules) term rule-id wrld ens
-                                      state)))))
+       (show-type-prescription-rules1 (cdr rules) term rule-id type-alist
+                                      abbreviations wrld ens state)))))
 
-(defun show-type-prescription-rules (term rule-id state)
+(defun show-type-prescription-rules (term rule-id abbreviations all-hyps ens
+                                          state)
   (cond ((and (nvariablep term)
               (not (fquotep term))
               (not (flambdap (ffn-symb term))))
          (let ((wrld (w state)))
-           (show-type-prescription-rules1
-            (getprop (ffn-symb term) 'type-prescriptions nil
-                     'current-acl2-world wrld)
-            term rule-id wrld (ens state) state)))
+           (mv-let
+            (flg hyps-type-alist ttree)
+            (hyps-type-alist all-hyps ens wrld state)
+            (declare (ignore ttree))
+            (cond
+             (flg ; contradiction, so hyps is non-nil: we are in proof-checker
+              (fms "*** Contradiction in the hypotheses! ***~%The S command ~
+                    should complete this goal.~|"
+                   nil (standard-co state) state nil))
+             (t (show-type-prescription-rules1
+                 (getprop (ffn-symb term) 'type-prescriptions nil
+                          'current-acl2-world wrld)
+                 term rule-id hyps-type-alist abbreviations wrld ens
+                 state))))))
         (t state)))
 
 (defun pl2-fn (form rule-id state)
-  (er-let* ((term (translate form t t nil 'pl (w state) state)))
-           (pprogn (show-rewrites-fn rule-id nil (ens state) term
-                                     nil nil nil :none t state)
-                   (show-meta-lemmas term rule-id state)
-                   (show-type-prescription-rules term rule-id state)
-                   (value :invisible))))
+  (let ((ens (ens state)))
+    (er-let*
+     ((term (translate form t t nil 'pl (w state) state)))
+     (pprogn (show-rewrites-fn rule-id nil ens term nil nil nil :none t state)
+             (show-meta-lemmas term rule-id state)
+             (show-type-prescription-rules term rule-id nil nil ens state)
+             (value :invisible)))))
 
 (defun pl-fn (name state)
   (cond

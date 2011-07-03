@@ -17658,9 +17658,9 @@
   ~il[command]s) were typically not given compiled code.  That has been fixed.
 
   The commands ~c[:]~ilc[pl] and ~c[:]~ilc[pl2] have been improved, primarily
-  by printing information for more rule classes.  ~l[pl] and ~pl[pl2].  Thanks
-  to Dave Greve for requesting an extension of ~c[:pl] to show rules of class
-  ~c[:]~ilc[type-prescription] that match a given term.
+  by printing information for more rule classes.  ~l[pl] and ~pl[pl2].  See
+  also the item below about the new ~il[proof-checker] command,
+  ~c[show-type-prescriptions].
 
   ~st[NEW FEATURES]
 
@@ -17735,6 +17735,12 @@
   You can now limit the printing of subgoal names when using
   ~c[:]~ilc[set-gag-mode]~c[ :goals].  ~l[set-print-clause-ids].  Thanks to
   Karl Hoech for a suggestion leading to this enhancement.
+
+  A new ~il[proof-checker] command, ~c[show-type-prescriptions], or ~c[st] for
+  short, provides information about ~c[:]~ilc[type-prescription] rules that
+  match a given term.  Thanks to Dave Greve for requesting this enhancement.
+  See also the item above about related improvements to commands ~c[:]~ilc[pl]
+  and ~c[:]~ilc[pl2].
 
   ~st[HEURISTIC IMPROVEMENTS]
 
