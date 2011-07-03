@@ -18357,14 +18357,19 @@
   ~c[(\"Subgoal x.y\" :do-not '(fertilize))].  What we would really want in
   this case is to generate the hint for the indicated subgoal that binds
   ~c[:do-not] to a list indicating that both fertilization _and_ generalization
-  are disabled for that goal.  A solution is to merge, as follows.
+  are disabled for that goal.  A solution is to merge, for example as follows.
+  (The use of ~ilc[prog2$] and ~ilc[cw] is of course optional, included here to
+  provide debug printing.)
   ~bv[]
   (add-override-hints
-   '((let ((tmp (assoc-eq :do-not KEYWORD-ALIST)))
-       (put-assoc-eq :do-not
-                     (add-to-set-eq 'generalize
-                                    (cdr tmp))
-                     KEYWORD-ALIST))))
+   '((let* ((tmp (assoc-keyword :do-not KEYWORD-ALIST))
+            (new-keyword-alist
+             (cond (tmp (list* :do-not
+                               `(cons 'generalize ,(cadr tmp))
+                               (remove-keyword :do-not KEYWORD-ALIST)))
+                   (t (list* :do-not ''(generalize) KEYWORD-ALIST)))))
+       (prog2$ (cw \"New: ~~x0~~|\" new-keyword-alist)
+               new-keyword-alist))))
   ~ev[]
 
   ~sc[Remarks]
