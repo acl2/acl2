@@ -1,0 +1,4 @@
+(include-book "hacker")
+
+
+(ACL2::CERTIFY-BOOK "defcode-macro" ACL2::? T :TTAGS ((DEFCODE)))

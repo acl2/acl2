@@ -1,0 +1,3 @@
+(value :q)
+(lp)
+(ld "package.lisp")

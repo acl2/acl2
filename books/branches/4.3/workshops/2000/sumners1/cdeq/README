@@ -1,0 +1,38 @@
+<HTML>
+<HEAD><TITLE>Concurrent Deque Proof in ACL2</TITLE></HEAD>
+<BODY BGCOLOR="#FFFFFF">
+
+<pre>
+The books in this directory define a refinement proof correlating
+a concurrent deque implementation to a simple deque specification.
+
+The refinement proof is broken into the following chain:
+
+     cdeq <-> cdeq+ <-> intr <-> intr+ >> spec
+
+Gzipped tar file: <A HREF="../cdeq.tar.gz">cdeq.tar.gz</A>
+
+BOOK descriptions
+-----------------
+<A HREF="records.lisp">records.lisp</A>     -- defines record operations and theorems
+<A HREF="cdeq-defs.lisp">cdeq-defs.lisp</A>   -- defines the step functions and several supporting lemmas
+<A HREF="cdeq-phase1.lisp"cdeq-phase1.lisp</A> -- presents proof that cdeq and cdeq+ are equivalent
+<A HREF="cdeq-phase2.lisp"cdeq-phase2.lisp</A> -- presents proof that cdeq+ and intr are equivalent
+<A HREF="cdeq-phase3.lisp"cdeq-phase3.lisp</A> -- presents proof that intr and intr+ are equivalent
+<A HREF="cdeq-phase4.lisp"cdeq-phase4.lisp</A> -- presents proof that intr+ is a refinement of spec
+
+To build the books in this directory (in the correct order), perform the
+following commands, or else just type <code>make</code> on a Unix or Linux
+system if this directory is installed in a copy of the ACL2 distribution, under
+books/workshops/2000/sumners1/cdeq/.
+
+&lt;shell&gt; ACL2
+&lt;lisp&gt;  (lp)
+ACL2 !&gt; (ld "<A HREF="make.lsp">make.lsp</A>")
+
+
+   -Rob Sumners
+    robert.sumners@amd.com
+</pre>
+</body>
+</html>

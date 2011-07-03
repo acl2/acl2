@@ -1,0 +1,4 @@
+;(ld "hacker-pkg.lsp")
+
+
+(ACL2::CERTIFY-BOOK "all" ACL2::? T :TTAGS ((DEFCODE) (TABLE-GUARD)))

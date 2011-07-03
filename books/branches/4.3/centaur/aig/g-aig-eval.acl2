@@ -1,0 +1,4 @@
+
+(include-book "../gl/portcullis")
+
+(certify-book "g-aig-eval" ? t :ttags :all)

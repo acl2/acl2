@@ -1,0 +1,5 @@
+(ld "hacker-pkg.lsp")
+
+
+
+(ACL2::CERTIFY-BOOK "dynamic-make-event" ACL2::? T)

@@ -1,0 +1,5 @@
+
+(ld "centaur/vl/package.lsp" :dir :system)
+(ld "centaur/vl/other-packages.lsp" :dir :system)
+(ld "fsm-pkg.lsp")
+(certify-book "portcullis" ?)

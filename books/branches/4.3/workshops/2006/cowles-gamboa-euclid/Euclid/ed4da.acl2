@@ -1,0 +1,8 @@
+(defpkg "INT-RND-REM"
+        (union-eq *acl2-exports*
+		  *common-lisp-symbols-from-main-lisp-package*))
+
+(certify-book "ed4da" 
+	      1
+	      nil ;;compile-flg
+	      )

@@ -1,0 +1,10 @@
+#|-*-Lisp-*-=================================================================|#
+#|                                                                           |#
+#| coi: Computational Object Inference                                       |#
+#|                                                                           |#
+#|===========================================================================|#
+
+(ld "cert.acl2")
+(ld "data-structures/memories/package.lsp" :dir :system)
+(ld "../paths/path-defpkg.lsp")
+(certify-book "fr-path-connection" ? t)
