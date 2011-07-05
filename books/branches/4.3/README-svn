@@ -61,37 +61,46 @@ How to make a release branch, as per Sol, 1/6/2011 (edited by Matt
 K. from Sol's email, mostly to add -m arguments).
 
 To create a branch from the trunk, Matt K. did this (but in the future
-change 4.2, of course, to the current release).
+change 4.3, of course, to the current release).
 
-svn copy -m 'Make initial release branch for Version 4.2.' \
+svn copy -m 'Make initial release branch for Version 4.3.' \
         https://acl2-books.googlecode.com/svn/trunk \
-        https://acl2-books.googlecode.com/svn/branches/4.2
+        https://acl2-books.googlecode.com/svn/branches/4.3
 
-To create a tag is the same operation; the only difference is the
-convention that directories under branches are to be considered
-branches and directories under tags are treated as write-once
-"markers" for a certain revision:
+To create a tag is the same operation (note from Matt K.: Not sure we
+ever need to create a tag); the only difference is the convention that
+directories under branches are to be considered branches and
+directories under tags are treated as write-once "markers" for a
+certain revision:
 
-svn copy -m 'Release branch corresponding to actual ACL2 4.2 release.' \
-        https://acl2-books.googlecode.com/svn/branches/4.2 \
-        https://acl2-books.googlecode.com/svn/tags/4.2
+svn copy -m 'Release branch corresponding to actual ACL2 4.3 release.' \
+        https://acl2-books.googlecode.com/svn/branches/4.3 \
+        https://acl2-books.googlecode.com/svn/tags/4.3
 
 If ever you want to make a branch/tag from a specific revision (i.e.
 not the latest), you can do something like (note the @660):
 
-svn copy  -m 'Release branch corresponding to actual ACL2 4.2 release.' \
-        https://acl2-books.googlecode.com/svn/branches/4.2@660 \
-        https://acl2-books.googlecode.com/svn/tags/4.2
+svn copy  -m 'Release branch corresponding to actual ACL2 4.3 release.' \
+        https://acl2-books.googlecode.com/svn/branches/4.3@660 \
+        https://acl2-books.googlecode.com/svn/tags/4.3
 
 
 For an ACL2 developer, the next step is:
 
-svn switch https://acl2-books.googlecode.com/svn/branches/4.2
+cd /projects/acl2/devel/books/
+svn switch https://acl2-books.googlecode.com/svn/branches/4.3
 
 and back to the trunk AFTER the release is complete:
 
+cd /projects/acl2/devel/books/
+# While still in 4.3:
+svn commit -m "Updates made for release committed to 4.3 branch"
+# Now switch over to trunk
 svn switch https://acl2-books.googlecode.com/svn/trunk
-[merge command goes here -- see below]
+svn update
+svn merge -r 663:HEAD https://acl2-books.googlecode.com/svn/branches/4.3 .
+svn commit -m "Updates made for release committed to trunk"
+
 Then resolve any conflicts.
 
 The "svn switch" command acts a lot like "svn update."  Basically it
@@ -110,24 +119,29 @@ an "svn update" in the acl2 sources directory, it will try and switch
 your books back from the branch to the trunk.  To avoid this, use "svn
 update --ignore-externals" instead.
 
-Finally, when you want to merge some changes from one branch into
-another (say, from the release branch back into the trunk), first get
-a working copy of the trunk.  (You can check one out fresh or "svn
-switch" one from the branch back to the trunk.)  Then, from that
-working copy directory, run the following command, with appropriately
-chosen revision numbers:
+[Instructions already covered above, but left here in case they're
+helpful sometime:
 
-svn merge -r 663:HEAD https://acl2-books.googlecode.com/svn/branches/4.2 .
+  Finally, when you want to merge some changes from one branch into
+  another (say, from the release branch back into the trunk), first get
+  a working copy of the trunk.  (You can check one out fresh or "svn
+  switch" one from the branch back to the trunk.)  Then, from that
+  working copy directory, run the following command, with appropriately
+  chosen revision numbers:
 
-This takes the diff between revisions 663 and HEAD of the 4.2 branch
-and applies it to your current working copy (no change is committed to
-the repository yet.)  Again, it will notify you of conflicts if it
-encounters any.  Note to ACL2 developers: Resolve those, if any, and
-then commit (to the trunk) whether there were conflicts or not.
+  svn merge -r 663:HEAD https://acl2-books.googlecode.com/svn/branches/4.3 .
+
+  This takes the diff between revisions 663 and HEAD of the 4.3 branch
+  and applies it to your current working copy (no change is committed to
+  the repository yet.)  Again, it will notify you of conflicts if it
+  encounters any.  Note to ACL2 developers: Resolve those, if any, and
+  then commit (to the trunk) whether there were conflicts or not.
+
+]
 
 Note that if desired, you can check out a working copy of the branch
 in the usual way:
 
-svn checkout https://acl2-books.googlecode.com/svn/branches/4.2 my-new-books-dir
+svn checkout https://acl2-books.googlecode.com/svn/branches/4.3 my-new-books-dir
 
 ============================================================
