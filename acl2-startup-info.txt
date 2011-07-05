@@ -1,3 +1,1 @@
-"$Revision$"
-Sun Jul  3 11:29:22 CDT 2011
-Books Revision: 817
+:release

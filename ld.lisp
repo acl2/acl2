@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -3158,7 +3158,7 @@
 
   ACL2 copyright, license, sponsorship~/~/
 
-  ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+  ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
   Copyright (C) 2011  University of Texas at Austin
 
   This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -13046,7 +13046,7 @@
   :doc
   ":Doc-Section release-notes
 
-  ACL2 Version  3.3(r) (xxx, 20xx) Notes~/
+  ACL2 Version  3.3(r) (November, 2007) Notes~/
 
   ~/
 
@@ -17452,13 +17452,13 @@
   :Doc
   ":Doc-Section release-notes
 
-  ACL2 Version  4.3 (xxx, 20xx) Notes~/
+  ACL2 Version  4.3 (July, 2011) Notes~/
 
   NOTE!  New users can ignore these release notes, because the
   ~il[documentation] has been updated to reflect all changes that are recorded
   here.
 
-  Below we roughly organize the changes since Version 4.2 into the following
+  Below we roughly organize the changes since Version  4.2 into the following
   categories of changes: existing features, new features, heuristic
   improvements, bug fixes, changes at the system level and to distributed
   books, Emacs support, and experimental versions.  Each change is described in
@@ -18081,7 +18081,7 @@
   :doc
   ":Doc-Section release-notes
 
-  ACL2 Version  4.3(r) (xxx, 20xx) Notes~/
+  ACL2 Version  4.3(r) (July, 2011) Notes~/
 
   ~/
 
@@ -20015,7 +20015,7 @@ Recent changes to this page</A>
 </TD>
 <TD>
 <!-- This relative URL is made absolute in distributed tar file -->
-<A HREF=\"installation/installation.html\">Obtaining and Installing Version 4.2</A>
+<A HREF=\"installation/installation.html\">Obtaining and Installing Version 4.3</A>
 </TD>
 
 </TR>
@@ -20025,7 +20025,7 @@ Recent changes to this page</A>
 <A HREF=\"~sg\"><IMG SRC=\"note02.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"~sg\">Differences from Version 4.1</A><A HREF=\"~s7\"> <IMG SRC=\"twarning.gif\"></A>
+<A HREF=\"~sg\">Differences from Version 4.2</A><A HREF=\"~s7\"> <IMG SRC=\"twarning.gif\"></A>
 </TD>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
 <A HREF=\"other-releases.html\">
@@ -20168,7 +20168,7 @@ with ACL2.
 
 <B>Note</B>: The documentation is available for reading in a Web
 browser (recommended), in Emacs Info, using the ACL2 <CODE>:DOC</CODE> command,
-or as a printed book (over 1800 pages).  These are available as follows.
+or as a printed book (about 1900 pages).  These are available as follows.
 
 <ul>
 
@@ -20278,7 +20278,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
-    note-4-2                            ;;; g
+    note-4-3                            ;;; g
     the-method                          ;;; h
     introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
     interesting-applications            ;;; j
@@ -24311,7 +24311,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
   about ACL2~/
 
-  This is ACL2 Version 4.2, copyright (C) 2011 University of Texas at Austin,
+  This is ACL2 Version 4.3, copyright (C) 2011 University of Texas at Austin,
   authored by Matt Kaufmann and J Strother Moore.
 
   For past versions, see

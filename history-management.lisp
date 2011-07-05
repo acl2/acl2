@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -3457,11 +3457,11 @@
             (let ((limit ,limit))
               (cond ((null limit)
                      *default-step-limit*)
+                    ((eq limit :start) ; inherit limit from parent environment
+                     (initial-step-limit (w state) state))
                     ((and (natp limit)
                           (<= limit *default-step-limit*))
                      limit)
-                    ((eq limit :start) ; inherit limit from parent environment
-                     (initial-step-limit (w state) state))
                     (t (er hard 'with-prover-step-limit
                            "Illegal value for ~x0, ~x1.  See :DOC ~
                             with-prover-step-limit."

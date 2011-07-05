@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1562,8 +1562,88 @@
 
 #-acl2-loop-only
 (defmacro maybe-make-package (name)
+
+; When we moved to Version_4.3, with LispWorks once again a supported host
+; Lisp, we modified the macro maybe-introduce-empty-pkg-1 to avoid the use of
+; defpackage; see the comment in that macro.  Unfortunately, the new approach
+; didn't work for CMUCL (at least, for version 19e).  The following example
+; shows why; even with an eval-when form specifying :compile-toplevel, the
+; compiled code seems to skip the underlying package-creation form, as shown
+; below.  Therefore we revert to the use of defpackage for CMUCL, which appears
+; not to cause problems.
+
+;   % cat pkg-bug-cmucl.lisp
+;   
+;   (in-package "CL-USER")
+;   
+;   (eval-when (:load-toplevel :execute :compile-toplevel)
+;              (cond ((not (find-package "MYPKG"))
+;                     (print "*** About to make package ***")
+;                     (terpri)
+;                     (make-package "MYPKG" :use nil))))
+;   
+;   (defparameter *foo* 'mypkg::x)
+;   % /projects/acl2/lisps/cmucl-19e-linux/bin/cmucl
+;   CMU Common Lisp 19e (19E), running on kindness
+;   With core: /v/filer4b/v11q001/acl2/lisps/cmucl-19e-linux/lib/cmucl/lib/lisp.core
+;   Dumped on: Thu, 2008-05-01 11:56:07-05:00 on usrtc3142
+;   See <http://www.cons.org/cmucl/> for support information.
+;   Loaded subsystems:
+;       Python 1.1, target Intel x86
+;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
+;   * (load "pkg-bug-cmucl.lisp")
+;   
+;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp".
+;   
+;   "*** About to make package ***" 
+;   T
+;   * (compile-file "pkg-bug-cmucl.lisp")
+;   
+;   ; Python version 1.1, VM version Intel x86 on 04 JUL 11 09:57:13 am.
+;   ; Compiling: /v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp 04 JUL 11 09:56:24 am
+;   
+;   ; Byte Compiling Top-Level Form: 
+;   
+;   ; pkg-bug-cmucl.x86f written.
+;   ; Compilation finished in 0:00:00.
+;   
+;   #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f"
+;   NIL
+;   NIL
+;   * (quit)
+;   % /projects/acl2/lisps/cmucl-19e-linux/bin/cmucl
+;   CMU Common Lisp 19e (19E), running on kindness
+;   With core: /v/filer4b/v11q001/acl2/lisps/cmucl-19e-linux/lib/cmucl/lib/lisp.core
+;   Dumped on: Thu, 2008-05-01 11:56:07-05:00 on usrtc3142
+;   See <http://www.cons.org/cmucl/> for support information.
+;   Loaded subsystems:
+;       Python 1.1, target Intel x86
+;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
+;   * (load "pkg-bug-cmucl.x86f")
+;   
+;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f".
+;   
+;   
+;   Error in function LISP::FOP-PACKAGE:  The package "MYPKG" does not exist.
+;      [Condition of type SIMPLE-ERROR]
+;   
+;   Restarts:
+;     0: [CONTINUE] Return NIL from load of "pkg-bug-cmucl.x86f".
+;     1: [ABORT   ] Return to Top-Level.
+;   
+;   Debug  (type H for help)
+;   
+;   (LISP::FOP-PACKAGE)
+;   Source: Error finding source: 
+;   Error in function DEBUG::GET-FILE-TOP-LEVEL-FORM:  Source file no longer exists:
+;     target:code/load.lisp.
+;   0] 
+
+  #-cmu
   `(when (not (find-package ,name))
-     (make-package ,name :use nil)))
+     (make-package ,name :use nil))
+  #+cmu
+  `(defpackage ,name (:use)))
 
 (defmacro maybe-introduce-empty-pkg-1 (name)
 
@@ -23930,7 +24010,7 @@
   ~c[Mv?-let] is a macro that extends the macro ~ilc[mv-let] by allowing a
   single variable to be bound.  Thus, the syntax is the same as that of
   ~ilc[mv-let] except that ~c[mv?-let] is permitted to bind a single variable
-  to a form that produces a single value.  The macros ~c[mv?-let} and ~ilc[mv?]
+  to a form that produces a single value.  The macros ~c[mv?-let] and ~ilc[mv?]
   are provided to facilitate the writing of macros that traffic in expressions
   that could return one or more (multiple) values.
 
@@ -24934,7 +25014,7 @@
 ; The reason MCL needs special treatment is that (char-code #\Newline) = 13 in
 ; MCL, not 10.  See also :DOC version.
 
-; ACL2 Version 4.2
+; ACL2 Version 4.3
 
 ; We put the version number on the line above just to remind ourselves to bump
 ; the value of state global 'acl2-version, which gets printed out with the
@@ -24960,7 +25040,7 @@
 ; reformatting :DOC comments.
 
                   ,(concatenate 'string
-                                "ACL2 Version 4.2"
+                                "ACL2 Version 4.3"
                                 #+non-standard-analysis
                                 "(r)"
                                 #+(and mcl (not ccl))

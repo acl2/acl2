@@ -1,5 +1,5 @@
 <HTML>
-<HEAD><TITLE>ACL2 Version 4.2 Installation Guide: Obtaining and Installing ACL2</TITLE></HEAD>
+<HEAD><TITLE>ACL2 Version 4.3 Installation Guide: Obtaining and Installing ACL2</TITLE></HEAD>
 
 <BODY TEXT="#000000">
 <BODY BGCOLOR="#FFFFFF">
@@ -47,9 +47,9 @@ ACL2 is more than just the executable image.  You should obtain the standard
 books and a local copy of the documentation.  Start here and we will take
 you through the whole process of obtaining and installing ACL2.
 
-First, create a directory in which to store ACL2 Version 4.2.  We will
+First, create a directory in which to store ACL2 Version 4.3.  We will
 call this directory <I>dir</I>.  For example, <I>dir</I> might be
-<CODE>/home/jones/acl2/v4-2</CODE>.
+<CODE>/home/jones/acl2/v4-3</CODE>.
 
 <H3>NOTE: If you intend to obtain an incremental release (e.g. 2.9.4 as opposed
 to 2.9), please see the <a href="../new.html">ACL2 News</a> for instructions.
@@ -65,11 +65,11 @@ Begin by clicking on one of the following links.
 
 <p>
 
-<!-- Do not change the following "v4-2" for incremental releases. -->
+<!-- Do not change the following "v4-3" for incremental releases. -->
 
 The sources come with a <CODE>books</CODE> subdirectory, in particular
 <CODE>books/Readme.html</CODE> (<A
-HREF="http://www.cs.utexas.edu/users/moore/acl2/v4-2/distrib/acl2-sources/books/Readme.html">here</A>
+HREF="http://www.cs.utexas.edu/users/moore/acl2/v4-3/distrib/acl2-sources/books/Readme.html">here</A>
 for the latest non-incremental release)
 that you may find helpful in your proof development and programming with ACL2.
 The following two collections of books are not included with the sources.  You
@@ -79,10 +79,10 @@ books</A> for information on using them.
 
 <UL>
 <LI><A
-HREF="http://www.cs.utexas.edu/users/moore/acl2/v4-2/distrib/acl2-sources/books/workshops.tar.gz">ACL2
+HREF="http://www.cs.utexas.edu/users/moore/acl2/v4-3/distrib/acl2-sources/books/workshops.tar.gz">ACL2
 Workshops books (gzipped tar file)</A>
 <LI><A
-HREF="http://www.cs.utexas.edu/users/moore/acl2/v4-2/distrib/acl2-sources/books/nonstd.tar.gz">
+HREF="http://www.cs.utexas.edu/users/moore/acl2/v4-3/distrib/acl2-sources/books/nonstd.tar.gz">
 Non-standard analysis books (gzipped tar file)</A>
 </UL>
 
@@ -253,10 +253,10 @@ For a Unix, Mac OS X, or Linux system, obtain the sources and place them in dire
 
 <UL>
 
-<LI>Save <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v4-2/distrib/acl2.tar.gz">
+<LI>Save <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v4-3/distrib/acl2.tar.gz">
 acl2.tar.gz</A> on directory <I>dir</I>.  (You can run <code>md5sum</code> and
 compare with <A
-HREF="http://www.cs.utexas.edu/users/moore/acl2/v4-2/distrib/acl2-tar-gz-md5sum">
+HREF="http://www.cs.utexas.edu/users/moore/acl2/v4-3/distrib/acl2-tar-gz-md5sum">
 acl2-tar-gz-md5sum</A> if you wish to verify the transmission.)
 
 <LI>Execute the following four Unix commands.  (<b>Note</b>: Gnu tar is
@@ -282,7 +282,7 @@ Now proceed to <A HREF="#Create-Image">Creating or Obtaining an Executable Image
 For a non-Unix (and non-Linux, non-Mac-OS-X) system, obtain the sources and place them in
 directory <I>dir</I>.  The easiest way to do this is to fetch
 file <CODE><A
-HREF="http://www.cs.utexas.edu/users/moore/acl2/v4-2/distrib/acl2.tar.gz">http://www.cs.utexas.edu/users/moore/acl2/v4-2/distrib/acl2.tar.gz</A></CODE>,
+HREF="http://www.cs.utexas.edu/users/moore/acl2/v4-3/distrib/acl2.tar.gz">http://www.cs.utexas.edu/users/moore/acl2/v4-3/distrib/acl2.tar.gz</A></CODE>,
 and then extract using an appropriate <CODE>tar</CODE> utility.  For example,
 for Windows systems you may be able to download a utility such as
 <code>djtarnt.exe</code> to be used as follows:
@@ -338,7 +338,7 @@ instructions for building an executable.
 <H3><A NAME="Pre-Built-Images">Short Cut:  Pre-Built ACL2 Images</A></H3>
 
 The site <a
-href="http://www.cs.utexas.edu/users/moore/acl2/v4-2/distrib/images/Readme.html">http://www.cs.utexas.edu/users/moore/acl2/v4-2/distrib/images/Readme.html</a>
+href="http://www.cs.utexas.edu/users/moore/acl2/v4-3/distrib/images/Readme.html">http://www.cs.utexas.edu/users/moore/acl2/v4-3/distrib/images/Readme.html</a>
 contains links to ACL2 executables and packages.  Each <code>-md5sum</code> file
 was created using <code>md5sum</code>.  We may add additional
 links from time to time.
@@ -600,12 +600,12 @@ C:\gcl\gclm\lib\gcl-2.6.1\unixport\saved_gcl.exe -dir C:/gcl/gclm/lib/gcl-2.6.1/
 systems</A> above, though the resulting file may be called
 <code>saved_acl2.exe</code> rather than <code>saved_acl2</code>.
 
-<!-- NOTE to developers: v4-2 below indicates a normal release, which is OK. -->
+<!-- NOTE to developers: v4-3 below indicates a normal release, which is OK. -->
 <!-- Do not edit that for incremental releases. -->
 
 <li><b>FINALLY</b>, create a file <code>acl2.bat</code> as explained in
-<code><a href="http://www.cs.utexas.edu/users/moore/acl2/v4-2/distrib/images/Readme.html#acl2-bat">
-http://www.cs.utexas.edu/users/moore/acl2/v4-2/distrib/images/Readme.html</a></code>.
+<code><a href="http://www.cs.utexas.edu/users/moore/acl2/v4-3/distrib/images/Readme.html#acl2-bat">
+http://www.cs.utexas.edu/users/moore/acl2/v4-3/distrib/images/Readme.html</a></code>.
 
 </ol>
 
@@ -728,9 +728,9 @@ split/     ; The result of splitting up acl2.tar.gz; see split/Readme.html
 </PRE>
 
 <P>
-The entire acl2.tar.gz is about 11.7 megabytes, which extracts to
-about 66 megabytes.  Additional space is required to build an image,
-perhaps 45 to 300 megabytes depending on the platform (including the
+The entire acl2.tar.gz is about 12 megabytes, which extracts to
+about 70 megabytes.  Additional space is required to build an image,
+perhaps 50 to 300 megabytes depending on the platform (including the
 host Lisp); and more will be required to <A
 HREF="using.html#Certifying">certify books</A>.
 

@@ -1,6 +1,6 @@
 #  -*- Fundamental -*- 
 
-# ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+# ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 # Copyright (C) 2011  University of Texas at Austin.
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -189,7 +189,7 @@
 
 LISP = gcl
 DIR = /tmp
-ACL2_VERSION = v4-2
+ACL2_VERSION = v4-3
 
 # The variable NONSTD should be defined for the non-standard version and not
 # for the standard version.  Non-standard ACL2 images will end in saved_acl2r
@@ -680,7 +680,7 @@ clean:
 # (since there could be many executables that one prefers not to delete),
 # except for *osaved_acl2* files.
 	rm -f *.o *#* *.c *.h *.data gazonk.* workxxx workyyy *.lib \
-	  *.fasl *.fas *.sparcf *.ufsl *.64ufasl *.ufasl *.dfsl \
+	  *.fasl *.fas *.sparcf *.ufsl *.64ufasl *.ufasl *.dfsl *.dxl \
 	  *.d64fsl *.dx64fsl *.lx64fsl \
 	  *.lx32fsl *.x86f *.o \
 	  TAGS acl2-status.txt acl2r.lisp acl2-proclaims.lisp .acl2rc \

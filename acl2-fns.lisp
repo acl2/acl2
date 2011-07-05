@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1165,9 +1165,10 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; WARNING: Keep this in sync with the #-acl2-loop-only definition of setenv$.
 
   #+cmu
-  (and (boundp ext::*environment-list*)
-       (cdr (assoc-eq (intern string :keyword)
-                      ext::*environment-list*)))
+  (and (boundp 'ext::*environment-list*)
+       (cdr (assoc (intern string :keyword)
+                   ext::*environment-list*
+                   :test #'eq)))
   #+(or gcl allegro lispworks ccl sbcl clisp)
   (let ((fn
          #+gcl       'si::getenv

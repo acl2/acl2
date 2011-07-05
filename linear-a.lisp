@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1639,7 +1639,7 @@
                                      (+f 2 calls)))))
            #+:non-standard-analysis
            ((realp evg)
-            (prog2$ (er hard 'fn-count-evg 
+            (prog2$ (er hard? 'fn-count-evg 
                         "Encountered an irrational in fn-count-evg!")
                     0))
            ((complex-rationalp evg)
@@ -1650,7 +1650,7 @@
                               (+f 2 calls)))
            #+:non-standard-analysis
            ((complexp evg)
-            (prog2$ (er hard 'fn-count-evg 
+            (prog2$ (er hard? 'fn-count-evg 
                         "Encountered a complex irrational in ~ fn-count-evg!")
                     0))
            ((symbolp evg)
