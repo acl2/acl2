@@ -19,6 +19,12 @@ clean: moreclean
 # automatic dependency scanning is painful in GNU Make, so I don't want to deal
 # with it.
 #
+# (On the above point, added by Matt K.: When we certify with the
+# saving of expansion files, as is the case for "make regression" with
+# ACL2_SAVE_EXPANSION=t, we create many files *@expansion.lsp.  Since
+# there are only three .lsp source files, we enumerate them explicitly
+# below in the dependencies for bookdoc.dat.)
+#
 # Practically speaking, it isn't really crucial that bookdoc.dat be rebuilt all
 # the time.  Documentation really isn't updated that frequently, and even if
 # the documentation in bookdoc.dat is out of date, the (maybe-import-bookdoc)
@@ -27,7 +33,7 @@ clean: moreclean
 # topic in a book that they haven't loaded.  I think it's reasonable to accept
 # this.
 
-bookdoc.dat: $(wildcard *.lsp) $(wildcard *.lisp)
+bookdoc.dat: acl2-customization.lsp bookdoc.lsp package.lsp $(wildcard *.lisp)
 	@$(ACL2) < bookdoc.lsp > bookdoc.out
 	@ls -l bookdoc.dat
 

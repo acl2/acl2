@@ -542,8 +542,8 @@ generate WP functions~/
 
 This book generates weakest precondition predicates, which are
 admitted as (possibly mutually recursive) ACL2 functions as described
-in the paper “A Weakest Precondition Model for Assembly Language
-Programs” by Bill Legato, dated January 28, 2003.
+in the paper ``A Weakest Precondition Model for Assembly Language
+Programs'' by Bill Legato, dated January 28, 2003.
 
 The input program is given in a variation of Legato's format for
 assembly language programs. In this format each node of the program

@@ -1,4 +1,4 @@
-#; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+#; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 #; Copyright (C) 2011  University of Texas at Austin
 
 #; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -475,7 +475,7 @@ clean-hons:
 	./cert.pl -c centaur/doc.lisp \
 	  $(ACL2_HONS_OPT) \
 	  --acl2-books "`pwd`" \
-	  --acl2 $(ACL2_FOR_HONS)
+	  -q
 
 # Keep the following three pairs in sync with the two targets just above.
 # They will create compiled files for books that may have already been
