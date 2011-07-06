@@ -27,9 +27,9 @@
 (defmacro test-serialize (x &rest write-args)
   (declare (ignorable x write-args))
   `(make-event
-    (b* ((host-lisp (get-global 'ACL2::host-lisp state))
-         ((when (equal host-lisp :gcl))
-          (value `(value-triple :does-not-work-on-gcl)))
+    (b* ((hons-disabledp (not (hons-enabledp state)))
+         ((when hons-disabledp)
+          (value `(value-triple :does-not-work-without-hons)))
 
          (- (cw ">>> Writing V1 file with serialize::write~%"))
          (state (serialize::write "test.sao" ,x :verbosep t ,@write-args))
@@ -180,40 +180,39 @@
 
 
 (make-event
- (let ((host-lisp (get-global 'ACL2::host-lisp state)))
-   (if (equal host-lisp :gcl)
-       `(value-triple :does-not-work-on-gcl)
-     '(local
-       (encapsulate
-        ()
-        ;; Write NIL to test.sao
-        (make-event
-         (let ((state (serialize::write "test.sao" nil)))
-           (value '(value-triple :invisible))))
+ (if (not (hons-enabledp state))
+     '(value-triple :does-not-work-without-hons)
+   '(local
+     (encapsulate
+      ()
+      ;; Write NIL to test.sao
+      (make-event
+       (let ((state (serialize::write "test.sao" nil)))
+         (value '(value-triple :invisible))))
 
-        ;; Prove that test.sao contains NIL.
-        (defthm lemma-1
-          (equal (serialize::unsound-read "test.sao") nil)
-          :rule-classes nil)
+      ;; Prove that test.sao contains NIL.
+      (defthm lemma-1
+        (equal (serialize::unsound-read "test.sao") nil)
+        :rule-classes nil)
 
-        ;; Write T to test.sao
-        (make-event
-         (let ((state (serialize::write "test.sao" t)))
-           (value '(value-triple :invisible))))
+      ;; Write T to test.sao
+      (make-event
+       (let ((state (serialize::write "test.sao" t)))
+         (value '(value-triple :invisible))))
 
-        ;; Prove that test.sao contains T.
-        (defthm lemma-2
-          (equal (serialize::unsound-read "test.sao") t)
-          :rule-classes nil)
+      ;; Prove that test.sao contains T.
+      (defthm lemma-2
+        (equal (serialize::unsound-read "test.sao") t)
+        :rule-classes nil)
 
-        ;; Arrive at our contradiction.
-        (defthm qed
-          nil
-          :rule-classes nil
-          :hints(("Goal"
-                  :use ((:instance lemma-1)
-                        (:instance lemma-2))
-                  :in-theory (disable (serialize::unsound-read-fn))))))))))
+      ;; Arrive at our contradiction.
+      (defthm qed
+        nil
+        :rule-classes nil
+        :hints(("Goal"
+                :use ((:instance lemma-1)
+                      (:instance lemma-2))
+                :in-theory (disable (serialize::unsound-read-fn)))))))))
 
 
 #||
