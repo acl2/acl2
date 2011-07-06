@@ -42,6 +42,11 @@
 
 TIME = time
 
+# Avoid loading customization file unless environment variable is already set.
+# (This is also done in Makefile-generic, but we do it here in support of the
+# hons target.)
+export ACL2_CUSTOMIZATION ?= NONE
+
 # Directories go here; first those before certifying arithmetic/top-with-meta,
 # then those afterwards.
 
@@ -137,6 +142,14 @@ wp-gen: ordinals
 xdoc: str unicode finite-set-theory/osets tools
 system: tools arithmetic arithmetic-5
 cutil: xdoc tools str misc finite-set-theory defsort unicode make-event
+# Note: There is no need to include values for "centaur:", since dependencies
+# are handled by cert.pl in that case.
+# There is also need to include taspi here -- after all, there is actually
+# no taspi target -- but we found these two with the following command in the
+# taspi directory
+#   find . -name 'Makefile' -print -exec fgrep ACL2_SYSTEM {} \; | fgrep ':'
+# so we figured we might as well include taspi here.
+taspi: misc arithmetic-3
 
 # Let us wait for everything else before workshops, except we currrently
 # (as of v3-6, at least) don't need to wait for coi (that may change).
@@ -463,7 +476,7 @@ all-plus: $(DIRS1) $(ACL2_BOOK_DIRS)
 #   make hons ACL2_HONS_OPT="-j4"
 # In general, ACL2_HONS_OPT is passed to the cert.pl command in centaur/.
 hons:
-	./cert.pl centaur/doc.lisp \
+	./cert.pl --targets regression-hons-targets \
 	  $(ACL2_HONS_OPT) \
 	  --acl2-books "`pwd`" \
 	  --acl2 $(ACL2_FOR_HONS)

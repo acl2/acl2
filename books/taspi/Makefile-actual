@@ -1,0 +1,5 @@
+DIRS = code database single-input sets-input \
+	tree-distance tree-score tree-generation \
+	proofs 
+#read-write : nothing to be certified (raw-mode support)
+include $(ACL2_SYSTEM_BOOKS)/Makefile-subdirs
