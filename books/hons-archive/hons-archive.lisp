@@ -28,6 +28,13 @@
 (local (include-book "tools/mv-nth" :dir :system))
 
 
+(make-event
+ (prog2$ (cw "Note: Using hons-archives is deprecated; see :doc serialize ~
+              for a replacement.~%")
+         '(value-triple :invisible))
+ :check-expansion t)
+
+
 
 ;                       FILE PRIMITIVES (BOZO)
 ;
