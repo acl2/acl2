@@ -16630,6 +16630,7 @@
 
   ~bv[]
   Example:
+  (defconst *mem-size* 10) ; for use of *mem-size* just below
   (defstobj st
             (reg :type (array (unsigned-byte 31) (8))
                  :initially 0)

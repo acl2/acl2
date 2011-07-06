@@ -938,9 +938,9 @@ of the current s-expression in the enclosing list"
 ; (setq auto-save-timeout 0)
 
 ; Abbrevs are great!  For example, if you type
-; control-x '
-; followed by
 ; ac
+; followed by
+; control-x '
 ; then (assuming the following form has been evaluated), the "ac" will be
 ; replaced by the value of *acl2-sources-dir*.
 ; (define-abbrev-table 'global-abbrev-table

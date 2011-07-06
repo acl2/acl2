@@ -939,9 +939,9 @@
 
   Many successful ACL2 users run in an shell under Emacs; ~pl[emacs].  However,
   those not familiar with Emacs may prefer to start with an Eclipse-based
-  interface developed by Peter Dillinger and Pete Manolios called the ``ACL2
-  Sedan'', or ``ACL2s''.  As of this writing, the home page for ACL2s is
-  ~url[http://acl2s.ccs.neu.edu/acl2s/doc/].~/
+  interface initiallly developed by Peter Dillinger and Pete Manolios called
+  the ``ACL2 Sedan'', or ``ACL2s''.  As of this writing, the home page for
+  ACL2s is ~url[http://acl2s.ccs.neu.edu/acl2s/doc/].~/
 
   ACL2 sessions in the ACL2 Sedan can utilize non-standard extensions and
   enhancements, especially geared toward new users, termination reasoning, and
@@ -950,8 +950,8 @@
   ~url[http://acl2s.ccs.neu.edu/acl2s/src/acl2-extensions].  (Some code
   originating from this project has been migrated to the ACL2 system books, but
   only after it was quite stable.)  Thanks to Peter Dillinger, Pete Manolios,
-  and Daron Vroon for their work on the ACL2 Sedan and for making their books
-  available to ACL2 users.  ~/")
+  Daron Vroon, and Harsh Raju Chamarthi for their work on the ACL2 Sedan and
+  for making their books available to ACL2 users.  ~/")
 
 (deflabel solution-to-simple-example
   :doc

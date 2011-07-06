@@ -12751,7 +12751,8 @@
   his own implementation).
 
   The ACL2 customization file can now be specified using environment variable
-  ~c[ACL2-CUSTOMIZATION].  ~l[acl2-customization].  Thanks to Peter Dillinger
+  ~c[ACL2-CUSTOMIZATION] [note: starting with Version_4.0,
+  ~c[ACL2_CUSTOMIZATION]].  ~l[acl2-customization].  Thanks to Peter Dillinger
   for requesting this feature.
 
   Added new emacs capabilities for proof trees (all documented in emacs):
@@ -17826,10 +17827,10 @@
 
   Avoided a potential error that could occur when no user home directory is
   located.  Our previous solution for Windows simply avoided looking for ACL2
-  customization files (~pl[ACL2-CUSTOMIZATION]) and ~c[acl2-init.lsp] files in
+  customization files (~pl[acl2-customization]) and ~c[acl2-init.lsp] files in
   a user's home directory.  With this change, we handle such files the same for
   Windows as for non-Windows systems: we always look for ACL2 customization
-  files (~pl[ACL2-CUSTOMIZATION]) and ~c[acl2-init.lsp] files in a user's home
+  files (~pl[acl2-customization]) and ~c[acl2-init.lsp] files in a user's home
   directory, but only if such a directory exists.  Thanks to Hanbing Liu for
   reporting this issue.
 
@@ -18089,6 +18090,43 @@
 
   ~/
   ")
+
+(deflabel note-4-4
+  :doc
+  ":Doc-Section release-notes
+
+  ACL2 Version  4.4 (xxx, 20xx) Notes~/
+
+  NOTE!  New users can ignore these release notes, because the
+  ~il[documentation] has been updated to reflect all changes that are recorded
+  here.
+
+  Below we roughly organize the changes since Version  4.3 into the following
+  categories of changes: existing features, new features, heuristic
+  improvements, bug fixes, changes at the system level and to distributed
+  books, Emacs support, and experimental versions.  Each change is described in
+  just one category, though of course many changes could be placed in more than
+  one category.
+
+  ~st[CHANGES TO EXISTING FEATURES]
+
+  A fatal error now occurs if environment variable ~c[ACL2_CUSTOMIZATION] has a
+  value other than ~c[NONE] or the empty string, but is not the name of an
+  existing file.  Thanks to Harsh Raju Chamarthi for requesting such a change.
+
+  ~st[NEW FEATURES]
+
+  ~st[HEURISTIC IMPROVEMENTS]
+
+  ~st[BUG FIXES]
+
+  ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
+
+  ~st[EMACS SUPPORT]
+
+  ~st[EXPERIMENTAL VERSIONS]
+
+  ~/~/")
 
 (deflabel the-method
   :doc

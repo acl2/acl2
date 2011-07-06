@@ -261,9 +261,6 @@ ACL2_SIZE =
 # on the make command line.
 ACL2_IGNORE = -i
 
-# Avoid loading customization file.
-export ACL2-CUSTOMIZATION = NONE
-
 # The order of the files below is unimportant.
 
 sources := axioms.lisp memoize.lisp hons.lisp boot-strap-pass-2.lisp\
