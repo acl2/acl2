@@ -1,0 +1,1 @@
+(certify-book "compact-print" ? t :ttags :all)
