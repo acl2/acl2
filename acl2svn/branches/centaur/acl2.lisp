@@ -583,9 +583,11 @@
 
   '(
     #+acl2-par "multi-threading-raw"
+    #+hons "serialize-raw"
     "axioms"
-    "memoize" ; but only get special under-the-hood treatment with #+hons
-    "hons"    ; but only get special under-the-hood treatment with #+hons
+    "memoize"   ; but only get special under-the-hood treatment with #+hons
+    "hons"      ; but only get special under-the-hood treatment with #+hons
+    "serialize" ; but only get special under-the-hood treatment with #+hons
     "boot-strap-pass-2"
     "basis"
     "parallel" ; but only get special under-the-hood treatment with #+acl2-par
@@ -1161,6 +1163,18 @@ which is saved just in case it's needed later.")
 (defun modify-acl2-readtable (do-all-changes)
   (let ((*readtable* *acl2-readtable*))
 
+; Jared patch: add #Z and #z for Serialized Objects (see serialize-raw.lisp)
+
+    (set-dispatch-macro-character
+     #\#
+     #\Z
+     'ser-hons-reader-macro)
+
+    (set-dispatch-macro-character
+     #\#
+     #\z
+     'ser-cons-reader-macro)
+
 ; Backquote
 
     (set-macro-character
@@ -1238,6 +1252,21 @@ which is saved just in case it's needed later.")
     (set-dispatch-macro-character #\#
                                   #\=
                                   #'reckless-sharp-equal-read)
+
+; Jared patch: add #Z and #z for Serialized Objects (see serialize-raw.lisp).
+; Hrmn, but is this readtable even necessary if we replace compact-printing
+; with the serialize reader?
+
+    (set-dispatch-macro-character
+     #\#
+     #\Z
+     'ser-hons-reader-macro)
+
+    (set-dispatch-macro-character
+     #\#
+     #\z
+     'ser-cons-reader-macro)
+
     *readtable*))
 
 (defvar *load-compiled-verbose* nil)
