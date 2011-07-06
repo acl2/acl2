@@ -6511,7 +6511,11 @@
   (let ((curr-ht (assoc-eq name *waterfall-parallelism-timings-ht-alist*)))
     (cond ((null curr-ht)
            (let ((new-ht (make-hash-table :test 'equal :size (expt 2 13)
-                                          :shared t)))
+
+; Parallelism wart: we will need to lock these hashtable operations manually in
+; Lispworks and SBCL.
+
+                                          #+ccl :shared #+ccl t)))
              (setf *waterfall-parallelism-timings-ht-alist*
                    (acons name
                           new-ht

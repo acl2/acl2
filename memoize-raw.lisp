@@ -2339,6 +2339,7 @@ the calls took.")
             qzget-sign-abs
             raw-mode-p
             read-acl2-oracle
+            read-acl2-oracle@par
             read-object
             read-run-time
             read-standard-oi

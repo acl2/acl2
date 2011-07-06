@@ -24766,16 +24766,17 @@
 ; concern since presumably users cannot define these redundantly anyhow.  But
 ; we go ahead and include them, just to be safe.
 
-    user-stobj-alist read-acl2-oracle update-user-stobj-alist
-    decrement-big-clock put-global close-input-channel makunbound-global
-    open-input-channel open-input-channel-p1 boundp-global1 global-table-cars1
-    extend-t-stack list-all-package-names close-output-channel write-byte$
-    shrink-t-stack aset-32-bit-integer-stack get-global
-    32-bit-integer-stack-length1 extend-32-bit-integer-stack aset-t-stack
-    aref-t-stack read-char$ aref-32-bit-integer-stack open-output-channel
-    open-output-channel-p1 princ$ read-object big-clock-negative-p peek-char$
-    shrink-32-bit-integer-stack read-run-time read-byte$ read-idate
-    t-stack-length1 print-object$ get-output-stream-string$-fn
+    user-stobj-alist read-acl2-oracle read-acl2-oracle@par
+    update-user-stobj-alist decrement-big-clock put-global close-input-channel
+    makunbound-global open-input-channel open-input-channel-p1 boundp-global1
+    global-table-cars1 extend-t-stack list-all-package-names
+    close-output-channel write-byte$ shrink-t-stack aset-32-bit-integer-stack
+    get-global 32-bit-integer-stack-length1 extend-32-bit-integer-stack
+    aset-t-stack aref-t-stack read-char$ aref-32-bit-integer-stack
+    open-output-channel open-output-channel-p1 princ$ read-object
+    big-clock-negative-p peek-char$ shrink-32-bit-integer-stack read-run-time
+    read-byte$ read-idate t-stack-length1 print-object$
+    get-output-stream-string$-fn
 
     mv-list return-last
 
@@ -30708,6 +30709,9 @@
 (defparameter *next-acl2-oracle-value* nil)
 
 (defun read-acl2-oracle (state-state)
+
+; Keep in sync with #+acl2-par read-acl2-oracle@par.
+
   (declare (xargs :guard (state-p1 state-state)))
 
 ;   Wart: We use state-state instead of state because of a bootstrap problem.
@@ -30723,6 +30727,53 @@
   (mv (null (acl2-oracle state-state))
       (car (acl2-oracle state-state))
       (update-acl2-oracle (cdr (acl2-oracle state-state)) state-state)))
+
+#+acl2-par
+(defun read-acl2-oracle@par (state-state)
+
+; Keep in sync with read-acl2-oracle.
+
+; Note that this function may make it possible to evaluate (equal X X) and
+; return nil, for a suitable term X.  Specifically, it may be the case that the
+; term (equal (read-acl2-oracle@par state) (read-acl2-oracle@par state)) can
+; evaluate to nil.  More likely, something like
+; (equal (read-acl2-oracle@par state)
+;        (prog2$ <form> (read-acl2-oracle@par state)))
+; could evaluate to nil, if <form> sets *next-acl2-oracle-value* under the
+; hood.  However, we are willing to live with such low-likelihood risks in
+; ACL2(p).
+
+  (declare (xargs :guard (state-p1 state-state)))
+  #-acl2-loop-only
+  (cond ((live-state-p state-state)
+         (return-from read-acl2-oracle@par
+                      (let ((val *next-acl2-oracle-value*))
+                        (setq *next-acl2-oracle-value* nil)
+                        (mv nil val state-state)))))
+  (mv (null (acl2-oracle state-state))
+      (car (acl2-oracle state-state))))
+
+#-acl2-par
+(defun read-acl2-oracle@par (state-state)
+
+; We have included read-acl2-oracle@par in *super-defun-wart-table*, in support
+; of ACL2(p).  But in order for ACL2(p) and ACL2 to be logically compatible, a
+; defconst should have the same value in #+acl2-par as in #-acl2-par; so
+; read-acl2-oracle@par is in *super-defun-wart-table* for #-acl2-par too, not
+; just #+acl2-par.
+
+; Because of that, if the function read-acl2-oracle@par were only defined in
+; #+acl2-par, then a normal ACL2 user could define read-acl2-oracle@par and
+; take advantage of such special treatment, which we can imagine is
+; problematic.  Rather than think hard about whether we can get away with that,
+; we eliminate such a user option by defining this function in #-acl2-par.
+
+  (declare (xargs :guard (state-p1 state-state))
+           (ignore state-state))
+  (mv (er hard? 'read-acl2-oracle@par
+          "The function symbol ~x0 is reserved but may not be executed."
+          'read-acl2-oracle@par)
+      nil))
 
 (defun getenv$ (str state)
 
@@ -31776,6 +31827,7 @@
 
 ;   read-idate - used by write-acl2-html, so can't be untouchable?
     read-acl2-oracle
+    read-acl2-oracle@par
     read-run-time ; might not need to be an untouchable function
     main-timer    ; might not need to be an untouchable function
     get-timer     ; might not need to be an untouchable function
@@ -39881,7 +39933,7 @@
   `(mv-let (step-limit x1 x2 x3 x4 ; values that cannot be stobjs
                        state)
            #+acl2-loop-only
-           ,form ; so, form does not return a stobj
+           ,form ; so, except for state, form does not return a stobj
            #-acl2-loop-only
            (progn
              (setq *next-acl2-oracle-value* nil)
@@ -39908,13 +39960,31 @@
 
   `(mv-let (step-limit x1 x2 x3 x4) ; values that cannot be stobjs
            #+acl2-loop-only
-           ,form ; so, form does not return a stobj
+           ,form ; so, form returns neither a stobj nor state
            #-acl2-loop-only
-           (catch 'time-limit5-tag
+           (progn
+
+; Parallelism wart: there is a rare race condition related to
+; *next-acl2-oracle-value*.  Specifically, a thread might set the value of
+; *next-acl2-oracle-value*, throw the 'time-limit5-tag, and the value of
+; *next-acl2-oracle-value* wouldn't be read until after that tag was caught.
+; In the meantime, maybe another thread would have cleared
+; *next-acl2-oracle-value*, and the needed value would be lost.  We do not plan
+; on fixing this wart until we have reason to believe that it is a practical
+; problem for users.
+
+             (setq *next-acl2-oracle-value* nil)
+             (catch 'time-limit5-tag
                (let ((*time-limit-tags* (add-to-set-eq 'time-limit5-tag
                                                        *time-limit-tags*)))
-                 ,form))
-           (mv step-limit nil x1 x2 x3 x4)))
+                 ,form)))
+           (pprogn@par 
+            (f-put-global@par 'last-step-limit step-limit state)
+            (mv-let (nullp temp)
+                    (read-acl2-oracle@par state);clears *next-acl2-oracle-value*
+                    (declare (ignore nullp))
+                    (cond (temp (mv step-limit temp nil nil nil nil))
+                          (t (mv step-limit nil x1 x2 x3 x4)))))))
 
 (defun time-limit5-reached-p (msg)
 

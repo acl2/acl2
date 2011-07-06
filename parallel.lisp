@@ -399,7 +399,6 @@
 
   ~l[set-waterfall-parallelism].~/~/")
 
-
 ; Here are the two functions we need now from
 ; make-waterfall-parallelism-constants and make-waterfall-printing-constants
 ; (see boot-strap-pass-2.lisp).
@@ -470,6 +469,8 @@
       (observation-cw nil observation-string)))))
 
 (defmacro set-waterfall-parallelism (value &optional no-error)
+
+; Parallelism wart: add a link to set-waterfall-printing with explanation.
 
   ":Doc-Section switches-parameters-and-modes
 
@@ -602,6 +603,8 @@
 ; this topic.  In particular, the explanation under :limited will be outdated,
 ; and it could be good to reference a :doc topic that explains ACL2(p)
 ; checkpoints (such a topic has yet to be written).
+
+; Parallelism wart: add a link to gag-mode.
 
   ":Doc-Section switches-parameters-and-modes
 

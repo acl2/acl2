@@ -5313,6 +5313,7 @@
     (READ-BYTE$                  (NIL STATE)     (NIL STATE)) 
     (READ-OBJECT                 (NIL STATE)     (NIL NIL STATE)) 
     (READ-ACL2-ORACLE            (STATE)         (NIL NIL STATE)) 
+    (READ-ACL2-ORACLE@PAR        (STATE)         (NIL NIL)) 
     (READ-RUN-TIME               (STATE)         (NIL STATE)) 
     (READ-IDATE                  (STATE)         (NIL STATE)) 
     (LIST-ALL-PACKAGE-NAMES      (STATE)         (NIL STATE)) 
