@@ -1229,7 +1229,6 @@ the whole process.</p>")
 
 
 
-
 (defsection vl-correct-bitlist
   :parents (lexer)
   :short "Extend (or truncate) a bit-list to match the size specifier for an
@@ -1320,8 +1319,16 @@ case.</li>
                    :args (list loc bitstr actual-len desired-len)
                    :fn 'vl-correct-bitlist))
                (bits-prime (nthcdr (- actual-len desired-len)
-                                   (redundant-list-fix bits))))
-            (mv (cons w warnings) bits-prime)))
+                                   (redundant-list-fix bits)))
+               (warnings
+                (if (all-equalp :vl-xval bits)
+                    ;; We suppress the truncation warning when all of the bits
+                    ;; are X, because we often run into 29'h XXXX_XXXX or similar,
+                    ;; and while perhaps {29{1'bX}} would be a better way to write
+                    ;; it, the XXXX_XXXX form seems pretty legitimate, too.
+                    warnings
+                  (cons w warnings))))
+            (mv warnings bits-prime)))
 
          ;; Else, desired-len > actual-len
          (pad        (repeat pad-bit (- desired-len actual-len)))

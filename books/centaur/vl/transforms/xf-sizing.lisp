@@ -2802,9 +2802,9 @@ a signed value since Verilog-XL doesn't handle them correctly.</p>"
 
 (defsection vl-warn-about-implicit-extension
 
-; Extension warnings are very good to have, but we need to be pretty clever to
-; avoid getting too many trivial, nitpicky complaints about assignments that
-; aren't really bugs.
+; Extension warnings are very, very good to have, and have found a lot of bugs.
+; However, we need to be pretty clever to avoid getting too many trivial,
+; nitpicky complaints about assignments that aren't really bugs.
 ;
 ; We found that extension warnings were frequently triggered by things like
 ; "assign {carry,sum} = a + b" where the designer seems to explicitly intend to
@@ -2998,8 +2998,7 @@ context-determined expressions."
 
         (warnings
          ;; We warn here about implicit extensions.  Truncation warnings get
-         ;; handled when we actually make truncations explicit; see
-         ;; xf-assign-trunc for details.
+         ;; handled when we size assignments, below.
          (b* (((unless (and (natp lhs-size)
                             (> lhs-size x-selfsize)))
                ;; Not an extension
@@ -3298,6 +3297,7 @@ context-determined expressions."
              (c (third args))
              ((mv a-successp warnings a-prime)
               (vl-expr-size nil a mod ialist elem warnings))
+             ;; BOZO consider warning if a-prime doesn't have width 1?
              ((mv b-successp warnings b-prime)
               (vl-expr-expandsizes b finalwidth finaltype mod ialist elem warnings))
              ((mv c-successp warnings c-prime)
@@ -3715,8 +3715,8 @@ context-determined expressions."
 
 
 
-(local (acl2::def-ruleset extra-disables
-                          '(sets::double-containment
+(local (acl2::def-ruleset! extra-disables
+                           '(sets::double-containment
                             (:type-prescription member-equal)
                             member-equal-of-cons
                             member-equal-when-member-equal-of-cdr-under-iff
@@ -4172,7 +4172,8 @@ throughout a @(see " type-s ")"))
 
        (defthm ,thm-warn
          (implies (force (vl-warninglist-p warnings))
-                  (vl-warninglist-p (mv-nth 1 (,name . ,formals)))))
+                  (vl-warninglist-p (mv-nth 1 (,name . ,formals))))
+         :hints(("Goal" :in-theory (disable (force)))))
 
        (defthm ,thm-type
          (implies (and (force (,type x))
@@ -4223,7 +4224,8 @@ a @(see " type-s ")"))
 
       (defthm ,thm-warn
         (implies (vl-warninglist-p warnings)
-                 (vl-warninglist-p (mv-nth 1 (,name . ,formals)))))
+                 (vl-warninglist-p (mv-nth 1 (,name . ,formals))))
+        :hints(("Goal" :in-theory (disable (force)))))
 
       (defthm ,thm-type
         (implies (and (force (,type x))
@@ -4294,6 +4296,150 @@ a @(see " type-s ")"))
             (vl-gatedelay-exprsize x mod ialist elem warnings)
           (mv t warnings x)))
 
+
+
+
+
+(defsection vl-maybe-warn-about-implicit-truncation
+
+; Truncation warnings are really, really good to have, and have found many
+; bugs.  However, if we just issue a truncation warning about everything, we
+; find that there are way too many nitpicky warnings and it's hard to go
+; through them all.  So, we want to be clever and not warn in certain cases
+; that we have seen where the truncation really doesn't matter.  Efficiency is
+; of no concern because this is called so infrequently.
+;
+; Probably the biggest source of spurious truncation warnings is from the use
+; of unsized numbers like 0 and 1.  It's a pretty good bet that any truncation
+; from 32-bits to some other number of bits is no big deal and is just being
+; caused by a unsized number.
+;
+; At any rate, we now have a notion of expression that are okay to truncate.
+; We basically don't want to complain about things like
+;
+;    assign foo[3:0] = 0;              // 32 bits, but who cares, it fits
+;
+;    assign foo[3:0] = 5'd7;           // 5 bits, but who cares, it still fits
+;
+;    assign foo[3:0] = x0 ? 5'h0 :     // each are 5 bits, but who cares, they
+;                      x1 ? 5'h1 :     // still fit.
+;                      x2 ? 5'h2 :
+;                      ...
+;                      x14 ? 5'h14 :
+;                      5'h15;
+
+  (defund vl-okay-to-truncate-atom (width x)
+    ;; Recognize:
+    ;;
+    ;; (1) atoms that were just ordinary constant integer numbers like 5, but
+    ;;     which are not "negative" numbers (i.e., bit 31 should not be set), and
+    ;;     whose value is small enough to fit into WIDTH many bits.
+    ;;
+    ;; (2) atoms that were sized but unsigned constant integers that can be
+    ;;     chopped down to width-many bits without changing their value.
+    (declare (xargs :guard (and (natp width)
+                                (vl-atom-p x))))
+    (b* ((guts (vl-atom->guts x))
+         ((unless (vl-fast-constint-p guts))
+          nil)
+         ((vl-constint guts) guts))
+      (or
+       ;; Case 1:
+       (and guts.wasunsized
+            (= guts.origwidth 32)
+            (not (logbitp 31 guts.value))
+            (< guts.value (expt 2 width)))
+       ;; Case 2:
+       (and (eq guts.origtype :vl-unsigned)
+            (< guts.value (expt 2 width))))))
+
+
+  (local (assert!
+          ;; Basic test to make sure it seems to be working right.
+          (flet ((test (value)
+                       (make-vl-atom :guts (make-vl-constint :value value
+                                                             :origwidth 32
+                                                             :origtype :vl-signed
+                                                             :wasunsized t))))
+                (and (vl-okay-to-truncate-atom 8 (test 0))
+                     (vl-okay-to-truncate-atom 8 (test 255))
+                     (not (vl-okay-to-truncate-atom 8 (test 256)))))))
+
+  (defun vl-okay-to-truncate-expr (width x)
+    ;; Recognize okay to truncate atoms and nests of (A ? B : C) where all of the
+    ;; final branches are okay to truncate atoms.
+    (declare (xargs :guard (and (natp width)
+                                (vl-expr-p x))))
+    (b* (((when (vl-fast-atom-p x))
+          (vl-okay-to-truncate-atom width x))
+         ((when (mbe :logic (atom x)
+                     :exec nil))
+          ;; Termination hack
+          (er hard? 'vl-okay-to-truncate-expr "impossible"))
+         (op   (vl-nonatom->op x))
+         (args (vl-nonatom->args x))
+         ((unless (eq op :vl-qmark))
+          nil))
+      (and (vl-okay-to-truncate-expr width (second args))
+           (vl-okay-to-truncate-expr width (third args)))))
+
+  (defund vl-unsized-atom-p (x)
+    (declare (xargs :guard (vl-atom-p x)))
+    (b* ((guts (vl-atom->guts x)))
+      (or (and (vl-fast-constint-p guts)
+               (vl-constint->wasunsized guts))
+          (and (vl-fast-weirdint-p guts)
+               (vl-weirdint->wasunsized guts)))))
+
+  (defund vl-some-unsized-atom-p (x)
+    (declare (xargs :guard (vl-atomlist-p x)))
+    (if (atom x)
+        nil
+      (or (vl-unsized-atom-p (car x))
+          (vl-some-unsized-atom-p (cdr x)))))
+
+  (defun vl-maybe-warn-about-implicit-truncation (lvalue expr x warnings)
+    (declare (xargs :guard (and (vl-expr-p lvalue)
+                                (vl-expr-p expr)
+                                (vl-assign-p x)
+                                (vl-warninglist-p warnings))))
+    (b* ((lw (vl-expr->finalwidth lvalue))
+         (ew (vl-expr->finalwidth expr))
+
+         ((when (and (natp lw)
+                     (vl-okay-to-truncate-expr lw expr)))
+          ;; Just ignore it, this is nothing to be worried about
+          warnings)
+
+         (probably-minor-p
+          ;; We could probably improve this somewhat... if the RHS is 32 bits
+          ;; and it at least has some atom that was originally unsized in it,
+          ;; it's probably just a truncation because there's a plain number on
+          ;; the rhs, and it probably isn't a real problem, so we'll call such
+          ;; things minor.  This is something we couldn't check very well when
+          ;; we were trying to handle truncation warnings as part of
+          ;; assign-trunc, because by then the expressions had already been
+          ;; split and the temp wires could hide unsized atoms.
+          (and (equal ew 32)
+               (vl-some-unsized-atom-p (vl-expr-atoms expr))))
+
+         ;; Add a warning about implicit truncation.
+         (warning (make-vl-warning
+                   :type (if probably-minor-p
+                             :vl-warn-truncation-minor
+                           :vl-warn-truncation)
+                   :msg "~a0: implicit truncation from ~x1-bit expression ~
+                       to ~x2-bit lvalue.~%     ~
+                         lhs: ~a3~%     ~
+                         rhs: ~a4~%~%"
+                   :args (list x ew lw lvalue expr)
+                   :fatalp nil
+                   :fn 'vl-maybe-add-truncation-warning)))
+
+      (cons warning warnings))))
+
+
+
 (def-vl-exprsize vl-assign-exprsize
   :takes-elem nil
   :type vl-assign-p
@@ -4333,6 +4479,16 @@ a @(see " type-s ")"))
 
              ((mv rhs-successp warnings rhs-prime)
               (vl-expr-size lhs-size x.expr mod ialist elem warnings))
+
+             (warnings
+              ;; By vl-expr->finalwidth-of-vl-expr-size-when-lhs-size, we know
+              ;; that rhs-prime is at least as wide as lhs-size.  But it can be
+              ;; wider, and in such cases we may wish to warn about truncation.
+              (if (and (posp (vl-expr->finalwidth rhs-prime))
+                       (< lhs-size (vl-expr->finalwidth rhs-prime)))
+                  (vl-maybe-warn-about-implicit-truncation lhs-prime rhs-prime
+                                                           x warnings)
+                warnings))
 
              ((mv delay-successp warnings delay-prime)
               (vl-maybe-gatedelay-exprsize x.delay mod ialist elem warnings))

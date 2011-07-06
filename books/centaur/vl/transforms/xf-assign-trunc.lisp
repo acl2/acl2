@@ -110,53 +110,6 @@ of the intermediate widths set up correctly.</p>"
 
 
 
-(defsection vl-troublesome-sign-p
-  :parents (trunc)
-  :short "Figure out if an signed expression has a non-zero sign bit."
-  :long "<p>This function is used in @(see vl-assign-trunc) to determine
-how severe of a truncation warning to issue.</p>
-
-<p>We assume that we are considering an assignment, <tt>assign lhs = rhs</tt>,
-where the lhs is shorter than the rhs, and hence the rhs needs to be truncated.
-We also assume that rhs is signed and has its width computed.</p>
-
-<p>We want to return true if the sign bit might be 1.  In such a case, we'll
-issue a more serious warning because the truncation might be chopping off the
-sign bit.</p>
-
-<p>We can sometimes tell what the sign bit will be.  For a constant integer
-expression like 5, we just look at the most significant bit.  Similarly for a
-weird integer expression we can just look at the leading bit.  We now also
-descend into <tt>a ? b : c</tt> and see whether either of B or C might have a
-leading bit of 1.</p>"
-
-  (defund vl-troublesome-sign-p (x)
-    (declare (xargs :guard (vl-expr-p x)))
-    (b* (((when (vl-fast-atom-p x))
-          (cond ((vl-expr-resolved-p x)
-                 ;; Troublesome when the MSB is true.
-                 (logbitp (nfix (- (nfix (vl-expr->finalwidth x)) 1))
-                          (vl-resolved->val x)))
-                ((vl-fast-weirdint-p (vl-atom->guts x))
-                 ;; Troublesome if leading bit isn't 0.
-                 (not (eq (car (vl-weirdint->bits (vl-atom->guts x))) :vl-0val)))
-                (t
-                 ;; Sign bit not obvious; we'll call it troublesome.
-                 t)))
-         ((when (mbe :logic (not (consp x))
-                     :exec nil))
-          (er hard 'vl-troublesome-sign-p "Impossible"))
-         (op   (vl-nonatom->op x))
-         (args (vl-nonatom->args x)))
-      (case op
-        (:vl-qmark
-         (or (vl-troublesome-sign-p (second args))
-             (vl-troublesome-sign-p (third args))))
-        ;; maybe eventually add some other ops, as evidence dictates
-        (otherwise
-         t)))))
-
-
 
 (defsection vl-truncate-constint
 
@@ -243,6 +196,8 @@ leading bit of 1.</p>"
 
 
 
+
+
 (defsection vl-assign-trunc
   :parents (trunc)
   :short "Make any implicit truncation in an assignment explicit."
@@ -309,42 +264,9 @@ to the module,</li>
           ;; The widths already agree, so nothing needs to change.
           (mv warnings nil (list x) nf))
 
-         ;; Otherwise, we need to truncate.
-
-         ;; If the right-hand side is signed but isn't obviously positive,
-         ;; we want to note that the truncation could be altering the sign
-         ;; of the expression.
-         (troublesome-sign-p
-          (and (eq (vl-expr->finaltype expr) :vl-signed)
-               (vl-troublesome-sign-p expr)))
-
-         (probably-minor-p
-          ;; We find it useful to separate warnings for 32-bit truncations from
-          ;; other warnings, since frequently a logic designer might write
-          ;; something like foo = bar + 1, causing what looks like a 32-bit
-          ;; truncation that we probably don't really want to look at.
-          (and (not troublesome-sign-p)
-               (equal ew 32)))
-
-         ;; Add a warning about implicit truncation.
-         (warning (make-vl-warning
-                   :type (if probably-minor-p
-                             :vl-warn-truncation-minor
-                           :vl-warn-truncation)
-                   :msg (if troublesome-sign-p
-                            "~a0: implicit truncation from ~x1-bit expression ~
-                             to ~x2-bit lvalue.  This truncation discards the ~
-                             sign-bit of the right-hand side.~%     ~
-                                lhs: ~a3~%     ~
-                                rhs: ~a4"
-                          "~a0: implicit truncation from ~x1-bit expression ~
-                           to ~x2-bit lvalue.~%     ~
-                             lhs: ~a3~%     ~
-                             rhs: ~a4")
-                   :args (list x ew lw lvalue expr)
-                   :fatalp nil
-                   :fn 'vl-assign-trunc))
-         (warnings (cons warning warnings))
+         ;; Otherwise, we need to truncate.  We used to issue warnings
+         ;; here, but we moved that to the sizing code because we can
+         ;; generate better messages there.
 
          ((when (and (vl-fast-atom-p expr)
                      (vl-fast-constint-p (vl-atom->guts expr))

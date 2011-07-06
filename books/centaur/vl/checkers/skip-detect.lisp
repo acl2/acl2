@@ -26,6 +26,17 @@
 (local (include-book "finite-set-theory/osets/set-order" :dir :system))
 
 
+
+; BOZO it seems tricky to implement with the current way the code is written,
+; but it would be nice if we could NOT mention skipped wires that occur on
+; the LHS of an assignment, e.g.,
+;
+;    assign foo5 = foo0 | foo1 | foo2 | foo3 | foo4;
+;
+; Is pretty unlikely to be a skipped wire.  This causes some noise in a couple
+; of modules.
+
+
 (defthm take-leading-digits-under-iff
   ;; BOZO consider moving to string library
   (iff (str::take-leading-digits x)

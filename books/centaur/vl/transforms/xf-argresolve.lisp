@@ -233,7 +233,7 @@ ports.</p>"
                                      (if (vl-plural-p extra)
                                          "ports, which do not exist"
                                        "port, which does not exist")
-                                     extra)
+                                     modname extra)
                          :fatalp t
                          :fn 'vl-convert-namedargs)))
                (w2 (and missing

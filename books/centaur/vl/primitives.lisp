@@ -161,7 +161,7 @@ modules that involve transistors.</p>")
 module VL_1_BIT_DELAY_1 (out, in) ;
   output out;
   input in;
-  assign out = in;
+  assign #1 out = in;
 endmodule
 </code>
 

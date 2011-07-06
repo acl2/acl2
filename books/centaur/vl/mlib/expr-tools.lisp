@@ -768,3 +768,129 @@ identifier, but we do not check what kind of identifier it is.</p>"
              (vl-nonatom-p x))
     :rule-classes ((:rewrite :backchain-limit-lst 1))))
 
+
+
+(defsection vl-expr-atoms
+  :parents (expr-tools)
+  :short "Gather all of the atoms throughout an expression."
+  :long "<p><b>Signature:</b> @(call vl-expr-atoms) returns a @(see
+vl-atomlist-p).</p>
+
+<p>We simply gather all of the @(see vl-atom-p)s in the expression, with
+repetition.  The resulting list may contain any @(see vl-atom-p), including
+even odd things like hid pieces and function names, which you might not
+usually think of as atoms.</p>
+
+@(def vl-expr-atoms)"
+
+  (defxdoc vl-exprlist-atoms
+    :parents (expr-tools)
+    :short "Gather all atoms used throughout an expression list."
+    :long "<p>See @(see vl-expr-atoms).</p>")
+
+  (mutual-recursion
+
+   (defund vl-fast-expr-atoms (x acc)
+     (declare (xargs :guard (vl-expr-p x)
+                     :measure (two-nats-measure (acl2-count x) 1)))
+     (if (vl-fast-atom-p x)
+         (cons x acc)
+       (vl-fast-exprlist-atoms (vl-nonatom->args x) acc)))
+
+   (defund vl-fast-exprlist-atoms (x acc)
+     (declare (xargs :guard (vl-exprlist-p x)
+                     :measure (two-nats-measure (acl2-count x) 0)))
+     (if (consp x)
+         (vl-fast-exprlist-atoms (cdr x)
+                                 (vl-fast-expr-atoms (car x) acc))
+       acc)))
+
+  (mutual-recursion
+
+   (defund vl-expr-atoms (x)
+     (declare (xargs :guard (vl-expr-p x)
+                     :measure (two-nats-measure (acl2-count x) 1)
+                     :verify-guards nil))
+     (mbe :logic (if (vl-atom-p x)
+                     (list x)
+                   (vl-exprlist-atoms (vl-nonatom->args x)))
+          :exec (reverse (vl-fast-expr-atoms x nil))))
+
+   (defund vl-exprlist-atoms (x)
+     (declare (xargs :guard (vl-exprlist-p x)
+                     :measure (two-nats-measure (acl2-count x) 0)))
+     (mbe :logic (if (consp x)
+                     (append (vl-expr-atoms (car x))
+                             (vl-exprlist-atoms (cdr x)))
+                   nil)
+          :exec (reverse (vl-fast-exprlist-atoms x nil)))))
+
+  (defttag vl-optimize)
+  (progn!
+   (set-raw-mode t)
+   (setf (gethash 'vl-fast-expr-atoms ACL2::*never-profile-ht*) t)
+   (setf (gethash 'vl-fast-exprlist-atoms ACL2::*never-profile-ht*) t)
+   (defun vl-expr-atoms (x)
+     (nreverse (vl-fast-expr-atoms x nil)))
+   (defun vl-exprlist-atoms (x)
+     (nreverse (vl-fast-exprlist-atoms x nil))))
+  (defttag nil)
+
+  (defthm true-listp-of-vl-expr-atoms
+    (true-listp (vl-expr-atoms x))
+    :rule-classes :type-prescription)
+
+  (defthm true-listp-of-vl-exprlist-atoms
+    (true-listp (vl-exprlist-atoms x))
+    :rule-classes :type-prescription)
+
+  (encapsulate
+    ()
+    (local (FLAG::make-flag vl-fast-flag-expr-atoms
+                            vl-fast-expr-atoms
+                            :flag-mapping ((vl-fast-expr-atoms . expr)
+                                           (vl-fast-exprlist-atoms . list))))
+
+    (local (defthm-vl-fast-flag-expr-atoms vl-fast-expr-atoms-correct
+             (expr (equal (vl-fast-expr-atoms x acc)
+                          (revappend (vl-expr-atoms x) acc)))
+             (list (equal (vl-fast-exprlist-atoms x acc)
+                          (revappend (vl-exprlist-atoms x) acc)))
+             :hints(("Goal"
+                     :induct (vl-fast-flag-expr-atoms flag x acc)
+                     :expand ((vl-fast-expr-atoms x acc)
+                              (vl-fast-exprlist-atoms x acc)
+                              (vl-expr-atoms x)
+                              (vl-exprlist-atoms x))))))
+
+    (verify-guards vl-expr-atoms
+      :hints(("Goal" :in-theory (enable vl-expr-atoms
+                                        vl-fast-expr-atoms
+                                        vl-exprlist-atoms
+                                        vl-fast-exprlist-atoms)))))
+
+  (encapsulate
+    ()
+    (local (defthm lemma
+             (case flag
+               (expr (implies (vl-expr-p x)
+                              (vl-atomlist-p (vl-expr-atoms x))))
+               (atts t)
+               (t (implies (vl-exprlist-p x)
+                           (vl-atomlist-p (vl-exprlist-atoms x)))))
+             :rule-classes nil
+             :hints(("Goal"
+                     :induct (vl-expr-induct flag x)
+                     :expand ((vl-expr-atoms x)
+                              (vl-exprlist-atoms x))))))
+
+    (defthm vl-atomlist-p-of-vl-expr-atoms
+      (implies (force (vl-expr-p x))
+               (vl-atomlist-p (vl-expr-atoms x)))
+      :hints(("Goal" :use ((:instance lemma (flag 'expr))))))
+
+    (defthm vl-atomlist-p-of-vl-exprlist-names
+      (implies (force (vl-exprlist-p x))
+               (vl-atomlist-p (vl-exprlist-atoms x)))
+      :hints(("Goal" :use ((:instance lemma (flag 'list))))))))
+
