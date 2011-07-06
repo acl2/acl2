@@ -384,21 +384,18 @@ T.</p>"
          ((mv sbar-expr sbar-netdecl)   (vl-occform-mkwire "sbar" 1))   ;;; sbar      = ~sel;
          ((mv sa-expr sa-netdecl)       (vl-occform-mkwire "s_a" n))    ;;; s_a[i]    = s & a[i];
          ((mv sbarb-expr sbarb-netdecl) (vl-occform-mkwire "sbar_b" n)) ;;; sbar_b[i] = sbar & b[i];
-         ((mv ab-expr ab-netdecl)       (vl-occform-mkwire "ab" n))     ;;; ab[i]     = a[i] & b[i];
-
          (sa-wires    (vl-make-list-of-bitselects sa-expr 0 (- n 1)))
-         (ab-wires    (vl-make-list-of-bitselects ab-expr 0 (- n 1)))
          (sbarb-wires (vl-make-list-of-bitselects sbarb-expr 0 (- n 1)))
 
          (sbar-gate   (vl-make-unary-gateinst :vl-not sbar-expr sel-expr nil *vl-fakeloc*))
          (sa-gates    (vl-make-binary-gateinstlist :vl-and sa-wires (repeat sel-expr n) a-wires *vl-fakeloc*))
          (sbarb-gates (vl-make-binary-gateinstlist :vl-and sbarb-wires (repeat sbar-expr n) b-wires *vl-fakeloc*))
-         (ab-gates    (vl-make-binary-gateinstlist :vl-and ab-wires a-wires b-wires *vl-fakeloc*))
+
 
          (ports     (list out-port sel-port a-port b-port))
          (portdecls (list out-portdecl sel-portdecl a-portdecl b-portdecl))
-         (nets1     (list out-netdecl sel-netdecl a-netdecl b-netdecl sbar-netdecl sa-netdecl sbarb-netdecl ab-netdecl))
-         (gates1    (append (list sbar-gate) sa-gates sbarb-gates ab-gates))
+         (nets1     (list out-netdecl sel-netdecl a-netdecl b-netdecl sbar-netdecl sa-netdecl sbarb-netdecl))
+         (gates1    (append (list sbar-gate) sa-gates sbarb-gates))
 
          ((when approxp)
           ;; Less exact version:
@@ -416,17 +413,24 @@ T.</p>"
          ;; More-exact version:
          ;; wire [n-1:0] main = s_a[i] | sbar_b[i];
          ;; assign out[i] = main[i] | ab[i];
+
+         ((mv ab-expr ab-netdecl)     (vl-occform-mkwire "ab" n))     ;;; ab[i]     = a[i] & b[i];
          ((mv main-expr main-netdecl) (vl-occform-mkwire "main" n))
+
+         (ab-wires   (vl-make-list-of-bitselects ab-expr 0 (- n 1)))
+         (ab-gates   (vl-make-binary-gateinstlist :vl-and ab-wires a-wires b-wires *vl-fakeloc*))
+
          (main-wires (vl-make-list-of-bitselects main-expr 0 (- n 1)))
          (main-gates (vl-make-binary-gateinstlist :vl-or main-wires sa-wires sbarb-wires *vl-fakeloc*))
+
          (out-gates  (vl-make-binary-gateinstlist :vl-or out-wires main-wires ab-wires *vl-fakeloc*)))
 
       (list (make-vl-module :name      name
                             :origname  name
                             :ports     ports
                             :portdecls portdecls
-                            :netdecls  (cons main-netdecl nets1)
-                            :gateinsts (append gates1 main-gates out-gates)
+                            :netdecls  (list* main-netdecl ab-netdecl nets1)
+                            :gateinsts (append gates1 main-gates out-gates ab-gates)
                             :minloc    *vl-fakeloc*
                             :maxloc    *vl-fakeloc*))))
 
