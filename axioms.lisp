@@ -24824,8 +24824,6 @@
     CLEAR-MEMOIZE-TABLE FAST-ALIST-FREE HONS-EQUAL HONS-RESIZE-FN HONS-GET HONS
     HONS-SHRINK-ALIST! MEMOIZE-SUMMARY CLEAR-MEMOIZE-STATISTICS
 
-; Jared added these for serialize
-
     serialize-read-fn serialize-write-fn
 
   ))
@@ -25094,7 +25092,6 @@
     (global-enabled-structure . nil) ; initialized in enter-boot-strap-mode
     (gstackp . nil)
     (guard-checking-on . t)
-    (hons-read-p . t) ; only of interest in the #+hons version
     (host-lisp . nil)
     (in-local-flg . nil)
     (in-prove-flg . nil)
@@ -28046,10 +28043,12 @@
             #+hons
             (cond (*print-circle* ; hence *print-circle-stream* is non-nil
 
-; Jared patch: use serialize instead of compact-print-stream.
-; BOZO want to be able to use #z instead of #Z sometimes.
+; It might be useful for the user to be able to write #\z instead of #\Z.  This
+; might be keyed off a state global instead of *print-circle*, since
+; *print-circle* is about structure sharing with #n= and #n#, as was formerly
+; managed in part through Version_4.3 by using compact-print-stream, which is
+; now obsolete (having been moved to books/serialize/compact-print-raw.lsp).
 
-                   ;;(compact-print-stream x stream)
                    (write-char #\# stream)
                    (write-char #\Z stream)
                    (ser-encode-to-stream x stream))
@@ -29521,13 +29520,12 @@
                    ((eq channel *standard-oi*)
                     (ccl::toplevel-read))
 
-; Jared patch: no longer use hons-read, after #z macros, because it breaks the
-; ability to choose what to hons.  (No matter what you choose, it's going to hons-copy
-; them afterward, which is too expensive for large, unhonsed structures)
-
-;                   #+hons
-;                   ((f-get-global 'hons-read-p *the-live-state*)
-;                    (hons-read stream nil read-object-eof nil))
+; (Comment for #+hons.)  In the case of #+hons, we formerly called a function
+; hons-read here when (f-get-global 'hons-read-p *the-live-state*) was true.
+; That had the unfortunate behavior of hons-copying every object, which can be
+; too expensive for large, unhonsed structures.  This problem has been fixed
+; with the addition of source files serialize[-raw].lisp, contributed by Jared
+; Davis.
 
                    (t
                     (read stream nil read-object-eof nil)))))

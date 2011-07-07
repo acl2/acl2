@@ -5612,7 +5612,9 @@ the calls took.")
   (clear-memoize-call-array)
   nil)
   
-
+; Note: The hons reader was formerly defined here, but it's now in
+; books/serialize/compact-print-raw.lsp (loaded when the book
+; serialize/compact-print is included).
 
 ; MEMOIZE INIT
 
@@ -6207,10 +6209,6 @@ next GC.~%"
 ; so we code HONS-INIT so that it may be called multiple times.
 
   (in-package "ACL2")
-
-;; Jared removed this for serialize
-;; (unless *hons-readtable-init-done* (hons-readtable-init))
-
   (unless *memoize-init-done* (memoize-init))
   (float-ticks/second-init)
   (eval *hons-init-hook*))

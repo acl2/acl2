@@ -1163,7 +1163,8 @@ which is saved just in case it's needed later.")
 (defun modify-acl2-readtable (do-all-changes)
   (let ((*readtable* *acl2-readtable*))
 
-; Jared patch: add #Z and #z for Serialized Objects (see serialize-raw.lisp)
+; Thanks to Jared Davis for contributing the code for #Z and #z (see
+; serialize-raw.lisp).
 
     #+hons ; SBCL requires #+hons (same restriction as ser-hons-reader-macro)
     (set-dispatch-macro-character
@@ -1255,9 +1256,15 @@ which is saved just in case it's needed later.")
                                   #\=
                                   #'reckless-sharp-equal-read)
 
-; Jared patch: add #Z and #z for Serialized Objects (see serialize-raw.lisp).
-; Hrmn, but is this readtable even necessary if we replace compact-printing
-; with the serialize reader?
+; Thanks to Jared Davis for contributing the code for #Z and #z (see
+; serialize-raw.lisp).  But is this readtable even necessary now that
+; compact-printing has been replaced by the serialize reader?  Quite possibly
+; it is indeed needed for #-hons, for (as of Version_4.3) the binding of
+; *readtable* to *reckless-acl2-readtable* in a call of compile-file in
+; acl2-compile-file, and for the calls of with-reckless-read in
+; load-compiled-book and include-book-raw.  But we could quite possibly omit
+; the #+hons code below.  At any rate, it seems harmless enough to continue to
+; use this function and to include the #+hons below.
 
     #+hons ; SBCL requires #+hons (same restriction as ser-hons-reader-macro)
     (set-dispatch-macro-character

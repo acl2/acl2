@@ -6292,9 +6292,14 @@
 ; files to be processed in :logic default-defun-mode.
 
 (defconst *acl2-pass-2-files*
+
+; Note that some books depend on "memoize", "hons", and "serialize", even in
+; #-hons.  For example, books/misc/hons-help.lisp uses hons primitives.
+
   '("axioms"
     "memoize"
-    "hons" ; included even without #+hons, for books/misc/hons-help*.lisp
+    "hons"
+    "serialize"
     "boot-strap-pass-2"
     ))
 

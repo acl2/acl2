@@ -26,14 +26,15 @@
 ; University of Texas at Austin
 ; Austin, TX 78701 U.S.A.
 
-; serialize.lisp -- logical definitions for serialization routines
+; serialize.lisp -- logical definitions for "serialization" routines,
+;                   i.e., saving ACL2 objects in files for later loading
 
 ; This file was developed and contributed by Jared Davis on behalf of
 ; Centaur Technology.
 
-; Note: this file is currently only included as part of ACL2(h).  But
-; it is independent of the remainder of the Hons extension and might
-; some day become part of ordinary ACL2.
+; Note: The serialization routines are restricted to work only in
+; ACL2(h).  However, they are independent of the remainder of the HONS
+; extension and might some day become part of ordinary ACL2.
 
 ; Current owner:  Jared Davis <jared@centtech.com>
 
@@ -44,13 +45,17 @@
 
 Routines for saving ACL2 objects to files, and later restoring them.~/
 
+This documentation topic relates to an experimental extension of ACL2 that
+supports ~ilc[hons], memoization, and fast alists.  ~l[hons-and-memoization].
+Thanks to Jared Davis for contributing the ``serialization'' routines for
+saving ACL2 objects in files for later loading.
+
 We implement some routines for writing arbitrary ACL2 objects to files, and for
 loading those files later.  We usually call these \".sao\" files, which stands
 for (S)erialized (A)CL2 (O)bject.
 
 Our serialization scheme uses a compact, binary format that preserves structure
 sharing in the original object.  We optimize for read performance.~/~/")
-
 
 (defmacro serialize-write (filename obj &key verbosep)
   ":Doc-Section serialize
@@ -90,9 +95,9 @@ to timing and memory usage as the file is being read.~/~/"
 
   #+acl2-loop-only
   (mv-let (erp val state)
-    (read-acl2-oracle state)
-    (declare (ignore erp val))
-    state)
+          (read-acl2-oracle state)
+          (declare (ignore erp val))
+          state)
 
   #-acl2-loop-only
   (progn
@@ -110,12 +115,10 @@ to timing and memory usage as the file is being read.~/~/"
     (with-open-file (stream filename
                             :direction :output
                             :if-exists :supersede)
-      (let* ((*ser-verbose* verbosep))
-        (ser-encode-to-stream obj stream)))
+                    (let* ((*ser-verbose* verbosep))
+                      (ser-encode-to-stream obj stream)))
 
     state))
-
-
 
 (defmacro serialize-read (filename &key
                                    (hons-mode ':smart)
@@ -170,30 +173,29 @@ related to timing and memory usage as the file is being read.~/~/"
 
   #+acl2-loop-only
   (mv-let (erp val state)
-    (read-acl2-oracle state)
-    (declare (ignore erp))
-    (mv val state))
+          (read-acl2-oracle state)
+          (declare (ignore erp))
+          (mv val state))
 
   #-acl2-loop-only
   (progn
 
     #-hons
-    (er hard? 'serialize-read-fn
-        "Serialization routines are currently only available in the HONS ~
+    (progn
+      (er hard? 'serialize-read-fn
+          "Serialization routines are currently only available in the HONS ~
          version of ACL2.")
-    #-hons
-    (mv nil state)
+      (mv nil state))
 
     #+hons
-    (unless (live-state-p state)
-      (er hard? 'serialize-read-fn "Serialization requires a live state."))
-    #+hons
-    (with-open-file (stream filename :direction :input)
-      (let* ((*ser-verbose* verbosep)
-             (val           (ser-decode-from-stream t hons-mode stream)))
-        (mv val state)))))
-
-
+    (progn
+      (unless (live-state-p state)
+        (er hard? 'serialize-read-fn "Serialization requires a live state."))
+      (with-open-file
+       (stream filename :direction :input)
+       (let* ((*ser-verbose* verbosep)
+              (val           (ser-decode-from-stream t hons-mode stream)))
+         (mv val state))))))
 
 (defdoc serialize-alternatives
   ":Doc-Section serialize
@@ -214,7 +216,6 @@ Another predecessor of the serialization routines were hons archives, which are
 still available in the ~c[hons-archive] library.  The serialization routines
 are generally better and we recommend against using hons archives for new
 projects.~/~/")
-
 
 (defdoc serialize-in-books
   ":Doc-Section serialize
