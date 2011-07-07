@@ -1165,11 +1165,13 @@ which is saved just in case it's needed later.")
 
 ; Jared patch: add #Z and #z for Serialized Objects (see serialize-raw.lisp)
 
+    #+hons ; SBCL requires #+hons (same restriction as ser-hons-reader-macro)
     (set-dispatch-macro-character
      #\#
      #\Z
      'ser-hons-reader-macro)
 
+    #+hons ; SBCL requires #+hons (same restriction as ser-cons-reader-macro)
     (set-dispatch-macro-character
      #\#
      #\z
@@ -1257,11 +1259,13 @@ which is saved just in case it's needed later.")
 ; Hrmn, but is this readtable even necessary if we replace compact-printing
 ; with the serialize reader?
 
+    #+hons ; SBCL requires #+hons (same restriction as ser-hons-reader-macro)
     (set-dispatch-macro-character
      #\#
      #\Z
      'ser-hons-reader-macro)
 
+    #+hons ; SBCL requires #+hons (same restriction as ser-cons-reader-macro)
     (set-dispatch-macro-character
      #\#
      #\z
