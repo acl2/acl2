@@ -43,7 +43,7 @@ instructions for how to obtain CCL.")
 #+(or (and sbcl sb-thread) ccl lispworks)
 (push :acl2-mv-as-values *features*)
 
-; Essay on Parallelism and Parallelism Warts
+; Essay on Parallelism, Parallelism Warts, and Parallelism No-fixes
 
 ; These sources incorporate code for an experimental extension for parallelism,
 ; initiated in David Rager's dissertation work.  That extension may be produced
@@ -52,10 +52,17 @@ instructions for how to obtain CCL.")
 ; preserve the functionality of ACL2 without parallelism.  As the parallelism
 ; extension is still under active development as of this writing (May, 2011),
 ; we use the phrase "Parallelism wart:" to annotate comments about known issues
-; for the #+acl2-par build of ACL2.  These range from minor comment suggestions
-; to deeper questions concerning the correctness of the code.  Rager intends to
-; address most of these parallelism warts by the time his dissertation work is
-; complete.
+; for the #+acl2-par build of ACL2 that we plan to fix.  These range from minor
+; comment suggestions to deeper questions concerning the correctness of the
+; code.  Rager intends to address most of these parallelism warts by the time
+; his dissertation work is complete.  We also use the phrase "Parallelism
+; no-fix:" to annotate comments about known issues for the #+acl2-par build of
+; ACL2 that we do not currently plan to fix.  These parallelism no-fixes also
+; vary in sophistication.  The main motivation for such an annotation is to
+; document possible sources of bugs that we do not intend to fix until users
+; report a problem.  Searching through the parallism warts and no-fixes could
+; be useful when a user reports a bug in #+acl2-par that cannot be replicated
+; in #-acl2-par.
 
 ; In an effort to avoid code duplication, we created a definition scheme that
 ; supports defining both serial and parallel versions of a function with one
@@ -919,22 +926,6 @@ implementations.")
 ; Parallelism wart: the 1 gigabyte threshold may cause problems for machines
 ; with less than 1 gigabytes of free RAM.
 
-  #+(and acl2-par (and lispworks lispworks-64bit))
-  (progn
-
-; Calling set-gen-num-gc-threshold sets the GC threshold for the given
-; generation of garbage.
-
-    (system:set-gen-num-gc-threshold 0 (expt 2 20))
-    (system:set-gen-num-gc-threshold 1 (expt 2 27))
-    (system:set-gen-num-gc-threshold 2 (expt 2 28))
-
-; This call to set-blocking-gen-num accomplishes two things: (1) It sets the
-; third generation as the "final" generation -- nothing can be promoted to
-; generation four or higher.  (2) It sets the GC threshold for generation 3.
-
-    (system:set-blocking-gen-num 3 :gc-threshold (expt 2 30)))
-   
 ; The following two lines follow the recommendation in Allegro CL's
 ; documentation file doc/delivery.htm.
 

@@ -7135,6 +7135,18 @@ Missing functions:
 
   #+acl2-par
   (reset-all-parallelism-variables)
+
+; Remark for #+acl2-par.  Here we set the gc-threshold to a high number.  If
+; the Lisps support it, this threshold could be based off the actual memory in
+; the system, but we just leave it at 1 gigabyte for now.  We peform this
+; setting of the threshold in lp, because Lispworks doesn't save the GC
+; configuration as part of the Lisp image.
+
+; Parallelism wart: the 1 gigabyte threshold may cause problems for machines
+; with less than 1 gigabyte of free RAM.
+
+  #+acl2-par
+  (when (not *lp-ever-entered-p*) (set-gc-threshold$ (expt 2 30) nil))
   #+acl2-par
   (f-put-global 'parallel-evaluation-enabled t *the-live-state*)
   (let ((state *the-live-state*)

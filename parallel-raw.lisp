@@ -1273,20 +1273,8 @@
             (progn (future-abort the-very-obscure-feature)
                    ,false-branch)))))))
 
-; Parallelism wart: should we make a function called "set-gc-threshold" and
-; document it in a performance section?
-
 ; Parallelism wart: should there be a documentation section called performance,
 ; with links to sections "Parallelism", "Hons", and "Set-gc-threshold"?
-
-#+ccl
-(ccl:egc nil)
-
-#+ccl
-(ccl:set-lisp-heap-gc-threshold (expt 2 30))
-
-#+sbcl
-(setf (sb-ext:bytes-consed-between-gcs) (1- (expt 2 30)))
 
 (defvar *resource-and-timing-based-parallelizations*
   0

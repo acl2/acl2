@@ -14800,3 +14800,77 @@
                 (cons (f-get-global 'inhibit-output-lst state)
                       (f-get-global 'inhibit-output-lst-stack state))
                 state))
+
+(defun set-gc-threshold$-fn (new-threshold verbose-p)
+
+; This function is used to manage garbage collection in a way that is friendly
+; to ACL2(p).  As suggested by its name, it sets (in supported Lisps), to
+; new-threshold, the number of bytes to be allocated before the next garbage
+; collection.  It may set other gc-related behavior as well.
+
+  (declare (ignorable verbose-p))
+  (let ((ctx 'set-gc-threshold$))
+    (cond
+     ((not (posp new-threshold))
+      (er hard ctx
+          "The argument to set-gc-threshold$ must be a positive integer, so ~
+           the value ~x0 is illegal."
+          new-threshold))
+     (t
+      #-acl2-loop-only
+      (progn
+        #+ccl
+        (ccl:set-lisp-heap-gc-threshold new-threshold)
+        #+(and ccl acl2-par)
+        (progn (cw "Disabling the CCL Ephemeral GC for ACL2(p)~%")
+               (ccl:egc nil))
+        #+sbcl
+        (setf (sb-ext:bytes-consed-between-gcs) (1- new-threshold))
+        #+(and lispworks lispworks-64bit)
+        (progn
+          (when (< new-threshold (expt 2 20))
+            (with-live-state
+
+; Avoid warning$-cw, since this function is called by LP outside the loop.
+
+             (warning$ 'set-gc-threshold$ nil
+                       "Ignoring argument to set-gc-threshold$, ~x0, because ~
+                        it specifies a threshold of less than one megabyte.  ~
+                        Using default threshold of one megabyte.")))
+
+; Calling set-gen-num-gc-threshold sets the GC threshold for the given
+; generation of garbage.
+
+          (system:set-gen-num-gc-threshold 0
+                                           (max (expt 2 10)
+                                                (/ new-threshold (expt 2 10))))
+          (system:set-gen-num-gc-threshold 1
+                                           (max (expt 2 17)
+                                                (/ new-threshold (expt 2 3))))
+          (system:set-gen-num-gc-threshold 2
+                                           (max (expt 2 18)
+                                                (/ new-threshold (expt 2 2))))
+
+; This call to set-blocking-gen-num accomplishes two things: (1) It sets the
+; third generation as the "final" generation -- nothing can be promoted to
+; generation four or higher.  (2) It sets the GC threshold for generation 3.
+
+          (system:set-blocking-gen-num 3 :gc-threshold (max (expt 2 20)
+                                                            new-threshold)))
+        #-(or ccl sbcl (and lispworks lispworks-64bit))
+        (when verbose-p
+          (with-live-state
+
+; Avoid warning$-cw, since this function is called by LP outside the loop.
+
+           (warning$ 'set-gc-threshold$ nil
+                     "We have not yet implemented setting the garbage ~
+                      collection threshold for this Lisp.  Contact the ACL2 ~
+                      implementors to request such an implementation."))))
+      t))))
+
+(defmacro set-gc-threshold$ (new-threshold &optional (verbose-p 't))
+
+; See comments in set-gc-threshold$-fn.
+
+  `(set-gc-threshold$-fn ,new-threshold ,verbose-p))

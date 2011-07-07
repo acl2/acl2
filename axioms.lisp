@@ -24706,6 +24706,7 @@
     clear-current-waterfall-parallelism-ht ; for #+acl2-par
     setup-waterfall-parallelism-ht-for-name ; for #+acl2-par
     fix-stobj-array-type
+    set-gc-threshold$-fn
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
@@ -39997,6 +39998,11 @@
                                                        *time-limit-tags*)))
                  ,form)))
            (pprogn@par 
+
+; Parallelism no-fix: we haven't analyzed the code to determine whether the
+; following call of (f-put-global@par 'last-step-limit ...) will be overridden
+; by another similar call performed by another thread.
+
             (f-put-global@par 'last-step-limit step-limit state)
             (mv-let (nullp temp)
                     (read-acl2-oracle@par state);clears *next-acl2-oracle-value*
