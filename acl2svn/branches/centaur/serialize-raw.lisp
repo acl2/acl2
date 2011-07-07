@@ -853,7 +853,23 @@
 ; package.
 
   (symbol-ht    (ser-hashtable-init 60 'eq) :type hash-table)
-  (symbol-al    nil :type list))
+  (symbol-al    nil :type list)
+
+
+; The free-index here is only used in ser-encode-conses.  Bundling it with the
+; encoder's state is beneficial in two ways for ser-encode-conses: it reduces
+; stack size requirements by eliminating a parameter, and simplifies the flow
+; because we don't need to return multiple values.
+
+  (free-index  0 :type fixnum)
+
+; The stream that we are writing into.  Bundling this into the encoder instead
+; of passing it as an extra argument helps to reduce the stack size
+; requirements for ser-encode-conses.
+
+  (stream nil)
+
+)
 
 (defmacro ser-see-obj (x table)
   ;; Mark X as seen, and return T/NIL based on whether it was previously seen
@@ -1004,7 +1020,6 @@
            (ser-make-atom-map-for-strings (cdr x) free-index seen-str acc)))))
 
 (defun ser-make-atom-map (encoder)
-  "Returns FREE-INDEX"
 
   ;; Note: this order must agree with ser-encode-main.
 
@@ -1061,7 +1076,8 @@
     (setf (gethash nil seen-sym) 0)
     (setf (gethash t seen-sym) 1)
 
-    free-index))
+    ;; Finally, update the encoder with the free index we've arrived at.
+    (setf (ser-encoder-free-index encoder) free-index)))
 
 
 
@@ -1090,52 +1106,55 @@
 
 (defun ser-encode-conses
   (x          ; the object we are encoding, which we are recurring through
-   free-index ; next free index, always a fixnum
    encoder    ; the encoder's state (so we can look at all the tables)
-   stream
    )
-  "Returns (VALUES X-INDEX FREE-INDEX)"
-  (declare (fixnum free-index)
-           (type ser-encoder encoder))
+  "Returns X-INDEX"
+  (declare (type ser-encoder encoder))
   (if (atom x)
+      ;; Atoms already have their indices assigned, so there's nothing
+      ;; to do but look them up.
       (cond ((symbolp x)
-             (values (gethash x (ser-encoder-seen-sym encoder)) free-index))
+             (gethash x (ser-encoder-seen-sym encoder)))
             ((stringp x)
-             (values (gethash x (ser-encoder-seen-str encoder)) free-index))
+             (gethash x (ser-encoder-seen-str encoder)))
             (t
-             (values (gethash x (ser-encoder-seen-eql encoder)) free-index)))
+             (gethash x (ser-encoder-seen-eql encoder))))
 
     (let* ((seen-cons (ser-encoder-seen-cons encoder))
            (idx       (gethash x seen-cons)))
 
-      ;; Note: since we are reusing the seen-cons table, every cons is either
-      ;; bound to T or a number.  We therefore check if idx is a fixnum, which
-      ;; should presumably be very fast.
+      ;; At this point you might expect to see something like, "(if idx ...)".
+      ;; But since we are reusing the seen-cons table, every cons that does not
+      ;; already have its index assign is bound to T, not unbound.  To see if
+      ;; an index has been assigned, then, we have to check if it is a number.
+      ;; Since all indices are fixnums, I check whether it's a fixnum, which is
+      ;; very fast (just looking at type bits), at least on CCL.
       (if (typep idx 'fixnum)
-          (values idx free-index)
+          idx
+        (let* ((car-index (ser-encode-conses (car x) encoder))
+               (cdr-index (ser-encode-conses (cdr x) encoder))
 
-        (multiple-value-bind (car-index free-index)
-          (ser-encode-conses (car x) free-index encoder stream)
-          (multiple-value-bind (cdr-index free-index)
-            (ser-encode-conses (cdr x) free-index encoder stream)
-            (progn
-              ;; At this point, we've assigned indices to the car and cdr.  We've
-              ;; also written out all of the instructions needed to generate them
-              ;; in the stream.  We can now assign an index to X and write the
-              ;; instruction for rebuilding it:
-              (setf (gethash x seen-cons) free-index)
+               ;; At this point, we've assigned indices to the car and cdr.
+               ;; We've also written out all of the instructions needed to
+               ;; generate them in the stream.  We can now assign an index to X
+               ;; and write the instruction for rebuilding it:
+               (free-index (ser-encoder-free-index encoder))
+               (stream     (ser-encoder-stream encoder))
 
-              ;; V2 change: we now write (car-index << 1) | (if honsp 1 0)
-              ;; instead of just car-index.  Note that these fixnum declarations
-              ;; are justified by the checking we do in ser-encode-to-stream
-              (let ((v2-car-index
-                     (if (hl-hspace-honsp-wrapper x)
-                         (the fixnum (logior (the fixnum (ash car-index 1)) 1))
-                       (the fixnum (ash car-index 1)))))
-                (ser-encode-nat v2-car-index stream))
+               ;; V2 change: we now write (car-index << 1) | (if honsp 1 0)
+               ;; instead of just car-index.  Note that these fixnum
+               ;; declarations are justified by the checking we do in
+               ;; ser-encode-to-stream
+               (v2-car-index
+                (if (hl-hspace-honsp-wrapper x)
+                    (the fixnum (logior (the fixnum (ash car-index 1)) 1))
+                  (the fixnum (ash car-index 1)))))
 
-              (ser-encode-nat cdr-index stream)
-              (values free-index (the fixnum (+ 1 free-index))))))))))
+          (setf (gethash x seen-cons) free-index)
+          (ser-encode-nat v2-car-index stream)
+          (ser-encode-nat cdr-index stream)
+          (setf (ser-encoder-free-index encoder) (the fixnum (+ 1 free-index)))
+          free-index)))))
 
 
 (defmacro ser-decode-loop (version hons-mode)
@@ -1215,18 +1234,19 @@
 
 
 
-(defun ser-encode-atoms (encoder stream)
-  (declare (type ser-encoder stream))
+(defun ser-encode-atoms (encoder)
+  (declare (type ser-encoder encoder))
 
 ; It's sort of silly for this to be its own function, but it makes a convenient
 ; target for timing.
 
-  (ser-encode-nats      (ser-encoder-naturals encoder)  stream)
-  (ser-encode-rats      (ser-encoder-rationals encoder) stream)
-  (ser-encode-complexes (ser-encoder-complexes encoder) stream)
-  (ser-encode-chars     (ser-encoder-chars encoder)     stream)
-  (ser-encode-strs      (ser-encoder-strings encoder)   stream)
-  (ser-encode-packages  (ser-encoder-symbol-al encoder) stream))
+  (let ((stream (ser-encoder-stream encoder)))
+    (ser-encode-nats      (ser-encoder-naturals encoder)  stream)
+    (ser-encode-rats      (ser-encoder-rationals encoder) stream)
+    (ser-encode-complexes (ser-encoder-complexes encoder) stream)
+    (ser-encode-chars     (ser-encoder-chars encoder)     stream)
+    (ser-encode-strs      (ser-encoder-strings encoder)   stream)
+    (ser-encode-packages  (ser-encoder-symbol-al encoder) stream)))
 
 
 (defun ser-encode-to-stream (obj stream)
@@ -1235,15 +1255,15 @@
 ; magic number to magic number."  Note that it does NOT include the #Z prefix,
 ; which is needed if you're going to read the object back in.
 
-  (let ((encoder (make-ser-encoder))
+  (let ((encoder (make-ser-encoder :stream stream))
         starting-free-index-for-conses
         total-number-of-objects
+        max-index
         nconses)
     (declare (dynamic-extent encoder))
 
     ;; Make sure the hons space is initialized
     (hl-maybe-initialize-default-hs-wrapper)
-
     (ser-time? (ser-gather-atoms obj encoder))
 
     (setq nconses (hash-table-count (ser-encoder-seen-cons encoder)))
@@ -1263,8 +1283,8 @@
       ;; need to shift it since indices get shifted in the file.
       (error "Maximum index exceeded."))
 
-    (setq starting-free-index-for-conses
-          (ser-time? (ser-make-atom-map encoder)))
+    (ser-time? (ser-make-atom-map encoder))
+    (setq starting-free-index-for-conses (ser-encoder-free-index encoder))
 
     (ser-encode-magic stream)
 
@@ -1277,26 +1297,24 @@
                            (- total-number-of-objects 1)))
                     stream)
 
-    (ser-time? (ser-encode-atoms encoder stream))
-
+    (ser-time? (ser-encode-atoms encoder))
     (ser-encode-nat nconses stream)
+    (setq max-index (ser-time? (ser-encode-conses obj encoder)))
 
-    (multiple-value-bind (max-index final-free-index)
-      (ser-time? (ser-encode-conses obj starting-free-index-for-conses encoder stream))
-
-      (unless (and (equal final-free-index total-number-of-objects)
-                   (or (equal max-index (- final-free-index 1))
-                       ;; in v2, max-index can be 0 and 1 also, for nil or t.
-                       ;; if it happens to be t, then it's still going to be one
-                       ;; less than the max free index.
-                       (equal max-index 0)))
-        (error "Sanity check failed in ser-encode-to-stream!~% ~
+    (unless (and (equal (ser-encoder-free-index encoder)
+                        total-number-of-objects)
+                 (or (equal max-index (- (ser-encoder-free-index encoder) 1))
+                     ;; in v2, max-index can be 0 and 1 also, for nil or t.
+                     ;; if it happens to be t, then it's still going to be one
+                     ;; less than the max free index.
+                     (equal max-index 0)))
+      (error "Sanity check failed in ser-encode-to-stream!~% ~
                 - final-free-index is ~a~% ~
                 - total-number-of-objects is ~a~% ~
                 - max-index is ~a~%"
-               final-free-index
-               total-number-of-objects
-               max-index)))
+             (ser-encoder-free-index encoder)
+             total-number-of-objects
+             max-index))
 
     (ser-encode-magic stream)))
 
