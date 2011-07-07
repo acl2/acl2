@@ -920,13 +920,17 @@
       (kill-thread (car thread-list))
       (kill-all-threads-in-list (cdr thread-list)))))
 
-#+(or ccl lispworks)
+#+(or ccl sbcl lispworks)
 (defun initial-threads1 (threads)
   (cond ((endp threads)
          nil)
         (#+ccl
          (member-equal (ccl:process-name (car threads))
                        '("listener" "Initial"))
+
+         #+sbcl
+         (member-equal (sb-thread:thread-name (car threads))
+                       '("initial thread"))
          #+lispworks
          (member-equal (mp:process-name (car threads))
                        '("TTY Listener" "The idle process" 
@@ -935,32 +939,24 @@
                (initial-threads1 (cdr threads))))
         (t (initial-threads1 (cdr threads)))))
 
-(defvar *initial-threads* 
-
-; *Intial-threads* stores a list of threads that are considered to be part of
-; the non-threaded part of ACL2.  When terminating parallelism threads, only
-; those not appearing in this list will be terminated.  Warning: If ACL2 uses
-; parallelism during the build process, this variable could incorrectly record
-; parallelism threads as initial threads.
-
-  (all-threads))
-
 (defun initial-threads ()
 
-; We know how to set the *initial-threads* variable reliably in all Lisps
-; except Lispworks.  Due to Lispworks' multiprocessing model (where we start a
-; tty-listener when lp exits), accurately updating this variable is difficult
-; (perhaps infeasiable).  Rather than spend even more time on this problem, we
-; simply return the threads that currently exist that match the names of
-; threads that we associate with "initial" threads.
+; Once upon a time, we would set a *initial-threads* variable upon startup of
+; ACL2.  This variable accurately reflected the set of initial threads in both
+; CCL and SBCL, but not Lispworks.  Due to our use of Lispworks'
+; multiprocessing model (where we start a tty-listener when lp exits),
+; accurately updating this variable is difficult (perhaps infeasible).  Since
+; we prefer a more uniform approach across Lisp implementations, we simply
+; return the threads that currently exist that match the names of threads that
+; we associate with "initial" threads.
 
-; Parallelism wart: we might want to adapt a similar name-based strategy for
-; SBCL.  This would allow us to get rid of *initial-threads* altogether.
+; When terminating parallelism threads, only those not appearing in the list
+; returned by initial-threads will be terminated.
 
-  #-(or ccl lispworks)
-  *initial-threads* 
-  #+(or ccl lispworks)
-  (initial-threads1 (all-threads)))
+  #+(or ccl sbcl lispworks)
+  (initial-threads1 (all-threads))
+  #-(or ccl sbcl lispworks)
+  nil)
 
 (defun all-threads-except-initial-threads-are-dead ()
   #+sbcl

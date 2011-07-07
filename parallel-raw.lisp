@@ -394,8 +394,6 @@
 
   (setf *total-parallelism-piece-historical-count* 0)
 
-  (setf *initial-threads* (all-threads))
-
   (setf *core-count* (core-count-raw))
 
   (setf *reset-parallelism-variables* nil)

@@ -60,9 +60,11 @@ instructions for how to obtain CCL.")
 ; ACL2 that we do not currently plan to fix.  These parallelism no-fixes also
 ; vary in sophistication.  The main motivation for such an annotation is to
 ; document possible sources of bugs that we do not intend to fix until users
-; report a problem.  Searching through the parallism warts and no-fixes could
-; be useful when a user reports a bug in #+acl2-par that cannot be replicated
-; in #-acl2-par.
+; report a problem.  With every parallelism no-fix, there is an implicit
+; disclaimer that we will not fix the issue until a user complains, at which
+; point we would be much more eager to try to solve the given problem.
+; Searching through the parallism warts and no-fixes could be useful when a
+; user reports a bug in #+acl2-par that cannot be replicated in #-acl2-par.
 
 ; In an effort to avoid code duplication, we created a definition scheme that
 ; supports defining both serial and parallel versions of a function with one
@@ -923,8 +925,11 @@ implementations.")
 ; of the threshold for Lispworks inside the restart function, because Lispworks
 ; doesn't save the GC configuration as part of the Lisp image.
 
-; Parallelism wart: the 1 gigabyte threshold may cause problems for machines
-; with less than 1 gigabytes of free RAM.
+; Parallelism no-fix: the 1 gigabyte threshold may cause problems for machines
+; with less than 1 gigabytes of free RAM.  At a first glance, this shouldn't
+; realistically be a problem.  However, a user might actually encounter this
+; problem when running multiple memory-intensive ACL2(p) sessions in parallel
+; via make -j.
 
 ; The following two lines follow the recommendation in Allegro CL's
 ; documentation file doc/delivery.htm.
