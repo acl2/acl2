@@ -272,6 +272,7 @@ sources := axioms.lisp memoize.lisp hons.lisp boot-strap-pass-2.lisp\
            other-processes.lisp induct.lisp prove.lisp\
            proof-checker-a.lisp history-management.lisp defuns.lisp defthm.lisp\
            other-events.lisp ld.lisp proof-checker-b.lisp interface-raw.lisp\
+	   serialize.lisp serialize-raw.lisp\
            defpkgs.lisp
 
 ifdef ACL2_HONS

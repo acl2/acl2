@@ -892,6 +892,11 @@
     (eq x entry)))
 
 
+(defun hl-hspace-honsp-wrapper (x)
+  ; Bootstrapping hack for serialize
+  (declare (special *default-hs*))
+  (hl-hspace-honsp x *default-hs*))
+
 
 
 ; ----------------------------------------------------------------------
@@ -2449,6 +2454,9 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   (unless *default-hs*
     (setq *default-hs* (hl-hspace-init))))
 
+(defun hl-maybe-initialize-default-hs-wrapper ()
+  ;; Bootstrapping hack for serialize
+  (hl-maybe-initialize-default-hs))
 
 (defun hons (x y)
   ;; hl-hspace-hons is inlined via defabbrev

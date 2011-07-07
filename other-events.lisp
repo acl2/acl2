@@ -11930,7 +11930,8 @@
              (if ,chan0
                  *print-circle-stream*
                (and ,chan (get-output-stream-from-channel ,chan)))))
-        #+hons (when (null ,chan0) (setq *compact-print-file-n* 0))
+; Commented out upon addition of serialize:
+;       #+hons (when (null ,chan0) (setq *compact-print-file-n* 0))
         ,body))))
 
 (defun make-certificate-file1 (file portcullis certification-file post-alist3

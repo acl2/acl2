@@ -496,7 +496,8 @@ implementations.")
                                    "memoize-raw.lisp"
                                    "multi-threading-raw.lisp"
                                    "futures-raw.lisp"
-                                   "parallel-raw.lisp")))))
+                                   "parallel-raw.lisp"
+                                   "serialize-raw.lisp")))))
 
 (defvar *saved-build-date-lst*)
 (defvar *saved-mode*)

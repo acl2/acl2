@@ -24823,6 +24823,10 @@
     CLEAR-MEMOIZE-TABLE FAST-ALIST-FREE HONS-EQUAL HONS-RESIZE-FN HONS-GET HONS
     HONS-SHRINK-ALIST! MEMOIZE-SUMMARY CLEAR-MEMOIZE-STATISTICS
 
+; Jared added these for serialize
+
+    serialize-read-fn serialize-write-fn
+
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -28040,7 +28044,15 @@
             (terpri stream)
             #+hons
             (cond (*print-circle* ; hence *print-circle-stream* is non-nil
-                   (compact-print-stream x stream))
+
+; Jared patch: use serialize instead of compact-print-stream.
+; BOZO want to be able to use #z instead of #Z sometimes.
+
+                   ;;(compact-print-stream x stream)
+                   (write-char #\# stream)
+                   (write-char #\Z stream)
+                   (ser-encode-to-stream x stream))
+
                   (t (prin1 x stream)))
             #-hons
             (prin1 x stream)
@@ -29507,9 +29519,15 @@
                    #+(and mcl (not ccl))
                    ((eq channel *standard-oi*)
                     (ccl::toplevel-read))
-                   #+hons
-                   ((f-get-global 'hons-read-p *the-live-state*)
-                    (hons-read stream nil read-object-eof nil))
+
+; Jared patch: no longer use hons-read, after #z macros, because it breaks the
+; ability to choose what to hons.  (No matter what you choose, it's going to hons-copy
+; them afterward, which is too expensive for large, unhonsed structures)
+
+;                   #+hons
+;                   ((f-get-global 'hons-read-p *the-live-state*)
+;                    (hons-read stream nil read-object-eof nil))
+
                    (t
                     (read stream nil read-object-eof nil)))))
 

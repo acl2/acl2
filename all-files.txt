@@ -76,6 +76,8 @@ rewrite.lisp
 save-gprof.lsp
 # The following is distributed but is not in the svn repository:
 saved
+serialize-raw.lisp
+serialize.lisp
 simplify.lisp
 sum-list-example.lisp
 translate.lisp
@@ -3473,6 +3475,9 @@ random.lisp
 books/serialize:
 LICENSE
 acl2-customization.lsp
+compact-print-raw.lsp
+compact-print.acl2
+compact-print.lisp
 gpl.txt
 serialize-tests.acl2
 serialize.acl2
