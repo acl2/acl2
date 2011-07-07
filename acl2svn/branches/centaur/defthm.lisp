@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -12270,20 +12270,26 @@
   (if (not (consp keys))
       state
     (mv-let (col state) 
-            (fmt1 "~s0:~t1~q2" 
+            (fmt1 "~s0:"
                   (list (cons #\0 (let* ((name (symbol-name (car keys)))
                                          (lst (coerce name 'list)))
                                     (coerce (cons (car lst)
                                                   (string-downcase1 (cdr lst)))
-                                            'string)))
-                        (cons #\1 14)
-                        (cons #\2 (caar vals)))
-                  0
-                  chan
-                  state
-                  nil)
-            (declare (ignore col))
-            (print-info-for-rules-entry (cdr keys) (cdr vals) chan state))))
+                                            'string))))
+                  0 chan state nil)
+            (mv-let (col state)
+                    (cond ((< col 14)
+                           (fmt1 "~t0~q1"
+                                 (list (cons #\0 14)
+                                       (cons #\1 (caar vals)))
+                                 col chan state nil))
+                          (t (fmt1 " ~q1"
+                                   (list (cons #\0 14)
+                                         (cons #\1 (caar vals)))
+                                   col chan state nil)))
+                    (declare (ignore col))
+                    (print-info-for-rules-entry (cdr keys) (cdr vals) chan
+                                                state)))))
 
 (defun print-info-for-rules (info chan state)
   (if (not (consp info))
@@ -12392,7 +12398,7 @@
   might be:
   ~bv[]
     Rune:     (:LINEAR ABC)
-    Status:   Enabled
+    Enabled:  T
     Hyps:     ((CONSP X))
     Concl:    (< (ACL2-COUNT (CAR X)) (ACL2-COUNT X))
     Max-term: (ACL2-COUNT (CAR X))

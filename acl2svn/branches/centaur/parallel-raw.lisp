@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1273,10 +1273,10 @@
             (progn (future-abort the-very-obscure-feature)
                    ,false-branch)))))))
 
-; Parallelism wart: Should we make a function called "set-gc-threshold" and
+; Parallelism wart: should we make a function called "set-gc-threshold" and
 ; document it in a performance section?
 
-; Parallelism wart: Should there be a documentation section called performance,
+; Parallelism wart: should there be a documentation section called performance,
 ; with links to sections "Parallelism", "Hons", and "Set-gc-threshold"?
 
 #+ccl

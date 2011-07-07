@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -3038,7 +3038,7 @@
 ; A heuristic question arises.  Suppose we have several such
 ; equiv-terms for lhs, all different refinements of geneqv.  What do
 ; we do?  Well, we will chose the first we find.  Ugh.  But suppose
-; they are refinements of eachother.  E.g., we have three hypotheses,
+; they are refinements of each other.  E.g., we have three hypotheses,
 ; (set-equal b a1), (list-equal b a2) and (equal b a3), where
 ; list-equal is a refinement of set-equal.  Then because we know, for
 ; every equivalence relation equiv, that iff is preserved by equiv in
@@ -8631,7 +8631,7 @@
 (defun brkpt1 (lemma target unify-subst type-alist ancestors initial-ttree
                      gstack state)
 
-; Parallelism wart: Since we lock the use of wormholes, brr might be usable
+; Parallelism wart: since we lock the use of wormholes, brr might be usable
 ; within the parallelized waterfall.  However, since locks can serialize
 ; computation, we leave brr disabled for now.  Kaufmann has the following
 ; reaction to using brr and waterfall parallelism at the same time:

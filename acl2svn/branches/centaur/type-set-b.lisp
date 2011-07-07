@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1924,7 +1924,7 @@
 ; Without the odd guard -- some term mentioning all the formals -- the formals
 ; are recognized as irrelevant!  This body below always returns t.
 
-; Parallelism wart: It's unclear whether we need to lock this array operation.
+; Parallelism wart: it's unclear whether we need to lock this array operation.
 ; By design, each array and theory is unique to the current subgoal, so this
 ; locking should be unnecessary.  However, we've seen some slow array access
 ; warnings, and maybe this is where they're generated.

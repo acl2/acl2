@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -399,7 +399,6 @@
 
   ~l[set-waterfall-parallelism].~/~/")
 
-
 ; Here are the two functions we need now from
 ; make-waterfall-parallelism-constants and make-waterfall-printing-constants
 ; (see boot-strap-pass-2.lisp).
@@ -470,6 +469,8 @@
       (observation-cw nil observation-string)))))
 
 (defmacro set-waterfall-parallelism (value &optional no-error)
+
+; Parallelism wart: add a link to set-waterfall-printing with explanation.
 
   ":Doc-Section switches-parameters-and-modes
 
@@ -575,7 +576,6 @@
 
      #-acl2-par
      (or no-error
-         (null val)
          (er hard 'set-waterfall-parallelism
              "Parallelism can only be enabled in CCL, threaded SBCL, or ~
               Lispworks. ~ Additionally, the feature :ACL2-PAR must be set ~
@@ -603,6 +603,8 @@
 ; this topic.  In particular, the explanation under :limited will be outdated,
 ; and it could be good to reference a :doc topic that explains ACL2(p)
 ; checkpoints (such a topic has yet to be written).
+
+; Parallelism wart: add a link to gag-mode.
 
   ":Doc-Section switches-parameters-and-modes
 
@@ -1165,7 +1167,7 @@
   (time$ (length (sets::pmergesort-exec *x* 0)))
   ~ev[]~/~/")
 
-; Parallelism wart: Add a section on waterfall-parallelism-performance.  It
+; Parallelism wart: add a section on waterfall-parallelism-performance.  It
 ; should be a discussion of the advantages of each argument to
 ; set-waterfall-parallelism.
 

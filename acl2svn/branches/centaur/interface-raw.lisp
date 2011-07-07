@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -6999,7 +6999,7 @@ Missing functions:
                   (invoke-restart 'continue))
                  (t
 
-; Parallelism wart: As of May 16, 2011, we also reset all parallelism variables
+; Parallelism wart: as of May 16, 2011, we also reset all parallelism variables
 ; in Rager's modified version of the source code.  However, that strikes Rager
 ; as strange, since we went through so much trouble to find out where we should
 ; reset parallelism variables. So, it is now commented out, today, May 16, 
@@ -7031,9 +7031,20 @@ Missing functions:
     (cond
      ((eq cfb0 :none)
       :none)
-     (cfb0
-      (and (probe-file cfb0)
-           cfb0))
+     ((and cfb0 (probe-file cfb0))
+      cfb0)
+     (cfb0 ; but (not (probe-file cfb0))
+      (let ((*print-circle* nil))
+        (format t
+                "~%ERROR: Environment variable ACL2_CUSTOMIZATION has value~%~
+                 ~3T~a~%but file~%~3T~a~%does not appear to exist.~%~
+                 Now quitting ACL2.  To fix this problem, you may wish~%~
+                 to fix the value of that environment variable by setting it~%~
+                 to a valid file name, by unsetting it, or by setting it to~%~
+                 the empty string.~%~%"
+                cfb00
+                cfb0))
+      (exit-lisp 1))
      (t
       (let* ((cb1 (our-merge-pathnames
                    (f-get-global 'connected-book-directory *the-live-state*)

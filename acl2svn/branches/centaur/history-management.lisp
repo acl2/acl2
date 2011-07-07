@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -3457,11 +3457,11 @@
             (let ((limit ,limit))
               (cond ((null limit)
                      *default-step-limit*)
+                    ((eq limit :start) ; inherit limit from parent environment
+                     (initial-step-limit (w state) state))
                     ((and (natp limit)
                           (<= limit *default-step-limit*))
                      limit)
-                    ((eq limit :start) ; inherit limit from parent environment
-                     (initial-step-limit (w state) state))
                     (t (er hard 'with-prover-step-limit
                            "Illegal value for ~x0, ~x1.  See :DOC ~
                             with-prover-step-limit."
@@ -4501,10 +4501,6 @@
 ; Keep in sync with eval-theory-expr.
 
   (cond ((equal expr '(current-theory :here))
-
-; Parallelism wart: here is another substitution of ev-w for ev which we will
-; need to check.
-
          (mv-let (erp val)
                  (ev-w '(current-theory-fn ':here world)
                        (list (cons 'world wrld))
@@ -4521,11 +4517,14 @@
                nil
                "A theory expression" ctx wrld state t
 
-; Parallelism wart: the #-acl2-par definition sets safe-mode to t, so maybe 
-; rather than reading from state, we should be passing in t.
+; The following arguments are intended to match the safe-mode and gc-off values
+; from the state in eval-theory-expr at the call there of
+; simple-translate-and-eval.  Since there is a superior state-global-let*
+; binding guard-checking-on to t, we bind our gc-off argument below to what
+; would be the value of (gc-off state) in that function, which is nil.
 
-               (f-get-global 'safe-mode state) 
-               t)))
+               (f-get-global 'safe-mode state)
+               nil)))
 
 ; Trans-ans is (term . val).
 
@@ -13599,13 +13598,9 @@
                      (list (cons 'world wrld))
                      nil
                      "A :do-not hint"
-                     ctx wrld state t 
-
-; Parallelism wart: the next two arguments are safe-mode and gc-off.  Consider
-; whether nil and nil are really correct or whether we should read these from
-; state.
-
-                     nil nil)))))
+                     ctx wrld state t
+                     (f-get-global 'safe-mode state)
+                     (gc-off state))))))
 
 ; trans-ans is (& . val), where & is either nil or a term.
 
@@ -16794,7 +16789,7 @@
                 (prettyify-stobj-flags stobjs-out))
             (er@par soft ctx
 
-; Parallelism wart: Consider adding a documentation topic on Context message
+; Parallelism wart: consider adding a documentation topic on Context message
 ; pairs.
 
               "The form ~x0 was expected to represent an ordinary value or a ~
@@ -16904,13 +16899,31 @@
 ; xtrans-eval that uses ev-w for evaluation rather than using ev.  The extra
 ; function call adds only trivial cost.
 
-; Parallelism wart: This function calls ev-w in a way that violates the
+; Parallelism wart: this function calls ev-w in a way that violates the
 ; contract that state is not part of one of ev-w's arguments ("alist").  As
 ; such, while this implementation "works", it is unlikely that it is both sound
-; and as "user friendly" as it should be.
+; and as "user friendly" as it should be.  We insist that we do not modify
+; state here, causing an error otherwise, thus avoiding for example the case
+; where a computed hints sets a state global differently in two different
+; threads.  We should make sure that there are clear error messages and
+; documentation, pointing out that instead of (er soft ...)  they could use
+; (er@par soft ...), for example.  How can we carry out this plan (which may
+; have in fact already been carried out, at least in part)?  Below we see that
+; if trans-flg is true, then we call a function that translates; we should be
+; sure to arrange that no stobj (user-defined, or state) is returned, and
+; indeed we probably already do that in our comparison against *cmp-sig*.  The
+; other case is that trans-flg is nil.  We can either arrange that such callers
+; only give us a uterm whose value doesn't include a stobj (user-defined, or
+; state), or perhaps just call term-stobjs-out on uterm (probably with alist
+; argument of nil -- careful though, not sure it's really complete -- maybe it
+; was just for printing heuristics -- if it's not suitable, then maybe call
+; translate on uterm) and ensure that it produces an appropriate value (in
+; particular, not returning a stobj; maybe in fact we'll insist on stobjs-out
+; of either '(nil) or *cmp-sig*).  Another parallelism wart related to custom
+; keyword hints may be found in add-custom-keyword-hint@par.
 
-; Parallelism wart: a correct version of the xtrans-eval documentation needs to
-; be written here.
+; Parallelism wart: a correct version of the xtrans-eval-with-ev-w comments
+; needs to be written here.
 
   (er-let*@par
    ((term
@@ -16922,8 +16935,12 @@
          (subsetp-eq (all-vars term)
                      (cons 'state (strip-cars alist))))
 
-; Parallelism wart: We currently discard any changes to the world.  Figure out
-; whether this is okay.
+; Parallelism wart: we currently discard any changes to the world of the live
+; state.  But if we restrict to terms that don't modify state, as discussed in
+; the parallelism wart above, then there is no issue because state hasn't
+; changed.  Otherwise, if we cheat, the world could indeed change out from
+; under us, which is just one example of the evils of cheating by modifying
+; state under the hood.
 
      (er-let*-cmp
       ((val
@@ -16934,10 +16951,7 @@
                             alist)
                       (w state)
                       (f-get-global 'safe-mode state)
-
-; Parallelism wart: why not pull gc-off from the state?
-
-                      nil
+                      (gc-off state)
                       nil
                       aok)
                 (cond
@@ -18343,14 +18357,19 @@
   ~c[(\"Subgoal x.y\" :do-not '(fertilize))].  What we would really want in
   this case is to generate the hint for the indicated subgoal that binds
   ~c[:do-not] to a list indicating that both fertilization _and_ generalization
-  are disabled for that goal.  A solution is to merge, as follows.
+  are disabled for that goal.  A solution is to merge, for example as follows.
+  (The use of ~ilc[prog2$] and ~ilc[cw] is of course optional, included here to
+  provide debug printing.)
   ~bv[]
   (add-override-hints
-   '((let ((tmp (assoc-eq :do-not KEYWORD-ALIST)))
-       (put-assoc-eq :do-not
-                     (add-to-set-eq 'generalize
-                                    (cdr tmp))
-                     KEYWORD-ALIST))))
+   '((let* ((tmp (assoc-keyword :do-not KEYWORD-ALIST))
+            (new-keyword-alist
+             (cond (tmp (list* :do-not
+                               `(cons 'generalize ,(cadr tmp))
+                               (remove-keyword :do-not KEYWORD-ALIST)))
+                   (t (list* :do-not ''(generalize) KEYWORD-ALIST)))))
+       (prog2$ (cw \"New: ~~x0~~|\" new-keyword-alist)
+               new-keyword-alist))))
   ~ev[]
 
   ~sc[Remarks]

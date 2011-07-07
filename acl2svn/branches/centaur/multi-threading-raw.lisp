@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -130,9 +130,9 @@
 ; achieves two things: (1) The code is there if we decide we want to use it
 ; again later (maybe after reading on the SBCL email lists that a bug with
 ; these atomic operations was fixed) and (2) We will have an on-going record of
-; the code that causes us to observe this bug (note that ACL2 4.2 also contains
-; the implementation that uses atomic operations).  Maybe someone will be able
-; to tell us what we are doing wrong.
+; the code that causes us to observe this bug (note that ACL2  4.2 also
+; contains the implementation that uses atomic operations).  Maybe someone will
+; be able to tell us what we are doing wrong.
 
   (val 0 ; :type (unsigned-byte #+x86-64 64 #-x86-64 32)
        )

@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1562,8 +1562,88 @@
 
 #-acl2-loop-only
 (defmacro maybe-make-package (name)
+
+; When we moved to Version_4.3, with LispWorks once again a supported host
+; Lisp, we modified the macro maybe-introduce-empty-pkg-1 to avoid the use of
+; defpackage; see the comment in that macro.  Unfortunately, the new approach
+; didn't work for CMUCL (at least, for version 19e).  The following example
+; shows why; even with an eval-when form specifying :compile-toplevel, the
+; compiled code seems to skip the underlying package-creation form, as shown
+; below.  Therefore we revert to the use of defpackage for CMUCL, which appears
+; not to cause problems.
+
+;   % cat pkg-bug-cmucl.lisp
+;   
+;   (in-package "CL-USER")
+;   
+;   (eval-when (:load-toplevel :execute :compile-toplevel)
+;              (cond ((not (find-package "MYPKG"))
+;                     (print "*** About to make package ***")
+;                     (terpri)
+;                     (make-package "MYPKG" :use nil))))
+;   
+;   (defparameter *foo* 'mypkg::x)
+;   % /projects/acl2/lisps/cmucl-19e-linux/bin/cmucl
+;   CMU Common Lisp 19e (19E), running on kindness
+;   With core: /v/filer4b/v11q001/acl2/lisps/cmucl-19e-linux/lib/cmucl/lib/lisp.core
+;   Dumped on: Thu, 2008-05-01 11:56:07-05:00 on usrtc3142
+;   See <http://www.cons.org/cmucl/> for support information.
+;   Loaded subsystems:
+;       Python 1.1, target Intel x86
+;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
+;   * (load "pkg-bug-cmucl.lisp")
+;   
+;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp".
+;   
+;   "*** About to make package ***" 
+;   T
+;   * (compile-file "pkg-bug-cmucl.lisp")
+;   
+;   ; Python version 1.1, VM version Intel x86 on 04 JUL 11 09:57:13 am.
+;   ; Compiling: /v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp 04 JUL 11 09:56:24 am
+;   
+;   ; Byte Compiling Top-Level Form: 
+;   
+;   ; pkg-bug-cmucl.x86f written.
+;   ; Compilation finished in 0:00:00.
+;   
+;   #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f"
+;   NIL
+;   NIL
+;   * (quit)
+;   % /projects/acl2/lisps/cmucl-19e-linux/bin/cmucl
+;   CMU Common Lisp 19e (19E), running on kindness
+;   With core: /v/filer4b/v11q001/acl2/lisps/cmucl-19e-linux/lib/cmucl/lib/lisp.core
+;   Dumped on: Thu, 2008-05-01 11:56:07-05:00 on usrtc3142
+;   See <http://www.cons.org/cmucl/> for support information.
+;   Loaded subsystems:
+;       Python 1.1, target Intel x86
+;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
+;   * (load "pkg-bug-cmucl.x86f")
+;   
+;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f".
+;   
+;   
+;   Error in function LISP::FOP-PACKAGE:  The package "MYPKG" does not exist.
+;      [Condition of type SIMPLE-ERROR]
+;   
+;   Restarts:
+;     0: [CONTINUE] Return NIL from load of "pkg-bug-cmucl.x86f".
+;     1: [ABORT   ] Return to Top-Level.
+;   
+;   Debug  (type H for help)
+;   
+;   (LISP::FOP-PACKAGE)
+;   Source: Error finding source: 
+;   Error in function DEBUG::GET-FILE-TOP-LEVEL-FORM:  Source file no longer exists:
+;     target:code/load.lisp.
+;   0] 
+
+  #-cmu
   `(when (not (find-package ,name))
-     (make-package ,name :use nil)))
+     (make-package ,name :use nil))
+  #+cmu
+  `(defpackage ,name (:use)))
 
 (defmacro maybe-introduce-empty-pkg-1 (name)
 
@@ -5724,11 +5804,20 @@
   raw Lisp.  In particular, the ~il[guard] of ~c[fn] is checked, at least by
   default (~pl[set-guard-checking].~eq[]
 
-  Note that in the term ~c[(ec-call (fn term1 ... termk))], only the indicated
+  Note that in the term (ec-call (fn term1 ... termk))~c[], only the indicated
   call of ~c[fn] is made in the logic; each ~c[termi] is evaluated in the
   normal manner.  If you want an entire term evaluated in the logic, wrap
   ~c[ec-call] around each function call in the term (other than calls of ~c[if]
   and ~c[ec-call]).
+
+  ~st[Technical Remark] (probably best ignored).  During evaluation of a call
+  of ~ilc[defconst] or ~ilc[defpkg] in raw Lisp, a form
+  ~c[(ec-call (fn term1 ... termk))] is treated as ~c[(fn term1 ... termk)],
+  that is, without calling the executable counterpart of ~c[fn].  This
+  situation occurs when loading a compiled file (or expansion file) on behalf
+  of an ~ilc[include-book] event.  The reason is technical: executable
+  counterparts are defined below a book's events in the book's compiled file.
+  End of Technical Remark.
 
   Here is a small example.  We define ~c[foo] recursively but with guard
   verification inhibited on the recursive call, which is to be evaluated in the
@@ -16541,6 +16630,7 @@
 
   ~bv[]
   Example:
+  (defconst *mem-size* 10) ; for use of *mem-size* just below
   (defstobj st
             (reg :type (array (unsigned-byte 31) (8))
                  :initially 0)
@@ -23921,7 +24011,7 @@
   ~c[Mv?-let] is a macro that extends the macro ~ilc[mv-let] by allowing a
   single variable to be bound.  Thus, the syntax is the same as that of
   ~ilc[mv-let] except that ~c[mv?-let] is permitted to bind a single variable
-  to a form that produces a single value.  The macros ~c[mv?-let} and ~ilc[mv?]
+  to a form that produces a single value.  The macros ~c[mv?-let] and ~ilc[mv?]
   are provided to facilitate the writing of macros that traffic in expressions
   that could return one or more (multiple) values.
 
@@ -24676,16 +24766,17 @@
 ; concern since presumably users cannot define these redundantly anyhow.  But
 ; we go ahead and include them, just to be safe.
 
-    user-stobj-alist read-acl2-oracle update-user-stobj-alist
-    decrement-big-clock put-global close-input-channel makunbound-global
-    open-input-channel open-input-channel-p1 boundp-global1 global-table-cars1
-    extend-t-stack list-all-package-names close-output-channel write-byte$
-    shrink-t-stack aset-32-bit-integer-stack get-global
-    32-bit-integer-stack-length1 extend-32-bit-integer-stack aset-t-stack
-    aref-t-stack read-char$ aref-32-bit-integer-stack open-output-channel
-    open-output-channel-p1 princ$ read-object big-clock-negative-p peek-char$
-    shrink-32-bit-integer-stack read-run-time read-byte$ read-idate
-    t-stack-length1 print-object$ get-output-stream-string$-fn
+    user-stobj-alist read-acl2-oracle read-acl2-oracle@par
+    update-user-stobj-alist decrement-big-clock put-global close-input-channel
+    makunbound-global open-input-channel open-input-channel-p1 boundp-global1
+    global-table-cars1 extend-t-stack list-all-package-names
+    close-output-channel write-byte$ shrink-t-stack aset-32-bit-integer-stack
+    get-global 32-bit-integer-stack-length1 extend-32-bit-integer-stack
+    aset-t-stack aref-t-stack read-char$ aref-32-bit-integer-stack
+    open-output-channel open-output-channel-p1 princ$ read-object
+    big-clock-negative-p peek-char$ shrink-32-bit-integer-stack read-run-time
+    read-byte$ read-idate t-stack-length1 print-object$
+    get-output-stream-string$-fn
 
     mv-list return-last
 
@@ -24929,7 +25020,7 @@
 ; The reason MCL needs special treatment is that (char-code #\Newline) = 13 in
 ; MCL, not 10.  See also :DOC version.
 
-; ACL2 Version 4.2
+; ACL2 Version 4.3
 
 ; We put the version number on the line above just to remind ourselves to bump
 ; the value of state global 'acl2-version, which gets printed out with the
@@ -24955,7 +25046,7 @@
 ; reformatting :DOC comments.
 
                   ,(concatenate 'string
-                                "ACL2 Version 4.2"
+                                "ACL2 Version 4.3"
                                 #+non-standard-analysis
                                 "(r)"
                                 #+(and mcl (not ccl))
@@ -25861,11 +25952,19 @@
 
 #+acl2-par
 (defmacro f-put-global@par (key value st)
+
+; Warning: This macro is used to modify the live ACL2 state, without passing
+; state back!
+
+; Parallelism wart: probably should make this macro untouchable so that
+; programmers can't modify the system state in arbitrary ways.
+
   (declare (ignorable key value st))
   #+acl2-loop-only
   nil
   #-acl2-loop-only
-  `(f-put-global ,key ,value ,st))
+  `(progn (f-put-global ,key ,value ,st)
+          nil))
 
 ; We now define state-global-let*, which lets us "bind" state
 ; globals.
@@ -26088,6 +26187,10 @@
 
 #-acl2-loop-only
 (defmacro state-free-global-let* (bindings body)
+
+; Parallelism wart: look for calls of this macro, and make sure that when a
+; child thread starts processing, we arrange that it binds corresponding values
+; from the parent.
 
 ; This raw Lisp macro is a variant of state-global-let* that should be used
 ; only when state is *not* lexically available, or at least not a formal
@@ -30624,6 +30727,9 @@
 (defparameter *next-acl2-oracle-value* nil)
 
 (defun read-acl2-oracle (state-state)
+
+; Keep in sync with #+acl2-par read-acl2-oracle@par.
+
   (declare (xargs :guard (state-p1 state-state)))
 
 ;   Wart: We use state-state instead of state because of a bootstrap problem.
@@ -30639,6 +30745,53 @@
   (mv (null (acl2-oracle state-state))
       (car (acl2-oracle state-state))
       (update-acl2-oracle (cdr (acl2-oracle state-state)) state-state)))
+
+#+acl2-par
+(defun read-acl2-oracle@par (state-state)
+
+; Keep in sync with read-acl2-oracle.
+
+; Note that this function may make it possible to evaluate (equal X X) and
+; return nil, for a suitable term X.  Specifically, it may be the case that the
+; term (equal (read-acl2-oracle@par state) (read-acl2-oracle@par state)) can
+; evaluate to nil.  More likely, something like
+; (equal (read-acl2-oracle@par state)
+;        (prog2$ <form> (read-acl2-oracle@par state)))
+; could evaluate to nil, if <form> sets *next-acl2-oracle-value* under the
+; hood.  However, we are willing to live with such low-likelihood risks in
+; ACL2(p).
+
+  (declare (xargs :guard (state-p1 state-state)))
+  #-acl2-loop-only
+  (cond ((live-state-p state-state)
+         (return-from read-acl2-oracle@par
+                      (let ((val *next-acl2-oracle-value*))
+                        (setq *next-acl2-oracle-value* nil)
+                        (mv nil val state-state)))))
+  (mv (null (acl2-oracle state-state))
+      (car (acl2-oracle state-state))))
+
+#-acl2-par
+(defun read-acl2-oracle@par (state-state)
+
+; We have included read-acl2-oracle@par in *super-defun-wart-table*, in support
+; of ACL2(p).  But in order for ACL2(p) and ACL2 to be logically compatible, a
+; defconst should have the same value in #+acl2-par as in #-acl2-par; so
+; read-acl2-oracle@par is in *super-defun-wart-table* for #-acl2-par too, not
+; just #+acl2-par.
+
+; Because of that, if the function read-acl2-oracle@par were only defined in
+; #+acl2-par, then a normal ACL2 user could define read-acl2-oracle@par and
+; take advantage of such special treatment, which we can imagine is
+; problematic.  Rather than think hard about whether we can get away with that,
+; we eliminate such a user option by defining this function in #-acl2-par.
+
+  (declare (xargs :guard (state-p1 state-state))
+           (ignore state-state))
+  (mv (er hard? 'read-acl2-oracle@par
+          "The function symbol ~x0 is reserved but may not be executed."
+          'read-acl2-oracle@par)
+      nil))
 
 (defun getenv$ (str state)
 
@@ -31692,6 +31845,7 @@
 
 ;   read-idate - used by write-acl2-html, so can't be untouchable?
     read-acl2-oracle
+    read-acl2-oracle@par
     read-run-time ; might not need to be an untouchable function
     main-timer    ; might not need to be an untouchable function
     get-timer     ; might not need to be an untouchable function
@@ -39797,7 +39951,7 @@
   `(mv-let (step-limit x1 x2 x3 x4 ; values that cannot be stobjs
                        state)
            #+acl2-loop-only
-           ,form ; so, form does not return a stobj
+           ,form ; so, except for state, form does not return a stobj
            #-acl2-loop-only
            (progn
              (setq *next-acl2-oracle-value* nil)
@@ -39818,23 +39972,37 @@
 
 ; Keep in sync with catch-time-limit5.
 
-; Parallelism wart: This definition is rather different from its non-@par
+; Parallelism wart: this definition is rather different from its non-@par
 ; counterpart.  We need to check that this is what we need.  I think it
 ; is okay, because we don't really support time-limits right now anyway.
 
   `(mv-let (step-limit x1 x2 x3 x4) ; values that cannot be stobjs
            #+acl2-loop-only
-           ,form ; so, form does not return a stobj
-
-; Parallelism wart: time-limit5-tag needs to be added to the list of throw tags
-; that futures support.
-
+           ,form ; so, form returns neither a stobj nor state
            #-acl2-loop-only
-           (catch 'time-limit5-tag
+           (progn
+
+; Parallelism wart: there is a rare race condition related to
+; *next-acl2-oracle-value*.  Specifically, a thread might set the value of
+; *next-acl2-oracle-value*, throw the 'time-limit5-tag, and the value of
+; *next-acl2-oracle-value* wouldn't be read until after that tag was caught.
+; In the meantime, maybe another thread would have cleared
+; *next-acl2-oracle-value*, and the needed value would be lost.  We do not plan
+; on fixing this wart until we have reason to believe that it is a practical
+; problem for users.
+
+             (setq *next-acl2-oracle-value* nil)
+             (catch 'time-limit5-tag
                (let ((*time-limit-tags* (add-to-set-eq 'time-limit5-tag
                                                        *time-limit-tags*)))
-                 ,form))
-           (mv step-limit nil x1 x2 x3 x4)))
+                 ,form)))
+           (pprogn@par 
+            (f-put-global@par 'last-step-limit step-limit state)
+            (mv-let (nullp temp)
+                    (read-acl2-oracle@par state);clears *next-acl2-oracle-value*
+                    (declare (ignore nullp))
+                    (cond (temp (mv step-limit temp nil nil nil nil))
+                          (t (mv step-limit nil x1 x2 x3 x4)))))))
 
 (defun time-limit5-reached-p (msg)
 
@@ -41960,7 +42128,7 @@ Lisp definition."
 (table custom-keywords-table nil nil
        :guard
 
-; Parallelism wart: The comment below starting with "Val must be of the
+; Parallelism wart: the comment below starting with "Val must be of the
 ; form..." will need to be updated once we finalize the way custom keyword
 ; hints work in ACL2(p).
 
@@ -42076,12 +42244,13 @@ Lisp definition."
 (defmacro add-custom-keyword-hint@par (key uterm1
                                        &key (checker '(value-cmp t)))
 
-; Parallelism wart: We do not currently handle custom keyword hints in a
+; Parallelism wart: we do not currently handle custom keyword hints in a
 ; graceful or disciplined manner.  The only promise we currently maintain is
 ; that they work in #-acl2-par and in #+acl2-par in the serial mode of the
 ; parallelized waterfall.  We should develop a cleaner explanation for how
 ; custom-keyword-hints interact with the parallelized waterfall and then
-; document it.
+; document it.  Another parallelism wart related to custom keyword hints may be
+; found in xtrans-eval-with-ev-w.
 
     `(add-custom-keyword-hint-fn@par ',key ',uterm1 ',checker state))
 
@@ -43489,7 +43658,7 @@ Lisp definition."
                        (car symbols))
                  (generate-@par-mappings (cdr symbols))))))
 
-; Parallelism wart: Consider adding a doc topic explaining that if a user finds
+; Parallelism wart: consider adding a doc topic explaining that if a user finds
 ; the #+acl2-par version of an "@par" function to be useful, that they should
 ; contact the authors of ACL2.  The authors should then create a version of the
 ; desired "@par" function, perhaps suffixing it with "@ns" (for "no state").

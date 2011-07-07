@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -5313,6 +5313,7 @@
     (READ-BYTE$                  (NIL STATE)     (NIL STATE)) 
     (READ-OBJECT                 (NIL STATE)     (NIL NIL STATE)) 
     (READ-ACL2-ORACLE            (STATE)         (NIL NIL STATE)) 
+    (READ-ACL2-ORACLE@PAR        (STATE)         (NIL NIL)) 
     (READ-RUN-TIME               (STATE)         (NIL STATE)) 
     (READ-IDATE                  (STATE)         (NIL STATE)) 
     (LIST-ALL-PACKAGE-NAMES      (STATE)         (NIL STATE)) 

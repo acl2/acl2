@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -3158,7 +3158,7 @@
 
   ACL2 copyright, license, sponsorship~/~/
 
-  ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+  ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
   Copyright (C) 2011  University of Texas at Austin
 
   This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -12751,7 +12751,8 @@
   his own implementation).
 
   The ACL2 customization file can now be specified using environment variable
-  ~c[ACL2-CUSTOMIZATION].  ~l[acl2-customization].  Thanks to Peter Dillinger
+  ~c[ACL2-CUSTOMIZATION] [note: starting with Version_4.0,
+  ~c[ACL2_CUSTOMIZATION]].  ~l[acl2-customization].  Thanks to Peter Dillinger
   for requesting this feature.
 
   Added new emacs capabilities for proof trees (all documented in emacs):
@@ -13046,7 +13047,7 @@
   :doc
   ":Doc-Section release-notes
 
-  ACL2 Version  3.3(r) (xxx, 20xx) Notes~/
+  ACL2 Version  3.3(r) (November, 2007) Notes~/
 
   ~/
 
@@ -17452,13 +17453,13 @@
   :Doc
   ":Doc-Section release-notes
 
-  ACL2 Version  4.3 (xxx, 20xx) Notes~/
+  ACL2 Version  4.3 (July, 2011) Notes~/
 
   NOTE!  New users can ignore these release notes, because the
   ~il[documentation] has been updated to reflect all changes that are recorded
   here.
 
-  Below we roughly organize the changes since Version 4.2 into the following
+  Below we roughly organize the changes since Version  4.2 into the following
   categories of changes: existing features, new features, heuristic
   improvements, bug fixes, changes at the system level and to distributed
   books, Emacs support, and experimental versions.  Each change is described in
@@ -17657,6 +17658,11 @@
   book's certification ~il[world] (that is, in its ~il[portcullis]
   ~il[command]s) were typically not given compiled code.  That has been fixed.
 
+  The commands ~c[:]~ilc[pl] and ~c[:]~ilc[pl2] have been improved, primarily
+  by printing information for more rule classes.  ~l[pl] and ~pl[pl2].  See
+  also the item below about the new ~il[proof-checker] command,
+  ~c[show-type-prescriptions].
+
   ~st[NEW FEATURES]
 
   New macros ~ilc[mv?-let] and ~ilc[mv?] extend the funtionality of
@@ -17730,6 +17736,12 @@
   You can now limit the printing of subgoal names when using
   ~c[:]~ilc[set-gag-mode]~c[ :goals].  ~l[set-print-clause-ids].  Thanks to
   Karl Hoech for a suggestion leading to this enhancement.
+
+  A new ~il[proof-checker] command, ~c[show-type-prescriptions], or ~c[st] for
+  short, provides information about ~c[:]~ilc[type-prescription] rules that
+  match a given term.  Thanks to Dave Greve for requesting this enhancement.
+  See also the item above about related improvements to commands ~c[:]~ilc[pl]
+  and ~c[:]~ilc[pl2].
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -17815,10 +17827,10 @@
 
   Avoided a potential error that could occur when no user home directory is
   located.  Our previous solution for Windows simply avoided looking for ACL2
-  customization files (~pl[ACL2-CUSTOMIZATION]) and ~c[acl2-init.lsp] files in
+  customization files (~pl[acl2-customization]) and ~c[acl2-init.lsp] files in
   a user's home directory.  With this change, we handle such files the same for
   Windows as for non-Windows systems: we always look for ACL2 customization
-  files (~pl[ACL2-CUSTOMIZATION]) and ~c[acl2-init.lsp] files in a user's home
+  files (~pl[acl2-customization]) and ~c[acl2-init.lsp] files in a user's home
   directory, but only if such a directory exists.  Thanks to Hanbing Liu for
   reporting this issue.
 
@@ -17922,6 +17934,39 @@
   (defun f (x) x)
   (defconst *c* (ec-call (f 3)))
   (defun g (x) (cons x x))
+  ~ev[]
+
+  The command ~c[:]~ilc[pl2], and also the ~il[proof-checker] commands
+  ~c[rewrite] and ~c[show-rewrites] (and hence their respective aliases ~c[r]
+  and ~c[sr]), now take rule-id arguments that can be ~c[:]~ilc[definition]
+  ~il[rune]s.  These commands dealt with definition rules already, e.g.
+  ~bv[]
+  :pl2 (append x y) binary-append
+  ~ev[]
+  but they did not allow explicit specification of ~c[:definition] runes, e.g.:
+  ~bv[]
+  :pl2 (append x y) (:definition binary-append)
+  ~ev[]
+
+  The following example illustrates a bug in the processing of (admittedly
+  obscure) ~il[hints] of the form ~c[:do-not-induct name], where ~c[name] is
+  not ~c[t], ~c[:otf-flg-override], ~c[:otf], or ~c[nil].  In this example,
+  ACL2 had essentially ignored the hint and reverted to prove the original goal
+  by induction, rather than to skip the goal temporarily as is expected for
+  such hints.  Thanks to David Rager for a helpful discussion.
+  ~bv[]
+  (thm (and (equal (append (append x y) z) (append x y z))
+            (equal (append (append x2 y2) z2) (append x2 y2 z2)))
+       :hints ((\"Subgoal 1\" :do-not-induct some-name)))
+  ~ev[]
+
+  Fixed a slight bug in the definitions of built-in ~ilc[theories].  For
+  example, in a fresh ACL2 session the value of the following form is ~c[nil],
+  but formerly included several ~c[:]~ilc[definition] ~il[rune]s.
+  ~bv[]
+  (let ((world (w state)))
+    (set-difference-theories (function-theory :here)
+                             (function-theory 'ground-zero)))
   ~ev[]
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
@@ -18037,7 +18082,7 @@
   :doc
   ":Doc-Section release-notes
 
-  ACL2 Version  4.3(r) (xxx, 20xx) Notes~/
+  ACL2 Version  4.3(r) (July, 2011) Notes~/
 
   ~/
 
@@ -18045,6 +18090,43 @@
 
   ~/
   ")
+
+(deflabel note-4-4
+  :doc
+  ":Doc-Section release-notes
+
+  ACL2 Version  4.4 (xxx, 20xx) Notes~/
+
+  NOTE!  New users can ignore these release notes, because the
+  ~il[documentation] has been updated to reflect all changes that are recorded
+  here.
+
+  Below we roughly organize the changes since Version  4.3 into the following
+  categories of changes: existing features, new features, heuristic
+  improvements, bug fixes, changes at the system level and to distributed
+  books, Emacs support, and experimental versions.  Each change is described in
+  just one category, though of course many changes could be placed in more than
+  one category.
+
+  ~st[CHANGES TO EXISTING FEATURES]
+
+  A fatal error now occurs if environment variable ~c[ACL2_CUSTOMIZATION] has a
+  value other than ~c[NONE] or the empty string, but is not the name of an
+  existing file.  Thanks to Harsh Raju Chamarthi for requesting such a change.
+
+  ~st[NEW FEATURES]
+
+  ~st[HEURISTIC IMPROVEMENTS]
+
+  ~st[BUG FIXES]
+
+  ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
+
+  ~st[EMACS SUPPORT]
+
+  ~st[EXPERIMENTAL VERSIONS]
+
+  ~/~/")
 
 (deflabel the-method
   :doc
@@ -19971,7 +20053,7 @@ Recent changes to this page</A>
 </TD>
 <TD>
 <!-- This relative URL is made absolute in distributed tar file -->
-<A HREF=\"installation/installation.html\">Obtaining and Installing Version 4.2</A>
+<A HREF=\"installation/installation.html\">Obtaining and Installing Version 4.3</A>
 </TD>
 
 </TR>
@@ -19981,7 +20063,7 @@ Recent changes to this page</A>
 <A HREF=\"~sg\"><IMG SRC=\"note02.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"~sg\">Differences from Version 4.1</A><A HREF=\"~s7\"> <IMG SRC=\"twarning.gif\"></A>
+<A HREF=\"~sg\">Differences from Version 4.2</A><A HREF=\"~s7\"> <IMG SRC=\"twarning.gif\"></A>
 </TD>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
 <A HREF=\"other-releases.html\">
@@ -20124,7 +20206,7 @@ with ACL2.
 
 <B>Note</B>: The documentation is available for reading in a Web
 browser (recommended), in Emacs Info, using the ACL2 <CODE>:DOC</CODE> command,
-or as a printed book (over 1800 pages).  These are available as follows.
+or as a printed book (about 1900 pages).  These are available as follows.
 
 <ul>
 
@@ -20234,7 +20316,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
-    note-4-2                            ;;; g
+    note-4-3                            ;;; g
     the-method                          ;;; h
     introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
     interesting-applications            ;;; j
@@ -24213,7 +24295,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   #-acl2-loop-only
   (progn
 
-; Parallelism wart: It may be a good idea to reset the parallelism variables
+; Parallelism wart: it may be a good idea to reset the parallelism variables
 ; in all #+acl2-par compilations before saving the image.
 
     (if (not (eql *ld-level* 0))
@@ -24267,7 +24349,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
   about ACL2~/
 
-  This is ACL2 Version 4.2, copyright (C) 2011 University of Texas at Austin,
+  This is ACL2 Version 4.3, copyright (C) 2011 University of Texas at Austin,
   authored by Matt Kaufmann and J Strother Moore.
 
   For past versions, see

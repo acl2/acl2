@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1202,7 +1202,7 @@
                  checkpoint-processors)
          (car h))
 
-; Parallelism wart: We haven't thought through how specious entries affect this
+; Parallelism wart: we haven't thought through how specious entries affect this
 ; function.  The following code is left as a hint at what might be needed.
 
 ;        ((or (and (consp (access history-entry (cadr h) :processor))
@@ -1314,10 +1314,6 @@
   (declare (ignorable state wrld)) ; actually ignored in #-acl2-par
   (prog2$
 
-; Parallelism wart: we considered trying to print in a manner more consistent
-; with waterfall-msg1 but have currently opt'd for this simpler solution.
-; However, maybe using waterfall-msg1 would be better in the long-run.
-
 ; Every branch of the cond below, with the exception of when cl is null,
 ; results in a key ACL2(p) checkpoint.  As such, it is reasonable to print the
 ; checkpoint at the very beginning of this function.
@@ -1375,6 +1371,16 @@
                                      :clause-set '(nil)
                                      :hint-settings nil)
                                pool))))
+      ((and do-not-induct-hint-val
+            (not (member-eq do-not-induct-hint-val '(t :otf :otf-flg-override)))
+            (not (assoc-eq :induct
+                           (access prove-spec-var pspv :hint-settings))))
+
+; In this case, we have seen a :DO-NOT-INDUCT name hint (where name isn't t)
+; that is not overridden by an :INDUCT hint.  We would like to give this clause
+; a :BY.  We can't do it here, as explained above.  So we will 'MISS instead.
+
+       (mv 'miss nil nil nil))
       ((and (not (access prove-spec-var pspv :otf-flg))
             (not (eq do-not-induct-hint-val :otf))
             (or
@@ -1414,7 +1420,7 @@
 ; assumptions created by forcing before reverting to the original goal still
 ; generated forcing rounds after the subsequent proof by induction.  When this
 ; bug was discovered we added code below to use delete-assumptions to remove
-; assumptions from the the tag-tree.  Note that we are not modifying the
+; assumptions from the tag-tree.  Note that we are not modifying the
 ; 'accumulated-ttree in state, so these assumptions still reside there; but
 ; since that ttree is only used for reporting rules used and is intended to
 ; reflect the entire proof attempt, this decision seems reasonable.
@@ -1472,23 +1478,6 @@
                                         *initial-clause-id*
                                         (access prove-spec-var pspv
                                                 :orig-hints)))))))))
-      ((and do-not-induct-hint-val
-            (not (member-eq do-not-induct-hint-val '(t :otf :otf-flg-override)))
-            (not (assoc-eq :induct
-                           (access prove-spec-var pspv :hint-settings))))
-
-; In this case, we have seen a :DO-NOT-INDUCT name hint (where name isn't t)
-; that is not overridden by an :INDUCT hint.  We would like to give this clause
-; a :BY.  We can't do it here, as explained above.  So we will 'MISS instead.
-
-       (mv 'miss nil nil nil))
-
-; Parallelism wart: it's unclear whether the branch of the conditional above
-; this comment or the #+acl2-par branch following it should come first.
-; :Mini-proveall breaks when the order is switched.  As of Jun 13, 2011, if you
-; trace push-clause, the relevant call and return of push-clause are search
-; results number 17 and 18.
-
       #+acl2-par
       ((and (serial-first-form-parallel-second-form@par nil t)
             (not (access prove-spec-var pspv :otf-flg))
@@ -1502,9 +1491,11 @@
            (add-to-tag-tree! 'abort-cause 'maybe-revert nil)
            (change prove-spec-var pspv
 
-; Parallelism wart: There may be a bug in ACL2(p) related to the comment above
+; Parallelism wart: there may be a bug in ACL2(p) related to the comment above
 ; (in this function's definition) that starts with "Before Version_2.6 we did
-; not modify the tag-tree here."
+; not modify the tag-tree here."  To fix this (likely) bug, don't reset the
+; tag-tree here -- just remove the ":tag-tree nil" -- and instead do it when we
+; convert a maybe-to-be-proved-by-induction to a to-be-proved-by-induction.
 
                    :tag-tree nil
                    :pool 
@@ -2022,16 +2013,10 @@
 
 ; Keep in sync with eval-clause-processor.
 
-; Parallelism wart: I leave the non-trivial differences between this function
-; and eval-clause-processor in comments, because I want to be able to easily
-; see what's missing from it.  I should remove the dead code once Kaufmann and
-; I have a look and discuss whether what I did is reasonable.
+; Parallelism wart: See the parallelism wart in ev-w-for-trans-eval.
 
-;  (revert-world-on-error
   (let ((wrld (w state))
         (cl-term (subst-var (kwote clause) 'clause term)))
-;     (protect-system-state-globals
-;      (pprogn
     (mv-let
      (erp trans-result)
 
@@ -2066,17 +2051,16 @@
                           term
                           nil)
                      nil))
-                (t (pprogn ; (set-w! wrld state)
-                    (cond ((not (term-list-listp val
-                                                 wrld))
-                           (mv (msg "The :CLAUSE-PROCESSOR hint~|~%  ~
-                                      ~Y01~%did not evaluate to a list of ~
-                                      clauses, but instead to~|~%  ~Y23~%~@4"
-                                    term nil
-                                    val nil
-                                    (non-term-list-listp-msg val wrld))
-                               nil))
-                          (t (value@par val)))))))))))))
+                (t (cond ((not (term-list-listp val
+                                                wrld))
+                          (mv (msg "The :CLAUSE-PROCESSOR hint~|~%  ~Y01~%did ~
+                                    not evaluate to a list of clauses, but ~
+                                    instead to~|~%  ~Y23~%~@4"
+                                   term nil
+                                   val nil
+                                   (non-term-list-listp-msg val wrld))
+                              nil))
+                         (t (value@par val))))))))))))
 
 (defun apply-top-hints-clause1 (temp cl-id cl pspv wrld state step-limit)
 
@@ -3193,7 +3177,7 @@
 (defun waterfall-update-gag-state@par (cl-id clause proc signal ttree pspv state)
   (declare (ignore cl-id clause proc signal ttree pspv state))
 
-; Parallelism wart: Consider causing an error when the user tries to enable gag
+; Parallelism wart: consider causing an error when the user tries to enable gag
 ; mode.  At the moment I'm unsure of the effects of returning two nils in this
 ; case.
 
@@ -6348,40 +6332,39 @@
 ; function must only consider the case where 'maybe-to-be-proved-by-induction
 ; tags are present, because push-clause[@par] handles all other cases.
 
+; If you change this function, evaluate the following form.  If the result is
+; an error, then either modify the form below or fix the change.
+
+; (assert$ 
+;  (and
+;   (not (abort-will-occur-in-pool '((maybe-to-be-proved-by-induction sub orig))))
+;   (abort-will-occur-in-pool '((maybe-to-be-proved-by-induction sub orig)
+;                               (to-be-proved-by-induction) 
+;                               (to-be-proved-by-induction)))
+;   (not (abort-will-occur-in-pool '((to-be-proved-by-induction))))
+;   (not (abort-will-occur-in-pool '((to-be-proved-by-induction)
+;                                    (maybe-to-be-proved-by-induction sub orig))))
+;   (not (abort-will-occur-in-pool '((maybe-to-be-proved-by-induction sub orig))))
+;   (not (abort-will-occur-in-pool '((to-be-proved-by-induction)
+;                                    (to-be-proved-by-induction)
+;                                    (to-be-proved-by-induction))))
+;   (abort-will-occur-in-pool '((maybe-to-be-proved-by-induction sub orig)
+;                               (to-be-proved-by-induction) 
+;                               (to-be-proved-by-induction)
+;                               (maybe-to-be-proved-by-induction sub2 orig2)))
+;   (abort-will-occur-in-pool '((to-be-proved-by-induction a)
+;                               (maybe-to-be-proved-by-induction sub orig)
+;                               (to-be-proved-by-induction b) 
+;                               (to-be-proved-by-induction c)
+;                               (maybe-to-be-proved-by-induction sub2 orig2))))
+;  "abort-will-occur-in-pool tests passed")
+
   (cond ((atom pool)
          nil)
         ((and (equal (caar pool) 'maybe-to-be-proved-by-induction)
               (consp (cdr pool)))
          t)
         (t (abort-will-occur-in-pool (cdr pool)))))
-
-; Parallelism wart: place the following example usages of
-; abort-will-occur-in-pool in a book.  Place a reference to that book inside
-; the definition of abort-will-occur-in-pool.
-
-;; (assert$ 
-;;  (and
-;;   (not (abort-will-occur-in-pool '((maybe-to-be-proved-by-induction sub orig))))
-;;   (abort-will-occur-in-pool '((maybe-to-be-proved-by-induction sub orig)
-;;                               (to-be-proved-by-induction) 
-;;                               (to-be-proved-by-induction)))
-;;   (not (abort-will-occur-in-pool '((to-be-proved-by-induction))))
-;;   (not (abort-will-occur-in-pool '((to-be-proved-by-induction)
-;;                                    (maybe-to-be-proved-by-induction sub orig))))
-;;   (not (abort-will-occur-in-pool '((maybe-to-be-proved-by-induction sub orig))))
-;;   (not (abort-will-occur-in-pool '((to-be-proved-by-induction)
-;;                                    (to-be-proved-by-induction)
-;;                                    (to-be-proved-by-induction))))
-;;   (abort-will-occur-in-pool '((maybe-to-be-proved-by-induction sub orig)
-;;                               (to-be-proved-by-induction) 
-;;                               (to-be-proved-by-induction)
-;;                               (maybe-to-be-proved-by-induction sub2 orig2)))
-;;   (abort-will-occur-in-pool '((to-be-proved-by-induction a)
-;;                               (maybe-to-be-proved-by-induction sub orig)
-;;                               (to-be-proved-by-induction b) 
-;;                               (to-be-proved-by-induction c)
-;;                               (maybe-to-be-proved-by-induction sub2 orig2))))
-;;  "abort-will-occur-in-pool tests passed")
 
 #+acl2-par
 (defrec maybe-to-be-proved-by-induction
@@ -6418,6 +6401,51 @@
 ; thinking about whether we are in an abort case to the function
 ; abort-will-occur-in-pool.
 
+; If you change this function, evaluate the following form.  If the result is
+; an error, then either modify the form below or fix the change.
+
+; (assert$ 
+;  (and
+;   (equal (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig)))
+;          '(sub))
+;   (equal
+;    (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig)
+;                               (to-be-proved-by-induction) 
+;                               (to-be-proved-by-induction)))
+;    '(orig))
+;   (equal
+;    (convert-maybes-to-tobes '((to-be-proved-by-induction)))
+;    '((to-be-proved-by-induction)))
+;   (equal (convert-maybes-to-tobes '((to-be-proved-by-induction)
+;                                     (maybe-to-be-proved-by-induction sub orig)))
+;          '((to-be-proved-by-induction)
+;            sub))
+;   (equal (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig)))
+;          '(sub))
+;   (equal (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig)
+;                                     (to-be-proved-by-induction) 
+;                                     (to-be-proved-by-induction)
+;                                     (maybe-to-be-proved-by-induction sub2 orig2)))
+;          '(orig))
+;   (equal (convert-maybes-to-tobes '((to-be-proved-by-induction a)
+;                                     (maybe-to-be-proved-by-induction sub orig)
+;                                     (to-be-proved-by-induction b) 
+;                                     (to-be-proved-by-induction c)
+;                                     (maybe-to-be-proved-by-induction sub2
+;                                                                      orig2)))
+;          '(orig))
+;   (equal (convert-maybes-to-tobes
+;           '((maybe-to-be-proved-by-induction sub1 orig)
+;             (to-be-proved-by-induction a)
+;             (maybe-to-be-proved-by-induction sub2 orig)
+;             (to-be-proved-by-induction b) 
+;             (to-be-proved-by-induction c)
+;             (maybe-to-be-proved-by-induction sub3 orig)))
+;          '(orig))
+;  )
+;  "convert-maybes-to-tobes tests worked."
+; )
+
   (cond ((atom pool)
          nil)
         ((abort-will-occur-in-pool pool)
@@ -6430,57 +6458,6 @@
                        (assoc-eq 'maybe-to-be-proved-by-induction pool)
                        :original)))
         (t (convert-maybes-to-tobe-subgoals pool))))
-
-; Parallelism wart: place the following example usages of
-; convert-maybes-to-tobes in a book.  Place a reference to that book inside
-; the definition of convert-maybes-to-tobes.
-
-;; (assert$ 
-;;  (and
-;;   (equal (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig)))
-;;          '(sub))
-;;   (equal
-;;    (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig)
-;;                               (to-be-proved-by-induction) 
-;;                               (to-be-proved-by-induction)))
-;;    '(orig))
-;;   (equal
-;;    (convert-maybes-to-tobes '((to-be-proved-by-induction)))
-;;    '((to-be-proved-by-induction)))
-;;   (equal (convert-maybes-to-tobes '((to-be-proved-by-induction)
-;;                                     (maybe-to-be-proved-by-induction sub orig)))
-;;          '((to-be-proved-by-induction)
-;;            sub))
-;;   (equal (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig)))
-;;          '(sub))
-;;   (equal (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig)
-;;                                     (to-be-proved-by-induction) 
-;;                                     (to-be-proved-by-induction)
-;;                                     (maybe-to-be-proved-by-induction sub2 orig2)))
-;;          '(orig))
-;;   (equal (convert-maybes-to-tobes '((to-be-proved-by-induction a)
-;;                                     (maybe-to-be-proved-by-induction sub orig)
-;;                                     (to-be-proved-by-induction b) 
-;;                                     (to-be-proved-by-induction c)
-;;                                     (maybe-to-be-proved-by-induction sub2
-;;                                                                      orig2)))
-;;          '(orig))
-
-;; ; We could require the following assertion, but since orig3==orig, we don't
-;; ; mind that our function returns orig3 instead of orig.
-
-;;   ;; (equal (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig3)
-;;   ;;                                   (to-be-proved-by-induction a)
-;;   ;;                                   (maybe-to-be-proved-by-induction sub orig)
-;;   ;;                                   (to-be-proved-by-induction b) 
-;;   ;;                                   (to-be-proved-by-induction c)
-;;   ;;                                   (maybe-to-be-proved-by-induction sub2
-;;   ;;                                                                    orig2)))
-;;   ;;        '(orig))
-
-;;   )
-;;  "convert-maybes-to-tobes tests worked."
-;; )
 
 #+acl2-par
 (defun convert-maybes-to-tobes-in-pspv (pspv)
@@ -6534,7 +6511,11 @@
   (let ((curr-ht (assoc-eq name *waterfall-parallelism-timings-ht-alist*)))
     (cond ((null curr-ht)
            (let ((new-ht (make-hash-table :test 'equal :size (expt 2 13)
-                                          :shared t)))
+
+; Parallelism wart: we will need to lock these hashtable operations manually in
+; Lispworks and SBCL.
+
+                                          #+ccl :shared #+ccl t)))
              (setf *waterfall-parallelism-timings-ht-alist*
                    (acons name
                           new-ht
@@ -7170,13 +7151,6 @@
                  (io?@par proof-tree nil state
                           (choice cl-id)
                           (pprogn@par
-
-; Parallelism wart: check for uses of serial-only@par and parallel-only@par and
-; see if they can be removed by changing the functions under them.  For
-; example, in the form below, we once wrapped a call to "increment-timer" with
-; "serial-only@par."  Instead, we now define increment-timer@par to either
-; perform the increment or just return nil.
-
                            (increment-timer@par 'prove-time state)
                            (install-disjunct-into-proof-tree cl-id (car choice) state)
                            (increment-timer@par 'proof-tree-time state)))
@@ -7261,7 +7235,7 @@
 ; assumptions, etc., in the :tag-tree).  In this case we terminate the sweep
 ; across the disjuncts.
 
-; Parallelism wart: You'll get a runtime error if pprogn@par forms are
+; Parallelism wart: you'll get a runtime error if pprogn@par forms are
 ; evaluated that have state returned by other than the last form, such as the
 ; call below of waterfall-or-hit-msg-b.  Example: (WORMHOLE1 'COMMENT-WINDOW-IO
 ; 'NIL '(PPROGN (PRINC$ 17 *STANDARD-CO* STATE) 17) 'NIL)
@@ -7862,10 +7836,6 @@
          (waterfall1-lst@par-pseudo-parallel n parent-cl-id clauses hist pspv
                                              jppl-flg hints suppress-print ens
                                              wrld ctx state step-limit))
-
-; Parallelism wart: remove this call to er, and make pseudo-parallel the
-; otherwise case.
-
         (otherwise 
          (prog2$ (er hard 'waterfall1-lst@par
                      "Implementation error in waterfall1-lst@par.  Please ~
