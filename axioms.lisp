@@ -28043,7 +28043,7 @@
             #+hons
             (cond (*print-circle* ; hence *print-circle-stream* is non-nil
 
-; It might be useful for the user to be able to write #\z instead of #\Z.  This
+; It might be useful for the user to be able to write #\Y instead of #\Z.  This
 ; might be keyed off a state global instead of *print-circle*, since
 ; *print-circle* is about structure sharing with #n= and #n#, as was formerly
 ; managed in part through Version_4.3 by using compact-print-stream, which is
