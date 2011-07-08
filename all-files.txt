@@ -698,8 +698,12 @@ books/centaur/vl/checkers:
 acl2-customization.lsp
 cert.acl2
 checkers.lisp
+condcheck.lisp
 duplicate-detect.lisp
+leftright.lisp
 multidrive-detect.lisp
+qmarksize-check.lisp
+selfassigns.lisp
 skip-detect.lisp
 typo-detect.lisp
 use-set.lisp
