@@ -177,13 +177,10 @@ cases.</p>"
                                     (with-local-ps (vl-pp-exprlist dupes)))
                         :fatalp nil
                         :fn 'vl-expr-leftright-check)
-                       ;; This might result in redundant warnings, but that's
-                       ;; probably fine.  Unless there are a whole lot of
-                       ;; dupes, the warnings should be identical and will get
-                       ;; cleaned up with the warning-cleaning stuff.  An
-                       ;; alternative would be to recur on subexprs, but then
-                       ;; we'd have to argue about the acl2-count of
-                       ;; collect-ac-args.... ugh.
+                       ;; This can result in a pile of redundant warnings, but
+                       ;; whatever.  A better alternative would be to recur on
+                       ;; subexprs, but then we'd have to argue about the
+                       ;; acl2-count of collect-ac-args.... ugh.
                        (vl-exprlist-leftright-check args ctx))))
              ;; Else, no dupes; fine, keep going.
              (vl-exprlist-leftright-check args ctx)))
