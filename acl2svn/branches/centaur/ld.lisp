@@ -18126,6 +18126,14 @@
 
   ~st[EXPERIMENTAL VERSIONS]
 
+  Among the enchancements for the HONS version (~pl[hons-and-memoization]) are
+  the following.~bq[]
+
+  The compact-print code has been replaced by new serialization routines.  This
+  may improve performance when including books that contain ~ilc[make-event]s
+  that expand to very large constants.  You can also now save objects to disk
+  without going into raw lisp; ~pl[serialize] for details.~eq[]
+
   ~/~/")
 
 (deflabel the-method
