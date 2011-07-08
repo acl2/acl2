@@ -17149,6 +17149,27 @@
                     (cons 'world wrld)
                     (cons 'ctx ctx))))
          (er-progn@par
+
+; Parallelism wart: Why doesn't the following cause an error when we try to
+; pass in a term that we think has output signature of a value triple?  (More
+; generally, see the parallelism wart just above the Essay on the Design of
+; Custom Keyword Hints.)  For example, try the following.  (You may see a
+; parallelism hazard, which might or might not be relevant; but what currently
+; seems surprising is that we don't even see a traced call of xtrans-eval@par
+; with trans-flg = t.)  Aha -- the answer is that someone else is calling
+; xtrans-eval@par, not this function.  Hmmm, needs further investigation.
+
+; cd <your_acl2>
+; cd books/arithmetic-5/lib/basic-ops/
+; <start_your_acl2p> # /projects/acl2/devel/ccl-saved_acl2p
+; (set-waterfall-parallelism :pseudo-parallel)
+; (ld "dynamic-e-d.lisp")
+; (trace$ xtrans-eval@par
+;         custom-keyword-hint-interpreter1
+;         custom-keyword-hint-interpreter1@par)
+; (thm (equal (append (append x y) x y) (append x y x y))
+;      :hints (("Goal" :dynamic-e/d nil :do-not-induct t)))
+
           (xtrans-eval@par uterm2
                            checker-bindings
                            t ; trans-flg = t
@@ -17801,15 +17822,15 @@
                    (keyword-value-listp (cdr pair))))
          (er@par soft ctx
            "Each hint is supposed to be a list of the form (str :key1 val1 ~
-             ... :keyn valn), but a proposed hint, ~x0, is not.  See :DOC ~
-             hints."
+            ... :keyn valn), but a proposed hint, ~x0, is not.  See :DOC ~
+            hints."
            pair))
         (t (let ((cl-id (parse-clause-id (car pair))))
              (cond
               ((null cl-id)
                (er@par soft ctx
-                 "The object ~x0 is not a goal-spec.  See :DOC hints and ~
-                   :DOC goal-spec."
+                 "The object ~x0 is not a goal-spec.  See :DOC hints and :DOC ~
+                  goal-spec."
                  (car pair)))
               ((assoc-keyword :error (cdr pair))
 

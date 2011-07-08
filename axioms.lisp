@@ -42050,6 +42050,10 @@ Lisp definition."
              (or (stringp val)
                  (null val))))
 
+; Parallelism wart: Finish dealing with custom keyword hints, and update the
+; following essay as necessary.  See also the parallelism wart in
+; custom-keyword-hint-interpreter1.
+
 ; Essay on the Design of Custom Keyword Hints
 
 ; A custom keyword hint is installed by adding a pair to the
