@@ -555,14 +555,33 @@
   (declare (ignorable state))
   (pprogn@par
    (cond ((eq step-limit :skip) (state-mac@par))
-         (t (f-put-global@par 'last-step-limit step-limit state)))
+         (t
+
+; Parallelism no-fix: the following call of (f-put-global@par 'last-step-limit
+; ...) may be overridden by another similar call performed by a concurrent
+; thread.  But we can live with that because step-limits do not affect
+; soundness.
+
+          (f-put-global@par 'last-step-limit step-limit state)))
    (cond
     ((eq ttree nil) (value@par nil))
     (t (pprogn@par
         (with-ttree-lock
+
+; In general, it is dangerous to set the same state global in two different
+; threads, because the first setting is blown away by the second.  But here, we
+; are _accumulating_ into a state global (namely, 'accumulated-ttree), and we
+; don't care about the order in which the accumulation occurs (even though such
+; nondeterminism isn't explained logically -- after all, we are modifying state
+; without passing it in, so we already are punting on providing a logical story
+; here).  Our only concern is that two such accumulations interfere with each
+; other, but the lock just above takes care of that (i.e., provides mutual
+; exclusion).
+
          (f-put-global@par 'accumulated-ttree
                            (cons-tag-trees ttree
-                                           (f-get-global 'accumulated-ttree state))
+                                           (f-get-global 'accumulated-ttree
+                                                         state))
                            state))
         (value@par ttree))))))
 

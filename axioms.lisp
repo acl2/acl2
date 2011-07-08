@@ -24911,6 +24911,8 @@
     with-prover-step-limit
     waterfall1-wrapper@par ; for #+acl2-par
     with-waterfall-parallelism-timings ; for #+acl2-par
+    with-enabled-parallelism-hazard-warnings ; for #+acl2-par
+    warn-about-parallelism-hazard ; for #+acl2-par
     ))
 
 (defmacro with-live-state (form)
@@ -25951,8 +25953,11 @@
 #+acl2-par
 (defmacro f-put-global@par (key value st)
 
-; Warning: This macro is used to modify the live ACL2 state, without passing
-; state back!
+; WARNING: Every use of this macro deserves an explanation that addresses the
+; following concern!  This macro is used to modify the live ACL2 state, without
+; passing state back!  This is particularly dangerous if we are calling
+; f-put-global@par in two threads that are executing concurrently, since the
+; second use will override the first.
 
 ; Parallelism wart: probably should make this macro untouchable so that
 ; programmers can't modify the system state in arbitrary ways.
@@ -26127,6 +26132,65 @@
                    (state-global-let*-cleanup (cdr bindings)
                                               (1+ index)))))))
 
+#+(and acl2-par (not acl2-loop-only))
+(defparameter *parallelism-hazard-warnings-enabled*
+
+; If *parallelism-hazard-warnings-enabled* is non-nil, then any operation known
+; to cause problems in a parallel environment will print a warning.  For
+; example, we know that calling state-global-let* in any environment where
+; parallel execution is enabled could cause problems.  See the use of
+; with-enabled-parallelism-hazard-warnings inside waterfall and the use of
+; warn-about-parallelism-hazard inside state-global-let* for how we warn the
+; user of such a potential pitfalls.
+
+; Here is a simple example that demonstrates their use:
+
+; (set-state-ok t)
+
+; (skip-proofs
+;  (defun foo (state)
+;    (declare (xargs :guard t))
+;    (state-global-let* 
+;     ((x 3))
+;     (value (f-get-global 'x state)))))
+ 
+; (skip-proofs
+;  (defun bar (state) 
+;    (declare (xargs :guard t))
+;    (with-enabled-parallelism-hazard-warnings
+;     (foo state))))
+
+; (set-waterfall-parallelism :full)
+
+; (bar state) ; prints the warning
+
+  nil)
+
+(defmacro with-enabled-parallelism-hazard-warnings (body)
+  #+(and acl2-par (not acl2-loop-only))
+  `(let ((*parallelism-hazard-warnings-enabled* t))
+     ,body)
+  #-(and acl2-par (not acl2-loop-only))
+  body)
+
+(defmacro warn-about-parallelism-hazard (call body)
+  #-(and acl2-par (not acl2-loop-only))
+  (declare (ignore call))
+  #+(and acl2-par (not acl2-loop-only))
+  `(progn
+     (when (and *parallelism-hazard-warnings-enabled*
+                (waterfall-parallelism))
+       (format t
+               "~%WARNING: A macro or function has been called that is not~%~
+                thread-safe.  Please email this message, including the~%~
+                offending call just below, to the ACL2 implementors.~%")
+       (let ((*print-length* 10)
+             (*print-level* 10))
+         (pprint ',call)))
+     ,body)
+  #-(and acl2-par (not acl2-loop-only))
+  body)
+
 (defmacro state-global-let* (bindings body)
 
 ; NOTE: In April 2010 we discussed the possibility that we could simplify the
@@ -26168,20 +26232,22 @@
   (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
                               (no-duplicatesp-equal (strip-cars bindings)))))
 
-  `(let ((state-global-let*-cleanup-lst
-          (list ,@(state-global-let*-get-globals bindings))))
-     ,@(and (null bindings)
-            '((declare (ignore state-global-let*-cleanup-lst))))
-     (acl2-unwind-protect
-      "state-global-let*"
-      (pprogn ,@(state-global-let*-put-globals bindings)
-              (check-vars-not-free (state-global-let*-cleanup-lst) ,body))
-      (pprogn
-       ,@(state-global-let*-cleanup bindings 0)
-       state)
-      (pprogn
-       ,@(state-global-let*-cleanup bindings 0)
-       state))))
+  `(warn-about-parallelism-hazard
+    '(state-global-let* ,bindings ,body)
+    (let ((state-global-let*-cleanup-lst
+           (list ,@(state-global-let*-get-globals bindings))))
+      ,@(and (null bindings)
+             '((declare (ignore state-global-let*-cleanup-lst))))
+      (acl2-unwind-protect
+       "state-global-let*"
+       (pprogn ,@(state-global-let*-put-globals bindings)
+               (check-vars-not-free (state-global-let*-cleanup-lst) ,body))
+       (pprogn
+        ,@(state-global-let*-cleanup bindings 0)
+        state)
+       (pprogn
+        ,@(state-global-let*-cleanup bindings 0)
+        state)))))
 
 #-acl2-loop-only
 (defmacro state-free-global-let* (bindings body)
@@ -31865,6 +31931,8 @@
     checkpoint-world
 
     let-beta-reduce
+
+    f-put-global@par ; for #+acl2-par (modifies state under the hood)
 
 ; We briefly included maybe-install-acl2-defaults-table, but that defeated the
 ; ability to call :puff.  It now seems unnecessary to include
@@ -39999,7 +40067,8 @@
 
 ; Parallelism no-fix: we haven't analyzed the code to determine whether the
 ; following call of (f-put-global@par 'last-step-limit ...) will be overridden
-; by another similar call performed by another thread.
+; by another similar call performed by a concurrent thread.  But we can live
+; with that because step-limits do not affect soundness.
 
             (f-put-global@par 'last-step-limit step-limit state)
             (mv-let (nullp temp)

@@ -7884,22 +7884,23 @@
      (sl-let (signal new-pspv new-jppl-flg state)
              #+acl2-par
              (if (waterfall-parallelism)
-                 (mv-let (step-limit signal new-pspv new-jppl-flg)
-                         (waterfall1-lst@par (cond ((null clauses) 0)
-                                                   ((null (cdr clauses))
-                                                    'settled-down-clause)
-                                                   (t (length clauses)))
-                                             parent-clause-id
-                                             clauses nil
-                                             pspv nil hints
-                                             (and (eql forcing-round 0)
-                                                  (null pool-lst)) ; suppress-print
-                                             ens wrld ctx state step-limit)
-                         (mv step-limit
-                             signal 
-                             (convert-maybes-to-tobes-in-pspv new-pspv)
-                             new-jppl-flg
-                             state))
+                 (with-enabled-parallelism-hazard-warnings
+                  (mv-let (step-limit signal new-pspv new-jppl-flg)
+                          (waterfall1-lst@par (cond ((null clauses) 0)
+                                                    ((null (cdr clauses))
+                                                     'settled-down-clause)
+                                                    (t (length clauses)))
+                                              parent-clause-id
+                                              clauses nil
+                                              pspv nil hints
+                                              (and (eql forcing-round 0)
+                                                   (null pool-lst)) ; suppress-print
+                                              ens wrld ctx state step-limit)
+                          (mv step-limit
+                              signal 
+                              (convert-maybes-to-tobes-in-pspv new-pspv)
+                              new-jppl-flg
+                              state)))
                (sl-let (signal new-pspv new-jppl-flg state)
                        (waterfall1-lst (cond ((null clauses) 0)
                                              ((null (cdr clauses))
