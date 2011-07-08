@@ -30,9 +30,15 @@
 (include-book "xf-lint-stmt-rewrite")
 (include-book "xf-remove-toohard")
 (include-book "xf-undefined-names")
-(include-book "../checkers/multidrive-detect")
+
+(include-book "../checkers/condcheck")
 (include-book "../checkers/duplicate-detect")
+(include-book "../checkers/leftright")
+(include-book "../checkers/multidrive-detect")
+(include-book "../checkers/qmarksize-check")
+(include-book "../checkers/selfassigns")
 (include-book "../checkers/skip-detect")
+
 (include-book "../loader/loader")
 (include-book "../transforms/cn-hooks")
 (include-book "../transforms/xf-argresolve")
@@ -150,6 +156,8 @@
 
        (- (cw "~%vl-lint: initial processing...~%"))
        (mods (cwtime (vl-modulelist-duplicate-detect mods)))
+       (mods (cwtime (vl-modulelist-condcheck mods)))
+       (mods (cwtime (vl-modulelist-leftright-check mods)))
        (mods (cwtime (vl-modulelist-drop-missing-submodules mods)))
        (mods (cwtime (vl-modulelist-make-implicit-wires mods)))
        (mods (cwtime (vl-modulelist-add-undefined-names mods)))
@@ -201,6 +209,7 @@
        (- (cw "~%vl-lint: processing ranges, statements...~%"))
        (mods (cwtime (vl-modulelist-rangeresolve mods)))
        (mods (cwtime (vl-modulelist-selresolve mods)))
+       (mods (cwtime (vl-modulelist-check-selfassigns mods)))
        (mods (cwtime (vl-modulelist-lint-stmt-rewrite mods)))
        (mods (cwtime (vl-modulelist-stmtrewrite mods 1000)))
        (mods (cwtime (vl-modulelist-hid-flatten mods)))
@@ -215,6 +224,7 @@
        (- (cw "~%vl-lint: processing expressions...~%"))
        (mods (cwtime (vl-modulelist-oprewrite mods)))
        (mods (cwtime (vl-modulelist-exprsize mods)))
+       (mods (cwtime (vl-modulelist-qmarksize-check mods)))
 
        (- (cw "~%vl-lint: finding unused/unset wires...~%"))
        ;; BOZO this probably doesn't quite work here due to replicate not having been done
@@ -386,6 +396,13 @@
            :vl-warn-function
            :vl-warn-taskdecl
            :vl-unsupported-block
+
+           ;; smells
+           :vl-warn-qmark-width
+           :vl-warn-qmark-const
+           :vl-warn-leftright
+           :vl-warn-selfassign
+           :vl-warn-partselect-same
 
            ;; multidrive
            :vl-warn-multidrive
@@ -627,6 +644,27 @@ wide addition instead of a 10-bit wide addition.")))
                                  *use-set-warnings*
                                  walist)))
 
+
+       (state
+        (with-ps-file
+         "vl-smells.txt"
+         (vl-ps-update-autowrap-col 68)
+         (vl-lint-print-warnings "vl-smells.txt"
+                                 "Code-Smell Warnings"
+                                 '(:vl-warn-qmark-width
+                                   :vl-warn-qmark-const
+                                   :vl-warn-leftright
+                                   :vl-warn-selfassign)
+                                 walist)))
+
+       (state
+        (with-ps-file
+         "vl-smells-minor.txt"
+         (vl-ps-update-autowrap-col 68)
+         (vl-lint-print-warnings "vl-smells-minor.txt"
+                                 "Minor Code-Smell Warnings"
+                                 '(:vl-warn-partselect-same)
+                                 walist)))
 
        (state
         (with-ps-file

@@ -3297,7 +3297,6 @@ context-determined expressions."
              (c (third args))
              ((mv a-successp warnings a-prime)
               (vl-expr-size nil a mod ialist elem warnings))
-             ;; BOZO consider warning if a-prime doesn't have width 1?
              ((mv b-successp warnings b-prime)
               (vl-expr-expandsizes b finalwidth finaltype mod ialist elem warnings))
              ((mv c-successp warnings c-prime)

@@ -234,11 +234,16 @@ mutual recursion as simple as possible.</p>"
     (case op
       (:vl-qmark
        (b* (((list a b c) args)
-            (or-a (make-vl-nonatom :op :vl-unary-bitor :args (list a))))
+            (or-a (make-vl-nonatom :op :vl-unary-bitor
+                                   :args (list a)
+                                   :atts (acons "VL_CONDITIONAL_FIX" nil nil))))
 
            (if (vl-zatom-p b)
                ;; a ? z : c -->  ~(|a) ? c : z
-               (let ((nor-a (make-vl-nonatom :op :vl-unary-bitnot :args (list or-a))))
+               (let ((nor-a (make-vl-nonatom :op :vl-unary-bitnot
+                                             :args (list or-a)
+                                             :atts (acons "VL_CONDITIONAL_FIX" nil nil)
+                                             )))
                  (mv warnings (make-vl-nonatom :op :vl-qmark
                                                :atts atts
                                                :args (list nor-a c b))))

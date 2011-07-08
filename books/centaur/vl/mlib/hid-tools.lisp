@@ -23,15 +23,6 @@
 (local (include-book "../util/arithmetic"))
 
 
-(defthm acl2-count-of-vl-nonatom->args-when-vl-nonatom->op
-  ;; BOZO move to parsetree
-  ;; This is a funny and weird rule, which is occasionally useful in avoiding
-  ;; artificial termination checks for functions that recur over expressions.
-  (implies (vl-nonatom->op x)
-           (not (equal (acl2-count (vl-nonatom->args x))
-                       (acl2-count x))))
-  :hints(("Goal" :in-theory (enable vl-nonatom->op vl-nonatom->args))))
-
 
 ;; BOZO consider automatically generating rules like these in defaggregate
 ;; when illegible mode is used.  Is it too expensive?  Do they drive proofs

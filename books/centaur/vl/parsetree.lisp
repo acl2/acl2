@@ -879,7 +879,9 @@ vl-atomguts-p) is already known."
     (vl-op-p op)
     :rule-classes ((:rewrite)
                    (:type-prescription
-                    :corollary (implies (force (vl-nonatom-p x))
+                    ;; I previously forced this, but it got irritating because it
+                    ;; kept screwing up termination proofs.  Consider case-split?
+                    :corollary (implies (vl-nonatom-p x)
                                         (and (symbolp (vl-nonatom->op x))
                                              (not (equal (vl-nonatom->op x) t))
                                              (not (equal (vl-nonatom->op x) nil)))))))
@@ -890,7 +892,9 @@ vl-atomguts-p) is already known."
     (vl-maybe-exprtype-p finaltype)
     :rule-classes ((:rewrite)
                    (:type-prescription
-                    :corollary (implies (force (vl-nonatom-p x))
+                    ;; I previously forced this, but maybe that's a bad idea for
+                    ;; the same reasons as vl-op-p-of-vl-nonatom->op?
+                    :corollary (implies (vl-nonatom-p x)
                                         (and (symbolp (vl-nonatom->finaltype x))
                                              (not (equal (vl-nonatom->finaltype x) t))))))))
   :parents (vl-expr-p)
@@ -906,6 +910,14 @@ vl-atomguts-p) is already known."
                    (acl2-count x))))
   :hints(("Goal" :in-theory (enable vl-nonatom->args)))
   :rule-classes ((:rewrite) (:linear)))
+
+(defthm acl2-count-of-vl-nonatom->args-when-vl-nonatom->op
+  ;; This is a funny rule that is occasionally useful in avoiding artificial
+  ;; termination checks for functions that recur over expressions.
+  (implies (vl-nonatom->op x)
+           (not (equal (acl2-count (vl-nonatom->args x))
+                       (acl2-count x))))
+  :hints(("Goal" :in-theory (enable vl-nonatom->op vl-nonatom->args))))
 
 (defthm acl2-count-of-vl-nonatom->atts
   (and (<= (acl2-count (vl-nonatom->atts x))
