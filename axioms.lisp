@@ -24911,7 +24911,7 @@
     with-prover-step-limit
     waterfall1-wrapper@par ; for #+acl2-par
     with-waterfall-parallelism-timings ; for #+acl2-par
-    with-enabled-parallelism-hazard-warnings ; for #+acl2-par
+    with-possible-parallelism-hazards ; for #+acl2-par
     warn-about-parallelism-hazard ; for #+acl2-par
     ))
 
@@ -25125,6 +25125,7 @@
     (more-doc-min-lines . 35)
     (more-doc-state . nil)
     (parallel-evaluation-enabled . nil)
+    (parallelism-hazards-enabled . nil) ; should be one of nil, :warn, or :error
     (pc-erp . nil)
     (pc-output . nil)
     (pc-print-macroexpansion-flg . nil)
@@ -26130,13 +26131,14 @@
                                               (1+ index)))))))
 
 #+(and acl2-par (not acl2-loop-only))
-(defparameter *parallelism-hazard-warnings-enabled*
+(defparameter *possible-parallelism-hazards*
 
-; If *parallelism-hazard-warnings-enabled* is non-nil, then any operation known
-; to cause problems in a parallel environment will print a warning.  For
-; example, we know that calling state-global-let* in any environment where
-; parallel execution is enabled could cause problems.  See the use of
-; with-enabled-parallelism-hazard-warnings inside waterfall and the use of
+; If *possible-parallelism-hazards* is non-nil and state global
+; 'parallelism-hazards-enabled is non-nil, then any operation known to cause
+; problems in a parallel environment will print a warning (and maybe cause an
+; error).  For example, we know that calling state-global-let* in any
+; environment where parallel execution is enabled could cause problems.  See
+; the use of with-possible-parallelism-hazards inside waterfall and the use of
 ; warn-about-parallelism-hazard inside state-global-let* for how we warn the
 ; user of such a potential pitfalls.
 
@@ -26154,7 +26156,7 @@
 ; (skip-proofs
 ;  (defun bar (state) 
 ;    (declare (xargs :guard t))
-;    (with-enabled-parallelism-hazard-warnings
+;    (with-possible-parallelism-hazards
 ;     (foo state))))
 
 ; (set-waterfall-parallelism :full)
@@ -26163,9 +26165,9 @@
 
   nil)
 
-(defmacro with-enabled-parallelism-hazard-warnings (body)
+(defmacro with-possible-parallelism-hazards (body)
   #+(and acl2-par (not acl2-loop-only))
-  `(let ((*parallelism-hazard-warnings-enabled* t))
+  `(let ((*possible-parallelism-hazards* t))
      ,body)
   #-(and acl2-par (not acl2-loop-only))
   body)
@@ -26175,15 +26177,23 @@
   (declare (ignore call))
   #+(and acl2-par (not acl2-loop-only))
   `(progn
-     (when (and *parallelism-hazard-warnings-enabled*
-                (waterfall-parallelism))
+     (when (and *possible-parallelism-hazards*
+                (waterfall-parallelism)
+                (f-get-global 'parallelism-hazards-enabled *the-live-state*))
        (format t
                "~%WARNING: A macro or function has been called that is not~%~
                 thread-safe.  Please email this message, including the~%~
                 offending call just below, to the ACL2 implementors.~%")
        (let ((*print-length* 10)
              (*print-level* 10))
-         (pprint ',call)))
+         (pprint ',call))
+       (format t
+               "~%~%To disable the above warning, issue the form:~%~%~
+                ~s~%~%"
+               '(f-put-global 'parallelism-hazard-enabled nil state))
+       (when (eq (f-get-global 'parallelism-hazards-enabled *the-live-state*)
+                 :error)
+         (error "Encountered above parallelism hazard")))
      ,body)
   #-(and acl2-par (not acl2-loop-only))
   body)
@@ -26222,9 +26232,10 @@
 ; Note: This function is a generalization of the now obsolete
 ; WITH-STATE-GLOBAL-BOUND.
 
-; Parallelism wart: use of this macro in a parallel environment is a terrible
-; idea.  It might work, because maybe no variables are rebound that are changed
-; inside the waterfall, but there should be an observation-cw warning printed.
+; We call warn-about-parallelism-hazard, because use of this macro in a
+; parallel environment is a terrible idea.  It might work, because maybe no
+; variables are rebound that are changed inside the waterfall, but we, the
+; developers, want to know about any such rebinding.
 
   (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
                               (no-duplicatesp-equal (strip-cars bindings)))))
@@ -26249,10 +26260,6 @@
 #-acl2-loop-only
 (defmacro state-free-global-let* (bindings body)
 
-; Parallelism wart: look for calls of this macro, and make sure that when a
-; child thread starts processing, we arrange that it binds corresponding values
-; from the parent.
-
 ; This raw Lisp macro is a variant of state-global-let* that should be used
 ; only when state is *not* lexically available, or at least not a formal
 ; parameter of the enclosing function or not something we care about tracking
@@ -26264,6 +26271,13 @@
 ; State-free-global-let* provides a nice alternative to state-global-let* when
 ; we want to avoid involving the acl2-unwind-protect mechanism, for example
 ; during parallel evaluation.
+
+; Comment for #+acl2-par: When using state-free-global-let* inside functions
+; that might execute in parallel (for example, functions that occur inside the
+; waterfall), consider modifying macro mt-future to cause child threads to
+; inherit these variables' values from their parent threads.  See how we
+; handled safe-mode and gc-on in macro mt-future for examples of how to cause
+; such inheritance to occur.
 
   (cond
    ((null bindings) body)

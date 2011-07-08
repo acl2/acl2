@@ -7884,7 +7884,7 @@
      (sl-let (signal new-pspv new-jppl-flg state)
              #+acl2-par
              (if (waterfall-parallelism)
-                 (with-enabled-parallelism-hazard-warnings
+                 (with-possible-parallelism-hazards
                   (mv-let (step-limit signal new-pspv new-jppl-flg)
                           (waterfall1-lst@par (cond ((null clauses) 0)
                                                     ((null (cdr clauses))
