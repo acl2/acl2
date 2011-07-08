@@ -43,28 +43,41 @@ instructions for how to obtain CCL.")
 #+(or (and sbcl sb-thread) ccl lispworks)
 (push :acl2-mv-as-values *features*)
 
-; Essay on Parallelism, Parallelism Warts, and Parallelism No-fixes
+; Essay on Parallelism, Parallelism Warts, Parallelism No-fixes, and
+; Parallelism Hazards
 
 ; These sources incorporate code for an experimental extension for parallelism,
 ; initiated in David Rager's dissertation work.  That extension may be produced
 ; by setting the :acl2-par feature, for example using make (see :DOC
 ; compiling-acl2p).  This work is evolving, but we have taken great pains to
-; preserve the functionality of ACL2 without parallelism.  As the parallelism
-; extension is still under active development as of this writing (May, 2011),
-; we use the phrase "Parallelism wart:" to annotate comments about known issues
-; for the #+acl2-par build of ACL2 that we plan to fix.  These range from minor
-; comment suggestions to deeper questions concerning the correctness of the
-; code.  Rager intends to address most of these parallelism warts by the time
-; his dissertation work is complete.  We also use the phrase "Parallelism
-; no-fix:" to annotate comments about known issues for the #+acl2-par build of
-; ACL2 that we do not currently plan to fix.  These parallelism no-fixes also
-; vary in sophistication.  The main motivation for such an annotation is to
-; document possible sources of bugs that we do not intend to fix until users
-; report a problem.  With every parallelism no-fix, there is an implicit
+; preserve the functionality of ACL2 without parallelism.
+
+; As the parallelism extension is still under active development as of this
+; writing (May, 2011), we use the phrase "Parallelism wart:" to label comments
+; about known issues for the #+acl2-par build of ACL2 that we plan to fix.
+; These range from minor comment suggestions to deeper questions concerning the
+; correctness of the code.  Rager intends to address most of these parallelism
+; warts by the time his dissertation work is complete.  We also use the phrase
+; "Parallelism no-fix:" to label comments about known issues for the #+acl2-par
+; build of ACL2 that we do not currently plan to fix.  These parallelism
+; no-fixes also vary in sophistication.  The main motivation for such a label
+; is to document possible sources of bugs that we do not intend to fix until
+; users report a problem.  With every parallelism no-fix, there is an implicit
 ; disclaimer that we will not fix the issue until a user complains, at which
 ; point we would be much more eager to try to solve the given problem.
 ; Searching through the parallism warts and no-fixes could be useful when a
 ; user reports a bug in #+acl2-par that cannot be replicated in #-acl2-par.
+
+; Parallelism hazards are unrelated to parallelism warts and parallelism
+; no-fixes.  Parallelism hazards are macros or functions that are known to be
+; theoretically unsafe when performing multi-threaded execution.  In practice,
+; we do not expect users to encounter parallelism hazards (because we should
+; have programmed such that the hazards never occur).  In the event that users
+; encounter a parallelism hazard, they will receive a warning that asks them to
+; report the associated warning to the ACL2 maintainers.  For example,
+; state-global-let* is called while executing concurrently, we want to know
+; about it and develop a work-around.  See
+; *parallelism-hazard-warnings-enabled* for more information.
 
 ; In an effort to avoid code duplication, we created a definition scheme that
 ; supports defining both serial and parallel versions of a function with one

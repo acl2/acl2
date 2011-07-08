@@ -25959,9 +25959,6 @@
 ; f-put-global@par in two threads that are executing concurrently, since the
 ; second use will override the first.
 
-; Parallelism wart: probably should make this macro untouchable so that
-; programmers can't modify the system state in arbitrary ways.
-
   (declare (ignorable key value st))
   #+acl2-loop-only
   nil
