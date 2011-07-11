@@ -124,50 +124,6 @@ said to occur at location <tt>loc</tt>.</p>
 
 
 
-(defsection vl-exprlist-to-plainarglist
-  :parents (expr-tools)
-  :short "Build a plainarglist from some expressions."
-  :long "<p><b>Signature:</b> @(call vl-exprlist-to-plainarglist) returns
-a @(see vl-plainarglist-p).</p>
-
-<ul>
-<li><tt>x</tt> is an @(see vl-exprlist-p),</li>
-
-<li><tt>dir</tt> is a @(see vl-direction-p), or <tt>nil</tt>, which will be
-assigned to each resulting plainarg, and</li>
-
-<li><tt>atts</tt> are the attributes which will be assigned to each resulting
-plainarg.</li>
-</ul>"
-
-  (defund vl-exprlist-to-plainarglist (x dir atts)
-    (declare (xargs :guard (and (vl-exprlist-p x)
-                                (vl-maybe-direction-p dir)
-                                (vl-atts-p atts))))
-    (if (consp x)
-        (cons (make-vl-plainarg :expr (car x)
-                                :dir dir
-                                :atts atts)
-              (vl-exprlist-to-plainarglist (cdr x) dir atts))
-      nil))
-
-  (local (in-theory (enable vl-exprlist-to-plainarglist)))
-
-  (defthm vl-exprlist-to-plainarglist-under-iff
-    (iff (vl-exprlist-to-plainarglist x dir atts)
-         (consp x)))
-
-  (defthm vl-plainarglist-p-of-vl-exprlist-to-plainarglist
-    (implies (and (force (vl-exprlist-p x))
-                  (force (vl-maybe-direction-p dir))
-                  (force (vl-atts-p atts)))
-             (vl-plainarglist-p (vl-exprlist-to-plainarglist x dir atts))))
-
-  (defthm len-of-vl-exprlist-to-plainarglist
-    (equal (len (vl-exprlist-to-plainarglist x dir atts))
-           (len x))))
-
-
 
 (defsection vl-make-gates-for-buf/not
   :parents (vl-gatesplit-buf/not)
@@ -627,8 +583,8 @@ replace <tt>x</tt>.</p>"
          (atts     (cons (cons "VL_GATESPLIT" (make-vl-atom :guts (vl-string origname)))
                          (vl-gateinst->atts x)))
 
-         (temp-args-out (vl-exprlist-to-plainarglist temp-exprs :vl-output nil))
-         (temp-args-in  (vl-exprlist-to-plainarglist temp-exprs :vl-input nil))
+         (temp-args-out (vl-exprlist-to-plainarglist temp-exprs :dir :vl-output))
+         (temp-args-in  (vl-exprlist-to-plainarglist temp-exprs :dir :vl-input))
 
          (o    (car args))
          (i1   (cadr args))
@@ -776,8 +732,8 @@ we need to add a \"not\" gate at the end.</p>"
          ((mv temp-exprs temp-decls nf)
           (vl-make-temporary-wires origname (- nargs 2) nf loc))
 
-         (all-args-out (vl-exprlist-to-plainarglist temp-exprs :vl-output nil))
-         (all-args-in (vl-exprlist-to-plainarglist temp-exprs :vl-input nil))
+         (all-args-out (vl-exprlist-to-plainarglist temp-exprs :dir :vl-output))
+         (all-args-in (vl-exprlist-to-plainarglist temp-exprs :dir :vl-input))
 
          ;; We call the last temporary "main", and the others are as before.
          (temp-args-out (butlast all-args-out 1))

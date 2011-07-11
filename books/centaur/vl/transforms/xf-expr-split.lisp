@@ -19,13 +19,11 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "../mlib/expr-slice")
 (include-book "../mlib/namefactory")
 (include-book "../mlib/range-tools")
+(include-book "../mlib/context")
 (local (include-book "../util/arithmetic"))
-
-; BOZO we may wish to rewrite this to not split up expression so aggressively.
-; We should probably stop when we reach a sliceable expression, instead of just
-; going all the way to atoms.
 
 
 (defxdoc split
@@ -53,13 +51,24 @@ such as</p>
 
 <p>This involves creating new wire declarations and assignments to those wires,
 and requires us to be very careful to avoid name collisions.  This process also
-needs to be quite efficient. (In one module, splitting results in about 80,000
-wires being introduced.)  We handle this by using a @(see vl-namefactory-p) to
-generate fresh names like <tt>temp_12</tt> and <tt>temp_46</tt>.</p>")
+needs to be quite efficient. (In one module, splitting once resulted in about
+80,000 wires being introduced.)  This led to the development of <see
+topic='@(url vl-namefactory-p)'>name factories</see> to generate fresh names
+like <tt>temp_12</tt> and <tt>temp_46</tt>.</p>
+
+
+<p>We basically try to split up expressions until every assignment involves
+either 0 or 1 operations.  In the past, we even counted \"wiring\" operations
+like bit-selects, part-selects, concatenation, and so forth.  But this led to
+a lot of unnecessary temporaries.  We now instead stop whenever we reach a
+sliceable expression; see @(see expr-slicing).</p>")
+
+
 
 (defsection vl-expr-split
   :parents (split)
   :short "Split up complex subexpressions throughout an expression."
+
   :long "<p><b>Signature:</b> @(call vl-expr-split) returns <tt>(mv
 warnings-prime x-prime decls-prime assigns-prime nf-prime)</tt>.</p>
 
@@ -67,10 +76,9 @@ warnings-prime x-prime decls-prime assigns-prime nf-prime)</tt>.</p>
 
 <ul>
 
-<li><tt>x</tt> is an expression to split, which occurs at within the parse tree
-construct located at <tt>loc</tt>,</li>
+<li><tt>x</tt> is an expression to split, which we recur through.</li>
 
-<li><tt>mod</tt> is the module we are descending through.  We need the module
+<li><tt>mod</tt> is the module in which <tt>x</tt> occurs.  We need the module
 in order to ensure that the new names we are generating are unique.  Our
 original approach was to pre-compute the namespace, but in our new approach we
 only need the namespace at most once, so we can construct it on demand and, in
@@ -83,7 +91,9 @@ accumulate into decls, and an assignment which we accumulate into assigns.</li>
 
 <li><tt>nf</tt> is a @(see vl-namefactory-p) for generating fresh wires.</li>
 
-<li><tt>warnings</tt> is an accumulator for warnings, which we may extend.</li>
+<li><tt>elem</tt> is a @(see vl-modelement-p) that says where this expression
+occurs, and is used for better error messages; <tt>warnings</tt> is an ordinary
+@(see warnings) accumulator.</li>
 
 </ul>
 
@@ -114,14 +124,13 @@ equivalent in the Verilog semantics.</p>
 
   (mutual-recursion
 
-   (defund vl-expr-split (x mod decls assigns nf loc warnings)
-     ;; BOZO loc should probably become a vl-modelement-p
+   (defund vl-expr-split (x mod decls assigns nf elem warnings)
      (declare (xargs :guard (and (vl-expr-p x)
                                  (vl-module-p mod)
                                  (vl-netdecllist-p decls)
                                  (vl-assignlist-p assigns)
                                  (vl-namefactory-p nf)
-                                 (vl-location-p loc)
+                                 (vl-modelement-p elem)
                                  (vl-warninglist-p warnings))
                      :verify-guards nil
                      :measure (two-nats-measure (acl2-count x) 1)))
@@ -132,11 +141,13 @@ equivalent in the Verilog semantics.</p>
           ((unless (and (posp width) type))
            ;; Basic sanity check.  Widths should be computed and positive, or
            ;; what are we even doing??
+
+           ;; BOZO consider switching this to a well-typed check instead.
            (mv (cons (make-vl-warning
                       :type :vl-programming-error
-                      :msg "~l0: expected widths/types to be determined, but ~
+                      :msg "~a0: expected widths/types to be determined, but ~
                             expression ~a1 has width ~x2 and type ~x3."
-                      :args (list loc x width type)
+                      :args (list elem x width type)
                       :fatalp t
                       :fn 'vl-expr-split)
                      warnings)
@@ -147,10 +158,17 @@ equivalent in the Verilog semantics.</p>
            ;; it and our accumulators, unchanged.
            (mv warnings x decls assigns nf))
 
-          ;; To begin with, we recursively split the arguments.  Note that each
-          ;; of the new-args will be an atom!
+          ((when (vl-expr-sliceable-p x))
+           ;; X is already sliceable, so any operators within it are just
+           ;; "wiring" and we do not want to count it as something to split up.
+           ;; So, just return it and our accumulators, unchanged.
+           (mv warnings x decls assigns nf))
+
+          ;; Otherwise, X contains at least some unsliceable components.
+          ;; First, lets recursively split the arguments.  Note that each of
+          ;; the new-args will be either atoms or sliceable expressions.
           ((mv warnings new-args decls assigns nf)
-           (vl-exprlist-split (vl-nonatom->args x) mod decls assigns nf loc warnings))
+           (vl-exprlist-split (vl-nonatom->args x) mod decls assigns nf elem warnings))
 
           ;; Now, our operation applied to the simplified args is a simple
           ;; expression.  We create a new, temporary wire of the appropriate
@@ -158,38 +176,38 @@ equivalent in the Verilog semantics.</p>
           (new-expr         (change-vl-nonatom x :args new-args))
           ((mv new-name nf) (vl-namefactory-indexed-name "temp" nf))
           (new-name-expr    (vl-idexpr new-name width type))
-          (new-decl         (make-vl-netdecl :loc loc
+          (new-decl         (make-vl-netdecl :loc (vl-modelement-loc elem)
                                              :name new-name
                                              :type :vl-wire
                                              :signedp (eq type :vl-signed)
                                              :range (vl-make-n-bit-range width)))
-          (new-assign       (make-vl-assign :loc loc
+          (new-assign       (make-vl-assign :loc (vl-modelement-loc elem)
                                             :lvalue new-name-expr
                                             :expr new-expr)))
 
-         ;; And that's it.
-         (mv warnings
-             new-name-expr
-             (cons new-decl decls)
-             (cons new-assign assigns)
-             nf)))
+       ;; And that's it.
+       (mv warnings
+           new-name-expr
+           (cons new-decl decls)
+           (cons new-assign assigns)
+           nf)))
 
-   (defund vl-exprlist-split (x mod decls assigns nf loc warnings)
+   (defund vl-exprlist-split (x mod decls assigns nf elem warnings)
      (declare (xargs :guard (and (vl-exprlist-p x)
                                  (vl-module-p mod)
                                  (vl-netdecllist-p decls)
                                  (vl-assignlist-p assigns)
                                  (vl-namefactory-p nf)
-                                 (vl-location-p loc)
+                                 (vl-modelement-p elem)
                                  (vl-warninglist-p warnings))
                      :measure (two-nats-measure (acl2-count x) 0)))
      (b* (((when (atom x))
            (mv warnings nil decls assigns nf))
           ((mv warnings car-prime decls assigns nf)
-           (vl-expr-split (car x) mod decls assigns nf loc warnings))
+           (vl-expr-split (car x) mod decls assigns nf elem warnings))
           ((mv warnings cdr-prime decls assigns nf)
-           (vl-exprlist-split (cdr x) mod decls assigns nf loc warnings)))
-         (mv warnings (cons car-prime cdr-prime) decls assigns nf))))
+           (vl-exprlist-split (cdr x) mod decls assigns nf elem warnings)))
+       (mv warnings (cons car-prime cdr-prime) decls assigns nf))))
 
   (FLAG::make-flag flag-vl-expr-split
                    vl-expr-split
@@ -200,16 +218,16 @@ equivalent in the Verilog semantics.</p>
    (defthm-flag-vl-expr-split lemma
      (expr t
            :rule-classes nil)
-     (list (equal (len (mv-nth 1 (vl-exprlist-split x mod decls assigns nf loc warnings)))
+     (list (equal (len (mv-nth 1 (vl-exprlist-split x mod decls assigns nf elem warnings)))
                   (len x))
            :name len-of-vl-exprlist-split-2)
      :hints(("Goal"
-             :induct (flag-vl-expr-split flag x mod decls assigns nf loc warnings)
-             :expand ((vl-expr-split x mod decls assigns nf loc warnings)
-                      (vl-exprlist-split x mod decls assigns nf loc warnings))))))
+             :induct (flag-vl-expr-split flag x mod decls assigns nf elem warnings)
+             :expand ((vl-expr-split x mod decls assigns nf elem warnings)
+                      (vl-exprlist-split x mod decls assigns nf elem warnings))))))
 
   (defthm len-of-vl-exprlist-split-2
-    (equal (len (mv-nth 1 (vl-exprlist-split x mod decls assigns nf loc warnings)))
+    (equal (len (mv-nth 1 (vl-exprlist-split x mod decls assigns nf elem warnings)))
            (len x)))
 
   (defthm-flag-vl-expr-split flag-vl-expr-split-basics
@@ -218,9 +236,9 @@ equivalent in the Verilog semantics.</p>
                         (force (vl-netdecllist-p decls))
                         (force (vl-assignlist-p assigns))
                         (force (vl-namefactory-p nf))
-                        (force (vl-location-p loc))
+                        (force (vl-modelement-p elem))
                         (force (vl-warninglist-p warnings)))
-                   (let ((ret (vl-expr-split x mod decls assigns nf loc warnings)))
+                   (let ((ret (vl-expr-split x mod decls assigns nf elem warnings)))
                      (and (vl-warninglist-p (mv-nth 0 ret))
                           (vl-expr-p        (mv-nth 1 ret))
                           (vl-netdecllist-p (mv-nth 2 ret))
@@ -232,9 +250,9 @@ equivalent in the Verilog semantics.</p>
                         (force (vl-netdecllist-p decls))
                         (force (vl-assignlist-p assigns))
                         (force (vl-namefactory-p nf))
-                        (force (vl-location-p loc))
+                        (force (vl-modelement-p elem))
                         (force (vl-warninglist-p warnings)))
-                   (let ((ret (vl-exprlist-split x mod decls assigns nf loc warnings)))
+                   (let ((ret (vl-exprlist-split x mod decls assigns nf elem warnings)))
                      (and (vl-warninglist-p (mv-nth 0 ret))
                           (vl-exprlist-p    (mv-nth 1 ret))
                           (vl-netdecllist-p (mv-nth 2 ret))
@@ -242,9 +260,9 @@ equivalent in the Verilog semantics.</p>
                           (vl-namefactory-p (mv-nth 4 ret))))))
 
     :hints(("Goal"
-            :induct (flag-vl-expr-split flag x mod decls assigns nf loc warnings)
-            :expand ((vl-expr-split x mod decls assigns nf loc warnings)
-                     (vl-exprlist-split x mod decls assigns nf loc warnings))
+            :induct (flag-vl-expr-split flag x mod decls assigns nf elem warnings)
+            :expand ((vl-expr-split x mod decls assigns nf elem warnings)
+                     (vl-exprlist-split x mod decls assigns nf elem warnings))
             :do-not '(generalize fertilize)
             :do-not-induct t
             )))
@@ -253,49 +271,66 @@ equivalent in the Verilog semantics.</p>
 
   (local (defthm-flag-vl-expr-split lemma
            (expr t :rule-classes nil)
-           (list (true-listp (mv-nth 1 (vl-exprlist-split x mod decls assigns nf loc warnings)))
+           (list (true-listp (mv-nth 1 (vl-exprlist-split x mod decls assigns nf elem warnings)))
                  :rule-classes :type-prescription
                  :name true-listp-of-vl-exprlist-split-1)
            :hints(("Goal"
-                   :induct (flag-vl-expr-split flag x mod decls assigns nf loc warnings)
-                   :expand ((vl-expr-split x mod decls assigns nf loc warnings)
-                            (vl-exprlist-split x mod decls assigns nf loc warnings))))))
+                   :induct (flag-vl-expr-split flag x mod decls assigns nf elem warnings)
+                   :expand ((vl-expr-split x mod decls assigns nf elem warnings)
+                            (vl-exprlist-split x mod decls assigns nf elem warnings))))))
 
   (defthm true-listp-of-vl-exprlist-split-1
-    (true-listp (mv-nth 1 (vl-exprlist-split x mod decls assigns nf loc warnings)))
+    (true-listp (mv-nth 1 (vl-exprlist-split x mod decls assigns nf elem warnings)))
     :rule-classes :type-prescription)
 
   (defthm-flag-vl-expr-split lemma
-    (expr (equal (true-listp (mv-nth 2 (vl-expr-split x mod decls assigns nf loc warnings)))
+    (expr (equal (true-listp (mv-nth 2 (vl-expr-split x mod decls assigns nf elem warnings)))
                  (true-listp decls))
           :name true-listp-of-vl-expr-split-2)
-    (list (equal (true-listp (mv-nth 2 (vl-exprlist-split x mod decls assigns nf loc warnings)))
+    (list (equal (true-listp (mv-nth 2 (vl-exprlist-split x mod decls assigns nf elem warnings)))
                  (true-listp decls))
           :name true-listp-of-vl-exprlist-split-2)
     :hints(("Goal"
-            :induct (flag-vl-expr-split flag x mod decls assigns nf loc warnings)
-            :expand ((vl-expr-split x mod decls assigns nf loc warnings)
-                     (vl-exprlist-split x mod decls assigns nf loc warnings)))))
+            :induct (flag-vl-expr-split flag x mod decls assigns nf elem warnings)
+            :expand ((vl-expr-split x mod decls assigns nf elem warnings)
+                     (vl-exprlist-split x mod decls assigns nf elem warnings)))))
 
   (defthm-flag-vl-expr-split lemma
-    (expr (equal (true-listp (mv-nth 3 (vl-expr-split x mod decls assigns nf loc warnings)))
+    (expr (equal (true-listp (mv-nth 3 (vl-expr-split x mod decls assigns nf elem warnings)))
                  (true-listp assigns))
           :name true-listp-of-vl-expr-split-3)
-    (list (equal (true-listp (mv-nth 3 (vl-exprlist-split x mod decls assigns nf loc warnings)))
+    (list (equal (true-listp (mv-nth 3 (vl-exprlist-split x mod decls assigns nf elem warnings)))
                  (true-listp assigns))
           :name true-listp-of-vl-exprlist-split-3)
     :hints(("Goal"
-            :induct (flag-vl-expr-split flag x mod decls assigns nf loc warnings)
-            :expand ((vl-expr-split x mod decls assigns nf loc warnings)
-                     (vl-exprlist-split x mod decls assigns nf loc warnings)))))
+            :induct (flag-vl-expr-split flag x mod decls assigns nf elem warnings)
+            :expand ((vl-expr-split x mod decls assigns nf elem warnings)
+                     (vl-exprlist-split x mod decls assigns nf elem warnings)))))
 
   )
 
 
 
+
+
+(defun vl-nosplit-p (x)
+  ;; Decide whether we need to split X.
+  (declare (xargs :guard (vl-expr-p x)))
+  (if (vl-fast-atom-p x)
+      t
+    (vl-expr-sliceable-p x)))
+
+(deflist vl-nosplitlist-p (x)
+  (vl-nosplit-p x)
+  :guard (vl-exprlist-p x)
+  :elementp-of-nil nil)
+
+(local (in-theory (enable vl-nosplit-p)))
+
 (defsection vl-assign-split
   :parents (split)
   :short "Split up an assignment if the right-hand side is complicated."
+
   :long "<p><b>Signature:</b> @(call vl-assign-split) returns <tt>(mv
 warnings-prime x-prime decls-prime assigns-prime nf-prime)</tt>.</p>
 
@@ -322,16 +357,21 @@ once we arrive at <tt>foo = bar + (baz + 1)</tt>, because at that point
                                 (vl-namefactory-p nf)
                                 (vl-warninglist-p warnings))))
     (b* ((expr    (vl-assign->expr x))
-         (loc     (vl-assign->loc x))
-         ((when (vl-fast-atom-p expr))
+
+         ;; Don't split things if they are already atomic/wiring.
+         ((when (vl-nosplit-p expr))
           (mv warnings x decls assigns nf))
-         ((when (vl-atomlist-p (vl-nonatom->args expr)))
+
+         ;; Don't split up a single operator applied to atomic/wiring stuff.
+         ((when (vl-nosplitlist-p (vl-nonatom->args expr)))
           (mv warnings x decls assigns nf))
-         ;; Even at this point, we don't want to eliminate the whole
-         ;; expression.  Just recursively simplify the args until they are
-         ;; constants, and build a new expr out of them.
+
+         ;; Even at this point, we don't want to apply splitting to the whole
+         ;; expression.  Instead, just recursively simplify the args until they
+         ;; are constants, and build a new expr out of them.
          ((mv warnings new-args decls assigns nf)
-          (vl-exprlist-split (vl-nonatom->args expr) mod decls assigns nf loc warnings))
+          (vl-exprlist-split (vl-nonatom->args expr) mod decls assigns nf x warnings))
+
          (new-expr   (change-vl-nonatom expr :args new-args))
          (new-assign (change-vl-assign x :expr new-expr)))
         (mv warnings new-assign decls assigns nf)))
@@ -405,14 +445,14 @@ once we arrive at <tt>foo = bar + (baz + 1)</tt>, because at that point
 
 (defsection vl-plainarg-split
 
-  (defund vl-plainarg-split (x mod decls assigns nf loc warnings)
+  (defund vl-plainarg-split (x mod decls assigns nf elem warnings)
     "Returns (MV WARNINGS' X' DECLS' ASSIGNS' NF')"
     (declare (xargs :guard (and (vl-plainarg-p x)
                                 (vl-module-p mod)
                                 (vl-netdecllist-p decls)
                                 (vl-assignlist-p assigns)
                                 (vl-namefactory-p nf)
-                                (vl-location-p loc)
+                                (vl-modelement-p elem)
                                 (vl-warninglist-p warnings))))
 
     (b* (((unless (eq (vl-plainarg->dir x) :vl-input))
@@ -423,16 +463,23 @@ once we arrive at <tt>foo = bar + (baz + 1)</tt>, because at that point
           ;; split them at all.
           (mv warnings x decls assigns nf))
 
-         ((unless (vl-plainarg->expr x))
+         (expr (vl-plainarg->expr x))
+
+         ((unless expr)
           ;; Found a blank port.  Nothing to do.
           (mv warnings x decls assigns nf))
 
-         ;; Okay, we have a legitimate input expression.  We want to do the
-         ;; splitting.  Unlike assignments, we want to just go ahead and fully
-         ;; split and get ourselves a single wire.
+         ((when (vl-expr-sliceable-p expr))
+          ;; Historically we just split these up, too.  But we no longer want
+          ;; to introduce temporary wires just for wiring-related expressions
+          ;; like bit-selects, etc.  So, don't split this up.
+          (mv warnings x decls assigns nf))
+
          ((mv warnings new-expr decls assigns nf)
-          (vl-expr-split (vl-plainarg->expr x) mod decls assigns nf loc warnings))
+          (vl-expr-split expr mod decls assigns nf elem warnings))
+
          (x-prime (change-vl-plainarg x :expr new-expr)))
+
         (mv warnings x-prime decls assigns nf)))
 
   (local (in-theory (enable vl-plainarg-split)))
@@ -443,9 +490,9 @@ once we arrive at <tt>foo = bar + (baz + 1)</tt>, because at that point
                   (force (vl-netdecllist-p decls))
                   (force (vl-assignlist-p assigns))
                   (force (vl-namefactory-p nf))
-                  (force (vl-location-p loc))
+                  (force (vl-modelement-p elem))
                   (force (vl-warninglist-p warnings)))
-             (let ((ret (vl-plainarg-split x mod decls assigns nf loc warnings)))
+             (let ((ret (vl-plainarg-split x mod decls assigns nf elem warnings)))
                (and (vl-warninglist-p (mv-nth 0 ret))
                     (vl-plainarg-p    (mv-nth 1 ret))
                     (vl-netdecllist-p (mv-nth 2 ret))
@@ -453,30 +500,30 @@ once we arrive at <tt>foo = bar + (baz + 1)</tt>, because at that point
                     (vl-namefactory-p (mv-nth 4 ret))))))
 
   (defthm vl-plainarg-split-true-list
-    (and (equal (true-listp (mv-nth 2 (vl-plainarg-split x mod decls assigns nf loc warnings)))
+    (and (equal (true-listp (mv-nth 2 (vl-plainarg-split x mod decls assigns nf elem warnings)))
                 (true-listp decls))
-         (equal (true-listp (mv-nth 3 (vl-plainarg-split x mod decls assigns nf loc warnings)))
+         (equal (true-listp (mv-nth 3 (vl-plainarg-split x mod decls assigns nf elem warnings)))
                 (true-listp assigns)))))
 
 
 
 (defsection vl-plainarglist-split
 
-  (defund vl-plainarglist-split (x mod decls assigns nf loc warnings)
+  (defund vl-plainarglist-split (x mod decls assigns nf elem warnings)
     "Returns (MV WARNINGS' X' DECLS' ASSIGNS' NF')"
     (declare (xargs :guard (and (vl-plainarglist-p x)
                                 (vl-module-p mod)
                                 (vl-netdecllist-p decls)
                                 (vl-assignlist-p assigns)
                                 (vl-namefactory-p nf)
-                                (vl-location-p loc)
+                                (vl-modelement-p elem)
                                 (vl-warninglist-p warnings))))
     (b* (((when (atom x))
           (mv warnings nil decls assigns nf))
          ((mv warnings car-prime decls assigns nf)
-          (vl-plainarg-split (car x) mod decls assigns nf loc warnings))
+          (vl-plainarg-split (car x) mod decls assigns nf elem warnings))
          ((mv warnings cdr-prime decls assigns nf)
-          (vl-plainarglist-split (cdr x) mod decls assigns nf loc warnings)))
+          (vl-plainarglist-split (cdr x) mod decls assigns nf elem warnings)))
         (mv warnings (cons car-prime cdr-prime) decls assigns nf)))
 
   (local (in-theory (enable vl-plainarglist-split)))
@@ -487,9 +534,9 @@ once we arrive at <tt>foo = bar + (baz + 1)</tt>, because at that point
                   (force (vl-netdecllist-p decls))
                   (force (vl-assignlist-p assigns))
                   (force (vl-namefactory-p nf))
-                  (force (vl-location-p loc))
+                  (force (vl-modelement-p elem))
                   (force (vl-warninglist-p warnings)))
-             (let ((ret (vl-plainarglist-split x mod decls assigns nf loc warnings)))
+             (let ((ret (vl-plainarglist-split x mod decls assigns nf elem warnings)))
                (and (vl-warninglist-p  (mv-nth 0 ret))
                     (vl-plainarglist-p (mv-nth 1 ret))
                     (vl-netdecllist-p  (mv-nth 2 ret))
@@ -497,37 +544,37 @@ once we arrive at <tt>foo = bar + (baz + 1)</tt>, because at that point
                     (vl-namefactory-p  (mv-nth 4 ret))))))
 
   (defthm vl-plainarglist-split-true-list
-    (and (equal (true-listp (mv-nth 2 (vl-plainarglist-split x mod decls assigns nf loc warnings)))
+    (and (equal (true-listp (mv-nth 2 (vl-plainarglist-split x mod decls assigns nf elem warnings)))
                 (true-listp decls))
-         (equal (true-listp (mv-nth 3 (vl-plainarglist-split x mod decls assigns nf loc warnings)))
+         (equal (true-listp (mv-nth 3 (vl-plainarglist-split x mod decls assigns nf elem warnings)))
                 (true-listp assigns)))))
 
 
 
 (defsection vl-arguments-split
 
-  (defund vl-arguments-split (x mod decls assigns nf loc warnings)
+  (defund vl-arguments-split (x mod decls assigns nf elem warnings)
     "Returns (MV WARNINGS' X' DECLS' ASSIGNS' NF')"
     (declare (xargs :guard (and (vl-arguments-p x)
                                 (vl-module-p mod)
                                 (vl-netdecllist-p decls)
                                 (vl-assignlist-p assigns)
                                 (vl-namefactory-p nf)
-                                (vl-location-p loc)
+                                (vl-modelement-p elem)
                                 (vl-warninglist-p warnings))))
     (b* (((when (vl-arguments->namedp x))
           (mv (cons (make-vl-warning
                      :type :vl-bad-arguments
-                     :msg "~l0: expected to only encounter plain arguments, ~
+                     :msg "~a0: expected to only encounter plain arguments, ~
                            but found a named argument list.  Not actually ~
                            splitting anything."
-                     :args (list loc)
+                     :args (list elem)
                      :fatalp t
                      :fn 'vl-arguments-split)
                     warnings)
               x decls assigns nf))
          ((mv warnings new-args decls assigns nf)
-          (vl-plainarglist-split (vl-arguments->args x) mod decls assigns nf loc warnings))
+          (vl-plainarglist-split (vl-arguments->args x) mod decls assigns nf elem warnings))
          (x-prime (vl-arguments nil new-args)))
         (mv warnings x-prime decls assigns nf)))
 
@@ -539,9 +586,9 @@ once we arrive at <tt>foo = bar + (baz + 1)</tt>, because at that point
                   (force (vl-netdecllist-p decls))
                   (force (vl-assignlist-p assigns))
                   (force (vl-namefactory-p nf))
-                  (force (vl-location-p loc))
+                  (force (vl-modelement-p elem))
                   (force (vl-warninglist-p warnings)))
-             (let ((ret (vl-arguments-split x mod decls assigns nf loc warnings)))
+             (let ((ret (vl-arguments-split x mod decls assigns nf elem warnings)))
                (and (vl-warninglist-p (mv-nth 0 ret))
                     (vl-arguments-p   (mv-nth 1 ret))
                     (vl-netdecllist-p (mv-nth 2 ret))
@@ -549,9 +596,9 @@ once we arrive at <tt>foo = bar + (baz + 1)</tt>, because at that point
                     (vl-namefactory-p (mv-nth 4 ret))))))
 
   (defthm vl-arguments-split-true-list
-    (and (equal (true-listp (mv-nth 2 (vl-arguments-split x mod decls assigns nf loc warnings)))
+    (and (equal (true-listp (mv-nth 2 (vl-arguments-split x mod decls assigns nf elem warnings)))
                 (true-listp decls))
-         (equal (true-listp (mv-nth 3 (vl-arguments-split x mod decls assigns nf loc warnings)))
+         (equal (true-listp (mv-nth 3 (vl-arguments-split x mod decls assigns nf elem warnings)))
                 (true-listp assigns)))))
 
 
@@ -567,9 +614,8 @@ once we arrive at <tt>foo = bar + (baz + 1)</tt>, because at that point
                                 (vl-namefactory-p nf)
                                 (vl-warninglist-p warnings))))
     (b* ((portargs (vl-modinst->portargs x))
-         (loc      (vl-modinst->loc x))
          ((mv warnings new-args decls assigns nf)
-          (vl-arguments-split portargs mod decls assigns nf loc warnings))
+          (vl-arguments-split portargs mod decls assigns nf x warnings))
          (x-prime (change-vl-modinst x :portargs new-args)))
         (mv warnings x-prime decls assigns nf)))
 
@@ -650,9 +696,8 @@ once we arrive at <tt>foo = bar + (baz + 1)</tt>, because at that point
                                 (vl-namefactory-p nf)
                                 (vl-warninglist-p warnings))))
     (b* ((args (vl-gateinst->args x))
-         (loc  (vl-gateinst->loc x))
          ((mv warnings new-args decls assigns nf)
-          (vl-plainarglist-split args mod decls assigns nf loc warnings))
+          (vl-plainarglist-split args mod decls assigns nf x warnings))
          (x-prime (change-vl-gateinst x :args new-args)))
         (mv warnings x-prime decls assigns nf)))
 

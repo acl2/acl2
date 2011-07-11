@@ -41,73 +41,49 @@
 
 (defsection vl-make-bitselect
 
+; Historic note.  We used to (incorrectly) check whether N was less than the
+; final-width of the expression, and also optimize so that when FOO had width
+; 1, we would create FOO instead of FOO[0].  This did not cause problems since
+; this function was only used in occform (where the wires we were generating
+; always started at index 0), but is more generally incorrect since a wire's
+; finalwidth need not be related to the valid bits that can be selected from
+; it, e.g., wire [7:5] w; should allow us to select w[7], w[6], and w[5], but
+; the width of w is only 2.
+;
+; We now do not try to do any bounds-checking here, since it is really not
+; possible to do it correctly without knowing the bounds of the wire, which is
+; not available to us here.  You can hence use this function to create an
+; invalid expression like foo[n]; garbage in, garbage out.
+
   (defund vl-make-bitselect (expr n)
-    (declare (xargs :guard (vl-expr-p expr)
-                    :guard-debug t
-                    ))
+    (declare (xargs :guard (and (vl-expr-p expr)
+                                (natp n))))
 
 ; Safely create the bit-select, expr[n].  Expr should be an identifier.
 
     (b* (((unless (vl-fast-atom-p expr))
+          ;; BOZO it would probably be cleaner to have vl-idexpr-p as a guard,
+          ;; instead of having this check.
           (er hard? 'vl-make-bitselect "Trying to select from non-atom: ~x0." expr)
           |*sized-1'b0*|)
 
          ((unless (posp (vl-expr->finalwidth expr)))
+          ;; This may not be necessary, now that our sizing code is better.
           (er hard? 'vl-make-bitselect "Trying to select from unwidthed expr: ~x0" expr)
           |*sized-1'b0*|)
 
-         ((unless (natp n))
-          (er hard? 'vl-make-bitselect "Trying to select a non-natural bit: ~x0." n)
-          |*sized-1'b0*|)
-
-         ((unless (< n (vl-expr->finalwidth expr)))
-          (er hard? 'vl-make-bitselect "Trying to select ~x0, past bounds of ~x1" n expr)
-          |*sized-1'b0*|)
-
          (guts (vl-atom->guts expr))
-         ((when (vl-id-p guts))
-          (if (and (= (vl-expr->finalwidth expr) 1)
-                   (eq (vl-expr->finaltype expr) :vl-unsigned))
-              ;; From above, we know n is less than (vl-expr->width expr),
-              ;; i.e., n is a natural less than 1.  N must be zero.  And the
-              ;; width of the wire we are selecting from is zero.  So there is
-              ;; no reason to introduce a select, just use the whole wire.  We
-              ;; require unsigned since this ensures we always get unsigned
-              ;; bitselects out.
-              expr
-            ;; Otherwise, make a bitselect.
-            (make-honsed-vl-nonatom :op :vl-bitselect
-                                    :args (acl2::hons-list expr (vl-make-index n))
-                                    :finalwidth 1
-                                    :finaltype :vl-unsigned)))
 
-         ;; ((when (vl-constint-p guts))
-         ;;  ;; BOZO odd to support this.
-         ;;  (er hard? 'vl-make-bitselect "Is this necessary??? constint case.")
-         ;;  (b* ((this-bit (logbitp n (vl-constint->value guts))))
-         ;;    (make-vl-atom :guts (make-vl-constint :origwidth 1
-         ;;                                          :origtype :vl-unsigned
-         ;;                                          :value (if this-bit 1 0))
-         ;;                  :finalwidth 1
-         ;;                  :finaltype :vl-unsigned)))
+         ((unless (vl-id-p guts))
+          ;; BOZO it would probably be cleaner to have vl-idexpr-p as a guard,
+          ;; instead of having this check.
+          (er hard? 'vl-make-bitselect "Not implemented: bitselect from ~x0." (tag guts))
+          |*sized-1'b0*|))
 
-         ;; ((when (vl-weirdint-p guts))
-         ;;  ;; BOZO odd to support this.
-         ;;  (er hard? 'vl-make-bitselect "Is this necessary??? weirdint case.")
-         ;;  (b* ((bits     (vl-weirdint->bits guts)) ;; MSB comes first!
-         ;;       ((unless (< n (len bits)))
-         ;;        (er hard? 'vl-make-bitselect "bad weirdint select")
-         ;;        *vl-default-one-bit-expr*)
-         ;;       (this-bit (nth n (rev bits))))
-         ;;    ;; BOZO can do better, make a constint if possible
-         ;;    (make-vl-atom :guts (make-vl-weirdint :origwidth 1
-         ;;                                          :origtype :vl-unsigned
-         ;;                                          :bits (list this-bit))
-         ;;                  :finalwidth 1
-         ;;                  :finaltype :vl-unsigned)))
-         )
-      (er hard? 'vl-make-bitselect "Not implemented: bitselect from ~x0." (tag guts))
-      |*sized-1'b0*|))
+      (make-honsed-vl-nonatom :op :vl-bitselect
+                              :args (acl2::hons-list expr (vl-make-index n))
+                              :finalwidth 1
+                              :finaltype :vl-unsigned)))
 
   (local (in-theory (enable vl-make-bitselect)))
 
@@ -194,34 +170,37 @@
 
 (defsection vl-make-partselect
 
+; Safely creates expr[msb:lsb].  We ensure that expr is an identifier and that
+; msb >= lsb.  Moreover, if msb = lsb, we create the bitselect expr[msb]
+; instead.
+
+; Historic note.  This used to have the same problem as vl-make-bitselect, and
+; checked whether the msb was less than the final-width of expression.  See the
+; comments there for more discussion.  We no longer try to prevent you from
+; creating part-selects with invalid ranges, since it's just not possible to do
+; that correctly here.  Garbage in, garbage out.
+
   (defund vl-make-partselect (expr msb lsb)
-    (declare (xargs :guard (vl-expr-p expr)))
+    (declare (xargs :guard (and (vl-expr-p expr)
+                                (natp msb)
+                                (natp lsb))))
 
-; Safely creates expr[msb:lsb].  We ensure that expr is an identifier, msb and
-; lsb are valid indexes into expr, and that msb >= lsb.  Moreover, if msb =
-; lsb, we create the bitselect expr[msb] instead.
 
-    (b* ((width     (+ (nfix (- (nfix msb) (nfix lsb))) 1))
-         (msb-index (vl-make-index msb))
-         (lsb-index (vl-make-index lsb))
-         (msb       (vl-resolved->val msb-index))
-         (lsb       (vl-resolved->val lsb-index))
-
-         ((unless (and (vl-fast-atom-p expr)
-                       (vl-fast-id-p (vl-atom->guts expr))))
-          (er hard? 'vl-make-partselect "Trying to select from a non-identifier: ~x0" expr)
-          (vl-default-n-bit-expr width))
-
-         ((unless (posp (vl-expr->finalwidth expr)))
-          (er hard? 'vl-make-partselect "Trying to select from unwidthed expr: ~x0" expr)
-          (vl-default-n-bit-expr width))
-
-         ((unless (< msb (vl-expr->finalwidth expr)))
-          (er hard? 'vl-make-partselect "Trying to select ~x0, past bounds of ~x1" msb expr)
-          (vl-default-n-bit-expr width))
+    (b* ((msb       (mbe :logic (nfix msb) :exec msb))
+         (lsb       (mbe :logic (nfix lsb) :exec lsb))
 
          ((when (> lsb msb))
           (er hard? 'vl-make-partselect "LSB, ~x0, is larger than MSB, ~x1." lsb msb)
+          (vl-default-n-bit-expr 1))
+
+         (width     (+ 1 (- msb lsb)))
+         (msb-index (vl-make-index msb))
+         (lsb-index (vl-make-index lsb))
+
+         ((unless (and (vl-fast-atom-p expr)
+                       (vl-fast-id-p (vl-atom->guts expr))))
+          ;; BOZO it might be nicer to use a vl-idexpr-p guard.
+          (er hard? 'vl-make-partselect "Trying to select from a non-identifier: ~x0" expr)
           (vl-default-n-bit-expr width))
 
          ((when (= lsb msb))
@@ -232,7 +211,7 @@
 
       (make-vl-nonatom :op :vl-partselect-colon
                        :args (list expr msb-index lsb-index)
-                       :finalwidth (+ 1 (- msb lsb))
+                       :finalwidth width
                        :finaltype :vl-unsigned)))
 
   (local (in-theory (enable vl-make-partselect)))

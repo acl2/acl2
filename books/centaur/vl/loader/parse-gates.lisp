@@ -23,7 +23,7 @@
 (include-book "parse-delays")
 (include-book "parse-ranges")
 (include-book "parse-lvalues")
-(include-book "parse-insts") ;; bleh, for vl-build-plainarglist-from-exprlist
+(include-book "../mlib/expr-tools")
 (local (include-book "../util/arithmetic"))
 
 
@@ -77,7 +77,7 @@
                               :range (second (car tuples))
                               :strength strength
                               :delay delay
-                              :args (vl-build-plainarglist-from-exprlist
+                              :args (vl-exprlist-to-plainarglist
                                      (third (car tuples)))
                               :atts atts)
             (vl-build-gate-instances loc (cdr tuples) type strength delay atts))

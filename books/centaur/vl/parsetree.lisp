@@ -2526,7 +2526,37 @@ name, some arguments to module instances may also not be given portnames.</p>")
 
 (deflist vl-plainarglist-p (x)
   (vl-plainarg-p x)
-  :elementp-of-nil nil)
+  :elementp-of-nil nil
+  :parents (modules))
+
+(deflist vl-plainarglistlist-p (x)
+  (vl-plainarglist-p x)
+  :elementp-of-nil t
+  :parents (modules))
+
+(defthm vl-plainarglist-p-of-strip-cars
+  (implies (and (vl-plainarglistlist-p x)
+                (all-have-len x n)
+                (not (zp n)))
+           (vl-plainarglist-p (strip-cars x)))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-plainarglistlist-p-of-strip-cdrs
+  (implies (vl-plainarglistlist-p x)
+           (vl-plainarglistlist-p (strip-cdrs x)))
+  :hints(("Goal" :induct (len x))))
+
+(defprojection vl-plainarglist->exprs (x)
+  (vl-plainarg->expr x)
+  :guard (vl-plainarglist-p x)
+  :nil-preservingp t)
+
+(defthm vl-exprlist-p-of-vl-plainarglist->exprs
+  (implies (force (vl-plainarglist-p x))
+           (equal (vl-exprlist-p (vl-plainarglist->exprs x))
+                  (not (member nil (vl-plainarglist->exprs x)))))
+  :hints(("Goal" :induct (len x))))
+
 
 
 
@@ -2684,6 +2714,12 @@ variety.  Each <tt>vl-arguments-p</tt> structure is an aggregate of two fields:<
     (implies (and (force (vl-arguments-p x))
                   (case-split (not (vl-arguments->namedp x))))
              (vl-plainarglist-p (vl-arguments->args x)))))
+
+
+(deflist vl-argumentlist-p (x)
+  (vl-arguments-p x)
+  :elementp-of-nil nil
+  :parents (modules))
 
 
 

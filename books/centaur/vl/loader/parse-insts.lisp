@@ -19,6 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "../mlib/expr-tools")
 (include-book "parse-ranges")
 (include-book "parse-lvalues")
 (include-book "parse-delays")
@@ -180,21 +181,6 @@
 ; named_parameter_assignment ::=
 ;  '.' identifier '(' [ mintypmax_expression ] ')'
 
-(defund vl-build-plainarglist-from-exprlist (x)
-  ;; Returns a vl-plainarglist-p
-  (declare (xargs :guard (vl-exprlist-p x)))
-  (if (consp x)
-      (cons (make-vl-plainarg :expr (car x))
-            (vl-build-plainarglist-from-exprlist (cdr x)))
-    nil))
-
-(defthm vl-plainarglist-p-of-vl-build-plainarglist-from-exprlist
-  (implies (force (vl-exprlist-p x))
-           (vl-plainarglist-p (vl-build-plainarglist-from-exprlist x)))
-  :hints(("Goal" :in-theory (enable vl-build-plainarglist-from-exprlist))))
-
-
-
 (defparser vl-parse-named-parameter-assignment (tokens warnings)
   :result (vl-namedarg-p val)
   :resultp-of-nil nil
@@ -232,7 +218,7 @@
           (args := (vl-parse-list-of-named-parameter-assignments))
           (return (vl-arguments t args)))
         (exprs := (vl-parse-1+-expressions-separated-by-commas))
-        (return (vl-arguments nil (vl-build-plainarglist-from-exprlist exprs)))))
+        (return (vl-arguments nil (vl-exprlist-to-plainarglist exprs)))))
 
 (defparser vl-parse-parameter-value-assignment (tokens warnings)
   :result (vl-arguments-p val)
@@ -334,18 +320,6 @@
 ;
 ; name_of_udp_instance ::= identifier [range]
 
-(defund vl-exprs-to-plainargs (x)
-  (declare (xargs :guard (vl-exprlist-p x)))
-  (if (consp x)
-      (cons (make-vl-plainarg :expr (car x))
-            (vl-exprs-to-plainargs (cdr x)))
-    nil))
-
-(defthm vl-plainarglist-p-of-vl-exprs-to-plainargs
-  (implies (force (vl-exprlist-p x))
-           (vl-plainarglist-p (vl-exprs-to-plainargs x)))
-  :hints(("Goal" :in-theory (enable vl-exprs-to-plainargs))))
-
 (defparser vl-parse-udp-instance (loc modname str delay atts tokens warnings)
   :guard (and (vl-location-p loc)
               (stringp modname)
@@ -373,8 +347,7 @@
                                  :range range
                                  :paramargs (vl-arguments nil nil)
                                  :portargs
-                                 (vl-arguments nil (vl-exprs-to-plainargs
-                                                    (cons lvalue exprs)))
+                                 (vl-arguments nil (vl-exprlist-to-plainarglist (cons lvalue exprs)))
                                  :str str
                                  :delay delay
                                  :atts atts))))

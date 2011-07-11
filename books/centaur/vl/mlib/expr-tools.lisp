@@ -894,3 +894,52 @@ usually think of as atoms.</p>
                (vl-atomlist-p (vl-exprlist-atoms x)))
       :hints(("Goal" :use ((:instance lemma (flag 'list))))))))
 
+
+
+(defsection vl-exprlist-to-plainarglist
+  :parents (expr-tools)
+  :short "Build a plainarglist from some expressions."
+  :long "<p><b>Signature:</b> @(call vl-exprlist-to-plainarglist) returns
+a @(see vl-plainarglist-p).</p>
+
+<ul>
+<li><tt>x</tt> is an @(see vl-exprlist-p),</li>
+
+<li><tt>dir</tt> is a @(see vl-direction-p), or <tt>nil</tt>, which will be
+assigned to each resulting plainarg, and</li>
+
+<li><tt>atts</tt> are the attributes which will be assigned to each resulting
+plainarg.</li>
+</ul>"
+
+  (defund vl-exprlist-to-plainarglist-fn (x dir atts)
+    (declare (xargs :guard (and (vl-exprlist-p x)
+                                (vl-maybe-direction-p dir)
+                                (vl-atts-p atts))))
+    (if (consp x)
+        (cons (make-vl-plainarg :expr (car x)
+                                :dir dir
+                                :atts atts)
+              (vl-exprlist-to-plainarglist-fn (cdr x) dir atts))
+      nil))
+
+  (defmacro vl-exprlist-to-plainarglist (x &key dir atts)
+    `(vl-exprlist-to-plainarglist-fn ,x ,dir ,atts))
+
+  (add-macro-alias vl-exprlist-to-plainarglist vl-exprlist-to-plainarglist-fn)
+
+  (local (in-theory (enable vl-exprlist-to-plainarglist)))
+
+  (defthm vl-exprlist-to-plainarglist-under-iff
+    (iff (vl-exprlist-to-plainarglist x :dir dir :atts atts)
+         (consp x)))
+
+  (defthm vl-plainarglist-p-of-vl-exprlist-to-plainarglist
+    (implies (and (force (vl-exprlist-p x))
+                  (force (vl-maybe-direction-p dir))
+                  (force (vl-atts-p atts)))
+             (vl-plainarglist-p (vl-exprlist-to-plainarglist x :dir dir :atts atts))))
+
+  (defthm len-of-vl-exprlist-to-plainarglist
+    (equal (len (vl-exprlist-to-plainarglist x :dir dir :atts atts))
+           (len x))))

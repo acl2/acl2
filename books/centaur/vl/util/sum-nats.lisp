@@ -127,7 +127,20 @@
   (defthm sum-nats-of-reverse
     (implies (true-listp x)
              (equal (sum-nats (reverse x))
-                    (sum-nats x)))))
+                    (sum-nats x))))
+
+  (defthm sum-nats-when-all-equalp
+    (implies (all-equalp n x)
+             (equal (sum-nats x)
+                    (* (nfix n) (len x))))
+    :hints(("Goal" :in-theory (disable all-equalp))))
+
+  (defthm sum-nats-when-all-equalp-1
+    ;; Special corollary to avoid free-variable in the commonly useful N=1 case.
+    (implies (all-equalp 1 x)
+             (equal (sum-nats x)
+                    (len x)))
+    :hints(("Goal" :in-theory (disable all-equalp)))))
 
 
 

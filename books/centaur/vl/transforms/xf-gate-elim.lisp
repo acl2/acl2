@@ -24,20 +24,6 @@
 (local (include-book "../util/arithmetic"))
 
 
-(defprojection vl-plainarglist->exprs (x)
-  ;; BOZO find me a home
-  (vl-plainarg->expr x)
-  :guard (vl-plainarglist-p x)
-  :nil-preservingp t)
-
-(defthm vl-exprlist-p-of-vl-plainarglist->exprs
-  ;; BOZO find me a home
-  (implies (force (vl-plainarglist-p x))
-           (equal (vl-exprlist-p (vl-plainarglist->exprs x))
-                  (not (member nil (vl-plainarglist->exprs x)))))
-  :hints(("Goal" :induct (len x))))
-
-
 
 (defxdoc gate-elim
   :parents (transforms)

@@ -19,10 +19,10 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "xf-partition-lvalue")
+(include-book "../mlib/expr-slice")
 (include-book "../mlib/namefactory")
 (include-book "../mlib/hierarchy")
-;(include-book "../wf-ranges-simple-p")
+(include-book "../mlib/context")
 (local (include-book "../util/arithmetic"))
 
 
@@ -54,9 +54,8 @@ and the arguments are expressions which represent the inputs and outputs.</p>
 applied so there are only plain argument lists to deal with, that (2) all
 expressions have been sized so we can determine the sizes of arguments and
 ports, and (3) that @(see drop-blankports) has been run so that there are no
-blank ports.  We also expect that all output ports are connected to legitimate
-lvalues (identifiers, selects, and concatenates, but nothing else).  We cause
-fatal warnings if these conditions are violated.  However, this transformation
+blank ports.  We expect that all of the actuals are <see topic='@(url
+expr-slicing)'>sliceable</see> expressions.  However, this transformation
 should be run before @(see blankargs), so there may be blank arguments (but not
 blank ports.)</p>
 
@@ -66,24 +65,222 @@ per Section 12.1.2 they hold for both gate instances and module instances.</p>
 <p>One minor issue to address is that the names of all instances throughout a
 module need to be unique, and so we need to take care that the instance names
 we are generating (i.e., instname_0, etc.) do not clash with other names in the
-module; we discuss this further in @(see vl-replicate-instnames).</p>
+module; we discuss this further in @(see vl-replicated-instnames).</p>
 
 <p>But the most complicated thing about splitting instances is how to come up
-with the new arguments for each new instance we are generating, which we now
-address.</p>
+with the new arguments for each new instance we are generating.  This is
+addressed in @(see argument-partitioning).</p>")
 
-<h3>Argument Partitioning</h3>
+
+
+(defsection vl-replicated-instnames
+  :parents (replicate)
+  :short "Safely generate the instance names for @(see replicate)d instances."
+
+  :long "<p>This function is responsible for naming the new module instances
+that are going to be created when we split up an instance array.  We really
+want these new names to correspond to the original instance name and the
+instance numbers, since otherwise it can be hard to understand the relationship
+of the transformed module's state to the original module.</p>
+
+<p>Suppose we are transforming an instance like this:</p>
+
+<code>
+   type foo [N:0] (arg1, arg2, ..., argM);
+</code>
+
+<p><b>Signature:</b> @(call vl-replicated-instnames) returns <tt>(MV
+WARNINGS' NAMES NF')</tt>.</p>
+
+<p>We are given:</p>
+
+<ul>
+
+<li><tt>instname</tt>, a string that is the name of the instance array,
+e.g., <tt>foo</tt>.</li>
+
+<li><tt>instrange</tt>, the associated range, e.g., <tt>[N:0]</tt>.</li>
+
+<li><tt>nf</tt>, a @(see vl-namefactory-p) for generating new names.</li>
+
+<li><tt>warnings</tt>, a @(see warnings) accumulator that we may extend
+with a non-fatal warning if our preferred names are unavailable.</li>
+
+<li><tt>inst</tt>, the whole instance, which is semantically irrelevant and
+used only as a context for warnings.</li>
+
+</ul>
+
+<p>We produce <tt>names</tt>, a list of <tt>N+1</tt> names that are to be used
+as the instance names for the split up arguments.  We try to use names of the
+form <tt>instname_index</tt> if they are available, e.g., we would prefer to
+split the above instance array into:</p>
+
+<code>
+   type foo_0 (arg1-0, arg2-0, ..., argM-0);
+   type foo_1 (arg1-1, arg2-1, ..., argM-1);
+   ...
+   type foo_N (arg1-N, arg2-N, ..., argM-N);
+</code>
+
+<p>The names we return are in largest-first order, <tt>foo_N, ..., foo_0</tt>,
+to agree with @(see vl-partition-lvalue).</p>"
+
+  (defund vl-preferred-replicate-names (low high instname)
+    ;; Preferred names in lowest-first order, e.g., (foo_3 foo_4 foo_5)
+    (declare (xargs :guard (and (natp low)
+                                (natp high)
+                                (<= low high)
+                                (stringp instname))
+                    :measure (nfix (- (nfix high) (nfix low)))))
+    (let ((low  (mbe :logic (nfix low) :exec low))
+          (high (mbe :logic (nfix high) :exec high))
+          (name (str::cat instname "_" (str::natstr low))))
+      (if (mbe :logic (zp (- high low))
+               :exec (= low high))
+          (list name)
+        (cons name (vl-preferred-replicate-names (+ 1 low) high instname)))))
+
+  (defthm string-listp-of-vl-preferred-replicate-names
+    (string-listp (vl-preferred-replicate-names low high instname))
+    :hints(("Goal" :in-theory (enable vl-preferred-replicate-names))))
+
+  (defthm len-of-vl-preferred-replicate-names
+    (equal (len (vl-preferred-replicate-names low high instname))
+           (+ 1 (nfix (- (nfix high) (nfix low)))))
+    :hints(("Goal" :in-theory (enable vl-preferred-replicate-names))))
+
+
+  (defund vl-bad-replicate-names (n basename nf)
+    ;; Fallback names in case our preferred names aren't available.  Only called
+    ;; if there is a name conflict that prevents us from using good names.
+    "Returns (MV NAMES NF')."
+    (declare (xargs :guard (and (natp n)
+                                (stringp basename)
+                                (vl-namefactory-p nf))))
+    (b* (((when (zp n))
+          (mv nil nf))
+         ((mv name nf)
+          (vl-namefactory-indexed-name basename nf))
+         ((mv others nf)
+          (vl-bad-replicate-names (- n 1) basename nf)))
+      (mv (cons name others) nf)))
+
+  (defthm vl-bad-replicate-names-props
+    (implies (and (force (stringp basename))
+                  (force (vl-namefactory-p nf)))
+             (and (string-listp (mv-nth 0 (vl-bad-replicate-names n basename nf)))
+                  (vl-namefactory-p (mv-nth 1 (vl-bad-replicate-names n basename nf)))))
+    :hints(("Goal" :in-theory (enable vl-bad-replicate-names))))
+
+  (defthm len-of-vl-bad-replicate-names
+    (equal (len (mv-nth 0 (vl-bad-replicate-names n basename nf)))
+           (nfix n))
+    :hints(("Goal" :in-theory (enable vl-bad-replicate-names))))
+
+
+  (local (in-theory (enable vl-range-resolved-p)))
+
+  (defund vl-replicated-instnames (instname instrange nf inst warnings)
+    "Returns (MV WARNINGS NAMES NF')"
+    (declare (xargs :guard (and (vl-maybe-string-p instname)
+                                (vl-range-p instrange)
+                                (vl-range-resolved-p instrange)
+                                (vl-namefactory-p nf)
+                                (or (vl-modinst-p inst)
+                                    (vl-gateinst-p inst))
+                                (vl-warninglist-p warnings))))
+    (b* ((high (vl-resolved->val (vl-range->left instrange)))
+         (low  (vl-resolved->val (vl-range->right instrange)))
+         (instname (or instname "unnamed"))
+         (want (vl-preferred-replicate-names low high instname))
+         ((mv fresh nf)
+          (vl-namefactory-plain-names want nf))
+         ((when (equal want fresh))
+          ;; Great -- we can use exactly what we want to use.
+          (mv warnings (reverse fresh) nf))
+         ;; Use bad names.
+         ((mv fresh nf)
+          (vl-bad-replicate-names (+ 1 (- high low))
+                                  (str::cat "vl_badname_" instname)
+                                  nf))
+         (warnings
+          (cons (make-vl-warning
+                 :type :vl-warn-replicate-name
+                 :msg "~a0: preferred names for instance array ~s1 are not ~
+                     available, so using lousy vl_badname_* naming scheme ~
+                     instead.  This conflict is caused by ~&2."
+                 :args (list inst instname
+                             (difference (mergesort want) (mergesort fresh)))
+                 :fatalp nil
+                 :fn 'vl-replicated-instnames)
+                warnings)))
+      (mv warnings (reverse fresh) nf)))
+
+  (local (in-theory (enable vl-replicated-instnames)))
+
+  (defthm vl-warninglist-p-of-vl-replicated-instnames
+    (implies (force (vl-warninglist-p warnings))
+             (vl-warninglist-p
+              (mv-nth 0 (vl-replicated-instnames instname instrange nf inst warnings)))))
+
+  (defthm string-listp-of-vl-replicated-instnames
+    (implies (and (force (vl-maybe-string-p instname))
+                  (force (vl-namefactory-p nf)))
+             (string-listp
+              (mv-nth 1 (vl-replicated-instnames instname instrange nf inst warnings)))))
+
+  (defthm len-of-vl-replicated-instnames
+    (implies (and (force (vl-range-resolved-p instrange))
+                  (force (vl-namefactory-p nf)))
+             (equal
+              (len (mv-nth 1 (vl-replicated-instnames instname instrange nf inst warnings)))
+              (vl-range-size instrange)))
+    :hints(("Goal" :in-theory (e/d (vl-range-size)))))
+
+  (defthm vl-namefactory-p-of-vl-replicated-instnames
+    (implies (and (force (vl-maybe-string-p instname))
+                  (force (vl-range-p instrange))
+                  (force (vl-range-resolved-p instrange))
+                  (force (vl-namefactory-p nf)))
+             (vl-namefactory-p
+              (mv-nth 2 (vl-replicated-instnames instname instrange nf inst warnings))))))
+
+
+
+
+(defxdoc argument-partitioning
+  :parents (replicate)
+  :short "How arguments to instance arrays are split up and given to the
+individual instances."
+
+  :long "<p>Recall that in the @(see replicate) transform we are basically
+rewriting instance arrays like this:</p>
+
+<code>
+   type instname [N:0] (arg1, arg2, ..., argM) ;
+</code>
+
+<p>Into things like this:</p>
+
+<code>
+   type instname_0 (arg1-0, arg2-0, ..., argM-0);
+   type instname_1 (arg1-1, arg2-1, ..., argM-1);
+   ...
+   type instname_N (arg1-N, arg2-N, ..., argM-N);
+</code>
 
 <p>Let us consider a particular, non-blank argument, <tt>ArgI</tt>, whose width
 is <tt>ArgI-W</tt>.  Suppose this argument is connected to a non-blank port
 with width <tt>P-W</tt>.</p>
 
-<p>To clarify, if we are talking about module instances then this is quite
-straightforward: the module has a list of ports, and we can see how wide these
-ports are supposed to be by looking at the widths of their port expressions;
-see @(see vl-port-p).  The argument <tt>ArgI</tt> corresponds to some
-particular port, and so the width of that port is what <tt>P-W</tt> is going to
-be.  If we are talking about gates, then P-W is always 1.</p>
+<p>Let's be clear on what we mean by <tt>P-W</tt>.  If we are talking about
+module instances then this is quite straightforward: the module has a list of
+ports, and we can see how wide these ports are supposed to be by looking at the
+widths of their port expressions; see @(see vl-port-p).  The argument
+<tt>ArgI</tt> corresponds to some particular port, and so the width of that
+port is what <tt>P-W</tt> is going to be.  If we are talking about gates, then
+P-W is always 1.</p>
 
 <p>According to the semantics laid forth in 7.1.6, there are only two valid
 cases.</p>
@@ -149,455 +346,395 @@ creating four instances, each of the array arguments can only be 2 or 8 bits
 long.  Any 8-bit arguments are split into 2-bit slices, and any 2-bit arguments
 are replicated.</p>")
 
-(deflist vl-plainarglistlist-p (x)
-  (vl-plainarglist-p x)
-  :elementp-of-nil t)
-
-(defthm vl-plainarglist-p-of-strip-cars
-  (implies (and (vl-plainarglistlist-p x)
-                (all-have-len x n)
-                (not (zp n)))
-           (vl-plainarglist-p (strip-cars x)))
-  :hints(("Goal" :induct (len x))))
-
-(defthm vl-plainarglistlist-p-of-strip-cdrs
-  (implies (vl-plainarglistlist-p x)
-           (vl-plainarglistlist-p (strip-cdrs x)))
-  :hints(("Goal" :induct (len x))))
 
 
-(deflist vl-argumentlist-p (x)
-  (vl-arguments-p x)
-  :elementp-of-nil nil)
+(defsection vl-partition-msb-bitslices
+  :parents (argument-partitioning)
+  :short "Group up a list of bits into N-bit concatenations."
 
+  :long "<p>The basic way that we partition an expression into <tt>N</tt>-bit
+slices is to break it up into individual bits with @(see vl-msb-bitslice-expr),
+then group these bits together into <tt>N</tt>-bit concatenations.</p>
 
+<p><b>Signature:</b> @(call vl-partition-msb-bitslices) returns a @(see
+vl-exprlist-p).</p>
 
-(defsection vl-plainarglists-to-arguments
-  :parents (mlib)
-  :short "Convert each plainarglist in a @(see vl-plainarglistlist-p) into an
-@(see vl-argument-p)."
+<ul>
 
-  (defund vl-plainarglists-to-arguments (x)
-    (declare (xargs :guard (vl-plainarglistlist-p x)))
-    (if (consp x)
-        (cons (vl-arguments nil (car x))
-              (vl-plainarglists-to-arguments (cdr x)))
-      nil))
+<li><tt>n</tt> must be a positive number that must evenly divide <tt>(len
+x)</tt>.</li>
 
-  (local (in-theory (enable vl-plainarglists-to-arguments)))
+<li><tt>x</tt> must be a list of 1-bit, unsigned expressions.  Typically we
+expect that <tt>x</tt> is the result of calling @(see vl-msb-bitslice-expr) to
+slice up an expression into such bits.</li>
 
-  (defthm vl-argumentlist-p-of-vl-plainarglists-to-arguments
-    (implies (force (vl-plainarglistlist-p x))
-             (vl-argumentlist-p (vl-plainarglists-to-arguments x))))
+</ul>
 
-  (defthm len-of-vl-plainarglists-to-arguments
-    (equal (len (vl-plainarglists-to-arguments x))
-           (len x))))
+<p>We return a new list of expressions, each of is a concatenation of
+<tt>n</tt> successive bits of <tt>x</tt>.  For instance, if</p>
 
+<ul>
+ <li><tt>x</tt> is <tt>(bit_99 bit_98 ... bit_0)</tt>, and</li>
+ <li><tt>n</tt> is <tt>5</tt>,</li>
+</ul>
 
+<p>Then the resulting list of expressions will be:</p>
 
-(defsection vl-replicated-instnames
-  :parents (replicate)
-  :short "Safely generate the instance names for @(see replicate)d instances."
+<ul>
+ <li><tt>{bit_99, bit_98, bit_97, bit_96, bit_95}</tt></li>
+ <li><tt>{bit_94, bit_93, bit_92, bit_91, bit_90}</tt></li>
+ <li>...</li>
+ <li><tt>{bit_4,  bit_3,  bit_2,  bit_1,  bit_0}</tt></li>
+</ul>
 
-  :long "<p><b>Signature:</b> @(call vl-replicated-instnames) returns <tt>(MV
-WARNINGS' NAMES NF')</tt>.</p>
+<p>We prove that the resulting expressions all have width <tt>n</tt>, that
+there are the right number of resulting expressions, and that they are all
+well-typed assuming that the input bit-expressions are well-typed.</p>
 
-<p>We are given <tt>instname</tt>, a string that should be the name of some
-gate or module instance array, e.g., <tt>foo</tt> in:</p>
+<h3>Aesthetic Notes</h3>
 
-<code>
-   type foo [N:0] (arg1, arg2, ..., argM);
-</code>
+<p>An arguably unfortunate consequence of our partitioning approach is that the
+resulting concatenations of bits can be large and ugly in certain cases.  For
+instance, part selects like <tt>foo[31:0]</tt> will get blown up into things
+like <tt>{ foo[31], foo[30], ..., foo[0] }</tt>, which is overly verbose and
+perhaps hard to read.</p>
 
-<p>and <tt>instrange</tt>, which should be the associated range, e.g.,
-<tt>[N:0]</tt>.  We are also given <tt>nf</tt>, a @(see vl-namefactory-p) for
-generating new names, and a @(see warnings) accumulator which may be extended
-with a non-fatal warning if our preferred names are unavailable.  The
-<tt>inst</tt> is semantically irrelevant and is only as a context for
-warnings.</p>
+<p>My original implementation of partitioning also had a \"cleaning\" phase
+that tried to correct for this, essentially by identifying these descending
+sequences of bit-selects and re-assembling them into part-selects.  But I no
+longer to implement such a cleaning phase.  My rationale is that:</p>
 
-<p>We produce <tt>names</tt>, a list of <tt>N+1</tt> names that are to be used
-as the instance names for the split up arguments.  We prefer to use names of
-the form <tt>instname_index</tt>, e.g., we would prefer to split the above
-instance array into:</p>
+<ol>
 
-<code>
-   type foo_0 (arg1-0, arg2-0, ..., argM-0);
-   type foo_1 (arg1-1, arg2-1, ..., argM-1);
-   ...
-   type foo_N (arg1-N, arg2-N, ..., argM-N);
-</code>
+<li>Aesthetics here are not very important because instance arrays are not
+    that common in the first place, so we are not going to be breaking up
+    very many expressions in this potentially bad way, and</li>
 
-<p>The names we return are in <tt>foo_N, ..., foo_0</tt> order, to agree with
-@(see vl-partition-lvalue).</p>
+<li>Not cleaning avoids any potential errors in the cleaning code.  This is
+    not much of an argument since the cleaning code is relatively simple,
+    but it still has some merit.</li>
 
-<p>We really want the split up names to correspond to the original name, since
-otherwise it can be very hard to understand the relationship of the transformed
-module's state to the original module.</p>"
+</ol>"
 
-  (defund vl-preferred-replicate-names (low high instname)
-    "The names we'd like to use... typically this is something like (foo_0 foo_1
-   ... foo_N), but we can also handle ranges like [5:3] by producing (foo_3
-   foo_4 foo_5)."
-    (declare (xargs :guard (and (natp low)
-                                (natp high)
-                                (<= low high)
-                                (stringp instname))
-                    :measure (nfix (- (nfix high) (nfix low)))))
-    (let ((low  (mbe :logic (nfix low) :exec low))
-          (high (mbe :logic (nfix high) :exec high))
-          (name (str::cat instname "_" (str::natstr low))))
-      (if (mbe :logic (zp (- high low))
-               :exec (= low high))
-          (list name)
-        (cons name (vl-preferred-replicate-names (+ 1 low) high instname)))))
+  (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 
-  (defthm string-listp-of-vl-preferred-replicate-names
-    (string-listp (vl-preferred-replicate-names low high instname))
-    :hints(("Goal" :in-theory (enable vl-preferred-replicate-names))))
+  (local (defthm l0
+           (implies (and (equal (vl-exprlist->finalwidths x) (repeat 1 (len x)))
+                         (natp n)
+                         (<= n (len x)))
+                    (equal (vl-exprlist->finalwidths (nthcdr n x))
+                           (repeat 1 (- (len x) n))))
+           :hints(("Goal" :in-theory (enable repeat nthcdr)))))
 
-  (defthm len-of-vl-preferred-replicate-names
-    (equal (len (vl-preferred-replicate-names low high instname))
-           (+ 1 (nfix (- (nfix high) (nfix low)))))
-    :hints(("Goal" :in-theory (enable vl-preferred-replicate-names))))
+  (defund vl-partition-msb-bitslices (n x)
+    (declare (xargs :guard (and (posp n)
+                                (= (mod (len x) n) 0)
+                                (vl-exprlist-p x)
+                                (true-listp x)
+                                (all-equalp 1 (vl-exprlist->finalwidths x)))
+                    :measure (len x)))
+    (let ((n (mbe :logic (nfix n) :exec n)))
+      (cond ((= n 0)
+             nil)
+            ((< (len x) n)
+             nil)
+            (t
+             (cons (make-vl-nonatom :op :vl-concat
+                                    :args (take n x)
+                                    :finalwidth n
+                                    :finaltype :vl-unsigned
+                                    :atts nil)
+                   (vl-partition-msb-bitslices n (nthcdr n x)))))))
 
+  (local (in-theory (enable vl-partition-msb-bitslices)))
 
-  (defund vl-bad-replicate-names (n basename nf)
-    "Returns (MV NAMES NF').  This is our fallback function which we only use if
-  we can't use our preferred names due to name conflicts."
-    (declare (xargs :guard (and (natp n)
-                                (stringp basename)
-                                (vl-namefactory-p nf))))
-    (b* (((when (zp n))
-          (mv nil nf))
-         ((mv name nf)
-          (vl-namefactory-indexed-name basename nf))
-         ((mv others nf)
-          (vl-bad-replicate-names (- n 1) basename nf)))
-        (mv (cons name others) nf)))
+  (defthm vl-exprlist-p-of-vl-partition-msb-bitslices
+    (implies (force (vl-exprlist-p x))
+             (vl-exprlist-p (vl-partition-msb-bitslices n x))))
 
-  (defthm vl-bad-replicate-names-props
-    (implies (and (force (stringp basename))
-                  (force (vl-namefactory-p nf)))
-             (and (string-listp (mv-nth 0 (vl-bad-replicate-names n basename nf)))
-                  (vl-namefactory-p (mv-nth 1 (vl-bad-replicate-names n basename nf)))))
-    :hints(("Goal" :in-theory (enable vl-bad-replicate-names))))
+  (defthm len-of-vl-partition-msb-bitslices
+    (implies (force (posp n))
+             (equal (len (vl-partition-msb-bitslices n x))
+                    (floor (len x) n))))
 
-  (defthm len-of-vl-bad-replicate-names
-    (equal (len (mv-nth 0 (vl-bad-replicate-names n basename nf)))
-           (nfix n))
-    :hints(("Goal" :in-theory (enable vl-bad-replicate-names))))
+  (defthm vl-exprlist->finalwidths-of-vl-partition-msb-bitslices
+    (implies (force (posp n))
+             (equal (vl-exprlist->finalwidths (vl-partition-msb-bitslices n x))
+                    (repeat n (floor (len x) n))))
+    :hints(("Goal" :in-theory (enable repeat))))
 
+  (defthm vl-exprlist->finaltypes-of-vl-partition-msb-bitslices
+    (implies (force (posp n))
+             (equal (vl-exprlist->finaltypes (vl-partition-msb-bitslices n x))
+                    (repeat :vl-unsigned (floor (len x) n))))
+    :hints(("Goal" :in-theory (enable repeat))))
 
-  (local (in-theory (enable vl-range-resolved-p)))
+  (local (defthm c0
+           (implies (and (all-equalp 1 (vl-exprlist->finalwidths x))
+                         (<= (nfix n) (len x)))
+                    (all-equalp 1 (vl-exprlist->finalwidths (simpler-take n x))))
+           :hints(("goal"
+                   :in-theory (e/d (simpler-take)
+                                   (all-equalp))))))
 
-  (defund vl-replicated-instnames (instname instrange nf inst warnings)
-    "Returns (MV WARNINGS NAMES NF')"
-    (declare (xargs :guard (and (vl-maybe-string-p instname)
-                                (vl-range-p instrange)
-                                (vl-range-resolved-p instrange)
-                                (vl-namefactory-p nf)
-                                (or (vl-modinst-p inst)
-                                    (vl-gateinst-p inst))
-                                (vl-warninglist-p warnings))))
-    (b* ((high (vl-resolved->val (vl-range->left instrange)))
-         (low  (vl-resolved->val (vl-range->right instrange)))
-         (instname (or instname "unnamed"))
-         (want (vl-preferred-replicate-names low high instname))
-         ((mv fresh nf)
-          (vl-namefactory-plain-names want nf))
-         ((when (equal want fresh))
-          ;; Great -- we can use exactly what we want to use.
-          (mv warnings (reverse fresh) nf))
-         ;; Use bad names.
-         ((mv fresh nf)
-          (vl-bad-replicate-names (+ 1 (- high low))
-                                  (str::cat "vl_badname_" instname)
-                                  nf))
-         (warnings
-          (cons (make-vl-warning
-                 :type :vl-warn-replicate-name
-                 :msg "~a0: preferred names for instance array ~s1 are not ~
-                     available, so using lousy vl_badname_* naming scheme ~
-                     instead.  This conflict is caused by ~&2."
-                 :args (list inst instname
-                             (difference (mergesort want) (mergesort fresh)))
-                 :fatalp nil
-                 :fn 'vl-replicated-instnames)
-                warnings)))
-        (mv warnings (reverse fresh) nf)))
+  (local (defthm c1
+           (implies (all-equalp 1 (vl-exprlist->finalwidths x))
+                    (all-equalp 1 (vl-exprlist->finalwidths (nthcdr n x))))))
 
-  (local (in-theory (enable vl-replicated-instnames)))
+  (local (defthm c2
+           (implies (all-equalp 1 (vl-exprlist->finalwidths x))
+                    (not (member-equal nil (vl-exprlist->finalwidths x))))))
 
-  (defthm vl-warninglist-p-of-vl-replicated-instnames
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 0 (vl-replicated-instnames instname instrange nf inst warnings)))))
-
-  (defthm string-listp-of-vl-replicated-instnames
-    (implies (and (force (vl-maybe-string-p instname))
-                  (force (vl-namefactory-p nf)))
-             (string-listp
-              (mv-nth 1 (vl-replicated-instnames instname instrange nf inst warnings)))))
-
-  (defthm len-of-vl-replicated-instnames
-    (implies (and (force (vl-range-resolved-p instrange))
-                  (force (vl-namefactory-p nf)))
-             (equal
-              (len (mv-nth 1 (vl-replicated-instnames instname instrange nf inst warnings)))
-              (vl-range-size instrange)))
-    :hints(("Goal" :in-theory (e/d (vl-range-size)))))
-
-  (defthm vl-namefactory-p-of-vl-replicated-instnames
-    (implies (and (force (vl-maybe-string-p instname))
-                  (force (vl-range-p instrange))
-                  (force (vl-range-resolved-p instrange))
-                  (force (vl-namefactory-p nf)))
-             (vl-namefactory-p
-              (mv-nth 2 (vl-replicated-instnames instname instrange nf inst warnings))))))
-
-
-
-
-(defsection vl-partition-plainarg-aux
-  :parents (vl-partition-plainarg)
-  :short "Convert expressions into plainargs."
-  :long "<p>Suppose we have split an argument into a number of slices, which
-are expressions <tt>E1</tt>, <tt>E2</tt>, ..., <tt>Ek</tt>.  This function just
-turns those expressions into plainargs, by attaching the appropriate direction
-and replicating the attributes of the original argument.</p>"
-
-  (defund vl-partition-plainarg-aux (exprs dir atts)
-    (declare (xargs :guard (and (vl-exprlist-p exprs)
-                                (vl-maybe-direction-p dir)
-                                (vl-atts-p atts))))
-    (if (consp exprs)
-        (cons (make-vl-plainarg :expr (car exprs) :dir dir :atts atts)
-              (vl-partition-plainarg-aux (cdr exprs) dir atts))
-      nil))
-
-  (local (in-theory (enable vl-partition-plainarg-aux)))
-
-  (defthm vl-plainarglist-p-of-vl-partition-plainarg-aux
-    (implies (and (force (vl-exprlist-p exprs))
-                  (force (vl-maybe-direction-p dir))
-                  (force (vl-atts-p atts)))
-             (vl-plainarglist-p (vl-partition-plainarg-aux exprs dir atts))))
-
-  (defthm len-of-vl-partition-plainarg-aux
-    (equal (len (vl-partition-plainarg-aux exprs dir atts))
-           (len exprs))))
+  (defthm vl-exprlist-welltyped-p-of-vl-partition-msb-bitslices
+    (implies (and (force (vl-exprlist-p x))
+                  (force (vl-exprlist-welltyped-p x))
+                  (force (all-equalp 1 (vl-exprlist->finalwidths x))))
+             (vl-exprlist-welltyped-p (vl-partition-msb-bitslices n x)))
+    :hints(("Goal" :in-theory (e/d (vl-expr-welltyped-p)
+                                   (all-equalp))))))
 
 
 
 
 (defsection vl-partition-plainarg
-  :parents (replicate)
+  :parents (argument-partitioning)
   :short "Partition a plain argument into slices."
 
   :long "<p><b>Signature:</b> @(call vl-partition-plainarg) returns <tt>(mv
-warnings plainargs)</tt>.</p>
+successp warnings plainargs)</tt>.</p>
 
 <p>As inputs,</p>
 
 <ul>
 
-  <li><tt>arg</tt> is a plainarg which we may need to replicate,</li>
+<li><tt>arg</tt> is a plainarg which we may need to replicate,</li>
 
-  <li><tt>port-width</tt> is the width of the port this argument is
-    connected to.</li>
+<li><tt>port-width</tt> is the width of the port this argument is connected
+to.</li>
 
-  <li><tt>insts</tt> is the number of instances in this array,</li>
+<li><tt>insts</tt> is the number of instances in this array,</li>
 
-  <li><tt>mod</tt> is the mod we are in (so we can look up wire ranges),
-  and</li>
+<li><tt>mod</tt> is the superior module that the instance array occurs in,
+which is needed for proper bit-splitting,</li>
 
-  <li><tt>warnings</tt> is an accumulator for warnings.</li>
+<li><tt>ialist</tt> is the @(see vl-moditem-alist) for <tt>mod</tt>, for
+fast wire lookups,</li>
+
+<li><tt>elem</tt> is a @(see vl-modelement-p) for good error messages,</li>
+
+<li><tt>warnings</tt> is an accumulator for warnings, and may be extended with
+fatal warnings.</li>
 
 </ul>
 
 <p>Our goal is to create a list of the <tt>insts</tt>-many plainargs which this
-port is to be partitioned into.</p>"
+port is to be partitioned into.  On success, <tt>plainargs</tt> will be a list
+of <tt>insts</tt> arguments, each of which has width <tt>port-width</tt>.  The
+arguments are in \"msb-first\" order, i.e., the \"msb-most slice\" of
+<tt>arg</tt> comes first.</p>
 
-  (defund vl-partition-plainarg (arg port-width insts mod warnings)
+<p>We might fail with a fatal warning if there is some problem with the actual;
+we expect the actual to be already sized, <see url='@(url
+vl-expr-welltyped-p)'>well-typed</see>, and <see url='@(url
+expr-slicing)'>sliceable</see>), and its width must be compatible with the
+width of the port, as described in @(see argument-partitioning).</p>"
+
+  (defund vl-partition-plainarg (arg port-width insts mod ialist elem warnings)
     "Returns (MV WARNINGS PLAINARGS)"
     (declare (xargs :guard (and (vl-plainarg-p arg)
                                 (posp port-width)
                                 (posp insts)
                                 (vl-module-p mod)
+                                (equal ialist (vl-moditem-alist mod))
+                                (vl-modelement-p elem)
                                 (vl-warninglist-p warnings))))
-
 
     (b* ((expr (vl-plainarg->expr arg))
          ((unless expr)
           ;; Special case for blanks: If we have a blank in an array of
           ;; instances, we just want to send blank to each member of the
           ;; instance.
-          (mv warnings (repeat arg insts)))
+          (mv t warnings (repeat arg insts)))
 
          (expr-width (vl-expr->finalwidth expr))
          ((unless (posp expr-width))
-          ;; Quick sanity check.
-          (mv (cons (make-vl-warning
-                     :type :vl-bad-argument
-                     :msg "Expected widths to be computed, but found ~
-                           expression ~a0 without any width assigned."
-                     :args (list expr)
-                     :fatalp t
-                     :fn 'vl-partition-plainarg)
-                    warnings)
-              ;; Senseless value for nice theorem.
-              (repeat arg insts)))
+          (b* ((w (make-vl-warning
+                   :type :vl-bad-argument
+                   :msg "~a0: expected argument widths to be computed, but ~
+                         found argument ~a1 without any width assigned."
+                   :args (list elem expr)
+                   :fatalp t
+                   :fn 'vl-partition-plainarg)))
+            (mv nil (cons w warnings) nil)))
 
          ((when (= expr-width port-width))
           ;; The port is exactly as wide as the argument being given to it.
           ;; We are to replicate the argument, verbatim, across all of the
           ;; instances we are creating.
-          (mv warnings (repeat arg insts)))
+          (mv t warnings (repeat arg insts)))
 
          ;; Otherwise, the port is not the same width as the argument.  In this
          ;; case, the argument's width should be a multiple of the port's
-         ;; width.  Lets try to partition the argument into port-width-bit
-         ;; segments.
-         ((mv successp exprs)
-          (vl-partition-lvalue expr port-width mod))
+         ;; width.
+
+         ((unless (= expr-width (* port-width insts)))
+          (b* ((w (make-vl-warning
+                   :type :vl-bad-argument
+                   :msg "~a0: argument ~a1 has width ~x2, which is not ~
+                         compatible with this array instance.  (Since the ~
+                         port has width ~x3, the only acceptable widths are ~
+                         ~x3 and ~x4.)"
+                   :args (list elem expr expr-width port-width (* port-width insts))
+                   :fatalp t
+                   :fn 'vl-partition-plainarg)))
+            (mv nil (cons w warnings) nil)))
+
+         ((unless (vl-expr-sliceable-p expr))
+          (b* ((w (make-vl-warning
+                   :type :vl-bad-argument
+                   :msg "~a0: trying to slice an unsliceable argument, ~a1."
+                   :args (list elem expr)
+                   :fatalp t
+                   :fn 'vl-partition-plainarg)))
+            (mv nil (cons w warnings) nil)))
+
+         ((unless (vl-expr-welltyped-p expr))
+          (b* ((w (make-vl-warning
+                   :type :vl-bad-argument
+                   :msg "~a0: trying to slice up ill-typed argument ~a1."
+                   :args (list elem expr)
+                   :fatalp t
+                   :fn 'vl-partition-plainarg)))
+            (mv nil (cons w warnings) nil)))
+
+         ;; Everything is looking good, try to slice the expression into bits.
+         ((mv successp warnings bits)
+          (vl-msb-bitslice-expr expr mod ialist warnings))
 
          ((unless successp)
-          ;; We failed outright.  The expr's width is not a multiple of the
-          ;; port's width.
-          (mv (cons (make-vl-warning
-                     :type :vl-bad-argument
-                     :msg "Cannot partition ~x0-bit argument into ~x1-bit ~
-                           slices: ~a1."
-                     :args (list expr-width port-width expr)
-                     :fatalp t
-                     :fn 'vl-partition-plainarg)
-                    warnings)
-              ;; Senseless value for nice theorem
-              (repeat arg insts)))
+          ;; This shouldn't really occur in practice, but if it does occur we've
+          ;; already given a warning.
+          (mv nil warnings nil))
 
-         ((unless (= (len exprs) insts))
-          ;; Partitioning was successful, but we got the wrong number of
-          ;; instances!
-          ;; BOZO we can probably prove this away now?
-          (mv (cons (make-vl-warning
-                     :type :vl-bad-argument
-                     :msg "Wanted ~x0 ~x1-bit partitions of the ~x2-bit ~
-                           argument, ~a3, but ~x4 were produced."
-                     :args (list insts port-width expr-width expr (len exprs))
-                     :fatalp t
-                     :fn 'vl-partition-plainarg)
-                    warnings)
-              ;; Senseless value for nice theorem
-              (repeat arg insts)))
+         ;; At this point, bits are provably a list of expr-width many
+         ;; expressions, each of which is well-typed, 1-bit wide, and unsigned.
+         ;; We now need to gather these expressions up into port-width bit
+         ;; concatenations.  This is always successful and results in
+         ;; insts-many port-width bit expressions.
+         (partitions (vl-partition-msb-bitslices port-width bits))
 
-         ;; Otherwise, the argument has been partitioned into inst-many new
-         ;; arguments, each of which has port-width bits.  That's exactly what
-         ;; we want.  Now turn those all into ports, instead of expressions.
-         (plainargs (vl-partition-plainarg-aux exprs
-                                               (vl-plainarg->dir arg)
-                                               (vl-plainarg->atts arg))))
+         ;; Now we just have to turn all these expressions into new plainargs,
+         ;; instead of just expressions.
+         (plainargs (vl-exprlist-to-plainarglist partitions
+                                                 :dir (vl-plainarg->dir arg)
+                                                 :atts (vl-plainarg->atts arg))))
 
-        (mv warnings plainargs)))
+      (mv t warnings plainargs)))
 
   (local (in-theory (enable vl-partition-plainarg)))
 
   (defthm vl-warninglist-p-of-vl-partition-plainarg
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 0 (vl-partition-plainarg arg port-width insts mod warnings)))))
+    (let ((ret (vl-partition-plainarg arg port-width insts mod ialist elem warnings)))
+      (implies (force (vl-warninglist-p warnings))
+               (vl-warninglist-p (mv-nth 1 ret)))))
 
   (defthm vl-plainarglist-p-of-vl-partition-plainarg
-    (implies (and (force (vl-plainarg-p arg))
-                  (force (posp port-width))
-                  (force (vl-module-p mod)))
-             (vl-plainarglist-p
-              (mv-nth 1 (vl-partition-plainarg arg port-width insts mod warnings)))))
+    (let ((ret (vl-partition-plainarg arg port-width insts mod ialist elem warnings)))
+      (implies (and (mv-nth 0 ret)
+                    (force (vl-plainarg-p arg))
+                    (force (posp port-width))
+                    (force (posp insts))
+                    (force (vl-module-p mod))
+                    (force (equal ialist (vl-moditem-alist mod))))
+               (vl-plainarglist-p (mv-nth 2 ret)))))
 
   (defthm len-of-vl-partition-plainarg
-    (equal (len (mv-nth 1 (vl-partition-plainarg arg port-width insts mod warnings)))
-           (nfix insts))))
+    (let ((ret (vl-partition-plainarg arg port-width insts mod ialist elem warnings)))
+      (implies (and (mv-nth 0 ret)
+                    (force (vl-plainarg-p arg))
+                    (force (posp port-width))
+                    (force (posp insts))
+                    (force (vl-module-p mod))
+                    (force (equal ialist (vl-moditem-alist mod))))
+               (equal (len (mv-nth 2 ret))
+                      insts))))
 
-
+  ;; hrmn, blank handling ruins nice theorms about width/type...
+  ;; could write a nice predicate, but whatever.
+  )
 
 
 (defsection vl-partition-plainarglist
-  :parents (replicate)
+  :parents (argument-partitioning)
   :short "Extend @(see vl-partition-plainarg) across a list of arguments."
 
   :long "<p><b>Signature:</b> @(call vl-partition-plainarglist) returns <tt>(mv
-warnings result)</tt>, where <tt>result</tt> is a @(see vl-plainarglistlist-p),
-i.e., a list of @(see vl-plainarglist-p)'s.</p>
-
-<p>The inputs are as follows:</p>
-
-<ul>
-
-<li><tt>args</tt> is a plainarglist which represents the actuals of some gate
-or module instance,</li>
-
-<li><tt>port-widths</tt> are a list of positive numbers, which represent the
-sizes of these arguments, and which has the same length as <tt>args</tt>,</li>
-
-<li><tt>insts</tt> is the number of instances we are trying to generate, i.e.,
-the size of the range of this instance array, and</li>
-
-<li><tt>mod</tt> is the module we are in (so we can look up wire ranges),</li>
-
-<li><tt>warnings</tt> is an accumulator for warnings.</li>
-
-</ul>
+successp warnings result)</tt>, where <tt>result</tt> is a @(see
+vl-plainarglistlist-p).</p>
 
 <p>Supposing that <tt>args</tt> has length <i>N</i>, the <tt>result</tt> we
-return is a list of <i>N</i> plainarglists (one for each argument), and each of
-these lists has <tt>insts</tt>-many plainargs.  That is, each element of the
-<tt>result</tt> is the partitioning of the corresponding argument.</p>"
+return on success is a list of <i>N</i> plainarglists (one for each argument),
+and each of these lists has <tt>insts</tt>-many plainargs.  That is, each
+element of the <tt>result</tt> is the partitioning of the corresponding
+argument.</p>"
 
-  (defund vl-partition-plainarglist (args port-widths insts mod warnings)
-    "Returns (MV WARNINGS PLAINARGLISTS)"
+  (defund vl-partition-plainarglist (args port-widths insts mod ialist elem warnings)
+    "Returns (MV SUCCESSP WARNINGS PLAINARGLISTS)"
     (declare (xargs :guard (and (vl-plainarglist-p args)
                                 (pos-listp port-widths)
                                 (same-lengthp args port-widths)
                                 (posp insts)
                                 (vl-module-p mod)
+                                (equal ialist (vl-moditem-alist mod))
+                                (vl-modelement-p elem)
                                 (vl-warninglist-p warnings))))
-    (if (atom args)
-        (mv warnings nil)
-      (b* (((mv warnings car-result)
-            (vl-partition-plainarg (car args) (car port-widths) insts mod warnings))
-           ((mv warnings cdr-result)
-            (vl-partition-plainarglist (cdr args) (cdr port-widths) insts mod warnings)))
-          (mv warnings (cons car-result cdr-result)))))
+    (b* (((when (atom args))
+          (mv t warnings nil))
+         ((mv successp warnings car-result)
+          (vl-partition-plainarg (car args) (car port-widths) insts mod ialist elem warnings))
+         ((unless successp)
+          (mv nil warnings nil))
+         ((mv successp warnings cdr-result)
+          (vl-partition-plainarglist (cdr args) (cdr port-widths) insts mod ialist elem warnings))
+         ((unless successp)
+          (mv nil warnings nil)))
+      (mv t warnings (cons car-result cdr-result))))
 
-  (defmvtypes vl-partition-plainarglist (nil true-listp))
+  (defmvtypes vl-partition-plainarglist (booleanp nil true-listp))
 
   (local (in-theory (enable vl-partition-plainarglist)))
 
   (defthm vl-warninglist-p-of-vl-partition-plainarglist
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 0 (vl-partition-plainarglist args port-widths insts mod warnings)))))
+    (let ((ret (vl-partition-plainarglist args port-widths insts mod ialist elem warnings)))
+      (implies (force (vl-warninglist-p warnings))
+               (vl-warninglist-p (mv-nth 1 ret)))))
 
   (defthm vl-plainarglistlist-p-of-vl-partition-plainarglist
-    (implies (and (force (vl-plainarglist-p args))
-                  (force (same-lengthp args port-widths))
-                  (force (pos-listp port-widths))
-                  (force (vl-module-p mod)))
-             (vl-plainarglistlist-p
-              (mv-nth 1 (vl-partition-plainarglist args port-widths insts mod warnings)))))
+    (let ((ret (vl-partition-plainarglist args port-widths insts mod ialist elem warnings)))
+      (implies (and (force (vl-plainarglist-p args))
+                    (force (pos-listp port-widths))
+                    (force (same-lengthp args port-widths))
+                    (force (posp insts))
+                    (force (vl-module-p mod))
+                    (force (equal ialist (vl-moditem-alist mod))))
+               (vl-plainarglistlist-p (mv-nth 2 ret)))))
 
   (defthm all-have-len-of-vl-partition-plainarglist
-    (implies (force (natp insts))
-             (all-have-len
-              (mv-nth 1 (vl-partition-plainarglist args port-widths insts mod warnings))
-              insts))))
+    (let ((ret (vl-partition-plainarglist args port-widths insts mod ialist elem warnings)))
+      (implies (and (mv-nth 0 ret)
+                    (force (vl-plainarglist-p args))
+                    (force (pos-listp port-widths))
+                    (force (same-lengthp args port-widths))
+                    (force (posp insts))
+                    (force (vl-module-p mod))
+                    (force (equal ialist (vl-moditem-alist mod))))
+               (all-have-len (mv-nth 2 ret) insts)))))
 
 
 
 
 (defsection vl-reorient-partitioned-args
-  :parents (replicate)
+  :parents (argument-partitioning)
   :short "Group arguments for instances after @(see vl-partition-plainarglist)."
 
   :long "<p><b>Signature:</b> @(call vl-reorient-partitioned-args) returns a
@@ -671,7 +808,7 @@ data by slice, rather than by argument.</p>"
 
 
 (defsection vl-assemble-gateinsts
-  :parents (replicate)
+  :parents (argument-partitioning)
   :short "Build @(see vl-gateinst-p)'s from the sliced-up arguments."
 
   :long "<p><b>Signature:</b> @(call vl-assemble-gateinsts) returns a @(see
@@ -720,6 +857,11 @@ the gate instance.  We create the new gates.</p>"
 
 
 
+; BOZO now that we have VL primitive modules for other gates, it might make the
+; most sense to try to just eliminate all gates in one fell swoop early in the
+; transformation sequence, replacing them with their VL module equivalents,
+; then only deal with module instances instead of gate instances here.
+
 (defsection vl-replicate-gateinst
   :parents (replicate)
   :short "Convert a gate into a list of simpler gates, if necessary."
@@ -727,70 +869,82 @@ the gate instance.  We create the new gates.</p>"
   :long "<p><b>Signature:</b> @(call vl-replicate-gateinst) returns <tt>(mv
 warnings new-gateinsts new-nf)</tt>.</p>
 
-<p><tt>x</tt> is some gate, <tt>warnings</tt> is an accumulator for warnings,
-<tt>mod</tt> is the module we are working in, and <tt>nf</tt> is a @(see
-vl-namefactory-p) for generating names.  If <tt>x</tt> has a range, i.e., it is
-an array of gate instances, then we try to split it into a list of
-<tt>nil</tt>-ranged, simple gates.  The <tt>new-gateinsts</tt> should replace
-<tt>x</tt> in the module.</p>"
+<ul>
 
-  (defund vl-replicate-gateinst (x nf mod warnings)
+<li><tt>x</tt> is some gate</li>
+
+<li><tt>warnings</tt> is an accumulator for warnings,</li>
+
+<li><tt>mod</tt> is the module that <tt>x</tt> occurs in, and <tt>ialist</tt>
+is its @(see vl-moditem-alist),</li>
+
+<li><tt>nf</tt> is a @(see vl-namefactory-p) for generating names.</li>
+
+</ul>
+
+<p>If <tt>x</tt> has a range, i.e., it is an array of gate instances, then we
+try to split it into a list of <tt>nil</tt>-ranged, simple gates.  The
+<tt>new-gateinsts</tt> should replace <tt>x</tt> in the module.</p>"
+
+  (defund vl-replicate-gateinst (x nf mod ialist warnings)
     "Returns (MV WARNINGS' NEW-GATEINSTS NF')"
     (declare (xargs :guard (and (vl-gateinst-p x)
                                 (vl-namefactory-p nf)
                                 (vl-module-p mod)
+                                (equal ialist (vl-moditem-alist mod))
                                 (vl-warninglist-p warnings))))
-    (b* ((range    (vl-gateinst->range x))
-         (type     (vl-gateinst->type x))
-         (name     (vl-gateinst->name x))
-         (strength (vl-gateinst->strength x))
-         (delay    (vl-gateinst->delay x))
-         (args     (vl-gateinst->args x))
-         (loc      (vl-gateinst->loc x))
-         (atts     (vl-gateinst->atts x))
-         ((unless range)
+    (b* (((vl-gateinst x) x)
+
+         ((unless x.range)
           ;; There is no range, so this is not an array of gates; we don't
           ;; need to do anything.
           (mv warnings (list x) nf))
 
-         ((unless (vl-range-resolved-p range))
+         ((unless (vl-range-resolved-p x.range))
           (b* ((w (make-vl-warning
                    :type :vl-bad-gate
                    :msg "~a0: expected range of instance array to be ~
-                           resolved, but found ~a1."
-                   :args (list x range)
+                         resolved, but found ~a1."
+                   :args (list x x.range)
                    :fatalp t
                    :fn 'vl-replicate-gateinst)))
             (mv (cons w warnings) (list x) nf)))
 
          ;; We add an annotation saying that these instances are from a gate
          ;; array.
-         (atts        (cons (list "VL_FROM_GATE_ARRAY") atts))
+         (x.atts      (cons (list "VL_FROM_GATE_ARRAY") x.atts))
 
          ;; We previously checked that size was positive, but via the theorem
          ;; posp-of-vl-range-size this check was not necessary; size is always
          ;; positive.
-         (size        (vl-range-size range))
+         (size        (vl-range-size x.range))
 
          ;; Claim: The port widths for gates are always 1.  BOZO is there any
          ;; evidence to support this claim, from the Verilog spec?
-         (port-widths (repeat 1 (len args)))
+         (port-widths (repeat 1 (len x.args)))
 
          ;; Partition the args into their slices, then transpose the slices to
          ;; form the new argument lists for the instances we are going to
          ;; generate.
-         ((mv warnings slices) (vl-partition-plainarglist args port-widths size mod warnings))
-         (transpose            (vl-reorient-partitioned-args slices size))
+         ((mv successp warnings slices)
+          (vl-partition-plainarglist x.args port-widths size mod ialist x warnings))
+
+         ((unless successp)
+          ;; Already added warnings
+          (mv warnings (list x) nf))
+
+         (transpose (vl-reorient-partitioned-args slices size))
 
          ;; Come up with names for these instances.
          ((mv warnings names nf)
-          (vl-replicated-instnames name range nf x warnings))
+          (vl-replicated-instnames x.name x.range nf x warnings))
 
          ;; Finally, assemble the gate instances.
-         (new-gates (vl-assemble-gateinsts names transpose type strength delay atts loc)))
+         (new-gates
+          (vl-assemble-gateinsts names transpose x.type x.strength x.delay x.atts x.loc)))
 
-        ;; And that's it!
-        (mv warnings new-gates nf)))
+      ;; And that's it!
+      (mv warnings new-gates nf)))
 
   (defmvtypes vl-replicate-gateinst (nil true-listp nil))
 
@@ -798,19 +952,21 @@ an array of gate instances, then we try to split it into a list of
 
   (defthm vl-warninglist-p-of-vl-replicate-gateinst
     (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p (mv-nth 0 (vl-replicate-gateinst x nf mod warnings)))))
+             (vl-warninglist-p (mv-nth 0 (vl-replicate-gateinst x nf mod ialist warnings)))))
 
   (defthm vl-gateinstlist-p-of-vl-replicate-gateinst
     (implies (and (force (vl-gateinst-p x))
                   (force (vl-namefactory-p nf))
-                  (force (vl-module-p mod)))
-             (vl-gateinstlist-p (mv-nth 1 (vl-replicate-gateinst x nf mod warnings)))))
+                  (force (vl-module-p mod))
+                  (force (equal ialist (vl-moditem-alist mod))))
+             (vl-gateinstlist-p (mv-nth 1 (vl-replicate-gateinst x nf mod ialist warnings)))))
 
   (defthm vl-namefactory-p-of-vl-replicate-gateinst
     (implies (and (force (vl-gateinst-p x))
-                  (force (vl-namefactory-p nf)))
-             (vl-namefactory-p (mv-nth 2 (vl-replicate-gateinst x nf mod warnings))))))
-
+                  (force (vl-namefactory-p nf))
+                  (force (vl-module-p mod))
+                  (force (equal ialist (vl-moditem-alist mod))))
+             (vl-namefactory-p (mv-nth 2 (vl-replicate-gateinst x nf mod ialist warnings))))))
 
 
 
@@ -825,18 +981,19 @@ warnings new-gateinsts new-nf)</tt>.</p>
 <p><tt>new-gateinsts</tt> is a list of new gates, which should replace
 <tt>x</tt> in the module.</p>"
 
-  (defund vl-replicate-gateinstlist (x nf mod warnings)
+  (defund vl-replicate-gateinstlist (x nf mod ialist warnings)
     "Returns (MV WARNINGS NEW-GATEINSTS NEW-NF)"
     (declare (xargs :guard (and (vl-gateinstlist-p x)
                                 (vl-namefactory-p nf)
                                 (vl-module-p mod)
+                                (equal ialist (vl-moditem-alist mod))
                                 (vl-warninglist-p warnings))))
     (b* (((when (atom x))
           (mv warnings nil nf))
          ((mv warnings car-prime nf)
-          (vl-replicate-gateinst (car x) nf mod warnings))
+          (vl-replicate-gateinst (car x) nf mod ialist warnings))
          ((mv warnings cdr-prime nf)
-          (vl-replicate-gateinstlist (cdr x) nf mod warnings))
+          (vl-replicate-gateinstlist (cdr x) nf mod ialist warnings))
          (new-gateinsts (append car-prime cdr-prime)))
         (mv warnings new-gateinsts nf)))
 
@@ -846,18 +1003,46 @@ warnings new-gateinsts new-nf)</tt>.</p>
 
   (defthm vl-warninglist-p-of-vl-replicate-gateinstlist
     (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p (mv-nth 0 (vl-replicate-gateinstlist x nf mod warnings)))))
+             (vl-warninglist-p (mv-nth 0 (vl-replicate-gateinstlist x nf mod ialist warnings)))))
 
   (defthm vl-gateinstlist-p-of-vl-replicate-gateinstlist
     (implies (and (force (vl-gateinstlist-p x))
                   (force (vl-module-p mod))
-                  (force (vl-namefactory-p nf)))
-             (vl-gateinstlist-p (mv-nth 1 (vl-replicate-gateinstlist x nf mod warnings)))))
+                  (force (vl-namefactory-p nf))
+                  (force (equal ialist (vl-moditem-alist mod))))
+             (vl-gateinstlist-p (mv-nth 1 (vl-replicate-gateinstlist x nf mod ialist warnings)))))
 
   (defthm vl-namefactory-p-of-vl-replicate-gateinstlist
     (implies (and (force (vl-gateinstlist-p x))
-                  (force (vl-namefactory-p nf)))
-             (vl-namefactory-p (mv-nth 2 (vl-replicate-gateinstlist x nf mod warnings))))))
+                  (force (vl-module-p mod))
+                  (force (vl-namefactory-p nf))
+                  (force (equal ialist (vl-moditem-alist mod))))
+             (vl-namefactory-p (mv-nth 2 (vl-replicate-gateinstlist x nf mod ialist warnings))))))
+
+
+
+
+(defsection vl-plainarglists-to-arguments
+  :parents (argument-partitioning)
+  :short "Convert each plainarglist in a @(see vl-plainarglistlist-p) into an
+@(see vl-argument-p)."
+
+  (defund vl-plainarglists-to-arguments (x)
+    (declare (xargs :guard (vl-plainarglistlist-p x)))
+    (if (consp x)
+        (cons (vl-arguments nil (car x))
+              (vl-plainarglists-to-arguments (cdr x)))
+      nil))
+
+  (local (in-theory (enable vl-plainarglists-to-arguments)))
+
+  (defthm vl-argumentlist-p-of-vl-plainarglists-to-arguments
+    (implies (force (vl-plainarglistlist-p x))
+             (vl-argumentlist-p (vl-plainarglists-to-arguments x))))
+
+  (defthm len-of-vl-plainarglists-to-arguments
+    (equal (len (vl-plainarglists-to-arguments x))
+           (len x))))
 
 
 
@@ -867,7 +1052,7 @@ warnings new-gateinsts new-nf)</tt>.</p>
   :short "Partition arguments for a module instance"
 
   :long "<p><b>Signature:</b> @(call vl-replicate-arguments) returns <tt>(mv
-warnings arg-lists)</tt>.</p>
+successp warnings arg-lists)</tt>.</p>
 
 <ul>
 
@@ -883,9 +1068,11 @@ arguments in <tt>args</tt>.</li>
 <li><tt>insts</tt> is the number of instances that we are splitting these
 arguments into.</li>
 
-<li><tt>mod</tt> is the module we are working in.</li>
+<li><tt>mod</tt> is the module we are working in, and <tt>ialist</tt> is its
+@(see vl-moditem-alist).</li>
 
-<li><tt>warnings</tt> is an accumulator for warnings.</li>
+<li><tt>elem</tt> is a @(see vl-modelement-p) for better warnings, and
+<tt>warnings</tt> is an accumulator for warnings.</li>
 
 </ul>
 
@@ -893,70 +1080,77 @@ arguments into.</li>
 <tt>insts</tt>, and contains the new arguments to use in the split up
 module instances.</p>"
 
-  (defund vl-replicate-arguments (args port-widths insts mod warnings)
-    "Returns (MV WARNINGS ARG-LISTS)"
+  (defund vl-replicate-arguments (args port-widths insts mod ialist elem warnings)
+    "Returns (MV SUCCESSP WARNINGS ARG-LISTS)"
     (declare (xargs :guard (and (vl-arguments-p args)
                                 (pos-listp port-widths)
                                 (posp insts)
                                 (vl-module-p mod)
+                                (equal ialist (vl-moditem-alist mod))
+                                (vl-modelement-p elem)
                                 (vl-warninglist-p warnings))))
-    (let ((namedp  (vl-arguments->namedp args))
-          (actuals (vl-arguments->args args)))
-      (cond (namedp
-             ;; Not a very good error message.  The value we return is
-             ;; senseless, but gives us a nice length theorem.
-             (mv (cons (make-vl-warning
-                        :type :vl-bad-arguments
-                        :msg "Expected only plain argument lists, but found ~
-                              named args instead."
-                        :fatalp t
-                        :fn 'vl-replicate-arguments)
-                       warnings)
-                 (repeat args insts)))
+    (b* ((namedp  (vl-arguments->namedp args))
+         (actuals (vl-arguments->args args))
 
-            ((not (same-lengthp actuals port-widths))
-             ;; Not a very good error message.  The value we return is
-             ;; senseless, but gives us a nice length theorem.
-             (mv (cons (make-vl-warning
-                        :type :vl-bad-arguments
-                        :msg "Expected ~x0 arguments but found ~x1."
-                        :args (list (len port-widths) (len actuals))
-                        :fatalp t
-                        :fn 'vl-replicate-arguments)
-                       warnings)
-                 ;; This is senseless, but gives us a nice length theorem.
-                 (repeat args insts)))
+         ((when namedp)
+          (b* ((w (make-vl-warning
+                   :type :vl-bad-arguments
+                   :msg "~a0: Expected only plain argument lists, but found ~
+                         named args instead."
+                   :args (list elem)
+                   :fatalp t
+                   :fn 'vl-replicate-arguments)))
+            (mv nil (cons w warnings) nil)))
 
-            (t
-             (b* ( ;; Slice up the arguments, as before
-                  ((mv warnings slices)
-                   (vl-partition-plainarglist actuals port-widths insts mod warnings))
-                  ;; Transpose the matrix into slice-order
-                  (transpose
-                   (vl-reorient-partitioned-args slices insts))
-                  ;; Turn the plainarglists into vl-arguments-p structures
-                  (arg-lists
-                   (vl-plainarglists-to-arguments transpose)))
-                 (mv warnings arg-lists))))))
+         ((unless (same-lengthp actuals port-widths))
+          (b* ((w (make-vl-warning
+                   :type :vl-bad-arguments
+                   :msg "~a0: Expected ~x1 arguments but found ~x2."
+                   :args (list elem (len port-widths) (len actuals))
+                   :fatalp t
+                   :fn 'vl-replicate-arguments)))
+            (mv nil (cons w warnings) nil)))
+
+         ;; Slice up the arguments...
+         ((mv successp warnings slices)
+          (vl-partition-plainarglist actuals port-widths insts mod ialist elem warnings))
+         ((unless successp)
+          ;; Already added warnings
+          (mv nil warnings nil))
+
+         ;; Transpose the matrix into slice-order
+         (transpose (vl-reorient-partitioned-args slices insts))
+
+         ;; Turn the plainarglists into vl-arguments-p structures
+         (arg-lists (vl-plainarglists-to-arguments transpose)))
+      (mv t warnings arg-lists)))
 
   (local (in-theory (enable vl-replicate-arguments)))
 
   (defthm vl-warninglist-p-of-vl-replicate-arguments
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 0 (vl-replicate-arguments args port-widths insts mod warnings)))))
+    (let ((ret (vl-replicate-arguments args port-widths insts mod ialist elem warnings)))
+      (implies (force (vl-warninglist-p warnings))
+               (vl-warninglist-p (mv-nth 1 ret)))))
 
   (defthm vl-argumentlist-p-of-vl-replicate-arguments
-    (implies (and (force (vl-arguments-p args))
-                  (force (pos-listp port-widths))
-                  (force (vl-module-p mod))
-                  (force (posp insts)))
-             (vl-argumentlist-p
-              (mv-nth 1 (vl-replicate-arguments args port-widths insts mod warnings)))))
+    (let ((ret (vl-replicate-arguments args port-widths insts mod ialist elem warnings)))
+      (implies (and (force (vl-arguments-p args))
+                    (force (pos-listp port-widths))
+                    (force (vl-module-p mod))
+                    (force (equal ialist (vl-moditem-alist mod)))
+                    (force (posp insts)))
+               (vl-argumentlist-p (mv-nth 2 ret)))))
 
   (defthm len-of-vl-replicate-arguments
-    (equal (len (mv-nth 1 (vl-replicate-arguments args port-widths insts mod warnings)))
-           (nfix insts))))
+    (let ((ret (vl-replicate-arguments args port-widths insts mod ialist elem warnings)))
+      (implies (and (mv-nth 0 ret)
+                    (force (vl-arguments-p args))
+                    (force (pos-listp port-widths))
+                    (force (vl-module-p mod))
+                    (force (equal ialist (vl-moditem-alist mod)))
+                    (force (posp insts)))
+               (equal (len (mv-nth 2 (vl-replicate-arguments args port-widths insts mod ialist elem warnings)))
+                      insts)))))
 
 
 
@@ -1047,13 +1241,14 @@ slicing up.</li>
 
 </ul>"
 
-  (defund vl-assemble-modinsts (names args modname str delay atts loc)
+  (defund vl-assemble-modinsts (names args modname str delay paramargs atts loc)
     (declare (xargs :guard (and (string-listp names)
                                 (vl-argumentlist-p args)
                                 (same-lengthp names args)
                                 (stringp modname)
                                 (vl-maybe-gatestrength-p str)
                                 (vl-maybe-gatedelay-p delay)
+                                (vl-arguments-p paramargs)
                                 (vl-atts-p atts)
                                 (vl-location-p loc))))
     (if (atom args)
@@ -1064,9 +1259,9 @@ slicing up.</li>
                              :delay delay
                              :atts atts
                              :portargs (car args)
-                             :paramargs (vl-arguments nil nil) ;; BOZO think about this?
+                             :paramargs paramargs
                              :loc loc)
-            (vl-assemble-modinsts (cdr names) (cdr args) modname str delay atts loc))))
+            (vl-assemble-modinsts (cdr names) (cdr args) modname str delay paramargs atts loc))))
 
   (local (in-theory (enable vl-assemble-modinsts)))
 
@@ -1076,10 +1271,11 @@ slicing up.</li>
                   (force (stringp modname))
                   (force (vl-maybe-gatestrength-p str))
                   (force (vl-maybe-gatedelay-p delay))
+                  (force (vl-arguments-p paramargs))
                   (force (vl-atts-p atts))
                   (force (vl-location-p loc)))
              (vl-modinstlist-p
-              (vl-assemble-modinsts names args modname str delay atts loc)))))
+              (vl-assemble-modinsts names args modname str delay paramargs atts loc)))))
 
 
 
@@ -1110,99 +1306,106 @@ to be able to determine the sizes of ports when we are slicing arguments.</li>
 then we try to split it into a list of <tt>nil</tt>-ranged, simple instances.
 The <tt>new-modinsts</tt> should replace <tt>x</tt> in the module.</p>"
 
-  (defund vl-replicate-modinst (x mods modalist nf mod warnings)
+  (defund vl-replicate-modinst (x mods modalist nf mod ialist warnings)
     "Returns (MV WARNINGS NEW-MODINSTS NF-PRIME)"
     (declare (xargs :guard (and (vl-modinst-p x)
                                 (vl-modulelist-p mods)
                                 (equal (vl-modalist mods) modalist)
                                 (vl-namefactory-p nf)
                                 (vl-module-p mod)
+                                (equal ialist (vl-moditem-alist mod))
                                 (vl-warninglist-p warnings))))
 
-    (b* ((range (vl-modinst->range x))
+    (b* (((vl-modinst x) x)
 
-         ((unless range)
+         ((unless x.range)
           ;; There isn't a range, so this is already an ordinary, non-array
           ;; instance.  We don't need to do anything, so return early.
           (mv warnings (list x) nf))
 
-         (instname  (vl-modinst->instname x))
-         (modname   (vl-modinst->modname x))
-         (portargs  (vl-modinst->portargs x))
-         (str       (vl-modinst->str x))
-         (delay     (vl-modinst->delay x))
-         (loc       (vl-modinst->loc x))
-         (atts      (vl-modinst->atts x))
+         ((unless (vl-range-resolved-p x.range))
+          (b* ((w (make-vl-warning
+                   :type :vl-bad-instance
+                   :msg "~a0: instance array with unresolved range: ~a1."
+                   :args (list x x.range)
+                   :fatalp t
+                   :fn 'vl-replicate-modinst)))
+            (mv (cons w warnings) (list x) nf)))
 
-         ((unless (vl-range-resolved-p range))
-          (mv (cons (make-vl-warning
-                     :type :vl-bad-instance
-                     :msg "~a0: instance array with unresolved range: ~a1."
-                     :args (list x range)
-                     :fatalp t
-                     :fn 'vl-replicate-modinst)
-                    warnings)
-              (list x) nf))
+         ((when (vl-arguments->args x.paramargs))
+          ;; Probably unnecessary, but I don't really want to think about
+          ;; parameters here.
+          (b* ((w (make-vl-warning
+                   :type :vl-bad-instance
+                   :msg "~a0: instance array still has parameters?  This ~
+                         should have been taken care of during ~
+                         unparameterization."
+                   :args (list x)
+                   :fatalp t
+                   :fn 'vl-replicate-modinst)))
+            (mv (cons w warnings) (list x) nf)))
 
          ;; We add an annotation saying that these instances are from an array.
-         (atts (cons (list "VL_FROM_INST_ARRAY") atts))
-         (size (vl-range-size range))
+         (x.atts (cons (list "VL_FROM_INST_ARRAY") x.atts))
+         (size   (vl-range-size x.range))
 
-         (target (vl-fast-find-module modname mods modalist))
+         (target (vl-fast-find-module x.modname mods modalist))
          ((unless target)
-          (mv (cons (make-vl-warning
-                     :type :vl-bad-instance
-                     :msg "~a0: instance of undefined module ~m1."
-                     :args (list x modname)
-                     :fatalp t
-                     :fn 'vl-replicate-modinst)
-                    warnings)
-              (list x) nf))
+          (b* ((w (make-vl-warning
+                   :type :vl-bad-instance
+                   :msg "~a0: instance of undefined module ~m1."
+                   :args (list x x.modname)
+                   :fatalp t
+                   :fn 'vl-replicate-modinst)))
+            (mv (cons w warnings) (list x) nf)))
 
          ((mv successp warnings port-widths)
           (vl-module-port-widths (vl-module->ports target) x warnings))
-
          ((unless successp)
           ;; Already added a warning.
           (mv warnings (list x) nf))
 
-         ((mv warnings new-args)
-          (vl-replicate-arguments portargs port-widths size mod warnings))
+         ((mv successp warnings new-args)
+          (vl-replicate-arguments x.portargs port-widths size mod ialist x warnings))
+         ((unless successp)
+          (mv warnings (list x) nf))
 
          ((mv warnings names nf)
-          (vl-replicated-instnames instname range nf x warnings))
+          (vl-replicated-instnames x.instname x.range nf x warnings))
 
          (new-modinsts
-          (vl-assemble-modinsts names new-args modname str delay atts loc)))
+          (vl-assemble-modinsts names new-args x.modname x.str x.delay x.paramargs x.atts x.loc)))
 
-        (mv warnings new-modinsts nf)))
+      (mv warnings new-modinsts nf)))
 
   (defmvtypes vl-replicate-modinst (nil true-listp nil))
 
   (local (in-theory (enable vl-replicate-modinst)))
 
   (defthm vl-warninglist-p-of-vl-replicate-modinst
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 0 (vl-replicate-modinst x mods modalist nf mod warnings)))))
+    (let ((ret (vl-replicate-modinst x mods modalist nf mod ialist warnings)))
+      (implies (force (vl-warninglist-p warnings))
+               (vl-warninglist-p (mv-nth 0 ret)))))
 
   (defthm vl-modinstlist-p-of-vl-replicate-modinst
-    (implies (and (force (vl-modinst-p x))
-                  (force (vl-modulelist-p mods))
-                  (force (equal (vl-modalist mods) modalist))
-                  (force (vl-namefactory-p nf))
-                  (force (vl-module-p mod)))
-             (vl-modinstlist-p
-              (mv-nth 1 (vl-replicate-modinst x mods modalist nf mod warnings)))))
+    (let ((ret (vl-replicate-modinst x mods modalist nf mod ialist warnings)))
+      (implies (and (force (vl-modinst-p x))
+                    (force (vl-modulelist-p mods))
+                    (force (equal (vl-modalist mods) modalist))
+                    (force (vl-namefactory-p nf))
+                    (force (vl-module-p mod))
+                    (force (equal ialist (vl-moditem-alist mod))))
+               (vl-modinstlist-p (mv-nth 1 ret)))))
 
   (defthm vl-namefactory-p-of-vl-replicate-modinst
-    (implies (and (force (vl-modinst-p x))
-                  (force (vl-modulelist-p mods))
-                  (force (equal (vl-modalist mods) modalist))
-                  (force (vl-namefactory-p nf))
-                  (force (vl-module-p mod)))
-             (vl-namefactory-p
-              (mv-nth 2 (vl-replicate-modinst x mods modalist nf mod warnings))))))
+    (let ((ret (vl-replicate-modinst x mods modalist nf mod ialist warnings)))
+      (implies (and (force (vl-modinst-p x))
+                    (force (vl-modulelist-p mods))
+                    (force (equal (vl-modalist mods) modalist))
+                    (force (vl-namefactory-p nf))
+                    (force (vl-module-p mod))
+                    (force (equal ialist (vl-moditem-alist mod))))
+               (vl-namefactory-p (mv-nth 2 ret))))))
 
 
 
@@ -1213,19 +1416,20 @@ The <tt>new-modinsts</tt> should replace <tt>x</tt> in the module.</p>"
   :long "<p><b>Signature:</b> @(call vl-replicate-modinstlist) returns <tt>(mv
 warnings x-prime nf-prime)</tt>.</p>"
 
-  (defund vl-replicate-modinstlist (x mods modalist nf mod warnings)
+  (defund vl-replicate-modinstlist (x mods modalist nf mod ialist warnings)
     (declare (xargs :guard (and (vl-modinstlist-p x)
                                 (vl-modulelist-p mods)
                                 (equal (vl-modalist mods) modalist)
                                 (vl-namefactory-p nf)
                                 (vl-module-p mod)
+                                (equal ialist (vl-moditem-alist mod))
                                 (vl-warninglist-p warnings))))
     (b* (((when (atom x))
           (mv warnings nil nf))
          ((mv warnings car-insts nf)
-          (vl-replicate-modinst (car x) mods modalist nf mod warnings))
+          (vl-replicate-modinst (car x) mods modalist nf mod ialist warnings))
          ((mv warnings cdr-insts nf)
-          (vl-replicate-modinstlist (cdr x) mods modalist nf mod warnings)))
+          (vl-replicate-modinstlist (cdr x) mods modalist nf mod ialist warnings)))
         (mv warnings (append car-insts cdr-insts) nf)))
 
   (defmvtypes vl-replicate-modinstlist (nil true-listp nil))
@@ -1233,29 +1437,49 @@ warnings x-prime nf-prime)</tt>.</p>"
   (local (in-theory (enable vl-replicate-modinstlist)))
 
   (defthm vl-warninglist-p-of-vl-replicate-modinstlist
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 0 (vl-replicate-modinstlist x mods modalist nf mod warnings)))))
+    (let ((ret (vl-replicate-modinstlist x mods modalist nf mod ialist warnings)))
+      (implies (force (vl-warninglist-p warnings))
+               (vl-warninglist-p (mv-nth 0 ret)))))
 
   (defthm vl-modinstlist-p-of-vl-replicate-modinstlist
-    (implies (and (force (vl-modinstlist-p x))
-                  (force (vl-modulelist-p mods))
-                  (force (equal (vl-modalist mods) modalist))
-                  (force (vl-namefactory-p nf))
-                  (force (vl-module-p mod)))
-             (vl-modinstlist-p
-              (mv-nth 1 (vl-replicate-modinstlist x mods modalist nf mod warnings)))))
+    (let ((ret (vl-replicate-modinstlist x mods modalist nf mod ialist warnings)))
+      (implies (and (force (vl-modinstlist-p x))
+                    (force (vl-modulelist-p mods))
+                    (force (equal (vl-modalist mods) modalist))
+                    (force (vl-namefactory-p nf))
+                    (force (vl-module-p mod))
+                    (force (equal ialist (vl-moditem-alist mod))))
+               (vl-modinstlist-p (mv-nth 1 ret)))))
 
   (defthm vl-namefactory-p-of-vl-replicate-modinstlist
-    (implies (and (force (vl-modinstlist-p x))
-                  (force (vl-modulelist-p mods))
-                  (force (equal (vl-modalist mods) modalist))
-                  (force (vl-namefactory-p nf))
-                  (force (vl-module-p mod)))
-             (vl-namefactory-p
-              (mv-nth 2 (vl-replicate-modinstlist x mods modalist nf mod warnings))))))
+    (let ((ret (vl-replicate-modinstlist x mods modalist nf mod ialist warnings)))
+      (implies (and (force (vl-modinstlist-p x))
+                    (force (vl-modulelist-p mods))
+                    (force (equal (vl-modalist mods) modalist))
+                    (force (vl-namefactory-p nf))
+                    (force (vl-module-p mod))
+                    (force (equal ialist (vl-moditem-alist mod))))
+               (vl-namefactory-p (mv-nth 2 ret))))))
 
 
+
+(defund vl-some-gateinst-array-p (x)
+  (declare (xargs :guard (vl-gateinstlist-p x)))
+  (cond ((atom x)
+         nil)
+        ((vl-gateinst->range (car x))
+         t)
+        (t
+         (vl-some-gateinst-array-p (cdr x)))))
+
+(defund vl-some-modinst-array-p (x)
+  (declare (xargs :guard (vl-modinstlist-p x)))
+  (cond ((atom x)
+         nil)
+        ((vl-modinst->range (car x))
+         t)
+        (t
+         (vl-some-modinst-array-p (cdr x)))))
 
 (defsection vl-module-replicate
   :parents (replicate)
@@ -1276,18 +1500,28 @@ instances.</p>"
                                 (equal modalist (vl-modalist mods)))))
     (b* (((when (vl-module->hands-offp x))
           x)
-         (warnings   (vl-module->warnings x))
-         (modinsts   (vl-module->modinsts x))
-         (gateinsts  (vl-module->gateinsts x))
+
+         ((vl-module x) x)
+
+         ((unless (or (vl-some-gateinst-array-p x.gateinsts)
+                      (vl-some-modinst-array-p x.modinsts)))
+          ;; Optimization.  Avoid constructing ialist, etc., when there aren't
+          ;; any arrays to replicate anyway.
+          x)
+
          (nf         (vl-starting-namefactory x))
+         (ialist     (vl-moditem-alist x))
+
+         (warnings   x.warnings)
 
          ((mv warnings new-gateinsts nf)
-          (vl-replicate-gateinstlist gateinsts nf x warnings))
+          (vl-replicate-gateinstlist x.gateinsts nf x ialist warnings))
 
          ((mv warnings new-modinsts nf)
-          (vl-replicate-modinstlist modinsts mods modalist nf x warnings))
+          (vl-replicate-modinstlist x.modinsts mods modalist nf x ialist warnings))
 
          (- (vl-free-namefactory nf))
+         (- (fast-alist-free ialist))
 
          (x-prime (change-vl-module x
                                     :modinsts new-modinsts

@@ -435,7 +435,26 @@ consing.</p>"
     (equal (all-equalp a (repeat b n))
            (or (equal a b)
                (zp n)))
-    :hints(("Goal" :in-theory (enable repeat)))))
+    :hints(("Goal" :in-theory (enable repeat))))
+
+  (defthm all-equalp-of-simpler-take
+    (implies (all-equalp a x)
+             (equal (all-equalp a (simpler-take n x))
+                    (or (not a)
+                        (<= (nfix n) (len x)))))
+    :hints(("Goal" :in-theory (enable simpler-take))))
+
+  (defthm all-equalp-of-nthcdr
+    (implies (all-equalp a x)
+             (all-equalp a (nthcdr n x)))
+    :hints(("Goal" :in-theory (enable nthcdr))))
+
+  (defthm member-equal-when-all-equalp
+    (implies (all-equalp a x)
+             (iff (member-equal b x)
+                  (and (consp x)
+                       (equal a b))))
+    :hints(("Goal" :induct (len x)))))
 
 
 
