@@ -18114,6 +18114,10 @@
   value other than ~c[NONE] or the empty string, but is not the name of an
   existing file.  Thanks to Harsh Raju Chamarthi for requesting such a change.
 
+  Functions ~c[read-acl2-oracle] (and ~c[read-acl2-oracle@par]),
+  ~c[read-run-time], and ~c[main-timer] are no longer untouchable
+  (~pl[remove-untouchable]).
+
   ~st[NEW FEATURES]
 
   ~st[HEURISTIC IMPROVEMENTS]
