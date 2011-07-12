@@ -8208,6 +8208,8 @@
 
 (link-doc-to observation-cw programming observation)
 
+(link-doc-to set-serialize-character serialize with-serialize-character)
+
 #+:non-standard-analysis
 (defun build-valid-std-usage-clause (arglist body)
   (cond ((null arglist)

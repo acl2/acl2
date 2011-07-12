@@ -43,7 +43,7 @@
 (defdoc serialize
   ":Doc-Section serialize
 
-Routines for saving ACL2 objects to files, and later restoring them.~/
+routines for saving ACL2 objects to files, and later restoring them~/
 
 This documentation topic relates to an experimental extension of ACL2 that
 supports ~ilc[hons], memoization, and fast alists.  ~l[hons-and-memoization].
@@ -60,7 +60,7 @@ sharing in the original object.  We optimize for read performance.~/~/")
 (defmacro serialize-write (filename obj &key verbosep)
   ":Doc-Section serialize
 
-Write an ACL2 object into a file.~/
+write an ACL2 object into a file~/
 
 General form:
 ~bv[]
@@ -125,7 +125,7 @@ to timing and memory usage as the file is being read.~/~/"
                                    verbosep)
   ":Doc-Section serialize
 
-Read a serialized ACL2 object from a file.~/
+read a serialized ACL2 object from a file~/
 
 General form:
 ~bv[]
@@ -200,7 +200,7 @@ related to timing and memory usage as the file is being read.~/~/"
 (defdoc serialize-alternatives
   ":Doc-Section serialize
 
-Alternatives to the ~il[serialize] routines.~/
+alternatives to the ~il[serialize] routines~/
 
 There are other ways to save ACL2 files to disk such as ~c[print-object$] and
 ~c[read-object].  But since these routines don't take advantage of structure
@@ -220,7 +220,7 @@ projects.~/~/")
 (defdoc serialize-in-books
   ":Doc-Section serialize
 
-Using serialization efficiently in books.~/
+using serialization efficiently in books~/
 
 Our serialize scheme was developed in order to allow very large ACL2 objects to
 be loaded into books.  Ordinarily this is carried out using
@@ -236,18 +236,18 @@ But this scheme is not particularly efficient.
 
 During ~ilc[certify-book], the actual call of ~c[serialize-read] is carried
 out, and this is typically pretty fast.  But then a number of possibly
-inefficient things occur.
+inefficient things occur.~bq[]
 
-  - The ACL2 function ~c[bad-lisp-object] is run on the resulting object.
-    This is memoized for efficiency, but may still take considerable
-    time when the file is very large.
+- The ACL2 function ~c[bad-lisp-object] is run on the resulting object.  This
+is memoized for efficiency, but may still take considerable time when the file
+is very large.
 
-  - The checksum of the resulting object is computed.  This is also memoized,
-    but as before may still take some time.
+- The checksum of the resulting object is computed.  This is also memoized, but
+as before may still take some time.
 
-  - The object that was just read is then written into book.cert, essentially
-    with ~ilc[serialize-write].  This can take some time, and results in large
-    certifiate files.
+- The object that was just read is then written into book.cert, essentially
+with ~ilc[serialize-write].  This can take some time, and results in large
+certifiate files.~eq[]
 
 Then, during ~il[include-book], the ~c[make-event] expansion of is loaded.
 This is now basically just a ~c[serialize-read].
@@ -260,3 +260,57 @@ To avoid this overhead, we have developed an UNSOUND alternative to
 if the above scheme is not performing well for you, you may wish to see
 the book ~c[serialize/unsound-read].~/~/")
 
+(defmacro with-serialize-character (val form)
+  (declare (xargs :guard (member val '(nil #\Y #\Z))))
+
+  ":Doc-Section serialize
+
+control output mode for ~c[print-object$]~/
+
+This documentation topic relates to an experimental extension of ACL2 that
+supports ~ilc[hons], memoization, and fast alists.  ~l[hons-and-memoization].
+~l[serialize] for a discussion of ``serialization'' routines, contributed by
+Jared Davis for saving ACL2 objects in files for later loading.
+
+~bv[]
+General forms:
+(with-serialize-character nil form)
+(with-serialize-character #\Y form)
+(with-serialize-character #\Z form)
+~ev[]
+where ~c[form] should evaluate to an error triple, i.e. a result of the form
+~c[(mv erp val state)] where ~c[erp] and ~c[val] are ordinary (non-~il[stobj])
+values.
+
+Note that if you prefer to obtain the same behavior (as described below)
+globally, rather than only within the scope of ~c[with-serialize-character],
+then use ~c[set-serialize-character] in a corresponding manner:
+
+~bv[]
+(set-serialize-character nil state)
+(set-serialize-character #\Y state)
+(set-serialize-character #\Z state)
+~ev[]
+
+In each case above, calls of ~c[print-object$] (~pl[io]) in ~c[form] will
+produce an object that can be read by the HONS version of ACL2.  In the first
+case, that object is printed as one might expect at the terminal, as an
+ordinary Lisp s-expression.  But in the other cases, the object is printed by
+first laying down either ~c[#Y] or ~c[#Z] (as indicated) and then calling
+~ilc[serialize-write] (or more precisely, the underlying function called by
+~c[serialize-write] that prints to a stream).
+
+Consider what happens when the ACL2 reader encounters an object produced as
+described above (in the ~c[#Y] or ~c[#Z] case).  When the object was written,
+information was recorded on whether that object was a ~il[hons].  In the case
+of ~c[#Z], the object will be read as a hons if and only if it was originally
+written as a hons.  But in the case of ~c[#Y], it will never be read as a hons.
+Thus, ~c[#Y] and ~c[#Z] will behave the same if the original written object was
+not a hons, creating an object that is not a hons.  For an equivalent
+explanation and a bit more discussion, ~pl[serialize-read], in particular the
+discussion of the hons-mode.  The value ~c[:smart] described there corresponds
+to ~c[#Z], while ~c[:never] corresponds to ~c[#Y].~/~/"
+
+  `(state-global-let*
+    ((serialize-character ,val set-serialize-character))
+    ,form))

@@ -7242,6 +7242,7 @@ Missing functions:
 ; "[RAW LISP]" prompt.
         (install-new-raw-prompt)
         (setq *lp-ever-entered-p* t)
+        #+hons (f-put-global 'serialize-character #\Z state)
         #+(and (not acl2-loop-only) acl2-rewrite-meter)
         (setq *rewrite-depth-alist* nil)
 
