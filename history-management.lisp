@@ -17476,16 +17476,15 @@
 ; We ``translate'' such a function symbol into a call of the function on the
 ; appropriate argument variables.
 
-  (cond
-   ((symbolp term)
-
 ; Parallelism wart: there is a bug in ACL2(p) related to translating computed
 ; hints.  To replicate this bug, run the following example.  Note that
-; translate-hint is being called before entering the waterfall, which means the
-; wrong version of formal-value-triple@par is being called.  To fix this, we
-; would need to modify thm-fn and probably defthm-fn to call a version of
-; translate-hints+ (and its subfunctions) that account for whether waterfall
-; parallelism is enabled.
+; translate-hint is being called before entering the waterfall, which means
+; that formal-value-triple (without the @par suffix) is always being called,
+; regardless of whether waterfall parallelism is enabled.  This is wrong.  If
+; waterfall parallelism is enabled, we should be calling
+; formal-value-triple@par.  To fix this, we would need to modify thm-fn and
+; probably defthm-fn to call a version of translate-hints+ (and its
+; subfunctions) that account for whether waterfall parallelism is enabled.
 
 ; (trace$ (formal-value-triple@par)
 ;         (formal-value-triple)
@@ -17515,6 +17514,18 @@
 ; (thm (equal x x)
 ;      :hints (bar))
 
+; Proving the following theorem also showcases the same bug, but for the
+; non-symbolp case.  And the resulting mistake is that we call
+; translate-simple-or-error-triple instead of
+; translate-simple-or-error-triple@par.
+
+; (thm (equal x x)
+;      :hints ((if (equal id *initial-clause-id*)
+;                  '(:use car-cons)
+;                nil)))
+
+  (cond
+   ((symbolp term)
     (cond ((and (function-symbolp term wrld)
                 (or (equal (arity term wrld) 3)
                     (equal (arity term wrld) 4)
@@ -18659,12 +18670,15 @@
 ; the computed hint returns a keyword-value-alistp that is non-nil even after
 ; stripping off a (:COMPUTED-HINT-REPLACEMENT val) prefix.
 
-; Parallelism wart: a fourth inaccuracy in the above description is due to the
-; #+acl2-par definition of translate-hint-expression.  In
-; translate-hint-expression, we make an effort to never return a value triple,
-; but instead to return an error-value pair.  Unfortunately, there are
-; exceptions to this.  For example, if translate-hint-expression is called from
-; outside the waterfall, term will return an error triple.
+; Parallelism wart: a fourth inaccuracy in the above description is that in the
+; #+acl2-par case, sometimes term (the third component of the input, tuple)
+; returns a pair rather than an error triple.  Indeed, this term could have
+; been created by translate-hint-expression@par, which in #+acl2-par returns an
+; error-value pair rather than a triple.  We need this different return
+; signature, because we do not want to allow hints that modify state when
+; executing the waterfall in parallel.  See the parallelism wart in
+; translate-hint-expression for details of a bug that further complicates the
+; #+acl2-par story on hints.
 
   (let* ((name-tree (car tuple))
          (flg (cadr tuple))
