@@ -858,7 +858,6 @@ xf-negedge-elim.lisp
 xf-oprewrite.lisp
 xf-optimize-rw.lisp
 xf-orig.lisp
-xf-partition-lvalue.lisp
 xf-portdecl-sign.lisp
 xf-replicate-insts.lisp
 xf-resolve-ranges.lisp
