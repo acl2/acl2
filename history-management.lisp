@@ -1553,8 +1553,8 @@
       state
     (let* ((forcing-round (access clause-id cl-id :forcing-round))
            (aborting-p (and (eq signal 'abort)
-                            (not (eq (tagged-object 'abort-cause ttree)
-                                     'revert))))
+                            (not (equal (tagged-objects 'abort-cause ttree)
+                                        '(revert)))))
            (clause-count
             (cond ((eq signal 'or-hit)
                    (assert$

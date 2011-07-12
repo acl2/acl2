@@ -18124,6 +18124,11 @@
 
   ~st[BUG FIXES]
 
+  Fixed an assertion that could occur, for example, after reverting to prove
+  the original goal by induction and generating a goal of ~c[NIL].  Thanks to
+  Jared Davis for sending us a helpful example to bring this bug to our
+  attention.
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   ~st[EMACS SUPPORT]

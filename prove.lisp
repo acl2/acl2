@@ -1626,6 +1626,9 @@
 ; pool-lst has already been defined, in support of proof-trees.
 
 (defun push-clause-msg1-abort (cl-id ttree pspv state)
+
+; Ttree has exactly one object associated with the tag 'abort-cause.
+
   (let ((temp (tagged-object 'abort-cause ttree))
         (cl-id-phrase (tilde-@-clause-id-phrase cl-id))
         (gag-mode (gag-mode)))
@@ -3100,8 +3103,8 @@
                     (t nil))))
         (cond
          (abort-p
-          (mv (cond ((eq (tagged-object 'abort-cause ttree)
-                         'revert)
+          (mv (cond ((equal (tagged-objects 'abort-cause ttree)
+                            '(revert))
                      (change gag-state gagst :abort-stack new-stack))
                     (t gagst))
               (and msg-p
@@ -3217,10 +3220,10 @@
                    (gagst2 (cond
                             ((eq signal 'abort)
                              (cond
-                              ((eq (tagged-object 'abort-cause
-                                                  (access prove-spec-var pspv
-                                                          :tag-tree))
-                                   'revert)
+                              ((equal (tagged-objects
+                                       'abort-cause
+                                       (access prove-spec-var pspv :tag-tree))
+                                      '(revert))
                                (change gag-state gagst1 ; save abort info
                                        :active-cl-id nil
                                        :active-printed-p nil
@@ -7221,10 +7224,10 @@
            ledge cl-id clause hist pspv hints ens wrld ctx state
            (cdr uhs-lst) (+ 1 i) branch-cnt
            (or revert-info
-               (and (eq (tagged-object 'abort-cause
-                                       (access prove-spec-var d-new-pspv
-                                               :tag-tree))
-                        'revert)
+               (and (equal (tagged-objects 'abort-cause
+                                           (access prove-spec-var d-new-pspv
+                                                   :tag-tree))
+                           '(revert))
                     (cons d-cl-id d-new-pspv)))
            results step-limit))
          ((equal (access prove-spec-var pspv :pool)
