@@ -31921,6 +31921,7 @@
 
 ;   read-idate - used by write-acl2-html, so can't be untouchable?
 
+    read-acl2-oracle
     get-timer     ; might not need to be an untouchable function
 
     update-user-stobj-alist
@@ -40057,7 +40058,7 @@
            #-acl2-loop-only
            (progn
 
-; Parallelism wart: there is a rare race condition related to
+; Parallelism no-fix: there is a rare race condition related to
 ; *next-acl2-oracle-value*.  Specifically, a thread might set the value of
 ; *next-acl2-oracle-value*, throw the 'time-limit5-tag, and the value of
 ; *next-acl2-oracle-value* wouldn't be read until after that tag was caught.

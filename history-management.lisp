@@ -16728,6 +16728,8 @@
 
 ; Keep in sync with formal-value-triple@par.
 
+; Returns a form that evaluates to the error triple (mv erp val state).
+
   (fcons-term* 'cons erp
                (fcons-term* 'cons val
                             (fcons-term* 'cons 'state *nil*))))
@@ -16736,10 +16738,6 @@
 (defun formal-value-triple@par (erp val)
 
 ; Keep in sync with formal-value-triple.
-
-; Parallelism wart: why is this different from formal-value-triple?  Document
-; why once I rediscover the reason.  It obviously has something to do with not
-; using state, but I should explain why fcons-term* is needed.
 
   (fcons-term* 'cons erp
                (fcons-term* 'cons val *nil*)))
@@ -16775,11 +16773,17 @@
        (cond
         ((equal stobjs-out '(nil)) ; replace term by (value@par term)
          (value@par (formal-value-triple@par *nil* term)))
-        ((equal stobjs-out
-                (serial-first-form-parallel-second-form@par 
-                 *error-triple-sig*
-                 *cmp-sig*))
-         (value@par term))
+        ((equal stobjs-out *error-triple-sig*)
+         (serial-first-form-parallel-second-form
+          (value@par term)
+          (er@par soft ctx
+                  "Since we are executing ACL2(p) with parallelism enabled, ~
+                   the form ~x0 was expected to represent an ordinary value, ~
+                   not an error triple (mv erp val state), as would be ~
+                   acceptable in a serial execution of ACL2.  Therefore, the ~
+                   form returning a tuple of the form ~x1 is an error."
+                  uform
+                  (prettyify-stobj-flags stobjs-out))))
         (t (serial-first-form-parallel-second-form@par
             (er soft ctx
                 "The form ~x0 was expected to represent an ordinary value or ~
@@ -16904,7 +16908,7 @@
 ; such, while this implementation "works", it is unlikely that it is both sound
 ; and as "user friendly" as it should be.  We insist that we do not modify
 ; state here, causing an error otherwise, thus avoiding for example the case
-; where a computed hints sets a state global differently in two different
+; where a computed hint sets a state global differently in two different
 ; threads.  We should make sure that there are clear error messages and
 ; documentation, pointing out that instead of (er soft ...)  they could use
 ; (er@par soft ...), for example.  How can we carry out this plan (which may
@@ -17474,6 +17478,43 @@
 
   (cond
    ((symbolp term)
+
+; Parallelism wart: there is a bug in ACL2(p) related to translating computed
+; hints.  To replicate this bug, run the following example.  Note that
+; translate-hint is being called before entering the waterfall, which means the
+; wrong version of formal-value-triple@par is being called.  To fix this, we
+; would need to modify thm-fn and probably defthm-fn to call a version of
+; translate-hints+ (and its subfunctions) that account for whether waterfall
+; parallelism is enabled.
+
+; (trace$ (formal-value-triple@par)
+;         (formal-value-triple)
+;         (thm-fn)
+;         (translate-hints+)
+;         (translate-hints)
+;         (translate-hint-expression)
+;         (translate-simple-or-error-triple)
+;         (simple-translate-and-eval)
+;         (xtrans-eval)
+;         (eval-and-translate-hint-expression)
+;         (translate-hint-expression@par)
+;         (translate-simple-or-error-triple@par)
+;         (simple-translate-and-eval@par)
+;         (xtrans-eval@par)
+;         (eval-and-translate-hint-expression@par)
+;         (find-applicable-hint-settings1@par)
+;         (find-applicable-hint-settings1)
+;         (waterfall))
+
+; (defun bar (clause-id clause world)
+;   (declare (ignore clause world))
+;   (cond ((equal clause-id *initial-clause-id*)
+;          '(:use car-cons))
+;         (t nil)))
+
+; (thm (equal x x)
+;      :hints (bar))
+
     (cond ((and (function-symbolp term wrld)
                 (or (equal (arity term wrld) 3)
                     (equal (arity term wrld) 4)
@@ -17487,14 +17528,14 @@
               (list 'eval-and-translate-hint-expression
                     name-tree
                     nil
-                    (formal-value-triple
+                    (formal-value-triple@par
                      *nil*
                      (fcons-term term '(id clause world)))))
              ((equal (arity term wrld) 4)
               (list 'eval-and-translate-hint-expression
                     name-tree
                     t
-                    (formal-value-triple
+                    (formal-value-triple@par
                      *nil*
                      (fcons-term term
                                  '(id clause world
@@ -17503,7 +17544,7 @@
               (list 'eval-and-translate-hint-expression
                     name-tree
                     t
-                    (formal-value-triple
+                    (formal-value-triple@par
                      *nil*
                      (fcons-term term
                                  '(id clause world
@@ -18617,6 +18658,13 @@
 ; fails to account for override-hints.  We apply the given override-hints if
 ; the computed hint returns a keyword-value-alistp that is non-nil even after
 ; stripping off a (:COMPUTED-HINT-REPLACEMENT val) prefix.
+
+; Parallelism wart: a fourth inaccuracy in the above description is due to the
+; #+acl2-par definition of translate-hint-expression.  In
+; translate-hint-expression, we make an effort to never return a value triple,
+; but instead to return an error-value pair.  Unfortunately, there are
+; exceptions to this.  For example, if translate-hint-expression is called from
+; outside the waterfall, term will return an error triple.
 
   (let* ((name-tree (car tuple))
          (flg (cadr tuple))

@@ -2766,18 +2766,17 @@
 
 (defun ev-w (form alist w safe-mode gc-off hard-error-returns-nilp aok)
 
-; WARNING: Do not call this function if alist contains the live state
-; or any other live stobjs and evaluation of form could modify any of
-; those stobjs.  Otherwise, the calls of ev-rec below violate
-; requirement (1) in The Essay on EV, which is stated explicitly for
-; ev but, in support of ev, is applicable to ev-rec as well.  Note
-; that users cannot make such a call because they cannot put live
-; stobjs into alist.
+; WARNING: Do not call this function if alist contains the live state or any
+; other live stobjs and evaluation of form could modify any of those stobjs.
+; Otherwise, the calls of ev-rec below violate requirement (1) in The Essay on
+; EV, which is stated explicitly for ev but, in support of ev, is applicable to
+; ev-rec as well.  Note that users cannot make such a call because they cannot
+; put live stobjs into alist.
 
-; Unlike ev-fncall-w, we do not check for untouchables (by traversing
-; the form before evaluating) and hence we must make ev-w untouchable.
-; It would be simple enough to create a user-available version of
-; ev-w, if requested, which would need to do an untouchables check.
+; Unlike ev-fncall-w, we do not check for untouchables (by traversing the form
+; before evaluating) and hence we must make ev-w untouchable.  It would be
+; simple enough to create a user-available version of ev-w, if requested, which
+; would need to do an untouchables check.
 
   (declare (xargs :guard (and (plist-worldp w)
                               (termp form w)

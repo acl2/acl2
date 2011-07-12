@@ -1801,8 +1801,8 @@
 #+(or acl2-loop-only (not acl2-par))
 (defmacro spec-mv-let (bindings computation body)
 
-; Parallelism wart: add pointers to this doc topic inside other
-; parallelism doc topics.
+; Parallelism wart: add pointers to this doc topic inside other parallelism doc
+; topics.
 
   ":Doc-Section Parallelism
 
