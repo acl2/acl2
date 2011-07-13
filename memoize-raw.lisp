@@ -5659,9 +5659,6 @@ the calls took.")
 
 #+Clozure
 (defn1 set-and-reset-gc-thresholds ()
-
- (error "Didn't expect to call set-and-reset-gc-thresholds!") ; !!
-
   (let ((n (max (- *max-mem-usage* (ccl::%usedbytes))
                 *gc-min-threshold*)))
     (cond ((not (eql n (ccl::lisp-heap-gc-threshold)))
@@ -5691,7 +5688,6 @@ next GC.~%"
 ; a reasonable assumption we think for anyone using the HONS version
 ; of ACL2.
 
- (error "Didn't expect to call start-sol-gc!") ; !!
   (let* ((phys (physical-memory))
          (memsize (cond ((> phys 0) (* phys 1024)) ; to bytes
                         (t (expt 2 32)))))
@@ -5716,9 +5712,6 @@ next GC.~%"
 
 #+Clozure
 (defn1 set-gc-threshold (bound)
-
- (error "Didn't expect to call set-gc-threshold!") ; !!
-
   (when (< (ccl::lisp-heap-gc-threshold) bound)
     (ofv "*hons-init-hook*:  Setting (ccl::lisp-heap-gc-threshold) ~
           to ~:d bytes."
@@ -6218,8 +6211,7 @@ next GC.~%"
   (in-package "ACL2")
   (unless *memoize-init-done* (memoize-init))
   (float-ticks/second-init)
-  ; (eval *hons-init-hook*)
-  )
+  (eval *hons-init-hook*))
 
 
 ;;; SHORTER, OLDER NAMES
