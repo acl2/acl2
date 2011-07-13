@@ -28301,7 +28301,6 @@
                          (write-char #\# stream)
                          (write-char serialize-character stream)
                          (ser-encode-to-stream x stream)
-                         (force-output stream)
                          t)))
                 (prin1 x stream))
             (force-output stream)))
