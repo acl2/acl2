@@ -117,8 +117,22 @@
             ;; value of the term.  Insert exceptions before this point.
             ((eq (car x) 'acl2::return-last)
              (if (eql (len x) 4)
-                 (interp-term (car (last x)) alist hyp clk obligs overrides
-                              world state)
+                 (if (equal (cadr x) ''acl2::time$1-raw)
+                     (b* (((mv err & time$-args state)
+                           (interp-term (caddr x) alist hyp clk obligs overrides
+                                        world state)))
+                       (mbe :logic (interp-term (car (last x)) alist hyp clk obligs overrides
+                                                world state)
+                            :exec (if (and (not err) (general-concretep time$-args))
+                                      (return-last
+                                       'acl2::time$1-raw
+                                       (general-concrete-obj time$-args)
+                                       (interp-term (car (last x)) alist hyp clk obligs overrides
+                                                                world state))
+                                    (time$ (interp-term (car (last x)) alist hyp clk obligs overrides
+                                                        world state)))))
+                   (interp-term (car (last x)) alist hyp clk obligs overrides
+                                world state))
                (glcp-interp-error
                 "Error: wrong number of args to RETURN-LAST~%")))
 
