@@ -2507,13 +2507,25 @@ The definition body, ~x1, is not a pseudo-term."
    (and stable-under-simplificationp
         (acl2::bind-as-in-definition
          glcp-generic
-         (hyp-clause concl-clause)
+         (hyp-clause concl-clause params-cov-term hyp)
          `(:use ((:instance glcp-generic-ev-falsify
                             (x (disjoin ,hyp-clause))
                             (a alist))
                  (:instance glcp-generic-ev-falsify
                             (x (disjoin ,concl-clause))
-                            (a alist)))))))
+                            (a alist))
+                 (:instance glcp-generic-ev-falsify
+                  (x (disjoin (CONS
+                               (CONS
+                                'NOT
+                                (CONS
+                                 (CONS 'GL-CP-HINT
+                                       (CONS (CONS 'QUOTE (CONS 'CASESPLIT 'NIL))
+                                             'NIL))
+                                 'NIL))
+                               (CONS (CONS 'NOT (CONS ,HYP 'NIL))
+                                     (CONS ,PARAMS-COV-TERM 'NIL)))))
+                  (a alist)))))))
   :otf-flg t
   :rule-classes nil)
 

@@ -712,7 +712,7 @@ clause processor to prove theorems.~/"
     ,hints
     :clause-processor acl2::remove-first-hyp-cp))
 
-(defun glcp-combine-hints (call cov-hints hyp-hints res-hints)
+(defun glcp-combine-hints (call cov-hints hyp-hints res-hints casesplit-hints)
   (declare (xargs :mode :program))
   `(:computed-hint-replacement
     ((use-by-computed-hint clause)
@@ -733,7 +733,11 @@ clause processor to prove theorems.~/"
           (param
            (prog2$ (cw "Now proving hyp coverage~%")
                    ,(and hyp-hints
-                         `(glcp-remove-and-replace ',hyp-hints))))))))
+                         `(glcp-remove-and-replace ',hyp-hints))))
+          (casesplit
+           (prog2$ (cw "Now proving casesplit coverage~%")
+                   ,(and casesplit-hints
+                         `(glcp-remove-and-replace ',casesplit-hints))))))))
     :clause-processor ,call))
 
 
@@ -787,19 +791,21 @@ See :DOC GL::COVERAGE-PROOFS.
                                cov-hints cov-hints-position cov-theory-add
                                do-not-expand hyp-hints result-hints
                                n-counterexamples abort-indeterminate abort-ctrex
-                               run-before-cases run-after-cases test-side-goals)
+                               run-before-cases run-after-cases
+                               case-split-override case-split-hints test-side-goals)
   (declare (xargs :mode :program))
   `(b* (((mv clause-proc bindings param-bindings hyp param-hyp concl
              hyp-clk concl-clk param-clk cov-hints cov-hints-position
              cov-theory-add do-not-expand hyp-hints result-hints
              n-counterexamples abort-indeterminate abort-ctrex
-             run-before-cases run-after-cases test-side-goals)
+             run-before-cases run-after-cases case-split-override
+             case-split-hints test-side-goals)
          (mv ',clause-proc ,bindings ,param-bindings ,hyp ,param-hyp
              ,concl ,hyp-clk ,concl-clk ,param-clk ',cov-hints
              ',cov-hints-position ',cov-theory-add ',do-not-expand
              ',hyp-hints ',result-hints ,n-counterexamples
              ,abort-indeterminate ,abort-ctrex ',run-before-cases ',run-after-cases
-             ,test-side-goals))
+             ,case-split-override ',case-split-hints ,test-side-goals))
         (cov-hints (glcp-coverage-hints
                     do-not-expand cov-theory-add cov-hints cov-hints-position)) 
         ((er trhyp)
@@ -830,9 +836,10 @@ bindings:
                              ,param-clk ,n-counterexamples
                              ,abort-indeterminate ,abort-ctrex
                              ',(and (not test-side-goals) run-before-cases)
-                             ',(and (not test-side-goals) run-after-cases))
+                             ',(and (not test-side-goals) run-after-cases)
+                             ,case-split-override)
                 state)))
-     (value (glcp-combine-hints call cov-hints hyp-hints result-hints))))
+     (value (glcp-combine-hints call cov-hints hyp-hints result-hints case-split-hints))))
 
 (defmacro gl-hint (clause-proc &key
                                bindings param-bindings
@@ -847,6 +854,8 @@ bindings:
                                (n-counterexamples '3)
                                (abort-indeterminate 't)
                                (abort-ctrex 't)
+                               (case-split-override 'nil)
+                               case-split-hints
                                run-before-cases run-after-cases
                                test-side-goals)
   ":Doc-section ACL2::GL
@@ -920,7 +929,8 @@ documented there.
               hyp-clk concl-clk param-clk cov-hints cov-hints-position
               cov-theory-add do-not-expand hyp-hints result-hints
               n-counterexamples abort-indeterminate abort-ctrex
-              run-before-cases run-after-cases test-side-goals))
+              run-before-cases run-after-cases
+              case-split-override case-split-hints test-side-goals))
 
 
 (defun def-gl-thm-fn
@@ -1149,7 +1159,7 @@ for the theorem produced, as in ~c[defthm]; the default is ~c[:rewrite].
               cov-hints cov-hints-position cov-theory-add do-not-expand
               hyp-clk concl-clk param-clk n-counterexamples
               abort-indeterminate abort-ctrex run-before-cases run-after-cases
-              test-side-goals rule-classes)
+              case-split-override case-split-hints test-side-goals rule-classes)
         rest)
        ((unless (and hyp-p param-hyp-p concl-p cov-bindings-p
                      param-bindings-p))
@@ -1177,7 +1187,9 @@ PARAM-BINDINGS must be provided in DEF-GL-PARAM-THM.~%"))
                          :abort-ctrex ,abort-ctrex
                          :run-before-cases ,run-before-cases
                          :run-after-cases ,run-after-cases
-                         :test-side-goals ,test-side-goals))
+                         :test-side-goals ,test-side-goals
+                         :case-split-override ,case-split-override
+                         :case-split-hints ,case-split-hints))
                 . ,(if test-side-goals
                        '(:rule-classes nil)
                      `(:rule-classes ,rule-classes)))))
@@ -1222,7 +1234,9 @@ PARAM-BINDINGS must be provided in DEF-GL-PARAM-THM.~%"))
         (param-clk '1000000)
         (n-counterexamples '3)
         (abort-indeterminate 't) (abort-ctrex 't)
-        run-before-cases run-after-cases local test-side-goals
+        run-before-cases run-after-cases
+        case-split-override
+        case-split-hints local test-side-goals
         (rule-classes ':rewrite))
   ":Doc-section ACL2::GL
 Prove a theorem using GL symbolic simulation with parametrized case-splitting.~/
@@ -1359,7 +1373,8 @@ will fail after the clause processor returns because it will produce a goal of
           cov-bindings-p param-bindings param-bindings-p cov-hints
           cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
           param-clk n-counterexamples abort-indeterminate abort-ctrex run-before-cases
-          run-after-cases test-side-goals rule-classes)))
+          run-after-cases case-split-override case-split-hints
+          test-side-goals rule-classes)))
 
 
 

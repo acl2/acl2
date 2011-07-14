@@ -289,7 +289,7 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
   '(defun clause-proc (clause hints state)
      (b* (((list bindings param-bindings hyp param-hyp concl untrans-concl
                  hyp-clk concl-clk param-clk nexamples abort-unknown
-                 abort-ctrex run-before run-after) hints)
+                 abort-ctrex run-before run-after case-split-override) hints)
           (world (w state))
           ((er overrides)
            (preferred-defs-to-overrides
@@ -321,10 +321,15 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
                 (params-cov-vars (collect-vars params-cov-term))
                 (- (cw "Checking case split coverage ...~%"))
                 ((er (cons params-cov-res-clauses obligs0))
-                 (run-parametrized
-                  hyp params-cov-term params-cov-term params-cov-vars bindings
-                  "case-split coverage" abort-unknown abort-ctrex nexamples hyp-clk
-                  param-clk 'obligs overrides world state))
+                 (if case-split-override
+                     (value (cons (list `((not (gl-cp-hint 'casesplit))
+                                        (not ,hyp)
+                                        ,params-cov-term))
+                                'obligs))
+                   (run-parametrized
+                    hyp params-cov-term params-cov-term params-cov-vars bindings
+                    "case-split coverage" abort-unknown abort-ctrex nexamples hyp-clk
+                    param-clk 'obligs overrides world state)))
                 (- (cw "Case-split coverage OK~%"))
                 ((er (cons cases-res-clauses obligs1))
                  (run-cases

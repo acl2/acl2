@@ -151,8 +151,8 @@
   ()
   (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
   (local (in-theory (enable nonnegative-integer-quotient)))
-
-  (defthm nonnegative-integer-quotient-for-gl
+  
+  (defthmd nonnegative-integer-quotient-for-gl
     (equal (nonnegative-integer-quotient i j)
            (floor (nfix i) (nfix j)))))
 
