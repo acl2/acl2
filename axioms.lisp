@@ -24776,7 +24776,7 @@
     aset-t-stack aref-t-stack read-char$ aref-32-bit-integer-stack
     open-output-channel open-output-channel-p1 princ$ read-object
     big-clock-negative-p peek-char$ shrink-32-bit-integer-stack read-run-time
-    read-byte$ read-idate t-stack-length1 print-object$
+    read-byte$ read-idate t-stack-length1 print-object$-ser
     get-output-stream-string$-fn
 
     mv-list return-last
@@ -27058,10 +27058,10 @@
   on the channel returned.  The types ~c[:character] and ~c[:byte] are
   familiar.  Type ~c[:object] is an abstraction not found in Common Lisp.
   An ~c[:object] file is a file of Lisp objects.  One uses ~c[read-object] to
-  read from ~c[:object] files and ~c[print-object$] to print to ~c[:object] files.
-  (The reading and printing are really done with the Common Lisp ~c[read]
-  and ~c[print] functions.  For those familiar with ~c[read], we note that the
-  ~c[recursive-p] argument is ~c[nil].)
+  read from ~c[:object] files and ~c[print-object$] (or ~c[print-object$-ser])
+  to print to ~c[:object] files.  (The reading and printing are really done
+  with the Common Lisp ~c[read] and ~c[print] functions.  For those familiar
+  with ~c[read], we note that the ~c[recursive-p] argument is ~c[nil].)
 
   File-names are strings.  ACL2 does not support the Common Lisp type
   ~ilc[pathname].  However, for the ~c[file-name] argument of the
@@ -27091,6 +27091,7 @@
     (princ$ (obj channel state) state)
     (write-byte$ (byte channel state) state)
     (print-object$ (obj channel state) state)
+    (print-object$-ser (obj serialize-character channel state) state)
     (fms  (string alist channel state evisc-tuple) state)
     (fms! (string alist channel state evisc-tuple) state)
     (fmt  (string alist channel state evisc-tuple) (mv col state))
@@ -27128,14 +27129,14 @@
   (mv-let
      (channel state)
      (open-output-channel :string :object state)
-     (pprogn (print-object$ 17 channel state)
-             (print-object$ '(a b (c d)) channel state)
+     (pprogn (print-object$-ser 17 nil channel state)
+             (print-object$-ser '(a b (c d)) nil channel state)
              (er-let*
                ((str1 (get-output-stream-string$
                        channel state
                        nil))) ; keep the channel open
-               (pprogn (print-object$ 23 channel state)
-                       (print-object$ '((e f)) channel state)
+               (pprogn (print-object$-ser 23 nil channel state)
+                       (print-object$-ser '((e f)) nil channel state)
                        (er-let* ; close the channel
                          ((str2 (get-output-stream-string$ channel state)))
                          (value (cons str1 str2)))))))
@@ -28250,28 +28251,20 @@
                 'set-serialize-character '(nil #\Y #\Z) c)))
      state))))
 
-(defun print-object$ (x channel state-state)
+(defun print-object$-ser (x serialize-character channel state-state)
 
 ; Wart: We use state-state instead of state because of a bootstrap problem.
 
-; WARNING: In the HONS version, be sure to use with-output-object-channel-sharing
-; rather than calling open-output-channel directly, so that
-; *print-circle-stream* is initialized.
+; This function is a version of print-object$ that allows specification of the
+; serialize-character, which can be nil (the normal case for #-hons), #\Y, or
+; #\Z (the normal case for #+hons).  However, we currently treat this as nil in
+; the #-hons version.
 
-; We believe that if in a single Common Lisp session, one prints an object and
-; then reads it back in with print-object$ and read-object, one will get back
-; an equal object under the assumptions that (a) the package structure has not
-; changed between the print and the read and (b) that *package* has the same
-; binding.  On a toothbrush, all calls of defpackage will occur before any
-; read-objecting or print-object$ing, so the package structure will be the
-; same.  It is up to the user to set current-package back to what it was at
-; print time if he hopes to read back in the same object.
+; See print-object$ for additional comments.
 
-; Warning: For soundness, we need to avoid using iprinting when writing to
-; certificate files.  We do all such writing with print-object$, so we rely on
-; print-object$ not to use iprinting.
-
-  (declare (xargs :guard (and (state-p1 state-state)
+  (declare (ignorable serialize-character) ; only used when #+hons
+           (xargs :guard (and (state-p1 state-state)
+                              (member serialize-character '(nil #\Y #\Z))
                               (symbolp channel)
                               (open-output-channel-p1 channel
                                                       :object state-state))))
@@ -28295,16 +28288,14 @@
                                   (f-get-global 'print-circle state-state))))
             (terpri stream)
             (or #+hons
-                (let ((serialize-character
-                       (get-serialize-character *the-live-state*)))
-                  (cond (serialize-character
-                         (write-char #\# stream)
-                         (write-char serialize-character stream)
-                         (ser-encode-to-stream x stream)
-                         t)))
+                (cond (serialize-character
+                       (write-char #\# stream)
+                       (write-char serialize-character stream)
+                       (ser-encode-to-stream x stream)
+                       t))
                 (prin1 x stream))
             (force-output stream)))
-         (return-from print-object$ *the-live-state*)))
+         (return-from print-object$-ser *the-live-state*)))
   (let ((entry (cdr (assoc-eq channel (open-output-channels state-state)))))
     (update-open-output-channels
      (add-pair channel
@@ -28313,6 +28304,37 @@
                            (cdr entry)))
                (open-output-channels state-state))
      state-state)))
+
+(defun print-object$ (x channel state)
+
+; WARNING: In the HONS version, be sure to use with-output-object-channel-sharing
+; rather than calling open-output-channel directly, so that
+; *print-circle-stream* is initialized.
+
+; We believe that if in a single Common Lisp session, one prints an object and
+; then reads it back in with print-object$ and read-object, one will get back
+; an equal object under the assumptions that (a) the package structure has not
+; changed between the print and the read and (b) that *package* has the same
+; binding.  On a toothbrush, all calls of defpackage will occur before any
+; read-objecting or print-object$ing, so the package structure will be the
+; same.  It is up to the user to set current-package back to what it was at
+; print time if he hopes to read back in the same object.
+
+; Warning: For soundness, we need to avoid using iprinting when writing to
+; certificate files.  We do all such writing with print-object$, so we rely on
+; print-object$ not to use iprinting.
+
+  (declare (xargs :guard (and (state-p state)
+
+; We might want to modify state-p (actually, state-p1) so that the following
+; conjunct is not needed.
+
+                              (member (get-serialize-character state)
+                                      '(nil #\Y #\Z))
+                              (symbolp channel)
+                              (open-output-channel-p channel
+                                                     :object state))))
+  (print-object$-ser x (get-serialize-character state) channel state))
 
 ;  We start the file-clock at one to avoid any possible confusion with
 ; the wired in standard-input/output channels, whose names end with

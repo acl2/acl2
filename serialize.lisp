@@ -202,10 +202,6 @@ related to timing and memory usage as the file is being read.~/~/"
 
 alternatives to the ~il[serialize] routines~/
 
-There are other ways to save ACL2 files to disk such as ~c[print-object$] and
-~c[read-object].  But since these routines don't take advantage of structure
-sharing they can be impractical for large, deeply structure-shared objects.
-
 ~il[Hons] users could previously use the routines ~c[compact-print-file] and
 ~c[compact-read-file].  These are deprecated and are no longer built into ACL2.
 However, they are still available by loading the new system book,
@@ -271,6 +267,16 @@ This documentation topic relates to an experimental extension of ACL2 that
 supports ~ilc[hons], memoization, and fast alists.  ~l[hons-and-memoization].
 ~l[serialize] for a discussion of ``serialization'' routines, contributed by
 Jared Davis for saving ACL2 objects in files for later loading.
+
+The expression ~c[(with-serialize-character char form)] evaluates to the value
+of ~c[form], but with the serialize-character of the ~ilc[state] assigned to
+~c[char], which should be one of ~c[nil], ~c[#\Y], or ~c[#\Z].  We describe the
+effect of that assignment below.  But note that if you are doing this because
+of one or more specific calls of ~c[print-object$], such as ~c[(print-object$ x
+channel state)], then you may wish instead to evaluate ~c[(print-object$-ser x
+serialize-character channel state)], in which case you will not need to use
+~c[with-serialize-character].  (Note however that ~c[serialize-character] is
+treated as ~c[nil] for other than a HONS version.)
 
 ~bv[]
 General forms:
