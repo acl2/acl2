@@ -272,11 +272,11 @@ The expression ~c[(with-serialize-character char form)] evaluates to the value
 of ~c[form], but with the serialize-character of the ~ilc[state] assigned to
 ~c[char], which should be one of ~c[nil], ~c[#\Y], or ~c[#\Z].  We describe the
 effect of that assignment below.  But note that if you are doing this because
-of one or more specific calls of ~c[print-object$], such as ~c[(print-object$ x
-channel state)], then you may wish instead to evaluate ~c[(print-object$-ser x
-serialize-character channel state)], in which case you will not need to use
-~c[with-serialize-character].  (Note however that ~c[serialize-character] is
-treated as ~c[nil] for other than a HONS version.)
+of one or more specific calls of ~c[print-object$], such as
+~c[(print-object$ x channel state)], then you may wish instead to evaluate
+~c[(print-object$-ser x serialize-character channel state)], in which case you
+will not need to use ~c[with-serialize-character].  (Note however that
+~c[serialize-character] is treated as ~c[nil] for other than a HONS version.)
 
 ~bv[]
 General forms:
