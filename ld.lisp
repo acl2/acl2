@@ -18092,6 +18092,9 @@
   ")
 
 (deflabel note-4-4
+
+; Improved comments about step-limits.
+
   :doc
   ":Doc-Section release-notes
 

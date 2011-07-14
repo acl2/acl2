@@ -35646,6 +35646,24 @@
         (car entry)
       (cadr entry))))
 
+; Essay on Step-limits
+
+; Here we document just the basics of how to use step-limits.  We may grow this
+; essay in the future.
+
+; When writing a recursive function that uses step-limits, for which you are
+; willing to have a return type of (mv step-limit erp val state):
+; * give it a step-limit arg;
+; * pass that along, for example with sl-let if that is convenient;
+; * decrement the step-limit when you deem that a "step" has been taken;
+; * call the top-level entry with the step-limit arg set to a fixnum limit that
+;   you prefer, for example with (initial-step-limit wrld state) or
+;   *default-step-limit*
+; * wrap the top-level call in a catch-step-limit as illustrated in
+;   prove-loop1
+
+; See also catch-step-limit for more about how step-limits are managed.
+
 (defun step-limit-from-table (wrld)
 
 ; We return the top-level prover step-limit, with of course can be overridden
@@ -35688,9 +35706,6 @@
   For examples of how step limits work, see the distributed book
   ~c[books/misc/misc2/step-limits.lisp].
 
-  For examples of how step limits work, see the distributed book
-  ~c[books/misc/misc2/step-limits.lisp].
-
   Note: This is an event!  It does not print the usual event summary
   but nevertheless changes the ACL2 logical ~il[world] and is so
   recorded.  Moreover, its effect is to set the ~ilc[acl2-defaults-table], and
@@ -35699,8 +35714,8 @@
 
   ~bv[]
   Example Forms:
-  (set-prover-step-limit nil)   ; avoid limit the number of prover steps
-  (set-prover-step-limit *default-step-limit*) ; same as above
+  (set-prover-step-limit *default-step-limit*) ; no limit on prover steps
+  (set-prover-step-limit nil)   ; abbreviation for the form just above
   (set-prover-step-limit 10000) ; allow at most 10,000 prover steps per event~/
 
   General Form:
@@ -40200,6 +40215,12 @@
   nil)
 
 (defmacro catch-step-limit (form)
+
+; Form should evaluate to a result of the form (mv step-limit erp val state).
+; Wrap this macro around any form for which you want an error to occur if the
+; step-limit transitions from 0 to -1.  Search for occurrences of
+; *step-limit-error-p* for details of how this works.
+
   #+acl2-loop-only
   `(mv-let (step-limit erp val state)
            ,form

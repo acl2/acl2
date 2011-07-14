@@ -3450,8 +3450,7 @@
   (let ((protected-form
          `(state-global-let*
            ((step-limit-record (make-step-limit-record wpsl-limit)))
-           (check-vars-not-free (wpsl-limit
-                                 wpsl-old-limit)
+           (check-vars-not-free (wpsl-limit wpsl-old-limit)
                                 ,form))))
     `(let ((wpsl-limit ; new step-limit for child environment
             (let ((limit ,limit))
@@ -3593,6 +3592,10 @@
   ; Do not limit the number of prover steps, regardless of such a limit imposed
   ; globally or by the surrounding context.
   (with-prover-step-limit nil (mini-proveall))
+
+  ; Same as just above (indeed, nil above is converted to
+  ; *default-step-limit*):
+  (with-prover-step-limit *default-step-limit* (mini-proveall))
 
   ; Limit the indicated theorem to 100 steps, and when the proof does not
   ; complete, then put down a label instead.
