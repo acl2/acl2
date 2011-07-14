@@ -112,7 +112,8 @@
      (mv $sat state))
     (clause
      (let* (($sat (update-num-f-clauses (1+ (num-f-clauses $sat)) $sat))
-            (state (print-object$ clause (sat-input-channel $sat) state)))
+            (state (print-object$-ser clause nil (sat-input-channel $sat)
+                                      state)))
        (mv $sat state)))
     (t 
      ;; At this point we have reduced the clause to false!
@@ -122,10 +123,12 @@
       (f-var $sat)
       (++f-var $sat)
       (let* (($sat (update-num-f-clauses (+ 2 (num-f-clauses $sat)) $sat))
-             (state (print-object$ (list f-var) 
-                                   (sat-input-channel $sat)
-                                   state))
-             (state (print-object$ (list (- f-var))
-                                   (sat-input-channel $sat)
-                                   state)))
+             (state (print-object$-ser (list f-var)
+                                       nil
+                                       (sat-input-channel $sat)
+                                       state))
+             (state (print-object$-ser (list (- f-var))
+                                       nil
+                                       (sat-input-channel $sat)
+                                       state)))
         (mv $sat state)))))))

@@ -30,7 +30,7 @@
 
 (defun print-bv-object (obj channel state)
   ;; Faster:
-  (print-object$ obj channel state))
+  (print-object$-ser obj nil channel state))
   ;; Prettier:
 ;;(fms! "~x0~%" (list (cons #\0 obj)) channel state nil))
 

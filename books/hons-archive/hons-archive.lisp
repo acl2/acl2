@@ -561,7 +561,7 @@
 
   (if (atom x)
       state
-    (let ((state (print-object$ (car x) channel state)))
+    (let ((state (print-object$-ser (car x) nil channel state)))
       (har-write-objects (cdr x) channel state))))
 
 (defun har-write-object-file (x filename state)
