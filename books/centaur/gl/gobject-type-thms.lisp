@@ -85,7 +85,9 @@
 
 (defthmd g-keyword-symbolp-def
   (equal (g-keyword-symbolp x)
-         (member-equal x *g-keywords*))
+         (if (member-equal x *g-keywords*)
+             t
+           nil))
   :hints(("Goal" :in-theory (enable g-keyword-symbolp))))
 
 (defthm not-g-keyword-symbol-when-not-symbol

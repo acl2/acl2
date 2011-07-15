@@ -110,16 +110,28 @@
 (make-g-world (hons-assoc-equal) gl-basis-ev)
 
 (defun canonical-general-concretep-bdd (x)
-  (declare (xargs :guard t))
-  (or (eq (gobject-hierarchy-bdd x) 'concrete)
+  (declare (xargs :guard t
+                  :guard-hints(("Goal" :in-theory (e/d (gobject-hierarchy-lite->bdd)
+                                                       (gobject-hierarchy-lite-redef))))))
+  (or (mbe :logic (eq (gobject-hierarchy-bdd x) 'concrete)
+           :exec (eq (gobject-hierarchy-lite x) 'concrete))
       (and (g-concrete-p x)
-           (not (eq (gobject-hierarchy-bdd (g-concrete->obj x)) 'concrete)))))
+           (not (mbe :logic
+                     (eq (gobject-hierarchy-bdd (g-concrete->obj x)) 'concrete)
+                     :exec
+                     (eq (gobject-hierarchy-lite (g-concrete->obj x)) 'concrete))))))
 
 (defun canonical-general-concretep-aig (x)
-  (declare (xargs :guard t))
-  (or (eq (gobject-hierarchy-aig x) 'concrete)
+  (declare (xargs :guard t
+                  :guard-hints(("Goal" :in-theory (e/d (gobject-hierarchy-lite->aig)
+                                                       (gobject-hierarchy-lite-redef))))))
+  (or (mbe :logic (eq (gobject-hierarchy-aig x) 'concrete)
+           :exec (eq (gobject-hierarchy-lite x) 'concrete))
       (and (g-concrete-p x)
-           (not (eq (gobject-hierarchy-aig (g-concrete->obj x)) 'concrete)))))
+           (not (mbe :logic
+                     (eq (gobject-hierarchy-aig (g-concrete->obj x)) 'concrete)
+                     :exec
+                     (eq (gobject-hierarchy-lite (g-concrete->obj x)) 'concrete))))))
 
 (defun canonical-general-concretep (x)
   (declare (xargs :guard t

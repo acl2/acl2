@@ -48,10 +48,14 @@
                     (general-concrete-atom-val)))
 
 
+
 (defn general-concretep (x)
-  (let ((res (gobject-hierarchy x)))
-    (or (eq res 'general)
-        (eq res 'concrete))))
+  (mbe :logic
+       (let ((res (gobject-hierarchy x)))
+         (or (eq res 'general)
+             (eq res 'concrete)))
+       :exec
+       (if (gobject-hierarchy-lite x) t nil)))
 
 (defun general-concrete-obj-bdd (x)
   (declare (xargs :guard (and (gobjectp x)
@@ -59,7 +63,9 @@
                   :verify-guards nil))
   (cond ((atom x) x)
         ((g-concrete-p x) (g-concrete->obj x))
-        ((eq (gobject-hierarchy-bdd x) 'concrete) x)
+        ((mbe :logic (eq (gobject-hierarchy-bdd x) 'concrete)
+              :exec (eq (gobject-hierarchy-lite x) 'concrete))
+         x)
         (t (cons (general-concrete-obj-bdd (car x))
                  (general-concrete-obj-bdd (cdr x))))))
 
@@ -69,7 +75,9 @@
                   :verify-guards nil))
   (cond ((atom x) x)
         ((g-concrete-p x) (g-concrete->obj x))
-        ((eq (gobject-hierarchy-aig x) 'concrete) x)
+        ((mbe :logic (eq (gobject-hierarchy-aig x) 'concrete)
+              :exec (eq (gobject-hierarchy-lite x) 'concrete))
+         x)
         (t (cons (general-concrete-obj-aig (car x))
                  (general-concrete-obj-aig (cdr x))))))
 

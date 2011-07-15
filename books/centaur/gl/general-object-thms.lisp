@@ -347,11 +347,17 @@
           :expand ((:with general-concretep-def (general-concretep x))
                    (:with gobjectp-def (gobjectp x))))))
 
+
 (verify-guards general-concrete-obj-aig
- :hints (("goal" :in-theory (enable general-concrete-gobject-car-and-cdr))))
+  :hints (("goal" :in-theory (e/d (general-concrete-gobject-car-and-cdr
+                                   gobject-hierarchy-lite->aig)
+                                  (gobject-hierarchy-lite-redef)))))
+
 
 (verify-guards general-concrete-obj-bdd
- :hints (("goal" :in-theory (enable general-concrete-gobject-car-and-cdr))))
+  :hints (("goal" :in-theory (e/d (general-concrete-gobject-car-and-cdr
+                                   gobject-hierarchy-lite->bdd)
+                                  (gobject-hierarchy-lite-redef)))))
 
 (verify-guards
  general-concrete-obj
