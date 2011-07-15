@@ -533,6 +533,25 @@
               (+ 1 (acl2-count (cdr x)))))
   :rule-classes (:rewrite :linear))
 
+(defun gobject-vals-alistp (x)
+  (declare (Xargs :guard t))
+  (if (atom x)
+      (equal x nil)
+    (and (or (atom (car x))
+             (gobjectp (cdar x)))
+         (gobject-vals-alistp (cdr x)))))
+
+
+(defthm lookup-in-gobject-vals-alistp
+  (implies (gobject-vals-alistp x)
+           (gobjectp (cdr (hons-assoc-equal k x)))))
+
+(defthm gobject-vals-alistp-pairlis$
+  (implies (gobject-listp vals)
+           (gobject-vals-alistp (pairlis$ keys vals)))
+  :hints(("Goal" :in-theory (enable gobject-listp))))
+
+
 (make-event
  (sublis *glcp-generic-template-subst*
          *glcp-interp-template*))
@@ -1370,9 +1389,6 @@
    (defthm revappend-set-equiv-union
      (acl2::set-equivp (revappend a b) (union-equal a b))
      :hints ((acl2::set-reasoning)))
-
-
-
 
 
    (defun gobject-alistp (x)

@@ -27,7 +27,8 @@
                                   (plist-worldp world)
                                   (acl2::interp-defs-alistp obligs)
                                   (acl2::interp-defs-alistp
-                                   overrides))
+                                   overrides)
+                                  (gobject-vals-alistp alist))
                       :stobjs state))
       (cond ((zp clk)
              (glcp-interp-error "The clock ran out.~%"))
@@ -35,9 +36,10 @@
             ((null x) (glcp-value nil))
 
             ;; X is a variable; look it up in the alist; the result must be a
-            ;; g-object, or it is coerced to one.
+            ;; g-object because of the gobject-vals-alistp guard.
             ((symbolp x)
-             (glcp-value (gobj-fix (cdr (hons-assoc-equal x alist)))))
+             (glcp-value (mbe :logic (gobj-fix (cdr (hons-assoc-equal x alist)))
+                              :exec (cdr (hons-assoc-equal x alist)))))
                  
             ((atom x)
              (glcp-interp-error
@@ -175,7 +177,8 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                                   (pseudo-term-listp x)
                                   (acl2::interp-defs-alistp obligs)
                                   (acl2::interp-defs-alistp overrides)
-                                  (plist-worldp world))
+                                  (plist-worldp world)
+                                  (gobject-vals-alistp alist))
                       :stobjs state))
       (if (atom x)
           (glcp-value nil)
