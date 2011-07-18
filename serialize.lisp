@@ -36,7 +36,8 @@
 ; ACL2(h).  However, they are independent of the remainder of the HONS
 ; extension and might some day become part of ordinary ACL2.
 
-; Current owner:  Jared Davis <jared@centtech.com>
+; Please direct correspondence about this file to Jared Davis
+; <jared@centtech.com>.
 
 (in-package "ACL2")
 

@@ -1445,6 +1445,13 @@ implementations.")
                                      "export CCL_DEFAULT_DIRECTORY=~s"
                                      default-dir)
                            "")))
+
+; It is probably important to use -e just below instead of :toplevel-function,
+; at least for #+hone.  Jared Davis and Sol Swords have told us that it seems
+; that with :toplevel-function one gets a new "toplevel" thread at start-up,
+; which "plays badly with the thread-local hash tables that make up the hons
+; space".
+
                       "~s -I ~s -e \"(acl2::acl2-default-restart)\" $*~%"
                       ccl-program
                       core-name))
