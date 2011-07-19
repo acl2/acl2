@@ -2900,13 +2900,29 @@ the calls took.")
     (mht :size size-to-use)))
 
 (defun make-initial-memoize-pons-table (fn init-size)
+  (declare (ignorable init-size))
 
-; This is just like make-initial-memoize-hash-table, but for the pons table.
+; This is similar to make-initial-memoize-table, but for the pons table.
 
   (let* ((max-sizes (gethash fn *memo-max-sizes*))
          (size-to-use
           (if (not max-sizes)
-              init-size
+              ;; We've never cleared this pons table before, so we don't have
+              ;; anything to go on besides what the user says.  Now, this is
+              ;; subtle.  Originally I just returned init-size here, i.e., "do
+              ;; what the user says."  But while this makes sense for the memo
+              ;; table, it doesn't necessarily make much sense for the pons
+              ;; table.  In particular, we can sometimes avoid ponsing by using
+              ;; our static-cons-index-hashing scheme.
+              ;;
+              ;; In some sense it would probably be good to give the user
+              ;; explicit control over the pons table size.  But for now, the
+              ;; main use of our memoize table size controls is to set things
+              ;; up for big BDD/AIG/SEXPR operations where we've got honsed
+              ;; data.  So, I'm going to just use 60 here, and say that the
+              ;; memo-table-init-size only affects the memoize table and not
+              ;; the pons table.
+              60
             (let* ((nclears       (access memo-max-sizes-entry max-sizes :num-clears))
                    (avg-pt-size   (access memo-max-sizes-entry max-sizes :avg-pt-size))
                    (our-guess     (ceiling (* 1.20 avg-pt-size)))
