@@ -706,7 +706,13 @@
         (t (qcons (to-param-space (car p) (car y))
                   (to-param-space (cdr p) (cdr y))))))
 
-(memoize 'to-param-space :condition '(and (consp p) (consp y)))
+;; [Jared]: tweaking this to only memoize when car&cdr are non-nil, to slightly
+;; reduce memo table overhead.
+
+(memoize 'to-param-space :condition '(and (consp p)
+                                          (consp y)
+                                          (car p)
+                                          (cdr p)))
 
 
 
