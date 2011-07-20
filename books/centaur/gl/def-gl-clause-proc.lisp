@@ -232,10 +232,23 @@
 (defun interp-term-fnname (clause-proc)
   (incat clause-proc (symbol-name clause-proc) "-INTERP-TERM"))
 
+(defun collect-non-fns (fns world)
+  (if (atom fns)
+      nil
+    (if (eq (wgetprop (car fns) 'formals :none) :none)
+        (cons (car fns)
+              (collect-non-fns (cdr fns) world))
+      (collect-non-fns (cdr fns) world))))
+      
 (defun def-gl-clause-processor-fn
   (clause-proc apply-fns include-nonrec top-apply-fns output state)
   (declare (xargs :mode :program :stobjs state))
   (b* ((world (w state))
+       (non-fns (append (collect-non-fns apply-fns world)
+                        (collect-non-fns top-apply-fns world)))
+       ((when non-fns)
+        (er hard? 'def-gl-clause-processor
+            "The following symbols are not functions: ~x0~%" non-fns))
        (current-geval (find-current-geval world))
        (geval (or current-geval
                   (incat clause-proc (symbol-name clause-proc) "-GEVAL")))

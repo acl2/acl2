@@ -537,6 +537,68 @@ is NIL or :WARN.~%" name)
 
 
 
+(defun aig-env-lookup-nil (x al)
+  (declare (Xargs :guard t))
+  (let ((look (hons-get x al)))
+    (if look
+        (cdr look)
+      (prog2$ (and *aig-env-lookup-warn-missing-binding*
+                   (aig-env-lookup-missing-output x))
+              nil))))
+
+(defn aig-compose-nil (x al)
+  (aig-cases
+   x
+   :true t
+   :false nil
+   :var (aig-env-lookup-nil x al)
+   :inv (aig-not (aig-compose-nil (car x) al))
+   :and (let ((a (aig-compose-nil (car x) al)))
+          (and a (aig-and a (aig-compose-nil (cdr x) al))))))
+
+(memoize 'aig-compose-nil :condition '(and (consp x) (cdr x)))
+
+(defn aig-compose-nil-alist (x-alst al)
+  (if (atom x-alst)
+      nil
+    (if (atom (car x-alst))
+        (aig-compose-nil-alist (cdr x-alst) al)
+      (cons (cons (caar x-alst)
+                  (aig-compose-nil (cdar x-alst) al))
+            (aig-compose-nil-alist (cdr x-alst) al)))))
+
+(defn aig-compose-nil-list (x al)
+  (if (atom x)
+      nil
+    (cons (aig-compose-nil (car x) al)
+          (aig-compose-nil-list (cdr x) al))))
+
+
+(defn faig-compose-nil (x comp-al)
+  (if (atom x)
+      '(t . t)
+    (cons (aig-compose-nil (car x) comp-al)
+          (aig-compose-nil (cdr x) comp-al))))
+
+(defn faig-compose-nil-pat (pat fpat al)
+  (if pat
+      (if (atom pat)
+          (faig-compose-nil fpat al)
+        (cons (faig-compose-nil-pat (car pat) (ec-call (car fpat)) al)
+              (faig-compose-nil-pat (cdr pat) (ec-call (cdr fpat)) al)))
+    nil))
+
+(defn faig-compose-nil-alist (al comp-al)
+  (if (atom al)
+      nil
+    (let ((rest (faig-compose-nil-alist (cdr al) comp-al)))
+      (if (atom (car al))
+          rest
+        (cons (cons (caar al) (faig-compose-nil (cdar al) comp-al))
+              rest)))))
+
+
+
 
 
 

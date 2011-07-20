@@ -438,6 +438,14 @@
          (hons-union2 (cdr l1) l2 acc))
         (t (hons-union2 (cdr l1) l2 (cons (car l1) acc)))))
 
+;; variant like hons-sd1, hons-int1 where fl2 doubles as the accumulator,
+;; and therefore does not collect duplicates; useful for unioning together many lists
+(defn hons-un1 (l1 fl2)
+  (cond ((atom l1) fl2)
+        ((hons-get (car l1) fl2)
+         (hons-un1 (cdr l1) fl2))
+        (t (hons-un1 (cdr l1) (hons-acons (car l1) t fl2)))))
+
 (defn hons-union (l1 l2)
 
 ; HONS-UNION may run faster if L1 and L2 are lists of atoms or honsps,
