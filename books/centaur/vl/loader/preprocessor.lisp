@@ -1104,7 +1104,6 @@ defines table appropriately if <tt>activep</tt> is set.</p>"
 
 
 
-
 (defsection vl-preprocess-loop
 
   (defund vl-preprocess-loop (echars defines istack activep acc n)
@@ -1165,7 +1164,38 @@ defines table appropriately if <tt>activep</tt> is set.</p>"
                      (eql (vl-echar->char (second echars)) #\/)))
           ;; Start of a one-line comment
           (b* (((mv & prefix remainder) (vl-read-until-literal *nls* (cddr echars)))
-               (prefix (list* (first echars) (second echars) prefix)))
+
+; SPECIAL VL EXTENSION.  We decided we wanted a way to have code that only VL
+; sees and that other tools see as comments.  So, if we see a comment of the
+; form
+;
+;   //+VL...\newline
+;
+; Then in the preprocessor we remove the //+VL part and just leave "..." in the
+; character stream.  This gives us a way to add pretty much anything we want
+; (e.g., (* foo = bar *) style attributes, which some other tools might not
+; support) just about anywhere.
+;
+; Since this is especially intended for attributes, we also say
+;
+;   //@VL...\newline
+;
+; Expands to (* ... *), putting in the (* and *) part automatically.
+
+               (prefix (cond ((vl-matches-string-p "+VL" prefix)
+                              ;; The // is already gone, strip off the "+VL" part
+                              (nthcdr 3 prefix))
+
+                             ((vl-matches-string-p "@VL" prefix)
+                              ;; The /* is already gone, strip off "@VL" and add the "(*" and "*)" parts
+                              (append (vl-echarlist-from-str "(*")
+                                      (nthcdr 3 prefix)
+                                      (vl-echarlist-from-str "*)")))
+
+                             (t
+                              ;; Else, not a +VL or @VL comment, so put the slashes back.
+                              (list* (first echars) (second echars) prefix)))))
+
               (vl-preprocess-loop remainder defines istack activep
                                   (if activep (revappend prefix acc) acc)
                                   n)))
@@ -1175,7 +1205,25 @@ defines table appropriately if <tt>activep</tt> is set.</p>"
                      (eql (vl-echar->char (second echars)) #\*)))
           ;; Start of a block comment
           (b* (((mv successp prefix remainder) (vl-read-through-literal "*/" (cddr echars)))
-               (prefix (list* (first echars) (second echars) prefix)))
+               (prefix
+
+; SPECIAL VL EXTENSION.  We do the same thing for /*+VL...*/, converting it into
+; "..." here during preprocessing, and for /*@VL...*/, converting it into (*...*)
+
+                (cond ((vl-matches-string-p "+VL" prefix)
+                       ;; The /* part is already gone.  Strip off "+VL" and "*/"
+                       (butlast (nthcdr 3 prefix) 2))
+
+                      ((vl-matches-string-p "@VL" prefix)
+                       ;; The /* part is gone.  Strip off "@VL" and "*/"; add "(*" and "*)"
+                       (append (vl-echarlist-from-str "(*")
+                               (butlast (nthcdr 3 prefix) 2)
+                               (vl-echarlist-from-str "*)")))
+
+                      (t
+                       ;; Else, not a +VL or @VL comment, so put the /* back.
+                       (list* (first echars) (second echars) prefix)))))
+
               (if (not successp)
                   (mv (cw "Preprocessor error (~s0): block comment is never closed.~%"
                           (vl-location-string loc))

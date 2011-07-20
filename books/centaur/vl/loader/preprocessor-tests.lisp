@@ -239,3 +239,35 @@
 ;; `define foo `bar
 ;; `bar"
 ;;  :defines nil)
+
+
+
+(preprocessor-basic-test
+ :input "//+VL test of special vl comments
+"
+ :output " test of special vl comments
+")
+
+(preprocessor-basic-test
+ :input "/*+VL test 2 of special vl comments */"
+ :output " test 2 of special vl comments ")
+
+
+
+(preprocessor-basic-test
+ :input "//+VL test of special vl comments
+"
+ :output " test of special vl comments
+")
+
+(preprocessor-basic-test
+ :input "/*@VL foo */"
+ :output "(* foo *)")
+
+(preprocessor-basic-test
+ :input "/*@VL foo, bar */"
+ :output "(* foo, bar *)")
+
+(preprocessor-basic-test
+ :input "//@VL foo, bar"
+ :output "(* foo, bar*)")
