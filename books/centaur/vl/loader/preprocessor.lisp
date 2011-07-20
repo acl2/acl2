@@ -1103,7 +1103,6 @@ defines table appropriately if <tt>activep</tt> is set.</p>"
   (def-prefix/remainder-thms vl-read-timescale))
 
 
-
 (defsection vl-preprocess-loop
 
   (defund vl-preprocess-loop (echars defines istack activep acc n)
@@ -1163,53 +1162,80 @@ defines table appropriately if <tt>activep</tt> is set.</p>"
                      (consp (cdr echars))
                      (eql (vl-echar->char (second echars)) #\/)))
           ;; Start of a one-line comment
-          (b* (((mv & prefix remainder) (vl-read-until-literal *nls* (cddr echars)))
 
-; SPECIAL VL EXTENSION.  We decided we wanted a way to have code that only VL
-; sees and that other tools see as comments.  So, if we see a comment of the
-; form
+; SPECIAL VL EXTENSION.
+;
+; We decided we wanted a way to have code that only VL sees and that other
+; tools see as comments.  So, if we see a comment of the form
 ;
 ;   //+VL...\newline
 ;
 ; Then in the preprocessor we remove the //+VL part and just leave "..." in the
-; character stream.  This gives us a way to add pretty much anything we want
-; (e.g., (* foo = bar *) style attributes, which some other tools might not
-; support) just about anywhere.
+; character stream.
 ;
-; Since this is especially intended for attributes, we also say
+; We wanted a shorthand for //+VL (* FOO *).  So, we say that //@VL FOO is
+; equivalent to this.  We then decided that it should be permitted to put
+; comments after the attributes, so as a special convenience we recognize:
 ;
-;   //@VL...\newline
+;    //@VL FOO // comment goes here    , and
+;    //@VL FOO /* comment starts here...
 ;
-; Expands to (* ... *), putting in the (* and *) part automatically.
+; And only read up to the start of the comment.  In other words, the above
+; expand into
+;
+;    (* FOO *) // comment goes here    , and
+;    (* FOO *) /* comment start here...
+;
+; respectively.
 
-               (prefix (cond ((vl-matches-string-p "+VL" prefix)
-                              ;; The // is already gone, strip off the "+VL" part
-                              (nthcdr 3 prefix))
+          (if (vl-matches-string-p "@VL" (cddr echars))
+              (b* (((mv atts-text remainder)
+                    ;; Figure out how much text we want to read for the attributes...
+                    (b* (((mv & prefix remainder) (vl-read-until-literal *nls* (nthcdr 5 echars)))
+                         ((mv comment1p pre-comment1 post-comment1)
+                          (vl-read-until-literal "//" prefix))
+                         ((mv comment2p pre-comment2 post-comment2)
+                          (vl-read-until-literal "/*" prefix)))
+                      (cond ((and comment1p comment2p)
+                             (if (< (len pre-comment1) (len pre-comment2))
+                                 (mv pre-comment1 (append post-comment1 remainder))
+                               (mv pre-comment2 (append post-comment2 remainder))))
+                            (comment1p
+                             (mv pre-comment1 (append post-comment1 remainder)))
+                            (comment2p
+                             (mv pre-comment2 (append post-comment2 remainder)))
+                            (t
+                             (mv prefix remainder)))))
+                   (atts (append (vl-echarlist-from-str "(*")
+                                 atts-text
+                                 (vl-echarlist-from-str "*)"))))
+                (vl-preprocess-loop remainder defines istack activep
+                                    (if activep (revappend atts acc) acc)
+                                    (- n 1)))
 
-                             ((vl-matches-string-p "@VL" prefix)
-                              ;; The /* is already gone, strip off "@VL" and add the "(*" and "*)" parts
-                              (append (vl-echarlist-from-str "(*")
-                                      (nthcdr 3 prefix)
-                                      (vl-echarlist-from-str "*)")))
-
-                             (t
-                              ;; Else, not a +VL or @VL comment, so put the slashes back.
-                              (list* (first echars) (second echars) prefix)))))
-
+            ;; Else, not a //@VL comment
+            (b* (((mv & prefix remainder) (vl-read-until-literal *nls* (cddr echars)))
+                 (prefix (if (vl-matches-string-p "+VL" prefix)
+                             ;; The // is already gone, strip off the "+VL" part
+                             (nthcdr 3 prefix)
+                           ;; Else, not a +VL or @VL comment, so put the slashes back.
+                           (list* (first echars) (second echars) prefix))))
               (vl-preprocess-loop remainder defines istack activep
                                   (if activep (revappend prefix acc) acc)
-                                  n)))
+                                  n))))
 
          ((when (and (eql char1 #\/)
                      (consp (cdr echars))
                      (eql (vl-echar->char (second echars)) #\*)))
-          ;; Start of a block comment
-          (b* (((mv successp prefix remainder) (vl-read-through-literal "*/" (cddr echars)))
-               (prefix
+          ;; Start of a block comment.
 
 ; SPECIAL VL EXTENSION.  We do the same thing for /*+VL...*/, converting it into
 ; "..." here during preprocessing, and for /*@VL...*/, converting it into (*...*)
+; We don't do anything special to support comments within the /*@VL ... */ form,
+; since this is mainly intended for inline things
 
+          (b* (((mv successp prefix remainder) (vl-read-through-literal "*/" (cddr echars)))
+               (prefix
                 (cond ((vl-matches-string-p "+VL" prefix)
                        ;; The /* part is already gone.  Strip off "+VL" and "*/"
                        (butlast (nthcdr 3 prefix) 2))

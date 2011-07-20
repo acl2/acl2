@@ -271,3 +271,15 @@
 (preprocessor-basic-test
  :input "//@VL foo, bar"
  :output "(* foo, bar*)")
+
+
+(preprocessor-basic-test
+ :input "//@VL foo, bar  // wow, a comment"
+ :output "(* foo, bar  *)// wow, a comment")
+
+
+(preprocessor-basic-test
+ :input "//@VL foo, bar  /* a multiline one
+too */"
+ :output "(* foo, bar  *)/* a multiline one
+too */")
