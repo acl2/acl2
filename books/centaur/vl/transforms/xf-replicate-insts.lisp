@@ -244,7 +244,57 @@ to agree with @(see vl-partition-lvalue).</p>"
                   (force (vl-range-resolved-p instrange))
                   (force (vl-namefactory-p nf)))
              (vl-namefactory-p
-              (mv-nth 2 (vl-replicated-instnames instname instrange nf inst warnings))))))
+              (mv-nth 2 (vl-replicated-instnames instname instrange nf inst
+                                                 warnings))))))
+
+
+(defsection vl-replicate-orig-instnames
+  :parents (replicate)
+  :short "Generate the original instance names (with square-bracketed indices) for @(see replicate)d instances."
+
+  (defund vl-replicate-orig-instnames1 (low high instname)
+    ;; Preferred names in lowest-first order, e.g., (foo_3 foo_4 foo_5)
+    (declare (xargs :guard (and (natp low)
+                                (natp high)
+                                (<= low high)
+                                (stringp instname))
+                    :measure (nfix (- (nfix high) (nfix low)))))
+    (let ((low  (mbe :logic (nfix low) :exec low))
+          (high (mbe :logic (nfix high) :exec high))
+          (name (str::cat instname "[" (str::natstr low) "]")))
+      (if (mbe :logic (zp (- high low))
+               :exec (= low high))
+          (list name)
+        (cons name (vl-replicate-orig-instnames1 (+ 1 low) high instname)))))
+
+  (defthm string-listp-of-vl-replicate-orig-instnames1
+    (string-listp (vl-replicate-orig-instnames1 low high instname))
+    :hints(("Goal" :in-theory (enable vl-replicate-orig-instnames1))))
+
+  (defthm len-of-vl-replicate-orig-instnames1
+    (equal (len (vl-replicate-orig-instnames1 low high instname))
+           (+ 1 (nfix (- (nfix high) (nfix low)))))
+    :hints(("Goal" :in-theory (enable vl-replicate-orig-instnames1))))
+
+  (defund vl-replicate-orig-instnames (instname instrange)
+    (declare (xargs :guard (and (vl-maybe-string-p instname)
+                                (vl-range-p instrange)
+                                (vl-range-resolved-p instrange))))
+    (b* ((high (vl-resolved->val (vl-range->left instrange)))
+         (low  (vl-resolved->val (vl-range->right instrange)))
+         ;; whoa, can this happen?
+         (instname (or instname "unnamed")))
+      (vl-replicate-orig-instnames1 low high instname)))
+
+  (defthm string-listp-of-vl-replicate-orig-instnames
+    (string-listp (vl-replicate-orig-instnames instname instrange))
+    :hints(("Goal" :in-theory (enable vl-replicate-orig-instnames))))
+
+  (defthm len-of-vl-replicate-orig-instnames
+    (equal (len (vl-replicate-orig-instnames instname instrange))
+           (vl-range-size instrange))
+    :hints(("Goal" :in-theory (enable vl-replicate-orig-instnames
+                                      vl-range-size)))))
 
 
 
@@ -819,8 +869,10 @@ reoriented, partitioned arguments (see @(see vl-partition-plainarglist) and
 @(see vl-reorient-partitioned-args); the other arguments are replicated from
 the gate instance.  We create the new gates.</p>"
 
-  (defund vl-assemble-gateinsts (names args type strength delay atts loc)
+  (defund vl-assemble-gateinsts (names orignames args type strength delay atts loc)
     (declare (xargs :guard (and (string-listp names)
+                                (string-listp orignames)
+                                (= (len orignames) (len names))
                                 (vl-plainarglistlist-p args)
                                 (same-lengthp names args)
                                 (vl-gatetype-p type)
@@ -836,14 +888,20 @@ the gate instance.  We create the new gates.</p>"
                               :strength strength
                               :delay delay
                               :args (car args)
-                              :atts atts
+                              :atts
+                              (cons (cons "VL_REPLICATE_ORIGNAME"
+                                          (vl-atom (vl-string (car orignames))
+                                                   nil nil))
+                                    atts)
                               :loc loc)
-            (vl-assemble-gateinsts (cdr names) (cdr args) type strength delay atts loc))))
+            (vl-assemble-gateinsts (cdr names) (cdr orignames) (cdr args) type strength delay atts loc))))
 
   (local (in-theory (enable vl-assemble-gateinsts)))
 
   (defthm vl-gateinstlist-p-of-vl-assemble-gateinsts
     (implies (and (force (string-listp names))
+                  (force (string-listp orignames))
+                  (force (= (len names) (len orignames)))
                   (force (vl-plainarglistlist-p args))
                   (force (same-lengthp names args))
                   (force (vl-gatetype-p type))
@@ -852,7 +910,10 @@ the gate instance.  We create the new gates.</p>"
                   (force (vl-atts-p atts))
                   (force (vl-location-p loc)))
              (vl-gateinstlist-p
-              (vl-assemble-gateinsts names args type strength delay atts loc)))))
+              (vl-assemble-gateinsts names orignames args type strength delay
+                                     atts loc)))
+    :hints(("Goal" :in-theory (disable stringp-when-true-listp
+                                       vl-location-p-when-wrong-tag)))))
 
 
 
@@ -885,6 +946,7 @@ is its @(see vl-moditem-alist),</li>
 <p>If <tt>x</tt> has a range, i.e., it is an array of gate instances, then we
 try to split it into a list of <tt>nil</tt>-ranged, simple gates.  The
 <tt>new-gateinsts</tt> should replace <tt>x</tt> in the module.</p>"
+
 
   (defund vl-replicate-gateinst (x nf mod ialist warnings)
     "Returns (MV WARNINGS' NEW-GATEINSTS NF')"
@@ -939,9 +1001,10 @@ try to split it into a list of <tt>nil</tt>-ranged, simple gates.  The
          ((mv warnings names nf)
           (vl-replicated-instnames x.name x.range nf x warnings))
 
+         (orignames (vl-replicate-orig-instnames x.name x.range))
          ;; Finally, assemble the gate instances.
          (new-gates
-          (vl-assemble-gateinsts names transpose x.type x.strength x.delay x.atts x.loc)))
+          (vl-assemble-gateinsts names orignames transpose x.type x.strength x.delay x.atts x.loc)))
 
       ;; And that's it!
       (mv warnings new-gates nf)))
@@ -1241,8 +1304,10 @@ slicing up.</li>
 
 </ul>"
 
-  (defund vl-assemble-modinsts (names args modname str delay paramargs atts loc)
+  (defund vl-assemble-modinsts (names orignames args modname str delay paramargs atts loc)
     (declare (xargs :guard (and (string-listp names)
+                                (string-listp orignames)
+                                (= (len orignames) (len names))
                                 (vl-argumentlist-p args)
                                 (same-lengthp names args)
                                 (stringp modname)
@@ -1257,17 +1322,24 @@ slicing up.</li>
                              :modname modname
                              :str str
                              :delay delay
-                             :atts atts
+                             :atts
+                             (cons (cons "VL_REPLICATE_ORIGNAME"
+                                         (vl-atom (vl-string (car orignames))
+                                                  nil nil))
+                                   atts)
                              :portargs (car args)
                              :paramargs paramargs
                              :loc loc)
-            (vl-assemble-modinsts (cdr names) (cdr args) modname str delay paramargs atts loc))))
+            (vl-assemble-modinsts (cdr names) (cdr orignames) (cdr args) modname str delay paramargs atts loc))))
 
   (local (in-theory (enable vl-assemble-modinsts)))
 
   (defthm vl-modinstlist-p-of-vl-assemble-modinsts
     (implies (and (force (string-listp names))
+                  (force (string-listp orignames))
+                  (force (= (len orignames) (len names)))
                   (force (vl-argumentlist-p args))
+                  (force (same-lengthp names args))
                   (force (stringp modname))
                   (force (vl-maybe-gatestrength-p str))
                   (force (vl-maybe-gatedelay-p delay))
@@ -1275,9 +1347,59 @@ slicing up.</li>
                   (force (vl-atts-p atts))
                   (force (vl-location-p loc)))
              (vl-modinstlist-p
-              (vl-assemble-modinsts names args modname str delay paramargs atts loc)))))
+              (vl-assemble-modinsts names orignames args modname str delay
+                                    paramargs atts loc)))
+    :hints (("goal" :induct (vl-assemble-modinsts names orignames args modname
+                                                  str delay paramargs atts loc)
+             :in-theory (e/d (string-listp)
+                             (stringp-when-true-listp
+                              vl-modinst-p-by-tag-when-vl-modelement-p
+                              vl-string-p-by-tag-when-vl-atomguts-p
+                              vl-location-p-when-wrong-tag))))))
 
+(defsection vl-modinst-origname
+  :parents (replicate)
+  :short "Retrieve the original name of a module instance if it was modified by
+the replicate transform."
 
+  (defund vl-modinst-origname (x)
+    (declare (xargs :guard (vl-modinst-p x)))
+    (b* (((vl-modinst x) x)
+         (look (assoc-equal "VL_REPLICATE_ORIGNAME" x.atts))
+         ((when (not look)) x.instname)
+         ((when (not (and (vl-atom-p (cdr look))
+                          (vl-string-p (vl-atom->guts (cdr look))))))
+          (er hard? 'vl-modinst-origname
+              "Malformed VL_REPLICATE_ORIGNAME attribute: ~x0~%" (cdr look))
+          x.instname))
+      (vl-string->value (vl-atom->guts (cdr look)))))
+
+  (defthm vl-maybe-string-p-of-vl-modinst-origname
+    (implies (vl-modinst-p x)
+             (vl-maybe-string-p (vl-modinst-origname x)))
+    :hints(("Goal" :in-theory (enable vl-modinst-origname)))))
+
+(defsection vl-gateinst-origname
+  :parents (replicate)
+  :short "Retrieve the original name of a module instance if it was modified by
+the replicate transform."
+
+  (defund vl-gateinst-origname (x)
+    (declare (xargs :guard (vl-gateinst-p x)))
+    (b* (((vl-gateinst x) x)
+         (look (assoc-equal "VL_REPLICATE_ORIGNAME" x.atts))
+         ((when (not look)) x.name)
+         ((when (not (and (vl-atom-p (cdr look))
+                          (vl-string-p (vl-atom->guts (cdr look))))))
+          (er hard? 'vl-gateinst-origname
+              "Malformed VL_REPLICATE_ORIGNAME attribute: ~x0~%" (cdr look))
+          x.name))
+      (vl-string->value (vl-atom->guts (cdr look)))))
+
+  (defthm vl-maybe-string-p-of-vl-gateinst-origname
+    (implies (vl-gateinst-p x)
+             (vl-maybe-string-p (vl-gateinst-origname x)))
+    :hints(("Goal" :in-theory (enable vl-gateinst-origname)))))
 
 (defsection vl-replicate-modinst
   :parents (replicate)
@@ -1373,8 +1495,9 @@ The <tt>new-modinsts</tt> should replace <tt>x</tt> in the module.</p>"
          ((mv warnings names nf)
           (vl-replicated-instnames x.instname x.range nf x warnings))
 
+         (orignames (vl-replicate-orig-instnames x.instname x.range))
          (new-modinsts
-          (vl-assemble-modinsts names new-args x.modname x.str x.delay x.paramargs x.atts x.loc)))
+          (vl-assemble-modinsts names orignames new-args x.modname x.str x.delay x.paramargs x.atts x.loc)))
 
       (mv warnings new-modinsts nf)))
 

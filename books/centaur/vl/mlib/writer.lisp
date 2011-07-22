@@ -2055,7 +2055,39 @@ original source code.)</p>"
                        (vl-pp-initiallist (cdr x)))
           ps))
 
+(defpp vl-pp-paramdecl (x)
+  :guard (vl-paramdecl-p x)
+  :body (b* (((vl-paramdecl x) x))
+          (vl-ps-seq
+           (vl-print "  ")
+           (if x.atts
+               (vl-ps-seq (vl-pp-atts x.atts)
+                          (vl-print " "))
+             ps)
+           (vl-print (if x.localp "localparam " "parameter "))
+           ;; BOZO is this the right place to print the atts?
+           (case x.type
+             (:vl-signed (vl-print "signed "))
+             (:vl-integer (vl-print "integer "))
+             (:vl-real (vl-print "real "))
+             (:vl-time (vl-print "time "))
+             (:vl-realtime (vl-print "realtime "))
+             (otherwise ps))
+           (if x.range
+               (vl-ps-seq (vl-pp-range x.range)
+                          (vl-print " "))
+             ps)
+           (vl-print x.name)
+           (vl-print " = ")
+           (vl-pp-expr x.expr)
+           (vl-println ";"))))
 
+(defpp vl-pp-paramdecllist (x)
+  :guard (vl-paramdecllist-p x)
+  :body (if (consp x)
+            (vl-ps-seq (vl-pp-paramdecl (car x))
+                       (vl-pp-paramdecllist (cdr x)))
+          ps))
 
 
 (defpp vl-pp-module (x mods modalist)
@@ -2108,9 +2140,7 @@ for hyperlinking to submodules in HTML mode.</p>"
            (if (not eventdecls)
                ps
              (vl-println "// BOZO implement eventdecl printing"))
-           (if (not paramdecls)
-               ps
-             (vl-println "// BOZO implement paramdecl printing"))
+           (vl-pp-paramdecllist paramdecls)
            (vl-pp-assignlist assigns)
            (vl-pp-modinstlist modinsts mods modalist)
            (vl-pp-gateinstlist gateinsts)
