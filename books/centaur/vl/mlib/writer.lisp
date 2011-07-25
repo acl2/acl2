@@ -2064,20 +2064,21 @@ original source code.)</p>"
                (vl-ps-seq (vl-pp-atts x.atts)
                           (vl-print " "))
              ps)
-           (vl-print (if x.localp "localparam " "parameter "))
-           ;; BOZO is this the right place to print the atts?
-           (case x.type
-             (:vl-signed (vl-print "signed "))
-             (:vl-integer (vl-print "integer "))
-             (:vl-real (vl-print "real "))
-             (:vl-time (vl-print "time "))
-             (:vl-realtime (vl-print "realtime "))
-             (otherwise ps))
+           (vl-ps-span
+            "vl_key"
+            (vl-print (if x.localp "localparam " "parameter "))
+            (case x.type
+              (:vl-signed (vl-print "signed "))
+              (:vl-integer (vl-print "integer "))
+              (:vl-real (vl-print "real "))
+              (:vl-time (vl-print "time "))
+              (:vl-realtime (vl-print "realtime "))
+              (otherwise ps)))
            (if x.range
                (vl-ps-seq (vl-pp-range x.range)
                           (vl-print " "))
              ps)
-           (vl-print x.name)
+           (vl-print-wirename x.name)
            (vl-print " = ")
            (vl-pp-expr x.expr)
            (vl-println ";"))))
@@ -2133,6 +2134,7 @@ for hyperlinking to submodules in HTML mode.</p>"
            (vl-print " (")
            (vl-pp-portlist ports)
            (vl-println ");")
+           (vl-pp-paramdecllist paramdecls)
            (vl-pp-portdecllist portdecls)
            (vl-pp-regdecllist regdecls)
            (vl-pp-netdecllist netdecls)
@@ -2140,7 +2142,6 @@ for hyperlinking to submodules in HTML mode.</p>"
            (if (not eventdecls)
                ps
              (vl-println "// BOZO implement eventdecl printing"))
-           (vl-pp-paramdecllist paramdecls)
            (vl-pp-assignlist assigns)
            (vl-pp-modinstlist modinsts mods modalist)
            (vl-pp-gateinstlist gateinsts)
