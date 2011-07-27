@@ -75,6 +75,7 @@ my @include_afters = ();
 my $svn_mode = 0;
 my $quiet = 0;
 my @run_sources = ();
+my $make = $ENV{"MAKE"} || "make";
 my @make_args = ();
 my $acl2 = $ENV{"ACL2"};
 my $acl2_books = $ENV{"ACL2_SYSTEM_BOOKS"};
@@ -531,7 +532,7 @@ unless ($no_makefile) {
     close($mf);
     
     unless ($no_build) {
-	my $make_cmd = join(' ', (("make -j $jobs -f $mf_name"
+	my $make_cmd = join(' ', (("$make -j $jobs -f $mf_name"
 				   . ($keep_going ? " -k" : "")),
 				  @make_args));
 	if ($certlib_opts{"debugging"}) {
