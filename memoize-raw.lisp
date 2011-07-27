@@ -4020,11 +4020,11 @@ the calls took.")
                 (ignorable
                  #+Clozure
                  ,@(and *record-bytes* `(,*mf-start-bytes*))
-                 ,@(and *record-hons-calls* `(,*mf-start-hons*))
+                 ;; ,@(and *record-hons-calls* `(,*mf-start-hons*))
                  ,@(and *record-pons-calls* `(,*mf-start-pons*)))
                 (type fixnum
                       ,*mf-old-caller*
-                      ,@(and *record-hons-calls* `(,*mf-start-hons*))
+                      ;; ,@(and *record-hons-calls* `(,*mf-start-hons*))
                       ,@(and *record-pons-calls* `(,*mf-start-pons*))
                       #+Clozure
                       ,@(and *record-bytes* `(,*mf-start-bytes*))))

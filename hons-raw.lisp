@@ -639,7 +639,7 @@
 
   ;; FAL-HT is described in the documentation for fast alists.
   (fal-ht       (hl-mht :test #'eq :size *hl-hspace-fal-ht-default-size*
-                        :lock-free t)
+                        :lock-free t :weak :key)
                 :type hash-table)
 
   ;; PERSIST-HT is described in the documentation for hl-hspace-persistent-norm
@@ -666,7 +666,7 @@
                         ;; to 99% of capacity and then repeatedly insert and
                         ;; delete elements, you're likely to spend a lot of
                         ;; time rehashing without growing the table.
-                        :lock-free t)))
+                        :lock-free t :weak :key)))
 
     #+Clozure
     ;; Truly disgusting hack.  As of Clozure Common Lisp revision 14519, in the
