@@ -410,10 +410,16 @@
       (make-package inv :use nil)))
 
 ; LispWorks has a package named "DEF", and that name conflicts with an ACL2
-; package of that name introduced in books/coi/.  So we rename it here.
+; package of that name introduced in books/coi/.  We deal with that issue
+; here.  Thanks to Martin Simmons for providing this code in place of the
+; original code, which instead invoked (rename-package "DEF"
+; "DEF-FROM-LW-RENAMED").
 #+lispworks
 (when (find-package "DEF")
-  (rename-package "DEF" "DEF-FROM-LW-RENAMED"))
+  (unless (equal (package-name "DEF") "DSPEC")
+    (error "Expected LispWorks DEF package to be called DSPEC"))
+  (rename-package "DSPEC" "DSPEC"
+                  (remove "DEF" (package-nicknames "DSPEC") :test 'equal)))
 
 ; The value of the constant *the-live-state* is actually just a
 ; symbol, but that symbol is the unique representative of the one

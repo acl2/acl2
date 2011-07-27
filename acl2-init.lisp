@@ -127,7 +127,15 @@ implementations.")
 (setq CUSTOM:*DEFAULT-FILE-ENCODING* :unix)
 
 #+lispworks
-(setq system::*stack-overflow-behaviour* nil) ; could be :warn
+(setq system::*stack-overflow-behaviour*
+
+; The following could reasonably be nil or :warn.  David Rager did some
+; experiments suggesting that ACL2(p) regressions (as of July 2011) may be more
+; robust with the :warn setting.  However, that setting causes warnings during
+; the build, and it's easy to imagine that ACL2 users would also see that
+; cryptic warning -- very un-ACL2-like!  So we use nil rather than :warn here.
+
+      nil)
 
 ; We have observed a significant speedup with Allegro CL when turning off
 ; its cross-referencing capability.  Here are the times before and after

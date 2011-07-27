@@ -18095,6 +18095,8 @@
 
 ; Improved comments about step-limits.
 
+; Incorporated a Lispworks-specific patch from Martin Simmons.
+
   :doc
   ":Doc-Section release-notes
 

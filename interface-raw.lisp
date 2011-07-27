@@ -7195,9 +7195,10 @@ Missing functions:
         #-(and gcl (not ansi-cl))
         (setq *debugger-hook* 'our-abort)
 
-; Even with the setting of *stack-overflow-behaviour* to nil in acl2-init.lisp,
-; we cannot eliminate the following form for LispWorks.  (We tried with
-; LispWorks 6.0 and Lispworks 6.0.1, but we got segmentation faults when
+; Even with the setting of *stack-overflow-behaviour* to nil or :warn in
+; acl2-init.lisp, we cannot eliminate the following form for LispWorks.  (We
+; tried with LispWorks 6.0 and Lispworks 6.0.1 with *stack-overflow-behaviour*
+; = nil and without the following form, but we got segmentation faults when
 ; certifying books/concurrent-programs/bakery/stutter2 and
 ; books/unicode/read-utf8.lisp.)
 
