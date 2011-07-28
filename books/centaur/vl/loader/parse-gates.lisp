@@ -410,7 +410,31 @@
 ; n_output_gate_instance ::=
 ;    [name_of_gate_instance] '(' lvalue { ',' lvalue } ',' expression ')'
 ;
-; The only tricky thing here is that expressions can be lvalues.
+
+; This is slightly tricky because expressions can be lvalues.
+
+; BUG on 2011-07-28.  The parse-0+-lvalues function was buggy, but note that it was
+; only used by vl-parse-n-output-gate-instance (immediately below) so we can fix it
+; here without impacting the rest of the parser.  Here are examples of the buggy
+; behavior we were getting:
+
+#||
+
+(vl-parse-0+-lvalues-separated-by-commas (vl-make-test-tstream "foo, bar, baz)") nil)
+;; OK: returns FOO, BAR, BAZ as expected and left the ) in the input stream.
+
+(vl-parse-0+-lvalues-separated-by-commas (vl-make-test-tstream "foo, bar, baz & bar)") nil)
+;; WRONG: returns FOO, BAR, and BAZ, leaving the &bar in the input stream.  terrible.
+
+(vl-parse-0+-lvalues-separated-by-commas (vl-make-test-tstream "foo, bar, ~baz)") nil)
+;; SORT OF OK: eats the comma, leaves ~baz in the input stream.
+;; But previously vl-parse-n-output-gate-instance was expecting the comma to be
+;; left there.  It has been updated appropriately.
+
+||#
+
+; Now we are sure to check that we always arrive at a comma or rparen after
+; eating an lvalue, and always eat the comma.
 
 (defparser vl-parse-0+-lvalues-separated-by-commas (tokens warnings)
   ;; Uses backtracking to stop; eats as many lvalues, separated by commas, as
@@ -420,27 +444,38 @@
   :true-listp t
   :fails never
   :count strong-on-value
-  ;; BOZO yikes this is kind of complicated.  Maybe think about using different
-  ;; names?
-  (mv-let (erp first explore new-warnings)
-          (vl-parse-lvalue)
-          (cond (erp
-                 (mv nil nil tokens warnings))
-                ((not (mbt (< (acl2-count explore) (acl2-count tokens))))
-                 (prog2$
-                  (er hard? 'vl-parse-0+-lvalues-separated-by-commas "termination failure")
-                  (vl-parse-error "termination failure")))
-                (t
-                 (let ((tokens explore)
-                       (warnings new-warnings))
-                   (mv-let (erp val explore new-warnings)
-                           (seqw tokens warnings
-                                 (:= (vl-match-token :vl-comma))
-                                 (rest := (vl-parse-0+-lvalues-separated-by-commas))
-                                 (return rest))
-                           (if erp
-                               (mv nil (list first) tokens warnings)
-                             (mv nil (cons first val) explore new-warnings))))))))
+  (b* (((mv erp first explore new-warnings) (vl-parse-lvalue))
+
+       ((when erp)
+        ;; Failed to eat even a single lvalue, go back to where you were before
+        ;; you tried.
+        (mv nil nil tokens warnings))
+
+       ((unless (mbt (< (acl2-count explore) (acl2-count tokens))))
+        (er hard? 'vl-parse-0+-lvalues-separated-by-commas "termination failure")
+        (vl-parse-error "termination failure"))
+
+       ((unless (or (vl-is-token? :vl-comma explore)
+                    (vl-is-token? :vl-rparen explore)))
+        ;; Very subtle.  We just ate an lvalue, but something is wrong because
+        ;; we should have gotten to a comma or a right-paren.  Probably what has
+        ;; happened is we have just eaten part of an expression that looks like
+        ;; an lvalue, e.g., "foo" from "foo & bar".  So, we need to backtrack
+        ;; and NOT eat this lvalue.
+        (mv nil nil tokens warnings))
+
+       ;; Otherwise, we successfully ate an lvalue and arrived at a comma or
+       ;; rparen as expected.  Commit to eating this lvalue.
+       (tokens explore)
+       (warnings new-warnings))
+    (seqw tokens warnings
+          (when (vl-is-token? :vl-rparen)
+            ;; Nothing more to eat.
+            (return (list first)))
+          ;; Else, it's a comma
+          (:= (vl-match-token :vl-comma))
+          (rest := (vl-parse-0+-lvalues-separated-by-commas))
+          (return (cons first rest)))))
 
 (defparser vl-parse-n-output-gate-instance (tokens warnings)
   :result (vl-gatebldr-tuple-p val)
@@ -453,13 +488,12 @@
         ;; First try to eat all the lvalues you see.  This might eat the final
         ;; expression, too!
         (lvalues := (vl-parse-0+-lvalues-separated-by-commas))
-        ;; If we're left with a comma, then the final expression is not an
-        ;; lvalue and needs to be matched now.  Otherwise, it may have eaten
-        ;; the final expression, too.
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+        ;; If we are at an RPAREN, the last expression happened to look like an
+        ;; lvalue and we already ate it.  Otherwise, we need to match the last
+        ;; expression (which can be arbitrary)
+        (unless (vl-is-token? :vl-rparen)
           (expr := (vl-parse-expression)))
-        (rparen := (vl-match-token :vl-rparen))
+        (:= (vl-match-token :vl-rparen))
         (return-raw
          (let ((args (if expr
                          (append lvalues (list expr))
@@ -467,6 +501,12 @@
            (if (< (len args) 2)
                (vl-parse-error "Expected at least two arguments.")
              (mv nil (list name range args) tokens warnings))))))
+
+;(vl-parse-n-output-gate-instance (vl-make-test-tstream "my_buf (foo, bar)") nil)
+;(vl-parse-n-output-gate-instance (vl-make-test-tstream "my_buf (foo, bar, baz)") nil)
+;(vl-parse-n-output-gate-instance (vl-make-test-tstream "my_buf (foo, bar & baz)") nil)
+;(vl-parse-n-output-gate-instance (vl-make-test-tstream "my_buf (foo, ~bar)") nil)
+
 
 (defparser vl-parse-n-output-gate-instances-list (tokens warnings)
   ;; Matches n_output_gate_instance { ',' n_output_gate_instance }
