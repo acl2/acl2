@@ -1828,7 +1828,7 @@ which is saved just in case it's needed later.")
   #+clisp
   (if status-p (user::exit status) (user::exit))
   #+lispworks ; Version 4.2.0; older versions have used bye
-  (if status-p (lisp::quit :status status) (lisp::quit))
+  (if status-p (lispworks:quit :status status) (lispworks:quit))
   #+akcl
   (if status-p (lisp::bye status) (lisp::bye))
   #+lucid
