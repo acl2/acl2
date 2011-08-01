@@ -99,4 +99,20 @@
              (- (cw "(len topics): ~x0~%" (len topics))))
           (value `(table xdoc 'doc ',topics)))))))
 
-
+(defmacro xdoc-extend (name long)
+  ;; Extend an existing xdoc topic with more content.  Long is an xdoc
+  ;; format string, e.g., "<p>blah blah @(def blah) blah.</p>" that will
+  ;; be appended onto the end of the current :long for this topic.
+  `(table xdoc 'doc
+          (b* ((all-topics   (xdoc::get-xdoc-table world))
+               (old-topic    (xdoc::find-topic ',name all-topics))
+               ((unless old-topic)
+                (cw "XDOC WARNING:  Ignoring attempt to extend topic ~x0, because ~
+                     no such topic is currently defined.~%"
+                    ',name)
+                all-topics)
+               (other-topics (remove-equal old-topic all-topics))
+               (old-long  (cdr (assoc :long old-topic)))
+               (new-long  (concatenate 'string old-long ,long))
+               (new-topic (acons :long new-long (delete-assoc :long old-topic))))
+            (cons new-topic other-topics))))

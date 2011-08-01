@@ -22,9 +22,24 @@
 
 (include-book "vl/top")
 (include-book "vl/lint/lint")
+
+(include-book "aig/aig-equivs")
+(include-book "aig/aig-vars")
+(include-book "aig/base")
+(include-book "aig/bddify")
+(include-book "aig/bddify-correct")
+(include-book "aig/eval-restrict")
+(include-book "aig/g-aig-eval")
+(include-book "aig/induction")
+(include-book "aig/misc")
+(include-book "aig/three-four")
+(include-book "aig/witness")
+
 (include-book "ubdds/lite")
 (include-book "ubdds/param")
+
 (include-book "bitops/top")
+
 (include-book "misc/alist-defs")
 (include-book "misc/alist-equiv")
 (include-book "misc/defapply")
@@ -41,8 +56,10 @@
 (include-book "misc/universal-equiv")
 (include-book "misc/vecs-ints")
 (include-book "misc/witness-cp")
+
 (include-book "gl/gl")
 (include-book "gl/bfr-aig-bddify")
+
 ; The following are included automatically by the xdoc::save command below, but
 ; we include them explicitly to support the hons `make' target in the books/
 ; directory (and hence the regression-hons `make' target in the acl2-sources

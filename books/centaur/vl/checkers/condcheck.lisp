@@ -327,7 +327,7 @@ occurs, and is used in any warning messages we produce.</p>"
 
 (defsection vl-exprctxalist-condcheck
   :parents (condcheck)
-  :short "@(call vl-exprctxalist-condcheck-check) extends @(see
+  :short "@(call vl-exprctxalist-condcheck) extends @(see
 vl-expr-condcheck-check) across an @(see vl-exprctxalist-p)."
 
   (defund vl-exprctxalist-condcheck (x)

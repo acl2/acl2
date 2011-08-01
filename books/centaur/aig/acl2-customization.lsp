@@ -18,6 +18,4 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-(ld "tools/flag-package.lsp" :dir :system)
-
-(certify-book "witness" ? t)
+(set-inhibit-warnings "theory" "disable")

@@ -19,6 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "CUTIL")
+(include-book "tools/bstar" :dir :system)
 (include-book "xdoc/top" :dir :system)
 (include-book "misc/book-thms" :dir :system)
 
@@ -116,10 +117,11 @@ support."
 
 <code>
  (defsection name
-    [:parents parents]
-    [:short short]
-    [:long long]
-    [:autodoc autodoc]
+    [:parents   parents]
+    [:short     short]
+    [:long      long]
+    [:autodoc   autodoc]
+    [:extension topic]
     ... events ...)
 </code>
 
@@ -136,6 +138,8 @@ support."
    (defthm foo-thm1 ...)
    (defthm foo-thm2 ...))
 </code>
+
+<h3>Ordinary Sections</h3>
 
 <p>The <tt>:parents</tt>, <tt>:short</tt>, and <tt>:long</tt> keywords are
 optional.  If any of these keywords are provided, they will be used to
@@ -163,7 +167,35 @@ with:</p>
 <tt>defund</tt> is immediately followed by a local <tt>enable</tt>, because if
 I want to add a new theorem, say <tt>foo-thm3</tt>, then I can just re-submit
 the defsection without undoing the previous one, and all of the enabling and
-disabling still happens correctly.</p>")
+disabling still happens correctly.</p>
+
+<h3>Extended Sections</h3>
+
+<p>The <tt>:extension</tt> keyword allows you to say that this section is a
+continuation of a previously introduced concept.  When <tt>:extension
+topic</tt> is provided, then <tt>topic</tt> must be the name of a previously
+documented @(see xdoc) section, and you are not allowed to use
+<tt>:parents</tt> or <tt>:short</tt> since the topic already exists.</p>
+
+<p>The main purpose of an <tt>:extension</tt> section is to add additional
+documentation, either via the <tt>:long</tt> string or via the automatic
+documentation generation features of <tt>defsection</tt>.  The documentation
+obtained this way is just appended onto the existing <tt>:long</tt> for the
+topic.</p>
+
+<p>For example, if we have already given the section <tt>foo</tt> with basic
+theorems, above we now want to add a bunch of additional theorems about it,
+we might write something like this:</p>
+
+<code>
+ (defsection advanced-theorems-about-foo
+   :extension foo
+   (defthm foo-thm3 ...)
+   (defthm foo-thm4 ...))
+</code>
+
+<p>This will then append the definitions of <tt>foo-thm3</tt> and
+<tt>foo-thm4</tt> onto the end of the documentation for <tt>foo</tt>.</p>")
 
 (defun bar-escape-chars (x)
   (declare (xargs :mode :program))
@@ -206,32 +238,44 @@ disabling still happens correctly.</p>")
         (t
          (concatenate 'string (car strs) sep (join-strings (cdr strs) sep)))))
 
-(defun formula-info-to-defs (entries)
+(defun formula-info-to-defs (headerp entries)
   ;; BOZO make this nicer
   (declare (xargs :mode :program))
   (let ((strs (formula-info-to-defs1 entries)))
     (if strs
         (concatenate 'string
-                     "<h3>Definitions and Theorems</h3>"
+                     (if headerp "<h3>Definitions and Theorems</h3>" "")
                      (join-strings strs (coerce (list #\Newline) 'string)))
       "")))
 
-(defun defsection-fn (name args)
+(defun defsection-fn (wrapper ; (encapsulate nil) or (progn)
+                      name args)
   (declare (xargs :mode :program))
-  (let* ((parents     (cdr (extract-keyword-from-args :parents args)))
-         (short       (cdr (extract-keyword-from-args :short args)))
-         (long        (cdr (extract-keyword-from-args :long args)))
-         (defxdoc-p   (or parents short long))
+  (b* ((parents     (cdr (extract-keyword-from-args :parents args)))
+       (short       (cdr (extract-keyword-from-args :short args)))
+       (long        (cdr (extract-keyword-from-args :long args)))
+       (extension   (cdr (extract-keyword-from-args :extension args)))
+       (defxdoc-p   (and (not extension)
+                         (or parents short long)))
 
-         (autodoc-arg (extract-keyword-from-args :autodoc args))
-         (autodoc-p   (and defxdoc-p
-                           (or (not autodoc-arg)
-                               (cdr autodoc-arg))))
+       (- (or (not extension)
+              (and (not parents)
+                   (not short))
+              (er hard? 'defsection-fn "When using :extension, you cannot ~
+                  give a :parents or :short field.")))
 
-         (new-args (throw-away-keyword-parts args)))
+       (autodoc-arg (extract-keyword-from-args :autodoc args))
+       (autodoc-p   (and (or defxdoc-p extension)
+                         (or (not autodoc-arg)
+                             (cdr autodoc-arg))))
+
+       (new-args (throw-away-keyword-parts args)))
 
     (if (not autodoc-p)
-        `(with-output :stack :push :off :all
+        `(with-output
+           :stack :push
+           :off :all
+           :on error  ;; leave errors on, or you can think forms succeeded when they didn't.
            (progn
              ,@(and defxdoc-p
                     `((defxdoc ,name
@@ -239,42 +283,51 @@ disabling still happens correctly.</p>")
                         :short ,short
                         :long ,long)))
              (with-output :stack :pop
-               (encapsulate ()
+               (,@wrapper
                  ;; A silly value-triple so that an empty defsection is okay.
                  (value-triple :invisible)
-                 . ,new-args))))
+                 . ,new-args))
+             ,@(and extension
+                    long
+                    `(xdoc-extend ,extension ,long))))
 
       ;; Fancy autodoc stuff.
       (let ((marker `(table acl2::intro-table :mark ',name)))
-        `(with-output :stack :push :off :all
+        `(with-output
+           :stack :push
+           :off :all
+           :on error
            (progn
              ,marker
              (with-output :stack :pop
-               (encapsulate ()
+               (,@wrapper
                  ;; A silly value-triple so that an empty defsection is okay.
                  (value-triple :invisible)
                  . ,new-args))
              (make-event
-              (let* ((wrld    (w state))
-                     (trips   (acl2::reversed-world-since-event wrld ',marker nil))
-                     (info    (reverse (acl2::new-formula-info trips wrld nil)))
-                     (autodoc (formula-info-to-defs info))
-                     (name    ',name)
-                     (parents ',parents)
-                     (short   ',short)
-                     (long    (concatenate 'string
-                                           ',(or long "")
-                                           (coerce (list #\Newline #\Newline) 'string)
-                                           autodoc)))
-                `(defxdoc ,name
-                   :parents ,parents
-                   :short ,short
-                   :long ,long)))
+              (let* ((name      ',name)
+                     (parents   ',parents)
+                     (short     ',short)
+                     (extension ',extension)
+                     (wrld      (w state))
+                     (trips     (acl2::reversed-world-since-event wrld ',marker nil))
+                     (info      (reverse (acl2::new-formula-info trips wrld nil)))
+                     (autodoc   (formula-info-to-defs (not extension) info))
+                     (long      (concatenate 'string
+                                             ',(or long "")
+                                             (coerce (list #\Newline #\Newline) 'string)
+                                             autodoc)))
+                (if extension
+                    `(xdoc-extend ,extension ,long)
+                  `(defxdoc ,name
+                     :parents ,parents
+                     :short ,short
+                     :long ,long))))
              (value-triple ',name)))))))
 
 (defmacro defsection (name &rest args)
   (declare (xargs :guard (symbolp name)))
-  (defsection-fn name args))
+  (defsection-fn '(encapsulate nil) name args))
 
 
 
@@ -290,59 +343,9 @@ nil ...)</tt>.</p>
 basically does not introduce a new scope, whereas a <tt>defsection</tt>
 does.</p>")
 
-(defun defsection-progn-fn (name args)
-  (declare (xargs :mode :program))
-  (let* ((parents     (cdr (extract-keyword-from-args :parents args)))
-         (short       (cdr (extract-keyword-from-args :short args)))
-         (long        (cdr (extract-keyword-from-args :long args)))
-         (defxdoc-p   (or parents short long))
-
-         (autodoc-arg (extract-keyword-from-args :autodoc args))
-         (autodoc-p   (and defxdoc-p
-                           (or (not autodoc-arg)
-                               (cdr autodoc-arg))))
-
-         (new-args (throw-away-keyword-parts args)))
-
-    (if (not autodoc-p)
-        `(with-output :stack :push :off :all
-           (progn
-             ,@(and defxdoc-p
-                    `((defxdoc ,name
-                        :parents ,parents
-                        :short ,short
-                        :long ,long)))
-             (with-output :stack :pop
-               (progn . ,new-args))))
-
-      ;; Fancy autodoc stuff.
-      (let ((marker `(table acl2::intro-table :mark ',name)))
-        `(with-output :stack :push :off :all
-           (progn
-             ,marker
-             (with-output :stack :pop
-               (progn . ,new-args))
-             (make-event
-              (let* ((wrld    (w state))
-                     (trips   (acl2::reversed-world-since-event wrld ',marker nil))
-                     (info    (reverse (acl2::new-formula-info trips wrld nil)))
-                     (autodoc (formula-info-to-defs info))
-                     (name    ',name)
-                     (parents ',parents)
-                     (short   ',short)
-                     (long    (concatenate 'string
-                                           ',(or long "")
-                                           (coerce (list #\Newline #\Newline) 'string)
-                                           autodoc)))
-                `(defxdoc ,name
-                   :parents ,parents
-                   :short ,short
-                   :long ,long)))
-             (value-triple ',name)))))))
-
 (defmacro defsection-progn (name &rest args)
   (declare (xargs :guard (symbolp name)))
-  (defsection-progn-fn name args))
+  (defsection-fn '(progn) name args))
 
 
 #||
@@ -386,6 +389,34 @@ does.</p>")
 
 ;; BOZO the theorems in the nested section are leaking out into the superior
 ;; section... ugh.
+
+
+(defsection foo3-advanced
+  :extension foo3
+
+  (local (in-theory (enable foo3)))
+
+  (defthm posp-of-foo3
+    (implies (natp x)
+             (posp (foo3 x))))
+
+  (defthm oddp-of-foo3
+    (implies (evenp x)
+             (oddp (foo3 x)))))
+
+
+(defsection foo3-advanced-more
+  :extension foo3
+  :long "<h3>Even more theorems!</h3>"
+
+  (local (in-theory (enable foo3)))
+
+  (defthm integerp-of-foo3
+    (implies (integerp x)
+             (integerp (foo3 x)))))
+
+
+
 
 ||#
 

@@ -150,15 +150,6 @@
   (sets::mergesort (find-children-aux par x)))
 
 
-(defun find-topic (name x)
-
-; Look up a particular topic by name in the list of topics.
-
-  (if (atom x)
-      nil
-    (if (equal (cdr (assoc :name (car x))) name)
-        (car x)
-      (find-topic name (cdr x)))))
 
 
 (mutual-recursion

@@ -52,7 +52,17 @@
           (let ((acc (simple-html-encode-chars (cdr data) acc)))
             (mv acc state))))
 
+(defun xml-ppr-obj (x state)
 
+; First, pretty-print an ACL2 object with ~x0 to create a string.  Then,
+; convert characters in this string like < into &lt;.  The resulting string can
+; then be injected into <code> sections.
+
+  (b* ((state (set-fmt-hard-right-margin 62 state))
+       (state (set-fmt-soft-right-margin 58 state))
+       ((mv acc state)
+        (xdoc::fmt-to-chars-and-encode "~x0" (list (cons #\0 x)) state nil)))
+    (mv (reverse (coerce acc 'string)) state)))
 
 
 

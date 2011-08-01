@@ -34,9 +34,9 @@ where <tt>A</tt> is not one bit wide.  It found a few minor things that we
 were able to clean up, but nothing that was really a bug.</p>
 
 <p>Since the <tt>?:</tt> operator has the lowest precedence, expressions like
-<tt>A & B ? C : D</tt> are parsed as <tt>(A & B) ? C : D</tt>, which might not
-be what is intended.  In some cases, an actual precedence problem might be
-revealed by seeing that the size of the test expression isn't 1.</p>")
+<tt>A &amp; B ? C : D</tt> are parsed as <tt>(A &amp; B) ? C : D</tt>, which
+might not be what is intended.  In some cases, an actual precedence problem
+might be revealed by seeing that the size of the test expression isn't 1.</p>")
 
 
 (defsection vl-qmark-test-size

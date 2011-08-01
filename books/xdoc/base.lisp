@@ -68,3 +68,13 @@
   (declare (xargs :guard (guard-for-defxdoc name parents short long)))
   `(defxdoc-raw-fn ',name ',parents ',short ',long))
 
+(defun find-topic (name x)
+  (declare (xargs :mode :program))
+
+; Look up a particular topic by name in the list of topics.
+
+  (if (atom x)
+      nil
+    (if (equal (cdr (assoc :name (car x))) name)
+        (car x)
+      (find-topic name (cdr x)))))

@@ -67,6 +67,7 @@
                value
                two-nats-measure
                make-fal
+               xdoc-extend
 
                ;; BOZO consider moving these to cutil?
                defconsts
