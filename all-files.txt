@@ -507,6 +507,7 @@ unversioned-files-extra.txt
 vl
 
 books/centaur/aig:
+acl2-customization.lsp
 aig-equivs.lisp
 aig-vars.lisp
 base.lisp
@@ -514,7 +515,6 @@ bddify-correct.lisp
 bddify.lisp
 cert.acl2
 eval-restrict.lisp
-faig-op-commutativity.lisp
 fsm-pkg.lsp
 g-aig-eval.acl2
 g-aig-eval.lisp
