@@ -24,7 +24,6 @@
 (in-package "XDOC")
 (include-book "names")
 (include-book "str/top" :dir :system)
-(include-book "unicode/read-file-characters" :dir :system)
 (set-state-ok t)
 (program)
 

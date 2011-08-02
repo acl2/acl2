@@ -139,7 +139,7 @@ str: arithmetic unicode defsort tools make-event
 coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
 	misc ordinals rtl
 wp-gen: ordinals
-xdoc: str unicode finite-set-theory/osets tools
+xdoc: str finite-set-theory/osets tools
 system: tools arithmetic arithmetic-5
 cutil: xdoc tools str misc finite-set-theory defsort unicode make-event
 # Note: There is no need to include values for "centaur:", since dependencies
