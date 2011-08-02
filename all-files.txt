@@ -4007,6 +4007,7 @@ portcullis.acl2
 portcullis.lisp
 preprocess.lisp
 save.lisp
+sort.lisp
 support
 top.lisp
 topics.lisp
