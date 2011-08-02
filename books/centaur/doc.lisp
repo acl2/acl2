@@ -69,4 +69,10 @@
 (include-book "../xdoc/mkdir-raw")
 (include-book "../xdoc/topics")
 
-(xdoc::save "./manual")
+(make-event
+; xdoc::save is an event, so we might have just called it directly.  But for
+; reasons Jared doesn't understand this is screwing up the extended manual we
+; build at Centaur.  So, I'm putting the save event into a make-event to try
+; to localize its effects to just this book's certification.
+  (er-progn (xdoc::save "./manual")
+            (value `(value-triple :manual))))
