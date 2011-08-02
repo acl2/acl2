@@ -61,7 +61,7 @@ DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3
 	defexec symbolic \
 	data-structures/memories unicode str concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
-	quadratic-reciprocity tools paco hacking hons-bdds security regex \
+	quadratic-reciprocity tools paco hacking security regex \
         defsort hons-archive serialize wp-gen xdoc system tutorial-problems cutil
 DIRS2_EXCEPT_WK = $(DIRS2_EXCEPT_WK_COI) coi misc/misc2
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
@@ -109,7 +109,6 @@ finite-set-theory/osets: unicode
 powerlists: arithmetic ordinals data-structures
 textbook: arithmetic top-with-meta-cert ordinals ihs
 defexec: arithmetic misc ordinals make-event
-hons-bdds: misc clause-processors
 symbolic: arithmetic arithmetic-2 data-structures ihs misc ordinals models/jvm/m5
 data-structures/memories: arithmetic-3 misc
 unicode: arithmetic arithmetic-3 ihs ordinals tools
@@ -139,7 +138,7 @@ str: arithmetic unicode defsort tools make-event
 coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
 	misc ordinals rtl
 wp-gen: ordinals
-xdoc: str finite-set-theory/osets tools
+xdoc: str tools
 system: tools arithmetic arithmetic-5
 cutil: xdoc tools str misc finite-set-theory defsort unicode make-event
 # Note: There is no need to include values for "centaur:", since dependencies

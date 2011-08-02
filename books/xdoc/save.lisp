@@ -31,7 +31,7 @@
 (include-book "preprocess")
 (include-book "parse-xml")
 (include-book "tools/progndollar" :dir :system)
-(include-book "finite-set-theory/osets/sets" :dir :system)
+(include-book "sort")
 (set-state-ok t)
 
 (defun cw-princ$ (str)
@@ -147,7 +147,7 @@
 
 ; Gather names of immediate children topics and sort them.
 
-  (sets::mergesort (find-children-aux par x)))
+  (mergesort (find-children-aux par x)))
 
 
 
@@ -244,7 +244,7 @@
 
 ; X is all topics.  We assume all parents are normalized.
 
-  (b* ((roots (sets::mergesort (find-roots x)))
+  (b* ((roots (mergesort (find-roots x)))
        (acc   nil)
        (acc   (str::revappend-chars "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" acc))
        (acc   (cons #\Newline acc))
