@@ -38,6 +38,7 @@ doc
 emacs
 futures-raw.lisp
 # gcl-patch.lisp # not distributed after v2-9
+graphics
 history-management.lisp
 hons.lisp
 hons-raw.lisp
@@ -702,6 +703,7 @@ condcheck.lisp
 duplicate-detect.lisp
 leftright.lisp
 multidrive-detect.lisp
+portcheck.lisp
 qmarksize-check.lisp
 selfassigns.lisp
 skip-detect.lisp
@@ -4092,6 +4094,9 @@ emacs-acl2.el
 # log-emacs-code.el -- developer file
 monitor.el
 # watch.el # removed by Boyer before v3-3
+
+graphics:
+*.gif
 
 installation:
 installation.html

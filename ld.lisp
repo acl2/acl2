@@ -18136,6 +18136,11 @@
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
+  Although the HTML documentation is distributed with ACL2, it had not been
+  possible for users to build that documentation without omitting graphics, for
+  example on the ACL2 home page.  That has been fixed, as files
+  ~c[graphics/*.gif] are now distributed.
+
   ~st[EMACS SUPPORT]
 
   ~st[EXPERIMENTAL VERSIONS]
