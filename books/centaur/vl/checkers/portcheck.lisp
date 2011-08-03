@@ -33,7 +33,7 @@
          ((unless (subset decl-names port-names))
           (b* ((w (make-vl-warning
                    :type :vl-port-mismatch
-                   :msg "Missing port declarations for ~&0."
+                   :msg "Port declarations for non-ports: ~&0."
                    :args (list (difference decl-names port-names))
                    :fatalp t
                    :fn 'vl-check-ports-agree-with-portdecls)))
@@ -41,7 +41,7 @@
          ((unless (subset port-names decl-names))
           (b* ((w (make-vl-warning
                    :type :vl-port-mismatch
-                   :msg "Port declarations for non-ports: ~&0."
+                   :msg "Missing port declarations for ~&0."
                    :args (list (difference port-names decl-names))
                    :fatalp t
                    :fn 'vl-check-ports-agree-with-portdecls)))
