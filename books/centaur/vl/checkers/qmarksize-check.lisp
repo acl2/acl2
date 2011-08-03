@@ -185,7 +185,10 @@ warnings to the module."
 
   (defund vl-module-qmarksize-check (x)
     (declare (xargs :guard (vl-module-p x)))
-    (b* ((ctxexprs     (vl-module-ctxexprs x))
+    (b* (((when (vl-module->hands-offp x))
+          ;; don't check things like vl_1_bit_latch if they're already defined somehow
+          x)
+         (ctxexprs     (vl-module-ctxexprs x))
          (new-warnings (vl-exprctxalist-qmarksize-check ctxexprs)))
       (change-vl-module x
                         :warnings (append new-warnings (vl-module->warnings x)))))

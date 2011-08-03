@@ -20,6 +20,7 @@
 
 (in-package "VL")
 (include-book "../mlib/modnamespace")
+(include-book "../mlib/expr-tools")
 (local (include-book "../util/arithmetic"))
 
 (defsection vl-module-portcheck
@@ -28,7 +29,7 @@
     (declare (xargs :guard (vl-module-p x)))
     (b* (((vl-module x) x)
          (decl-names (mergesort (vl-portdecllist->names x.portdecls)))
-         (port-names (mergesort (remove nil (vl-portlist->exprs x.ports))))
+         (port-names (mergesort (vl-exprlist-names (remove nil (vl-portlist->exprs x.ports)))))
          ((unless (subset decl-names port-names))
           (b* ((w (make-vl-warning
                    :type :vl-port-mismatch
@@ -64,7 +65,7 @@
     (vl-module-portcheck x)
     :guard (vl-modulelist-p x)
     :result-type vl-modulelist-p)
-  
+
   (defthm vl-modulelist->names-of-vl-modulelist-portcheck
     (equal (vl-modulelist->names (vl-modulelist-portcheck x))
            (vl-modulelist->names x))

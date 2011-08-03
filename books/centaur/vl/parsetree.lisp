@@ -1756,6 +1756,17 @@ and @(see ctxsize) for details.</p>")
   :nil-preservingp t
   :parents (vl-portlist-p))
 
+(defthm vl-exprlist-p-of-vl-portlist->exprs
+  (implies (force (vl-portlist-p x))
+           (equal (vl-exprlist-p (vl-portlist->exprs x))
+                  (not (member nil (vl-portlist->exprs x)))))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-exprlist-p-of-remove-equal-of-vl-portlist->exprs
+  (implies (force (vl-portlist-p x))
+           (vl-exprlist-p (remove-equal nil (vl-portlist->exprs x))))
+  :hints(("Goal" :induct (len x))))
+
 (defprojection vl-portlist->names (x)
   (vl-port->name x)
   :guard (vl-portlist-p x)
