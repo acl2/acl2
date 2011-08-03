@@ -35,6 +35,7 @@
 (include-book "../checkers/duplicate-detect")
 (include-book "../checkers/leftright")
 (include-book "../checkers/multidrive-detect")
+(include-book "../checkers/portcheck")
 (include-book "../checkers/qmarksize-check")
 (include-book "../checkers/selfassigns")
 (include-book "../checkers/skip-detect")
@@ -155,6 +156,7 @@
        (mods0 mods)
 
        (- (cw "~%vl-lint: initial processing...~%"))
+       (mods (cwtime (vl-modulelist-portcheck mods)))
        (mods (cwtime (vl-modulelist-duplicate-detect mods)))
        (mods (cwtime (vl-modulelist-condcheck mods)))
        (mods (cwtime (vl-modulelist-leftright-check mods)))
@@ -373,6 +375,7 @@
            :vl-warn-unused-reg
            :vl-warn-blank
            :vl-undefined-names
+           :vl-port-mismatch
 
            ;; trunc
            :vl-warn-extension
@@ -449,6 +452,7 @@
                                    :vl-warn-unused-reg
                                    :vl-undefined-names
                                    :vl-warn-blank
+                                   :vl-port-mismatch
                                    )
                                  walist)))
 

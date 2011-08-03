@@ -22,6 +22,7 @@
 (include-book "checkers/checkers")
 (include-book "checkers/duplicate-detect")
 (include-book "checkers/multidrive-detect")
+(include-book "checkers/portcheck")
 (include-book "checkers/use-set")
 (include-book "loader/loader")
 (include-book "mlib/ram-tools")
@@ -321,6 +322,9 @@ supplied by the caller.</p>"
     (declare (xargs :guard (vl-modulelist-p mods)))
     (b* ((mods (xf-cwtime (vl-modulelist-duplicate-detect mods)
                           :name xf-duplicate-detect))
+
+         (mods (xf-cwtime (vl-modulelist-portcheck mods)
+                          :name xf-portcheck))
 
          (mods (xf-cwtime (vl-modulelist-make-implicit-wires mods)
                           :name xf-make-implicit-wires))
