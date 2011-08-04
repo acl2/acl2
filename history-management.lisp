@@ -16747,21 +16747,17 @@
 
 (defun@par translate-simple-or-error-triple (uform ctx wrld state)
 
-; Parallelism wart: clean up this function's documentation for the #+acl2-par
-; case and for the #-acl2-par case.  The documentation prefixed with ";;;" is
-; an incorrect first attempt at the new version of the documentation.
+; First suppose either #-acl2-par or else #+acl2-par with waterfall-parallelism
+; disabled.  Uform is an untranslated term that is expected to translate either
+; to an error triple or to an ordinary value.  In those cases we return an
+; error triple whose value component is the translated term or, respectively,
+; the term representing (mv nil tterm state) where tterm is the translated
+; term.  Otherwise, we return a soft error.
 
-;;; Uform is an untranslated term that is expected to translate either to a
-;;; context message pair or to an ordinary value.  In those cases we return an
-;;; error triple/double whose value component is the translated term or,
-;;; respectively, the term representing (mv nil tterm [state]) where tterm is
-;;; the translated term.  Otherwise, we return a soft error.
-
-; Uform is an untranslated term that is expected to translate either to an
-; error triple or to an ordinary value.  In those cases we return an error
-; triple whose value component is the translated term or, respectively, the
-; term representing (mv nil tterm state) where tterm is the translated term.
-; Otherwise, we return a soft error.
+; Now consider the case of #+acl2-par with waterfall-parallelism enabled.
+; Uform is an untranslated term that is expected to translate to an ordinary
+; value.  In this case, we return an error pair (mv nil val) where val is the
+; translated term.  Otherwise, uform translates into an error pair (mv t nil).
 
   (mv-let@par
    (erp term bindings state)
@@ -16780,13 +16776,13 @@
          (serial-first-form-parallel-second-form
           (value@par term)
           (er@par soft ctx
-                  "Since we are executing ACL2(p) with parallelism enabled, ~
-                   the form ~x0 was expected to represent an ordinary value, ~
-                   not an error triple (mv erp val state), as would be ~
-                   acceptable in a serial execution of ACL2.  Therefore, the ~
-                   form returning a tuple of the form ~x1 is an error."
-                  uform
-                  (prettyify-stobj-flags stobjs-out))))
+            "Since we are executing ACL2(p) with parallelism enabled, the ~
+             form ~x0 was expected to represent an ordinary value, not an ~
+             error triple (mv erp val state), as would be acceptable in a ~
+             serial execution of ACL2.  Therefore, the form returning a tuple ~
+             of the form ~x1 is an error."
+            uform
+            (prettyify-stobj-flags stobjs-out))))
         (t (serial-first-form-parallel-second-form@par
             (er soft ctx
                 "The form ~x0 was expected to represent an ordinary value or ~
@@ -16799,9 +16795,10 @@
 ; Parallelism wart: consider adding a documentation topic on Context message
 ; pairs.
 
-              "The form ~x0 was expected to represent an ordinary value or a ~
-               Context message pair (mv erp msg), but it returns a tuple of ~
-               the form ~x1."
+              "The form ~x0 was expected to represent an ordinary value, but ~
+               it returns a tuple of the form ~x1. Note that Error triples ~
+               are not allowed in this feature in ACL2(p) (see :doc ~
+               error-triples-and-parallelism)"
               uform
               (prettyify-stobj-flags stobjs-out))))))))))
 

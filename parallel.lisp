@@ -1917,3 +1917,18 @@
 
 ; Parallelism wart: interrupting a proof with waterfall-parallelism enabled is
 ; currently broken.  See :doc unsupported-waterfall-parallelism-features.
+
+(defdoc error-triples-and-parallelism
+  ":Doc-Section Parallelism
+  how to avoid error triples in ACL2(p)~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].
+
+  ACL2 supports the use of error-triples in many features
+  (e.g., ~ilc[computed-hints]).  ACL2(p) does not support the use of
+  error-triples in some of these features (e.g., ~ilc[computed-hints]).  As an
+  alternative, the user can consider calling ~ilc[er] with the ~c[hard] flag,
+  which instead of returning an error triple, causes an immediate error and
+  logically returns ~c[nil].  In this way, the user avoids modifying
+  ~ilc[state], a requirement for much of the code written in ACL2(p).~/~/")
