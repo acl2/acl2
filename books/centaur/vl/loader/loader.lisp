@@ -870,12 +870,13 @@ On the other hand, this approach is convenient in that it allows us to see what
 defines have been encountered, and hence we can programmatically extract the
 values associated with particular <tt>`define</tt> symbols.</p></li>
 
-<li><tt>warnings</tt> are any @(see warnings) that were generated during the
-loading process.  Note that warnings generated during the parsing of modules
-are automatically associated with their modules.  However, warnings generated
-in the early stages of file loading, such as preprocessing and lexing, are
-<b>not</b> associated with any modules, and may only occur show up in this
-list!</li>
+<li><tt>warnings</tt> are any \"floating\" @(see warnings) that were generated
+during the loading process.  Note that most warnings generated during the
+parsing of modules are automatically associated with their modules, and these
+warnings are <i>not</i> included.  Instead, this list will have warnings
+generated in the early stages of file loading, such as preprocessing and
+lexing, and perhaps any warnings about malformed syntax that occurs
+<i>between</i> modules, etc.</li>
 
 </ul>"
 
@@ -979,7 +980,7 @@ list!</li>
                           (if (= (len floating-warnings) 1) "" "s"))
                    (vl-print-warnings warnings)
                    (vl-println "")))))
-        (mv successp mods filemap defines warnings state))
+        (mv successp mods filemap defines floating-warnings state))
 
       (progn$
        ;; We're now after the mv-let's body, so the temporary bindings above

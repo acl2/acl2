@@ -36,7 +36,9 @@
 (progn!
  (set-raw-mode t)
  (defun cw-unformatted (x)
-   (write-string x)
+   (let ((stream (get-output-stream-from-channel *standard-co*)))
+     (write-string x stream)
+     (finish-output stream))
    nil))
 (defttag nil)
 
