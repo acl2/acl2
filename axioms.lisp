@@ -41765,7 +41765,9 @@ Lisp definition."
 
 ; We avoid skipping proofs for the rest of initialization, so that we can do
 ; the verify-termination-boot-strap proofs below during the first pass.  See
-; the comment in the encapsulate that follows.
+; the comment in the encapsulate that follows.  Note that preceding in-theory
+; events are skipped during pass 1 of the boot-strap, since we are only just
+; now entering :logic mode and in-theory events are skipped in :program mode.
 
 #+acl2-loop-only
 (set-ld-skip-proofsp nil state)
@@ -41776,7 +41778,9 @@ Lisp definition."
 
 ; We verify termination (and guards) for the following functions, in order that
 ; certain macroexpansions avoid stack overflows during boot-strapping or at
-; least are sped up.
+; least are sped up.  Note that preceding in-theory events are skipped during
+; pass 1 of the boot-strap, since we have only just above entered :logic mode
+; and in-theory events are skipped in :program mode.
 
  (verify-termination-boot-strap alistp)
  (verify-termination-boot-strap symbol-alistp)
@@ -42397,8 +42401,8 @@ Lisp definition."
   (val world ctx state).
   ~ev[]
 
-  For an explanation of how custom keyword hints are processed,
-  ~pl[custom-keyword-hints].
+  For examples, see the books distributed with ACL2 in directory
+  ~c[books/hints/], in particular ~c[basic-tests.lisp].
 
   To delete a previously added custom keyword hint,
   ~pl[remove-custom-keyword-hint].

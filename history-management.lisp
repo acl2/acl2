@@ -3319,6 +3319,72 @@
                   (newline channel state)
                   (fms *proof-failure-string* nil channel state nil))))))
 
+(defstub print-summary-user (state) t)
+
+(defun print-summary-user-builtin (state)
+   (declare (ignore state)
+            (xargs :mode :logic :verify-guards t))
+   nil)
+
+(defattach print-summary-user print-summary-user-builtin)
+
+(defdoc print-summary-user
+  ":Doc-Section switches-parameters-and-modes
+
+  causing additional summary output~/
+
+  ACL2 prints summaries at the conclusions of processing ~il[events] (unless
+  summaries are inhibited; ~pl[set-inhibit-output-lst] and also
+  ~pl[set-inhibited-summary-types]).  You may arrange for information to be
+  printed at the end of the summary, by defining a function of ~c[state] that
+  returns an ordinary value (typically ~c[nil], but the value is irrelevant).
+  This function should normally be a ~il[guard]-verified ~c[:]~ilc[logic] mode
+  function with no explicit guard (hence, its guard is actually
+  ~c[(state-p state)]), but later below we discuss how to avoid this
+  requirement.  It is then attached (~pl[defattach]) to the function
+  ~c[print-summary-user].  The following example illustrates how this all
+  works.
+
+  ~bv[]
+  (defun print-summary-user-test (state)
+    (declare (xargs :stobjs state))
+    (and (f-boundp-global 'abbrev-evisc-tuple state)
+         (observation-cw
+          'my-test
+          \"~~|Value of abbrev-evisc-tuple: ~~x0~~|\"
+          (f-get-global 'abbrev-evisc-tuple state))))
+  
+  (defattach print-summary-user print-summary-user-test)
+  ~ev[]
+
+  After admission of the two events above, every event summary will conclude
+  with extra printout, for example:
+
+  ~bv[]
+  ACL2 Observation in MY-TEST:  
+  Value of abbrev-evisc-tuple: :DEFAULT
+  ~ev[]
+
+  If the attachment function (above, ~c[print-summary-user-test]) does not meet
+  all the requirements stated above, then you can use the ~c[:skip-checks]
+  argument of ~ilc[defattach] to get around the requirement, as illustrated by
+  the following example.
+
+  ~bv[]
+  (defun print-summary-user-test2 (state)
+    (declare (xargs :stobjs state
+                    :mode :program))
+    (observation-cw
+     'my-test
+     \"~~|Value of term-evisc-tuple: ~~x0~~|\"
+     (f-get-global 'term-evisc-tuple state)))
+
+  (defttag t) ; needed for :skip-checks t
+
+  (defattach (print-summary-user print-summary-user-test2)
+             :skip-checks t)
+  ~ev[]~/~/")
+
 (defun print-summary (erp noop-flg ctx state)
 
 ; This function prints the Summary paragraph.  Part of that paragraph includes
@@ -3438,7 +3504,8 @@
                               (print-proof-tree state))))
                 (t state))))
              (t state))
-       (f-put-global 'proof-tree nil state))))))
+       (prog2$ (print-summary-user state)
+               (f-put-global 'proof-tree nil state)))))))
 
 (defun make-step-limit-record (limit)
   (make step-limit-record

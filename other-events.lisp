@@ -5870,12 +5870,15 @@
    ((endp thms) ans)
    ((ffnnamesp fns (car thms))
 
-; We use add-to-set-equal below because an inner encapsulate may have both an
-; 'unnormalized-body and 'constraint-lst property, and if 'unnormalized-body
-; has already been put into ans then we don't want to include that constraint
-; when we see it here.
+; By using union-equal below, we handle the case that an inner encapsulate may
+; have both an 'unnormalized-body and 'constraint-lst property, so that if
+; 'unnormalized-body has already been put into ans, then we don't include that
+; constraint when we see it here.
 
-    (constraints-introduced1 (cdr thms) fns (add-to-set-equal (car thms) ans)))
+    (constraints-introduced1 (cdr thms)
+                             fns
+                             (union-equal (flatten-ands-in-lit (car thms))
+                                          ans)))
    (t (constraints-introduced1 (cdr thms) fns ans))))
 
 (defun new-trips (wrld3 proto-wrld3 seen acc)
@@ -6071,7 +6074,7 @@
            (theorem
             (cond
              ((ffnnamesp fns (cddr trip))
-              (add-to-set-equal (cddr trip) ans))
+              (union-equal (flatten-ands-in-lit (cddr trip)) ans))
              (t ans)))
            (classes
             (constraints-introduced1

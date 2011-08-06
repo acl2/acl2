@@ -18123,7 +18123,27 @@
   ~c[read-run-time], and ~c[main-timer] are no longer untouchable
   (~pl[remove-untouchable]).
 
+  We now avoid certain duplicate conjuncts in the contraint stored for
+  ~ilc[encapsulate] ~il[events].  For example, the constraint stored for the
+  following event formerly included ~c[(EQUAL (FOOP (CONS X Y)) (FOOP Y))] and
+  ~c[(BOOLEANP (FOOP X))] twice each, but no more.
+  ~bv[]
+  (encapsulate
+   ((foop (x) t))
+   (local (defun foop (x) (declare (ignore x)) t))
+   (defthm foop-constraints
+     (and (booleanp (foop x))
+          (equal (foop (cons x y)) (foop y)))
+     :rule-classes
+     ((:type-prescription :corollary (booleanp (foop x)))
+      (:rewrite :corollary (equal (foop (cons x y)) (foop y))))))
+  ~ev[]
+
   ~st[NEW FEATURES]
+
+  Users may now arrange for additional summary information to be printed at the
+  end of ~il[events]; ~pl[print-summary-user].  Thanks to Harsh Raju Chamarthi
+  for requesting this feature and participating in a design discussion.
 
   ~st[HEURISTIC IMPROVEMENTS]
 

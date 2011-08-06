@@ -6308,6 +6308,10 @@
 ; functions-defined-in-file in hons-raw.lisp.
 
 (defun note-fns-in-form (form ht)
+
+; For every macro and every function defined by form, associate its definition
+; with its name in the given hash table, ht.  See note-fns-in-files.
+
   (and (consp form)
        (case (car form)
          ((defun defund defn defproxy defun-nx defun-one-output defstub
@@ -6386,6 +6390,11 @@
                  (car form))))))
 
 (defun note-fns-in-file (filename ht)
+
+; For every macro and every function defined in the indicated file, associate
+; its definition with its name in the given hash table, ht.  See
+; note-fns-in-files.
+
   (with-open-file
    (str filename :direction :input)
    (let ((avrc (cons nil nil))
@@ -6396,6 +6405,12 @@
            (note-fns-in-form x ht)))))
 
 (defun note-fns-in-files (filenames ht loop-only-p)
+
+; For every macro and every function defined in filenames, associate its
+; definition with its name in the given hash table, ht.  We read each file in
+; filenames either with or without feature :acl2-loop-only, according to
+; whether loop-only-p is true or false, respectively.
+
   (let ((*features* (if loop-only-p
                         (push :acl2-loop-only *features*)
                       (remove :acl2-loop-only *features*))))
@@ -6410,8 +6425,16 @@
 
 (defun fns-different-wrt-acl2-loop-only (acl2-files)
 
-; This function should be called with acl2-files equal to *acl2-files*, in the
-; build directory.  See the comment about redundant definitions in
+; For each file in acl2-files we collect up all definitions of functions and
+; macros, reading each file both with and without feature :acl2-loop-only.  We
+; return (mv macro-result program-mode-result logic-mode-result), where each of
+; macro-result, program-mode-result, and logic-mode-result is a list of
+; symbols.  Each symbol is the name of a macro, program-mode function, or
+; logic-mode function (respectively) defined with feature :acl2-loop-only,
+; which has a different (or absent) definition without feature :acl2-loop-only.
+
+; This function is typically called with acl2-files equal to *acl2-files*, in
+; the build directory.  See the comment about redundant definitions in
 ; chk-acceptable-defuns-redundancy for a pertinent explanation.
 
   (let ((filenames (loop for x in acl2-files
