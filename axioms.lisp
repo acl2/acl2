@@ -21365,7 +21365,8 @@
 ; arrays.
 
 ; In case we find the following information useful later, here is a summary of
-; the above constants in various lisps.  The
+; the above constants in various 32-bit lisps, observed many years ago as of
+; the time you are reading this comment.
 
 ; Lisp              array-dimension-limit            array-total-size-limit
 ; ---------------   ---------------------            ----------------------

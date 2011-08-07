@@ -18097,6 +18097,16 @@
 
 ; Incorporated a Lispworks-specific patch from Martin Simmons.
 
+; Here is a slightly simplified version of the example sent to us by Warren
+; Hunt for the defstobj bug involving, quoting the :doc below, "excessively
+; restrictive type declarations".
+
+;   (defstobj x86-32
+;     (mem :type (array (unsigned-byte 8) (4294967296)) ;; 2^32
+;          :initially 0
+;          :resizable nil)
+;     :inline t)
+
   :doc
   ":Doc-Section release-notes
 
@@ -18153,6 +18163,13 @@
   the original goal by induction and generating a goal of ~c[NIL].  Thanks to
   Jared Davis for sending us a helpful example to bring this bug to our
   attention.
+
+  It was possible for ~ilc[defstobj] to generate raw Lisp code with
+  excessively restrictive type declarations.  This has been fixed.  Thanks to
+  Warren Hunt for reporting this bug and sending an example that illustrates
+  it.  ~l[stobj-example-2] for examples of such raw Lisp code; now, one finds
+  ~c[(and fixnum (integer 0 *))] where formerly the type was restricted to
+  ~c[(integer 0 268435455)].
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 

@@ -19124,7 +19124,6 @@
                            (if (array-etype-is-fixnum-type array-etype)
                                'fix-aref
                              vref)))
-            (max-index (and arrayp (1- *expt2-28*)))
             (accessor-name (nth 3 field-template))
             (updater-name (nth 4 field-template))
             (length-name (nth 5 field-template))
@@ -19138,7 +19137,7 @@
             ,@(if (not resizable)
                   `((declare (ignore ,var))
                     ,array-length)
-                `((the (integer 0 ,max-index)
+                `((the (and fixnum (integer 0 *))
                        (length (svref ,var ,n))))))
            (,resize-name
             (k ,var)
@@ -19154,14 +19153,16 @@
                       ,var))
                 `((if (not (and (integerp k)
                                 (>= k 0)
-                                (< k ,max-index)))
+                                (< k array-dimension-limit)))
                       (hard-error
                        ',resize-name
                        "Attempted array resize failed because the requested ~
-                        size ~x0 was not an integer between 0 and (1- (expt ~
-                        2 28)).  These bounds on array sizes are fixed by ~
-                        ACL2."
-                       (list (cons #\0 k)))
+                        size ~x0 was not a nonnegative integer less than the ~
+                        value of Common Lisp constant array-dimension-limit, ~
+                        which is ~x1.  These bounds on array sizes are fixed ~
+                        by ACL2."
+                       (list (cons #\0 k)
+                             (cons #\1 array-dimension-limit)))
                     (let* ((old (svref ,var ,n))
                            (min-index (if (< k (length old))
                                           k
@@ -19191,21 +19192,21 @@
                       ,var)))))
            (,accessor-name
             (i ,var)
-            (declare (type (integer 0 ,max-index) i))
+            (declare (type (and fixnum (integer 0 *)) i))
             ,@(and inline (list *stobj-inline-declare*))
             (the ,array-etype
               (,vref (the ,simple-type (svref ,var ,n))
-                     (the (integer 0 ,max-index) i))))
+                     (the (and fixnum (integer 0 *)) i))))
            (,updater-name
             (i v ,var)
-            (declare (type (integer 0 ,max-index) i)
+            (declare (type (and fixnum (integer 0 *)) i)
                      (type ,array-etype v))
             ,@(and inline (list *stobj-inline-declare*))
             (progn 
               #+(and hons (not acl2-loop-only))
               (memoize-flush ,var)
               (setf (,vref (the ,simple-type (svref ,var ,n))
-                           (the (integer 0 ,max-index) i))
+                           (the (and fixnum (integer 0 *)) i))
                     (the ,array-etype v))
               ,var))))
         ((equal type t)
@@ -20446,19 +20447,19 @@
   The raw Lisp implementing these two functions is shown below.
   ~bv[]
   (defun memi (i ms)
-    (declare (type (integer 0 268435455) i))
+    (declare (type (and fixnum (integer 0 *)) i))
     (the integer
          (aref (the (simple-array integer (*))
                     (svref ms 1))
-               (the (integer 0 268435455) i))))
+               (the (and fixnum (integer 0 *)) i))))
 
   (defun update-memi (i v ms)
-    (declare (type (integer 0 268435455) i)
+    (declare (type (and fixnum (integer 0 *)) i)
              (type integer v))
     (progn
      (setf (aref (the (simple-array integer (*))
                       (svref ms 1))
-                 (the (integer 0 268435455) i))
+                 (the (and fixnum (integer 0 *)) i))
            (the integer v))
      ms))
   ~ev[]
