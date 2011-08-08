@@ -74,7 +74,8 @@
           (str::isubstrp "mux" name)
           (str::isubstrp "clk" name)
           (str::isubstrp "net" name)
-          (str::isubstrp "ph1" name))))
+          (str::isubstrp "ph1" name)
+          (str::isubstrp "ph2" name))))
 
   (defund vl-multidrive-filter-innocuous-wires (x innocuous other)
     (declare (xargs :guard (symbol-listp x)))
@@ -139,6 +140,169 @@
          (exotic-bits  (append-domains exotic-fal)))
       exotic-bits)))
 
+(defund vl-bitlist-all-zs (x)
+  (declare (Xargs :guard (vl-bitlist-p x)))
+  (or (atom x)
+      (and (eq (car X) :vl-zval)
+           (vl-bitlist-all-zs (cdr x)))))
+      
+
+(defund vl-z-atom-p (x)
+  (declare (xargs :guard (vl-atom-p x)))
+  (b* ((guts (vl-atom->guts x)))
+    (and (vl-weirdint-p guts)
+         (vl-bitlist-all-zs (vl-weirdint->bits guts)))))
+
+(defund vl-z-expr-p (x)
+  (declare (Xargs :guard (vl-expr-p x)))
+  (if (vl-atom-p x)
+      (vl-z-atom-p x)
+    (b* (((vl-nonatom x) x))
+      (and (eq x.op :vl-qmark)
+           (or (and (vl-atom-p (cadr x.args))
+                    (vl-z-atom-p (cadr x.args)))
+               (and (vl-atom-p (caddr x.args))
+                    (vl-z-atom-p (caddr x.args))))))))
+         
+        
+
+(defund vl-z-assign-p (x)
+  (declare (xargs :guard (vl-assign-p x)))
+  (vl-z-expr-p (vl-assign->expr x)))
+
+(defund vl-remove-z-assigns (x)
+  (declare (Xargs :guard (vl-assignlist-p x)))
+  (if (atom x)
+      nil
+    (if (vl-z-assign-p (car x))
+        (vl-remove-z-assigns (cdr x))
+      (cons (car x)
+            (vl-remove-z-assigns (cdr x))))))
+
+(defund vl-keep-z-assigns (x)
+  (declare (Xargs :guard (vl-assignlist-p x)))
+  (if (atom x)
+      nil
+    (if (vl-z-assign-p (car x))
+        (cons (car x)
+              (vl-keep-z-assigns (cdr x)))
+      (vl-keep-z-assigns (cdr x)))))
+
+(defthm vl-assignlist-p-of-vl-remove-z-assigns
+  (implies (vl-assignlist-p x)
+           (vl-assignlist-p (vl-remove-z-assigns x)))
+  :hints(("Goal" :in-theory (enable vl-remove-z-assigns))))
+
+(defthm vl-assignlist-p-of-vl-keep-z-assigns
+  (implies (vl-assignlist-p x)
+           (vl-assignlist-p (vl-keep-z-assigns x)))
+  :hints(("Goal" :in-theory (enable vl-keep-z-assigns))))
+
+
+(defund vl-z-gatetype-p (x)
+  (declare (xargs :guard t))
+  (member x '(:vl-cmos
+              :vl-rcmos
+              :vl-bufif0
+              :vl-bufif1
+              :vl-notif0
+              :vl-notif1
+              :vl-nmos
+              :vl-pmos
+              :vl-rnmos
+              :vl-rpmos
+              :vl-tranif0
+              :vl-tranif1
+              :vl-rtranif1
+              :vl-rtranif0
+              :vl-tran
+              :vl-rtran
+              :vl-pulldown
+              :vl-pullup)))
+
+(defund vl-z-gateinst-p (x)
+  (declare (Xargs :guard (vl-gateinst-p x)))
+  (b* (((vl-gateinst x) x))
+    (vl-z-gatetype-p x.type)))
+
+(defund vl-remove-z-gateinsts (x)
+  (declare (Xargs :guard (vl-gateinstlist-p x)))
+  (if (atom x)
+      nil
+    (if (vl-z-gateinst-p (car x))
+        (vl-remove-z-gateinsts (cdr x))
+      (cons (car x) (vl-remove-z-gateinsts (cdr x))))))
+
+(defund vl-keep-z-gateinsts (x)
+  (declare (Xargs :guard (vl-gateinstlist-p x)))
+  (if (atom x)
+      nil
+    (if (vl-z-gateinst-p (car x))
+        (cons (car x) (vl-keep-z-gateinsts (cdr x)))
+      (vl-keep-z-gateinsts (cdr x)))))
+
+(defthm vl-gateinstlist-p-of-vl-remove-z-gateinsts
+  (implies (vl-gateinstlist-p x)
+           (vl-gateinstlist-p (vl-remove-z-gateinsts x)))
+  :hints(("Goal" :in-theory (enable vl-remove-z-gateinsts))))
+
+(defthm vl-gateinstlist-p-of-vl-keep-z-gateinsts
+  (implies (vl-gateinstlist-p x)
+           (vl-gateinstlist-p (vl-keep-z-gateinsts x)))
+  :hints(("Goal" :in-theory (enable vl-keep-z-gateinsts))))
+
+
+(defun vl-z-module-p (x)
+  (declare (Xargs :guard (vl-module-p x)))
+  (b* (((vl-module x) x))
+    (and (not x.modinsts)
+         (not (vl-remove-z-gateinsts x.gateinsts))
+         (not (vl-remove-z-assigns x.assigns)))))
+
+;; BOZO: Perhaps do something more sophisticated like accessing a modalist and
+;; checking vl-z-module-p of the instanced module.
+(defund vl-z-modinst-p (x)
+  (declare (xargs :guard (vl-modinst-p x)))
+  (member-equal (vl-modinst->modname x)
+                '("unmos"
+                  "upmos"
+                  "urnmos"
+                  "urpmos"
+                  "uwnmos"
+                  "uwpmos"
+                  "n_fdbk"
+                  "n_pchg"
+                  "p_fdbk"
+                  "p_pchg"
+                  "open"
+                  "short")))
+
+(defund vl-remove-z-modinsts (x)
+  (declare (Xargs :guard (vl-modinstlist-p x)))
+  (if (atom x)
+      nil
+    (if (vl-z-modinst-p (car x))
+        (vl-remove-z-modinsts (cdr x))
+      (cons (car x) (vl-remove-z-modinsts (cdr x))))))
+
+(defund vl-keep-z-modinsts (x)
+  (declare (Xargs :guard (vl-modinstlist-p x)))
+  (if (atom x)
+      nil
+    (if (vl-z-modinst-p (car x))
+        (cons (car x) (vl-keep-z-modinsts (cdr x)))
+      (vl-keep-z-modinsts (cdr x)))))
+
+
+(defthm vl-modinstlist-p-of-vl-remove-z-modinsts
+  (implies (vl-modinstlist-p x)
+           (vl-modinstlist-p (vl-remove-z-modinsts x)))
+  :hints(("Goal" :in-theory (enable vl-remove-z-modinsts))))
+
+(defthm vl-modinstlist-p-of-vl-keep-z-modinsts
+  (implies (vl-modinstlist-p x)
+           (vl-modinstlist-p (vl-keep-z-modinsts x)))
+  :hints(("Goal" :in-theory (enable vl-keep-z-modinsts))))
 
 
 (defsection vl-module-multidrive-detect
@@ -163,21 +327,25 @@
                    :fn 'vl-module-multidrive-detect)))
             (change-vl-module x :warnings (cons w warnings))))
 
-         (lvalexprs
-          ;; We explicitly remove any initial/always statements because all
-          ;; procedural assignments must be to registers instead of wires, and
-          ;; this will cause problems since the registers aren't included in the
-          ;; wire alist, and we also think it's pretty legitimate for registers
-          ;; to be assigned to in multiple places (e.g., it could be given an
-          ;; initial value in an initial statement, and be updated in an always
-          ;; statement), so we don't want to cause any warnings about them.
-          (vl-module-lvalexprs (change-vl-module x
-                                                 :alwayses nil
-                                                 :initials nil)))
-         ((mv successp warnings allbits)
-          (vl-msb-exprlist-bitlist lvalexprs walist warnings))
+         (z-lvalexprs (append (vl-assignlist-lvalexprs
+                               (vl-keep-z-assigns x.assigns))
+                              (vl-gateinstlist-lvalexprs
+                               (vl-keep-z-gateinsts x.gateinsts))
+                              (vl-modinstlist-lvalexprs
+                               (vl-keep-z-modinsts x.modinsts))))
+
+         (nonz-lvalexprs (append (vl-assignlist-lvalexprs
+                                  (vl-remove-z-assigns x.assigns))
+                                 (vl-gateinstlist-lvalexprs
+                                  (vl-remove-z-gateinsts x.gateinsts))
+                                 (vl-modinstlist-lvalexprs
+                                  (vl-remove-z-modinsts x.modinsts))))
+         
+         ((mv successp1 warnings zbits)
+          (vl-msb-exprlist-bitlist z-lvalexprs walist warnings))
+
          (warnings
-          (if successp
+          (if successp1
               warnings
             (cons (make-vl-warning
                    :type :vl-multidrive-detect-incomplete
@@ -192,7 +360,63 @@
                    :fn 'vl-module-multidrive-detect)
                   warnings)))
 
-         (badbits (duplicated-members allbits))
+         ((mv successp2 warnings nonzbits)
+          (vl-msb-exprlist-bitlist nonz-lvalexprs walist warnings))
+
+         (warnings
+          (if (or successp2 (not successp1))
+              warnings
+            (cons (make-vl-warning
+                   :type :vl-multidrive-detect-incomplete
+                   :msg "Our detection of multiply-driven wires in ~m0 may be ~
+                         incomplete because we failed to generate bit-lists for ~
+                         all lvalues.  This is probably caused by a malformed ~
+                         lvalue?  Check other warnings for vl-msb-*-bitlist.  ~
+                         BOZO this error message is terrible, Jared should make ~
+                         it better."
+                   :args (list (vl-module->name x))
+                   :fatalp nil
+                   :fn 'vl-module-multidrive-detect)
+                  warnings)))
+         
+
+         ;; (lvalexprs
+         ;;  ;; We explicitly remove any initial/always statements because all
+         ;;  ;; procedural assignments must be to registers instead of wires, and
+         ;;  ;; this will cause problems since the registers aren't included in the
+         ;;  ;; wire alist, and we also think it's pretty legitimate for registers
+         ;;  ;; to be assigned to in multiple places (e.g., it could be given an
+         ;;  ;; initial value in an initial statement, and be updated in an always
+         ;;  ;; statement), so we don't want to cause any warnings about them.
+         ;;  (vl-module-lvalexprs (change-vl-module x
+         ;;                                         :alwayses nil
+         ;;                                         :initials nil)))
+         ;; ((mv successp warnings allbits)
+         ;;  (vl-msb-exprlist-bitlist lvalexprs walist warnings))
+
+         ;; (warnings
+         ;;  (if successp
+         ;;      warnings
+         ;;    (cons (make-vl-warning
+         ;;           :type :vl-multidrive-detect-incomplete
+         ;;           :msg "Our detection of multiply-driven wires in ~m0 may be ~
+         ;;                 incomplete because we failed to generate bit-lists for ~
+         ;;                 all lvalues.  This is probably caused by a malformed ~
+         ;;                 lvalue?  Check other warnings for vl-msb-*-bitlist.  ~
+         ;;                 BOZO this error message is terrible, Jared should make ~
+         ;;                 it better."
+         ;;           :args (list (vl-module->name x))
+         ;;           :fatalp nil
+         ;;           :fn 'vl-module-multidrive-detect)
+         ;;          warnings)))
+
+         ;; A bit is multiply driven in a weird way if it is driven multiple
+         ;; times by a non-Z driver, or if it is driven by both non-Z and Z
+         ;; drivers, but not if it is only driven by multple Z drivers.
+         (badbits (duplicated-members (append nonzbits
+                                              (mergesort zbits))))
+
+;;         (badbits (duplicated-members allbits))
 
          ;; Throw away bits that probably ought to be multiply driven due to
          ;; having types like wor/wand
