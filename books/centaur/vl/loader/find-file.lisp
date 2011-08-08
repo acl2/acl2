@@ -25,56 +25,89 @@
 (local (include-book "../util/arithmetic"))
 (set-state-ok t)
 
-(defund vl-ends-with-directory-separatorp (x)
-  (declare (xargs :guard (stringp x)))
-  (let ((len (length x)))
-    (and (/= len 0)
-         (eql (char x (- (length x) 1)) ACL2::*directory-separator*))))
 
-(defund vl-extend-pathname (dir filename)
-  (declare (xargs :guard (and (stringp dir)
-                              (stringp filename))))
-  (str::cat dir
-            (if (vl-ends-with-directory-separatorp dir)
-                ""
-              (coerce (list ACL2::*directory-separator*) 'string))
-            filename))
+(defsection vl-extend-pathname
+  :parents (vl-find-file)
+  :short "@(call vl-extend-pathname) concatenates <tt>dir</tt> and
+<tt>filename</tt>, adding a slash to between them only if <tt>dir</tt> does not
+end with a slash."
 
-(defthm stringp-of-vl-extend-pathname
-  (stringp (vl-extend-pathname dir filename))
-  :rule-classes :type-prescription)
+  (defund vl-ends-with-directory-separatorp (x)
+    (declare (xargs :guard (stringp x)))
+    (let ((len (length x)))
+      (and (/= len 0)
+           (eql (char x (- (length x) 1)) ACL2::*directory-separator*))))
+
+  (defund vl-extend-pathname (dir filename)
+    (declare (xargs :guard (and (stringp dir)
+                                (stringp filename))))
+    (str::cat dir
+              (if (vl-ends-with-directory-separatorp dir)
+                  ""
+                (coerce (list ACL2::*directory-separator*) 'string))
+              filename))
+
+  (defthm stringp-of-vl-extend-pathname
+    (stringp (vl-extend-pathname dir filename))
+    :rule-classes :type-prescription))
 
 
-(encapsulate
-  ()
+
+(defsection vl-find-file-aux
+  :parents (vl-find-file)
+  :short "Look for a file in a list of search directories."
+
   (defund vl-find-file-aux (filename searchpath state)
     (declare (xargs :guard (and (stringp filename)
                                 (string-listp searchpath)
                                 (state-p state))
                     :verify-guards nil))
-    (if (atom searchpath)
-        (mv nil state)
-      (let ((attempt (vl-extend-pathname (car searchpath) filename)))
-        (mv-let (channel state)
-          (open-input-channel attempt :character state)
-          (if channel
-              (let ((state (close-input-channel channel state)))
-                (mv attempt state))
-            (vl-find-file-aux filename (cdr searchpath) state))))))
+    (b* (((when (atom searchpath))
+          (mv nil state))
+         (attempt (vl-extend-pathname (car searchpath) filename))
+         ((mv channel state)
+          (open-input-channel attempt :character state))
+         ((unless channel)
+          (vl-find-file-aux filename (cdr searchpath) state))
+         (state (close-input-channel channel state)))
+      (mv attempt state)))
 
-  (local (defthm state-p1-of-vl-find-file-aux
-           (implies (force (state-p1 state))
-                    (state-p1 (mv-nth 1 (vl-find-file-aux filename searchpath state))))
-           :hints(("Goal" :in-theory (e/d (vl-find-file-aux))))))
+  (defthm state-p1-of-vl-find-file-aux
+    (implies (force (state-p1 state))
+             (state-p1 (mv-nth 1 (vl-find-file-aux filename searchpath state))))
+    :hints(("Goal" :in-theory (e/d (vl-find-file-aux)))))
 
-  (local (defthm stringp-of-vl-find-file-aux
-           (equal (stringp (mv-nth 0 (vl-find-file-aux filename searchpath state)))
-                  (if (mv-nth 0 (vl-find-file-aux filename searchpath state))
-                      t
-                    nil))
-           :hints(("Goal" :in-theory (enable vl-find-file-aux)))))
+  (defthm stringp-of-vl-find-file-aux
+    (equal (stringp (mv-nth 0 (vl-find-file-aux filename searchpath state)))
+           (if (mv-nth 0 (vl-find-file-aux filename searchpath state))
+               t
+             nil))
+    :hints(("Goal" :in-theory (enable vl-find-file-aux))))
 
-  (verify-guards vl-find-file-aux)
+  (verify-guards vl-find-file-aux))
+
+
+
+(defsection vl-find-file
+  :parents (loader)
+  :short "Determine where to load a file from, given its (absolute or relative)
+name and a list of directories to search."
+
+  :long "<p><b>Signature:</b> @(call vl-find-file) returns <tt>(mv realname
+state)</tt>.</p>
+
+<p>The <tt>filename</tt> is the name of a file you want to load; it can be
+either an absolute filename (in which case it will just be returned as
+<tt>realname</tt>), or a relative filename (in which case we will look for it
+in the <tt>searchpath</tt>).</p>
+
+<p>The <tt>searchpath</tt> is a list of strings that are the names of
+directories to search.  These order of these directories is important, because
+we search them in order.</p>
+
+<p>If we find the file in any of the search directories, we essentially return
+<tt>dir/filename</tt> as <tt>realname</tt>.  But if we can't find the file
+anywhere, <tt>realname</tt> is just <tt>nil</tt>.</p>"
 
   (defund vl-find-file (filename searchpath state)
     (declare (xargs :guard (and (stringp filename)

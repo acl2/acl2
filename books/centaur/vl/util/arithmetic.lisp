@@ -117,11 +117,13 @@
             string-append-lst
             append
             subseq
+            subseq-list
             intersectp-equal
             intersection-equal
             no-duplicatesp-equal
             set-difference-equal
             pairlis$
+            make-character-list
 
             simpler-take
             nthcdr
@@ -1225,6 +1227,12 @@
                   (force (characterp x)))
              (character-listp (make-list-ac n x ac))))
 
+  (defthm character-listp-of-repeat
+    (equal (character-listp (repeat a n))
+           (or (zp n)
+               (characterp a)))
+    :hints(("Goal" :in-theory (enable repeat))))
+
   (defthm character-listp-of-simpler-take
     (implies (and (character-listp x)
                   (force (<= (nfix n) (len x))))
@@ -1410,10 +1418,6 @@
            (plist-worldp (w state)))
   :hints(("Goal" :in-theory (enable state-p1 w))))
 
-(defthm stringp-of-subseq
-  (equal (stringp (subseq x start end))
-         (stringp x))
-  :hints(("Goal" :in-theory (enable subseq))))
 
 (defthm alistp-of-make-fal
   (equal (alistp (make-fal x y))
@@ -1437,3 +1441,97 @@
 
 
 
+
+(encapsulate
+  ()
+  (local (in-theory (enable make-character-list)))
+
+  (defthm make-character-list-when-character-listp
+    (implies (character-listp x)
+             (equal (make-character-list x)
+                    x)))
+
+  (defthm character-listp-of-make-character-list
+    (character-listp (make-character-list x)))
+
+  (defthm len-of-make-character-list
+    (equal (len (make-character-list x))
+           (len x))))
+
+
+
+(encapsulate
+  ()
+  (defthm length-of-coerce
+    ;; Wow, coerce is sort of awful in that (coerce "foo" 'string) returns ""
+    ;; and (coerce '(1 2 3) 'list) returns nil.  This leads to a weird length
+    ;; theorem.  We normally just leave length enabled, so this rule won't
+    ;; have many uses.
+    (equal (length (coerce x y))
+           (cond ((equal y 'list)
+                  (if (stringp x)
+                      (length x)
+                    0))
+                 (t
+                  (if (stringp x)
+                      0
+                    (len x)))))
+    :hints(("Goal"
+            :use ((:instance acl2::completion-of-coerce
+                             (acl2::x x)
+                             (acl2::y y))))))
+
+  (defthm len-of-coerce-to-string
+    (equal (len (coerce x 'string))
+           0))
+
+  (defthm coerce-inverse-1-better
+    (equal (coerce (coerce x 'string) 'list)
+           (if (stringp x)
+               nil
+             (make-character-list x)))
+    :hints(("Goal"
+            :use ((:instance acl2::completion-of-coerce
+                             (acl2::x x)
+                             (acl2::y 'string))))))
+
+  (defthm coerce-inverse-2-better
+    (equal (coerce (coerce x 'list) 'string)
+           (if (stringp x)
+               x
+             "")))
+
+  (in-theory (disable coerce-inverse-1 coerce-inverse-2)))
+
+
+
+(encapsulate
+  ()
+  (local (in-theory (enable subseq-list)))
+
+  (defthm len-of-subseq-list
+    (equal (len (subseq-list x start end))
+           (nfix (- end start))))
+
+  (defthm true-listp-subseq-list
+    (true-listp (subseq-list x start end))
+    :rule-classes :type-prescription))
+
+
+(encapsulate
+  ()
+  (local (in-theory (enable subseq)))
+
+  (defthm stringp-of-subseq
+    (equal (stringp (subseq x start end))
+           (stringp x)))
+
+  (defthm length-of-subseq
+    (equal (length (subseq x start end))
+           (nfix (- (or end (length x)) start))))
+
+  (defthm len-of-subseq
+    (equal (len (subseq x start end))
+           (if (stringp x)
+               0
+             (nfix (- (or end (len x)) start))))))

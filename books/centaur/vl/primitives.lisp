@@ -33,10 +33,9 @@
 
   :long "<p>The modules here can sort of be thought of as the target language
 for VL's simplification scheme.  That is, our usual sequence of @(see
-transformations) tries to convert rich Verilog modules that include
-expressions, gates, parameters, etc., into simple, hierarchical modules that do
-nothing more than instantiate other modules, with these primitive modules at
-the tips.</p>
+transforms) tries to convert rich Verilog modules that include expressions,
+gates, parameters, etc., into simple, hierarchical modules that do nothing more
+than instantiate other modules, with these primitive modules at the tips.</p>
 
 <p>This set of primitives modules could be simplified, for instance we could
 rewrite all of the basic gate modules into <tt>nand</tt> or some other basic

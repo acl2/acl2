@@ -444,6 +444,7 @@ and <tt>change-vl-emodwire</tt> macros.</p>"
                                       vl-emodwire-encode
                                       vl-emodwire-encode-aux
                                       subseq
+                                      subseq-list
                                       string-append))))
 
   (definlined vl-emodwire-exec (basename index)
@@ -553,6 +554,7 @@ a string."
                                       vl-emodwire-encode-aux
                                       vl-emodwire-decode-aux
                                       subseq
+                                      subseq-list
                                       string-append)))))
 
 
@@ -599,6 +601,7 @@ a string."
                                     vl-emodwire-encode-aux
                                     vl-emodwire-decode-aux
                                     subseq
+                                    subseq-list
                                     string-append)
                                    ((force)))))))
 
@@ -679,6 +682,7 @@ a string."
                                 vl-emodwire->index
                                 vl-emodwire->basename-without-decoding
                                 subseq
+                                subseq-list
                                 string-append
                                 len
                                 nth)
@@ -720,7 +724,7 @@ a string."
                     (coerce (vl-emodwire->basename-without-decoding x) 'list)))
           :hints(("Goal" :in-theory (enable vl-emodwire-p
                                             vl-emodwire->basename-without-decoding
-                                            subseq))))))
+                                            subseq subseq-list))))))
 
      (local
       (defthm f3

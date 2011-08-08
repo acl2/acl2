@@ -601,8 +601,10 @@ override-alist filemap defines' comment-map' walist' state)</tt>.</p>
          (filemap (and filemapp
                        (list (cons filename (vl-echarlist->string contents)))))
 
-         ((mv successp defines preprocessed)
-          (cwtime (vl-preprocess contents defines) :mintime 1/2))
+         ((mv successp defines preprocessed state)
+          ;; BOZO for now overrides don't have any include-dirs.  Not sure what
+          ;; the right way to handle this is.
+          (cwtime (vl-preprocess contents defines nil state) :mintime 1/2))
          ((unless successp)
           (b* ((w (make-vl-warning :type :vl-preprocess-failed
                                    :msg "Preprocessing failed for override file ~s0."

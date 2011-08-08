@@ -153,6 +153,7 @@
                     nil))))
 
 
+
 (encapsulate
   ()
   (local (defun my-induct (item n lst acc)
@@ -182,7 +183,7 @@
                    :in-theory (disable l0)
                    :use ((:instance l0 (acc 0)))))))
 
-  (local (in-theory (enable subseq position-equal)))
+  (local (in-theory (enable subseq subseq-list position-equal)))
 
   (defthm member-equal-of-subseq-chars-impossible-1
     (implies (and (not (position-equal a x))

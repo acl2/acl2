@@ -38,11 +38,15 @@
 
 
 (defmacro preprocessor-must-ignore (input &key defines)
-  `(assert!
+  `(make-event
     (b* ((echars                     (vl-echarlist-from-str ,input))
-         ((mv successp ?defs output) (vl-preprocess echars ,defines)))
-        (debuggable-and successp
-                        (equal echars output)))))
+         ((mv successp ?defs output state) (vl-preprocess echars ,defines (list ".") state))
+         (- (or (debuggable-and successp
+                                (equal echars output))
+                (er hard? 'preprocessor-must-ignore "failed!"))))
+      (value '(value-triple :success)))))
+
+;; (preprocessor-must-ignore "`foo") ;; causes an error, good.
 
 (preprocessor-must-ignore "foo")
 (preprocessor-must-ignore "0.0 + 10'h4 * 10")
@@ -57,16 +61,16 @@
 
 
 
-
 (defmacro preprocessor-basic-test (&key input defines output)
-  `(assert!
-    (b* ((echars                     (vl-echarlist-from-str ,input))
-         ((mv successp ?defs output) (vl-preprocess echars ,defines))
+  `(make-event
+    (b* ((echars                           (vl-echarlist-from-str ,input))
+         ((mv successp ?defs output state) (vl-preprocess echars ,defines (list ".") state))
          (- (cw! "Successp:~x0~%Input:~%~s1~%Output:~%|~s2|~%"
-                successp ,input (vl-echarlist->string output))))
-        (debuggable-and successp
-                        (equal (vl-echarlist->string output) ,output)))))
-
+                 successp ,input (vl-echarlist->string output)))
+         (- (or (debuggable-and successp
+                                (equal (vl-echarlist->string output) ,output))
+                (er hard? 'preprocessor-basic-test "failed!"))))
+      (value '(value-triple :success)))))
 
 
 (preprocessor-basic-test
@@ -230,6 +234,17 @@
 
 
 
+(preprocessor-basic-test
+ :input "this is some `resetall text"
+ :output "this is some  text")
+
+
+(preprocessor-basic-test
+ :input "this is `celldefine some more `endcelldefine and some more"
+ :output "this is  some more  and some more")
+
+
+
 
 
 ;; This should cause an infinite loop.
@@ -283,3 +298,24 @@
 too */"
  :output "(* foo, bar  *)/* a multiline one
 too */")
+
+(preprocessor-basic-test
+ :input "//@VL foo, bar  // wow, a comment
+blah blah"
+ :output "(* foo, bar  *)// wow, a comment
+blah blah")
+
+(preprocessor-basic-test
+ :input "//@VL foo // wow, a comment
+blah blah"
+ :output "(* foo *)// wow, a comment
+blah blah")
+
+
+
+(preprocessor-basic-test
+ :input "`include \"test.txt\""
+ :output "// this is used in preprocessor-tests.lisp
+// do not delete it
+")
+

@@ -147,6 +147,11 @@ E, and VL can be used to implement other Verilog tools.  For instance:</p>
 powerful linter which is available in <tt>vl/lint</tt> but is not yet
 documented.</li>
 
+<li>We have implemented an equivalence checking tool (which is not yet
+released) that has a unit-based timing model and handles transistor-level
+constructs.  This tool uses the same parser and most of VL's transforms, but
+also has a couple of additional transformation steps.</li>
+
 <li>We have also used it to implement a web-based \"module browser\" (which
 will probably not be released since it is very Centaur specific) that lets
 users see the original and translated source code for our modules, and has
@@ -177,12 +182,20 @@ and hierarchical modules.  (This is really how we use it.)</li>
 Page and section numbers given throughout the VL documentation are in reference
 to this document.  VL does not have any support for SystemVerilog.</p>
 
-<p>Regarding file loading, VL's @(see preprocessor) is very incomplete and
-basically just supports <tt>`define</tt> and <tt>`ifdef</tt>-related stuff; it
-notably doesn't support <tt>`include</tt>; we typically just use search paths.
-The @(see lexer) is complete.  The @(see parser) doesn't currently support
-user-defined primitives, generate statements, specify blocks, specparams,
-genvars, functions, and tasks.</p>
+<p>VL's @(see preprocessor) is somewhat incomplete.  It basically just supports
+<tt>`define</tt> and <tt>`ifdef</tt>-related stuff and can <tt>`include</tt>
+files in the style of the <tt>+incdir</tt> options for tools like
+Verilog-XL (but we often use search paths, which are more similar to
+<tt>+libdir</tt> arguments.)</p>
+
+<p>The @(see lexer) is complete.</p>
+
+<p>The @(see parser) doesn't currently support user-defined primitives,
+generate statements, specify blocks, specparams, genvars, functions, and tasks.
+The parser will just skip over some of these constructs, and depending on what
+you are doing, this behavior may be actually appropriate (e.g., skipping task
+statements is probably okay if they are only used in the development of test
+benches.)</p>
 
 <p>Each of VL's @(see transforms) have certain capabilities and limitations,
 which vary from transform to transform.  As a general rule, VL mainly supports
@@ -1086,7 +1099,7 @@ from @(see vl-simplify-part2).</p>"
   :long "<p><b>Signature:</b> @(call vl-simplify) returns <tt>(mv mods
 failmods use-set-report)</tt>.</p>
 
-<p>This is a high-level routine that applies our @(see transformations) in a
+<p>This is a high-level routine that applies our @(see transforms) in a
 suitable order to simplify Verilog modules and to produce E modules.</p>
 
 <h5>Inputs</h5>
@@ -1208,13 +1221,13 @@ constant <tt>*foo*</tt> will be defined as a @(see vl-translation-p) that
 allows you to inspect the translation in other ways.</p>
 
 
-<h4>Search Path</h4>
+<h4>Search Paths and Include Dirs</h4>
 
-<p>Verilog files often rely on modules defined in other files.  You can add a
-<tt>search-path</tt>, which is a list of directories that will be searched, in
-order, for any modules that are used but not defined in the start-files; see
-@(see vl-load-module) and @(see vl-flush-out-modules) for details.  For
-example:</p>
+<p>Verilog files often rely on modules defined in other files.</p>
+
+<p>VL can use a <tt>search-path</tt>, which is a list of directories that will
+be searched, in order, for any modules that are used but not defined (and not
+explicitly <tt>`include</tt>d in the start-files).  For example:</p>
 
 <code>
  (defmodules foo
@@ -1222,21 +1235,17 @@ example:</p>
     :search-path (list \"/my/project/libs1\" \"/my/project/libs2\" ...))
 </code>
 
-<p>You can also specify an <tt>:override-dirs</tt> argument to \"safely\"
-replace particular Verilog modules with custom definitions.  See @(see
-overrides) for details on how to write override files.</p>
-
-
-<h4>Start Modnames</h4>
-
-<p>Instead of (or in addition to) explicitly providing <tt>start-files</tt>,
-you can provide the names of some modules that you want to load from the search
-path, e.g.,:</p>
+<p>You can separately set up the <tt>include-dirs</tt> that should be searched
+when loading files with <tt>`include</tt>.  By default, <tt>`include
+\"foo.v\"</tt> only looks for <tt>foo.v</tt> in the current directory (i.e.,
+<tt>\".\"</tt>).  But you can add additional include directories, which will be
+searched in priority order (with <tt>\".\"</tt>, always implicitly taking
+priority).  For instance,</p>
 
 <code>
  (defmodules foo
-    :start-modnames (list \"foo_control\" \"foo_datapath\")
-    :search-path (list \".\" \"/my/project/libs1\" \"/my/project/libs2\" ...))
+   :start-files (list \"foo_wrapper.v\")
+   :include-dirs (list \"./foo_extra1\" \"./foo_extra2\"))
 </code>
 
 
@@ -1262,6 +1271,49 @@ path, e.g.,:</p>
 defines, you might add an extra start-file, instead.</p>
 
 
+<h4>Overriding and Customizing Modules</h4>
+
+<p>You can also specify an <tt>:override-dirs</tt> argument to \"safely\"
+replace particular Verilog modules with custom definitions.  See @(see
+overrides) for details on how to write override files.</p>
+
+<p>VL also supports a special comment syntax:</p>
+
+<code>
+//+VL single-line version
+/*+VL multi-line version */
+</code>
+
+<p>Which can be used to hide VL-specific code from other tools, e.g., if
+you need your modules to work with an older Verilog implementation that
+doesn't support Verilog-2005 style attributes, you might write something
+like:</p>
+
+<code>
+//+VL (* my_attribute *)
+assign foo = bar;
+</code>
+
+<p>There is also a special, more concise syntax for attributes:</p>
+
+<code>
+//@VL my_attribute
+</code>
+
+
+<h4>Start Modnames</h4>
+
+<p>Instead of (or in addition to) explicitly providing <tt>start-files</tt>,
+you can provide the names of some modules that you want to load from the search
+path, e.g.,:</p>
+
+<code>
+ (defmodules foo
+    :start-modnames (list \"foo_control\" \"foo_datapath\")
+    :search-path (list \".\" \"/my/project/libs1\" \"/my/project/libs2\" ...))
+</code>
+
+
 <h4>Advanced Options</h4>
 
 <p>If some module causes errors that are not handled gracefully, you can mark
@@ -1279,12 +1331,14 @@ sensible defaults that are not currently configurable.  We may add these
 options in the future, as the need arises.</p>"
 
   (defund defmodules-fn (override-dirs start-files start-modnames
-                                       search-path defines problem-modules state)
+                                       search-path include-dirs defines
+                                       problem-modules state)
     "Returns (MV TRANS STATE)"
     (declare (xargs :guard (and (string-listp override-dirs)
                                 (string-listp start-files)
                                 (string-listp start-modnames)
                                 (string-listp search-path)
+                                (string-listp include-dirs)
                                 (string-listp defines)
                                 (string-listp problem-modules))
                     :stobjs state))
@@ -1299,6 +1353,7 @@ options in the future, as the need arises.</p>"
                        :start-files    start-files
                        :start-modnames start-modnames
                        :search-path    search-path
+                       :include-dirs   include-dirs
                        :defines        initial-defs
                        :filemapp       filemapp))
 
@@ -1359,16 +1414,17 @@ options in the future, as the need arises.</p>"
                   (force (string-listp start-files))
                   (force (string-listp start-modnames))
                   (force (string-listp search-path))
+                  (force (string-listp include-dirs))
                   (force (string-listp defines))
                   (force (string-listp problem-modules))
                   (force (state-p1 state)))
              (and
               (vl-translation-p
                (mv-nth 0 (defmodules-fn override-dirs start-files start-modnames
-                           search-path defines problem-modules state)))
+                           search-path include-dirs defines problem-modules state)))
               (state-p1
                (mv-nth 1 (defmodules-fn override-dirs start-files start-modnames
-                           search-path defines problem-modules state))))))
+                           search-path include-dirs defines problem-modules state))))))
 
   (defund vl-modulelist-nonnil-emods (x)
     (declare (xargs :guard (vl-modulelist-p x)))
@@ -1385,6 +1441,7 @@ options in the future, as the need arises.</p>"
                              start-files
                              start-modnames
                              search-path
+                             include-dirs
                              defines
                              problem-modules)
     `(make-event
@@ -1411,6 +1468,10 @@ options in the future, as the need arises.</p>"
            ((unless (string-listp search-path))
             (er soft 'defmodules "Expected search-path to be a string list."))
 
+           (search-path ,include-dirs)
+           ((unless (string-listp include-dirs))
+            (er soft 'defmodules "Expected include-dirs to be a string list."))
+
            (defines ,defines)
            ((unless (string-listp defines))
             (er soft 'defmodules "Expected defines to be a string list."))
@@ -1421,7 +1482,7 @@ options in the future, as the need arises.</p>"
 
            ((mv translation state)
             (cwtime (defmodules-fn override-dirs start-files start-modnames
-                      search-path defines problem-modules state)
+                      search-path include-dirs defines problem-modules state)
                     :name defmodules-fn))
 
            (emods (vl-modulelist-nonnil-emods
