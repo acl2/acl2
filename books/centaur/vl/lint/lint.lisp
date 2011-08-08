@@ -658,7 +658,9 @@ wide addition instead of a 10-bit wide addition.")))
                                  '(:vl-warn-qmark-width
                                    :vl-warn-qmark-const
                                    :vl-warn-leftright
-                                   :vl-warn-selfassign)
+                                   :vl-warn-selfassign
+                                   :vl-warn-instances-same
+                                   )
                                  walist)))
 
        (state
@@ -667,7 +669,8 @@ wide addition instead of a 10-bit wide addition.")))
          (vl-ps-update-autowrap-col 68)
          (vl-lint-print-warnings "vl-smells-minor.txt"
                                  "Minor Code-Smell Warnings"
-                                 '(:vl-warn-partselect-same)
+                                 '(:vl-warn-partselect-same
+                                   :vl-warn-instances-same-minor)
                                  walist)))
 
        (state
