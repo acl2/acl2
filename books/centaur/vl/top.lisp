@@ -1235,6 +1235,20 @@ explicitly <tt>`include</tt>d in the start-files).  For example:</p>
     :search-path (list \"/my/project/libs1\" \"/my/project/libs2\" ...))
 </code>
 
+<p>By default only <tt>.v</tt> files will be loaded in this way, but the
+<tt>:searchext</tt> option can also be used to give more extensions, e.g., you
+could write:</p>
+
+<code>
+ (defmodules foo
+    :start-files (list \"foo_control.v\" \"foo_datapath.v\")
+    :search-path (list \"/my/project/libs1\" \"/my/project/libs2\" ...)
+    :searchext   (list \"v\" \"V\"))
+</code>
+
+<p>to include both <tt>.v</tt> and <tt>.V</tt> files.</p>
+
+
 <p>You can separately set up the <tt>include-dirs</tt> that should be searched
 when loading files with <tt>`include</tt>.  By default, <tt>`include
 \"foo.v\"</tt> only looks for <tt>foo.v</tt> in the current directory (i.e.,
@@ -1331,13 +1345,14 @@ sensible defaults that are not currently configurable.  We may add these
 options in the future, as the need arises.</p>"
 
   (defund defmodules-fn (override-dirs start-files start-modnames
-                                       search-path include-dirs defines
-                                       problem-modules state)
+                                       search-path searchext include-dirs
+                                       defines problem-modules state)
     "Returns (MV TRANS STATE)"
     (declare (xargs :guard (and (string-listp override-dirs)
                                 (string-listp start-files)
                                 (string-listp start-modnames)
                                 (string-listp search-path)
+                                (string-listp searchext)
                                 (string-listp include-dirs)
                                 (string-listp defines)
                                 (string-listp problem-modules))
@@ -1353,6 +1368,7 @@ options in the future, as the need arises.</p>"
                        :start-files    start-files
                        :start-modnames start-modnames
                        :search-path    search-path
+                       :searchext      searchext
                        :include-dirs   include-dirs
                        :defines        initial-defs
                        :filemapp       filemapp))
@@ -1414,6 +1430,7 @@ options in the future, as the need arises.</p>"
                   (force (string-listp start-files))
                   (force (string-listp start-modnames))
                   (force (string-listp search-path))
+                  (force (string-listp searchext))
                   (force (string-listp include-dirs))
                   (force (string-listp defines))
                   (force (string-listp problem-modules))
@@ -1421,10 +1438,12 @@ options in the future, as the need arises.</p>"
              (and
               (vl-translation-p
                (mv-nth 0 (defmodules-fn override-dirs start-files start-modnames
-                           search-path include-dirs defines problem-modules state)))
+                           search-path searchext include-dirs
+                           defines problem-modules state)))
               (state-p1
                (mv-nth 1 (defmodules-fn override-dirs start-files start-modnames
-                           search-path include-dirs defines problem-modules state))))))
+                           search-path searchext include-dirs
+                           defines problem-modules state))))))
 
   (defund vl-modulelist-nonnil-emods (x)
     (declare (xargs :guard (vl-modulelist-p x)))
@@ -1441,6 +1460,7 @@ options in the future, as the need arises.</p>"
                              start-files
                              start-modnames
                              search-path
+                             (searchext '("v"))
                              include-dirs
                              defines
                              problem-modules)
@@ -1468,9 +1488,13 @@ options in the future, as the need arises.</p>"
            ((unless (string-listp search-path))
             (er soft 'defmodules "Expected search-path to be a string list."))
 
-           (search-path ,include-dirs)
+           (include-dirs ,include-dirs)
            ((unless (string-listp include-dirs))
             (er soft 'defmodules "Expected include-dirs to be a string list."))
+
+           (searchext ,searchext)
+           ((unless (string-listp searchext))
+            (er soft 'defmodules "Expected searchext to be a string list."))
 
            (defines ,defines)
            ((unless (string-listp defines))
@@ -1482,7 +1506,8 @@ options in the future, as the need arises.</p>"
 
            ((mv translation state)
             (cwtime (defmodules-fn override-dirs start-files start-modnames
-                      search-path include-dirs defines problem-modules state)
+                      search-path searchext include-dirs
+                      defines problem-modules state)
                     :name defmodules-fn))
 
            (emods (vl-modulelist-nonnil-emods

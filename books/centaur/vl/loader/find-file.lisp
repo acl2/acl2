@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../util/defs")
+(include-book "../util/warnings")
 (local (include-book "unicode/open-input-channel" :dir :system))
 (local (include-book "unicode/close-input-channel" :dir :system))
 (local (include-book "../util/arithmetic"))
@@ -140,3 +140,104 @@ anywhere, <tt>realname</tt> is just <tt>nil</tt>.</p>"
                                  (stringp (mv-nth 0 (vl-find-file filename searchpath state)))))))
     :hints(("Goal" :in-theory (enable vl-find-file)))))
 
+
+
+(defsection vl-find-basename/extension
+  :parents (loader)
+  :short "Alternative to @(see vl-find-file) that can take a list of
+extensions."
+
+  :long "<p><b>Signature:</b> @(call vl-find-basename/extension) returns
+<tt>(mv realname warnings state)</tt>.</p>"
+
+  (defund vl-find-basename/extension-aux (filename extensions dir state)
+    (declare (xargs :guard (and (stringp filename)
+                                (string-listp extensions)
+                                (stringp dir)
+                                (state-p state))))
+    (b* (((when (atom extensions))
+          (mv nil state))
+         ((mv rest state)
+          (vl-find-basename/extension-aux filename (cdr extensions) dir state))
+         (filename1 (str::cat filename "." (car extensions)))
+         (attempt   (vl-extend-pathname dir filename1))
+         ((mv channel state)
+          (open-input-channel attempt :character state))
+         (state
+          (if channel
+              (close-input-channel channel state)
+            state)))
+      (mv (if channel (cons attempt rest) rest)
+          state)))
+
+  (local (in-theory (enable vl-find-basename/extension-aux)))
+
+  (defthm true-listp-of-vl-find-basename/extension-aux
+    (true-listp (mv-nth 0 (vl-find-basename/extension-aux filename extensions dir state)))
+    :rule-classes :type-prescription)
+
+  (defthm state-p1-of-vl-find-basename/extension-aux
+    (implies (force (state-p1 state))
+             (state-p1 (mv-nth 1 (vl-find-basename/extension-aux filename extensions dir state)))))
+
+  (defthm string-listp-of-vl-find-basename/extension-aux
+    (string-listp (mv-nth 0 (vl-find-basename/extension-aux filename extensions dir state))))
+
+  (local (in-theory (disable vl-find-basename/extension-aux)))
+
+
+  (defund vl-find-basename/extension (filename extensions searchpath warnings state)
+    (declare (xargs :guard (and (stringp filename)
+                                (string-listp extensions)
+                                (string-listp searchpath)
+                                (vl-warninglist-p warnings)
+                                (state-p state))))
+    (b* (((when (atom searchpath))
+          (mv nil warnings state))
+         ((mv hits state)
+          (vl-find-basename/extension-aux filename extensions (car searchpath) state))
+         ((unless hits)
+          (vl-find-basename/extension filename extensions (cdr searchpath) warnings state))
+         (warnings
+          (if (atom (cdr hits))
+              warnings
+            (cons (make-vl-warning
+                   :type :vl-ambiguous-load
+                   :msg "Loading ~x0 based on extension order, but there are ~
+                       also other matching files in this directory: ~&1."
+                   :args (list (car hits) (cdr hits))
+                   :fatalp nil
+                   :fn 'vl-find-basename/extension)
+                  warnings))))
+      (mv (car hits) warnings state)))
+
+  (local (in-theory (enable vl-find-basename/extension)))
+
+  (defthm state-p1-of-vl-find-basename/extension
+    (implies (force (state-p1 state))
+             (state-p1 (mv-nth 2 (vl-find-basename/extension filename extensions searchpath warnings state)))))
+
+  (defthm vl-warninglist-p-of-vl-find-basename/extension
+    (implies (force (vl-warninglist-p warnings))
+             (vl-warninglist-p (mv-nth 1 (vl-find-basename/extension filename extensions searchpath warnings state)))))
+
+  (local (defthm crock
+           (implies (string-listp x)
+                    (equal (stringp (car x))
+                           (if x t nil)))))
+
+  (local (defthm crock2
+           (implies (string-listp x)
+                    (iff (car x)
+                         (consp x)))))
+
+  (defthm stringp-of-vl-find-basename/extension
+    (equal (stringp (mv-nth 0 (vl-find-basename/extension filename extensions searchpath warnings state)))
+           (if (mv-nth 0 (vl-find-basename/extension filename extensions searchpath warnings state))
+               t
+             nil))
+    :rule-classes ((:rewrite)
+                   (:type-prescription
+                    :corollary
+                    (or (not (mv-nth 0 (vl-find-basename/extension filename extensions searchpath warnings state)))
+                        (stringp (mv-nth 0 (vl-find-basename/extension filename extensions searchpath warnings state))))))))

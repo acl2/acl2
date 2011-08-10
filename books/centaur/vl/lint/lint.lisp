@@ -136,17 +136,19 @@
 
 
 
-(defun run-vl-lint (start-files search-path top-mods state)
+(defun run-vl-lint (start-files search-path searchext top-mods state)
   (declare (xargs :guard (and (string-listp start-files)
                               (string-listp search-path)
+                              (string-listp searchext)
                               (string-listp top-mods))
                   :stobjs state))
   (b* ((- (cw "Starting VL-Lint ~s0~%" *vl-lint-version*))
        (- (cw "~%vl-lint: loading modules...~%"))
        ((mv ?successp mods ?filemap ?defines ?warnings state)
         (cwtime (vl-load :override-dirs nil
-                         :start-files start-files
-                         :search-path search-path)))
+                         :start-files   start-files
+                         :search-path   search-path
+                         :searchext     searchext)))
        ;; Throw away any modules we don't care about, if we have been
        ;; given any top-mods.
        (mods (if (not top-mods)
@@ -693,12 +695,13 @@ wide addition instead of a 10-bit wide addition.")))
   (remove-untouchable acl2::writes-okp nil))
 
 (defmacro vl-lint (&key start-files search-path
+                        (searchext '(".v"))
                         ;; gross yucky thing; suppress defaults to all ACL2
                         ;; output, but for debugging use :suppress nil to be
                         ;; able to see what is wrong.
                         top-mods
                         (suppress ':all))
-  (declare (ignorable start-files search-path suppress))
+  (declare (ignorable start-files search-path searchext suppress))
   `(with-output
     :off ,(or suppress 'proof-tree)
     (make-event
@@ -709,7 +712,7 @@ wide addition instead of a 10-bit wide addition.")))
            ;; make-event code, rather than ahead of time.
            (assign acl2::writes-okp t))
           ((mv ?mods ?mods0 ?mwalist ?sd-probs ?dalist ?state)
-           (cwtime (run-vl-lint ,start-files ,search-path ,top-mods state)
+           (cwtime (run-vl-lint ,start-files ,search-path ,searchext ,top-mods state)
                    :name vl-lint))
           (state (vl-lint-report mwalist sd-probs state)))
        (value `(progn (defconst *mods* ',mods)

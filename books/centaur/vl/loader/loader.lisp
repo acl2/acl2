@@ -293,11 +293,12 @@ may not yield <tt>foo</tt> at all.</p>
 in a module <tt>foo</tt> being loaded if the logic designers are disciplined in
 their file naming.</p>"
 
-  (defund vl-load-module (modname searchpath include-dirs defines overrides
+  (defund vl-load-module (modname searchpath searchext include-dirs defines overrides
                                   warnings walist filemapp state)
     "Returns (MV SUCCESSP MODS FILEMAP OUSED MTOKENS DEFINES WARNINGS WALIST STATE)"
     (declare (xargs :guard (and (stringp modname)
                                 (string-listp searchpath)
+                                (string-listp searchext)
                                 (string-listp include-dirs)
                                 (vl-defines-p defines)
                                 (vl-override-db-p overrides)
@@ -305,12 +306,12 @@ their file naming.</p>"
                                 (vl-modwarningalist-p walist)
                                 (booleanp filemapp))
                     :stobjs state))
-    (b* (((mv filename state)
-          (vl-find-file (str::cat modname ".v") searchpath state))
+    (b* (((mv filename warnings state)
+          (vl-find-basename/extension modname searchext searchpath warnings state))
          ((unless filename)
           (mv nil nil nil nil nil defines
               (cons (make-vl-warning :type :vl-warn-find-failed
-                                     :msg "Unable to find file '~s0.v'."
+                                     :msg "Unable to find module ~s0."
                                      :args (list modname)
                                      :fn 'vl-load-module)
                     warnings)
@@ -325,20 +326,21 @@ their file naming.</p>"
   (defthm state-p1-of-vl-load-module
     (implies (force (state-p1 state))
              (state-p1
-              (mv-nth 8 (vl-load-module modname searchpath include-dirs defines overrides
+              (mv-nth 8 (vl-load-module modname searchpath searchext include-dirs defines overrides
                                         warnings walist filemapp state)))))
 
   (defthm vl-load-module-basics
     (implies
      (and (force (stringp modname))
           (force (string-listp searchpath))
+          (force (string-listp searchext))
           (force (string-listp include-dirs))
           (force (vl-defines-p defines))
           (force (vl-override-db-p overrides))
           (force (vl-warninglist-p warnings))
           (force (vl-modwarningalist-p walist))
           (force (state-p state)))
-     (let ((result (vl-load-module modname searchpath include-dirs defines overrides
+     (let ((result (vl-load-module modname searchpath searchext include-dirs defines overrides
                                    warnings walist filemapp state)))
        (and (vl-modulelist-p      (mv-nth 1 result))
             (vl-filemap-p         (mv-nth 2 result))
@@ -368,11 +370,12 @@ necessarily indicate that we have loaded modules of the desired names, and we
 may also load additional modules.  See the comments in @(see vl-load-module)
 for details.</p>"
 
-  (defund vl-load-modules (modnames searchpath include-dirs defines overrides
+  (defund vl-load-modules (modnames searchpath searchext include-dirs defines overrides
                                     warnings walist filemapp state)
     "Returns (MV SUCCESSP MODS FILEMAP DEFINES WARNINGS WALIST STATE)"
     (declare (xargs :guard (and (string-listp modnames)
                                 (string-listp searchpath)
+                                (string-listp searchext)
                                 (string-listp include-dirs)
                                 (vl-defines-p defines)
                                 (vl-override-db-p overrides)
@@ -385,11 +388,11 @@ for details.</p>"
         (mv t nil nil nil nil defines warnings walist state)
       (b* (((mv car-successp car-mods car-filemap car-oused car-mtokens
                 defines warnings walist state)
-            (vl-load-module (car modnames) searchpath include-dirs defines overrides
+            (vl-load-module (car modnames) searchpath searchext include-dirs defines overrides
                             warnings walist filemapp state))
            ((mv cdr-successp cdr-mods cdr-filemap cdr-oused cdr-mtokens
                 defines warnings walist state)
-            (vl-load-modules (cdr modnames) searchpath include-dirs defines overrides
+            (vl-load-modules (cdr modnames) searchpath searchext include-dirs defines overrides
                              warnings walist filemapp state)))
         (mv (and car-successp cdr-successp)
             (append car-mods cdr-mods)
@@ -409,20 +412,21 @@ for details.</p>"
   (defthm state-p1-of-vl-load-modules
     (implies (force (state-p1 state))
              (state-p1
-              (mv-nth 8 (vl-load-modules modnames searchpath include-dirs defines overrides
+              (mv-nth 8 (vl-load-modules modnames searchpath searchext include-dirs defines overrides
                                          warnings walist filemapp state)))))
 
   (defthm vl-load-modules-basics
     (implies
      (and (force (string-listp modnames))
           (force (string-listp searchpath))
+          (force (string-listp searchext))
           (force (string-listp include-dirs))
           (force (vl-defines-p defines))
           (force (vl-override-db-p overrides))
           (force (vl-warninglist-p warnings))
           (force (vl-modwarningalist-p walist))
           (force (state-p state)))
-     (let ((result (vl-load-modules modnames searchpath include-dirs defines overrides
+     (let ((result (vl-load-modules modnames searchpath searchext include-dirs defines overrides
                                     warnings walist filemapp state)))
        (and (vl-modulelist-p      (mv-nth 1 result))
             (vl-filemap-p         (mv-nth 2 result))
@@ -482,13 +486,14 @@ vl-modulelist-missing).</p>"
                              )))
 
 
-  (defund vl-flush-out-modules (mods start-modnames searchpath include-dirs defines overrides
+  (defund vl-flush-out-modules (mods start-modnames searchpath searchext include-dirs defines overrides
                                      required warnings walist filemapp state n)
     "Returns (MV SUCCESSP MODS FILEMAP OUSED MTOKENS DEFINES WARNINGS WALIST STATE)"
     (declare (xargs :guard (and (vl-modulelist-p mods)
                                 (true-listp mods)
                                 (string-listp start-modnames)
                                 (string-listp searchpath)
+                                (string-listp searchext)
                                 (string-listp include-dirs)
                                 (vl-defines-p defines)
                                 (vl-override-db-p overrides)
@@ -529,7 +534,7 @@ vl-modulelist-missing).</p>"
 
          ((mv successp new-mods new-filemap new-oused new-mtokens
               defines warnings walist state)
-          (vl-load-modules missing searchpath include-dirs defines overrides
+          (vl-load-modules missing searchpath searchext include-dirs defines overrides
                            warnings walist filemapp state))
 
          ;; When we switched to the new overrides system, we found that we
@@ -566,7 +571,7 @@ vl-modulelist-missing).</p>"
          ((mv rest-successp rest-mods rest-filemap rest-oused rest-mtokens
               defines warnings walist state)
           (vl-flush-out-modules (append mods new-mods) start-modnames
-                                searchpath include-dirs defines overrides required
+                                searchpath searchext include-dirs defines overrides required
                                 warnings walist filemapp state (- n 1))))
 
       (mv (and successp rest-successp)
@@ -586,40 +591,40 @@ vl-modulelist-missing).</p>"
 
   (defthm booleanp-of-vl-flush-out-modules-0
     (booleanp
-     (mv-nth 0 (vl-flush-out-modules mods start-modnames searchpath include-dirs defines overrides required
+     (mv-nth 0 (vl-flush-out-modules mods start-modnames searchpath searchext include-dirs defines overrides required
                                      warnings walist filemapp state n)))
     :rule-classes :type-prescription)
 
   (defthm true-listp-of-vl-flush-out-modules-1
     (implies (true-listp mods)
              (true-listp
-              (mv-nth 1 (vl-flush-out-modules mods start-modnames searchpath include-dirs defines overrides required
+              (mv-nth 1 (vl-flush-out-modules mods start-modnames searchpath searchext include-dirs defines overrides required
                                               warnings walist filemapp state n))))
     :rule-classes :type-prescription)
 
   (defthm true-listp-of-vl-flush-out-modules-2
     (true-listp
-     (mv-nth 2 (vl-flush-out-modules mods start-modnames searchpath include-dirs defines overrides required
+     (mv-nth 2 (vl-flush-out-modules mods start-modnames searchpath searchext include-dirs defines overrides required
                                      warnings walist filemapp state n)))
     :rule-classes :type-prescription)
 
   (defthm true-listp-of-vl-flush-out-modules-3
     (implies (true-listp mods)
              (true-listp
-              (mv-nth 3 (vl-flush-out-modules mods start-modnames searchpath include-dirs defines overrides required
+              (mv-nth 3 (vl-flush-out-modules mods start-modnames searchpath searchext include-dirs defines overrides required
                                               warnings walist filemapp state n))))
     :rule-classes :type-prescription)
 
   (defthm true-listp-of-vl-flush-out-modules-4
     (true-listp
-     (mv-nth 4 (vl-flush-out-modules mods start-modnames searchpath include-dirs defines overrides required
+     (mv-nth 4 (vl-flush-out-modules mods start-modnames searchpath searchext include-dirs defines overrides required
                                      warnings walist filemapp state n)))
     :rule-classes :type-prescription)
 
   (defthm state-p1-of-vl-flush-out-modules
     (implies (force (state-p1 state))
              (state-p1
-              (mv-nth 8 (vl-flush-out-modules mods start-modnames searchpath include-dirs defines overrides required
+              (mv-nth 8 (vl-flush-out-modules mods start-modnames searchpath searchext include-dirs defines overrides required
                                               warnings walist filemapp state n)))))
 
   (local (in-theory (enable (force))))
@@ -635,6 +640,7 @@ vl-modulelist-missing).</p>"
           (force (true-listp mods))
           (force (string-listp start-modnames))
           (force (string-listp searchpath))
+          (force (string-listp searchext))
           (force (string-listp include-dirs))
           (force (vl-defines-p defines))
           (force (vl-override-db-p overrides))
@@ -642,7 +648,7 @@ vl-modulelist-missing).</p>"
           (force (vl-warninglist-p warnings))
           (force (vl-modwarningalist-p walist))
           (force (state-p state)))
-     (let ((result (vl-flush-out-modules mods start-modnames searchpath include-dirs defines overrides required
+     (let ((result (vl-flush-out-modules mods start-modnames searchpath searchext include-dirs defines overrides required
                                          warnings walist filemapp state n)))
        (and (vl-modulelist-p      (mv-nth 1 result))
             (vl-filemap-p         (mv-nth 2 result))
@@ -890,6 +896,10 @@ the search path.  This is similar to the \"library directories\" of tools like
 Verilog-XL and NCVerilog; see @(see vl-load-module) and @(see
 vl-flush-out-modules) for details.</li>
 
+<li><tt>searchext</tt> is a list of file extensions to consider Verilog files
+when looking in the <tt>search-path</tt>.  The default is <tt>(\"v\")</tt>,
+meaning that only files such as <tt>foo.v</tt> are considered.</li>
+
 <li><tt>include-dirs</tt> is a list of directories that will be searched when
 <tt>`include</tt> directives are encountered.  This is similar to the \"include
 directories\" for Verilog-XL.  Any includes with relative path names are
@@ -942,17 +952,22 @@ lexing, and perhaps any warnings about malformed syntax that occurs
 </ul>"
 
   (defmacro vl-load (&key override-dirs start-files start-modnames
-                          search-path include-dirs defines filemapp)
+                          search-path
+                          (searchext '("v"))
+                          include-dirs defines filemapp)
     `(vl-load-fn ,override-dirs ,start-files ,start-modnames
-                 ,search-path ,include-dirs ,defines ,filemapp state))
+                 ,search-path ,searchext ,include-dirs
+                 ,defines ,filemapp state))
 
   (defund vl-load-fn (override-dirs start-files start-modnames
-                                    search-path include-dirs defines filemapp state)
+                                    search-path searchext include-dirs
+                                    defines filemapp state)
     "Returns (MV SUCCESSP MODS FILEMAP DEFINES WARNINGS STATE)"
     (declare (xargs :guard (and (string-listp override-dirs)
                                 (string-listp start-files)
                                 (string-listp start-modnames)
                                 (string-listp search-path)
+                                (string-listp searchext)
                                 (string-listp include-dirs)
                                 (vl-defines-p defines)
                                 (booleanp filemapp))
@@ -996,7 +1011,7 @@ lexing, and perhaps any warnings about malformed syntax that occurs
                 flushed-oused flushed-mtokens
                 defines warnings walist state)
             (cwtime (vl-flush-out-modules start-mods start-modnames search-path
-                                          include-dirs defines overrides
+                                          searchext include-dirs defines overrides
                                           required warnings walist filemapp
                                           state 10000)
                     :mintime 1))
@@ -1071,29 +1086,29 @@ lexing, and perhaps any warnings about malformed syntax that occurs
 
   (defthm booleanp-of-vl-load-fn-0
     (booleanp (mv-nth 0 (vl-load-fn override-dirs start-files start-modnames
-                                    search-path include-dirs defines filemapp state)))
+                                    search-path searchext include-dirs defines filemapp state)))
     :rule-classes :type-prescription)
 
   (defthm true-listp-of-vl-load-fn-1
     (implies (true-listp mods)
              (true-listp (mv-nth 1 (vl-load-fn override-dirs start-files start-modnames
-                                               search-path include-dirs defines filemapp state))))
+                                               search-path searchext include-dirs defines filemapp state))))
     :rule-classes :type-prescription)
 
   (defthm true-listp-of-vl-load-fn-2
     (true-listp (mv-nth 2 (vl-load-fn override-dirs start-files start-modnames
-                                      search-path include-dirs defines filemapp state)))
+                                      search-path searchext include-dirs defines filemapp state)))
     :rule-classes :type-prescription)
 
   (defthm state-p1-of-vl-load-fn
     (implies (force (state-p1 state))
              (state-p1 (mv-nth 5 (vl-load-fn override-dirs start-files start-modnames
-                                             search-path include-dirs defines filemapp state)))))
+                                             search-path searchext include-dirs defines filemapp state)))))
 
   (defthm no-duplicatesp-equal-of-vl-load-fn
     (no-duplicatesp-equal
      (vl-modulelist->names (mv-nth 1 (vl-load-fn override-dirs start-files start-modnames
-                                                 search-path include-dirs defines filemapp state)))))
+                                                 search-path searchext include-dirs defines filemapp state)))))
 
   (defthm vl-load-fn-basics
     (implies
@@ -1101,11 +1116,13 @@ lexing, and perhaps any warnings about malformed syntax that occurs
           (force (string-listp start-files))
           (force (string-listp start-modnames))
           (force (string-listp search-path))
+          (force (string-listp searchext))
           (force (string-listp include-dirs))
           (force (vl-defines-p defines))
           (force (state-p state)))
      (let ((result (vl-load-fn override-dirs start-files start-modnames
-                               search-path include-dirs defines filemapp state)))
+                               search-path searchext include-dirs
+                               defines filemapp state)))
        (and (vl-modulelist-p (mv-nth 1 result))
             (vl-filemap-p (mv-nth 2 result))
             (vl-defines-p (mv-nth 3 result))
