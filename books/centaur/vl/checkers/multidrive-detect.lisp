@@ -23,6 +23,7 @@
 (include-book "../mlib/lvalues")
 (include-book "../mlib/wirealist")
 (local (include-book "../util/arithmetic"))
+(include-book "../../misc/fal-graphs")
 
 ;; bozo build me in earlier
 (include-book "centaur/misc/hons-extra" :dir :system)
@@ -30,41 +31,6 @@
 (local (in-theory (disable mergesort difference))) ;; bozo why is this enabled?
 
 
-;; BOZO find us a home
-
-(defun accumulate-to-each (keys val al)
-  (declare (xargs :guard t))
-  (if (atom keys)
-      al
-    (b* ((rest (cdr (hons-get (car keys) al))))
-      (accumulate-to-each (cdr keys) val
-                          (hons-acons (car keys)
-                                      (cons val rest)
-                                      al)))))
-
-(defun graph-transpose (edges acc)
-  ;; This inverts an alist of keys to lists of values, e.g.,
-  ;;    key1 -> (val1 val2)
-  ;;    key2 -> (val1 val3)
-  ;; And inverts it to produce an alist binding each value to all of the keys
-  ;; that include it, e.g.,
-  ;;    val1 -> (key1 key2)
-  ;;    val2 -> (key1)
-  ;;    val3 -> (key2)
-  (declare (xargs :guard t))
-  (cond ((atom edges)
-         (b* ((ret (hons-shrink-alist acc nil)))
-           (fast-alist-free acc)
-           (fast-alist-free ret)
-           ret))
-        ((atom (car edges))
-         ;; Bad alist convention
-         (graph-transpose (cdr edges) acc))
-        (t
-         (graph-transpose (cdr edges)
-                          (accumulate-to-each
-                           (cdar edges) (caar edges)
-                           acc)))))
 
 
 
@@ -307,7 +273,19 @@
                   "p_fdbk"
                   "p_pchg"
                   "open"
-                  "short")))
+                  "short"
+                  "unmos_xtor"
+                  "upmos_xtor"
+                  "urnmos_xtor"
+                  "urpmos_xtor"
+                  "uwnmos_xtor"
+                  "uwpmos_xtor"
+                  "n_fdbk_xtor"
+                  "n_pchg_xtor"
+                  "p_fdbk_xtor"
+                  "p_pchg_xtor"
+                  "open_xtor"
+                  "short_xtor")))
 
 
 (defsection vl-zsplit-plainargs
@@ -476,7 +454,7 @@
           (pairlis$ instnames (pairlis$ names-dropped nil)))
          (rev-alist
           ;; fixed up inst --> instance name list
-          (graph-transpose alist nil))
+          (acl2::graph-transpose alist nil))
          (prob-alist
           ;; fixed up inst --> instance name list with only problematic entries
           (acl2::with-fast-alist rev-alist
