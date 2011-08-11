@@ -72,7 +72,9 @@
       (format t "Dynamic+Frozen: ~15:D bytes~%" (+ dynamic-used frozen-size))
       (hons-summary)
       (hons-analyze-memory nil)
-      (finish-output))))
+      ;; Jared changed this to force-output, since finish-output is slow
+      ;; on an NFS.
+      (force-output))))
 
  (defun maybe-wash-memory-fn (n clear)
    (when (or (eq n t)
