@@ -12340,6 +12340,10 @@
         rest))))
 
 (defun term-stobjs-out (term alist wrld)
+
+; Warning: This function currently has heuristic application only.  We need to
+; think harder about it if we are to rely on it for soundness.
+
   (cond
    ((variablep term)
     (or (cdr (assoc term alist))

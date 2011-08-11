@@ -621,6 +621,7 @@ defapply.lisp
 equal-sets.acl2
 equal-sets.lisp
 evaluator-metatheorems.lisp
+fal-graphs.lisp
 fast-alists.lisp
 f-put-global.lisp
 hons-analyze-memory-raw.lsp
@@ -770,6 +771,7 @@ parse-utils.lisp
 preprocessor.lisp
 preprocessor-tests.lisp
 read-file.lisp
+test.txt
 
 books/centaur/vl/mlib:
 acl2-customization.lsp

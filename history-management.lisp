@@ -17320,9 +17320,9 @@
                 (io?@par prove nil state
                          (keyi id  keyword-alist val)
                          (fms "~%(Advisory from ~
-                            show-custom-keyword-hint-expansion:  The custom ~
-                            keyword hint ~x0, appearing in ~@1, ~
-                            transformed~%~%~Y23,~%into~%~%~Y43.)~%"
+                               show-custom-keyword-hint-expansion:  The ~
+                               custom keyword hint ~x0, appearing in ~@1, ~
+                               transformed~%~%~Y23,~%into~%~%~Y43.)~%"
                               (list
                                (cons #\0 keyi)
                                (cons #\1 (tilde-@-clause-id-phrase id))
@@ -18827,7 +18827,7 @@
               "The hint ~x0 produced a :COMPUTED-HINT-REPLACEMENT value as ~
                part of its result.  It is not permitted for custom keyword ~
                hints to produce such a value (only computed hints are allowed ~
-               to do that). The result produced was ~x1."
+               to do that).  The result produced was ~x1."
               (cons str
                     (cadr (fargn term 1)))
               val0))
@@ -18917,19 +18917,30 @@
                                  ~x1.  "
                                 (if (equal val0 val1) 1 0)
                                 val))))
-                 wrld state)))
+                 wrld state))
+               (temp1
+                (cond
+                 ((eq (car temp) 'eval-and-translate-hint-expression)
+                  (eval-and-translate-hint-expression@par
+                   (cdr temp)
+                   cl-id clause wrld stable-under-simplificationp hist pspv
+                   clause-list processor keyword-alist hint-type
+                   nil ; we have already dealt with the override-hints
+                   ctx state))
+                 (t (value@par (cdr temp))))))
               (cond
-               ((eq (car temp) 'eval-and-translate-hint-expression)
-                (eval-and-translate-hint-expression@par
-                 (cdr temp)
-                 cl-id clause wrld stable-under-simplificationp hist pspv
-                 clause-list processor keyword-alist hint-type
-                 nil ; we have already dealt with the override-hints
-                 ctx state))
-               (chr-p (value@par (list* :computed-hint-replacement
-                                        chr
-                                        (cdr temp))))
-               (t (value@par (cdr temp))))))))))))))))
+               ((and chr-p
+                     (not (eq (car temp1) :computed-hint-replacement)))
+
+; What if chr-p and (eq (car temp1) :computed-hint-replacement)?  We take the
+; value of the inner :computed-hint-replacement, but we could equally well take
+; the outer value or cause an error instead.  We have simply chosen the
+; simplest alternative to code.
+
+                (value@par (list* :computed-hint-replacement
+                                  chr
+                                  temp1)))
+               (t (value@par temp1)))))))))))))))
 
 (deflabel goal-spec
   :doc

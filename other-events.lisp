@@ -3863,7 +3863,7 @@
 ; code for encapsulate in axioms.lisp and change signature-fns.
 
 ; X is supposed to be the external form of a signature of a function, fn.  This
-; function either causes an error (if x is ill-formed) returns (insig
+; function either causes an error (if x is ill-formed) or else returns (insig
 ; new-kwd-alist . wrld1), where: insig is of the form (fn formals' stobjs-in
 ; stobjs-out), where formals' is an appropriate arglist, generated if
 ; necessary; new-kwd-alist is a suitable translation of kwd-value-list; and
@@ -6900,10 +6900,8 @@
 ; Exports-with-sig-ancestors contains each element of names that has at least
 ; one signature function of that encapsulate among its ancestors.  We return
 ; those elements of names whose body or guard has at least one ancestor in
-; sig-fns, except for those that are constrained or non-executable.  It seems
-; safest not to allow these function symbols to be considered guard-verified,
-; because the guard proof obligations may depend on local properties.  Consider
-; the following example.
+; sig-fns, except for those that are constrained, because the guard proof
+; obligations may depend on local properties.  Consider the following example.
 
 ; (encapsulate
 ;  ((f (x) t))
@@ -6915,27 +6913,24 @@
 ; Outside the encapsulate, we do not know that (f x) suffices as a guard for
 ; (car x).
 
-; For functions that are not executed (except perhaps via attachments), guards
-; serve a role similar to that served by guards of constrained functions: they
-; are used only to stitch together guard verifications for attachments.  Hence
-; we don't have any concern for those functions.
+; We considered exempting non-executable functions, but if we are to bother
+; with their guard verification, it seems appropriate to insist that the guard
+; proof obligation really does hold in the theory produced by the encapsulate,
+; not merely in the temporary theory of the first pass of the encapsulate.
 
   (cond ((endp names) nil)
         ((and (eq (symbol-class (car names) wrld) :common-lisp-compliant)
               (not (getprop (car names) 'constrainedp nil
                             'current-acl2-world wrld))
-              (not (eq (getprop (car names) 'non-executablep nil
-                                'current-acl2-world wrld)
-                       t)) ; maybe excessively conservative to allow :program?
 
-; So, this function can be executed.  We can only trust its guard verification
-; if the guard proof obligation can be moved forward.  We could in principle
-; save that proof obligation, or perhaps we could recompute it; and then we
-; could check that no signature function is ancestral.  But an easy sufficient
-; condition for trusting that the guard proof obligation doesn't depend on
-; functions introduced in the encapsulate, and one that does not seem overly
-; restrictive, is to insist that neither the body of the function nor its guard
-; have any signature functions as ancestors.
+; We can only trust guard verification for (car names) if its guard proof
+; obligation can be moved forward.  We could in principle save that proof
+; obligation, or perhaps we could recompute it; and then we could check that no
+; signature function is ancestral.  But an easy sufficient condition for
+; trusting that the guard proof obligation doesn't depend on functions
+; introduced in the encapsulate, and one that does not seem overly restrictive,
+; is to insist that neither the body of the function nor its guard have any
+; signature functions as ancestors.
 
               (or (member-eq (car names) exports-with-sig-ancestors)
                   (intersectp-eq sig-fns (instantiable-ancestors

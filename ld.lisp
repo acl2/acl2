@@ -18107,6 +18107,14 @@
 ;          :resizable nil)
 ;     :inline t)
 
+; It has for some time been illegal to do guard verification inside a
+; non-trivial encapsulate for an exported function whose body or guard depends
+; on signature functions; see function bogus-exported-compliants.  However, we
+; made exceptions both for constrained functions and for non-executable
+; functions.  The latter exception has been removed; after all, if the guard
+; obligations aren't theorems of the post-encapsulate theory, it's a bit odd to
+; allow them.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18170,6 +18178,11 @@
   it.  ~l[stobj-example-2] for examples of such raw Lisp code; now, one finds
   ~c[(and fixnum (integer 0 *))] where formerly the type was restricted to
   ~c[(integer 0 268435455)].
+
+  Fixed a bug in that was ignoring the use of ~c[:computed-hint-replacement] in
+  certain cases involving a combination of computed hints and custom keyword
+  hints.  Thanks to Robert Krug for reporting this bug and sending a very
+  helpful example.
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
