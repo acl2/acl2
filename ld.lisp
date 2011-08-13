@@ -18115,6 +18115,9 @@
 ; obligations aren't theorems of the post-encapsulate theory, it's a bit odd to
 ; allow them.
 
+; For more about the increase in speed for ACL2 array reads, see the Essay on
+; Array Caching.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18141,7 +18144,7 @@
   ~c[read-run-time], and ~c[main-timer] are no longer untouchable
   (~pl[remove-untouchable]).
 
-  We now avoid certain duplicate conjuncts in the contraint stored for
+  We now avoid certain duplicate conjuncts in the ~il[constraint] stored for
   ~ilc[encapsulate] ~il[events].  For example, the constraint stored for the
   following event formerly included ~c[(EQUAL (FOOP (CONS X Y)) (FOOP Y))] and
   ~c[(BOOLEANP (FOOP X))] twice each, but no more.
@@ -18157,6 +18160,11 @@
       (:rewrite :corollary (equal (foop (cons x y)) (foop y))))))
   ~ev[]
 
+  The ~c[:]~ilc[guard] for a constrained function (~pl[signature]) may now
+  mention function symbols introduced in the same ~ilc[encapsulate] event that
+  introduces that function.  Thanks to Nathan Wetzler for a helpful discussion
+  leading to this improvement.
+
   ~st[NEW FEATURES]
 
   Users may now arrange for additional summary information to be printed at the
@@ -18164,6 +18172,11 @@
   for requesting this feature and participating in a design discussion.
 
   ~st[HEURISTIC IMPROVEMENTS]
+
+  Reading of ACL2 ~ilc[arrays] (~pl[aref1], ~pl[aref2]) has been made more
+  efficient (as tested with CCL as the host Lisp) in the case of consecutive
+  repeated reads of the same named array.  Thanks to Jared Davis and Sol Swords
+  for contributing this improvement.
 
   ~st[BUG FIXES]
 
@@ -18198,10 +18211,15 @@
   Among the enchancements for the HONS version (~pl[hons-and-memoization]) are
   the following.~bq[]
 
-  The compact-print code has been replaced by new serialization routines.  This
-  may improve performance when including books that contain ~ilc[make-event]s
-  that expand to very large constants.  You can also now save objects to disk
-  without going into raw lisp; ~pl[serialize] for details.~eq[]
+  The compact-print code has been replaced by new serialization routines
+  contributed by Jared Davis.  This may improve performance when including
+  books that contain ~ilc[make-event]s that expand to very large constants.
+  You can also now save objects to disk without going into raw lisp;
+  ~pl[serialize] for details.
+
+  Printing of certain messages has been sped up (by using Lisp function
+  ~c[force-output] in place of ~c[finish-output]).  Thanks to Jared Davis for
+  contributing this improvement.~eq[]
 
   ~/~/")
 

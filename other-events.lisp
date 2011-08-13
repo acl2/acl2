@@ -3805,58 +3805,6 @@
          (car l))
         (t (duplicate-key-in-keyword-value-listp (cddr l)))))
 
-(defun translate-signature-kwd-value-list1 (kwd-value-list name formals ctx
-                                                           wrld state)
-
-; Given a signature with tail kwd-value-list starting with the first keyword of
-; the signature, we return a corresponding alist associating the same keywords
-; with their translated values.  We assume however that :STOBJS and :FORMALS
-; have already been processed, so we throw those out.
-
-  (cond ((endp kwd-value-list)
-         (value nil))
-        (t (er-let*
-            ((rst (translate-signature-kwd-value-list1
-                   (cddr kwd-value-list) name formals ctx wrld state)))
-            (let ((kwd (car kwd-value-list))
-                  (val (cadr kwd-value-list)))
-              (case kwd
-                ((:STOBJS :FORMALS) ; perhaps impossible
-                 (value rst))
-                (:GUARD
-                 (er-let* ((guard (translate val
-                                             t ; stobjs-out for logic, not exec
-                                             t ; logic-modep
-                                             nil ; known-stobjs
-                                             ctx wrld state)))
-                          (er-progn
-                           (chk-free-vars name formals guard "guard for" ctx
-                                          state)
-                           (value (acons kwd guard rst)))))
-                #+:non-standard-analysis
-                (:CLASSICAL
-                 (value (acons kwd val rst)))
-                (otherwise ; chk-signature should keep us from getting here
-                 (value (er hard ctx
-                            "Implementation error: Unknown keyword, ~x0"
-                            kwd)))))))))
-
-(defun translate-signature-kwd-value-list (kwd-value-list name formals stobjs
-                                                          ctx wrld state)
-  (er-let* ((alist (translate-signature-kwd-value-list1
-                    kwd-value-list name formals ctx wrld state)))
-           (value
-            (cond (stobjs
-                   (let ((pair (assoc-eq :guard alist))
-                         (stobj-terms (stobj-recognizer-terms stobjs wrld)))
-                     (cond (pair
-                            (put-assoc-eq :guard
-                                          (conjoin (append stobj-terms
-                                                           (list (cdr pair))))
-                                          alist))
-                           (t (acons :guard (conjoin stobj-terms) alist)))))
-                  (t alist)))))
-
 (defun chk-signature (x ctx wrld state)
 
 ; Warning: If you change the acceptable form of signatures, change the raw lisp
@@ -3864,10 +3812,11 @@
 
 ; X is supposed to be the external form of a signature of a function, fn.  This
 ; function either causes an error (if x is ill-formed) or else returns (insig
-; new-kwd-alist . wrld1), where: insig is of the form (fn formals' stobjs-in
+; kwd-value-list . wrld1), where: insig is of the form (fn formals' stobjs-in
 ; stobjs-out), where formals' is an appropriate arglist, generated if
-; necessary; new-kwd-alist is a suitable translation of kwd-value-list; and
-; wrld1 is the world in which we are to perform the constraint of fn.
+; necessary; kwd-value-list is the keyword-value-listp from the signature (see
+; below); and wrld1 is the world in which we are to perform the constraint of
+; fn.
 
 ; The preferred external form of a signature is of the form:
 
@@ -4051,66 +4000,62 @@
         (chk-all-stobj-names stobjs
                              (msg "~x0" x)
                              ctx wrld state)
-        (er-let*
-         ((kwd-alist (translate-signature-kwd-value-list
-                      kwd-value-list fn formals stobjs ctx wrld state)))
-         (er-progn
-          (cond ((not (or (symbolp val)
-                          (and (consp val)
-                               (eq (car val) 'mv)
-                               (symbol-listp (cdr val))
-                               (> (length val) 2))))
-                 (er soft ctx
-                     "The purported signature ~x0 is not a legal signature ~
-                      because ~x1 is not a legal output description.  Such a ~
-                      description should either be a symbol or of the form ~
-                      (mv sym1 ... symn), where n>=2."
-                     x val))
-                (t (value nil)))
-          (let* ((syms (cond ((symbolp val) (list val))
-                             (t (cdr val))))
-                 (stobjs-in (compute-stobj-flags formals
-                                                 stobjs
-                                                 wrld))
-                 (stobjs-out (compute-stobj-flags syms
-                                                  stobjs
-                                                  wrld)))
-            (cond
-             ((not (subsetp (collect-non-x nil stobjs-out)
-                            (collect-non-x nil stobjs-in)))
-              (er soft ctx
-                  "It is impossible to return single-threaded objects (such ~
-                   as ~&0) that are not among the formals!  Thus, the input ~
-                   signature ~x1 and the output signature ~x2 are ~
-                   incompatible."
-                  (set-difference-eq (collect-non-x nil stobjs-out)
-                                     (collect-non-x nil stobjs-in))
-                  formals
-                  val))
-             ((not (no-duplicatesp (collect-non-x nil stobjs-out)))
-              (er soft ctx
-                  "It is illegal to return the same single-threaded object in ~
-                   more than one position of the output signature.  Thus, ~x0 ~
-                   is illegal because ~&1 ~#1~[is~/are~] duplicated."
-                  val
-                  (duplicates (collect-non-x nil stobjs-out))))
-             (t (er-let* ((wrld1 (chk-just-new-name fn
-                                                    (list* 'function
-                                                           stobjs-in
-                                                           stobjs-out)
-                                                    nil ctx wrld state)))
-                  (value (list* (list fn
-                                      formals
-                                      stobjs-in
-                                      stobjs-out)
-                                kwd-alist
-                                wrld1))))))))))))))
+        (cond ((not (or (symbolp val)
+                        (and (consp val)
+                             (eq (car val) 'mv)
+                             (symbol-listp (cdr val))
+                             (> (length val) 2))))
+               (er soft ctx
+                   "The purported signature ~x0 is not a legal signature ~
+                    because ~x1 is not a legal output description.  Such a ~
+                    description should either be a symbol or of the form (mv ~
+                    sym1 ... symn), where n>=2."
+                   x val))
+              (t (value nil)))
+        (let* ((syms (cond ((symbolp val) (list val))
+                           (t (cdr val))))
+               (stobjs-in (compute-stobj-flags formals
+                                               stobjs
+                                               wrld))
+               (stobjs-out (compute-stobj-flags syms
+                                                stobjs
+                                                wrld)))
+          (cond
+           ((not (subsetp (collect-non-x nil stobjs-out)
+                          (collect-non-x nil stobjs-in)))
+            (er soft ctx
+                "It is impossible to return single-threaded objects (such as ~
+                 ~&0) that are not among the formals!  Thus, the input ~
+                 signature ~x1 and the output signature ~x2 are incompatible."
+                (set-difference-eq (collect-non-x nil stobjs-out)
+                                   (collect-non-x nil stobjs-in))
+                formals
+                val))
+           ((not (no-duplicatesp (collect-non-x nil stobjs-out)))
+            (er soft ctx
+                "It is illegal to return the same single-threaded object in ~
+                 more than one position of the output signature.  Thus, ~x0 ~
+                 is illegal because ~&1 ~#1~[is~/are~] duplicated."
+                val
+                (duplicates (collect-non-x nil stobjs-out))))
+           (t (er-let* ((wrld1 (chk-just-new-name fn
+                                                  (list* 'function
+                                                         stobjs-in
+                                                         stobjs-out)
+                                                  nil ctx wrld state)))
+                       (value (list* (list fn
+                                           formals
+                                           stobjs-in
+                                           stobjs-out)
+                                     kwd-value-list
+                                     wrld1))))))))))))
 
 (defun chk-signatures (signatures ctx wrld state)
 
-; We return a triple (sigs kwd-alist-lst . wrld) containing the list of
-; internal signatures, their corresponding keyword-alists, and the final world
-; in which we are to do the introduction of these fns, or else cause an error.
+; We return a triple (sigs kwd-value-list-lst . wrld) containing the list of
+; internal signatures, their corresponding keyword-value-lists, and the final
+; world in which we are to do the introduction of these fns, or else cause an
+; error.
 
   (cond ((atom signatures)
          (cond ((null signatures) (value (list* nil nil wrld)))
@@ -4142,9 +4087,9 @@
                      (trip2 (chk-signatures (cdr signatures)
                                             ctx (cddr trip1) state)))
                     (let ((insig (car trip1))
-                          (kwd-alist (cadr trip1))
+                          (kwd-value-list (cadr trip1))
                           (insig-lst (car trip2))
-                          (kwd-alist-lst (cadr trip2))
+                          (kwd-value-list-lst (cadr trip2))
                           (wrld1 (cddr trip2)))
                       (cond ((assoc-eq (car insig) insig-lst)
                              (er soft ctx
@@ -4153,7 +4098,8 @@
                                   encapsulate."
                                  (car insig)))
                             (t (value (list* (cons insig insig-lst)
-                                             (cons kwd-alist kwd-alist-lst)
+                                             (cons kwd-value-list
+                                                   kwd-value-list-lst)
                                              wrld1)))))))))
 
 (defun chk-acceptable-encapsulate1 (signatures form-lst ctx wrld state)
@@ -6918,6 +6864,8 @@
 ; proof obligation really does hold in the theory produced by the encapsulate,
 ; not merely in the temporary theory of the first pass of the encapsulate.
 
+; See also the comment about this function in intro-udf.
+
   (cond ((endp names) nil)
         ((and (eq (symbol-class (car names) wrld) :common-lisp-compliant)
               (not (getprop (car names) 'constrainedp nil
@@ -6943,7 +6891,7 @@
         (t (bogus-exported-compliants
             (cdr names) exports-with-sig-ancestors sig-fns wrld))))
 
-(defun encapsulate-pass-2 (insigs kwd-alist-lst ev-lst
+(defun encapsulate-pass-2 (insigs kwd-value-list-lst ev-lst
                                   saved-acl2-defaults-table only-pass-p ctx
                                   state)
 
@@ -7009,9 +6957,9 @@
                                          (list* 'encapsulate insigs
 
 ; The non-nil final cdr signifies that we are in pass 2 of encapsulate; see
-; chk-evaluator-use-in-rule.
+; context-for-encapsulate-pass-2.
 
-                                                (or kwd-alist-lst
+                                                (or kwd-value-list-lst
                                                     t))
                                          ev-lst 0
 
@@ -8270,6 +8218,47 @@
         (t ; optimize for common case
          lst)))
 
+(defun intro-udf-guards (insigs kwd-value-list-lst wrld-acc wrld ctx state)
+
+; Insigs is a list of signatures, each in the internal form (list fn formals
+; stobjs-in stobjs-out); see chk-signature.  Kwd-value-list-lst corresponds
+; positionally to insigs.  We return an extension of wrld-acc in which the
+; 'guard property has been set according to insigs.
+
+; Wrld is the world we used for translating guards.  Our intention is that it
+; is used in place of the accumulator, wrld-acc, because it is installed.
+
+  (cond
+   ((endp insigs) (value wrld-acc))
+   (t (er-let*
+       ((tguard
+         (let ((tail (assoc-keyword :GUARD (car kwd-value-list-lst))))
+           (cond (tail (translate (cadr tail)
+                                  t   ; stobjs-out for logic, not exec
+                                  t   ; logic-modep
+                                  nil ; known-stobjs
+                                  ctx wrld state))
+                 (t (value nil))))))
+       (let* ((insig (car insigs))
+              (fn (car insig))
+              (formals (cadr insig))
+              (stobjs-in (caddr insig))
+              (stobjs (collect-non-x nil stobjs-in))
+              (stobj-terms (stobj-recognizer-terms stobjs wrld)))
+         (er-progn
+          (cond (tguard (chk-free-vars fn formals tguard "guard for" ctx
+                                       state))
+                (t (value nil)))
+          (intro-udf-guards
+           (cdr insigs)
+           (cdr kwd-value-list-lst)
+           (putprop-unless fn 'guard
+                           (cond (tguard (conjoin (append stobj-terms
+                                                          (list tguard))))
+                                 (t (conjoin stobj-terms)))
+                           *t* wrld-acc)
+           wrld ctx state)))))))
+
 (defun encapsulate-fn (signatures ev-lst state event-form)
 
 ; Important Note:  Don't change the formals of this function without reading
@@ -8430,7 +8419,7 @@
              ((trip (chk-acceptable-encapsulate1 signatures ev-lst
                                                  ctx wrld1 state)))
              (let ((insigs (car trip))
-                   (kwd-alist-lst (cadr trip))
+                   (kwd-value-list-lst (cadr trip))
                    (wrld1 (cddr trip)))
                (pprogn
                 (set-w 'extension wrld1 state)
@@ -8476,7 +8465,7 @@
 ; error above.
                           (encapsulate-pass-2
                            insigs
-                           kwd-alist-lst
+                           kwd-value-list-lst
                            new-ev-lst
                            saved-acl2-defaults-table nil ctx state)))
                         (let ((wrld3 (w state))
@@ -8497,56 +8486,60 @@
                            (f-put-global 'last-make-event-expansion
                                          new-event-form
                                          state)
-                           (install-event
-                            t
-                            (or new-event-form event-form)
-                            'encapsulate
-                            (strip-cars insigs)
-                            nil nil
-                            t
-                            ctx
-                            (let* ((wrld4 (encapsulate-fix-known-package-alist
-                                           pass1-known-package-alist
-                                           wrld3))
-                                   (wrld5 (global-set? 'ttags-seen
-                                                       post-pass-1-ttags-seen
-                                                       wrld4
-                                                       (global-val 'ttags-seen
-                                                                   wrld3)))
-                                   (wrld6 (cond
-                                           ((or (global-val 'skip-proofs-seen
+                           (er-let*
+                            ((wrld3a (intro-udf-guards insigs
+                                                       kwd-value-list-lst wrld3
+                                                       wrld3 ctx state)))
+                            (install-event
+                             t
+                             (or new-event-form event-form)
+                             'encapsulate
+                             (strip-cars insigs)
+                             nil nil
+                             t
+                             ctx
+                             (let* ((wrld4 (encapsulate-fix-known-package-alist
+                                            pass1-known-package-alist
+                                            wrld3a))
+                                    (wrld5 (global-set? 'ttags-seen
+                                                        post-pass-1-ttags-seen
+                                                        wrld4
+                                                        (global-val 'ttags-seen
+                                                                    wrld3)))
+                                    (wrld6 (cond
+                                            ((or (global-val 'skip-proofs-seen
 
 ; We prefer that an error report about skip-proofs in certification world be
 ; about a non-local event.
 
-                                                            wrld3)
-                                                (null
-                                                 post-pass-1-skip-proofs-seen))
-                                            wrld5)
-                                           (t (global-set
-                                               'skip-proofs-seen
-                                               post-pass-1-skip-proofs-seen
-                                               wrld5))))
-                                   (wrld7 (global-set?
-                                           'include-book-alist-all
-                                           post-pass-1-include-book-alist-all
-                                           wrld6
-                                           (global-val
+                                                             wrld3)
+                                                 (null
+                                                  post-pass-1-skip-proofs-seen))
+                                             wrld5)
+                                            (t (global-set
+                                                'skip-proofs-seen
+                                                post-pass-1-skip-proofs-seen
+                                                wrld5))))
+                                    (wrld7 (global-set?
                                             'include-book-alist-all
-                                            wrld3))))
-                              wrld7)
-                            state)))))))))))))
+                                            post-pass-1-include-book-alist-all
+                                            wrld6
+                                            (global-val
+                                             'include-book-alist-all
+                                             wrld3))))
+                               wrld7)
+                             state))))))))))))))
 
            (t ; (ld-skip-proofsp state) = 'include-book
-          ;;;                         'include-book-with-locals or
-          ;;;                         'initialize-acl2
+;                                         'include-book-with-locals or
+;                                         'initialize-acl2
 
 ; We quietly execute our second pass.
 
             (er-let*
              ((trip (chk-signatures signatures ctx wrld1 state)))
              (let ((insigs (car trip))
-                   (kwd-alist-lst (cadr trip))
+                   (kwd-value-list-lst (cadr trip))
                    (wrld1 (cddr trip)))
                (pprogn
                 (set-w 'extension wrld1 state)
@@ -8557,8 +8550,8 @@
 
                  ((expansion-alist
                    (encapsulate-pass-2
-                    insigs kwd-alist-lst ev-lst saved-acl2-defaults-table t ctx
-                    state)))
+                    insigs kwd-value-list-lst ev-lst saved-acl2-defaults-table
+                    t ctx state)))
                  (let ((wrld3 (w state))
                        (new-event-form
                         (and expansion-alist
@@ -8570,17 +8563,20 @@
                     (f-put-global 'last-make-event-expansion
                                   new-event-form
                                   state)
-                    (install-event t
-                                   (if expansion-alist
-                                       new-event-form
-                                     event-form)
-                                   'encapsulate
-                                   (signature-fns signatures)
-                                   nil nil
-                                   nil ; irrelevant, since we are skipping proofs
-                                   ctx
+                    (er-let*
+                     ((wrld3a (intro-udf-guards insigs kwd-value-list-lst
+                                                wrld3 wrld3 ctx state)))
+                     (install-event t
+                                    (if expansion-alist
+                                        new-event-form
+                                      event-form)
+                                    'encapsulate
+                                    (strip-cars insigs)
+                                    nil nil
+                                    nil ; irrelevant, since we are skipping proofs
+                                    ctx
 
-; We have considered calling encapsulate-fix-known-package-alist on wrld3, just
+; We have considered calling encapsulate-fix-known-package-alist on wrld3a, just
 ; as we do in the first case (when not doing this on behalf of include-book).
 ; But we do not see a need to do so, both because all include-books are local
 ; and hence skipped (hence the known-package-alist has not changed from before
@@ -8588,8 +8584,8 @@
 ; include-book, :puff (where ld-skip-proofsp is include-book-with-locals), or
 ; initialization.
 
-                                   wrld3
-                                   state)))))))))))))))
+                                    wrld3a
+                                    state))))))))))))))))
 
 (defun progn-fn1 (ev-lst progn!p bindings state)
 

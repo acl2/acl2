@@ -8723,7 +8723,11 @@
                   (stobjs-out (car names) wrld))
             (make-udf-insigs (cdr names) wrld)))))
 
-(defun intro-udf (insig kwd-alist wrld)
+(defun intro-udf (insig wrld)
+
+; This function is called during pass 2 of an encapsulate.  See the comment
+; below about guards.
+
   (case-match
    insig
    ((fn formals stobjs-in stobjs-out)
@@ -8743,17 +8747,25 @@
            fn 'stobjs-in stobjs-in nil
            (putprop
             fn 'formals formals
-            (let ((guard (cdr (assoc-eq :GUARD kwd-alist))))
-              (cond (guard (putprop-unless fn 'guard guard *t* wrld))
-                    (t wrld))))))))))))
+            (putprop fn 'guard
+
+; We are putting a guard of t on a signature function, even though a :guard
+; other than t might have been specified for this function.  This may seem to
+; be an error.  However, proofs are skipped during that pass, so an incorrect
+; guard proof obligation will not be noticed anyhow.  Instead, guard
+; verification takes place during the first pass of the encapsulate, which
+; could indeed present a problem if we are not careful.  However, we call
+; function bogus-exported-compliants to check that we are not making that sort
+; of mistake; see bogus-exported-compliants.
+
+                     *t*
+                     wrld))))))))))
   (& (er hard 'store-signature "Unrecognized signature!" insig))))
 
-(defun intro-udf-lst1 (insigs kwd-alist-lst wrld)
+(defun intro-udf-lst1 (insigs wrld)
   (cond ((null insigs) wrld)
         (t (intro-udf-lst1 (cdr insigs)
-                           (cdr kwd-alist-lst)
                            (intro-udf (car insigs)
-                                      (car kwd-alist-lst)
                                       wrld)))))
 
 (defun apply-stobj-print-names (vars stobjs)
@@ -8777,7 +8789,7 @@
         (list 'throw-or-attach fn formals alt-formals)
       (list 'throw-without-attach nil fn alt-formals))))
 
-(defun intro-udf-lst2 (insigs kwd-alist-lst wrld)
+(defun intro-udf-lst2 (insigs kwd-value-list-lst wrld)
 
 ; Warning: Keep this in sync with oneify-cltl-code.
 
@@ -8788,33 +8800,36 @@
 ; Note that the body we build (in this ACL2 code) is a Common Lisp body but not
 ; an ACL2 expression!
 
-; Kwd-alist-lst is normally a list that corresponds by position to insigs, each
-; of whose elements associates keywords with values; in particular it can
+; kwd-value-list-lst is normally a list that corresponds by position to insigs,
+; each of whose elements associates keywords with values; in particular it can
 ; associate :guard with the guard for the corresponding element of insigs.
-; However, kwd-alist-lst can be the atom 'non-executable-programp, which we use
-; for proxy functions (see :DOC defproxy), i.e., :program mode functions with
-; the xarg declaration :non-executable :program.
+; However, kwd-value-list-lst can be the atom 'non-executable-programp, which
+; we use for proxy functions (see :DOC defproxy), i.e., :program mode functions
+; with the xarg declaration :non-executable :program.
 
   (cond
    ((null insigs) nil)
    (t (cons `(,(caar insigs)
               ,(cadar insigs)
-              ,@(cond ((eq kwd-alist-lst 'non-executable-programp)
-                       '((declare (xargs :non-executable :program))))
-                      (t (let ((guard (cdr (assoc-eq :guard (car kwd-alist-lst)))))
-                           (and guard
-                                `((declare (xargs :guard ,guard)))))))
+              ,@(cond
+                 ((eq kwd-value-list-lst 'non-executable-programp)
+                  '((declare (xargs :non-executable :program))))
+                 (t (let ((guard
+                           (cadr (assoc-keyword :guard
+                                                (car kwd-value-list-lst)))))
+                      (and guard
+                           `((declare (xargs :guard ,guard)))))))
               ,(null-body-er+ (caar insigs)
                               (cadar insigs)
                               wrld
                               t))
             (intro-udf-lst2 (cdr insigs)
-                            (if (eq kwd-alist-lst 'non-executable-programp)
+                            (if (eq kwd-value-list-lst 'non-executable-programp)
                                 'non-executable-programp
-                              (cdr kwd-alist-lst))
+                              (cdr kwd-value-list-lst))
                             wrld)))))
 
-(defun intro-udf-lst (insigs kwd-alist-lst wrld)
+(defun intro-udf-lst (insigs kwd-value-list-lst wrld)
 
 ; Insigs is a list of internal form signatures.  We know all the function
 ; symbols are new in wrld.  We declare each of them to have the given formals,
@@ -8827,10 +8842,10 @@
       wrld
     (put-cltl-command `(defuns nil nil
                          ,@(intro-udf-lst2 insigs
-                                           (and (not (eq kwd-alist-lst t))
-                                                kwd-alist-lst)
+                                           (and (not (eq kwd-value-list-lst t))
+                                                kwd-value-list-lst)
                                            wrld))
-                      (intro-udf-lst1 insigs kwd-alist-lst wrld)
+                      (intro-udf-lst1 insigs wrld)
                       wrld)))
 
 (defun defun-ctx (def-lst state event-form #+:non-standard-analysis std-p)

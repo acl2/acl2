@@ -2152,7 +2152,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (let ((max-index (length sbits)))
       (declare (type fixnum max-index))
       (format t "; Hons Note: Restoring conses; max index ~:D.~%" max-index)
-      (finish-output)
+      (force-output)
       (loop for i fixnum below max-index do
             (when (= (aref sbits i) 1)
               ;; This object was previously normed.
@@ -2175,7 +2175,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
                               (key    (hl-addr-combine* addr-a addr-b)))
                          (setf (gethash key addr-ht) object))))))))
     (format t "; Hons Note: Done restoring~%")
-    (finish-output)
+    (force-output)
 
     ;; All objects restored.  The hons space should now be in a fine state
     ;; once again.  Restore it.
@@ -2187,7 +2187,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
     (format t "; Hons Note: Done washing, ~:D normed conses remain.~%"
             (hash-table-count addr-ht))
-    (finish-output))
+    (force-output))
 
   nil)
 
@@ -2306,7 +2306,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (format t "~%Fast Alists Summary:~%~%")
     (format t " - Number of fast alists: ~15:D~%" (hash-table-count fal-ht))
     (format t " - Size of FAL-HT:        ~15:D~%" (hash-table-size fal-ht))
-    (finish-output)
+    (force-output)
     (maphash
      (lambda (alist associated-ht)
        (let* ((final-cdr (hl-get-final-cdr alist))
@@ -2319,7 +2319,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (format t " - Total of counts:       ~15:D~%" total-count)
     (format t " - Total of sizes:        ~15:D~%" total-sizes)
     (format t "~%")
-    (finish-output)
+    (force-output)
     (setq report-entries
           (sort report-entries (lambda (x y)
                                  (or (> (first x) (first y))
@@ -2333,7 +2333,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
           (format t "~10:D ~16:D        ~:D~%" (first entry) (second entry) (third entry)))
     (format t "--------------------------------------------------~%")
     (format t "~%")
-    (finish-output)))
+    (force-output)))
 
 
 (defun hl-hspace-hons-summary (hs)

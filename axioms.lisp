@@ -21396,15 +21396,134 @@
         (t `(prog2$ (chk-make-array$ ,dimensions ',form)
                     (make-array ,@(cdr form))))))
 
-; For 1 and 2 dimensional arrays, there may be a property,
-; 'acl2-array, stored under a symbol name.  If so, this property has
-; is a list of length four, (object actual-array to-go-array header),
-; where object is an alist; actual-array, is the current ``real''
-; array associated with object under name; to-go-array is an array of
-; length one whose content is the number of additional conses that may
-; be added before compresses is required; and header is the first pair
-; beginning with :header in object. (to-go-array is kept as an array
-; rather than as a mere integer in order to avoid number boxing.)
+; For 1 and 2 dimensional arrays, there may be a property, 'acl2-array, stored
+; under a symbol name.  If so, this property has is a list of length four,
+; (object actual-array to-go-array header), where object is an alist;
+; actual-array, is the current ``real'' array associated with object under
+; name; to-go-array is an array of length one whose content is the number of
+; additional conses that may be added before compresses is required; and header
+; is the first pair beginning with :header in object.  (To-go-array is kept as
+; an array rather than as a mere integer in order to avoid number boxing.)
+; We use a one-slot cache for efficiency; see the Essay on Array Caching.
+
+#-acl2-loop-only
+(progn
+
+; Essay on Array Caching
+
+; We use the following approach, developed by Jared Davis and Sol Swords, to
+; speed up ACL2 Arrays by avoiding (get name 'acl2-array) in the common case
+; that you are reading/writing from the same array.  We basically just add a
+; one-slot cache, stored in the special *acl2-array-cache*.  This is a
+; performance win (on CCL, at least) because getting a property seems to be
+; more expensive than getting a special.  We could try this on other Lisps too,
+; e.g., with these loops:
+;
+;  (defparameter *foo* 1)
+;  (time
+;   (loop for i fixnum from 1 to 100000000 do (consp *foo*)))       ; 0.07 secs
+;  (time
+;   (loop for i fixnum from 1 to 100000000 do (get 'consp 'sally))) ; 1.39 secs
+;
+; Our approach is simply to use macros in place of direct access to property
+; lists, as follows.
+;
+; (get name 'acl2-array)             --> (get-acl2-array-property name)
+; (setf (get name 'acl2-array) prop) --> (set-acl2-array-property name prop)
+
+; Finally, we inline aref1 and aref2.  To see why, consider the following
+; timing results.  In each case, we started with ACL2 Version_4.3 built on CCL.
+; The four results are based on two dimensions: either loading a patch file or
+; not that implements our one-slot cache, and either inlining aref1 or not.
+; The test run was the one contributed Jared Davis and Sol Swords that is
+; exhibited in a comment in set-acl2-array-property.
+
+; 16.1 ; no patch
+;  8.9 ; patch but no inline
+; 11.6 ; no patch, but inline
+;  4.3 ; patch and inline
+
+(declaim (inline aref1))
+(declaim (inline aref2))
+
+(defparameter *acl2-array-cache*
+
+; This special is always the same cons, but its car and cdr may be
+; destructively modified.  Its value always has the form (name . prop), where
+; name is a symbol and prop is either nil or (get name 'acl2-array).
+
+  (cons nil nil))
+
+(defmacro set-acl2-array-property (name prop)
+
+; Use this macro instead of (setf (get name 'acl2-array) prop).  We update the
+; 'acl2-array property of name, and install (name . prop) into the array cache.
+; See the Essay on Array Caching.
+
+; We are tempted to handle name as we handle prop, by let-binding name below.
+; However, by using ,name directly we have reduced the time from 5.0 seconds to
+; 4.3 seconds in the following test from Jared Davis and Sol Swords.
+
+;  (defun count-down (n)
+;    (if (zp n)
+;        nil
+;      (cons (- n 1)
+;            (count-down (- n 1)))))
+;
+;  (defconst *test-array*
+;    (compress1 '*test-array*
+;               (cons (list :HEADER
+;                           :DIMENSIONS (list 100)
+;                           :MAXIMUM-LENGTH (+ 100 1)
+;                           :DEFAULT 0
+;                           :NAME '*test-array*)
+;                     (pairlis$ (count-down 100)
+;                               (make-list 100)))))
+;
+;  (let ((arr *test-array*))
+;    (time (loop for i fixnum from 1 to 1000000000 do
+;                (aref1 '*test-array* arr 10))))
+
+; Therefore, we use ,name directly but add the following compile-time check to
+; ensure that ,name refers to the given formal parameter rather than to the
+; let-bound prop or cache.
+
+  (when (or (not (symbolp name))
+            (eq name 'prop)
+            (eq name '*acl2-array-cache*))
+    (error "Bad call, ~s: See set-acl2-array-property"
+           `(set-acl2-array-property ,name ,prop)))
+  `(let ((prop  ,prop)
+         (cache *acl2-array-cache*))
+     (setf (cdr cache) nil) ; Invalidate the cache in case of interrupts.
+     (setf (get ,name 'acl2-array) prop)
+     (setf (car cache) ,name)
+     (setf (cdr cache) prop)))
+
+(defmacro get-acl2-array-property (name)
+
+; Use this macro instead of (get name 'acl2-array).  We get the 'acl2-array
+; property for name from the cache if possible, or from the property list if it
+; is not cached.  On a cache miss, we update the cache so that it points to the
+; newly accessed array.  See the Essay on Array Caching.
+
+; See set-acl2-array-property for an explanation of the following compile-time
+; check.
+
+  (when (or (not (symbolp name))
+            (eq name 'prop)
+            (eq name '*acl2-array-cache*))
+    (error "Bad call, ~s: See set-acl2-array-property"
+           `(get-acl2-array-property ,name)))
+  `(let ((cache *acl2-array-cache*))
+     (or (and (eq ,name (car cache))
+              (cdr cache))
+         (let ((prop (get ,name 'acl2-array)))
+           (setf (cdr cache) nil) ; Invalidate the cache in case of interrupts.
+           (setf (car cache) ,name)
+           (setf (cdr cache) prop)))))
+
+)
 
 (defun bounded-integer-alistp (l n)
 
@@ -22156,7 +22275,7 @@
   (declare (xargs :guard t))
   #-acl2-loop-only
   (cond ((symbolp name)
-         (let ((prop (get name 'acl2-array)))
+         (let ((prop (get-acl2-array-property name)))
            (cond ((and prop (eq l (car prop)))
                   (return-from array1p (= 1 (array-rank (cadr prop)))))))))
 
@@ -22266,7 +22385,7 @@
   (declare (xargs :guard t))
   #-acl2-loop-only
   (cond ((symbolp name)
-         (let ((prop (get name 'acl2-array)))
+         (let ((prop (get-acl2-array-property name)))
            (cond ((and prop (eq l (car prop))
                        (return-from array2p
                                     (= 2 (array-rank (cadr prop))))))))))
@@ -22355,7 +22474,7 @@
 ; functions for getting the fields of the header fast, too.
 
   #-acl2-loop-only
-  (let ((prop (get name 'acl2-array)))
+  (let ((prop (get-acl2-array-property name)))
     (cond ((and prop (eq l (car prop)))
            (cadddr prop))
           (t (assoc-eq :header l)))))
@@ -22501,7 +22620,7 @@
 ; See comment above (for #+acl2-par) about *acl2-par-arrays-lock*:
 ; (with-lock 
 ;  *acl2-par-arrays-lock*
-  (let ((prop (get name 'acl2-array)))
+  (let ((prop (get-acl2-array-property name)))
     (cond ((eq l (car prop))
            (svref (the simple-vector (car (cdr prop)))
                   n))
@@ -22619,7 +22738,7 @@
 ; See comment above (for #+acl2-par) about *acl2-par-arrays-lock*:
 ; (with-lock
 ;  *acl2-par-arrays-lock*
-  (let* ((old (get name 'acl2-array))
+  (let* ((old (get-acl2-array-property name))
          (header (header name l))
          (length (car (cadr (assoc-keyword :dimensions (cdr header)))))
          (maximum-length (cadr (assoc-keyword :maximum-length (cdr header))))
@@ -22804,8 +22923,7 @@
                    (cond ((equal old-car x) old-car)
                          (t x)))
              (car old))
-            (t (setf (get name 'acl2-array)
-                     (list x ar max-ar header))
+            (t (set-acl2-array-property name (list x ar max-ar header))
                x)))))
 
 (defthm array1p-cons
@@ -22871,7 +22989,7 @@
 ; See comment above (for #+acl2-par) about *acl2-par-arrays-lock*:
 ; (with-lock 
 ;  *acl2-par-arrays-lock*
-  (let ((prop (get name 'acl2-array)))
+  (let ((prop (get-acl2-array-property name)))
     (cond ((eq l (car prop))
            (let* ((ar (cadr prop))
                   (to-go (aref (the (array (unsigned-byte 31) (*))
@@ -22980,7 +23098,7 @@
   #-acl2-loop-only
   (declare (type (unsigned-byte 31) i j))
   #-acl2-loop-only
-  (let ((prop (get name 'acl2-array)))
+  (let ((prop (get-acl2-array-property name)))
     (cond ((eq l (car prop))
            (aref (the (array * (* *)) (car (cdr prop)))
                  i j))
@@ -23067,7 +23185,7 @@
                     (cadr (dimensions name l))
                     (default name l)))
   #-acl2-loop-only
-  (let* ((old (get name 'acl2-array))
+  (let* ((old (get-acl2-array-property name))
          (header (header name l))
          (dimension1 (car (cadr (assoc-keyword :dimensions (cdr header)))))
          (dimension2 (cadr (cadr (assoc-keyword :dimensions (cdr header)))))
@@ -23193,8 +23311,7 @@
                            (t x)))
                (car old))
               (t
-               (setf (get name 'acl2-array)
-                     (list x ar max-ar header))
+               (set-acl2-array-property name (list x ar max-ar header))
                x))))))
 
 (defthm array2p-cons
@@ -23262,7 +23379,7 @@
   #-acl2-loop-only
   (declare (type (unsigned-byte 31) i j))
   #-acl2-loop-only
-  (let ((prop (get name 'acl2-array)))
+  (let ((prop (get-acl2-array-property name)))
     (cond
      ((eq l (car prop))
       (let* ((ar (car (cdr prop)))
@@ -23459,7 +23576,7 @@
   #+acl2-loop-only
   nil
   #-acl2-loop-only
-  (setf (get name 'acl2-array) nil))
+  (set-acl2-array-property name nil))
 
 ; MULTIPLE VALUE returns, done our way, not Common Lisp's way.
 
@@ -24629,7 +24746,7 @@
     setup-simplify-clause-pot-lst1 ; dmr-flush
     save-exec ; save-exec-raw, etc.
     cw-gstack-fn ; *deep-gstack*
-    recompress-global-enabled-structure ; (get name 'acl2-array)
+    recompress-global-enabled-structure ; get-acl2-array-property
     ev-w ; *the-live-state*
     verbose-pstack ; *verbose-pstk*
     user-stobj-alist-safe ; chk-user-stobj-alist
@@ -29401,9 +29518,9 @@
 ; apparently already certified.  Those may all have been with Allegro CL.  In
 ; particular, on 4/29/09 there were two successive regression failes as
 ; books/rtl/rel8/support/lib2.delta1/reps.lisp tried to include "bits" in that
-; same directory.  We saw a web page claiming issue in old versions of Allegro
-; CL for which finish-output didn't do the job, and force-output perhaps did.
-; So we add a call here of force-output for Allegro.
+; same directory.  We saw a web page claiming an issue in old versions of
+; Allegro CL for which finish-output didn't do the job, and force-output
+; perhaps did.  So we add a call here of force-output for Allegro.
 
          (force-output (get-output-stream-from-channel channel))
          (finish-output (get-output-stream-from-channel channel))

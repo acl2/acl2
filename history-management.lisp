@@ -18406,7 +18406,7 @@
 
   a list of hints given priority in every proof attempt~/
 
-  This is an advanced feature, originally implmented to help system designers
+  This is an advanced feature, originally implemented to help system designers
   to create ``modes'' that control the way hints are supplied to the theorem
   prover.  Please ~pl[default-hints] for the much more usual way to install
   hints that may be applied by default.~/
@@ -18447,7 +18447,7 @@
   else an error occurs.  Any custom keyword hints are then eliminated from that
   keyword-alist.  The resulting keyword-alist must not contain the ~c[:ERROR]
   hint keyword and must not start with the ~c[:COMPUTED-HINT-REPLACEMENT]
-  keyword; otherwise an error occurs.  With ~c[KEYWORD-ALIST] is bound to this
+  keyword; otherwise an error occurs.  With ~c[KEYWORD-ALIST] bound to this
   result, the second override-hint is similarly evaluated.  This process
   continues, and the keyword-alist returned by the final override-hint is the
   one used when processing the goal at hand.  If the final result is ~c[nil],
