@@ -1,13 +1,13 @@
 ; Matt Kaufmann, January 2011
 
 ; In this little example we show how defattach may be used to build systems of
-; executable programs in which some of the functions are constrain.  Be sure to
-; see the final comment, which is really the punch line.
+; executable programs in which some of the functions are constrained.  Be sure
+; to see the final comment, which is really the punch line.
 
 (in-package "ACL2")
 
-; Experienced ACL2 users know that with encapsulate, and without any need for
-; defattach, you can deduce theorems about concrete functions from theorems
+; Experienced ACL2 users know that by using encapsulate, and without any need
+; for defattach, you can deduce theorems about concrete functions from theorems
 ; about abstract functions, using the following steps.
 
 ; (1) Write abstract specifications -- basically, axioms about functions that
@@ -23,13 +23,14 @@
 ;     (defined in (3)).
 
 ; Below we present a standard example of that style of reasoning.  We then show
-; how defattach goes beyond this: the idea is still to refine a specification
-; function to be to a more concrete definition, but with defattach one can do
-; this without changing the function symbol.  That is, the concrete
-; strengthening is applied to the original function symbols.
+; how defattach goes beyond this: the idea is still to refine specification
+; functions to more concrete definitions, but with defattach one can do this in
+; a way that allows evaluation using the original function symbols.
 
-; Here is an outline of the example we present below, using the numbered steps
-; shown above.
+; Thus, this file presents an example in two parts: traditional functional
+; instantiation without defattach, and then evaluation using defattach.
+
+; Here is an outline of the first part, using the numbered steps shown above.
 
 ; (1) Abstract spec:
 ;     - Specify that ac-fn is associative-commutative (example: +)
@@ -47,7 +48,9 @@
 
 ; (5) Conclude that fold-mult(x) = fold-mult(reverse x).
 
-; Here is an example, first without defattach, then with defattach.
+; The second part then takes advantage of the first part, resulting in
+; computation using the abstract functions by attaching corresponding concrete
+; functions.  We also provide a second set of attachments.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;; EXAMPLE WITHOUT DEFATTACH ;;;;;;;;;;;;;;;;;;;;;
@@ -136,15 +139,27 @@
 ;;;;;;;;;;;;;;;;;;;;;;; EXAMPLE WITH DEFATTACH ;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(verify-guards mult) ; necessary for attachments
+(verify-guards mult) ; guard verification is necessary for attachments
+
+; Next we attach the executable function mult to the abstract specification
+; function ac-fn.  The proof obligations ensure, roughly speaking, that mult
+; satisfies the constraints on ac-fn.  In this case the proofs of those
+; obligations are skipped because they were already proved (and then cached) at
+; the earlier functional instantiation (see fold-mult-reverse).
 
 (defattach ac-fn mult)
 
-; Example execution using fold-ac (not fold-mult!):
+; Next we do a sample computation using fold-ac (interestingly, without calling
+; fold-mult).  The foundations guarantees that this computation is taking place
+; in a consistent extension of the current theory, called the "evaluation
+; theory".  The equality below is a theorem of the evaluation theory, but not
+; of the (weaker) current theory.
+
 (assert-event (equal (fold-ac '(3 4 5) 1)
                      60))
 
-; Second example:
+; Here is a second example, which provides a different extension of the current
+; theory to the evaluation theory.
 
 (defun add (x y)
   (+ (fix x) (fix y)))
