@@ -737,7 +737,7 @@
   executable supporting it, to avoid calling parallelism primitives directly in
   the top-level loop, to have sufficient resources (especially, threads)
   available, and to avoid explicitly disabling parallel evaluation
-  ~pl[set-parallel-evaluation]).~/")
+  (~pl[set-parallel-evaluation]).~/")
 
 (defdoc parallelism-tutorial
   ":Doc-Section Parallelism

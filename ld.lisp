@@ -18197,6 +18197,10 @@
   hints.  Thanks to Robert Krug for reporting this bug and sending a very
   helpful example.
 
+  Fixed a bug in the output from ~ilc[defattach], which was failing to list
+  previous ~il[events] in the message about ``bypassing constraints that have
+  been proved when processing the event(s)''.
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Although the HTML documentation is distributed with ACL2, it had not been

@@ -27533,7 +27533,7 @@
    (let ((constraint-bypass-string
           "  Note that we are bypassing constraints that have been proved ~
            when processing ~#0~[previous events~/events including ~&1~/the ~
-           event~#1~[~/s~]~]."))
+           event~#1~[~/s~] ~&1~]."))
      (cond
       ((equal goal *t*)
        (pprogn
