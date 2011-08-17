@@ -6280,7 +6280,11 @@
   ~ev[]
   Also, you can avoid skipping proofs for the successful sub-events by
   supplying keyword ~c[:succ-ld-skip-proofsp] with a valid value for
-  ~c[ld-skip-proofsp]; ~pl[ld-skip-proofsp].
+  ~c[ld-skip-proofsp]; ~pl[ld-skip-proofsp].  For example, you might want to
+  execute ~c[(redo-flat :succ-ld-skip-proofsp nil)] if you use the
+  ~c[must-fail] utility from distributed book ~c[make-event/eval.lisp], since
+  for example ~c[(must-fail (thm (equal x y)))] normally succeeds but would
+  cause an error if proofs are skipped.
 
   If you prefer only to see the successful and failed sub-events, without any
   events being re-executed, you may evaluate the following form instead.
