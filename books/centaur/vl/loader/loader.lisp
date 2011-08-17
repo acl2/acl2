@@ -953,7 +953,7 @@ lexing, and perhaps any warnings about malformed syntax that occurs
 
   (defmacro vl-load (&key override-dirs start-files start-modnames
                           search-path
-                          (searchext '("v"))
+                          (searchext ''("v"))
                           include-dirs defines filemapp)
     `(vl-load-fn ,override-dirs ,start-files ,start-modnames
                  ,search-path ,searchext ,include-dirs

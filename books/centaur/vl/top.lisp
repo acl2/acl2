@@ -1460,7 +1460,7 @@ options in the future, as the need arises.</p>"
                              start-files
                              start-modnames
                              search-path
-                             (searchext '("v"))
+                             (searchext ''("v"))
                              include-dirs
                              defines
                              problem-modules)
