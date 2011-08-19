@@ -1169,13 +1169,6 @@
                           ,@body)))
                    `(let ,bindings ,@declare-forms ,@body)))))))
 
-(defun and-list (x)
-  (declare (xargs :guard (true-listp x)))
-  (if (endp x)
-      t
-    (and (car x)
-         (and-list (cdr x)))))
-
 (defmacro pand (&rest forms)
 
 ; This is the raw Lisp version for threaded Lisps.
@@ -1196,14 +1189,6 @@
                          remainder-forms)
                    and-early-termination-function)
              (list 'if (cons 'and remainder-forms) t nil))))))
-
-(defun or-list (x)
-  (declare (xargs :guard (true-listp x)))
-  (if (endp x)
-      nil
-    (if (car x)
-        t
-        (or-list (cdr x)))))
 
 (defmacro por (&rest forms)
 

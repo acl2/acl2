@@ -5596,7 +5596,8 @@ the calls took.")
 
   (when (symbolp k)
     (let ((l (gethash k *memoize-info-ht*)))
-      (when l (clear-one-memo-and-pons-hash l)))))
+      (when l (clear-one-memo-and-pons-hash l))))
+  k)
 
 (defn1 clear-memoize-tables ()
 
@@ -5611,7 +5612,8 @@ the calls took.")
                        (clear-one-memo-and-pons-hash l)))
                    *memoize-info-ht*)
           (setq success t))
-      (or success (ofe "clear-memoize-tables failed.")))))
+      (or success (ofe "clear-memoize-tables failed."))))
+  nil)
 
 (defn clear-memoize-call-array ()
 

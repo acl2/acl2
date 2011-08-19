@@ -11594,7 +11594,6 @@
 ; Just in case throw-raw-ev-fncall doesn't throw -- though it always should.
 
     (error "This error is caused by what should be dead code!"))
-  #+acl2-loop-only
   nil)
 
 (defun defun-nx-fn (form disabledp)
@@ -24840,8 +24839,8 @@
     header
     search-fn
     state-p1 ; LIVE-STATE-P
-    aref2 ; slow-array-warning
-    aref1 ; slow-array-warning
+    aref2 ; aref, slow-array-warning
+    aref1 ; aref, slow-array-warning
     mfc-ancestors ; *metafunction-context*
     fgetprop ; EQ, GET, ...
     getenv$ ; GETENV$-RAW
@@ -29435,13 +29434,11 @@
   #-acl2-loop-only
   (when (live-state-p state-state)
     (let ((stream (get-output-stream-from-channel channel)))
-      (return-from get-output-stream-string$-fn
-                   (cond (*wormholep*
-                          (mv nil
-                              (wormhole-er 'get-output-stream-string$-fn
-                                           (list channel))
-                              state-state))
-                         #-(and gcl (not cltl2))
+      (when *wormholep*
+        (wormhole-er 'get-output-stream-string$-fn
+                     (list channel)))
+      (return-from get-output-stream-string$-fn 
+                   (cond #-(and gcl (not cltl2))
                          ((not (typep stream 'string-stream))
                           (mv t nil state-state))
                          #+(and gcl (not cltl2))
@@ -31075,9 +31072,11 @@
   (declare (xargs :stobjs state :guard (stringp str)))
   #+acl2-loop-only
   (declare (ignore str))
-  (read-acl2-oracle state)
   #-acl2-loop-only
-  (value (and (stringp str) (getenv$-raw str))))
+  (when (live-state-p state)
+    (return-from getenv$
+                 (value (and (stringp str) (getenv$-raw str)))))
+  (read-acl2-oracle state))
 
 (defun setenv$ (str val)
 
@@ -31158,8 +31157,9 @@
   (declare (type (integer 1 *) limit)
            (xargs :stobjs state))
   #-acl2-loop-only
-  (mv (random limit) state)
-  #+acl2-loop-only
+  (when (live-state-p state)
+    (return-from random$
+                 (mv (random limit) state)))
   (mv-let (erp val state)
           (read-acl2-oracle state)
           (mv (cond ((and (null erp) (natp val) (< val limit))
@@ -40747,10 +40747,11 @@
   ~c[(mv nil nil state)].~/~/"
 
   (declare (xargs :guard (state-p state)))
-  #+acl2-loop-only
-  (read-acl2-oracle state)
   #-acl2-loop-only
-  (value *wormholep*))
+  (when (live-state-p state)
+    (return-from wormhole-p
+                 (value *wormholep*)))
+  (read-acl2-oracle state))
 
 (defun duplicates (lst)
   (declare (xargs :guard (symbol-listp lst)))
@@ -43661,21 +43662,25 @@ Lisp definition."
    #+acl2-loop-only
    (declare (xargs :guard (state-p state))
             (ignore name))
-   #+acl2-loop-only
-   (read-acl2-oracle state)
    #-acl2-loop-only
-   (value (cdr (assoc-equal name *wormhole-status-alist*))))
+   (when (live-state-p state)
+     (return-from get-wormhole-status
+                  (value (cdr (assoc-equal name *wormhole-status-alist*)))))
+   (read-acl2-oracle state))
 
 (defun file-write-date$ (file state)
   (declare (xargs :guard (stringp file)
                   :stobjs state))
-  #+(and (not acl2-loop-only) cltl2)
-  (mv (ignore-errors (file-write-date file)) state)
-  #+(and (not acl2-loop-only) (not cltl2))
-  (mv (file-write-date file) state)
   #+acl2-loop-only
   (declare (ignore file))
-  #+acl2-loop-only
+  #+(and (not acl2-loop-only) cltl2)
+  (when (live-state-p state)
+    (return-from file-write-date$
+                 (mv (ignore-errors (file-write-date file)) state)))
+  #+(and (not acl2-loop-only) (not cltl2))
+  (when (live-state-p state)
+    (return-from file-write-date$
+                 (mv (file-write-date file) state)))
   (mv-let (erp val state)
           (read-acl2-oracle state)
           (mv (and (null erp)
@@ -43924,8 +43929,8 @@ Lisp definition."
                                                  :break-bt :bt-break)))))
   #+(and (not acl2-loop-only)
          (and gcl (not ansi-cl)))
-  (progn (setq lisp::*break-enable* (debugger-enabledp state))
-         state)
+  (when (live-state-p state)
+    (setq lisp::*break-enable* (debugger-enabledp state)))
   (f-put-global 'debugger-enable val state))
 
 ; See comment in true-listp-cadr-assoc-eq-for-open-channels-p.

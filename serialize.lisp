@@ -93,33 +93,32 @@ to timing and memory usage as the file is being read.~/~/"
                               (state-p state))
                   :stobjs state)
            (ignorable filename obj verbosep))
-
-  #+acl2-loop-only
-  (mv-let (erp val state)
-          (read-acl2-oracle state)
-          (declare (ignore erp val))
-          state)
-
   #-acl2-loop-only
-  (progn
-
+  (cond
+   ((live-state-p state)
     #-hons
     (er hard? 'serialize-write-fn
         "Serialization routines are currently only available in the HONS ~
          version of ACL2.")
-
     #+hons
-    (unless (live-state-p state)
-      (er hard? 'serialize-write-fn "Serialization require a live state."))
+    (with-open-file
+     (stream filename
+             :direction :output
+             :if-exists :supersede)
+     (let* ((*ser-verbose* verbosep))
+       (ser-encode-to-stream obj stream)))
+    (return-from serialize-write-fn state))
+   (t
 
-    #+hons
-    (with-open-file (stream filename
-                            :direction :output
-                            :if-exists :supersede)
-                    (let* ((*ser-verbose* verbosep))
-                      (ser-encode-to-stream obj stream)))
+; We fall through to the logic code if we are doing a proof, where
+; *hard-error-returns-nilp* is true.  Otherwise, we throw here with an error
+; message.
 
-    state))
+    (er hard? 'serialize-write-fn "Serialization requires a live state.")))
+  (mv-let (erp val state)
+          (read-acl2-oracle state)
+          (declare (ignore erp val))
+          state))
 
 (defmacro serialize-read (filename &key
                                    (hons-mode ':smart)
@@ -172,31 +171,33 @@ related to timing and memory usage as the file is being read.~/~/"
                   :stobjs state)
            (ignorable filename hons-mode verbosep))
 
-  #+acl2-loop-only
+  #-acl2-loop-only
+  (cond
+   ((live-state-p state)
+    (return-from
+     serialize-read-fn
+     #-hons
+     (progn (er hard? 'serialize-read-fn
+                "Serialization routines are currently only available in the ~
+                 HONS version of ACL2.")
+            (mv nil state))
+     #+hons
+     (with-open-file
+      (stream filename :direction :input)
+      (let* ((*ser-verbose* verbosep)
+             (val           (ser-decode-from-stream t hons-mode stream)))
+        (mv val state)))))
+   (t
+
+; We fall through to the logic code if we are doing a proof, where
+; *hard-error-returns-nilp* is true.  Otherwise, we throw here with an error
+; message.
+
+    (er hard? 'serialize-read-fn "Serialization requires a live state.")))
   (mv-let (erp val state)
           (read-acl2-oracle state)
           (declare (ignore erp))
-          (mv val state))
-
-  #-acl2-loop-only
-  (progn
-
-    #-hons
-    (progn
-      (er hard? 'serialize-read-fn
-          "Serialization routines are currently only available in the HONS ~
-         version of ACL2.")
-      (mv nil state))
-
-    #+hons
-    (progn
-      (unless (live-state-p state)
-        (er hard? 'serialize-read-fn "Serialization requires a live state."))
-      (with-open-file
-       (stream filename :direction :input)
-       (let* ((*ser-verbose* verbosep)
-              (val           (ser-decode-from-stream t hons-mode stream)))
-         (mv val state))))))
+          (mv val state)))
 
 (defdoc serialize-alternatives
   ":Doc-Section serialize

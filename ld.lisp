@@ -18118,6 +18118,11 @@
 ; For more about the increase in speed for ACL2 array reads, see the Essay on
 ; Array Caching.
 
+; Regarding the fix to getenv$ etc. mentioned below: we also changed
+; throw-nonexec-error, get-output-stream-string$-fn, and set-debugger-enable-fn
+; just a bit, just to be safe, though we're not aware of a soundness bug for
+; those functions.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18179,6 +18184,27 @@
   for contributing this improvement.
 
   ~st[BUG FIXES]
+
+  Fixed a class of soundness bugs involving each of the following functions:
+  ~ilc[getenv$], ~ilc[get-wormhole-status], ~ilc[cpu-core-count],
+  ~ilc[wormhole-p], ~ilc[random$], ~c[file-write-date$], and
+  ~c[serialize-read-fn], and (for the HONS version of ACL2)
+  ~ilc[clear-memoize-table] and ~ilc[clear-memoize-tables] as well as (possible
+  soundness bug) ~c[serialize-write-fn].  For example, we were able to admit
+  the following events, but that is no longer the case (neither for ~c[getenv$]
+  as shown, nor analogously for other functions listed above).
+  ~bv[]
+  (defthm not-true
+    (stringp (cadr (getenv$ \"PWD\" (build-state))))
+    :rule-classes nil)
+
+  (defthm contradiction
+    nil
+    :hints ((\"Goal\"
+             :in-theory (disable (getenv$))
+             :use not-true))
+    :rule-classes nil)
+  ~ev[]
 
   Fixed an assertion that could occur, for example, after reverting to prove
   the original goal by induction and generating a goal of ~c[NIL].  Thanks to

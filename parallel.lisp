@@ -1602,17 +1602,7 @@
                 (xxxjoin 'binary-por remainder-forms)))
          (t (xxxjoin 'binary-por remainder-forms)))))
 
-; We conclude with two functions defined also in parallel-raw.lisp; but see
-; comments below before deleting these!
-
-#+(or acl2-loop-only (not acl2-par))
 (defun or-list (x)
-
-; Warning: This function is needed in books/clause-processors/equality.lisp,
-; which however cannot define it redundantly because it is in
-; *primitive-logic-fns-with-raw-code*.  So do not delete this definition even
-; though it is in parallel-raw.lisp!
-
   (declare (xargs :guard (true-listp x) :mode :logic))
   (if (endp x)
       nil
@@ -1620,14 +1610,7 @@
         t
         (or-list (cdr x)))))
 
-#+(or acl2-loop-only (not acl2-par))
 (defun and-list (x)
-
-; Warning: This function is needed in books/clause-processors/equality.lisp,
-; which however cannot define it redundantly because it is in
-; *primitive-logic-fns-with-raw-code*.  So do not delete this definition even
-; though it is in parallel-raw.lisp!
-
   (declare (xargs :guard (true-listp x) :mode :logic))
   (if (endp x)
       t
@@ -1654,19 +1637,23 @@
   ~ev[].~/~/"
 
   (declare (xargs :stobjs state :guard t))
-  #+acl2-loop-only
+  #+(and (not acl2-loop-only) (not acl2-par))
+  (when (live-state-p state)
+    (return-from cpu-core-count
+                 (mv 1 state)))
+  #+(and (not acl2-loop-only) acl2-par)
+  (when (live-state-p state)
+    (return-from cpu-core-count
+                 (mv (if (and (f-boundp-global 'cpu-core-count state)
+                              (posp (f-get-global 'cpu-core-count state)))
+                         (core-count-raw nil (f-get-global 'cpu-core-count
+                                                           state)) 
+                       (core-count-raw 'core-count))
+                     state)))
   (mv-let (nullp val state)
           (read-acl2-oracle state)
           (declare (ignore nullp))
-          (mv val state))
-  #+(and (not acl2-loop-only) (not acl2-par))
-  (mv 1 state)
-  #+(and (not acl2-loop-only) acl2-par)
-  (mv (if (and (f-boundp-global 'cpu-core-count state)
-               (posp (f-get-global 'cpu-core-count state)))
-          (core-count-raw nil (f-get-global 'cpu-core-count state))
-        (core-count-raw 'core-count))
-      state))
+          (mv val state)))
 
 ; Preliminary code for parallelizing the rewriter
 
