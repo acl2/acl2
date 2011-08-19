@@ -25,6 +25,8 @@
 (include-book "../transforms/xf-argresolve")
 (include-book "../transforms/xf-portdecl-sign")
 (include-book "../transforms/cn-hooks")
+(local (include-book "../util/osets"))
+(local (include-book "../mlib/modname-sets"))
 
 
 (defconst *use-set-defines*
@@ -51,12 +53,16 @@
 ;                                suppress-mismatchesp
                                 suppress-linputsp
                                 suppress-warningsp
+                                top-mods
+                                ignore-mods
                                 state)
   (declare (xargs :guard (and (string-listp override-dirs)
                               (string-listp start-files)
                               (string-listp search-path)
                               (string-listp defines)
                               (string-listp omit)
+                              (string-listp top-mods)
+                              (string-listp ignore-mods)
                               (state-p state))
                   :stobjs state))
 
@@ -74,6 +80,7 @@
        (-
         (or successp (cw "Note: Not all loading was successful.~%")))
 
+
 ; We print out the warnings from the parse, but hide warnings like ifxz and
 ; noports since they're chatty and aren't particularly relevant to the use-set
 ; analysis.
@@ -81,6 +88,16 @@
        (warnings (vl-remove-warnings '(:vl-warn-ifxz :vl-warn-noports) warnings))
        (state (ec-call (princ$ (with-local-ps (vl-print-warnings warnings))
                                *standard-co* state)))
+
+
+; Throw away modules the user isn't interested in.  (We'll keep the ignore mods
+; for now, since they might be necessary for argresolve, etc.)
+
+       (mods
+        (if top-mods
+            (cwtime (vl-remove-unnecessary-modules top-mods (mergesort mods))
+                    :name xf-only-keep-top-mods)
+          mods))
 
 ; Before we run our analysis, we are going to transform the parsed modules
 ; in a few simple ways.
@@ -118,8 +135,17 @@
 ;       (mods (cwtime (vl-modulelist-backflow-annotate mods)
 ;                     :name xf-backflow-annotate))
 
+; At this point, throw away any modules that the user wants to ignore the
+; warnings for.  It is safe to do this before marking wires for modulelist,
+; because it only looks at the arguments and no longer tries to do any module
+; lookups.
+
+       (mods (vl-delete-modules ignore-mods mods))
+
+
        ((mv mods report) (cwtime (vl-mark-wires-for-modulelist mods omit)
                               :name use-set-analysis))
+
 
        (state (ec-call
                (acl2::put-global 'mods mods state)))
@@ -153,7 +179,9 @@
                                            suppress-typos
                                            suppress-mismatches
                                            suppress-linputsp
-                                           suppress-warningsp)
+                                           suppress-warningsp
+                                           top-mods
+                                           ignore-mods)
 
 ; This is the macro that Logic invokes when they want to carry out a USE-SET
 ; analysis.  Hopefully this is easy to add new keywords to, etc., without
@@ -173,6 +201,8 @@
 ;                           ,suppress-mismatches
                            ,suppress-linputsp
                            ,suppress-warningsp
+                           ,top-mods
+                           ,ignore-mods
                            state))
 
 
