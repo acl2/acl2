@@ -1255,23 +1255,32 @@
                                  (let*-abstractionp state) 
                                  wrld))
 
-; Parallelism wart: we are encountering a problem that we've known about from
-; within the first few months of looking at parallelizing the
-; waterfall.  When two sibling subgoals both push for induction, the second
-; push doesn't know about the first proof's push in parallel mode.  So, the
-; number of the second proof (e.g., *1.2) gets printed as if the first push
-; hasn't happened (e.g., *1.2 gets mistakenly called *1.1).  Rather than fix
-; this (the problem is inherent to the naming scheme of ACL2), we punt and say
-; what the name _could_ be (e.g., we print *1.1 for what's really *1.2).  The
-; following non-theorem show-cases this problem.  See :doc topic 
-; set-waterfall-printing.
+; Parallelism no-fix: we are encountering a problem that we've known about from
+; within the first few months of looking at parallelizing the waterfall.  When
+; two sibling subgoals both push for induction, the second push doesn't know
+; about the first proof's push in parallel mode.  So, the number of the second
+; proof (e.g., *1.2) gets printed as if the first push hasn't happened (e.g.,
+; *1.2 gets mistakenly called *1.1).  Rather than fix this (the problem is
+; inherent to the naming scheme of ACL2), we punt and say what the name _could_
+; be (e.g., we print *1.1 for what's really *1.2).  The following non-theorem
+; show-cases this problem.  See :doc topic set-waterfall-printing.
 
 ; (thm (equal (append (car (cons x x)) y z) (append x x y)))
+
+; The sentence in the following cw call concerning the halting of the proof
+; attempt is motivated by the following example -- which is relevant because
+; ACL2(p) with :limited waterfall-printing does not print a message that says
+; the :do-not-induct hint causes the proof to abort.
+
+; (thm (equal (append x (append y z)) (append (append x y) z))
+;      :hints (("Goal" :do-not-induct t)))
 
        (cw "~%~%The above subgoal may cause a goal to be pushed for proof by ~
             induction.  The pushed goal's new name might be ~@0.  Note that ~
             we may instead decide (either now or later) to prove the original ~
-            conjecture by induction.~%~%])~%~%"
+            conjecture by induction.  Also note that if a hint indicates that ~
+            this subgoal or the original conjecture should not be proved by ~
+            induction, the proof attempt will halt.~%~%])~%~%"
            (tilde-@-pool-name-phrase
             forcing-round
             old-pspv-pool-lst))))))))
@@ -2017,54 +2026,66 @@
 
 ; Keep in sync with eval-clause-processor.
 
-; Parallelism wart: See the parallelism wart in ev-w-for-trans-eval.
+  (cond 
+   ((and ; (waterfall-parallelism) ; not needed since in @par
+     (not (equal stobjs-out '(nil)))
+     (not (cdr (assoc-eq 'hacks-enabled
+                         (table-alist 'waterfall-parallelism-table 
+                                      (w state))))))
+    (mv (msg
+         "Clause-processors that do not return a single value are not ~
+          officially supported in ACL2(p).  If you wish to use ~
+          clause-processors anyway, you can call ~x0. See :DOC ~
+          set-waterfall-parallelism-hacks-enabled for more information.  "
+         '(set-waterfall-parallelism-hacks-enabled t))
+        nil))
+   (t
+    (let ((wrld (w state))
+          (cl-term (subst-var (kwote clause) 'clause term)))
+      (mv-let
+       (erp trans-result)
 
-  (let ((wrld (w state))
-        (cl-term (subst-var (kwote clause) 'clause term)))
-    (mv-let
-     (erp trans-result)
-
-; Parallelism wart: we should consider making an ev@par, which calls ev-w, and
+; Parallelism wart: we could consider making an ev@par, which calls ev-w, and
 ; tests that the appropriate preconditions for ev-w are upheld (like state not
 ; being in the alist).
 
-     (ev-w-for-trans-eval cl-term (all-vars cl-term) stobjs-out ctx state
+       (ev-w-for-trans-eval cl-term (all-vars cl-term) stobjs-out ctx state
 
 ; See chk-evaluator-use-in-rule for a discussion of how we restrict the use of
 ; evaluators in rules of class :meta or :clause-processor, so that we can use
 ; aok = t here.
 
-                          t)
-     (cond
-      (erp (mv (msg "Evaluation failed for the :clause-processor hint.")
-               nil))
-      (t
-       (assert$
-        (equal (car trans-result) stobjs-out)
-        (let* ((result (cdr trans-result))
-               (eval-erp (and (cdr stobjs-out) (car result)))
-               (val (if (cdr stobjs-out) (cadr result) result)))
-          (cond ((stringp eval-erp)
-                 (mv (msg "~s0" eval-erp) nil))
-                ((tilde-@p eval-erp) ; a message
-                 (mv (msg "Error in clause-processor hint:~|~%  ~@0"
-                          eval-erp)
-                     nil))
-                (eval-erp
-                 (mv (msg "Error in clause-processor hint:~|~%  ~Y01"
-                          term
-                          nil)
-                     nil))
-                (t (cond ((not (term-list-listp val
-                                                wrld))
-                          (mv (msg "The :CLAUSE-PROCESSOR hint~|~%  ~Y01~%did ~
-                                    not evaluate to a list of clauses, but ~
-                                    instead to~|~%  ~Y23~%~@4"
-                                   term nil
-                                   val nil
-                                   (non-term-list-listp-msg val wrld))
-                              nil))
-                         (t (value@par val))))))))))))
+                            t)
+       (cond
+        (erp (mv (msg "Evaluation failed for the :clause-processor hint.")
+                 nil))
+        (t
+         (assert$
+          (equal (car trans-result) stobjs-out)
+          (let* ((result (cdr trans-result))
+                 (eval-erp (and (cdr stobjs-out) (car result)))
+                 (val (if (cdr stobjs-out) (cadr result) result)))
+            (cond ((stringp eval-erp)
+                   (mv (msg "~s0" eval-erp) nil))
+                  ((tilde-@p eval-erp) ; a message
+                   (mv (msg "Error in clause-processor hint:~|~%  ~@0"
+                            eval-erp)
+                       nil))
+                  (eval-erp
+                   (mv (msg "Error in clause-processor hint:~|~%  ~Y01"
+                            term
+                            nil)
+                       nil))
+                  (t (cond ((not (term-list-listp val
+                                                  wrld))
+                            (mv (msg "The :CLAUSE-PROCESSOR hint~|~%  ~
+                                      ~Y01~%did not evaluate to a list of ~
+                                      clauses, but instead to~|~%  ~Y23~%~@4"
+                                     term nil
+                                     val nil
+                                     (non-term-list-listp-msg val wrld))
+                                nil))
+                           (t (value@par val))))))))))))))
 
 (defun apply-top-hints-clause1 (temp cl-id cl pspv wrld state step-limit)
 
@@ -2404,7 +2425,7 @@
                                        (access prove-spec-var pspv
                                                :hint-settings)))
               state))
-     ((eq (car temp) :clause-processor) ; special case since state is returned
+     ((eq (car temp) :clause-processor) ; special case as state can be returned
 
 ; Temp is of the form (clause-processor-hint . stobjs-out), as returned by
 ; translate-clause-processor-hint.

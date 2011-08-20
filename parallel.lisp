@@ -59,7 +59,7 @@
 
   ":Doc-Section Parallelism
 
-  experimental extension for evaluating forms in parallel~/
+  experimental extension for parallel execution and proofs~/
 
   This documentation topic relates to an experimental extension of ACL2,
   ACL2(p), created initially by David L. Rager.  ~l[compiling-acl2p] for how to
@@ -73,8 +73,9 @@
   efficient evaluation and proof development, we focus less on ironclad
   soundness and more on providing an efficient and working implementation.
   Nevertheless, if you encounter a case where ACL2(p) computes an incorrect
-  result, or produces a proof where ACL2 fails to do so, please tell the
-  implementors.
+  result, or produces a proof where ACL2 fails to do so (and this failure is
+  not discussed in ~il[unsupported-waterfall-parallelism-features]), please
+  notify the implementors.
 
   One of ACL2's strengths lies in its ability to execute industrial models
   efficiently.  The ACL2 source code provides an experimental parallel
@@ -257,9 +258,9 @@
   error, but rather, simply results in serial evaluation for these primitives.
 
   Value ~c[nil]:~nl[]
-  All parallelism primitives will degrade to their serial equivalents, include
-  their calls made directly in the ACL2 top-level loop, which does not cause an
-  error.~/"
+  All parallelism primitives degrade to their serial equivalents, including
+  their calls made directly in the ACL2 top-level loop.  Thus, uses of
+  parallelism primitives do not in themselves cause errors.~/"
 
   (declare (xargs :guard (member-equal value
                                        '(t 't nil 'nil
@@ -272,6 +273,15 @@
             (t val))
       ctx
       state)))
+
+(defdoc parallel-evaluation
+
+  ":Doc-Section Parallelism
+
+  for ACL2(p): configure parallel execution~/
+
+  ~l[set-parallel-evaluation] for how to configure parallel evaluation for
+  calls of ~ilc[plet], ~ilc[pargs], ~ilc[pand], and ~ilc[por].~/~/")
 
 (defun waterfall-printing-value-for-parallelism-value (value)
 
@@ -296,10 +306,6 @@
          (assert$ (eq value :pseudo-parallel)
                   :very-limited))))
 
-; Parallelism wart: either support the reading of state by computed hints, or
-; explicitly disallow it with a user-friendly error message; modify :doc
-; unsupported-waterfall-parallelism-features accordingly.
-
 ; Parallelism wart: figure out if :bdd hints are supported.  Given the call of
 ; error-in-parallelism-mode@par in waterfall-step, it seems that they might not
 ; be; yet, regressions may have passed with them.  One possible outcome: If
@@ -312,6 +318,24 @@
 ; For a discussion of the wormhole issue referenced in the :doc string below,
 ; see waterfall-print-clause-id@par.
 
+; Parallelism wart: I removed the following paragraph from this topic.
+; Consider working part of it back in.
+
+;;; Our intent is to prevent all possible modifications of the ACL2 ~ilc[state]
+;;; while executing ACL2's primary proof process, the ~il[waterfall].  This
+;;; includes preventing the modification of ~c[state] inside ACL2's hint
+;;; mechanisms (e.g., ~il[computed-hints], ~il[override-hints], and
+;;; ~il[custom-keyword-hints]).  ~pl[error-triples-and-parallelism] for a
+;;; discussion of how to avoid modifying state in such situations.
+
+; Parallelism wart: Consider putting the following back into this :doc topic.
+
+; If the host Lisp is Lispworks, you may see messages about misaligned conses.
+; This LispWorks bug can be fixed with a patch.  Please contact the ACL2
+; maintainers if you are working with LispWorks 6.0 or 6.0.1 on 64-bit Linux
+; and would like this patch.  The state of the system may be corrupted after
+; such a message has been printed.
+
   ":Doc-Section ACL2::Parallelism
 
   proof features not supported with waterfall-parallelism enabled~/
@@ -319,11 +343,10 @@
   For a general introduction to ACL2(p), an experimental extension of ACL2 that
   supports parallel execution and proof, ~pl[parallelism].  Please note that
   although this extension is usable and, we hope, robust in its behavior, there
-  are still known issues to address beyond those listed explicitly below.  For
-  example, esoteric ``invalid speculation'' messages may appear.  More
-  generally, while we expect ACL2(p) to perform correctly, it may never have
-  the same level of attention to correctness as is given to ACL2;
-  ~pl[parallelism], specifically the ``IMPORTANT NOTE'' there.
+  are still known issues to address beyond those listed explicitly below.
+  While we expect ACL2(p) to perform correctly, it may never have the same
+  level of attention to correctness as is given to ACL2; ~pl[parallelism],
+  specifically the ``IMPORTANT NOTE'' there.
 
   Below we list proof features of ACL2 that are not yet supported when parallel
   execution is enabled for the primary ACL2 proof process, generally known as
@@ -334,33 +357,37 @@
   supported when waterfall parallelism is disabled, even in executables that
   support parallelism (~pl[compiling-acl2p]).
 
-  While we support ~il[clause-processor]s, we do not support those that modify
-  ~il[state].  At this time, such an attempt to modify ~il[state] may result in
-  a sub-optimal error message.
+  Without a trust tag (~pl[defttag]): We support ~il[clause-processor]s,
+  ~il[computed-hints], and ~il[custom-keyword-hints] that do not modify
+  ~il[state].  We do not permit ~il[override-hints], regardless of whether they
+  modify state.  With a trust tag, the user can use ~il[clause-processor]s that
+  modify state and can also use ~il[override-hints]
+  (~pl[set-waterfall-parallelism-hacks-enabled] for a convenient mechanism for
+  adding a trust tag).  Regardless of whether a trust tag is active: We do not
+  support checkers of ~il[custom-keyword-hints] to be anything but the default
+  checker.
 
-  Computed hints are supported, as long as they don't modify ~il[state].
-  Computed hints may in principle read ~il[state], but support for such hints
-  may be incomplete.
-
-  ~il[Custom-keyword-hints] are unsupported, though they may work on occasion.
-
-  GNU Make versions 3.81 and 3.82 used to cause a lot of problems (version 3.80
-  somewhat less so), at least on Linux, when certifying books with CCL using
-  ~c[make] (~pl[book-makefiles].  CCL was updated around March 23, 2011 to fix
-  this problem, so if you get segfaults (for example), try updating your CCL.
+  GNU Make versions 3.81 and 3.82 formerly caused a lot of problems (version
+  3.80 somewhat less so), at least on Linux, when certifying books with ACL2
+  built on a host Lisp of CCL using ~c[make] (~pl[book-makefiles]).  CCL was
+  updated around March 23, 2011 to fix this problem, so if you get
+  segfaults (for example) with CCL, try updating your CCL installation.
 
   The standard process for book certification will not use
-  waterfall-parallelism (~pl[set-waterfall-parallelism]), which is disabled by
-  default.  ~l[book-makefiles], which explains that ~il[acl2-customization]
-  files are ignored during that process unless specified explicitly on the
-  command line or in the environment.
+  ~il[waterfall-parallelism], which is disabled by default (even when
+  ~il[compiling-acl2p] by using the ~c[ACL2_PAR] flag).  ~l[book-makefiles],
+  which explains that ~il[acl2-customization] files are ignored during that
+  process unless specified explicitly on the command line or in the
+  environment.
 
   Proof output can contain repeated printing of the same subgoal name.
 
-  ~il[Gag-mode] isn't supported.  However, ACL2(p) also prints key checkpoints
-  (for example ~pl[introduction-to-key-checkpoints]), but with a notion of
-  ``key checkpoint'' that does not take into account whether the goal is later
-  proved by induction.
+  ~il[Gag-mode] isn't officially supported, although it has proved helpful to
+  use ACL2(p) in conjunction with ~c[(set-gag-mode t)].  This being said,
+  ACL2(p) also prints key checkpoints (for example
+  ~pl[introduction-to-key-checkpoints]), but with a notion of ``key
+  checkpoint'' that does not take into account whether the goal is later proved
+  by induction.
 
   The ~c[:]~ilc[brr] utility is not supported.
 
@@ -377,11 +404,7 @@
   user typically needs to issue the interrupt twice before the proof attempt is
   actually interrupted.  Additionally, sometimes the theorem is registered as
   proved, even though the prover did not finish the proof.  If this occurs,
-  issue a ~c[:u] (~pl[ubt]) and you will be at a stable state.
-
-  If the host Lisp is Lispworks, you may see messages about misaligned conses.
-  The state of the system may be corrupted after such a message has been
-  printed.~/~/")
+  issue a ~c[:u] (~pl[ubt]) and you will be at a stable state.~/~/")
 
 (defdoc waterfall-printing
 
@@ -467,6 +490,35 @@
             (symbol-name print-val)
             " (see :DOC set-waterfall-printing).")))
       (observation-cw nil observation-string)))))
+
+; #+acl2-par -- This readtime conditional might be added later.
+(defmacro check-for-no-override-hints (ctx value)
+  (declare (ignorable value))
+  `(with-output
+    (make-event
+     (cond
+      ((and (not (cdr (assoc-eq 'hacks-enabled
+                                (table-alist 'waterfall-parallelism-table
+                                             (w state)))))
+            (cdr (assoc-eq :override (table-alist 'default-hints-table
+                                                  (w state)))))
+       (with-output
+        :stack :pop
+        (er soft ,ctx
+
+; Override hints must be removed because set-waterfall-parallelism performs a
+; defattach, which spawns some proof effort.  If there are override-hints
+; available for use during this proof, apply-override-hints will see them and
+; attempt to use them.  Since override-hints are not permitted without enabling
+; waterfall-parallelism-hacks, in this case, we must cause an error.
+            
+            "Before changing the status of waterfall-parallelism, either (1) ~
+             override hints must be removed from the default-hints-table or ~
+             (2) waterfall-parallelism hacks must be enabled.  (1) can be ~
+             achieved by calling ~x0.  (2) can be achived by calling ~x1."
+            '(set-override-hints nil)
+            '(set-waterfall-parallelism-hacks-enabled t))))
+      (t (value '(value-triple nil)))))))
 
 (defmacro set-waterfall-parallelism (value &optional no-error)
 
@@ -572,7 +624,8 @@
 ; no-error argument in case one wants to put a set-waterfall-parallelism event
 ; into a book that can be certified with either ACL2 or ACL2(p).
 
-; Parallelism wart: document the no-error argument.
+; Parallelism wart: document the no-error argument.  Specifically, give an
+; example of using no-error to achieve such a certification.
 
      #-acl2-par
      (or no-error
@@ -588,6 +641,7 @@
        `(with-output
          :off (event observation proof-tree prove summary warning)
          (progn
+           (check-for-no-override-hints 'set-waterfall-parallelism ,val)
            (defattach (waterfall-parallelism
                        ,val-fn
                        :hints
@@ -680,6 +734,67 @@
   :skip-checks t)
 (defattach (waterfall-printing waterfall-printing-full)
   :skip-checks t)
+
+(table waterfall-parallelism-table nil nil :guard (ttag world))
+
+(defmacro set-waterfall-parallelism-hacks-enabled (val)
+
+  ":Doc-Section Parallelism
+
+  enable waterfall-parallelism hacks~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel evaluation and proof; ~pl[parallelism].
+
+  ~bv[]
+  General Forms:
+  (set-waterfall-parallelism-hacks-enabled t)
+  (set-waterfall-parallelism-hacks-enabled nil)
+  ~ev[]~/
+
+  Some features (e.g., ~il[override-hints] and ~il[clause-processor]s) of
+  serial ACL2 are by default not available in ACL2(p) with waterfall
+  parallelism enabled, because they offer a mechanism to modify ~il[state] that
+  is unsound.  To allow or (once again) disallow the use the these features in
+  ACL2(p), call ~c[set-waterfall-parallelism-hacks-enabled] with argument ~c[t]
+  or ~c[nil], respectively.
+
+  ~c[Set-waterfall-parallelism-hacks-enabled] requires the use of a trust tag
+  (~pl[defttag]).  One can call ~ilc[set-waterfall-parallelism-hacks-enabled!]
+  instead, which will automatically install a trust tag named
+  ~c[:waterfall-parallelism-hacks].
+
+  ~l[error-triples-and-parallelism] for further related discussion.~/"
+
+  (declare (xargs :guard (or (equal val t) (null val))))
+  `(with-output
+    :stack :push :off (error)
+    (make-event
+     (cond ((not (ttag (w state)))
+            (with-output
+             :stack :pop     
+             (er soft 'set-waterfall-parallelism-hacks-enabled
+                 "Using waterfall parallelism hacks requires an active ~
+                  trust-tag. Consider using ~
+                  (set-waterfall-parallelism-hacks-enabled! t).  See :DOC ~
+                  set-waterfall-parallelism-hacks-enabled for more ~
+                  information.")))
+            (t (value '(table waterfall-parallelism-table 'hacks-enabled
+                              ,val)))))))
+
+(defmacro set-waterfall-parallelism-hacks-enabled! (val)
+
+  ":Doc-Section Parallelism
+
+  for ACL2(p): enabling waterfall parallelism hacks~/
+
+  ~l[set-waterfall-parallelism-hacks-enabled].~/~/"
+
+  `(make-event
+    (cond ((not (ttag (w state)))
+           (value '(progn (defttag :waterfall-parallelism-hacks)
+                          (set-waterfall-parallelism-hacks-enabled ,val))))
+          (t (value '(set-waterfall-parallelism-hacks-enabled ,val))))))
 
 (defdoc parallelism-at-the-top-level
 
@@ -1912,10 +2027,142 @@
   This ~il[documentation] topic relates to the experimental extension of ACL2
   supporting parallel evaluation and proof; ~pl[parallelism].
 
-  ACL2 supports the use of error-triples in many features
-  (e.g., ~ilc[computed-hints]).  ACL2(p) does not support the use of
-  error-triples in some of these features (e.g., ~ilc[computed-hints]).  As an
-  alternative, the user can consider calling ~ilc[er] with the ~c[hard] flag,
-  which instead of returning an error triple, causes an immediate error and
-  logically returns ~c[nil].  In this way, the user avoids modifying
-  ~ilc[state], a requirement for much of the code written in ACL2(p).~/~/")
+  ACL2 supports the use of error triples in many features
+  (e.g., ~ilc[computed-hints]).  However, ACL2(p) does not support the use of
+  error triples in some of these features (e.g., ~ilc[computed-hints]) while
+  ~il[waterfall-parallelism] is enabled.~/
+  
+  You may see an error message like the following when running ACL2(p) with
+  ~il[waterfall-parallelism] enabled:
+
+  ~bv[]
+  ACL2 Error in ( THM ...):  Since we are translating a form in ACL2(p)
+  intended to be executed with waterfall parallelism enabled, the form
+  (MY-STATE-MODIFYING-COMPUTED-HINT ID STATE) was expected to represent
+  an ordinary value, not an error triple (mv erp val state), as would
+  be acceptable in a serial execution of ACL2.  Therefore, the form returning
+  a tuple of the form (* * STATE) is an error.  See :DOC unsupported-
+  waterfall-parallelism-features and :DOC error-triples-and-parallelism
+  for further explanation.
+  ~ev[]
+
+  In this particular example, the cause of the error was trying to use a
+  computed hint that returned state, which is not allowed when executing the
+  waterfall in parallel (~pl[unsupported-waterfall-parallelism-features] for
+  other related information).
+
+  Often, the only reason a user needs to return state is so they can perform
+  some output during the proof process.  In this case, we suggest using one of
+  the state-free output functions, like ~ilc[cw] or ~ilc[observation-cw].  If
+  the user is concerned about the interleaving of their output with other
+  output, these calls can be surrounded with the macro ~ilc[with-output-lock].
+
+  Another frequent reason users return state is so they can cause a ~c[soft]
+  error and halt the proof process.  In this case, we suggest instead calling
+  ~ilc[er] with the ~c[hard] or ~c[hard?] severity.  By using these mechanisms,
+  the user avoids modifying ~ilc[state], a requirement for much of the code
+  written in ACL2(p).
+
+  You may encounter other similar error messages when using
+  ~il[computed-hints], ~il[custom-keyword-hints], or ~il[override-hints].
+  Chances are that you are somehow returning an error triple when an ordinary
+  value is needed.  If this turns out not to be the case, please let the ACL2
+  implementors know.~/")
+
+(defdoc with-output-lock
+  ":Doc-Section Parallelism
+
+  provides a mutual-exclusion mechanism for performing output in parallel~/
+
+  This documentation topic relates to an experimental extension of ACL2,
+  ACL2(p), created initially by David L. Rager.  ~l[compiling-acl2p] for how to
+  build an executable image that supports parallel evaluation.  Also see
+  distributed directory ~c[books/parallel/] for examples.~/
+
+  One may wish to perform output while executing code in parallel.  If 
+  threads are allowed to print concurrently, the output will be interleaved and
+  often unreadable.  To avoid this, the user can surround forms that perform
+  output with the ~c[with-output-lock] macro.
+
+  Take the following definition of ~c[pfib] as an example.
+
+  ~bv[]
+  (defun pfib (x)
+    (declare (xargs :guard (natp x)))
+    (cond ((mbe :logic (or (zp x) (<= x 0))
+                :exec (<= x 0))
+           0)
+          ((= x 1) 1)
+          (t (plet (declare (granularity t))
+                   ((a (prog2$ (cw \"Computing pfib ~~x0~~%\" (- x 1))
+                               (pfib (- x 1))))
+                    (b (prog2$ (cw \"Computing pfib ~~x0~~%\" (- x 2))
+                               (pfib (- x 2)))))
+                   (+ a b)))))
+  ~ev[]
+
+  With ~il[parallel-evaluation] enabled, a call of ~c[(pfib 5)]results in
+  non-deterministically interleaved output, for example as follows.
+
+  ~bv[]
+  ACL2 !>(pfib 5)
+  CComputing pfib 4
+  omputing pfib 3
+  ComCpuotmipnugt ipnfgi bp fib3
+  2
+  Computing pCfiobm put2i
+  ng pfib 1
+  Computing pfib Co1mp
+  uting pfib 0
+  CCoommppuuttiinngg  ppffiibb  12
+
+  ComCpuotmipnugt ipnfgi bp fib1 
+  0
+  CoCmopmuptuitnign gp fpifbi b 1
+  0
+  5
+  ACL2 !>
+  ~ev[]
+
+  If the user instead surrounds the calls to ~ilc[cw] with the macro
+  ~c[with-output-lock], as in the following session, the output will no longer
+  be interleaved.
+
+  ~bv[]
+  ACL2 !>
+  (defun pfib (x)
+    (declare (xargs :guard (natp x)))
+    (cond ((mbe :logic (or (zp x) (<= x 0))
+                :exec (<= x 0))
+           0)
+          ((= x 1) 1)
+          (t (plet (declare (granularity t))
+                   ((a (prog2$ (with-output-lock
+                                (cw \"Computing pfib ~~x0~~%\" (- x 1)))
+                               (pfib (- x 1))))
+                    (b (prog2$ (with-output-lock
+                                (cw \"Computing pfib ~~x0~~%\" (- x 2)))
+                               (pfib (- x 2)))))
+                   (+ a b)))))
+
+  <snip>
+
+  ACL2 !>(pfib 5)
+  Computing pfib 4
+  Computing pfib 3
+  Computing pfib 3
+  Computing pfib 2
+  Computing pfib 2
+  Computing pfib 1
+  Computing pfib 2
+  Computing pfib 1
+  Computing pfib 1
+  Computing pfib 0
+  Computing pfib 1
+  Computing pfib 0
+  Computing pfib 1
+  Computing pfib 0
+  5
+  ACL2 !>
+  ~ev[]
+  ~/")

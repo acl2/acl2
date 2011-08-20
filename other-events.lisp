@@ -4156,6 +4156,9 @@
 (defun primitive-event-macros ()
   (declare (xargs :guard t :mode :logic))
 
+; Warning: If you add to this list, consider adding to the list in translate11
+; associated with a comment about primitive-event-macros.
+
 ; Warning: Keep this in sync with oneify-cltl-code (see comment there about
 ; primitive-event-macros).
 
@@ -4163,74 +4166,78 @@
 
 ; Note: This zero-ary function used to be a constant, *primitive-event-macros*.
 ; But Peter Dillinger wanted to be able to change this value with ttags, so
-; this function has replaced that constant.
+; this function has replaced that constant.  We keep the lines sorted below,
+; but only for convenience.
 
-  '(defun
-     #+:non-standard-analysis
-     defun-std
-     mutual-recursion
-     defuns
-     defthm
-     #+:non-standard-analysis
-     defthm-std
+  '(
+     #+:non-standard-analysis defthm-std
+     #+:non-standard-analysis defun-std
+     add-custom-keyword-hint
+     add-default-hints!
+     add-include-book-dir
+     add-match-free-override
+     comp
+     defattach
      defaxiom
-     defconst
-     defstobj
-;    defpkg                   ; We prohibit defpkgs except in very
-                              ; special places.  See below.
-     deflabel
-     defdoc
-     deftheory
      defchoose
-     verify-guards
+     defconst
+     defdoc
+     deflabel
      defmacro
-     in-theory
+;    defpkg ; We prohibit defpkgs except in very special places.  See below.
+     defstobj
+     deftheory
+     defthm
+     defttag
+     defun
+     defuns
+     delete-include-book-dir
+     encapsulate
      in-arithmetic-theory
-     push-untouchable
-     remove-untouchable
-     reset-prehistory
-     set-body
-     table
+     in-theory
+     include-book
+     logic
+     mutual-recursion
      progn
      progn!
-     encapsulate
-     include-book
-     add-custom-keyword-hint
-     add-include-book-dir
-     delete-include-book-dir
-     comp
-     verify-termination-boot-strap
-     defattach
-     add-match-free-override
-     theory-invariant
-     logic program
-     add-default-hints!
+     program
+     push-untouchable
      remove-default-hints!
-     set-rw-cache-state!
-     set-override-hints-macro
-     set-match-free-default
-     set-enforce-redundancy
-     set-ignore-doc-string-error
-     set-verify-guards-eagerness
-     set-non-linearp
-     set-compile-fns set-measure-function set-well-founded-relation
-     set-invisible-fns-table
+     remove-untouchable
+     reset-prehistory
      set-backchain-limit
+     set-body
      set-bogus-defun-hints-ok
      set-bogus-mutual-recursion-ok
-     set-ruler-extenders
-     set-default-backchain-limit
-     set-irrelevant-formals-ok
-     set-ignore-ok
-     set-inhibit-warnings set-state-ok
-     set-let*-abstractionp
-     set-nu-rewriter-mode
      set-case-split-limitations
+     set-compile-fns
+     set-default-backchain-limit
      set-default-hints!
-     set-rewrite-stack-limit
+     set-enforce-redundancy
+     set-ignore-doc-string-error
+     set-ignore-ok
+     set-inhibit-warnings
+     set-invisible-fns-table
+     set-irrelevant-formals-ok
+     set-let*-abstractionp
+     set-match-free-default
+     set-measure-function
+     set-non-linearp
+     set-nu-rewriter-mode
+     set-override-hints-macro
      set-prover-step-limit
-     defttag
-     value-triple))
+     set-rewrite-stack-limit
+     set-ruler-extenders
+     set-rw-cache-state!
+     set-state-ok
+     set-verify-guards-eagerness
+     set-well-founded-relation
+     table
+     theory-invariant
+     value-triple
+     verify-guards
+     verify-termination-boot-strap
+     ))
 
 ; Warning: If a symbol is on this list then it is allowed into books.
 ; If it is allowed into books, it will be compiled.  Thus, if you add a
@@ -24856,7 +24863,7 @@
                                    (list 'quote new)))
                    (value new))))))))))
 
-(defun@par add-custom-keyword-hint-fn (key uterm1 uterm2 state)
+(defun add-custom-keyword-hint-fn (key uterm1 uterm2 state)
 
 ; We translate uterm1 and uterm2 to check the syntactic requirements and we
 ; cause errors if we don't like what we see.  BUT we store the untranslated
@@ -24882,66 +24889,60 @@
         (allowed-cvars
          '(val world ctx state)))
     (er-let*
-      ((term1 (translate-simple-or-error-triple uterm1 ctx world state))
-       (term2 (translate uterm2
-                         (serial-first-form-parallel-second-form@par
-                          *error-triple-sig*
-                          *cmp-sig*)
-                         nil
-                         '(state)
-                         ctx world state)))
-      (cond
-       ((not (keywordp key))
-        (er soft ctx
-            "The first argument of add-custom-keyword-hint must be a ~
-             keyword and ~x0 is not!"
-            key))
-       ((member-eq key *hint-keywords*)
-        (er soft ctx
-            "It is illegal to use the name of a primitive hint, ~
-             ~e.g., ~x0, as a custom keyword hint."
-            key))
-       ((assoc-eq key
-                  (table-alist 'custom-keywords-table (w state)))
-        (er soft ctx
-            "It is illegal to use the name of an existing custom ~
-             keyword hint, e.g., ~x0.  Use ~
-             remove-custom-keyword-hint first to remove the existing ~
-             custom keyword hint of that name."
-            key))
-       ((not (subsetp-eq (all-vars term1) allowed-gvars))
-        (er soft ctx
-            "The second argument of add-custom-keyword-hint must be a ~
-             term whose free variables are among ~%~Y01, but you ~
-             provided the term ~x2, whose variables include~%~Y31."
-            allowed-gvars
-            nil
-            uterm1
-            (set-difference-eq (all-vars term1) allowed-gvars)))
-       ((not (subsetp-eq (all-vars term2) allowed-cvars))
-        (er soft ctx
-            "The :checker argument of add-custom-keyword-hint must be a ~
-             term whose free variables are among ~%~Y01, but you ~
-             provided the term ~x2, whose variables include~%~Y31."
-            allowed-cvars
-            nil
-            uterm2
-            (set-difference-eq (all-vars term2) allowed-cvars)))
-       (t
-        (state-global-let*
-         ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
-         (let ((val (list uterm1 uterm2))) ; WARNING: Each term is UNtranslated
-           (er-progn (table-fn 'custom-keywords-table
-                               (list (kwote key) (kwote val))
-                               state
-                               (list 'table
-                                     'custom-keywords-table
-                                     (kwote key)
-                                     (kwote val)))
-                     (table-fn 'custom-keywords-table
-                               'nil
-                               state
-                               '(table custom-keywords-table))))))))))
+     ((term1 (translate-simple-or-error-triple uterm1 ctx world state))
+      (term2 (translate uterm2 *error-triple-sig* nil '(state) ctx world
+                        state)))
+     (cond
+      ((not (keywordp key))
+       (er soft ctx
+           "The first argument of add-custom-keyword-hint must be a keyword ~
+            and ~x0 is not!"
+           key))
+      ((member-eq key *hint-keywords*)
+       (er soft ctx
+           "It is illegal to use the name of a primitive hint, ~e.g., ~x0, as ~
+            a custom keyword hint."
+           key))
+      ((assoc-eq key
+                 (table-alist 'custom-keywords-table (w state)))
+       (er soft ctx
+           "It is illegal to use the name of an existing custom keyword hint, ~
+            e.g., ~x0.  Use remove-custom-keyword-hint first to remove the ~
+            existing custom keyword hint of that name."
+           key))
+      ((not (subsetp-eq (all-vars term1) allowed-gvars))
+       (er soft ctx
+           "The second argument of add-custom-keyword-hint must be a term ~
+            whose free variables are among ~%~Y01, but you provided the term ~
+            ~x2, whose variables include~%~Y31."
+           allowed-gvars
+           nil
+           uterm1
+           (set-difference-eq (all-vars term1) allowed-gvars)))
+      ((not (subsetp-eq (all-vars term2) allowed-cvars))
+       (er soft ctx
+           "The :checker argument of add-custom-keyword-hint must be a term ~
+            whose free variables are among ~%~Y01, but you provided the term ~
+            ~x2, whose variables include~%~Y31."
+           allowed-cvars
+           nil
+           uterm2
+           (set-difference-eq (all-vars term2) allowed-cvars)))
+      (t
+       (state-global-let*
+        ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+        (let ((val (list uterm1 uterm2))) ; WARNING: Each term is UNtranslated
+          (er-progn (table-fn 'custom-keywords-table
+                              (list (kwote key) (kwote val))
+                              state
+                              (list 'table
+                                    'custom-keywords-table
+                                    (kwote key)
+                                    (kwote val)))
+                    (table-fn 'custom-keywords-table
+                              'nil
+                              state
+                              '(table custom-keywords-table))))))))))
 
 (defmacro set-tainted-okp (x)
 

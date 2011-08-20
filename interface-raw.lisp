@@ -7121,6 +7121,14 @@ Missing functions:
                              (t nil))))))))))))
 
 #+(and acl2-par lispworks)
+(setq system:*sg-default-size* 
+
+; Keep the below number in sync with the call to hcl:extend-current-stack in
+; lp.
+
+      80000)
+
+#+(and acl2-par lispworks)
 (defun spawn-extra-lispworks-listener ()
 
 ; In Lispworks, we spawn a thread for the listener before we exit lp for the
@@ -7170,11 +7178,24 @@ Missing functions:
 ; setting of the threshold in lp, because Lispworks doesn't save the GC
 ; configuration as part of the Lisp image.
 
-; Parallelism wart: the 1 gigabyte threshold may cause problems for machines
-; with less than 1 gigabyte of free RAM.
+; Parallelism no-fix: the 1 gigabyte threshold may cause problems for machines
+; with less than 1 gigabytes of free RAM.  At a first glance, this shouldn't
+; realistically be a problem.  However, a user might actually encounter this
+; problem when running several memory-intensive ACL2(p) sessions in parallel
+; via make -j.
 
   #+acl2-par
   (when (not *lp-ever-entered-p*) (set-gc-threshold$ (expt 2 30) nil))
+
+  #+(and acl2-par lispworks)
+  (when (not *lp-ever-entered-p*)
+    (sys:set-default-segment-size 0 :cons 250)
+    (sys:set-default-segment-size 1 :cons 250)
+    (sys:set-default-segment-size 2 :cons 250)
+    (sys:set-default-segment-size 0 :other 250)
+    (sys:set-default-segment-size 1 :other 250)
+    (sys:set-default-segment-size 2 :other 250))
+
   #+acl2-par
   (f-put-global 'parallel-evaluation-enabled t *the-live-state*)
   (let ((state *the-live-state*)
@@ -7225,7 +7246,20 @@ Missing functions:
 ; certifying books/concurrent-programs/bakery/stutter2 and
 ; books/unicode/read-utf8.lisp.)
 
-        #+lispworks (cl-user::extend-current-stack 400)
+        #+lispworks (hcl:extend-current-stack 400)
+
+        #+(and lispworks acl2-par)
+        (when (< (hcl:current-stack-length)
+
+; Keep the below number (currently 80000) in sync with the value given to
+; *sg-default-size* (set elsewhere in our code).
+
+                 80000)
+          (hcl:extend-current-stack
+
+; this calculation sets the current stack length to be within 1% of 80000
+
+           (- (round (* 100 (/ (hcl:current-stack-length) 80000))) 100)))
 
 ; Acl2-default-restart isn't enough in Allegro, at least, to get the new prompt
 ; when we start up:

@@ -126,7 +126,7 @@ implementations.")
 #+clisp
 (setq CUSTOM:*DEFAULT-FILE-ENCODING* :unix)
 
-#+lispworks
+#+(and lispworks (not acl2-par))
 (setq system::*stack-overflow-behaviour*
 
 ; The following could reasonably be nil or :warn.  David Rager did some
@@ -136,6 +136,16 @@ implementations.")
 ; cryptic warning -- very un-ACL2-like!  So we use nil rather than :warn here.
 
       nil)
+
+#+(and lispworks acl2-par)
+(setq system:*stack-overflow-behaviour* 
+
+; Since a setting of nil is at least sometimes (if not always) ignored when
+; safety is set to 0 (according to an email communication between David Rager
+; and Martin Simmons), we choose to use the warn setting for the #+acl2-par
+; build.
+
+      :warn)
 
 ; We have observed a significant speedup with Allegro CL when turning off
 ; its cross-referencing capability.  Here are the times before and after
@@ -941,19 +951,6 @@ implementations.")
   (maybe-load-acl2-init)
   (eval `(in-package ,*startup-package-name*))
 
-; Remark for #+acl2-par.  Here (for 64-bit Lispworks) and in parallel-raw.lisp
-; (for CCL and SBCL), we set the gc-threshold to a high number.  If the Lisps
-; support it, this threshold could be based off the actual memory in the
-; system, but we just leave it at 2 gigabytes for now.  We peform this setting
-; of the threshold for Lispworks inside the restart function, because Lispworks
-; doesn't save the GC configuration as part of the Lisp image.
-
-; Parallelism no-fix: the 1 gigabyte threshold may cause problems for machines
-; with less than 1 gigabytes of free RAM.  At a first glance, this shouldn't
-; realistically be a problem.  However, a user might actually encounter this
-; problem when running multiple memory-intensive ACL2(p) sessions in parallel
-; via make -j.
-
 ; The following two lines follow the recommendation in Allegro CL's
 ; documentation file doc/delivery.htm.
 
@@ -1004,17 +1001,7 @@ implementations.")
 ; ;; No live processes except internal servers - stopping multiprocessing
 
 ; So we have decided not to call :multiprocessing t, and also not to call
-; (mp:initialize-multiprocessing).  LispWorks 6.0 seems to work fine for ACL2,
-; so it seems that we need not think further about
-; mp:initialize-multiprocessing until perhaps LispWorks is supported with
-; #+acl2-par.
-
-; Parallelism wart: it's unclear whether calling stop-multiprocessing really
-; works.  We are currently seeing an error in ACL2(p) on Lispworks, where
-; cons's are reported as misaligned when including books and also when
-; executing proofs in parallel.  This error didn't occur initially, and it
-; started surfacing about the time that we started calling
-; stop-multiprocessing.
+; (mp:initialize-multiprocessing) in the #-acl2-par case.
 
   #+acl2-par
   (when mp::*multiprocessing*

@@ -178,8 +178,10 @@
 
 ; Consider using (safety 3) if there is a problem with LispWorks.  It enabled
 ; us to see a stack overflow involving collect-assumptions in the proof of
-; bitn-lam0 from books/rtl/rel2/support/lop3.lisp.  (See save-acl2-in-lispworks
-; for how we have eliminated that stack overflow.)
+; bitn-lam0 from books/rtl/rel2/support/lop3.lisp.  The safety setting of 3
+; helped in this example, because, when the safety is set to 0, the stack is
+; not always automatically extended upon overflow (despite setting
+; system::*stack-overflow-behaviour* to nil in acl2-init.lisp).
 
 ; Safety 1 for CCL has avoided the kernel debugger, e.g. for compiled calls
 ; of car on a non-nil atom.  The following results for CCL show why we have
@@ -1801,6 +1803,19 @@ which is saved just in case it's needed later.")
 (defparameter *acl2-panic-exit-status* nil)
 
 (defun exit-lisp (&optional (status '0 status-p))
+
+; Parallelism wart: In ACL2(p), LispWorks doesn't always successfully exit when
+; exit-lisp is called.  The below call to stop-multiprocessing is an attempt to
+; improve the chance of a succesful exit.  In practice, the call does not fix
+; the problem.  However, we leave it for now since we don't think it can hurt.
+; If exit-lisp starts working reliably without the following calls to
+; send-die-to-all-except-initial-threads and stop-multiprocessing, they should
+; be removed.
+
+  #+(and acl2-par lispworks)
+  (when mp::*multiprocessing*
+    (send-die-to-all-except-initial-threads)
+    (mp::stop-multiprocessing))
 
 ; The status (an integer) will be returned as the exit status (shell variable
 ; $?).  We avoid passing the status argument when it is 0, in case Windows or

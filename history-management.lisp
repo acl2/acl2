@@ -16716,6 +16716,12 @@
                    (set-difference-eq (non-stobjps (all-vars term) t wrld)
                                       '(clause))
                    'clause)))
+
+; #+ACL2-PAR note: Here, we could check that clause-processors do not modify
+; state when waterfall-parallelism is enabled.  However, since performing the
+; check in eval-clause-processor@par suffices, we do not perform the check
+; here.
+
            (t (value@par (make clause-processor-hint
                                :term term
                                :stobjs-out (translate-deref :stobjs-out
@@ -16840,16 +16846,41 @@
         ((equal stobjs-out '(nil)) ; replace term by (value@par term)
          (value@par (formal-value-triple@par *nil* term)))
         ((equal stobjs-out *error-triple-sig*)
-         (serial-first-form-parallel-second-form
+         (serial-first-form-parallel-second-form@par
           (value@par term)
+
+; #+ACL2-PAR note: This message is used to check that computed hints and custom
+; keyword hints (and perhaps other hint mechanisms too) do not modify state.
+; Note that not all hint mechanisms rely upon this check.  For example,
+; apply-override-hint@par and eval-clause-processor@par perform their own
+; checks.
+
           (er@par soft ctx
-            "Since we are executing ACL2(p) with parallelism enabled, the ~
-             form ~x0 was expected to represent an ordinary value, not an ~
-             error triple (mv erp val state), as would be acceptable in a ~
-             serial execution of ACL2.  Therefore, the form returning a tuple ~
-             of the form ~x1 is an error."
+            "Since we are translating a form in ACL2(p) intended to be ~
+             executed with waterfall parallelism enabled, the form ~x0 was ~
+             expected to represent an ordinary value, not an error triple (mv ~
+             erp val state), as would be acceptable in a serial execution of ~
+             ACL2.  Therefore, the form returning a tuple of the form ~x1 is ~
+             an error.  See :DOC unsupported-waterfall-parallelism-features ~
+             and :DOC error-triples-and-parallelism for further explanation."
             uform
             (prettyify-stobj-flags stobjs-out))))
+        #+acl2-par
+        ((serial-first-form-parallel-second-form@par
+          nil
+          (and 
+
+; The test of this branch is never true in the non-@par version of the
+; waterfall.  We need this test for custom-keyword-hints, which are evaluated
+; using the function eval-and-translate-hint-expression[@par].  Since
+; eval-and-translate-hint-expression[@par] calls
+; translate-simple-or-error-triple[@par] to check the return signature of the
+; custom hint, we must not cause an error when we encounter this legitimate
+; use.
+
+           (equal stobjs-out *cmp-sig*) 
+           (equal (car uform) 'custom-keyword-hint-interpreter@par)))
+         (value@par term))
         (t (serial-first-form-parallel-second-form@par
             (er soft ctx
                 "The form ~x0 was expected to represent an ordinary value or ~
@@ -16858,10 +16889,6 @@
                 uform
                 (prettyify-stobj-flags stobjs-out))
             (er@par soft ctx
-
-; Parallelism wart: consider adding a documentation topic on Context message
-; pairs.
-
               "The form ~x0 was expected to represent an ordinary value, but ~
                it returns a tuple of the form ~x1. Note that Error triples ~
                are not allowed in this feature in ACL2(p) (see :doc ~
@@ -16970,35 +16997,18 @@
 ; xtrans-eval that uses ev-w for evaluation rather than using ev.  The extra
 ; function call adds only trivial cost.
 
-; Parallelism wart: this function calls ev-w in a way that violates the
-; contract that state is not part of one of ev-w's arguments ("alist").  As
-; such, while this implementation "works", it is unlikely that it is both sound
-; and as "user friendly" as it should be.  We insist that we do not modify
-; state here, causing an error otherwise, thus avoiding for example the case
-; where a computed hint sets a state global differently in two different
-; threads.  We should make sure that there are clear error messages and
-; documentation, pointing out that instead of (er soft ...)  they could use
-; (er@par soft ...), for example.  How can we carry out this plan (which may
-; have in fact already been carried out, at least in part)?  Below we see that
-; if trans-flg is true, then we call a function that translates; we should be
-; sure to arrange that no stobj (user-defined, or state) is returned, and
-; indeed we probably already do that in our comparison against *cmp-sig*.  The
-; other case is that trans-flg is nil.  We can either arrange that such callers
-; only give us a uterm whose value doesn't include a stobj (user-defined, or
-; state), or perhaps just call term-stobjs-out on uterm (probably with alist
-; argument of nil -- careful though, not sure it's really complete -- maybe it
-; was just for printing heuristics -- if it's not suitable, then maybe call
-; translate on uterm) and ensure that it produces an appropriate value (in
-; particular, not returning a stobj; maybe in fact we'll insist on stobjs-out
-; of either '(nil) or *cmp-sig*).  Another parallelism wart related to custom
-; keyword hints may be found in add-custom-keyword-hint@par.
-
-; Parallelism wart: a correct version of the xtrans-eval-with-ev-w comments
-; needs to be written here.
-
   (er-let*@par
    ((term
      (if trans-flg
+
+; #+ACL2-PAR note: As of August 2011, there are two places that call
+; xtrans-eval@par with the trans-flg set to nil: apply-override-hint@par and
+; eval-and-translate-hint-expression@par.  In both of these cases, we performed
+; a manual inspection of the code (aided by testing) to determine that if state
+; can be modified by executing uterm, that the user will receive an error
+; before even reaching this call of xtrans-eval@par.  In this way, we guarantee
+; that the invariant for ev-w (that uterm does not modify state) is maintained.
+
          (translate-simple-or-error-triple@par uterm ctx (w state) state)
        (value@par uterm))))
    (cond
@@ -17006,9 +17016,9 @@
          (subsetp-eq (all-vars term)
                      (cons 'state (strip-cars alist))))
 
-; Parallelism wart: we currently discard any changes to the world of the live
+; #+ACL2-PAR note: we currently discard any changes to the world of the live
 ; state.  But if we restrict to terms that don't modify state, as discussed in
-; the parallelism wart above, then there is no issue because state hasn't
+; the #+ACL2-PAR note above, then there is no issue because state hasn't
 ; changed.  Otherwise, if we cheat, the world could indeed change out from
 ; under us, which is just one example of the evils of cheating by modifying
 ; state under the hood.
@@ -17096,7 +17106,11 @@
 ; isn't, unless we made custom hint authors translate all custom
 ; hints, even those they don't "own."
 
-  (er-progn@par (xtrans-eval@par uterm2
+  (er-progn@par (xtrans-eval@par #-acl2-par uterm2
+                                 #+acl2-par
+                                 (serial-first-form-parallel-second-form@par
+                                  uterm2
+                                  (if (equal uterm2 '(value t)) t uterm2))
                                  (list (cons 'val arg)
                                        (cons 'world wrld)
                                        (cons 'ctx ctx))
@@ -17220,28 +17234,22 @@
                     (cons 'world wrld)
                     (cons 'ctx ctx))))
          (er-progn@par
+          (xtrans-eval@par #-acl2-par uterm2
 
-; Parallelism wart: Why doesn't the following cause an error when we try to
-; pass in a term that we think has output signature of a value triple?  (More
-; generally, see the parallelism wart just above the Essay on the Design of
-; Custom Keyword Hints.)  For example, try the following.  (You may see a
-; parallelism hazard, which might or might not be relevant; but what currently
-; seems surprising is that we don't even see a traced call of xtrans-eval@par
-; with trans-flg = t.)  Aha -- the answer is that someone else is calling
-; xtrans-eval@par, not this function.  Hmmm, needs further investigation.
+; #+ACL2-PAR note: the following change doesn't seem to matter when we run our
+; tests.  However, we include it, because from looking at the code, David Rager
+; perceives that it can't hurt and that it might help.  It may turn out that
+; the change to translate-custom-keyword-hint (which performs a similar
+; replacement), supercedes this change, because that occurs earlier in the call
+; stack (before the waterfall).  David Rager suspects that the call to
+; custom-keyword-hint-interpreter1@par is used inside the waterfall (perhaps
+; when the custom keyword hint process it told to 'wait and deal with the hint
+; later).  If that is the case, then this replacement is indeed necessary!
 
-; cd <your_acl2>
-; cd books/arithmetic-5/lib/basic-ops/
-; <start_your_acl2p> # /projects/acl2/devel/ccl-saved_acl2p
-; (set-waterfall-parallelism :pseudo-parallel)
-; (ld "dynamic-e-d.lisp")
-; (trace$ xtrans-eval@par
-;         custom-keyword-hint-interpreter1
-;         custom-keyword-hint-interpreter1@par)
-; (thm (equal (append (append x y) x y) (append x y x y))
-;      :hints (("Goal" :dynamic-e/d nil :do-not-induct t)))
-
-          (xtrans-eval@par uterm2
+                           #+acl2-par 
+                           (serial-first-form-parallel-second-form@par
+                            uterm2
+                            (if (equal uterm2 '(value t)) t uterm2))
                            checker-bindings
                            t ; trans-flg = t
                            t ; ev-flg = t
@@ -17543,53 +17551,59 @@
 ; We ``translate'' such a function symbol into a call of the function on the
 ; appropriate argument variables.
 
-; Parallelism wart: there is a bug in ACL2(p) related to translating computed
-; hints.  To replicate this bug, run the following example.  Note that
-; translate-hint is being called before entering the waterfall, which means
-; that formal-value-triple (without the @par suffix) is always being called,
-; regardless of whether waterfall parallelism is enabled.  This is wrong.  If
-; waterfall parallelism is enabled, we should be calling
-; formal-value-triple@par.  To fix this, we would need to modify thm-fn and
-; probably defthm-fn to call a version of translate-hints+ (and its
-; subfunctions) that account for whether waterfall parallelism is enabled.
+; Here is a form that allows us to trace many of the functions related to
+; translating hints.
 
-; (trace$ (formal-value-triple@par)
-;         (formal-value-triple)
-;         (thm-fn)
-;         (translate-hints+)
-;         (translate-hints)
-;         (translate-hint-expression)
-;         (translate-simple-or-error-triple)
-;         (simple-translate-and-eval)
-;         (xtrans-eval)
-;         (eval-and-translate-hint-expression)
-;         (translate-hint-expression@par)
-;         (translate-simple-or-error-triple@par)
-;         (simple-translate-and-eval@par)
-;         (xtrans-eval@par)
-;         (eval-and-translate-hint-expression@par)
-;         (find-applicable-hint-settings1@par)
-;         (find-applicable-hint-settings1)
-;         (waterfall))
-
-; (defun bar (clause-id clause world)
-;   (declare (ignore clause world))
-;   (cond ((equal clause-id *initial-clause-id*)
-;          '(:use car-cons))
-;         (t nil)))
-
-; (thm (equal x x)
-;      :hints (bar))
-
-; Proving the following theorem also showcases the same bug, but for the
-; non-symbolp case.  And the resulting mistake is that we call
-; translate-simple-or-error-triple instead of
-; translate-simple-or-error-triple@par.
-
-; (thm (equal x x)
-;      :hints ((if (equal id *initial-clause-id*)
-;                  '(:use car-cons)
-;                nil)))
+; (trace$ 
+;  (translate-hints+1)
+;  (translate-hints+1@par)
+;  (translate-hints2)
+;  (translate-hints2@par)
+;  (translate-hints1)
+;  (apply-override-hints@par)
+;  (apply-override-hints)
+;  (translate-x-hint-value)
+;  (translate-x-hint-value@par)
+;  (translate-custom-keyword-hint)
+;  (translate-custom-keyword-hint@par)
+;  (custom-keyword-hint-interpreter@par)
+;  (custom-keyword-hint-interpreter)
+;  (translate-simple-or-error-triple)
+;  (translate-simple-or-error-triple@par)
+;  (xtrans-eval)
+;  (xtrans-eval-with-ev-w)
+;  (eval-and-translate-hint-expression)
+;  (eval-and-translate-hint-expression@par)
+;  (translate-hint-expression@par)
+;  (translate-hint-expression)
+;  (translate-hints1@par)
+;  (waterfall)
+;  (find-applicable-hint-settings1)
+;  (find-applicable-hint-settings1@par)
+;  (xtrans-eval@par)
+;  (simple-translate-and-eval@par)
+;  (simple-translate-and-eval)
+;  (translate-hints)
+;  (translate-hints+)
+;  (thm-fn)
+;  (formal-value-triple)
+;  (formal-value-triple@par)
+;  (eval-clause-processor)
+;  (eval-clause-processor@par)
+;  (apply-top-hints-clause@par)
+;  (apply-top-hints-clause)
+;  (waterfall-step1)
+;  (waterfall-step1@par)
+;  (waterfall-step)
+;  (waterfall-step@par)
+;  (translate1)
+;  (translate1@par)
+;  (translate)
+;  (translate@par)
+;  (translate-doc)
+;  (translate-clause-processor-hint)
+;  (translate-clause-processor-hint@par)
+;  (translate1-cmp))
 
   (cond
    ((symbolp term)
@@ -18270,18 +18284,18 @@
                                                 hint-type ctx wrld state)))
        (value@par (cons thint thints))))))
 
-(defun check-translated-override-hint (hint uhint ctx state)
+(defun@par check-translated-override-hint (hint uhint ctx state)
   (cond ((not (and (consp hint)
                    (eq (car hint)
                        'eval-and-translate-hint-expression)))
-         (er soft ctx
+         (er@par soft ctx
              "The proposed override-hint, ~x0, was not a computed hint.  See ~
               :DOC override-hints."
              uhint))
         (t ; term is (caddr (cdr hint)); we allow any term here
-         (value nil))))
+         (value@par nil))))
 
-(defun translate-hints1 (name-tree lst hint-type override-hints ctx wrld state)
+(defun@par translate-hints1 (name-tree lst hint-type override-hints ctx wrld state)
 
 ; A note on the taxonomy of hints.  A "hint setting" is a pair of the
 ; form (key . val), such as (:DO-NOT-INDUCT . T) or (:USE . (lmi-lst
@@ -18323,80 +18337,83 @@
 ; override-hints to eval-and-translate-hint-expression.
 
   (cond ((atom lst)
-         (cond ((null lst) (value nil))
-               (t (er soft ctx
-                      "The :HINTS keyword is supposed to have a true-list as ~
-                       its value, but ~x0 is not one.  See :DOC hints."
-                      lst))))
+         (cond ((null lst) (value@par nil))
+               (t (er@par soft ctx
+                    "The :HINTS keyword is supposed to have a true-list as ~
+                     its value, but ~x0 is not one.  See :DOC hints."
+                    lst))))
         ((and (consp (car lst))
               (stringp (caar lst))
               (null (cdar lst)))
-         (translate-hints1 name-tree (cdr lst) hint-type override-hints ctx
-                           wrld state))
-        (t (er-let*
+         (translate-hints1@par name-tree (cdr lst) hint-type override-hints ctx
+                               wrld state))
+        (t (er-let*@par
             ((hint (cond ((and (consp (car lst))
                                (stringp (caar lst)))
-                          (translate-hint name-tree (car lst) hint-type ctx
-                                          wrld state))
-                         (t (translate-hint-expression
+                          (translate-hint@par name-tree (car lst) hint-type ctx
+                                              wrld state))
+                         (t (translate-hint-expression@par
                              name-tree (car lst) hint-type ctx wrld state))))
-             (rst (translate-hints1 name-tree (cdr lst) hint-type
-                                    override-hints ctx wrld state)))
-            (er-progn
+             (rst (translate-hints1@par name-tree (cdr lst) hint-type
+                                        override-hints ctx wrld state)))
+            (er-progn@par
              (cond ((eq hint-type 'override)
-                    (check-translated-override-hint hint (car lst) ctx state))
-                   (t (value nil)))
-             (value (cons (cond ((atom hint) hint) ; nil
-                                ((and (consp (car lst))
-                                      (stringp (caar lst)))
-                                 (cond (override-hints
-                                        (list* (car hint) ; (caar lst)
-                                               (cons :KEYWORD-ALIST
-                                                     (cdar lst))
-                                               (cons :NAME-TREE
-                                                     name-tree)
-                                               (cdr hint)))
-                                       (t hint)))
-                                ((eq (car hint)
-                                     'eval-and-translate-hint-expression)
-                                 hint)
-                                (t (er hard ctx
-                                       "Internal error: Unexpected ~
-                                        translation ~x0 for hint ~x1.  Please ~
-                                        contact the ACL2 implementors."
-                                       hint (car lst))))
-                          rst)))))))
+                    (check-translated-override-hint@par hint (car lst) ctx state))
+                   (t (value@par nil)))
+             (value@par (cons (cond ((atom hint) hint) ; nil
+                                    ((and (consp (car lst))
+                                          (stringp (caar lst)))
+                                     (cond (override-hints
+                                            (list* (car hint) ; (caar lst)
+                                                   (cons :KEYWORD-ALIST
+                                                         (cdar lst))
+                                                   (cons :NAME-TREE
+                                                         name-tree)
+                                                   (cdr hint)))
+                                           (t hint)))
+                                    ((eq (car hint)
+                                         'eval-and-translate-hint-expression)
+                                     hint)
+                                    (t (er hard ctx
+                                           "Internal error: Unexpected ~
+                                            translation ~x0 for hint ~x1.  ~
+                                            Please contact the ACL2 ~
+                                            implementors."
+                                           hint (car lst))))
+                              rst)))))))
 
-(defun warn-on-duplicate-hint-goal-specs (lst seen ctx state)
+(defun@par warn-on-duplicate-hint-goal-specs (lst seen ctx state)
   (cond ((endp lst)
-         state)
+         (state-mac@par))
         ((and (consp (car lst))
               (stringp (caar lst)))
          (if (member-equal (caar lst) seen)
-             (pprogn (warning$ ctx ("Hints")
-                               "The goal-spec ~x0 is explicitly associated ~
-                                with more than one hint.  All but the first ~
-                                of these hints may be ignored.  If you ~
-                                intended to give all of these hints, combine ~
-                                them into a single hint of the form (~x0 ~
-                                :kwd1 val1 :kwd2 val2 ...).  See :DOC ~
-                                hints-and-the-waterfall."
-                               (caar lst))
-                     (warn-on-duplicate-hint-goal-specs (cdr lst) seen ctx
-                                                        state))
-           (warn-on-duplicate-hint-goal-specs (cdr lst) (cons (caar lst) seen)
-                                              ctx state)))
-        (t (warn-on-duplicate-hint-goal-specs (cdr lst) seen ctx state))))
+             (pprogn@par (warning$@par ctx ("Hints")
+                           "The goal-spec ~x0 is explicitly associated with ~
+                            more than one hint.  All but the first of these ~
+                            hints may be ignored.  If you intended to give ~
+                            all of these hints, combine them into a single ~
+                            hint of the form (~x0 :kwd1 val1 :kwd2 val2 ...). ~
+                            ~ See :DOC hints-and-the-waterfall."
+                           (caar lst))
+                         (warn-on-duplicate-hint-goal-specs@par (cdr lst) seen
+                                                                ctx state))
+           (warn-on-duplicate-hint-goal-specs@par (cdr lst)
+                                                  (cons (caar lst) seen)
+                                                  ctx state)))
+        (t (warn-on-duplicate-hint-goal-specs@par (cdr lst) seen ctx state))))
 
-(defun translate-hints2 (name-tree lst hint-type override-hints ctx wrld state)
+(defun@par translate-hints2 (name-tree lst hint-type override-hints ctx wrld state)
   (cond ((warning-disabled-p "Hints")
-         (translate-hints1 name-tree lst hint-type override-hints ctx wrld
-                           state))
+         (translate-hints1@par name-tree lst hint-type override-hints ctx wrld
+                               state))
         (t
-         (er-let* ((hints (translate-hints1 name-tree lst hint-type
-                                            override-hints ctx wrld state)))
-                  (pprogn (warn-on-duplicate-hint-goal-specs lst nil ctx state)
-                          (value hints))))))
+         (er-let*@par ((hints (translate-hints1@par name-tree lst hint-type
+                                                    override-hints ctx wrld
+                                                    state)))
+                      (pprogn@par (warn-on-duplicate-hint-goal-specs@par
+                                   lst nil ctx state)
+                                  (value@par hints))))))
 
 (defun override-hints (wrld)
   (declare (xargs :guard (and (plist-worldp wrld)
@@ -18540,25 +18557,46 @@
 
   (cdr (assoc-eq :override (table-alist 'default-hints-table wrld))))
 
-(defun translate-hints (name-tree lst ctx wrld state)
-  (translate-hints2 name-tree lst nil (override-hints wrld) ctx wrld state))
+(defun@par translate-hints (name-tree lst ctx wrld state)
+  (translate-hints2@par name-tree lst nil (override-hints wrld) ctx wrld
+                        state))
 
-(defun translate-hints+ (name-tree lst default-hints ctx wrld state)
+(defun@par translate-hints+1 (name-tree lst default-hints ctx wrld state)
   (cond
    ((not (true-listp lst))
-    (er soft ctx
-        "The :HINTS keyword is supposed to have a true-list as its value, but ~
-         ~x0 is not one.  See :DOC hints."
-        lst))
+    (er@par soft ctx
+      "The :HINTS keyword is supposed to have a true-list as its value, but ~
+       ~x0 is not one.  See :DOC hints."
+      lst))
    (t
-    (translate-hints name-tree (append lst default-hints) ctx wrld state))))
+    (translate-hints@par name-tree (append lst default-hints) ctx wrld
+                         state))))
+
+(defun translate-hints+ (name-tree lst default-hints ctx wrld state)
+  #-acl2-par
+  (translate-hints+1 name-tree lst default-hints ctx wrld state)
+  #+acl2-par
+  (if (waterfall-parallelism)
+      (cmp-to-error-triple
+       (translate-hints+1@par name-tree lst default-hints ctx wrld state))
+      (translate-hints+1 name-tree lst default-hints ctx wrld state)))
 
 (defun translate-override-hints (name-tree lst ctx wrld state)
+  #-acl2-par
   (translate-hints2 name-tree lst 'override
                     nil ; no override-hints are applied
-                    ctx wrld state))
+                    ctx wrld state)
+  #+acl2-par
+  (if (waterfall-parallelism)
+      (cmp-to-error-triple
+       (translate-hints2@par name-tree lst 'override
+                             nil ; no override-hints are applied
+                             ctx wrld state))
+    (translate-hints2 name-tree lst 'override
+                      nil ; no override-hints are applied
+                      ctx wrld state)))
 
-(defun@par apply-override-hint
+(defun@par apply-override-hint1
   (override-hint cl-id clause hist pspv ctx wrld
                  stable-under-simplificationp clause-list processor
                  keyword-alist state)
@@ -18587,6 +18625,18 @@
                                stable-under-simplificationp)
                          nil)
                  nil))
+
+; #+ACL2-PAR note: we wish that we could have determined that the translation
+; mentioned at the beginning of this function's definition was performed by
+; translate-simple-or-error-triple@par (via a call to translate-hints+@par,
+; which occurs before entering the waterfall).  However, in the case of
+; override hints, the translation really occurs when the override hint is added
+; (perhaps via a call to "set-override-hints").  As such, even though we would
+; like to check the output signature of the override hint, there is no way to
+; do so without retranslating.  We therefore disallow override hints whenever
+; waterfall parallelism is enabled and waterfall-parallelism-hacks have not
+; been enabled.
+
         nil ; trans-flg = nil because term is already translated
         t   ; ev-flg = t because we have bound all the vars
         ctx state t)))
@@ -18658,6 +18708,29 @@
            wrld state))
          (t
           (value@par new-keyword-alist)))))))))
+
+(defun@par apply-override-hint 
+  (override-hint cl-id clause hist pspv ctx wrld
+                 stable-under-simplificationp clause-list processor
+                 keyword-alist state)
+  #-acl2-par
+  (apply-override-hint1 override-hint cl-id clause hist pspv ctx wrld
+                        stable-under-simplificationp clause-list processor
+                        keyword-alist state)
+  #+acl2-par
+  (cond ((and (waterfall-parallelism)
+              (not (cdr (assoc-eq 'hacks-enabled
+                                  (table-alist 'waterfall-parallelism-table
+                                               (w state))))))
+         (er@par soft ctx 
+           "Override-hints are not officially supported in ACL2(p).  If you ~
+            wish to use override hints anyway, you can call ~x0. See :DOC ~
+            set-waterfall-parallelism-hacks-enabled for more information."
+           '(set-waterfall-parallelism-hacks-enabled t)))
+        (t (apply-override-hint1@par override-hint cl-id clause hist pspv ctx
+                                     wrld stable-under-simplificationp
+                                     clause-list processor keyword-alist
+                                     state))))
 
 (defun@par apply-override-hints
   (override-hints cl-id clause hist pspv ctx wrld
@@ -18736,16 +18809,6 @@
 ; fails to account for override-hints.  We apply the given override-hints if
 ; the computed hint returns a keyword-value-alistp that is non-nil even after
 ; stripping off a (:COMPUTED-HINT-REPLACEMENT val) prefix.
-
-; Parallelism wart: a fourth inaccuracy in the above description is that in the
-; #+acl2-par case, sometimes term (the third component of the input, tuple)
-; returns a pair rather than an error triple.  Indeed, this term could have
-; been created by translate-hint-expression@par, which in #+acl2-par returns an
-; error-value pair rather than a triple.  We need this different return
-; signature, because we do not want to allow hints that modify state when
-; executing the waterfall in parallel.  See the parallelism wart in
-; translate-hint-expression for details of a bug that further complicates the
-; #+acl2-par story on hints.
 
   (let* ((name-tree (car tuple))
          (flg (cadr tuple))

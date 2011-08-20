@@ -4256,15 +4256,6 @@
     (sys-call)
     ))
 
-(defun ttag (wrld)
-
-; This function returns nil if there is no active ttag.
-
-  (declare (xargs :guard
-                  (and (plist-worldp wrld)
-                       (alistp (table-alist 'acl2-defaults-table wrld)))))
-  (cdr (assoc-eq :ttag (table-alist 'acl2-defaults-table wrld))))
-
 (defun unknown-binding-msg (stobjs-bound str1 str2 str3)
   (msg
    "The single-threaded object~#0~[ ~&0 has~/s ~&0 have~] been bound in ~@1.  ~
@@ -5606,7 +5597,7 @@
                                flet-alist ctx wrld state-vars)))))
    ((and bindings
          (not (eq (caar bindings) :stobjs-out))
-         (member-eq (car x) '(defun defmacro in-package progn)))
+         (member-eq (car x) '(defun defmacro in-package progn defpkg)))
     (trans-er+ x ctx
                "We do not permit the use of ~x0 inside of code to be executed ~
                 by Common Lisp because its Common Lisp meaning differs from ~
@@ -5615,15 +5606,54 @@
    ((and bindings
          (not (eq (caar bindings) :stobjs-out))
          (member-eq (car x)
-                    '(defpkg defconst defstobj defthm defaxiom
-                       deflabel defdoc deftheory
-                       verify-guards
-                       in-theory in-arithmetic-theory
-                       push-untouchable remove-untouchable reset-prehistory
-                       set-body table theory-invariant
-                       include-book certify-book value-triple
-                       local make-event with-output progn!
-                       with-prover-step-limit)))
+
+; The following list should contain every symbol listed in
+; primitive-event-macros for which the error message below applies.  We keep
+; both lists alphabetical to make it convenient to compare them.  For
+; efficiency, we may omit those that will ultimately expand to calls of table
+; (or any other symbol in the list below).  We also omit those handled in the
+; previous case, above, such as defun.
+
+                    '(
+                      #+:non-standard-analysis defthm-std
+                      #+:non-standard-analysis defun-std
+                      add-custom-keyword-hint
+                      add-include-book-dir
+                      add-match-free-override
+                      certify-book
+                      comp
+                      defattach
+                      defaxiom
+                      defchoose
+                      defconst
+                      defdoc
+                      deflabel
+                      defstobj
+                      deftheory
+                      defthm
+                      defuns
+                      delete-include-book-dir
+                      encapsulate
+                      in-arithmetic-theory
+                      in-theory
+                      include-book
+                      local ; note: not in (primitive-event-macros)
+                      make-event ; note: not in (primitive-event-macros)
+                      mutual-recursion
+                      progn!
+                      push-untouchable
+                      remove-untouchable
+                      reset-prehistory
+                      set-body
+                      set-override-hints-macro
+                      table
+                      theory-invariant
+                      value-triple
+                      verify-guards
+                      with-output ; note: not in (primitive-event-macros)
+                      with-prover-step-limit ; not in (primitive-event-macros)
+                      verify-termination-boot-strap
+                      )))
     (trans-er+ x ctx
                "We do not permit the use of ~x0 inside of code to be executed ~
                 by Common Lisp because its Common Lisp runtime value and ~
@@ -6913,16 +6943,9 @@
 
 ; See analogous function ev-for-trans-eval.
 
-; Parallelism wart: The call of this function in eval-clause-processor@par can
-; lead to an ev-w call below that violates the input requirement on ev-w,
-; namely that we don't modify stobjs.  The parallelism wart in
-; xtrans-eval-with-ev-w explains a similar issue with custom keyword hints that
-; we have already begun to address.  But in the present situation, we can
-; easily permit a computed hint that modifies state without recording that
-; modification in the logic.  Perhaps that's not so important for the
-; #+acl2-par code, but it's certainly a logical wart at the least that should
-; be documented.  Alternately, we could "do the right thing" and prohibit
-; computed hints that modify state or stobjs.
+; Parallelism wart: add an assertion that stobjs-out does not contain state (or
+; any other stobj).  Perhaps the assertion should be that stobjs-out equals the
+; representation for an ordinary value.
 
   (let ((alist (cons (cons 'state 
                            (coerce-state-to-object state))

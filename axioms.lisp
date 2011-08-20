@@ -17166,6 +17166,12 @@
 
   remove names from lists of untouchable symbols~/
 
+  ~bv[]
+  Example Forms:
+  (remove-untouchable my-var nil) ; then state global my-var is not untouchable
+  (remove-untouchable set-mem t)  ; then function set-mem is not untouchable
+  ~ev[]
+
   Also ~pl[push-untouchable].
 
   This documentation topic is directed at those who build systems on top of
@@ -17218,10 +17224,6 @@
   it, you must first create an active trust tag; ~pl[defttag].
 
   ~bv[]
-  Examples:
-  (remove-untouchable my-var nil)
-  (remove-untouchable set-mem t)
-
   General Form:
   (remove-untouchable name{s}  fn-p :doc doc-string)
   ~ev[]
@@ -25020,7 +25022,6 @@
     position
     catch-step-limit
     step-limit-error
-    add-custom-keyword-hint@par ; for #+acl2-par
     waterfall-print-clause-id@par ; for #+acl2-par
     deflock ; for #+acl2-par
     f-put-global@par ; for #+acl2-par
@@ -28422,6 +28423,23 @@
                (open-output-channels state-state))
      state-state)))
 
+(defthm all-boundp-preserves-assoc-equal
+  (implies (and (all-boundp tbl1 tbl2)
+                (assoc-equal x tbl1))
+           (assoc-equal x tbl2))
+  :rule-classes nil)
+
+(local
+ (defthm all-boundp-initial-global-table
+  (implies (and (state-p1 state)
+                (assoc-eq x *initial-global-table*))
+           (assoc x (nth 2 state)))
+  :hints (("Goal" :use
+           ((:instance all-boundp-preserves-assoc-equal
+                       (tbl1 *initial-global-table*)
+                       (tbl2 (nth 2 state))))
+           :in-theory (disable all-boundp)))))
+
 (defun print-object$ (x channel state)
 
 ; WARNING: In the HONS version, be sure to use with-output-object-channel-sharing
@@ -29423,7 +29441,11 @@
     `(defmacro ,macro-symbol (&rest args)
        (cons 'progn$ args))))
 
-(deflock *output-lock*)
+(deflock
+
+; Keep in sync with :DOC topic with-output-lock.
+
+  *output-lock*)
 
 (skip-proofs ; as with open-output-channel
 (defun get-output-stream-string$-fn (channel state-state)
@@ -30429,23 +30451,6 @@
 (defun os (wrld)
   (declare (xargs :guard (plist-worldp wrld)))
   (global-val 'operating-system wrld))
-
-(defthm all-boundp-preserves-assoc-equal
-  (implies (and (all-boundp tbl1 tbl2)
-                (assoc-equal x tbl1))
-           (assoc-equal x tbl2))
-  :rule-classes nil)
-
-(local
- (defthm all-boundp-initial-global-table
-  (implies (and (state-p1 state)
-                (assoc-eq x *initial-global-table*))
-           (assoc x (nth 2 state)))
-  :hints (("Goal" :use
-           ((:instance all-boundp-preserves-assoc-equal
-                       (tbl1 *initial-global-table*)
-                       (tbl2 (nth 2 state))))
-           :in-theory (disable all-boundp)))))
 
 (local (in-theory (enable boundp-global1)))
 
@@ -37236,6 +37241,15 @@
   (declare (ignore args))
   nil)
 
+(defun ttag (wrld)
+
+; This function returns nil if there is no active ttag.
+
+  (declare (xargs :guard
+                  (and (plist-worldp wrld)
+                       (alistp (table-alist 'acl2-defaults-table wrld)))))
+  (cdr (assoc-eq :ttag (table-alist 'acl2-defaults-table wrld))))
+
 ; We here document some Common Lisp functions.  The primitives are near
 ; the end of this file.
 
@@ -42275,10 +42289,6 @@ Lisp definition."
              (or (stringp val)
                  (null val))))
 
-; Parallelism wart: Finish dealing with custom keyword hints, and update the
-; following essay as necessary.  See also the parallelism wart in
-; custom-keyword-hint-interpreter1.
-
 ; Essay on the Design of Custom Keyword Hints
 
 ; A custom keyword hint is installed by adding a pair to the
@@ -42536,25 +42546,6 @@ Lisp definition."
 
 #-acl2-loop-only
 (defmacro add-custom-keyword-hint (&rest args)
-  (declare (ignore args))
-  nil)
-
-#+(and acl2-par acl2-loop-only)
-(defmacro add-custom-keyword-hint@par (key uterm1
-                                       &key (checker '(value-cmp t)))
-
-; Parallelism wart: we do not currently handle custom keyword hints in a
-; graceful or disciplined manner.  The only promise we currently maintain is
-; that they work in #-acl2-par and in #+acl2-par in the serial mode of the
-; parallelized waterfall.  We should develop a cleaner explanation for how
-; custom-keyword-hints interact with the parallelized waterfall and then
-; document it.  Another parallelism wart related to custom keyword hints may be
-; found in xtrans-eval-with-ev-w.
-
-    `(add-custom-keyword-hint-fn@par ',key ',uterm1 ',checker state))
-
-#+(and acl2-par (not acl2-loop-only))
-(defmacro add-custom-keyword-hint@par (&rest args)
   (declare (ignore args))
   nil)
 
@@ -44074,9 +44065,11 @@ Lisp definition."
      accumulate-ttree-and-step-limit-into-state
      add-custom-keyword-hint-fn
      apply-override-hint
+     apply-override-hint1
      apply-override-hints
      apply-reorder-hint
      apply-top-hints-clause
+     check-translated-override-hint
      chk-arglist
      chk-do-not-expr-value
      chk-equal-arities
@@ -44124,6 +44117,10 @@ Lisp definition."
      translate-hands-off-hint
      translate-hands-off-hint1
      translate-hint
+     translate-hints
+     translate-hints1
+     translate-hints2
+     translate-hints+1
      translate-hint-expression
      translate-hint-expressions
      translate-hint-settings
@@ -44145,6 +44142,7 @@ Lisp definition."
      translate-use-hint
      translate-use-hint1
      translate-x-hint-value
+     warn-on-duplicate-hint-goal-specs
      waterfall-msg
      waterfall-print-clause
      waterfall-step

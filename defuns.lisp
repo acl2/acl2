@@ -8163,6 +8163,8 @@
 
 (link-doc-to waterfall miscellaneous hints-and-the-waterfall)
 
+(link-doc-to trust-tag miscellaneous defttag)
+
 (link-doc-to verify-guards-eagerness switches-parameters-and-modes
              set-verify-guards-eagerness)
 (link-doc-to default-verify-guards-eagerness switches-parameters-and-modes

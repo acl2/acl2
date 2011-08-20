@@ -18206,6 +18206,19 @@
     :rule-classes nil)
   ~ev[]
 
+  While calls of many event macros had been prohibited inside executable code,
+  others should have been but were not.  For example, the following was
+  formerly allowed.
+  ~bv[]
+  (defun foo (state)
+    (declare (xargs :mode :program :stobjs state))
+    (add-custom-keyword-hint :my-hint (identity nil)))
+  (foo state) ; Caused hard raw Lisp error!
+  ~ev[]
+  Thus, several event macros (including for example
+  ~ilc[add-custom-keyword-hint]) may no longer be called inside executable
+  code.
+
   Fixed an assertion that could occur, for example, after reverting to prove
   the original goal by induction and generating a goal of ~c[NIL].  Thanks to
   Jared Davis for sending us a helpful example to bring this bug to our
