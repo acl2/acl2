@@ -11,8 +11,7 @@
           (end-gc-time #+ccl (ccl:gctime)
                        #+sbcl sb-ext:*gc-run-time*)
           (total-gc-time (/ (- end-gc-time start-gc-time) 
-                            #+ccl internal-time-units-per-second
-                            #+sbcl internal-time-units-per-second)))
+                            internal-time-units-per-second)))
      (format t "Total GC time: ~2$ seconds ~%" total-gc-time)
      (values-list result))
   #+lispworks
