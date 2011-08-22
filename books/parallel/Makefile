@@ -10,4 +10,3 @@ COMPILE_FLG := t :ttags :all
 
 matrix-multiplication-parallel.cert: matrix-multiplication-serial.cert
 fibonacci.cert: matrix-multiplication-parallel.cert
-futures-st.cert: futures-st-raw.lsp
