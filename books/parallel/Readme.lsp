@@ -4,8 +4,7 @@
 Makefile
 Readme.lsp
 fibonacci.lisp
-futures-st.lisp
-futures-st-raw.lsp
+hint-tests.lisp
 matrix-multiplication-parallel.lisp
 matrix-multiplication-serial.lisp
 matrix-multiplication-setup.lisp
@@ -18,15 +17,14 @@ stress-tests.lisp")
    "parallelism" "parallel" "pand" "por" "plet" "pargs" "performance" "futures"
    "spec-mv-let")
  (:ABSTRACT "Generally speaking, these files illustrate and check the use of
-parallelism primitives.
+parallelism primitives, including their use during the ACL2 proof process.
 ")
   (:PERMISSION ; author/s permission for distribution and copying:
 "parallel
 Copyright (C) 2008 University of Texas at Austin
 for files not explicitly copyrighted otherwise
 
-{futures-st}.lisp and {futures-st-raw}.lsp copyright (C) 2010 by David L. Rager
-<ragerdl@cs.utexas.edu>.
+{hint-tests}.lisp copyright (C) 2011 by David L. Rager <ragerdl@cs.utexas.edu>.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
