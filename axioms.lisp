@@ -21444,6 +21444,13 @@
 ; 11.6 ; no patch, but inline
 ;  4.3 ; patch and inline
 
+; #+ACL2-PAR note: Unsurpisingly, when we add the semi-necessary locking to the
+; array caching scheme (alternatively, we could investigate using a
+; compare-and-swap-based mechanism like atomic increments), we experience a
+; very large slow down.  In Rager's experiment, it was about 40x slower.  This
+; is a terrible performance penalty, so in #+ACL2-PAR, we do not use array
+; caching.
+
 (declaim (inline aref1))
 (declaim (inline aref2))
 
@@ -21494,12 +21501,15 @@
             (eq name '*acl2-array-cache*))
     (error "Bad call, ~s: See set-acl2-array-property"
            `(set-acl2-array-property ,name ,prop)))
+  #-acl2-par
   `(let ((prop  ,prop)
          (cache *acl2-array-cache*))
      (setf (cdr cache) nil) ; Invalidate the cache in case of interrupts.
      (setf (get ,name 'acl2-array) prop)
      (setf (car cache) ,name)
-     (setf (cdr cache) prop)))
+     (setf (cdr cache) prop))
+  #+acl2-par
+  `(setf (get ,name 'acl2-array) ,prop))
 
 (defmacro get-acl2-array-property (name)
 
@@ -21516,13 +21526,16 @@
             (eq name '*acl2-array-cache*))
     (error "Bad call, ~s: See set-acl2-array-property"
            `(get-acl2-array-property ,name)))
+  #-acl2-par
   `(let ((cache *acl2-array-cache*))
      (or (and (eq ,name (car cache))
               (cdr cache))
          (let ((prop (get ,name 'acl2-array)))
            (setf (cdr cache) nil) ; Invalidate the cache in case of interrupts.
            (setf (car cache) ,name)
-           (setf (cdr cache) prop)))))
+           (setf (cdr cache) prop))))
+  #+acl2-par
+  `(get ,name 'acl2-array))
 
 )
 

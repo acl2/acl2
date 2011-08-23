@@ -902,10 +902,39 @@
   (if (endp thread-list)
       nil
     (progn
+      #-sbcl
       (interrupt-thread
        (car thread-list)
        #'(lambda () (when *throwable-worker-thread*
                       (throw :worker-thread-no-longer-needed nil))))
+      #+sbcl
+      (handler-case
+       (interrupt-thread
+        (car thread-list)
+        #'(lambda () (when *throwable-worker-thread*
+                       (throw :worker-thread-no-longer-needed nil))))
+       (sb-thread:interrupt-thread-error
+        ()
+
+; Parallelism no-fix: turns out that this error is common.  And since we think
+; that the error is caused by the thread being finished by the time we get
+; around to interrupting it, we do not print the following warning.  The error
+; message we are trying to avoid is:
+
+; debugger invoked on a SB-THREAD:INTERRUPT-THREAD-ERROR in thread #<THREAD
+;                                                                    "initial thread" RUNNING
+
+;                                                                    {100E761FB1}>:
+;   Interrupt thread failed: thread #<THREAD "Worker thread" FINISHED values: 17
+;                                     {100F1AD651}> has exited.
+
+;        (format t "Warning: We tried to interrupt a thread and throw it with ~%~
+;                   the :worker-thread-no-longer-needed tag, but we ~%~
+;                   encountered an error. Since the error is likely benign, ~%~
+;                   this is only a warning.  Unless you are an ACL2(p) ~%~
+;                   maintainer, you can ignore this warning.~%")
+
+        ))
       (throw-all-threads-in-list (cdr thread-list)))))
 
 (defun kill-all-threads-in-list (thread-list)
