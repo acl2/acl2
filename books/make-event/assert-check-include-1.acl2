@@ -1,5 +1,7 @@
 (include-book "eval")
 
-(setenv$ "ACL2_SAVE_EXPANSION" "t")
+; Commented out because setenv$ causes an error in sbcl and besides,
+; it's not clear why this is needed.
+; (setenv$ "ACL2_SAVE_EXPANSION" "t")
 
 (certify-book "assert-check-include-1" 1 t)

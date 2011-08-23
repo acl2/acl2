@@ -1,3 +1,5 @@
+; (Comment from Matt K. August 2011: I no longer know what this test is
+; intended to accomplish, and the comment on the next line looks misguided.)
 ; Here we make sure that we can include assert-check.
 
 (in-package "ACL2")
