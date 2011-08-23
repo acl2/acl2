@@ -2212,6 +2212,8 @@ books/parallel:
 Makefile
 Readme.lsp
 fibonacci.lisp
+hint-tests.acl2
+hint-tests.lisp
 matrix-multiplication-parallel.lisp
 matrix-multiplication-serial.lisp
 matrix-multiplication-setup.lisp
