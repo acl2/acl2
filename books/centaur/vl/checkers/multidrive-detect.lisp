@@ -459,8 +459,34 @@
           ;; fixed up inst --> instance name list with only problematic entries
           (acl2::with-fast-alist rev-alist
                                  (acl2::fal-extract dupes rev-alist)))
-         (warnings (vl-modinsts-same-warning modname prob-alist)))
-      (mv (mergesort names-dropped) warnings)))
+         (warnings (vl-modinsts-same-warning modname prob-alist))
+         (back-alist (pairlis$ names-dropped (list-fix modinsts)))
+         ((acl2::with-fast back-alist)))
+      (mv (alist-vals (acl2::fal-extract (mergesort names-dropped)
+                                         back-alist))
+          warnings)))
+
+  (local (defthm vl-modinst-p-of-hons-assoc-equal-pairlis$-modinstlist
+           (implies (and (vl-modinstlist-p modinsts)
+                         (equal (len keys) (len modinsts))
+                         (hons-assoc-equal key (pairlis$ keys modinsts)))
+                    (vl-modinst-p (cdr (hons-assoc-equal key (pairlis$ keys
+                                                                       modinsts)))))
+           :hints(("Goal" :in-theory (enable hons-assoc-equal pairlis$)))))
+
+  (local (defthm vl-modinstlist-p-of-fal-extract-from-pairlis$-modinstlist
+           (implies (and (vl-modinstlist-p modinsts)
+                         (equal (len keys1) (len modinsts)))
+                    (vl-modinstlist-p
+                     (alist-vals (acl2::fal-extract keys 
+                                                    (pairlis$ keys1
+                                                              modinsts)))))
+           :hints (("goal" :induct (len keys)
+                    :in-theory (enable acl2::fal-extract alist-vals)))))
+
+  (local (defthm len-vl-modinstlist-name-drop-fix
+           (equal (len (vl-modinstlist-name-drop-fix modinsts))
+                  (len modinsts))))
 
   (local (in-theory (enable vl-prepare-modinsts-for-multidrive)))
 
@@ -481,7 +507,6 @@
     "Returns x-prime"
     (declare (xargs :guard (vl-module-p x)))
     (b* (((vl-module x) x)
-
          ;; Note: walist only includes net declarations (it omits registers)
          ((mv successp warnings walist)
           (vl-module-wirealist x x.warnings))
