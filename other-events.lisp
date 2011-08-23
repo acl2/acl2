@@ -19186,7 +19186,10 @@
                                              ',init
                                              :element-type
                                              ',array-etype)))
-                      #+(and hons (not acl2-loop-only))
+                      #+(and hons
+                             (not acl2-loop-only)
+; See the Essay on Memoization Involving Stobjs:
+                             memoize-stobjs-hack)
                       (memoize-flush ,var)
                       (setf (svref ,var ,n)
                             (,(pack2 'stobj-copy-array- fix-vref)
@@ -19205,7 +19208,10 @@
                      (type ,array-etype v))
             ,@(and inline (list *stobj-inline-declare*))
             (progn 
-              #+(and hons (not acl2-loop-only))
+              #+(and hons
+                     (not acl2-loop-only)
+; See the Essay on Memoization Involving Stobjs:
+                     memoize-stobjs-hack)
               (memoize-flush ,var)
               (setf (,vref (the ,simple-type (svref ,var ,n))
                            (the (and fixnum (integer 0 *)) i))
@@ -19218,7 +19224,10 @@
            (,updater-name (v ,var)
                           ,@(and inline (list *stobj-inline-declare*))
                           (progn
-                            #+(and hons (not acl2-loop-only))
+                            #+(and hons
+                                   (not acl2-loop-only)
+; See the Essay on Memoization Involving Stobjs:
+                                   memoize-stobjs-hack)
                             (memoize-flush ,var)
                             (setf (svref ,var ,n) v) ,var))))
         (t
@@ -19232,7 +19241,10 @@
                           (declare (type ,type v))
                           ,@(and inline (list *stobj-inline-declare*))
                           (progn
-                            #+(and hons (not acl2-loop-only))
+                            #+(and hons
+                                   (not acl2-loop-only)
+; See the Essay on Memoization Involving Stobjs:
+                                   memoize-stobjs-hack)
                             (memoize-flush ,var)
                             (setf (aref (the (simple-array ,type (1))
                                           (svref ,var ,n))
@@ -25319,6 +25331,7 @@
       (er hard ctx
           "~@0~x1 is not a function symbol."
           str key))
+     #-memoize-stobjs-hack ; see the Essay on Memoization Involving Stobjs
      ((not (all-nils (stobjs-in key wrld)))
       (let ((stobj (find-first-non-nil (stobjs-in key wrld))))
         (cond ((eq stobj 'state)
@@ -25329,6 +25342,18 @@
                (er hard ctx
                    "~@0~x1 takes a stobj, ~x2, as an argument."
                    str key stobj)))))
+      #+memoize-stobjs-hack ; see the Essay on Memoization Involving Stobjs
+      ((member-eq 'state (stobjs-in key wrld))
+
+; Consider warning when memoizing a fn that takes a user-defined stobj as an
+; argument, saying that all modifications of such stobjs may be slow.  [A
+; variant of a test supplied by Warren Hunt, basically a big loop of
+; interleaved writes and reads, slowed down from about 19 seconds to nearly 100
+; seconds.]
+
+       (er hard ctx
+           "~@0~x1 takes ACL2's STATE as an argument."
+           str key))
      ((member-eq key *hons-primitive-fns*)
       (er hard ctx
           "~@0~x1 is a HONS primitive."

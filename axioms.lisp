@@ -1874,6 +1874,13 @@
 ; warnings in Lisps such as CCL that compile on-the-fly.
 
        (defvar ,the-live-name)
+
+; Memoize-flush expects the variable (st-lst name) to be bound.  Sadly, this is
+; not sufficient, because this raw-Lisp definition of defstobj is only invoked
+; when including compiled code from a book; see the Essay on Memoization
+; Involving Stobjs.
+
+       #+(and hons memoize-stobjs-hack) (defg ,(st-lst name) nil)
        (let* ((template ',template)
               (boundp (boundp ',the-live-name))
               (d (and boundp
@@ -24810,6 +24817,7 @@
     chk-package-reincarnation-import-restrictions ; [-restrictions2 version]
     untrace$-fn1 ; eval
     bdd-top ; (GCL only) si::sgc-on
+    #+memoize-stobjs-hack ; see the Essay on Memoization Involving Stobjs
     defstobj-field-fns-raw-defs ; call to memoize-flush when #+hons
     expansion-alist-pkg-names
     times-mod-m31 ; gcl has raw code

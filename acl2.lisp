@@ -62,6 +62,9 @@
 
 #+(or ansi-cl draft-ansi-cl-2 lispworks clisp ccl)
 (push :CLTL2 *features*)
+; The following is intentionally commented out, but is handy for experimenting
+; as explained in the Essay on Memoization Involving Stobjs.
+; (push :memoize-stobjs-hack *features*)
 
 ; We use IN-PACKAGE in a way that is consistent with both CLTL1 and
 ; CLTL2, namely as a macro (i.e., whose argument is not evaluated) for
