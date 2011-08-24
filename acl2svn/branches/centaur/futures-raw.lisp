@@ -727,13 +727,34 @@
          (st-future ,x))
      ;;     ,(multiple-value-list x)
      (prog2 (incf *futures-resources-available-count*)
-         (let* ((ld-level *ld-level*)
+         (let* (
+
+; Parallelism wart: if x contains references to any of the following let-bound
+; variables, these bindings will shadow the values in x.  We should consider
+; using a gensym to ensure that this doesn't occur.
+
+                (ld-level *ld-level*)
 ; consider also *ev-shortcut-okp* *raw-guard-warningp*
                 (acl2-unwind-protect-stack *acl2-unwind-protect-stack*)
                 (wormholep *wormholep*)
                 ;; (wormhole-cleanup-form *wormhole-cleanup-form*)
                 (standard-oi  *standard-oi*)
                 (standard-co *standard-co*)
+                (local-safe-mode (f-get-global 'safe-mode *the-live-state*))
+                (local-gc-on (f-get-global 'guard-checking-on
+                                           *the-live-state*)) 
+
+; Parallelism wart: consider inheriting ld-specials, as the following comment
+; suggests.
+
+; At one point, in an effort to fix printing in parallel from within wormholes,
+; I tried rebinding the ld-special.  I now know that my approach at that time
+; was doomed to fail, because these specials aren't implemented as global
+; variables but instead as a setq of a variable in a completely different
+; package.  Now that I understand how state global variables work in ACL2, it
+; may be worth coming back to this code and trying once again to inherit the
+; ld-specials.
+
                 ;; *deep-gstack*  ???
                 ;; (proofs-co *standard-co*)
                 ;; (ld-skip-proofsp (f-get-global 'ld-skip-proofsp
@@ -761,7 +782,10 @@
                                  (*standard-co* standard-co)
                                  ;; (*proofs-co* proofs-co)
                                  )
-                             ,x))))
+                             (state-free-global-let*
+                              ((safe-mode local-safe-mode)
+                               (guard-checking-on local-gc-on))
+                              ,x)))))
            (without-interrupts
             (let ((future (make-future-with-closure closure)))
               (without-interrupts (add-future-to-queue future))

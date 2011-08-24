@@ -9301,12 +9301,15 @@
   rather than individual subterms of terms in the clause.
 
   We begin with a simple illustrative example: a clause-processor that assumes
-  an alleged fact and creates a separate goal to prove that fact.  We can
-  extend the hypotheses of the current goal with a term by adding the negation
-  of that term to the clause (disjunctive) representation of that goal.  So the
-  following returns two clauses: the result of adding ~c[term] as a hypothesis
-  to the input clause, as just described, and a second clause consisting only
-  of that term.
+  an alleged fact (named ~c[term] in the example) and creates a separate goal
+  to prove that fact.  We can extend the hypotheses of the current goal (named
+  ~c[cl] in the example) with a term by adding the negation of that term to the
+  clause (disjunctive) representation of that goal.  So the following returns
+  a list of two clauses: the result of adding ~c[term] as a hypothesis to the
+  input clause, as just described, and a second clause consisting only of that
+  term.  This list of two clauses can be viewed as the conjunction of the first
+  clause and the second clause (where again, each clause is viewed as a
+  disjunction).
   ~bv[]
 
   (defun note-fact-clause-processor (cl term)

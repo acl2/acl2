@@ -428,13 +428,8 @@
 (defmacro add-pc-command (name command-type)
   `(table pc-command-table ',name ,command-type))
 
-(defun table-get (name key wrld)
-  (assoc-equal key
-               (getprop name 'table-alist nil
-                        'current-acl2-world wrld)))
-
 (defmacro pc-command-type (name)
-  `(cdr (table-get 'pc-command-table ,name (w state))))
+  `(cdr (assoc-equal ,name (table-alist 'pc-command-table (w state)))))
 
 (defmacro print-no-change3 (&optional str alist (col '0))
   `(pprogn (print-no-change-fn ,str ,alist ,col state)

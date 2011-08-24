@@ -43,28 +43,43 @@ instructions for how to obtain CCL.")
 #+(or (and sbcl sb-thread) ccl lispworks)
 (push :acl2-mv-as-values *features*)
 
-; Essay on Parallelism, Parallelism Warts, and Parallelism No-fixes
+; Essay on Parallelism, Parallelism Warts, Parallelism No-fixes, and
+; Parallelism Hazards
 
 ; These sources incorporate code for an experimental extension for parallelism,
 ; initiated in David Rager's dissertation work.  That extension may be produced
 ; by setting the :acl2-par feature, for example using make (see :DOC
 ; compiling-acl2p).  This work is evolving, but we have taken great pains to
-; preserve the functionality of ACL2 without parallelism.  As the parallelism
-; extension is still under active development as of this writing (May, 2011),
-; we use the phrase "Parallelism wart:" to annotate comments about known issues
-; for the #+acl2-par build of ACL2 that we plan to fix.  These range from minor
-; comment suggestions to deeper questions concerning the correctness of the
-; code.  Rager intends to address most of these parallelism warts by the time
-; his dissertation work is complete.  We also use the phrase "Parallelism
-; no-fix:" to annotate comments about known issues for the #+acl2-par build of
-; ACL2 that we do not currently plan to fix.  These parallelism no-fixes also
-; vary in sophistication.  The main motivation for such an annotation is to
-; document possible sources of bugs that we do not intend to fix until users
-; report a problem.  With every parallelism no-fix, there is an implicit
+; preserve the functionality of ACL2 without parallelism.
+
+; As the parallelism extension is still under active development as of this
+; writing (May, 2011), we use the phrase "Parallelism wart:" to label comments
+; about known issues for the #+acl2-par build of ACL2 that we plan to fix.
+; These range from minor comment suggestions to deeper questions concerning the
+; correctness of the code.  Rager intends to address most of these parallelism
+; warts by the time his dissertation work is complete.  We also use the phrase
+; "Parallelism no-fix:" to label comments about known issues for the #+acl2-par
+; build of ACL2 that we do not currently plan to fix.  These parallelism
+; no-fixes also vary in sophistication.  The main motivation for such a label
+; is to document possible sources of bugs that we do not intend to fix until
+; users report a problem.  With every parallelism no-fix, there is an implicit
 ; disclaimer that we will not fix the issue until a user complains, at which
 ; point we would be much more eager to try to solve the given problem.
 ; Searching through the parallism warts and no-fixes could be useful when a
 ; user reports a bug in #+acl2-par that cannot be replicated in #-acl2-par.
+
+; Parallelism hazards are unrelated to parallelism warts and parallelism
+; no-fixes.  Parallelism hazards are macros or functions that are known to be
+; theoretically unsafe when performing multi-threaded execution.  We originally
+; did not expect users to encounter parallelism hazards (because we should have
+; programmed such that the hazards never occur).  However, in practice, these
+; parallelism hazards are somewhat common and we have disabled the automatic
+; warning that occurs everytime a hazard occurs.  Once we re-enable that
+; warning, in the event that users encounter a parallelism hazard, they will be
+; asked to report the associated warning to the ACL2 maintainers.  For example,
+; if state-global-let* is called while executing concurrently, we want to know
+; about it and develop a work-around.  See *possible-parallelism-hazards* for
+; more information.
 
 ; In an effort to avoid code duplication, we created a definition scheme that
 ; supports defining both serial and parallel versions of a function with one
@@ -111,8 +126,26 @@ implementations.")
 #+clisp
 (setq CUSTOM:*DEFAULT-FILE-ENCODING* :unix)
 
-#+lispworks
-(setq system::*stack-overflow-behaviour* nil) ; could be :warn
+#+(and lispworks (not acl2-par))
+(setq system::*stack-overflow-behaviour*
+
+; The following could reasonably be nil or :warn.  David Rager did some
+; experiments suggesting that ACL2(p) regressions (as of July 2011) may be more
+; robust with the :warn setting.  However, that setting causes warnings during
+; the build, and it's easy to imagine that ACL2 users would also see that
+; cryptic warning -- very un-ACL2-like!  So we use nil rather than :warn here.
+
+      nil)
+
+#+(and lispworks acl2-par)
+(setq system:*stack-overflow-behaviour* 
+
+; Since a setting of nil is at least sometimes (if not always) ignored when
+; safety is set to 0 (according to an email communication between David Rager
+; and Martin Simmons), we choose to use the warn setting for the #+acl2-par
+; build.
+
+      :warn)
 
 ; We have observed a significant speedup with Allegro CL when turning off
 ; its cross-referencing capability.  Here are the times before and after
@@ -918,19 +951,6 @@ implementations.")
   (maybe-load-acl2-init)
   (eval `(in-package ,*startup-package-name*))
 
-; Remark for #+acl2-par.  Here (for 64-bit Lispworks) and in parallel-raw.lisp
-; (for CCL and SBCL), we set the gc-threshold to a high number.  If the Lisps
-; support it, this threshold could be based off the actual memory in the
-; system, but we just leave it at 2 gigabytes for now.  We peform this setting
-; of the threshold for Lispworks inside the restart function, because Lispworks
-; doesn't save the GC configuration as part of the Lisp image.
-
-; Parallelism no-fix: the 1 gigabyte threshold may cause problems for machines
-; with less than 1 gigabytes of free RAM.  At a first glance, this shouldn't
-; realistically be a problem.  However, a user might actually encounter this
-; problem when running multiple memory-intensive ACL2(p) sessions in parallel
-; via make -j.
-
 ; The following two lines follow the recommendation in Allegro CL's
 ; documentation file doc/delivery.htm.
 
@@ -981,17 +1001,7 @@ implementations.")
 ; ;; No live processes except internal servers - stopping multiprocessing
 
 ; So we have decided not to call :multiprocessing t, and also not to call
-; (mp:initialize-multiprocessing).  LispWorks 6.0 seems to work fine for ACL2,
-; so it seems that we need not think further about
-; mp:initialize-multiprocessing until perhaps LispWorks is supported with
-; #+acl2-par.
-
-; Parallelism wart: it's unclear whether calling stop-multiprocessing really
-; works.  We are currently seeing an error in ACL2(p) on Lispworks, where
-; cons's are reported as misaligned when including books and also when
-; executing proofs in parallel.  This error didn't occur initially, and it
-; started surfacing about the time that we started calling
-; stop-multiprocessing.
+; (mp:initialize-multiprocessing) in the #-acl2-par case.
 
   #+acl2-par
   (when mp::*multiprocessing*
@@ -1430,6 +1440,13 @@ implementations.")
                                      "export CCL_DEFAULT_DIRECTORY=~s"
                                      default-dir)
                            "")))
+
+; It is probably important to use -e just below instead of :toplevel-function,
+; at least for #+hone.  Jared Davis and Sol Swords have told us that it seems
+; that with :toplevel-function one gets a new "toplevel" thread at start-up,
+; which "plays badly with the thread-local hash tables that make up the hons
+; space".
+
                       "~s -I ~s -e \"(acl2::acl2-default-restart)\" $*~%"
                       ccl-program
                       core-name))

@@ -1944,7 +1944,7 @@
 ; doing here and make it available to the ACL2 user.
 
     #-acl2-loop-only
-    (when (let ((old-ar (get name 'acl2-array)))
+    (when (let ((old-ar (get-acl2-array-property name)))
             (and old-ar
                  (eq (car old-ar) theory-array)))
       (return-from recompress-global-enabled-structure t))

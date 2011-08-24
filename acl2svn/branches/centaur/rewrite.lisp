@@ -5218,9 +5218,6 @@
 ; :sub-limit is the step-limit to use for sub-events, if any, where nil
 ; indicates that the sub-limit should be limited by the current step-limit.
 
-; This record is not often built, but we could change the cheap flag from t to
-; nil to save a cons if that turns out to be important.
-
   (start strictp . sub-limit)
   t)
 

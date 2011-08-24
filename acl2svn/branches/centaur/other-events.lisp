@@ -3805,69 +3805,18 @@
          (car l))
         (t (duplicate-key-in-keyword-value-listp (cddr l)))))
 
-(defun translate-signature-kwd-value-list1 (kwd-value-list name formals ctx
-                                                           wrld state)
-
-; Given a signature with tail kwd-value-list starting with the first keyword of
-; the signature, we return a corresponding alist associating the same keywords
-; with their translated values.  We assume however that :STOBJS and :FORMALS
-; have already been processed, so we throw those out.
-
-  (cond ((endp kwd-value-list)
-         (value nil))
-        (t (er-let*
-            ((rst (translate-signature-kwd-value-list1
-                   (cddr kwd-value-list) name formals ctx wrld state)))
-            (let ((kwd (car kwd-value-list))
-                  (val (cadr kwd-value-list)))
-              (case kwd
-                ((:STOBJS :FORMALS) ; perhaps impossible
-                 (value rst))
-                (:GUARD
-                 (er-let* ((guard (translate val
-                                             t ; stobjs-out for logic, not exec
-                                             t ; logic-modep
-                                             nil ; known-stobjs
-                                             ctx wrld state)))
-                          (er-progn
-                           (chk-free-vars name formals guard "guard for" ctx
-                                          state)
-                           (value (acons kwd guard rst)))))
-                #+:non-standard-analysis
-                (:CLASSICAL
-                 (value (acons kwd val rst)))
-                (otherwise ; chk-signature should keep us from getting here
-                 (value (er hard ctx
-                            "Implementation error: Unknown keyword, ~x0"
-                            kwd)))))))))
-
-(defun translate-signature-kwd-value-list (kwd-value-list name formals stobjs
-                                                          ctx wrld state)
-  (er-let* ((alist (translate-signature-kwd-value-list1
-                    kwd-value-list name formals ctx wrld state)))
-           (value
-            (cond (stobjs
-                   (let ((pair (assoc-eq :guard alist))
-                         (stobj-terms (stobj-recognizer-terms stobjs wrld)))
-                     (cond (pair
-                            (put-assoc-eq :guard
-                                          (conjoin (append stobj-terms
-                                                           (list (cdr pair))))
-                                          alist))
-                           (t (acons :guard (conjoin stobj-terms) alist)))))
-                  (t alist)))))
-
 (defun chk-signature (x ctx wrld state)
 
 ; Warning: If you change the acceptable form of signatures, change the raw lisp
 ; code for encapsulate in axioms.lisp and change signature-fns.
 
 ; X is supposed to be the external form of a signature of a function, fn.  This
-; function either causes an error (if x is ill-formed) returns (insig
-; new-kwd-alist . wrld1), where: insig is of the form (fn formals' stobjs-in
+; function either causes an error (if x is ill-formed) or else returns (insig
+; kwd-value-list . wrld1), where: insig is of the form (fn formals' stobjs-in
 ; stobjs-out), where formals' is an appropriate arglist, generated if
-; necessary; new-kwd-alist is a suitable translation of kwd-value-list; and
-; wrld1 is the world in which we are to perform the constraint of fn.
+; necessary; kwd-value-list is the keyword-value-listp from the signature (see
+; below); and wrld1 is the world in which we are to perform the constraint of
+; fn.
 
 ; The preferred external form of a signature is of the form:
 
@@ -4051,66 +4000,62 @@
         (chk-all-stobj-names stobjs
                              (msg "~x0" x)
                              ctx wrld state)
-        (er-let*
-         ((kwd-alist (translate-signature-kwd-value-list
-                      kwd-value-list fn formals stobjs ctx wrld state)))
-         (er-progn
-          (cond ((not (or (symbolp val)
-                          (and (consp val)
-                               (eq (car val) 'mv)
-                               (symbol-listp (cdr val))
-                               (> (length val) 2))))
-                 (er soft ctx
-                     "The purported signature ~x0 is not a legal signature ~
-                      because ~x1 is not a legal output description.  Such a ~
-                      description should either be a symbol or of the form ~
-                      (mv sym1 ... symn), where n>=2."
-                     x val))
-                (t (value nil)))
-          (let* ((syms (cond ((symbolp val) (list val))
-                             (t (cdr val))))
-                 (stobjs-in (compute-stobj-flags formals
-                                                 stobjs
-                                                 wrld))
-                 (stobjs-out (compute-stobj-flags syms
-                                                  stobjs
-                                                  wrld)))
-            (cond
-             ((not (subsetp (collect-non-x nil stobjs-out)
-                            (collect-non-x nil stobjs-in)))
-              (er soft ctx
-                  "It is impossible to return single-threaded objects (such ~
-                   as ~&0) that are not among the formals!  Thus, the input ~
-                   signature ~x1 and the output signature ~x2 are ~
-                   incompatible."
-                  (set-difference-eq (collect-non-x nil stobjs-out)
-                                     (collect-non-x nil stobjs-in))
-                  formals
-                  val))
-             ((not (no-duplicatesp (collect-non-x nil stobjs-out)))
-              (er soft ctx
-                  "It is illegal to return the same single-threaded object in ~
-                   more than one position of the output signature.  Thus, ~x0 ~
-                   is illegal because ~&1 ~#1~[is~/are~] duplicated."
-                  val
-                  (duplicates (collect-non-x nil stobjs-out))))
-             (t (er-let* ((wrld1 (chk-just-new-name fn
-                                                    (list* 'function
-                                                           stobjs-in
-                                                           stobjs-out)
-                                                    nil ctx wrld state)))
-                  (value (list* (list fn
-                                      formals
-                                      stobjs-in
-                                      stobjs-out)
-                                kwd-alist
-                                wrld1))))))))))))))
+        (cond ((not (or (symbolp val)
+                        (and (consp val)
+                             (eq (car val) 'mv)
+                             (symbol-listp (cdr val))
+                             (> (length val) 2))))
+               (er soft ctx
+                   "The purported signature ~x0 is not a legal signature ~
+                    because ~x1 is not a legal output description.  Such a ~
+                    description should either be a symbol or of the form (mv ~
+                    sym1 ... symn), where n>=2."
+                   x val))
+              (t (value nil)))
+        (let* ((syms (cond ((symbolp val) (list val))
+                           (t (cdr val))))
+               (stobjs-in (compute-stobj-flags formals
+                                               stobjs
+                                               wrld))
+               (stobjs-out (compute-stobj-flags syms
+                                                stobjs
+                                                wrld)))
+          (cond
+           ((not (subsetp (collect-non-x nil stobjs-out)
+                          (collect-non-x nil stobjs-in)))
+            (er soft ctx
+                "It is impossible to return single-threaded objects (such as ~
+                 ~&0) that are not among the formals!  Thus, the input ~
+                 signature ~x1 and the output signature ~x2 are incompatible."
+                (set-difference-eq (collect-non-x nil stobjs-out)
+                                   (collect-non-x nil stobjs-in))
+                formals
+                val))
+           ((not (no-duplicatesp (collect-non-x nil stobjs-out)))
+            (er soft ctx
+                "It is illegal to return the same single-threaded object in ~
+                 more than one position of the output signature.  Thus, ~x0 ~
+                 is illegal because ~&1 ~#1~[is~/are~] duplicated."
+                val
+                (duplicates (collect-non-x nil stobjs-out))))
+           (t (er-let* ((wrld1 (chk-just-new-name fn
+                                                  (list* 'function
+                                                         stobjs-in
+                                                         stobjs-out)
+                                                  nil ctx wrld state)))
+                       (value (list* (list fn
+                                           formals
+                                           stobjs-in
+                                           stobjs-out)
+                                     kwd-value-list
+                                     wrld1))))))))))))
 
 (defun chk-signatures (signatures ctx wrld state)
 
-; We return a triple (sigs kwd-alist-lst . wrld) containing the list of
-; internal signatures, their corresponding keyword-alists, and the final world
-; in which we are to do the introduction of these fns, or else cause an error.
+; We return a triple (sigs kwd-value-list-lst . wrld) containing the list of
+; internal signatures, their corresponding keyword-value-lists, and the final
+; world in which we are to do the introduction of these fns, or else cause an
+; error.
 
   (cond ((atom signatures)
          (cond ((null signatures) (value (list* nil nil wrld)))
@@ -4142,9 +4087,9 @@
                      (trip2 (chk-signatures (cdr signatures)
                                             ctx (cddr trip1) state)))
                     (let ((insig (car trip1))
-                          (kwd-alist (cadr trip1))
+                          (kwd-value-list (cadr trip1))
                           (insig-lst (car trip2))
-                          (kwd-alist-lst (cadr trip2))
+                          (kwd-value-list-lst (cadr trip2))
                           (wrld1 (cddr trip2)))
                       (cond ((assoc-eq (car insig) insig-lst)
                              (er soft ctx
@@ -4153,7 +4098,8 @@
                                   encapsulate."
                                  (car insig)))
                             (t (value (list* (cons insig insig-lst)
-                                             (cons kwd-alist kwd-alist-lst)
+                                             (cons kwd-value-list
+                                                   kwd-value-list-lst)
                                              wrld1)))))))))
 
 (defun chk-acceptable-encapsulate1 (signatures form-lst ctx wrld state)
@@ -4210,6 +4156,9 @@
 (defun primitive-event-macros ()
   (declare (xargs :guard t :mode :logic))
 
+; Warning: If you add to this list, consider adding to the list in translate11
+; associated with a comment about primitive-event-macros.
+
 ; Warning: Keep this in sync with oneify-cltl-code (see comment there about
 ; primitive-event-macros).
 
@@ -4217,74 +4166,78 @@
 
 ; Note: This zero-ary function used to be a constant, *primitive-event-macros*.
 ; But Peter Dillinger wanted to be able to change this value with ttags, so
-; this function has replaced that constant.
+; this function has replaced that constant.  We keep the lines sorted below,
+; but only for convenience.
 
-  '(defun
-     #+:non-standard-analysis
-     defun-std
-     mutual-recursion
-     defuns
-     defthm
-     #+:non-standard-analysis
-     defthm-std
+  '(
+     #+:non-standard-analysis defthm-std
+     #+:non-standard-analysis defun-std
+     add-custom-keyword-hint
+     add-default-hints!
+     add-include-book-dir
+     add-match-free-override
+     comp
+     defattach
      defaxiom
-     defconst
-     defstobj
-;    defpkg                   ; We prohibit defpkgs except in very
-                              ; special places.  See below.
-     deflabel
-     defdoc
-     deftheory
      defchoose
-     verify-guards
+     defconst
+     defdoc
+     deflabel
      defmacro
-     in-theory
+;    defpkg ; We prohibit defpkgs except in very special places.  See below.
+     defstobj
+     deftheory
+     defthm
+     defttag
+     defun
+     defuns
+     delete-include-book-dir
+     encapsulate
      in-arithmetic-theory
-     push-untouchable
-     remove-untouchable
-     reset-prehistory
-     set-body
-     table
+     in-theory
+     include-book
+     logic
+     mutual-recursion
      progn
      progn!
-     encapsulate
-     include-book
-     add-custom-keyword-hint
-     add-include-book-dir
-     delete-include-book-dir
-     comp
-     verify-termination-boot-strap
-     defattach
-     add-match-free-override
-     theory-invariant
-     logic program
-     add-default-hints!
+     program
+     push-untouchable
      remove-default-hints!
-     set-rw-cache-state!
-     set-override-hints-macro
-     set-match-free-default
-     set-enforce-redundancy
-     set-ignore-doc-string-error
-     set-verify-guards-eagerness
-     set-non-linearp
-     set-compile-fns set-measure-function set-well-founded-relation
-     set-invisible-fns-table
+     remove-untouchable
+     reset-prehistory
      set-backchain-limit
+     set-body
      set-bogus-defun-hints-ok
      set-bogus-mutual-recursion-ok
-     set-ruler-extenders
-     set-default-backchain-limit
-     set-irrelevant-formals-ok
-     set-ignore-ok
-     set-inhibit-warnings set-state-ok
-     set-let*-abstractionp
-     set-nu-rewriter-mode
      set-case-split-limitations
+     set-compile-fns
+     set-default-backchain-limit
      set-default-hints!
-     set-rewrite-stack-limit
+     set-enforce-redundancy
+     set-ignore-doc-string-error
+     set-ignore-ok
+     set-inhibit-warnings
+     set-invisible-fns-table
+     set-irrelevant-formals-ok
+     set-let*-abstractionp
+     set-match-free-default
+     set-measure-function
+     set-non-linearp
+     set-nu-rewriter-mode
+     set-override-hints-macro
      set-prover-step-limit
-     defttag
-     value-triple))
+     set-rewrite-stack-limit
+     set-ruler-extenders
+     set-rw-cache-state!
+     set-state-ok
+     set-verify-guards-eagerness
+     set-well-founded-relation
+     table
+     theory-invariant
+     value-triple
+     verify-guards
+     verify-termination-boot-strap
+     ))
 
 ; Warning: If a symbol is on this list then it is allowed into books.
 ; If it is allowed into books, it will be compiled.  Thus, if you add a
@@ -5870,12 +5823,15 @@
    ((endp thms) ans)
    ((ffnnamesp fns (car thms))
 
-; We use add-to-set-equal below because an inner encapsulate may have both an
-; 'unnormalized-body and 'constraint-lst property, and if 'unnormalized-body
-; has already been put into ans then we don't want to include that constraint
-; when we see it here.
+; By using union-equal below, we handle the case that an inner encapsulate may
+; have both an 'unnormalized-body and 'constraint-lst property, so that if
+; 'unnormalized-body has already been put into ans, then we don't include that
+; constraint when we see it here.
 
-    (constraints-introduced1 (cdr thms) fns (add-to-set-equal (car thms) ans)))
+    (constraints-introduced1 (cdr thms)
+                             fns
+                             (union-equal (flatten-ands-in-lit (car thms))
+                                          ans)))
    (t (constraints-introduced1 (cdr thms) fns ans))))
 
 (defun new-trips (wrld3 proto-wrld3 seen acc)
@@ -6071,7 +6027,7 @@
            (theorem
             (cond
              ((ffnnamesp fns (cddr trip))
-              (add-to-set-equal (cddr trip) ans))
+              (union-equal (flatten-ands-in-lit (cddr trip)) ans))
              (t ans)))
            (classes
             (constraints-introduced1
@@ -6331,7 +6287,11 @@
   ~ev[]
   Also, you can avoid skipping proofs for the successful sub-events by
   supplying keyword ~c[:succ-ld-skip-proofsp] with a valid value for
-  ~c[ld-skip-proofsp]; ~pl[ld-skip-proofsp].
+  ~c[ld-skip-proofsp]; ~pl[ld-skip-proofsp].  For example, you might want to
+  execute ~c[(redo-flat :succ-ld-skip-proofsp nil)] if you use the
+  ~c[must-fail] utility from distributed book ~c[make-event/eval.lisp], since
+  for example ~c[(must-fail (thm (equal x y)))] normally succeeds but would
+  cause an error if proofs are skipped.
 
   If you prefer only to see the successful and failed sub-events, without any
   events being re-executed, you may evaluate the following form instead.
@@ -6897,10 +6857,8 @@
 ; Exports-with-sig-ancestors contains each element of names that has at least
 ; one signature function of that encapsulate among its ancestors.  We return
 ; those elements of names whose body or guard has at least one ancestor in
-; sig-fns, except for those that are constrained or non-executable.  It seems
-; safest not to allow these function symbols to be considered guard-verified,
-; because the guard proof obligations may depend on local properties.  Consider
-; the following example.
+; sig-fns, except for those that are constrained, because the guard proof
+; obligations may depend on local properties.  Consider the following example.
 
 ; (encapsulate
 ;  ((f (x) t))
@@ -6912,27 +6870,26 @@
 ; Outside the encapsulate, we do not know that (f x) suffices as a guard for
 ; (car x).
 
-; For functions that are not executed (except perhaps via attachments), guards
-; serve a role similar to that served by guards of constrained functions: they
-; are used only to stitch together guard verifications for attachments.  Hence
-; we don't have any concern for those functions.
+; We considered exempting non-executable functions, but if we are to bother
+; with their guard verification, it seems appropriate to insist that the guard
+; proof obligation really does hold in the theory produced by the encapsulate,
+; not merely in the temporary theory of the first pass of the encapsulate.
+
+; See also the comment about this function in intro-udf.
 
   (cond ((endp names) nil)
         ((and (eq (symbol-class (car names) wrld) :common-lisp-compliant)
               (not (getprop (car names) 'constrainedp nil
                             'current-acl2-world wrld))
-              (not (eq (getprop (car names) 'non-executablep nil
-                                'current-acl2-world wrld)
-                       t)) ; maybe excessively conservative to allow :program?
 
-; So, this function can be executed.  We can only trust its guard verification
-; if the guard proof obligation can be moved forward.  We could in principle
-; save that proof obligation, or perhaps we could recompute it; and then we
-; could check that no signature function is ancestral.  But an easy sufficient
-; condition for trusting that the guard proof obligation doesn't depend on
-; functions introduced in the encapsulate, and one that does not seem overly
-; restrictive, is to insist that neither the body of the function nor its guard
-; have any signature functions as ancestors.
+; We can only trust guard verification for (car names) if its guard proof
+; obligation can be moved forward.  We could in principle save that proof
+; obligation, or perhaps we could recompute it; and then we could check that no
+; signature function is ancestral.  But an easy sufficient condition for
+; trusting that the guard proof obligation doesn't depend on functions
+; introduced in the encapsulate, and one that does not seem overly restrictive,
+; is to insist that neither the body of the function nor its guard have any
+; signature functions as ancestors.
 
               (or (member-eq (car names) exports-with-sig-ancestors)
                   (intersectp-eq sig-fns (instantiable-ancestors
@@ -6945,7 +6902,7 @@
         (t (bogus-exported-compliants
             (cdr names) exports-with-sig-ancestors sig-fns wrld))))
 
-(defun encapsulate-pass-2 (insigs kwd-alist-lst ev-lst
+(defun encapsulate-pass-2 (insigs kwd-value-list-lst ev-lst
                                   saved-acl2-defaults-table only-pass-p ctx
                                   state)
 
@@ -7011,9 +6968,9 @@
                                          (list* 'encapsulate insigs
 
 ; The non-nil final cdr signifies that we are in pass 2 of encapsulate; see
-; chk-evaluator-use-in-rule.
+; context-for-encapsulate-pass-2.
 
-                                                (or kwd-alist-lst
+                                                (or kwd-value-list-lst
                                                     t))
                                          ev-lst 0
 
@@ -8272,6 +8229,47 @@
         (t ; optimize for common case
          lst)))
 
+(defun intro-udf-guards (insigs kwd-value-list-lst wrld-acc wrld ctx state)
+
+; Insigs is a list of signatures, each in the internal form (list fn formals
+; stobjs-in stobjs-out); see chk-signature.  Kwd-value-list-lst corresponds
+; positionally to insigs.  We return an extension of wrld-acc in which the
+; 'guard property has been set according to insigs.
+
+; Wrld is the world we used for translating guards.  Our intention is that it
+; is used in place of the accumulator, wrld-acc, because it is installed.
+
+  (cond
+   ((endp insigs) (value wrld-acc))
+   (t (er-let*
+       ((tguard
+         (let ((tail (assoc-keyword :GUARD (car kwd-value-list-lst))))
+           (cond (tail (translate (cadr tail)
+                                  t   ; stobjs-out for logic, not exec
+                                  t   ; logic-modep
+                                  nil ; known-stobjs
+                                  ctx wrld state))
+                 (t (value nil))))))
+       (let* ((insig (car insigs))
+              (fn (car insig))
+              (formals (cadr insig))
+              (stobjs-in (caddr insig))
+              (stobjs (collect-non-x nil stobjs-in))
+              (stobj-terms (stobj-recognizer-terms stobjs wrld)))
+         (er-progn
+          (cond (tguard (chk-free-vars fn formals tguard "guard for" ctx
+                                       state))
+                (t (value nil)))
+          (intro-udf-guards
+           (cdr insigs)
+           (cdr kwd-value-list-lst)
+           (putprop-unless fn 'guard
+                           (cond (tguard (conjoin (append stobj-terms
+                                                          (list tguard))))
+                                 (t (conjoin stobj-terms)))
+                           *t* wrld-acc)
+           wrld ctx state)))))))
+
 (defun encapsulate-fn (signatures ev-lst state event-form)
 
 ; Important Note:  Don't change the formals of this function without reading
@@ -8432,7 +8430,7 @@
              ((trip (chk-acceptable-encapsulate1 signatures ev-lst
                                                  ctx wrld1 state)))
              (let ((insigs (car trip))
-                   (kwd-alist-lst (cadr trip))
+                   (kwd-value-list-lst (cadr trip))
                    (wrld1 (cddr trip)))
                (pprogn
                 (set-w 'extension wrld1 state)
@@ -8478,7 +8476,7 @@
 ; error above.
                           (encapsulate-pass-2
                            insigs
-                           kwd-alist-lst
+                           kwd-value-list-lst
                            new-ev-lst
                            saved-acl2-defaults-table nil ctx state)))
                         (let ((wrld3 (w state))
@@ -8499,56 +8497,60 @@
                            (f-put-global 'last-make-event-expansion
                                          new-event-form
                                          state)
-                           (install-event
-                            t
-                            (or new-event-form event-form)
-                            'encapsulate
-                            (strip-cars insigs)
-                            nil nil
-                            t
-                            ctx
-                            (let* ((wrld4 (encapsulate-fix-known-package-alist
-                                           pass1-known-package-alist
-                                           wrld3))
-                                   (wrld5 (global-set? 'ttags-seen
-                                                       post-pass-1-ttags-seen
-                                                       wrld4
-                                                       (global-val 'ttags-seen
-                                                                   wrld3)))
-                                   (wrld6 (cond
-                                           ((or (global-val 'skip-proofs-seen
+                           (er-let*
+                            ((wrld3a (intro-udf-guards insigs
+                                                       kwd-value-list-lst wrld3
+                                                       wrld3 ctx state)))
+                            (install-event
+                             t
+                             (or new-event-form event-form)
+                             'encapsulate
+                             (strip-cars insigs)
+                             nil nil
+                             t
+                             ctx
+                             (let* ((wrld4 (encapsulate-fix-known-package-alist
+                                            pass1-known-package-alist
+                                            wrld3a))
+                                    (wrld5 (global-set? 'ttags-seen
+                                                        post-pass-1-ttags-seen
+                                                        wrld4
+                                                        (global-val 'ttags-seen
+                                                                    wrld3)))
+                                    (wrld6 (cond
+                                            ((or (global-val 'skip-proofs-seen
 
 ; We prefer that an error report about skip-proofs in certification world be
 ; about a non-local event.
 
-                                                            wrld3)
-                                                (null
-                                                 post-pass-1-skip-proofs-seen))
-                                            wrld5)
-                                           (t (global-set
-                                               'skip-proofs-seen
-                                               post-pass-1-skip-proofs-seen
-                                               wrld5))))
-                                   (wrld7 (global-set?
-                                           'include-book-alist-all
-                                           post-pass-1-include-book-alist-all
-                                           wrld6
-                                           (global-val
+                                                             wrld3)
+                                                 (null
+                                                  post-pass-1-skip-proofs-seen))
+                                             wrld5)
+                                            (t (global-set
+                                                'skip-proofs-seen
+                                                post-pass-1-skip-proofs-seen
+                                                wrld5))))
+                                    (wrld7 (global-set?
                                             'include-book-alist-all
-                                            wrld3))))
-                              wrld7)
-                            state)))))))))))))
+                                            post-pass-1-include-book-alist-all
+                                            wrld6
+                                            (global-val
+                                             'include-book-alist-all
+                                             wrld3))))
+                               wrld7)
+                             state))))))))))))))
 
            (t ; (ld-skip-proofsp state) = 'include-book
-          ;;;                         'include-book-with-locals or
-          ;;;                         'initialize-acl2
+;                                         'include-book-with-locals or
+;                                         'initialize-acl2
 
 ; We quietly execute our second pass.
 
             (er-let*
              ((trip (chk-signatures signatures ctx wrld1 state)))
              (let ((insigs (car trip))
-                   (kwd-alist-lst (cadr trip))
+                   (kwd-value-list-lst (cadr trip))
                    (wrld1 (cddr trip)))
                (pprogn
                 (set-w 'extension wrld1 state)
@@ -8559,8 +8561,8 @@
 
                  ((expansion-alist
                    (encapsulate-pass-2
-                    insigs kwd-alist-lst ev-lst saved-acl2-defaults-table t ctx
-                    state)))
+                    insigs kwd-value-list-lst ev-lst saved-acl2-defaults-table
+                    t ctx state)))
                  (let ((wrld3 (w state))
                        (new-event-form
                         (and expansion-alist
@@ -8572,17 +8574,20 @@
                     (f-put-global 'last-make-event-expansion
                                   new-event-form
                                   state)
-                    (install-event t
-                                   (if expansion-alist
-                                       new-event-form
-                                     event-form)
-                                   'encapsulate
-                                   (signature-fns signatures)
-                                   nil nil
-                                   nil ; irrelevant, since we are skipping proofs
-                                   ctx
+                    (er-let*
+                     ((wrld3a (intro-udf-guards insigs kwd-value-list-lst
+                                                wrld3 wrld3 ctx state)))
+                     (install-event t
+                                    (if expansion-alist
+                                        new-event-form
+                                      event-form)
+                                    'encapsulate
+                                    (strip-cars insigs)
+                                    nil nil
+                                    nil ; irrelevant, since we are skipping proofs
+                                    ctx
 
-; We have considered calling encapsulate-fix-known-package-alist on wrld3, just
+; We have considered calling encapsulate-fix-known-package-alist on wrld3a, just
 ; as we do in the first case (when not doing this on behalf of include-book).
 ; But we do not see a need to do so, both because all include-books are local
 ; and hence skipped (hence the known-package-alist has not changed from before
@@ -8590,8 +8595,8 @@
 ; include-book, :puff (where ld-skip-proofsp is include-book-with-locals), or
 ; initialization.
 
-                                   wrld3
-                                   state)))))))))))))))
+                                    wrld3a
+                                    state))))))))))))))))
 
 (defun progn-fn1 (ev-lst progn!p bindings state)
 
@@ -19121,7 +19126,6 @@
                            (if (array-etype-is-fixnum-type array-etype)
                                'fix-aref
                              vref)))
-            (max-index (and arrayp (1- *expt2-28*)))
             (accessor-name (nth 3 field-template))
             (updater-name (nth 4 field-template))
             (length-name (nth 5 field-template))
@@ -19135,7 +19139,7 @@
             ,@(if (not resizable)
                   `((declare (ignore ,var))
                     ,array-length)
-                `((the (integer 0 ,max-index)
+                `((the (and fixnum (integer 0 *))
                        (length (svref ,var ,n))))))
            (,resize-name
             (k ,var)
@@ -19151,14 +19155,16 @@
                       ,var))
                 `((if (not (and (integerp k)
                                 (>= k 0)
-                                (< k ,max-index)))
+                                (< k array-dimension-limit)))
                       (hard-error
                        ',resize-name
                        "Attempted array resize failed because the requested ~
-                        size ~x0 was not an integer between 0 and (1- (expt ~
-                        2 28)).  These bounds on array sizes are fixed by ~
-                        ACL2."
-                       (list (cons #\0 k)))
+                        size ~x0 was not a nonnegative integer less than the ~
+                        value of Common Lisp constant array-dimension-limit, ~
+                        which is ~x1.  These bounds on array sizes are fixed ~
+                        by ACL2."
+                       (list (cons #\0 k)
+                             (cons #\1 array-dimension-limit)))
                     (let* ((old (svref ,var ,n))
                            (min-index (if (< k (length old))
                                           k
@@ -19180,7 +19186,10 @@
                                              ',init
                                              :element-type
                                              ',array-etype)))
-                      #+(and hons (not acl2-loop-only))
+                      #+(and hons
+                             (not acl2-loop-only)
+; See the Essay on Memoization Involving Stobjs:
+                             memoize-stobjs-hack)
                       (memoize-flush ,var)
                       (setf (svref ,var ,n)
                             (,(pack2 'stobj-copy-array- fix-vref)
@@ -19188,21 +19197,24 @@
                       ,var)))))
            (,accessor-name
             (i ,var)
-            (declare (type (integer 0 ,max-index) i))
+            (declare (type (and fixnum (integer 0 *)) i))
             ,@(and inline (list *stobj-inline-declare*))
             (the ,array-etype
               (,vref (the ,simple-type (svref ,var ,n))
-                     (the (integer 0 ,max-index) i))))
+                     (the (and fixnum (integer 0 *)) i))))
            (,updater-name
             (i v ,var)
-            (declare (type (integer 0 ,max-index) i)
+            (declare (type (and fixnum (integer 0 *)) i)
                      (type ,array-etype v))
             ,@(and inline (list *stobj-inline-declare*))
             (progn 
-              #+(and hons (not acl2-loop-only))
+              #+(and hons
+                     (not acl2-loop-only)
+; See the Essay on Memoization Involving Stobjs:
+                     memoize-stobjs-hack)
               (memoize-flush ,var)
               (setf (,vref (the ,simple-type (svref ,var ,n))
-                           (the (integer 0 ,max-index) i))
+                           (the (and fixnum (integer 0 *)) i))
                     (the ,array-etype v))
               ,var))))
         ((equal type t)
@@ -19212,7 +19224,10 @@
            (,updater-name (v ,var)
                           ,@(and inline (list *stobj-inline-declare*))
                           (progn
-                            #+(and hons (not acl2-loop-only))
+                            #+(and hons
+                                   (not acl2-loop-only)
+; See the Essay on Memoization Involving Stobjs:
+                                   memoize-stobjs-hack)
                             (memoize-flush ,var)
                             (setf (svref ,var ,n) v) ,var))))
         (t
@@ -19226,7 +19241,10 @@
                           (declare (type ,type v))
                           ,@(and inline (list *stobj-inline-declare*))
                           (progn
-                            #+(and hons (not acl2-loop-only))
+                            #+(and hons
+                                   (not acl2-loop-only)
+; See the Essay on Memoization Involving Stobjs:
+                                   memoize-stobjs-hack)
                             (memoize-flush ,var)
                             (setf (aref (the (simple-array ,type (1))
                                           (svref ,var ,n))
@@ -20443,19 +20461,19 @@
   The raw Lisp implementing these two functions is shown below.
   ~bv[]
   (defun memi (i ms)
-    (declare (type (integer 0 268435455) i))
+    (declare (type (and fixnum (integer 0 *)) i))
     (the integer
          (aref (the (simple-array integer (*))
                     (svref ms 1))
-               (the (integer 0 268435455) i))))
+               (the (and fixnum (integer 0 *)) i))))
 
   (defun update-memi (i v ms)
-    (declare (type (integer 0 268435455) i)
+    (declare (type (and fixnum (integer 0 *)) i)
              (type integer v))
     (progn
      (setf (aref (the (simple-array integer (*))
                       (svref ms 1))
-                 (the (integer 0 268435455) i))
+                 (the (and fixnum (integer 0 *)) i))
            (the integer v))
      ms))
   ~ev[]
@@ -24857,7 +24875,7 @@
                                    (list 'quote new)))
                    (value new))))))))))
 
-(defun@par add-custom-keyword-hint-fn (key uterm1 uterm2 state)
+(defun add-custom-keyword-hint-fn (key uterm1 uterm2 state)
 
 ; We translate uterm1 and uterm2 to check the syntactic requirements and we
 ; cause errors if we don't like what we see.  BUT we store the untranslated
@@ -24883,66 +24901,60 @@
         (allowed-cvars
          '(val world ctx state)))
     (er-let*
-      ((term1 (translate-simple-or-error-triple uterm1 ctx world state))
-       (term2 (translate uterm2
-                         (serial-first-form-parallel-second-form@par
-                          *error-triple-sig*
-                          *cmp-sig*)
-                         nil
-                         '(state)
-                         ctx world state)))
-      (cond
-       ((not (keywordp key))
-        (er soft ctx
-            "The first argument of add-custom-keyword-hint must be a ~
-             keyword and ~x0 is not!"
-            key))
-       ((member-eq key *hint-keywords*)
-        (er soft ctx
-            "It is illegal to use the name of a primitive hint, ~
-             ~e.g., ~x0, as a custom keyword hint."
-            key))
-       ((assoc-eq key
-                  (table-alist 'custom-keywords-table (w state)))
-        (er soft ctx
-            "It is illegal to use the name of an existing custom ~
-             keyword hint, e.g., ~x0.  Use ~
-             remove-custom-keyword-hint first to remove the existing ~
-             custom keyword hint of that name."
-            key))
-       ((not (subsetp-eq (all-vars term1) allowed-gvars))
-        (er soft ctx
-            "The second argument of add-custom-keyword-hint must be a ~
-             term whose free variables are among ~%~Y01, but you ~
-             provided the term ~x2, whose variables include~%~Y31."
-            allowed-gvars
-            nil
-            uterm1
-            (set-difference-eq (all-vars term1) allowed-gvars)))
-       ((not (subsetp-eq (all-vars term2) allowed-cvars))
-        (er soft ctx
-            "The :checker argument of add-custom-keyword-hint must be a ~
-             term whose free variables are among ~%~Y01, but you ~
-             provided the term ~x2, whose variables include~%~Y31."
-            allowed-cvars
-            nil
-            uterm2
-            (set-difference-eq (all-vars term2) allowed-cvars)))
-       (t
-        (state-global-let*
-         ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
-         (let ((val (list uterm1 uterm2))) ; WARNING: Each term is UNtranslated
-           (er-progn (table-fn 'custom-keywords-table
-                               (list (kwote key) (kwote val))
-                               state
-                               (list 'table
-                                     'custom-keywords-table
-                                     (kwote key)
-                                     (kwote val)))
-                     (table-fn 'custom-keywords-table
-                               'nil
-                               state
-                               '(table custom-keywords-table))))))))))
+     ((term1 (translate-simple-or-error-triple uterm1 ctx world state))
+      (term2 (translate uterm2 *error-triple-sig* nil '(state) ctx world
+                        state)))
+     (cond
+      ((not (keywordp key))
+       (er soft ctx
+           "The first argument of add-custom-keyword-hint must be a keyword ~
+            and ~x0 is not!"
+           key))
+      ((member-eq key *hint-keywords*)
+       (er soft ctx
+           "It is illegal to use the name of a primitive hint, ~e.g., ~x0, as ~
+            a custom keyword hint."
+           key))
+      ((assoc-eq key
+                 (table-alist 'custom-keywords-table (w state)))
+       (er soft ctx
+           "It is illegal to use the name of an existing custom keyword hint, ~
+            e.g., ~x0.  Use remove-custom-keyword-hint first to remove the ~
+            existing custom keyword hint of that name."
+           key))
+      ((not (subsetp-eq (all-vars term1) allowed-gvars))
+       (er soft ctx
+           "The second argument of add-custom-keyword-hint must be a term ~
+            whose free variables are among ~%~Y01, but you provided the term ~
+            ~x2, whose variables include~%~Y31."
+           allowed-gvars
+           nil
+           uterm1
+           (set-difference-eq (all-vars term1) allowed-gvars)))
+      ((not (subsetp-eq (all-vars term2) allowed-cvars))
+       (er soft ctx
+           "The :checker argument of add-custom-keyword-hint must be a term ~
+            whose free variables are among ~%~Y01, but you provided the term ~
+            ~x2, whose variables include~%~Y31."
+           allowed-cvars
+           nil
+           uterm2
+           (set-difference-eq (all-vars term2) allowed-cvars)))
+      (t
+       (state-global-let*
+        ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+        (let ((val (list uterm1 uterm2))) ; WARNING: Each term is UNtranslated
+          (er-progn (table-fn 'custom-keywords-table
+                              (list (kwote key) (kwote val))
+                              state
+                              (list 'table
+                                    'custom-keywords-table
+                                    (kwote key)
+                                    (kwote val)))
+                    (table-fn 'custom-keywords-table
+                              'nil
+                              state
+                              '(table custom-keywords-table))))))))))
 
 (defmacro set-tainted-okp (x)
 
@@ -25319,6 +25331,7 @@
       (er hard ctx
           "~@0~x1 is not a function symbol."
           str key))
+     #-memoize-stobjs-hack ; see the Essay on Memoization Involving Stobjs
      ((not (all-nils (stobjs-in key wrld)))
       (let ((stobj (find-first-non-nil (stobjs-in key wrld))))
         (cond ((eq stobj 'state)
@@ -25329,6 +25342,18 @@
                (er hard ctx
                    "~@0~x1 takes a stobj, ~x2, as an argument."
                    str key stobj)))))
+      #+memoize-stobjs-hack ; see the Essay on Memoization Involving Stobjs
+      ((member-eq 'state (stobjs-in key wrld))
+
+; Consider warning when memoizing a fn that takes a user-defined stobj as an
+; argument, saying that all modifications of such stobjs may be slow.  [A
+; variant of a test supplied by Warren Hunt, basically a big loop of
+; interleaved writes and reads, slowed down from about 19 seconds to nearly 100
+; seconds.]
+
+       (er hard ctx
+           "~@0~x1 takes ACL2's STATE as an argument."
+           str key))
      ((member-eq key *hons-primitive-fns*)
       (er hard ctx
           "~@0~x1 is a HONS primitive."
@@ -27538,7 +27563,7 @@
    (let ((constraint-bypass-string
           "  Note that we are bypassing constraints that have been proved ~
            when processing ~#0~[previous events~/events including ~&1~/the ~
-           event~#1~[~/s~]~]."))
+           event~#1~[~/s~] ~&1~]."))
      (cond
       ((equal goal *t*)
        (pprogn

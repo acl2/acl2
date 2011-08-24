@@ -18092,6 +18092,37 @@
   ")
 
 (deflabel note-4-4
+
+; Improved comments about step-limits.
+
+; Incorporated a Lispworks-specific patch from Martin Simmons.
+
+; Here is a slightly simplified version of the example sent to us by Warren
+; Hunt for the defstobj bug involving, quoting the :doc below, "excessively
+; restrictive type declarations".
+
+;   (defstobj x86-32
+;     (mem :type (array (unsigned-byte 8) (4294967296)) ;; 2^32
+;          :initially 0
+;          :resizable nil)
+;     :inline t)
+
+; It has for some time been illegal to do guard verification inside a
+; non-trivial encapsulate for an exported function whose body or guard depends
+; on signature functions; see function bogus-exported-compliants.  However, we
+; made exceptions both for constrained functions and for non-executable
+; functions.  The latter exception has been removed; after all, if the guard
+; obligations aren't theorems of the post-encapsulate theory, it's a bit odd to
+; allow them.
+
+; For more about the increase in speed for ACL2 array reads, see the Essay on
+; Array Caching.
+
+; Regarding the fix to getenv$ etc. mentioned below: we also changed
+; throw-nonexec-error, get-output-stream-string$-fn, and set-debugger-enable-fn
+; just a bit, just to be safe, though we're not aware of a soundness bug for
+; those functions.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18114,13 +18145,107 @@
   value other than ~c[NONE] or the empty string, but is not the name of an
   existing file.  Thanks to Harsh Raju Chamarthi for requesting such a change.
 
+  Functions ~c[read-acl2-oracle] (and ~c[read-acl2-oracle@par]),
+  ~c[read-run-time], and ~c[main-timer] are no longer untouchable
+  (~pl[remove-untouchable]).
+
+  We now avoid certain duplicate conjuncts in the ~il[constraint] stored for
+  ~ilc[encapsulate] ~il[events].  For example, the constraint stored for the
+  following event formerly included ~c[(EQUAL (FOOP (CONS X Y)) (FOOP Y))] and
+  ~c[(BOOLEANP (FOOP X))] twice each, but no more.
+  ~bv[]
+  (encapsulate
+   ((foop (x) t))
+   (local (defun foop (x) (declare (ignore x)) t))
+   (defthm foop-constraints
+     (and (booleanp (foop x))
+          (equal (foop (cons x y)) (foop y)))
+     :rule-classes
+     ((:type-prescription :corollary (booleanp (foop x)))
+      (:rewrite :corollary (equal (foop (cons x y)) (foop y))))))
+  ~ev[]
+
+  The ~c[:]~ilc[guard] for a constrained function (~pl[signature]) may now
+  mention function symbols introduced in the same ~ilc[encapsulate] event that
+  introduces that function.  Thanks to Nathan Wetzler for a helpful discussion
+  leading to this improvement.
+
   ~st[NEW FEATURES]
+
+  Users may now arrange for additional summary information to be printed at the
+  end of ~il[events]; ~pl[print-summary-user].  Thanks to Harsh Raju Chamarthi
+  for requesting this feature and participating in a design discussion.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
+  Reading of ACL2 ~ilc[arrays] (~pl[aref1], ~pl[aref2]) has been made more
+  efficient (as tested with CCL as the host Lisp) in the case of consecutive
+  repeated reads of the same named array.  Thanks to Jared Davis and Sol Swords
+  for contributing this improvement.
+
   ~st[BUG FIXES]
 
+  Fixed a class of soundness bugs involving each of the following functions:
+  ~ilc[getenv$], ~ilc[get-wormhole-status], ~ilc[cpu-core-count],
+  ~ilc[wormhole-p], ~ilc[random$], ~c[file-write-date$], and
+  ~c[serialize-read-fn], and (for the HONS version of ACL2)
+  ~ilc[clear-memoize-table] and ~ilc[clear-memoize-tables] as well as (possible
+  soundness bug) ~c[serialize-write-fn].  For example, we were able to admit
+  the following events, but that is no longer the case (neither for ~c[getenv$]
+  as shown, nor analogously for other functions listed above).
+  ~bv[]
+  (defthm not-true
+    (stringp (cadr (getenv$ \"PWD\" (build-state))))
+    :rule-classes nil)
+
+  (defthm contradiction
+    nil
+    :hints ((\"Goal\"
+             :in-theory (disable (getenv$))
+             :use not-true))
+    :rule-classes nil)
+  ~ev[]
+
+  While calls of many event macros had been prohibited inside executable code,
+  others should have been but were not.  For example, the following was
+  formerly allowed.
+  ~bv[]
+  (defun foo (state)
+    (declare (xargs :mode :program :stobjs state))
+    (add-custom-keyword-hint :my-hint (identity nil)))
+  (foo state) ; Caused hard raw Lisp error!
+  ~ev[]
+  Thus, several event macros (including for example
+  ~ilc[add-custom-keyword-hint]) may no longer be called inside executable
+  code.
+
+  Fixed an assertion that could occur, for example, after reverting to prove
+  the original goal by induction and generating a goal of ~c[NIL].  Thanks to
+  Jared Davis for sending us a helpful example to bring this bug to our
+  attention.
+
+  It was possible for ~ilc[defstobj] to generate raw Lisp code with
+  excessively restrictive type declarations.  This has been fixed.  Thanks to
+  Warren Hunt for reporting this bug and sending an example that illustrates
+  it.  ~l[stobj-example-2] for examples of such raw Lisp code; now, one finds
+  ~c[(and fixnum (integer 0 *))] where formerly the type was restricted to
+  ~c[(integer 0 268435455)].
+
+  Fixed a bug in that was ignoring the use of ~c[:computed-hint-replacement] in
+  certain cases involving a combination of computed hints and custom keyword
+  hints.  Thanks to Robert Krug for reporting this bug and sending a very
+  helpful example.
+
+  Fixed a bug in the output from ~ilc[defattach], which was failing to list
+  previous ~il[events] in the message about ``bypassing constraints that have
+  been proved when processing the event(s)''.
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
+
+  Although the HTML documentation is distributed with ACL2, it had not been
+  possible for users to build that documentation without omitting graphics, for
+  example on the ACL2 home page.  That has been fixed, as files
+  ~c[graphics/*.gif] are now distributed.
 
   ~st[EMACS SUPPORT]
 
@@ -18129,10 +18254,15 @@
   Among the enchancements for the HONS version (~pl[hons-and-memoization]) are
   the following.~bq[]
 
-  The compact-print code has been replaced by new serialization routines.  This
-  may improve performance when including books that contain ~ilc[make-event]s
-  that expand to very large constants.  You can also now save objects to disk
-  without going into raw lisp; ~pl[serialize] for details.~eq[]
+  The compact-print code has been replaced by new serialization routines
+  contributed by Jared Davis.  This may improve performance when including
+  books that contain ~ilc[make-event]s that expand to very large constants.
+  You can also now save objects to disk without going into raw lisp;
+  ~pl[serialize] for details.
+
+  Printing of certain messages has been sped up (by using Lisp function
+  ~c[force-output] in place of ~c[finish-output]).  Thanks to Jared Davis for
+  contributing this improvement.~eq[]
 
   ~/~/")
 

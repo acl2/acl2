@@ -375,10 +375,6 @@
   Volumne 218, 1968, pages 19-22.
   ~/")
 
-(defun hons-enabledp (state)
-  (declare (xargs :guard (state-p state)))
-  (global-val 'hons-enabled (w state)))
-
 #+(or acl2-loop-only (not hons))
 (defn clear-memoize-table (fn)
 

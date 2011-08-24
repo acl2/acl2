@@ -62,6 +62,9 @@
 
 #+(or ansi-cl draft-ansi-cl-2 lispworks clisp ccl)
 (push :CLTL2 *features*)
+; The following is intentionally commented out, but is handy for experimenting
+; as explained in the Essay on Memoization Involving Stobjs.
+; (push :memoize-stobjs-hack *features*)
 
 ; We use IN-PACKAGE in a way that is consistent with both CLTL1 and
 ; CLTL2, namely as a macro (i.e., whose argument is not evaluated) for
@@ -178,8 +181,10 @@
 
 ; Consider using (safety 3) if there is a problem with LispWorks.  It enabled
 ; us to see a stack overflow involving collect-assumptions in the proof of
-; bitn-lam0 from books/rtl/rel2/support/lop3.lisp.  (See save-acl2-in-lispworks
-; for how we have eliminated that stack overflow.)
+; bitn-lam0 from books/rtl/rel2/support/lop3.lisp.  The safety setting of 3
+; helped in this example, because, when the safety is set to 0, the stack is
+; not always automatically extended upon overflow (despite setting
+; system::*stack-overflow-behaviour* to nil in acl2-init.lisp).
 
 ; Safety 1 for CCL has avoided the kernel debugger, e.g. for compiled calls
 ; of car on a non-nil atom.  The following results for CCL show why we have
@@ -410,10 +415,16 @@
       (make-package inv :use nil)))
 
 ; LispWorks has a package named "DEF", and that name conflicts with an ACL2
-; package of that name introduced in books/coi/.  So we rename it here.
+; package of that name introduced in books/coi/.  We deal with that issue
+; here.  Thanks to Martin Simmons for providing this code in place of the
+; original code, which instead invoked (rename-package "DEF"
+; "DEF-FROM-LW-RENAMED").
 #+lispworks
 (when (find-package "DEF")
-  (rename-package "DEF" "DEF-FROM-LW-RENAMED"))
+  (unless (equal (package-name "DEF") "DSPEC")
+    (error "Expected LispWorks DEF package to be called DSPEC"))
+  (rename-package "DSPEC" "DSPEC"
+                  (remove "DEF" (package-nicknames "DSPEC") :test 'equal)))
 
 ; The value of the constant *the-live-state* is actually just a
 ; symbol, but that symbol is the unique representative of the one
@@ -1796,6 +1807,19 @@ which is saved just in case it's needed later.")
 
 (defun exit-lisp (&optional (status '0 status-p))
 
+; Parallelism wart: In ACL2(p), LispWorks doesn't always successfully exit when
+; exit-lisp is called.  The below call to stop-multiprocessing is an attempt to
+; improve the chance of a succesful exit.  In practice, the call does not fix
+; the problem.  However, we leave it for now since we don't think it can hurt.
+; If exit-lisp starts working reliably without the following calls to
+; send-die-to-all-except-initial-threads and stop-multiprocessing, they should
+; be removed.
+
+  #+(and acl2-par lispworks)
+  (when mp::*multiprocessing*
+    (send-die-to-all-except-initial-threads)
+    (mp::stop-multiprocessing))
+
 ; The status (an integer) will be returned as the exit status (shell variable
 ; $?).  We avoid passing the status argument when it is 0, in case Windows or
 ; other operating systems get confused by it.  However, this function is a
@@ -1822,7 +1846,7 @@ which is saved just in case it's needed later.")
   #+clisp
   (if status-p (user::exit status) (user::exit))
   #+lispworks ; Version 4.2.0; older versions have used bye
-  (if status-p (lisp::quit :status status) (lisp::quit))
+  (if status-p (lispworks:quit :status status) (lispworks:quit))
   #+akcl
   (if status-p (lisp::bye status) (lisp::bye))
   #+lucid

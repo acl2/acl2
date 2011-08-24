@@ -38,7 +38,8 @@
 ; implemented by Boyer and Hunt.  The code has since been improved by Boyer and
 ; Hunt, and also by Sol Swords, Jared Davis, and Matt Kaufmann.
 
-; Current owners:  Jared Davis and Warren Hunt
+; Please direct correspondence about this file to Jared Davis
+; <jared@centtech.com> and Warren Hunt <hunt@centtech.com>.
 
 (in-package "ACL2")
 

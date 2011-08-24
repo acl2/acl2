@@ -6308,6 +6308,10 @@
 ; functions-defined-in-file in hons-raw.lisp.
 
 (defun note-fns-in-form (form ht)
+
+; For every macro and every function defined by form, associate its definition
+; with its name in the given hash table, ht.  See note-fns-in-files.
+
   (and (consp form)
        (case (car form)
          ((defun defund defn defproxy defun-nx defun-one-output defstub
@@ -6386,6 +6390,11 @@
                  (car form))))))
 
 (defun note-fns-in-file (filename ht)
+
+; For every macro and every function defined in the indicated file, associate
+; its definition with its name in the given hash table, ht.  See
+; note-fns-in-files.
+
   (with-open-file
    (str filename :direction :input)
    (let ((avrc (cons nil nil))
@@ -6396,6 +6405,12 @@
            (note-fns-in-form x ht)))))
 
 (defun note-fns-in-files (filenames ht loop-only-p)
+
+; For every macro and every function defined in filenames, associate its
+; definition with its name in the given hash table, ht.  We read each file in
+; filenames either with or without feature :acl2-loop-only, according to
+; whether loop-only-p is true or false, respectively.
+
   (let ((*features* (if loop-only-p
                         (push :acl2-loop-only *features*)
                       (remove :acl2-loop-only *features*))))
@@ -6410,8 +6425,16 @@
 
 (defun fns-different-wrt-acl2-loop-only (acl2-files)
 
-; This function should be called with acl2-files equal to *acl2-files*, in the
-; build directory.  See the comment about redundant definitions in
+; For each file in acl2-files we collect up all definitions of functions and
+; macros, reading each file both with and without feature :acl2-loop-only.  We
+; return (mv macro-result program-mode-result logic-mode-result), where each of
+; macro-result, program-mode-result, and logic-mode-result is a list of
+; symbols.  Each symbol is the name of a macro, program-mode function, or
+; logic-mode function (respectively) defined with feature :acl2-loop-only,
+; which has a different (or absent) definition without feature :acl2-loop-only.
+
+; This function is typically called with acl2-files equal to *acl2-files*, in
+; the build directory.  See the comment about redundant definitions in
 ; chk-acceptable-defuns-redundancy for a pertinent explanation.
 
   (let ((filenames (loop for x in acl2-files
@@ -7098,6 +7121,14 @@ Missing functions:
                              (t nil))))))))))))
 
 #+(and acl2-par lispworks)
+(setq system:*sg-default-size* 
+
+; Keep the below number in sync with the call to hcl:extend-current-stack in
+; lp.
+
+      80000)
+
+#+(and acl2-par lispworks)
 (defun spawn-extra-lispworks-listener ()
 
 ; In Lispworks, we spawn a thread for the listener before we exit lp for the
@@ -7147,11 +7178,24 @@ Missing functions:
 ; setting of the threshold in lp, because Lispworks doesn't save the GC
 ; configuration as part of the Lisp image.
 
-; Parallelism wart: the 1 gigabyte threshold may cause problems for machines
-; with less than 1 gigabyte of free RAM.
+; Parallelism no-fix: the 1 gigabyte threshold may cause problems for machines
+; with less than 1 gigabytes of free RAM.  At a first glance, this shouldn't
+; realistically be a problem.  However, a user might actually encounter this
+; problem when running several memory-intensive ACL2(p) sessions in parallel
+; via make -j.
 
   #+acl2-par
   (when (not *lp-ever-entered-p*) (set-gc-threshold$ (expt 2 30) nil))
+
+  #+(and acl2-par lispworks)
+  (when (not *lp-ever-entered-p*)
+    (sys:set-default-segment-size 0 :cons 250)
+    (sys:set-default-segment-size 1 :cons 250)
+    (sys:set-default-segment-size 2 :cons 250)
+    (sys:set-default-segment-size 0 :other 250)
+    (sys:set-default-segment-size 1 :other 250)
+    (sys:set-default-segment-size 2 :other 250))
+
   #+acl2-par
   (f-put-global 'parallel-evaluation-enabled t *the-live-state*)
   (let ((state *the-live-state*)
@@ -7195,13 +7239,27 @@ Missing functions:
         #-(and gcl (not ansi-cl))
         (setq *debugger-hook* 'our-abort)
 
-; Even with the setting of *stack-overflow-behaviour* to nil in acl2-init.lisp,
-; we cannot eliminate the following form for LispWorks.  (We tried with
-; LispWorks 6.0 and Lispworks 6.0.1, but we got segmentation faults when
+; Even with the setting of *stack-overflow-behaviour* to nil or :warn in
+; acl2-init.lisp, we cannot eliminate the following form for LispWorks.  (We
+; tried with LispWorks 6.0 and Lispworks 6.0.1 with *stack-overflow-behaviour*
+; = nil and without the following form, but we got segmentation faults when
 ; certifying books/concurrent-programs/bakery/stutter2 and
 ; books/unicode/read-utf8.lisp.)
 
-        #+lispworks (cl-user::extend-current-stack 400)
+        #+lispworks (hcl:extend-current-stack 400)
+
+        #+(and lispworks acl2-par)
+        (when (< (hcl:current-stack-length)
+
+; Keep the below number (currently 80000) in sync with the value given to
+; *sg-default-size* (set elsewhere in our code).
+
+                 80000)
+          (hcl:extend-current-stack
+
+; this calculation sets the current stack length to be within 1% of 80000
+
+           (- (round (* 100 (/ (hcl:current-stack-length) 80000))) 100)))
 
 ; Acl2-default-restart isn't enough in Allegro, at least, to get the new prompt
 ; when we start up:
@@ -7242,6 +7300,7 @@ Missing functions:
 ; "[RAW LISP]" prompt.
         (install-new-raw-prompt)
         (setq *lp-ever-entered-p* t)
+        #+hons (f-put-global 'serialize-character #\Z state)
         #+(and (not acl2-loop-only) acl2-rewrite-meter)
         (setq *rewrite-depth-alist* nil)
 
