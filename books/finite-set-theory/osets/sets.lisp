@@ -22,8 +22,8 @@
 
  sets.lisp
 
-   This is the top level file, which you should include to use the 
-   ordered set theory library.  
+   This is the top level file, which you should include to use the
+   ordered set theory library.
 
 |#
 
@@ -40,11 +40,11 @@
 ; The definitions in this file are redundant from the local include
 ; books.  This approach has several advantages.
 ;
-;  - it gives a better event order than simply including the books 
+;  - it gives a better event order than simply including the books
 ;    one by one
 ;
 ;  - this file is also faster to include than all of the local books
-;    below, and allows the "ugliness" of auxilliary lemmas to be 
+;    below, and allows the "ugliness" of auxilliary lemmas to be
 ;    hidden away
 ;
 ;  - it makes clear that these theorems are public, and entirely
@@ -57,7 +57,7 @@
 (local (include-book "sort"))
 
 
-; We begin with the definitions of the set theory functions and a 
+; We begin with the definitions of the set theory functions and a
 ; few trivial type prescriptions.
 
 (defund << (a b)
@@ -109,16 +109,31 @@
 
 (defund insert (a X)
   (declare (xargs :guard (setp X)))
-  (cond ((empty X) (list a))
-        ((equal (head X) a) X)
-        ((<< a (head X)) (cons a X))
-        (t (cons (head X) (insert a (tail X))))))
+  (mbe :logic (cond ((empty X) (list a))
+                    ((equal (head X) a) X)
+                    ((<< a (head X)) (cons a X))
+                    (t (cons (head X) (insert a (tail X)))))
+       :exec
+       (cond ((null X) (cons a nil))
+             ((equal (car X) a) X)
+             ((lexorder a (car X)) (cons a X))
+             ((null (cdr X)) (cons (car X) (cons a nil)))
+             ((equal (cadr x) a) X)
+             ((lexorder a (cadr X)) (cons (car X) (cons a (cdr X))))
+             (t (cons (car X) (cons (cadr X) (insert a (cddr X))))))))
 
 (defun in (a X)
   (declare (xargs :guard (setp X)))
-  (and (not (empty X))
-       (or (equal a (head X))
-           (in a (tail X)))))
+  (mbe :logic
+       (and (not (empty X))
+                   (or (equal a (head X))
+                       (in a (tail X))))
+       :exec
+       (and x
+            (or (equal a (car x))
+                (and (cdr x)
+                     (or (equal a (cadr x))
+                         (in a (cddr x))))))))
 
 (defthm in-type
   (or (equal (in a X) t)
@@ -127,11 +142,20 @@
 
 (defund fast-subset (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
-  (cond ((empty X) t)
-        ((empty Y) nil)
-        ((<< (head X) (head Y)) nil)
-        ((equal (head X) (head Y)) (fast-subset (tail X) (tail Y)))
-        (t (fast-subset X (tail Y)))))
+  (mbe :logic
+       (cond ((empty X) t)
+             ((empty Y) nil)
+             ((<< (head X) (head Y)) nil)
+             ((equal (head X) (head Y)) (fast-subset (tail X) (tail Y)))
+             (t (fast-subset X (tail Y))))
+       :exec
+       (cond ((null X) t)
+             ((null Y) nil)
+             ((lexorder (car X) (car Y))
+              (and (equal (car X) (car Y))
+                   (fast-subset (cdr X) (cdr Y))))
+             (t
+              (fast-subset X (cdr Y))))))
 
 (defun subset (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
@@ -154,58 +178,89 @@
                   :guard (and (setp x)
                               (setp y)
                               (true-listp acc))))
-
-  (cond
-   ((empty x) (revappend acc y))
-   ((empty y) (revappend acc x))
-   ((equal (head x) (head y))
-    (fast-union (tail x) (tail y) (cons (head x) acc)))
-   ((<< (head x) (head y))
-    (fast-union (tail x) y (cons (head x) acc)))
-   (t
-    (fast-union x (tail y) (cons (head y) acc)))))
+  (mbe :logic
+       (cond ((empty x) (revappend acc y))
+             ((empty y) (revappend acc x))
+             ((equal (head x) (head y))
+              (fast-union (tail x) (tail y) (cons (head x) acc)))
+             ((<< (head x) (head y))
+              (fast-union (tail x) y (cons (head x) acc)))
+             (t
+              (fast-union x (tail y) (cons (head y) acc))))
+       :exec
+       (cond ((null x) (revappend acc y))
+             ((null y) (revappend acc x))
+             ((equal (car x) (car y))
+              (fast-union (cdr x) (cdr y) (cons (car x) acc)))
+             ((lexorder (car x) (car y))
+              (fast-union (cdr x) y (cons (car x) acc)))
+             (t
+              (fast-union x (cdr y) (cons (car y) acc))))))
 
 (defun fast-intersect (X Y acc)
   (declare (xargs :measure (fast-measure X Y)
-                  :guard (and (setp X) (setp Y) (true-listp acc))))
-  (cond ((empty X) (reverse acc))
-        ((empty Y) (reverse acc))
-        ((equal (head X) (head Y))
-         (fast-intersect (tail X)
-                         (tail Y)
-                         (cons (head X) acc)))
-        
-        ((<< (head X) (head Y))
-         (fast-intersect (tail X) Y acc))
-        (t (fast-intersect X (tail Y) acc))))
+                  :guard (and (setp X)
+                              (setp Y)
+                              (true-listp acc))))
+  (mbe :logic (cond ((empty X) (reverse acc))
+                    ((empty Y) (reverse acc))
+                    ((equal (head X) (head Y))
+                     (fast-intersect (tail X)
+                                     (tail Y)
+                                     (cons (head X) acc)))
+                    ((<< (head X) (head Y))
+                     (fast-intersect (tail X) Y acc))
+                    (t (fast-intersect X (tail Y) acc)))
+       :exec (cond ((null X) (revappend acc nil))
+                   ((null Y) (revappend acc nil))
+                   ((equal (car X) (car Y))
+                    (fast-intersect (cdr X)
+                                    (cdr Y)
+                                    (cons (car X) acc)))
+                   ((lexorder (car X) (car Y))
+                    (fast-intersect (cdr X) Y acc))
+                   (t (fast-intersect X (cdr Y) acc)))))
 
 (defun fast-intersectp (X Y)
   (declare (xargs :guard (and (setp X)
                               (setp Y))
                   :measure (fast-measure X Y)))
-  (cond ((empty X) nil)
-        ((empty Y) nil)
-        ((equal (head X) (head Y))
-         t)
-        ((<< (head X) (head Y))
-         (fast-intersectp (tail X) Y))
-        (t
-         (fast-intersectp X (tail Y)))))
+  (mbe :logic (cond ((empty X) nil)
+                    ((empty Y) nil)
+                    ((equal (head X) (head Y))
+                     t)
+                    ((<< (head X) (head Y))
+                     (fast-intersectp (tail X) Y))
+                    (t
+                     (fast-intersectp X (tail Y))))
+       :exec (cond ((null X) nil)
+                   ((null Y) nil)
+                   ((equal (car X) (car Y))
+                    t)
+                   ((lexorder (car X) (car Y))
+                    (fast-intersectp (cdr X) Y))
+                   (t
+                    (fast-intersectp X (cdr Y))))))
 
 (defun fast-difference (X Y acc)
   (declare (xargs :measure (fast-measure X Y)
-                  :guard (and (setp X) (setp Y) (true-listp acc))))
-
-  (cond ((empty X) (reverse acc))
-        ((empty Y) (revappend acc X))
-
-        ((equal (head X) (head Y))
-         (fast-difference (tail X) (tail Y) acc))
-
-        ((<< (head X) (head Y))
-         (fast-difference (tail X) Y (cons (head X) acc)))
-
-        (t (fast-difference X (tail Y) acc))))
+                  :guard (and (setp X)
+                              (setp Y)
+                              (true-listp acc))))
+  (mbe :logic (cond ((empty X) (reverse acc))
+                    ((empty Y) (revappend acc X))
+                    ((equal (head X) (head Y))
+                     (fast-difference (tail X) (tail Y) acc))
+                    ((<< (head X) (head Y))
+                     (fast-difference (tail X) Y (cons (head X) acc)))
+                    (t (fast-difference X (tail Y) acc)))
+       :exec (cond ((null X) (revappend acc nil))
+                   ((null Y) (revappend acc X))
+                   ((equal (car X) (car Y))
+                    (fast-difference (cdr X) (cdr Y) acc))
+                   ((lexorder (car X) (car Y))
+                    (fast-difference (cdr X) Y (cons (car X) acc)))
+                   (t (fast-difference X (cdr Y) acc)))))
 
 (defun delete (a X)
   (declare (xargs :guard (setp X)))
@@ -245,7 +300,7 @@
   (mbe :logic (if (empty X)
                   0
                 (1+ (cardinality (tail X))))
-       :exec  (length X)))
+       :exec  (length (the list X))))
 
 (defund halve-list-aux (mid x acc)
   (declare (xargs :guard (<= (len x) (len mid))))
@@ -268,13 +323,17 @@
 	(in-list a (cdr x)))))
 
 (defun mergesort-exec (x)
-  (declare (xargs :guard t :measure (len x)))
+  (declare (xargs :guard t
+                  :measure (len x)))
   (cond ((atom x) nil)
         ((atom (cdr x))
-         (insert (car x) nil))
+         (mbe :logic (insert (car x) nil)
+              :exec (list (car x))))
         (t (mv-let (part1 part2)
                    (halve-list x)
-                   (union (mergesort-exec part1) (mergesort-exec part2))))))
+                   (fast-union (mergesort-exec part1)
+                               (mergesort-exec part2)
+                               nil)))))
 
 (defun mergesort (x)
   (declare (xargs :guard t))
@@ -295,14 +354,14 @@
  (((predicate *) => *))
   (local (defun predicate (x) x)))
 
-(defun all (set-for-all-reduction) 
+(defun all (set-for-all-reduction)
   (declare (xargs :guard (setp set-for-all-reduction)))
   (if (empty set-for-all-reduction)
       t
     (and (predicate (head set-for-all-reduction))
 	 (all (tail set-for-all-reduction)))))
 
-(encapsulate 
+(encapsulate
  (((all-hyps) => *)
   ((all-set) => *))
 
@@ -329,8 +388,8 @@
 	   (equal (subset X Y)
 		  (subset-trigger X Y))))
 
-(COMPUTED-HINTS::automate-instantiation 
-  :new-hint-name pick-a-point-subset-hint 
+(COMPUTED-HINTS::automate-instantiation
+  :new-hint-name pick-a-point-subset-hint
   :generic-theorem all-by-membership
   :generic-predicate predicate
   :generic-hyps all-hyps
@@ -489,7 +548,7 @@
   (equal (subset X (sfix Y)) (subset X Y)))
 
 (defthm subset-in
-  (implies (and (subset X Y) (in a X)) 
+  (implies (and (subset X Y) (in a X))
            (in a Y)))
 
 (defthm subset-in-2
@@ -511,7 +570,7 @@
 
 (defthm subset-tail
   (subset (tail X) X)
-  :rule-classes ((:rewrite) 
+  :rule-classes ((:rewrite)
 		 (:forward-chaining :trigger-terms ((tail x)))))
 
 
@@ -750,7 +809,7 @@
   (equal (difference X (sfix Y)) (difference X Y)))
 
 (defthm difference-empty-X
-  (implies (empty X) 
+  (implies (empty X)
            (equal (difference X Y) (sfix X))))
 
 (defthm difference-empty-Y
@@ -809,7 +868,7 @@
   :rule-classes :type-prescription)
 
 (defthm cardinality-zero-empty
-  (equal (equal (cardinality x) 0)             
+  (equal (equal (cardinality x) 0)
 	 (empty x)))
 
 (defthm cardinality-sfix-cancel
@@ -847,7 +906,7 @@
            (equal (equal X Y) t)))
 
 (defthm intersect-cardinality-X
-  (<= (cardinality (intersect X Y)) 
+  (<= (cardinality (intersect X Y))
       (cardinality X))
   :rule-classes (:rewrite :linear))
 

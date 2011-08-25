@@ -20,16 +20,16 @@
 
 
 
- primitives.lisp 
+ primitives.lisp
 
-  Consider implementing a set theory library in ACL2.  Lists are a 
+  Consider implementing a set theory library in ACL2.  Lists are a
   natural choice for an underlying representation.  And, naturally,
-  we are drawn to define our functions in terms of the primitive 
-  list functions (car, cdr, endp, cons).  
+  we are drawn to define our functions in terms of the primitive
+  list functions (car, cdr, endp, cons).
 
   These functions are ill-suited for use in our set theory books be-
   cause of the non-set convention.  This convention states that non-
-  sets should be treated as the empty set.  But the primitive list 
+  sets should be treated as the empty set.  But the primitive list
   functions do not support this idea.  For example:
 
     (car '(1 1 1)) = 1, but (car nil) = nil
@@ -37,34 +37,34 @@
     (cons 1 '(1 1 1)) = (1 1 1 1), but (cons 1 nil) = (1)
     (endp '(1 1 1)) = nil, but (endp nil) = t
 
-  These are "problems" in the sense that, when reasoning about sets, 
+  These are "problems" in the sense that, when reasoning about sets,
   the primitive list functions do not respect the non-set convention.
   These functions do not fit our problem well, and will introduce all
   manner of cases into our proofs that we should not have to con-
   sider.
 
   Having recognized this as a problem, here is what we are going to
-  do.  Instead of using the list primitives to manipulate sets, we 
+  do.  Instead of using the list primitives to manipulate sets, we
   will use new primitives which are very similar, but which respect
   the non-set convention.  These primitives get the following names:
-  
+
     (head X) - the first element of a set, nil for non/empty sets.
     (tail X) - all but the first element, nil for non/empty sets.
     (insert a X) - ordered insert of a into the set X
     (empty X) - recognizer for non/empty sets.
 
-  This file introduces these functions, and shows several theorems 
+  This file introduces these functions, and shows several theorems
   about them.  The purpose of all of this is to, at the end of this
-  file, disable the definitions for these functions, and thereby 
+  file, disable the definitions for these functions, and thereby
   keep the primitive list functions (car, cdr, ...) confined where
   they cannot cause case splits.
 
   Before we can introduce the list primitives, we need to be able
-  to define a set.  Our sets will be ordered under a total order, 
-  <<.  Note that this order is encapsulated: we locally use the 
-  same order as the standard "misc/total-order" book, which was 
+  to define a set.  Our sets will be ordered under a total order,
+  <<.  Note that this order is encapsulated: we locally use the
+  same order as the standard "misc/total-order" book, which was
   put together by Matt Kaufmann, Pete Manolios, and Rob Sumners.
-  However, we will only use this locally and will allow other 
+  However, we will only use this locally and will allow other
   orders to be used, in order to be a more flexible library.
 
 |#
@@ -77,7 +77,7 @@
 
 ;;; First we introduce the total order, <<. and prove that it is a
 ;;; total order (irreflexivity, transitivity, asymmetricity, trichot-
-;;; omy). 
+;;; omy).
 
 (defun << (a b)
   (declare (xargs :guard t))
@@ -116,7 +116,7 @@
 ;;; will inherently be somewhat slow since we have to check that the
 ;;; elements are in order.  However, its complexity is still only lin-
 ;;; ear with the size of X.
- 
+
 (defun setp (X)
   (declare (xargs :guard t))
   (if (atom X)
@@ -141,43 +141,63 @@
 ;;; At this point, we simply introduce the remainder of the primitive
 ;;; functions.  These definitions should hold few surprises.  The MBE
 ;;; macro is used in all of these functions except for insert, to
-;;; avoid potentially slow calls to setp. 
- 
+;;; avoid potentially slow calls to setp.
+
 (defun empty (X)
   (declare (xargs :guard (setp X)))
   (mbe :logic (or (null X)
                   (not (setp X)))
        :exec  (null X)))
- 
+
 (defthm empty-type
   (or (equal (empty X) t)
       (equal (empty X) nil))
   :rule-classes :type-prescription)
- 
+
 (defun sfix (X)
   (declare (xargs :guard (setp X)))
   (mbe :logic (if (empty X) nil X)
        :exec  X))
- 
+
 (defun head (X)
   (declare (xargs :guard (and (setp X)
                               (not (empty X)))))
   (mbe :logic (car (sfix X))
        :exec  (car X)))
- 
+
 (defun tail (X)
   (declare (xargs :guard (and (setp X)
                               (not (empty X)))))
   (mbe :logic (cdr (sfix X))
        :exec  (cdr X)))
- 
-(defun insert (a X)
-  (declare (xargs :guard (setp X)))
-  (cond ((empty X) (list a))
-        ((equal (head X) a) X)
-        ((<< a (head X)) (cons a X))
-        (t (cons (head X) (insert a (tail X))))))
 
+(defun insert (a X)
+  (declare (xargs :guard (setp X)
+                  :verify-guards nil))
+  (mbe :logic (cond ((empty X) (list a))
+                    ((equal (head X) a) X)
+                    ((<< a (head X)) (cons a X))
+                    (t (cons (head X) (insert a (tail X)))))
+       :exec
+       (cond ((null X) (cons a nil))
+             ((equal (car X) a) X)
+             ((lexorder a (car X)) (cons a X))
+             ((null (cdr X)) (cons (car X) (cons a nil)))
+             ((equal (cadr x) a) X)
+             ((lexorder a (cadr X)) (cons (car X) (cons a (cdr X))))
+             (t (cons (car X) (cons (cadr X) (insert a (cddr X))))))))
+
+(verify-guards insert
+  :hints(("Goal" :in-theory (enable <<))))
+
+;; On CCL, the :exec version of insert is apparently 1.6x faster, per the
+;; following micro-benchmark.  2.15 seconds with the logic definition, 1.56
+;; seconds with inlining but no unrolling, 1.34 seconds with unrolling
+;;
+;; (let ((acc nil))
+;;  (gc$)
+;;  (time$ (loop for i fixnum from 1 to 10000 do
+;;               (setq acc (sets::insert i acc)))))
 
 
 
@@ -188,7 +208,7 @@
 ;;; functions terminate.  Naturally, we show that acl2-count decreases
 ;;; with tail.  We also show that acl2-count decreases with head, in
 ;;; case this fact is needed.
- 
+
 (defthm tail-count
   (implies (not (empty X))
            (< (acl2-count (tail X)) (acl2-count X)))
@@ -370,7 +390,7 @@
 ;;; membership.lisp will fail.
 
 (defthm head-insert-empty
-  (implies (empty X) 
+  (implies (empty X)
            (equal (head (insert a X)) a)))
 
 (defthm tail-insert-empty

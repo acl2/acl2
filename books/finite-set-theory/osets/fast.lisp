@@ -1,4 +1,4 @@
-#| 
+#|
 
    Fully Ordered Finite Sets, Version 0.91
    Copyright (C) 2003-2006 by Jared Davis <jared@cs.utexas.edu>
@@ -25,22 +25,22 @@
   The MBE feature in ACL2 version 2.8 provides the opportunity to
   introduce functions which take advantage of the set order for good
   execution efficiency, while still using simple/nice functions for
-  reasoning about.  
+  reasoning about.
 
   This file contains efficient versions of the union, intersect, and
   difference functions, and a few theorems about them.  The goal is
-  to show that for each of these "fast" functions, when given two 
+  to show that for each of these "fast" functions, when given two
   sets as inputs:
 
     (1) produces a set, and
     (2) has the correct membership properties
 
   These facts can then be used to make an equal-by-membership argu-
-  ment with the simple versions as required by MBE. 
+  ment with the simple versions as required by MBE.
 
   Note that this file is very ugly.  There are many factors that con-
   tribute to this problem.  For one, these functions are written in
-  terms of cons and therefore we have to consider many cases.  This 
+  terms of cons and therefore we have to consider many cases.  This
   also means we have lots of subgoals when we do inductions.  It is
   also challenging to develop a "good" rewrite theory when it comes
   to the cons function, which does not have very nice properties when
@@ -77,7 +77,7 @@
   :hints(("Goal" :in-theory (enable primitives-theory))))
 
 (defthm cons-to-insert-nonempty
-  (implies (and (setp X) 
+  (implies (and (setp X)
                 (<< a (head X)))
            (equal (cons a X) (insert a X)))
   :hints(("Goal" :in-theory (enable primitives-theory
@@ -125,35 +125,35 @@
                 (cons (head X) (fast-union-old (tail X) Y)))
                (t (cons (head Y) (fast-union-old X (tail Y)))))))
 
-(local 
+(local
  (encapsulate ()
-              
+
   (local (defthmd fast-union-old-head-weak
-           (implies (and (setp X) 
+           (implies (and (setp X)
                          (setp Y)
                          (setp (fast-union-old X Y))
                          (not (equal (head (fast-union-old X Y)) (head X))))
                     (equal (head (fast-union-old X Y)) (head Y)))
-           :hints(("Goal" 
+           :hints(("Goal"
                    :in-theory (enable primitive-order-theory)
                    :use (:instance fast-union-old (X X) (Y Y))))))
 
   (defthm fast-union-old-set
     (implies (and (setp X) (setp Y))
              (setp (fast-union-old X Y)))
-    :hints(("Goal" 
+    :hints(("Goal"
             :in-theory (enable primitive-order-theory))
-           ("Subgoal *1/9" 
-            :use (:instance fast-union-old-head-weak 
-                            (X X) 
+           ("Subgoal *1/9"
+            :use (:instance fast-union-old-head-weak
+                            (X X)
                             (Y (tail Y))))
-           ("Subgoal *1/7" 
+           ("Subgoal *1/7"
             :use (:instance fast-union-old-head-weak
-                            (X (tail X)) 
+                            (X (tail X))
                             (Y Y)))
-           ("Subgoal *1/5" 
+           ("Subgoal *1/5"
             :use (:instance fast-union-old-head-weak
-                            (X (tail X)) 
+                            (X (tail X))
                             (Y (tail Y))))))
 
 
@@ -164,25 +164,25 @@
                                  ((empty Y)              (head X))
                                  ((<< (head X) (head Y)) (head X))
                                  (t                      (head Y)))))
-           :hints(("Goal" 
+           :hints(("Goal"
                    :in-theory (enable primitive-order-theory))
-                  ("Subgoal *1/3" :use 
-                   (:instance cons-head 
-                              (a (head X)) 
+                  ("Subgoal *1/3" :use
+                   (:instance cons-head
+                              (a (head X))
                               (X (fast-union-old (tail X) (tail Y))))))))
 
-            
+
   (defthm fast-union-old-membership
     (implies (and (setp X) (setp Y))
              (equal (in a (fast-union-old X Y))
                     (or (in a X) (in a Y))))
-    :hints(("Goal" 
+    :hints(("Goal"
             :in-theory (enable primitive-order-theory))
-           ("Subgoal *1/5" 
-            :use (:instance cons-head 
-                            (a (head Y)) 
+           ("Subgoal *1/5"
+            :use (:instance cons-head
+                            (a (head Y))
                             (X (fast-union-old X (tail Y)))))
-           ("Subgoal *1/4" 
+           ("Subgoal *1/4"
             :use ((:instance cons-head
                              (a (head X))
                              (X (fast-union-old (tail X) Y)))
@@ -193,7 +193,7 @@
                              (a a)
                              (b (head X))
                              (X (fast-union-old (tail X) Y)))))
-           ("Subgoal *1/3" 
+           ("Subgoal *1/3"
             :use (:instance cons-head
                             (a (head X))
                             (X (fast-union-old (tail X) (tail Y)))))))
@@ -204,22 +204,44 @@
   (declare (xargs :measure (fast-measure X Y)
                   :guard (and (setp x)
                               (setp y)
-                              (true-listp acc))))
+                              (true-listp acc))
+                  :verify-guards nil))
+  (mbe :logic
+       (cond ((empty x) (revappend acc y))
+             ((empty y) (revappend acc x))
+             ((equal (head x) (head y))
+              (fast-union (tail x) (tail y) (cons (head x) acc)))
+             ((<< (head x) (head y))
+              (fast-union (tail x) y (cons (head x) acc)))
+             (t
+              (fast-union x (tail y) (cons (head y) acc))))
+       :exec
+       (cond ((null x) (revappend acc y))
+             ((null y) (revappend acc x))
+             ((equal (car x) (car y))
+              (fast-union (cdr x) (cdr y) (cons (car x) acc)))
+             ((lexorder (car x) (car y))
+              (fast-union (cdr x) y (cons (car x) acc)))
+             (t
+              (fast-union x (cdr y) (cons (car y) acc))))))
 
-  (cond
-   ((empty x) (revappend acc y))
-   ((empty y) (revappend acc x))
-   ((equal (head x) (head y))
-    (fast-union (tail x) (tail y) (cons (head x) acc)))
-   ((<< (head x) (head y))
-    (fast-union (tail x) y (cons (head x) acc)))
-   (t
-    (fast-union x (tail y) (cons (head y) acc)))))
+(verify-guards fast-union
+   :hints(("Goal" :in-theory (e/d (primitives-theory <<)))))
+
+;; The :exec version is around 1.7x faster than the :logic version on the
+;; following microbenchmark; logic mode: 5.525 seconds, exec mode: 3.167
+;; seconds.
+;;
+;; (let ((evens (loop for i from 1 to 10000 collect (* 2 i)))
+;;       (odds  (loop for i from 1 to 10000 collect (+ 1 (* 2 i)))))
+;;   (gc$)
+;;   (format t "starting test~%")
+;;   (time (loop for i fixnum from 1 to 4000 do
+;;               (sets::fast-union evens odds nil))))
 
 
 (encapsulate
  ()
-
  (local (defthm lemma
           (equal (fast-union x y acc)
                  (revappend acc (fast-union-old x y)))))
@@ -231,7 +253,7 @@
  (defthm fast-union-set
    (implies (and (setp X) (setp Y))
             (setp (fast-union X Y nil))))
-            
+
  (defthm fast-union-membership
    (implies (and (setp X) (setp Y))
             (equal (in a (fast-union X Y nil))
@@ -248,19 +270,30 @@
 ;;; creates sets and has the expected membership property.  And again,
 ;;; the proofs are quite ugly.
 
-
 (defun fast-intersectp (X Y)
   (declare (xargs :guard (and (setp X)
                               (setp Y))
-                  :measure (fast-measure X Y)))
-  (cond ((empty X) nil)
-        ((empty Y) nil)
-        ((equal (head X) (head Y))
-         t)
-        ((<< (head X) (head Y))
-         (fast-intersectp (tail X) Y))
-        (t
-         (fast-intersectp X (tail Y)))))
+                  :measure (fast-measure X Y)
+                  :verify-guards nil))
+  (mbe :logic (cond ((empty X) nil)
+                    ((empty Y) nil)
+                    ((equal (head X) (head Y))
+                     t)
+                    ((<< (head X) (head Y))
+                     (fast-intersectp (tail X) Y))
+                    (t
+                     (fast-intersectp X (tail Y))))
+       :exec (cond ((null X) nil)
+                   ((null Y) nil)
+                   ((equal (car X) (car Y))
+                    t)
+                   ((lexorder (car X) (car Y))
+                    (fast-intersectp (cdr X) Y))
+                   (t
+                    (fast-intersectp X (cdr Y))))))
+
+(verify-guards fast-intersectp
+  :hints(("Goal" :in-theory (enable primitives-theory <<))))
 
 ;; PATCH (0.91): David Rager noticed that as of v0.9, fast-intersect was not
 ;; tail recursive, and submitted an updated version.  The original
@@ -273,7 +306,7 @@
          (cond ((empty X) (sfix X))
                ((empty Y) (sfix Y))
                ((equal (head X) (head Y))
-                (cons (head X) 
+                (cons (head X)
                       (fast-intersect-old (tail X) (tail Y))))
                ((<< (head X) (head Y))
                 (fast-intersect-old (tail X) Y))
@@ -281,7 +314,7 @@
 
 
 (local
- (encapsulate 
+ (encapsulate
   ()
 
   (defthm fast-intersect-old-empty
@@ -295,7 +328,7 @@
                          (not (empty (fast-intersect-old X Y)))
                          (not (<< (head X) (head Y))))
                     (not (empty (tail Y))))))
-			 
+
   (local (defthm lemma-2
            (implies (and (not (empty X))
                          (not (empty Y))
@@ -363,7 +396,7 @@
     (implies (and (setp X) (setp Y))
              (equal (in a (fast-intersect-old X Y))
                     (and (in a X) (in a Y))))
-    :hints(("Goal" :in-theory (enable primitive-order-theory 
+    :hints(("Goal" :in-theory (enable primitive-order-theory
                                       head-minimal))
            ("Subgoal *1/3" :use (:instance fast-intersect-old-order-weak
                                            (a (head X))
@@ -379,37 +412,49 @@
            :hints(("Goal" :in-theory (enable empty head setp)))))
 
   (defthm fast-intersectp-correct-lemma
-    (implies (and (setp X) 
+    (implies (and (setp X)
                   (setp Y))
              (equal (fast-intersectp X Y)
                     (not (empty (fast-intersect-old X Y)))))
-    :hints(("Goal" 
+    :hints(("Goal"
             :induct (fast-intersect-old X Y)
             :in-theory (enable primitive-order-theory))
-           ("Subgoal *1/3" 
+           ("Subgoal *1/3"
             :use ((:instance fast-intersect-old-order-weak
                              (a (head x))
                              (x (tail x))
                              (y (tail y)))))))
-                                    
+
   ))
 
 
 (defun fast-intersect (X Y acc)
   (declare (xargs :measure (fast-measure X Y)
-                  :guard (and (setp X) 
-                              (setp Y) 
-                              (true-listp acc))))
-  (cond ((empty X) (reverse acc))
-        ((empty Y) (reverse acc))
-        ((equal (head X) (head Y))
-         (fast-intersect (tail X)
-                         (tail Y)
-                         (cons (head X) acc)))
-        
-        ((<< (head X) (head Y))
-         (fast-intersect (tail X) Y acc))
-        (t (fast-intersect X (tail Y) acc))))
+                  :guard (and (setp X)
+                              (setp Y)
+                              (true-listp acc))
+                  :verify-guards nil))
+  (mbe :logic (cond ((empty X) (reverse acc))
+                    ((empty Y) (reverse acc))
+                    ((equal (head X) (head Y))
+                     (fast-intersect (tail X)
+                                     (tail Y)
+                                     (cons (head X) acc)))
+                    ((<< (head X) (head Y))
+                     (fast-intersect (tail X) Y acc))
+                    (t (fast-intersect X (tail Y) acc)))
+       :exec (cond ((null X) (revappend acc nil))
+                   ((null Y) (revappend acc nil))
+                   ((equal (car X) (car Y))
+                    (fast-intersect (cdr X)
+                                    (cdr Y)
+                                    (cons (car X) acc)))
+                   ((lexorder (car X) (car Y))
+                    (fast-intersect (cdr X) Y acc))
+                   (t (fast-intersect X (cdr Y) acc)))))
+
+(verify-guards fast-intersect
+  :hints(("Goal" :in-theory (enable primitives-theory <<))))
 
 (encapsulate
  ()
@@ -425,7 +470,7 @@
 
  (defthm fast-intersect-empty
    (implies (empty X)
-            (equal (fast-intersect X Y nil) 
+            (equal (fast-intersect X Y nil)
                    (sfix X))))
 
  (defthm fast-intersect-set
@@ -445,7 +490,7 @@
 
 
 
-  
+
 
 ;;; Fast Difference
 ;;;
@@ -480,7 +525,7 @@
                          (<< (head X) (head Y)))
                     (equal (head (fast-difference-old X Y))
                            (head X)))
-           :hints(("Goal" 
+           :hints(("Goal"
                    :in-theory (disable cons-set)
                    :use (:instance cons-head
                                    (a (head X))
@@ -532,18 +577,27 @@
 
 (defun fast-difference (X Y acc)
   (declare (xargs :measure (fast-measure X Y)
-                  :guard (and (setp X) (setp Y) (true-listp acc))))
+                  :guard (and (setp X)
+                              (setp Y)
+                              (true-listp acc))
+                  :verify-guards nil))
+  (mbe :logic (cond ((empty X) (reverse acc))
+                    ((empty Y) (revappend acc X))
+                    ((equal (head X) (head Y))
+                     (fast-difference (tail X) (tail Y) acc))
+                    ((<< (head X) (head Y))
+                     (fast-difference (tail X) Y (cons (head X) acc)))
+                    (t (fast-difference X (tail Y) acc)))
+       :exec (cond ((null X) (revappend acc nil))
+                   ((null Y) (revappend acc X))
+                   ((equal (car X) (car Y))
+                    (fast-difference (cdr X) (cdr Y) acc))
+                   ((lexorder (car X) (car Y))
+                    (fast-difference (cdr X) Y (cons (car X) acc)))
+                   (t (fast-difference X (cdr Y) acc)))))
 
-  (cond ((empty X) (reverse acc))
-        ((empty Y) (revappend acc X))
-
-        ((equal (head X) (head Y))
-         (fast-difference (tail X) (tail Y) acc))
-
-        ((<< (head X) (head Y))
-         (fast-difference (tail X) Y (cons (head X) acc)))
-
-        (t (fast-difference X (tail Y) acc))))
+(verify-guards fast-difference
+  :hints(("Goal" :in-theory (enable primitives-theory <<))))
 
 (encapsulate
  ()
@@ -551,7 +605,7 @@
           (implies (empty x)
                    (not (sfix x)))
           :hints(("Goal" :in-theory (enable empty sfix)))))
-  
+
  (local (defthm lemma2
           (implies (true-listp acc)
                    (equal (fast-difference x y acc)
@@ -573,7 +627,7 @@
 
  (defthm fast-difference-empty
    (implies (empty X)
-            (equal (fast-difference X Y nil) 
+            (equal (fast-difference X Y nil)
                    (sfix X))))
  )
 
@@ -584,7 +638,7 @@
 ;;; we will go ahead and disable all these theorems and put them into
 ;;; nice packages for the future.
 
-(deftheory fast-union-theory 
+(deftheory fast-union-theory
   '(fast-union-set
     fast-union-membership))
 
@@ -598,9 +652,9 @@
     fast-difference-membership
     fast-difference-empty))
 
-(deftheory cons-theory 
+(deftheory cons-theory
   '(cons-set
-    cons-head 
+    cons-head
     cons-to-insert-empty
     cons-to-insert-nonempty
     cons-in))
@@ -613,4 +667,4 @@
                     fast-intersect-theory
                     fast-difference-theory
 		    cons-theory))
-                    
+

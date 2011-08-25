@@ -1,4 +1,4 @@
-#| 
+#|
 
    Fully Ordered Finite Sets, Version 0.91
    Copyright (C) 2003-2006 by Jared Davis <jared@cs.utexas.edu>
@@ -23,7 +23,7 @@
  sort.lisp
 
    We implement a mergesort which can convert lists into sets more
-   efficiencly than repeated insertion.  Logically, (mergesort x) 
+   efficiencly than repeated insertion.  Logically, (mergesort x)
    is exactly the same as repeated insertion, so it is fairly easy
    to reason about.  But, under the hood, mergesort is implemented
    fairly efficiently using MBE.
@@ -35,17 +35,17 @@
    mance is inadequate, which is unlikely, you can work on making it
    faster.
 
-   There are a few points of interest.  If you look at the actual 
+   There are a few points of interest.  If you look at the actual
    sort code (mergesort-exec), you will see that it is actually using
    the set library's own union function to perform the union.  This
-   is pretty slick because union is linear complexity, and yet is 
+   is pretty slick because union is linear complexity, and yet is
    easy to reason about since we have already got a lot of theory in
    place about it.
 
    In any case, our strategy for proving the equality of this merge-
-   sort with a simple insert-sort is the exact same trick we use 
-   everywhere else in the sets library.  We begin by showing that 
-   both produce sets, and then show that membership in either is 
+   sort with a simple insert-sort is the exact same trick we use
+   everywhere else in the sets library.  We begin by showing that
+   both produce sets, and then show that membership in either is
    true exactly when an element is member-equal in the original list.
 
 |#
@@ -77,7 +77,7 @@
 ; In the future we might want to expand this section to include more
 ; theorems.
 
-;;; BOZO this is really gross.  We should get rid of in-list and just 
+;;; BOZO this is really gross.  We should get rid of in-list and just
 ;;; use member-equal, or memberp from somewhere else.
 
 (defun in-list (a x)
@@ -112,7 +112,7 @@
 
 (encapsulate nil
 
-  (local (defthm lemma 
+  (local (defthm lemma
 	   (implies (in-list a acc)
 		    (in-list a (revappend x acc)))))
 
@@ -148,15 +148,15 @@
 ;                     (mv (cons (car x) part1)
 ;                         (cons (cadr x) part2)))))))
 ;
-; But David Rager noted that this was not tail recursive, and accordingly 
-; it ran into trouble on large data sets.  Accordingly, in Version 0.91, 
+; But David Rager noted that this was not tail recursive, and accordingly
+; it ran into trouble on large data sets.  Accordingly, in Version 0.91,
 ; I rewrote this to be tail recursive:
 ;
 ;  (defun split-list (x acc acc2)
 ;   (declare (xargs :guard (true-listp x)))
-;   (cond ((endp x) 
+;   (cond ((endp x)
 ;          (mv acc acc2))
-;         ((endp (cdr x)) 
+;         ((endp (cdr x))
 ;          (mv (cons (car x) acc) acc2))
 ;         (t (split-list (cddr x)
 ;                        (cons (car x) acc)
@@ -169,7 +169,7 @@
 ;
 ; Defsort's approach uses a lot of arithmetic optimization.  I later wrote a
 ; mergesort for Milawa, where arithmetic is expensive.  Here, I implemented
-; split-list by walking down "one cdr" and "two cdrs" at a time.  Below is a 
+; split-list by walking down "one cdr" and "two cdrs" at a time.  Below is a
 ; reimplementation of this strategy for osets.
 
 (defund halve-list-aux (mid x acc)
@@ -231,9 +231,9 @@
          (implies (<= (len x) (len mid))
                   (equal (acl2::app (acl2::rev (first (halve-list-aux mid x acc)))
                                     (second (halve-list-aux mid x acc)))
-                         (acl2::app (acl2::rev acc) 
+                         (acl2::app (acl2::rev acc)
                                     mid)))
-         :hints(("Goal" 
+         :hints(("Goal"
                  :in-theory (enable halve-list-aux)
                  :do-not '(generalize fertilize)))))
 
@@ -266,7 +266,7 @@
          (or (in-list a (first (halve-list x)))
              (in-list a (second (halve-list x)))))
   :rule-classes nil
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (disable in-list-app)
           :use ((:instance in-list-app
                            (x (acl2::rev (first (halve-list x))))
@@ -281,10 +281,20 @@
                   :verify-guards nil))
   (cond ((atom x) nil)
         ((atom (cdr x))
-         (insert (car x) nil))
+         (mbe :logic (insert (car x) nil)
+              :exec (list (car x))))
         (t (mv-let (part1 part2)
                    (halve-list x)
-                   (union (mergesort-exec part1) (mergesort-exec part2))))))
+                   (fast-union (mergesort-exec part1)
+                               (mergesort-exec part2)
+                               nil)))))
+
+(local (defthm fast-union-is-union
+         (implies (and (setp x)
+                       (setp y))
+                  (equal (fast-union x y nil)
+                         (union x y)))
+         :hints(("Goal" :in-theory (enable fast-union-theory)))))
 
 (local (defthm mergesort-exec-set
          (setp (mergesort-exec x))))
@@ -306,7 +316,8 @@
               (in-list a x))))
 
 (verify-guards mergesort-exec
-               :hints(("Goal" :in-theory (disable mv-nth))))
+               :hints(("Goal" :in-theory (e/d (primitives-theory)
+                                              (mv-nth)))))
 
 
 (defun mergesort (x)
@@ -317,7 +328,7 @@
 		(insert (car x)
 			(mergesort (cdr x))))
        :exec (mergesort-exec x)))
-	   
+
 (defthm mergesort-set
   (setp (mergesort x)))
 
@@ -326,7 +337,7 @@
 	 (in-list a x)))
 
 (verify-guards mergesort)
-    
+
 (defthm mergesort-set-identity
   (implies (setp X)
 	   (equal (mergesort X) X))
