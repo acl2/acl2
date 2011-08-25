@@ -2724,37 +2724,21 @@ the calls took.")
 
 ; Essay on Memoization Involving Stobjs
 
-; We have considered allowing memoization of functions that take user-defined
-; stobjs as arguments, an action that is currently prohibited in
-; memoize-table-chk.  The original comment here was as follows.
-
-;   memoize-flush 'forgets' all that was remembered for certain
-;   functions that use certain stobjs.  We must keep memoize-flush very
-;   fast in execution so as not to slow down stobj update or resize
-;   operations in general.  We 'forget' the pons table later.
-
-; The key was the use of a macro, memoize-flush, in functions introduced by
-; defstobj that modify stobj fields.  This macro arranged to empty the memo
-; tables for all such functions whenever such updates would occur.  We observed
-; significant slowdown due to memoize-flush, but we a newer implementation of
-; memoize-flush below may (according to tests run) incur essentially no cost as
+; We allow memoization of functions that take user-defined stobjs (not state)
+; as arguments but do not return stobjs.  The key is the use of memoize-flush
+; to "forget" all that was remembered for certain functions that use certain
+; stobjs.  We must keep memoize-flush very fast in execution so as not to slow
+; down stobj update or resize operations in general.  Indeed, memoize-flush may
+; (according to tests run) incur essentially no cost (after Version_4.3) as
 ; long as no functions with stobj arguments are actually memoized.
 
-; Unfortunately, the implementation using memoize-flush (as of August 2011) was
-; not correct.  Here we document the problem, as a starting point for possible
-; future enhancements that do allow memoization of functions with user-defined
-; stobjs as arguments.  Just perform the following steps.  Note that we use
-; #+memoize-stobjs-hack for parts of the source code that are not currently
-; used but might be useful in the implementation of memoization with stobjs.
+; The following example shows why we disallow memoization of functions that
+; return stobjs.  First, redefine memoize-table-chk by eliminating the branch
+; that causes an error in the presence of stobj names in stobjs-out.  Then
+; start up ACL2 and submit the forms below.  The problem is that we do not
+; inhibit storing a result in the case that the stobj has changed from the time
+; the function was called to the time the result is to be stored.
 
-; Rebuild ACL2 by uncommenting out the following form in acl2.lisp, just below.
-; ; (push :memoize-stobjs-hack *features*)
-; Then start up ACL2 and submit the forms below.
-; :q
-; ; For the following setting of (st-lst 'st), see the comment about
-; ; memoize-flush in the raw Lisp definition of defstobj:
-; (defg ACL2_INVISIBLE::|HONS-S-"ACL2","ST"| nil)
-; (lp)
 ; (defstobj st fld)
 ; (defun foo (st)
 ;   (declare (xargs :stobjs st))
@@ -2767,18 +2751,30 @@ the calls took.")
 ; (foo st) ; no longer updates (fld st)
 ; (fld st) ; still ((nil . nil). (nil . nil))
 
-#+memoize-stobjs-hack ; see the Essay on Memoization Involving Stobjs
 (defun memoize-flush1 (lst)
+
+; Experiments showed that when lst is nil, it is faster to call this function
+; then to inline its code into the body of memoize-flush.
+
+; We "forget" all memoized values by clearing all necessary memoize tables; see
+; the comment about memoize-flush in memoize-fn.  We leave the pons table alone
+; in order to keep this flushing operation as fast as possible.  Note that the
+; pons table merely stores keys to be looked up in the memo table, so there is
+; no soundness issue, and in fact those pons table entries might remain useful;
+; the cost is the space taken up by the pons tables.
+
   (loop for sym in lst do
         (when (boundp (the symbol sym)) ; Is this test needed?
           (let ((old (symbol-value (the symbol sym))))
             (unless (or (null old) (empty-ht-p old))
               (setf (symbol-value (the symbol sym)) nil))))))
 
-#+memoize-stobjs-hack ; see the Essay on Memoization Involving Stobjs
 (defmacro memoize-flush (st)
+
+; See memoize-flush1 for a relevant discussion.
+
   (let ((s (st-lst st)))
-    `(when ,s
+    `(when ,s ; optimization
        (memoize-flush1 ,s))))
 
 (declaim (hash-table *memoize-info-ht*))
@@ -3388,7 +3384,6 @@ the calls took.")
          (intern name (find-package "ACL2_INVISIBLE"))
        (if (null status) (return sym))))))
 
-#+memoize-stobjs-hack ; see the Essay on Memoization Involving Stobjs
 (defn1 st-lst (st)
 
 ; ST-LST returns a symbol whose value is a list in which are saved the
@@ -3879,11 +3874,18 @@ the calls took.")
 
          (localtablename (make-symbol "TABLENAME"))
          (localponstablename (make-symbol "PONSTABLENAME"))
+         (sts
 
-         ;; When these user-level stobjs change the memo table will need to be cleared, I guess...
-         #+memoize-stobjs-hack ; see the Essay on Memoization Involving Stobjs
-         (sts (loop for x in (union stobjs-in stobjs-out)
-                    when x collect (st-lst x)))
+; Here we support memoize-flush, which keeps memoize tables coherent in the
+; presence of user-defined stobjs.  For each (user-level) stobj input name, x,
+; we collect up the variable (st-lst x), whose value is the list of names of
+; memoize tables that need to be cleared whenever that stobj changes.  Below,
+; we will push the present function's table name onto each of these lists.
+
+          (loop for x in (union stobjs-in stobjs-out)
+                when x
+                collect (assert$ (not (eq x 'state)) ; see memoize-table-chk
+                                 (st-lst x))))
 
          ;; Number of arguments.  Specials only matter for common lisp functions, see the notes above in memoize-fn.
          ;; Basically if the function reads from specials we want to count them as args.
@@ -4177,7 +4179,7 @@ the calls took.")
                         :condition condition
                         :inline inline
                         :num fnn
-                        #+memoize-stobjs-hack :sts #+memoize-stobjs-hack sts
+                        :sts sts
                         :trace trace
                         :start-time start-time
                         :cl-defun cl-defun
@@ -4197,7 +4199,6 @@ the calls took.")
                         :forget            forget
                         :memo-table-init-size memo-table-init-size))
             (setf (gethash fnn *memoize-info-ht*) fn)
-            #+memoize-stobjs-hack
             (and condition (loop for s in sts do
                                  (push tablename
                                        (symbol-value s))))
@@ -4210,7 +4211,6 @@ the calls took.")
                        (when (eq fn (cadr v))
                          (remhash k *form-ht*)))
                      *form-ht*)
-            #+memoize-stobjs-hack
             (and condition
                  (loop for s in sts
                        when (eq tablename
@@ -4263,7 +4263,6 @@ the calls took.")
               (the symbol (access memoize-info-ht-entry
                                   l :ponstablename)))
              nil)
-         #+memoize-stobjs-hack ; see the Essay on Memoization Involving Stobjs
        (loop for s in (access memoize-info-ht-entry l :sts) do
              (when (boundp s)
                (setf (symbol-value (the symbol s))

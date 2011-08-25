@@ -19186,11 +19186,7 @@
                                              ',init
                                              :element-type
                                              ',array-etype)))
-                      #+(and hons
-                             (not acl2-loop-only)
-; See the Essay on Memoization Involving Stobjs:
-                             memoize-stobjs-hack)
-                      (memoize-flush ,var)
+                      #+hons (memoize-flush ,var)
                       (setf (svref ,var ,n)
                             (,(pack2 'stobj-copy-array- fix-vref)
                              old new 0 min-index))
@@ -19208,11 +19204,7 @@
                      (type ,array-etype v))
             ,@(and inline (list *stobj-inline-declare*))
             (progn 
-              #+(and hons
-                     (not acl2-loop-only)
-; See the Essay on Memoization Involving Stobjs:
-                     memoize-stobjs-hack)
-              (memoize-flush ,var)
+              #+hons (memoize-flush ,var)
               (setf (,vref (the ,simple-type (svref ,var ,n))
                            (the (and fixnum (integer 0 *)) i))
                     (the ,array-etype v))
@@ -19224,12 +19216,9 @@
            (,updater-name (v ,var)
                           ,@(and inline (list *stobj-inline-declare*))
                           (progn
-                            #+(and hons
-                                   (not acl2-loop-only)
-; See the Essay on Memoization Involving Stobjs:
-                                   memoize-stobjs-hack)
-                            (memoize-flush ,var)
-                            (setf (svref ,var ,n) v) ,var))))
+                            #+hons (memoize-flush ,var)
+                            (setf (svref ,var ,n) v)
+                            ,var))))
         (t
          `((,accessor-name (,var)
                            ,@(and inline (list *stobj-inline-declare*))
@@ -19241,11 +19230,7 @@
                           (declare (type ,type v))
                           ,@(and inline (list *stobj-inline-declare*))
                           (progn
-                            #+(and hons
-                                   (not acl2-loop-only)
-; See the Essay on Memoization Involving Stobjs:
-                                   memoize-stobjs-hack)
-                            (memoize-flush ,var)
+                            #+hons (memoize-flush ,var)
                             (setf (aref (the (simple-array ,type (1))
                                           (svref ,var ,n))
                                         0)
@@ -25326,157 +25311,162 @@
                          (getprop key 'formals t 'current-acl2-world wrld)
                        t))
         (key-class (symbol-class key wrld)))
-    (cond
-     ((eq key-formals t)
-      (er hard ctx
-          "~@0~x1 is not a function symbol."
-          str key))
-     #-memoize-stobjs-hack ; see the Essay on Memoization Involving Stobjs
-     ((not (all-nils (stobjs-in key wrld)))
-      (let ((stobj (find-first-non-nil (stobjs-in key wrld))))
-        (cond ((eq stobj 'state)
+    (let ((result
+           (cond
+            ((eq key-formals t)
+             (er hard ctx
+                 "~@0~x1 is not a function symbol."
+                 str key))
+            ((member-eq 'state (stobjs-in key wrld))
+             (er hard ctx
+                 "~@0~x1 takes ACL2's STATE as an argument."
+                 str key))
+            ((not (all-nils (stobjs-out key wrld)))
+             (let ((stobj (find-first-non-nil (stobjs-out key wrld))))
                (er hard ctx
-                   "~@0~x1 takes ACL2's ~x2 as an argument."
-                   str key stobj))
-              (t
-               (er hard ctx
-                   "~@0~x1 takes a stobj, ~x2, as an argument."
-                   str key stobj)))))
-      #+memoize-stobjs-hack ; see the Essay on Memoization Involving Stobjs
-      ((member-eq 'state (stobjs-in key wrld))
-
-; Consider warning when memoizing a fn that takes a user-defined stobj as an
-; argument, saying that all modifications of such stobjs may be slow.  [A
-; variant of a test supplied by Warren Hunt, basically a big loop of
-; interleaved writes and reads, slowed down from about 19 seconds to nearly 100
-; seconds.]
-
-       (er hard ctx
-           "~@0~x1 takes ACL2's STATE as an argument."
-           str key))
-     ((member-eq key *hons-primitive-fns*)
-      (er hard ctx
-          "~@0~x1 is a HONS primitive."
-          str key))
-     ((not (cltl-def-from-name key nil wrld))
-      (er hard ctx
-          "~@0~x1 is not a defined ACL2 function."
-          str key))
-     ((getprop key 'constrainedp nil 'current-acl2-world wrld)
-      (er hard ctx
-          "~@0~x1 is constrained.  You may instead wish to memoize a caller ~
-           or to memoize its attachment (see :DOC defattach)."
-          str key))
-     ((if (eq key-class :program)
-          (member-eq key *primitive-program-fns-with-raw-code*)
-        (member-eq key *primitive-logic-fns-with-raw-code*))
-      (er hard ctx
-          "~@0The built-in function symbol ~x1 has associated raw-Lisp ~
-           code, hence is illegal to memoize."
-          str key))
-     ((not (symbol-alistp val))
-      (er hard ctx
-          "~@0Function symbol ~x1 must be associated with a symbol-alistp, ~
-           unlike ~x2."
-          str key val))
-     ((let ((pair (assoc-eq :memo-table-init-size val)))
-        (and pair (not (posp (cdr pair)))))
-      (er hard ctx
-          "~@0The :memo-table-init-size must be a positive integer, unlike ~
-           ~x1."
-          str (cdr (assoc-eq :memo-table-init-size val))))
-     ((not (memoize-table-chk-commutative str key val ctx wrld))
-      nil) ; an error was presumably already caused
+                   "~@0~x1 returns a stobj, ~x2."
+                   str key stobj)))
+            ((member-eq key *hons-primitive-fns*)
+             (er hard ctx
+                 "~@0~x1 is a HONS primitive."
+                 str key))
+            ((not (cltl-def-from-name key nil wrld))
+             (er hard ctx
+                 "~@0~x1 is not a defined ACL2 function."
+                 str key))
+            ((getprop key 'constrainedp nil 'current-acl2-world wrld)
+             (er hard ctx
+                 "~@0~x1 is constrained.  You may instead wish to memoize a ~
+                  caller or to memoize its attachment (see :DOC defattach)."
+                 str key))
+            ((if (eq key-class :program)
+                 (member-eq key *primitive-program-fns-with-raw-code*)
+               (member-eq key *primitive-logic-fns-with-raw-code*))
+             (er hard ctx
+                 "~@0The built-in function symbol ~x1 has associated raw-Lisp ~
+                  code, hence is illegal to memoize."
+                 str key))
+            ((not (symbol-alistp val))
+             (er hard ctx
+                 "~@0Function symbol ~x1 must be associated with a ~
+                  symbol-alistp, unlike ~x2."
+                 str key val))
+            ((let ((pair (assoc-eq :memo-table-init-size val)))
+               (and pair (not (posp (cdr pair)))))
+             (er hard ctx
+                 "~@0The :memo-table-init-size must be a positive integer, ~
+                  unlike ~x1."
+                 str (cdr (assoc-eq :memo-table-init-size val))))
+            ((not (memoize-table-chk-commutative str key val ctx wrld))
+             nil) ; an error was presumably already caused
 
 ; The next two checks require that we do not memoize or unmemoize a function
 ; that is already memoized or unmemoized, respectively.  The function
 ; maybe-push-undo-stack relies on this check.
 
-     ((and val (cdr (assoc-eq key memoize-table)))
-      (er hard ctx
-          "~@0Function ~x1 is already memoized."
-          str key))
-     ((and (null val) (null (cdr (assoc-eq key memoize-table))))
-      (er hard ctx
-          "~@0Cannot unmemoize function ~x1 because it is not currently ~
-           memoized."
-          str key))
-     ((and (eq key-class :ideal)
-           (let* ((pair (assoc-eq :ideal-okp val))
-                  (okp (if pair
-                           (cdr pair)
-                         (cdr (assoc-eq :memoize-ideal-okp
-                                        (table-alist 'acl2-defaults-table
-                                                     wrld))))))
-             (cond ((eq okp t)
-                    nil)
-                   ((not okp)
-                    (er hard ctx
-                        "~@0The function symbol ~x1 is in :logic mode but has ~
-                         not had its guards verified.  Either run ~x2, or ~
-                         specify :IDEAL-OKP ~x3 in your ~x4 call, or else ~
-                         evaluate ~x5 or ~x6."
-                        str key 'verify-guards t 'memoize
-                        '(table acl2-defaults-table :memoize-ideal-okp t)
-                        '(table acl2-defaults-table :memoize-ideal-okp :warn)))
-                   (t ; okp is :warn
-                    (prog2$ (warning$-cw
-                             'memoize-table-chk
-                             "The function ~x0 to be memoized is in :logic ~
-                              mode but has not had its guards verified. ~
-                              Memoization might therefore not take place; see ~
-                              :DOC memoize."
-                             key)
-                            nil))))))
+            ((and val (cdr (assoc-eq key memoize-table)))
+             (er hard ctx
+                 "~@0Function ~x1 is already memoized."
+                 str key))
+            ((and (null val) (null (cdr (assoc-eq key memoize-table))))
+             (er hard ctx
+                 "~@0Cannot unmemoize function ~x1 because it is not ~
+                  currently memoized."
+                 str key))
+            ((and (eq key-class :ideal)
+                  (let* ((pair (assoc-eq :ideal-okp val))
+                         (okp (if pair
+                                  (cdr pair)
+                                (cdr (assoc-eq :memoize-ideal-okp
+                                               (table-alist 'acl2-defaults-table
+                                                            wrld))))))
+                    (cond ((eq okp t)
+                           nil)
+                          ((not okp)
+                           (er hard ctx
+                               "~@0The function symbol ~x1 is in :logic mode ~
+                                but has not had its guards verified.  Either ~
+                                run ~x2, or specify :IDEAL-OKP ~x3 in your ~
+                                ~x4 call, or else evaluate ~x5 or ~x6."
+                               str key 'verify-guards t 'memoize
+                               '(table acl2-defaults-table :memoize-ideal-okp t)
+                               '(table acl2-defaults-table :memoize-ideal-okp :warn)))
+                          (t ; okp is :warn
+                           (prog2$ (warning$-cw
+                                    'memoize-table-chk
+                                    "The function ~x0 to be memoized is in ~
+                                     :logic mode but has not had its guards ~
+                                     verified.  Memoization might therefore ~
+                                     not take place; see :DOC memoize."
+                                    key)
+                                   nil))))))
 
 ; Finally, check conditions on the memoization condition function.
 
-     (t
-      (let* ((condition (and val (cdr (assoc-eq :condition-fn val))))
-             (val-formals (and condition
-                               (if (symbolp condition)
-                                   (getprop condition 'formals t
-                                            'current-acl2-world wrld)
-                                 t)))
-             (val-guard (and condition
-                             (if (symbolp condition)
-                                 (getprop condition 'guard *t*
-                                          'current-acl2-world wrld)
-                               t))))
+            (t
+             (let* ((condition (and val (cdr (assoc-eq :condition-fn val))))
+                    (val-formals (and condition
+                                      (if (symbolp condition)
+                                          (getprop condition 'formals t
+                                                   'current-acl2-world wrld)
+                                        t)))
+                    (val-guard (and condition
+                                    (if (symbolp condition)
+                                        (getprop condition 'guard *t*
+                                                 'current-acl2-world wrld)
+                                      t))))
 
-        (cond
-         ((or (eq val nil)
-              (member-eq condition '(t nil)))
-          t)
-         ((eq val-formals t)
-          (er hard ctx
-              "~@0The proposed memoization condition function, ~x1, is ~
-               neither nil nor a function symbol known to ACL2."
-              str condition))
-         ((not (and (symbolp condition)
-                    (or (eq key-class :program)
-                        (eq (symbol-class condition wrld)
-                            :common-lisp-compliant))))
-          (er hard ctx
-              "~@0Function ~x1 cannot serve as a memoization condition ~
-               function for function ~x2, because unlike ~x2, ~x1 is not ~
-               common-lisp-compliant (a logic-mode function that has had its ~
-               guards verified)."
-              str condition key))
-         ((not (equal key-formals val-formals))
-          (er hard ctx
-              "~@0Function ~x1 cannot serve as a memoization condition ~
-               function for ~x2, because the two functions have different ~
-               formal parameter lists."
-              str condition key))
-         ((not (equal (getprop key 'guard *t* 'current-acl2-world wrld)
-                      val-guard))
-          (er hard ctx
-              "~@0Function ~x1 cannot serve as a memoization condition ~
-               function for ~x2, because the two functions have different ~
-               guards."
-              str condition key))
-         (t t)))))))
+               (cond
+                ((or (eq val nil)
+                     (member-eq condition '(t nil)))
+                 t)
+                ((eq val-formals t)
+                 (er hard ctx
+                     "~@0The proposed memoization condition function, ~x1, is ~
+                      neither nil nor a function symbol known to ACL2."
+                     str condition))
+                ((not (and (symbolp condition)
+                           (or (eq key-class :program)
+                               (eq (symbol-class condition wrld)
+                                   :common-lisp-compliant))))
+                 (er hard ctx
+                     "~@0Function ~x1 cannot serve as a memoization condition ~
+                      function for function ~x2, because unlike ~x2, ~x1 is ~
+                      not common-lisp-compliant (a logic-mode function that ~
+                      has had its guards verified)."
+                     str condition key))
+                ((not (equal key-formals val-formals))
+                 (er hard ctx
+                     "~@0Function ~x1 cannot serve as a memoization condition ~
+                      function for ~x2, because the two functions have ~
+                      different formal parameter lists."
+                     str condition key))
+                ((not (equal (getprop key 'guard *t* 'current-acl2-world wrld)
+                             val-guard))
+                 (er hard ctx
+                     "~@0Function ~x1 cannot serve as a memoization condition ~
+                      function for ~x2, because the two functions have ~
+                      different guards."
+                     str condition key))
+                (t t)))))))
+      (prog2$
+       (and val
+            (let ((stobjs-in (stobjs-in key wrld)))
+              (cond
+               ((find-first-non-nil stobjs-in)
+                (observation-cw
+                 ctx
+                 "The function ~x0 has input stobj~#1~[~/s~] ~&1.  The ~
+                  memoization table for ~x0 will be cleared whenever ~
+                  ~#2~[this stobj is~/either of these stobjs is~/any of these ~
+                  stobjs is~] updated.  Any update of a stobj may therefore ~
+                  be significantly slower, perhaps by a factor of 5 or 10, ~
+                  when it is an input of a memoized function."
+                 key
+                 (collect-non-x nil stobjs-in)
+                 (zero-one-or-more (cdr stobjs-in))))
+               (t nil))))
+       result))))
 
 (table memoize-table nil nil
        :guard

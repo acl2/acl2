@@ -5211,6 +5211,14 @@
 ;               (maybe-push-undo-stack 'defconst name)
             (install-for-add-trip `(defparameter ,the-live-name ,init) nil t)
 
+; Memoize-flush expects the variable (st-lst name) to be bound.  We take care
+; of that directly here.  We see no need to involve install-for-add-trip or the
+; like.
+
+            #+hons (let ((var (st-lst name)))
+                     (or (boundp var)
+                         (eval `(defg ,var nil))))
+
 ; As with defconst we want to make it look like we eval'd this defstobj
 ; in raw lisp, so we set up the redundancy stuff:
 

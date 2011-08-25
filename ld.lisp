@@ -18262,7 +18262,14 @@
 
   Printing of certain messages has been sped up (by using Lisp function
   ~c[force-output] in place of ~c[finish-output]).  Thanks to Jared Davis for
-  contributing this improvement.~eq[]
+  contributing this improvement.
+
+  ~il[Stobj] array writes are perhaps twice as fast.
+
+  It is now permitted to ~il[memoize] functions that take user-defined
+  ~il[stobj]s as inputs, provided that no ~il[stobj]s are returned.  Thanks to
+  Sol Swords for an observation that led to this improvement and useful
+  conversations.~eq[]
 
   ~/~/")
 
