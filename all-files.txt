@@ -1804,6 +1804,7 @@ CHANGES.html
 COPYING
 Makefile
 README
+acl2-customization.lsp
 cert.acl2
 computed-hints.lisp
 fast.lisp
