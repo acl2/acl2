@@ -170,6 +170,32 @@
   (no-duplicatesp-equal (duplicated-members x))
   :hints(("Goal" :in-theory (enable duplicated-members))))
 
+(encapsulate
+  ()
+  (local (defthm l0
+           (implies (duplicated-members x)
+                    (not (no-duplicatesp-equal x)))
+           :hints(("Goal"
+                   :in-theory (disable no-duplicatesp-equal-when-high-duplicity
+                                       member-equal-of-duplicated-members)
+                   :use ((:instance no-duplicatesp-equal-when-high-duplicity
+                                    (a (car (duplicated-members x))))
+                         (:instance member-equal-of-duplicated-members
+                                    (a (car (duplicated-members x)))))))))
+
+  (local (defthm l1
+           (implies (not (duplicated-members x))
+                    (no-duplicatesp-equal x))
+           :hints(("Goal"
+                   :in-theory (disable member-equal-of-duplicated-members)
+                   :use ((:instance member-equal-of-duplicated-members
+                                    (a (car (duplicity-badguy x)))
+                                    (x x)))))))
+
+  (defthm duplicated-members-under-iff
+    (iff (duplicated-members x)
+         (not (no-duplicatesp-equal x)))))
+
 
 
 
