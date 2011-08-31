@@ -18123,6 +18123,9 @@
 ; just a bit, just to be safe, though we're not aware of a soundness bug for
 ; those functions.
 
+; We removed a #-acl2-loop-only shortcut in plist-worldp, which remains as a
+; comment in that function.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18169,6 +18172,33 @@
   mention function symbols introduced in the same ~ilc[encapsulate] event that
   introduces that function.  Thanks to Nathan Wetzler for a helpful discussion
   leading to this improvement.
+
+  The test for redundancy (~pl[redundant-events]) of ~ilc[encapsulate]
+  ~il[events] has been improved in cases involving redefinition
+  (~pl[ld-redefinition-action]).  Thanks to Jared Davis for providing the
+  following example, which illustrates the problem.
+  ~bv[]
+    (redef!)
+
+    (encapsulate ()
+      (defun g (x)
+        (+ 3 x)))
+
+    (g 0) ; 3, as expected
+
+    (encapsulate ()
+      (defun g (x)
+        (+ 4 x)))
+
+    (g 0) ; 4, as expected
+
+    ; Unfortunately, the following was flagged as redundant because it agreed
+    ; with the first encapsulate above.  That has been fixed; now, it is
+    ; recognized as not being redundant.
+    (encapsulate ()
+      (defun g (x)
+        (+ 3 x)))
+  ~ev[]
 
   ~st[NEW FEATURES]
 

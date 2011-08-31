@@ -19505,7 +19505,8 @@
   See distributed book ~c[books/misc/defattach-example.lisp] for a small
   example.  it illustrates how ~c[defattach] may be used to build something
   like ``higher-order'' programs, in which constrained functions may be refined
-  to different executable functions.
+  to different executable functions.  More uses of ~c[defattach] may be found
+  in the ACL2 source code, specifically, file ~c[boot-strap-pass-2.lisp].
 
   The argument ~c[:skip-checks t] enables easy experimentation with
   ~c[defattach], by permitting use of ~c[:]~ilc[program] mode functions and the
@@ -19991,9 +19992,31 @@
 
 (defun plist-worldp (alist)
   (declare (xargs :guard t))
+
+; The following shortcut speeds up this function's execution.  It seems
+; slightly risky: if we can somehow get the installed world to be eq to a world
+; in a theorem (say, by honsing both), and if that world does not actually
+; satisfy the logical definition of plist-worldp, then we could prove nil.
+; Initially we included books/centaur/doc, creating a world of length 359,153
+; (in a post-4.3 development version), and it took about 1/50 second to do this
+; check without the above shortcut; so performance didn't seem too critical an
+; issue here.  However, the regression slowed down significantly without the
+; shortcut.  Here are statistics from HONS regressions using identical books,
+; on the same unloaded machine.
+
+; With shortcut:
+; 15634.000u 1057.650s 53:22.39 521.2%	0+0k 352216+1367056io 1789pf+0w
+
+; Without shortcut:
+; 16414.440u 1048.600s 57:20.82 507.5%	0+0k 354128+1367184io 1696pf+0w
+
+; So we have decided to keep the shortcut, since we really do expect this
+; simple property to hold of any ACL2 world.
+
   #-acl2-loop-only
   (cond ((eq alist (w *the-live-state*))
          (return-from plist-worldp t)))
+
   (cond ((atom alist) (eq alist nil))
         (t
          (and (consp (car alist))

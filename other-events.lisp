@@ -4156,8 +4156,9 @@
 (defun primitive-event-macros ()
   (declare (xargs :guard t :mode :logic))
 
-; Warning: If you add to this list, consider adding to the list in translate11
-; associated with a comment about primitive-event-macros.
+; Warning: If you add to this list, consider adding to
+; find-first-non-local-name and to the list in translate11 associated with a
+; comment about primitive-event-macros.
 
 ; Warning: Keep this in sync with oneify-cltl-code (see comment there about
 ; primitive-event-macros).
@@ -4529,7 +4530,8 @@
                                      make-event-chk)
 
 ; WARNING: Keep this in sync with destructure-expansion, elide-locals-rec,
-; elide-locals-post, and make-include-books-absolute.
+; elide-locals-post, make-include-books-absolute, and
+; find-first-non-local-name.
 
 ; Note: For a test of this function, see the reference to foo.lisp below.
 
@@ -7930,38 +7932,73 @@
 
 (defun find-first-non-local-name (x)
 
-; X is allegedly an embedded event form.  It may be a call of some
-; user macro and thus completely unrecognizable to us.  But it could
-; be a call of one of our primitive fns.  We are interested in the
-; question "If x is successfully executed, what is a logical name it
-; will introduce?"  Since no user event will introduce nil, we use nil
-; to indicate that we don't know about x (or, equivalently, that it is
-; some user form we don't recognizer, or that it introduces no names,
-; or that it is ill-formed and will blow up).  Otherwise, we return a
-; logical name that x will create.
+; Keep this in sync with chk-embedded-event-form and primitive-event-macros;
+; see comments below.
 
-  (case-match x
-              (('local . &) nil)
-              (('defun name . &) name)
-              (('defuns (name . &) . &) name)
-              (('defthm name . &) name)
-              (('defaxiom name . &) name)
-              (('skip-proofs ev) (find-first-non-local-name ev))
-              (('defconst name . &) name)
-              (('deflabel name . &) name)
-              (('deftheory name . &) name)
-              (('defstobj name . &) name)
-              (('defmacro name . &) name)
-              (('mutual-recursion ('defun name . &) . &) name)
-              (('encapsulate (((name . &) arrow &) . &) . &)
-               (and (symbolp arrow)
-                    (equal (symbol-name arrow) "=>")
-                    name))
-              (('encapsulate ((name . &) . &) . &) name)
-              (('encapsulate nil . ev-lst)
-               (find-first-non-local-name-lst ev-lst))
-              (('include-book name . &) name)
-              (& nil)))               
+; This function is used heuristically to help check redundancy of encapsulate
+; events.
+
+; X is allegedly an embedded event form, though we do not guarantee this.  It
+; may be a call of some user macro and thus completely unrecognizable to us.
+; But it could be a call of one of our primitive fns.  We are interested in the
+; question "If x is successfully executed, what is a logical name it will
+; introduce?"  Since no user event will introduce nil, we use nil to indicate
+; that we don't know about x (or, equivalently, that it is some user form we
+; don't recognizer, or that it introduces no names, or that it is ill-formed
+; and will blow up).  Otherwise, we return a logical name that x will create.
+; We are interested only in returning symbols, not book names or packages.
+
+  (let ((val
+         (case-match x
+
+; We are typically looking at events inside an encapsulate form.  Below, we
+; handle local and defun first, since these are the most common.  We then
+; handle all event forms in (primitive-event-macros) that introduce a new name
+; that is a symbol.  Finally, we deal with compound event forms that are
+; handled by chk-embedded-event-form.
+
+           (('local . &) nil)
+           (('defun name . &) name)
+
+; Others from (primitive-event-macros); see comment above.
+
+           (('defaxiom name . &) name)
+           (('defchoose name . &) name)
+           (('defconst name . &) name)
+           (('deflabel name . &) name)
+           (('defmacro name . &) name)
+           (('deftheory name . &) name)
+           (('defuns (name . &) . &) name)
+           (('defstobj name . &) name)
+           (('defthm name . &) name)
+           (('encapsulate (((name . &) arrow . &)
+                           . &)
+                          . &)
+            (and (symbolp arrow)
+                 (equal (symbol-name arrow) "=>")
+                 name))
+           (('encapsulate ((name . &)
+                           . &)
+                          . &)
+            name)
+           (('encapsulate nil . ev-lst)
+            (find-first-non-local-name-lst ev-lst))
+           (('mutual-recursion ('defun name . &) . &) name)
+           (('progn . ev-lst)
+            (find-first-non-local-name-lst ev-lst))
+
+; Keep the following in sync with chk-embedded-event-form; see comment above.
+
+           ((sym . lst)
+            (and (member-eq sym '(skip-proofs
+                                  with-output
+                                  with-prover-step-limit
+                                  with-prover-time-limit))
+                 (find-first-non-local-name (car (last lst)))))
+
+           (& nil))))
+    (and (symbolp val)
+         val)))               
 
 (defun find-first-non-local-name-lst (lst)
 
@@ -8006,18 +8043,24 @@
         (equal (cadr old) (cadr new))
         (corresponding-encap-events (cddr old) (cddr new) t))))
 
-(defun redundant-encapsulate-tuplep (event-form mode ruler-extenders vge wrld)
+(defun redundant-encapsulate-tuplep (event-form mode ruler-extenders vge
+                                                event-number wrld)
 
-; We return non-nil iff the non-prehistoric (if that's where we start) part of wrld
-; contains an event-tuple whose form is essentially equal to event-form.  We
-; return t if they are equal, else we return the old form.  See also the Essay
-; on Make-event.
+; We return non-nil iff the non-prehistoric (if that's where we start) part of
+; wrld later than the given absolute event number (unless it's nil) contains an
+; event-tuple whose form is essentially equal to event-form.  We return t if
+; they are equal, else we return the old form.  See also the Essay on
+; Make-event.
 
   (cond ((or (null wrld)
              (and (eq (caar wrld) 'command-landmark)
                   (eq (cadar wrld) 'global-value)
                   (equal (access-command-tuple-form (cddar wrld))
-                         '(exit-boot-strap-mode))))
+                         '(exit-boot-strap-mode)))
+             (and (integerp event-number)
+                  (eq (cadar wrld) 'absolute-event-number)
+                  (integerp (cddar wrld))
+                  (<= (cddar wrld) event-number)))
          nil)
         ((and (eq (caar wrld) 'event-landmark)
               (eq (cadar wrld) 'global-value)
@@ -8037,7 +8080,7 @@
                             old-event-form
                           t)))))))
         (t (redundant-encapsulate-tuplep event-form mode ruler-extenders vge
-                                         (cdr wrld)))))
+                                         event-number (cdr wrld)))))
 
 (defun redundant-encapsulatep (signatures ev-lst event-form wrld)
 
@@ -8063,72 +8106,62 @@
 ; return that earlier encapsulate, which is stored in expanded form.  See also
 ; the Essay on Make-event.  Otherwise we return nil.
 
-  (let ((name
-         (find-first-non-local-name
-          (list* 'encapsulate signatures ev-lst))))
-    (cond ((and name
-                (stringp name)
-                (not (find-non-hidden-package-entry
-                      name
-                      (global-val 'known-package-alist wrld)))
-                (not (assoc-equal name (global-val 'include-book-alist wrld))))
+  (cond
+   (signatures
+    (let ((name (case-match signatures
+                  ((((name . &) arrow . &) . &)
+                   (and (symbolp arrow)
+                        (equal (symbol-name arrow) "=>")
+                        name))
+                  (((name . &) . &)
+                   name))))
+      (and name
+           (not (new-namep name wrld))
+           (let* ((wrld-tail (lookup-world-index
+                              'event
+                              (getprop name 'absolute-event-number 0
+                                       'current-acl2-world wrld)
+                              wrld))
+                  (event-tuple (cddr (car wrld-tail)))
+                  (old-event-form (access-event-tuple-form
+                                   event-tuple))
+                  (equal? (corresponding-encaps old-event-form
+                                                event-form)))
+             (and
+              equal?
+              (let ((old-adt
+                     (table-alist 'acl2-defaults-table wrld-tail))
+                    (new-adt
+                     (table-alist 'acl2-defaults-table wrld)))
+                (and
+                 (eq (default-defun-mode-from-table old-adt)
+                     (default-defun-mode-from-table new-adt))
+                 (equal (default-ruler-extenders-from-table old-adt)
+                        (default-ruler-extenders-from-table new-adt))
+                 (eql (default-verify-guards-eagerness-from-table
+                        old-adt)
+                      (default-verify-guards-eagerness-from-table
+                        new-adt))
+                 (if (eq equal? :expanded)
+                     old-event-form
+                   t))))))))
+   (t (let ((name (find-first-non-local-name-lst ev-lst)))
+        (and (or (not name)
 
-; If the name we find is a string then it can only be a full-book-name, e.g.,
-; the first non-local event in the encapsulate was an include-book.  However,
-; just to remind us that stringp names can be package names we look there too,
-; even though a defpkg couldn't occur in an encapsulate.  Note that if we do
-; not find the name in the 'include-book-alist or the 'known-package-alist
-; (non-hidden; see the Essay on Hidden Packages) then this encapsulate could
-; not have been executed so it is not redundant.
+; A non-local name need not be found.  But if one is found, then redundancy
+; fails if that name is new.
 
-; It actually is tempting to cause an error here, since we believe that both
-; defpkg and non-local include-book forms are impossible.  But we haven't
-; checked that we have a legal embedded event form, so a string is possible;
-; consider for example (encapsulate () (defun "foo" (x) t)).
-
-           nil)
-          ((and name
-                (symbolp name)
-                (new-namep name wrld))
-           nil)
-          (t
-           (or (and name
-                    (symbolp name)
-                    (let* ((wrld-tail (lookup-world-index
-                                       'event
-                                       (getprop name 'absolute-event-number 0
-                                                'current-acl2-world wrld)
-                                       wrld))
-                           (event-tuple (cddr (car wrld-tail)))
-                           (old-event-form (access-event-tuple-form
-                                            event-tuple))
-                           (equal? (corresponding-encaps old-event-form
-                                                         event-form)))
-                      (and
-                       equal?
-                       (let ((old-adt
-                              (table-alist 'acl2-defaults-table wrld-tail))
-                             (new-adt
-                              (table-alist 'acl2-defaults-table wrld)))
-                         (and
-                          (eq (default-defun-mode-from-table old-adt)
-                              (default-defun-mode-from-table new-adt))
-                          (equal (default-ruler-extenders-from-table old-adt)
-                                 (default-ruler-extenders-from-table new-adt))
-                          (eql (default-verify-guards-eagerness-from-table
-                                 old-adt)
-                               (default-verify-guards-eagerness-from-table
-                                 new-adt))
-                          (if (eq equal? :expanded)
-                              old-event-form
-                            t))))))
-               (let ((new-adt (table-alist 'acl2-defaults-table wrld)))
-                 (redundant-encapsulate-tuplep
-                  event-form
-                  (default-defun-mode-from-table new-adt)
-                  (default-ruler-extenders-from-table new-adt)
-                  (default-verify-guards-eagerness-from-table new-adt)
-                  wrld)))))))
+                 (not (new-namep name wrld)))
+             (let ((new-adt (table-alist 'acl2-defaults-table wrld)))
+               (redundant-encapsulate-tuplep
+                event-form
+                (default-defun-mode-from-table new-adt)
+                (default-ruler-extenders-from-table new-adt)
+                (default-verify-guards-eagerness-from-table new-adt)
+                (and name
+                     (getprop name 'absolute-event-number nil
+                              'current-acl2-world wrld))
+                wrld)))))))
 
 (defun mark-missing-as-hidden-p (a1 a2)
 
