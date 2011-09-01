@@ -146,7 +146,7 @@ expensive.</p>
 
 <p>In particular, the first time we build a wire alist for a module, we are
 generally doing \"first-time\" <tt>intern</tt>s for the names of every bit.
-Itq is far more expensive to <tt>intern</tt> a string for the first time than
+It is far more expensive to <tt>intern</tt> a string for the first time than
 to subsequently <tt>intern</tt> it again.  For instance, when we run the
 following code in a fresh CCL session, we find that it takes 2.2 seconds to
 intern 100,000 fresh strings the first time, but it only takes 0.15 seconds to
@@ -810,7 +810,7 @@ theorem:</p>
 
 ; Name uniqueness check.
 ;
-; Note this uniqueness check is on the module's net and register named and NOT
+; Note this uniqueness check is on the module's net and register names and NOT
 ; on the generated name lists.  This is a performance win since each name might
 ; expand into lots of bits.  This appears to be taking about 8% of the runtime
 ; in practice.
@@ -853,6 +853,9 @@ theorem:</p>
 ; looking up non-honsed strings slightly more expensive.  But it might
 ; dramatically improve the performance of looking up honsed strings, which
 ; would give us a nice improvement here.
+;
+; BOZO this might also be due to fast-alist sentinel problems in previous
+; versions of the Hons code, you may wish to revisit it!
 
          ((unless (mbe :logic
                        (uniquep (append (vl-netdecllist->names x.netdecls)

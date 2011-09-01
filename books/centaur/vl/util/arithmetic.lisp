@@ -1294,6 +1294,10 @@
     (implies (string-listp x)
              (string-listp (set-difference-equal x y))))
 
+  (defthm string-listp-of-remove-equal
+    (implies (string-listp x)
+             (string-listp (remove-equal a x))))
+
   (defthm stringp-when-member-equal-in-string-listp
     (implies (and (member-equal name x)
                   (string-listp x))

@@ -37,7 +37,7 @@ for <tt>and</tt>, <tt>or</tt>, etc.</p>
 
 <p><b>Ordering Notes.</b> This transformation must be done after widths have
 been computed, and after @(see replicate) has been run to eliminate any arrays.
-Replication is necessary for certain well-formedness checks on the widths. to
+Replication is necessary for certain well-formedness checks on the widths to
 succeed.</p>
 
 <p>Unlike occforming, we lay down gates directly instead of introducing new

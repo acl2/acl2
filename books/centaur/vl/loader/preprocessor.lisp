@@ -1385,23 +1385,23 @@ try to enforce this restriction since it is somewhat awkward to do so.</p>"
          ((when (eql char1 #\"))
           ;; Start of a string literal
           (b* (((mv string prefix remainder) (vl-read-string echars)))
-              (if (not string)
-                  ;; it already printed a warning, so we don't use cw.
-                  (mv nil defines acc echars state)
-                (vl-preprocess-loop remainder defines istack activep include-dirs
-                                    (if activep (revappend prefix acc) acc)
-                                    n state))))
+            (if (not string)
+                ;; it already printed a warning, so we don't use cw.
+                (mv nil defines acc echars state)
+              (vl-preprocess-loop remainder defines istack activep include-dirs
+                                  (if activep (revappend prefix acc) acc)
+                                  n state))))
 
          ((when (eql char1 #\\))
           ;; Start of an escaped identifier
           (b* (((mv name prefix remainder) (vl-read-escaped-identifier echars)))
-              (if (not name)
-                  (mv (cw "Preprocessor error (~s0): stray backslash?~%"
-                          (vl-location-string (vl-echar->loc (car echars))))
-                      defines acc echars state)
-                (vl-preprocess-loop remainder defines istack activep include-dirs
-                                    (if activep (revappend prefix acc) acc)
-                                    n state))))
+            (if (not name)
+                (mv (cw "Preprocessor error (~s0): stray backslash?~%"
+                        (vl-location-string (vl-echar->loc (car echars))))
+                    defines acc echars state)
+              (vl-preprocess-loop remainder defines istack activep include-dirs
+                                  (if activep (revappend prefix acc) acc)
+                                  n state))))
 
          ((when (and (eql char1 #\/)
                      (consp (cdr echars))
@@ -1454,17 +1454,23 @@ try to enforce this restriction since it is somewhat awkward to do so.</p>"
                    (atts (append (vl-echarlist-from-str "(*")
                                  atts-text
                                  (vl-echarlist-from-str "*)"))))
-                (vl-preprocess-loop remainder defines istack activep include-dirs
-                                    (if activep (revappend atts acc) acc)
-                                    (- n 1) state))
+                ;; We leave the atts in the preprocessor's input stream so
+                ;; that, e.g., defines can still get expanded in them.
+                (vl-preprocess-loop (append atts remainder)
+                                    defines istack activep include-dirs
+                                    acc (- n 1) state))
 
             ;; Else, not a //@VL comment
             (b* (((mv & prefix remainder) (vl-read-until-literal *nls* (cddr echars)))
-                 (prefix (if (vl-matches-string-p "+VL" prefix)
-                             ;; The // is already gone, strip off the "+VL" part
-                             (nthcdr 3 prefix)
-                           ;; Else, not a +VL or @VL comment, so put the slashes back.
-                           (list* (first echars) (second echars) prefix))))
+                 ((when (vl-matches-string-p "+VL" prefix))
+                  ;; The // part is already gone, strip off the +VL part and
+                  ;; leave it in the preprocessor's input stream, as above.
+                  (vl-preprocess-loop (append (nthcdr 3 prefix) remainder)
+                                      defines istack activep include-dirs
+                                      acc (- n 1) state))
+                 ;; Else, regular comment instead of //+VL or //@VL comment, so
+                 ;; put the slashes back and don't try to preprocess it any more.
+                 (prefix (list* (first echars) (second echars) prefix)))
               (vl-preprocess-loop remainder defines istack activep include-dirs
                                   (if activep (revappend prefix acc) acc)
                                   n state))))
@@ -1480,28 +1486,37 @@ try to enforce this restriction since it is somewhat awkward to do so.</p>"
 ; since this is mainly intended for inline things
 
           (b* (((mv successp prefix remainder) (vl-read-through-literal "*/" (cddr echars)))
-               (prefix
-                (cond ((vl-matches-string-p "+VL" prefix)
-                       ;; The /* part is already gone.  Strip off "+VL" and "*/"
-                       (butlast (nthcdr 3 prefix) 2))
+               ((unless successp)
+                (mv (cw "Preprocessor error (~s0): block comment is never closed.~%"
+                        (vl-location-string loc))
+                    defines acc echars state))
 
-                      ((vl-matches-string-p "@VL" prefix)
-                       ;; The /* part is gone.  Strip off "@VL" and "*/"; add "(*" and "*)"
-                       (append (vl-echarlist-from-str "(*")
-                               (butlast (nthcdr 3 prefix) 2)
-                               (vl-echarlist-from-str "*)")))
+               ((when (vl-matches-string-p "+VL" prefix))
+                ;; The /* part is already gone.  Strip off "+VL" and "*/", and put the
+                ;; comment's body into the input stream, as for //+VL above.
+                (b* ((body (butlast (nthcdr 3 prefix) 2)))
+                  (vl-preprocess-loop (append body remainder)
+                                      defines istack activep include-dirs
+                                      acc (- n 1) state)))
 
-                      (t
-                       ;; Else, not a +VL or @VL comment, so put the /* back.
-                       (list* (first echars) (second echars) prefix)))))
+               ((when (vl-matches-string-p "@VL" prefix))
+                ;; The /* part is gone.  Strip off "@VL" and "*/"; add "(*" and "*)",
+                ;; and put the body into the input stream, as for //@VL above.
+                (b* ((body (append (vl-echarlist-from-str "(*")
+                                   (butlast (nthcdr 3 prefix) 2)
+                                   (vl-echarlist-from-str "*)"))))
+                  (vl-preprocess-loop (append body remainder)
+                                      defines istack activep include-dirs
+                                      acc (- n 1) state)))
 
-              (if (not successp)
-                  (mv (cw "Preprocessor error (~s0): block comment is never closed.~%"
-                          (vl-location-string loc))
-                      defines acc echars state)
-                (vl-preprocess-loop remainder defines istack activep include-dirs
-                                    (if activep (revappend prefix acc) acc)
-                                    n state))))
+               ;; Else, not a +VL or @VL comment, so put the /* back, and put
+               ;; the prefix into the acc becuase we're done preprocessing this
+               ;; comment.
+               (prefix (list* (first echars) (second echars) prefix)))
+            (vl-preprocess-loop remainder defines istack activep include-dirs
+                                (if activep (revappend prefix acc) acc)
+                                n state)))
+
 
          ((when (not (eql char1 #\`)))
           ;; Any regular character.  Accumulate or discard, per activep.
@@ -1655,13 +1670,13 @@ try to enforce this restriction since it is somewhat awkward to do so.</p>"
                         (vl-location-string loc) filename include-dirs)
                     defines acc echars state))
 
-                ((mv contents state)
-                 (cwtime (vl-read-file (string-fix realfile) state)
-                         :mintime 1/2))
-                ((when (stringp contents))
-                 (mv (cw "Preprocessor error (~s0): unable to read ~s1."
-                         (vl-location-string loc) realfile)
-                     defines acc echars state)))
+               ((mv contents state)
+                (cwtime (vl-read-file (string-fix realfile) state)
+                        :mintime 1/2))
+               ((when (stringp contents))
+                (mv (cw "Preprocessor error (~s0): unable to read ~s1."
+                        (vl-location-string loc) realfile)
+                    defines acc echars state)))
 
             (vl-preprocess-loop
              ;; We could perhaps avoid this append with two recursive calls,
@@ -1685,29 +1700,34 @@ try to enforce this restriction since it is somewhat awkward to do so.</p>"
           (vl-preprocess-loop remainder defines istack activep include-dirs
                               acc n state)))
 
-        (mv (cw "Preprocessor error (~s0): we do not support ~s1.~%"
-                (vl-location-string loc) directive)
-            defines acc echars state)))
+      (mv (cw "Preprocessor error (~s0): we do not support ~s1.~%"
+              (vl-location-string loc) directive)
+          defines acc echars state)))
 
   (local (in-theory (enable vl-preprocess-loop)))
 
   ;; Speed hint
   (local (in-theory (disable ACL2::OPEN-SMALL-NTHCDR
-                           CONSP-UNDER-IFF-WHEN-TRUE-LISTP
-                           ACL2::NTHCDR-WITH-LARGE-INDEX
-                           VL-MATCHES-STRING-P-WHEN-ACL2-COUNT-ZERO
-                           acl2::nthcdr-append
-                           acl2::consp-butlast
-                           acl2::len-when-prefixp
-                           string-fix
-                           stringp-when-true-listp
-                           CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
-                           hons-assoc-equal
-                           (:TYPE-PRESCRIPTION REMAINDER-OF-VL-READ-UNTIL-LITERAL)
-                           acl2::revappend-removal
-                           revappend
-                           )))
+                             CONSP-UNDER-IFF-WHEN-TRUE-LISTP
+                             ACL2::NTHCDR-WITH-LARGE-INDEX
+                             VL-MATCHES-STRING-P-WHEN-ACL2-COUNT-ZERO
+                             acl2::nthcdr-append
+                             acl2::consp-butlast
+                             acl2::len-when-prefixp
+                             string-fix
+                             stringp-when-true-listp
+                             CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
+                             hons-assoc-equal
+                             (:TYPE-PRESCRIPTION REMAINDER-OF-VL-READ-UNTIL-LITERAL)
+                             acl2::revappend-removal
+                             revappend
+                             )))
 
+  (local (set-default-hints
+          ;; I think we might be hitting ACL2's heuristics on not opening up
+          ;; functions when it would introduce too many ifs, so we need this to
+          ;; tell it to really go ahead and open up the function.
+          '('(:expand ((:free (activep) (vl-preprocess-loop echars defines istack activep include-dirs acc n state)))))))
 
   (defthm booleanp-of-vl-preprocess-loop-success
     (booleanp (mv-nth 0 (vl-preprocess-loop echars defines istack activep include-dirs

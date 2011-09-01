@@ -540,11 +540,6 @@
 
   (local (include-book "lexer"))
 
-  ;; JCD: This program-mode switch is nothing to be concerned with.  It is only
-  ;; a convenience to assist with the unit tests below.  These unit tests are
-  ;; to help ensure the semantic correctness of the functions above, and have
-  ;; nothing to do with logical soundness.
-
   (program)
 
   (defun test-assign-aux (assigns lvalues exprs str rise fall high atts)

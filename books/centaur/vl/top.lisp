@@ -39,6 +39,7 @@
 (include-book "transforms/xf-drop-blankports")
 (include-book "transforms/xf-elim-always")
 (include-book "transforms/xf-elim-supply")
+(include-book "transforms/xf-expand-functions")
 (include-book "transforms/xf-expr-split")
 (include-book "transforms/xf-follow-hids")
 (include-book "transforms/xf-gateredux")
@@ -46,7 +47,6 @@
 (include-book "transforms/xf-gate-elim")
 (include-book "transforms/xf-hid-elim")
 (include-book "transforms/xf-infer-flops")
-(include-book "transforms/xf-make-implicit-wires")
 (include-book "transforms/xf-negedge-elim")
 (include-book "transforms/xf-oprewrite")
 (include-book "transforms/xf-optimize-rw")
@@ -339,9 +339,6 @@ supplied by the caller.</p>"
          (mods (xf-cwtime (vl-modulelist-portcheck mods)
                           :name xf-portcheck))
 
-         (mods (xf-cwtime (vl-modulelist-make-implicit-wires mods)
-                          :name xf-make-implicit-wires))
-
          (mods (xf-cwtime (vl-modulelist-designwires mods)
                           :name xf-mark-design-wires))
 
@@ -483,8 +480,7 @@ supplied by the caller.</p>"
 of parts.  Part 1 addresses:</p>
 
 <ul>
- <li>Initial, simple transforms such as adding declarations for implicit wires
-     and resolving arguments to modules,</li>
+ <li>Initial, simple transforms such as resolving arguments to modules,</li>
  <li>Generating the @(see use-set) report,</li>
  <li>Sanifying the module list by throwing away unreasonable, incomplete, or
      otherwise problematic modules, and</li>
@@ -502,13 +498,12 @@ of parts.  Part 1 addresses:</p>
 
     (b* ((- (cw "Beginning simplification of ~x0 modules.~%" (len mods)))
 
-; We begin by adding wire declarations for any implicit (or port implicit)
-; wires and try to resolve argument lists.  This is the minimum we need for
-; use-set generation.  These transforms are quite robust and can deal with
-; pretty much any constructs in the modules, so we don't need to eliminate the
-; unreasonable modules and such first.  This is good, because it means the
-; use-set report can span the entire list of modules, rather than just the
-; reasonable ones.
+; We begin by trying to resolve argument lists and adding other basic
+; annotations.  This is the minimum we need for use-set generation.  These
+; transforms are quite robust and can deal with pretty much any constructs in
+; the modules, so we don't need to eliminate the unreasonable modules and such
+; first.  This is good, because it means the use-set report can span the entire
+; list of modules, rather than just the reasonable ones.
 
          (mods (vl-simplify-part1-annotate-mods mods))
 
@@ -520,6 +515,12 @@ of parts.  Part 1 addresses:</p>
          ((mv mods use-set-report)
           (xf-cwtime (vl-mark-wires-for-modulelist mods omit-wires)
                      :name use-set-analysis))
+
+; I'll eliminate functions before cleaning params, since we don't want to
+; allow function parameters to overlap with module parameters.
+
+         (mods (xf-cwtime (vl-modulelist-expand-functions mods)
+                          :name xf-expand-functions))
 
          (mods (xf-cwtime (vl-modulelist-clean-params mods)
                           :name xf-clean-params))
@@ -957,6 +958,11 @@ from @(see vl-simplify-part2).</p>"
 ; :vl-reasonable :vl-always-known :vl-param-free :vl-ranges-resolved
 ; :vl-selects-resolved :vl-selects-in-bounds :vl-ranges-simple :vl-widths-fixed
 ; :vl-args-compat>>
+
+      ;; Note: adding this here because one-bit selects from scalars make Verilog
+      ;; simulators mad, and this gets rid of them... blah.
+      (mods (xf-cwtime (vl-modulelist-optimize mods)
+                       :name optimize))
 
       (mods (xf-cwtime (vl-deporder-sort mods)
                        :name xf-deporder-sort))

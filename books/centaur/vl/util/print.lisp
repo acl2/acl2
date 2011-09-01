@@ -900,6 +900,36 @@ we are already past column <tt>n</tt>.</p>"
             (vl-ps-update-col n))))))
 
 
+(defpp vl-soft-space ()
+  :parents (basic-printing)
+  :short "@(call vl-soft-space) usually prints a space, but prints nothing if
+a space or newline was just printed."
+
+  :long "<p>Note that we don't do anything smart in HTML mode to skip past
+tags, e.g., if you've just printed a tag like <tt>&lt;/b&gt;</tt>, we'll think
+that a space is necessary no matter what came before the tag.</p>"
+
+  :body
+  (b* ((rchars (vl-ps->rchars))
+       (already-has-whitespace-p
+        (or (eq rchars nil)
+            (eql (car rchars) #\Space)
+            (eql (car rchars) #\Newline)
+            (and (vl-ps->htmlp)
+                 ;; &nbsp; in reverse order
+                 (and (eql (first rchars)  #\;)
+                      (eql (second rchars) #\p)
+                      (eql (third rchars)  #\s)
+                      (eql (fourth rchars) #\b)
+                      (eql (fifth rchars)  #\n)
+                      (eql (sixth rchars)  #\&))))))
+    (if already-has-whitespace-p
+        ps
+      (vl-ps-seq
+       (vl-ps-update-rchars (cons #\Space rchars))
+       (vl-ps-update-col (+ 1 (vl-ps->col)))))))
+
+
 
 (defsection vl-printable-p
   :parents (basic-printing)

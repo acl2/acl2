@@ -22,11 +22,6 @@
 (include-book "preprocessor")
 (local (include-book "../util/arithmetic"))
 
-
-;; JCD: This program-mode switch is nothing to be concerned with.  It is only a
-;; convenience to assist with the unit tests below.  These unit tests are to
-;; help ensure the semantic correctness of the functions above, and have
-;; nothing to do with logical soundness.
 (program)
 
 ;; This will get run any time the book is included.
@@ -318,4 +313,50 @@ blah blah")
  :output "// this is used in preprocessor-tests.lisp
 // do not delete it
 ")
+
+
+
+; Well, the spacing here is kind of awful.  Make sure we can put preprocessor
+; stuff into //+VL and //@VL stuff.
+
+(preprocessor-basic-test
+ :input "`define foo 1
+
+//+VL assign w = `foo" ;
+ :output "
+
+ assign w =  1")
+
+
+(preprocessor-basic-test
+ :input "`define foo 1
+
+/*+VL
+assign w = `foo ;
+*/"
+ :output "
+
+
+assign w =  1 ;
+")
+
+
+(preprocessor-basic-test
+ :input "`define foo 1
+
+/*@VL FOO = `foo */ assign bar = 2;"
+ :output "
+
+(* FOO =  1 *) assign bar = 2;")
+
+
+(preprocessor-basic-test
+ :input "`define foo 1
+
+//@VL FOO = `foo
+assign bar = 2;"
+ :output "
+
+(* FOO =  1*)
+assign bar = 2;")
 

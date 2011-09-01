@@ -20,6 +20,7 @@
 
 (in-package "VL")
 (include-book "parse-modules")
+(include-book "parse-error")
 (local (include-book "../util/arithmetic"))
 
 (defxdoc parser

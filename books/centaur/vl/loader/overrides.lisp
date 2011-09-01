@@ -23,6 +23,7 @@
 (include-book "lexer")
 (include-book "preprocessor")
 (include-book "parse-utils")
+(include-book "parse-error")
 (include-book "filemap")
 (include-book "../util/cwtime")
 (include-book "../mlib/warnings")

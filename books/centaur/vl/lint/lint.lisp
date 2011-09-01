@@ -49,8 +49,8 @@
 (include-book "../transforms/xf-clean-params")
 (include-book "../transforms/xf-drop-blankports")
 (include-book "../transforms/xf-expr-split")
+(include-book "../transforms/xf-expand-functions")
 (include-book "../transforms/xf-follow-hids")
-(include-book "../transforms/xf-make-implicit-wires")
 (include-book "../transforms/xf-orig")
 (include-book "../transforms/xf-oprewrite")
 (include-book "../transforms/xf-portdecl-sign")
@@ -163,8 +163,7 @@
        (mods (cwtime (vl-modulelist-condcheck mods)))
        (mods (cwtime (vl-modulelist-leftright-check mods)))
        (mods (cwtime (vl-modulelist-drop-missing-submodules mods)))
-       (mods (cwtime (vl-modulelist-make-implicit-wires mods)))
-       (mods (cwtime (vl-modulelist-add-undefined-names mods)))
+;; BOZO reinstate this??       (mods (cwtime (vl-modulelist-add-undefined-names mods)))
        (mods (cwtime (vl-modulelist-portdecl-sign mods)))
        (mods (cwtime (vl-modulelist-make-array-indexing mods)))
        (mods (cwtime (vl-modulelist-origexprs mods)))
@@ -173,6 +172,9 @@
        (- (cw "~%vl-lint: processing arguments, parameters...~%"))
        (mods (cwtime (vl-modulelist-elim-unused-regs mods)))
        (mods (cwtime (vl-modulelist-argresolve mods)))
+
+       ;; BOZO not exactly sure where this should go, maybe this will work.
+       (mods (cwtime (vl-modulelist-expand-functions mods)))
 
        ;; BOZO we need to do something to throw away instances with unresolved
        ;; arguments to avoid programming-errors in drop-blankports... and actually

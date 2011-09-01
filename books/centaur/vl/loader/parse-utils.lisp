@@ -25,7 +25,6 @@
 (include-book "tools/flag" :dir :system)
 (include-book "../util/warnings")
 (include-book "tools/rulesets" :dir :system)
-(include-book "../mlib/fmt")
 (local (include-book "../util/arithmetic"))
 
 ; Our Verilog parser makes extensive use of the defparser macro, which is now
@@ -149,10 +148,6 @@
                               (true-listp formals)
                               (equal (nthcdr (- (len formals) 2) formals)
                                      '(tokens warnings)))
-
-; What is the reason for this switch over to program mode?  Who did
-; it?????  Asks Boyer.
-
                   :mode :program))
   (let* ((fn-name (intern-in-package-of-symbol (str::cat (symbol-name name) "-FN")
                                                name))
@@ -990,10 +985,6 @@
 (mutual-recursion
 
  (defun vl-macroexpand-until-recognized-type (form types state)
-
-; What is the reason for this switch over to program mode?  Who did
-; it?????  Asks Boyer.
-
    (declare (xargs :stobjs state :mode :program))
    (cond ((and (consp form)
                (member-eq (car form) types))
@@ -1010,10 +1001,6 @@
 
  (defun vl-macroexpand-all-until-recognized-type (forms types state)
    (declare (xargs :stobjs state :mode :program))
-
-; What is the reason for this switch over to program mode?  Who did
-; it?????  Asks Boyer.
-
    (if (atom forms)
        (mv nil nil state)
      (mv-let (erp first state)
@@ -1038,10 +1025,6 @@
          (vl-gather-forms-of-type (cdr forms) types))))
 
 (defun vl-mutual-recursion-fn (forms state)
-
-; What is the reason for this switch over to program mode?  Who did
-; it?????  Asks Boyer.
-
   (declare (xargs :stobjs state :mode :program))
   (let* ((main-types '(defun defund))
          (pre-types  '(defmacro))
@@ -1065,64 +1048,3 @@
 (defmacro vl-mutual-recursion (&rest forms)
   `(make-event (vl-mutual-recursion-fn ',forms state)))
 
-
-
-
-(defund vl-tokenlist->string-with-spaces (x)
-
-; BOZO this could be a lot more efficient.  Consider consing up the whole
-; list with spaces in it, then passing it off to str::fast-string-append-lst
-; all at once.
-
-  (declare (xargs :guard (vl-tokenlist-p x)))
-
-; Given a token list, which has already had the spaces stripped out of it,
-; we insert a single space between each of the tokens, and turn everything
-; back into a string.  This can be useful for error reporting in the parser.
-
-  (if (consp x)
-      (str::cat (vl-echarlist->string (vl-token->etext (car x)))
-                " "
-                (vl-tokenlist->string-with-spaces (cdr x)))
-    ""))
-
-
-
-(defsection vl-report-parse-error
-
-; This is a truly horrific use of memoization to avoid printing the same errors
-; multiple times.
-
-; BOZO consider moving this to another file, to avoid the dependency on the writer.
-
-
-  (defund vl-actually-report-parse-error (err context)
-    (declare (xargs :guard (stringp context)))
-    (if (not err)
-        nil
-      (vl-cw-ps-seq
-       (vl-ps-update-autowrap-col 68)
-       (if (and (consp err)
-                (stringp (car err)))
-           (vl-cw-obj (car err) (cdr err))
-         (vl-cw "Malformed error object: ~x0." err))
-       (vl-println context)
-       (vl-println ""))))
-
-  (memoize 'vl-actually-report-parse-error)
-
-  (defund vl-report-parse-error (err tokens)
-    (declare (xargs :guard (vl-tokenlist-p tokens)))
-    (if (not err)
-        nil
-      (let ((context (str::cat "  Near: \""
-                               (vl-tokenlist->string-with-spaces
-                                (take (min 4 (len tokens))
-                                      (redundant-list-fix tokens)))
-                               (if (> (len tokens) 4) "..." "")
-                               "\"")))
-        (vl-actually-report-parse-error
-         ;; Have to hons the arguments for the memoization to work correctly.
-         ;; Fortunately they're usually very small.
-         (hons-copy err)
-         (hons-copy context))))))

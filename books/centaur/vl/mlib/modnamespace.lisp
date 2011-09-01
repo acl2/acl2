@@ -269,13 +269,15 @@
 ; a cons for every object in the module.  But we can at least cut down on
 ; garbage by doing everything tail recursively, etc.
 
-  (let* ((acc (vl-netdecllist->names-exec (vl-module->netdecls x) nil))
-         (acc (vl-regdecllist->names-exec (vl-module->regdecls x) acc))
-         (acc (vl-vardecllist->names-exec (vl-module->vardecls x) acc))
-         (acc (vl-eventdecllist->names-exec (vl-module->eventdecls x) acc))
-         (acc (vl-paramdecllist->names-exec (vl-module->paramdecls x) acc))
-         (acc (vl-modinstlist->instnames-exec (vl-module->modinsts x) acc))
-         (acc (vl-gateinstlist->names-exec (vl-module->gateinsts x) acc)))
+  (b* (((vl-module x) x)
+       (acc (vl-netdecllist->names-exec     x.netdecls   nil))
+       (acc (vl-regdecllist->names-exec     x.regdecls   acc))
+       (acc (vl-vardecllist->names-exec     x.vardecls   acc))
+       (acc (vl-eventdecllist->names-exec   x.eventdecls acc))
+       (acc (vl-paramdecllist->names-exec   x.paramdecls acc))
+       (acc (vl-fundecllist->names-exec     x.fundecls   acc))
+       (acc (vl-modinstlist->instnames-exec x.modinsts   acc))
+       (acc (vl-gateinstlist->names-exec    x.gateinsts  acc)))
     acc))
 
 (defund vl-module->modnamespace (x)
@@ -293,13 +295,15 @@
 ; illegally declares those duplicated names more than once.
 
   (mbe :logic
-       (append (vl-netdecllist->names (vl-module->netdecls x))
-               (vl-regdecllist->names (vl-module->regdecls x))
-               (vl-vardecllist->names (vl-module->vardecls x))
-               (vl-eventdecllist->names (vl-module->eventdecls x))
-               (vl-paramdecllist->names (vl-module->paramdecls x))
-               (vl-modinstlist->instnames (vl-module->modinsts x))
-               (vl-gateinstlist->names (vl-module->gateinsts x)))
+       (b* (((vl-module x) x))
+         (append (vl-netdecllist->names     x.netdecls)
+                 (vl-regdecllist->names     x.regdecls)
+                 (vl-vardecllist->names     x.vardecls)
+                 (vl-eventdecllist->names   x.eventdecls)
+                 (vl-paramdecllist->names   x.paramdecls)
+                 (vl-fundecllist->names     x.fundecls)
+                 (vl-modinstlist->instnames x.modinsts)
+                 (vl-gateinstlist->names    x.gateinsts)))
        :exec
        (reverse (vl-module->modnamespace-exec x))))
 

@@ -943,3 +943,73 @@ plainarg.</li>
   (defthm len-of-vl-exprlist-to-plainarglist
     (equal (len (vl-exprlist-to-plainarglist x :dir dir :atts atts))
            (len x))))
+
+
+
+(defsection vl-atomlist-collect-funnames
+  :parents (vl-expr-funnames vl-atomlist-p)
+  :short "Collect all the function names that occur in an @(see vl-atomlist-p)
+and return them as a string list."
+
+  (defund vl-atomlist-collect-funnames (x)
+    (declare (xargs :guard (vl-atomlist-p x)))
+    (b* (((when (atom x))
+          nil)
+         (guts (vl-atom->guts (car x)))
+         ((when (vl-fast-funname-p guts))
+          (cons (string-fix (vl-funname->name guts))
+                (vl-atomlist-collect-funnames (cdr x)))))
+      (vl-atomlist-collect-funnames (cdr x))))
+
+  (local (in-theory (enable vl-atomlist-collect-funnames)))
+
+  (defthm string-listp-of-vl-atomlist-collect-funnames
+    (string-listp (vl-atomlist-collect-funnames x))
+    :hints(("Goal" :in-theory (disable (force))))))
+
+
+(defsection vl-expr-funnames
+  :parents (expr-tools)
+  :short "Collect the names of all functions that occur in a @(see vl-expr-p)
+and return them as a string list."
+
+  (defund vl-expr-funnames (x)
+    (declare (xargs :guard (vl-expr-p x)))
+    (vl-atomlist-collect-funnames (vl-expr-atoms x)))
+
+  (local (in-theory (enable vl-expr-funnames)))
+
+  (defthm string-listp-of-vl-expr-funnames
+    (string-listp (vl-expr-funnames x))))
+
+
+(defsection vl-exprlist-funnames
+  :parents (expr-tools)
+  :short "Collect the names of all functions that occur in a @(see
+vl-exprlist-p) and return them as a string list."
+  :long "<p>See @(see vl-expr-funnames).</p>"
+
+  (defund vl-exprlist-funnames (x)
+    (declare (xargs :guard (vl-exprlist-p x)))
+    (vl-atomlist-collect-funnames (vl-exprlist-atoms x)))
+
+  (local (in-theory (enable vl-exprlist-funnames)))
+
+  (defthm string-listp-of-vl-exprlist-funnames
+    (string-listp (vl-exprlist-funnames x))))
+
+
+(defun vl-expr-has-funcalls (x)
+  (declare (xargs :guard (vl-expr-p x)))
+  (mbe :logic (if (member :vl-funcall (vl-expr-ops x))
+                  t
+                nil)
+       :exec (vl-expr-has-ops (list :vl-funcall) x)))
+
+(defun vl-exprlist-has-funcalls (x)
+  (declare (xargs :guard (vl-exprlist-p x)))
+  (mbe :logic (if (member :vl-funcall (vl-exprlist-ops x))
+                  t
+                nil)
+       :exec (vl-exprlist-has-ops (list :vl-funcall) x)))
+

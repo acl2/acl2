@@ -25,366 +25,73 @@
 (include-book "parse-blockitems") ;; vl-vardecllist-p, vl-regdecllist-p, vl-eventdecllist-p, vl-paramdecllist-p
 (include-book "parse-insts")      ;; vl-modinstlist-p
 (include-book "parse-gates")      ;; vl-gateinstlist-p
+(include-book "parse-functions")  ;; vl-fundecllist-p
+(include-book "make-implicit-wires")
+(include-book "../mlib/context")  ;; vl-modelement-p, sorting modelements
 (local (include-book "../util/arithmetic"))
 
 
 
+(defsection vl-make-module-by-items
 
-;                            MODULE CONSTRUCTION
-;
-; Our parsing functions return all kinds of different module items.  We need to
-; go ahead and sort these into the different buckets we're going to use.
+; Our various parsing functions for declarations, assignments, etc., return all
+; kinds of different module items.  We initially get all of these different
+; kinds of items as a big list.  Then, here, we sort it into buckets by type,
+; and turn it into a module.
 
-(defund vl-moduleitem-p (x)
-  (declare (xargs :guard t))
-  (or (vl-portdecl-p x)
-      (vl-assign-p x)
-      (vl-netdecl-p x)
-      (vl-vardecl-p x)
-      (vl-regdecl-p x)
-      (vl-eventdecl-p x)
-      (vl-paramdecl-p x)
-      (vl-modinst-p x)
-      (vl-gateinst-p x)
-      (vl-always-p x)
-      (vl-initial-p x)))
+  (defund vl-make-module-by-items (name params ports items atts minloc maxloc warnings)
+    (declare (xargs :guard (and (stringp name)
+                                ;; BOZO add something about params
+                                (vl-portlist-p ports)
+                                (vl-modelementlist-p items)
+                                (vl-atts-p atts)
+                                (vl-location-p minloc)
+                                (vl-location-p maxloc)
+                                (vl-warninglist-p warnings)
+                                )))
+    (b* (((mv items warnings) (vl-make-implicit-wires items warnings))
+         ((mv item-ports portdecls assigns netdecls vardecls regdecls eventdecls paramdecls
+              fundecls modinsts gateinsts alwayses initials)
+          (vl-sort-modelements items nil nil nil nil nil nil nil nil nil nil nil nil nil)))
 
-(defthm vl-moduleitem-p-forward-to-consp
-  (implies (vl-moduleitem-p x)
-           (consp x))
-  :rule-classes :forward-chaining
-  :hints(("Goal" :in-theory (enable vl-moduleitem-p))))
+      (or (not item-ports)
+          (er hard? 'vl-make-module-by-items "There shouldn't be any ports in the items."))
 
-(deflist vl-moduleitemlist-p (x)
-  (vl-moduleitem-p x)
-  :elementp-of-nil nil)
+      (make-vl-module :name       name
+                      :params     params
+                      :ports      ports
+                      :portdecls  portdecls
+                      :assigns    assigns
+                      :netdecls   netdecls
+                      :vardecls   vardecls
+                      :regdecls   regdecls
+                      :eventdecls eventdecls
+                      :paramdecls paramdecls
+                      :fundecls   fundecls
+                      :modinsts   modinsts
+                      :gateinsts  gateinsts
+                      :alwayses   alwayses
+                      :initials   initials
+                      :atts       atts
+                      :minloc     minloc
+                      :maxloc     maxloc
+                      :warnings   warnings
+                      :origname   name
+                      :comments   nil
+                      )))
 
-(encapsulate
- ()
- (local (in-theory (enable vl-moduleitem-p)))
+  (local (in-theory (enable vl-make-module-by-items)))
 
- (defthm vl-moduleitemlist-p-when-vl-portdecllist-p
-   (implies (vl-portdecllist-p x)
-            (vl-moduleitemlist-p x))
-   :hints(("Goal" :induct (len x))))
-
- (defthm vl-moduleitemlist-p-when-vl-assignlist-p
-   (implies (vl-assignlist-p x)
-            (vl-moduleitemlist-p x))
-   :hints(("Goal" :induct (len x))))
-
- (defthm vl-moduleitemlist-p-when-vl-netdecllist-p
-   (implies (vl-netdecllist-p x)
-            (vl-moduleitemlist-p x))
-   :hints(("Goal" :induct (len x))))
-
- (defthm vl-moduleitemlist-p-when-vl-vardecllist-p
-   (implies (vl-vardecllist-p x)
-            (vl-moduleitemlist-p x))
-   :hints(("Goal" :induct (len x))))
-
- (defthm vl-moduleitemlist-p-when-vl-regdecllist-p
-   (implies (vl-regdecllist-p x)
-            (vl-moduleitemlist-p x))
-   :hints(("Goal" :induct (len x))))
-
- (defthm vl-moduleitemlist-p-when-vl-eventdecllist-p
-   (implies (vl-eventdecllist-p x)
-            (vl-moduleitemlist-p x))
-   :hints(("Goal" :induct (len x))))
-
- (defthm vl-moduleitemlist-p-when-vl-paramdecllist-p
-   (implies (vl-paramdecllist-p x)
-            (vl-moduleitemlist-p x))
-   :hints(("Goal" :induct (len x))))
-
- (defthm vl-moduleitemlist-p-when-vl-modinstlist-p
-   (implies (vl-modinstlist-p x)
-            (vl-moduleitemlist-p x))
-   :hints(("Goal" :induct (len x))))
-
- (defthm vl-moduleitemlist-p-when-vl-gateinstlist-p
-   (implies (vl-gateinstlist-p x)
-            (vl-moduleitemlist-p x))
-   :hints(("Goal" :induct (len x))))
-
- (defthm vl-moduleitemlist-p-when-vl-alwayslist-p
-   (implies (vl-alwayslist-p x)
-            (vl-moduleitemlist-p x))
-   :hints(("Goal" :induct (len x))))
-
- (defthm vl-moduleitemlist-p-when-vl-initiallist-p
-   (implies (vl-initiallist-p x)
-            (vl-moduleitemlist-p x))
-   :hints(("Goal" :induct (len x)))))
-
-
-
-
-(defsection discriminate-moduleitems-by-tag
-
-  (local (in-theory (enable vl-moduleitem-p)))
-
-  (defthm vl-portdecl-p-by-tag-when-vl-moduleitem-p
-    (implies (and (equal (tag x) :vl-portdecl)
-                  (vl-moduleitem-p x))
-             (vl-portdecl-p x))
-    :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
-  (defthm vl-assign-p-by-tag-when-vl-moduleitem-p
-    (implies (and (equal (tag x) :vl-assign)
-                  (vl-moduleitem-p x))
-             (vl-assign-p x))
-    :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
-  (defthm vl-netdecl-p-by-tag-when-vl-moduleitem-p
-    (implies (and (equal (tag x) :vl-netdecl)
-                  (vl-moduleitem-p x))
-             (vl-netdecl-p x))
-    :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
-  (defthm vl-vardecl-p-by-tag-when-vl-moduleitem-p
-    (implies (and (equal (tag x) :vl-vardecl)
-                  (vl-moduleitem-p x))
-             (vl-vardecl-p x))
-    :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
-  (defthm vl-regdecl-p-by-tag-when-vl-moduleitem-p
-    (implies (and (equal (tag x) :vl-regdecl)
-                  (vl-moduleitem-p x))
-             (vl-regdecl-p x))
-    :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
-  (defthm vl-eventdecl-p-by-tag-when-vl-moduleitem-p
-    (implies (and (equal (tag x) :vl-eventdecl)
-                  (vl-moduleitem-p x))
-             (vl-eventdecl-p x))
-    :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
-  (defthm vl-paramdecl-p-by-tag-when-vl-moduleitem-p
-    (implies (and (equal (tag x) :vl-paramdecl)
-                  (vl-moduleitem-p x))
-             (vl-paramdecl-p x))
-    :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
-  (defthm vl-modinst-p-by-tag-when-vl-moduleitem-p
-    (implies (and (equal (tag x) :vl-modinst)
-                  (vl-moduleitem-p x))
-             (vl-modinst-p x))
-    :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
-  (defthm vl-gateinst-p-by-tag-when-vl-moduleitem-p
-    (implies (and (equal (tag x) :vl-gateinst)
-                  (vl-moduleitem-p x))
-             (vl-gateinst-p x))
-    :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
-  (defthm vl-always-p-by-tag-when-vl-moduleitem-p
-    (implies (and (equal (tag x) :vl-always)
-                  (vl-moduleitem-p x))
-             (vl-always-p x))
-    :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
-  (defthm vl-initial-p-by-tag-when-vl-moduleitem-p
-    (implies (and (equal (tag x) :vl-initial)
-                  (vl-moduleitem-p x))
-             (vl-initial-p x))
-    :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))))
-
-
-
-(defund vl-sort-module-items (x portdecls assigns netdecls vardecls regdecls
-                                eventdecls paramdecls modinsts gateinsts
-                                alwayses initials)
-  (declare (xargs :guard (and (vl-moduleitemlist-p x)
-                              (vl-portdecllist-p portdecls)
-                              (vl-assignlist-p assigns)
-                              (vl-netdecllist-p netdecls)
-                              (vl-vardecllist-p vardecls)
-                              (vl-regdecllist-p regdecls)
-                              (vl-eventdecllist-p eventdecls)
-                              (vl-paramdecllist-p paramdecls)
-                              (vl-modinstlist-p modinsts)
-                              (vl-gateinstlist-p gateinsts)
-                              (vl-alwayslist-p alwayses)
-                              (vl-initiallist-p initials)
-                              (true-listp portdecls)
-                              (true-listp assigns)
-                              (true-listp netdecls)
-                              (true-listp vardecls)
-                              (true-listp regdecls)
-                              (true-listp eventdecls)
-                              (true-listp paramdecls)
-                              (true-listp modinsts)
-                              (true-listp gateinsts)
-                              (true-listp alwayses)
-                              (true-listp initials))))
-  (if (atom x)
-      (mv (reverse portdecls)
-          (reverse assigns)
-          (reverse netdecls)
-          (reverse vardecls)
-          (reverse regdecls)
-          (reverse eventdecls)
-          (reverse paramdecls)
-          (reverse modinsts)
-          (reverse gateinsts)
-          (reverse alwayses)
-          (reverse initials))
-    (let ((tag (tag (car x))))
-      (vl-sort-module-items (cdr x)
-                            (if (eq tag :vl-portdecl)  (cons (car x) portdecls)  portdecls)
-                            (if (eq tag :vl-assign)    (cons (car x) assigns)    assigns)
-                            (if (eq tag :vl-netdecl)   (cons (car x) netdecls)   netdecls)
-                            (if (eq tag :vl-vardecl)   (cons (car x) vardecls)   vardecls)
-                            (if (eq tag :vl-regdecl)   (cons (car x) regdecls)   regdecls)
-                            (if (eq tag :vl-eventdecl) (cons (car x) eventdecls) eventdecls)
-                            (if (eq tag :vl-paramdecl) (cons (car x) paramdecls) paramdecls)
-                            (if (eq tag :vl-modinst)   (cons (car x) modinsts)   modinsts)
-                            (if (eq tag :vl-gateinst)  (cons (car x) gateinsts)  gateinsts)
-                            (if (eq tag :vl-always)    (cons (car x) alwayses)   alwayses)
-                            (if (eq tag :vl-initial)   (cons (car x) initials)   initials)
-                            ))))
-
-
-(defsection vl-sort-module-items-types
-
-  (local (in-theory (enable vl-sort-module-items)))
-
-  (defmacro vl-sort-module-items$ ()
-    `(vl-sort-module-items x portdecls assigns netdecls vardecls regdecls
-                           eventdecls paramdecls modinsts gateinsts
-                           alwayses initials))
-
-  (defthm vl-portdecllist-p-of-vl-sort-module-items
-    (implies (and (vl-moduleitemlist-p x)
-                  (vl-portdecllist-p portdecls)
-                  (true-listp portdecls))
-             (vl-portdecllist-p (mv-nth 0 (vl-sort-module-items$))))
-    :hints(("Goal" :induct (vl-sort-module-items$))))
-
-  (defthm vl-assignlist-p-of-vl-sort-module-items
-    (implies (and (vl-moduleitemlist-p x)
-                  (vl-assignlist-p assigns)
-                  (true-listp assigns))
-             (vl-assignlist-p (mv-nth 1 (vl-sort-module-items$))))
-    :hints(("Goal" :induct (vl-sort-module-items$))))
-
-  (defthm vl-netdecllist-p-of-vl-sort-module-items
-    (implies (and (vl-moduleitemlist-p x)
-                  (vl-netdecllist-p netdecls)
-                  (true-listp netdecls))
-             (vl-netdecllist-p (mv-nth 2 (vl-sort-module-items$))))
-    :hints(("Goal" :induct (vl-sort-module-items$))))
-
-  (defthm vl-vardecllist-p-of-vl-sort-module-items
-    (implies (and (vl-moduleitemlist-p x)
-                  (vl-vardecllist-p vardecls)
-                  (true-listp vardecls))
-             (vl-vardecllist-p (mv-nth 3 (vl-sort-module-items$))))
-    :hints(("Goal" :induct (vl-sort-module-items$))))
-
-  (defthm vl-regdecllist-p-of-vl-sort-module-items
-    (implies (and (vl-moduleitemlist-p x)
-                  (vl-regdecllist-p regdecls)
-                  (true-listp regdecls))
-             (vl-regdecllist-p (mv-nth 4 (vl-sort-module-items$))))
-    :hints(("Goal" :induct (vl-sort-module-items$))))
-
-  (defthm vl-eventdecllist-p-of-vl-sort-module-items
-    (implies (and (vl-moduleitemlist-p x)
-                  (vl-eventdecllist-p eventdecls)
-                  (true-listp eventdecls))
-             (vl-eventdecllist-p (mv-nth 5 (vl-sort-module-items$))))
-    :hints(("Goal" :induct (vl-sort-module-items$))))
-
-  (defthm vl-paramdecllist-p-of-vl-sort-module-items
-    (implies (and (vl-moduleitemlist-p x)
-                  (vl-paramdecllist-p paramdecls)
-                  (true-listp paramdecls))
-             (vl-paramdecllist-p (mv-nth 6 (vl-sort-module-items$))))
-    :hints(("Goal" :induct (vl-sort-module-items$))))
-
-  (defthm vl-modinstlist-p-of-vl-sort-module-items
-    (implies (and (vl-moduleitemlist-p x)
-                  (vl-modinstlist-p modinsts)
-                  (true-listp modinsts))
-             (vl-modinstlist-p (mv-nth 7 (vl-sort-module-items$))))
-    :hints(("Goal" :induct (vl-sort-module-items$))))
-
-  (defthm vl-gateinstlist-p-of-vl-sort-module-items
-    (implies (and (vl-moduleitemlist-p x)
-                  (vl-gateinstlist-p gateinsts)
-                  (true-listp gateinsts))
-             (vl-gateinstlist-p (mv-nth 8 (vl-sort-module-items$))))
-    :hints(("Goal" :induct (vl-sort-module-items$))))
-
-  (defthm vl-alwayslist-p-of-vl-sort-module-items
-    (implies (and (vl-moduleitemlist-p x)
-                  (vl-alwayslist-p alwayses)
-                  (true-listp alwayses))
-             (vl-alwayslist-p (mv-nth 9 (vl-sort-module-items$))))
-    :hints(("Goal" :induct (vl-sort-module-items$))))
-
-  (defthm vl-initiallist-p-of-vl-sort-module-items
-    (implies (and (vl-moduleitemlist-p x)
-                  (vl-initiallist-p initials)
-                  (true-listp initials))
-             (vl-initiallist-p (mv-nth 10 (vl-sort-module-items$))))
-    :hints(("Goal" :induct (vl-sort-module-items$)))))
-
-
-(defund vl-make-module-by-items (name params ports items atts minloc maxloc warnings)
-  (declare (xargs :guard (and (stringp name)
-                              ;; BOZO add something about params
-                              (vl-portlist-p ports)
-                              (vl-moduleitemlist-p items)
-                              (vl-atts-p atts)
-                              (vl-location-p minloc)
-                              (vl-location-p maxloc)
-                              (vl-warninglist-p warnings)
-                              )))
-  (mv-let (portdecls assigns netdecls vardecls regdecls eventdecls paramdecls
-                     modinsts gateinsts alwayses initials)
-          (vl-sort-module-items items nil nil nil nil nil nil nil nil nil nil nil)
-          (make-vl-module :name name
-                          :params params
-                          :ports ports
-                          :portdecls portdecls
-                          :assigns assigns
-                          :netdecls netdecls
-                          :vardecls vardecls
-                          :regdecls regdecls
-                          :eventdecls eventdecls
-                          :paramdecls paramdecls
-                          :modinsts modinsts
-                          :gateinsts gateinsts
-                          :alwayses alwayses
-                          :initials initials
-                          :atts atts
-                          :minloc minloc
-                          :maxloc maxloc
-                          :warnings warnings
-                          :origname name
-                          :comments nil
-                          )))
-
-(defthm vl-module-p-of-vl-make-module-by-items
-  (implies (and (force (stringp name))
-                ;; BOZO add something about params
-                (force (vl-portlist-p ports))
-                (force (vl-moduleitemlist-p items))
-                (force (vl-atts-p atts))
-                (force (vl-location-p minloc))
-                (force (vl-location-p maxloc))
-                (force (vl-warninglist-p warnings)))
-           (vl-module-p (vl-make-module-by-items name params ports items atts minloc maxloc warnings)))
-  :hints(("Goal" :in-theory (enable vl-make-module-by-items))))
-
-
-
-
-
+  (defthm vl-module-p-of-vl-make-module-by-items
+    (implies (and (force (stringp name))
+                  ;; BOZO add something about params
+                  (force (vl-portlist-p ports))
+                  (force (vl-modelementlist-p items))
+                  (force (vl-atts-p atts))
+                  (force (vl-location-p minloc))
+                  (force (vl-location-p maxloc))
+                  (force (vl-warninglist-p warnings)))
+             (vl-module-p (vl-make-module-by-items name params ports items atts minloc maxloc warnings)))))
 
 
 
@@ -434,7 +141,7 @@
 ;
 
 (defparser vl-parse-generate-region (tokens warnings)
-  :result (vl-moduleitemlist-p val)
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -442,7 +149,7 @@
   (vl-unimplemented))
 
 (defparser vl-parse-specify-block (tokens warnings)
-  :result (vl-moduleitemlist-p val)
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -451,7 +158,7 @@
 
 (defparser vl-parse-specparam-declaration (atts tokens warnings)
   :guard (vl-atts-p atts)
-  :result (vl-moduleitemlist-p val)
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -461,14 +168,13 @@
 
 (defparser vl-parse-genvar-declaration (atts tokens warnings)
   :guard (vl-atts-p atts)
-  :result (vl-moduleitemlist-p val)
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
   :count strong
   (declare (ignore atts))
   (vl-unimplemented))
-
 
 (defund vl-task-p (x)
   (declare (xargs :guard t))
@@ -498,17 +204,17 @@
  ()
  (local (defthm horrible-hack-1
           (implies (vl-task-p x)
-                   (vl-moduleitemlist-p x))
+                   (vl-modelementlist-p x))
           :hints(("Goal" :in-theory (enable vl-task-p)))))
 
  (local (defthm horrible-hack-2
           (implies (and (not (mv-nth 0 (vl-parse-task-declaration-aux tokens)))
                         (force (vl-tokenlist-p tokens)))
-                   (vl-moduleitemlist-p (mv-nth 1 (vl-parse-task-declaration-aux tokens))))))
+                   (vl-modelementlist-p (mv-nth 1 (vl-parse-task-declaration-aux tokens))))))
 
  (defparser vl-parse-task-declaration (atts tokens warnings)
    :guard (vl-atts-p atts)
-   :result (vl-moduleitemlist-p val)
+   :result (vl-modelementlist-p val)
    :resultp-of-nil t
    :true-listp t
    :fails gracefully
@@ -525,56 +231,9 @@
            (return ret)))))
 
 
-
-(defparser vl-parse-function-declaration-aux (tokens warnings)
-  ;; BOZO this is really not implemented.  We just read until endfunction, throwing
-  ;; away any tokens we encounter until then.
-  :result (vl-task-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seqw tokens warnings
-        (when (vl-is-token? :vl-kwd-endfunction)
-          (:= (vl-match-token :vl-kwd-endfunction))
-          (return nil))
-        (:s= (vl-match-any))
-        (:= (vl-parse-function-declaration-aux))
-        (return nil)))
-
-(encapsulate
- ()
- (local (defthm horrible-hack-1
-          (implies (vl-task-p x)
-                   (vl-moduleitemlist-p x))
-          :hints(("Goal" :in-theory (enable vl-task-p)))))
-
- (local (defthm horrible-hack-2
-          (implies (and (not (mv-nth 0 (vl-parse-function-declaration-aux tokens)))
-                        (force (vl-tokenlist-p tokens)))
-                   (vl-moduleitemlist-p (mv-nth 1 (vl-parse-function-declaration-aux tokens))))))
-
- (defparser vl-parse-function-declaration (atts tokens warnings)
-   :guard (vl-atts-p atts)
-   :result (vl-moduleitemlist-p val)
-   :resultp-of-nil t
-   :true-listp t
-   :fails gracefully
-   :count strong
-   (declare (ignore atts))
-   (if (atom tokens)
-       (vl-parse-error "Unexpected EOF.")
-     (seqw tokens warnings
-           (:= (vl-parse-warning :vl-warn-function
-                                 (str::cat "Function declarations are not yet implemented.  "
-                                           "Instead, we are simply ignoring everything until "
-                                           "'endfunction'.")))
-           (ret := (vl-parse-function-declaration-aux))
-           (return ret)))))
-
 (defparser vl-parse-parameter-override (atts tokens warnings)
   :guard (vl-atts-p atts)
-  :result (vl-moduleitemlist-p val)
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -584,7 +243,7 @@
 
 (defparser vl-parse-loop-generate-construct (atts tokens warnings)
   :guard (vl-atts-p atts)
-  :result (vl-moduleitemlist-p val)
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -594,7 +253,7 @@
 
 (defparser vl-parse-conditional-generate-construct (atts tokens warnings)
   :guard (vl-atts-p atts)
-  :result (vl-moduleitemlist-p val)
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -657,7 +316,7 @@
 
 (defparser vl-parse-module-or-generate-item (atts tokens warnings)
   :guard (vl-atts-p atts)
-  :result (vl-moduleitemlist-p val)
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -667,7 +326,9 @@
         ((member-eq (vl-token->type (car tokens)) *vl-netdecltypes-kwds*)
          (seqw tokens warnings
                ((assigns . decls) := (vl-parse-net-declaration atts))
-               (return (append assigns decls))))
+               ;; Note: this order is important, the decls have to come first
+               ;; or we'll try to infer implicit nets from the assigns.
+               (return (append decls assigns))))
         ((member-eq (vl-token->type (car tokens)) *vl-gate-type-keywords*)
          (vl-parse-gate-instantiation atts tokens))
         (t
@@ -699,7 +360,7 @@
 
 (defparser vl-parse-non-port-module-item (atts tokens warnings)
   :guard (vl-atts-p atts)
-  :result (vl-moduleitemlist-p val)
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -725,7 +386,7 @@
          (vl-parse-module-or-generate-item atts))))
 
 (defparser vl-parse-module-item (tokens warnings)
-  :result (vl-moduleitemlist-p val)
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -797,7 +458,7 @@
 
 (defparser vl-parse-module-items-until-endmodule (tokens warnings)
   ;; Look for module items until :vl-kwd-endmodule is encountered.
-  :result (vl-moduleitemlist-p val)
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -811,7 +472,7 @@
 
 (defparser vl-parse-non-port-module-items-until-endmodule (tokens warnings)
   ;; Look for non-port module items until :vl-kwd-endmodule is encountered.
-  :result (vl-moduleitemlist-p val)
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -936,57 +597,36 @@
         (return end)))
 
 
-(defund vl-make-module-with-parse-error (name minloc maxloc err1 err2 tokens1 tokens2)
+
+(defund vl-make-module-with-parse-error (name minloc maxloc err tokens)
   (declare (xargs :guard (and (stringp name)
                               (vl-location-p minloc)
                               (vl-location-p maxloc)
-                              (vl-tokenlist-p tokens1)
-                              (vl-tokenlist-p tokens2)
-                              )))
-  (b* (;; We expect that ERR1 and ERR2 are objects suitable for cw-obj, i.e.,
+                              (vl-tokenlist-p tokens))))
+  (b* (;; We expect that ERR should be an object suitable for cw-obj, i.e.,
        ;; each should be a cons of a string onto some arguments.  But if this
        ;; is not the case, we handle it here by just making a generic error.
-       ((mv msg1 args1)
-        (if (and (consp err1)
-                 (stringp (car err1)))
-            (mv (car err1) (list-fix (cdr err1)))
+       ((mv msg args)
+        (if (and (consp err)
+                 (stringp (car err)))
+            (mv (car err) (list-fix (cdr err)))
           (mv "Generic error message for modules with parse errors. ~% ~
-               Details: ~x0.~%" (list err1))))
-
-       ((mv msg2 args2)
-        (if (and (consp err2)
-                 (stringp (car err2)))
-            (mv (car err2) (list-fix (cdr err2)))
-          (mv "Generic error message for modules with parse errors. ~% ~
-               Details: ~x0.~%" (list err2))))
+               Details: ~x0.~%" (list err))))
 
        (warn1 (make-vl-warning :type :vl-parse-error
-                               :msg msg1
-                               :args args1
-                               :fatalp t
-                               :fn 'vl-make-module-with-parse-error))
-       (warn2 (make-vl-warning :type :vl-parse-error
-                               :msg msg2
-                               :args args2
+                               :msg msg
+                               :args args
                                :fatalp t
                                :fn 'vl-make-module-with-parse-error))
 
        ;; We also generate a second error message to show the remaining part of
        ;; the token stream in each case:
-       (warn3 (make-vl-warning :type :vl-parse-error
+       (warn2 (make-vl-warning :type :vl-parse-error
                                :msg "[[ Remaining ]]: ~s0 ~s1.~%"
                                :args (list (vl-tokenlist->string-with-spaces
-                                            (take (min 4 (len tokens1))
-                                                  (redundant-list-fix tokens1)))
-                                           (if (> (len tokens1) 4) "..." ""))
-                               :fatalp t
-                               :fn 'vl-make-module-with-parse-error))
-       (warn4 (make-vl-warning :type :vl-parse-error
-                               :msg "[[ Remaining ]]: ~s0 ~s1.~%"
-                               :args (list (vl-tokenlist->string-with-spaces
-                                            (take (min 4 (len tokens2))
-                                                  (redundant-list-fix tokens2)))
-                                           (if (> (len tokens2) 4) "..." ""))
+                                            (take (min 4 (len tokens))
+                                                  (redundant-list-fix tokens)))
+                                           (if (> (len tokens) 4) "..." ""))
                                :fatalp t
                                :fn 'vl-make-module-with-parse-error)))
 
@@ -994,18 +634,17 @@
                     :origname name
                     :minloc minloc
                     :maxloc maxloc
-                    :warnings (list warn1 warn2 warn3 warn4))))
+                    :warnings (list warn1 warn2))))
 
 (defthm vl-module-p-of-vl-make-module-with-parse-error
   (implies (and (force (stringp name))
                 (force (vl-location-p minloc))
                 (force (vl-location-p maxloc))
-                (force (vl-tokenlist-p tokens1))
-                (force (vl-tokenlist-p tokens2)))
-           (vl-module-p (vl-make-module-with-parse-error name minloc maxloc
-                                                         err1 err2
-                                                         tokens1 tokens2)))
+                (force (vl-tokenlist-p tokens)))
+           (vl-module-p (vl-make-module-with-parse-error name minloc maxloc err tokens)))
   :hints(("Goal" :in-theory (enable vl-make-module-with-parse-error))))
+
+
 
 
 
@@ -1042,19 +681,42 @@
               ((unless err2)
                (mv err2 mod v2-tokens warnings)))
 
-           ;; If we get this far, we saw "module foo" but were not able to
-           ;; parse the rest of this module definiton.  We attempt to be
-           ;; somewhat fault-tolerant by advancing all the way to endtoken.
-           ;; Note that we backtrack all the way to the start of the module.
+; If we get this far, we saw "module foo" but were not able to parse the rest
+; of this module definiton.  We attempt to be somewhat fault-tolerant by
+; advancing all the way to endtoken.  Note that we backtrack all the way to the
+; start of the module.
+;
+; We need to report a parse error.  But which error do we report?  We have two
+; errors, one from our Variant-1 attempt to parse the module, and one from our
+; Variant-2 attempt.
+;
+; Well, originally I thought I'd just report both errors, but that was a really
+; bad idea.  Why?  Well, imagine a mostly-well-formed module that happens to
+; have a parse error far down within it.  Instead of getting told, "hey, I was
+; expecting a semicolon after "assign foo = bar", the user gets TWO parse
+; errors, one of which properly says this, but the other of which says that
+; there's a parse error very closely after the module keyword.  (The wrong
+; variant tends to fail very quickly because we either hit a
+; list_of_port_declarations or a list_of_ports, at which point we get a
+; failure.)  This parse error is really hard to understand, because where it
+; occurs the module looks perfectly well-formed (under the other variant).
+;
+; So, as a gross but workable sort of hack, my new approach is simply:
+; whichever variant "got farther" was probably the variant that we wanted to
+; follow, so we'll just report its parse-error.  Maybe some day we'll rework
+; the module parser so that it doesn't use backtracking so aggressively.
+
            (seqw tokens warnings
                  (endkwd := (vl-skip-through-endmodule tokens))
                  (return
-                  (vl-make-module-with-parse-error (vl-idtoken->name id)
-                                                   (vl-token->loc kwd)
-                                                   (vl-token->loc endkwd)
-                                                   err1
-                                                   err2
-                                                   v1-tokens
-                                                   v2-tokens)))))))
-
+                  (b* (((mv err tokens)
+                        (if (<= (len v1-tokens) (len v2-tokens))
+                            ;; Variant 1 got farther (or as far), so use it.
+                            (mv err1 v1-tokens)
+                          ;; Variant 2 got farther
+                          (mv err2 v2-tokens))))
+                    (vl-make-module-with-parse-error (vl-idtoken->name id)
+                                                     (vl-token->loc kwd)
+                                                     (vl-token->loc endkwd)
+                                                     err tokens))))))))
 

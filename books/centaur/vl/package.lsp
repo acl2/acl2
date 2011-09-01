@@ -124,6 +124,11 @@
       get-ruleset
       ruleset-theory
 
+      make-fast-alist
+      with-fast-alist
+      with-fast
+      with-fast-alists
+
       vcd-dump))
 
    ;; Things to remove:

@@ -260,6 +260,7 @@ ranges, e.g., <tt>wire [7:0] w</tt>.  What we do not support are, e.g.,
                   (vl-vardecl-p item)
                   (vl-eventdecl-p item)
                   (vl-paramdecl-p item)
+                  (vl-fundecl-p item)
                   (vl-modinst-p item)
                   (vl-gateinst-p item)))
 
@@ -394,7 +395,7 @@ ranges, e.g., <tt>wire [7:0] w</tt>.  What we do not support are, e.g.,
       ))
 
 ; It doesn't make sense to me that any of these would be a port.
-    ((:vl-vardecl :vl-eventdecl :vl-paramdecl :vl-modinst :vl-gateinst)
+    ((:vl-vardecl :vl-eventdecl :vl-paramdecl :vl-fundecl :vl-modinst :vl-gateinst)
 
      (@wf-assert nil
                  :vl-weird-port

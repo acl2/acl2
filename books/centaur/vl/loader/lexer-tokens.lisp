@@ -846,3 +846,22 @@ vl-location-p)</p>.
   (declare (xargs :guard (vl-token-p x)))
   (vl-echarlist->string (vl-token->etext x)))
 
+
+
+(defund vl-tokenlist->string-with-spaces (x)
+
+; BOZO this could be a lot more efficient.  Consider consing up the whole
+; list with spaces in it, then passing it off to str::fast-string-append-lst
+; all at once.
+
+  (declare (xargs :guard (vl-tokenlist-p x)))
+
+; Given a token list, which has already had the spaces stripped out of it,
+; we insert a single space between each of the tokens, and turn everything
+; back into a string.  This can be useful for error reporting in the parser.
+
+  (if (consp x)
+      (str::cat (vl-echarlist->string (vl-token->etext (car x)))
+                " "
+                (vl-tokenlist->string-with-spaces (cdr x)))
+    ""))

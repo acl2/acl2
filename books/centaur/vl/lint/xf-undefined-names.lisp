@@ -19,11 +19,17 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../transforms/xf-make-implicit-wires")
-(include-book "../mlib/modnamespace")
-(include-book "../mlib/allexprs")
-(local (include-book "../util/arithmetic"))
-(local (include-book "../util/osets"))
+
+; BOZO removing this transform temporarily, until I'm sure we need it again,
+; since it seems to simpleminded and probably doesn't work quite right
+; w.r.t. functions, etc.
+
+
+;(include-book "../loader/make-implicit-wires")
+;(include-book "../mlib/modnamespace")
+;(include-book "../mlib/allexprs")
+;(local (include-book "../util/arithmetic"))
+;(local (include-book "../util/osets"))
 
 
 ; VL-Lint Only.
@@ -41,50 +47,49 @@
 ; don't deal with port-implicit wires.  We also don't add any warnings because
 ; implicit-wires should have done that.
 
-(defsection vl-module-add-undefined-names
+;; (defsection vl-module-add-undefined-names
 
-  (defund vl-module-add-undefined-names (x)
-    (declare (xargs :guard (vl-module-p x)))
+;;   (defund vl-module-add-undefined-names (x)
+;;     (declare (xargs :guard (vl-module-p x)))
 
-    (b* (((vl-module x) x)
+;;     (b* (((vl-module x) x)
 
-         (declared-names
-          ;; Set of all explicitly declared names in the module, as in the
-          ;; ordinary make-implicit-wires transform.
-          (mergesort (vl-module->modnamespace-exec x)))
+;;          (declared-names
+;;           ;; Set of all explicitly declared names in the module
+;;           (mergesort (vl-module->modnamespace-exec x)))
 
-         (allnames
-          ;; All names used anywhere in the module
-          (b* ((exprs (vl-module-allexprs-exec x nil))
-               (names (vl-exprlist-names-exec exprs nil)))
-            (mergesort names)))
+;;          (allnames
+;;           ;; All names used anywhere in the module
+;;           (b* ((exprs (vl-module-allexprs-exec x nil))
+;;                (names (vl-exprlist-names-exec exprs nil)))
+;;             (mergesort names)))
 
-         (implicit-names (difference allnames declared-names))
-         (implicit-decls (vl-make-other-implicit-wires x.minloc implicit-names)))
-      (change-vl-module x
-                        :netdecls (append implicit-decls x.netdecls))))
+;;          (implicit-names (difference allnames declared-names))
+;;          (implicit-decls (vl-make-ordinary-implicit-wires x.minloc implicit-names)))
+;;       (change-vl-module x
+;;                         :netdecls (append implicit-decls x.netdecls))))
 
-  (local (in-theory (enable vl-module-add-undefined-names)))
+;;   (local (in-theory (enable vl-module-add-undefined-names)))
 
-  (defthm vl-modulep-of-vl-module-add-undefined-names
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-add-undefined-names x))))
+;;   (defthm vl-modulep-of-vl-module-add-undefined-names
+;;     (implies (force (vl-module-p x))
+;;              (vl-module-p (vl-module-add-undefined-names x))))
 
-  (defthm vl-module->name-of-vl-module-add-undefined-names
-    (equal (vl-module->name (vl-module-add-undefined-names x))
-           (vl-module->name x))))
+;;   (defthm vl-module->name-of-vl-module-add-undefined-names
+;;     (equal (vl-module->name (vl-module-add-undefined-names x))
+;;            (vl-module->name x))))
 
 
-(defsection vl-modulelist-add-undefined-names
+;; (defsection vl-modulelist-add-undefined-names
 
-  (defprojection vl-modulelist-add-undefined-names (x)
-    (vl-module-add-undefined-names x)
-    :guard (vl-modulelist-p x)
-    :result-type vl-modulelist-p)
+;;   (defprojection vl-modulelist-add-undefined-names (x)
+;;     (vl-module-add-undefined-names x)
+;;     :guard (vl-modulelist-p x)
+;;     :result-type vl-modulelist-p)
 
-  (local (in-theory (enable vl-modulelist-add-undefined-names)))
+;;   (local (in-theory (enable vl-modulelist-add-undefined-names)))
 
-  (defthm vl-modulelist->names-of-vl-modulelist-add-undefined-names
-    (equal (vl-modulelist->names (vl-modulelist-add-undefined-names x))
-           (vl-modulelist->names x))))
+;;   (defthm vl-modulelist->names-of-vl-modulelist-add-undefined-names
+;;     (equal (vl-modulelist->names (vl-modulelist-add-undefined-names x))
+;;            (vl-modulelist->names x))))
 

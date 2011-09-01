@@ -22,10 +22,6 @@
 (include-book "lexer")
 (local (include-book "../util/arithmetic"))
 
-;; JCD: This program-mode switch is nothing to be concerned with.  It is only a
-;; convenience to assist with the unit tests below.  These unit tests are to
-;; help ensure the semantic correctness of the functions above, and have
-;; nothing to do with logical soundness.
 (program)
 
 

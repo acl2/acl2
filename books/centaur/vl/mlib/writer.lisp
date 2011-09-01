@@ -839,102 +839,114 @@ displays.  The module browser's web pages are responsible for defining the
                                 (vl-pp-atts-aux-fn . atts-aux)
                                 (vl-pp-exprlist-fn . list)))
 
-(defthm-flag-vl-pp-expr vl-pstate-p-of-flag-vl-pp-expr
-  (expr (implies (and (force (vl-pstate-p ps))
-                      (force (vl-expr-p x)))
-                 (vl-pstate-p (vl-pp-expr x))))
-  (atts (implies (and (force (vl-pstate-p ps))
-                      (force (vl-atts-p x)))
-                 (vl-pstate-p (vl-pp-atts x))))
-  (atts-aux (implies (and (force (vl-pstate-p ps))
-                          (force (vl-atts-p x)))
-                     (vl-pstate-p (vl-pp-atts-aux x))))
-  (list (implies (and (force (vl-pstate-p ps))
-                      (force (vl-exprlist-p x)))
-                 (vl-pstate-p (vl-pp-exprlist x))))
-  :hints(("Goal"
-          :do-not '(generalize fertilize)
-          :induct (flag-vl-pp-expr flag x ps)
-          :expand ((vl-pp-expr-fn x ps)
-                   (:free (ps) (vl-pp-expr-fn nil ps))
-                   (vl-pp-atts-fn x ps)
-                   (vl-pp-atts-fn nil ps)
-                   (vl-pp-atts-aux-fn nil ps)
-                   (vl-pp-atts-aux-fn x ps)
-                   (vl-pp-exprlist-fn x ps)
-                   ))))
-
 (encapsulate
- ()
- (local (defthm crock0
-          (implies (and (vl-exprlist-p x)
-                        (= (len x) 1))
-                   (car x))))
+  ()
+  ;; Speed hint
+  (local (in-theory (disable member-equal-of-cons
+                             MEMBER-EQUAL-WHEN-MEMBER-EQUAL-OF-CDR-UNDER-IFF
+                             double-containment
+                             ACL2::TRUE-LISTP-MEMBER-EQUAL
+                             ACL2::CONSP-MEMBER-EQUAL
+                             MEMBER-EQUAL-WHEN-SUBSETP-EQUAL
+                             (:ruleset tag-reasoning)
+                             )))
 
- (local (defthm crock0b
-          (implies (and (vl-exprlist-p x)
-                        (= (len x) 2))
-                   (and (car x)
-                        (cadr x)))))
-
- (local (defthm crock0c
-          (implies (and (vl-exprlist-p x)
-                        (= (len x) 3))
-                   (and (car x)
-                        (cadr x)
-                        (caddr x)))))
-
- (local (defthm crock0d
-          (implies (and (vl-exprlist-p x)
-                        (consp x))
-                   (car x))))
-
- (local (in-theory (disable crock0 crock0b crock0c crock0d)))
-
- (local (defthm crock1
-          (implies (and (= (len (vl-nonatom->args x)) 1)
-                        (force (not (vl-atom-p x)))
+  (defthm-flag-vl-pp-expr vl-pstate-p-of-flag-vl-pp-expr
+    (expr (implies (and (force (vl-pstate-p ps))
                         (force (vl-expr-p x)))
-                   (iff (car (vl-nonatom->args x))
-                        t))
-          :hints(("Goal"
-                  :in-theory (e/d (vl-expr-p))
-                  :use ((:instance crock0
-                                   (x (vl-nonatom->args x))))))))
- (local (defthm crock1b
-          (implies (and (= (len (vl-nonatom->args x)) 2)
-                        (force (not (vl-atom-p x)))
-                        (force (vl-expr-p x)))
-                   (and (car (vl-nonatom->args x))
-                        (cadr (vl-nonatom->args x))))
-          :hints(("Goal"
-                  :in-theory (e/d (vl-expr-p))
-                  :use ((:instance crock0b (x (vl-nonatom->args x))))))))
+                   (vl-pstate-p (vl-pp-expr x))))
+    (atts (implies (and (force (vl-pstate-p ps))
+                        (force (vl-atts-p x)))
+                   (vl-pstate-p (vl-pp-atts x))))
+    (atts-aux (implies (and (force (vl-pstate-p ps))
+                            (force (vl-atts-p x)))
+                       (vl-pstate-p (vl-pp-atts-aux x))))
+    (list (implies (and (force (vl-pstate-p ps))
+                        (force (vl-exprlist-p x)))
+                   (vl-pstate-p (vl-pp-exprlist x))))
+    :hints(("Goal"
+            :do-not '(generalize fertilize)
+            :induct (flag-vl-pp-expr flag x ps)
+            :expand ((vl-pp-expr-fn x ps)
+                     (:free (ps) (vl-pp-expr-fn nil ps))
+                     (vl-pp-atts-fn x ps)
+                     (vl-pp-atts-fn nil ps)
+                     (vl-pp-atts-aux-fn nil ps)
+                     (vl-pp-atts-aux-fn x ps)
+                     (vl-pp-exprlist-fn x ps)
+                     ))))
 
- (local (defthm crock1c
-          (implies (and (= (len (vl-nonatom->args x)) 3)
-                        (force (not (vl-atom-p x)))
-                        (force (vl-expr-p x)))
-                   (and (car (vl-nonatom->args x))
-                        (cadr (vl-nonatom->args x))
-                        (caddr (vl-nonatom->args x))))
-          :hints(("Goal"
-                  :in-theory (e/d (vl-expr-p))
-                  :use ((:instance crock0c (x (vl-nonatom->args x))))))))
+  (local (defthm crock0
+           (implies (and (vl-exprlist-p x)
+                         (= (len x) 1))
+                    (car x))))
 
- (local (defthm crock1d
-          (implies (and (consp (vl-nonatom->args x))
-                        (force (not (vl-atom-p x)))
-                        (force (vl-expr-p x)))
-                   (car (vl-nonatom->args x)))
-          :hints(("Goal"
-                  :in-theory (e/d (vl-expr-p))
-                  :use ((:instance crock0d (x (vl-nonatom->args x))))))))
+  (local (defthm crock0b
+           (implies (and (vl-exprlist-p x)
+                         (= (len x) 2))
+                    (and (car x)
+                         (cadr x)))))
 
- (verify-guards vl-pp-expr-fn
-                :hints(("Goal"
-                        :expand (vl-expr-p x)
-                        :in-theory (e/d () ((force)))))))
+  (local (defthm crock0c
+           (implies (and (vl-exprlist-p x)
+                         (= (len x) 3))
+                    (and (car x)
+                         (cadr x)
+                         (caddr x)))))
+
+  (local (defthm crock0d
+           (implies (and (vl-exprlist-p x)
+                         (consp x))
+                    (car x))))
+
+  (local (in-theory (disable crock0 crock0b crock0c crock0d)))
+
+  (local (defthm crock1
+           (implies (and (= (len (vl-nonatom->args x)) 1)
+                         (force (not (vl-atom-p x)))
+                         (force (vl-expr-p x)))
+                    (iff (car (vl-nonatom->args x))
+                         t))
+           :hints(("Goal"
+                   :in-theory (e/d (vl-expr-p))
+                   :use ((:instance crock0
+                                    (x (vl-nonatom->args x))))))))
+  (local (defthm crock1b
+           (implies (and (= (len (vl-nonatom->args x)) 2)
+                         (force (not (vl-atom-p x)))
+                         (force (vl-expr-p x)))
+                    (and (car (vl-nonatom->args x))
+                         (cadr (vl-nonatom->args x))))
+           :hints(("Goal"
+                   :in-theory (e/d (vl-expr-p))
+                   :use ((:instance crock0b (x (vl-nonatom->args x))))))))
+
+  (local (defthm crock1c
+           (implies (and (= (len (vl-nonatom->args x)) 3)
+                         (force (not (vl-atom-p x)))
+                         (force (vl-expr-p x)))
+                    (and (car (vl-nonatom->args x))
+                         (cadr (vl-nonatom->args x))
+                         (caddr (vl-nonatom->args x))))
+           :hints(("Goal"
+                   :in-theory (e/d (vl-expr-p))
+                   :use ((:instance crock0c (x (vl-nonatom->args x))))))))
+
+  (local (defthm crock1d
+           (implies (and (consp (vl-nonatom->args x))
+                         (force (not (vl-atom-p x)))
+                         (force (vl-expr-p x)))
+                    (car (vl-nonatom->args x)))
+           :hints(("Goal"
+                   :in-theory (e/d (vl-expr-p))
+                   :use ((:instance crock0d (x (vl-nonatom->args x))))))))
+
+  (local (in-theory (enable member-equal-of-cons)))
+
+  (verify-guards vl-pp-expr-fn
+    :hints(("Goal"
+            :expand (vl-expr-p x)
+            :in-theory (e/d () ((force)))))))
 
 (defund vl-pps-expr (x)
   (declare (xargs :guard (vl-expr-p x)))
@@ -2091,6 +2103,126 @@ original source code.)</p>"
           ps))
 
 
+
+(defpp vl-pp-blockitem (x)
+  :guard (vl-blockitem-p x)
+  :body
+  (case (tag x)
+    (:vl-regdecl   (vl-pp-regdecl x))
+    (:vl-vardecl   (vl-pp-vardecl x))
+    (:vl-eventdecl (vl-println "// BOZO implement eventdecl printing"))
+    (:vl-paramdecl (vl-pp-paramdecl x))
+    (otherwise
+     (prog2$ (er hard 'vl-pp-blockitem "Impossible")
+             ps))))
+
+(defpp vl-pp-blockitemlist (x)
+  :guard (vl-blockitemlist-p x)
+  :body (if (consp x)
+            (vl-ps-seq (vl-pp-blockitem (car x))
+                       (vl-pp-blockitemlist (cdr x)))
+          ps))
+
+
+
+(defsection vl-funtype-string
+  :parents (vl-funtype-p)
+  :short "@(call vl-funtype-string) returns a string describing this function
+type, for pretty-printing."
+
+  :long "<p>We just return the empty don't print anything for
+<tt>:vl-unsigned</tt>, but it seems like; it would be valid to print
+<tt>reg</tt>.</p>"
+
+  (local (in-theory (enable vl-funtype-p)))
+
+  (defund vl-funtype-string (x)
+    (declare (xargs :guard (vl-funtype-p x)))
+    (case x
+      (:vl-unsigned "")
+      (:vl-signed   "signed")
+      (:vl-integer  "integer")
+      (:vl-real     "real")
+      (:vl-realtime "realtime")
+      (:vl-time     "time")
+      (otherwise
+       (prog2$ (er hard 'vl-funtype-string "Provably impossible")
+               ""))))
+
+  (local (in-theory (enable vl-funtype-string)))
+
+  (defthm stringp-of-vl-funtype-string
+    (stringp (vl-funtype-string x))
+    :rule-classes :type-prescription))
+
+(defpp vl-pp-funinput (x)
+  :guard (vl-funinput-p x)
+  :body (b* (((vl-funinput x) x))
+          (vl-ps-seq
+           (vl-print "  ")
+           (if x.atts
+               (vl-ps-seq (vl-pp-atts x.atts)
+                          (vl-print " "))
+             ps)
+           (vl-ps-span "vl_key"
+                       (vl-print "input ")
+                       (vl-print (vl-funtype-string x.type))
+                       (vl-soft-space))
+           (if x.range
+               (vl-ps-seq (vl-pp-range x.range)
+                          (vl-print " "))
+             ps)
+           (vl-print-wirename x.name))))
+
+(defpp vl-pp-funinputlist (x)
+  :guard (vl-funinputlist-p x)
+  :body (if (atom x)
+            ps
+          (vl-ps-seq (vl-pp-funinput (car x))
+                     (vl-println " ;")
+                     (vl-pp-funinputlist (cdr x)))))
+
+(defpp vl-pp-fundecl (x)
+  :guard (vl-fundecl-p x)
+  ;; We print these off using "variant 1" style (see parse-functions)
+  :body (b* (((vl-fundecl x) x))
+          (vl-ps-seq
+           (vl-print "  ")
+           (if x.atts
+               (vl-ps-seq (vl-pp-atts x.atts)
+                          (vl-print " "))
+             ps)
+           (vl-ps-span "vl_key"
+                       (vl-print "function ")
+                       (if x.automaticp
+                           (vl-print "automatic ")
+                         ps)
+                       (vl-print (vl-funtype-string x.rtype))
+                       (vl-soft-space))
+           (if x.rrange
+               (vl-ps-seq (vl-pp-range x.rrange)
+                          (vl-print " "))
+             ps)
+           (vl-print-wirename x.name)
+           (vl-println ";")
+           (vl-pp-funinputlist x.inputs)
+           (vl-pp-blockitemlist x.decls)
+           (vl-print "  ")
+           (vl-pp-stmt x.body)
+           (vl-basic-cw "~|")  ;; newline only if necessary
+           (vl-print "  ")
+           (vl-ps-span "vl_key" (vl-print "endfunction"))
+           (vl-println ""))))
+
+(defpp vl-pp-fundecllist (x)
+  :guard (vl-fundecllist-p x)
+  :body (if (atom x)
+            ps
+          (vl-ps-seq (vl-pp-fundecl (car x))
+                     (vl-println "")
+                     (vl-pp-fundecllist (cdr x)))))
+
+
 (defpp vl-pp-module (x mods modalist)
   :parents (verilog-printing)
   :short "Pretty-print a module to @(see ps)."
@@ -2110,43 +2242,31 @@ for hyperlinking to submodules in HTML mode.</p>"
   :guard (and (vl-module-p x)
               (vl-modulelist-p mods)
               (equal modalist (vl-modalist mods)))
-  :body (let ((name       (vl-module->name x))
-              (ports      (vl-module->ports x))
-              (portdecls  (vl-module->portdecls x))
-              (assigns    (vl-module->assigns x))
-              (netdecls   (vl-module->netdecls x))
-              (vardecls   (vl-module->vardecls x))
-              (regdecls   (vl-module->regdecls x))
-              (eventdecls (vl-module->eventdecls x))
-              (paramdecls (vl-module->paramdecls x))
-              (modinsts   (vl-module->modinsts x))
-              (gateinsts  (vl-module->gateinsts x))
-              (alwayses   (vl-module->alwayses x))
-              (initials   (vl-module->initials x))
-              (atts       (vl-module->atts x)))
+  :body (b* (((vl-module x) x))
           (vl-ps-seq
-           (vl-pp-set-portnames portdecls)
-           (vl-pp-atts atts)
+           (vl-pp-set-portnames x.portdecls)
+           (vl-pp-atts x.atts)
            (vl-ps-span "vl_key" (vl-print "module "))
            (if (vl-ps->htmlp)
-               (vl-pp-modulename-link name mods modalist)
-             (vl-print-modname name))
+               (vl-pp-modulename-link x.name mods modalist)
+             (vl-print-modname x.name))
            (vl-print " (")
-           (vl-pp-portlist ports)
+           (vl-pp-portlist x.ports)
            (vl-println ");")
-           (vl-pp-paramdecllist paramdecls)
-           (vl-pp-portdecllist portdecls)
-           (vl-pp-regdecllist regdecls)
-           (vl-pp-netdecllist netdecls)
-           (vl-pp-vardecllist vardecls)
-           (if (not eventdecls)
+           (vl-pp-paramdecllist x.paramdecls)
+           (vl-pp-portdecllist x.portdecls)
+           (vl-pp-regdecllist x.regdecls)
+           (vl-pp-netdecllist x.netdecls)
+           (vl-pp-vardecllist x.vardecls)
+           (if (not x.eventdecls)
                ps
              (vl-println "// BOZO implement eventdecl printing"))
-           (vl-pp-assignlist assigns)
-           (vl-pp-modinstlist modinsts mods modalist)
-           (vl-pp-gateinstlist gateinsts)
-           (vl-pp-alwayslist alwayses)
-           (vl-pp-initiallist initials)
+           (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
+           (vl-pp-assignlist x.assigns)
+           (vl-pp-modinstlist x.modinsts mods modalist)
+           (vl-pp-gateinstlist x.gateinsts)
+           (vl-pp-alwayslist x.alwayses)
+           (vl-pp-initiallist x.initials)
            (vl-ps-span "vl_key" (vl-println "endmodule"))
            (vl-println ""))))
 

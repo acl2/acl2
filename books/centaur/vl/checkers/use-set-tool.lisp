@@ -21,7 +21,6 @@
 (in-package "VL")
 (include-book "use-set")
 (include-book "../loader/loader")
-(include-book "../transforms/xf-make-implicit-wires")
 (include-book "../transforms/xf-argresolve")
 (include-book "../transforms/xf-portdecl-sign")
 (include-book "../transforms/cn-hooks")
@@ -99,24 +98,10 @@
                     :name xf-only-keep-top-mods)
           mods))
 
-; Before we run our analysis, we are going to transform the parsed modules
-; in a few simple ways.
-;
-;   1. We will add declarations for implicit wires (wires which are used but
-;      not declared) and for port-implicit wires (wires which are declared as
-;      "input w" or "output w", but not also "wire w".  This way, we only have
-;      to look at the list of declared wires to see all wire names.
-;
-;   2. We will also resolve all the argument lists.  This transformation
-;      converts named argument lists, like "(.foo(1), .bar(2))", into plain
-;      argument lists, like "(1, 2)", and also marks each argument as an input
-;      or an output.
-;
-; Once these transformations are applied, we can construct the use and set
-; alist in a pretty direct way.
-
-       (mods (cwtime (vl-modulelist-make-implicit-wires mods)
-                     :name xf-make-implicit-wires))
+; Before we run our analysis, we are going to transform the parsed modules in a
+; few simple ways.  We need to resolve the argument lists (to mark each
+; argument as an input or output). BOZO consider switching this to annotate mods
+; like vl/top, and consider eliminating functions, etc.
 
        (mods (cwtime (vl-modulelist-portdecl-sign mods)
                      :name xf-crosscheck-port-signedness))

@@ -134,8 +134,6 @@ throughout a module item."
 up \"top level\" expressions found throughout various module items that occur
 in \"lvalue positions.\"</p>
 
-<p><b>BOZO</b> proper handling for port expressions?</p>
-
 <p>Roughly speaking, the lvalexprs functions try to return all expressions that
 are being driven by assignments or submodules.  But lvalue gathering is
 something of a crapshoot, and you should regard these functions as a sort of
@@ -165,7 +163,14 @@ we see that an input has some backflow, it will be included.</p>
 satisfy @(see vl-expr-lvaluep).  In certain cases, this may require us to omit
 certain \"bad\" expressions.  We print warnings to standard out when this
 happens, but there is no way for the caller to programmatically determine if
-this has happened.</p>")
+this has happened.</p>
+
+<p><b>BOZO</b> proper handling for port expressions?</p>
+
+<p><b>BOZO</b> we don't do anything with function declarations.  This seems
+basically reasonable; if the functions can be expanded away then we shouldn't
+see them, and if they aren't expanded away then we don't really want to include
+their \"wires\" since they're in a different namespace.</p>")
 
 (defmacro def-vl-lvalexprs (&key type
                                  exec-body
@@ -469,8 +474,6 @@ throughout a @(see " list-rec-s "), as described in @(see lvalexprs).</p>")))
 
 
 
-
-
 (defxdoc lvaluecheck
   :parents (lvalues well-formedness)
 
@@ -769,17 +772,33 @@ long)))
     (b* ((warnings (vl-initial-lvaluecheck (car x) warnings)))
         (vl-initiallist-lvaluecheck (cdr x) warnings))))
 
+(def-vl-lvaluecheck
+  :type vl-fundecl
+  :body (vl-stmt-lvaluecheck (vl-fundecl->body x) warnings))
+
+(def-vl-lvaluecheck
+  :type vl-fundecllist
+  :body
+  (if (atom x)
+      warnings
+    (b* ((warnings (vl-fundecl-lvaluecheck (car x) warnings)))
+        (vl-fundecllist-lvaluecheck (cdr x) warnings))))
+
+
+
 (defsection vl-module-lvaluecheck
 
   (defund vl-module-lvaluecheck (x)
     (declare (xargs :guard (vl-module-p x)))
-    (b* ((warnings  (vl-module->warnings x))
-         (warnings  (vl-assignlist-lvaluecheck (vl-module->assigns x) warnings))
-         (warnings  (vl-modinstlist-lvaluecheck (vl-module->modinsts x) warnings))
-         (warnings  (vl-gateinstlist-lvaluecheck (vl-module->gateinsts x) warnings))
-         (warnings  (vl-alwayslist-lvaluecheck (vl-module->alwayses x) warnings))
-         (warnings  (vl-initiallist-lvaluecheck (vl-module->initials x) warnings)))
-        (change-vl-module x :warnings warnings)))
+    (b* (((vl-module x) x)
+         (warnings  x.warnings)
+         (warnings  (vl-assignlist-lvaluecheck   x.assigns   warnings))
+         (warnings  (vl-modinstlist-lvaluecheck  x.modinsts  warnings))
+         (warnings  (vl-gateinstlist-lvaluecheck x.gateinsts warnings))
+         (warnings  (vl-alwayslist-lvaluecheck   x.alwayses  warnings))
+         (warnings  (vl-initiallist-lvaluecheck  x.initials  warnings))
+         (warnings  (vl-fundecllist-lvaluecheck  x.fundecls  warnings)))
+      (change-vl-module x :warnings warnings)))
 
   (local (in-theory (enable vl-module-lvaluecheck)))
 

@@ -827,6 +827,20 @@ vl-atomguts-p) is already known."
          :exec (eq (tag x) :vl-hidpiece))))
 
 
+(defsection vl-fast-funname-p
+  :parents (vl-atomguts-p vl-funname-p)
+  :short "Faster version of @(see vl-funname-p), given that @(see
+vl-atomguts-p) is already known."
+
+  :long "<p>We leave this function enabled and reason about
+<tt>vl-funname-p</tt> instead.</p>"
+
+  (definline vl-fast-funname-p (x)
+    (declare (xargs :guard (vl-atomguts-p x)))
+    (mbe :logic (vl-funname-p x)
+         :exec (eq (tag x) :vl-funname))))
+
+
 (defsection vl-fast-sysfunname-p
   :parents (vl-atomguts-p vl-sysfunname-p)
   :short "Faster version of @(see vl-sysfunname-p), given that @(see
@@ -4226,6 +4240,20 @@ instead.</p>"
          :exec (eq (tag x) :vl-nullstmt))))
 
 
+(defsection vl-fast-assignstmt-p
+  :parents (vl-assignstmt-p vl-stmt-p)
+  :short "Faster version of @(see vl-assignstmt-p), given that @(see vl-stmt-p)
+is already known."
+
+  :long "<p>We leave this function assignd and reason about <tt>vl-assignstmt-p</tt>
+instead.</p>"
+
+  (definline vl-fast-assignstmt-p (x)
+    (declare (xargs :guard (vl-stmt-p x)))
+    (mbe :logic (vl-assignstmt-p x)
+         :exec (eq (tag x) :vl-assignstmt))))
+
+
 (defsection vl-fast-enablestmt-p
   :parents (vl-enablestmt-p vl-stmt-p)
   :short "Faster version of @(see vl-enablestmt-p), given that @(see vl-stmt-p)
@@ -4381,6 +4409,217 @@ statement was read from in the source code.</li>
   (vl-always-p x)
   :elementp-of-nil nil
   :parents (modules))
+
+(defthm acl2-count-of-vl-initial->stmt
+  (and (<= (acl2-count (vl-initial->stmt x))
+           (acl2-count x))
+       (implies (consp x)
+                (< (acl2-count (vl-initial->stmt x))
+                   (acl2-count x))))
+  :hints(("Goal" :in-theory (enable vl-initial->stmt)))
+  :rule-classes ((:rewrite) (:linear)))
+
+(defthm acl2-count-of-vl-always->stmt
+  (and (<= (acl2-count (vl-always->stmt x))
+           (acl2-count x))
+       (implies (consp x)
+                (< (acl2-count (vl-always->stmt x))
+                   (acl2-count x))))
+  :hints(("Goal" :in-theory (enable vl-always->stmt)))
+  :rule-classes ((:rewrite) (:linear)))
+
+
+
+
+(defenum vl-funtype-p
+  (:vl-unsigned
+   :vl-signed
+   :vl-integer
+   :vl-real
+   :vl-realtime
+   :vl-time)
+  :parents (modules)
+  :short "Representation of a function return and argument types."
+
+  :long "<p>These are the various return types that a Verilog function can
+have.  For instance, we use <tt>:vl-unsigned</tt> for a function like:</p>
+
+<code> function [7:0] add_one ; ... endfunction </code>
+
+<p>whereas we use <tt>:vl-real</tt> for a function like:</p>
+
+<code> function real get_ratio ; ... endfunction </code>
+
+<p>These same types can be used for the inputs of a function, e.g., you can
+have function inputs such as:</p>
+
+<code> input real a; </code>")
+
+
+(defaggregate vl-funinput
+  (name type range atts loc)
+  :tag :vl-funinput
+  :legiblep nil
+  :require ((stringp-of-vl-funinput->name
+             (stringp name)
+             :rule-classes :type-prescription)
+            (vl-funtype-p-of-vl-funinput->type
+             (vl-funtype-p type))
+            (vl-maybe-range-p-of-vl-funinput->range
+             (vl-maybe-range-p range))
+            (vl-atts-p-of-vl-funinput->atts
+             (vl-atts-p atts))
+            (vl-location-p-of-vl-funinput->loc
+             (vl-location-p loc)))
+  :parents (modules)
+  :short "Representation of an input to a function."
+
+  :long "<p>A function in Verilog takes inputs which are similar to the ports
+of a module.  We represent them with their own <tt>vl-funinput-p</tt>
+structures instead of trying to reuse @(see vl-portdecl-p) because, unlike port
+declarations, they can have types such as <tt>integer</tt>, <tt>real</tt>, and
+so forth.</p>
+
+<p>The <tt>name</tt> is just a string that is the name of this input.</p>
+
+<p>The <tt>type</tt> is a @(see vl-funtype-p) that gives the type for this
+input.</p>
+
+<p>The <tt>range</tt> is a @(see vl-maybe-range-p) that gives the size of this
+input.  This only makes sense when the type is <tt>:vl-unsigned</tt> or
+<tt>:vl-signed</tt>, and is <tt>nil</tt> when other types are used.</p>
+
+<p>The <tt>atts</tt> are any attributes (see @(see vl-atts-p)) associated with
+this input.  Syntactically, the attributes come before the <tt>input</tt>
+keyword.</p>
+
+<p>The <tt>loc</tt> is the @(see vl-location-p) where the <tt>name</tt> of the
+function was found in the source code.  We use this location, instead of the
+location of the input keyword, because a list of inputs can be declared using
+the same input keyword.</p>")
+
+(deflist vl-funinputlist-p (x)
+  (vl-funinput-p x)
+  :guard t
+  :elementp-of-nil nil)
+
+(defprojection vl-funinputlist->names (x)
+  (vl-funinput->name x)
+  :guard (vl-funinputlist-p x)
+  :nil-preservingp t
+  :result-type string-listp)
+
+
+
+(defaggregate vl-fundecl
+  (name automaticp rtype rrange inputs decls body atts loc)
+  :tag :vl-fundecl
+  :legiblep nil
+  :require ((stringp-of-vl-fundecl->name
+             (stringp name)
+             :rule-classes :type-prescription)
+            (booleanp-of-vl-fundecl->automaticp
+             (booleanp automaticp)
+             :rule-classes :type-prescription)
+            (vl-funtype-p-of-vl-fundecl->rtype
+             (vl-funtype-p rtype))
+            (vl-maybe-range-p-of-vl-fundecl->rrange
+             (vl-maybe-range-p rrange))
+            (vl-funinputlist-p-of-vl-fundecl->inputs
+             (vl-funinputlist-p inputs))
+            (vl-blockitemlist-p-of-vl-fundecl->decls
+             (vl-blockitemlist-p decls))
+            (vl-stmt-p-of-vl-fundecl->body
+             (vl-stmt-p body))
+            (vl-atts-p-of-vl-fundecl->atts
+             (vl-atts-p atts))
+            (vl-location-p-of-vl-fundecl->loc
+             (vl-location-p loc)))
+  :parents (modules)
+  :short "Representation of a single Verilog function."
+
+  :long "<p>Functions are described in Section 10.4 of the standard.  An
+example of a function is:</p>
+
+<code>
+function [3:0] lower_bits;
+  input [7:0] a;
+  reg [1:0] lowest_pair;
+  reg [1:0] next_lowest_pair;
+  begin
+    lowest_pair = a[1:0];
+    next_lowest_pair = a[3:2];
+    lower_bits = {next_lowest_pair, lowest_pair};
+  end
+endfunction
+</code>
+
+<p>Note that functions don't have any inout or output ports.  Instead, you
+assign to a function's name to indicate its return value.</p>
+
+<h3>Representation of Functions</h3>
+
+<p>The <tt>name</tt> is a string that names the function, e.g.,
+<tt>\"lower_bits\"</tt>.</p>
+
+<p>The <tt>automaticp</tt> flag says whether the <tt>automatic</tt> keyword was
+provided.  This keyword indicates that the function should be reentrant and
+have its local parameters dynamically allocated for each function call, with
+various consequences.</p>
+
+<p>The <tt>rtype</tt> is a @(see vl-funtype-p) that describes the return type
+of the function, e.g., a function might return an ordinary unsigned or signed
+result of some width, or might return a <tt>real</tt> value, etc.  For
+instance, the return type of <tt>lower_bits</tt> is <tt>:vl-unsigned</tt>.</p>
+
+<p>The <tt>rrange</tt> is a @(see vl-maybe-range-p) that describes the width of
+the function's result.  This only makes sense when the <tt>rtype</tt> is
+<tt>:vl-unsigned</tt> or <tt>:vl-signed</tt>.  For instance, the return range
+of <tt>lower_bits</tt> is <tt>[7:0]</tt>.</p>
+
+<p>The <tt>inputs</tt> are the arguments to the function, e.g., <tt>input [7:0]
+a</tt> above.  We represent these inputs as an @(see vl-funinputlist-p).  Note
+that although functions must have at least one input (and we do check for this
+in our parser), we don't syntactically enforce this requirement in the
+<tt>vl-fundecl-p</tt> structure.</p>
+
+<p>The <tt>decls</tt> are the local variable declarations for the function,
+e.g., the declarations of <tt>lowest_pair</tt> and <tt>next_lowest_pair</tt>
+above.  We represent the declarations as an ordinary @(see vl-blockitemlist-p),
+and it appears that it may even contain event declarations, parameter
+declarations, etc., which seems pretty absurd.</p>
+
+<p>The <tt>body</tt> is a @(see vl-stmt-p) that gives the body of the function.
+We represent this as an ordinary statement, but it must follow certain rules as
+outlined in 10.4.4, e.g., it cannot have any time controls, cannot enable
+tasks, cannot have non-blocking assignments, etc.</p>
+
+<p>The <tt>atts</tt> are any attributes (see @(see vl-atts-p)) associated with
+this function.  The attributes come before the <tt>function</tt> keyword.</p>
+
+<p>The <tt>loc</tt> is the @(see vl-location-p) where the <tt>function</tt>
+keyword was found in the source code.</p>")
+
+(deflist vl-fundecllist-p (x)
+  (vl-fundecl-p x)
+  :guard t
+  :elementp-of-nil nil)
+
+(defprojection vl-fundecllist->names (x)
+  (vl-fundecl->name x)
+  :guard (vl-fundecllist-p x)
+  :nil-preservingp t
+  :result-type string-listp)
+
+(defthm acl2-count-of-vl-fundecl->body
+  (and (<= (acl2-count (vl-fundecl->body x))
+           (acl2-count x))
+       (implies (consp x)
+                (< (acl2-count (vl-fundecl->body x))
+                   (acl2-count x))))
+  :hints(("Goal" :in-theory (enable vl-fundecl->body)))
+  :rule-classes ((:rewrite) (:linear)))
+
 
 
 
@@ -4550,6 +4789,7 @@ them.</p>"
    regdecls
    eventdecls
    paramdecls
+   fundecls
    modinsts
    gateinsts
    alwayses
@@ -4580,6 +4820,7 @@ them.</p>"
    (vl-regdecllist-p-of-vl-module->regdecls     (vl-regdecllist-p regdecls))
    (vl-eventdecllist-p-of-vl-module->eventdecls (vl-eventdecllist-p eventdecls))
    (vl-paramdecllist-p-of-vl-module->paramdecls (vl-paramdecllist-p paramdecls))
+   (vl-fundecllist-p-of-vl-module->fundecls     (vl-fundecllist-p fundecls))
    (vl-modinstlist-p-of-vl-module->modinsts     (vl-modinstlist-p modinsts))
    (vl-gateinstlist-p-of-vl-module->gateinsts   (vl-gateinstlist-p gateinsts))
    (vl-alwayslist-p-of-vl-module->alwayses      (vl-alwayslist-p alwayses))
@@ -4642,6 +4883,10 @@ foo;</tt>.</p>
 
 <p>The <tt>eventdecls</tt> are a list of @(see vl-eventdecl-p) objects that
 describe any events for the module.</p>
+
+<p>The <tt>fundecls</tt> are a list of @(see vl-fundecl-p) objects that
+describe any functions for the module.</p>
+
 
 
 <h5>Assignments and Instances</h5>

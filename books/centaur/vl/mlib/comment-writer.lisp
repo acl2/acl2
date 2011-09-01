@@ -37,13 +37,6 @@
 ; module items.  Then, we just need to merge the two alists in order to put the
 ; comments back into place.
 ;
-; To generate the PPMAP, we could use with-local-ps to print each module item
-; in a local pstate.  But to avoid the overhead of creating and reconfiguring
-; many ps objects, we instead just pass in the pstate to use but clear its
-; rchars and column before printing each module item.  This is just a dumb hack
-; to allow us to configure the pstate once, then never worry about its
-; configuration again.
-
 
 (defthm alistp-when-vl-commentmap-p
   (implies (vl-commentmap-p x)
@@ -52,6 +45,14 @@
 
 
 (defmacro with-semilocal-ps (&rest args)
+
+; To generate the PPMAP, we could use with-local-ps to print each module item
+; in a local pstate.  But to avoid the overhead of creating and reconfiguring
+; many ps objects, we instead just pass in the pstate to use but clear its
+; rchars and column before printing each module item.  This is just a dumb hack
+; to allow us to configure the pstate once, then never worry about its
+; configuration again.
+
   `(let ((ps (vl-ps-seq
               (vl-ps-update-rchars nil)
               (vl-ps-update-col 0)
@@ -60,307 +61,388 @@
 
 
 
-(defund vl-portdecllist-ppmap (x alist ps)
-  (declare (xargs :guard (and (vl-portdecllist-p x)
-                              (vl-commentmap-p alist)
-                              (vl-pstate-p ps))
-                  :stobjs ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-            (with-semilocal-ps (vl-pp-portdecl (car x)))
-            (vl-portdecllist-ppmap (cdr x)
-                                   (acons (vl-portdecl->loc (car x)) str alist)
-                                   ps))))
+(defsection vl-portdecllist-ppmap
 
-(defthm vl-commentmap-p-of-vl-portdecllist-ppmap
-  (implies (and (force (vl-portdecllist-p x))
-                (force (vl-commentmap-p alist))
-                (force (vl-pstate-p ps)))
-           (vl-commentmap-p (mv-nth 0 (vl-portdecllist-ppmap x alist ps))))
-  :hints(("Goal" :in-theory (enable vl-portdecllist-ppmap))))
+  (defund vl-portdecllist-ppmap (x alist ps)
+    (declare (xargs :guard (and (vl-portdecllist-p x)
+                                (vl-commentmap-p alist)
+                                (vl-pstate-p ps))
+                    :stobjs ps))
+    (if (atom x)
+        (mv alist ps)
+      (mv-let (str ps)
+        (with-semilocal-ps (vl-pp-portdecl (car x)))
+        (vl-portdecllist-ppmap (cdr x)
+                               (acons (vl-portdecl->loc (car x)) str alist)
+                               ps))))
 
-(defthm vl-pstate-p-of-vl-portdecllist-ppmap
-  (implies (and (force (vl-portdecllist-p x))
-                (force (vl-pstate-p ps)))
-           (vl-pstate-p (mv-nth 1 (vl-portdecllist-ppmap x alist ps))))
-  :hints(("Goal" :in-theory (enable vl-portdecllist-ppmap))))
+  (local (in-theory (enable vl-portdecllist-ppmap)))
 
+  (defthm vl-commentmap-p-of-vl-portdecllist-ppmap
+    (implies (and (force (vl-portdecllist-p x))
+                  (force (vl-commentmap-p alist))
+                  (force (vl-pstate-p ps)))
+             (vl-commentmap-p (mv-nth 0 (vl-portdecllist-ppmap x alist ps)))))
 
-
-(defund vl-assignlist-ppmap (x alist ps)
-  (declare (xargs :guard (and (vl-assignlist-p x)
-                              (vl-commentmap-p alist)
-                              (vl-pstate-p ps))
-                  :stobjs ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-            (with-semilocal-ps (vl-pp-assign (car x)))
-            (vl-assignlist-ppmap (cdr x)
-                                 (acons (vl-assign->loc (car x)) str alist)
-                                 ps))))
-
-(defthm vl-commentmap-p-of-vl-assignlist-ppmap
-  (implies (and (force (vl-assignlist-p x))
-                (force (vl-commentmap-p alist))
-                (force (vl-pstate-p ps)))
-           (vl-commentmap-p (mv-nth 0 (vl-assignlist-ppmap x alist ps))))
-  :hints(("Goal" :in-theory (enable vl-assignlist-ppmap))))
-
-(defthm vl-pstate-p-of-vl-assignlist-ppmap
-  (implies (and (force (vl-assignlist-p x))
-                (force (vl-pstate-p ps)))
-           (vl-pstate-p (mv-nth 1 (vl-assignlist-ppmap x alist ps))))
-  :hints(("Goal" :in-theory (enable vl-assignlist-ppmap))))
+  (defthm vl-pstate-p-of-vl-portdecllist-ppmap
+    (implies (and (force (vl-portdecllist-p x))
+                  (force (vl-pstate-p ps)))
+             (vl-pstate-p (mv-nth 1 (vl-portdecllist-ppmap x alist ps))))))
 
 
 
-(defund vl-netdecllist-ppmap (x alist ps)
-  (declare (xargs :guard (and (vl-netdecllist-p x)
-                              (vl-commentmap-p alist)
-                              (vl-pstate-p ps))
-                  :stobjs ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-            (with-semilocal-ps (vl-pp-netdecl (car x)))
-            (vl-netdecllist-ppmap (cdr x)
-                                  (acons (vl-netdecl->loc (car x)) str alist)
-                                  ps))))
+(defsection vl-assignlist-ppmap
 
-(defthm vl-commentmap-p-of-vl-netdecllist-ppmap
-  (implies (and (force (vl-netdecllist-p x))
-                (force (vl-commentmap-p alist))
-                (force (vl-pstate-p ps)))
-           (vl-commentmap-p (mv-nth 0 (vl-netdecllist-ppmap x alist ps))))
-  :hints(("Goal" :in-theory (enable vl-netdecllist-ppmap))))
+  (defund vl-assignlist-ppmap (x alist ps)
+    (declare (xargs :guard (and (vl-assignlist-p x)
+                                (vl-commentmap-p alist)
+                                (vl-pstate-p ps))
+                    :stobjs ps))
+    (if (atom x)
+        (mv alist ps)
+      (mv-let (str ps)
+        (with-semilocal-ps (vl-pp-assign (car x)))
+        (vl-assignlist-ppmap (cdr x)
+                             (acons (vl-assign->loc (car x)) str alist)
+                             ps))))
 
-(defthm vl-pstate-p-of-vl-netdecllist-ppmap
-  (implies (and (force (vl-netdecllist-p x))
-                (force (vl-pstate-p ps)))
-           (vl-pstate-p (mv-nth 1 (vl-netdecllist-ppmap x alist ps))))
-  :hints(("Goal" :in-theory (enable vl-netdecllist-ppmap))))
+  (local (in-theory (enable vl-assignlist-ppmap)))
 
+  (defthm vl-commentmap-p-of-vl-assignlist-ppmap
+    (implies (and (force (vl-assignlist-p x))
+                  (force (vl-commentmap-p alist))
+                  (force (vl-pstate-p ps)))
+             (vl-commentmap-p (mv-nth 0 (vl-assignlist-ppmap x alist ps)))))
 
-
-
-(defund vl-regdecllist-ppmap (x alist ps)
-  (declare (xargs :guard (and (vl-regdecllist-p x)
-                              (vl-commentmap-p alist)
-                              (vl-pstate-p ps))
-                  :stobjs ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-            (with-semilocal-ps (vl-pp-regdecl (car x)))
-            (vl-regdecllist-ppmap (cdr x)
-                                  (acons (vl-regdecl->loc (car x)) str alist)
-                                  ps))))
-
-(defthm vl-commentmap-p-of-vl-regdecllist-ppmap
-  (implies (and (force (vl-regdecllist-p x))
-                (force (vl-commentmap-p alist))
-                (force (vl-pstate-p ps)))
-           (vl-commentmap-p (mv-nth 0 (vl-regdecllist-ppmap x alist ps))))
-  :hints(("Goal" :in-theory (enable vl-regdecllist-ppmap))))
-
-(defthm vl-pstate-p-of-vl-regdecllist-ppmap
-  (implies (and (force (vl-regdecllist-p x))
-                (force (vl-pstate-p ps)))
-           (vl-pstate-p (mv-nth 1 (vl-regdecllist-ppmap x alist ps))))
-  :hints(("Goal" :in-theory (enable vl-regdecllist-ppmap))))
+  (defthm vl-pstate-p-of-vl-assignlist-ppmap
+    (implies (and (force (vl-assignlist-p x))
+                  (force (vl-pstate-p ps)))
+             (vl-pstate-p (mv-nth 1 (vl-assignlist-ppmap x alist ps))))))
 
 
 
-(defund vl-vardecllist-ppmap (x alist ps)
-  (declare (xargs :guard (and (vl-vardecllist-p x)
-                              (vl-commentmap-p alist)
-                              (vl-pstate-p ps))
-                  :stobjs ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-            (with-semilocal-ps (vl-pp-vardecl (car x)))
-            (vl-vardecllist-ppmap (cdr x)
-                                  (acons (vl-vardecl->loc (car x)) str alist)
-                                  ps))))
+(defsection vl-netdecllist-ppmap
 
-(defthm vl-commentmap-p-of-vl-vardecllist-ppmap
-  (implies (and (force (vl-vardecllist-p x))
-                (force (vl-commentmap-p alist))
-                (force (vl-pstate-p ps)))
-           (vl-commentmap-p (mv-nth 0 (vl-vardecllist-ppmap x alist ps))))
-  :hints(("Goal" :in-theory (enable vl-vardecllist-ppmap))))
+  (defund vl-netdecllist-ppmap (x alist ps)
+    (declare (xargs :guard (and (vl-netdecllist-p x)
+                                (vl-commentmap-p alist)
+                                (vl-pstate-p ps))
+                    :stobjs ps))
+    (if (atom x)
+        (mv alist ps)
+      (mv-let (str ps)
+        (with-semilocal-ps (vl-pp-netdecl (car x)))
+        (vl-netdecllist-ppmap (cdr x)
+                              (acons (vl-netdecl->loc (car x)) str alist)
+                              ps))))
 
-(defthm vl-pstate-p-of-vl-vardecllist-ppmap
-  (implies (and (force (vl-vardecllist-p x))
-                (force (vl-pstate-p ps)))
-           (vl-pstate-p (mv-nth 1 (vl-vardecllist-ppmap x alist ps))))
-  :hints(("Goal" :in-theory (enable vl-vardecllist-ppmap))))
+  (local (in-theory (enable vl-netdecllist-ppmap)))
 
+  (defthm vl-commentmap-p-of-vl-netdecllist-ppmap
+    (implies (and (force (vl-netdecllist-p x))
+                  (force (vl-commentmap-p alist))
+                  (force (vl-pstate-p ps)))
+             (vl-commentmap-p (mv-nth 0 (vl-netdecllist-ppmap x alist ps)))))
 
-
-
-(defund vl-modinstlist-ppmap (x mods modalist alist ps)
-  (declare (xargs :guard (and (vl-modinstlist-p x)
-                              (vl-modulelist-p mods)
-                              (equal modalist (vl-modalist mods))
-                              (vl-commentmap-p alist)
-                              (vl-pstate-p ps))
-                  :stobjs ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-            (with-semilocal-ps (vl-pp-modinst (car x) mods modalist))
-            (vl-modinstlist-ppmap (cdr x) mods modalist
-                                  (acons (vl-modinst->loc (car x)) str alist)
-                                  ps))))
-
-(defthm vl-commentmap-p-of-vl-modinstlist-ppmap
-  (implies (and (force (vl-modinstlist-p x))
-                (force (vl-modulelist-p mods))
-                (force (equal modalist (vl-modalist mods)))
-                (force (vl-commentmap-p alist))
-                (force (vl-pstate-p ps)))
-           (vl-commentmap-p (mv-nth 0 (vl-modinstlist-ppmap x mods modalist alist ps))))
-  :hints(("Goal" :in-theory (enable vl-modinstlist-ppmap))))
-
-(defthm vl-pstate-p-of-vl-modinstlist-ppmap
-  (implies (and (force (vl-modinstlist-p x))
-                (force (vl-pstate-p ps))
-                (force (vl-modulelist-p mods))
-                (force (equal modalist (vl-modalist mods))))
-           (vl-pstate-p (mv-nth 1 (vl-modinstlist-ppmap x mods modalist alist ps))))
-  :hints(("Goal" :in-theory (enable vl-modinstlist-ppmap))))
+  (defthm vl-pstate-p-of-vl-netdecllist-ppmap
+    (implies (and (force (vl-netdecllist-p x))
+                  (force (vl-pstate-p ps)))
+             (vl-pstate-p (mv-nth 1 (vl-netdecllist-ppmap x alist ps))))))
 
 
 
-(defund vl-gateinstlist-ppmap (x alist ps)
-  (declare (xargs :guard (and (vl-gateinstlist-p x)
-                              (vl-commentmap-p alist)
-                              (vl-pstate-p ps))
-                  :stobjs ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-            (with-semilocal-ps (vl-pp-gateinst (car x)))
-            (vl-gateinstlist-ppmap (cdr x)
-                                   (acons (vl-gateinst->loc (car x)) str alist)
-                                   ps))))
+(defsection vl-regdecllist-ppmap
 
-(defthm vl-commentmap-p-of-vl-gateinstlist-ppmap
-  (implies (and (force (vl-gateinstlist-p x))
-                (force (vl-commentmap-p alist))
-                (force (vl-pstate-p ps)))
-           (vl-commentmap-p (mv-nth 0 (vl-gateinstlist-ppmap x alist ps))))
-  :hints(("Goal" :in-theory (enable vl-gateinstlist-ppmap))))
+  (defund vl-regdecllist-ppmap (x alist ps)
+    (declare (xargs :guard (and (vl-regdecllist-p x)
+                                (vl-commentmap-p alist)
+                                (vl-pstate-p ps))
+                    :stobjs ps))
+    (if (atom x)
+        (mv alist ps)
+      (mv-let (str ps)
+        (with-semilocal-ps (vl-pp-regdecl (car x)))
+        (vl-regdecllist-ppmap (cdr x)
+                              (acons (vl-regdecl->loc (car x)) str alist)
+                              ps))))
 
-(defthm vl-pstate-p-of-vl-gateinstlist-ppmap
-  (implies (and (force (vl-gateinstlist-p x))
-                (force (vl-pstate-p ps)))
-           (vl-pstate-p (mv-nth 1 (vl-gateinstlist-ppmap x alist ps))))
-  :hints(("Goal" :in-theory (enable vl-gateinstlist-ppmap))))
+  (local (in-theory (enable vl-regdecllist-ppmap)))
 
+  (defthm vl-commentmap-p-of-vl-regdecllist-ppmap
+    (implies (and (force (vl-regdecllist-p x))
+                  (force (vl-commentmap-p alist))
+                  (force (vl-pstate-p ps)))
+             (vl-commentmap-p (mv-nth 0 (vl-regdecllist-ppmap x alist ps)))))
 
-
-
-(defund vl-alwayslist-ppmap (x alist ps)
-  (declare (xargs :guard (and (vl-alwayslist-p x)
-                              (vl-commentmap-p alist)
-                              (vl-pstate-p ps))
-                  :stobjs ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-            (with-semilocal-ps (vl-pp-always (car x)))
-            (vl-alwayslist-ppmap (cdr x)
-                                 (acons (vl-always->loc (car x)) str alist)
-                                 ps))))
-
-(defthm vl-commentmap-p-of-vl-alwayslist-ppmap
-  (implies (and (force (vl-alwayslist-p x))
-                (force (vl-commentmap-p alist))
-                (force (vl-pstate-p ps)))
-           (vl-commentmap-p (mv-nth 0 (vl-alwayslist-ppmap x alist ps))))
-  :hints(("Goal" :in-theory (enable vl-alwayslist-ppmap))))
-
-(defthm vl-pstate-p-of-vl-alwayslist-ppmap
-  (implies (and (force (vl-alwayslist-p x))
-                (force (vl-pstate-p ps)))
-           (vl-pstate-p (mv-nth 1 (vl-alwayslist-ppmap x alist ps))))
-  :hints(("Goal" :in-theory (enable vl-alwayslist-ppmap))))
+  (defthm vl-pstate-p-of-vl-regdecllist-ppmap
+    (implies (and (force (vl-regdecllist-p x))
+                  (force (vl-pstate-p ps)))
+             (vl-pstate-p (mv-nth 1 (vl-regdecllist-ppmap x alist ps))))))
 
 
 
+(defsection vl-vardecllist-ppmap
 
-(defund vl-initiallist-ppmap (x alist ps)
-  (declare (xargs :guard (and (vl-initiallist-p x)
-                              (vl-commentmap-p alist)
-                              (vl-pstate-p ps))
-                  :stobjs ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-            (with-semilocal-ps (vl-pp-initial (car x)))
-            (vl-initiallist-ppmap (cdr x)
-                                  (acons (vl-initial->loc (car x)) str alist)
-                                  ps))))
+  (defund vl-vardecllist-ppmap (x alist ps)
+    (declare (xargs :guard (and (vl-vardecllist-p x)
+                                (vl-commentmap-p alist)
+                                (vl-pstate-p ps))
+                    :stobjs ps))
+    (if (atom x)
+        (mv alist ps)
+      (mv-let (str ps)
+        (with-semilocal-ps (vl-pp-vardecl (car x)))
+        (vl-vardecllist-ppmap (cdr x)
+                              (acons (vl-vardecl->loc (car x)) str alist)
+                              ps))))
 
-(defthm vl-commentmap-p-of-vl-initiallist-ppmap
-  (implies (and (force (vl-initiallist-p x))
-                (force (vl-commentmap-p alist))
-                (force (vl-pstate-p ps)))
-           (vl-commentmap-p (mv-nth 0 (vl-initiallist-ppmap x alist ps))))
-  :hints(("Goal" :in-theory (enable vl-initiallist-ppmap))))
+  (local (in-theory (enable vl-vardecllist-ppmap)))
 
-(defthm vl-pstate-p-of-vl-initiallist-ppmap
-  (implies (and (force (vl-initiallist-p x))
-                (force (vl-pstate-p ps)))
-           (vl-pstate-p (mv-nth 1 (vl-initiallist-ppmap x alist ps))))
-  :hints(("Goal" :in-theory (enable vl-initiallist-ppmap))))
+  (defthm vl-commentmap-p-of-vl-vardecllist-ppmap
+    (implies (and (force (vl-vardecllist-p x))
+                  (force (vl-commentmap-p alist))
+                  (force (vl-pstate-p ps)))
+             (vl-commentmap-p (mv-nth 0 (vl-vardecllist-ppmap x alist ps)))))
 
-
-
-
-(defund vl-add-newlines-after-block-comments (x)
-  (declare (xargs :guard (vl-commentmap-p x)))
-  (b* (((when (atom x))
-        nil)
-       (loc1 (caar x))
-       (str1 (cdar x))
-       ((when (and (> (length str1) 2)
-                   (eql (char str1 1) #\*)))
-        (cons (cons loc1 (str::cat str1 *nls*))
-              (vl-add-newlines-after-block-comments (cdr x)))))
-    (cons (car x)
-          (vl-add-newlines-after-block-comments (cdr x)))))
-
-(defthm vl-commentmap-p-of-vl-add-newlines-after-block-comments
-  (implies (force (vl-commentmap-p x))
-           (vl-commentmap-p (vl-add-newlines-after-block-comments x)))
-  :hints(("Goal" :in-theory (enable vl-add-newlines-after-block-comments))))
+  (defthm vl-pstate-p-of-vl-vardecllist-ppmap
+    (implies (and (force (vl-vardecllist-p x))
+                  (force (vl-pstate-p ps)))
+             (vl-pstate-p (mv-nth 1 (vl-vardecllist-ppmap x alist ps))))))
 
 
-(defund vl-html-encode-commentmap (x tabsize)
-  ;; BOZO inefficient, potentially bad!
-  (declare (xargs :guard (and (vl-commentmap-p x)
-                              (posp tabsize))
-                  :guard-debug t))
-  (b* (((when (atom x))
-        nil)
-       (loc1 (caar x))
-       (str1 (cdar x)))
-    (cons (cons loc1
-                (str::cat "<span class=\"vl_cmt\">"
-                          (vl-html-encode-string str1 tabsize)
-                          "</span>"))
-          (vl-html-encode-commentmap (cdr x) tabsize))))
 
-(defthm vl-commentmap-p-of-vl-html-encode-commentmap
-  (implies (force (vl-commentmap-p x))
-           (vl-commentmap-p (vl-html-encode-commentmap x tabsize)))
-  :hints(("Goal" :in-theory (enable vl-html-encode-commentmap))))
+(defsection vl-modinstlist-ppmap
+
+  (defund vl-modinstlist-ppmap (x mods modalist alist ps)
+    (declare (xargs :guard (and (vl-modinstlist-p x)
+                                (vl-modulelist-p mods)
+                                (equal modalist (vl-modalist mods))
+                                (vl-commentmap-p alist)
+                                (vl-pstate-p ps))
+                    :stobjs ps))
+    (if (atom x)
+        (mv alist ps)
+      (mv-let (str ps)
+        (with-semilocal-ps (vl-pp-modinst (car x) mods modalist))
+        (vl-modinstlist-ppmap (cdr x) mods modalist
+                              (acons (vl-modinst->loc (car x)) str alist)
+                              ps))))
+
+  (local (in-theory (enable vl-modinstlist-ppmap)))
+
+  (defthm vl-commentmap-p-of-vl-modinstlist-ppmap
+    (implies (and (force (vl-modinstlist-p x))
+                  (force (vl-modulelist-p mods))
+                  (force (equal modalist (vl-modalist mods)))
+                  (force (vl-commentmap-p alist))
+                  (force (vl-pstate-p ps)))
+             (vl-commentmap-p (mv-nth 0 (vl-modinstlist-ppmap x mods modalist alist ps)))))
+
+  (defthm vl-pstate-p-of-vl-modinstlist-ppmap
+    (implies (and (force (vl-modinstlist-p x))
+                  (force (vl-pstate-p ps))
+                  (force (vl-modulelist-p mods))
+                  (force (equal modalist (vl-modalist mods))))
+             (vl-pstate-p (mv-nth 1 (vl-modinstlist-ppmap x mods modalist alist ps))))))
+
+
+
+(defsection vl-gateinstlist-ppmap
+
+  (defund vl-gateinstlist-ppmap (x alist ps)
+    (declare (xargs :guard (and (vl-gateinstlist-p x)
+                                (vl-commentmap-p alist)
+                                (vl-pstate-p ps))
+                    :stobjs ps))
+    (if (atom x)
+        (mv alist ps)
+      (mv-let (str ps)
+        (with-semilocal-ps (vl-pp-gateinst (car x)))
+        (vl-gateinstlist-ppmap (cdr x)
+                               (acons (vl-gateinst->loc (car x)) str alist)
+                               ps))))
+
+  (local (in-theory (enable vl-gateinstlist-ppmap)))
+
+  (defthm vl-commentmap-p-of-vl-gateinstlist-ppmap
+    (implies (and (force (vl-gateinstlist-p x))
+                  (force (vl-commentmap-p alist))
+                  (force (vl-pstate-p ps)))
+             (vl-commentmap-p (mv-nth 0 (vl-gateinstlist-ppmap x alist ps)))))
+
+  (defthm vl-pstate-p-of-vl-gateinstlist-ppmap
+    (implies (and (force (vl-gateinstlist-p x))
+                  (force (vl-pstate-p ps)))
+             (vl-pstate-p (mv-nth 1 (vl-gateinstlist-ppmap x alist ps))))))
+
+
+
+(defsection vl-alwayslist-ppmap
+
+  (defund vl-alwayslist-ppmap (x alist ps)
+    (declare (xargs :guard (and (vl-alwayslist-p x)
+                                (vl-commentmap-p alist)
+                                (vl-pstate-p ps))
+                    :stobjs ps))
+    (if (atom x)
+        (mv alist ps)
+      (mv-let (str ps)
+        (with-semilocal-ps (vl-pp-always (car x)))
+        (vl-alwayslist-ppmap (cdr x)
+                             (acons (vl-always->loc (car x)) str alist)
+                             ps))))
+
+  (local (in-theory (enable vl-alwayslist-ppmap)))
+
+  (defthm vl-commentmap-p-of-vl-alwayslist-ppmap
+    (implies (and (force (vl-alwayslist-p x))
+                  (force (vl-commentmap-p alist))
+                  (force (vl-pstate-p ps)))
+             (vl-commentmap-p (mv-nth 0 (vl-alwayslist-ppmap x alist ps)))))
+
+  (defthm vl-pstate-p-of-vl-alwayslist-ppmap
+    (implies (and (force (vl-alwayslist-p x))
+                  (force (vl-pstate-p ps)))
+             (vl-pstate-p (mv-nth 1 (vl-alwayslist-ppmap x alist ps))))))
+
+
+
+(defsection vl-initiallist-ppmap
+
+  (defund vl-initiallist-ppmap (x alist ps)
+    (declare (xargs :guard (and (vl-initiallist-p x)
+                                (vl-commentmap-p alist)
+                                (vl-pstate-p ps))
+                    :stobjs ps))
+    (if (atom x)
+        (mv alist ps)
+      (mv-let (str ps)
+        (with-semilocal-ps (vl-pp-initial (car x)))
+        (vl-initiallist-ppmap (cdr x)
+                              (acons (vl-initial->loc (car x)) str alist)
+                              ps))))
+
+  (local (in-theory (enable vl-initiallist-ppmap)))
+
+  (defthm vl-commentmap-p-of-vl-initiallist-ppmap
+    (implies (and (force (vl-initiallist-p x))
+                  (force (vl-commentmap-p alist))
+                  (force (vl-pstate-p ps)))
+             (vl-commentmap-p (mv-nth 0 (vl-initiallist-ppmap x alist ps)))))
+
+  (defthm vl-pstate-p-of-vl-initiallist-ppmap
+    (implies (and (force (vl-initiallist-p x))
+                  (force (vl-pstate-p ps)))
+             (vl-pstate-p (mv-nth 1 (vl-initiallist-ppmap x alist ps))))))
+
+
+
+
+(defsection vl-paramdecllist-ppmap
+
+  (defund vl-paramdecllist-ppmap (x alist ps)
+    (declare (xargs :guard (and (vl-paramdecllist-p x)
+                                (vl-commentmap-p alist)
+                                (vl-pstate-p ps))
+                    :stobjs ps))
+    (if (atom x)
+        (mv alist ps)
+      (mv-let (str ps)
+        (with-semilocal-ps (vl-pp-paramdecl (car x)))
+        (vl-paramdecllist-ppmap (cdr x)
+                              (acons (vl-paramdecl->loc (car x)) str alist)
+                              ps))))
+
+  (local (in-theory (enable vl-paramdecllist-ppmap)))
+
+  (defthm vl-commentmap-p-of-vl-paramdecllist-ppmap
+    (implies (and (force (vl-paramdecllist-p x))
+                  (force (vl-commentmap-p alist))
+                  (force (vl-pstate-p ps)))
+             (vl-commentmap-p (mv-nth 0 (vl-paramdecllist-ppmap x alist ps)))))
+
+  (defthm vl-pstate-p-of-vl-paramdecllist-ppmap
+    (implies (and (force (vl-paramdecllist-p x))
+                  (force (vl-pstate-p ps)))
+             (vl-pstate-p (mv-nth 1 (vl-paramdecllist-ppmap x alist ps))))))
+
+
+
+(defsection vl-fundecllist-ppmap
+
+  (defund vl-fundecllist-ppmap (x alist ps)
+    (declare (xargs :guard (and (vl-fundecllist-p x)
+                                (vl-commentmap-p alist)
+                                (vl-pstate-p ps))
+                    :stobjs ps))
+    (if (atom x)
+        (mv alist ps)
+      (mv-let (str ps)
+        (with-semilocal-ps (vl-pp-fundecl (car x)))
+        (vl-fundecllist-ppmap (cdr x)
+                              (acons (vl-fundecl->loc (car x)) str alist)
+                              ps))))
+
+  (local (in-theory (enable vl-fundecllist-ppmap)))
+
+  (defthm vl-commentmap-p-of-vl-fundecllist-ppmap
+    (implies (and (force (vl-fundecllist-p x))
+                  (force (vl-commentmap-p alist))
+                  (force (vl-pstate-p ps)))
+             (vl-commentmap-p (mv-nth 0 (vl-fundecllist-ppmap x alist ps)))))
+
+  (defthm vl-pstate-p-of-vl-fundecllist-ppmap
+    (implies (and (force (vl-fundecllist-p x))
+                  (force (vl-pstate-p ps)))
+             (vl-pstate-p (mv-nth 1 (vl-fundecllist-ppmap x alist ps))))))
+
+
+
+(defsection vl-add-newlines-after-block-comments
+
+  (defund vl-add-newlines-after-block-comments (x)
+    (declare (xargs :guard (vl-commentmap-p x)))
+    (b* (((when (atom x))
+          nil)
+         (loc1 (caar x))
+         (str1 (cdar x))
+         ((when (and (> (length str1) 2)
+                     (eql (char str1 1) #\*)))
+          (cons (cons loc1 (str::cat str1 *nls*))
+                (vl-add-newlines-after-block-comments (cdr x)))))
+      (cons (car x)
+            (vl-add-newlines-after-block-comments (cdr x)))))
+
+  (local (in-theory (enable vl-add-newlines-after-block-comments)))
+
+  (defthm vl-commentmap-p-of-vl-add-newlines-after-block-comments
+    (implies (force (vl-commentmap-p x))
+             (vl-commentmap-p (vl-add-newlines-after-block-comments x)))))
+
+
+
+(defsection vl-html-encode-commentmap
+
+  (defund vl-html-encode-commentmap (x tabsize)
+    ;; BOZO inefficient, potentially bad!
+    (declare (xargs :guard (and (vl-commentmap-p x)
+                                (posp tabsize))
+                    :guard-debug t))
+    (b* (((when (atom x))
+          nil)
+         (loc1 (caar x))
+         (str1 (cdar x)))
+      (cons (cons loc1
+                  (str::cat "<span class=\"vl_cmt\">"
+                            (vl-html-encode-string str1 tabsize)
+                            "</span>"))
+            (vl-html-encode-commentmap (cdr x) tabsize))))
+
+  (local (in-theory (enable vl-html-encode-commentmap)))
+
+  (defthm vl-commentmap-p-of-vl-html-encode-commentmap
+    (implies (force (vl-commentmap-p x))
+             (vl-commentmap-p (vl-html-encode-commentmap x tabsize)))))
 
 
 
@@ -399,6 +481,82 @@
                     (vl-ps-seq (vl-print-markup (cdr (first x)))
                                (vl-pp-encoded-commentmap (cdr x))))))))
 
+
+
+(defsection vl-make-item-map-for-ppc-module
+
+; We build a commentmap that has the encoded items for a module.
+
+  (defund vl-make-item-map-for-ppc-module (x mods modalist ps)
+    (declare (xargs :guard (and (vl-module-p x)
+                                (vl-modulelist-p mods)
+                                (equal modalist (vl-modalist mods)))
+                    :stobjs ps))
+
+    (b* (((vl-module x) x)
+
+         ;; For efficiency, our ppmap functions destroy the current contents of
+         ;; the printer's state, so we are going to go ahead and save them
+         ;; before we generate the ppmap.
+         (rchars (vl-ps->rchars))
+         (col    (vl-ps->col))
+         (misc   (vl-ps->misc))
+
+         (ps     (vl-pp-set-portnames x.portdecls)) ;; modifies ps->misc
+
+         (imap nil)
+
+         ;; Note: portdecls need to come before netdecls, so that after stable
+         ;; sorting any implicit portdecls are still listed before their
+         ;; correspondign netdecl; Verilog-XL won't tolerate it the other way;
+         ;; see make-implicit-wires for more details.  The netdecls should come
+         ;; before any instances/assignments, so that things are declared
+         ;; before use.
+         ((mv imap ps) (vl-paramdecllist-ppmap x.paramdecls imap ps))
+         ((mv imap ps) (vl-portdecllist-ppmap x.portdecls imap ps))
+         ((mv imap ps) (vl-regdecllist-ppmap x.regdecls imap ps))
+         ((mv imap ps) (vl-vardecllist-ppmap x.vardecls imap ps))
+         ((mv imap ps) (vl-netdecllist-ppmap x.netdecls imap ps))
+         ((mv imap ps) (vl-fundecllist-ppmap x.fundecls imap ps))
+         ((mv imap ps) (vl-assignlist-ppmap x.assigns imap ps))
+         ((mv imap ps) (vl-modinstlist-ppmap x.modinsts mods modalist imap ps))
+         ((mv imap ps) (vl-gateinstlist-ppmap x.gateinsts imap ps))
+         ((mv imap ps) (vl-alwayslist-ppmap x.alwayses imap ps))
+         ((mv imap ps) (vl-initiallist-ppmap x.initials imap ps))
+
+
+         ;; Why are we reversing the imap when we're going to sort it anyway?
+         ;; I think the answer is that some module elements may share a
+         ;; location, and since our sort is stable we want to preserve their
+         ;; original order in the lists above, if possible.
+         (imap (reverse imap))
+
+         ;; Now that we are done generating the ppmap, restore the previous
+         ;; state of the ps.
+
+         (ps   (vl-ps-update-rchars rchars))
+         (ps   (vl-ps-update-col col))
+         (ps   (vl-ps-update-misc misc)))
+
+      (mv imap ps)))
+
+  (local (in-theory (enable vl-make-item-map-for-ppc-module)))
+
+  (defthm vl-commentmap-p-of-vl-make-item-map-for-ppc-module
+    (implies (and (force (vl-module-p x))
+                  (force (vl-modulelist-p mods))
+                  (force (equal modalist (vl-modalist mods)))
+                  (force (vl-pstate-p ps)))
+             (vl-commentmap-p (mv-nth 0 (vl-make-item-map-for-ppc-module x mods modalist ps)))))
+
+  (defthm vl-pstate-p-of-vl-make-item-map-for-ppc-module
+    (implies (and (force (vl-module-p x))
+                  (force (vl-modulelist-p mods))
+                  (force (equal modalist (vl-modalist mods)))
+                  (force (vl-pstate-p ps)))
+             (vl-pstate-p (mv-nth 1 (vl-make-item-map-for-ppc-module x mods modalist ps))))))
+
+
 (defpp vl-ppc-module (x mods modalist)
   :parents (verilog-printing vl-module-p)
   :short "Pretty print a module with comments to @(see ps)."
@@ -417,63 +575,13 @@ for hyperlinking to submodules in HTML mode.</p>"
               (vl-modulelist-p mods)
               (equal modalist (vl-modalist mods)))
 
-  :body  (b* ((name       (vl-module->name x))
-              (ports      (vl-module->ports x))
-              (portdecls  (vl-module->portdecls x))
-              (assigns    (vl-module->assigns x))
-              (netdecls   (vl-module->netdecls x))
-              (vardecls   (vl-module->vardecls x))
-              (regdecls   (vl-module->regdecls x))
-              (eventdecls (vl-module->eventdecls x))
-              (paramdecls (vl-module->paramdecls x))
-              (modinsts   (vl-module->modinsts x))
-              (gateinsts  (vl-module->gateinsts x))
-              (alwayses   (vl-module->alwayses x))
-              (initials   (vl-module->initials x))
-              (atts       (vl-module->atts x))
-              (comments   (vl-module->comments x))
+  :body  (b* (((vl-module x) x)
 
-; We begin by assembling a (location . string) map of all the module items.
-; For efficiency, our ppmap functions destroy the current contents of the
-; printer's state, so we are going to go ahead and save them before we generate
-; the ppmap.
+              ;; The item map binds module item locations to their printed
+              ;; representations.
+              ((mv imap ps) (vl-make-item-map-for-ppc-module x mods modalist ps))
 
-              (rchars (vl-ps->rchars))
-              (col    (vl-ps->col))
-              (ps     (vl-pp-set-portnames portdecls))
-
-              (imap nil)
-              ((mv imap ps) (vl-portdecllist-ppmap portdecls imap ps))
-              ((mv imap ps) (vl-regdecllist-ppmap regdecls imap ps))
-              ((mv imap ps) (vl-vardecllist-ppmap vardecls imap ps))
-              ((mv imap ps) (vl-netdecllist-ppmap netdecls imap ps))
-              ((mv imap ps) (vl-assignlist-ppmap assigns imap ps))
-              ((mv imap ps) (vl-modinstlist-ppmap modinsts mods modalist imap ps))
-              ((mv imap ps) (vl-gateinstlist-ppmap gateinsts imap ps))
-              ((mv imap ps) (vl-alwayslist-ppmap alwayses imap ps))
-              ((mv imap ps) (vl-initiallist-ppmap initials imap ps))
-              (ps (if (not eventdecls)
-                      ps
-                    (vl-println "// BOZO implement eventdecl printing")))
-              (ps (if (not paramdecls)
-                      ps
-                    (vl-println "// BOZO Implement paramdecl printing")))
-
-; Now that we are done generating the ppmap, we can restore the rchars and col
-; from the pstate.  This whole approach is nothing more than a trick to avoid
-; having to create new vl-pstate objects and reconfigure them for each module
-; item.
-
-              (ps   (vl-ps-update-rchars rchars))
-              (ps   (vl-ps-update-col col))
-
-; With the map of all module items in hand, we add in the comment map and sort
-; by location order.  Why are we reversing the imap when we're going to sort it
-; anyway?  I think the answer is that since our sort is stable, we want to have
-; the printed elements in the proper order.
-
-              (imap     (reverse imap))
-              (comments (vl-add-newlines-after-block-comments comments))
+              (comments (vl-add-newlines-after-block-comments x.comments))
               (comments (if (vl-ps->htmlp)
                             (vl-html-encode-commentmap comments (vl-ps->tabsize))
                           comments))
@@ -482,12 +590,17 @@ for hyperlinking to submodules in HTML mode.</p>"
                                 :name vl-commentmap-entry-sort)))
 
              (vl-ps-seq (vl-when-html (vl-println-markup "<div class=\"vl_src\">"))
-                        (vl-pp-atts atts)
+                        (vl-pp-atts x.atts)
                         (vl-ps-span "vl_key" (vl-print "module "))
-                        (vl-print-modname name)
+                        (vl-print-modname x.name)
                         (vl-print " (")
-                        (vl-pp-portlist ports)
+                        (vl-pp-portlist x.ports)
                         (vl-println ");")
+
+                        (if (not x.eventdecls)
+                            ps
+                          (vl-println "// BOZO implement eventdecl printing"))
+
                         (vl-pp-encoded-commentmap guts)
                         (vl-ps-span "vl_key" (vl-println "endmodule"))
                         (vl-println "")

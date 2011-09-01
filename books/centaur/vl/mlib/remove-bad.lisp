@@ -20,7 +20,6 @@
 
 (in-package "VL")
 (include-book "hierarchy")
-(include-book "../wf-reasonable-p")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 (local (include-book "modname-sets"))

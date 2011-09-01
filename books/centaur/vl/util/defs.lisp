@@ -20,7 +20,7 @@
 
 (in-package "VL")
 
-; util-defs.lisp
+; defs.lisp
 ;
 ; This book is for definitions of general concepts.  Hopefully much of this
 ; can eventually be moved into proper libraries.
@@ -35,6 +35,7 @@
 (include-book "unicode/list-defuns" :dir :system)
 (include-book "centaur/bitops/integer-length" :dir :system)
 (include-book "centaur/misc/alist-equiv" :dir :system)
+(include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "str/top" :dir :system)
 (include-book "str/fast-cat" :dir :system)
 (local (include-book "arithmetic/top" :dir :system))
@@ -766,7 +767,7 @@ such that <tt>p</tt> is a prefix of every list in <tt>x</tt>."
   :short "@(call string-fix) is the identity function for strings."
   :long "<p>Note that we leave this function enabled.</p>"
 
-  (defun string-fix (x)
+  (definline string-fix (x)
     (declare (type string x))
     (mbe :logic (if (stringp x) x "")
          :exec x))
@@ -1080,3 +1081,147 @@ behavior in cases like:</p>
 (deflist cons-listp (x)
   (consp x)
   :elementp-of-nil nil)
+
+
+
+
+(defsection and*
+  :parents (utilities)
+  :short "<tt>and*</tt> is like <tt>and</tt> but is a (typically disabled) function."
+  :long "<p>This is occasionally useful for avoiding case-splitting in theorems.</p>"
+
+  (defund binary-and* (x y)
+    (declare (xargs :guard t))
+    (if x y nil))
+
+  (defund and*-macro (x)
+    (declare (xargs :guard t))
+    (cond ((atom x)
+           t)
+          ((atom (cdr x))
+           (car x))
+          (t
+           `(binary-and* ,(car x)
+                         ,(and*-macro (cdr x))))))
+
+  (defmacro and* (&rest args)
+    (and*-macro args))
+
+  (add-binop and* binary-and*))
+
+
+
+(defsection or*
+  :parents (utilities)
+  :short "<tt>or*</tt> is like <tt>or</tt> but is a (typically disabled) function."
+  :long "<p>This is occasionally useful for avoiding case-splitting in theorems.</p>"
+
+  (defund binary-or* (x y)
+    (declare (xargs :guard t))
+    (if x x y))
+
+  (defund or*-macro (x)
+    (declare (xargs :guard t))
+    (cond ((atom x)
+           nil)
+          ((atom (cdr x))
+           (car x))
+          (t
+           `(binary-or* ,(car x)
+                        ,(or*-macro (cdr x))))))
+
+  (defmacro or* (&rest args)
+    (or*-macro args))
+
+  (add-binop or* binary-or*))
+
+
+(defsection not*
+  :parents (utilities)
+  :short "<tt>not*</tt> is like <tt>not</tt> but is not built-in to ACL2 and is
+typically disabled."
+  :long "<p>This might occasionally be useful for avoiding case-splitting in
+theorems.</p>"
+
+  (defund not* (x)
+    (declare (xargs :guard t))
+    (not x)))
+
+
+
+
+(defsection keys-boundp
+  :parents (utilities)
+  :short "@(call keys-boundp) determines if every key in <tt>keys</tt> is bound
+in the alist <tt>alist</tt>."
+
+  (defund keys-boundp-fal (keys alist)
+    (declare (xargs :guard t))
+    (if (atom keys)
+        t
+      (and (hons-get (car keys) alist)
+           (keys-boundp-fal (cdr keys) alist))))
+
+  (defund keys-boundp-slow-alist (keys alist)
+    (declare (xargs :guard t))
+    (if (atom keys)
+        t
+      (and (hons-assoc-equal (car keys) alist)
+           (keys-boundp-slow-alist (cdr keys) alist))))
+
+  (defund keys-boundp (keys alist)
+    (declare (xargs :guard t :verify-guards nil))
+    (mbe :logic
+         (if (atom keys)
+             t
+           (and (hons-assoc-equal (car keys) alist)
+                (keys-boundp (cdr keys) alist)))
+         :exec
+         (if (atom keys)
+             t
+           (if (and (acl2::worth-hashing keys)
+                    (acl2::worth-hashing alist))
+               (with-fast-alist alist (keys-boundp-fal keys alist))
+             (keys-boundp-slow-alist keys alist)))))
+
+  (local (in-theory (enable keys-boundp
+                            keys-boundp-fal
+                            keys-boundp-slow-alist)))
+
+  (defthm keys-boundp-fal-removal
+    (equal (keys-boundp-fal keys alist)
+           (keys-boundp keys alist)))
+
+  (defthm keys-boundp-slow-alist-removal
+    (equal (keys-boundp-slow-alist keys alist)
+           (keys-boundp keys alist)))
+
+  (verify-guards keys-boundp)
+
+  (defthm keys-boundp-when-atom
+    (implies (atom keys)
+             (equal (keys-boundp keys alist)
+                    t)))
+
+  (defthm keys-boundp-of-cons
+    (equal (keys-boundp (cons a keys) alist)
+           (and (hons-get a alist)
+                (keys-boundp keys alist))))
+
+  (defthm keys-boundp-of-list-fix
+    (equal (keys-boundp (list-fix x) alist)
+           (keys-boundp x alist)))
+
+  (defthm keys-boundp-of-append
+    (equal (keys-boundp (append x y) alist)
+           (and (keys-boundp x alist)
+                (keys-boundp y alist))))
+
+  (defthm keys-boundp-of-rev
+    (equal (keys-boundp (rev x) alist)
+           (keys-boundp x alist)))
+
+  (defthm keys-boundp-of-revappend
+    (equal (keys-boundp (revappend x y) alist)
+           (and (keys-boundp x alist)
+                (keys-boundp y alist)))))

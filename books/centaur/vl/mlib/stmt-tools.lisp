@@ -2038,3 +2038,38 @@ in this list.</li>
                  :hints(("Goal" :in-theory (enable vl-stmt-atomicstmts
                                                    vl-stmtlist-atomicstmts)))))
 
+
+
+(defsection vl-filter-blockitems
+  :parents (stmt-tools vl-blockitemlist-p)
+  :short "Split up blockitems into lists by their type."
+
+  (defund vl-filter-blockitems (x)
+    "Returns (MV REGDECLS VARDECLS EVENTDECLS PARAMDECLS)"
+    (declare (xargs :guard (vl-blockitemlist-p x)))
+    (b* (((when (atom x))
+          (mv nil nil nil nil))
+         ((mv regdecls vardecls eventdecls paramdecls)
+          (vl-filter-blockitems (cdr x))))
+      (case (tag (car x))
+        (:vl-regdecl   (mv (cons (car x) regdecls) vardecls eventdecls paramdecls))
+        (:vl-vardecl   (mv regdecls (cons (car x) vardecls) eventdecls paramdecls))
+        (:vl-eventdecl (mv regdecls vardecls (cons (car x) eventdecls) paramdecls))
+        (:vl-paramdecl (mv regdecls vardecls eventdecls (cons (car x) paramdecls)))
+        (otherwise
+         (progn$
+          (er hard 'vl-filter-blockitems "Impossible")
+          (mv regdecls vardecls eventdecls paramdecls))))))
+
+  (local (in-theory (enable vl-filter-blockitems)))
+
+  (defmvtypes vl-filter-blockitems
+    (true-listp true-listp true-listp true-listp))
+
+  (defthm vl-filter-blockitems-basics
+    (implies (vl-blockitemlist-p x)
+             (let ((ret (vl-filter-blockitems x)))
+               (and (vl-regdecllist-p (mv-nth 0 ret))
+                    (vl-vardecllist-p (mv-nth 1 ret))
+                    (vl-eventdecllist-p (mv-nth 2 ret))
+                    (vl-paramdecllist-p (mv-nth 3 ret)))))))

@@ -93,13 +93,13 @@
   (if (atom alist)
       alist
     ;; If the alist already has an associated hash table, we're also done.
-    (let* ((fal-ht      (hl-hspace-fal-ht hs))
-           (alist-table (gethash alist (the hash-table fal-ht))))
+    (let* ((faltable    (hl-hspace-faltable hs))
+           (slot        (hl-faltable-general-lookup alist faltable))
+           (alist-table (hl-falslot-val slot)))
       (if alist-table
           alist
-        (let* ((tail
-                ;; Finds the largest tail of alist in which all keys are normed.
-                (hl-make-fast-alist-check alist hs))
+        (let* (;; Find the largest tail of alist in which all keys are normed.
+               (tail (hl-make-fast-alist-check alist hs))
                ;; Makes a copy of alist in which all keys are normed.
                (alist (hl-make-fast-norm-keys alist tail hs)))
           ;; We need to make a new hash table to back ALIST.  As in
@@ -108,8 +108,13 @@
           (setq alist-table
                 (hl-mht :size (max 60 (ash (len alist) -3))))
           (hl-make-fast-alist-put-pairs alist alist-table)
-          (setf (gethash alist (the hash-table fal-ht))
-                alist-table)
+          ;; The slot is empty, so install everything.  Since the value wasn't
+          ;; found, the initial ALIST isn't bound; if we ended up making a new
+          ;; alist due to honsing any keys, it's also not bound because we used
+          ;; cons.  So, uniqueness is guaranteed.  And we already know from the
+          ;; general lookup that it is unique.
+          (setf (hl-falslot-val slot) alist-table)
+          (setf (hl-falslot-key slot) alist)
           alist)))))
 
 
@@ -133,9 +138,10 @@
           ;; execution of form, but we'll still correctly free it.
           (,alist-var ,alist)
           (,alist-was-fast-p
-           (if (gethash ,alist-var (hl-hspace-fal-ht *default-hs*))
-               t
-             nil))
+           (let ((slot (hl-faltable-general-lookup ,alist-var (hl-hspace-faltable *default-hs*))))
+             (if (hl-falslot-key slot)
+                 t
+               nil)))
           (,alist-var (if ,alist-was-fast-p
                           ,alist-var
                         (make-fast-alist ,alist-var))))

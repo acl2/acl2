@@ -27,8 +27,11 @@
   :parents (vl-context-p)
   :short "Recognizer for an arbitrary module element."
 
-  :long "<p>These are used in our @(see vl-context-p) to describe where an
-expression occurs.</p>"
+  :long "<p>It is sometimes useful to be able to deal with module elements of
+arbitrary types.  For instance, we often use this in error messages, along with
+@(see vl-context-p), to describe where expressions occur.  We also use it in
+our @(see parser), where before module formation, the module elements are
+initially kept in a big, mixed list.</p>"
 
   (defund vl-modelement-p (x)
     (declare (xargs :guard t))
@@ -40,6 +43,7 @@ expression occurs.</p>"
                     (vl-regdecl-p x)
                     (vl-eventdecl-p x)
                     (vl-paramdecl-p x)
+                    (vl-fundecl-p x)
                     (vl-modinst-p x)
                     (vl-gateinst-p x)
                     (vl-always-p x)
@@ -53,6 +57,7 @@ expression occurs.</p>"
                  (:vl-regdecl   (vl-regdecl-p x))
                  (:vl-eventdecl (vl-eventdecl-p x))
                  (:vl-paramdecl (vl-paramdecl-p x))
+                 (:vl-fundecl   (vl-fundecl-p x))
                  (:vl-modinst   (vl-modinst-p x))
                  (:vl-gateinst  (vl-gateinst-p x))
                  (:vl-always    (vl-always-p x))
@@ -97,6 +102,10 @@ expression occurs.</p>"
     (implies (vl-paramdecl-p x)
              (vl-modelement-p x)))
 
+  (defthm vl-modelement-p-when-vl-fundecl-p
+    (implies (vl-fundecl-p x)
+             (vl-modelement-p x)))
+
   (defthm vl-modelement-p-when-vl-modinst-p
     (implies (vl-modinst-p x)
              (vl-modelement-p x)))
@@ -112,6 +121,13 @@ expression occurs.</p>"
   (defthm vl-modelement-p-when-vl-initial-p
     (implies (vl-initial-p x)
              (vl-modelement-p x)))
+
+
+;; Note.  When I merged vl-moduleitem-p and vl-modelement-p, the moduleitem-p
+;; rules had :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))) but these
+;; rules did not.  If these rules turn out to be slow, consider adding that
+;; back in.  Consider similar limits on the analagous rules for atomicstmts,
+;; atomguts, etc.
 
   (defthm vl-port-p-by-tag-when-vl-modelement-p
     (implies (and (equal (tag x) :vl-port)
@@ -153,6 +169,11 @@ expression occurs.</p>"
                   (vl-modelement-p x))
              (vl-paramdecl-p x)))
 
+  (defthm vl-fundecl-p-by-tag-when-vl-modelement-p
+    (implies (and (equal (tag x) :vl-fundecl)
+                  (vl-modelement-p x))
+             (vl-fundecl-p x)))
+
   (defthm vl-modinst-p-by-tag-when-vl-modelement-p
     (implies (and (equal (tag x) :vl-modinst)
                   (vl-modelement-p x))
@@ -182,6 +203,7 @@ expression occurs.</p>"
                   (not (equal (tag x) :vl-regdecl))
                   (not (equal (tag x) :vl-eventdecl))
                   (not (equal (tag x) :vl-paramdecl))
+                  (not (equal (tag x) :vl-fundecl))
                   (not (equal (tag x) :vl-modinst))
                   (not (equal (tag x) :vl-gateinst))
                   (not (equal (tag x) :vl-always))
@@ -189,6 +211,82 @@ expression occurs.</p>"
              (equal (vl-modelement-p x)
                     nil))
     :rule-classes ((:rewrite :backchain-limit-lst 0))))
+
+
+
+
+(defsection vl-modelementlist-p
+
+  (deflist vl-modelementlist-p (x)
+    (vl-modelement-p x)
+    :elementp-of-nil nil
+    :parents (vl-modelement-p))
+
+  (defthm vl-modelementlist-p-when-vl-portlist-p
+    (implies (vl-portlist-p x)
+             (vl-modelementlist-p x))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-modelementlist-p-when-vl-portdecllist-p
+    (implies (vl-portdecllist-p x)
+             (vl-modelementlist-p x))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-modelementlist-p-when-vl-assignlist-p
+    (implies (vl-assignlist-p x)
+             (vl-modelementlist-p x))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-modelementlist-p-when-vl-netdecllist-p
+    (implies (vl-netdecllist-p x)
+             (vl-modelementlist-p x))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-modelementlist-p-when-vl-vardecllist-p
+    (implies (vl-vardecllist-p x)
+             (vl-modelementlist-p x))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-modelementlist-p-when-vl-regdecllist-p
+    (implies (vl-regdecllist-p x)
+             (vl-modelementlist-p x))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-modelementlist-p-when-vl-eventdecllist-p
+    (implies (vl-eventdecllist-p x)
+             (vl-modelementlist-p x))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-modelementlist-p-when-vl-paramdecllist-p
+    (implies (vl-paramdecllist-p x)
+             (vl-modelementlist-p x))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-modelementlist-p-when-vl-fundecllist-p
+    (implies (vl-fundecllist-p x)
+             (vl-modelementlist-p x))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-modelementlist-p-when-vl-modinstlist-p
+    (implies (vl-modinstlist-p x)
+             (vl-modelementlist-p x))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-modelementlist-p-when-vl-gateinstlist-p
+    (implies (vl-gateinstlist-p x)
+             (vl-modelementlist-p x))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-modelementlist-p-when-vl-alwayslist-p
+    (implies (vl-alwayslist-p x)
+             (vl-modelementlist-p x))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-modelementlist-p-when-vl-initiallist-p
+    (implies (vl-initiallist-p x)
+             (vl-modelementlist-p x))
+    :hints(("Goal" :induct (len x)))))
+
 
 
 (defsection vl-modelement-loc
@@ -206,6 +304,7 @@ expression occurs.</p>"
       (:vl-regdecl   (vl-regdecl->loc x))
       (:vl-eventdecl (vl-eventdecl->loc x))
       (:vl-paramdecl (vl-paramdecl->loc x))
+      (:vl-fundecl   (vl-fundecl->loc x))
       (:vl-modinst   (vl-modinst->loc x))
       (:vl-gateinst  (vl-gateinst->loc x))
       (:vl-always    (vl-always->loc x))
@@ -219,6 +318,172 @@ expression occurs.</p>"
   (defthm vl-location-p-of-vl-modelement-loc
     (implies (force (vl-modelement-p x))
              (vl-location-p (vl-modelement-loc x)))))
+
+
+
+(defsection vl-sort-modelements
+
+  (local (in-theory (disable
+                     ;; just a speed hint
+                     double-containment
+                     sets::nonempty-means-set
+                     consp-under-iff-when-true-listp
+                     consp-by-len
+                     true-listp-when-character-listp
+                     true-listp-when-symbol-listp
+                     true-listp-when-string-listp
+                     true-listp-when-not-consp
+                     sets::sets-are-true-lists
+                     consp-when-member-equal-of-cons-listp
+                     consp-when-member-equal-of-cons-listp
+                     acl2::rev-when-not-consp
+                     default-car
+                     default-cdr
+                     pick-a-point-subset-strategy
+                     vl-modelement-p-when-member-equal-of-vl-modelementlist-p
+                     vl-portlist-p-when-subsetp-equal
+                     vl-initiallist-p-when-subsetp-equal
+                     vl-regdecllist-p-when-subsetp-equal
+                     vl-assignlist-p-when-subsetp-equal
+                     vl-alwayslist-p-when-subsetp-equal
+                     vl-vardecllist-p-when-subsetp-equal
+                     vl-paramdecllist-p-when-subsetp-equal
+                     vl-netdecllist-p-when-subsetp-equal
+                     vl-modinstlist-p-when-subsetp-equal
+                     vl-gateinstlist-p-when-subsetp-equal
+                     vl-fundecllist-p-when-subsetp-equal
+                     vl-eventdecllist-p-when-subsetp-equal
+                     vl-portdecllist-p-when-subsetp-equal
+                     vl-modelementlist-p-when-vl-portlist-p
+                     vl-modelementlist-p-when-vl-initiallist-p
+                     vl-modelementlist-p-when-vl-vardecllist-p
+                     vl-modelementlist-p-when-vl-regdecllist-p
+                     vl-modelementlist-p-when-vl-portdecllist-p
+                     vl-modelementlist-p-when-vl-netdecllist-p
+                     vl-modelementlist-p-when-vl-modinstlist-p
+                     vl-modelementlist-p-when-vl-gateinstlist-p
+                     vl-modelementlist-p-when-vl-fundecllist-p
+                     vl-modelementlist-p-when-vl-eventdecllist-p
+                     vl-modelementlist-p-when-vl-assignlist-p
+                     vl-modelementlist-p-when-vl-alwayslist-p
+                     (:rules-of-class :type-prescription :here)
+                     (:ruleset tag-reasoning)
+                     )))
+
+  (defund vl-sort-modelements (x ports portdecls assigns netdecls vardecls regdecls
+                                 eventdecls paramdecls fundecls modinsts gateinsts
+                                 alwayses initials)
+    (declare (xargs :guard (and (vl-modelementlist-p x)
+                                (vl-portlist-p ports)
+                                (vl-portdecllist-p portdecls)
+                                (vl-assignlist-p assigns)
+                                (vl-netdecllist-p netdecls)
+                                (vl-vardecllist-p vardecls)
+                                (vl-regdecllist-p regdecls)
+                                (vl-eventdecllist-p eventdecls)
+                                (vl-paramdecllist-p paramdecls)
+                                (vl-fundecllist-p fundecls)
+                                (vl-modinstlist-p modinsts)
+                                (vl-gateinstlist-p gateinsts)
+                                (vl-alwayslist-p alwayses)
+                                (vl-initiallist-p initials)
+                                (true-listp ports)
+                                (true-listp portdecls)
+                                (true-listp assigns)
+                                (true-listp netdecls)
+                                (true-listp vardecls)
+                                (true-listp regdecls)
+                                (true-listp eventdecls)
+                                (true-listp paramdecls)
+                                (true-listp fundecls)
+                                (true-listp modinsts)
+                                (true-listp gateinsts)
+                                (true-listp alwayses)
+                                (true-listp initials))))
+    (b* (((when (atom x))
+          (mv (reverse ports)
+              (reverse portdecls)
+              (reverse assigns)
+              (reverse netdecls)
+              (reverse vardecls)
+              (reverse regdecls)
+              (reverse eventdecls)
+              (reverse paramdecls)
+              (reverse fundecls)
+              (reverse modinsts)
+              (reverse gateinsts)
+              (reverse alwayses)
+              (reverse initials)))
+         (tag (tag (car x))))
+      (vl-sort-modelements (cdr x)
+                           (if (eq tag :vl-port)      (cons (car x) ports)      ports)
+                           (if (eq tag :vl-portdecl)  (cons (car x) portdecls)  portdecls)
+                           (if (eq tag :vl-assign)    (cons (car x) assigns)    assigns)
+                           (if (eq tag :vl-netdecl)   (cons (car x) netdecls)   netdecls)
+                           (if (eq tag :vl-vardecl)   (cons (car x) vardecls)   vardecls)
+                           (if (eq tag :vl-regdecl)   (cons (car x) regdecls)   regdecls)
+                           (if (eq tag :vl-eventdecl) (cons (car x) eventdecls) eventdecls)
+                           (if (eq tag :vl-paramdecl) (cons (car x) paramdecls) paramdecls)
+                           (if (eq tag :vl-fundecl)   (cons (car x) fundecls)   fundecls)
+                           (if (eq tag :vl-modinst)   (cons (car x) modinsts)   modinsts)
+                           (if (eq tag :vl-gateinst)  (cons (car x) gateinsts)  gateinsts)
+                           (if (eq tag :vl-always)    (cons (car x) alwayses)   alwayses)
+                           (if (eq tag :vl-initial)   (cons (car x) initials)   initials)
+                           )))
+
+  (local (in-theory (enable vl-sort-modelements)))
+
+  (defthm vl-sort-modelements-basics
+    (implies (force (and (vl-portlist-p ports)
+                         (vl-modelementlist-p x)
+                         (vl-portdecllist-p portdecls)
+                         (vl-assignlist-p assigns)
+                         (vl-netdecllist-p netdecls)
+                         (vl-vardecllist-p vardecls)
+                         (vl-regdecllist-p regdecls)
+                         (vl-eventdecllist-p eventdecls)
+                         (vl-paramdecllist-p paramdecls)
+                         (vl-fundecllist-p fundecls)
+                         (vl-modinstlist-p modinsts)
+                         (vl-gateinstlist-p gateinsts)
+                         (vl-alwayslist-p alwayses)
+                         (vl-initiallist-p initials)
+                         (true-listp ports)
+                         (true-listp portdecls)
+                         (true-listp assigns)
+                         (true-listp netdecls)
+                         (true-listp vardecls)
+                         (true-listp regdecls)
+                         (true-listp eventdecls)
+                         (true-listp paramdecls)
+                         (true-listp fundecls)
+                         (true-listp modinsts)
+                         (true-listp gateinsts)
+                         (true-listp alwayses)
+                         (true-listp initials)))
+             (b* (((mv ports portdecls assigns netdecls
+                       vardecls regdecls eventdecls
+                       paramdecls fundecls modinsts
+                       gateinsts alwayses initials)
+                   (vl-sort-modelements x ports portdecls assigns netdecls
+                                        vardecls regdecls eventdecls
+                                        paramdecls fundecls modinsts
+                                        gateinsts alwayses initials)))
+               (and (vl-portlist-p ports)
+                    (vl-portdecllist-p portdecls)
+                    (vl-assignlist-p assigns)
+                    (vl-netdecllist-p netdecls)
+                    (vl-vardecllist-p vardecls)
+                    (vl-regdecllist-p regdecls)
+                    (vl-eventdecllist-p eventdecls)
+                    (vl-paramdecllist-p paramdecls)
+                    (vl-fundecllist-p fundecls)
+                    (vl-modinstlist-p modinsts)
+                    (vl-gateinstlist-p gateinsts)
+                    (vl-alwayslist-p alwayses)
+                    (vl-initiallist-p initials))))
+    :hints(("Goal" :induct t))))
+
 
 
 (defpp vl-pp-modelement-summary (x)
@@ -246,9 +511,13 @@ expression occurs.</p>"
        (vl-ps-seq (vl-basic-cw "Assignment to ")
                   (if (< (length orig) 40)
                       (vl-pp-origexpr (vl-assign->lvalue x))
-                    (vl-print (str::cat (subseq orig 0 40) "...")))
-                  (vl-basic-cw " at ")
-                  (vl-print-loc (vl-assign->loc x)))))
+                    (vl-ps-seq
+                     (vl-print (subseq orig 0 40))
+                     ;; To reduce the amount of line numbers we see in error
+                     ;; messages we now prefer to print the location only if
+                     ;; the name is elided.
+                     (vl-print "... at ")
+                     (vl-print-loc (vl-assign->loc x)))))))
 
     (:vl-netdecl
      (vl-ps-seq (vl-basic-cw "Net declaration of ")
@@ -268,6 +537,10 @@ expression occurs.</p>"
     (:vl-paramdecl
      (vl-ps-seq (vl-basic-cw "Param declaration of ")
                 (vl-print-wirename (vl-paramdecl->name x))))
+
+    (:vl-fundecl
+     (vl-ps-seq (vl-basic-cw "Function ")
+                (vl-print-wirename (vl-fundecl->name x))))
 
     (:vl-modinst
      (let* ((instname (vl-modinst->instname x))
@@ -383,7 +656,8 @@ vl-pp-context-full).</p>"
     (:vl-vardecl   (vl-pp-vardecl x))
     (:vl-regdecl   (vl-pp-regdecl x))
     (:vl-eventdecl (vl-print "// BOZO implement vl-pp-eventdecl in vl-pp-modelement-full"))
-    (:vl-paramdecl (vl-print "// BOZO implement vl-pp-paramdecl in vl-pp-modelement-full"))
+    (:vl-paramdecl (vl-pp-paramdecl x))
+    (:vl-fundecl   (vl-pp-fundecl x))
     (:vl-modinst   (vl-pp-modinst x nil nil))
     (:vl-gateinst  (vl-pp-gateinst x))
     (:vl-always    (vl-pp-always x))
