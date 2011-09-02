@@ -739,9 +739,11 @@ lexer-tests.lisp
 lexer-tokens.lisp
 lexer-utils.lisp
 loader.lisp
+make-implicit-wires.lisp
 overrides.lisp
 parse-blockitems.lisp
 parse-delays.lisp
+parse-error.lisp
 parse-eventctrl.lisp
 parse-expressions-def.lisp
 parse-expressions-eof.lisp
@@ -751,6 +753,7 @@ parse-expressions-progress.lisp
 parse-expressions-result.lisp
 parse-expressions-tokenlist.lisp
 parse-expressions-warnings.lisp
+parse-functions.lisp
 parse-gates.lisp
 parse-insts.lisp
 parse-lvalues.lisp
@@ -850,6 +853,7 @@ xf-designwires.lisp
 xf-drop-blankports.lisp
 xf-elim-always.lisp
 xf-elim-supply.lisp
+xf-expand-functions.lisp
 xf-expr-split.lisp
 xf-follow-hids.lisp
 xf-gate-elim.lisp
@@ -857,7 +861,6 @@ xf-gateredux.lisp
 xf-gatesplit.lisp
 xf-hid-elim.lisp
 xf-infer-flops.lisp
-xf-make-implicit-wires.lisp
 xf-negedge-elim.lisp
 xf-oprewrite.lisp
 xf-optimize-rw.lisp
@@ -912,6 +915,7 @@ print-urlencode.lisp
 string-alists.lisp
 subsetp-equal.lisp
 sum-nats.lisp
+toposort.lisp
 warnings.lisp
 
 books/clause-processors:
