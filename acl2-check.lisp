@@ -267,9 +267,7 @@ most-negative-fixnum = ~s."
 ; The following check must be put last in this file, since we don't entirely
 ; trust that it won't corrupt the current image.  We collect all symbols in
 ; *common-lisp-symbols-from-main-lisp-package*, other than those that have the
-; syntax of a lambda list keyword, that are either globally bound (as constants
-; or else as special variables) or else have a global value when they are
-; locally bound (and hence are special).
+; syntax of a lambda list keyword, that are special.
 
 (let ((badvars nil))
   (dolist (var *copy-of-common-lisp-symbols-from-main-lisp-package*)
@@ -278,10 +276,15 @@ most-negative-fixnum = ~s."
               (if (and (let ((s (symbol-name var)))
                          (or (= (length s) 0)
                              (not (eql (char s 0) #\&))))
-                       (or (boundp var)
-                           (eval `(let ((,var t))
-                                    (declare (ignore ,var))
-                                    (boundp ',var)))))
+                       (eval `(let ((,var (gensym)))
+
+; If var is special, then the above binding will make it boundp and update its
+; symbol-value.  Conversely, if var is not special, then there are two cases:
+; either it is not boundp before the binding above in which case it remains not
+; boundp, or else its global value is not the above gensym value.
+
+                                (and (boundp ',var)
+                                     (eq ,var (symbol-value ',var))))))
                   (setq badvars (cons var badvars)))))
   (if badvars
       (error "The following constants or special variables in the main~%~

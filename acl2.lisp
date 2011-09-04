@@ -735,7 +735,8 @@ ACL2 from scratch.")
                 #+lispworks :lispworks
                 #-(or gcl ccl sbcl allegro clisp cmu lispworks)
                 (error
-                 "The underlying host Lisp appears not to support ACL2. ~%~
+                 "Error detected in initialize-state-globals: ~%~
+                  The underlying host Lisp appears not to support ACL2. ~%~
                   Contact the ACL2 implementors to request such support."))
              *the-live-state*)
             #+unix

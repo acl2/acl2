@@ -25071,6 +25071,7 @@
     with-waterfall-parallelism-timings ; for #+acl2-par
     with-possible-parallelism-hazards ; for #+acl2-par
     warn-about-parallelism-hazard ; for #+acl2-par
+    state-global-let* ; raw Lisp version for efficiency
     ))
 
 (defmacro with-live-state (form)
@@ -25092,6 +25093,20 @@
 ; that the current value of state really is *the-live-state*, which we expect
 ; will always be the case.
 
+; This function has a clear semantics in raw Lisp.  But our argument for
+; correctness of this macro in the logic (where it is logically the identity,
+; but binds the live state) is a bit subtle.  If form does not reference state,
+; then binding state to *the-live-state* has no lexical effect.  This binding
+; never has a dynamic effect (other than to avoid a compiler warning), since
+; state is always globally bound to the value of *the-live-state*.  So the only
+; case of concern is when state occurs lexically in form (which will presumably
+; usually be the case).  It suffices (as above) that the value of state in that
+; context is *the-live-state*.  If we are evaluating a top-level form, this is
+; always the case.  But suppose we are evaluating the body of a function.  If
+; we are in the body of a *1* function that mentions state, then our
+; single-threadedness restrictions, enforced for function bodies, will
+; guarantee that state is indeed the live state.
+
   ":Doc-Section ACL2::Programming
 
   allow a reference to ~c[state] in raw Lisp~/
@@ -25112,14 +25127,8 @@
   #+acl2-loop-only
   form
   #-acl2-loop-only
-  `(progn
-     (or ;; add if needed, e.g. when doing the build: (not (boundp 'state))
-         (eq (symbol-value 'state) *the-live-state*)
-         (error "Implementation error:~%~p
-                 Illegal use of with-live-state on state that is not live."
-                ',form))
-     (let ((state *the-live-state*))
-       ,form)))
+  `(let ((state *the-live-state*))
+     ,form))
 
 (defun init-iprint-ar (hard-bound enabledp)
 
@@ -26357,7 +26366,41 @@
   #-(and acl2-par (not acl2-loop-only))
   body)
 
-(defmacro state-global-let* (bindings body)
+#-acl2-loop-only
+(defmacro state-free-global-let* (bindings body)
+
+; This raw Lisp macro is a variant of state-global-let* that should be used
+; only when state is *not* lexically available, or at least not a formal
+; parameter of the enclosing function or not something we care about tracking
+; (because we are in raw Lisp).  It is used to bind state globals that may have
+; raw-Lisp side effects.  If state were available this sort of binding could be
+; inappropriate, since one could observe a change in state globals under the
+; state-free-global-let* that was not justified by the logic.
+
+; State-free-global-let* provides a nice alternative to state-global-let* when
+; we want to avoid involving the acl2-unwind-protect mechanism, for example
+; during parallel evaluation.
+
+; Comment for #+acl2-par: When using state-free-global-let* inside functions
+; that might execute in parallel (for example, functions that occur inside the
+; waterfall), consider modifying macro mt-future to cause child threads to
+; inherit these variables' values from their parent threads.  See how we
+; handled safe-mode and gc-on in macro mt-future for examples of how to cause
+; such inheritance to occur.
+
+  (cond
+   ((null bindings) body)
+   (t (let (bs syms)
+        (dolist (binding bindings)
+          (let ((sym (global-symbol (car binding))))
+            (push (list sym (cadr binding))
+                  bs)
+            (push sym syms)))
+        `(let* ,(nreverse bs)
+           (declare (special ,@(nreverse syms)))
+           ,body)))))
+
+(defmacro state-global-let*-logical (bindings body)
 
 ; NOTE: In April 2010 we discussed the possibility that we could simplify the
 ; raw-Lisp code for state-global-let* to avoid acl2-unwind-protect, in favor of
@@ -26399,56 +26442,51 @@
   (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
                               (no-duplicatesp-equal (strip-cars bindings)))))
 
-  `(warn-about-parallelism-hazard
-    '(state-global-let* ,bindings ,body)
-    (let ((state-global-let*-cleanup-lst
-           (list ,@(state-global-let*-get-globals bindings))))
-      ,@(and (null bindings)
-             '((declare (ignore state-global-let*-cleanup-lst))))
-      (acl2-unwind-protect
-       "state-global-let*"
-       (pprogn ,@(state-global-let*-put-globals bindings)
-               (check-vars-not-free (state-global-let*-cleanup-lst) ,body))
-       (pprogn
-        ,@(state-global-let*-cleanup bindings 0)
-        state)
-       (pprogn
-        ,@(state-global-let*-cleanup bindings 0)
-        state)))))
+  `(let ((state-global-let*-cleanup-lst
+          (list ,@(state-global-let*-get-globals bindings))))
+     ,@(and (null bindings)
+            '((declare (ignore state-global-let*-cleanup-lst))))
+     (acl2-unwind-protect
+      "state-global-let*"
+      (pprogn ,@(state-global-let*-put-globals bindings)
+              (check-vars-not-free (state-global-let*-cleanup-lst) ,body))
+      (pprogn
+       ,@(state-global-let*-cleanup bindings 0)
+       state)
+      (pprogn
+       ,@(state-global-let*-cleanup bindings 0)
+       state))))
 
 #-acl2-loop-only
-(defmacro state-free-global-let* (bindings body)
+(defmacro enforce-live-state-p (form)
 
-; This raw Lisp macro is a variant of state-global-let* that should be used
-; only when state is *not* lexically available, or at least not a formal
-; parameter of the enclosing function or not something we care about tracking
-; (because we are in raw Lisp).  It is used to bind state globals that may have
-; raw-Lisp side effects.  If state were available this sort of binding could be
-; inappropriate, since one could observe a change in state globals under the
-; state-free-global-let* that was not justified by the logic.
+; Note that STATE is intended to be lexically bound at the point where this
+; macro is called.
 
-; State-free-global-let* provides a nice alternative to state-global-let* when
-; we want to avoid involving the acl2-unwind-protect mechanism, for example
-; during parallel evaluation.
+  `(progn (when (not (live-state-p state)) ; (er hard! ...)
+            (let ((*hard-error-returns-nilp* nil))
+              (illegal 'enforce-live-state-p
+                       "The state was expected to be live in the context of ~
+                        an evaluation of the form:~|~x0"
+                       (list (cons #\0 ',form)))))
+          ,form))
 
-; Comment for #+acl2-par: When using state-free-global-let* inside functions
-; that might execute in parallel (for example, functions that occur inside the
-; waterfall), consider modifying macro mt-future to cause child threads to
-; inherit these variables' values from their parent threads.  See how we
-; handled safe-mode and gc-on in macro mt-future for examples of how to cause
-; such inheritance to occur.
+(defmacro state-global-let* (bindings body)
+  (cond #-acl2-loop-only
+        ((and (symbol-doublet-listp bindings)
+              (not (assoc-eq 'acl2-raw-mode-p bindings)))
 
-  (cond
-   ((null bindings) body)
-   (t (let (bs syms)
-        (dolist (binding bindings)
-          (let ((sym (global-symbol (car binding))))
-            (push (list sym (cadr binding))
-                  bs)
-            (push sym syms)))
-        `(let* ,(nreverse bs)
-           (declare (special ,@(nreverse syms)))
-           ,body)))))
+; The test above guarantees that we merely have bindings of state globals.  A
+; triple requires cleanup using a setter function.  Also we avoid giving this
+; simple treatment to 'acl2-raw-mode-p because the semantics of
+; state-global-let* are to call f-put-global, which has side effects in the
+; case of 'acl2-raw-mode-p.
+
+         `(enforce-live-state-p
+           (warn-about-parallelism-hazard
+            '(state-global-let* ,bindings ,body)
+            (state-free-global-let* ,bindings ,body))))
+        (t `(state-global-let*-logical ,bindings ,body))))
 
 ; With state-global-let* defined, we may now define a few more primitives and
 ; finish some unfinished business.

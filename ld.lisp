@@ -18126,6 +18126,20 @@
 ; We removed a #-acl2-loop-only shortcut in plist-worldp, which remains as a
 ; comment in that function.
 
+; Modified the check in acl2-check.lisp related to
+; *common-lisp-specials-and-constants*, so that it no longer causes an error
+; when attempting to build with ECL (which bound the symbol
+; COMMON-LISP:FUNCTION), in case this is something we try in the future.
+
+; Improved the comment for with-live-state.  Also eliminated a useless check in
+; that definition.  For example, the following form did not cause an error in
+; raw Lisp (and still doesn't).
+;
+; (let ((state 17)) (with-live-state state))
+
+; Improved the efficiency of the raw Lisp definition of state-global-let* in
+; many cases, and reduced code size.
+
   :doc
   ":Doc-Section release-notes
 

@@ -224,7 +224,7 @@ implementations.")
 
 (defun system-call (string arguments)
   #+akcl
-  (lisp::system
+  (si::system
    (let ((result string))
      (dolist
       (x arguments)
