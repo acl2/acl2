@@ -18220,6 +18220,10 @@
   end of ~il[events]; ~pl[print-summary-user].  Thanks to Harsh Raju Chamarthi
   for requesting this feature and participating in a design discussion.
 
+  A new, advanced ~il[proof-checker] command, ~c[geneqv], shows the generated
+  equivalence relation at the current subterm.  Thanks to Dave Greve for an
+  inquiry leading to this enhancement.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   Reading of ACL2 ~ilc[arrays] (~pl[aref1], ~pl[aref2]) has been made more

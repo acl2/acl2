@@ -7249,6 +7249,46 @@
                 (finish-error ,instrs)
                 t)))
 
+(defun show-geneqv (x with-runes-p)
+  (cond ((endp x) nil)
+        (t (cons (if with-runes-p
+                     (list (access congruence-rule (car x) :equiv)
+                           (access congruence-rule (car x) :rune))
+                   (access congruence-rule (car x) :equiv))
+                 (show-geneqv (cdr x) with-runes-p)))))
+
+(define-pc-macro geneqv (&optional with-runes-p)
+
+  "show the generated equivalence relation maintained at the current subterm~/
+  ~bv[]
+  General Forms:
+  geneqv     ; show list of equivalence relations being maintained
+  (geneqv t) ; as above, but pair each relation with a justifying rune~/
+  ~ev[]
+  This is an advanced command, whose effect is to print the so-called
+  ``generated equivalence relation'' (or ``geneqv'') that is maintained at the
+  current subterm of the conclusion.  That structure is a list of equivalence
+  relations, representing the transitive closure ~c[E] of the union of those
+  relations, such that it suffices to maintain ~c[E] at the current subterm: if
+  that subterm, ~c[u], is replaced in the goal's conclusion, ~c[G], by another
+  term equivalent to ~c[u] with respect to ~c[E], then the resulting conclusion
+  is Boolean equivalent to ~c[G].  Also ~pl[defcong].
+
+  The command `~c[geneqv]' prints the above list of equivalence relations, or
+  more precisely, the list of function symbols for those relations.  If however
+  ~c[geneqv] is given a non-~c[nil] argument, then a list is printed whose
+  elements are each of the form ~c[(s r)], where ~c[s] is the symbol for an
+  equivalence relation and ~c[r] is a ~c[:]~ilc[congruence] ~il[rune]
+  justifying the inclusion of ~c[s] in the list of equivalence relations being
+  maintained at the current subterm."
+
+  (value `(print (show-geneqv
+                  (geneqv-at-subterm-top (conc)
+                                         (current-addr)
+                                         (pc-ens)
+                                         (w state))
+                  ',with-runes-p))))
+
 ; Support for :instructions as hints
 
 (defun goals-to-clause-list (goals)
