@@ -18231,6 +18231,12 @@
   repeated reads of the same named array.  Thanks to Jared Davis and Sol Swords
   for contributing this improvement.
 
+  Slightly modified the induction schemes stored, so that calls of so-called
+  ``guard-holders'' (such as ~ilc[mbe] and ~ilc[prog2$] ~-[] indeed, any call
+  of ~ilc[return-last] ~-[] and ~ilc[the]) are expanded away.  In particular,
+  calls of equality variants such as ~ilc[member] are treated as their
+  corresponding function calls, e.g., ~ilc[member-equal]; ~pl[equality-variants].
+
   ~st[BUG FIXES]
 
   Fixed a class of soundness bugs involving each of the following functions:
