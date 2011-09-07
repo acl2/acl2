@@ -1,5 +1,5 @@
 
-DIRS = 1999 2000 2002 2003 2004 2006 2007 2009
+DIRS = 1999 2000 2002 2003 2004 2006 2007 2009 2011
 include ../Makefile-psubdirs
 
 # Because 2003/greve-wilding_mbe/support/fpst.cert
