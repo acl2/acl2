@@ -1968,12 +1968,9 @@
 
   As a ``user-friendly'' gesture, ACL2 implicitly moves ~c[map]-like functions
   out of encapsulations; logically speaking, they are introduced after the
-  encapsulation.  This simplifies the constraint.  This is done only for
-  ``top-level'' encapsulations.  When an ~c[encapsulate] containing a non-empty
-  ~il[signature] list is embedded in another ~c[encapsulate] with a non-empty
-  signature list, no attempt is made to move ~c[map]-like functions out.  The
-  user is advised, via the ``infected'' warning, to phrase the encapsulation in
-  the simplest way possible.
+  encapsulation.  This simplifies the constraint.  When the constraint cannot
+  be thus simplfied the user is advised, via the ``infected'' warning, to
+  phrase the encapsulation in the simplest way possible.
 
   The lingering bug between Versions 1.5 and 2.3 mentioned above was due to our
   failure to detect the ~c[g]-like nature of some functions when they were
