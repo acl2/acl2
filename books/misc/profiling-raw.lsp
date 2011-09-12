@@ -95,20 +95,19 @@
            (eval (cons ',unprof unprof-fns)))))))
 
 (defmacro with-profiling-no-op-warning (macro-name supported-lisps form)
-  `(with-live-state
-    (progn
-      (case (f-get-global 'host-lisp state)
-        (,supported-lisps state)
-        (t (warning$ ',macro-name nil
-                     "The macro ~x0 does not do any profiling in ~
-                      this host Lisp and OS:~|  ~x1 = ~x2.~|  ~x3 = ~x4"
-                     ',macro-name
-                     '(f-get-global 'host-lisp state)
-                     (f-get-global 'host-lisp state)
-                     '(os (w state))
-                     (os (w state)))))
-      (our-multiple-value-prog1
-       ,form
+  `(let ((state *the-live-state*))
+     (case (f-get-global 'host-lisp state)
+       (,supported-lisps state)
+       (t (warning$ ',macro-name nil
+                    "The macro ~x0 does not do any profiling in this host ~
+                     Lisp and OS:~|  ~x1 = ~x2.~|  ~x3 = ~x4"
+                    ',macro-name
+                    '(f-get-global 'host-lisp state)
+                    (f-get-global 'host-lisp state)
+                    '(os (w state))
+                    (os (w state)))))
+     (our-multiple-value-prog1
+      ,form
 
 ; The second warning, below, looks silly when we evaluate a form that doesn't
 ; have output.  But otherwise, we think it prudent to print it, since warnings
@@ -118,12 +117,12 @@
 ; which we don't support profiling; the extra warning might actually encourage
 ; people to avoid such futile attempts.
 
-       ,(protect-mv
-         `(warning$
-           ',macro-name nil
-           "To repeat the warning above:  The macro ~x0 does not do any ~
-            profiling on this host Lisp and platform."
-           ',macro-name))))))
+      ,(protect-mv
+        `(warning$
+          ',macro-name nil
+          "To repeat the warning above:  The macro ~x0 does not do any ~
+           profiling on this host Lisp and platform."
+          ',macro-name)))))
 
 #-(or (and (not mswindows) ccl) sbcl)
 (defmacro with-profiling-raw (syms form)
