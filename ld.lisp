@@ -18131,14 +18131,11 @@
 ; when attempting to build with ECL (which bound the symbol
 ; COMMON-LISP:FUNCTION), in case this is something we try in the future.
 
-; Improved the comment for with-live-state.  Also eliminated a useless check in
-; that definition.  For example, the following form did not cause an error in
-; raw Lisp (and still doesn't).
-;
-; (let ((state 17)) (with-live-state state))
-
 ; Improved the efficiency of the raw Lisp definition of state-global-let* in
 ; many cases, and reduced code size.
+
+; The soundness bug for with-live-state has been recorded in a comment where
+; that macro is defined.
 
   :doc
   ":Doc-Section release-notes
@@ -18237,6 +18234,10 @@
   calls of equality variants such as ~ilc[member] are treated as their
   corresponding function calls, e.g., ~ilc[member-equal]; ~pl[equality-variants].
 
+  Improved the performance of ~ilc[dmr] (technical note: by modifying raw Lisp
+  code for function ~c[dmr-flush], replacing ~c[finish-output] by
+  ~c[force-output]).
+
   ~st[BUG FIXES]
 
   Fixed a class of soundness bugs involving each of the following functions:
@@ -18259,6 +18260,9 @@
              :use not-true))
     :rule-classes nil)
   ~ev[]
+
+  Fixed a soundness bug involving ~c[with-live-state].  ~l[with-live-state], as
+  the documentation for this macro has been updated.
 
   While calls of many event macros had been prohibited inside executable code,
   others should have been but were not.  For example, the following was

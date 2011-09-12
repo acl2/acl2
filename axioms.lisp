@@ -25088,24 +25088,44 @@
 ;     ACL2_INVISIBLE::|The Live State Itself|
 ;     ? [RAW LISP] 
 
-; The present macro is provided in order to avoid this problem:
-; (with-live-state form) binds state to *the-live-state* in form after checking
-; that the current value of state really is *the-live-state*, which we expect
-; will always be the case.
+; The present macro is provided in order to avoid this problem: in raw Lisp
+; (with-live-state form) binds state to *the-live-state*.  This way, we avoid
+; the above compiler warning.
 
-; This function has a clear semantics in raw Lisp.  But our argument for
-; correctness of this macro in the logic (where it is logically the identity,
-; but binds the live state) is a bit subtle.  If form does not reference state,
-; then binding state to *the-live-state* has no lexical effect.  This binding
-; never has a dynamic effect (other than to avoid a compiler warning), since
-; state is always globally bound to the value of *the-live-state*.  So the only
-; case of concern is when state occurs lexically in form (which will presumably
-; usually be the case).  It suffices (as above) that the value of state in that
-; context is *the-live-state*.  If we are evaluating a top-level form, this is
-; always the case.  But suppose we are evaluating the body of a function.  If
-; we are in the body of a *1* function that mentions state, then our
-; single-threadedness restrictions, enforced for function bodies, will
-; guarantee that state is indeed the live state.
+; Unfortunately, our initial solution was unsound.  The following book
+; certifies in Versions 3.5 and 4.3, and probably all versions inbetween.
+
+;   (in-package "ACL2")
+;   
+;   (defun foo (state)
+;     (declare (xargs :stobjs state))
+;     (with-live-state state))
+;   
+;   (defthm thm1
+;     (equal (caddr (foo (build-state)))
+;            nil)
+;     :rule-classes nil)
+;   
+;   (defthm thm2
+;     (consp (caddr (build-state)))
+;     :rule-classes nil)
+;   
+;   (defthm contradiction
+;     nil
+;     :hints (("Goal"
+;              :use (thm1 thm2)
+;              :in-theory (disable build-state (build-state))))
+;     :rule-classes nil)
+
+; The problem was that state was bound to *the-live-state* for evaluation
+; during a proof, where lexically state had a different binding that should
+; have ruled.
+
+; Our solution is for this macro to expand trivially within the usual ACL2
+; loop, only binding state to *the-live-state* when outside the loop or in raw
+; mode.  In principle, everything takes place inside the loop without raw mode.
+; If one references a non-live state outside the loop or in raw mode, one could
+; thus get surprising results; but we can live with that.
 
   ":Doc-Section ACL2::Programming
 
@@ -25119,16 +25139,25 @@
   ~ev[]
   where form is an arbitrary form that mentions ~ilc[state].
 
-  Most users will not need ~c[with-live-state].  If for some reason a form
-  that mentions the variable ~ilc[state] might be executed in raw Lisp, outside
-  the ACL2 loop, then the use of ~c[with-live-state] is recommended in order to
-  avoid potential warnings or (less likely) errors.~/~/"
+  Most users will not need ~c[with-live-state].  If for some reason a form that
+  mentions the variable ~ilc[state] might be executed in raw Lisp ~-[] that is,
+  either outside the ACL2 loop or in raw mode (~pl[set-raw-mode]) ~-[] then the
+  use of ~c[with-live-state] is recommended in order to avoid potential
+  warnings or (much less likely) errors.  Note however that if ~c[state] is
+  lexically bound to a state other than the usual ``live'' state, surprising
+  behavior may occur when evaluating a call of ~c[with-live-state] in raw Lisp
+  or raw mode (either directly by evaluation or at compile time), because
+  ~c[with-live-state] will override that lexical binding of ~ilc[state] by a
+  lexical binding of ~c[state] to the usual ``live'' state.~/~/"
 
   #+acl2-loop-only
   form
   #-acl2-loop-only
-  `(let ((state *the-live-state*))
-     ,form))
+  (cond ((or (> *ld-level* 0)
+             (f-get-global 'acl2-raw-mode-p *the-live-state*))
+         form)
+        (t `(let ((state *the-live-state*))
+              ,form))))
 
 (defun init-iprint-ar (hard-bound enabledp)
 

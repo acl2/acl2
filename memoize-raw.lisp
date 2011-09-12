@@ -3539,29 +3539,29 @@ the calls took.")
 
 (defun memoize-use-attachment-warning (fn at-fn)
   (when *memoize-use-attachment-warning-p*
-    (with-live-state
-     (warning$ 'top-level "Attachment"
-               "Although the function ~x0 is memoized, a result is not being ~
-                stored because ~@1.  Warnings such as this one, about not ~
-                storing results, will remain off for all functions for the ~
-                remainder of the session unless the variable ~x2 is set to a ~
-                non-nil value in raw Lisp."
-               fn
-               (mv-let (lookup-p at-fn)
-                       (if (consp at-fn)
-                           (assert$ (eq (car at-fn) :lookup)
-                                    (mv t (cdr at-fn)))
-                         (mv nil at-fn))
-                       (cond (lookup-p
-                              (msg "a stored result was used from a call of ~
-                                    memoized function ~x0, which may have been ~
-                                    computed using attachments"
-                                   at-fn))
-                             (t
-                              (msg "an attachment to function ~x0 was used ~
-                                    during evaluation of one of its calls"
-                                   at-fn))))
-               '*memoize-use-attachment-warning-p*))
+    (let ((state *the-live-state*))
+      (warning$ 'top-level "Attachment"
+                "Although the function ~x0 is memoized, a result is not being ~
+                 stored because ~@1.  Warnings such as this one, about not ~
+                 storing results, will remain off for all functions for the ~
+                 remainder of the session unless the variable ~x2 is set to a ~
+                 non-nil value in raw Lisp."
+                fn
+                (mv-let (lookup-p at-fn)
+                        (if (consp at-fn)
+                            (assert$ (eq (car at-fn) :lookup)
+                                     (mv t (cdr at-fn)))
+                          (mv nil at-fn))
+                        (cond (lookup-p
+                               (msg "a stored result was used from a call of ~
+                                     memoized function ~x0, which may have ~
+                                     been computed using attachments"
+                                    at-fn))
+                              (t
+                               (msg "an attachment to function ~x0 was used ~
+                                     during evaluation of one of its calls"
+                                    at-fn))))
+                '*memoize-use-attachment-warning-p*))
     (setq *memoize-use-attachment-warning-p* nil)))
 
 (defun memoize-fn (fn &key (condition t) (inline t) (trace nil)

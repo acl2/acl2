@@ -9454,17 +9454,17 @@
                                     tmp)
                                    (t (case *canonical-unix-pathname-action*
                                         (:warning
-                                         (with-live-state
-                                          (warning$ 'canonical-unix-pathname
-                                                    "Pathname"
-                                                    "Unable to compute ~
-                                                     canonical-unix-pathname ~
-                                                     for ~x0.  (Debug info: ~
-                                                     truename is ~x1 while ~
-                                                     (truename tmp) is ~x2.)"
-                                                    x
-                                                    namestring-truename
-                                                    namestring-tmp)))
+                                         (let ((state *the-live-state*))
+                                           (warning$ 'canonical-unix-pathname
+                                                     "Pathname"
+                                                     "Unable to compute ~
+                                                      canonical-unix-pathname ~
+                                                      for ~x0.  (Debug info: ~
+                                                      truename is ~x1 while ~
+                                                      (truename tmp) is ~x2.)"
+                                                     x
+                                                     namestring-truename
+                                                     namestring-tmp)))
                                         (:error
                                          (er hard 'canonical-unix-pathname
                                              "Unable to compute ~
@@ -21898,20 +21898,19 @@
 
 ; Inline maybe-untrace$-fn:
 
-  (with-live-state
-   (progn
-     (when (assoc-eq fn (f-get-global 'trace-specs state))
-       (untrace$-fn1 fn state)
-       (when verbose
-         (observation "untracing"
-                      "Untracing ~x0."
-                      fn)))
-     (when (and (eval `(maybe-untrace ,fn))
-                verbose)
-       (observation "untracing"
-                    "Raw-Lisp untracing ~x0."
-                    fn))
-     nil)))
+  (let ((state *the-live-state*))
+    (when (assoc-eq fn (f-get-global 'trace-specs state))
+      (untrace$-fn1 fn state)
+      (when verbose
+        (observation "untracing"
+                     "Untracing ~x0."
+                     fn)))
+    (when (and (eval `(maybe-untrace ,fn))
+               verbose)
+      (observation "untracing"
+                   "Raw-Lisp untracing ~x0."
+                   fn))
+    nil))
 
 #-acl2-loop-only
 (defun increment-trace-level ()
@@ -22295,16 +22294,16 @@
                         #-(or gcl allegro)
                         (pprogn (when (assoc-keyword :multiplicity
                                                      trace-options)
-                                  (with-live-state
-                                   (with-output
-                                    :on (warning)
-                                    (warning$ ctx "Trace"
-                                              "The :multiplicity option of ~
+                                  (let ((state *the-live-state*))
+                                    (with-output
+                                     :on (warning)
+                                     (warning$ ctx "Trace"
+                                               "The :multiplicity option of ~
                                                trace$ has no effect in this ~
                                                Lisp.  Only one value will be ~
                                                passed to trace printing by ~
                                                function ~x0."
-                                              fn))))
+                                               fn))))
                                 trace-options-1)))
                   (if new-trace-options
                       (eval `(trace (,fn ,@new-trace-options)))

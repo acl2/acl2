@@ -14833,14 +14833,14 @@
         #+(and lispworks lispworks-64bit)
         (progn
           (when (< new-threshold (expt 2 20))
-            (with-live-state
+            (let ((state *the-live-state*))
 
 ; Avoid warning$-cw, since this function is called by LP outside the loop.
 
-             (warning$ 'set-gc-threshold$ nil
-                       "Ignoring argument to set-gc-threshold$, ~x0, because ~
-                        it specifies a threshold of less than one megabyte.  ~
-                        Using default threshold of one megabyte.")))
+              (warning$ 'set-gc-threshold$ nil
+                        "Ignoring argument to set-gc-threshold$, ~x0, because ~
+                         it specifies a threshold of less than one megabyte.  ~
+                         Using default threshold of one megabyte.")))
 
 ; Calling set-gen-num-gc-threshold sets the GC threshold for the given
 ; generation of garbage.
@@ -14863,14 +14863,14 @@
                                                             new-threshold)))
         #-(or ccl sbcl (and lispworks lispworks-64bit))
         (when verbose-p
-          (with-live-state
+          (let ((state *the-live-state*))
 
 ; Avoid warning$-cw, since this function is called by LP outside the loop.
 
-           (warning$ 'set-gc-threshold$ nil
-                     "We have not yet implemented setting the garbage ~
-                      collection threshold for this Lisp.  Contact the ACL2 ~
-                      implementors to request such an implementation."))))
+            (warning$ 'set-gc-threshold$ nil
+                      "We have not yet implemented setting the garbage ~
+                       collection threshold for this Lisp.  Contact the ACL2 ~
+                       implementors to request such an implementation."))))
       t))))
 
 (defmacro set-gc-threshold$ (new-threshold &optional (verbose-p 't))
