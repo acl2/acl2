@@ -697,7 +697,7 @@ wide addition instead of a 10-bit wide addition.")))
   (remove-untouchable acl2::writes-okp nil))
 
 (defmacro vl-lint (&key start-files search-path
-                        (searchext ''(".v"))
+                        (searchext ''("v"))
                         ;; gross yucky thing; suppress defaults to all ACL2
                         ;; output, but for debugging use :suppress nil to be
                         ;; able to see what is wrong.
