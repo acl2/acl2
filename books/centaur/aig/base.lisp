@@ -419,6 +419,10 @@ discussion.</p>"
   (defthm atom-listp-aig-vars
     (atom-listp (aig-vars x)))
 
+  (defthm true-listp-aig-vars
+    (true-listp (aig-vars x))
+    :rule-classes :type-prescription)
+
   (verify-guards aig-vars)
 
   (memoize 'aig-vars :condition '(and (consp x) (cdr x))))
