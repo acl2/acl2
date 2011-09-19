@@ -58,7 +58,7 @@
  ()
  (local (defund exhaustive-test (n)
           (and (let ((x (code-char n)))
-                 (equal (char-downcase x)
+                 (equal (acl2::char-downcase x)
                         (if (and (<= (char-code #\A) (char-code x))
                                  (<= (char-code x) (char-code #\Z)))
                             (code-char (+ (char-code x) 32))
@@ -79,7 +79,7 @@
                         (= x (code-char m))
                         (<= m n)
                         (<= n 255))
-                   (equal (char-downcase x)
+                   (equal (acl2::char-downcase x)
                           (if (and (<= (char-code #\A) (char-code x))
                                    (<= (char-code x) (char-code #\Z)))
                               (code-char (+ (char-code x) 32))
@@ -90,7 +90,7 @@
 
  (local (defthm lemma3
           (implies (characterp x)
-                   (equal (char-downcase x)
+                   (equal (acl2::char-downcase x)
                           (if (and (<= (char-code #\A) (char-code x))
                                    (<= (char-code x) (char-code #\Z)))
                               (code-char (+ (char-code x) 32))
@@ -103,12 +103,12 @@
 
  (local (defthm lemma4
           (implies (not (characterp x))
-                   (equal (char-downcase x)
+                   (equal (acl2::char-downcase x)
                           (code-char 0)))
-          :hints(("Goal" :in-theory (enable char-downcase)))))
+          :hints(("Goal" :in-theory (enable acl2::char-downcase)))))
 
  (defthm char-downcase-redefinition
-   (equal (char-downcase x)
+   (equal (acl2::char-downcase x)
           (if (characterp x)
               (if (and (<= (char-code #\A) (char-code x))
                        (<= (char-code x) (char-code #\Z)))
@@ -116,6 +116,72 @@
                 x)
             (code-char 0)))
    :rule-classes :definition))
+
+
+
+(encapsulate
+ ()
+ (local (defund exhaustive-test (n)
+          (and (let ((x (code-char n)))
+                 (equal (acl2::char-upcase x)
+                        (if (and (<= (char-code #\a) (char-code x))
+                                 (<= (char-code x) (char-code #\z)))
+                            (code-char (- (char-code x) 32))
+                          x)))
+               (or (zp n)
+                   (exhaustive-test (- n 1))))))
+
+ (local (defthm lemma1
+          (implies (and (natp n)
+                        (<= n 255))
+                   (equal (char-code (code-char n))
+                          n))))
+
+ (local (defthm lemma2
+          (implies (and (natp n)
+                        (natp m)
+                        (exhaustive-test n)
+                        (= x (code-char m))
+                        (<= m n)
+                        (<= n 255))
+                   (equal (acl2::char-upcase x)
+                          (if (and (<= (char-code #\a) (char-code x))
+                                   (<= (char-code x) (char-code #\z)))
+                              (code-char (- (char-code x) 32))
+                            x)))
+          :hints(("Goal"
+                  :induct (exhaustive-test n)
+                  :in-theory (enable exhaustive-test)))))
+
+ (local (defthm lemma3
+          (implies (characterp x)
+                   (equal (acl2::char-upcase x)
+                          (if (and (<= (char-code #\a) (char-code x))
+                                   (<= (char-code x) (char-code #\z)))
+                              (code-char (- (char-code x) 32))
+                            x)))
+          :hints(("Goal"
+                  :in-theory (disable lemma2)
+                  :use ((:instance lemma2
+                                   (n 255)
+                                   (m (char-code x))))))))
+
+ (local (defthm lemma4
+          (implies (not (characterp x))
+                   (equal (acl2::char-upcase x)
+                          (code-char 0)))
+          :hints(("Goal" :in-theory (enable acl2::char-upcase)))))
+
+ (defthm char-upcase-redefinition
+   (equal (acl2::char-upcase x)
+          (if (characterp x)
+              (if (and (<= (char-code #\a) (char-code x))
+                       (<= (char-code x) (char-code #\z)))
+                  (code-char (- (char-code x) 32))
+                x)
+            (code-char 0)))
+   :rule-classes :definition))
+
 
 
 (encapsulate

@@ -470,7 +470,6 @@ necessary.</p>"
 
 
 
-
 (defsection vl-msb-bitslice-id
   :parents (vl-msb-bitslice-expr)
   :short "Explode a <see topic='@(url vl-expr-welltyped-p)'>well-typed</see>,
@@ -544,7 +543,18 @@ are used to indicate zero/sign extensions.</p>"
          (low  (if range (vl-resolved->val (vl-range->right range)) 0))
 
          ;; Main-bits are, e.g., (foo[5] ... foo[3]) for wire [5:3] foo;
-         (main-bits (reverse (vl-make-list-of-bitselects x low high)))
+         ;; We now try to avoid introducing bitselects for wires that do
+         ;; not have a range, since some Verilog implementations complain
+         ;; about that sort of thing.  It's okay to force the width/type
+         ;; here to 1-bit unsigned because the spec is that we're producing
+         ;; a list of 1-bit, unsigned expressions that are semantically
+         ;; equivalent to the input expression, and we're going to make any
+         ;; sign/zero extension explicit immediately below.
+         (main-bits (if range
+                        (reverse (vl-make-list-of-bitselects x low high))
+                      (list (change-vl-atom x
+                                            :finalwidth 1
+                                            :finaltype :vl-unsigned))))
 
          ((when (= nwires x.finalwidth))
           ;; There's no sign/zero extension so this is straightforward:

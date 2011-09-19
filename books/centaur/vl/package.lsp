@@ -132,8 +132,7 @@
       vcd-dump))
 
    ;; Things to remove:
-   '(string-trim
-     true-list-listp
+   '(true-list-listp
      substitute
      union
      delete

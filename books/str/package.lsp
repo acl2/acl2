@@ -19,8 +19,19 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (defpkg "STR"
-  (union-eq (union-eq *acl2-exports*
-                      *common-lisp-symbols-from-main-lisp-package*)
-            '(quit exit simpler-take list-fix prefixp str b* assert!
-                   a b c d e f g h i j k l m n o p q r s t u v w x y z)))
+  (set-difference-eq
+   (union-eq *acl2-exports*
+             *common-lisp-symbols-from-main-lisp-package*
+             '(quit exit simpler-take list-fix prefixp str b* assert!
+                    a b c d e f g h i j k l m n o p q r s t u v w x y z))
 
+   ;; Remove some "bad" acl2 string functions to try to prevent users from
+   ;; accidentally using them.
+   '(upper-case-p
+     lower-case-p
+     char-upcase
+     char-downcase
+     string-upcase1
+     string-downcase1
+     string-upcase
+     string-downcase)))

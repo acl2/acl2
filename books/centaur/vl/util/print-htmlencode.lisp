@@ -78,8 +78,7 @@
 (defund vl-html-encode-chars-aux (x col tabsize acc)
   (declare (xargs :guard (and (character-listp x)
                               (natp col)
-                              (posp tabsize)
-                              (character-listp acc))))
+                              (posp tabsize))))
 
 ; Inputs:
 ;
@@ -128,7 +127,6 @@
                               (natp xl)
                               (natp col)
                               (posp tabsize)
-                              (character-listp acc)
                               (<= n xl)
                               (= xl (length x)))
                   :measure (nfix (- (nfix xl) (nfix n))))

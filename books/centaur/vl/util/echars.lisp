@@ -26,44 +26,6 @@
 
 
 
-;; BOZO move to string library and make it efficient.
-
-(defund string-trim-aux (x)
-  (declare (xargs :guard (character-listp x)))
-  ;; Remove all whitespace characters from the front of a list.
-  (if (consp x)
-      (if (or (eql (car x) #\Space)
-              (eql (car x) #\Tab)
-              (eql (car x) #\Newline)
-              (eql (car x) #\Page))
-          (string-trim-aux (cdr x))
-        x)
-    nil))
-
-(defthm character-listp-of-string-trim-aux
-  (implies (force (character-listp x))
-           (character-listp (string-trim-aux x)))
-  :hints(("Goal" :in-theory (enable string-trim-aux))))
-
-(defund string-trim (x)
-  (declare (xargs :guard (stringp x)))
-  (let* ((chars (coerce x 'list))
-         (chars (string-trim-aux chars)) ;; eat spaces at the front
-         (chars (reverse chars))         ;; flip so we can get to the back
-         (chars (string-trim-aux chars)) ;; eat spaces at the back
-         (chars (reverse chars)))        ;; flip again so it's back to normal
-    (coerce chars 'string)))
-
-(defthm stringp-of-string-trim
-  (stringp (string-trim x))
-  :hints(("Goal" :in-theory (enable string-trim)))
-  :rule-classes ((:rewrite)
-                 (:type-prescription)))
-
-
-
-
-
 (defxdoc extended-characters
   :parents (loader)
   :short "Characters with additional annotations."

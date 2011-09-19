@@ -19,3 +19,4 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (ld "package.lsp")
+(in-package "STR")

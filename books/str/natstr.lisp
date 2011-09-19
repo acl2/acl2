@@ -204,6 +204,40 @@
 
 
 
+
+(defund revappend-natchars-aux (n acc)
+  (declare (type integer n)
+           (xargs :guard (and (natp n))))
+  (if (mbe :logic (zp n)
+           :exec (= (the integer n) 0))
+      acc
+    (cons (the character (code-char
+                          (the (unsigned-byte 8)
+                            (+ (the (unsigned-byte 8) 48)
+                               (the (unsigned-byte 8)
+                                 (rem (the integer n) 10))))))
+          (revappend-natchars-aux
+           (the integer (truncate (the integer n) 10))
+           acc))))
+
+(defthm revappend-natchars-aux-redef
+  (equal (revappend-natchars-aux n acc)
+         (append (basic-natchars n) acc))
+  :hints(("Goal" :in-theory (enable revappend-natchars-aux basic-natchars))))
+
+(defun revappend-natchars (n acc)
+  (declare (type integer n)
+           (xargs :guard (natp n)
+                  :guard-hints(("Goal" :in-theory (enable natchars)))))
+  (mbe :logic (revappend (natchars n) acc)
+       :exec (if (= n 0)
+                 (cons #\0 acc)
+               (revappend-natchars-aux n acc))))
+
+
+
+
+
 #|
 
 ;; Use a machine with lots of memory, or lower the indices below.  Ideally the

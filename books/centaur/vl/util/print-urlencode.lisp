@@ -74,8 +74,7 @@
                    (vl-make-url-encode-array 255))))
 
 (defund vl-url-encode-chars-aux (chars acc)
-  (declare (xargs :guard (and (character-listp chars)
-                              (character-listp acc))))
+  (declare (xargs :guard (character-listp chars)))
   (if (atom chars)
       acc
     (vl-url-encode-chars-aux
@@ -123,7 +122,6 @@
 
 (defund vl-url-encode-string-aux (x n xl acc)
   (declare (xargs :guard (and (stringp x)
-                              (character-listp acc)
                               (natp n)
                               (natp xl)
                               (<= n xl)

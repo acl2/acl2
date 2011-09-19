@@ -19,6 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
+(include-book "case-conversion")
 (include-book "cat")
 (include-book "doc")
 (include-book "digitp")

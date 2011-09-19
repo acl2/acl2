@@ -1062,8 +1062,8 @@ defines table appropriately if <tt>activep</tt> is set.</p>"
           (vl-lookup-in-defines name defines))
 
          (- (if (and lookup
-                     (not (equal (string-trim (vl-echarlist->string (cdr lookup)))
-                                 (string-trim (vl-echarlist->string text)))))
+                     (not (equal (str::trim (vl-echarlist->string (cdr lookup)))
+                                 (str::trim (vl-echarlist->string text)))))
                 (cw "Preprocessor warning (~s0): redefining ~s1 from ~s2 to ~s3.~%"
                     (vl-location-string loc)
                     name

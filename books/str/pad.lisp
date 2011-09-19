@@ -153,3 +153,48 @@ string is already longer than the desired width, it's not changed.~/~/"
                   (max (length x)
                        (nfix len))))
   :hints(("Goal" :in-theory (enable lpadstr))))
+
+
+
+
+(defund trim-aux (x)
+  (declare (xargs :guard (character-listp x)))
+  ;; Remove all whitespace characters from the front of a list.
+  (if (consp x)
+      (if (or (eql (car x) #\Space)
+              (eql (car x) #\Tab)
+              (eql (car x) #\Newline)
+              (eql (car x) #\Page))
+          (trim-aux (cdr x))
+        x)
+    nil))
+
+(defthm character-listp-of-trim-aux
+  (implies (force (character-listp x))
+           (character-listp (trim-aux x)))
+  :hints(("Goal" :in-theory (enable trim-aux))))
+
+
+(local (defthm true-listp-when-character-listp
+         (implies (character-listp x)
+                  (true-listp x))))
+
+(defund trim (x)
+  ":Doc-Section Str
+  Remove whitespace from the front and end of a string.~/
+
+  BOZO eventually make this efficient.~/~/"
+
+  (declare (xargs :guard (stringp x)))
+  (let* ((chars (coerce x 'list))
+         (chars (trim-aux chars)) ;; eat spaces at the front
+         (chars (reverse chars))  ;; flip so we can get to the back
+         (chars (trim-aux chars)) ;; eat spaces at the back
+         (chars (reverse chars))) ;; flip again so it's back to normal
+    (coerce chars 'string)))
+
+(defthm stringp-of-trim
+  (stringp (trim x))
+  :hints(("Goal" :in-theory (enable trim)))
+  :rule-classes ((:rewrite)
+                 (:type-prescription)))
