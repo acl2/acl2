@@ -9117,6 +9117,9 @@
 ; that indicates that the stack must be unwound some (to cleanup after an
 ; aborted inferior).
 
+; Parallelism wart: Deal with the folowing comment.  David Rager suspects that
+; we might want to replace it with a pointer to elsewhere where we handle the
+; issue.
 ; Warning: This variable is let-bound in ld-fn.  This could present a problem
 ; if parallelism is enabled and the theorem prover uses parallelism
 ; primitives.  We can imagine (and we may have seen) a case in which there are

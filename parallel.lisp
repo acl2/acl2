@@ -311,7 +311,10 @@
 ; be; yet, regressions may have passed with them.  One possible outcome: If
 ; books/bdd/ tests fail, you might just modify translate-bdd-hint to cause a
 ; nice error if watefall parallelism is enabled, and also mention that (once
-; again) in :doc unsupported-waterfall-parallelism-features.
+; again) in :doc unsupported-waterfall-parallelism-features.  Note that
+; bdd-clause might be the function that actually performs the bdd hint, and
+; that bdd-clause doesn't return state.  So, aside from the place in
+; waterfall-step, bdd hints might be fine.
 
 (defdoc unsupported-waterfall-parallelism-features
 
@@ -335,6 +338,8 @@
 ; maintainers if you are working with LispWorks 6.0 or 6.0.1 on 64-bit Linux
 ; and would like this patch.  The state of the system may be corrupted after
 ; such a message has been printed.
+
+; Parallelism wart: fix the problem documented below related to interrupts.
 
   ":Doc-Section ACL2::Parallelism
 
@@ -404,7 +409,27 @@
   user typically needs to issue the interrupt twice before the proof attempt is
   actually interrupted.  Additionally, sometimes the theorem is registered as
   proved, even though the prover did not finish the proof.  If this occurs,
-  issue a ~c[:u] (~pl[ubt]) and you will be at a stable state.~/~/")
+  issue a ~c[:u] (~pl[ubt]) and you will be at a stable state.
+
+  Also with regards to interrupting a proof attempt, sometimes the user may
+  need to issue a ~c[:q] and ~c[lp] to properly reset the parallelism
+  implementation to a stable state.  The primary symptom that the user is
+  experiencing this issue is that threads will continue to compute in the
+  background, even though there should be no proof attempt in progress.  The
+  user can observe this symptom by examining the CPU utilization of their ACL2
+  process, for example on Linux/Unix with the shell process ~c[top].  Lisp
+  usage greater than a few percent is indicative of this problem.
+
+  Because of how ACL2 ~il[arrays] are designed, the user may find that, in
+  practice, ACL2 arrays work (but perhaps with some ~il[slow-array-warning]
+  messages).  However, we are aware of race conditions that can cause
+  problems.
+
+  Instead of dynamically monitoring rewrites, ~il[dmr] instead dynamically
+  outputs information helpful for debugging the performance of proof
+  parallelism.  The instructions concerning how to see this debugging
+  information are the same as the instructions for enabling ~il[dmr]
+  mode.~/~/")
 
 (defdoc waterfall-printing
 
@@ -545,7 +570,7 @@
   ~ev[]
   ~/
 
-  ~c[Set-waterfall-parallelism] takes an argument that specifies the enabling
+  ~c[Set-waterfall-parallelism] accepts an argument that specifies the enabling
   or disabling of the ~il[parallel] execution of ACL2's main proof process, the
   waterfall.
 
@@ -682,7 +707,7 @@
 
   A value of ~c[:full] is intended to print the same output as in serial mode.
   This output will be interleaved unless the waterfall-parallelism mode is one
-  of ~c[nil] or ~c[pseudo-parallel].
+  of ~c[nil] or ~c[:pseudo-parallel].
 
   A value of ~c[:limited] omits most of the output that occurs in the serial
   version of the waterfall.  Instead, the proof attempt prints proof
@@ -692,8 +717,8 @@
   concerning them is welcome.  The value of ~c[:limited] also prints messages
   that indicate which subgoal is currently being proved.  (The function
   ~c[print-clause-id-okp] may receive an attachment to limit such printing;
-  ~pl[set-print-clause-ids].)  Naturally, these subgoal numbers can be out of
-  order, because they can be proved in parallel.
+  ~pl[set-print-clause-ids].)  Naturally, these subgoal numbers can appear out
+  of order, because the subgoals can be proved in parallel.
 
   A value of ~c[:very-limited] is treated the same as ~c[:limited], except that
   instead of printing subgoal numbers, the proof attempt prints a

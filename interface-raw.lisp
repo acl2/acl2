@@ -2073,7 +2073,7 @@
 ; gstack before *dmr-file-name* is written.
 ; If you set this, consider also setting Emacs Lisp variable
 ; *acl2-timer-display-interval*.
-(defvar *dmr-interval* 1000)
+(defvar *dmr-interval* #-acl2-par 1000 #+acl2-par 300000)
 
 ; This variable's positive integer value indicates the maximum indentation for
 ; each line in the display.  Lines that otherwise would exceed this indentation
@@ -2125,7 +2125,10 @@
         (open *dmr-file-name*
               :if-exists
               :supersede ; :overwrite doesn't open non-existent file in CCL
-              :direction :output))
+              :direction :output 
+              #+acl2-par :sharing 
+              #+acl2-par :lock ; the default of :private is single-threaded
+              ))
   state)
 
 (defvar *dmr-array*
@@ -2323,6 +2326,7 @@
 
   "delete-from-here-to-end-of-buffer")
 
+#-acl2-par
 (defun dmr-string ()
   (when (null *pstk-stack*)
     (setq *dmr-counter* *dmr-interval*) ; will flush next time
@@ -2399,7 +2403,14 @@
       (princ *dmr-delete-string* s)))
   *dmr-reusable-string*)
 
-(defun dmr-flush (&optional reset-counter)
+#+acl2-par
+(defun dmr-string ()
+  (print-interesting-parallelism-variables-str))
+
+#-acl2-par ; could inline for #+acl2-par, too
+(declaim (inline dmr-flush1))
+
+(defun dmr-flush1 (&optional reset-counter)
   (when *dmr-stream*
     (file-position *dmr-stream* :start)
     (princ (dmr-string) *dmr-stream*)
@@ -2413,13 +2424,32 @@
       (setq *dmr-counter* 0))
     t))
 
+#+acl2-par
+(defvar *dmr-lock* (make-lock))
+
+(defun dmr-flush (&optional reset-counter)
+  #+acl2-par
+  (declare (ignore reset-counter))
+  #-acl2-par
+  (dmr-flush1 reset-counter)
+  #+acl2-par
+  (cond ((> *dmr-counter*
+            *dmr-interval*)
+         (setq *dmr-counter* 0)
+         (with-lock *dmr-lock* (dmr-flush1)))
+        (t
+         (setq *dmr-counter* (1+ *dmr-counter*)))))
+
 (defun dmr-display ()
+  #-acl2-par
   (cond ((> *dmr-counter*
             *dmr-interval*)
          (setq *dmr-counter* 0)
          (dmr-flush))
         (t
-         (setq *dmr-counter* (1+ *dmr-counter*)))))
+         (setq *dmr-counter* (1+ *dmr-counter*))))
+  #+acl2-par
+  (dmr-flush))
 
 (defun cw-gstack-short ()
   (let* ((str (dmr-string))

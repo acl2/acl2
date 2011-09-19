@@ -278,10 +278,13 @@ most-negative-fixnum = ~s."
                              (not (eql (char s 0) #\&))))
                        (eval `(let ((,var (gensym)))
 
-; If var is special, then the above binding will make it boundp and update its
-; symbol-value.  Conversely, if var is not special, then there are two cases:
-; either it is not boundp before the binding above in which case it remains not
-; boundp, or else its global value is not the above gensym value.
+; We are not aware of any predicate, defined in all Common Lisp
+; implementations, for checking that a variable is special; so we write our own
+; behavioral test here.  If var is special, then the above binding will make it
+; boundp and update its symbol-value.  Conversely, if var is not special, then
+; there are two cases: either it is not boundp before the binding above in
+; which case it remains not boundp, or else its global value is not the above
+; gensym value.
 
                                 (and (boundp ',var)
                                      (eq ,var (symbol-value ',var))))))

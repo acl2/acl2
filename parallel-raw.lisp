@@ -1259,58 +1259,86 @@
 ; Parallelism wart: should there be a documentation section called performance,
 ; with links to sections "Parallelism", "Hons", and "Set-gc-threshold"?
 
-(defvar *resource-and-timing-based-parallelizations*
-  0
-  "Tracks the number of times that we parallelize execution when
-  waterfall-parallelism is set to :resource-and-timing-based")
+(defun number-of-active-threads-aux (threads acc)
+  (cond ((atom threads)
+         acc)
+        ((equal (ccl:process-whostate (car threads)) "Active")
+         (number-of-active-threads-aux (cdr threads) (1+ acc)))
+        (t (number-of-active-threads-aux (cdr threads) acc))))
 
-(defvar *resource-and-timing-based-serializations*
-  0
-  "Tracks the number of times that we do not parallize execution when
-  waterfall-parallelism is set to :resource-and-timing-based")
+(defun number-of-active-threads ()
+  (number-of-active-threads-aux (all-threads) 0))
 
-(defvar *resource-based-parallelizations*
-  0
-  "Tracks the number of times that we parallelize execution when
-  waterfall-parallelism is set to :resource-based")
+(defun number-of-threads-waiting-on-a-child-aux (threads acc)
+  (cond ((atom threads)
+         acc)
+        ((equal (ccl:process-whostate (car threads)) "semaphore wait")
+         (number-of-threads-waiting-on-a-child-aux (cdr threads) (1+ acc)))
+        (t (number-of-threads-waiting-on-a-child-aux (cdr threads) acc))))
 
-(defvar *resource-based-serializations*
-  0
-  "Tracks the number of times that we do not parallize execution when
-  waterfall-parallelism is set to :resource-based")
+(defun number-of-threads-waiting-on-a-child ()
+  (number-of-threads-waiting-on-a-child-aux (all-threads) 0))
 
-(defun print-interesting-parallelism-variables()
-  (format t "Printing vars related to executing in parallel.~%")
-  (format t "*idle-future-core-count* is ~s~%"
-          (atomically-modifiable-counter-read *idle-future-core-count*))
-  (format t "*idle-future-resumptive-core-count* is ~s~%"
-          (atomically-modifiable-counter-read
-           *idle-future-resumptive-core-count*))
-  (format t "*idle-future-thread-count* is ~s~%"
-          (atomically-modifiable-counter-read *idle-future-thread-count*))
-  (format t "*unassigned-and-active-future-count* is ~s~%"
-          (atomically-modifiable-counter-read
-           *unassigned-and-active-future-count*))
-  (format t "*total-future-count* is ~s~%"
-          (atomically-modifiable-counter-read *total-future-count*))  
-  (format t "*futures-resources-available-count* is ~s~%"
-          *futures-resources-available-count*)
-  (format t "*futures-resources-unavailable-count* is ~s~%"
-          *futures-resources-unavailable-count*)
+(defun future-queue-length ()
+  (- *last-slot-saved* *last-slot-taken*))
 
-  (format t "~%Printing vars related to aborting futures.~%")
-  (format t "*aborted-futures-total* is ~s~%" *aborted-futures-total*)
-  (format t "*aborted-futures-via-throw* is ~s~%" *aborted-futures-via-throw*)
-  (format t "*aborted-futures-via-flag* is ~s~%" *aborted-futures-via-flag*)
-  (format t "*almost-aborted-future-count* is ~s~%~%"
-          *almost-aborted-future-count*)
+(defvar *refresh-rate-indicator* 0)
 
-  (format t "*resource-based-parallelizations* is ~s~%"
-          *resource-based-parallelizations*)
-  (format t "*resource-based-serializations* is ~s~%"
-          *resource-based-serializations*)
+(defmacro value-of-symbol (var)
+  (when (not (or (fboundp var)
+                 (symbolp var)))
+    (error "value-of-symbol requires a symbol or function name as its argument"))
+  (cond ((constantp var)
+         `(format nil " Constant ~s is ~s~% " ,(symbol-name var) ,var))
+        ((fboundp var)
+         `(format nil " Stat     ~s is ~s~% " ,(symbol-name var) (,var)))
+        (t
+         `(format nil " Variable ~s is ~s~% " ,(symbol-name var) ,var))))
 
-  (format t "*resource-and-timing-based-parallelizations* is ~s~%"
-          *resource-and-timing-based-parallelizations*)
-  (format t "*resource-and-timing-based-serializations* is ~s~%"
-          *resource-and-timing-based-serializations*))
+(defun print-interesting-parallelism-variables-str()
+  (incf *refresh-rate-indicator*)
+  (concatenate 
+   'string
+   (format nil "  Printing stats related to executing in parallel.~% ")
+   (value-of-symbol *idle-future-core-count*)
+   (value-of-symbol *idle-future-core-count*)
+   (value-of-symbol *idle-future-resumptive-core-count*)
+   (value-of-symbol *idle-future-thread-count*)
+
+   (value-of-symbol *unassigned-and-active-future-count*)
+   (value-of-symbol *total-work-limit*)
+
+   (value-of-symbol number-of-active-threads)
+   (value-of-symbol number-of-threads-waiting-on-a-child)
+
+   (format nil "~% ")
+   (value-of-symbol *last-slot-taken*)
+   (value-of-symbol *last-slot-saved*)
+   (value-of-symbol future-queue-length)
+
+
+   (format nil "~% ")
+   (value-of-symbol *resource-based-parallelizations*)
+   (value-of-symbol *resource-based-serializations*)
+
+   (value-of-symbol *resource-and-timing-based-parallelizations*)
+   (value-of-symbol *resource-and-timing-based-serializations*)
+
+
+
+   (value-of-symbol *total-future-count*)  
+   (value-of-symbol *futures-resources-available-count*)
+   (value-of-symbol *futures-resources-unavailable-count*)
+
+   (format nil "~% ")
+   (format nil " Printing stats related to aborting futures.~% ")
+   (value-of-symbol *aborted-futures-total*)
+   (value-of-symbol *aborted-futures-via-throw*)
+   (value-of-symbol *aborted-futures-via-flag*)
+   (value-of-symbol *almost-aborted-future-count*)
+
+   (format nil "~% ")
+   (value-of-symbol *refresh-rate-indicator*)))
+
+(defun print-interesting-parallelism-variables ()
+  (format t (print-interesting-parallelism-variables-str)))

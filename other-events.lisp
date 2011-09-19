@@ -5939,8 +5939,8 @@
            (constraint-lst
 
 ; As promised in a comment in encapsulate-constraint, here we explain why the
-; 'constraint-lst properties must be considered when as we collect up formulas
-; for an encapsulate event.  That is, we explain why after virtually moving
+; 'constraint-lst properties must be considered as we collect up formulas for
+; an encapsulate event.  That is, we explain why after virtually moving
 ; functions in front of an encapsulate where possible, then any
 ; sub-encapsulate's constraint is a formula that must be collected.  The
 ; following example illustrates, starting with the following event.
@@ -7912,9 +7912,7 @@
               (warning$ ctx "Infected"
                         "Note that the definitional equation~#0~[~/s~] for ~
                          ~&0 infect~#0~[s~/~] the constraint of this ~
-                         en~-cap~-su~-la~-tion.  That can be caused either ~
-                         because we are not allowed to move a defun out of ~
-                         nested non-trivial encapsulates or because a ~
+                         en~-cap~-su~-la~-tion.  That can be caused because a ~
                          function ancestrally involves the constrained ~
                          functions of an encapsulate and is ancestrally ~
                          involved in the constraining theorems of those ~
