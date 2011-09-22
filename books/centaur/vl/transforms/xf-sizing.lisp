@@ -1302,6 +1302,9 @@ as if they produce unsigned values.</li>
                             :vl-unary-nand :vl-unary-nor :vl-unary-xor :vl-unary-xnor)
           (cond ((eq mode :probably-right)
                  ;; We believe the result is always unsigned; see "minutia".
+                 ;; If we ever decide this is not right, review the rules in
+                 ;; oprewrite that introduce concatenations like !a -> {~(|a)}
+                 ;; since they are not supposed to change signs.
                  (mv warnings :vl-unsigned))
                 (t
                  ;; Probably-wrong mode: we act like the operand type matters and

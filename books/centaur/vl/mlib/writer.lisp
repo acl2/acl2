@@ -1484,7 +1484,7 @@ original source code.)</p>"
          ps)
        (if htmlp (vl-print-markup "</span>") ps))))
 
-(defpp vl-pp-plainarglist (x)
+(defpp vl-pp-plainarglist (x force-newlinesp)
   :guard (vl-plainarglist-p x)
   :body (cond ((atom x)
                ps)
@@ -1492,8 +1492,11 @@ original source code.)</p>"
                (vl-pp-plainarg (car x)))
               (t
                (vl-ps-seq (vl-pp-plainarg (car x))
-                          (vl-println? ", ")
-                          (vl-pp-plainarglist (cdr x))))))
+                          (if force-newlinesp
+                              (vl-ps-seq (vl-println ",")
+                                         (vl-indent (vl-ps->autowrap-ind)))
+                            (vl-println? ", "))
+                          (vl-pp-plainarglist (cdr x) force-newlinesp)))))
 
 (defpp vl-pp-namedarg (x)
   :guard (vl-namedarg-p x)
@@ -1510,7 +1513,7 @@ original source code.)</p>"
                        ps)
                      (vl-print ")"))))
 
-(defpp vl-pp-namedarglist (x)
+(defpp vl-pp-namedarglist (x force-newlinesp)
   :guard (vl-namedarglist-p x)
   :body (cond ((atom x)
                ps)
@@ -1518,15 +1521,20 @@ original source code.)</p>"
                (vl-pp-namedarg (car x)))
               (t
                (vl-ps-seq (vl-pp-namedarg (car x))
-                          (vl-println? ", ")
-                          (vl-pp-namedarglist (cdr x))))))
+                          (if force-newlinesp
+                              (vl-ps-seq (vl-println ",")
+                                         (vl-indent (vl-ps->autowrap-ind)))
+                            (vl-println? ", "))
+                          (vl-pp-namedarglist (cdr x) force-newlinesp)))))
 
 (defpp vl-pp-arguments (x)
   :guard (vl-arguments-p x)
-  :body (let ((namedp (vl-arguments->namedp x))
-              (args   (vl-arguments->args x)))
+  :body (let* ((namedp         (vl-arguments->namedp x))
+               (args           (vl-arguments->args x))
+               (force-newlinep (longer-than-p 5 args)))
+
           (if namedp
-              (vl-pp-namedarglist args)
+              (vl-pp-namedarglist args force-newlinep)
 
             (progn$
 
@@ -1546,7 +1554,7 @@ original source code.)</p>"
                       give up.  Well done!")
                t)
 
-             (vl-pp-plainarglist args)))))
+             (vl-pp-plainarglist args force-newlinep)))))
 
 (defpp vl-pp-modinst-atts-begin (x)
   :guard (vl-atts-p x)
@@ -1767,7 +1775,7 @@ original source code.)</p>"
                          ps
                        (vl-pp-range range))
                      (vl-print " (")
-                     (vl-pp-plainarglist args)
+                     (vl-pp-plainarglist args nil)
                      (vl-println ") ;"))))
 
 (defpp vl-pp-gateinstlist (x)

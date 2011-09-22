@@ -1433,7 +1433,8 @@ tag and a newline are printed.</p>"
     :inlinep t
     :body
     (vl-ps-seq
-     (vl-ps-update-rchars (cons #\Newline (vl-ps->rchars)))
+     (vl-ps-update-rchars (cons (if (vl-ps->htmlp) "<br/>
+" #\Newline) (vl-ps->rchars)))
      (vl-ps-update-col 0)))
 
   (defpp vl-println-raw-fast2 (str)
@@ -1441,7 +1442,8 @@ tag and a newline are printed.</p>"
     :inlinep t
     :body
     (vl-ps-seq
-     (vl-ps-update-rchars (cons #\Newline (cons str (vl-ps->rchars))))
+     (vl-ps-update-rchars (cons (if (vl-ps->htmlp) "<br/>
+" #\Newline) (cons str (vl-ps->rchars))))
      (vl-ps-update-col 0)))
 
   (defmacro vl-println (x)

@@ -51,16 +51,19 @@ completely erased from the parse tree.  Hence, we do not need to consider
 how to synthesize them or handle them at all!</p>
 
 <ul>
+<li><tt>+a</tt>             --&gt; <tt>a + 1'sb0</tt></li>
+<li><tt>-a</tt>             --&gt; <tt>1'sb0 - a</tt></li>
+
 <li><tt>a &amp;&amp; b</tt> --&gt; <tt>(|a) &amp; (|b)</tt></li>
 <li><tt>a || b</tt>         --&gt; <tt>(|a) | (|b)</tt></li>
-<li><tt>!a</tt>             --&gt; <tt>~(|a)</tt></li>
+<li><tt>!a</tt>             --&gt; <tt>{~(|a)}</tt></li>
 
-<li><tt>~&amp; (a)</tt> --&gt; <tt>~( &amp;a )</tt></li>
-<li><tt>~| (a)</tt>     --&gt; <tt>~( |a )</tt></li>
-<li><tt>~^ (a)</tt>     --&gt; <tt>~( ^a )</tt></li>
+<li><tt>~&amp; (a)</tt> --&gt; <tt>{~( &amp;a )}</tt></li>
+<li><tt>~| (a)</tt>     --&gt; <tt>{~( |a )}</tt></li>
+<li><tt>~^ (a)</tt>     --&gt; <tt>{~( ^a )}</tt></li>
 
-<li><tt>a &lt; b</tt>  --&gt; <tt>~(a &gt;= b)</tt></li>
-<li><tt>a &gt; b</tt>  --&gt; <tt>~(b &gt;= a)</tt></li>
+<li><tt>a &lt; b</tt>  --&gt; <tt>{~(a &gt;= b)}</tt></li>
+<li><tt>a &gt; b</tt>  --&gt; <tt>{~(b &gt;= a)}</tt></li>
 <li><tt>a &lt;= b</tt> --&gt; <tt>b &gt;= a</tt></li>
 
 <li><tt>a == b</tt> --&gt; <tt>&amp;(a ~^ b)</tt></li>
@@ -272,41 +275,122 @@ mutual recursion as simple as possible.</p>"
                                      :args (list or-a or-b))))
            (mv warnings result)))
 
-      (:vl-unary-lognot
-       ;; !a -->  ~(|a)
+
+      (:vl-unary-plus
+       ;; +a --> a + 1'sb0
+
+; What is the meaning of +a?  In Verilog-XL it seems to be equal to A.  In
+; NCVerilog it is equal to (a + 1'sb0).
+;
+; This difference matters because, e.g., if a is 4'b000X, then in Verilog-XL +a
+; is also 4'b000X, whereas in NCVerilog it is 4'bXXXX.  We choose to implement
+; NCVerilog's behavior since it is more conservative.
+;
+; It's important to add a signed zero since otherwise we could inadvertently be
+; changing the sign of the expression.  If A is signed we preserve this since
+; signed + signed is signed.  If A is unsigned, we also preserve it since
+; unsigned + signed is unsigned.
+;
+; It's important to add a one-bit zero since that way we know that we are not
+; increasing the size of the expression.  If A is one bit we won't be changing
+; its size.  If A is larger, we'll inherit its size.
+
        (b* (((list a) args)
-            (or-a   (make-vl-nonatom :op :vl-unary-bitor :args (list a)))
-            (result (make-vl-nonatom :op :vl-unary-bitnot
+            (|1'sb0|  (make-vl-atom
+                       :guts (make-vl-constint :value 0
+                                               :origwidth 1
+                                               :origtype :vl-signed)))
+            (result   (make-vl-nonatom :op :vl-binary-plus
+                                       :atts atts
+                                       :args (list a |1'sb0|))))
+         (mv warnings result)))
+
+
+      (:vl-unary-minus
+       ;; -a --> 1'sb0 - a
+
+; Verilog-XL and NCVerilog both agree on this for the meaning of -a.
+
+       (b* (((list a) args)
+            (|1'sb0|  (make-vl-atom
+                       :guts (make-vl-constint :value 0
+                                               :origwidth 1
+                                               :origtype :vl-signed)))
+            (result   (make-vl-nonatom :op :vl-binary-minus
+                                       :atts atts
+                                       :args (list |1'sb0| a))))
+         (mv warnings result)))
+
+
+
+      (:vl-unary-lognot
+       ;; !a -->  {~(|a)}
+
+; BUG FOUND ON 2011-09-22.  We used to not put in the concatenation.  This was
+; correct for one-bit contexts, but if a !a was being used in a wider context,
+; there could be a problem.  For instance, if a was 4'b1011, then something
+; like:
+;
+;    wire [3:0] w = !a;
+;
+; should yield w = 4'b0000.  But without the concatenation, the ~ gets applied
+; to 4'b0001, and yields 4'b1110, which is just totally wrong.
+;
+; We therefore add the concatenation to force the ~ to be self-determined and
+; hence to be carried out in one bit.  This creates an unsigned result, but
+; that is okay because (we think) !a should produce a one-bit unsigned result
+; anyway.
+
+       (b* (((list a) args)
+            (or-a   (make-vl-nonatom :op :vl-unary-bitor  :args (list a)))
+            (~or-a  (make-vl-nonatom :op :vl-unary-bitnot :args (list or-a)))
+            (result (make-vl-nonatom :op :vl-concat
                                      :atts atts
-                                     :args (list or-a))))
-           (mv warnings result)))
+                                     :args (list ~or-a))))
+         (mv warnings result)))
+
 
       (:vl-unary-nand
-       ;; ~& (a)  -->  ~( &a )
+       ;; ~& (a)  -->  {~( &a )}
+
+; BUG FOUND ON 2011-09-22.  Same deal as unary-lognot.
+
        (b* (((list a) args)
             (and-a    (make-vl-nonatom :op :vl-unary-bitand :args (list a)))
-            (result   (make-vl-nonatom :op :vl-unary-bitnot
+            (~and-a   (make-vl-nonatom :op :vl-unary-bitnot :args (list and-a)))
+            (result   (make-vl-nonatom :op :vl-concat
                                        :atts atts
-                                       :args (list and-a))))
+                                       :args (list ~and-a))))
            (mv warnings result)))
+
 
       (:vl-unary-nor
-       ;; ~| (a)  -->  ~( |a )
+       ;; ~| (a)  -->  {~( |a )}
+
+; BUG FOUND ON 2011-09-22.  Same deal as unary-lognot.
+
        (b* (((list a) args)
-            (or-a     (make-vl-nonatom :op :vl-unary-bitor :args (list a)))
-            (result   (make-vl-nonatom :op :vl-unary-bitnot
+            (or-a     (make-vl-nonatom :op :vl-unary-bitor  :args (list a)))
+            (~or-a    (make-vl-nonatom :op :vl-unary-bitnot :args (list or-a)))
+            (result   (make-vl-nonatom :op :vl-concat
                                        :atts atts
-                                       :args (list or-a))))
-           (mv warnings result)))
+                                       :args (list ~or-a))))
+         (mv warnings result)))
+
 
       (:vl-unary-xnor
-       ;; ~^ (a)  -->  ~( ^a )
+       ;; ~^ (a)  -->  {~( ^a )}
+
+; BUG FOUND ON 2011-09-22.  Same deal as unary-lognot.
+
        (b* (((list a) args)
-            (^a       (make-vl-nonatom :op :vl-unary-xor :args (list a)))
-            (result   (make-vl-nonatom :op :vl-unary-bitnot
+            (^a       (make-vl-nonatom :op :vl-unary-xor    :args (list a)))
+            (~^a      (make-vl-nonatom :op :vl-unary-bitnot :args (list ^a)))
+            (result   (make-vl-nonatom :op :vl-concat
                                        :atts atts
-                                       :args (list ^a))))
-           (mv warnings result)))
+                                       :args (list ~^a))))
+         (mv warnings result)))
+
 
       ((:vl-binary-eq :vl-binary-ceq)
        ;; a == b    -->  &(a ~^ b)
@@ -351,22 +435,38 @@ mutual recursion as simple as possible.</p>"
            (mv warnings result)))
 
       (:vl-binary-lt
-       ;; a < b     -->  ~(a >= b)
+       ;; a < b     -->  {~(a >= b)}
+
+; BUG FOUND ON 2011-09-22.  Same deal as unary-lognot.
+
+; Note that on Verilog-XL, in a 4-bit context, when there are X bits involved,
+; a < b produces 4'bXXXX instead of 4'b000X like NCVerilog produces.  From the
+; Verilog standard, it seems that NCVerilog gets it right: the answer from an
+; addition is supposed to be one-bit unsigned.  So, this rewrite doesn't agree
+; with the Verilog-XL interpretation in all cases, but that's okay because
+; Verilog-XL is wrong.
+
        (b* (((list a b) args)
-            (a>=b       (make-vl-nonatom :op :vl-binary-gte :args (list a b)))
-            (result     (make-vl-nonatom :op :vl-unary-bitnot
+            (a>=b       (make-vl-nonatom :op :vl-binary-gte   :args (list a b)))
+            (~a>=b      (make-vl-nonatom :op :vl-unary-bitnot :args (list a>=b)))
+            (result     (make-vl-nonatom :op :vl-concat
                                          :atts atts
-                                         :args (list a>=b))))
+                                         :args (list ~a>=b))))
            (mv warnings result)))
 
       (:vl-binary-gt
-       ;; a > b     -->  ~(b >= a)
+       ;; a > b     -->  {~(b >= a)}
+
+; BUG FOUND ON 2011-09-22.  Same deal as binary-lt.
+
        (b* (((list a b) args)
-            (b>=a       (make-vl-nonatom :op :vl-binary-gte :args (list b a)))
-            (result     (make-vl-nonatom :op :vl-unary-bitnot
+            (b>=a       (make-vl-nonatom :op :vl-binary-gte   :args (list b a)))
+            (~b>=a      (make-vl-nonatom :op :vl-unary-bitnot :args (list b>=a)))
+            (result     (make-vl-nonatom :op :vl-concat
                                          :atts atts
-                                         :args (list b>=a))))
-           (mv warnings result)))
+                                         :args (list ~b>=a))))
+         (mv warnings result)))
+
 
       (:vl-binary-lte
        ;; a <= b    -->  b >= a
