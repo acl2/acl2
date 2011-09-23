@@ -633,6 +633,7 @@ ls.lisp
 memory-mgmt-logic.lisp
 memory-mgmt-raw.lisp
 sneaky-load.lisp
+suffixp.lisp
 universal-equiv.lisp
 vecs-ints.lisp
 witness-cp.acl2
