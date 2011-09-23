@@ -281,15 +281,20 @@ concatenations.</p>")
             (mv warnings nil)
           (mv-let (warnings range)
                   (vl-rangeresolve x warnings)
-                  (if (and (vl-range-resolved-p range)
-                           (= (vl-resolved->val (vl-range->left range)) 0)
-                           (= (vl-resolved->val (vl-range->right range)) 0))
-                      ;; Special case: range reduced to [0:0]; get rid of it!
-                      ;; This helps avoid [0:0] wire declarations that Cadence
-                      ;; doesn't like (at least, it doesn't like hooking them
-                      ;; up to gates)
-                      (mv warnings nil)
-                    (mv warnings range)))))
+                  ;; Historic note:  We used to eliminate [0:0] ranges as
+                  ;; follows.  But we no longer do, because Verilog-XL and
+                  ;; NCVerilog both seem ok with them, and not ok with indexing
+                  ;; into a scalar wire.
+                  ;; (if (and (vl-range-resolved-p range)
+                  ;;          (= (vl-resolved->val (vl-range->left range)) 0)
+                  ;;          (= (vl-resolved->val (vl-range->right range)) 0))
+                  ;;     ;; Special case: range reduced to [0:0]; get rid of it!
+                  ;;     ;; This helps avoid [0:0] wire declarations that Cadence
+                  ;;     ;; doesn't like (at least, it doesn't like hooking them
+                  ;;     ;; up to gates)
+                  ;;     (mv warnings nil)
+                  ;;   (mv warnings range))
+                  (mv warnings range))))
 
 (def-vl-rangeresolve-list vl-rangelist-rangeresolve
   :type vl-rangelist-p

@@ -23,7 +23,7 @@
 (include-book "bddify")
 (include-book "centaur/ubdds/param" :dir :system)
 (include-book "centaur/ubdds/lite" :dir :system)
-
+(include-book "centaur/misc/suffixp" :dir :system)
 (in-theory (disable equal-by-eval-bdds
                     aig-q-compose-correct))
 
@@ -979,18 +979,10 @@
 
 ;; --------- SUFFIXP
 
-;; (SUFFIXP X1 X2) holds if some tail of X2 is equal to X1.
-
-(defn suffixp (x1 x2)
-  (or (equal x1 x2)
-      (and (not (atom x2))
-           (suffixp x1 (cdr x2)))))
 
 (local
  (progn
-   (defthm suffixp-self
-     (suffixp x x))
-
+   (in-theory (enable suffixp))
    (defthm suffixp-transitive
      (implies (and (suffixp a b)
                    (suffixp b c))

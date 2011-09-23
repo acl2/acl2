@@ -20,6 +20,9 @@
 
 (in-package "ACL2")
 
+;; for alist-keys, alist-vals:
+(include-book "misc/hons-help" :dir :system)
+
 (defund alists-agree (keys al1 al2)
   (declare (Xargs :guard t))
   (or (atom keys)
@@ -27,23 +30,6 @@
                   (hons-get (car keys) al2))
            (alists-agree (cdr keys) al1 al2))))
 
-(defund alist-keys (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      nil
-    (if (consp (car x))
-        (cons (caar x) (alist-keys (cdr x)))
-      (alist-keys (cdr x)))))
-
-(defund alist-vals (x)
-  (declare (xargs :guard t))
-  (cond ((atom x)
-         nil)
-        ((not (consp (car x)))
-         (alist-vals (cdr x)))
-        (t
-         (cons (cdar x)
-               (alist-vals (cdr x))))))
 
 (defund hons-acons-each (keys val al)
   (declare (xargs :guard t))
@@ -51,7 +37,6 @@
       al
     (hons-acons (car keys) val
                 (hons-acons-each (Cdr keys) val al))))
-
 
 ;; This is just hshrink-alist with a NIL accumulator.
 (defund al-shrink (al)

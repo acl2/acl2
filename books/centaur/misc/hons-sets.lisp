@@ -44,7 +44,7 @@
   (equal (hons-member-equal a b)
          (member-equal a b)))
 
-(defthm hons-assoc-equal-hons-put-list
+(defthm hons-assoc-equal-hons-put-list-iff
   (iff (hons-assoc-equal x (hons-put-list a b c))
        (or (member-equal x a)
            (hons-assoc-equal x c)))
@@ -70,22 +70,27 @@
            (member-equal x b))))
 
 
-;; Hons-intersection interaction with member-equal
-(defthm hons-intersection2-member
-  (iff (member-equal x (hons-intersection2 a b))
-       (and (member-equal x a)
-            (member-equal x b))))
+;; ;; Hons-intersection interaction with member-equal
+;; (defthm hons-intersection2-member
+;;   (iff (member-equal x (hons-intersection2 a b))
+;;        (and (member-equal x a)
+;;             (member-equal x b))))
 
-(defthm hons-int1-member
-  (iff (member-equal x (hons-int1 a b))
-       (and (member-equal x a)
-            (hons-assoc-equal x b))))
+(defthm hons-int1-is-intersection-equal
+  (implies (atom atom)
+           (equal (hons-int1 x (hons-put-list y t atom))
+                  (intersection-equal x y)))
+  :hints(("Goal" :in-theory (enable intersection-equal))))
 
-(defthm hons-intersection-member
-  (iff (member-equal x (hons-intersection a b))
-       (and (member-equal x a)
-            (member-equal x b))))
+(defthm hons-intersection2-is-intersection-equal
+  (equal (hons-intersection2 x y)
+         (intersection-equal x y))
+  :hints(("Goal" :in-theory (enable intersection-equal))))
 
+;; (defthm hons-int1-member
+;;   (iff (member-equal x (hons-int1 a b))
+;;        (and (member-equal x a)
+;;             (hons-assoc-equal x b))))
 
 ;; Hons-intersection interaction with member-equal
 (defthm hons-set-diff2-member
@@ -113,9 +118,6 @@
   (set-equivp (hons-union x y)
                    (union-equal x y)))
 
-(defthm hons-intersection-set-equiv-intersection-equal
-  (set-equivp (hons-intersection x y)
-                   (intersection-equal x y)))
 
 (defthm hons-set-diff-set-equiv-set-diff-equal
   (set-equivp (hons-set-diff x y)

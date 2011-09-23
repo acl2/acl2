@@ -459,4 +459,22 @@ semantically irrelevant and is only used as a context for warnings.</li>
 
   (defthm alistp-of-vl-modinst-to-eocc-bindings
     (alistp
-     (mv-nth 2 (vl-modinst-to-eocc-bindings actuals portpat walist warnings inst)))))
+     (mv-nth 2 (vl-modinst-to-eocc-bindings actuals portpat walist warnings
+                                            inst))))
+  
+  (local (defthm alist-keys-pairlis$
+           (equal (alist-keys (pairlis$ a b))
+                  (list-fix a))
+           :hints(("Goal" :in-theory (enable alist-keys pairlis$)))))
+
+  (defthm vl-emodwirelist-p-alist-keys-eocc-bindings
+    (implies (vl-emodwirelistlist-p portpat)
+             (vl-emodwirelist-p (alist-keys (mv-nth 2 (vl-modinst-to-eocc-bindings actuals portpat walist warnings
+                                                                                   inst)))))
+    :hints(("Goal" :in-theory (enable vl-modinst-to-eocc-bindings))))
+
+  (defthm vl-emodwirelist-p-alist-vals-eocc-bindings
+    (implies (vl-wirealist-p walist)
+             (vl-emodwirelist-p (alist-vals (mv-nth 2 (vl-modinst-to-eocc-bindings
+                                                       actuals portpat walist warnings inst)))))
+    :hints(("Goal" :in-theory (enable vl-modinst-to-eocc-bindings)))))

@@ -139,6 +139,30 @@
 
 
 
+(defund alist-keys (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      nil
+    (if (consp (car x))
+        (cons (caar x) (alist-keys (cdr x)))
+      (alist-keys (cdr x)))))
+
+(defund alist-vals (x)
+  (declare (xargs :guard t))
+  (cond ((atom x)
+         nil)
+        ((not (consp (car x)))
+         (alist-vals (cdr x)))
+        (t
+         (cons (cdar x)
+               (alist-vals (cdr x))))))
+
+
+
+
+
+
+
 
 ; LIST OPERATIONS USING HONS -----------------------------------------------
 
@@ -232,6 +256,18 @@
          (hons-dups-p1 (cdr l)
                        (hons-acons (car l) t tab)))))
 
+(encapsulate nil
+  (local (defthm hons-assoc-equal-hons-put-list-t
+           (iff (hons-assoc-equal x (hons-put-list y t rest))
+                (or (hons-assoc-equal x rest)
+                    (member x y)))
+           :hints (("goal" :induct (hons-put-list y t rest)))))
+  (defthm hons-assoc-equal-hons-put-list
+    (implies (atom a)
+             (iff (hons-assoc-equal x (hons-put-list y t a))
+                  (member x y)))))
+
+
 (defn hons-dups-p (l)
 
 ; If L has no duplicate members, then (HONS-DUPS-P L) is NIL.  If L
@@ -242,6 +278,39 @@
 ; function, rather than in hons-dups-p1?
 
   (hons-dups-p1 l '*hons-dups-p*))
+
+(local (in-theory (enable alist-keys)))
+(local (defthm member-alist-keys
+         (iff (member x (alist-keys y))
+              (hons-assoc-equal x y))))
+
+(encapsulate
+  nil
+
+
+  (local (defthm intersectp-cons-second
+           (implies (intersectp x y)
+                    (intersectp x (cons z y)))))
+
+  (local (defthm intersectp-cons-second-2
+           (implies (not (intersectp x y))
+                    (iff (intersectp x (cons z y))
+                         (member z x)))))
+
+  (local (defthm intersectp-cons-member
+           (implies (member z x)
+                    (intersectp x (cons z y)))))
+
+  (local (defthm hons-dups-p1-no-duplicatesp
+           (iff (hons-dups-p1 x tab)
+                (or (not (no-duplicatesp x))
+                    (intersectp x (alist-keys tab))))
+           :hints(("Goal" :induct (hons-dups-p1 x tab)))))
+
+  (defthm hons-dups-p-no-duplicatesp
+    (iff (hons-dups-p x)
+         (not (no-duplicatesp x)))))
+
 
 (defn hons-duplicates1 (l tab)
   (cond ((atom l) (ansfl nil tab))
@@ -264,12 +333,14 @@
                (hons-remove-duplicates1 (cdr l)
                                         (hons-acons (car l) t tab))))))
 
+
+
 (defn hons-remove-duplicates (l)
 
-; preserves order, deleting later occurrences
+; preserves order, deleting later occurrences.  Note that this is not the same
+; as remove-duplicates, since that deletes the earlier occurrences.
 
   (hons-remove-duplicates1 l '*hons-remove-duplicates*))
-
 
 
 
@@ -385,6 +456,26 @@
         (t
          (hons-intersection2 l1 l2))))
 
+(encapsulate
+  nil
+  (local
+   (defthm hons-int1-is-intersection-equal
+     (implies (atom atom)
+              (equal (hons-int1 x (hons-put-list y t atom))
+                     (intersection-equal x y)))
+     :hints(("Goal" :in-theory (enable intersection-equal)))))
+
+  (local
+   (defthm hons-intersection2-is-intersection-equal
+     (equal (hons-intersection2 x y)
+            (intersection-equal x y))
+     :hints(("Goal" :in-theory (enable intersection-equal)))))
+
+  (defthm hons-intersection-is-intersection-equal
+    (equal (hons-intersection a b)
+           (intersection-equal a b))))
+
+
 (defn hons-intersect-p1 (l1 al2)
   (cond ((atom l1) 
          nil)
@@ -408,6 +499,26 @@
         (t
          (hons-intersect-p2 l1 l2))))
 
+(encapsulate
+  nil
+  (local
+   (defthm hons-intersect-p1-is-intersectp
+     (implies (atom atom)
+              (equal (hons-intersect-p1 x (hons-put-list y t atom))
+                     (intersectp x y)))
+     :hints(("Goal" :in-theory (enable intersectp)))))
+
+  (local
+   (defthm hons-intersect-p2-is-intersectp
+     (equal (hons-intersect-p2 x y)
+            (intersectp x y))
+     :hints(("Goal" :in-theory (enable intersectp)))))
+
+  (defthm hons-intersect-p-is-intersectp
+    (equal (hons-intersect-p a b)
+           (intersectp a b))))
+
+
 (defn hons-sd1 (l1 al2)
   (cond ((atom l1) nil)
         ((hons-get (car l1) al2)
@@ -425,6 +536,26 @@
          (with-fast-list fl2 l2 '*hons-set-diff-alist*
                          (hons-sd1 l1 fl2)))
         (t (hons-set-diff2 l1 l2))))
+
+(encapsulate
+  nil
+  (local
+   (defthm hons-sd1-is-set-difference$
+     (implies (atom atom)
+              (equal (hons-sd1 x (hons-put-list y t atom))
+                     (set-difference$ x y)))
+     :hints(("Goal" :in-theory (enable set-difference$)))))
+
+  (local
+   (defthm hons-set-diff2-is-set-difference$
+     (equal (hons-set-diff2 x y)
+            (set-difference$ x y))
+     :hints(("Goal" :in-theory (enable set-difference$)))))
+
+  (defthm hons-set-diff-is-set-difference$
+    (equal (hons-set-diff a b)
+           (set-difference$ a b))))
+
 
 (defn hons-union1 (l1 al2 acc)
   (cond ((atom l1) acc)
@@ -470,6 +601,14 @@
         (t
          ;; [Jared]: calling len on both lists seems inefficient; we could
          ;; write a cdr-both style function that determines which is longer
+
+         ;; BOZO This is a very messy optimization, and the benchmarks below
+         ;; suggest that it might be backward.  What is our goal?  If we want
+         ;; to produce the shortest list containing the union of our elements,
+         ;; then we're going about it all wrong in any case.  If we just want
+         ;; any list containing the union, and we want to get it as fast as
+         ;; possible, we're better off putting only the shorter list into the
+         ;; fal; here we're using the longer list instead.
          (let ((len1 (len l1))
                (len2 (len l2)))
            (cond ((and (>= len2 len1)
@@ -483,6 +622,74 @@
                    fl1 l1 '*hons-union*
                    (hons-union1 l2 fl1 l1)))
                  (t (hons-union2 l1 l2 l2)))))))
+
+;; (let ((l1 (loop for i from 1 to 10 collect i))
+;;       (l2 (loop for i from 1 to 1000 collect i)))
+;;   (progn
+;;     (time$ (loop for i from 1 to 1000 collect
+;;                  (with-fast-list fl2 l2 '*hons-union*
+;;                    (hons-union1 l1 fl2 l2))))
+;;     nil)) ;; 0.43 seconds, 102 MB
+
+;; (let ((l1 (loop for i from 1 to 10 collect i))
+;;       (l2 (loop for i from 1 to 1000 collect i)))
+;;   (progn
+;;     (time$ (loop for i from 1 to 1000 collect
+;;                  (with-fast-list fl1 l1 '*hons-union*
+;;                    (hons-union1 l2 fl1 l1))))
+;;     nil)) ;; 0.10 seconds, 18 MB (!!)
+
+;; (let ((l1 (loop for i from 1 to 10 collect i))
+;;       (l2 (loop for i from 1 to 1000 collect i)))
+;;   (progn
+;;     (time$ (loop for i from 1 to 1000 collect
+;;                  (with-fast-list fl1 l1 '*hons-union*
+;;                    (hons-un1 l2 fl1))))
+;;     nil)) ;; 0.42 seconds, 101 MB
+
+;; (let ((l1 (loop for i from 1 to 10 collect i))
+;;       (l2 (loop for i from 1 to 1000 collect i)))
+;;   (progn
+;;     (time$ (loop for i from 1 to 1000 collect
+;;                  (with-fast-list fl2 l2 '*hons-union*
+;;                    (hons-un1 l1 fl2))))
+;;     nil)) ;; 0.43 seconds, 102 MB
+
+;; (let ((l1 (loop for i from 1 to 10 collect i))
+;;       (l2 (loop for i from 1 to 20 nconc
+;;                 (loop for i from 1 to 50 collect i))))
+;;   (progn
+;;     (time$ (loop for i from 1 to 1000 collect
+;;                  (with-fast-list fl2 l2 '*hons-union*
+;;                    (hons-union1 l1 fl2 l2))))
+;;     nil)) ;; 0.11 seconds, 3.3 MB
+
+;; (let ((l1 (loop for i from 1 to 10 collect i))
+;;       (l2 (loop for i from 1 to 20 nconc
+;;                 (loop for i from 1 to 50 collect i))))
+;;   (progn
+;;     (time$ (loop for i from 1 to 1000 collect
+;;                  (with-fast-list fl1 l1 '*hons-union*
+;;                    (hons-union1 l2 fl1 l1))))
+;;     nil)) ;; 0.10 seconds, 15 MB
+
+
+;; Note that because hons-union1 and 2 accumulate the first arg onto the second
+;; arg in reverse order, it's not the same as union$.
+
+(encapsulate nil
+  (local (defthm hons-union1-revappend-set-difference
+           (equal (hons-union1 x tab y)
+                  (revappend (set-difference$ x (alist-keys tab)) y))))
+
+  (local (defthm hons-union2-revappend-set-difference
+           (equal (hons-union2 x l y)
+                  (revappend (set-difference$ x l) y))))
+
+  ;; bozo prove something about hons-union, but maybe fix it first
+  )
+
+
 
 (defn hons-union-list (l)
   (if (atom l)

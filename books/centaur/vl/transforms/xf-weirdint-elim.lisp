@@ -24,6 +24,7 @@
 (include-book "../mlib/namefactory")
 (include-book "../mlib/stmt-tools")
 (include-book "occform/gen-util")
+(include-book "../primitives")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 
@@ -35,77 +36,21 @@
 generated wires."
 
   :long "<p>In this transformation, we replace any @(see vl-weirdint-p) atoms
-with concatenations of @(see vl-constint-p)s (for the 1 or 0 bits), and with
-the special wires <tt>vl-x-value</tt> and <tt>vl-z-value</tt> (for X and Z
-bits).  If we do this, then we also add instances of the special
-<tt>VL_X_GENERATOR</tt> and <tt>VL_Z_GENERATOR</tt> modules, which have the
-following semantics:</p>
-
-<code>
-module VL_X_GENERATOR (out) ;
-  wire out;
-  assign out = 1'bx;
-endmodule
-</code>
-
-<code>
-module VL_Z_GENERATOR (out) ;
-  wire out;
-  assign out = 1'bz;
-endmodule
-</code>
+with concatenations of the special wires <tt>vl-x-value</tt> and
+<tt>vl-z-value</tt> (for X and Z bits), and one-bit constants <tt>1'b0</tt> and
+<tt>1'b1</tt> (for 1 and 0 bits).  If necessary, we then add instances of the
+primitive @(see *vl-1-bit-x*) and @(see *vl-1-bit-z*) modules to drive the X
+and Z wires.</p>
 
 <p>The net effect is that after this transformation, no modules besides
-<tt>VL_X_GENERATOR</tt> and <tt>VL_Z_GENERATOR</tt> will contain any weird
-literals.</p>
-
-<p>This transformation is convenient for our conversion to E, where X and Z are
-not valid literals.  The E version of <tt>VL_X_GENERATOR</tt> generates its
-output by wiring together <tt>t</tt> and <tt>f</tt> into a <tt>*res2*</tt>
-module.  Meanwhile, the E version of <tt>VL_Z_GENERATOR</tt> just uses the
-<tt>*float*</tt> module to generate its output.</p>
+<tt>VL_1_BIT_X</tt> and <tt>VL_1_BIT_Z</tt> will contain any weird literals.
+This transformation is convenient for our conversion to E, where X and Z are
+not valid literals.</p>
 
 <h3>Order Considerations</h3>
 
 <p>This must be done after occform, or it will interfere with the creation
 of Z muxes.</p>")
-
-
-(defconst *vl-x-generator-verilog*
-  ;; module VL_X_GENERATOR (out);
-  (b* ((name "VL_X_GENERATOR")
-       (atts (acons "VL_HANDS_OFF" nil nil))
-
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       (out-assign (make-vl-assign :lvalue out-expr :expr |*sized-1'bx*| :loc *vl-fakeloc*)))
-
-    (make-vl-module :name      name
-                    :origname  name
-                    :ports     (list out-port)
-                    :portdecls (list out-portdecl)
-                    :netdecls  (list out-netdecl)
-                    :assigns   (list out-assign)
-                    :minloc    *vl-fakeloc*
-                    :maxloc    *vl-fakeloc*
-                    :atts      atts)))
-
-(defconst *vl-z-generator-verilog*
-  ;; module VL_Z_GENERATOR (out);
-  (b* ((name "VL_Z_GENERATOR")
-       (atts (acons "VL_HANDS_OFF" nil nil))
-
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       (out-assign (make-vl-assign :lvalue out-expr :expr |*sized-1'bz*| :loc *vl-fakeloc*)))
-
-    (make-vl-module :name      name
-                    :origname  name
-                    :ports     (list out-port)
-                    :portdecls (list out-portdecl)
-                    :netdecls  (list out-netdecl)
-                    :assigns   (list out-assign)
-                    :minloc    *vl-fakeloc*
-                    :maxloc    *vl-fakeloc*
-                    :atts      atts)))
 
 (defconst *vl-x-wire-expr*
   (vl-idexpr "vl-x-wire" 1 :vl-unsigned))
@@ -772,7 +717,7 @@ of Z muxes.</p>")
 ; couple of extra considerations:
 ;
 ;   1. If we actually made any changes, we may need to also introduce instances
-;      of VL_X_GENERATOR and/or VL_Z_GENERATOR to drive vl-x-wire and/or
+;      of VL_1_BIT_X and/or VL_1_BIT_Z to drive vl-x-wire and/or
 ;      vl-z-wire.
 ;
 ;   2. If we made any changes, we need to be sure that we aren't introducing
@@ -804,8 +749,8 @@ of Z muxes.</p>")
                                      nf))
 
          (target-mod (if (eq which :x)
-                         *vl-x-generator-verilog*
-                       *vl-z-generator-verilog*))
+                         *vl-1-bit-x*
+                       *vl-1-bit-z*))
 
          (new-netdecl (make-vl-netdecl :name wirename
                                        :type :vl-wire
@@ -911,8 +856,8 @@ of Z muxes.</p>")
             (mv (change-vl-module x :warnings (cons wrn warnings)) nil)))
 
          (addmods nil)
-         (addmods (if need-x-wire (cons *vl-x-generator-verilog* addmods) addmods))
-         (addmods (if need-z-wire (cons *vl-z-generator-verilog* addmods) addmods))
+         (addmods (if need-x-wire (cons *vl-1-bit-x* addmods) addmods))
+         (addmods (if need-z-wire (cons *vl-1-bit-z* addmods) addmods))
 
          (nf          (vl-starting-namefactory temp-module))
          ((mv nf temp-module)

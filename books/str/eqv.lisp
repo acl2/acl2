@@ -96,7 +96,7 @@
 
 (defthm char<-transitive
   (implies (and (char< x y)
-                (char< y x))
+                (char< y z))
            (char< x z))
   :hints(("Goal" :in-theory (enable char<))))
 
