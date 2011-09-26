@@ -278,6 +278,117 @@ given name, width, and type.</p>"
 
 
 
+
+(defsection vl-expr-count
+  :parents (expr-tools)
+  :short "@(call vl-expr-count) returns the size of an expression, measured by
+the number of atoms and the number of operators.  It is mainly useful for
+termination arguments."
+
+  (mutual-recursion
+
+   (defund vl-expr-count (x)
+     (declare (xargs :guard (vl-expr-p x)
+                     :measure (two-nats-measure (acl2-count x) 1)))
+     (cond ((vl-fast-atom-p x)
+            1)
+           (t
+            (+ 1 (vl-exprlist-count (vl-nonatom->args x))))))
+
+   (defund vl-exprlist-count (x)
+     (declare (xargs :guard (vl-exprlist-p x)
+                     :measure (two-nats-measure (acl2-count x) 0)))
+     (if (consp x)
+         (+ (vl-expr-count (car x))
+            (vl-exprlist-count (cdr x)))
+       1)))
+
+  (defthm posp-of-vl-expr-count
+    (posp (vl-expr-count x))
+    :rule-classes :type-prescription)
+
+  (defthm posp-of-vl-exprlist-count
+    (posp (vl-exprlist-count x))
+    :rule-classes :type-prescription)
+
+  (local (in-theory (enable vl-exprlist-count)))
+
+  (defthm vl-exprlist-count-when-atom
+    (implies (atom x)
+             (equal (vl-exprlist-count x)
+                    1)))
+
+  (defthm vl-exprlist-count-of-cons
+    (equal (vl-exprlist-count (cons a x))
+           (+ (vl-expr-count a)
+              (vl-exprlist-count x))))
+
+  (defthm vl-exprlist-count-of-append
+    (equal (vl-exprlist-count (append x y))
+           (+ -1
+              (vl-exprlist-count x)
+              (vl-exprlist-count y)))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-exprlist-count-of-revappend
+    (equal (vl-exprlist-count (revappend x y))
+           (+ -1
+              (vl-exprlist-count x)
+              (vl-exprlist-count y)))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-exprlist-count-of-rev
+    (equal (vl-exprlist-count (rev x))
+           (vl-exprlist-count x))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-exprlist-count-of-list-fix
+    (equal (vl-exprlist-count (list-fix x))
+           (vl-exprlist-count x))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-expr-count-of-vl-nonatom
+    (equal (vl-expr-count (vl-nonatom op atts args finalwidth finaltype))
+           (+ 1 (vl-exprlist-count args)))
+    :hints(("Goal" :in-theory (enable vl-expr-count))))
+
+  (defthm vl-expr-count-of-vl-nonatom->args-strong
+    (implies (not (vl-atom-p x))
+             (< (vl-exprlist-count (vl-nonatom->args x))
+                (vl-expr-count x)))
+    :rule-classes ((:linear) (:rewrite))
+    :hints(("Goal" :in-theory (enable vl-expr-count))))
+
+  (defthm vl-expr-count-of-vl-nonatom->args-weak
+    (<= (vl-exprlist-count (vl-nonatom->args x))
+        (vl-expr-count x))
+    :rule-classes ((:linear) (:rewrite))
+    :hints(("Goal" :in-theory (enable vl-expr-count
+                                      vl-nonatom->args
+                                      vl-atom-p))))
+
+  (defthm vl-expr-count-of-car-strong
+    (implies (consp x)
+             (< (vl-expr-count (car x))
+                (vl-exprlist-count x)))
+    :rule-classes ((:linear) (:rewrite))
+    :hints(("Goal" :cases ((consp x)))))
+
+  (defthm vl-exprlist-count-of-cdr-weak
+    (<= (vl-exprlist-count (cdr x))
+        (vl-exprlist-count x))
+    :rule-classes ((:linear) (:rewrite)))
+
+  (defthm vl-exprlist-count-of-cdr-strong
+    (implies (consp x)
+             (< (vl-exprlist-count (cdr x))
+                (vl-exprlist-count x)))
+    :rule-classes ((:linear) (:rewrite))))
+
+
+
+
+
 (defsection vl-expr-names
   :parents (expr-tools)
   :short "Gather the names of all @(see vl-id-p) atoms throughout an
@@ -316,7 +427,7 @@ expression list."
 
    (defund vl-expr-names-exec (x acc)
      (declare (xargs :guard (vl-expr-p x)
-                     :measure (two-nats-measure (acl2-count x) 1)))
+                     :measure (vl-expr-count x)))
      (if (vl-fast-atom-p x)
          (let ((guts (vl-atom->guts x)))
            (if (vl-fast-id-p guts)
@@ -326,7 +437,7 @@ expression list."
 
    (defund vl-exprlist-names-exec (x acc)
      (declare (xargs :guard (vl-exprlist-p x)
-                     :measure (two-nats-measure (acl2-count x) 0)))
+                     :measure (vl-exprlist-count x)))
      (if (consp x)
          (vl-exprlist-names-exec (cdr x)
                                  (vl-expr-names-exec (car x) acc))
@@ -336,7 +447,7 @@ expression list."
 
    (defund vl-expr-names (x)
      (declare (xargs :guard (vl-expr-p x)
-                     :measure (two-nats-measure (acl2-count x) 1)
+                     :measure (vl-expr-count x)
                      :verify-guards nil))
      (mbe :logic (if (vl-atom-p x)
                      (let ((guts (vl-atom->guts x)))
@@ -348,7 +459,7 @@ expression list."
 
    (defund vl-exprlist-names (x)
      (declare (xargs :guard (vl-exprlist-p x)
-                     :measure (two-nats-measure (acl2-count x) 0)))
+                     :measure (vl-exprlist-count x)))
      (mbe :logic (if (consp x)
                      (append (vl-expr-names (car x))
                              (vl-exprlist-names (cdr x)))

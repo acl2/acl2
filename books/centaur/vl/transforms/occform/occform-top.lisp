@@ -684,7 +684,8 @@ is <tt>X</tt> or <tt>Z</tt>.</p>"
        ;; now use our "less precise" mode.  But if the attribute VL_X_SELECT is
        ;; present, we use the "more precise" mode where, e.g., X ? 1 : 1 is 1.
        ((mv instname nf) (vl-namefactory-indexed-name "vl_mux" nf))
-       (approxp (not (hons-assoc-equal "VL_X_SELECT" x.atts)))
+       (approxp (not (hons-assoc-equal "VL_X_SELECT" (vl-nonatom->atts x.expr))))
+
        (mods (vl-make-n-bit-mux width approxp))
        (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "out"))
                    (make-vl-plainarg :expr sel      :dir :vl-input  :portname (hons-copy "sel"))

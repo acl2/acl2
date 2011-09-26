@@ -21,6 +21,7 @@
 (in-package "VL")
 (include-book "../mlib/expr-tools")
 (include-book "../mlib/stmt-tools")
+(include-book "../checkers/duplicate-detect")
 (local (include-book "../util/arithmetic"))
 
 
@@ -504,6 +505,161 @@ mutual recursion as simple as possible.</p>"
 
 
 
+; Special outside-in rewrite for strange muxes
+
+(defsection vl-qmark-p
+
+  ;; Recognize a ? b : c and return the components, or return NILs
+  ;; if X doens't match.
+
+  (defund vl-qmark-p (x)
+    "Returns (MV A B C)"
+    (declare (xargs :guard (vl-expr-p x)))
+    (b* (((when (vl-fast-atom-p x))
+          (mv nil nil nil))
+         ((unless (and (eq (vl-nonatom->op x) :vl-qmark)
+                       (mbt (equal (len (vl-nonatom->args x)) 3))))
+          (mv nil nil nil))
+         (args (vl-nonatom->args x)))
+      (mv (first args) (second args) (third args))))
+
+  (local (in-theory (enable vl-qmark-p)))
+
+  (defthm vl-qmark-p-basics
+    (let ((ret (vl-qmark-p x)))
+      (implies (vl-expr-p x)
+               (and (equal (vl-expr-p (mv-nth 0 ret))
+                           (if (mv-nth 0 ret) t nil))
+                    (equal (vl-expr-p (mv-nth 1 ret))
+                           (if (mv-nth 0 ret) t nil))
+                    (equal (vl-expr-p (mv-nth 2 ret))
+                           (if (mv-nth 0 ret) t nil)))))))
+
+(defsection vl-goofymux-p
+  ;; Recognize terms of the following forms:
+  ;;  1. (i1 === i2) ? i1 : (s ? i1 : i2)
+  ;;  2. (i1 === i2) ? i2 : (s ? i1 : i2)
+  ;;  3. (i1 === i2) ? i1 : (s ? i2 : i1)
+  ;;  4. (i1 === i2) ? i2 : (s ? i2 : i1)
+  ;; Return the three components, or NIL if it doesn't match.
+
+  (defund vl-goofymux-p (x)
+    "Returns (MV S I1 I2)"
+    (declare (xargs :guard (vl-expr-p x)))
+    (b* (((mv equiv i1 mux)
+          (vl-qmark-p x))
+         ((unless equiv)
+          (mv nil nil nil))
+         ((unless (and (not (vl-fast-atom-p equiv))
+                       (eq (vl-nonatom->op equiv) :vl-binary-ceq)))
+          (mv nil nil nil))
+
+         (i1-fix    (vl-expr-fix i1))
+         (equiv-lhs (vl-expr-fix (first (vl-nonatom->args equiv))))
+         (equiv-rhs (vl-expr-fix (second (vl-nonatom->args equiv))))
+         ((unless (or (equal equiv-lhs i1-fix)
+                      (equal equiv-rhs i1-fix)))
+          (mv nil nil nil))
+
+         ((mv sel mi1 mi2) (vl-qmark-p mux))
+         ((unless sel)
+          (mv nil nil nil))
+
+         (mi1-fix (vl-expr-fix mi1))
+         (mi2-fix (vl-expr-fix mi2))
+
+         ((unless (or (and (equal equiv-lhs mi1-fix)
+                           (equal equiv-rhs mi2-fix))
+                      (and (equal equiv-lhs mi2-fix)
+                           (equal equiv-rhs mi1-fix))))
+          (mv nil nil nil)))
+      (mv sel mi1 mi2)))
+
+  (local (in-theory (enable vl-goofymux-p)))
+
+  (defthm vl-goofymux-p-basics
+    (let ((ret (vl-goofymux-p x)))
+      (implies (vl-expr-p x)
+               (and (equal (vl-expr-p (mv-nth 0 ret))
+                           (if (mv-nth 0 ret) t nil))
+                    (equal (vl-expr-p (mv-nth 1 ret))
+                           (if (mv-nth 0 ret) t nil))
+                    (equal (vl-expr-p (mv-nth 2 ret))
+                           (if (mv-nth 0 ret) t nil)))))))
+
+
+(defsection vl-goofymux-rewrite
+
+  (local (defthm crock
+           (implies (and (mv-nth 0 (vl-goofymux-p x))
+                         (vl-expr-p x))
+                    (vl-nonatom-p x))
+           :hints(("Goal" :in-theory (enable vl-goofymux-p
+                                             vl-qmark-p)))))
+
+  (local (defthm crock2
+           (implies (vl-atom-p x)
+                    (equal (vl-expr-count x)
+                           1))
+           :hints(("Goal" :in-theory (enable vl-expr-count)))))
+
+  (local (defthm crock3
+           (implies (not (vl-atom-p x))
+                    (equal (vl-expr-count x)
+                           (+ 1 (vl-exprlist-count (vl-nonatom->args x)))))
+           :hints(("Goal" :in-theory (enable vl-expr-count)))))
+
+  (local (defthm crock234
+           (implies (mv-nth 0 (vl-qmark-p x))
+                    (equal (vl-expr-count x)
+                           (+ 2 (vl-expr-count (mv-nth 0 (vl-qmark-p x)))
+                              (vl-expr-count (mv-nth 1 (vl-qmark-p x)))
+                              (vl-expr-count (mv-nth 2 (vl-qmark-p x))))))
+           :hints(("Goal" :in-theory (e/d (vl-qmark-p)
+                                          ((force)))
+                   :expand ((vl-exprlist-count (vl-nonatom->args x))
+                            (vl-exprlist-count (cdr (vl-nonatom->args x)))
+                            (vl-exprlist-count (cddr (vl-nonatom->args x))))))))
+
+
+  (defund vl-goofymux-rewrite (x)
+    (declare (xargs :guard (vl-expr-p x)))
+    (b* (((mv sel i1 i2) (vl-goofymux-p x))
+         ((unless sel)
+          x))
+      (make-vl-nonatom
+       :op :vl-qmark
+       :args (list sel i1 i2)
+       ;; See vl-mux-occform; this uses a less-conservative version of the mux,
+       ;; which is what we want if we're writing this goofy === thing.
+       :atts (acons "VL_X_SELECT" nil (vl-nonatom->atts x)))))
+
+  (local (in-theory (enable vl-goofymux-rewrite)))
+
+  (defthm vl-expr-p-of-vl-goofymux-rewrite
+    (implies (force (vl-expr-p x))
+             (vl-expr-p (vl-goofymux-rewrite x))))
+
+  (defthm vl-expr-count-of-vl-goofymux-rewrite
+    (<= (vl-expr-count (vl-goofymux-rewrite x))
+        (vl-expr-count x))
+    :rule-classes ((:rewrite) (:linear))
+    :hints(("Goal" :in-theory (enable vl-goofymux-p))))
+
+  (defthm vl-nonatom-p-of-vl-goofymux-rewrite
+    (implies (vl-expr-p x)
+             (equal (vl-nonatom-p (vl-goofymux-rewrite x))
+                    (vl-nonatom-p x))))
+
+  (defthm vl-not-atom-p-of-vl-goofymux-rewrite
+    (equal (vl-atom-p (vl-goofymux-rewrite x))
+           (vl-atom-p x))
+    :hints(("Goal" :in-theory (e/d (vl-goofymux-p
+                                    vl-qmark-p)
+                                   ((force)))))))
+
+
+
 (defsection vl-expr-oprewrite
   :parents (oprewrite)
   :short "@(call vl-expr-oprewrite) rewrites operators throughout the @(see
@@ -516,10 +672,16 @@ vl-expr-p) <tt>x</tt> and returns <tt>(mv warnings-prime x-prime)</tt>."
      (declare (xargs :guard (and (vl-expr-p x)
                                  (vl-warninglist-p warnings))
                      :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 1)))
+                     :measure (vl-expr-count x)))
      (b* (((when (vl-fast-atom-p x))
            (mv warnings x))
+
+          ;; Outside-in rewriting of any goofy mux expressions.  We might
+          ;; eventually want to expand this to include other kinds of rules
+          ;; about === or other operators that we're too conservative for...
+          (x (vl-goofymux-rewrite x))
           ((vl-nonatom x) x)
+
           ((mv warnings args-prime)
            (vl-exprlist-oprewrite x.args warnings)))
        (vl-op-oprewrite x.op args-prime x.atts warnings)))
@@ -528,7 +690,7 @@ vl-expr-p) <tt>x</tt> and returns <tt>(mv warnings-prime x-prime)</tt>."
      "Returns (MV WARNINGS-PRIME X-PRIME)"
      (declare (xargs :guard (and (vl-exprlist-p x)
                                  (vl-warninglist-p warnings))
-                     :measure (two-nats-measure (acl2-count x) 0)))
+                     :measure (vl-exprlist-count x)))
      (b* (((when (atom x))
            (mv warnings nil))
           ((mv warnings car-prime) (vl-expr-oprewrite (car x) warnings))
