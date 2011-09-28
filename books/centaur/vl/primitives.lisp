@@ -551,6 +551,54 @@ used to implement muxes.</p>")
                            :origname  name)))
 
 
+(defxdoc *vl-1-bit-ceq*
+  :parents (primitives)
+  :short "Primitive <tt>===</tt> module."
+  :long "<p>The Verilog definition of this module is:</p>
+
+<code>
+module VL_1_BIT_CEQ (out, a, b) ;
+  output out;
+  input a;
+  input b;
+  assign out = (a === b);
+endmodule
+</code>
+
+<p>VL takes this as a primitive, and uses of <tt>===</tt> and <tt>!==</tt>
+operators are generally converted into instances of this module or wide
+versions of it.</p>
+
+<p>These operators are inherently unsound because they do not treat <tt>X</tt>
+as an unknown.  For our back-end tools, we usually conservatively approximate
+<tt>VL_1_BIT_CEQ</tt> with an <tt>xnor</tt> gate.  But a less conservative tool
+might choose to give it a different interpretation.</p>")
+
+(defconsts *vl-1-bit-ceq*
+  ;; BOZO this should probably be a non-primitive.
+  (b* ((name "VL_1_BIT_CEQ")
+       (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
+       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input  1))
+       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-occform-mkport "b"   :vl-input  1))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom :op :vl-binary-ceq
+                                                      :args (list a-expr b-expr)
+                                                      :finalwidth 1
+                                                      :finaltype :vl-unsigned)
+                               :loc *vl-fakeloc*)))
+    (make-honsed-vl-module :name      name
+                           :origname  name
+                           :ports     (list out-port     a-port     b-port)
+                           :portdecls (list out-portdecl a-portdecl b-portdecl)
+                           :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
+                           :assigns   (list assign)
+                           :minloc    *vl-fakeloc*
+                           :maxloc    *vl-fakeloc*
+                           :atts      atts)))
+
+
+
 (defxdoc *vl-1-bit-flop*
   :parents (primitives)
   :short "Primitive edge-triggered register."
@@ -660,7 +708,7 @@ certain <tt>always</tt> statements into instances of this module.</p>")
 
 
 
-;; (include-book "../mlib/writer")
+;; (include-book "mlib/writer")
 ;; (vl-pps-module *vl-1-bit-x*)
 ;; (vl-pps-module *vl-1-bit-z*)
 ;; (vl-pps-module *vl-1-bit-assign*)
@@ -673,6 +721,7 @@ certain <tt>always</tt> statements into instances of this module.</p>")
 ;; (vl-pps-module *vl-1-bit-nand*)
 ;; (vl-pps-module *vl-1-bit-nor*)
 ;; (vl-pps-module *vl-1-bit-xnor*)
+;; (vl-pps-module *vl-1-bit-ceq*)
 ;; (vl-pps-module *vl-1-bit-zmux*)
 ;; (vl-pps-module *vl-1-bit-flop*)
 ;; (vl-pps-module *vl-1-bit-latch*)

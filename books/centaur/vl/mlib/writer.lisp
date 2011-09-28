@@ -641,6 +641,7 @@ displays.  The module browser's web pages are responsible for defining the
             (vl-ps-seq (if want-parens-1p (vl-print "(") ps)
                        (vl-pp-expr arg1)
                        (if want-parens-1p (vl-print ")") ps)
+                       (vl-print-str " ")
                        (vl-print-str (vl-op-string op))
                        (if atts (vl-pp-atts atts) ps)
                        (vl-println? " ")

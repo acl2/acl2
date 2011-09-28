@@ -41,6 +41,7 @@
     vl-make-n-bit-reduction-op
     vl-make-n-bit-mux
     vl-make-n-bit-zmux
+    vl-make-n-bit-ceq
     vl-make-n-bit-adder-core
     vl-make-n-bit-plusminus
     vl-make-n-bit-unsigned-gte
@@ -553,7 +554,7 @@ module instance."
        (arg1      (first (vl-nonatom->args x.expr)))
        (arg2      (second (vl-nonatom->args x.expr)))
        (arg1width (vl-expr->finalwidth arg1))
-       (arg1type  (vl-expr->finaltype arg2))
+       (arg1type  (vl-expr->finaltype arg1))
 
        ((unless (and (equal (vl-expr->finalwidth x.expr) 1)
                      (equal (vl-expr->finaltype x.expr) :vl-unsigned)
@@ -822,6 +823,54 @@ sliceable.</p>"
                     :modinsts (list modinst))))
 
 
+
+(def-vl-occform vl-ceq-occform
+  :short "Transform an assignment of a <tt>===</tt> expression into occurrences."
+
+  :long "<p><tt>x</tt> should have the form: <tt>assign lhs = (a === b);</tt></p>"
+
+  :ops (:vl-binary-ceq)
+  :body
+  (b* (((vl-assign x) x)
+       (arg1      (first (vl-nonatom->args x.expr)))
+       (arg2      (second (vl-nonatom->args x.expr)))
+       (arg1width (vl-expr->finalwidth arg1))
+       (arg1type  (vl-expr->finaltype arg1))
+
+       ((unless (and (equal (vl-expr->finalwidth x.expr) 1)
+                     (equal (vl-expr->finaltype x.expr) :vl-unsigned)
+                     (equal (vl-expr->finalwidth x.lvalue) 1)
+                     (vl-expr->finaltype x.lvalue)
+                     arg1type
+                     (posp arg1width)
+                     (equal arg1type  (vl-expr->finaltype arg2))
+                     (equal arg1width (vl-expr->finalwidth arg2))))
+        (occform-return
+         :assigns (list x)
+         :warnings (cons (make-vl-warning
+                          :type :vl-programming-error
+                          :msg "~a0: bad widths in assignment of ceq."
+                          :args (list x)
+                          :fatalp t
+                          :fn 'vl-ceq-occform)
+                         warnings)))
+
+       ;; Make a module and instantiate it.
+       ((mv iname nf) (vl-namefactory-indexed-name "vl_ceq" nf))
+       (mods          (vl-make-n-bit-ceq arg1width))
+       (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "out"))
+                   (make-vl-plainarg :expr arg1     :dir :vl-input  :portname (hons-copy "a"))
+                   (make-vl-plainarg :expr arg2     :dir :vl-input  :portname (hons-copy "b"))))
+       (modinst (make-vl-modinst :modname   (vl-module->name (car mods))
+                                 :instname  iname
+                                 :paramargs (vl-arguments nil nil)
+                                 :portargs  (vl-arguments nil args)
+                                 :atts      x.atts
+                                 :loc       x.loc)))
+    (occform-return :mods mods
+                    :modinsts (list modinst))))
+
+
 (def-vl-occform vl-assign-occform
   :short "Transform an arbitrary single assignment into occurrences."
 
@@ -866,6 +915,9 @@ below.</p>"
 
       ((:vl-binary-gte)
        (vl-gte-occform x nf warnings))
+
+      ((:vl-binary-ceq)
+       (vl-ceq-occform x nf warnings))
 
       ((:vl-bitselect)
        ;; Must be a dynamic bitselect...

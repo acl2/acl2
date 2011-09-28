@@ -69,6 +69,8 @@ how to synthesize them or handle them at all!</p>
 
 <li><tt>a == b</tt> --&gt; <tt>&amp;(a ~^ b)</tt></li>
 <li><tt>a != b</tt> --&gt; <tt>|(a ^ b)</tt></li>
+
+<li><tt>a !== b</tt> --&gt; <tt>{~(a === b)}</tt></li>
 </ul>
 
 <h4>Additional Rules</h4>
@@ -85,9 +87,9 @@ false branch.</p>
 <li><tt>a ? z : c</tt> --&gt; <tt>~(|a) ? c : z</tt></li>
 </ul>
 
-<p>Finally, we also consolidate multiple-concatenations of constint and
-weirdint values into a single values.  This is important for properly
-recognizing zatoms in occform, since designers sometimes write things like</p>
+<p>We also consolidate multiple-concatenations of constint and weirdint values
+into a single values.  This is important for properly recognizing zatoms in
+occform, since designers sometimes write things like</p>
 
 <code>
     assign foo = a ? b : width{ 1'bz }
@@ -393,47 +395,43 @@ mutual recursion as simple as possible.</p>"
          (mv warnings result)))
 
 
-      ((:vl-binary-eq :vl-binary-ceq)
+      ((:vl-binary-eq)
        ;; a == b    -->  &(a ~^ b)
+
+; We once also rewrite a === b and warned that it was a dangerous operator.
+; But we now treat === as a primitive instead, and leave it up to warn about it
+; and perhaps to explain how it is being handled.
+
        (b* (((list a b) args)
             (a~^b   (make-vl-nonatom :op :vl-binary-xnor :args (list a b)))
             (result (make-vl-nonatom :op :vl-unary-bitand
                                      :atts atts
-                                     :args (list a~^b)))
-            (warnings
-             (if (eq op :vl-binary-eq)
-                 warnings
-               (cons (make-vl-warning
-                      ;; BOZO.  This is terrible.  There's no context.  This
-                      ;; is just a bad place to do this, probably.
-                      :type :vl-dangerous-operator
-                      :msg "Use of the === operator is discouraged since it does ~
-                            not conservatively interpret X as an unknown.  We are ~
-                            replacing === with an ordinary == comparison."
-                      :fn 'vl-op-oprewrite)
-                     warnings))))
-           (mv warnings result)))
+                                     :args (list a~^b))))
+         (mv warnings result)))
 
-      ((:vl-binary-neq :vl-binary-cne)
+
+      ((:vl-binary-neq)
        ;; a != b    -->  |(a ^ b)
+
+; We once rewrite a !== b in the same way, but now it is handled separately
+; since === is a primitive.
+
        (b* (((list a b) args)
             (a^b        (make-vl-nonatom :op :vl-binary-xor :args (list a b)))
             (result     (make-vl-nonatom :op :vl-unary-bitor
                                          :atts atts
-                                         :args (list a^b)))
-            (warnings
-             (if (eq op :vl-binary-neq)
-                 warnings
-               (cons (make-vl-warning
-                      ;; BOZO.  This is terrible.  There's no context.  This
-                      ;; is just a bad place to do this, probably.
-                      :type :vl-dangerous-operator
-                      :msg "Use of the !== operator is discouraged since it does ~
-                            not conservatively interpret X as an unknown.  We are ~
-                            replacing !== with an ordinary != comparison."
-                      :fn 'vl-op-oprewrite)
-                     warnings))))
-           (mv warnings result)))
+                                         :args (list a^b))))
+         (mv warnings result)))
+
+      (:vl-binary-cne
+       ;; a !== b   -->  {~(a === b)}
+       (b* (((list a b) args)
+            (a===b      (make-vl-nonatom :op :vl-binary-ceq :args (list a b)))
+            (~a===b     (make-vl-nonatom :op :vl-unary-bitnot :args (list a===b)))
+            (result     (make-vl-nonatom :op :vl-concat
+                                         :atts atts
+                                         :args (list ~a===b))))
+         (mv warnings result)))
 
       (:vl-binary-lt
        ;; a < b     -->  {~(a >= b)}
