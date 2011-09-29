@@ -296,6 +296,10 @@ Least common multiple of the moduli
 	  T)
      NIL))
 
+; The following is needed for Lispworks 6.0.1 and maybe some other host Lisps,
+; in order to avoid a stack overflow.
+(comp 'cover)
+
 (DEFTHM cover=>cover-one
  (IMPLIES (AND (INTEGERP N)(<= L N)(< N U)(cover L U))
 	   (cover-one N))
